@@ -11,7 +11,13 @@ vi.mock('idb', () => {
     }),
     getAll: vi.fn(async () => [...store.values()]),
     delete: vi.fn(async (storeName, id) => store.delete(id)),
-    transaction: vi.fn(() => ({ store: { getAll: vi.fn(async () => [...store.values()]) } })),
+    transaction: vi.fn(() => ({
+      store: {
+        getAll: vi.fn(async () => [...store.values()]),
+        clear:  vi.fn(async () => store.clear()),
+      },
+      done: Promise.resolve(),
+    })),
   }
   return {
     openDB: vi.fn(async () => mockDB),

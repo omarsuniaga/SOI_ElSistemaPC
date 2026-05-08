@@ -1,7 +1,8 @@
 import { supabase } from '../../lib/supabaseClient.js'
+import { academicService } from '../../modules/academic-routes/services/academicService.js'
 import { getMaestroLocal } from '../auth/maestroAuth.js'
-
-const DIAS_ES = ['domingo','lunes','martes','miércoles','jueves','viernes','sábado']
+import { escHTML, formatHora, capitalize, formatFechaPortal } from '../utils/portalUtils.js'
+import { getMisClases, getHorariosClases, getSesiones, getInscripcionesClases, getSalones } from '../services/maestroDataService.js'
 
 /**
  * Renderiza la vista Hoy: lista de clases del día actual ordenadas por hora.
@@ -18,117 +19,120 @@ export async function renderHoyView(container, { onClaseClick } = {}) {
   }
 
   const hoy     = new Date()
-  const diaHoy  = DIAS_ES[hoy.getDay()]
-  const fechaStr = hoy.toISOString().split('T')[0]
+  const diaHoy  = hoy.toLocaleDateString('es-ES', { weekday: 'long' }).toLowerCase()
+  const yH = hoy.getFullYear()
+  const mH = String(hoy.getMonth() + 1).padStart(2, '0')
+  const dH = String(hoy.getDate()).padStart(2, '0')
+  const fechaHoy = `${yH}-${mH}-${dH}`
 
   try {
-    // 1. Obtener clases del maestro que tienen horario hoy
-    const { data: horarios, error: errH } = await supabase
-      .from('clase_horarios')
-      .select(`
-        hora_inicio,
-        hora_fin,
-        salon_id,
-        clase:clases!inner(
-          id,
-          nombre,
-          instrumento,
-          capacidad_maxima,
-          maestro_principal_id
-        )
-      `)
-      .eq('dia', diaHoy)
-      .eq('clase.maestro_principal_id', maestro.id)
-      .order('hora_inicio', { ascending: true })
-
-    if (errH) throw errH
-
-    if (!horarios || horarios.length === 0) {
-      container.innerHTML = `<p class="pm-empty">No tenés clases hoy.<br><small>Día: ${_capitalize(diaHoy)}</small></p>`
+    // 1. Obtener clases del maestro (con cache)
+    const misClases = await getMisClases()
+    if (!misClases || misClases.length === 0) {
+      container.innerHTML = `<p class="pm-empty">No tenés clases asignadas.</p>`
       return
     }
 
-    // 2. Obtener qué sesiones ya fueron registradas hoy
-    const claseIds = horarios.map(h => h.clase.id)
-    const { data: sesionesHoy } = await supabase
-      .from('sesiones_clase')
-      .select('clase_id, borrador')
-      .in('clase_id', claseIds)
-      .eq('fecha', fechaStr)
-      .eq('borrador', false)
+    const claseIds = misClases.map(c => c.id)
+    const clasesMap = Object.fromEntries(misClases.map(c => [c.id, c]))
 
-    const registradasHoy = new Set((sesionesHoy || []).map(s => s.clase_id))
+    // 2. Obtener horarios de hoy para esas clases (con cache)
+    const todosHorarios = await getHorariosClases(claseIds)
+    const horarios = todosHorarios
+      .filter(h => h.dia?.toLowerCase() === diaHoy)
+      .sort((a, b) => a.hora_inicio.localeCompare(b.hora_inicio))
 
-    // 3. Obtener cantidad de alumnos por clase
-    const { data: inscripciones } = await supabase
-      .from('alumnos_clases')
-      .select('clase_id')
-      .in('clase_id', claseIds)
-      .eq('activo', true)
-
-    const alumnosPorClase = {}
-    for (const insc of (inscripciones || [])) {
-      alumnosPorClase[insc.clase_id] = (alumnosPorClase[insc.clase_id] || 0) + 1
+    if (!horarios || horarios.length === 0) {
+      container.innerHTML = `
+        <h2 class="pm-date-header">${capitalize(diaHoy)} ${formatFechaPortal(hoy)}</h2>
+        <p class="pm-empty">No tenés clases hoy.</p>
+      `
+      return
     }
 
-    // 4. Renderizar
+    // 3. Obtener sesiones de hoy (con cache)
+    const todasSesiones = await getSesiones(maestro.id, fechaHoy, fechaHoy)
+    const sesionesHoy = todasSesiones.filter(s => claseIds.includes(s.clase_id))
+
+    // Filtrar en JS: sesión registrada si borrador === false, O si tiene
+    // asistencia y borrador NO es explícitamente true (legacy data sin campo borrador).
+    const sesionesRegistradas = sesionesHoy.filter(s =>
+      s.borrador === false || (s.borrador !== true && Array.isArray(s.asistencia) && s.asistencia.length > 0)
+    )
+
+    const registradasHoy = new Set(sesionesRegistradas.map(s => s.clase_id))
+
+    // 4. Obtener cantidad de alumnos por clase (con cache)
+    const inscripciones = await getInscripcionesClases(claseIds)
+    const alumnosPorClase = {}
+    for (const insc of (inscripciones || [])) {
+      if (insc.clase_id) {
+        alumnosPorClase[insc.clase_id] = (alumnosPorClase[insc.clase_id] || 0) + 1
+      }
+    }
+
+    // 5. Obtener salones (con cache)
+    const salonIds = [...new Set(horarios.map(h => h.salon_id).filter(Boolean))]
+    const salonesData = salonIds.length > 0 ? await getSalones(salonIds) : []
+    const salonMap = Object.fromEntries(salonesData.map(s => [s.id, s.nombre]))
+
+    // 6. Renderizar
     const listHTML = horarios.map(h => {
-      const clase        = h.clase
+      const clase        = clasesMap[h.clase_id]
       const registrada   = registradasHoy.has(clase.id)
       const totalAlumnos = alumnosPorClase[clase.id] || 0
       const estadoClass  = registrada ? 'registrada' : 'sin-registrar'
       const badgeHTML    = registrada
-        ? `<span class="pm-badge pm-badge-success">✓ Registrada</span>`
+        ? `<span class="pm-badge pm-badge-success"><i class="bi bi-check-circle-fill me-1"></i>Registrada</span>`
         : `<span class="pm-badge pm-badge-danger">Sin registrar</span>`
 
       return `
-        <div class="pm-clase-card ${estadoClass}" data-clase-id="${clase.id}" data-horario-inicio="${h.hora_inicio}">
-          <div class="pm-clase-nombre">${_escHTML(clase.nombre)}</div>
-          <div class="pm-clase-meta">
-            <span>🕐 ${_formatHora(h.hora_inicio)} – ${_formatHora(h.hora_fin)}</span>
-            <span>🎸 ${_escHTML(clase.instrumento || '—')}</span>
-            <span>👥 ${totalAlumnos} alumnos</span>
-            ${h.salon_id ? `<span>📍 Salón ${h.salon_id}</span>` : ''}
+        <div class="pm-clase-card ${estadoClass}" data-clase-id="${clase.id}">
+          <div class="d-flex justify-content-between align-items-start mb-2">
+            <div class="pm-clase-nombre">${escHTML(clase.nombre)}</div>
+            ${badgeHTML}
           </div>
-          ${badgeHTML}
+          <div class="pm-clase-meta">
+            <div class="meta-item"><i class="bi bi-clock"></i> ${formatHora(h.hora_inicio)} – ${formatHora(h.hora_fin)}</div>
+            <div class="meta-item"><i class="bi bi-music-note-beamed"></i> ${escHTML(clase.instrumento || '—')}</div>
+            <div class="meta-item"><i class="bi bi-people"></i> ${totalAlumnos} alumnos</div>
+            ${h.salon_id ? `<div class="meta-item"><i class="bi bi-geo-alt"></i> ${escHTML(salonMap[h.salon_id] || 'Salón')}</div>` : ''}
+          </div>
         </div>
       `
     }).join('')
 
     container.innerHTML = `
-      <h2 style="font-size:.9rem;font-weight:700;color:var(--pm-text-muted);margin-bottom:.75rem;text-transform:uppercase;letter-spacing:.05em;">
-        ${_capitalize(diaHoy)} ${_formatFecha(hoy)}
-      </h2>
-      ${listHTML}
+      <h2 class="pm-date-header">${capitalize(diaHoy)} ${formatFechaPortal(hoy)}</h2>
+      <div class="pm-clases-container">
+        ${listHTML}
+      </div>
     `
 
-    // 5. Eventos de click en cada clase
+    // 6. Eventos de click en cada clase
     container.querySelectorAll('.pm-clase-card').forEach(card => {
-      card.addEventListener('click', () => {
-        onClaseClick?.(card.dataset.claseId)
+      card.addEventListener('click', async () => {
+        // Prevent double-click while loading
+        if (card.classList.contains('pm-card-loading')) return
+        card.classList.add('pm-card-loading')
+
+        const claseId = card.dataset.claseId
+
+        try {
+          // Generar snapshot de planificación antes de entrar
+          await academicService.createSnapshotFromPlan(claseId, fechaHoy, maestro.id)
+        } catch (err) {
+          console.error('Error generando snapshot:', err)
+          // Continuamos aunque falle el snapshot para no bloquear el flujo
+        }
+
+        // Reset loading state before navigating so cached view shows normal cards
+        card.classList.remove('pm-card-loading')
+        onClaseClick?.(claseId)
       })
     })
 
   } catch (err) {
-    container.innerHTML = `<p class="pm-empty" style="color:var(--pm-danger)">Error al cargar clases: ${_escHTML(err.message)}</p>`
+    container.innerHTML = `<p class="pm-empty" style="color:var(--pm-danger)">Error al cargar clases: ${escHTML(err.message)}</p>`
   }
-}
-
-// -- Helpers privados ---------------------------------------
-
-function _escHTML(str) {
-  return String(str ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
-}
-
-function _formatHora(hora) {
-  if (!hora) return '—'
-  return hora.substring(0, 5)
-}
-
-function _capitalize(str) {
-  return str.charAt(0).toUpperCase() + str.slice(1)
-}
-
-function _formatFecha(date) {
-  return date.toLocaleDateString('es-AR', { day: 'numeric', month: 'long' })
 }

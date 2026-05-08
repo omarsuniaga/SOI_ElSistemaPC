@@ -1113,6 +1113,7 @@ html, body {
 
 .pm-clase-card.sin-registrar { border-left-color: var(--pm-danger); }
 .pm-clase-card.registrada    { border-left-color: var(--pm-success); }
+.pm-clase-card.pm-card-loading { opacity: 0.5; pointer-events: none; }
 
 .pm-clase-nombre {
   font-weight: 700;

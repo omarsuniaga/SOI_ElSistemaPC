@@ -1,6 +1,7 @@
 import { supabase } from '../../lib/supabaseClient.js'
 
-const STORAGE_KEY = 'portal-maestros:maestro'
+export const STORAGE_KEY = 'portal-maestros:maestro'
+export const PM_AUTH_KEY = 'portal-maestros:auth'
 
 /**
  * Login con email + password. Verifica que el user_id exista en tabla maestros.
@@ -86,4 +87,9 @@ export function getMaestroLocal() {
   } catch {
     return null
   }
+}
+
+export function clearMaestroLocal() {
+  localStorage.removeItem(STORAGE_KEY)
+  localStorage.removeItem(PM_AUTH_KEY)
 }

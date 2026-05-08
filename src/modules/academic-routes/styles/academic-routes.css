@@ -1,0 +1,81 @@
+/* ============================================================
+    ACADEMIC ROUTES MODULE — Estilos específicos
+    Apple Design Tokens integrados
+    ============================================================ */
+
+.pm-hierarchy-container {
+    padding: 0.5rem;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+/* Bloques Académicos */
+.pm-block-section {
+    animation: pm-fade-in 0.4s ease-out forwards;
+}
+
+/* Tarjetas de Nivel */
+.pm-level-card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.pm-level-card:hover {
+    transform: scale(1.01);
+}
+
+/* Items de Nodo */
+.pm-node-item {
+    border: 1px solid transparent;
+    transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.pm-node-item:hover {
+    border-color: var(--pm-border);
+    background: var(--pm-surface) !important;
+}
+
+/* Iconos de Estado */
+.node-status-icon {
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+/* Indicadores */
+.pm-indicators-list span {
+    transition: background 0.2s ease;
+}
+
+.pm-indicators-list span:hover {
+    background: var(--pm-bg-hover) !important;
+}
+
+/* Grid de Rutas (Librería) */
+.route-card {
+    min-height: 180px;
+    display: flex;
+    flex-direction: column;
+}
+
+.route-card:active {
+    transform: scale(0.98);
+}
+
+/* Search Bar animada */
+.input-apple-group input:focus + i {
+    color: var(--apple-primary) !important;
+}
+
+/* Responsive adjustments */
+@media (max-width: 600px) {
+    .apple-display-md {
+        font-size: 1.5rem !important;
+    }
+    
+    .pm-node-item {
+        padding: 0.5rem !important;
+    }
+}

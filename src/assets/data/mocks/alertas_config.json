@@ -1,0 +1,49 @@
+{
+  "alertas": [
+    {
+      "id": "alert-001",
+      "tipo": "asistencia_baja",
+      "clase_id": "clase-001",
+      " umbral": 75,
+      " activo": true,
+      "color": "rojo",
+      "notificar_maestro": true,
+      "notificar_administrador": true,
+      "mensaje_personalizado": null
+    },
+    {
+      "id": "alert-002",
+      "tipo": "rendimiento_bajo",
+      "clase_id": "clase-002",
+      " umbral": 5.0,
+      " activo": true,
+      "color": "naranja",
+      "notificar_maestro": true,
+      "notificar_administrador": false,
+      "mensaje_personalizado": null
+    },
+    {
+      "id": "alert-003",
+      "tipo": "asistencia_baja",
+      "clase_id": "clase-003",
+      " umbral": 80,
+      " activo": true,
+      "color": "amarillo",
+      "notificar_maestro": false,
+      "notificar_administrador": false,
+      "mensaje_personalizado": "Alerta preventiva"
+    }
+  ],
+  "umbrales_default": {
+    "asistencia": {
+      "rojo": 70,
+      "naranja": 80,
+      "amarillo": 90
+    },
+    "rendimiento": {
+      "rojo": 4.0,
+      "naranja": 5.5,
+      "amarillo": 7.0
+    }
+  }
+}

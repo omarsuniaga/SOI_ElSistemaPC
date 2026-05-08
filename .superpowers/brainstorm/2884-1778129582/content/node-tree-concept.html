@@ -1,0 +1,180 @@
+<h2>Barra de Nodo Activo — Concepto</h2>
+<p class="subtitle">¿Este árbol colapsable refleja lo que imaginás?</p>
+
+<div class="mockup">
+  <div class="mockup-header">Vista Asistencia — Selector de Nodo</div>
+  <div class="mockup-body" style="padding:0; background:#0f1923; color:#e2e8f0; font-family:-apple-system,system-ui,sans-serif;">
+
+    <!-- Barra de nodo activo (colapsada) -->
+    <div style="background:#1a2332; border-bottom:1px solid rgba(255,255,255,0.08); padding:0.75rem 1rem; display:flex; justify-content:space-between; align-items:center; cursor:pointer;" id="nodeBarToggle">
+      <div>
+        <span style="font-size:0.7rem; color:#64748b; text-transform:uppercase; letter-spacing:1px;">Tema activo</span>
+        <div style="font-weight:700; font-size:0.95rem; margin-top:2px;">
+          <span style="color:#64748b;">Niv1 ›</span>
+          <span style="color:#94a3b8;">Nodo 1 ›</span>
+          <span style="color:#007aff;">Agarre del arco</span>
+        </div>
+      </div>
+      <span style="color:#64748b; font-size:1.2rem;" id="chevron">▾</span>
+    </div>
+
+    <!-- Árbol expandido -->
+    <div id="treePanel" style="background:#111b27; border-bottom:2px solid rgba(0,122,255,0.3); padding:0.75rem; max-height:400px; overflow-y:auto;">
+
+      <!-- Header instrumento -->
+      <div style="font-size:0.75rem; color:#64748b; font-weight:700; text-transform:uppercase; letter-spacing:1px; padding:0.25rem 0.5rem; margin-bottom:0.5rem;">
+        🎻 Violín / Viola — Ruta Integral
+      </div>
+
+      <!-- Nivel 1 -->
+      <div style="margin-bottom:0.25rem;">
+        <div style="padding:0.5rem; border-radius:8px; display:flex; align-items:center; gap:0.5rem; cursor:pointer; background:rgba(255,255,255,0.03);" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none'">
+          <span style="color:#64748b; font-size:0.8rem;">▾</span>
+          <span style="font-weight:700; font-size:0.9rem;">Nivel 1 — Iniciación Musical</span>
+          <span style="margin-left:auto; font-size:0.7rem; background:rgba(34,197,94,0.15); color:#22c55e; padding:2px 8px; border-radius:10px;">2/8 completados</span>
+        </div>
+
+        <!-- Nodos del Nivel 1 -->
+        <div style="padding-left:1.25rem;">
+
+          <!-- Nodo 1 (expandido) -->
+          <div style="margin:0.25rem 0;">
+            <div style="padding:0.4rem 0.5rem; border-radius:6px; display:flex; align-items:center; gap:0.5rem; cursor:pointer; background:rgba(255,255,255,0.02);" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none'">
+              <span style="color:#64748b; font-size:0.75rem;">▾</span>
+              <span style="font-weight:600; font-size:0.85rem;">Nodo 1 — Escalas</span>
+            </div>
+
+            <!-- Indicadores del Nodo 1 -->
+            <div style="padding-left:1.25rem;">
+
+              <!-- VERDE: dominado -->
+              <div style="padding:0.5rem 0.75rem; margin:3px 0; border-radius:8px; display:flex; align-items:center; gap:0.75rem; background:rgba(34,197,94,0.08); border-left:3px solid #22c55e; cursor:pointer;">
+                <span style="font-size:0.85rem;">✅</span>
+                <div style="flex:1;">
+                  <div style="font-size:0.85rem; font-weight:600; color:#e2e8f0;">Postura de Pie</div>
+                  <div style="font-size:0.7rem; color:#22c55e;">12/12 alumnos dominan · Promedio 4.8/5</div>
+                </div>
+              </div>
+
+              <!-- AMARILLO: en proceso -->
+              <div style="padding:0.5rem 0.75rem; margin:3px 0; border-radius:8px; display:flex; align-items:center; gap:0.75rem; background:rgba(234,179,8,0.08); border-left:3px solid #eab308; cursor:pointer;">
+                <span style="font-size:0.85rem;">⏳</span>
+                <div style="flex:1;">
+                  <div style="font-size:0.85rem; font-weight:600; color:#e2e8f0;">Postura Sentado</div>
+                  <div style="font-size:0.7rem; color:#eab308;">9/12 dominan · 3 en proceso · Promedio 3.2/5</div>
+                </div>
+                <span style="font-size:0.65rem; background:rgba(234,179,8,0.2); color:#eab308; padding:2px 6px; border-radius:4px;">3 pendientes</span>
+              </div>
+
+              <!-- SIN FONDO: no visto -->
+              <div style="padding:0.5rem 0.75rem; margin:3px 0; border-radius:8px; display:flex; align-items:center; gap:0.75rem; background:rgba(255,255,255,0.02); border-left:3px solid #334155; cursor:pointer;" onclick="this.style.borderColor='#007aff'; this.style.background='rgba(0,122,255,0.06)'">
+                <span style="font-size:0.85rem; opacity:0.4;">○</span>
+                <div style="flex:1;">
+                  <div style="font-size:0.85rem; font-weight:600; color:#94a3b8;">Agarre del arco</div>
+                  <div style="font-size:0.7rem; color:#475569;">No evaluado aún</div>
+                </div>
+                <span style="font-size:0.65rem; color:#475569;">← Sugerido</span>
+              </div>
+
+              <!-- SIN FONDO: no visto -->
+              <div style="padding:0.5rem 0.75rem; margin:3px 0; border-radius:8px; display:flex; align-items:center; gap:0.75rem; background:rgba(255,255,255,0.02); border-left:3px solid #334155; cursor:pointer;">
+                <span style="font-size:0.85rem; opacity:0.4;">○</span>
+                <div style="flex:1;">
+                  <div style="font-size:0.85rem; font-weight:600; color:#94a3b8;">Pase del arco — Punto de contacto</div>
+                  <div style="font-size:0.7rem; color:#475569;">No evaluado aún</div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- Nodo 2 (colapsado) -->
+          <div style="margin:0.25rem 0;">
+            <div style="padding:0.4rem 0.5rem; border-radius:6px; display:flex; align-items:center; gap:0.5rem; cursor:pointer; background:rgba(255,255,255,0.02);" onclick="if(this.nextElementSibling)this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none'">
+              <span style="color:#64748b; font-size:0.75rem;">▸</span>
+              <span style="font-weight:600; font-size:0.85rem; color:#64748b;">Nodo 2 — Arpegios y patrones</span>
+              <span style="margin-left:auto; font-size:0.65rem; color:#475569;">0/4 vistos</span>
+            </div>
+            <div style="display:none;"></div>
+          </div>
+
+          <!-- Nodo 3 (colapsado) -->
+          <div style="margin:0.25rem 0;">
+            <div style="padding:0.4rem 0.5rem; border-radius:6px; display:flex; align-items:center; gap:0.5rem; cursor:pointer; background:rgba(255,255,255,0.02);">
+              <span style="color:#64748b; font-size:0.75rem;">▸</span>
+              <span style="font-weight:600; font-size:0.85rem; color:#64748b;">Nodo 3 — Mano izquierda</span>
+              <span style="margin-left:auto; font-size:0.65rem; color:#475569;">0/4 vistos</span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Nivel 2 (colapsado) -->
+      <div style="margin-top:0.5rem;">
+        <div style="padding:0.5rem; border-radius:8px; display:flex; align-items:center; gap:0.5rem; cursor:pointer; background:rgba(255,255,255,0.03); opacity:0.6;">
+          <span style="color:#64748b; font-size:0.8rem;">▸</span>
+          <span style="font-weight:700; font-size:0.9rem; color:#64748b;">Nivel 2 — Primeros Intervalos</span>
+          <span style="margin-left:auto; font-size:0.7rem; color:#475569;">Bloqueado</span>
+          <span style="font-size:0.8rem;">🔒</span>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Editor preview -->
+    <div style="padding:1rem; border-top:1px solid rgba(255,255,255,0.05);">
+      <div style="font-size:0.7rem; color:#64748b; margin-bottom:0.5rem;">OBSERVACIÓN</div>
+      <div style="background:#1a2332; border:1px solid rgba(255,255,255,0.08); border-radius:10px; padding:0.75rem; font-size:0.85rem; color:#94a3b8; min-height:60px;">
+        Los alumnos <span style="color:#007aff;">#Isabella</span>, <span style="color:#007aff;">#Martin</span> avanzaron en <span style="color:#22c55e;">[Agarre del arco]</span> con nota <span style="font-weight:700; color:#eab308;">4/5</span> <span style="color:#64748b;">(deben mejorar presión del meñique)</span> tarea <span style="color:#f97316;">{practicar frente al espejo 10min}</span>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div style="margin-top:1.5rem;">
+  <h3>Semáforo de estados</h3>
+  <div style="display:flex; gap:1.5rem; flex-wrap:wrap; margin-top:0.75rem;">
+    <div style="display:flex; align-items:center; gap:0.5rem;">
+      <div style="width:14px; height:14px; border-radius:3px; background:#22c55e;"></div>
+      <span><strong>Verde</strong> — Todos los alumnos dominan (≥4/5)</span>
+    </div>
+    <div style="display:flex; align-items:center; gap:0.5rem;">
+      <div style="width:14px; height:14px; border-radius:3px; background:#eab308;"></div>
+      <span><strong>Amarillo</strong> — Algunos en proceso (2-3/5)</span>
+    </div>
+    <div style="display:flex; align-items:center; gap:0.5rem;">
+      <div style="width:14px; height:14px; border-radius:3px; background:#334155;"></div>
+      <span><strong>Gris</strong> — No evaluado aún</span>
+    </div>
+    <div style="display:flex; align-items:center; gap:0.5rem;">
+      <span>🔒</span>
+      <span><strong>Bloqueado</strong> — Nivel no alcanzado</span>
+    </div>
+  </div>
+</div>
+
+<div class="options" style="margin-top:2rem;">
+  <div class="option" data-choice="approve" onclick="toggleSelect(this)">
+    <div class="letter">✅</div>
+    <div class="content">
+      <h3>Esto es lo que imaginaba</h3>
+      <p>El árbol, el semáforo y la integración con el editor están bien</p>
+    </div>
+  </div>
+  <div class="option" data-choice="changes" onclick="toggleSelect(this)">
+    <div class="letter">✏️</div>
+    <div class="content">
+      <h3>Necesita ajustes</h3>
+      <p>La idea está pero hay cosas que cambiar (contame en el terminal)</p>
+    </div>
+  </div>
+  <div class="option" data-choice="rethink" onclick="toggleSelect(this)">
+    <div class="letter">🔄</div>
+    <div class="content">
+      <h3>No es así</h3>
+      <p>Tengo algo diferente en mente</p>
+    </div>
+  </div>
+</div>

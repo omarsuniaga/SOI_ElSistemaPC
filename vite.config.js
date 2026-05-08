@@ -19,10 +19,21 @@ export default defineConfig({
     }
   },
   optimizeDeps: {
-    include: ['@supabase/supabase-js', 'idb']
+    include: [
+      '@supabase/supabase-js', 
+      'idb', 
+      'bootstrap', 
+      'xlsx', 
+      'jspdf', 
+      'jspdf-autotable'
+    ]
   },
   server: {
     host: true,
-    port: 5173
+    port: 5173,
+    hmr: {
+      overlay: false
+    },
+    strictPort: false
   }
 })

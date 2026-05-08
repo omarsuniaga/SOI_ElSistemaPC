@@ -1,0 +1,36 @@
+{
+  "configuraciones": [
+    {
+      "id": "per-001",
+      "nombre": "Trimestre 1 2026",
+      "fecha_inicio": "2026-01-15",
+      "fecha_fin": "2026-04-15",
+      "activo": true,
+      " umbral_asistencia": 85,
+      " umbral_riesgo": 70,
+      "dias_calculo": 30
+    },
+    {
+      "id": "per-002",
+      "nombre": "Trimestre 2 2026",
+      "fecha_inicio": "2026-04-16",
+      "fecha_fin": "2026-07-15",
+      "activo": false,
+      " umbral_asistencia": 85,
+      " umbral_riesgo": 70,
+      "dias_calculo": 30
+    }
+  ],
+  "estadisticas_periodo": [
+    {
+      "periodo_id": "per-001",
+      "total_alumnos": 48,
+      "tasa_asistencia_promedio": 87.5,
+      "tasa_asistencia_min": 62.0,
+      "tasa_asistencia_max": 100.0,
+      "promedio_calificaciones": 7.82,
+      "alumnos_en_riesgo": 5,
+      "alumnos_destacados": 8
+    }
+  ]
+}

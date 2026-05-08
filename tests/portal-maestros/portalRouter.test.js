@@ -16,7 +16,7 @@ describe('portalRouter', () => {
 
   it('devuelve ruta por defecto si hash está vacío', () => {
     window.location.hash = ''
-    expect(router.currentRoute()).toBe('calendario')
+    expect(router.currentRoute()).toBe('hoy')
   })
 
   it('navigate cambia el hash y dispara handlers', () => {

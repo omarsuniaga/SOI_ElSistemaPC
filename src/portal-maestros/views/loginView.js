@@ -41,6 +41,10 @@ export function renderLoginView(container, { onSuccess }) {
           Iniciar sesión
         </button>
 
+        <button type="button" class="pm-btn pm-btn-secondary" id="pm-biometric-btn" style="display:none;">
+          <i class="bi bi-fingerprint"></i> Usar huella o Face ID
+        </button>
+
         <p class="pm-error-msg" id="pm-login-error" aria-live="polite"></p>
       </div>
     </div>
@@ -68,7 +72,11 @@ export function renderLoginView(container, { onSuccess }) {
 
     if (result.success) {
       usePortalAuth.setMaestro(result.maestro)
-      onSuccess()
+      const intended = localStorage.getItem('intended-route')
+      localStorage.removeItem('intended-route')
+      if (onSuccess) {
+        onSuccess(intended)
+      }
     } else {
       errorMsg.textContent = result.error
       loginBtn.disabled    = false
@@ -79,6 +87,56 @@ export function renderLoginView(container, { onSuccess }) {
   loginBtn.addEventListener('click', handleLogin)
   passwordInput.addEventListener('keydown', e => {
     if (e.key === 'Enter') handleLogin()
+  })
+
+  // WebAuthn / Biométrico
+  const biometricBtn = container.querySelector('#pm-biometric-btn')
+
+  async function checkWebAuthnSupport() {
+    if (!window.PublicKeyCredential) return false
+    try {
+      const isAvailable = await navigator.credentials.get({ mediation: 'optional' })
+      return true // Si no throw, el browser soporta WebAuthn
+    } catch {
+      return false
+    }
+  }
+
+  // Verificar si hay credencial guardada
+  async function tryBiometricLogin() {
+    try {
+      const credential = await navigator.credentials.get({
+        mediation: 'required',
+        publicKey: {
+          challenge: new TextEncoder().encode('login-challenge'),
+        }
+      })
+      
+        if (credential) {
+          const cachedMaestro = localStorage.getItem('portal-maestros:maestro')
+          if (cachedMaestro) {
+            const maestro = JSON.parse(cachedMaestro)
+            usePortalAuth.setMaestro(maestro)
+            const intended = localStorage.getItem('intended-route')
+            localStorage.removeItem('intended-route')
+            if (onSuccess) {
+              onSuccess(intended)
+            }
+          } else {
+          errorMsg.textContent = 'No hay sesión biométrica guardada. Iniciá sesión con contraseña primero.'
+        }
+      }
+    } catch (err) {
+      console.log('[WebAuthn] No se pudo usar biometría:', err.message)
+    }
+  }
+
+  // Mostrar botón biométrico si está disponible
+  checkWebAuthnSupport().then(supported => {
+    if (supported) {
+      biometricBtn.style.display = 'flex'
+      biometricBtn.onclick = tryBiometricLogin
+    }
   })
 
   requestAnimationFrame(() => emailInput.focus())

@@ -48,3 +48,5 @@ export const usePortalAuth = {
   isAuthenticated: () => !!state.maestro,
   isLoading:       () => state.loading,
 }
+
+export const logoutMaestro = usePortalAuth.logout

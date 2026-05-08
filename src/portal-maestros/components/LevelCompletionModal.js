@@ -1,5 +1,5 @@
 import { escHTML } from '../utils/portalUtils.js';
-import supabase from '../../lib/supabaseClient.js';
+import { supabase } from '../../lib/supabaseClient.js';
 
 const STATUS_ICONS = {
   approved: '✅',

@@ -1,0 +1,194 @@
+/* ============================================================
+    ACADEMIC ADMIN — La Torre de Control
+    Glassmorphism & Apple Design
+    ============================================================ */
+
+.academic-admin-container {
+    padding: 1.5rem;
+    max-width: 1200px;
+    margin: 0 auto;
+    animation: pm-fade-in 0.5s ease-out;
+}
+
+.aa-glass-panel {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 24px;
+    padding: 2rem;
+    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
+    margin-bottom: 2rem;
+}
+
+[data-bs-theme="dark"] .aa-glass-panel {
+    background: rgba(30, 41, 59, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.aa-title {
+    font-size: 2rem;
+    font-weight: 800;
+    letter-spacing: -0.04em;
+    margin-bottom: 0.5rem;
+    background: linear-gradient(135deg, var(--pm-primary), #5856d6);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.aa-subtitle {
+    color: var(--pm-text-muted);
+    font-size: 1.1rem;
+    margin-bottom: 2rem;
+}
+
+/* Radar Table Styles */
+.aa-table-container {
+    overflow-x: auto;
+    border-radius: 16px;
+}
+
+.aa-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0 8px;
+}
+
+.aa-table th {
+    padding: 1rem;
+    text-align: left;
+    color: var(--pm-text-muted);
+    font-weight: 600;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.aa-table tr {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.aa-table tbody tr:hover {
+    transform: scale(1.01);
+    z-index: 10;
+}
+
+.aa-table td {
+    padding: 1.25rem 1rem;
+    background: var(--pm-surface);
+    border-top: 1px solid var(--pm-border);
+    border-bottom: 1px solid var(--pm-border);
+}
+
+.aa-table td:first-child {
+    border-left: 1px solid var(--pm-border);
+    border-top-left-radius: 12px;
+    border-bottom-left-radius: 12px;
+}
+
+.aa-table td:last-child {
+    border-right: 1px solid var(--pm-border);
+    border-top-right-radius: 12px;
+    border-bottom-right-radius: 12px;
+}
+
+/* Progress Bar */
+.aa-progress-wrapper {
+    width: 150px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.aa-progress-bar {
+    height: 8px;
+    background: rgba(0, 0, 0, 0.05);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+[data-bs-theme="dark"] .aa-progress-bar {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.aa-progress-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.progress-low { background: linear-gradient(90deg, #ff3b30, #ff9500); }
+.progress-mid { background: linear-gradient(90deg, #ff9500, #ffcc00); }
+.progress-high { background: linear-gradient(90deg, #34c759, #007aff); }
+
+/* Badges */
+.aa-badge {
+    padding: 4px 12px;
+    border-radius: 99px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.aa-badge-active { background: rgba(52, 199, 89, 0.15); color: #248a3d; }
+.aa-badge-stagnant { background: rgba(255, 59, 48, 0.15); color: #d70015; animation: pulse-red 2s infinite; }
+.aa-badge-not_started { background: rgba(142, 142, 147, 0.15); color: #8e8e93; }
+
+@keyframes pulse-red {
+    0% { opacity: 1; }
+    50% { opacity: 0.6; }
+    100% { opacity: 1; }
+}
+
+/* Hotspots Section */
+.aa-hotspots-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1.5rem;
+}
+
+.aa-hotspot-card {
+    background: var(--pm-surface);
+    border-radius: 16px;
+    padding: 1.25rem;
+    border: 1px solid var(--pm-border);
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    transition: all 0.3s ease;
+}
+
+.aa-hotspot-card:hover {
+    box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+    border-color: var(--pm-danger);
+}
+
+.aa-hotspot-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.aa-hotspot-name {
+    font-weight: 700;
+    font-size: 1rem;
+    color: var(--pm-text);
+}
+
+.aa-hotspot-level {
+    font-size: 0.8rem;
+    color: var(--pm-text-muted);
+}
+
+.aa-hotspot-rate {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--pm-danger);
+}
+
+.aa-hotspot-meta {
+    font-size: 0.8rem;
+    color: var(--pm-text-muted);
+    border-top: 1px solid var(--pm-border);
+    padding-top: 0.5rem;
+}

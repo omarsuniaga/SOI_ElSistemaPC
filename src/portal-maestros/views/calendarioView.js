@@ -1,9 +1,11 @@
 import { supabase } from '../../lib/supabaseClient.js'
 import { getMaestroLocal } from '../auth/maestroAuth.js'
+import { escHTML, MESES_ES, DIAS_ES } from '../utils/portalUtils.js'
+import { openClaseEmergenteModal } from '../../modules/planificacion/components/claseEmergenteModal.js'
+import { AppToast } from '../../shared/components/AppToast.js'
+import { getMisClases, getHorariosClases, getSesiones } from '../services/maestroDataService.js'
 
 const DIAS_HEADER    = ['Do','Lu','Ma','Mi','Ju','Vi','Sa']
-const DIAS_ES        = ['domingo','lunes','martes','miércoles','jueves','viernes','sábado']
-const MESES_ES       = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre']
 const UMBRAL_VENCIDA = 7
 
 /**
@@ -28,7 +30,10 @@ export async function renderCalendarioView(container, { onFechaClick } = {}) {
     try {
       const estado = await _calcularEstadoMes(maestro.id, anio, mes)
       _renderCalendario(container, anio, mes, hoy, estado, {
-        onFechaClick,
+        onFechaClick: (fecha) => {
+          _openActionDrawer(fecha);
+          onFechaClick?.(fecha);
+        },
         onPrev: () => {
           if (mes === 0) { anio--; mes = 11 } else { mes-- }
           cargarYRenderizar()
@@ -39,7 +44,7 @@ export async function renderCalendarioView(container, { onFechaClick } = {}) {
         },
       })
     } catch (err) {
-      container.innerHTML = `<p class="pm-empty" style="color:var(--pm-danger)">Error al cargar calendario: ${_escHTML(err.message)}</p>`
+      container.innerHTML = `<p class="pm-empty" style="color:var(--pm-danger)">Error al cargar calendario: ${escHTML(err.message)}</p>`
     }
   }
 
@@ -56,24 +61,29 @@ async function _calcularEstadoMes(maestroId, anio, mes) {
   const desde     = primerDia.toISOString().split('T')[0]
   const hasta     = ultimoDia.toISOString().split('T')[0]
 
-  // 1. Horarios del maestro (qué días de la semana tiene clases)
-  const { data: horarios } = await supabase
-    .from('clase_horarios')
-    .select('dia, clase:clases!inner(id, maestro_principal_id)')
-    .eq('clase.maestro_principal_id', maestroId)
+  // 1. Obtener clases del maestro (con cache)
+  const clases = await getMisClases()
+  const claseIds = clases.map(c => c.id)
 
-  const diasConClase = new Set((horarios || []).map(h => h.dia.toLowerCase()))
+  if (claseIds.length === 0) {
+    return new Map()
+  }
 
-  // 2. Sesiones registradas en el mes
-  const { data: sesiones } = await supabase
-    .from('sesiones_clase')
-    .select('fecha')
-    .eq('maestro_id', maestroId)
-    .eq('borrador', false)
-    .gte('fecha', desde)
-    .lte('fecha', hasta)
+  // 2. Horarios de esas clases (con cache)
+  const horarios = await getHorariosClases(claseIds)
+  const diasConClase = new Set(horarios.map(h => h.dia?.toLowerCase()))
 
-  const fechasRegistradas = new Set((sesiones || []).map(s => s.fecha))
+  // 3. Sesiones del mes (con cache)
+  const todasSesiones = await getSesiones(maestroId, desde, hasta)
+  
+  // Filtrar en JS: sesión registrada si borrador === false, O si tiene
+  // asistencia y borrador NO es true (legacy data sin campo borrador).
+  const sesiones = todasSesiones.filter(s =>
+    s.estado === 'registrada' || s.estado === 'cerrada' || s.borrador === false ||
+    (s.borrador !== true && Array.isArray(s.asistencia) && s.asistencia.length > 0)
+  )
+
+  const fechasRegistradas = new Set(sesiones.map(s => s.fecha))
 
   // 3. Calcular estado por día
   const estadoMap = new Map()
@@ -81,7 +91,10 @@ async function _calcularEstadoMes(maestroId, anio, mes) {
   hoy.setHours(0, 0, 0, 0)
 
   for (let d = new Date(primerDia); d <= ultimoDia; d.setDate(d.getDate() + 1)) {
-    const fecha   = d.toISOString().split('T')[0]
+    const y = d.getFullYear()
+    const m = String(d.getMonth() + 1).padStart(2, '0')
+    const dia = String(d.getDate()).padStart(2, '0')
+    const fecha = `${y}-${m}-${dia}`
     const diaEs   = DIAS_ES[d.getDay()]
     const tieneCl = diasConClase.has(diaEs)
 
@@ -114,7 +127,10 @@ function _renderCalendario(container, anio, mes, hoy, estadoMap, { onFechaClick,
   const primerDia    = new Date(anio, mes, 1)
   const ultimoDia    = new Date(anio, mes + 1, 0)
   const primerDiaSem = primerDia.getDay()
-  const hoyStr       = hoy.toISOString().split('T')[0]
+  const yH = hoy.getFullYear()
+  const mH = String(hoy.getMonth() + 1).padStart(2, '0')
+  const dH = String(hoy.getDate()).padStart(2, '0')
+  const hoyStr = `${yH}-${mH}-${dH}`
 
   let diasHTML = DIAS_HEADER.map(d => `<div class="pm-cal-day-header">${d}</div>`).join('')
 
@@ -135,10 +151,10 @@ function _renderCalendario(container, anio, mes, hoy, estadoMap, { onFechaClick,
   }
 
   container.innerHTML = `
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;">
-      <button id="pm-cal-prev" style="background:none;border:none;font-size:1.4rem;cursor:pointer;color:var(--pm-primary);padding:.25rem .5rem;">‹</button>
-      <h2 style="font-size:1.1rem;font-weight:700;">${MESES_ES[mes]} ${anio}</h2>
-      <button id="pm-cal-next" style="background:none;border:none;font-size:1.4rem;cursor:pointer;color:var(--pm-primary);padding:.25rem .5rem;">›</button>
+    <div class="d-flex align-items-center justify-content-between mb-3 px-1">
+      <button id="pm-cal-prev" class="btn-icon-pm">‹</button>
+      <h2 class="pm-month-title">${MESES_ES[mes]} ${anio}</h2>
+      <button id="pm-cal-next" class="btn-icon-pm">›</button>
     </div>
 
     <div class="pm-card" style="padding:.75rem;">
@@ -148,13 +164,13 @@ function _renderCalendario(container, anio, mes, hoy, estadoMap, { onFechaClick,
 
       <div class="pm-cal-legend">
         <div class="pm-cal-legend-item">
-          <div class="pm-cal-legend-dot" style="background:#16a34a"></div> Registrada
+          <div class="pm-cal-legend-dot" style="background:var(--pm-success)"></div> Registrada
         </div>
         <div class="pm-cal-legend-item">
-          <div class="pm-cal-legend-dot" style="background:#ca8a04"></div> Pendiente
+          <div class="pm-cal-legend-dot" style="background:var(--pm-warning)"></div> Pendiente
         </div>
         <div class="pm-cal-legend-item">
-          <div class="pm-cal-legend-dot" style="background:#dc2626"></div> Vencida (+7 días)
+          <div class="pm-cal-legend-dot" style="background:var(--pm-danger)"></div> Vencida (+7d)
         </div>
       </div>
     </div>
@@ -170,6 +186,226 @@ function _renderCalendario(container, anio, mes, hoy, estadoMap, { onFechaClick,
   })
 }
 
-function _escHTML(str) {
-  return String(str ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+/**
+ * Muestra el drawer con acciones contextuales para la fecha seleccionada.
+ */
+async function _openActionDrawer(fecha) {
+  const maestro = getMaestroLocal()
+  if (!maestro) return
+
+  const now = new Date()
+  const yH = now.getFullYear()
+  const mH = String(now.getMonth() + 1).padStart(2, '0')
+  const dH = String(now.getDate()).padStart(2, '0')
+  const hoyStr = `${yH}-${mH}-${dH}`
+  let drawer = document.getElementById('pm-action-drawer')
+
+  if (!drawer) {
+    drawer = document.createElement('div')
+    drawer.id = 'pm-action-drawer'
+    drawer.className = 'pm-drawer-overlay'
+    document.body.appendChild(drawer)
+  }
+
+  const isToday = fecha === hoyStr
+  const isPast = fecha < hoyStr
+
+  // 1. Obtener datos necesarios
+  let sesiones = []
+  let clasesDelMaestro = []
+  let horarios = []
+
+  try {
+    const { data: s } = await supabase
+      .from('sesiones_clase')
+      .select('*')
+      .eq('maestro_id', maestro.id)
+      .eq('fecha', fecha)
+    sesiones = s || []
+
+    const { data: c } = await supabase
+      .from('clases')
+      .select('id, nombre, instrumento')
+      .or(`maestro_principal_id.eq.${maestro.id},maestro_suplente_id.eq.${maestro.id},maestro_id.eq.${maestro.id}`)
+    clasesDelMaestro = c || []
+
+    const claseIds = clasesDelMaestro.map(x => x.id)
+    if (claseIds.length > 0) {
+      const { data: h } = await supabase
+        .from('clase_horarios')
+        .select('clase_id, hora_inicio, hora_fin, dia')
+        .in('clase_id', claseIds)
+      horarios = h || []
+    }
+  } catch (e) {
+    console.error('Error fetching drawer data:', e)
+  }
+
+  // 2. Filtrar clases programadas para este día de la semana
+  const [y, m, d] = fecha.split('-').map(Number)
+  const fechaLocal = new Date(y, m - 1, d)
+  const diaSemana = fechaLocal.toLocaleDateString('es-ES', { weekday: 'long' }).toLowerCase()
+  const clasesProgramadas = clasesDelMaestro.filter(c => 
+    horarios.some(h => h.clase_id === c.id && h.dia?.toLowerCase() === diaSemana)
+  ).map(c => {
+    const h = horarios.find(h => h.clase_id === c.id && h.dia?.toLowerCase() === diaSemana)
+    const s = sesiones.find(s => s.clase_id === c.id)
+    return { ...c, hora_inicio: h?.hora_inicio, hora_fin: h?.hora_fin, sesion: s }
+  }).sort((a, b) => (a.hora_inicio || '').localeCompare(b.hora_inicio || ''))
+
+  // 3. Renderizar contenido
+  let clasesHTML = ''
+  if (clasesProgramadas.length > 0) {
+    clasesHTML = clasesProgramadas.map(c => {
+      const tieneSesion = c.sesion && (c.sesion.estado === 'registrada' || c.sesion.estado === 'cerrada' || c.sesion.borrador === false ||
+        (c.sesion.borrador !== true && Array.isArray(c.sesion.asistencia) && c.sesion.asistencia.length > 0))
+      const esPendiente = c.sesion && !tieneSesion && (c.sesion.estado === 'pendiente' || c.sesion.borrador === true)
+      
+      return `
+        <div class="pm-drawer-clase-item">
+          <div class="pm-drawer-clase-info">
+            <span class="pm-drawer-clase-hora">${c.hora_inicio?.slice(0,5) || '--:--'} - ${c.hora_fin?.slice(0,5) || '--:--'}</span>
+            <span class="pm-drawer-clase-nombre">${escHTML(c.nombre)}</span>
+            <span class="pm-drawer-clase-instrumento">${escHTML(c.instrumento || '')}</span>
+          </div>
+          
+          <div class="pm-drawer-clase-actions">
+            ${!tieneSesion ? `
+              <button class="pm-btn pm-btn-primary btn-pasar-asistencia" data-clase="${c.id}">
+                <i class="bi bi-person-check"></i> Pasar asistencia
+              </button>
+            ` : ''}
+            ${tieneSesion ? `
+              <button class="pm-btn btn-ver-sesion" data-clase="${c.id}" style="background:var(--pm-success); border-color:var(--pm-success);">
+                <i class="bi bi-eye"></i> Ver
+              </button>
+            ` : ''}
+            ${esPendiente ? `
+              <button class="pm-btn btn-continuar-sesion" data-clase="${c.id}">
+                <i class="bi bi-pencil"></i> Continuar
+              </button>
+            ` : ''}
+          </div>
+
+          <div class="pm-clase-status ${tieneSesion ? 'completed' : esPendiente ? 'pending' : ''}" style="margin-left: auto;">
+             ${tieneSesion ? '<i class="bi bi-check-circle-fill" style="color:var(--pm-success)"></i>' : esPendiente ? '<i class="bi bi-pencil-fill" style="color:var(--pm-warning)"></i>' : ''}
+          </div>
+        </div>
+      `
+    }).join('')
+  }
+
+  drawer.innerHTML = `
+    <div class="pm-drawer-content">
+      <div class="pm-drawer-header">
+        <div style="flex:1">
+          <h3 style="margin:0; font-size:1.1rem; font-weight:700;">${fechaLocal.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })}</h3>
+          <p style="margin:0.25rem 0 0; font-size:0.85rem; color:var(--pm-text-muted);">
+            ${clasesProgramadas.length > 0 ? `${clasesProgramadas.length} clase(s) programada(s)` : 'Sin clases programadas'}
+          </p>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+          <button class="pm-btn-sm" id="pm-drawer-emergente" style="background:var(--pm-primary); color:white; border:none; font-size:0.7rem; padding: 6px 10px; border-radius: 20px;">
+            <i class="bi bi-lightning-charge"></i> Crear Clase Emergente
+          </button>
+          <button class="pm-drawer-close" id="pm-drawer-close-btn">&times;</button>
+        </div>
+      </div>
+      <div class="pm-drawer-body">
+        ${clasesHTML || '<p style="text-align:center;color:var(--pm-text-muted);padding:2rem 1rem;">No hay clases programadas para esta fecha</p>'}
+        ${!isPast && !isToday ? `
+          <button class="pm-btn pm-btn-secondary" style="margin-top:0.5rem; width:100%;">
+            <i class="bi bi-plus-circle"></i> Agregar Clase a Horario
+          </button>
+        ` : ''}
+      </div>
+    </div>
+  `
+
+  // Estilos (solo una vez)
+  if (!document.getElementById('pm-drawer-styles')) {
+    const style = document.createElement('style')
+    style.id = 'pm-drawer-styles'
+    style.textContent = `
+      .pm-drawer-overlay {
+        position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0,0,0,0.5); display: none; z-index: 1001; align-items: flex-end;
+      }
+      .pm-drawer-overlay.open { display: flex; }
+      .pm-drawer-content {
+        background: var(--pm-surface); width: 100%; border-radius: 1.5rem 1.5rem 0 0;
+        padding-bottom: 2rem; transform: translateY(100%);
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        max-height: 80vh; overflow-y: auto;
+      }
+      .pm-drawer-overlay.open .pm-drawer-content { transform: translateY(0); }
+      .pm-drawer-header { padding: 1.25rem 1.25rem 0.5rem; display: flex; justify-content: space-between; align-items: flex-start; }
+      .pm-drawer-close { background: none; border: none; font-size: 1.8rem; color: var(--pm-text-muted); cursor: pointer; }
+      .pm-drawer-clase-item {
+        display: flex; justify-content: space-between; align-items: center;
+        padding: 0.75rem; background: var(--pm-surface-2); border-radius: var(--pm-radius-sm); margin-bottom: 0.5rem;
+      }
+      .pm-drawer-clase-info { display: flex; flex-direction: column; }
+      .pm-drawer-clase-hora { font-size: 0.75rem; color: var(--pm-primary); font-weight: 600; }
+      .pm-drawer-clase-nombre { font-size: 0.95rem; font-weight: 600; }
+      .pm-drawer-clase-instrumento { font-size: 0.75rem; color: var(--pm-text-muted); }
+      .pm-drawer-clase-actions { display: flex; gap: 0.5rem; }
+    `
+    document.head.appendChild(style)
+  }
+
+  // Eventos
+  const close = () => drawer.classList.remove('open')
+  const closeBtn = drawer.querySelector('#pm-drawer-close-btn')
+  if (closeBtn) closeBtn.onclick = close
+  drawer.addEventListener('click', (e) => { if (e.target === drawer) close() })
+
+  drawer.querySelectorAll('.btn-pasar-asistencia, .btn-ver-sesion, .btn-continuar-sesion').forEach(btn => {
+    if (btn) btn.addEventListener('click', () => {
+      const claseId = btn.dataset.clase
+      close()
+      window.location.hash = `#/asistencia?clase=${claseId}&fecha=${fecha}`
+    })
+  })
+
+  const btnEmergente = drawer.querySelector('#pm-drawer-emergente')
+  if (btnEmergente) {
+    btnEmergente.addEventListener('click', () => {
+      _abrirModalClaseEmergente(fecha, clasesDelMaestro);
+    })
+  }
+
+  setTimeout(() => drawer.classList.add('open'), 10)
+}
+
+/**
+ * Abre el modal para crear una sesión emergente
+ */
+async function _abrirModalClaseEmergente(fecha, clases) {
+  openClaseEmergenteModal({
+    fecha,
+    clases,
+    maestroId: getMaestroLocal().id,
+    onSave: async (datos) => {
+      try {
+        const { data, error } = await supabase
+          .from('sesiones_clase')
+          .insert([datos])
+          .select()
+          .single()
+
+        if (error) throw error
+
+        // Redirigir a asistencia
+        const drawer = document.getElementById('pm-action-drawer')
+        if (drawer) drawer.classList.remove('open')
+        
+        window.location.hash = `#/asistencia?clase=${datos.clase_id}&fecha=${datos.fecha}`
+        AppToast.success('Clase emergente creada. Procedé a pasar asistencia.')
+      } catch (err) {
+        console.error('Error creando clase emergente:', err)
+        AppToast.error('No se pudo crear la clase emergente')
+      }
+    }
+  })
 }

@@ -1,0 +1,102 @@
+{
+  "objetivos": [
+    {
+      "id": "obj-001",
+      "nombre": "Completa tu primera clase",
+      "descripcion": "Asiste a tu primera clase del período",
+      "tipo": "asistencia",
+      "xp": 50,
+      "icono": "bi-play-circle",
+      "requisitos": []
+    },
+    {
+      "id": "obj-002",
+      "nombre": "Racha de 3 días",
+      "descripcion": "Asiste 3 días consecutivos",
+      "tipo": "racha",
+      "xp": 100,
+      "icono": "bi-fire",
+      "requisitos": [{ "tipo": "dias_consecutivos", "valor": 3 }]
+    },
+    {
+      "id": "obj-003",
+      "nombre": "Perfecto semanal",
+      "descripcion": "100% asistencia en una semana",
+      "tipo": "perfecto",
+      "xp": 150,
+      "icono": "bi-star",
+      "requisitos": [{ "tipo": "semana_perfecta", "valor": true }]
+    },
+    {
+      "id": "obj-004",
+      "nombre": "Notas destacadas",
+      "descripcion": "Obtén un promedio mayor a 8.0",
+      "tipo": "rendimiento",
+      "xp": 200,
+      "icono": "bi-trophy",
+      "requisitos": [{ "tipo": "promedio_min", "valor": 8.0 }]
+    },
+    {
+      "id": "obj-005",
+      "nombre": "Maestro estelar",
+      "descripcion": "Tu maestro te da feedback positivo",
+      "tipo": "reconocimiento",
+      "xp": 75,
+      "icono": "bi-heart",
+      "requisitos": [{ "tipo": "feedback_positivo", "valor": 1 }]
+    }
+  ],
+  "nodos": [
+    {
+      "id": "nodo-001",
+      "objetivo_id": "obj-001",
+      "x": 50,
+      "y": 200,
+      "estado": "available",
+      "completado_en": null
+    },
+    {
+      "id": "nodo-002",
+      "objetivo_id": "obj-002",
+      "x": 150,
+      "y": 150,
+      "estado": "locked",
+      "completado_en": null,
+      "requiere": ["nodo-001"]
+    },
+    {
+      "id": "nodo-003",
+      "objetivo_id": "obj-003",
+      "x": 250,
+      "y": 200,
+      "estado": "locked",
+      "completado_en": null,
+      "requiere": ["nodo-001"]
+    },
+    {
+      "id": "nodo-004",
+      "objetivo_id": "obj-004",
+      "x": 350,
+      "y": 100,
+      "estado": "locked",
+      "completado_en": null,
+      "requiere": ["nodo-002", "nodo-003"]
+    },
+    {
+      "id": "nodo-005",
+      "objetivo_id": "obj-005",
+      "x": 450,
+      "y": 200,
+      "estado": "locked",
+      "completado_en": null,
+      "requiere": ["nodo-002"]
+    }
+  ],
+  "niveles": [
+    { "nivel": 1, "xp_necesario": 0, "titulo": "Novato" },
+    { "nivel": 2, "xp_necesario": 100, "titulo": "Aprendiz" },
+    { "nivel": 3, "xp_necesario": 300, "titulo": "Intermedio" },
+    { "nivel": 4, "xp_necesario": 600, "titulo": "Avanzado" },
+    { "nivel": 5, "xp_necesario": 1000, "titulo": "Estrella" }
+  ]
+}

@@ -1,0 +1,38 @@
+[
+  {
+    "id": "1",
+    "nombre_completo": "Juan Pérez",
+    "correo_representante": "juan.perez@example.com",
+    "instrumento_principal": "Piano",
+    "activo": true,
+    "fecha_nacimiento": "2010-05-15",
+    "direccion": "Calle Falsa 123",
+    "representante_nombre": "María Pérez",
+    "representante_tlf": "555-0101",
+    "representante_cedula": "12345678"
+  },
+  {
+    "id": "2",
+    "nombre_completo": "Ana García",
+    "correo_representante": "ana.garcia@example.com",
+    "instrumento_principal": "Violín",
+    "activo": true,
+    "fecha_nacimiento": "2012-08-20",
+    "direccion": "Avenida Siempre Viva 742",
+    "representante_nombre": "José García",
+    "representante_tlf": "555-0202",
+    "representante_cedula": "87654321"
+  },
+  {
+    "id": "3",
+    "nombre_completo": "Luis Rodríguez",
+    "correo_representante": "luis.rod@example.com",
+    "instrumento_principal": "Guitarra",
+    "activo": false,
+    "fecha_nacimiento": "2009-11-02",
+    "direccion": "Pasaje del Sol 45",
+    "representante_nombre": "Elena Rodríguez",
+    "representante_tlf": "555-0303",
+    "representante_cedula": "11223344"
+  }
+]

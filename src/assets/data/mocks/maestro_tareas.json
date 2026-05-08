@@ -1,0 +1,54 @@
+{
+  "tareas": [
+    {
+      "id": "tarea_001",
+      "alumno_nombre": "Pedro",
+      "descripcion": "Practicar escala Do Mayor",
+      "sesion_id": "sesion_hoy",
+      "fecha_asignacion": "2026-05-05T10:00:00Z",
+      "fecha_entrega": "2026-05-12T10:00:00Z",
+      "estado": "pendiente",
+      "prioridad": "alta"
+    },
+    {
+      "id": "tarea_002",
+      "alumno_nombre": "Pedro",
+      "descripcion": "Venir a clases conguitarra afinada",
+      "sesion_id": "sesion_hoy",
+      "fecha_asignacion": "2026-05-05T10:00:00Z",
+      "fecha_entrega": "2026-05-05T18:00:00Z",
+      "estado": "vencida",
+      "prioridad": "media"
+    },
+    {
+      "id": "tarea_003",
+      "alumno_nombre": "Lucía",
+      "descripcion": "Estudiar数字fa Do#",
+      "sesion_id": "sesion_hoy",
+      "fecha_asignacion": "2026-05-05T10:00:00Z",
+      "fecha_entrega": "2026-05-12T10:00:00Z",
+      "estado": "pendiente",
+      "prioridad": "baja"
+    },
+    {
+      "id": "tarea_004",
+      "alumno_nombre": "Mateo",
+      "descripcion": "Repasar técnica de dedos",
+      "sesion_id": "sesion_hoy",
+      "fecha_asignacion": "2026-05-05T10:00:00Z",
+      "fecha_entrega": "2026-05-10T10:00:00Z",
+      "estado": "completada",
+      "prioridad": "media"
+    },
+    {
+      "id": "tarea_005",
+      "alumno_nombre": "Sofía",
+      "descripcion": "Traer partitura de la neuen canci\u00f3n",
+      "sesion_id": "sesion_hoy",
+      "fecha_asignacion": "2026-05-05T10:00:00Z",
+      "fecha_entrega": "2026-05-08T10:00:00Z",
+      "estado": "pendiente",
+      "prioridad": "alta"
+    }
+  ]
+}

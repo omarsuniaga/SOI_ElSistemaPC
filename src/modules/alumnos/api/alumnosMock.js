@@ -1,0 +1,75 @@
+import alumnosMockData from '../../../assets/data/mocks/alumnos.json'
+
+// Simulación de delay para que se sienta como una API real
+const delay = (ms = 500) => new Promise(resolve => setTimeout(resolve, ms))
+
+function normalizeAlumno(a) {
+  if (!a) return null
+  return {
+    ...a,
+    nombre: a.nombre_completo ?? '',
+    email: a.correo_representante ?? '',
+    instrumento: a.instrumento_principal ?? '',
+    is_active: a.activo ?? true,
+    contacto_emergencia_nombre: a.contacto_emergencia_nombre ?? '',
+    contacto_emergencia_telefono: a.contacto_emergencia_telefono ?? '',
+    contacto_emergencia_parentesco: a.contacto_emergencia_parentesco ?? '',
+    familiar_nombre: a.familiar_nombre ?? '',
+    familiar_telefono: a.familiar_telefono ?? '',
+    familiar_parentesco: a.familiar_parentesco ?? '',
+    condiciones_medicas: a.condiciones_medicas ?? '',
+    alergias: a.alergias ?? '',
+    medicamentos: a.medicamentos ?? '',
+  }
+}
+
+// Persistencia en memoria local (solo por sesión para el demo)
+let alumnos = [...alumnosMockData]
+
+export async function obtenerAlumnos() {
+  await delay()
+  return alumnos.map(normalizeAlumno)
+}
+
+export async function obtenerAlumno(id) {
+  await delay()
+  const alumno = alumnos.find(a => a.id === id)
+  if (!alumno) throw new Error('Alumno no encontrado (Demo)')
+  return normalizeAlumno(alumno)
+}
+
+export async function crearAlumno(alumno) {
+  await delay()
+  const nuevo = {
+    ...alumno,
+    id: Math.random().toString(36).substr(2, 9),
+    nombre_completo: alumno.nombre || alumno.nombre_completo,
+    activo: alumno.is_active !== undefined ? alumno.is_active : true
+  }
+  alumnos.push(nuevo)
+  return normalizeAlumno(nuevo)
+}
+
+export async function actualizarAlumno(id, actualizaciones) {
+  await delay()
+  const index = alumnos.findIndex(a => a.id === id)
+  if (index === -1) throw new Error('Alumno no encontrado (Demo)')
+  
+  alumnos[index] = { ...alumnos[index], ...actualizaciones }
+  return normalizeAlumno(alumnos[index])
+}
+
+export async function eliminarAlumno(id) {
+  await delay()
+  alumnos = alumnos.filter(a => a.id !== id)
+}
+
+export async function validarEmail(email) {
+  await delay(100)
+  return alumnos.some(a => a.correo_representante === email.trim().toLowerCase())
+}
+
+export async function validarCedula(cedula) {
+  await delay(100)
+  return alumnos.some(a => a.representante_cedula === cedula.trim())
+}

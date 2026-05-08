@@ -1,0 +1,599 @@
+import { Toast } from 'bootstrap'
+import { AppModal } from '../../../shared/components/AppModal.js'
+import {
+  obtenerMaestros,
+  crearMaestro,
+  actualizarMaestro,
+  eliminarMaestro,
+  validarEmail,
+} from '../api/maestrosApi.js'
+import { escapeHTML, getStatusColor, getStatusLabel, getInitials } from '../utils/maestrosUtils.js'
+
+const state = {
+  maestros: [],
+  maestrosOriginales: [],
+  editando: null,
+  deletingId: null,
+}
+
+const VALIDATION = {
+  nombreMax: 100,
+}
+
+let currentContainer = null
+
+// ─── Entry point ────────────────────────────────────────────────────────────
+
+const ESPECTACULOS_PREDEFINIDOS = [
+  'Piano', 'Guitarra', 'Violín', 'Viola', 'Cello', 'Contrabajo',
+  'Flauta', 'Clarinete', 'Oboe', 'Fagot', 'Saxofón', 'Trompeta',
+  'Trombón', 'Corno', 'Tuba', 'Percusión', 'Batería', 'Canto',
+  'Teoría', 'Solfeo', 'Dirección', 'Composición', 'Arreglos'
+]
+
+export async function renderMaestrosView(container) {
+  try {
+    renderLoading(container)
+    const maestros = await obtenerMaestros()
+    state.maestros = maestros
+    state.maestrosOriginales = [...maestros]
+    renderContent(container)
+    attachEvents(container)
+  } catch (error) {
+    console.error(error)
+    renderError(container, error.message)
+  }
+}
+
+// ─── Render helpers ─────────────────────────────────────────────────────────
+
+function renderLoading(container) {
+  container.innerHTML = `
+    <div class="d-flex justify-content-center align-items-center" style="min-height: 400px;">
+      <div class="text-center">
+        <div class="spinner-border text-primary mb-3" role="status">
+          <span class="visually-hidden">Cargando...</span>
+        </div>
+        <p class="text-muted">Cargando maestros...</p>
+      </div>
+    </div>
+  `
+}
+
+function renderError(container, mensaje) {
+  container.innerHTML = `
+    <div class="container mt-5">
+      <div class="row justify-content-center">
+        <div class="col-md-6">
+          <div class="alert alert-danger" role="alert">
+            <h4 class="alert-heading">
+              <i class="bi bi-exclamation-triangle"></i> Error al cargar
+            </h4>
+            <p>${escapeHTML(mensaje)}</p>
+            <hr>
+            <button class="btn btn-primary" id="retryBtn">
+              <i class="bi bi-arrow-clockwise"></i> Reintentar
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `
+  container.querySelector('#retryBtn')?.addEventListener('click', () => renderMaestrosView(container))
+}
+
+function renderEspecialidadesChips(especialidades = [], inputId = 'modal-especialidades-input') {
+  const containerId = 'modal-especialidades-container'
+  return `
+    <div class="mb-3">
+      <label class="form-label-compact">Especialidades</label>
+      <div class="especialidades-chips-container" id="${containerId}">
+        <div class="chips-wrapper d-flex flex-wrap gap-1 mb-2">
+          ${especialidades.map(e => `
+            <span class="badge bg-primary-subtle text-primary rounded-pill chip-item">
+              ${escapeHTML(e)}
+              <i class="bi bi-x-lg chip-remove" data-especialidad="${escapeHTML(e)}" style="cursor:pointer;margin-left:4px;"></i>
+            </span>
+          `).join('')}
+        </div>
+        <div class="d-flex gap-2">
+          <input type="text" class="form-control input-dense" id="${inputId}" placeholder="Escribir y presionar Enter...">
+          <button type="button" class="btn btn-outline-secondary btn-sm-compact" id="btnAddEspecialidad">
+            <i class="bi bi-plus-lg"></i>
+          </button>
+        </div>
+        <div class="mt-2">
+          <small class="text-muted">Sugerencias:</small>
+          <div class="d-flex flex-wrap gap-1 mt-1">
+            ${ESPECTACULOS_PREDEFINIDOS.slice(0, 8).map(e => `
+              <button type="button" class="btn btn-link btn-sm p-0 suggest-chip" data-especialidad="${escapeHTML(e)}">${escapeHTML(e)}</button>
+            `).join(', ')}
+          </div>
+        </div>
+      </div>
+    </div>
+  `
+}
+
+function getEspecialidadesFromModal(modalBody) {
+  const container = modalBody.querySelector('.especialidades-chips-container')
+  if (!container) return []
+  const chips = container.querySelectorAll('.chip-item')
+  return Array.from(chips).map(chip => chip.textContent.replace(/×$/, '').trim())
+}
+
+function attachEspecialidadesEvents(modalBody, onChange) {
+  const input = modalBody.querySelector('#modal-especialidades-input')
+  const addBtn = modalBody.querySelector('#btnAddEspecialidad')
+  const container = modalBody.querySelector('.especialidades-chips-container')
+
+  const addEspecialidad = (value) => {
+    const trimmed = value.trim()
+    if (!trimmed) return
+    const current = getEspecialidadesFromModal(modalBody)
+    if (!current.includes(trimmed)) {
+      const wrapper = container.querySelector('.chips-wrapper')
+      const chip = document.createElement('span')
+      chip.className = 'badge bg-primary-subtle text-primary rounded-pill chip-item'
+      chip.innerHTML = `${escapeHTML(trimmed)}<i class="bi bi-x-lg chip-remove" data-especialidad="${escapeHTML(trimmed)}" style="cursor:pointer;margin-left:4px;"></i>`
+      wrapper.appendChild(chip)
+      if (onChange) onChange()
+    }
+    input.value = ''
+  }
+
+  input?.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      addEspecialidad(input.value)
+    }
+  })
+
+  addBtn?.addEventListener('click', () => addEspecialidad(input.value))
+
+  container?.addEventListener('click', (e) => {
+    if (e.target.classList.contains('chip-remove')) {
+      e.target.closest('.chip-item').remove()
+      if (onChange) onChange()
+    }
+    if (e.target.classList.contains('suggest-chip')) {
+      e.preventDefault()
+      addEspecialidad(e.target.dataset.especialidad)
+    }
+  })
+}
+
+function renderContent(container) {
+  container.innerHTML = `
+    <div class="page-container">
+      <div class="page-header">
+        <div class="d-flex align-items-center gap-2">
+          <span class="page-title"><i class="bi bi-person-check me-2 text-primary"></i>Maestros</span>
+          <span class="badge bg-secondary" id="maestrosCount">${state.maestros.length}</span>
+        </div>
+        <div class="d-flex gap-2">
+          <button class="btn btn-outline-success btn-sm-compact" id="btnExportarCSV">
+            <i class="bi bi-file-earmark-spreadsheet"></i> CSV
+          </button>
+          <button class="btn btn-primary btn-sm-compact" id="btnAgregarMaestro">
+            <i class="bi bi-plus-lg"></i> Nuevo
+          </button>
+        </div>
+
+      <div class="toolbar-dense mb-3">
+        <div class="search-bar flex-grow-1" style="min-width: 180px;">
+          <i class="bi bi-search"></i>
+          <input type="text" class="form-control input-dense" placeholder="Buscar maestro..." id="buscar" autocomplete="off">
+        </div>
+        <select class="form-select input-dense" id="filtroEstado" style="width: auto; min-width: 120px;">
+          <option value="todos">Todos</option>
+          <option value="activo">Activos</option>
+          <option value="inactivo">Inactivos</option>
+        </select>
+      </div>
+
+      <div class="table-scroll-container">
+        <table class="table table-compact table-hover mb-0">
+          <thead>
+            <tr>
+              <th style="width: 25%;">Nombre</th>
+              <th style="width: 18%;">Email</th>
+              <th style="width: 10%;">Teléfono</th>
+              <th style="width: 17%;">Especialidades</th>
+              <th style="width: 10%;">Estado</th>
+              <th style="width: 10%;" class="text-end">Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="maestrosTBody">
+            ${renderTableRows(state.maestros)}
+          </tbody>
+        </table>
+      </div>
+
+      <div class="toast-container position-fixed top-0 end-0 p-3" id="toastContainer"></div>
+    </div>
+  `
+}
+
+function renderTableRows(maestros) {
+  if (!maestros.length) {
+    return '<tr><td colspan="6" class="text-center text-muted py-4"><i class="bi bi-inbox me-2"></i>No hay maestros</td></tr>'
+  }
+  return maestros.map(a => {
+    const nombre = a.nombre || a.name || '-'
+    const isActive = a.is_active ?? true
+    return `
+      <tr data-id="${a.id}">
+        <td>
+          <div class="d-flex align-items-center gap-2">
+            <div class="avatar-compact bg-primary text-white">${getInitials(nombre)}</div>
+            <span class="text-truncate" style="max-width: 150px;" title="${escapeHTML(nombre)}">${escapeHTML(nombre)}</span>
+          </div>
+        </td>
+        <td class="text-truncate" style="max-width: 120px;" title="${escapeHTML(a.email || '')}">${escapeHTML(a.email || '-')}</td>
+        <td>${escapeHTML(a.telefono || '-')}</td>
+        <td>${(a.especialidades || []).length ? (a.especialidades.slice(0, 2).map(e => `<span class="badge bg-primary-subtle text-primary me-1">${escapeHTML(e)}</span>`).join('') + (a.especialidades.length > 2 ? `<span class="badge bg-secondary">+${a.especialidades.length - 2}</span>` : '')) : escapeHTML(a.instrumento || '-')}</td>
+        <td>
+          <span class="badge badge-compact bg-${isActive ? 'success' : 'secondary'}">${isActive ? 'Activo' : 'Inactivo'}</span>
+        </td>
+        <td class="text-end">
+          <div class="quick-actions justify-content-end">
+            <button class="btn btn-sm btn-outline-primary btn-icon-compact" data-action="edit" data-id="${a.id}" title="Editar">
+              <i class="bi bi-pencil"></i>
+            </button>
+            <button class="btn btn-sm btn-outline-danger btn-icon-compact" data-action="delete" data-id="${a.id}" title="Eliminar">
+              <i class="bi bi-trash"></i>
+            </button>
+          </div>
+        </td>
+      </tr>
+    `
+  }).join('')
+}
+
+// ─── Events ─────────────────────────────────────────────────────────────────
+
+function attachEvents(container) {
+  currentContainer = container
+
+  container.querySelector('#btnAgregarMaestro').addEventListener('click', () => openCreateModal())
+
+  container.querySelector('#btnExportarCSV')?.addEventListener('click', () => exportarMaestrosCSV())
+
+  container.querySelector('#buscar').addEventListener('input', () => applyFilters())
+  container.querySelector('#filtroEstado').addEventListener('change', () => applyFilters())
+
+  container.querySelector('#maestrosTBody').addEventListener('click', e => {
+    const row = e.target.closest('tr[data-id]')
+    if (row && !e.target.closest('[data-action]')) {
+      openViewModal(row.dataset.id)
+      return
+    }
+
+    const btn = e.target.closest('[data-action]')
+    if (!btn) return
+    const id = btn.dataset.id
+    const action = btn.dataset.action
+    if (action === 'edit') openEditModal(id)
+    else if (action === 'delete') openDeleteModal(id)
+  })
+}
+
+// ─── Filters ─────────────────────────────────────────────────────────────────
+
+function applyFilters() {
+  const searchTerm = currentContainer.querySelector('#buscar').value.trim().toLowerCase()
+  const filtroEstado = currentContainer.querySelector('#filtroEstado').value
+
+  state.maestros = state.maestrosOriginales.filter(a => {
+    const nombre = (a.nombre || a.name || '').toLowerCase()
+    const matchSearch = !searchTerm ||
+      nombre.includes(searchTerm) ||
+      (a.email || '').toLowerCase().includes(searchTerm) ||
+      (a.instrumento || '').toLowerCase().includes(searchTerm) ||
+      (a.especialidad || '').toLowerCase().includes(searchTerm) ||
+      (a.especialidades || []).some(e => e.toLowerCase().includes(searchTerm))
+
+    const isActive = a.is_active ?? true
+    const matchEstado = filtroEstado === 'todos' ||
+      (filtroEstado === 'activo' && isActive) ||
+      (filtroEstado === 'inactivo' && !isActive)
+
+    return matchSearch && matchEstado
+  })
+
+  refreshTable()
+}
+
+// ─── Modal openers ───────────────────────────────────────────────────────────
+
+function openCreateModal() {
+  state.editando = null
+  AppModal.open({
+    title: 'Crear Nuevo Maestro',
+    body: `<form class="row g-2" novalidate>
+      <div class="col-12">
+        <label class="form-label-compact">Nombre Completo *</label>
+        <input type="text" class="form-control input-dense" id="modal-nombre" required maxlength="${VALIDATION.nombreMax}" placeholder="Juan Pérez">
+        <small class="text-muted" id="modal-nombreCount">0/${VALIDATION.nombreMax}</small>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label-compact">Email *</label>
+        <input type="email" class="form-control input-dense" id="modal-email" required placeholder="email@ejemplo.com">
+      </div>
+      <div class="col-md-6">
+        <label class="form-label-compact">Teléfono</label>
+        <input type="text" class="form-control input-dense" id="modal-telefono" placeholder="+58 412 1234567">
+      </div>
+      <div class="col-md-6">
+        <label class="form-label-compact">Instrumento *</label>
+        <input type="text" class="form-control input-dense" id="modal-instrumento" required placeholder="Violín">
+      </div>
+      <div class="col-md-6">
+        <label class="form-label-compact">Especialidad</label>
+        <input type="text" class="form-control input-dense" id="modal-especialidad" placeholder="Dirección">
+      </div>
+      ${renderEspecialidadesChips([], 'modal-especialidades-input')}
+      <div class="col-12">
+        <label class="form-label-compact">Biografía</label>
+        <textarea class="form-control input-dense" id="modal-bio" rows="2" placeholder="Breve descripción..."></textarea>
+      </div>
+      <div class="col-12">
+        <div class="form-check">
+          <input class="form-check-input" type="checkbox" id="modal-esActivo" checked>
+          <label class="form-check-label" for="modal-esActivo">Maestro activo</label>
+        </div>
+      </div>
+    </form>`,
+    onShow: (modalBody) => attachEspecialidadesEvents(modalBody),
+    saveText: 'Guardar',
+    onSave: async (modalBody) => {
+      const nombre = modalBody.querySelector('#modal-nombre').value.trim()
+      const email = modalBody.querySelector('#modal-email').value.trim().toLowerCase()
+      const telefono = modalBody.querySelector('#modal-telefono').value.trim()
+      const instrumento = modalBody.querySelector('#modal-instrumento').value.trim()
+      const especialidad = modalBody.querySelector('#modal-especialidad').value.trim()
+      const bio = modalBody.querySelector('#modal-bio').value.trim()
+      const esActivo = modalBody.querySelector('#modal-esActivo').checked
+
+      if (!nombre) { showToast('El nombre es obligatorio', 'error'); return false }
+      if (!email) { showToast('El email es obligatorio', 'error'); return false }
+      if (!isValidEmail(email)) { showToast('El formato del email no es válido', 'error'); return false }
+
+      if (email) {
+        const emailExiste = await validarEmail(email)
+        if (emailExiste) { showToast('El email ya está registrado', 'error'); return false }
+      }
+
+      const especialidades = getEspecialidadesFromModal(modalBody)
+      const datosMaestro = { nombre, email: email || null, telefono: telefono || null, instrumento: instrumento || null, especialidad: especialidad || null, bio: bio || null, is_active: esActivo, especialidades }
+      const nuevo = await crearMaestro(datosMaestro)
+      state.maestrosOriginales.push(nuevo)
+      applyFilters()
+      showToast('Maestro creado exitosamente', 'success')
+    }
+  })
+}
+
+function openEditModal(id) {
+  const maestro = state.maestrosOriginales.find(a => a.id === id)
+  if (!maestro) { showToast('Maestro no encontrado', 'error'); return }
+
+  state.editando = id
+  AppModal.open({
+    title: 'Editar Maestro',
+    body: `<form class="row g-2" novalidate>
+      <div class="col-12">
+        <label class="form-label-compact">Nombre Completo *</label>
+        <input type="text" class="form-control input-dense" id="modal-nombre" required maxlength="${VALIDATION.nombreMax}" value="${escapeHTML(maestro.nombre || maestro.name || '')}">
+        <small class="text-muted" id="modal-nombreCount">${(maestro.nombre || maestro.name || '').length}/${VALIDATION.nombreMax}</small>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label-compact">Email *</label>
+        <input type="email" class="form-control input-dense" id="modal-email" required value="${escapeHTML(maestro.email || '')}">
+      </div>
+      <div class="col-md-6">
+        <label class="form-label-compact">Teléfono</label>
+        <input type="text" class="form-control input-dense" id="modal-telefono" value="${escapeHTML(maestro.telefono || '')}">
+      </div>
+      <div class="col-md-6">
+        <label class="form-label-compact">Instrumento *</label>
+        <input type="text" class="form-control input-dense" id="modal-instrumento" required value="${escapeHTML(maestro.instrumento || '')}">
+      </div>
+      <div class="col-md-6">
+        <label class="form-label-compact">Especialidad</label>
+        <input type="text" class="form-control input-dense" id="modal-especialidad" value="${escapeHTML(maestro.especialidad || '')}">
+      </div>
+      ${renderEspecialidadesChips(maestro.especialidades || [], 'modal-especialidades-input')}
+      <div class="col-12">
+        <label class="form-label-compact">Biografía</label>
+        <textarea class="form-control input-dense" id="modal-bio" rows="2">${escapeHTML(maestro.bio || '')}</textarea>
+      </div>
+      <div class="col-12">
+        <div class="form-check">
+          <input class="form-check-input" type="checkbox" id="modal-esActivo" ${maestro.is_active !== false ? 'checked' : ''}>
+          <label class="form-check-label" for="modal-esActivo">Maestro activo</label>
+        </div>
+      </div>
+    </form>`,
+    onShow: (modalBody) => attachEspecialidadesEvents(modalBody),
+    saveText: 'Guardar cambios',
+    onSave: async (modalBody) => {
+      const nombre = modalBody.querySelector('#modal-nombre').value.trim()
+      const email = modalBody.querySelector('#modal-email').value.trim().toLowerCase()
+      const telefono = modalBody.querySelector('#modal-telefono').value.trim()
+      const instrumento = modalBody.querySelector('#modal-instrumento').value.trim()
+      const especialidad = modalBody.querySelector('#modal-especialidad').value.trim()
+      const bio = modalBody.querySelector('#modal-bio').value.trim()
+      const esActivo = modalBody.querySelector('#modal-esActivo').checked
+
+      if (!nombre) { showToast('El nombre es obligatorio', 'error'); return false }
+      if (!email) { showToast('El email es obligatorio', 'error'); return false }
+      if (!isValidEmail(email)) { showToast('El formato del email no es válido', 'error'); return false }
+
+      if (email && maestro.email !== email) {
+        const emailExiste = await validarEmail(email)
+        if (emailExiste) { showToast('El email ya está registrado', 'error'); return false }
+      }
+
+      const especialidades = getEspecialidadesFromModal(modalBody)
+      const datosMaestro = { nombre, email: email || null, telefono: telefono || null, instrumento: instrumento || null, especialidad: especialidad || null, bio: bio || null, is_active: esActivo, especialidades }
+      await actualizarMaestro(state.editando, datosMaestro)
+      const idx = state.maestrosOriginales.findIndex(a => a.id === state.editando)
+      if (idx !== -1) state.maestrosOriginales[idx] = { ...state.maestrosOriginales[idx], ...datosMaestro }
+      applyFilters()
+      showToast('Maestro actualizado correctamente', 'success')
+    }
+  })
+}
+
+function openViewModal(id) {
+  const maestro = state.maestrosOriginales.find(a => a.id === id)
+  if (!maestro) { showToast('Maestro no encontrado', 'error'); return }
+
+  const nombre = maestro.nombre || maestro.name || '-'
+  const isActive = maestro.is_active ?? true
+  AppModal.open({
+    title: nombre,
+    hideSave: true,
+    cancelText: 'Cerrar',
+    body: `
+      <div class="row">
+        <div class="col-md-6">
+          <div class="mb-3">
+            <label class="form-label fw-bold">Nombre</label>
+            <p class="form-control-plaintext">${escapeHTML(nombre)}</p>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-bold">Email</label>
+            <p class="form-control-plaintext">${maestro.email ? `<a href="mailto:${escapeHTML(maestro.email)}">${escapeHTML(maestro.email)}</a>` : '-'}</p>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-bold">Teléfono</label>
+            <p class="form-control-plaintext">${escapeHTML(maestro.telefono || '-')}</p>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="mb-3">
+            <label class="form-label fw-bold">Instrumento</label>
+            <p class="form-control-plaintext">${escapeHTML(maestro.instrumento || '-')}</p>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-bold">Especialidad</label>
+            <p class="form-control-plaintext">${escapeHTML(maestro.especialidad || '-')}</p>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-bold">Especialidades</label>
+            <p class="form-control-plaintext">
+              ${(maestro.especialidades || []).length 
+                ? maestro.especialidades.map(e => `<span class="badge bg-primary-subtle text-primary me-1">${escapeHTML(e)}</span>`).join('')
+                : 'Sin especialidades'}
+            </p>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-bold">Estado</label>
+            <p class="form-control-plaintext">
+              <span class="badge ${getStatusColor(isActive)}">${getStatusLabel(isActive)}</span>
+            </p>
+          </div>
+        </div>
+      </div>
+      <hr>
+      <div class="mb-3">
+        <label class="form-label fw-bold">Biografía</label>
+        <p class="form-control-plaintext">${escapeHTML(maestro.bio || 'Sin biografía')}</p>
+      </div>
+    `
+  })
+}
+
+function openDeleteModal(id) {
+  const maestro = state.maestrosOriginales.find(a => a.id === id)
+  if (!maestro) { showToast('Maestro no encontrado', 'error'); return }
+
+  state.deletingId = id
+  const nombre = maestro.nombre || maestro.name || ''
+  AppModal.open({
+    title: '⚠️ Eliminar Maestro',
+    size: 'sm',
+    saveText: 'Eliminar',
+    body: `<p>¿Eliminar al maestro <strong>${escapeHTML(nombre)}</strong>?</p>
+           <p class="text-muted small mb-0">Esta acción no se puede deshacer.</p>`,
+    onSave: async () => {
+      await eliminarMaestro(id)
+      state.maestrosOriginales = state.maestrosOriginales.filter(a => a.id !== id)
+      applyFilters()
+      showToast('Maestro eliminado correctamente', 'success')
+    }
+  })
+}
+
+// ─── Utils ───────────────────────────────────────────────────────────────────
+
+function refreshTable() {
+  const tbody = currentContainer.querySelector('#maestrosTBody')
+  if (!tbody) return
+  tbody.innerHTML = renderTableRows(state.maestros)
+  const countEl = currentContainer.querySelector('#maestrosCount')
+  if (countEl) countEl.textContent = state.maestros.length
+}
+
+function isValidEmail(email) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+}
+
+function exportarMaestrosCSV() {
+  if (state.maestrosOriginales.length === 0) {
+    showToast('No hay maestros para exportar', 'error')
+    return
+  }
+
+  const headers = ['Nombre', 'Email', 'Teléfono', 'Instrumento', 'Especialidad', 'Estado']
+  const rows = state.maestrosOriginales.map(m => [
+    m.nombre || '',
+    m.email || '',
+    m.telefono || '',
+    m.instrumento || '',
+    m.especialidad || '',
+    m.is_active !== false ? 'Activo' : 'Inactivo'
+  ])
+
+  const csvContent = [headers, ...rows]
+    .map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+    .join('\n')
+
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+  const link = document.createElement('a')
+  link.href = URL.createObjectURL(blob)
+  link.download = `maestros-${new Date().toISOString().split('T')[0]}.csv`
+  link.click()
+
+  showToast('CSV exportado exitosamente', 'success')
+}
+
+function showToast(message, type = 'info') {
+  const toastContainer = currentContainer.querySelector('#toastContainer')
+  if (!toastContainer) return
+
+  const bgClass = type === 'success' ? 'bg-success' : type === 'error' ? 'bg-danger' : 'bg-info'
+  const iconClass = type === 'success' ? 'bi-check-circle' : type === 'error' ? 'bi-exclamation-circle' : 'bi-info-circle'
+  const label = type === 'success' ? 'Éxito' : type === 'error' ? 'Error' : 'Información'
+
+  const toastEl = document.createElement('div')
+  toastEl.className = 'toast'
+  toastEl.setAttribute('role', 'alert')
+  toastEl.setAttribute('aria-live', 'assertive')
+  toastEl.setAttribute('aria-atomic', 'true')
+  toastEl.innerHTML = `
+    <div class="toast-header ${bgClass} text-white">
+      <i class="bi ${iconClass} me-2"></i>
+      <strong class="me-auto">${label}</strong>
+      <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
+    </div>
+    <div class="toast-body">${escapeHTML(message)}</div>
+  `
+  toastContainer.appendChild(toastEl)
+  const t = new Toast(toastEl, { autohide: true, delay: 3000 })
+  t.show()
+  toastEl.addEventListener('hidden.bs.toast', () => toastEl.remove())
+}

@@ -86,17 +86,25 @@ export async function renderAsistenciaView(container, { claseId, fecha } = {}) {
       if (serverTs > localTs + 5000) hasConflict = true
     }
 
-    // ── Resolve route_version_id for the class ──
+    // ── Resolve route_version_id for the class via instrumento ──
     let rutaId = null
     try {
-      const { data: rutaData } = await supabase
-        .from('alumnos_rutas')
-        .select('route_version_id')
-        .eq('clase_id', claseId)
-        .eq('activo', true)
-        .limit(1)
-        .maybeSingle()
-      rutaId = rutaData?.route_version_id || null
+      // clases.instrumento may be "Violín", "Violines", "Violín, Viola", etc.
+      // routes.instrument is lowercase "violín"
+      // Strategy: normalize clase instrumento, match first word against routes
+      const claseRow = misClases?.find(c => c.id === claseId)
+      const instrumento = claseRow?.instrumento
+      if (instrumento) {
+        const primerInstrumento = instrumento.split(',')[0].trim().toLowerCase()
+        const { data: routeData } = await supabase
+          .from('routes')
+          .select('id, route_versions!inner(id)')
+          .ilike('instrument', `%${primerInstrumento}%`)
+          .eq('route_versions.status', 'published')
+          .limit(1)
+          .maybeSingle()
+        rutaId = routeData?.route_versions?.[0]?.id || routeData?.route_versions?.id || null
+      }
     } catch (_e) {
       console.warn('[asistencia] No se pudo resolver route_version_id:', _e)
     }

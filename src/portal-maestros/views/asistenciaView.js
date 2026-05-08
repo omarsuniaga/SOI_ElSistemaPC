@@ -13,6 +13,11 @@ import { createRouteTreeBar } from '../components/routeTreeBar.js'
 import { createStudentProgressPanel } from '../components/studentProgressPanel.js'
 import { resolveDSL, saveEvaluaciones } from '../services/evaluationService.js'
 import { createAutoDraft, saveDraft, loadDraft, discardDraft, saveObservation } from '../services/autoDraftService.js'
+import { createContentSelectionPanel } from '../components/ContentSelectionPanel.js'
+import { createMethodologyForm } from '../components/MethodologyForm.js'
+import { createHomeworkPanel } from '../components/HomeworkPanel.js'
+import { createLevelCompletionModal } from '../components/LevelCompletionModal.js'
+import { getClassEvent, updateClassEventStatus } from '../services/classEventService.js'
 
 /**
  * Vista Asistencia Optimizada (F3+): toma de asistencia con micro-interacciones.
@@ -206,6 +211,8 @@ function _renderVista(container, ctx) {
         </button>
       </div>
 
+      <div id="pm-academic-tools" style="margin-top:1.5rem; display:none;"></div>
+
       <div class="pm-asist-footer">
         <button class="pm-btn pm-btn-primary" id="btn-guardar" style="width:100%; font-weight:700;">
           Guardar sesión
@@ -307,6 +314,69 @@ function _renderVista(container, ctx) {
     }).catch(err => console.warn('[autoDraft] Error loading draft:', err))
   }
 
+  // === Academic Content Flow (ContentSelectionPanel → MethodologyForm → HomeworkPanel) ===
+  let activeClassEventId = null
+  let activeLevel = null
+  let academicPanelInstances = []
+  const academicToolsContainer = container.querySelector('#pm-academic-tools')
+
+  if (sesionId && rutaId) {
+    // Show ContentSelectionPanel for each present student context
+    academicToolsContainer.style.display = ''
+    const contentPanel = createContentSelectionPanel({
+      sessionId: sesionId,
+      studentId: null, // will be set per-student interaction
+      teacherId: maestro.id,
+      onConfirm: ({ classEventId, selectedNodes, levelId }) => {
+        activeClassEventId = classEventId
+        activeLevel = levelId || null
+
+        // Clear previous methodology/homework panels
+        academicPanelInstances.forEach(inst => { if (inst.destroy) inst.destroy() })
+        academicPanelInstances = []
+
+        // Remove old sub-panels
+        const oldMethodology = academicToolsContainer.querySelector('.pm-methodology-wrap')
+        if (oldMethodology) oldMethodology.remove()
+        const oldHomework = academicToolsContainer.querySelector('.pm-homework-wrap')
+        if (oldHomework) oldHomework.remove()
+
+        // MethodologyForm
+        const methWrap = document.createElement('div')
+        methWrap.className = 'pm-methodology-wrap'
+        methWrap.style.marginTop = '1rem'
+        academicToolsContainer.appendChild(methWrap)
+        const methForm = createMethodologyForm({
+          classEventId,
+          onSave: (data) => { console.log('[asistencia] Methodology saved:', data) },
+          initialData: {}
+        })
+        methWrap.appendChild(methForm.el || methForm)
+        academicPanelInstances.push(methForm)
+
+        // HomeworkPanel
+        const hwWrap = document.createElement('div')
+        hwWrap.className = 'pm-homework-wrap'
+        hwWrap.style.marginTop = '1rem'
+        academicToolsContainer.appendChild(hwWrap)
+        const hwPanel = createHomeworkPanel({
+          classEventId,
+          studentId: null,
+          teacherId: maestro.id,
+          nodes: selectedNodes || []
+        })
+        hwWrap.appendChild(hwPanel.el || hwPanel)
+        academicPanelInstances.push(hwPanel)
+      }
+    })
+    academicToolsContainer.appendChild(contentPanel.el || contentPanel)
+    academicPanelInstances.push(contentPanel)
+    _cleanups.push(() => {
+      academicPanelInstances.forEach(inst => { if (inst.destroy) inst.destroy() })
+      academicPanelInstances = []
+    })
+  }
+
   // === Save Observation Button ===
   const obsSaveBtn = container.querySelector('#btn-guardar-obs')
   if (obsSaveBtn) {
@@ -373,6 +443,35 @@ function _renderVista(container, ctx) {
         toast.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--pm-success,#22c55e);color:#fff;padding:10px 20px;border-radius:8px;z-index:10000;font-size:14px;font-weight:600;'
         document.body.appendChild(toast)
         setTimeout(() => toast.remove(), 3000)
+
+        // Update class event status and check level completion
+        if (activeClassEventId) {
+          try {
+            await updateClassEventStatus(activeClassEventId, 'completed')
+          } catch (ceErr) {
+            console.warn('[asistencia] Error updating class event status:', ceErr)
+          }
+
+          if (activeLevel) {
+            try {
+              const { academicService } = await import('../../modules/academic-routes/services/academicService.js')
+              const presentes = alumnos.filter(a => estado[a.id] === 'P')
+              for (const student of presentes) {
+                const levelResult = await academicService.checkLevelCompletion(student.id, activeLevel)
+                if (levelResult && levelResult.completed) {
+                  const modal = createLevelCompletionModal({
+                    studentId: student.id,
+                    levelId: activeLevel,
+                    onConfirm: () => { console.log('[asistencia] Level completion confirmed for', student.id) }
+                  })
+                  container.querySelector('.pm-asist-root').appendChild(modal.el || modal)
+                }
+              }
+            } catch (lcErr) {
+              console.warn('[asistencia] Error checking level completion:', lcErr)
+            }
+          }
+        }
 
         obsSaveBtn.textContent = 'Guardado!'
         setTimeout(() => { obsSaveBtn.textContent = 'Guardar observacion'; obsSaveBtn.disabled = false }, 2000)

@@ -4152,3 +4152,252 @@ html, body {
 .pm-completeness-warning { background:rgba(234,179,8,0.1); border:1px solid rgba(234,179,8,0.3); border-radius:var(--pm-radius-sm); padding:0.75rem; margin:0.5rem 0; font-size:0.85rem; display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap; }
 .pm-completeness-warning__actions { display:flex; gap:0.5rem; margin-top:0.5rem; }
 
+/* ============================================================
+   Content Selection Panel
+   ============================================================ */
+.pm-content-panel {
+  background: var(--pm-surface);
+  border-radius: var(--pm-radius);
+  padding: 1rem;
+  margin-bottom: 1rem;
+  box-shadow: var(--pm-shadow);
+}
+.pm-content-panel-header {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+.pm-content-panel-title {
+  font-size: 1rem;
+  font-weight: 600;
+}
+.pm-content-panel-level {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--pm-primary) 12%, transparent);
+  color: var(--pm-primary);
+}
+.pm-content-panel-homework-reminder {
+  background: rgba(255, 149, 0, 0.1);
+  font-size: 0.8rem;
+  border-radius: var(--pm-radius-sm);
+  padding: 0.5rem 0.75rem;
+  display: flex;
+  flex-direction: row;
+  gap: 0.5rem;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+.pm-content-panel-nodes {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.pm-content-panel-node {
+  display: flex;
+  flex-direction: row;
+  padding: 0.75rem;
+  border: 1px solid var(--pm-border);
+  border-radius: var(--pm-radius-sm);
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+  gap: 0.5rem;
+  align-items: flex-start;
+}
+.pm-content-panel-node.selected {
+  border-color: var(--pm-primary);
+  background: color-mix(in srgb, var(--pm-primary) 5%, transparent);
+}
+.pm-content-panel-node input[type="checkbox"] {
+  accent-color: var(--pm-primary);
+  margin-top: 0.15rem;
+}
+.pm-content-panel-node-info {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+.pm-content-panel-node-name {
+  font-weight: 500;
+}
+.pm-content-panel-indicators {
+  margin-top: 0.25rem;
+  font-size: 0.8rem;
+  color: var(--pm-text-muted);
+}
+
+/* ============================================================
+   Methodology Form
+   ============================================================ */
+.pm-methodology-form {
+  background: var(--pm-surface);
+  border-radius: var(--pm-radius);
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+  box-shadow: var(--pm-shadow);
+}
+.pm-methodology-form-header {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  padding: 0.75rem;
+}
+.pm-methodology-form-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+.pm-methodology-form-body {
+  padding: 0 1rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+.pm-methodology-form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+.pm-methodology-form-label {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--pm-text-muted);
+}
+.pm-methodology-form-status {
+  font-size: 0.75rem;
+  color: var(--pm-text-muted);
+  text-align: right;
+}
+
+/* ============================================================
+   Homework Panel
+   ============================================================ */
+.pm-homework-panel {
+  background: var(--pm-surface);
+  border-radius: var(--pm-radius);
+  padding: 1rem;
+  box-shadow: var(--pm-shadow);
+}
+.pm-homework-panel-header {
+  margin-bottom: 0.5rem;
+}
+.pm-homework-panel-title {
+  font-size: 1rem;
+  font-weight: 600;
+}
+.pm-homework-panel-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+.pm-homework-panel-item {
+  display: flex;
+  flex-direction: row;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  border-bottom: 1px solid var(--pm-border);
+  font-size: 0.9rem;
+  align-items: baseline;
+}
+.pm-homework-panel-desc {
+  flex: 1;
+}
+.pm-homework-panel-due {
+  font-size: 0.8rem;
+  color: var(--pm-text-muted);
+}
+.pm-homework-panel-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  border-top: 1px solid var(--pm-border);
+  padding-top: 0.75rem;
+}
+.pm-homework-panel-row {
+  display: flex;
+  flex-direction: row;
+  gap: 0.5rem;
+}
+@media (max-width: 480px) {
+  .pm-homework-panel-row {
+    flex-direction: column;
+  }
+}
+.pm-homework-panel-select {
+  flex: 1;
+}
+
+/* ============================================================
+   Level Completion Modal
+   ============================================================ */
+.pm-level-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+}
+.pm-level-modal-overlay.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+.pm-level-modal {
+  background: var(--pm-surface);
+  max-width: 420px;
+  width: 90%;
+  border-radius: 1rem;
+  padding: 1.5rem;
+  text-align: center;
+  box-shadow: var(--pm-shadow);
+}
+.pm-level-modal-trophy {
+  font-size: 3rem;
+  margin-bottom: 0.5rem;
+}
+.pm-level-modal-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+.pm-level-modal-level-name {
+  font-size: 0.9rem;
+  color: var(--pm-text-muted);
+}
+.pm-level-modal-nodes {
+  text-align: left;
+  margin: 1rem 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.pm-level-modal-node {
+  display: flex;
+  flex-direction: row;
+  gap: 0.5rem;
+  align-items: center;
+  font-size: 0.9rem;
+}
+.pm-level-modal-node .critical {
+  color: var(--pm-danger);
+  font-weight: 600;
+}
+.pm-level-modal-notes {
+  width: 100%;
+  margin-top: 0.5rem;
+}
+.pm-level-modal-warning {
+  color: var(--pm-warning);
+  font-size: 0.85rem;
+  margin: 0.5rem 0;
+}
+

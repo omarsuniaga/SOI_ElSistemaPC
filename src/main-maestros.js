@@ -1,8 +1,4 @@
-// ============================================================
-// PORTAL MAESTROS — Entry Point
-// ============================================================
 import './portal-maestros/styles/portal.css'
-
 import { usePortalAuth, logoutMaestro } from './portal-maestros/auth/usePortalAuth.js'
 import { createPortalRouter }   from './portal-maestros/router/portalRouter.js'
 import { processQueue, getQueue } from './portal-maestros/services/offlineQueue.js'
@@ -28,6 +24,12 @@ import { renderAcademicPlanBuilderView } from './portal-maestros/views/academicP
 import { renderWeeklyPlanView } from './portal-maestros/views/weeklyPlanView.js'
 import { RouteLibraryView }      from './portal-maestros/views/routeLibraryView.js'
 import { RouteDetailView }       from './portal-maestros/views/routeDetailView.js'
+import { renderAlumnosView }     from './modules/alumnos/views/alumnosView.js'
+import { renderProgramasView }   from './modules/programas/views/programasView.js'
+import { renderMaestrosView }    from './modules/maestros/views/maestrosView.js'
+import { renderMetricasCompletaView as renderAdminMetricasView } from './modules/metricas/views/metricasCompletaView.js'
+import { renderAcademicAdminView } from './modules/academic-admin/views/academicAdminView.js'
+import { renderClasesView }        from './modules/clases/views/clasesView.js'
 
 // Nuevos componentes de UI
 import { themeToggle } from './portal-maestros/components/themeToggle.js'
@@ -38,11 +40,22 @@ import { setNavigationCallbacks } from './portal-maestros/services/navigationHoo
 // Módulo de Rutas Académicas
 import './modules/academic-routes/styles/academic-routes.css'
 
-const TABS = [
+const IS_ADMIN = window.__SOI_MODE__ === 'admin'
+
+const MAESTRO_TABS = [
   { id: 'hoy',        label: 'Hoy',        icon: 'bi-house-door' },
   { id: 'calendario', label: 'Calendario',  icon: 'bi-calendar3' },
   { id: 'metricas',   label: 'Métricas',    icon: 'bi-bar-chart-line' },
 ]
+
+const ADMIN_TABS = [
+  { id: 'admin-alumnos',   label: 'Alumnos',      icon: 'bi-people-fill' },
+  { id: 'admin-programas', label: 'Programas',    icon: 'bi-grid-1x2' },
+  { id: 'admin-maestros',  label: 'Maestros',     icon: 'bi-person-badge' },
+  { id: 'admin-metricas',  label: 'Métricas',     icon: 'bi-bar-chart-line' },
+]
+
+const ALL_TABS = () => IS_ADMIN ? ADMIN_TABS : MAESTRO_TABS
 
 let _maestro = null
 
@@ -143,12 +156,66 @@ async function _triggerSync() {
 window.addEventListener('online',  _triggerSync)
 window.addEventListener('offline', _updateSyncIndicator)
 
+// ── Shell visibility (logout / auth states) ──────────────────
+
+function _hideShell() {
+  const app = document.getElementById('portal-app')
+  if (!app) return
+  const header = app.querySelector('.pm-header')
+  const nav    = app.querySelector('.pm-bottom-nav')
+  const view   = app.querySelector('.pm-view')
+  if (header) header.style.display = 'none'
+  if (nav)    nav.style.display = 'none'
+  if (view)   view.style.display = 'none'
+}
+
+function _showShell() {
+  const app = document.getElementById('portal-app')
+  if (!app) return
+  const header = app.querySelector('.pm-header')
+  const nav    = app.querySelector('.pm-bottom-nav')
+  const view   = app.querySelector('.pm-view')
+  if (header) header.style.display = ''
+  if (nav)    nav.style.display = ''
+  if (view)   view.style.display = ''
+}
+
+function _showLoginScreen() {
+  // Si el shell ya está montado, usar el contenedor de vistas
+  const loginContainer = _viewContainers['login']
+  if (loginContainer) {
+    _hideShell()
+    loginContainer.style.display = 'block'
+    loginContainer.innerHTML = ''
+    renderLoginView(loginContainer, {
+      onSuccess: (intended) => {
+        if (intended && intended !== 'login') {
+          _showShell()
+          router.navigate(intended)
+        } else {
+          initPortal()
+        }
+      }
+    })
+    return
+  }
+
+  // Sin shell montado (primer load sin sesión): renderizar directo en el app
+  const app = document.getElementById('portal-app')
+  if (!app) return
+  app.innerHTML = ''
+  renderLoginView(app, {
+    onSuccess: () => initPortal()
+  })
+}
+
 // ── Shell (estructura persistente) ─────────────────────────
 
 function _renderShell(app, maestro) {
   _maestro = maestro
 
-  const renderTabs = () => TABS.map(tab => `
+  const tabs = ALL_TABS()
+  const renderTabs = () => tabs.map(tab => `
       <button class="pm-bottom-tab" data-route="${tab.id}">
         <i class="bi ${tab.icon}"></i>
         <span>${tab.label}</span>
@@ -159,9 +226,12 @@ function _renderShell(app, maestro) {
     <!-- Header -->
     <header class="pm-header">
       <div class="pm-header-left">
-        <span class="pm-header-greeting">Hola,</span>
+        <span class="pm-header-greeting">${IS_ADMIN ? 'Panel Admin' : 'Hola,'}</span>
         <span class="pm-header-title">
-          ${maestro?.nombre?.split(' ')[0] ?? 'Maestro'}
+          ${IS_ADMIN
+            ? (maestro?.nombre_completo?.split(' ')[0] ?? 'Administrador')
+            : (maestro?.nombre_completo?.split(' ')[0] ?? 'Maestro')
+          }
         </span>
       </div>
       <div class="pm-header-right">
@@ -274,7 +344,12 @@ function _initViewContainers() {
     'login', 'logout', 'calendario', 'clases', 'hoy', 'asistencia', 
     'metricas', 'perfil', 'clase-emergente', 'planificacion', 
     'alumno', 'gamificacion', 'crear-clase', 'ruta-plan-builder', 
-    'ruta-semanal', 'ruta-libreria', 'ruta-detalle'
+    'ruta-semanal', 'ruta-libreria', 'ruta-detalle',
+  ]
+
+  const adminViews = [
+    'admin-alumnos', 'admin-programas', 'admin-maestros',
+    'admin-metricas', 'admin-config', 'admin-clases', 'admin-sesiones',
   ]
 
   views.forEach(viewName => {
@@ -285,6 +360,17 @@ function _initViewContainers() {
     container.appendChild(el)
     _viewContainers[viewName] = el
   })
+
+  if (IS_ADMIN) {
+    adminViews.forEach(viewName => {
+      const el = document.createElement('div')
+      el.id = `pm-view-${viewName}`
+      el.className = 'pm-view-content'
+      el.style.display = 'none'
+      container.appendChild(el)
+      _viewContainers[viewName] = el
+    })
+  }
 }
 
 // ── Renderizado de vistas (SPA sin reload) ───────────────────
@@ -338,6 +424,7 @@ async function _renderView(route, params = {}, { silent = false } = {}) {
         renderLoginView(targetContainer, { onSuccess: () => initPortal() })
         break
       case 'logout':
+        _showLoginScreen()
         logoutMaestro().then(() => window.location.reload())
         break
       case 'calendario':
@@ -391,8 +478,28 @@ async function _renderView(route, params = {}, { silent = false } = {}) {
           targetContainer.appendChild(view)
         })
         break
+      // ── Admin routes ──────────────────────────────────────
+      case 'admin-alumnos':
+        renderAlumnosView(targetContainer)
+        break
+      case 'admin-programas':
+        renderProgramasView(targetContainer)
+        break
+      case 'admin-maestros':
+        renderMaestrosView(targetContainer)
+        break
+      case 'admin-metricas':
+        renderAdminMetricasView(targetContainer)
+        break
+      case 'admin-config':
+        renderAcademicAdminView(targetContainer)
+        break
+      case 'admin-clases':
+        renderClasesView?.(targetContainer)
+        break
+      case 'admin-sesiones':
+        break
       default:
-        router.navigate('hoy')
     }
 
     clearTimeout(spinnerTimeout)
@@ -463,28 +570,26 @@ async function initPortal() {
   const app = document.getElementById('portal-app')
   if (!app) return
 
+  console.log('[Init] Iniciando Portal...')
+
   // 1. Init auth (optimistic load from cache)
+  console.log('[Init] Llamando usePortalAuth.init()...')
   const maestro = await usePortalAuth.init()
+  console.log('[Init] Auth completado:', maestro ? 'con maestro' : 'sin maestro')
 
   if (!maestro) {
-    const loginContainer = _viewContainers['login']
-    if (loginContainer) {
-      loginContainer.style.display = 'block'
-      renderLoginView(loginContainer, { onSuccess: (intended) => {
-        if (intended && intended !== 'login') {
-          router.navigate(intended)
-        } else {
-          initPortal()
-        }
-      } })
-    }
+    console.log('[Init] No maestro, mostrando login screen')
+    _showLoginScreen()
+    console.log('[Init] LoginScreen mostrado')
     return
   }
 
   // 2. Render shell with navigation
+  console.log('[Init] Renderizando shell...')
   _renderShell(app, maestro)
-  
-  // 2.1 Re-inicializar los contenedores dentro del nuevo pm-view-container
+  console.log('[Init] Shell renderizado')
+
+  // 2.1 Init view containers AFTER shell (shell creates #pm-view-container)
   _initViewContainers()
 
   // 3. Registrar callbacks de navegación
@@ -508,7 +613,24 @@ async function initPortal() {
   router.on('ruta-semanal',      (route, params) => _renderView('ruta-semanal', params))
   router.on('ruta-libreria',  (route, params) => _renderView('ruta-libreria', params))
   router.on('ruta-detalle/:id', (route, params) => _renderView('ruta-detalle', params))
-  router.onNotFound(()         => _renderView('hoy'))
+
+  // Admin routes (solo visible cuando IS_ADMIN=true)
+  if (IS_ADMIN) {
+    router.on('admin-alumnos',   (route, params) => _renderView('admin-alumnos', params))
+    router.on('admin-programas', (route, params) => _renderView('admin-programas', params))
+    router.on('admin-maestros',  (route, params) => _renderView('admin-maestros', params))
+    router.on('admin-metricas',  (route, params) => _renderView('admin-metricas', params))
+    router.on('admin-config',    (route, params) => _renderView('admin-config', params))
+    router.on('admin-clases',    (route, params) => _renderView('admin-clases', params))
+    router.on('admin-sesiones',  (route, params) => _renderView('admin-sesiones', params))
+    // Admin default route
+    router.onNotFound(() => _renderView('admin-alumnos'))
+  } else {
+    router.onNotFound(() => _renderView('hoy'))
+  }
+
+  // 3.1 Activar guard de rutas
+  router.setAuthGuard(() => usePortalAuth.isAuthenticated(), ['login'])
 
   router.start()
 

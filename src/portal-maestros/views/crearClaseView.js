@@ -109,7 +109,7 @@ export async function renderCrearClaseView(container) {
           
           <div class="pm-form-group">
             <label class="pm-label">Maestro titular *</label>
-            <input type="text" class="pm-input" value="${escHTML(maestro.nombre || 'Tú')}" disabled>
+            <input type="text" class="pm-input" value="${escHTML(maestro.nombre_completo || maestro.nombre || 'Tú')}" disabled>
             <input type="hidden" id="nueva-clase-maestro-titular" value="${maestro.id}">
           </div>
 

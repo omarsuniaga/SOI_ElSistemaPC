@@ -17,7 +17,7 @@ export async function renderSustitucionModal(container, opciones = {}) {
             <div class="text-center mb-3">
               <i class="bi bi-person-badge" style="font-size:3rem;color:var(--pm-primary)"></i>
             </div>
-            <p>El maestro <strong>${maestro.nombre || 'Auxiliar'}</strong> solicita acceso temporal a tu clase.</p>
+            <p>El maestro <strong>${maestro.nombre_completo || maestro.nombre || 'Auxiliar'}</strong> solicita acceso temporal a tu clase.</p>
             <div class="alert alert-info">
               <i class="bi bi-clock-history"></i> El acceso expirará automáticamente en 24 horas.
             </div>

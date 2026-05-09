@@ -33,7 +33,7 @@ export function renderPerfilView(container) {
     return;
   }
 
-  const initials = _getInitials(maestro.nombre);
+  const initials = _getInitials(maestro.nombre_completo);
 
   container.innerHTML = `
     <div class="pm-settings">
@@ -54,7 +54,7 @@ export function renderPerfilView(container) {
         <div class="pm-settings-profile-hero__content">
           <div class="pm-settings-avatar">
             ${maestro.avatar_url 
-              ? `<img src="${maestro.avatar_url}" alt="Avatar de ${maestro.nombre}" class="pm-settings-avatar__img">`
+              ? `<img src="${maestro.avatar_url}" alt="Avatar de ${maestro.nombre_completo}" class="pm-settings-avatar__img">`
               : `<div class="pm-settings-avatar__placeholder">${initials}</div>`
             }
             <button class="pm-settings-avatar__edit" id="btnCambiarAvatar" aria-label="Cambiar foto de perfil">
@@ -62,7 +62,7 @@ export function renderPerfilView(container) {
             </button>
           </div>
           <div class="pm-settings-profile-hero__info">
-            <h2 class="pm-settings-profile-hero__name">${maestro.nombre}</h2>
+            <h2 class="pm-settings-profile-hero__name">${maestro.nombre_completo}</h2>
             <p class="pm-settings-profile-hero__email">${maestro.email}</p>
             ${maestro.especialidad ? `
               <span class="pm-settings-profile-hero__badge">
@@ -94,7 +94,7 @@ export function renderPerfilView(container) {
               <label class="pm-settings-label" for="perfilNombre">
                 <i class="bi bi-person"></i> Nombre Completo
               </label>
-              <input type="text" class="pm-settings-input" id="perfilNombre" value="${maestro.nombre || ''}" placeholder="Tu nombre completo">
+              <input type="text" class="pm-settings-input" id="perfilNombre" value="${maestro.nombre_completo || ''}" placeholder="Tu nombre completo">
             </div>
             <div class="pm-settings-field">
               <label class="pm-settings-label" for="perfilEmail">

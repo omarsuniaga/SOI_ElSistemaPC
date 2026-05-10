@@ -7,7 +7,7 @@ import {
   getNotificationPreferences, saveNotificationPreferences,
   getSubscriptionStatus, isPushSupported, subscribeToPush,
   unsubscribeFromPush, testNotification, isPushSubscribed
-} from '../../portal-maestros/services/pushService.js'
+} from '../../../portal-maestros/services/pushService.js'
 
 const FREE_MODELS = [
   { id: 'google/gemini-2.0-flash-exp', name: '🔥 Gemini 2.0 Flash (Gratis)', provider: 'openrouter' },

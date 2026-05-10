@@ -217,6 +217,11 @@ if (!document.getElementById('pm-notif-styles')) {
       top: 1.2rem;
       right: 1rem;
     }
+
+    /* Dark mode */
+    [data-portal-theme="dark"] .pm-notif-item:hover {
+      background: rgba(255, 255, 255, 0.04);
+    }
   `;
   document.head.appendChild(style);
 }

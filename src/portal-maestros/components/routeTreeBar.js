@@ -42,7 +42,7 @@ async function _loadTree(routeVersionId, claseId) {
   // 1. Blocks
   const { data: blocks, error: bErr } = await supabase
     .from('blocks')
-    .select('id, nombre, order_index')
+    .select('id, nombre:name, order_index')
     .eq('route_version_id', routeVersionId)
     .order('order_index', { ascending: true })
 
@@ -53,7 +53,7 @@ async function _loadTree(routeVersionId, claseId) {
   const blockIds = blocks.map(b => b.id)
   const { data: levels, error: lErr } = await supabase
     .from('levels')
-    .select('id, block_id, nombre, order_index')
+    .select('id, block_id, nombre:name, order_index')
     .in('block_id', blockIds)
     .eq('route_version_id', routeVersionId)
     .order('order_index', { ascending: true })
@@ -68,7 +68,7 @@ async function _loadTree(routeVersionId, claseId) {
 
   const { data: nodes, error: nErr } = await supabase
     .from('nodes')
-    .select('id, level_id, nombre, order_index')
+    .select('id, level_id, nombre:name, order_index')
     .in('level_id', levelIds)
     .eq('route_version_id', routeVersionId)
     .order('order_index', { ascending: true })
@@ -82,7 +82,7 @@ async function _loadTree(routeVersionId, claseId) {
     nodeIds.length > 0
       ? supabase
           .from('indicators')
-          .select('id, node_id, nombre, description, order_index, is_required')
+          .select('id, node_id, nombre:description, order_index, is_required')
           .in('node_id', nodeIds)
           .eq('activo', true)
           .order('order_index', { ascending: true })

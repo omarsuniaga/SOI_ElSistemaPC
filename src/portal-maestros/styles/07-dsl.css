@@ -1,0 +1,218 @@
+/* ============================================================
+   PORTAL MAESTROS — DSL Editor
+   Syntax highlighting, toolbar, preview
+   ============================================================ */
+
+/* ── DSL Editor Wrapper ─────────────────────────────────────── */
+.dsl-editor-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: .75rem;
+}
+
+/* ── DSL Preview ────────────────────────────────────────────── */
+.dsl-editor-preview {
+  min-height: 80px;
+  padding: .75rem;
+  background: var(--pm-surface-2);
+  border-radius: var(--pm-radius-sm);
+  font-size: .85rem;
+  white-space: pre-wrap;
+  line-height: 1.5;
+}
+
+.dsl-placeholder { color: var(--pm-text-muted); font-style: italic; }
+
+/* ── DSL Textarea (legacy/textarea mode) ────────────────────── */
+.dsl-textarea {
+  width: 100%;
+  min-height: 120px;
+  padding: .75rem;
+  border: 1px solid var(--pm-border);
+  border-radius: var(--pm-radius-sm);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: .85rem;
+  line-height: 1.5;
+  resize: vertical;
+  outline: none;
+}
+
+.dsl-textarea:focus {
+  border-color: var(--apple-primary);
+  box-shadow: 0 0 0 3px rgba(0,122,255,.15);
+}
+
+.dsl-summary {
+  font-size: .75rem;
+  color: var(--pm-text-muted);
+}
+
+/* ── DSL Tokens (highlighted) ──────────────────────────────── */
+.dsl-token {
+  border-radius: 3px;
+  padding: 1px 3px;
+  font-weight: 600;
+}
+
+.dsl-token.dsl-alumno      { color: var(--apple-primary);    background: rgba(0,122,255,0.08); }
+.dsl-token.dsl-contenido   { color: var(--apple-success);    background: rgba(52,199,89,0.08); }
+.dsl-token.dsl-sugerencia  { color: var(--apple-warning);    background: rgba(255,149,0,0.08); }
+.dsl-token.dsl-tarea      { color: #9333ea;                  background: rgba(147,51,234,0.08); }
+.dsl-token.dsl-calificacion { color: var(--apple-danger);    background: rgba(255,59,48,0.08); font-weight: 800; }
+.dsl-token.dsl-medida      { color: #0891b2;                  background: rgba(8,145,178,0.08); }
+.dsl-token.dsl-objetivo    { color: var(--pm-text-muted);    background: rgba(108,117,125,0.08); }
+.dsl-token.dsl-nivel      { color: #5856d6;                  background: rgba(88,86,214,0.1); font-weight: 700; }
+.dsl-token.dsl-nodo       { color: #af52de;                  background: rgba(175,82,222,0.08); }
+.dsl-token.dsl-capa       { font-weight: 800; }
+
+/* ── DSL Toolbar ───────────────────────────────────────────── */
+.dsl-toolbar {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  padding: .5rem;
+  background: var(--pm-surface);
+  border-radius: var(--pm-radius-sm);
+  box-shadow: var(--pm-shadow);
+}
+
+.dsl-toolbar.collapsed .dsl-toolbar-buttons { display: none; }
+
+.dsl-toolbar-toggle {
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 4px;
+  background: var(--pm-surface-2);
+  color: var(--pm-text-muted);
+  font-size: .8rem;
+  cursor: pointer;
+}
+
+.dsl-toolbar-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .25rem;
+}
+
+.dsl-token-btn {
+  padding: .25rem .5rem;
+  border: 1px solid var(--pm-border);
+  border-radius: 4px;
+  background: var(--pm-surface);
+  color: var(--pm-text);
+  font-size: .7rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background .15s;
+}
+
+.dsl-token-btn:hover { background: var(--pm-surface-2); }
+
+/* ── Contenteditable DSL Editor ─────────────────────────────── */
+.pm-dsl-editor-container {
+  position: relative;
+  background: var(--pm-surface);
+  border: 1.5px solid var(--pm-border);
+  border-radius: var(--pm-radius-sm);
+  min-height: 150px;
+  font-family: inherit;
+  transition: border-color 0.2s;
+}
+
+.pm-dsl-editor-container:focus-within {
+  border-color: var(--apple-primary);
+  box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
+}
+
+.pm-dsl-editable {
+  padding: 1rem;
+  min-height: 150px;
+  outline: none;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  line-height: 1.6;
+  z-index: 2;
+  position: relative;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.95rem;
+}
+
+.pm-dsl-placeholder {
+  position: absolute;
+  top: 1rem;
+  left: 1.1rem;
+  color: var(--pm-text-muted);
+  pointer-events: none;
+  z-index: 1;
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+/* ── DSL Tooltip (hover) ────────────────────────────────────── */
+.dsl-tooltip {
+  position: absolute;
+  background: rgba(0,0,0,0.85);
+  color: #fff;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  z-index: 1000;
+  pointer-events: none;
+  max-width: 200px;
+  display: none;
+}
+
+/* ── Tokens Legend ──────────────────────────────────────────── */
+.dsl-tokens-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem;
+  font-size: .7rem;
+}
+
+.dsl-legend-item {
+  display: flex;
+  align-items: center;
+  gap: .25rem;
+  color: var(--pm-text-muted);
+}
+
+.dsl-legend-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--token-color);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   ADAPTIVE DSL EDITOR
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Tablet: toolbar en 2 líneas si necesario */
+@media (min-width: 768px) {
+  .dsl-editor-wrapper {
+    gap: var(--pm-space-4);
+  }
+  
+  .dsl-toolbar {
+    padding: var(--pm-space-3);
+  }
+}
+
+/* Desktop: editor más alto, toolbar inline */
+@media (min-width: 1024px) {
+  .pm-dsl-editor-container {
+    min-height: 200px;
+  }
+  
+  .pm-dsl-editable {
+    min-height: 200px;
+    padding: var(--pm-space-5);
+    font-size: 1rem;
+  }
+  
+  .dsl-editor-wrapper {
+    gap: var(--pm-space-5);
+  }
+}

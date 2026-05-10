@@ -38,62 +38,6 @@ export function createDslEditor(container, { initialContent = '', onChange, onAl
   tooltip.className = 'dsl-tooltip';
   container.appendChild(tooltip);
 
-  // Estilos del editor
-  if (!document.getElementById('pm-dsl-editor-styles')) {
-    const style = document.createElement('style');
-    style.id = 'pm-dsl-editor-styles';
-    style.textContent = `
-      .pm-dsl-editor-container {
-        position: relative;
-        background: var(--pm-surface);
-        border: 1.5px solid var(--pm-border);
-        border-radius: var(--pm-radius-sm);
-        min-height: 150px;
-        font-family: inherit;
-        transition: border-color 0.2s;
-      }
-      .pm-dsl-editor-container:focus-within {
-        border-color: var(--apple-primary);
-        box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
-      }
-      .pm-dsl-editable {
-        padding: 1rem;
-        min-height: 150px;
-        outline: none;
-        white-space: pre-wrap;
-        word-wrap: break-word;
-        line-height: 1.6;
-        z-index: 2;
-        position: relative;
-        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-        font-size: 0.95rem;
-      }
-      .pm-dsl-placeholder {
-        position: absolute;
-        top: 1rem;
-        left: 1.1rem;
-        color: var(--pm-text-muted);
-        pointer-events: none;
-        z-index: 1;
-        font-size: 0.95rem;
-        line-height: 1.6;
-      }
-      .dsl-tooltip {
-        position: absolute;
-        background: rgba(0,0,0,0.85);
-        color: #fff;
-        padding: 4px 8px;
-        border-radius: 4px;
-        font-size: 0.75rem;
-        z-index: 1000;
-        pointer-events: none;
-        max-width: 200px;
-        display: none;
-      }
-    `;
-    document.head.appendChild(style);
-  }
-
   function _updateValue() {
     _value = editor.innerText;
     placeholder.style.display = _value.trim() === '' ? 'block' : 'none';

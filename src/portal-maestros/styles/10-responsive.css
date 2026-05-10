@@ -1,0 +1,714 @@
+/* ============================================================
+   PORTAL MAESTROS — Responsive Design
+   Breakpoint strategy: mobile → tablet → desktop
+   ============================================================ */
+
+/* ═══════════════════════════════════════════════════════════
+   MOBILE (< 768px) — Mobile-first base styles
+   ═══════════════════════════════════════════════════════════ */
+
+@media (max-width: 767px) {
+  /* ── Header: compact ─────────────────────────────────────────── */
+  .pm-header {
+    height: 56px;
+    padding: 0 0.75rem;
+  }
+
+  .pm-header-greeting { display: none; }
+  .pm-header-title    { font-size: 1rem; }
+
+  .pm-header-right {
+    gap: 0.25rem;
+  }
+
+  .pm-theme-toggle {
+    width: 48px;
+    height: 28px;
+  }
+
+  .pm-theme-toggle-thumb {
+    width: 22px;
+    height: 22px;
+  }
+
+  .pm-icon-btn {
+    width: 36px;
+    height: 36px;
+    font-size: 1.1rem;
+  }
+
+  .pm-avatar-btn {
+    width: 36px;
+    height: 36px;
+    font-size: 1.3rem;
+  }
+
+  .pm-ausencias-badge {
+    font-size: 0.6rem;
+    padding: 1px 4px;
+    min-width: 14px;
+  }
+
+  /* ── View container: full width ──────────────────────────────── */
+  .pm-view {
+    padding: 0.75rem;
+  }
+
+  /* ── Bottom nav: visible ─────────────────────────────────────── */
+  .pm-bottom-nav {
+    display: flex;
+    height: 60px;
+    padding: 0.5rem 0;
+  }
+
+  .pm-bottom-tab {
+    font-size: 0.65rem;
+    padding: 0.25rem;
+  }
+
+  .pm-bottom-tab i {
+    font-size: 1.1rem;
+    margin-bottom: 2px;
+  }
+
+  /* ── KPI Cards: 3 columnas, compact ─────────────────────────── */
+  .pm-metricas-kpis {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.5rem;
+  }
+
+  .pm-metricas-kpi {
+    padding: 0.6rem 0.25rem;
+  }
+
+  .pm-kpi-value {
+    font-size: 1.4rem;
+  }
+
+  .pm-kpi-label {
+    font-size: 0.6rem;
+  }
+
+  /* ── Clase cards: full width ────────────────────────────────── */
+  .pm-metricas-clases,
+  .pm-metricas-links {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+  }
+
+  /* ── Ausencias ──────────────────────────────────────────────── */
+  .ausencias-dashboard {
+    padding: 1rem;
+  }
+
+  .ausencias-stat-card {
+    padding: 1rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .stat-icon {
+    width: 40px;
+    height: 40px;
+    font-size: 1rem;
+  }
+
+  .stat-number { font-size: 1.5rem; }
+
+  .ausencia-card {
+    padding: 1rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .ausencia-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .ausencia-meta { align-self: flex-start; }
+
+  .ausencia-footer {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  /* ── Modales: bottom sheet ────────────────────────────────────── */
+  .pm-modal-overlay { align-items: flex-end; padding: 0; }
+
+  .pm-modal-content {
+    border-radius: var(--pm-radius) var(--pm-radius) 0 0;
+    max-width: 100%;
+    width: 100%;
+  }
+
+  /* ── Settings ───────────────────────────────────────────────── */
+  .pm-settings {
+    padding: 0.25rem 0 5rem;
+    gap: 0.5rem;
+  }
+
+  .pm-settings-profile-hero__content {
+    flex-direction: column;
+    text-align: center;
+    padding-top: 2.5rem;
+  }
+
+  .pm-settings-profile-hero__name {
+    color: var(--pm-text);
+    text-shadow: none;
+  }
+
+  .pm-settings-profile-hero__email { color: var(--pm-text-muted); }
+  .pm-settings-profile-hero__bg { height: 56px; }
+
+  .pm-settings-header__title { font-size: 1.25rem; }
+
+  .pm-settings-section__header { flex-wrap: wrap; }
+
+  .pm-settings-btn-group {
+    width: 100%;
+    margin-top: 0.25rem;
+  }
+
+  .pm-settings-btn-group .pm-settings-btn {
+    flex: 1;
+    justify-content: center;
+  }
+
+  .pm-settings-form-grid { grid-template-columns: 1fr; }
+  .pm-settings-notif-grid { grid-template-columns: 1fr; }
+  .pm-settings-theme-picker { gap: 0.5rem; }
+
+  .pm-homework-panel-row { flex-direction: column; }
+
+  .pm-alumno-stats { grid-template-columns: repeat(4, 1fr); }
+
+  /* ── Sidebar: drawer ─────────────────────────────────────────── */
+  .pm-sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 90vw;
+    max-width: 320px;
+    z-index: var(--pm-z-sidebar);
+    transform: translateX(-100%);
+    transition: transform var(--pm-transition-slow);
+  }
+
+  .pm-sidebar.open {
+    transform: translateX(0);
+  }
+
+  /* ── Calendario: compact ─────────────────────────────────────── */
+  .pm-cal-day { font-size: 0.8rem; }
+
+  /* ── Login ───────────────────────────────────────────────────── */
+  .pm-login {
+    padding: 1.5rem 1rem;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   EXTRA SMALL (< 480px) — iPhone SE, small Android
+   ═══════════════════════════════════════════════════════════ */
+
+@media (max-width: 480px) {
+  .pm-view { padding: 0.5rem; }
+
+  .pm-metricas-kpis {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.35rem;
+  }
+
+  .pm-kpi-value { font-size: 1.2rem; }
+  .pm-kpi-label { font-size: 0.55rem; }
+
+  .pm-metricas-title { font-size: 1.2rem; }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   TABLET (768px – 1023px) — iPad, Android tablets
+   ═══════════════════════════════════════════════════════════ */
+
+@media (min-width: 768px) and (max-width: 1023px) {
+  /* ── Header: tabs horizontales ─────────────────────────────────── */
+  .pm-header {
+    height: 60px;
+    padding: 0 1.25rem;
+    display: flex;
+    align-items: center;
+  }
+
+  .pm-header-greeting { display: block; font-size: 0.65rem; }
+  .pm-header-title    { font-size: 1.2rem; }
+
+  .pm-header-right {
+    gap: 0.5rem;
+    flex-shrink: 0;
+  }
+
+  .pm-theme-toggle {
+    width: 54px;
+    height: 30px;
+  }
+
+  .pm-icon-btn {
+    width: 38px;
+    height: 38px;
+    font-size: 1.15rem;
+  }
+
+  .pm-avatar-btn {
+    width: 38px;
+    height: 38px;
+    font-size: 1.3rem;
+  }
+
+  /* ── Bottom nav: oculto ────────────────────────────────────────── */
+  .pm-bottom-nav { display: none; }
+
+  /* ── View container ────────────────────────────────────────────── */
+  .pm-view {
+    padding: 1.25rem;
+    max-width: 100%;
+  }
+
+  /* ── KPI Cards: 3 columnas ────────────────────────────────────── */
+  .pm-metricas-kpis {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.75rem;
+  }
+
+  .pm-metricas-kpi {
+    padding: 0.875rem 0.5rem;
+  }
+
+  .pm-kpi-value { font-size: 1.6rem; }
+  .pm-kpi-label { font-size: 0.65rem; }
+
+  /* ── Clase cards: grid 2 cols ─────────────────────────────────── */
+  .pm-metricas-clases {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+  }
+
+  .pm-metricas-links {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.5rem;
+  }
+
+  /* ── Ausencias: 2 cols ─────────────────────────────────────────── */
+  .ausencias-dashboard {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+  }
+
+  .ausencias-stat-card {
+    padding: 1.25rem;
+  }
+
+  .stat-icon { width: 44px; height: 44px; }
+  .stat-number { font-size: 1.75rem; }
+
+  /* ── Modales: centered ─────────────────────────────────────────── */
+  .pm-modal-overlay { align-items: center; padding: 1rem; }
+
+  .pm-modal-content {
+    max-width: 500px;
+    border-radius: var(--pm-radius);
+  }
+
+  /* ── Settings ────────────────────────────────────────────────── */
+  .pm-settings {
+    max-width: 640px;
+    margin: 0 auto;
+    padding: 0.5rem 0 2rem;
+  }
+
+  /* ── Calendario: mes completo ─────────────────────────────────── */
+  .pm-cal-day { font-size: 0.85rem; }
+
+  /* ── Sidebar: drawer 80vw ──────────────────────────────────────── */
+  .pm-sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: min(320px, 80vw);
+    z-index: var(--pm-z-sidebar);
+    transform: translateX(-100%);
+    transition: transform var(--pm-transition-slow);
+  }
+
+  .pm-sidebar.open {
+    transform: translateX(0);
+  }
+
+  /* ── Login ───────────────────────────────────────────────────── */
+  .pm-login-card {
+    max-width: 420px;
+  }
+
+  /* ── Planificacion ────────────────────────────────────────────── */
+  .pm-planif-programas {
+    gap: 0.75rem;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   DESKTOP (≥ 1024px) — iPad Pro landscape, laptops, desktops
+   ═══════════════════════════════════════════════════════════ */
+
+@media (min-width: 1024px) {
+  /* ── Shell layout con sidebar ─────────────────────────────────── */
+  #portal-app {
+    display: grid;
+    grid-template-columns: var(--pm-sidebar-w) 1fr;
+    grid-template-rows: var(--pm-header-h) 1fr;
+    min-height: 100vh;
+    overflow: hidden;
+  }
+
+  /* ── Header: completo con tabs ─────────────────────────────────── */
+  .pm-header {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: var(--pm-header-h);
+    padding: 0 1.5rem;
+  }
+
+  .pm-header-left {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.1;
+    min-width: 0;
+  }
+
+  .pm-header-greeting {
+    display: block;
+    font-size: 0.65rem;
+    opacity: 0.8;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .pm-header-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+  }
+
+  /* Header tabs */
+  .pm-header-tabs {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    margin-left: var(--pm-space-6);
+  }
+
+  .pm-header-tab {
+    padding: var(--pm-space-2) var(--pm-space-4);
+    border-radius: var(--pm-radius-xs);
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background var(--pm-transition-fast), color var(--pm-transition-fast);
+    background: none;
+    border: none;
+    color: rgba(255, 255, 255, 0.7);
+    display: flex;
+    align-items: center;
+    gap: var(--pm-space-1);
+  }
+
+  .pm-header-tab i { font-size: 0.9rem; }
+
+  .pm-header-tab:hover {
+    background: rgba(255, 255, 255, 0.15);
+    color: #fff;
+  }
+
+  .pm-header-tab.active {
+    background: rgba(255, 255, 255, 0.25);
+    color: #fff;
+  }
+
+  .pm-header-right {
+    display: flex;
+    align-items: center;
+    gap: var(--pm-space-3);
+    flex-shrink: 0;
+  }
+
+  /* Search en header */
+  .pm-header-search {
+    display: flex;
+    align-items: center;
+    gap: var(--pm-space-2);
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: var(--pm-radius-xs);
+    padding: var(--pm-space-2) var(--pm-space-3);
+    width: 200px;
+    transition: width var(--pm-transition-base), background var(--pm-transition-base);
+  }
+
+  .pm-header-search:focus-within {
+    background: rgba(255, 255, 255, 0.25);
+    width: 280px;
+  }
+
+  .pm-header-search i {
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 0.9rem;
+    flex-shrink: 0;
+  }
+
+  .pm-header-search input {
+    background: none;
+    border: none;
+    color: #fff;
+    font-size: 0.85rem;
+    outline: none;
+    width: 100%;
+  }
+
+  .pm-header-search input::placeholder {
+    color: rgba(255, 255, 255, 0.5);
+  }
+
+  /* ── Bottom nav: oculto ────────────────────────────────────────── */
+  .pm-bottom-nav { display: none; }
+
+  /* ── Sidebar: visible y fijo ────────────────────────────────────── */
+  .pm-sidebar {
+    grid-row: 2;
+    position: sticky;
+    top: var(--pm-header-h);
+    height: calc(100vh - var(--pm-header-h));
+    transform: none !important;
+    overflow-y: auto;
+    z-index: var(--pm-z-sidebar);
+  }
+
+  /* ── View container: contenido ancho ──────────────────────────── */
+  .pm-view {
+    padding: var(--pm-space-6) var(--pm-space-8);
+    max-width: var(--pm-content-max-w, 900px);
+    overflow-y: auto;
+    height: calc(100vh - var(--pm-header-h));
+  }
+
+  /* ── KPI Cards: 6 columnas, densas ───────────────────────────── */
+  .pm-metricas-kpis {
+    grid-template-columns: repeat(6, 1fr);
+    gap: 0.5rem;
+    margin-bottom: var(--pm-space-6);
+  }
+
+  .pm-metricas-kpi {
+    padding: var(--pm-space-4) var(--pm-space-2);
+  }
+
+  .pm-kpi-value {
+    font-size: 1.8rem;
+  }
+
+  .pm-kpi-label {
+    font-size: 0.6rem;
+  }
+
+  /* ── Clase cards: más info, 2 cols ──────────────────────────────── */
+  .pm-metricas-clases {
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--pm-space-4);
+  }
+
+  .pm-metricas-clase-card {
+    padding: var(--pm-space-4);
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: var(--pm-space-3);
+    align-items: center;
+  }
+
+  /* ── Accesos rápidos: grid 2 cols ─────────────────────────────── */
+  .pm-metricas-links {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--pm-space-3);
+  }
+
+  .pm-metricas-link {
+    padding: var(--pm-space-4);
+  }
+
+  /* ── Ausencias: grid 3 cols ───────────────────────────────────── */
+  .ausencias-dashboard {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--pm-space-4);
+  }
+
+  .ausencias-stat-card {
+    display: flex;
+    align-items: center;
+    padding: var(--pm-space-5);
+  }
+
+  .stat-icon { width: 48px; height: 48px; font-size: 1.25rem; }
+  .stat-number { font-size: 1.75rem; }
+
+  /* ── Calendario: mes completo con más detalle ─────────────────── */
+  .pm-cal-grid { gap: 4px; }
+  .pm-cal-day { font-size: 0.9rem; }
+
+  /* ── Modales: centered, más anchos ──────────────────────────────── */
+  .pm-modal-overlay { align-items: center; }
+
+  .pm-modal-content { max-width: 520px; }
+
+  /* ── Settings: más ancho ───────────────────────────────────────── */
+  .pm-settings {
+    max-width: 800px;
+    padding: var(--pm-space-4) var(--pm-space-6);
+  }
+
+  /* ── Login: centrado ────────────────────────────────────────────── */
+  .pm-login {
+    align-items: center;
+    justify-content: center;
+    padding: var(--pm-space-8);
+  }
+
+  .pm-login-card {
+    max-width: 400px;
+  }
+
+  /* ── Planificacion ─────────────────────────────────────────────── */
+  .pm-planif-root { padding: var(--pm-space-6); }
+
+  .pm-planif-niveles {
+    gap: var(--pm-space-4);
+  }
+
+  /* ── Metricas section title ────────────────────────────────────── */
+  .pm-metricas-section-title {
+    font-size: 1rem;
+    margin: var(--pm-space-6) 0 var(--pm-space-3);
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   LARGE DESKTOP (≥ 1280px) — Full HD, QHD
+   ═══════════════════════════════════════════════════════════ */
+
+@media (min-width: 1280px) {
+  .pm-view {
+    padding: var(--pm-space-8) var(--pm-space-10);
+    max-width: 1000px;
+  }
+
+  .pm-metricas-kpis {
+    grid-template-columns: repeat(6, 1fr);
+  }
+
+  .pm-kpi-value { font-size: 2rem; }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   EXTRA LARGE (≥ 1440px) — WQHD, 4K
+   ═══════════════════════════════════════════════════════════ */
+
+@media (min-width: 1440px) {
+  .pm-view {
+    padding: var(--pm-space-8) var(--pm-space-12);
+    max-width: 1100px;
+  }
+
+  /* Más KPIs por fila */
+  .pm-metricas-kpis {
+    gap: 0.75rem;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   TOUCH DEVICE OVERRIDES (hover vs pointer)
+   ═══════════════════════════════════════════════════════════ */
+
+/* Disable hover effects on touch to prevent sticky states */
+@media (hover: none) and (pointer: coarse) {
+  .pm-card-hover:hover {
+    transform: none;
+    box-shadow: var(--pm-shadow-sm);
+  }
+
+  .pm-metricas-clase-card:hover {
+    transform: none;
+    border-color: var(--pm-border);
+  }
+
+  .pm-metricas-link:hover {
+    transform: none;
+    background: var(--pm-surface);
+    color: var(--pm-text);
+    border-color: var(--pm-border);
+  }
+
+  .pm-metricas-link:hover i {
+    color: var(--pm-primary);
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   REDUCED MOTION (accessibility)
+   ═══════════════════════════════════════════════════════════ */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .pm-skeleton {
+    animation: none;
+    opacity: 0.6;
+  }
+
+  .pm-sidebar {
+    transition: none;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   PRINT STYLES
+   ═══════════════════════════════════════════════════════════ */
+
+@media print {
+  .pm-header,
+  .pm-bottom-nav,
+  .pm-sidebar,
+  .pm-metricas-link,
+  .pm-btn {
+    display: none !important;
+  }
+
+  .pm-view {
+    padding: 0;
+    max-width: 100%;
+  }
+
+  .pm-metricas-kpis,
+  .pm-metricas-clases {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}

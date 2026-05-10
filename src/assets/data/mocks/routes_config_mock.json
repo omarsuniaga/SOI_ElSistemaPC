@@ -1,0 +1,19 @@
+{
+  "levels": [
+    { "id": 1, "route_version_id": 1, "level_number": 1, "name": "Inicio corporal y sonoro", "main_objective": "Lograr una postura base sólida y producción de sonido limpio." },
+    { "id": 2, "route_version_id": 1, "level_number": 2, "name": "Coordinación básica", "main_objective": "Independencia de manos en cuerda al aire." },
+    { "id": 3, "route_version_id": 1, "level_number": 3, "name": "Escala de La Mayor", "main_objective": "Dominio tonal de los primeros 3 dedos." }
+  ],
+  "nodes": [
+    { "id": 101, "level_id": 1, "name": "Postura corporal", "type": "TECNICA", "is_critical": true },
+    { "id": 102, "level_id": 1, "name": "Cuerdas al aire", "type": "SONIDO", "is_critical": true },
+    { "id": 103, "level_id": 2, "name": "Ritmos de Suzuki 1", "type": "ARCO", "is_critical": false },
+    { "id": 104, "level_id": 3, "name": "Ubicación 1er dedo", "type": "AFINACION", "is_critical": true }
+  ],
+  "indicators": [
+    { "id": 1001, "node_id": 101, "description": "Mantiene la espalda recta y pies separados.", "is_required": true },
+    { "id": 1002, "node_id": 101, "description": "Sostiene el violín sin ayuda del brazo izquierdo.", "is_required": true },
+    { "id": 1003, "node_id": 102, "description": "Arco paralelo al puente.", "is_required": true },
+    { "id": 1004, "node_id": 104, "description": "El primer dedo está afinado consistentemente.", "is_required": true }
+  ]
+}

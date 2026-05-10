@@ -1,4 +1,4 @@
-import './portal-maestros/styles/portal.css'
+import './portal-maestros/styles/index.css'
 import { usePortalAuth, logoutMaestro } from './portal-maestros/auth/usePortalAuth.js'
 import { createPortalRouter }   from './portal-maestros/router/portalRouter.js'
 import { processQueue, getQueue } from './portal-maestros/services/offlineQueue.js'
@@ -213,16 +213,28 @@ function _showLoginScreen() {
 
 // ── Shell (estructura persistente) ─────────────────────────
 
+// Breakpoint detection utilities
+export function getBreakpoint() {
+  const w = window.innerWidth
+  if (w < 768)  return 'mobile'
+  if (w < 1024) return 'tablet'
+  return 'desktop'
+}
+
+let _currentBreakpoint = getBreakpoint()
+window.addEventListener('resize', () => {
+  const next = getBreakpoint()
+  if (next !== _currentBreakpoint) {
+    _currentBreakpoint = next
+    document.body.dataset.pmLayout = next
+  }
+}, { passive: true })
+
 function _renderShell(app, maestro) {
   _maestro = maestro
+  const bp = _currentBreakpoint
 
   const tabs = ALL_TABS()
-  const renderTabs = () => tabs.map(tab => `
-      <button class="pm-bottom-tab" data-route="${tab.id}">
-        <i class="bi ${tab.icon}"></i>
-        <span>${tab.label}</span>
-      </button>
-    `).join('')
 
   app.innerHTML = `
     <!-- Header -->
@@ -236,18 +248,28 @@ function _renderShell(app, maestro) {
           }
         </span>
       </div>
+
+      <!-- Header right controls -->
       <div class="pm-header-right">
-        <span class="pm-sync-indicator synced" id="pm-sync-indicator">✓ Sincronizado</span>
-        
+        <!-- Search (desktop only) -->
+        ${bp === 'desktop' ? `
+          <div class="pm-header-search">
+            <i class="bi bi-search"></i>
+            <input type="search" placeholder="Buscar alumno..." id="pm-header-search-input" />
+          </div>
+        ` : ''}
+
+        <span class="pm-sync-indicator synced" id="pm-sync-indicator">✓</span>
+
         <!-- Toggle de tema -->
         <div id="pm-theme-toggle-container"></div>
-        
+
         <!-- Botón de notificaciones -->
         <button id="pm-btn-notificaciones" class="pm-icon-btn" title="Notificaciones" style="position: relative;">
           <i class="bi bi-bell"></i>
           <span class="pm-ausencias-badge" id="pm-notif-badge" style="display: none; background: var(--pm-danger);">0</span>
         </button>
-        
+
         <button id="pm-btn-logout" class="pm-icon-btn" title="Cerrar sesión">
           <i class="bi bi-box-arrow-right"></i>
         </button>
@@ -260,12 +282,22 @@ function _renderShell(app, maestro) {
       </div>
     </header>
 
+    <!-- Sidebar (desktop only) -->
+    ${bp === 'desktop' ? `<aside class="pm-sidebar" id="pm-sidebar"></aside>` : ''}
+
     <!-- Contenido de la vista activa -->
     <main class="pm-view" id="pm-view-container"></main>
 
-    <!-- Bottom nav -->
-    <nav class="pm-bottom-nav" id="pm-bottom-nav">
-      ${renderTabs()}
+    <!-- Footer Nav (always visible) -->
+    <nav class="pm-footer-nav" id="pm-footer-nav">
+      <div class="pm-footer-nav__inner">
+        ${tabs.map(tab => `
+          <button class="pm-nav-tab" data-route="${tab.id}">
+            <i class="bi ${tab.icon}"></i>
+            <span>${tab.label}</span>
+          </button>
+        `).join('')}
+      </div>
     </nav>
   `
 
@@ -277,14 +309,16 @@ function _renderShell(app, maestro) {
     themeContainer.appendChild(themeToggle.createToggleButton())
   }
 
-  // Bottom nav events - SPA navigation (no reload)
-  const bottomNav = document.getElementById('pm-bottom-nav')
-  bottomNav.querySelectorAll('.pm-bottom-tab').forEach(tab => {
-    tab.addEventListener('click', (e) => {
-      e.preventDefault()
-      router.navigate(tab.dataset.route)
+  // Footer nav events - SPA navigation
+  const footerNav = document.getElementById('pm-footer-nav')
+  if (footerNav) {
+    footerNav.querySelectorAll('.pm-nav-tab').forEach(tab => {
+      tab.addEventListener('click', (e) => {
+        e.preventDefault()
+        router.navigate(tab.dataset.route)
+      })
     })
-  })
+  }
 
   document.getElementById('pm-btn-perfil').addEventListener('click', (e) => {
     e.preventDefault()
@@ -294,6 +328,17 @@ function _renderShell(app, maestro) {
   document.getElementById('pm-btn-logout').addEventListener('click', async () => {
     await logoutMaestro()
     window.location.reload()
+  })
+
+  // Header search (desktop)
+  const searchInput = document.getElementById('pm-header-search-input')
+  searchInput?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      const q = e.target.value.trim()
+      if (q.length > 1) {
+        router.navigate(`alumno?id=${encodeURIComponent(q)}`)
+      }
+    }
   })
 
   // Retry sync on error indicator click
@@ -323,10 +368,67 @@ function _renderShell(app, maestro) {
   
   // Disparar la primera carga
   fetchNotificaciones();
+
+  // Keyboard shortcuts (desktop only)
+  if (bp === 'desktop') {
+    const _keys = []
+    document.addEventListener('keydown', (e) => {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return
+      _keys.push(e.key)
+      if (_keys[_keys.length - 2] === 'g') {
+        switch (e.key) {
+          case 'h': router.navigate('hoy'); _keys.length = 0; break
+          case 'c': router.navigate('calendario'); _keys.length = 0; break
+          case 'r': router.navigate('ruta'); _keys.length = 0; break
+          case 'm': router.navigate('metricas'); _keys.length = 0; break
+          case 'p': router.navigate('perfil'); _keys.length = 0; break
+          default: break
+        }
+      }
+      if (_keys.length > 3) _keys.splice(0, _keys.length - 2)
+    })
+  }
+
+  // Breakpoint change handler
+  let _resizeTimer = null
+  window.addEventListener('resize', () => {
+    clearTimeout(_resizeTimer)
+    _resizeTimer = setTimeout(() => {
+      const next = getBreakpoint()
+      if (next !== _currentBreakpoint) {
+        _currentBreakpoint = next
+        document.body.dataset.pmLayout = next
+        // Re-render shell to switch between header tabs / bottom nav
+        _renderShell(document.getElementById('portal-app'), _maestro)
+        _initViewContainers()
+        // Re-register header tab events
+        setTimeout(() => {
+          document.querySelectorAll('.pm-header-tab').forEach(tab => {
+            tab.addEventListener('click', (e) => {
+              e.preventDefault()
+              router.navigate(tab.dataset.route)
+            })
+          })
+          document.querySelectorAll('.pm-bottom-tab').forEach(tab => {
+            tab.addEventListener('click', (e) => {
+              e.preventDefault()
+              router.navigate(tab.dataset.route)
+            })
+          })
+          // Re-apply current route
+          const route = (router.currentRoute?.() || 'hoy').split('?')[0]
+          _setActiveTab(route)
+        }, 50)
+      }
+    }, 250)
+  }, { passive: true })
 }
 
 function _setActiveTab(route) {
   document.querySelectorAll('.pm-bottom-tab').forEach(tab => {
+    tab.classList.toggle('active', tab.dataset.route === route)
+  })
+  document.querySelectorAll('.pm-header-tab').forEach(tab => {
     tab.classList.toggle('active', tab.dataset.route === route)
   })
 }
@@ -460,7 +562,7 @@ async function _renderView(route, params = {}, { silent = false } = {}) {
         renderGamificacionView(targetContainer)
         break
       case 'ruta':
-        renderRutaPlayerView(targetContainer)
+        renderPlanificacionView(targetContainer)
         break
       case 'crear-clase':
         renderCrearClaseView(targetContainer)

@@ -1,0 +1,264 @@
+/* ============================================================
+   PORTAL MAESTROS — Modules: Ausencias & Tareas
+   Feature-specific styles
+   ============================================================ */
+
+/* ── Ausencias Dashboard ───────────────────────────────────── */
+/* Base (mobile): stack, full width */
+.ausencias-dashboard {
+  background: var(--pm-surface);
+  border-radius: var(--pm-radius);
+  padding: var(--pm-space-4);
+  border: 1px solid var(--pm-border);
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+/* Tablet: 2 columnas */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .ausencias-dashboard {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--pm-space-4);
+  }
+
+  .ausencias-stat-card {
+    display: flex;
+    align-items: center;
+    padding: var(--pm-space-4);
+    height: auto;
+  }
+}
+
+/* Desktop: 3 columnas, más amplio */
+@media (min-width: 1024px) {
+  .ausencias-dashboard {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--pm-space-4);
+  }
+}
+
+.ausencias-stat-card {
+  background: var(--pm-surface);
+  border: 1px solid var(--pm-border);
+  border-radius: var(--pm-radius-sm);
+  padding: var(--pm-space-4);
+  display: flex;
+  align-items: center;
+  gap: var(--pm-space-4);
+  transition: transform var(--pm-transition-base), box-shadow var(--pm-transition-base), border-color var(--pm-transition-base);
+  height: 100%;
+}
+
+.ausencias-stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--pm-shadow-lg);
+  border-color: var(--pm-primary);
+}
+
+.ausencias-stat-card.pending { border-left: 4px solid var(--pm-warning); }
+.ausencias-stat-card.approved { border-left: 4px solid var(--pm-success); }
+.ausencias-stat-card.rejected  { border-left: 4px solid var(--pm-danger); }
+
+.stat-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--pm-radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  color: white;
+  flex-shrink: 0;
+}
+
+.ausencias-stat-card.pending .stat-icon  { background: var(--pm-warning); }
+.ausencias-stat-card.approved .stat-icon  { background: var(--pm-success); }
+.ausencias-stat-card.rejected .stat-icon  { background: var(--pm-danger); }
+
+.stat-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.stat-number {
+  font-size: 1.75rem;
+  font-weight: 800;
+  line-height: 1.2;
+  margin-bottom: var(--pm-space-1);
+  color: var(--pm-text);
+}
+
+.stat-label {
+  font-size: 0.8rem;
+  color: var(--pm-text-muted);
+  font-weight: 500;
+}
+
+.ausencias-list {
+  max-height: 400px;
+  overflow-y: auto;
+  margin-top: var(--pm-space-5);
+}
+
+.ausencia-card {
+  background: var(--pm-surface);
+  border: 1px solid var(--pm-border);
+  border-radius: var(--pm-radius-sm);
+  padding: var(--pm-space-4);
+  margin-bottom: var(--pm-space-3);
+  transition: border-color var(--pm-transition-fast), box-shadow var(--pm-transition-fast);
+}
+
+.ausencia-card:hover {
+  border-color: var(--pm-primary);
+  box-shadow: var(--pm-shadow-md);
+}
+
+.ausencia-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: var(--pm-space-3);
+  gap: var(--pm-space-2);
+}
+
+.ausencia-tipo {
+  display: flex;
+  align-items: center;
+  gap: var(--pm-space-2);
+}
+
+.tipo-icon { font-size: 1.25rem; }
+
+.tipo-text {
+  font-weight: 700;
+  color: var(--pm-text);
+  font-size: 0.95rem;
+}
+
+.ausencia-meta {
+  display: flex;
+  gap: var(--pm-space-2);
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.ausencia-meta .badge {
+  padding: var(--pm-space-1) var(--pm-space-2);
+  font-size: 0.7rem;
+  font-weight: 600;
+  border-radius: 99px;
+}
+
+.ausencia-dates {
+  display: flex;
+  align-items: center;
+  gap: var(--pm-space-2);
+  margin-bottom: var(--pm-space-3);
+  color: var(--pm-text-muted);
+  font-size: 0.825rem;
+}
+
+.ausencia-dates i {
+  color: var(--pm-primary);
+  font-size: 0.9rem;
+}
+
+.ausencia-motivo { margin-bottom: var(--pm-space-3); }
+
+.ausencia-motivo p {
+  margin: 0;
+  color: var(--pm-text);
+  line-height: 1.5;
+  font-size: 0.875rem;
+  padding: var(--pm-space-3);
+  background: var(--pm-surface-2);
+  border-radius: var(--pm-radius-xs);
+  border-left: 3px solid var(--pm-primary);
+}
+
+.ausencia-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: var(--pm-space-3);
+  border-top: 1px solid var(--pm-border);
+  gap: var(--pm-space-2);
+}
+
+.ausencia-footer small {
+  color: var(--pm-text-muted);
+  font-size: 0.75rem;
+}
+
+.ausencia-footer .btn {
+  padding: var(--pm-space-1) var(--pm-space-3);
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: var(--pm-radius-xs);
+  border: none;
+  cursor: pointer;
+  transition: background var(--pm-transition-fast);
+}
+
+/* ── Tareas Panel ───────────────────────────────────────────── */
+.pm-tareas-panel {
+  display: flex;
+  flex-direction: column;
+  gap: .5rem;
+}
+
+.pm-tareas-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.pm-tareas-title {
+  font-size: .9rem;
+  font-weight: 600;
+}
+
+.pm-tareas-list {
+  display: flex;
+  flex-direction: column;
+  gap: .25rem;
+}
+
+.pm-tarea-item {
+  display: flex;
+  justify-content: space-between;
+  padding: .5rem .75rem;
+  background: var(--pm-surface);
+  border-radius: var(--pm-radius-sm);
+  font-size: .8rem;
+  cursor: pointer;
+  transition: background .15s;
+}
+
+.pm-tarea-item:hover { background: var(--pm-surface-2); }
+
+.pm-tarea-fecha {
+  font-weight: 500;
+  color: var(--apple-primary);
+}
+
+.pm-tarea-clase { color: var(--pm-text-muted); }
+
+/* ── AI Menu ────────────────────────────────────────────────── */
+.pm-ai-menu {
+  display: flex;
+  flex-direction: column;
+  gap: .5rem;
+  padding: 1rem;
+  background: var(--pm-surface);
+  border-radius: var(--pm-radius);
+  box-shadow: var(--pm-shadow);
+}
+
+.pm-ai-menu h4 {
+  font-size: 1rem;
+  margin-bottom: .5rem;
+}

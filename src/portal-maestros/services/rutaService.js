@@ -151,6 +151,51 @@ export async function resolveRutaIdForClaseWithFuzzy(claseId) {
 }
 
 /**
+ * Load nodes for a specific level (lazy-load on expand).
+ * Used by the UI to load child nodes when a level is expanded.
+ *
+ * @param {string} levelId
+ * @returns {Promise<Object[]>} Array of node objects
+ */
+export async function loadNodesForLevel(levelId) {
+  const { data, error } = await supabase
+    .from('nodes')
+    .select('id, level_id, nombre, order_index')
+    .in('level_id', [levelId])
+    .eq('route_version_id', null) // Only if not filtering by route_version_id
+
+  if (error) {
+    console.warn('[rutaService] loadNodesForLevel error:', error.message)
+    return []
+  }
+
+  return data || []
+}
+
+/**
+ * Load indicators for a specific node (lazy-load on expand).
+ * Used by the UI to load child indicators when a node is expanded.
+ *
+ * @param {string} nodeId
+ * @returns {Promise<Object[]>} Array of indicator objects
+ */
+export async function loadIndicatorsForNode(nodeId) {
+  const { data, error } = await supabase
+    .from('indicators')
+    .select('id, node_id, description as nombre, order_index')
+    .in('node_id', [nodeId])
+    .eq('activo', true)
+    .order('order_index', { ascending: true })
+
+  if (error) {
+    console.warn('[rutaService] loadIndicatorsForNode error:', error.message)
+    return []
+  }
+
+  return data || []
+}
+
+/**
  * Resolve the published route_version_id for a given clase.
  * Matches the class instrumento against routes.instrument (case-insensitive).
  * Returns null if not found.

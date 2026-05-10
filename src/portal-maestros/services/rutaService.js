@@ -2,6 +2,7 @@ import { supabase } from '../../lib/supabaseClient.js'
 import { getSemaphoreForNode } from './evaluationService.js'
 import { getMisClases } from './maestroDataService.js'
 import { SemaphoreCache } from '../../lib/semaphoreCache.js'
+import { fuzzyMatch, fuzzyMatchBest } from '../../lib/fuzzyMatch.js'
 
 // Global cache instance for semaphore states
 let _semaphoreCache = null
@@ -92,6 +93,64 @@ export function invalidateSemaphoresForClase(claseId) {
 }
 
 /**
+ * Resolve the published route_version_id for a given clase, with fuzzy matching fallback.
+ * First tries exact match via ilike on the first instrument.
+ * If no match found, uses fuzzy matching against available routes.
+ *
+ * @param {string} claseId
+ * @returns {Promise<string|null>}
+ */
+export async function resolveRutaIdForClaseWithFuzzy(claseId) {
+  const misClases = await getMisClases()
+  const claseRow  = misClases?.find(c => c.id === claseId)
+  const instrumento = claseRow?.instrumento
+  if (!instrumento) return null
+
+  const primerInstrumento = instrumento.split(',')[0].trim().toLowerCase()
+
+  // ── 1. Try exact match first ────────────────────────────────────────────────
+  const { data: exactMatch, error: exactErr } = await supabase
+    .from('routes')
+    .select('id, instrument, route_versions!inner(id)')
+    .ilike('instrument', `%${primerInstrumento}%`)
+    .eq('route_versions.status', 'published')
+    .limit(1)
+    .maybeSingle()
+
+  if (!exactErr && exactMatch) {
+    return exactMatch.route_versions?.[0]?.id || exactMatch.route_versions?.id || null
+  }
+
+  // ── 2. Fallback to fuzzy matching ──────────────────────────────────────────
+  const { data: allRoutes, error: allErr } = await supabase
+    .from('routes')
+    .select('id, instrument, route_versions!inner(id)')
+    .eq('route_versions.status', 'published')
+
+  if (allErr) {
+    console.warn('[rutaService] resolveRutaIdForClaseWithFuzzy fuzzy match error:', allErr.message)
+    return null
+  }
+
+  if (!allRoutes || allRoutes.length === 0) return null
+
+  // Extract route instruments and find best fuzzy match
+  const routeInstruments = allRoutes.map(r => ({
+    instrument: r.instrument?.toLowerCase() || '',
+    routeVersionId: r.route_versions?.[0]?.id || r.route_versions?.id,
+  }))
+
+  const bestMatch = fuzzyMatchBest(primerInstrumento, routeInstruments.map(r => r.instrument), 0.6)
+
+  if (bestMatch) {
+    const matched = routeInstruments.find(r => r.instrument === bestMatch.candidate)
+    return matched?.routeVersionId || null
+  }
+
+  return null
+}
+
+/**
  * Resolve the published route_version_id for a given clase.
  * Matches the class instrumento against routes.instrument (case-insensitive).
  * Returns null if not found.
@@ -140,7 +199,7 @@ export async function loadRouteTree(routeVersionId, claseId) {
   // ── 1. Blocks ──────────────────────────────────────────────────────────────
   const { data: blocks, error: bErr } = await supabase
     .from('blocks')
-    .select('id, nombre, order_index')
+    .select('id, nombre:name, order_index')
     .eq('route_version_id', routeVersionId)
     .order('order_index', { ascending: true })
 
@@ -151,7 +210,7 @@ export async function loadRouteTree(routeVersionId, claseId) {
   const blockIds = blocks.map(b => b.id)
   const { data: levels, error: lErr } = await supabase
     .from('levels')
-    .select('id, block_id, nombre, order_index')
+    .select('id, block_id, nombre:name, order_index')
     .in('block_id', blockIds)
     .eq('route_version_id', routeVersionId)
     .order('order_index', { ascending: true })
@@ -164,7 +223,7 @@ export async function loadRouteTree(routeVersionId, claseId) {
 
   const { data: nodes, error: nErr } = await supabase
     .from('nodes')
-    .select('id, level_id, nombre, order_index')
+    .select('id, level_id, nombre:name, order_index')
     .in('level_id', levelIds)
     .eq('route_version_id', routeVersionId)
     .order('order_index', { ascending: true })
@@ -176,7 +235,7 @@ export async function loadRouteTree(routeVersionId, claseId) {
   const { data: indicators, error: iErr } = nodeIds.length > 0
     ? await supabase
         .from('indicators')
-        .select('id, node_id, nombre, description, order_index')
+        .select('id, node_id, nombre:description, order_index')
         .in('node_id', nodeIds)
         .eq('activo', true)
         .order('order_index', { ascending: true })

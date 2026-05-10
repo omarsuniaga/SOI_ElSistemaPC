@@ -1,8 +1,8 @@
-import { getMaestroLocal }    from '../auth/maestroAuth.js'
-import { getMisClases }       from '../services/maestroDataService.js'
+import { getMaestroLocal }                 from '../auth/maestroAuth.js'
+import { getMisClases, invalidateClasesCache } from '../services/maestroDataService.js'
 import { loadRouteTree, resolveRutaIdForClase } from '../services/rutaService.js'
-import { setRutaTema, peekRutaTema } from '../services/rutaTopicStore.js'
-import { escHTML }            from '../utils/portalUtils.js'
+import { setRutaTema, peekRutaTema }      from '../services/rutaTopicStore.js'
+import { escHTML }                        from '../utils/portalUtils.js'
 
 const SEM_ICON  = { green: '🟢', yellow: '🟡', gray: '⚫' }
 const SEM_COLOR = { green: '#22c55e', yellow: '#f59e0b', gray: '#94a3b8' }
@@ -32,7 +32,9 @@ export async function renderRutaPlayerView(container) {
   }
 
   try {
-    _state.clases = await getMisClases()
+    // Force refresh clases on mount to ensure latest data
+    invalidateClasesCache()
+    _state.clases = await getMisClases(true)
     if (!_state.clases?.length) {
       container.innerHTML = `<p class="pm-empty">No tenés clases asignadas.</p>`
       return

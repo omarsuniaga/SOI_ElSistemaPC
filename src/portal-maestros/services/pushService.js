@@ -19,6 +19,17 @@ const DEFAULT_PREFS = {
   recordatorios_activos: true,
 }
 
+// ── Push Received Callback ──
+let _onPushReceivedCallback = null;
+
+/**
+ * Registra un callback que se ejecuta cuando llega una notificación push
+ * o cuando cambia el estado de suscripción.
+ */
+export function onPushReceived(callback) {
+  _onPushReceivedCallback = callback;
+}
+
 let _prefsCache = null
 
 /**
@@ -109,7 +120,7 @@ export async function subscribeToPush() {
       applicationServerKey: _urlBase64ToUint8Array(vapidKey),
     })
 
-    // Extraer las keys que necesita la tabla push_subscriptions
+    // Guardar endpoint+keys en Supabase
     const subJSON = subscription.toJSON()
     const { error } = await supabase
       .from('push_subscriptions')
@@ -131,6 +142,11 @@ export async function subscribeToPush() {
     // Marcar push_activo en preferencias
     await saveNotificationPreferences({ push_activo: true })
 
+    // Notificar a servicios de la suscripción exitosa
+    if (_onPushReceivedCallback) {
+      _onPushReceivedCallback({ event: 'subscriptionChanged', subscribed: true })
+    }
+
     return { success: true, subscription }
   } catch (err) {
     console.error('[Push] Error:', err)
@@ -148,13 +164,17 @@ export async function unsubscribeFromPush() {
     if (subscription) {
       const endpoint = subscription.endpoint
       await subscription.unsubscribe()
-      // Desactivar en Supabase
       await supabase
         .from('push_subscriptions')
         .update({ activo: false, updated_at: new Date().toISOString() })
         .eq('endpoint', endpoint)
     }
     await saveNotificationPreferences({ push_activo: false })
+
+    if (_onPushReceivedCallback) {
+      _onPushReceivedCallback({ event: 'subscriptionChanged', subscribed: false })
+    }
+
     return { success: true }
   } catch (err) {
     return { success: false, error: err.message }
@@ -172,6 +192,30 @@ export async function isPushSubscribed() {
     return !!subscription
   } catch {
     return false
+  }
+}
+
+/**
+ * Obtiene estado detallado de suscripción para UI.
+ * @returns {Promise<{ subscribed: boolean, endpoint?: string, error?: string }>}
+ */
+export async function getSubscriptionStatus() {
+  if (!isPushSupported()) {
+    return { subscribed: false, error: 'El navegador no soporta push notifications' }
+  }
+  try {
+    const registration = await navigator.serviceWorker.ready
+    const subscription = await registration.pushManager.getSubscription()
+    if (subscription) {
+      return {
+        subscribed: true,
+        endpoint: subscription.endpoint.substring(0, 50) + '...',
+      }
+    } else {
+      return { subscribed: false }
+    }
+  } catch (err) {
+    return { subscribed: false, error: err.message }
   }
 }
 

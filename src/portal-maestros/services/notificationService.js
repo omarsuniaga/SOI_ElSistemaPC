@@ -76,7 +76,26 @@ export async function fetchNotificaciones() {
       return notificacionesCache;
     }
 
-    notificacionesCache = data || [];
+    // Normalize: ensure created_at is always present
+    const newNotifications = (data || []).map(n => ({
+      ...n,
+      created_at: n.created_at || new Date().toISOString(),
+    }));
+
+    // FILTER: Remove duplicates using deduplication cache
+    const filteredNotifications = newNotifications.filter(n => {
+      if (_isDuplicateNotification(n)) {
+        console.log('[Notif] Duplicate skipped:', _generateDeduplicationKey(n));
+        return false;
+      }
+      return true;
+    });
+
+    // RECORD: Mark these as received to prevent future push duplicates
+    filteredNotifications.forEach(n => _recordNotificationReceived(n));
+
+    // MERGE: Update cache with filtered notifications
+    notificacionesCache = filteredNotifications;
 
     // Generar alertas locales usando datos YA CACHEADOS (0 queries extra)
     await _checkLocalAlerts(maestro.id);

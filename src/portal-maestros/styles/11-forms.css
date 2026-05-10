@@ -642,13 +642,106 @@
   
   .pm-settings-section__body { padding: 0 var(--pm-space-6) var(--pm-space-6); }
   
+/* Crear clase: form más denso */
+  .pm-crear-clase {
+    padding: var(--pm-space-8);
+    padding-bottom: var(--pm-space-6);
+    max-width: var(--pm-content-max-w);
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   ADAPTIVE FORMS & PLANNING
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Tablet: 2-column forms */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .pm-settings {
+    max-width: 640px;
+    padding: var(--pm-space-5);
+  }
+
+  .pm-settings-header__title { font-size: 1.5rem; }
+
+  .pm-settings-section__body {
+    padding: var(--pm-space-5);
+  }
+
+  /* Content panels: 2 columns if applicable */
+  .pm-content-panel {
+    padding: var(--pm-space-5);
+  }
+
+  /* Forms: 2 column grid */
+  .pm-form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--pm-space-4);
+  }
+
+  .pm-form-grid .pm-input-group {
+    grid-column: span 1;
+  }
+
+  /* Planning timeline: more horizontal space */
+  .pm-timeline-item {
+    padding: var(--pm-space-4);
+  }
+
+  /* Crear clase: 2 col layout */
+  .pm-crear-clase {
+    max-width: 640px;
+    padding: var(--pm-space-6);
+  }
+}
+
+/* Desktop: full layout */
+@media (min-width: 1024px) {
+  .pm-settings {
+    max-width: 840px;
+    padding: var(--pm-space-6) var(--pm-space-8);
+  }
+
+  .pm-settings-header__title { font-size: 1.75rem; }
+
+  .pm-settings-section__header {
+    padding: var(--pm-space-5) var(--pm-space-6);
+  }
+
+  .pm-settings-section__body { padding: 0 var(--pm-space-6) var(--pm-space-6); }
+
   /* Crear clase: form más denso */
   .pm-crear-clase {
     padding: var(--pm-space-8);
     padding-bottom: var(--pm-space-6);
     max-width: var(--pm-content-max-w);
   }
-  
-  .pm-horario-row select { flex: 1; }
-  .pm-horario-row input { width: 100px; }
+
+  /* Content panel: wider with dense info */
+  .pm-content-panel { padding: var(--pm-space-5); }
+  .pm-content-panel-header { margin-bottom: var(--pm-space-4); }
+
+  /* Form grid: 3 columns */
+  .pm-form-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--pm-space-5);
+  }
+
+  /* Timeline: spacious */
+  .pm-timeline-item {
+    padding: var(--pm-space-5) var(--pm-space-6);
+    gap: var(--pm-space-6);
+  }
+
+  .pm-timeline-date { min-width: 56px; }
+  .pm-date-day { font-size: 1.75rem; }
+
+/* Content selection panel grid */
+  .pm-content-panel-nodes {
+    gap: var(--pm-space-3);
+  }
 }
+
+/* ── Horario row (shared) ─────────────────────────────────────── */
+.pm-horario-row select { flex: 1; }
+.pm-horario-row input { width: 100px; }

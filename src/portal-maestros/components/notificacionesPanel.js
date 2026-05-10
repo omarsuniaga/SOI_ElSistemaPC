@@ -1,4 +1,4 @@
-import { fetchNotificaciones, onNotificacionesChange, marcarLeida, marcarTodasLeidas } from '../services/notificationService.js';
+import { fetchNotificaciones, onNotificacionesChange, marcarLeida, marcarTodasLeidas, _isDuplicateNotification, _recordNotificationReceived } from '../services/notificationService.js';
 
 let isOpen = false;
 let container = null;
@@ -76,7 +76,17 @@ export const notificacionesPanel = {
     const listEl = document.getElementById('pm-notificaciones-list');
     if (!listEl) return;
 
-    if (notificaciones.length === 0) {
+    // FILTER: Apply deduplication
+    const visibleNotifications = notificaciones.filter(n => {
+      if (_isDuplicateNotification(n)) {
+        console.log('[Panel] Skipping duplicate notification:', n.id);
+        return false;
+      }
+      _recordNotificationReceived(n);
+      return true;
+    });
+
+    if (visibleNotifications.length === 0) {
       listEl.innerHTML = `
         <div class="text-center text-muted mt-5">
           <i class="bi bi-bell-slash" style="font-size: 2rem; opacity: 0.5;"></i>
@@ -86,7 +96,7 @@ export const notificacionesPanel = {
       return;
     }
 
-    listEl.innerHTML = notificaciones.map(n => `
+    listEl.innerHTML = visibleNotifications.map(n => `
       <div class="pm-notif-item ${n.estado === 'leida' ? 'leida' : ''}" data-id="${n.id}">
         <div class="pm-notif-icon ${getNotifColor(n.tipo)}">
           <i class="bi ${getNotifIcon(n.tipo)}"></i>

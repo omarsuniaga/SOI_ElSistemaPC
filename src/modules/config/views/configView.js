@@ -1,8 +1,13 @@
-import { 
-  getGroqApiKey, setGroqApiKey, 
+import {
+  getGroqApiKey, setGroqApiKey,
   getOpenRouterApiKey, setOpenRouterApiKey,
   getPreferredModel, setPreferredModel
 } from '../api/configApi.js'
+import {
+  getNotificationPreferences, saveNotificationPreferences,
+  getSubscriptionStatus, isPushSupported, subscribeToPush,
+  unsubscribeFromPush, testNotification, isPushSubscribed
+} from '../../portal-maestros/services/pushService.js'
 
 const FREE_MODELS = [
   { id: 'google/gemini-2.0-flash-exp', name: '🔥 Gemini 2.0 Flash (Gratis)', provider: 'openrouter' },
@@ -150,6 +155,115 @@ export async function renderConfigView(container) {
               </div>
 
               <div id="config-status" class="mt-3"></div>
+            </div>
+          </div>
+
+          <!-- Panel de Notificaciones -->
+          <div class="card shadow-sm mb-4">
+            <div class="card-header bg-info bg-opacity-10">
+              <h5 class="mb-0">
+                <i class="bi bi-bell me-2"></i>
+                Notificaciones
+              </h5>
+              <small class="text-muted">Controla tus alertas y recordatorios de clase</small>
+            </div>
+            <div class="card-body">
+              <!-- Web Push Notifications -->
+              <div class="mb-4">
+                <div class="form-check form-switch">
+                  <input
+                    class="form-check-input"
+                    type="checkbox"
+                    id="push-enabled"
+                    role="switch"
+                  >
+                  <label class="form-check-label" for="push-enabled">
+                    <strong>Habilitar Web Push Notifications</strong>
+                  </label>
+                </div>
+                <div class="form-text">Recibe notificaciones en el navegador aunque no tengas la app abierta</div>
+                <div id="push-status" class="mt-2"></div>
+              </div>
+
+              <hr class="my-4">
+
+              <!-- Alertas de Clase -->
+              <div class="mb-4">
+                <div class="form-check form-switch mb-3">
+                  <input
+                    class="form-check-input"
+                    type="checkbox"
+                    id="alert-pre-class"
+                    role="switch"
+                    checked
+                  >
+                  <label class="form-check-label" for="alert-pre-class">
+                    <strong>Alertas antes de clase</strong>
+                  </label>
+                </div>
+                <div class="input-group input-group-sm" style="max-width: 200px;">
+                  <span class="input-group-text">
+                    <i class="bi bi-clock"></i>
+                  </span>
+                  <input
+                    type="number"
+                    class="form-control"
+                    id="minutes-before-class"
+                    min="1"
+                    max="120"
+                    value="15"
+                  >
+                  <span class="input-group-text">minutos</span>
+                </div>
+                <div class="form-text">Recibe alerta antes de que comience cada clase</div>
+              </div>
+
+              <!-- Alertas Después de Clase -->
+              <div class="mb-4">
+                <div class="form-check form-switch mb-3">
+                  <input
+                    class="form-check-input"
+                    type="checkbox"
+                    id="alert-post-class"
+                    role="switch"
+                    checked
+                  >
+                  <label class="form-check-label" for="alert-post-class">
+                    <strong>Alertas si no registras asistencia</strong>
+                  </label>
+                </div>
+                <div class="input-group input-group-sm" style="max-width: 200px;">
+                  <span class="input-group-text">
+                    <i class="bi bi-clock"></i>
+                  </span>
+                  <input
+                    type="number"
+                    class="form-control"
+                    id="minutes-after-class"
+                    min="1"
+                    max="300"
+                    value="60"
+                  >
+                  <span class="input-group-text">minutos</span>
+                </div>
+                <div class="form-text">Te recordamos si no marcaste asistencia después de clase</div>
+              </div>
+
+              <hr class="my-4">
+
+              <!-- Botones -->
+              <div class="d-flex gap-2 flex-wrap">
+                <button class="btn btn-primary" id="save-notifications">
+                  <i class="bi bi-save me-2"></i>
+                  Guardar Notificaciones
+                </button>
+                <button class="btn btn-outline-secondary" id="test-notification">
+                  <i class="bi bi-send me-2"></i>
+                  Probar Notificación
+                </button>
+              </div>
+
+              <div id="notification-status" class="mt-3"></div>
             </div>
           </div>
 
@@ -353,10 +467,149 @@ export async function renderConfigView(container) {
     try {
       localStorage.removeItem('portal-maestros:groq-usage')
       updateUsageStats()
-      document.getElementById('config-status').innerHTML = 
+      document.getElementById('config-status').innerHTML =
         '<div class="alert alert-info mb-0">Cache limpiado</div>'
     } catch (err) {
       console.error('Error clearing cache:', err)
     }
   })
+
+  // ── Notificaciones ──
+
+  // Cargar preferencias de notificaciones
+  async function loadNotificationPreferences() {
+    try {
+      const prefs = await getNotificationPreferences()
+      const isSubscribed = await isPushSubscribed()
+
+      document.getElementById('alert-pre-class').checked = prefs.alerta_pre_clase ?? true
+      document.getElementById('minutes-before-class').value = prefs.min_antes_clase ?? 15
+      document.getElementById('alert-post-class').checked = prefs.alerta_post_clase ?? true
+      document.getElementById('minutes-after-class').value = prefs.min_post_clase_sin_registro ?? 60
+
+      // Mostrar estado de push
+      if (isPushSupported()) {
+        document.getElementById('push-enabled').checked = isSubscribed
+        await updatePushStatus()
+      } else {
+        document.getElementById('push-enabled').disabled = true
+        document.getElementById('push-status').innerHTML =
+          '<div class="alert alert-warning alert-sm mb-0">Tu navegador no soporta Web Push</div>'
+      }
+    } catch (err) {
+      console.error('Error loading notification preferences:', err)
+    }
+  }
+
+  // Actualizar estado de push
+  async function updatePushStatus() {
+    const statusDiv = document.getElementById('push-status')
+    try {
+      const { subscribed, error } = await getSubscriptionStatus()
+      if (subscribed) {
+        statusDiv.innerHTML = '<div class="alert alert-success alert-sm mb-0">' +
+          '<i class="bi bi-check-circle me-1"></i> Push habilitado correctamente</div>'
+      } else if (error) {
+        statusDiv.innerHTML = `<div class="alert alert-info alert-sm mb-0">${error}</div>`
+      } else {
+        statusDiv.innerHTML = ''
+      }
+    } catch (err) {
+      console.error('Error updating push status:', err)
+    }
+  }
+
+  // Toggle Web Push
+  document.getElementById('push-enabled').addEventListener('change', async (e) => {
+    const statusDiv = document.getElementById('notification-status')
+    const checkbox = e.target
+
+    if (checkbox.checked) {
+      statusDiv.innerHTML = '<div class="spinner-border spinner-border-sm me-2"></div> Habilitando push...'
+      try {
+        const result = await subscribeToPush()
+        if (result.success) {
+          statusDiv.innerHTML = '<div class="alert alert-success alert-dismissible fade show mb-0">' +
+            '<i class="bi bi-check-circle me-1"></i> Web Push habilitado' +
+            '<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>'
+          await updatePushStatus()
+        } else {
+          statusDiv.innerHTML = `<div class="alert alert-danger alert-dismissible fade show mb-0">` +
+            `<i class="bi bi-exclamation-triangle me-1"></i> ${result.error || 'Error al habilitar push'}` +
+            `<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>`
+          checkbox.checked = false
+        }
+      } catch (err) {
+        statusDiv.innerHTML = `<div class="alert alert-danger mb-0">Error: ${err.message}</div>`
+        checkbox.checked = false
+      }
+    } else {
+      statusDiv.innerHTML = '<div class="spinner-border spinner-border-sm me-2"></div> Deshabilitando push...'
+      try {
+        await unsubscribeFromPush()
+        statusDiv.innerHTML = '<div class="alert alert-info alert-dismissible fade show mb-0">' +
+          '<i class="bi bi-info-circle me-1"></i> Web Push deshabilitado' +
+          '<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>'
+        await updatePushStatus()
+      } catch (err) {
+        statusDiv.innerHTML = `<div class="alert alert-danger mb-0">Error: ${err.message}</div>`
+        checkbox.checked = true
+      }
+    }
+  })
+
+  // Guardar preferencias
+  document.getElementById('save-notifications').addEventListener('click', async () => {
+    const statusDiv = document.getElementById('notification-status')
+    statusDiv.innerHTML = '<div class="spinner-border spinner-border-sm me-2"></div> Guardando...'
+
+    try {
+      const prefs = {
+        alerta_pre_clase: document.getElementById('alert-pre-class').checked,
+        min_antes_clase: parseInt(document.getElementById('minutes-before-class').value),
+        alerta_post_clase: document.getElementById('alert-post-class').checked,
+        min_post_clase_sin_registro: parseInt(document.getElementById('minutes-after-class').value),
+      }
+
+      const { error } = await saveNotificationPreferences(prefs)
+
+      if (error) {
+        statusDiv.innerHTML = `<div class="alert alert-danger alert-dismissible fade show mb-0">` +
+          `<i class="bi bi-exclamation-triangle me-1"></i> Error: ${error}` +
+          `<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>`
+      } else {
+        statusDiv.innerHTML = '<div class="alert alert-success alert-dismissible fade show mb-0">' +
+          '<i class="bi bi-check-circle me-1"></i> Preferencias guardadas correctamente' +
+          '<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>'
+      }
+    } catch (err) {
+      statusDiv.innerHTML = `<div class="alert alert-danger mb-0">Error: ${err.message}</div>`
+      console.error('Error saving notification preferences:', err)
+    }
+  })
+
+  // Probar notificación
+  document.getElementById('test-notification').addEventListener('click', async () => {
+    const statusDiv = document.getElementById('notification-status')
+    statusDiv.innerHTML = '<div class="spinner-border spinner-border-sm me-2"></div> Enviando notificación de prueba...'
+
+    try {
+      const success = await testNotification()
+      if (success) {
+        statusDiv.innerHTML = '<div class="alert alert-success alert-dismissible fade show mb-0">' +
+          '<i class="bi bi-check-circle me-1"></i> Notificación de prueba enviada' +
+          '<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>'
+      } else {
+        statusDiv.innerHTML = '<div class="alert alert-warning alert-dismissible fade show mb-0">' +
+          '<i class="bi bi-exclamation-triangle me-1"></i> Debes habilitar los permisos de notificación' +
+          '<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>'
+      }
+    } catch (err) {
+      statusDiv.innerHTML = `<div class="alert alert-danger mb-0">Error: ${err.message}</div>`
+      console.error('Error sending test notification:', err)
+    }
+  })
+
+  // Cargar preferencias al inicializar
+  loadNotificationPreferences()
 }

@@ -221,5 +221,5 @@ export function getUnreadCount() {
   return notificacionesCache.filter(n => n.estado === 'pendiente' || n.estado === 'enviada').length;
 }
 
-// Polling suave (cada 5 minutos)
-setInterval(fetchNotificaciones, 5 * 60 * 1000);
+// Polling suave (cada 30 segundos)
+setInterval(fetchNotificaciones, POLL_INTERVAL_MS);

@@ -14,9 +14,9 @@ import { SNIPPETS, searchSnippets, expandSnippet } from '../services/snippetBank
  *   >  → Objetivo curricular
  * 
  * @param {HTMLElement} container
- * @param {{ onInsert: Function, onLoading: Function, onIaProposal: Function, getEditorContent: Function, aiService?: object }} options
+ * @param {{ onInsert: Function, onLoading: Function, onIaProposal: Function, getEditorContent: Function, aiService?: object, onImproveClick?: Function }} options
  */
-export function createDslToolbar(container, { onInsert, onLoading, onIaProposal, getEditorContent, aiService }) {
+export function createDslToolbar(container, { onInsert, onLoading, onIaProposal, getEditorContent, aiService, onImproveClick }) {
 
   // Contexto mutable: se actualiza desde fuera vía setContext()
   let _ctx = { presentes: [], indicadorActivo: null, indicadoresDisponibles: [] }
@@ -43,7 +43,8 @@ export function createDslToolbar(container, { onInsert, onLoading, onIaProposal,
         <span class="snippet-icon">/</span>
       </button>
       <div class="pm-dsl-divider"></div>
-      <button class="pm-dsl-tool-btn ai" id="btn-ia-magic" title="Mejorar con IA">✨</button>
+      <button class="pm-dsl-tool-btn ai" id="btn-improve-text" title="Mejorar texto con IA">✨</button>
+      <button class="pm-dsl-tool-btn ai" id="btn-ia-magic" title="Estructurar con IA">🚀</button>
       <button class="pm-dsl-tool-btn ai" id="btn-ia-voice" title="Dictado por voz">🎤</button>
       <div id="pm-voice-indicator" style="display:none; align-items:center; gap:0.5rem; margin-left:0.5rem;">
         <span class="recording-dot"></span>
@@ -214,6 +215,20 @@ export function createDslToolbar(container, { onInsert, onLoading, onIaProposal,
     }
   }
 
+  // --- Lógica de Mejorar Texto ---
+  async function handleImproveText() {
+    const rawText = getEditorContent ? getEditorContent() : ''
+    if (!rawText.trim()) return
+
+    if (onImproveClick) {
+      try {
+        onImproveClick(rawText)
+      } catch (err) {
+        alert('Error al mejorar texto: ' + err.message)
+      }
+    }
+  }
+
   // --- Lógica de Mejorar con IA ---
   async function handleIaMagic() {
     const rawText = getEditorContent ? getEditorContent() : ''
@@ -241,6 +256,7 @@ export function createDslToolbar(container, { onInsert, onLoading, onIaProposal,
     }
   }
 
+  container.querySelector('#btn-improve-text').onclick = handleImproveText;
   container.querySelector('#btn-ia-magic').onclick = handleIaMagic;
   container.querySelector('#btn-ia-voice').onclick = toggleVoiceRecording;
 

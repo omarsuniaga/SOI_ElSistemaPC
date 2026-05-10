@@ -398,24 +398,16 @@ function _renderShell(app, maestro) {
       if (next !== _currentBreakpoint) {
         _currentBreakpoint = next
         document.body.dataset.pmLayout = next
-        // Re-render shell to switch between header tabs / bottom nav
         _renderShell(document.getElementById('portal-app'), _maestro)
         _initViewContainers()
-        // Re-register header tab events
         setTimeout(() => {
-          document.querySelectorAll('.pm-header-tab').forEach(tab => {
+          // Re-register footer nav events
+          document.querySelectorAll('.pm-nav-tab').forEach(tab => {
             tab.addEventListener('click', (e) => {
               e.preventDefault()
               router.navigate(tab.dataset.route)
             })
           })
-          document.querySelectorAll('.pm-bottom-tab').forEach(tab => {
-            tab.addEventListener('click', (e) => {
-              e.preventDefault()
-              router.navigate(tab.dataset.route)
-            })
-          })
-          // Re-apply current route
           const route = (router.currentRoute?.() || 'hoy').split('?')[0]
           _setActiveTab(route)
         }, 50)
@@ -425,10 +417,7 @@ function _renderShell(app, maestro) {
 }
 
 function _setActiveTab(route) {
-  document.querySelectorAll('.pm-bottom-tab').forEach(tab => {
-    tab.classList.toggle('active', tab.dataset.route === route)
-  })
-  document.querySelectorAll('.pm-header-tab').forEach(tab => {
+  document.querySelectorAll('.pm-nav-tab').forEach(tab => {
     tab.classList.toggle('active', tab.dataset.route === route)
   })
 }

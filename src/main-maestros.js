@@ -281,6 +281,16 @@ function _renderShell(app, maestro) {
           }
         </button>
       </div>
+
+      <!-- Header tabs (tablet+) -->
+      <div class="pm-header-tabs" id="pm-header-tabs">
+        ${tabs.map(tab => `
+          <button class="pm-header-tab" data-route="${tab.id}" title="${tab.label}">
+            <i class="bi ${tab.icon}"></i>
+            <span>${tab.label}</span>
+          </button>
+        `).join('')}
+      </div>
     </header>
 
     <!-- Contenido de la vista activa -->
@@ -310,6 +320,17 @@ function _renderShell(app, maestro) {
   const footerNav = document.getElementById('pm-footer-nav')
   if (footerNav) {
     footerNav.querySelectorAll('.pm-nav-tab').forEach(tab => {
+      tab.addEventListener('click', (e) => {
+        e.preventDefault()
+        router.navigate(tab.dataset.route)
+      })
+    })
+  }
+
+  // Header tabs events - SPA navigation (tablet+)
+  const headerTabs = document.getElementById('pm-header-tabs')
+  if (headerTabs) {
+    headerTabs.querySelectorAll('.pm-header-tab').forEach(tab => {
       tab.addEventListener('click', (e) => {
         e.preventDefault()
         router.navigate(tab.dataset.route)

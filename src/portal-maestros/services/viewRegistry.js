@@ -55,6 +55,18 @@ function _showView(route) {
 
 function _updateActiveTab(route) {
   const baseRoute = route.split('?')[0]
+  
+  // Footer nav tabs
+  document.querySelectorAll('.pm-nav-tab').forEach(tab => {
+    tab.classList.toggle('active', tab.dataset.route === baseRoute)
+  })
+  
+  // Header tabs (tablet+)
+  document.querySelectorAll('.pm-header-tab').forEach(tab => {
+    tab.classList.toggle('active', tab.dataset.route === baseRoute)
+  })
+  
+  // Legacy bottom tabs (for compatibility)
   document.querySelectorAll('.pm-bottom-tab').forEach(tab => {
     tab.classList.toggle('active', tab.dataset.route === baseRoute)
   })

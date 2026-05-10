@@ -245,9 +245,6 @@
   .pm-nav-tab i { font-size: 1.3rem; }
   .pm-nav-tab span { font-size: 0.6rem; }
 
-  /* ── Footer nav hidden on tablet ───────────────────────────── */
-  .pm-footer-nav { display: none; }
-
   /* ── Header tabs en tablet ─────────────────────────────────── */
   .pm-header-tabs {
     display: flex;

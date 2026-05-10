@@ -249,6 +249,10 @@ function _renderVista(container, ctx) {
 
   const toolbar = createDslToolbar(toolbarContainer, {
     onInsert: (text, cursorOffset, triggerAC) => editor.insertText(text, cursorOffset, triggerAC),
+    getEditorContent: () => editor.getContent(),
+    onLoading: (loading) => {
+      // Show/hide loading state if needed
+    },
     onIaProposal: async (proposal) => {
       // Implementar modal Apple-style aquí si es necesario
     },

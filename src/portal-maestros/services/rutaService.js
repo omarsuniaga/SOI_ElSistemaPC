@@ -1,6 +1,95 @@
 import { supabase } from '../../lib/supabaseClient.js'
 import { getSemaphoreForNode } from './evaluationService.js'
 import { getMisClases } from './maestroDataService.js'
+import { SemaphoreCache } from '../../lib/semaphoreCache.js'
+
+// Global cache instance for semaphore states
+let _semaphoreCache = null
+
+/**
+ * Get or initialize the global semaphore cache.
+ * @returns {SemaphoreCache}
+ */
+function getSemaphoreCache() {
+  if (!_semaphoreCache) {
+    _semaphoreCache = new SemaphoreCache({ ttl: 60000 }) // 60 second TTL
+  }
+  return _semaphoreCache
+}
+
+/**
+ * Create a cache key from nodeId and claseId.
+ * @param {string} nodeId
+ * @param {string} claseId
+ * @returns {string}
+ */
+export function getSemaphoreCacheKey(nodeId, claseId) {
+  return `${nodeId}:${claseId}`
+}
+
+/**
+ * Load semaphores for multiple nodes in batch, with caching.
+ * Uses the global cache to avoid redundant queries for the same node+clase pair.
+ *
+ * @param {string[]} nodeIds
+ * @param {string} claseId
+ * @param {SemaphoreCache} [cache] - optional cache instance for testing
+ * @returns {Promise<Map<string, string>>} Map of nodeId -> semaphore state
+ */
+export async function loadSemaphoresInBatch(nodeIds, claseId, cache = null) {
+  const actualCache = cache || getSemaphoreCache()
+
+  // Separate cached and uncached nodes
+  const nodesToFetch = []
+  const result = new Map()
+
+  for (const nodeId of nodeIds) {
+    const cacheKey = getSemaphoreCacheKey(nodeId, claseId)
+    const cached = actualCache.get(cacheKey)
+
+    if (cached !== null) {
+      result.set(nodeId, cached)
+    } else {
+      nodesToFetch.push(nodeId)
+    }
+  }
+
+  // Fetch uncached nodes in parallel
+  if (nodesToFetch.length > 0) {
+    const fetchResults = await Promise.all(
+      nodesToFetch.map(nodeId =>
+        getSemaphoreForNode(nodeId, claseId)
+          .then(r => {
+            const semaphore = r.semaphore
+            const cacheKey = getSemaphoreCacheKey(nodeId, claseId)
+            actualCache.set(cacheKey, semaphore)
+            return { nodeId, semaphore }
+          })
+          .catch(() => {
+            const semaphore = 'gray'
+            const cacheKey = getSemaphoreCacheKey(nodeId, claseId)
+            actualCache.set(cacheKey, semaphore)
+            return { nodeId, semaphore }
+          })
+      )
+    )
+
+    for (const { nodeId, semaphore } of fetchResults) {
+      result.set(nodeId, semaphore)
+    }
+  }
+
+  return result
+}
+
+/**
+ * Invalidate all cached semaphores for a specific clase.
+ * @param {string} claseId
+ */
+export function invalidateSemaphoresForClase(claseId) {
+  const cache = getSemaphoreCache()
+  cache.invalidatePrefix(`:${claseId}`)
+}
 
 /**
  * Resolve the published route_version_id for a given clase.

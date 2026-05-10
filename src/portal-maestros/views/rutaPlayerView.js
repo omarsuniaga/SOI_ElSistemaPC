@@ -405,7 +405,7 @@ function _attachEvents(container) {
           blockNombre: ind.blockNombre,
           claseId:     _state.activeClaseId,
         })
-        window.location.hash = '#/hoy'
+        window.location.hash = `#/hoy/${_state.activeClaseId}`
         break
       }
 

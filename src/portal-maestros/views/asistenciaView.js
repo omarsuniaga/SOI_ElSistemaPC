@@ -3,11 +3,12 @@ import { getMaestroLocal } from '../auth/maestroAuth.js'
 import { escHTML, formatHora } from '../utils/portalUtils.js'
 import { enqueue } from '../services/offlineQueue.js'
 import { parseDSL } from '../utils/dslParser.js'
-import { enrichToDSL, transcribeAndStructure, improveText } from '../services/groqService.js'
+import { enrichToDSL, transcribeAndStructure, improveText, structureTextToDSL } from '../services/groqService.js'
 import { createDslToolbar } from '../components/dslToolbar.js'
 import { createDslEditor } from '../components/dslEditor.js'
 import { createEvaluationDrawer } from '../components/EvaluationDrawer.js'
 import { createImproveTextModal } from '../components/improveTextModal.js'
+import { createStructureModal } from '../components/structureModal.js'
 import { getMisClases, getHorariosClases, getInscripcionesClases, getSalones, invalidateClasesCache } from '../services/maestroDataService.js'
 import { invalidateView as navInvalidateView } from '../services/navigationHooks.js'
 import { createRouteTreeBar } from '../components/routeTreeBar.js'
@@ -146,8 +147,28 @@ function _renderVista(container, ctx) {
 
   // Cleanup registry — all destroyable sub-components register here
   const _cleanups = []
-  const localKey = `pm_asistencia_${claseId}_${fechaHoy}`
-  let dslContent = serverDSL
+  const localKey = `pm_asistencia_${claseId}_${fechaHoy}`;
+  let dslContent = serverDSL;
+  let _saveTimer = null;
+
+  // Local CSS for badges with high contrast
+  if (!document.getElementById('pm-asist-badge-styles')) {
+    const badgeStyle = document.createElement('style');
+    badgeStyle.id = 'pm-asist-badge-styles';
+    badgeStyle.textContent = `
+      .pm-badge { 
+        display: inline-flex; align-items: center; justify-content: center;
+        padding: 0.25rem 0.6rem; border-radius: 20px; font-size: 0.7rem; font-weight: 700; 
+        background: var(--pm-primary-light, rgba(59,130,246,0.15)); color: var(--pm-primary, #3b82f6);
+        white-space: nowrap; border: 1px solid rgba(59,130,246,0.3);
+      }
+      .pm-badge-warning { background: rgba(245,158,11,0.15); color: #d97706; border-color: rgba(245,158,11,0.3); }
+      .pm-badge-danger { background: rgba(239,68,68,0.15); color: #dc2626; border-color: rgba(239,68,68,0.3); }
+      .pm-badge-muted { background: var(--pm-surface-2, #374151); color: #e5e7eb; border-color: rgba(255,255,255,0.2); }
+      [data-theme="light"] .pm-badge-muted { background: #e5e7eb; color: #374151; border-color: #d1d5db; }
+    `;
+    document.head.appendChild(badgeStyle);
+  }
 
   container.innerHTML = `
     <style>
@@ -230,7 +251,6 @@ function _renderVista(container, ctx) {
   const editorContainer = container.querySelector('#pm-dsl-editor-container')
 
   // Inicializar timer ANTES de usar onChange
-  let _saveTimer = null;
 
   const editor = createDslEditor(editorContainer, {
     initialContent: serverDSL,
@@ -244,6 +264,13 @@ function _renderVista(container, ctx) {
   const improveModal = createImproveTextModal(container, {
     onAccept: (improvedText) => {
       editor.setValue(improvedText)
+    }
+  })
+
+  // === Structure Modal ===
+  const structureModal = createStructureModal(container, {
+    onAccept: (dslText) => {
+      editor.setValue(dslText)
     }
   })
 
@@ -267,6 +294,19 @@ function _renderVista(container, ctx) {
         alert('Error al mejorar texto: ' + err.message)
       } finally {
         if (improveBtn) improveBtn.disabled = false
+      }
+    },
+    onStructureClick: async (text) => {
+      const structureBtn = toolbarContainer.querySelector('#btn-ia-magic')
+      if (structureBtn) structureBtn.disabled = true
+
+      try {
+        const dsl = await structureTextToDSL(text)
+        structureModal.open({ original: text, dsl })
+      } catch (err) {
+        alert('Error al estructurar con IA: ' + err.message)
+      } finally {
+        if (structureBtn) structureBtn.disabled = false
       }
     }
   });
@@ -495,8 +535,8 @@ function _renderVista(container, ctx) {
 
         // Toast
         const toast = document.createElement('div')
-        toast.textContent = 'Observacion guardada'
-        toast.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--pm-success,#22c55e);color:#fff;padding:10px 20px;border-radius:8px;z-index:10000;font-size:14px;font-weight:600;'
+        toast.textContent = 'Observación guardada'
+        toast.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:var(--pm-success,#22c55e);color:#fff;padding:10px 20px;border-radius:20px;z-index:10000;font-size:14px;font-weight:600;box-shadow:0 4px 12px rgba(0,0,0,0.15);'
         document.body.appendChild(toast)
         setTimeout(() => toast.remove(), 3000)
 
@@ -513,8 +553,9 @@ function _renderVista(container, ctx) {
               const { academicService } = await import('../../modules/academic-routes/services/academicService.js')
               const presentes = alumnos.filter(a => estado[a.id] === 'P')
               for (const student of presentes) {
+                // status: 'approved' means level is completed
                 const levelResult = await academicService.checkLevelCompletion(student.id, activeLevel)
-                if (levelResult && levelResult.completed) {
+                if (levelResult && levelResult.status === 'approved') {
                   const modal = createLevelCompletionModal({
                     studentId: student.id,
                     levelId: activeLevel,
@@ -529,13 +570,13 @@ function _renderVista(container, ctx) {
           }
         }
 
-        obsSaveBtn.textContent = 'Guardado!'
-        setTimeout(() => { obsSaveBtn.textContent = 'Guardar observacion'; obsSaveBtn.disabled = false }, 2000)
+        obsSaveBtn.textContent = '¡Guardado!'
+        setTimeout(() => { obsSaveBtn.textContent = 'Guardar observación'; obsSaveBtn.disabled = false }, 2000)
       } catch (err) {
         console.error('[asistencia] Error saving observation:', err)
         alert('Error al guardar: ' + (err.message || err))
         obsSaveBtn.disabled = false
-        obsSaveBtn.textContent = 'Guardar observacion'
+        obsSaveBtn.textContent = 'Guardar observación'
       }
     }
   }
@@ -672,25 +713,45 @@ async function _autoSave(immediate = false) {
         alumno_id: a.id, estado: estado[a.id]
       }));
       
-      // Si hay sesionId, verificar que existe antes de hacer update
-      let op = sesionId ? 'update' : 'insert';
-      if (sesionId) {
-        const { data: exists } = await supabase.from('sesiones_clase').select('id').eq('id', sesionId).maybeSingle();
-        if (!exists) { op = 'insert'; sesionId = null; }
+      const payload = {
+        clase_id: claseId, 
+        maestro_id: maestro.id, 
+        fecha: fechaHoy,
+        estado: 'pendiente',
+        borrador: true,
+        asistencia: asistencia || [], 
+        contenido: dslContent || '',
+      };
+
+      // Si estamos ONLINE y es la primera vez (sesionId null), 
+      // insertamos directo para obtener el ID real.
+      if (!sesionId && navigator.onLine) {
+        try {
+          const { data, error } = await supabase
+            .from('sesiones_clase')
+            .insert([payload])
+            .select('id')
+            .single();
+          
+          if (!error && data) {
+            sesionId = data.id;
+            console.log('[asistencia] Nueva sesión creada:', sesionId);
+            localStorage.setItem(`${localKey}_updated`, new Date().toISOString());
+            return;
+          }
+        } catch (err) {
+          console.warn('[asistencia] Fallo insert directo, usando cola:', err.message);
+        }
       }
-      
+
+      // Fallback a la cola (offline o error en insert directo)
+      let op = sesionId ? 'update' : 'insert';
       await enqueue({
         tabla: 'sesiones_clase',
         operacion: op,
         payload: {
           ...(sesionId ? { id: sesionId } : {}),
-          clase_id: claseId, 
-          maestro_id: maestro.id, 
-          fecha: fechaHoy,
-          estado: 'pendiente',
-          borrador: true,
-          asistencia: asistencia || [], 
-          contenido: dslContent || '',
+          ...payload
         }
       });
       localStorage.setItem(`${localKey}_updated`, new Date().toISOString());
@@ -725,6 +786,19 @@ async function _autoSave(immediate = false) {
 
       // 1. Guardar estado actual (asistencia y contenido)
       await _autoSave(true);
+
+      // 1.1 Si sesionId sigue siendo null (nueva sesión), intentar obtenerla de Supabase 
+      // ya que _autoSave(true) acaba de encolar/insertar.
+      if (!sesionId) {
+        const { data: sData } = await supabase
+          .from('sesiones_clase')
+          .select('id')
+          .eq('clase_id', claseId)
+          .eq('maestro_id', maestro.id)
+          .eq('fecha', fechaHoy)
+          .maybeSingle();
+        if (sData) sesionId = sData.id;
+      }
 
       // 2. Si hay sesión existente, marcarla como registrada (borrador = false)
       if (sesionId && (tieneAsistenciaMarcada || tieneContenido)) {
@@ -761,7 +835,6 @@ async function _autoSave(immediate = false) {
               .eq('id', sesionId);
           }
         }
-        console.log('Sesión marcada como registrada');
         
         // Invalidar cache y vistas para que se actualicen
         invalidateClasesCache();
@@ -781,9 +854,11 @@ async function _autoSave(immediate = false) {
         // 4. Mostrar feedback de logros si existen
         if (achievements && achievements.length > 0) {
           btn.textContent = '¡Logros detectados!';
-          btn.style.background = 'var(--apple-success)';
+          btn.style.background = 'var(--pm-success)';
           await createAchievementsSummaryModal(container, achievements);
         }
+      } else {
+        console.warn('[asistencia] No se pudo obtener sesionId para procesar logros.');
       }
 
       btn.textContent = '✓ Guardado';

@@ -662,132 +662,6 @@
     color: #fff;
   }
 
-  /* ── Header right ────────────────────────────────────────────── */
-  .pm-header-right {
-    display: flex;
-    align-items: center;
-    gap: var(--pm-space-3);
-    flex-shrink: 0;
-  }
-
-  /* Search en header */
-  .pm-header-search {
-    display: flex;
-    align-items: center;
-    gap: var(--pm-space-2);
-    background: rgba(255, 255, 255, 0.15);
-    border-radius: var(--pm-radius-xs);
-    padding: var(--pm-space-2) var(--pm-space-3);
-    width: 200px;
-    transition: width var(--pm-transition-base), background var(--pm-transition-base);
-  }
-
-  .pm-header-search:focus-within {
-    background: rgba(255, 255, 255, 0.25);
-    width: 280px;
-  }
-
-  .pm-header-search i {
-    color: rgba(255, 255, 255, 0.7);
-    font-size: 0.9rem;
-    flex-shrink: 0;
-  }
-
-  .pm-header-search input {
-    background: none;
-    border: none;
-    color: #fff;
-    font-size: 0.85rem;
-    outline: none;
-    width: 100%;
-  }
-
-  .pm-header-search input::placeholder {
-    color: rgba(255, 255, 255, 0.5);
-  }
-
-  /* ── Large Desktop: footer nav ──────────────────────────────── */
-  .pm-footer-nav__inner {
-    max-width: 540px;
-  }
-
-  .pm-nav-tab i { font-size: 1.3rem; }
-
-  /* ── KPI Cards: 6 columnas, densas ───────────────────────────── */
-  .pm-metricas-kpis {
-    grid-template-columns: repeat(6, 1fr);
-    gap: 0.5rem;
-    margin-bottom: var(--pm-space-6);
-  }
-
-  .pm-metricas-kpi {
-    padding: var(--pm-space-4) var(--pm-space-2);
-  }
-
-  .pm-kpi-value {
-    font-size: 1.8rem;
-  }
-
-  .pm-kpi-label {
-    font-size: 0.6rem;
-  }
-
-  /* ── Clase cards: más info, 2 cols ──────────────────────────────── */
-  .pm-metricas-clases {
-    grid-template-columns: repeat(2, 1fr);
-    gap: var(--pm-space-4);
-  }
-
-  .pm-metricas-clase-card {
-    padding: var(--pm-space-4);
-    display: grid;
-    grid-template-columns: auto 1fr auto;
-    gap: var(--pm-space-3);
-    align-items: center;
-  }
-
-  /* ── Accesos rápidos: grid 2 cols ─────────────────────────────── */
-  .pm-metricas-links {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: var(--pm-space-3);
-  }
-
-  .pm-metricas-link {
-    padding: var(--pm-space-4);
-  }
-
-  /* ── Ausencias: grid 3 cols ───────────────────────────────────── */
-  .ausencias-dashboard {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: var(--pm-space-4);
-  }
-
-  .ausencias-stat-card {
-    display: flex;
-    align-items: center;
-    padding: var(--pm-space-5);
-  }
-
-  .stat-icon { width: 48px; height: 48px; font-size: 1.25rem; }
-  .stat-number { font-size: 1.75rem; }
-
-  /* ── Calendario: mes completo con más detalle ─────────────────── */
-  .pm-cal-grid { gap: 4px; }
-  .pm-cal-day { font-size: 0.9rem; }
-
-  /* ── Modales: centered, más anchos ──────────────────────────────── */
-  .pm-modal-overlay { align-items: center; }
-
-  .pm-modal-content { max-width: 520px; }
-
-  /* ── Settings: más ancho ───────────────────────────────────────── */
-  .pm-settings {
-    max-width: 800px;
-    padding: var(--pm-space-4) var(--pm-space-6);
-  }
-
   /* ── Login: centrado ────────────────────────────────────────────── */
   .pm-login {
     align-items: center;
@@ -821,6 +695,7 @@
   .pm-view {
     padding: var(--pm-space-8) var(--pm-space-10);
     max-width: 1000px;
+    padding-bottom: calc(var(--pm-space-6) + var(--pm-bottom-nav-h));
   }
 
   .pm-metricas-kpis {
@@ -828,6 +703,10 @@
   }
 
   .pm-kpi-value { font-size: 2rem; }
+
+  .pm-footer-nav__inner {
+    max-width: 560px;
+  }
 }
 
 /* ═══════════════════════════════════════════════════════════

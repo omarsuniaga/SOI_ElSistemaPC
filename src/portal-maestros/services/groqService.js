@@ -43,6 +43,29 @@ Tu tarea es MEJORAR el texto que recibes del maestro, enfocándose en:
 Responde ÚNICAMENTE con el texto mejorado, sin explicaciones ni cambios de significado.
 `;
 
+const STRUCTURE_TO_DSL_PROMPT = `
+Eres un experto en convertir observaciones de clase al formato DSL pedagógico.
+Recibes una observación libre de un maestro (ejemplo: "María no entendió bien los acordes. Necesita práctica")
+Tu tarea es ESTRUCTURARLA usando los tokens DSL:
+  #Nombre    = alumno mencionado
+  [texto]    = contenido dado en clase
+  (texto)    = sugerencia de mejora para el alumno
+  {texto}    = tarea asignada
+  $término   = medida técnica (una palabra o frase con guion bajo)
+  >CÓDIGO    = objetivo curricular alcanzado
+
+Reglas:
+- Identifica el alumno (María) → #María
+- Identifica el contenido ([acordes])
+- Transforma la sugerencia → (práctica) o (Requiere más práctica en acordes)
+- Sugiere tareas si es relevante
+- Responde ÚNICAMENTE con el texto estructurado en DSL, sin explicaciones.
+
+Ejemplo entrada: "María no entendió bien los acordes. Necesita práctica"
+Ejemplo salida: "#María [acordes] (Requiere más práctica) {Ejercitar escala mayor en Do}
+`;
+
+
 /**
  * Obtiene la API key de GROQ desde Supabase (system_config).
  * @returns {Promise<string>}
@@ -165,6 +188,41 @@ export async function improveText(text) {
     return data.choices[0].message.content.trim();
   } catch (err) {
     console.error('[GROQ] Error en improveText:', err);
+    throw err;
+  }
+}
+
+/**
+ * Convierte texto libre a estructura DSL.
+ * @param {string} text - Texto libre del maestro
+ * @returns {Promise<string>} Texto estructurado en DSL
+ */
+export async function structureTextToDSL(text) {
+  const apiKey = await getGroqApiKey()
+
+  try {
+    const response = await fetch(`${GROQ_CONFIG.baseURL}/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: GROQ_CONFIG.model,
+        messages: [
+          { role: 'system', content: STRUCTURE_TO_DSL_PROMPT },
+          { role: 'user', content: text }
+        ],
+        temperature: GROQ_CONFIG.temperature
+      })
+    });
+
+    const data = await response.json();
+    if (data.error) throw new Error(data.error.message);
+
+    return data.choices[0].message.content.trim();
+  } catch (err) {
+    console.error('[GROQ] Error en structureTextToDSL:', err);
     throw err;
   }
 }

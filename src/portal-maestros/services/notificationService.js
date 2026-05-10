@@ -11,14 +11,14 @@ onPushReceived((event) => {
 });
 
 // ── Deduplication Configuration ──
-const POLL_INTERVAL_MS = 30 * 1000;  // 30 seconds (configurable)
-const DEDUP_WINDOW_MS = 60 * 1000;   // 1 minute
-const DEDUP_EXPIRY_MS = 120 * 1000;  // 2 minutes
+export const POLL_INTERVAL_MS = 30 * 1000;  // 30 seconds (configurable)
+export const DEDUP_WINDOW_MS = 60 * 1000;   // 1 minute
+export const DEDUP_EXPIRY_MS = 120 * 1000;  // 2 minutes
 
 // ── Deduplication State ──
 const _recentNotificationKeys = new Map(); // Map<key, expiryTime>
 
-function _generateDeduplicationKey(notification) {
+export function _generateDeduplicationKey(notification) {
   const tipo = notification.tipo || 'unknown';
   const relatedId = notification.clase_id || notification.alumno_id || notification.id || 'generic';
   const minuteBucket = Math.floor(Date.now() / DEDUP_WINDOW_MS);

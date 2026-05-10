@@ -1,5 +1,7 @@
-import { enrichToDSL, transcribeAndStructure } from '../services/groqService.js';
+import { enrichToDSL, transcribeAndStructure, structureTextToDSL } from '../services/groqService.js';
 import { SNIPPETS, searchSnippets, expandSnippet } from '../services/snippetBank.js';
+import { createStructureModal } from './structureModal.js';
+import { createToolbarHelpModal } from './toolbarHelpModal.js';
 
 /**
  * Componente: DslToolbar
@@ -14,9 +16,9 @@ import { SNIPPETS, searchSnippets, expandSnippet } from '../services/snippetBank
  *   >  → Objetivo curricular
  * 
  * @param {HTMLElement} container
- * @param {{ onInsert: Function, onLoading: Function, onIaProposal: Function, getEditorContent: Function, aiService?: object, onImproveClick?: Function }} options
+ * @param {{ onInsert: Function, onLoading: Function, onIaProposal: Function, getEditorContent: Function, aiService?: object, onImproveClick?: Function, onStructureClick?: Function }} options
  */
-export function createDslToolbar(container, { onInsert, onLoading, onIaProposal, getEditorContent, aiService, onImproveClick }) {
+export function createDslToolbar(container, { onInsert, onLoading, onIaProposal, getEditorContent, aiService, onImproveClick, onStructureClick }) {
 
   // Contexto mutable: se actualiza desde fuera vía setContext()
   let _ctx = { presentes: [], indicadorActivo: null, indicadoresDisponibles: [] }
@@ -45,6 +47,8 @@ export function createDslToolbar(container, { onInsert, onLoading, onIaProposal,
       <div class="pm-dsl-divider"></div>
       <button class="pm-dsl-tool-btn ai" id="btn-improve-text" title="Mejorar texto con IA">✨</button>
       <button class="pm-dsl-tool-btn ai" id="btn-ia-magic" title="Estructurar con IA">🚀</button>
+      <div class="pm-dsl-divider"></div>
+      <button class="pm-dsl-tool-btn" id="btn-help" title="Ayuda">❓</button>
 
     </div>
     <div id="pm-snippet-popup" class="pm-snippet-popup" style="display:none;"></div>
@@ -156,35 +160,22 @@ export function createDslToolbar(container, { onInsert, onLoading, onIaProposal,
     }
   }
 
-  // --- Lógica de Mejorar con IA ---
-  async function handleIaMagic() {
+  // --- Lógica de Estructurar con IA ---
+  async function handleStructure() {
     const rawText = getEditorContent ? getEditorContent() : ''
     if (!rawText.trim()) return
 
-    if (onLoading) onLoading(true)
-    try {
-      let dsl
-      if (aiService && typeof aiService.structureDSL === 'function') {
-        dsl = await aiService.structureDSL({
-          rawText,
-          presentes: _ctx.presentes,
-          indicadorActivo: _ctx.indicadorActivo,
-          indicadoresDisponibles: _ctx.indicadoresDisponibles
-        })
-      } else {
-        // Fallback sin aiService
-        dsl = rawText
+    if (onStructureClick) {
+      try {
+        onStructureClick(rawText)
+      } catch (err) {
+        alert('Error al estructurar con IA: ' + err.message)
       }
-      if (onIaProposal) onIaProposal(dsl)
-    } catch (err) {
-      alert('Error al estructurar con IA: ' + err.message)
-    } finally {
-      if (onLoading) onLoading(false)
     }
   }
 
   container.querySelector('#btn-improve-text').onclick = handleImproveText;
-  container.querySelector('#btn-ia-magic').onclick = handleIaMagic;
+  container.querySelector('#btn-ia-magic').onclick = handleStructure;
 
 
   // === Snippets Popup ===
@@ -298,6 +289,13 @@ export function createDslToolbar(container, { onInsert, onLoading, onIaProposal,
     } else {
       showSnippetPopup()
     }
+  }
+
+  // === Help Modal ===
+  const helpModal = createToolbarHelpModal(container)
+
+  container.querySelector('#btn-help').onclick = () => {
+    helpModal.open()
   }
 
   /**

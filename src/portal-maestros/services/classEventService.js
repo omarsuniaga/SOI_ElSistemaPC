@@ -78,17 +78,13 @@ export async function generateClassEvent({ studentId, teacherId, sessionId }) {
     progress: nodeProgressMap[node.id] || null,
   }))
 
-  // Suggested nodes: pending or in_process, prioritizing critical/required
+  // Suggested nodes: pending or in_process, following hierarchical order
   const suggestedNodes = activeNodes
     .filter(n => {
       const status = n.progress?.status
       return !status || status === 'pending' || status === 'in_process'
     })
-    .sort((a, b) => {
-      if (a.is_critical !== b.is_critical) return a.is_critical ? -1 : 1
-      if (a.is_required !== b.is_required) return a.is_required ? -1 : 1
-      return a.order_index - b.order_index
-    })
+    .sort((a, b) => a.order_index - b.order_index)
 
   // 4. Get last homework
   const { data: lastHomework } = await supabase

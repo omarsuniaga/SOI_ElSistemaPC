@@ -5,6 +5,7 @@ import { processQueue, getQueue } from './portal-maestros/services/offlineQueue.
 import { supabase }             from './lib/supabaseClient.js'
 import { prefetchMonthData, getMisClases, getHorariosClases, getSesiones } from './portal-maestros/services/maestroDataService.js'
 import { scheduleLocalAlerts }  from './portal-maestros/services/pushService.js'
+import { AppModal }             from './shared/components/AppModal.js'
 
 // Icons only — NO Bootstrap CSS/JS in portal
 import 'bootstrap-icons/font/bootstrap-icons.css'
@@ -321,9 +322,19 @@ function _renderShell(app, maestro) {
     router.navigate('perfil')
   })
 
-  document.getElementById('pm-btn-logout').addEventListener('click', async () => {
-    await logoutMaestro()
-    window.location.reload()
+  document.getElementById('pm-btn-logout').addEventListener('click', (e) => {
+    e.preventDefault()
+    AppModal.open({
+      title: 'Cerrar Sesión',
+      body: '<div class="text-center py-3"><i class="bi bi-box-arrow-right text-danger mb-3 d-block" style="font-size: 2.5rem;"></i><p class="mb-0">¿Estás seguro de que deseas salir del portal?</p></div>',
+      saveText: 'Salir',
+      cancelText: 'Cancelar',
+      size: 'sm',
+      onSave: async () => {
+        await logoutMaestro()
+        window.location.reload()
+      }
+    })
   })
 
   // Header search (desktop)
@@ -499,12 +510,13 @@ async function _renderView(route, params = {}, { silent = false } = {}) {
 
   // Show spinner only if loading takes >300ms (keep stale content visible meanwhile)
   const spinnerTimeout = setTimeout(() => {
-    if (!targetContainer.querySelector('.pm-loading')) {
-      const spinner = document.createElement('div')
-      spinner.className = 'pm-loading pm-loading-overlay'
-      spinner.innerHTML = '<div class="pm-spinner"></div>'
-      targetContainer.prepend(spinner)
-    }
+    // Remove any existing spinners first
+    targetContainer.querySelectorAll('.pm-loading-overlay').forEach(el => el.remove())
+
+    const spinner = document.createElement('div')
+    spinner.className = 'pm-loading pm-loading-overlay'
+    spinner.innerHTML = '<div class="pm-spinner"></div>'
+    targetContainer.prepend(spinner)
   }, 300)
 
   try {
@@ -756,11 +768,43 @@ async function initPortal() {
 // Global error trap — shows errors visually so we can debug without DevTools
 window.addEventListener('error', (e) => {
   const app = document.getElementById('portal-app')
-  if (app) app.innerHTML = `<div style="padding:20px;color:red;font-family:monospace;background:#fff;z-index:9999;position:fixed;top:0;left:0;right:0;bottom:0;overflow:auto;"><h2>❌ JS Error</h2><pre>${e.message}\n${e.filename?.split('/').pop()}:${e.lineno}</pre></div>`
+  if (app) app.innerHTML = `
+    <div style="padding:40px; color:#fff; font-family:'Outfit',sans-serif; background:radial-gradient(circle at top right, #1e293b, #0f172a); z-index:9999; position:fixed; top:0; left:0; right:0; bottom:0; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center;">
+      <div style="background:rgba(255,255,255,0.05); backdrop-filter:blur(10px); border:1px solid rgba(255,255,255,0.1); border-radius:24px; padding:40px; max-width:600px; width:90%; box-shadow:0 25px 50px -12px rgba(0,0,0,0.5);">
+        <div style="width:80px; height:80px; background:rgba(239,68,68,0.1); color:#ef4444; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:40px; margin:0 auto 24px;">
+          <i class="bi bi-x-circle-fill"></i>
+        </div>
+        <h2 style="margin-bottom:16px; font-weight:700;">Ups! Algo salió mal</h2>
+        <p style="color:rgba(255,255,255,0.6); margin-bottom:24px;">Se ha producido un error inesperado en la aplicación.</p>
+        <div style="background:rgba(0,0,0,0.3); padding:16px; border-radius:12px; text-align:left; font-family:monospace; font-size:13px; margin-bottom:24px; overflow:auto; max-height:200px; border-left:4px solid #ef4444;">
+          <div style="color:#ef4444; font-weight:bold; margin-bottom:8px;">${e.message}</div>
+          <div style="color:rgba(255,255,255,0.4);">${e.filename?.split('/').pop()}:${e.lineno}</div>
+        </div>
+        <button onclick="window.location.reload()" style="background:var(--pm-primary,#3b82f6); color:white; border:none; padding:12px 32px; border-radius:12px; font-weight:600; cursor:pointer; transition:all 0.2s;">
+          Recargar Aplicación
+        </button>
+      </div>
+    </div>`
 })
 window.addEventListener('unhandledrejection', (e) => {
   const app = document.getElementById('portal-app')
-  if (app) app.innerHTML = `<div style="padding:20px;color:red;font-family:monospace;background:#fff;z-index:9999;position:fixed;top:0;left:0;right:0;bottom:0;overflow:auto;"><h2>❌ Promise Error</h2><pre>${String(e.reason)}</pre></div>`
+  if (app) app.innerHTML = `
+    <div style="padding:40px; color:#fff; font-family:'Outfit',sans-serif; background:radial-gradient(circle at top right, #1e293b, #0f172a); z-index:9999; position:fixed; top:0; left:0; right:0; bottom:0; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center;">
+      <div style="background:rgba(255,255,255,0.05); backdrop-filter:blur(10px); border:1px solid rgba(255,255,255,0.1); border-radius:24px; padding:40px; max-width:600px; width:90%; box-shadow:0 25px 50px -12px rgba(0,0,0,0.5);">
+        <div style="width:80px; height:80px; background:rgba(239,68,68,0.1); color:#ef4444; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:40px; margin:0 auto 24px;">
+          <i class="bi bi-exclamation-triangle-fill"></i>
+        </div>
+        <h2 style="margin-bottom:16px; font-weight:700;">Error de Sincronización</h2>
+        <p style="color:rgba(255,255,255,0.6); margin-bottom:24px;">Hubo un problema al procesar una solicitud de red.</p>
+        <div style="background:rgba(0,0,0,0.3); padding:16px; border-radius:12px; text-align:left; font-family:monospace; font-size:13px; margin-bottom:24px; overflow:auto; max-height:200px; border-left:4px solid #ef4444;">
+          <div style="color:#ef4444; font-weight:bold; margin-bottom:8px;">Promise Rejection</div>
+          <div style="color:rgba(255,255,255,0.4);">${String(e.reason)}</div>
+        </div>
+        <button onclick="window.location.reload()" style="background:var(--pm-primary,#3b82f6); color:white; border:none; padding:12px 32px; border-radius:12px; font-weight:600; cursor:pointer; transition:all 0.2s;">
+          Recargar Aplicación
+        </button>
+      </div>
+    </div>`
 })
 
 initPortal().catch(err => {

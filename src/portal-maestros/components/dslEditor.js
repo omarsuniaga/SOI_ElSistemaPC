@@ -434,9 +434,14 @@ export function createDslEditor(container, { initialContent = '', onChange, onAl
     _applyHighlight();
   }
 
-  return { 
-    insertText, 
+  return {
+    insertText,
     getValue: () => _value,
+    setValue: (newContent) => {
+      editor.innerText = newContent
+      _updateValue()
+      _applyHighlight()
+    },
     setContext: (context) => { _context = context; }
   };
 }

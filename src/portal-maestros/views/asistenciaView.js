@@ -243,13 +243,13 @@ function _renderVista(container, ctx) {
   // === Improve Text Modal ===
   const improveModal = createImproveTextModal(container, {
     onAccept: (improvedText) => {
-      editor.insertText(improvedText)
+      editor.setValue(improvedText)
     }
   })
 
   const toolbar = createDslToolbar(toolbarContainer, {
     onInsert: (text, cursorOffset, triggerAC) => editor.insertText(text, cursorOffset, triggerAC),
-    getEditorContent: () => editor.getContent(),
+    getEditorContent: () => editor.getValue(),
     onLoading: (loading) => {
       // Show/hide loading state if needed
     },

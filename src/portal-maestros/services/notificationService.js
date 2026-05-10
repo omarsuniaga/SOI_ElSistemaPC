@@ -1,6 +1,14 @@
 import { supabase } from '../../lib/supabaseClient.js';
 import { getMaestroLocal } from '../auth/maestroAuth.js';
 import { getMisClases, getHorariosClases, getSesiones } from './maestroDataService.js';
+import { onPushReceived } from './pushService.js';
+
+// ── Register Push Notification Handler ──
+onPushReceived((event) => {
+  if (event.event === 'subscriptionChanged') {
+    console.log('[Notif] Push subscription changed:', event.subscribed);
+  }
+});
 
 // ── Deduplication Configuration ──
 const POLL_INTERVAL_MS = 30 * 1000;  // 30 seconds (configurable)

@@ -3,10 +3,11 @@ import { getMaestroLocal } from '../auth/maestroAuth.js'
 import { escHTML, formatHora } from '../utils/portalUtils.js'
 import { enqueue } from '../services/offlineQueue.js'
 import { parseDSL } from '../utils/dslParser.js'
-import { enrichToDSL, transcribeAndStructure } from '../services/groqService.js'
+import { enrichToDSL, transcribeAndStructure, improveText } from '../services/groqService.js'
 import { createDslToolbar } from '../components/dslToolbar.js'
 import { createDslEditor } from '../components/dslEditor.js'
 import { createEvaluationDrawer } from '../components/EvaluationDrawer.js'
+import { createImproveTextModal } from '../components/improveTextModal.js'
 import { getMisClases, getHorariosClases, getInscripcionesClases, getSalones, invalidateClasesCache } from '../services/maestroDataService.js'
 import { invalidateView as navInvalidateView } from '../services/navigationHooks.js'
 import { createRouteTreeBar } from '../components/routeTreeBar.js'
@@ -239,10 +240,30 @@ function _renderVista(container, ctx) {
   // Pasar contexto para autocompletado (claseId para cargar alumnos)
   editor.setContext({ claseId: claseId });
 
+  // === Improve Text Modal ===
+  const improveModal = createImproveTextModal(container, {
+    onAccept: (improvedText) => {
+      editor.insertText(improvedText)
+    }
+  })
+
   const toolbar = createDslToolbar(toolbarContainer, {
     onInsert: (text, cursorOffset, triggerAC) => editor.insertText(text, cursorOffset, triggerAC),
     onIaProposal: async (proposal) => {
       // Implementar modal Apple-style aquí si es necesario
+    },
+    onImproveClick: async (text) => {
+      const improveBtn = toolbarContainer.querySelector('#btn-improve-text')
+      if (improveBtn) improveBtn.disabled = true
+
+      try {
+        const improved = await improveText(text)
+        improveModal.open({ original: text, improved })
+      } catch (err) {
+        alert('Error al mejorar texto: ' + err.message)
+      } finally {
+        if (improveBtn) improveBtn.disabled = false
+      }
     }
   });
 

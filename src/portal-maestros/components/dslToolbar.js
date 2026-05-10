@@ -45,11 +45,7 @@ export function createDslToolbar(container, { onInsert, onLoading, onIaProposal,
       <div class="pm-dsl-divider"></div>
       <button class="pm-dsl-tool-btn ai" id="btn-improve-text" title="Mejorar texto con IA">✨</button>
       <button class="pm-dsl-tool-btn ai" id="btn-ia-magic" title="Estructurar con IA">🚀</button>
-      <button class="pm-dsl-tool-btn ai" id="btn-ia-voice" title="Dictado por voz">🎤</button>
-      <div id="pm-voice-indicator" style="display:none; align-items:center; gap:0.5rem; margin-left:0.5rem;">
-        <span class="recording-dot"></span>
-        <span style="font-size:0.7rem; font-weight:700; color:var(--pm-danger);" id="pm-voice-timer">0s</span>
-      </div>
+
     </div>
     <div id="pm-snippet-popup" class="pm-snippet-popup" style="display:none;"></div>
   `;
@@ -105,12 +101,7 @@ export function createDslToolbar(container, { onInsert, onLoading, onIaProposal,
         color: var(--pm-primary); 
         background: rgba(99, 102, 241, 0.05); 
       }
-      .pm-dsl-tool-btn.recording { 
-        background: var(--pm-danger); 
-        color: white; 
-        border-color: var(--pm-danger);
-        animation: pm-pulse-btn 1s infinite;
-      }
+
       
       .pm-dsl-tool-symbol {
         font-family: ui-monospace, SFMono-Regular, monospace;
@@ -125,14 +116,7 @@ export function createDslToolbar(container, { onInsert, onLoading, onIaProposal,
         height: 20px;
       }
 
-      .recording-dot {
-        width: 8px; height: 8px;
-        background: var(--pm-danger);
-        border-radius: 50%;
-        animation: pm-pulse 1s infinite;
-      }
-      @keyframes pm-pulse { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
-      @keyframes pm-pulse-btn { 0% { box-shadow: 0 0 0 0 rgba(220,53,69,0.4); } 70% { box-shadow: 0 0 0 6px rgba(220,53,69,0); } }
+
     `;
     document.head.appendChild(style);
   }
@@ -156,64 +140,7 @@ export function createDslToolbar(container, { onInsert, onLoading, onIaProposal,
     };
   });
 
-  // --- Lógica de Voz ---
-  let mediaRecorder = null;
-  let audioChunks = [];
-  let recordingInterval = null;
-  let recordingSeconds = 0;
 
-  async function toggleVoiceRecording() {
-    const btn = container.querySelector('#btn-ia-voice');
-    const indicator = container.querySelector('#pm-voice-indicator');
-    const timer = container.querySelector('#pm-voice-timer');
-
-    if (mediaRecorder && mediaRecorder.state === 'recording') {
-      mediaRecorder.stop();
-      return;
-    }
-
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      mediaRecorder = new MediaRecorder(stream);
-      audioChunks = [];
-      recordingSeconds = 0;
-
-      mediaRecorder.ondataavailable = (event) => audioChunks.push(event.data);
-      
-      mediaRecorder.onstart = () => {
-        btn.classList.add('recording');
-        indicator.style.display = 'flex';
-        recordingInterval = setInterval(() => {
-          recordingSeconds++;
-          timer.textContent = `${recordingSeconds}s`;
-          if (recordingSeconds >= 60) mediaRecorder.stop();
-        }, 1000);
-      };
-
-      mediaRecorder.onstop = async () => {
-        btn.classList.remove('recording');
-        indicator.style.display = 'none';
-        clearInterval(recordingInterval);
-        
-        const audioBlob = new Blob(audioChunks, { type: 'audio/m4a' });
-        stream.getTracks().forEach(track => track.stop());
-
-        if (onLoading) onLoading(true);
-        try {
-          const proposal = await transcribeAndStructure(audioBlob);
-          if (onIaProposal) onIaProposal(proposal);
-        } catch (err) {
-          alert('Error en transcripción: ' + err.message);
-        } finally {
-          if (onLoading) onLoading(false);
-        }
-      };
-
-      mediaRecorder.start();
-    } catch (err) {
-      alert('No se pudo acceder al micrófono: ' + err.message);
-    }
-  }
 
   // --- Lógica de Mejorar Texto ---
   async function handleImproveText() {
@@ -258,7 +185,7 @@ export function createDslToolbar(container, { onInsert, onLoading, onIaProposal,
 
   container.querySelector('#btn-improve-text').onclick = handleImproveText;
   container.querySelector('#btn-ia-magic').onclick = handleIaMagic;
-  container.querySelector('#btn-ia-voice').onclick = toggleVoiceRecording;
+
 
   // === Snippets Popup ===
   const snippetPopup = container.querySelector('#pm-snippet-popup')

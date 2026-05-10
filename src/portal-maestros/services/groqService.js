@@ -31,6 +31,18 @@ Reglas:
 - Mantén el tono profesional pero cercano.
 `;
 
+const IMPROVE_TEXT_PROMPT = `
+Eres un experto en escritura pedagógica y claridad profesional.
+Tu tarea es MEJORAR el texto que recibes del maestro, enfocándose en:
+1. Gramática y ortografía correctas
+2. Claridad y concisión
+3. Tono profesional pero accesible
+4. Agregar perspectivas pedagógicas cuando sea relevante
+5. Mantener la voz y estilo del maestro original
+
+Responde ÚNICAMENTE con el texto mejorado, sin explicaciones ni cambios de significado.
+`;
+
 /**
  * Obtiene la API key de GROQ desde Supabase (system_config).
  * @returns {Promise<string>}
@@ -123,6 +135,41 @@ export async function transcribeAndStructure(audioBlob) {
 }
 
 /**
+ * Mejora un texto para claridad, gramática y perspectiva pedagógica.
+ * @param {string} text - Texto original a mejorar
+ * @returns {Promise<string>} Texto mejorado
+ */
+export async function improveText(text) {
+  const apiKey = await getGroqApiKey()
+
+  try {
+    const response = await fetch(`${GROQ_CONFIG.baseURL}/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: GROQ_CONFIG.model,
+        messages: [
+          { role: 'system', content: IMPROVE_TEXT_PROMPT },
+          { role: 'user', content: text }
+        ],
+        temperature: GROQ_CONFIG.temperature
+      })
+    });
+
+    const data = await response.json();
+    if (data.error) throw new Error(data.error.message);
+
+    return data.choices[0].message.content.trim();
+  } catch (err) {
+    console.error('[GROQ] Error en improveText:', err);
+    throw err;
+  }
+}
+
+/**
  * Función genérica para chat con GROQ.
  * @param {Array<{role: string, content: string}>} messages - Array de mensajes
  * @returns {Promise<string>}
@@ -146,7 +193,7 @@ export async function callGroq(messages) {
 
     const data = await response.json();
     if (data.error) throw new Error(data.error.message);
-    
+
     return data.choices[0].message.content.trim();
   } catch (err) {
     console.error('[GROQ] Error en callGroq:', err);

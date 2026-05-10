@@ -282,9 +282,6 @@ function _renderShell(app, maestro) {
       </div>
     </header>
 
-    <!-- Sidebar (desktop only) -->
-    ${bp === 'desktop' ? `<aside class="pm-sidebar" id="pm-sidebar"></aside>` : ''}
-
     <!-- Contenido de la vista activa -->
     <main class="pm-view" id="pm-view-container"></main>
 
@@ -292,9 +289,8 @@ function _renderShell(app, maestro) {
     <nav class="pm-footer-nav" id="pm-footer-nav">
       <div class="pm-footer-nav__inner">
         ${tabs.map(tab => `
-          <button class="pm-nav-tab" data-route="${tab.id}">
+          <button class="pm-nav-tab" data-route="${tab.id}" title="${tab.label}">
             <i class="bi ${tab.icon}"></i>
-            <span>${tab.label}</span>
           </button>
         `).join('')}
       </div>

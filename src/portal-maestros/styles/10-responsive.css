@@ -54,21 +54,28 @@
     padding: 0.75rem;
   }
 
-  /* ── Bottom nav: visible ─────────────────────────────────────── */
-  .pm-bottom-nav {
-    display: flex;
-    height: 60px;
-    padding: 0.5rem 0;
+  /* ── Footer nav: pill-shaped, Apple-style ────────────────────── */
+  .pm-footer-nav {
+    padding: 0.5rem 0.75rem calc(0.5rem + env(safe-area-inset-bottom, 0));
   }
 
-  .pm-bottom-tab {
-    font-size: 0.65rem;
-    padding: 0.25rem;
+  .pm-footer-nav__inner {
+    border-radius: 20px;
+    height: 56px;
   }
 
-  .pm-bottom-tab i {
-    font-size: 1.1rem;
-    margin-bottom: 2px;
+  .pm-nav-tab {
+    gap: 2px;
+    padding: 4px 2px 6px;
+  }
+
+  .pm-nav-tab i { font-size: 1.2rem; }
+  .pm-nav-tab span { font-size: 0.55rem; }
+
+  .pm-nav-tab.active::after {
+    width: 3px;
+    height: 3px;
+    bottom: 3px;
   }
 
   /* ── KPI Cards: 3 columnas, compact ─────────────────────────── */
@@ -266,8 +273,19 @@
     font-size: 1.3rem;
   }
 
-  /* ── Bottom nav: oculto ────────────────────────────────────────── */
-  .pm-bottom-nav { display: none; }
+  /* ── Footer nav: centered, pill ──────────────────────────────── */
+  .pm-footer-nav {
+    padding: 0.5rem 1.5rem calc(0.5rem + env(safe-area-inset-bottom, 0));
+  }
+
+  .pm-footer-nav__inner {
+    border-radius: 22px;
+    height: 58px;
+    max-width: 400px;
+  }
+
+  .pm-nav-tab i { font-size: 1.3rem; }
+  .pm-nav-tab span { font-size: 0.6rem; }
 
   /* ── View container ────────────────────────────────────────────── */
   .pm-view {
@@ -363,14 +381,140 @@
    ═══════════════════════════════════════════════════════════ */
 
 @media (min-width: 1024px) {
-  /* ── Shell layout con sidebar ─────────────────────────────────── */
+  /* ── Desktop layout: flex column + sidebar ──────────────────── */
   #portal-app {
-    display: grid;
-    grid-template-columns: var(--pm-sidebar-w) 1fr;
-    grid-template-rows: var(--pm-header-h) 1fr;
-    min-height: 100vh;
+    flex-direction: column;
     overflow: hidden;
   }
+
+  /* ── Header: completo ─────────────────────────────────────────── */
+  .pm-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: var(--pm-header-h);
+    padding: 0 1.5rem;
+    position: sticky;
+    top: 0;
+    z-index: var(--pm-z-header);
+    flex-shrink: 0;
+  }
+
+  .pm-header-left {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.1;
+    min-width: 0;
+  }
+
+  .pm-header-greeting {
+    display: block;
+    font-size: 0.65rem;
+    opacity: 0.8;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .pm-header-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+  }
+
+  .pm-header-right {
+    display: flex;
+    align-items: center;
+    gap: var(--pm-space-3);
+    flex-shrink: 0;
+  }
+
+  /* Search en header */
+  .pm-header-search {
+    display: flex;
+    align-items: center;
+    gap: var(--pm-space-2);
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: var(--pm-radius-xs);
+    padding: var(--pm-space-2) var(--pm-space-3);
+    width: 200px;
+    transition: width var(--pm-transition-base), background var(--pm-transition-base);
+  }
+
+  .pm-header-search:focus-within {
+    background: rgba(255, 255, 255, 0.25);
+    width: 280px;
+  }
+
+  .pm-header-search i {
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 0.9rem;
+    flex-shrink: 0;
+  }
+
+  .pm-header-search input {
+    background: none;
+    border: none;
+    color: #fff;
+    font-size: 0.85rem;
+    outline: none;
+    width: 100%;
+  }
+
+  .pm-header-search input::placeholder {
+    color: rgba(255, 255, 255, 0.5);
+  }
+
+  /* ── Sidebar: visible, sticky left ───────────────────────────── */
+  .pm-sidebar {
+    position: sticky;
+    top: var(--pm-header-h);
+    height: calc(100vh - var(--pm-header-h));
+    flex-shrink: 0;
+    overflow-y: auto;
+    border-right: 1px solid var(--pm-border);
+    border-top: none;
+    z-index: auto;
+  }
+
+  /* ── Content area (header + view + footer) ─────────────────── */
+  #portal-app > :not(.pm-sidebar) {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  /* ── View container ──────────────────────────────────────────── */
+  .pm-view {
+    flex: 1;
+    padding: var(--pm-space-6) var(--pm-space-8);
+    max-width: var(--pm-content-max-w, 900px);
+    overflow-y: auto;
+    padding-bottom: calc(var(--pm-space-4) + var(--pm-bottom-nav-h));
+  }
+
+  /* ── Footer nav: compact on desktop ─────────────────────────── */
+  .pm-footer-nav {
+    position: sticky;
+    bottom: 0;
+    flex-shrink: 0;
+    padding: 0.375rem 2rem calc(0.375rem + env(safe-area-inset-bottom, 0));
+  }
+
+  .pm-footer-nav__inner {
+    border-radius: 26px;
+    height: 52px;
+    max-width: 480px;
+  }
+
+  .pm-nav-tab {
+    gap: 2px;
+    padding: 4px 2px 6px;
+  }
+
+  .pm-nav-tab i { font-size: 1.2rem; }
+  .pm-nav-tab span { font-size: 0.6rem; letter-spacing: 0.02em; }
 
   /* ── Header: completo con tabs ─────────────────────────────────── */
   .pm-header {
@@ -482,27 +626,92 @@
     color: rgba(255, 255, 255, 0.5);
   }
 
-  /* ── Bottom nav: oculto ────────────────────────────────────────── */
-  .pm-bottom-nav { display: none; }
-
-  /* ── Sidebar: visible y fijo ────────────────────────────────────── */
-  .pm-sidebar {
-    grid-row: 2;
-    position: sticky;
-    top: var(--pm-header-h);
-    height: calc(100vh - var(--pm-header-h));
-    transform: none !important;
-    overflow-y: auto;
-    z-index: var(--pm-z-sidebar);
+  /* ── Header tabs ──────────────────────────────────────────────── */
+  .pm-header-tabs {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    margin-left: var(--pm-space-6);
   }
 
-  /* ── View container: contenido ancho ──────────────────────────── */
-  .pm-view {
-    padding: var(--pm-space-6) var(--pm-space-8);
-    max-width: var(--pm-content-max-w, 900px);
-    overflow-y: auto;
-    height: calc(100vh - var(--pm-header-h));
+  .pm-header-tab {
+    padding: var(--pm-space-2) var(--pm-space-4);
+    border-radius: var(--pm-radius-xs);
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background var(--pm-transition-fast), color var(--pm-transition-fast);
+    background: none;
+    border: none;
+    color: rgba(255, 255, 255, 0.7);
+    display: flex;
+    align-items: center;
+    gap: var(--pm-space-1);
   }
+
+  .pm-header-tab i { font-size: 0.9rem; }
+
+  .pm-header-tab:hover {
+    background: rgba(255, 255, 255, 0.15);
+    color: #fff;
+  }
+
+  .pm-header-tab.active {
+    background: rgba(255, 255, 255, 0.25);
+    color: #fff;
+  }
+
+  /* ── Header right ────────────────────────────────────────────── */
+  .pm-header-right {
+    display: flex;
+    align-items: center;
+    gap: var(--pm-space-3);
+    flex-shrink: 0;
+  }
+
+  /* Search en header */
+  .pm-header-search {
+    display: flex;
+    align-items: center;
+    gap: var(--pm-space-2);
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: var(--pm-radius-xs);
+    padding: var(--pm-space-2) var(--pm-space-3);
+    width: 200px;
+    transition: width var(--pm-transition-base), background var(--pm-transition-base);
+  }
+
+  .pm-header-search:focus-within {
+    background: rgba(255, 255, 255, 0.25);
+    width: 280px;
+  }
+
+  .pm-header-search i {
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 0.9rem;
+    flex-shrink: 0;
+  }
+
+  .pm-header-search input {
+    background: none;
+    border: none;
+    color: #fff;
+    font-size: 0.85rem;
+    outline: none;
+    width: 100%;
+  }
+
+  .pm-header-search input::placeholder {
+    color: rgba(255, 255, 255, 0.5);
+  }
+
+  /* ── Large Desktop: footer nav ──────────────────────────────── */
+  .pm-footer-nav__inner {
+    max-width: 540px;
+  }
+
+  .pm-nav-tab i { font-size: 1.3rem; }
 
   /* ── KPI Cards: 6 columnas, densas ───────────────────────────── */
   .pm-metricas-kpis {

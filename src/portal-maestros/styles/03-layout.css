@@ -1,7 +1,15 @@
 /* ============================================================
    PORTAL MAESTROS — Layout
-   Header, View Container, Bottom Nav
+   Header, View Container, Apple-Style Footer Navigation
    ============================================================ */
+
+/* ── App Shell ───────────────────────────────────────────────── */
+#portal-app {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  min-height: 100dvh;
+}
 
 /* ── Header ─────────────────────────────────────────────────── */
 .pm-header {
@@ -15,7 +23,7 @@
   flex-shrink: 0;
   position: sticky;
   top: 0;
-  z-index: 100;
+  z-index: var(--pm-z-header);
 }
 
 .pm-header-left {
@@ -117,59 +125,122 @@
 
 .pm-view-content.active { opacity: 1; }
 
-/* ── Bottom Nav ─────────────────────────────────────────────── */
-.pm-bottom-nav {
-  display: flex;
-  height: var(--pm-bottom-nav-h);
+/* ═══════════════════════════════════════════════════════════
+   APPLE-STYLE FOOTER NAVIGATION
+   Frosted glass, pill indicator, scales across breakpoints
+   ═══════════════════════════════════════════════════════════ */
+
+.pm-footer-nav {
+  flex-shrink: 0;
+  padding: 0 max(env(safe-area-inset-right), 0.5rem)
+           var(--env-safe-area-bottom, env(safe-area-inset-bottom, 0.5rem))
+           max(env(safe-area-inset-left), 0.5rem);
   background: var(--pm-surface);
   border-top: 1px solid var(--pm-border);
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  z-index: 200;
-  padding-bottom: env(safe-area-inset-bottom, 0);
+  /* Base: visible on mobile */
+  display: block;
 }
 
-.pm-bottom-tab {
+.pm-footer-nav__inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  height: var(--pm-bottom-nav-h);
+  max-width: 500px;
+  margin: 0 auto;
+  background: var(--pm-surface);
+  border-radius: var(--pm-radius);
+  position: relative;
+  /* Frosted glass base */
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backflow-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  box-shadow:
+    0 -1px 0 rgba(0, 0, 0, 0.04),
+    0 -4px 16px rgba(0, 0, 0, 0.04);
+}
+
+/* Dark mode frosted glass */
+[data-portal-theme="dark"] .pm-footer-nav__inner,
+[data-bs-theme="dark"] .pm-footer-nav__inner {
+  background: rgba(30, 41, 59, 0.72);
+  border-color: rgba(255, 255, 255, 0.08);
+  box-shadow:
+    0 -1px 0 rgba(255, 255, 255, 0.04),
+    0 -4px 16px rgba(0, 0, 0, 0.2);
+}
+
+/* Tab button — Apple style */
+.pm-nav-tab {
   flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: .2rem;
+  gap: 3px;
   background: none;
   border: none;
   cursor: pointer;
   color: var(--pm-text-muted);
-  font-size: .65rem;
+  font-size: 0.6rem;
   font-weight: 500;
-  padding: .4rem;
-  transition: color .15s;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
+  padding: 6px 4px 8px;
   position: relative;
+  transition: color 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+              transform 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  min-width: 0;
 }
 
-.pm-bottom-tab i {
+.pm-nav-tab i {
   font-size: 1.35rem;
   line-height: 1;
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.pm-bottom-tab.active { color: var(--pm-primary); }
+.pm-nav-tab span {
+  font-size: 0.58rem;
+  letter-spacing: 0.01em;
+  opacity: 0.8;
+  white-space: nowrap;
+}
 
-.pm-bottom-tab.active::before {
+/* Active tab — pill indicator (Apple style) */
+.pm-nav-tab.active {
+  color: var(--pm-primary);
+}
+
+.pm-nav-tab.active i {
+  transform: scale(1.08);
+}
+
+/* Subtle dot indicator — more Apple-like than a bar */
+.pm-nav-tab.active::after {
   content: '';
   position: absolute;
-  top: 0; left: 25%; right: 25%;
-  height: 2px;
+  bottom: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 4px;
+  height: 4px;
   background: var(--pm-primary);
-  border-radius: 0 0 2px 2px;
+  border-radius: 50%;
 }
 
+/* Tap feedback */
+.pm-nav-tab:active {
+  transform: scale(0.92);
+}
+
+/* Badge on tab */
 .pm-nav-badge {
   position: absolute;
   top: 2px;
   right: 50%;
-  transform: translateX(12px);
+  transform: translateX(14px);
   background: var(--apple-danger);
   color: #fff;
   font-size: .55rem;
@@ -181,6 +252,15 @@
   align-items: center;
   justify-content: center;
   padding: 0 4px;
+}
+
+/* ── Sidebar (desktop) ─────────────────────────────────────── */
+.pm-sidebar {
+  width: var(--pm-sidebar-w);
+  flex-shrink: 0;
+  background: var(--pm-surface-2);
+  border-right: 1px solid var(--pm-border);
+  overflow-y: auto;
 }
 
 /* ── Ausencias Header Buttons ───────────────────────────────── */
@@ -251,8 +331,77 @@
   transform: translateX(28px);
 }
 
+[data-portal-theme="dark"] .pm-theme-toggle-track { background: var(--pm-surface-2); }
+[data-portal-theme="dark"] .pm-theme-toggle-thumb {
+  background: var(--pm-surface);
+  transform: translateX(28px);
+}
+
 .pm-theme-icon {
   font-size: 14px;
   color: var(--pm-text);
   transition: color 0.3s ease;
+}
+
+/* ── Header Search (desktop) ───────────────────────────────── */
+.pm-header-search {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+  width: 200px;
+  transition: width 0.2s, background 0.2s;
+}
+
+.pm-header-search:focus-within {
+  background: rgba(255, 255, 255, 0.25);
+  width: 280px;
+}
+
+.pm-header-search i {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.9rem;
+  flex-shrink: 0;
+}
+
+.pm-header-search input {
+  background: none;
+  border: none;
+  color: #fff;
+  font-size: 0.85rem;
+  outline: none;
+  width: 100%;
+}
+
+.pm-header-search input::placeholder {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+/* ── Touch overrides for footer nav ───────────────────────── */
+@media (hover: none) and (pointer: coarse) {
+  .pm-nav-tab:hover {
+    color: var(--pm-text-muted);
+  }
+
+  .pm-nav-tab:active {
+    transform: scale(0.92);
+    color: var(--pm-primary);
+  }
+}
+
+/* ── Reduced motion: no transforms ──────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .pm-nav-tab {
+    transition: none;
+  }
+
+  .pm-nav-tab i {
+    transition: none;
+  }
+
+  .pm-nav-tab:active {
+    transform: none;
+  }
 }

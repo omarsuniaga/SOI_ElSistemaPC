@@ -1,8 +1,8 @@
-import { getMaestroLocal }                 from '../auth/maestroAuth.js'
-import { getMisClases, invalidateClasesCache } from '../services/maestroDataService.js'
-import { loadRouteTree, resolveRutaIdForClase } from '../services/rutaService.js'
-import { setRutaTema, peekRutaTema }      from '../services/rutaTopicStore.js'
-import { escHTML }                        from '../utils/portalUtils.js'
+import { getMaestroLocal }                         from '../auth/maestroAuth.js'
+import { getMisClases, invalidateClasesCache }      from '../services/maestroDataService.js'
+import { loadRouteTree, resolveRutaIdForClase, loadNodesForLevel, loadIndicatorsForNode } from '../services/rutaService.js'
+import { setRutaTema, peekRutaTema }                from '../services/rutaTopicStore.js'
+import { escHTML }                                  from '../utils/portalUtils.js'
 
 const SEM_ICON  = { green: '🟢', yellow: '🟡', gray: '⚫' }
 const SEM_COLOR = { green: '#22c55e', yellow: '#f59e0b', gray: '#94a3b8' }
@@ -299,27 +299,83 @@ function _attachEvents(container) {
     _renderFull(container)
   })
 
-  container.addEventListener('click', (e) => {
+  container.addEventListener('click', async (e) => {
     const el = e.target.closest('[data-action]')
     if (!el) return
 
     switch (el.dataset.action) {
 
       case 'toggle-level': {
-        const body    = container.querySelector(`[data-level-body="${el.dataset.levelId}"]`)
-        const chevron = container.querySelector(`[data-chevron="${el.dataset.levelId}"]`)
+        const levelId = el.dataset.levelId
+        const body    = container.querySelector(`[data-level-body="${levelId}"]`)
+        const chevron = container.querySelector(`[data-chevron="${levelId}"]`)
         if (!body) return
         const open = body.style.display !== 'none'
+
+        if (!open && !body.dataset.loaded) {
+          // Lazy-load nodes for this level on first expand
+          body.innerHTML = `<div style="padding:10px;color:#94a3b8;"><i class="bi bi-hourglass-split"></i> Cargando...</div>`
+          try {
+            const nodes = await loadNodesForLevel(levelId)
+            if (nodes.length > 0) {
+              // Find the level object to render nodes with semaphore
+              const levelObj = _state.blocks
+                .flatMap(b => b.levels)
+                .find(l => l.id === levelId)
+              if (levelObj) {
+                levelObj.nodes = nodes
+                body.innerHTML = nodes.map(n => _renderNode(n, levelObj)).join('')
+                body.dataset.loaded = 'true'
+              }
+            } else {
+              body.innerHTML = `<div style="font-size:12px;color:#94a3b8;padding:4px 0;">Sin nodos</div>`
+            }
+          } catch (err) {
+            console.error('[rutaPlayerView] lazy-load nodes error:', err)
+            body.innerHTML = `<div style="padding:10px;color:#d32f2f;"><i class="bi bi-exclamation-circle"></i> Error cargando nodos</div>`
+          }
+        }
+
         body.style.display    = open ? 'none' : ''
         if (chevron) chevron.style.transform = open ? '' : 'rotate(90deg)'
         break
       }
 
       case 'toggle-node': {
-        const body    = container.querySelector(`[data-node-body="${el.dataset.nodeId}"]`)
-        const chevron = container.querySelector(`[data-chevron="${el.dataset.nodeId}"]`)
+        const nodeId = el.dataset.nodeId
+        const body    = container.querySelector(`[data-node-body="${nodeId}"]`)
+        const chevron = container.querySelector(`[data-chevron="${nodeId}"]`)
         if (!body) return
         const open = body.style.display !== 'none'
+
+        if (!open && !body.dataset.loaded) {
+          // Lazy-load indicators for this node on first expand
+          body.innerHTML = `<div style="padding:4px 0;color:#94a3b8;font-size:12px;"><i class="bi bi-hourglass-split"></i> Cargando...</div>`
+          try {
+            const indicators = await loadIndicatorsForNode(nodeId)
+            if (indicators.length > 0) {
+              // Find the node object to render indicators with semaphore
+              const nodeObj = _state.blocks
+                .flatMap(b => b.levels)
+                .flatMap(l => l.nodes)
+                .find(n => n.id === nodeId)
+              if (nodeObj) {
+                nodeObj.indicators = indicators
+                const levelObj = _state.blocks
+                  .flatMap(b => b.levels)
+                  .find(l => l.nodes.some(n => n.id === nodeId))
+                body.innerHTML = indicators.map(i => _renderIndicator(i, nodeObj, levelObj)).join('')
+                body.dataset.loaded = 'true'
+              }
+            } else {
+              body.innerHTML = `<div style="font-size:12px;color:#94a3b8;padding:4px 0;">Sin indicadores</div>`
+            }
+          } catch (err) {
+            console.error('[rutaPlayerView] lazy-load indicators error:', err)
+            body.innerHTML = `<div style="font-size:12px;color:#d32f2f;"><i class="bi bi-exclamation-circle"></i> Error cargando indicadores</div>`
+          }
+        }
+
         body.style.display    = open ? 'none' : ''
         if (chevron) chevron.style.transform = open ? '' : 'rotate(90deg)'
         break

@@ -4,7 +4,7 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     globals: true,
-    include: ['src/modules/clases/**/*.test.js', 'src/modules/planificacion/**/*.test.js', 'tests/**/*.test.js'],
+    include: ['src/lib/**/*.test.js', 'src/modules/clases/**/*.test.js', 'src/modules/planificacion/**/*.test.js', 'src/portal-maestros/**/*.test.js', 'tests/**/*.test.js'],
     exclude: ['src/modules/metricas/**'],
     coverage: {
       provider: 'v8',

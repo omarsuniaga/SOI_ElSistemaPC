@@ -28,13 +28,57 @@ export function renderLoginView(container, { onSuccess }) {
 
         <div class="pm-input-group">
           <label for="pm-password">Contraseña</label>
-          <input
-            type="password"
-            id="pm-password"
-            class="pm-input"
-            placeholder="••••••••"
-            autocomplete="current-password"
-          />
+          <div style="position: relative;">
+            <input
+              type="password"
+              id="pm-password"
+              class="pm-input"
+              placeholder="••••••••"
+              autocomplete="current-password"
+              style="padding-right: 40px;"
+            />
+            <button
+              type="button"
+              id="pm-toggle-password"
+              style="
+                position: absolute;
+                right: 12px;
+                top: 50%;
+                transform: translateY(-50%);
+                background: none;
+                border: none;
+                cursor: pointer;
+                color: var(--pm-text-muted);
+                padding: 6px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 18px;
+              "
+              title="Mostrar contraseña"
+            >
+              <i class="bi bi-eye"></i>
+            </button>
+          </div>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 16px;">
+          <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 14px; color: var(--pm-text-muted);">
+            <input
+              type="checkbox"
+              id="pm-remember-email"
+              style="cursor: pointer; width: 18px; height: 18px;"
+            />
+            Recordar correo electrónico
+          </label>
+          <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 14px; color: var(--pm-text-muted);">
+            <input
+              type="checkbox"
+              id="pm-keep-session"
+              style="cursor: pointer; width: 18px; height: 18px;"
+            />
+            Mantener sesión abierta por 30 días
+          </label>
         </div>
 
         <button type="button" class="pm-btn pm-btn-primary" id="pm-login-btn">
@@ -50,10 +94,58 @@ export function renderLoginView(container, { onSuccess }) {
     </div>
   `
 
-  const emailInput    = container.querySelector('#pm-email')
-  const passwordInput = container.querySelector('#pm-password')
-  const loginBtn      = container.querySelector('#pm-login-btn')
-  const errorMsg      = container.querySelector('#pm-login-error')
+  const emailInput       = container.querySelector('#pm-email')
+  const passwordInput    = container.querySelector('#pm-password')
+  const loginBtn         = container.querySelector('#pm-login-btn')
+  const errorMsg         = container.querySelector('#pm-login-error')
+  const togglePwdBtn     = container.querySelector('#pm-toggle-password')
+  const rememberEmailChk = container.querySelector('#pm-remember-email')
+  const keepSessionChk   = container.querySelector('#pm-keep-session')
+
+  // --- Show/Hide Password ---
+  let passwordVisible = false
+  togglePwdBtn.addEventListener('mousedown', () => {
+    passwordVisible = true
+    passwordInput.type = 'text'
+    togglePwdBtn.querySelector('i').className = 'bi bi-eye-slash'
+  })
+
+  togglePwdBtn.addEventListener('mouseup', () => {
+    passwordVisible = false
+    passwordInput.type = 'password'
+    togglePwdBtn.querySelector('i').className = 'bi bi-eye'
+  })
+
+  togglePwdBtn.addEventListener('mouseleave', () => {
+    if (passwordVisible) {
+      passwordVisible = false
+      passwordInput.type = 'password'
+      togglePwdBtn.querySelector('i').className = 'bi bi-eye'
+    }
+  })
+
+  // --- Load saved email ---
+  const savedEmail = localStorage.getItem('pm-saved-email')
+  if (savedEmail) {
+    emailInput.value = savedEmail
+    rememberEmailChk.checked = true
+  }
+
+  // --- Handle Remember Email checkbox ---
+  rememberEmailChk.addEventListener('change', () => {
+    if (rememberEmailChk.checked) {
+      localStorage.setItem('pm-saved-email', emailInput.value)
+    } else {
+      localStorage.removeItem('pm-saved-email')
+    }
+  })
+
+  // Update saved email when user types
+  emailInput.addEventListener('input', () => {
+    if (rememberEmailChk.checked) {
+      localStorage.setItem('pm-saved-email', emailInput.value)
+    }
+  })
 
   async function handleLogin() {
     const email    = emailInput.value.trim()
@@ -68,6 +160,12 @@ export function renderLoginView(container, { onSuccess }) {
     loginBtn.textContent = 'Ingresando...'
     errorMsg.textContent = ''
 
+    // Set session duration based on checkbox
+    const sessionDuration = keepSessionChk.checked ? 30 * 24 * 60 * 60 * 1000 : undefined // 30 days or default
+    if (sessionDuration) {
+      localStorage.setItem('pm-session-expires', new Date(Date.now() + sessionDuration).toISOString())
+    }
+
     const result = await loginMaestro(email, password)
 
     if (result.success) {
@@ -81,6 +179,7 @@ export function renderLoginView(container, { onSuccess }) {
       errorMsg.textContent = result.error
       loginBtn.disabled    = false
       loginBtn.textContent = 'Iniciar sesión'
+      localStorage.removeItem('pm-session-expires')
     }
   }
 

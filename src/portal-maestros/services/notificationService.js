@@ -2,6 +2,42 @@ import { supabase } from '../../lib/supabaseClient.js';
 import { getMaestroLocal } from '../auth/maestroAuth.js';
 import { getMisClases, getHorariosClases, getSesiones } from './maestroDataService.js';
 
+// ── Deduplication Configuration ──
+const POLL_INTERVAL_MS = 30 * 1000;  // 30 seconds (configurable)
+const DEDUP_WINDOW_MS = 60 * 1000;   // 1 minute
+const DEDUP_EXPIRY_MS = 120 * 1000;  // 2 minutes
+
+// ── Deduplication State ──
+const _recentNotificationKeys = new Map(); // Map<key, expiryTime>
+
+function _generateDeduplicationKey(notification) {
+  const tipo = notification.tipo || 'unknown';
+  const relatedId = notification.clase_id || notification.alumno_id || notification.id || 'generic';
+  const minuteBucket = Math.floor(Date.now() / DEDUP_WINDOW_MS);
+  return `${tipo}:${relatedId}:${minuteBucket}`;
+}
+
+function _cleanExpiredDeduplicationKeys() {
+  const now = Date.now();
+  for (const [key, expiryTime] of _recentNotificationKeys.entries()) {
+    if (now > expiryTime) {
+      _recentNotificationKeys.delete(key);
+    }
+  }
+}
+
+export function _isDuplicateNotification(notification) {
+  _cleanExpiredDeduplicationKeys();
+  const key = _generateDeduplicationKey(notification);
+  return _recentNotificationKeys.has(key);
+}
+
+export function _recordNotificationReceived(notification) {
+  const key = _generateDeduplicationKey(notification);
+  const expiryTime = Date.now() + DEDUP_EXPIRY_MS;
+  _recentNotificationKeys.set(key, expiryTime);
+}
+
 let notificacionesCache = [];
 let listeners = [];
 

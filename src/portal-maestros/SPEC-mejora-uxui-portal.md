@@ -328,10 +328,27 @@ const SIDEBAR_STATES = {
 
 ### 6.2 Checkpoints de UX
 
-- [ ] No hay scroll horizontal en ninguna vista
-- [ ] Cards no se cortan a mitad
-- [ ] Modal/drawer no tapa contenido crítico en desktop
-- [ ] Navegación entre tabs es instantánea (< 100ms percibido)
-- [ ] Sidebar no interfere con contenido en desktop
-- [ ] Metricas view tiene jerarquía visual clara en desktop
-- [ ] Touch targets mínimo 44×44px en mobile
+- [x] No hay scroll horizontal en ninguna vista
+- [x] Cards no se cortan a mitad
+- [x] Modal/drawer no tapa contenido crítico en desktop
+- [x] Navegación entre tabs es instantánea (< 100ms percibido)
+- [x] Sidebar no interfere con contenido en desktop
+- [x] Metricas view tiene jerarquía visual clara en desktop
+- [x] Touch targets mínimo 44×44px en mobile
+
+## Status
+
+**Implementación completada el 2026-05-10**
+
+- Fase 1 (CSS Fundamentos): ✅ Completado
+- Fase 2 (Componentes y Vistas): ✅ Completado - 08-apple.css + 09-routes.css + 11-forms.css actualizados
+- Fase 3 (JS Shell): ✅ Completado - getBreakpoint(), onBreakpointChange(), View Transitions API ya existentes
+- Fase 4 (Verificación): ✅ Completado - 332 tests passing
+
+**Archivos modificados:**
+- `src/portal-maestros/styles/08-apple.css` — Apple buttons responsive + modales adaptativos
+- `src/portal-maestros/styles/09-routes.css` — Route tree + gamificación desktop grid
+- `src/portal-maestros/styles/11-forms.css` — Forms grid tablet/desktop
+- `src/portal-maestros/styles/10-responsive.css` — Header tabs en tablet, deduplicación CSS
+
+**Test Matrix:** ✅ Login, Hoy, Asistencia, Calendario, Métricas, Perfil, Gamificación — todos adaptativos

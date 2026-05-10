@@ -149,48 +149,6 @@
     width: 100%;
   }
 
-  /* ── Settings ───────────────────────────────────────────────── */
-  .pm-settings {
-    padding: 0.25rem 0 5rem;
-    gap: 0.5rem;
-  }
-
-  .pm-settings-profile-hero__content {
-    flex-direction: column;
-    text-align: center;
-    padding-top: 2.5rem;
-  }
-
-  .pm-settings-profile-hero__name {
-    color: var(--pm-text);
-    text-shadow: none;
-  }
-
-  .pm-settings-profile-hero__email { color: var(--pm-text-muted); }
-  .pm-settings-profile-hero__bg { height: 56px; }
-
-  .pm-settings-header__title { font-size: 1.25rem; }
-
-  .pm-settings-section__header { flex-wrap: wrap; }
-
-  .pm-settings-btn-group {
-    width: 100%;
-    margin-top: 0.25rem;
-  }
-
-  .pm-settings-btn-group .pm-settings-btn {
-    flex: 1;
-    justify-content: center;
-  }
-
-  .pm-settings-form-grid { grid-template-columns: 1fr; }
-  .pm-settings-notif-grid { grid-template-columns: 1fr; }
-  .pm-settings-theme-picker { gap: 0.5rem; }
-
-  .pm-homework-panel-row { flex-direction: column; }
-
-  .pm-alumno-stats { grid-template-columns: repeat(4, 1fr); }
-
   /* ── Sidebar: drawer ─────────────────────────────────────────── */
   .pm-sidebar {
     position: fixed;
@@ -287,6 +245,45 @@
   .pm-nav-tab i { font-size: 1.3rem; }
   .pm-nav-tab span { font-size: 0.6rem; }
 
+  /* ── Footer nav hidden on tablet ───────────────────────────── */
+  .pm-footer-nav { display: none; }
+
+  /* ── Header tabs en tablet ─────────────────────────────────── */
+  .pm-header-tabs {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    margin-left: var(--pm-space-4);
+  }
+
+  .pm-header-tab {
+    padding: var(--pm-space-1) var(--pm-space-3);
+    border-radius: var(--pm-radius-xs);
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background var(--pm-transition-fast), color var(--pm-transition-fast);
+    background: none;
+    border: none;
+    color: rgba(255, 255, 255, 0.7);
+    display: flex;
+    align-items: center;
+    gap: var(--pm-space-1);
+  }
+
+  .pm-header-tab i { font-size: 0.85rem; }
+
+  .pm-header-tab:hover {
+    background: rgba(255, 255, 255, 0.15);
+    color: #fff;
+  }
+
+  .pm-header-tab.active {
+    background: rgba(255, 255, 255, 0.25);
+    color: #fff;
+  }
+
   /* ── View container ────────────────────────────────────────────── */
   .pm-view {
     padding: 1.25rem;
@@ -337,13 +334,6 @@
   .pm-modal-content {
     max-width: 500px;
     border-radius: var(--pm-radius);
-  }
-
-  /* ── Settings ────────────────────────────────────────────────── */
-  .pm-settings {
-    max-width: 640px;
-    margin: 0 auto;
-    padding: 0.5rem 0 2rem;
   }
 
   /* ── Calendario: mes completo ─────────────────────────────────── */
@@ -515,116 +505,6 @@
 
   .pm-nav-tab i { font-size: 1.2rem; }
   .pm-nav-tab span { font-size: 0.6rem; letter-spacing: 0.02em; }
-
-  /* ── Header: completo con tabs ─────────────────────────────────── */
-  .pm-header {
-    grid-column: 1 / -1;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    height: var(--pm-header-h);
-    padding: 0 1.5rem;
-  }
-
-  .pm-header-left {
-    display: flex;
-    flex-direction: column;
-    line-height: 1.1;
-    min-width: 0;
-  }
-
-  .pm-header-greeting {
-    display: block;
-    font-size: 0.65rem;
-    opacity: 0.8;
-    font-weight: 500;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-  }
-
-  .pm-header-title {
-    font-size: 1.25rem;
-    font-weight: 700;
-  }
-
-  /* Header tabs */
-  .pm-header-tabs {
-    display: flex;
-    align-items: center;
-    gap: 0.25rem;
-    margin-left: var(--pm-space-6);
-  }
-
-  .pm-header-tab {
-    padding: var(--pm-space-2) var(--pm-space-4);
-    border-radius: var(--pm-radius-xs);
-    font-size: 0.8rem;
-    font-weight: 600;
-    cursor: pointer;
-    white-space: nowrap;
-    transition: background var(--pm-transition-fast), color var(--pm-transition-fast);
-    background: none;
-    border: none;
-    color: rgba(255, 255, 255, 0.7);
-    display: flex;
-    align-items: center;
-    gap: var(--pm-space-1);
-  }
-
-  .pm-header-tab i { font-size: 0.9rem; }
-
-  .pm-header-tab:hover {
-    background: rgba(255, 255, 255, 0.15);
-    color: #fff;
-  }
-
-  .pm-header-tab.active {
-    background: rgba(255, 255, 255, 0.25);
-    color: #fff;
-  }
-
-  .pm-header-right {
-    display: flex;
-    align-items: center;
-    gap: var(--pm-space-3);
-    flex-shrink: 0;
-  }
-
-  /* Search en header */
-  .pm-header-search {
-    display: flex;
-    align-items: center;
-    gap: var(--pm-space-2);
-    background: rgba(255, 255, 255, 0.15);
-    border-radius: var(--pm-radius-xs);
-    padding: var(--pm-space-2) var(--pm-space-3);
-    width: 200px;
-    transition: width var(--pm-transition-base), background var(--pm-transition-base);
-  }
-
-  .pm-header-search:focus-within {
-    background: rgba(255, 255, 255, 0.25);
-    width: 280px;
-  }
-
-  .pm-header-search i {
-    color: rgba(255, 255, 255, 0.7);
-    font-size: 0.9rem;
-    flex-shrink: 0;
-  }
-
-  .pm-header-search input {
-    background: none;
-    border: none;
-    color: #fff;
-    font-size: 0.85rem;
-    outline: none;
-    width: 100%;
-  }
-
-  .pm-header-search input::placeholder {
-    color: rgba(255, 255, 255, 0.5);
-  }
 
   /* ── Header tabs ──────────────────────────────────────────────── */
   .pm-header-tabs {

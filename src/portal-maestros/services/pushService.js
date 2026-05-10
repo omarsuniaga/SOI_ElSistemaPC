@@ -30,6 +30,21 @@ export function onPushReceived(callback) {
   _onPushReceivedCallback = callback;
 }
 
+// ── Listen for SW messages ───────────────────────────────────
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.addEventListener('message', (event) => {
+    if (event.data && event.data.type === 'PUSH_RECEIVED') {
+      console.log('[Push] Notification received from SW:', event.data.notification);
+      if (_onPushReceivedCallback) {
+        _onPushReceivedCallback({ 
+          event: 'notificationReceived', 
+          notification: event.data.notification 
+        });
+      }
+    }
+  });
+}
+
 let _prefsCache = null
 
 /**

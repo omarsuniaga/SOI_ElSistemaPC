@@ -335,33 +335,265 @@
 .pm-obj-desc { font-size: 0.85rem; flex: 1; }
 .pm-obj-bloque { font-size: 0.7rem; color: var(--pm-text-muted); background: var(--pm-surface-2); padding: 0.15rem 0.4rem; border-radius: 4px; }
 
-/* ── Perfil View ──────────────────────────────────────────────── */
-.pm-pref-row {
+/* ── Settings: Grid and Layout (DEPRECATED: Refactored to Apple DS) ── */
+.pm-settings {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: var(--pm-space-4) var(--pm-space-5);
   display: flex;
-  justify-content: space-between;
+  flex-direction: column;
+  gap: var(--pm-space-6);
+}
+
+.pm-settings-header {
+  margin-bottom: var(--pm-space-4);
+  padding: 0 var(--pm-space-2);
+}
+
+.pm-settings-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--pm-space-5);
+}
+
+@media (min-width: 1024px) {
+  .pm-settings-grid {
+    grid-template-columns: 1fr 1fr;
+    align-items: start;
+  }
+}
+
+.pm-settings-col {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pm-space-5);
+}
+
+.pm-settings-section {
+  margin-bottom: 0; /* Handled by grid/col gap */
+}
+
+/* Icons within sections */
+.pm-icon-blue { color: #007aff; }
+.pm-icon-amber { color: #ff9f0a; }
+.pm-icon-teal { color: #30d158; }
+.pm-icon-red { color: #ff3b30; }
+
+.pm-settings-section__header {
+  display: flex;
   align-items: center;
-  padding: 0.75rem 0;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.pm-settings-section__header i {
+  font-size: 1.5rem;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--pm-surface-2);
+  border-radius: 10px;
+}
+
+.pm-settings-section__title { font-size: 1.1rem; font-weight: 700; margin: 0; }
+.pm-settings-section__desc { font-size: 0.85rem; color: var(--pm-text-muted); margin: 0; }
+
+/* Custom components for Perfil */
+.pm-profile-hero__content {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.pm-settings-avatar {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  flex-shrink: 0;
+}
+
+.pm-settings-avatar__img,
+.pm-settings-avatar__placeholder {
+  width: 100%;
+  height: 100%;
+  border-radius: 22px;
+  object-fit: cover;
+  background: var(--pm-surface-2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--apple-primary);
+}
+
+.pm-settings-avatar__edit {
+  position: absolute;
+  bottom: -4px;
+  right: -4px;
+  width: 28px;
+  height: 28px;
+  background: var(--apple-primary);
+  color: white;
+  border-radius: 50%;
+  border: 2px solid var(--pm-surface);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.pm-profile-hero__info { display: flex; flex-direction: column; gap: 0.25rem; }
+.pm-profile-hero__name { font-size: 1.25rem; font-weight: 700; margin: 0; }
+.pm-profile-hero__email { font-size: 0.9rem; color: var(--pm-text-muted); margin: 0 0 0.5rem; }
+
+/* Theme Picker Apple */
+.pm-theme-picker {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
   gap: 1rem;
 }
 
-.pm-pref-row + .pm-pref-row { border-top: 1px solid var(--pm-border); }
-.pm-pref-row small { color: var(--pm-text-muted); font-size: 0.75rem; }
-.pm-pref-controls { display: flex; align-items: center; gap: 0.5rem; flex-shrink: 0; }
-.pm-checkbox { width: 20px; height: 20px; accent-color: var(--pm-primary); cursor: pointer; }
-.pm-select-mini { background: var(--pm-surface); color: var(--pm-text); border: 1px solid var(--pm-border); border-radius: 8px; padding: 0.3rem 0.5rem; font-size: 0.8rem; cursor: pointer; }
+.pm-theme-opt {
+  background: none;
+  border: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  padding: 0;
+}
 
-/* ── Toggle Button (iOS style) ────────────────────────────────── */
-.pm-toggle-btn { background: none; border: none; padding: 0; cursor: pointer; }
-.pm-toggle-track { display: block; width: 50px; height: 30px; border-radius: 15px; background: var(--pm-border); position: relative; transition: background 0.3s; }
-.pm-toggle-thumb { display: block; width: 26px; height: 26px; border-radius: 50%; background: #fff; position: absolute; top: 2px; left: 2px; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 1px 3px rgba(0,0,0,0.3); }
-.pm-toggle-btn.active .pm-toggle-track { background: var(--pm-success); }
-.pm-toggle-btn.active .pm-toggle-thumb { transform: translateX(20px); }
+.pm-theme-preview {
+  width: 100%;
+  aspect-ratio: 16/10;
+  border-radius: 8px;
+  border: 2px solid transparent;
+  transition: border-color 0.2s;
+}
 
-.label-apple { font-size: 14px; font-weight: 500; color: var(--pm-text-muted); margin-bottom: 6px; display: block; }
-.perfil-avatar { width: 100px; height: 100px; border-radius: 50%; background: var(--pm-surface); display: flex; align-items: center; justify-content: center; color: var(--pm-text-muted); }
+.pm-theme-opt.active .pm-theme-preview { border-color: var(--apple-primary); }
+.pm-theme-opt span { font-size: 0.8rem; font-weight: 500; color: var(--pm-text-muted); }
+.pm-theme-opt.active span { color: var(--apple-primary); font-weight: 700; }
 
-.perfil-header h2 { font-size: 28px; font-weight: 700; color: var(--pm-text); margin-bottom: 4px; }
-.perfil-header p { font-size: 15px; color: var(--pm-text-muted); margin: 0; }
+.pm-theme-preview.light { background: #f2f2f7; }
+.pm-theme-preview.dark { background: #1c1c1e; }
+.pm-theme-preview.system { background: linear-gradient(135deg, #f2f2f7 50%, #1c1c1e 50%); }
+
+/* Apple-style Switch */
+.pm-apple-switch {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 24px;
+  margin-left: auto;
+}
+
+.pm-apple-switch input { opacity: 0; width: 0; height: 0; }
+.pm-apple-switch-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-color: var(--pm-border);
+  transition: .3s;
+  border-radius: 24px;
+}
+
+.pm-apple-switch-slider:before {
+  position: absolute;
+  content: "";
+  height: 20px; width: 20px;
+  left: 2px; bottom: 2px;
+  background-color: white;
+  transition: .3s;
+  border-radius: 50%;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+}
+
+.pm-apple-switch input:checked + .pm-apple-switch-slider { background-color: var(--apple-success); }
+.pm-apple-switch input:checked + .pm-apple-switch-slider:before { transform: translateX(20px); }
+
+/* Notifications List */
+.pm-notif-list { display: flex; flex-direction: column; gap: 0.75rem; }
+.pm-notif-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  background: var(--pm-surface-2);
+  border-radius: 12px;
+  gap: 1rem;
+}
+
+.pm-notif-item__info { display: flex; flex-direction: column; gap: 0.5rem; flex: 1; }
+.pm-notif-item__title { font-size: 0.9rem; font-weight: 600; }
+
+.pm-apple-select {
+  background: var(--pm-surface);
+  border: 1px solid var(--pm-border);
+  border-radius: 8px;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.8rem;
+  color: var(--pm-text);
+}
+
+.pm-apple-mini-switch {
+  position: relative;
+  display: inline-block;
+  width: 32px;
+  height: 18px;
+}
+
+.pm-apple-mini-switch input { opacity: 0; width: 0; height: 0; }
+.pm-apple-mini-switch-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-color: var(--pm-border);
+  transition: .2s;
+  border-radius: 18px;
+}
+
+.pm-apple-mini-switch-slider:before {
+  position: absolute;
+  content: "";
+  height: 14px; width: 14px;
+  left: 2px; bottom: 2px;
+  background-color: white;
+  transition: .2s;
+  border-radius: 50%;
+}
+
+.pm-apple-mini-switch input:checked + .pm-apple-mini-switch-slider { background-color: var(--apple-success); }
+.pm-apple-mini-switch input:checked + .pm-apple-mini-switch-slider:before { transform: translateX(14px); }
+
+/* Buttons row */
+.pm-settings-actions-row { display: flex; gap: 0.75rem; flex-wrap: wrap; }
+.pm-settings-actions-row .btn-apple-utility { flex: 1; min-width: 120px; }
+
+/* Danger Section */
+.pm-section-danger { border-color: rgba(255, 59, 48, 0.2); }
+
+/* Footer */
+.pm-settings-footer {
+  margin-top: 3rem;
+  padding-top: 2rem;
+  border-top: 1px solid var(--pm-border);
+  text-align: center;
+}
+
+.pm-settings-footer p { font-size: 0.8rem; color: var(--pm-text-muted); margin: 0; }
+.pm-settings-footer__version { font-weight: 700; margin-top: 0.25rem; }
+
+@media (max-width: 767px) {
+  .pm-settings { padding: var(--pm-space-3); }
+  .pm-profile-hero__content { flex-direction: column; text-align: center; }
+  .pm-settings-form-grid { grid-template-columns: 1fr; }
+}
 
 /* ── Alumno Perfil ───────────────────────────────────────────── */
 .pm-alumno-root { padding: 1rem; padding-bottom: 5rem; }
@@ -541,28 +773,6 @@
     gap: var(--pm-space-3);
   }
   
-  /* Settings: grid 2 cols */
-  .pm-settings {
-    max-width: 680px;
-  }
-  
-  .pm-settings-form-grid {
-    grid-template-columns: 1fr 1fr;
-    gap: var(--pm-space-4);
-  }
-  
-  .pm-settings-notif-grid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: var(--pm-space-4);
-  }
-  
-  .pm-settings-profile-hero__content {
-    flex-direction: row;
-    gap: var(--pm-space-5);
-  }
-  
-  .pm-settings-profile-hero__bg { height: 80px; }
-  
   .pm-crear-clase {
     padding: var(--pm-space-6);
     padding-bottom: 2rem;
@@ -628,21 +838,7 @@
   .pm-timeline-date { min-width: 48px; }
   .pm-date-day { font-size: 1.5rem; }
   
-  /* Settings: aún más amplio */
-  .pm-settings {
-    max-width: 840px;
-    padding: var(--pm-space-6) var(--pm-space-8);
-  }
-  
-  .pm-settings-header__title { font-size: 1.75rem; }
-  
-  .pm-settings-section__header {
-    padding: var(--pm-space-5) var(--pm-space-6);
-  }
-  
-  .pm-settings-section__body { padding: 0 var(--pm-space-6) var(--pm-space-6); }
-  
-/* Crear clase: form más denso */
+  /* Crear clase: form más denso */
   .pm-crear-clase {
     padding: var(--pm-space-8);
     padding-bottom: var(--pm-space-6);
@@ -656,17 +852,6 @@
 
 /* Tablet: 2-column forms */
 @media (min-width: 768px) and (max-width: 1023px) {
-  .pm-settings {
-    max-width: 640px;
-    padding: var(--pm-space-5);
-  }
-
-  .pm-settings-header__title { font-size: 1.5rem; }
-
-  .pm-settings-section__body {
-    padding: var(--pm-space-5);
-  }
-
   /* Content panels: 2 columns if applicable */
   .pm-content-panel {
     padding: var(--pm-space-5);
@@ -697,19 +882,6 @@
 
 /* Desktop: full layout */
 @media (min-width: 1024px) {
-  .pm-settings {
-    max-width: 840px;
-    padding: var(--pm-space-6) var(--pm-space-8);
-  }
-
-  .pm-settings-header__title { font-size: 1.75rem; }
-
-  .pm-settings-section__header {
-    padding: var(--pm-space-5) var(--pm-space-6);
-  }
-
-  .pm-settings-section__body { padding: 0 var(--pm-space-6) var(--pm-space-6); }
-
   /* Crear clase: form más denso */
   .pm-crear-clase {
     padding: var(--pm-space-8);

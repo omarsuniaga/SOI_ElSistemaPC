@@ -7,6 +7,21 @@ import { onPushReceived } from './pushService.js';
 onPushReceived((event) => {
   if (event.event === 'subscriptionChanged') {
     console.log('[Notif] Push subscription changed:', event.subscribed);
+  } else if (event.event === 'notificationReceived') {
+    console.log('[Notif] Real-time push received:', event.notification);
+    
+    // RECORD: Mark as received to prevent polling duplicate
+    _recordNotificationReceived(event.notification);
+    
+    // ADD to cache if not already there
+    const exists = notificacionesCache.some(n => n.id === event.notification.id);
+    if (!exists) {
+      notificacionesCache.unshift({
+        ...event.notification,
+        created_at: event.notification.created_at || new Date().toISOString()
+      });
+      notifyListeners();
+    }
   }
 });
 

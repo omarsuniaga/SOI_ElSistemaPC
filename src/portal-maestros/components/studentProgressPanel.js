@@ -13,6 +13,7 @@
  */
 
 import { supabase } from '../../lib/supabaseClient.js'
+import { getBreakpoint, onBreakpointChange } from '../utils/portalUtils.js'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Helpers
@@ -249,6 +250,18 @@ export function createStudentProgressPanel({ alumno, rutaId }) {
   let _summaries = []
 
   // ── Event delegation ──────────────────────────────────────────────────────
+  function _adaptToBreakpoint() {
+    const bp = getBreakpoint()
+    if (bp === 'desktop') {
+      el.classList.add('pm-student-panel--desktop')
+    } else {
+      el.classList.remove('pm-student-panel--desktop')
+    }
+  }
+
+  const unbindBP = onBreakpointChange(_adaptToBreakpoint)
+  _adaptToBreakpoint()
+
   function _onClick(e) {
     const target = e.target.closest('[data-action]')
     if (!target) return
@@ -309,6 +322,7 @@ export function createStudentProgressPanel({ alumno, rutaId }) {
   }
 
   function destroy() {
+    unbindBP()
     el.removeEventListener('click', _onClick)
     el.remove()
   }

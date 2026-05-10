@@ -608,6 +608,11 @@
     transform: none;
   }
   
+  .pm-student-panel--desktop {
+    right: 0;
+    left: auto;
+  }
+  
   .pm-student-panel__close {
     display: none; /* En desktop se cierra con X inline */
   }

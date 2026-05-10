@@ -109,7 +109,19 @@ export function createPortalRouter() {
         _activeTransition.skipTransition()
         _activeTransition = null
       }
+      
+      const view = document.querySelector('.pm-view-content.active')
+      if (view) {
+        view.classList.remove('pm-animate-fade-in')
+        void view.offsetWidth // force reflow
+      }
+      
       callFn()
+      
+      const newView = document.querySelector('.pm-view-content.active')
+      if (newView) {
+        newView.classList.add('pm-animate-fade-in')
+      }
       return
     }
 

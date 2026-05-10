@@ -6,7 +6,8 @@ export default defineConfig({
     outDir: 'dist',
     rollupOptions: {
       input: {
-        admin:    'index.html',
+        index:    'index.html',
+        admin:    'admin.html',
         maestros: 'maestros.html',
       },
       output: {
@@ -31,9 +32,12 @@ export default defineConfig({
   server: {
     host: true,
     port: 5173,
+    strictPort: false,
+    // HMR configuration - allow it to work properly without WebSocket hanging
     hmr: {
-      overlay: false
-    },
-    strictPort: false
+      protocol: 'ws',
+      host: 'localhost',
+      port: 5173
+    }
   }
 })

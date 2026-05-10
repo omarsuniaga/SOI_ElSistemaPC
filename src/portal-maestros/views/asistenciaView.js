@@ -18,6 +18,7 @@ import { createMethodologyForm } from '../components/MethodologyForm.js'
 import { createHomeworkPanel } from '../components/HomeworkPanel.js'
 import { createLevelCompletionModal } from '../components/LevelCompletionModal.js'
 import { getClassEvent, updateClassEventStatus } from '../services/classEventService.js'
+import { consumeRutaTema } from '../services/rutaTopicStore.js'
 
 /**
  * Vista Asistencia Optimizada (F3+): toma de asistencia con micro-interacciones.
@@ -263,6 +264,36 @@ function _renderVista(container, ctx) {
       }
     })
     _cleanups.push(() => routeTreeBar.destroy())
+  }
+
+  // === Ruta topic auto-injection ===
+  const rutaTema = consumeRutaTema()
+  if (rutaTema && rutaTema.claseId === claseId) {
+    const temaText = `[${rutaTema.nombre}] `
+    editor.insertText(temaText)
+    toolbar.setContext({ indicadorActivo: rutaTema.nombre })
+
+    const obsBtn = container.querySelector('#btn-guardar-obs')
+    if (obsBtn) obsBtn.style.display = ''
+
+    const editorContainer = container.querySelector('#pm-dsl-editor-container')
+    if (editorContainer) {
+      const banner = document.createElement('div')
+      banner.style.cssText = `
+        background:#eff6ff;border:1px solid #93c5fd;border-radius:8px;
+        padding:8px 12px;margin-bottom:8px;font-size:12px;color:#1d4ed8;
+        display:flex;align-items:center;gap:8px;
+      `
+      banner.innerHTML = `
+        <i class="bi bi-diagram-3"></i>
+        Tema cargado desde Ruta: <strong>${rutaTema.nombre.replace(/</g, '&lt;')}</strong>
+        <button onclick="this.parentElement.remove()" style="
+          margin-left:auto;background:none;border:none;cursor:pointer;
+          font-size:12px;color:#1d4ed8;
+        ">✕</button>
+      `
+      editorContainer.parentElement.insertBefore(banner, editorContainer)
+    }
   }
 
   // === Auto-Draft ===

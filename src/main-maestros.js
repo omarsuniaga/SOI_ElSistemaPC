@@ -19,6 +19,7 @@ import { renderPerfilView }       from './portal-maestros/views/perfilView.js'
 import { renderPlanificacionView } from './portal-maestros/views/planificacionView.js'
 import { renderAlumnoPerfilView } from './portal-maestros/views/alumnoPerfilView.js'
 import { renderGamificacionView } from './portal-maestros/views/gamificacionView.js'
+import { renderRutaPlayerView }  from './portal-maestros/views/rutaPlayerView.js'
 import { renderCrearClaseView } from './portal-maestros/views/crearClaseView.js'
 import { renderAcademicPlanBuilderView } from './portal-maestros/views/academicPlanBuilderView.js'
 import { renderWeeklyPlanView } from './portal-maestros/views/weeklyPlanView.js'
@@ -45,6 +46,7 @@ const IS_ADMIN = window.__SOI_MODE__ === 'admin'
 const MAESTRO_TABS = [
   { id: 'hoy',        label: 'Hoy',        icon: 'bi-house-door' },
   { id: 'calendario', label: 'Calendario',  icon: 'bi-calendar3' },
+  { id: 'ruta',       label: 'Ruta',        icon: 'bi-diagram-3' },
   { id: 'metricas',   label: 'Métricas',    icon: 'bi-bar-chart-line' },
 ]
 
@@ -343,7 +345,7 @@ function _initViewContainers() {
   const views = [
     'login', 'logout', 'calendario', 'clases', 'hoy', 'asistencia', 
     'metricas', 'perfil', 'clase-emergente', 'planificacion', 
-    'alumno', 'gamificacion', 'crear-clase', 'ruta-plan-builder', 
+    'alumno', 'gamificacion', 'ruta', 'crear-clase', 'ruta-plan-builder',
     'ruta-semanal', 'ruta-libreria', 'ruta-detalle',
   ]
 
@@ -457,6 +459,9 @@ async function _renderView(route, params = {}, { silent = false } = {}) {
       case 'gamificacion':
         renderGamificacionView(targetContainer)
         break
+      case 'ruta':
+        renderRutaPlayerView(targetContainer)
+        break
       case 'crear-clase':
         renderCrearClaseView(targetContainer)
         break
@@ -508,7 +513,7 @@ async function _renderView(route, params = {}, { silent = false } = {}) {
     // Vistas que se cachean tras primer render (no se re-renderizan al navegar)
     // Excluidas: asistencia (depende de query params), alumno (depende de id)
     const CACHEABLE_VIEWS = new Set([
-      'hoy', 'calendario', 'metricas', 'perfil',
+      'hoy', 'calendario', 'metricas', 'perfil', 'ruta',
       'gamificacion', 'crear-clase', 'planificacion',
       'ruta-libreria'
     ])
@@ -608,6 +613,7 @@ async function initPortal() {
   router.on('planificacion',   (route, params) => _renderView('planificacion', params))
   router.on('alumno',         (route, params) => _renderView('alumno', params))
   router.on('gamificacion',   (route, params) => _renderView('gamificacion', params))
+  router.on('ruta',           (route, params) => _renderView('ruta', params))
   router.on('crear-clase',    (route, params) => _renderView('crear-clase', params))
   router.on('ruta-plan-builder', (route, params) => _renderView('ruta-plan-builder', params))
   router.on('ruta-semanal',      (route, params) => _renderView('ruta-semanal', params))
@@ -660,4 +666,17 @@ async function initPortal() {
   _triggerSync()
 }
 
-initPortal()
+// Global error trap — shows errors visually so we can debug without DevTools
+window.addEventListener('error', (e) => {
+  const app = document.getElementById('portal-app')
+  if (app) app.innerHTML = `<div style="padding:20px;color:red;font-family:monospace;background:#fff;z-index:9999;position:fixed;top:0;left:0;right:0;bottom:0;overflow:auto;"><h2>❌ JS Error</h2><pre>${e.message}\n${e.filename?.split('/').pop()}:${e.lineno}</pre></div>`
+})
+window.addEventListener('unhandledrejection', (e) => {
+  const app = document.getElementById('portal-app')
+  if (app) app.innerHTML = `<div style="padding:20px;color:red;font-family:monospace;background:#fff;z-index:9999;position:fixed;top:0;left:0;right:0;bottom:0;overflow:auto;"><h2>❌ Promise Error</h2><pre>${String(e.reason)}</pre></div>`
+})
+
+initPortal().catch(err => {
+  const app = document.getElementById('portal-app')
+  if (app) app.innerHTML = `<div style="padding:20px;color:red;font-family:monospace;background:#fff;z-index:9999;position:fixed;top:0;left:0;right:0;bottom:0;overflow:auto;"><h2>❌ initPortal() falló</h2><pre>${err?.message || err}\n${err?.stack || ''}</pre></div>`
+})

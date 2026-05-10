@@ -19,16 +19,34 @@ export const usePortalAuth = {
 
   /** Inicializa la sesión al cargar la app. */
   async init() {
+    console.log('[usePortalAuth.init] Iniciando...')
     state.maestro = getMaestroLocal()
+    console.log('[usePortalAuth.init] Maestro local:', state.maestro ? 'found' : 'not found')
     state.loading  = true
     notify()
 
-    const maestro  = await detectarRolMaestro()
-    state.maestro  = maestro
-    state.loading  = false
-    notify()
+    try {
+      // Timeout protection: detectarRolMaestro puede colgar en desarrollo
+      console.log('[usePortalAuth.init] Iniciando detectarRolMaestro() con timeout de 8s...')
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Auth timeout after 8s')), 8000)
+      )
+      const maestro = await Promise.race([
+        detectarRolMaestro(),
+        timeoutPromise
+      ])
+      console.log('[usePortalAuth.init] detectarRolMaestro completado:', maestro ? 'con datos' : 'sin datos')
+      state.maestro = maestro
+    } catch (err) {
+      console.warn('[usePortalAuth.init] Error:', err.message)
+      state.maestro = null
+    }
 
-    return maestro
+    state.loading = false
+    notify()
+    console.log('[usePortalAuth.init] Completado')
+
+    return state.maestro
   },
 
   /** Establece el maestro activo tras login exitoso. */

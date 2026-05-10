@@ -39,33 +39,38 @@ export async function loginMaestro(email, password) {
  * @returns {Promise<object|null>}
  */
 export async function detectarRolMaestro() {
-  const { data: { session } } = await supabase.auth.getSession()
+  try {
+    const { data: { session } } = await supabase.auth.getSession()
 
-  if (!session) {
-    localStorage.removeItem(STORAGE_KEY)
+    if (!session) {
+      localStorage.removeItem(STORAGE_KEY)
+      return null
+    }
+
+    // Intentar desde caché local primero
+    const cached = localStorage.getItem(STORAGE_KEY)
+    if (cached) {
+      try { return JSON.parse(cached) } catch { /* corrupted, continuar */ }
+    }
+
+    // Buscar en Supabase
+    const { data: maestro, error } = await supabase
+      .from('maestros')
+      .select('*')
+      .eq('user_id', session.user.id)
+      .single()
+
+    if (error || !maestro) {
+      localStorage.removeItem(STORAGE_KEY)
+      return null
+    }
+
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(maestro))
+    return maestro
+  } catch (err) {
+    console.error('[Auth] Error in detectarRolMaestro:', err.message)
     return null
   }
-
-  // Intentar desde caché local primero
-  const cached = localStorage.getItem(STORAGE_KEY)
-  if (cached) {
-    try { return JSON.parse(cached) } catch { /* corrupted, continuar */ }
-  }
-
-  // Buscar en Supabase
-  const { data: maestro, error } = await supabase
-    .from('maestros')
-    .select('*')
-    .eq('user_id', session.user.id)
-    .single()
-
-  if (error || !maestro) {
-    localStorage.removeItem(STORAGE_KEY)
-    return null
-  }
-
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(maestro))
-  return maestro
 }
 
 /**

@@ -16,6 +16,8 @@ let _state = {
   loading: false,
 }
 
+let _globalListenersAttached = false
+
 /**
  * Main entry point for gamified ruta view
  * @param {HTMLElement} container
@@ -43,7 +45,8 @@ export async function renderRutaGameificadaView(container) {
     _state.activeClaseId = _state.clases[0].id
     await _loadTreeForActiveClass()
     _renderFull(container)
-    _attachEventListeners(container)
+    _attachDropdownListener(container)
+    _attachGlobalListenersOnce(container)
   } catch (err) {
     console.error('[rutaGameificadaView]', err)
     container.innerHTML = `<div style="color:red;padding:20px;"><i class="bi bi-exclamation"></i> Error: ${err.message}</div>`
@@ -84,19 +87,35 @@ function _renderFull(container) {
     : '<div style="padding:40px; text-align:center; color:#94a3b8;">No se encontró ruta publicada.</div>'
 }
 
-function _attachEventListeners(container) {
+/**
+ * Attach dropdown listener to the current select element.
+ * Called each time the select is re-rendered; old element is GC'd with its listeners.
+ */
+function _attachDropdownListener(container) {
   container.querySelector('#ruta-clase-select')?.addEventListener('change', async (e) => {
     _state.activeClaseId = e.target.value
     container.innerHTML = '<div class="pm-loading"><div class="pm-spinner"></div></div>'
     await _loadTreeForActiveClass()
-    renderRutaGameificadaView(container)
+    _renderFull(container)
+    _attachDropdownListener(container) // attach to the newly rendered select
+    // NOTE: do NOT call renderRutaGameificadaView() — that resets state and re-fetches clases
   })
+}
+
+/**
+ * Attach global event listeners exactly once for the lifetime of this view.
+ * Uses a module-level flag to prevent duplication across class changes.
+ */
+function _attachGlobalListenersOnce(container) {
+  if (_globalListenersAttached) return
+  _globalListenersAttached = true
 
   // Listen for node-covered events from clase view
   rutaEvents.on('node-covered', () => {
     // Reload tree to show updates
     _loadTreeForActiveClass().then(() => {
       _renderFull(container)
+      _attachDropdownListener(container)
     })
   })
 }

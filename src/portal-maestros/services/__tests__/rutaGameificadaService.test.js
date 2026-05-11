@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { getStudentsPerNode } from '../rutaGameificadaService.js'
+import { getStudentsPerNode, markNodeAsCovered } from '../rutaGameificadaService.js'
 
 vi.mock('../../../lib/supabaseClient.js', () => ({
   supabase: {
@@ -40,6 +40,94 @@ describe('rutaGameificadaService', () => {
     vi.clearAllMocks()
     const mod = await import('../../../lib/supabaseClient.js')
     supabase = mod.supabase
+  })
+
+  describe('markNodeAsCovered', () => {
+    it('marks node as covered for a clase with coverage metadata', async () => {
+      const nodeId = 'node-123'
+      const claseId = 'clase-456'
+      const studentIds = ['student-1', 'student-2']
+
+      // indicators query
+      supabase.from.mockReturnValueOnce({
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockResolvedValue({
+          data: [{ id: 'ind-1' }, { id: 'ind-2' }],
+          error: null,
+        }),
+      })
+
+      // indicator_attempts update
+      supabase.from.mockReturnValueOnce({
+        update: vi.fn().mockReturnThis(),
+        in: vi.fn().mockReturnThis(),
+        // second .in() resolves
+        _resolvedWith: null,
+      })
+
+      // Need a proper chain for update().in().in()
+      const inMock = vi.fn()
+      const updateChain = {
+        update: vi.fn().mockReturnThis(),
+        in: inMock,
+      }
+      inMock.mockReturnValueOnce(updateChain) // first .in()
+      inMock.mockResolvedValueOnce({ data: [{ id: 'a' }, { id: 'b' }], error: null }) // second .in()
+      supabase.from.mockReset()
+
+      // Re-mock both calls cleanly
+      supabase.from
+        .mockReturnValueOnce({
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockResolvedValue({
+            data: [{ id: 'ind-1' }, { id: 'ind-2' }],
+            error: null,
+          }),
+        })
+        .mockReturnValueOnce(updateChain)
+
+      const result = await markNodeAsCovered(nodeId, claseId, studentIds)
+
+      expect(result.success).toBe(true)
+      expect(result.updatedCount).toBe(2)
+    })
+
+    it('returns error if nodeId or claseId is missing', async () => {
+      const result = await markNodeAsCovered('', 'clase-456', [])
+
+      expect(result.success).toBe(false)
+      expect(result.error).toBeDefined()
+    })
+
+    it('returns error if no indicators found for node', async () => {
+      supabase.from.mockReturnValueOnce({
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockResolvedValue({ data: [], error: null }),
+      })
+
+      const result = await markNodeAsCovered('node-noind', 'clase-456', ['s1'])
+
+      expect(result.success).toBe(false)
+      expect(result.error).toBe('No indicators found for node')
+    })
+
+    it('returns error if supabase update fails', async () => {
+      supabase.from.mockReturnValueOnce({
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockResolvedValue({ data: [{ id: 'ind-1' }], error: null }),
+      })
+
+      const inMock = vi.fn()
+      const updateChain = { update: vi.fn().mockReturnThis(), in: inMock }
+      inMock.mockReturnValueOnce(updateChain)
+      inMock.mockResolvedValueOnce({ data: null, error: { message: 'DB error' } })
+      supabase.from.mockReturnValueOnce(updateChain)
+
+      const result = await markNodeAsCovered('node-123', 'clase-456', ['s1'])
+
+      expect(result.success).toBe(false)
+      expect(result.error).toBe('DB error')
+    })
   })
 
   describe('getStudentsPerNode', () => {

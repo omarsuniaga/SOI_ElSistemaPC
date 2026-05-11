@@ -24,3 +24,41 @@ export async function getStudentsPerNode(nodeId) {
     attemptCount: row.attempt_count || 0,
   }))
 }
+
+/**
+ * Mark a node as covered (covered_date set, covered_by_clase_id set)
+ * Called manually or automatically when observations are registered
+ * @param {string} nodeId
+ * @param {string} claseId
+ * @param {string[]} studentIds - Students who participated
+ * @returns {Promise<{success: boolean, updatedCount?: number, error?: string}>}
+ */
+export async function markNodeAsCovered(nodeId, claseId, studentIds = []) {
+  if (!nodeId || !claseId) {
+    return { success: false, error: 'nodeId and claseId required' }
+  }
+
+  const { data: indicators, error: indError } = await supabase
+    .from('indicators')
+    .select('id')
+    .eq('node_id', nodeId)
+
+  if (indError || !indicators?.length) {
+    return { success: false, error: 'No indicators found for node' }
+  }
+
+  const indicatorIds = indicators.map(i => i.id)
+  const coveredDate = new Date().toISOString().split('T')[0]
+
+  const { error: updateError, data } = await supabase
+    .from('indicator_attempts')
+    .update({ covered_date: coveredDate, covered_by_clase_id: claseId })
+    .in('indicator_id', indicatorIds)
+    .in('student_id', studentIds)
+
+  if (updateError) {
+    return { success: false, error: updateError.message }
+  }
+
+  return { success: true, updatedCount: data?.length || 0 }
+}

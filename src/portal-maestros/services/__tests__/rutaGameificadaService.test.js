@@ -66,13 +66,14 @@ describe('rutaGameificadaService', () => {
       })
 
       // Need a proper chain for update().in().in()
+      const selectAfterIn = vi.fn().mockResolvedValue({ data: [{ id: 'a' }, { id: 'b' }], error: null })
       const inMock = vi.fn()
       const updateChain = {
         update: vi.fn().mockReturnThis(),
         in: inMock,
       }
       inMock.mockReturnValueOnce(updateChain) // first .in()
-      inMock.mockResolvedValueOnce({ data: [{ id: 'a' }, { id: 'b' }], error: null }) // second .in()
+      inMock.mockReturnValueOnce({ select: selectAfterIn }) // second .in() → returns object with .select()
       supabase.from.mockReset()
 
       // Re-mock both calls cleanly
@@ -117,10 +118,11 @@ describe('rutaGameificadaService', () => {
         eq: vi.fn().mockResolvedValue({ data: [{ id: 'ind-1' }], error: null }),
       })
 
+      const selectAfterIn = vi.fn().mockResolvedValue({ data: null, error: { message: 'DB error' } })
       const inMock = vi.fn()
       const updateChain = { update: vi.fn().mockReturnThis(), in: inMock }
       inMock.mockReturnValueOnce(updateChain)
-      inMock.mockResolvedValueOnce({ data: null, error: { message: 'DB error' } })
+      inMock.mockReturnValueOnce({ select: selectAfterIn })
       supabase.from.mockReturnValueOnce(updateChain)
 
       const result = await markNodeAsCovered('node-123', 'clase-456', ['s1'])

@@ -38,12 +38,21 @@ export async function markNodeAsCovered(nodeId, claseId, studentIds = []) {
     return { success: false, error: 'nodeId and claseId required' }
   }
 
+  if (!Array.isArray(studentIds) || studentIds.length === 0) {
+    return { success: false, error: 'studentIds array required and cannot be empty' }
+  }
+
   const { data: indicators, error: indError } = await supabase
     .from('indicators')
     .select('id')
     .eq('node_id', nodeId)
 
-  if (indError || !indicators?.length) {
+  if (indError) {
+    console.error('[rutaGameificadaService] Failed to query indicators:', indError)
+    return { success: false, error: indError.message }
+  }
+
+  if (!indicators?.length) {
     return { success: false, error: 'No indicators found for node' }
   }
 
@@ -55,8 +64,10 @@ export async function markNodeAsCovered(nodeId, claseId, studentIds = []) {
     .update({ covered_date: coveredDate, covered_by_clase_id: claseId })
     .in('indicator_id', indicatorIds)
     .in('student_id', studentIds)
+    .select('id')
 
   if (updateError) {
+    console.error('[rutaGameificadaService] Failed to mark node as covered:', updateError)
     return { success: false, error: updateError.message }
   }
 

@@ -1,5 +1,11 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { getStudentsPerNode, markNodeAsCovered } from '../rutaGameificadaService.js'
+import {
+  getStudentsPerNode,
+  markNodeAsCovered,
+  getPlannedContentForToday,
+  addPlannedContent,
+  markPlannedAsCovered,
+} from '../rutaGameificadaService.js'
 
 vi.mock('../../../lib/supabaseClient.js', () => ({
   supabase: {
@@ -129,6 +135,56 @@ describe('rutaGameificadaService', () => {
 
       expect(result.success).toBe(false)
       expect(result.error).toBe('DB error')
+    })
+  })
+
+  describe('plannedContent', () => {
+    it('gets planned nodes for a clase today', async () => {
+      const claseId = 'clase-456'
+
+      // Build a proper chain for select().eq().eq().eq()
+      const eqMock = vi.fn()
+      const chain = {
+        select: vi.fn().mockReturnThis(),
+        eq: eqMock,
+      }
+      eqMock.mockReturnValueOnce(chain) // .eq('clase_id', ...)
+      eqMock.mockReturnValueOnce(chain) // .eq('planned_date', ...)
+      eqMock.mockResolvedValueOnce({ data: [], error: null }) // .eq('covered', false)
+      supabase.from.mockReturnValueOnce(chain)
+
+      const result = await getPlannedContentForToday(claseId)
+
+      expect(Array.isArray(result)).toBe(true)
+    })
+
+    it('adds a node to planned content', async () => {
+      const maestroId = 'maestro-123'
+      const claseId = 'clase-456'
+      const nodeId = 'node-789'
+
+      const selectMock = vi.fn().mockResolvedValue({ data: [{ id: 'planned-new' }], error: null })
+      supabase.from.mockReturnValueOnce({
+        insert: vi.fn().mockReturnThis(),
+        select: selectMock,
+      })
+
+      const result = await addPlannedContent(maestroId, claseId, nodeId)
+
+      expect(result.success).toBe(true)
+    })
+
+    it('marks planned content as covered', async () => {
+      const plannedId = 'planned-123'
+
+      supabase.from.mockReturnValueOnce({
+        update: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockResolvedValue({ error: null }),
+      })
+
+      const result = await markPlannedAsCovered(plannedId)
+
+      expect(result.success).toBe(true)
     })
   })
 

@@ -73,3 +73,79 @@ export async function markNodeAsCovered(nodeId, claseId, studentIds = []) {
 
   return { success: true, updatedCount: data?.length || 0 }
 }
+
+/**
+ * Get all nodes planned for today for a clase
+ * @param {string} claseId
+ * @returns {Promise<Array>} [{id, nodeId, plannedDate}]
+ */
+export async function getPlannedContentForToday(claseId) {
+  const today = new Date().toISOString().split('T')[0]
+
+  const { data, error } = await supabase
+    .from('planned_content')
+    .select('id, node_id, planned_date')
+    .eq('clase_id', claseId)
+    .eq('planned_date', today)
+    .eq('covered', false)
+
+  if (error) {
+    console.error('[rutaGameificadaService] getPlannedContentForToday error:', error)
+    return []
+  }
+
+  return (data || []).map(row => ({
+    id: row.id,
+    nodeId: row.node_id,
+    plannedDate: row.planned_date,
+  }))
+}
+
+/**
+ * Add a node to planned content for a specific date
+ * @param {string} maestroId
+ * @param {string} claseId
+ * @param {string} nodeId
+ * @param {string} plannedDate - Optional, defaults to today
+ * @returns {Promise<{success: boolean, id?: string, error?: string}>}
+ */
+export async function addPlannedContent(maestroId, claseId, nodeId, plannedDate = null) {
+  const date = plannedDate || new Date().toISOString().split('T')[0]
+
+  const { data, error } = await supabase
+    .from('planned_content')
+    .insert({
+      maestro_id: maestroId,
+      clase_id: claseId,
+      node_id: nodeId,
+      planned_date: date,
+      covered: false,
+    })
+    .select('id')
+
+  if (error) {
+    console.error('[rutaGameificadaService] addPlannedContent error:', error)
+    return { success: false, error: error.message }
+  }
+
+  return { success: true, id: data?.[0]?.id }
+}
+
+/**
+ * Mark planned content as covered
+ * @param {string} plannedId
+ * @returns {Promise<{success: boolean, error?: string}>}
+ */
+export async function markPlannedAsCovered(plannedId) {
+  const { error } = await supabase
+    .from('planned_content')
+    .update({ covered: true })
+    .eq('id', plannedId)
+
+  if (error) {
+    console.error('[rutaGameificadaService] markPlannedAsCovered error:', error)
+    return { success: false, error: error.message }
+  }
+
+  return { success: true }
+}

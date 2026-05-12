@@ -323,9 +323,8 @@ export const academicService = {
       payload: {
         student_id: payload.student_id,
         indicator_id: payload.indicator_id,
-        node_id: payload.node_id,
         session_id: payload.session_id,
-        teacher_id: payload.teacher_id,
+        created_by: payload.teacher_id,
         status: payload.status,
         feedback: payload.feedback || '',
         attempt_number: payload.attempt_number || 1,

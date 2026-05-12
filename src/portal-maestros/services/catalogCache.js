@@ -93,7 +93,7 @@ export async function getAll(storeName) {
  */
 export async function getByIndex(storeName, indexName, value) {
   const db = await getDB();
-  return db.getFromIndex(storeName, indexName, value);
+  return db.getAllFromIndex(storeName, indexName, value);
 }
 
 /**

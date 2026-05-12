@@ -120,11 +120,12 @@ export async function discardDraft(draftId) {
  * Finalize an observation (delete draft, insert permanent record).
  * @param {string} sesionId
  * @param {string} maestroId
- * @param {string} contenidoRaw
- * @param {Object} contenidoParsed
+ * @param {string} contenidoRaw - Texto original del maestro (lenguaje natural o DSL)
+ * @param {Object} contenidoParsed - Datos cuantificados extraídos del texto
+ * @param {string|null} contenidoIaDsl - DSL generado por IA (null si el maestro escribió en DSL directo)
  * @returns {Promise<Object>} saved row
  */
-export async function saveObservation(sesionId, maestroId, contenidoRaw, contenidoParsed) {
+export async function saveObservation(sesionId, maestroId, contenidoRaw, contenidoParsed, contenidoIaDsl = null) {
   // Delete any active draft first
   const { error: deleteError } = await supabase
     .from('observaciones_sesion')
@@ -142,6 +143,7 @@ export async function saveObservation(sesionId, maestroId, contenidoRaw, conteni
       maestro_id: maestroId,
       contenido_raw: contenidoRaw,
       contenido_parsed: contenidoParsed,
+      contenido_ia_dsl: contenidoIaDsl,
       es_borrador: false,
     })
     .select()

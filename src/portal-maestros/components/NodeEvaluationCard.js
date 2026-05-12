@@ -57,9 +57,8 @@ export function createNodeEvaluationCard(container, { indicator, sessionId, stud
       const payload = {
         student_id: studentId,
         indicator_id: indicator.indicator_id,
-        node_id: indicator.node_id,
         session_id: sessionId,
-        teacher_id: teacherId,
+        created_by: teacherId,
         status: currentStatus,
         feedback: feedbackInput.value,
         attempt_number: (indicator.attempt_number || 0) + 1

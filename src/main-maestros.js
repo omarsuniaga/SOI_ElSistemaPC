@@ -1,4 +1,60 @@
+// ============================================
+// EARLY ERROR SUPPRESSION (Must be first!)
+// ============================================
+import './early-error-suppression.js'
+
 import './portal-maestros/styles/index.css'
+
+// ============================================
+// NUEVOS SERVICIOS - Portal Professionalization
+// ============================================
+
+// Error Boundary - captura errores globales
+import { renderErrorBoundary } from './components/ErrorBoundary.js'
+
+// Error Reporter - Sentry integration
+import { initErrorReporter, reportError, setErrorUser } from './services/errorReporter.js'
+
+// Analytics - tracking (GDPR compliant)
+import { initAnalytics, trackPageView, setUser as setAnalyticsUser } from './services/analyticsService.js'
+
+// GDPR Service
+import { exportUserData } from './services/gdprService.js'
+
+// Rate Limiter
+import { initRateLimit, checkRateLimit } from './middleware/rateLimit.js'
+
+// CSRF Protection
+import { initCSRF, generateToken } from './middleware/csrfProtection.js'
+
+// Web Vitals
+import { initWebVitals, getWebVitals } from './services/webVitals.js'
+
+// Inicializar servicios
+console.log('[SOI] Initializing professionalization services...')
+
+// CSRF
+initCSRF()
+
+// Rate Limit (100 req/min)
+initRateLimit({ windowMs: 60000, max: 100 })
+
+// Analytics (disabled by default, consent required)
+initAnalytics({ enabled: false, consent: false })
+
+// Web Vitals
+initWebVitals({ debug: false })
+
+// Sentry (requires VITE_SENTRY_DSN env var)
+initErrorReporter({
+  dsn: import.meta.env.VITE_SENTRY_DSN || null,
+  environment: import.meta.env.MODE || 'development',
+})
+
+// ============================================
+// FIN NUEVOS SERVICIOS
+// ============================================
+
 import { usePortalAuth, logoutMaestro } from './portal-maestros/auth/usePortalAuth.js'
 import { createPortalRouter }   from './portal-maestros/router/portalRouter.js'
 import { processQueue, getQueue } from './portal-maestros/services/offlineQueue.js'
@@ -453,7 +509,8 @@ function _setActiveTab(route) {
 // ── Contenedores de vistas persistentes ───────────────────────
 
 const _viewContainers = {}
-const _viewRendered = new Set()
+let _activeViewCleanup = null
+let _viewRendered = new Set()
 
 function _initViewContainers() {
   const container = document.getElementById('pm-view-container')
@@ -515,6 +572,13 @@ async function _renderView(route, params = {}, { silent = false } = {}) {
   }
 
   if (!silent) {
+    // ── CLEANUP ANTERIOR ──
+    if (typeof _activeViewCleanup === 'function') {
+      console.log(`[Router] Ejecutando cleanup de vista anterior...`)
+      _activeViewCleanup()
+      _activeViewCleanup = null
+    }
+
     Object.values(_viewContainers).forEach(el => {
       el.style.display = 'none'
       el.classList.remove('active')
@@ -551,30 +615,30 @@ async function _renderView(route, params = {}, { silent = false } = {}) {
         break
       case 'calendario':
       case 'clases':
-        await renderCalendarioView(targetContainer)
+        _activeViewCleanup = await renderCalendarioView(targetContainer)
         break
       case 'hoy':
-        await renderHoyView(targetContainer, {
+        _activeViewCleanup = await renderHoyView(targetContainer, {
           onClaseClick: (id) => router.navigate(`asistencia?clase=${id}`)
         })
         break
       case 'asistencia':
-        await renderAsistenciaView(targetContainer, { claseId: urlParams.get('clase'), fecha: urlParams.get('fecha') })
+        _activeViewCleanup = await renderAsistenciaView(targetContainer, { claseId: urlParams.get('clase'), fecha: urlParams.get('fecha') })
         break
       case 'metricas':
-        renderMetricasView(targetContainer)
+        _activeViewCleanup = renderMetricasView(targetContainer)
         break
       case 'perfil':
-        renderPerfilView(targetContainer)
+        _activeViewCleanup = renderPerfilView(targetContainer)
         break
       case 'clase-emergente':
-        renderClaseEmergenteView(targetContainer, { maestroId: _maestro?.id })
+        _activeViewCleanup = renderClaseEmergenteView(targetContainer, { maestroId: _maestro?.id })
         break
       case 'planificacion':
-        renderPlanificacionView(targetContainer)
+        _activeViewCleanup = await renderPlanificacionView(targetContainer)
         break
       case 'alumno':
-        renderAlumnoPerfilView(targetContainer, { alumnoId: urlParams.get('id') })
+        _activeViewCleanup = renderAlumnoPerfilView(targetContainer, { alumnoId: urlParams.get('id') })
         break
       case 'gamificacion':
         renderGamificacionView(targetContainer)
@@ -786,8 +850,30 @@ async function initPortal() {
   _triggerSync()
 }
 
-// Global error trap — shows errors visually so we can debug without DevTools
+// Global error trap — shows errors visually + report to services
 window.addEventListener('error', (e) => {
+  // Filter out non-critical errors
+  const ignoredPatterns = [
+    'useCache',
+    'WebSocket',
+    'content.js',
+  ]
+  
+  const errorMsg = e.message || ''
+  const isIgnored = ignoredPatterns.some(p => errorMsg.includes(p))
+  
+  if (isIgnored) {
+    console.warn('[Ignored Error]', errorMsg)
+    return
+  }
+  
+  // Report to Sentry
+  reportError(new Error(e.message), {
+    context: 'window.error',
+    filename: e.filename,
+    lineno: e.lineno,
+  })
+  
   const app = document.getElementById('portal-app')
   if (app) app.innerHTML = `
     <div style="padding:40px; color:#fff; font-family:'Outfit',sans-serif; background:radial-gradient(circle at top right, #1e293b, #0f172a); z-index:9999; position:fixed; top:0; left:0; right:0; bottom:0; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center;">
@@ -808,6 +894,14 @@ window.addEventListener('error', (e) => {
     </div>`
 })
 window.addEventListener('unhandledrejection', (e) => {
+  // Additional handling for unhandled rejections
+  // (early-error-suppression.js already filters most non-critical errors)
+  
+  // Report to Sentry
+  reportError(e.reason instanceof Error ? e.reason : new Error(String(e.reason)), {
+    context: 'unhandledRejection',
+  })
+  
   const app = document.getElementById('portal-app')
   if (app) app.innerHTML = `
     <div style="padding:40px; color:#fff; font-family:'Outfit',sans-serif; background:radial-gradient(circle at top right, #1e293b, #0f172a); z-index:9999; position:fixed; top:0; left:0; right:0; bottom:0; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center;">

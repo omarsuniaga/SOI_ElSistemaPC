@@ -48,6 +48,7 @@ export async function crearPlanificacion(plan) {
     recursos: Array.isArray(plan.recursos) ? plan.recursos.map(r => r.trim()).filter(r => r) : [],
     evaluacion_metodo: (plan.evaluacion_metodo || '').trim(),
     observaciones: (plan.observaciones || '').trim(),
+    instrumento: plan.instrumento ? plan.instrumento.trim() : null,
     estado: plan.estado || 'planificado',
   }
 
@@ -107,6 +108,12 @@ export async function actualizarPlanificacion(id, actualizaciones) {
 
   if (actualizaciones.observaciones !== undefined) {
     datosActualizacion.observaciones = (actualizaciones.observaciones || '').trim()
+  }
+
+  if (actualizaciones.instrumento !== undefined) {
+    datosActualizacion.instrumento = actualizaciones.instrumento
+      ? actualizaciones.instrumento.trim()
+      : null
   }
 
   if (actualizaciones.estado !== undefined) {

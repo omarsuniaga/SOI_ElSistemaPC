@@ -14,9 +14,9 @@ function ensureDOM() {
   backdrop.id = BACKDROP_ID
   backdrop.style.cssText = `
     display:none;position:fixed;inset:0;
-    background:rgba(0,0,0,0.55);
-    backdrop-filter:blur(2px);
-    z-index:1200;
+    background:var(--pm-backdrop, rgba(0,0,0,0.55));
+    backdrop-filter:blur(4px);
+    z-index:2000;
     transition:opacity .2s ease;
     opacity:0;
   `
@@ -29,7 +29,7 @@ function ensureDOM() {
   modal.setAttribute('aria-modal', 'true')
   modal.style.cssText = `
     display:none;position:fixed;inset:0;
-    z-index:1201;
+    z-index:2001;
     overflow-y:auto;
     padding:1.5rem;
     align-items:center;
@@ -37,9 +37,11 @@ function ensureDOM() {
   `
   modal.innerHTML = `
     <div class="app-modal-dialog" style="
-      background:var(--bs-body-bg);
-      border-radius:0.75rem;
-      box-shadow:0 20px 50px rgba(0,0,0,0.35);
+      background:var(--pm-surface);
+      color:var(--pm-text);
+      border:1px solid var(--pm-border);
+      border-radius:1rem;
+      box-shadow:var(--pm-shadow-lg);
       width:100%;
       max-width:480px;
       margin:auto;
@@ -50,34 +52,37 @@ function ensureDOM() {
     ">
       <!-- Header -->
       <div class="app-modal-header" style="
-        padding:0.75rem 1rem 0.5rem;
-        border-bottom:1px solid var(--bs-border-color);
+        padding:1rem 1.25rem;
+        border-bottom:1px solid var(--pm-border);
         display:flex;align-items:center;gap:.5rem;
+        background:var(--pm-surface-2);
       ">
-        <h5 class="app-modal-title mb-0 fw-semibold" style="flex:1;font-size:0.95rem;"></h5>
+        <h5 class="app-modal-title mb-0 fw-bold" style="flex:1;font-size:1rem;color:var(--pm-primary);"></h5>
         <button class="app-modal-close-x" type="button" aria-label="Cerrar" style="
           background:none;border:none;cursor:pointer;
-          width:28px;height:28px;border-radius:50%;
+          width:32px;height:32px;border-radius:50%;
           display:flex;align-items:center;justify-content:center;
-          color:var(--bs-secondary-color);
-          transition:background .15s,color .15s;
+          color:var(--pm-text-muted);
+          transition:all .15s;
           flex-shrink:0;
         ">
-          <i class="bi bi-x-lg" style="font-size:.85rem;"></i>
+          <i class="bi bi-x-lg" style="font-size:1rem;"></i>
         </button>
       </div>
 
       <!-- Body -->
-      <div class="app-modal-body" style="padding:0.75rem;"></div>
+      <div class="app-modal-body" style="padding:1.25rem; background:var(--pm-surface);"></div>
 
       <!-- Footer -->
       <div class="app-modal-footer" style="
-        padding:0.5rem 1rem;
-        border-top:1px solid var(--bs-border-color);
-        display:flex;align-items:center;justify-content:flex-end;gap:.35rem;
+        padding:1rem 1.25rem;
+        border-top:1px solid var(--pm-border);
+        display:flex;align-items:center;justify-content:flex-end;gap:.5rem;
+        background:var(--pm-surface-2);
       ">
-        <button class="app-modal-btn-cancel btn btn-secondary btn-sm px-3" type="button">Cancelar</button>
-        <button class="app-modal-btn-save btn btn-primary btn-sm px-4" type="button">
+        <button class="app-modal-btn-delete pm-btn" type="button" style="background:none; border:none; color:var(--pm-danger); font-size:0.85rem; font-weight:600; padding:0.5rem 1rem; cursor:pointer; margin-right:auto; display:none;">Eliminar</button>
+        <button class="app-modal-btn-cancel pm-btn pm-btn-outline" type="button">Cancelar</button>
+        <button class="app-modal-btn-save pm-btn pm-btn-primary" type="button">
           <span class="app-modal-save-text">Guardar</span>
         </button>
       </div>
@@ -101,6 +106,7 @@ function getEls() {
     closeX:   document.querySelector(`#${MODAL_ID} .app-modal-close-x`),
     btnCancel:document.querySelector(`#${MODAL_ID} .app-modal-btn-cancel`),
     btnSave:  document.querySelector(`#${MODAL_ID} .app-modal-btn-save`),
+    btnDelete:document.querySelector(`#${MODAL_ID} .app-modal-btn-delete`),
     saveText: document.querySelector(`#${MODAL_ID} .app-modal-save-text`),
   }
 }
@@ -112,7 +118,7 @@ export const AppModal = {
   _saveHandler: null,
   _cancelHandler: null,
 
-  open({ title = '', body = '', saveText = 'Guardar', cancelText = 'Cancelar', onSave = null, onCancel = null, onShow = null, size = 'md', hideSave = false } = {}) {
+  open({ title = '', body = '', saveText = 'Guardar', cancelText = 'Cancelar', deleteText = 'Eliminar', onSave = null, onCancel = null, onDelete = null, onShow = null, size = 'md', hideSave = false } = {}) {
     ensureDOM()
     const els = getEls()
 
@@ -134,6 +140,14 @@ export const AppModal = {
     this.resetSaveBtn(saveText)
     els.btnCancel.textContent = cancelText
     els.btnSave.style.display = hideSave ? 'none' : ''
+    
+    // Delete btn logic
+    if (onDelete) {
+      els.btnDelete.textContent = deleteText
+      els.btnDelete.style.display = 'block'
+    } else {
+      els.btnDelete.style.display = 'none'
+    }
 
     // Trap focus on first input when open
     setTimeout(() => {
@@ -172,9 +186,31 @@ export const AppModal = {
       this.close()
     }
 
+    this._deleteHandler = async () => {
+      if (!onDelete) return
+      if (!confirm('¿Estás seguro de que querés eliminar este elemento? Esta acción no se puede deshacer.')) return
+      
+      const original = els.btnDelete.innerHTML
+      els.btnDelete.disabled = true
+      els.btnDelete.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span>'
+      
+      try {
+        const result = await onDelete()
+        if (result !== false) this.close()
+        else {
+          els.btnDelete.disabled = false
+          els.btnDelete.innerHTML = original
+        }
+      } catch (err) {
+        els.btnDelete.disabled = false
+        els.btnDelete.innerHTML = original
+      }
+    }
+
     els.btnSave.addEventListener('click', this._saveHandler)
     els.btnCancel.addEventListener('click', this._cancelHandler)
     els.closeX.addEventListener('click', this._cancelHandler)
+    els.btnDelete.addEventListener('click', this._deleteHandler)
 
     // Close-X hover style
     els.closeX.onmouseenter = () => { els.closeX.style.background = 'var(--bs-secondary-bg)'; els.closeX.style.color = 'var(--bs-body-color)' }
@@ -217,8 +253,12 @@ export const AppModal = {
       els.btnCancel.removeEventListener('click', this._cancelHandler)
       els.closeX.removeEventListener('click', this._cancelHandler)
     }
+    if (this._deleteHandler) {
+      els.btnDelete.removeEventListener('click', this._deleteHandler)
+    }
     this._saveHandler = null
     this._cancelHandler = null
+    this._deleteHandler = null
   },
 
   // Reset save button after error (call from onSave catch if you handle errors yourself)

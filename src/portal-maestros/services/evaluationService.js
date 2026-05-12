@@ -1,12 +1,31 @@
 /**
  * evaluationService — DSL resolution and evaluation persistence
  *
- * Pure functions: parseToBlocks, expandTodos, resolveDSL, calculateSemaphore
- * Async (Supabase): saveEvaluaciones, getSemaphoreForNode
+ * Pure functions: parseToBlocks, expandTodos, resolveDSL, calculateSemaphore, detectInputMode
+ * Async (Supabase): saveEvaluaciones, getSemaphoreForNode, processarEvaluacion
  */
 
 import { parseDSL } from '../utils/dslParser.js'
 import { supabase } from '../../lib/supabaseClient.js'
+import { structureTextToDSL } from './groqService.js'
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Pure helpers
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Detecta si el texto está en modo DSL o lenguaje natural.
+ * DSL = contiene tokens (#, [, (, {, $, >)
+ * Natural = todo lo demás
+ *
+ * @param {string} text
+ * @returns {'dsl' | 'natural'}
+ */
+export function detectInputMode(text) {
+  if (!text || typeof text !== 'string' || !text.trim()) return 'dsl'
+  const hasTokens = /[#\[\(\{\$>]/.test(text)
+  return hasTokens ? 'dsl' : 'natural'
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Pure helpers
@@ -145,11 +164,17 @@ export function calculateSemaphore(evaluaciones, totalAlumnos) {
  * @param {{ alumno_id: string, nota: number|null, observacion: string|null, tarea: string|null }[]} evaluaciones
  * @returns {Promise<{ data: object[]|null, error: object|null }>}
  */
-export async function saveEvaluaciones(sesionId, indicadorId, evaluaciones) {
+export async function saveEvaluaciones(sesionId, indicadorId, evaluaciones, teacherId) {
+  if (!teacherId) {
+    console.error('[evaluationService] Error: teacherId is required for saveEvaluaciones (RLS)');
+    return { error: { message: 'teacherId is required' } };
+  }
+
   const rows = evaluaciones.map(e => ({
     session_id: sesionId,
     indicator_id: indicadorId,
     student_id: e.alumno_id,
+    created_by: teacherId,
     nota: e.nota,
     observations: e.observacion,
     tarea: e.tarea,
@@ -208,4 +233,97 @@ export async function getSemaphoreForNode(nodoId, claseId) {
   const semaphore = calculateSemaphore(attempts ?? [], totalAlumnos)
 
   return { semaphore, indicators: indicators, totalAlumnos }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Bimodal Entry Point — Natural → DSL → Evaluación
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Punto de entrada unificado para procesar evaluaciones.
+ * Detecta automáticamente si el texto es DSL nativo o lenguaje natural
+ * y aplica el pipeline correspondiente.
+ *
+ * Flujo:
+ *   Natural → structureTextToDSL (IA) → resolveDSL → expandTodos
+ *   DSL     → resolveDSL → expandTodos (directo)
+ *
+ * @param {string} rawText - Texto del maestro (natural o DSL)
+ * @param {string} indicadorId - ID del indicador activo
+ * @param {{ id: string, nombre_completo: string }[]} presentes - Alumnos de la clase
+ * @returns {Promise<{
+ *   modo: 'dsl' | 'natural' | 'error',
+ *   dslGenerado: string | null,
+ *   evaluaciones: object[],
+ *   missing: string[],
+ *   error: string | null
+ * }>}
+ */
+export async function processarEvaluacion(rawText, indicadorId, presentes, indicadorNombre = null) {
+  if (!rawText || !rawText.trim()) {
+    return { modo: 'error', dslGenerado: null, evaluaciones: [], missing: [], error: 'Texto vacío' }
+  }
+
+  const modo = detectInputMode(rawText)
+
+  try {
+    let dslText = rawText
+
+    // Si es lenguaje natural, convertir a DSL con IA (con contexto de alumnos e indicador activo)
+    if (modo === 'natural') {
+      const presentesNombres = presentes.map(p => p.nombre_completo)
+      dslText = await structureTextToDSL(rawText, {
+        presentes: presentesNombres,
+        indicadorActivo: indicadorNombre,
+      })
+    }
+
+    // Parsear y expandir con la lógica existente
+    const blocks = parseToBlocks(dslText)
+    const evaluaciones = expandTodos(blocks, presentes)
+    const evaluatedIds = new Set(evaluaciones.map(e => e.alumno_id))
+    const missing = presentes
+      .filter(p => !evaluatedIds.has(p.id))
+      .map(p => p.nombre_completo)
+
+    return {
+      modo,
+      dslGenerado: modo === 'natural' ? dslText : null,
+      evaluaciones,
+      missing,
+      error: null,
+    }
+  } catch (err) {
+    console.error('[evaluationService] Error en processarEvaluacion:', err)
+    return {
+      modo,
+      dslGenerado: null,
+      evaluaciones: [],
+      missing: [],
+      error: err.message || 'Error desconocido',
+    }
+  }
+}
+
+/**
+ * Guarda las evaluaciones procesadas en indicator_attempts.
+ * Wrapper de saveEvaluaciones con manejo de errores.
+ *
+ * @param {string} sesionId
+ * @param {string} indicadorId
+ * @param {object[]} evaluaciones
+ * @returns {Promise<{ success: boolean, error: string | null }>}
+ */
+export async function guardarEvaluaciones(sesionId, indicadorId, evaluaciones, teacherId) {
+  if (!evaluaciones || evaluaciones.length === 0) {
+    return { success: true, error: null }
+  }
+
+  const { error } = await saveEvaluaciones(sesionId, indicadorId, evaluaciones, teacherId)
+  if (error) {
+    console.error('[evaluationService] Error guardando evaluaciones:', error)
+    return { success: false, error: error.message }
+  }
+
+  return { success: true, error: null }
 }

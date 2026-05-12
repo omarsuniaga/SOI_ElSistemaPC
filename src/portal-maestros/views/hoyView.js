@@ -103,9 +103,11 @@ export async function renderHoyView(container, { onClaseClick } = {}) {
     }).join('')
 
     container.innerHTML = `
-      <h2 class="pm-date-header">${capitalize(diaHoy)} ${formatFechaPortal(hoy)}</h2>
-      <div class="pm-clases-container">
-        ${listHTML}
+      <div style="padding: 1rem 1rem 2rem;">
+        <h2 class="pm-date-header">${capitalize(diaHoy)} ${formatFechaPortal(hoy)}</h2>
+        <div class="pm-clases-container">
+          ${listHTML}
+        </div>
       </div>
     `
 

@@ -12,6 +12,7 @@ export class Planificacion {
     this.observaciones = data.observaciones || ''
     this.notas_dsl = data.notas_dsl || ''
     this.estado = data.estado || 'planificado'
+    this.instrumento = data.instrumento || null
     this.created_at = data.created_at || null
     this.updated_at = data.updated_at || null
   }
@@ -45,6 +46,10 @@ export class Planificacion {
 
     if (this.observaciones && this.observaciones.length > 1000) {
       errores.push('Las observaciones no pueden exceder 1000 caracteres')
+    }
+
+    if (this.instrumento && this.instrumento.length > 100) {
+      errores.push('El instrumento no puede exceder 100 caracteres')
     }
 
     const estadosValidos = Planificacion.getEstados().map(e => e.value)
@@ -83,6 +88,7 @@ export class Planificacion {
       evaluacion_metodo: this.evaluacion_metodo.trim() || null,
       observaciones: this.observaciones.trim() || null,
       estado: this.estado,
+      instrumento: this.instrumento?.trim() || null,
       created_at: this.created_at,
       updated_at: this.updated_at,
     }

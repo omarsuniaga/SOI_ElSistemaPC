@@ -41,7 +41,7 @@ describe('asistenciaView - Improve Text Integration', () => {
     const filePath = path.resolve('./src/portal-maestros/views/asistenciaView.js')
     const content = fs.readFileSync(filePath, 'utf-8')
 
-    expect(content).toContain('improveModal.open')
+    expect(content).toContain('informeModal.open')
     expect(content).toContain('await improveText(text)')
   })
 })

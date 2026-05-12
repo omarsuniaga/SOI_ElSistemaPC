@@ -7,9 +7,10 @@ async function _renderEvaluaciones(container, alumnoId) {
   if (!root) return
 
   try {
+    // Traer intentos del alumno, sin join a nodes (evita duplicados del inner join)
     const { data: evaluaciones, error } = await supabase
       .from('indicator_attempts')
-      .select('id, nota, observations, tarea, created_at, indicators!inner(id, nombre, description, nodes!inner(id, name))')
+      .select('id, nota, observations, tarea, created_at, indicator_id')
       .eq('student_id', alumnoId)
       .order('created_at', { ascending: false })
 
@@ -20,25 +21,52 @@ async function _renderEvaluaciones(container, alumnoId) {
       return
     }
 
-    // Agrupar por indicador
+    // Obtener info de indicadores una sola vez (sin join multiplicador)
+    const indicatorIds = [...new Set(evaluaciones.map(e => e.indicator_id))]
+    const { data: indicatorsMeta } = await supabase
+      .from('indicators')
+      .select('id, nombre, node_id')
+      .in('id', indicatorIds)
+
+    // Obtener nombres de nodos
+    const nodeIds = [...new Set((indicatorsMeta || []).map(i => i.node_id).filter(Boolean))]
+    const { data: nodesMeta } = await supabase
+      .from('nodes')
+      .select('id, name')
+      .in('id', nodeIds)
+    const nodeMap = new Map((nodesMeta || []).map(n => [n.id, n.name]))
+    const indicatorMap = new Map((indicatorsMeta || []).map(i => [i.id, i]))
+
+    // Agrupar por indicador ID (un solo registro por indicador, el más reciente)
     const byIndicator = new Map()
     for (const ev of evaluaciones) {
-      const ind = ev.indicators
-      if (!byIndicator.has(ind.id)) {
-        byIndicator.set(ind.id, {
-          id: ind.id,
-          nombre: ind.nombre,
-          nodeName: ind.nodes?.name || '',
-          latest: ev,
-          history: []
-        })
+      if (byIndicator.has(ev.indicator_id)) continue // ya está el más reciente por orden desc
+      const meta = indicatorMap.get(ev.indicator_id)
+      byIndicator.set(ev.indicator_id, {
+        id: ev.indicator_id,
+        nombre: meta?.nombre || '',
+        nodeName: nodeMap.get(meta?.node_id) || '',
+        latest: ev,
+        history: []
+      })
+    }
+
+    // Agregar intentos restantes al history (sin duplicar el primero)
+    for (const ev of evaluaciones) {
+      if (byIndicator.has(ev.indicator_id)) {
+        const entry = byIndicator.get(ev.indicator_id)
+        if (entry.history.length === 0 || entry.history[0].id !== ev.id) {
+          entry.history.push(ev)
+        }
       }
-      byIndicator.get(ind.id).history.push(ev)
     }
 
     const indicators = Array.from(byIndicator.values())
+      // Solo mostrar indicadores que tengan nota o una observación
+      .filter(i => (i.latest.nota != null && i.latest.nota !== 0) || (i.latest.observations && i.latest.observations.trim() !== ''))
     const aprobados = indicators.filter(i => i.latest.nota >= 4).length
-    const avance = Math.round((aprobados / indicators.length) * 100)
+    const totalInd = indicators.length
+    const avance = totalInd > 0 ? Math.round((aprobados / totalInd) * 100) : 0
 
     function semaforo(nota) {
       if (nota === null || nota === undefined) return '⚫'

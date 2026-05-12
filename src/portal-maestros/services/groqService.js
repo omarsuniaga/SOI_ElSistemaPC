@@ -44,25 +44,29 @@ Responde ÚNICAMENTE con el texto mejorado, sin explicaciones ni cambios de sign
 `;
 
 const STRUCTURE_TO_DSL_PROMPT = `
-Eres un experto en convertir observaciones de clase al formato DSL pedagógico.
-Recibes una observación libre de un maestro (ejemplo: "María no entendió bien los acordes. Necesita práctica")
+Sos un experto en convertir observaciones de clase al formato DSL pedagógico.
+Recibís una observación libre de un maestro de música.
 Tu tarea es ESTRUCTURARLA usando los tokens DSL:
+
   #Nombre    = alumno mencionado
-  [texto]    = contenido dado en clase
-  (texto)    = sugerencia de mejora para el alumno
-  {texto}    = tarea asignada
-  $término   = medida técnica (una palabra o frase con guion bajo)
-  >CÓDIGO    = objetivo curricular alcanzado
+  [texto]    = contenido o indicador evaluado
+  (texto)    = observación pedagógica / sugerencia de mejora
+  {texto}    = tarea asignada para la próxima clase
+  $término   = medida técnica (digitación, arco, respiración, etc.)
+  N/5        = calificación numérica (ej: 4/5)
 
-Reglas:
-- Identifica el alumno (María) → #María
-- Identifica el contenido ([acordes])
-- Transforma la sugerencia → (práctica) o (Requiere más práctica en acordes)
-- Sugiere tareas si es relevante
-- Responde ÚNICAMENTE con el texto estructurado en DSL, sin explicaciones.
+Reglas strictas:
+- NO uses >CÓDIGO a menos que el maestro mencione explícitamente un código curricular
+- Usa [indicador] para referenciar el contenido evaluado
+- Si hay un indicador activo en la ruta, mencionalo en [ ]
+- Las calificaciones van al FINAL de cada línea (ej: #María [Escalas] (buen trabajo) 5/5)
+- Si el maestro no mencionó un alumno, agrupalo con #todos
+- Solo usa los tokens que tengan contenido real — omití los que estén vacíos
+- Respondé ÚNICAMENTE con el texto estructurado en DSL, sin explicaciones ni prefijos
 
-Ejemplo entrada: "María no entendió bien los acordes. Necesita práctica"
-Ejemplo salida: "#María [acordes] (Requiere más práctica) {Ejercitar escala mayor en Do}
+MAL: "#María [Escalas] (mejoró) {practicar} 4/5 >CÓDIGO"
+MAL: "#María >CÓDIGO"
+BIEN: "#María [Escalas] (mejoró notablemente en la ejecución económica) {Escala F mayor en 3 octavas} 5/5"
 `;
 
 
@@ -195,10 +199,17 @@ export async function improveText(text) {
 /**
  * Convierte texto libre a estructura DSL.
  * @param {string} text - Texto libre del maestro
+ * @param {{ presentes?: string[], indicadorActivo?: string|null }} context - Contexto opcional
  * @returns {Promise<string>} Texto estructurado en DSL
  */
-export async function structureTextToDSL(text) {
+export async function structureTextToDSL(text, context = {}) {
   const apiKey = await getGroqApiKey()
+
+  const names = context.presentes?.join(', ') || ''
+  const indicadorActivo = context.indicadorActivo || 'ninguno'
+
+  const contextualPrompt = STRUCTURE_TO_DSL_PROMPT + `
+\n\nCONTEXTO ADICIONAL:\nAlumnos en clase: ${names || 'no especificados'}\nIndicador activo en la ruta: ${indicadorActivo}\n`
 
   try {
     const response = await fetch(`${GROQ_CONFIG.baseURL}/chat/completions`, {
@@ -210,7 +221,7 @@ export async function structureTextToDSL(text) {
       body: JSON.stringify({
         model: GROQ_CONFIG.model,
         messages: [
-          { role: 'system', content: STRUCTURE_TO_DSL_PROMPT },
+          { role: 'system', content: contextualPrompt },
           { role: 'user', content: text }
         ],
         temperature: GROQ_CONFIG.temperature

@@ -151,26 +151,28 @@ function _renderCalendario(container, anio, mes, hoy, estadoMap, { onFechaClick,
   }
 
   container.innerHTML = `
-    <div class="d-flex align-items-center justify-content-between mb-3 px-1">
-      <button id="pm-cal-prev" class="btn-icon-pm">‹</button>
-      <h2 class="pm-month-title">${MESES_ES[mes]} ${anio}</h2>
-      <button id="pm-cal-next" class="btn-icon-pm">›</button>
-    </div>
-
-    <div class="pm-card" style="padding:.75rem;">
-      <div class="pm-cal-grid">
-        ${diasHTML}
+    <div style="padding: 1rem 1rem 2rem;">
+      <div class="d-flex align-items-center justify-content-between mb-3 px-1">
+        <button id="pm-cal-prev" class="btn-icon-pm">‹</button>
+        <h2 class="pm-month-title">${MESES_ES[mes]} ${anio}</h2>
+        <button id="pm-cal-next" class="btn-icon-pm">›</button>
       </div>
 
-      <div class="pm-cal-legend">
-        <div class="pm-cal-legend-item">
-          <div class="pm-cal-legend-dot" style="background:var(--pm-success)"></div> Registrada
+      <div class="pm-card" style="padding:.75rem;">
+        <div class="pm-cal-grid">
+          ${diasHTML}
         </div>
-        <div class="pm-cal-legend-item">
-          <div class="pm-cal-legend-dot" style="background:var(--pm-warning)"></div> Pendiente
-        </div>
-        <div class="pm-cal-legend-item">
-          <div class="pm-cal-legend-dot" style="background:var(--pm-danger)"></div> Vencida (+7d)
+
+        <div class="pm-cal-legend">
+          <div class="pm-cal-legend-item">
+            <div class="pm-cal-legend-dot" style="background:var(--pm-success)"></div> Registrada
+          </div>
+          <div class="pm-cal-legend-item">
+            <div class="pm-cal-legend-dot" style="background:var(--pm-warning)"></div> Pendiente
+          </div>
+          <div class="pm-cal-legend-item">
+            <div class="pm-cal-legend-dot" style="background:var(--pm-danger)"></div> Vencida (+7d)
+          </div>
         </div>
       </div>
     </div>

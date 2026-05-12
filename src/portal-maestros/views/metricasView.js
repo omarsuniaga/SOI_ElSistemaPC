@@ -167,7 +167,7 @@ export async function renderMetricasView(container) {
 
     // ── Render ────────────────────────────────────────────────────
     container.innerHTML = `
-      <div class="pm-metricas-root">
+      <div class="pm-metricas-root" style="padding: 1rem 1rem 2rem;">
 
         <!-- ── Filter bar ──────────────────────────────────────── -->
         <div class="pm-metricas-filters">

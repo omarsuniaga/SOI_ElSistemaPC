@@ -9,6 +9,10 @@ let currentCallback = null;
 let selectedIndex = -1;
 let isVisible = false;
 let triggerType = null;
+let isDragging = false;
+let dragOffsetX = 0;
+let dragOffsetY = 0;
+let initialPos = { x: 0, y: 0 };
 
 /**
  * Crea e inicializa el popup de autocompletado
@@ -33,6 +37,7 @@ function initPopup() {
     overflow-y: auto;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     animation: pm-ac-fadein 0.15s ease-out;
+    user-select: none;
   `;
   
   // Agregar animación si no existe
@@ -157,13 +162,61 @@ export function show(options, callback, config = {}) {
   
   render(options);
   
-  // Posicionar
+  // Posicionar con smart placement (evitar solapamiento con menús)
   if (config.position) {
-    popupEl.style.left = `${config.position.x}px`;
-    popupEl.style.top = `${config.position.y + 20}px`;
+    const pos = config.position;
+    const viewportW = window.innerWidth;
+    const viewportH = window.innerHeight;
+    const popupW = 320;
+    const popupH = 280;
+    
+    let left = pos.x;
+    let top = pos.y + 20;
+    
+    // Si se sale por la derecha, mostrar a la izquierda del cursor
+    if (left + popupW > viewportW - 20) {
+      left = Math.max(10, pos.x - popupW - 10);
+    }
+    
+    // Si se sale por abajo, mostrar arriba del cursor
+    if (top + popupH > viewportH - 20) {
+      top = Math.max(10, pos.y - popupH - 10);
+    }
+    
+    popupEl.style.left = `${left}px`;
+    popupEl.style.top = `${top}px`;
+    initialPos = { x: left, y: top };
   }
   
+  // Agregar listeners de drag
+  popupEl.onmousedown = _startDrag;
+  document.addEventListener('mousemove', _onDrag);
+  document.addEventListener('mouseup', _endDrag);
+  
   popupEl.style.display = 'block';
+}
+
+function _startDrag(e) {
+  if (e.target.closest('.pm-ac-option')) return;
+  isDragging = true;
+  dragOffsetX = e.clientX - popupEl.offsetLeft;
+  dragOffsetY = e.clientY - popupEl.offsetTop;
+  popupEl.style.cursor = 'grabbing';
+  popupEl.style.transition = 'none';
+}
+
+function _onDrag(e) {
+  if (!isDragging) return;
+  const x = e.clientX - dragOffsetX;
+  const y = e.clientY - dragOffsetY;
+  popupEl.style.left = `${Math.max(0, x)}px`;
+  popupEl.style.top = `${Math.max(0, y)}px`;
+}
+
+function _endDrag() {
+  if (!isDragging) return;
+  isDragging = false;
+  popupEl.style.cursor = '';
 }
 
 /**
@@ -172,6 +225,9 @@ export function show(options, callback, config = {}) {
 export function hide() {
   if (popupEl) {
     popupEl.style.display = 'none';
+    isDragging = false;
+    document.removeEventListener('mousemove', _onDrag);
+    document.removeEventListener('mouseup', _endDrag);
   }
   currentOptions = [];
   currentCallback = null;
@@ -333,9 +389,10 @@ function getHeaderText(trigger) {
  * Obtiene el icono según el tipo de opción
  */
 function getIcon(trigger, opt) {
-  // Para alumnos, mostrar inicial del nombre
+  // Para alumnos: "todos" usa emoji de grupo, el resto muestra inicial
   if (trigger === '#') {
     const nombre = opt.nombre || opt.name || '';
+    if (opt.value === 'todos' || nombre.toLowerCase() === 'todos') return '👥';
     return nombre.charAt(0).toUpperCase();
   }
   

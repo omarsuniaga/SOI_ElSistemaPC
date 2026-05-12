@@ -1,6 +1,7 @@
 import { Toast } from 'bootstrap'
 import { AppModal } from '../../../shared/components/AppModal.js'
 import { router } from '../../../core/router/router.js'
+import { supabase } from '../../../lib/supabaseClient.js'
 import {
   obtenerPlanificaciones,
   crearPlanificacion,
@@ -41,9 +42,20 @@ export async function renderPlanificacionView(container) {
     state.cargando = true
     renderLoading(container)
 
-    const planificaciones = await obtenerPlanificaciones()
+    // Cargar planificaciones y datos relacionados en paralelo
+    const [planificaciones, clasesData, maestrosData] = await Promise.all([
+      obtenerPlanificaciones(),
+      supabase.from('clases').select('id, nombre').order('nombre'),
+      supabase.from('maestros').select('id, nombre_completo').eq('activo', true).order('nombre_completo'),
+    ])
+
     state.planificaciones = planificaciones
     state.planificacionesOriginales = [...planificaciones]
+    state.clases = clasesData.data || []
+    state.maestros = (maestrosData.data || []).map(m => ({
+      id: m.id,
+      nombre: m.nombre_completo,
+    }))
     state.cargando = false
 
     renderContent(container)
@@ -296,7 +308,7 @@ function applyFilters() {
 
 function openCreateModal() {
   state.editando = null
-  openPlanificacionModal('create', null, state.clases, state.maestros, async (datos) => {
+  openPlanificacionModal('create', null, state.clases, state.maestros, {}, async (datos) => {
     const nueva = await crearPlanificacion(datos)
     state.planificacionesOriginales.unshift(nueva)
     applyFilters()
@@ -309,7 +321,7 @@ function openEditModal(id) {
   if (!plan) { showToast('Planificación no encontrada', 'error'); return }
 
   state.editando = id
-  openPlanificacionModal('edit', plan, state.clases, state.maestros, async (datos) => {
+  openPlanificacionModal('edit', plan, state.clases, state.maestros, {}, async (datos) => {
     await actualizarPlanificacion(id, datos)
     const idx = state.planificacionesOriginales.findIndex(p => p.id === id)
     if (idx !== -1) state.planificacionesOriginales[idx] = { ...state.planificacionesOriginales[idx], ...datos }

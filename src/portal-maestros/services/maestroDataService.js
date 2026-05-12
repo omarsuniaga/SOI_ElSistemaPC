@@ -13,7 +13,8 @@ const CACHE_KEYS = {
   SESIONES: 'sesiones',
   INSCRIPCIONES: 'inscripciones',
   SALONES: 'salones',
-  AUSENCIAS: 'ausencias'
+  AUSENCIAS: 'ausencias',
+  RUTAS: 'rutas',
 }
 
 async function _getMaestroId() {
@@ -244,12 +245,83 @@ export function invalidateAllCache() {
   viewCache.invalidateAll()
 }
 
+/**
+ * Obtiene rutas disponibles del maestro filtradas por instrumento de la clase.
+ * Resuelve route_version_id de la versión published.
+ *
+ * @param {string} claseId - ID de la clase actual
+ * @param {string|null} instrumento - instrumento a filtrar (opcional)
+ * @returns {Promise<Array<{id, name, instrumento, route_version_id}>>}
+ */
+export async function getRutasMaestro(claseId, instrumento = null) {
+  const cacheKey = `${CACHE_KEYS.RUTAS}_${claseId}_${instrumento || 'all'}`
+
+  const cached = viewCache.getCached(cacheKey)
+  if (cached) return cached
+
+  // 1. Obtener el instrumento de la clase para saber qué filtrar
+  const clases = await getMisClases()
+  const clase = clases.find(c => c.id === claseId)
+  const instrumentosClase = (clase?.instrumento || '').split(',').map(i => i.trim().toLowerCase())
+
+  // 2. Si se provee instrumento, buscar coincidencia parcial
+  // Si no, buscar rutas que matcheen con cualquiera de los instrumentos de la clase
+  const instrumentosBusqueda = instrumento
+    ? [instrumento.trim().toLowerCase()]
+    : instrumentosClase
+
+  // 3. Query routes con route_versions published
+  const { data, error } = await supabase
+    .from('routes')
+    .select(`
+      id,
+      name,
+      instrument,
+      route_versions!inner(id, status)
+    `)
+    .eq('route_versions.status', 'published')
+    .order('name', { ascending: true })
+
+  if (error) {
+    console.warn('[MaestroData] Error cargando rutas:', error.message)
+    return []
+  }
+
+  // 4. Filtrar en JS (ilike con array no funciona bien en todos los Supabase clients)
+  const rutasFiltradas = (data || [])
+    .map(r => {
+      // route_versions puede ser array u objeto según el join
+      const rv = Array.isArray(r.route_versions)
+        ? r.route_versions.find(rv => rv.status === 'published')
+        : r.route_versions
+      return {
+        id: r.id,
+        name: r.name,
+        instrumento: r.instrument || null,
+        route_version_id: rv?.id || null,
+      }
+    })
+    .filter(r => {
+      if (!r.route_version_id) return false
+      if (instrumentosBusqueda.length === 0) return true
+      const routeInstrument = (r.instrumento || '').toLowerCase()
+      // Match si algún instrumento de la clase contiene el de la ruta o viceversa
+      return instrumentosBusqueda.some(ri =>
+        routeInstrument.includes(ri) || ri.includes(routeInstrument)
+      )
+    })
+
+  viewCache.set(cacheKey, rutasFiltradas, CACHE_KEYS.RUTAS)
+  return rutasFiltradas
+}
+
 export default {
   getMisClases,
   getHorariosClases,
   getSesiones,
   getInscripcionesClases,
   getSalones,
+  getRutasMaestro,
   prefetchMonthData,
   invalidateClasesCache,
   invalidateAllCache,

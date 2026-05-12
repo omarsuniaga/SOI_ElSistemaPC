@@ -45,7 +45,7 @@ export function createDslToolbar(container, { onInsert, onLoading, onIaProposal,
         <span class="snippet-icon">/</span>
       </button>
       <div class="pm-dsl-divider"></div>
-      <button class="pm-dsl-tool-btn ai" id="btn-improve-text" title="Mejorar texto con IA">✨</button>
+      <button class="pm-dsl-tool-btn ai" id="btn-generar-informe" title="Generar informe para padres/tutores">📋</button>
       <button class="pm-dsl-tool-btn ai" id="btn-ia-magic" title="Estructurar con IA">🚀</button>
       <div class="pm-dsl-divider"></div>
       <button class="pm-dsl-tool-btn" id="btn-help" title="Ayuda">❓</button>
@@ -146,16 +146,15 @@ export function createDslToolbar(container, { onInsert, onLoading, onIaProposal,
 
 
 
-  // --- Lógica de Mejorar Texto ---
-  async function handleImproveText() {
+// --- Lógica de Generar Informe ---
+  async function handleGenerateReport() {
     const rawText = getEditorContent ? getEditorContent() : ''
     if (!rawText.trim()) return
-
     if (onImproveClick) {
       try {
         onImproveClick(rawText)
       } catch (err) {
-        alert('Error al mejorar texto: ' + err.message)
+        alert('Error al generar informe: ' + err.message)
       }
     }
   }
@@ -164,7 +163,6 @@ export function createDslToolbar(container, { onInsert, onLoading, onIaProposal,
   async function handleStructure() {
     const rawText = getEditorContent ? getEditorContent() : ''
     if (!rawText.trim()) return
-
     if (onStructureClick) {
       try {
         onStructureClick(rawText)
@@ -174,7 +172,7 @@ export function createDslToolbar(container, { onInsert, onLoading, onIaProposal,
     }
   }
 
-  container.querySelector('#btn-improve-text').onclick = handleImproveText;
+  container.querySelector('#btn-generar-informe').onclick = handleGenerateReport;
   container.querySelector('#btn-ia-magic').onclick = handleStructure;
 
 

@@ -25,28 +25,28 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/26</span>
+                <span class='fraction'>0/37</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">100% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>0/0</span>
+                <span class='fraction'>0/4</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>0/11</span>
+                <span class='fraction'>0/13</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/23</span>
+                <span class='fraction'>0/33</span>
             </div>
         
             
@@ -115,7 +115,25 @@
 <a name='L50'></a><a href='#L50'>50</a>
 <a name='L51'></a><a href='#L51'>51</a>
 <a name='L52'></a><a href='#L52'>52</a>
-<a name='L53'></a><a href='#L53'>53</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L53'></a><a href='#L53'>53</a>
+<a name='L54'></a><a href='#L54'>54</a>
+<a name='L55'></a><a href='#L55'>55</a>
+<a name='L56'></a><a href='#L56'>56</a>
+<a name='L57'></a><a href='#L57'>57</a>
+<a name='L58'></a><a href='#L58'>58</a>
+<a name='L59'></a><a href='#L59'>59</a>
+<a name='L60'></a><a href='#L60'>60</a>
+<a name='L61'></a><a href='#L61'>61</a>
+<a name='L62'></a><a href='#L62'>62</a>
+<a name='L63'></a><a href='#L63'>63</a>
+<a name='L64'></a><a href='#L64'>64</a>
+<a name='L65'></a><a href='#L65'>65</a>
+<a name='L66'></a><a href='#L66'>66</a>
+<a name='L67'></a><a href='#L67'>67</a>
+<a name='L68'></a><a href='#L68'>68</a>
+<a name='L69'></a><a href='#L69'>69</a>
+<a name='L70'></a><a href='#L70'>70</a>
+<a name='L71'></a><a href='#L71'>71</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -139,8 +157,26 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -188,16 +224,34 @@ export const usePortalAuth = <span class="cstat-no" title="statement not covered
 &nbsp;
   /** Inicializa la sesión al cargar la app. */
   async <span class="fstat-no" title="function not covered" >init(</span>) {
+<span class="cstat-no" title="statement not covered" >    console.log('[usePortalAuth.init] Iniciando...')</span>
 <span class="cstat-no" title="statement not covered" >    state.maestro = getMaestroLocal()</span>
+<span class="cstat-no" title="statement not covered" >    console.log('[usePortalAuth.init] Maestro local:', state.maestro ? 'found' : 'not found')</span>
 <span class="cstat-no" title="statement not covered" >    state.loading  = true</span>
 <span class="cstat-no" title="statement not covered" >    notify()</span>
 &nbsp;
-    const maestro  = <span class="cstat-no" title="statement not covered" >await detectarRolMaestro()</span>
-<span class="cstat-no" title="statement not covered" >    state.maestro  = maestro</span>
-<span class="cstat-no" title="statement not covered" >    state.loading  = false</span>
-<span class="cstat-no" title="statement not covered" >    notify()</span>
+<span class="cstat-no" title="statement not covered" >    try {</span>
+      // Timeout protection: detectarRolMaestro puede colgar en desarrollo
+<span class="cstat-no" title="statement not covered" >      console.log('[usePortalAuth.init] Iniciando detectarRolMaestro() con timeout de 8s...')</span>
+      const timeoutPromise = <span class="cstat-no" title="statement not covered" >new Promise(<span class="fstat-no" title="function not covered" >(_</span>, reject) =&gt;</span>
+<span class="cstat-no" title="statement not covered" >        setTimeout(<span class="fstat-no" title="function not covered" >()</span> =&gt; <span class="cstat-no" title="statement not covered" >reject(new Error('Auth timeout after 8s')),</span> 8000)</span>
+      )
+      const maestro = <span class="cstat-no" title="statement not covered" >await Promise.race([</span>
+        detectarRolMaestro(),
+        timeoutPromise
+      ])
+<span class="cstat-no" title="statement not covered" >      console.log('[usePortalAuth.init] detectarRolMaestro completado:', maestro ? 'con datos' : 'sin datos')</span>
+<span class="cstat-no" title="statement not covered" >      state.maestro = maestro</span>
+    } catch (err) {
+<span class="cstat-no" title="statement not covered" >      console.warn('[usePortalAuth.init] Error:', err.message)</span>
+<span class="cstat-no" title="statement not covered" >      state.maestro = null</span>
+    }
 &nbsp;
-<span class="cstat-no" title="statement not covered" >    return maestro</span>
+<span class="cstat-no" title="statement not covered" >    state.loading = false</span>
+<span class="cstat-no" title="statement not covered" >    notify()</span>
+<span class="cstat-no" title="statement not covered" >    console.log('[usePortalAuth.init] Completado')</span>
+&nbsp;
+<span class="cstat-no" title="statement not covered" >    return state.maestro</span>
   },
 &nbsp;
   /** Establece el maestro activo tras login exitoso. */
@@ -226,7 +280,7 @@ export const logoutMaestro = <span class="cstat-no" title="statement not covered
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-05-06T16:26:58.151Z
+                at 2026-05-11T03:20:00.789Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

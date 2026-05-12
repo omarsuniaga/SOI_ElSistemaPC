@@ -23,10 +23,10 @@ describe('dslToolbar - Improve with AI button', () => {
       getEditorContent: vi.fn(() => ''),
     })
 
-    const improveBtn = container.querySelector('#btn-improve-text')
-    expect(improveBtn).toBeTruthy()
-    expect(improveBtn.textContent).toContain('✨')
-    expect(improveBtn.getAttribute('title')).toContain('Mejorar')
+    const informeBtn = container.querySelector('#btn-generar-informe')
+    expect(informeBtn).toBeTruthy()
+    expect(informeBtn.textContent).toContain('📋')
+    expect(informeBtn.getAttribute('title')).toContain('informe')
   })
 
   it('should call onImproveClick callback when button is clicked', () => {
@@ -39,9 +39,8 @@ describe('dslToolbar - Improve with AI button', () => {
       onImproveClick,
     })
 
-    const improveBtn = container.querySelector('#btn-improve-text')
-    improveBtn.click()
-
+    const informeBtn = container.querySelector('#btn-generar-informe')
+    informeBtn.click()
     expect(onImproveClick).toHaveBeenCalledTimes(1)
     expect(onImproveClick).toHaveBeenCalledWith('some text')
   })
@@ -56,14 +55,14 @@ describe('dslToolbar - Improve with AI button', () => {
       onImproveClick,
     })
 
-    const improveBtn = container.querySelector('#btn-improve-text')
+    const informeBtn = container.querySelector('#btn-generar-informe')
 
     // Simulate button disabled state during processing
-    improveBtn.disabled = true
-    expect(improveBtn.disabled).toBe(true)
+    informeBtn.disabled = true
+    expect(informeBtn.disabled).toBe(true)
 
-    improveBtn.disabled = false
-    expect(improveBtn.disabled).toBe(false)
+    informeBtn.disabled = false
+    expect(informeBtn.disabled).toBe(false)
   })
 
   it('should not call onImproveClick when editor is empty', () => {
@@ -76,8 +75,8 @@ describe('dslToolbar - Improve with AI button', () => {
       onImproveClick,
     })
 
-    const improveBtn = container.querySelector('#btn-improve-text')
-    improveBtn.click()
+    const informeBtn = container.querySelector('#btn-generar-informe')
+    informeBtn.click()
 
     // Should not call handler for empty text
     expect(onImproveClick).not.toHaveBeenCalled()
@@ -94,8 +93,8 @@ describe('dslToolbar - Improve with AI button', () => {
       onImproveClick,
     })
 
-    const improveBtn = container.querySelector('#btn-improve-text')
-    improveBtn.click()
+    const informeBtn = container.querySelector('#btn-generar-informe')
+    informeBtn.click()
 
     expect(onImproveClick).toHaveBeenCalledWith(content)
   })
@@ -246,8 +245,8 @@ describe('dslToolbar - Help button', () => {
     const modal = document.getElementById('pm-toolbar-help-modal')
     const helpCards = modal.querySelectorAll('.pm-help-card')
 
-    // Should have 9 help cards (one for each tool)
-    expect(helpCards.length).toBe(9)
+    // Should have 8 help cards (one for each tool)
+    expect(helpCards.length).toBe(8)
   })
 
   it('should close help modal when close button is clicked', () => {

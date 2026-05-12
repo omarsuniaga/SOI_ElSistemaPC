@@ -186,11 +186,13 @@ export function createDslEditor(container, { initialContent = '', onChange, onAl
     }
   }
 
-  /**
+/**
    * Inserta la opción seleccionada del autocompletado
    */
   function _insertAutocomplete(selected, trigger, query) {
-    const label = selected.nombre || selected.name || selected.descripcion || '';
+    // Extraer texto plano del label (puede contener HTML del popup)
+    const labelHtml = selected.nombre || selected.name || selected.label || selected.descripcion || ''
+    const label = _stripHtml(labelHtml)
     
     // Construir el texto según el trigger
     let finalText = '';
@@ -286,15 +288,23 @@ export function createDslEditor(container, { initialContent = '', onChange, onAl
     }
   }
 
+  function _stripHtml(str) {
+    if (!str) return ''
+    const d = document.createElement('div')
+    d.innerHTML = str
+    return d.textContent || d.innerText || ''
+  }
+
   /**
    * Inserta texto plano en la posición actual del cursor (sin mover ni re-posicionar).
    */
   function _insertRawText(text) {
+    const clean = _stripHtml(text)
     const sel = window.getSelection();
     if (!sel || sel.rangeCount === 0) return;
     const range = sel.getRangeAt(0);
     range.deleteContents();
-    const textNode = document.createTextNode(text);
+    const textNode = document.createTextNode(clean);
     range.insertNode(textNode);
     range.setStartAfter(textNode);
     range.collapse(true);
@@ -393,15 +403,16 @@ export function createDslEditor(container, { initialContent = '', onChange, onAl
    *   0 = después del texto, 1 = un caracter desde el inicio (dentro de brackets)
    * @param {string|null} triggerAC — Si se pasa, auto-dispara autocomplete para este trigger
    */
-  function insertText(text, cursorOffset = 0, triggerAC = null) {
+function insertText(text, cursorOffset = 0, triggerAC = null) {
     editor.focus();
     const sel = window.getSelection();
     if (!sel || sel.rangeCount === 0) return;
 
     const range = sel.getRangeAt(0);
     range.deleteContents();
-    const textNode = document.createTextNode(text);
-    range.insertNode(textNode);
+    const cleanText = _stripHtml(text)
+    const textNode = document.createTextNode(cleanText)
+    range.insertNode(textNode)
 
     // Posicionar cursor: cursorOffset = 1 pone el cursor DENTRO de [] () {}
     if (cursorOffset > 0 && cursorOffset < text.length) {

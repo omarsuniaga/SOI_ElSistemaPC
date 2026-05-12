@@ -30,14 +30,18 @@ export default defineConfig({
     ]
   },
   server: {
-    host: true,
+    host: '0.0.0.0',
     port: 5173,
     strictPort: false,
-    // HMR configuration - allow it to work properly without WebSocket hanging
+    // HMR configuration - auto-detect port
     hmr: {
       protocol: 'ws',
-      host: 'localhost',
-      port: 5173
-    }
+      host: undefined, // Let Vite auto-detect from window.location
+      port: undefined, // Let Vite auto-detect the actual port
+    },
+    // Middleware para mejorar compatibilidad
+    middlewareMode: false,
+    // Configuración CORS para permitir WebSocket
+    cors: true,
   }
 })

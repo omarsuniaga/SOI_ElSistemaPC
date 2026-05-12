@@ -14,6 +14,16 @@
     padding: 0 0.75rem;
   }
 
+  /* Ocultar header tabs en móvil - solo visible en desktop */
+  .pm-header-tabs {
+    display: none !important;
+  }
+
+  /* Footer nav: siempre visible en móvil */
+  .pm-footer-nav {
+    display: block !important;
+  }
+
   .pm-header-greeting { display: none; }
   .pm-header-title    { font-size: 1rem; }
 
@@ -51,7 +61,7 @@
 
   /* ── View container: full width ──────────────────────────────── */
   .pm-view {
-    padding: 0.75rem;
+    padding: 0;
   }
 
   /* ── Footer nav: pill-shaped, Apple-style ────────────────────── */
@@ -180,7 +190,7 @@
    ═══════════════════════════════════════════════════════════ */
 
 @media (max-width: 480px) {
-  .pm-view { padding: 0.5rem; }
+  .pm-view { padding: 0; }
 
   .pm-metricas-kpis {
     grid-template-columns: repeat(3, 1fr);
@@ -204,6 +214,11 @@
     padding: 0 1.25rem;
     display: flex;
     align-items: center;
+  }
+
+  /* Footer nav: visible en tablet */
+  .pm-footer-nav {
+    display: block !important;
   }
 
   .pm-header-greeting { display: block; font-size: 0.65rem; }
@@ -283,8 +298,8 @@
 
   /* ── View container ────────────────────────────────────────────── */
   .pm-view {
-    padding: 1.25rem;
-    max-width: 100%;
+    padding: 0;
+    max-width: none;
   }
 
   /* ── KPI Cards: 3 columnas ────────────────────────────────────── */
@@ -372,6 +387,19 @@
   #portal-app {
     flex-direction: column;
     overflow: hidden;
+  }
+
+  /* ── Header tabs: visible en desktop ───────────────────────── */
+  .pm-header-tabs {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    margin-left: var(--pm-space-6);
+  }
+
+  /* Ocultar footer nav en desktop (opcional, según preferencia) */
+  .pm-footer-nav {
+    display: none;
   }
 
   /* ── Header: completo ─────────────────────────────────────────── */
@@ -475,8 +503,8 @@
   /* ── View container ──────────────────────────────────────────── */
   .pm-view {
     flex: 1;
-    padding: var(--pm-space-6) var(--pm-space-8);
-    max-width: var(--pm-content-max-w, 900px);
+    padding: 0;
+    max-width: none;
     overflow-y: auto;
     padding-bottom: calc(var(--pm-space-4) + var(--pm-bottom-nav-h));
   }
@@ -570,8 +598,8 @@
 
 @media (min-width: 1280px) {
   .pm-view {
-    padding: var(--pm-space-8) var(--pm-space-10);
-    max-width: 1000px;
+    padding: 0;
+    max-width: none;
     padding-bottom: calc(var(--pm-space-6) + var(--pm-bottom-nav-h));
   }
 
@@ -592,8 +620,8 @@
 
 @media (min-width: 1440px) {
   .pm-view {
-    padding: var(--pm-space-8) var(--pm-space-12);
-    max-width: 1100px;
+    padding: 0;
+    max-width: none;
   }
 
   /* Más KPIs por fila */

@@ -1,5 +1,6 @@
 const TOKEN_PATTERNS = {
-  alumnos: /#([A-Za-zÁÉÍÓÚáéíóúÑñ]+)/g,
+  // Prioriza 'todos' (cierre exacto). Si no, permite palabras (nombres) pero es estricto con los límites.
+  alumnos: /#(todos\b|[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+(?:\s+(?:de|la|las|los|del|y|el)\b)?(?:\s+[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+)*|[A-Za-zÁÉÍÓÚáéíóúÑñ]+)/g,
   contenido: /\[([^\]]+)\]/g,
   sugerencias: /\(([^)]+)\)/g,
   tareas: /\{([^}]+)\}/g,
@@ -9,6 +10,17 @@ const TOKEN_PATTERNS = {
   nodos: />NODO:([A-Z_]+)/g,
   capas: /:::CAPA:\s*([A-Z_]+)/g,
   calificacion: /(\d)\/(\d)/g,
+}
+
+/**
+ * Detecta si el texto está en modo DSL o lenguaje natural.
+ * @param {string} text
+ * @returns {'dsl' | 'natural'}
+ */
+export function detectInputMode(text) {
+  if (!text || typeof text !== 'string' || !text.trim()) return 'dsl'
+  const hasTokens = /[#\[\(\{\$>]/.test(text)
+  return hasTokens ? 'dsl' : 'natural'
 }
 
 export const TOKEN_COLORS = {
@@ -126,52 +138,73 @@ export const parseDsl = parseDSL;
 export function highlightDSL(text) {
   if (!text) return ''
 
-  // PRIMERO escapar HTML para evitar XSS, DESPUÉS aplicar tokens
+  // 1. Escapar HTML base
   let result = escapeHtml(text)
+  
+  // 2. Mapa de placeholders para evitar colisiones
+  const placeholders = []
+  function pushPlaceholder(html) {
+    const id = `__DSL_TOKEN_${placeholders.length}__`
+    placeholders.push({ id, html })
+    return id
+  }
 
-  // Resaltar Capas
+  // 3. Aplicar transformaciones usando placeholders
+  
+  // Capas
   result = result.replace(TOKEN_PATTERNS.capas, (_, capa) => {
-    return `<span class="dsl-token dsl-capa" style="background:${TOKEN_COLORS.capas}22; color:${TOKEN_COLORS.capas}; font-weight:800; padding:2px 6px; border-radius:4px">:::CAPA: ${capa}</span>`
+    return pushPlaceholder(`<span class="dsl-token dsl-capa" style="background:${TOKEN_COLORS.capas}22; color:${TOKEN_COLORS.capas}; font-weight:800; padding:2px 6px; border-radius:4px">:::CAPA: ${capa}</span>`)
   })
 
-  // Resaltar Niveles — el > ya fue escapado a &gt; así que ajustamos
+  // Niveles
   result = result.replace(/&gt;NIVEL-(\d{1,2})/g, (_, nivel) => {
-    return `<span class="dsl-token dsl-nivel" style="color:${TOKEN_COLORS.niveles}; font-weight:700">&gt;NIVEL-${nivel}</span>`
+    return pushPlaceholder(`<span class="dsl-token dsl-nivel" style="color:${TOKEN_COLORS.niveles}; font-weight:700">&gt;NIVEL-${nivel}</span>`)
   })
 
-  // Resaltar Nodos
+  // Nodos
   result = result.replace(/&gt;NODO:([A-Z_]+)/g, (_, nodo) => {
-    return `<span class="dsl-token dsl-nodo" style="color:${TOKEN_COLORS.nodos}; font-weight:600">&gt;NODO:${nodo}</span>`
+    return pushPlaceholder(`<span class="dsl-token dsl-nodo" style="color:${TOKEN_COLORS.nodos}; font-weight:600">&gt;NODO:${nodo}</span>`)
   })
 
-  result = result.replace(TOKEN_PATTERNS.calificacion, (_, v, s) => {
-    return `<span class="dsl-token dsl-calificacion" data-valor="${v}" data-sobre="${s}">${v}/${s}</span>`
-  })
-
-  // Objetivos genéricos — el > ya fue escapado
+  // Objetivos
   result = result.replace(/&gt;([A-Z]{1,3}(?:-[A-Za-z]+)?-[0-9]+(?:\.[0-9]+)?)/g, (_, objetivo) => {
-    return `<span class="dsl-token dsl-objetivo" data-objetivo="${objetivo}">&gt;${objetivo}</span>`
+    return pushPlaceholder(`<span class="dsl-token dsl-objetivo" data-objetivo="${objetivo}">&gt;${objetivo}</span>`)
   })
 
+  // Alumnos
   result = result.replace(TOKEN_PATTERNS.alumnos, (_, nombre) => {
-    return `<span class="dsl-token dsl-alumno" data-nombre="${nombre}">#${nombre}</span>`
+    return pushPlaceholder(`<span class="dsl-token dsl-alumno" data-nombre="${nombre}">#${nombre}</span>`)
   })
 
+  // Contenido
   result = result.replace(TOKEN_PATTERNS.contenido, (_, contenido) => {
-    return `<span class="dsl-token dsl-contenido" data-contenido="${contenido}">[${contenido}]</span>`
+    return pushPlaceholder(`<span class="dsl-token dsl-contenido" data-contenido="${contenido}">[${contenido}]</span>`)
   })
 
+  // Sugerencias
   result = result.replace(TOKEN_PATTERNS.sugerencias, (_, sugerencia) => {
-    return `<span class="dsl-token dsl-sugerencia" data-sugerencia="${sugerencia}">(${sugerencia})</span>`
+    return pushPlaceholder(`<span class="dsl-token dsl-sugerencia" data-sugerencia="${sugerencia}">(${sugerencia})</span>`)
   })
 
+  // Tareas
   result = result.replace(TOKEN_PATTERNS.tareas, (_, tarea) => {
-    return `<span class="dsl-token dsl-tarea" data-tarea="${tarea}">{${tarea}}</span>`
+    return pushPlaceholder(`<span class="dsl-token dsl-tarea" data-tarea="${tarea}">{${tarea}}</span>`)
   })
 
+  // Medidas
   result = result.replace(TOKEN_PATTERNS.medidas, (_, medida) => {
-    return `<span class="dsl-token dsl-medida" data-medida="${medida}">$${medida}</span>`
+    return pushPlaceholder(`<span class="dsl-token dsl-medida" data-medida="${medida}">$${medida}</span>`)
   })
+
+  // Calificación
+  result = result.replace(TOKEN_PATTERNS.calificacion, (_, v, s) => {
+    return pushPlaceholder(`<span class="dsl-token dsl-calificacion" data-valor="${v}" data-sobre="${s}">${v}/${s}</span>`)
+  })
+
+  // 4. Restaurar placeholders (en orden inverso para manejar posibles anidamientos si existieran)
+  for (let i = placeholders.length - 1; i >= 0; i--) {
+    result = result.replace(placeholders[i].id, placeholders[i].html)
+  }
 
   return result
 }

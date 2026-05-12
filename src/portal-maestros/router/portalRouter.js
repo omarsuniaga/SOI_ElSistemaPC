@@ -4,7 +4,7 @@
  * No usa window.location.hash que causa recargas completas
  */
 
-const DEFAULT_ROUTE = 'hoy'
+const DEFAULT_ROUTE = 'calendario'
 
 export function createPortalRouter() {
   const handlers = new Map()
@@ -102,7 +102,12 @@ export function createPortalRouter() {
     const fn = handler || notFoundFn
     if (!fn) return
 
-    const callFn = () => fn(fullRoute, params)
+    const callFn = async () => {
+      // If the function is a dynamic import or async, await it
+      if (typeof fn === 'function') {
+        await fn(fullRoute, params)
+      }
+    }
 
     if (!document.startViewTransition || _activeTransition) {
       if (_activeTransition) {
@@ -126,7 +131,9 @@ export function createPortalRouter() {
     }
 
     try {
-      const transition = document.startViewTransition(() => callFn())
+      const transition = document.startViewTransition(async () => {
+        await callFn()
+      })
       _activeTransition = transition
 
       const suppress = (p) => p.catch(() => {})

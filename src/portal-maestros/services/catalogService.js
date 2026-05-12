@@ -14,13 +14,7 @@ import catalogCache from './catalogCache.js';
 export async function getAlumnos(claseId) {
   if (!claseId) return [];
   
-  // 1. Intentar cache primero
-  const cached = await catalogCache.getByIndex('alumnos', 'by_clase', claseId);
-  if (cached && cached.length > 0) {
-    return cached;
-  }
-  
-  // 2. Cargar de Supabase
+  // Alumnos SIEMPRE del backend filtrado por claseId (no usar cache, evita stale data de otras clases)
   try {
     const { data, error } = await supabase
       .from('alumnos_clases')
@@ -36,14 +30,9 @@ export async function getAlumnos(claseId) {
         .filter(Boolean)
         .map(a => ({
           id: a.id,
-          nombre: a.nombre_completo,
+          nombre: a.nombre_completo || '',
           instrumento: a.instrumento_principal
         }));
-      
-      // Guardar en cache
-      for (const a of alumnos) {
-        await catalogCache.set('alumnos', { ...a, clase_id: claseId });
-      }
       
       return alumnos;
     }
@@ -436,7 +425,8 @@ export async function getOptionsForTrigger(trigger, query = '', context = {}) {
   }
   
   // Agregar opciones del historial del maestro (priorizadas)
-  if (trigger) {
+  // Solo para triggers que NO son alumnos (#), para evitar mezclar alumnos de otras clases
+  if (trigger && trigger !== '#') {
     const historial = await catalogCache.getTopUsed(trigger, 3);
     const historialOptions = historial
       .flatMap(h => h.recent_selections || [])

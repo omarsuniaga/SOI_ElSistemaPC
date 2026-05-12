@@ -28,6 +28,8 @@ import { createHomeworkPanel } from '../components/HomeworkPanel.js'
 import { createLevelCompletionModal } from '../components/LevelCompletionModal.js'
 import { getClassEvent, updateClassEventStatus } from '../services/classEventService.js'
 import { consumeRutaTema } from '../services/rutaTopicStore.js'
+import { createJustificacionModal } from '../components/JustificacionModal.js'
+import { guardarJustificacion, obtenerJustificacion, eliminarJustificacion } from '../services/justificacionService.js'
 
 /**
  * Vista Asistencia Optimizada (F3+): toma de asistencia con micro-interacciones.
@@ -140,10 +142,73 @@ export async function renderAsistenciaView(container, { claseId, fecha } = {}) {
       }
     })
 
+    // Restaurar estados "J" desde justificaciones (fuente de verdad para justificación)
+    let justificacionesRegistradas = []
+    if (sesionId) {
+      try {
+        justificacionesRegistradas = await supabase
+          .from('justificaciones')
+          .select('alumno_id')
+          .eq('sesion_id', sesionId)
+          .then(r => r.data || [])
+        justificacionesRegistradas.forEach(j => {
+          if (estado.hasOwnProperty(j.alumno_id)) {
+            estado[j.alumno_id] = 'J'
+          }
+        })
+      } catch (_e) {
+        console.warn('[asistencia] No se pudieron restaurar justificaciones:', _e)
+      }
+    }
+
+    // === Crear modal de justificación (con acceso al closure) ===
+    const _justifModal = createJustificacionModal(document.body, {
+      onSave: async ({ alumnoId, motivo, evidenciaFile, evidenciaPreview, justificacionId, existingUrl, isEdit }) => {
+        try {
+          if (isEdit && justificacionId) {
+            // Update: reemplazar evidencia solo si hay archivo nuevo
+            let urlToSave = existingUrl;
+            if (evidenciaFile) {
+              if (existingUrl) {
+                const match = existingUrl.match(/\/storage\/v1\/object\/public\/[^/]+\/(.+)/)
+                if (match) await supabase.storage.from('documentos').remove([match[1]]).catch(() => {})
+              }
+              const { data: uploadData } = await supabase.storage.from('documentos').upload(
+                `justificaciones/${Date.now()}_${Math.random().toString(36).slice(2)}.${evidenciaFile.name.split('.').pop()}`,
+                evidenciaFile
+              ).catch(() => ({ data: null }))
+              if (uploadData) {
+                const { data: urlData } = supabase.storage.from('documentos').getPublicUrl(uploadData.path)
+                urlToSave = urlData.publicUrl
+              }
+            }
+            const { error } = await supabase.from('justificaciones').update({ motivo, evidencia_url: urlToSave }).eq('id', justificacionId).select().single()
+            if (error) throw error
+          } else {
+            const result = await guardarJustificacion(
+              { sesionId, alumnoId, claseId, fecha: fechaHoy, motivo, creadoPor: maestro.id },
+              evidenciaFile
+            )
+            if (result.error) throw result.error
+          }
+          _justifModal.close()  // Cerrar modal tras guardar exitoso
+        } catch (err) {
+          console.error('[justificacion] Error guardando:', err)
+        }
+      },
+      onCancel: (alumnoId, prevEstado) => {
+        // Rollback: restaurar estado anterior del alumno
+        estado[alumnoId] = prevEstado
+        renderLista(alumnoId)
+        _updateProgress()
+      }
+    });
+
     // === Render ===
     _renderVista(container, {
       clase, horario, alumnos, estado, justificaciones,
-      maestro, fechaHoy, claseId, sesionId, hasConflict, serverDSL, snapshots, salonNombre, rutaId
+      maestro, fechaHoy, claseId, sesionId, hasConflict, serverDSL, snapshots, salonNombre, rutaId,
+      _justifModal
     })
 
   } catch (err) {
@@ -152,7 +217,7 @@ export async function renderAsistenciaView(container, { claseId, fecha } = {}) {
 }
 
 function _renderVista(container, ctx) {
-  const { clase, horario, alumnos, estado, justificaciones, maestro, fechaHoy, claseId, snapshots, serverDSL, hasConflict, salonNombre, rutaId } = ctx
+  const { clase, horario, alumnos, estado, justificaciones, maestro, fechaHoy, claseId, snapshots, serverDSL, hasConflict, salonNombre, rutaId, _justifModal } = ctx
   let sesionId = ctx.sesionId
 
   // Cleanup registry — all destroyable sub-components register here
@@ -1295,6 +1360,45 @@ function _renderVista(container, ctx) {
     
     // Haptic feedback
     if (window.navigator.vibrate) window.navigator.vibrate(10);
+    
+    // === Interceptor para estado "J" (Justificado): abrir modal de justificación ===
+    if (action === 'J') {
+      const alumno = alumnos.find(a => a.id === id);
+      if (!alumno) return;
+
+      // Si ya está J, permitir quitarlo; si no, abrir modal para justificar
+      if (estado[id] === 'J') {
+        // Quitar J: eliminar justificación + archivo de Storage
+        if (sesionId) {
+          const j = await obtenerJustificacion(sesionId, id)
+          if (j?.id) {
+            if (j.evidencia_url) {
+              const match = j.evidencia_url.match(/\/storage\/v1\/object\/public\/[^/]+\/(.+)/)
+              if (match) supabase.storage.from('documentos').remove([match[1]]).catch(() => {})
+            }
+            eliminarJustificacion(j.id).catch(console.warn)
+          }
+        }
+        estado[id] = null;
+        renderLista(id);
+        _updateProgress();
+        await _autoSave(true);
+      } else {
+        // Marcar J ANTES de abrir modal para que el botón quede visible
+        estado[id] = 'J';
+        renderLista(id);
+        _updateProgress();
+        await _autoSave(true);
+
+        // Abrir modal: pre-cargar justificación existente si hay
+        let justifExistente = null;
+        if (sesionId) {
+          justifExistente = await obtenerJustificacion(sesionId, id);
+        }
+        _justifModal.open(alumno, justifExistente, null); // null = crear (no rollback de J)
+      }
+      return;
+    }
     
     estado[id] = (estado[id] === action) ? null : action;
     renderLista(id);

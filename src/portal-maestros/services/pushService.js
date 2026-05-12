@@ -56,11 +56,14 @@ export async function getNotificationPreferences() {
   const maestro = getMaestroLocal()
   if (!maestro) return DEFAULT_PREFS
 
+  const profileId = maestro.user_id || maestro.id
+  if (!profileId) return DEFAULT_PREFS
+
   try {
     const { data } = await supabase
       .from('configuracion_recordatorios')
       .select('*')
-      .eq('profile_id', maestro.id)
+      .eq('profile_id', profileId)
       .maybeSingle()
 
     _prefsCache = data ? { ...DEFAULT_PREFS, ...data } : DEFAULT_PREFS
@@ -77,8 +80,11 @@ export async function saveNotificationPreferences(prefs) {
   const maestro = getMaestroLocal()
   if (!maestro) return { error: 'No hay sesión' }
 
+  const profileId = maestro.user_id || maestro.id
+  if (!profileId) return { error: 'No hay user_id asociado' }
+
   const payload = {
-    profile_id: maestro.id,
+    profile_id: profileId,
     ...prefs,
     updated_at: new Date().toISOString(),
   }
@@ -119,35 +125,38 @@ export async function requestNotificationPermission() {
 export async function subscribeToPush() {
   if (!isPushSupported()) return { success: false, error: 'Push no soportado' }
 
-  const maestro = getMaestroLocal()
-  if (!maestro) return { success: false, error: 'No hay sesión' }
+    const maestro = getMaestroLocal()
+    if (!maestro) return { success: false, error: 'No hay sesión' }
 
-  try {
-    const { granted } = await requestNotificationPermission()
-    if (!granted) return { success: false, error: 'Permiso de notificaciones no otorgado' }
+    const profileId = maestro.user_id || maestro.id
+    if (!profileId) return { success: false, error: 'No hay user_id asociado' }
 
-    const vapidKey = await _getVapidPublicKey()
-    if (!vapidKey) return { success: false, error: 'VAPID key no configurada en el servidor' }
+    try {
+      const { granted } = await requestNotificationPermission()
+      if (!granted) return { success: false, error: 'Permiso de notificaciones no otorgado' }
 
-    const registration = await navigator.serviceWorker.ready
-    const subscription = await registration.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey: _urlBase64ToUint8Array(vapidKey),
-    })
+      const vapidKey = await _getVapidPublicKey()
+      if (!vapidKey) return { success: false, error: 'VAPID key no configurada en el servidor' }
 
-    // Guardar endpoint+keys en Supabase
-    const subJSON = subscription.toJSON()
-    const { error } = await supabase
-      .from('push_subscriptions')
-      .upsert({
-        profile_id: maestro.id,
-        endpoint: subJSON.endpoint,
-        p256dh: subJSON.keys.p256dh,
-        auth: subJSON.keys.auth,
-        user_agent: navigator.userAgent,
-        activo: true,
-        updated_at: new Date().toISOString(),
-      }, { onConflict: 'endpoint' })
+      const registration = await navigator.serviceWorker.ready
+      const subscription = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: _urlBase64ToUint8Array(vapidKey),
+      })
+
+      // Guardar endpoint+keys en Supabase
+      const subJSON = subscription.toJSON()
+      const { error } = await supabase
+        .from('push_subscriptions')
+        .upsert({
+          profile_id: profileId,
+          endpoint: subJSON.endpoint,
+          p256dh: subJSON.keys.p256dh,
+          auth: subJSON.keys.auth,
+          user_agent: navigator.userAgent,
+          activo: true,
+          updated_at: new Date().toISOString(),
+        }, { onConflict: 'endpoint' })
 
     if (error) {
       console.error('[Push] Error guardando suscripción:', error)

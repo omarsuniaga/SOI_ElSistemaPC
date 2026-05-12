@@ -578,6 +578,9 @@
 /* Danger Section */
 .pm-section-danger { border-color: rgba(255, 59, 48, 0.2); }
 
+/* Warning Section */
+.pm-section-warning { border-color: rgba(234, 179, 8, 0.35); }
+
 /* Footer */
 .pm-settings-footer {
   margin-top: 3rem;

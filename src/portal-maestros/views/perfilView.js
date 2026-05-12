@@ -37,10 +37,14 @@ export function renderPerfilView(container) {
       </header>
 
       <div class="pm-settings-grid">
+        <!-- Banner de perfil incompleto -->
+        <div id="pm-banner-perfil-incompleto" style="display:none;" class="pm-profile-alert"></div>
+
         <!-- Columna Izquierda: Perfil y Datos -->
         <div class="pm-settings-col">
           <section id="section-hero"></section>
           <section id="section-datos"></section>
+          <section id="section-disponibilidad"></section>
         </div>
 
         <!-- Columna Derecha: Preferencias y Sesión -->
@@ -62,10 +66,14 @@ export function renderPerfilView(container) {
   // Renderizar secciones
   _renderHeroSection(container.querySelector('#section-hero'), maestro);
   _renderPersonalDataSection(container.querySelector('#section-datos'), maestro);
+  _renderAvailabilitySection(container.querySelector('#section-disponibilidad'), maestro);
   _renderAppearanceSection(container.querySelector('#section-apariencia'));
   _renderNotificationsSection(container.querySelector('#section-notificaciones'));
   _renderAbsencesSection(container.querySelector('#section-ausencias'));
   _renderSessionSection(container.querySelector('#section-sesion'));
+
+  // Banner de alerta si perfil incompleto
+  _checkPerfilIncompleto(maestro);
 
   // Inicializar lógica
   _initListeners();
@@ -317,6 +325,7 @@ async function guardarPerfil() {
   const nombre = document.getElementById('perfilNombre').value.trim();
   const telefono = document.getElementById('perfilTelefono').value.trim();
   const especialidad = document.getElementById('perfilEspecialidad').value.trim();
+  const disponibilidad = _collectDisponibilidad();
 
   if (!nombre) {
     mostrarToast('El nombre es obligatorio', 'danger');
@@ -332,14 +341,14 @@ async function guardarPerfil() {
   try {
     const { error } = await supabase
       .from('maestros')
-      .update({ nombre, telefono, especialidad })
+      .update({ nombre, telefono, especialidad, disponibilidad })
       .eq('id', getMaestroLocal().id);
 
     if (error) throw error;
 
-    const actualizado = { ...getMaestroLocal(), nombre, telefono, especialidad };
+    const actualizado = { ...getMaestroLocal(), nombre, telefono, especialidad, disponibilidad };
     localStorage.setItem(PM_AUTH_KEY, JSON.stringify(actualizado));
-    
+
     mostrarToast('Perfil actualizado', 'success');
   } catch (error) {
     mostrarToast('Error al guardar: ' + error.message, 'danger');
@@ -348,6 +357,20 @@ async function guardarPerfil() {
     btn.disabled = false;
     btn.innerHTML = originalHtml;
   }
+}
+
+function _collectDisponibilidad() {
+  const disp = {};
+  DIAS_SEMANA.forEach(({ key }) => {
+    const franjas = [];
+    document.querySelectorAll(`[data-dia="${key}"].pm-avail-franja`).forEach(row => {
+      const inicio = row.querySelector('[data-field="inicio"]')?.value;
+      const fin = row.querySelector('[data-field="fin"]')?.value;
+      if (inicio && fin) franjas.push({ inicio, fin });
+    });
+    disp[key] = franjas;
+  });
+  return disp;
 }
 
 function confirmarCerrarSesion() {
@@ -455,6 +478,47 @@ async function _initListeners() {
   });
 
   document.getElementById('pm-btn-solicitar-ausencia')?.addEventListener('click', () => ausenciaModal.open());
+
+  // Disponibilidad: collapse/expand días
+  document.querySelectorAll('.pm-avail-dia__header').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const diaEl = btn.closest('.pm-avail-dia');
+      const bodyId = `pm-avail-body-${btn.dataset.dia}`;
+      const body = document.getElementById(bodyId);
+      const isOpen = diaEl.classList.contains('open');
+      if (isOpen) {
+        diaEl.classList.remove('open');
+        body.style.display = 'none';
+      } else {
+        diaEl.classList.add('open');
+        body.style.display = 'block';
+      }
+    });
+  });
+
+  // Disponibilidad: agregar franja
+  document.querySelectorAll('.pm-avail-add-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const diaKey = btn.dataset.dia;
+      const franjasEl = document.getElementById(`pm-avail-franjas-${diaKey}`);
+      if (!franjasEl) return;
+      const index = franjasEl.querySelectorAll('.pm-avail-franja').length;
+      franjasEl.insertAdjacentHTML('beforeend', _renderFranja(diaKey, index, { inicio: '08:00', fin: '12:00' }));
+      // Auto-expandir si estaba cerrado
+      const diaEl = btn.closest('.pm-avail-dia');
+      const bodyId = `pm-avail-body-${diaKey}`;
+      diaEl.classList.add('open');
+      document.getElementById(bodyId).style.display = 'block';
+    });
+  });
+
+  // Disponibilidad: eliminar franja
+  document.addEventListener('click', e => {
+    const delBtn = e.target.closest('.pm-avail-franja__del');
+    if (!delBtn) return;
+    const row = delBtn.closest('.pm-avail-franja');
+    if (row) row.remove();
+  });
 }
 
 const THEME_KEY = 'portal-maestros-theme';
@@ -485,3 +549,189 @@ function applyTheme(theme) {
 }
 
 applyTheme(currentTheme);
+
+/* =====================================================================
+   Disponibilidad Horaria
+   ===================================================================== */
+
+const DIAS_SEMANA = [
+  { key: 'lunes',     label: 'Lunes' },
+  { key: 'martes',    label: 'Martes' },
+  { key: 'miercoles', label: 'Miércoles' },
+  { key: 'jueves',    label: 'Jueves' },
+  { key: 'viernes',   label: 'Viernes' },
+  { key: 'sabado',    label: 'Sábado' },
+  { key: 'domingo',   label: 'Domingo' },
+];
+
+function _renderAvailabilitySection(container, maestro) {
+  const disp = maestro.disponibilidad || {};
+  const needsCompletion = !maestro.especialidad || !maestro.disponibilidad ||
+    Object.keys(maestro.disponibilidad).length === 0;
+
+  container.innerHTML = `
+    <div class="card-apple pm-settings-section ${needsCompletion ? 'pm-section-warning' : ''}">
+      <div class="pm-settings-section__header">
+        <i class="bi bi-calendar-week pm-icon-teal"></i>
+        <div>
+          <h3 class="pm-settings-section__title">Disponibilidad Horaria</h3>
+          <p class="pm-settings-section__desc">Bloques de horarios por día</p>
+        </div>
+        ${needsCompletion ? '<span class="pm-badge-warning">Requerido</span>' : ''}
+      </div>
+
+      <div id="pm-avail-days" class="pm-avail-days">
+        ${DIAS_SEMANA.map(d => _renderDiaCard(d.key, disp[d.key] || [])).join('')}
+      </div>
+    </div>
+  `;
+}
+
+function _renderDiaCard(diaKey, franjas) {
+  const dia = DIAS_SEMANA.find(d => d.key === diaKey);
+  const hasFranjas = franjas.length > 0;
+  return `
+    <div class="pm-avail-dia" data-dia="${diaKey}">
+      <button class="pm-avail-dia__header" data-dia="${diaKey}">
+        <span class="pm-avail-dia__label">${dia.label}</span>
+        <span class="pm-avail-dia__count">${franjas.length} franja${franjas.length !== 1 ? 's' : ''}</span>
+        <i class="bi bi-chevron-down pm-avail-dia__arrow"></i>
+      </button>
+      <div class="pm-avail-dia__body" id="pm-avail-body-${diaKey}" ${hasFranjas ? '' : 'style="display:none"'}>
+        <div class="pm-avail-franjas" id="pm-avail-franjas-${diaKey}">
+          ${franjas.map((f, i) => _renderFranja(diaKey, i, f)).join('')}
+        </div>
+        <button class="btn-apple-utility btn-apple-sm pm-avail-add-btn" data-dia="${diaKey}">
+          <i class="bi bi-plus-lg"></i> Agregar franja
+        </button>
+      </div>
+    </div>
+  `;
+}
+
+function _renderFranja(diaKey, index, franja) {
+  return `
+    <div class="pm-avail-franja" data-dia="${diaKey}" data-index="${index}">
+      <input type="time" class="pm-apple-time" value="${franja.inicio || '08:00'}" data-field="inicio">
+      <span>a</span>
+      <input type="time" class="pm-apple-time" value="${franja.fin || '12:00'}" data-field="fin">
+      <button class="pm-avail-franja__del" data-dia="${diaKey}" data-index="${index}">
+        <i class="bi bi-trash"></i>
+      </button>
+    </div>
+  `;
+}
+
+function _checkPerfilIncompleto(maestro) {
+  const needsCompletion = !maestro.especialidad || !maestro.disponibilidad ||
+    Object.keys(maestro.disponibilidad || {}).length === 0;
+  const banner = document.getElementById('pm-banner-perfil-incompleto');
+  if (!banner) return;
+  if (needsCompletion) {
+    banner.style.display = 'block';
+    banner.innerHTML = `
+      <div class="pm-profile-alert__inner">
+        <i class="bi bi-exclamation-triangle"></i>
+        <div>
+          <strong>Completá tu perfil</strong>
+          <p>Agregá tu especialidad y disponibilidad horaria para acceder a todas las funciones.</p>
+        </div>
+      </div>
+    `;
+  } else {
+    banner.style.display = 'none';
+  }
+}
+
+/* =====================================================================
+   Estilos de disponibilidad y banner
+   ===================================================================== */
+
+const _availStyles = `
+  .pm-profile-alert {
+    grid-column: 1 / -1;
+    padding: 0 0 0.5rem;
+  }
+  .pm-profile-alert__inner {
+    background: rgba(234, 179, 8, 0.12);
+    border: 1px solid rgba(234, 179, 8, 0.4);
+    border-radius: 12px;
+    padding: 0.75rem 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    color: var(--pm-warning);
+  }
+  .pm-profile-alert__inner i { font-size: 1.4rem; flex-shrink: 0; }
+  .pm-profile-alert__inner strong { display: block; font-size: 0.9rem; }
+  .pm-profile-alert__inner p { margin: 0.15rem 0 0; font-size: 0.78rem; opacity: 0.85; }
+  .pm-badge-warning {
+    background: rgba(234, 179, 8, 0.15);
+    color: var(--pm-warning);
+    font-size: 0.68rem;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 20px;
+    letter-spacing: 0.05em;
+  }
+  .pm-avail-days { display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.5rem; }
+  .pm-avail-dia { border: 1px solid var(--pm-border); border-radius: 10px; overflow: hidden; }
+  .pm-avail-dia__header {
+    width: 100%;
+    background: var(--pm-surface-2);
+    border: none;
+    padding: 0.6rem 0.85rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    color: var(--pm-text);
+    transition: background 0.15s;
+  }
+  .pm-avail-dia__header:hover { background: var(--pm-border); }
+  .pm-avail-dia__label { font-size: 0.85rem; font-weight: 600; flex: 1; text-align: left; }
+  .pm-avail-dia__count { font-size: 0.72rem; color: var(--pm-text-muted); }
+  .pm-avail-dia__arrow { font-size: 0.8rem; color: var(--pm-text-muted); transition: transform 0.2s; }
+  .pm-avail-dia.open .pm-avail-dia__arrow { transform: rotate(180deg); }
+  .pm-avail-dia__body { padding: 0.65rem; background: var(--pm-surface); }
+  .pm-avail-franjas { display: flex; flex-direction: column; gap: 0.4rem; }
+  .pm-avail-franja {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: var(--pm-surface-2);
+    border-radius: 8px;
+    padding: 0.4rem 0.6rem;
+  }
+  .pm-avail-franja span { font-size: 0.75rem; color: var(--pm-text-muted); flex-shrink: 0; }
+  .pm-apple-time {
+    background: var(--pm-surface);
+    border: 1px solid var(--pm-border);
+    border-radius: 6px;
+    padding: 0.3rem 0.5rem;
+    font-size: 0.8rem;
+    color: var(--pm-text);
+    font-family: inherit;
+    color-scheme: light;
+  }
+  .pm-avail-franja__del {
+    margin-left: auto;
+    background: none;
+    border: none;
+    color: var(--pm-text-muted);
+    cursor: pointer;
+    padding: 0.2rem;
+    border-radius: 4px;
+    transition: color 0.15s;
+    flex-shrink: 0;
+  }
+  .pm-avail-franja__del:hover { color: var(--pm-danger); }
+  .pm-avail-add-btn { margin-top: 0.5rem; width: 100%; }
+`;
+
+if (!document.getElementById('pm-avail-styles')) {
+  const s = document.createElement('style');
+  s.id = 'pm-avail-styles';
+  s.textContent = _availStyles;
+  document.head.appendChild(s);
+}

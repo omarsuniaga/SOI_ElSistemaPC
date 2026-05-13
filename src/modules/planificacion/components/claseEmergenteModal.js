@@ -18,68 +18,193 @@ export function openClaseEmergenteModal(options = {}) {
   currentMaestroId = maestroId
 
   AppModal.open({
-    title: '📅 Nueva Clase Emergente',
+    title: '⚡ Nueva Clase Emergente',
     size: 'lg',
     saveText: 'Crear Clase',
     cancelText: 'Cancelar',
     body: `
-      <form id="formClaseEmergente" class="row g-3">
-        <div class="col-md-6">
-          <label class="form-label-compact">Fecha *</label>
-          <input type="date" class="form-control input-dense" id="modal-fecha" required value="${fecha}">
-        </div>
-        <div class="col-md-6">
-          <label class="form-label-compact">Clase *</label>
-          <select class="form-select input-dense" id="modal-clase_id" required>
-            <option value="">Seleccionar clase...</option>
-            ${clases.map(c => `<option value="${c.id}" ${c.id === claseId ? 'selected' : ''}>${escapeHTML(c.nombre)}</option>`).join('')}
-          </select>
-        </div>
-        <div class="col-md-6">
-          <label class="form-label-compact">Hora inicio *</label>
-          <input type="time" class="form-control input-dense" id="modal-hora_inicio" required>
-        </div>
-        <div class="col-md-6">
-          <label class="form-label-compact">Hora fin *</label>
-          <input type="time" class="form-control input-dense" id="modal-hora_fin" required>
-        </div>
-        <div class="col-12">
-          <label class="form-label-compact">Tema / Título *</label>
-          <input type="text" class="form-control input-dense" id="modal-tema" required placeholder="Ej: Clase especial de repertorio">
-        </div>
-        <div class="col-12">
-          <label class="form-label-compact">Contenido / Descripción</label>
-          <textarea class="form-control input-dense" id="modal-contenido" rows="3" placeholder="Describe los objetivos de esta clase especial..."></textarea>
-        </div>
-        <div class="col-12">
-          <label class="form-label-compact">Motivo de clase emergente</label>
-          <select class="form-select input-dense" id="modal-motivo" required>
-            <option value="">Seleccionar motivo...</option>
-            <option value="recuperacion">Recuperación (feriado/ausencia)</option>
-            <option value="concierto">Preparación para concerto/recital</option>
-            <option value="examen">Examen parcial</option>
-            <option value="reemplazo">Reemplazo de maestro</option>
-            <option value="especial">Clase especial programada</option>
-            <option value="otro">Otro motivo</option>
-          </select>
-        </div>
-        <div class="col-12">
-          <div class="form-check">
-            <input class="form-check-input" type="checkbox" id="modal-es_co-docencia">
-            <label class="form-check-label" for="modal-es_co-docencia">
-              ¿Esta clase tiene co-docencia?
-            </label>
+      <form id="formClaseEmergente" class="pm-emergente-form">
+        <div class="pm-emergente-section">
+          <h3 class="pm-emergente-section-title">📅 Información de la Sesión</h3>
+          <div class="pm-emergente-grid">
+            <div class="pm-emergente-field">
+              <label class="pm-emergente-label">Fecha</label>
+              <input type="date" class="pm-emergente-input" id="modal-fecha" required value="${fecha}">
+            </div>
+            <div class="pm-emergente-field">
+              <label class="pm-emergente-label">Clase</label>
+              <select class="pm-emergente-select" id="modal-clase_id" required>
+                <option value="">Seleccionar...</option>
+                ${clases.map(c => `<option value="${c.id}" ${c.id === claseId ? 'selected' : ''}>${escapeHTML(c.nombre)}</option>`).join('')}
+              </select>
+            </div>
+            <div class="pm-emergente-field">
+              <label class="pm-emergente-label">Hora inicio</label>
+              <input type="time" class="pm-emergente-input" id="modal-hora_inicio" required>
+            </div>
+            <div class="pm-emergente-field">
+              <label class="pm-emergente-label">Hora fin</label>
+              <input type="time" class="pm-emergente-input" id="modal-hora_fin" required>
+            </div>
           </div>
         </div>
-        <div id="codocencia-fields" class="col-12" style="display: none;">
-          <div class="p-3 bg-body-tertiary rounded">
-            <label class="form-label-compact">Maestro auxiliar</label>
-            <select class="form-select input-dense" id="modal-maestro_auxiliar_id">
-              <option value="">Seleccionar maestro auxiliar...</option>
+
+        <div class="pm-emergente-section">
+          <h3 class="pm-emergente-section-title">📝 Contenido</h3>
+          <div class="pm-emergente-field full">
+            <label class="pm-emergente-label">Tema / Título</label>
+            <input type="text" class="pm-emergente-input" id="modal-tema" required placeholder="Ej: Clase especial de repertorio">
+          </div>
+          <div class="pm-emergente-field full">
+            <label class="pm-emergente-label">Descripción</label>
+            <textarea class="pm-emergente-textarea" id="modal-contenido" rows="3" placeholder="Describe los objetivos de esta clase especial..."></textarea>
+          </div>
+        </div>
+
+        <div class="pm-emergente-section">
+          <h3 class="pm-emergente-section-title">⚠️ Motivo</h3>
+          <div class="pm-emergente-field full">
+            <select class="pm-emergente-select" id="modal-motivo" required>
+              <option value="">Seleccionar motivo...</option>
+              <option value="recuperacion">🔄 Recuperación (feriado/ausencia)</option>
+              <option value="concierto">🎭 Preparación para concerto/recital</option>
+              <option value="examen">📋 Examen parcial</option>
+              <option value="reemplazo">👥 Reemplazo de maestro</option>
+              <option value="especial">⭐ Clase especial programada</option>
+              <option value="otro">📌 Otro motivo</option>
             </select>
-            <small class="text-muted">El maestro auxiliar podrá ver y editar esta sesión.</small>
           </div>
         </div>
+
+        <div class="pm-emergente-section">
+          <label class="pm-emergente-checkbox">
+            <input type="checkbox" id="modal-es_co-docencia">
+            <span class="pm-emergente-checkbox-mark">✓</span>
+            <span class="pm-emergente-checkbox-text">¿Esta clase tiene co-docencia?</span>
+          </label>
+          
+          <div id="codocencia-fields" class="pm-emergente-codocencia" style="display: none;">
+            <div class="pm-emergente-codocencia-card">
+              <label class="pm-emergente-label">Maestro auxiliar</label>
+              <select class="pm-emergente-select" id="modal-maestro_auxiliar_id">
+                <option value="">Seleccionar maestro...</option>
+              </select>
+              <span class="pm-emergente-hint">El maestro auxiliar podrá ver y editar esta sesión.</span>
+            </div>
+          </div>
+        </div>
+
+        <style>
+          .pm-emergente-form {
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+          }
+          .pm-emergente-section {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+          }
+          .pm-emergente-section-title {
+            font-size: 0.8125rem;
+            font-weight: 600;
+            color: var(--pm-text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            margin: 0;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid var(--pm-border);
+          }
+          .pm-emergente-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.75rem;
+          }
+          .pm-emergente-field {
+            display: flex;
+            flex-direction: column;
+            gap: 0.375rem;
+          }
+          .pm-emergente-field.full {
+            grid-column: span 2;
+          }
+          .pm-emergente-label {
+            font-size: 0.8125rem;
+            font-weight: 500;
+            color: var(--pm-text);
+          }
+          .pm-emergente-input,
+          .pm-emergente-select,
+          .pm-emergente-textarea {
+            padding: 0.625rem 0.875rem;
+            border: 1px solid var(--pm-border);
+            border-radius: 10px;
+            font-size: 0.875rem;
+            background: var(--pm-surface);
+            color: var(--pm-text);
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+          }
+          .pm-emergente-input:focus,
+          .pm-emergente-select:focus,
+          .pm-emergente-textarea:focus {
+            border-color: var(--pm-primary);
+            box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
+          }
+          .pm-emergente-textarea {
+            resize: vertical;
+            min-height: 80px;
+          }
+          .pm-emergente-checkbox {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            cursor: pointer;
+            padding: 0.75rem;
+            background: var(--pm-surface-2);
+            border-radius: 10px;
+          }
+          .pm-emergente-checkbox input {
+            display: none;
+          }
+          .pm-emergente-checkbox-mark {
+            width: 22px;
+            height: 22px;
+            border: 2px solid var(--pm-border);
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            color: transparent;
+            transition: all 0.2s;
+          }
+          .pm-emergente-checkbox input:checked + .pm-emergente-checkbox-mark {
+            background: var(--pm-primary);
+            border-color: var(--pm-primary);
+            color: white;
+          }
+          .pm-emergente-checkbox-text {
+            font-size: 0.875rem;
+            color: var(--pm-text);
+          }
+          .pm-emergente-codocencia {
+            margin-top: 0.5rem;
+          }
+          .pm-emergente-codocencia-card {
+            padding: 1rem;
+            background: linear-gradient(135deg, rgba(88, 86, 214, 0.1) 0%, rgba(88, 86, 214, 0.05) 100%);
+            border: 1px solid rgba(88, 86, 214, 0.2);
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+          }
+          .pm-emergente-hint {
+            font-size: 0.75rem;
+            color: var(--pm-text-muted);
+          }
+        </style>
       </form>
     `,
     onShow: (modalBody) => {

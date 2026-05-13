@@ -152,7 +152,7 @@ export function renderLoginView(container, { onSuccess }) {
     const password = passwordInput.value
 
     if (!email || !password) {
-      errorMsg.textContent = 'Completá tu correo y contraseña.'
+      errorMsg.textContent = 'Completa tu correo y contraseña.'
       return
     }
 

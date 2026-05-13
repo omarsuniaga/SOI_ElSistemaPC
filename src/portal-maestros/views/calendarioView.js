@@ -151,11 +151,17 @@ function _renderCalendario(container, anio, mes, hoy, estadoMap, { onFechaClick,
   }
 
   container.innerHTML = `
-    <div style="padding: 1rem 1rem 2rem;">
-      <div class="d-flex align-items-center justify-content-between mb-3 px-1">
-        <button id="pm-cal-prev" class="btn-icon-pm">‹</button>
-        <h2 class="pm-month-title">${MESES_ES[mes]} ${anio}</h2>
-        <button id="pm-cal-next" class="btn-icon-pm">›</button>
+    <div style="padding: 1.5rem 1.25rem;">
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem;">
+        <button id="pm-cal-prev" class="btn-icon-pm" style="font-size: 1.8rem; padding: 0.5rem; color: var(--pm-primary);">
+          <i class="bi bi-chevron-left"></i>
+        </button>
+        <h2 class="pm-month-title" style="margin: 0; font-size: 1.4rem; font-weight: 700; flex: 1; text-align: center;">
+          ${MESES_ES[mes]} ${anio}
+        </h2>
+        <button id="pm-cal-next" class="btn-icon-pm" style="font-size: 1.8rem; padding: 0.5rem; color: var(--pm-primary);">
+          <i class="bi bi-chevron-right"></i>
+        </button>
       </div>
 
       <div class="pm-card" style="padding:.75rem;">

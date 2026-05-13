@@ -594,14 +594,17 @@ export async function renderConfigView(container) {
     statusDiv.innerHTML = '<div class="spinner-border spinner-border-sm me-2"></div> Enviando notificación de prueba...'
 
     try {
-      const success = await testNotification()
-      if (success) {
+      const result = await testNotification()
+      if (result.success) {
+        const method = result.method === 'serviceWorker' 
+          ? 'Notificación push del sistema operativo' 
+          : 'Notificación local del navegador'
         statusDiv.innerHTML = '<div class="alert alert-success alert-dismissible fade show mb-0">' +
-          '<i class="bi bi-check-circle me-1"></i> Notificación de prueba enviada' +
+          `<i class="bi bi-check-circle me-1"></i> ${method} enviada` +
           '<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>'
       } else {
         statusDiv.innerHTML = '<div class="alert alert-warning alert-dismissible fade show mb-0">' +
-          '<i class="bi bi-exclamation-triangle me-1"></i> Debes habilitar los permisos de notificación' +
+          `<i class="bi bi-exclamation-triangle me-1"></i> ${result.error || 'Debes habilitar los permisos de notificación'}` +
           '<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>'
       }
     } catch (err) {

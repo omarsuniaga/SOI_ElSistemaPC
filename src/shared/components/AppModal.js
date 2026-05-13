@@ -40,8 +40,8 @@ function ensureDOM() {
       background:var(--pm-surface);
       color:var(--pm-text);
       border:1px solid var(--pm-border);
-      border-radius:1rem;
-      box-shadow:var(--pm-shadow-lg);
+      border-radius:16px;
+      box-shadow:0 20px 60px rgba(0,0,0,0.2);
       width:100%;
       max-width:480px;
       margin:auto;
@@ -55,18 +55,18 @@ function ensureDOM() {
         padding:1rem 1.25rem;
         border-bottom:1px solid var(--pm-border);
         display:flex;align-items:center;gap:.5rem;
-        background:var(--pm-surface-2);
+        background: linear-gradient(135deg, var(--pm-primary) 0%, #5856d6 100%);
       ">
-        <h5 class="app-modal-title mb-0 fw-bold" style="flex:1;font-size:1rem;color:var(--pm-primary);"></h5>
+        <h5 class="app-modal-title mb-0 fw-bold" style="flex:1;font-size:1.0625rem;color:white;font-weight:600;letter-spacing:-0.01em;"></h5>
         <button class="app-modal-close-x" type="button" aria-label="Cerrar" style="
-          background:none;border:none;cursor:pointer;
-          width:32px;height:32px;border-radius:50%;
+          background:rgba(255,255,255,0.15);border:none;cursor:pointer;
+          width:28px;height:28px;border-radius:50%;
           display:flex;align-items:center;justify-content:center;
-          color:var(--pm-text-muted);
+          color:white;
           transition:all .15s;
           flex-shrink:0;
         ">
-          <i class="bi bi-x-lg" style="font-size:1rem;"></i>
+          <i class="bi bi-x-lg" style="font-size:0.875rem;"></i>
         </button>
       </div>
 

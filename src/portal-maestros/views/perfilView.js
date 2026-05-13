@@ -7,6 +7,7 @@ import {
 } from '../services/pushService.js';
 import { AppModal } from '../../shared/components/AppModal.js';
 import { ausenciaModal } from '../components/ausenciaModal.js';
+import { notifConfigModal } from '../components/notifConfigModal.js';
 import { escHTML, getInitials } from '../utils/portalUtils.js';
 
 const state = { saving: false };
@@ -209,10 +210,8 @@ function _renderAbsencesSection(container) {
   `;
 }
 
-/**
- * Renderiza la sección de Notificaciones
- */
 function _renderNotificationsSection(container) {
+  // Fix applied
   const supported = isPushSupported();
   
   container.innerHTML = `
@@ -221,60 +220,22 @@ function _renderNotificationsSection(container) {
         <i class="bi bi-bell pm-icon-red"></i>
         <div>
           <h3 class="pm-settings-section__title">Notificaciones</h3>
-          <p class="pm-settings-section__desc">Configura tus alertas push</p>
+          <p class="pm-settings-section__desc">Gestiona tus alertas y avisos</p>
         </div>
-        <label class="pm-apple-switch" id="btn-toggle-push">
+        <label class="pm-apple-switch" id="btn-toggle-push-main">
           <input type="checkbox">
           <span class="pm-apple-switch-slider"></span>
         </label>
       </div>
 
-      ${supported ? `
-        <div id="pm-notif-rules" class="pm-notif-list">
-          <div class="pm-notif-item">
-            <div class="pm-notif-item__info">
-              <span class="pm-notif-item__title">Recordatorio Pre-clase</span>
-              <select id="pref-min-antes" class="pm-apple-select">
-                <option value="5">5 min antes</option>
-                <option value="15">15 min antes</option>
-                <option value="30">30 min antes</option>
-              </select>
-            </div>
-            <label class="pm-apple-mini-switch">
-              <input type="checkbox" id="pref-pre-clase">
-              <span class="pm-apple-mini-switch-slider"></span>
-            </label>
-          </div>
-
-          <div class="pm-notif-item">
-            <div class="pm-notif-item__info">
-              <span class="pm-notif-item__title">Pase de Lista Pendiente</span>
-              <select id="pref-min-post" class="pm-apple-select">
-                <option value="30">30 min después</option>
-                <option value="60">1 hora después</option>
-              </select>
-            </div>
-            <label class="pm-apple-mini-switch">
-              <input type="checkbox" id="pref-post-clase">
-              <span class="pm-apple-mini-switch-slider"></span>
-            </label>
-          </div>
-
-          <div class="pm-notif-item pm-notif-item--simple">
-            <span>Alerta 24 horas</span>
-            <label class="pm-apple-mini-switch">
-              <input type="checkbox" id="pref-24h">
-              <span class="pm-apple-mini-switch-slider"></span>
-            </label>
-          </div>
-
-          <button class="btn-apple-secondary btn-apple-sm" id="btn-test-notif" style="margin-top: 1rem; width: 100%;">
-            <i class="bi bi-send"></i> Probar Notificación
-          </button>
-        </div>
-      ` : `
-        <p class="apple-caption" style="color: var(--pm-danger);">Push no soportado en este navegador.</p>
-      `}
+      <div class="pm-settings-actions-row">
+        <button class="btn-apple-utility w-100" id="btn-abrir-config-notif">
+          <i class="bi bi-gear-wide-connected"></i>
+          Configurar preferencias...
+        </button>
+      </div>
+      
+      ${!supported ? `<p class="apple-caption mt-2" style="color: var(--pm-danger); font-size: 0.7rem;">Push no soportado en este navegador.</p>` : ''}
     </div>
   `;
 }
@@ -409,8 +370,8 @@ async function _initListeners() {
     mostrarToast('Cambio de avatar disponible en la próxima versión', 'info');
   });
 
-  // Push toggle
-  const toggleLabel = document.getElementById('btn-toggle-push');
+  // Push toggle principal
+  const toggleLabel = document.getElementById('btn-toggle-push-main');
   const toggleInput = toggleLabel?.querySelector('input');
   if (toggleLabel && toggleInput) {
     toggleInput.checked = await isPushSubscribed();
@@ -430,40 +391,9 @@ async function _initListeners() {
     });
   }
 
-  // Cargar y guardar preferencias de notificaciones
-  const prefs = await getNotificationPreferences();
-  const elements = {
-    preClase: document.getElementById('pref-pre-clase'),
-    minAntes: document.getElementById('pref-min-antes'),
-    postClase: document.getElementById('pref-post-clase'),
-    minPost: document.getElementById('pref-min-post'),
-    pref24h: document.getElementById('pref-24h')
-  };
-
-  if (elements.preClase) elements.preClase.checked = prefs.alerta_pre_clase;
-  if (elements.minAntes) elements.minAntes.value = String(prefs.min_antes_clase);
-  if (elements.postClase) elements.postClase.checked = prefs.alerta_post_clase;
-  if (elements.minPost) elements.minPost.value = String(prefs.min_post_clase_sin_registro);
-  if (elements.pref24h) elements.pref24h.checked = prefs.alerta_24h;
-
-  const savePrefs = async () => {
-    const updated = {
-      alerta_pre_clase: elements.preClase?.checked ?? true,
-      min_antes_clase: parseInt(elements.minAntes?.value || '15', 10),
-      alerta_post_clase: elements.postClase?.checked ?? true,
-      min_post_clase_sin_registro: parseInt(elements.minPost?.value || '60', 10),
-      alerta_24h: elements.pref24h?.checked ?? true,
-      alerta_48h: true // default
-    };
-    await saveNotificationPreferences(updated);
-  };
-
-  document.querySelectorAll('#pm-notif-rules input, #pm-notif-rules select').forEach(el => {
-    el.addEventListener('change', savePrefs);
-  });
-
-  document.getElementById('btn-test-notif')?.addEventListener('click', async () => {
-    if (!await testNotification()) mostrarToast('Primero activa las notificaciones', 'warning');
+  // Abrir Modal de Configuración Detallada
+  document.getElementById('btn-abrir-config-notif')?.addEventListener('click', () => {
+    notifConfigModal.open();
   });
 
   // Temas
@@ -633,8 +563,8 @@ function _checkPerfilIncompleto(maestro) {
       <div class="pm-profile-alert__inner">
         <i class="bi bi-exclamation-triangle"></i>
         <div>
-          <strong>Completá tu perfil</strong>
-          <p>Agregá tu especialidad y disponibilidad horaria para acceder a todas las funciones.</p>
+          <strong>Completa tu perfil</strong>
+          <p>Agrega tu especialidad y disponibilidad horaria para acceder a todas las funciones.</p>
         </div>
       </div>
     `;

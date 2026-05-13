@@ -8,9 +8,10 @@
    ═══════════════════════════════════════════════════════════ */
 
 @media (max-width: 767px) {
+
   /* ── Header: compact ─────────────────────────────────────────── */
   .pm-header {
-    height: 56px;
+    height: var(--pm-header-h);
     padding: 0 0.75rem;
   }
 
@@ -24,8 +25,13 @@
     display: block !important;
   }
 
-  .pm-header-greeting { display: none; }
-  .pm-header-title    { font-size: 1rem; }
+  .pm-header-greeting {
+    display: none;
+  }
+
+  .pm-header-title {
+    font-size: 1rem;
+  }
 
   .pm-header-right {
     gap: 0.25rem;
@@ -79,8 +85,13 @@
     padding: 4px 2px 6px;
   }
 
-  .pm-nav-tab i { font-size: 1.2rem; }
-  .pm-nav-tab span { font-size: 0.55rem; }
+  .pm-nav-tab i {
+    font-size: 1.2rem;
+  }
+
+  .pm-nav-tab span {
+    font-size: 0.55rem;
+  }
 
   .pm-nav-tab.active::after {
     width: 3px;
@@ -129,7 +140,9 @@
     font-size: 1rem;
   }
 
-  .stat-number { font-size: 1.5rem; }
+  .stat-number {
+    font-size: 1.5rem;
+  }
 
   .ausencia-card {
     padding: 1rem;
@@ -142,7 +155,9 @@
     gap: 0.5rem;
   }
 
-  .ausencia-meta { align-self: flex-start; }
+  .ausencia-meta {
+    align-self: flex-start;
+  }
 
   .ausencia-footer {
     flex-direction: column;
@@ -151,7 +166,10 @@
   }
 
   /* ── Modales: bottom sheet ────────────────────────────────────── */
-  .pm-modal-overlay { align-items: flex-end; padding: 0; }
+  .pm-modal-overlay {
+    align-items: flex-end;
+    padding: 0;
+  }
 
   .pm-modal-content {
     border-radius: var(--pm-radius) var(--pm-radius) 0 0;
@@ -177,7 +195,9 @@
   }
 
   /* ── Calendario: compact ─────────────────────────────────────── */
-  .pm-cal-day { font-size: 0.8rem; }
+  .pm-cal-day {
+    font-size: 0.8rem;
+  }
 
   /* ── Login ───────────────────────────────────────────────────── */
   .pm-login {
@@ -190,17 +210,26 @@
    ═══════════════════════════════════════════════════════════ */
 
 @media (max-width: 480px) {
-  .pm-view { padding: 0; }
+  .pm-view {
+    padding: 0;
+  }
 
   .pm-metricas-kpis {
     grid-template-columns: repeat(3, 1fr);
     gap: 0.35rem;
   }
 
-  .pm-kpi-value { font-size: 1.2rem; }
-  .pm-kpi-label { font-size: 0.55rem; }
+  .pm-kpi-value {
+    font-size: 1.2rem;
+  }
 
-  .pm-metricas-title { font-size: 1.2rem; }
+  .pm-kpi-label {
+    font-size: 0.55rem;
+  }
+
+  .pm-metricas-title {
+    font-size: 1.2rem;
+  }
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -208,9 +237,10 @@
    ═══════════════════════════════════════════════════════════ */
 
 @media (min-width: 768px) and (max-width: 1023px) {
+
   /* ── Header: tabs horizontales ─────────────────────────────────── */
   .pm-header {
-    height: 60px;
+    height: var(--pm-header-h);
     padding: 0 1.25rem;
     display: flex;
     align-items: center;
@@ -221,8 +251,14 @@
     display: block !important;
   }
 
-  .pm-header-greeting { display: block; font-size: 0.65rem; }
-  .pm-header-title    { font-size: 1.2rem; }
+  .pm-header-greeting {
+    display: block;
+    font-size: 0.65rem;
+  }
+
+  .pm-header-title {
+    font-size: 1.2rem;
+  }
 
   .pm-header-right {
     gap: 0.5rem;
@@ -257,8 +293,13 @@
     max-width: 400px;
   }
 
-  .pm-nav-tab i { font-size: 1.3rem; }
-  .pm-nav-tab span { font-size: 0.6rem; }
+  .pm-nav-tab i {
+    font-size: 1.3rem;
+  }
+
+  .pm-nav-tab span {
+    font-size: 0.6rem;
+  }
 
   /* ── Header tabs en tablet ─────────────────────────────────── */
   .pm-header-tabs {
@@ -284,7 +325,9 @@
     gap: var(--pm-space-1);
   }
 
-  .pm-header-tab i { font-size: 0.85rem; }
+  .pm-header-tab i {
+    font-size: 0.85rem;
+  }
 
   .pm-header-tab:hover {
     background: rgba(255, 255, 255, 0.15);
@@ -312,8 +355,13 @@
     padding: 0.875rem 0.5rem;
   }
 
-  .pm-kpi-value { font-size: 1.6rem; }
-  .pm-kpi-label { font-size: 0.65rem; }
+  .pm-kpi-value {
+    font-size: 1.6rem;
+  }
+
+  .pm-kpi-label {
+    font-size: 0.65rem;
+  }
 
   /* ── Clase cards: grid 2 cols ─────────────────────────────────── */
   .pm-metricas-clases {
@@ -337,11 +385,20 @@
     padding: 1.25rem;
   }
 
-  .stat-icon { width: 44px; height: 44px; }
-  .stat-number { font-size: 1.75rem; }
+  .stat-icon {
+    width: 44px;
+    height: 44px;
+  }
+
+  .stat-number {
+    font-size: 1.75rem;
+  }
 
   /* ── Modales: centered ─────────────────────────────────────────── */
-  .pm-modal-overlay { align-items: center; padding: 1rem; }
+  .pm-modal-overlay {
+    align-items: center;
+    padding: 1rem;
+  }
 
   .pm-modal-content {
     max-width: 500px;
@@ -349,7 +406,9 @@
   }
 
   /* ── Calendario: mes completo ─────────────────────────────────── */
-  .pm-cal-day { font-size: 0.85rem; }
+  .pm-cal-day {
+    font-size: 0.85rem;
+  }
 
   /* ── Sidebar: drawer 80vw ──────────────────────────────────────── */
   .pm-sidebar {
@@ -383,6 +442,7 @@
    ═══════════════════════════════════════════════════════════ */
 
 @media (min-width: 1024px) {
+
   /* ── Desktop layout: flex column + sidebar ──────────────────── */
   #portal-app {
     flex-direction: column;
@@ -492,7 +552,7 @@
   }
 
   /* ── Content area (header + view + footer) ─────────────────── */
-  #portal-app > :not(.pm-sidebar) {
+  #portal-app> :not(.pm-sidebar) {
     flex: 1;
     display: flex;
     flex-direction: column;
@@ -528,8 +588,14 @@
     padding: 4px 2px 6px;
   }
 
-  .pm-nav-tab i { font-size: 1.2rem; }
-  .pm-nav-tab span { font-size: 0.6rem; letter-spacing: 0.02em; }
+  .pm-nav-tab i {
+    font-size: 1.2rem;
+  }
+
+  .pm-nav-tab span {
+    font-size: 0.6rem;
+    letter-spacing: 0.02em;
+  }
 
   /* ── Header tabs ──────────────────────────────────────────────── */
   .pm-header-tabs {
@@ -555,7 +621,9 @@
     gap: var(--pm-space-1);
   }
 
-  .pm-header-tab i { font-size: 0.9rem; }
+  .pm-header-tab i {
+    font-size: 0.9rem;
+  }
 
   .pm-header-tab:hover {
     background: rgba(255, 255, 255, 0.15);
@@ -579,7 +647,9 @@
   }
 
   /* ── Planificacion ─────────────────────────────────────────────── */
-  .pm-planif-root { padding: var(--pm-space-6); }
+  .pm-planif-root {
+    padding: var(--pm-space-6);
+  }
 
   .pm-planif-niveles {
     gap: var(--pm-space-4);
@@ -607,7 +677,9 @@
     grid-template-columns: repeat(6, 1fr);
   }
 
-  .pm-kpi-value { font-size: 2rem; }
+  .pm-kpi-value {
+    font-size: 2rem;
+  }
 
   .pm-footer-nav__inner {
     max-width: 560px;
@@ -663,6 +735,7 @@
    ═══════════════════════════════════════════════════════════ */
 
 @media (prefers-reduced-motion: reduce) {
+
   *,
   *::before,
   *::after {
@@ -687,6 +760,7 @@
    ═══════════════════════════════════════════════════════════ */
 
 @media print {
+
   .pm-header,
   .pm-bottom-nav,
   .pm-sidebar,

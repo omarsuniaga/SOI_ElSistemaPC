@@ -5,128 +5,137 @@
 
 :root {
   /* ── Apple Design Tokens (Source of Truth) ────────────────── */
-  --apple-bg:           #f2f2f7;
-  --apple-surface:      #ffffff;
-  --apple-text:         #000000;
-  --apple-text-muted:   #8e8e93;
-  --apple-border:       #c6c6c8;
-  
-  --apple-primary:      #007aff;
-  --apple-secondary:    #5856d6;
-  --apple-success:      #34c759;
-  --apple-warning:      #ff9500;
-  --apple-danger:       #ff3b30;
-  --apple-pending:      #ffcc00;
+  --apple-bg: #f2f2f7;
+  --apple-surface: #ffffff;
+  --apple-text: #000000;
+  --apple-text-muted: #8e8e93;
+  --apple-border: #c6c6c8;
+
+  --apple-primary: #007aff;
+  --apple-secondary: #5856d6;
+  --apple-success: #34c759;
+  --apple-warning: #ff9500;
+  --apple-danger: #ff3b30;
+  --apple-pending: #ffcc00;
 
   /* ── Semantic Aliases (Portal Maestros) ───────────────────── */
-  --pm-primary:         var(--apple-primary);
-  --pm-surface:         var(--apple-surface);
-  --pm-surface-2:       var(--apple-bg);
-  --pm-text:            var(--apple-text);
-  --pm-text-muted:      var(--apple-text-muted);
-  --pm-border:          var(--apple-border);
-  
-  --pm-success:         var(--apple-success);
-  --pm-warning:         var(--apple-warning);
-  --pm-danger:          var(--apple-danger);
+  --pm-primary: var(--apple-primary);
+  --pm-surface: var(--apple-surface);
+  --pm-surface-2: var(--apple-bg);
+  --pm-text: var(--apple-text);
+  --pm-text-muted: var(--apple-text-muted);
+  --pm-border: var(--apple-border);
+
+  --pm-success: var(--apple-success);
+  --pm-warning: var(--apple-warning);
+  --pm-danger: var(--apple-danger);
 
   /* ── Spacing & Dimensions ──────────────────────────────────── */
-  --pm-bottom-nav-h:    64px;
-  --pm-header-h:        52px;
-  --pm-radius:          16px;
-  --pm-radius-sm:       10px;
-  --pm-radius-md:       14px;
-  --pm-radius-xs:        8px;
-  --pm-shadow:          0 1px 3px rgba(0,0,0,.08), 0 4px 12px rgba(0,0,0,.05);
+  --pm-bottom-nav-h: 64px;
+  --pm-header-h: 82px;
+  --pm-radius: 16px;
+  --pm-radius-sm: 10px;
+  --pm-radius-md: 14px;
+  --pm-radius-xs: 8px;
+  --pm-shadow: 0 1px 3px rgba(0, 0, 0, .08), 0 4px 12px rgba(0, 0, 0, .05);
 
   /* ── SPACING SCALE (4px base) ─────────────────────────────── */
-  --pm-space-1:    4px;
-  --pm-space-2:    8px;
-  --pm-space-3:   12px;
-  --pm-space-4:   16px;
-  --pm-space-5:   20px;
-  --pm-space-6:   24px;
-  --pm-space-8:   32px;
-  --pm-space-10:  40px;
-  --pm-space-12:  48px;
-  --pm-space-16:  64px;
+  --pm-space-1: 4px;
+  --pm-space-2: 8px;
+  --pm-space-3: 12px;
+  --pm-space-4: 16px;
+  --pm-space-5: 20px;
+  --pm-space-6: 24px;
+  --pm-space-8: 32px;
+  --pm-space-10: 40px;
+  --pm-space-12: 48px;
+  --pm-space-16: 64px;
 
   /* ── BREAKPOINTS (CSS custom properties) ──────────────────── */
-  --pm-bp-sm:   576px;
-  --pm-bp-md:   768px;
-  --pm-bp-lg:  1024px;
-  --pm-bp-xl:  1280px;
+  --pm-bp-sm: 576px;
+  --pm-bp-md: 768px;
+  --pm-bp-lg: 1024px;
+  --pm-bp-xl: 1280px;
   --pm-bp-2xl: 1440px;
 
   /* ── LAYOUT TOKENS ───────────────────────────────────────── */
-  --pm-sidebar-w:     280px;
+  --pm-sidebar-w: 280px;
   --pm-content-max-w: 900px;
-  --pm-max-width:     1400px;
-  --pm-view-max-w:    720px;
+  --pm-max-width: 1400px;
+  --pm-view-max-w: 720px;
 
   /* ── SHADOW SCALE ─────────────────────────────────────────── */
-  --pm-shadow-sm:  0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.06);
-  --pm-shadow-md:  0 4px 12px rgba(0,0,0,.08), 0 2px 4px rgba(0,0,0,.06);
-  --pm-shadow-lg:  0 8px 24px rgba(0,0,0,.1),  0 4px 8px rgba(0,0,0,.06);
-  --pm-shadow-xl:  0 16px 40px rgba(0,0,0,.12);
+  --pm-shadow-sm: 0 1px 3px rgba(0, 0, 0, .08), 0 1px 2px rgba(0, 0, 0, .06);
+  --pm-shadow-md: 0 4px 12px rgba(0, 0, 0, .08), 0 2px 4px rgba(0, 0, 0, .06);
+  --pm-shadow-lg: 0 8px 24px rgba(0, 0, 0, .1), 0 4px 8px rgba(0, 0, 0, .06);
+  --pm-shadow-xl: 0 16px 40px rgba(0, 0, 0, .12);
 
   /* ── TRANSITIONS ─────────────────────────────────────────── */
-  --pm-transition-fast:   150ms ease;
-  --pm-transition-base:   200ms ease;
-  --pm-transition-slow:   300ms ease;
+  --pm-transition-fast: 150ms ease;
+  --pm-transition-base: 200ms ease;
+  --pm-transition-slow: 300ms ease;
   --pm-transition-spring: 300ms cubic-bezier(0.4, 0, 0.2, 1);
 
   /* ── Status Backgrounds (for badge fills) ────────────────── */
-  --pm-success-bg:      rgba(52, 199, 89, 0.15);
-  --pm-success-text:     #16a34a;
-  
-  --pm-warning-bg:      rgba(255, 149, 0, 0.15);
-  --pm-warning-text:     #b45309;
-  
-  --pm-danger-bg:       rgba(255, 59, 48, 0.15);
-  --pm-danger-text:      #dc2626;
+  --pm-success-bg: rgba(52, 199, 89, 0.15);
+  --pm-success-text: #16a34a;
+
+  --pm-warning-bg: rgba(255, 149, 0, 0.15);
+  --pm-warning-text: #b45309;
+
+  --pm-danger-bg: rgba(255, 59, 48, 0.15);
+  --pm-danger-text: #dc2626;
 
   /* ── Z-index scale ────────────────────────────────────────── */
-  --pm-z-sidebar:   200;
-  --pm-z-header:   100;
-  --pm-z-nav:      100;
-  --pm-z-overlay:  300;
-  --pm-z-modal:    400;
-  --pm-z-toast:    500;
+  --pm-z-sidebar: 200;
+  --pm-z-header: 100;
+  --pm-z-nav: 100;
+  --pm-z-overlay: 300;
+  --pm-z-modal: 400;
+  --pm-z-toast: 500;
 
   /* ── Hover / Interactive ─────────────────────────────────── */
-  --pm-bg-hover:       rgba(0, 122, 255, 0.06);
-  --pm-surface-hover:   rgba(0, 0, 0, 0.04);
+  --pm-bg-hover: rgba(0, 122, 255, 0.06);
+  --pm-surface-hover: rgba(0, 0, 0, 0.04);
   --apple-primary-dark: #0056b3;
 
-  /* ── Glass Effect Tokens (set dynamically by themeToggle) ─── */
-  --pm-glass-bg:     rgba(255, 255, 255, 0.8);
-  --pm-glass-border: rgba(0, 0, 0, 0.1);
-  --pm-header-glass: rgba(242, 242, 247, 0.95);
+  /* Glassmorphism Refined */
+  --pm-glass-bg: rgba(255, 255, 255, 0.7);
+  --pm-glass-border: rgba(255, 255, 255, 0.4);
+  --pm-glass-blur: 20px;
+}
+
+/* Global Glass Utility */
+.pm-glass {
+  background: var(--pm-glass-bg);
+  backdrop-filter: blur(var(--pm-glass-blur));
+  -webkit-backdrop-filter: blur(var(--pm-glass-blur));
+  border: 1px solid var(--pm-glass-border);
+  box-shadow: var(--pm-shadow-md);
 }
 
 /* ── Dark Mode ─────────────────────────────────────────────── */
 [data-bs-theme="dark"],
 [data-portal-theme="dark"] {
-  --pm-surface:      #1e293b;
-  --pm-surface-2:    #0f172a;
-  --pm-text:         #f1f5f9;
-  --pm-text-muted:   #94a3b8;
-  --pm-border:       #334155;
-  --pm-bg-hover:     rgba(0, 122, 255, 0.15);
+  --pm-surface: #1c1c1e;
+  --pm-surface-2: #0f172a;
+  --pm-text: #f1f5f9;
+  --pm-text-muted: #94a3b8;
+  --pm-border: #334155;
+  --pm-bg-hover: rgba(0, 122, 255, 0.15);
 
   /* Status backgrounds para dark mode */
-  --pm-success-bg:     rgba(52, 199, 89, 0.2);
-  --pm-success-text:   #4ade80;
+  --pm-success-bg: rgba(52, 199, 89, 0.2);
+  --pm-success-text: #4ade80;
 
-  --pm-warning-bg:     rgba(255, 149, 0, 0.2);
-  --pm-warning-text:   #fbbf24;
+  --pm-warning-bg: rgba(255, 149, 0, 0.2);
+  --pm-warning-text: #fbbf24;
 
-  --pm-danger-bg:      rgba(255, 59, 48, 0.2);
-  --pm-danger-text:    #f87171;
+  --pm-danger-bg: rgba(255, 59, 48, 0.2);
+  --pm-danger-text: #f87171;
 
-  /* Glass effects para dark mode (set by themeToggle.js) */
-  --pm-glass-bg:     rgba(30, 41, 59, 0.8);
+  /* Glass effects para dark mode */
+  --pm-glass-bg: rgba(28, 28, 30, 0.7);
   --pm-glass-border: rgba(255, 255, 255, 0.1);
   --pm-header-glass: rgba(15, 23, 42, 0.95);
 }

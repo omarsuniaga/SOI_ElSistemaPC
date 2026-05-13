@@ -139,10 +139,28 @@ export async function subscribeToPush() {
       if (!vapidKey) return { success: false, error: 'VAPID key no configurada en el servidor' }
 
       const registration = await navigator.serviceWorker.ready
-      const subscription = await registration.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: _urlBase64ToUint8Array(vapidKey),
-      })
+      let subscription;
+      
+      try {
+        subscription = await registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: _urlBase64ToUint8Array(vapidKey),
+        })
+      } catch (subErr) {
+        // Si el navegador tiene una suscripción con una llave vieja, la eliminamos y reintentamos
+        if (subErr.name === 'InvalidStateError') {
+          console.warn('[Push] Llave VAPID diferente detectada. Eliminando suscripción antigua y reintentando...');
+          const oldSub = await registration.pushManager.getSubscription();
+          if (oldSub) await oldSub.unsubscribe();
+          
+          subscription = await registration.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: _urlBase64ToUint8Array(vapidKey),
+          });
+        } else {
+          throw subErr;
+        }
+      }
 
       // Guardar endpoint+keys en Supabase
       const subJSON = subscription.toJSON()
@@ -272,29 +290,60 @@ export async function scheduleLocalAlerts(horariosHoy, sesionesRegistradas) {
 // ── Test ──
 
 export async function testNotification() {
+  // 1. Solicitar permisos si no están otorgados
   const { granted } = await requestNotificationPermission()
-  if (!granted) return false
+  if (!granted) return { success: false, error: 'Permiso de notificaciones no otorgado' }
 
-  new Notification('Portal Maestros', {
-    body: 'Las notificaciones están funcionando correctamente.',
-    icon: '/icons/icon-192.png',
-  })
-  return true
+  // 2. Intentar mostrar notificación via Service Worker (fuera del navegador)
+  try {
+    if ('serviceWorker' in navigator) {
+      const registration = await navigator.serviceWorker.ready
+      
+      // Notificación via SW (aparece en sistema operativo)
+      await registration.showNotification('🔔 Sistema Académico SOI', {
+        body: 'Las notificaciones push están configuradas correctamente.',
+        icon: '/icons/icon-192.png',
+        badge: '/icons/icon-96.png',
+        vibrate: [200, 100, 200],
+        tag: 'test-notification',
+        renotify: true,
+        data: { url: '/maestros', timestamp: Date.now() },
+        actions: [
+          { action: 'open', title: 'Abrir App' },
+          { action: 'dismiss', title: 'Cerrar' }
+        ]
+      })
+      
+      console.log('[Push] Test notification sent via SW')
+      return { success: true, method: 'serviceWorker' }
+    }
+  } catch (swError) {
+    console.warn('[Push] SW notification failed, fallback to local:', swError)
+  }
+
+  // 3. Fallback: notificación local del navegador
+  try {
+    new Notification('🔔 Sistema Académico SOI', {
+      body: 'Las notificaciones están funcionando correctamente.',
+      icon: '/icons/icon-192.png',
+      badge: '/icons/icon-72.png',
+    })
+    return { success: true, method: 'browser' }
+  } catch (e) {
+    return { success: false, error: e.message }
+  }
 }
 
-// ── Helpers ──
-
 async function _getVapidPublicKey() {
-  try {
-    const { data } = await supabase
-      .from('system_config')
-      .select('value')
-      .eq('key', 'vapid_public_key')
-      .maybeSingle()
-    return data?.value || null
-  } catch {
+  // Práctica profesional: La llave pública se inyecta en tiempo de compilación/desarrollo
+  const publicKey = import.meta.env.VITE_VAPID_PUBLIC_KEY
+  
+  if (!publicKey || publicKey.includes('TU_LLAVE_PUBLICA')) {
+    console.error('❌ VITE_VAPID_PUBLIC_KEY no está configurada en tu archivo .env')
     return null
   }
+  
+  return publicKey
 }
 
 function _urlBase64ToUint8Array(base64String) {

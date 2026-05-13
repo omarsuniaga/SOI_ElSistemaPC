@@ -152,7 +152,7 @@ function _renderLevel(level, idx) {
           <span style="font-size:18px;">🔒</span>
           <div>
             <div style="font-weight:600;font-size:13px;">${escHTML(level.nombre)}</div>
-            <div style="font-size:11px;margin-top:2px;">Completá el nivel anterior al 80% para desbloquear</div>
+            <div style="font-size:11px;margin-top:2px;">Completa el nivel anterior al 80% para desbloquear</div>
           </div>
         </div>
       </div>`

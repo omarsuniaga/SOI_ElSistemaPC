@@ -2,8 +2,8 @@
 // SISTEMA ACADÉMICO - Main Entry Point
 // ============================================================================
 
-// PWA: Registrar Service Worker en producción
-if ('serviceWorker' in navigator && location.hostname !== 'localhost') {
+// PWA: Registrar Service Worker (también en desarrollo para probar)
+if ('serviceWorker' in navigator) {
   window.addEventListener('load', async () => {
     try {
       const registration = await navigator.serviceWorker.register('/sw.js');

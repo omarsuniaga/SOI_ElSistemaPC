@@ -3,6 +3,23 @@
 // ============================================
 import './early-error-suppression.js'
 
+// ============================================
+// PWA: Registrar Service Worker
+// ============================================
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', async () => {
+    try {
+      const registration = await navigator.serviceWorker.register('/sw.js');
+      console.log('[PWA] Service Worker registered:', registration.scope);
+    } catch (error) {
+      console.log('[PWA] Service Worker registration failed:', error);
+    }
+  });
+}
+
+// PWA: Banner de instalación automática
+import { pwaInstaller } from './portal-maestros/components/pwaInstaller.js'
+
 import './portal-maestros/styles/index.css'
 
 // ============================================
@@ -56,43 +73,44 @@ initErrorReporter({
 // ============================================
 
 import { usePortalAuth, logoutMaestro } from './portal-maestros/auth/usePortalAuth.js'
-import { createPortalRouter }   from './portal-maestros/router/portalRouter.js'
+import { createPortalRouter } from './portal-maestros/router/portalRouter.js'
 import { processQueue, getQueue } from './portal-maestros/services/offlineQueue.js'
-import { supabase }             from './lib/supabaseClient.js'
+import { supabase } from './lib/supabaseClient.js'
 import { prefetchMonthData, getMisClases, getHorariosClases, getSesiones } from './portal-maestros/services/maestroDataService.js'
-import { scheduleLocalAlerts }  from './portal-maestros/services/pushService.js'
-import { AppModal }             from './shared/components/AppModal.js'
+import { scheduleLocalAlerts } from './portal-maestros/services/pushService.js'
+import { AppModal } from './shared/components/AppModal.js'
 
 // Icons only — NO Bootstrap CSS/JS in portal
 import 'bootstrap-icons/font/bootstrap-icons.css'
 
-import { renderLoginView }        from './portal-maestros/views/loginView.js'
-import { renderHoyView }          from './portal-maestros/views/hoyView.js'
-import { renderCalendarioView }   from './portal-maestros/views/calendarioView.js'
-import { renderMetricasView }     from './portal-maestros/views/metricasView.js'
-import { renderAsistenciaView }   from './portal-maestros/views/asistenciaView.js'
+import { renderLoginView } from './portal-maestros/views/loginView.js'
+import { renderHoyView } from './portal-maestros/views/hoyView.js'
+import { renderCalendarioView } from './portal-maestros/views/calendarioView.js'
+import { renderMetricasView } from './portal-maestros/views/metricasView.js'
+import { renderAsistenciaView } from './portal-maestros/views/asistenciaView.js'
 import { renderClaseEmergenteView } from './portal-maestros/views/claseEmergenteView.js'
-import { renderPerfilView }       from './portal-maestros/views/perfilView.js'
+import { renderPerfilView } from './portal-maestros/views/perfilView.js'
 import { renderPlanificacionView } from './portal-maestros/views/planificacionView.js'
 import { renderAlumnoPerfilView } from './portal-maestros/views/alumnoPerfilView.js'
 import { renderGamificacionView } from './portal-maestros/views/gamificacionView.js'
-import { renderRutaPlayerView }  from './portal-maestros/views/rutaPlayerView.js'
+import { renderRutaPlayerView } from './portal-maestros/views/rutaPlayerView.js'
 import { renderCrearClaseView } from './portal-maestros/views/crearClaseView.js'
 import { renderAcademicPlanBuilderView } from './portal-maestros/views/academicPlanBuilderView.js'
 import { renderWeeklyPlanView } from './portal-maestros/views/weeklyPlanView.js'
-import { RouteLibraryView }      from './portal-maestros/views/routeLibraryView.js'
-import { RouteDetailView }       from './portal-maestros/views/routeDetailView.js'
-import { renderAlumnosView }     from './modules/alumnos/views/alumnosView.js'
-import { renderProgramasView }   from './modules/programas/views/programasView.js'
-import { renderMaestrosView }    from './modules/maestros/views/maestrosView.js'
+import { RouteLibraryView } from './portal-maestros/views/routeLibraryView.js'
+import { RouteDetailView } from './portal-maestros/views/routeDetailView.js'
+import { renderAlumnosView } from './modules/alumnos/views/alumnosView.js'
+import { renderProgramasView } from './modules/programas/views/programasView.js'
+import { renderMaestrosView } from './modules/maestros/views/maestrosView.js'
 import { renderMetricasCompletaView as renderAdminMetricasView } from './modules/metricas/views/metricasCompletaView.js'
 import { renderAcademicAdminView } from './modules/academic-admin/views/academicAdminView.js'
-import { renderClasesView }        from './modules/clases/views/clasesView.js'
+import { renderClasesView } from './modules/clases/views/clasesView.js'
 
 // Nuevos componentes de UI
 import { themeToggle } from './portal-maestros/components/themeToggle.js'
 import { notificacionesPanel } from './portal-maestros/components/notificacionesPanel.js'
 import { onNotificacionesChange, getUnreadCount, fetchNotificaciones } from './portal-maestros/services/notificationService.js'
+import { pushDiagnostic } from './portal-maestros/components/pushDiagnostic.js'
 import { setNavigationCallbacks } from './portal-maestros/services/navigationHooks.js'
 
 // Módulo de Rutas Académicas
@@ -101,17 +119,17 @@ import './modules/academic-routes/styles/academic-routes.css'
 const IS_ADMIN = window.__SOI_MODE__ === 'admin'
 
 const MAESTRO_TABS = [
-  { id: 'hoy',        label: 'Hoy',        icon: 'bi-house-door' },
-  { id: 'calendario', label: 'Calendario',  icon: 'bi-calendar3' },
-  { id: 'ruta',       label: 'Ruta',        icon: 'bi-diagram-3' },
-  { id: 'metricas',   label: 'Métricas',    icon: 'bi-bar-chart-line' },
+  { id: 'calendario', label: 'Calendario', icon: 'bi-calendar3' },
+  { id: 'hoy', label: 'Hoy', icon: 'bi-house-door' },
+  { id: 'ruta', label: 'Ruta', icon: 'bi-diagram-3' },
+  { id: 'metricas', label: 'Métricas', icon: 'bi-bar-chart-line' },
 ]
 
 const ADMIN_TABS = [
-  { id: 'admin-alumnos',   label: 'Alumnos',      icon: 'bi-people-fill' },
-  { id: 'admin-programas', label: 'Programas',    icon: 'bi-grid-1x2' },
-  { id: 'admin-maestros',  label: 'Maestros',     icon: 'bi-person-badge' },
-  { id: 'admin-metricas',  label: 'Métricas',     icon: 'bi-bar-chart-line' },
+  { id: 'admin-alumnos', label: 'Alumnos', icon: 'bi-people-fill' },
+  { id: 'admin-programas', label: 'Programas', icon: 'bi-grid-1x2' },
+  { id: 'admin-maestros', label: 'Maestros', icon: 'bi-person-badge' },
+  { id: 'admin-metricas', label: 'Métricas', icon: 'bi-bar-chart-line' },
 ]
 
 const ALL_TABS = () => IS_ADMIN ? ADMIN_TABS : MAESTRO_TABS
@@ -124,7 +142,7 @@ const router = createPortalRouter()
 
 async function _syncWithSupabase(item) {
   const { tabla, operacion, payload: rawPayload } = item
-  
+
   // Limpieza de emergencia para evitar fallos por esquemas viejos en IndexedDB
   const payload = { ...rawPayload }
   if (tabla === 'sesiones_clase') {
@@ -188,14 +206,14 @@ async function _updateSyncIndicator() {
   try {
     const queue = await getQueue()
     if (queue.length === 0) {
-      indicator.className  = 'pm-sync-indicator synced'
+      indicator.className = 'pm-sync-indicator synced'
       indicator.textContent = '✓ Sincronizado'
     } else {
-      indicator.className  = 'pm-sync-indicator pending'
+      indicator.className = 'pm-sync-indicator pending'
       indicator.textContent = `⏳ Pendiente (${queue.length})`
     }
   } catch {
-    indicator.className  = 'pm-sync-indicator error'
+    indicator.className = 'pm-sync-indicator error'
     indicator.textContent = '⚠️ Error de sync'
   }
 }
@@ -212,7 +230,7 @@ async function _triggerSync() {
   }, 1000)
 }
 
-window.addEventListener('online',  _triggerSync)
+window.addEventListener('online', _triggerSync)
 window.addEventListener('offline', _updateSyncIndicator)
 
 // ── Shell visibility (logout / auth states) ──────────────────
@@ -221,22 +239,22 @@ function _hideShell() {
   const app = document.getElementById('portal-app')
   if (!app) return
   const header = app.querySelector('.pm-header')
-  const nav    = app.querySelector('.pm-bottom-nav')
-  const view   = app.querySelector('.pm-view')
+  const nav = app.querySelector('.pm-bottom-nav')
+  const view = app.querySelector('.pm-view')
   if (header) header.style.display = 'none'
-  if (nav)    nav.style.display = 'none'
-  if (view)   view.style.display = 'none'
+  if (nav) nav.style.display = 'none'
+  if (view) view.style.display = 'none'
 }
 
 function _showShell() {
   const app = document.getElementById('portal-app')
   if (!app) return
   const header = app.querySelector('.pm-header')
-  const nav    = app.querySelector('.pm-bottom-nav')
-  const view   = app.querySelector('.pm-view')
+  const nav = app.querySelector('.pm-bottom-nav')
+  const view = app.querySelector('.pm-view')
   if (header) header.style.display = ''
-  if (nav)    nav.style.display = ''
-  if (view)   view.style.display = ''
+  if (nav) nav.style.display = ''
+  if (view) view.style.display = ''
 }
 
 function _showLoginScreen() {
@@ -273,7 +291,7 @@ function _showLoginScreen() {
 // Breakpoint detection utilities
 export function getBreakpoint() {
   const w = window.innerWidth
-  if (w < 768)  return 'mobile'
+  if (w < 768) return 'mobile'
   if (w < 1024) return 'tablet'
   return 'desktop'
 }
@@ -300,9 +318,9 @@ function _renderShell(app, maestro) {
         <span class="pm-header-greeting">${IS_ADMIN ? 'Panel Admin' : 'Hola,'}</span>
         <span class="pm-header-title">
           ${IS_ADMIN
-            ? (maestro?.nombre_completo?.split(' ')[0] ?? 'Administrador')
-            : (maestro?.nombre_completo?.split(' ')[0] ?? 'Maestro')
-          }
+      ? (maestro?.nombre_completo?.split(' ')[0] ?? 'Administrador')
+      : (maestro?.nombre_completo?.split(' ')[0] ?? 'Maestro')
+    }
         </span>
       </div>
 
@@ -326,15 +344,17 @@ function _renderShell(app, maestro) {
           <i class="bi bi-bell"></i>
           <span class="pm-ausencias-badge" id="pm-notif-badge" style="display: none; background: var(--pm-danger);">0</span>
         </button>
-
-        <button id="pm-btn-logout" class="pm-icon-btn" title="Cerrar sesión">
-          <i class="bi bi-box-arrow-right"></i>
+        
+        <!-- Botón diagnóstico de push -->
+        <button id="pm-btn-push-diagnostic" class="pm-icon-btn" title="Diagnosticar Notificaciones" style="opacity: 0.7;">
+          <i class="bi bi-broadcast"></i>
         </button>
+
         <button id="pm-btn-perfil" class="pm-avatar-btn" title="Perfil">
           ${maestro?.avatar_url
-            ? `<img src="${maestro.avatar_url}" alt="Avatar">`
-            : `<i class="bi bi-person-circle"></i>`
-          }
+      ? `<img src="${maestro.avatar_url}" alt="Avatar">`
+      : `<i class="bi bi-person-circle"></i>`
+    }
         </button>
       </div>
 
@@ -399,20 +419,6 @@ function _renderShell(app, maestro) {
     router.navigate('perfil')
   })
 
-  document.getElementById('pm-btn-logout').addEventListener('click', (e) => {
-    e.preventDefault()
-    AppModal.open({
-      title: 'Cerrar Sesión',
-      body: '<div class="text-center py-3"><i class="bi bi-box-arrow-right text-danger mb-3 d-block" style="font-size: 2.5rem;"></i><p class="mb-0">¿Estás seguro de que deseas salir del portal?</p></div>',
-      saveText: 'Salir',
-      cancelText: 'Cancelar',
-      size: 'sm',
-      onSave: async () => {
-        await logoutMaestro()
-        window.location.reload()
-      }
-    })
-  })
 
   // Header search (desktop)
   const searchInput = document.getElementById('pm-header-search-input')
@@ -437,6 +443,11 @@ function _renderShell(app, maestro) {
     notificacionesPanel.open()
   })
 
+  // Evento de diagnóstico de push
+  document.getElementById('pm-btn-push-diagnostic')?.addEventListener('click', () => {
+    pushDiagnostic.open()
+  })
+
   // Suscribirse al badge de notificaciones
   onNotificacionesChange(() => {
     const badge = document.getElementById('pm-notif-badge');
@@ -449,7 +460,7 @@ function _renderShell(app, maestro) {
       badge.style.display = 'none';
     }
   });
-  
+
   // Disparar la primera carga
   fetchNotificaciones();
 
@@ -519,8 +530,8 @@ function _initViewContainers() {
   container.innerHTML = ''
 
   const views = [
-    'login', 'logout', 'calendario', 'clases', 'hoy', 'asistencia', 
-    'metricas', 'perfil', 'clase-emergente', 'planificacion', 
+    'login', 'logout', 'calendario', 'clases', 'hoy', 'asistencia',
+    'metricas', 'perfil', 'clase-emergente', 'planificacion',
     'alumno', 'gamificacion', 'ruta', 'crear-clase', 'ruta-plan-builder',
     'ruta-semanal', 'ruta-libreria', 'ruta-detalle',
   ]
@@ -785,34 +796,34 @@ async function initPortal() {
   setNavigationCallbacks(invalidateView, invalidateAllViews)
 
   // 3. Configure router — F1-F6 routes
-  router.on('login',         (route, params) => _renderView('login', params))
-  router.on('logout',        (route, params) => _renderView('logout', params))
-  router.on('calendario',    (route, params) => _renderView('calendario', params))
-  router.on('clases',        (route, params) => _renderView('clases', params))
-  router.on('hoy',           (route, params) => _renderView('hoy', params))
-  router.on('asistencia',    (route, params) => _renderView('asistencia', params))
-  router.on('metricas',      (route, params) => _renderView('metricas', params))
-  router.on('perfil',          (route, params) => _renderView('perfil', params))
+  router.on('login', (route, params) => _renderView('login', params))
+  router.on('logout', (route, params) => _renderView('logout', params))
+  router.on('calendario', (route, params) => _renderView('calendario', params))
+  router.on('clases', (route, params) => _renderView('clases', params))
+  router.on('hoy', (route, params) => _renderView('hoy', params))
+  router.on('asistencia', (route, params) => _renderView('asistencia', params))
+  router.on('metricas', (route, params) => _renderView('metricas', params))
+  router.on('perfil', (route, params) => _renderView('perfil', params))
   router.on('clase-emergente', (route, params) => _renderView('clase-emergente', params))
-  router.on('planificacion',   (route, params) => _renderView('planificacion', params))
-  router.on('alumno',         (route, params) => _renderView('alumno', params))
-  router.on('gamificacion',   (route, params) => _renderView('gamificacion', params))
-  router.on('ruta',           (route, params) => _renderView('ruta', params))
-  router.on('crear-clase',    (route, params) => _renderView('crear-clase', params))
+  router.on('planificacion', (route, params) => _renderView('planificacion', params))
+  router.on('alumno', (route, params) => _renderView('alumno', params))
+  router.on('gamificacion', (route, params) => _renderView('gamificacion', params))
+  router.on('ruta', (route, params) => _renderView('ruta', params))
+  router.on('crear-clase', (route, params) => _renderView('crear-clase', params))
   router.on('ruta-plan-builder', (route, params) => _renderView('ruta-plan-builder', params))
-  router.on('ruta-semanal',      (route, params) => _renderView('ruta-semanal', params))
-  router.on('ruta-libreria',  (route, params) => _renderView('ruta-libreria', params))
+  router.on('ruta-semanal', (route, params) => _renderView('ruta-semanal', params))
+  router.on('ruta-libreria', (route, params) => _renderView('ruta-libreria', params))
   router.on('ruta-detalle/:id', (route, params) => _renderView('ruta-detalle', params))
 
   // Admin routes (solo visible cuando IS_ADMIN=true)
   if (IS_ADMIN) {
-    router.on('admin-alumnos',   (route, params) => _renderView('admin-alumnos', params))
+    router.on('admin-alumnos', (route, params) => _renderView('admin-alumnos', params))
     router.on('admin-programas', (route, params) => _renderView('admin-programas', params))
-    router.on('admin-maestros',  (route, params) => _renderView('admin-maestros', params))
-    router.on('admin-metricas',  (route, params) => _renderView('admin-metricas', params))
-    router.on('admin-config',    (route, params) => _renderView('admin-config', params))
-    router.on('admin-clases',    (route, params) => _renderView('admin-clases', params))
-    router.on('admin-sesiones',  (route, params) => _renderView('admin-sesiones', params))
+    router.on('admin-maestros', (route, params) => _renderView('admin-maestros', params))
+    router.on('admin-metricas', (route, params) => _renderView('admin-metricas', params))
+    router.on('admin-config', (route, params) => _renderView('admin-config', params))
+    router.on('admin-clases', (route, params) => _renderView('admin-clases', params))
+    router.on('admin-sesiones', (route, params) => _renderView('admin-sesiones', params))
     // Admin default route
     router.onNotFound(() => _renderView('admin-alumnos'))
   } else {
@@ -858,22 +869,22 @@ window.addEventListener('error', (e) => {
     'WebSocket',
     'content.js',
   ]
-  
+
   const errorMsg = e.message || ''
   const isIgnored = ignoredPatterns.some(p => errorMsg.includes(p))
-  
+
   if (isIgnored) {
     console.warn('[Ignored Error]', errorMsg)
     return
   }
-  
+
   // Report to Sentry
   reportError(new Error(e.message), {
     context: 'window.error',
     filename: e.filename,
     lineno: e.lineno,
   })
-  
+
   const app = document.getElementById('portal-app')
   if (app) app.innerHTML = `
     <div style="padding:40px; color:#fff; font-family:'Outfit',sans-serif; background:radial-gradient(circle at top right, #1e293b, #0f172a); z-index:9999; position:fixed; top:0; left:0; right:0; bottom:0; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center;">
@@ -896,12 +907,12 @@ window.addEventListener('error', (e) => {
 window.addEventListener('unhandledrejection', (e) => {
   // Additional handling for unhandled rejections
   // (early-error-suppression.js already filters most non-critical errors)
-  
+
   // Report to Sentry
   reportError(e.reason instanceof Error ? e.reason : new Error(String(e.reason)), {
     context: 'unhandledRejection',
   })
-  
+
   const app = document.getElementById('portal-app')
   if (app) app.innerHTML = `
     <div style="padding:40px; color:#fff; font-family:'Outfit',sans-serif; background:radial-gradient(circle at top right, #1e293b, #0f172a); z-index:9999; position:fixed; top:0; left:0; right:0; bottom:0; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center;">

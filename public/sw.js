@@ -52,6 +52,17 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  // IGNORAR peticiones internas de Vite (HMR) para que no se rompa el WebSocket en desarrollo local
+  if (url.pathname.includes('@vite') || url.pathname.includes('@fs') || url.search.includes('import') || url.search.includes('t=')) {
+    return;
+  }
+
+  // Estrategia diferenciada por tipo de archivo
+  if (url.pathname.endsWith('.css') || url.pathname.endsWith('.js') || url.pathname.endsWith('.html') || url.pathname === '/') {
+    event.respondWith(networkFirst(request));
+    return;
+  }
+
   if (url.pathname.startsWith('/api/')) {
     event.respondWith(staleWhileRevalidate(request));
     return;
@@ -59,6 +70,19 @@ self.addEventListener('fetch', (event) => {
 
   event.respondWith(cacheFirst(request));
 });
+
+async function networkFirst(request) {
+  try {
+    const response = await fetch(request);
+    if (response.ok) {
+      const cache = await caches.open(CACHE_NAME);
+      cache.put(request, response.clone());
+    }
+    return response;
+  } catch (error) {
+    return caches.match(request);
+  }
+}
 
 self.addEventListener('push', (event) => {
   console.log('[SW] Push event received');
@@ -75,14 +99,30 @@ self.addEventListener('push', (event) => {
   const options = {
     body: data.body || 'Nueva notificación del Sistema Académico',
     icon: '/icons/icon-192.png',
-    badge: '/icons/icon-72.png',
+    badge: '/icons/icon-96.png',
     data: data.data || {},
     vibrate: [200, 100, 200],
-    requireInteraction: data.requireInteraction || false
+    requireInteraction: data.requireInteraction || false,
+    tag: data.tag || 'soi-push-notification'
   };
 
+  // Notificar a las pestañas abiertas que llegó un push
   event.waitUntil(
-    self.registration.showNotification(data.title || 'SOI', options)
+    Promise.all([
+      self.registration.showNotification(data.title || 'SOI', options),
+      self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(clients => {
+        clients.forEach(client => {
+          client.postMessage({
+            type: 'PUSH_RECEIVED',
+            notification: {
+              title: data.title,
+              body: options.body,
+              data: options.data
+            }
+          });
+        });
+      })
+    ])
   );
 });
 

@@ -935,7 +935,7 @@ function _bindTomaEventos(container) {
     const container = document.querySelector('.tomar-asistencia-view')
     if (container) {
       container.innerHTML = ''
-      import('./asistenciasView.js').then(m => m.renderAsistenciasView(container))
+      renderAsistenciasView(container)
     }
   })
 
@@ -1009,6 +1009,6 @@ async function _guardarAsistencia() {
   const container = document.querySelector('.tomar-asistencia-view')
   if (container) {
     container.innerHTML = ''
-    import('./asistenciasView.js').then(m => m.renderAsistenciasView(container))
+    renderAsistenciasView(container)
   }
 }

@@ -1,9 +1,8 @@
-import { getMaestroLocal, clearMaestroLocal, PM_AUTH_KEY } from '../auth/maestroAuth.js';
+import { getMaestroLocal, clearMaestroLocal, logoutPortal, PM_AUTH_KEY, STORAGE_KEY } from '../auth/maestroAuth.js';
 import { supabase } from '../../lib/supabaseClient.js';
 import {
-  requestNotificationPermission, subscribeToPush, unsubscribeFromPush,
-  getNotificationPreferences, saveNotificationPreferences,
-  isPushSupported, isPushSubscribed, testNotification
+  subscribeToPush, unsubscribeFromPush,
+  isPushSupported, isPushSubscribed
 } from '../services/pushService.js';
 import { AppModal } from '../../shared/components/AppModal.js';
 import { ausenciaModal } from '../components/ausenciaModal.js';
@@ -11,12 +10,13 @@ import { notifConfigModal } from '../components/notifConfigModal.js';
 import { escHTML, getInitials } from '../utils/portalUtils.js';
 
 const state = { saving: false };
+let initialProfileValues = {};
 
 /**
  * Vista de Perfil y Ajustes
  * Refactoreada a estructura modular y Apple Design System.
  */
-export function renderPerfilView(container) {
+export async function renderPerfilView(container) {
   const maestro = getMaestroLocal();
   
   if (!maestro) {
@@ -31,13 +31,13 @@ export function renderPerfilView(container) {
 
   // Estructura principal de la vista
   container.innerHTML = `
-    <div class="pm-settings pm-fade-in">
+    <div class="pm-settings pm-fade-in" role="main" aria-label="Perfil y configuración">
       <header class="pm-settings-header">
         <h1 class="apple-display-md">Perfil</h1>
         <p class="apple-caption">Gestiona tu cuenta, apariencia y notificaciones</p>
       </header>
 
-      <div class="pm-settings-grid">
+      <div class="pm-settings-grid" role="region" aria-label="Opciones de configuración">
         <!-- Banner de perfil incompleto -->
         <div id="pm-banner-perfil-incompleto" style="display:none;" class="pm-profile-alert"></div>
 
@@ -64,12 +64,16 @@ export function renderPerfilView(container) {
     </div>
   `;
 
+// Pre-cargar estado de suscripciones para evitar parpadeo
+  const pushSupported = isPushSupported();
+  const pushSubscribed = pushSupported ? await isPushSubscribed() : false;
+  
   // Renderizar secciones
   _renderHeroSection(container.querySelector('#section-hero'), maestro);
   _renderPersonalDataSection(container.querySelector('#section-datos'), maestro);
   _renderAvailabilitySection(container.querySelector('#section-disponibilidad'), maestro);
   _renderAppearanceSection(container.querySelector('#section-apariencia'));
-  _renderNotificationsSection(container.querySelector('#section-notificaciones'));
+  _renderNotificationsSection(container.querySelector('#section-notificaciones'), pushSupported, pushSubscribed);
   _renderAbsencesSection(container.querySelector('#section-ausencias'));
   _renderSessionSection(container.querySelector('#section-sesion'));
 
@@ -80,6 +84,15 @@ export function renderPerfilView(container) {
   _initListeners();
   _initThemeSelector();
   _animateSections();
+
+  // Sembrar estado inicial para dirty-state tracking del botón Guardar
+  initialProfileValues = {
+    nombre_completo: maestro.nombre_completo || '',
+    tlf:             maestro.tlf ?? maestro.telefono ?? '',
+    especialidad:    maestro.especialidad || '',
+    disponibilidad:  JSON.stringify(maestro.disponibilidad || {}),
+  };
+  _updateSaveButtonState();
 }
 
 /**
@@ -89,23 +102,23 @@ function _renderHeroSection(container, maestro) {
   const initials = getInitials(maestro.nombre_completo);
   
   container.innerHTML = `
-    <div class="card-apple pm-profile-hero">
+    <div class="card-apple pm-profile-hero" role="region" aria-labelledby="hero-name">
       <div class="pm-profile-hero__content">
-        <div class="pm-settings-avatar">
+        <div class="pm-settings-avatar" role="img" aria-label="Avatar de perfil">
           ${maestro.avatar_url 
             ? `<img src="${escHTML(maestro.avatar_url)}" alt="Avatar" class="pm-settings-avatar__img">`
             : `<div class="pm-settings-avatar__placeholder">${escHTML(initials)}</div>`
           }
-          <button class="pm-settings-avatar__edit" id="btnCambiarAvatar" title="Cambiar foto">
-            <i class="bi bi-camera"></i>
+          <button class="pm-settings-avatar__edit" id="btnCambiarAvatar" title="Cambiar foto" aria-label="Cambiar foto de perfil">
+            <i class="bi bi-camera" aria-hidden="true"></i>
           </button>
         </div>
         <div class="pm-profile-hero__info">
-          <h2 class="pm-profile-hero__name">${escHTML(maestro.nombre_completo)}</h2>
+          <h2 class="pm-profile-hero__name" id="hero-name">${escHTML(maestro.nombre_completo)}</h2>
           <p class="pm-profile-hero__email">${escHTML(maestro.email)}</p>
           ${maestro.especialidad ? `
             <span class="chip-apple active">
-              <i class="bi bi-mortarboard"></i> ${escHTML(maestro.especialidad)}
+              <i class="bi bi-mortarboard" aria-hidden="true"></i> ${escHTML(maestro.especialidad)}
             </span>
           ` : ''}
         </div>
@@ -119,33 +132,33 @@ function _renderHeroSection(container, maestro) {
  */
 function _renderPersonalDataSection(container, maestro) {
   container.innerHTML = `
-    <div class="card-apple pm-settings-section">
+    <div class="card-apple pm-settings-section" role="region" aria-labelledby="section-datos-title">
       <div class="pm-settings-section__header">
-        <i class="bi bi-person-circle pm-icon-blue"></i>
+        <i class="bi bi-person-circle pm-icon-blue" aria-hidden="true"></i>
         <div>
-          <h3 class="pm-settings-section__title">Datos Personales</h3>
+          <h3 class="pm-settings-section__title" id="section-datos-title">Datos Personales</h3>
           <p class="pm-settings-section__desc">Información básica de tu cuenta</p>
         </div>
       </div>
       
       <div class="pm-settings-form-grid">
         <div class="pm-settings-field">
-          <label class="apple-caption">Nombre Completo</label>
-          <input type="text" class="input-apple" id="perfilNombre" value="${escHTML(maestro.nombre_completo)}" placeholder="Tu nombre">
+          <label class="apple-caption" for="perfilNombre">Nombre Completo</label>
+          <input type="text" class="input-apple" id="perfilNombre" value="${escHTML(maestro.nombre_completo)}" placeholder="Tu nombre" aria-required="true">
         </div>
         <div class="pm-settings-field">
-          <label class="apple-caption">Teléfono</label>
-          <input type="tel" class="input-apple" id="perfilTelefono" value="${escHTML(maestro.telefono || '')}" placeholder="809-000-0000">
+          <label class="apple-caption" for="perfilTelefono">Teléfono</label>
+          <input type="tel" class="input-apple" id="perfilTelefono" value="${escHTML(maestro.tlf ?? maestro.telefono ?? '')}" placeholder="809-000-0000">
         </div>
         <div class="pm-settings-field">
-          <label class="apple-caption">Especialidad</label>
+          <label class="apple-caption" for="perfilEspecialidad">Especialidad</label>
           <input type="text" class="input-apple" id="perfilEspecialidad" value="${escHTML(maestro.especialidad || '')}" placeholder="Ej. Violín">
         </div>
       </div>
 
       <div class="pm-settings-actions">
-        <button class="btn-apple-primary" id="btnGuardarPerfil">
-          <i class="bi bi-check2"></i>
+        <button class="btn-apple-primary" id="btnGuardarPerfil" aria-disabled="true">
+          <i class="bi bi-check2" aria-hidden="true"></i>
           <span>Guardar Cambios</span>
         </button>
       </div>
@@ -158,25 +171,25 @@ function _renderPersonalDataSection(container, maestro) {
  */
 function _renderAppearanceSection(container) {
   container.innerHTML = `
-    <div class="card-apple pm-settings-section">
+    <div class="card-apple pm-settings-section" role="region" aria-labelledby="section-apariencia-title">
       <div class="pm-settings-section__header">
-        <i class="bi bi-palette pm-icon-amber"></i>
+        <i class="bi bi-palette pm-icon-amber" aria-hidden="true"></i>
         <div>
-          <h3 class="pm-settings-section__title">Apariencia</h3>
+          <h3 class="pm-settings-section__title" id="section-apariencia-title">Apariencia</h3>
           <p class="pm-settings-section__desc">Personaliza el tema visual</p>
         </div>
       </div>
 
-      <div class="pm-theme-picker">
-        <button class="pm-theme-opt" data-theme="light" id="pm-theme-light">
+      <div class="pm-theme-picker" role="radiogroup" aria-label="Seleccionar tema">
+        <button class="pm-theme-opt" data-theme="light" id="pm-theme-light" role="radio" aria-checked="false">
           <div class="pm-theme-preview light"></div>
           <span>Claro</span>
         </button>
-        <button class="pm-theme-opt" data-theme="dark" id="pm-theme-dark">
+        <button class="pm-theme-opt" data-theme="dark" id="pm-theme-dark" role="radio" aria-checked="false">
           <div class="pm-theme-preview dark"></div>
           <span>Oscuro</span>
         </button>
-        <button class="pm-theme-opt" data-theme="system" id="pm-theme-system">
+        <button class="pm-theme-opt" data-theme="system" id="pm-theme-system" role="radio" aria-checked="false">
           <div class="pm-theme-preview system"></div>
           <span>Auto</span>
         </button>
@@ -190,47 +203,44 @@ function _renderAppearanceSection(container) {
  */
 function _renderAbsencesSection(container) {
   container.innerHTML = `
-    <div class="card-apple pm-settings-section">
+    <div class="card-apple pm-settings-section" role="region" aria-labelledby="section-ausencias-title">
       <div class="pm-settings-section__header">
-        <i class="bi bi-calendar-event pm-icon-teal"></i>
+        <i class="bi bi-calendar-event pm-icon-teal" aria-hidden="true"></i>
         <div>
-          <h3 class="pm-settings-section__title">Ausencias</h3>
+          <h3 class="pm-settings-section__title" id="section-ausencias-title">Ausencias</h3>
           <p class="pm-settings-section__desc">Gestiona tus permisos</p>
         </div>
       </div>
       <div class="pm-settings-actions-row">
         <button class="btn-apple-utility" id="pm-btn-ver-ausencias">
-          <i class="bi bi-clock-history"></i> Historial
+          <i class="bi bi-clock-history" aria-hidden="true"></i> Historial
         </button>
         <button class="btn-apple-utility" id="pm-btn-solicitar-ausencia">
-          <i class="bi bi-plus-lg"></i> Solicitar
+          <i class="bi bi-plus-lg" aria-hidden="true"></i> Solicitar
         </button>
       </div>
     </div>
   `;
 }
 
-function _renderNotificationsSection(container) {
-  // Fix applied
-  const supported = isPushSupported();
-  
+function _renderNotificationsSection(container, supported = false, subscribed = false) {
   container.innerHTML = `
     <div class="card-apple pm-settings-section">
       <div class="pm-settings-section__header">
-        <i class="bi bi-bell pm-icon-red"></i>
+        <i class="bi bi-bell pm-icon-red" aria-hidden="true"></i>
         <div>
           <h3 class="pm-settings-section__title">Notificaciones</h3>
           <p class="pm-settings-section__desc">Gestiona tus alertas y avisos</p>
         </div>
         <label class="pm-apple-switch" id="btn-toggle-push-main">
-          <input type="checkbox">
+          <input type="checkbox" aria-label="Activar notificaciones push" ${subscribed ? 'checked' : ''}>
           <span class="pm-apple-switch-slider"></span>
         </label>
       </div>
 
       <div class="pm-settings-actions-row">
         <button class="btn-apple-utility w-100" id="btn-abrir-config-notif">
-          <i class="bi bi-gear-wide-connected"></i>
+          <i class="bi bi-gear-wide-connected" aria-hidden="true"></i>
           Configurar preferencias...
         </button>
       </div>
@@ -245,14 +255,14 @@ function _renderNotificationsSection(container) {
  */
 function _renderSessionSection(container) {
   container.innerHTML = `
-    <div class="card-apple pm-settings-section pm-section-danger">
+    <div class="card-apple pm-settings-section pm-section-danger" role="region" aria-labelledby="section-sesion-title">
       <div class="pm-settings-section__header">
-        <i class="bi bi-shield-lock pm-icon-red"></i>
+        <i class="bi bi-shield-lock pm-icon-red" aria-hidden="true"></i>
         <div>
-          <h3 class="pm-settings-section__title">Seguridad</h3>
+          <h3 class="pm-settings-section__title" id="section-sesion-title">Seguridad</h3>
           <p class="pm-settings-section__desc">Cerrar sesión en este equipo</p>
         </div>
-        <button class="btn-apple-secondary" id="btnCerrarSesion" style="border-color: var(--pm-danger); color: var(--pm-danger);">
+        <button class="btn-apple-secondary" id="btnCerrarSesion" style="border-color: var(--pm-danger); color: var(--pm-danger);" aria-label="Cerrar sesión">
           Salir
         </button>
       </div>
@@ -275,6 +285,25 @@ function _animateSections() {
   });
 }
 
+function _updateSaveButtonState() {
+  const currentNombre = document.getElementById('perfilNombre')?.value?.trim() || '';
+  const currentTelefono = document.getElementById('perfilTelefono')?.value?.trim() || '';
+  const currentEspecialidad = document.getElementById('perfilEspecialidad')?.value?.trim() || '';
+  const currentDisp = _collectDisponibilidad();
+  
+  const hasChanges = 
+    currentNombre !== initialProfileValues.nombre_completo ||
+    currentTelefono !== (initialProfileValues.tlf ?? initialProfileValues.telefono ?? '') ||
+    currentEspecialidad !== initialProfileValues.especialidad ||
+    JSON.stringify(currentDisp) !== initialProfileValues.disponibilidad;
+  
+  const btn = document.getElementById('btnGuardarPerfil');
+  if (btn) {
+    btn.disabled = !hasChanges;
+    btn.style.opacity = hasChanges ? '1' : '0.5';
+  }
+}
+
 function _initThemeSelector() {
   const currentTheme = localStorage.getItem('portal-maestros-theme') || 'system';
   document.querySelectorAll('.pm-theme-opt').forEach(opt => {
@@ -283,13 +312,27 @@ function _initThemeSelector() {
 }
 
 async function guardarPerfil() {
-  const nombre = document.getElementById('perfilNombre').value.trim();
+  const nombre_completo = document.getElementById('perfilNombre').value.trim();
   const telefono = document.getElementById('perfilTelefono').value.trim();
   const especialidad = document.getElementById('perfilEspecialidad').value.trim();
   const disponibilidad = _collectDisponibilidad();
 
-  if (!nombre) {
+  if (!nombre_completo) {
     mostrarToast('El nombre es obligatorio', 'danger');
+    return;
+  }
+
+  // Validar formato de teléfono (opcional pero con formato válido si se ingresa)
+  const phoneRegex = /^[\d\s\-\(\)\+]+$/;
+  if (telefono && !phoneRegex.test(telefono)) {
+    mostrarToast('El formato del teléfono no es válido', 'danger');
+    return;
+  }
+
+  // Validar disponibilidad: inicio < fin en cada franquicia
+  const validacionDisp = _validarDisponibilidad(disponibilidad);
+  if (!validacionDisp.valida) {
+    mostrarToast(validacionDisp.error, 'danger');
     return;
   }
 
@@ -302,13 +345,32 @@ async function guardarPerfil() {
   try {
     const { error } = await supabase
       .from('maestros')
-      .update({ nombre, telefono, especialidad, disponibilidad })
+      .update({ nombre_completo, tlf: telefono, especialidad, disponibilidad })
       .eq('id', getMaestroLocal().id);
 
     if (error) throw error;
 
-    const actualizado = { ...getMaestroLocal(), nombre, telefono, especialidad, disponibilidad };
-    localStorage.setItem(PM_AUTH_KEY, JSON.stringify(actualizado));
+    const maestroActual = getMaestroLocal();
+    const actualizado = {
+      ...maestroActual,
+      nombre_completo,
+      tlf: telefono,
+      especialidad,
+      disponibilidad: {
+        ...(maestroActual.disponibilidad || {}),
+        ...disponibilidad
+      }
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(actualizado));
+
+    // Actualizar valores iniciales para resetear dirty state
+    initialProfileValues = {
+      nombre_completo,
+      telefono,
+      especialidad,
+      disponibilidad: JSON.stringify(disponibilidad)
+    };
+    _updateSaveButtonState();
 
     mostrarToast('Perfil actualizado', 'success');
   } catch (error) {
@@ -334,7 +396,29 @@ function _collectDisponibilidad() {
   return disp;
 }
 
-function confirmarCerrarSesion() {
+function _validarDisponibilidad(disponibilidad) {
+  for (const [dia, franjas] of Object.entries(disponibilidad)) {
+    for (let i = 0; i < franjas.length; i++) {
+      const f = franjas[i];
+      // Validar que inicio < fin
+      if (f.inicio >= f.fin) {
+        const diaLabel = DIAS_SEMANA.find(d => d.key === dia)?.label || dia;
+        return { valida: false, error: `En ${diaLabel}, la hora de inicio debe ser anterior a la hora de fin` };
+      }
+      // Validar que no haya solapamientos en el mismo día
+      for (let j = i + 1; j < franjas.length; j++) {
+        const f2 = franjas[j];
+        if (f.inicio < f2.fin && f2.inicio < f.fin) {
+          const diaLabel = DIAS_SEMANA.find(d => d.key === dia)?.label || dia;
+          return { valida: false, error: `En ${diaLabel}, las franjas horarias se solapan` };
+        }
+      }
+    }
+  }
+  return { valida: true };
+}
+
+async function confirmarCerrarSesion() {
   AppModal.open({
     title: '¿Cerrar Sesión?',
     size: 'sm',
@@ -346,8 +430,8 @@ function confirmarCerrarSesion() {
     `,
     saveText: 'Salir',
     cancelText: 'Cancelar',
-    onSave: () => {
-      clearMaestroLocal();
+    onSave: async () => {
+      await logoutPortal();
       window.location.reload();
       return true;
     }
@@ -362,6 +446,14 @@ async function _initListeners() {
   // Guardar Perfil
   document.getElementById('btnGuardarPerfil')?.addEventListener('click', guardarPerfil);
   
+  // Detectar cambios en campos del perfil (dirty state)
+  ['perfilNombre', 'perfilTelefono', 'perfilEspecialidad'].forEach(id => {
+    document.getElementById(id)?.addEventListener('input', _updateSaveButtonState);
+  });
+  
+  // Detectar cambios en disponibilidad (delegated)
+  document.getElementById('pm-avail-days')?.addEventListener('input', _updateSaveButtonState);
+  
   // Cerrar Sesión
   document.getElementById('btnCerrarSesion')?.addEventListener('click', confirmarCerrarSesion);
 
@@ -370,23 +462,37 @@ async function _initListeners() {
     mostrarToast('Cambio de avatar disponible en la próxima versión', 'info');
   });
 
-  // Push toggle principal
+  // Push toggle principal - con feedback visual durante operación
   const toggleLabel = document.getElementById('btn-toggle-push-main');
   const toggleInput = toggleLabel?.querySelector('input');
   if (toggleLabel && toggleInput) {
-    toggleInput.checked = await isPushSubscribed();
-
     toggleInput.addEventListener('change', async () => {
-      if (toggleInput.checked) {
-        const res = await subscribeToPush();
-        if (res.success) mostrarToast('Notificaciones activadas', 'success');
-        else {
-          toggleInput.checked = false;
-          mostrarToast(res.error || 'Error al activar', 'danger');
+      const originalChecked = toggleInput.checked;
+      // Feedback visual durante carga
+      toggleInput.disabled = true;
+      toggleLabel.style.opacity = '0.6';
+      
+      try {
+        if (originalChecked) {
+          const res = await subscribeToPush();
+          if (res.success) {
+            mostrarToast('Notificaciones activadas', 'success');
+          } else {
+            toggleInput.checked = false;
+            mostrarToast(res.error || 'Error al activar', 'danger');
+          }
+        } else {
+          const res = await unsubscribeFromPush();
+          if (res.success) {
+            mostrarToast('Notificaciones desactivadas', 'info');
+          } else {
+            toggleInput.checked = true;
+            mostrarToast('Error al desactivar', 'danger');
+          }
         }
-      } else {
-        const res = await unsubscribeFromPush();
-        if (res.success) mostrarToast('Notificaciones desactivadas', 'info');
+      } finally {
+        toggleInput.disabled = false;
+        toggleLabel.style.opacity = '1';
       }
     });
   }
@@ -409,19 +515,17 @@ async function _initListeners() {
 
   document.getElementById('pm-btn-solicitar-ausencia')?.addEventListener('click', () => ausenciaModal.open());
 
-  // Disponibilidad: collapse/expand días
+  // Disponibilidad: collapse/expand días (acordeón accesible con animación)
   document.querySelectorAll('.pm-avail-dia__header').forEach(btn => {
     btn.addEventListener('click', () => {
       const diaEl = btn.closest('.pm-avail-dia');
-      const bodyId = `pm-avail-body-${btn.dataset.dia}`;
-      const body = document.getElementById(bodyId);
       const isOpen = diaEl.classList.contains('open');
       if (isOpen) {
         diaEl.classList.remove('open');
-        body.style.display = 'none';
+        btn.setAttribute('aria-expanded', 'false');
       } else {
         diaEl.classList.add('open');
-        body.style.display = 'block';
+        btn.setAttribute('aria-expanded', 'true');
       }
     });
   });
@@ -442,12 +546,63 @@ async function _initListeners() {
     });
   });
 
-  // Disponibilidad: eliminar franja
+  // Disponibilidad: eliminar franquicia
   document.addEventListener('click', e => {
     const delBtn = e.target.closest('.pm-avail-franja__del');
     if (!delBtn) return;
     const row = delBtn.closest('.pm-avail-franja');
     if (row) row.remove();
+  });
+
+  // Disponibilidad: copiar horario a otro día
+  document.querySelectorAll('.pm-avail-copy-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const diaOrigen = btn.dataset.dia;
+      const franjasOrigen = _collectDisponibilidad()[diaOrigen] || [];
+      
+      if (franjasOrigen.length === 0) {
+        mostrarToast('Primero agrega franjas en este día', 'info');
+        return;
+      }
+
+      const opciones = DIAS_SEMANA
+        .filter(d => d.key !== diaOrigen)
+        .map(d => `<button class="pm-copy-dest-btn" data-dest="${d.key}">${d.label}</button>`)
+        .join('');
+      
+      const popup = document.createElement('div');
+      popup.className = 'pm-copy-popup';
+      popup.innerHTML = `
+        <div class="pm-copy-popup__overlay"></div>
+        <div class="pm-copy-popup__content">
+          <p class="pm-copy-popup__title">Copiar a:</p>
+          <div class="pm-copy-popup__options">${opciones}</div>
+        </div>
+      `;
+      document.body.appendChild(popup);
+      
+      popup.querySelector('.pm-copy-popup__overlay').addEventListener('click', () => popup.remove());
+      popup.querySelectorAll('.pm-copy-dest-btn').forEach(destBtn => {
+        destBtn.addEventListener('click', () => {
+          const diaDestino = destBtn.dataset.dest;
+          const franjasEl = document.getElementById(`pm-avail-franjas-${diaDestino}`);
+          if (franjasEl) {
+            franjasOrigen.forEach((f, i) => {
+              franjasEl.insertAdjacentHTML('beforeend', _renderFranja(diaDestino, franjasEl.children.length, f));
+            });
+            const diaEl = franjasEl.closest('.pm-avail-dia');
+            if (diaEl && !diaEl.classList.contains('open')) {
+              diaEl.classList.add('open');
+              diaEl.querySelector('.pm-avail-dia__header').setAttribute('aria-expanded', 'true');
+            }
+            _updateSaveButtonState();
+            mostrarToast('Horario copiado a ' + DIAS_SEMANA.find(d => d.key === diaDestino)?.label, 'success');
+          }
+          popup.remove();
+        });
+      });
+    });
   });
 }
 
@@ -500,17 +655,17 @@ function _renderAvailabilitySection(container, maestro) {
     Object.keys(maestro.disponibilidad).length === 0;
 
   container.innerHTML = `
-    <div class="card-apple pm-settings-section ${needsCompletion ? 'pm-section-warning' : ''}">
+    <div class="card-apple pm-settings-section ${needsCompletion ? 'pm-section-warning' : ''}" role="region" aria-labelledby="section-disponibilidad-title">
       <div class="pm-settings-section__header">
-        <i class="bi bi-calendar-week pm-icon-teal"></i>
+        <i class="bi bi-calendar-week pm-icon-teal" aria-hidden="true"></i>
         <div>
-          <h3 class="pm-settings-section__title">Disponibilidad Horaria</h3>
+          <h3 class="pm-settings-section__title" id="section-disponibilidad-title">Disponibilidad Horaria</h3>
           <p class="pm-settings-section__desc">Bloques de horarios por día</p>
         </div>
         ${needsCompletion ? '<span class="pm-badge-warning">Requerido</span>' : ''}
       </div>
 
-      <div id="pm-avail-days" class="pm-avail-days">
+      <div id="pm-avail-days" class="pm-avail-days" role="list" aria-label="Disponibilidad por día">
         ${DIAS_SEMANA.map(d => _renderDiaCard(d.key, disp[d.key] || [])).join('')}
       </div>
     </div>
@@ -520,20 +675,29 @@ function _renderAvailabilitySection(container, maestro) {
 function _renderDiaCard(diaKey, franjas) {
   const dia = DIAS_SEMANA.find(d => d.key === diaKey);
   const hasFranjas = franjas.length > 0;
+  const bodyId = `pm-avail-body-${diaKey}`;
+  const expanded = hasFranjas ? 'true' : 'false';
+  const openClass = hasFranjas ? 'open' : '';
   return `
-    <div class="pm-avail-dia" data-dia="${diaKey}">
-      <button class="pm-avail-dia__header" data-dia="${diaKey}">
+    <div class="pm-avail-dia ${openClass}" data-dia="${diaKey}" role="listitem">
+      <button class="pm-avail-dia__header" data-dia="${diaKey}" 
+        aria-expanded="${expanded}" aria-controls="${bodyId}">
         <span class="pm-avail-dia__label">${dia.label}</span>
-        <span class="pm-avail-dia__count">${franjas.length} franja${franjas.length !== 1 ? 's' : ''}</span>
-        <i class="bi bi-chevron-down pm-avail-dia__arrow"></i>
+        <span class="pm-avail-dia__count">${franjas.length} franca${franjas.length !== 1 ? 's' : ''}</span>
+        <i class="bi bi-chevron-down pm-avail-dia__arrow" aria-hidden="true"></i>
       </button>
-      <div class="pm-avail-dia__body" id="pm-avail-body-${diaKey}" ${hasFranjas ? '' : 'style="display:none"'}>
+      <div class="pm-avail-dia__body" id="${bodyId}" role="group" aria-label="${dia.label}">
         <div class="pm-avail-franjas" id="pm-avail-franjas-${diaKey}">
           ${franjas.map((f, i) => _renderFranja(diaKey, i, f)).join('')}
         </div>
-        <button class="btn-apple-utility btn-apple-sm pm-avail-add-btn" data-dia="${diaKey}">
-          <i class="bi bi-plus-lg"></i> Agregar franja
-        </button>
+        <div class="pm-avail-actions">
+          <button class="btn-apple-utility btn-apple-sm pm-avail-add-btn" data-dia="${diaKey}" aria-label="Agregar franquicia a ${dia.label}">
+            <i class="bi bi-plus-lg" aria-hidden="true"></i> Agregar
+          </button>
+          <button class="btn-apple-utility btn-apple-sm pm-avail-copy-btn" data-dia="${diaKey}" aria-label="Copiar horario a otro día" title="Copiar a...">
+            <i class="bi bi-clipboard-plus" aria-hidden="true"></i>
+          </button>
+        </div>
       </div>
     </div>
   `;
@@ -623,7 +787,17 @@ const _availStyles = `
   .pm-avail-dia__count { font-size: 0.72rem; color: var(--pm-text-muted); }
   .pm-avail-dia__arrow { font-size: 0.8rem; color: var(--pm-text-muted); transition: transform 0.2s; }
   .pm-avail-dia.open .pm-avail-dia__arrow { transform: rotate(180deg); }
-  .pm-avail-dia__body { padding: 0.65rem; background: var(--pm-surface); }
+  .pm-avail-dia__body { 
+    padding: 0.65rem; 
+    background: var(--pm-surface); 
+    overflow: hidden;
+    max-height: 0;
+    transition: max-height 0.3s ease-out, padding 0.3s ease-out;
+  }
+  .pm-avail-dia.open .pm-avail-dia__body {
+    max-height: 500px;
+    padding: 0.65rem;
+  }
   .pm-avail-franjas { display: flex; flex-direction: column; gap: 0.4rem; }
   .pm-avail-franja {
     display: flex;
@@ -657,6 +831,25 @@ const _availStyles = `
   }
   .pm-avail-franja__del:hover { color: var(--pm-danger); }
   .pm-avail-add-btn { margin-top: 0.5rem; width: 100%; }
+  .pm-avail-actions { display: flex; gap: 0.5rem; margin-top: 0.5rem; }
+  .pm-avail-actions .pm-avail-add-btn { flex: 1; }
+  .pm-avail-actions .pm-avail-copy-btn { flex: 0 0 auto; }
+  
+  /* Popup de copiar horario */
+  .pm-copy-popup { position: fixed; inset: 0; z-index: 9999; }
+  .pm-copy-popup__overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.4); }
+  .pm-copy-popup__content { 
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    background: var(--pm-surface); border-radius: 12px; padding: 1rem;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15); min-width: 200px;
+  }
+  .pm-copy-popup__title { margin: 0 0 0.75rem; font-weight: 600; font-size: 0.9rem; }
+  .pm-copy-popup__options { display: flex; flex-direction: column; gap: 0.25rem; }
+  .pm-copy-dest-btn { 
+    background: var(--pm-surface-2); border: none; padding: 0.5rem 0.75rem; 
+    border-radius: 6px; text-align: left; cursor: pointer; color: var(--pm-text);
+  }
+  .pm-copy-dest-btn:hover { background: var(--pm-border); }
 `;
 
 if (!document.getElementById('pm-avail-styles')) {

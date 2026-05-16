@@ -1,5 +1,5 @@
 import { login as authLogin, register as authRegister, logout as authLogout, isAuthenticated as authIsAuthenticated, getUser as authGetUser } from '../../../core/auth/authManager.js';
-import { getSession, clearSession } from '../../../core/auth/sessionStorage.js';
+import { getSession, clearSession, saveSession } from '../../../core/auth/sessionStorage.js';
 import { supabase } from '../../../lib/supabaseClient.js';
 
 const state = {
@@ -43,7 +43,6 @@ async function login(email, password, remember = false) {
     // Forzar recarga de config (ya que es un objeto estático)
     config.isDemoMode = true;
 
-    const { saveSession } = await import('../../../core/auth/sessionStorage.js');
     saveSession(mockSession, remember);
 
     state.user = mockUser;
@@ -138,7 +137,6 @@ async function refreshAuth() {
   }
 
   // Sincronizar custom storage para que isAuthenticated() siga funcionando
-  const { saveSession } = await import('../../../core/auth/sessionStorage.js');
   const persistent = getSession()?.persistent ?? true;
   saveSession(session, persistent);
 

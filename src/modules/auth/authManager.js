@@ -1,4 +1,5 @@
 import { setSession, clearSession } from './sessionStorage.js';
+import { supabase } from '../../lib/supabaseClient.js';
 
 const API_URL = '/api/auth';
 
@@ -58,10 +59,11 @@ class AuthManager {
     }
   }
 
-  logout() {
+  async logout() {
     this.currentUser = null;
     this.currentSession = null;
     clearSession();
+    await supabase.auth.signOut();
   }
 
   async validateSession(session) {

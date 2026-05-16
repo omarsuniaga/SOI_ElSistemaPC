@@ -3,7 +3,10 @@
    View-specific styles: hoy, asistencia, calendario, login
    ============================================================ */
 
-/* ── Login View ─────────────────────────────────────────────── */
+/* ═══════════════════════════════════════════════════════════
+    LOGIN VIEW — Professional Design
+    ═══════════════════════════════════════════════════════════ */
+
 .pm-login {
   display: flex;
   flex-direction: column;
@@ -11,40 +14,412 @@
   justify-content: center;
   min-height: 100dvh;
   padding: var(--pm-space-4) var(--pm-space-3);
-  background: var(--pm-primary);
+  background: linear-gradient(135deg, #5856D6 0%, #007AFF 50%, #5856D6 100%);
+  background-size: 200% 200%;
+  animation: loginGradient 15s ease infinite;
+  position: relative;
+  overflow: hidden;
+}
+
+@keyframes loginGradient {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+/* Background pattern */
+.pm-login::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   background-image: 
-    radial-gradient(ellipse at 20% 80%, rgba(88,86,214,.3) 0%, transparent 50%),
-    radial-gradient(ellipse at 80% 20%, rgba(0,122,255,.3) 0%, transparent 50%);
+    radial-gradient(circle at 20% 80%, rgba(255,255,255,0.1) 0%, transparent 40%),
+    radial-gradient(circle at 80% 20%, rgba(255,255,255,0.08) 0%, transparent 40%),
+    radial-gradient(circle at 40% 40%, rgba(255,255,255,0.05) 0%, transparent 30%);
+  pointer-events: none;
+}
+
+/* Floating decorative circles */
+.pm-login::after {
+  content: '';
+  position: absolute;
+  width: 600px;
+  height: 600px;
+  top: -200px;
+  right: -100px;
+  background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+  border-radius: 50%;
+  animation: floatBlob 20s ease-in-out infinite;
+}
+
+@keyframes floatBlob {
+  0%, 100% { transform: translate(0, 0) rotate(0deg); }
+  33% { transform: translate(-30px, 30px) rotate(10deg); }
+  66% { transform: translate(20px, -20px) rotate(-5deg); }
 }
 
 .pm-login-logo {
-  font-size: 3rem;
-  color: #fff;
+  width: 80px;
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255,255,255,0.15);
+  border-radius: 24px;
   margin-bottom: 1.5rem;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255,255,255,0.2);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+  animation: fadeInDown 0.6s ease-out;
+}
+
+.pm-login-logo i {
+  font-size: 2.5rem;
+  color: #fff;
 }
 
 .pm-login-title {
   color: #fff;
-  font-size: 1.4rem;
+  font-size: 1.75rem;
   font-weight: 700;
-  margin-bottom: .25rem;
+  margin-bottom: 0.5rem;
   text-align: center;
+  letter-spacing: -0.02em;
+  animation: fadeInDown 0.6s ease-out 0.1s both;
 }
 
 .pm-login-subtitle {
-  color: rgba(255,255,255,.7);
-  font-size: .875rem;
+  color: rgba(255,255,255,0.75);
+  font-size: 0.95rem;
   margin-bottom: 2rem;
   text-align: center;
+  font-weight: 400;
+  animation: fadeInDown 0.6s ease-out 0.2s both;
 }
 
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Card */
 .pm-login-card {
   width: 100%;
-  max-width: 360px;
+  max-width: 380px;
   background: #fff;
-  border-radius: var(--pm-radius);
-  padding: 1.5rem;
-  box-shadow: 0 20px 60px rgba(0,0,0,.2);
+  border-radius: 24px;
+  padding: 2rem;
+  box-shadow: 
+    0 25px 80px rgba(0,0,0,0.15),
+    0 0 0 1px rgba(255,255,255,0.1) inset;
+  position: relative;
+  z-index: 1;
+  animation: fadeInUp 0.6s ease-out 0.3s both;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Input groups */
+.pm-login-card .pm-input-group {
+  margin-bottom: 1.25rem;
+}
+
+.pm-login-card .pm-input-group label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #1a1a2e;
+  margin-bottom: 0.5rem;
+  letter-spacing: 0.01em;
+}
+
+.pm-login-card .pm-input {
+  width: 100%;
+  padding: 0.875rem 1rem;
+  font-size: 1rem;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  background: #fafbfc;
+  transition: all 0.2s ease;
+  color: #1a1a2e;
+}
+
+.pm-login-card .pm-input::placeholder {
+  color: #9ca3af;
+}
+
+.pm-login-card .pm-input:focus {
+  outline: none;
+  border-color: #5856D6;
+  background: #fff;
+  box-shadow: 0 0 0 4px rgba(88,86,214,0.1);
+}
+
+/* Checkboxes */
+.pm-login-card .pm-checkbox-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin: 1.5rem 0;
+}
+
+.pm-login-card .pm-checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  cursor: pointer;
+  font-size: 0.875rem;
+  color: #6b7280;
+  transition: color 0.2s ease;
+}
+
+.pm-login-card .pm-checkbox-label:hover {
+  color: #1a1a2e;
+}
+
+.pm-login-card .pm-checkbox-label input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: #5856D6;
+  cursor: pointer;
+}
+
+/* Primary button */
+.pm-login-card .pm-btn-primary {
+  width: 100%;
+  padding: 0.9375rem;
+  font-size: 1rem;
+  font-weight: 600;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #5856D6 0%, #7C7AE6 100%);
+  border: none;
+  color: #fff;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 15px rgba(88,86,214,0.3);
+  margin-top: 0.5rem;
+}
+
+.pm-login-card .pm-btn-primary:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(88,86,214,0.4);
+}
+
+.pm-login-card .pm-btn-primary:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.pm-login-card .pm-btn-primary:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+/* Secondary button */
+.pm-login-card .pm-btn-secondary {
+  width: 100%;
+  padding: 0.875rem;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  border-radius: 12px;
+  background: #f3f4f6;
+  border: 2px solid #e5e7eb;
+  color: #4b5563;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-top: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.pm-login-card .pm-btn-secondary:hover {
+  background: #f9fafb;
+  border-color: #d1d5db;
+}
+
+/* Error message */
+.pm-login-card .pm-error-msg {
+  margin-top: 1rem;
+  padding: 0.75rem 1rem;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  color: #dc2626;
+  font-size: 0.875rem;
+  text-align: center;
+  animation: shake 0.4s ease;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  75% { transform: translateX(5px); }
+}
+
+/* ── Desktop ───────────────────────────────────────────────── */
+@media (min-width: 1024px) {
+  .pm-login {
+    flex-direction: row;
+    gap: 0;
+    justify-content: flex-start;
+    padding: 0;
+    position: relative;
+  }
+
+  /* Left side - branding */
+  .pm-login-branding {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 4rem 6rem;
+    min-height: 100vh;
+    position: relative;
+  }
+
+  .pm-login-branding::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, rgba(88,86,214,0.9) 0%, rgba(0,122,255,0.8) 100%);
+    z-index: 0;
+  }
+
+  .pm-login-branding > * {
+    position: relative;
+    z-index: 1;
+  }
+
+  .pm-login-logo {
+    width: 100px;
+    height: 100px;
+    border-radius: 28px;
+    margin-bottom: 2rem;
+  }
+
+  .pm-login-logo i {
+    font-size: 3rem;
+  }
+
+  .pm-login-title {
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+    text-align: left;
+    max-width: 400px;
+  }
+
+  .pm-login-subtitle {
+    font-size: 1.125rem;
+    text-align: left;
+    max-width: 400px;
+    margin-bottom: 0;
+  }
+
+  /* Right side - form */
+  .pm-login-form {
+    flex: 0 0 480px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    background: #fff;
+    min-height: 100vh;
+  }
+
+  .pm-login-card {
+    width: 100%;
+    max-width: 400px;
+    box-shadow: none;
+    animation: none;
+  }
+
+  /* Remove original layout elements */
+  .pm-login > .pm-login-logo,
+  .pm-login > .pm-login-title,
+  .pm-login > .pm-login-subtitle {
+    display: none;
+  }
+
+  /* Show branding on desktop */
+  .pm-login-branding {
+    display: flex;
+  }
+}
+
+/* Hide branding by default (mobile) */
+.pm-login-branding {
+  display: none;
+}
+
+/* Password wrapper */
+.pm-password-wrapper {
+  position: relative;
+}
+
+.pm-password-wrapper .pm-input {
+  padding-right: 48px;
+}
+
+.pm-password-toggle {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #9ca3af;
+  padding: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  transition: color 0.2s ease;
+}
+
+.pm-password-toggle:hover {
+  color: #5856D6;
+}
+
+/* Button loading state */
+.pm-btn-loader {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.d-none {
+  display: none !important;
+}
+
+/* Login form wrapper */
+.pm-login-form {
+  display: block;
+  width: 100%;
+  z-index: 1;
 }
 
 /* ── Hoy View (Dashboard iOS) ─────────────────────────────────── */
@@ -60,28 +435,28 @@
 .pm-clase-card {
   display: flex;
   flex-direction: column;
-  gap: .5rem;
-  padding: 1.25rem;
+  gap: 0.375rem;
+  padding: 0.875rem;
   background: var(--pm-surface);
-  border-radius: 20px;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.04);
-  margin-bottom: 1rem;
+  border-radius: 14px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+  margin-bottom: 0.625rem;
   cursor: pointer;
   border: 1px solid var(--pm-glass-border, rgba(0,0,0,0.05));
-  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   position: relative;
   overflow: hidden;
 }
 
 .pm-clase-card:active {
-  transform: scale(0.96);
+  transform: scale(0.98);
   background: var(--pm-surface-2);
 }
 
 .pm-clase-card::before {
   content: '';
   position: absolute;
-  top: 0; left: 0; bottom: 0; width: 5px;
+  top: 0; left: 0; bottom: 0; width: 4px;
   transition: background 0.3s;
 }
 
@@ -92,25 +467,25 @@
 .pm-clase-nombre {
   font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
   font-weight: 700;
-  font-size: 1.15rem;
+  font-size: 1rem;
   letter-spacing: -0.01em;
   color: var(--pm-text);
   margin-bottom: 0.1rem;
 }
 
 .pm-clase-meta {
-  font-size: .85rem;
+  font-size: 0.75rem;
   font-weight: 500;
   color: var(--pm-text-muted);
   display: flex;
-  gap: 1rem;
+  gap: 0.75rem;
   flex-wrap: wrap;
 }
 
 .pm-clase-meta .meta-item {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 3px;
 }
 
 .pm-clase-meta i {
@@ -295,8 +670,11 @@
 .pm-calendar-full {
   background: var(--pm-surface);
   border-radius: var(--pm-radius);
-  padding: 1rem;
+  padding: 0.75rem;
   box-shadow: var(--pm-shadow);
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
 }
 
 .pm-cal-nav {
@@ -412,40 +790,40 @@
 
 /* ── Métricas View ────────────────────────────────────────────── */
 .pm-metricas-root {
-  padding: 0.75rem 0;
+  padding: 0.5rem 0;
 }
 
 .pm-metricas-title {
-  font-size: 1.4rem;
+  font-size: 1.2rem;
   font-weight: 700;
-  margin: 0 0 0.25rem;
+  margin: 0 0 0.2rem;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.375rem;
   color: var(--pm-text);
 }
 
 .pm-metricas-title i {
   color: var(--pm-primary);
-  font-size: 1.3rem;
+  font-size: 1.1rem;
 }
 
 .pm-metricas-subtitle {
-  font-size: 0.8rem;
+  font-size: 0.7rem;
   color: var(--pm-text-muted);
-  margin: 0 0 1.5rem;
+  margin: 0 0 1rem;
 }
 
 /* ── Filter Bar ─────────────────────────────────────────────── */
 .pm-metricas-filters {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 1.25rem;
-  padding: 0.75rem;
+  gap: 0.375rem;
+  margin-bottom: 0.75rem;
+  padding: 0.5rem;
   background: var(--pm-surface);
   border: 1px solid var(--pm-border);
-  border-radius: var(--pm-radius);
+  border-radius: var(--pm-radius-sm);
   flex-wrap: wrap;
 }
 
@@ -503,27 +881,21 @@
 .pm-metricas-kpis {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 0.6rem;
-  margin-bottom: 1.25rem;
+  gap: 0.4rem;
+  margin-bottom: 0.75rem;
 }
 
 .pm-metricas-kpi {
   background: var(--pm-surface);
   border: 1px solid var(--pm-border);
-  border-radius: var(--pm-radius);
-  padding: 0.75rem 0.5rem;
+  border-radius: var(--pm-radius-sm);
+  padding: 0.5rem 0.25rem;
   text-align: center;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.25rem;
+  gap: 0.15rem;
   box-shadow: var(--pm-shadow-sm);
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
-}
-
-.pm-metricas-kpi:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--pm-shadow-md);
 }
 
 .pm-kpi-chart {
@@ -536,8 +908,8 @@
 
 .pm-kpi-value {
   display: block;
-  font-size: 1.4rem;
-  font-weight: 800;
+  font-size: 1.1rem;
+  font-weight: 700;
   line-height: 1;
   color: var(--pm-primary);
 }
@@ -545,38 +917,38 @@
 .pm-kpi-warning .pm-kpi-value { color: var(--pm-warning); }
 
 .pm-kpi-label {
-  font-size: 0.6rem;
+  font-size: 0.5rem;
   font-weight: 600;
   color: var(--pm-text-muted);
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.03em;
   line-height: 1.2;
 }
 
 /* ── Attendance Breakdown ────────────────────────────────────── */
 .pm-metricas-attendance-breakdown {
-  margin-bottom: 1.5rem;
+  margin-bottom: 1rem;
 }
 
 .pm-metricas-breakdown-cards {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 0.5rem;
+  gap: 0.375rem;
 }
 
 .pm-breakdown-card {
   background: var(--pm-surface);
   border: 1px solid var(--pm-border);
   border-radius: var(--pm-radius-sm);
-  padding: 0.75rem;
+  padding: 0.5rem;
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.5rem;
   box-shadow: var(--pm-shadow-sm);
 }
 
 .pm-breakdown-icon {
-  font-size: 1.5rem;
+  font-size: 1.25rem;
   flex-shrink: 0;
 }
 
@@ -588,30 +960,32 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 0.2rem;
+  gap: 0.1rem;
+  min-width: 0;
 }
 
 .pm-breakdown-value {
-  font-size: 1.25rem;
-  font-weight: 800;
+  font-size: 1rem;
+  font-weight: 700;
   line-height: 1;
   color: var(--pm-text);
 }
 
 .pm-breakdown-label {
-  font-size: 0.65rem;
+  font-size: 0.55rem;
   font-weight: 600;
   color: var(--pm-text-muted);
   text-transform: uppercase;
   letter-spacing: 0.04em;
+  white-space: nowrap;
 }
 
 .pm-breakdown-bar {
-  height: 4px;
+  height: 3px;
   background: var(--pm-border);
   border-radius: 2px;
   overflow: hidden;
-  margin-top: 0.2rem;
+  margin-top: 0.15rem;
 }
 
 .pm-breakdown-fill {
@@ -629,52 +1003,46 @@
 .pm-metricas-clases {
   display: flex;
   flex-direction: column;
-  gap: 0.6rem;
-  margin-bottom: 1.5rem;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
 }
 
 .pm-metricas-clase-card {
   background: var(--pm-surface);
   border: 1px solid var(--pm-border);
-  border-radius: var(--pm-radius);
-  padding: 1rem;
-  transition: all 0.15s ease;
+  border-radius: var(--pm-radius-sm);
+  padding: 0.75rem;
   box-shadow: var(--pm-shadow-sm);
-}
-
-.pm-metricas-clase-card:hover {
-  border-color: var(--pm-primary);
-  box-shadow: var(--pm-shadow-md);
 }
 
 .pm-clase-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 0.75rem;
+  margin-bottom: 0.5rem;
 }
 
 .pm-clase-title-group {
   display: flex;
   flex-direction: column;
-  gap: 0.15rem;
+  gap: 0.1rem;
 }
 
 .pm-clase-title-group .pm-clase-nombre {
   font-weight: 700;
-  font-size: 0.95rem;
+  font-size: 0.85rem;
   color: var(--pm-text);
 }
 
 .pm-clase-title-group .pm-clase-instrumento {
-  font-size: 0.75rem;
+  font-size: 0.65rem;
   color: var(--pm-text-muted);
 }
 
 .pm-clase-attendance-badge {
-  font-size: 0.85rem;
-  font-weight: 800;
-  padding: 0.25rem 0.6rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.2rem 0.5rem;
   border-radius: 99px;
   flex-shrink: 0;
 }
@@ -684,7 +1052,7 @@
 .pm-clase-attendance-badge.danger  { background: var(--pm-danger-bg);  color: var(--pm-danger-text); }
 
 .pm-clase-chart {
-  margin-bottom: 0.75rem;
+  margin-bottom: 0.5rem;
 }
 
 .pm-clase-chart svg { display: block; }
@@ -692,8 +1060,8 @@
 .pm-clase-stats-row {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 0.5rem;
-  margin-bottom: 0.5rem;
+  gap: 0.375rem;
+  margin-bottom: 0.375rem;
 }
 
 .pm-clase-stat {
@@ -704,8 +1072,8 @@
 }
 
 .pm-clase-stat-value {
-  font-size: 1rem;
-  font-weight: 800;
+  font-size: 0.9rem;
+  font-weight: 700;
   color: var(--pm-text);
   line-height: 1;
 }
@@ -1248,6 +1616,232 @@
   
   .pm-asist-progress-wrap {
     max-width: 400px;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+    CALENDARIO RESPONSIVE — Sin scroll vertical
+    ═══════════════════════════════════════════════════════════ */
+
+/* Contenedor principal del calendario - ocupa todo el ancho disponible */
+.pm-calendar-wrapper {
+  width: 100%;
+  overflow-x: hidden;
+  overflow-y: visible;
+}
+
+.pm-calendar-container {
+  padding: 0.5rem;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.pm-cal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+
+.pm-cal-nav-btn {
+  background: none;
+  border: none;
+  font-size: 1.2rem;
+  color: var(--pm-primary);
+  cursor: pointer;
+  padding: 0.2rem 0.4rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pm-month-title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  flex: 1;
+  text-align: center;
+}
+
+.pm-cal-grid-container {
+  margin-bottom: 0.5rem;
+}
+
+/* Grid del calendario - usa fracciones del ancho */
+.pm-cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  width: 100%;
+  gap: 1px;
+}
+
+/* Días de la semana - ajustables según viewport */
+.pm-cal-day-header {
+  text-align: center;
+  font-size: min(0.6rem, 2vw);
+  font-weight: 600;
+  color: var(--pm-text-muted);
+  padding: 0.2rem 0;
+  text-transform: uppercase;
+}
+
+/* Celdas del calendario - se ajustan automáticamente */
+.pm-cal-day {
+  aspect-ratio: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: 3px;
+  font-size: min(0.75rem, 2.5vw);
+  cursor: pointer;
+  position: relative;
+  transition: background 0.1s;
+  min-height: 0;
+  padding: 1px;
+  overflow: hidden;
+}
+
+/* Mobile:日历 compacto que cabe en pantalla */
+@media (max-width: 767px) {
+  .pm-calendar-container {
+    padding: 0.375rem;
+    margin: 0 -0.5rem;
+    width: calc(100% + 1rem);
+  }
+
+  .pm-cal-header {
+    margin-bottom: 0.25rem;
+  }
+
+  .pm-month-title {
+    font-size: 0.85rem;
+  }
+
+  .pm-cal-nav-btn {
+    font-size: 1rem;
+    padding: 0.15rem;
+  }
+
+  .pm-cal-grid {
+    gap: 1px;
+  }
+
+  .pm-cal-day-header {
+    font-size: 0.4rem;
+    padding: 0.1rem 0;
+  }
+
+  .pm-cal-day {
+    font-size: 0.55rem;
+    padding: 0;
+    border-radius: 2px;
+  }
+
+  .pm-cal-legend {
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    padding: 0.25rem 0;
+    justify-content: center;
+    font-size: 0.45rem;
+  }
+
+  .pm-cal-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.2rem;
+  }
+
+  .pm-cal-legend-dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .pm-cal-day::after {
+    width: 2px;
+    height: 2px;
+    bottom: 1px;
+  }
+}
+
+/* Extra small devices */
+@media (max-width: 360px) {
+  .pm-cal-day {
+    font-size: 0.45rem;
+  }
+  
+  .pm-cal-day-header {
+    font-size: 0.35rem;
+  }
+  
+  .pm-month-title {
+    font-size: 0.75rem;
+  }
+}
+
+/* Tablet:日历 más amplio */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .pm-calendar-container {
+    padding: 0.625rem;
+  }
+
+  .pm-cal-day {
+    font-size: min(0.8rem, 2vw);
+  }
+
+  .pm-month-title {
+    font-size: 1rem;
+  }
+
+  .pm-cal-day-header {
+    font-size: 0.5rem;
+    padding: 0.15rem 0;
+  }
+}
+
+/* Desktop:日历 más pequeño */
+@media (min-width: 1024px) {
+  .pm-calendar-container {
+    padding: 0.625rem;
+    max-width: 500px;
+    margin: 0 auto;
+  }
+
+  .pm-cal-header {
+    margin-bottom: 0.375rem;
+  }
+
+  .pm-month-title {
+    font-size: 1rem;
+  }
+
+  .pm-cal-nav-btn {
+    font-size: 1rem;
+    padding: 0.15rem 0.3rem;
+  }
+
+  .pm-cal-grid {
+    gap: 1px;
+  }
+
+  .pm-cal-day-header {
+    font-size: 0.5rem;
+    padding: 0.15rem 0;
+  }
+
+  .pm-cal-day {
+    font-size: 0.7rem;
+    border-radius: 3px;
+  }
+
+  .pm-cal-legend {
+    gap: 0.5rem 1rem;
+    font-size: 0.6rem;
+    justify-content: center;
   }
 }
 

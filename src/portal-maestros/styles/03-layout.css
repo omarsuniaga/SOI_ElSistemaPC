@@ -14,6 +14,11 @@
 }
 
 /* ── Header iOS (Glassmorphism) ─────────────────────────────── */
+:root {
+  --pm-header-glass: rgba(255, 255, 255, 0.85);
+  --pm-header-text: #000000;
+}
+
 .pm-header {
   display: flex;
   align-items: center;
@@ -220,6 +225,13 @@
     0 -4px 16px rgba(0, 0, 0, 0.04);
 }
 
+/* Dark mode header */
+[data-portal-theme="dark"] .pm-header,
+[data-bs-theme="dark"] .pm-header {
+  --pm-header-glass: rgba(15, 23, 42, 0.95);
+  --pm-header-text: #ffffff;
+}
+
 /* Dark mode frosted glass */
 [data-portal-theme="dark"] .pm-footer-nav__inner,
 [data-bs-theme="dark"] .pm-footer-nav__inner {
@@ -318,13 +330,23 @@
   padding: 0 4px;
 }
 
-/* ── Sidebar (desktop) ─────────────────────────────────────── */
+/* ── Sidebar (hidden by default - desktop only) ─────────────── */
 .pm-sidebar {
+  display: none;
   width: var(--pm-sidebar-w);
   flex-shrink: 0;
   background: var(--pm-surface-2);
   border-right: 1px solid var(--pm-border);
   overflow-y: auto;
+}
+
+/* Main area wrapper */
+.pm-main-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
 }
 
 /* ── Ausencias Header Buttons ───────────────────────────────── */

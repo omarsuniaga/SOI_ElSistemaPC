@@ -19,15 +19,25 @@ const DEFAULT_PREFS = {
   recordatorios_activos: true,
 }
 
-// ── Push Received Callback ──
-let _onPushReceivedCallback = null;
+// ── Push Received Callbacks ───────────────────────────────────────
+// Array de callbacks: múltiples módulos pueden suscribirse sin pisarse.
+const _pushCallbacks = [];
+
+function _notifyPushCallbacks(event) {
+  _pushCallbacks.forEach(cb => {
+    try { cb(event); } catch (e) { console.warn('[Push] callback error:', e); }
+  });
+}
 
 /**
- * Registra un callback que se ejecuta cuando llega una notificación push
- * o cuando cambia el estado de suscripción.
+ * Registra un callback para eventos push. Devuelve una función de desuscripción.
  */
 export function onPushReceived(callback) {
-  _onPushReceivedCallback = callback;
+  _pushCallbacks.push(callback);
+  return () => {
+    const idx = _pushCallbacks.indexOf(callback);
+    if (idx !== -1) _pushCallbacks.splice(idx, 1);
+  };
 }
 
 // ── Listen for SW messages ───────────────────────────────────
@@ -35,8 +45,8 @@ if ('serviceWorker' in navigator) {
   navigator.serviceWorker.addEventListener('message', (event) => {
     if (event.data && event.data.type === 'PUSH_RECEIVED') {
       console.log('[Push] Notification received from SW:', event.data.notification);
-      if (_onPushReceivedCallback) {
-        _onPushReceivedCallback({ 
+      if (_pushCallbacks.length) {
+        _notifyPushCallbacks({ 
           event: 'notificationReceived', 
           notification: event.data.notification 
         });
@@ -185,9 +195,7 @@ export async function subscribeToPush() {
     await saveNotificationPreferences({ push_activo: true })
 
     // Notificar a servicios de la suscripción exitosa
-    if (_onPushReceivedCallback) {
-      _onPushReceivedCallback({ event: 'subscriptionChanged', subscribed: true })
-    }
+    _notifyPushCallbacks({ event: 'subscriptionChanged', subscribed: true });
 
     return { success: true, subscription }
   } catch (err) {
@@ -213,9 +221,7 @@ export async function unsubscribeFromPush() {
     }
     await saveNotificationPreferences({ push_activo: false })
 
-    if (_onPushReceivedCallback) {
-      _onPushReceivedCallback({ event: 'subscriptionChanged', subscribed: false })
-    }
+    _notifyPushCallbacks({ event: 'subscriptionChanged', subscribed: false });
 
     return { success: true }
   } catch (err) {

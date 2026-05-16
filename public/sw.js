@@ -127,23 +127,81 @@ self.addEventListener('push', (event) => {
 });
 
 self.addEventListener('notificationclick', (event) => {
-  console.log('[SW] Notification clicked:', event.notification.tag);
+  console.log('[SW] Notification clicked:', event.notification.tag, '| action:', event.action);
   event.notification.close();
 
-  const urlToOpen = event.notification.data?.url || '/';
-  
+  // Acción "dismiss": solo cerrar, no navegar
+  if (event.action === 'dismiss') return;
+
+  const data = event.notification.data || {};
+
+  // Resolver la ruta correcta según el tipo de notificación
+  const targetHash = _resolveRoute(data);
+  const baseUrl = self.registration.scope; // ej: https://soi.com/
+  const urlToOpen = `${baseUrl}maestros.html${targetHash}`;
+
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true })
       .then((windowClients) => {
+        // Si ya hay una ventana con el portal abierto → enfocarla y navegar
         for (const client of windowClients) {
-          if (client.url === urlToOpen && 'focus' in client) {
-            return client.focus();
+          if (client.url.includes('maestros') && 'focus' in client) {
+            client.focus();
+            // Enviar mensaje al cliente para que el router navegue sin reload
+            client.postMessage({
+              type: 'NAVIGATE_TO',
+              hash: targetHash,
+            });
+            return;
           }
         }
+        // Sin ventana abierta → abrir la URL directamente
         return clients.openWindow(urlToOpen);
       })
   );
 });
+
+/**
+ * Resuelve el hash de navegación in-app a partir de los datos de la notificación.
+ * Mapea tipo + ids a la ruta concreta del SPA.
+ */
+function _resolveRoute(data) {
+  // Si el backend envió una URL explícita, usarla directamente
+  if (data.url && data.url !== '/') {
+    // Convertir rutas absolutas a hashes si hace falta
+    if (data.url.startsWith('#')) return data.url;
+    if (data.url.includes('#')) return '#' + data.url.split('#')[1];
+    return data.url;
+  }
+
+  const tipo = data.tipo || data.type || '';
+  const claseId = data.clase_id || data.claseId;
+  const alumnoId = data.alumno_id || data.alumnoId;
+  const fecha = data.fecha || new Date().toISOString().split('T')[0];
+
+  switch (tipo) {
+    case 'sesion_sin_registrar':
+    case 'recordatorio_clase':
+      // Ir a la vista de asistencia de esa clase si hay clase_id, o a "hoy"
+      return claseId
+        ? `#/asistencia?clase=${claseId}&fecha=${fecha}`
+        : '#/hoy';
+
+    case 'mensaje_admin':
+      return '#/perfil';
+
+    case 'tarea_vencida':
+      return alumnoId
+        ? `#/alumno?id=${alumnoId}`
+        : '#/hoy';
+
+    case 'in_app':
+    default:
+      return '#/hoy';
+  }
+}
+
+
 
 // ── Alertas locales programadas ──────────────────────────────
 

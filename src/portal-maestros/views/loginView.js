@@ -9,83 +9,69 @@ import { usePortalAuth } from '../auth/usePortalAuth.js'
 export function renderLoginView(container, { onSuccess }) {
   container.innerHTML = `
     <div class="pm-login">
-      <div class="pm-login-logo">🎵</div>
-      <h1 class="pm-login-title">Portal Maestros</h1>
-      <p class="pm-login-subtitle">SOI · Sistema Operativo Institucional</p>
+      <!-- Branding Side (Desktop) -->
+      <div class="pm-login-branding">
+        <div class="pm-login-logo"><i class="bi bi-music-note-beamed"></i></div>
+        <h1 class="pm-login-title">Portal Maestros</h1>
+        <p class="pm-login-subtitle">Sistema Operativo Institucional — SOI</p>
+      </div>
 
-      <div class="pm-login-card">
-        <div class="pm-input-group">
-          <label for="pm-email">Correo electrónico</label>
-          <input
-            type="email"
-            id="pm-email"
-            class="pm-input"
-            placeholder="tu@correo.com"
-            autocomplete="username"
-            inputmode="email"
-          />
-        </div>
-
-        <div class="pm-input-group">
-          <label for="pm-password">Contraseña</label>
-          <div style="position: relative;">
+      <!-- Form Side -->
+      <div class="pm-login-form">
+        <div class="pm-login-card">
+          <div class="pm-input-group">
+            <label for="pm-email">Correo electrónico</label>
             <input
-              type="password"
-              id="pm-password"
+              type="email"
+              id="pm-email"
               class="pm-input"
-              placeholder="••••••••"
-              autocomplete="current-password"
-              style="padding-right: 40px;"
+              placeholder="tu@correo.com"
+              autocomplete="username"
+              inputmode="email"
             />
-            <button
-              type="button"
-              id="pm-toggle-password"
-              style="
-                position: absolute;
-                right: 12px;
-                top: 50%;
-                transform: translateY(-50%);
-                background: none;
-                border: none;
-                cursor: pointer;
-                color: var(--pm-text-muted);
-                padding: 6px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                font-size: 18px;
-              "
-              title="Mostrar contraseña"
-            >
-              <i class="bi bi-eye"></i>
+          </div>
+
+          <div class="pm-input-group">
+            <label for="pm-password">Contraseña</label>
+            <div class="pm-password-wrapper">
+              <input
+                type="password"
+                id="pm-password"
+                class="pm-input"
+                placeholder="••••••••"
+                autocomplete="current-password"
+              />
+              <button
+                type="button"
+                id="pm-toggle-password"
+                class="pm-password-toggle"
+                title="Mostrar contraseña"
+              >
+                <i class="bi bi-eye"></i>
             </button>
           </div>
         </div>
 
-        <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 16px;">
-          <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 14px; color: var(--pm-text-muted);">
-            <input
-              type="checkbox"
-              id="pm-remember-email"
-              style="cursor: pointer; width: 18px; height: 18px;"
-            />
+        <div class="pm-checkbox-group">
+          <label class="pm-checkbox-label">
+            <input type="checkbox" id="pm-remember-email" />
             Recordar correo electrónico
           </label>
-          <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 14px; color: var(--pm-text-muted);">
-            <input
-              type="checkbox"
-              id="pm-keep-session"
-              style="cursor: pointer; width: 18px; height: 18px;"
-            />
+          <label class="pm-checkbox-label">
+            <input type="checkbox" id="pm-keep-session" />
             Mantener sesión abierta por 30 días
           </label>
         </div>
 
-        <button type="button" class="pm-btn pm-btn-primary" id="pm-login-btn">
-          Iniciar sesión
+        <button type="button" class="pm-btn-primary" id="pm-login-btn">
+          <span class="pm-btn-text">Iniciar sesión</span>
+          <span class="pm-btn-loader d-none">
+            <span class="pm-spinner-sm"></span>
+            Validando...
+          </span>
         </button>
 
-        <button type="button" class="pm-btn pm-btn-secondary" id="pm-biometric-btn" style="display:none;">
+        <button type="button" class="pm-btn-secondary" id="pm-biometric-btn" style="display:none;">
           <i class="bi bi-fingerprint"></i> Usar huella o Face ID
         </button>
 
@@ -151,17 +137,23 @@ export function renderLoginView(container, { onSuccess }) {
     const email    = emailInput.value.trim()
     const password = passwordInput.value
 
-    if (!email || !password) {
-      errorMsg.textContent = 'Completa tu correo y contraseña.'
+    errorMsg.textContent = ''
+    setInputsDisabled(false)
+
+    if (!email) {
+      errorMsg.textContent = 'Ingresa tu correo electrónico'
+      emailInput.focus()
+      return
+    }
+    if (!password) {
+      errorMsg.textContent = 'Ingresa tu contraseña'
+      passwordInput.focus()
       return
     }
 
-    loginBtn.disabled    = true
-    loginBtn.textContent = 'Ingresando...'
-    errorMsg.textContent = ''
+    setLoading(true)
 
-    // Set session duration based on checkbox
-    const sessionDuration = keepSessionChk.checked ? 30 * 24 * 60 * 60 * 1000 : undefined // 30 days or default
+    const sessionDuration = keepSessionChk.checked ? 30 * 24 * 60 * 60 * 1000 : undefined
     if (sessionDuration) {
       localStorage.setItem('pm-session-expires', new Date(Date.now() + sessionDuration).toISOString())
     }
@@ -177,10 +169,37 @@ export function renderLoginView(container, { onSuccess }) {
       }
     } else {
       errorMsg.textContent = result.error
-      loginBtn.disabled    = false
-      loginBtn.textContent = 'Iniciar sesión'
+      setLoading(false)
       localStorage.removeItem('pm-session-expires')
+      passwordInput.value = ''
+      passwordInput.focus()
     }
+  }
+
+  function setLoading(loading) {
+    loginBtn.disabled = loading
+    emailInput.disabled = loading
+    passwordInput.disabled = loading
+    keepSessionChk.disabled = loading
+    togglePwdBtn.disabled = loading
+
+    const btnText = loginBtn.querySelector('.pm-btn-text')
+    const btnLoader = loginBtn.querySelector('.pm-btn-loader')
+
+    if (loading) {
+      btnText?.classList.add('d-none')
+      btnLoader?.classList.remove('d-none')
+    } else {
+      btnText?.classList.remove('d-none')
+      btnLoader?.classList.add('d-none')
+    }
+  }
+
+  function setInputsDisabled(disabled) {
+    emailInput.disabled = disabled
+    passwordInput.disabled = disabled
+    keepSessionChk.disabled = disabled
+    togglePwdBtn.disabled = disabled
   }
 
   loginBtn.addEventListener('click', handleLogin)

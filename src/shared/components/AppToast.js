@@ -1,84 +1,197 @@
 /**
- * AppToast - Sistema de notificaciones global
- * Basado en Bootstrap 5 Toasts con esteroides premium.
+ * AppToast -- Sistema de toasts nativo, sin dependencia de Bootstrap JS.
+ * Usa las variables CSS del design system del portal (--pm-*).
+ * Soporta apilamiento, auto-dismiss, y animación de entrada/salida.
  */
 
-const CONTAINER_ID = 'app-toast-container'
+const CONTAINER_ID = 'app-toast-container';
 
-function ensureContainer() {
-  let container = document.getElementById(CONTAINER_ID)
-  if (!container) {
-    container = document.createElement('div')
-    container.id = CONTAINER_ID
-    container.className = 'toast-container position-fixed bottom-0 end-0 p-3'
-    container.style.zIndex = '1090'
-    document.body.appendChild(container)
-  }
-  return container
+// -- Estilos ----------------------------------------------------------------
+let _stylesInjected = false;
+function _injectStyles() {
+  if (_stylesInjected) return;
+  _stylesInjected = true;
+
+  const s = document.createElement('style');
+  s.id = 'app-toast-styles';
+  s.textContent = `
+    #app-toast-container {
+      position: fixed;
+      bottom: 1.25rem;
+      right: 1.25rem;
+      z-index: 10050;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      pointer-events: none;
+    }
+
+    .app-toast {
+      pointer-events: all;
+      display: flex;
+      align-items: flex-start;
+      gap: 0.65rem;
+      min-width: 280px;
+      max-width: 360px;
+      padding: 0.85rem 1rem;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(24, 24, 32, 0.97);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+      color: #fff;
+      font-size: 0.875rem;
+      line-height: 1.4;
+      opacity: 0;
+      transform: translateY(12px) scale(0.97);
+      transition: opacity 0.3s ease, transform 0.35s cubic-bezier(0.16,1,0.3,1);
+    }
+
+    .app-toast.app-toast--visible {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+
+    .app-toast.app-toast--hiding {
+      opacity: 0;
+      transform: translateY(8px) scale(0.96);
+    }
+
+    .app-toast__icon {
+      font-size: 1.1rem;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    .app-toast__body {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .app-toast__title {
+      font-weight: 700;
+      font-size: 0.78rem;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+      margin-bottom: 2px;
+      opacity: 0.75;
+    }
+
+    .app-toast__msg {
+      font-size: 0.875rem;
+      color: rgba(255,255,255,0.9);
+    }
+
+    .app-toast__close {
+      background: transparent;
+      border: none;
+      color: rgba(255,255,255,0.4);
+      font-size: 1.1rem;
+      cursor: pointer;
+      padding: 0;
+      line-height: 1;
+      flex-shrink: 0;
+      transition: color 0.2s;
+      align-self: flex-start;
+    }
+    .app-toast__close:hover { color: #fff; }
+
+    /* Colores por tipo */
+    .app-toast--success .app-toast__icon { color: #34d399; }
+    .app-toast--success { border-color: rgba(52,211,153,0.2); }
+
+    .app-toast--error .app-toast__icon   { color: #f87171; }
+    .app-toast--error   { border-color: rgba(248,113,113,0.2); }
+
+    .app-toast--warning .app-toast__icon { color: #fbbf24; }
+    .app-toast--warning { border-color: rgba(251,191,36,0.2); }
+
+    .app-toast--info .app-toast__icon    { color: #60a5fa; }
+    .app-toast--info    { border-color: rgba(96,165,250,0.2); }
+
+    @media (max-width: 400px) {
+      #app-toast-container { right: 0.75rem; left: 0.75rem; }
+      .app-toast { min-width: unset; max-width: 100%; }
+    }
+  `;
+  document.head.appendChild(s);
 }
 
-/**
- * Muestra una notificación tipo Toast
- * @param {string} message - El mensaje a mostrar
- * @param {'success'|'error'|'info'|'warning'} type - El tipo de notificación
- */
+// -- Container --------------------------------------------------------------
+function _ensureContainer() {
+  let el = document.getElementById(CONTAINER_ID);
+  if (!el) {
+    el = document.createElement('div');
+    el.id = CONTAINER_ID;
+    document.body.appendChild(el);
+  }
+  return el;
+}
+
+// -- Config por tipo --------------------------------------------------------
+const TYPE_CONFIG = {
+  success: { icon: 'bi bi-check-circle-fill', title: 'Éxito' },
+  error:   { icon: 'bi bi-exclamation-octagon-fill', title: 'Error' },
+  danger:  { icon: 'bi bi-exclamation-octagon-fill', title: 'Error' },
+  warning: { icon: 'bi bi-exclamation-triangle-fill', title: 'Atención' },
+  info:    { icon: 'bi bi-info-circle-fill', title: 'Info' },
+};
+
+// -- Lógica de dismiss ------------------------------------------------------
+function _dismiss(toastEl) {
+  if (toastEl._dismissing) return;
+  toastEl._dismissing = true;
+  toastEl.classList.remove('app-toast--visible');
+  toastEl.classList.add('app-toast--hiding');
+  setTimeout(() => toastEl.remove(), 350);
+}
+
+// -- API pública ------------------------------------------------------------
 export const AppToast = {
   show(message, type = 'info') {
-    const container = ensureContainer()
-    const id = `toast-${Date.now()}`
-    
-    const config = {
-      success: { bg: 'bg-success', icon: 'bi-check-circle-fill', title: 'Éxito' },
-      error:   { bg: 'bg-danger',  icon: 'bi-exclamation-octagon-fill', title: 'Error' },
-      warning: { bg: 'bg-warning', icon: 'bi-exclamation-triangle-fill', title: 'Atención' },
-      info:    { bg: 'bg-info',    icon: 'bi-info-circle-fill', title: 'Info' }
-    }
-    
-    const { bg, icon, title } = config[type] || config.info
+    _injectStyles();
+    const container = _ensureContainer();
 
-    const html = `
-      <div id="${id}" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
-        <div class="toast-header ${bg} text-white border-0">
-          <i class="bi ${icon} me-2"></i>
-          <strong class="me-auto">${title}</strong>
-          <small class="text-white-50">ahora</small>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Close"></button>
-        </div>
-        <div class="toast-body py-3">
-          ${message}
-        </div>
+    const cfg = TYPE_CONFIG[type] || TYPE_CONFIG.info;
+    const canonicalType = type === 'danger' ? 'error' : type;
+
+    const toastEl = document.createElement('div');
+    toastEl.className = `app-toast app-toast--${canonicalType}`;
+    toastEl.setAttribute('role', 'alert');
+    toastEl.setAttribute('aria-live', 'polite');
+    toastEl.innerHTML = `
+      <i class="${cfg.icon} app-toast__icon" aria-hidden="true"></i>
+      <div class="app-toast__body">
+        <div class="app-toast__title">${cfg.title}</div>
+        <div class="app-toast__msg">${message}</div>
       </div>
-    `
+      <button class="app-toast__close" aria-label="Cerrar">&#x2715;</button>
+    `;
 
-    const wrapper = document.createElement('div')
-    wrapper.innerHTML = html
-    const toastEl = wrapper.firstElementChild
-    container.appendChild(toastEl)
+    container.appendChild(toastEl);
 
-    // Inicializar con Bootstrap
-    const bootstrapInstance = window.bootstrap || (typeof bootstrap !== 'undefined' ? bootstrap : null)
-    
-    if (!bootstrapInstance) {
-      console.warn('Bootstrap JS no detectado. El toast se mostrará pero no se auto-ocultará correctamente.')
-      // Fallback: auto-ocultar manualmente si no hay bootstrap
-      setTimeout(() => {
-        toastEl.classList.add('hide')
-        setTimeout(() => toastEl.remove(), 500)
-      }, 4000)
-      return
-    }
+    // Botón de cierre
+    toastEl.querySelector('.app-toast__close').addEventListener('click', () => _dismiss(toastEl));
 
-    const bsToast = new bootstrapInstance.Toast(toastEl, { autohide: true, delay: 4000 })
-    bsToast.show()
+    // Animar entrada (necesita un frame para que la transición funcione)
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => toastEl.classList.add('app-toast--visible'));
+    });
 
-    // Limpiar el DOM después de ocultar
-    toastEl.addEventListener('hidden.bs.toast', () => {
-      toastEl.remove()
-    })
+    // Auto-dismiss a los 4 segundos
+    const timer = setTimeout(() => _dismiss(toastEl), 4000);
+
+    // Pausar auto-dismiss al hacer hover
+    toastEl.addEventListener('mouseenter', () => clearTimeout(timer));
+    toastEl.addEventListener('mouseleave', () => {
+      setTimeout(() => _dismiss(toastEl), 1500);
+    });
   },
 
-  success(msg) { this.show(msg, 'success') },
-  error(msg)   { this.show(msg, 'error') },
-  info(msg)    { this.show(msg, 'info') },
-  warning(msg) { this.show(msg, 'warning') }
-}
+  success(msg) { this.show(msg, 'success'); },
+  error(msg)   { this.show(msg, 'error');   },
+  danger(msg)  { this.show(msg, 'danger');  },
+  info(msg)    { this.show(msg, 'info');    },
+  warning(msg) { this.show(msg, 'warning'); },
+};

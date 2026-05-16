@@ -1,7 +1,5 @@
 import { router } from '../../core/router/router.js'
 
-export { renderConfigView } from './views/configView.js'
-export { renderImportView } from './views/importView.js'
 export { 
   getGroqApiKey, setGroqApiKey,
   getOpenRouterApiKey, setOpenRouterApiKey,

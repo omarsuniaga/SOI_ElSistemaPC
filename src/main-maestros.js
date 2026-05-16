@@ -80,8 +80,16 @@ import { prefetchMonthData, getMisClases, getHorariosClases, getSesiones } from 
 import { scheduleLocalAlerts } from './portal-maestros/services/pushService.js'
 import { AppModal } from './shared/components/AppModal.js'
 
-// Icons only — NO Bootstrap CSS/JS in portal
+// Icons only -- NO Bootstrap CSS/JS in portal
 import 'bootstrap-icons/font/bootstrap-icons.css'
+
+// Toast system -- sin dependencia de Bootstrap JS
+import { AppToast } from './shared/components/AppToast.js'
+window.addEventListener('showToast', (e) => {
+  const { message, type = 'info' } = e.detail || {};
+  if (message) AppToast.show(message, type);
+});
+
 
 import { renderLoginView } from './portal-maestros/views/loginView.js'
 import { renderHoyView } from './portal-maestros/views/hoyView.js'
@@ -109,7 +117,8 @@ import { renderClasesView } from './modules/clases/views/clasesView.js'
 // Nuevos componentes de UI
 import { themeToggle } from './portal-maestros/components/themeToggle.js'
 import { notificacionesPanel } from './portal-maestros/components/notificacionesPanel.js'
-import { onNotificacionesChange, getUnreadCount, fetchNotificaciones } from './portal-maestros/services/notificationService.js'
+import { onNotificacionesChange, getUnreadCount, fetchNotificaciones, startRealtime, stopRealtime } from './portal-maestros/services/notificationService.js'
+
 import { pushDiagnostic } from './portal-maestros/components/pushDiagnostic.js'
 import { setNavigationCallbacks } from './portal-maestros/services/navigationHooks.js'
 
@@ -312,76 +321,108 @@ function _renderShell(app, maestro) {
   const tabs = ALL_TABS()
 
   app.innerHTML = `
-    <!-- Header -->
-    <header class="pm-header">
-      <div class="pm-header-left">
-        <span class="pm-header-greeting">${IS_ADMIN ? 'Panel Admin' : 'Hola,'}</span>
-        <span class="pm-header-title">
-          ${IS_ADMIN
-      ? (maestro?.nombre_completo?.split(' ')[0] ?? 'Administrador')
-      : (maestro?.nombre_completo?.split(' ')[0] ?? 'Maestro')
-    }
-        </span>
+    <!-- Sidebar (desktop only) -->
+    <aside class="pm-sidebar" id="pm-sidebar">
+      <div class="pm-sidebar-header">
+        <div class="pm-sidebar-logo">
+          <i class="bi bi-music-note-beamed"></i>
+          <span>SOI</span>
+        </div>
       </div>
-
-      <!-- Header right controls -->
-      <div class="pm-header-right">
-        <!-- Search (desktop only) -->
-        ${bp === 'desktop' ? `
-          <div class="pm-header-search">
-            <i class="bi bi-search"></i>
-            <input type="search" placeholder="Buscar alumno..." id="pm-header-search-input" />
-          </div>
-        ` : ''}
-
-        <span class="pm-sync-indicator synced" id="pm-sync-indicator">✓</span>
-
-        <!-- Toggle de tema -->
-        <div id="pm-theme-toggle-container"></div>
-
-        <!-- Botón de notificaciones -->
-        <button id="pm-btn-notificaciones" class="pm-icon-btn" title="Notificaciones" style="position: relative;">
-          <i class="bi bi-bell"></i>
-          <span class="pm-ausencias-badge" id="pm-notif-badge" style="display: none; background: var(--pm-danger);">0</span>
-        </button>
-        
-        <!-- Botón diagnóstico de push -->
-        <button id="pm-btn-push-diagnostic" class="pm-icon-btn" title="Diagnosticar Notificaciones" style="opacity: 0.7;">
-          <i class="bi bi-broadcast"></i>
-        </button>
-
-        <button id="pm-btn-perfil" class="pm-avatar-btn" title="Perfil">
-          ${maestro?.avatar_url
-      ? `<img src="${maestro.avatar_url}" alt="Avatar">`
-      : `<i class="bi bi-person-circle"></i>`
-    }
-        </button>
-      </div>
-
-      <!-- Header tabs (tablet+) -->
-      <div class="pm-header-tabs" id="pm-header-tabs">
+      <nav class="pm-sidebar-nav">
         ${tabs.map(tab => `
-          <button class="pm-header-tab" data-route="${tab.id}" title="${tab.label}">
+          <a class="pm-sidebar-link" data-route="${tab.id}" title="${tab.label}">
             <i class="bi ${tab.icon}"></i>
             <span>${tab.label}</span>
-          </button>
+          </a>
         `).join('')}
+      </nav>
+      <div class="pm-sidebar-footer">
+        <button id="pm-btn-perfil-sidebar" class="pm-sidebar-link" data-route="perfil">
+          <i class="bi bi-person-circle"></i>
+          <span>Perfil</span>
+        </button>
       </div>
-    </header>
+    </aside>
 
-    <!-- Contenido de la vista activa -->
-    <main class="pm-view" id="pm-view-container"></main>
+    <!-- Main content area -->
+    <div class="pm-main-area">
+      <!-- Header -->
+      <header class="pm-header">
+        <div class="pm-header-left">
+          <span class="pm-header-greeting">${IS_ADMIN ? 'Panel Admin' : 'Hola,'}</span>
+          <span class="pm-header-title">
+            ${IS_ADMIN
+        ? (maestro?.nombre_completo?.split(' ')[0] ?? 'Administrador')
+        : (maestro?.nombre_completo?.split(' ')[0] ?? 'Maestro')
+      }
+          </span>
+        </div>
 
-    <!-- Footer Nav (always visible) -->
-    <nav class="pm-footer-nav" id="pm-footer-nav">
-      <div class="pm-footer-nav__inner">
-        ${tabs.map(tab => `
-          <button class="pm-nav-tab" data-route="${tab.id}" title="${tab.label}">
-            <i class="bi ${tab.icon}"></i>
+        <!-- Header right controls -->
+        <div class="pm-header-right">
+          <!-- Search (desktop only) -->
+          ${bp === 'desktop' ? `
+            <div class="pm-header-search">
+              <i class="bi bi-search"></i>
+              <input type="search" placeholder="Buscar alumno..." id="pm-header-search-input" />
+            </div>
+          ` : ''}
+
+          <span class="pm-sync-indicator synced" id="pm-sync-indicator">✓</span>
+
+          <!-- Toggle de tema -->
+          <div id="pm-theme-toggle-container"></div>
+
+          <!-- Botón de notificaciones -->
+          <button id="pm-bell-btn" class="pm-icon-btn" title="Notificaciones" style="position: relative;">
+            <i class="bi bi-bell"></i>
+            <span class="pm-ausencias-badge" id="pm-notif-badge" style="display: none; background: var(--pm-danger);">0</span>
           </button>
-        `).join('')}
-      </div>
-    </nav>
+          
+          <!-- Botón instalación PWA -->
+          <button id="pm-btn-install" class="pm-icon-btn" title="Instalar app">
+            <i class="bi bi-download"></i>
+          </button>
+
+          <!-- Botón diagnóstico de push -->
+          <button id="pm-btn-push-diagnostic" class="pm-icon-btn" title="Diagnosticar Notificaciones" style="opacity: 0.7;">
+            <i class="bi bi-broadcast"></i>
+          </button>
+
+          <button id="pm-btn-perfil" class="pm-avatar-btn" title="Perfil">
+            ${maestro?.avatar_url
+        ? `<img src="${maestro.avatar_url}" alt="Avatar">`
+        : `<i class="bi bi-person-circle"></i>`
+      }
+          </button>
+        </div>
+
+        <!-- Header tabs (tablet only - hidden on desktop) -->
+        <div class="pm-header-tabs" id="pm-header-tabs">
+          ${tabs.map(tab => `
+            <button class="pm-header-tab" data-route="${tab.id}" title="${tab.label}">
+              <i class="bi ${tab.icon}"></i>
+              <span>${tab.label}</span>
+            </button>
+          `).join('')}
+        </div>
+      </header>
+
+      <!-- Contenido de la vista activa -->
+      <main class="pm-view" id="pm-view-container"></main>
+
+      <!-- Footer Nav (mobile/tablet only - hidden on desktop) -->
+      <nav class="pm-footer-nav" id="pm-footer-nav">
+        <div class="pm-footer-nav__inner">
+          ${tabs.map(tab => `
+            <button class="pm-nav-tab" data-route="${tab.id}" title="${tab.label}">
+              <i class="bi ${tab.icon}"></i>
+            </button>
+          `).join('')}
+        </div>
+      </nav>
+    </div>
   `
 
   _updateSyncIndicator()
@@ -392,7 +433,7 @@ function _renderShell(app, maestro) {
     themeContainer.appendChild(themeToggle.createToggleButton())
   }
 
-  // Footer nav events - SPA navigation
+// Footer nav events - SPA navigation
   const footerNav = document.getElementById('pm-footer-nav')
   if (footerNav) {
     footerNav.querySelectorAll('.pm-nav-tab').forEach(tab => {
@@ -403,13 +444,24 @@ function _renderShell(app, maestro) {
     })
   }
 
-  // Header tabs events - SPA navigation (tablet+)
+  // Header tabs events - SPA navigation (tablet only)
   const headerTabs = document.getElementById('pm-header-tabs')
   if (headerTabs) {
     headerTabs.querySelectorAll('.pm-header-tab').forEach(tab => {
       tab.addEventListener('click', (e) => {
         e.preventDefault()
         router.navigate(tab.dataset.route)
+      })
+    })
+  }
+
+  // Sidebar nav events - SPA navigation (desktop only)
+  const sidebar = document.getElementById('pm-sidebar')
+  if (sidebar) {
+    sidebar.querySelectorAll('.pm-sidebar-link').forEach(link => {
+      link.addEventListener('click', (e) => {
+        e.preventDefault()
+        router.navigate(link.dataset.route)
       })
     })
   }
@@ -439,13 +491,24 @@ function _renderShell(app, maestro) {
   })
 
   // Eventos de notificaciones
-  document.getElementById('pm-btn-notificaciones')?.addEventListener('click', () => {
+  document.getElementById('pm-bell-btn')?.addEventListener('click', () => {
     notificacionesPanel.open()
   })
 
   // Evento de diagnóstico de push
   document.getElementById('pm-btn-push-diagnostic')?.addEventListener('click', () => {
     pushDiagnostic.open()
+  })
+
+  // Evento de instalación PWA
+  document.getElementById('pm-btn-install')?.addEventListener('click', () => {
+    if (window.pwaInstaller) {
+      if (window.pwaInstaller.deferredPrompt) {
+        window.pwaInstaller.install()
+      } else {
+        window.pwaInstaller.showInstallInstructions()
+      }
+    }
   })
 
   // Suscribirse al badge de notificaciones
@@ -461,8 +524,9 @@ function _renderShell(app, maestro) {
     }
   });
 
-  // Disparar la primera carga
+  // Disparar primera carga y abrir canal Realtime
   fetchNotificaciones();
+  startRealtime();
 
   // Keyboard shortcuts (desktop only)
   if (bp === 'desktop') {
@@ -503,6 +567,13 @@ function _renderShell(app, maestro) {
               router.navigate(tab.dataset.route)
             })
           })
+          // Re-register sidebar events
+          document.querySelectorAll('.pm-sidebar-link').forEach(link => {
+            link.addEventListener('click', (e) => {
+              e.preventDefault()
+              router.navigate(link.dataset.route)
+            })
+          })
           const route = (router.currentRoute?.() || 'hoy').split('?')[0]
           _setActiveTab(route)
         }, 50)
@@ -513,6 +584,12 @@ function _renderShell(app, maestro) {
 
 function _setActiveTab(route) {
   document.querySelectorAll('.pm-nav-tab').forEach(tab => {
+    tab.classList.toggle('active', tab.dataset.route === route)
+  })
+  document.querySelectorAll('.pm-sidebar-link').forEach(link => {
+    link.classList.toggle('active', link.dataset.route === route)
+  })
+  document.querySelectorAll('.pm-header-tab').forEach(tab => {
     tab.classList.toggle('active', tab.dataset.route === route)
   })
 }
@@ -622,6 +699,7 @@ async function _renderView(route, params = {}, { silent = false } = {}) {
         break
       case 'logout':
         _showLoginScreen()
+        stopRealtime()
         logoutMaestro().then(() => window.location.reload())
         break
       case 'calendario':

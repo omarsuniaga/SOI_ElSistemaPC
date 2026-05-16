@@ -1,4 +1,15 @@
-import { fetchNotificaciones, onNotificacionesChange, marcarLeida, marcarTodasLeidas, _isDuplicateNotification, _recordNotificationReceived } from '../services/notificationService.js';
+import { fetchNotificaciones, onNotificacionesChange, marcarLeida, marcarTodasLeidas } from '../services/notificationService.js';
+
+// ── Listener: NAVIGATE_TO desde el SW (toque en notificación OS) ────────────────
+// El SW envía este mensaje cuando el usuario toca una notificación del SO
+// y el portal ya está abierto en una pestaña.
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.addEventListener('message', (event) => {
+    if (event.data?.type === 'NAVIGATE_TO' && event.data.hash) {
+      window.location.hash = event.data.hash;
+    }
+  });
+}
 
 let isOpen = false;
 let container = null;
@@ -76,45 +87,61 @@ export const notificacionesPanel = {
     const listEl = document.getElementById('pm-notificaciones-list');
     if (!listEl) return;
 
-    // FILTER: Apply deduplication
-    const visibleNotifications = notificaciones.filter(n => {
-      if (_isDuplicateNotification(n)) {
-        console.log('[Panel] Skipping duplicate notification:', n.id);
-        return false;
-      }
-      _recordNotificationReceived(n);
-      return true;
-    });
-
-    if (visibleNotifications.length === 0) {
+    if (notificaciones.length === 0) {
       listEl.innerHTML = `
         <div class="text-center text-muted mt-5">
           <i class="bi bi-bell-slash" style="font-size: 2rem; opacity: 0.5;"></i>
-          <p class="mt-2">No tienes notificaciones recientes.</p>
+          <p class="mt-2">No tenés notificaciones recientes.</p>
         </div>
       `;
       return;
     }
 
-    listEl.innerHTML = visibleNotifications.map(n => `
-      <div class="pm-notif-item ${n.estado === 'leida' ? 'leida' : ''}" data-id="${n.id}">
-        <div class="pm-notif-icon ${getNotifColor(n.tipo)}">
-          <i class="bi ${getNotifIcon(n.tipo)}"></i>
-        </div>
-        <div class="pm-notif-content">
-          <div class="pm-notif-title">${n.titulo}</div>
-          <div class="pm-notif-msg">${n.mensaje}</div>
-          <div class="pm-notif-time">${formatRelativeTime(n.created_at)}</div>
-        </div>
-        ${n.estado !== 'leida' ? '<div class="pm-notif-dot"></div>' : ''}
-      </div>
-    `).join('');
+    // ── Agrupar por tipo: más de una del mismo tipo → un ítem colapsado ──
+    const groups = _groupByTipo(notificaciones);
 
-    // Marcar como leída al clickear (si no es local/In-app simple)
+    listEl.innerHTML = groups.map(g => {
+      const isGroup = g.count > 1;
+      const anyUnread = g.items.some(n => n.estado !== 'leida');
+      const route = _routeForTipo(g.tipo, g.items[0]);
+
+      return `
+        <div
+          class="pm-notif-item ${anyUnread ? '' : 'leida'}"
+          data-ids="${g.items.map(n => n.id).join(',')}"
+          data-route="${route}"
+          title="${isGroup ? 'Ver todo' : g.items[0].titulo}"
+        >
+          <div class="pm-notif-icon ${getNotifColor(g.tipo)}">
+            <i class="bi ${getNotifIcon(g.tipo)}"></i>
+          </div>
+          <div class="pm-notif-content">
+            <div class="pm-notif-title">
+              ${isGroup ? `${g.items[0].titulo} <span class="pm-notif-count">${g.count}</span>` : g.items[0].titulo}
+            </div>
+            <div class="pm-notif-msg">
+              ${isGroup
+                ? `${g.count} alertas de este tipo`
+                : g.items[0].mensaje
+              }
+            </div>
+            <div class="pm-notif-time">${formatRelativeTime(g.items[0].created_at)}</div>
+          </div>
+          ${anyUnread ? '<div class="pm-notif-dot"></div>' : ''}
+        </div>
+      `;
+    }).join('');
+
+    // Click: marcar leída(s) y navegar a la ruta relevante
     listEl.querySelectorAll('.pm-notif-item').forEach(el => {
       el.addEventListener('click', () => {
-        marcarLeida(el.dataset.id);
-        // Aquí se podría navegar a la sesión si es necesario
+        const ids = el.dataset.ids.split(',');
+        ids.forEach(id => marcarLeida(id));
+
+        const route = el.dataset.route;
+        if (route && route !== '#/') {
+          window.location.hash = route.replace(/^#/, '');
+        }
       });
     });
   },
@@ -161,6 +188,53 @@ function getNotifColor(tipo) {
     case 'recordatorio_clase': return 'bg-warning text-dark';
     case 'mensaje_admin': return 'bg-primary text-white';
     default: return 'bg-secondary text-white';
+  }
+}
+
+/**
+ * Agrupa notificaciones por tipo.
+ * Tipos de alta frecuencia (sesion_sin_registrar, recordatorio_clase)
+ * se colapsan en un solo ítem si hay más de uno.
+ */
+function _groupByTipo(notificaciones) {
+  // Tipos que se agrupan cuando hay más de uno
+  const GROUPABLE = new Set(['sesion_sin_registrar', 'recordatorio_clase', 'in_app']);
+
+  const groups = [];
+  const seen = new Map(); // tipo → index en groups[]
+
+  for (const notif of notificaciones) {
+    if (GROUPABLE.has(notif.tipo) && seen.has(notif.tipo)) {
+      const g = groups[seen.get(notif.tipo)];
+      g.items.push(notif);
+      g.count++;
+    } else {
+      seen.set(notif.tipo, groups.length);
+      groups.push({ tipo: notif.tipo, items: [notif], count: 1 });
+    }
+  }
+
+  return groups;
+}
+
+/**
+ * Resuelve la ruta de navegación in-app para el click en el panel.
+ */
+function _routeForTipo(tipo, notif) {
+  const claseId = notif.clase_id || notif.data?.clase_id;
+  const alumnoId = notif.alumno_id || notif.data?.alumno_id;
+  const fecha = notif.fecha || new Date().toISOString().split('T')[0];
+
+  switch (tipo) {
+    case 'sesion_sin_registrar':
+    case 'recordatorio_clase':
+      return claseId ? `#/asistencia?clase=${claseId}&fecha=${fecha}` : '#/hoy';
+    case 'mensaje_admin':
+      return '#/perfil';
+    case 'tarea_vencida':
+      return alumnoId ? `#/alumno?id=${alumnoId}` : '#/hoy';
+    default:
+      return '#/hoy';
   }
 }
 
@@ -226,6 +300,24 @@ if (!document.getElementById('pm-notif-styles')) {
       position: absolute;
       top: 1.2rem;
       right: 1rem;
+    }
+
+    /* Badge de conteo para grupos */
+    .pm-notif-count {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 18px;
+      height: 18px;
+      padding: 0 5px;
+      background: var(--pm-primary);
+      color: #fff;
+      border-radius: 9px;
+      font-size: 0.68rem;
+      font-weight: 700;
+      margin-left: 6px;
+      vertical-align: middle;
+      letter-spacing: 0;
     }
 
     /* Dark mode */

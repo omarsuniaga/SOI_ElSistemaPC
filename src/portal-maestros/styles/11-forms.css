@@ -786,30 +786,59 @@
   .pm-form-actions { gap: var(--pm-space-4); }
 }
 
-/* Desktop: layouts densos */
+/* Desktop: layouts densos y compactos */
 @media (min-width: 1024px) {
   .pm-planif-root {
-    padding: var(--pm-space-8);
-    padding-bottom: var(--pm-space-6);
+    padding: 0.5rem;
+    padding-bottom: 1rem;
   }
   
-  .pm-planif-title { font-size: 1.5rem; }
+  .pm-planif-title { font-size: 1.1rem; margin-bottom: 0.25rem; }
+  .pm-planif-subtitle { font-size: 0.75rem; margin-bottom: 0.75rem; }
+  .pm-planif-selector { margin-bottom: 0.75rem; }
   
-  .pm-planif-section-title { font-size: 1rem; margin: var(--pm-space-8) 0 var(--pm-space-4); }
+  .pm-planif-section-title { font-size: 0.85rem; margin: 0.75rem 0 0.5rem; }
   
   .pm-planif-programa-card {
-    margin-bottom: var(--pm-space-2);
+    margin-bottom: 0.25rem;
   }
   
-  .pm-programa-nombre { font-size: 1rem; }
+  .pm-programa-header {
+    padding: 0.5rem 0.75rem;
+    gap: 0.5rem;
+  }
+  
+  .pm-programa-nombre { font-size: 0.85rem; }
+  
+  .pm-programa-desc {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.75rem;
+  }
   
   .pm-planif-niveles {
-    gap: var(--pm-space-4);
+    gap: 0.375rem;
+  }
+  
+  .pm-planif-nivel {
+    margin-bottom: 0.25rem;
+  }
+  
+  .pm-nivel-header {
+    padding: 0.5rem 0.75rem;
+    gap: 0.5rem;
+  }
+  
+  .pm-nivel-header i { font-size: 0.9rem; }
+  .pm-nivel-count { font-size: 0.65rem; }
+  
+  .pm-nivel-items {
+    padding: 0.375rem;
   }
   
   .pm-nivel-item {
-    padding: var(--pm-space-3);
-    gap: var(--pm-space-3);
+    padding: 0.375rem 0.5rem;
+    gap: 0.375rem;
+    font-size: 0.8rem;
   }
   
   .pm-alumno-root {

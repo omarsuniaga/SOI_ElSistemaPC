@@ -165,6 +165,28 @@ export async function getInscripcionesClases(claseIds, forceRefresh = false) {
   return inscripciones
 }
 
+/**
+ * Obtiene los alumnos de varias clases agrupados por clase_id.
+ * @param {string[]} claseIds 
+ */
+export async function getAlumnosPorClaseIds(claseIds) {
+  if (!claseIds || claseIds.length === 0) return {}
+  const inscripciones = await getInscripcionesClases(claseIds)
+  const map = {}
+  claseIds.forEach(id => { map[id] = [] })
+
+  inscripciones.forEach(ins => {
+    if (ins.alumnos && map[ins.clase_id]) {
+      map[ins.clase_id].push({
+        id: ins.alumnos.id,
+        nombre_completo: ins.alumnos.nombre_completo,
+        instrumento_principal: ins.alumnos.instrumento_principal
+      })
+    }
+  })
+  return map
+}
+
 export async function getSalones(salonIds, forceRefresh = false) {
   if (!salonIds || salonIds.length === 0) return []
 
@@ -320,6 +342,7 @@ export default {
   getHorariosClases,
   getSesiones,
   getInscripcionesClases,
+  getAlumnosPorClaseIds,
   getSalones,
   getRutasMaestro,
   prefetchMonthData,

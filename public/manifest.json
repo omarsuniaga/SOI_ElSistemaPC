@@ -5,12 +5,20 @@
   "id": "/maestros.html",
   "start_url": "/maestros.html",
   "display": "standalone",
-  "display_override": ["window-controls-overlay", "standalone"],
-  "orientation": "portrait-primary",
+  "display_override": [
+    "window-controls-overlay",
+    "standalone",
+    "minimal-ui"
+  ],
   "scope": "/",
-  "background_color": "#5856D6",
+  "background_color": "#fbfbfd",
   "theme_color": "#5856D6",
-  "categories": ["education", "productivity"],
+  "categories": [
+    "education",
+    "productivity"
+  ],
+  "lang": "es-ES",
+  "dir": "ltr",
   "icons": [
     {
       "src": "/icons/icon-72.png",
@@ -49,29 +57,59 @@
       "purpose": "any maskable"
     }
   ],
-  "screenshots": [],
+  "screenshots": [
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Escritorio - Dashboard SOI"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Móvil - Gestión de Clases"
+    }
+  ],
   "prefer_related_applications": false,
   "shortcuts": [
     {
       "name": "Mis Clases",
       "short_name": "Clases",
       "description": "Ver mis clases de hoy",
-      "url": "/maestros#/hoy",
-      "icons": [{ "src": "/icons/icon-96.png", "sizes": "96x96" }]
+      "url": "/maestros.html#/hoy",
+      "icons": [
+        {
+          "src": "/icons/icon-96.png",
+          "sizes": "96x96"
+        }
+      ]
     },
     {
       "name": "Calendario",
       "short_name": "Calendario",
       "description": "Ver calendario de clases",
-      "url": "/maestros#/calendario",
-      "icons": [{ "src": "/icons/icon-96.png", "sizes": "96x96" }]
+      "url": "/maestros.html#/calendario",
+      "icons": [
+        {
+          "src": "/icons/icon-96.png",
+          "sizes": "96x96"
+        }
+      ]
     },
     {
       "name": "Métricas",
       "short_name": "Métricas",
       "description": "Ver estadísticas y métricas",
-      "url": "/maestros#/metricas",
-      "icons": [{ "src": "/icons/icon-96.png", "sizes": "96x96" }]
+      "url": "/maestros.html#/metricas",
+      "icons": [
+        {
+          "src": "/icons/icon-96.png",
+          "sizes": "96x96"
+        }
+      ]
     }
   ]
 }

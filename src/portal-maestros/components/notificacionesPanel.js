@@ -1,6 +1,6 @@
 import { fetchNotificaciones, onNotificacionesChange, marcarLeida, marcarTodasLeidas } from '../services/notificationService.js';
 
-// ── Listener: NAVIGATE_TO desde el SW (toque en notificación OS) ────────────────
+// -- Listener: NAVIGATE_TO desde el SW (toque en notificación OS) ----------------
 // El SW envía este mensaje cuando el usuario toca una notificación del SO
 // y el portal ya está abierto en una pestaña.
 if ('serviceWorker' in navigator) {

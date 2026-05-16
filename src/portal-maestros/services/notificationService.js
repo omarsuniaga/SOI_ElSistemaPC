@@ -3,7 +3,7 @@ import { getMaestroLocal } from '../auth/maestroAuth.js';
 import { getMisClases, getHorariosClases, getSesiones } from './maestroDataService.js';
 import { onPushReceived } from './pushService.js';
 
-// ── Register Push Notification Handler ──
+// -- Register Push Notification Handler --
 onPushReceived((event) => {
   if (event.event === 'subscriptionChanged') {
     console.log('[Notif] Push subscription changed:', event.subscribed);
@@ -25,13 +25,13 @@ onPushReceived((event) => {
   }
 });
 
-// ── Deduplication Configuration ──
+// -- Deduplication Configuration --
 // Realtime es la fuente primaria. Polling cada 5 min es el fallback.
 export const POLL_INTERVAL_MS = 5 * 60 * 1000;  // 5 minutos
 export const DEDUP_WINDOW_MS  = 60 * 1000;        // 1 minuto
 export const DEDUP_EXPIRY_MS  = 120 * 1000;        // 2 minutos
 
-// ── Deduplication State ──
+// -- Deduplication State --
 const _recentNotificationKeys = new Map(); // Map<key, expiryTime>
 
 export function _generateDeduplicationKey(notification) {
@@ -62,7 +62,7 @@ export function _recordNotificationReceived(notification) {
   _recentNotificationKeys.set(key, expiryTime);
 }
 
-// ── Persistencia del inbox en localStorage ──────────────────────────────────
+// -- Persistencia del inbox en localStorage ----------------------------------
 // El inbox sobrevive F5 sin necesidad de un fetch extra al arrancar.
 
 function _cacheKey(maestroId) {
@@ -367,7 +367,7 @@ export function stopRealtime() {
   }
 }
 
-// ── Toast in-app ──────────────────────────────────────────────────────────────────
+// -- Toast in-app ------------------------------------------------------------------
 // Notificación flotante in-app que aparece cuando llega un evento Realtime
 // y el panel de notificaciones NO está abierto.
 

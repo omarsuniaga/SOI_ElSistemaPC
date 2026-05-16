@@ -482,6 +482,12 @@ async function startApp() {
       app.innerHTML = '';
       const nav = document.querySelector('.app-navbar');
       if (nav) nav.remove();
+      
+      // Cleanup DOM elements specific to admin view
+      document.querySelector('.app-sidebar')?.remove();
+      document.querySelector('.app-bottom-nav')?.remove();
+      document.querySelector('.mobile-sub-sheet')?.remove();
+      
       router.navigate('login');
     }
   });

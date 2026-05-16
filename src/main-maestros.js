@@ -216,14 +216,14 @@ async function _updateSyncIndicator() {
     const queue = await getQueue()
     if (queue.length === 0) {
       indicator.className = 'pm-sync-indicator synced'
-      indicator.textContent = '✓ Sincronizado'
+      indicator.innerHTML = '✓ <span class="pm-hide-mobile">Sincronizado</span>'
     } else {
       indicator.className = 'pm-sync-indicator pending'
-      indicator.textContent = `⏳ Pendiente (${queue.length})`
+      indicator.innerHTML = `⏳ <span class="pm-hide-mobile">Pendiente (${queue.length})</span>`
     }
   } catch {
     indicator.className = 'pm-sync-indicator error'
-    indicator.textContent = '⚠️ Error de sync'
+    indicator.innerHTML = '⚠️ <span class="pm-hide-mobile">Error de sync</span>'
   }
 }
 
@@ -381,12 +381,12 @@ function _renderShell(app, maestro) {
           </button>
           
           <!-- Botón instalación PWA -->
-          <button id="pm-btn-install" class="pm-icon-btn" title="Instalar app">
+          <button id="pm-btn-install" class="pm-icon-btn pm-hide-mobile" title="Instalar app">
             <i class="bi bi-download"></i>
           </button>
 
           <!-- Botón diagnóstico de push -->
-          <button id="pm-btn-push-diagnostic" class="pm-icon-btn" title="Diagnosticar Notificaciones" style="opacity: 0.7;">
+          <button id="pm-btn-push-diagnostic" class="pm-icon-btn pm-hide-mobile" title="Diagnosticar Notificaciones" style="opacity: 0.7;">
             <i class="bi bi-broadcast"></i>
           </button>
 

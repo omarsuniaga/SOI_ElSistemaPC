@@ -79,6 +79,11 @@
     min-width: 14px;
   }
 
+  /* Ocultar elementos no esenciales en el header de móvil */
+  .pm-hide-mobile {
+    display: none !important;
+  }
+
   /* ── View container: full width ──────────────────────────────── */
   .pm-view {
     padding: 0;

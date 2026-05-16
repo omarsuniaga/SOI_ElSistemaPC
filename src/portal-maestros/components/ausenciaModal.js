@@ -1,12 +1,8 @@
-/**
- * Modal de Solicitud de Ausencias - Portal Maestros v2
- * Diseño profesional con Apple-style
- */
-import { AppModal } from '../../shared/components/AppModal.js'
-import { supabase } from '../../lib/supabaseClient.js'
-import { getMaestroLocal } from '../auth/maestroAuth.js'
-import { AppToast } from '../../shared/components/AppToast.js'
-import { escHTML } from '../utils/portalUtils.js'
+import { AppModal } from '../../shared/components/AppModal.js';
+import { supabase } from '../../lib/supabaseClient.js';
+import { getMaestroLocal } from '../auth/maestroAuth.js';
+import { AppToast } from '../../shared/components/AppToast.js';
+import { escHTML } from '../utils/portalUtils.js';
 
 const TIPO_AUSENCIA = [
   { value: 'enfermedad', label: 'Enfermedad', icon: 'bi-thermometer-half' },
@@ -14,38 +10,47 @@ const TIPO_AUSENCIA = [
   { value: 'capacitacion', label: 'Capacitación', icon: 'bi-book' },
   { value: 'vacaciones', label: 'Vacaciones', icon: 'bi-sun' },
   { value: 'otro', label: 'Otro', icon: 'bi-three-dots' }
-]
+];
 
 const URGENCIA_OPTS = [
   { value: 'baja', label: 'Baja', color: 'var(--pm-success)', desc: 'Con anticipación' },
   { value: 'media', label: 'Media', color: 'var(--pm-warning)', desc: 'Necesaria' },
   { value: 'alta', label: 'Alta', color: 'var(--pm-danger)', desc: 'Urgente' }
-]
+];
 
-export class AusenciaModal {
+class AusenciaModal {
   constructor() {
-    this.maestro = getMaestroLocal()
-    this.clasesAfectadas = []
-    this.actividades = {} 
-    this.isDirty = false
-    this.isSubmitting = false
-    this.loadClasesDebounced = this._debounce(() => this._loadClasesAfectadasInternal(), 300)
-  }
-
-  _debounce(fn, delay) {
-    let timeoutId
-    return (...args) => {
-      clearTimeout(timeoutId)
-      timeoutId = setTimeout(() => fn.apply(this, args), delay)
-    }
+    this.maestro = null;
+    // Estado del formulario
+    this.state = {
+      duracionTipo: 'un_dia',
+      fechaInicio: null,
+      fechaFin: null,
+      tipoAusencia: null,
+      urgencia: 'media',
+      motivo: '',
+      clases: [],             // Todas las clases del maestro (cache)
+      clasesAfectadas: [],    // Subconjunto según fechas
+      actividades: {},        // { claseId: texto }
+      archivo: null,
+      claseEmergente: {
+        activo: false,
+        fecha: '',
+        hora: '',
+        salonId: null
+      }
+    };
+    this.debounceTimer = null;
   }
 
   open() {
+    this.maestro = getMaestroLocal();
     if (!this.maestro) {
-      AppToast.error('Debes estar logueado para solicitar ausencias')
-      return
+      AppToast.error('Debes estar logueado para solicitar ausencias');
+      return;
     }
-
+    // Resetear estado
+    this.state = { ...this.defaultState(), clases: [] };
     AppModal.open({
       title: 'Solicitar Ausencia',
       size: 'lg',
@@ -53,17 +58,33 @@ export class AusenciaModal {
       saveText: 'Enviar Solicitud',
       onSave: () => this.handleSubmit(),
       onShow: () => this.attachEvents()
-    })
+    });
+  }
+
+  defaultState() {
+    return {
+      duracionTipo: 'un_dia',
+      fechaInicio: null,
+      fechaFin: null,
+      tipoAusencia: null,
+      urgencia: 'media',
+      motivo: '',
+      clases: [],
+      clasesAfectadas: [],
+      actividades: {},
+      archivo: null,
+      claseEmergente: { activo: false, fecha: '', hora: '', salonId: null }
+    };
   }
 
   renderForm() {
-    const today = new Date().toISOString().split('T')[0]
-    const maxDate = new Date()
-    maxDate.setMonth(maxDate.getMonth() + 3)
-    const maxDateStr = maxDate.toISOString().split('T')[0]
+    const today = new Date().toISOString().split('T')[0];
+    const maxDate = new Date();
+    maxDate.setMonth(maxDate.getMonth() + 3);
+    const maxDateStr = maxDate.toISOString().split('T')[0];
 
     return `
-      <form id="ausencia-form" class="pm-ausencia-form">
+      <form id="ausencia-form" class="pm-ausencia-form" novalidate>
         <!-- Tipo de Ausencia -->
         <div class="pm-form-section">
           <fieldset style="border:none; padding:0; margin:0;">
@@ -529,458 +550,321 @@ export class AusenciaModal {
         }
         .pm-clase-check-box i { font-size: 0.75rem; color: white; display: none; }
         .pm-clase-check input:checked + .pm-clase-check-box i { display: block; }
-      </style>
-    `
+      </style>`;
   }
 
   attachEvents() {
-    const motivo = document.getElementById('motivo')
-    const motivoCount = document.getElementById('motivo-count')
-    const fechaInicio = document.getElementById('fecha-inicio')
-    const fechaFin = document.getElementById('fecha-fin')
-    const fechaUnica = document.getElementById('fecha-unica')
-    const duracionTipo = document.querySelectorAll('input[name="duracion_tipo"]')
-    const fechaUnDiaContainer = document.getElementById('fecha-un-dia-container')
-    const fechaRangoContainer = document.getElementById('fecha-rango-container')
-    const diasPreview = document.getElementById('dias-seleccionados')
-    const diasPreviewText = document.getElementById('dias-seleccionados-text')
-    const fileInput = document.getElementById('documento')
-    const fileName = document.getElementById('file-name')
-    const form = document.getElementById('ausencia-form')
+    // Referencias a elementos
+    const form = document.getElementById('ausencia-form');
+    const motivo = document.getElementById('motivo');
+    const motivoCount = document.getElementById('motivo-count');
+    const fechaUnica = document.getElementById('fecha-unica');
+    const fechaInicio = document.getElementById('fecha-inicio');
+    const fechaFin = document.getElementById('fecha-fin');
+    const duracionRadios = document.querySelectorAll('input[name="duracion_tipo"]');
+    const quieroEmergente = document.getElementById('quiero-emergente');
+    const emergenteOpciones = document.getElementById('emergente-opciones');
+    const fileInput = document.getElementById('documento');
+    const fileName = document.getElementById('file-name');
 
     // Cambio de duración
-    duracionTipo.forEach(radio => {
+    duracionRadios.forEach(radio => {
       radio.addEventListener('change', () => {
-        const isUnDia = radio.value === 'un_dia'
-        fechaUnDiaContainer.style.display = isUnDia ? 'block' : 'none'
-        fechaRangoContainer.style.display = isUnDia ? 'none' : 'grid'
-        
-        // Requerir el campo apropiado
+        this.state.duracionTipo = radio.value;
+        const isUnDia = radio.value === 'un_dia';
+        document.getElementById('fecha-un-dia-container').style.display = isUnDia ? 'block' : 'none';
+        document.getElementById('fecha-rango-container').style.display = isUnDia ? 'none' : 'grid';
         if (isUnDia) {
-          fechaUnica.setAttribute('required', 'true')
-          fechaInicio.removeAttribute('required')
-          fechaFin.removeAttribute('required')
+          fechaUnica.setAttribute('required', 'true');
+          fechaInicio.removeAttribute('required');
+          fechaFin.removeAttribute('required');
         } else {
-          fechaUnica.removeAttribute('required')
-          fechaInicio.setAttribute('required', 'true')
-          fechaFin.setAttribute('required', 'true')
+          fechaUnica.removeAttribute('required');
+          fechaInicio.setAttribute('required', 'true');
+          fechaFin.setAttribute('required', 'true');
         }
-        
-        this.loadClasesDebounced()
-      })
-    })
+        this.updateDiasPreview();
+        this.loadClasesAfectadasDebounced();
+      });
+    });
 
-    // Actualizar preview de días
-    const updateDiasPreview = () => {
-      const tipo = document.querySelector('input[name="duracion_tipo"]:checked')?.value
-      if (tipo === 'un_dia' && fechaUnica.value) {
-        const fecha = new Date(fechaUnica.value)
-        const diaSemana = fecha.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })
-        diasPreview.style.display = 'flex'
-        diasPreviewText.textContent = `1 día: ${diaSemana}`
-      } else if (tipo === 'varios_dias' && fechaInicio.value && fechaFin.value) {
-        const inicio = new Date(fechaInicio.value)
-        const fin = new Date(fechaFin.value)
-        const diffDays = Math.ceil((fin - inicio) / (1000 * 60 * 60 * 24)) + 1
-        if (diffDays > 0) {
-          diasPreview.style.display = 'flex'
-          diasPreviewText.textContent = `${diffDays} días seleccionados (${inicio.toLocaleDateString('es-ES', {day:'numeric', month:'short'})} - ${fin.toLocaleDateString('es-ES', {day:'numeric', month:'short'})})`
-        }
-      } else {
-        diasPreview.style.display = 'none'
-      }
-    }
-
-    // Contador de caracteres
-    motivo?.addEventListener('input', () => {
-      const len = motivo.value.length
-      motivoCount.textContent = len
-      motivoCount.style.color = len > 450 ? 'var(--pm-danger)' : 'var(--pm-text-muted)'
-      this.isDirty = true
-    })
-
-    // Sincronizar fechas
+    // Fechas
+    const updateFecha = () => {
+      this.updateDiasPreview();
+      this.loadClasesAfectadasDebounced();
+    };
+    fechaUnica?.addEventListener('change', updateFecha);
     fechaInicio?.addEventListener('change', () => {
-      if (fechaFin) {
-        fechaFin.min = fechaInicio.value
-        if (fechaFin.value && fechaFin.value < fechaInicio.value) {
-          fechaFin.value = fechaInicio.value
-        }
-      }
-      updateDiasPreview()
-      this.loadClasesDebounced()
-    })
+      if (fechaFin) fechaFin.min = fechaInicio.value;
+      updateFecha();
+    });
+    fechaFin?.addEventListener('change', updateFecha);
 
-    fechaFin?.addEventListener('change', () => {
-      updateDiasPreview()
-      this.loadClasesDebounced()
-    })
+    // Motivo
+    motivo?.addEventListener('input', () => {
+      const len = motivo.value.length;
+      motivoCount.textContent = len;
+      motivoCount.style.color = len > 450 ? 'var(--pm-danger)' : 'var(--pm-text-muted)';
+      this.state.motivo = motivo.value;
+    });
 
-    fechaUnica?.addEventListener('change', () => {
-      updateDiasPreview()
-      this.loadClasesDebounced()
-    })
-
-    // Toggle clase emergente
-    const quieroEmergente = document.getElementById('quiero-emergente')
-    const emergenteOpciones = document.getElementById('emergente-opciones')
+    // Clase emergente
     quieroEmergente?.addEventListener('change', () => {
-      emergenteOpciones.style.display = quieroEmergente.checked ? 'block' : 'none'
-      this.isDirty = true
-      if (quieroEmergente.checked) {
-        this.loadSalonesDisponibles()
-      }
-    })
+      this.state.claseEmergente.activo = quieroEmergente.checked;
+      emergenteOpciones.style.display = quieroEmergente.checked ? 'block' : 'none';
+      if (quieroEmergente.checked) this.loadSalonesDisponibles();
+    });
+    document.getElementById('emergente-fecha')?.addEventListener('change', () => this.loadSalonesDisponibles());
+    document.getElementById('emergente-hora')?.addEventListener('change', () => this.loadSalonesDisponibles());
 
-    // Fecha/hora emergente para cargar salones
-    const emergenteFecha = document.getElementById('emergente-fecha')
-    const emergenteHora = document.getElementById('emergente-hora')
-    const loadSalonesOnChange = () => {
-      if (emergenteFecha.value && emergenteHora.value) {
-        this.loadSalonesDisponibles()
-      }
-    }
-    emergenteFecha?.addEventListener('change', loadSalonesOnChange)
-    emergenteHora?.addEventListener('change', loadSalonesOnChange)
-
-    // File validation
+    // Archivo
     fileInput?.addEventListener('change', (e) => {
-      const file = e.target.files[0]
-      if (file) {
-        const maxSize = 5 * 1024 * 1024 // 5MB
-        if (file.size > maxSize) {
-          AppToast.error('El archivo no puede exceder 5MB')
-          e.target.value = ''
-          fileName.textContent = ''
-          return
-        }
-        const allowedTypes = ['application/pdf', 'image/jpeg', 'image/png']
-        if (!allowedTypes.includes(file.type)) {
-          AppToast.error('Formato no permitido. Solo PDF, JPG o PNG')
-          e.target.value = ''
-          fileName.textContent = ''
-          return
-        }
-        const size = (file.size / 1024 / 1024).toFixed(2)
-        fileName.textContent = `${file.name} (${size}MB)`
-        this.isDirty = true
+      const file = e.target.files[0];
+      if (!file) return;
+      if (file.size > 5 * 1024 * 1024) {
+        AppToast.error('El archivo no puede superar 5MB');
+        fileInput.value = '';
+        return;
       }
-    })
+      this.state.archivo = file;
+      fileName.textContent = `${file.name} (${(file.size/1024/1024).toFixed(2)}MB)`;
+    });
 
-    // Mark dirty on any input
-    const markDirty = () => { this.isDirty = true }
-    form?.addEventListener('input', markDirty)
-    form?.addEventListener('change', markDirty)
+    // Actividades delegadas: sincronizar al escribir
+    document.addEventListener('input', (e) => {
+      if (e.target.classList.contains('pm-actividad-textarea')) {
+        const claseId = e.target.dataset.claseId;
+        this.state.actividades[claseId] = e.target.value;
+      }
+    });
+  }
+
+  updateDiasPreview() {
+    const tipo = this.state.duracionTipo;
+    const fechaUnica = document.getElementById('fecha-unica')?.value;
+    const fechaInicio = document.getElementById('fecha-inicio')?.value;
+    const fechaFin = document.getElementById('fecha-fin')?.value;
+    const preview = document.getElementById('dias-seleccionados');
+    const text = document.getElementById('dias-seleccionados-text');
+
+    if (tipo === 'un_dia' && fechaUnica) {
+      const fecha = new Date(fechaUnica);
+      // To correctly format local time, we should adjust for timezone or add Time component, but since it's just date we use 'es-ES'
+      // Note: new Date("YYYY-MM-DD") creates UTC date which might show as previous day in some timezones.
+      const d = new Date(fechaUnica + "T00:00:00");
+      preview.style.display = 'flex';
+      text.textContent = `1 día: ${d.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })}`;
+    } else if (tipo === 'varios_dias' && fechaInicio && fechaFin) {
+      const inicio = new Date(fechaInicio + "T00:00:00");
+      const fin = new Date(fechaFin + "T00:00:00");
+      const diff = Math.ceil((fin - inicio) / (1000*60*60*24)) + 1;
+      if (diff > 0) {
+        preview.style.display = 'flex';
+        text.textContent = `${diff} días (${inicio.toLocaleDateString('es-ES',{day:'numeric',month:'short'})} - ${fin.toLocaleDateString('es-ES',{day:'numeric',month:'short'})})`;
+      }
+    } else {
+      preview.style.display = 'none';
+    }
+  }
+
+  loadClasesAfectadasDebounced() {
+    clearTimeout(this.debounceTimer);
+    this.debounceTimer = setTimeout(() => this.loadClasesAfectadas(), 400);
   }
 
   async loadClasesAfectadas() {
-    this.loadClasesDebounced()
-  }
-
-  async _loadClasesAfectadasInternal() {
-    const duracionTipo = document.querySelector('input[name="duracion_tipo"]:checked')?.value
-    let fechaInicio, fechaFin
-    
-    if (duracionTipo === 'un_dia') {
-      fechaInicio = document.getElementById('fecha-unica')?.value
-      fechaFin = fechaInicio
+    const tipo = this.state.duracionTipo;
+    let fechaInicio, fechaFin;
+    if (tipo === 'un_dia') {
+      fechaInicio = document.getElementById('fecha-unica')?.value;
+      fechaFin = fechaInicio;
     } else {
-      fechaInicio = document.getElementById('fecha-inicio')?.value
-      fechaFin = document.getElementById('fecha-fin')?.value
+      fechaInicio = document.getElementById('fecha-inicio')?.value;
+      fechaFin = document.getElementById('fecha-fin')?.value;
     }
-    
-    const container = document.getElementById('clases-afectadas')
-    
-    if (!fechaInicio || !container) {
-      document.getElementById('actividades-seccion').style.display = 'none'
-      document.getElementById('emergente-seccion').style.display = 'none'
-      return
-    }
+    if (!fechaInicio) return;
 
-    container.innerHTML = `
-      <div class="pm-clases-empty">
-        <div class="pm-spinner" style="width:16px;height:16px;border-width:2px;"></div>
-        <span>Cargando clases...</span>
-      </div>
-    `
+    const container = document.getElementById('clases-afectadas');
+    container.innerHTML = `<div class="pm-clases-empty"><div class="pm-spinner"></div> Cargando clases...</div>`;
 
     try {
-      // Obtener clases del maestro
-      const { data: clases, error } = await supabase
-        .from('clases')
-        .select('id, nombre, instrumento')
-        .or(`maestro_principal_id.eq.${this.maestro.id},maestro_suplente_id.eq.${this.maestro.id}`)
-
-      if (error) throw error
-
-      // Filtrar clases que tienen sesiones programadas en el rango de fechas
-      const { data: sesiones } = await supabase
+      // Obtener clases que tengan sesiones en el rango
+      const { data: sesiones, error } = await supabase
         .from('sesiones')
-        .select('clase_id, fecha')
-        .in('clase_id', (clases || []).map(c => c.id))
+        .select('clase_id, clase:clases(id, nombre, instrumento)')
         .gte('fecha', fechaInicio)
         .lte('fecha', fechaFin)
+        .or(`clase.maestro_principal_id.eq.${this.maestro.id},clase.maestro_suplente_id.eq.${this.maestro.id}`);
 
-      const clasesConSesiones = new Set((sesiones || []).map(s => s.clase_id))
-      this.clasesAfectadas = (clases || []).filter(c => clasesConSesiones.has(c.id))
+      if (error) throw error;
 
-      // Preservar actividades existentes
-      const existingActividades = { ...this.actividades }
+      // Extraer clases únicas
+      const clasesMap = new Map();
+      (sesiones || []).forEach(s => {
+        if (s.clase) {
+          clasesMap.set(s.clase.id, s.clase);
+        }
+      });
+      this.state.clasesAfectadas = Array.from(clasesMap.values());
 
-      document.getElementById('clases-count').textContent = this.clasesAfectadas.length
+      const count = this.state.clasesAfectadas.length;
+      document.getElementById('clases-count').textContent = count;
 
-      if (this.clasesAfectadas.length > 0) {
-        container.innerHTML = `
-          <div class="pm-clases-list">
-            ${this.clasesAfectadas.map(clase => `
-              <div class="pm-clase-item">
-                <div class="pm-clase-info">
-                  <span class="pm-clase-nombre">${escHTML(clase.nombre)}</span>
-                  <span class="pm-clase-meta">${escHTML(clase.instrumento || 'Sin instrumento')}</span>
-                </div>
-                <label class="pm-clase-check">
-                  <input type="checkbox" checked data-clase-id="${clase.id}">
-                  <span class="pm-clase-check-box"><i class="bi bi-check"></i></span>
-                </label>
-              </div>
-            `).join('')}
-          </div>
-        `
-
-        const actsSec = document.getElementById('actividades-seccion')
-        const actsCont = document.getElementById('actividades-container')
-        actsSec.style.display = 'block'
-        
-        // Preserve existing textarea content when re-rendering
-        actsCont.innerHTML = this.clasesAfectadas.map(clase => `
-          <div class="pm-actividad-item">
-            <div class="pm-actividad-header">
-              <span class="pm-actividad-nombre">${escHTML(clase.nombre)}</span>
-              <span class="pm-actividad-badge">${escHTML(clase.instrumento || '')}</span>
+      if (count > 0) {
+        container.innerHTML = this.state.clasesAfectadas.map(clase => `
+          <div class="pm-clase-item">
+            <div class="pm-clase-info">
+              <span class="pm-clase-nombre">${escHTML(clase.nombre)}</span>
+              <span class="pm-clase-meta">${escHTML(clase.instrumento || 'Sin instrumento')}</span>
             </div>
-            <textarea class="pm-actividad-textarea" 
-              data-clase-id="${clase.id}" 
-              placeholder="Describe el material, contenido o actividad que el estudiante debe trabajar..."
-              aria-label="Actividad para ${escHTML(clase.nombre)}">${existingActividades[clase.id] || ''}</textarea>
-          </div>
-        `).join('')
+            <label class="pm-clase-check" aria-label="Incluir clase">
+              <input type="checkbox" checked data-clase-id="${clase.id}">
+              <span class="pm-clase-check-box"><i class="bi bi-check"></i></span>
+            </label>
+          </div>`).join('');
 
-        // Restore activity values from state after render
-        requestAnimationFrame(() => {
-          document.querySelectorAll('.pm-actividad-textarea').forEach(textarea => {
-            const claseId = textarea.dataset.claseId
-            if (this.actividades[claseId]) {
-              textarea.value = this.actividades[claseId]
-            }
-          })
-        })
+        // Mostrar sección de actividades, preservando las ya escritas
+        const actsSec = document.getElementById('actividades-seccion');
+        const actsCont = document.getElementById('actividades-container');
+        actsSec.style.display = 'block';
+        actsCont.innerHTML = this.state.clasesAfectadas.map(clase => {
+          const texto = this.state.actividades[clase.id] || '';
+          return `
+            <div class="pm-actividad-item">
+              <div class="pm-actividad-header">
+                <span class="pm-actividad-nombre">${escHTML(clase.nombre)}</span>
+                <span class="pm-actividad-badge">${escHTML(clase.instrumento || '')}</span>
+              </div>
+              <textarea class="pm-actividad-textarea" data-clase-id="${clase.id}" placeholder="Material o actividad...">${escHTML(texto)}</textarea>
+            </div>`;
+        }).join('');
 
-        document.getElementById('emergente-seccion').style.display = 'block'
+        document.getElementById('emergente-seccion').style.display = 'block';
       } else {
-        container.innerHTML = `
-          <div class="pm-clases-empty">
-            <i class="bi bi-check-circle" style="color:var(--pm-success)"></i>
-            <span>No hay clases programadas en este período</span>
-          </div>
-        `
-        document.getElementById('actividades-seccion').style.display = 'none'
-        document.getElementById('emergente-seccion').style.display = 'none'
+        container.innerHTML = `<div class="pm-clases-empty"><i class="bi bi-check-circle" style="color:var(--pm-success)"></i> No tienes clases en esas fechas</div>`;
+        document.getElementById('actividades-seccion').style.display = 'none';
+        document.getElementById('emergente-seccion').style.display = 'none';
       }
     } catch (error) {
-      console.error('Error cargando clases:', error)
-      container.innerHTML = `
-        <div class="pm-clases-empty">
-          <i class="bi bi-info-circle"></i>
-          <span>No se pudieron cargar las clases</span>
-        </div>
-      `
+      container.innerHTML = `<div class="pm-clases-empty"><i class="bi bi-exclamation-circle"></i> Error al cargar clases</div>`;
     }
   }
 
   async loadSalonesDisponibles() {
-    const fecha = document.getElementById('emergente-fecha')?.value
-    const hora = document.getElementById('emergente-hora')?.value
-    const container = document.getElementById('salones-disponibles')
-    
-    if (!fecha || !hora || !container) return
-
-    container.innerHTML = `<div class="pm-clases-empty"><div class="pm-spinner" style="width:16px;height:16px;border-width:2px;"></div><span>Verificando disponibilidad...</span></div>`
+    const fecha = document.getElementById('emergente-fecha')?.value;
+    const hora = document.getElementById('emergente-hora')?.value;
+    if (!fecha || !hora) return;
+    const container = document.getElementById('salones-disponibles');
+    container.innerHTML = `<div class="pm-clases-empty"><div class="pm-spinner"></div> Verificando disponibilidad...</div>`;
 
     try {
-      // Cargar todos los salones
-      const { data: salones, error } = await supabase
-        .from('salones')
-        .select('id, nombre, capacidad')
-        .eq('activo', true)
-        .order('nombre')
-
-      if (error) throw error
-
-      // Verificar disponibilidad (buscar reservas en esa fecha/hora)
-      const { data: reservas } = await supabase
-        .from('reservas_salones')
-        .select('salon_id')
-        .eq('fecha', fecha)
-        .eq('hora', hora)
-        .eq('estado', 'confirmada')
-
-      const reservadoIds = new Set((reservas || []).map(r => r.salon_id))
-
-      const salonesDisp = (salones || []).filter(s => !reservadoIds.has(s.id))
-
-      if (salonesDisp.length > 0) {
-        container.innerHTML = salones.map(salon => `
-          <label class="pm-salon-option">
-            <input type="radio" name="salon-emergente" value="${salon.id}">
-            <div>
-              <span class="pm-salon-nombre">${escHTML(salon.nombre)}</span>
-              <span class="pm-salon-info">Capacidad: ${salon.capacidad || 'N/A'}</span>
-            </div>
-          </label>
-        `).join('')
+      const { data: salones } = await supabase.from('salones').select('id,nombre,capacidad').eq('activo', true);
+      const { data: reservas } = await supabase.from('reservas_salones').select('salon_id').eq('fecha', fecha).eq('hora', hora).eq('estado', 'confirmada');
+      const ocupados = new Set((reservas||[]).map(r=>r.salon_id));
+      const disponibles = (salones||[]).filter(s => !ocupados.has(s.id));
+      if (disponibles.length) {
+        container.innerHTML = disponibles.map(s => `
+          <label class="pm-salon-option" aria-label="Seleccionar salón ${s.nombre}">
+            <input type="radio" name="salon-emergente" value="${s.id}">
+            <span class="pm-salon-nombre">${escHTML(s.nombre)}</span>
+            <span class="pm-salon-info">Capacidad: ${s.capacidad||'N/A'}</span>
+          </label>`).join('');
       } else {
-        container.innerHTML = `
-          <div class="pm-clases-empty" style="color:var(--pm-danger);">
-            <i class="bi bi-x-circle"></i>
-            <span>No hay salones disponibles en ese horario</span>
-          </div>
-        `
+        container.innerHTML = `<div class="pm-clases-empty" style="color:var(--pm-danger)">No hay salones disponibles</div>`;
       }
-    } catch (error) {
-      console.error('Error cargando salones:', error)
-      container.innerHTML = `<div class="pm-clases-empty"><i class="bi bi-info-circle"></i><span>Error al verificar disponibilidad</span></div>`
+    } catch {
+      container.innerHTML = `<div class="pm-clases-empty">Error al verificar salones</div>`;
     }
   }
 
   async handleSubmit() {
-    if (this.isSubmitting) return false
-    
-    const form = document.getElementById('ausencia-form')
+    const form = document.getElementById('ausencia-form');
     if (!form.checkValidity()) {
-      form.reportValidity()
-      return false
+      form.reportValidity();
+      return false;
     }
 
-    // Disable submit button
-    this.isSubmitting = true
-    const saveBtn = document.querySelector('.pm-modal-footer .pm-btn-primary')
-    if (saveBtn) {
-      saveBtn.disabled = true
-      saveBtn.textContent = 'Enviando...'
-    }
+    // Validaciones adicionales
+    const tipo = document.querySelector('input[name="tipo_ausencia"]:checked')?.value;
+    if (!tipo) { AppToast.error('Selecciona el tipo de ausencia'); return false; }
 
-    const tipo = document.querySelector('input[name="tipo_ausencia"]:checked')?.value
-    const urgencia = document.querySelector('input[name="urgencia"]:checked')?.value
-    const duracionTipo = document.querySelector('input[name="duracion_tipo"]:checked')?.value
-    const motivo = document.getElementById('motivo').value
+    const motivo = document.getElementById('motivo').value;
+    if (motivo.length > 500) { AppToast.error('El motivo no puede exceder 500 caracteres'); return false; }
 
-    if (!tipo) {
-      AppToast.error('Selecciona el tipo de ausencia')
-      this.isSubmitting = false
-      if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = 'Enviar Solicitud' }
-      return false
-    }
-
-    if (motivo.length > 500) {
-      AppToast.error('El motivo no puede exceder 500 caracteres')
-      this.isSubmitting = false
-      if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = 'Enviar Solicitud' }
-      return false
-    }
-
-    // Validar fecha fin >= fecha inicio
-    if (duracionTipo === 'varios_dias') {
-      const fInicio = new Date(document.getElementById('fecha-inicio').value)
-      const fFin = new Date(document.getElementById('fecha-fin').value)
-      if (fFin < fInicio) {
-        AppToast.error('La fecha de fin no puede ser anterior a la de inicio')
-        this.isSubmitting = false
-        if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = 'Enviar Solicitud' }
-        return false
-      }
-    }
-
-    // Obtener fechas según tipo de duración
-    let fechaInicio, fechaFin
+    let fechaInicio, fechaFin;
+    const duracionTipo = this.state.duracionTipo;
     if (duracionTipo === 'un_dia') {
-      fechaInicio = document.getElementById('fecha-unica').value
-      fechaFin = fechaInicio // Mismo día
+      fechaInicio = document.getElementById('fecha-unica').value;
+      fechaFin = fechaInicio;
     } else {
-      fechaInicio = document.getElementById('fecha-inicio').value
-      fechaFin = document.getElementById('fecha-fin').value
+      fechaInicio = document.getElementById('fecha-inicio').value;
+      fechaFin = document.getElementById('fecha-fin').value;
+      if (fechaFin < fechaInicio) {
+        AppToast.error('La fecha fin no puede ser anterior a la de inicio');
+        return false;
+      }
     }
 
-    if (!fechaInicio) {
-      AppToast.error('Selecciona la fecha de inicio')
-      return false
-    }
+    // Verificar solapamiento con solicitudes existentes (opcional)
+    // ...
 
-    // Recolectar actividades por clase (preserved from state)
-    const actividades = { ...this.actividades }
-    document.querySelectorAll('.pm-actividad-textarea').forEach(textarea => {
-      const claseId = textarea.dataset.claseId
-      if (textarea.value.trim()) {
-        actividades[claseId] = textarea.value.trim()
-      }
-    })
+    // Construir datos
+    const clasesIds = [];
+    document.querySelectorAll('.pm-clase-check input[type="checkbox"]:checked').forEach(cb => clasesIds.push(cb.dataset.claseId));
+    const actividades = {};
+    document.querySelectorAll('.pm-actividad-textarea').forEach(ta => {
+      if (ta.value.trim()) actividades[ta.dataset.claseId] = ta.value.trim();
+    });
 
-    // Datos de clase emergente
-    const quieroEmergente = document.getElementById('quiero-emergente')?.checked
-    let claseEmergente = null
-    if (quieroEmergente) {
-      const salonId = document.querySelector('input[name="salon-emergente"]:checked')?.value
-      if (!salonId) {
-        AppToast.error('Selecciona un salón para la clase emergente')
-        return false
-      }
+    let claseEmergente = null;
+    if (this.state.claseEmergente.activo) {
+      const salonId = document.querySelector('input[name="salon-emergente"]:checked')?.value;
+      if (!salonId) { AppToast.error('Selecciona un salón para la clase emergente'); return false; }
       claseEmergente = {
         fecha: document.getElementById('emergente-fecha').value,
         hora: document.getElementById('emergente-hora').value,
         salon_id: salonId,
         estado: 'pendiente_aprobacion'
-      }
+      };
     }
 
     const formData = {
       maestro_id: this.maestro.id,
       tipo_ausencia: tipo,
-      urgencia: urgencia || 'media',
+      urgencia: document.querySelector('input[name="urgencia"]:checked')?.value || 'media',
       duracion_tipo: duracionTipo,
       fecha_inicio: fechaInicio,
       fecha_fin: fechaFin,
-      motivo: motivo,
-      clases_afectadas: this.clasesAfectadas.map(c => c.id),
+      motivo,
+      clases_afectadas: clasesIds,
       actividades_por_clase: actividades,
       clase_emergente: claseEmergente,
-      notificar_director: true, // Siempre true
+      notificar_director: true,
       estado: 'pendiente',
       created_at: new Date().toISOString()
-    }
+    };
+
+    // Deshabilitar botón de envío
+    const saveBtn = document.querySelector('#ausencia-form button[type="submit"]') || AppModal.getSaveButton();
+    if (saveBtn) saveBtn.disabled = true;
 
     try {
-      const { error } = await supabase
-        .from('ausencias_maestros')
-        .insert([formData])
-
+      const { error } = await supabase.from('ausencias_maestros').insert([formData]);
       if (error) {
-        console.warn('Guardando localmente:', error.message)
-        const ausencias = JSON.parse(localStorage.getItem('ausencias_maestros') || '[]')
-        ausencias.push({ ...formData, id: Date.now() })
-        localStorage.setItem('ausencias_maestros', JSON.stringify(ausencias))
+        // Fallback a localStorage
+        const ausencias = JSON.parse(localStorage.getItem('ausencias_maestros') || '[]');
+        ausencias.push({ ...formData, id: Date.now() });
+        localStorage.setItem('ausencias_maestros', JSON.stringify(ausencias));
       }
-
-      this.isDirty = false
-      this.isSubmitting = false
-      AppToast.success('Solicitud de ausencia enviada correctamente')
-      return true
-    } catch (error) {
-      console.error('Error guardando ausencia:', error)
-      this.isSubmitting = false
-      if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = 'Enviar Solicitud' }
-      AppToast.error('No se pudo enviar la solicitud')
-      return false
+      AppToast.success('Solicitud de ausencia enviada correctamente');
+      return true;
+    } catch {
+      AppToast.error('No se pudo enviar la solicitud. Intenta de nuevo.');
+      return false;
+    } finally {
+      if (saveBtn) saveBtn.disabled = false;
     }
   }
 }
 
-export const ausenciaModal = new AusenciaModal()
+export const ausenciaModal = new AusenciaModal();

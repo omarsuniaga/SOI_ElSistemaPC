@@ -1,0 +1,996 @@
+-- WARNING: This schema is for context only and is not meant to be run.
+-- Table order and constraints may not be valid for execution.
+
+CREATE TABLE public.academic_plans (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  student_id uuid,
+  programa_id uuid,
+  status text DEFAULT 'in_process'::text CHECK (status = ANY (ARRAY['draft'::text, 'in_process'::text, 'completed'::text, 'cancelled'::text])),
+  started_at timestamp with time zone DEFAULT now(),
+  completed_at timestamp with time zone,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT academic_plans_pkey PRIMARY KEY (id),
+  CONSTRAINT academic_plans_student_id_fkey FOREIGN KEY (student_id) REFERENCES public.alumnos(id),
+  CONSTRAINT academic_plans_programa_id_fkey FOREIGN KEY (programa_id) REFERENCES public.programas(id)
+);
+CREATE TABLE public.alumnos (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  user_id uuid UNIQUE,
+  nombre_completo text NOT NULL,
+  fecha_nacimiento date,
+  instrumento_principal text,
+  nivel_actual integer DEFAULT 1 CHECK (nivel_actual >= 1 AND nivel_actual <= 10),
+  fecha_ingreso date DEFAULT CURRENT_DATE,
+  padre_nombre text,
+  madre_nombre text,
+  representante_nombre text,
+  representante_cedula text,
+  representante_tlf text,
+  correo_representante text,
+  tlf_alumno text,
+  direccion text,
+  foto_url text,
+  observaciones_generales text,
+  activo boolean DEFAULT true,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  nivel text NOT NULL DEFAULT 'inicial'::text,
+  condiciones_medicas text,
+  alergias text,
+  medicamentos text,
+  contacto_emergencia_nombre text,
+  contacto_emergencia_telefono text,
+  contacto_emergencia_parentesco text,
+  familiar_nombre text,
+  familiar_telefono text,
+  familiar_parentesco text,
+  CONSTRAINT alumnos_pkey PRIMARY KEY (id),
+  CONSTRAINT fk_alumnos_profile FOREIGN KEY (user_id) REFERENCES public.profiles(id)
+);
+CREATE TABLE public.alumnos_clases (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  alumno_id uuid NOT NULL,
+  clase_id uuid NOT NULL,
+  fecha_inscripcion date DEFAULT CURRENT_DATE,
+  activo boolean DEFAULT true,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT alumnos_clases_pkey PRIMARY KEY (id),
+  CONSTRAINT fk_alumnos_clases_alumno FOREIGN KEY (alumno_id) REFERENCES public.alumnos(id),
+  CONSTRAINT fk_alumnos_clases_clase FOREIGN KEY (clase_id) REFERENCES public.clases(id)
+);
+CREATE TABLE public.alumnos_ejercicios (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  alumno_id uuid NOT NULL,
+  ejercicio_id uuid NOT NULL,
+  estado text NOT NULL DEFAULT 'pendiente'::text CHECK (estado = ANY (ARRAY['pendiente'::text, 'en_progreso'::text, 'aprobado'::text, 'refuerzo'::text, 'bloqueado'::text])),
+  puntaje_actual numeric,
+  mejor_puntaje numeric,
+  intentos integer DEFAULT 0 CHECK (intentos >= 0),
+  aprobado boolean DEFAULT false,
+  fecha_ultimo_intento timestamp with time zone,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT alumnos_ejercicios_pkey PRIMARY KEY (id),
+  CONSTRAINT fk_alumnos_ejercicios_alumno FOREIGN KEY (alumno_id) REFERENCES public.alumnos(id),
+  CONSTRAINT fk_alumnos_ejercicios_ejercicio FOREIGN KEY (ejercicio_id) REFERENCES public.ejercicios(id)
+);
+CREATE TABLE public.alumnos_logros (
+  alumno_id uuid NOT NULL,
+  logro_id uuid NOT NULL,
+  obtenido_en timestamp with time zone DEFAULT now(),
+  CONSTRAINT alumnos_logros_pkey PRIMARY KEY (alumno_id, logro_id),
+  CONSTRAINT fk_alumnos_logros_alumno FOREIGN KEY (alumno_id) REFERENCES public.alumnos(id),
+  CONSTRAINT fk_alumnos_logros_logro FOREIGN KEY (logro_id) REFERENCES public.logros(id)
+);
+CREATE TABLE public.alumnos_modulos (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  alumno_id uuid NOT NULL,
+  modulo_id uuid NOT NULL,
+  estado text NOT NULL DEFAULT 'bloqueado'::text CHECK (estado = ANY (ARRAY['bloqueado'::text, 'disponible'::text, 'en_progreso'::text, 'completado'::text, 'refuerzo'::text])),
+  porcentaje_completado numeric DEFAULT 0 CHECK (porcentaje_completado >= 0::numeric AND porcentaje_completado <= 100::numeric),
+  fecha_inicio date,
+  fecha_completado date,
+  intentos_totales integer DEFAULT 0 CHECK (intentos_totales >= 0),
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT alumnos_modulos_pkey PRIMARY KEY (id),
+  CONSTRAINT fk_alumnos_modulos_alumno FOREIGN KEY (alumno_id) REFERENCES public.alumnos(id),
+  CONSTRAINT fk_alumnos_modulos_modulo FOREIGN KEY (modulo_id) REFERENCES public.modulos(id)
+);
+CREATE TABLE public.alumnos_programas (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  alumno_id uuid NOT NULL,
+  programa_id uuid NOT NULL,
+  fecha_inscripcion date DEFAULT CURRENT_DATE,
+  activo boolean DEFAULT true,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT alumnos_programas_pkey PRIMARY KEY (id),
+  CONSTRAINT fk_alumnos_programas_alumno FOREIGN KEY (alumno_id) REFERENCES public.alumnos(id),
+  CONSTRAINT fk_alumnos_programas_programa FOREIGN KEY (programa_id) REFERENCES public.programas(id)
+);
+CREATE TABLE public.alumnos_rutas (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  alumno_id uuid NOT NULL,
+  programa_id uuid NOT NULL,
+  nivel_id uuid NOT NULL,
+  fecha_inicio date DEFAULT CURRENT_DATE,
+  fecha_fin_estimada date,
+  fecha_completado date,
+  estado text NOT NULL DEFAULT 'activa'::text CHECK (estado = ANY (ARRAY['activa'::text, 'pausada'::text, 'completada'::text, 'retirada'::text])),
+  progreso_porcentaje numeric DEFAULT 0 CHECK (progreso_porcentaje >= 0::numeric AND progreso_porcentaje <= 100::numeric),
+  activo boolean DEFAULT true,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT alumnos_rutas_pkey PRIMARY KEY (id),
+  CONSTRAINT fk_alumnos_rutas_alumno FOREIGN KEY (alumno_id) REFERENCES public.alumnos(id),
+  CONSTRAINT fk_alumnos_rutas_programa FOREIGN KEY (programa_id) REFERENCES public.programas(id),
+  CONSTRAINT fk_alumnos_rutas_nivel FOREIGN KEY (nivel_id) REFERENCES public.niveles(id)
+);
+CREATE TABLE public.asistencias (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  sesion_clase_id uuid NOT NULL,
+  clase_id uuid NOT NULL,
+  alumno_id uuid NOT NULL,
+  fecha date NOT NULL,
+  estado text NOT NULL CHECK (estado = ANY (ARRAY['presente'::text, 'ausente'::text, 'tarde'::text, 'justificado'::text])),
+  justificacion_texto text,
+  observaciones text,
+  registrado_por uuid,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  periodo_id uuid,
+  CONSTRAINT asistencias_pkey PRIMARY KEY (id),
+  CONSTRAINT asistencias_periodo_id_fkey FOREIGN KEY (periodo_id) REFERENCES public.periodos(id),
+  CONSTRAINT fk_asistencias_sesion FOREIGN KEY (sesion_clase_id) REFERENCES public.sesiones_clase(id),
+  CONSTRAINT fk_asistencias_clase FOREIGN KEY (clase_id) REFERENCES public.clases(id),
+  CONSTRAINT fk_asistencias_alumno FOREIGN KEY (alumno_id) REFERENCES public.alumnos(id),
+  CONSTRAINT fk_asistencias_registrado_por FOREIGN KEY (registrado_por) REFERENCES public.profiles(id)
+);
+CREATE TABLE public.ausencias (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  maestro_id uuid NOT NULL,
+  fecha_ausencia date NOT NULL,
+  motivo text NOT NULL,
+  reemplazo_maestro_id uuid,
+  clase_alternativa text,
+  notificacion_enviada boolean DEFAULT false,
+  estado text NOT NULL DEFAULT 'pendiente'::text CHECK (estado = ANY (ARRAY['pendiente'::text, 'notificado'::text, 'resuelta'::text])),
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT ausencias_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.ausencias_maestros (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  maestro_id uuid NOT NULL,
+  tipo_ausencia text NOT NULL,
+  fecha_inicio date NOT NULL,
+  fecha_fin date NOT NULL,
+  motivo text,
+  estado text DEFAULT 'pendiente'::text CHECK (estado = ANY (ARRAY['pendiente'::text, 'aprobada'::text, 'rechazada'::text, 'cancelada'::text])),
+  urgencia text DEFAULT 'media'::text CHECK (urgencia = ANY (ARRAY['baja'::text, 'media'::text, 'alta'::text, 'critica'::text])),
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT ausencias_maestros_pkey PRIMARY KEY (id),
+  CONSTRAINT ausencias_maestros_maestro_id_fkey FOREIGN KEY (maestro_id) REFERENCES auth.users(id)
+);
+CREATE TABLE public.blocks (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  route_version_id uuid NOT NULL,
+  name text NOT NULL,
+  level_from integer NOT NULL,
+  level_to integer NOT NULL,
+  objective text,
+  description text,
+  order_index integer NOT NULL DEFAULT 0,
+  CONSTRAINT blocks_pkey PRIMARY KEY (id),
+  CONSTRAINT blocks_route_version_id_fkey FOREIGN KEY (route_version_id) REFERENCES public.route_versions(id)
+);
+CREATE TABLE public.catalogos (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  tipo text NOT NULL CHECK (tipo = ANY (ARRAY['contenidos'::text, 'medidas'::text, 'sugerencias'::text, 'tareas'::text, 'objetivos'::text])),
+  nombre text NOT NULL,
+  descripcion text,
+  codigo text,
+  categoria text,
+  orden integer DEFAULT 0,
+  activo boolean DEFAULT true,
+  created_by uuid,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT catalogos_pkey PRIMARY KEY (id),
+  CONSTRAINT catalogos_created_by_fkey FOREIGN KEY (created_by) REFERENCES auth.users(id)
+);
+CREATE TABLE public.clase_acceso_temporal (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  clase_id uuid,
+  maestro_suplente_id uuid NOT NULL,
+  fecha_inicio date NOT NULL,
+  fecha_fin date NOT NULL,
+  activo boolean DEFAULT true,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT clase_acceso_temporal_pkey PRIMARY KEY (id),
+  CONSTRAINT clase_acceso_temporal_clase_id_fkey FOREIGN KEY (clase_id) REFERENCES public.clases(id)
+);
+CREATE TABLE public.clase_horarios (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  clase_id uuid NOT NULL,
+  dia text NOT NULL CHECK (dia = ANY (ARRAY['lunes'::text, 'martes'::text, 'miércoles'::text, 'jueves'::text, 'viernes'::text, 'sábado'::text, 'domingo'::text])),
+  hora_inicio time without time zone NOT NULL,
+  hora_fin time without time zone NOT NULL,
+  salon_id uuid,
+  created_at timestamp with time zone DEFAULT now(),
+  maestro_id uuid,
+  CONSTRAINT clase_horarios_pkey PRIMARY KEY (id),
+  CONSTRAINT clase_horarios_clase_id_fkey FOREIGN KEY (clase_id) REFERENCES public.clases(id),
+  CONSTRAINT clase_horarios_salon_id_fkey FOREIGN KEY (salon_id) REFERENCES public.salones(id)
+);
+CREATE TABLE public.clases (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  nombre text NOT NULL,
+  programa_id uuid NOT NULL,
+  nivel_id uuid,
+  maestro_principal_id uuid NOT NULL,
+  maestro_suplente_id uuid,
+  tipo_clase text DEFAULT 'grupal'::text CHECK (tipo_clase = ANY (ARRAY['individual'::text, 'grupal'::text, 'seccional'::text, 'orquesta'::text, 'coro'::text, 'teoria'::text, 'preparatoria'::text, 'otro'::text])),
+  instrumento text,
+  descripcion text,
+  capacidad_maxima integer CHECK (capacidad_maxima IS NULL OR capacidad_maxima > 0),
+  activo boolean DEFAULT true,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  estado character varying DEFAULT 'activa'::character varying,
+  maestro_id uuid,
+  plan_estudio text,
+  modalidad text DEFAULT 'presencial'::text CHECK (modalidad = ANY (ARRAY['presencial'::text, 'virtual'::text, 'hibrida'::text])),
+  salon text,
+  CONSTRAINT clases_pkey PRIMARY KEY (id),
+  CONSTRAINT fk_clases_programa FOREIGN KEY (programa_id) REFERENCES public.programas(id),
+  CONSTRAINT fk_clases_nivel FOREIGN KEY (nivel_id) REFERENCES public.niveles(id),
+  CONSTRAINT fk_clases_maestro_principal FOREIGN KEY (maestro_principal_id) REFERENCES public.maestros(id),
+  CONSTRAINT fk_clases_maestro_suplente FOREIGN KEY (maestro_suplente_id) REFERENCES public.maestros(id)
+);
+CREATE TABLE public.clases_emergentes (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  maestro_id uuid NOT NULL,
+  fecha date NOT NULL,
+  hora_inicio time without time zone,
+  hora_fin time without time zone,
+  clase_id uuid,
+  nombre_clase text,
+  motivo text,
+  contenido text,
+  observaciones text,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT clases_emergentes_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.class_event_methodology (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  class_event_id uuid NOT NULL,
+  warmup text,
+  sound_focus text,
+  intonation_focus text,
+  main_node_id uuid,
+  technical_focus text,
+  study_used text,
+  repertoire_used text,
+  sight_reading_work text,
+  ear_training_work text,
+  closing_observation text,
+  homework_text text,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT class_event_methodology_pkey PRIMARY KEY (id),
+  CONSTRAINT class_event_methodology_class_event_id_fkey FOREIGN KEY (class_event_id) REFERENCES public.class_events(id),
+  CONSTRAINT class_event_methodology_main_node_id_fkey FOREIGN KEY (main_node_id) REFERENCES public.nodes(id)
+);
+CREATE TABLE public.class_events (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  teacher_id uuid NOT NULL,
+  student_id uuid NOT NULL,
+  academic_plan_id uuid,
+  session_id uuid,
+  level_id uuid,
+  event_date date NOT NULL DEFAULT CURRENT_DATE,
+  status text NOT NULL DEFAULT 'draft'::text CHECK (status = ANY (ARRAY['draft'::text, 'completed'::text, 'cancelled'::text])),
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT class_events_pkey PRIMARY KEY (id),
+  CONSTRAINT class_events_teacher_id_fkey FOREIGN KEY (teacher_id) REFERENCES public.maestros(id),
+  CONSTRAINT class_events_student_id_fkey FOREIGN KEY (student_id) REFERENCES public.alumnos(id),
+  CONSTRAINT class_events_academic_plan_id_fkey FOREIGN KEY (academic_plan_id) REFERENCES public.academic_plans(id),
+  CONSTRAINT class_events_session_id_fkey FOREIGN KEY (session_id) REFERENCES public.sesiones_clase(id),
+  CONSTRAINT class_events_level_id_fkey FOREIGN KEY (level_id) REFERENCES public.levels(id)
+);
+CREATE TABLE public.class_session_content_snapshots (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  session_id uuid NOT NULL,
+  node_id uuid,
+  indicator_id uuid,
+  node_name text,
+  indicator_description text,
+  is_critical boolean DEFAULT false,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT class_session_content_snapshots_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.configuracion_recordatorios (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  profile_id uuid NOT NULL UNIQUE,
+  recordatorios_activos boolean DEFAULT true,
+  push_activo boolean DEFAULT false,
+  email_activo boolean DEFAULT false,
+  hora_resumen_diario time without time zone DEFAULT '18:00:00'::time without time zone,
+  dia_resumen_semanal integer DEFAULT 5 CHECK (dia_resumen_semanal >= 1 AND dia_resumen_semanal <= 7),
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  min_antes_clase integer DEFAULT 15,
+  min_post_clase_sin_registro integer DEFAULT 60,
+  horas_recordatorio_dia1 integer DEFAULT 24,
+  horas_recordatorio_dia2 integer DEFAULT 48,
+  alerta_pre_clase boolean DEFAULT true,
+  alerta_post_clase boolean DEFAULT true,
+  alerta_24h boolean DEFAULT true,
+  alerta_48h boolean DEFAULT true,
+  CONSTRAINT configuracion_recordatorios_pkey PRIMARY KEY (id),
+  CONSTRAINT fk_configuracion_recordatorios_profile FOREIGN KEY (profile_id) REFERENCES public.profiles(id)
+);
+CREATE TABLE public.contenidos_sesion (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  sesion_clase_id uuid NOT NULL,
+  planificacion_id uuid,
+  modulo_id uuid,
+  unidad_id uuid,
+  ejercicio_id uuid,
+  descripcion text,
+  nivel_logro text CHECK (nivel_logro IS NULL OR (nivel_logro = ANY (ARRAY['introducido'::text, 'practicado'::text, 'reforzado'::text, 'evaluado'::text, 'dominado'::text]))),
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT contenidos_sesion_pkey PRIMARY KEY (id),
+  CONSTRAINT fk_contenidos_sesion_sesion FOREIGN KEY (sesion_clase_id) REFERENCES public.sesiones_clase(id),
+  CONSTRAINT fk_contenidos_sesion_planificacion FOREIGN KEY (planificacion_id) REFERENCES public.planificaciones(id),
+  CONSTRAINT fk_contenidos_sesion_modulo FOREIGN KEY (modulo_id) REFERENCES public.modulos(id),
+  CONSTRAINT fk_contenidos_sesion_unidad FOREIGN KEY (unidad_id) REFERENCES public.unidades(id),
+  CONSTRAINT fk_contenidos_sesion_ejercicio FOREIGN KEY (ejercicio_id) REFERENCES public.ejercicios(id)
+);
+CREATE TABLE public.ejercicios (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  unidad_id uuid NOT NULL,
+  nombre text NOT NULL,
+  descripcion text,
+  tipo_ejercicio text NOT NULL CHECK (tipo_ejercicio = ANY (ARRAY['tecnico'::text, 'ritmico'::text, 'lectura'::text, 'auditivo'::text, 'repertorio'::text, 'teorico'::text, 'postural'::text, 'ensamble'::text, 'memoria'::text, 'otro'::text])),
+  dificultad integer DEFAULT 1 CHECK (dificultad >= 1 AND dificultad <= 10),
+  instrucciones text,
+  criterios_evaluacion jsonb DEFAULT '{}'::jsonb,
+  contenido jsonb DEFAULT '{}'::jsonb,
+  puntaje_maximo numeric DEFAULT 10 CHECK (puntaje_maximo > 0::numeric),
+  puntaje_aprobacion numeric DEFAULT 7 CHECK (puntaje_aprobacion >= 0::numeric),
+  requiere_evidencia boolean DEFAULT false,
+  puntos_xp integer DEFAULT 10 CHECK (puntos_xp >= 0),
+  orden integer NOT NULL CHECK (orden > 0),
+  activo boolean DEFAULT true,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT ejercicios_pkey PRIMARY KEY (id),
+  CONSTRAINT fk_ejercicios_unidad FOREIGN KEY (unidad_id) REFERENCES public.unidades(id)
+);
+CREATE TABLE public.historial_estado_alumno (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  alumno_id uuid NOT NULL,
+  estado text NOT NULL,
+  motivo text,
+  registrado_por uuid,
+  fecha date NOT NULL DEFAULT CURRENT_DATE,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT historial_estado_alumno_pkey PRIMARY KEY (id),
+  CONSTRAINT historial_estado_alumno_alumno_id_fkey FOREIGN KEY (alumno_id) REFERENCES public.alumnos(id)
+);
+CREATE TABLE public.homework_assignments (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  class_event_id uuid NOT NULL,
+  student_id uuid NOT NULL,
+  teacher_id uuid NOT NULL,
+  node_id uuid,
+  description text NOT NULL,
+  due_date date,
+  status text NOT NULL DEFAULT 'assigned'::text CHECK (status = ANY (ARRAY['assigned'::text, 'completed'::text, 'overdue'::text])),
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT homework_assignments_pkey PRIMARY KEY (id),
+  CONSTRAINT homework_assignments_class_event_id_fkey FOREIGN KEY (class_event_id) REFERENCES public.class_events(id),
+  CONSTRAINT homework_assignments_student_id_fkey FOREIGN KEY (student_id) REFERENCES public.alumnos(id),
+  CONSTRAINT homework_assignments_teacher_id_fkey FOREIGN KEY (teacher_id) REFERENCES public.maestros(id),
+  CONSTRAINT homework_assignments_node_id_fkey FOREIGN KEY (node_id) REFERENCES public.nodes(id)
+);
+CREATE TABLE public.horarios (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  clase_id uuid NOT NULL,
+  maestro_id uuid NOT NULL,
+  salon_id uuid NOT NULL,
+  dia_semana integer NOT NULL CHECK (dia_semana >= 1 AND dia_semana <= 7),
+  hora_inicio time without time zone NOT NULL,
+  hora_fin time without time zone NOT NULL,
+  activo boolean DEFAULT true,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT horarios_pkey PRIMARY KEY (id),
+  CONSTRAINT fk_horarios_clase FOREIGN KEY (clase_id) REFERENCES public.clases(id),
+  CONSTRAINT fk_horarios_maestro FOREIGN KEY (maestro_id) REFERENCES public.maestros(id),
+  CONSTRAINT fk_horarios_salon FOREIGN KEY (salon_id) REFERENCES public.salones(id)
+);
+CREATE TABLE public.indicator_attempts (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  student_id uuid NOT NULL,
+  indicator_id uuid NOT NULL,
+  session_id uuid,
+  result text,
+  observations text,
+  created_at timestamp with time zone DEFAULT now(),
+  node_id uuid,
+  status text DEFAULT 'pending'::text,
+  nota smallint CHECK (nota >= 1 AND nota <= 5),
+  tarea text,
+  covered_date date DEFAULT CURRENT_DATE,
+  covered_by_clase_id uuid,
+  created_by uuid NOT NULL,
+  updated_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT indicator_attempts_pkey PRIMARY KEY (id),
+  CONSTRAINT indicator_attempts_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.maestros(id),
+  CONSTRAINT indicator_attempts_node_id_fkey FOREIGN KEY (node_id) REFERENCES public.nodes(id),
+  CONSTRAINT indicator_attempts_covered_by_clase_id_fkey FOREIGN KEY (covered_by_clase_id) REFERENCES public.clases(id)
+);
+CREATE TABLE public.indicators (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  node_id uuid NOT NULL,
+  description text NOT NULL,
+  minimum_criteria jsonb DEFAULT '{}'::jsonb,
+  is_required boolean NOT NULL DEFAULT true,
+  order_index integer NOT NULL DEFAULT 0,
+  nombre text,
+  activo boolean NOT NULL DEFAULT true,
+  CONSTRAINT indicators_pkey PRIMARY KEY (id),
+  CONSTRAINT indicators_node_id_fkey FOREIGN KEY (node_id) REFERENCES public.nodes(id)
+);
+CREATE TABLE public.intentos_ejercicios (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  alumno_id uuid NOT NULL,
+  ejercicio_id uuid NOT NULL,
+  maestro_id uuid,
+  clase_id uuid,
+  sesion_clase_id uuid,
+  fecha timestamp with time zone DEFAULT now(),
+  puntaje numeric NOT NULL CHECK (puntaje >= 0::numeric),
+  aprobado boolean DEFAULT false,
+  rubrica jsonb DEFAULT '{}'::jsonb,
+  observaciones text,
+  evidencia_url text,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT intentos_ejercicios_pkey PRIMARY KEY (id),
+  CONSTRAINT fk_intentos_ejercicios_alumno FOREIGN KEY (alumno_id) REFERENCES public.alumnos(id),
+  CONSTRAINT fk_intentos_ejercicios_ejercicio FOREIGN KEY (ejercicio_id) REFERENCES public.ejercicios(id),
+  CONSTRAINT fk_intentos_ejercicios_maestro FOREIGN KEY (maestro_id) REFERENCES public.maestros(id),
+  CONSTRAINT fk_intentos_ejercicios_clase FOREIGN KEY (clase_id) REFERENCES public.clases(id),
+  CONSTRAINT fk_intentos_ejercicios_sesion FOREIGN KEY (sesion_clase_id) REFERENCES public.sesiones_clase(id)
+);
+CREATE TABLE public.justificaciones (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  sesion_id uuid,
+  alumno_id uuid NOT NULL,
+  clase_id uuid NOT NULL,
+  fecha date NOT NULL,
+  motivo text NOT NULL,
+  evidencia_url text,
+  evidencia_base64 text,
+  creado_por uuid,
+  estado text NOT NULL DEFAULT 'pendiente'::text CHECK (estado = ANY (ARRAY['pendiente'::text, 'aprobado'::text, 'rechazado'::text])),
+  revisado_por uuid,
+  fecha_revision timestamp with time zone,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT justificaciones_pkey PRIMARY KEY (id),
+  CONSTRAINT justificaciones_sesion_id_fkey FOREIGN KEY (sesion_id) REFERENCES public.sesiones_clase(id),
+  CONSTRAINT justificaciones_creado_por_fkey FOREIGN KEY (creado_por) REFERENCES public.maestros(id),
+  CONSTRAINT justificaciones_revisado_por_fkey FOREIGN KEY (revisado_por) REFERENCES public.maestros(id)
+);
+CREATE TABLE public.levels (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  block_id uuid,
+  route_version_id uuid NOT NULL,
+  level_number integer NOT NULL,
+  name text NOT NULL,
+  main_objective text,
+  suggested_duration_value integer,
+  suggested_duration_unit text,
+  is_flexible_duration boolean NOT NULL DEFAULT true,
+  target_work jsonb DEFAULT '{}'::jsonb,
+  unlock_criteria jsonb DEFAULT '{}'::jsonb,
+  order_index integer NOT NULL DEFAULT 0,
+  CONSTRAINT levels_pkey PRIMARY KEY (id),
+  CONSTRAINT levels_block_id_fkey FOREIGN KEY (block_id) REFERENCES public.blocks(id),
+  CONSTRAINT levels_route_version_id_fkey FOREIGN KEY (route_version_id) REFERENCES public.route_versions(id)
+);
+CREATE TABLE public.logros (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  nombre text NOT NULL UNIQUE,
+  descripcion text,
+  criterio jsonb DEFAULT '{}'::jsonb,
+  icono text,
+  activo boolean DEFAULT true,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT logros_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.maestro_tareas (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  maestro_id uuid NOT NULL,
+  alumno_id uuid,
+  sesion_id uuid,
+  tarea text NOT NULL,
+  fecha_recordatorio date,
+  completada boolean DEFAULT false,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT maestro_tareas_pkey PRIMARY KEY (id),
+  CONSTRAINT maestro_tareas_alumno_id_fkey FOREIGN KEY (alumno_id) REFERENCES public.alumnos(id),
+  CONSTRAINT maestro_tareas_sesion_id_fkey FOREIGN KEY (sesion_id) REFERENCES public.sesiones_clase(id)
+);
+CREATE TABLE public.maestros (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  user_id uuid UNIQUE,
+  nombre_completo text NOT NULL,
+  especialidad text NOT NULL,
+  tipo_maestro text DEFAULT 'catedra'::text CHECK (tipo_maestro = ANY (ARRAY['catedra'::text, 'orquesta'::text, 'coro'::text, 'preparatoria'::text, 'monitor'::text, 'suplente'::text, 'direccion'::text, 'otro'::text])),
+  habilidades ARRAY DEFAULT ARRAY[]::text[],
+  disponibilidad jsonb NOT NULL DEFAULT '{}'::jsonb,
+  tlf text,
+  correo text NOT NULL UNIQUE,
+  resena text,
+  puede_ser_suplente boolean DEFAULT true,
+  activo boolean DEFAULT true,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  especialidades ARRAY,
+  CONSTRAINT maestros_pkey PRIMARY KEY (id),
+  CONSTRAINT fk_maestros_profile FOREIGN KEY (user_id) REFERENCES public.profiles(id)
+);
+CREATE TABLE public.modulos (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  programa_id uuid NOT NULL,
+  nivel_id uuid NOT NULL,
+  nombre text NOT NULL,
+  descripcion text,
+  orden integer NOT NULL CHECK (orden > 0),
+  duracion_estimada_semanas integer CHECK (duracion_estimada_semanas IS NULL OR duracion_estimada_semanas > 0),
+  requisito_modulo_id uuid,
+  porcentaje_aprobacion numeric DEFAULT 80 CHECK (porcentaje_aprobacion >= 0::numeric AND porcentaje_aprobacion <= 100::numeric),
+  activo boolean DEFAULT true,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT modulos_pkey PRIMARY KEY (id),
+  CONSTRAINT fk_modulos_programa FOREIGN KEY (programa_id) REFERENCES public.programas(id),
+  CONSTRAINT fk_modulos_nivel FOREIGN KEY (nivel_id) REFERENCES public.niveles(id),
+  CONSTRAINT fk_modulos_requisito FOREIGN KEY (requisito_modulo_id) REFERENCES public.modulos(id)
+);
+CREATE TABLE public.niveles (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  programa_id uuid NOT NULL,
+  nombre text NOT NULL,
+  descripcion text,
+  orden integer NOT NULL CHECK (orden > 0),
+  duracion_estimada_meses integer CHECK (duracion_estimada_meses IS NULL OR duracion_estimada_meses > 0),
+  criterios_promocion jsonb DEFAULT '{}'::jsonb,
+  activo boolean DEFAULT true,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT niveles_pkey PRIMARY KEY (id),
+  CONSTRAINT fk_niveles_programa FOREIGN KEY (programa_id) REFERENCES public.programas(id)
+);
+CREATE TABLE public.nodes (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  level_id uuid NOT NULL,
+  route_version_id uuid NOT NULL,
+  name text NOT NULL,
+  type text NOT NULL,
+  is_critical boolean NOT NULL DEFAULT false,
+  is_required boolean NOT NULL DEFAULT true,
+  objective text,
+  order_index integer NOT NULL DEFAULT 0,
+  CONSTRAINT nodes_pkey PRIMARY KEY (id),
+  CONSTRAINT nodes_level_id_fkey FOREIGN KEY (level_id) REFERENCES public.levels(id),
+  CONSTRAINT nodes_route_version_id_fkey FOREIGN KEY (route_version_id) REFERENCES public.route_versions(id)
+);
+CREATE TABLE public.notificaciones (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  profile_id uuid,
+  registro_pendiente_id uuid,
+  tipo text DEFAULT 'in_app'::text CHECK (tipo = ANY (ARRAY['in_app'::text, 'push'::text, 'email'::text, 'sistema'::text])),
+  titulo text NOT NULL,
+  mensaje text NOT NULL,
+  deep_link text,
+  estado text DEFAULT 'pendiente'::text CHECK (estado = ANY (ARRAY['pendiente'::text, 'enviada'::text, 'leida'::text, 'fallida'::text])),
+  enviada_en timestamp with time zone,
+  leida_en timestamp with time zone,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT notificaciones_pkey PRIMARY KEY (id),
+  CONSTRAINT fk_notificaciones_profile FOREIGN KEY (profile_id) REFERENCES public.profiles(id),
+  CONSTRAINT fk_notificaciones_registro FOREIGN KEY (registro_pendiente_id) REFERENCES public.registros_pendientes(id)
+);
+CREATE TABLE public.observaciones_alumnos (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  alumno_id uuid NOT NULL,
+  maestro_id uuid,
+  clase_id uuid,
+  sesion_clase_id uuid,
+  tipo text DEFAULT 'academica'::text CHECK (tipo = ANY (ARRAY['academica'::text, 'conductual'::text, 'asistencia'::text, 'tecnica'::text, 'motivacional'::text, 'administrativa'::text, 'otra'::text])),
+  observacion text NOT NULL,
+  requiere_seguimiento boolean DEFAULT false,
+  fecha date DEFAULT CURRENT_DATE,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  titulo text,
+  descripcion text,
+  prioridad text NOT NULL DEFAULT 'media'::text,
+  estado text NOT NULL DEFAULT 'abierta'::text,
+  fecha_observacion date,
+  seguimiento_fecha date,
+  seguimiento_observacion text,
+  CONSTRAINT observaciones_alumnos_pkey PRIMARY KEY (id),
+  CONSTRAINT fk_observaciones_alumnos_alumno FOREIGN KEY (alumno_id) REFERENCES public.alumnos(id),
+  CONSTRAINT fk_observaciones_alumnos_maestro FOREIGN KEY (maestro_id) REFERENCES public.maestros(id),
+  CONSTRAINT fk_observaciones_alumnos_clase FOREIGN KEY (clase_id) REFERENCES public.clases(id),
+  CONSTRAINT fk_observaciones_alumnos_sesion FOREIGN KEY (sesion_clase_id) REFERENCES public.sesiones_clase(id)
+);
+CREATE TABLE public.observaciones_sesion (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  sesion_id uuid NOT NULL,
+  maestro_id uuid NOT NULL,
+  contenido_raw text NOT NULL DEFAULT ''::text,
+  contenido_parsed jsonb,
+  es_borrador boolean NOT NULL DEFAULT true,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  contenido_ia_dsl text,
+  CONSTRAINT observaciones_sesion_pkey PRIMARY KEY (id),
+  CONSTRAINT observaciones_sesion_sesion_id_fkey FOREIGN KEY (sesion_id) REFERENCES public.sesiones_clase(id),
+  CONSTRAINT observaciones_sesion_maestro_id_fkey FOREIGN KEY (maestro_id) REFERENCES public.maestros(id)
+);
+CREATE TABLE public.periodos (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  nombre text NOT NULL,
+  fecha_inicio date NOT NULL,
+  fecha_fin date NOT NULL,
+  activo boolean NOT NULL DEFAULT false,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT periodos_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.plan_clases (
+  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  created_at timestamp with time zone DEFAULT now(),
+  nombre text NOT NULL,
+  descripcion text,
+  activo boolean DEFAULT true,
+  CONSTRAINT plan_clases_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.plan_indicadores (
+  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  objetivo_id uuid,
+  descripcion text NOT NULL,
+  es_requerido boolean DEFAULT true,
+  orden_index integer DEFAULT 0,
+  CONSTRAINT plan_indicadores_pkey PRIMARY KEY (id),
+  CONSTRAINT plan_indicadores_objetivo_id_fkey FOREIGN KEY (objetivo_id) REFERENCES public.plan_objetivos(id)
+);
+CREATE TABLE public.plan_niveles (
+  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  clase_id uuid,
+  nombre text NOT NULL,
+  numero_nivel integer NOT NULL,
+  objetivo_general text,
+  orden_index integer DEFAULT 0,
+  CONSTRAINT plan_niveles_pkey PRIMARY KEY (id),
+  CONSTRAINT plan_niveles_clase_id_fkey FOREIGN KEY (clase_id) REFERENCES public.plan_clases(id)
+);
+CREATE TABLE public.plan_objetivos (
+  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  tema_id uuid,
+  nombre text NOT NULL,
+  orden_index integer DEFAULT 0,
+  CONSTRAINT plan_objetivos_pkey PRIMARY KEY (id),
+  CONSTRAINT plan_objetivos_tema_id_fkey FOREIGN KEY (tema_id) REFERENCES public.plan_temas(id)
+);
+CREATE TABLE public.plan_temas (
+  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  nivel_id uuid,
+  nombre text NOT NULL,
+  tipo text DEFAULT 'TECNICA'::text,
+  es_critico boolean DEFAULT false,
+  orden_index integer DEFAULT 0,
+  CONSTRAINT plan_temas_pkey PRIMARY KEY (id),
+  CONSTRAINT plan_temas_nivel_id_fkey FOREIGN KEY (nivel_id) REFERENCES public.plan_niveles(id)
+);
+CREATE TABLE public.planificacion (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  programa_id uuid NOT NULL,
+  nivel integer NOT NULL CHECK (nivel >= 1 AND nivel <= 10),
+  titulo text NOT NULL,
+  contenidos jsonb DEFAULT '[]'::jsonb,
+  tecnicas jsonb,
+  obras jsonb,
+  escalas_arpegios jsonb,
+  evaluaciones jsonb,
+  fecha_inicio date NOT NULL,
+  fecha_fin date,
+  activo boolean DEFAULT true,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT planificacion_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.planificacion_nodos (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  maestro_id uuid NOT NULL,
+  programa_id uuid,
+  codigo text,
+  nombre text,
+  descripcion text,
+  nivel integer,
+  bloque integer,
+  ponderacion numeric,
+  padre_id uuid,
+  estado text DEFAULT 'disponible'::text CHECK (estado = ANY (ARRAY['bloqueado'::text, 'disponible'::text, 'en_progreso'::text, 'completado'::text])),
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT planificacion_nodos_pkey PRIMARY KEY (id),
+  CONSTRAINT planificacion_nodos_padre_id_fkey FOREIGN KEY (padre_id) REFERENCES public.planificacion_nodos(id)
+);
+CREATE TABLE public.planificaciones (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  programa_id uuid,
+  nivel_id uuid,
+  clase_id uuid NOT NULL,
+  maestro_id uuid NOT NULL,
+  titulo text NOT NULL,
+  descripcion text,
+  periodo_nombre text,
+  fecha_inicio date NOT NULL,
+  fecha_fin date,
+  contenidos jsonb DEFAULT '[]'::jsonb,
+  tecnicas jsonb DEFAULT '[]'::jsonb,
+  obras jsonb DEFAULT '[]'::jsonb,
+  escalas_arpegios jsonb DEFAULT '[]'::jsonb,
+  evaluaciones jsonb DEFAULT '[]'::jsonb,
+  estado text DEFAULT 'borrador'::text CHECK (estado = ANY (ARRAY['borrador'::text, 'activa'::text, 'cerrada'::text, 'archivada'::text])),
+  activo boolean DEFAULT true,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  instrumento text,
+  CONSTRAINT planificaciones_pkey PRIMARY KEY (id),
+  CONSTRAINT fk_planificaciones_programa FOREIGN KEY (programa_id) REFERENCES public.programas(id),
+  CONSTRAINT fk_planificaciones_nivel FOREIGN KEY (nivel_id) REFERENCES public.niveles(id),
+  CONSTRAINT fk_planificaciones_clase FOREIGN KEY (clase_id) REFERENCES public.clases(id),
+  CONSTRAINT fk_planificaciones_maestro FOREIGN KEY (maestro_id) REFERENCES public.maestros(id)
+);
+CREATE TABLE public.planned_content (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  maestro_id uuid NOT NULL,
+  clase_id uuid NOT NULL,
+  node_id uuid NOT NULL,
+  planned_date date DEFAULT CURRENT_DATE,
+  covered boolean DEFAULT false,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT planned_content_pkey PRIMARY KEY (id),
+  CONSTRAINT planned_content_maestro_id_fkey FOREIGN KEY (maestro_id) REFERENCES public.maestros(id),
+  CONSTRAINT planned_content_clase_id_fkey FOREIGN KEY (clase_id) REFERENCES public.clases(id),
+  CONSTRAINT planned_content_node_id_fkey FOREIGN KEY (node_id) REFERENCES public.nodes(id)
+);
+CREATE TABLE public.planning_documents (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  maestro_id uuid NOT NULL,
+  clase_id uuid,
+  title text NOT NULL,
+  file_name text NOT NULL,
+  file_url text NOT NULL,
+  file_type text,
+  file_size bigint,
+  description text,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT planning_documents_pkey PRIMARY KEY (id),
+  CONSTRAINT planning_documents_maestro_id_fkey FOREIGN KEY (maestro_id) REFERENCES public.maestros(id),
+  CONSTRAINT planning_documents_clase_id_fkey FOREIGN KEY (clase_id) REFERENCES public.clases(id)
+);
+CREATE TABLE public.profiles (
+  id uuid NOT NULL,
+  email text NOT NULL CHECK (email ~* '^[^@]+@[^@]+\.[^@]+$'::text),
+  nombre_completo text,
+  rol text NOT NULL DEFAULT 'user'::text CHECK (rol = ANY (ARRAY['superadmin'::text, 'admin'::text, 'direccion'::text, 'coordinacion_academica'::text, 'maestro'::text, 'monitor'::text, 'finanzas'::text, 'operaciones'::text, 'representante'::text, 'alumno'::text, 'user'::text])),
+  avatar_url text,
+  activo boolean DEFAULT true,
+  estado text NOT NULL DEFAULT 'pendiente'::text CHECK (estado = ANY (ARRAY['pendiente'::text, 'activo'::text, 'rechazado'::text])),
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT profiles_pkey PRIMARY KEY (id),
+  CONSTRAINT profiles_id_fkey FOREIGN KEY (id) REFERENCES auth.users(id)
+);
+CREATE TABLE public.programas (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  nombre text NOT NULL UNIQUE,
+  descripcion text,
+  activo boolean DEFAULT true,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  nivel text,
+  CONSTRAINT programas_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.progresos (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  alumno_id uuid NOT NULL,
+  clase_id uuid NOT NULL,
+  sesion_clase_id uuid,
+  asistencia_id uuid,
+  ejercicio_id uuid,
+  maestro_id uuid,
+  fecha_evaluacion date NOT NULL DEFAULT CURRENT_DATE,
+  indicadores jsonb NOT NULL DEFAULT '{}'::jsonb,
+  estado_cualitativo text,
+  calificacion numeric CHECK (calificacion IS NULL OR calificacion >= 0::numeric AND calificacion <= 10::numeric),
+  evaluacion_tipo text DEFAULT 'clase'::text CHECK (evaluacion_tipo = ANY (ARRAY['clase'::text, 'ejercicio'::text, 'audicion'::text, 'recital'::text, 'examen'::text, 'observacion'::text, 'otro'::text])),
+  observaciones text,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  periodo_id uuid,
+  CONSTRAINT progresos_pkey PRIMARY KEY (id),
+  CONSTRAINT progresos_periodo_id_fkey FOREIGN KEY (periodo_id) REFERENCES public.periodos(id),
+  CONSTRAINT fk_progresos_alumno FOREIGN KEY (alumno_id) REFERENCES public.alumnos(id),
+  CONSTRAINT fk_progresos_clase FOREIGN KEY (clase_id) REFERENCES public.clases(id),
+  CONSTRAINT fk_progresos_sesion FOREIGN KEY (sesion_clase_id) REFERENCES public.sesiones_clase(id),
+  CONSTRAINT fk_progresos_asistencia FOREIGN KEY (asistencia_id) REFERENCES public.asistencias(id),
+  CONSTRAINT fk_progresos_ejercicio FOREIGN KEY (ejercicio_id) REFERENCES public.ejercicios(id),
+  CONSTRAINT fk_progresos_maestro FOREIGN KEY (maestro_id) REFERENCES public.maestros(id)
+);
+CREATE TABLE public.push_subscriptions (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  profile_id uuid NOT NULL,
+  endpoint text NOT NULL UNIQUE,
+  p256dh text NOT NULL,
+  auth text NOT NULL,
+  user_agent text,
+  activo boolean DEFAULT true,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT push_subscriptions_pkey PRIMARY KEY (id),
+  CONSTRAINT fk_push_subscriptions_profile FOREIGN KEY (profile_id) REFERENCES public.profiles(id)
+);
+CREATE TABLE public.rachas (
+  alumno_id uuid NOT NULL,
+  racha_actual integer DEFAULT 0 CHECK (racha_actual >= 0),
+  racha_maxima integer DEFAULT 0 CHECK (racha_maxima >= 0),
+  ultima_fecha_activa date,
+  updated_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT rachas_pkey PRIMARY KEY (alumno_id),
+  CONSTRAINT fk_rachas_alumno FOREIGN KEY (alumno_id) REFERENCES public.alumnos(id)
+);
+CREATE TABLE public.registros_pendientes (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  maestro_id uuid NOT NULL,
+  sesion_clase_id uuid,
+  tipo text NOT NULL CHECK (tipo = ANY (ARRAY['asistencia_pendiente'::text, 'contenido_pendiente'::text, 'progreso_pendiente'::text, 'sesion_sin_cerrar'::text, 'justificacion_pendiente'::text, 'otro'::text])),
+  prioridad text DEFAULT 'media'::text CHECK (prioridad = ANY (ARRAY['baja'::text, 'media'::text, 'alta'::text, 'critica'::text])),
+  estado text DEFAULT 'pendiente'::text CHECK (estado = ANY (ARRAY['pendiente'::text, 'visto'::text, 'resuelto'::text, 'cancelado'::text])),
+  fecha_limite timestamp with time zone,
+  mensaje text NOT NULL,
+  deep_link text,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  resuelto_at timestamp with time zone,
+  CONSTRAINT registros_pendientes_pkey PRIMARY KEY (id),
+  CONSTRAINT fk_registros_pendientes_maestro FOREIGN KEY (maestro_id) REFERENCES public.maestros(id),
+  CONSTRAINT fk_registros_pendientes_sesion FOREIGN KEY (sesion_clase_id) REFERENCES public.sesiones_clase(id)
+);
+CREATE TABLE public.route_versions (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  route_id uuid NOT NULL,
+  version text NOT NULL,
+  status USER-DEFINED NOT NULL DEFAULT 'draft'::route_status,
+  notes text,
+  created_by uuid,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  published_at timestamp with time zone,
+  CONSTRAINT route_versions_pkey PRIMARY KEY (id),
+  CONSTRAINT route_versions_route_id_fkey FOREIGN KEY (route_id) REFERENCES public.routes(id),
+  CONSTRAINT route_versions_created_by_fkey FOREIGN KEY (created_by) REFERENCES auth.users(id)
+);
+CREATE TABLE public.routes (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  name text NOT NULL,
+  instrument text NOT NULL,
+  description text,
+  status USER-DEFINED NOT NULL DEFAULT 'draft'::route_status,
+  created_by uuid,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT routes_pkey PRIMARY KEY (id),
+  CONSTRAINT routes_created_by_fkey FOREIGN KEY (created_by) REFERENCES auth.users(id)
+);
+CREATE TABLE public.salones (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  nombre text NOT NULL UNIQUE,
+  ubicacion text,
+  descripcion text,
+  activo boolean DEFAULT true,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  capacidad integer DEFAULT 20,
+  codigo_salon text UNIQUE,
+  piso integer,
+  condicion_fisica text DEFAULT 'buena'::text,
+  equipamiento jsonb DEFAULT '[]'::jsonb,
+  responsable_id uuid,
+  is_active boolean,
+  CONSTRAINT salones_pkey PRIMARY KEY (id),
+  CONSTRAINT salones_responsable_id_fkey FOREIGN KEY (responsable_id) REFERENCES public.maestros(id)
+);
+CREATE TABLE public.sesiones_clase (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  clase_id uuid NOT NULL,
+  horario_id uuid,
+  maestro_id uuid NOT NULL,
+  salon_id uuid,
+  fecha date NOT NULL,
+  hora_inicio time without time zone,
+  hora_fin time without time zone,
+  tema_principal text,
+  contenidos_trabajados jsonb DEFAULT '[]'::jsonb,
+  observaciones_generales text,
+  estado text NOT NULL DEFAULT 'programada'::text CHECK (estado = ANY (ARRAY['programada'::text, 'abierta'::text, 'asistencia_registrada'::text, 'progreso_registrado'::text, 'cerrada'::text, 'pendiente'::text, 'atrasada'::text, 'cancelada'::text, 'registrada'::text])),
+  cerrada_en timestamp with time zone,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  borrador boolean DEFAULT false,
+  contenido text,
+  contenido_dsl text,
+  asistencia jsonb DEFAULT '[]'::jsonb,
+  CONSTRAINT sesiones_clase_pkey PRIMARY KEY (id),
+  CONSTRAINT fk_sesiones_clase_clase FOREIGN KEY (clase_id) REFERENCES public.clases(id),
+  CONSTRAINT fk_sesiones_clase_horario FOREIGN KEY (horario_id) REFERENCES public.horarios(id),
+  CONSTRAINT fk_sesiones_clase_maestro FOREIGN KEY (maestro_id) REFERENCES public.maestros(id),
+  CONSTRAINT fk_sesiones_clase_salon FOREIGN KEY (salon_id) REFERENCES public.salones(id)
+);
+CREATE TABLE public.solicitudes_ausencia (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  maestro_id uuid NOT NULL,
+  fecha_ausencia date NOT NULL,
+  motivo text,
+  contenido_reemplazo text,
+  suplente_id uuid,
+  dinamica_trabajo text,
+  estado text DEFAULT 'pendiente'::text CHECK (estado = ANY (ARRAY['pendiente'::text, 'aprobada'::text, 'rechazada'::text])),
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT solicitudes_ausencia_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.system_config (
+  key character varying NOT NULL,
+  value text,
+  description text,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT system_config_pkey PRIMARY KEY (key)
+);
+CREATE TABLE public.unidades (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  modulo_id uuid NOT NULL,
+  nombre text NOT NULL,
+  descripcion text,
+  orden integer NOT NULL CHECK (orden > 0),
+  activo boolean DEFAULT true,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT unidades_pkey PRIMARY KEY (id),
+  CONSTRAINT fk_unidades_modulo FOREIGN KEY (modulo_id) REFERENCES public.modulos(id)
+);
+CREATE TABLE public.xp_log (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  alumno_id uuid NOT NULL,
+  cantidad integer NOT NULL CHECK (cantidad > 0),
+  concepto text NOT NULL,
+  referencia_tipo text,
+  referencia_id uuid,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT xp_log_pkey PRIMARY KEY (id),
+  CONSTRAINT fk_xp_log_alumno FOREIGN KEY (alumno_id) REFERENCES public.alumnos(id)
+);

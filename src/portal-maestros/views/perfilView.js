@@ -2,7 +2,8 @@ import { getMaestroLocal, clearMaestroLocal, logoutPortal, STORAGE_KEY } from '.
 import { supabase } from '../../lib/supabaseClient.js';
 import {
   subscribeToPush, unsubscribeFromPush,
-  isPushSupported, isPushSubscribed
+  isPushSupported, isPushSubscribed,
+  testNotification
 } from '../services/pushService.js';
 import { AppModal } from '../../shared/components/AppModal.js';
 import { ausenciaModal } from '../components/ausenciaModal.js';
@@ -166,6 +167,9 @@ function renderAppearance(container) {
 // ─── SECCIÓN NOTIFICACIONES ──────────────────────────────────
 function renderNotifications(container, maestro) {
   const supported = isPushSupported();
+  const subBadge = supported
+    ? `<span class="pm-badge-sub" id="pm-notif-sub-badge">${viewState.pushEnabled ? '✅ Suscripción activa' : '⏸ Pausada'}</span>`
+    : '';
   container.insertAdjacentHTML('beforeend', `
     <section class="card-apple pm-settings-section" aria-labelledby="notif-title">
       <div class="pm-settings-section__header">
@@ -179,9 +183,15 @@ function renderNotifications(container, maestro) {
           <span class="pm-apple-switch-slider"></span>
         </label>
       </div>
-      <div class="pm-settings-actions-row">
+      ${subBadge}
+      <div class="pm-settings-actions-row" style="margin-top:0.5rem;">
         <button class="btn-apple-utility w-100" id="btn-abrir-config-notif">
           <i class="bi bi-gear-wide-connected" aria-hidden="true"></i> Configurar preferencias...
+        </button>
+      </div>
+      <div class="pm-settings-actions-row">
+        <button class="btn-apple-utility" id="btn-probar-notificacion">
+          <i class="bi bi-send"></i> Probar notificación
         </button>
       </div>
       ${!supported ? `<p class="apple-caption mt-2" style="color:var(--pm-danger)">Push no soportado en este navegador.</p>` : ''}
@@ -314,10 +324,37 @@ function initListeners(maestro) {
       window.dispatchEvent(new CustomEvent('showToast', { detail: { message: 'Notificaciones desactivadas', type: 'info' } }));
     }
     toggleInput.disabled = false;
+    // Update subscription badge
+    const badge = document.getElementById('pm-notif-sub-badge');
+    if (badge) badge.textContent = viewState.pushEnabled ? '✅ Suscripción activa' : '⏸ Pausada';
   });
 
   // Configuración detallada notificaciones
   document.getElementById('btn-abrir-config-notif')?.addEventListener('click', () => notifConfigModal.open());
+
+  // Botón probar notificación
+  document.getElementById('btn-probar-notificacion')?.addEventListener('click', async () => {
+    const btn = document.getElementById('btn-probar-notificacion');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="pm-settings-spinner"></span> Enviando...';
+    const result = await testNotification();
+    if (result.success) {
+      btn.innerHTML = '<i class="bi bi-check2"></i> Notificación enviada';
+      setTimeout(() => {
+        btn.innerHTML = '<i class="bi bi-send"></i> Probar notificación';
+        btn.disabled = false;
+      }, 2000);
+    } else {
+      btn.innerHTML = '<i class="bi bi-exclamation-triangle"></i> Error';
+      window.dispatchEvent(new CustomEvent('showToast', {
+        detail: { message: result.error || 'No se pudo enviar notificación de prueba. Verifica los permisos.', type: 'danger' }
+      }));
+      setTimeout(() => {
+        btn.innerHTML = '<i class="bi bi-send"></i> Probar notificación';
+        btn.disabled = false;
+      }, 2000);
+    }
+  });
 
   // Temas
   document.getElementById('pm-theme-light')?.addEventListener('click', () => applyTheme('light'));
@@ -601,6 +638,18 @@ const styles = `
   /* Popup de copiar horario */
   .pm-copy-popup { position: fixed; inset: 0; z-index: 9999; }
   .pm-copy-popup__overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.4); }
+  .pm-badge-sub {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 12px;
+    background: var(--pm-primary-light, rgba(59,130,246,0.12));
+    color: var(--pm-primary, #3b82f6);
+    margin: 0.25rem 0 0 0;
+  }
   .pm-copy-popup__content { 
     position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
     background: var(--pm-surface); border-radius: 12px; padding: 1rem;

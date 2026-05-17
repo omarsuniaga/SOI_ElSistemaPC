@@ -48,3 +48,20 @@ export function peekRutaTema() {
     return null
   }
 }
+
+/**
+ * Returns the stored topic formatted for asistenciaView navigation.
+ * Builds query params for DSL handoff: { indicatorId, nombre, claseId }
+ * Returns null if nothing stored.
+ *
+ * @returns {{ indicatorId: string, nombre: string, claseId: string } | null}
+ */
+export function getRutaTemaForAsistencia() {
+  const tema = peekRutaTema()
+  if (!tema) return null
+  return {
+    indicatorId: tema.indicatorId,
+    nombre: tema.nombre,
+    claseId: tema.claseId,
+  }
+}

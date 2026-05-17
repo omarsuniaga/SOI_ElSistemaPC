@@ -35,8 +35,7 @@ import { initErrorReporter, reportError, setErrorUser } from './services/errorRe
 // Analytics - tracking (GDPR compliant)
 import { initAnalytics, trackPageView, setUser as setAnalyticsUser } from './services/analyticsService.js'
 
-// GDPR Service
-import { exportUserData } from './services/gdprService.js'
+// GDPR Service — imported but not yet wired
 
 // Rate Limiter
 import { initRateLimit, checkRateLimit } from './middleware/rateLimit.js'
@@ -733,7 +732,7 @@ async function _renderView(route, params = {}, { silent = false } = {}) {
         renderGamificacionView(targetContainer)
         break
       case 'ruta':
-        renderPlanificacionView(targetContainer)
+        renderRutaPlayerView(targetContainer)
         break
       case 'crear-clase':
         renderCrearClaseView(targetContainer)

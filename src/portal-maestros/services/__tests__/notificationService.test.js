@@ -31,6 +31,7 @@ import {
   _isDuplicateNotification,
   _recordNotificationReceived,
   _generateDeduplicationKey,
+  getDedupCount,
   POLL_INTERVAL_MS,
   DEDUP_WINDOW_MS,
   DEDUP_EXPIRY_MS,
@@ -149,6 +150,58 @@ describe('Deduplication Logic', () => {
       // Advance time past expiry (120 seconds + buffer)
       vi.setSystemTime(now + 121 * 1000);
       expect(_isDuplicateNotification(notif)).toBe(false);
+    });
+  });
+
+  describe('getDedupCount', () => {
+    beforeEach(() => {
+      // Advance clock past DEDUP_EXPIRY_MS (120s) to flush entries from previous tests
+      vi.setSystemTime(Date.now() + 200 * 1000);
+    });
+
+    it('should return 0 when no notifications were recorded', () => {
+      expect(getDedupCount()).toBe(0);
+    });
+
+    it('should return the number of unique dedup keys within window', () => {
+      const notif1 = { id: 'n1', tipo: 'recordatorio_clase', clase_id: 'clase-a' };
+      const notif2 = { id: 'n2', tipo: 'recordatorio_clase', clase_id: 'clase-b' };
+      const notif3 = { id: 'n3', tipo: 'sesion_sin_registrar', clase_id: 'clase-a' };
+
+      _recordNotificationReceived(notif1);
+      expect(getDedupCount()).toBe(1);
+
+      _recordNotificationReceived(notif2);
+      expect(getDedupCount()).toBe(2);
+
+      _recordNotificationReceived(notif3);
+      expect(getDedupCount()).toBe(3);
+    });
+
+    it('should not count duplicate notifications for same key twice', () => {
+      const notif = { id: 'dup-x', tipo: 'recordatorio_clase', clase_id: 'clase-dup' };
+
+      _recordNotificationReceived(notif);
+      _recordNotificationReceived(notif); // same key within window
+
+      expect(getDedupCount()).toBe(1); // still 1 because same key
+    });
+
+    it('should decrease count after keys expire', () => {
+      const now = Date.now();
+      vi.setSystemTime(now);
+
+      const notif1 = { id: 'e1', tipo: 'recordatorio_clase', clase_id: 'clase-exp' };
+      const notif2 = { id: 'e2', tipo: 'recordatorio_clase', clase_id: 'clase-exp2' };
+
+      _recordNotificationReceived(notif1);
+      _recordNotificationReceived(notif2);
+      expect(getDedupCount()).toBe(2);
+
+      // Advance past expiry
+      vi.setSystemTime(now + 121 * 1000);
+      expect(getDedupCount()).toBe(0);
+      vi.setSystemTime(now);
     });
   });
 

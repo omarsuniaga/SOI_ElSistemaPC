@@ -8,7 +8,7 @@ Portal Maestros is a Progressive Web App (PWA) with a modern, scalable architect
 ┌─────────────────────────────────────────────────────┐
 │           Browser (PWA)                              │
 │  ┌────────────────────────────────────────────────┐  │
-│  │ Vue 3 + Vite (Reactive UI)                     │  │
+  │  │ Vanilla JS + Vite (Reactive UI)                 │  │
 │  │ - Portal Maestros (Teacher Interface)          │  │
 │  │ - Admin Panel                                  │  │
 │  └────────────────────────────────────────────────┘  │

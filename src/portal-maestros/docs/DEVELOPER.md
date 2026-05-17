@@ -142,18 +142,23 @@ if (result.success) {
 ### Notifications (`src/portal-maestros/services/notificationService.js`)
 
 ```javascript
-import { notificationService } from './notificationService.js'
+import { onNotificacionesChange, fetchNotificaciones, marcarLeida, getUnreadCount } from './notificationService.js'
 
-// Start polling (30-second intervals)
-notificationService.startPolling()
-
-// Listen for new notifications
-notificationService.on('notification', (notification) => {
-  console.log('New notification:', notification)
+// Listen for notification changes
+onNotificacionesChange((notifications) => {
+  const count = getUnreadCount()
+  updateBadge(count)
 })
+
+// Manual fetch
+await fetchNotificaciones()
+
+// Mark as read
+await marcarLeida('notification-id')
 
 // Deduplication: prevents push + polling duplicates
 // Key format: `${tipo}:${relatedId}:${minuteBucket}`
+// Dedup count available via getDedupCount()
 ```
 
 ### Error Reporting (`src/services/errorReporter.js`)

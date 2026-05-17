@@ -38,3 +38,6 @@ Thumbs.db
 *.njsproj
 *.sln
 *.sw?
+# Local AI runtime state
+.atl/
+.pi/

@@ -27,7 +27,7 @@ onPushReceived((event) => {
 
 // -- Deduplication Configuration --
 // Realtime es la fuente primaria. Polling cada 5 min es el fallback.
-export const POLL_INTERVAL_MS = 5 * 60 * 1000;  // 5 minutos
+export const POLL_INTERVAL_MS = 30 * 1000;  // 30 segundos (NOTIF-04)
 export const DEDUP_WINDOW_MS  = 60 * 1000;        // 1 minuto
 export const DEDUP_EXPIRY_MS  = 120 * 1000;        // 2 minutos
 
@@ -60,6 +60,16 @@ export function _recordNotificationReceived(notification) {
   const key = _generateDeduplicationKey(notification);
   const expiryTime = Date.now() + DEDUP_EXPIRY_MS;
   _recentNotificationKeys.set(key, expiryTime);
+}
+
+/**
+ * Returns the count of deduplicated notifications in the current dedup window.
+ * Used by the UI to show a badge indicating how many duplicates were filtered.
+ * @returns {number}
+ */
+export function getDedupCount() {
+  _cleanExpiredDeduplicationKeys();
+  return _recentNotificationKeys.size;
 }
 
 // -- Persistencia del inbox en localStorage ----------------------------------

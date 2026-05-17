@@ -1,4 +1,4 @@
-import { fetchNotificaciones, onNotificacionesChange, marcarLeida, marcarTodasLeidas } from '../services/notificationService.js';
+import { fetchNotificaciones, onNotificacionesChange, marcarLeida, marcarTodasLeidas, getDedupCount } from '../services/notificationService.js';
 
 // -- Listener: NAVIGATE_TO desde el SW (toque en notificación OS) ----------------
 // El SW envía este mensaje cuando el usuario toca una notificación del SO
@@ -42,7 +42,7 @@ export const notificacionesPanel = {
       <div id="pm-notificaciones-drawer-overlay" class="pm-drawer-overlay">
         <div class="pm-drawer">
           <div class="pm-drawer-header">
-            <h4><i class="bi bi-bell"></i> Notificaciones</h4>
+            <h4><i class="bi bi-bell"></i> Notificaciones <span id="pm-notif-dedup-badge" class="pm-dedup-badge" style="display:none;"></span></h4>
             <div style="display:flex; gap: 0.5rem;">
               <button id="pm-notif-mark-all" class="pm-icon-btn" title="Marcar todas como leídas" style="font-size: 1rem;">
                 <i class="bi bi-check2-all"></i>
@@ -83,9 +83,22 @@ export const notificacionesPanel = {
     fetchNotificaciones();
   },
 
+  _updateDedupBadge() {
+    const dedupBadge = document.getElementById('pm-notif-dedup-badge');
+    if (!dedupBadge) return;
+    const count = getDedupCount();
+    if (count > 0) {
+      dedupBadge.textContent = `🔄 ${count} dedup`;
+      dedupBadge.style.display = 'inline-flex';
+    } else {
+      dedupBadge.style.display = 'none';
+    }
+  },
+
   renderList(notificaciones) {
     const listEl = document.getElementById('pm-notificaciones-list');
     if (!listEl) return;
+    this._updateDedupBadge();
 
     if (notificaciones.length === 0) {
       listEl.innerHTML = `
@@ -156,6 +169,7 @@ export const notificacionesPanel = {
     isOpen = true;
     
     // Al abrir el panel, traemos la última data
+    this._updateDedupBadge();
     fetchNotificaciones();
   },
 
@@ -317,6 +331,22 @@ if (!document.getElementById('pm-notif-styles')) {
       font-weight: 700;
       margin-left: 6px;
       vertical-align: middle;
+      letter-spacing: 0;
+    }
+
+    /* Dedup badge in panel header */
+    .pm-dedup-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      font-size: 0.65rem;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 10px;
+      background: rgba(245, 158, 11, 0.15);
+      color: #d97706;
+      vertical-align: middle;
+      margin-left: 6px;
       letter-spacing: 0;
     }
 

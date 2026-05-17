@@ -1,21 +1,27 @@
 import { getMaestroLocal }                         from '../auth/maestroAuth.js'
 import { getMisClases, invalidateClasesCache }      from '../services/maestroDataService.js'
-import { loadRouteTree, resolveRutaIdForClase, loadNodesForLevel, loadIndicatorsForNode } from '../services/rutaService.js'
+import { loadRouteTree, resolveRutaIdForClase, loadNodesForLevel, loadIndicatorsForNode, invalidateSemaphoresForClase } from '../services/rutaService.js'
 import { setRutaTema, peekRutaTema }                from '../services/rutaTopicStore.js'
+import { createNodeEvaluationCard }                  from '../components/NodeEvaluationCard.js'
 import { escHTML }                                  from '../utils/portalUtils.js'
+import { academicService }                          from '../../modules/academic-routes/services/academicService.js'
 
 const SEM_ICON  = { green: '🟢', yellow: '🟡', gray: '⚫' }
 const SEM_COLOR = { green: '#22c55e', yellow: '#f59e0b', gray: '#94a3b8' }
 const SEM_BG    = { green: '#f0fdf4', yellow: '#fffbeb', gray: '#f8fafc' }
 
 let _state = {
-  clases:         [],
-  activeClaseId:  null,
-  rutaId:         null,
-  blocks:         [],
-  selectedInd:    null,
-  loading:        false,
+  clases:           [],
+  activeClaseId:    null,
+  rutaId:           null,
+  blocks:           [],
+  selectedInd:      null,
+  evaluacionActiva: null,  // { sesionId, nodoId, indicadorId, claseId }
+  evaluando:        false,
+  loading:          false,
 }
+
+const _maestroLocal = () => getMaestroLocal()
 
 /**
  * Main entry point — called by main-maestros.js for route #/ruta
@@ -259,6 +265,8 @@ function _renderActionPanel(container) {
   const ind = _state.selectedInd
   if (!ind) { panel.innerHTML = ''; return }
 
+  const maestro = _maestroLocal()
+
   panel.innerHTML = `
     <div style="
       position:sticky;bottom:16px;margin-top:16px;
@@ -272,6 +280,29 @@ function _renderActionPanel(container) {
       <div style="font-size:15px;font-weight:700;color:var(--pm-text-primary,#1e293b);margin-bottom:12px;">
         📌 ${escHTML(ind.nombre)}
       </div>
+
+      <!-- Evaluation buttons for class-level progress -->
+      <div style="margin-bottom:12px;border-top:1px solid var(--pm-border,#e2e8f0);padding-top:12px;">
+        <div style="font-size:11px;font-weight:600;color:var(--pm-text-muted,#64748b);margin-bottom:6px;">
+          Evaluación de clase
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;" id="ruta-eval-buttons">
+          <button data-action="eval-indicator" data-status="approved" class="pm-eval-ruta-btn" style="
+            flex:1;padding:8px 12px;border-radius:8px;border:1px solid #22c55e;
+            background:transparent;color:#22c55e;font-size:12px;font-weight:600;cursor:pointer;
+          ">✅ Logrado</button>
+          <button data-action="eval-indicator" data-status="in_process" class="pm-eval-ruta-btn" style="
+            flex:1;padding:8px 12px;border-radius:8px;border:1px solid #f59e0b;
+            background:transparent;color:#f59e0b;font-size:12px;font-weight:600;cursor:pointer;
+          ">🔄 En Proceso</button>
+          <button data-action="eval-indicator" data-status="failed" class="pm-eval-ruta-btn" style="
+            flex:1;padding:8px 12px;border-radius:8px;border:1px solid #ef4444;
+            background:transparent;color:#ef4444;font-size:12px;font-weight:600;cursor:pointer;
+          ">❌ No Logrado</button>
+        </div>
+        <div id="ruta-eval-status" style="font-size:11px;color:var(--pm-text-muted,#64748b);margin-top:6px;"></div>
+      </div>
+
       <div style="display:flex;gap:10px;flex-wrap:wrap;">
         <button data-action="usar-tema-hoy" style="
           flex:1;min-width:180px;padding:12px;
@@ -390,7 +421,40 @@ function _attachEvents(container) {
           blockNombre: _state.blocks[0]?.nombre ?? '',
         }
         _renderActionPanel(container)
-        container.querySelector('#ruta-action-panel')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+        container.querySelector('#ruta-action-panel')?.scrollIntoView?.({ behavior: 'smooth', block: 'nearest' })
+        break
+      }
+
+      case 'eval-indicator': {
+        const ind = _state.selectedInd
+        if (!ind) return
+        const maestro = _maestroLocal()
+        if (!maestro) break
+
+        const status = el.dataset.status
+        const statusEl = container.querySelector('#ruta-eval-status')
+        const allBtns = container.querySelectorAll('.pm-eval-ruta-btn')
+        statusEl.textContent = '⏳ Guardando...'
+        allBtns.forEach(b => b.style.opacity = '0.5')
+
+        try {
+          await academicService.saveIndicatorAttempt({
+            indicator_id: ind.id,
+            clase_id: _state.activeClaseId,
+            created_by: maestro.id,
+            status,
+            feedback: '',
+            attempt_number: 1,
+          })
+          invalidateSemaphoresForClase(_state.activeClaseId)
+          statusEl.textContent = `✅ Guardado — ${status === 'approved' ? 'Logrado' : status === 'in_process' ? 'En Proceso' : 'No Logrado'}`
+          statusEl.style.color = '#22c55e'
+        } catch (err) {
+          console.error('[rutaPlayer] eval error:', err)
+          statusEl.textContent = '❌ Error al guardar evaluación'
+          statusEl.style.color = '#ef4444'
+        }
+        allBtns.forEach(b => b.style.opacity = '1')
         break
       }
 

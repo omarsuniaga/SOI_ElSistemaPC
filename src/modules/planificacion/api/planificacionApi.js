@@ -105,6 +105,10 @@ export async function marcarRevisadasMasivo(ids) {
   return (data || []).map(p => new Planificacion(p))
 }
 
+export async function marcarRevisada(id) {
+  return marcarRevisadasMasivo([id])
+}
+
 export async function marcarEjecutada(id) {
   return actualizarPlanificacion(id, { estado: 'ejecutado' })
 }

@@ -2,6 +2,17 @@ import { supabase } from '../../../lib/supabaseClient.js'
 import { formatHora } from '../utils/clasesUtils.js'
 import { Clase } from '../models/clase.model.js'
 
+export const NIVELES = [
+  { value: '1', label: '1° Año' },
+  { value: '2', label: '2° Año' },
+  { value: '3', label: '3° Año' },
+  { value: '4', label: '4° Año' },
+  { value: '5', label: '5° Año' },
+  { value: 'inicial', label: 'Nivel Inicial' },
+  { value: 'intermedio', label: 'Nivel Intermedio' },
+  { value: 'avanzado', label: 'Nivel Avanzado' },
+]
+
 /**
  * Verifica si hay solapamiento de horarios para un salón o maestro específico
  * @param {Object} params Parámetros de verificación

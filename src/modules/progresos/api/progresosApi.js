@@ -1,5 +1,21 @@
 import { supabase } from '../../../lib/supabaseClient.js'
 
+export const NIVELES = [
+  { value: '1', label: '1° Año' },
+  { value: '2', label: '2° Año' },
+  { value: '3', label: '3° Año' },
+  { value: '4', label: '4° Año' },
+  { value: '5', label: '5° Año' },
+  { value: 'inicial', label: 'Nivel Inicial' },
+  { value: 'intermedio', label: 'Nivel Intermedio' },
+  { value: 'avanzado', label: 'Nivel Avanzado' },
+]
+
+export function getNivelLabel(nivel) {
+  const found = NIVELES.find(n => n.value === nivel)
+  return found ? found.label : nivel || '-'
+}
+
 export async function obtenerAlumnos() {
   const { data, error } = await supabase
     .from('alumnos')

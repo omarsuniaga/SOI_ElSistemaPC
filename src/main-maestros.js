@@ -112,6 +112,8 @@ import { renderMaestrosView } from './modules/maestros/views/maestrosView.js'
 import { renderMetricasCompletaView as renderAdminMetricasView } from './modules/metricas/views/metricasCompletaView.js'
 import { renderAcademicAdminView } from './modules/academic-admin/views/academicAdminView.js'
 import { renderClasesView } from './modules/clases/views/clasesView.js'
+import { renderRegistroAlumnoView } from './portal-maestros/views/registroAlumnoView.js'
+import { getPermisos } from './portal-maestros/services/permisoService.js'
 
 // Nuevos componentes de UI
 import { themeToggle } from './portal-maestros/components/themeToggle.js'
@@ -126,12 +128,19 @@ import './modules/academic-routes/styles/academic-routes.css'
 
 const IS_ADMIN = window.__SOI_MODE__ === 'admin'
 
-const MAESTRO_TABS = [
-  { id: 'calendario', label: 'Calendario', icon: 'bi-calendar3' },
-  { id: 'hoy', label: 'Hoy', icon: 'bi-house-door' },
-  { id: 'ruta', label: 'Ruta', icon: 'bi-diagram-3' },
-  { id: 'metricas', label: 'Métricas', icon: 'bi-bar-chart-line' },
-]
+function buildMaestroTabs(permisos) {
+  const tabs = [
+    { id: 'calendario', label: 'Calendario', icon: 'bi-calendar3' },
+    { id: 'hoy', label: 'Hoy', icon: 'bi-house-door' },
+    { id: 'planificacion', label: 'Plan', icon: 'bi-signpost-split' },
+    { id: 'metricas', label: 'Métricas', icon: 'bi-bar-chart-line' },
+  ]
+  // PERM-05: Only show "Registrar Alumno" tab if teacher has permission
+  if (permisos?.puede_registrar_alumnos) {
+    tabs.push({ id: 'registrar-alumno', label: 'Registrar', icon: 'bi-person-plus' })
+  }
+  return tabs
+}
 
 const ADMIN_TABS = [
   { id: 'admin-alumnos', label: 'Alumnos', icon: 'bi-people-fill' },
@@ -140,9 +149,10 @@ const ADMIN_TABS = [
   { id: 'admin-metricas', label: 'Métricas', icon: 'bi-bar-chart-line' },
 ]
 
-const ALL_TABS = () => IS_ADMIN ? ADMIN_TABS : MAESTRO_TABS
+const ALL_TABS = (permisos) => IS_ADMIN ? ADMIN_TABS : buildMaestroTabs(permisos)
 
 let _maestro = null
+let _permisos = null
 
 const router = createPortalRouter()
 
@@ -313,11 +323,12 @@ window.addEventListener('resize', () => {
   }
 }, { passive: true })
 
-function _renderShell(app, maestro) {
+function _renderShell(app, maestro, permisos) {
   _maestro = maestro
+  _permisos = permisos || _permisos
   const bp = _currentBreakpoint
 
-  const tabs = ALL_TABS()
+  const tabs = ALL_TABS(_permisos)
 
   app.innerHTML = `
     <!-- Sidebar (desktop only) -->
@@ -605,7 +616,7 @@ function _initViewContainers() {
     'login', 'logout', 'calendario', 'clases', 'hoy', 'asistencia',
     'metricas', 'perfil', 'clase-emergente', 'planificacion',
     'alumno', 'gamificacion', 'ruta', 'crear-clase', 'ruta-plan-builder',
-    'ruta-semanal', 'ruta-libreria', 'ruta-detalle',
+    'ruta-semanal', 'ruta-libreria', 'ruta-detalle', 'registrar-alumno',
   ]
 
   const adminViews = [
@@ -772,6 +783,9 @@ async function _renderView(route, params = {}, { silent = false } = {}) {
         break
       case 'admin-sesiones':
         break
+      case 'registrar-alumno':
+        renderRegistroAlumnoView(targetContainer)
+        break
       default:
     }
 
@@ -857,18 +871,28 @@ async function initPortal() {
     return
   }
 
-  // 2. Render shell with navigation
+  // 2. Fetch permissions (for tab visibility, etc.)
+  let permisos = null
+  if (!IS_ADMIN) {
+    try {
+      permisos = await getPermisos(maestro.id)
+    } catch (err) {
+      console.warn('[Init] Error fetching permissions:', err.message)
+    }
+  }
+
+  // 3. Render shell with navigation
   console.log('[Init] Renderizando shell...')
-  _renderShell(app, maestro)
+  _renderShell(app, maestro, permisos)
   console.log('[Init] Shell renderizado')
 
-  // 2.1 Init view containers AFTER shell (shell creates #pm-view-container)
+  // 4. Init view containers AFTER shell (shell creates #pm-view-container)
   _initViewContainers()
 
-  // 3. Registrar callbacks de navegación
+  // 5. Registrar callbacks de navegación
   setNavigationCallbacks(invalidateView, invalidateAllViews)
 
-  // 3. Configure router — F1-F6 routes
+  // 6. Configure router — F1-F6 routes
   router.on('login', (route, params) => _renderView('login', params))
   router.on('logout', (route, params) => _renderView('logout', params))
   router.on('calendario', (route, params) => _renderView('calendario', params))
@@ -887,6 +911,7 @@ async function initPortal() {
   router.on('ruta-semanal', (route, params) => _renderView('ruta-semanal', params))
   router.on('ruta-libreria', (route, params) => _renderView('ruta-libreria', params))
   router.on('ruta-detalle/:id', (route, params) => _renderView('ruta-detalle', params))
+  router.on('registrar-alumno', (route, params) => _renderView('registrar-alumno', params))
 
   // Admin routes (solo visible cuando IS_ADMIN=true)
   if (IS_ADMIN) {

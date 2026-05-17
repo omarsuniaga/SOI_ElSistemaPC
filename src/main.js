@@ -45,6 +45,7 @@ import { registerRoutesObservaciones } from './modules/observaciones/index.js'
 import { registerRoutesMetricas } from './modules/metricas/index.js';
 import { registerRoutesConfig } from './modules/config/index.js';
 import { registerRoutesAcademicAdmin } from './modules/academic-admin/academic-admin.router.js';
+import { registerRoutesPermisos } from './modules/permisos/index.js';
 
 // ============================================================================
 // MÓDULOS REGISTRY - Define todos los módulos de la aplicación
@@ -139,6 +140,14 @@ const MODULES_REGISTRY = [
     register: registerRoutesMetricas
   },
   {
+    id: 'permisos',
+    label: 'Permisos',
+    icon: 'bi-shield-lock',
+    description: 'Permisos y roles de maestros',
+    enabled: true,
+    register: registerRoutesPermisos
+  },
+  {
     id: 'config',
     label: 'Configuración',
     icon: 'bi-gear',
@@ -222,6 +231,7 @@ const NAV_GROUPS = [
     icon: 'bi-gear',
     items: [
       { id: 'configuracion', label: 'Configuración', icon: 'bi-sliders' },
+      { id: 'permisos', label: 'Permisos', icon: 'bi-shield-lock' },
       { id: 'importar-datos', label: 'Importar Datos', icon: 'bi-cloud-upload' },
     ],
   },

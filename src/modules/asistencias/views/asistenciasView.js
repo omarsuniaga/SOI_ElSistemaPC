@@ -13,7 +13,7 @@ import {
   getTimelineProcesado,
   guardarAsistenciaMasiva
 } from '../services/asistenciaDataService.js'
-import { consumeRutaTema } from '../services/rutaTopicStore.js'
+import { consumeRutaTema } from '../../../portal-maestros/services/rutaTopicStore.js'
 import { supabase } from '../../../lib/supabaseClient.js'
 import { escapeHTML } from '../../clases/utils/clasesUtils.js'
 

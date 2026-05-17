@@ -1,282 +1,133 @@
 import { supabase } from '../../../lib/supabaseClient.js'
+import { Observacion } from '../models/observacion.model.js'
+
+/**
+ * Normaliza los datos de la base de datos a instancias del modelo
+ */
+function normalize(data) {
+  if (!data) return null
+  if (Array.isArray(data)) return data.map(o => new Observacion(o))
+  return new Observacion(data)
+}
 
 export async function obtenerObservaciones() {
   const { data, error } = await supabase
     .from('observaciones_alumnos')
-    .select('*')
-    .order('created_at', { ascending: false })
+    .select(`
+      *,
+      alumno:alumnos(nombre_completo),
+      maestro:maestros(nombre_completo)
+    `)
+    .order('fecha_observacion', { ascending: false })
 
   if (error) {
     console.error('Error cargando observaciones:', error.message)
     throw new Error('No se pudieron cargar las observaciones')
   }
 
-  return data
+  return data.map(o => {
+    const model = new Observacion(o)
+    model.alumno_nombre = o.alumno?.nombre_completo || 'Desconocido'
+    model.maestro_nombre = o.maestro?.nombre_completo || 'N/A'
+    return model
+  })
 }
 
 export async function obtenerObservacion(id) {
   const { data, error } = await supabase
     .from('observaciones_alumnos')
-    .select('*')
+    .select('*, alumno:alumnos(nombre_completo)')
     .eq('id', id)
     .single()
 
-  if (error) {
-    console.error('Error cargando observación:', error.message)
-    throw new Error('Observación no encontrada')
-  }
-
-  return data
+  if (error) throw new Error('Observación no encontrada')
+  
+  const model = new Observacion(data)
+  model.alumno_nombre = data.alumno?.nombre_completo || 'Desconocido'
+  return model
 }
 
-export async function crearObservacion(obs) {
-  if (!obs.alumno_id) {
-    throw new Error('El alumno es obligatorio')
-  }
-
-  if (!obs.titulo || !obs.titulo.trim()) {
-    throw new Error('El título es obligatorio')
-  }
-
-  if (!obs.descripcion || !obs.descripcion.trim()) {
-    throw new Error('La descripción es obligatoria')
-  }
-
-  const datosLimpios = {
-    alumno_id: obs.alumno_id,
-    maestro_id: obs.maestro_id || null,
-    tipo: (obs.tipo || 'comportamiento').trim(),
-    titulo: obs.titulo.trim(),
-    descripcion: obs.descripcion.trim(),
-    observacion: obs.descripcion.trim(),
-    prioridad: (obs.prioridad || 'media').trim(),
-    estado: (obs.estado || 'abierta').trim(),
-    fecha: obs.fecha_observacion || obs.fecha || new Date().toISOString().split('T')[0],
-    fecha_observacion: obs.fecha_observacion || obs.fecha || new Date().toISOString().split('T')[0],
-    requiere_seguimiento: obs.requiere_seguimiento ?? false,
-    seguimiento_fecha: obs.seguimiento_fecha || null,
-    seguimiento_observacion: (obs.seguimiento_observacion || '').trim() || null,
-  }
-
-  if (obs.clase_id) datosLimpios.clase_id = obs.clase_id
-  if (obs.sesion_clase_id) datosLimpios.sesion_clase_id = obs.sesion_clase_id
+export async function crearObservacion(obsData) {
+  const model = new Observacion(obsData)
+  const errores = model.validate()
+  if (errores.length > 0) throw new Error(errores[0])
 
   const { data, error } = await supabase
     .from('observaciones_alumnos')
-    .insert([datosLimpios])
+    .insert([model.toJSON()])
     .select()
 
-  if (error) {
-    console.error('Error creando observación:', error.message)
-    throw new Error('No se pudo crear la observación')
-  }
-
-  return data[0]
+  if (error) throw error
+  return normalize(data[0])
 }
 
 export async function actualizarObservacion(id, actualizaciones) {
-  if (actualizaciones.titulo !== undefined && !actualizaciones.titulo.trim()) {
-    throw new Error('El título no puede estar vacío')
-  }
-
-  if (actualizaciones.descripcion !== undefined && !actualizaciones.descripcion.trim()) {
-    throw new Error('La descripción no puede estar vacía')
-  }
-
-  const datosActualizacion = {}
-
-  if (actualizaciones.alumno_id !== undefined) datosActualizacion.alumno_id = actualizaciones.alumno_id
-  if (actualizaciones.maestro_id !== undefined) datosActualizacion.maestro_id = actualizaciones.maestro_id || null
-  if (actualizaciones.tipo !== undefined) datosActualizacion.tipo = actualizaciones.tipo.trim()
-  if (actualizaciones.titulo !== undefined) {
-    datosActualizacion.titulo = actualizaciones.titulo.trim()
-  }
-  if (actualizaciones.descripcion !== undefined) {
-    datosActualizacion.descripcion = actualizaciones.descripcion.trim()
-    datosActualizacion.observacion = actualizaciones.descripcion.trim()
-  }
-  if (actualizaciones.prioridad !== undefined) datosActualizacion.prioridad = actualizaciones.prioridad.trim()
-  if (actualizaciones.estado !== undefined) datosActualizacion.estado = actualizaciones.estado.trim()
-  if (actualizaciones.fecha_observacion !== undefined) {
-    datosActualizacion.fecha_observacion = actualizaciones.fecha_observacion
-    datosActualizacion.fecha = actualizaciones.fecha_observacion
-  }
-  if (actualizaciones.requiere_seguimiento !== undefined) datosActualizacion.requiere_seguimiento = actualizaciones.requiere_seguimiento
-  if (actualizaciones.seguimiento_fecha !== undefined) datosActualizacion.seguimiento_fecha = actualizaciones.seguimiento_fecha
-  if (actualizaciones.seguimiento_observacion !== undefined) {
-    datosActualizacion.seguimiento_observacion = (actualizaciones.seguimiento_observacion || '').trim() || null
-  }
-  if (actualizaciones.clase_id !== undefined) datosActualizacion.clase_id = actualizaciones.clase_id
+  const { data: original } = await supabase.from('observaciones_alumnos').select('*').eq('id', id).single()
+  const model = new Observacion({ ...original, ...actualizaciones })
+  
+  const errores = model.validate()
+  if (errores.length > 0) throw new Error(errores[0])
 
   const { data, error } = await supabase
     .from('observaciones_alumnos')
-    .update(datosActualizacion)
+    .update(model.toJSON())
     .eq('id', id)
     .select()
 
-  if (error) {
-    console.error('Error actualizando observación:', error.message)
-    throw new Error('No se pudo actualizar la observación')
-  }
-
-  return data[0]
+  if (error) throw error
+  return normalize(data[0])
 }
 
 export async function eliminarObservacion(id) {
-  const { error } = await supabase
-    .from('observaciones_alumnos')
-    .delete()
-    .eq('id', id)
-
-  if (error) {
-    console.error('Error eliminando observación:', error.message)
-    throw new Error('No se pudo eliminar la observación')
-  }
+  const { error } = await supabase.from('observaciones_alumnos').delete().eq('id', id)
+  if (error) throw error
 }
 
-export async function obtenerObservacionesPorAlumno(alumnoId) {
-  const { data, error } = await supabase
-    .from('observaciones_alumnos')
-    .select('*')
-    .eq('alumno_id', alumnoId)
-    .order('created_at', { ascending: false })
-
-  if (error) {
-    console.error('Error cargando observaciones del alumno:', error.message)
-    throw new Error('No se pudieron cargar las observaciones del alumno')
-  }
-
-  return data
-}
-
-export async function obtenerObservacionesPorTipo(tipo) {
-  const { data, error } = await supabase
-    .from('observaciones_alumnos')
-    .select('*')
-    .eq('tipo', tipo)
-    .order('created_at', { ascending: false })
-
-  if (error) {
-    console.error('Error filtrando observaciones:', error.message)
-    throw new Error('No se pudieron filtrar las observaciones')
-  }
-
-  return data
-}
-
-export async function obtenerObservacionesAbiertas() {
-  const { data, error } = await supabase
-    .from('observaciones_alumnos')
-    .select('*')
-    .eq('estado', 'abierta')
-    .order('created_at', { ascending: false })
-
-  if (error) {
-    console.error('Error cargando observaciones abiertas:', error.message)
-    throw new Error('No se pudieron cargar las observaciones abiertas')
-  }
-
-  return data
-}
-
-export async function agregarSeguimiento(id, fechaSeguimiento, observacionSeguimiento) {
-  if (!observacionSeguimiento || !observacionSeguimiento.trim()) {
-    throw new Error('La observación de seguimiento es obligatoria')
-  }
-
+export async function agregarSeguimiento(id, observacionSeguimiento) {
   const { data, error } = await supabase
     .from('observaciones_alumnos')
     .update({
-      seguimiento_fecha: fechaSeguimiento || new Date().toISOString().split('T')[0],
       seguimiento_observacion: observacionSeguimiento.trim(),
+      seguimiento_fecha: new Date().toISOString().split('T')[0],
       estado: 'seguimiento',
-      requiere_seguimiento: true,
+      requiere_seguimiento: true
     })
     .eq('id', id)
     .select()
 
-  if (error) {
-    console.error('Error agregando seguimiento:', error.message)
-    throw new Error('No se pudo agregar el seguimiento')
-  }
-
-  return data[0]
+  if (error) throw error
+  return normalize(data[0])
 }
 
 export async function resolverObservacion(id) {
   const { data, error } = await supabase
     .from('observaciones_alumnos')
-    .update({ estado: 'resuelta', requiere_seguimiento: false })
+    .update({ 
+      estado: 'resuelta', 
+      requiere_seguimiento: false 
+    })
     .eq('id', id)
     .select()
 
-  if (error) {
-    console.error('Error resolviendo observación:', error.message)
-    throw new Error('No se pudo resolver la observación')
-  }
-
-  return data[0]
-}
-
-export async function cambiarPrioridad(id, nuevaPrioridad) {
-  if (!nuevaPrioridad || !nuevaPrioridad.trim()) {
-    throw new Error('La prioridad es obligatoria')
-  }
-
-  const { data, error } = await supabase
-    .from('observaciones_alumnos')
-    .update({ prioridad: nuevaPrioridad.trim() })
-    .eq('id', id)
-    .select()
-
-  if (error) {
-    console.error('Error cambiando prioridad:', error.message)
-    throw new Error('No se pudo cambiar la prioridad')
-  }
-
-  return data[0]
+  if (error) throw error
+  return normalize(data[0])
 }
 
 export async function getEstadisticas() {
-  const { data: tipoData, error: tipoError } = await supabase
+  const { data, error } = await supabase
     .from('observaciones_alumnos')
-    .select('tipo')
+    .select('estado, prioridad, tipo')
 
-  const { data: estadoData, error: estadoError } = await supabase
-    .from('observaciones_alumnos')
-    .select('estado')
-
-  const { data: prioridadData, error: prioridadError } = await supabase
-    .from('observaciones_alumnos')
-    .select('prioridad')
-
-  if (tipoError || estadoError || prioridadError) {
-    console.error('Error obteniendo estadísticas:', tipoError?.message || estadoError?.message || prioridadError?.message)
-    throw new Error('No se pudieron obtener las estadísticas')
-  }
-
-  const countByTipo = (tipoData || []).reduce((acc, o) => {
-    const tipo = o.tipo || 'sin-tipo'
-    acc[tipo] = (acc[tipo] || 0) + 1
-    return acc
-  }, {})
-
-  const countByEstado = (estadoData || []).reduce((acc, o) => {
-    const estado = o.estado || 'sin-estado'
-    acc[estado] = (acc[estado] || 0) + 1
-    return acc
-  }, {})
-
-  const countByPrioridad = (prioridadData || []).reduce((acc, o) => {
-    const prioridad = o.prioridad || 'sin-prioridad'
-    acc[prioridad] = (acc[prioridad] || 0) + 1
-    return acc
-  }, {})
+  if (error) throw error
 
   return {
-    total: (tipoData || []).length,
-    porTipo: countByTipo,
-    porEstado: countByEstado,
-    porPrioridad: countByPrioridad,
+    total: data.length,
+    abiertas: data.filter(o => o.estado === 'abierta').length,
+    seguimiento: data.filter(o => o.estado === 'seguimiento').length,
+    altas: data.filter(o => o.prioridad === 'alta').length,
+    porTipo: data.reduce((acc, o) => {
+      acc[o.tipo] = (acc[o.tipo] || 0) + 1
+      return acc
+    }, {})
   }
 }

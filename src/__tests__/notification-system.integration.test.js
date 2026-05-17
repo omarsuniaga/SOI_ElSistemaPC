@@ -118,7 +118,8 @@ describe('Notification System Integration', () => {
     });
 
     it('should prevent duplicates when same notification arrives via polling and push', async () => {
-      const now = Date.now();
+      // Fix time at the start of a minute to ensure 5s jump stays in same bucket (DEDUP_WINDOW_MS = 60s)
+      const now = new Date('2026-05-17T10:00:00Z').getTime();
       vi.setSystemTime(now);
 
       const notification = {

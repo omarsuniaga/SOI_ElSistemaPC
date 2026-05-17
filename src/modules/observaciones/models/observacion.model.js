@@ -1,20 +1,30 @@
+/**
+ * Modelo de Observacion - Validaciones y lógica de negocio
+ */
 export class Observacion {
   constructor(data = {}) {
     this.id = data.id || null
     this.alumno_id = data.alumno_id || null
     this.maestro_id = data.maestro_id || null
+    this.clase_id = data.clase_id || null
+    this.sesion_clase_id = data.sesion_clase_id || null
     this.tipo = data.tipo || 'comportamiento'
     this.titulo = data.titulo || ''
-    this.descripcion = data.descripcion || ''
+    this.descripcion = data.descripcion || data.observacion || ''
     this.prioridad = data.prioridad || 'media'
     this.estado = data.estado || 'abierta'
-    this.fecha_observacion = data.fecha_observacion || null
+    this.fecha_observacion = data.fecha_observacion || data.fecha || null
+    this.requiere_seguimiento = data.requiere_seguimiento ?? false
     this.seguimiento_fecha = data.seguimiento_fecha || null
     this.seguimiento_observacion = data.seguimiento_observacion || ''
     this.created_at = data.created_at || null
     this.updated_at = data.updated_at || null
   }
 
+  /**
+   * Valida los datos de la observación
+   * @returns {string[]} Array de errores (vacío si no hay errores)
+   */
   validate() {
     const errores = []
 
@@ -38,8 +48,19 @@ export class Observacion {
       errores.push('La descripción no puede exceder 1000 caracteres')
     }
 
-    if (!this.tipo) {
-      errores.push('El tipo es obligatorio')
+    const tiposValidos = Observacion.getTipos().map(t => t.value)
+    if (!tiposValidos.includes(this.tipo)) {
+      errores.push('El tipo de observación no es válido')
+    }
+
+    const prioridadesValidas = Observacion.getPrioridades().map(p => p.value)
+    if (!prioridadesValidas.includes(this.prioridad)) {
+      errores.push('La prioridad no es válida')
+    }
+
+    const estadosValidos = Observacion.getEstados().map(e => e.value)
+    if (!estadosValidos.includes(this.estado)) {
+      errores.push('El estado no es válido')
     }
 
     return errores
@@ -47,62 +68,52 @@ export class Observacion {
 
   static getTipos() {
     return [
-      { value: 'comportamiento', label: 'Comportamiento' },
-      { value: 'academico', label: 'Académico' },
-      { value: 'social', label: 'Social' },
-      { value: 'disciplina', label: 'Disciplina' },
+      { value: 'comportamiento', label: 'Comportamiento', icon: 'bi-person-badge' },
+      { value: 'academico', label: 'Académico', icon: 'bi-mortarboard' },
+      { value: 'social', label: 'Social', icon: 'bi-people' },
+      { value: 'disciplina', label: 'Disciplina', icon: 'bi-exclamation-octagon' },
     ]
   }
 
   static getPrioridades() {
     return [
-      { value: 'baja', label: 'Baja' },
-      { value: 'media', label: 'Media' },
-      { value: 'alta', label: 'Alta' },
+      { value: 'baja', label: 'Baja', color: 'text-success' },
+      { value: 'media', label: 'Media', color: 'text-warning' },
+      { value: 'alta', label: 'Alta', color: 'text-danger' },
     ]
   }
 
   static getEstados() {
     return [
-      { value: 'abierta', label: 'Abierta' },
-      { value: 'resuelta', label: 'Resuelta' },
-      { value: 'seguimiento', label: 'Seguimiento' },
+      { value: 'abierta', label: 'Abierta', color: 'bg-secondary' },
+      { value: 'seguimiento', label: 'Seguimiento', color: 'bg-warning text-dark' },
+      { value: 'resuelta', label: 'Resuelta', color: 'bg-success' },
     ]
   }
 
-  static validarTitulo(titulo) {
-    if (!titulo || !titulo.trim()) return false
-    if (titulo.trim().length < 5) return false
-    if (titulo.trim().length > 100) return false
-    return true
-  }
-
-  static validarDescripcion(descripcion) {
-    if (!descripcion || !descripcion.trim()) return false
-    if (descripcion.trim().length < 20) return false
-    if (descripcion.trim().length > 1000) return false
-    return true
-  }
-
-  static validarTipo(tipo) {
-    return this.getTipos().some(t => t.value === tipo)
-  }
-
+  /**
+   * Devuelve los datos como objeto limpio para persistencia en Supabase
+   * @returns {object}
+   */
   toJSON() {
-    return {
-      id: this.id,
+    const json = {
       alumno_id: this.alumno_id,
       maestro_id: this.maestro_id,
-      tipo: this.tipo.trim(),
+      clase_id: this.clase_id,
+      sesion_clase_id: this.sesion_clase_id,
+      tipo: this.tipo,
       titulo: this.titulo.trim(),
       descripcion: this.descripcion.trim(),
-      prioridad: this.prioridad.trim(),
-      estado: this.estado.trim(),
+      observacion: this.descripcion.trim(), // Alias para legacy DB column
+      prioridad: this.prioridad,
+      estado: this.estado,
       fecha_observacion: this.fecha_observacion,
+      requiere_seguimiento: this.requiere_seguimiento,
       seguimiento_fecha: this.seguimiento_fecha,
-      seguimiento_observacion: this.seguimiento_observacion.trim() || null,
-      created_at: this.created_at,
-      updated_at: this.updated_at,
+      seguimiento_observacion: this.seguimiento_observacion.trim() || null
     }
+
+    if (this.id) json.id = this.id
+    return json
   }
 }

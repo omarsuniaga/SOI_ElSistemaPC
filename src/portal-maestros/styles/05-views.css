@@ -1552,9 +1552,20 @@
 .timeline-date { flex-shrink: 0; }
 .timeline-content { flex: 1; }
 
+/* ── View Transitions ──────────────────────────────────────────── */
+.pm-view-enter {
+  opacity: 0;
+  transform: translateY(8px);
+}
+.pm-view-enter-active {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 200ms ease, transform 200ms ease;
+}
+
 /* ═══════════════════════════════════════════════════════════════
-   ADAPTIVE VIEWS — Responsive enhancements por breakpoint
-   ═══════════════════════════════════════════════════════════════ */
+    ADAPTIVE VIEWS — Responsive enhancements por breakpoint
+    ═══════════════════════════════════════════════════════════════ */
 
 /* ── Asistencia: más compacta en tablet ──────────────────── */
 @media (min-width: 768px) {

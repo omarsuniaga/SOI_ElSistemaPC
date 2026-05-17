@@ -255,6 +255,18 @@ export const pwaInstaller = {
     });
   },
 
+  // ── Public API ──────────────────────────────────────────────────────────────
+
+  promptInstall() {
+    if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+      this._showIOSGuide();
+    } else if (deferredPrompt) {
+      this._triggerNativeInstall();
+    } else {
+      this._showDesktopGuide();
+    }
+  },
+
   // ── Helpers ─────────────────────────────────────────────────────────────────
 
   _isStandalone() {

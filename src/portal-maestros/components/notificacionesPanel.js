@@ -1,4 +1,5 @@
 import { fetchNotificaciones, onNotificacionesChange, marcarLeida, marcarTodasLeidas, getDedupCount } from '../services/notificationService.js';
+import { enableTrap } from '../utils/focusTrap.js';
 
 // -- Listener: NAVIGATE_TO desde el SW (toque en notificación OS) ----------------
 // El SW envía este mensaje cuando el usuario toca una notificación del SO
@@ -168,12 +169,20 @@ export const notificacionesPanel = {
     overlay.classList.add('open');
     isOpen = true;
     
+    // Focus trap
+    const drawer = document.querySelector('#pm-notificaciones-drawer-overlay .pm-drawer');
+    if (drawer) {
+      if (this._trap) this._trap.dispose();
+      this._trap = enableTrap(drawer, { onClose: () => this.close() });
+    }
+
     // Al abrir el panel, traemos la última data
     this._updateDedupBadge();
     fetchNotificaciones();
   },
 
   close() {
+    if (this._trap) { this._trap.dispose(); this._trap = null; }
     const overlay = document.getElementById('pm-notificaciones-drawer-overlay');
     if (overlay) {
       overlay.classList.remove('open');

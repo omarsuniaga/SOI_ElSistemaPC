@@ -3,6 +3,7 @@ import { supabase } from '../../lib/supabaseClient.js';
 import { getMaestroLocal } from '../auth/maestroAuth.js';
 import { AppToast } from '../../shared/components/AppToast.js';
 import { escHTML } from '../utils/portalUtils.js';
+import { enableTrap } from '../utils/focusTrap.js';
 
 const TIPO_AUSENCIA = [
   { value: 'enfermedad', label: 'Enfermedad', icon: 'bi-thermometer-half' },
@@ -44,6 +45,12 @@ class AusenciaModal {
   }
 
   open() {
+    // Cleanup any previous trap
+    if (this._focusTrap) {
+      this._focusTrap.dispose();
+      this._focusTrap = null;
+    }
+
     this.maestro = getMaestroLocal();
     if (!this.maestro) {
       AppToast.error('Debes estar logueado para solicitar ausencias');
@@ -637,6 +644,12 @@ class AusenciaModal {
         this.state.actividades[claseId] = e.target.value;
       }
     });
+
+    // Focus trap
+    const dialog = document.querySelector('.app-modal-dialog');
+    if (dialog) {
+      this._focusTrap = enableTrap(dialog, { onClose: () => AppModal.close() });
+    }
   }
 
   updateDiasPreview() {

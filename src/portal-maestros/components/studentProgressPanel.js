@@ -16,6 +16,7 @@ import { supabase } from '../../lib/supabaseClient.js'
 import { getBreakpoint, onBreakpointChange } from '../utils/portalUtils.js'
 import { saveEvaluaciones } from '../services/evaluationService.js'
 import { getMaestroLocal } from '../auth/maestroAuth.js'
+import { enableTrap } from '../utils/focusTrap.js'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Styles
@@ -392,6 +393,7 @@ export function createStudentProgressPanel({ alumno, rutaId, sessionId, claseId,
 
   // Keep reference to loaded summaries for event delegation
   let _summaries = []
+  let _focusTrap = null
 
   // ── Event delegation ──────────────────────────────────────────────────────
   function _adaptToBreakpoint() {
@@ -557,6 +559,10 @@ export function createStudentProgressPanel({ alumno, rutaId, sessionId, claseId,
     el.innerHTML = _renderLoading()
     el.classList.add('pm-student-panel--open')
 
+    // Focus trap
+    if (_focusTrap) _focusTrap.dispose()
+    _focusTrap = enableTrap(el, { onClose: () => close() })
+
     try {
       const data = await _loadProgress(alumno.id, rutaId)
       _summaries = data.indicatorSummaries
@@ -569,6 +575,7 @@ export function createStudentProgressPanel({ alumno, rutaId, sessionId, claseId,
 
   function close() {
     el.classList.remove('pm-student-panel--open')
+    if (_focusTrap) { _focusTrap.dispose(); _focusTrap = null }
     // Clear content after CSS transition (300ms)
     setTimeout(() => {
       if (!el.classList.contains('pm-student-panel--open')) {
@@ -579,6 +586,7 @@ export function createStudentProgressPanel({ alumno, rutaId, sessionId, claseId,
   }
 
   function destroy() {
+    if (_focusTrap) { _focusTrap.dispose(); _focusTrap = null }
     unbindBP()
     el.removeEventListener('click', _onClick)
     el.remove()

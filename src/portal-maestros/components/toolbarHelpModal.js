@@ -4,6 +4,8 @@
  * Diseño Apple-style con categorías y ejemplos visuales.
  */
 
+import { enableTrap } from '../utils/focusTrap.js';
+
 export function createToolbarHelpModal(parentContainer, options = {}) {
   let modalEl = document.getElementById('pm-toolbar-help-modal')
 
@@ -490,13 +492,18 @@ export function createToolbarHelpModal(parentContainer, options = {}) {
     }
   }
 
+  let _focusTrap = null
+
   function open() {
     modalEl.classList.add('open')
     // Focus trap for accessibility
     modalEl.querySelector('.pm-help-primary-btn')?.focus()
+    if (_focusTrap) _focusTrap.dispose()
+    _focusTrap = enableTrap(modalEl.querySelector('.pm-help-modal'), { onClose: () => close() })
   }
 
   function close() {
+    if (_focusTrap) { _focusTrap.dispose(); _focusTrap = null }
     modalEl.classList.remove('open')
   }
 

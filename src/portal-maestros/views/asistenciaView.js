@@ -16,6 +16,7 @@ import { RouteConfigAdapter } from '../services/routeConfigAdapter.js'
 import { renderRouteConfigurator } from './components/routeConfigurator.js'
 import { crearPlanificacion } from '../../modules/planificacion/api/planificacionApi.js'
 import { AppModal } from '../../shared/components/AppModal.js'
+import { AppToast } from '../../shared/components/AppToast.js'
 import { invalidateView as navInvalidateView } from '../services/navigationHooks.js'
 import { createRouteTreeBar } from '../components/routeTreeBar.js'
 import { createStudentProgressPanel } from '../components/studentProgressPanel.js'
@@ -693,7 +694,7 @@ function _renderVista(container, ctx) {
         const improved = await improveText(text)
         informeModal.open({ original: text, improved })
       } catch (err) {
-        alert('Error al generar informe: ' + err.message)
+        AppToast.error('Error al generar informe: ' + err.message)
       } finally {
         if (informeBtn) informeBtn.disabled = false
       }
@@ -711,7 +712,7 @@ function _renderVista(container, ctx) {
         })
         structureModal.open({ original: text, dsl })
       } catch (err) {
-        alert('Error al estructurar con IA: ' + err.message)
+        AppToast.error('Error al estructurar con IA: ' + err.message)
       } finally {
         if (structureBtn) structureBtn.disabled = false
       }
@@ -988,7 +989,7 @@ function _renderVista(container, ctx) {
           setTimeout(() => toast.remove(), 3000);
         } catch (err) {
           console.error('[asistencia] Error guardando planificación:', err);
-          alert('Error al guardar la planificación: ' + (err.message || err));
+          AppToast.error('Error al guardar la planificación: ' + (err.message || err));
         }
       });
     });

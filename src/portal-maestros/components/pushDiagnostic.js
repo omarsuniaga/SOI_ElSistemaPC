@@ -11,6 +11,7 @@ import {
   getSubscriptionStatus,
   testNotification
 } from '../services/pushService.js'
+import { enableTrap } from '../utils/focusTrap.js'
 
 export const pushDiagnostic = {
   container: null,
@@ -459,9 +460,17 @@ export const pushDiagnostic = {
     this.init()
     const overlay = document.getElementById('push-diagnostic-overlay')
     overlay.style.display = 'flex'
+
+    // Focus trap
+    const card = document.querySelector('#push-diagnostic-panel .push-diagnostic-card')
+    if (card) {
+      if (this._trap) this._trap.dispose()
+      this._trap = enableTrap(card, { onClose: () => this.close() })
+    }
   },
 
   close() {
+    if (this._trap) { this._trap.dispose(); this._trap = null }
     const overlay = document.getElementById('push-diagnostic-overlay')
     if (overlay) overlay.style.display = 'none'
   }

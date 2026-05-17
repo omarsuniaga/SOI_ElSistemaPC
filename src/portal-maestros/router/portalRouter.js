@@ -117,7 +117,7 @@ export function createPortalRouter() {
       
       const view = document.querySelector('.pm-view-content.active')
       if (view) {
-        view.classList.remove('pm-animate-fade-in')
+        view.classList.remove('pm-animate-fade-in', 'pm-view-enter', 'pm-view-enter-active')
         void view.offsetWidth // force reflow
       }
       
@@ -126,6 +126,18 @@ export function createPortalRouter() {
       const newView = document.querySelector('.pm-view-content.active')
       if (newView) {
         newView.classList.add('pm-animate-fade-in')
+        // View transition: two-step class toggle for fade-in effect
+        newView.classList.add('pm-view-enter')
+        requestAnimationFrame(() => {
+          newView.classList.add('pm-view-enter-active')
+          // Clean up classes after transition completes
+          const cleanUp = () => {
+            newView.classList.remove('pm-view-enter', 'pm-view-enter-active')
+          }
+          newView.addEventListener('transitionend', cleanUp, { once: true })
+          // Fallback cleanup if transitionend doesn't fire
+          setTimeout(cleanUp, 250)
+        })
       }
       return
     }

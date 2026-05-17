@@ -502,11 +502,7 @@ function _renderShell(app, maestro) {
   // Evento de instalación PWA
   document.getElementById('pm-btn-install')?.addEventListener('click', () => {
     if (window.pwaInstaller) {
-      if (window.pwaInstaller.deferredPrompt) {
-        window.pwaInstaller.install()
-      } else {
-        window.pwaInstaller.showInstallInstructions()
-      }
+      window.pwaInstaller.promptInstall()
     }
   })
 
@@ -729,10 +725,10 @@ async function _renderView(route, params = {}, { silent = false } = {}) {
         _activeViewCleanup = renderAlumnoPerfilView(targetContainer, { alumnoId: urlParams.get('id') })
         break
       case 'gamificacion':
-        renderGamificacionView(targetContainer)
+        await renderGamificacionView(targetContainer)
         break
       case 'ruta':
-        renderRutaPlayerView(targetContainer)
+        await renderRutaPlayerView(targetContainer)
         break
       case 'crear-clase':
         renderCrearClaseView(targetContainer)

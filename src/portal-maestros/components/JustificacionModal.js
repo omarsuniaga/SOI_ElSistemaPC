@@ -7,6 +7,8 @@
  * @param {{ onSave: Function }} options 
  * @returns {Object} API del componente
  */
+import { enableTrap } from '../utils/focusTrap.js';
+
 export function createJustificacionModal(parentContainer, { onSave, onCancel }) {
   let modalEl = document.getElementById('pm-justif-modal');
 
@@ -349,6 +351,7 @@ export function createJustificacionModal(parentContainer, { onSave, onCancel }) 
   let _previewUrl = null;          // URL temporal para preview
   let _isEditing = false;
   let _prevEstado = null;          // Estado anterior para rollback en cancel
+  let _focusTrap = null;           // Focus trap instance
 
   // Referencias DOM
   const titleEl = modalEl.querySelector('#pm-justif-title');
@@ -407,6 +410,13 @@ export function createJustificacionModal(parentContainer, { onSave, onCancel }) 
     
     modalEl.classList.add('open');
     motivoInput.focus();
+
+    // Focus trap
+    const modalContainer = modalEl.querySelector('.pm-justif-modal');
+    if (modalContainer) {
+      if (_focusTrap) _focusTrap.dispose();
+      _focusTrap = enableTrap(modalContainer, { onClose: () => close(true) });
+    }
   }
 
   function close(cancelled = false) {
@@ -419,6 +429,7 @@ export function createJustificacionModal(parentContainer, { onSave, onCancel }) 
     _currentFile = null;
     _previewUrl = null;
     _prevEstado = null;
+    if (_focusTrap) { _focusTrap.dispose(); _focusTrap = null; }
   }
 
   // Eventos

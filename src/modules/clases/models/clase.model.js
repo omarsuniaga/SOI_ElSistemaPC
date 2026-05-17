@@ -7,6 +7,7 @@ export class Clase {
     this.nombre = data.nombre || ''
     this.maestro_id = data.maestro_id || null
     this.maestro_auxiliar_id = data.maestro_auxiliar_id || null
+    this.programa_id = data.programa_id || null
     this.instrumento = data.instrumento || ''
     this.horarios = data.horarios || []
     this.max_alumnos = data.max_alumnos ?? 20
@@ -36,6 +37,10 @@ export class Clase {
       errores.push('El maestro titular es obligatorio')
     }
 
+    if (!this.programa_id) {
+      errores.push('El programa es obligatorio')
+    }
+
     if (!this.instrumento || !this.instrumento.trim()) {
       errores.push('El instrumento es obligatorio')
     }
@@ -44,6 +49,7 @@ export class Clase {
       errores.push('Debe agregar al menos un horario')
     }
 
+    // Validación de horarios individuales
     for (const h of this.horarios) {
       if (!h.dia) {
         errores.push('El día es obligatorio en todos los horarios')
@@ -53,6 +59,28 @@ export class Clase {
       }
       if (h.hora_inicio && h.hora_fin && h.hora_inicio >= h.hora_fin) {
         errores.push('La hora de inicio debe ser menor que la hora de fin')
+      }
+    }
+
+    // Validación de solapamientos internos (misma clase)
+    const schedulesByDay = {}
+    this.horarios.forEach(h => {
+      if (!h.dia || !h.hora_inicio || !h.hora_fin) return
+      const dia = h.dia.toLowerCase().trim()
+      if (!schedulesByDay[dia]) schedulesByDay[dia] = []
+      schedulesByDay[dia].push(h)
+    })
+
+    for (const dia in schedulesByDay) {
+      const slots = schedulesByDay[dia].sort((a, b) => a.hora_inicio.localeCompare(b.hora_inicio))
+      for (let i = 0; i < slots.length - 1; i++) {
+        const current = slots[i]
+        const next = slots[i + 1]
+        if (current.hora_fin > next.hora_inicio) {
+          const diaLabel = dia.charAt(0).toUpperCase() + dia.slice(1)
+          errores.push(`Existen horarios solapados en la misma clase (${diaLabel})`)
+          break
+        }
       }
     }
 
@@ -76,7 +104,7 @@ export class Clase {
    * @returns {boolean}
    */
   isCompleto() {
-    return !!(this.nombre && this.maestro_id && this.instrumento && this.horarios?.length > 0)
+    return !!(this.nombre && this.maestro_id && this.programa_id && this.instrumento && this.horarios?.length > 0)
   }
 
   /**
@@ -89,6 +117,7 @@ export class Clase {
       nombre: this.nombre.trim(),
       maestro_id: this.maestro_id,
       maestro_auxiliar_id: this.maestro_auxiliar_id || null,
+      programa_id: this.programa_id,
       instrumento: this.instrumento.trim(),
       max_alumnos: this.max_alumnos,
       estado: this.estado,

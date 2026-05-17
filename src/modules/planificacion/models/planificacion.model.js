@@ -1,3 +1,6 @@
+/**
+ * Modelo de Planificacion - Validaciones y lógica de negocio
+ */
 export class Planificacion {
   constructor(data = {}) {
     this.id = data.id || null
@@ -15,8 +18,16 @@ export class Planificacion {
     this.instrumento = data.instrumento || null
     this.created_at = data.created_at || null
     this.updated_at = data.updated_at || null
+    
+    // UI Helpers
+    this.clase_nombre = data.clase_nombre || null
+    this.maestro_nombre = data.maestro_nombre || null
   }
 
+  /**
+   * Valida los datos de la planificación
+   * @returns {string[]} Array de errores (vacío si no hay errores)
+   */
   validate() {
     const errores = []
 
@@ -60,24 +71,48 @@ export class Planificacion {
     return errores
   }
 
-  static validarTema(tema) {
-    if (!tema || !tema.trim()) return false
-    if (tema.trim().length < 3) return false
-    if (tema.trim().length > 200) return false
-    return true
+  /**
+   * Indica si el plan puede ser editado según su estado
+   * @returns {boolean}
+   */
+  canEdit() {
+    return this.estado === 'planificado' || this.estado === 'ejecutado'
+  }
+
+  /**
+   * Indica si el plan puede ser aprobado (marcar como revisado)
+   * @returns {boolean}
+   */
+  canApprove() {
+    return this.estado === 'ejecutado'
+  }
+
+  /**
+   * Indica si el plan está bloqueado para cualquier cambio
+   * @returns {boolean}
+   */
+  isLocked() {
+    return this.estado === 'revisado'
   }
 
   static getEstados() {
     return [
-      { value: 'planificado', label: 'Planificado' },
-      { value: 'ejecutado', label: 'Ejecutado' },
-      { value: 'revisado', label: 'Revisado' },
+      { value: 'planificado', label: 'Planificado', color: 'bg-primary' },
+      { value: 'ejecutado', label: 'Ejecutado', color: 'bg-success' },
+      { value: 'revisado', label: 'Revisado', color: 'bg-info' },
     ]
   }
 
+  static getEstadoConfig(estado) {
+    return this.getEstados().find(e => e.value === estado) || { value: estado, label: estado, color: 'bg-secondary' }
+  }
+
+  /**
+   * Devuelve los datos como objeto limpio para persistencia en Supabase
+   * @returns {object}
+   */
   toJSON() {
     return {
-      id: this.id,
       clase_id: this.clase_id,
       maestro_id: this.maestro_id,
       fecha_inicio: this.fecha_inicio,
@@ -88,9 +123,7 @@ export class Planificacion {
       evaluacion_metodo: this.evaluacion_metodo.trim() || null,
       observaciones: this.observaciones.trim() || null,
       estado: this.estado,
-      instrumento: this.instrumento?.trim() || null,
-      created_at: this.created_at,
-      updated_at: this.updated_at,
+      instrumento: this.instrumento?.trim() || null
     }
   }
 }

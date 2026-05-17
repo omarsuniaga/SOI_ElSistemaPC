@@ -2,16 +2,42 @@
  * Modelo de Asistencia - Validaciones y lógica de negocio
  */
 export class Asistencia {
+  static MAP_LEGACY = {
+    'P': 'presente',
+    'A': 'ausente',
+    'J': 'justificado'
+  }
+
+  static MAP_SHORT = {
+    'presente': 'P',
+    'ausente': 'A',
+    'justificado': 'J'
+  }
+
   constructor(data = {}) {
     this.id = data.id || null
     this.clase_id = data.clase_id || null
-    this.student_id = data.student_id || null
+    this.student_id = data.student_id || data.alumno_id || null
+    this.sesion_clase_id = data.sesion_clase_id || null
     this.fecha = data.fecha || ''
-    this.estado = data.estado || 'P'
+    this.estado = this._normalizeEstado(data.estado || 'presente')
     this.justificacion_texto = data.justificacion_texto || ''
-    this.justificacion_archivo = data.justificacion_archivo || ''
+    this.observaciones = data.observaciones || ''
     this.created_at = data.created_at || null
     this.updated_at = data.updated_at || null
+  }
+
+  _normalizeEstado(val) {
+    if (!val) return 'presente'
+    const normalized = val.toLowerCase().trim()
+    return Asistencia.MAP_LEGACY[val.toUpperCase()] || normalized
+  }
+
+  /**
+   * Retorna el código corto (P, A, J) para la UI
+   */
+  getShortCode() {
+    return Asistencia.MAP_SHORT[this.estado] || 'P'
   }
 
   /**
@@ -33,13 +59,9 @@ export class Asistencia {
       errores.push('La fecha es obligatoria')
     }
 
-    if (!this.estado) {
-      errores.push('El estado es obligatorio')
-    } else {
-      const estadosValidos = ['P', 'A', 'J']
-      if (!estadosValidos.includes(this.estado)) {
-        errores.push('Estado no válido. Debe ser P (Presente), A (Ausente) o J (Justificado)')
-      }
+    const estadosValidos = ['presente', 'ausente', 'justificado']
+    if (!estadosValidos.includes(this.estado)) {
+      errores.push('Estado no válido. Debe ser presente, ausente o justificado')
     }
 
     if (this.justificacion_texto && this.justificacion_texto.length > 500) {
@@ -58,32 +80,30 @@ export class Asistencia {
   }
 
   /**
-   * Devuelve los datos como objeto limpio
+   * Devuelve los datos como objeto limpio para persistencia en Supabase
    * @returns {object}
    */
   toJSON() {
     return {
-      id: this.id,
       clase_id: this.clase_id,
-      student_id: this.student_id,
+      alumno_id: this.student_id,
+      sesion_clase_id: this.sesion_clase_id,
       fecha: this.fecha,
       estado: this.estado,
-      justificacion_texto: this.justificacion_texto.trim() || null,
-      justificacion_archivo: this.justificacion_archivo.trim() || null,
-      created_at: this.created_at,
-      updated_at: this.updated_at,
+      justificacion_texto: this.justificacion_texto ? this.justificacion_texto.trim() : null,
+      observaciones: this.observaciones ? this.observaciones.trim() : null
     }
   }
 
   /**
-   * Obtiene los estados posibles de asistencia
+   * Obtiene los estados posibles de asistencia con etiquetas
    * @returns {Array<{value: string, label: string}>}
    */
   static getEstados() {
     return [
-      { value: 'P', label: 'Presente' },
-      { value: 'A', label: 'Ausente' },
-      { value: 'J', label: 'Justificado' },
+      { value: 'presente', label: 'Presente' },
+      { value: 'ausente', label: 'Ausente' },
+      { value: 'justificado', label: 'Justificado' },
     ]
   }
 }

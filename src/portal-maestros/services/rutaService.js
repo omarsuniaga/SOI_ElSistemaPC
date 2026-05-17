@@ -331,6 +331,10 @@ export async function loadRouteTree(routeVersionId, claseId) {
   for (const [blockId, blockLevels] of levelsSortedByBlock) {
     const enriched = blockLevels.map((level, idx, arr) => {
       const levelNodes = nodesByLevel.get(level.id) ?? []
+      const allLevelInds = levelNodes.flatMap(n => indByNode.get(n.id) ?? [])
+      const greenIndCount = allLevelInds.filter(i => (semMap.get(i.node_id) ?? 'gray') === 'green').length
+      const percentage = allLevelInds.length > 0 ? Math.round((greenIndCount / allLevelInds.length) * 100) : 0
+
       const nodeSems   = levelNodes.map(n => n.semaphore)
       const levelSem   = nodeSems.every(s => s === 'green') && nodeSems.length > 0
         ? 'green'
@@ -348,7 +352,7 @@ export async function loadRouteTree(routeVersionId, claseId) {
         locked = allInds.length > 0 && greenCount / allInds.length < 0.8
       }
 
-      return { ...level, semaphore: levelSem, locked, nodes: levelNodes }
+      return { ...level, semaphore: levelSem, locked, percentage, nodes: levelNodes }
     })
     levelsByBlock.set(blockId, enriched)
   }

@@ -134,10 +134,10 @@ export async function getEstadisticasPeriodoActivo() {
     .from('vw_estadisticas_periodo')
     .select('*')
     .eq('activo', true)
-    .single()
+    .maybeSingle()
 
-  if (error) throw new Error('No se pudo cargar el período activo')
-  return data
+  if (error) throw new Error('No se pudieron cargar las estadísticas del período activo')
+  return data || null
 }
 
 // ─── DESTACADOS Y RIESGO ACADÉMICO ──────────────────────────────────────────

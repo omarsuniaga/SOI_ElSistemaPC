@@ -1,12 +1,13 @@
 # Delta for Ruta de Contenidos — Player View
 
-> **Change**: actualizacion-portales | **Domain**: ruta-player-view | **Type**: MODIFIED capability
+> **Change**: ruta-gamificada-integration | **Domain**: ruta-player-view | **Type**: MODIFIED capability
 
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: RUTA-01 — Interactive Route Tree Display
 
 The system SHALL display a Duolingo-style route tree with blocks → levels → nodes → indicators using the `rutaGameificadaView` component, replacing the technical view of `rutaPlayerView`. Each level and node shows a traffic-light semaphore (green/yellow/gray) based on `indicator_attempts` data. 
+(Previously: the system used a technical view with less interactivity and was wired to a different component in the router)
 
 #### Scenario: Tree loads with semaphore colors
 - GIVEN the teacher selects a class on the Ruta view
@@ -23,6 +24,7 @@ The system SHALL display a Duolingo-style route tree with blocks → levels → 
 ### Requirement: RUTA-02 — Indicator Selection and Topic Handoff
 
 The system SHALL allow selecting an indicator to use as the "Topic of the Day", persisting it across views until consumed or cancelled.
+(Previously: no automated handoff between Route and Asistencia existed)
 
 #### Scenario: Assign topic persists and redirects
 - GIVEN a selected indicator
@@ -36,3 +38,8 @@ The system SHALL allow selecting an indicator to use as the "Topic of the Day", 
 - WHEN the teacher clicks "Cancelar" on the information banner in Asistencia
 - THEN the topic SHALL be removed from `sessionStorage`
 - AND the banner SHALL disappear
+
+## REMOVED Requirements
+
+### Requirement: Technical Route Bar
+(Reason: Replaced by the Duolingo-style tree for better teacher UX)

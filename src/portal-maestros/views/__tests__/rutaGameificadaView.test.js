@@ -7,6 +7,7 @@ describe('rutaGameificadaView', () => {
   beforeEach(() => {
     container = document.createElement('div')
     document.body.appendChild(container)
+    vi.clearAllMocks()
   })
 
   afterEach(() => {
@@ -14,7 +15,7 @@ describe('rutaGameificadaView', () => {
   })
 
   it('renders without crashing', async () => {
-    // Mock maestro
+    // Mock global helpers used in rutaGameificadaView
     global.getMaestroLocal = () => ({ id: 'm1', nombre: 'Test' })
     global.getMisClases = () => Promise.resolve([{ id: 'c1', nombre: 'Grupo A' }])
     global.loadRouteTree = () => Promise.resolve([])
@@ -22,6 +23,7 @@ describe('rutaGameificadaView', () => {
     await renderRutaGameificadaView(container)
 
     expect(container.querySelector('.pm-ruta-gamificada')).toBeTruthy()
+    expect(container.querySelector('h2').textContent).toBe('Mi Ruta')
   })
 
   it('displays loading state initially', () => {
@@ -37,6 +39,21 @@ describe('rutaGameificadaView', () => {
 
     await renderRutaGameificadaView(container)
 
-    expect(container.textContent).toContain('No hay sesión')
+    expect(container.textContent).toContain('No hay sesión activa.')
+  })
+
+  it('displays class selector when classes exist', async () => {
+    global.getMaestroLocal = () => ({ id: 'm1', nombre: 'Test' })
+    global.getMisClases = () => Promise.resolve([
+      { id: 'c1', nombre: 'Grupo A' },
+      { id: 'c2', nombre: 'Grupo B' }
+    ])
+    global.loadRouteTree = () => Promise.resolve([])
+
+    await renderRutaGameificadaView(container)
+
+    const select = container.querySelector('#ruta-clase-select')
+    expect(select).toBeTruthy()
+    expect(select.options.length).toBe(2)
   })
 })

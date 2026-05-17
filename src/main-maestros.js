@@ -755,7 +755,9 @@ async function _renderView(route, params = {}, { silent = false } = {}) {
         await renderGamificacionView(targetContainer)
         break
       case 'ruta':
-        await renderRutaPlayerView(targetContainer)
+        await renderRutaGameificadaView(targetContainer, {
+          onTopicSelected: (id) => router.navigate(`asistencia?clase=${id}`)
+        })
         break
       case 'crear-clase':
         renderCrearClaseView(targetContainer)

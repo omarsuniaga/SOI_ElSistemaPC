@@ -65,9 +65,11 @@ export async function renderAsistenciaView(container, { claseId, fecha } = {}) {
       getInscripcionesClases([claseId]),    // cache: 2min
       supabase.from('sesiones_clase').select('*').eq('clase_id', claseId).eq('maestro_id', maestro.id).eq('fecha', fechaHoy).limit(1),
     ])
+    console.log('[DEBUG] Finished Batch 1')
 
     const clase = misClases.find(c => c.id === claseId)
     if (!clase) {
+      console.log('[DEBUG] Clase not found in misClases')
       container.innerHTML = `<p class="pm-empty" style="color:var(--pm-danger)">Clase no encontrada.</p>`
       return
     }
@@ -96,6 +98,8 @@ export async function renderAsistenciaView(container, { claseId, fecha } = {}) {
         : Promise.resolve([]),
       salonIds.length > 0 ? getSalones(salonIds) : Promise.resolve([]),  // cache: 1hr
     ])
+    console.log('[DEBUG] Finished Batch 2')
+
     const salonNombre = salonesData.length > 0 ? salonesData[0].nombre : null
 
     // Detectar conflicto
@@ -214,6 +218,7 @@ export async function renderAsistenciaView(container, { claseId, fecha } = {}) {
     })
 
   } catch (err) {
+    console.error('[asistenciaView] Error fatal:', err.message, err.stack)
     container.innerHTML = `<p class="pm-empty" style="color:var(--pm-danger)">Error: ${escHTML(err.message)}</p>`
   }
 }
@@ -1019,6 +1024,7 @@ function _renderVista(container, ctx) {
   }
 
   // === Ruta topic auto-injection ===
+  console.log('[DEBUG] Reached handoff section')
   const rutaTema = consumeRutaTema()
   if (rutaTema && rutaTema.claseId === claseId) {
     const temaText = `[${rutaTema.nombre}] `

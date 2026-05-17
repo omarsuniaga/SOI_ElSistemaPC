@@ -17,6 +17,13 @@ function escapeHTML(str) {
     .replace(/'/g, '&#039;')
 }
 
+function getInitials(nombre) {
+  if (!nombre) return '?'
+  const parts = String(nombre).trim().split(/\s+/)
+  if (parts.length === 1) return parts[0].substring(0, 2).toUpperCase()
+  return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase()
+}
+
 export function renderSalonesView(container) {
   container.innerHTML = `
     <div class="page-container">
@@ -52,26 +59,12 @@ export function renderSalonesView(container) {
         </select>
       </div>
 
-      <div class="table-scroll-container">
-        <table class="table table-compact table-hover mb-0" id="salonesTable">
-          <thead>
-            <tr>
-              <th class="d-none d-md-table-cell">Código</th>
-              <th>Nombre</th>
-              <th class="d-none d-sm-table-cell">Capacidad</th>
-              <th>Ubicación</th>
-              <th class="d-none d-sm-table-cell">Condición</th>
-              <th class="d-none d-md-table-cell">Equipamiento</th>
-              <th>Estado</th>
-              <th class="text-end">Acciones</th>
-            </tr>
-          </thead>
-          <tbody id="salonesTableBody">
-            <tr><td colspan="8" class="text-center py-3"><div class="spinner-border spinner-border-sm text-primary" role="status"></div><br><small class="text-muted">Cargando salones...</small></td></tr>
-          </tbody>
-        </table>
+      <!-- Table Compact Overhauled to modern List-Group -->
+      <div class="page-glass rounded w-100">
+        <div class="list-group list-group-flush w-100" id="salonesTableBody">
+          <div class="text-center py-5 text-muted"><div class="spinner-border text-primary mb-3" role="status"></div><br><small class="text-muted">Cargando salones...</small></div>
+        </div>
       </div>
-
 
     </div>
   `
@@ -89,54 +82,49 @@ export function renderSalonesView(container) {
     const salones = useSalones.getFiltered(query, piso, condicion)
 
     if (useSalones.cargando) {
+      tbody.innerHTML = `<div class="text-center py-5 text-muted"><div class="spinner-border text-primary mb-3" role="status"></div><br><small class="text-muted">Cargando salones...</small></div>`
       return
     }
 
     if (useSalones.error) {
-      tbody.innerHTML = `<tr><td colspan="8" class="text-center py-3 text-danger"><i class="bi bi-exclamation-triangle"></i> Error: ${escapeHTML(useSalones.error)}</td></tr>`
+      tbody.innerHTML = `<div class="text-center py-5 text-danger"><i class="bi bi-exclamation-triangle fs-3 d-block mb-2"></i> Error: ${escapeHTML(useSalones.error)}</div>`
       return
     }
 
     if (salones.length === 0) {
       tbody.innerHTML = `
-        <tr>
-          <td colspan="8" class="text-center py-4 text-muted">
-            <i class="bi bi-inbox fs-4 d-block mb-2"></i>
-            No se encontraron salones con esos filtros.
-          </td>
-        </tr>`
+        <div class="text-center py-5 w-100 text-muted list-group-item" style="background: transparent; border: none;">
+          <i class="bi bi-inbox fs-1 d-block mb-3" style="color: var(--bs-secondary);"></i>
+          No se encontraron salones con esos filtros.
+        </div>`
       return
     }
 
     salonesCount.textContent = salones.length
 
     tbody.innerHTML = salones.map(salon => {
-      const ubicacionPiso = (salon.piso === 0 || salon.piso === '0') ? 'Planta Baja' : `Piso ${salon.piso}`
+      const initials = getInitials(salon.nombre || 'S')
+      const active = salon.is_active !== false
       const condicionBadge = getCondicionBadge(salon.condicion)
-      const estadoBadge = salon.is_active !== false 
-        ? '<span class="badge badge-compact bg-success-subtle text-success border border-success-subtle">Activo</span>' 
-        : '<span class="badge badge-compact bg-secondary-subtle text-secondary border border-secondary-subtle">Inactivo</span>'
-      
+
       return `
-        <tr data-id="${salon.id}" class="align-middle">
-          <td class="d-none d-md-table-cell"><code>${escapeHTML(salon.codigo || '-')}</code></td>
-          <td class="fw-bold text-truncate" style="max-width: 150px;" title="${escapeHTML(salon.nombre || '')}">${escapeHTML(salon.nombre || '-')}</td>
-          <td class="d-none d-sm-table-cell">${salon.capacidad || '-'}</td>
-          <td>${escapeHTML(ubicacionPiso)}</td>
-          <td class="d-none d-sm-table-cell">${condicionBadge}</td>
-          <td class="d-none d-md-table-cell text-truncate text-muted small" style="max-width: 150px;" title="${escapeHTML(salon.equipamiento || '')}">${escapeHTML(salon.equipamiento || '-')}</td>
-          <td>${estadoBadge}</td>
-          <td class="text-end">
-            <div class="quick-actions justify-content-end">
-              <button class="btn btn-sm btn-light text-primary border btn-icon-compact" data-action="edit" data-id="${salon.id}" title="Editar">
-                <i class="bi bi-pencil"></i>
-              </button>
-              <button class="btn btn-sm btn-light text-danger border btn-icon-compact" data-action="delete" data-id="${salon.id}" title="Inactivar">
-                <i class="bi bi-trash"></i>
-              </button>
+        <div class="list-group-item list-group-item-action d-flex align-items-center justify-content-between p-3 w-100" data-id="${salon.id}" style="cursor: pointer; background: transparent;">
+          <div class="d-flex align-items-center gap-3 flex-grow-1 overflow-hidden">
+            <div class="position-relative flex-shrink-0">
+              <div class="avatar-compact bg-primary bg-opacity-10 text-primary border border-primary-subtle" style="width: 48px; height: 48px; font-size: 1.2rem; display: flex; align-items: center; justify-content: center; border-radius: 50%;">${initials}</div>
+              <span class="position-absolute bottom-0 end-0 p-1 bg-${active ? 'success' : 'secondary'} border border-light rounded-circle" style="transform: translate(10%, 10%);">
+                <span class="visually-hidden">${active ? 'Activo' : 'Inactivo'}</span>
+              </span>
             </div>
-          </td>
-        </tr>
+            <div class="d-flex flex-column flex-grow-1 overflow-hidden pe-3">
+              <span class="fw-bold text-truncate" style="font-size: 1.05rem;">${escapeHTML(salon.nombre || '-')}</span>
+              <small class="text-muted text-truncate">Capacidad: ${salon.capacidad || '-'} personas</small>
+            </div>
+          </div>
+          <div class="flex-shrink-0 text-end">
+            ${condicionBadge}
+          </div>
+        </div>
       `
     }).join('')
   }
@@ -175,20 +163,10 @@ export function renderSalonesView(container) {
   })
 
   tbody?.addEventListener('click', async (e) => {
-    const row = e.target.closest('tr[data-id]')
-    if (row && !e.target.closest('[data-action]')) {
-      const id = row.dataset.id
+    const item = e.target.closest('.list-group-item[data-id]')
+    if (item) {
+      const id = item.dataset.id
       openViewModal(id)
-      return
-    }
-    
-    const btn = e.target.closest('[data-action]')
-    if (!btn) return
-    const id = btn.dataset.id
-    if (btn.dataset.action === 'edit') {
-      openEditModal(id)
-    } else if (btn.dataset.action === 'delete') {
-      openDeleteModal(id)
     }
   })
 
@@ -382,6 +360,16 @@ function openViewModal(id) {
     title: escapeHTML(salon.nombre || 'Salón'),
     hideSave: true,
     cancelText: 'Cerrar',
+    onShow: (modalBody) => {
+      modalBody.querySelector('#modal-view-btn-edit')?.addEventListener('click', () => {
+        AppModal.close()
+        setTimeout(() => openEditModal(id), 300)
+      })
+      modalBody.querySelector('#modal-view-btn-delete')?.addEventListener('click', () => {
+        AppModal.close()
+        setTimeout(() => openDeleteModal(id), 300)
+      })
+    },
     body: `
       <div class="row">
         <div class="col-md-6">
@@ -432,6 +420,15 @@ function openViewModal(id) {
         </div>
       </div>
       ` : ''}
+      
+      <div class="d-flex justify-content-end gap-2 pt-3 border-top mt-4">
+        <button class="btn btn-outline-danger" id="modal-view-btn-delete">
+          <i class="bi bi-trash me-1"></i> Inactivar
+        </button>
+        <button class="btn btn-primary" id="modal-view-btn-edit">
+          <i class="bi bi-pencil me-1"></i> Editar
+        </button>
+      </div>
     `
   })
 }

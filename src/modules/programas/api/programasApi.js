@@ -1,14 +1,5 @@
 import { supabase } from '../../../lib/supabaseClient.js'
-
-function normalizePrograma(p) {
-  return {
-    ...p,
-    nombre: p.nombre ?? p.name ?? '',
-    descripcion: p.descripcion ?? p.description ?? '',
-    nivel: p.nivel ?? p.level ?? '',
-    duracion_anios: p.duracion_anios ?? p.duracionAnios ?? null,
-  }
-}
+import { Programa } from '../models/programa.model.js'
 
 export const NIVELES = [
   { value: '', label: 'Sin nivel específico' },
@@ -40,7 +31,7 @@ export async function obtenerProgramas() {
     throw error
   }
 
-  return data.map(normalizePrograma)
+  return (data || []).map(p => new Programa(p))
 }
 
 /**
@@ -58,16 +49,24 @@ export async function obtenerPrograma(id) {
     throw error
   }
 
-  return data
+  return new Programa(data)
 }
 
 /**
  * Crea un nuevo programa
  */
-export async function crearPrograma(programa) {
+export async function crearPrograma(programaData) {
+  const programa = new Programa(programaData)
+  const validLevels = NIVELES.map(n => n.value).filter(Boolean)
+  const errores = programa.validate(validLevels)
+  
+  if (errores.length > 0) {
+    throw new Error(errores.join('. '))
+  }
+
   const { data, error } = await supabase
     .from('programas')
-    .insert([programa])
+    .insert([programa.toJSON()])
     .select()
 
   if (error) {
@@ -75,16 +74,26 @@ export async function crearPrograma(programa) {
     throw error
   }
 
-  return data[0]
+  return new Programa(data[0])
 }
 
 /**
  * Actualiza un programa existente
  */
 export async function actualizarPrograma(id, actualizaciones) {
+  const programa = new Programa(actualizaciones)
+  // Nota: Al actualizar permitimos validación parcial si el modelo lo soporta, 
+  // pero por ahora validamos el objeto completo como buena práctica.
+  const validLevels = NIVELES.map(n => n.value).filter(Boolean)
+  const errores = programa.validate(validLevels)
+  
+  if (errores.length > 0) {
+    throw new Error(errores.join('. '))
+  }
+
   const { data, error } = await supabase
     .from('programas')
-    .update(actualizaciones)
+    .update(programa.toJSON())
     .eq('id', id)
     .select()
 
@@ -93,7 +102,7 @@ export async function actualizarPrograma(id, actualizaciones) {
     throw error
   }
 
-  return data[0]
+  return new Programa(data[0])
 }
 
 /**
@@ -127,7 +136,7 @@ export async function exportarProgramasPDF(programas) {
 
   const tableData = programas.map(p => [
     p.nombre,
-    p.nivel || '-',
+    getNivelLabel(p.nivel),
     p.descripcion ? p.descripcion.substring(0, 50) + (p.descripcion.length > 50 ? '...' : '') : '-',
     p.activo ? 'Activo' : 'Inactivo',
     p.created_at ? new Date(p.created_at).toLocaleDateString('es-ES') : '-'

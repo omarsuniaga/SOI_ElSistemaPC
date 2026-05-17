@@ -170,26 +170,14 @@ function renderContent(container) {
         </select>
       </div>
 
-      <!-- Table Compact -->
-      <div class="page-glass p-3 mb-4">
-        <div class="table-scroll-container">
-          <table class="table table-premium table-compact mb-0">
-            <thead>
-              <tr>
-                <th>Nombre</th>
-                <th class="d-none d-md-table-cell">Instrumento</th>
-                <th>Maestro</th>
-                <th>Horarios</th>
-                <th>Estado</th>
-                <th class="text-end">Acciones</th>
-              </tr>
-            </thead>
-            <tbody id="clasesTBody">
-              ${renderTableRows(state.clases)}
-            </tbody>
-          </table>
+      <!-- Table Compact Overhauled to modern List-Group -->
+      <div class="page-glass rounded w-100 mb-4" id="clases-table-view">
+        <div class="list-group list-group-flush w-100" id="clasesTBody">
+          ${renderTableRows(state.clases)}
         </div>
-        ${state.clases.length === 0 ? renderEmpty() : ''}
+        <div id="emptyContainer">
+          ${state.clases.length === 0 ? renderEmpty() : ''}
+        </div>
       </div>
 
       <!-- Calendar View -->
@@ -202,11 +190,9 @@ function renderContent(container) {
 }
 
 function renderTableRows(clases) {
-  if (!clases.length) return '<tr><td colspan="7" class="text-center text-muted py-3">No hay clases</td></tr>'
+  if (!clases.length) return ''
 
   return clases.map(c => {
-    const maestro = state.maestros.find(m => m.id === c.maestro_id)
-    const maestroNombre = maestro ? (maestro.nombre_completo || maestro.nombre) : '-'
     const horarios = c.horarios || []
     const color = getConsistentColor(c.id)
     
@@ -215,65 +201,43 @@ function renderTableRows(clases) {
       return `${diaCorto} ${formatHora(h.hora_inicio)}-${formatHora(h.hora_fin)}`
     }).join(', ')
 
+    const isActive = c.estado === 'activa'
+    const statusBg = isActive ? 'success' : (c.estado === 'suspendida' ? 'warning' : 'secondary')
+
     return `
-      <tr data-id="${c.id}" class="align-middle">
-        <td>
-          <div class="d-flex align-items-center gap-3">
-            <div class="avatar-compact bg-${color}-subtle text-${color} border border-${color}-subtle">
+      <div class="list-group-item list-group-item-action d-flex align-items-center justify-content-between p-3 w-100" data-id="${c.id}" style="cursor: pointer; background: transparent;">
+        <div class="d-flex align-items-center gap-3 flex-grow-1 overflow-hidden">
+          <div class="position-relative flex-shrink-0">
+            <div class="avatar-compact bg-${color}-subtle text-${color} border border-${color}-subtle" style="width: 48px; height: 48px; font-size: 1.2rem; display: flex; align-items: center; justify-content: center; border-radius: 50%;">
               <i class="bi ${getInstrumentoIcon(c.instrumento)}"></i>
             </div>
-            <div>
-              <div class="fw-bold text-truncate" style="max-width: 150px;" title="${c.nombre}">${escapeHTML(c.nombre)}</div>
-              <div class="small text-muted d-md-none">${escapeHTML(c.instrumento || '-')}</div>
-            </div>
+            <span class="position-absolute bottom-0 end-0 p-1 bg-${statusBg} border border-light rounded-circle" style="transform: translate(10%, 10%);">
+              <span class="visually-hidden">${c.estado}</span>
+            </span>
           </div>
-        </td>
-        <td class="d-none d-md-table-cell">
-          <span class="badge bg-body-tertiary text-body border">${escapeHTML(c.instrumento || '-')}</span>
-        </td>
-        <td class="text-truncate" style="max-width: 120px;" title="${maestroNombre}">
-          <div class="d-flex align-items-center gap-1">
-            <i class="bi bi-person-badge opacity-50"></i>
-            <span>${escapeHTML(maestroNombre)}</span>
+          <div class="d-flex flex-column flex-grow-1 overflow-hidden pe-3">
+            <span class="fw-bold text-truncate" style="font-size: 1.05rem;">${escapeHTML(c.nombre)}</span>
+            <small class="text-muted text-truncate"><i class="bi bi-calendar3 me-1"></i>${horariosDisplay || 'Sin horario'}</small>
           </div>
-        </td>
-        <td class="text-truncate" style="max-width: 140px;" title="${horariosDisplay}">
-          <small class="text-muted"><i class="bi bi-calendar3 me-1"></i>${horariosDisplay || 'Sin horario'}</small>
-        </td>
-        <td>
-          <span class="badge badge-pill bg-${getEstadoBadgeClass(c.estado)}-subtle text-${getEstadoBadgeClass(c.estado)} border border-${getEstadoBadgeClass(c.estado)}-subtle">
+        </div>
+        <div class="flex-shrink-0 text-end">
+          <span class="badge bg-${getEstadoBadgeClass(c.estado)}-subtle text-${getEstadoBadgeClass(c.estado)} border border-${getEstadoBadgeClass(c.estado)}-subtle rounded-pill px-2.5 py-1">
             ${getEstadoLabel(c.estado)}
           </span>
-        </td>
-        <td class="text-end">
-          <div class="quick-actions justify-content-end gap-1">
-            <button class="btn btn-icon-compact btn-light text-primary border" data-action="edit" data-id="${c.id}" title="Editar">
-              <i class="bi bi-pencil"></i>
-            </button>
-            <button class="btn btn-icon-compact btn-light text-info border" data-action="view" data-id="${c.id}" title="Ver">
-              <i class="bi bi-eye"></i>
-            </button>
-            <button class="btn btn-icon-compact btn-light text-warning border" data-action="inscribir" data-id="${c.id}" title="Inscribir">
-              <i class="bi bi-person-plus"></i>
-            </button>
-            <button class="btn btn-icon-compact btn-light text-danger border" data-action="delete" data-id="${c.id}" title="Eliminar">
-              <i class="bi bi-trash"></i>
-            </button>
-          </div>
-        </td>
-      </tr>
+        </div>
+      </div>
     `
   }).join('')
 }
 
 function renderEmpty() {
   return `
-    <div class="col-12 text-center py-5">
+    <div class="text-center py-5 w-100 list-group-item text-muted" style="background: transparent; border: none;">
       <div class="mb-3">
         <i class="bi bi-inbox" style="font-size: 3rem; color: var(--bs-secondary);"></i>
       </div>
       <h4>No hay clases</h4>
-      <p class="text-muted">Crea tu primera clase haciendo clic en el botón "Nuevo"</p>
+      <p class="text-muted mb-0">Crea tu primera clase haciendo clic en el botón "Nuevo"</p>
     </div>
   `
 }
@@ -380,25 +344,10 @@ function attachGlobalEvents(container) {
 
   const tbody = container.querySelector('#clasesTBody')
   tbody?.addEventListener('click', async (e) => {
-    const row = e.target.closest('tr[data-id]')
-    const btn = e.target.closest('[data-action]')
-
-    if (row && !btn) {
-      const id = row.dataset.id
+    const item = e.target.closest('.list-group-item[data-id]')
+    if (item) {
+      const id = item.dataset.id
       openViewModal(id)
-      return
-    }
-
-    if (!btn) return
-    const id = btn.dataset.id
-    if (btn.dataset.action === 'edit') {
-      openEditModal(id)
-    } else if (btn.dataset.action === 'delete') {
-      openDeleteModal(id)
-    } else if (btn.dataset.action === 'view') {
-      openViewModal(id)
-    } else if (btn.dataset.action === 'inscribir') {
-      await openAlumnoInscripcionModal(id)
     }
   })
 }
@@ -572,11 +521,10 @@ function refreshCalendar() {
 
 function refreshTable() {
   const tbody = document.getElementById('clasesTBody')
-  if (!tbody) return
-  if (state.clases.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4">No hay clases</td></tr>'
-  } else {
-    tbody.innerHTML = renderTableRows(state.clases)
+  if (tbody) tbody.innerHTML = renderTableRows(state.clases)
+  const emptyContainer = document.getElementById('emptyContainer')
+  if (emptyContainer) {
+    emptyContainer.innerHTML = state.clases.length === 0 ? renderEmpty() : ''
   }
 }
 
@@ -1356,15 +1304,20 @@ function openViewModal(id) {
 
   AppModal.open({
     title: escapeHTML(clase.nombre),
-    saveText: 'Editar',
+    hideSave: true,
     cancelText: 'Cerrar',
-    onSave: () => {
-      openEditModal(id)
-      return false // Evita que se cierre y permite que openEditModal sobreescriba el DOM
-    },
     onShow: (modalBody) => {
       modalBody.querySelector('#btn-gestionar-alumnos')?.addEventListener('click', () => {
-        openAlumnoInscripcionModal(id)
+        AppModal.close()
+        setTimeout(() => openAlumnoInscripcionModal(id), 300)
+      })
+      modalBody.querySelector('#modal-view-btn-edit')?.addEventListener('click', () => {
+        AppModal.close()
+        setTimeout(() => openEditModal(id), 300)
+      })
+      modalBody.querySelector('#modal-view-btn-delete')?.addEventListener('click', () => {
+        AppModal.close()
+        setTimeout(() => openDeleteModal(id), 300)
       })
     },
     body: `
@@ -1406,17 +1359,24 @@ function openViewModal(id) {
             <label class="form-label fw-bold">Máx. alumnos</label>
             <p class="form-control-plaintext">${clase.max_alumnos || 20}</p>
           </div>
-          <div class="mb-3 mt-4">
-            <button type="button" class="btn btn-outline-primary btn-sm w-100" id="btn-gestionar-alumnos">
-              <i class="bi bi-people-fill me-2"></i> Gestionar alumnos inscritos
-            </button>
-          </div>
         </div>
       </div>
       <hr>
       <div class="mb-3">
         <label class="form-label fw-bold">Notas pedagógicas</label>
         <p class="form-control-plaintext">${clase.notas_pedagogicas ? escapeHTML(clase.notas_pedagogicas) : '<span class="text-muted">Sin notas pedagógicas</span>'}</p>
+      </div>
+      
+      <div class="d-flex justify-content-end gap-2 pt-3 border-top mt-4">
+        <button class="btn btn-outline-danger" id="modal-view-btn-delete">
+          <i class="bi bi-trash me-1"></i> Eliminar
+        </button>
+        <button class="btn btn-outline-primary" id="btn-gestionar-alumnos">
+          <i class="bi bi-people me-1"></i> Inscribir
+        </button>
+        <button class="btn btn-primary" id="modal-view-btn-edit">
+          <i class="bi bi-pencil me-1"></i> Editar
+        </button>
       </div>
     `
   })

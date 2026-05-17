@@ -10,6 +10,8 @@ function normalizePermiso(p) {
     maestro_email: p.maestros?.correo ?? '',
     puede_registrar_alumnos: p.puede_registrar_alumnos ?? false,
     puede_inscribir_clases: p.puede_inscribir_clases ?? false,
+    permisos: Array.isArray(p.permisos) ? p.permisos : [],
+    solicitudes: Array.isArray(p.solicitudes) ? p.solicitudes : [],
     concedido_por: p.concedido_por ?? null,
     concedido_por_nombre: null, // se llena desde JOIN si es necesario
     creado_en: p.creado_en || null,
@@ -51,6 +53,8 @@ export async function actualizarPermiso(maestroId, changes) {
     maestro_id: maestroId,
     puede_registrar_alumnos: changes.puede_registrar_alumnos ?? false,
     puede_inscribir_clases: changes.puede_inscribir_clases ?? false,
+    permisos: Array.isArray(changes.permisos) ? changes.permisos : [],
+    solicitudes: Array.isArray(changes.solicitudes) ? changes.solicitudes : [],
     concedido_por: changes.concedido_por || null,
   }
 

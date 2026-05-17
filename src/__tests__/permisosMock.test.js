@@ -93,11 +93,13 @@ describe('permisosMock CRUD', () => {
         maestro_email: 'nuevo@ejemplo.com',
         puede_registrar_alumnos: true,
         puede_inscribir_clases: false,
+        permisos: ['planificacion:write']
       })
       expect(result.maestro_id).toBe('maestro_new_003')
       expect(result.maestro_nombre).toBe('Nuevo Maestro')
       expect(result.puede_registrar_alumnos).toBe(true)
       expect(result.puede_inscribir_clases).toBe(false)
+      expect(result.permisos).toEqual(['planificacion:write'])
       expect(result.id).toBeTruthy()
     })
 

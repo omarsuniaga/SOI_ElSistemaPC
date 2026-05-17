@@ -22,8 +22,24 @@ describe('permisoService.getPermisos()', () => {
     expect(result).toEqual({
       puede_registrar_alumnos: true,
       puede_inscribir_clases: false,
+      puede_planificar: false,
+      puede_asistir: false
     })
     expect(obtenerPermisoPorMaestro).toHaveBeenCalledWith('maestro_001')
+  })
+
+  it('should map permisos array to boolean flags', async () => {
+    obtenerPermisoPorMaestro.mockResolvedValueOnce({
+      permisos: ['alumnos:create', 'planificacion:write']
+    })
+
+    const result = await getPermisos('maestro_001')
+    expect(result).toEqual({
+      puede_registrar_alumnos: true,
+      puede_inscribir_clases: false,
+      puede_planificar: true,
+      puede_asistir: false
+    })
   })
 
   it('should return false,false when maestroId is empty (fail-closed)', async () => {
@@ -31,6 +47,8 @@ describe('permisoService.getPermisos()', () => {
     expect(result).toEqual({
       puede_registrar_alumnos: false,
       puede_inscribir_clases: false,
+      puede_planificar: false,
+      puede_asistir: false
     })
     expect(obtenerPermisoPorMaestro).not.toHaveBeenCalled()
   })
@@ -40,6 +58,8 @@ describe('permisoService.getPermisos()', () => {
     expect(result).toEqual({
       puede_registrar_alumnos: false,
       puede_inscribir_clases: false,
+      puede_planificar: false,
+      puede_asistir: false
     })
   })
 
@@ -50,6 +70,8 @@ describe('permisoService.getPermisos()', () => {
     expect(result).toEqual({
       puede_registrar_alumnos: false,
       puede_inscribir_clases: false,
+      puede_planificar: false,
+      puede_asistir: false
     })
   })
 
@@ -60,6 +82,8 @@ describe('permisoService.getPermisos()', () => {
     expect(result).toEqual({
       puede_registrar_alumnos: false,
       puede_inscribir_clases: false,
+      puede_planificar: false,
+      puede_asistir: false
     })
   })
 
@@ -70,6 +94,8 @@ describe('permisoService.getPermisos()', () => {
     expect(result).toEqual({
       puede_registrar_alumnos: false,
       puede_inscribir_clases: false,
+      puede_planificar: false,
+      puede_asistir: false
     })
   })
 })

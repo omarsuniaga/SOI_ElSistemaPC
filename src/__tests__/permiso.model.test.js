@@ -9,6 +9,8 @@ describe('Permiso Model', () => {
       expect(p.maestro_id).toBe('')
       expect(p.puede_registrar_alumnos).toBe(false)
       expect(p.puede_inscribir_clases).toBe(false)
+      expect(p.permisos).toEqual([])
+      expect(p.solicitudes).toEqual([])
       expect(p.concedido_por).toBeNull()
       expect(p.creado_en).toBeNull()
       expect(p.actualizado_en).toBeNull()
@@ -21,6 +23,8 @@ describe('Permiso Model', () => {
         maestro_nombre: 'Carlos Méndez',
         puede_registrar_alumnos: true,
         puede_inscribir_clases: false,
+        permisos: ['alumnos:create', 'clases:enroll'],
+        solicitudes: ['asistencias:write'],
         concedido_por: 'admin_001',
         creado_en: '2026-01-15T10:00:00Z',
         actualizado_en: '2026-05-01T14:30:00Z',
@@ -31,6 +35,8 @@ describe('Permiso Model', () => {
       expect(p.maestro_nombre).toBe('Carlos Méndez')
       expect(p.puede_registrar_alumnos).toBe(true)
       expect(p.puede_inscribir_clases).toBe(false)
+      expect(p.permisos).toEqual(['alumnos:create', 'clases:enroll'])
+      expect(p.solicitudes).toEqual(['asistencias:write'])
       expect(p.concedido_por).toBe('admin_001')
       expect(p.creado_en).toBe('2026-01-15T10:00:00Z')
     })
@@ -118,6 +124,8 @@ describe('Permiso Model', () => {
         maestro_email: 'carlos@ejemplo.com',
         puede_registrar_alumnos: true,
         puede_inscribir_clases: false,
+        permisos: [],
+        solicitudes: [],
         concedido_por: null,
         concedido_por_nombre: null,
         creado_en: null,

@@ -1,272 +1,253 @@
-import * as MetricsApi from '../api/metricsApi.js'
-import * as PeriodosApi from '../../periodos/api/periodosApi.js'
-import { createKpiCard } from '../components/kpiCard.js'
-import * as Utils from '../utils/metricsUtils.js'
+import { AppModal } from '../../../shared/components/AppModal.js'
+import { AppToast } from '../../../shared/components/AppToast.js'
+import { 
+  getEstadisticasPeriodoActivo, 
+  getResumenAlertas, 
+  getRiesgoAbandono,
+  getAlumnosDestacados,
+  getAlertasActivas
+} from '../api/metricsApi.js'
+import { renderMetricCard } from '../components/MetricCard.js'
+import { escapeHTML } from '../../clases/utils/clasesUtils.js'
 
+const state = {
+  activeTab: localStorage.getItem('pm_metrics_tab') || 'resumen',
+  stats: null,
+  alertas: [],
+  riesgo: [],
+  cargando: false,
+  container: null
+}
+
+/**
+ * Institutional Analytics Hub - Orquestador de Métricas
+ */
 export async function renderDashboardMetricasView(container) {
+  if (!container) return
+  try {
+    state.container = container
+    state.cargando = true
+    renderLoading(container)
+
+    // Cargar datos iniciales (KPIs)
+    state.stats = await getEstadisticasPeriodoActivo()
+    const resumenAlertas = await getResumenAlertas()
+    state.resumenAlertas = resumenAlertas
+
+    state.cargando = false
+    renderContent(container)
+    _attachEvents(container)
+  } catch (error) {
+    console.error(error)
+    renderError(container, error.message)
+  }
+}
+
+function renderLoading(container) {
+  container.innerHTML = `<div class="d-flex justify-content-center align-items-center" style="min-height: 400px;"><div class="spinner-border text-primary" role="status"></div></div>`
+}
+
+function renderError(container, msg) {
+  container.innerHTML = `<div class="alert alert-danger m-3"><h5>Error analítico</h5><p>${escapeHTML(msg)}</p></div>`
+}
+
+function renderContent(container) {
   container.innerHTML = `
-    <div class="container-fluid py-4">
-      <div id="dashboard-header" class="mb-4 d-flex justify-content-between align-items-center">
-        <div>
-          <h2 class="fw-bold mb-0">Dashboard de Métricas</h2>
-          <p class="text-muted mb-0" id="periodo-activo-label">Cargando período...</p>
-        </div>
-        <button id="refresh-dashboard" class="btn btn-outline-primary">
-          <i class="bi bi-arrow-clockwise"></i> Actualizar
-        </button>
-      </div>
-
-      <div class="row g-3 mb-4" id="kpi-container">
-        <!-- KPI Cards loading skeleton -->
-        ${Array(4).fill(0).map(() => `
-          <div class="col-md-3">
-            <div class="card border-0 shadow-sm skeleton-loading" style="height: 120px;"></div>
-          </div>
-        `).join('')}
-      </div>
-
-      <div class="row g-4 mb-4">
-        <div class="col-lg-8">
-          <div class="card border-0 shadow-sm h-100">
-            <div class="card-body">
-              <h5 class="card-title fw-bold mb-4">Correlación Asistencia – Rendimiento</h5>
-              <div id="correlacion-container" class="text-center py-4">
-                <div class="spinner-border text-primary" role="status"></div>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="col-lg-4">
-          <div class="card border-0 shadow-sm h-100">
-            <div class="card-body">
-              <h5 class="card-title fw-bold mb-4">Resumen de Alertas</h5>
-              <div id="alertas-summary-container">
-                <div class="placeholder-glow">
-                  <span class="placeholder col-12 mb-2"></span>
-                  <span class="placeholder col-12 mb-2"></span>
-                  <span class="placeholder col-12"></span>
-                </div>
-              </div>
-            </div>
-          </div>
+    <div class="page-container">
+      <div class="page-header">
+        <div class="d-flex align-items-center gap-2">
+          <span class="page-title"><i class="bi bi-cpu me-2 text-primary"></i>Analytics Hub</span>
         </div>
       </div>
 
-      <div class="row g-4">
-        <div class="col-md-6">
-          <div class="card border-0 shadow-sm">
-            <div class="card-header bg-transparent border-0 pt-4 px-4">
-              <h5 class="card-title fw-bold mb-0">Alumnos en Riesgo Alto</h5>
-            </div>
-            <div class="card-body px-0">
-              <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0">
-                  <thead class="table-light">
-                    <tr>
-                      <th class="ps-4">Nombre</th>
-                      <th>Instrumento</th>
-                      <th>Score</th>
-                      <th class="pe-4">Nivel</th>
-                    </tr>
-                  </thead>
-                  <tbody id="riesgo-alto-table">
-                    <tr><td colspan="4" class="text-center py-4">Cargando...</td></tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
+      <div class="pm-tabs-container mb-4">
+        <div class="btn-group w-100 shadow-sm" role="group">
+          <button class="btn btn-outline-primary ${state.activeTab === 'resumen' ? 'active' : ''}" data-tab="resumen"><i class="bi bi-speedometer2 me-1"></i> Resumen</button>
+          <button class="btn btn-outline-primary ${state.activeTab === 'alertas' ? 'active' : ''}" data-tab="alertas"><i class="bi bi-bell me-1"></i> Alertas</button>
+          <button class="btn btn-outline-primary ${state.activeTab === 'riesgo' ? 'active' : ''}" data-tab="riesgo"><i class="bi bi-shield-exclamation me-1"></i> Riesgo</button>
+          <button class="btn btn-outline-primary ${state.activeTab === 'ia' ? 'active' : ''}" data-tab="ia"><i class="bi bi-robot me-1"></i> IA Analysis</button>
         </div>
+      </div>
 
-        <div class="col-md-6">
-          <div class="card border-0 shadow-sm">
-            <div class="card-header bg-transparent border-0 pt-4 px-4">
-              <h5 class="card-title fw-bold mb-0">Alumnos Destacados</h5>
-            </div>
-            <div class="card-body px-0">
-              <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0">
-                  <thead class="table-light">
-                    <tr>
-                      <th class="ps-4">Nombre</th>
-                      <th>Instrumento</th>
-                      <th>Promedio</th>
-                      <th class="pe-4">Asistencia</th>
-                    </tr>
-                  </thead>
-                  <tbody id="destacados-table">
-                    <tr><td colspan="4" class="text-center py-4">Cargando...</td></tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
+      <div id="hub-content">
+        ${renderTabContent()}
+      </div>
+    </div>
+  `
+}
+
+function renderTabContent() {
+  switch (state.activeTab) {
+    case 'resumen': return renderResumenTab()
+    case 'alertas': return renderAlertasTab()
+    case 'riesgo': return renderRiesgoTab()
+    case 'ia': return renderIATab()
+    default: return renderResumenTab()
+  }
+}
+
+function renderResumenTab() {
+  const s = state.stats || {}
+  const ra = state.resumenAlertas || { total: 0, rojas: 0 }
+  
+  return `
+    <div class="row g-3">
+      <div class="col-md-6 col-lg-3">
+        ${renderMetricCard({ label: 'Alumnos Activos', value: s.total_alumnos || 0, icon: 'bi-people', color: 'primary' })}
+      </div>
+      <div class="col-md-6 col-lg-3">
+        ${renderMetricCard({ label: 'Promedio Global', value: (s.promedio_general || 0).toFixed(2), icon: 'bi-star', color: 'success' })}
+      </div>
+      <div class="col-md-6 col-lg-3">
+        ${renderMetricCard({ label: 'Alertas Rojas', value: ra.rojas, icon: 'bi-exclamation-octagon', color: 'danger' })}
+      </div>
+      <div class="col-md-6 col-lg-3">
+        ${renderMetricCard({ label: 'Asistencia Hoy', value: (s.asistencia_hoy_porcentaje || 0) + '%', icon: 'bi-check2-circle', color: 'info' })}
+      </div>
+      
+      <div class="col-12 mt-4">
+        <h5 class="fw-bold mb-3"><i class="bi bi-trophy me-2 text-warning"></i>Alumnos Destacados</h5>
+        <div class="page-glass p-0 overflow-hidden">
+          <div id="destacados-placeholder" class="p-4 text-center text-muted">Cargando destacados...</div>
         </div>
       </div>
     </div>
   `
+}
 
-  async function loadData() {
-    const refreshBtn = container.querySelector('#refresh-dashboard')
-    if (refreshBtn) {
-      refreshBtn.disabled = true
-      refreshBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Actualizando...'
-    }
+function renderAlertasTab() {
+  return `
+    <div class="page-glass p-4">
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <h5 class="fw-bold m-0">Alertas de Seguimiento Académico</h5>
+        <span class="badge bg-danger">${state.resumenAlertas?.rojas || 0} Críticas</span>
+      </div>
+      <div id="alertas-list-container">
+        <div class="text-center py-5"><div class="spinner-border spinner-border-sm text-primary"></div></div>
+      </div>
+    </div>
+  `
+}
 
-    try {
-      // 1. Cargar Período Activo y Estadísticas
-      const [periodoActivo, estadisticas, alertas, correlacion, riesgoAlto, destacados] = await Promise.all([
-        PeriodosApi.getPeriodoActivo(),
-        MetricsApi.getEstadisticasPeriodoActivo(),
-        MetricsApi.getResumenAlertas(),
-        MetricsApi.getCorrelacionAsistenciaRendimiento(),
-        MetricsApi.getAlumnosEnRiesgoAlto(),
-        MetricsApi.getAlumnosDestacados()
-      ])
+function renderRiesgoTab() {
+  return `
+    <div class="page-glass p-4">
+      <h5 class="fw-bold mb-4">Análisis Proactivo de Riesgo de Abandono</h5>
+      <div class="alert alert-info small mb-4">
+        <i class="bi bi-info-circle me-1"></i> El puntaje de riesgo se calcula combinando racha de ausencias, promedio académico y participación.
+      </div>
+      <div id="riesgo-list-container">
+        <div class="text-center py-5"><div class="spinner-border spinner-border-sm text-primary"></div></div>
+      </div>
+    </div>
+  `
+}
 
-      // Actualizar Header
-      const headerLabel = container.querySelector('#periodo-activo-label')
-      if (periodoActivo) {
-        headerLabel.textContent = `${periodoActivo.nombre} (${periodoActivo.fecha_inicio} a ${periodoActivo.fecha_fin})`
-      } else {
-        headerLabel.textContent = 'No hay período activo'
-      }
+function renderIATab() {
+  return `
+    <div class="text-center py-5">
+      <i class="bi bi-robot fs-1 text-primary d-block mb-3"></i>
+      <h5>SOI Intelligence</h5>
+      <p class="text-muted">Genera un análisis narrativo del estado actual de tu grupo.</p>
+      <button class="btn btn-primary px-4 rounded-pill" id="btn-run-ia">
+        <i class="bi bi-magic me-1"></i> Iniciar Análisis de IA
+      </button>
+      <div id="ia-result-area" class="mt-4 text-start" style="max-width: 600px; margin: 0 auto;"></div>
+    </div>
+  `
+}
 
-      // 2. Renderizar KPIs
-      const kpiContainer = container.querySelector('#kpi-container')
-      const kpiHtml = [
-        createKpiCard({
-          titulo: 'Alumnos Activos',
-          valor: estadisticas?.total_alumnos || 0,
-          colorClass: 'primary',
-          icono: 'bi-people'
-        }),
-        createKpiCard({
-          titulo: 'Tasa Asistencia',
-          valor: `${(estadisticas?.tasa_asistencia_promedio || 0).toFixed(1)}%`,
-          colorClass: Utils.formatTasa(estadisticas?.tasa_asistencia_promedio || 0).colorClass.replace('text-', ''),
-          icono: 'bi-calendar-check'
-        }),
-        createKpiCard({
-          titulo: 'Promedio Gral',
-          valor: (estadisticas?.promedio_calificaciones || 0).toFixed(2),
-          colorClass: 'info',
-          icono: 'bi-graph-up'
-        }),
-        createKpiCard({
-          titulo: 'Alertas Rojas',
-          valor: alertas?.rojas || 0,
-          subtitulo: `${alertas?.total || 0} alertas totales`,
-          colorClass: 'danger',
-          icono: 'bi-exclamation-triangle'
-        })
-      ].map(card => `<div class="col-md-3">${card}</div>`).join('')
-      
-      kpiContainer.innerHTML = kpiHtml
-
-      // 3. Correlación
-      const corrContainer = container.querySelector('#correlacion-container')
-      const r = correlacion || 0
-      let desc = 'Sin datos suficientes'
-      if (r > 0.7) desc = 'Correlación fuerte: los alumnos con mejor asistencia tienden a rendir mejor.'
-      else if (r > 0.4) desc = 'Correlación moderada entre asistencia y rendimiento.'
-      else if (r > 0) desc = 'Correlación débil entre asistencia y rendimiento.'
-      else if (r < 0) desc = 'Correlación negativa: comportamiento inusual detectado.'
-
-      corrContainer.innerHTML = `
-        <h1 class="display-3 fw-bold text-primary mb-0">${r.toFixed(2)}</h1>
-        <p class="lead text-muted">${desc}</p>
-      `
-
-      // 4. Resumen Alertas
-      const alertsContainer = container.querySelector('#alertas-summary-container')
-      const totalAlerts = alertas?.total || 1 // prevent div by zero
-      alertsContainer.innerHTML = `
-        <div class="mb-3">
-          <div class="d-flex justify-content-between mb-1">
-            <span>Riesgo Alto (Rojas)</span>
-            <span class="fw-bold">${alertas?.rojas || 0}</span>
-          </div>
-          <div class="progress" style="height: 6px;">
-            <div class="progress-bar bg-danger" style="width: ${((alertas?.rojas || 0) / totalAlerts * 100)}%"></div>
-          </div>
-        </div>
-        <div class="mb-3">
-          <div class="d-flex justify-content-between mb-1">
-            <span>Seguimiento (Naranjas)</span>
-            <span class="fw-bold">${alertas?.naranjas || 0}</span>
-          </div>
-          <div class="progress" style="height: 6px;">
-            <div class="progress-bar bg-warning" style="width: ${((alertas?.naranjas || 0) / totalAlerts * 100)}%"></div>
-          </div>
-        </div>
-        <div>
-          <div class="d-flex justify-content-between mb-1">
-            <span>Preventivas (Amarillas)</span>
-            <span class="fw-bold">${alertas?.amarillas || 0}</span>
-          </div>
-          <div class="progress" style="height: 6px;">
-            <div class="progress-bar bg-info" style="width: ${((alertas?.amarillas || 0) / totalAlerts * 100)}%"></div>
-          </div>
-        </div>
-      `
-
-      // 5. Tabla Riesgo Alto
-      const riesgoTable = container.querySelector('#riesgo-alto-table')
-      if (!riesgoAlto || riesgoAlto.length === 0) {
-        riesgoTable.innerHTML = '<tr><td colspan="4" class="text-center py-4 text-muted">No se detectaron alumnos en riesgo crítico.</td></tr>'
-      } else {
-        riesgoTable.innerHTML = riesgoAlto.slice(0, 5).map(a => {
-          const score = Utils.formatScore(a.score_riesgo)
-          return `
-            <tr>
-              <td class="ps-4 fw-medium">${a.nombre_completo}</td>
-              <td>${a.instrumento_principal}</td>
-              <td><span class="fw-bold ${score.colorClass}">${score.text}</span></td>
-              <td class="pe-4"><span class="badge bg-body-tertiary text-body border">${Utils.getNivelLabel(a.nivel_riesgo)}</span></td>
-            </tr>
-          `
-        }).join('')
-      }
-
-      // 6. Tabla Destacados
-      const destacadosTable = container.querySelector('#destacados-table')
-      if (!destacados || destacados.length === 0) {
-        destacadosTable.innerHTML = '<tr><td colspan="4" class="text-center py-4 text-muted">No hay alumnos destacados en este período.</td></tr>'
-      } else {
-        destacadosTable.innerHTML = destacados.slice(0, 5).map(a => `
-          <tr>
-            <td class="ps-4 fw-medium">${a.nombre_completo}</td>
-            <td>${a.instrumento_principal}</td>
-            <td><span class="fw-bold text-success">${(a.promedio_calificaciones || 0).toFixed(2)}</span></td>
-            <td class="pe-4"><span class="fw-bold">${(a.tasa_asistencia || 0).toFixed(1)}%</span></td>
-          </tr>
-        `).join('')
-      }
-
-    } catch (error) {
-      console.error('Error al cargar dashboard:', error)
-      container.innerHTML = `
-        <div class="alert alert-danger m-4" role="alert">
-          <h4 class="alert-heading">Error al cargar datos</h4>
-          <p>${error.message}</p>
-          <hr>
-          <button class="btn btn-outline-danger" onclick="location.reload()">Reintentar</button>
-        </div>
-      `
-    } finally {
-      if (refreshBtn) {
-        refreshBtn.disabled = false
-        refreshBtn.innerHTML = '<i class="bi bi-arrow-clockwise"></i> Actualizar'
-      }
-    }
-  }
-
-  loadData()
-  const reloadBtn = container.querySelector('#refresh-dashboard')
-  if (reloadBtn) {
-    reloadBtn.addEventListener('click', () => {
-      renderDashboardMetricasView(container)
+function _attachEvents(container) {
+  container.querySelectorAll('[data-tab]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      state.activeTab = btn.dataset.tab
+      localStorage.setItem('pm_metrics_tab', state.activeTab)
+      renderContent(container)
+      _attachEvents(container)
+      _onTabChange()
     })
+  })
+
+  // Ejecutar carga de datos específica de la pestaña
+  _onTabChange()
+}
+
+async function _onTabChange() {
+  if (state.activeTab === 'resumen') {
+    const destacados = await getAlumnosDestacados()
+    const area = state.container.querySelector('#destacados-placeholder')
+    if (area) {
+      area.className = ''
+      area.innerHTML = `
+        <table class="table table-compact table-hover mb-0">
+          <tbody class="small">
+            ${destacados.slice(0, 5).map(d => `
+              <tr>
+                <td><i class="bi bi-award text-warning me-2"></i><strong>${escapeHTML(d.nombre_completo)}</strong></td>
+                <td><span class="badge bg-success bg-opacity-10 text-success border border-success-subtle">${d.promedio}</span></td>
+                <td class="text-muted">${escapeHTML(d.programa)}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `
+    }
   }
+
+  if (state.activeTab === 'alertas') {
+    const alertas = await getAlertasActivas()
+    const area = state.container.querySelector('#alertas-list-container')
+    if (area) {
+      area.innerHTML = alertas.length === 0 
+        ? '<p class="text-center text-muted">No hay alertas activas.</p>'
+        : alertas.map(a => `
+          <div class="alert-item d-flex align-items-center gap-3 p-3 border-bottom">
+            <div class="bg-${a.color} rounded-circle" style="width:12px;height:12px;"></div>
+            <div class="flex-grow-1">
+              <div class="fw-bold small">${escapeHTML(a.nombre_alumno)}</div>
+              <div class="extra-small text-muted">${escapeHTML(a.descripcion_alerta)}</div>
+            </div>
+            <div class="text-end small text-muted">${a.fecha_referencia}</div>
+          </div>
+        `).join('')
+    }
+  }
+
+  if (state.activeTab === 'riesgo') {
+    const riesgo = await getRiesgoAbandono()
+    const area = state.container.querySelector('#riesgo-list-container')
+    if (area) {
+      area.innerHTML = `
+        <table class="table table-compact table-hover">
+          <thead><tr><th>Alumno</th><th class="text-center">Score</th><th>Nivel</th></tr></thead>
+          <tbody class="small">
+            ${riesgo.map(r => `
+              <tr>
+                <td>${escapeHTML(r.nombre_completo)}</td>
+                <td class="text-center fw-bold">${r.score_riesgo}</td>
+                <td><span class="badge bg-${r.nivel_riesgo === 'alto' ? 'danger' : 'warning'}">${r.nivel_riesgo.toUpperCase()}</span></td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `
+    }
+  }
+}
+
+function _attachGlobalEventsIA() {
+  state.container.querySelector('#btn-run-ia')?.addEventListener('click', async () => {
+    const area = state.container.querySelector('#ia-result-area')
+    area.innerHTML = '<div class="text-center"><div class="spinner-border spinner-border-sm text-primary"></div><p class="small mt-2">Analizando datos...</p></div>'
+    // Simulación de respuesta de IA (será reemplazado por groqService real)
+    setTimeout(() => {
+      area.innerHTML = `
+        <div class="page-glass p-3 border-primary border-start border-4">
+          <p class="small mb-2"><strong>Análisis Institucional:</strong></p>
+          <p class="extra-small text-secondary">Basado en el rendimiento del período actual, se observa una mejora del 12% en la asistencia del grupo de Cuerdas. Sin embargo, 3 alumnos muestran un patrón de riesgo por inasistencias en la última racha de 15 días.</p>
+          <button class="btn btn-xs btn-outline-primary mt-2">Copiar Reporte</button>
+        </div>
+      `
+    }, 1500)
+  })
 }

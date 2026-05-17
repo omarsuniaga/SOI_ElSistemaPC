@@ -91,6 +91,8 @@ window.addEventListener('showToast', (e) => {
 
 
 import { renderLoginView } from './portal-maestros/views/loginView.js'
+import { renderRegisterView } from './portal-maestros/views/registerView.js'
+import { renderPendingApprovalView } from './portal-maestros/views/pendingApprovalView.js'
 import { renderHoyView } from './portal-maestros/views/hoyView.js'
 import { renderCalendarioView } from './portal-maestros/views/calendarioView.js'
 import { renderMetricasView } from './portal-maestros/views/metricasView.js'
@@ -113,6 +115,7 @@ import { renderMetricasCompletaView as renderAdminMetricasView } from './modules
 import { renderAcademicAdminView } from './modules/academic-admin/views/academicAdminView.js'
 import { renderClasesView } from './modules/clases/views/clasesView.js'
 import { renderRegistroAlumnoView } from './portal-maestros/views/registroAlumnoView.js'
+import { renderAprobacionView } from './modules/admin-aprobacion/views/aprobacionView.js'
 import { getPermisos } from './portal-maestros/services/permisoService.js'
 
 // Nuevos componentes de UI
@@ -146,6 +149,7 @@ const ADMIN_TABS = [
   { id: 'admin-alumnos', label: 'Alumnos', icon: 'bi-people-fill' },
   { id: 'admin-programas', label: 'Programas', icon: 'bi-grid-1x2' },
   { id: 'admin-maestros', label: 'Maestros', icon: 'bi-person-badge' },
+  { id: 'admin-aprobacion', label: 'Aprobación', icon: 'bi-check-circle-fill' },
   { id: 'admin-metricas', label: 'Métricas', icon: 'bi-bar-chart-line' },
 ]
 
@@ -613,7 +617,8 @@ function _initViewContainers() {
   container.innerHTML = ''
 
   const views = [
-    'login', 'logout', 'calendario', 'clases', 'hoy', 'asistencia',
+    'login', 'logout', 'register', 'pending-approval',
+    'calendario', 'clases', 'hoy', 'asistencia',
     'metricas', 'perfil', 'clase-emergente', 'planificacion',
     'alumno', 'gamificacion', 'ruta', 'crear-clase', 'ruta-plan-builder',
     'ruta-semanal', 'ruta-libreria', 'ruta-detalle', 'registrar-alumno',
@@ -622,6 +627,7 @@ function _initViewContainers() {
   const adminViews = [
     'admin-alumnos', 'admin-programas', 'admin-maestros',
     'admin-metricas', 'admin-config', 'admin-clases', 'admin-sesiones',
+    'admin-aprobacion',
   ]
 
   views.forEach(viewName => {
@@ -703,6 +709,16 @@ async function _renderView(route, params = {}, { silent = false } = {}) {
       case 'login':
         renderLoginView(targetContainer, { onSuccess: () => initPortal() })
         break
+      case 'register':
+        renderRegisterView(targetContainer, {
+          onSuccess: () => router.navigate('pending-approval')
+        })
+        break
+      case 'pending-approval':
+        renderPendingApprovalView(targetContainer, {
+          onBackToLogin: () => router.navigate('login')
+        })
+        break
       case 'logout':
         _showLoginScreen()
         stopRealtime()
@@ -782,6 +798,10 @@ async function _renderView(route, params = {}, { silent = false } = {}) {
         renderClasesView?.(targetContainer)
         break
       case 'admin-sesiones':
+        break
+      case 'admin-aprobacion':
+        await renderAprobacionView(targetContainer)
+        _activeViewCleanup = null
         break
       case 'registrar-alumno':
         renderRegistroAlumnoView(targetContainer)
@@ -913,6 +933,9 @@ async function initPortal() {
   router.on('ruta-detalle/:id', (route, params) => _renderView('ruta-detalle', params))
   router.on('registrar-alumno', (route, params) => _renderView('registrar-alumno', params))
 
+  router.on('register', (route, params) => _renderView('register', params))
+  router.on('pending-approval', (route, params) => _renderView('pending-approval', params))
+
   // Admin routes (solo visible cuando IS_ADMIN=true)
   if (IS_ADMIN) {
     router.on('admin-alumnos', (route, params) => _renderView('admin-alumnos', params))
@@ -922,6 +945,7 @@ async function initPortal() {
     router.on('admin-config', (route, params) => _renderView('admin-config', params))
     router.on('admin-clases', (route, params) => _renderView('admin-clases', params))
     router.on('admin-sesiones', (route, params) => _renderView('admin-sesiones', params))
+    router.on('admin-aprobacion', (route, params) => _renderView('admin-aprobacion', params))
     // Admin default route
     router.onNotFound(() => _renderView('admin-alumnos'))
   } else {
@@ -929,7 +953,7 @@ async function initPortal() {
   }
 
   // 3.1 Activar guard de rutas
-  router.setAuthGuard(() => usePortalAuth.isAuthenticated(), ['login'])
+  router.setAuthGuard(() => usePortalAuth.isAuthenticated(), ['login', 'register', 'pending-approval'])
 
   router.start()
 

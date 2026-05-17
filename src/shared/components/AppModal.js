@@ -37,9 +37,9 @@ function ensureDOM() {
   `
   modal.innerHTML = `
     <div class="app-modal-dialog" style="
-      background:var(--pm-surface);
-      color:var(--pm-text);
-      border:1px solid var(--pm-border);
+      background:var(--pm-surface, var(--bs-body-bg, #ffffff));
+      color:var(--pm-text, var(--bs-body-color, #212529));
+      border:1px solid var(--pm-border, var(--bs-border-color, #dee2e6));
       border-radius:16px;
       box-shadow:0 20px 60px rgba(0,0,0,0.2);
       width:100%;
@@ -53,9 +53,9 @@ function ensureDOM() {
       <!-- Header -->
       <div class="app-modal-header" style="
         padding:1rem 1.25rem;
-        border-bottom:1px solid var(--pm-border);
+        border-bottom:1px solid var(--pm-border, var(--bs-border-color, #dee2e6));
         display:flex;align-items:center;gap:.5rem;
-        background: linear-gradient(135deg, var(--pm-primary) 0%, #5856d6 100%);
+        background: linear-gradient(135deg, var(--pm-primary, var(--bs-primary, #0d6efd)) 0%, #5856d6 100%);
       ">
         <h5 class="app-modal-title mb-0 fw-bold" style="flex:1;font-size:1.0625rem;color:white;font-weight:600;letter-spacing:-0.01em;"></h5>
         <button class="app-modal-close-x" type="button" aria-label="Cerrar" style="
@@ -71,16 +71,16 @@ function ensureDOM() {
       </div>
 
       <!-- Body -->
-      <div class="app-modal-body" style="padding:1.25rem; background:var(--pm-surface);"></div>
+      <div class="app-modal-body" style="padding:1.25rem; background:var(--pm-surface, var(--bs-body-bg, #ffffff));"></div>
 
       <!-- Footer -->
       <div class="app-modal-footer" style="
         padding:1rem 1.25rem;
-        border-top:1px solid var(--pm-border);
+        border-top:1px solid var(--pm-border, var(--bs-border-color, #dee2e6));
         display:flex;align-items:center;justify-content:flex-end;gap:.5rem;
-        background:var(--pm-surface-2);
+        background:var(--pm-surface-2, var(--bs-tertiary-bg, #f8f9fa));
       ">
-        <button class="app-modal-btn-delete pm-btn" type="button" style="background:none; border:none; color:var(--pm-danger); font-size:0.85rem; font-weight:600; padding:0.5rem 1rem; cursor:pointer; margin-right:auto; display:none;">Eliminar</button>
+        <button class="app-modal-btn-delete pm-btn" type="button" style="background:none; border:none; color:var(--pm-danger, var(--bs-danger, #dc3545)); font-size:0.85rem; font-weight:600; padding:0.5rem 1rem; cursor:pointer; margin-right:auto; display:none;">Eliminar</button>
         <button class="app-modal-btn-cancel pm-btn pm-btn-outline" type="button">Cancelar</button>
         <button class="app-modal-btn-save pm-btn pm-btn-primary" type="button">
           <span class="app-modal-save-text">Guardar</span>

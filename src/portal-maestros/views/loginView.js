@@ -78,6 +78,10 @@ export function renderLoginView(container, { onSuccess }) {
         </button>
 
         <p class="pm-error-msg" id="pm-login-error" aria-live="polite"></p>
+
+        <p class="pm-login-register-link">
+          <a href="#" data-route="register" class="pm-link">¿No tenés cuenta? Registrate como maestro</a>
+        </p>
       </div>
     </div>
     <style>
@@ -257,6 +261,14 @@ export function renderLoginView(container, { onSuccess }) {
       biometricBtn.style.display = 'flex'
       biometricBtn.onclick = tryBiometricLogin
     }
+  })
+
+  // Handle navigation links
+  const registerLink = container.querySelector('[data-route="register"]')
+  registerLink?.addEventListener('click', (e) => {
+    e.preventDefault()
+    history.pushState({ route: 'register' }, '', '#/register')
+    window.dispatchEvent(new PopStateEvent('popstate', { state: { route: 'register' } }))
   })
 
   requestAnimationFrame(() => emailInput.focus())

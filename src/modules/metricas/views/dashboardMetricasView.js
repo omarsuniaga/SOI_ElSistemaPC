@@ -107,7 +107,7 @@ export async function renderDashboardMetricasView(container) {
   `
 
   async function loadData() {
-    const refreshBtn = document.getElementById('refresh-dashboard')
+    const refreshBtn = container.querySelector('#refresh-dashboard')
     if (refreshBtn) {
       refreshBtn.disabled = true
       refreshBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Actualizando...'
@@ -125,7 +125,7 @@ export async function renderDashboardMetricasView(container) {
       ])
 
       // Actualizar Header
-      const headerLabel = document.getElementById('periodo-activo-label')
+      const headerLabel = container.querySelector('#periodo-activo-label')
       if (periodoActivo) {
         headerLabel.textContent = `${periodoActivo.nombre} (${periodoActivo.fecha_inicio} a ${periodoActivo.fecha_fin})`
       } else {
@@ -133,7 +133,7 @@ export async function renderDashboardMetricasView(container) {
       }
 
       // 2. Renderizar KPIs
-      const kpiContainer = document.getElementById('kpi-container')
+      const kpiContainer = container.querySelector('#kpi-container')
       const kpiHtml = [
         createKpiCard({
           titulo: 'Alumnos Activos',
@@ -155,8 +155,8 @@ export async function renderDashboardMetricasView(container) {
         }),
         createKpiCard({
           titulo: 'Alertas Rojas',
-          valor: alertas.rojas,
-          subtitulo: `${alertas.total} alertas totales`,
+          valor: alertas?.rojas || 0,
+          subtitulo: `${alertas?.total || 0} alertas totales`,
           colorClass: 'danger',
           icono: 'bi-exclamation-triangle'
         })
@@ -165,7 +165,7 @@ export async function renderDashboardMetricasView(container) {
       kpiContainer.innerHTML = kpiHtml
 
       // 3. Correlación
-      const corrContainer = document.getElementById('correlacion-container')
+      const corrContainer = container.querySelector('#correlacion-container')
       const r = correlacion || 0
       let desc = 'Sin datos suficientes'
       if (r > 0.7) desc = 'Correlación fuerte: los alumnos con mejor asistencia tienden a rendir mejor.'
@@ -179,40 +179,41 @@ export async function renderDashboardMetricasView(container) {
       `
 
       // 4. Resumen Alertas
-      const alertsContainer = document.getElementById('alertas-summary-container')
+      const alertsContainer = container.querySelector('#alertas-summary-container')
+      const totalAlerts = alertas?.total || 1 // prevent div by zero
       alertsContainer.innerHTML = `
         <div class="mb-3">
           <div class="d-flex justify-content-between mb-1">
             <span>Riesgo Alto (Rojas)</span>
-            <span class="fw-bold">${alertas.rojas}</span>
+            <span class="fw-bold">${alertas?.rojas || 0}</span>
           </div>
           <div class="progress" style="height: 6px;">
-            <div class="progress-bar bg-danger" style="width: ${(alertas.rojas / alertas.total * 100) || 0}%"></div>
+            <div class="progress-bar bg-danger" style="width: ${((alertas?.rojas || 0) / totalAlerts * 100)}%"></div>
           </div>
         </div>
         <div class="mb-3">
           <div class="d-flex justify-content-between mb-1">
             <span>Seguimiento (Naranjas)</span>
-            <span class="fw-bold">${alertas.naranjas}</span>
+            <span class="fw-bold">${alertas?.naranjas || 0}</span>
           </div>
           <div class="progress" style="height: 6px;">
-            <div class="progress-bar bg-warning" style="width: ${(alertas.naranjas / alertas.total * 100) || 0}%"></div>
+            <div class="progress-bar bg-warning" style="width: ${((alertas?.naranjas || 0) / totalAlerts * 100)}%"></div>
           </div>
         </div>
         <div>
           <div class="d-flex justify-content-between mb-1">
             <span>Preventivas (Amarillas)</span>
-            <span class="fw-bold">${alertas.amarillas}</span>
+            <span class="fw-bold">${alertas?.amarillas || 0}</span>
           </div>
           <div class="progress" style="height: 6px;">
-            <div class="progress-bar bg-info" style="width: ${(alertas.amarillas / alertas.total * 100) || 0}%"></div>
+            <div class="progress-bar bg-info" style="width: ${((alertas?.amarillas || 0) / totalAlerts * 100)}%"></div>
           </div>
         </div>
       `
 
       // 5. Tabla Riesgo Alto
-      const riesgoTable = document.getElementById('riesgo-alto-table')
-      if (riesgoAlto.length === 0) {
+      const riesgoTable = container.querySelector('#riesgo-alto-table')
+      if (!riesgoAlto || riesgoAlto.length === 0) {
         riesgoTable.innerHTML = '<tr><td colspan="4" class="text-center py-4 text-muted">No se detectaron alumnos en riesgo crítico.</td></tr>'
       } else {
         riesgoTable.innerHTML = riesgoAlto.slice(0, 5).map(a => {
@@ -229,16 +230,16 @@ export async function renderDashboardMetricasView(container) {
       }
 
       // 6. Tabla Destacados
-      const destacadosTable = document.getElementById('destacados-table')
-      if (destacados.length === 0) {
+      const destacadosTable = container.querySelector('#destacados-table')
+      if (!destacados || destacados.length === 0) {
         destacadosTable.innerHTML = '<tr><td colspan="4" class="text-center py-4 text-muted">No hay alumnos destacados en este período.</td></tr>'
       } else {
         destacadosTable.innerHTML = destacados.slice(0, 5).map(a => `
           <tr>
             <td class="ps-4 fw-medium">${a.nombre_completo}</td>
             <td>${a.instrumento_principal}</td>
-            <td><span class="fw-bold text-success">${a.promedio_calificaciones.toFixed(2)}</span></td>
-            <td class="pe-4"><span class="fw-bold">${a.tasa_asistencia.toFixed(1)}%</span></td>
+            <td><span class="fw-bold text-success">${(a.promedio_calificaciones || 0).toFixed(2)}</span></td>
+            <td class="pe-4"><span class="fw-bold">${(a.tasa_asistencia || 0).toFixed(1)}%</span></td>
           </tr>
         `).join('')
       }
@@ -262,7 +263,10 @@ export async function renderDashboardMetricasView(container) {
   }
 
   loadData()
-  document.getElementById('refresh-dashboard').addEventListener('click', () => {
-    renderDashboardMetricasView(container)
-  })
+  const reloadBtn = container.querySelector('#refresh-dashboard')
+  if (reloadBtn) {
+    reloadBtn.addEventListener('click', () => {
+      renderDashboardMetricasView(container)
+    })
+  }
 }

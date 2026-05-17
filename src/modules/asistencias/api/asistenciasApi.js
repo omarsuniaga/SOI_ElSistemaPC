@@ -145,18 +145,28 @@ export async function getDetalleSesion(sesionId) {
 
   if (errSc) throwError('No se pudo cargar la sesión', errSc)
 
-  // Asistencias + alumnos + justificaciones
+  // Asistencias + alumnos
   const { data: asistencias, error: errA } = await supabase
     .from('asistencias')
     .select(`
-      id, estado, justificacion_texto, observaciones,
-      alumnos ( id, nombre_completo ),
-      justificaciones ( motivo, descripcion, archivo_url, estado )
+      id, estado, justificacion_texto, observaciones, alumno_id,
+      alumnos ( id, nombre_completo )
     `)
     .eq('sesion_clase_id', sesionId)
     .order('alumnos(nombre_completo)', { ascending: true })
 
   if (errA) throwError('No se pudieron cargar las asistencias', errA)
+
+  // Justificaciones separadas (por falta de FK directa)
+  const { data: justificaciones } = await supabase
+    .from('justificaciones')
+    .select('motivo, descripcion, archivo_url, estado, alumno_id')
+    .eq('sesion_id', sesionId)
+
+  const justificacionesMap = {}
+  if (justificaciones) {
+    justificaciones.forEach(j => { justificacionesMap[j.alumno_id] = j })
+  }
 
   // Observaciones por alumno vinculadas a esta sesión
   const { data: observaciones, error: errO } = await supabase
@@ -174,7 +184,7 @@ export async function getDetalleSesion(sesionId) {
     .from('contenidos_sesion')
     .select(`
       id, descripcion, nivel_logro,
-      planificacion ( titulo, contenidos )
+      planificaciones ( titulo, contenidos )
     `)
     .eq('sesion_clase_id', sesionId)
 
@@ -198,9 +208,9 @@ export async function getDetalleSesion(sesionId) {
       estado:           a.estado,
       justificacionTexto: a.justificacion_texto,
       observacion:      a.observaciones,
-      alumnoId:         a.alumnos?.id,
+      alumnoId:         a.alumno_id,
       alumnoNombre:     a.alumnos?.nombre_completo ?? '—',
-      justificacion:    a.justificaciones?.[0] ?? null,
+      justificacion:    justificacionesMap[a.alumno_id] ?? null,
     })),
     observaciones: (observaciones || []).map(o => ({
       id:           o.id,
@@ -215,7 +225,7 @@ export async function getDetalleSesion(sesionId) {
       id:           c.id,
       descripcion:  c.descripcion,
       nivelLogro:   c.nivel_logro,
-      planTitulo:   c.planificacion?.titulo,
+      planTitulo:   c.planificaciones?.titulo,
     })),
   }
 }
@@ -235,14 +245,25 @@ export async function getReporteCompleto({ fechaInicio, fechaFin, periodoId } = 
   const { data: asistencias, error } = await supabase
     .from('asistencias')
     .select(`
-      id, estado, justificacion_texto, sesion_clase_id,
-      alumnos ( id, nombre_completo ),
-      justificaciones ( motivo, descripcion )
+      id, estado, justificacion_texto, sesion_clase_id, alumno_id,
+      alumnos ( id, nombre_completo )
     `)
     .in('sesion_clase_id', sesionIds)
     .order('alumnos(nombre_completo)', { ascending: true })
 
   if (error) throwError('No se pudo generar el reporte', error)
+
+  const { data: justificacionesData } = await supabase
+    .from('justificaciones')
+    .select('motivo, descripcion, alumno_id, sesion_id')
+    .in('sesion_id', sesionIds)
+
+  const justificacionesMap = {}
+  if (justificacionesData) {
+    justificacionesData.forEach(j => {
+      justificacionesMap[`${j.sesion_id}_${j.alumno_id}`] = j
+    })
+  }
 
   // Indexar asistencias por sesion_clase_id
   const asistenciasPorSesion = {}
@@ -254,7 +275,7 @@ export async function getReporteCompleto({ fechaInicio, fechaFin, periodoId } = 
       alumnoNombre:       a.alumnos?.nombre_completo ?? '—',
       estado:             a.estado,
       justificacionTexto: a.justificacion_texto,
-      justificacionMotivo:a.justificaciones?.[0]?.motivo ?? null,
+      justificacionMotivo:justificacionesMap[`${a.sesion_clase_id}_${a.alumno_id}`]?.motivo ?? null,
     })
   }
 

@@ -4,6 +4,7 @@ function normalizeMaestro(m) {
   if (!m) return null
   return {
     ...m,
+    user_id: m.user_id ?? null,
     nombre: m.nombre_completo ?? '',
     email: m.correo ?? '',
     telefono: m.tlf ?? '',
@@ -55,6 +56,7 @@ export async function crearMaestro(maestro) {
     resena: (maestro.bio || maestro.resena || '').trim() || null,
     activo: maestro.is_active !== undefined ? maestro.is_active : (maestro.activo !== undefined ? maestro.activo : true),
     especialidades: Array.isArray(maestro.especialidades) ? maestro.especialidades : [],
+    user_id: maestro.user_id || null,
   }
 
   const { data, error } = await supabase

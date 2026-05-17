@@ -1,6 +1,16 @@
+-- ╔═══════════════════════════════════════════════════════════════════════╗
+-- ║  DEPRECATED — See 20260517_auth_rls_fix.sql for the replacement      ║
+-- ║  This trigger created profiles FROM maestros (maestros → profiles).  ║
+-- ║  The correct flow is profiles → maestros (auth.users → profiles →   ║
+-- ║  maestros). The replacement trigger on_profile_insert_maestro in     ║
+-- ║  20260517_auth_rls_fix.sql reverses this direction.                  ║
+-- ║  This file is kept for historical reference only.                    ║
+-- ║  The actual trigger and function are DROPPED in the new migration.   ║
+-- ╚═══════════════════════════════════════════════════════════════════════╝
 -- Migration: 20260513_auto_create_profile_for_maestro.sql
 -- Crea automáticamente un registro en 'profiles' cuando se inserta un maestro con user_id
 -- Soluciona el error FK en push_subscriptions: "Key is not present in table profiles"
+-- DEPRECATED: Use the new trigger on_profile_insert_maestro instead
 
 CREATE OR REPLACE FUNCTION public.create_profile_for_maestro()
 RETURNS TRIGGER AS $$

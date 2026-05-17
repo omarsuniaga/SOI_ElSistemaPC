@@ -301,31 +301,63 @@ function _renderTimeline() {
     return
   }
 
-  tl.innerHTML = state.grupos.map(({ fecha, sesiones }) => `
-    <div class="as-fecha-grupo mb-4">
+  tl.innerHTML = state.grupos.map(({ fecha, sesiones }) => {
+    // Group by class name
+    const clasesMap = {}
+    sesiones.forEach(s => {
+      const key = s.claseNombre || 'Clase sin nombre'
+      if (!clasesMap[key]) clasesMap[key] = {
+        instrumento: s.instrumento,
+        sesiones: []
+      }
+      clasesMap[key].sesiones.push(s)
+    })
 
-      <!-- Fecha header -->
-      <div class="d-flex align-items-center gap-2 mb-2">
-        <span class="badge bg-primary-subtle text-primary-emphasis px-3 py-2 rounded-pill fw-semibold" style="font-size:.85rem;">
-          <i class="bi bi-calendar3 me-1"></i>${_formatFecha(fecha)}
-        </span>
-        <div class="flex-grow-1" style="height:1px;background:var(--bs-border-color)"></div>
-        <button
-          class="btn btn-outline-secondary btn-sm py-0 px-2 as-dl-dia"
-          data-fecha="${fecha}"
-          title="Descargar reporte del día"
-          style="font-size:.75rem;"
-        >
-          <i class="bi bi-download me-1"></i>Día
-        </button>
-      </div>
+    const accId = `acc-${fecha.replace(/-/g, '')}`
 
-      <!-- Sessions -->
-      <div class="d-flex flex-column gap-2 ms-2">
-        ${sesiones.map(s => _tarjetaSesion(s)).join('')}
+    const accordionHtml = Object.entries(clasesMap).map(([nombre, data], idx) => {
+      const colId = `${accId}-${idx}`
+      const count = data.sesiones.length
+
+      return `
+        <div class="accordion-item border-0 mb-2 shadow-sm" style="border-radius:.5rem; overflow:hidden; background:var(--bs-body-bg)">
+          <h2 class="accordion-header">
+            <button class="accordion-button collapsed py-2 px-3" type="button" data-bs-toggle="collapse" data-bs-target="#${colId}">
+              <div class="d-flex align-items-center gap-2 flex-grow-1">
+                <span class="fw-semibold">${_esc(nombre)}</span>
+                ${data.instrumento ? `<span class="badge bg-secondary-subtle text-secondary-emphasis rounded-pill" style="font-size:.7rem;">${_esc(data.instrumento)}</span>` : ''}
+                <span class="badge bg-primary-subtle text-primary-emphasis rounded-pill ms-auto me-3">${count} sesión${count > 1 ? 'es' : ''}</span>
+              </div>
+            </button>
+          </h2>
+          <div id="${colId}" class="accordion-collapse collapse" data-bs-parent="#${accId}">
+            <div class="accordion-body p-2 bg-light">
+              <div class="d-flex flex-column gap-2">
+                ${data.sesiones.map(s => _tarjetaSesion(s)).join('')}
+              </div>
+            </div>
+          </div>
+        </div>
+      `
+    }).join('')
+
+    return `
+      <div class="as-fecha-grupo mb-4">
+        <div class="d-flex align-items-center gap-2 mb-2">
+          <span class="badge bg-primary-subtle text-primary-emphasis px-3 py-2 rounded-pill fw-semibold" style="font-size:.85rem;">
+            <i class="bi bi-calendar3 me-1"></i>${_formatFecha(fecha)}
+          </span>
+          <div class="flex-grow-1" style="height:1px;background:var(--bs-border-color)"></div>
+          <button class="btn btn-outline-secondary btn-sm py-0 px-2 as-dl-dia" data-fecha="${fecha}" title="Descargar reporte del día" style="font-size:.75rem;">
+            <i class="bi bi-download me-1"></i>Día
+          </button>
+        </div>
+        <div class="accordion ms-2" id="${accId}">
+          ${accordionHtml}
+        </div>
       </div>
-    </div>
-  `).join('')
+    `
+  }).join('')
 
   // Bind events
   tl.querySelectorAll('.as-btn-detalle').forEach(btn => {
@@ -342,6 +374,10 @@ function _tarjetaSesion(s) {
   const pct       = total ? Math.round((s.totalPresentes / total) * 100) : null
   const pctColor  = pct === null ? 'secondary' : pct >= 80 ? 'success' : pct >= 50 ? 'warning' : 'danger'
 
+  const timeStr = (s.horaInicio || s.horaFin) 
+    ? `${s.horaInicio?.slice(0,5) ?? '?'} – ${s.horaFin?.slice(0,5) ?? '?'}` 
+    : 'Horario no definido'
+
   return `
     <div class="card border-0 shadow-sm" style="background:var(--bs-body-bg)">
       <div class="card-body py-2 px-3">
@@ -350,13 +386,12 @@ function _tarjetaSesion(s) {
           <!-- Info -->
           <div style="flex:1;min-width:0">
             <div class="d-flex align-items-center gap-2 flex-wrap">
-              <span class="fw-semibold text-truncate" style="font-size:.93rem;">${_esc(s.claseNombre)}</span>
-              ${s.instrumento ? `<span class="badge bg-secondary-subtle text-secondary-emphasis rounded-pill" style="font-size:.7rem;">${_esc(s.instrumento)}</span>` : ''}
-              <span class="text-secondary" style="font-size:.8rem;">${s.horaInicio?.slice(0,5) ?? ''} – ${s.horaFin?.slice(0,5) ?? ''}</span>
+              <span class="text-secondary fw-medium" style="font-size:.85rem;"><i class="bi bi-clock me-1"></i>${timeStr}</span>
+              ${s.temaPrincipal ? `<span class="badge bg-info-subtle text-info-emphasis rounded-pill"><i class="bi bi-book me-1"></i>Tema: ${_esc(s.temaPrincipal)}</span>` : ''}
             </div>
             <div class="text-secondary small mt-1">
               <i class="bi bi-person-circle me-1"></i>${_esc(s.maestroNombre)}
-              ${s.temaPrincipal ? `<span class="ms-3"><i class="bi bi-book me-1"></i>${_esc(s.temaPrincipal)}</span>` : ''}
+              <span class="ms-2 text-muted" style="font-size: 0.7rem;" title="ID Único de Sesión">ID: ${s.sesionId.slice(0, 8)}</span>
             </div>
           </div>
 
@@ -818,7 +853,7 @@ function _renderListaAlumnos(container, alumnos) {
   const lista = container.querySelector('#lista-alumnos')
   if (!lista) return
 
-  lista.innerHTML = alunos.map((alum, idx) => _tarjetaAlumno(alum, idx)).join('')
+  lista.innerHTML = alumnos.map((alum, idx) => _tarjetaAlumno(alum, idx)).join('')
 
   lista.querySelectorAll('.btn-estado').forEach(btn => {
     btn.addEventListener('click', (e) => {

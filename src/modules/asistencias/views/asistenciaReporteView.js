@@ -4,7 +4,11 @@ import { createKpiCard } from '../../metricas/components/kpiCard.js'
 const state = {
   periodoActivo: null,
   periodos: [],
-  datos: { programas: {}, niveles: {} },
+  datos: { 
+    programas: {}, 
+    niveles: {}, 
+    totales: { sesiones: 0, presentes: 0, ausentes: 0, justificados: 0 } 
+  },
   cargando: false,
 }
 

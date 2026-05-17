@@ -23,7 +23,7 @@ vi.mock('../../../../portal-maestros/services/pushService.js', () => ({
   isPushSupported: vi.fn(() => true),
   subscribeToPush: vi.fn(async () => ({ success: true })),
   unsubscribeFromPush: vi.fn(async () => {}),
-  testNotification: vi.fn(async () => true),
+  testNotification: vi.fn(async () => ({ success: true, method: 'local' })),
   isPushSubscribed: vi.fn(async () => false),
 }))
 
@@ -355,7 +355,7 @@ describe('Notification Settings UI (configView)', () => {
       await new Promise((resolve) => setTimeout(resolve, 200))
 
       expect(statusDiv.innerHTML).toContain('success')
-      expect(statusDiv.innerHTML).toContain('prueba')
+      expect(statusDiv.innerHTML).toContain('enviada')
     })
 
     it('should display warning when test notification fails', async () => {

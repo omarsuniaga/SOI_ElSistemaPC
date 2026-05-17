@@ -40,15 +40,15 @@ export const notificacionesPanel = {
 
     container = document.createElement('div');
     container.innerHTML = `
-      <div id="pm-notificaciones-drawer-overlay" class="pm-drawer-overlay">
+      <div id="pm-notificaciones-drawer-overlay" class="pm-drawer-overlay" role="dialog" aria-modal="true" aria-labelledby="pm-notif-dialog-title">
         <div class="pm-drawer">
           <div class="pm-drawer-header">
-            <h4><i class="bi bi-bell"></i> Notificaciones <span id="pm-notif-dedup-badge" class="pm-dedup-badge" style="display:none;"></span></h4>
+            <h4 id="pm-notif-dialog-title"><i class="bi bi-bell"></i> Notificaciones <span id="pm-notif-dedup-badge" class="pm-dedup-badge" style="display:none;"></span></h4>
             <div style="display:flex; gap: 0.5rem;">
               <button id="pm-notif-mark-all" class="pm-icon-btn" title="Marcar todas como leídas" style="font-size: 1rem;">
                 <i class="bi bi-check2-all"></i>
               </button>
-              <button class="pm-drawer-close" id="pm-notificaciones-close">
+              <button class="pm-drawer-close" id="pm-notificaciones-close" aria-label="Cerrar">
                 <i class="bi bi-x-lg"></i>
               </button>
             </div>
@@ -162,6 +162,8 @@ export const notificacionesPanel = {
 
   open() {
     this.init();
+    // Store the trigger element so we can restore focus on close
+    this._triggerEl = document.activeElement;
     const overlay = document.getElementById('pm-notificaciones-drawer-overlay');
     overlay.style.display = 'block';
     // Forzar reflow para la transición
@@ -175,6 +177,10 @@ export const notificacionesPanel = {
       if (this._trap) this._trap.dispose();
       this._trap = enableTrap(drawer, { onClose: () => this.close() });
     }
+
+    // Move focus to the close button inside the drawer
+    const closeBtn = document.getElementById('pm-notificaciones-close');
+    if (closeBtn) closeBtn.focus();
 
     // Al abrir el panel, traemos la última data
     this._updateDedupBadge();
@@ -191,6 +197,12 @@ export const notificacionesPanel = {
       }, 300);
     }
     isOpen = false;
+
+    // Restore focus to the element that triggered the drawer
+    if (this._triggerEl && typeof this._triggerEl.focus === 'function') {
+      this._triggerEl.focus();
+    }
+    this._triggerEl = null;
   }
 };
 

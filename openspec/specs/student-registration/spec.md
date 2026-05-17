@@ -57,3 +57,9 @@ Successful submission MUST create one `alumno` record and one `alumnos_clases` r
 - [ ] Created student visible in admin panel immediately
 - [ ] Registration UI hidden when teacher lacks permission
 - [ ] Full flow works in Demo mode (mock data)
+
+### Cross-reference: Accessibility
+
+WCAG AA accessibility requirements for this view are defined in `openspec/specs/accessibility-audit/spec.md`:
+- **Requirement 13** — Inline validation errors with `aria-describedby`, `aria-invalid`, per-field error messages
+- **Requirement 9** — Form error announcements via shared `setFieldError()` utility

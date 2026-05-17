@@ -41,3 +41,9 @@ Thumbs.db
 # Local AI runtime state
 .atl/
 .pi/
+
+# Linting & formatting
+.eslintcache
+
+# Supabase CLI temp files
+supabase/.temp/

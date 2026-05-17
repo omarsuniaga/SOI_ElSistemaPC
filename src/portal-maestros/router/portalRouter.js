@@ -70,6 +70,20 @@ export function createPortalRouter() {
 
   let _activeTransition = null
 
+  /**
+   * Focus the first heading (h1/h2) or [role="main"] element inside a view container.
+   * Adds tabindex="-1" if the element isn't natively focusable.
+   */
+  function _focusViewHeading(view) {
+    const target = view.querySelector('h1, h2, [role="main"]')
+    if (target) {
+      if (!target.hasAttribute('tabindex')) {
+        target.setAttribute('tabindex', '-1')
+      }
+      target.focus({ preventScroll: true })
+    }
+  }
+
   function _dispatch(fullRoute) {
     if (_currentRoute === fullRoute && _currentRoute !== null) {
       return
@@ -130,6 +144,8 @@ export function createPortalRouter() {
         newView.classList.add('pm-view-enter')
         requestAnimationFrame(() => {
           newView.classList.add('pm-view-enter-active')
+          // Focus first heading for a11y after the new view has rendered
+          _focusViewHeading(newView)
           // Clean up classes after transition completes
           const cleanUp = () => {
             newView.classList.remove('pm-view-enter', 'pm-view-enter-active')
@@ -153,7 +169,14 @@ export function createPortalRouter() {
       suppress(transition.updateCallbackDone)
       suppress(transition.finished)
 
-      transition.finished.finally(() => { _activeTransition = null })
+      transition.finished.finally(() => {
+        _activeTransition = null
+        // Focus first heading after the view transition completes
+        const newView = document.querySelector('.pm-view-content.active')
+        if (newView) {
+          requestAnimationFrame(() => _focusViewHeading(newView))
+        }
+      })
     } catch (error) {
       _activeTransition = null
       callFn()

@@ -168,7 +168,7 @@ function renderAppearance(container) {
 function renderNotifications(container, maestro) {
   const supported = isPushSupported();
   const subBadge = supported
-    ? `<span class="pm-badge-sub" id="pm-notif-sub-badge">${viewState.pushEnabled ? '✅ Suscripción activa' : '⏸ Pausada'}</span>`
+    ? `<span class="pm-badge-sub" id="pm-notif-sub-badge" aria-live="polite" aria-atomic="true">${viewState.pushEnabled ? '✅ Suscripción activa' : '⏸ Pausada'}</span>`
     : '';
   container.insertAdjacentHTML('beforeend', `
     <section class="card-apple pm-settings-section" aria-labelledby="notif-title">

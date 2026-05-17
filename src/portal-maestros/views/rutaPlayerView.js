@@ -7,8 +7,6 @@ import { escHTML }                                  from '../utils/portalUtils.j
 import { academicService }                          from '../../modules/academic-routes/services/academicService.js'
 
 const SEM_ICON  = { green: '🟢', yellow: '🟡', gray: '⚫' }
-const SEM_COLOR = { green: '#22c55e', yellow: '#f59e0b', gray: '#94a3b8' }
-const SEM_BG    = { green: '#f0fdf4', yellow: '#fffbeb', gray: '#f8fafc' }
 
 let _state = {
   clases:           [],
@@ -72,34 +70,20 @@ async function _loadTreeForActiveClass() {
 function _renderFull(container) {
   const pendingTema = peekRutaTema()
   const pendingBanner = pendingTema
-    ? `<div style="
-        background:#fffbeb;border:1px solid #f59e0b;border-radius:10px;
-        padding:10px 14px;margin-bottom:16px;font-size:13px;color:#92400e;
-        display:flex;align-items:center;gap:8px;
-       ">
+    ? `<div class="rp-pending-banner">
         <i class="bi bi-clock-history"></i>
         Tema pendiente de asignar: <strong>${escHTML(pendingTema.nombre)}</strong>
-        <button data-action="clear-pending" style="
-          margin-left:auto;background:none;border:none;cursor:pointer;
-          font-size:12px;color:#92400e;text-decoration:underline;
-        ">Cancelar</button>
+        <button data-action="clear-pending" class="rp-pending-cancel">Cancelar</button>
        </div>`
     : ''
 
   container.innerHTML = `
     <div style="padding:16px;max-width:800px;margin:0 auto;">
 
-      <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap;">
-        <i class="bi bi-diagram-3-fill" style="font-size:1.4rem;color:var(--pm-accent,#007aff);"></i>
-        <h2 style="margin:0;font-size:1.15rem;font-weight:700;color:var(--pm-text-primary,#1e293b);">
-          Ruta de Contenidos
-        </h2>
-        <select id="ruta-clase-select" style="
-          margin-left:auto;padding:8px 12px;
-          border:1px solid var(--pm-border,#e2e8f0);border-radius:8px;
-          background:var(--pm-surface,#fff);color:var(--pm-text-primary,#1e293b);
-          font-size:13px;cursor:pointer;
-        ">
+      <div class="rp-header-row">
+        <i class="bi bi-diagram-3-fill rp-header-icon"></i>
+        <h1 class="rp-title">Ruta de Contenidos</h1>
+        <select id="ruta-clase-select" class="rp-clase-select">
           ${_state.clases.map(c => `
             <option value="${c.id}" ${c.id === _state.activeClaseId ? 'selected' : ''}>
               ${escHTML(c.nombre)}
@@ -110,7 +94,9 @@ function _renderFull(container) {
 
       ${pendingBanner}
 
-      <div id="ruta-tree-area">
+      <div id="ruta-tree-area"
+           role="tree"
+           aria-label="Ruta de aprendizaje">
         ${_state.rutaId ? _renderBlocks() : `
           <div style="text-align:center;padding:40px;color:var(--pm-text-muted,#64748b);">
             <i class="bi bi-diagram-3" style="font-size:2rem;"></i>
@@ -134,8 +120,8 @@ function _renderBlocks() {
     </div>`
 
   return _state.blocks.map(block => `
-    <div style="margin-bottom:20px;">
-      <div style="
+    <div role="presentation" style="margin-bottom:20px;">
+      <div role="presentation" style="
         font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;
         color:var(--pm-text-muted,#64748b);padding:0 4px;margin-bottom:8px;
       ">${escHTML(block.nombre)}</div>
@@ -147,15 +133,9 @@ function _renderBlocks() {
 function _renderLevel(level, idx) {
   if (level.locked) {
     return `
-      <div style="
-        margin-bottom:8px;border:1px solid #e2e8f0;border-radius:12px;
-        background:#f8fafc;opacity:0.6;
-      ">
-        <div style="
-          display:flex;align-items:center;gap:10px;padding:14px 16px;
-          color:#94a3b8;
-        ">
-          <span style="font-size:18px;">🔒</span>
+      <div class="rp-level rp-level--locked">
+        <div class="rp-level-header" style="opacity:0.6;">
+          <span style="font-size:18px;" aria-hidden="true">🔒</span>
           <div>
             <div style="font-weight:600;font-size:13px;">${escHTML(level.nombre)}</div>
             <div style="font-size:11px;margin-top:2px;">Completa el nivel anterior al 80% para desbloquear</div>
@@ -165,33 +145,32 @@ function _renderLevel(level, idx) {
   }
 
   const sem = level.semaphore
-  const color = SEM_COLOR[sem]
   const pct = _levelPct(level)
 
   return `
-    <div style="
-      margin-bottom:8px;border:1px solid ${color}44;border-radius:12px;
-      background:var(--pm-surface,#fff);overflow:hidden;
-    ">
-      <div data-action="toggle-level" data-level-id="${level.id}" style="
-        display:flex;align-items:center;gap:10px;padding:14px 16px;
-        cursor:pointer;user-select:none;
-        border-bottom:1px solid ${color}22;
-      ">
-        <span style="font-size:16px;">${SEM_ICON[sem]}</span>
+    <div class="rp-level" data-semaphore="${sem}">
+      <div data-action="toggle-level"
+           data-level-id="${level.id}"
+           role="treeitem"
+           aria-expanded="false"
+           data-semaphore="${sem}"
+           class="rp-level-header"
+           tabindex="-1">
+        <span aria-hidden="true">${SEM_ICON[sem]}</span>
         <div style="flex:1;min-width:0;">
-          <div style="font-weight:600;font-size:13px;color:var(--pm-text-primary,#1e293b);">
-            ${escHTML(level.nombre)}
-          </div>
-          <div style="font-size:11px;color:${color};margin-top:2px;">${pct}% completado</div>
+          <div class="rp-level-name">${escHTML(level.nombre)}</div>
+          <div class="rp-level-pct" data-semaphore="${sem}">${pct}% completado</div>
         </div>
-        <div style="width:72px;height:5px;background:#e2e8f0;border-radius:3px;overflow:hidden;flex-shrink:0;">
-          <div style="height:100%;width:${pct}%;background:${color};border-radius:3px;"></div>
+        <div class="rp-progress-track">
+          <div class="rp-progress-fill" data-semaphore="${sem}" style="width:${pct}%;"></div>
         </div>
-        <span data-chevron="${level.id}" style="color:#94a3b8;transition:transform 0.2s;font-size:14px;">›</span>
+        <span data-chevron="${level.id}" class="rp-chevron">›</span>
       </div>
 
-      <div data-level-body="${level.id}" style="padding:10px 14px;display:none;">
+      <div data-level-body="${level.id}"
+           role="group"
+           class="rp-level-body"
+           style="display:none;">
         ${level.nodes.map(node => _renderNode(node, level)).join('')}
       </div>
     </div>`
@@ -199,24 +178,25 @@ function _renderLevel(level, idx) {
 
 function _renderNode(node, level) {
   const sem = node.semaphore
-  const color = SEM_COLOR[sem]
 
   return `
-    <div style="margin-bottom:10px;">
-      <div data-action="toggle-node" data-node-id="${node.id}" style="
-        display:flex;align-items:center;gap:8px;
-        padding:8px 10px;border-radius:8px;
-        background:${SEM_BG[sem]};border:1px solid ${color}44;
-        cursor:pointer;user-select:none;
-      ">
-        <span style="font-size:13px;">${SEM_ICON[sem]}</span>
-        <span style="font-size:13px;font-weight:600;color:var(--pm-text-primary,#1e293b);flex:1;">
-          ${escHTML(node.nombre)}
-        </span>
-        <span data-chevron="${node.id}" style="color:#94a3b8;font-size:12px;">›</span>
+    <div class="rp-node" data-semaphore="${sem}">
+      <div data-action="toggle-node"
+           data-node-id="${node.id}"
+           role="treeitem"
+           aria-expanded="false"
+           data-semaphore="${sem}"
+           class="rp-node-header"
+           tabindex="-1">
+        <span aria-hidden="true">${SEM_ICON[sem]}</span>
+        <span class="rp-node-name">${escHTML(node.nombre)}</span>
+        <span data-chevron="${node.id}" class="rp-chevron">›</span>
       </div>
 
-      <div data-node-body="${node.id}" style="display:none;padding:6px 0 0 24px;">
+      <div data-node-body="${node.id}"
+           role="group"
+           class="rp-node-body"
+           style="display:none;">
         ${node.indicators.map(ind => _renderIndicator(ind, node, level)).join('')}
         ${node.indicators.length === 0
           ? `<div style="font-size:12px;color:#94a3b8;padding:4px 0;">Sin indicadores</div>`
@@ -227,8 +207,8 @@ function _renderNode(node, level) {
 
 function _renderIndicator(ind, node, level) {
   const sem   = ind.semaphore
-  const color = SEM_COLOR[sem]
   const isSelected = _state.selectedInd?.id === ind.id
+  const cls = `rp-indicator${isSelected ? ' rp-indicator--selected' : ''}`
 
   return `
     <div data-action="select-indicator"
@@ -236,17 +216,12 @@ function _renderIndicator(ind, node, level) {
          data-ind-nombre="${escHTML(ind.nombre)}"
          data-node-nombre="${escHTML(node.nombre)}"
          data-level-nombre="${escHTML(level.nombre)}"
-         style="
-           display:flex;align-items:center;gap:8px;
-           padding:7px 10px;margin-bottom:3px;
-           border-radius:8px;cursor:pointer;
-           background:${isSelected ? color + '22' : 'transparent'};
-           border:1px solid ${isSelected ? color : 'transparent'};
-           transition:all 0.15s;
-         "
-         onmouseover="this.style.background='${color}11'"
-         onmouseout="this.style.background='${isSelected ? color + '22' : 'transparent'}'">
-      <span style="font-size:12px;">${SEM_ICON[sem]}</span>
+         role="treeitem"
+         aria-selected="${isSelected}"
+         data-semaphore="${sem}"
+         class="${cls}"
+         tabindex="-1">
+      <span aria-hidden="true">${SEM_ICON[sem]}</span>
       <span style="font-size:12px;color:var(--pm-text-primary,#1e293b);">${escHTML(ind.nombre)}</span>
     </div>`
 }
@@ -321,6 +296,85 @@ function _renderActionPanel(container) {
     </div>`
 }
 
+function _updateTreeTabindex() {
+  const tree = document.getElementById('ruta-tree-area')
+  if (!tree) return
+  const items = tree.querySelectorAll('[role="treeitem"]')
+  let foundFirst = false
+  items.forEach(item => {
+    // Only visible items (not hidden by display:none or inside a collapsed parent)
+    if (item.offsetParent !== null) {
+      item.setAttribute('tabindex', foundFirst ? '-1' : '0')
+      foundFirst = true
+    } else {
+      item.setAttribute('tabindex', '-1')
+    }
+  })
+}
+
+function _handleTreeKeydown(e, tree) {
+  const target = e.target.closest('[role="treeitem"]')
+  if (!target || !tree.contains(target)) return
+
+  const key = e.key
+
+  // Collect all visible treeitems
+  const allItems = Array.from(tree.querySelectorAll('[role="treeitem"]'))
+    .filter(el => el.offsetParent !== null)
+
+  const idx = allItems.indexOf(target)
+  if (idx === -1) return
+
+  let newIdx = idx
+
+  switch (key) {
+    case 'ArrowDown':
+      e.preventDefault()
+      newIdx = Math.min(idx + 1, allItems.length - 1)
+      break
+    case 'ArrowUp':
+      e.preventDefault()
+      newIdx = Math.max(idx - 1, 0)
+      break
+    case 'ArrowRight':
+      e.preventDefault()
+      if (target.getAttribute('aria-expanded') === 'false') {
+        target.click()
+      }
+      return
+    case 'ArrowLeft':
+      e.preventDefault()
+      if (target.getAttribute('aria-expanded') === 'true') {
+        target.click()
+      }
+      return
+    case 'Home':
+      e.preventDefault()
+      newIdx = 0
+      break
+    case 'End':
+      e.preventDefault()
+      newIdx = allItems.length - 1
+      break
+    case 'Enter':
+    case ' ':
+      e.preventDefault()
+      target.click()
+      return
+    default:
+      return
+  }
+
+  if (newIdx !== idx && newIdx >= 0) {
+    const next = allItems[newIdx]
+    if (next) {
+      next.focus()
+      next.setAttribute('tabindex', '0')
+      target.setAttribute('tabindex', '-1')
+    }
+  }
+}
+
 function _attachEvents(container) {
   container.querySelector('#ruta-clase-select')?.addEventListener('change', async (e) => {
     _state.activeClaseId = e.target.value
@@ -369,6 +423,8 @@ function _attachEvents(container) {
 
         body.style.display    = open ? 'none' : ''
         if (chevron) chevron.style.transform = open ? '' : 'rotate(90deg)'
+        el.setAttribute('aria-expanded', open ? 'false' : 'true')
+        _updateTreeTabindex()
         break
       }
 
@@ -409,6 +465,8 @@ function _attachEvents(container) {
 
         body.style.display    = open ? 'none' : ''
         if (chevron) chevron.style.transform = open ? '' : 'rotate(90deg)'
+        el.setAttribute('aria-expanded', open ? 'false' : 'true')
+        _updateTreeTabindex()
         break
       }
 
@@ -486,4 +544,14 @@ function _attachEvents(container) {
       }
     }
   })
+
+  // Keyboard navigation for the ARIA tree
+  container.addEventListener('keydown', (e) => {
+    const tree = container.querySelector('#ruta-tree-area')
+    if (!tree) return
+    _handleTreeKeydown(e, tree)
+  })
+
+  // Initialize tree tabindex after first render
+  requestAnimationFrame(() => _updateTreeTabindex())
 }

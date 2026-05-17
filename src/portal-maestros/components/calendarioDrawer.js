@@ -185,6 +185,16 @@ function _renderMonth(year, month, sesiones, clases, onFechaClick) {
   const today = new Date()
   const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
 
+  // Determine active date for roving tabindex: today if visible, else first day of month
+  const firstDate = `${year}-${String(month + 1).padStart(2, '0')}-01`
+  const lastDate = `${year}-${String(month + 1).padStart(2, '0')}-${String(diasEnMes).padStart(2, '0')}`
+  const activeDate = (todayStr >= firstDate && todayStr <= lastDate) ? todayStr : null
+
+  // Determine weekday number for each date (0=Do, 6=Sa) to group by week
+  function getDayOfWeek(year, month, day) {
+    return new Date(year, month, day).getDay()
+  }
+
   let diasHTML = DIAS.map(d => `<div class="pm-cal-day-header">${d}</div>`).join('')
 
   for (let i = 0; i < primerDiaSemana; i++) {
@@ -197,6 +207,7 @@ function _renderMonth(year, month, sesiones, clases, onFechaClick) {
     const sesionCount = sesionesEnFecha.length
     const esHoy = fecha === todayStr
     const tieneEmergente = sesionesEnFecha.some(s => s.tipo === 'emergente')
+    const isActive = fecha === activeDate
 
     let dayClass = 'pm-cal-day'
     if (esHoy) dayClass += ' today'
@@ -208,8 +219,12 @@ function _renderMonth(year, month, sesiones, clases, onFechaClick) {
         </div>`
       : ''
 
+    const ariaLabel = `${d} de ${MESES[month]} ${year}`
+    const ariaCurrent = esHoy ? ' aria-current="date"' : ''
+    const tabIndex = isActive ? '0' : '-1'
+
     diasHTML += `
-      <div class="${dayClass}" data-fecha="${fecha}">
+      <div class="${dayClass}" data-fecha="${fecha}" role="gridcell" tabindex="${tabIndex}" aria-label="${ariaLabel}" aria-selected="false"${ariaCurrent}>
         <span class="pm-day-number">${d}</span>
         ${dots}
       </div>
@@ -224,7 +239,7 @@ function _renderMonth(year, month, sesiones, clases, onFechaClick) {
         <button class="pm-nav-btn" id="pm-cal-next">›</button>
       </div>
 
-      <div class="pm-cal-grid">
+      <div class="pm-cal-grid" role="grid" aria-label="Calendario ${MESES[month]} ${year}">
         ${diasHTML}
       </div>
 
@@ -242,10 +257,101 @@ function _attachMonthEvents(container, year, month, onNext, onPrev, onFechaClick
 
   container.querySelectorAll('.pm-cal-day:not(.empty)').forEach(day => {
     day.addEventListener('click', () => {
+      // Update aria-selected on click
+      container.querySelectorAll('.pm-cal-day[data-fecha]').forEach(c => c.setAttribute('aria-selected', 'false'))
+      day.setAttribute('aria-selected', 'true')
       if (onFechaClick) {
         onFechaClick(day.dataset.fecha)
       }
     })
+  })
+
+  // Keyboard navigation: WAI-ARIA grid pattern with roving tabindex
+  const grid = container.querySelector('.pm-cal-grid')
+  if (!grid) return
+
+  grid.addEventListener('keydown', function onGridKeydown(e) {
+    const days = [...grid.querySelectorAll('.pm-cal-day[data-fecha]')]
+    if (days.length === 0) return
+
+    const currentFocused = grid.querySelector('[tabindex="0"]')
+    const currentIndex = currentFocused ? days.indexOf(currentFocused) : -1
+
+    const clampedIndex = (idx) => Math.max(0, Math.min(days.length - 1, idx))
+    const moveFocus = (idx) => {
+      if (idx < 0 || idx >= days.length) return
+      days.forEach(d => d.setAttribute('tabindex', '-1'))
+      days[idx].setAttribute('tabindex', '0')
+      days[idx].focus()
+    }
+
+    switch (e.key) {
+      case 'ArrowLeft':
+        e.preventDefault()
+        if (currentIndex > 0) moveFocus(currentIndex - 1)
+        break
+      case 'ArrowRight':
+        e.preventDefault()
+        if (currentIndex < days.length - 1) moveFocus(currentIndex + 1)
+        break
+      case 'ArrowUp':
+        e.preventDefault()
+        moveFocus(clampedIndex(currentIndex - 7))
+        break
+      case 'ArrowDown':
+        e.preventDefault()
+        moveFocus(clampedIndex(currentIndex + 7))
+        break
+      case 'Home':
+        e.preventDefault()
+        moveFocus(Math.floor(Math.max(currentIndex, 0) / 7) * 7)
+        break
+      case 'End':
+        e.preventDefault()
+        moveFocus(Math.min(days.length - 1, Math.floor(Math.max(currentIndex, 0) / 7) * 7 + 6))
+        break
+      case 'PageUp':
+        e.preventDefault()
+        if (typeof onPrev === 'function') {
+          onPrev()
+          requestAnimationFrame(() => {
+            const newGrid = container.querySelector('.pm-cal-grid')
+            if (newGrid) {
+              const firstDay = newGrid.querySelector('.pm-cal-day[data-fecha]')
+              if (firstDay) {
+                newGrid.querySelectorAll('.pm-cal-day[data-fecha]').forEach(d => d.setAttribute('tabindex', '-1'))
+                firstDay.setAttribute('tabindex', '0')
+                firstDay.focus()
+              }
+            }
+          })
+        }
+        break
+      case 'PageDown':
+        e.preventDefault()
+        if (typeof onNext === 'function') {
+          onNext()
+          requestAnimationFrame(() => {
+            const newGrid = container.querySelector('.pm-cal-grid')
+            if (newGrid) {
+              const firstDay = newGrid.querySelector('.pm-cal-day[data-fecha]')
+              if (firstDay) {
+                newGrid.querySelectorAll('.pm-cal-day[data-fecha]').forEach(d => d.setAttribute('tabindex', '-1'))
+                firstDay.setAttribute('tabindex', '0')
+                firstDay.focus()
+              }
+            }
+          })
+        }
+        break
+      case 'Enter':
+      case ' ':
+        e.preventDefault()
+        if (currentFocused) {
+          currentFocused.click()
+        }
+        break
+    }
   })
 }
 

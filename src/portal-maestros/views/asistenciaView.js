@@ -1,6 +1,7 @@
 import { supabase } from '../../lib/supabaseClient.js'
 import { getMaestroLocal } from '../auth/maestroAuth.js'
 import { escHTML, formatHora, formatFechaPortal } from '../utils/portalUtils.js'
+import { announce } from '../utils/a11yUtils.js'
 import { enqueue } from '../services/offlineQueue.js'
 import { parseDSL } from '../utils/dslParser.js'
 import { enrichToDSL, transcribeAndStructure, improveText, structureTextToDSL } from '../services/groqService.js'
@@ -588,6 +589,8 @@ function _renderVista(container, ctx) {
           <span class="pm-asist-progress-label" id="pm-progress-label">0/${alumnos.length}</span>
         </div>
 
+        <div id="pm-asist-announce" role="status" aria-live="polite" aria-atomic="true" class="pm-visually-hidden"></div>
+
         <div id="pm-alumnos-list" class="pm-alumnos-queue"></div>
 
         <div id="pm-planificacion-card" class="pm-planificacion-card" style="display:none; margin: 1rem 0;">
@@ -1113,12 +1116,12 @@ function _renderVista(container, ctx) {
     obsSaveBtn.onclick = async () => {
       const raw = editor.getValue()
       if (!raw || !raw.trim()) {
-        alert('El editor está vacío. Escribe observaciones antes de guardar.')
+        AppToast.warning('El editor está vacío. Escribe observaciones antes de guardar.')
         return
       }
 
       if (!sesionId) {
-        alert('Primero guarda la sesión (asistencia) para poder registrar observaciones.')
+        AppToast.warning('Primero guarda la sesión (asistencia) para poder registrar observaciones.')
         return
       }
 
@@ -1130,7 +1133,7 @@ function _renderVista(container, ctx) {
       indicadorActivo = textoIndicador || treeIndicador;
 
       if (!indicadorActivo) {
-        alert('Seleccione un indicador en la ruta antes de guardar la observación o escríbalo entre corchetes [Ejemplo].')
+        AppToast.warning('Seleccione un indicador en la ruta antes de guardar la observación o escríbalo entre corchetes [Ejemplo].')
         return
       }
 
@@ -1246,7 +1249,7 @@ function _renderVista(container, ctx) {
         setTimeout(() => { obsSaveBtn.textContent = 'Guardar observación'; obsSaveBtn.disabled = false }, 2000)
       } catch (err) {
         console.error('[asistencia] Error saving observation:', err)
-        alert('Error al guardar: ' + (err.message || err))
+        AppToast.error('Error al guardar: ' + (err.message || err))
         obsSaveBtn.disabled = false
         obsSaveBtn.textContent = 'Guardar observación'
       }
@@ -1384,6 +1387,7 @@ function _renderVista(container, ctx) {
         renderLista(id);
         _updateProgress();
         await _autoSave(true);
+        announce(`Justificación eliminada para ${alumno.nombre_completo}.`)
       } else {
         // Marcar J ANTES de abrir modal para que el botón quede visible
         estado[id] = 'J';
@@ -1397,6 +1401,7 @@ function _renderVista(container, ctx) {
           justifExistente = await obtenerJustificacion(sesionId, id);
         }
         _justifModal.open(alumno, justifExistente, null); // null = crear (no rollback de J)
+        announce(`Justificación marcada para ${alumno.nombre_completo}.`)
       }
       return;
     }
@@ -1404,6 +1409,12 @@ function _renderVista(container, ctx) {
     estado[id] = (estado[id] === action) ? null : action;
     renderLista(id);
     _updateProgress();
+
+    // Announce current attendance count
+    const presentes = Object.values(estado).filter(v => v === 'P').length
+    const ausentes = Object.values(estado).filter(v => v === 'A').length
+    const justificados = Object.values(estado).filter(v => v === 'J').length
+    announce(`Asistencia actualizada. ${presentes} presentes, ${ausentes} ausentes, ${justificados} justificados.`)
     
     // Guardado inmediato para evitar race conditions al navegar
     await _autoSave(true);
@@ -1581,6 +1592,11 @@ async function _autoSave(immediate = false) {
 
       btn.textContent = '✓ Guardado';
       btn.style.background = 'var(--apple-success)';
+
+      // Announce save success
+      const presentes = Object.values(estado).filter(v => v === 'P').length
+      const ausentes = Object.values(estado).filter(v => v === 'A').length
+      announce(`Sesión guardada exitosamente. ${presentes} presentes, ${ausentes} ausentes.`)
 
       // 5. Mostrar pantalla de éxito (overlay sólido sobre todo el contenido)
       const overlay = document.createElement('div');
@@ -1772,6 +1788,7 @@ async function _autoSave(immediate = false) {
     renderLista();
     _updateProgress();
     await _autoSave(true);
+    announce(`Todos los ${alumnos.length} alumnos marcados como presentes.`)
   };
 
   container.querySelector('#btn-bulk-a').onclick = async () => {
@@ -1779,6 +1796,7 @@ async function _autoSave(immediate = false) {
     renderLista();
     _updateProgress();
     await _autoSave(true);
+    announce(`Todos los ${alumnos.length} alumnos marcados como ausentes.`)
   };
 
   renderLista();

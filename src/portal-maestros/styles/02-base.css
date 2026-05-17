@@ -160,6 +160,27 @@ html, body {
   border: 0;
 }
 
+/* ── Skip Link (accessibility) ────────────────────────────── */
+.pm-skip-link {
+  position: absolute;
+  top: -100%;
+  left: 0;
+  z-index: 10001;
+  padding: 0.5rem 1rem;
+  background: var(--pm-primary, #007AFF);
+  color: #fff;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.875rem;
+  border-radius: 0 0 4px 0;
+  transition: top 0.1s;
+}
+.pm-skip-link:focus {
+  top: 0;
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+
 /* ── Section Divider ──────────────────────────────────────── */
 .pm-section-divider {
   height: 1px;

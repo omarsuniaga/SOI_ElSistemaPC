@@ -62,14 +62,18 @@
   }
 
   .pm-icon-btn {
-    width: 36px;
-    height: 36px;
+    min-width: var(--pm-touch-min, 44px);
+    min-height: var(--pm-touch-min, 44px);
+    width: 44px;
+    height: 44px;
     font-size: 1.1rem;
   }
 
   .pm-avatar-btn {
-    width: 36px;
-    height: 36px;
+    min-width: var(--pm-touch-min, 44px);
+    min-height: var(--pm-touch-min, 44px);
+    width: 44px;
+    height: 44px;
     font-size: 1.3rem;
   }
 
@@ -297,69 +301,14 @@
     align-items: center;
   }
 
-  /* Footer nav:隐藏 en tablet - solo header-tabs */
+  /* Footer nav: oculto en tablet — se usa header-tabs */
   .pm-footer-nav {
     display: none !important;
   }
 
-  /* Header tabs: visible en tablet */
+  /* Header tabs: navegación principal en tablet */
   .pm-header-tabs {
     display: flex !important;
-  }
-
-  .pm-header-greeting {
-    display: block;
-    font-size: 0.65rem;
-  }
-
-  .pm-header-title {
-    font-size: 1.2rem;
-  }
-
-  .pm-header-right {
-    gap: 0.5rem;
-    flex-shrink: 0;
-  }
-
-  .pm-theme-toggle {
-    width: 54px;
-    height: 30px;
-  }
-
-  .pm-icon-btn {
-    width: 38px;
-    height: 38px;
-    font-size: 1.15rem;
-  }
-
-  .pm-avatar-btn {
-    width: 38px;
-    height: 38px;
-    font-size: 1.3rem;
-  }
-
-  /* ── Footer nav: centered, pill ──────────────────────────────── */
-  .pm-footer-nav {
-    padding: 0.5rem 1.5rem calc(0.5rem + env(safe-area-inset-bottom, 0));
-  }
-
-  .pm-footer-nav__inner {
-    border-radius: 22px;
-    height: 58px;
-    max-width: 400px;
-  }
-
-  .pm-nav-tab i {
-    font-size: 1.3rem;
-  }
-
-  .pm-nav-tab span {
-    font-size: 0.6rem;
-  }
-
-  /* ── Header tabs en tablet ─────────────────────────────────── */
-  .pm-header-tabs {
-    display: flex;
     align-items: center;
     gap: 0.25rem;
     margin-left: var(--pm-space-4);
@@ -404,9 +353,9 @@
     color: var(--pm-header-text-active, #fff);
   }
 
-  /* ── View container ────────────────────────────────────────────── */
+  /* ── View container: padding para legibilidad en tablet ─────────── */
   .pm-view {
-    padding: 0;
+    padding: 0 var(--pm-space-4);
     max-width: none;
   }
 

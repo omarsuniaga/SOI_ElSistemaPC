@@ -8,7 +8,7 @@
   --apple-bg: #f2f2f7;
   --apple-surface: #ffffff;
   --apple-text: #000000;
-  --apple-text-muted: #8e8e93;
+  --apple-text-muted: #6b6b70;
   --apple-border: #c6c6c8;
 
   --apple-primary: #007aff;
@@ -103,6 +103,9 @@
   --pm-glass-bg: rgba(255, 255, 255, 0.7);
   --pm-glass-border: rgba(255, 255, 255, 0.4);
   --pm-glass-blur: 20px;
+
+  /* ── Accessibility ────────────────────────────────────────── */
+  --pm-touch-min: 44px; /* WCAG AA 2.5.8 touch target minimum */
 }
 
 /* Global Glass Utility */

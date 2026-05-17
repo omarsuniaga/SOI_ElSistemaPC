@@ -78,3 +78,8 @@ The system SHALL allow the teacher to switch between classes and reload the rout
 | AC-04 | Action panel appears on indicator click | DOM: check `#ruta-action-panel` innerHTML |
 | AC-05 | Topic handoff lands in DSL editor | `consumeRutaTema()` returns stored value in asistencia |
 | AC-06 | Lazy-load for routes > 160 nodes | `rutaService` paginates levels beyond 160 nodes |
+
+### Cross-reference: Accessibility
+
+WCAG AA accessibility requirements for this view are defined in `openspec/specs/accessibility-audit/spec.md`:
+- **Requirement 11** — Heading hierarchy (`<h1>`), ARIA tree semantics (`role="tree"`, `role="treeitem"`, `aria-expanded`), keyboard navigation, inline style extraction to CSS classes

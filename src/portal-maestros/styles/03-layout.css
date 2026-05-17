@@ -64,8 +64,10 @@
 .pm-avatar-btn {
   background: none;
   border: none;
-  width: 32px;
-  height: 32px;
+  min-width: var(--pm-touch-min, 44px);
+  min-height: var(--pm-touch-min, 44px);
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
   overflow: hidden;
   display: flex;
@@ -74,7 +76,7 @@
   color: #fff;
   font-size: 1.4rem;
   cursor: pointer;
-  padding: 0;
+  padding: 6px;
   transition: transform .15s;
 }
 
@@ -96,8 +98,10 @@
   color: var(--pm-primary);
   font-size: 1.1rem;
   cursor: pointer;
-  width: 38px;
-  height: 38px;
+  min-width: var(--pm-touch-min, 44px);
+  min-height: var(--pm-touch-min, 44px);
+  width: 44px;
+  height: 44px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -269,6 +273,7 @@
   -webkit-tap-highlight-color: transparent;
   user-select: none;
   min-width: 0;
+  min-height: var(--pm-touch-min, 44px);
 }
 
 .pm-nav-tab i {

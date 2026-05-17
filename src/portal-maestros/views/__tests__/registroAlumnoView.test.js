@@ -126,15 +126,13 @@ describe('registroAlumnoView', () => {
 
     // Should not call crearAlumno
     expect(crearAlumno).not.toHaveBeenCalled()
-    // Should dispatch a toast with the validation error
-    expect(window.dispatchEvent).toHaveBeenCalledWith(
-      expect.objectContaining({
-        detail: expect.objectContaining({
-          message: expect.stringContaining('nombre del alumno'),
-          type: 'danger',
-        }),
-      })
-    )
+    // Should show inline error instead of toast
+    const nombreInput = document.getElementById('reg-nombre')
+    expect(nombreInput.getAttribute('aria-invalid')).toBe('true')
+    expect(nombreInput.getAttribute('aria-describedby')).toBe('reg-nombre-error')
+    const errorEl = document.getElementById('reg-nombre-error')
+    expect(errorEl).toBeTruthy()
+    expect(errorEl.textContent).toContain('obligatorio')
   })
 
   // ─── Issue 3: Submit calls crearAlumno ───────────────────────

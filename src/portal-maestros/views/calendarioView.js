@@ -132,19 +132,30 @@ function _renderCalendario(container, anio, mes, hoy, estadoMap, { onFechaClick,
   const dH = String(hoy.getDate()).padStart(2, '0')
   const hoyStr = `${yH}-${mH}-${dH}`
 
+  // Determine active date for roving tabindex: today if visible, else first day of month
+  const diasEnMes = ultimoDia.getDate()
+  const firstDate = `${anio}-${String(mes + 1).padStart(2,'0')}-01`
+  const lastDate  = `${anio}-${String(mes + 1).padStart(2,'0')}-${String(diasEnMes).padStart(2,'0')}`
+  const activeDate = (hoyStr >= firstDate && hoyStr <= lastDate) ? hoyStr : firstDate
+
   let diasHTML = DIAS_HEADER.map(d => `<div class="pm-cal-day-header">${d}</div>`).join('')
 
   for (let i = 0; i < primerDiaSem; i++) {
     diasHTML += `<div class="pm-cal-day otro-mes"></div>`
   }
 
-  for (let d = 1; d <= ultimoDia.getDate(); d++) {
+  for (let d = 1; d <= diasEnMes; d++) {
     const fecha  = `${anio}-${String(mes + 1).padStart(2,'0')}-${String(d).padStart(2,'0')}`
     const estado = estadoMap.get(fecha) || 'sin-clase'
     const esHoy  = fecha === hoyStr ? 'today' : ''
+    const isActive = fecha === activeDate
+
+    const ariaLabel = `${d} de ${MESES_ES[mes]} ${anio}`
+    const ariaCurrent = fecha === hoyStr ? ' aria-current="date"' : ''
+    const tabIndex = isActive ? '0' : '-1'
 
     diasHTML += `
-      <div class="pm-cal-day estado-${estado} ${esHoy}" data-fecha="${fecha}" title="${fecha}">
+      <div class="pm-cal-day estado-${estado} ${esHoy}" data-fecha="${fecha}" title="${fecha}" role="gridcell" tabindex="${tabIndex}" aria-label="${ariaLabel}" aria-selected="false"${ariaCurrent}>
         ${d}
       </div>
     `
@@ -166,7 +177,7 @@ function _renderCalendario(container, anio, mes, hoy, estadoMap, { onFechaClick,
       </div>
 
       <div class="pm-cal-grid-container">
-        <div class="pm-cal-grid">
+        <div class="pm-cal-grid" role="grid" aria-label="Calendario ${MESES_ES[mes]} ${anio}">
           ${diasHTML}
         </div>
       </div>
@@ -191,8 +202,70 @@ function _renderCalendario(container, anio, mes, hoy, estadoMap, { onFechaClick,
 
   container.querySelectorAll('.pm-cal-day[data-fecha]').forEach(cell => {
     cell.addEventListener('click', () => {
+      // Update aria-selected on click
+      container.querySelectorAll('.pm-cal-day[data-fecha]').forEach(c => c.setAttribute('aria-selected', 'false'))
+      cell.setAttribute('aria-selected', 'true')
       onFechaClick?.(cell.dataset.fecha)
     })
+  })
+
+  // Keyboard navigation: WAI-ARIA grid pattern with roving tabindex
+  const grid = container.querySelector('.pm-cal-grid')
+  if (!grid) return
+
+  grid.addEventListener('keydown', function onGridKeydown(e) {
+    const days = [...grid.querySelectorAll('.pm-cal-day[data-fecha]')]
+    if (days.length === 0) return
+
+    const currentFocused = grid.querySelector('[tabindex="0"]')
+    const currentIndex = currentFocused ? days.indexOf(currentFocused) : -1
+
+    const moveFocus = (idx) => {
+      if (idx < 0 || idx >= days.length) return
+      days.forEach(d => d.setAttribute('tabindex', '-1'))
+      days[idx].setAttribute('tabindex', '0')
+      days[idx].focus()
+    }
+
+    switch (e.key) {
+      case 'ArrowLeft':
+        e.preventDefault()
+        if (currentIndex > 0) moveFocus(currentIndex - 1)
+        break
+      case 'ArrowRight':
+        e.preventDefault()
+        if (currentIndex < days.length - 1) moveFocus(currentIndex + 1)
+        break
+      case 'ArrowUp':
+        e.preventDefault()
+        moveFocus(Math.max(0, currentIndex - 7))
+        break
+      case 'ArrowDown':
+        e.preventDefault()
+        moveFocus(Math.min(days.length - 1, currentIndex + 7))
+        break
+      case 'Home':
+        e.preventDefault()
+        moveFocus(Math.floor(Math.max(currentIndex, 0) / 7) * 7)
+        break
+      case 'End':
+        e.preventDefault()
+        moveFocus(Math.min(days.length - 1, Math.floor(Math.max(currentIndex, 0) / 7) * 7 + 6))
+        break
+      case 'PageUp':
+        e.preventDefault()
+        if (typeof onPrev === 'function') onPrev()
+        break
+      case 'PageDown':
+        e.preventDefault()
+        if (typeof onNext === 'function') onNext()
+        break
+      case 'Enter':
+      case ' ':
+        e.preventDefault()
+        if (currentFocused) currentFocused.click()
+        break
+    }
   })
 }
 

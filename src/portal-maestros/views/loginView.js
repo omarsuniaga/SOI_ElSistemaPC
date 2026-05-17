@@ -1,5 +1,6 @@
 import { loginMaestro } from '../auth/maestroAuth.js'
 import { usePortalAuth } from '../auth/usePortalAuth.js'
+import { setFieldError, clearFieldError, clearAllFieldErrors } from '../utils/a11yUtils.js'
 
 /**
  * Renderiza la vista de login del portal maestros en el contenedor dado.
@@ -46,6 +47,7 @@ export function renderLoginView(container, { onSuccess }) {
                 id="pm-toggle-password"
                 class="pm-password-toggle"
                 title="Mostrar contraseña"
+                aria-label="Mostrar contraseña"
               >
                 <i class="bi bi-eye"></i>
             </button>
@@ -78,6 +80,12 @@ export function renderLoginView(container, { onSuccess }) {
         <p class="pm-error-msg" id="pm-login-error" aria-live="polite"></p>
       </div>
     </div>
+    <style>
+      .pm-input[aria-invalid="true"] {
+        border-color: var(--pm-danger, #ef4444);
+        box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15);
+      }
+    </style>
   `
 
   const emailInput       = container.querySelector('#pm-email')
@@ -90,24 +98,14 @@ export function renderLoginView(container, { onSuccess }) {
 
   // --- Show/Hide Password ---
   let passwordVisible = false
-  togglePwdBtn.addEventListener('mousedown', () => {
-    passwordVisible = true
-    passwordInput.type = 'text'
-    togglePwdBtn.querySelector('i').className = 'bi bi-eye-slash'
-  })
-
-  togglePwdBtn.addEventListener('mouseup', () => {
-    passwordVisible = false
-    passwordInput.type = 'password'
-    togglePwdBtn.querySelector('i').className = 'bi bi-eye'
-  })
-
-  togglePwdBtn.addEventListener('mouseleave', () => {
-    if (passwordVisible) {
-      passwordVisible = false
-      passwordInput.type = 'password'
-      togglePwdBtn.querySelector('i').className = 'bi bi-eye'
-    }
+  // Use click instead of mousedown/mouseup so keyboard (Enter/Space) works too
+  togglePwdBtn.addEventListener('click', () => {
+    passwordVisible = !passwordVisible
+    passwordInput.type = passwordVisible ? 'text' : 'password'
+    togglePwdBtn.querySelector('i').className = passwordVisible ? 'bi bi-eye-slash' : 'bi bi-eye'
+    togglePwdBtn.title = passwordVisible ? 'Ocultar contraseña' : 'Mostrar contraseña'
+    togglePwdBtn.setAttribute('aria-label', passwordVisible ? 'Ocultar contraseña' : 'Mostrar contraseña')
+    togglePwdBtn.setAttribute('aria-pressed', passwordVisible ? 'true' : 'false')
   })
 
   // --- Load saved email ---
@@ -138,18 +136,22 @@ export function renderLoginView(container, { onSuccess }) {
     const password = passwordInput.value
 
     errorMsg.textContent = ''
+    // Clear any previous inline field errors
+    clearAllFieldErrors(container)
     setInputsDisabled(false)
 
+    let hasError = false
     if (!email) {
-      errorMsg.textContent = 'Ingresa tu correo electrónico'
+      setFieldError(emailInput, 'Ingresa tu correo electrónico')
       emailInput.focus()
-      return
+      hasError = true
     }
     if (!password) {
-      errorMsg.textContent = 'Ingresa tu contraseña'
-      passwordInput.focus()
-      return
+      setFieldError(passwordInput, 'Ingresa tu contraseña')
+      if (!hasError) passwordInput.focus()
+      hasError = true
     }
+    if (hasError) return
 
     setLoading(true)
 

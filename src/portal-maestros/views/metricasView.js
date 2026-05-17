@@ -2,6 +2,7 @@ import { supabase } from '../../lib/supabaseClient.js'
 import { getMaestroLocal } from '../auth/maestroAuth.js'
 import { escHTML } from '../utils/portalUtils.js'
 import { getMisClases, getSesiones } from '../services/maestroDataService.js'
+import { announce } from '../utils/a11yUtils.js'
 
 // ── Mini gráfico de barras (SVG interno con labels) ──────────────
 function barChartContent(data, maxVal, width = 160, height = 36) {
@@ -180,8 +181,12 @@ function generarHTML(datos) {
   const pctAusentes = totalRegistros > 0 ? Math.round((totalAusentes / totalRegistros) * 100) : 0
   const pctJustificados = totalRegistros > 0 ? Math.round((totalJustificados / totalRegistros) * 100) : 0
 
+  // Build announcement text for screen readers
+  const announceText = `Dashboard: ${asistenciaPromedio}% asistencia general, ${totalClases} clases, ${sesionesCompletadas} sesiones registradas, ${sesionesPendientes} pendientes.`
+
   return `
     <div class="pm-dashboard" role="main" aria-label="Panel de métricas">
+      <div role="status" aria-live="polite" aria-atomic="true" class="pm-visually-hidden">${escHTML(announceText)}</div>
       <header class="pm-dashboard-header">
         <div>
           <h1 class="pm-dashboard-title">Dashboard</h1>
@@ -423,6 +428,7 @@ function bindEvents(container) {
 
       container.innerHTML = generarHTML(procesados)
       bindEvents(container)
+      announce(`Período actualizado a ${nuevoPeriodo} semanas. ${procesados.asistenciaPromedio}% de asistencia general.`)
     } catch (err) {
       container.innerHTML = `<p class="pm-empty">Error al cargar datos: ${escHTML(err.message)}</p>`
     }
@@ -590,6 +596,7 @@ export async function renderMetricasView(container) {
 
     container.innerHTML = generarHTML(procesados)
     bindEvents(container)
+    announce(`Métricas actualizadas. ${procesados.asistenciaPromedio}% de asistencia general.`)
   } catch (err) {
     container.innerHTML = `
       <div class="pm-empty" style="padding:3rem 1rem;text-align:center;" role="alert">

@@ -3,6 +3,7 @@ import { getPermisos } from '../services/permisoService.js'
 import { getMaestroLocal } from '../auth/maestroAuth.js'
 import { crearAlumno, validarEmail, validarCedula } from '../../modules/alumnos/api/alumnosApi.js'
 import { getMisClases } from '../services/maestroDataService.js'
+import { setFieldError, clearFieldError, clearAllFieldErrors } from '../utils/a11yUtils.js'
 
 // ─── ESTADO LOCAL ────────────────────────────────────────────
 const viewState = {
@@ -176,7 +177,26 @@ function renderForm(container) {
         <p>SOI Sistema Operativo Institucional</p>
         <p class="pm-settings-footer__version">v2.5.0 &copy; 2026</p>
       </footer>
-    </div>`
+    </div>
+
+    <style>
+      .input-apple[aria-invalid="true"] {
+        border-color: var(--pm-danger, #ef4444);
+        box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15);
+      }
+      .pm-field-error {
+        display: block;
+        font-size: 0.75rem;
+        color: var(--pm-danger, #ef4444);
+        margin-top: 0.25rem;
+        font-weight: 500;
+        animation: pm-error-fade-in 0.2s ease;
+      }
+      @keyframes pm-error-fade-in {
+        from { opacity: 0; transform: translateY(-4px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+    </style>`
 }
 
 // ─── VALIDACIÓN CLIENTE ──────────────────────────────────────
@@ -195,40 +215,40 @@ function getFormData() {
 }
 
 function validateForm(data) {
-  const errors = []
+  const errors = [] // { fieldId: string, message: string }
 
-  if (!data.nombre) errors.push('El nombre del alumno es obligatorio')
-  else if (data.nombre.length < 3) errors.push('El nombre debe tener al menos 3 caracteres')
-  else if (data.nombre.length > 100) errors.push('El nombre no puede exceder 100 caracteres')
+  if (!data.nombre) errors.push({ fieldId: 'reg-nombre', message: 'El nombre del alumno es obligatorio' })
+  else if (data.nombre.length < 3) errors.push({ fieldId: 'reg-nombre', message: 'El nombre debe tener al menos 3 caracteres' })
+  else if (data.nombre.length > 100) errors.push({ fieldId: 'reg-nombre', message: 'El nombre no puede exceder 100 caracteres' })
 
-  if (!data.fechaNac) errors.push('La fecha de nacimiento es obligatoria')
+  if (!data.fechaNac) errors.push({ fieldId: 'reg-fecha-nac', message: 'La fecha de nacimiento es obligatoria' })
   else {
     const fecha = new Date(data.fechaNac)
     const hoy = new Date()
-    if (fecha > hoy) errors.push('La fecha de nacimiento no puede ser futura')
+    if (fecha > hoy) errors.push({ fieldId: 'reg-fecha-nac', message: 'La fecha de nacimiento no puede ser futura' })
     const edad = hoy.getFullYear() - fecha.getFullYear()
-    if (edad < 3) errors.push('El alumno debe tener mínimo 3 años')
-    if (edad > 100) errors.push('Verifica la fecha de nacimiento')
+    if (edad < 3) errors.push({ fieldId: 'reg-fecha-nac', message: 'El alumno debe tener mínimo 3 años' })
+    if (edad > 100) errors.push({ fieldId: 'reg-fecha-nac', message: 'Verifica la fecha de nacimiento' })
   }
 
-  if (!data.instrumento) errors.push('El instrumento principal es obligatorio')
-  else if (data.instrumento.length > 100) errors.push('El instrumento no puede exceder 100 caracteres')
+  if (!data.instrumento) errors.push({ fieldId: 'reg-instrumento', message: 'El instrumento principal es obligatorio' })
+  else if (data.instrumento.length > 100) errors.push({ fieldId: 'reg-instrumento', message: 'El instrumento no puede exceder 100 caracteres' })
 
-  if (!data.repNombre) errors.push('El nombre del representante es obligatorio')
-  else if (data.repNombre.length > 100) errors.push('El nombre del representante no puede exceder 100 caracteres')
+  if (!data.repNombre) errors.push({ fieldId: 'reg-rep-nombre', message: 'El nombre del representante es obligatorio' })
+  else if (data.repNombre.length > 100) errors.push({ fieldId: 'reg-rep-nombre', message: 'El nombre del representante no puede exceder 100 caracteres' })
 
-  if (!data.repTlf) errors.push('El teléfono del representante es obligatorio')
-  else if (data.repTlf.length > 20) errors.push('El teléfono no puede exceder 20 caracteres')
+  if (!data.repTlf) errors.push({ fieldId: 'reg-rep-tlf', message: 'El teléfono del representante es obligatorio' })
+  else if (data.repTlf.length > 20) errors.push({ fieldId: 'reg-rep-tlf', message: 'El teléfono no puede exceder 20 caracteres' })
 
-  if (data.repCedula && data.repCedula.length > 20) errors.push('La cédula no puede exceder 20 caracteres')
+  if (data.repCedula && data.repCedula.length > 20) errors.push({ fieldId: 'reg-rep-cedula', message: 'La cédula no puede exceder 20 caracteres' })
 
   if (data.repEmail) {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    if (!emailRegex.test(data.repEmail)) errors.push('El formato del correo electrónico no es válido')
-    else if (data.repEmail.length > 100) errors.push('El correo no puede exceder 100 caracteres')
+    if (!emailRegex.test(data.repEmail)) errors.push({ fieldId: 'reg-rep-email', message: 'El formato del correo electrónico no es válido' })
+    else if (data.repEmail.length > 100) errors.push({ fieldId: 'reg-rep-email', message: 'El correo no puede exceder 100 caracteres' })
   }
 
-  if (data.direccion && data.direccion.length > 255) errors.push('La dirección no puede exceder 255 caracteres')
+  if (data.direccion && data.direccion.length > 255) errors.push({ fieldId: 'reg-direccion', message: 'La dirección no puede exceder 255 caracteres' })
 
   return errors
 }
@@ -251,11 +271,12 @@ async function handleSubmit() {
   const errors = validateForm(data)
 
   if (errors.length > 0) {
-    // Show first error as toast
-    window.dispatchEvent(new CustomEvent('showToast', {
-      detail: { message: errors[0], type: 'danger' }
-    }))
-    // Highlight errors if needed
+    // Clear previous inline errors and set new field-specific errors
+    clearAllFieldErrors(document.getElementById('reg-nombre')?.closest('.pm-settings') || document)
+    errors.forEach(err => {
+      const inputEl = document.getElementById(err.fieldId)
+      if (inputEl) setFieldError(inputEl, err.message)
+    })
     return
   }
 

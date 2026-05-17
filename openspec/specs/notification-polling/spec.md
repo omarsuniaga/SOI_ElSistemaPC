@@ -102,3 +102,8 @@ The system SHALL prevent duplicate notifications when the same notification arri
 | AC-03 | Dedup filters within 2-min window | Unit test with fake timers |
 | AC-04 | Subscription status displayed | `getSubscriptionStatus()` returns correct state |
 | AC-05 | Preferences persist across reload | localStorage/Supabase readback |
+
+### Cross-reference: Accessibility
+
+WCAG AA accessibility requirements for this view are defined in `openspec/specs/accessibility-audit/spec.md`:
+- **Requirement 14** — Push subscription status badge with `aria-live="polite"` and `aria-atomic="true"`, toggle `aria-describedby` linking to status badge

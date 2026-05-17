@@ -284,6 +284,26 @@
   min-height: 1.2em;
 }
 
+/* ── A11y: Inline Field Errors ──────────────────────────── */
+.pm-field-error {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--pm-danger, #ef4444);
+  margin-top: 0.25rem;
+  font-weight: 500;
+  animation: pm-error-fade-in 0.2s ease;
+}
+
+.pm-input[aria-invalid="true"] {
+  border-color: var(--pm-danger, #ef4444) !important;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15) !important;
+}
+
+@keyframes pm-error-fade-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 /* ── Evaluation Card (Node) ────────────────────────────────── */
 .pm-node-eval-card {
   background: var(--pm-surface);

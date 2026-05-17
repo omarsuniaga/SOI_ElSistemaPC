@@ -1,3 +1,6 @@
+/**
+ * Modelo de Progreso - Validaciones y lógica de negocio
+ */
 export class Progreso {
   constructor(data = {}) {
     this.id = data.id || null
@@ -5,14 +8,20 @@ export class Progreso {
     this.clase_id = data.clase_id || ''
     this.maestro_id = data.maestro_id || null
     this.fecha_evaluacion = data.fecha_evaluacion || ''
-    this.tipo_evaluacion = data.tipo_evaluacion || ''
-    this.calificacion = data.calificacion !== undefined ? parseFloat(data.calificacion) : null
+    this.tipo_evaluacion = data.tipo_evaluacion || data.evaluacion_tipo || ''
+    this.calificacion = data.calificacion !== undefined && data.calificacion !== null
+      ? parseFloat(data.calificacion)
+      : null
     this.observaciones = data.observaciones || ''
     this.estado = data.estado || 'en_progreso'
     this.created_at = data.created_at || null
     this.updated_at = data.updated_at || null
   }
 
+  /**
+   * Valida los datos del progreso
+   * @returns {string[]} Array de errores (vacío si no hay errores)
+   */
   validate() {
     const errores = []
 
@@ -24,21 +33,18 @@ export class Progreso {
       errores.push('La clase es obligatoria')
     }
 
-    if (!this.tipo_evaluacion) {
-      errores.push('El tipo de evaluacion es obligatorio')
+    if (!this.tipo_evaluacion || !this.tipo_evaluacion.trim()) {
+      errores.push('El tipo de evaluación es obligatorio')
     } else {
       const tiposValidos = Progreso.getTiposEvaluacion().map(t => t.value)
       if (!tiposValidos.includes(this.tipo_evaluacion)) {
-        errores.push('Tipo de evaluacion no valido')
+        errores.push('Tipo de evaluación no válido')
       }
     }
 
     if (this.calificacion !== null && this.calificacion !== undefined) {
-      const calif = parseFloat(this.calificacion)
-      if (isNaN(calif)) {
-        errores.push('La calificacion debe ser un numero valido')
-      } else if (calif < 0 || calif > 5) {
-        errores.push('La calificacion debe estar entre 0 y 5')
+      if (isNaN(this.calificacion) || this.calificacion < 0 || this.calificacion > 5) {
+        errores.push('La calificación debe estar entre 0.0 y 5.0')
       }
     }
 
@@ -46,11 +52,9 @@ export class Progreso {
       errores.push('Las observaciones no pueden exceder 500 caracteres')
     }
 
-    if (this.estado) {
-      const estadosValidos = Progreso.getEstados().map(e => e.value)
-      if (!estadosValidos.includes(this.estado)) {
-        errores.push('Estado no valido')
-      }
+    const estadosValidos = Progreso.getEstados().map(e => e.value)
+    if (this.estado && !estadosValidos.includes(this.estado)) {
+      errores.push('Estado no válido')
     }
 
     return errores
@@ -61,47 +65,38 @@ export class Progreso {
       { value: 'parcial', label: 'Parcial' },
       { value: 'final', label: 'Final' },
       { value: 'continua', label: 'Continua' },
+      { value: 'oral', label: 'Oral' },
+      { value: 'escrita', label: 'Escrita' },
+      { value: 'practica', label: 'Práctica' },
     ]
   }
 
   static getEstados() {
     return [
-      { value: 'en_progreso', label: 'En Progreso' },
-      { value: 'completado', label: 'Completado' },
-      { value: 'pendiente', label: 'Pendiente' },
+      { value: 'en_progreso', label: 'En Progreso', color: 'bg-primary' },
+      { value: 'completado', label: 'Completado', color: 'bg-success' },
+      { value: 'pendiente', label: 'Pendiente', color: 'bg-secondary' },
     ]
   }
 
-  static validarCalificacion(calificacion) {
-    if (calificacion === null || calificacion === undefined) return true
-    const num = parseFloat(calificacion)
-    if (isNaN(num)) return false
-    return num >= 0 && num <= 5
+  static getEstadoConfig(estado) {
+    return this.getEstados().find(e => e.value === estado) || { value: estado, label: estado, color: 'bg-secondary' }
   }
 
-  static validarTipoEvaluacion(tipo) {
-    const tipos = this.getTiposEvaluacion()
-    return tipos.some(t => t.value === tipo)
-  }
-
-  static validarEstado(estado) {
-    const estados = this.getEstados()
-    return estados.some(e => e.value === estado)
-  }
-
+  /**
+   * Devuelve los datos como objeto limpio para persistencia en Supabase
+   * @returns {object}
+   */
   toJSON() {
     return {
-      id: this.id,
       alumno_id: this.alumno_id,
       clase_id: this.clase_id,
       maestro_id: this.maestro_id,
       fecha_evaluacion: this.fecha_evaluacion || null,
       tipo_evaluacion: this.tipo_evaluacion.trim(),
-      calificacion: this.calificacion !== null ? parseFloat(this.calificacion) : null,
-      observaciones: this.observaciones.trim() || null,
-      estado: this.estado,
-      created_at: this.created_at,
-      updated_at: this.updated_at,
+      calificacion: this.calificacion,
+      observaciones: this.observaciones ? this.observaciones.trim() : null,
+      estado: this.estado
     }
   }
 }

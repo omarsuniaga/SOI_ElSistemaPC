@@ -7,6 +7,9 @@ import {
   eliminarClase,
   validarHorario,
   getConflictoLabel,
+  obtenerAlumnosInscritos,
+  inscribirAlumno,
+  desinscribirAlumno,
 } from '../api/clasesApi.js'
 import { crearMaestro } from '../../maestros/api/maestrosApi.js'
 import { crearSalon, obtenerSalonesActivos } from '../../salones/api/salonesApi.js'
@@ -169,21 +172,23 @@ function renderContent(container) {
 
       <!-- Table Compact -->
       <div class="page-glass p-3 mb-4">
-        <table class="table table-premium table-compact mb-0">
-          <thead>
-            <tr>
-              <th>Nombre</th>
-              <th class="d-none d-md-table-cell">Instrumento</th>
-              <th>Maestro</th>
-              <th>Horarios</th>
-              <th>Estado</th>
-              <th class="text-end">Acciones</th>
-            </tr>
-          </thead>
-          <tbody id="clasesTBody">
-            ${renderTableRows(state.clases)}
-          </tbody>
-        </table>
+        <div class="table-scroll-container">
+          <table class="table table-premium table-compact mb-0">
+            <thead>
+              <tr>
+                <th>Nombre</th>
+                <th class="d-none d-md-table-cell">Instrumento</th>
+                <th>Maestro</th>
+                <th>Horarios</th>
+                <th>Estado</th>
+                <th class="text-end">Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="clasesTBody">
+              ${renderTableRows(state.clases)}
+            </tbody>
+          </table>
+        </div>
         ${state.clases.length === 0 ? renderEmpty() : ''}
       </div>
 

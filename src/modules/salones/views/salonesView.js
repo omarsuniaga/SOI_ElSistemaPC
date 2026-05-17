@@ -56,14 +56,14 @@ export function renderSalonesView(container) {
         <table class="table table-compact table-hover mb-0" id="salonesTable">
           <thead>
             <tr>
-              <th style="width: 12%;">Código</th>
-              <th style="width: 20%;">Nombre</th>
-              <th style="width: 10%;">Capacidad</th>
-              <th style="width: 15%;">Ubicación</th>
-              <th style="width: 12%;">Condición</th>
-              <th style="width: 15%;">Equipamiento</th>
-              <th style="width: 10%;">Estado</th>
-              <th style="width: 6%;" class="text-end">Acciones</th>
+              <th class="d-none d-md-table-cell">Código</th>
+              <th>Nombre</th>
+              <th class="d-none d-sm-table-cell">Capacidad</th>
+              <th>Ubicación</th>
+              <th class="d-none d-sm-table-cell">Condición</th>
+              <th class="d-none d-md-table-cell">Equipamiento</th>
+              <th>Estado</th>
+              <th class="text-end">Acciones</th>
             </tr>
           </thead>
           <tbody id="salonesTableBody">
@@ -114,24 +114,24 @@ export function renderSalonesView(container) {
       const ubicacionPiso = (salon.piso === 0 || salon.piso === '0') ? 'Planta Baja' : `Piso ${salon.piso}`
       const condicionBadge = getCondicionBadge(salon.condicion)
       const estadoBadge = salon.is_active !== false 
-        ? '<span class="badge badge-compact bg-success">Activo</span>' 
-        : '<span class="badge badge-compact bg-secondary">Inactivo</span>'
+        ? '<span class="badge badge-compact bg-success-subtle text-success border border-success-subtle">Activo</span>' 
+        : '<span class="badge badge-compact bg-secondary-subtle text-secondary border border-secondary-subtle">Inactivo</span>'
       
       return `
-        <tr data-id="${salon.id}">
-          <td><code>${escapeHTML(salon.codigo || '-')}</code></td>
-          <td class="text-truncate" style="max-width: 150px;" title="${escapeHTML(salon.nombre || '')}">${escapeHTML(salon.nombre || '-')}</td>
-          <td>${salon.capacidad || '-'}</td>
+        <tr data-id="${salon.id}" class="align-middle">
+          <td class="d-none d-md-table-cell"><code>${escapeHTML(salon.codigo || '-')}</code></td>
+          <td class="fw-bold text-truncate" style="max-width: 150px;" title="${escapeHTML(salon.nombre || '')}">${escapeHTML(salon.nombre || '-')}</td>
+          <td class="d-none d-sm-table-cell">${salon.capacidad || '-'}</td>
           <td>${escapeHTML(ubicacionPiso)}</td>
-          <td>${condicionBadge}</td>
-          <td class="text-truncate" style="max-width: 100px;" title="${escapeHTML(salon.equipamiento || '')}">${escapeHTML(salon.equipamiento || '-')}</td>
+          <td class="d-none d-sm-table-cell">${condicionBadge}</td>
+          <td class="d-none d-md-table-cell text-truncate text-muted small" style="max-width: 150px;" title="${escapeHTML(salon.equipamiento || '')}">${escapeHTML(salon.equipamiento || '-')}</td>
           <td>${estadoBadge}</td>
           <td class="text-end">
             <div class="quick-actions justify-content-end">
-              <button class="btn btn-sm btn-outline-primary btn-icon-compact" data-action="edit" data-id="${salon.id}" title="Editar">
+              <button class="btn btn-sm btn-light text-primary border btn-icon-compact" data-action="edit" data-id="${salon.id}" title="Editar">
                 <i class="bi bi-pencil"></i>
               </button>
-              <button class="btn btn-sm btn-outline-danger btn-icon-compact" data-action="delete" data-id="${salon.id}" title="Inactivar">
+              <button class="btn btn-sm btn-light text-danger border btn-icon-compact" data-action="delete" data-id="${salon.id}" title="Inactivar">
                 <i class="bi bi-trash"></i>
               </button>
             </div>

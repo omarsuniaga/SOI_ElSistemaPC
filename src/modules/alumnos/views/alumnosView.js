@@ -135,12 +135,12 @@ function renderContent(container) {
         <table class="table table-compact table-hover mb-0" id="alumnosTable">
           <thead>
             <tr>
-              <th style="width: 25%;">Nombre</th>
-              <th style="width: 15%;">Instrumento</th>
-              <th style="width: 15%;">Teléfono (WA)</th>
-              <th style="width: 15%;">Representante</th>
-              <th style="width: 10%;">Estado</th>
-              <th style="width: 10%;" class="text-end">Acciones</th>
+              <th>Nombre</th>
+              <th class="d-none d-sm-table-cell">Instrumento</th>
+              <th class="d-none d-md-table-cell">Teléfono (WA)</th>
+              <th class="d-none d-lg-table-cell">Representante</th>
+              <th>Estado</th>
+              <th class="text-end">Acciones</th>
             </tr>
           </thead>
           <tbody id="alumnosTBody">
@@ -159,27 +159,32 @@ function renderTableRows(alumnos) {
   if (!alumnos.length) return '<tr><td colspan="7" class="text-center text-muted py-3">No hay alumnos</td></tr>'
 
   return alumnos.map(a => `
-    <tr data-id="${a.id}">
+    <tr data-id="${a.id}" class="align-middle">
       <td>
         <div class="d-flex align-items-center gap-2">
           <div class="avatar-compact bg-primary text-white">${getInitials(a.nombre)}</div>
-          <span class="text-truncate" style="max-width: 120px;" title="${a.nombre}">${escapeHTML(a.nombre)}</span>
+          <span class="text-truncate fw-bold" style="max-width: 150px;" title="${a.nombre}">${escapeHTML(a.nombre)}</span>
         </div>
       </td>
-      <td>${escapeHTML(a.instrumento || '-')}</td>
-      <td>
+      <td class="d-none d-sm-table-cell">${escapeHTML(a.instrumento || '-')}</td>
+      <td class="d-none d-md-table-cell">
         ${a.telefono ? `
-          <a href="https://wa.me/${a.telefono.replace(/\D/g, '')}" target="_blank" class="text-success text-decoration-none d-flex align-items-center gap-1">
+          <button class="btn btn-link text-success p-0 border-0 d-flex align-items-center gap-1 text-decoration-none" data-action="whatsapp" data-id="${a.id}">
             <i class="bi bi-whatsapp"></i> ${escapeHTML(a.telefono)}
-          </a>
+          </button>
         ` : '-'}
       </td>
-      <td class="text-truncate" style="max-width: 100px;" title="${a.familiar_nombre || '-'}">${escapeHTML(a.familiar_nombre || '-')}</td>
+      <td class="d-none d-lg-table-cell text-truncate text-muted small" style="max-width: 100px;" title="${a.familiar_nombre || '-'}">${escapeHTML(a.familiar_nombre || '-')}</td>
       <td>
         <span class="badge badge-compact ${getEstadoClass(a.is_active)}">${getEstadoLabel(a.is_active)}</span>
       </td>
       <td class="text-end">
         <div class="quick-actions justify-content-end">
+          ${a.telefono ? `
+            <button class="btn btn-sm btn-outline-success btn-icon-compact" data-action="whatsapp" data-id="${a.id}" title="WhatsApp">
+              <i class="bi bi-whatsapp"></i>
+            </button>
+          ` : ''}
           <button class="btn btn-sm btn-outline-primary btn-icon-compact" data-action="edit" data-id="${a.id}" title="Editar">
             <i class="bi bi-pencil"></i>
           </button>
@@ -231,6 +236,41 @@ function attachGlobalEvents(container) {
       openEditModal(id)
     } else if (btn.dataset.action === 'delete') {
       openDeleteModal(id)
+    } else if (btn.dataset.action === 'whatsapp') {
+      openWhatsAppModal(id)
+    }
+  })
+}
+
+function openWhatsAppModal(id) {
+  const alumno = state.alumnosOriginales.find(a => a.id === id)
+  if (!alumno || !alumno.telefono) return
+
+  const telefonoLimpio = alumno.telefono.replace(/\D/g, '')
+
+  AppModal.open({
+    title: 'Enviar WhatsApp a ' + escapeHTML(alumno.nombre),
+    size: 'md',
+    saveText: 'Enviar WhatsApp',
+    body: `
+      <div class="mb-3">
+        <label class="form-label-compact">Número de destino</label>
+        <p class="form-control-plaintext fw-bold mb-0">
+          <i class="bi bi-whatsapp text-success me-1"></i> +${telefonoLimpio}
+        </p>
+      </div>
+      <div class="mb-3">
+        <label class="form-label-compact">Mensaje</label>
+        <textarea class="form-control input-dense" id="modal-whatsapp-msg" rows="4" placeholder="Escribe tu mensaje aquí..."></textarea>
+      </div>
+      <p class="text-muted small mb-0">
+        Se abrirá WhatsApp Web (o la aplicación) con el mensaje listo para ser enviado.
+      </p>
+    `,
+    onSave: async (modalBody) => {
+      const msg = modalBody.querySelector('#modal-whatsapp-msg').value.trim()
+      const url = `https://wa.me/${telefonoLimpio}?text=${encodeURIComponent(msg)}`
+      window.open(url, '_blank')
     }
   })
 }

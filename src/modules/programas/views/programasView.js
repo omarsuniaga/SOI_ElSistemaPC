@@ -155,11 +155,11 @@ function renderContent(container) {
         <table class="table table-compact table-hover mb-0" id="programasTable">
           <thead>
             <tr>
-              <th style="width: 30%;">Nombre</th>
-              <th style="width: 15%;">Nivel</th>
-              <th style="width: 25%;">Descripción</th>
-              <th style="width: 10%;">Estado</th>
-              <th style="width: 10%;">Acciones</th>
+              <th>Nombre</th>
+              <th class="d-none d-sm-table-cell">Nivel</th>
+              <th class="d-none d-md-table-cell">Descripción</th>
+              <th>Estado</th>
+              <th class="text-end">Acciones</th>
             </tr>
           </thead>
           <tbody id="programasTBody">
@@ -183,24 +183,27 @@ function renderTableRows(programas) {
     const activo = p.activo ?? true
     const nivelLabel = getNivelLabel(p.nivel)
     return `
-      <tr data-id="${p.id}">
+      <tr data-id="${p.id}" class="align-middle">
         <td>
-          <div class="d-flex align-items-center gap-2">
-            <div class="avatar-compact bg-primary text-white">${getInitials(nombre)}</div>
-            <span class="text-truncate" style="max-width: 150px;" title="${nombre}">${escapeHTML(nombre)}</span>
+          <div class="d-flex align-items-center gap-3">
+            <div class="avatar-compact bg-primary bg-opacity-10 text-primary border border-primary-subtle">${getInitials(nombre)}</div>
+            <div>
+              <div class="fw-bold text-truncate" style="max-width: 180px;" title="${nombre}">${escapeHTML(nombre)}</div>
+              <div class="small text-muted d-sm-none">${nivelLabel}</div>
+            </div>
           </div>
         </td>
-        <td><span class="badge bg-info bg-opacity-25 text-info">${nivelLabel}</span></td>
-        <td class="text-truncate" style="max-width: 150px;" title="${descripcion}">${escapeHTML(descripcion)}</td>
+        <td class="d-none d-sm-table-cell"><span class="badge bg-info-subtle text-info border border-info-subtle">${nivelLabel}</span></td>
+        <td class="d-none d-md-table-cell text-truncate text-muted small" style="max-width: 200px;" title="${descripcion}">${escapeHTML(descripcion)}</td>
         <td>
-          <span class="badge badge-compact bg-${activo ? 'success' : 'secondary'}">${activo ? 'Activo' : 'Inactivo'}</span>
+          <span class="badge badge-pill bg-${activo ? 'success' : 'secondary'}-subtle text-${activo ? 'success' : 'secondary'} border border-${activo ? 'success' : 'secondary'}-subtle">${activo ? 'Activo' : 'Inactivo'}</span>
         </td>
-        <td>
-          <div class="quick-actions">
-            <button class="btn btn-sm btn-outline-primary btn-icon-compact" data-action="edit" data-id="${p.id}" title="Editar">
+        <td class="text-end">
+          <div class="quick-actions justify-content-end">
+            <button class="btn btn-sm btn-light text-primary border btn-icon-compact" data-action="edit" data-id="${p.id}" title="Editar">
               <i class="bi bi-pencil"></i>
             </button>
-            <button class="btn btn-sm btn-outline-danger btn-icon-compact" data-action="delete" data-id="${p.id}" title="Eliminar">
+            <button class="btn btn-sm btn-light text-danger border btn-icon-compact" data-action="delete" data-id="${p.id}" title="Eliminar">
               <i class="bi bi-trash"></i>
             </button>
           </div>

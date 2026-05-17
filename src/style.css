@@ -646,7 +646,11 @@ tr .quick-actions {
 .table-scroll-container {
   max-height: calc(100vh - 280px);
   overflow-y: auto;
-  overflow-x: hidden;
+  overflow-x: auto;
+  width: 100%;
+}
+.table-scroll-container table {
+  min-width: 800px;
 }
 
 /* Page Layout Compact */

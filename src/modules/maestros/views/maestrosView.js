@@ -192,22 +192,10 @@ function renderContent(container) {
         </select>
       </div>
 
-      <div class="table-scroll-container">
-        <table class="table table-compact table-hover mb-0">
-          <thead>
-            <tr>
-              <th style="width: 25%;">Nombre</th>
-              <th style="width: 18%;">Email</th>
-              <th style="width: 10%;">Teléfono</th>
-              <th style="width: 17%;">Especialidades</th>
-              <th style="width: 10%;">Estado</th>
-              <th style="width: 10%;" class="text-end">Acciones</th>
-            </tr>
-          </thead>
-          <tbody id="maestrosTBody">
-            ${renderTableRows(state.maestros)}
-          </tbody>
-        </table>
+      <div class="page-glass rounded w-100">
+        <div class="list-group list-group-flush w-100" id="maestrosTBody">
+          ${renderTableRows(state.maestros)}
+        </div>
       </div>
 
       <div class="toast-container position-fixed top-0 end-0 p-3" id="toastContainer"></div>
@@ -217,36 +205,35 @@ function renderContent(container) {
 
 function renderTableRows(maestros) {
   if (!maestros.length) {
-    return '<tr><td colspan="6" class="text-center text-muted py-4"><i class="bi bi-inbox me-2"></i>No hay maestros</td></tr>'
+    return '<div class="list-group-item text-center text-muted py-5 w-100"><i class="bi bi-inbox mb-2" style="font-size: 2rem; display: block;"></i>No hay maestros registrados</div>'
   }
   return maestros.map(a => {
     const nombre = a.nombre || a.name || '-'
     const isActive = a.is_active ?? true
     return `
-      <tr data-id="${a.id}">
-        <td>
-          <div class="d-flex align-items-center gap-2">
-            <div class="avatar-compact bg-primary text-white">${getInitials(nombre)}</div>
-            <span class="text-truncate" style="max-width: 150px;" title="${escapeHTML(nombre)}">${escapeHTML(nombre)}</span>
+      <div class="list-group-item list-group-item-action d-flex align-items-center justify-content-between p-3 w-100" data-id="${a.id}" style="cursor: pointer; background: transparent;">
+        <div class="d-flex align-items-center gap-3 flex-grow-1 overflow-hidden">
+          <div class="position-relative flex-shrink-0">
+            <div class="avatar-compact bg-primary text-white" style="width: 48px; height: 48px; font-size: 1.2rem;">${getInitials(nombre)}</div>
+            <span class="position-absolute bottom-0 end-0 p-1 bg-${isActive ? 'success' : 'danger'} border border-light rounded-circle" style="transform: translate(10%, 10%);">
+              <span class="visually-hidden">${isActive ? 'Activo' : 'Inactivo'}</span>
+            </span>
           </div>
-        </td>
-        <td class="text-truncate" style="max-width: 120px;" title="${escapeHTML(a.email || '')}">${escapeHTML(a.email || '-')}</td>
-        <td>${escapeHTML(a.telefono || '-')}</td>
-        <td>${(a.especialidades || []).length ? (a.especialidades.slice(0, 2).map(e => `<span class="badge bg-primary-subtle text-primary me-1">${escapeHTML(e)}</span>`).join('') + (a.especialidades.length > 2 ? `<span class="badge bg-secondary">+${a.especialidades.length - 2}</span>` : '')) : escapeHTML(a.instrumento || '-')}</td>
-        <td>
-          <span class="badge badge-compact bg-${isActive ? 'success' : 'secondary'}">${isActive ? 'Activo' : 'Inactivo'}</span>
-        </td>
-        <td class="text-end">
-          <div class="quick-actions justify-content-end">
-            <button class="btn btn-sm btn-outline-primary btn-icon-compact" data-action="edit" data-id="${a.id}" title="Editar">
-              <i class="bi bi-pencil"></i>
-            </button>
-            <button class="btn btn-sm btn-outline-danger btn-icon-compact" data-action="delete" data-id="${a.id}" title="Eliminar">
-              <i class="bi bi-trash"></i>
-            </button>
+          <div class="d-flex flex-column flex-grow-1 overflow-hidden pe-3">
+            <span class="fw-bold text-truncate" style="font-size: 1.05rem;">${escapeHTML(nombre)}</span>
+            <small class="text-muted text-truncate">
+              ${escapeHTML(a.instrumento || 'Sin instrumento especificado')}
+            </small>
           </div>
-        </td>
-      </tr>
+        </div>
+        <div class="flex-shrink-0">
+          ${a.telefono ? `
+            <button class="btn btn-sm btn-success bg-gradient text-white rounded-pill px-3 shadow-sm d-flex align-items-center gap-2" data-action="whatsapp" data-id="${a.id}" title="Enviar WhatsApp">
+              <i class="bi bi-whatsapp"></i> <span class="d-none d-sm-inline fw-medium">${escapeHTML(a.telefono)}</span>
+            </button>
+          ` : '<span class="badge bg-light text-muted border">Sin número</span>'}
+        </div>
+      </div>
     `
   }).join('')
 }
@@ -264,7 +251,7 @@ function attachEvents(container) {
   container.querySelector('#filtroEstado').addEventListener('change', () => applyFilters())
 
   container.querySelector('#maestrosTBody').addEventListener('click', e => {
-    const row = e.target.closest('tr[data-id]')
+    const row = e.target.closest('.list-group-item[data-id]')
     if (row && !e.target.closest('[data-action]')) {
       openViewModal(row.dataset.id)
       return
@@ -276,6 +263,40 @@ function attachEvents(container) {
     const action = btn.dataset.action
     if (action === 'edit') openEditModal(id)
     else if (action === 'delete') openDeleteModal(id)
+    else if (action === 'whatsapp') openWhatsAppModal(id)
+  })
+}
+
+function openWhatsAppModal(id) {
+  const maestro = state.maestrosOriginales.find(a => a.id === id)
+  if (!maestro || !maestro.telefono) return
+
+  const telefonoLimpio = maestro.telefono.replace(/\D/g, '')
+
+  AppModal.open({
+    title: 'Enviar WhatsApp a ' + escapeHTML(maestro.nombre || maestro.name || ''),
+    size: 'md',
+    saveText: 'Enviar WhatsApp',
+    body: `
+      <div class="mb-3">
+        <label class="form-label-compact">Número de destino</label>
+        <p class="form-control-plaintext fw-bold mb-0">
+          <i class="bi bi-whatsapp text-success me-1"></i> +${telefonoLimpio}
+        </p>
+      </div>
+      <div class="mb-3">
+        <label class="form-label-compact">Mensaje</label>
+        <textarea class="form-control input-dense" id="modal-whatsapp-msg" rows="4" placeholder="Escribe tu mensaje aquí..."></textarea>
+      </div>
+      <p class="text-muted small mb-0">
+        Se abrirá WhatsApp Web (o la aplicación) con el mensaje listo para ser enviado.
+      </p>
+    `,
+    onSave: async (modalBody) => {
+      const msg = modalBody.querySelector('#modal-whatsapp-msg').value.trim()
+      const url = `https://wa.me/${telefonoLimpio}?text=${encodeURIComponent(msg)}`
+      window.open(url, '_blank')
+    }
   })
 }
 
@@ -499,11 +520,30 @@ function openViewModal(id) {
         </div>
       </div>
       <hr>
-      <div class="mb-3">
+      <div class="mb-4">
         <label class="form-label fw-bold">Biografía</label>
         <p class="form-control-plaintext">${escapeHTML(maestro.bio || 'Sin biografía')}</p>
       </div>
-    `
+      
+      <div class="d-flex justify-content-end gap-2 pt-3 border-top mt-auto">
+        <button class="btn btn-outline-danger" id="modal-view-btn-delete">
+          <i class="bi bi-trash me-1"></i> Eliminar
+        </button>
+        <button class="btn btn-primary" id="modal-view-btn-edit">
+          <i class="bi bi-pencil me-1"></i> Editar Perfil
+        </button>
+      </div>
+    `,
+    onShow: (modalBody) => {
+      modalBody.querySelector('#modal-view-btn-edit')?.addEventListener('click', () => {
+        AppModal.close()
+        setTimeout(() => openEditModal(id), 300)
+      })
+      modalBody.querySelector('#modal-view-btn-delete')?.addEventListener('click', () => {
+        AppModal.close()
+        setTimeout(() => openDeleteModal(id), 300)
+      })
+    }
   })
 }
 

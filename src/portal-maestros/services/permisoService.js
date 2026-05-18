@@ -4,6 +4,7 @@
  */
 
 import { obtenerPermisoPorMaestro } from '../../modules/permisos/api/permisosApi.js'
+import { esVigente } from '../../modules/permisos/services/esVigente.js'
 
 /**
  * Obtiene los permisos de un maestro
@@ -26,6 +27,9 @@ export async function getPermisos(maestroId) {
   try {
     const permiso = await obtenerPermisoPorMaestro(maestroId)
     if (!permiso) return failClosed
+
+    // Expiry check — fail-closed if permiso is not currently active
+    if (!esVigente(permiso)) return failClosed
 
     // Mapeo desde arreglo de permisos (prioridad) o booleanos (fallback)
     const permisosArray = permiso.permisos || []

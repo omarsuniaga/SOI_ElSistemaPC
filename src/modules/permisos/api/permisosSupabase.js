@@ -1,4 +1,5 @@
 import { supabase } from '../../../lib/supabaseClient.js'
+import { esVigente } from '../services/esVigente.js'
 
 function normalizePermiso(p) {
   if (!p) return null
@@ -16,6 +17,9 @@ function normalizePermiso(p) {
     concedido_por_nombre: null, // se llena desde JOIN si es necesario
     creado_en: p.creado_en || null,
     actualizado_en: p.actualizado_en || null,
+    fecha_inicio: p.fecha_inicio ?? null,
+    fecha_fin: p.fecha_fin ?? null,
+    vigente: esVigente(p),
   }
 }
 
@@ -56,6 +60,9 @@ export async function actualizarPermiso(maestroId, changes) {
     permisos: Array.isArray(changes.permisos) ? changes.permisos : [],
     solicitudes: Array.isArray(changes.solicitudes) ? changes.solicitudes : [],
     concedido_por: changes.concedido_por || null,
+    // Temporal validity — pass through if provided, otherwise omit to keep DB defaults
+    ...(changes.fecha_inicio !== undefined && { fecha_inicio: changes.fecha_inicio }),
+    ...(changes.fecha_fin !== undefined && { fecha_fin: changes.fecha_fin }),
   }
 
   const { data, error } = await supabase
@@ -70,4 +77,26 @@ export async function actualizarPermiso(maestroId, changes) {
   }
 
   return normalizePermiso(data)
+}
+
+/**
+ * Lists maestros that do NOT yet have a permisos_maestros row.
+ * Uses a two-query anti-join: fetch existing maestro_ids, then exclude them.
+ * @returns {Promise<Array<{id: string, nombre_completo: string}>>}
+ */
+export async function listarMaestrosSinPermisos() {
+  // Step 1: get all maestro_ids that already have a row
+  const { data: existing } = await supabase
+    .from('permisos_maestros')
+    .select('maestro_id')
+  const existingIds = (existing || []).map(r => r.maestro_id)
+
+  // Step 2: get maestros NOT in that list
+  let q = supabase.from('maestros').select('id, nombre_completo')
+  if (existingIds.length > 0) {
+    q = q.not('id', 'in', `(${existingIds.join(',')})`)
+  }
+  const { data, error } = await q.order('nombre_completo')
+  if (error) return []
+  return data || []
 }

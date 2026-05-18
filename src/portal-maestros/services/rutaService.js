@@ -3,6 +3,7 @@ import { getSemaphoreForNode } from './evaluationService.js'
 import { getMisClases } from './maestroDataService.js'
 import { SemaphoreCache } from '../../lib/semaphoreCache.js'
 import { fuzzyMatch, fuzzyMatchBest } from '../../lib/fuzzyMatch.js'
+import { fetchCurriculumHierarchy } from './curriculumHierarchy.js'
 
 // Global cache instance for semaphore states
 let _semaphoreCache = null
@@ -151,6 +152,50 @@ export async function resolveRutaIdForClaseWithFuzzy(claseId) {
 }
 
 /**
+ * List all distinct instruments that have at least one published route version.
+ * @returns {Promise<string[]>}
+ */
+export async function listInstruments() {
+  const { data, error } = await supabase
+    .from('routes')
+    .select('instrument')
+    .eq('status', 'published')
+
+  if (error) {
+    console.warn('[rutaService] listInstruments error:', error.message)
+    return []
+  }
+
+  const unique = [...new Set((data ?? []).map(r => r.instrument).filter(Boolean))]
+  return unique
+}
+
+/**
+ * Resolve the published route_version_id for a given clase.
+ * Strategy:
+ *   1. Check clases.route_version_id — if set, return it directly (O(1)).
+ *   2. Otherwise fall back to resolveRutaIdForClaseWithFuzzy (instrument matching).
+ *
+ * @param {string} claseId
+ * @returns {Promise<string|null>}
+ */
+export async function resolveRouteForClass(claseId) {
+  // 1. Column-hit: direct link already stored on the clase row
+  const { data: claseRow, error: claseErr } = await supabase
+    .from('clases')
+    .select('id, route_version_id')
+    .eq('id', claseId)
+    .maybeSingle()
+
+  if (!claseErr && claseRow?.route_version_id) {
+    return claseRow.route_version_id
+  }
+
+  // 2. Fuzzy fallback: resolve via instrument name matching
+  return resolveRutaIdForClaseWithFuzzy(claseId)
+}
+
+/**
  * Load nodes for a specific level (lazy-load on expand).
  * Used by the UI to load child nodes when a level is expanded.
  *
@@ -241,52 +286,11 @@ export async function resolveRutaIdForClase(claseId) {
  * @returns {Promise<Block[]>}
  */
 export async function loadRouteTree(routeVersionId, claseId) {
-  // ── 1. Blocks ──────────────────────────────────────────────────────────────
-  const { data: blocks, error: bErr } = await supabase
-    .from('blocks')
-    .select('id, nombre:name, order_index')
-    .eq('route_version_id', routeVersionId)
-    .order('order_index', { ascending: true })
+  // ── 1–4. Fetch hierarchy via shared helper ─────────────────────────────────
+  const { blocks, levels, nodes, indicators } = await fetchCurriculumHierarchy(routeVersionId)
 
-  if (bErr) throw new Error('[rutaService] blocks: ' + bErr.message)
-  if (!blocks || blocks.length === 0) return []
-
-  // ── 2. Levels ──────────────────────────────────────────────────────────────
-  const blockIds = blocks.map(b => b.id)
-  const { data: levels, error: lErr } = await supabase
-    .from('levels')
-    .select('id, block_id, nombre:name, order_index')
-    .in('block_id', blockIds)
-    .eq('route_version_id', routeVersionId)
-    .order('order_index', { ascending: true })
-
-  if (lErr) throw new Error('[rutaService] levels: ' + lErr.message)
-
-  // ── 3. Nodes ───────────────────────────────────────────────────────────────
-  const levelIds = (levels ?? []).map(l => l.id)
-  if (levelIds.length === 0) return blocks.map(b => ({ ...b, levels: [] }))
-
-  const { data: nodes, error: nErr } = await supabase
-    .from('nodes')
-    .select('id, level_id, nombre:name, order_index')
-    .in('level_id', levelIds)
-    .eq('route_version_id', routeVersionId)
-    .order('order_index', { ascending: true })
-
-  if (nErr) throw new Error('[rutaService] nodes: ' + nErr.message)
-
-  // ── 4. Indicators ──────────────────────────────────────────────────────────
-  const nodeIds = (nodes ?? []).map(n => n.id)
-  const { data: indicators, error: iErr } = nodeIds.length > 0
-    ? await supabase
-        .from('indicators')
-        .select('id, node_id, nombre:description, order_index')
-        .in('node_id', nodeIds)
-        .eq('activo', true)
-        .order('order_index', { ascending: true })
-    : { data: [], error: null }
-
-  if (iErr) throw new Error('[rutaService] indicators: ' + iErr.message)
+  if (blocks.length === 0) return []
+  if (levels.length === 0) return blocks.map(b => ({ ...b, levels: [] }))
 
   // ── 5. Semaphore per node (parallel) ───────────────────────────────────────
   const semaphoreResults = await Promise.all(
@@ -318,8 +322,8 @@ export async function loadRouteTree(routeVersionId, claseId) {
 
   // ── 8. Group levels by block + compute level semaphore + lock state ────────
   const levelsByBlock = new Map()
-  for (const [blockId] of blockIds.map(id => [id])) {
-    levelsByBlock.set(blockId, [])
+  for (const b of blocks) {
+    levelsByBlock.set(b.id, [])
   }
 
   const levelsSortedByBlock = new Map()

@@ -35,7 +35,6 @@ export async function getMisClases(forceRefresh = false) {
   const { data, error } = await supabase
     .from('clases')
     .select('id, nombre, instrumento, capacidad_maxima, maestro_principal_id')
-    .or(`maestro_principal_id.eq.${maestroId},maestro_suplente_id.eq.${maestroId},maestro_id.eq.${maestroId}`)
 
   if (error) {
     console.warn('[MaestroData] Error cargando clases:', error.message)
@@ -100,7 +99,6 @@ export async function getSesiones(maestroId, desde, hasta, forceRefresh = false)
   const { data, error } = await supabase
     .from('sesiones_clase')
     .select('*')
-    .eq('maestro_id', maestroId)
     .gte('fecha', desde)
     .lte('fecha', hasta)
 

@@ -98,6 +98,11 @@ export function invalidateSemaphoresForClase(claseId) {
  * First tries exact match via ilike on the first instrument.
  * If no match found, uses fuzzy matching against available routes.
  *
+ * NOTE (Task 4.2 — curriculo-institucional): clases.instrumento is a text column that may
+ * contain comma-separated instrument names (e.g. "Violín,Piano"). We take the first value
+ * via .split(',')[0] for matching against routes.instrument. This is intentional and correct.
+ * The column was confirmed as `text` (not an FK) in the Supabase schema.
+ *
  * @param {string} claseId
  * @returns {Promise<string|null>}
  */

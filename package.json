@@ -12,7 +12,8 @@
     "lint": "eslint src/",
     "lint:fix": "eslint src/ --fix",
     "format": "prettier --check src/",
-    "format:fix": "prettier --write src/"
+    "format:fix": "prettier --write src/",
+    "check:no-plan-tables": "node scripts/check-no-plan-tables.cjs"
   },
   "devDependencies": {
     "@testing-library/dom": "^10.4.1",

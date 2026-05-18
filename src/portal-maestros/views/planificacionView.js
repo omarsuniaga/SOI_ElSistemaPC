@@ -2,7 +2,6 @@ import { supabase } from '../../lib/supabaseClient.js'
 import { getMaestroLocal } from '../auth/maestroAuth.js'
 import { escHTML } from '../utils/portalUtils.js'
 import { renderRouteConfigurator } from './components/routeConfigurator.js'
-import { RouteConfigAdapter } from '../services/routeConfigAdapter.js'
 import { resolveAndLoadCurriculum } from '../services/curriculumAdapter.js'
 import { EmptyCurriculumState } from '../components/EmptyCurriculumState.js'
 import { AppModal } from '../../shared/components/AppModal.js'
@@ -24,8 +23,12 @@ export async function renderPlanificacionView(container) {
       .eq('maestro_id', maestro.id)
       .order('nombre')
 
-    // 2. Mantener RouteConfigAdapter solo para el CRUD de importación (tab Configurador)
-    const planningClasses = await RouteConfigAdapter.getClasses()
+    // 2. Load plan_clases for the CRUD import tab (legacy configurator)
+    const { data: planningClasses } = await supabase
+      .from('plan_clases')
+      .select('*')
+      .eq('activo', true)
+      .order('nombre')
 
     // 3. Función para renderizar la jerarquía HTML usando el nuevo curriculumAdapter
     const getHierarchyHtml = async (claseId = null) => {
@@ -279,7 +282,11 @@ export async function renderPlanificacionView(container) {
           })
 
           importStatusText.textContent = 'Estructurando con IA...'
-          const currentPlanningClasses = await RouteConfigAdapter.getClasses()
+          const { data: currentPlanningClasses } = await supabase
+            .from('plan_clases')
+            .select('*')
+            .eq('activo', true)
+            .order('nombre')
           const previewHtml = generateImportPreview(structure, currentPlanningClasses || [])
 
           AppModal.open({
@@ -297,7 +304,12 @@ export async function renderPlanificacionView(container) {
                   const className = modalBody.querySelector('#preview-class-name').value.trim()
                   if (!className) { alert('Asigná un nombre.'); return false; }
                   importStatusText.textContent = 'Creando clase...'
-                  const newClass = await RouteConfigAdapter.addClass(className)
+                  const { data: newClass, error: errNewClass } = await supabase
+                    .from('plan_clases')
+                    .insert([{ nombre: className }])
+                    .select()
+                    .single()
+                  if (errNewClass) throw errNewClass
                   finalClassId = newClass.id
                 }
 
@@ -310,7 +322,37 @@ export async function renderPlanificacionView(container) {
                 objInputs.forEach(input => { structure.niveles[input.dataset.nIdx].temas[input.dataset.tIdx].objetivos[input.dataset.oIdx].nombre = input.value })
 
                 importStatusText.textContent = 'Importando...'
-                await RouteConfigAdapter.importStructure(finalClassId, structure)
+                // Inline bulk import into plan_* tables (legacy CRUD path)
+                for (const nivel of structure.niveles || []) {
+                  const { data: newLevel, error: errL } = await supabase
+                    .from('plan_niveles')
+                    .insert([{ clase_id: finalClassId, nombre: nivel.nombre, numero_nivel: nivel.numero_nivel || 1, objetivo_general: nivel.objetivo_general }])
+                    .select().single()
+                  if (errL) throw errL
+                  const temas = (nivel.temas || []).map(t => ({ nivel_id: newLevel.id, nombre: t.nombre, tipo: t.tipo || 'TECNICA', es_critico: t.es_critico || false, _ref: t }))
+                  if (!temas.length) continue
+                  const { data: newTemas, error: errT } = await supabase
+                    .from('plan_temas')
+                    .insert(temas.map(({ _ref, ...rest }) => rest))
+                    .select()
+                  if (errT) throw errT
+                  for (let i = 0; i < newTemas.length; i++) {
+                    const objetivosRaw = temas[i]._ref.objetivos || []
+                    if (!objetivosRaw.length) continue
+                    const objsToInsert = objetivosRaw.map(obj => ({ tema_id: newTemas[i].id, nombre: obj.nombre || obj, _ref: obj }))
+                    const { data: newObjs, error: errO } = await supabase
+                      .from('plan_objetivos')
+                      .insert(objsToInsert.map(({ _ref, ...rest }) => rest))
+                      .select()
+                    if (errO) throw errO
+                    const inds = []
+                    newObjs.forEach((newObj, oIdx) => {
+                      const orig = objsToInsert[oIdx]._ref
+                      if (orig.indicadores) orig.indicadores.forEach(ind => inds.push({ objetivo_id: newObj.id, descripcion: ind.descripcion, es_requerido: ind.es_requerido ?? true }))
+                    })
+                    if (inds.length) { const { error: errI } = await supabase.from('plan_indicadores').insert(inds); if (errI) throw errI }
+                  }
+                }
                 
                 AppModal.open({
                   title: '¡Éxito!',

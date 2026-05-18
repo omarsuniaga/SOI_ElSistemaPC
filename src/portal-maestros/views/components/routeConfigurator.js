@@ -1,4 +1,4 @@
-import { RouteConfigAdapter } from '../../services/routeConfigAdapter.js';
+import { supabase } from '../../../lib/supabaseClient.js';
 import { escHTML } from '../../utils/portalUtils.js';
 import { AppModal } from '../../../shared/components/AppModal.js';
 
@@ -78,13 +78,10 @@ async function openEditItemModal(type, id, currentValue, onComplete) {
       if (!newValue) return false;
 
       try {
-        switch(type) {
-          case 'Clase': await RouteConfigAdapter.updateClass(id, newValue); break;
-          case 'Nivel': await RouteConfigAdapter.updateLevel(id, { nombre: newValue }); break;
-          case 'Tema': await RouteConfigAdapter.updateNode(id, { nombre: newValue }); break;
-          case 'Objetivo': await RouteConfigAdapter.updateObjective(id, newValue); break;
-          case 'Indicador': await RouteConfigAdapter.updateIndicator(id, { descripcion: newValue }); break;
-        }
+        const tableMap = { Clase: 'plan_clases', Nivel: 'plan_niveles', Tema: 'plan_temas', Objetivo: 'plan_objetivos', Indicador: 'plan_indicadores' };
+        const fieldMap = { Clase: { nombre: newValue }, Nivel: { nombre: newValue }, Tema: { nombre: newValue }, Objetivo: { nombre: newValue }, Indicador: { descripcion: newValue } };
+        const { error } = await supabase.from(tableMap[type]).update(fieldMap[type]).eq('id', id);
+        if (error) throw error;
         onComplete();
         return true;
       } catch (err) {
@@ -95,13 +92,9 @@ async function openEditItemModal(type, id, currentValue, onComplete) {
     },
     onDelete: async () => {
       try {
-        switch(type) {
-          case 'Clase': await RouteConfigAdapter.deleteClass(id); break;
-          case 'Nivel': await RouteConfigAdapter.deleteLevel(id); break;
-          case 'Tema': await RouteConfigAdapter.deleteNode(id); break;
-          case 'Objetivo': await RouteConfigAdapter.deleteObjective(id); break;
-          case 'Indicador': await RouteConfigAdapter.deleteIndicator(id); break;
-        }
+        const tableMap = { Clase: 'plan_clases', Nivel: 'plan_niveles', Tema: 'plan_temas', Objetivo: 'plan_objetivos', Indicador: 'plan_indicadores' };
+        const { error } = await supabase.from(tableMap[type]).delete().eq('id', id);
+        if (error) throw error;
         onComplete();
         return true;
       } catch (err) {
@@ -132,13 +125,16 @@ async function openAddItemModal(type, parentId, onComplete) {
       if (!value) return false;
 
       try {
-        switch(type) {
-          case 'Clase': await RouteConfigAdapter.addClass(value); break;
-          case 'Nivel': await RouteConfigAdapter.addLevel({ clase_id: parentId, nombre: value, numero_nivel: 1 }); break;
-          case 'Tema': await RouteConfigAdapter.addNode({ nivel_id: parentId, nombre: value, tipo: 'TECNICA' }); break;
-          case 'Objetivo': await RouteConfigAdapter.addObjective({ tema_id: parentId, nombre: value }); break;
-          case 'Indicador': await RouteConfigAdapter.addIndicator({ objetivo_id: parentId, descripcion: value, es_requerido: true }); break;
-        }
+        const insertMap = {
+          Clase: { table: 'plan_clases', row: { nombre: value } },
+          Nivel: { table: 'plan_niveles', row: { clase_id: parentId, nombre: value, numero_nivel: 1 } },
+          Tema: { table: 'plan_temas', row: { nivel_id: parentId, nombre: value, tipo: 'TECNICA' } },
+          Objetivo: { table: 'plan_objetivos', row: { tema_id: parentId, nombre: value } },
+          Indicador: { table: 'plan_indicadores', row: { objetivo_id: parentId, descripcion: value, es_requerido: true } },
+        };
+        const { table, row } = insertMap[type];
+        const { error } = await supabase.from(table).insert([row]);
+        if (error) throw error;
         onComplete();
         return true;
       } catch (err) {
@@ -152,7 +148,7 @@ async function openAddItemModal(type, parentId, onComplete) {
 
 async function loadClasses() {
   const wrapper = document.getElementById('pm-rc-classes-wrapper');
-  const classes = await RouteConfigAdapter.getClasses();
+  const { data: classes = [] } = await supabase.from('plan_clases').select('*').eq('activo', true).order('nombre');
   
   const currentExists = classes.some(c => c.id === state.activeClassId);
   if (!currentExists && classes.length > 0) {
@@ -204,7 +200,7 @@ async function loadClasses() {
 
 async function loadLevels(classId) {
   const wrapper = document.getElementById('pm-rc-levels-wrapper');
-  const levels = await RouteConfigAdapter.getLevelsByClass(classId);
+  const { data: levels = [] } = await supabase.from('plan_niveles').select('*').eq('clase_id', classId).order('numero_nivel', { ascending: true });
 
   const currentExists = levels.some(l => l.id === state.activeLevelId);
   if (!currentExists && levels.length > 0) {
@@ -256,7 +252,7 @@ async function loadLevels(classId) {
 
 async function loadNodes(levelId) {
   const wrapper = document.getElementById('pm-rc-nodes-wrapper');
-  const nodes = await RouteConfigAdapter.getNodesByLevel(levelId);
+  const { data: nodes = [] } = await supabase.from('plan_temas').select('*').eq('nivel_id', levelId).order('orden_index');
 
   const currentExists = nodes.some(n => n.id === state.activeNodeId);
   if (!currentExists && nodes.length > 0) {
@@ -307,7 +303,7 @@ async function loadNodes(levelId) {
 
 async function loadObjectives(nodeId) {
   const wrapper = document.getElementById('pm-rc-objs-wrapper');
-  const objs = await RouteConfigAdapter.getObjectivesByNode(nodeId);
+  const { data: objs = [] } = await supabase.from('plan_objetivos').select('*').eq('tema_id', nodeId).order('orden_index');
 
   const currentExists = objs.some(o => o.id === state.activeObjectiveId);
   if (!currentExists && objs.length > 0) {
@@ -355,7 +351,7 @@ async function loadObjectives(nodeId) {
 
 async function loadIndicators(objectiveId) {
   const wrapper = document.getElementById('pm-rc-inds-wrapper');
-  const inds = await RouteConfigAdapter.getIndicatorsByObjective(objectiveId);
+  const { data: inds = [] } = await supabase.from('plan_indicadores').select('*').eq('objetivo_id', objectiveId).order('orden_index');
   
   wrapper.innerHTML = `
     <div class="pm-rc-header">

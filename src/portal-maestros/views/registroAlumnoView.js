@@ -348,13 +348,16 @@ async function handleSubmit() {
         showSuccessState(data.nombre)
         resetForm()
       } catch (err) {
-        // Alumno was created but inscription failed — show recoverable error card
+        // Alumno was created but inscription failed — show recoverable error card.
+        // DEMO MODE: to simulate this failure path in demo mode, use claseId 'DEMO_FAIL'
+        // (clasesApi has no demo adapter; a future mock adapter should intercept that ID
+        //  and throw new Error('Demo: inscripción fallida') to exercise this card).
         viewState.inscripcionState = {
           alumnoId: nuevoAlumno.id,
           claseId: data.claseId,
           pendiente: true,
         }
-        renderInscripcionFailedCard(viewState.container, data.nombre)
+        renderInscripcionFailedCard(viewState.container, data.nombre, err.message || 'Error desconocido')
       }
     } else {
       // No class selected — plain success
@@ -389,7 +392,7 @@ function resetForm() {
 }
 
 // ─── INSCRIPCION FAILED CARD ──────────────────────────────────
-function renderInscripcionFailedCard(container, nombreAlumno) {
+function renderInscripcionFailedCard(container, nombreAlumno, errorMessage) {
   // Remove any existing card first
   const existing = container.querySelector('[data-testid="inscripcion-failed-card"]')
   if (existing) existing.remove()
@@ -404,6 +407,7 @@ function renderInscripcionFailedCard(container, nombreAlumno) {
       <div>
         <h3 class="pm-settings-section__title">Inscripción pendiente</h3>
         <p class="pm-settings-section__desc">El alumno fue registrado pero no se pudo asignar a la clase.</p>
+        ${errorMessage ? `<small class="text-muted" data-testid="inscripcion-error-reason">${escHTML(errorMessage)}</small>` : ''}
       </div>
     </div>
     <div style="display: flex; gap: 0.75rem; margin-top: 1rem; flex-wrap: wrap;">
@@ -436,7 +440,9 @@ function renderInscripcionFailedCard(container, nombreAlumno) {
       showSuccessState(nombreAlumno)
       resetForm()
     } catch (err) {
-      // Still failing — keep card shown, do nothing else
+      // Still failing — update error reason and keep card shown
+      const reasonEl = card.querySelector('[data-testid="inscripcion-error-reason"]')
+      if (reasonEl) reasonEl.textContent = err.message || 'Error desconocido'
     }
   })
 

@@ -1,4 +1,5 @@
 import { actualizarPermiso } from '../../api/permisosApi.js'
+import { AppToast } from '../../../../shared/components/AppToast.js'
 
 function escapeHTML(str) {
   if (!str) return ''
@@ -129,8 +130,9 @@ function attachRowEvents(tr, permiso) {
       try {
         await actualizarPermiso(permiso.maestro_id, { [field]: newValue })
         permiso[field] = newValue
-      } catch {
+      } catch (err) {
         toggle.checked = prev
+        AppToast.error('Error al actualizar permiso: ' + err.message)
       } finally {
         toggle.disabled = false
       }

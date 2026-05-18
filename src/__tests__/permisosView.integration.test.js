@@ -2,6 +2,14 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { JSDOM } from 'jsdom'
 
 // Mock dependencies
+vi.mock('../modules/permisos/api/permisosSupabase.js', () => ({
+  obtenerPermisos: vi.fn().mockResolvedValue([]),
+  obtenerPermisoPorMaestro: vi.fn().mockResolvedValue(null),
+  actualizarPermiso: vi.fn().mockResolvedValue({ data: null, error: null }),
+  listarMaestrosSinPermisos: vi.fn().mockResolvedValue([]),
+  grantBulk: vi.fn().mockResolvedValue({ succeeded: [], failed: [] }),
+}))
+
 vi.mock('../modules/permisos/api/permisosApi.js', () => ({
   obtenerPermisos: vi.fn(),
   actualizarPermiso: vi.fn(),

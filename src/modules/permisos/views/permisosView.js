@@ -204,27 +204,4 @@ function attachEvents(container) {
     }
   })
 
-  // Toggle switches — delegated on table (handled inside PermisoRow via attachRowEvents)
-  // Additional: direct delegation for actualizarPermiso on permiso-toggle for backward compat
-  container.querySelector('#permisosTable')?.addEventListener('change', async (e) => {
-    const toggle = e.target.closest('.permiso-toggle')
-    if (!toggle) return
-
-    const maestroId = toggle.dataset.maestroId
-    const field = toggle.dataset.field
-    const newValue = toggle.checked
-
-    toggle.disabled = true
-
-    try {
-      await actualizarPermiso(maestroId, { [field]: newValue })
-      const permiso = state.permisos.find(p => p.maestro_id === maestroId)
-      if (permiso) permiso[field] = newValue
-    } catch (err) {
-      toggle.checked = !newValue
-      AppToast.error('Error al actualizar permiso: ' + err.message)
-    } finally {
-      toggle.disabled = false
-    }
-  })
 }

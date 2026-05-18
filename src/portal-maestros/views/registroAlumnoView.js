@@ -4,6 +4,7 @@ import { getMaestroLocal } from '../auth/maestroAuth.js'
 import { crearAlumno, validarEmail, validarCedula } from '../../modules/alumnos/api/alumnosApi.js'
 import { getMisClases } from '../services/maestroDataService.js'
 import { setFieldError, clearFieldError, clearAllFieldErrors } from '../utils/a11yUtils.js'
+import { inscribirAlumnoEnClase } from '../../modules/clases/api/clasesApi.js'
 
 // ─── ESTADO LOCAL ────────────────────────────────────────────
 const viewState = {
@@ -12,6 +13,13 @@ const viewState = {
   clases: [],
   submitting: false,
   checked: false,
+  container: null, // kept for handleSubmit access to render inscripcion card
+  // Inscription pending state (used to retry without re-creating the alumno)
+  inscripcionState: {
+    alumnoId: null,
+    claseId: null,
+    pendiente: false,
+  },
 }
 
 // ─── RENDER PRINCIPAL ────────────────────────────────────────
@@ -28,6 +36,7 @@ export async function renderRegistroAlumnoView(container) {
 
   viewState.maestro = maestro
   viewState.submitting = false
+  viewState.container = container
 
   // Check permissions
   const permisos = await getPermisos(maestro.id)
@@ -331,33 +340,27 @@ async function handleSubmit() {
 
     const nuevoAlumno = await crearAlumno(alumnoData)
 
-    // Si se seleccionó una clase, inscribir al alumno (via API futura)
+    // Si se seleccionó una clase, inscribir al alumno
     if (data.claseId) {
       try {
-        const { inscribirAlumnoEnClase } = await import('../../modules/clases/api/clasesApi.js')
-        if (typeof inscribirAlumnoEnClase === 'function') {
-          await inscribirAlumnoEnClase(data.claseId, nuevoAlumno.id)
-        }
+        await inscribirAlumnoEnClase(data.claseId, nuevoAlumno.id)
+        // Full success
+        showSuccessState(data.nombre)
+        resetForm()
       } catch (err) {
-        console.warn('[Registro] No se pudo inscribir en clase:', err.message)
-        // No es crítico — el alumno ya fue creado
+        // Alumno was created but inscription failed — show recoverable error card
+        viewState.inscripcionState = {
+          alumnoId: nuevoAlumno.id,
+          claseId: data.claseId,
+          pendiente: true,
+        }
+        renderInscripcionFailedCard(viewState.container, data.nombre)
       }
+    } else {
+      // No class selected — plain success
+      showSuccessState(data.nombre)
+      resetForm()
     }
-
-    window.dispatchEvent(new CustomEvent('showToast', {
-      detail: { message: `Alumno ${data.nombre} registrado exitosamente`, type: 'success' }
-    }))
-
-    // Reset form
-    document.getElementById('reg-nombre').value = ''
-    document.getElementById('reg-fecha-nac').value = ''
-    document.getElementById('reg-instrumento').value = ''
-    document.getElementById('reg-rep-nombre').value = ''
-    document.getElementById('reg-rep-tlf').value = ''
-    document.getElementById('reg-rep-cedula').value = ''
-    document.getElementById('reg-rep-email').value = ''
-    document.getElementById('reg-direccion').value = ''
-    document.getElementById('reg-clase').value = ''
 
   } catch (err) {
     window.dispatchEvent(new CustomEvent('showToast', {
@@ -368,6 +371,82 @@ async function handleSubmit() {
     btn.disabled = false
     btn.innerHTML = originalHtml
   }
+}
+
+// ─── SUCCESS STATE ───────────────────────────────────────────
+function showSuccessState(nombreAlumno) {
+  window.dispatchEvent(new CustomEvent('showToast', {
+    detail: { message: `Alumno ${nombreAlumno} registrado exitosamente`, type: 'success' }
+  }))
+}
+
+function resetForm() {
+  const ids = ['reg-nombre', 'reg-fecha-nac', 'reg-instrumento', 'reg-rep-nombre', 'reg-rep-tlf', 'reg-rep-cedula', 'reg-rep-email', 'reg-direccion', 'reg-clase']
+  ids.forEach(id => {
+    const el = document.getElementById(id)
+    if (el) el.value = ''
+  })
+}
+
+// ─── INSCRIPCION FAILED CARD ──────────────────────────────────
+function renderInscripcionFailedCard(container, nombreAlumno) {
+  // Remove any existing card first
+  const existing = container.querySelector('[data-testid="inscripcion-failed-card"]')
+  if (existing) existing.remove()
+
+  const card = document.createElement('div')
+  card.setAttribute('data-testid', 'inscripcion-failed-card')
+  card.className = 'card-apple pm-settings-section'
+  card.style.cssText = 'border-left: 4px solid var(--pm-warning, #f59e0b); margin-top: 1rem;'
+  card.innerHTML = `
+    <div class="pm-settings-section__header">
+      <i class="bi bi-exclamation-triangle" style="color: var(--pm-warning, #f59e0b);" aria-hidden="true"></i>
+      <div>
+        <h3 class="pm-settings-section__title">Inscripción pendiente</h3>
+        <p class="pm-settings-section__desc">El alumno fue registrado pero no se pudo asignar a la clase.</p>
+      </div>
+    </div>
+    <div style="display: flex; gap: 0.75rem; margin-top: 1rem; flex-wrap: wrap;">
+      <button class="btn-apple-primary" data-testid="btn-retry-inscripcion" style="flex: 1;">
+        <i class="bi bi-arrow-clockwise" aria-hidden="true"></i>
+        <span>Reintentar inscripción</span>
+      </button>
+      <button class="btn-apple-secondary" data-testid="btn-continuar-sin-clase">
+        <i class="bi bi-check-lg" aria-hidden="true"></i>
+        <span>Continuar sin clase</span>
+      </button>
+    </div>`
+
+  // Append after the form actions, or to container if not found
+  const actionsEl = container.querySelector('.pm-settings-actions')
+  if (actionsEl) {
+    actionsEl.parentNode.insertBefore(card, actionsEl.nextSibling)
+  } else {
+    container.appendChild(card)
+  }
+
+  // Wire retry button
+  card.querySelector('[data-testid="btn-retry-inscripcion"]').addEventListener('click', async () => {
+    const { alumnoId, claseId } = viewState.inscripcionState
+    try {
+      await inscribirAlumnoEnClase(claseId, alumnoId)
+      // Success — dismiss card and show success state
+      card.remove()
+      viewState.inscripcionState = { alumnoId: null, claseId: null, pendiente: false }
+      showSuccessState(nombreAlumno)
+      resetForm()
+    } catch (err) {
+      // Still failing — keep card shown, do nothing else
+    }
+  })
+
+  // Wire continue button
+  card.querySelector('[data-testid="btn-continuar-sin-clase"]').addEventListener('click', () => {
+    card.remove()
+    viewState.inscripcionState = { alumnoId: null, claseId: null, pendiente: false }
+    showSuccessState(nombreAlumno)
+    resetForm()
+  })
 }
 
 // ─── ANIMACIONES ─────────────────────────────────────────────

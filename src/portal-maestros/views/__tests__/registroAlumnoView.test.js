@@ -24,10 +24,15 @@ vi.mock('../../services/maestroDataService.js', () => ({
   getMisClases: vi.fn(),
 }))
 
+vi.mock('../../../modules/clases/api/clasesApi.js', () => ({
+  inscribirAlumnoEnClase: vi.fn(),
+}))
+
 import { getPermisos } from '../../services/permisoService.js'
 import { getMaestroLocal } from '../../auth/maestroAuth.js'
 import { crearAlumno, validarEmail, validarCedula } from '../../../modules/alumnos/api/alumnosApi.js'
 import { getMisClases } from '../../services/maestroDataService.js'
+import { inscribirAlumnoEnClase } from '../../../modules/clases/api/clasesApi.js'
 import { renderRegistroAlumnoView } from '../registroAlumnoView.js'
 
 const MOCK_MAESTRO = { id: 'm1', nombre_completo: 'Profesor Test' }
@@ -50,6 +55,7 @@ describe('registroAlumnoView', () => {
     crearAlumno.mockResolvedValue({ id: 'new_001', nombre: 'Alumno Test' })
     validarEmail.mockResolvedValue(false)
     validarCedula.mockResolvedValue(false)
+    inscribirAlumnoEnClase.mockResolvedValue({ ok: true })
     // Mock window dispatch for toast events
     window.dispatchEvent = vi.fn()
   })
@@ -271,5 +277,146 @@ describe('registroAlumnoView', () => {
 
     expect(validarCedula).not.toHaveBeenCalled()
     expect(crearAlumno).toHaveBeenCalledTimes(1)
+  })
+
+  // ─── C1: Inscription feedback tests ─────────────────────────
+
+  async function submitWithClase(claseId = 'c1') {
+    document.getElementById('reg-nombre').value = 'Juan Pérez'
+    document.getElementById('reg-fecha-nac').value = '2020-01-15'
+    document.getElementById('reg-instrumento').value = 'Violín'
+    document.getElementById('reg-rep-nombre').value = 'María Pérez'
+    document.getElementById('reg-rep-tlf').value = '809-555-0101'
+    document.getElementById('reg-clase').value = claseId
+    document.getElementById('btn-registrar-alumno').click()
+  }
+
+  it('C1-happy: alumno created and inscribed shows success state without error card', async () => {
+    inscribirAlumnoEnClase.mockResolvedValue({ ok: true })
+    await renderRegistroAlumnoView(container)
+    await submitWithClase('c1')
+
+    await vi.waitUntil(() => window.dispatchEvent.mock.calls.length > 0, { timeout: 1000 })
+
+    expect(crearAlumno).toHaveBeenCalledTimes(1)
+    expect(inscribirAlumnoEnClase).toHaveBeenCalledWith('c1', 'new_001')
+    // No InscripcionFailedCard rendered
+    expect(container.querySelector('[data-testid="inscripcion-failed-card"]')).toBeFalsy()
+    // Success toast dispatched
+    expect(window.dispatchEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        detail: expect.objectContaining({ type: 'success' })
+      })
+    )
+  })
+
+  it('C1-fail: inscription throws shows InscripcionFailedCard with retry button', async () => {
+    inscribirAlumnoEnClase.mockRejectedValue(new Error('network error'))
+    await renderRegistroAlumnoView(container)
+    await submitWithClase('c1')
+
+    await vi.waitUntil(
+      () => container.querySelector('[data-testid="inscripcion-failed-card"]'),
+      { timeout: 1000 }
+    )
+
+    const card = container.querySelector('[data-testid="inscripcion-failed-card"]')
+    expect(card).toBeTruthy()
+    expect(card.textContent).toContain('no se pudo asignar a la clase')
+    expect(container.querySelector('[data-testid="btn-retry-inscripcion"]')).toBeTruthy()
+    expect(container.querySelector('[data-testid="btn-continuar-sin-clase"]')).toBeTruthy()
+    // crearAlumno was called — alumno exists
+    expect(crearAlumno).toHaveBeenCalledTimes(1)
+  })
+
+  it('C1-retry-success: retry calls inscribirAlumnoEnClase with saved alumnoId, NOT re-calling crearAlumno', async () => {
+    inscribirAlumnoEnClase
+      .mockRejectedValueOnce(new Error('first attempt failed'))
+      .mockResolvedValueOnce({ ok: true })
+
+    await renderRegistroAlumnoView(container)
+    await submitWithClase('c1')
+
+    await vi.waitUntil(
+      () => container.querySelector('[data-testid="btn-retry-inscripcion"]'),
+      { timeout: 1000 }
+    )
+
+    // Click retry
+    container.querySelector('[data-testid="btn-retry-inscripcion"]').click()
+
+    await vi.waitUntil(() => inscribirAlumnoEnClase.mock.calls.length >= 2, { timeout: 1000 })
+
+    // crearAlumno only called once (NOT on retry)
+    expect(crearAlumno).toHaveBeenCalledTimes(1)
+    // inscribirAlumnoEnClase called twice, second with same ids
+    expect(inscribirAlumnoEnClase).toHaveBeenCalledTimes(2)
+    expect(inscribirAlumnoEnClase.mock.calls[1]).toEqual(['c1', 'new_001'])
+    // Error card dismissed after success
+    await vi.waitUntil(
+      () => !container.querySelector('[data-testid="inscripcion-failed-card"]'),
+      { timeout: 1000 }
+    )
+  })
+
+  it('C1-retry-fail: retry also throws, still shows error card, does not loop or crash', async () => {
+    inscribirAlumnoEnClase.mockRejectedValue(new Error('persistent error'))
+
+    await renderRegistroAlumnoView(container)
+    await submitWithClase('c1')
+
+    await vi.waitUntil(
+      () => container.querySelector('[data-testid="btn-retry-inscripcion"]'),
+      { timeout: 1000 }
+    )
+
+    container.querySelector('[data-testid="btn-retry-inscripcion"]').click()
+
+    await vi.waitUntil(() => inscribirAlumnoEnClase.mock.calls.length >= 2, { timeout: 1000 })
+
+    // Still showing error card
+    expect(container.querySelector('[data-testid="inscripcion-failed-card"]')).toBeTruthy()
+    // No crash — crearAlumno still called only once
+    expect(crearAlumno).toHaveBeenCalledTimes(1)
+  })
+
+  it('C1-continue: clicking "Continuar sin clase" dismisses card and shows success state', async () => {
+    inscribirAlumnoEnClase.mockRejectedValue(new Error('fail'))
+
+    await renderRegistroAlumnoView(container)
+    await submitWithClase('c1')
+
+    await vi.waitUntil(
+      () => container.querySelector('[data-testid="btn-continuar-sin-clase"]'),
+      { timeout: 1000 }
+    )
+
+    container.querySelector('[data-testid="btn-continuar-sin-clase"]').click()
+
+    await vi.waitUntil(
+      () => !container.querySelector('[data-testid="inscripcion-failed-card"]'),
+      { timeout: 1000 }
+    )
+
+    expect(container.querySelector('[data-testid="inscripcion-failed-card"]')).toBeFalsy()
+    // Success toast should be dispatched
+    expect(window.dispatchEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        detail: expect.objectContaining({ type: 'success' })
+      })
+    )
+  })
+
+  it('C1-no-clase: no claseId in form never calls inscribirAlumnoEnClase', async () => {
+    await renderRegistroAlumnoView(container)
+    await submitWithClase('') // empty claseId = no class selected
+
+    await vi.waitUntil(() => crearAlumno.mock.calls.length > 0, { timeout: 1000 })
+    // Give async ops time to settle
+    await new Promise(r => setTimeout(r, 50))
+
+    expect(crearAlumno).toHaveBeenCalledTimes(1)
+    expect(inscribirAlumnoEnClase).not.toHaveBeenCalled()
+    expect(container.querySelector('[data-testid="inscripcion-failed-card"]')).toBeFalsy()
   })
 })

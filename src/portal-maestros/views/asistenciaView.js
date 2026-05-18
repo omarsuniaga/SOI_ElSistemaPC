@@ -14,6 +14,8 @@ import { createStructureModal } from '../components/structureModal.js'
 import { getMisClases, getHorariosClases, getInscripcionesClases, getSalones, getRutasMaestro, invalidateClasesCache } from '../services/maestroDataService.js'
 import { openPlanificacionModal } from '../../modules/planificacion/components/planificacionModal.js'
 import { RouteConfigAdapter } from '../services/routeConfigAdapter.js'
+import { resolveAndLoadCurriculum } from '../services/curriculumAdapter.js'
+import { EmptyCurriculumState } from '../components/EmptyCurriculumState.js'
 import { renderRouteConfigurator } from './components/routeConfigurator.js'
 import { crearPlanificacion } from '../../modules/planificacion/api/planificacionApi.js'
 import { AppModal } from '../../shared/components/AppModal.js'
@@ -836,12 +838,12 @@ function _renderVista(container, ctx) {
 
     if (activePlanificacionId && treeContainer) {
       treeContainer.innerHTML = '';
-      
+
       // TRAER TEMAS COMPLETADOS HISTORICAMENTE
       _getCompletedTopics(claseId).then(completedTopics => {
         routeTreeBar = createRouteTreeBar(treeContainer, {
           claseId,
-          rutaId: activePlanificacionId,
+          tree: plan._tree ?? null,
           completedTopics,
           onIndicadorSelect: (ind) => {
             editor.insertText(`[${ind.nombre}] `);
@@ -892,66 +894,60 @@ function _renderVista(container, ctx) {
     };
   }
 
-  // Load planificaciones (Biblioteca y Mis Rutas)
+  // Load curriculum via the new adapter (resolves route_version_id → tree)
   if (planificacionCard) {
     (async () => {
       try {
-        const planningClasses = await RouteConfigAdapter.getClasses();
-        
-        // 1. "Mis Rutas" son los planes que coinciden con el instrumento de la clase o guardados
-        const savedPlanId = localStorage.getItem(`pm_default_plan_${claseId}`);
-        const claseInstrumentos = (clase.instrumento || '').toLowerCase().split(',').map(i => i.trim());
-        
-        const misRutas = planningClasses.filter(p => {
-          if (p.id === savedPlanId) return true;
-          const planInst = (p.nombre || '').toLowerCase();
-          return claseInstrumentos.some(ci => planInst.includes(ci));
-        });
+        const curriculumResult = await resolveAndLoadCurriculum(claseId);
+
+        if (!curriculumResult.tree) {
+          // Show empty state in the route tree container
+          const treeContainer = container.querySelector('#pm-route-tree-container');
+          if (treeContainer) {
+            treeContainer.innerHTML = EmptyCurriculumState({ reason: curriculumResult.reason });
+          }
+          planificacionCard.style.display = '';
+          return;
+        }
+
+        // Auto-select: synthesize a plan-like object from the resolved route
+        const resolvedPlan = {
+          id: curriculumResult.routeVersionId,
+          nombre: clase.instrumento || clase.nombre || 'Ruta académica',
+          _tree: curriculumResult.tree,
+        };
 
         if (planListRutas) {
-          planListRutas.innerHTML = misRutas.length
-            ? misRutas.map(r => `
-              <div class="pm-plan-item ${r.id === savedPlanId ? 'active' : ''}" data-plan-id="${r.id}">
-                <span class="pm-plan-item-icon">📍</span>
-                <span class="pm-plan-item-name">${escHTML(r.nombre || 'Ruta sin nombre')}</span>
-                ${r.id === savedPlanId ? '<span class="pm-tree-badge">ACTIVA</span>' : ''}
-              </div>`).join('')
-            : '<div style="padding:0.5rem;font-size:0.8rem;color:var(--pm-text-muted)">No hay planes sugeridos para este instrumento</div>';
+          planListRutas.innerHTML = `
+            <div class="pm-plan-item active" data-plan-id="${resolvedPlan.id}">
+              <span class="pm-plan-item-icon">📍</span>
+              <span class="pm-plan-item-name">${escHTML(resolvedPlan.nombre)}</span>
+              <span class="pm-tree-badge">ACTIVA</span>
+            </div>`;
 
           planListRutas.querySelectorAll('.pm-plan-item').forEach(item => {
-            item.addEventListener('click', () => {
-              const r = misRutas.find(x => x.id === item.dataset.planId);
-              if (r) selectPlanificacion(r);
-            });
+            item.addEventListener('click', () => selectPlanificacion(resolvedPlan));
           });
         }
 
-        // 2. "Biblioteca" es todo el catálogo
         if (planListPlanes) {
-          planListPlanes.innerHTML = planningClasses.map(p => `
-            <div class="pm-plan-item" data-plan-id="${p.id}">
+          planListPlanes.innerHTML = `
+            <div class="pm-plan-item" data-plan-id="${resolvedPlan.id}">
               <span class="pm-plan-item-icon">📚</span>
-              <span class="pm-plan-item-name">${escHTML(p.nombre || p.name)}</span>
-            </div>`).join('');
+              <span class="pm-plan-item-name">${escHTML(resolvedPlan.nombre)}</span>
+            </div>`;
 
           planListPlanes.querySelectorAll('.pm-plan-item').forEach(item => {
-            item.addEventListener('click', () => {
-              const p = planningClasses.find(x => x.id === item.dataset.planId);
-              if (p) selectPlanificacion(p);
-            });
+            item.addEventListener('click', () => selectPlanificacion(resolvedPlan));
           });
         }
 
-        // Mostrar card
+        // Mostrar card y auto-seleccionar
         planificacionCard.style.display = '';
-
-        // AUTO-SELECCIÓN
-        const savedMatch = planningClasses.find(c => c.id === savedPlanId);
-        const initialMatch = savedMatch || misRutas[0] || (await RouteConfigAdapter.resolveSmartPlan(clase));
-        if (initialMatch) selectPlanificacion(initialMatch);
+        selectPlanificacion(resolvedPlan);
 
       } catch (err) {
-        console.warn('[asistencia] Error cargando planificación unificada:', err);
+        console.warn('[asistencia] Error cargando currículo:', err);
       }
     })();
   }
@@ -1866,36 +1862,38 @@ async function _autoSave(immediate = false) {
     if (targetKeywords.length === 0) return null;
 
     try {
-      const hierarchy = await RouteConfigAdapter.getRouteHierarchy(activePlanificacionId);
-      
+      // Use the new curriculum adapter: resolve by claseId, then walk the tree
+      const curriculumResult = await resolveAndLoadCurriculum(claseId);
+      const tree = curriculumResult?.tree ?? [];
+
       let bestMatch = null;
       let maxScore = 0;
 
-      // Buscar el mejor match en toda la jerarquía
-      for (const nivel of hierarchy) {
-        for (const tema of (nivel.plan_temas || [])) {
-          for (const obj of (tema.plan_objetivos || [])) {
-            const objKeywords = getKeywords(obj.nombre);
-            
-            // Calcular score: cuántas targetKeywords están en objKeywords
-            let score = 0;
-            for (const tk of targetKeywords) {
-              if (objKeywords.some(ok => ok.includes(tk) || tk.includes(ok))) {
-                score++;
+      // Walk blocks → levels → nodes → indicators
+      for (const block of tree) {
+        for (const level of (block.levels || [])) {
+          for (const node of (level.nodes || [])) {
+            for (const ind of (node.indicators || [])) {
+              const indName = ind.description ?? ind.descripcion ?? ind.name ?? '';
+              const indKeywords = getKeywords(indName);
+
+              let score = 0;
+              for (const tk of targetKeywords) {
+                if (indKeywords.some(ok => ok.includes(tk) || tk.includes(ok))) {
+                  score++;
+                }
               }
-            }
 
-            // Bonificación por coincidencia exacta de la cadena completa (sin stop words)
-            if (obj.nombre.toLowerCase().includes(rawTema)) {
-                score += 5; 
-            }
+              if (indName.toLowerCase().includes(rawTema)) {
+                score += 5;
+              }
 
-            // Normalizar score por longitud para priorizar matches más específicos
-            const finalScore = score / (objKeywords.length || 1);
+              const finalScore = score / (indKeywords.length || 1);
 
-            if (score > 0 && finalScore > maxScore) {
-              maxScore = finalScore;
-              bestMatch = { id: obj.id, nombre: obj.nombre };
+              if (score > 0 && finalScore > maxScore) {
+                maxScore = finalScore;
+                bestMatch = { id: ind.id, nombre: indName };
+              }
             }
           }
         }

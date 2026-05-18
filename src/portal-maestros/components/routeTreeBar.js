@@ -1,8 +1,19 @@
 /**
- * routeTreeBar — Visualizador de Ruta para Asistencia (NUEVO MODELO: plan_clases)
+ * routeTreeBar — Curriculum route visualizer for the attendance view.
+ *
+ * Accepts a pre-resolved curriculum tree (blocks → levels → nodes → indicators).
+ * Does NOT query Supabase or plan_* tables directly.
+ *
+ * @param {HTMLElement} container
+ * @param {{
+ *   claseId: string,
+ *   tree?: Block[],           // pre-resolved tree from curriculumAdapter
+ *   completedTopics?: string[],
+ *   onIndicadorSelect?: (ind: {id: string, nombre: string}) => void
+ * }} options
+ * @returns {{ refresh: Function, destroy: Function, getActiveIndicador: Function }}
  */
-import { supabase } from '../../lib/supabaseClient.js'
-import { RouteConfigAdapter } from '../services/routeConfigAdapter.js'
+import { EmptyCurriculumState } from './EmptyCurriculumState.js'
 
 function _escHTML(str) {
   const div = document.createElement('div')
@@ -10,16 +21,15 @@ function _escHTML(str) {
   return div.innerHTML
 }
 
-export function createRouteTreeBar(container, { claseId, rutaId, completedTopics = [], onIndicadorSelect }) {
-  let _hierarchy = []
-  let _loading = false
+export function createRouteTreeBar(container, { claseId, tree = null, completedTopics = [], onIndicadorSelect }) {
+  let _tree = tree
   let _activeNode = null
 
   const wrapper = document.createElement('div')
   wrapper.className = 'pm-route-bar-wrapper'
   container.appendChild(wrapper)
 
-  // Estilos locales para el árbol compacto en asistencia
+  // Local styles for the compact tree in the attendance view
   if (!document.getElementById('pm-route-bar-styles')) {
     const style = document.createElement('style')
     style.id = 'pm-route-bar-styles'
@@ -47,7 +57,7 @@ export function createRouteTreeBar(container, { claseId, rutaId, completedTopics
       return
     }
 
-    const obj = e.target.closest('[data-type="obj"]')
+    const obj = e.target.closest('[data-type="ind"]')
     if (obj) {
       const id = obj.dataset.id
       const nombre = obj.dataset.nombre
@@ -60,58 +70,60 @@ export function createRouteTreeBar(container, { claseId, rutaId, completedTopics
   wrapper.addEventListener('click', _handleClick)
 
   function _render() {
-    if (_loading) {
-      wrapper.innerHTML = '<div style="padding:1rem; text-align:center; font-size:0.8rem; color:var(--pm-text-muted);">Cargando ruta...</div>'
+    if (!_tree || _tree.length === 0) {
+      wrapper.innerHTML = EmptyCurriculumState({ reason: 'no_route' })
       return
     }
 
-    if (!_hierarchy || _hierarchy.length === 0) {
-      wrapper.innerHTML = '<div style="padding:1rem; text-align:center; font-size:0.8rem; color:var(--pm-text-muted);">No hay objetivos configurados para esta clase.</div>'
-      return
-    }
+    // Flatten tree: blocks → levels → nodes → indicators
+    // Display: block label + nodes as expandable rows + indicators as leaf items
+    wrapper.innerHTML = _tree.map(block => {
+      const blockName = block.name ?? block.nombre ?? ''
+      const allNodes = (block.levels || []).flatMap(lvl => lvl.nodes || [])
 
-    wrapper.innerHTML = _hierarchy.map(nivel => `
-      <div class="pm-tree-level">
-        <div style="background:var(--pm-surface-2); padding: 0.4rem 1rem; font-size:0.7rem; font-weight:800; color:var(--pm-primary); text-transform:uppercase; letter-spacing:0.5px;">
-          ${_escHTML(nivel.nombre)}
-        </div>
-        ${(nivel.plan_temas || []).map(tema => `
-          <div class="pm-tree-node" data-type="node">
-            <div class="pm-tree-header">
-              <span class="pm-tree-title">${_escHTML(tema.nombre)}</span>
-              <span class="pm-tree-badge">${tema.tipo}</span>
-            </div>
+      return `
+        <div class="pm-tree-level">
+          <div style="background:var(--pm-surface-2); padding: 0.4rem 1rem; font-size:0.7rem; font-weight:800; color:var(--pm-primary); text-transform:uppercase; letter-spacing:0.5px;">
+            ${_escHTML(blockName)}
           </div>
-          <div class="pm-tree-children">
-            ${(tema.plan_objetivos || []).map(obj => {
-              const isCompleted = (completedTopics || []).includes(obj.nombre);
-              return `
-                <div class="pm-tree-obj" data-type="obj" data-id="${obj.id}" data-nombre="${_escHTML(obj.nombre)}">
-                  <i class="bi ${isCompleted ? 'bi-check-circle-fill text-success' : (_activeNode?.id === obj.id ? 'bi-circle-fill text-primary' : 'bi-circle')}"></i>
-                  <span style="${isCompleted ? 'text-decoration: line-through; opacity: 0.6;' : ''}">${_escHTML(obj.nombre)}</span>
+          ${allNodes.map(node => {
+            const nodeName = node.name ?? node.nombre ?? ''
+            const nodeType = node.type ?? node.tipo ?? ''
+            const indicators = node.indicators ?? []
+            return `
+              <div class="pm-tree-node" data-type="node">
+                <div class="pm-tree-header">
+                  <span class="pm-tree-title">${_escHTML(nodeName)}</span>
+                  ${nodeType ? `<span class="pm-tree-badge">${_escHTML(nodeType)}</span>` : ''}
                 </div>
-              `;
-            }).join('')}
-          </div>
-        `).join('')}
-      </div>
-    `).join('')
+              </div>
+              <div class="pm-tree-children">
+                ${indicators.map(ind => {
+                  const indName = ind.description ?? ind.descripcion ?? ind.name ?? ''
+                  const isCompleted = (completedTopics || []).includes(indName)
+                  const isActive = _activeNode?.id === ind.id
+                  return `
+                    <div class="pm-tree-obj" data-type="ind" data-id="${ind.id}" data-nombre="${_escHTML(indName)}">
+                      <i class="bi ${isCompleted ? 'bi-check-circle-fill text-success' : (isActive ? 'bi-circle-fill text-primary' : 'bi-circle')}"></i>
+                      <span style="${isCompleted ? 'text-decoration: line-through; opacity: 0.6;' : ''}">${_escHTML(indName)}</span>
+                    </div>
+                  `
+                }).join('')}
+              </div>
+            `
+          }).join('')}
+        </div>
+      `
+    }).join('')
   }
 
-  async function refresh() {
-    if (!rutaId) return
-    _loading = true
+  /**
+   * Update the tree with new data and re-render.
+   * @param {Block[]} newTree
+   */
+  function setTree(newTree) {
+    _tree = newTree
     _render()
-
-    try {
-      // Usamos el nuevo Adapter para traer la jerarquía de plan_clases
-      _hierarchy = await RouteConfigAdapter.getRouteHierarchy(rutaId)
-    } catch (err) {
-      console.error('[routeTreeBar] Error:', err)
-    } finally {
-      _loading = false
-      _render()
-    }
   }
 
   function destroy() {
@@ -123,7 +135,8 @@ export function createRouteTreeBar(container, { claseId, rutaId, completedTopics
     return _activeNode
   }
 
-  refresh()
+  // Initial render with whatever tree was passed in
+  _render()
 
-  return { refresh, destroy, getActiveIndicador }
+  return { setTree, destroy, getActiveIndicador }
 }

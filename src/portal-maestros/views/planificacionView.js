@@ -3,6 +3,8 @@ import { getMaestroLocal } from '../auth/maestroAuth.js'
 import { escHTML } from '../utils/portalUtils.js'
 import { renderRouteConfigurator } from './components/routeConfigurator.js'
 import { RouteConfigAdapter } from '../services/routeConfigAdapter.js'
+import { resolveAndLoadCurriculum } from '../services/curriculumAdapter.js'
+import { EmptyCurriculumState } from '../components/EmptyCurriculumState.js'
 import { AppModal } from '../../shared/components/AppModal.js'
 
 export async function renderPlanificacionView(container) {
@@ -15,24 +17,30 @@ export async function renderPlanificacionView(container) {
   }
 
   try {
-    // 1. Obtener clases de PLANIFICACIÓN (plan_clases)
-    const planningClasses = await RouteConfigAdapter.getClasses()
-
-    // 2. Obtener clases de SESIÓN (para documentos y piloto automático)
+    // 1. Obtener clases de SESIÓN del maestro (selector del visualizador)
     const { data: clases } = await supabase
       .from('clases')
       .select('id, nombre, instrumento')
       .eq('maestro_id', maestro.id)
       .order('nombre')
 
-    // 3. Función para renderizar la jerarquía HTML
-    const getHierarchyHtml = async (classId = null) => {
-      if (!classId) return '<p class="pm-empty">Seleccioná una clase para ver su ruta académica.</p>'
+    // 2. Mantener RouteConfigAdapter solo para el CRUD de importación (tab Configurador)
+    const planningClasses = await RouteConfigAdapter.getClasses()
 
-      const levels = await RouteConfigAdapter.getRouteHierarchy(classId)
+    // 3. Función para renderizar la jerarquía HTML usando el nuevo curriculumAdapter
+    const getHierarchyHtml = async (claseId = null) => {
+      if (!claseId) return '<p class="pm-empty">Seleccioná una clase para ver su ruta académica.</p>'
 
-      if (!levels || levels.length === 0) {
-        return '<p class="pm-empty">Esta clase aún no tiene una ruta configurada.</p>'
+      const result = await resolveAndLoadCurriculum(claseId)
+
+      if (!result.tree) {
+        return EmptyCurriculumState({ reason: result.reason })
+      }
+
+      const tree = result.tree
+
+      if (tree.length === 0) {
+        return EmptyCurriculumState({ reason: 'no_route' })
       }
 
       const getNodeIcon = (type) => {
@@ -48,32 +56,33 @@ export async function renderPlanificacionView(container) {
 
       return `
         <div class="pm-route-niveles">
-          ${levels.map(level => `
+          ${tree.map(block => `
             <div class="pm-route-nivel expanded">
-              <div class="pm-nivel-toggle" data-level="${level.id}">
-                <div class="pm-nivel-num">${level.numero_nivel}</div>
+              <div class="pm-nivel-toggle" data-block="${block.id}">
+                <div class="pm-nivel-num">${escHTML(block.order_index ?? '')}</div>
                 <div class="pm-nivel-info">
-                  <span class="pm-nivel-name">${escHTML(level.nombre)}</span>
-                  <span class="pm-nivel-obj">${escHTML(level.objetivo_general || 'Objetivo no especificado')}</span>
+                  <span class="pm-nivel-name">${escHTML(block.name ?? block.nombre ?? '')}</span>
+                  <span class="pm-nivel-obj">${escHTML(block.description ?? block.objetivo_general ?? 'Objetivo no especificado')}</span>
                 </div>
                 <i class="bi bi-chevron-down pm-nivel-arrow"></i>
               </div>
               <div class="pm-nivel-nodos">
-                ${(level.plan_temas || []).map(tema => `
-                  <div class="pm-nodo-card ${tema.es_critico ? 'critical' : ''}">
-                    <div class="pm-nodo-icon" style="color: ${getNodeColor(tema.es_critico)}">${getNodeIcon(tema.tipo)}</div>
+                ${(block.levels || []).flatMap(lvl => lvl.nodes || []).map(node => `
+                  <div class="pm-nodo-card ${node.is_critical ? 'critical' : ''}">
+                    <div class="pm-nodo-icon" style="color: ${getNodeColor(node.is_critical)}">${getNodeIcon(node.type)}</div>
                     <div class="pm-nodo-info">
-                      <span class="pm-nodo-name">${escHTML(tema.nombre)}</span>
-                      <span class="pm-nodo-type">${tema.tipo}</span>
-                      ${tema.es_critico ? '<span class="pm-nodo-critical">CRÍTICO</span>' : ''}
-                      
+                      <span class="pm-nodo-name">${escHTML(node.name ?? node.nombre ?? '')}</span>
+                      <span class="pm-nodo-type">${node.type ?? ''}</span>
+                      ${node.is_critical ? '<span class="pm-nodo-critical">CRÍTICO</span>' : ''}
                       <div style="font-size:0.6rem; color:var(--pm-text-muted); margin-top:4px;">
-                        ${(tema.plan_objetivos || []).length} objetivos definidos
+                        ${(node.indicators || []).length} indicadores
                       </div>
                     </div>
                   </div>
                 `).join('')}
-                ${(level.plan_temas || []).length === 0 ? '<p style="font-size:0.7rem; color:var(--pm-text-muted); padding:10px;">Sin temas configurados.</p>' : ''}
+                ${(block.levels || []).flatMap(lvl => lvl.nodes || []).length === 0
+                  ? '<p style="font-size:0.7rem; color:var(--pm-text-muted); padding:10px;">Sin nodos configurados.</p>'
+                  : ''}
               </div>
             </div>
           `).join('')}
@@ -104,8 +113,8 @@ export async function renderPlanificacionView(container) {
           <div class="pm-planif-selector">
             <label class="pm-planif-label">Ruta de:</label>
             <select id="pm-planif-clase-select" class="pm-input">
-              <option value="">Seleccionar planificación...</option>
-              ${planningClasses?.map(c => `<option value="${c.id}">${escHTML(c.nombre || c.name || 'Sin nombre')}</option>`).join('') || ''}
+              <option value="">Seleccionar clase...</option>
+              ${clases?.map(c => `<option value="${c.id}">${escHTML(c.nombre || 'Sin nombre')}${c.instrumento ? ` (${escHTML(c.instrumento)})` : ''}</option>`).join('') || ''}
             </select>
           </div>
 
@@ -216,19 +225,12 @@ export async function renderPlanificacionView(container) {
     const activeClaseId = localStorage.getItem('pm_active_clase_id')
     let initialClassId = null
 
-    if (activeClaseId) {
-      const activeClase = clases?.find(c => c.id === activeClaseId)
-      if (activeClase) {
-        const match = planningClasses.find(c =>
-          activeClase.nombre.toLowerCase().includes(c.nombre.toLowerCase()) ||
-          c.nombre.toLowerCase().includes(activeClase.nombre.toLowerCase())
-        )
-        if (match) initialClassId = match.id
-      }
+    if (activeClaseId && clases?.find(c => c.id === activeClaseId)) {
+      initialClassId = activeClaseId
     }
 
-    if (!initialClassId && planningClasses && planningClasses.length > 0) {
-      initialClassId = planningClasses[0].id
+    if (!initialClassId && clases && clases.length > 0) {
+      initialClassId = clases[0].id
     }
 
     if (initialClassId && routeSelect && routeContainer) {

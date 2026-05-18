@@ -5,12 +5,13 @@ import {
 } from '../api/permisosApi.js'
 import { config } from '../../../core/config/config.js'
 import { useAuth } from '../../auth/hooks/useAuth.js'
+import { AddMaestroModal } from './components/AddMaestroModal.js'
+import { renderPermisoRow } from './components/PermisoRow.js'
+import { grantBulk } from '../services/grantBulk.js'
 
 const state = {
   permisos: [],
   cargando: false,
-  togglingId: null,
-  togglingField: null,
 }
 
 let currentContainer = null
@@ -74,21 +75,35 @@ function renderError(container, mensaje) {
       </div>
     </div>
   `
-  document.getElementById('retryBtn')?.addEventListener('click', () => renderPermisosView(container))
+  container.querySelector('#retryBtn')?.addEventListener('click', () => renderPermisosView(container))
 }
 
 function renderContent(container) {
-  const maestroActual = useAuth.getUser ? useAuth.getUser() : null
-  const adminName = maestroActual?.nombre_completo || maestroActual?.email || 'Admin'
-
   container.innerHTML = `
     <div class="page-container">
       <!-- Page Header -->
-      <div class="page-header">
+      <div class="page-header d-flex align-items-center justify-content-between mb-3">
         <div class="d-flex align-items-center gap-2">
           <span class="page-title"><i class="bi bi-shield-lock me-2 text-primary"></i>Permisos de Maestros</span>
           <span class="badge bg-secondary">${state.permisos.length}</span>
         </div>
+        <button class="btn btn-primary btn-sm" data-action="add-maestro">
+          <i class="bi bi-plus-lg me-1"></i>Agregar Maestro
+        </button>
+      </div>
+
+      <!-- Bulk Action Bar -->
+      <div class="d-flex align-items-center gap-2 mb-2" id="bulkActionBar">
+        <input type="checkbox" class="form-check-input" data-action="select-all" id="selectAll">
+        <label class="form-check-label small me-2" for="selectAll">Seleccionar todos</label>
+        <select class="form-select form-select-sm" data-action="grant-key" style="width:auto;">
+          <option value="">-- Permiso --</option>
+          <option value="alumnos:create">Registrar Alumnos</option>
+          <option value="clases:enroll">Inscribir Clases</option>
+          <option value="planificacion:write">Planificación</option>
+          <option value="asistencias:write">Asistencias</option>
+        </select>
+        <button class="btn btn-secondary btn-sm" data-action="apply-bulk">Aplicar</button>
       </div>
 
       ${!state.permisos.length ? renderEmpty() : `
@@ -97,76 +112,38 @@ function renderContent(container) {
         <table class="table table-compact table-hover mb-0" id="permisosTable">
           <thead>
             <tr>
-              <th style="width: 20%;">Maestro</th>
-              <th style="width: 20%;">Email</th>
-              <th style="width: 18%;">Registrar Alumnos</th>
-              <th style="width: 18%;">Inscribir Clases</th>
-              <th style="width: 14%;">Concedido por</th>
-              <th style="width: 10%;">Actualizado</th>
+              <th>Maestro</th>
+              <th>Email</th>
+              <th>Permisos</th>
+              <th>Acceso</th>
+              <th>Inicio</th>
+              <th>Fin</th>
+              <th></th>
             </tr>
           </thead>
-          <tbody id="permisosTBody">
-            ${renderTableRows()}
-          </tbody>
+          <tbody id="permisosTBody"></tbody>
         </table>
       </div>
       `}
 
+      <!-- Toast container -->
+      <div id="toastContainer" class="toast-container position-fixed bottom-0 end-0 p-3"></div>
+
       <div class="mt-3 text-muted small">
         <i class="bi bi-info-circle"></i>
-        Los cambios se guardan automáticamente al alternar un permiso.
+        Los cambios se guardan automáticamente.
         ${config.isDemoMode ? '<span class="badge bg-warning text-dark ms-1">Demo</span>' : ''}
       </div>
     </div>
   `
-}
 
-function renderTableRows() {
-  return state.permisos.map(p => {
-    const isToggling = state.togglingId === p.maestro_id
-    const concedidoPor = p.concedido_por_nombre || p.concedido_por || '-'
-    const actualizado = p.actualizado_en
-      ? new Date(p.actualizado_en).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })
-      : '-'
-
-    return `
-      <tr data-maestro-id="${escapeHTML(p.maestro_id)}">
-        <td>
-          <div class="d-flex align-items-center gap-2">
-            <div class="avatar-compact bg-primary text-white">${getInitials(p.maestro_nombre || p.maestro_id)}</div>
-            <span class="text-truncate" style="max-width: 150px;" title="${escapeHTML(p.maestro_nombre)}">${escapeHTML(p.maestro_nombre || 'Sin nombre')}</span>
-          </div>
-        </td>
-        <td class="text-truncate" style="max-width: 150px;" title="${escapeHTML(p.maestro_email)}">${escapeHTML(p.maestro_email || '-')}</td>
-        <td>
-          <div class="form-check form-switch mb-0 d-flex align-items-center gap-2">
-            <input class="form-check-input permiso-toggle" type="checkbox"
-              data-maestro-id="${escapeHTML(p.maestro_id)}"
-              data-field="puede_registrar_alumnos"
-              ${p.puede_registrar_alumnos ? 'checked' : ''}
-              ${isToggling ? 'disabled' : ''}>
-            <span class="small ${p.puede_registrar_alumnos ? 'text-success' : 'text-muted'}">
-              ${p.puede_registrar_alumnos ? 'Sí' : 'No'}
-            </span>
-          </div>
-        </td>
-        <td>
-          <div class="form-check form-switch mb-0 d-flex align-items-center gap-2">
-            <input class="form-check-input permiso-toggle" type="checkbox"
-              data-maestro-id="${escapeHTML(p.maestro_id)}"
-              data-field="puede_inscribir_clases"
-              ${p.puede_inscribir_clases ? 'checked' : ''}
-              ${isToggling ? 'disabled' : ''}>
-            <span class="small ${p.puede_inscribir_clases ? 'text-success' : 'text-muted'}">
-              ${p.puede_inscribir_clases ? 'Sí' : 'No'}
-            </span>
-          </div>
-        </td>
-        <td class="small text-muted">${escapeHTML(concedidoPor)}</td>
-        <td class="small text-muted">${actualizado}</td>
-      </tr>
-    `
-  }).join('')
+  // Render rows using PermisoRow component
+  const tbody = container.querySelector('#permisosTBody')
+  if (tbody) {
+    state.permisos.forEach(p => {
+      tbody.appendChild(renderPermisoRow(p))
+    })
+  }
 }
 
 function renderEmpty() {
@@ -181,18 +158,54 @@ function renderEmpty() {
   `
 }
 
-function getInitials(nombre) {
-  if (!nombre) return '?'
-  return nombre
-    .split(' ')
-    .map(n => n[0])
-    .join('')
-    .toUpperCase()
-    .slice(0, 2)
-}
-
 function attachEvents(container) {
-  // Event delegation for toggle switches
+  // Add maestro button
+  container.querySelector('[data-action="add-maestro"]')?.addEventListener('click', async () => {
+    const modal = new AddMaestroModal(container)
+    await modal.open()
+  })
+
+  // maestro-added event → refresh list
+  container.addEventListener('maestro-added', async () => {
+    await renderPermisosView(container)
+  })
+
+  // Select-all checkbox
+  container.querySelector('[data-action="select-all"]')?.addEventListener('change', (e) => {
+    const checked = e.target.checked
+    container.querySelectorAll('.bulk-select').forEach(cb => {
+      cb.checked = checked
+    })
+  })
+
+  // Apply bulk grant
+  container.querySelector('[data-action="apply-bulk"]')?.addEventListener('click', async () => {
+    const selectedIds = Array.from(container.querySelectorAll('.bulk-select:checked'))
+      .map(cb => cb.dataset.maestroId)
+
+    if (!selectedIds.length) {
+      AppToast.error('Seleccioná al menos un maestro')
+      return
+    }
+
+    const permisoKey = container.querySelector('[data-action="grant-key"]')?.value
+    if (!permisoKey) {
+      AppToast.error('Seleccioná un permiso para otorgar')
+      return
+    }
+
+    const result = await grantBulk(selectedIds, permisoKey)
+    const total = result.succeeded.length + result.failed.length
+    const msg = `${result.succeeded.length} de ${total} actualizados`
+    if (result.failed.length === 0) {
+      AppToast.success(msg)
+    } else {
+      AppToast.error(`${msg} (${result.failed.length} fallaron)`)
+    }
+  })
+
+  // Toggle switches — delegated on table (handled inside PermisoRow via attachRowEvents)
+  // Additional: direct delegation for actualizarPermiso on permiso-toggle for backward compat
   container.querySelector('#permisosTable')?.addEventListener('change', async (e) => {
     const toggle = e.target.closest('.permiso-toggle')
     if (!toggle) return
@@ -201,38 +214,17 @@ function attachEvents(container) {
     const field = toggle.dataset.field
     const newValue = toggle.checked
 
-    // Optimistic: disable the toggle
     toggle.disabled = true
-    state.togglingId = maestroId
-    state.togglingField = field
-
-    // Update the label next to the toggle immediately
-    const label = toggle.closest('.form-check')?.querySelector('span')
-    if (label) {
-      label.textContent = newValue ? 'Sí' : 'No'
-      label.className = `small ${newValue ? 'text-success' : 'text-muted'}`
-    }
 
     try {
       await actualizarPermiso(maestroId, { [field]: newValue })
-      // Update state
       const permiso = state.permisos.find(p => p.maestro_id === maestroId)
-      if (permiso) {
-        permiso[field] = newValue
-      }
-      AppToast.success(`Permiso actualizado: ${field === 'puede_registrar_alumnos' ? 'Registrar Alumnos' : 'Inscribir Clases'}`)
+      if (permiso) permiso[field] = newValue
     } catch (err) {
-      // Rollback on error
       toggle.checked = !newValue
-      if (label) {
-        label.textContent = !newValue ? 'Sí' : 'No'
-        label.className = `small ${!newValue ? 'text-success' : 'text-muted'}`
-      }
       AppToast.error('Error al actualizar permiso: ' + err.message)
     } finally {
       toggle.disabled = false
-      state.togglingId = null
-      state.togglingField = null
     }
   })
 }

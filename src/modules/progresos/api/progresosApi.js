@@ -1,4 +1,5 @@
 import { supabase } from '../../../lib/supabaseClient.js'
+import { Progreso } from '../models/progreso.model.js'
 
 export const NIVELES = [
   { value: '1', label: '1° Año' },
@@ -14,6 +15,33 @@ export const NIVELES = [
 export function getNivelLabel(nivel) {
   const found = NIVELES.find(n => n.value === nivel)
   return found ? found.label : nivel || '-'
+}
+
+/**
+ * Build a structured VALIDATION error from model errors.
+ */
+function buildValidationError(errores) {
+  const e = new Error(errores[0])
+  e.code = 'VALIDATION'
+  e.errors = errores
+  return e
+}
+
+/**
+ * Translate a Supabase write error into a structured error with a code.
+ */
+function handleWriteError(error) {
+  if (error.code === '23505' || (error.message && error.message.includes('duplicate key'))) {
+    const e = new Error('Ya existe una evaluación con ese tipo para este alumno en esta clase')
+    e.code = 'DUPLICATE'
+    throw e
+  }
+  if (error.code === '42501' || (error.message && /row-level security/i.test(error.message))) {
+    const e = new Error('No tienes permiso para registrar progresos (evaluacion:write).')
+    e.code = 'RLS_DENIED'
+    throw e
+  }
+  throw error
 }
 
 export async function obtenerAlumnos() {
@@ -87,101 +115,55 @@ export async function obtenerProgreso(id) {
   return data
 }
 
-export async function crearProgreso(progreso) {
-  if (!progreso.alumno_id) {
-    throw new Error('El alumno es obligatorio')
-  }
+export async function crearProgreso(progresoData) {
+  const model = new Progreso(progresoData)
+  const errores = model.validate()
+  if (errores.length > 0) throw buildValidationError(errores)
 
-  if (!progreso.clase_id) {
-    throw new Error('La clase es obligatoria')
-  }
+  const payload = model.toJSON() // correctly emits evaluacion_tipo, estado_cualitativo
 
-  if (!progreso.evaluacion_tipo) {
-    throw new Error('El tipo de evaluacion es obligatorio')
-  }
-
-  const datosLimpios = {
-    alumno_id: progreso.alumno_id,
-    clase_id: progreso.clase_id,
-    maestro_id: progreso.maestro_id || null,
-    fecha_evaluacion: progreso.fecha_evaluacion || null,
-    evaluacion_tipo: progreso.evaluacion_tipo.trim(),
-    calificacion: progreso.calificacion !== undefined && progreso.calificacion !== null
-      ? parseFloat(progreso.calificacion)
-      : null,
-    estado_cualitativo: (progreso.estado_cualitativo || 'en_progreso').trim(),
-    observaciones: (progreso.observaciones || '').trim(),
-    indicadores: progreso.indicadores || null,
-  }
-
-  if (progreso.sesion_clase_id) datosLimpios.sesion_clase_id = progreso.sesion_clase_id
-  if (progreso.asistencia_id) datosLimpios.asistencia_id = progreso.asistencia_id
-  if (progreso.ejercicio_id) datosLimpios.ejercicio_id = progreso.ejercicio_id
-
-  if (datosLimpios.calificacion !== null) {
-    if (datosLimpios.calificacion < 0 || datosLimpios.calificacion > 5) {
-      throw new Error('La calificacion debe estar entre 0 y 5')
-    }
-  }
+  // Attach extras not captured by the base model
+  if (progresoData.sesion_clase_id) payload.sesion_clase_id = progresoData.sesion_clase_id
+  if (progresoData.asistencia_id)   payload.asistencia_id   = progresoData.asistencia_id
+  if (progresoData.ejercicio_id)    payload.ejercicio_id    = progresoData.ejercicio_id
+  if (progresoData.indicadores)     payload.indicadores     = progresoData.indicadores
 
   const { data, error } = await supabase
     .from('progresos')
-    .insert([datosLimpios])
+    .insert([payload])
     .select()
 
-  if (error) {
-    if (error.message.includes('duplicate key') || error.code === '23505') {
-      throw new Error('Ya existe una evaluacion con ese tipo para este alumno en esta clase')
-    }
-    console.error('Error creando progreso:', error.message)
-    throw new Error('No se pudo crear el progreso')
-  }
-
+  if (error) handleWriteError(error)
   return data[0]
 }
 
 export async function actualizarProgreso(id, actualizaciones) {
+  // Validate any calificacion change via the model
+  if (actualizaciones.calificacion !== undefined) {
+    const tempModel = new Progreso({
+      alumno_id: 'placeholder',
+      clase_id: 'placeholder',
+      tipo_evaluacion: 'parcial',
+      calificacion: actualizaciones.calificacion,
+    })
+    const errores = tempModel.validate().filter(e => e.includes('calificación'))
+    if (errores.length > 0) throw buildValidationError(errores)
+  }
+
   const datosActualizacion = {}
 
-  if (actualizaciones.alumno_id !== undefined) {
-    datosActualizacion.alumno_id = actualizaciones.alumno_id
-  }
-
-  if (actualizaciones.clase_id !== undefined) {
-    datosActualizacion.clase_id = actualizaciones.clase_id
-  }
-
-  if (actualizaciones.maestro_id !== undefined) {
-    datosActualizacion.maestro_id = actualizaciones.maestro_id
-  }
-
-  if (actualizaciones.fecha_evaluacion !== undefined) {
-    datosActualizacion.fecha_evaluacion = actualizaciones.fecha_evaluacion
-  }
-
-  if (actualizaciones.evaluacion_tipo !== undefined) {
-    datosActualizacion.evaluacion_tipo = actualizaciones.evaluacion_tipo.trim()
-  }
-
+  if (actualizaciones.alumno_id !== undefined)         datosActualizacion.alumno_id         = actualizaciones.alumno_id
+  if (actualizaciones.clase_id !== undefined)          datosActualizacion.clase_id          = actualizaciones.clase_id
+  if (actualizaciones.maestro_id !== undefined)        datosActualizacion.maestro_id        = actualizaciones.maestro_id
+  if (actualizaciones.fecha_evaluacion !== undefined)  datosActualizacion.fecha_evaluacion  = actualizaciones.fecha_evaluacion
+  if (actualizaciones.evaluacion_tipo !== undefined)   datosActualizacion.evaluacion_tipo   = actualizaciones.evaluacion_tipo.trim()
   if (actualizaciones.calificacion !== undefined) {
     const calif = parseFloat(actualizaciones.calificacion)
-    if (!isNaN(calif) && (calif < 0 || calif > 5)) {
-      throw new Error('La calificacion debe estar entre 0 y 5')
-    }
     datosActualizacion.calificacion = isNaN(calif) ? null : calif
   }
-
-  if (actualizaciones.estado_cualitativo !== undefined) {
-    datosActualizacion.estado_cualitativo = actualizaciones.estado_cualitativo
-  }
-
-  if (actualizaciones.observaciones !== undefined) {
-    datosActualizacion.observaciones = (actualizaciones.observaciones || '').trim()
-  }
-
-  if (actualizaciones.indicadores !== undefined) {
-    datosActualizacion.indicadores = actualizaciones.indicadores
-  }
+  if (actualizaciones.estado_cualitativo !== undefined) datosActualizacion.estado_cualitativo = actualizaciones.estado_cualitativo
+  if (actualizaciones.observaciones !== undefined)      datosActualizacion.observaciones      = (actualizaciones.observaciones || '').trim()
+  if (actualizaciones.indicadores !== undefined)        datosActualizacion.indicadores        = actualizaciones.indicadores
 
   const { data, error } = await supabase
     .from('progresos')
@@ -189,14 +171,7 @@ export async function actualizarProgreso(id, actualizaciones) {
     .eq('id', id)
     .select()
 
-  if (error) {
-    if (error.message.includes('duplicate key') || error.code === '23505') {
-      throw new Error('Ya existe una evaluacion con ese tipo para este alumno en esta clase')
-    }
-    console.error('Error actualizando progreso:', error.message)
-    throw new Error('No se pudo actualizar el progreso')
-  }
-
+  if (error) handleWriteError(error)
   return data[0]
 }
 
@@ -206,10 +181,7 @@ export async function eliminarProgreso(id) {
     .delete()
     .eq('id', id)
 
-  if (error) {
-    console.error('Error eliminando progreso:', error.message)
-    throw new Error('No se pudo eliminar el progreso')
-  }
+  if (error) handleWriteError(error)
 }
 
 export async function obtenerProgresosPorAlumno(alumnoId) {
@@ -328,7 +300,7 @@ export async function exportarBoletinPDF(alumno, progresos) {
 
   const estadoTexto = enRiesgo ? 'EN RIESGO' : 'SATISFACTORIO'
   const estadoColor = enRiesgo ? [185, 27, 27] : [39, 174, 96]
-  
+
   doc.setFillColor(...estadoColor)
   doc.rect(14, 50, 60, 10, 'F')
   doc.setTextColor(255, 255, 255)
@@ -343,10 +315,10 @@ export async function exportarBoletinPDF(alumno, progresos) {
   if (progresos.length > 0) {
     const tableData = progresos.map(p => [
       p.fecha_evaluacion ? formatDateLocal(p.fecha_evaluacion) : '-',
-      getTipoLabelLocal(p.tipo_evaluacion),
+      getTipoLabelLocal(p.tipo_evaluacion || p.evaluacion_tipo),
       p.calificacion !== null ? p.calificacion.toFixed(2) : '-',
       getCalificacionLabelLocal(p.calificacion),
-      p.observaciones ? p.observaciones.substring(0, 40) + (p.observaciones.length > 40 ? '...' : '') : '-'
+      p.observaciones ? p.observaciones.substring(0, 40) + (p.observaciones.length > 40 ? '...' : '') : '-',
     ])
 
     autoTable(doc, {
@@ -387,9 +359,9 @@ function getTipoLabelLocal(tipo) {
 function getCalificacionLabelLocal(calificacion) {
   if (calificacion === null || calificacion === undefined) return '-'
   const calif = parseFloat(calificacion)
-  if (calif >= 4.5) return 'Sobresaliente'
-  if (calif >= 4) return 'Muy Bueno'
-  if (calif >= 3) return 'Bueno'
-  if (calif >= 2) return 'En Progreso'
+  if (calif >= 9) return 'Sobresaliente'
+  if (calif >= 7) return 'Muy Bueno'
+  if (calif >= 5) return 'Bueno'
+  if (calif >= 3) return 'En Progreso'
   return 'Necesita Mejorar'
 }

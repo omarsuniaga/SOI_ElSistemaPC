@@ -281,8 +281,8 @@ function openCreateModal() {
           </select>
         </div>
         <div class="col-md-4">
-          <label class="form-label-compact">Calificación (0-5) *</label>
-          <input type="number" class="form-control input-dense" id="nota-valor" min="0" max="5" step="0.1" required>
+          <label class="form-label-compact">Calificación (0 a 10) *</label>
+          <input type="number" class="form-control input-dense" id="nota-valor" min="0" max="10" step="0.1" required>
         </div>
         <div class="col-md-8">
           <label class="form-label-compact">Fecha</label>

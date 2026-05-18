@@ -14,29 +14,45 @@ describe('Progreso Model', () => {
     })
   })
 
-  describe('validate()', () => {
-    it('should return error when calificacion is > 5', () => {
-      const p = new Progreso({ 
-        alumno_id: 'a1', 
-        clase_id: 'c1', 
-        tipo_evaluacion: 'final', 
-        calificacion: 5.1 
-      })
+  describe('validate() — calificacion range 0–10', () => {
+    it('should accept calificacion = 0 (boundary)', () => {
+      const p = new Progreso({ alumno_id: 'a1', clase_id: 'c1', tipo_evaluacion: 'final', calificacion: 0 })
       const errores = p.validate()
-      expect(errores).toContain('La calificación debe estar entre 0.0 y 5.0')
+      expect(errores.some(e => e.includes('calificación'))).toBe(false)
     })
 
-    it('should return error when calificacion is < 0', () => {
-      const p = new Progreso({ 
-        alumno_id: 'a1', 
-        clase_id: 'c1', 
-        tipo_evaluacion: 'final', 
-        calificacion: -0.1 
-      })
+    it('should accept calificacion = 5 (regression: previously valid)', () => {
+      const p = new Progreso({ alumno_id: 'a1', clase_id: 'c1', tipo_evaluacion: 'final', calificacion: 5 })
       const errores = p.validate()
-      expect(errores).toContain('La calificación debe estar entre 0.0 y 5.0')
+      expect(errores.some(e => e.includes('calificación'))).toBe(false)
     })
 
+    it('should accept calificacion = 10 (new upper boundary)', () => {
+      const p = new Progreso({ alumno_id: 'a1', clase_id: 'c1', tipo_evaluacion: 'final', calificacion: 10 })
+      const errores = p.validate()
+      expect(errores.some(e => e.includes('calificación'))).toBe(false)
+    })
+
+    it('should reject calificacion = 10.1 (above max)', () => {
+      const p = new Progreso({ alumno_id: 'a1', clase_id: 'c1', tipo_evaluacion: 'final', calificacion: 10.1 })
+      const errores = p.validate()
+      expect(errores.some(e => e.includes('calificación') && e.includes('0') && e.includes('10'))).toBe(true)
+    })
+
+    it('should reject calificacion = -0.1 (below min)', () => {
+      const p = new Progreso({ alumno_id: 'a1', clase_id: 'c1', tipo_evaluacion: 'final', calificacion: -0.1 })
+      const errores = p.validate()
+      expect(errores.some(e => e.includes('calificación') && e.includes('0') && e.includes('10'))).toBe(true)
+    })
+
+    it('error message should mention "0 y 10"', () => {
+      const p = new Progreso({ alumno_id: 'a1', clase_id: 'c1', tipo_evaluacion: 'final', calificacion: 11 })
+      const errores = p.validate()
+      expect(errores.some(e => /0 y 10/.test(e))).toBe(true)
+    })
+  })
+
+  describe('validate() — existing required fields', () => {
     it('should return error for missing required fields', () => {
       const p = new Progreso()
       const errores = p.validate()
@@ -46,18 +62,41 @@ describe('Progreso Model', () => {
     })
   })
 
-  describe('toJSON()', () => {
-    it('should return clean object for DB', () => {
+  describe('toJSON() — correct DB column names', () => {
+    it('should emit evaluacion_tipo (not tipo_evaluacion)', () => {
       const p = new Progreso({
         alumno_id: 'a1',
         clase_id: 'c1',
         tipo_evaluacion: 'continua',
         calificacion: 4,
-        observaciones: '  Muy bien  '
+        estado: 'en_progreso',
       })
       const json = p.toJSON()
-      expect(json.tipo_evaluacion).toBe('continua')
-      expect(json.calificacion).toBe(4)
+      expect(json).toHaveProperty('evaluacion_tipo', 'continua')
+      expect(json).not.toHaveProperty('tipo_evaluacion')
+    })
+
+    it('should emit estado_cualitativo (not estado)', () => {
+      const p = new Progreso({
+        alumno_id: 'a1',
+        clase_id: 'c1',
+        tipo_evaluacion: 'continua',
+        estado: 'completado',
+      })
+      const json = p.toJSON()
+      expect(json).toHaveProperty('estado_cualitativo', 'completado')
+      expect(json).not.toHaveProperty('estado')
+    })
+
+    it('should trim observaciones', () => {
+      const p = new Progreso({
+        alumno_id: 'a1',
+        clase_id: 'c1',
+        tipo_evaluacion: 'continua',
+        calificacion: 4,
+        observaciones: '  Muy bien  ',
+      })
+      const json = p.toJSON()
       expect(json.observaciones).toBe('Muy bien')
     })
   })

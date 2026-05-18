@@ -1,3 +1,9 @@
+import {
+  OBSERVACION_TIPOS,
+  OBSERVACION_TIPO_LABELS,
+  normalizeTipo,
+} from '../../_shared/evaluacion-constants.js'
+
 /**
  * Modelo de Observacion - Validaciones y lógica de negocio
  */
@@ -8,7 +14,12 @@ export class Observacion {
     this.maestro_id = data.maestro_id || null
     this.clase_id = data.clase_id || null
     this.sesion_clase_id = data.sesion_clase_id || null
-    this.tipo = data.tipo || 'comportamiento'
+
+    // Normalize legacy tipo values at construction; default to 'academica'
+    const rawTipo = data.tipo || 'academica'
+    const normalized = normalizeTipo(rawTipo)
+    this.tipo = normalized !== null ? normalized : rawTipo // keep raw for validate() to reject
+
     this.titulo = data.titulo || ''
     this.descripcion = data.descripcion || data.observacion || ''
     this.prioridad = data.prioridad || 'media'
@@ -48,9 +59,8 @@ export class Observacion {
       errores.push('La descripción no puede exceder 1000 caracteres')
     }
 
-    const tiposValidos = Observacion.getTipos().map(t => t.value)
-    if (!tiposValidos.includes(this.tipo)) {
-      errores.push('El tipo de observación no es válido')
+    if (!OBSERVACION_TIPOS.includes(this.tipo)) {
+      errores.push(`El tipo de observación no es válido. Valores permitidos: ${OBSERVACION_TIPOS.join(', ')}`)
     }
 
     const prioridadesValidas = Observacion.getPrioridades().map(p => p.value)
@@ -66,13 +76,29 @@ export class Observacion {
     return errores
   }
 
+  /**
+   * Returns the canonical tipo list with labels (and optional icons for backwards compat).
+   * All consumers of observacion tipos MUST use this method — no inline arrays.
+   */
   static getTipos() {
-    return [
-      { value: 'comportamiento', label: 'Comportamiento', icon: 'bi-person-badge' },
-      { value: 'academico', label: 'Académico', icon: 'bi-mortarboard' },
-      { value: 'social', label: 'Social', icon: 'bi-people' },
-      { value: 'disciplina', label: 'Disciplina', icon: 'bi-exclamation-octagon' },
-    ]
+    return OBSERVACION_TIPOS.map(value => ({
+      value,
+      label: OBSERVACION_TIPO_LABELS[value],
+      icon: Observacion._tipoIcons[value] || 'bi-tag',
+    }))
+  }
+
+  /** Icon mapping — kept separate so getTipos() stays readable */
+  static get _tipoIcons() {
+    return {
+      academica:      'bi-mortarboard',
+      conductual:     'bi-person-badge',
+      asistencia:     'bi-calendar-check',
+      tecnica:        'bi-tools',
+      motivacional:   'bi-emoji-smile',
+      administrativa: 'bi-clipboard',
+      otra:           'bi-three-dots',
+    }
   }
 
   static getPrioridades() {
@@ -110,7 +136,7 @@ export class Observacion {
       fecha_observacion: this.fecha_observacion,
       requiere_seguimiento: this.requiere_seguimiento,
       seguimiento_fecha: this.seguimiento_fecha,
-      seguimiento_observacion: this.seguimiento_observacion.trim() || null
+      seguimiento_observacion: this.seguimiento_observacion.trim() || null,
     }
 
     if (this.id) json.id = this.id

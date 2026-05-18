@@ -67,8 +67,8 @@ export async function openCalificacionModal(mode, container, data = null, option
           </select>
         </div>
         <div class="col-md-6 mb-3">
-          <label for="cal_calificacion" class="form-label">Calificacion (0-5)</label>
-          <input type="number" class="form-control" id="cal_calificacion" name="calificacion" min="0" max="5" step="0.01" placeholder="0.00 - 5.00" value="${isEdit && data.calificacion !== null && data.calificacion !== undefined ? data.calificacion : ''}">
+          <label for="cal_calificacion" class="form-label">Calificacion (0 a 10)</label>
+          <input type="number" class="form-control" id="cal_calificacion" name="calificacion" min="0" max="10" step="0.01" placeholder="0.00 - 10.00" value="${isEdit && data.calificacion !== null && data.calificacion !== undefined ? data.calificacion : ''}">
           <small class="form-text text-muted" id="cal_calificacionLabel"></small>
         </div>
       </div>

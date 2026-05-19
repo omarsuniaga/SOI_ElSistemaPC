@@ -179,11 +179,12 @@ async function _handleSave(modalBody, originalClase) {
   const isEdicion = !!originalClase
   
   const getFormData = () => {
+    const maestroAuxiliarValue = modalBody.querySelector('#modal-maestro_auxiliar_id').value
     const data = {
       nombre: modalBody.querySelector('#modal-nombre').value.trim(),
       programa_id: modalBody.querySelector('#modal-programa_id').value,
       maestro_id: modalBody.querySelector('#modal-maestro_id').value,
-      maestro_auxiliar_id: modalBody.querySelector('#modal-maestro_auxiliar_id').value || null,
+      maestro_auxiliar_id: maestroAuxiliarValue ? maestroAuxiliarValue : null,
       instrumento: modalBody.querySelector('#modal-instrumento').value.trim(),
       max_alumnos: parseInt(modalBody.querySelector('#modal-max_alumnos').value) || 20,
       estado: modalBody.querySelector('#modal-estado').value,

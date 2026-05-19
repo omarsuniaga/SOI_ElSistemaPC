@@ -131,63 +131,99 @@ function renderContent(container) {
 }
 
 function renderTableView() {
+  const grouped = groupClasses(state.clases)
+  const groupNames = Object.keys(grouped).sort()
+
   return `
-    <div class="page-glass rounded">
-      <div class="table-responsive">
-        <table class="table table-compact table-hover mb-0">
-          <thead class="table-light">
-            <tr>
-              <th style="width: 40px;"></th>
-              <th>Clase</th>
-              <th class="d-none d-md-table-cell">Horarios</th>
-              <th>Estado</th>
-              <th class="text-end">Acciones</th>
-            </tr>
-          </thead>
-          <tbody id="clasesTBody">
-            ${renderTableRows(state.clases)}
-          </tbody>
-        </table>
-      </div>
-      <div id="emptyContainer">
-        ${state.clases.length === 0 ? renderEmpty() : ''}
-      </div>
+    <div class="accordion accordion-apple" id="clasesAccordion">
+      ${groupNames.map((name, index) => renderAccordionItem(name, grouped[name], index)).join('')}
+    </div>
+    <div id="emptyContainer">
+      ${state.clases.length === 0 ? renderEmpty() : ''}
     </div>
   `
 }
 
-function renderTableRows(clases) {
-  return clases.map(c => `
-    <tr data-id="${c.id}">
-      <td>
-        <div class="avatar-compact" style="background: ${getConsistentColor(c.id)}20; color: ${getConsistentColor(c.id)};">
-          ${getInitials(c.nombre)}
+function groupClasses(clases) {
+  const groups = {}
+  clases.forEach(c => {
+    const key = c.nombre || 'Sin nombre'
+    if (!groups[key]) groups[key] = []
+    groups[key].push(c)
+  })
+  return groups
+}
+
+function renderAccordionItem(name, classes, index) {
+  const firstClass = classes[0]
+  const total = classes.length
+
+  return `
+    <div class="accordion-item border-0 mb-2 rounded shadow-sm overflow-hidden">
+      <h2 class="accordion-header" id="heading-${index}">
+        <button class="accordion-button collapsed bg-white py-3" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-${index}">
+          <div class="d-flex align-items-center w-100 me-3">
+            <div class="avatar-compact me-3" style="background: ${getConsistentColor(firstClass.id)}20; color: ${getConsistentColor(firstClass.id)};">
+              ${getInitials(name)}
+            </div>
+            <div class="flex-grow-1">
+              <div class="fw-bold text-dark">${escapeHTML(name)}</div>
+              <div class="text-muted extra-small text-uppercase letter-spacing-05">
+                ${total} ${total === 1 ? 'clase identificada' : 'clases identificadas'}
+              </div>
+            </div>
+            <div class="ms-auto pe-2 d-none d-sm-block">
+              <span class="badge bg-light text-primary border border-primary-subtle small">${escapeHTML(firstClass.instrumento)}</span>
+            </div>
+          </div>
+        </button>
+      </h2>
+      <div id="collapse-${index}" class="accordion-collapse collapse" data-bs-parent="#clasesAccordion">
+        <div class="accordion-body p-0 bg-light-subtle">
+          <div class="table-responsive">
+            <table class="table table-compact table-hover mb-0 align-middle">
+              <thead class="table-light">
+                <tr class="extra-small text-uppercase text-muted">
+                  <th class="ps-4">Detalle / Maestro</th>
+                  <th>Horarios</th>
+                  <th>Estado</th>
+                  <th class="text-end pe-4">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${classes.map(c => `
+                  <tr data-id="${c.id}" style="cursor: pointer;" class="clickable-row">
+                    <td class="ps-4">
+                      <div class="small fw-semibold">${escapeHTML(c.instrumento)}</div>
+                      <div class="text-muted extra-small">${state.maestros.find(m => m.id === c.maestro_principal_id)?.nombre_completo || 'Sin maestro'}</div>
+                    </td>
+                    <td>
+                      <div class="d-flex flex-wrap gap-1">
+                        ${(c.horarios || []).map(h => `<span class="badge bg-white text-dark border extra-small fw-normal">${(h.dia || '').slice(0,2)} ${(h.hora_inicio || '').slice(0,5)}</span>`).join('')}
+                      </div>
+                    </td>
+                    <td>
+                      <span class="badge badge-compact ${getEstadoBadgeClass(c.estado)}">${getEstadoLabel(c.estado)}</span>
+                    </td>
+                    <td class="text-end pe-4">
+                      <div class="quick-actions justify-content-end">
+                        <button class="btn btn-sm btn-outline-primary btn-icon-compact" data-action="edit" data-id="${c.id}" title="Editar">
+                          <i class="bi bi-pencil"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger btn-icon-compact" data-action="delete" data-id="${c.id}" title="Eliminar">
+                          <i class="bi bi-trash"></i>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
         </div>
-      </td>
-      <td>
-        <div class="fw-bold">${escapeHTML(c.nombre)}</div>
-        <div class="text-muted small">${escapeHTML(c.instrumento)}</div>
-      </td>
-      <td class="d-none d-md-table-cell">
-        <div class="d-flex flex-wrap gap-1">
-          ${(c.horarios || []).map(h => `<span class="badge bg-light text-dark border small fw-normal">${h.dia.slice(0,2)} ${h.hora_inicio.slice(0,5)}</span>`).join('')}
-        </div>
-      </td>
-      <td>
-        <span class="badge badge-compact ${getEstadoBadgeClass(c.estado)}">${getEstadoLabel(c.estado)}</span>
-      </td>
-      <td class="text-end">
-        <div class="quick-actions justify-content-end">
-          <button class="btn btn-sm btn-outline-primary btn-icon-compact" data-action="edit" data-id="${c.id}" title="Editar">
-            <i class="bi bi-pencil"></i>
-          </button>
-          <button class="btn btn-sm btn-outline-danger btn-icon-compact" data-action="delete" data-id="${c.id}" title="Eliminar">
-            <i class="bi bi-trash"></i>
-          </button>
-        </div>
-      </td>
-    </tr>
-  `).join('')
+      </div>
+    </div>
+  `
 }
 
 function renderEmpty() {
@@ -234,22 +270,40 @@ function attachGlobalEvents(container) {
   container.querySelector('#buscar')?.addEventListener('input', applyFilters)
   container.querySelector('#filtroEstado')?.addEventListener('change', applyFilters)
 
-  container.querySelector('#clasesTBody')?.addEventListener('click', (e) => {
+  container.querySelector('#view-content')?.addEventListener('click', (e) => {
+    // Manejo de clicks en botones de acción
     const btn = e.target.closest('button[data-action]')
-    if (!btn) return
-
-    const { action, id } = btn.dataset
-    if (action === 'edit') {
-      const clase = state.clasesOriginales.find(c => c.id === id)
-      openClaseModal(clase, {
-        maestros: state.maestros,
-        salones: state.salones,
-        programas: state.programas,
-        alumnos: state.alumnos,
-        onSuccess: () => renderClasesView(container)
-      })
+    if (btn) {
+      const { action, id } = btn.dataset
+      if (action === 'edit') {
+        const clase = state.clasesOriginales.find(c => c.id === id)
+        openClaseModal(clase, {
+          maestros: state.maestros,
+          salones: state.salones,
+          programas: state.programas,
+          alumnos: state.alumnos,
+          onSuccess: () => renderClasesView(container)
+        })
+      }
+      if (action === 'delete') openDeleteModal(id)
+      return
     }
-    if (action === 'delete') openDeleteModal(id)
+
+    // Manejo de clicks en filas de la tabla
+    const row = e.target.closest('tr.clickable-row')
+    if (row && !e.target.closest('button')) {
+      const id = row.dataset.id
+      const clase = state.clasesOriginales.find(c => c.id === id)
+      if (clase) {
+        openClaseModal(clase, {
+          maestros: state.maestros,
+          salones: state.salones,
+          programas: state.programas,
+          alumnos: state.alumnos,
+          onSuccess: () => renderClasesView(container)
+        })
+      }
+    }
   })
 }
 
@@ -263,8 +317,10 @@ function applyFilters() {
     return matchSearch && matchEstado
   })
 
-  const tbody = state.container.querySelector('#clasesTBody')
-  if (tbody) tbody.innerHTML = renderTableRows(state.clases)
+  const viewContent = state.container.querySelector('#view-content')
+  if (viewContent) {
+    viewContent.innerHTML = state.vista === 'tabla' ? renderTableView() : renderCalendarView()
+  }
 }
 
 function openDeleteModal(id) {

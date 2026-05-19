@@ -77,6 +77,9 @@
   --pm-transition-spring: 300ms cubic-bezier(0.4, 0, 0.2, 1);
 
   /* ── Status Backgrounds (for badge fills) ────────────────── */
+  --pm-primary-bg: rgba(0, 122, 255, 0.1);
+  --pm-primary-text: #0066cc;
+
   --pm-success-bg: rgba(52, 199, 89, 0.15);
   --pm-success-text: #16a34a;
 
@@ -128,6 +131,9 @@
   --pm-bg-hover: rgba(0, 122, 255, 0.15);
 
   /* Status backgrounds para dark mode */
+  --pm-primary-bg: rgba(0, 122, 255, 0.2);
+  --pm-primary-text: #60a5fa;
+
   --pm-success-bg: rgba(52, 199, 89, 0.2);
   --pm-success-text: #4ade80;
 

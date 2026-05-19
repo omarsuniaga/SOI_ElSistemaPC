@@ -280,7 +280,11 @@ class AusenciaModal {
         .pm-form-input:focus, .pm-form-textarea:focus {
           outline: none;
           border-color: var(--pm-primary);
-          box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.15);
+          box-shadow: 0 0 0 3px var(--pm-primary-bg);
+        }
+        .pm-form-input::placeholder, .pm-form-textarea::placeholder {
+          color: var(--pm-text-muted);
+          opacity: 0.8;
         }
         .pm-form-textarea { resize: vertical; min-height: 80px; }
         .pm-char-count { font-size: 0.6875rem; color: var(--pm-text-muted); text-align: right; }
@@ -324,7 +328,7 @@ class AusenciaModal {
         .pm-tipo-card span { font-size: 0.6875rem; color: var(--pm-text); }
         .pm-tipo-option input:checked + .pm-tipo-card {
           border-color: var(--pm-primary);
-          background: rgba(0, 122, 255, 0.08);
+          background: var(--pm-primary-bg);
         }
         .pm-tipo-option input:checked + .pm-tipo-card i { color: var(--pm-primary); }
 
@@ -421,7 +425,7 @@ class AusenciaModal {
         .pm-toggle-switch::after {
           content: ''; position: absolute;
           width: 20px; height: 20px;
-          background: white; border-radius: 50%;
+          background: var(--pm-surface); border-radius: 50%;
           top: 2px; left: 2px;
           transition: transform 0.2s;
           box-shadow: 0 1px 3px rgba(0,0,0,0.2);
@@ -456,7 +460,7 @@ class AusenciaModal {
         .pm-duration-card small { font-size: 0.6875rem; color: var(--pm-text-muted); }
         .pm-duration-option input:checked + .pm-duration-card {
           border-color: var(--pm-primary);
-          background: rgba(0, 122, 255, 0.08);
+          background: var(--pm-primary-bg);
         }
         .pm-duration-option input:checked + .pm-duration-card i { color: var(--pm-primary); }
 
@@ -513,8 +517,16 @@ class AusenciaModal {
           border: 1px solid var(--pm-border);
           border-radius: 6px;
           font-size: 0.8125rem;
+          background: var(--pm-surface);
+          color: var(--pm-text);
           resize: vertical;
           min-height: 60px;
+          transition: border-color 0.2s;
+        }
+        .pm-actividad-textarea:focus {
+          outline: none;
+          border-color: var(--pm-primary);
+          box-shadow: 0 0 0 2px var(--pm-primary-bg);
         }
 
         /* Emergente box */
@@ -577,6 +589,32 @@ class AusenciaModal {
         }
         .pm-clase-check-box i { font-size: 0.75rem; color: white; display: none; }
         .pm-clase-check input:checked + .pm-clase-check-box i { display: block; }
+
+        /* ─── Dark Mode Overrides ─────────────────────────────── */
+        [data-bs-theme="dark"] .pm-toggle-switch::after,
+        [data-portal-theme="dark"] .pm-toggle-switch::after {
+          background: var(--pm-surface);
+          box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+        }
+
+        [data-bs-theme="dark"] .pm-form-input,
+        [data-bs-theme="dark"] .pm-form-textarea,
+        [data-portal-theme="dark"] .pm-form-input,
+        [data-portal-theme="dark"] .pm-form-textarea {
+          background-color: var(--pm-surface);
+          border-color: var(--pm-border);
+        }
+
+        [data-bs-theme="dark"] .pm-clase-check-box,
+        [data-portal-theme="dark"] .pm-clase-check-box {
+          border-color: var(--pm-border);
+        }
+
+        [data-bs-theme="dark"] .pm-actividad-textarea,
+        [data-portal-theme="dark"] .pm-actividad-textarea {
+          background-color: var(--pm-surface);
+          border-color: var(--pm-border);
+        }
       </style>`;
   }
 

@@ -128,7 +128,6 @@ export class Clase {
       capacidad_maxima: this.capacidad_maxima,
       estado: this.estado,
       descripcion: this.descripcion.trim() || null,
-      planificacion_id: this.planificacion_id || null,
     }
   }
 

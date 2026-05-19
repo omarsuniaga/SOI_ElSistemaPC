@@ -13,7 +13,7 @@ export class Clase {
     this.instrumento = data.instrumento || ''
     this.horarios = data.horarios || []
     // Mapeo: max_alumnos del formulario → capacidad_maxima en BD
-    this.capacidad_maxima = data.capacidad_maxima || data.max_alumnos ?? 20
+    this.capacidad_maxima = data.capacidad_maxima ?? data.max_alumnos ?? 20
     this.estado = data.estado || 'activa'
     // Mapeo: notas_pedagogicas del formulario → descripcion en BD
     this.descripcion = data.descripcion || data.notas_pedagogicas || ''

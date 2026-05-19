@@ -90,9 +90,9 @@ function _getClaseFormHTML(clase, inscritosIds) {
         </select>
       </div>
       <div class="col-md-6">
-        <label class="form-label-compact">Maestro Auxiliar</label>
-        <select class="form-select input-dense" id="modal-maestro_auxiliar_id">
-          ${_getMaestrosOptions(clase?.maestro_auxiliar_id)}
+        <label class="form-label-compact">Maestro Suplente</label>
+        <select class="form-select input-dense" id="modal-maestro_suplente_id">
+          ${_getMaestrosOptions(clase?.maestro_suplente_id)}
         </select>
       </div>
       <div class="col-md-6">
@@ -179,12 +179,12 @@ async function _handleSave(modalBody, originalClase) {
   const isEdicion = !!originalClase
   
   const getFormData = () => {
-    const maestroAuxiliarValue = modalBody.querySelector('#modal-maestro_auxiliar_id').value
+    const maestroSuplenteValue = modalBody.querySelector('#modal-maestro_suplente_id').value
     const data = {
       nombre: modalBody.querySelector('#modal-nombre').value.trim(),
       programa_id: modalBody.querySelector('#modal-programa_id').value,
       maestro_id: modalBody.querySelector('#modal-maestro_id').value,
-      maestro_auxiliar_id: maestroAuxiliarValue ? maestroAuxiliarValue : null,
+      maestro_suplente_id: maestroSuplenteValue ? maestroSuplenteValue : null,
       instrumento: modalBody.querySelector('#modal-instrumento').value.trim(),
       max_alumnos: parseInt(modalBody.querySelector('#modal-max_alumnos').value) || 20,
       estado: modalBody.querySelector('#modal-estado').value,

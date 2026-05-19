@@ -6,7 +6,7 @@ export class Clase {
     this.id = data.id || null
     this.nombre = data.nombre || ''
     this.maestro_id = data.maestro_id || null
-    this.maestro_auxiliar_id = data.maestro_auxiliar_id || null
+    this.maestro_suplente_id = data.maestro_suplente_id || data.maestro_auxiliar_id || null
     this.programa_id = data.programa_id || null
     this.instrumento = data.instrumento || ''
     this.horarios = data.horarios || []
@@ -116,7 +116,7 @@ export class Clase {
       id: this.id,
       nombre: this.nombre.trim(),
       maestro_id: this.maestro_id,
-      maestro_auxiliar_id: this.maestro_auxiliar_id || null,
+      maestro_suplente_id: this.maestro_suplente_id || null,
       programa_id: this.programa_id,
       instrumento: this.instrumento.trim(),
       max_alumnos: this.max_alumnos,

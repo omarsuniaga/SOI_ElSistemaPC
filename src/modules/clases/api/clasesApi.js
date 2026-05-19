@@ -13,6 +13,8 @@ export const NIVELES = [
   { value: 'avanzado', label: 'Nivel Avanzado' },
 ]
 
+export { NIVELES as NIVELES_CONST } // Exportación adicional por si acaso hay colisiones
+
 /**
  * Verifica si hay solapamiento de horarios para un salón o maestro específico
  * @param {Object} params Parámetros de verificación
@@ -75,7 +77,7 @@ function normalizeClase(c) {
   return new Clase({
     ...c,
     maestro_id: c.maestro_principal_id ?? c.maestro_id ?? null,
-    maestro_auxiliar_id: c.maestro_suplente_id ?? c.maestro_auxiliar_id ?? null,
+    maestro_suplente_id: c.maestro_suplente_id ?? null,
     max_alumnos: c.capacidad_maxima ?? c.max_alumnos ?? 20,
     notas_pedagogicas: c.descripcion ?? c.notas_pedagogicas ?? '',
   })

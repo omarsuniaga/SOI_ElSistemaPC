@@ -1,803 +1,759 @@
+/**
+ * ausenciaModal.js
+ * 5-step FSM workflow for teacher absence management.
+ *
+ * Architecture:
+ * - AusenciaModal: view layer — renders steps, dispatches events, mutates state
+ * - ausenciaService: service layer — DB/network IO only (no DOM)
+ * - ausenciaValidator: pure validation (no IO)
+ * - ausenciaUtils: pure helpers (filterBusinessDays, truncateWhatsAppText)
+ *
+ * Usage:
+ *   import { ausenciaModal } from './ausenciaModal.js';
+ *   ausenciaModal.open(maestro);
+ */
+
 import { AppModal } from '../../shared/components/AppModal.js';
-import { supabase } from '../../lib/supabaseClient.js';
-import { getMaestroLocal } from '../auth/maestroAuth.js';
 import { AppToast } from '../../shared/components/AppToast.js';
+import { getMaestroLocal } from '../auth/maestroAuth.js';
 import { escHTML } from '../utils/portalUtils.js';
-import '../styles/ausenciaModal.css';
+import { enableTrap } from '../utils/focusTrap.js';
+import { ausenciaService } from '../services/ausenciaService.js';
+import { validateStep1, validateStep2, validateStep3 } from '../services/ausenciaValidator.js';
+import { filterBusinessDays } from '../services/ausenciaUtils.js';
 
-const TIPO_AUSENCIA = [
-  { value: 'enfermedad', label: 'Enfermedad' },
-  { value: 'personal', label: 'Personal' },
-  { value: 'capacitacion', label: 'Capacitación' },
-  { value: 'vacaciones', label: 'Vacaciones' },
-  { value: 'otro', label: 'Otro' }
-];
+// ── Step metadata ─────────────────────────────────────────────────────────────
 
-const URGENCIA_OPTS = [
-  { value: 'baja', label: 'Baja', desc: 'Con anticipación' },
-  { value: 'media', label: 'Media', desc: 'Necesaria' },
-  { value: 'alta', label: 'Alta', desc: 'Urgente' }
-];
+const STEP_TITLES = {
+  1: 'Paso 1 de 5 — Duración de la Ausencia',
+  2: 'Paso 2 de 5 — Clases Afectadas',
+  3: 'Paso 3 de 5 — Plan de Recuperación',
+  4: 'Paso 4 de 5 — Datos Administrativos',
+  5: 'Paso 5 de 5 — Confirmación y Envío',
+};
 
-class AusenciaModal {
+const STEP_SAVE_TEXTS = {
+  1: 'Siguiente',
+  2: 'Siguiente',
+  3: 'Siguiente',
+  4: 'Siguiente',
+  5: 'Enviar Solicitud',
+};
+
+// ── AusenciaModal ─────────────────────────────────────────────────────────────
+
+export class AusenciaModal {
   constructor() {
+    /** @type {{ id: string, nombre: string }|null} */
     this.maestro = null;
-    this.step = 1; // Step 1-5 workflow
-    this.state = {
-      // Step 1: Duración y fechas
-      duracionTipo: 'un_dia',
-      fechaAusencia: null,
-      fechaInicio: null,
-      fechaFin: null,
 
-      // Step 2: Clases afectadas (loaded)
-      clasesAfectadas: [], // { claseId, className, sesionId, fecha, hora, salonId, maestroSuplente }
+    /** @type {number} */
+    this.currentStep = 1;
 
-      // Step 3: Plan de recuperación por clase
-      planRecuperacion: {}, // { claseId: { tipo: 'recuperar'|'tareas', ...config } }
+    /** @type {Object} */
+    this.state = this.defaultState();
 
-      // Step 4: Admin
-      tipoAusencia: null,
-      urgencia: 'media',
-      motivo: '',
-      archivo: null,
-
-      // Step 5: Documento final
-      documentoGenerado: ''
-    };
+    this._focusTrap = null;
   }
 
-  async open() {
-    this.maestro = getMaestroLocal();
-    if (!this.maestro) {
-      AppToast.error('Debes estar logueado');
-      return;
-    }
+  // ── State ──────────────────────────────────────────────────────────────────
 
-    this.step = 1;
-    this.state = {
+  /**
+   * Returns a fresh default state object.
+   * @returns {Object}
+   */
+  defaultState() {
+    return {
       duracionTipo: 'un_dia',
-      fechaAusencia: null,
-      fechaInicio: null,
-      fechaFin: null,
+      fechaAusencia: '',
+      fechaInicio: '',
+      fechaFin: '',
       clasesAfectadas: [],
-      planRecuperacion: {},
-      tipoAusencia: null,
-      urgencia: 'media',
+      tipoAusencia: '',
+      urgencia: '',
       motivo: '',
-      archivo: null,
-      documentoGenerado: ''
+      archivo: { file: null, uploadedUrl: null },
+      notificarDirector: true,
+      validationErrors: {},
+      loadingStates: {
+        classes: false,
+        salones: false,
+        maestros: false,
+        upload: false,
+      },
+      // internal flags for step 2
+      _classesLoaded: false,
+      _classesError: false,
+      whatsappText: '',
     };
+  }
 
-    // Cargar todas las clases del maestro
-    const { data: clases, error } = await supabase
-      .from('clases')
-      .select('id, nombre, maestro_principal_id, maestro_suplente_id')
-      .or(`maestro_principal_id.eq.${this.maestro.id},maestro_suplente_id.eq.${this.maestro.id}`);
+  // ── Public API ─────────────────────────────────────────────────────────────
 
-    if (error) {
-      AppToast.error('Error cargando clases');
+  /**
+   * Open the modal for a given teacher.
+   * @param {Object} [maestroOverride] - Optional maestro to use instead of local
+   */
+  open(maestroOverride) {
+    if (this._focusTrap) {
+      this._focusTrap.dispose();
+      this._focusTrap = null;
+    }
+
+    this.maestro = maestroOverride ?? getMaestroLocal();
+    if (!this.maestro) {
+      AppToast.error('Debes estar logueado para solicitar ausencias');
       return;
     }
 
-    this.state.clasesDisponibles = clases || [];
-    this.renderStep();
-  }
-
-  renderStep() {
-    let body, saveText, onSave;
-
-    if (this.step === 1) {
-      body = this.renderStep1();
-      saveText = 'Siguiente';
-      onSave = () => this.validateStep1();
-    } else if (this.step === 2) {
-      body = this.renderStep2();
-      saveText = 'Siguiente';
-      onSave = () => this.loadStep2();
-    } else if (this.step === 3) {
-      body = this.renderStep3();
-      saveText = 'Siguiente';
-      onSave = () => this.validateStep3();
-    } else if (this.step === 4) {
-      body = this.renderStep4();
-      saveText = 'Siguiente';
-      onSave = () => this.validateStep4();
-    } else if (this.step === 5) {
-      body = this.renderStep5();
-      saveText = 'Crear Solicitud';
-      onSave = () => this.handleSubmit();
-    }
+    this.state = this.defaultState();
+    this.currentStep = 1;
 
     AppModal.open({
-      title: `Solicitar Ausencia (Paso ${this.step}/5)`,
+      title: this.getTitle(),
       size: 'lg',
-      body,
-      saveText,
-      closeText: 'Cancelar',
-      onSave,
-      onShow: () => this.attachEvents()
+      body: this.renderCurrentStep(),
+      saveText: this.getSaveButtonText(),
+      onSave: () => this.handleStepSubmit(),
+      onShow: () => this.attachStepEvents(),
     });
   }
 
-  // ================== STEP 1: Duración y Fechas ==================
-  renderStep1() {
-    const today = new Date().toISOString().split('T')[0];
-    const maxDate = new Date();
-    maxDate.setMonth(maxDate.getMonth() + 3);
-    const maxDateStr = maxDate.toISOString().split('T')[0];
-
-    return `
-      <form id="step1-form" class="pm-ausencia-form" novalidate>
-        <div class="pm-form-section">
-          <label class="pm-form-label">Duración de la Ausencia <span class="pm-required">*</span></label>
-          <div style="display: flex; gap: 20px; margin-top: 12px;">
-            <label style="cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 14px;">
-              <input type="radio" name="duracionTipo" value="un_dia" ${this.state.duracionTipo === 'un_dia' ? 'checked' : ''}>
-              <span>Un solo día</span>
-            </label>
-            <label style="cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 14px;">
-              <input type="radio" name="duracionTipo" value="varios_dias" ${this.state.duracionTipo === 'varios_dias' ? 'checked' : ''}>
-              <span>Varios días (rango)</span>
-            </label>
-          </div>
-        </div>
-
-        ${this.state.duracionTipo === 'un_dia' ? `
-          <div class="pm-form-section">
-            <label class="pm-form-label">Fecha de Ausencia <span class="pm-required">*</span></label>
-            <input type="date" id="fechaAusencia" value="${this.state.fechaAusencia || ''}"
-              min="${today}" max="${maxDateStr}">
-          </div>
-        ` : `
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
-            <div class="pm-form-section">
-              <label class="pm-form-label">Desde <span class="pm-required">*</span></label>
-              <input type="date" id="fechaInicio" value="${this.state.fechaInicio || ''}"
-                min="${today}" max="${maxDateStr}">
-            </div>
-            <div class="pm-form-section">
-              <label class="pm-form-label">Hasta <span class="pm-required">*</span></label>
-              <input type="date" id="fechaFin" value="${this.state.fechaFin || ''}"
-                min="${this.state.fechaInicio || today}" max="${maxDateStr}">
-            </div>
-          </div>
-        `}
-      </form>
-    `;
+  /**
+   * Close the modal and clean up.
+   */
+  close() {
+    if (this._focusTrap) {
+      this._focusTrap.dispose();
+      this._focusTrap = null;
+    }
+    AppModal.close();
   }
 
+  /**
+   * Returns the title string for the current step.
+   * @returns {string}
+   */
+  getTitle() {
+    return STEP_TITLES[this.currentStep] ?? `Paso ${this.currentStep}`;
+  }
+
+  /**
+   * Returns the save button label for the current step.
+   * @returns {string}
+   */
+  getSaveButtonText() {
+    return STEP_SAVE_TEXTS[this.currentStep] ?? 'Siguiente';
+  }
+
+  // ── Step Dispatcher ────────────────────────────────────────────────────────
+
+  /**
+   * Render the body HTML for the current step.
+   * @returns {string}
+   */
+  renderCurrentStep() {
+    switch (this.currentStep) {
+      case 1: return this.renderStep1();
+      case 2: return this.renderStep2();
+      case 3: return this.renderStep3();
+      default: return `<p>Paso ${this.currentStep} pendiente de implementación.</p>`;
+    }
+  }
+
+  /**
+   * Attach step-specific event listeners. Called by AppModal's onShow callback.
+   */
+  attachStepEvents() {
+    switch (this.currentStep) {
+      case 1: this._attachStep1Events(); break;
+      case 2: this._attachStep2Events(); break;
+      case 3: this._attachStep3Events(); break;
+    }
+
+    const dialog = document.querySelector('.app-modal-dialog');
+    if (dialog) {
+      this._focusTrap = enableTrap(dialog, { onClose: () => this.close() });
+    }
+  }
+
+  /**
+   * Handle the primary CTA for the current step (validate → advance).
+   */
+  async handleStepSubmit() {
+    let result;
+
+    switch (this.currentStep) {
+      case 1:
+        result = this.validateStep1();
+        break;
+      case 2:
+        result = this.validateStep2();
+        break;
+      case 3:
+        result = this.validateStep3();
+        break;
+      default:
+        result = { valid: true, errors: [] };
+    }
+
+    if (!result.valid) {
+      this.state.validationErrors[this.currentStep] = result.errors;
+      this._showValidationErrors(result.errors);
+      return false;
+    }
+
+    this.state.validationErrors[this.currentStep] = [];
+    this.currentStep += 1;
+    this._rerenderModal();
+    return true;
+  }
+
+  // ── Validation delegates ───────────────────────────────────────────────────
+
+  /**
+   * @returns {{ valid: boolean, errors: string[] }}
+   */
   validateStep1() {
-    const form = document.getElementById('step1-form');
-    const duracionTipo = form.elements.namedItem('duracionTipo').value;
-    this.state.duracionTipo = duracionTipo;
-
-    if (duracionTipo === 'un_dia') {
-      const fecha = document.getElementById('fechaAusencia').value;
-      if (!fecha) {
-        AppToast.error('Debes seleccionar la fecha de ausencia');
-        return;
-      }
-      this.state.fechaAusencia = fecha;
-    } else {
-      const inicio = document.getElementById('fechaInicio').value;
-      const fin = document.getElementById('fechaFin').value;
-      if (!inicio || !fin) {
-        AppToast.error('Debes seleccionar el rango de fechas');
-        return;
-      }
-      if (new Date(fin) < new Date(inicio)) {
-        AppToast.error('La fecha final no puede ser anterior a la inicial');
-        return;
-      }
-      this.state.fechaInicio = inicio;
-      this.state.fechaFin = fin;
-    }
-
-    this.step = 2;
-    this.renderStep();
+    return validateStep1(this.state);
   }
 
-  // ================== STEP 2: Cargar Clases Afectadas ==================
-  renderStep2() {
-    return `
-      <div style="padding: 20px; text-align: center;">
-        <div style="font-size: 14px; color: var(--pm-text-muted);">Cargando tus clases...</div>
-        <div class="pm-spinner" style="margin-top: 20px;"></div>
-      </div>
-    `;
+  /**
+   * @returns {{ valid: boolean, errors: string[] }}
+   */
+  validateStep2() {
+    return validateStep2(this.state);
   }
 
-  async loadStep2() {
-    // Determinar rango de fechas
-    let fechaInicio, fechaFin;
-    if (this.state.duracionTipo === 'un_dia') {
-      fechaInicio = this.state.fechaAusencia;
-      fechaFin = this.state.fechaAusencia;
-    } else {
-      fechaInicio = this.state.fechaInicio;
-      fechaFin = this.state.fechaFin;
-    }
-
-    // Buscar sesiones del maestro en ese rango
-    const { data: sesiones, error } = await supabase
-      .from('sesiones_clase')
-      .select(`
-        id, fecha, hora_inicio, hora_fin, salon_id,
-        clase:clases(id, nombre, maestro_principal_id, maestro_suplente_id)
-      `)
-      .gte('fecha', fechaInicio)
-      .lte('fecha', fechaFin);
-
-    if (error) {
-      AppToast.error('Error cargando clases');
-      return;
-    }
-
-    // Filtrar clases del maestro (eres maestro principal o suplente)
-    const clasesAfectadas = (sesiones || []).filter(s =>
-      s.clase?.maestro_principal_id === this.maestro.id ||
-      s.clase?.maestro_suplente_id === this.maestro.id
-    );
-
-    if (clasesAfectadas.length === 0) {
-      AppToast.warning('No tienes clases en este período');
-      this.step = 4; // Saltar al paso 4
-    } else {
-      this.state.clasesAfectadas = clasesAfectadas.map(s => ({
-        claseId: s.clase.id,
-        className: s.clase.nombre,
-        sesionId: s.id,
-        fecha: s.fecha,
-        hora: s.hora_inicio,
-        salonId: s.salon_id
-      }));
-
-      // Inicializar plan de recuperación
-      this.state.planRecuperacion = {};
-      this.state.clasesAfectadas.forEach(c => {
-        this.state.planRecuperacion[c.claseId] = {
-          tipo: 'recuperar',
-          fechaRecuperacion: null,
-          horaRecuperacion: null,
-          salonRecuperacionId: null,
-          suplente: null,
-          tareasDescripcion: ''
-        };
-      });
-    }
-
-    this.step = 3;
-    this.renderStep();
+  /**
+   * @returns {{ valid: boolean, errors: string[] }}
+   */
+  validateStep3() {
+    return validateStep3(this.state);
   }
 
-  // ================== STEP 3: Plan de Recuperación por Clase ==================
-  renderStep3() {
+  // ── Step 1: Duration + Dates ───────────────────────────────────────────────
+
+  /**
+   * Render Step 1 HTML.
+   * @returns {string}
+   */
+  renderStep1() {
+    const isUnDia = this.state.duracionTipo !== 'varios_dias';
+
     return `
       <div class="pm-form-section">
-        <div class="pm-divider" style="margin: 0 0 16px 0;"></div>
-        <p style="margin: 0; color: var(--pm-text-muted); font-size: 14px; line-height: 1.6;">
-          Para cada clase, elige si <strong style="color: var(--pm-text);">recuperarás</strong> la clase en otra fecha/hora, o <strong style="color: var(--pm-text);">asignarás tareas</strong> a un suplente.
-        </p>
-        <div class="pm-divider" style="margin: 16px 0 0 0;"></div>
+        <h3 class="pm-form-label">Duración de la Ausencia <span class="pm-required">*</span></h3>
+        <div class="pm-two-cols" role="radiogroup" aria-label="Duración de la ausencia">
+          <label class="pm-duration-option">
+            <input
+              type="radio"
+              name="duracion_tipo"
+              value="un_dia"
+              ${isUnDia ? 'checked' : ''}
+              aria-label="Un solo día"
+            >
+            <span class="pm-duration-card">
+              <strong>Un solo día</strong>
+              <small>Seleccionar una fecha</small>
+            </span>
+          </label>
+          <label class="pm-duration-option">
+            <input
+              type="radio"
+              name="duracion_tipo"
+              value="varios_dias"
+              ${!isUnDia ? 'checked' : ''}
+              aria-label="Varios días (rango)"
+            >
+            <span class="pm-duration-card">
+              <strong>Varios días (rango)</strong>
+              <small>Seleccionar rango de fechas</small>
+            </span>
+          </label>
+        </div>
+      </div>
 
-        ${this.state.clasesAfectadas.map((clase, idx) => `
-          <div id="clase-${clase.claseId}" class="pm-step-card">
-            <h3 class="pm-step-card-title">
-              ${escHTML(clase.className)}
-              <span class="pm-badge pm-badge-primary" style="float: right; font-size: 11px;">
-                ${clase.fecha}
-              </span>
-            </h3>
+      <div id="fecha-unica-container" class="pm-form-section" ${!isUnDia ? 'style="display:none"' : ''}>
+        <label class="pm-form-label" for="fecha-unica">
+          Fecha de la ausencia <span class="pm-required">*</span>
+        </label>
+        <input
+          type="date"
+          id="fecha-unica"
+          class="pm-form-input"
+          value="${escHTML(this.state.fechaAusencia)}"
+          placeholder="YYYY-MM-DD"
+          aria-required="true"
+        >
+      </div>
 
-            <!-- Radio: Recuperar vs Tareas -->
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
-              <label style="cursor: pointer; display: flex; align-items: center; gap: 12px; padding: 12px; border: 1px solid var(--pm-border); border-radius: 8px; background: var(--pm-surface); transition: all var(--pm-transition-base);"
-                class="tipo-label-${clase.claseId}">
-                <input type="radio" name="tipo-${clase.claseId}" value="recuperar"
-                  ${this.state.planRecuperacion[clase.claseId]?.tipo === 'recuperar' ? 'checked' : ''}>
-                <div>
-                  <div style="font-weight: 600; font-size: 14px; color: var(--pm-text);">Recuperar</div>
-                  <div style="font-size: 12px; color: var(--pm-text-muted);">En otra fecha/hora</div>
-                </div>
-              </label>
-              <label style="cursor: pointer; display: flex; align-items: center; gap: 12px; padding: 12px; border: 1px solid var(--pm-border); border-radius: 8px; background: var(--pm-surface); transition: all var(--pm-transition-base);"
-                class="tipo-label-${clase.claseId}">
-                <input type="radio" name="tipo-${clase.claseId}" value="tareas"
-                  ${this.state.planRecuperacion[clase.claseId]?.tipo === 'tareas' ? 'checked' : ''}>
-                <div>
-                  <div style="font-weight: 600; font-size: 14px; color: var(--pm-text);">Tareas</div>
-                  <div style="font-size: 12px; color: var(--pm-text-muted);">Con suplente</div>
-                </div>
-              </label>
-            </div>
-
-            <!-- Panel: Recuperar -->
-            <div id="panel-recuperar-${clase.claseId}" class="pm-panel-recuperar" style="display: ${this.state.planRecuperacion[clase.claseId]?.tipo === 'recuperar' ? 'block' : 'none'};">
-              <div class="pm-form-section">
-                <label class="pm-form-label">
-                  Fecha de Recuperación <span class="pm-required">*</span>
-                </label>
-                <input type="date" id="fecha-rec-${clase.claseId}"
-                  value="${this.state.planRecuperacion[clase.claseId]?.fechaRecuperacion || ''}">
-              </div>
-              <div class="pm-form-section">
-                <label class="pm-form-label">
-                  Hora <span class="pm-required">*</span>
-                </label>
-                <input type="time" id="hora-rec-${clase.claseId}"
-                  value="${this.state.planRecuperacion[clase.claseId]?.horaRecuperacion || ''}">
-              </div>
-              <div class="pm-form-section">
-                <label class="pm-form-label">
-                  Salón <span class="pm-required">*</span>
-                </label>
-                <select id="salon-rec-${clase.claseId}">
-                  <option value="">-- Buscar disponibles --</option>
-                </select>
-                <button type="button" id="btn-buscar-salon-${clase.claseId}" class="btn-primary" style="width: 100%; margin-top: 8px;">
-                  🔍 Buscar Salones Disponibles
-                </button>
-              </div>
-            </div>
-
-            <!-- Panel: Tareas -->
-            <div id="panel-tareas-${clase.claseId}" class="pm-panel-tareas" style="display: ${this.state.planRecuperacion[clase.claseId]?.tipo === 'tareas' ? 'block' : 'none'};">
-              <div class="pm-form-section">
-                <label class="pm-form-label">
-                  Maestro/Suplente <span class="pm-required">*</span>
-                </label>
-                <select id="suplente-${clase.claseId}">
-                  <option value="">-- Seleccionar --</option>
-                  <option value="auto">Auto-detectar (suplente de la clase)</option>
-                </select>
-              </div>
-              <div class="pm-form-section">
-                <label class="pm-form-label">
-                  Actividades/Tareas <span class="pm-required">*</span>
-                </label>
-                <textarea id="tareas-${clase.claseId}" placeholder="Describe las tareas, ejercicios o actividades que el suplente debe dejar...">${this.state.planRecuperacion[clase.claseId]?.tareasDescripcion || ''}</textarea>
-              </div>
-            </div>
+      <div id="fecha-rango-container" class="pm-form-section" ${isUnDia ? 'style="display:none"' : ''}>
+        <div class="pm-two-cols">
+          <div>
+            <label class="pm-form-label" for="fecha-inicio">
+              Desde <span class="pm-required">*</span>
+            </label>
+            <input
+              type="date"
+              id="fecha-inicio"
+              class="pm-form-input"
+              value="${escHTML(this.state.fechaInicio)}"
+              placeholder="YYYY-MM-DD"
+              aria-required="true"
+            >
           </div>
-        `).join('')}
+          <div>
+            <label class="pm-form-label" for="fecha-fin">
+              Hasta <span class="pm-required">*</span>
+            </label>
+            <input
+              type="date"
+              id="fecha-fin"
+              class="pm-form-input"
+              value="${escHTML(this.state.fechaFin)}"
+              placeholder="YYYY-MM-DD"
+              aria-required="true"
+            >
+          </div>
+        </div>
+      </div>
+
+      <div id="step1-errors" class="pm-validation-errors" role="alert" aria-live="polite"></div>
+
+      <div class="pm-step-actions">
+        <button type="button" class="pm-btn pm-btn-secondary" id="btn-cancelar-step1">
+          Cancelar
+        </button>
+        <button type="button" class="pm-btn pm-btn-primary" id="btn-siguiente-step1">
+          Siguiente
+        </button>
       </div>
     `;
   }
 
-  validateStep3() {
-    // Validar que cada clase tenga plan completo
-    for (const clase of this.state.clasesAfectadas) {
-      const plan = this.state.planRecuperacion[clase.claseId];
+  /**
+   * Attach events for Step 1.
+   * @private
+   */
+  _attachStep1Events() {
+    const radios = document.querySelectorAll('input[name="duracion_tipo"]');
+    const fechaUnicaContainer = document.getElementById('fecha-unica-container');
+    const fechaRangoContainer = document.getElementById('fecha-rango-container');
 
-      if (plan.tipo === 'recuperar') {
-        const fecha = document.getElementById(`fecha-rec-${clase.claseId}`).value;
-        const hora = document.getElementById(`hora-rec-${clase.claseId}`).value;
-        const salon = document.getElementById(`salon-rec-${clase.claseId}`).value;
+    radios.forEach((radio) => {
+      radio.addEventListener('change', () => {
+        this.state.duracionTipo = radio.value;
+        const isUnDia = radio.value === 'un_dia';
+        if (fechaUnicaContainer) fechaUnicaContainer.style.display = isUnDia ? '' : 'none';
+        if (fechaRangoContainer) fechaRangoContainer.style.display = isUnDia ? 'none' : '';
+      });
+    });
 
-        if (!fecha || !hora || !salon) {
-          AppToast.error(`Completa la recuperación de ${clase.className}`);
-          return;
-        }
+    const fechaUnica = document.getElementById('fecha-unica');
+    fechaUnica?.addEventListener('change', (e) => {
+      this.state.fechaAusencia = e.target.value;
+    });
 
-        plan.fechaRecuperacion = fecha;
-        plan.horaRecuperacion = hora;
-        plan.salonRecuperacionId = salon;
-      } else if (plan.tipo === 'tareas') {
-        const suplente = document.getElementById(`suplente-${clase.claseId}`).value;
-        const tareas = document.getElementById(`tareas-${clase.claseId}`).value.trim();
+    const fechaInicio = document.getElementById('fecha-inicio');
+    fechaInicio?.addEventListener('change', (e) => {
+      this.state.fechaInicio = e.target.value;
+    });
 
-        if (!suplente || !tareas) {
-          AppToast.error(`Completa las tareas de ${clase.className}`);
-          return;
-        }
+    const fechaFin = document.getElementById('fecha-fin');
+    fechaFin?.addEventListener('change', (e) => {
+      this.state.fechaFin = e.target.value;
+    });
 
-        plan.suplente = suplente === 'auto' ? null : suplente;
-        plan.tareasDescripcion = tareas;
-      }
-    }
+    document.getElementById('btn-cancelar-step1')?.addEventListener('click', () => {
+      this.close();
+    });
 
-    this.step = 4;
-    this.renderStep();
+    document.getElementById('btn-siguiente-step1')?.addEventListener('click', () => {
+      this.handleStepSubmit();
+    });
   }
 
-  // ================== STEP 4: Admin (Tipo, Urgencia, Motivo) ==================
-  renderStep4() {
-    return `
-      <form id="step4-form" class="pm-ausencia-form" novalidate>
-        <div class="pm-form-section">
-          <label class="pm-form-label">Tipo de Ausencia <span class="pm-required">*</span></label>
-          <div class="pm-grid-responsive">
-            ${TIPO_AUSENCIA.map(t => `
-              <label style="cursor: pointer; padding: 12px; border: 1px solid var(--pm-border); border-radius: 8px; text-align: center; background: var(--pm-surface); transition: all var(--pm-transition-base);
-                ${this.state.tipoAusencia === t.value ? 'background: var(--pm-primary-bg); border-color: var(--pm-primary);' : ''}" class="tipo-ausencia-label">
-                <input type="radio" name="tipoAusencia" value="${t.value}" ${this.state.tipoAusencia === t.value ? 'checked' : ''} style="margin-bottom: 6px;">
-                <div style="font-size: 13px; font-weight: 500; color: var(--pm-text);">${t.label}</div>
-              </label>
-            `).join('')}
-          </div>
+  // ── Step 2: Affected Classes ───────────────────────────────────────────────
+
+  /**
+   * Render Step 2 HTML.
+   * @returns {string}
+   */
+  renderStep2() {
+    const { loadingStates, clasesAfectadas, _classesLoaded, _classesError } = this.state;
+
+    let content;
+
+    if (loadingStates.classes) {
+      content = `
+        <div class="pm-loading-state" aria-live="polite">
+          <div class="pm-spinner" role="status" aria-label="Cargando"></div>
+          <p>Buscando tus clases...</p>
         </div>
-
-        <div class="pm-form-section">
-          <label class="pm-form-label">Urgencia <span class="pm-required">*</span></label>
-          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 12px;">
-            ${URGENCIA_OPTS.map(u => `
-              <label style="cursor: pointer; padding: 12px; border: 1px solid var(--pm-border); border-radius: 8px; text-align: center; background: var(--pm-surface); transition: all var(--pm-transition-base);
-                ${this.state.urgencia === u.value ? 'background: var(--pm-primary-bg); border-color: var(--pm-primary);' : ''}" class="urgencia-label">
-                <input type="radio" name="urgencia" value="${u.value}" ${this.state.urgencia === u.value ? 'checked' : ''} style="margin-bottom: 6px;">
-                <div style="font-size: 13px; font-weight: 600; color: var(--pm-text);">${u.label}</div>
-                <div style="font-size: 11px; color: var(--pm-text-muted); margin-top: 4px;">${u.desc}</div>
-              </label>
-            `).join('')}
-          </div>
+      `;
+    } else if (_classesError) {
+      content = `
+        <div class="pm-error-state" role="alert">
+          <p>Error al cargar clases. Intenta de nuevo.</p>
+          <button type="button" class="pm-btn pm-btn-secondary" id="btn-retry-classes">
+            Reintentar
+          </button>
         </div>
-
-        <div class="pm-form-section">
-          <label class="pm-form-label">Motivo <span class="pm-required">*</span></label>
-          <textarea id="motivo" placeholder="Describe el motivo de tu ausencia..." maxlength="500">${this.state.motivo}</textarea>
-          <div class="pm-char-counter">
-            <span id="char-count">0</span>/500
-          </div>
+      `;
+    } else if (_classesLoaded && clasesAfectadas.length === 0) {
+      content = `
+        <div class="pm-empty-state">
+          <p>No hay clases programadas en esa fecha. Revisa la duración.</p>
         </div>
-
-        <div class="pm-form-section">
-          <label class="pm-form-label">Documento Soporte (Opcional)</label>
-          <input type="file" id="archivo" accept=".pdf,.jpg,.jpeg,.png">
-          <div class="pm-helper-text">PDF, JPG o PNG. Máximo 5MB.</div>
+      `;
+    } else if (clasesAfectadas.length > 0) {
+      content = clasesAfectadas.map((c) => `
+        <div class="pm-step-card">
+          <h4 class="pm-step-card-title">${escHTML(c.className)}</h4>
+          <p class="pm-step-card-subtitle">${escHTML(c.sessionDate)} a las ${escHTML(c.sessionTime)}</p>
         </div>
-      </form>
-    `;
-  }
-
-  validateStep4() {
-    const form = document.getElementById('step4-form');
-
-    this.state.tipoAusencia = form.elements.namedItem('tipoAusencia').value;
-    this.state.urgencia = form.elements.namedItem('urgencia').value;
-    this.state.motivo = document.getElementById('motivo').value.trim();
-    this.state.archivo = document.getElementById('archivo').files[0] || null;
-
-    if (!this.state.tipoAusencia) {
-      AppToast.error('Selecciona el tipo de ausencia');
-      return;
-    }
-    if (!this.state.motivo) {
-      AppToast.error('Describe el motivo de la ausencia');
-      return;
+      `).join('');
+    } else {
+      // Initial state — trigger load
+      content = `
+        <div class="pm-loading-state" aria-live="polite">
+          <div class="pm-spinner" role="status" aria-label="Cargando"></div>
+          <p>Buscando tus clases...</p>
+        </div>
+      `;
     }
 
-    this.step = 5;
-    this.renderStep();
-  }
-
-  // ================== STEP 5: Generar Documento ==================
-  renderStep5() {
-    // Generar documento de texto
-    const clasesTexto = this.state.clasesAfectadas
-      .map(c => `${c.className} (${c.fecha})`)
-      .join(', ');
-
-    let detallesRecuperacion = [];
-    for (const clase of this.state.clasesAfectadas) {
-      const plan = this.state.planRecuperacion[clase.claseId];
-      if (plan.tipo === 'recuperar') {
-        detallesRecuperacion.push(`- ${clase.className}: ${plan.fechaRecuperacion} a las ${plan.horaRecuperacion}`);
-      } else {
-        const suplementeName = plan.suplente ? `${plan.suplente}` : 'suplente asignado';
-        detallesRecuperacion.push(`- ${clase.className}: tareas delegadas a ${suplementeName}`);
-      }
-    }
-
-    const documento = `Saludos cordiales, soy la profesora "${escHTML(this.maestro.nombre)}", el dia ${this.state.duracionTipo === 'un_dia' ? this.state.fechaAusencia : `${this.state.fechaInicio} al ${this.state.fechaFin}`} estaré faltandando a la clase de ese dia, ya que tengo ${escHTML(this.state.motivo)} y debo solicitar esta ausencia, para cubrir las clases ${clasesTexto} voy a delegar en el maestro suplente que haga la siguiente actividad:
-
-${detallesRecuperacion.join('\n')}
-
-Esta solicitud es de carácter ${this.state.urgencia}.`;
-
-    this.state.documentoGenerado = documento;
+    const dateRange = this._getDateRangeLabel();
 
     return `
-      <div class="pm-two-cols">
-
-        <!-- Vista previa -->
-        <div>
-          <h4 style="margin-top: 0; margin-bottom: 12px; color: var(--pm-text); font-size: 15px;">
-            📄 Vista Previa del Documento
-          </h4>
-          <div class="pm-preview-box">
-${escHTML(documento)}
-          </div>
+      <div class="pm-form-section">
+        <h3 class="pm-form-label">Clases afectadas</h3>
+        ${dateRange ? `<p class="pm-form-hint">${escHTML(dateRange)}</p>` : ''}
+        <div id="clases-afectadas-list">
+          ${content}
         </div>
+      </div>
 
-        <!-- Acciones -->
-        <div>
-          <h4 style="margin-top: 0; margin-bottom: 12px; color: var(--pm-text); font-size: 15px;">
-            ✉️ Envío por WhatsApp
-          </h4>
+      <div id="step2-errors" class="pm-validation-errors" role="alert" aria-live="polite"></div>
 
-          <button type="button" id="btn-copy-whatsapp" class="btn-whatsapp" style="width: 100%; margin-bottom: 12px;">
-            📋 Copiar Documento
-          </button>
-
-          <div class="pm-info-box" style="margin-bottom: 16px;">
-            <p style="margin: 0 0 12px 0; font-weight: 600; color: var(--pm-text); font-size: 13px;">
-              📱 Selecciona Contacto:
-            </p>
-            <select id="contacto-whatsapp">
-              <option value="">-- Seleccionar contacto --</option>
-              <option value="director">👨‍💼 Director/Coordinador</option>
-              <option value="rrhh">👥 Recursos Humanos</option>
-              <option value="custom">📞 Otro número</option>
-            </select>
-            <input type="tel" id="numero-custom" placeholder="+58 XXX XXX XXXX"
-              style="display: none; margin-top: 8px;">
-          </div>
-
-          <button type="button" id="btn-enviar-whatsapp" class="btn-primary" style="width: 100%; margin-bottom: 16px;">
-            💬 Abrir WhatsApp
-          </button>
-
-          <div class="pm-helper-text" style="padding: 12px; background: var(--pm-surface-2); border-left: 3px solid var(--pm-warning); border-radius: 6px; font-size: 12px;">
-            <strong style="color: var(--pm-text);">ℹ️ Cómo funciona:</strong>
-            <ol style="margin: 8px 0 0 0; padding-left: 20px;">
-              <li>Haz clic en "Copiar Documento"</li>
-              <li>Selecciona un contacto</li>
-              <li>Abre WhatsApp y pega el texto</li>
-              <li>El documento se enviará al admin</li>
-            </ol>
-          </div>
-        </div>
+      <div class="pm-step-actions">
+        <button type="button" class="pm-btn pm-btn-secondary" id="btn-atras-step2">
+          Atrás
+        </button>
+        <button type="button" class="pm-btn pm-btn-primary" id="btn-siguiente-step2">
+          Siguiente
+        </button>
       </div>
     `;
   }
 
-  // ================== Submit Handler ==================
-  async handleSubmit() {
+  /**
+   * Attach events for Step 2.
+   * @private
+   */
+  _attachStep2Events() {
+    document.getElementById('btn-atras-step2')?.addEventListener('click', () => {
+      this.currentStep = 1;
+      this._rerenderModal();
+    });
+
+    document.getElementById('btn-siguiente-step2')?.addEventListener('click', () => {
+      this.handleStepSubmit();
+    });
+
+    document.getElementById('btn-retry-classes')?.addEventListener('click', () => {
+      this.state._classesError = false;
+      this.onLoadAffectedClasses();
+    });
+
+    // Auto-load classes when entering step 2
+    if (!this.state._classesLoaded && !this.state._classesError) {
+      this.onLoadAffectedClasses();
+    }
+  }
+
+  /**
+   * Load affected classes from the service, update state, and re-render the list.
+   * @returns {Promise<void>}
+   */
+  async onLoadAffectedClasses() {
+    if (!this.maestro) return;
+
+    const { fechaInicio, fechaFin } = this._getDateRange();
+    this.state.loadingStates.classes = true;
+    this.state._classesError = false;
+    this._updateStep2List();
+
     try {
-      // 1. Crear ausencia en BD
-      const { data: ausencia, error: ausenciaError } = await supabase
-        .from('ausencias_maestros')
-        .insert({
-          maestro_id: this.maestro.id,
-          tipo: this.state.tipoAusencia,
-          urgencia: this.state.urgencia,
-          motivo: this.state.motivo,
-          fecha_inicio: this.state.duracionTipo === 'un_dia' ? this.state.fechaAusencia : this.state.fechaInicio,
-          fecha_fin: this.state.duracionTipo === 'un_dia' ? this.state.fechaAusencia : this.state.fechaFin,
-          estado: 'pendiente',
-          duracion_tipo: this.state.duracionTipo,
-          notificar_director: true
-        })
-        .select()
-        .single();
-
-      if (ausenciaError) throw ausenciaError;
-
-      // 2. Crear registro en ausencias_clases_afectadas
-      const clasesAfectadasRecords = this.state.clasesAfectadas.map(clase => {
-        const plan = this.state.planRecuperacion[clase.claseId];
-        let actividadReemplazo = '';
-
-        if (plan.tipo === 'recuperar') {
-          actividadReemplazo = `Recuperación: ${plan.fechaRecuperacion} a las ${plan.horaRecuperacion}`;
-        } else {
-          actividadReemplazo = plan.tareasDescripcion;
-        }
-
-        return {
-          ausencia_id: ausencia.id,
-          clase_id: clase.claseId,
-          actividad_reemplazo: actividadReemplazo
-        };
+      const raw = await ausenciaService.findAffectedClasses(this.maestro.id, {
+        fechaInicio,
+        fechaFin,
       });
-
-      const { error: clasesError } = await supabase
-        .from('ausencias_clases_afectadas')
-        .insert(clasesAfectadasRecords);
-
-      if (clasesError) throw clasesError;
-
-      // 3. Crear notificación para director
-      await this.crearNotificacionDirector(ausencia.id);
-
-      // 4. Subir archivo si existe
-      if (this.state.archivo) {
-        await this.uploadDocumento(ausencia.id);
-      }
-
-      AppToast.success('Solicitud de ausencia creada correctamente');
-      AppModal.close();
-    } catch (err) {
-      console.error('Error:', err);
-      AppToast.error(`Error al crear solicitud: ${err.message}`);
+      const filtered = filterBusinessDays(raw ?? []);
+      this.state.clasesAfectadas = filtered;
+      this.state._classesLoaded = true;
+    } catch {
+      this.state._classesError = true;
+    } finally {
+      this.state.loadingStates.classes = false;
+      this._updateStep2List();
     }
   }
 
-  async uploadDocumento(ausenciaId) {
-    const file = this.state.archivo;
-    const fileName = `ausencias/${Date.now()}_${this.maestro.id}_${file.name}`;
-
-    const { data, error } = await supabase.storage
-      .from('academico')
-      .upload(fileName, file);
-
-    if (error) throw error;
-
-    const { data: { publicUrl } } = supabase.storage
-      .from('academico')
-      .getPublicUrl(fileName);
-
-    await supabase
-      .from('ausencias_maestros')
-      .update({ archivo_url: publicUrl })
-      .eq('id', ausenciaId);
+  /**
+   * Update only the classes list in the DOM without full re-render.
+   * @private
+   */
+  _updateStep2List() {
+    const container = document.getElementById('clases-afectadas-list');
+    if (!container) return;
+    // Re-render just the list portion using current state
+    const tmp = document.createElement('div');
+    tmp.innerHTML = this.renderStep2();
+    const newList = tmp.querySelector('#clases-afectadas-list');
+    if (newList) container.innerHTML = newList.innerHTML;
   }
 
-  async crearNotificacionDirector(ausenciaId) {
-    // Obtener director del maestro (o admin)
-    const { data: maestro } = await supabase
-      .from('maestros')
-      .select('director_id')
-      .eq('id', this.maestro.id)
-      .single();
+  // ── Step 3: Recovery Planning per Class ───────────────────────────────────
 
-    if (!maestro?.director_id) return; // Sin director asignado
+  /**
+   * Render Step 3 HTML.
+   * @returns {string}
+   */
+  renderStep3() {
+    const panels = this.state.clasesAfectadas.map((c) => {
+      const claseId = escHTML(c.claseId);
+      const plan = c.recoveryPlan ?? {};
 
-    await supabase
-      .from('ausencias_notificaciones')
-      .insert({
-        ausencia_id: ausenciaId,
-        director_id: maestro.director_id,
-        tipo: 'director_alert',
-        estado: 'pendiente'
-      });
+      return `
+        <div class="pm-panel-tareas pm-form-section">
+          <h4>${escHTML(c.className)}</h4>
+          <p class="pm-form-hint">${escHTML(c.sessionDate)} a las ${escHTML(c.sessionTime)}</p>
+
+          <div>
+            <label>
+              <input
+                type="radio"
+                name="opcion-${claseId}"
+                value="tareas"
+                ${plan.tipo === 'tareas' ? 'checked' : ''}
+              >
+              Asignar tareas/ejercicios
+            </label>
+          </div>
+          <textarea
+            id="tareas-${claseId}"
+            class="pm-form-textarea pm-tareas-input"
+            data-clase-id="${claseId}"
+            placeholder="Describe las tareas..."
+            ${plan.tipo !== 'tareas' ? 'style="display:none"' : ''}
+          >${escHTML(plan.actividadReemplazo ?? '')}</textarea>
+
+          <div>
+            <label>
+              <input
+                type="radio"
+                name="opcion-${claseId}"
+                value="reprogramar"
+                ${plan.tipo === 'reprogramar' ? 'checked' : ''}
+              >
+              Reprogramar clase
+            </label>
+          </div>
+          <div
+            id="reprogramar-${claseId}"
+            class="pm-reprogramar-fields"
+            data-clase-id="${claseId}"
+            ${plan.tipo !== 'reprogramar' ? 'style="display:none"' : ''}
+          >
+            <input
+              type="date"
+              id="fecha-reprograma-${claseId}"
+              class="pm-form-input pm-fecha-reprograma"
+              data-clase-id="${claseId}"
+              value="${escHTML(plan.fechaReprograma ?? '')}"
+            >
+            <input
+              type="time"
+              id="hora-reprograma-${claseId}"
+              class="pm-form-input pm-hora-reprograma"
+              data-clase-id="${claseId}"
+              value="${escHTML(plan.horaReprograma ?? '')}"
+            >
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    return `
+      <div class="pm-form-section">
+        <h3 class="pm-form-label">Plan de recuperación por clase</h3>
+        ${panels || '<p class="pm-form-hint">No hay clases afectadas registradas.</p>'}
+      </div>
+
+      <div id="step3-errors" class="pm-validation-errors" role="alert" aria-live="polite"></div>
+
+      <div class="pm-step-actions">
+        <button type="button" class="pm-btn pm-btn-secondary" id="btn-atras-step3">
+          Atrás
+        </button>
+        <button type="button" class="pm-btn pm-btn-primary" id="btn-siguiente-step3">
+          Siguiente
+        </button>
+      </div>
+    `;
   }
 
-  // ================== Event Handlers ==================
-  attachEvents() {
-    // Step 1: Toggle input fields based on duración
-    const radios = document.querySelectorAll('input[name="duracionTipo"]');
-    radios.forEach(r => {
-      r.addEventListener('change', () => {
-        this.state.duracionTipo = r.value;
-        this.renderStep();
+  /**
+   * Attach events for Step 3.
+   * @private
+   */
+  _attachStep3Events() {
+    document.getElementById('btn-atras-step3')?.addEventListener('click', () => {
+      this.currentStep = 2;
+      this._rerenderModal();
+    });
+
+    document.getElementById('btn-siguiente-step3')?.addEventListener('click', () => {
+      this.handleStepSubmit();
+    });
+
+    // Radio toggles for each class
+    document.querySelectorAll('input[type="radio"][name^="opcion-"]').forEach((radio) => {
+      radio.addEventListener('change', () => {
+        const claseId = radio.name.replace('opcion-', '');
+        const tipo = radio.value;
+        this._setRecoveryPlanType(claseId, tipo);
+        this._toggleRecoveryFields(claseId, tipo);
       });
     });
 
-    // Step 3: Toggle recuperar/tareas panels
-    this.state.clasesAfectadas.forEach(clase => {
-      const radioGroup = document.querySelectorAll(`input[name="tipo-${clase.claseId}"]`);
-      radioGroup.forEach(r => {
-        r.addEventListener('change', (e) => {
-          this.state.planRecuperacion[clase.claseId].tipo = e.target.value;
-          document.getElementById(`panel-recuperar-${clase.claseId}`).style.display =
-            e.target.value === 'recuperar' ? 'block' : 'none';
-          document.getElementById(`panel-tareas-${clase.claseId}`).style.display =
-            e.target.value === 'tareas' ? 'block' : 'none';
-        });
+    // Textarea capture
+    document.querySelectorAll('.pm-tareas-input').forEach((ta) => {
+      ta.addEventListener('input', () => {
+        const claseId = ta.dataset.claseId;
+        this._updateRecoveryPlanField(claseId, 'actividadReemplazo', ta.value);
       });
-
-      // Botón buscar salones
-      const btnBuscar = document.getElementById(`btn-buscar-salon-${clase.claseId}`);
-      if (btnBuscar) {
-        btnBuscar.addEventListener('click', () => this.buscarSalones(clase.claseId));
-      }
     });
 
-    // Step 4: Character counter
-    const motivo = document.getElementById('motivo');
-    if (motivo) {
-      motivo.addEventListener('input', () => {
-        document.getElementById('char-count').textContent = motivo.value.length;
+    // Date/time capture
+    document.querySelectorAll('.pm-fecha-reprograma').forEach((input) => {
+      input.addEventListener('change', () => {
+        const claseId = input.dataset.claseId;
+        this._updateRecoveryPlanField(claseId, 'fechaReprograma', input.value);
       });
-      document.getElementById('char-count').textContent = motivo.value.length;
-    }
-
-    // Step 5: WhatsApp actions
-    const btnCopy = document.getElementById('btn-copy-whatsapp');
-    if (btnCopy) {
-      btnCopy.addEventListener('click', () => this.copyToClipboard());
-    }
-
-    const contactoSelect = document.getElementById('contacto-whatsapp');
-    if (contactoSelect) {
-      contactoSelect.addEventListener('change', (e) => {
-        document.getElementById('numero-custom').style.display =
-          e.target.value === 'custom' ? 'block' : 'none';
-      });
-    }
-
-    const btnEnviar = document.getElementById('btn-enviar-whatsapp');
-    if (btnEnviar) {
-      btnEnviar.addEventListener('click', () => this.enviarWhatsApp());
-    }
-  }
-
-  async buscarSalones(claseId) {
-    const fechaInput = document.getElementById(`fecha-rec-${claseId}`);
-    const horaInput = document.getElementById(`hora-rec-${claseId}`);
-    const fecha = fechaInput.value;
-    const hora = horaInput.value;
-
-    if (!fecha || !hora) {
-      AppToast.warning('Selecciona fecha y hora primero');
-      return;
-    }
-
-    // Buscar sesiones en esa fecha/hora
-    const { data: sesiones, error } = await supabase
-      .from('sesiones_clase')
-      .select('salon_id')
-      .eq('fecha', fecha)
-      .overlaps('hora_inicio', hora); // Buscar conflictos de horario
-
-    if (error) {
-      AppToast.error('Error buscando salones');
-      return;
-    }
-
-    // Salones ocupados
-    const salonesOcupados = new Set(sesiones?.map(s => s.salon_id) || []);
-
-    // Obtener todos los salones
-    const { data: salones } = await supabase
-      .from('salones')
-      .select('id, nombre')
-      .order('nombre');
-
-    const salonSelect = document.getElementById(`salon-rec-${claseId}`);
-    salonSelect.innerHTML = '<option value="">-- Seleccionar --</option>';
-
-    (salones || []).forEach(s => {
-      const disabled = salonesOcupados.has(s.id);
-      const option = document.createElement('option');
-      option.value = s.id;
-      option.textContent = `${s.nombre}${disabled ? ' (ocupado)' : ' ✓'}`;
-      option.disabled = disabled;
-      salonSelect.appendChild(option);
     });
 
-    AppToast.success(`${salones?.length - salonesOcupados.size || 0} salones disponibles`);
+    document.querySelectorAll('.pm-hora-reprograma').forEach((input) => {
+      input.addEventListener('change', () => {
+        const claseId = input.dataset.claseId;
+        this._updateRecoveryPlanField(claseId, 'horaReprograma', input.value);
+      });
+    });
   }
 
-  copyToClipboard() {
-    navigator.clipboard.writeText(this.state.documentoGenerado)
-      .then(() => AppToast.success('Texto copiado al portapapeles'))
-      .catch(() => AppToast.error('Error al copiar'));
+  // ── Private Helpers ────────────────────────────────────────────────────────
+
+  /**
+   * Set the recovery plan type for a class.
+   * @private
+   */
+  _setRecoveryPlanType(claseId, tipo) {
+    const clase = this.state.clasesAfectadas.find((c) => c.claseId === claseId);
+    if (!clase) return;
+    clase.recoveryPlan = { ...(clase.recoveryPlan ?? {}), tipo };
   }
 
-  enviarWhatsApp() {
-    const contacto = document.getElementById('contacto-whatsapp').value;
-    const numeroCustom = document.getElementById('numero-custom').value;
+  /**
+   * Update a field inside a class's recoveryPlan.
+   * @private
+   */
+  _updateRecoveryPlanField(claseId, field, value) {
+    const clase = this.state.clasesAfectadas.find((c) => c.claseId === claseId);
+    if (!clase) return;
+    clase.recoveryPlan = { ...(clase.recoveryPlan ?? {}), [field]: value };
+  }
 
-    let numero;
-    if (contacto === 'director') {
-      numero = '584241234567'; // Placeholder
-    } else if (contacto === 'rrhh') {
-      numero = '584240000000'; // Placeholder
-    } else if (contacto === 'custom') {
-      numero = numeroCustom.replace(/\D/g, '');
+  /**
+   * Toggle visibility of textarea vs reprogramar fields for a class.
+   * @private
+   */
+  _toggleRecoveryFields(claseId, tipo) {
+    const textarea = document.getElementById(`tareas-${claseId}`);
+    const reprogramar = document.getElementById(`reprogramar-${claseId}`);
+    if (textarea) textarea.style.display = tipo === 'tareas' ? '' : 'none';
+    if (reprogramar) reprogramar.style.display = tipo === 'reprogramar' ? '' : 'none';
+  }
+
+  /**
+   * Display validation error messages in the current step's error container.
+   * @param {string[]} errors
+   * @private
+   */
+  _showValidationErrors(errors) {
+    const containerId = `step${this.currentStep}-errors`;
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    container.innerHTML = errors
+      .map((e) => `<p class="pm-error-message">${escHTML(e)}</p>`)
+      .join('');
+  }
+
+  /**
+   * Full re-render of modal body + title + button text.
+   * @private
+   */
+  _rerenderModal() {
+    const bodyEl = document.querySelector('.app-modal-body');
+    if (bodyEl) {
+      bodyEl.innerHTML = this.renderCurrentStep();
     }
 
-    if (!numero) {
-      AppToast.warning('Selecciona un contacto');
-      return;
+    const titleEl = document.querySelector('.app-modal-title');
+    if (titleEl) {
+      titleEl.textContent = this.getTitle();
     }
 
-    // Copiar al portapapeles
-    navigator.clipboard.writeText(this.state.documentoGenerado);
+    const saveBtn = document.querySelector('.app-modal-save');
+    if (saveBtn) {
+      saveBtn.textContent = this.getSaveButtonText();
+    }
 
-    // Abrir WhatsApp
-    const mensajeEncode = encodeURIComponent(this.state.documentoGenerado.substring(0, 1024));
-    const urlWhatsApp = `https://api.whatsapp.com/send?phone=${numero}&text=${mensajeEncode}`;
-    window.open(urlWhatsApp, '_blank');
+    this.attachStepEvents();
+  }
 
-    AppToast.info('El texto ha sido copiado. WhatsApp se abrirá en tu navegador.');
+  /**
+   * Build the date range for service calls based on current state.
+   * @returns {{ fechaInicio: string, fechaFin: string }}
+   * @private
+   */
+  _getDateRange() {
+    if (this.state.duracionTipo === 'un_dia') {
+      return {
+        fechaInicio: this.state.fechaAusencia,
+        fechaFin: this.state.fechaAusencia,
+      };
+    }
+    return {
+      fechaInicio: this.state.fechaInicio,
+      fechaFin: this.state.fechaFin,
+    };
+  }
+
+  /**
+   * Returns a human-readable date range label.
+   * @returns {string}
+   * @private
+   */
+  _getDateRangeLabel() {
+    const { fechaInicio, fechaFin } = this._getDateRange();
+    if (!fechaInicio) return '';
+    if (fechaInicio === fechaFin) return `Fecha: ${fechaInicio}`;
+    return `Del ${fechaInicio} al ${fechaFin}`;
   }
 }
+
+// ── Singleton export ──────────────────────────────────────────────────────────
 
 export const ausenciaModal = new AusenciaModal();
-
-export function openAusenciaModal() {
-  ausenciaModal.open();
-}

@@ -117,3 +117,36 @@ export function validateStep3(state) {
 
   return { valid: errors.length === 0, errors };
 }
+
+/**
+ * Validate Step 4: tipo, urgencia, motivo, and optional file.
+ * @param {Object} state
+ * @returns {{ valid: boolean, errors: string[] }}
+ */
+export function validateStep4(state) {
+  const errors = [];
+
+  if (!state.tipoAusencia) {
+    errors.push('Selecciona el tipo de ausencia.');
+  }
+
+  if (!state.urgencia) {
+    errors.push('Selecciona el nivel de urgencia.');
+  }
+
+  if (!state.motivo || !state.motivo.trim()) {
+    errors.push('El motivo es obligatorio.');
+  } else if (state.motivo.length > 500) {
+    errors.push('El motivo no puede superar los 500 caracteres.');
+  }
+
+  return { valid: errors.length === 0, errors };
+}
+
+/**
+ * Validate Step 5: no required fields — confirms submission is ready.
+ * @returns {{ valid: boolean, errors: string[] }}
+ */
+export function validateStep5() {
+  return { valid: true, errors: [] };
+}

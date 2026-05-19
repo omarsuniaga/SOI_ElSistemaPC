@@ -1,6 +1,6 @@
 /**
- * Componente: Modal de Asistencia (Versión Mejorada)
- * Siguiendo patrones de ausenciaModal: CSS variables, dark/light theme support, card-based UI
+ * Componente: Modal de Asistencia
+ * Diseño original + mejoras: variables CSS, dark/light mode, responsive, mejor UX
  */
 
 import { ModalManager } from '../../../shared/components/modal.js'
@@ -12,192 +12,138 @@ const VALIDATION = {
   justificacionMax: 500,
 }
 
-const ESTADO_OPCIONES = [
-  { value: 'P', label: 'Presente', icon: 'bi-check-circle-fill', color: 'success' },
-  { value: 'A', label: 'Ausente', icon: 'bi-x-circle-fill', color: 'danger' },
-  { value: 'J', label: 'Justificado', icon: 'bi-file-earmark-text', color: 'warning' },
-]
-
 /**
- * Abre el modal de justificación mejorado
- * @param {Object} data - Datos del alumno
+ * Abre el modal de justificación
+ * @param {Object} data - Datos del alumno {id, nombre, estado, justificacionTexto, justificacionArchivo}
  * @param {Function} onSave - Callback al guardar
  */
 export function openAsistenciaJustificarModal(data, onSave) {
   const body = `
-    <form id="formJustificacion" class="asi-justif-form">
-      <div class="asi-form-section">
-        <label class="asi-form-label">Alumno</label>
-        <div class="asi-alumno-card">
-          <i class="bi bi-person-circle"></i>
-          <span>${escapeHTML(data.nombre)}</span>
-        </div>
+    <form id="formJustificacion">
+      <div class="am-mb-3">
+        <label class="am-form-label">Alumno</label>
+        <div class="am-fw-semibold">${escapeHTML(data.nombre)}</div>
       </div>
 
-      <div class="asi-form-section">
-        <label class="asi-form-label">Tipo de ausencia</label>
-        <div class="asi-estado-grid">
-          ${ESTADO_OPCIONES.map(opt => `
-            <label class="asi-estado-card" title="${opt.label}">
-              <input type="radio" name="tipoJustif" value="${opt.value}"
-                ${data.estado === opt.value ? 'checked' : ''}>
-              <span class="asi-estado-visual">
-                <i class="bi ${opt.icon}"></i>
-                <span class="asi-estado-label">${opt.label}</span>
-              </span>
+      <div class="am-mb-3">
+        <label class="am-form-label">Tipo de ausencia</label>
+        <div class="am-d-flex am-gap-3">
+          <div class="am-form-check">
+            <input class="am-form-check-input" type="radio" name="tipoJustif" id="tipoP" value="P" ${data.estado === 'P' ? 'checked' : ''}>
+            <label class="am-form-check-label am-text-success" for="tipoP">
+              <i class="bi bi-check-circle"></i> Presente
             </label>
-          `).join('')}
+          </div>
+          <div class="am-form-check">
+            <input class="am-form-check-input" type="radio" name="tipoJustif" id="tipoA" value="A">
+            <label class="am-form-check-label am-text-danger" for="tipoA">
+              <i class="bi bi-x-circle"></i> Ausente
+            </label>
+          </div>
+          <div class="am-form-check">
+            <input class="am-form-check-input" type="radio" name="tipoJustif" id="tipoJ" value="J" ${data.estado === 'J' ? 'checked' : ''}>
+            <label class="am-form-check-label am-text-warning" for="tipoJ">
+              <i class="bi bi-file-earmark-text"></i> Justificado
+            </label>
+          </div>
         </div>
       </div>
 
-      <div class="asi-form-section">
-        <label for="justifTexto" class="asi-form-label">Justificación</label>
-        <textarea class="asi-form-textarea" id="justifTexto" name="justificacion_texto"
-          rows="4" maxlength="${VALIDATION.justificacionMax}"
+      <div class="am-mb-3">
+        <label for="justifTexto" class="am-form-label">Justificación</label>
+        <textarea class="am-form-control" id="justifTexto" name="justificacion_texto"
+          rows="3" maxlength="${VALIDATION.justificacionMax}"
           placeholder="Motivo de la ausencia o nota adicional...">${data.justificacionTexto || ''}</textarea>
-        <div class="asi-form-footer">
-          <span class="asi-char-count"><span id="justifCount">${(data.justificacionTexto || '').length}</span>/${VALIDATION.justificacionMax}</span>
-        </div>
+        <small class="am-form-text am-text-muted" id="justifCount">${(data.justificacionTexto || '').length}/${VALIDATION.justificacionMax}</small>
       </div>
 
-      <div class="asi-form-section">
-        <label for="justifArchivo" class="asi-form-label">Adjuntar archivo (opcional)</label>
-        <div class="asi-file-upload">
-          <input type="file" class="asi-file-input" id="justifArchivo" name="justificacion_archivo"
-            accept="image/*,.pdf">
-          <label for="justifArchivo" class="asi-file-label">
-            <i class="bi bi-cloud-upload"></i>
-            <span>Haz click para seleccionar o arrastra un archivo</span>
-            <small>Máx 5MB (PDF, JPG, PNG)</small>
-          </label>
-          ${data.justificacionArchivo ? `
-            <div class="asi-file-preview">
-              <i class="bi bi-check-circle-fill"></i>
-              <span>${data.justificacionArchivo}</span>
-            </div>
-          ` : ''}
-        </div>
+      <div class="am-mb-3">
+        <label for="justifArchivo" class="am-form-label">Adjuntar imagen (opcional)</label>
+        <input type="file" class="am-form-control" id="justifArchivo" name="justificacion_archivo"
+          accept="image/*">
+        ${data.justificacionArchivo ? `<small class="am-text-success am-d-block am-mt-1"><i class="bi bi-paperclip"></i> Archivo adjuntado previamente</small>` : ''}
       </div>
     </form>
 
     <style>
-      .asi-justif-form { display: flex; flex-direction: column; gap: 1.25rem; }
-      .asi-form-section { display: flex; flex-direction: column; gap: 0.5rem; }
-      .asi-form-label { font-size: 0.8125rem; font-weight: 600; color: var(--pm-text); }
-
-      .asi-alumno-card {
-        display: flex; align-items: center; gap: 0.75rem;
-        padding: 0.75rem 1rem;
-        background: var(--pm-surface-2);
-        border-radius: 10px;
-        font-weight: 500;
-        border: 1px solid var(--pm-border);
-      }
-      .asi-alumno-card i { font-size: 1.5rem; color: var(--pm-primary); }
-
-      .asi-estado-grid {
-        display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem;
-      }
-      @media (max-width: 500px) {
-        .asi-estado-grid { grid-template-columns: repeat(2, 1fr); }
-      }
-
-      .asi-estado-card {
-        position: relative; cursor: pointer;
-      }
-      .asi-estado-card input { display: none; }
-      .asi-estado-visual {
-        display: flex; flex-direction: column; align-items: center; gap: 0.5rem;
-        padding: 0.875rem 0.75rem;
-        border: 2px solid var(--pm-border);
-        border-radius: 12px;
-        transition: all 0.2s;
-        text-align: center;
-      }
-      .asi-estado-visual i { font-size: 1.75rem; }
-      .asi-estado-label { font-size: 0.75rem; font-weight: 500; }
-
-      .asi-estado-card input:checked + .asi-estado-visual {
-        border-color: var(--pm-primary);
-        background: var(--pm-primary-bg);
-        transform: scale(1.05);
-      }
-
-      .asi-form-textarea {
+      .am-mb-3 { margin-bottom: 1rem; display: flex; flex-direction: column; gap: 0.5rem; }
+      .am-form-label { font-size: 0.8125rem; font-weight: 600; color: var(--pm-text); }
+      .am-fw-semibold { font-weight: 600; color: var(--pm-text); }
+      .am-form-control {
         padding: 0.625rem 0.875rem;
         border: 1px solid var(--pm-border);
         border-radius: 10px;
         font-size: 0.875rem;
         background: var(--pm-surface);
         color: var(--pm-text);
+        transition: border-color 0.2s, box-shadow 0.2s;
         font-family: inherit;
         resize: vertical;
-        transition: border-color 0.2s, box-shadow 0.2s;
       }
-      .asi-form-textarea:focus {
+      .am-form-control:focus {
         outline: none;
         border-color: var(--pm-primary);
         box-shadow: 0 0 0 3px var(--pm-primary-bg);
       }
-      .asi-form-textarea::placeholder {
+      .am-form-control::placeholder {
         color: var(--pm-text-muted);
         opacity: 0.7;
       }
 
-      .asi-form-footer {
-        display: flex; justify-content: flex-end;
+      .am-d-flex { display: flex; }
+      .am-gap-3 { gap: 0.75rem; }
+      .am-form-check {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
       }
-      .asi-char-count {
-        font-size: 0.6875rem;
-        color: var(--pm-text-muted);
-      }
-
-      .asi-file-upload {
-        position: relative;
-        display: flex; flex-direction: column; gap: 0.75rem;
-      }
-      .asi-file-input { display: none; }
-      .asi-file-label {
-        display: flex; flex-direction: column; align-items: center; gap: 0.5rem;
-        padding: 1.5rem 1rem;
-        border: 2px dashed var(--pm-border);
-        border-radius: 12px;
+      .am-form-check-input {
+        width: 1rem;
+        height: 1rem;
+        margin-top: 0;
         cursor: pointer;
-        transition: all 0.2s;
-        text-align: center;
-        color: var(--pm-text-muted);
+        accent-color: var(--pm-primary);
       }
-      .asi-file-label:hover {
-        border-color: var(--pm-primary);
-        background: var(--pm-primary-bg);
-        color: var(--pm-primary);
+      .am-form-check-label {
+        font-size: 0.875rem;
+        cursor: pointer;
+        margin-bottom: 0;
+        display: flex;
+        align-items: center;
+        gap: 0.375rem;
       }
-      .asi-file-label i { font-size: 1.75rem; }
-      .asi-file-label small { font-size: 0.6875rem; }
+      .am-form-check-label i { font-size: 1rem; }
 
-      .asi-file-preview {
-        display: flex; align-items: center; gap: 0.75rem;
-        padding: 0.75rem 1rem;
-        background: var(--pm-success-bg);
-        border: 1px solid var(--pm-success);
-        border-radius: 10px;
-        color: var(--pm-success);
-        font-size: 0.8125rem;
+      .am-text-success { color: var(--pm-success); }
+      .am-text-danger { color: var(--pm-danger); }
+      .am-text-warning { color: var(--pm-warning); }
+      .am-text-muted { color: var(--pm-text-muted); }
+
+      .am-form-text {
+        font-size: 0.6875rem;
+        display: block;
+        margin-top: 0.25rem;
+        text-align: right;
       }
-      .asi-file-preview i { font-size: 1.25rem; }
+      .am-d-block { display: block; }
+      .am-mt-1 { margin-top: 0.25rem; }
 
       /* Dark mode support */
-      [data-bs-theme="dark"] .asi-form-textarea,
-      [data-portal-theme="dark"] .asi-form-textarea {
+      [data-bs-theme="dark"] .am-form-control,
+      [data-portal-theme="dark"] .am-form-control {
         background-color: var(--pm-surface);
         border-color: var(--pm-border);
+      }
+
+      @media (max-width: 600px) {
+        .am-gap-3 { flex-direction: column; gap: 0.5rem; }
       }
     </style>
   `
 
   const footer = `
-    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
-    <button type="button" class="btn btn-primary btn-sm" id="btnSubmitJustif">Justificar</button>
+    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+    <button type="button" class="btn btn-primary" id="btnSubmitJustif">Guardar</button>
   `
 
   const modal = ModalManager.createModal({
@@ -208,45 +154,12 @@ export function openAsistenciaJustificarModal(data, onSave) {
     size: 'modal-lg',
   })
 
-  // Event listeners
   const justifInput = modal.element.querySelector('#justifTexto')
   const justifCount = modal.element.querySelector('#justifCount')
-  if (justifInput) {
-    justifInput.addEventListener('input', (e) => {
-      justifCount.textContent = e.target.value.length
-    })
-  }
+  justifInput?.addEventListener('input', (e) => {
+    justifCount.textContent = `${e.target.value.length}/${VALIDATION.justificacionMax}`
+  })
 
-  // File drag & drop
-  const fileLabel = modal.element.querySelector('.asi-file-label')
-  if (fileLabel) {
-    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-      fileLabel.addEventListener(eventName, preventDefaults, false)
-    })
-
-    function preventDefaults(e) {
-      e.preventDefault()
-      e.stopPropagation()
-    }
-
-    ['dragenter', 'dragover'].forEach(eventName => {
-      fileLabel.addEventListener(eventName, highlight, false)
-    })
-    ['dragleave', 'drop'].forEach(eventName => {
-      fileLabel.addEventListener(eventName, unhighlight, false)
-    })
-
-    function highlight() {
-      fileLabel.style.borderColor = 'var(--pm-primary)'
-      fileLabel.style.background = 'var(--pm-primary-bg)'
-    }
-    function unhighlight() {
-      fileLabel.style.borderColor = ''
-      fileLabel.style.background = ''
-    }
-  }
-
-  // Submit handler
   modal.element.querySelector('#btnSubmitJustif')?.addEventListener('click', async () => {
     const btn = modal.element.querySelector('#btnSubmitJustif')
     btn.disabled = true
@@ -254,11 +167,11 @@ export function openAsistenciaJustificarModal(data, onSave) {
 
     try {
       const tipo = modal.element.querySelector('input[name="tipoJustif"]:checked')?.value || 'J'
-      const justificacionTexto = justifInput.value.trim()
+      const justificacionTexto = modal.element.querySelector('#justifTexto').value.trim()
       const archivoInput = modal.element.querySelector('#justifArchivo')
       let justificacionArchivo = data.justificacionArchivo || ''
 
-      if (archivoInput?.files?.length > 0) {
+      if (archivoInput && archivoInput.files && archivoInput.files.length > 0) {
         justificacionArchivo = archivoInput.files[0].name
       }
 
@@ -272,7 +185,7 @@ export function openAsistenciaJustificarModal(data, onSave) {
     } catch (error) {
       ModalManager.showToast(error.message || 'Error al guardar', 'error')
       btn.disabled = false
-      btn.innerHTML = 'Justificar'
+      btn.innerHTML = 'Guardar'
     }
   })
 
@@ -280,7 +193,7 @@ export function openAsistenciaJustificarModal(data, onSave) {
 }
 
 /**
- * Abre el modal para crear/editar asistencia (versión mejorada)
+ * Abre el modal para crear/editar una asistencia
  * @param {string} mode - 'create' | 'edit'
  * @param {HTMLElement} container
  * @param {Object} data - Datos de la asistencia
@@ -288,8 +201,6 @@ export function openAsistenciaJustificarModal(data, onSave) {
  */
 export async function openAsistenciaModal(mode, container, data, onSave) {
   const isEdit = mode === 'edit'
-  const titulo = isEdit ? 'Editar Asistencia' : 'Nueva Asistencia'
-  const submitLabel = isEdit ? 'Guardar cambios' : 'Guardar'
 
   let alumnos = []
   try {
@@ -298,76 +209,80 @@ export async function openAsistenciaModal(mode, container, data, onSave) {
     console.warn('No se pudieron cargar alumnos:', e.message)
   }
 
+  const titulo = isEdit ? 'Editar Asistencia' : 'Nueva Asistencia'
+  const submitLabel = isEdit ? 'Guardar cambios' : 'Guardar'
+
   const alumnosOptions = alumnos.map(a =>
     `<option value="${a.id}" ${data?.student_id === a.id ? 'selected' : ''}>${escapeHTML(a.name)}</option>`
   ).join('')
 
   const body = `
-    <form id="formAsistencia" class="asi-form">
-      <div class="asi-form-row">
-        <div class="asi-form-group">
-          <label for="asistFecha" class="asi-form-label">Fecha <span class="asi-required">*</span></label>
-          <input type="date" class="asi-form-input" id="asistFecha" name="fecha"
-            value="${data?.fecha || formatDateISO(new Date())}" required>
-        </div>
+    <form id="formAsistencia">
+      <div class="am-mb-3">
+        <label for="asistFecha" class="am-form-label">Fecha <span class="am-required">*</span></label>
+        <input type="date" class="am-form-control" id="asistFecha" name="fecha"
+          value="${data?.fecha || formatDateISO(new Date())}" required>
       </div>
 
-      <div class="asi-form-row">
-        <div class="asi-form-group">
-          <label for="asistClase" class="asi-form-label">Clase <span class="asi-required">*</span></label>
-          <select class="asi-form-select" id="asistClase" name="clase_id" required>
+      <div class="am-row">
+        <div class="am-col-md-6 am-mb-3">
+          <label for="asistClase" class="am-form-label">Clase <span class="am-required">*</span></label>
+          <select class="am-form-select" id="asistClase" name="clase_id" required>
             <option value="">Seleccionar clase</option>
             <option value="clase-1" ${data?.clase_id === 'clase-1' ? 'selected' : ''}>Clase ejemplo</option>
           </select>
         </div>
-        <div class="asi-form-group">
-          <label for="asistAlumno" class="asi-form-label">Alumno <span class="asi-required">*</span></label>
-          <select class="asi-form-select" id="asistAlumno" name="student_id" required>
+        <div class="am-col-md-6 am-mb-3">
+          <label for="asistAlumno" class="am-form-label">Alumno <span class="am-required">*</span></label>
+          <select class="am-form-select" id="asistAlumno" name="student_id" required>
             <option value="">Seleccionar alumno</option>
             ${alumnosOptions}
           </select>
         </div>
       </div>
 
-      <div class="asi-form-section">
-        <label class="asi-form-label">Estado <span class="asi-required">*</span></label>
-        <div class="asi-estado-grid">
-          ${ESTADO_OPCIONES.map(opt => `
-            <label class="asi-estado-card" title="${opt.label}">
-              <input type="radio" name="estado" value="${opt.value}"
-                ${(!data || data.estado === opt.value) ? 'checked' : ''}>
-              <span class="asi-estado-visual">
-                <i class="bi ${opt.icon}"></i>
-                <span class="asi-estado-label">${opt.label}</span>
-              </span>
+      <div class="am-mb-3">
+        <label class="am-form-label">Estado <span class="am-required">*</span></label>
+        <div class="am-d-flex am-gap-3">
+          <div class="am-form-check">
+            <input class="am-form-check-input" type="radio" name="estado" id="estadoP" value="P"
+              ${(!data || data.estado === 'P') ? 'checked' : ''}>
+            <label class="am-form-check-label" for="estadoP">
+              <i class="bi bi-check-circle am-text-success"></i> Presente
             </label>
-          `).join('')}
+          </div>
+          <div class="am-form-check">
+            <input class="am-form-check-input" type="radio" name="estado" id="estadoA" value="A"
+              ${data?.estado === 'A' ? 'checked' : ''}>
+            <label class="am-form-check-label" for="estadoA">
+              <i class="bi bi-x-circle am-text-danger"></i> Ausente
+            </label>
+          </div>
+          <div class="am-form-check">
+            <input class="am-form-check-input" type="radio" name="estado" id="estadoJ" value="J"
+              ${data?.estado === 'J' ? 'checked' : ''}>
+            <label class="am-form-check-label" for="estadoJ">
+              <i class="bi bi-file-earmark-text am-text-warning"></i> Justificado
+            </label>
+          </div>
         </div>
       </div>
 
-      <div class="asi-form-section">
-        <label for="asistJustificacion" class="asi-form-label">Justificación (opcional)</label>
-        <textarea class="asi-form-textarea" id="asistJustificacion" name="justificacion_texto"
+      <div class="am-mb-3">
+        <label for="asistJustificacion" class="am-form-label">Justificación</label>
+        <textarea class="am-form-control" id="asistJustificacion" name="justificacion_texto"
           rows="3" maxlength="${VALIDATION.justificacionMax}"
           placeholder="Motivo de la ausencia o nota adicional...">${data?.justificacion_texto || ''}</textarea>
-        <div class="asi-form-footer">
-          <span class="asi-char-count"><span id="justifCount">${(data?.justificacion_texto || '').length}</span>/${VALIDATION.justificacionMax}</span>
-        </div>
+        <small class="am-form-text am-text-muted" id="justifCount">${(data?.justificacion_texto || '').length}/${VALIDATION.justificacionMax}</small>
       </div>
     </form>
 
     <style>
-      .asi-form { display: flex; flex-direction: column; gap: 1.25rem; }
-      .asi-form-section { display: flex; flex-direction: column; gap: 0.5rem; }
-      .asi-form-row { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; }
-      @media (max-width: 600px) {
-        .asi-form-row { grid-template-columns: 1fr; }
-      }
-      .asi-form-group { display: flex; flex-direction: column; gap: 0.375rem; }
-      .asi-form-label { font-size: 0.8125rem; font-weight: 600; color: var(--pm-text); }
-      .asi-required { color: var(--pm-danger); }
+      .am-mb-3 { margin-bottom: 1rem; display: flex; flex-direction: column; gap: 0.5rem; }
+      .am-form-label { font-size: 0.8125rem; font-weight: 600; color: var(--pm-text); }
+      .am-required { color: var(--pm-danger); }
 
-      .asi-form-input, .asi-form-select {
+      .am-form-control, .am-form-select {
         padding: 0.625rem 0.875rem;
         border: 1px solid var(--pm-border);
         border-radius: 10px;
@@ -377,86 +292,78 @@ export async function openAsistenciaModal(mode, container, data, onSave) {
         transition: border-color 0.2s, box-shadow 0.2s;
         font-family: inherit;
       }
-      .asi-form-input:focus, .asi-form-select:focus {
+      .am-form-control:focus, .am-form-select:focus {
         outline: none;
         border-color: var(--pm-primary);
         box-shadow: 0 0 0 3px var(--pm-primary-bg);
       }
-      .asi-form-select { appearance: none; background-image: url("data:image/svg+xml,..."); }
-
-      .asi-estado-grid {
-        display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem;
-      }
-      @media (max-width: 500px) {
-        .asi-estado-grid { grid-template-columns: repeat(2, 1fr); }
-      }
-
-      .asi-estado-card {
-        position: relative; cursor: pointer;
-      }
-      .asi-estado-card input { display: none; }
-      .asi-estado-visual {
-        display: flex; flex-direction: column; align-items: center; gap: 0.5rem;
-        padding: 0.875rem 0.75rem;
-        border: 2px solid var(--pm-border);
-        border-radius: 12px;
-        transition: all 0.2s;
-        text-align: center;
-      }
-      .asi-estado-visual i { font-size: 1.75rem; }
-      .asi-estado-label { font-size: 0.75rem; font-weight: 500; }
-
-      .asi-estado-card input:checked + .asi-estado-visual {
-        border-color: var(--pm-primary);
-        background: var(--pm-primary-bg);
-        transform: scale(1.05);
-      }
-
-      .asi-form-textarea {
-        padding: 0.625rem 0.875rem;
-        border: 1px solid var(--pm-border);
-        border-radius: 10px;
-        font-size: 0.875rem;
-        background: var(--pm-surface);
-        color: var(--pm-text);
-        font-family: inherit;
-        resize: vertical;
-        transition: border-color 0.2s, box-shadow 0.2s;
-      }
-      .asi-form-textarea:focus {
-        outline: none;
-        border-color: var(--pm-primary);
-        box-shadow: 0 0 0 3px var(--pm-primary-bg);
-      }
-      .asi-form-textarea::placeholder {
+      .am-form-control::placeholder {
         color: var(--pm-text-muted);
         opacity: 0.7;
       }
+      .am-form-select { appearance: none; cursor: pointer; }
 
-      .asi-form-footer {
-        display: flex; justify-content: flex-end;
+      .am-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+      .am-col-md-6 { grid-column: span 1; }
+      @media (max-width: 600px) {
+        .am-row { grid-template-columns: 1fr; gap: 1rem; }
       }
-      .asi-char-count {
+
+      .am-d-flex { display: flex; }
+      .am-gap-3 { gap: 0.75rem; }
+
+      .am-form-check {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+      .am-form-check-input {
+        width: 1rem;
+        height: 1rem;
+        margin-top: 0;
+        cursor: pointer;
+        accent-color: var(--pm-primary);
+      }
+      .am-form-check-label {
+        font-size: 0.875rem;
+        cursor: pointer;
+        margin-bottom: 0;
+        display: flex;
+        align-items: center;
+        gap: 0.375rem;
+      }
+      .am-form-check-label i { font-size: 1rem; }
+
+      .am-text-success { color: var(--pm-success); }
+      .am-text-danger { color: var(--pm-danger); }
+      .am-text-warning { color: var(--pm-warning); }
+      .am-text-muted { color: var(--pm-text-muted); }
+
+      .am-form-text {
         font-size: 0.6875rem;
-        color: var(--pm-text-muted);
+        display: block;
+        margin-top: 0.25rem;
+        text-align: right;
       }
 
       /* Dark mode support */
-      [data-bs-theme="dark"] .asi-form-input,
-      [data-bs-theme="dark"] .asi-form-select,
-      [data-bs-theme="dark"] .asi-form-textarea,
-      [data-portal-theme="dark"] .asi-form-input,
-      [data-portal-theme="dark"] .asi-form-select,
-      [data-portal-theme="dark"] .asi-form-textarea {
+      [data-bs-theme="dark"] .am-form-control,
+      [data-bs-theme="dark"] .am-form-select,
+      [data-portal-theme="dark"] .am-form-control,
+      [data-portal-theme="dark"] .am-form-select {
         background-color: var(--pm-surface);
         border-color: var(--pm-border);
+      }
+
+      @media (max-width: 600px) {
+        .am-gap-3 { flex-direction: column; gap: 0.5rem; }
       }
     </style>
   `
 
   const footer = `
-    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
-    <button type="button" class="btn btn-primary btn-sm" id="btnSubmitAsistencia">${submitLabel}</button>
+    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+    <button type="button" class="btn btn-primary" id="btnSubmitAsistencia">${submitLabel}</button>
   `
 
   const modal = ModalManager.createModal({
@@ -467,16 +374,12 @@ export async function openAsistenciaModal(mode, container, data, onSave) {
     size: 'modal-lg',
   })
 
-  // Event listeners
   const justifInput = modal.element.querySelector('#asistJustificacion')
   const justifCount = modal.element.querySelector('#justifCount')
-  if (justifInput) {
-    justifInput.addEventListener('input', (e) => {
-      justifCount.textContent = e.target.value.length
-    })
-  }
+  justifInput?.addEventListener('input', (e) => {
+    justifCount.textContent = `${e.target.value.length}/${VALIDATION.justificacionMax}`
+  })
 
-  // Submit handler
   modal.element.querySelector('#btnSubmitAsistencia')?.addEventListener('click', async () => {
     const btn = modal.element.querySelector('#btnSubmitAsistencia')
     btn.disabled = true
@@ -489,8 +392,8 @@ export async function openAsistenciaModal(mode, container, data, onSave) {
 
       const modelo = new Asistencia({
         id: data?.id,
-        clase_id: modal.element.querySelector('#asistClase').value,
-        student_id: modal.element.querySelector('#asistAlumno').value,
+        clase_id: modal.element.querySelector('#asistClase')?.value,
+        student_id: modal.element.querySelector('#asistAlumno')?.value,
         fecha,
         estado,
         justificacion_texto,

@@ -1,0 +1,453 @@
+/* ============================================================
+   AUSENCIA MODAL — Workflow Component
+   Dark/Light Theme Support with Semantic Tokens
+   ============================================================ */
+
+/* ── Form Container ──────────────────────────────────────── */
+.pm-ausencia-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 4px;
+}
+
+.pm-form-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.pm-form-label {
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 1.4;
+  color: var(--pm-text);
+  letter-spacing: -0.3px;
+}
+
+.pm-required {
+  color: var(--pm-danger);
+  margin-left: 4px;
+}
+
+/* ── Input Fields ────────────────────────────────────────── */
+input[type="date"],
+input[type="time"],
+input[type="tel"],
+input[type="file"],
+select,
+textarea {
+  padding: 10px 12px;
+  background-color: var(--pm-surface);
+  border: 1px solid var(--pm-border);
+  border-radius: 10px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  font-size: 14px;
+  color: var(--pm-text);
+  line-height: 1.5;
+  transition: all var(--pm-transition-base);
+}
+
+input[type="date"]::placeholder,
+input[type="time"]::placeholder,
+input[type="tel"]::placeholder,
+textarea::placeholder {
+  color: var(--pm-text-muted);
+}
+
+input[type="date"]:focus,
+input[type="time"]:focus,
+input[type="tel"]:focus,
+input[type="file"]:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--pm-primary);
+  box-shadow: 0 0 0 3px var(--pm-primary-bg);
+  background-color: var(--pm-surface);
+}
+
+textarea {
+  resize: vertical;
+  min-height: 100px;
+  font-family: inherit;
+}
+
+/* ── Radio Buttons & Checkboxes ──────────────────────────── */
+input[type="radio"],
+input[type="checkbox"] {
+  accent-color: var(--pm-primary);
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+}
+
+/* ── Button Base ─────────────────────────────────────────── */
+button[type="button"],
+button[type="submit"] {
+  padding: 12px 16px;
+  font-weight: 600;
+  font-size: 14px;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all var(--pm-transition-base);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+}
+
+button[type="button"]:hover:not(:disabled),
+button[type="submit"]:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: var(--pm-shadow-md);
+}
+
+button[type="button"]:active,
+button[type="submit"]:active {
+  transform: translateY(0);
+}
+
+button[type="button"]:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ── Primary Button ──────────────────────────────────────── */
+.btn-primary {
+  background-color: var(--pm-primary);
+  color: #ffffff;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background-color: var(--apple-primary-dark);
+}
+
+/* ── Secondary Button ────────────────────────────────────── */
+.btn-secondary {
+  background-color: var(--pm-surface-2);
+  color: var(--pm-text);
+  border: 1px solid var(--pm-border);
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background-color: var(--pm-bg-hover);
+}
+
+/* ── Spinner Animation ───────────────────────────────────── */
+.pm-spinner {
+  display: inline-block;
+  width: 40px;
+  height: 40px;
+  border: 4px solid var(--pm-border);
+  border-top-color: var(--pm-primary);
+  border-radius: 50%;
+  animation: pm-spin 0.8s linear infinite;
+}
+
+@keyframes pm-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ── Grid Layouts ────────────────────────────────────────── */
+.pm-tipo-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 12px;
+}
+
+@media (max-width: 600px) {
+  .pm-tipo-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* ── Step Card Container ─────────────────────────────────── */
+.pm-step-card {
+  padding: 16px;
+  border: 1px solid var(--pm-border);
+  border-radius: 12px;
+  background-color: var(--pm-surface-2);
+  transition: all var(--pm-transition-base);
+}
+
+.pm-step-card:hover {
+  border-color: var(--pm-primary);
+  box-shadow: 0 0 0 2px var(--pm-primary-bg);
+}
+
+.pm-step-card-title {
+  font-weight: 600;
+  font-size: 15px;
+  color: var(--pm-text);
+  margin: 0 0 12px 0;
+}
+
+.pm-step-card-subtitle {
+  font-size: 13px;
+  color: var(--pm-text-muted);
+  margin: 0;
+}
+
+/* ── Panel: Recuperación ─────────────────────────────────── */
+.pm-panel-recuperar {
+  padding: 12px;
+  background-color: var(--pm-primary-bg);
+  border-radius: 8px;
+  margin-bottom: 12px;
+  border-left: 3px solid var(--pm-primary);
+}
+
+.pm-panel-recuperar input,
+.pm-panel-recuperar select,
+.pm-panel-recuperar button {
+  width: 100%;
+  margin-bottom: 12px;
+}
+
+.pm-panel-recuperar > div:last-child input,
+.pm-panel-recuperar > div:last-child select,
+.pm-panel-recuperar > div:last-child button {
+  margin-bottom: 0;
+}
+
+/* ── Panel: Tareas ───────────────────────────────────────── */
+.pm-panel-tareas {
+  padding: 12px;
+  background-color: rgba(52, 199, 89, 0.08);
+  border-radius: 8px;
+  margin-bottom: 12px;
+  border-left: 3px solid var(--pm-success);
+}
+
+.pm-panel-tareas input,
+.pm-panel-tareas select,
+.pm-panel-tareas textarea {
+  width: 100%;
+  margin-bottom: 12px;
+}
+
+.pm-panel-tareas > div:last-child input,
+.pm-panel-tareas > div:last-child select,
+.pm-panel-tareas > div:last-child textarea {
+  margin-bottom: 0;
+}
+
+/* ── Preview Container ───────────────────────────────────── */
+.pm-preview-box {
+  padding: 16px;
+  background-color: var(--pm-surface-2);
+  border: 1px solid var(--pm-border);
+  border-radius: 10px;
+  min-height: 300px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: var(--pm-text);
+  font-family: 'Courier New', 'Monaco', monospace;
+  font-size: 12px;
+  line-height: 1.6;
+  overflow-y: auto;
+  max-height: 500px;
+}
+
+/* ── Info Box ────────────────────────────────────────────── */
+.pm-info-box {
+  padding: 12px;
+  background-color: var(--pm-primary-bg);
+  border-left: 3px solid var(--pm-primary);
+  border-radius: 6px;
+  font-size: 13px;
+  color: var(--pm-text);
+  line-height: 1.6;
+}
+
+.pm-info-box strong {
+  color: var(--pm-text);
+  font-weight: 600;
+}
+
+/* ── Character Counter ───────────────────────────────────── */
+.pm-char-counter {
+  font-size: 12px;
+  color: var(--pm-text-muted);
+  text-align: right;
+  margin-top: 4px;
+}
+
+/* ── Helper Text ─────────────────────────────────────────── */
+.pm-helper-text {
+  font-size: 12px;
+  color: var(--pm-text-muted);
+  margin-top: 4px;
+  line-height: 1.4;
+}
+
+.pm-helper-text.success {
+  color: var(--pm-success);
+}
+
+.pm-helper-text.warning {
+  color: var(--pm-warning);
+}
+
+.pm-helper-text.danger {
+  color: var(--pm-danger);
+}
+
+/* ── Two Column Layout ───────────────────────────────────── */
+.pm-two-cols {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+@media (max-width: 768px) {
+  .pm-two-cols {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── Responsive Grid ─────────────────────────────────────── */
+.pm-grid-responsive {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+}
+
+@media (max-width: 600px) {
+  .pm-grid-responsive {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── Status Badge ────────────────────────────────────────── */
+.pm-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+  min-width: 80px;
+}
+
+.pm-badge-success {
+  background-color: var(--pm-success-bg);
+  color: var(--pm-success-text);
+}
+
+.pm-badge-warning {
+  background-color: var(--pm-warning-bg);
+  color: var(--pm-warning-text);
+}
+
+.pm-badge-danger {
+  background-color: var(--pm-danger-bg);
+  color: var(--pm-danger-text);
+}
+
+.pm-badge-primary {
+  background-color: var(--pm-primary-bg);
+  color: var(--pm-primary-text);
+}
+
+/* ── WhatsApp Specific ───────────────────────────────────── */
+.btn-whatsapp {
+  background-color: #25D366;
+  color: #ffffff;
+}
+
+.btn-whatsapp:hover:not(:disabled) {
+  background-color: #1FA552;
+}
+
+/* ── Accessibility ───────────────────────────────────────── */
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+button:focus-visible {
+  outline: 2px solid var(--pm-primary);
+  outline-offset: 2px;
+}
+
+/* ── Separator ───────────────────────────────────────────── */
+.pm-divider {
+  height: 1px;
+  background-color: var(--pm-border);
+  margin: 16px 0;
+}
+
+/* ── Dark Mode Adjustments ──────────────────────────────── */
+[data-bs-theme="dark"],
+[data-portal-theme="dark"] {
+  --pm-spinner-border: rgba(255, 255, 255, 0.15);
+}
+
+[data-bs-theme="dark"] input[type="date"],
+[data-bs-theme="dark"] input[type="time"],
+[data-bs-theme="dark"] input[type="tel"],
+[data-bs-theme="dark"] input[type="file"],
+[data-bs-theme="dark"] select,
+[data-bs-theme="dark"] textarea,
+[data-portal-theme="dark"] input[type="date"],
+[data-portal-theme="dark"] input[type="time"],
+[data-portal-theme="dark"] input[type="tel"],
+[data-portal-theme="dark"] input[type="file"],
+[data-portal-theme="dark"] select,
+[data-portal-theme="dark"] textarea {
+  background-color: var(--pm-surface);
+  color: var(--pm-text);
+  border-color: var(--pm-border);
+}
+
+[data-bs-theme="dark"] .pm-step-card,
+[data-portal-theme="dark"] .pm-step-card {
+  background-color: var(--pm-surface-2);
+  border-color: var(--pm-border);
+}
+
+[data-bs-theme="dark"] .pm-preview-box,
+[data-portal-theme="dark"] .pm-preview-box {
+  background-color: var(--pm-surface-2);
+  border-color: var(--pm-border);
+  color: var(--pm-text);
+}
+
+[data-bs-theme="dark"] .pm-info-box,
+[data-portal-theme="dark"] .pm-info-box {
+  background-color: var(--pm-primary-bg);
+  border-color: var(--pm-primary);
+}
+
+[data-bs-theme="dark"] .pm-panel-recuperar,
+[data-portal-theme="dark"] .pm-panel-recuperar {
+  background-color: var(--pm-primary-bg);
+  border-color: var(--pm-primary);
+}
+
+[data-bs-theme="dark"] .pm-panel-tareas,
+[data-portal-theme="dark"] .pm-panel-tareas {
+  background-color: rgba(52, 199, 89, 0.15);
+  border-color: var(--pm-success);
+}
+
+/* ── Print Styles ────────────────────────────────────────── */
+@media print {
+  .pm-ausencia-form {
+    display: block;
+  }
+
+  button {
+    display: none;
+  }
+
+  .pm-preview-box {
+    border: none;
+    max-height: none;
+    page-break-inside: avoid;
+  }
+}

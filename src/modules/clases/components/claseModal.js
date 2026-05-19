@@ -90,6 +90,12 @@ function _getClaseFormHTML(clase, inscritosIds) {
         </select>
       </div>
       <div class="col-md-6">
+        <label class="form-label-compact">Maestro Auxiliar</label>
+        <select class="form-select input-dense" id="modal-maestro_auxiliar_id">
+          ${_getMaestrosOptions(clase?.maestro_auxiliar_id)}
+        </select>
+      </div>
+      <div class="col-md-6">
         <label class="form-label-compact">Máx. Alumnos</label>
         <input type="number" class="form-control input-dense" id="modal-max_alumnos" value="${clase?.max_alumnos || 20}" min="1" max="50">
       </div>
@@ -177,6 +183,7 @@ async function _handleSave(modalBody, originalClase) {
       nombre: modalBody.querySelector('#modal-nombre').value.trim(),
       programa_id: modalBody.querySelector('#modal-programa_id').value,
       maestro_id: modalBody.querySelector('#modal-maestro_id').value,
+      maestro_auxiliar_id: modalBody.querySelector('#modal-maestro_auxiliar_id').value || null,
       instrumento: modalBody.querySelector('#modal-instrumento').value.trim(),
       max_alumnos: parseInt(modalBody.querySelector('#modal-max_alumnos').value) || 20,
       estado: modalBody.querySelector('#modal-estado').value,
@@ -272,10 +279,10 @@ function _renderHorarioRow(horario, index) {
           </select>
         </div>
         <div class="col-md-3">
-          <input type="time" class="form-control form-control-sm" name="horario-hora_inicio" value="${horario?.hora_inicio?.slice(0,5) || ''}" required>
+          <input type="time" class="form-control form-control-sm" name="horario-hora_inicio" value="${(horario?.hora_inicio || '').slice(0,5)}" required>
         </div>
         <div class="col-md-3">
-          <input type="time" class="form-control form-control-sm" name="horario-hora_fin" value="${horario?.hora_fin?.slice(0,5) || ''}" required>
+          <input type="time" class="form-control form-control-sm" name="horario-hora_fin" value="${(horario?.hora_fin || '').slice(0,5)}" required>
         </div>
         <div class="col-md-2 d-flex justify-content-end">
           <button type="button" class="btn btn-sm btn-link text-danger btn-remove-horario" title="Quitar"><i class="bi bi-x-circle"></i></button>

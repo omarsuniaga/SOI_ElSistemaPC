@@ -76,10 +76,11 @@ function normalizeClase(c) {
   if (!c) return null
   return new Clase({
     ...c,
-    maestro_id: c.maestro_principal_id ?? c.maestro_id ?? null,
+    maestro_principal_id: c.maestro_principal_id ?? c.maestro_id ?? null,
     maestro_suplente_id: c.maestro_suplente_id ?? null,
-    max_alumnos: c.capacidad_maxima ?? c.max_alumnos ?? 20,
-    notas_pedagogicas: c.descripcion ?? c.notas_pedagogicas ?? '',
+    tiene_suplente: !!c.maestro_suplente_id, // true si existe suplente en BD
+    capacidad_maxima: c.capacidad_maxima ?? c.max_alumnos ?? 20,
+    descripcion: c.descripcion ?? c.notas_pedagogicas ?? '',
   })
 }
 

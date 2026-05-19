@@ -5,14 +5,20 @@ export class Clase {
   constructor(data = {}) {
     this.id = data.id || null
     this.nombre = data.nombre || ''
-    this.maestro_id = data.maestro_id || null
-    this.maestro_suplente_id = data.maestro_suplente_id || data.maestro_auxiliar_id || null
+    // Mapeo: maestro_id del formulario → maestro_principal_id en BD
+    this.maestro_principal_id = data.maestro_principal_id || data.maestro_id || null
+    this.maestro_suplente_id = data.maestro_suplente_id || null
+    this.tiene_suplente = data.tiene_suplente || false
     this.programa_id = data.programa_id || null
     this.instrumento = data.instrumento || ''
     this.horarios = data.horarios || []
-    this.max_alumnos = data.max_alumnos ?? 20
+    // Mapeo: max_alumnos del formulario → capacidad_maxima en BD
+    this.capacidad_maxima = data.capacidad_maxima || data.max_alumnos ?? 20
     this.estado = data.estado || 'activa'
-    this.notas_pedagogicas = data.notas_pedagogicas || ''
+    // Mapeo: notas_pedagogicas del formulario → descripcion en BD
+    this.descripcion = data.descripcion || data.notas_pedagogicas || ''
+    this.tipo_clase = data.tipo_clase || null
+    this.nivel_id = data.nivel_id || null
     this.planificacion_id = data.planificacion_id || null
     this.created_at = data.created_at || null
     this.updated_at = data.updated_at || null
@@ -33,7 +39,7 @@ export class Clase {
       errores.push('El nombre no puede exceder 100 caracteres')
     }
 
-    if (!this.maestro_id) {
+    if (!this.maestro_principal_id) {
       errores.push('El maestro titular es obligatorio')
     }
 
@@ -84,15 +90,15 @@ export class Clase {
       }
     }
 
-    if (this.max_alumnos !== undefined && this.max_alumnos !== null) {
-      if (this.max_alumnos < 1) {
+    if (this.capacidad_maxima !== undefined && this.capacidad_maxima !== null) {
+      if (this.capacidad_maxima < 1) {
         errores.push('El máximo de alumnos debe ser al menos 1')
-      } else if (this.max_alumnos > 100) {
+      } else if (this.capacidad_maxima > 100) {
         errores.push('El máximo de alumnos no puede exceder 100')
       }
     }
 
-    if (this.notas_pedagogicas && this.notas_pedagogicas.length > 1000) {
+    if (this.descripcion && this.descripcion.length > 1000) {
       errores.push('Las notas pedagógicas no pueden exceder 1000 caracteres')
     }
 
@@ -104,24 +110,24 @@ export class Clase {
    * @returns {boolean}
    */
   isCompleto() {
-    return !!(this.nombre && this.maestro_id && this.programa_id && this.instrumento && this.horarios?.length > 0)
+    return !!(this.nombre && this.maestro_principal_id && this.programa_id && this.instrumento && this.horarios?.length > 0)
   }
 
   /**
-   * Devuelve los datos como objeto limpio
+   * Devuelve los datos como objeto limpio (con nombres de columnas de BD)
    * @returns {object}
    */
   toJSON() {
     return {
       id: this.id,
       nombre: this.nombre.trim(),
-      maestro_id: this.maestro_id,
+      maestro_principal_id: this.maestro_principal_id,
       maestro_suplente_id: this.maestro_suplente_id || null,
       programa_id: this.programa_id,
       instrumento: this.instrumento.trim(),
-      max_alumnos: this.max_alumnos,
+      capacidad_maxima: this.capacidad_maxima,
       estado: this.estado,
-      notas_pedagogicas: this.notas_pedagogicas.trim() || null,
+      descripcion: this.descripcion.trim() || null,
       planificacion_id: this.planificacion_id || null,
     }
   }

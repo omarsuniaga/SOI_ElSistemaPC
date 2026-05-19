@@ -90,8 +90,13 @@ function _getClaseFormHTML(clase, inscritosIds) {
         </select>
       </div>
       <div class="col-md-6">
-        <label class="form-label-compact">Maestro Suplente</label>
-        <select class="form-select input-dense" id="modal-maestro_suplente_id">
+        <div class="d-flex align-items-center gap-2">
+          <label class="form-label-compact mb-0">Maestro Suplente</label>
+          <div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" id="modal-tiene_suplente" ${clase?.tiene_suplente ? 'checked' : ''}>
+          </div>
+        </div>
+        <select class="form-select input-dense" id="modal-maestro_suplente_id" style="display: ${clase?.tiene_suplente ? 'block' : 'none'}; margin-top: 8px;">
           ${_getMaestrosOptions(clase?.maestro_suplente_id)}
         </select>
       </div>
@@ -132,6 +137,19 @@ function _getClaseFormHTML(clase, inscritosIds) {
 }
 
 function _attachModalEvents(modalBody, clase) {
+  // Switch para maestro suplente
+  const switchSuplente = modalBody.querySelector('#modal-tiene_suplente')
+  const selectSuplente = modalBody.querySelector('#modal-maestro_suplente_id')
+
+  if (switchSuplente && selectSuplente) {
+    switchSuplente.addEventListener('change', (e) => {
+      selectSuplente.style.display = e.target.checked ? 'block' : 'none'
+      if (!e.target.checked) {
+        selectSuplente.value = '' // Limpiar selección si se desactiva
+      }
+    })
+  }
+
   // Add schedule row
   modalBody.querySelector('#btn-add-horario').addEventListener('click', () => {
     const container = modalBody.querySelector('#modal-horarios-container')
@@ -177,18 +195,21 @@ function _attachModalEvents(modalBody, clase) {
 
 async function _handleSave(modalBody, originalClase) {
   const isEdicion = !!originalClase
-  
+
   const getFormData = () => {
     const maestroSuplenteValue = modalBody.querySelector('#modal-maestro_suplente_id').value
+    const tieneSuplente = modalBody.querySelector('#modal-tiene_suplente').checked
+
     const data = {
       nombre: modalBody.querySelector('#modal-nombre').value.trim(),
       programa_id: modalBody.querySelector('#modal-programa_id').value,
-      maestro_id: modalBody.querySelector('#modal-maestro_id').value,
-      maestro_suplente_id: maestroSuplenteValue ? maestroSuplenteValue : null,
+      maestro_principal_id: modalBody.querySelector('#modal-maestro_id').value,
+      maestro_suplente_id: tieneSuplente ? maestroSuplenteValue : null,
+      tiene_suplente: tieneSuplente,
       instrumento: modalBody.querySelector('#modal-instrumento').value.trim(),
-      max_alumnos: parseInt(modalBody.querySelector('#modal-max_alumnos').value) || 20,
+      capacidad_maxima: parseInt(modalBody.querySelector('#modal-max_alumnos').value) || 20,
       estado: modalBody.querySelector('#modal-estado').value,
-      notas_pedagogicas: modalBody.querySelector('#modal-notas_pedagogicas').value.trim(),
+      descripcion: modalBody.querySelector('#modal-notas_pedagogicas').value.trim(),
       horarios: Array.from(modalBody.querySelectorAll('.horario-row')).map(row => ({
         dia: row.querySelector('[name="horario-dia"]').value,
         hora_inicio: row.querySelector('[name="horario-hora_inicio"]').value,
@@ -212,14 +233,14 @@ async function _handleSave(modalBody, originalClase) {
     let resultClase
     if (isEdicion) {
       resultClase = await actualizarClase(originalClase.id, formData)
-      
+
       // Update enrollment if it changed (optimization: only if edicion)
       // This part requires comparing original vs new IDs, for now simple bulk:
       const newIds = Array.from(modalBody.querySelectorAll('.alumnos-list input[type="checkbox"]:checked')).map(cb => cb.value)
       // Logic for diffing enrollment could be added here
     } else {
       resultClase = await crearClase(formData)
-      
+
       // New enrollment
       const selectedIds = Array.from(modalBody.querySelectorAll('.alumnos-list input[type="checkbox"]:checked')).map(cb => cb.value)
       if (selectedIds.length > 0) {
@@ -280,10 +301,10 @@ function _renderHorarioRow(horario, index) {
           </select>
         </div>
         <div class="col-md-3">
-          <input type="time" class="form-control form-control-sm" name="horario-hora_inicio" value="${(horario?.hora_inicio || '').slice(0,5)}" required>
+          <input type="time" class="form-control form-control-sm" name="horario-hora_inicio" value="${(horario?.hora_inicio || '').slice(0, 5)}" required>
         </div>
         <div class="col-md-3">
-          <input type="time" class="form-control form-control-sm" name="horario-hora_fin" value="${(horario?.hora_fin || '').slice(0,5)}" required>
+          <input type="time" class="form-control form-control-sm" name="horario-hora_fin" value="${(horario?.hora_fin || '').slice(0, 5)}" required>
         </div>
         <div class="col-md-2 d-flex justify-content-end">
           <button type="button" class="btn btn-sm btn-link text-danger btn-remove-horario" title="Quitar"><i class="bi bi-x-circle"></i></button>

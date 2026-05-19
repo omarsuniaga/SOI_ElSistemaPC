@@ -132,7 +132,7 @@ export async function obtenerClase(id) {
 export async function crearClase(claseData, force = false) {
   const clase = normalizeClase(claseData)
   clase.horarios = claseData.horarios || []
-  
+
   const errores = clase.validate()
   if (errores.length > 0) {
     throw new Error(errores.join('. '))
@@ -142,7 +142,7 @@ export async function crearClase(claseData, force = false) {
     for (const h of clase.horarios) {
       const solapamiento = await verificarSolapamiento({
         salonId: h.salon_id,
-        maestroId: clase.maestro_id,
+        maestroId: clase.maestro_principal_id,
         dia: h.dia,
         horaInicio: h.hora_inicio,
         horaFin: h.hora_fin
@@ -157,9 +157,13 @@ export async function crearClase(claseData, force = false) {
     }
   }
 
+  // Para INSERT, no enviar id (que será null) - dejar que BD genere con DEFAULT
+  const claseJSON = clase.toJSON()
+  delete claseJSON.id
+
   const { data, error } = await supabase
     .from('clases')
-    .insert([clase.toJSON()])
+    .insert([claseJSON])
     .select()
 
   if (error) {

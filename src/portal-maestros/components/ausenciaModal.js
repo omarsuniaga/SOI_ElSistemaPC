@@ -287,6 +287,26 @@ class AusenciaModal {
 
         /* Tipo options */
         .pm-tipo-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.5rem; }
+        @media (max-width: 768px) {
+          .pm-tipo-grid { grid-template-columns: repeat(3, 1fr); }
+        }
+        @media (max-width: 480px) {
+          .pm-tipo-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+
+        /* Spinner animation */
+        .pm-spinner {
+          display: inline-block;
+          width: 14px; height: 14px;
+          border: 2px solid var(--pm-text-muted);
+          border-radius: 50%;
+          border-top-color: var(--pm-primary);
+          animation: pm-spin 0.8s linear infinite;
+        }
+        @keyframes pm-spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
         .pm-tipo-option input { display: none; }
         .pm-tipo-card {
           display: flex;
@@ -702,18 +722,36 @@ class AusenciaModal {
 
     try {
       // Obtener clases que tengan sesiones en el rango
+      // Filter by sessions in date range where maestro is primary or substitute
       const { data: sesiones, error } = await supabase
         .from('sesiones')
-        .select('clase_id, clase:clases(id, nombre, instrumento)')
+        .select(`
+          clase_id,
+          clase:clases(
+            id,
+            nombre,
+            instrumento,
+            maestro_principal_id,
+            maestro_suplente_id
+          )
+        `)
         .gte('fecha', fechaInicio)
-        .lte('fecha', fechaFin)
-        .or(`clase.maestro_principal_id.eq.${this.maestro.id},clase.maestro_suplente_id.eq.${this.maestro.id}`);
+        .lte('fecha', fechaFin);
 
       if (error) throw error;
 
+      // Filter classes where maestro is principal or substitute
+      const filteredSesiones = (sesiones || []).filter(s => {
+        const clase = s.clase;
+        return clase && (
+          clase.maestro_principal_id === this.maestro.id ||
+          clase.maestro_suplente_id === this.maestro.id
+        );
+      });
+
       // Extraer clases únicas
       const clasesMap = new Map();
-      (sesiones || []).forEach(s => {
+      filteredSesiones.forEach(s => {
         if (s.clase) {
           clasesMap.set(s.clase.id, s.clase);
         }
@@ -772,8 +810,16 @@ class AusenciaModal {
 
     try {
       const { data: salones } = await supabase.from('salones').select('id,nombre,capacidad').eq('activo', true);
-      const { data: reservas } = await supabase.from('reservas_salones').select('salon_id').eq('fecha', fecha).eq('hora', hora).eq('estado', 'confirmada');
-      const ocupados = new Set((reservas||[]).map(r=>r.salon_id));
+
+      // Check availability using sesiones_clase (which tracks salon usage)
+      // A salon is occupied if it has a session on the same date and overlapping hour
+      const { data: ocupadas } = await supabase
+        .from('sesiones_clase')
+        .select('salon_id')
+        .eq('fecha', fecha)
+        .eq('hora_inicio', hora);
+
+      const ocupados = new Set((ocupadas||[]).map(s=>s.salon_id));
       const disponibles = (salones||[]).filter(s => !ocupados.has(s.id));
       if (disponibles.length) {
         container.innerHTML = disponibles.map(s => `
@@ -841,6 +887,7 @@ class AusenciaModal {
       };
     }
 
+    // Base form data (only columns that exist in DB)
     const formData = {
       maestro_id: this.maestro.id,
       tipo_ausencia: tipo,
@@ -849,12 +896,8 @@ class AusenciaModal {
       fecha_inicio: fechaInicio,
       fecha_fin: fechaFin,
       motivo,
-      clases_afectadas: clasesIds,
-      actividades_por_clase: actividades,
-      clase_emergente: claseEmergente,
       notificar_director: true,
-      estado: 'pendiente',
-      created_at: new Date().toISOString()
+      estado: 'pendiente'
     };
 
     // Deshabilitar botón de envío
@@ -862,21 +905,140 @@ class AusenciaModal {
     if (saveBtn) saveBtn.disabled = true;
 
     try {
-      const { error } = await supabase.from('ausencias_maestros').insert([formData]);
-      if (error) {
-        // Fallback a localStorage
-        const ausencias = JSON.parse(localStorage.getItem('ausencias_maestros') || '[]');
-        ausencias.push({ ...formData, id: Date.now() });
-        localStorage.setItem('ausencias_maestros', JSON.stringify(ausencias));
+      // 1. Insert absence request
+      const { data: ausenciaData, error: ausenciaError } = await supabase
+        .from('ausencias_maestros')
+        .insert([formData])
+        .select();
+
+      if (ausenciaError) throw ausenciaError;
+
+      const ausenciaId = ausenciaData[0].id;
+
+      // 2. Upload document if provided
+      let archivoUrl = null;
+      if (this.state.archivo) {
+        archivoUrl = await this.uploadDocumento(ausenciaId, this.state.archivo);
+        if (archivoUrl) {
+          await supabase
+            .from('ausencias_maestros')
+            .update({ archivo_url: archivoUrl })
+            .eq('id', ausenciaId);
+        }
       }
+
+      // 3. Insert affected classes
+      if (clasesIds.length > 0) {
+        const clasesAfectadasData = clasesIds.map(claseId => ({
+          ausencia_id: ausenciaId,
+          clase_id: claseId,
+          actividad_reemplazo: actividades[claseId] || null
+        }));
+        const { error: clasesError } = await supabase
+          .from('ausencias_clases_afectadas')
+          .insert(clasesAfectadasData);
+        if (clasesError) throw clasesError;
+      }
+
+      // 4. Notify director
+      await this.crearNotificacionDirector(ausenciaId, formData);
+
+      // 5. Generate WhatsApp message
+      const mensajeWhatsApp = this.generarMensajeWhatsApp(formData, clasesIds.length);
+
+      // Show success with option to copy WhatsApp message
       AppToast.success('Solicitud de ausencia enviada correctamente');
+
+      // Copy WhatsApp message to clipboard
+      if (navigator.clipboard && mensajeWhatsApp) {
+        navigator.clipboard.writeText(mensajeWhatsApp);
+        AppToast.info('Mensaje de WhatsApp copiado al portapapeles');
+      }
+
       return true;
-    } catch {
+    } catch (error) {
+      console.error('[AusenciaModal] Error:', error);
       AppToast.error('No se pudo enviar la solicitud. Intenta de nuevo.');
       return false;
     } finally {
       if (saveBtn) saveBtn.disabled = false;
     }
+  }
+
+  // Helper: Upload document to Supabase Storage
+  async uploadDocumento(ausenciaId, file) {
+    try {
+      const timestamp = new Date().getTime();
+      const filename = `${timestamp}_${this.maestro.id}_${file.name}`;
+      const path = `ausencias/${filename}`;
+
+      const { data, error } = await supabase.storage
+        .from('documentos')
+        .upload(path, file);
+
+      if (error) throw error;
+
+      // Return public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('documentos')
+        .getPublicUrl(path);
+
+      return publicUrl;
+    } catch (error) {
+      console.error('[AusenciaModal] Upload error:', error);
+      return null;
+    }
+  }
+
+  // Helper: Create director notification
+  async crearNotificacionDirector(ausenciaId, formData) {
+    try {
+      // Get director's ID from clase (first affected class)
+      // For simplicity, we create notification in tabla ausencias_notificaciones
+      // Director assignment logic could be enhanced later
+
+      const { data: clases } = await supabase
+        .from('clases')
+        .select('director_id')
+        .limit(1);
+
+      if (!clases || clases.length === 0) {
+        console.warn('[AusenciaModal] No director found');
+        return;
+      }
+
+      const directorId = clases[0].director_id;
+
+      // Create notification record
+      await supabase
+        .from('ausencias_notificaciones')
+        .insert([{
+          ausencia_id: ausenciaId,
+          director_id: directorId,
+          tipo: 'director_alert',
+          estado: 'pendiente'
+        }]);
+    } catch (error) {
+      console.error('[AusenciaModal] Notification error:', error);
+      // Don't fail submission if notification fails
+    }
+  }
+
+  // Helper: Generate WhatsApp-copyable message
+  generarMensajeWhatsApp(formData, clasesCount) {
+    const { maestro } = this;
+    const fecha = new Date().toLocaleDateString('es-ES');
+    const tipoLabel = TIPO_AUSENCIA.find(t => t.value === formData.tipo_ausencia)?.label || formData.tipo_ausencia;
+
+    return `📋 *Solicitud de Ausencia*\n\n` +
+      `👨‍🏫 *Maestro:* ${maestro.nombre || 'N/A'}\n` +
+      `📅 *Tipo:* ${tipoLabel}\n` +
+      `⏰ *Urgencia:* ${formData.urgencia}\n` +
+      `📆 *Desde:* ${formData.fecha_inicio}\n` +
+      `📆 *Hasta:* ${formData.fecha_fin}\n` +
+      `📚 *Clases Afectadas:* ${clasesCount}\n` +
+      `💬 *Motivo:* ${formData.motivo}\n` +
+      `\n✅ Solicitud enviada: ${fecha}`;
   }
 }
 

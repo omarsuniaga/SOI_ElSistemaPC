@@ -86,7 +86,7 @@ function _getClaseFormHTML(clase, inscritosIds) {
       <div class="col-md-6">
         <label class="form-label-compact">Maestro Titular *</label>
         <select class="form-select input-dense" id="modal-maestro_id" required>
-          ${_getMaestrosOptions(clase?.maestro_id)}
+          ${_getMaestrosOptions(clase?.maestro_principal_id)}
         </select>
       </div>
       <div class="col-md-6">
@@ -102,7 +102,7 @@ function _getClaseFormHTML(clase, inscritosIds) {
       </div>
       <div class="col-md-6">
         <label class="form-label-compact">Máx. Alumnos</label>
-        <input type="number" class="form-control input-dense" id="modal-max_alumnos" value="${clase?.max_alumnos || 20}" min="1" max="50">
+        <input type="number" class="form-control input-dense" id="modal-max_alumnos" value="${clase?.capacidad_maxima || 20}" min="1" max="50">
       </div>
       <div class="col-md-6">
         <label class="form-label-compact">Estado</label>
@@ -125,7 +125,7 @@ function _getClaseFormHTML(clase, inscritosIds) {
 
       <div class="col-12">
         <label class="form-label-compact">Notas Pedagógicas</label>
-        <textarea class="form-control input-dense" id="modal-notas_pedagogicas" rows="2" placeholder="Observaciones sobre el grupo o metodología..." maxlength="${VALIDATION.notasMax}">${escapeHTML(clase?.notas_pedagogicas || '')}</textarea>
+        <textarea class="form-control input-dense" id="modal-notas_pedagogicas" rows="2" placeholder="Observaciones sobre el grupo o metodología..." maxlength="${VALIDATION.notasMax}">${escapeHTML(clase?.descripcion || '')}</textarea>
       </div>
 
       <div class="col-12 mt-3 border-top pt-3">

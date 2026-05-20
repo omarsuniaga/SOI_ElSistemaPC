@@ -451,6 +451,7 @@ export async function getReporteConsolidado({ periodoId, fecha, claseId } = {}) 
         nombre_clase,
         hora_inicio,
         hora_fin,
+        borrador,
         maestro_principal,
         maestro_auxiliar,
         observacion_clase,
@@ -476,6 +477,12 @@ export async function getReporteConsolidado({ periodoId, fecha, claseId } = {}) 
       console.warn('sesiones no es un array, usando array vacío', sesiones)
       sesiones = []
     }
+
+    // 🔥 FILTRO CRÍTICO: Excluir sesiones borradores (incompletas/abandonadas)
+    // Solo mostrar sesiones guardadas (borrador = false)
+    const sesionesFiltered = sesiones.filter(s => s.borrador === false)
+    console.log(`📊 Filtro de borradores: ${sesiones.length} sesiones → ${sesionesFiltered.length} sesiones reales`)
+    sesiones = sesionesFiltered
 
     // DEBUG
     console.log('📊 getReporteConsolidado DEBUG:', {

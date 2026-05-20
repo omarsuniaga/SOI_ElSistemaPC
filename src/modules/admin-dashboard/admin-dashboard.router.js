@@ -21,39 +21,18 @@ export function registerRoutesAdminDashboard() {
     }
   })
 
-  // Reportes de Director
+  // Reportes de Director (DESACTIVADO - pendiente crear VIEW con datos agregados)
   router.register('admin-dashboard-reportes', (container) => {
-    try {
-      container.innerHTML = `<div id="director-reporting-container"></div>`
-      const panel = new DirectorReportingPanel('director-reporting-container')
-      panel.init()
-    } catch (error) {
-      console.error('[admin-dashboard-reportes] Error:', error)
-      container.innerHTML = `<div class="pm-placeholder"><i class="bi bi-exclamation-triangle"></i><p>Error al cargar reportes: ${error.message}</p></div>`
-    }
+    container.innerHTML = `<div class="pm-placeholder"><i class="bi bi-exclamation-triangle"></i><p>⚠️ Componente en desarrollo. Esperando VIEW teacher_class_fill_metrics agregada.</p></div>`
   })
 
-  // Analítica de Llenado de Asistencias
+  // Analítica de Llenado de Asistencias (DESACTIVADO - pendiente crear VIEW con datos agregados)
   router.register('admin-dashboard-analitca-llenado', (container) => {
-    try {
-      container.innerHTML = `<div id="analytics-filling-container"></div>`
-      const widget = analyticsFillingBehaviorWidget('analytics-filling-container')
-      widget.init()
-    } catch (error) {
-      console.error('[admin-dashboard-analitca-llenado] Error:', error)
-      container.innerHTML = `<div class="pm-placeholder"><i class="bi bi-exclamation-triangle"></i><p>Error al cargar analítica: ${error.message}</p></div>`
-    }
+    container.innerHTML = `<div class="pm-placeholder"><i class="bi bi-exclamation-triangle"></i><p>⚠️ Componente en desarrollo. Esperando VIEW teacher_class_fill_metrics agregada.</p></div>`
   })
 
-  // Reporte de Tendencias para Director
+  // Reporte de Tendencias para Director (DESACTIVADO - pendiente crear VIEW con datos agregados)
   router.register('admin-dashboard-tendencias', (container) => {
-    try {
-      container.innerHTML = `<div id="trend-report-container"></div>`
-      const view = directorTrendReportView('trend-report-container')
-      view.init()
-    } catch (error) {
-      console.error('[admin-dashboard-tendencias] Error:', error)
-      container.innerHTML = `<div class="pm-placeholder"><i class="bi bi-exclamation-triangle"></i><p>Error al cargar tendencias: ${error.message}</p></div>`
-    }
+    container.innerHTML = `<div class="pm-placeholder"><i class="bi bi-exclamation-triangle"></i><p>⚠️ Componente en desarrollo. Esperando VIEW teacher_class_fill_metrics agregada.</p></div>`
   })
 }

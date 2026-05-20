@@ -1,4 +1,5 @@
 import '../styles/analyticsFillingBehavior.css'
+import { getTeacherFillingMetrics } from '../api/analyticsFillingBehaviorService.js'
 
 export function analyticsFillingBehaviorWidget(containerId) {
   const container = document.getElementById(containerId)
@@ -53,8 +54,7 @@ export function analyticsFillingBehaviorWidget(containerId) {
     async init() {
       container.innerHTML = '<div class="loading">Cargando analítica</div>'
 
-      const response = await fetch('/api/analytics/fill-metrics')
-      const metrics = await response.json()
+      const metrics = await getTeacherFillingMetrics()
 
       this.render(metrics)
     },

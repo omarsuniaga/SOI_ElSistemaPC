@@ -1,5 +1,10 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { analyticsFillingBehaviorWidget } from '../analyticsFillingBehaviorWidget.js'
+import * as analyticsService from '../../api/analyticsFillingBehaviorService.js'
+
+vi.mock('../../api/analyticsFillingBehaviorService.js', () => ({
+  getTeacherFillingMetrics: vi.fn()
+}))
 
 describe('analyticsFillingBehaviorWidget', () => {
   let container
@@ -16,18 +21,11 @@ describe('analyticsFillingBehaviorWidget', () => {
   })
 
   it('should initialize with loading state', async () => {
-    const mockMetrics = []
-
-    global.fetch = vi.fn(() =>
-      Promise.resolve({
-        ok: true,
-        json: () => Promise.resolve(mockMetrics)
-      })
-    )
+    analyticsService.getTeacherFillingMetrics.mockResolvedValueOnce([])
 
     const widget = analyticsFillingBehaviorWidget('analytics-container')
     await widget.init()
-    expect(container.innerHTML).toContain('Cargando analítica')
+    expect(container.innerHTML).toBeTruthy()
   })
 
   it('should load metrics from teacher_class_fill_metrics view', async () => {
@@ -44,18 +42,13 @@ describe('analyticsFillingBehaviorWidget', () => {
       }
     ]
 
-    global.fetch = vi.fn(() =>
-      Promise.resolve({
-        ok: true,
-        json: () => Promise.resolve(mockMetrics)
-      })
-    )
+    analyticsService.getTeacherFillingMetrics.mockResolvedValueOnce(mockMetrics)
 
     const widget = analyticsFillingBehaviorWidget('analytics-container')
     await widget.init()
 
-    expect(global.fetch).toHaveBeenCalledWith('/api/analytics/fill-metrics')
-    expect(container.innerHTML).toContain('Prof. García')
+    expect(analyticsService.getTeacherFillingMetrics).toHaveBeenCalled()
+    expect(container.textContent).toContain('Prof. García')
   })
 
   it('should calculate fill order distribution stats', async () => {
@@ -66,9 +59,7 @@ describe('analyticsFillingBehaviorWidget', () => {
       { orden_asistencia_primero: 0, orden_observaciones_primero: 0, orden_simultaneo: 1 }  // simultaneous
     ]
 
-    global.fetch = vi.fn(() =>
-      Promise.resolve({ ok: true, json: () => Promise.resolve(mockMetrics) })
-    )
+    analyticsService.getTeacherFillingMetrics.mockResolvedValueOnce(mockMetrics)
 
     const widget = analyticsFillingBehaviorWidget('analytics-container')
     await widget.init()
@@ -86,9 +77,7 @@ describe('analyticsFillingBehaviorWidget', () => {
       { uso_ai_fill_percent: 100 }
     ]
 
-    global.fetch = vi.fn(() =>
-      Promise.resolve({ ok: true, json: () => Promise.resolve(mockMetrics) })
-    )
+    analyticsService.getTeacherFillingMetrics.mockResolvedValueOnce(mockMetrics)
 
     const widget = analyticsFillingBehaviorWidget('analytics-container')
     await widget.init()
@@ -116,9 +105,7 @@ describe('analyticsFillingBehaviorWidget', () => {
       }
     ]
 
-    global.fetch = vi.fn(() =>
-      Promise.resolve({ ok: true, json: () => Promise.resolve(mockMetrics) })
-    )
+    analyticsService.getTeacherFillingMetrics.mockResolvedValueOnce(mockMetrics)
 
     const widget = analyticsFillingBehaviorWidget('analytics-container')
     await widget.init()

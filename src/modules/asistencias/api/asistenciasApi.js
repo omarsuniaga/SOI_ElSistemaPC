@@ -447,8 +447,8 @@ export async function getReporteConsolidado({ periodoId, fecha, claseId } = {}) 
       }
     }
 
-    // Obtener todas las sesiones agrupadas por clase + horario
-    let query = supabase
+    // PASO 1: Obtener todas las sesiones (sin asistencias como relación)
+    let sesionesQuery = supabase
       .from('sesiones_clase')
       .select(`
         id,
@@ -464,52 +464,87 @@ export async function getReporteConsolidado({ periodoId, fecha, claseId } = {}) 
           instrumento,
           maestro_principal_id,
           maestro_auxiliar_id
-        ),
-        asistencias (
-          id,
-          alumno_id,
-          estado,
-          observaciones,
-          alumnos (id, nombre_completo)
-        ),
-        justificaciones (
-          id,
-          alumno_id,
-          motivo,
-          evidencia_url,
-          evidencia_base64
         )
       `)
 
-    // Aplicar filtros
-    if (periodoFechaInicio) query = query.gte('fecha', periodoFechaInicio)
-    if (periodoFechaFin) query = query.lte('fecha', periodoFechaFin)
-    if (fecha) query = query.eq('fecha', fecha)
-    if (claseId) query = query.eq('clase_id', claseId)
+    // Aplicar filtros de periodo/fecha/clase
+    if (periodoFechaInicio) sesionesQuery = sesionesQuery.gte('fecha', periodoFechaInicio)
+    if (periodoFechaFin) sesionesQuery = sesionesQuery.lte('fecha', periodoFechaFin)
+    if (fecha) sesionesQuery = sesionesQuery.eq('fecha', fecha)
+    if (claseId) sesionesQuery = sesionesQuery.eq('clase_id', claseId)
 
-    const { data: sesiones, error } = await query.order('hora_inicio', { ascending: true })
-    if (error) throwError('No se pudieron cargar las sesiones consolidadas', error)
+    const { data: sesiones, error: errSesiones } = await sesionesQuery.order('hora_inicio', { ascending: true })
+    if (errSesiones) throwError('No se pudieron cargar las sesiones', errSesiones)
 
-    // Validar que sesiones sea un array
     if (!Array.isArray(sesiones)) {
       console.warn('sesiones no es un array, usando array vacío', sesiones)
       sesiones = []
     }
 
-    // DEBUG: Log para verificar datos
+    // PASO 2: Obtener TODAS las asistencias para esas sesiones (en query separada)
+    const sesionIds = sesiones.map(s => s.id)
+    const asistenciasMap = {} // Indexar por sesion_clase_id
+
+    if (sesionIds.length > 0) {
+      const { data: asistencias, error: errAsistencias } = await supabase
+        .from('asistencias')
+        .select(`
+          id,
+          sesion_clase_id,
+          alumno_id,
+          estado,
+          observaciones,
+          alumnos (id, nombre_completo)
+        `)
+        .in('sesion_clase_id', sesionIds)
+
+      if (errAsistencias) throwError('No se pudieron cargar las asistencias', errAsistencias)
+
+      // Indexar asistencias por sesion_clase_id para acceso rápido
+      if (asistencias && Array.isArray(asistencias)) {
+        asistencias.forEach(a => {
+          if (!asistenciasMap[a.sesion_clase_id]) {
+            asistenciasMap[a.sesion_clase_id] = []
+          }
+          asistenciasMap[a.sesion_clase_id].push(a)
+        })
+      }
+    }
+
+    // PASO 3: Obtener justificaciones para esas sesiones
+    const justificacionesMap = {} // Indexar por sesion_clase_id
+
+    if (sesionIds.length > 0) {
+      const { data: justificaciones, error: errJustificaciones } = await supabase
+        .from('justificaciones')
+        .select('id, sesion_id, alumno_id, motivo, evidencia_url, evidencia_base64')
+        .in('sesion_id', sesionIds)
+
+      if (justificaciones && Array.isArray(justificaciones)) {
+        justificaciones.forEach(j => {
+          if (!justificacionesMap[j.sesion_id]) {
+            justificacionesMap[j.sesion_id] = []
+          }
+          justificacionesMap[j.sesion_id].push(j)
+        })
+      }
+    }
+
+    // DEBUG
     console.log('📊 getReporteConsolidado DEBUG:', {
       periodoId,
       sesionesCount: sesiones.length,
+      asistenciasCount: Object.values(asistenciasMap).flat().length,
+      asistenciasMap,
       firstSesion: sesiones[0] ? {
         id: sesiones[0].id,
         fecha: sesiones[0].fecha,
         clase_nombre: sesiones[0].clases?.nombre,
-        asistenciasCount: sesiones[0].asistencias?.length || 0,
-        asistenciasData: sesiones[0].asistencias
+        asistenciasEnMapa: asistenciasMap[sesiones[0].id]?.length || 0
       } : 'NO SESIONES'
     })
 
-    // Consolidar por Clase + Fecha + Horario en el cliente
+    // PASO 4: Consolidar por Clase + Fecha + Horario en el cliente
     const consolidado = {}
     const claseOrder = [] // Para mantener orden por horario
 
@@ -540,15 +575,16 @@ export async function getReporteConsolidado({ periodoId, fecha, claseId } = {}) 
           claseOrder.push(key)
         }
 
-        // Contar asistencias
+        // Obtener asistencias para esta sesión desde el mapa
+        const sesionAsistencias = asistenciasMap[sesion.id] || []
+
+        // Contar asistencias (deduplicar por alumno_id)
         const asistenciasPorAlumno = {}
-        if (sesion.asistencias && Array.isArray(sesion.asistencias)) {
-          sesion.asistencias.forEach(a => {
-            if (!asistenciasPorAlumno[a.alumno_id]) {
-              asistenciasPorAlumno[a.alumno_id] = { ...a }
-            }
-          })
-        }
+        sesionAsistencias.forEach(a => {
+          if (!asistenciasPorAlumno[a.alumno_id]) {
+            asistenciasPorAlumno[a.alumno_id] = { ...a }
+          }
+        })
 
         Object.values(asistenciasPorAlumno).forEach(a => {
           if (a.estado === 'presente') consolidado[key].presentes++
@@ -558,20 +594,19 @@ export async function getReporteConsolidado({ periodoId, fecha, claseId } = {}) 
           consolidado[key].asistencias.push(a)
         })
 
-        // Agregar justificaciones
-        if (sesion.justificaciones && Array.isArray(sesion.justificaciones)) {
-          sesion.justificaciones.forEach(j => {
-            // Get alumno name from the asistencias if available
-            const alumnoAsistencia = sesion.asistencias?.find(a => a.alumno_id === j.alumno_id)
-            consolidado[key].justificaciones.push({
-              alumno_nombre: alumnoAsistencia?.alumnos?.nombre_completo || 'Sin nombre',
-              alumno_id: j.alumno_id,
-              motivo: j.motivo,
-              evidencia_url: j.evidencia_url,
-              evidencia_base64: j.evidencia_base64
-            })
+        // Agregar justificaciones para esta sesión desde el mapa
+        const sesionJustificaciones = justificacionesMap[sesion.id] || []
+        sesionJustificaciones.forEach(j => {
+          // Get alumno name from the asistencias if available
+          const alumnoAsistencia = sesionAsistencias.find(a => a.alumno_id === j.alumno_id)
+          consolidado[key].justificaciones.push({
+            alumno_nombre: alumnoAsistencia?.alumnos?.nombre_completo || 'Sin nombre',
+            alumno_id: j.alumno_id,
+            motivo: j.motivo,
+            evidencia_url: j.evidencia_url,
+            evidencia_base64: j.evidencia_base64
           })
-        }
+        })
       })
     }
 

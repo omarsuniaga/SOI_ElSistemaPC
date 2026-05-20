@@ -77,4 +77,22 @@ describe('analyticsFillingBehaviorWidget', () => {
     expect(container.textContent).toContain('25.0%') // observaciones first
     expect(container.textContent).toContain('25.0%') // simultaneous
   })
+
+  it('should calculate AI fill usage percentage', async () => {
+    const mockMetrics = [
+      { uso_ai_fill_percent: 0 },
+      { uso_ai_fill_percent: 50 },
+      { uso_ai_fill_percent: 100 },
+      { uso_ai_fill_percent: 100 }
+    ]
+
+    global.fetch = vi.fn(() =>
+      Promise.resolve({ ok: true, json: () => Promise.resolve(mockMetrics) })
+    )
+
+    const widget = analyticsFillingBehaviorWidget('analytics-container')
+    await widget.init()
+
+    expect(container.textContent).toContain('62.5%') // average AI usage
+  })
 })

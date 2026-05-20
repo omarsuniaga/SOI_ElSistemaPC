@@ -441,7 +441,8 @@ export async function getReporteConsolidado({ periodoId, fecha, claseId } = {}) 
           instrumento,
           maestro_principal_id,
           maestro_auxiliar_id,
-          maestros!clases_maestro_principal_id_fk (id, nombre_completo)
+          maestros_principal:maestros!clases_maestro_principal_id_fk (id, nombre_completo),
+          maestros_auxiliar:maestros!clases_maestro_auxiliar_id_fk (id, nombre_completo)
         ),
         asistencias (
           id,
@@ -481,8 +482,8 @@ export async function getReporteConsolidado({ periodoId, fecha, claseId } = {}) 
           fecha: sesion.fecha,
           hora_inicio: sesion.hora_inicio,
           hora_fin: sesion.hora_fin,
-          maestro_nombre: sesion.clases.maestros?.nombre_completo || 'Sin asignar',
-          maestro_auxiliar_nombre: null, // TODO: cargar desde tabla maestros
+          maestro_nombre: sesion.clases.maestros_principal?.nombre_completo || 'Sin asignar',
+          maestro_auxiliar_nombre: sesion.clases.maestros_auxiliar?.nombre_completo || null,
           presentes: 0,
           ausentes: 0,
           justificados: 0,

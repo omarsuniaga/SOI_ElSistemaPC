@@ -4,6 +4,8 @@ import {
   obtenerMaestros,
   crearMaestro,
   actualizarMaestro,
+  inactivarMaestro,
+  activarMaestro,
   eliminarMaestro,
   validarEmail,
 } from '../api/maestrosApi.js'
@@ -553,17 +555,26 @@ function openDeleteModal(id) {
 
   state.deletingId = id
   const nombre = maestro.nombre || maestro.name || ''
+  const isActive = maestro.is_active !== false
+
   AppModal.open({
-    title: '⚠️ Eliminar Maestro',
+    title: isActive ? '⏸️ Desactivar Maestro' : '▶️ Reactivar Maestro',
     size: 'sm',
-    saveText: 'Eliminar',
-    body: `<p>¿Eliminar al maestro <strong>${escapeHTML(nombre)}</strong>?</p>
-           <p class="text-muted small mb-0">Esta acción no se puede deshacer.</p>`,
+    saveText: isActive ? 'Desactivar' : 'Reactivar',
+    body: isActive
+      ? `<p>¿Desactivar al maestro <strong>${escapeHTML(nombre)}</strong>?</p>
+         <p class="text-muted small mb-0">El maestro no aparecerá en las listas, pero sus datos se conservarán.</p>`
+      : `<p>¿Reactivar al maestro <strong>${escapeHTML(nombre)}</strong>?</p>
+         <p class="text-muted small mb-0">El maestro volverá a aparecer en las listas.</p>`,
     onSave: async () => {
-      await eliminarMaestro(id)
-      state.maestrosOriginales = state.maestrosOriginales.filter(a => a.id !== id)
+      if (isActive) {
+        await inactivarMaestro(id)
+        showToast('Maestro desactivado correctamente', 'success')
+      } else {
+        await activarMaestro(id)
+        showToast('Maestro reactivado correctamente', 'success')
+      }
       applyFilters()
-      showToast('Maestro eliminado correctamente', 'success')
     }
   })
 }

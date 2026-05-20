@@ -112,6 +112,41 @@ export async function actualizarMaestro(id, actualizaciones) {
   return normalizeMaestro(data[0])
 }
 
+/**
+ * Desactiva un maestro (soft delete) en lugar de eliminarlo
+ * El maestro seguirá existiendo en la BD pero marcado como inactivo
+ */
+export async function inactivarMaestro(id) {
+  const { error } = await supabase
+    .from('maestros')
+    .update({ activo: false })
+    .eq('id', id)
+
+  if (error) {
+    console.error('Error inactivando maestro:', error.message)
+    throw new Error('No se pudo desactivar el maestro')
+  }
+}
+
+/**
+ * Reactiva un maestro previamente inactivado
+ */
+export async function activarMaestro(id) {
+  const { error } = await supabase
+    .from('maestros')
+    .update({ activo: true })
+    .eq('id', id)
+
+  if (error) {
+    console.error('Error activando maestro:', error.message)
+    throw new Error('No se pudo activar el maestro')
+  }
+}
+
+/**
+ * Elimina permanentemente un maestro (hard delete)
+ * Solo se permite si no tiene clases asignadas
+ */
 export async function eliminarMaestro(id) {
   const { error } = await supabase.from('maestros').delete().eq('id', id)
   if (error) {
@@ -119,7 +154,7 @@ export async function eliminarMaestro(id) {
 
     // Errores específicos de integridad referencial
     if (error.code === '23503' || error.message.includes('foreign key')) {
-      throw new Error('No se puede eliminar este maestro porque tiene clases asignadas. Desasigna las clases primero o marca el maestro como inactivo.')
+      throw new Error('No se puede eliminar este maestro porque tiene clases asignadas. Desasigna las clases primero.')
     }
 
     throw new Error('No se pudo eliminar el maestro')

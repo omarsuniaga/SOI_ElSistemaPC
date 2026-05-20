@@ -1,0 +1,111 @@
+.director-trend-report {
+  padding: 30px;
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  min-height: 100vh;
+}
+
+.report-header {
+  margin-bottom: 30px;
+  background: white;
+  padding: 25px;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.report-header h1 {
+  margin: 0;
+  font-size: 32px;
+  color: #1f2937;
+}
+
+.report-header p {
+  margin: 10px 0 0;
+  color: #6b7280;
+}
+
+.trend-summary-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+  margin-bottom: 30px;
+}
+
+.trend-card {
+  background: white;
+  padding: 25px;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  text-align: center;
+}
+
+.card-label {
+  font-size: 12px;
+  color: #6b7280;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.card-value {
+  font-size: 36px;
+  font-weight: 700;
+  color: #1f2937;
+  margin-top: 10px;
+}
+
+.date-trends-section {
+  background: white;
+  padding: 25px;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  margin-bottom: 30px;
+}
+
+.trends-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.trends-table thead {
+  background: #f3f4f6;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+.trends-table th {
+  padding: 12px;
+  text-align: left;
+  font-weight: 600;
+  color: #374151;
+}
+
+.trends-table td {
+  padding: 12px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.trends-table tbody tr:hover {
+  background: #f9fafb;
+}
+
+.generated-timestamp {
+  text-align: right;
+  font-size: 12px;
+  color: #9ca3af;
+  padding: 10px;
+}
+
+.loading, .error {
+  padding: 20px;
+  text-align: center;
+  border-radius: 8px;
+  margin: 20px;
+}
+
+.loading {
+  color: #6b7280;
+}
+
+.error {
+  background: #fee2e2;
+  color: #dc2626;
+}

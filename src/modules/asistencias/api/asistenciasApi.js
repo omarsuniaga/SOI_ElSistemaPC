@@ -418,7 +418,7 @@ export async function registrarAsistenciaBulk(asistencias) {
   return data
 }
 
-// ─── NUEVO: REPORTE CONSOLIDADO POR CLASE (OPCIÓN 3) ──────────────────────────
+// ─── REPORTE CONSOLIDADO POR CLASE ──────────────────────────────────────
 // Agrupa por Clase + Horario (no por sesión individual)
 // Consolida asistencias de múltiples sesiones del mismo día
 

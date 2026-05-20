@@ -242,7 +242,6 @@ const NAV_GROUPS = [
     icon: 'bi-bar-chart-line',
     items: [
       { id: 'metricas', label: 'Dashboard', icon: 'bi-bar-chart-line' },
-      { id: 'torre-de-control', label: 'Torre de Control', icon: 'bi-radar' },
       { id: 'admin-dashboard', label: 'Cumplimiento Maestros', icon: 'bi-clipboard-check' },
       { id: 'admin-dashboard-reportes', label: 'Reportes Director', icon: 'bi-file-earmark-pdf' },
       { id: 'admin-dashboard-analitca-llenado', label: 'Analítica Llenado', icon: 'bi-graph-up' },

@@ -57,4 +57,24 @@ describe('analyticsFillingBehaviorWidget', () => {
     expect(global.fetch).toHaveBeenCalledWith('/api/analytics/fill-metrics')
     expect(container.innerHTML).toContain('Prof. García')
   })
+
+  it('should calculate fill order distribution stats', async () => {
+    const mockMetrics = [
+      { orden_asistencia_primero: 1, orden_observaciones_primero: 0, orden_simultaneo: 0 }, // asistencia first
+      { orden_asistencia_primero: 1, orden_observaciones_primero: 0, orden_simultaneo: 0 },
+      { orden_asistencia_primero: 0, orden_observaciones_primero: 1, orden_simultaneo: 0 }, // observaciones first
+      { orden_asistencia_primero: 0, orden_observaciones_primero: 0, orden_simultaneo: 1 }  // simultaneous
+    ]
+
+    global.fetch = vi.fn(() =>
+      Promise.resolve({ ok: true, json: () => Promise.resolve(mockMetrics) })
+    )
+
+    const widget = analyticsFillingBehaviorWidget('analytics-container')
+    await widget.init()
+
+    expect(container.textContent).toContain('50.0%') // asistencia first
+    expect(container.textContent).toContain('25.0%') // observaciones first
+    expect(container.textContent).toContain('25.0%') // simultaneous
+  })
 })

@@ -234,50 +234,59 @@ function renderAccordions() {
 }
 
 function renderClaseDetalles(clase) {
-  const justificados = clase.justificaciones || []
+  // Separar alumnos por estado
+  const asistencias = clase.asistencias || []
+  const presentes = asistencias.filter(a => a.estado === 'presente')
+  const ausentes = asistencias.filter(a => a.estado === 'ausente')
+  const justificados = asistencias.filter(a => a.estado === 'justificado')
+
+  // Función helper para renderizar listado con estructura de árbol
+  const renderListadoEstado = (titulo, alumnos, colorBadge) => {
+    if (alumnos.length === 0) return ''
+
+    return `
+      <div class="mb-3">
+        <h6 class="fw-bold mb-2">
+          <span class="badge bg-${colorBadge} me-2">${alumnos.length}</span>
+          ${titulo}
+        </h6>
+        <div class="listado-alumnos ps-3" style="border-left: 2px solid #dee2e6; padding-left: 1rem;">
+          ${alumnos.map((a, idx) => `
+            <div class="alumno-item mb-2">
+              <span style="color: #6c757d; margin-right: 0.5rem;">
+                ${idx === alumnos.length - 1 ? '└─' : '├─'}
+              </span>
+              <span>${escapeHTML(a.alumno_nombre || 'Sin nombre')}</span>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `
+  }
 
   return `
     <div class="clase-details-container">
-      <!-- Resumen de Asistencia -->
-      <div class="resumen-stats mb-3">
-        <div class="stat-row">
-          <span class="stat-label">Presentes:</span>
-          <span class="stat-value text-success">${clase.presentes}</span>
-        </div>
-        <div class="stat-row">
-          <span class="stat-label">Ausentes:</span>
-          <span class="stat-value text-danger">${clase.ausentes}</span>
-        </div>
-        <div class="stat-row">
-          <span class="stat-label">Justificados:</span>
-          <span class="stat-value text-warning">${clase.justificados}</span>
-        </div>
+      <!-- Listado de Alumnos por Estado -->
+      <div class="alumnos-por-estado mb-4">
+        ${renderListadoEstado('Presentes', presentes, 'success')}
+        ${renderListadoEstado('Ausentes', ausentes, 'danger')}
+        ${renderListadoEstado('Justificados', justificados, 'warning')}
       </div>
 
-      <!-- Justificaciones con Detalles -->
-      ${justificados && justificados.length > 0 ? `
-        <div class="justificaciones-section">
-          <h6 class="section-title">Justificaciones</h6>
-          <div class="justificaciones-list">
-            ${justificados.map((j, idx) => `
-              <div class="justificacion-item">
-                <div class="d-flex justify-content-between align-items-start">
-                  <div>
-                    <div class="fw-semibold">${escapeHTML(j.alumno_nombre || 'Sin nombre')}</div>
-                    <div class="small text-muted">${escapeHTML(j.motivo || 'Sin descripción')}</div>
-                  </div>
-                  ${j.evidencia_url ? `
-                    <button class="btn btn-sm btn-outline-primary" onclick="alert('Abrir adjunto: ${j.evidencia_url}')">
-                      <i class="bi bi-paperclip"></i>
-                    </button>
-                  ` : ''}
-                </div>
-              </div>
-            `).join('')}
+      <!-- Observaciones del Maestro -->
+      ${clase.observacion_clase || clase.tema_principal ? `
+        <div class="observaciones-section border-top pt-3">
+          <h6 class="fw-bold mb-2"><i class="bi bi-chat-left-text me-2"></i>Observaciones de la Clase</h6>
+          <div class="alert alert-light border">
+            <p class="mb-0 text-secondary">
+              ${escapeHTML(clase.observacion_clase || 'Sin observaciones registradas')}
+            </p>
           </div>
         </div>
       ` : `
-        <div class="text-muted small">No hay justificaciones registradas para esta clase.</div>
+        <div class="text-muted small text-center py-3">
+          <i class="bi bi-info-circle me-2"></i>No hay observaciones registradas para esta clase.
+        </div>
       `}
     </div>
   `

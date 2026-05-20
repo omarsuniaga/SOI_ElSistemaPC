@@ -52,11 +52,21 @@ export function analyticsFillingBehaviorWidget(containerId) {
 
   return {
     async init() {
-      container.innerHTML = '<div class="loading">Cargando analítica</div>'
+      container.innerHTML = '<div class="loading">Cargando analítica...</div>'
 
-      const metrics = await getTeacherFillingMetrics()
+      try {
+        const metrics = await getTeacherFillingMetrics()
 
-      this.render(metrics)
+        if (!metrics || metrics.length === 0) {
+          container.innerHTML = '<div class="no-data">No hay datos disponibles</div>'
+          return
+        }
+
+        this.render(metrics)
+      } catch (err) {
+        console.error('[analyticsFillingBehaviorWidget] Error:', err)
+        container.innerHTML = `<div class="error">Error cargando analítica: ${err.message}</div>`
+      }
     },
 
     render(metrics) {

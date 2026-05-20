@@ -115,4 +115,24 @@ describe('analyticsFillingBehaviorWidget', () => {
     expect(container.textContent).toContain('Prof. Martínez')
     expect(container.textContent).toContain('120') // duration in seconds
   })
+
+  it('should display error message when data fetch fails', async () => {
+    analyticsService.getTeacherFillingMetrics.mockRejectedValueOnce(
+      new Error('Database error')
+    )
+
+    const widget = analyticsFillingBehaviorWidget('analytics-container')
+    await widget.init()
+
+    expect(container.textContent).toContain('Error cargando analítica')
+  })
+
+  it('should display no data message when metrics are empty', async () => {
+    analyticsService.getTeacherFillingMetrics.mockResolvedValueOnce([])
+
+    const widget = analyticsFillingBehaviorWidget('analytics-container')
+    await widget.init()
+
+    expect(container.textContent).toContain('No hay datos disponibles')
+  })
 })

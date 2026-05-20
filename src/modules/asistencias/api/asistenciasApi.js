@@ -496,6 +496,19 @@ export async function getReporteConsolidado({ periodoId, fecha, claseId } = {}) 
       sesiones = []
     }
 
+    // DEBUG: Log para verificar datos
+    console.log('📊 getReporteConsolidado DEBUG:', {
+      periodoId,
+      sesionesCount: sesiones.length,
+      firstSesion: sesiones[0] ? {
+        id: sesiones[0].id,
+        fecha: sesiones[0].fecha,
+        clase_nombre: sesiones[0].clases?.nombre,
+        asistenciasCount: sesiones[0].asistencias?.length || 0,
+        asistenciasData: sesiones[0].asistencias
+      } : 'NO SESIONES'
+    })
+
     // Consolidar por Clase + Fecha + Horario en el cliente
     const consolidado = {}
     const claseOrder = [] // Para mantener orden por horario

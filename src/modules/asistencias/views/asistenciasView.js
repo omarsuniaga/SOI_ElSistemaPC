@@ -7,6 +7,7 @@ import {
   getClases,
   getDetalleSesion,
   getReporteCompleto,
+  getReporteConsolidado,
   ESTADOS,
   ESTADO_LABEL
 } from '../api/asistenciasApi.js'
@@ -56,12 +57,22 @@ export async function renderAsistenciasView(container) {
 }
 
 async function _loadData() {
-  const { grupos, resumen } = await getReporteCompleto({
-    periodoId: state.filtroPeriodo
+  // OPCIÓN 3: Reporte Consolidado (agrupa por clase, no por sesión)
+  const today = new Date().toISOString().split('T')[0]
+
+  const { clases, resumenGlobal, fecha } = await getReporteConsolidado({
+    periodoId: state.filtroPeriodo,
+    fecha: today
   })
 
-  state.timeline = grupos
-  state.resumenGlobal = resumen
+  state.timeline = clases || []
+  state.resumenGlobal = resumenGlobal || {
+    totalClases: 0,
+    totalPresentes: 0,
+    totalAusentes: 0,
+    totalJustificados: 0,
+    totalRegistros: 0,
+  }
 }
 
 function renderLoading(container) {
@@ -136,27 +147,49 @@ function renderContent(container) {
 }
 
 function renderAccordions() {
+  // OPCIÓN 3: Renderizar clases consolidadas (ya agrupadas por clase+horario)
   if (state.timeline.length === 0) {
-    return `<div class="text-center py-5 text-muted"><i class="bi bi-calendar-x fs-1 d-block mb-2"></i>No hay sesiones registradas en este período.</div>`
+    return `<div class="text-center py-5 text-muted"><i class="bi bi-calendar-x fs-1 d-block mb-2"></i>No hay clases para hoy.</div>`
   }
 
-  return state.timeline.map((grupo, dayIdx) => {
-    const fecha = formatTimelineDate(grupo.fecha)
-    const dayAccordionId = `accordion-day-${dayIdx}`
+  // state.timeline contiene directamente clases consolidadas
+  return state.timeline.map((clase, idx) => {
+    const accordionId = `accordion-clase-${idx}`
+    const horario = clase.hora_inicio
+      ? `${clase.hora_inicio.slice(0, 5)} - ${clase.hora_fin?.slice(0, 5) || '??:??'}`
+      : 'Sin horario'
 
     return `
-      <div class="accordion-item accordion-day">
-        <h2 class="accordion-header" id="heading-day-${dayIdx}">
-          <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#${dayAccordionId}" aria-expanded="false" aria-controls="${dayAccordionId}">
-            <span class="accordion-date">${fecha}</span>
-            <span class="accordion-count">${grupo.sesiones.length} clase${grupo.sesiones.length !== 1 ? 's' : ''}</span>
+      <div class="accordion-item accordion-clase">
+        <h2 class="accordion-header" id="heading-${idx}">
+          <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#${accordionId}" aria-expanded="false" aria-controls="${accordionId}">
+            <div class="clase-header-info">
+              <div class="clase-name">${escapeHTML(clase.clase_nombre)}</div>
+              <div class="clase-meta">
+                <span class="horario">${horario}</span>
+                <span class="maestro">Prof. ${escapeHTML(clase.maestro_nombre)}</span>
+                ${clase.maestro_auxiliar_nombre ? `<span class="auxiliar">Aux. ${escapeHTML(clase.maestro_auxiliar_nombre)}</span>` : ''}
+              </div>
+            </div>
+            <div class="clase-header-stats">
+              <div class="stat-badge stat-present">
+                <span class="value">${clase.presentes}</span>
+                <span class="label">P</span>
+              </div>
+              <div class="stat-badge stat-absent">
+                <span class="value">${clase.ausentes}</span>
+                <span class="label">A</span>
+              </div>
+              <div class="stat-badge stat-justified">
+                <span class="value">${clase.justificados}</span>
+                <span class="label">J</span>
+              </div>
+            </div>
           </button>
         </h2>
-        <div id="${dayAccordionId}" class="accordion-collapse collapse" aria-labelledby="heading-day-${dayIdx}">
-          <div class="accordion-body p-0">
-            <div class="accordion accordion-clases" id="accordion-clases-${dayIdx}">
-              ${grupo.sesiones.map((s, sessionIdx) => renderSessionAccordion(s, dayIdx, sessionIdx)).join('')}
-            </div>
+        <div id="${accordionId}" class="accordion-collapse collapse" aria-labelledby="heading-${idx}">
+          <div class="accordion-body">
+            ${renderClaseDetalles(clase)}
           </div>
         </div>
       </div>
@@ -164,83 +197,52 @@ function renderAccordions() {
   }).join('')
 }
 
-function renderSessionAccordion(s, dayIdx, sessionIdx) {
-  const totalAlumnos = s.totalPresentes + s.totalAusentes + s.totalJustificados
-  const porcentajePresencia = totalAlumnos > 0 ? Math.round((s.totalPresentes / totalAlumnos) * 100) : 0
-  const sessionAccordionId = `accordion-session-${dayIdx}-${sessionIdx}`
+function renderClaseDetalles(clase) {
+  const justificados = clase.justificaciones || []
 
   return `
-    <div class="accordion-item accordion-clase">
-      <h2 class="accordion-header" id="heading-session-${dayIdx}-${sessionIdx}">
-        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#${sessionAccordionId}" aria-expanded="false" aria-controls="${sessionAccordionId}">
-          <div class="sesion-header-info">
-            <div class="sesion-time">${(s.horaInicio || '--:--').slice(0,5)}</div>
-            <div class="sesion-header-details">
-              <div class="sesion-name">${escapeHTML(s.claseNombre)}</div>
-              <div class="sesion-meta">${escapeHTML(s.instrumento || 'General')} • ${escapeHTML(s.maestroNombre)}</div>
-            </div>
-          </div>
-          <div class="sesion-header-stats">
-            <div class="stat-badge stat-present">
-              <span class="value">${s.totalPresentes}</span>
-              <span class="label">P</span>
-            </div>
-            <div class="stat-badge stat-absent">
-              <span class="value">${s.totalAusentes}</span>
-              <span class="label">A</span>
-            </div>
-            <div class="stat-badge stat-justified">
-              <span class="value">${s.totalJustificados}</span>
-              <span class="label">J</span>
-            </div>
-          </div>
-        </button>
-      </h2>
-      <div id="${sessionAccordionId}" class="accordion-collapse collapse" aria-labelledby="heading-session-${dayIdx}-${sessionIdx}">
-        <div class="accordion-body">
-          ${renderSessionDetails(s)}
+    <div class="clase-details-container">
+      <!-- Resumen de Asistencia -->
+      <div class="resumen-stats mb-3">
+        <div class="stat-row">
+          <span class="stat-label">Presentes:</span>
+          <span class="stat-value text-success">${clase.presentes}</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Ausentes:</span>
+          <span class="stat-value text-danger">${clase.ausentes}</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Justificados:</span>
+          <span class="stat-value text-warning">${clase.justificados}</span>
         </div>
       </div>
-    </div>
-  `
-}
 
-function renderSessionDetails(s) {
-  const alumnos = s.alumnos || []
-
-  return `
-    <div class="session-details-container">
-      <!-- Observaciones de la Clase -->
-      ${s.observacionesGenerales ? `
-        <div class="observaciones-section">
-          <h6 class="section-title">Observaciones de Clase</h6>
-          <div class="observacion-content">
-            ${escapeHTML(s.observacionesGenerales)}
+      <!-- Justificaciones con Detalles -->
+      ${justificados && justificados.length > 0 ? `
+        <div class="justificaciones-section">
+          <h6 class="section-title">Justificaciones</h6>
+          <div class="justificaciones-list">
+            ${justificados.map((j, idx) => `
+              <div class="justificacion-item">
+                <div class="d-flex justify-content-between align-items-start">
+                  <div>
+                    <div class="fw-semibold">${escapeHTML(j.alumno_nombre || 'Sin nombre')}</div>
+                    <div class="small text-muted">${escapeHTML(j.motivo || 'Sin descripción')}</div>
+                  </div>
+                  ${j.evidencia_url ? `
+                    <button class="btn btn-sm btn-outline-primary" onclick="alert('Abrir adjunto: ${j.evidencia_url}')">
+                      <i class="bi bi-paperclip"></i>
+                    </button>
+                  ` : ''}
+                </div>
+              </div>
+            `).join('')}
           </div>
         </div>
-      ` : ''}
-
-      <!-- Tema Principal -->
-      ${s.temaPrincipal ? `
-        <div class="tema-section">
-          <h6 class="section-title">Tema Tratado</h6>
-          <div class="tema-content">
-            ${escapeHTML(s.temaPrincipal)}
-          </div>
-        </div>
-      ` : ''}
-
-      <!-- Detalles de Asistencias -->
-      <div class="asistencias-section">
-        <h6 class="section-title">Registro de Asistencias</h6>
-        ${alumnos.length > 0 ? `
-          <div class="asistencias-list">
-            ${alumnos.map(a => renderAlumnoAsistencia(a)).join('')}
-          </div>
-        ` : `
-          <div class="text-muted small">No hay registros de asistencia para esta sesión.</div>
-        `}
-      </div>
+      ` : `
+        <div class="text-muted small">No hay justificaciones registradas para esta clase.</div>
+      `}
     </div>
   `
 }

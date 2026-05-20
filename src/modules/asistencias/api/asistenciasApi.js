@@ -417,3 +417,124 @@ export async function registrarAsistenciaBulk(asistencias) {
   if (error) throwError('No se pudieron registrar las asistencias', error)
   return data
 }
+
+// ─── NUEVO: REPORTE CONSOLIDADO POR CLASE (OPCIÓN 3) ──────────────────────────
+// Agrupa por Clase + Horario (no por sesión individual)
+// Consolida asistencias de múltiples sesiones del mismo día
+
+export async function getReporteConsolidado({ periodoId, fecha, claseId } = {}) {
+  try {
+    // Obtener todas las sesiones agrupadas por clase + horario
+    let query = supabase
+      .from('sesiones_clase')
+      .select(`
+        id,
+        fecha,
+        hora_inicio,
+        hora_fin,
+        tema_principal,
+        observaciones_generales,
+        clase_id,
+        clases!inner (
+          id,
+          nombre,
+          instrumento,
+          maestro_principal_id,
+          maestro_auxiliar_id,
+          maestros!clases_maestro_principal_id_fk (id, nombre_completo)
+        ),
+        asistencias (
+          id,
+          alumno_id,
+          estado,
+          observaciones,
+          alumnos (id, nombre_completo)
+        ),
+        justificaciones (
+          id,
+          alumno_id,
+          motivo,
+          evidencia_url,
+          evidencia_base64,
+          alumnos (nombre_completo)
+        )
+      `)
+
+    if (fecha) query = query.eq('fecha', fecha)
+    if (claseId) query = query.eq('clase_id', claseId)
+
+    const { data: sesiones, error } = await query.order('hora_inicio', { ascending: true })
+    if (error) throwError('No se pudieron cargar las sesiones consolidadas', error)
+
+    // Consolidar por Clase + Fecha + Horario en el cliente
+    const consolidado = {}
+    const claseOrder = [] // Para mantener orden por horario
+
+    sesiones.forEach(sesion => {
+      const key = `${sesion.clase_id}-${sesion.fecha}-${sesion.hora_inicio || 'sin-hora'}`
+
+      if (!consolidado[key]) {
+        consolidado[key] = {
+          clase_id: sesion.clase_id,
+          clase_nombre: sesion.clases.nombre,
+          instrumento: sesion.clases.instrumento,
+          fecha: sesion.fecha,
+          hora_inicio: sesion.hora_inicio,
+          hora_fin: sesion.hora_fin,
+          maestro_nombre: sesion.clases.maestros?.nombre_completo || 'Sin asignar',
+          maestro_auxiliar_nombre: null, // TODO: cargar desde tabla maestros
+          presentes: 0,
+          ausentes: 0,
+          justificados: 0,
+          total_alumnos: 0,
+          asistencias: [],
+          justificaciones: []
+        }
+        claseOrder.push(key)
+      }
+
+      // Contar asistencias
+      const asistenciasPorAlumno = {}
+      sesion.asistencias?.forEach(a => {
+        if (!asistenciasPorAlumno[a.alumno_id]) {
+          asistenciasPorAlumno[a.alumno_id] = { ...a }
+        }
+      })
+
+      Object.values(asistenciasPorAlumno).forEach(a => {
+        if (a.estado === 'presente') consolidado[key].presentes++
+        else if (a.estado === 'ausente') consolidado[key].ausentes++
+        else if (a.estado === 'justificado') consolidado[key].justificados++
+        consolidado[key].total_alumnos++
+        consolidado[key].asistencias.push(a)
+      })
+
+      // Agregar justificaciones
+      sesion.justificaciones?.forEach(j => {
+        consolidado[key].justificaciones.push({
+          alumno_nombre: j.alumnos?.nombre_completo,
+          motivo: j.motivo,
+          evidencia_url: j.evidencia_url,
+          evidencia_base64: j.evidencia_base64
+        })
+      })
+    })
+
+    // Retornar en orden
+    const clases = claseOrder.map(key => consolidado[key])
+
+    return {
+      fecha,
+      clases,
+      resumenGlobal: {
+        totalClases: clases.length,
+        totalPresentes: clases.reduce((sum, c) => sum + c.presentes, 0),
+        totalAusentes: clases.reduce((sum, c) => sum + c.ausentes, 0),
+        totalJustificados: clases.reduce((sum, c) => sum + c.justificados, 0),
+        totalRegistros: clases.reduce((sum, c) => sum + c.total_alumnos, 0),
+      }
+    }
+  } catch (err) {
+    throwError('Error en getReporteConsolidado', err)
+  }
+}

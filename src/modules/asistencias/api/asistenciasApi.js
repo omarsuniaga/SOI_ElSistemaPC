@@ -424,15 +424,7 @@ export async function registrarAsistenciaBulk(asistencias) {
 
 export async function getReporteConsolidado({ periodoId, fecha, claseId } = {}) {
   try {
-    // Obtener maestros para mapeo
-    const { data: maestros, error: errMaestros } = await supabase
-      .from('maestros')
-      .select('id, nombre_completo')
-    if (errMaestros) throwError('No se pudieron cargar los maestros', errMaestros)
-    const maestrosMap = {}
-    maestros.forEach(m => { maestrosMap[m.id] = m.nombre_completo })
-
-    // Filtrar por período si se provee (opcional)
+    // Obtener período si se provee (para filtrar por rango de fechas)
     let periodoFechaInicio, periodoFechaFin
     if (periodoId) {
       const { data: periodo, error: errPeriodo } = await supabase
@@ -448,193 +440,94 @@ export async function getReporteConsolidado({ periodoId, fecha, claseId } = {}) 
         periodoFechaFin = periodo.fecha_fin
       }
     }
-    // Si no hay periodoId o periodo, mostrar todas las sesiones (sin filtro de fecha)
 
-    // PASO 1: Obtener todas las sesiones (sin asistencias como relación)
-    let sesionesQuery = supabase
-      .from('sesiones_clase')
+    // PASO ÚNICO: Obtener todas las sesiones consolidadas desde la vista SQL
+    let query = supabase
+      .from('vw_asistencias_consolidada')
       .select(`
-        id,
         fecha,
+        sesion_clase_id,
+        clase_id,
+        nombre_clase,
         hora_inicio,
         hora_fin,
-        tema_principal,
-        observaciones_generales,
-        clase_id,
-        clases!inner (
-          id,
-          nombre,
-          instrumento,
-          maestro_principal_id,
-          maestro_auxiliar_id
-        )
+        maestro_principal,
+        maestro_auxiliar,
+        observacion_clase,
+        presentes,
+        ausentes,
+        justificados,
+        total_registros,
+        asistencias_detalle,
+        justificaciones_detalle
       `)
 
-    // Aplicar filtros de periodo/fecha/clase
-    if (periodoFechaInicio) sesionesQuery = sesionesQuery.gte('fecha', periodoFechaInicio)
-    if (periodoFechaFin) sesionesQuery = sesionesQuery.lte('fecha', periodoFechaFin)
-    if (fecha) sesionesQuery = sesionesQuery.eq('fecha', fecha)
-    if (claseId) sesionesQuery = sesionesQuery.eq('clase_id', claseId)
+    // Aplicar filtros
+    if (periodoFechaInicio) query = query.gte('fecha', periodoFechaInicio)
+    if (periodoFechaFin) query = query.lte('fecha', periodoFechaFin)
+    if (fecha) query = query.eq('fecha', fecha)
+    if (claseId) query = query.eq('clase_id', claseId)
 
-    const { data: sesiones, error: errSesiones } = await sesionesQuery.order('hora_inicio', { ascending: true })
-    if (errSesiones) throwError('No se pudieron cargar las sesiones', errSesiones)
+    const { data: sesiones, error } = await query.order('fecha', { ascending: false }).order('hora_inicio', { ascending: true })
+    if (error) throwError('No se pudieron cargar las sesiones consolidadas', error)
 
     if (!Array.isArray(sesiones)) {
       console.warn('sesiones no es un array, usando array vacío', sesiones)
       sesiones = []
     }
 
-    // PASO 2: Obtener TODAS las asistencias para esas sesiones (en query separada)
-    const sesionIds = sesiones.map(s => s.id)
-    const asistenciasMap = {} // Indexar por sesion_clase_id
-
-    if (sesionIds.length > 0) {
-      const { data: asistencias, error: errAsistencias } = await supabase
-        .from('asistencias')
-        .select(`
-          id,
-          sesion_clase_id,
-          alumno_id,
-          estado,
-          observaciones,
-          alumnos (id, nombre_completo)
-        `)
-        .in('sesion_clase_id', sesionIds)
-
-      if (errAsistencias) throwError('No se pudieron cargar las asistencias', errAsistencias)
-
-      // Indexar asistencias por sesion_clase_id para acceso rápido
-      if (asistencias && Array.isArray(asistencias)) {
-        asistencias.forEach(a => {
-          if (!asistenciasMap[a.sesion_clase_id]) {
-            asistenciasMap[a.sesion_clase_id] = []
-          }
-          asistenciasMap[a.sesion_clase_id].push(a)
-        })
-      }
-    }
-
-    // PASO 3: Obtener justificaciones para esas sesiones
-    const justificacionesMap = {} // Indexar por sesion_clase_id
-
-    if (sesionIds.length > 0) {
-      const { data: justificaciones, error: errJustificaciones } = await supabase
-        .from('justificaciones')
-        .select('id, sesion_id, alumno_id, motivo, evidencia_url, evidencia_base64')
-        .in('sesion_id', sesionIds)
-
-      if (justificaciones && Array.isArray(justificaciones)) {
-        justificaciones.forEach(j => {
-          if (!justificacionesMap[j.sesion_id]) {
-            justificacionesMap[j.sesion_id] = []
-          }
-          justificacionesMap[j.sesion_id].push(j)
-        })
-      }
-    }
-
     // DEBUG
     console.log('📊 getReporteConsolidado DEBUG:', {
       periodoId,
       sesionesCount: sesiones.length,
-      asistenciasCount: Object.values(asistenciasMap).flat().length,
-      asistenciasMap,
+      dataSource: 'vw_asistencias_consolidada',
       firstSesion: sesiones[0] ? {
-        id: sesiones[0].id,
         fecha: sesiones[0].fecha,
-        clase_nombre: sesiones[0].clases?.nombre,
-        asistenciasEnMapa: asistenciasMap[sesiones[0].id]?.length || 0
+        nombre_clase: sesiones[0].nombre_clase,
+        presentes: sesiones[0].presentes,
+        ausentes: sesiones[0].ausentes,
+        justificados: sesiones[0].justificados
       } : 'NO SESIONES'
     })
 
-    // PASO 4: Consolidar por Clase + Fecha + Horario en el cliente
-    const consolidado = {}
-    const claseOrder = [] // Para mantener orden por horario
+    // PASO 2: Transformar datos de la vista en formato timeline (fecha → clases)
+    // Los datos ya vienen consolidados, solo necesitamos agrupar por fecha
+    const timelineByDate = {}
 
     if (sesiones && sesiones.length > 0) {
-      sesiones.forEach(sesion => {
-        const key = `${sesion.clase_id}-${sesion.fecha}-${sesion.hora_inicio || 'sin-hora'}`
-
-        if (!consolidado[key]) {
-          const maestroPrincipalId = sesion.clases.maestro_principal_id
-          const maestroAuxiliarId = sesion.clases.maestro_auxiliar_id
-
-          consolidado[key] = {
-            clase_id: sesion.clase_id,
-            clase_nombre: sesion.clases.nombre,
-            instrumento: sesion.clases.instrumento,
-            fecha: sesion.fecha,
-            hora_inicio: sesion.hora_inicio,
-            hora_fin: sesion.hora_fin,
-            maestro_nombre: maestroPrincipalId ? (maestrosMap[maestroPrincipalId] || 'Sin asignar') : 'Sin asignar',
-            maestro_auxiliar_nombre: maestroAuxiliarId ? (maestrosMap[maestroAuxiliarId] || null) : null,
-            presentes: 0,
-            ausentes: 0,
-            justificados: 0,
-            total_alumnos: 0,
-            asistencias: [],
-            justificaciones: []
-          }
-          claseOrder.push(key)
+      sesiones.forEach(row => {
+        // Crear objeto de clase con los datos ya consolidados de la vista
+        const clase = {
+          clase_id: row.clase_id,
+          clase_nombre: row.nombre_clase,
+          fecha: row.fecha,
+          hora_inicio: row.hora_inicio,
+          hora_fin: row.hora_fin,
+          maestro_nombre: row.maestro_principal || 'Sin asignar',
+          maestro_auxiliar_nombre: row.maestro_auxiliar || null,
+          presentes: row.presentes || 0,
+          ausentes: row.ausentes || 0,
+          justificados: row.justificados || 0,
+          total_alumnos: row.total_registros || 0,
+          asistencias: row.asistencias_detalle ? (Array.isArray(row.asistencias_detalle) ? row.asistencias_detalle : JSON.parse(row.asistencias_detalle || '[]')) : [],
+          justificaciones: row.justificaciones_detalle ? (Array.isArray(row.justificaciones_detalle) ? row.justificaciones_detalle : JSON.parse(row.justificaciones_detalle || '[]')) : []
         }
 
-        // Obtener asistencias para esta sesión desde el mapa
-        const sesionAsistencias = asistenciasMap[sesion.id] || []
-
-        // Contar asistencias (deduplicar por alumno_id)
-        const asistenciasPorAlumno = {}
-        sesionAsistencias.forEach(a => {
-          if (!asistenciasPorAlumno[a.alumno_id]) {
-            asistenciasPorAlumno[a.alumno_id] = { ...a }
-          }
-        })
-
-        Object.values(asistenciasPorAlumno).forEach(a => {
-          if (a.estado === 'presente') consolidado[key].presentes++
-          else if (a.estado === 'ausente') consolidado[key].ausentes++
-          else if (a.estado === 'justificado') consolidado[key].justificados++
-          consolidado[key].total_alumnos++
-          consolidado[key].asistencias.push(a)
-        })
-
-        // Agregar justificaciones para esta sesión desde el mapa
-        const sesionJustificaciones = justificacionesMap[sesion.id] || []
-        sesionJustificaciones.forEach(j => {
-          // Get alumno name from the asistencias if available
-          const alumnoAsistencia = sesionAsistencias.find(a => a.alumno_id === j.alumno_id)
-          consolidado[key].justificaciones.push({
-            alumno_nombre: alumnoAsistencia?.alumnos?.nombre_completo || 'Sin nombre',
-            alumno_id: j.alumno_id,
-            motivo: j.motivo,
-            evidencia_url: j.evidencia_url,
-            evidencia_base64: j.evidencia_base64
-          })
-        })
-      })
-    }
-
-    // Retornar agrupado por fecha primero
-    const timelineByDate = {}
-    if (claseOrder.length > 0) {
-      claseOrder.forEach(key => {
-        const clase = consolidado[key]
-        if (!timelineByDate[clase.fecha]) {
-          timelineByDate[clase.fecha] = []
+        // Agrupar por fecha
+        if (!timelineByDate[row.fecha]) {
+          timelineByDate[row.fecha] = []
         }
-        timelineByDate[clase.fecha].push(clase)
+        timelineByDate[row.fecha].push(clase)
       })
     }
 
     // Convertir a array ordenado descendente por fecha
-    const timelineEntries = Object.entries(timelineByDate)
-    const timeline = timelineEntries.length > 0
-      ? timelineEntries
-          .sort(([dateA], [dateB]) => dateB.localeCompare(dateA))
-          .map(([fecha, clases]) => ({
-            fecha,
-            clases: clases.sort((a, b) => (a.hora_inicio || '').localeCompare(b.hora_inicio || ''))
-          }))
-      : []
+    const timeline = Object.entries(timelineByDate)
+      .sort(([dateA], [dateB]) => dateB.localeCompare(dateA))
+      .map(([fecha, clases]) => ({
+        fecha,
+        clases: clases.sort((a, b) => (a.hora_inicio || '').localeCompare(b.hora_inicio || ''))
+      }))
 
     // Calcular resumen global
     const todasLasClases = timeline.flatMap(d => d.clases)
@@ -644,7 +537,7 @@ export async function getReporteConsolidado({ periodoId, fecha, claseId } = {}) 
       totalAusentes: todasLasClases.reduce((sum, c) => sum + c.ausentes, 0),
       totalJustificados: todasLasClases.reduce((sum, c) => sum + c.justificados, 0),
       totalRegistros: todasLasClases.reduce((sum, c) => sum + c.total_alumnos, 0),
-      totalSesiones: sesiones ? sesiones.length : 0,
+      totalSesiones: sesiones.length,
     }
 
     return {

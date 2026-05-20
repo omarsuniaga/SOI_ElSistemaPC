@@ -57,20 +57,19 @@ export async function renderAsistenciasView(container) {
 }
 
 async function _loadData() {
-  // OPCIÓN 3: Reporte Consolidado (agrupa por clase, no por sesión)
-  // Mostrar todas las clases del período seleccionado, sin filtrar por fecha
-
-  const { clases, resumenGlobal, fecha } = await getReporteConsolidado({
+  // OPCIÓN 3: Reporte Consolidado agrupado por fecha → clase
+  const { timelineByDate, resumenGlobal } = await getReporteConsolidado({
     periodoId: state.filtroPeriodo
   })
 
-  state.timeline = clases || []
+  state.timeline = timelineByDate || []
   state.resumenGlobal = resumenGlobal || {
     totalClases: 0,
     totalPresentes: 0,
     totalAusentes: 0,
     totalJustificados: 0,
     totalRegistros: 0,
+    totalSesiones: 0,
   }
 }
 
@@ -146,49 +145,72 @@ function renderContent(container) {
 }
 
 function renderAccordions() {
-  // OPCIÓN 3: Renderizar clases consolidadas (ya agrupadas por clase+horario)
+  // Renderizar dos niveles: fechas (nivel 1) → clases (nivel 2)
   if (state.timeline.length === 0) {
-    return `<div class="text-center py-5 text-muted"><i class="bi bi-calendar-x fs-1 d-block mb-2"></i>No hay clases para hoy.</div>`
+    return `<div class="text-center py-5 text-muted"><i class="bi bi-calendar-x fs-1 d-block mb-2"></i>No hay clases registradas.</div>`
   }
 
-  // state.timeline contiene directamente clases consolidadas
-  return state.timeline.map((clase, idx) => {
-    const accordionId = `accordion-clase-${idx}`
-    const horario = clase.hora_inicio
-      ? `${clase.hora_inicio.slice(0, 5)} - ${clase.hora_fin?.slice(0, 5) || '??:??'}`
-      : 'Sin horario'
+  // state.timeline contiene [{ fecha, clases: [...] }, ...]
+  return state.timeline.map((diaData, dayIdx) => {
+    const fechaFormato = formatTimelineDate(diaData.fecha)
+    const accordionIdFecha = `accordion-fecha-${dayIdx}`
+
+    const clasesHTML = diaData.clases.map((clase, claseIdx) => {
+      const accordionIdClase = `accordion-clase-${dayIdx}-${claseIdx}`
+      const horario = clase.hora_inicio
+        ? `${clase.hora_inicio.slice(0, 5)} - ${clase.hora_fin?.slice(0, 5) || '??:??'}`
+        : 'Sin horario'
+
+      return `
+        <div class="accordion-item accordion-clase">
+          <h2 class="accordion-header" id="heading-clase-${dayIdx}-${claseIdx}">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#${accordionIdClase}" aria-expanded="false" aria-controls="${accordionIdClase}">
+              <div class="clase-header-info">
+                <div class="clase-name">${escapeHTML(clase.clase_nombre)}</div>
+                <div class="clase-meta">
+                  <span class="horario">${horario}</span>
+                  <span class="maestro">Prof. ${escapeHTML(clase.maestro_nombre)}</span>
+                  ${clase.maestro_auxiliar_nombre ? `<span class="auxiliar">Aux. ${escapeHTML(clase.maestro_auxiliar_nombre)}</span>` : ''}
+                </div>
+              </div>
+              <div class="clase-header-stats">
+                <div class="stat-badge stat-present">
+                  <span class="value">${clase.presentes}</span>
+                  <span class="label">P</span>
+                </div>
+                <div class="stat-badge stat-absent">
+                  <span class="value">${clase.ausentes}</span>
+                  <span class="label">A</span>
+                </div>
+                <div class="stat-badge stat-justified">
+                  <span class="value">${clase.justificados}</span>
+                  <span class="label">J</span>
+                </div>
+              </div>
+            </button>
+          </h2>
+          <div id="${accordionIdClase}" class="accordion-collapse collapse" aria-labelledby="heading-clase-${dayIdx}-${claseIdx}">
+            <div class="accordion-body">
+              ${renderClaseDetalles(clase)}
+            </div>
+          </div>
+        </div>
+      `
+    }).join('')
 
     return `
-      <div class="accordion-item accordion-clase">
-        <h2 class="accordion-header" id="heading-${idx}">
-          <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#${accordionId}" aria-expanded="false" aria-controls="${accordionId}">
-            <div class="clase-header-info">
-              <div class="clase-name">${escapeHTML(clase.clase_nombre)}</div>
-              <div class="clase-meta">
-                <span class="horario">${horario}</span>
-                <span class="maestro">Prof. ${escapeHTML(clase.maestro_nombre)}</span>
-                ${clase.maestro_auxiliar_nombre ? `<span class="auxiliar">Aux. ${escapeHTML(clase.maestro_auxiliar_nombre)}</span>` : ''}
-              </div>
-            </div>
-            <div class="clase-header-stats">
-              <div class="stat-badge stat-present">
-                <span class="value">${clase.presentes}</span>
-                <span class="label">P</span>
-              </div>
-              <div class="stat-badge stat-absent">
-                <span class="value">${clase.ausentes}</span>
-                <span class="label">A</span>
-              </div>
-              <div class="stat-badge stat-justified">
-                <span class="value">${clase.justificados}</span>
-                <span class="label">J</span>
-              </div>
-            </div>
+      <div class="accordion-item accordion-fecha">
+        <h2 class="accordion-header" id="heading-fecha-${dayIdx}">
+          <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#${accordionIdFecha}" aria-expanded="true" aria-controls="${accordionIdFecha}">
+            <strong>${fechaFormato}</strong>
+            <span class="ms-auto text-muted small">${diaData.clases.length} clase${diaData.clases.length !== 1 ? 's' : ''}</span>
           </button>
         </h2>
-        <div id="${accordionId}" class="accordion-collapse collapse" aria-labelledby="heading-${idx}">
-          <div class="accordion-body">
-            ${renderClaseDetalles(clase)}
+        <div id="${accordionIdFecha}" class="accordion-collapse collapse show" aria-labelledby="heading-fecha-${dayIdx}">
+          <div class="accordion-body p-0">
+            <div class="accordion accordion-asistencias-clases">
+              ${clasesHTML}
+            </div>
           </div>
         </div>
       </div>

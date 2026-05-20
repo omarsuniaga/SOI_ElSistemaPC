@@ -424,6 +424,14 @@ export async function registrarAsistenciaBulk(asistencias) {
 
 export async function getReporteConsolidado({ periodoId, fecha, claseId } = {}) {
   try {
+    // Obtener maestros para mapeo
+    const { data: maestros, error: errMaestros } = await supabase
+      .from('maestros')
+      .select('id, nombre_completo')
+    if (errMaestros) throwError('No se pudieron cargar los maestros', errMaestros)
+    const maestrosMap = {}
+    maestros.forEach(m => { maestrosMap[m.id] = m.nombre_completo })
+
     // Obtener todas las sesiones agrupadas por clase + horario
     let query = supabase
       .from('sesiones_clase')
@@ -440,9 +448,7 @@ export async function getReporteConsolidado({ periodoId, fecha, claseId } = {}) 
           nombre,
           instrumento,
           maestro_principal_id,
-          maestro_auxiliar_id,
-          maestros_principal:maestros!maestro_principal_id (id, nombre_completo),
-          maestros_auxiliar:maestros!maestro_auxiliar_id (id, nombre_completo)
+          maestro_auxiliar_id
         ),
         asistencias (
           id,
@@ -474,6 +480,9 @@ export async function getReporteConsolidado({ periodoId, fecha, claseId } = {}) 
       const key = `${sesion.clase_id}-${sesion.fecha}-${sesion.hora_inicio || 'sin-hora'}`
 
       if (!consolidado[key]) {
+        const maestroPrincipalId = sesion.clases.maestro_principal_id
+        const maestroAuxiliarId = sesion.clases.maestro_auxiliar_id
+
         consolidado[key] = {
           clase_id: sesion.clase_id,
           clase_nombre: sesion.clases.nombre,
@@ -481,8 +490,8 @@ export async function getReporteConsolidado({ periodoId, fecha, claseId } = {}) 
           fecha: sesion.fecha,
           hora_inicio: sesion.hora_inicio,
           hora_fin: sesion.hora_fin,
-          maestro_nombre: sesion.clases.maestros_principal?.nombre_completo || 'Sin asignar',
-          maestro_auxiliar_nombre: sesion.clases.maestros_auxiliar?.nombre_completo || null,
+          maestro_nombre: maestroPrincipalId ? (maestrosMap[maestroPrincipalId] || 'Sin asignar') : 'Sin asignar',
+          maestro_auxiliar_nombre: maestroAuxiliarId ? (maestrosMap[maestroAuxiliarId] || null) : null,
           presentes: 0,
           ausentes: 0,
           justificados: 0,
@@ -523,19 +532,38 @@ export async function getReporteConsolidado({ periodoId, fecha, claseId } = {}) 
       })
     })
 
-    // Retornar en orden
-    const clases = claseOrder.map(key => consolidado[key])
+    // Retornar agrupado por fecha primero
+    const timelineByDate = {}
+    claseOrder.forEach(key => {
+      const clase = consolidado[key]
+      if (!timelineByDate[clase.fecha]) {
+        timelineByDate[clase.fecha] = []
+      }
+      timelineByDate[clase.fecha].push(clase)
+    })
+
+    // Convertir a array ordenado descendente por fecha
+    const timeline = Object.entries(timelineByDate)
+      .sort(([dateA], [dateB]) => dateB.localeCompare(dateA))
+      .map(([fecha, clases]) => ({
+        fecha,
+        clases: clases.sort((a, b) => (a.hora_inicio || '').localeCompare(b.hora_inicio || ''))
+      }))
+
+    // Calcular resumen global
+    const todasLasClases = timeline.flatMap(d => d.clases)
+    const resumenGlobal = {
+      totalClases: todasLasClases.length,
+      totalPresentes: todasLasClases.reduce((sum, c) => sum + c.presentes, 0),
+      totalAusentes: todasLasClases.reduce((sum, c) => sum + c.ausentes, 0),
+      totalJustificados: todasLasClases.reduce((sum, c) => sum + c.justificados, 0),
+      totalRegistros: todasLasClases.reduce((sum, c) => sum + c.total_alumnos, 0),
+      totalSesiones: sesiones.length,
+    }
 
     return {
-      fecha,
-      clases,
-      resumenGlobal: {
-        totalClases: clases.length,
-        totalPresentes: clases.reduce((sum, c) => sum + c.presentes, 0),
-        totalAusentes: clases.reduce((sum, c) => sum + c.ausentes, 0),
-        totalJustificados: clases.reduce((sum, c) => sum + c.justificados, 0),
-        totalRegistros: clases.reduce((sum, c) => sum + c.total_alumnos, 0),
-      }
+      timelineByDate: timeline,
+      resumenGlobal
     }
   } catch (err) {
     throwError('Error en getReporteConsolidado', err)

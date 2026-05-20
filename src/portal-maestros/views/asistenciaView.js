@@ -64,7 +64,15 @@ export async function renderAsistenciaView(container, { claseId, fecha } = {}) {
       getMisClases(),                       // cache: 1min
       getHorariosClases([claseId]),         // cache: 5min
       getInscripcionesClases([claseId]),    // cache: 2min
-      supabase.from('sesiones_clase').select('*').eq('clase_id', claseId).eq('maestro_id', maestro.id).eq('fecha', fechaHoy).limit(1),
+      // 🔥 REUTILIZAR BORRADORES: Buscar sesión guardada OR borrador más reciente
+      supabase.from('sesiones_clase')
+        .select('*')
+        .eq('clase_id', claseId)
+        .eq('maestro_id', maestro.id)
+        .eq('fecha', fechaHoy)
+        .order('borrador', { ascending: true })  // Priorizar guardadas (false) sobre borradores (true)
+        .order('updated_at', { ascending: false }) // Entre borradores, la más reciente
+        .limit(1),
     ])
     console.log('[DEBUG] Finished Batch 1')
 

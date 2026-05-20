@@ -451,6 +451,7 @@ export async function getReporteConsolidado({ periodoId, fecha, claseId } = {}) 
         nombre_clase,
         hora_inicio,
         hora_fin,
+        borrador,
         maestro_principal,
         maestro_auxiliar,
         observacion_clase,
@@ -462,10 +463,6 @@ export async function getReporteConsolidado({ periodoId, fecha, claseId } = {}) 
         asistencias_detalle,
         justificaciones_detalle
       `)
-
-    // 📝 NOTA: Campo 'borrador' comentado hasta que ejecutes esta SQL en Supabase:
-    // DROP VIEW IF EXISTS vw_asistencias_consolidada CASCADE;
-    // CREATE VIEW vw_asistencias_consolidada AS ... (ver migration 20260520_add_borrador_to_vw_asistencias_consolidada.sql)
 
     // Aplicar filtros
     if (periodoFechaInicio) query = query.gte('fecha', periodoFechaInicio)
@@ -483,14 +480,9 @@ export async function getReporteConsolidado({ periodoId, fecha, claseId } = {}) 
 
     // 🔥 FILTRO CRÍTICO: Excluir sesiones borradores (incompletas/abandonadas)
     // Solo mostrar sesiones guardadas (borrador = false)
-    // Si el campo borrador no existe aún en la vista, simplemente continuar sin filtrar
-    if (sesiones.length > 0 && 'borrador' in sesiones[0]) {
-      const sesionesFiltered = sesiones.filter(s => s.borrador === false)
-      console.log(`📊 Filtro de borradores: ${sesiones.length} sesiones → ${sesionesFiltered.length} sesiones reales`)
-      sesiones = sesionesFiltered
-    } else {
-      console.warn('⚠️  Campo borrador no disponible en vista. Mostrando todas las sesiones.')
-    }
+    const sesionesFiltered = sesiones.filter(s => s.borrador === false)
+    console.log(`📊 Filtro de borradores: ${sesiones.length} sesiones → ${sesionesFiltered.length} sesiones reales`)
+    sesiones = sesionesFiltered
 
     // DEBUG
     console.log('📊 getReporteConsolidado DEBUG:', {

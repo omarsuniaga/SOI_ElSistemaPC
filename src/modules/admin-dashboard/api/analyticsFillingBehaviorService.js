@@ -3,7 +3,7 @@ import { supabase } from '../../../lib/supabaseClient.js'
 export async function getTeacherFillingMetrics() {
   try {
     const { data, error } = await supabase
-      .from('teacher_class_fill_metrics')
+      .from('teacher_class_fill_metrics_aggregated')
       .select('*')
       .order('maestro_nombre', { ascending: true })
 

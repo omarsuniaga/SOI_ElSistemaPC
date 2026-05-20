@@ -196,8 +196,7 @@ export async function getCriticalMaestrosReport() {
         notification_state,
         created_at,
         notif_count,
-        maestros(nombre_completo, email),
-        clases(nombre)
+        maestros(nombre_completo)
         `
       )
       .in('notification_state', ['NARANJA', 'ROJO'])

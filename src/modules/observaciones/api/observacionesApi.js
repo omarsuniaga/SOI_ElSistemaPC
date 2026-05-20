@@ -209,7 +209,7 @@ export async function promoteObservations(sessionId, alumnoIds) {
     }
 
     // Call service to build promotion plan
-    const promotionResult = promoteSessionObservations(
+    const promotionResult = await promoteSessionObservations(
       sessionId,
       alumnoIds,
       sessionObs || [],

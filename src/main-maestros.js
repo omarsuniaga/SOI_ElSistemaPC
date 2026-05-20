@@ -116,6 +116,7 @@ import { renderAcademicAdminView } from './modules/academic-admin/views/academic
 import { renderClasesView } from './modules/clases/views/clasesView.js'
 import { renderRegistroAlumnoView } from './portal-maestros/views/registroAlumnoView.js'
 import { renderAprobacionView } from './modules/admin-aprobacion/views/aprobacionView.js'
+import { renderAusenciasAdminView } from './modules/admin-aprobacion/views/ausenciasAdminView.js'
 import { getPermisos } from './portal-maestros/services/permisoService.js'
 
 // Nuevos componentes de UI
@@ -150,6 +151,7 @@ const ADMIN_TABS = [
   { id: 'admin-programas', label: 'Programas', icon: 'bi-grid-1x2' },
   { id: 'admin-maestros', label: 'Maestros', icon: 'bi-person-badge' },
   { id: 'admin-aprobacion', label: 'Aprobación', icon: 'bi-check-circle-fill' },
+  { id: 'admin-ausencias', label: 'Ausencias', icon: 'bi-calendar-x' },
   { id: 'admin-metricas', label: 'Métricas', icon: 'bi-bar-chart-line' },
 ]
 
@@ -159,6 +161,7 @@ let _maestro = null
 let _permisos = null
 
 const router = createPortalRouter()
+window.router = router // Exponer para las vistas
 
 // ── Sync indicator ─────────────────────────────────────────
 
@@ -280,6 +283,27 @@ function _showShell() {
 }
 
 function _showLoginScreen() {
+  const app = document.getElementById('portal-app')
+  if (!app) return
+
+  // Si estamos en una ruta pública que no sea login (ej: register), dejar que el router la maneje
+  const publicRoutes = ['login', 'register', 'pending-approval']
+  const current = (router.currentRoute?.() || 'login').split('?')[0]
+  
+  if (publicRoutes.includes(current) && current !== 'login') {
+    console.log('[Auth] Manteniendo ruta pública:', current)
+    
+    if (!document.getElementById('pm-view-container')) {
+      app.innerHTML = '<main class="pm-view" id="pm-view-container"></main>'
+    }
+
+    _initViewContainers()
+    _setupRouterRoutes()
+    router.setAuthGuard(() => usePortalAuth.isAuthenticated(), publicRoutes)
+    router.start()
+    return
+  }
+
   // Si el shell ya está montado, usar el contenedor de vistas
   const loginContainer = _viewContainers['login']
   if (loginContainer) {
@@ -300,12 +324,53 @@ function _showLoginScreen() {
   }
 
   // Sin shell montado (primer load sin sesión): renderizar directo en el app
-  const app = document.getElementById('portal-app')
-  if (!app) return
   app.innerHTML = ''
   renderLoginView(app, {
     onSuccess: () => initPortal()
   })
+}
+
+// Factorizar el setup de rutas para reuso
+function _setupRouterRoutes() {
+  router.on('login', (route, params) => _renderView('login', params))
+  router.on('logout', (route, params) => _renderView('logout', params))
+  router.on('calendario', (route, params) => _renderView('calendario', params))
+  router.on('clases', (route, params) => _renderView('clases', params))
+  router.on('hoy', (route, params) => _renderView('hoy', params))
+  router.on('asistencia', (route, params) => _renderView('asistencia', params))
+  router.on('metricas', (route, params) => _renderView('metricas', params))
+  router.on('perfil', (route, params) => _renderView('perfil', params))
+  router.on('clase-emergente', (route, params) => _renderView('clase-emergente', params))
+  router.on('planificacion', (route, params) => _renderView('planificacion', params))
+  router.on('alumno', (route, params) => _renderView('alumno', params))
+  router.on('gamificacion', (route, params) => _renderView('gamificacion', params))
+  router.on('ruta', (route, params) => _renderView('ruta', params))
+  router.on('crear-clase', (route, params) => _renderView('crear-clase', params))
+  router.on('ruta-plan-builder', (route, params) => _renderView('ruta-plan-builder', params))
+  router.on('ruta-semanal', (route, params) => _renderView('ruta-semanal', params))
+  router.on('ruta-libreria', (route, params) => _renderView('ruta-libreria', params))
+  router.on('ruta-detalle/:id', (route, params) => _renderView('ruta-detalle', params))
+  router.on('registrar-alumno', (route, params) => _renderView('registrar-alumno', params))
+
+  router.on('register', (route, params) => _renderView('register', params))
+  router.on('pending-approval', (route, params) => _renderView('pending-approval', params))
+
+  // Admin routes (solo visible cuando IS_ADMIN=true)
+  if (IS_ADMIN) {
+    router.on('admin-alumnos', (route, params) => _renderView('admin-alumnos', params))
+    router.on('admin-programas', (route, params) => _renderView('admin-programas', params))
+    router.on('admin-maestros', (route, params) => _renderView('admin-maestros', params))
+    router.on('admin-metricas', (route, params) => _renderView('admin-metricas', params))
+    router.on('admin-config', (route, params) => _renderView('admin-config', params))
+    router.on('admin-clases', (route, params) => _renderView('admin-clases', params))
+    router.on('admin-sesiones', (route, params) => _renderView('admin-sesiones', params))
+    router.on('admin-aprobacion', (route, params) => _renderView('admin-aprobacion', params))
+    router.on('admin-ausencias', (route, params) => _renderView('admin-ausencias', params))
+    // Admin default route
+    router.onNotFound(() => _renderView('admin-alumnos'))
+  } else {
+    router.onNotFound(() => _renderView('hoy'))
+  }
 }
 
 // ── Shell (estructura persistente) ─────────────────────────
@@ -627,7 +692,7 @@ function _initViewContainers() {
   const adminViews = [
     'admin-alumnos', 'admin-programas', 'admin-maestros',
     'admin-metricas', 'admin-config', 'admin-clases', 'admin-sesiones',
-    'admin-aprobacion',
+    'admin-aprobacion', 'admin-ausencias',
   ]
 
   views.forEach(viewName => {
@@ -805,6 +870,10 @@ async function _renderView(route, params = {}, { silent = false } = {}) {
         await renderAprobacionView(targetContainer)
         _activeViewCleanup = null
         break
+      case 'admin-ausencias':
+        await renderAusenciasAdminView(targetContainer)
+        _activeViewCleanup = null
+        break
       case 'registrar-alumno':
         renderRegistroAlumnoView(targetContainer)
         break
@@ -886,10 +955,34 @@ async function initPortal() {
   const maestro = await usePortalAuth.init()
   console.log('[Init] Auth completado:', maestro ? 'con maestro' : 'sin maestro')
 
-  if (!maestro) {
-    console.log('[Init] No maestro, mostrando login screen')
+  // Determinar si estamos en una ruta pública
+  const routerInstance = window.router || createPortalRouter()
+  const publicRoutes = ['login', 'register', 'pending-approval']
+  const currentPath = routerInstance.currentRoute().split('?')[0]
+  const isPublicRoute = publicRoutes.includes(currentPath)
+
+  if (!maestro && !isPublicRoute) {
+    console.log('[Init] No maestro y ruta privada, mostrando login screen')
     _showLoginScreen()
-    console.log('[Init] LoginScreen mostrado')
+    return
+  }
+
+  // Si no hay maestro pero es ruta pública, necesitamos inicializar el shell mínimo o los contenedores
+  if (!maestro && isPublicRoute) {
+    console.log('[Init] No maestro pero ruta pública detectada:', currentPath)
+    
+    // Inyectar un contenedor de vistas mínimo si no existe (ya que no hay shell)
+    if (!document.getElementById('pm-view-container')) {
+      app.innerHTML = '<main class="pm-view" id="pm-view-container"></main>'
+    }
+
+    // Inicializar contenedores de vista sin shell completo
+    _initViewContainers()
+    
+    // Configurar router y activar guard
+    _setupRouterRoutes()
+    router.setAuthGuard(() => usePortalAuth.isAuthenticated(), publicRoutes)
+    router.start()
     return
   }
 
@@ -915,44 +1008,7 @@ async function initPortal() {
   setNavigationCallbacks(invalidateView, invalidateAllViews)
 
   // 6. Configure router — F1-F6 routes
-  router.on('login', (route, params) => _renderView('login', params))
-  router.on('logout', (route, params) => _renderView('logout', params))
-  router.on('calendario', (route, params) => _renderView('calendario', params))
-  router.on('clases', (route, params) => _renderView('clases', params))
-  router.on('hoy', (route, params) => _renderView('hoy', params))
-  router.on('asistencia', (route, params) => _renderView('asistencia', params))
-  router.on('metricas', (route, params) => _renderView('metricas', params))
-  router.on('perfil', (route, params) => _renderView('perfil', params))
-  router.on('clase-emergente', (route, params) => _renderView('clase-emergente', params))
-  router.on('planificacion', (route, params) => _renderView('planificacion', params))
-  router.on('alumno', (route, params) => _renderView('alumno', params))
-  router.on('gamificacion', (route, params) => _renderView('gamificacion', params))
-  router.on('ruta', (route, params) => _renderView('ruta', params))
-  router.on('crear-clase', (route, params) => _renderView('crear-clase', params))
-  router.on('ruta-plan-builder', (route, params) => _renderView('ruta-plan-builder', params))
-  router.on('ruta-semanal', (route, params) => _renderView('ruta-semanal', params))
-  router.on('ruta-libreria', (route, params) => _renderView('ruta-libreria', params))
-  router.on('ruta-detalle/:id', (route, params) => _renderView('ruta-detalle', params))
-  router.on('registrar-alumno', (route, params) => _renderView('registrar-alumno', params))
-
-  router.on('register', (route, params) => _renderView('register', params))
-  router.on('pending-approval', (route, params) => _renderView('pending-approval', params))
-
-  // Admin routes (solo visible cuando IS_ADMIN=true)
-  if (IS_ADMIN) {
-    router.on('admin-alumnos', (route, params) => _renderView('admin-alumnos', params))
-    router.on('admin-programas', (route, params) => _renderView('admin-programas', params))
-    router.on('admin-maestros', (route, params) => _renderView('admin-maestros', params))
-    router.on('admin-metricas', (route, params) => _renderView('admin-metricas', params))
-    router.on('admin-config', (route, params) => _renderView('admin-config', params))
-    router.on('admin-clases', (route, params) => _renderView('admin-clases', params))
-    router.on('admin-sesiones', (route, params) => _renderView('admin-sesiones', params))
-    router.on('admin-aprobacion', (route, params) => _renderView('admin-aprobacion', params))
-    // Admin default route
-    router.onNotFound(() => _renderView('admin-alumnos'))
-  } else {
-    router.onNotFound(() => _renderView('hoy'))
-  }
+  _setupRouterRoutes()
 
   // 3.1 Activar guard de rutas
   router.setAuthGuard(() => usePortalAuth.isAuthenticated(), ['login', 'register', 'pending-approval'])

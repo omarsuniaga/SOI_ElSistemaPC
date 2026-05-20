@@ -347,7 +347,7 @@ async function _openActionDrawer(fecha) {
       return `
         <div class="pm-drawer-clase-item">
           <div class="pm-drawer-clase-info">
-            <span class="pm-drawer-clase-hora">${c.hora_inicio?.slice(0,5) || '--:--'} - ${c.hora_fin?.slice(0,5) || '--:--'}</span>
+            <span class="pm-drawer-clase-hora">${(c.hora_inicio || '--:--').slice(0,5)} - ${(c.hora_fin || '--:--').slice(0,5)}</span>
             <span class="pm-drawer-clase-nombre">${escHTML(c.nombre)}</span>
             <span class="pm-drawer-clase-instrumento">${escHTML(c.instrumento || '')}</span>
           </div>

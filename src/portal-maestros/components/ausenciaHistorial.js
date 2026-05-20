@@ -105,7 +105,12 @@ class AusenciaHistorial {
       return this._renderEmpty();
     }
 
-    return this._renderTable();
+    return `
+      ${this._renderTable()}
+      <div class="ah-cards">
+        ${this._renderCards()}
+      </div>
+    `;
   }
 
   _renderLoading() {
@@ -356,6 +361,21 @@ class AusenciaHistorial {
           color: var(--pm-text-muted);
         }
 
+        .ah-btn-cancel {
+          background: none;
+          border: none;
+          color: var(--pm-text-muted);
+          cursor: pointer;
+          padding: 0.2rem;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: color 0.2s;
+        }
+        .ah-btn-cancel:hover {
+          color: var(--pm-danger);
+        }
+
         @media (max-width: 600px) {
           .ah-table-container {
             display: none;
@@ -436,7 +456,14 @@ class AusenciaHistorial {
           <span class="ah-motivo" title="${ausencia.motivo}">${ausencia.motivo}</span>
         </td>
         <td>
-          <span class="ah-badge ah-badge-${ausencia.estado}">${ausencia.estado}</span>
+          <div style="display:flex; align-items:center; justify-content:space-between; gap:0.5rem;">
+            <span class="ah-badge ah-badge-${ausencia.estado}">${ausencia.estado}</span>
+            ${ausencia.estado === 'pendiente' ? `
+              <button class="ah-btn-cancel" data-action="cancel" data-id="${ausencia.id}" title="Cancelar solicitud">
+                <i class="bi bi-x-circle"></i>
+              </button>
+            ` : ''}
+          </div>
         </td>
       </tr>
     `;
@@ -455,7 +482,14 @@ class AusenciaHistorial {
             <div class="ah-card-title">
               ${this._getTipoIcon(ausencia.tipo_ausencia)} ${this._getTipoLabel(ausencia.tipo_ausencia)}
             </div>
-            <span class="ah-badge ah-badge-${ausencia.estado}">${ausencia.estado}</span>
+            <div style="display:flex; align-items:center; gap:0.5rem;">
+              <span class="ah-badge ah-badge-${ausencia.estado}">${ausencia.estado}</span>
+              ${ausencia.estado === 'pendiente' ? `
+                <button class="ah-btn-cancel" data-action="cancel" data-id="${ausencia.id}" title="Cancelar solicitud">
+                  <i class="bi bi-x-circle"></i>
+                </button>
+              ` : ''}
+            </div>
           </div>
           <div class="ah-card-body">
             <div class="ah-card-row">
@@ -476,6 +510,32 @@ class AusenciaHistorial {
     this.container?.querySelectorAll('[data-action="retry"]').forEach(btn => {
       btn.addEventListener('click', () => this.refresh());
     });
+
+    this.container?.querySelectorAll('[data-action="cancel"]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const id = e.currentTarget.dataset.id;
+        this._cancelSolicitud(id);
+      });
+    });
+  }
+
+  async _cancelSolicitud(id) {
+    if (!confirm('¿Estás seguro que deseas cancelar esta solicitud?')) return;
+
+    try {
+      const { error } = await supabase
+        .from('ausencias_maestros')
+        .update({ estado: 'cancelada' })
+        .eq('id', id);
+
+      if (error) throw error;
+
+      AppToast.success('Solicitud cancelada correctamente');
+      this.refresh();
+    } catch (error) {
+      console.error('Error al cancelar:', error);
+      AppToast.error('No se pudo cancelar la solicitud');
+    }
   }
 
   _formatDate(fecha) {

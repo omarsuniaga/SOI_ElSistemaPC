@@ -88,6 +88,7 @@ async function run() {
         const node = level.nodes[i];
         const { data: dbNode, error: nodeError } = await supabase.from('nodes').insert({
           level_id: dbLevel.id,
+          route_version_id: version.id, // Añadido para cumplir con el constraint
           name: node.name,
           type: node.type || node.nodeKey || 'standard',
           is_critical: node.isCritical === true,

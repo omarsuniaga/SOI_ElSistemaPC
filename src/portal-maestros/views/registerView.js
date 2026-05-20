@@ -267,8 +267,11 @@ export function renderRegisterView(container, { onSuccess }) {
   const loginLink = container.querySelector('[data-route="login"]')
   loginLink?.addEventListener('click', (e) => {
     e.preventDefault()
-    history.pushState({ route: 'login' }, '', '#/login')
-    window.dispatchEvent(new PopStateEvent('popstate', { state: { route: 'login' } }))
+    if (window.router) {
+      window.router.navigate('login')
+    } else {
+      console.error('[RegisterView] Router not found in window')
+    }
   })
 
   requestAnimationFrame(() => nombreInput.focus())

@@ -212,17 +212,18 @@ function renderTableRows(maestros) {
   return maestros.map(a => {
     const nombre = a.nombre || a.name || '-'
     const isActive = a.is_active ?? true
+    const inactiveStyle = !isActive ? 'opacity-50; background-color: rgba(0,0,0,0.05);' : 'background: transparent;'
     return `
-      <div class="list-group-item list-group-item-action d-flex align-items-center justify-content-between p-3 w-100" data-id="${a.id}" style="cursor: pointer; background: transparent;">
+      <div class="list-group-item list-group-item-action d-flex align-items-center justify-content-between p-3 w-100" data-id="${a.id}" style="cursor: pointer; ${inactiveStyle}">
         <div class="d-flex align-items-center gap-3 flex-grow-1 overflow-hidden">
           <div class="position-relative flex-shrink-0">
-            <div class="avatar-compact bg-primary text-white" style="width: 48px; height: 48px; font-size: 1.2rem;">${getInitials(nombre)}</div>
+            <div class="avatar-compact bg-primary text-white" style="width: 48px; height: 48px; font-size: 1.2rem; ${!isActive ? 'opacity-60;' : ''}">${getInitials(nombre)}</div>
             <span class="position-absolute bottom-0 end-0 p-1 bg-${isActive ? 'success' : 'danger'} border border-light rounded-circle" style="transform: translate(10%, 10%);">
               <span class="visually-hidden">${isActive ? 'Activo' : 'Inactivo'}</span>
             </span>
           </div>
           <div class="d-flex flex-column flex-grow-1 overflow-hidden pe-3">
-            <span class="fw-bold text-truncate" style="font-size: 1.05rem;">${escapeHTML(nombre)}</span>
+            <span class="fw-bold text-truncate ${!isActive ? 'text-muted' : ''}" style="font-size: 1.05rem;">${escapeHTML(nombre)}</span>
             <small class="text-muted text-truncate">
               ${escapeHTML(a.instrumento || 'Sin instrumento especificado')}
             </small>
@@ -230,7 +231,7 @@ function renderTableRows(maestros) {
         </div>
         <div class="flex-shrink-0">
           ${a.telefono ? `
-            <button class="btn btn-sm btn-success bg-gradient text-white rounded-pill px-3 shadow-sm d-flex align-items-center gap-2" data-action="whatsapp" data-id="${a.id}" title="Enviar WhatsApp">
+            <button class="btn btn-sm btn-success bg-gradient text-white rounded-pill px-3 shadow-sm d-flex align-items-center gap-2" data-action="whatsapp" data-id="${a.id}" title="Enviar WhatsApp" ${!isActive ? 'disabled' : ''}>
               <i class="bi bi-whatsapp"></i> <span class="d-none d-sm-inline fw-medium">${escapeHTML(a.telefono)}</span>
             </button>
           ` : '<span class="badge bg-light text-muted border">Sin número</span>'}

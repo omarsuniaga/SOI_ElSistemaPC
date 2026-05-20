@@ -267,8 +267,11 @@ export function renderLoginView(container, { onSuccess }) {
   const registerLink = container.querySelector('[data-route="register"]')
   registerLink?.addEventListener('click', (e) => {
     e.preventDefault()
-    history.pushState({ route: 'register' }, '', '#/register')
-    window.dispatchEvent(new PopStateEvent('popstate', { state: { route: 'register' } }))
+    if (window.router) {
+      window.router.navigate('register')
+    } else {
+      console.error('[LoginView] Router not found in window')
+    }
   })
 
   requestAnimationFrame(() => emailInput.focus())

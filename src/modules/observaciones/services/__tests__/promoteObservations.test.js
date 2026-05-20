@@ -1,14 +1,27 @@
 import { describe, it, expect } from 'vitest'
 import { promoteSessionObservations } from '../promoteObservations.js'
-import { createHash } from 'crypto'
 
-function sha256(input) {
-  return createHash('sha256').update(input).digest('hex')
+/**
+ * Local sha256 helper for tests (consistent with promoteObservations.js)
+ */
+async function sha256(input) {
+  // Use Web Crypto API if available (Browser or Node 18+)
+  if (typeof globalThis.crypto !== 'undefined' && globalThis.crypto.subtle) {
+    const msgUint8 = new TextEncoder().encode(input)
+    const hashBuffer = await globalThis.crypto.subtle.digest('SHA-256', msgUint8)
+    return Array.from(new Uint8Array(hashBuffer))
+      .map(b => b.toString(16).padStart(2, '0'))
+      .join('')
+  }
+
+  // Fallback for Node.js
+  const crypto = await import('node:crypto')
+  return crypto.createHash('sha256').update(input).digest('hex')
 }
 
 describe('promoteSessionObservations Service', () => {
   describe('T1: Single observation promotion', () => {
-    it('should promote one observation for one alumno', () => {
+    it('should promote one observation for one alumno', async () => {
       const sessionId = '550e8400-e29b-41d4-a716-446655440001'
       const alumnoIds = ['alumno-uuid-001']
       const observacionesSessionRows = [
@@ -24,7 +37,7 @@ describe('promoteSessionObservations Service', () => {
       ]
       const existingAlumnoRows = []
 
-      const result = promoteSessionObservations(
+      const result = await promoteSessionObservations(
         sessionId,
         alumnoIds,
         observacionesSessionRows,
@@ -41,7 +54,7 @@ describe('promoteSessionObservations Service', () => {
   })
 
   describe('T2: Multiple observations for one alumno', () => {
-    it('should promote three observations for the same alumno', () => {
+    it('should promote three observations for the same alumno', async () => {
       const sessionId = '550e8400-e29b-41d4-a716-446655440002'
       const alumnoIds = ['alumno-uuid-001']
       const observacionesSessionRows = [
@@ -69,7 +82,7 @@ describe('promoteSessionObservations Service', () => {
       ]
       const existingAlumnoRows = []
 
-      const result = promoteSessionObservations(
+      const result = await promoteSessionObservations(
         sessionId,
         alumnoIds,
         observacionesSessionRows,
@@ -85,7 +98,7 @@ describe('promoteSessionObservations Service', () => {
   })
 
   describe('T3: Bulk promote for 5 alumnos', () => {
-    it('should promote 10 observations across 5 alumnos', () => {
+    it('should promote 10 observations across 5 alumnos', async () => {
       const sessionId = '550e8400-e29b-41d4-a716-446655440003'
       const alumnoIds = ['a1', 'a2', 'a3', 'a4', 'a5']
 
@@ -108,7 +121,7 @@ describe('promoteSessionObservations Service', () => {
       ]
       const existingAlumnoRows = []
 
-      const result = promoteSessionObservations(
+      const result = await promoteSessionObservations(
         sessionId,
         alumnoIds,
         observacionesSessionRows,
@@ -123,7 +136,7 @@ describe('promoteSessionObservations Service', () => {
   })
 
   describe('T4: Dedup idempotency', () => {
-    it('should skip already-promoted observations on re-run', () => {
+    it('should skip already-promoted observations on re-run', async () => {
       const sessionId = '550e8400-e29b-41d4-a716-446655440004'
       const alumnoIds = ['alumno-uuid-001']
 
@@ -144,11 +157,11 @@ describe('promoteSessionObservations Service', () => {
 
       // Simulate that these were already promoted (same dedup_key)
       const existingAlumnoRows = [
-        { dedup_key: sha256(`${sessionId}|alumno-uuid-001|${JSON.stringify(obs1.contenido_parsed)}`) },
-        { dedup_key: sha256(`${sessionId}|alumno-uuid-001|${JSON.stringify(obs2.contenido_parsed)}`) }
+        { dedup_key: await sha256(`${sessionId}|alumno-uuid-001|${JSON.stringify(obs1.contenido_parsed)}`) },
+        { dedup_key: await sha256(`${sessionId}|alumno-uuid-001|${JSON.stringify(obs2.contenido_parsed)}`) }
       ]
 
-      const result = promoteSessionObservations(
+      const result = await promoteSessionObservations(
         sessionId,
         alumnoIds,
         observacionesSessionRows,
@@ -164,7 +177,7 @@ describe('promoteSessionObservations Service', () => {
   })
 
   describe('T7: Null contenido_parsed', () => {
-    it('should skip null content without error', () => {
+    it('should skip null content without error', async () => {
       const sessionId = '550e8400-e29b-41d4-a716-446655440007'
       const alumnoIds = ['alumno-uuid-001']
       const observacionesSessionRows = [
@@ -183,7 +196,7 @@ describe('promoteSessionObservations Service', () => {
       ]
       const existingAlumnoRows = []
 
-      const result = promoteSessionObservations(
+      const result = await promoteSessionObservations(
         sessionId,
         alumnoIds,
         observacionesSessionRows,
@@ -202,7 +215,7 @@ describe('promoteSessionObservations Service', () => {
   })
 
   describe('Edge case: Empty alumno_ids', () => {
-    it('should handle empty alumno_ids array', () => {
+    it('should handle empty alumno_ids array', async () => {
       const sessionId = '550e8400-e29b-41d4-a716-446655440008'
       const alumnoIds = []
       const observacionesSessionRows = [
@@ -215,7 +228,7 @@ describe('promoteSessionObservations Service', () => {
       ]
       const existingAlumnoRows = []
 
-      const result = promoteSessionObservations(
+      const result = await promoteSessionObservations(
         sessionId,
         alumnoIds,
         observacionesSessionRows,
@@ -230,14 +243,14 @@ describe('promoteSessionObservations Service', () => {
   })
 
   describe('Hash consistency', () => {
-    it('should compute consistent SHA256 dedup key', () => {
+    it('should compute consistent SHA256 dedup key', async () => {
       const sessionId = '550e8400-e29b-41d4-a716-446655440009'
       const alumnoId = 'alumno-001'
       const content = { nota: 'Bien', detalle: 'Participación activa' }
 
       const hashInput = `${sessionId}|${alumnoId}|${JSON.stringify(content)}`
-      const hash1 = sha256(hashInput)
-      const hash2 = sha256(hashInput)
+      const hash1 = await sha256(hashInput)
+      const hash2 = await sha256(hashInput)
 
       expect(hash1).toBe(hash2)
       expect(hash1).toMatch(/^[a-f0-9]{64}$/) // 256-bit hex
@@ -245,7 +258,7 @@ describe('promoteSessionObservations Service', () => {
   })
 
   describe('Mixed scenario: Promote + Skip + Null', () => {
-    it('should handle mixed promotion, dedup, and null scenarios', () => {
+    it('should handle mixed promotion, dedup, and null scenarios', async () => {
       const sessionId = '550e8400-e29b-41d4-a716-446655440010'
       const alumnoIds = ['a1', 'a2']
 
@@ -257,10 +270,10 @@ describe('promoteSessionObservations Service', () => {
 
       // obs1 already exists (dedup)
       const existingAlumnoRows = [
-        { dedup_key: sha256(`${sessionId}|a1|${JSON.stringify(obs1.contenido_parsed)}`) }
+        { dedup_key: await sha256(`${sessionId}|a1|${JSON.stringify(obs1.contenido_parsed)}`) }
       ]
 
-      const result = promoteSessionObservations(
+      const result = await promoteSessionObservations(
         sessionId,
         alumnoIds,
         observacionesSessionRows,

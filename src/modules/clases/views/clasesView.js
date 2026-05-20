@@ -1,3 +1,4 @@
+import '../styles/clases.css'
 import { AppModal } from '../../../shared/components/AppModal.js'
 import { AppToast } from '../../../shared/components/AppToast.js'
 import {
@@ -131,95 +132,57 @@ function renderContent(container) {
 }
 
 function renderTableView() {
-  const grouped = groupClasses(state.clases)
-  const groupNames = Object.keys(grouped).sort()
+  if (state.clases.length === 0) {
+    return renderEmpty()
+  }
 
   return `
-    <div class="accordion accordion-apple" id="clasesAccordion">
-      ${groupNames.map((name, index) => renderAccordionItem(name, grouped[name], index)).join('')}
-    </div>
-    <div id="emptyContainer">
-      ${state.clases.length === 0 ? renderEmpty() : ''}
+    <div class="page-glass rounded w-100">
+      <div class="list-group list-group-flush w-100" id="clasesListBody">
+        ${state.clases.map(c => renderClaseCard(c)).join('')}
+      </div>
     </div>
   `
 }
 
-function groupClasses(clases) {
-  const groups = {}
-  clases.forEach(c => {
-    const key = c.nombre || 'Sin nombre'
-    if (!groups[key]) groups[key] = []
-    groups[key].push(c)
-  })
-  return groups
-}
-
-function renderAccordionItem(name, classes, index) {
-  const firstClass = classes[0]
-  const total = classes.length
+function renderClaseCard(clase) {
+  const nombre = clase.nombre || 'Sin nombre'
+  const maestro = state.maestros.find(m => m.id === clase.maestro_principal_id)
+  const maestroNombre = maestro?.nombre || 'Sin maestro'
+  const initials = getInitials(nombre)
+  const estado = clase.estado || 'activa'
+  const estadoColor = getEstadoBadgeClass(estado)
+  const horarios = (clase.horarios || []).slice(0, 3) // Mostrar máximo 3 horarios
+  const horariosTexto = horarios.length > 0
+    ? horarios.map(h => `${(h.dia || '').slice(0, 2).toUpperCase()} ${(h.hora_inicio || '').slice(0, 5)}`).join(' • ')
+    : 'Sin horarios'
 
   return `
-    <div class="accordion-item border-0 mb-2 rounded shadow-sm overflow-hidden">
-      <h2 class="accordion-header" id="heading-${index}">
-        <button class="accordion-button collapsed bg-white py-3" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-${index}">
-          <div class="d-flex align-items-center w-100 me-3">
-            <div class="avatar-compact me-3" style="background: ${getConsistentColor(firstClass.id)}20; color: ${getConsistentColor(firstClass.id)};">
-              ${getInitials(name)}
-            </div>
-            <div class="flex-grow-1">
-              <div class="fw-bold text-dark">${escapeHTML(name)}</div>
-              <div class="text-muted extra-small text-uppercase letter-spacing-05">
-                ${total} ${total === 1 ? 'clase identificada' : 'clases identificadas'}
-              </div>
-            </div>
-            <div class="ms-auto pe-2 d-none d-sm-block">
-              <span class="badge bg-light text-primary border border-primary-subtle small">${escapeHTML(firstClass.instrumento)}</span>
-            </div>
+    <div class="list-group-item list-group-item-action d-flex align-items-center justify-content-between p-3 w-100" data-id="${clase.id}" style="cursor: pointer;">
+      <div class="d-flex align-items-center gap-3 flex-grow-1 overflow-hidden">
+        <div class="position-relative flex-shrink-0">
+          <div class="avatar-compact bg-primary bg-opacity-10 text-primary border border-primary-subtle" style="width: 48px; height: 48px; font-size: 1.2rem; display: flex; align-items: center; justify-content: center; border-radius: 50%;">
+            ${initials}
           </div>
-        </button>
-      </h2>
-      <div id="collapse-${index}" class="accordion-collapse collapse" data-bs-parent="#clasesAccordion">
-        <div class="accordion-body p-0 bg-light-subtle">
-          <div class="table-responsive">
-            <table class="table table-compact table-hover mb-0 align-middle">
-              <thead class="table-light">
-                <tr class="extra-small text-uppercase text-muted">
-                  <th class="ps-4">Detalle / Maestro</th>
-                  <th>Horarios</th>
-                  <th>Estado</th>
-                  <th class="text-end pe-4">Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${classes.map(c => `
-                  <tr data-id="${c.id}" style="cursor: pointer;" class="clickable-row">
-                    <td class="ps-4">
-                      <div class="small fw-semibold">${escapeHTML(c.instrumento)}</div>
-                      <div class="text-muted extra-small">${state.maestros.find(m => m.id === c.maestro_principal_id)?.nombre_completo || 'Sin maestro'}</div>
-                    </td>
-                    <td>
-                      <div class="d-flex flex-wrap gap-1">
-                        ${(c.horarios || []).map(h => `<span class="badge bg-white text-dark border extra-small fw-normal">${(h.dia || '').slice(0,2)} ${(h.hora_inicio || '').slice(0,5)}</span>`).join('')}
-                      </div>
-                    </td>
-                    <td>
-                      <span class="badge badge-compact ${getEstadoBadgeClass(c.estado)}">${getEstadoLabel(c.estado)}</span>
-                    </td>
-                    <td class="text-end pe-4">
-                      <div class="quick-actions justify-content-end">
-                        <button class="btn btn-sm btn-outline-primary btn-icon-compact" data-action="edit" data-id="${c.id}" title="Editar">
-                          <i class="bi bi-pencil"></i>
-                        </button>
-                        <button class="btn btn-sm btn-outline-danger btn-icon-compact" data-action="delete" data-id="${c.id}" title="Eliminar">
-                          <i class="bi bi-trash"></i>
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                `).join('')}
-              </tbody>
-            </table>
-          </div>
+          <span class="position-absolute bottom-0 end-0 p-1 bg-${estado === 'activa' ? 'success' : 'warning'} border border-light rounded-circle" style="transform: translate(10%, 10%);">
+            <span class="visually-hidden">${estado}</span>
+          </span>
+        </div>
+        <div class="d-flex flex-column flex-grow-1 overflow-hidden pe-3">
+          <span class="fw-bold text-truncate" style="font-size: 1.05rem;">${escapeHTML(nombre)}</span>
+          <small class="text-muted text-truncate">${escapeHTML(maestroNombre)} • ${escapeHTML(clase.instrumento || '-')}</small>
+          <small class="text-muted extra-small mt-1" style="font-size: 0.85rem;">${escapeHTML(horariosTexto)}</small>
+        </div>
+      </div>
+      <div class="flex-shrink-0 text-end">
+        <span class="badge badge-compact ${estadoColor} mb-2">${getEstadoLabel(estado)}</span>
+        <div class="quick-actions gap-2" style="display: flex; gap: 0.5rem;">
+          <button class="btn btn-sm btn-outline-primary btn-icon-compact" data-action="edit" data-id="${clase.id}" title="Editar" style="font-size: 0.875rem; padding: 0.25rem 0.5rem;">
+            <i class="bi bi-pencil"></i>
+          </button>
+          <button class="btn btn-sm btn-outline-danger btn-icon-compact" data-action="delete" data-id="${clase.id}" title="Eliminar" style="font-size: 0.875rem; padding: 0.25rem 0.5rem;">
+            <i class="bi bi-trash"></i>
+          </button>
         </div>
       </div>
     </div>
@@ -270,10 +233,13 @@ function attachGlobalEvents(container) {
   container.querySelector('#buscar')?.addEventListener('input', applyFilters)
   container.querySelector('#filtroEstado')?.addEventListener('change', applyFilters)
 
-  container.querySelector('#view-content')?.addEventListener('click', (e) => {
+  const viewContent = container.querySelector('#view-content')
+
+  viewContent?.addEventListener('click', (e) => {
     // Manejo de clicks en botones de acción
     const btn = e.target.closest('button[data-action]')
     if (btn) {
+      e.stopPropagation()
       const { action, id } = btn.dataset
       if (action === 'edit') {
         const clase = state.clasesOriginales.find(c => c.id === id)
@@ -289,10 +255,10 @@ function attachGlobalEvents(container) {
       return
     }
 
-    // Manejo de clicks en filas de la tabla
-    const row = e.target.closest('tr.clickable-row')
-    if (row && !e.target.closest('button')) {
-      const id = row.dataset.id
+    // Manejo de clicks en tarjetas de la lista
+    const item = e.target.closest('.list-group-item[data-id]')
+    if (item && !e.target.closest('button')) {
+      const id = item.dataset.id
       const clase = state.clasesOriginales.find(c => c.id === id)
       if (clase) {
         openClaseModal(clase, {

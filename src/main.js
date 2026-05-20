@@ -511,6 +511,31 @@ if (document.readyState === 'loading') {
 }
 
 // ============================================================================
+// PORTAL SWITCH BUTTON VISIBILITY (only on main page)
+// ============================================================================
+function updatePortalButtonVisibility() {
+  const currentRoute = localStorage.getItem('current-view') || 'programas';
+  const teacherBridge = document.querySelector('.teacher-bridge');
+
+  if (!teacherBridge) return;
+
+  // Show button only on main page (programas)
+  if (currentRoute === 'programas') {
+    teacherBridge.classList.add('visible');
+  } else {
+    teacherBridge.classList.remove('visible');
+  }
+}
+
+// Update button visibility on initialization
+updatePortalButtonVisibility();
+
+// Update button visibility whenever route changes
+window.addEventListener('routeChanged', (e) => {
+  updatePortalButtonVisibility();
+});
+
+// ============================================================================
 // EXPORTAR PARA TESTING
 // ============================================================================
 export { MODULES_REGISTRY, router, config };

@@ -1,25 +1,34 @@
-import { createHash } from 'crypto'
-
 /**
- * Compute SHA256 hash for dedup key
+ * Compute SHA256 hash for dedup key (browser/Node 18+ compatible)
  * @param {string} input - Input string to hash
- * @returns {string} 256-bit hex hash
+ * @returns {Promise<string>} 256-bit hex hash
  */
-function sha256(input) {
-  return createHash('sha256').update(input).digest('hex')
+async function sha256(input) {
+  // Use Web Crypto API if available (Browser or Node 18+)
+  if (typeof globalThis.crypto !== 'undefined' && globalThis.crypto.subtle) {
+    const msgUint8 = new TextEncoder().encode(input)
+    const hashBuffer = await globalThis.crypto.subtle.digest('SHA-256', msgUint8)
+    return Array.from(new Uint8Array(hashBuffer))
+      .map(b => b.toString(16).padStart(2, '0'))
+      .join('')
+  }
+
+  // Fallback for older Node.js or environments without subtle crypto
+  const crypto = await import('node:crypto')
+  return crypto.createHash('sha256').update(input).digest('hex')
 }
 
 /**
  * Build promotion plan with dedup checks
- * Pure function: no DB calls, no async
+ * Now async to support browser-native crypto
  *
  * @param {string} sessionId - UUID of session
  * @param {string[]} alumnoIds - Array of alumno UUIDs to filter by
  * @param {Array} observacionesSessionRows - Observations from observaciones_sesion
  * @param {Array} existingAlumnoRows - Observations from observaciones_alumnos (for dedup check)
- * @returns {Object} Promotion result with counts and plan
+ * @returns {Promise<Object>} Promotion result with counts and plan
  */
-export function promoteSessionObservations(
+export async function promoteSessionObservations(
   sessionId,
   alumnoIds,
   observacionesSessionRows,
@@ -38,11 +47,13 @@ export function promoteSessionObservations(
   }
 
   // Build set of existing dedup keys for O(1) lookup
-  const existingDedup = new Set(
-    existingAlumnoRows.map(row => row.dedup_key || sha256(
+  // We compute missing hashes in parallel if needed
+  const existingDedupArray = await Promise.all(
+    existingAlumnoRows.map(async row => row.dedup_key || await sha256(
       `${row.sesion_id}|${row.alumno_id}|${JSON.stringify(row.contenido_parsed)}`
     ))
   )
+  const existingDedup = new Set(existingDedupArray)
 
   // Filter by alumno_ids and es_borrador
   const filteredRows = observacionesSessionRows.filter(row =>
@@ -67,7 +78,7 @@ export function promoteSessionObservations(
 
     // Compute dedup key
     const hashInput = `${sesion_id}|${alumno_id}|${JSON.stringify(contenido_parsed)}`
-    const dedupKey = sha256(hashInput)
+    const dedupKey = await sha256(hashInput)
 
     // Check for existing (dedup)
     if (existingDedup.has(dedupKey)) {

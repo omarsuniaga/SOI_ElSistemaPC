@@ -1,4 +1,10 @@
 import { supabase } from '../../../lib/supabaseClient.js'
+import { aggregateStudentProgress, aggregateBatch, InvalidWindowError } from '../services/progresoAggregationService.js'
+import { format as formatProgressHistory } from '../services/progressHistoryFormatter.js'
+import * as asistenciasRepo from '../repositories/asistenciasRepo.js'
+import * as progresosRepo from '../repositories/progresosRepo.js'
+import * as indicatorAttemptsRepo from '../repositories/indicatorAttemptsRepo.js'
+import * as observacionesRepo from '../repositories/observacionesRepo.js'
 
 export const NIVELES = [
   { value: '1', label: '1° Año' },
@@ -392,4 +398,102 @@ function getCalificacionLabelLocal(calificacion) {
   if (calif >= 3) return 'Bueno'
   if (calif >= 2) return 'En Progreso'
   return 'Necesita Mejorar'
+}
+
+/**
+ * Phase B: Aggregates student progress from all sources
+ * Orchestrates bulk fetches and aggregation
+ * @param {string} alumnoId - Student ID
+ * @param {Object} options - { claseId, periodoId, from, to }
+ * @returns {Promise<Object>} StudentProgress DTO
+ * @throws {InvalidWindowError} if from > to
+ */
+export async function getStudentProgress(alumnoId, { claseId, periodoId, from, to }) {
+  if (from > to) {
+    throw new InvalidWindowError('Date window invalid: from must be <= to')
+  }
+
+  // Parallel fetch from all sources
+  const [asistencias, progresos, indicatorAttempts, observaciones] = await Promise.all([
+    asistenciasRepo.fetchBulk({ alumnoIds: [alumnoId], claseId, periodoId, from, to }),
+    progresosRepo.fetchBulk({ alumnoIds: [alumnoId], claseId, periodoId, from, to }),
+    indicatorAttemptsRepo.fetchBulk({ alumnoIds: [alumnoId], claseId, periodoId, from, to }),
+    observacionesRepo.fetchBulk({ alumnoIds: [alumnoId], claseId, periodoId, from, to }),
+  ])
+
+  // Aggregate into DTO
+  return aggregateStudentProgress(alumnoId, {
+    from,
+    to,
+    sources: { asistencias, progresos, indicatorAttempts, observaciones },
+  })
+}
+
+/**
+ * Phase B: Aggregates progress for multiple students in one batch
+ * Executes exactly 4 database round-trips regardless of student count (no N+1)
+ * @param {Array<string>} alumnoIds - List of student IDs
+ * @param {Object} options - { claseId, periodoId, from, to }
+ * @returns {Promise<Map>} Map<alumnoId, StudentProgress>
+ * @throws {InvalidWindowError} if from > to
+ */
+export async function getStudentProgressBatch(alumnoIds, { claseId, periodoId, from, to }) {
+  if (from > to) {
+    throw new InvalidWindowError('Date window invalid: from must be <= to')
+  }
+
+  // Parallel fetch from all sources (uses .in() for bulk filter, no N+1)
+  const [asistencias, progresos, indicatorAttempts, observaciones] = await Promise.all([
+    asistenciasRepo.fetchBulk({ alumnoIds, claseId, periodoId, from, to }),
+    progresosRepo.fetchBulk({ alumnoIds, claseId, periodoId, from, to }),
+    indicatorAttemptsRepo.fetchBulk({ alumnoIds, claseId, periodoId, from, to }),
+    observacionesRepo.fetchBulk({ alumnoIds, claseId, periodoId, from, to }),
+  ])
+
+  // Aggregate all students in one pass
+  return aggregateBatch(alumnoIds, {
+    from,
+    to,
+    sources: { asistencias, progresos, indicatorAttempts, observaciones },
+  })
+}
+
+/**
+ * Phase B: Gets progress history for multiple students with configurable granularity
+ * Executes exactly 4 database round-trips regardless of student count (no N+1)
+ * @param {Object} options - { alumnoIds, from, to, granularity = 'week' }
+ * @returns {Promise<Map>} Map<alumnoId, ProgressHistory>
+ * @throws {InvalidWindowError} if from > to
+ */
+export async function getProgressHistory({
+  alumnoIds,
+  from,
+  to,
+  granularity = 'week',
+  claseId,
+  periodoId,
+}) {
+  if (from > to) {
+    throw new InvalidWindowError('Date window invalid: from must be <= to')
+  }
+
+  // Parallel fetch from all sources (uses .in() for bulk filter, no N+1)
+  const [asistencias, progresos, indicatorAttempts, observaciones] = await Promise.all([
+    asistenciasRepo.fetchBulk({ alumnoIds, claseId, periodoId, from, to }),
+    progresosRepo.fetchBulk({ alumnoIds, claseId, periodoId, from, to }),
+    indicatorAttemptsRepo.fetchBulk({ alumnoIds, claseId, periodoId, from, to }),
+    observacionesRepo.fetchBulk({ alumnoIds, claseId, periodoId, from, to }),
+  ])
+
+  // Format into continuous timeline with bucketing
+  return formatProgressHistory({
+    alumnoIds,
+    from,
+    to,
+    granularity,
+    asis: asistencias,
+    prog: progresos,
+    attempts: indicatorAttempts,
+    obs: observaciones,
+  })
 }

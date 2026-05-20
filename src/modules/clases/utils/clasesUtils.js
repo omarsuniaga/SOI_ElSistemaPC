@@ -176,13 +176,23 @@ export function calcularDuracion(horaInicio, horaFin) {
 }
 
 /**
- * Obtiene color de badge consistente según el ID
+ * Obtiene color de badge consistente según el ID (formato hex)
  * @param {string} id
  * @returns {string}
  */
 export function getConsistentColor(id) {
-  const colores = ['primary', 'secondary', 'success', 'danger', 'warning', 'info']
-  if (!id) return 'primary'
-  const code = id.charCodeAt(0) + id.charCodeAt(id.length - 1)
-  return colores[code % colores.length]
+  const colores = [
+    '#007aff', // primary (apple)
+    '#5856d6', // indigo
+    '#34c759', // success
+    '#ff3b30', // danger
+    '#ff9500', // warning
+    '#5ac8fa', // info
+  ]
+  if (!id) return colores[0]
+  let hash = 0
+  for (let i = 0; i < id.length; i++) {
+    hash = id.charCodeAt(i) + ((hash << 5) - hash)
+  }
+  return colores[Math.abs(hash) % colores.length]
 }

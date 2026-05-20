@@ -1,0 +1,226 @@
+/* ============================================================================
+   PROGRAMAS VIEW STYLES - Responsive to light/dark theme
+   ============================================================================ */
+
+/* List Group Items - Modern Card Style */
+.list-group-item {
+  border: none;
+  border-radius: 8px;
+  margin-bottom: 8px;
+  transition: all 0.2s ease;
+  background-color: var(--bs-body-bg);
+  color: var(--bs-body-color);
+}
+
+/* Light theme */
+[data-bs-theme="light"] .list-group-item {
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+[data-bs-theme="light"] .list-group-item:hover {
+  background: rgba(255, 255, 255, 0.95);
+  border-color: rgba(0, 0, 0, 0.12);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+/* Dark theme */
+[data-bs-theme="dark"] .list-group-item {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+[data-bs-theme="dark"] .list-group-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.15);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+/* Avatar Container */
+.avatar-compact {
+  font-weight: 600;
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+}
+
+.list-group-item:hover .avatar-compact {
+  transform: scale(1.05);
+}
+
+/* Text Styles - Theme Aware */
+[data-bs-theme="light"] .list-group-item .fw-bold {
+  color: #1a1a1a;
+}
+
+[data-bs-theme="dark"] .list-group-item .fw-bold {
+  color: #f0f0f0;
+}
+
+/* Small text styles */
+[data-bs-theme="light"] .list-group-item .text-muted {
+  color: #6c757d !important;
+}
+
+[data-bs-theme="dark"] .list-group-item .text-muted {
+  color: #adb5bd !important;
+}
+
+/* Extra small text */
+.extra-small {
+  font-size: 0.75rem;
+}
+
+/* Badge Styles - Compact */
+.badge-compact {
+  padding: 0.35rem 0.65rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  border-radius: 12px;
+  white-space: nowrap;
+}
+
+/* Light theme badges */
+[data-bs-theme="light"] .badge-compact {
+  opacity: 0.9;
+}
+
+[data-bs-theme="light"] .badge-compact:hover {
+  opacity: 1;
+}
+
+/* Dark theme badges */
+[data-bs-theme="dark"] .badge-compact {
+  opacity: 0.85;
+}
+
+[data-bs-theme="dark"] .badge-compact:hover {
+  opacity: 1;
+}
+
+/* Estado Badges */
+.badge.bg-success {
+  background-color: #198754 !important;
+}
+
+.badge.bg-warning {
+  background-color: #ffc107 !important;
+  color: #000 !important;
+}
+
+.badge.bg-primary {
+  background-color: #0d6efd !important;
+}
+
+.badge.bg-danger {
+  background-color: #dc3545 !important;
+}
+
+/* Quick Actions */
+.quick-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.btn-icon-compact {
+  padding: 0.4rem 0.6rem;
+  font-size: 0.875rem;
+  border-radius: 6px;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+[data-bs-theme="light"] .btn-icon-compact {
+  opacity: 0;
+}
+
+[data-bs-theme="light"] .list-group-item:hover .btn-icon-compact {
+  opacity: 1;
+}
+
+[data-bs-theme="dark"] .btn-icon-compact {
+  opacity: 0.3;
+}
+
+[data-bs-theme="dark"] .list-group-item:hover .btn-icon-compact {
+  opacity: 1;
+}
+
+/* Page Glass Container */
+.page-glass {
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+[data-bs-theme="light"] .page-glass {
+  background: rgba(255, 255, 255, 0.5);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+[data-bs-theme="dark"] .page-glass {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* Empty State */
+.text-center .bi {
+  transition: transform 0.2s ease;
+}
+
+.text-center:hover .bi {
+  transform: scale(1.1);
+}
+
+/* Responsive adjustments */
+@media (max-width: 576px) {
+  .list-group-item {
+    padding: 0.75rem !important;
+  }
+
+  .quick-actions {
+    margin-top: 0.5rem;
+  }
+
+  .flex-shrink-0.text-end {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.5rem;
+  }
+
+  [data-bs-theme="light"] .btn-icon-compact {
+    opacity: 1;
+  }
+
+  [data-bs-theme="dark"] .btn-icon-compact {
+    opacity: 1;
+  }
+}
+
+/* Animation for list items */
+@keyframes slideInFade {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.list-group-item {
+  animation: slideInFade 0.3s ease-out;
+}
+
+/* Status indicator pulse (optional) */
+.position-absolute.rounded-circle {
+  animation: none;
+}
+
+.list-group-item:hover .position-absolute.rounded-circle {
+  animation: none;
+}

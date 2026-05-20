@@ -43,5 +43,19 @@ export default defineConfig({
     middlewareMode: false,
     // Configuración CORS para permitir WebSocket
     cors: true,
-  }
+  },
+  // Plugin para manejar rutas multi-página limpias
+  plugins: [
+    {
+      name: 'handle-admin-route',
+      configureServer(server) {
+        server.middlewares.use((req, res, next) => {
+          if (req.url === '/admin' || req.url === '/admin/') {
+            req.url = '/admin.html'
+          }
+          next()
+        })
+      }
+    }
+  ]
 })

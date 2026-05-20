@@ -44,7 +44,19 @@ export function renderPerfilView(container) {
   // Inicializar estado con datos reales
   viewState.dirty = false;
   viewState.saving = false;
-  isPushSubscribed().then(sub => viewState.pushEnabled = sub);
+  
+  // Cargar preferencias para sincronizar el switch push_activo
+  import('../services/pushService.js').then(async (push) => {
+    const prefs = await push.getNotificationPreferences();
+    viewState.pushEnabled = prefs.push_activo;
+    
+    // Si la vista ya se renderizó, sincronizar el switch
+    const toggle = document.querySelector('#btn-toggle-push-main input');
+    if (toggle) toggle.checked = viewState.pushEnabled;
+    
+    const badge = document.getElementById('pm-notif-sub-badge');
+    if (badge) badge.textContent = viewState.pushEnabled ? '✅ Suscripción activa' : '⏸ Pausada';
+  });
 
   container.innerHTML = `
     <div class="pm-settings pm-fade-in" role="main" aria-label="Configuración del perfil">
@@ -254,13 +266,13 @@ function renderAvailability(container, maestro) {
 function renderDayCard(diaKey, franjas, label) {
   const hasFranjas = franjas.length > 0;
   return `
-    <div class="pm-avail-dia" data-dia="${diaKey}" role="listitem">
+    <div class="pm-avail-dia ${hasFranjas ? 'open' : ''}" data-dia="${diaKey}" role="listitem">
       <button class="pm-avail-dia__header" aria-expanded="${hasFranjas ? 'true' : 'false'}" aria-controls="pm-avail-body-${diaKey}" data-dia="${diaKey}">
         <span class="pm-avail-dia__label">${label}</span>
         <span class="pm-avail-dia__count">${franjas.length} franja${franjas.length !== 1 ? 's' : ''}</span>
         <i class="bi bi-chevron-down pm-avail-dia__arrow" aria-hidden="true"></i>
       </button>
-      <div class="pm-avail-dia__body" id="pm-avail-body-${diaKey}" style="display:${hasFranjas ? 'block' : 'none'}">
+      <div class="pm-avail-dia__body" id="pm-avail-body-${diaKey}">
         <div class="pm-avail-franjas" id="pm-avail-franjas-${diaKey}">
           ${franjas.map((f, i) => renderSlot(diaKey, i, f)).join('')}
         </div>
@@ -372,10 +384,11 @@ function initListeners(maestro) {
   document.querySelectorAll('.pm-avail-dia__header').forEach(btn => {
     btn.addEventListener('click', () => {
       const diaKey = btn.dataset.dia;
-      const body = document.getElementById(`pm-avail-body-${diaKey}`);
+      const parent = btn.closest('.pm-avail-dia');
       const expanded = btn.getAttribute('aria-expanded') === 'true';
+      
       btn.setAttribute('aria-expanded', !expanded);
-      body.style.display = expanded ? 'none' : 'block';
+      parent.classList.toggle('open', !expanded);
     });
   });
 
@@ -383,11 +396,13 @@ function initListeners(maestro) {
   document.querySelectorAll('.pm-avail-add-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       const diaKey = btn.dataset.dia;
+      const parent = btn.closest('.pm-avail-dia');
       const franjasEl = document.getElementById(`pm-avail-franjas-${diaKey}`);
       const index = franjasEl.querySelectorAll('.pm-avail-franja').length;
+      
       franjasEl.insertAdjacentHTML('beforeend', renderSlot(diaKey, index, { inicio: '08:00', fin: '12:00' }));
-      document.getElementById(`pm-avail-body-${diaKey}`).style.display = 'block';
-      const header = document.querySelector(`.pm-avail-dia__header[data-dia="${diaKey}"]`);
+      parent.classList.add('open');
+      const header = parent.querySelector('.pm-avail-dia__header');
       header.setAttribute('aria-expanded', 'true');
       viewState.dirty = true;
       document.getElementById('btnGuardarPerfil').disabled = false;
@@ -588,15 +603,15 @@ const styles = `
   .pm-avail-dia__arrow { font-size: 0.8rem; color: var(--pm-text-muted); transition: transform 0.2s; }
   .pm-avail-dia.open .pm-avail-dia__arrow { transform: rotate(180deg); }
   .pm-avail-dia__body { 
-    padding: 0.65rem; 
+    padding: 0; 
     background: var(--pm-surface); 
     overflow: hidden;
     max-height: 0;
     transition: max-height 0.3s ease-out, padding 0.3s ease-out;
   }
   .pm-avail-dia.open .pm-avail-dia__body {
-    max-height: 500px;
-    padding: 0.65rem;
+    max-height: 1000px;
+    padding: 0.85rem;
   }
   .pm-avail-franjas { display: flex; flex-direction: column; gap: 0.4rem; }
   .pm-avail-franja {

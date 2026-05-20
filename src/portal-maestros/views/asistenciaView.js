@@ -32,6 +32,7 @@ import { getClassEvent, updateClassEventStatus } from '../services/classEventSer
 import { consumeRutaTema } from '../services/rutaTopicStore.js'
 import { createJustificacionModal } from '../components/JustificacionModal.js'
 import { guardarJustificacion, obtenerJustificacion, eliminarJustificacion } from '../services/justificacionService.js'
+import { promocionarObservacionesAlumnos } from '../services/observationPromotionService.js'
 
 /**
  * Vista Asistencia Optimizada (F3+): toma de asistencia con micro-interacciones.
@@ -1201,6 +1202,20 @@ function _renderVista(container, ctx) {
         // Save observation record — guarda texto original + DSL de IA si corresponde
         const parsed = { indicador_id: indicadorActivo.id, evaluaciones: resultado.evaluaciones }
         await saveObservation(sesionId, maestro.id, raw, parsed, resultado.dslGenerado || null)
+
+        // Fase C: Pipeline de Promoción — Promover notas individuales a la ficha histórica del alumno
+        const promo = await promocionarObservacionesAlumnos(
+          sesionId, 
+          claseId, 
+          maestro.id, 
+          resultado.evaluaciones, 
+          clase.nombre || 'Clase'
+        )
+        
+        if (!promo.success) {
+          console.warn('[Fase C] Fallo parcial en promoción:', promo.error)
+          // No bloqueamos el flujo principal pero informamos por consola
+        }
 
         // Refresh route tree semaphore
         if (routeTreeBar) await routeTreeBar.refresh()

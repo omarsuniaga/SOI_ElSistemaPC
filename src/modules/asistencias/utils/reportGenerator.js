@@ -75,7 +75,7 @@ async function _sesionXLSX(sesion, asistencias, observaciones, nombre) {
   // Asistencias
   const rows = [
     [`Sesión: ${sesion.claseNombre} — ${sesion.fecha}`],
-    [`Maestro: ${sesion.maestroNombre}   Hora: ${sesion.horaInicio?.slice(0,5)} – ${sesion.horaFin?.slice(0,5)}`],
+    [`Maestro: ${sesion.maestroNombre}   Hora: ${_formatTime(sesion.horaInicio)} – ${_formatTime(sesion.horaFin)}`],
     sesion.temaPrincipal ? [`Tema: ${sesion.temaPrincipal}`] : [],
     [],
     ['Alumno', 'Estado', 'Observación'],
@@ -167,7 +167,7 @@ async function _sesionPDF(sesion, asistencias, observaciones, nombre) {
   doc.setFontSize(13)
   doc.text(`${sesion.claseNombre} — ${sesion.fecha}`, 14, 18)
   doc.setFontSize(8)
-  doc.text(`Maestro: ${sesion.maestroNombre}   |   ${sesion.horaInicio?.slice(0,5)} – ${sesion.horaFin?.slice(0,5)}`, 14, 24)
+  doc.text(`Maestro: ${sesion.maestroNombre}   |   ${_formatTime(sesion.horaInicio)} – ${_formatTime(sesion.horaFin)}`, 14, 24)
   if (sesion.temaPrincipal) doc.text(`Tema: ${sesion.temaPrincipal}`, 14, 29)
 
   autoTable(doc, {
@@ -215,7 +215,7 @@ async function _periodoMD(grupos, resumen, nombre) {
   for (const { fecha, sesiones } of grupos) {
     md += `### ${fecha}\n\n`
     for (const s of sesiones) {
-      md += `#### ${s.claseNombre} (${s.horaInicio?.slice(0,5)} – ${s.horaFin?.slice(0,5)})\n`
+      md += `#### ${s.claseNombre} (${_formatTime(s.horaInicio)} – ${_formatTime(s.horaFin)})\n`
       md += `Maestro: ${s.maestroNombre}\n\n`
       if (s.alumnos?.length) {
         md += `| Alumno | Estado |\n|---|---|\n`
@@ -233,7 +233,7 @@ async function _periodoMD(grupos, resumen, nombre) {
 async function _sesionMD(sesion, asistencias, observaciones, nombre) {
   let md = `# ${sesion.claseNombre} — ${sesion.fecha}\n\n`
   md += `**Maestro:** ${sesion.maestroNombre}  \n`
-  md += `**Hora:** ${sesion.horaInicio?.slice(0,5)} – ${sesion.horaFin?.slice(0,5)}\n`
+  md += `**Hora:** ${_formatTime(sesion.horaInicio)} – ${_formatTime(sesion.horaFin)}\n`
   if (sesion.temaPrincipal) md += `**Tema:** ${sesion.temaPrincipal}\n`
   md += `\n## Asistencias\n\n`
   md += `| Alumno | Estado |\n|---|---|\n`
@@ -262,6 +262,10 @@ async function _loadJsPDF() {
 }
 
 // ─── UTILS ───────────────────────────────────────────────────────────────────
+
+function _formatTime(t) {
+  return (t || '--:--').slice(0, 5)
+}
 
 function _estadoLabel(estado) {
   return { presente: 'Presente', ausente: 'Ausente', justificado: 'Justificado' }[estado] ?? estado ?? '—'

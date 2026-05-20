@@ -90,7 +90,7 @@ const NODE_TYPE_DISTRIBUTION = [
 ]
 
 // Generate node definitions for a level
-function generateLevelNodes(levelId, levelNumber) {
+function generateLevelNodes(levelId, levelNumber, versionId) {
   const nodes = []
   const typeDistribution = NODE_TYPE_DISTRIBUTION[levelNumber - 1]
   const nodesPerType = NODES_PER_LEVEL / 2 // 8 nodes per type
@@ -103,11 +103,11 @@ function generateLevelNodes(levelId, levelNumber) {
 
     nodes.push({
       level_id: levelId,
+      route_version_id: versionId, // Añadido para el constraint
       name: `${typeInLevel} ${nodeNumber} - Nivel ${levelNumber}`,
       type: typeInLevel,
       order_index: nodeNumber,
       is_critical: ['SONIDO', 'AFINACION'].includes(typeInLevel) && levelNumber >= 3,
-      description: `Nodo de ${typeInLevel} para nivel ${levelNumber}`,
     })
   }
 
@@ -146,7 +146,7 @@ async function seedCompleteRoute(supabase) {
         route_id: routeId,
         version: 1,
         status: 'published',
-        description: 'Versión 1.0 de la ruta del violín',
+        notes: 'Versión 1.0 de la ruta del violín',
       })
       .select('id')
       .single()
@@ -183,7 +183,7 @@ async function seedCompleteRoute(supabase) {
     const allNodesToInsert = []
     for (let levelNum = 1; levelNum <= 10; levelNum++) {
       const levelId = levelMap[levelNum]
-      const levelNodes = generateLevelNodes(levelId, levelNum)
+      const levelNodes = generateLevelNodes(levelId, levelNum, versionId)
       allNodesToInsert.push(...levelNodes)
     }
 

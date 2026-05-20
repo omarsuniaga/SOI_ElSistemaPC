@@ -1,3 +1,4 @@
+import '../styles/programas.css'
 import { AppModal } from '../../../shared/components/AppModal.js'
 import { AppToast } from '../../../shared/components/AppToast.js'
 import { Programa } from '../models/programa.model.js'
@@ -135,23 +136,9 @@ function renderContent(container) {
         </select>
       </div>
 
-      <div class="page-glass rounded">
-        <div class="table-responsive">
-          <table class="table table-compact table-hover mb-0">
-            <thead class="table-light">
-              <tr>
-                <th style="width: 50px;"></th>
-                <th>Nombre</th>
-                <th class="d-none d-md-table-cell">Nivel</th>
-                <th class="d-none d-lg-table-cell">Descripción</th>
-                <th>Estado</th>
-                <th class="text-end">Acciones</th>
-              </tr>
-            </thead>
-            <tbody id="programasTBody">
-              ${renderTableRows(state.programas)}
-            </tbody>
-          </table>
+      <div class="page-glass rounded w-100">
+        <div class="list-group list-group-flush w-100" id="programasTBody">
+          ${renderTableRows(state.programas)}
         </div>
         <div id="emptyContainer">
           ${state.programas.length === 0 ? renderEmpty() : ''}
@@ -164,37 +151,30 @@ function renderContent(container) {
 function renderTableRows(programas) {
   if (!programas.length) return ''
 
-  return programas.map(p => `
-    <tr data-id="${p.id}">
-      <td>
-        <div class="avatar-compact bg-primary bg-opacity-10 text-primary border border-primary-subtle" style="width: 32px; height: 32px; font-size: 0.8rem;">
-          ${getInitials(p.nombre)}
+  return programas.map(p => {
+    const initials = getInitials(p.nombre)
+    const nivel = getNivelLabel(p.nivel)
+    const descripcion = escapeHTML(p.descripcion || 'Sin descripción')
+
+    return `
+      <div class="list-group-item list-group-item-action d-flex align-items-center justify-content-between p-3 w-100" data-id="${p.id}" style="cursor: pointer;">
+        <div class="d-flex align-items-center gap-3 flex-grow-1 overflow-hidden">
+          <div class="position-relative flex-shrink-0">
+            <div class="avatar-compact bg-primary bg-opacity-10 text-primary border border-primary-subtle" style="width: 48px; height: 48px; font-size: 1.2rem; display: flex; align-items: center; justify-content: center; border-radius: 50%;">
+              ${initials}
+            </div>
+          </div>
+          <div class="d-flex flex-column flex-grow-1 overflow-hidden pe-3">
+            <span class="fw-bold text-truncate" style="font-size: 1.05rem;">${escapeHTML(p.nombre)}</span>
+            <small class="text-muted text-truncate">${nivel} • ${descripcion.substring(0, 50)}${descripcion.length > 50 ? '...' : ''}</small>
+          </div>
         </div>
-      </td>
-      <td>
-        <div class="fw-bold text-truncate" style="max-width: 250px;">${escapeHTML(p.nombre)}</div>
-      </td>
-      <td class="d-none d-md-table-cell">
-        <span class="badge bg-info bg-opacity-10 text-info border border-info-subtle">${getNivelLabel(p.nivel)}</span>
-      </td>
-      <td class="d-none d-lg-table-cell text-muted small text-truncate" style="max-width: 300px;">
-        ${escapeHTML(p.descripcion || '-')}
-      </td>
-      <td>
-        <span class="badge badge-compact ${getStatusColor(p.activo)}">${getStatusLabel(p.activo)}</span>
-      </td>
-      <td class="text-end">
-        <div class="quick-actions justify-content-end">
-          <button class="btn btn-sm btn-outline-primary btn-icon-compact" data-action="edit" data-id="${p.id}" title="Editar">
-            <i class="bi bi-pencil"></i>
-          </button>
-          <button class="btn btn-sm btn-outline-danger btn-icon-compact" data-action="delete" data-id="${p.id}" title="Eliminar">
-            <i class="bi bi-trash"></i>
-          </button>
+        <div class="flex-shrink-0 text-end">
+          <span class="badge badge-compact ${getStatusColor(p.activo)}">${getStatusLabel(p.activo)}</span>
         </div>
-      </td>
-    </tr>
-  `).join('')
+      </div>
+    `
+  }).join('')
 }
 
 function renderEmpty() {

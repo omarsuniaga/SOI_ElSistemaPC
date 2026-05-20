@@ -456,8 +456,7 @@ export async function getReporteConsolidado({ periodoId, fecha, claseId } = {}) 
           alumno_id,
           motivo,
           evidencia_url,
-          evidencia_base64,
-          alumnos (nombre_completo)
+          evidencia_base64
         )
       `)
 
@@ -512,8 +511,11 @@ export async function getReporteConsolidado({ periodoId, fecha, claseId } = {}) 
 
       // Agregar justificaciones
       sesion.justificaciones?.forEach(j => {
+        // Get alumno name from the asistencias if available
+        const alumnoAsistencia = sesion.asistencias?.find(a => a.alumno_id === j.alumno_id)
         consolidado[key].justificaciones.push({
-          alumno_nombre: j.alumnos?.nombre_completo,
+          alumno_nombre: alumnoAsistencia?.alumnos?.nombre_completo || 'Sin nombre',
+          alumno_id: j.alumno_id,
           motivo: j.motivo,
           evidencia_url: j.evidencia_url,
           evidencia_base64: j.evidencia_base64

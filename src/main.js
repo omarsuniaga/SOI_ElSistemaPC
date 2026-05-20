@@ -34,6 +34,7 @@ import * as bootstrapLib from 'bootstrap';
 window.bootstrap = bootstrapLib;
 import './style.css';
 import './styles/bootstrap-support.css';
+import './styles/sidebar.css';
 import './modules/academic-admin/styles/academic-admin.css';
 
 // Core

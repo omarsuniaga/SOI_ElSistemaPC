@@ -116,6 +116,12 @@ export async function eliminarMaestro(id) {
   const { error } = await supabase.from('maestros').delete().eq('id', id)
   if (error) {
     console.error('Error eliminando maestro:', error.message)
+
+    // Errores específicos de integridad referencial
+    if (error.code === '23503' || error.message.includes('foreign key')) {
+      throw new Error('No se puede eliminar este maestro porque tiene clases asignadas. Desasigna las clases primero o marca el maestro como inactivo.')
+    }
+
     throw new Error('No se pudo eliminar el maestro')
   }
 }

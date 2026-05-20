@@ -49,7 +49,7 @@ describe('Programas Integration', () => {
     await renderProgramasView(container)
 
     expect(container.querySelector('.page-title').textContent).toContain('Programas')
-    expect(container.querySelectorAll('#programasTBody tr').length).toBe(2)
+    expect(container.querySelectorAll('#programasTBody .list-group-item').length).toBe(2)
     expect(container.textContent).toContain('Programa A')
     expect(container.textContent).toContain('Programa B')
   })
@@ -67,7 +67,7 @@ describe('Programas Integration', () => {
     searchInput.value = 'Cuerdas'
     searchInput.dispatchEvent(new Event('input'))
 
-    expect(container.querySelectorAll('#programasTBody tr').length).toBe(1)
+    expect(container.querySelectorAll('#programasTBody .list-group-item').length).toBe(1)
     expect(container.textContent).toContain('Cuerdas')
     expect(container.textContent).not.toContain('Vientos')
   })

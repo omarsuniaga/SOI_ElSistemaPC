@@ -196,3 +196,35 @@ export function getConsistentColor(id) {
   }
   return colores[Math.abs(hash) % colores.length]
 }
+
+/**
+ * Convierte un string de hora a minutos desde la medianoche
+ * @param {string} timeStr - Formato HH:MM, HH:MM:SS, HH:MM:SS.SSS, con o sin AM/PM y espacios
+ * @returns {number} Minutos desde la medianoche
+ */
+export function timeToMinutes(timeStr) {
+  if (!timeStr) return 0
+  const cleanTime = timeStr.trim()
+  let isPM = false
+  let timePart = cleanTime
+
+  if (cleanTime.toLowerCase().includes('pm')) {
+    isPM = true
+    timePart = cleanTime.toLowerCase().replace('pm', '').trim()
+  } else if (cleanTime.toLowerCase().includes('am')) {
+    timePart = cleanTime.toLowerCase().replace('am', '').trim()
+  }
+
+  const parts = timePart.split(':')
+  let hours = parseInt(parts[0], 10) || 0
+  const minutes = parseInt(parts[1], 10) || 0
+
+  if (isPM && hours < 12) {
+    hours += 12
+  } else if (!isPM && hours === 12) {
+    hours = 0
+  }
+
+  return hours * 60 + minutes
+}
+

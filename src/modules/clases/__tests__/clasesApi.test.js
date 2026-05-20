@@ -60,6 +60,52 @@ describe('clasesApi Integration', () => {
       expect(conflictos.length).toBe(0)
     })
 
+    it('should NOT return conflicts if classes are adjacent in time with varying string formats', async () => {
+      const mockSchedules = [
+        { 
+          dia: 'lunes', 
+          hora_inicio: '16:00:00.000', 
+          hora_fin: '17:00:00', 
+          salon_id: 's1',
+          clases: { nombre: 'Clase Existente', maestro_principal_id: 'm2' }
+        }
+      ]
+
+      supabase.from.mockReturnValue({
+        select: vi.fn().mockReturnThis(),
+        in: vi.fn().mockResolvedValue({ data: mockSchedules, error: null })
+      })
+
+      const inputs = [{ dia: 'lunes', hora_inicio: '5:00 PM', hora_fin: '18:00', salon_id: 's1' }]
+      const conflictos = await clasesApi.validarHorario(inputs, 'm1')
+
+      expect(conflictos.length).toBe(0)
+    })
+
+    it('should return conflicts if classes overlap by even a single minute', async () => {
+      const mockSchedules = [
+        { 
+          dia: 'lunes', 
+          hora_inicio: '16:00:00', 
+          hora_fin: '17:01:00', 
+          salon_id: 's1',
+          clases: { nombre: 'Clase Existente', maestro_principal_id: 'm2' }
+        }
+      ]
+
+      supabase.from.mockReturnValue({
+        select: vi.fn().mockReturnThis(),
+        in: vi.fn().mockResolvedValue({ data: mockSchedules, error: null })
+      })
+
+      const inputs = [{ dia: 'lunes', hora_inicio: '17:00', hora_fin: '18:00', salon_id: 's1' }]
+      const conflictos = await clasesApi.validarHorario(inputs, 'm1')
+
+      expect(conflictos.length).toBe(1)
+      expect(conflictos[0].tipo).toBe('salón')
+    })
+
+
     it('should return conflicts if maestro is occupied', async () => {
       const mockSchedules = [
         { 

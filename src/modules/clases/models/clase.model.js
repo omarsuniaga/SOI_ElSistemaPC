@@ -1,3 +1,5 @@
+import { timeToMinutes } from '../utils/clasesUtils.js'
+
 /**
  * Modelo de Clase - Validaciones y lógica de negocio
  */
@@ -76,8 +78,12 @@ export class Clase {
       if (!h.hora_inicio || !h.hora_fin) {
         errores.push('La hora de inicio y fin son obligatorias en todos los horarios')
       }
-      if (h.hora_inicio && h.hora_fin && h.hora_inicio >= h.hora_fin) {
-        errores.push('La hora de inicio debe ser menor que la hora de fin')
+      if (h.hora_inicio && h.hora_fin) {
+        const startMin = timeToMinutes(h.hora_inicio)
+        const endMin = timeToMinutes(h.hora_fin)
+        if (startMin >= endMin) {
+          errores.push('La hora de inicio debe ser menor que la hora de fin')
+        }
       }
     }
 
@@ -91,19 +97,20 @@ export class Clase {
     })
 
     for (const dia in schedulesByDay) {
-      const slots = schedulesByDay[dia].sort((a, b) => a.hora_inicio.slice(0, 5).localeCompare(b.hora_inicio.slice(0, 5)))
+      const slots = schedulesByDay[dia].sort((a, b) => timeToMinutes(a.hora_inicio) - timeToMinutes(b.hora_inicio))
       for (let i = 0; i < slots.length - 1; i++) {
         const current = slots[i]
         const next = slots[i + 1]
-        const currentFin = current.hora_fin.slice(0, 5)
-        const nextInicio = next.hora_inicio.slice(0, 5)
-        if (currentFin > nextInicio) {
+        const currentFinMin = timeToMinutes(current.hora_fin)
+        const nextInicioMin = timeToMinutes(next.hora_inicio)
+        if (currentFinMin > nextInicioMin) {
           const diaLabel = dia.charAt(0).toUpperCase() + dia.slice(1)
           errores.push(`Existen horarios solapados en la misma clase (${diaLabel})`)
           break
         }
       }
     }
+
 
     if (this.capacidad_maxima !== undefined && this.capacidad_maxima !== null) {
       if (this.capacidad_maxima < 1) {

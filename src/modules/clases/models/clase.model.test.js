@@ -108,6 +108,23 @@ describe('Clase Model', () => {
         const overlapError = errores.find(e => e.includes('solapados'))
         expect(overlapError).toBeUndefined()
       })
+
+      it('should allow multiple slots on the same day if they are adjacent/consecutive', () => {
+        const clase = new Clase({
+          nombre: 'Test Adjacent',
+          maestro_id: '1',
+          programa_id: '1',
+          instrumento: 'piano',
+          horarios: [
+            { dia: 'lunes', hora_inicio: '08:00', hora_fin: '09:00', salon_id: 's1' },
+            { dia: 'lunes', hora_inicio: '09:00', hora_fin: '10:00', salon_id: 's1' }
+          ]
+        })
+        const errores = clase.validate()
+        const overlapError = errores.find(e => e.includes('solapados'))
+        expect(overlapError).toBeUndefined()
+      })
+
     })
 
     it('should return error when hora_inicio >= hora_fin', () => {

@@ -1,3 +1,4 @@
+import '../styles/alumnos.css'
 import { AppModal } from '../../../shared/components/AppModal.js'
 import { AppToast } from '../../../shared/components/AppToast.js'
 import {
@@ -101,41 +102,50 @@ function renderError(container, mensaje) {
 function renderContent(container) {
   container.innerHTML = `
     <div class="page-container">
-      <!-- Page Header Compact -->
-      <div class="page-header">
-        <div class="d-flex align-items-center gap-2">
-          <span class="page-title"><i class="bi bi-people me-2 text-primary"></i>Alumnos</span>
-          <span class="badge bg-secondary">${state.alumnos.length}</span>
+      <div class="alumnos-header-premium mb-4">
+        <div class="d-flex align-items-center gap-3">
+          <div class="brand-badge bg-primary bg-opacity-10 text-primary rounded-3 d-flex align-items-center justify-content-center" style="width: 42px; height: 42px;">
+            <i class="bi bi-people fs-4"></i>
+          </div>
+          <div>
+            <h1 class="alumnos-title-premium mb-0">Alumnos</h1>
+            <p class="text-muted small mb-0">${state.alumnos.length} alumnos en total</p>
+          </div>
         </div>
-        <div class="d-flex gap-2 flex-wrap">
-          <button class="btn btn-outline-success btn-sm-compact" id="btnExportarCSV">
+        
+        <div class="alumnos-header-actions">
+          <button class="btn btn-outline-success btn-sm-compact me-2" id="btnExportarCSV" title="Exportar CSV">
             <i class="bi bi-file-earmark-spreadsheet"></i> CSV
           </button>
-          <button class="btn btn-primary btn-sm-compact" id="btnAgregarAlumno">
-            <i class="bi bi-plus-lg"></i> Nuevo
+          <button class="btn btn-premium-action" id="btnAgregarAlumno">
+            <i class="bi bi-plus-lg me-1.5"></i>Nuevo Alumno
           </button>
         </div>
       </div>
 
-      <!-- Toolbar Compact -->
-      <div class="toolbar-dense mb-3">
-        <div class="search-bar flex-grow-1" style="min-width: 180px;">
-          <i class="bi bi-search"></i>
-          <input type="text" class="form-control input-dense" placeholder="Buscar alumno..." id="buscar" autocomplete="off">
+      <div class="alumnos-filter-toolbar mb-4">
+        <div class="premium-search-container flex-grow-1">
+          <i class="bi bi-search search-icon-muted"></i>
+          <input type="text" class="form-control premium-search-input" placeholder="Buscar alumno..." id="buscar" autocomplete="off">
         </div>
-        <select class="form-select input-dense" id="filtroEstado" style="width: auto; min-width: 120px;">
-          <option value="todos">Todos</option>
-          <option value="activo">Activos</option>
-          <option value="inactivo">Inactivos</option>
-        </select>
+        
+        <div class="premium-select-container">
+          <i class="bi bi-funnel select-icon-muted"></i>
+          <select class="form-select premium-filter-select" id="filtroEstado">
+            <option value="todos">Todos los estados</option>
+            <option value="activo">Activos</option>
+            <option value="inactivo">Inactivos</option>
+          </select>
+        </div>
       </div>
 
-      <!-- Table Compact Overhauled to modern List-Group -->
       <div class="page-glass rounded w-100">
         <div class="list-group list-group-flush w-100" id="alumnosTBody">
           ${renderTableRows(state.alumnos)}
         </div>
-        ${state.alumnos.length === 0 ? renderEmpty() : ''}
+        <div id="emptyContainer">
+          ${state.alumnos.length === 0 ? renderEmpty() : ''}
+        </div>
       </div>
 
     </div>
@@ -148,14 +158,16 @@ function renderTableRows(alumnos) {
   return alumnos.map(a => {
     const nombre = a.nombre || '-'
     const isActive = a.is_active ?? true
+    const accentClass = `border-accent-${isActive ? 'success' : 'secondary'}`
+    const statusDotClass = `bg-${isActive ? 'success' : 'secondary'}`
     return `
-      <div class="list-group-item list-group-item-action d-flex align-items-center justify-content-between p-3 w-100" data-id="${a.id}" style="cursor: pointer; background: transparent;">
+      <div class="list-group-item list-group-item-action d-flex align-items-center justify-content-between p-3 w-100 border-start-accent ${accentClass}" data-id="${a.id}" style="cursor: pointer;">
         <div class="d-flex align-items-center gap-3 flex-grow-1 overflow-hidden">
           <div class="position-relative flex-shrink-0">
-            <div class="avatar-compact bg-primary text-white" style="width: 48px; height: 48px; font-size: 1.2rem;">${getInitials(nombre)}</div>
-            <span class="position-absolute bottom-0 end-0 p-1 bg-${isActive ? 'success' : 'danger'} border border-light rounded-circle" style="transform: translate(10%, 10%);">
-              <span class="visually-hidden">${isActive ? 'Activo' : 'Inactivo'}</span>
-            </span>
+            <div class="avatar-compact bg-primary bg-opacity-10 text-primary border border-primary-subtle d-flex align-items-center justify-content-center rounded-circle" style="width: 48px; height: 48px; font-size: 1.2rem; font-weight: 600;">
+              ${getInitials(nombre)}
+            </div>
+            <span class="position-absolute bottom-0 end-0 p-1 ${statusDotClass} border border-light rounded-circle" style="transform: translate(10%, 10%);"></span>
           </div>
           <div class="d-flex flex-column flex-grow-1 overflow-hidden pe-3">
             <span class="fw-bold text-truncate" style="font-size: 1.05rem;">${escapeHTML(nombre)}</span>
@@ -164,12 +176,13 @@ function renderTableRows(alumnos) {
             </small>
           </div>
         </div>
-        <div class="flex-shrink-0">
+        <div class="d-flex align-items-center gap-2 flex-shrink-0">
           ${a.telefono ? `
-            <button class="btn btn-sm btn-success bg-gradient text-white rounded-pill px-3 shadow-sm d-flex align-items-center gap-2" data-action="whatsapp" data-id="${a.id}" title="Enviar WhatsApp">
+            <button class="btn btn-sm btn-success bg-gradient text-white rounded-pill px-3 shadow-sm d-flex align-items-center gap-2" data-action="whatsapp" data-id="${a.id}" title="Enviar WhatsApp" style="min-height: 32px;">
               <i class="bi bi-whatsapp"></i> <span class="d-none d-sm-inline fw-medium">${escapeHTML(a.telefono)}</span>
             </button>
-          ` : '<span class="badge bg-light text-muted border">Sin número</span>'}
+          ` : '<span class="badge bg-light text-muted border d-none d-sm-inline-block">Sin número</span>'}
+          <i class="bi bi-chevron-right text-muted ms-1" style="font-size: 1.1rem; transition: transform 0.2s ease;"></i>
         </div>
       </div>
     `
@@ -702,10 +715,21 @@ function openDeleteModal(id) {
 function refreshTable() {
   const tbody = currentContainer.querySelector('#alumnosTBody')
   if (!tbody) return
+  
   if (state.alumnos.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-3">No hay alumnos</td></tr>'
+    tbody.innerHTML = renderEmpty()
   } else {
     tbody.innerHTML = renderTableRows(state.alumnos)
+  }
+
+  const emptyContainer = currentContainer.querySelector('#emptyContainer')
+  if (emptyContainer) {
+    emptyContainer.innerHTML = state.alumnos.length === 0 ? renderEmpty() : ''
+  }
+
+  const countEl = currentContainer.querySelector('.alumnos-header-premium p.text-muted')
+  if (countEl) {
+    countEl.textContent = `${state.alumnos.length} alumnos en total`
   }
 }
 

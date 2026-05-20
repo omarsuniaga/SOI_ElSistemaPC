@@ -25,26 +25,21 @@ export const pwaInstaller = {
     if (this._isStandalone()) return;
 
     const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
-    const isCapable = 'BeforeInstallPromptEvent' in window;
 
-    if (isCapable) {
-      // Escuchar el prompt nativo del navegador (Chrome/Edge desktop y Android)
-      window.addEventListener('beforeinstallprompt', (e) => {
-        e.preventDefault();
-        deferredPrompt = e;
-        this._updateBannerButton(); // Actualizar si el banner ya está visible
-      });
+    // Escuchar el prompt nativo del navegador (Chrome/Edge desktop y Android)
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      this._updateBannerButton(); // Actualizar si el banner ya está visible
+    });
 
-      window.addEventListener('appinstalled', () => {
-        this._dismissBanner(true);
-        deferredPrompt = null;
-      });
-    }
+    window.addEventListener('appinstalled', () => {
+      this._dismissBanner(true);
+      deferredPrompt = null;
+    });
 
     // Mostrar el smart banner siempre (con pequeño delay para que el layout esté listo)
-    if (isCapable || isIOS) {
-      setTimeout(() => this._showSmartBanner(), 800);
-    }
+    setTimeout(() => this._showSmartBanner(), 300);
   },
 
   // ── Smart Banner (siempre visible en el navegador) ──────────────────────────

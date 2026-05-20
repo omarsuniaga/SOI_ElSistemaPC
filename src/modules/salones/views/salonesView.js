@@ -1,3 +1,4 @@
+import '../styles/salones.css'
 import { AppModal } from '../../../shared/components/AppModal.js'
 import { AppToast } from '../../../shared/components/AppToast.js'
 import { useSalones } from '../hooks/useSalones.js'
@@ -27,36 +28,52 @@ function getInitials(nombre) {
 export function renderSalonesView(container) {
   container.innerHTML = `
     <div class="page-container">
-      <div class="page-header">
-        <div class="d-flex align-items-center gap-2">
-          <span class="page-title"><i class="bi bi-door-open me-2 text-primary"></i>Salones</span>
-          <span class="badge bg-secondary" id="salonesCount">0</span>
+      <div class="salones-header-premium mb-4">
+        <div class="d-flex align-items-center gap-3">
+          <div class="brand-badge bg-primary bg-opacity-10 text-primary rounded-3 d-flex align-items-center justify-content-center" style="width: 42px; height: 42px;">
+            <i class="bi bi-door-open fs-4"></i>
+          </div>
+          <div>
+            <h1 class="salones-title-premium mb-0">Salones</h1>
+            <p class="text-muted small mb-0"><span id="salonesCount">0</span> salones en total</p>
+          </div>
         </div>
-        <button class="btn btn-primary btn-sm-compact" id="btnCrearSalon">
-          <i class="bi bi-plus-lg"></i> Nuevo
-        </button>
+        
+        <div class="salones-header-actions">
+          <button class="btn btn-premium-action" id="btnCrearSalon">
+            <i class="bi bi-plus-lg me-1.5"></i>Nuevo Salón
+          </button>
+        </div>
       </div>
 
-      <div class="toolbar-dense mb-3">
-        <div class="search-bar flex-grow-1" style="min-width: 180px;">
-          <i class="bi bi-search"></i>
-          <input type="text" class="form-control input-dense" placeholder="Buscar por nombre, código o ubicación..." id="searchSalon" autocomplete="off">
+      <div class="salones-filter-toolbar mb-4">
+        <div class="premium-search-container flex-grow-1" style="min-width: 180px;">
+          <i class="bi bi-search search-icon-muted"></i>
+          <input type="text" class="form-control premium-search-input" placeholder="Buscar por nombre, código o ubicación..." id="searchSalon" autocomplete="off">
         </div>
-        <select class="form-select input-dense" id="filterCondicion" style="width: auto; min-width: 140px;">
-          <option value="">Todas las condiciones</option>
-          <option value="excelente">Excelente</option>
-          <option value="buena">Buena</option>
-          <option value="regular">Regular</option>
-          <option value="mala">Mala</option>
-        </select>
-        <select class="form-select input-dense" id="filterPiso" style="width: auto; min-width: 120px;">
-          <option value="">Todos los pisos</option>
-          <option value="0">Planta Baja</option>
-          <option value="1">Piso 1</option>
-          <option value="2">Piso 2</option>
-          <option value="3">Piso 3</option>
-          <option value="4">Piso 4</option>
-        </select>
+        
+        <div class="premium-select-container">
+          <i class="bi bi-funnel select-icon-muted"></i>
+          <select class="form-select premium-filter-select" id="filterCondicion">
+            <option value="">Todas las condiciones</option>
+            <option value="excelente">Excelente</option>
+            <option value="buena">Buena</option>
+            <option value="regular">Regular</option>
+            <option value="mala">Mala</option>
+          </select>
+        </div>
+
+        <div class="premium-select-container">
+          <i class="bi bi-layers select-icon-muted"></i>
+          <select class="form-select premium-filter-select" id="filterPiso">
+            <option value="">Todos los pisos</option>
+            <option value="0">Planta Baja</option>
+            <option value="1">Piso 1</option>
+            <option value="2">Piso 2</option>
+            <option value="3">Piso 3</option>
+            <option value="4">Piso 4</option>
+          </select>
+        </div>
       </div>
 
       <!-- Table Compact Overhauled to modern List-Group -->
@@ -106,23 +123,26 @@ export function renderSalonesView(container) {
       const initials = getInitials(salon.nombre || 'S')
       const active = salon.is_active !== false
       const condicionBadge = getCondicionBadge(salon.condicion)
+      const accentClass = `border-accent-${active ? 'success' : 'secondary'}`
+      const statusDotClass = `bg-${active ? 'success' : 'secondary'}`
 
       return `
-        <div class="list-group-item list-group-item-action d-flex align-items-center justify-content-between p-3 w-100" data-id="${salon.id}" style="cursor: pointer; background: transparent;">
+        <div class="list-group-item list-group-item-action d-flex align-items-center justify-content-between p-3 w-100 border-start-accent ${accentClass}" data-id="${salon.id}" style="cursor: pointer;">
           <div class="d-flex align-items-center gap-3 flex-grow-1 overflow-hidden">
             <div class="position-relative flex-shrink-0">
-              <div class="avatar-compact bg-primary bg-opacity-10 text-primary border border-primary-subtle" style="width: 48px; height: 48px; font-size: 1.2rem; display: flex; align-items: center; justify-content: center; border-radius: 50%;">${initials}</div>
-              <span class="position-absolute bottom-0 end-0 p-1 bg-${active ? 'success' : 'secondary'} border border-light rounded-circle" style="transform: translate(10%, 10%);">
+              <div class="avatar-compact bg-primary bg-opacity-10 text-primary border border-primary-subtle d-flex align-items-center justify-content-center rounded-circle" style="width: 48px; height: 48px; font-size: 1.2rem; font-weight: 600;">${initials}</div>
+              <span class="position-absolute bottom-0 end-0 p-1 ${statusDotClass} border border-light rounded-circle" style="transform: translate(10%, 10%);">
                 <span class="visually-hidden">${active ? 'Activo' : 'Inactivo'}</span>
               </span>
             </div>
             <div class="d-flex flex-column flex-grow-1 overflow-hidden pe-3">
               <span class="fw-bold text-truncate" style="font-size: 1.05rem;">${escapeHTML(salon.nombre || '-')}</span>
-              <small class="text-muted text-truncate">Capacidad: ${salon.capacidad || '-'} personas</small>
+              <small class="text-muted text-truncate">Capacidad: ${salon.capacidad || '-'} personas • Piso: ${(salon.piso === 0 || salon.piso === '0') ? 'Planta Baja' : `Piso ${salon.piso}`}</small>
             </div>
           </div>
-          <div class="flex-shrink-0 text-end">
+          <div class="d-flex align-items-center gap-2 flex-shrink-0">
             ${condicionBadge}
+            <i class="bi bi-chevron-right text-muted ms-1" style="font-size: 1.1rem; transition: transform 0.2s ease;"></i>
           </div>
         </div>
       `

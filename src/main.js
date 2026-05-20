@@ -2,17 +2,30 @@
 // SISTEMA ACADÉMICO - Main Entry Point
 // ============================================================================
 
+// Desactivar gestos de recarga pull-to-refresh (Look and Feel nativo)
+import { disablePullToRefresh } from './shared/utils/pullToRefreshBlocker.js'
+disablePullToRefresh()
+
 // PWA: Registrar Service Worker (también en desarrollo para probar)
 if ('serviceWorker' in navigator) {
-  window.addEventListener('load', async () => {
+  const registerSW = async () => {
     try {
       const registration = await navigator.serviceWorker.register('/sw.js');
       console.log('[PWA] Service Worker registered:', registration.scope);
     } catch (error) {
       console.log('[PWA] Service Worker registration failed:', error);
     }
-  });
+  };
+
+  if (document.readyState === 'complete') {
+    registerSW();
+  } else {
+    window.addEventListener('load', registerSW);
+  }
 }
+
+// PWA: Banner de instalación automática
+import { pwaInstaller } from './portal-maestros/components/pwaInstaller.js'
 
 // Estilos
 import 'bootstrap/dist/css/bootstrap.min.css';

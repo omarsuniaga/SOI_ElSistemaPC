@@ -109,31 +109,41 @@ function renderError(container, mensaje) {
 function renderContent(container) {
   container.innerHTML = `
     <div class="page-container">
-      <div class="page-header">
-        <div class="d-flex align-items-center gap-2">
-          <span class="page-title"><i class="bi bi-journal-bookmark me-2 text-primary"></i>Programas</span>
-          <span class="badge bg-secondary rounded-pill">${state.programas.length}</span>
+      <div class="programas-header-premium mb-4">
+        <div class="d-flex align-items-center gap-3">
+          <div class="brand-badge bg-primary bg-opacity-10 text-primary rounded-3 d-flex align-items-center justify-content-center" style="width: 42px; height: 42px;">
+            <i class="bi bi-journal-bookmark fs-4"></i>
+          </div>
+          <div>
+            <h1 class="programas-title-premium page-title mb-0">Programas</h1>
+            <p class="text-muted small mb-0">${state.programas.length} programas en total</p>
+          </div>
         </div>
-        <div class="d-flex gap-2">
-          <button class="btn btn-outline-secondary btn-sm-compact" id="btnExportarPDF" title="Exportar PDF">
+        
+        <div class="programas-header-actions">
+          <button class="btn btn-outline-secondary btn-sm-compact me-2" id="btnExportarPDF" title="Exportar PDF">
             <i class="bi bi-file-earmark-pdf"></i> PDF
           </button>
-          <button class="btn btn-primary btn-sm-compact" id="btnAgregarPrograma">
-            <i class="bi bi-plus-lg"></i> Nuevo
+          <button class="btn btn-premium-action" id="btnAgregarPrograma">
+            <i class="bi bi-plus-lg me-1.5"></i>Nuevo Programa
           </button>
         </div>
       </div>
 
-      <div class="toolbar-dense mb-3">
-        <div class="search-bar flex-grow-1">
-          <i class="bi bi-search"></i>
-          <input type="text" class="form-control input-dense" placeholder="Buscar programa..." id="buscar">
+      <div class="programas-filter-toolbar mb-4">
+        <div class="premium-search-container flex-grow-1">
+          <i class="bi bi-search search-icon-muted"></i>
+          <input type="text" class="form-control premium-search-input" placeholder="Buscar programa..." id="buscar">
         </div>
-        <select class="form-select input-dense w-auto" id="filtroEstado">
-          <option value="todos">Todos</option>
-          <option value="activo">Activos</option>
-          <option value="inactivo">Inactivos</option>
-        </select>
+        
+        <div class="premium-select-container">
+          <i class="bi bi-funnel select-icon-muted"></i>
+          <select class="form-select premium-filter-select" id="filtroEstado">
+            <option value="todos">Todos los estados</option>
+            <option value="activo">Activos</option>
+            <option value="inactivo">Inactivos</option>
+          </select>
+        </div>
       </div>
 
       <div class="page-glass rounded w-100">
@@ -155,22 +165,25 @@ function renderTableRows(programas) {
     const initials = getInitials(p.nombre)
     const nivel = getNivelLabel(p.nivel)
     const descripcion = escapeHTML(p.descripcion || 'Sin descripción')
+    const accentClass = `border-accent-${p.activo ? 'success' : 'secondary'}`
+    const statusDotClass = `bg-${p.activo ? 'success' : 'secondary'}`
 
     return `
-      <div class="list-group-item list-group-item-action d-flex align-items-center justify-content-between p-3 w-100" data-id="${p.id}" style="cursor: pointer;">
+      <div class="list-group-item list-group-item-action d-flex align-items-center justify-content-between p-3 w-100 border-start-accent ${accentClass}" data-id="${p.id}" style="cursor: pointer;">
         <div class="d-flex align-items-center gap-3 flex-grow-1 overflow-hidden">
           <div class="position-relative flex-shrink-0">
-            <div class="avatar-compact bg-primary bg-opacity-10 text-primary border border-primary-subtle" style="width: 48px; height: 48px; font-size: 1.2rem; display: flex; align-items: center; justify-content: center; border-radius: 50%;">
+            <div class="avatar-compact bg-primary bg-opacity-10 text-primary border border-primary-subtle d-flex align-items-center justify-content-center rounded-circle" style="width: 48px; height: 48px; font-size: 1.2rem; font-weight: 600;">
               ${initials}
             </div>
+            <span class="position-absolute bottom-0 end-0 p-1 ${statusDotClass} border border-light rounded-circle" style="transform: translate(10%, 10%);"></span>
           </div>
           <div class="d-flex flex-column flex-grow-1 overflow-hidden pe-3">
             <span class="fw-bold text-truncate" style="font-size: 1.05rem;">${escapeHTML(p.nombre)}</span>
             <small class="text-muted text-truncate">${nivel} • ${descripcion.substring(0, 50)}${descripcion.length > 50 ? '...' : ''}</small>
           </div>
         </div>
-        <div class="flex-shrink-0 text-end">
-          <span class="badge badge-compact ${getStatusColor(p.activo)}">${getStatusLabel(p.activo)}</span>
+        <div class="flex-shrink-0 text-muted ms-2 pe-1">
+          <i class="bi bi-chevron-right" style="font-size: 1.1rem; transition: transform 0.2s ease;"></i>
         </div>
       </div>
     `
@@ -208,7 +221,7 @@ function attachGlobalEvents(container) {
   container.querySelector('#programasTBody')?.addEventListener('click', (e) => {
     const btn = e.target.closest('button[data-action]')
     if (!btn) {
-      const row = e.target.closest('tr[data-id]')
+      const row = e.target.closest('.list-group-item[data-id]')
       if (row) openViewModal(row.dataset.id)
       return
     }
@@ -332,34 +345,95 @@ function openViewModal(id) {
   if (!p) return
 
   AppModal.open({
-    title: escapeHTML(p.nombre),
+    title: 'Perfil del Programa',
     hideSave: true,
     cancelText: 'Cerrar',
     body: `
-      <div class="row g-4">
-        <div class="col-md-6">
-          <label class="text-muted small text-uppercase fw-bold mb-1 d-block">Identificador</label>
-          <p class="mb-0 font-monospace small">${p.id}</p>
+      <div class="programa-profile">
+        <!-- Header Banner / Avatar Section -->
+        <div class="d-flex align-items-center gap-3 mb-4 pb-3 border-bottom border-light-subtle">
+          <div class="position-relative" style="flex-shrink: 0;">
+            <div class="avatar-large bg-primary bg-opacity-10 text-primary border border-primary-subtle d-flex align-items-center justify-content-center fw-bold" 
+                 style="width: 60px; height: 60px; font-size: 1.6rem; border-radius: 50%;">
+              ${getInitials(p.nombre)}
+            </div>
+            <span class="position-absolute bottom-0 end-0 p-1 bg-${p.activo ? 'success' : 'danger'} border border-light rounded-circle" 
+                  style="transform: translate(10%, 10%);"
+                  title="${p.activo ? 'Activo' : 'Inactivo'}">
+            </span>
+          </div>
+          <div class="overflow-hidden">
+            <h4 class="h5 mb-1 fw-bold text-truncate" style="letter-spacing: -0.01em;">${escapeHTML(p.nombre)}</h4>
+            <span class="badge bg-primary bg-opacity-10 text-primary border border-primary-subtle">${getNivelLabel(p.nivel)}</span>
+          </div>
         </div>
-        <div class="col-md-3">
-          <label class="text-muted small text-uppercase fw-bold mb-1 d-block">Nivel</label>
-          <span class="badge bg-info bg-opacity-10 text-info border border-info-subtle">${getNivelLabel(p.nivel)}</span>
-        </div>
-        <div class="col-md-3">
-          <label class="text-muted small text-uppercase fw-bold mb-1 d-block">Estado</label>
-          <span class="badge ${getStatusColor(p.activo)}">${getStatusLabel(p.activo)}</span>
-        </div>
-        <div class="col-12">
-          <label class="text-muted small text-uppercase fw-bold mb-1 d-block">Descripción</label>
-          <p class="mb-0 text-secondary">${escapeHTML(p.descripcion || 'Sin descripción detallada.')}</p>
-        </div>
-        <div class="col-md-6">
-          <label class="text-muted small text-uppercase fw-bold mb-1 d-block">Fecha Creación</label>
-          <p class="mb-0 small">${formatDate(p.created_at)}</p>
-        </div>
-        <div class="col-md-6 text-end d-flex align-items-end justify-content-end gap-2">
-          <button class="btn btn-outline-danger btn-sm" id="view-delete-btn"><i class="bi bi-trash"></i></button>
-          <button class="btn btn-primary btn-sm" id="view-edit-btn"><i class="bi bi-pencil me-1"></i> Editar</button>
+
+        <!-- Info Grid -->
+        <div class="row g-3">
+          <div class="col-md-6">
+            <div class="programa-profile-card h-100">
+              <label class="programa-profile-label small text-uppercase fw-bold mb-1 d-block" style="font-size: 0.75rem; letter-spacing: 0.05em;">
+                <i class="bi bi-clock me-1 text-primary"></i> Duración
+              </label>
+              <p class="mb-0 fw-semibold programa-profile-value" style="font-size: 0.95rem;">
+                ${p.duracion_anios ? `${p.duracion_anios} ${p.duracion_anios === 1 ? 'año' : 'años'}` : 'No especificada'}
+              </p>
+            </div>
+          </div>
+          
+          <div class="col-md-6">
+            <div class="programa-profile-card h-100 d-flex flex-column justify-content-between">
+              <label class="programa-profile-label small text-uppercase fw-bold mb-1 d-block" style="font-size: 0.75rem; letter-spacing: 0.05em;">
+                <i class="bi bi-fingerprint me-1 text-primary"></i> Identificador
+              </label>
+              <div class="d-flex align-items-center justify-content-between">
+                <span class="font-monospace programa-profile-value small text-truncate pe-2" style="font-size: 0.85rem;">${p.id}</span>
+                <button class="btn btn-link btn-sm p-0 text-decoration-none text-muted" id="copy-id-btn" title="Copiar ID" style="cursor: pointer;">
+                  <i class="bi bi-copy"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-12">
+            <div class="programa-profile-card">
+              <label class="programa-profile-label small text-uppercase fw-bold mb-1 d-block" style="font-size: 0.75rem; letter-spacing: 0.05em;">
+                <i class="bi bi-file-text me-1 text-primary"></i> Descripción
+              </label>
+              <p class="mb-0 programa-profile-desc" style="font-size: 0.9rem; line-height: 1.5; white-space: pre-line;">
+                ${escapeHTML(p.descripcion || 'Sin descripción detallada.')}
+              </p>
+            </div>
+          </div>
+
+          <div class="col-12">
+            <div class="programa-profile-card">
+              <div class="row g-2">
+                <div class="col-sm-6">
+                  <label class="programa-profile-label small text-uppercase fw-bold mb-1 d-block" style="font-size: 0.72rem; letter-spacing: 0.05em;">
+                    <i class="bi bi-calendar-check me-1"></i> Creado
+                  </label>
+                  <p class="mb-0 programa-profile-value small" style="opacity: 0.85;">${formatDate(p.created_at)}</p>
+                </div>
+                <div class="col-sm-6">
+                  <label class="programa-profile-label small text-uppercase fw-bold mb-1 d-block" style="font-size: 0.72rem; letter-spacing: 0.05em;">
+                    <i class="bi bi-calendar-event me-1"></i> Modificado
+                  </label>
+                  <p class="mb-0 programa-profile-value small" style="opacity: 0.85;">${p.updated_at ? formatDate(p.updated_at) : formatDate(p.created_at)}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Actions -->
+          <div class="col-12 text-end d-flex align-items-center justify-content-end gap-2 mt-2">
+            <button class="btn btn-outline-danger btn-sm px-3" id="view-delete-btn" title="Eliminar programa">
+              <i class="bi bi-trash me-1"></i> Eliminar
+            </button>
+            <button class="btn btn-primary btn-sm px-4" id="view-edit-btn" title="Editar programa">
+              <i class="bi bi-pencil me-1"></i> Editar
+            </button>
+          </div>
         </div>
       </div>
     `,
@@ -371,6 +445,10 @@ function openViewModal(id) {
       modalBody.querySelector('#view-delete-btn').addEventListener('click', () => {
         AppModal.close()
         setTimeout(() => openDeleteModal(id), 300)
+      })
+      modalBody.querySelector('#copy-id-btn')?.addEventListener('click', () => {
+        navigator.clipboard.writeText(p.id)
+        AppToast.success('ID copiado al portapapeles')
       })
     }
   })

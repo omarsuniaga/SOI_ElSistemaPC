@@ -1,3 +1,4 @@
+import '../styles/maestros.css'
 import { Toast } from 'bootstrap'
 import { AppModal } from '../../../shared/components/AppModal.js'
 import {
@@ -168,30 +169,41 @@ function attachEspecialidadesEvents(modalBody, onChange) {
 function renderContent(container) {
   container.innerHTML = `
     <div class="page-container">
-      <div class="page-header">
-        <div class="d-flex align-items-center gap-2">
-          <span class="page-title"><i class="bi bi-person-check me-2 text-primary"></i>Maestros</span>
-          <span class="badge bg-secondary" id="maestrosCount">${state.maestros.length}</span>
+      <div class="maestros-header-premium mb-4">
+        <div class="d-flex align-items-center gap-3">
+          <div class="brand-badge bg-primary bg-opacity-10 text-primary rounded-3 d-flex align-items-center justify-content-center" style="width: 42px; height: 42px;">
+            <i class="bi bi-person-check fs-4"></i>
+          </div>
+          <div>
+            <h1 class="maestros-title-premium mb-0">Maestros</h1>
+            <p class="text-muted small mb-0">${state.maestros.length} maestros en total</p>
+          </div>
         </div>
-        <div class="d-flex gap-2">
-          <button class="btn btn-outline-success btn-sm-compact" id="btnExportarCSV">
+        
+        <div class="maestros-header-actions">
+          <button class="btn btn-outline-success btn-sm-compact me-2" id="btnExportarCSV" title="Exportar CSV">
             <i class="bi bi-file-earmark-spreadsheet"></i> CSV
           </button>
-          <button class="btn btn-primary btn-sm-compact" id="btnAgregarMaestro">
-            <i class="bi bi-plus-lg"></i> Nuevo
+          <button class="btn btn-premium-action" id="btnAgregarMaestro">
+            <i class="bi bi-plus-lg me-1.5"></i>Nuevo Maestro
           </button>
         </div>
+      </div>
 
-      <div class="toolbar-dense mb-3">
-        <div class="search-bar flex-grow-1" style="min-width: 180px;">
-          <i class="bi bi-search"></i>
-          <input type="text" class="form-control input-dense" placeholder="Buscar maestro..." id="buscar" autocomplete="off">
+      <div class="maestros-filter-toolbar mb-4">
+        <div class="premium-search-container flex-grow-1">
+          <i class="bi bi-search search-icon-muted"></i>
+          <input type="text" class="form-control premium-search-input" placeholder="Buscar maestro..." id="buscar" autocomplete="off">
         </div>
-        <select class="form-select input-dense" id="filtroEstado" style="width: auto; min-width: 120px;">
-          <option value="todos">Todos</option>
-          <option value="activo">Activos</option>
-          <option value="inactivo">Inactivos</option>
-        </select>
+        
+        <div class="premium-select-container">
+          <i class="bi bi-funnel select-icon-muted"></i>
+          <select class="form-select premium-filter-select" id="filtroEstado">
+            <option value="todos">Todos los estados</option>
+            <option value="activo">Activos</option>
+            <option value="inactivo">Inactivos</option>
+          </select>
+        </div>
       </div>
 
       <div class="page-glass rounded w-100">
@@ -207,34 +219,40 @@ function renderContent(container) {
 
 function renderTableRows(maestros) {
   if (!maestros.length) {
-    return '<div class="list-group-item text-center text-muted py-5 w-100"><i class="bi bi-inbox mb-2" style="font-size: 2rem; display: block;"></i>No hay maestros registrados</div>'
+    return `
+      <div class="text-center py-5 w-100 text-muted list-group-item" style="background: transparent; border: none;">
+        <i class="bi bi-inbox fs-1 d-block mb-3" style="color: var(--bs-secondary);"></i>
+        No hay maestros registrados.
+      </div>`
   }
   return maestros.map(a => {
     const nombre = a.nombre || a.name || '-'
     const isActive = a.is_active ?? true
-    const inactiveStyle = !isActive ? 'opacity-50; background-color: rgba(0,0,0,0.05);' : 'background: transparent;'
+    const accentClass = `border-accent-${isActive ? 'success' : 'secondary'}`
+    const statusDotClass = `bg-${isActive ? 'success' : 'secondary'}`
     return `
-      <div class="list-group-item list-group-item-action d-flex align-items-center justify-content-between p-3 w-100" data-id="${a.id}" style="cursor: pointer; ${inactiveStyle}">
+      <div class="list-group-item list-group-item-action d-flex align-items-center justify-content-between p-3 w-100 border-start-accent ${accentClass}" data-id="${a.id}" style="cursor: pointer;">
         <div class="d-flex align-items-center gap-3 flex-grow-1 overflow-hidden">
           <div class="position-relative flex-shrink-0">
-            <div class="avatar-compact bg-primary text-white" style="width: 48px; height: 48px; font-size: 1.2rem; ${!isActive ? 'opacity-60;' : ''}">${getInitials(nombre)}</div>
-            <span class="position-absolute bottom-0 end-0 p-1 bg-${isActive ? 'success' : 'danger'} border border-light rounded-circle" style="transform: translate(10%, 10%);">
-              <span class="visually-hidden">${isActive ? 'Activo' : 'Inactivo'}</span>
-            </span>
+            <div class="avatar-compact bg-primary bg-opacity-10 text-primary border border-primary-subtle d-flex align-items-center justify-content-center rounded-circle" style="width: 48px; height: 48px; font-size: 1.2rem; font-weight: 600;">
+              ${getInitials(nombre)}
+            </div>
+            <span class="position-absolute bottom-0 end-0 p-1 ${statusDotClass} border border-light rounded-circle" style="transform: translate(10%, 10%);"></span>
           </div>
           <div class="d-flex flex-column flex-grow-1 overflow-hidden pe-3">
-            <span class="fw-bold text-truncate ${!isActive ? 'text-muted' : ''}" style="font-size: 1.05rem;">${escapeHTML(nombre)}</span>
+            <span class="fw-bold text-truncate" style="font-size: 1.05rem;">${escapeHTML(nombre)}</span>
             <small class="text-muted text-truncate">
               ${escapeHTML(a.instrumento || 'Sin instrumento especificado')}
             </small>
           </div>
         </div>
-        <div class="flex-shrink-0">
+        <div class="d-flex align-items-center gap-2 flex-shrink-0">
           ${a.telefono ? `
-            <button class="btn btn-sm btn-success bg-gradient text-white rounded-pill px-3 shadow-sm d-flex align-items-center gap-2" data-action="whatsapp" data-id="${a.id}" title="Enviar WhatsApp" ${!isActive ? 'disabled' : ''}>
+            <button class="btn btn-sm btn-success bg-gradient text-white rounded-pill px-3 shadow-sm d-flex align-items-center gap-2" data-action="whatsapp" data-id="${a.id}" title="Enviar WhatsApp" style="min-height: 32px;" ${!isActive ? 'disabled' : ''}>
               <i class="bi bi-whatsapp"></i> <span class="d-none d-sm-inline fw-medium">${escapeHTML(a.telefono)}</span>
             </button>
-          ` : '<span class="badge bg-light text-muted border">Sin número</span>'}
+          ` : '<span class="badge bg-light text-muted border d-none d-sm-inline-block">Sin número</span>'}
+          <i class="bi bi-chevron-right text-muted ms-1" style="font-size: 1.1rem; transition: transform 0.2s ease;"></i>
         </div>
       </div>
     `
@@ -586,8 +604,8 @@ function refreshTable() {
   const tbody = currentContainer.querySelector('#maestrosTBody')
   if (!tbody) return
   tbody.innerHTML = renderTableRows(state.maestros)
-  const countEl = currentContainer.querySelector('#maestrosCount')
-  if (countEl) countEl.textContent = state.maestros.length
+  const countEl = currentContainer.querySelector('.maestros-header-premium p.text-muted')
+  if (countEl) countEl.textContent = `${state.maestros.length} maestros en total`
 }
 
 function isValidEmail(email) {

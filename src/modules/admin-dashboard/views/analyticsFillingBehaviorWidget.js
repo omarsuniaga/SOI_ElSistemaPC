@@ -1,3 +1,5 @@
+import '../styles/analyticsFillingBehavior.css'
+
 export function analyticsFillingBehaviorWidget(containerId) {
   const container = document.getElementById(containerId)
 

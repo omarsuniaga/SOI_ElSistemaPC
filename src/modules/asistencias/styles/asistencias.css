@@ -464,6 +464,118 @@
 
 /* ─── RESPONSIVE ──────────────────────────────────────────────────────────── */
 
+/* ─── CLASE HEADER STRUCTURE ──────────────────────────────────────────────── */
+
+.clase-header-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  flex: 1;
+}
+
+.clase-name {
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--bs-body-color);
+}
+
+.clase-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: center;
+  font-size: 0.85rem;
+  color: var(--bs-secondary);
+}
+
+.clase-meta .horario,
+.clase-meta .maestro,
+.clase-meta .auxiliar {
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
+}
+
+.clase-meta .horario::before {
+  content: "🕐 ";
+  margin-right: 0.3rem;
+}
+
+.clase-meta .maestro::before {
+  content: "👨‍🏫 ";
+  margin-right: 0.3rem;
+}
+
+.clase-meta .auxiliar::before {
+  content: "👩‍🏫 ";
+  margin-right: 0.3rem;
+}
+
+.clase-header-stats {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  margin-left: auto;
+}
+
+.stat-badge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 45px;
+  padding: 0.4rem 0.5rem;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.03);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+[data-bs-theme="dark"] .stat-badge {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.stat-badge .value {
+  font-size: 1.1rem;
+  font-weight: 700;
+  line-height: 1;
+  margin-bottom: 0.2rem;
+}
+
+.stat-badge .label {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.stat-badge.stat-present .value { color: #198754; }
+.stat-badge.stat-absent .value { color: #dc3545; }
+.stat-badge.stat-justified .value { color: #ffc107; }
+
+[data-bs-theme="light"] .stat-badge.stat-present { background: rgba(25, 135, 84, 0.1); }
+[data-bs-theme="light"] .stat-badge.stat-absent { background: rgba(220, 53, 69, 0.1); }
+[data-bs-theme="light"] .stat-badge.stat-justified { background: rgba(255, 193, 7, 0.1); }
+
+[data-bs-theme="dark"] .stat-badge.stat-present { background: rgba(25, 135, 84, 0.15); }
+[data-bs-theme="dark"] .stat-badge.stat-absent { background: rgba(220, 53, 69, 0.15); }
+[data-bs-theme="dark"] .stat-badge.stat-justified { background: rgba(255, 193, 7, 0.15); }
+
+/* ─── ACCORDION BUTTON STRUCTURE ──────────────────────────────────────────── */
+
+.accordion-item.accordion-clase .accordion-button {
+  display: flex !important;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem;
+}
+
+.accordion-item.accordion-clase .accordion-button:not(.collapsed) {
+  background: rgba(13, 110, 253, 0.05);
+}
+
 @media (max-width: 768px) {
   .stats-grid {
     grid-template-columns: repeat(2, 1fr);
@@ -536,10 +648,44 @@
     font-size: 0.9rem;
   }
 
-  .accordion-clases .accordion-item.accordion-clase .accordion-button {
-    padding: 0.65rem;
+  .accordion-clases .accordion-item.accordion-clase .accordion-button,
+  .accordion-item.accordion-clase .accordion-button {
+    padding: 0.75rem;
     gap: 0.5rem;
     flex-wrap: wrap;
+  }
+
+  .clase-header-info {
+    gap: 0.3rem;
+  }
+
+  .clase-name {
+    font-size: 0.9rem;
+  }
+
+  .clase-meta {
+    gap: 0.8rem;
+    font-size: 0.8rem;
+  }
+
+  .clase-header-stats {
+    gap: 0.4rem;
+    margin-left: 0;
+    width: 100%;
+    margin-top: 0.4rem;
+  }
+
+  .stat-badge {
+    min-width: 40px;
+    padding: 0.3rem 0.4rem;
+  }
+
+  .stat-badge .value {
+    font-size: 0.95rem;
+  }
+
+  .stat-badge .label {
+    font-size: 0.6rem;
   }
 
   .sesion-header-info {

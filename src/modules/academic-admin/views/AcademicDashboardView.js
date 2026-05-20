@@ -9,13 +9,17 @@ import { NodeHotspots } from '../components/NodeHotspots.js';
 
 export async function AcademicDashboardView() {
     // 1. Cargar datos en paralelo para máxima eficiencia
-    const [radarResponse, hotspotsResponse] = await Promise.all([
-        getInstitutionalRadar().catch(err => ({ error: err, data: [] })),
-        getNodeHotspots().catch(err => ({ error: err, data: [] }))
-    ]);
+    // TODO: These VIEWs don't exist yet, using empty data for now
+    const radarData = [];
+    const hotspotsData = [];
 
-    const radarData = radarResponse.data || [];
-    const hotspotsData = hotspotsResponse.data || [];
+    // Commented out until VIEWs are created
+    // const [radarResponse, hotspotsResponse] = await Promise.all([
+    //     getInstitutionalRadar().catch(err => ({ error: err, data: [] })),
+    //     getNodeHotspots().catch(err => ({ error: err, data: [] }))
+    // ]);
+    // const radarData = radarResponse.data || [];
+    // const hotspotsData = hotspotsResponse.data || [];
 
     // 2. Renderizar contenedor principal
     return `

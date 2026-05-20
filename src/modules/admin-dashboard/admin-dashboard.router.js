@@ -11,10 +11,9 @@ import { directorTrendReportView } from './views/directorTrendReportView.js'
 export function registerRoutesAdminDashboard() {
   // Cumplimiento de Maestros - Vista principal del dashboard
   router.register('admin-dashboard', (container) => {
-    container.innerHTML = '<div class="pm-loading"><div class="pm-spinner"></div></div>'
     try {
-      const widget = new CumplimientoMaestrosWidget('admin-dashboard-container')
       container.innerHTML = `<div id="admin-dashboard-container"></div>`
+      const widget = new CumplimientoMaestrosWidget('admin-dashboard-container')
       widget.init()
     } catch (error) {
       console.error('[admin-dashboard] Error:', error)
@@ -24,10 +23,9 @@ export function registerRoutesAdminDashboard() {
 
   // Reportes de Director
   router.register('admin-dashboard-reportes', (container) => {
-    container.innerHTML = '<div class="pm-loading"><div class="pm-spinner"></div></div>'
     try {
-      const panel = new DirectorReportingPanel('director-reporting-container')
       container.innerHTML = `<div id="director-reporting-container"></div>`
+      const panel = new DirectorReportingPanel('director-reporting-container')
       panel.init()
     } catch (error) {
       console.error('[admin-dashboard-reportes] Error:', error)
@@ -37,10 +35,9 @@ export function registerRoutesAdminDashboard() {
 
   // Analítica de Llenado de Asistencias
   router.register('admin-dashboard-analitca-llenado', (container) => {
-    container.innerHTML = '<div class="pm-loading"><div class="pm-spinner"></div></div>'
     try {
-      const widget = analyticsFillingBehaviorWidget('analytics-filling-container')
       container.innerHTML = `<div id="analytics-filling-container"></div>`
+      const widget = analyticsFillingBehaviorWidget('analytics-filling-container')
       widget.init()
     } catch (error) {
       console.error('[admin-dashboard-analitca-llenado] Error:', error)
@@ -50,10 +47,9 @@ export function registerRoutesAdminDashboard() {
 
   // Reporte de Tendencias para Director
   router.register('admin-dashboard-tendencias', (container) => {
-    container.innerHTML = '<div class="pm-loading"><div class="pm-spinner"></div></div>'
     try {
-      const view = directorTrendReportView('trend-report-container')
       container.innerHTML = `<div id="trend-report-container"></div>`
+      const view = directorTrendReportView('trend-report-container')
       view.init()
     } catch (error) {
       console.error('[admin-dashboard-tendencias] Error:', error)

@@ -95,4 +95,37 @@ describe('analyticsFillingBehaviorWidget', () => {
 
     expect(container.textContent).toContain('62.5%') // average AI usage
   })
+
+  it('should render maestro fill metrics table with timing details', async () => {
+    const mockMetrics = [
+      {
+        maestro_id: '1',
+        maestro_nombre: 'Prof. García',
+        total_clases: 10,
+        orden_asistencia_primero: 6,
+        promedio_duracion_observaciones: 120,
+        uso_ai_fill_percent: 40
+      },
+      {
+        maestro_id: '2',
+        maestro_nombre: 'Prof. Martínez',
+        total_clases: 8,
+        orden_asistencia_primero: 5,
+        promedio_duracion_observaciones: 180,
+        uso_ai_fill_percent: 60
+      }
+    ]
+
+    global.fetch = vi.fn(() =>
+      Promise.resolve({ ok: true, json: () => Promise.resolve(mockMetrics) })
+    )
+
+    const widget = analyticsFillingBehaviorWidget('analytics-container')
+    await widget.init()
+
+    expect(container.querySelector('table')).toBeTruthy()
+    expect(container.textContent).toContain('Prof. García')
+    expect(container.textContent).toContain('Prof. Martínez')
+    expect(container.textContent).toContain('120') // duration in seconds
+  })
 })

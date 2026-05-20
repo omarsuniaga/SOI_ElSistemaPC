@@ -1,6 +1,33 @@
 export function analyticsFillingBehaviorWidget(containerId) {
   const container = document.getElementById(containerId)
 
+  function renderMaestroTable(metrics) {
+    return `
+      <table class="metrics-table">
+        <thead>
+          <tr>
+            <th>Maestro</th>
+            <th>Total Clases</th>
+            <th>Asistencia 1°</th>
+            <th>Duración Obs (seg)</th>
+            <th>IA Promedio</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${metrics.map(m => `
+            <tr>
+              <td>${m.maestro_nombre}</td>
+              <td>${m.total_clases}</td>
+              <td>${m.orden_asistencia_primero}</td>
+              <td>${m.promedio_duracion_observaciones}</td>
+              <td>${m.uso_ai_fill_percent}%</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    `
+  }
+
   function calculateStats(data) {
     const total = data.length
     const asistenciaPrimero = data.filter(m => m.orden_asistencia_primero === 1).length
@@ -66,6 +93,10 @@ export function analyticsFillingBehaviorWidget(containerId) {
           <div class="metrics-list">
             ${metricsHtml}
           </div>
+          <section class="maestro-metrics-section">
+            <h3>Detalle por Maestro</h3>
+            ${renderMaestroTable(metrics)}
+          </section>
         </div>
       `
 

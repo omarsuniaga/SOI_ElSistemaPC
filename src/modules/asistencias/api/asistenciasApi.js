@@ -505,6 +505,7 @@ export async function getReporteConsolidado({ periodoId, fecha, claseId } = {}) 
           hora_fin: row.hora_fin,
           maestro_nombre: row.maestro_principal || 'Sin asignar',
           maestro_auxiliar_nombre: row.maestro_auxiliar || null,
+          observacion_clase: row.observacion_clase || null,
           presentes: row.presentes || 0,
           ausentes: row.ausentes || 0,
           justificados: row.justificados || 0,

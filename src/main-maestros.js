@@ -952,6 +952,27 @@ export function invalidateView(name) {
   _viewRendered.delete(name)
 }
 
+// ── Admin Bridge (Dev only) ────────────────────────────────
+
+function _createAdminBridgeIfDev() {
+  // Solo agregar el botón Admin en desarrollo, no en producción
+  if (import.meta.env.MODE === 'production') {
+    return
+  }
+
+  const adminBridge = document.createElement('a')
+  adminBridge.href = '/admin.html'
+  adminBridge.className = 'admin-bridge'
+  adminBridge.title = 'Panel de Administración (Dev only)'
+  adminBridge.innerHTML = `
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+    </svg>
+    <span>Admin</span>
+  `
+  document.body.appendChild(adminBridge)
+}
+
 // ── Bootstrap ───────────────────────────────────────────────
 
 async function initPortal() {
@@ -1049,6 +1070,9 @@ async function initPortal() {
 
   // 4. Initial sync attempt
   _triggerSync()
+
+  // 5. Add admin bridge only in development
+  _createAdminBridgeIfDev()
 }
 
 // Global error trap — shows errors visually + report to services

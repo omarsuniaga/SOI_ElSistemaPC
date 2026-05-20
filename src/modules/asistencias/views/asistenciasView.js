@@ -274,12 +274,12 @@ function renderClaseDetalles(clase) {
       </div>
 
       <!-- Observaciones del Maestro -->
-      ${clase.observacion_clase || clase.tema_principal ? `
+      ${clase.observacion_sesion || clase.observacion_clase || clase.tema_principal ? `
         <div class="observaciones-section border-top pt-3">
           <h6 class="fw-bold mb-2"><i class="bi bi-chat-left-text me-2"></i>Observaciones de la Clase</h6>
           <div class="alert alert-light border">
             <p class="mb-0 text-secondary">
-              ${escapeHTML(clase.observacion_clase || 'Sin observaciones registradas')}
+              ${escapeHTML(clase.observacion_sesion || clase.observacion_clase || 'Sin observaciones registradas')}
             </p>
           </div>
         </div>

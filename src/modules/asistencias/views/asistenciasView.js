@@ -110,13 +110,21 @@ function renderError(container, msg) {
 function renderContent(container) {
   container.innerHTML = `
     <div class="page-container">
-      <div class="page-header">
-        <div class="d-flex align-items-center gap-2">
-          <span class="page-title"><i class="bi bi-calendar-check me-2 text-primary"></i>Asistencias</span>
+      <div class="asistencias-header-premium mb-4">
+        <div class="d-flex align-items-center gap-3">
+          <div class="brand-badge bg-primary bg-opacity-10 text-primary rounded-3 d-flex align-items-center justify-content-center" style="width: 42px; height: 42px;">
+            <i class="bi bi-calendar-check fs-4"></i>
+          </div>
+          <div>
+            <h1 class="asistencias-title-premium page-title mb-0">Asistencias</h1>
+            <p class="text-muted small mb-0">${state.resumenGlobal?.totalRegistros || 0} registros en total</p>
+          </div>
         </div>
-        <button class="btn btn-primary btn-sm-compact" id="btn-nueva-sesion">
-          <i class="bi bi-plus-lg"></i> Tomar Asistencia
-        </button>
+        <div class="asistencias-header-actions">
+          <button class="btn btn-premium-action" id="btn-nueva-sesion">
+            <i class="bi bi-plus-lg me-1.5"></i>Tomar Asistencia
+          </button>
+        </div>
       </div>
 
       <!-- Panel de Estadísticas Globales -->
@@ -145,10 +153,13 @@ function renderContent(container) {
         </div>
       </div>
 
-      <div class="toolbar-dense mb-3">
-        <select class="form-select input-dense" id="select-periodo" style="max-width: 200px;">
-          ${state.periodos.map(p => `<option value="${p.id}" ${p.id === state.filtroPeriodo ? 'selected' : ''}>${escapeHTML(p.nombre)}</option>`).join('')}
-        </select>
+      <div class="asistencias-filter-toolbar mb-4">
+        <div class="premium-select-container" style="max-width: 250px;">
+          <i class="bi bi-calendar3 select-icon-muted"></i>
+          <select class="form-select premium-filter-select" id="select-periodo">
+            ${state.periodos.map(p => `<option value="${p.id}" ${p.id === state.filtroPeriodo ? 'selected' : ''}>${escapeHTML(p.nombre)}</option>`).join('')}
+          </select>
+        </div>
       </div>
 
       <!-- Acordeons por Día -->
@@ -331,6 +342,12 @@ async function _reloadView() {
   AppToast.info('Cargando asistencias...')
 
   await _loadData()
+
+  // Update total records in header
+  const countEl = container.querySelector('.asistencias-header-premium p.text-muted')
+  if (countEl) {
+    countEl.textContent = `${state.resumenGlobal?.totalRegistros || 0} registros en total`
+  }
 
   // Rerender stats
   const statsPanel = container.querySelector('.stats-panel')

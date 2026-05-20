@@ -1,5 +1,6 @@
 import { getPeriodos, getPeriodoActivo, getSesionesPorRango } from '../api/asistenciasApi.js'
 import { createKpiCard } from '../../metricas/components/kpiCard.js'
+import '../styles/asistencias.css'
 
 const state = {
   periodoActivo: null,
@@ -92,17 +93,23 @@ function _render(container) {
     : 0
 
   container.innerHTML = `
-    <div class="admin-report-view px-3 px-md-4 py-3">
-      <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
-        <div>
-          <h4 class="mb-0 fw-semibold"><i class="bi bi-graph-up me-2 text-primary"></i>Reportes de Asistencia</h4>
-          <p class="text-secondary small mb-0">Panel administrativo de análisis de asistencia</p>
+    <div class="page-container py-3">
+      <div class="asistencias-reportes-header-premium mb-4">
+        <div class="d-flex align-items-center gap-3">
+          <div class="brand-badge bg-primary bg-opacity-10 text-primary rounded-3 d-flex align-items-center justify-content-center" style="width: 42px; height: 42px;">
+            <i class="bi bi-graph-up fs-4"></i>
+          </div>
+          <div>
+            <h1 class="asistencias-reportes-title-premium page-title mb-0">Reportes de Asistencia</h1>
+            <p class="text-muted small mb-0">Panel administrativo de análisis de asistencia</p>
+          </div>
         </div>
-        <div class="d-flex gap-2">
-          <button class="btn btn-outline-success btn-sm" id="exportXlsx">
+        
+        <div class="asistencias-reportes-header-actions">
+          <button class="btn btn-outline-success btn-sm-compact me-2" id="exportXlsx">
             <i class="bi bi-file-earmark-spreadsheet me-1"></i>Excel
           </button>
-          <button class="btn btn-outline-danger btn-sm" id="exportPdf">
+          <button class="btn btn-outline-danger btn-sm-compact" id="exportPdf">
             <i class="bi bi-file-earmark-pdf me-1"></i>PDF
           </button>
         </div>

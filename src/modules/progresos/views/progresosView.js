@@ -1,3 +1,4 @@
+import '../styles/progresos.css'
 import { AppModal } from '../../../shared/components/AppModal.js'
 import { AppToast } from '../../../shared/components/AppToast.js'
 import { 
@@ -65,24 +66,35 @@ function renderError(container, msg) {
 function renderContent(container) {
   container.innerHTML = `
     <div class="page-container">
-      <div class="page-header">
-        <div class="d-flex align-items-center gap-2">
-          <span class="page-title"><i class="bi bi-graph-up-arrow me-2 text-primary"></i>Calificaciones</span>
+      <div class="progresos-header-premium mb-4">
+        <div class="d-flex align-items-center gap-3">
+          <div class="brand-badge bg-primary bg-opacity-10 text-primary rounded-3 d-flex align-items-center justify-content-center" style="width: 42px; height: 42px;">
+            <i class="bi bi-graph-up-arrow fs-4"></i>
+          </div>
+          <div>
+            <h1 class="progresos-title-premium page-title mb-0">Calificaciones</h1>
+            <p class="text-muted small mb-0">${state.progresosOriginales.length} calificaciones registradas</p>
+          </div>
         </div>
-        <button class="btn btn-primary btn-sm-compact" id="btn-nueva-nota">
-          <i class="bi bi-plus-lg"></i> Registrar Nota
-        </button>
+        <div class="progresos-header-actions">
+          <button class="btn btn-premium-action" id="btn-nueva-nota">
+            <i class="bi bi-plus-lg me-1.5"></i>Registrar Nota
+          </button>
+        </div>
       </div>
 
-      <div class="toolbar-dense mb-3">
-        <div class="search-bar flex-grow-1">
-          <i class="bi bi-search"></i>
-          <input type="text" class="form-control input-dense" placeholder="Buscar por alumno o programa..." id="buscar-progreso">
+      <div class="progresos-filter-toolbar mb-4">
+        <div class="premium-search-container flex-grow-1">
+          <i class="bi bi-search search-icon-muted"></i>
+          <input type="text" class="form-control premium-search-input" placeholder="Buscar por alumno o programa..." id="buscar-progreso">
         </div>
-        <select class="form-select input-dense w-auto" id="select-clase">
-          <option value="todas">Todas las clases</option>
-          ${state.clases.map(c => `<option value="${c.id}" ${c.id === state.filtroClase ? 'selected' : ''}>${escapeHTML(c.nombre)}</option>`).join('')}
-        </select>
+        <div class="premium-select-container select-clase-container">
+          <i class="bi bi-funnel select-icon-muted"></i>
+          <select class="form-select premium-filter-select" id="select-clase">
+            <option value="todas">Todas las clases</option>
+            ${state.clases.map(c => `<option value="${c.id}" ${c.id === state.filtroClase ? 'selected' : ''}>${escapeHTML(c.nombre)}</option>`).join('')}
+          </select>
+        </div>
       </div>
 
       <div class="page-glass rounded">
@@ -129,26 +141,27 @@ function renderGroupedByAlumno() {
 
   return entries.map(({ alumno, lista }) => {
     const rend = PROGRESO_SERVICE.calcularRendimiento(lista)
+    const accentClass = rend.enRiesgo ? 'border-accent-danger' : 'border-accent-success'
     return `
-      <tr>
+      <tr class="border-start-accent ${accentClass}">
         <td>
           <div class="fw-bold">${escapeHTML(alumno?.nombre_completo || 'Desconocido')}</div>
           <div class="small text-muted">${lista.length > 0 ? escapeHTML(state.clases.find(c => c.id === lista[0].clase_id)?.nombre) : ''}</div>
         </td>
-        <td class="text-center">
+        <td class="text-center align-middle">
           <div class="fw-bold ${rend.enRiesgo ? 'text-danger' : 'text-success'}" style="font-size: 1.1rem;">
             ${rend.promedio !== null ? rend.promedio.toFixed(2) : '-.--'}
           </div>
         </td>
-        <td class="d-none d-md-table-cell text-center">
+        <td class="d-none d-md-table-cell text-center align-middle">
           <span class="badge bg-light text-dark border">${rend.total}</span>
         </td>
-        <td>
+        <td class="align-middle">
           ${rend.enRiesgo 
             ? '<span class="badge bg-danger bg-opacity-10 text-danger border border-danger-subtle"><i class="bi bi-exclamation-circle me-1"></i>En Riesgo</span>' 
             : '<span class="badge bg-success bg-opacity-10 text-success border border-success-subtle">Satisfactorio</span>'}
         </td>
-        <td class="text-end">
+        <td class="text-end align-middle">
           <div class="quick-actions justify-content-end">
             <button class="btn btn-sm btn-outline-secondary btn-icon-compact" data-action="pdf" data-alumno-id="${alumno?.id}" title="Generar Boletín">
               <i class="bi bi-file-earmark-pdf"></i>

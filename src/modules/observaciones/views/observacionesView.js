@@ -1,3 +1,4 @@
+import '../styles/observaciones.css'
 import { AppModal } from '../../../shared/components/AppModal.js'
 import { AppToast } from '../../../shared/components/AppToast.js'
 import {
@@ -68,52 +69,57 @@ function renderError(container, msg) {
 function renderContent(container) {
   container.innerHTML = `
     <div class="page-container">
-      <div class="page-header">
-        <div class="d-flex align-items-center gap-2">
-          <span class="page-title"><i class="bi bi-clipboard2-pulse me-2 text-primary"></i>Observaciones</span>
-          <span class="badge bg-secondary rounded-pill">${state.observaciones.length}</span>
-        </div>
-        <button class="btn btn-primary btn-sm-compact" id="btn-nueva-obs">
-          <i class="bi bi-plus-lg"></i> Nueva
-        </button>
-      </div>
-
-      <div class="row g-3 mb-4">
-        <div class="col-6 col-lg-3">
-          <div class="page-glass p-3 text-center border-start border-4 border-primary">
-            <div class="small text-muted text-uppercase fw-bold">Abiertas</div>
-            <div class="h4 mb-0">${state.estadisticas?.abiertas || 0}</div>
+      <div class="observaciones-header-premium mb-4">
+        <div class="d-flex align-items-center gap-3">
+          <div class="brand-badge bg-primary bg-opacity-10 text-primary rounded-3 d-flex align-items-center justify-content-center" style="width: 42px; height: 42px;">
+            <i class="bi bi-clipboard2-pulse fs-4"></i>
+          </div>
+          <div>
+            <h1 class="observaciones-title-premium page-title mb-0">Observaciones</h1>
+            <p class="text-muted small mb-0">${state.observaciones.length} observaciones en total</p>
           </div>
         </div>
-        <div class="col-6 col-lg-3">
-          <div class="page-glass p-3 text-center border-start border-4 border-warning">
-            <div class="small text-muted text-uppercase fw-bold">Seguimiento</div>
-            <div class="h4 mb-0">${state.estadisticas?.seguimiento || 0}</div>
-          </div>
-        </div>
-        <div class="col-6 col-lg-3">
-          <div class="page-glass p-3 text-center border-start border-4 border-danger">
-            <div class="small text-muted text-uppercase fw-bold">Alta Prioridad</div>
-            <div class="h4 mb-0">${state.estadisticas?.altas || 0}</div>
-          </div>
-        </div>
-        <div class="col-6 col-lg-3">
-          <div class="page-glass p-3 text-center border-start border-4 border-success">
-            <div class="small text-muted text-uppercase fw-bold">Total</div>
-            <div class="h4 mb-0">${state.estadisticas?.total || 0}</div>
-          </div>
+        <div class="observaciones-header-actions">
+          <button class="btn btn-premium-action" id="btn-nueva-obs">
+            <i class="bi bi-plus-lg me-1.5"></i>Nueva Observación
+          </button>
         </div>
       </div>
 
-      <div class="toolbar-dense mb-3">
-        <div class="search-bar flex-grow-1">
-          <i class="bi bi-search"></i>
-          <input type="text" class="form-control input-dense" placeholder="Buscar observación..." id="buscar-obs">
+      <!-- Panel de Estadísticas / KPIs Premium -->
+      <div class="stats-panel mb-4">
+        <div class="stats-grid">
+          <div class="stat-card stat-total border-start border-4 border-primary">
+            <div class="stat-label">Abiertas</div>
+            <div class="stat-value">${state.estadisticas?.abiertas || 0}</div>
+          </div>
+          <div class="stat-card stat-justified border-start border-4 border-warning">
+            <div class="stat-label">Seguimiento</div>
+            <div class="stat-value">${state.estadisticas?.seguimiento || 0}</div>
+          </div>
+          <div class="stat-card stat-absent border-start border-4 border-danger">
+            <div class="stat-label">Alta Prioridad</div>
+            <div class="stat-value">${state.estadisticas?.altas || 0}</div>
+          </div>
+          <div class="stat-card stat-present border-start border-4 border-success">
+            <div class="stat-label">Total</div>
+            <div class="stat-value">${state.estadisticas?.total || 0}</div>
+          </div>
         </div>
-        <select class="form-select input-dense w-auto" id="select-tipo">
-          <option value="">Todos los tipos</option>
-          ${Observacion.getTipos().map(t => `<option value="${t.value}">${t.label}</option>`).join('')}
-        </select>
+      </div>
+
+      <div class="observaciones-filter-toolbar mb-4">
+        <div class="premium-search-container flex-grow-1">
+          <i class="bi bi-search search-icon-muted"></i>
+          <input type="text" class="form-control premium-search-input" placeholder="Buscar observación..." id="buscar-obs">
+        </div>
+        <div class="premium-select-container select-tipo-container">
+          <i class="bi bi-funnel select-icon-muted"></i>
+          <select class="form-select premium-filter-select" id="select-tipo">
+            <option value="">Todos los tipos</option>
+            ${Observacion.getTipos().map(t => `<option value="${t.value}">${t.label}</option>`).join('')}
+          </select>
+        </div>
       </div>
 
       <div class="page-glass rounded">
@@ -143,23 +149,29 @@ function renderTableRows(progs) {
     const tipo = Observacion.getTipos().find(t => t.value === o.tipo)
     const prio = Observacion.getPrioridades().find(p => p.value === o.prioridad)
     const estado = Observacion.getEstados().find(e => e.value === o.estado)
+
+    const accentClass = o.prioridad === 'alta' 
+      ? 'border-accent-danger' 
+      : o.prioridad === 'media' 
+        ? 'border-accent-warning' 
+        : 'border-accent-secondary'
     
     return `
-      <tr data-id="${o.id}">
+      <tr data-id="${o.id}" class="border-start-accent ${accentClass}">
         <td>
           <div class="fw-bold text-truncate" style="max-width: 250px;">${escapeHTML(o.titulo)}</div>
           <div class="small text-muted">${escapeHTML(o.alumno_nombre)}</div>
         </td>
-        <td class="d-none d-md-table-cell">
+        <td class="d-none d-md-table-cell align-middle">
           <div class="d-flex align-items-center gap-2">
             <i class="bi ${tipo?.icon || 'bi-info-circle'} text-muted"></i>
             <span class="small ${prio?.color} fw-bold">${prio?.label || o.prioridad}</span>
           </div>
         </td>
-        <td>
+        <td class="align-middle">
           <span class="badge badge-compact ${estado?.color}">${estado?.label || o.estado}</span>
         </td>
-        <td class="text-end">
+        <td class="text-end align-middle">
           <div class="quick-actions justify-content-end">
             <button class="btn btn-sm btn-outline-warning btn-icon-compact" data-action="follow" data-id="${o.id}" title="Seguimiento">
               <i class="bi bi-arrow-repeat"></i>

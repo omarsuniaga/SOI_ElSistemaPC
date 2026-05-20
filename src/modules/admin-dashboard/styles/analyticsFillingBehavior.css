@@ -1,112 +1,141 @@
 /* src/modules/admin-dashboard/styles/analyticsFillingBehavior.css */
+
 .analytics-widget {
-  padding: 30px;
-  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-  min-height: 100vh;
+  padding: 1.5rem;
+  background: rgba(255, 255, 255, 0.02);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  color: var(--bs-body-color);
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.03);
 }
 
 .analytics-widget h2 {
-  margin: 0 0 30px;
-  font-size: 32px;
-  color: #1f2937;
-  font-weight: 700;
+  margin: 0 0 1.5rem;
+  font-size: 1.4rem;
+  color: var(--bs-body-color);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
 }
 
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 20px;
-  margin-bottom: 40px;
+  gap: 1.25rem;
+  margin-bottom: 2rem;
 }
 
 .stat-card {
-  background: white;
-  padding: 25px;
-  border-radius: 10px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  border-left: 5px solid #3b82f6;
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 1.25rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.01);
+  border-left: 4px solid #3b82f6;
   text-align: center;
+  transition: transform 0.2s ease;
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
 }
 
 .stat-card .stat-label {
-  font-size: 12px;
-  color: #6b7280;
-  font-weight: 600;
+  font-size: 0.75rem;
+  color: #8b949e;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
-  margin-bottom: 10px;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.5rem;
 }
 
 .stat-card .stat-value {
-  font-size: 42px;
-  font-weight: 700;
-  color: #1f2937;
-  line-height: 1;
+  font-size: 1.85rem;
+  font-weight: 800;
+  color: var(--bs-body-color);
+  line-height: 1.1;
+  letter-spacing: -0.02em;
 }
 
 .maestro-metrics-section {
-  background: white;
-  padding: 25px;
-  border-radius: 10px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  margin-top: 30px;
+  background: rgba(255, 255, 255, 0.01);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 1.5rem;
+  border-radius: 12px;
+  margin-top: 2rem;
 }
 
 .maestro-metrics-section h3 {
-  margin: 0 0 20px;
-  font-size: 20px;
-  color: #1f2937;
+  margin: 0 0 1.25rem;
+  font-size: 1.1rem;
+  font-weight: 750;
+  color: var(--bs-body-color);
+  opacity: 0.95;
 }
 
 .metrics-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 14px;
+  font-size: 0.88rem;
+  color: var(--bs-body-color);
 }
 
 .metrics-table thead {
-  background: #f3f4f6;
-  border-bottom: 2px solid #e5e7eb;
+  background: rgba(255, 255, 255, 0.03);
+  border-bottom: 2px solid rgba(255, 255, 255, 0.08);
 }
 
 .metrics-table th {
-  padding: 12px;
+  padding: 0.85rem 1rem;
   text-align: left;
   font-weight: 600;
-  color: #374151;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #8b949e;
 }
 
 .metrics-table td {
-  padding: 12px;
-  border-bottom: 1px solid #e5e7eb;
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  vertical-align: middle;
 }
 
 .metrics-table tbody tr:hover {
-  background: #f9fafb;
+  background: rgba(255, 255, 255, 0.02);
 }
 
 .error {
-  background: #fee2e2;
-  color: #dc2626;
-  padding: 20px;
+  background: rgba(239, 68, 68, 0.03);
+  border: 1px solid rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+  padding: 1rem 1.25rem;
   border-radius: 8px;
-  margin: 20px;
+  font-weight: 500;
 }
 
 .no-data {
-  background: #f3f4f6;
-  color: #6b7280;
-  padding: 40px;
   text-align: center;
-  border-radius: 8px;
-  margin: 20px;
+  padding: 3rem 1.5rem;
+  color: #8b949e;
+  font-size: 0.9rem;
 }
 
 .loading {
-  text-align: center;
-  padding: 40px;
-  color: #6b7280;
-  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem;
+  color: #8b949e;
+  font-size: 0.9rem;
+  font-weight: 500;
+  gap: 0.75rem;
 }
 
 @media (max-width: 768px) {
@@ -115,6 +144,6 @@
   }
 
   .analytics-widget {
-    padding: 20px;
+    padding: 1rem;
   }
 }

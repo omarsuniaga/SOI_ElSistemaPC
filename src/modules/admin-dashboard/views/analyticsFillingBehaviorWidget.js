@@ -6,28 +6,34 @@ export function analyticsFillingBehaviorWidget(containerId) {
 
   function renderMaestroTable(metrics) {
     return `
-      <table class="metrics-table">
-        <thead>
-          <tr>
-            <th>Maestro</th>
-            <th>Total Clases</th>
-            <th>Asistencia 1°</th>
-            <th>Duración Obs (seg)</th>
-            <th>IA Promedio</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${metrics.map(m => `
+      <div class="premium-table-container">
+        <table class="premium-table">
+          <thead>
             <tr>
-              <td>${m.maestro_nombre}</td>
-              <td>${m.total_clases}</td>
-              <td>${m.orden_asistencia_primero}</td>
-              <td>${m.promedio_duracion_observaciones}</td>
-              <td>${m.uso_ai_fill_percent}%</td>
+              <th>Maestro</th>
+              <th>Total Clases</th>
+              <th>Asistencia 1°</th>
+              <th>Duración Obs (seg)</th>
+              <th>IA Promedio</th>
             </tr>
-          `).join('')}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            ${metrics.map(m => `
+              <tr>
+                <td><strong>${m.maestro_nombre}</strong></td>
+                <td><span class="badge bg-secondary bg-opacity-10 text-secondary px-2 py-1">${m.total_clases || 0}</span></td>
+                <td><span class="badge bg-primary bg-opacity-10 text-primary px-2 py-1">${m.orden_asistencia_primero || 0}</span></td>
+                <td><span class="badge bg-warning bg-opacity-10 text-warning px-2 py-1">${m.promedio_duracion_observaciones || 0}s</span></td>
+                <td>
+                  <span class="badge ${m.uso_ai_fill_percent > 70 ? 'bg-success text-white' : m.uso_ai_fill_percent > 30 ? 'bg-primary text-white' : 'bg-secondary bg-opacity-10 text-secondary'} px-2 py-1">
+                    ${m.uso_ai_fill_percent || 0}%
+                  </span>
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
     `
   }
 
@@ -52,59 +58,71 @@ export function analyticsFillingBehaviorWidget(containerId) {
 
   return {
     async init() {
-      container.innerHTML = '<div class="loading">Cargando analítica...</div>'
+      container.innerHTML = `
+        <div class="premium-loading">
+          <div class="premium-loading-spinner"></div>
+          <div>Cargando analítica...</div>
+        </div>
+      `
 
       try {
         const metrics = await getTeacherFillingMetrics()
 
         if (!metrics || metrics.length === 0) {
-          container.innerHTML = '<div class="no-data">No hay datos disponibles</div>'
+          container.innerHTML = `
+            <div class="analytics-widget">
+              <div class="premium-no-data">No hay datos disponibles</div>
+            </div>
+          `
           return
         }
 
         this.render(metrics)
       } catch (err) {
         console.error('[analyticsFillingBehaviorWidget] Error:', err)
-        container.innerHTML = `<div class="error">Error cargando analítica: ${err.message}</div>`
+        container.innerHTML = `
+          <div class="premium-error-card">
+            <i class="bi bi-exclamation-triangle-fill"></i>
+            <div>Error cargando analítica: ${err.message}</div>
+          </div>
+        `
       }
     },
 
     render(metrics) {
       if (metrics.length === 0) {
-        // Keep the loading message if no metrics
         return
       }
 
       const stats = calculateStats(metrics)
 
-      const metricsHtml = metrics.map(m =>
-        `<div>${m.maestro_nombre}</div>`
-      ).join('')
-
       const html = `
         <div class="analytics-widget">
-          <h2>📊 Analítica de Llenado de Asistencias</h2>
+          <h2><i class="bi bi-bar-chart-steps text-primary"></i> Analítica de Llenado de Asistencias</h2>
+          
           <div class="stats-grid">
-            <div class="stat-card">
+            <div class="stat-card primary">
               <div class="stat-label">Asistencia Primero</div>
               <div class="stat-value">${stats.asistenciaPrimero}%</div>
+              <div class="stat-subtitle">Orden de llenado preferido</div>
             </div>
             <div class="stat-card">
               <div class="stat-label">Observaciones Primero</div>
               <div class="stat-value">${stats.observacionesPrimero}%</div>
+              <div class="stat-subtitle">Enfoque en comentarios</div>
             </div>
-            <div class="stat-card">
+            <div class="stat-card warning">
               <div class="stat-label">Simultáneo</div>
               <div class="stat-value">${stats.simultaneo}%</div>
+              <div class="stat-subtitle">Registro en tiempo real</div>
             </div>
-            <div class="stat-card">
+            <div class="stat-card success">
               <div class="stat-label">Uso IA Promedio</div>
               <div class="stat-value">${stats.avgAiUsage}%</div>
+              <div class="stat-subtitle">Asistente activado</div>
             </div>
           </div>
-          <div class="metrics-list">
-            ${metricsHtml}
-          </div>
+
           <section class="maestro-metrics-section">
             <h3>Detalle por Maestro</h3>
             ${renderMaestroTable(metrics)}

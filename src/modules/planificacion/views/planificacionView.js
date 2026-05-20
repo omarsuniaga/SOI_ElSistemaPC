@@ -1,3 +1,4 @@
+import '../styles/planificacion.css'
 import { AppModal } from '../../../shared/components/AppModal.js'
 import { AppToast } from '../../../shared/components/AppToast.js'
 import { Planificacion } from '../models/planificacion.model.js'
@@ -55,30 +56,40 @@ function renderError(container, msg) {
 function renderContent(container) {
   container.innerHTML = `
     <div class="page-container">
-      <div class="page-header">
-        <div class="d-flex align-items-center gap-2">
-          <span class="page-title"><i class="bi bi-journal-check me-2 text-primary"></i>Planificación</span>
+      <div class="planificacion-header-premium mb-4">
+        <div class="d-flex align-items-center gap-3">
+          <div class="brand-badge bg-primary bg-opacity-10 text-primary rounded-3 d-flex align-items-center justify-content-center" style="width: 42px; height: 42px;">
+            <i class="bi bi-journal-check fs-4"></i>
+          </div>
+          <div>
+            <h1 class="planificacion-title-premium page-title mb-0">Planificación</h1>
+            <p class="text-muted small mb-0">${state.planes.length} planes en total</p>
+          </div>
         </div>
-        <div class="d-flex gap-2">
+        <div class="planificacion-header-actions">
           ${state.vista === 'admin' ? `
             <button class="btn btn-outline-success btn-sm-compact d-none" id="btn-aprobar-bulk">
               <i class="bi bi-check-all"></i> Aprobar Seleccionados
             </button>
           ` : ''}
-          <button class="btn btn-primary btn-sm-compact" id="btn-nuevo-plan">
-            <i class="bi bi-plus-lg"></i> Nuevo Plan
+          <button class="btn btn-premium-action" id="btn-nuevo-plan">
+            <i class="bi bi-plus-lg me-1.5"></i>Nuevo Plan
           </button>
         </div>
       </div>
 
-      <div class="toolbar-dense mb-3">
-        <div class="btn-group btn-group-sm me-3" role="group">
-          <button class="btn btn-outline-primary ${state.vista === 'maestro' ? 'active' : ''}" id="tab-maestro">Mis Planes</button>
-          <button class="btn btn-outline-primary ${state.vista === 'admin' ? 'active' : ''}" id="tab-admin">Administración</button>
+      <div class="planificacion-filter-toolbar mb-4">
+        <div class="view-segmented-control">
+          <button class="view-segment-btn ${state.vista === 'maestro' ? 'active' : ''}" id="tab-maestro" title="Mis Planes">
+            <i class="bi bi-person-workspace me-1.5"></i><span class="d-none d-sm-inline">Mis Planes</span>
+          </button>
+          <button class="view-segment-btn ${state.vista === 'admin' ? 'active' : ''}" id="tab-admin" title="Administración">
+            <i class="bi bi-shield-lock me-1.5"></i><span class="d-none d-sm-inline">Administración</span>
+          </button>
         </div>
-        <div class="search-bar flex-grow-1">
-          <i class="bi bi-search"></i>
-          <input type="text" class="form-control input-dense" placeholder="Buscar por tema o clase..." id="buscar-plan">
+        <div class="premium-search-container flex-grow-1">
+          <i class="bi bi-search search-icon-muted"></i>
+          <input type="text" class="form-control premium-search-input" placeholder="Buscar por tema o clase..." id="buscar-plan">
         </div>
       </div>
 
@@ -108,20 +119,26 @@ function renderContent(container) {
 function renderTableRows(planes) {
   return planes.map(p => {
     const config = Planificacion.getEstadoConfig(p.estado)
+    const accentClass = p.estado === 'aprobado' || p.estado === 'revisado' 
+      ? 'border-accent-success' 
+      : p.estado === 'pendiente' 
+        ? 'border-accent-warning' 
+        : 'border-accent-secondary'
+
     return `
-      <tr data-id="${p.id}" class="${p.isLocked() ? 'text-muted' : ''}">
+      <tr data-id="${p.id}" class="border-start-accent ${accentClass} ${p.isLocked() ? 'text-muted' : ''}">
         ${state.vista === 'admin' ? `<td><input type="checkbox" class="plan-check" value="${p.id}" ${state.seleccionados.has(p.id) ? 'checked' : ''}></td>` : ''}
         <td>
           <div class="fw-bold">${escapeHTML(p.clase_nombre)}</div>
-          <div class="small">${escapeHTML(p.tema)}</div>
+          <div class="small text-muted">${escapeHTML(p.tema)}</div>
         </td>
-        <td class="d-none d-md-table-cell">
+        <td class="d-none d-md-table-cell align-middle">
           <span class="badge badge-compact ${config.color}">${config.label}</span>
         </td>
-        <td class="d-none d-lg-table-cell text-muted small">
+        <td class="d-none d-lg-table-cell text-muted small align-middle">
           ${p.fecha_inicio || '-'}
         </td>
-        <td class="text-end">
+        <td class="text-end align-middle">
           <div class="quick-actions justify-content-end">
             <button class="btn btn-sm btn-outline-primary btn-icon-compact" data-action="edit" data-id="${p.id}" title="Editar">
               <i class="bi bi-pencil"></i>

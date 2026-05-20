@@ -1,7 +1,19 @@
 {
   "permissions": {
     "allow": [
-      "mcp__plugin_engram_engram__mem_search"
+      "mcp__plugin_engram_engram__mem_search",
+      "mcp__c014a43e-d076-4c5b-b0f9-3d63cebd2fd8__list_projects",
+      "mcp__c014a43e-d076-4c5b-b0f9-3d63cebd2fd8__apply_migration",
+      "mcp__c014a43e-d076-4c5b-b0f9-3d63cebd2fd8__deploy_edge_function",
+      "Bash(grep -r \"sesiones_clase\\\\|CREATE TABLE.*sesion\" /home/omare/OneDrive/Documentos/SOI_Sistema_Operativo_Institucional/09_SOI_WEB_PORTAL/sistema-academico-pwa/supabase/migrations/*.sql 2>/dev/null | head -5)",
+      "Bash(grep -r \"DSL\\\\|inteligente\\\\|smart\\\\|contenido_ia\\\\|contenido_dsl\" /home/omare/OneDrive/Documentos/SOI_Sistema_Operativo_Institucional/09_SOI_WEB_PORTAL/sistema-academico-pwa/src/modules/asistencias --include=\"*.js\" | head -20)",
+      "mcp__c014a43e-d076-4c5b-b0f9-3d63cebd2fd8__execute_sql",
+      "mcp__plugin_engram_engram__mem_get_observation",
+      "mcp__plugin_engram_engram__mem_update",
+      "Bash(powershell -Command \"Test-Path 'src/modules/admin-dashboard/styles/analyticsFillingBehavior.css' -PathType Leaf\")",
+      "Bash(powershell -Command \"ls -Path 'C:\\\\Users\\\\omare\\\\.claude\\\\skills' -ErrorAction SilentlyContinue\")",
+      "Bash(cat)",
+      "Read(//tmp/**)"
     ]
   }
 }

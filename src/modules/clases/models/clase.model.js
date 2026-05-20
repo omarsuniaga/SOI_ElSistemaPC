@@ -7,7 +7,7 @@ export class Clase {
     this.nombre = data.nombre || ''
     // Mapeo: maestro_id del formulario → maestro_principal_id en BD
     this.maestro_principal_id = data.maestro_principal_id || data.maestro_id || null
-    this.maestro_suplente_id = data.maestro_suplente_id || null
+    this.maestro_suplente_id = data.maestro_suplente_id || data.maestro_auxiliar_id || null
     this.tiene_suplente = data.tiene_suplente || false
     this.programa_id = data.programa_id || null
     this.instrumento = data.instrumento || ''
@@ -23,6 +23,19 @@ export class Clase {
     this.created_at = data.created_at || null
     this.updated_at = data.updated_at || null
   }
+
+  // Getters/Setters para compatibilidad hacia atrás con el código legacy y tests
+  get maestro_id() { return this.maestro_principal_id }
+  set maestro_id(val) { this.maestro_principal_id = val }
+
+  get maestro_auxiliar_id() { return this.maestro_suplente_id }
+  set maestro_auxiliar_id(val) { this.maestro_suplente_id = val }
+
+  get max_alumnos() { return this.capacidad_maxima }
+  set max_alumnos(val) { this.capacidad_maxima = val }
+
+  get notas_pedagogicas() { return this.descripcion }
+  set notas_pedagogicas(val) { this.descripcion = val }
 
   /**
    * Valida los datos de la clase
@@ -78,11 +91,13 @@ export class Clase {
     })
 
     for (const dia in schedulesByDay) {
-      const slots = schedulesByDay[dia].sort((a, b) => a.hora_inicio.localeCompare(b.hora_inicio))
+      const slots = schedulesByDay[dia].sort((a, b) => a.hora_inicio.slice(0, 5).localeCompare(b.hora_inicio.slice(0, 5)))
       for (let i = 0; i < slots.length - 1; i++) {
         const current = slots[i]
         const next = slots[i + 1]
-        if (current.hora_fin > next.hora_inicio) {
+        const currentFin = current.hora_fin.slice(0, 5)
+        const nextInicio = next.hora_inicio.slice(0, 5)
+        if (currentFin > nextInicio) {
           const diaLabel = dia.charAt(0).toUpperCase() + dia.slice(1)
           errores.push(`Existen horarios solapados en la misma clase (${diaLabel})`)
           break

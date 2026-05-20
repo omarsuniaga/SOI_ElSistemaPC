@@ -23,6 +23,9 @@ export { NIVELES as NIVELES_CONST } // Exportación adicional por si acaso hay c
 async function verificarSolapamiento({ salonId, maestroId, dia, horaInicio, horaFin, excludeClaseId = null }) {
   if (!dia || !horaInicio || !horaFin) return null
 
+  const start = horaInicio.slice(0, 5)
+  const end = horaFin.slice(0, 5)
+
   // 1. Verificar solapamiento por SALÓN
   if (salonId) {
     const { data: conflictosSalon, error: errorSalon } = await supabase
@@ -34,12 +37,14 @@ async function verificarSolapamiento({ salonId, maestroId, dia, horaInicio, hora
     if (!errorSalon && conflictosSalon) {
       for (const h of conflictosSalon) {
         if (excludeClaseId && h.clase_id === excludeClaseId) continue
-        if (horaInicio < h.hora_fin && h.hora_inicio < horaFin) {
+        const hStart = h.hora_inicio.slice(0, 5)
+        const hEnd = h.hora_fin.slice(0, 5)
+        if (start < hEnd && hStart < end) {
           return {
             tipo: 'salón',
             clase_nombre: h.clases?.nombre || 'Otra clase',
             detalle: `El salón ya está ocupado por "${h.clases?.nombre}"`,
-            horario: `${h.dia} de ${h.hora_inicio} a ${h.hora_fin}`
+            horario: `${h.dia} de ${hStart} a ${hEnd}`
           }
         }
       }
@@ -57,12 +62,14 @@ async function verificarSolapamiento({ salonId, maestroId, dia, horaInicio, hora
     if (!errorMaestro && conflictosMaestro) {
       for (const h of conflictosMaestro) {
         if (excludeClaseId && h.clase_id === excludeClaseId) continue
-        if (horaInicio < h.hora_fin && h.hora_inicio < horaFin) {
+        const hStart = h.hora_inicio.slice(0, 5)
+        const hEnd = h.hora_fin.slice(0, 5)
+        if (start < hEnd && hStart < end) {
           return {
             tipo: 'maestro',
             clase_nombre: h.clases?.nombre || 'Otra clase',
             detalle: `El maestro ya tiene otra clase asignada ("${h.clases?.nombre}")`,
-            horario: `${h.dia} de ${h.hora_inicio} a ${h.hora_fin}`
+            horario: `${h.dia} de ${hStart} a ${hEnd}`
           }
         }
       }
@@ -329,10 +336,16 @@ export async function validarHorario(horarios, maestroId, excludeClaseId = null)
   if (error) return []
 
   for (const input of inputs) {
+    const inputStart = input.hora_inicio.slice(0, 5)
+    const inputEnd = input.hora_fin.slice(0, 5)
+
     for (const h of (todosLosHorarios || [])) {
       if (excludeClaseId && h.clase_id === excludeClaseId) continue
 
-      if (input.hora_inicio < h.hora_fin && input.hora_fin > h.hora_inicio) {
+      const hStart = h.hora_inicio.slice(0, 5)
+      const hEnd = h.hora_fin.slice(0, 5)
+
+      if (inputStart < hEnd && inputEnd > hStart) {
         if (input.salon_id && h.salon_id === input.salon_id) {
           conflictos.push({
             tipo: 'salón',

@@ -143,14 +143,13 @@ describe('Clase Model', () => {
       expect(json).toEqual({
         id: '123',
         nombre: 'Test Clase',
-        maestro_id: 'maestro-1',
+        maestro_principal_id: 'maestro-1',
+        maestro_suplente_id: 'maestro-2',
         programa_id: 'prog-1',
-        maestro_auxiliar_id: 'maestro-2',
         instrumento: 'violin',
-        max_alumnos: 15,
+        capacidad_maxima: 15,
         estado: 'activa',
-        notas_pedagogicas: 'Some notes',
-        planificacion_id: null,
+        descripcion: 'Some notes',
       })
     })
   })

@@ -17,7 +17,7 @@ export async function getMaestrosComplianceStatus() {
         `
         id,
         maestro_id,
-        maestros(id, nombre_completo, email),
+        maestros(id, nombre_completo),
         total_sesiones,
         sesiones_verde,
         sesiones_amarillo,
@@ -124,7 +124,7 @@ export async function getMaestrosByCategory(categoria) {
         `
         id,
         maestro_id,
-        maestros(id, nombre_completo, email),
+        maestros(id, nombre_completo),
         categoria,
         tendencia,
         sesiones_verde,

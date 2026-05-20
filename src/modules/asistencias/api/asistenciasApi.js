@@ -432,6 +432,21 @@ export async function getReporteConsolidado({ periodoId, fecha, claseId } = {}) 
     const maestrosMap = {}
     maestros.forEach(m => { maestrosMap[m.id] = m.nombre_completo })
 
+    // Filtrar por período si se provee
+    let periodoFechaInicio, periodoFechaFin
+    if (periodoId) {
+      const { data: periodo, error: errPeriodo } = await supabase
+        .from('periodos')
+        .select('fecha_inicio, fecha_fin')
+        .eq('id', periodoId)
+        .single()
+      if (errPeriodo) throwError('No se pudo cargar el período', errPeriodo)
+      if (periodo) {
+        periodoFechaInicio = periodo.fecha_inicio
+        periodoFechaFin = periodo.fecha_fin
+      }
+    }
+
     // Obtener todas las sesiones agrupadas por clase + horario
     let query = supabase
       .from('sesiones_clase')
@@ -466,89 +481,109 @@ export async function getReporteConsolidado({ periodoId, fecha, claseId } = {}) 
         )
       `)
 
+    // Aplicar filtros
+    if (periodoFechaInicio) query = query.gte('fecha', periodoFechaInicio)
+    if (periodoFechaFin) query = query.lte('fecha', periodoFechaFin)
     if (fecha) query = query.eq('fecha', fecha)
     if (claseId) query = query.eq('clase_id', claseId)
 
     const { data: sesiones, error } = await query.order('hora_inicio', { ascending: true })
     if (error) throwError('No se pudieron cargar las sesiones consolidadas', error)
 
+    // Validar que sesiones sea un array
+    if (!Array.isArray(sesiones)) {
+      console.warn('sesiones no es un array, usando array vacío', sesiones)
+      sesiones = []
+    }
+
     // Consolidar por Clase + Fecha + Horario en el cliente
     const consolidado = {}
     const claseOrder = [] // Para mantener orden por horario
 
-    sesiones.forEach(sesion => {
-      const key = `${sesion.clase_id}-${sesion.fecha}-${sesion.hora_inicio || 'sin-hora'}`
+    if (sesiones && sesiones.length > 0) {
+      sesiones.forEach(sesion => {
+        const key = `${sesion.clase_id}-${sesion.fecha}-${sesion.hora_inicio || 'sin-hora'}`
 
-      if (!consolidado[key]) {
-        const maestroPrincipalId = sesion.clases.maestro_principal_id
-        const maestroAuxiliarId = sesion.clases.maestro_auxiliar_id
+        if (!consolidado[key]) {
+          const maestroPrincipalId = sesion.clases.maestro_principal_id
+          const maestroAuxiliarId = sesion.clases.maestro_auxiliar_id
 
-        consolidado[key] = {
-          clase_id: sesion.clase_id,
-          clase_nombre: sesion.clases.nombre,
-          instrumento: sesion.clases.instrumento,
-          fecha: sesion.fecha,
-          hora_inicio: sesion.hora_inicio,
-          hora_fin: sesion.hora_fin,
-          maestro_nombre: maestroPrincipalId ? (maestrosMap[maestroPrincipalId] || 'Sin asignar') : 'Sin asignar',
-          maestro_auxiliar_nombre: maestroAuxiliarId ? (maestrosMap[maestroAuxiliarId] || null) : null,
-          presentes: 0,
-          ausentes: 0,
-          justificados: 0,
-          total_alumnos: 0,
-          asistencias: [],
-          justificaciones: []
+          consolidado[key] = {
+            clase_id: sesion.clase_id,
+            clase_nombre: sesion.clases.nombre,
+            instrumento: sesion.clases.instrumento,
+            fecha: sesion.fecha,
+            hora_inicio: sesion.hora_inicio,
+            hora_fin: sesion.hora_fin,
+            maestro_nombre: maestroPrincipalId ? (maestrosMap[maestroPrincipalId] || 'Sin asignar') : 'Sin asignar',
+            maestro_auxiliar_nombre: maestroAuxiliarId ? (maestrosMap[maestroAuxiliarId] || null) : null,
+            presentes: 0,
+            ausentes: 0,
+            justificados: 0,
+            total_alumnos: 0,
+            asistencias: [],
+            justificaciones: []
+          }
+          claseOrder.push(key)
         }
-        claseOrder.push(key)
-      }
 
-      // Contar asistencias
-      const asistenciasPorAlumno = {}
-      sesion.asistencias?.forEach(a => {
-        if (!asistenciasPorAlumno[a.alumno_id]) {
-          asistenciasPorAlumno[a.alumno_id] = { ...a }
+        // Contar asistencias
+        const asistenciasPorAlumno = {}
+        if (sesion.asistencias && Array.isArray(sesion.asistencias)) {
+          sesion.asistencias.forEach(a => {
+            if (!asistenciasPorAlumno[a.alumno_id]) {
+              asistenciasPorAlumno[a.alumno_id] = { ...a }
+            }
+          })
         }
-      })
 
-      Object.values(asistenciasPorAlumno).forEach(a => {
-        if (a.estado === 'presente') consolidado[key].presentes++
-        else if (a.estado === 'ausente') consolidado[key].ausentes++
-        else if (a.estado === 'justificado') consolidado[key].justificados++
-        consolidado[key].total_alumnos++
-        consolidado[key].asistencias.push(a)
-      })
-
-      // Agregar justificaciones
-      sesion.justificaciones?.forEach(j => {
-        // Get alumno name from the asistencias if available
-        const alumnoAsistencia = sesion.asistencias?.find(a => a.alumno_id === j.alumno_id)
-        consolidado[key].justificaciones.push({
-          alumno_nombre: alumnoAsistencia?.alumnos?.nombre_completo || 'Sin nombre',
-          alumno_id: j.alumno_id,
-          motivo: j.motivo,
-          evidencia_url: j.evidencia_url,
-          evidencia_base64: j.evidencia_base64
+        Object.values(asistenciasPorAlumno).forEach(a => {
+          if (a.estado === 'presente') consolidado[key].presentes++
+          else if (a.estado === 'ausente') consolidado[key].ausentes++
+          else if (a.estado === 'justificado') consolidado[key].justificados++
+          consolidado[key].total_alumnos++
+          consolidado[key].asistencias.push(a)
         })
+
+        // Agregar justificaciones
+        if (sesion.justificaciones && Array.isArray(sesion.justificaciones)) {
+          sesion.justificaciones.forEach(j => {
+            // Get alumno name from the asistencias if available
+            const alumnoAsistencia = sesion.asistencias?.find(a => a.alumno_id === j.alumno_id)
+            consolidado[key].justificaciones.push({
+              alumno_nombre: alumnoAsistencia?.alumnos?.nombre_completo || 'Sin nombre',
+              alumno_id: j.alumno_id,
+              motivo: j.motivo,
+              evidencia_url: j.evidencia_url,
+              evidencia_base64: j.evidencia_base64
+            })
+          })
+        }
       })
-    })
+    }
 
     // Retornar agrupado por fecha primero
     const timelineByDate = {}
-    claseOrder.forEach(key => {
-      const clase = consolidado[key]
-      if (!timelineByDate[clase.fecha]) {
-        timelineByDate[clase.fecha] = []
-      }
-      timelineByDate[clase.fecha].push(clase)
-    })
+    if (claseOrder.length > 0) {
+      claseOrder.forEach(key => {
+        const clase = consolidado[key]
+        if (!timelineByDate[clase.fecha]) {
+          timelineByDate[clase.fecha] = []
+        }
+        timelineByDate[clase.fecha].push(clase)
+      })
+    }
 
     // Convertir a array ordenado descendente por fecha
-    const timeline = Object.entries(timelineByDate)
-      .sort(([dateA], [dateB]) => dateB.localeCompare(dateA))
-      .map(([fecha, clases]) => ({
-        fecha,
-        clases: clases.sort((a, b) => (a.hora_inicio || '').localeCompare(b.hora_inicio || ''))
-      }))
+    const timelineEntries = Object.entries(timelineByDate)
+    const timeline = timelineEntries.length > 0
+      ? timelineEntries
+          .sort(([dateA], [dateB]) => dateB.localeCompare(dateA))
+          .map(([fecha, clases]) => ({
+            fecha,
+            clases: clases.sort((a, b) => (a.hora_inicio || '').localeCompare(b.hora_inicio || ''))
+          }))
+      : []
 
     // Calcular resumen global
     const todasLasClases = timeline.flatMap(d => d.clases)
@@ -558,7 +593,7 @@ export async function getReporteConsolidado({ periodoId, fecha, claseId } = {}) 
       totalAusentes: todasLasClases.reduce((sum, c) => sum + c.ausentes, 0),
       totalJustificados: todasLasClases.reduce((sum, c) => sum + c.justificados, 0),
       totalRegistros: todasLasClases.reduce((sum, c) => sum + c.total_alumnos, 0),
-      totalSesiones: sesiones.length,
+      totalSesiones: sesiones ? sesiones.length : 0,
     }
 
     return {

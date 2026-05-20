@@ -432,7 +432,7 @@ export async function getReporteConsolidado({ periodoId, fecha, claseId } = {}) 
     const maestrosMap = {}
     maestros.forEach(m => { maestrosMap[m.id] = m.nombre_completo })
 
-    // Filtrar por período si se provee
+    // Filtrar por período si se provee (opcional)
     let periodoFechaInicio, periodoFechaFin
     if (periodoId) {
       const { data: periodo, error: errPeriodo } = await supabase
@@ -440,12 +440,15 @@ export async function getReporteConsolidado({ periodoId, fecha, claseId } = {}) 
         .select('fecha_inicio, fecha_fin')
         .eq('id', periodoId)
         .single()
-      if (errPeriodo) throwError('No se pudo cargar el período', errPeriodo)
+      if (errPeriodo) {
+        console.warn('No se pudo cargar el período, mostrando todas las sesiones', errPeriodo)
+      }
       if (periodo) {
         periodoFechaInicio = periodo.fecha_inicio
         periodoFechaFin = periodo.fecha_fin
       }
     }
+    // Si no hay periodoId o periodo, mostrar todas las sesiones (sin filtro de fecha)
 
     // PASO 1: Obtener todas las sesiones (sin asistencias como relación)
     let sesionesQuery = supabase

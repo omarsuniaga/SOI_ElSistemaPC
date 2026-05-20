@@ -58,11 +58,10 @@ export async function renderAsistenciasView(container) {
 
 async function _loadData() {
   // OPCIÓN 3: Reporte Consolidado (agrupa por clase, no por sesión)
-  const today = new Date().toISOString().split('T')[0]
+  // Mostrar todas las clases del período seleccionado, sin filtrar por fecha
 
   const { clases, resumenGlobal, fecha } = await getReporteConsolidado({
-    periodoId: state.filtroPeriodo,
-    fecha: today
+    periodoId: state.filtroPeriodo
   })
 
   state.timeline = clases || []

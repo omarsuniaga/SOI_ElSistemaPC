@@ -441,8 +441,8 @@ export async function getReporteConsolidado({ periodoId, fecha, claseId } = {}) 
           instrumento,
           maestro_principal_id,
           maestro_auxiliar_id,
-          maestros_principal:maestros!clases_maestro_principal_id_fk (id, nombre_completo),
-          maestros_auxiliar:maestros!clases_maestro_auxiliar_id_fk (id, nombre_completo)
+          maestros_principal:maestros!fk_clases_maestro_principal (id, nombre_completo),
+          maestros_auxiliar:maestros!fk_clases_maestro_auxiliar (id, nombre_completo)
         ),
         asistencias (
           id,

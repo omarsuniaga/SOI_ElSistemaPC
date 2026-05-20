@@ -470,7 +470,7 @@ export async function getReporteConsolidado({ periodoId, fecha, claseId } = {}) 
     if (fecha) query = query.eq('fecha', fecha)
     if (claseId) query = query.eq('clase_id', claseId)
 
-    const { data: sesiones, error } = await query.order('fecha', { ascending: false }).order('hora_inicio', { ascending: true })
+    let { data: sesiones, error } = await query.order('fecha', { ascending: false }).order('hora_inicio', { ascending: true })
     if (error) throwError('No se pudieron cargar las sesiones consolidadas', error)
 
     if (!Array.isArray(sesiones)) {
@@ -480,9 +480,8 @@ export async function getReporteConsolidado({ periodoId, fecha, claseId } = {}) 
 
     // 🔥 FILTRO CRÍTICO: Excluir sesiones borradores (incompletas/abandonadas)
     // Solo mostrar sesiones guardadas (borrador = false)
-    const sesionesFiltered = sesiones.filter(s => s.borrador === false)
-    console.log(`📊 Filtro de borradores: ${sesiones.length} sesiones → ${sesionesFiltered.length} sesiones reales`)
-    sesiones = sesionesFiltered
+    sesiones = sesiones.filter(s => s.borrador === false)
+    console.log(`📊 Filtro de borradores: ${sesiones.length} sesiones reales`)
 
     // DEBUG
     console.log('📊 getReporteConsolidado DEBUG:', {

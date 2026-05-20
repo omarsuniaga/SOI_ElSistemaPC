@@ -58,6 +58,7 @@ import { registerRoutesObservaciones } from './modules/observaciones/index.js'
 import { registerRoutesMetricas } from './modules/metricas/index.js';
 import { registerRoutesConfig } from './modules/config/index.js';
 import { registerRoutesAcademicAdmin } from './modules/academic-admin/academic-admin.router.js';
+import { registerRoutesAdminDashboard } from './modules/admin-dashboard/admin-dashboard.router.js';
 import { registerRoutesPermisos } from './modules/permisos/index.js';
 
 // ============================================================================
@@ -79,6 +80,14 @@ const MODULES_REGISTRY = [
     description: 'Gestión de mapa curricular y recursos',
     enabled: true,
     register: registerRoutesAcademicAdmin
+  },
+  {
+    id: 'admin-dashboard',
+    label: 'Dashboard Administrativo',
+    icon: 'bi-speedometer2',
+    description: 'Panel de control, reportes y analítica de maestros',
+    enabled: true,
+    register: registerRoutesAdminDashboard
   },
   {
     id: 'maestros',
@@ -236,6 +245,10 @@ const NAV_GROUPS = [
       { id: 'torre-de-control', label: 'Torre de Control', icon: 'bi-radar' },
       { id: 'metricas-ia-analisis', label: 'IA Análisis', icon: 'bi-robot' },
       { id: 'metricas-ia-reportes', label: 'IA Reportes', icon: 'bi-file-earmark-richtext' },
+      { id: 'admin-dashboard', label: 'Cumplimiento Maestros', icon: 'bi-clipboard-check' },
+      { id: 'admin-dashboard-reportes', label: 'Reportes Director', icon: 'bi-file-earmark-pdf' },
+      { id: 'admin-dashboard-analitca-llenado', label: 'Analítica Llenado', icon: 'bi-graph-up' },
+      { id: 'admin-dashboard-tendencias', label: 'Tendencias', icon: 'bi-arrow-up-right' },
     ],
   },
   {

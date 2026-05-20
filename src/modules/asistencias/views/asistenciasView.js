@@ -44,8 +44,23 @@ export async function renderAsistenciasView(container) {
 
     state.periodos = periodos
     state.periodoActivo = periodoActivo
-    state.filtroPeriodo = periodoActivo?.id || periodos[0]?.id
+
+    // Inicializar filtroPeriodo: activo > primer periodo > null
+    if (periodoActivo?.id) {
+      state.filtroPeriodo = periodoActivo.id
+    } else if (periodos && periodos.length > 0) {
+      state.filtroPeriodo = periodos[0].id
+    } else {
+      state.filtroPeriodo = null
+    }
+
     state.clases = clases
+
+    console.log('🔍 renderAsistenciasView init:', {
+      periodosCount: periodos?.length || 0,
+      periodoActivo: periodoActivo?.nombre,
+      filtroPeriodo: state.filtroPeriodo
+    })
 
     await _loadData()
     renderContent(container)

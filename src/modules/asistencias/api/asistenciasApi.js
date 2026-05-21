@@ -398,22 +398,45 @@ export async function crearAsistencia(asistencia) {
 
 export async function registrarAsistenciaBulk(asistencias) {
   if (!asistencias?.length) throwError('No hay asistencias para registrar')
+
+  // Prepare records - ensure all required fields are present
+  const records = asistencias.map(a => {
+    if (!a.sesion_clase_id) {
+      throw new Error(`sesion_clase_id es requerido para alumno ${a.alumno_id}`)
+    }
+    return {
+      sesion_clase_id:     a.sesion_clase_id,
+      clase_id:           a.clase_id,
+      alumno_id:          a.alumno_id,
+      fecha:              a.fecha,
+      estado:             a.estado || ESTADOS.PRESENTE,
+      justificacion_texto:(a.justificacion_texto || '').trim() || null,
+      observaciones:      (a.observaciones || '').trim() || null,
+      ...(a.registrado_por ? { registrado_por: a.registrado_por } : {}),
+    }
+  })
+
+  // Try UPSERT with composite key (clase_id, alumno_id, fecha)
+  // This requires uk_asistencias_clase_alumno_fecha constraint
   const { data, error } = await supabase
     .from('asistencias')
     .upsert(
-      asistencias.map(a => ({
-        clase_id:           a.clase_id,
-        alumno_id:          a.alumno_id,
-        fecha:              a.fecha,
-        estado:             a.estado || ESTADOS.PRESENTE,
-        justificacion_texto:(a.justificacion_texto || '').trim() || null,
-        observaciones:      (a.observaciones || '').trim() || null,
-        ...(a.sesion_clase_id ? { sesion_clase_id: a.sesion_clase_id } : {}),
-        ...(a.registrado_por  ? { registrado_por:  a.registrado_por  } : {}),
-      })),
-      { onConflict: 'clase_id, alumno_id, fecha' }
+      records,
+      { onConflict: 'clase_id,alumno_id,fecha' }
     )
     .select()
+
+  // If constraint doesn't exist, try plain INSERT as fallback
+  if (error?.message?.includes('unique or exclusion constraint')) {
+    console.warn('[registrarAsistenciaBulk] UPSERT failed, trying plain INSERT. Migration needed for unique constraint.')
+    const { data: insertData, error: insertError } = await supabase
+      .from('asistencias')
+      .insert(records, { returning: 'representation' })
+      .select()
+    if (insertError) throwError('No se pudieron registrar las asistencias (INSERT)', insertError)
+    return insertData || []
+  }
+
   if (error) throwError('No se pudieron registrar las asistencias', error)
   return data
 }

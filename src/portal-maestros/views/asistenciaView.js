@@ -35,43 +35,6 @@ import { guardarJustificacion, obtenerJustificacion, eliminarJustificacion } fro
 import { promocionarObservacionesAlumnos } from '../services/observationPromotionService.js'
 import { registrarAsistenciaBulk } from '../../modules/asistencias/api/asistenciasApi.js'
 import { createAsyncMutex } from '../../shared/utils/asyncMutex.js'
-import { obtenerAsistenciaClase } from '../api/asistenciaApi.js'
-
-/**
- * Render attendance table for a specific class (used by deep-link navigation).
- * @param {HTMLElement} container
- * @param {{clase_id: string, fecha: string, estudiantes: Array}} asistencia
- */
-function _renderAsistenciaTable(container, asistencia, metadata = {}) {
-  const { fecha } = metadata
-  const displayFecha = fecha || asistencia.fecha || ''
-  container.innerHTML = `
-    <div class="asistencia-view">
-      <div class="asistencia-header">
-        <h2 data-testid="asistencia-title">
-          Asistencia${displayFecha ? ' - ' + displayFecha : ''}
-        </h2>
-      </div>
-      <table class="asistencia-table">
-        <thead>
-          <tr>
-            <th>Estudiante</th>
-            <th>Asistió</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${(asistencia.estudiantes || []).map(est => `
-            <tr>
-              <td>${est.nombre}</td>
-              <td><input type="checkbox" ${est.asistio ? 'checked' : ''} /></td>
-            </tr>
-          `).join('')}
-        </tbody>
-      </table>
-    </div>
-  `
-}
-
 /**
  * Vista Asistencia Optimizada (F3+): toma de asistencia con micro-interacciones.
  *
@@ -86,19 +49,6 @@ export async function renderAsistenciaView(containerOrId, { claseId, fecha } = {
 
   if (!container) {
     console.error('[asistenciaView] Container not found:', containerOrId)
-    return
-  }
-
-  // Direct navigation: load specific class attendance without full view bootstrap
-  if (claseId && fecha) {
-    container.innerHTML = `<div class="pm-loading"><div class="pm-spinner"></div></div>`
-    try {
-      const asistencia = await obtenerAsistenciaClase(claseId, fecha)
-      _renderAsistenciaTable(container, asistencia, { claseId, fecha })
-    } catch (err) {
-      console.error('[asistenciaView] Error loading direct class:', err)
-      container.innerHTML = '<div class="error">Error cargando asistencia</div>'
-    }
     return
   }
 

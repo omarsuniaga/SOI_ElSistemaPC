@@ -89,12 +89,36 @@ export async function crearSesion(sesion) {
     throw new Error('El tema es obligatorio')
   }
 
+  // Obtener el horario correspondiente al día de la semana para llenar salon_id e horario_id
+  let horarioId = null
+  let salonId = null
+
+  if (!USE_MOCK) {
+    const fecha = new Date(sesion.fecha)
+    const diasSemana = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado']
+    const diaString = diasSemana[fecha.getDay()].toLowerCase()
+
+    const { data: horarios, error: errorHorarios } = await supabase
+      .from('clase_horarios')
+      .select('id, salon_id')
+      .eq('clase_id', sesion.clase_id)
+      .eq('dia', diaString)
+      .limit(1)
+
+    if (!errorHorarios && horarios && horarios.length > 0) {
+      horarioId = horarios[0].id
+      salonId = horarios[0].salon_id
+    }
+  }
+
   const datosLimpios = {
     clase_id: sesion.clase_id,
     maestro_id: sesion.maestro_id || null,
     fecha: sesion.fecha,
     hora_inicio: sesion.hora_inicio || null,
     hora_fin: sesion.hora_fin || null,
+    horario_id: horarioId,
+    salon_id: salonId,
     tema: sesion.tema.trim(),
     contenido: sesion.contenido?.trim() || null,
     motivo: sesion.motivo?.trim() || null,

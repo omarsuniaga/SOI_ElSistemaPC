@@ -111,18 +111,18 @@ async function _calcularEstadoMes(maestroId, anio, mes) {
     const diffDias  = Math.floor((hoy - fechaDate) / 86400000)
 
     // Caso especial: HOY (diffDias === 0)
-    // Verde solo si la asistencia fue realmente registrada.
-    // Sin sesión o sesión sin asistencia → sin color (la clase aún no se ha dado).
+    // Verde solo si la asistencia fue realmente registrada, O el estado es registrada/cerrada
+    // Si no → PENDIENTE (naranja), porque la clase podría aún no haberse impartido
     if (diffDias === 0) {
       const sesionHoy = todasSesiones.find(s => s.fecha === fecha)
-      const asistenciaRegistradaHoy = sesionHoy && (
-        (Array.isArray(sesionHoy.asistencia) && sesionHoy.asistencia.length > 0)
-      )
-      if (asistenciaRegistradaHoy) {
+      const tieneEstadoRegistrado = sesionHoy && (sesionHoy.estado === 'registrada' || sesionHoy.estado === 'cerrada')
+      const tieneAsistencia = sesionHoy && Array.isArray(sesionHoy.asistencia) && sesionHoy.asistencia.length > 0
+
+      if (tieneEstadoRegistrado || tieneAsistencia) {
         estadoMap.set(fecha, 'registrada')
       } else {
-        // La clase de hoy aún no se ha impartido (o no se registró asistencia)
-        estadoMap.set(fecha, 'sin-clase')
+        // Hoy sin asistencia registrada → pendiente de marcar
+        estadoMap.set(fecha, 'pendiente')
       }
       continue
     }

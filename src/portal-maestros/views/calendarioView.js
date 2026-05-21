@@ -212,7 +212,7 @@ function _renderCalendario(container, anio, mes, hoy, estadoMap, { onFechaClick,
           <div class="pm-cal-legend-dot" style="background:var(--pm-warning)"></div> Pendiente
         </div>
         <div class="pm-cal-legend-item">
-          <div class="pm-cal-legend-dot" style="background:var(--pm-danger)"></div> Vencida (+7d)
+          <div class="pm-cal-legend-dot" style="background:var(--pm-danger)"></div> Sin registro >7 días
         </div>
 </div>
       </div>

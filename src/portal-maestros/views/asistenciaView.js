@@ -34,6 +34,7 @@ import { createJustificacionModal } from '../components/JustificacionModal.js'
 import { guardarJustificacion, obtenerJustificacion, eliminarJustificacion } from '../services/justificacionService.js'
 import { promocionarObservacionesAlumnos } from '../services/observationPromotionService.js'
 import { registrarAsistenciaBulk } from '../../modules/asistencias/api/asistenciasApi.js'
+import { createAsyncMutex } from '../../shared/utils/asyncMutex.js'
 
 /**
  * Vista Asistencia Optimizada (F3+): toma de asistencia con micro-interacciones.
@@ -270,6 +271,7 @@ function _renderVista(container, ctx) {
   const localKey = `pm_asistencia_${claseId}_${fechaHoy}`;
   let dslContent = serverDSL;
   let _saveTimer = null;
+  const _saveMutex = createAsyncMutex()
   let routeTreeBar = null; // Mover al scope superior
 
   // Local CSS for badges with high contrast
@@ -1559,9 +1561,13 @@ async function _autoSave(immediate = false) {
     };
 
     if (immediate) {
-      await saveFn();
+      // Use mutex to serialize with manual save
+      await _saveMutex.run(saveFn);
     } else {
-      _saveTimer = setTimeout(saveFn, 2000);
+      // Schedule with mutex — deferred 2s, then acquire lock before executing
+      _saveTimer = setTimeout(() => {
+        _saveMutex.run(saveFn).catch(err => console.error('[asistencia] Autosave error:', err));
+      }, 2000);
     }
   }
 
@@ -1571,6 +1577,8 @@ async function _autoSave(immediate = false) {
       btn.textContent = 'Guardando...';
       btn.disabled = true;
 
+      // Use mutex to serialize with autosave — prevents lost updates from concurrent saves
+      await _saveMutex.run(async () => {
       try {
         // Build attendance array with required fields (sesion_clase_id will be added later once resolved)
         const asistencia = alumnos.filter(a => estado[a.id]).map(a => ({
@@ -1840,6 +1848,7 @@ async function _autoSave(immediate = false) {
       btn.disabled = false;
       setTimeout(() => { btn.textContent = originalText; btn.style.background = ''; }, 3000);
     }
+      }) // end _saveMutex.run
   };
 
   // === Helper functions (definidas aquí para evitar TDZ con let) ===

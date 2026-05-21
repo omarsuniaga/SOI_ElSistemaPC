@@ -3,16 +3,67 @@ import { getMaestroLocal } from '../auth/maestroAuth.js';
 import { getMisClases, getHorariosClases, getSesiones } from './maestroDataService.js';
 import { onPushReceived } from './pushService.js';
 
+// -- Deep Link Parsing and Navigation -----------------------------------------
+
+/**
+ * Parse deep_link to extract claseId and fecha
+ * Deep link format: /asistencia/{claseId}/{fecha}
+ * Example: /asistencia/550e8400-e29b-41d4-a716-446655440000/2026-05-21
+ */
+export function parseDeepLink(deepLink) {
+  if (!deepLink || typeof deepLink !== 'string') {
+    return { claseId: null, fecha: null, isValid: false }
+  }
+
+  const match = deepLink.match(/^\/asistencia\/([a-f0-9-]{36})\/(\d{4}-\d{2}-\d{2})$/)
+
+  if (!match) {
+    return { claseId: null, fecha: null, isValid: false }
+  }
+
+  return {
+    claseId: match[1],
+    fecha: match[2],
+    isValid: true
+  }
+}
+
+/**
+ * Navigate to asistenciaView with deep link parameters
+ */
+export function navigateToDeepLink(deepLink) {
+  const { claseId, fecha, isValid } = parseDeepLink(deepLink)
+
+  if (!isValid) {
+    console.warn('[notificationService] Invalid deep link:', deepLink)
+    return
+  }
+
+  window.appNavigate?.({
+    view: 'asistencia',
+    claseId,
+    fecha
+  })
+}
+
 // -- Register Push Notification Handler --
 onPushReceived((event) => {
   if (event.event === 'subscriptionChanged') {
     console.log('[Notif] Push subscription changed:', event.subscribed);
   } else if (event.event === 'notificationReceived') {
     console.log('[Notif] Real-time push received:', event.notification);
-    
+
     // RECORD: Mark as received to prevent polling duplicate
     _recordNotificationReceived(event.notification);
-    
+
+    // If notification carries a deep_link, navigate to it
+    const notif = event.notification;
+    if (notif?.data?.deep_link) {
+      navigateToDeepLink(notif.data.deep_link);
+    } else if (notif?.data?.deep_link_url) {
+      navigateToDeepLink(notif.data.deep_link_url);
+    }
+
     // ADD to cache if not already there
     const exists = notificacionesCache.some(n => n.id === event.notification.id);
     if (!exists) {

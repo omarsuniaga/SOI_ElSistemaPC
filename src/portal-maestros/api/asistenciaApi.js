@@ -8,7 +8,7 @@ import { supabase } from '../../lib/supabaseClient.js'
  */
 export async function obtenerAsistenciaClase(claseId, fecha) {
   const { data, error } = await supabase
-    .from('inscripciones')
+    .from('alumnos_clases')
     .select('alumno_id, alumnos(id, nombre)')
     .eq('clase_id', claseId)
 

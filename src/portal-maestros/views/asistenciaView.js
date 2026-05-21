@@ -33,6 +33,7 @@ import { consumeRutaTema } from '../services/rutaTopicStore.js'
 import { createJustificacionModal } from '../components/JustificacionModal.js'
 import { guardarJustificacion, obtenerJustificacion, eliminarJustificacion } from '../services/justificacionService.js'
 import { promocionarObservacionesAlumnos } from '../services/observationPromotionService.js'
+import { registrarAsistenciaBulk } from '../../modules/asistencias/api/asistenciasApi.js'
 
 /**
  * Vista Asistencia Optimizada (F3+): toma de asistencia con micro-interacciones.
@@ -1529,14 +1530,18 @@ async function _autoSave(immediate = false) {
       btn.disabled = true;
 
       try {
+        // Build attendance array with required fields (sesion_clase_id will be added later once resolved)
         const asistencia = alumnos.filter(a => estado[a.id]).map(a => ({
-          alumno_id: a.id, 
-          estado: estado[a.id]
+          clase_id: claseId,
+          alumno_id: a.id,
+          fecha: fechaHoy,
+          estado: estado[a.id],
+          registrado_por: maestro.id
       }));
-      
+
       const tieneAsistenciaMarcada = asistencia.length > 0;
       const tieneContenido = dslContent && dslContent.trim().length > 0;
-      
+
       // Permitir guardar si hay asistencia marcada O contenido DSL no vacío
       if (!tieneAsistenciaMarcada && !tieneContenido) {
         throw new Error('Debes marcar asistencia o agregar contenido para guardar');
@@ -1545,7 +1550,7 @@ async function _autoSave(immediate = false) {
       // 1. Guardar estado actual (asistencia y contenido)
       await _autoSave(true);
 
-      // 1.1 Si sesionId sigue siendo null (nueva sesión), intentar obtenerla de Supabase 
+      // 1.1 Si sesionId sigue siendo null (nueva sesión), intentar obtenerla de Supabase
       // ya que _autoSave(true) acaba de encolar/insertar.
       if (!sesionId) {
         const { data: sData } = await supabase
@@ -1556,6 +1561,22 @@ async function _autoSave(immediate = false) {
           .eq('fecha', fechaHoy)
           .maybeSingle();
         if (sData) sesionId = sData.id;
+      }
+
+      // 1.5 Registrar asistencias individuales en la tabla asistencias
+      if (tieneAsistenciaMarcada) {
+        try {
+          // Enrich with sesionId if available
+          const asistenciaConSesion = asistencia.map(a => ({
+            ...a,
+            ...(sesionId && { sesion_clase_id: sesionId })
+          }));
+          await registrarAsistenciaBulk(asistenciaConSesion);
+          console.log('[asistencia] Registradas asistencias individuales:', asistenciaConSesion.length);
+        } catch (bulkErr) {
+          console.error('[asistencia] Error registrando asistencias en bulk:', bulkErr);
+          throw new Error('No se pudieron registrar las asistencias individuales: ' + bulkErr.message);
+        }
       }
 
       // 2. Si hay sesión existente, marcarla como registrada (borrador = false)

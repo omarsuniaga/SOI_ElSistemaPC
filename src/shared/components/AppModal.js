@@ -122,6 +122,11 @@ export const AppModal = {
     ensureDOM()
     const els = getEls()
 
+    // Reset footer visibility so a previous call with `!important` inline
+    // style cannot bleed into this new modal (e.g. profile modal hiding footer).
+    const footer = els.dialog.querySelector('.app-modal-footer')
+    if (footer) footer.style.removeProperty('display')
+
     // Size
     els.dialog.style.maxWidth = SIZES[size] || SIZES.md
 

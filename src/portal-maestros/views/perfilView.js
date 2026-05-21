@@ -10,6 +10,7 @@ import { ausenciaModal } from '../components/ausenciaModal.js';
 import { notifConfigModal } from '../components/notifConfigModal.js';
 import { registrarAlumnoModal } from '../components/registrarAlumnoModal.js';
 import { gestionarClasesModal } from '../components/gestionarClasesModal.js';
+import { renderGestionAlumnosClasesView } from './gestionAlumnosClasesView.js';
 import { escHTML, getInitials } from '../utils/portalUtils.js';
 
 // Estado local de la vista
@@ -90,6 +91,9 @@ export function renderPerfilView(container) {
   // Contenedor dinámico de colaboración
   colDer.insertAdjacentHTML('beforeend', `<div id="pm-collaboration-container"></div>`);
 
+  // Contenedor para gestión de alumnos y clases (se muestra solo si hay permisos aprobados)
+  colDer.insertAdjacentHTML('beforeend', `<div id="pm-gestion-container" style="display:none;"></div>`);
+
   renderSession(colDer);
   checkPerfilIncompleto(maestro);
   initListeners(maestro);
@@ -102,6 +106,13 @@ export function renderPerfilView(container) {
       const collabContainer = document.getElementById('pm-collaboration-container');
       if (collabContainer) {
         renderCollaborationPermissions(collabContainer, perm, maestro.id, solicitarPermiso);
+      }
+
+      // Si hay permisos aprobados, mostrar gestión de alumnos/clases
+      const gestionContainer = document.getElementById('pm-gestion-container');
+      if (gestionContainer && (perm.puede_registrar_alumnos || perm.puede_inscribir_clases)) {
+        gestionContainer.style.display = 'block';
+        await renderGestionAlumnosClasesView(gestionContainer);
       }
     } catch (err) {
       console.warn('[PerfilView] Error cargando permisos de colaboración:', err.message);

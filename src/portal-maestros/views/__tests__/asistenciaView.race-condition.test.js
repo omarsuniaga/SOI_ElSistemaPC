@@ -1,39 +1,34 @@
 // src/portal-maestros/views/__tests__/asistenciaView.race-condition.test.js
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { registrarAsistenciaBulk } from '../../../modules/asistencias/api/asistenciasApi.js'
-
-vi.mock('../../../modules/asistencias/api/asistenciasApi.js')
-vi.mock('../../../lib/supabaseClient.js')
+import { createAsyncMutex } from '../../../shared/utils/asyncMutex.js'
 
 describe('asistenciaView - Race Condition Prevention', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
+  it('should serialize concurrent save operations using mutex', async () => {
+    // Verify that the mutex pattern prevents concurrent execution
+    const mutex = createAsyncMutex()
+    const executionOrder = []
 
-  it('should serialize concurrent save operations to prevent lost updates', async () => {
-    // Simulate two concurrent save attempts
-    const saveOperations = []
-
-    registrarAsistenciaBulk.mockImplementation(async (asistencias) => {
-      saveOperations.push({ type: 'save', data: asistencias, time: Date.now() })
-      // Simulate network delay
+    const operation1 = async () => {
+      executionOrder.push('start-1')
       await new Promise(resolve => setTimeout(resolve, 50))
-      return asistencias
-    })
+      executionOrder.push('end-1')
+    }
 
-    // Import the module - this test verifies the integration
-    // In real test, would call _autoSave() and click handler concurrently
+    const operation2 = async () => {
+      executionOrder.push('start-2')
+      await new Promise(resolve => setTimeout(resolve, 50))
+      executionOrder.push('end-2')
+    }
 
-    // This is a contract test - verifies that registrarAsistenciaBulk
-    // is called serially, not concurrently
-    const [result1, result2] = await Promise.all([
-      registrarAsistenciaBulk([{ alumno_id: 'a1', estado: 'P' }]),
-      registrarAsistenciaBulk([{ alumno_id: 'a1', estado: 'A' }])
+    // Fire both concurrently
+    await Promise.all([
+      mutex.run(operation1),
+      mutex.run(operation2)
     ])
 
-    // In actual implementation with mutex, even though both called
-    // concurrently, they will execute serially
-    expect(result1).toBeDefined()
-    expect(result2).toBeDefined()
+    // Verify they executed serially, not concurrently
+    // If concurrent: would see ['start-1', 'start-2', 'end-1', 'end-2']
+    // If serial: would see ['start-1', 'end-1', 'start-2', 'end-2']
+    expect(executionOrder).toEqual(['start-1', 'end-1', 'start-2', 'end-2'])
   })
 })

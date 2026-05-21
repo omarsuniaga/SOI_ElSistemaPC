@@ -1494,7 +1494,7 @@ function _renderVista(container, ctx) {
     label.textContent = `${marcados}/${total}`;
   }
 
-async function _autoSave(immediate = false) {
+async function _autoSave(immediate = false, skipMutex = false) {
     if (_saveTimer) clearTimeout(_saveTimer);
 
     const saveFn = async () => {
@@ -1561,8 +1561,13 @@ async function _autoSave(immediate = false) {
     };
 
     if (immediate) {
-      // Use mutex to serialize with manual save
-      await _saveMutex.run(saveFn);
+      if (skipMutex) {
+        // Caller (button handler) already holds the mutex — run directly to avoid deadlock
+        await saveFn();
+      } else {
+        // Normal autosave: acquire mutex
+        await _saveMutex.run(saveFn);
+      }
     } else {
       // Schedule with mutex — deferred 2s, then acquire lock before executing
       _saveTimer = setTimeout(() => {
@@ -1598,7 +1603,8 @@ async function _autoSave(immediate = false) {
       }
 
       // 1. Guardar estado actual (asistencia y contenido)
-      await _autoSave(true);
+      // skipMutex=true: button handler already holds the mutex, skip to prevent deadlock
+      await _autoSave(true, true);
 
       // 1.1 Si sesionId sigue siendo null (nueva sesión), intentar obtenerla de Supabase
       // ya que _autoSave(true) acaba de encolar/insertar.

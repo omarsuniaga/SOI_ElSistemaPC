@@ -9,7 +9,7 @@ import { supabase } from '../../lib/supabaseClient.js'
 export async function obtenerAsistenciaClase(claseId, fecha) {
   const { data, error } = await supabase
     .from('alumnos_clases')
-    .select('alumno_id, alumnos(id, nombre)')
+    .select('alumno_id, alumnos(id, nombre_completo)')
     .eq('clase_id', claseId)
 
   if (error) throw error
@@ -29,7 +29,7 @@ export async function obtenerAsistenciaClase(claseId, fecha) {
 
   const estudiantes = (data || []).map(insc => ({
     id: insc.alumno_id,
-    nombre: insc.alumnos?.nombre ?? insc.alumno_id,
+    nombre: insc.alumnos?.nombre_completo ?? insc.alumno_id,
     asistio: asistenciaMap.has(insc.alumno_id) ? asistenciaMap.get(insc.alumno_id) : null,
   }))
 

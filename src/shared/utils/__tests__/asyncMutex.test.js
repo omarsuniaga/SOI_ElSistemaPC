@@ -1,5 +1,5 @@
 // src/shared/utils/__tests__/asyncMutex.test.js
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { createAsyncMutex } from '../asyncMutex.js'
 
 describe('asyncMutex', () => {

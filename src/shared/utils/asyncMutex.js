@@ -22,9 +22,13 @@ export function createAsyncMutex() {
     /**
      * Acquire lock, run function, then release lock
      * @param {Function} asyncFn - Async function to execute
-     * @returns {Promise} Result of asyncFn
+     * @returns {Promise} Resolves with the result of asyncFn, or rejects with any error it throws
      */
     run(asyncFn) {
+      if (typeof asyncFn !== 'function') {
+        throw new TypeError('asyncMutex.run expects a function')
+      }
+
       // Chain onto current lock synchronously — this ensures ordering even
       // when multiple callers invoke run() before any awaits settle.
       const result = lockPromise.then(() => asyncFn())

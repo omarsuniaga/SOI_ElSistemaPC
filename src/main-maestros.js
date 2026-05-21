@@ -528,7 +528,7 @@ function _renderShell(app, maestro, permisos) {
     themeContainer.appendChild(themeToggle.createToggleButton())
   }
 
-// Footer nav events - SPA navigation
+  // Footer nav events - SPA navigation
   const footerNav = document.getElementById('pm-footer-nav')
   if (footerNav) {
     footerNav.querySelectorAll('.pm-nav-tab').forEach(tab => {
@@ -602,6 +602,19 @@ function _renderShell(app, maestro, permisos) {
     }
   })
 
+  const route = (router.currentRoute?.() || 'hoy').split('?')[0]
+  _setActiveTab(route)
+}
+
+/**
+ * Registra listeners globales que solo deben activarse UNA VEZ.
+ * (Evita fugas de memoria y errores de duplicación en Realtime)
+ */
+let _globalEventsInitialized = false
+function _setupGlobalAppEvents() {
+  if (_globalEventsInitialized) return
+  _globalEventsInitialized = true
+
   // Suscribirse al badge de notificaciones
   onNotificacionesChange(() => {
     const badge = document.getElementById('pm-notif-badge');
@@ -615,7 +628,7 @@ function _renderShell(app, maestro, permisos) {
     }
   });
 
-  // Disparar primera carga y abrir canal Realtime
+  // Disparar primera carga y abrir canal Realtime de notificaciones
   fetchNotificaciones();
   startRealtime();
 
@@ -662,9 +675,6 @@ function _renderShell(app, maestro, permisos) {
               _viewRendered.clear()
 
               // Reset router's internal _currentRoute so _dispatch doesn't short-circuit
-              // when we re-navigate to the same route we were already on.
-              // router.navigate() calls _dispatch which deduplicates — bypass by calling
-              // _renderView directly (already wired handler) since _viewRendered is now cleared.
               await _renderView(currentRoute)
               // Also sync router state so nav tab highlighting is correct
               router.navigate(currentRoute)
@@ -691,24 +701,27 @@ function _renderShell(app, maestro, permisos) {
   }
 
   // Keyboard shortcuts (desktop only)
-  if (bp === 'desktop') {
-    const _keys = []
-    document.addEventListener('keydown', (e) => {
-      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return
-      _keys.push(e.key)
-      if (_keys[_keys.length - 2] === 'g') {
-        switch (e.key) {
-          case 'h': router.navigate('hoy'); _keys.length = 0; break
-          case 'c': router.navigate('calendario'); _keys.length = 0; break
-          case 'r': router.navigate('ruta'); _keys.length = 0; break
-          case 'm': router.navigate('metricas'); _keys.length = 0; break
-          case 'p': router.navigate('perfil'); _keys.length = 0; break
-          default: break
-        }
+  document.addEventListener('keydown', (e) => {
+    if (getBreakpoint() !== 'desktop') return
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return
+    
+    // Simple state machine for shortcuts
+    if (!window._globalAppKeys) window._globalAppKeys = []
+    const _keys = window._globalAppKeys
+    
+    _keys.push(e.key.toLowerCase())
+    if (_keys[_keys.length - 2] === 'g') {
+      switch (e.key.toLowerCase()) {
+        case 'h': router.navigate('hoy'); _keys.length = 0; break
+        case 'c': router.navigate('calendario'); _keys.length = 0; break
+        case 'r': router.navigate('ruta'); _keys.length = 0; break
+        case 'm': router.navigate('metricas'); _keys.length = 0; break
+        case 'p': router.navigate('perfil'); _keys.length = 0; break
+        default: break
       }
-      if (_keys.length > 3) _keys.splice(0, _keys.length - 2)
-    })
-  }
+    }
+    if (_keys.length > 3) _keys.splice(0, _keys.length - 2)
+  })
 
   // Breakpoint change handler
   let _resizeTimer = null
@@ -721,24 +734,10 @@ function _renderShell(app, maestro, permisos) {
         document.body.dataset.pmLayout = next
         _renderShell(document.getElementById('portal-app'), _maestro)
         _initViewContainers()
-        setTimeout(() => {
-          // Re-register footer nav events
-          document.querySelectorAll('.pm-nav-tab').forEach(tab => {
-            tab.addEventListener('click', (e) => {
-              e.preventDefault()
-              router.navigate(tab.dataset.route)
-            })
-          })
-          // Re-register sidebar events
-          document.querySelectorAll('.pm-sidebar-link').forEach(link => {
-            link.addEventListener('click', (e) => {
-              e.preventDefault()
-              router.navigate(link.dataset.route)
-            })
-          })
-          const route = (router.currentRoute?.() || 'hoy').split('?')[0]
-          _setActiveTab(route)
-        }, 50)
+        
+        // El nuevo DOM necesita re-activar el tab correcto
+        const route = (router.currentRoute?.() || 'hoy').split('?')[0]
+        _setActiveTab(route)
       }
     }, 250)
   }, { passive: true })
@@ -1116,10 +1115,13 @@ async function initPortal() {
   // 4. Init view containers AFTER shell (shell creates #pm-view-container)
   _initViewContainers()
 
-  // 5. Registrar callbacks de navegación
+  // 5. Setup global events (Realtime, shortcuts, resize) — ONCE
+  _setupGlobalAppEvents()
+
+  // 6. Registrar callbacks de navegación
   setNavigationCallbacks(invalidateView, invalidateAllViews)
 
-  // 6. Configure router — F1-F6 routes
+  // 7. Configure router — F1-F6 routes
   _setupRouterRoutes()
 
   // 3.1 Activar guard de rutas

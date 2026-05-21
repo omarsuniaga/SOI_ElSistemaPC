@@ -1581,12 +1581,20 @@ async function _autoSave(immediate = false) {
 
       // 2. Si hay sesión existente, marcarla como registrada (borrador = false)
       if (sesionId && (tieneAsistenciaMarcada || tieneContenido)) {
+        // Re-build asistencia array to ensure it's synchronized
+        const asistenciaActualizada = alumnos.filter(a => estado[a.id]).map(a => ({
+          alumno_id: a.id,
+          estado: estado[a.id]
+        }));
+
         // Intentar con 'registrada' primero (requiere migración 010)
         let { error } = await supabase
           .from('sesiones_clase')
-          .update({ 
+          .update({
             borrador: false,
             estado: 'registrada',
+            asistencia: asistenciaActualizada,
+            contenido: dslContent || '',
             updated_at: new Date().toISOString()
           })
           .eq('id', sesionId)
@@ -1597,9 +1605,11 @@ async function _autoSave(immediate = false) {
           console.warn('estado "registrada" no permitido, usando fallback "cerrada":', error.message);
           const { error: err2 } = await supabase
             .from('sesiones_clase')
-            .update({ 
+            .update({
               borrador: false,
               estado: 'cerrada',
+              asistencia: asistenciaActualizada,
+              contenido: dslContent || '',
               updated_at: new Date().toISOString()
             })
             .eq('id', sesionId)
@@ -1610,7 +1620,12 @@ async function _autoSave(immediate = false) {
             console.warn('Fallback "cerrada" también falló, actualizando solo borrador:', err2.message);
             await supabase
               .from('sesiones_clase')
-              .update({ borrador: false, updated_at: new Date().toISOString() })
+              .update({
+                borrador: false,
+                asistencia: asistenciaActualizada,
+                contenido: dslContent || '',
+                updated_at: new Date().toISOString()
+              })
               .eq('id', sesionId);
           }
         }

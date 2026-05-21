@@ -89,7 +89,7 @@ async function _calcularEstadoMes(maestroId, anio, mes) {
 
   const fechasRegistradas = new Set(sesiones.map(s => s.fecha))
 
-  // 3. Calcular estado por día
+  // 4. Calcular estado por día
   const estadoMap = new Map()
   const hoy       = new Date()
   hoy.setHours(0, 0, 0, 0)
@@ -107,13 +107,14 @@ async function _calcularEstadoMes(maestroId, anio, mes) {
       continue
     }
 
-    if (fechasRegistradas.has(fecha)) {
+    const fechaDate = new Date(d)
+    const diffDias  = Math.floor((hoy - fechaDate) / 86400000)
+
+    // Solo marcar como registrada si la fecha no es futura
+    if (diffDias >= 0 && fechasRegistradas.has(fecha)) {
       estadoMap.set(fecha, 'registrada')
       continue
     }
-
-    const fechaDate = new Date(d)
-    const diffDias  = Math.floor((hoy - fechaDate) / 86400000)
 
     if (diffDias < 0) {
       estadoMap.set(fecha, 'sin-clase')

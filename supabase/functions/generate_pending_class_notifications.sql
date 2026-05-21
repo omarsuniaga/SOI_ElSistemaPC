@@ -24,11 +24,15 @@ DECLARE
   v_processed INT := 0;
   v_profile_exists BOOLEAN;
 BEGIN
-  -- Process each maestro with unfilled (vencida/pendiente) classes
+  -- Process each maestro with unfilled (vencida/pendiente) classes.
+  -- Only include maestros with a linked auth user (user_id IS NOT NULL) to
+  -- prevent inserting orphaned notifications with an unresolvable profile_id.
   FOR v_maestro_id IN
-    SELECT DISTINCT maestro_id
-    FROM teacher_class_fill_metrics
-    WHERE asistencia_marked_at IS NULL
+    SELECT DISTINCT tcfm.maestro_id
+    FROM teacher_class_fill_metrics tcfm
+    INNER JOIN profiles p ON p.id = tcfm.maestro_id
+    WHERE tcfm.asistencia_marked_at IS NULL
+      AND p.user_id IS NOT NULL
   LOOP
     v_processed := v_processed + 1;
 
@@ -47,7 +51,13 @@ BEGIN
         AND asistencia_marked_at IS NULL
         AND fecha < CURRENT_DATE - INTERVAL '7 days';
 
-      -- Count pendiente classes (recent, without attendance)
+      -- Count pendiente classes (recent, without attendance).
+      -- NOTE: asistencia_marked_at reflects per-class aggregate fill status in the view.
+      -- A class is considered pending as long as asistencia_marked_at IS NULL — meaning
+      -- no fill has been recorded at all. Partial fills (some students marked, others not)
+      -- are NOT yet tracked here; once any fill is recorded the class exits this count.
+      -- Assumption: partial fill = maestro started; no fill = truly pending. Revisit if
+      -- per-student completeness tracking is required in the future.
       SELECT COUNT(*) INTO v_pendiente_count
       FROM teacher_class_fill_metrics
       WHERE maestro_id = v_maestro_id

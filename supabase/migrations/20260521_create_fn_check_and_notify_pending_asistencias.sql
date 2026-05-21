@@ -8,7 +8,9 @@
 --   notificaciones.estado valid values: 'pendiente','enviada','leida','fallida'
 --   notificaciones.clase_id  EXISTS (added by Task 1 migration)
 CREATE OR REPLACE FUNCTION fn_check_and_notify_pending_asistencias()
-RETURNS TABLE (notification_count INT) AS $$
+RETURNS TABLE (notification_count INT)
+SET search_path = public
+LANGUAGE plpgsql SECURITY DEFINER AS $$
 DECLARE
   v_maestro_id   UUID;  -- maestros.id
   v_profile_id   UUID;  -- profiles.id (notification recipient)
@@ -39,6 +41,7 @@ BEGIN
     WHERE h.dia_semana = v_day_of_week
       AND h.activo = TRUE
       AND m.activo = TRUE
+      AND m.user_id IS NOT NULL
   LOOP
     -- Last class end time for this maestro today
     SELECT MAX(h.hora_fin)
@@ -112,4 +115,4 @@ BEGIN
 
   RETURN QUERY SELECT v_notification_count;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$;

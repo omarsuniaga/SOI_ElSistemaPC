@@ -1,5 +1,6 @@
 import { fetchNotificaciones, onNotificacionesChange, marcarLeida, marcarTodasLeidas, getDedupCount } from '../services/notificationService.js';
 import { enableTrap } from '../utils/focusTrap.js';
+import { supabase } from '../../lib/supabaseClient.js';
 
 // -- Listener: NAVIGATE_TO desde el SW (toque en notificación OS) ----------------
 // El SW envía este mensaje cuando el usuario toca una notificación del SO
@@ -141,14 +142,25 @@ export const notificacionesPanel = {
             </div>
             <div class="pm-notif-time">${formatRelativeTime(g.items[0].created_at)}</div>
           </div>
+          <div class="pm-notif-actions">
+            <button class="pm-notif-btn-mark" data-ids="${g.items.map(n => n.id).join(',')}" title="Marcar como leída">
+              <i class="bi bi-check-circle"></i>
+            </button>
+            <button class="pm-notif-btn-delete" data-ids="${g.items.map(n => n.id).join(',')}" title="Eliminar">
+              <i class="bi bi-trash"></i>
+            </button>
+          </div>
           ${anyUnread ? '<div class="pm-notif-dot"></div>' : ''}
         </div>
       `;
     }).join('');
 
-    // Click: marcar leída(s) y navegar a la ruta relevante
+    // Click en item: marcar leída(s) y navegar a la ruta relevante
     listEl.querySelectorAll('.pm-notif-item').forEach(el => {
-      el.addEventListener('click', () => {
+      el.addEventListener('click', (e) => {
+        // Evitar si el click fue en un botón de acción
+        if (e.target.closest('.pm-notif-actions')) return;
+
         const ids = el.dataset.ids.split(',');
         ids.forEach(id => marcarLeida(id));
 
@@ -156,6 +168,32 @@ export const notificacionesPanel = {
         if (route && route !== '#/') {
           window.location.hash = route.replace(/^#/, '');
         }
+      });
+    });
+
+    // Botón "marcar leída"
+    listEl.querySelectorAll('.pm-notif-btn-mark').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const ids = btn.dataset.ids.split(',');
+        ids.forEach(id => marcarLeida(id));
+      });
+    });
+
+    // Botón "eliminar"
+    listEl.querySelectorAll('.pm-notif-btn-delete').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        const ids = btn.dataset.ids.split(',');
+        for (const id of ids) {
+          // Marcar como eliminada (estado = 'eliminada' o similar)
+          await supabase
+            .from('notificaciones')
+            .update({ estado: 'eliminada' })
+            .eq('id', id);
+        }
+        // Recargar
+        fetchNotificaciones();
       });
     });
   },
@@ -370,6 +408,39 @@ if (!document.getElementById('pm-notif-styles')) {
       vertical-align: middle;
       margin-left: 6px;
       letter-spacing: 0;
+    }
+
+    /* Action buttons */
+    .pm-notif-actions {
+      display: flex;
+      gap: 0.5rem;
+      margin-left: 0.5rem;
+      flex-shrink: 0;
+    }
+
+    .pm-notif-btn-mark,
+    .pm-notif-btn-delete {
+      background: none;
+      border: none;
+      padding: 0.4rem;
+      cursor: pointer;
+      color: var(--pm-text-muted);
+      border-radius: 4px;
+      font-size: 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+    }
+
+    .pm-notif-btn-mark:hover {
+      background: rgba(34, 197, 94, 0.1);
+      color: #22c55e;
+    }
+
+    .pm-notif-btn-delete:hover {
+      background: rgba(239, 68, 68, 0.1);
+      color: #ef4444;
     }
 
     /* Dark mode */

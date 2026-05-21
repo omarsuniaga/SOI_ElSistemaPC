@@ -31,8 +31,8 @@ describe('Attendance Notification E2E Deep Link Flow', () => {
       fecha: '2026-05-21',
       clase_nombre: 'Violin 101',
       estudiantes: [
-        { id: '1', nombre: 'Estudiante A', presente: true },
-        { id: '2', nombre: 'Estudiante B', presente: false }
+        { id: '1', nombre: 'Estudiante A', asistio: true },
+        { id: '2', nombre: 'Estudiante B', asistio: false }
       ]
     })
 
@@ -51,6 +51,12 @@ describe('Attendance Notification E2E Deep Link Flow', () => {
     // Verify render assertions — DOM should contain rendered attendance data
     expect(container.innerHTML).toContain('Estudiante A')
     expect(container.innerHTML).toContain('2026-05-21')
+
+    // Verify obtenerAsistenciaClase was called with correct params from deep link
+    expect(obtenerAsistenciaClase).toHaveBeenCalledWith(parsed.claseId, parsed.fecha)
+
+    // Verify that the checked checkbox for the attending student is actually rendered
+    expect(container.querySelector('input[type="checkbox"][checked]')).toBeTruthy()
   })
 
   it('should handle multiple notifications with different classes', () => {

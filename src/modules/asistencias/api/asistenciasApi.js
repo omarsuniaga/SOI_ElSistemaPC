@@ -417,10 +417,38 @@ export async function crearAsistencia(asistencia) {
 export async function registrarAsistenciaBulk(asistencias) {
   if (!asistencias?.length) throwError('No hay asistencias para registrar')
 
-  // Prepare records - ensure all required fields are present and map estado values
+  // STEP 1: Validate that all alumno_ids exist
+  const alumnoIds = [...new Set(asistencias.map(a => a.alumno_id))]
+  if (alumnoIds.some(id => !id)) {
+    throwError('Todas las asistencias deben tener alumno_id')
+  }
+
+  const { data: estudiantesExistentes, error: errorEstudiantes } = await supabase
+    .from('alumnos')
+    .select('id')
+    .in('id', alumnoIds)
+
+  if (errorEstudiantes) {
+    throwError('No se pudo validar alumnos en la base de datos', errorEstudiantes)
+  }
+
+  const alumnosValidosSet = new Set(estudiantesExistentes?.map(e => e.id) || [])
+  const alumnosInvalidos = alumnoIds.filter(id => !alumnosValidosSet.has(id))
+
+  if (alumnosInvalidos.length > 0) {
+    throwError(`Los siguientes alumnos no existen: ${alumnosInvalidos.join(', ')}`)
+  }
+
+  // STEP 2: Prepare records with validated data
   const records = asistencias.map(a => {
     if (!a.sesion_clase_id) {
       throw new Error(`sesion_clase_id es requerido para alumno ${a.alumno_id}`)
+    }
+    if (!a.clase_id) {
+      throw new Error(`clase_id es requerido para alumno ${a.alumno_id}`)
+    }
+    if (!a.fecha) {
+      throw new Error(`fecha es requerido para alumno ${a.alumno_id}`)
     }
     return {
       sesion_clase_id:     a.sesion_clase_id,
@@ -434,8 +462,7 @@ export async function registrarAsistenciaBulk(asistencias) {
     }
   })
 
-  // Try UPSERT with composite key (clase_id, alumno_id, fecha)
-  // This requires uk_asistencias_clase_alumno_fecha constraint
+  // STEP 3: Try UPSERT with composite key
   const { data, error } = await supabase
     .from('asistencias')
     .upsert(
@@ -444,9 +471,8 @@ export async function registrarAsistenciaBulk(asistencias) {
     )
     .select()
 
-  // If constraint doesn't exist, try plain INSERT as fallback
   if (error?.message?.includes('unique or exclusion constraint')) {
-    console.warn('[registrarAsistenciaBulk] UPSERT failed, trying plain INSERT. Migration needed for unique constraint.')
+    console.warn('[registrarAsistenciaBulk] UPSERT failed, trying plain INSERT')
     const { data: insertData, error: insertError } = await supabase
       .from('asistencias')
       .insert(records, { returning: 'representation' })

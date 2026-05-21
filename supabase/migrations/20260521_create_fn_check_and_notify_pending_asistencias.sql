@@ -1,8 +1,17 @@
 -- Function to check pending asistencias and send notifications after workday ends
+-- Schema-aligned version:
+--   horarios.dia_semana  = INTEGER (ISODOW 1-7), compared directly
+--   horarios.maestro_id  -> maestros(id)  (proper FK)
+--   maestros.user_id     -> profiles(id)  (notification recipient)
+--   asistencias.estado valid values: 'presente','ausente','tarde','justificado'
+--     "pending" = no asistencias row exists for that class+date (a.id IS NULL)
+--   notificaciones.estado valid values: 'pendiente','enviada','leida','fallida'
+--   notificaciones.clase_id  EXISTS (added by Task 1 migration)
 CREATE OR REPLACE FUNCTION fn_check_and_notify_pending_asistencias()
 RETURNS TABLE (notification_count INT) AS $$
 DECLARE
-  v_maestro_id UUID;
+  v_maestro_id   UUID;  -- maestros.id
+  v_profile_id   UUID;  -- profiles.id (notification recipient)
   v_ultima_hora_fin TIME;
   v_clases_pendientes RECORD;
   v_deep_link TEXT;
@@ -10,82 +19,70 @@ DECLARE
   v_current_time TIME;
   v_day_of_week INT;
 BEGIN
-  -- Get current time in Buenos Aires timezone
-  v_current_time := NOW() AT TIME ZONE 'America/Argentina/Buenos_Aires'::TEXT;
-  v_day_of_week := EXTRACT(ISODOW FROM NOW());
+  -- Get current time and day in Buenos Aires timezone
+  v_current_time := (NOW() AT TIME ZONE 'America/Argentina/Buenos_Aires')::TIME;
+  v_day_of_week  := EXTRACT(ISODOW FROM NOW() AT TIME ZONE 'America/Argentina/Buenos_Aires');
 
-  -- Determine if we should run today
-  -- ISODOW: 1=Monday, ..., 5=Friday, 6=Saturday, 7=Sunday
-  -- Run on weekdays (1-5) AND Saturdays (6) — skip Sundays (7)
+  -- ISODOW: 1=Monday … 6=Saturday, 7=Sunday
+  -- Skip Sundays — no classes
   IF v_day_of_week = 7 THEN
     RETURN QUERY SELECT 0::INT;
     RETURN;
   END IF;
 
-  -- Iterate through maestros who have classes today
-  FOR v_maestro_id IN
-    SELECT DISTINCT m.id
-    FROM profiles m
-    INNER JOIN clases c ON c.maestro_id = m.id
-    INNER JOIN horarios h ON h.clase_id = c.id
-    WHERE h.dia_semana = CASE
-                          WHEN v_day_of_week = 6 THEN 'sabado'::TEXT
-                          WHEN v_day_of_week = 5 THEN 'viernes'::TEXT
-                          WHEN v_day_of_week = 4 THEN 'jueves'::TEXT
-                          WHEN v_day_of_week = 3 THEN 'miercoles'::TEXT
-                          WHEN v_day_of_week = 2 THEN 'martes'::TEXT
-                          WHEN v_day_of_week = 1 THEN 'lunes'::TEXT
-                        END
-    AND m.rol = 'maestro'
-    AND m.activo = TRUE
+  -- Iterate maestros who have at least one horario scheduled for today
+  -- horarios.maestro_id -> maestros(id), horarios.dia_semana is INTEGER
+  FOR v_maestro_id, v_profile_id IN
+    SELECT DISTINCT m.id, m.user_id
+    FROM maestros m
+    INNER JOIN horarios h ON h.maestro_id = m.id
+    WHERE h.dia_semana = v_day_of_week
+      AND h.activo = TRUE
+      AND m.activo = TRUE
   LOOP
-    -- Get the last class end time for this maestro today
-    SELECT MAX(h.hora_fin)::TIME
+    -- Last class end time for this maestro today
+    SELECT MAX(h.hora_fin)
     INTO v_ultima_hora_fin
     FROM horarios h
-    INNER JOIN clases c ON c.id = h.clase_id
-    WHERE c.maestro_id = v_maestro_id
-    AND h.dia_semana = CASE
-                        WHEN v_day_of_week = 6 THEN 'sabado'::TEXT
-                        WHEN v_day_of_week = 5 THEN 'viernes'::TEXT
-                        WHEN v_day_of_week = 4 THEN 'jueves'::TEXT
-                        WHEN v_day_of_week = 3 THEN 'miercoles'::TEXT
-                        WHEN v_day_of_week = 2 THEN 'martes'::TEXT
-                        WHEN v_day_of_week = 1 THEN 'lunes'::TEXT
-                      END
-    AND h.hora_inicio IS NOT NULL
-    AND h.hora_fin IS NOT NULL;
+    WHERE h.maestro_id = v_maestro_id
+      AND h.dia_semana = v_day_of_week
+      AND h.hora_fin IS NOT NULL
+      AND h.activo = TRUE;
 
-    -- Check if current time >= last class end time (allow 5 min buffer)
+    -- Skip if no end time found
     IF v_ultima_hora_fin IS NULL THEN
-      CONTINUE; -- No classes found, skip
+      CONTINUE;
     END IF;
 
+    -- Only notify once the workday has ended (5-min buffer)
     IF v_current_time >= (v_ultima_hora_fin + INTERVAL '5 minutes') THEN
-      -- Maestro's workday is over. Create notifications for each pending class today.
+
       FOR v_clases_pendientes IN
-        SELECT c.id, c.nombre, CURRENT_DATE::TEXT AS fecha
-        FROM clases c
-        INNER JOIN horarios h ON h.clase_id = c.id
-        LEFT JOIN asistencias a ON a.clase_id = c.id AND a.fecha = CURRENT_DATE
-        WHERE c.maestro_id = v_maestro_id
-        AND h.dia_semana = CASE
-                            WHEN v_day_of_week = 6 THEN 'sabado'::TEXT
-                            WHEN v_day_of_week = 5 THEN 'viernes'::TEXT
-                            WHEN v_day_of_week = 4 THEN 'jueves'::TEXT
-                            WHEN v_day_of_week = 3 THEN 'miercoles'::TEXT
-                            WHEN v_day_of_week = 2 THEN 'martes'::TEXT
-                            WHEN v_day_of_week = 1 THEN 'lunes'::TEXT
-                          END
-        AND (a.id IS NULL OR a.estado = 'draft') -- No record or draft = pending
-        AND NOT EXISTS ( -- Dedup: no notification in last 24 hours
-          SELECT 1 FROM notificaciones n
-          WHERE n.profile_id = v_maestro_id
-          AND n.clase_id = c.id
-          AND n.created_at > NOW() - INTERVAL '24 hours'
-        )
+        SELECT
+          c.id        AS clase_id,
+          c.nombre    AS clase_nombre
+        FROM horarios h
+        INNER JOIN clases c ON c.id = h.clase_id
+        WHERE h.maestro_id = v_maestro_id
+          AND h.dia_semana = v_day_of_week
+          AND h.activo = TRUE
+          -- "pending" = no attendance row recorded for this class today
+          AND NOT EXISTS (
+            SELECT 1
+            FROM asistencias a
+            WHERE a.clase_id = c.id
+              AND a.fecha = CURRENT_DATE
+          )
+          -- Dedup: skip if we already sent a notification in the last 24 hours
+          AND NOT EXISTS (
+            SELECT 1
+            FROM notificaciones n
+            WHERE n.profile_id = v_profile_id
+              AND n.clase_id = c.id
+              AND n.created_at > NOW() - INTERVAL '24 hours'
+          )
       LOOP
-        v_deep_link := '/asistencia/' || v_clases_pendientes.id::TEXT || '/' || v_clases_pendientes.fecha;
+        v_deep_link := '/asistencia/' || v_clases_pendientes.clase_id::TEXT || '/' || CURRENT_DATE::TEXT;
 
         INSERT INTO notificaciones (
           profile_id,
@@ -97,18 +94,19 @@ BEGIN
           estado,
           created_at
         ) VALUES (
-          v_maestro_id,
+          v_profile_id,
           'sistema',
           'Asistencia Pendiente',
-          'Debes llenar la asistencia de ' || v_clases_pendientes.nombre,
+          'Debes llenar la asistencia de ' || v_clases_pendientes.clase_nombre,
           v_deep_link,
-          v_clases_pendientes.id,
+          v_clases_pendientes.clase_id,
           'pendiente',
           NOW()
         );
 
         v_notification_count := v_notification_count + 1;
       END LOOP;
+
     END IF;
   END LOOP;
 

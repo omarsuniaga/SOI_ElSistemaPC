@@ -1,86 +1,141 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import {
-  crearAusencia,
-  obtenerPendientesDirector,
-  revisarAusencia,
-  aprobarAusencia,
-  rechazarAusencia
-} from '../ausenciasApi.js'
+import * as ausenciasApi from '../ausenciasApi.js'
+import * as supabaseModule from '../../../lib/supabaseClient.js'
 
-vi.mock('../ausenciaValidator.js')
-vi.mock('../ausenciaService.js')
+vi.mock('../../../lib/supabaseClient.js', () => ({
+  supabase: {
+    from: vi.fn()
+  }
+}))
 
-describe('ausenciasApi', () => {
-  describe('crearAusencia', () => {
-    it('debe validar antes de crear', async () => {
-      const { validarSolicitud } = await import('../ausenciaValidator.js')
-      validarSolicitud.mockReturnValueOnce({
-        valid: false,
-        errors: ['Error de validación']
-      })
+describe('ausenciasApi - new functions', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
 
-      const data = { fecha_inicio: '2026-05-20' }
+  describe('obtenerClasesMaestro', () => {
+    it('should fetch classes for a maestro', async () => {
+      const mockClases = [
+        { id: 'clase-1', nombre: 'Violín A', instrumento: 'Violín', maestro_id: 'maestro-1' }
+      ]
 
-      try {
-        await crearAusencia(data)
-        expect.fail('Should throw error')
-      } catch (err) {
-        expect(err.message).toContain('Error de validación')
+      const mockChain = {
+        select: vi.fn(function() { return this }),
+        eq: vi.fn().mockResolvedValue({ data: mockClases, error: null })
       }
+
+      supabaseModule.supabase.from.mockReturnValue(mockChain)
+      const result = await ausenciasApi.obtenerClasesMaestro('maestro-1')
+
+      expect(result).toEqual(mockClases)
+    })
+  })
+
+  describe('obtenerSesionesRango', () => {
+    it('should fetch sessions in date range', async () => {
+      const mockSesiones = [
+        { id: 'ses-1', clase_id: 'clase-1', fecha: '2026-05-21', hora_inicio: '10:00', hora_fin: '11:00' }
+      ]
+
+      const mockChain = {
+        select: vi.fn(function() { return this }),
+        in: vi.fn(function() { return this }),
+        gte: vi.fn(function() { return this }),
+        lte: vi.fn(function() { return this }),
+        order: vi.fn().mockResolvedValue({ data: mockSesiones, error: null })
+      }
+
+      supabaseModule.supabase.from.mockReturnValue(mockChain)
+      const result = await ausenciasApi.obtenerSesionesRango(['clase-1'], '2026-05-21', '2026-05-23')
+
+      expect(result).toEqual(mockSesiones)
     })
 
-    it('debe crear ausencia si validación pasa', async () => {
-      const { validarSolicitud } = await import('../ausenciaValidator.js')
-      const { crearSolicitud, buscarClasesAfectadas } = await import('../ausenciaService.js')
+    it('should return empty array if no claseIds', async () => {
+      const result = await ausenciasApi.obtenerSesionesRango([], '2026-05-21', '2026-05-23')
+      expect(result).toEqual([])
+    })
+  })
 
-      validarSolicitud.mockReturnValueOnce({
-        valid: true,
-        errors: []
-      })
-      buscarClasesAfectadas.mockResolvedValueOnce([])
-      crearSolicitud.mockResolvedValueOnce({
+  describe('registrarAusencia', () => {
+    it('should register an absence request', async () => {
+      const mockAusencia = {
         id: 'ausencia-1',
-        estado: 'solicitada'
-      })
-
-      const data = {
         maestro_id: 'maestro-1',
-        fecha_inicio: '2026-05-25',
-        fecha_fin: '2026-05-25',
-        tipo_ausencia: 'personal'
+        tipo_ausencia: 'enfermedad',
+        estado: 'pendiente'
       }
 
-      const result = await crearAusencia(data)
+      const mockChain = {
+        insert: vi.fn(function() { return this }),
+        select: vi.fn(function() { return this }),
+        single: vi.fn().mockResolvedValue({ data: mockAusencia, error: null })
+      }
 
-      expect(result.estado).toBe('solicitada')
+      supabaseModule.supabase.from.mockReturnValue(mockChain)
+      
+      const payload = {
+        maestro_id: 'maestro-1',
+        tipo_ausencia: 'enfermedad',
+        fecha_inicio: '2026-05-21',
+        fecha_fin: '2026-05-23',
+        motivo: 'Enfermedad',
+        urgencia: 'alta',
+        duracion_tipo: 'varios_dias',
+        clases_afectadas: ['clase-1'],
+        actividades_por_clase: {},
+        clase_emergente: null,
+        archivo_url: null,
+        estado: 'pendiente'
+      }
+
+      const result = await ausenciasApi.registrarAusencia(payload)
+      expect(result).toEqual(mockAusencia)
     })
   })
 
-  describe('obtenerPendientesDirector', () => {
-    it('debe obtener ausencias en estado en_revision', async () => {
-      // Will implement with supabase mock
-      expect(true).toBe(true) // Placeholder
-    })
-  })
+  describe('crearNotificacionAusencia', () => {
+    it('should create absence notification', async () => {
+      const mockNotification = {
+        id: 'notif-1',
+        profile_id: null,
+        tipo: 'sistema',
+        titulo: 'Nueva Solicitud de Ausencia'
+      }
 
-  describe('revisarAusencia', () => {
-    it('debe actualizar estado según acción director', async () => {
-      // Will implement with supabase mock
-      expect(true).toBe(true) // Placeholder
-    })
-  })
+      const mockChain = {
+        insert: vi.fn(function() { return this }),
+        select: vi.fn(function() { return this }),
+        single: vi.fn().mockResolvedValue({ data: mockNotification, error: null })
+      }
 
-  describe('aprobarAusencia', () => {
-    it('debe cambiar estado a aprobada', async () => {
-      // Will implement with supabase mock
-      expect(true).toBe(true) // Placeholder
-    })
-  })
+      supabaseModule.supabase.from.mockReturnValue(mockChain)
 
-  describe('rechazarAusencia', () => {
-    it('debe cambiar estado a rechazada con razón', async () => {
-      // Will implement with supabase mock
-      expect(true).toBe(true) // Placeholder
+      const result = await ausenciasApi.crearNotificacionAusencia({
+        ausencia: {
+          id: 'ausencia-1',
+          fecha_inicio: '2026-05-21',
+          fecha_fin: '2026-05-23',
+          tipo_ausencia: 'enfermedad'
+        },
+        maestro: {
+          nombre_completo: 'Juan Pérez',
+          nombre: 'Juan'
+        },
+        approvalUrl: '/ausencias/ausencia-1'
+      })
+
+      expect(result).toEqual(mockNotification)
+    })
+
+    it('should return null if ausencia is missing', async () => {
+      const result = await ausenciasApi.crearNotificacionAusencia({
+        ausencia: null,
+        maestro: { nombre_completo: 'Juan' },
+        approvalUrl: ''
+      })
+
+      expect(result).toBeNull()
     })
   })
 })

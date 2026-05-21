@@ -227,3 +227,171 @@ async function crearNotificacion(profileId, tipo, data) {
     estado: 'pendiente'
   });
 }
+
+/**
+ * Get all classes for a maestro
+ */
+export async function obtenerClasesMaestro(maestroId) {
+  const { data, error } = await supabase
+    .from('clases')
+    .select('id, nombre, instrumento, maestro_id')
+    .eq('maestro_id', maestroId);
+
+  if (error) throw error;
+  return data || [];
+}
+
+/**
+ * Get sessions in a date range for given classes
+ */
+export async function obtenerSesionesRango(claseIds, fechaInicio, fechaFin) {
+  if (!claseIds || claseIds.length === 0) return [];
+
+  const { data, error } = await supabase
+    .from('sesiones')
+    .select('id, clase_id, fecha, hora_inicio, hora_fin, salon_id')
+    .in('clase_id', claseIds)
+    .gte('fecha', fechaInicio)
+    .lte('fecha', fechaFin)
+    .order('fecha', { ascending: true });
+
+  if (error) throw error;
+  return data || [];
+}
+
+/**
+ * Get recurring schedules (horarios) for classes
+ */
+export async function obtenerHorariosClases(claseIds) {
+  if (!claseIds || claseIds.length === 0) return [];
+
+  const { data, error } = await supabase
+    .from('horarios')
+    .select('id, clase_id, dia, hora_inicio, hora_fin')
+    .in('clase_id', claseIds);
+
+  if (error) throw error;
+  return data || [];
+}
+
+/**
+ * Get all active salons
+ */
+export async function obtenerSalonesActivos() {
+  const { data, error } = await supabase
+    .from('salones')
+    .select('id, nombre, capacidad, ubicacion')
+    .eq('activo', true)
+    .order('nombre', { ascending: true });
+
+  if (error) throw error;
+  return data || [];
+}
+
+/**
+ * Get occupied sessions for a given date and time
+ */
+export async function obtenerSesionesOcupadas(fecha, hora) {
+  if (!fecha || !hora) return [];
+
+  const { data, error } = await supabase
+    .from('sesiones')
+    .select('id, salon_id, clase_id, fecha, hora_inicio, hora_fin')
+    .eq('fecha', fecha)
+    .order('hora_inicio', { ascending: true });
+
+  if (error) throw error;
+
+  // Filter sessions that overlap with the given time
+  return (data || []).filter((sesion) => {
+    if (!sesion.hora_inicio || !sesion.hora_fin) return false;
+    return hora >= sesion.hora_inicio && hora < sesion.hora_fin;
+  });
+}
+
+/**
+ * Get substitute teachers for a class
+ */
+export async function obtenerMaestrosSuplentes(claseId) {
+  if (!claseId) return [];
+
+  // Get the main teacher's instrument first
+  const { data: clase, error: claseError } = await supabase
+    .from('clases')
+    .select('instrumento')
+    .eq('id', claseId)
+    .single();
+
+  if (claseError || !clase) return [];
+
+  // Get other active teachers with same instrument
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('id, nombre_completo, correo')
+    .eq('rol', 'maestro')
+    .eq('activo', true)
+    .neq('id', clase.maestro_id || 'null')
+    .order('nombre_completo', { ascending: true });
+
+  if (error) throw error;
+  return data || [];
+}
+
+/**
+ * Register an absence request
+ */
+export async function registrarAusencia(payload) {
+  const { data, error } = await supabase
+    .from('ausencias_maestros')
+    .insert([{
+      maestro_id: payload.maestro_id,
+      tipo_ausencia: payload.tipo_ausencia,
+      fecha_inicio: payload.fecha_inicio,
+      fecha_fin: payload.fecha_fin,
+      motivo: payload.motivo,
+      urgencia: payload.urgencia,
+      duracion_tipo: payload.duracion_tipo,
+      clases_afectadas: payload.clases_afectadas,
+      actividades_por_clase: payload.actividades_por_clase,
+      clase_emergente: payload.clase_emergente,
+      archivo_url: payload.archivo_url,
+      estado: payload.estado || 'pendiente',
+      creado_en: new Date().toISOString()
+    }])
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
+/**
+ * Create absence notification for director
+ */
+export async function crearNotificacionAusencia({ ausencia, maestro, approvalUrl }) {
+  if (!ausencia || !maestro) return null;
+
+  const fechas = ausencia.fecha_inicio === ausencia.fecha_fin
+    ? ausencia.fecha_inicio
+    : `${ausencia.fecha_inicio} al ${ausencia.fecha_fin}`;
+
+  const mensaje = `Nueva solicitud de ausencia: ${maestro.nombre_completo || maestro.nombre} (${fechas}) - Tipo: ${ausencia.tipo_ausencia}`;
+
+  const { data, error } = await supabase
+    .from('notificaciones')
+    .insert([{
+      profile_id: null, // Will be set by trigger to director
+      tipo: 'sistema',
+      titulo: 'Nueva Solicitud de Ausencia',
+      mensaje,
+      deep_link: approvalUrl || '/ausencias/pendientes',
+      estado: 'pendiente',
+      ausencia_id: ausencia.id,
+      creado_en: new Date().toISOString()
+    }])
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+}

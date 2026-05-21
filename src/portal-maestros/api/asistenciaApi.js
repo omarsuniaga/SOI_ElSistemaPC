@@ -16,7 +16,7 @@ export async function obtenerAsistenciaClase(claseId, fecha) {
 
   // Fetch existing attendance records for this session
   const { data: asistencias, error: asistError } = await supabase
-    .from('asistencias_detalle')
+    .from('asistencias')
     .select('alumno_id, asistio')
     .eq('clase_id', claseId)
     .eq('fecha', fecha)

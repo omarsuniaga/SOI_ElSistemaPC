@@ -7,5 +7,15 @@ CREATE INDEX IF NOT EXISTS idx_notificaciones_clase_id ON notificaciones(clase_i
 
 -- Add constraint: deep_link must be a valid internal path (allows both generic and class-specific formats)
 -- Note: strict /asistencia/{uuid}/{date} pattern widened to accommodate existing /portal/* deep_links
-ALTER TABLE notificaciones ADD CONSTRAINT check_deep_link_format
-  CHECK (deep_link IS NULL OR deep_link ~ '^/[a-zA-Z0-9/_-]+$');
+-- NOT VALID: existing rows are not validated, only future writes are checked
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint
+        WHERE conname = 'check_deep_link_format'
+          AND conrelid = 'notificaciones'::regclass
+    ) THEN
+        ALTER TABLE notificaciones ADD CONSTRAINT check_deep_link_format
+            CHECK (deep_link IS NULL OR deep_link ~ '^/[a-zA-Z0-9/_-]+$') NOT VALID;
+    END IF;
+END $$;

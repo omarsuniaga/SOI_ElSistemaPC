@@ -72,6 +72,14 @@ async function _calcularEstadoMes(maestroId, anio, mes) {
   // 2. Horarios de esas clases (con cache)
   const horarios = await getHorariosClases(claseIds)
   const diasConClase = new Set(horarios.map(h => h.dia?.toLowerCase()))
+  const horaFinPorDia = new Map() // Map<"lunes"|"martes"|..., max_hora_fin>
+  horarios.forEach(h => {
+    const dia = h.dia?.toLowerCase()
+    const horaFin = h.hora_fin || '23:59'
+    if (dia && !horaFinPorDia.has(dia) || horaFin > horaFinPorDia.get(dia)) {
+      horaFinPorDia.set(dia, horaFin)
+    }
+  })
 
   // 3. Sesiones del mes (con cache)
   const todasSesiones = await getSesiones(maestroId, desde, hasta)
@@ -111,19 +119,34 @@ async function _calcularEstadoMes(maestroId, anio, mes) {
     const diffDias  = Math.floor((hoy - fechaDate) / 86400000)
 
     // Caso especial: HOY (diffDias === 0)
-    // Verde solo si la asistencia fue realmente registrada, O el estado es registrada/cerrada
-    // Si no → PENDIENTE (naranja), porque la clase podría aún no haberse impartido
+    // Sin color hasta que la clase finalice
     if (diffDias === 0) {
       const sesionHoy = todasSesiones.find(s => s.fecha === fecha)
-      const tieneEstadoRegistrado = sesionHoy && (sesionHoy.estado === 'registrada' || sesionHoy.estado === 'cerrada')
       const tieneAsistencia = sesionHoy && Array.isArray(sesionHoy.asistencia) && sesionHoy.asistencia.length > 0
 
-      if (tieneEstadoRegistrado || tieneAsistencia) {
+      // Si ya tiene asistencia → registrada (verde)
+      if (tieneAsistencia) {
         estadoMap.set(fecha, 'registrada')
-      } else {
-        // Hoy sin asistencia registrada → pendiente de marcar
-        estadoMap.set(fecha, 'pendiente')
+        continue
       }
+
+      // Verificar si la clase ya finalizó hoy
+      const horaFinDia = horaFinPorDia.get(diaEs)
+      if (horaFinDia) {
+        const ahora = new Date()
+        const [hFinStr, minFinStr] = horaFinDia.split(':')
+        const horaFinMs = parseInt(hFinStr) * 60 * 60 * 1000 + parseInt(minFinStr || 0) * 60 * 1000
+        const ahoraMs = ahora.getHours() * 60 * 60 * 1000 + ahora.getMinutes() * 60 * 1000
+
+        // Si aún no finalizó → sin color
+        if (ahoraMs < horaFinMs) {
+          estadoMap.set(fecha, 'sin-clase')
+          continue
+        }
+      }
+
+      // Finalizó pero sin asistencia → pendiente (naranja)
+      estadoMap.set(fecha, 'pendiente')
       continue
     }
 

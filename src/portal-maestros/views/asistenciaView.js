@@ -151,10 +151,38 @@ export async function renderAsistenciaView(container, { claseId, fecha } = {}) {
     alumnos.forEach(a => { estado[a.id] = null })
 
     // Si hay sesión guardada, restaurar estados de asistencia
-    const serverAsistencia = sesionExistenteData?.asistencia || []
+    // Source 1: JSON field in sesiones_clase (fast, legacy)
+    let serverAsistencia = sesionExistenteData?.asistencia || []
+
+    // Source 2: asistencias table (authoritative, fallback if JSON is empty)
+    if (serverAsistencia.length === 0 && sesionId) {
+      try {
+        const { data: asistenciasDB } = await supabase
+          .from('asistencias')
+          .select('alumno_id, estado')
+          .eq('sesion_clase_id', sesionId)
+        if (asistenciasDB?.length > 0) {
+          console.log('[asistencia] Restaurando desde tabla asistencias:', asistenciasDB.length)
+          // Map DB values back to UI codes
+          const ESTADO_DB_TO_UI = {
+            'presente': 'P', 'ausente': 'A', 'justificado': 'J', 'tarde': 'T'
+          }
+          serverAsistencia = asistenciasDB.map(a => ({
+            alumno_id: a.alumno_id,
+            estado: ESTADO_DB_TO_UI[a.estado] ?? a.estado
+          }))
+        }
+      } catch (_e) {
+        console.warn('[asistencia] No se pudo restaurar desde tabla asistencias:', _e)
+      }
+    }
+
+    // Normalize any full DB values back to UI abbreviations
+    const ESTADO_DB_TO_UI = { 'presente': 'P', 'ausente': 'A', 'justificado': 'J', 'tarde': 'T' }
     serverAsistencia.forEach(item => {
       if (estado.hasOwnProperty(item.alumno_id)) {
-        estado[item.alumno_id] = item.estado
+        const estadoNorm = ESTADO_DB_TO_UI[item.estado] ?? item.estado
+        estado[item.alumno_id] = estadoNorm
       }
     })
 

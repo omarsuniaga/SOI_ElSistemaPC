@@ -125,6 +125,7 @@ import { renderDashboardMetricasView as renderAdminMetricasView } from './module
 import { renderAcademicAdminView } from './modules/academic-admin/views/academicAdminView.js'
 import { renderClasesView } from './modules/clases/views/clasesView.js'
 import { renderRegistroAlumnoView } from './portal-maestros/views/registroAlumnoView.js'
+import { renderGestionarClasesView } from './portal-maestros/views/gestionarClasesView.js'
 import { renderAprobacionView } from './modules/admin-aprobacion/views/aprobacionView.js'
 import { renderAusenciasAdminView } from './modules/admin-aprobacion/views/ausenciasAdminView.js'
 import { getPermisos } from './portal-maestros/services/permisoService.js'
@@ -152,6 +153,10 @@ function buildMaestroTabs(permisos) {
   // PERM-05: Only show "Registrar Alumno" tab if teacher has permission
   if (permisos?.puede_registrar_alumnos) {
     tabs.push({ id: 'registrar-alumno', label: 'Registrar', icon: 'bi-person-plus' })
+  }
+  // PERM-06: Only show "Gestionar Clases" tab if teacher has enrollment permission
+  if (permisos?.puede_inscribir_clases) {
+    tabs.push({ id: 'gestionar-clases', label: 'Clases', icon: 'bi-mortarboard' })
   }
   return tabs
 }
@@ -361,6 +366,7 @@ function _setupRouterRoutes() {
   router.on('ruta-libreria', (route, params) => _renderView('ruta-libreria', params))
   router.on('ruta-detalle/:id', (route, params) => _renderView('ruta-detalle', params))
   router.on('registrar-alumno', (route, params) => _renderView('registrar-alumno', params))
+  router.on('gestionar-clases', (route, params) => _renderView('gestionar-clases', params))
 
   router.on('register', (route, params) => _renderView('register', params))
   router.on('pending-approval', (route, params) => _renderView('pending-approval', params))
@@ -613,6 +619,77 @@ function _renderShell(app, maestro, permisos) {
   fetchNotificaciones();
   startRealtime();
 
+  // PERM-REALTIME: Subscribe to permisos_maestros changes for instant shell updates
+  if (!IS_ADMIN) {
+    const maestroLocal = _maestro
+    if (maestroLocal?.id) {
+      const permisosChannel = supabase
+        .channel(`permisos-maestro:${maestroLocal.id}`)
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'permisos_maestros',
+            filter: `maestro_id=eq.${maestroLocal.id}`,
+          },
+          async (payload) => {
+            console.log('[Realtime] Permisos actualizados:', payload.new)
+            try {
+              const nuevosPermisos = await getPermisos(maestroLocal.id)
+              const app = document.getElementById('portal-app')
+              if (!app) return
+
+              // Detect actual permission gains to show targeted toast
+              const ganados = []
+              if (nuevosPermisos.puede_registrar_alumnos && !_permisos?.puede_registrar_alumnos) {
+                ganados.push('Registrar Alumnos')
+              }
+              if (nuevosPermisos.puede_inscribir_clases && !_permisos?.puede_inscribir_clases) {
+                ganados.push('Gestionar e Inscribir Clases')
+              }
+
+              // Capture current route BEFORE shell wipes the DOM
+              const currentRoute = (router.currentRoute?.() || 'perfil').split('?')[0]
+
+              // Re-render shell with updated permissions (updates nav tabs instantly)
+              _renderShell(app, maestroLocal, nuevosPermisos)
+              _initViewContainers()
+              _setupRouterRoutes()
+              router.setAuthGuard(() => usePortalAuth.isAuthenticated(), ['login', 'register', 'pending-approval'])
+
+              // CRITICAL: clear stale render cache so the active view re-renders
+              _viewRendered.clear()
+
+              // Reset router's internal _currentRoute so _dispatch doesn't short-circuit
+              // when we re-navigate to the same route we were already on.
+              // router.navigate() calls _dispatch which deduplicates — bypass by calling
+              // _renderView directly (already wired handler) since _viewRendered is now cleared.
+              await _renderView(currentRoute)
+              // Also sync router state so nav tab highlighting is correct
+              router.navigate(currentRoute)
+
+              if (ganados.length > 0) {
+                AppToast.success(`¡Nuevos permisos activados: ${ganados.join(', ')}! Ahora podés acceder desde el Perfil o la barra de navegación.`)
+              } else {
+                AppToast.show('Tus permisos fueron actualizados por el administrador.', 'info')
+              }
+            } catch (err) {
+              console.warn('[Realtime] Error actualizando permisos:', err.message)
+            }
+          }
+        )
+        .subscribe(status => {
+          console.log('[Realtime] Canal permisos_maestros:', status)
+        })
+
+      // Clean up on page unload
+      window.addEventListener('beforeunload', () => {
+        supabase.removeChannel(permisosChannel)
+      }, { once: true })
+    }
+  }
+
   // Keyboard shortcuts (desktop only)
   if (bp === 'desktop') {
     const _keys = []
@@ -697,6 +774,7 @@ function _initViewContainers() {
     'metricas', 'perfil', 'clase-emergente', 'planificacion',
     'alumno', 'gamificacion', 'ruta', 'crear-clase', 'ruta-plan-builder',
     'ruta-semanal', 'ruta-libreria', 'ruta-detalle', 'registrar-alumno',
+    'gestionar-clases',
   ]
 
   const adminViews = [
@@ -886,6 +964,9 @@ async function _renderView(route, params = {}, { silent = false } = {}) {
         break
       case 'registrar-alumno':
         renderRegistroAlumnoView(targetContainer)
+        break
+      case 'gestionar-clases':
+        _activeViewCleanup = await renderGestionarClasesView(targetContainer)
         break
       default:
     }

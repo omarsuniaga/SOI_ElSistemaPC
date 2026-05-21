@@ -129,6 +129,10 @@ function renderTableRows() {
       ? new Date(p.actualizado_en).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })
       : '-'
 
+    const solicitudes = p.solicitudes || []
+    const reqAlumnos = !p.puede_registrar_alumnos && solicitudes.includes('alumnos:create')
+    const reqClases = !p.puede_inscribir_clases && solicitudes.includes('clases:enroll')
+
     return `
       <tr data-maestro-id="${escapeHTML(p.maestro_id)}">
         <td>
@@ -149,6 +153,16 @@ function renderTableRows() {
               ${p.puede_registrar_alumnos ? 'Sí' : 'No'}
             </span>
           </div>
+          ${reqAlumnos ? `
+            <div class="mt-1 d-flex align-items-center gap-1">
+              <span class="badge bg-warning text-dark" style="font-size: 0.65rem; padding: 2px 4px;"><i class="bi bi-exclamation-triangle"></i> Solicitado</span>
+              <button class="btn btn-sm btn-outline-primary aprobar-btn px-1 py-0" 
+                data-maestro-id="${escapeHTML(p.maestro_id)}" 
+                data-permiso="alumnos:create" 
+                data-field="puede_registrar_alumnos" 
+                style="font-size: 0.65rem; line-height: 1;">Aprobar</button>
+            </div>
+          ` : ''}
         </td>
         <td>
           <div class="form-check form-switch mb-0 d-flex align-items-center gap-2">
@@ -161,6 +175,16 @@ function renderTableRows() {
               ${p.puede_inscribir_clases ? 'Sí' : 'No'}
             </span>
           </div>
+          ${reqClases ? `
+            <div class="mt-1 d-flex align-items-center gap-1">
+              <span class="badge bg-warning text-dark" style="font-size: 0.65rem; padding: 2px 4px;"><i class="bi bi-exclamation-triangle"></i> Solicitado</span>
+              <button class="btn btn-sm btn-outline-primary aprobar-btn px-1 py-0" 
+                data-maestro-id="${escapeHTML(p.maestro_id)}" 
+                data-permiso="clases:enroll" 
+                data-field="puede_inscribir_clases" 
+                style="font-size: 0.65rem; line-height: 1;">Aprobar</button>
+            </div>
+          ` : ''}
         </td>
         <td class="small text-muted">${escapeHTML(concedidoPor)}</td>
         <td class="small text-muted">${actualizado}</td>
@@ -192,8 +216,11 @@ function getInitials(nombre) {
 }
 
 function attachEvents(container) {
+  const table = container.querySelector('#permisosTable')
+  if (!table) return
+
   // Event delegation for toggle switches
-  container.querySelector('#permisosTable')?.addEventListener('change', async (e) => {
+  table.addEventListener('change', async (e) => {
     const toggle = e.target.closest('.permiso-toggle')
     if (!toggle) return
 
@@ -214,13 +241,58 @@ function attachEvents(container) {
     }
 
     try {
-      await actualizarPermiso(maestroId, { [field]: newValue })
-      // Update state
-      const permiso = state.permisos.find(p => p.maestro_id === maestroId)
-      if (permiso) {
-        permiso[field] = newValue
+      const match = state.permisos.find(p => p.maestro_id === maestroId)
+      let changes = { [field]: newValue }
+
+      if (match) {
+        if (newValue) {
+          const key = field === 'puede_registrar_alumnos' ? 'alumnos:create' : 'clases:enroll'
+          const arrayPermisos = match.permisos || []
+          if (!arrayPermisos.includes(key)) {
+            arrayPermisos.push(key)
+          }
+          const solicitudes = (match.solicitudes || []).filter(s => s !== key)
+          const adminUser = useAuth.getUser ? useAuth.getUser() : null
+          const adminName = adminUser?.nombre_completo || adminUser?.email || 'Administrador'
+
+          changes = {
+            ...changes,
+            permisos: arrayPermisos,
+            solicitudes: solicitudes,
+            concedido_por: adminUser?.id || 'admin',
+            concedido_por_nombre: adminName
+          }
+
+          match.permisos = arrayPermisos
+          match.solicitudes = solicitudes
+          match.concedido_por = adminUser?.id || 'admin'
+          match.concedido_por_nombre = adminName
+        } else {
+          const key = field === 'puede_registrar_alumnos' ? 'alumnos:create' : 'clases:enroll'
+          const arrayPermisos = (match.permisos || []).filter(pk => pk !== key)
+          
+          changes = {
+            ...changes,
+            permisos: arrayPermisos
+          }
+          match.permisos = arrayPermisos
+        }
+        match.actualizado_en = new Date().toISOString()
       }
+
+      await actualizarPermiso(maestroId, changes)
+      
+      if (match) {
+        match[field] = newValue
+      }
+
       AppToast.success(`Permiso actualizado: ${field === 'puede_registrar_alumnos' ? 'Registrar Alumnos' : 'Inscribir Clases'}`)
+
+      // Volver a renderizar para limpiar badges de solicitudes si existían
+      const tbody = container.querySelector('#permisosTBody')
+      if (tbody) {
+        tbody.innerHTML = renderTableRows()
+      }
     } catch (err) {
       // Rollback on error
       toggle.checked = !newValue
@@ -233,6 +305,62 @@ function attachEvents(container) {
       toggle.disabled = false
       state.togglingId = null
       state.togglingField = null
+    }
+  })
+
+  // Event delegation for clicks (like "Aprobar" button)
+  table.addEventListener('click', async (e) => {
+    const btn = e.target.closest('.aprobar-btn')
+    if (!btn) return
+
+    const maestroId = btn.dataset.maestroId
+    const permiso = btn.dataset.permiso
+    const field = btn.dataset.field
+
+    btn.disabled = true
+    const originalHtml = btn.innerHTML
+    btn.innerHTML = `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>`
+
+    try {
+      const match = state.permisos.find(p => p.maestro_id === maestroId)
+      if (!match) throw new Error('No se encontró el registro de permisos del maestro')
+
+      const arrayPermisos = match.permisos || []
+      if (!arrayPermisos.includes(permiso)) {
+        arrayPermisos.push(permiso)
+      }
+      const solicitudes = (match.solicitudes || []).filter(s => s !== permiso)
+
+      const adminUser = useAuth.getUser ? useAuth.getUser() : null
+      const adminName = adminUser?.nombre_completo || adminUser?.email || 'Administrador'
+
+      const changes = {
+        permisos: arrayPermisos,
+        solicitudes: solicitudes,
+        concedido_por: adminUser?.id || 'admin',
+        concedido_por_nombre: adminName,
+        [field]: true
+      }
+
+      await actualizarPermiso(maestroId, changes)
+
+      match.permisos = arrayPermisos
+      match.solicitudes = solicitudes
+      match.concedido_por = adminUser?.id || 'admin'
+      match.concedido_por_nombre = adminName
+      match[field] = true
+      match.actualizado_en = new Date().toISOString()
+
+      AppToast.success(`Solicitud aprobada: ${field === 'puede_registrar_alumnos' ? 'Registrar Alumnos' : 'Inscribir Clases'}`)
+
+      const tbody = container.querySelector('#permisosTBody')
+      if (tbody) {
+        tbody.innerHTML = renderTableRows()
+      }
+    } catch (err) {
+      AppToast.error('Error al aprobar solicitud: ' + err.message)
+      btn.disabled = false
+      btn.innerHTML = originalHtml
     }
   })
 }

@@ -101,7 +101,7 @@ describe('registroAlumnoView', () => {
 
     await renderRegistroAlumnoView(container)
 
-    expect(container.textContent).toContain('Sin Permiso')
+    expect(container.textContent).toContain('Acceso de Colaborador Requerido')
     expect(container.querySelector('#btn-registrar-alumno')).toBeFalsy()
   })
 

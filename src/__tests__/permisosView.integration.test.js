@@ -136,6 +136,10 @@ describe('Permisos View — Admin toggle integration', () => {
 
     expect(actualizarPermiso).toHaveBeenCalledWith('maestro_001', {
       puede_inscribir_clases: true,
+      permisos: ['clases:enroll'],
+      solicitudes: [],
+      concedido_por: 'admin',
+      concedido_por_nombre: 'Admin Test'
     })
   })
 

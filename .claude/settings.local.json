@@ -13,7 +13,15 @@
       "Bash(powershell -Command \"Test-Path 'src/modules/admin-dashboard/styles/analyticsFillingBehavior.css' -PathType Leaf\")",
       "Bash(powershell -Command \"ls -Path 'C:\\\\Users\\\\omare\\\\.claude\\\\skills' -ErrorAction SilentlyContinue\")",
       "Bash(cat)",
-      "Read(//tmp/**)"
+      "Read(//tmp/**)",
+      "Skill(superpowers:brainstorming)",
+      "Skill(superpowers:brainstorming:*)",
+      "Skill(superpowers:write-plan)",
+      "Skill(superpowers:write-plan:*)",
+      "Skill(superpowers:writing-plans)",
+      "Skill(superpowers:writing-plans:*)",
+      "Skill(brainstorming)",
+      "Skill(brainstorming:*)"
     ]
   }
 }

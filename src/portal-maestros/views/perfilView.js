@@ -84,10 +84,27 @@ export function renderPerfilView(container) {
   renderAppearance(colDer);
   renderNotifications(colDer, maestro);
   renderAbsences(colDer);
+  
+  // Contenedor dinámico de colaboración
+  colDer.insertAdjacentHTML('beforeend', `<div id="pm-collaboration-container"></div>`);
+
   renderSession(colDer);
   checkPerfilIncompleto(maestro);
   initListeners(maestro);
   animateSections();
+
+  // Carga asíncrona de permisos de colaboración
+  import('../services/permisoService.js').then(async ({ getPermisos, solicitarPermiso }) => {
+    try {
+      const perm = await getPermisos(maestro.id);
+      const collabContainer = document.getElementById('pm-collaboration-container');
+      if (collabContainer) {
+        renderCollaborationPermissions(collabContainer, perm, maestro.id, solicitarPermiso);
+      }
+    } catch (err) {
+      console.warn('[PerfilView] Error cargando permisos de colaboración:', err.message);
+    }
+  });
 }
 
 // ─── SECCIÓN HERO ──────────────────────────────────────────────
@@ -241,6 +258,144 @@ function renderSession(container) {
         <button class="btn-apple-secondary" id="btnCerrarSesion" style="border-color:var(--pm-danger);color:var(--pm-danger)">Salir</button>
       </div>
     </section>`);
+}
+
+// ─── COLABORACIÓN DE PERMISOS ─────────────────────────────────
+function renderCollaborationPermissions(container, perm, maestroId, solicitarPermisoFn) {
+  // Usar solicitud_actual si existe (new system), fallback a array checking
+  const solicitud_actual = perm?.solicitud_actual;
+  const es_solicitud_alumnos = solicitud_actual?.solicita_alumnos || false;
+  const es_solicitud_clases = solicitud_actual?.solicita_clases || false;
+  const estado_solicitud = solicitud_actual?.estado || null; // 'pendiente', 'aprobado', 'rechazado'
+
+  const items = [
+    {
+      key: 'alumnos:create',
+      title: 'Registrar Alumnos',
+      desc: 'Matricular nuevos estudiantes directamente en el sistema desde tu portal.',
+      icon: 'bi-person-plus',
+      iconClass: 'pm-icon-blue',
+      active: perm.puede_registrar_alumnos,
+      pending: es_solicitud_alumnos && estado_solicitud === 'pendiente',
+      pending_alumnos: true
+    },
+    {
+      key: 'clases:enroll',
+      title: 'Gestionar e Inscribir Clases',
+      desc: 'Asignar alumnos matriculados a tus clases vigentes sin intermediarios.',
+      icon: 'bi-journal-bookmark',
+      iconClass: 'pm-icon-teal',
+      active: perm.puede_inscribir_clases,
+      pending: es_solicitud_clases && estado_solicitud === 'pendiente',
+      pending_clases: true
+    }
+  ];
+
+  container.innerHTML = `
+    <section class="card-apple pm-settings-section" aria-labelledby="collab-title">
+      <div class="pm-settings-section__header">
+        <i class="bi bi-shield-check pm-icon-blue" aria-hidden="true"></i>
+        <div>
+          <h3 id="collab-title" class="pm-settings-section__title">Colaboración de Inscripción</h3>
+          <p class="pm-settings-section__desc">Solicitá permisos especiales para coadyuvar en la matrícula</p>
+        </div>
+      </div>
+      <div class="pm-collab-cards">
+        ${items.map(item => {
+          let badgeHtml = '';
+          let actionHtml = '';
+
+          if (item.active) {
+            badgeHtml = `<span class="pm-collab-badge active"><i class="bi bi-patch-check-fill"></i> Concedido</span>`;
+            // Show action button based on permission type
+            if (item.key === 'alumnos:create') {
+              actionHtml = `
+                <button class="btn-apple-primary btn-apple-sm w-100 pm-collab-action-btn" data-route="registrar-alumno"
+                  style="padding: 0.45rem 0.9rem; font-size: 0.8rem; display:flex; align-items:center; justify-content:center; gap:0.4rem;">
+                  <i class="bi bi-person-plus-fill"></i> Registrar Alumno
+                </button>`;
+            } else if (item.key === 'clases:enroll') {
+              actionHtml = `
+                <button class="btn-apple-primary btn-apple-sm w-100 pm-collab-action-btn" data-route="gestionar-clases"
+                  style="padding: 0.45rem 0.9rem; font-size: 0.8rem; display:flex; align-items:center; justify-content:center; gap:0.4rem; background: linear-gradient(135deg, #0d9488, #0891b2);">
+                  <i class="bi bi-mortarboard-fill"></i> Gestionar Clases
+                </button>`;
+            } else {
+              actionHtml = `<p class="pm-collab-help-text">Permiso activo.</p>`;
+            }
+          } else if (item.pending) {
+            badgeHtml = `<span class="pm-collab-badge pending"><i class="bi bi-clock-history"></i> Pendiente</span>`;
+            actionHtml = `<p class="pm-collab-help-text">Tu solicitud está siendo revisada por la administración.</p>`;
+          } else {
+            badgeHtml = `<span class="pm-collab-badge inactive"><i class="bi bi-slash-circle"></i> Inactivo</span>`;
+            actionHtml = `
+              <button class="btn-apple-primary btn-apple-sm w-100 pm-collab-request-btn" data-key="${item.key}" style="padding: 0.4rem 0.75rem; font-size: 0.75rem;">
+                <i class="bi bi-send"></i> Solicitar Acceso
+              </button>`;
+          }
+
+          return `
+            <div class="pm-collab-card ${item.active ? 'active' : item.pending ? 'pending' : ''}">
+              <div class="pm-collab-card__header">
+                <div class="pm-collab-card__icon ${item.iconClass}">
+                  <i class="bi ${item.icon}"></i>
+                </div>
+                <div class="pm-collab-card__info">
+                  <h4 class="pm-collab-card__name">${item.title}</h4>
+                  <p class="pm-collab-card__desc">${item.desc}</p>
+                </div>
+              </div>
+              <div class="pm-collab-card__footer">
+                ${badgeHtml}
+                <div class="pm-collab-card__action">
+                  ${actionHtml}
+                </div>
+              </div>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    </section>
+  `;
+
+  // Asignar listeners
+  container.querySelectorAll('.pm-collab-request-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const key = btn.dataset.key;
+      btn.disabled = true;
+      const originalHtml = btn.innerHTML;
+      btn.innerHTML = `<span class="pm-settings-spinner"></span> Enviando...`;
+
+      try {
+        await solicitarPermisoFn(maestroId, key);
+        window.dispatchEvent(new CustomEvent('showToast', {
+          detail: { message: 'Solicitud enviada correctamente. Esperando aprobación admin.', type: 'success' }
+        }));
+        
+        // Refrescar los permisos locales del servicio
+        const { getPermisos } = await import('../services/permisoService.js');
+        const updatedPerm = await getPermisos(maestroId);
+
+        renderCollaborationPermissions(container, updatedPerm, maestroId, solicitarPermisoFn);
+      } catch (err) {
+        window.dispatchEvent(new CustomEvent('showToast', {
+          detail: { message: 'Error al enviar solicitud: ' + err.message, type: 'danger' }
+        }));
+        btn.disabled = false;
+        btn.innerHTML = originalHtml;
+      }
+    });
+  });
+
+  // Action buttons (shown when permission is approved)
+  container.querySelectorAll('.pm-collab-action-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const route = btn.dataset.route;
+      if (route && window.router) {
+        window.router.navigate(route);
+      }
+    });
+  });
 }
 
 // ─── DISPONIBILIDAD HORARIA (ACCORDION MEJORADO) ──────────────
@@ -677,6 +832,115 @@ const styles = `
     border-radius: 6px; text-align: left; cursor: pointer; color: var(--pm-text);
   }
   .pm-copy-dest-btn:hover { background: var(--pm-border); }
+
+  /* Colaboración de permisos */
+  .pm-collab-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-top: 0.75rem;
+  }
+  .pm-collab-card {
+    background: var(--pm-surface-2);
+    border: 1px solid var(--pm-border);
+    border-radius: 12px;
+    padding: 0.85rem;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .pm-collab-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    border-color: rgba(59, 130, 246, 0.3);
+  }
+  .pm-collab-card.active {
+    border-color: rgba(34, 197, 94, 0.3);
+  }
+  .pm-collab-card.active:hover {
+    border-color: rgba(34, 197, 94, 0.5);
+    box-shadow: 0 4px 12px rgba(34, 197, 94, 0.05);
+  }
+  .pm-collab-card.pending {
+    border-color: rgba(234, 179, 8, 0.3);
+  }
+  .pm-collab-card.pending:hover {
+    border-color: rgba(234, 179, 8, 0.5);
+    box-shadow: 0 4px 12px rgba(234, 179, 8, 0.05);
+  }
+  .pm-collab-card__header {
+    display: flex;
+    gap: 0.75rem;
+    align-items: flex-start;
+  }
+  .pm-collab-card__icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    background: var(--pm-surface);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.04);
+    flex-shrink: 0;
+  }
+  .pm-collab-card__info {
+    flex: 1;
+  }
+  .pm-collab-card__name {
+    font-size: 0.9rem;
+    font-weight: 600;
+    margin: 0;
+    color: var(--pm-text);
+  }
+  .pm-collab-card__desc {
+    font-size: 0.75rem;
+    color: var(--pm-text-muted);
+    margin: 0.2rem 0 0;
+    line-height: 1.3;
+  }
+  .pm-collab-card__footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 0.75rem;
+    padding-top: 0.6rem;
+    border-top: 1px dashed var(--pm-border);
+    gap: 0.75rem;
+  }
+  .pm-collab-badge {
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    white-space: nowrap;
+  }
+  .pm-collab-badge.active {
+    background: rgba(34, 197, 94, 0.12);
+    color: #22c55e;
+  }
+  .pm-collab-badge.pending {
+    background: rgba(234, 179, 8, 0.12);
+    color: #eab308;
+  }
+  .pm-collab-badge.inactive {
+    background: var(--pm-surface);
+    color: var(--pm-text-muted);
+    border: 1px solid var(--pm-border);
+  }
+  .pm-collab-card__action {
+    flex: 1;
+    display: flex;
+    justify-content: flex-end;
+  }
+  .pm-collab-help-text {
+    font-size: 0.7rem;
+    color: var(--pm-text-muted);
+    margin: 0;
+    text-align: right;
+  }
 `;
 
 if (!document.getElementById('pm-avail-styles')) {

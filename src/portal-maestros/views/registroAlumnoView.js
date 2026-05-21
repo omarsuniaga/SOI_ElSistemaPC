@@ -35,7 +35,7 @@ export async function renderRegistroAlumnoView(container) {
   viewState.checked = true
 
   if (!permisos.puede_registrar_alumnos) {
-    renderSinPermiso(container)
+    renderSinPermiso(container, permisos, maestro.id)
     return
   }
 
@@ -54,20 +54,68 @@ export async function renderRegistroAlumnoView(container) {
 }
 
 // ─── SIN PERMISO ─────────────────────────────────────────────
-function renderSinPermiso(container) {
+function renderSinPermiso(container, permisos, maestroId) {
+  const solicitudes = permisos?.solicitudes || []
+  const pending = solicitudes.includes('alumnos:create')
+
   container.innerHTML = `
     <div class="pm-settings pm-fade-in" role="main" aria-label="Registro de alumnos">
-      <div class="pm-settings-empty" style="padding: 4rem 2rem; text-align: center;">
-        <div style="width:80px; height:80px; background:rgba(239,68,68,0.1); border-radius:50%; display:flex; align-items:center; justify-content:center; margin: 0 auto 1.5rem;">
-          <i class="bi bi-shield-exclamation" style="font-size:2rem; color:#ef4444;"></i>
+      <div class="pm-settings-empty" style="padding: 4rem 2rem; text-align: center; background: var(--pm-surface-2); border-radius: 16px; border: 1px solid var(--pm-border); max-width: 500px; margin: 2rem auto;">
+        <div style="width:80px; height:80px; background:rgba(59,130,246,0.1); border-radius:50%; display:flex; align-items:center; justify-content:center; margin: 0 auto 1.5rem;">
+          <i class="bi bi-shield-exclamation" style="font-size:2.5rem; color:var(--pm-primary, #3b82f6);"></i>
         </div>
-        <h2 style="font-weight:600; margin-bottom:0.5rem;">Sin Permiso</h2>
-        <p style="color:var(--pm-text-muted); max-width:400px; margin:0 auto;">
-          No tienes permisos para registrar alumnos. Contacta al administrador del sistema para solicitar acceso.
+        <h2 style="font-weight:700; margin-bottom:0.75rem; color: var(--pm-text);">Acceso de Colaborador Requerido</h2>
+        <p style="color:var(--pm-text-muted); max-width:400px; margin:0 auto 1.5rem; line-height: 1.5; font-size: 0.9rem;">
+          Para poder registrar nuevos alumnos en el sistema y asignarlos a tus clases, necesitás tener activo el permiso de inscripción.
         </p>
+        <div id="pm-register-action-container">
+          ${pending ? `
+            <div style="background: rgba(234, 179, 8, 0.1); border: 1px solid rgba(234, 179, 8, 0.3); padding: 0.85rem; border-radius: 10px; display: inline-flex; align-items: center; gap: 8px; color: #eab308; font-weight: 600; font-size: 0.85rem;">
+              <i class="bi bi-clock-history"></i> Solicitud Pendiente de Aprobación
+            </div>
+          ` : `
+            <button class="btn-apple-primary" id="btn-solicitar-acceso-registro" style="padding: 0.6rem 1.5rem; font-size: 0.9rem;">
+              <i class="bi bi-send-fill" style="margin-right: 6px;"></i> Solicitar Permiso de Registro
+            </button>
+          `}
+        </div>
       </div>
     </div>`
+
+  const btn = document.getElementById('btn-solicitar-acceso-registro')
+  if (btn) {
+    btn.addEventListener('click', async () => {
+      btn.disabled = true
+      const originalHtml = btn.innerHTML
+      btn.innerHTML = `<span class="pm-settings-spinner"></span> Enviando...`
+
+      try {
+        const { solicitarPermiso } = await import('../services/permisoService.js')
+        await solicitarPermiso(maestroId, 'alumnos:create')
+        
+        window.dispatchEvent(new CustomEvent('showToast', {
+          detail: { message: 'Solicitud de permiso enviada correctamente.', type: 'success' }
+        }))
+
+        // Update view state dynamically
+        const actionContainer = document.getElementById('pm-register-action-container')
+        if (actionContainer) {
+          actionContainer.innerHTML = `
+            <div style="background: rgba(234, 179, 8, 0.1); border: 1px solid rgba(234, 179, 8, 0.3); padding: 0.85rem; border-radius: 10px; display: inline-flex; align-items: center; gap: 8px; color: #eab308; font-weight: 600; font-size: 0.85rem; animation: pm-error-fade-in 0.3s ease;">
+              <i class="bi bi-clock-history"></i> Solicitud Pendiente de Aprobación
+            </div>`
+        }
+      } catch (err) {
+        window.dispatchEvent(new CustomEvent('showToast', {
+          detail: { message: 'Error al solicitar: ' + err.message, type: 'danger' }
+        }))
+        btn.disabled = false
+        btn.innerHTML = originalHtml
+      }
+    })
+  }
 }
+
 
 // ─── FORMULARIO (APPLE CARD DESIGN) ─────────────────────────
 function renderForm(container) {
@@ -331,12 +379,12 @@ async function handleSubmit() {
 
     const nuevoAlumno = await crearAlumno(alumnoData)
 
-    // Si se seleccionó una clase, inscribir al alumno (via API futura)
+    // Si se seleccionó una clase, inscribir al alumno
     if (data.claseId) {
       try {
-        const { inscribirAlumnoEnClase } = await import('../../modules/clases/api/clasesApi.js')
-        if (typeof inscribirAlumnoEnClase === 'function') {
-          await inscribirAlumnoEnClase(data.claseId, nuevoAlumno.id)
+        const { inscribirAlumno } = await import('../../modules/clases/api/clasesApi.js')
+        if (typeof inscribirAlumno === 'function') {
+          await inscribirAlumno(data.claseId, nuevoAlumno.id)
         }
       } catch (err) {
         console.warn('[Registro] No se pudo inscribir en clase:', err.message)

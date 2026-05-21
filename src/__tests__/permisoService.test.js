@@ -23,7 +23,8 @@ describe('permisoService.getPermisos()', () => {
       puede_registrar_alumnos: true,
       puede_inscribir_clases: false,
       puede_planificar: false,
-      puede_asistir: false
+      puede_asistir: false,
+      solicitudes: []
     })
     expect(obtenerPermisoPorMaestro).toHaveBeenCalledWith('maestro_001')
   })
@@ -38,7 +39,8 @@ describe('permisoService.getPermisos()', () => {
       puede_registrar_alumnos: true,
       puede_inscribir_clases: false,
       puede_planificar: true,
-      puede_asistir: false
+      puede_asistir: false,
+      solicitudes: []
     })
   })
 
@@ -48,7 +50,8 @@ describe('permisoService.getPermisos()', () => {
       puede_registrar_alumnos: false,
       puede_inscribir_clases: false,
       puede_planificar: false,
-      puede_asistir: false
+      puede_asistir: false,
+      solicitudes: []
     })
     expect(obtenerPermisoPorMaestro).not.toHaveBeenCalled()
   })
@@ -59,7 +62,8 @@ describe('permisoService.getPermisos()', () => {
       puede_registrar_alumnos: false,
       puede_inscribir_clases: false,
       puede_planificar: false,
-      puede_asistir: false
+      puede_asistir: false,
+      solicitudes: []
     })
   })
 
@@ -71,7 +75,8 @@ describe('permisoService.getPermisos()', () => {
       puede_registrar_alumnos: false,
       puede_inscribir_clases: false,
       puede_planificar: false,
-      puede_asistir: false
+      puede_asistir: false,
+      solicitudes: []
     })
   })
 
@@ -83,7 +88,8 @@ describe('permisoService.getPermisos()', () => {
       puede_registrar_alumnos: false,
       puede_inscribir_clases: false,
       puede_planificar: false,
-      puede_asistir: false
+      puede_asistir: false,
+      solicitudes: []
     })
   })
 
@@ -95,7 +101,8 @@ describe('permisoService.getPermisos()', () => {
       puede_registrar_alumnos: false,
       puede_inscribir_clases: false,
       puede_planificar: false,
-      puede_asistir: false
+      puede_asistir: false,
+      solicitudes: []
     })
   })
 })

@@ -1494,44 +1494,58 @@ function _renderVista(container, ctx) {
 
 async function _autoSave(immediate = false) {
     if (_saveTimer) clearTimeout(_saveTimer);
-    
+
     const saveFn = async () => {
       const asistencia = alumnos.filter(a => estado[a.id]).map(a => ({
         alumno_id: a.id, estado: estado[a.id]
       }));
-      
+
       const payload = {
-        clase_id: claseId, 
-        maestro_id: maestro.id, 
+        clase_id: claseId,
+        maestro_id: maestro.id,
         fecha: fechaHoy,
         estado: 'pendiente',
         borrador: true,
-        asistencia: asistencia || [], 
+        asistencia: asistencia || [],
         contenido: dslContent || '',
       };
 
-      // Si estamos ONLINE y es la primera vez (sesionId null), 
-      // insertamos directo para obtener el ID real.
-      if (!sesionId && navigator.onLine) {
+      if (navigator.onLine) {
         try {
-          const { data, error } = await supabase
-            .from('sesiones_clase')
-            .insert([payload])
-            .select('id')
-            .single();
-          
-          if (!error && data) {
-            sesionId = data.id;
-            console.log('[asistencia] Nueva sesión creada:', sesionId);
-            localStorage.setItem(`${localKey}_updated`, new Date().toISOString());
-            return;
+          if (!sesionId) {
+            // Primera vez: INSERT directo para obtener el ID real
+            const { data, error } = await supabase
+              .from('sesiones_clase')
+              .insert([payload])
+              .select('id')
+              .single();
+
+            if (!error && data) {
+              sesionId = data.id;
+              console.log('[asistencia] Nueva sesión creada:', sesionId);
+              localStorage.setItem(`${localKey}_updated`, new Date().toISOString());
+              return;
+            }
+            throw error || new Error('No se pudo crear la sesión');
+          } else {
+            // Sesión existente: UPDATE directo (evita que la cola sobreescriba estado posterior)
+            const { error } = await supabase
+              .from('sesiones_clase')
+              .update({ ...payload, updated_at: new Date().toISOString() })
+              .eq('id', sesionId);
+
+            if (!error) {
+              localStorage.setItem(`${localKey}_updated`, new Date().toISOString());
+              return;
+            }
+            throw error;
           }
         } catch (err) {
-          console.warn('[asistencia] Fallo insert directo, usando cola:', err.message);
+          console.warn('[asistencia] Fallo operación directa, usando cola offline:', err.message);
         }
       }
 
-      // Fallback a la cola (offline o error en insert directo)
+      // Fallback: cola offline (cuando offline o si falla la operación directa)
       let op = sesionId ? 'update' : 'insert';
       await enqueue({
         tabla: 'sesiones_clase',

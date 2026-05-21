@@ -177,6 +177,9 @@ function renderTableRows(alumnos) {
           </div>
         </div>
         <div class="d-flex align-items-center gap-2 flex-shrink-0">
+          <button class="btn btn-sm btn-outline-primary rounded-pill px-2 d-flex align-items-center justify-content-center" data-action="edit" data-id="${a.id}" title="Editar alumno" style="min-height: 32px; width: 32px;">
+            <i class="bi bi-pencil-square"></i>
+          </button>
           ${a.telefono ? `
             <button class="btn btn-sm btn-success bg-gradient text-white rounded-pill px-3 shadow-sm d-flex align-items-center gap-2" data-action="whatsapp" data-id="${a.id}" title="Enviar WhatsApp" style="min-height: 32px;">
               <i class="bi bi-whatsapp"></i> <span class="d-none d-sm-inline fw-medium">${escapeHTML(a.telefono)}</span>

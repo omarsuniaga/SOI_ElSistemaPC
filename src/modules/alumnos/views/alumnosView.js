@@ -480,16 +480,22 @@ function openEditModal(id) {
     body: buildAlumnoForm(alumno),
     saveText: 'Guardar cambios',
     onSave: async (modalBody) => {
-      const datos = await collectAndValidateAlumno(modalBody, alumno)
-      if (!datos) return false
+      try {
+        const datos = await collectAndValidateAlumno(modalBody, alumno)
+        if (!datos) return false
 
-      await actualizarAlumno(state.editando, datos)
-      const idx = state.alumnosOriginales.findIndex(a => a.id === state.editando)
-      if (idx !== -1) {
-        state.alumnosOriginales[idx] = { ...state.alumnosOriginales[idx], ...datos }
+        await actualizarAlumno(state.editando, datos)
+        const idx = state.alumnosOriginales.findIndex(a => a.id === state.editando)
+        if (idx !== -1) {
+          state.alumnosOriginales[idx] = { ...state.alumnosOriginales[idx], ...datos }
+        }
+        applyFilters()
+        AppToast.success('Alumno actualizado correctamente')
+      } catch (err) {
+        console.error('[alumnosView] Error al actualizar alumno:', err)
+        AppToast.error(err.message || 'Error al guardar los cambios')
+        return false
       }
-      applyFilters()
-      AppToast.success('Alumno actualizado correctamente')
     }
   })
 }

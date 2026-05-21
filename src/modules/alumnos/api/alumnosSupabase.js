@@ -106,11 +106,11 @@ export async function actualizarAlumno(id, actualizaciones) {
 
   if (actualizaciones.nombre !== undefined) datosActualizacion.nombre_completo = actualizaciones.nombre.trim()
   if (actualizaciones.nombre_completo !== undefined) datosActualizacion.nombre_completo = actualizaciones.nombre_completo.trim()
-  
+
   if (actualizaciones.email !== undefined) datosActualizacion.correo_representante = actualizaciones.email.trim().toLowerCase()
   if (actualizaciones.instrumento !== undefined) datosActualizacion.instrumento_principal = actualizaciones.instrumento.trim()
   if (actualizaciones.cedula !== undefined) datosActualizacion.representante_cedula = actualizaciones.cedula.trim()
-  
+
   if (actualizaciones.is_active !== undefined) datosActualizacion.activo = actualizaciones.is_active
   if (actualizaciones.activo !== undefined) datosActualizacion.activo = actualizaciones.activo
 
@@ -135,8 +135,12 @@ export async function actualizarAlumno(id, actualizaciones) {
     .select()
 
   if (error) {
-    console.error('Error actualizando alumno:', error.message)
-    throw new Error('No se pudo actualizar el alumno')
+    console.error('Error actualizando alumno:', error)
+    // Detectar si es un error de RLS
+    if (error.code === 'PGRST201' || error.message?.includes('row-level security')) {
+      throw new Error('No tienes permisos para actualizar este alumno. Contacta al administrador.')
+    }
+    throw new Error(`No se pudo actualizar el alumno: ${error.message || 'Error desconocido'}`)
   }
 
   return normalizeAlumno(data[0])

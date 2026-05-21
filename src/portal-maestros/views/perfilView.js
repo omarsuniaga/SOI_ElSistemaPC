@@ -8,6 +8,8 @@ import {
 import { AppModal } from '../../shared/components/AppModal.js';
 import { ausenciaModal } from '../components/ausenciaModal.js';
 import { notifConfigModal } from '../components/notifConfigModal.js';
+import { registrarAlumnoModal } from '../components/registrarAlumnoModal.js';
+import { gestionarClasesModal } from '../components/gestionarClasesModal.js';
 import { escHTML, getInitials } from '../utils/portalUtils.js';
 
 // Estado local de la vista
@@ -389,10 +391,30 @@ function renderCollaborationPermissions(container, perm, maestroId, solicitarPer
 
   // Action buttons (shown when permission is approved)
   container.querySelectorAll('.pm-collab-action-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
+    btn.addEventListener('click', async () => {
       const route = btn.dataset.route;
-      if (route && window.router) {
-        window.router.navigate(route);
+
+      if (route === 'registrar-alumno') {
+        const modal = registrarAlumnoModal();
+        modal.show(maestroId);
+
+        // Listen for alumno-registrado event to refresh if needed
+        const handleAlumnoRegistrado = (event) => {
+          // Optionally refresh any list in the UI
+          window.removeEventListener('alumno-registrado', handleAlumnoRegistrado);
+        };
+        window.addEventListener('alumno-registrado', handleAlumnoRegistrado);
+
+      } else if (route === 'gestionar-clases') {
+        const modal = gestionarClasesModal();
+        modal.show(maestroId);
+
+        // Listen for clase-creada event to refresh if needed
+        const handleClaseCreada = (event) => {
+          // Optionally refresh any list in the UI
+          window.removeEventListener('clase-creada', handleClaseCreada);
+        };
+        window.addEventListener('clase-creada', handleClaseCreada);
       }
     });
   });

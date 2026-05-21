@@ -132,7 +132,7 @@ export async function crearSolicitud(maestroId, solicita_alumnos, solicita_clase
       solicita_clases: solicita_clases ?? false,
       estado: 'pendiente',
     }])
-    .select('*, maestros(nombre_completo, correo)')
+    .select('*, maestros!maestro_id(nombre_completo, correo)')
     .single()
 
   if (error) {
@@ -146,7 +146,7 @@ export async function crearSolicitud(maestroId, solicita_alumnos, solicita_clase
 export async function obtenerSolicitudPorMaestro(maestroId) {
   const { data, error } = await supabase
     .from('solicitudes_permisos')
-    .select('*, maestros(nombre_completo, correo), maestros_aprobado:aprobado_por(nombre_completo)')
+    .select('*, maestros!maestro_id(nombre_completo, correo)')
     .eq('maestro_id', maestroId)
     .order('creado_en', { ascending: false })
     .maybeSingle()
@@ -162,7 +162,7 @@ export async function obtenerSolicitudPorMaestro(maestroId) {
 export async function obtenerSolicitudesPendientes() {
   const { data, error } = await supabase
     .from('solicitudes_permisos')
-    .select('*, maestros(nombre_completo, correo, id as maestro_id_check)')
+    .select('*, maestros!maestro_id(nombre_completo, correo)')
     .eq('estado', 'pendiente')
     .order('creado_en', { ascending: true })
 
@@ -187,7 +187,7 @@ export async function aprobarSolicitud(solicitudId, adminId) {
       aprobado_por: adminId,
     })
     .eq('id', solicitudId)
-    .select('*, maestros(nombre_completo, correo), maestros_aprobado:aprobado_por(nombre_completo)')
+    .select('*, maestros!maestro_id(nombre_completo, correo)')
     .single()
 
   if (error) {
@@ -228,7 +228,7 @@ export async function rechazarSolicitud(solicitudId, adminId, motivo) {
       motivo_rechazo: motivo || '',
     })
     .eq('id', solicitudId)
-    .select('*, maestros(nombre_completo, correo), maestros_aprobado:aprobado_por(nombre_completo)')
+    .select('*, maestros!maestro_id(nombre_completo, correo)')
     .single()
 
   if (error) {

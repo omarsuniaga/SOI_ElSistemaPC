@@ -174,6 +174,7 @@ const ALL_TABS = (permisos) => IS_ADMIN ? ADMIN_TABS : buildMaestroTabs(permisos
 
 let _maestro = null
 let _permisos = null
+let _globalAppKeys = []
 
 const router = createPortalRouter()
 window.router = router // Exponer para las vistas

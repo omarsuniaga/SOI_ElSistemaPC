@@ -110,8 +110,25 @@ async function _calcularEstadoMes(maestroId, anio, mes) {
     const fechaDate = new Date(d)
     const diffDias  = Math.floor((hoy - fechaDate) / 86400000)
 
-    // Solo marcar como registrada si la fecha no es futura
-    if (diffDias >= 0 && fechasRegistradas.has(fecha)) {
+    // Caso especial: HOY (diffDias === 0)
+    // Verde solo si la asistencia fue realmente registrada.
+    // Sin sesión o sesión sin asistencia → sin color (la clase aún no se ha dado).
+    if (diffDias === 0) {
+      const sesionHoy = todasSesiones.find(s => s.fecha === fecha)
+      const asistenciaRegistradaHoy = sesionHoy && (
+        (Array.isArray(sesionHoy.asistencia) && sesionHoy.asistencia.length > 0)
+      )
+      if (asistenciaRegistradaHoy) {
+        estadoMap.set(fecha, 'registrada')
+      } else {
+        // La clase de hoy aún no se ha impartido (o no se registró asistencia)
+        estadoMap.set(fecha, 'sin-clase')
+      }
+      continue
+    }
+
+    // Fechas pasadas: marcar como registrada si tienen sesión registrada
+    if (diffDias > 0 && fechasRegistradas.has(fecha)) {
       estadoMap.set(fecha, 'registrada')
       continue
     }

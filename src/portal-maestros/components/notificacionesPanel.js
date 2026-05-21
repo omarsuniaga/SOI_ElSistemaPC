@@ -228,12 +228,13 @@ function getNotifColor(tipo) {
 
 /**
  * Agrupa notificaciones por tipo.
- * Tipos de alta frecuencia (sesion_sin_registrar, recordatorio_clase)
- * se colapsan en un solo ítem si hay más de uno.
+ * NOTA: sesion_sin_registrar NO se agrupa porque cada notificación es para una clase/día específica
+ * y el usuario necesita acceso individual a cada una para registrar esa clase.
  */
 function _groupByTipo(notificaciones) {
   // Tipos que se agrupan cuando hay más de uno
-  const GROUPABLE = new Set(['sesion_sin_registrar', 'recordatorio_clase', 'in_app']);
+  // Removido 'sesion_sin_registrar' para que cada notificación sea accesible individualmente
+  const GROUPABLE = new Set(['recordatorio_clase', 'in_app']);
 
   const groups = [];
   const seen = new Map(); // tipo → index en groups[]

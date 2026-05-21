@@ -75,13 +75,17 @@ async function _calcularEstadoMes(maestroId, anio, mes) {
 
   // 3. Sesiones del mes (con cache)
   const todasSesiones = await getSesiones(maestroId, desde, hasta)
-  
-  // Filtrar en JS: sesión registrada si borrador === false, O si tiene
-  // asistencia y borrador NO es true (legacy data sin campo borrador).
-  const sesiones = todasSesiones.filter(s =>
-    s.estado === 'registrada' || s.estado === 'cerrada' || s.borrador === false ||
-    (s.borrador !== true && Array.isArray(s.asistencia) && s.asistencia.length > 0)
-  )
+
+  // Filtrar en JS: sesión registrada si:
+  // - tiene estado registrada/cerrada, O
+  // - tiene asistencia marcada (independientemente de borrador), O
+  // - fue guardada (borrador=false) con contenido en observaciones
+  const sesiones = todasSesiones.filter(s => {
+    const tieneAsistencia = Array.isArray(s.asistencia) && s.asistencia.length > 0
+    const tieneContenido = typeof s.contenido === 'string' && s.contenido.trim().length > 0
+    return s.estado === 'registrada' || s.estado === 'cerrada' ||
+           tieneAsistencia || (s.borrador === false && tieneContenido)
+  })
 
   const fechasRegistradas = new Set(sesiones.map(s => s.fecha))
 
@@ -340,8 +344,12 @@ async function _openActionDrawer(fecha) {
   let clasesHTML = ''
   if (clasesProgramadas.length > 0) {
     clasesHTML = clasesProgramadas.map(c => {
-      const tieneSesion = c.sesion && (c.sesion.estado === 'registrada' || c.sesion.estado === 'cerrada' || c.sesion.borrador === false ||
-        (c.sesion.borrador !== true && Array.isArray(c.sesion.asistencia) && c.sesion.asistencia.length > 0))
+      const tieneSesion = c.sesion && (() => {
+        const tieneAsistencia = Array.isArray(c.sesion.asistencia) && c.sesion.asistencia.length > 0
+        const tieneContenido = typeof c.sesion.contenido === 'string' && c.sesion.contenido.trim().length > 0
+        return c.sesion.estado === 'registrada' || c.sesion.estado === 'cerrada' ||
+               tieneAsistencia || (c.sesion.borrador === false && tieneContenido)
+      })()
       const esPendiente = c.sesion && !tieneSesion && (c.sesion.estado === 'pendiente' || c.sesion.borrador === true)
       
       return `

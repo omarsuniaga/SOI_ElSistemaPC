@@ -54,10 +54,12 @@ export async function renderHoyView(container, { onClaseClick } = {}) {
     const todasSesiones = await getSesiones(maestro.id, fechaHoy, fechaHoy)
     const sesionesHoy = todasSesiones.filter(s => claseIds.includes(s.clase_id))
 
-    // Filtrar en JS: sesión registrada si borrador === false, O si tiene
-    // asistencia y borrador NO es explícitamente true (legacy data sin campo borrador).
+    // Filtrar en JS: sesión registrada si:
+    // - borrador === false (guardado correctamente), O
+    // - tiene datos de asistencia (cubre race condition que dejaba borrador=true en sesiones ya guardadas)
     const sesionesRegistradas = sesionesHoy.filter(s =>
-      s.borrador === false || (s.borrador !== true && Array.isArray(s.asistencia) && s.asistencia.length > 0)
+      s.borrador === false ||
+      (Array.isArray(s.asistencia) && s.asistencia.length > 0)
     )
 
     const registradasHoy = new Set(sesionesRegistradas.map(s => s.clase_id))

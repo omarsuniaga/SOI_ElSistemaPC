@@ -17,14 +17,15 @@ export async function obtenerAsistenciaClase(claseId, fecha) {
   // Fetch existing attendance records for this session
   const { data: asistencias, error: asistError } = await supabase
     .from('asistencias')
-    .select('alumno_id, asistio')
+    .select('alumno_id, estado')
     .eq('clase_id', claseId)
     .eq('fecha', fecha)
 
   if (asistError) throw asistError
 
+  // Map estado to boolean: 'presente' = true, anything else = false/null
   const asistenciaMap = new Map(
-    (asistencias || []).map(a => [a.alumno_id, a.asistio])
+    (asistencias || []).map(a => [a.alumno_id, a.estado === 'presente'])
   )
 
   const estudiantes = (data || []).map(insc => ({

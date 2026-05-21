@@ -54,13 +54,14 @@ export async function renderHoyView(container, { onClaseClick } = {}) {
     const todasSesiones = await getSesiones(maestro.id, fechaHoy, fechaHoy)
     const sesionesHoy = todasSesiones.filter(s => claseIds.includes(s.clase_id))
 
-    // Filtrar en JS: sesión registrada si:
-    // - borrador === false (guardado correctamente), O
-    // - tiene datos de asistencia (cubre race condition que dejaba borrador=true en sesiones ya guardadas)
-    const sesionesRegistradas = sesionesHoy.filter(s =>
-      s.borrador === false ||
-      (Array.isArray(s.asistencia) && s.asistencia.length > 0)
-    )
+    // Sesión se considera registrada si tiene datos reales, no solo el flag borrador.
+    // Esto cubre el race condition que dejaba borrador=true en sesiones correctamente guardadas.
+    const sesionesRegistradas = sesionesHoy.filter(s => {
+      const tieneAsistencia = Array.isArray(s.asistencia) && s.asistencia.length > 0
+      const tieneContenido  = typeof s.contenido === 'string' && s.contenido.trim().length > 0
+      // Registrada: tiene asistencia marcada, O fue guardada (borrador=false) con contenido
+      return tieneAsistencia || (s.borrador === false && tieneContenido)
+    })
 
     const registradasHoy = new Set(sesionesRegistradas.map(s => s.clase_id))
 

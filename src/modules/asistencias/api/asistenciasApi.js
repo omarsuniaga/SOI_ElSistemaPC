@@ -6,6 +6,24 @@ export const ESTADOS = {
   PRESENTE:    'presente',
   AUSENTE:     'ausente',
   JUSTIFICADO: 'justificado',
+  TARDE:       'tarde',
+}
+
+// Map UI abbreviations to database values
+const ESTADO_MAP = {
+  'P': ESTADOS.PRESENTE,
+  'A': ESTADOS.AUSENTE,
+  'J': ESTADOS.JUSTIFICADO,
+  'T': ESTADOS.TARDE,
+  'presente': ESTADOS.PRESENTE,
+  'ausente': ESTADOS.AUSENTE,
+  'justificado': ESTADOS.JUSTIFICADO,
+  'tarde': ESTADOS.TARDE,
+}
+
+function mapEstado(estado) {
+  if (!estado) return ESTADOS.PRESENTE
+  return ESTADO_MAP[estado] || estado
 }
 
 // Etiquetas cortas para UI
@@ -399,7 +417,7 @@ export async function crearAsistencia(asistencia) {
 export async function registrarAsistenciaBulk(asistencias) {
   if (!asistencias?.length) throwError('No hay asistencias para registrar')
 
-  // Prepare records - ensure all required fields are present
+  // Prepare records - ensure all required fields are present and map estado values
   const records = asistencias.map(a => {
     if (!a.sesion_clase_id) {
       throw new Error(`sesion_clase_id es requerido para alumno ${a.alumno_id}`)
@@ -409,7 +427,7 @@ export async function registrarAsistenciaBulk(asistencias) {
       clase_id:           a.clase_id,
       alumno_id:          a.alumno_id,
       fecha:              a.fecha,
-      estado:             a.estado || ESTADOS.PRESENTE,
+      estado:             mapEstado(a.estado),
       justificacion_texto:(a.justificacion_texto || '').trim() || null,
       observaciones:      (a.observaciones || '').trim() || null,
       ...(a.registrado_por ? { registrado_por: a.registrado_por } : {}),

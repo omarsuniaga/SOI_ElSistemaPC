@@ -64,3 +64,61 @@ describe('registrarAsistenciaBulk - Student Validation', () => {
     expect(result[0].estado).toBe('presente')
   })
 })
+
+describe('registrarAsistenciaBulk - Constraint Error Detection', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('should detect constraint error with various Supabase error formats', async () => {
+    const asistencias = [
+      { sesion_clase_id: '1', clase_id: 'c1', alumno_id: 'a1', fecha: '2026-05-20', estado: 'P' }
+    ]
+
+    const inMock = vi.fn().mockResolvedValue({ data: [{ id: 'a1' }], error: null })
+    const selectMock = vi.fn().mockReturnValue({ in: inMock })
+
+    const upsertSelectMock = vi.fn().mockResolvedValue({
+      data: null,
+      error: {
+        message: 'duplicate key value violates unique constraint "uk_asistencias_clase_alumno_fecha"'
+      }
+    })
+    const upsertMock = vi.fn().mockReturnValue({ select: upsertSelectMock })
+
+    // INSERT fallback returns empty array successfully
+    const insertSelectMock = vi.fn().mockResolvedValue({ data: [], error: null })
+    const insertMock = vi.fn().mockReturnValue({ select: insertSelectMock })
+
+    supabase.from
+      .mockReturnValueOnce({ select: selectMock })
+      .mockReturnValueOnce({ upsert: upsertMock })
+      .mockReturnValueOnce({ insert: insertMock })
+
+    const result = await registrarAsistenciaBulk(asistencias)
+    expect(result).toBeDefined()
+  })
+
+  it('should throw error if constraint error is not related to unique constraint', async () => {
+    const asistencias = [
+      { sesion_clase_id: '1', clase_id: 'c1', alumno_id: 'a1', fecha: '2026-05-20', estado: 'P' }
+    ]
+
+    const inMock = vi.fn().mockResolvedValue({ data: [{ id: 'a1' }], error: null })
+    const selectMock = vi.fn().mockReturnValue({ in: inMock })
+
+    const upsertSelectMock = vi.fn().mockResolvedValue({
+      data: null,
+      error: { message: 'Invalid foreign key constraint' }
+    })
+    const upsertMock = vi.fn().mockReturnValue({ select: upsertSelectMock })
+
+    supabase.from
+      .mockReturnValueOnce({ select: selectMock })
+      .mockReturnValueOnce({ upsert: upsertMock })
+
+    await expect(registrarAsistenciaBulk(asistencias))
+      .rejects
+      .toThrow(/registrar las asistencias/i)
+  })
+})

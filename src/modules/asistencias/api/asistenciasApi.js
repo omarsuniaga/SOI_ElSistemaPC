@@ -40,6 +40,16 @@ function throwError(msg, err) {
   throw new Error(msg)
 }
 
+function isUniqueConstraintError(error) {
+  const message = error?.message?.toLowerCase() || ''
+  return (
+    message.includes('unique constraint') ||
+    message.includes('duplicate key') ||
+    message.includes('uk_asistencias') ||
+    (message.includes('unique') && message.includes('duplicate'))
+  )
+}
+
 // ─── 1. TIMELINE AGRUPADO POR FECHA ─────────────────────────────────────────
 // Retorna: { fecha, sesiones[] } agrupado para el timeline de la vista principal
 
@@ -471,13 +481,18 @@ export async function registrarAsistenciaBulk(asistencias) {
     )
     .select()
 
-  if (error?.message?.includes('unique or exclusion constraint')) {
-    console.warn('[registrarAsistenciaBulk] UPSERT failed, trying plain INSERT')
+  // If unique constraint error, try INSERT as fallback
+  if (error && isUniqueConstraintError(error)) {
+    console.warn('[registrarAsistenciaBulk] Constraint detected, trying plain INSERT:', error.message)
     const { data: insertData, error: insertError } = await supabase
       .from('asistencias')
       .insert(records, { returning: 'representation' })
       .select()
-    if (insertError) throwError('No se pudieron registrar las asistencias (INSERT)', insertError)
+
+    if (insertError) {
+      // If INSERT also fails, throw original UPSERT error
+      throwError('No se pudieron registrar las asistencias (UPSERT y INSERT fallidos)', error)
+    }
     return insertData || []
   }
 

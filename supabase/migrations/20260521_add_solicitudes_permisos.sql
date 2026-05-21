@@ -14,15 +14,34 @@ ADD COLUMN IF NOT EXISTS permisos TEXT[] DEFAULT '{}';
 CREATE TABLE IF NOT EXISTS public.solicitudes_permisos (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   maestro_id uuid NOT NULL UNIQUE REFERENCES public.maestros(id) ON DELETE CASCADE,
-  solicita_alumnos boolean DEFAULT false,
-  solicita_clases boolean DEFAULT false,
   estado TEXT DEFAULT 'pendiente', -- pendiente, aprobado, rechazado
   creado_en timestamptz DEFAULT now(),
-  actualizado_en timestamptz DEFAULT now(),
-  aprobado_en timestamptz,
-  aprobado_por uuid REFERENCES public.maestros(id),
-  motivo_rechazo TEXT
+  actualizado_en timestamptz DEFAULT now()
 );
+
+-- Asegurar que las columnas de solicitud existan (por si la tabla ya existía sin ellas)
+DO $$ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'solicitudes_permisos' AND column_name = 'solicita_alumnos') THEN
+        ALTER TABLE public.solicitudes_permisos ADD COLUMN solicita_alumnos boolean DEFAULT false;
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'solicitudes_permisos' AND column_name = 'solicita_clases') THEN
+        ALTER TABLE public.solicitudes_permisos ADD COLUMN solicita_clases boolean DEFAULT false;
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'solicitudes_permisos' AND column_name = 'aprobado_en') THEN
+        ALTER TABLE public.solicitudes_permisos ADD COLUMN aprobado_en timestamptz;
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'solicitudes_permisos' AND column_name = 'aprobado_por') THEN
+        ALTER TABLE public.solicitudes_permisos ADD COLUMN aprobado_por uuid REFERENCES public.maestros(id);
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'solicitudes_permisos' AND column_name = 'motivo_rechazo') THEN
+        ALTER TABLE public.solicitudes_permisos ADD COLUMN motivo_rechazo TEXT;
+    END IF;
+END $$;
 
 -- Índices
 CREATE INDEX IF NOT EXISTS idx_solicitudes_estado ON public.solicitudes_permisos(estado);

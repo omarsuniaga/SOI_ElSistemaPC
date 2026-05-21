@@ -124,12 +124,18 @@ export async function crearSolicitud(maestroId, solicita_alumnos, solicita_clase
     throw new Error('Ya existe una solicitud pendiente para este maestro')
   }
 
+  // Build tipos array based on what maestro is requesting
+  const tipos = []
+  if (solicita_alumnos) tipos.push('alumnos:create')
+  if (solicita_clases) tipos.push('clases:enroll')
+
   const { data, error } = await supabase
     .from('solicitudes_permisos')
     .insert([{
       maestro_id: maestroId,
       solicita_alumnos: solicita_alumnos ?? false,
       solicita_clases: solicita_clases ?? false,
+      tipos: tipos,
       estado: 'pendiente',
     }])
     .select('*, maestros!maestro_id(nombre_completo, correo)')
@@ -137,7 +143,7 @@ export async function crearSolicitud(maestroId, solicita_alumnos, solicita_clase
 
   if (error) {
     console.error('Error creando solicitud:', error.message)
-    throw new Error('No se pudo crear la solicitud de permisos')
+    throw new Error(`No se pudo crear la solicitud de permisos: ${error.message}`)
   }
 
   return normalizeSolicitud(data)

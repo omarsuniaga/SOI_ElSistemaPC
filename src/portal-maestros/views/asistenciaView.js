@@ -1140,19 +1140,21 @@ function _renderVista(container, ctx) {
 
     _cleanups.push(() => autoDraft.destroy())
 
-    // Check for existing draft and offer recovery
-    loadDraft(sesionId, maestro.id).then(draft => {
-      if (draft && draft.contenido_raw && draft.contenido_raw.trim()) {
-        const ts = draft.updated_at ? new Date(draft.updated_at).toLocaleString('es-AR') : ''
-        const recover = confirm(`Hay un borrador guardado${ts ? ` (${ts})` : ''}.\n\n¿Deseas recuperarlo?`)
-        if (recover) {
-          editor.setValue(draft.contenido_raw)
-          dslContent = draft.contenido_raw
-        } else {
-          discardDraft(draft.id).catch(err => console.warn('[autoDraft] Error discarding:', err))
+    // Check for existing draft and offer recovery — ONLY if session is actually a draft
+    if (sesionExistenteData?.borrador === true) {
+      loadDraft(sesionId, maestro.id).then(draft => {
+        if (draft && draft.contenido_raw && draft.contenido_raw.trim()) {
+          const ts = draft.updated_at ? new Date(draft.updated_at).toLocaleString('es-AR') : ''
+          const recover = confirm(`Hay un borrador guardado${ts ? ` (${ts})` : ''}.\n\n¿Deseas recuperarlo?`)
+          if (recover) {
+            editor.setValue(draft.contenido_raw)
+            dslContent = draft.contenido_raw
+          } else {
+            discardDraft(draft.id).catch(err => console.warn('[autoDraft] Error discarding:', err))
+          }
         }
-      }
-    }).catch(err => console.warn('[autoDraft] Error loading draft:', err))
+      }).catch(err => console.warn('[autoDraft] Error loading draft:', err))
+    }
   }
 
   // === Academic Content Flow ===

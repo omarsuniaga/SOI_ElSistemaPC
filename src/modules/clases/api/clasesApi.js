@@ -286,10 +286,17 @@ export async function obtenerClasesPorMaestro(maestroId) {
   return (data || []).map(normalizeClase)
 }
 
-export async function inscribirAlumno(claseId, alumnoId) {
+export async function inscribirAlumno(claseId, alumnoId, horaInicio = null, horaFin = null) {
   const { data, error } = await supabase
     .from('alumnos_clases')
-    .insert([{ clase_id: claseId, alumno_id: alumnoId, activo: true, fecha_inscripcion: new Date().toISOString().split('T')[0] }])
+    .insert([{ 
+      clase_id: claseId, 
+      alumno_id: alumnoId, 
+      activo: true, 
+      fecha_inscripcion: new Date().toISOString().split('T')[0],
+      hora_inicio: horaInicio,
+      hora_fin: horaFin
+    }])
     .select()
 
   if (error) {
@@ -307,6 +314,18 @@ export async function desinscribirAlumno(claseId, alumnoId) {
     .eq('alumno_id', alumnoId)
 
   if (error) throw error
+}
+
+export async function actualizarTurnoInscripcion(claseId, alumnoId, horaInicio, horaFin) {
+  const { data, error } = await supabase
+    .from('alumnos_clases')
+    .update({ hora_inicio: horaInicio, hora_fin: horaFin })
+    .eq('clase_id', claseId)
+    .eq('alumno_id', alumnoId)
+    .select()
+
+  if (error) throw error
+  return data[0]
 }
 
 export async function obtenerAlumnosInscritos(claseId) {

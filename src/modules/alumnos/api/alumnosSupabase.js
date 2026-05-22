@@ -104,29 +104,29 @@ export async function crearAlumno(alumno) {
 export async function actualizarAlumno(id, actualizaciones) {
   const datosActualizacion = {}
 
-  if (actualizaciones.nombre !== undefined) datosActualizacion.nombre_completo = actualizaciones.nombre.trim()
-  if (actualizaciones.nombre_completo !== undefined) datosActualizacion.nombre_completo = actualizaciones.nombre_completo.trim()
+  if (actualizaciones.nombre !== undefined) datosActualizacion.nombre_completo = actualizaciones.nombre ? actualizaciones.nombre.trim() : actualizaciones.nombre
+  if (actualizaciones.nombre_completo !== undefined) datosActualizacion.nombre_completo = actualizaciones.nombre_completo ? actualizaciones.nombre_completo.trim() : actualizaciones.nombre_completo
 
-  if (actualizaciones.email !== undefined) datosActualizacion.correo_representante = actualizaciones.email.trim().toLowerCase()
-  if (actualizaciones.instrumento !== undefined) datosActualizacion.instrumento_principal = actualizaciones.instrumento.trim()
-  if (actualizaciones.cedula !== undefined) datosActualizacion.representante_cedula = actualizaciones.cedula.trim()
+  if (actualizaciones.email !== undefined) datosActualizacion.correo_representante = actualizaciones.email ? actualizaciones.email.trim().toLowerCase() : actualizaciones.email
+  if (actualizaciones.instrumento !== undefined) datosActualizacion.instrumento_principal = actualizaciones.instrumento ? actualizaciones.instrumento.trim() : actualizaciones.instrumento
+  if (actualizaciones.cedula !== undefined) datosActualizacion.representante_cedula = actualizaciones.cedula ? actualizaciones.cedula.trim() : actualizaciones.cedula
 
   if (actualizaciones.is_active !== undefined) datosActualizacion.activo = actualizaciones.is_active
   if (actualizaciones.activo !== undefined) datosActualizacion.activo = actualizaciones.activo
 
-  if (actualizaciones.telefono !== undefined) datosActualizacion.familiar_telefono = actualizaciones.telefono.trim()
-  if (actualizaciones.familiar_telefono !== undefined) datosActualizacion.familiar_telefono = actualizaciones.familiar_telefono.trim()
+  if (actualizaciones.telefono !== undefined) datosActualizacion.familiar_telefono = actualizaciones.telefono ? actualizaciones.telefono.trim() : actualizaciones.telefono
+  if (actualizaciones.familiar_telefono !== undefined) datosActualizacion.familiar_telefono = actualizaciones.familiar_telefono ? actualizaciones.familiar_telefono.trim() : actualizaciones.familiar_telefono
 
-  if (actualizaciones.familiar_nombre !== undefined) datosActualizacion.familiar_nombre = actualizaciones.familiar_nombre.trim()
-  if (actualizaciones.familiar_parentesco !== undefined) datosActualizacion.familiar_parentesco = actualizaciones.familiar_parentesco.trim()
+  if (actualizaciones.familiar_nombre !== undefined) datosActualizacion.familiar_nombre = actualizaciones.familiar_nombre ? actualizaciones.familiar_nombre.trim() : actualizaciones.familiar_nombre
+  if (actualizaciones.familiar_parentesco !== undefined) datosActualizacion.familiar_parentesco = actualizaciones.familiar_parentesco ? actualizaciones.familiar_parentesco.trim() : actualizaciones.familiar_parentesco
 
-  if (actualizaciones.contacto_emergencia_nombre !== undefined) datosActualizacion.contacto_emergencia_nombre = actualizaciones.contacto_emergencia_nombre.trim()
-  if (actualizaciones.contacto_emergencia_telefono !== undefined) datosActualizacion.contacto_emergencia_telefono = actualizaciones.contacto_emergencia_telefono.trim()
-  if (actualizaciones.contacto_emergencia_parentesco !== undefined) datosActualizacion.contacto_emergencia_parentesco = actualizaciones.contacto_emergencia_parentesco.trim()
+  if (actualizaciones.contacto_emergencia_nombre !== undefined) datosActualizacion.contacto_emergencia_nombre = actualizaciones.contacto_emergencia_nombre ? actualizaciones.contacto_emergencia_nombre.trim() : actualizaciones.contacto_emergencia_nombre
+  if (actualizaciones.contacto_emergencia_telefono !== undefined) datosActualizacion.contacto_emergencia_telefono = actualizaciones.contacto_emergencia_telefono ? actualizaciones.contacto_emergencia_telefono.trim() : actualizaciones.contacto_emergencia_telefono
+  if (actualizaciones.contacto_emergencia_parentesco !== undefined) datosActualizacion.contacto_emergencia_parentesco = actualizaciones.contacto_emergencia_parentesco ? actualizaciones.contacto_emergencia_parentesco.trim() : actualizaciones.contacto_emergencia_parentesco
 
-  if (actualizaciones.condiciones_medicas !== undefined) datosActualizacion.condiciones_medicas = actualizaciones.condiciones_medicas.trim()
-  if (actualizaciones.alergias !== undefined) datosActualizacion.alergias = actualizaciones.alergias.trim()
-  if (actualizaciones.medicamentos !== undefined) datosActualizacion.medicamentos = actualizaciones.medicamentos.trim()
+  if (actualizaciones.condiciones_medicas !== undefined) datosActualizacion.condiciones_medicas = actualizaciones.condiciones_medicas ? actualizaciones.condiciones_medicas.trim() : actualizaciones.condiciones_medicas
+  if (actualizaciones.alergias !== undefined) datosActualizacion.alergias = actualizaciones.alergias ? actualizaciones.alergias.trim() : actualizaciones.alergias
+  if (actualizaciones.medicamentos !== undefined) datosActualizacion.medicamentos = actualizaciones.medicamentos ? actualizaciones.medicamentos.trim() : actualizaciones.medicamentos
 
   const { data, error } = await supabase
     .from('alumnos')

@@ -11,6 +11,7 @@ import {
   validarEmail,
 } from '../api/maestrosApi.js'
 import { escapeHTML, getStatusColor, getStatusLabel, getInitials } from '../utils/maestrosUtils.js'
+import { obtenerClasesPorMaestro, actualizarClase } from '../../clases/api/clasesApi.js'
 
 const state = {
   maestros: [],
@@ -545,6 +546,13 @@ function openViewModal(id) {
         <label class="form-label fw-bold">Biografía</label>
         <p class="form-control-plaintext">${escapeHTML(maestro.bio || 'Sin biografía')}</p>
       </div>
+      <hr>
+      <div class="mb-4">
+        <label class="form-label fw-bold"><i class="bi bi-book"></i> Clases Asignadas</label>
+        <div id="maestro-clases-container" class="mt-2">
+          <div class="text-muted"><div class="spinner-border spinner-border-sm text-primary me-2"></div> Cargando clases...</div>
+        </div>
+      </div>
       
       <div class="d-flex justify-content-end gap-2 pt-3 border-top mt-auto">
         <button class="btn btn-outline-danger" id="modal-view-btn-delete">
@@ -555,7 +563,7 @@ function openViewModal(id) {
         </button>
       </div>
     `,
-    onShow: (modalBody) => {
+    onShow: async (modalBody) => {
       modalBody.querySelector('#modal-view-btn-edit')?.addEventListener('click', () => {
         AppModal.close()
         setTimeout(() => openEditModal(id), 300)
@@ -564,6 +572,53 @@ function openViewModal(id) {
         AppModal.close()
         setTimeout(() => openDeleteModal(id), 300)
       })
+
+      // Fetch and render classes
+      const container = modalBody.querySelector('#maestro-clases-container')
+      try {
+        const clases = await obtenerClasesPorMaestro(id)
+        if (clases.length === 0) {
+          container.innerHTML = '<p class="text-muted small">No tiene clases asignadas actualmente.</p>'
+        } else {
+          container.innerHTML = '<ul class="list-group">' + clases.map(c => `
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+              <div>
+                <strong style="font-size: 0.95rem;">${escapeHTML(c.nombre)}</strong>
+                <div class="small text-muted">${escapeHTML(c.instrumento || 'Sin instrumento')}</div>
+              </div>
+              <button class="btn btn-sm btn-outline-danger btn-desvincular-clase" data-clase-id="${c.id}" data-clase-nombre="${escapeHTML(c.nombre)}" title="Desvincular Maestro">
+                <i class="bi bi-x-circle"></i> Desvincular
+              </button>
+            </li>
+          `).join('') + '</ul>'
+
+          // Add event listeners for desvincular
+          container.querySelectorAll('.btn-desvincular-clase').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+              const claseId = e.currentTarget.dataset.claseId
+              const claseNombre = e.currentTarget.dataset.claseNombre
+              if (confirm(`¿Seguro que deseas desvincular a este maestro de la clase "${claseNombre}"?`)) {
+                try {
+                  e.currentTarget.disabled = true
+                  e.currentTarget.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>'
+                  await actualizarClase(claseId, { maestro_principal_id: null }, true) // force true to avoid overlap checks issues
+                  showToast('Maestro desvinculado de la clase', 'success')
+                  
+                  // Re-render modal by closing and opening it again quickly
+                  AppModal.close()
+                  setTimeout(() => openViewModal(id), 300)
+                } catch(error) {
+                  showToast('Error al desvincular: ' + error.message, 'error')
+                  e.currentTarget.disabled = false
+                  e.currentTarget.innerHTML = '<i class="bi bi-x-circle"></i> Desvincular'
+                }
+              }
+            })
+          })
+        }
+      } catch (error) {
+        container.innerHTML = '<p class="text-danger small"><i class="bi bi-exclamation-triangle"></i> Error al cargar las clases.</p>'
+      }
     }
   })
 }

@@ -1,6 +1,6 @@
 import { AppModal } from '../../../shared/components/AppModal.js'
 import { supabase } from '../../../lib/supabaseClient.js'
-import { inscribirAlumno, desinscribirAlumno, obtenerAlumnosInscritos } from '../api/clasesApi.js'
+import { inscribirAlumno, desinscribirAlumno, obtenerAlumnosInscritos, obtenerClase, actualizarTurnoInscripcion } from '../api/clasesApi.js'
 import { crearAlumno } from '../../alumnos/api/alumnosApi.js'
 import { escapeHTML, getInitials } from '../utils/clasesUtils.js'
 
@@ -14,9 +14,10 @@ export async function openAlumnoInscripcionModal(claseId) {
   })
 
   try {
-    const [inscritosRaw, todosRes] = await Promise.all([
+    const [inscritosRaw, todosRes, clase] = await Promise.all([
       obtenerAlumnosInscritos(claseId),
       supabase.from('alumnos').select('*').eq('activo', true).order('nombre_completo', { ascending: true }),
+      obtenerClase(claseId)
     ])
 
     const inscritosIds = new Set(inscritosRaw.map(r => r.alumno_id))
@@ -28,10 +29,10 @@ export async function openAlumnoInscripcionModal(claseId) {
       size: 'lg',
       hideSave: true,
       cancelText: 'Cerrar',
-      body: _buildBody(inscritos, disponibles, claseId),
+      body: _buildBody(inscritos, disponibles, claseId, clase, inscritosRaw),
     })
 
-    requestAnimationFrame(() => _wireEvents(claseId))
+    requestAnimationFrame(() => _wireEvents(claseId, clase))
   } catch (err) {
     AppModal.open({
       title: 'Error',
@@ -43,7 +44,9 @@ export async function openAlumnoInscripcionModal(claseId) {
   }
 }
 
-function _buildBody(inscritos, disponibles, claseId) {
+function _buildBody(inscritos, disponibles, claseId, clase, inscritosRaw) {
+  const isRotativa = clase?.tipo_clase === 'rotativa'
+
   return `
     <div class="input-group mb-3">
       <span class="input-group-text"><i class="bi bi-search"></i></span>
@@ -82,7 +85,10 @@ function _buildBody(inscritos, disponibles, claseId) {
       <div id="lista-inscritos">
         ${inscritos.length === 0
           ? '<p class="text-muted small mb-0">Sin alumnos inscritos aún.</p>'
-          : inscritos.map(a => _rowInscrito(a)).join('')}
+          : inscritos.map(a => {
+              const inscripcion = inscritosRaw.find(r => r.alumno_id === a.id)
+              return _rowInscrito(a, isRotativa, inscripcion?.hora_inicio, inscripcion?.hora_fin)
+            }).join('')}
       </div>
     </div>
 
@@ -98,7 +104,7 @@ function _buildBody(inscritos, disponibles, claseId) {
       <div id="lista-disponibles" style="max-height: 280px; overflow-y: auto;">
         ${disponibles.length === 0
           ? '<p class="text-muted small mb-0">No quedan alumnos disponibles.</p>'
-          : disponibles.map(a => _rowDisponible(a)).join('')}
+          : disponibles.map(a => _rowDisponible(a, isRotativa)).join('')}
       </div>
 
       ${disponibles.length > 0 ? `
@@ -111,15 +117,33 @@ function _buildBody(inscritos, disponibles, claseId) {
   `
 }
 
-function _rowInscrito(a) {
+function _rowInscrito(a, isRotativa, horaInicio, horaFin) {
   const nombre = escapeHTML(a.nombre_completo || a.nombre || 'Alumno')
   const instrumento = escapeHTML(a.instrumento_principal || '')
+  
+  let turnoHtml = ''
+  if (isRotativa) {
+    const timeDisplay = (horaInicio && horaFin) ? `${horaInicio.slice(0,5)} a ${horaFin.slice(0,5)}` : 'Sin turno'
+    turnoHtml = `
+      <div class="d-flex align-items-center gap-2 ms-auto me-3 turno-container">
+        <span class="badge bg-secondary turno-display"><i class="bi bi-clock"></i> ${timeDisplay}</span>
+        <div class="turno-edit-form d-none d-flex gap-1">
+          <input type="time" class="form-control form-control-sm" style="width: 80px;" value="${horaInicio ? horaInicio.slice(0,5) : ''}">
+          <input type="time" class="form-control form-control-sm" style="width: 80px;" value="${horaFin ? horaFin.slice(0,5) : ''}">
+          <button class="btn btn-sm btn-success btn-guardar-turno" data-alumno-id="${a.id}"><i class="bi bi-check2"></i></button>
+          <button class="btn btn-sm btn-light btn-cancelar-turno"><i class="bi bi-x"></i></button>
+        </div>
+        <button class="btn btn-sm btn-link py-0 px-1 text-muted btn-editar-turno" title="Editar turno"><i class="bi bi-pencil-square"></i></button>
+      </div>
+    `
+  }
+
   return `
-    <div class="d-flex align-items-center justify-content-between py-2 border-bottom inscrito-item" 
+    <div class="d-flex align-items-center py-2 border-bottom inscrito-item" 
          data-alumno-id="${a.id}"
          data-name="${nombre.toLowerCase()}"
          data-instrumento="${instrumento.toLowerCase()}">
-      <div class="d-flex align-items-center gap-2">
+      <div class="d-flex align-items-center gap-2" style="flex: 1;">
         <div class="rounded-circle bg-success text-white d-flex align-items-center justify-content-center fw-bold"
              style="width:32px;height:32px;font-size:.75rem;flex-shrink:0">${getInitials(nombre)}</div>
         <div>
@@ -127,6 +151,7 @@ function _rowInscrito(a) {
           ${instrumento ? `<small class="text-muted" style="font-size: 0.7rem;"><i class="bi bi-music-note-beamed"></i> ${instrumento}</small>` : ''}
         </div>
       </div>
+      ${turnoHtml}
       <button type="button" class="btn btn-outline-danger btn-sm py-0 desinscribir-btn" data-alumno-id="${a.id}" title="Quitar">
         <i class="bi bi-person-x"></i>
       </button>
@@ -134,26 +159,41 @@ function _rowInscrito(a) {
   `
 }
 
-function _rowDisponible(a) {
+function _rowDisponible(a, isRotativa) {
   const nombre = escapeHTML(a.nombre_completo || a.nombre || 'Alumno')
   const instrumento = escapeHTML(a.instrumento_principal || '')
+  
+  let turnoHtml = ''
+  if (isRotativa) {
+    turnoHtml = `
+      <div class="d-flex gap-1 ms-auto me-2">
+        <input type="time" class="form-control form-control-sm new-hora-inicio" style="width: 80px;" placeholder="Inicio">
+        <input type="time" class="form-control form-control-sm new-hora-fin" style="width: 80px;" placeholder="Fin">
+      </div>
+    `
+  }
+
   return `
-    <label class="d-flex align-items-center gap-2 py-2 border-bottom disponible-item cursor-pointer"
+    <div class="d-flex align-items-center py-2 border-bottom disponible-item"
            data-alumno-id="${a.id}"
            data-name="${nombre.toLowerCase()}"
            data-instrumento="${instrumento.toLowerCase()}">
-      <input class="form-check-input mt-0 flex-shrink-0" type="checkbox" value="${a.id}">
-      <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center fw-bold"
-           style="width:32px;height:32px;font-size:.75rem;flex-shrink:0">${getInitials(nombre)}</div>
-      <div>
-        <span class="small d-block lh-1">${nombre}</span>
-        ${instrumento ? `<small class="text-muted" style="font-size: 0.7rem;"><i class="bi bi-music-note-beamed"></i> ${instrumento}</small>` : ''}
+      <div class="d-flex align-items-center gap-2 cursor-pointer flex-grow-1" onclick="this.parentElement.querySelector('input[type=checkbox]').click()">
+        <input class="form-check-input mt-0 flex-shrink-0" type="checkbox" value="${a.id}" onclick="event.stopPropagation()">
+        <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center fw-bold"
+             style="width:32px;height:32px;font-size:.75rem;flex-shrink:0">${getInitials(nombre)}</div>
+        <div>
+          <span class="small d-block lh-1">${nombre}</span>
+          ${instrumento ? `<small class="text-muted" style="font-size: 0.7rem;"><i class="bi bi-music-note-beamed"></i> ${instrumento}</small>` : ''}
+        </div>
       </div>
-    </label>
+      ${turnoHtml}
+    </div>
   `
 }
 
-function _wireEvents(claseId) {
+function _wireEvents(claseId, clase) {
+  const isRotativa = clase?.tipo_clase === 'rotativa'
   // Búsqueda en inscritos y disponibles
   document.getElementById('insc-buscar')?.addEventListener('input', e => {
     const term = e.target.value.toLowerCase()
@@ -221,6 +261,44 @@ function _wireEvents(claseId) {
     })
   })
 
+  // Editar turnos (si rotativa)
+  document.querySelectorAll('.btn-editar-turno').forEach(btn => {
+    btn.addEventListener('click', e => {
+      const container = e.currentTarget.closest('.turno-container')
+      container.querySelector('.turno-display').classList.add('d-none')
+      container.querySelector('.turno-edit-form').classList.remove('d-none')
+      e.currentTarget.classList.add('d-none')
+    })
+  })
+
+  document.querySelectorAll('.btn-cancelar-turno').forEach(btn => {
+    btn.addEventListener('click', e => {
+      const container = e.currentTarget.closest('.turno-container')
+      container.querySelector('.turno-display').classList.remove('d-none')
+      container.querySelector('.turno-edit-form').classList.add('d-none')
+      container.querySelector('.btn-editar-turno').classList.remove('d-none')
+    })
+  })
+
+  document.querySelectorAll('.btn-guardar-turno').forEach(btn => {
+    btn.addEventListener('click', async e => {
+      const alumnoId = e.currentTarget.dataset.alumnoId
+      const container = e.currentTarget.closest('.turno-container')
+      const inputs = container.querySelectorAll('input[type="time"]')
+      const horaInicio = inputs[0].value || null
+      const horaFin = inputs[1].value || null
+
+      e.currentTarget.disabled = true
+      try {
+        await actualizarTurnoInscripcion(claseId, alumnoId, horaInicio, horaFin)
+        openAlumnoInscripcionModal(claseId)
+      } catch (err) {
+        alert(err.message)
+        e.currentTarget.disabled = false
+      }
+    })
+  })
+
   // Inscribir seleccionados
   document.getElementById('insc-btn-inscribir')?.addEventListener('click', async () => {
     const checks = [...document.querySelectorAll('#lista-disponibles input[type="checkbox"]:checked')]
@@ -232,7 +310,13 @@ function _wireEvents(claseId) {
 
     try {
       for (const cb of checks) {
-        await inscribirAlumno(claseId, cb.value)
+        let horaInicio = null, horaFin = null
+        if (isRotativa) {
+          const row = cb.closest('.disponible-item')
+          horaInicio = row.querySelector('.new-hora-inicio')?.value || null
+          horaFin = row.querySelector('.new-hora-fin')?.value || null
+        }
+        await inscribirAlumno(claseId, cb.value, horaInicio, horaFin)
       }
       openAlumnoInscripcionModal(claseId)
     } catch (err) {

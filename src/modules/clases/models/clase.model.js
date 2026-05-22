@@ -19,7 +19,7 @@ export class Clase {
     this.estado = data.estado || 'activa'
     // Mapeo: notas_pedagogicas del formulario → descripcion en BD
     this.descripcion = data.descripcion || data.notas_pedagogicas || ''
-    this.tipo_clase = data.tipo_clase || null
+    this.tipo_clase = data.tipo_clase || 'grupal'
     this.nivel_id = data.nivel_id || null
     this.planificacion_id = data.planificacion_id || null
     this.created_at = data.created_at || null
@@ -150,6 +150,7 @@ export class Clase {
       capacidad_maxima: this.capacidad_maxima,
       estado: this.estado,
       descripcion: this.descripcion.trim() || null,
+      tipo_clase: this.tipo_clase || 'grupal',
     }
   }
 

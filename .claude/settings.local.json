@@ -22,7 +22,9 @@
       "Skill(superpowers:writing-plans:*)",
       "Skill(brainstorming)",
       "Skill(brainstorming:*)",
-      "Bash(cd \"C:\\\\\\\\Users\\\\\\\\omare\\\\\\\\OneDrive\\\\\\\\Documentos\\\\\\\\SOI_Sistema_Operativo_Institucional\\\\\\\\09_SOI_WEB_PORTAL\\\\\\\\sistema-academico-pwa\")"
+      "Bash(cd \"C:\\\\\\\\Users\\\\\\\\omare\\\\\\\\OneDrive\\\\\\\\Documentos\\\\\\\\SOI_Sistema_Operativo_Institucional\\\\\\\\09_SOI_WEB_PORTAL\\\\\\\\sistema-academico-pwa\")",
+      "mcp__c014a43e-d076-4c5b-b0f9-3d63cebd2fd8__list_tables",
+      "Bash(grep -E \"\\\\.\\(js|ts\\)$\")"
     ]
   }
 }

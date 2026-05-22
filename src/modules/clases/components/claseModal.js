@@ -111,6 +111,26 @@ function _getClaseFormHTML(clase, inscritosIds) {
         </select>
       </div>
       
+      <div class="col-12 mt-3 pt-2 border-top">
+        <label class="form-label-compact d-block mb-2"><i class="bi bi-gear me-1"></i> Dinámica de la Clase *</label>
+        <div class="d-flex align-items-center bg-body-tertiary p-2 rounded border">
+          <div class="form-check me-4">
+            <input class="form-check-input cursor-pointer" type="radio" name="modal-tipo_clase" id="tipo-grupal" value="grupal" ${!clase || clase.tipo_clase !== 'rotativa' ? 'checked' : ''}>
+            <label class="form-check-label small cursor-pointer lh-sm" for="tipo-grupal">
+              <strong>Grupal</strong><br>
+              <span class="text-muted" style="font-size: 0.75rem;">Asistencia global, todos los alumnos asisten en el mismo horario.</span>
+            </label>
+          </div>
+          <div class="form-check">
+            <input class="form-check-input cursor-pointer" type="radio" name="modal-tipo_clase" id="tipo-rotativa" value="rotativa" ${clase?.tipo_clase === 'rotativa' ? 'checked' : ''}>
+            <label class="form-check-label small cursor-pointer lh-sm" for="tipo-rotativa">
+              <strong>Rotativa (Turnos)</strong><br>
+              <span class="text-muted" style="font-size: 0.75rem;">Clase individual o micro-grupos. Se asignan slots de tiempo a cada alumno.</span>
+            </label>
+          </div>
+        </div>
+      </div>
+      
       <div class="col-12 mt-4">
         <div class="d-flex justify-content-between align-items-center mb-2">
           <label class="form-label-compact mb-0">Horarios y Salones *</label>
@@ -209,6 +229,7 @@ async function _handleSave(modalBody, originalClase) {
       instrumento: modalBody.querySelector('#modal-instrumento').value.trim(),
       capacidad_maxima: parseInt(modalBody.querySelector('#modal-max_alumnos').value) || 20,
       estado: modalBody.querySelector('#modal-estado').value,
+      tipo_clase: modalBody.querySelector('input[name="modal-tipo_clase"]:checked')?.value || 'grupal',
       descripcion: modalBody.querySelector('#modal-notas_pedagogicas').value.trim(),
       horarios: Array.from(modalBody.querySelectorAll('.horario-row')).map(row => ({
         dia: row.querySelector('[name="horario-dia"]').value,
@@ -235,9 +256,19 @@ async function _handleSave(modalBody, originalClase) {
       resultClase = await actualizarClase(originalClase.id, formData)
 
       // Update enrollment if it changed (optimization: only if edicion)
-      // This part requires comparing original vs new IDs, for now simple bulk:
       const newIds = Array.from(modalBody.querySelectorAll('.alumnos-list input[type="checkbox"]:checked')).map(cb => cb.value)
-      // Logic for diffing enrollment could be added here
+      
+      // We need to fetch the current enrolled students to diff
+      const currentEnrolled = await obtenerAlumnosInscritos(resultClase.id)
+      const currentIds = currentEnrolled.map(i => i.alumno_id)
+      
+      const toAdd = newIds.filter(id => !currentIds.includes(id))
+      const toRemove = currentIds.filter(id => !newIds.includes(id))
+      
+      await Promise.all([
+        ...toAdd.map(aid => inscribirAlumno(resultClase.id, aid)),
+        ...toRemove.map(aid => desinscribirAlumno(resultClase.id, aid))
+      ])
     } else {
       resultClase = await crearClase(formData)
 

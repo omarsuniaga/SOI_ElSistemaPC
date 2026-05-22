@@ -47,3 +47,6 @@ Thumbs.db
 
 # Supabase CLI temp files
 supabase/.temp/
+
+# Claude AI worktrees and metadata
+.claude/

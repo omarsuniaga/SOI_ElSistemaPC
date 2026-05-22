@@ -222,3 +222,61 @@ tr.border-start-accent:hover {
     min-height: 44px;
   }
 }
+
+/* ============================================================================
+   STATS / KPI PANEL  (shared pattern, local copy for progresos)
+   ============================================================================ */
+
+.stats-panel {
+  background: rgba(var(--bs-primary-rgb), 0.04);
+  border: 1px solid rgba(var(--bs-primary-rgb), 0.08);
+  border-radius: 12px;
+  padding: 1.25rem;
+  backdrop-filter: blur(10px);
+}
+
+[data-bs-theme="dark"] .stats-panel {
+  background: rgba(255, 255, 255, 0.02);
+  border-color: rgba(255, 255, 255, 0.05);
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 1rem;
+}
+
+.stat-card {
+  background: var(--bs-body-bg);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  padding: 0.875rem 1rem;
+  border-radius: 10px;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+[data-bs-theme="dark"] .stat-card {
+  background: rgba(255, 255, 255, 0.02);
+  border-color: rgba(255, 255, 255, 0.05);
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+}
+
+.stat-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--bs-secondary-color);
+  margin-bottom: 0.25rem;
+}
+
+.stat-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--bs-body-color);
+  line-height: 1.2;
+}
+

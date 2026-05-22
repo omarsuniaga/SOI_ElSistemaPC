@@ -2,9 +2,11 @@ import { router } from '../../core/router/router.js'
 import { renderPlanificacionView } from './views/planificacionView.js'
 
 export function registerRoutesPlanificacion() {
-  // Ahora todas las rutas de planificación se unifican en la vista inteligente
-  router.register('planificacion', renderPlanificacionView)
-  router.register('planificacion-curricular', renderPlanificacionView)
-  router.register('planificacion-plantillas', renderPlanificacionView)
-  router.register('planificacion-maestros', renderPlanificacionView)
+  // "Mis Planes" - vista del maestro logueado
+  router.register('planificacion', (container) => renderPlanificacionView(container, { viewMode: 'maestro' }))
+  // "Plantillas" - biblioteca de plantillas DSL
+  router.register('planificacion-plantillas', (container) => renderPlanificacionView(container, { viewMode: 'plantillas' }))
+  // "Todas las Planificaciones" - vista administrativa
+  router.register('planificacion-maestros', (container) => renderPlanificacionView(container, { viewMode: 'admin' }))
+  // planificacion-curricular queda bajo academic-admin.router.js (no registrar aquí)
 }

@@ -62,7 +62,20 @@ function renderLoading(container) {
 }
 
 function renderError(container, msg) {
-  container.innerHTML = `<div class="alert alert-danger m-3"><h5>Error al cargar</h5><p>${escapeHTML(msg)}</p><button class="btn btn-primary btn-sm" id="retry-btn">Reintentar</button></div>`
+  container.innerHTML = `
+    <div class="page-container">
+      <div class="alert alert-warning d-flex align-items-start gap-3 m-0" role="alert">
+        <i class="bi bi-database-exclamation fs-3 text-warning mt-1"></i>
+        <div>
+          <h5 class="alert-heading mb-1">Tabla no encontrada o sin acceso</h5>
+          <p class="mb-2 small">${escapeHTML(msg)}</p>
+          <p class="mb-0 small text-muted">Verificá que la tabla <code>observaciones_alumnos</code> existe en Supabase y que las políticas RLS permiten la lectura.</p>
+          <button class="btn btn-outline-warning btn-sm mt-3" id="retry-btn">
+            <i class="bi bi-arrow-clockwise me-1"></i>Reintentar
+          </button>
+        </div>
+      </div>
+    </div>`
   container.querySelector('#retry-btn')?.addEventListener('click', () => renderObservacionesView(container))
 }
 

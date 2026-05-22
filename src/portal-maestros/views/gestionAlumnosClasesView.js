@@ -1,6 +1,9 @@
 import { supabase } from '../../lib/supabaseClient.js';
 import { getMaestroLocal } from '../auth/maestroAuth.js';
 import { escHTML } from '../utils/portalUtils.js';
+import { getPermisos, solicitarPermiso } from '../services/permisoService.js';
+import { registrarAlumnoModal } from '../components/registrarAlumnoModal.js';
+import { gestionarClasesModal } from '../components/gestionarClasesModal.js';
 
 /**
  * Vista para que maestro gestione sus alumnos y clases
@@ -16,17 +19,42 @@ export async function renderGestionAlumnosClasesView(container) {
   }
 
   try {
+    // Consultar permisos del maestro
+    const permisos = await getPermisos(maestro.id);
+
     // Obtener alumnos del maestro
     const { data: alumnos } = await supabase
       .from('alumnos')
-      .select('id, nombre, email, telefono')
-      .eq('maestro_id', maestro.id);
+      .select('id, nombre, apellido, email, telefono')
+      .eq('maestro_id', maestro.id); // Si existe relacion directa, sino por inscripcion
 
     // Obtener clases del maestro
     const { data: clases } = await supabase
       .from('clases')
       .select('id, nombre, instrumento, descripcion')
       .eq('maestro_id', maestro.id);
+
+    const renderAlumnoBtn = () => {
+      if (permisos.puede_registrar_alumnos) {
+        return `<button id="pm-btn-new-alumno" class="btn-apple-primary btn-apple-sm">
+                  <i class="bi bi-plus-lg"></i> Agregar Alumno
+                </button>`;
+      }
+      return `<button id="pm-btn-req-alumno" class="btn btn-outline-secondary btn-sm" title="Solicitar permiso al Administrador">
+                <i class="bi bi-lock"></i> Solicitar Permiso
+              </button>`;
+    };
+
+    const renderClaseBtn = () => {
+      if (permisos.puede_inscribir_clases) {
+        return `<button id="pm-btn-new-clase" class="btn-apple-primary btn-apple-sm">
+                  <i class="bi bi-plus-lg"></i> Gestionar / Agregar Clases
+                </button>`;
+      }
+      return `<button id="pm-btn-req-clase" class="btn btn-outline-secondary btn-sm" title="Solicitar permiso al Administrador">
+                <i class="bi bi-lock"></i> Solicitar Permiso
+              </button>`;
+    };
 
     const html = `
       <div class="pm-container">
@@ -40,9 +68,7 @@ export async function renderGestionAlumnosClasesView(container) {
           <section class="pm-section">
             <div class="pm-section-header">
               <h2>👥 Alumnos (${alumnos?.length || 0})</h2>
-              <button id="pm-btn-new-alumno" class="btn-apple-primary btn-apple-sm">
-                <i class="bi bi-plus-lg"></i> Agregar Alumno
-              </button>
+              ${renderAlumnoBtn()}
             </div>
 
             <div class="pm-list">
@@ -50,15 +76,12 @@ export async function renderGestionAlumnosClasesView(container) {
                 ? alumnos.map(a => `
                   <div class="pm-list-item">
                     <div class="pm-list-content">
-                      <h3>${escHTML(a.nombre)}</h3>
+                      <h3>${escHTML(a.nombre)} ${escHTML(a.apellido || '')}</h3>
                       <p>${escHTML(a.email || 'Sin email')}</p>
                     </div>
-                    <button class="pm-btn-action" data-alumno-id="${a.id}" title="Eliminar">
-                      <i class="bi bi-trash"></i>
-                    </button>
                   </div>
                 `).join('')
-                : '<p class="pm-text-muted">No hay alumnos aún.</p>'
+                : '<p class="pm-text-muted">No tienes alumnos registrados aún.</p>'
               }
             </div>
           </section>
@@ -67,9 +90,7 @@ export async function renderGestionAlumnosClasesView(container) {
           <section class="pm-section">
             <div class="pm-section-header">
               <h2>🎵 Clases (${clases?.length || 0})</h2>
-              <button id="pm-btn-new-clase" class="btn-apple-primary btn-apple-sm">
-                <i class="bi bi-plus-lg"></i> Agregar Clase
-              </button>
+              ${renderClaseBtn()}
             </div>
 
             <div class="pm-list">
@@ -80,12 +101,9 @@ export async function renderGestionAlumnosClasesView(container) {
                       <h3>${escHTML(c.nombre)} - ${escHTML(c.instrumento || 'Instrumento')}</h3>
                       <p>${escHTML(c.descripcion || 'Sin descripción')}</p>
                     </div>
-                    <button class="pm-btn-action" data-clase-id="${c.id}" title="Eliminar">
-                      <i class="bi bi-trash"></i>
-                    </button>
                   </div>
                 `).join('')
-                : '<p class="pm-text-muted">No hay clases aún.</p>'
+                : '<p class="pm-text-muted">No tienes clases creadas aún.</p>'
               }
             </div>
           </section>
@@ -100,25 +118,14 @@ export async function renderGestionAlumnosClasesView(container) {
           margin-bottom: 1.5rem;
           border: 1px solid var(--pm-border);
         }
-
         .pm-section-header {
           display: flex;
           justify-content: space-between;
           align-items: center;
           margin-bottom: 1rem;
         }
-
-        .pm-section-header h2 {
-          margin: 0;
-          font-size: 1.1rem;
-        }
-
-        .pm-list {
-          display: flex;
-          flex-direction: column;
-          gap: 0.5rem;
-        }
-
+        .pm-section-header h2 { margin: 0; font-size: 1.1rem; }
+        .pm-list { display: flex; flex-direction: column; gap: 0.5rem; }
         .pm-list-item {
           display: flex;
           justify-content: space-between;
@@ -128,48 +135,74 @@ export async function renderGestionAlumnosClasesView(container) {
           border-radius: 6px;
           border: 1px solid var(--pm-border);
         }
-
-        .pm-list-item:hover {
-          background: var(--pm-surface-2);
-        }
-
-        .pm-list-content h3 {
-          margin: 0 0 0.3rem 0;
-          font-size: 0.95rem;
-        }
-
-        .pm-list-content p {
-          margin: 0;
-          font-size: 0.8rem;
-          color: var(--pm-text-muted);
-        }
-
-        .pm-btn-action {
-          background: none;
-          border: none;
-          color: var(--pm-danger);
-          cursor: pointer;
-          padding: 0.5rem;
-          font-size: 1rem;
-        }
-
-        .pm-btn-action:hover {
-          background: rgba(239, 68, 68, 0.1);
-          border-radius: 4px;
-        }
+        .pm-list-item:hover { background: var(--pm-surface-2); }
+        .pm-list-content h3 { margin: 0 0 0.3rem 0; font-size: 0.95rem; }
+        .pm-list-content p { margin: 0; font-size: 0.8rem; color: var(--pm-text-muted); }
       </style>
     `;
 
     container.innerHTML = html;
 
-    // Event listeners
-    document.getElementById('pm-btn-new-alumno')?.addEventListener('click', () => {
-      alert('Funcionalidad de agregar alumno disponible proximamente');
+    // Listeners modales
+    const setupModals = () => {
+      let modalAlumnoInst = null;
+      let modalClasesInst = null;
+
+      const btnNewAlumno = document.getElementById('pm-btn-new-alumno');
+      if (btnNewAlumno) {
+        btnNewAlumno.addEventListener('click', () => {
+          if (!modalAlumnoInst) modalAlumnoInst = registrarAlumnoModal();
+          modalAlumnoInst.show(maestro.id);
+        });
+      }
+
+      const btnNewClase = document.getElementById('pm-btn-new-clase');
+      if (btnNewClase) {
+        btnNewClase.addEventListener('click', () => {
+          if (!modalClasesInst) modalClasesInst = gestionarClasesModal();
+          modalClasesInst.show(maestro.id);
+        });
+      }
+    };
+    setupModals();
+
+    // Listeners solicitudes permiso
+    document.getElementById('pm-btn-req-alumno')?.addEventListener('click', async (e) => {
+      try {
+        e.target.disabled = true;
+        e.target.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Solicitando...';
+        await solicitarPermiso(maestro.id, 'alumnos:create');
+        alert('Solicitud enviada al administrador.');
+        renderGestionAlumnosClasesView(container);
+      } catch (err) {
+        alert('Error al solicitar permiso: ' + err.message);
+        e.target.disabled = false;
+        e.target.innerHTML = '<i class="bi bi-lock"></i> Solicitar Permiso';
+      }
     });
 
-    document.getElementById('pm-btn-new-clase')?.addEventListener('click', () => {
-      alert('Funcionalidad de agregar clase disponible proximamente');
+    document.getElementById('pm-btn-req-clase')?.addEventListener('click', async (e) => {
+      try {
+        e.target.disabled = true;
+        e.target.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Solicitando...';
+        await solicitarPermiso(maestro.id, 'clases:enroll');
+        alert('Solicitud enviada al administrador.');
+        renderGestionAlumnosClasesView(container);
+      } catch (err) {
+        alert('Error al solicitar permiso: ' + err.message);
+        e.target.disabled = false;
+        e.target.innerHTML = '<i class="bi bi-lock"></i> Solicitar Permiso';
+      }
     });
+
+    // Refrescar al recibir eventos custom
+    const refreshView = () => renderGestionAlumnosClasesView(container);
+    
+    window.removeEventListener('alumno-registrado', refreshView);
+    window.addEventListener('alumno-registrado', refreshView, { once: true });
+
+    window.removeEventListener('clase-creada', refreshView);
+    window.addEventListener('clase-creada', refreshView, { once: true });
 
   } catch (err) {
     container.innerHTML = `<p class="pm-empty" style="color:red">Error: ${escHTML(err.message)}</p>`;

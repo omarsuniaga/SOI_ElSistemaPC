@@ -60,10 +60,42 @@ function renderLoading(container) {
 }
 
 function renderError(container, msg) {
-  container.innerHTML = `<div class="alert alert-danger m-3"><h5>Error al cargar</h5><p>${escapeHTML(msg)}</p></div>`
+  container.innerHTML = `
+    <div class="page-container">
+      <div class="alert alert-warning d-flex align-items-start gap-3 m-0" role="alert">
+        <i class="bi bi-database-exclamation fs-3 text-warning mt-1"></i>
+        <div>
+          <h5 class="alert-heading mb-1">Tabla no encontrada o sin acceso</h5>
+          <p class="mb-2 small">${escapeHTML(msg)}</p>
+          <p class="mb-0 small text-muted">Verificá que la tabla <code>progresos</code> existe en Supabase y que las políticas RLS permiten la lectura.</p>
+        </div>
+      </div>
+    </div>`
 }
 
 function renderContent(container) {
+  // ── Stats ────────────────────────────────────────────────────────────────────
+  const totalEvals = state.progresosOriginales.length
+  const promedios  = state.progresosOriginales.filter(p => p.calificacion != null).map(p => parseFloat(p.calificacion))
+  const promGeneral = promedios.length > 0
+    ? (promedios.reduce((a, b) => a + b, 0) / promedios.length).toFixed(2)
+    : null
+
+  // group by alumno to count at-risk
+  const porAlumno = {}
+  state.progresosOriginales.forEach(p => {
+    if (!porAlumno[p.alumno_id]) porAlumno[p.alumno_id] = []
+    if (p.calificacion != null) porAlumno[p.alumno_id].push(parseFloat(p.calificacion))
+  })
+  let enRiesgo = 0
+  Object.values(porAlumno).forEach(califs => {
+    if (califs.length === 0) return
+    const avg = califs.reduce((a, b) => a + b, 0) / califs.length
+    if (avg < 3) enRiesgo++
+  })
+  const totalAlumnos  = Object.keys(porAlumno).length
+  const clases = new Set(state.progresosOriginales.map(p => p.clase_id)).size
+
   container.innerHTML = `
     <div class="page-container">
       <div class="progresos-header-premium mb-4">
@@ -73,13 +105,35 @@ function renderContent(container) {
           </div>
           <div>
             <h1 class="progresos-title-premium page-title mb-0">Calificaciones</h1>
-            <p class="text-muted small mb-0">${state.progresosOriginales.length} calificaciones registradas</p>
+            <p class="text-muted small mb-0">${totalEvals} evaluaciones registradas · ${totalAlumnos} alumnos</p>
           </div>
         </div>
         <div class="progresos-header-actions">
           <button class="btn btn-premium-action" id="btn-nueva-nota">
-            <i class="bi bi-plus-lg me-1.5"></i>Registrar Nota
+            <i class="bi bi-plus-lg me-1"></i>Registrar Nota
           </button>
+        </div>
+      </div>
+
+      <!-- Mini-Dashboard -->
+      <div class="stats-panel mb-4">
+        <div class="stats-grid">
+          <div class="stat-card border-start border-4 border-primary">
+            <div class="stat-label">Promedio General</div>
+            <div class="stat-value ${promGeneral !== null && parseFloat(promGeneral) < 3 ? 'text-danger' : 'text-success'}">${promGeneral !== null ? promGeneral : '–'}</div>
+          </div>
+          <div class="stat-card border-start border-4 border-info">
+            <div class="stat-label">Alumnos evaluados</div>
+            <div class="stat-value">${totalAlumnos}</div>
+          </div>
+          <div class="stat-card border-start border-4 border-danger">
+            <div class="stat-label">En riesgo</div>
+            <div class="stat-value ${enRiesgo > 0 ? 'text-danger' : 'text-success'}">${enRiesgo}</div>
+          </div>
+          <div class="stat-card border-start border-4 border-secondary">
+            <div class="stat-label">Clases activas</div>
+            <div class="stat-value">${clases}</div>
+          </div>
         </div>
       </div>
 

@@ -118,7 +118,7 @@ export const AppModal = {
   _saveHandler: null,
   _cancelHandler: null,
 
-  open({ title = '', body = '', saveText = 'Guardar', cancelText = 'Cancelar', deleteText = 'Eliminar', onSave = null, onCancel = null, onDelete = null, onShow = null, size = 'md', hideSave = false } = {}) {
+  open({ title = '', body = '', saveText = 'Guardar', cancelText = 'Cancelar', deleteText = 'Eliminar', onSave = null, onCancel = null, onDelete = null, onShow = null, onOpen = null, size = 'md', hideSave = false } = {}) {
     ensureDOM()
     const els = getEls()
 
@@ -140,6 +140,9 @@ export const AppModal = {
     }
 
     if (onShow) onShow(els.body)
+
+    // onOpen fires async after the animation completes (useful for async data loads)
+    if (onOpen) setTimeout(() => onOpen(els.body), 280)
 
     // Buttons
     this.resetSaveBtn(saveText)

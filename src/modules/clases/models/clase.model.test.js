@@ -167,6 +167,7 @@ describe('Clase Model', () => {
         capacidad_maxima: 15,
         estado: 'activa',
         descripcion: 'Some notes',
+        tipo_clase: 'grupal',
       })
     })
   })

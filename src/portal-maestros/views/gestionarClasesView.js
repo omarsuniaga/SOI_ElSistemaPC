@@ -29,7 +29,17 @@ function getInitials(name) {
 
 function formatHorarios(horarios) {
   if (!horarios || horarios.length === 0) return '<span style="color:var(--pm-text-muted);font-size:.8rem;">Sin horario asignado</span>'
-  const dayMap = { lunes: 'Lun', martes: 'Mar', miercoles: 'Mié', jueves: 'Jue', viernes: 'Vie', sabado: 'Sáb', domingo: 'Dom' }
+  const dayMap = { 
+    lunes: 'Lun', 
+    martes: 'Mar', 
+    miercoles: 'Mié', 
+    miércoles: 'Mié', 
+    jueves: 'Jue', 
+    viernes: 'Vie', 
+    sabado: 'Sáb', 
+    sábado: 'Sáb', 
+    domingo: 'Dom' 
+  }
   return horarios.map(h => {
     const dia = dayMap[h.dia] || h.dia || ''
     const inicio = (h.hora_inicio || '').slice(0, 5)

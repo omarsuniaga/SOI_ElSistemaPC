@@ -25,10 +25,10 @@ const viewState = {
 const DIAS_SEMANA = [
   { key: 'lunes',     label: 'Lunes' },
   { key: 'martes',    label: 'Martes' },
-  { key: 'miercoles', label: 'Miércoles' },
+  { key: 'miércoles', label: 'Miércoles' },
   { key: 'jueves',    label: 'Jueves' },
   { key: 'viernes',   label: 'Viernes' },
-  { key: 'sabado',    label: 'Sábado' },
+  { key: 'sábado',    label: 'Sábado' },
   { key: 'domingo',   label: 'Domingo' },
 ];
 

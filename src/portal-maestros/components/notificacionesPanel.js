@@ -185,14 +185,36 @@ export const notificacionesPanel = {
       btn.addEventListener('click', async (e) => {
         e.stopPropagation();
         const ids = btn.dataset.ids.split(',');
+        
+        // Confirmación nativa elegante
+        const confirmar = confirm('¿Estás seguro de que querés eliminar esta notificación?');
+        if (!confirmar) return;
+
+        let deleteSuccess = true;
         for (const id of ids) {
-          // Marcar como eliminada (estado = 'eliminada' o similar)
-          await supabase
+          // Usar DELETE directo para evitar violación de la CHECK CONSTRAINT de estado en Supabase
+          const { error } = await supabase
             .from('notificaciones')
-            .update({ estado: 'eliminada' })
+            .delete()
             .eq('id', id);
+          
+          if (error) {
+            console.error('[NotifPanel] Error al eliminar:', error.message);
+            deleteSuccess = false;
+          }
         }
-        // Recargar
+
+        if (deleteSuccess) {
+          window.dispatchEvent(new CustomEvent('showToast', { 
+            detail: { message: 'Notificación eliminada correctamente.', type: 'info' } 
+          }));
+        } else {
+          window.dispatchEvent(new CustomEvent('showToast', { 
+            detail: { message: 'Hubo un problema al eliminar la notificación.', type: 'danger' } 
+          }));
+        }
+
+        // Recargar lista y refrescar badge
         fetchNotificaciones();
       });
     });

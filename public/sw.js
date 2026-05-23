@@ -111,7 +111,8 @@ self.addEventListener('push', event => {
     tag: data.tag || 'soi-push',
     lang: 'es-DO',
     dir: 'ltr',
-    renotify: data.renotify || false
+    renotify: data.renotify || false,
+    actions: data.actions || [] // Soportar botones interactivos (ej: Responder, Marcar Leído, etc.)
   };
 
   event.waitUntil(
@@ -132,6 +133,17 @@ self.addEventListener('push', event => {
 self.addEventListener('notificationclick', event => {
   event.notification.close();
   const data = event.notification.data || {};
+  const clickedAction = event.action;
+
+  // Si se hizo click en un botón de acción interactiva (ej: marcar leída sin abrir la app)
+  if (clickedAction) {
+    console.log(`[SW] Acción interactiva clickeada: ${clickedAction}`);
+    event.waitUntil(
+      handleBackgroundAction(clickedAction, data)
+    );
+    return;
+  }
+
   const targetUrl = resolveNotificationUrl(data);
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then(windowClients => {
@@ -149,6 +161,53 @@ self.addEventListener('notificationclick', event => {
     })
   );
 });
+
+/**
+ * Procesa acciones rápidas de notificaciones en segundo plano sin abrir la app.
+ */
+async function handleBackgroundAction(action, data) {
+  console.log(`[SW] Procesando acción background: ${action}`, data);
+
+  // Notificar a las pestañas activas si están abiertas para que actualicen sus contadores
+  try {
+    const clientsList = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    clientsList.forEach(client => {
+      client.postMessage({
+        type: 'NOTIFICATION_ACTION_CLICKED',
+        action,
+        data
+      });
+    });
+  } catch (err) {
+    console.warn('[SW] Error enviando mensaje a pestañas:', err.message);
+  }
+
+  // Ejemplo de acción directa contra Supabase en segundo plano:
+  // Marcar una notificación como leída directamente usando el endpoint REST de Supabase
+  if (action === 'mark-read' && data.notification_id) {
+    try {
+      const supabaseUrl = 'https://zmhmdvmyeyswunurcyow.supabase.co';
+      const anonKey = 'sb_publishable_-TE6E79mrn4fSs4XGnvWnw_2QgDrX0P';
+
+      const res = await fetch(`${supabaseUrl}/rest/v1/notificaciones?id=eq.${data.notification_id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': anonKey,
+          'Authorization': `Bearer ${anonKey}`,
+          'Prefer': 'return=minimal'
+        },
+        body: JSON.stringify({
+          estado: 'leida',
+          leida_en: new Date().toISOString()
+        })
+      });
+      console.log(`[SW] Notificación ${data.notification_id} marcada como leída en background. Status: ${res.status}`);
+    } catch (err) {
+      console.error('[SW] Error marcando leída en segundo plano:', err.message);
+    }
+  }
+}
 
 function resolveNotificationUrl(data) {
   if (data.url) return data.url; // El backend ya envió URL completa o hash

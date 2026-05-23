@@ -42,8 +42,27 @@ Deno.serve(async (req) => {
     )
 
     const body = await req.json().catch(() => ({}))
-    const { title = 'Portal Maestros', body: notificationBody = 'Nueva notificación', data = {} } = body
-    const targetProfileId = body.profile_id || null
+    const { title = 'Portal Maestros', body: notificationBody = 'Nueva notificación', data = {}, actions = [] } = body
+    
+    let targetProfileId = body.profile_id || null
+    const maestroId = body.maestro_id || body.maestroId || null
+
+    // Si pasaron maestro_id pero no profile_id, resolver user_id (profile_id) desde maestros
+    if (!targetProfileId && maestroId) {
+      console.log(`[send-push] Resolviendo profile_id para maestro_id: ${maestroId}`)
+      const { data: maestroData, error: mError } = await supabase
+        .from('maestros')
+        .select('user_id')
+        .eq('id', maestroId)
+        .maybeSingle()
+      
+      if (!mError && maestroData?.user_id) {
+        targetProfileId = maestroData.user_id
+        console.log(`[send-push] Maestro_id ${maestroId} resuelto a profile_id: ${targetProfileId}`)
+      } else {
+        console.warn(`[send-push] No se pudo resolver user_id para maestro_id: ${maestroId}`, mError)
+      }
+    }
 
     // Buscar suscripciones activas
     let query = supabase
@@ -67,7 +86,8 @@ Deno.serve(async (req) => {
     const payload = JSON.stringify({
       title,
       body: notificationBody,
-      data
+      data,
+      actions
     })
 
     // Enviar notificaciones en paralelo

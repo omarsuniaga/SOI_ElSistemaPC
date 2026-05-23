@@ -1,10 +1,13 @@
 import { detectarRolMaestro, getMaestroLocal, logoutPortal } from './maestroAuth.js'
+import { supabase } from '../../lib/supabaseClient.js'
 
 const state = {
   maestro:   null,
   loading:   true,
   listeners: [],
 }
+
+let _authListener = null
 
 function notify() {
   state.listeners.forEach(fn => fn({ ...state }))
@@ -24,6 +27,37 @@ export const usePortalAuth = {
     console.log('[usePortalAuth.init] Maestro local:', state.maestro ? 'found' : 'not found')
     state.loading  = true
     notify()
+
+    // Registrar observador de autenticación en tiempo real de Supabase (Sincronización robusta)
+    if (!_authListener) {
+      const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+        console.log(`[usePortalAuth] Evento de auth disparado: ${event}`)
+        if (event === 'SIGNED_OUT' || event === 'USER_DELETED') {
+          localStorage.removeItem('portal-maestros:maestro')
+          state.maestro = null
+          notify()
+          const publicRoutes = ['login', 'register', 'pending-approval']
+          const currentPath = (window.router?.currentRoute?.() || 'login').split('?')[0]
+          if (!publicRoutes.includes(currentPath)) {
+            console.log('[usePortalAuth] Sesión inactiva o expirada en ruta privada. Recargando aplicación...')
+            window.location.reload()
+          }
+        } else if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+          if (session?.user) {
+            const cached = getMaestroLocal()
+            if (!cached || cached.user_id !== session.user.id) {
+              console.log('[usePortalAuth] Nueva sesión detectada. Sincronizando datos de maestro...')
+              const maestro = await detectarRolMaestro()
+              if (maestro) {
+                state.maestro = maestro
+                notify()
+              }
+            }
+          }
+        }
+      })
+      _authListener = subscription
+    }
 
     try {
       // Timeout protection: detectarRolMaestro puede colgar en desarrollo

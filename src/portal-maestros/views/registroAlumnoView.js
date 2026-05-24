@@ -1,10 +1,10 @@
-import { escHTML, getInitials } from '../utils/portalUtils.js'
+import { escHTML } from '../utils/portalUtils.js'
 import { normalizePhone } from '../../shared/utils/phoneUtils.js'
 import { getPermisos } from '../services/permisoService.js'
 import { getMaestroLocal } from '../auth/maestroAuth.js'
 import { crearAlumno, validarEmail, validarCedula } from '../../modules/alumnos/api/alumnosApi.js'
 import { getMisClases } from '../services/maestroDataService.js'
-import { setFieldError, clearFieldError, clearAllFieldErrors } from '../utils/a11yUtils.js'
+import { setFieldError, clearAllFieldErrors } from '../utils/a11yUtils.js'
 
 // ─── ESTADO LOCAL ────────────────────────────────────────────
 const viewState = {
@@ -50,17 +50,21 @@ export async function renderRegistroAlumnoView(container) {
   }
 
   renderForm(container)
-  initListeners(container)
+  initListeners()
   animateSections()
 }
 
 // ─── SIN PERMISO ─────────────────────────────────────────────
 function renderSinPermiso(container, permisos, maestroId) {
   const solicitudes = permisos?.solicitudes || []
-  const pending = solicitudes.includes('alumnos:create')
+  const solicitudActual = permisos?.solicitud_actual
+  const pending =
+    solicitudes.includes('alumnos:create') ||
+    solicitudes.includes('registrar_alumnos') ||
+    (solicitudActual?.estado === 'pendiente' && solicitudActual?.solicita_alumnos)
 
   container.innerHTML = `
-    <div class="pm-settings pm-fade-in" role="main" aria-label="Registro de alumnos">
+    <div class="pm-settings pm-fade-in registro-alumno-view" role="main" aria-label="Registro de alumnos">
       <div class="pm-settings-empty" style="padding: 4rem 2rem; text-align: center; background: var(--pm-surface-2); border-radius: 16px; border: 1px solid var(--pm-border); max-width: 500px; margin: 2rem auto;">
         <div style="width:80px; height:80px; background:rgba(59,130,246,0.1); border-radius:50%; display:flex; align-items:center; justify-content:center; margin: 0 auto 1.5rem;">
           <i class="bi bi-shield-exclamation" style="font-size:2.5rem; color:var(--pm-primary, #3b82f6);"></i>
@@ -121,7 +125,7 @@ function renderSinPermiso(container, permisos, maestroId) {
 // ─── FORMULARIO (APPLE CARD DESIGN) ─────────────────────────
 function renderForm(container) {
   container.innerHTML = `
-    <div class="pm-settings pm-fade-in" role="main" aria-label="Registro de alumnos">
+    <div class="pm-settings pm-fade-in registro-alumno-view" role="main" aria-label="Registro de alumnos">
       <header class="pm-settings-header">
         <h1 class="apple-display-md">Registrar Alumno</h1>
         <p class="apple-caption">Completa los datos del nuevo estudiante</p>
@@ -233,6 +237,39 @@ function renderForm(container) {
         border-color: var(--pm-danger, #ef4444);
         box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15);
       }
+      .registro-alumno-view .card-apple {
+        background: var(--pm-surface);
+        color: var(--pm-text);
+        border-color: var(--pm-border);
+      }
+      .registro-alumno-view .pm-settings-section__title,
+      .registro-alumno-view .apple-display-md {
+        color: var(--pm-text);
+      }
+      .registro-alumno-view .input-apple,
+      .registro-alumno-view select.input-apple {
+        background: var(--pm-surface);
+        color: var(--pm-text);
+        border-color: var(--pm-border);
+      }
+      .registro-alumno-view .input-apple::placeholder {
+        color: var(--pm-text-muted);
+        opacity: .9;
+      }
+      [data-bs-theme="dark"] .registro-alumno-view .card-apple,
+      [data-portal-theme="dark"] .registro-alumno-view .card-apple {
+        background: rgba(28, 28, 30, .92);
+        border-color: rgba(148, 163, 184, .28);
+        box-shadow: 0 18px 45px rgba(0, 0, 0, .24);
+      }
+      [data-bs-theme="dark"] .registro-alumno-view .input-apple,
+      [data-bs-theme="dark"] .registro-alumno-view select.input-apple,
+      [data-portal-theme="dark"] .registro-alumno-view .input-apple,
+      [data-portal-theme="dark"] .registro-alumno-view select.input-apple {
+        background: rgba(15, 23, 42, .72);
+        color: var(--pm-text);
+        border-color: rgba(148, 163, 184, .35);
+      }
       .pm-field-error {
         display: block;
         font-size: 0.75rem;
@@ -303,7 +340,7 @@ function validateForm(data) {
 }
 
 // ─── EVENTOS ─────────────────────────────────────────────────
-function initListeners(container) {
+function initListeners() {
   document.getElementById('btn-registrar-alumno')?.addEventListener('click', handleSubmit)
   document.getElementById('btn-cancelar-registro')?.addEventListener('click', () => {
     window.dispatchEvent(new CustomEvent('showToast', {

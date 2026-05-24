@@ -445,8 +445,8 @@ export async function renderAlumnoPerfilView(container, { alumnoId }) {
               <div class="pm-zen-detail">
                 <i class="bi bi-telephone-fill"></i>
                 <div>
-                  <span>Teléfono alumno</span>
-                  <strong>${formatPhone(alumno.tlf_alumno) || '—'}</strong>
+                  <span>${alumno.tlf_alumno ? 'Teléfono alumno' : alumno.representante_tlf ? 'Teléfono representante' : 'Teléfono'}</span>
+                  <strong>${formatPhone(alumno.tlf_alumno || alumno.representante_tlf) || '—'}</strong>
                 </div>
               </div>
               ${alumno.representante_nombre ? `
@@ -455,14 +455,6 @@ export async function renderAlumnoPerfilView(container, { alumnoId }) {
                 <div>
                   <span>Representante</span>
                   <strong>${escHTML(alumno.representante_nombre)}</strong>
-                </div>
-              </div>` : ''}
-              ${alumno.representante_tlf ? `
-              <div class="pm-zen-detail">
-                <i class="bi bi-telephone"></i>
-                <div>
-                  <span>Teléfono representante</span>
-                  <strong>${formatPhone(alumno.representante_tlf)}</strong>
                 </div>
               </div>` : ''}
               ${alumno.correo_representante ? `

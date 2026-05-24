@@ -1,5 +1,35 @@
 import { defineConfig } from 'vite'
 
+// Content Security Policy shared across dev server and production build.
+// Keep both vite.config.js and _headers in sync when adding new external origins.
+const CSP = [
+  // Only load resources from our own origin by default
+  "default-src 'self'",
+  // Scripts: self + dynamic imports (Vite HMR needs 'self')
+  // pdf.js, mammoth, tesseract loaded dynamically from cdnjs/jsdelivr
+  "script-src 'self' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net",
+  // Styles: unsafe-inline needed — Bootstrap and component styles are inline
+  "style-src 'self' 'unsafe-inline'",
+  // Images: self, data URIs (avatars), blob (canvas/pdf previews), Supabase Storage
+  "img-src 'self' data: blob: https://*.supabase.co",
+  // Fonts: self only (no Google Fonts)
+  "font-src 'self'",
+  // API calls: Supabase REST + Realtime, Groq AI
+  "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.groq.com",
+  // Workers: blob (pdf.js spawns a worker from blob URL)
+  "worker-src 'self' blob:",
+  // Media: self + blob (audio recording)
+  "media-src 'self' blob:",
+  // Frames: none
+  "frame-src 'none'",
+  // Object/embed: none
+  "object-src 'none'",
+  // Base URI locked to self
+  "base-uri 'self'",
+  // Forms only to self
+  "form-action 'self'",
+].join('; ')
+
 export default defineConfig({
   base: '/',
   build: {
@@ -43,6 +73,12 @@ export default defineConfig({
     middlewareMode: false,
     // Configuración CORS para permitir WebSocket
     cors: true,
+    headers: {
+      'Content-Security-Policy': CSP,
+      'X-Content-Type-Options': 'nosniff',
+      'X-Frame-Options': 'DENY',
+      'Referrer-Policy': 'strict-origin-when-cross-origin',
+    },
   },
   // Plugin para manejar rutas multi-página limpias
   plugins: [

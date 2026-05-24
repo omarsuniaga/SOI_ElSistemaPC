@@ -489,15 +489,6 @@ function _renderShell(app, maestro, permisos) {
           </button>
         </div>
 
-        <!-- Header tabs (tablet only - hidden on desktop) -->
-        <div class="pm-header-tabs" id="pm-header-tabs">
-          ${tabs.map(tab => `
-            <button class="pm-header-tab" data-route="${tab.id}" title="${tab.label}">
-              <i class="bi ${tab.icon}"></i>
-              <span>${tab.label}</span>
-            </button>
-          `).join('')}
-        </div>
       </header>
 
       <!-- Contenido de la vista activa -->
@@ -535,18 +526,7 @@ function _renderShell(app, maestro, permisos) {
     })
   }
 
-  // Header tabs events - SPA navigation (tablet only)
-  const headerTabs = document.getElementById('pm-header-tabs')
-  if (headerTabs) {
-    headerTabs.querySelectorAll('.pm-header-tab').forEach(tab => {
-      tab.addEventListener('click', (e) => {
-        e.preventDefault()
-        router.navigate(tab.dataset.route)
-      })
-    })
-  }
-
-  // Sidebar nav events - SPA navigation (desktop only)
+  // Sidebar nav events - SPA navigation (desktop + landscape tablet)
   const sidebar = document.getElementById('pm-sidebar')
   if (sidebar) {
     sidebar.querySelectorAll('.pm-sidebar-link').forEach(link => {
@@ -759,9 +739,6 @@ function _setActiveTab(route) {
   })
   document.querySelectorAll('.pm-sidebar-link').forEach(link => {
     link.classList.toggle('active', link.dataset.route === route)
-  })
-  document.querySelectorAll('.pm-header-tab').forEach(tab => {
-    tab.classList.toggle('active', tab.dataset.route === route)
   })
 }
 

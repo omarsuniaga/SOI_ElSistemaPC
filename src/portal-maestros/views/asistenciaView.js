@@ -12,6 +12,7 @@ import { createImproveTextModal } from '../components/improveTextModal.js'
 import { createGenerarInformeModal } from '../components/improveTextModal.js'
 import { createStructureModal } from '../components/structureModal.js'
 import { getMisClases, getHorariosClases, getInscripcionesClases, getSalones, getRutasMaestro, invalidateClasesCache } from '../services/maestroDataService.js'
+import { AsistenciaTour } from '../components/AsistenciaTour.js'
 import { openPlanificacionModal } from '../../modules/planificacion/components/planificacionModal.js'
 import { RouteConfigAdapter } from '../services/routeConfigAdapter.js'
 import { renderRouteConfigurator } from './components/routeConfigurator.js'
@@ -499,53 +500,7 @@ function _renderVista(container, ctx) {
       [data-theme="light"] .pm-route-tree-dropdown-box {
         border-top-color: #e5e7eb;
       }
-      /* --- ESTILOS DEL TOUR INTERACTIVO --- */
-      .pm-tour-overlay {
-        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-        background: rgba(0, 0, 0, 0.8); z-index: 10000;
-        pointer-events: auto; display: none;
-        transition: opacity 0.3s;
-      }
-      .pm-tour-spotlight {
-        position: absolute; border-radius: 12px;
-        box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.8);
-        z-index: 10001; transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-        pointer-events: none; border: 2px solid var(--pm-primary);
-      }
-      .pm-tour-tooltip {
-        position: absolute; width: 280px; background: var(--pm-surface);
-        border: 1px solid var(--pm-border); border-radius: 16px;
-        padding: 1.5rem; z-index: 10002; color: #fff;
-        box-shadow: 0 10px 40px rgba(0,0,0,0.5);
-        transition: all 0.4s; pointer-events: auto;
-      }
-      .pm-tour-tooltip h4 { margin: 0 0 0.5rem; color: var(--pm-primary); font-size: 1.1rem; display: flex; align-items: center; gap: 0.5rem; }
-      .pm-tour-tooltip p { margin: 0; font-size: 0.9rem; line-height: 1.4; color: var(--pm-text-muted); }
-      .pm-tour-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 1.25rem; }
-      .pm-tour-btn-skip { background: none; border: none; color: var(--pm-text-muted); font-size: 0.8rem; cursor: pointer; text-decoration: underline; }
-      .pm-tour-btn-next { 
-        background: var(--pm-primary); color: #fff; border: none; 
-        padding: 0.5rem 1rem; border-radius: 20px; font-weight: 700; cursor: pointer;
-        font-size: 0.85rem; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
-      }
-      
-      .pm-help-btn {
-        width: 32px; height: 32px; border-radius: 50%; background: rgba(var(--pm-primary-rgb), 0.15);
-        color: var(--pm-primary); border: 1px solid rgba(var(--pm-primary-rgb), 0.3);
-        display: flex; align-items: center; justify-content: center; cursor: pointer;
-        transition: all 0.2s; font-size: 1rem;
-      }
-      .pm-help-btn:hover { background: var(--pm-primary); color: #fff; transform: scale(1.1); }
-
-      @media (max-width: 480px) {
-        .pm-tour-tooltip {
-          width: calc(100% - 40px);
-          left: 20px !important;
-          font-size: 0.85rem;
-        }
-      }
-
-      [data-theme="light"] .pm-tour-tooltip { background: #fff; color: #111; }
+      /* Estilos del tour movidos a AsistenciaTour.js */
       .pm-asist-actions-fixed {
         position: fixed;
         bottom: 80px; /* Por encima del menú inferior */
@@ -596,18 +551,7 @@ function _renderVista(container, ctx) {
       .pm-asist-btn-obs:active, .pm-asist-btn-save:active { transform: scale(0.96); }
     </style>
 
-    <!-- Overlay del Tour -->
-    <div id="pm-tour-overlay" class="pm-tour-overlay">
-      <div id="pm-tour-spotlight" class="pm-tour-spotlight"></div>
-      <div id="pm-tour-tooltip" class="pm-tour-tooltip">
-        <h4 id="pm-tour-title"></h4>
-        <p id="pm-tour-body"></p>
-        <div class="pm-tour-footer">
-          <button id="pm-tour-skip" class="pm-tour-btn-skip">Saltar guía</button>
-          <button id="pm-tour-next" class="pm-tour-btn-next">Siguiente</button>
-        </div>
-      </div>
-    </div>
+    <!-- Tour inyectado por AsistenciaTour.js -->
 
     <div class="pm-asist-root pm-animate-fade-in" style="position:relative; min-height:100vh; padding: 0;">
       ${hasConflict ? `
@@ -2043,129 +1987,18 @@ async function _autoSave(immediate = false, skipMutex = false) {
     return null;
   }
 
-  // === SISTEMA DE TOUR INTERACTIVO ===
-  const tourSteps = [
-    {
-      target: '.pm-asist-header',
-      title: '📍 Cabecera de Clase',
-      body: 'Aquí puede ver los datos de la clase, el salón y la fecha. Es su panel de control principal.'
-    },
-    {
-      target: '.pm-asist-bulk-circles',
-      title: '👥 Asistencia Rápida',
-      body: '¿Asistieron todos? Presione "P" para marcar a todos los alumnos como presentes en un solo clic.'
-    },
-    {
-      target: '#pm-alumnos-list',
-      title: '🙋‍♂️ Lista de Alumnos',
-      body: 'Presione el círculo de cada alumno para cambiar entre Presente, Ausente o Retraso.'
-    },
-    {
-      target: '#pm-planificacion-card',
-      title: '🗺️ Planificación Académica',
-      body: 'Seleccione una Ruta o busque en la Biblioteca. Los temas que ya impartió aparecerán con un check ✅ verde.'
-    },
-    {
-      target: '#pm-dsl-toolbar-container',
-      title: '🛠️ Caja de Herramientas',
-      body: 'Use el micrófono 🎤 para dictar la clase, o el botón de IA ✨ para mejorar y profesionalizar su redacción automáticamente.'
-    },
-    {
-      target: '#pm-dsl-editor-container',
-      title: '✍️ Escritura Inteligente (DSL)',
-      body: 'Use [Corchetes] para vincular temas de la planificación y asteriscos * para puntos clave. La IA le ayudará a darle formato profesional.'
-    },
-    {
-      target: '#btn-guardar',
-      title: '💾 Guardar Sesión',
-      body: 'Al finalizar, no olvide guardar su sesión para que el progreso de los alumnos se registre en el sistema.'
-    }
-  ];
+  // === TOUR INTERACTIVO (delegado a AsistenciaTour) ===
+  const tour = new AsistenciaTour(container)
+  tour.mount()
 
-  let currentTourStep = 0;
-  const tourOverlay = container.querySelector('#pm-tour-overlay');
-  const tourSpotlight = container.querySelector('#pm-tour-spotlight');
-  const tourTooltip = container.querySelector('#pm-tour-tooltip');
-  const tourTitle = container.querySelector('#pm-tour-title');
-  const tourBody = container.querySelector('#pm-tour-body');
-  const tourNext = container.querySelector('#pm-tour-next');
-  const tourSkip = container.querySelector('#pm-tour-skip');
-
-  function startTour() {
-    currentTourStep = 0;
-    tourOverlay.style.display = 'block';
-    setTimeout(() => tourOverlay.style.opacity = '1', 10);
-    showTourStep(0);
-  }
-
-  function showTourStep(index) {
-    const step = tourSteps[index];
-    const targetEl = container.querySelector(step.target);
-    
-    if (!targetEl) {
-      nextStep();
-      return;
-    }
-
-    // Scroll to element
-    targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-
-    // Position spotlight
-    const rect = targetEl.getBoundingClientRect();
-    const scrollY = window.scrollY;
-    
-    tourSpotlight.style.width = `${rect.width + 20}px`;
-    tourSpotlight.style.height = `${rect.height + 20}px`;
-    tourSpotlight.style.top = `${rect.top + scrollY - 10}px`;
-    tourSpotlight.style.left = `${rect.left - 10}px`;
-
-    // Update content
-    tourTitle.innerHTML = `<span>${step.title}</span>`;
-    tourBody.textContent = step.body;
-    tourNext.textContent = index === tourSteps.length - 1 ? 'Finalizar' : 'Siguiente';
-
-    // Position tooltip
-    let tipTop = rect.bottom + scrollY + 20;
-    if (tipTop + 200 > document.documentElement.scrollHeight) {
-      tipTop = rect.top + scrollY - 220;
-    }
-    
-    tourTooltip.style.top = `${tipTop}px`;
-    tourTooltip.style.left = `${Math.max(10, Math.min(window.innerWidth - 300, rect.left))}px`;
-  }
-
-  function nextStep() {
-    currentTourStep++;
-    if (currentTourStep < tourSteps.length) {
-      showTourStep(currentTourStep);
-    } else {
-      closeTour();
-    }
-  }
-
-  function closeTour() {
-    tourOverlay.style.opacity = '0';
-    setTimeout(() => {
-      tourOverlay.style.display = 'none';
-      localStorage.setItem('pm_tour_completed', 'true');
-    }, 300);
-  }
-
-  tourNext.onclick = nextStep;
-  tourSkip.onclick = closeTour;
-
-  // Evento botón ayuda
-  const helpBtn = container.querySelector('#pm-btn-help');
-  if (helpBtn) helpBtn.onclick = startTour;
-
-  // Auto-start si es la primera vez
-  if (!localStorage.getItem('pm_tour_completed')) {
-    setTimeout(startTour, 1500);
-  }
+  // Conectar botón de ayuda al tour
+  const helpBtn = container.querySelector('#pm-btn-help')
+  if (helpBtn) helpBtn.onclick = () => tour.start()
 
   // RETORNAR CLEANUP PARA EL ROUTER
   return () => {
     console.log('[AsistenciaView] Cleanup ejecutado por el Router');
+    tour.destroy()
     _cleanups.forEach(fn => { try { fn() } catch (_) {} });
   };
 }

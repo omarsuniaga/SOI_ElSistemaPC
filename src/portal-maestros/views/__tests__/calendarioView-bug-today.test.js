@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { renderCalendarioView } from '../calendarioView.js'
 import * as maestroDataService from '../../services/maestroDataService.js'
 import * as maestroAuth from '../../auth/maestroAuth.js'
@@ -15,6 +15,10 @@ describe('calendarioView - Bug 1: Today should not appear green without attendan
     container.id = 'calendario'
     document.body.appendChild(container)
 
+    // Fix time to 23:00 so that any class with hora_fin <= 22:00 has already ended
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date().setHours(23, 0, 0, 0))
+
     // Mock maestro
     maestroAuth.getMaestroLocal.mockReturnValue({ id: 'maestro-1', nombre: 'Test' })
   })
@@ -22,6 +26,7 @@ describe('calendarioView - Bug 1: Today should not appear green without attendan
   afterEach(() => {
     container?.remove()
     vi.clearAllMocks()
+    vi.useRealTimers()
   })
 
   it('should show today as pendiente when session has content but NO attendance recorded', async () => {
@@ -62,11 +67,11 @@ describe('calendarioView - Bug 1: Today should not appear green without attendan
 
     await renderCalendarioView(container)
 
-    // Today should be ORANGE (pendiente), not GREEN (registrada)
+    // Today should be ORANGE (estado-pendiente), not GREEN (estado-registrada)
     const todayCell = container.querySelector(`[data-fecha="${dateStr}"]`)
     expect(todayCell).toBeTruthy()
-    expect(todayCell.classList.contains('pendiente')).toBe(true)
-    expect(todayCell.classList.contains('registrada')).toBe(false)
+    expect(todayCell.classList.contains('estado-pendiente')).toBe(true)
+    expect(todayCell.classList.contains('estado-registrada')).toBe(false)
   })
 
   it('should show today as registrada when attendance IS recorded', async () => {
@@ -107,9 +112,9 @@ describe('calendarioView - Bug 1: Today should not appear green without attendan
 
     await renderCalendarioView(container)
 
-    // Today SHOULD be GREEN (registrada) when attendance exists
+    // Today SHOULD be GREEN (estado-registrada) when attendance exists
     const todayCell = container.querySelector(`[data-fecha="${dateStr}"]`)
     expect(todayCell).toBeTruthy()
-    expect(todayCell.classList.contains('registrada')).toBe(true)
+    expect(todayCell.classList.contains('estado-registrada')).toBe(true)
   })
 })

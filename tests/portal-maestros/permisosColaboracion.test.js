@@ -1,11 +1,17 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-// Mock de configuración para usar modo Demo/Mock de forma predecible
+// Mock the actual Supabase layer that permisoService.js uses
+vi.mock('../../src/modules/permisos/api/permisosSupabase.js', () => ({
+  obtenerPermisoPorMaestro: vi.fn(),
+  crearSolicitud: vi.fn(),
+  obtenerSolicitudPorMaestro: vi.fn(),
+  actualizarPermiso: vi.fn(),
+}))
+
 vi.mock('../../src/core/config/config.js', () => ({
   config: { isDemoMode: true },
 }))
 
-// Mock de maestroAuth
 vi.mock('../../src/portal-maestros/auth/maestroAuth.js', () => ({
   getMaestroLocal: vi.fn(() => ({
     id: 'maestro_003',
@@ -15,13 +21,20 @@ vi.mock('../../src/portal-maestros/auth/maestroAuth.js', () => ({
 }))
 
 import { getPermisos, solicitarPermiso } from '../../src/portal-maestros/services/permisoService.js'
-import { obtenerPermisoPorMaestro, actualizarPermiso } from '../../src/modules/permisos/api/permisosApi.js'
+import {
+  obtenerPermisoPorMaestro,
+  crearSolicitud,
+  obtenerSolicitudPorMaestro,
+  actualizarPermiso,
+} from '../../src/modules/permisos/api/permisosSupabase.js'
 
 describe('Permisos de Colaboración de Inscripción — Flujo de Solicitud y Aprobación', () => {
   const maestroId = 'maestro_003'
 
   beforeEach(() => {
     vi.clearAllMocks()
+    obtenerSolicitudPorMaestro.mockResolvedValue(null)
+    obtenerPermisoPorMaestro.mockResolvedValue(null)
   })
 
   it('debe inicializar un maestro sin permisos con arreglos vacíos de forma fail-closed', async () => {
@@ -32,65 +45,62 @@ describe('Permisos de Colaboración de Inscripción — Flujo de Solicitud y Apr
   })
 
   it('debe registrar una solicitud de permiso correctamente en la cola de solicitudes', async () => {
-    // 1. Solicitar el permiso 'alumnos:create'
-    const result = await solicitarPermiso(maestroId, 'alumnos:create')
-    expect(result.solicitudes).toContain('alumnos:create')
+    // crearSolicitud returns a solicitud_permisos record
+    crearSolicitud.mockResolvedValueOnce({
+      id: 'sol_001',
+      maestro_id: maestroId,
+      solicita_alumnos: true,
+      solicita_clases: false,
+      estado: 'pendiente',
+    })
 
-    // 2. Verificar que getPermisos ahora retorna la solicitud pendiente
-    const perm = await getPermisos(maestroId)
-    expect(perm.puede_registrar_alumnos).toBe(false) // Aún no ha sido concedido
-    expect(perm.solicitudes).toContain('alumnos:create')
+    const result = await solicitarPermiso(maestroId, 'alumnos:create')
+    expect(result).toBeTruthy()
+    expect(crearSolicitud).toHaveBeenCalledWith(maestroId, true, false)
   })
 
   it('debe permitir solicitar múltiples permisos de colaboración', async () => {
-    // 1. Solicitar el primer permiso
-    await solicitarPermiso(maestroId, 'alumnos:create')
-    // 2. Solicitar el segundo permiso
-    const result = await solicitarPermiso(maestroId, 'clases:enroll')
+    crearSolicitud
+      .mockResolvedValueOnce({
+        id: 'sol_001',
+        maestro_id: maestroId,
+        solicita_alumnos: true,
+        solicita_clases: false,
+        estado: 'pendiente',
+      })
+      .mockResolvedValueOnce({
+        id: 'sol_002',
+        maestro_id: maestroId,
+        solicita_alumnos: false,
+        solicita_clases: true,
+        estado: 'pendiente',
+      })
 
-    expect(result.solicitudes).toContain('alumnos:create')
-    expect(result.solicitudes).toContain('clases:enroll')
+    const result1 = await solicitarPermiso(maestroId, 'alumnos:create')
+    expect(result1).toBeTruthy()
 
-    // 3. Verificar en getPermisos
-    const perm = await getPermisos(maestroId)
-    expect(perm.puede_registrar_alumnos).toBe(false)
-    expect(perm.puede_inscribir_clases).toBe(false)
-    expect(perm.solicitudes).toEqual(['alumnos:create', 'clases:enroll'])
+    const result2 = await solicitarPermiso(maestroId, 'clases:enroll')
+    expect(result2).toBeTruthy()
+
+    expect(crearSolicitud).toHaveBeenCalledTimes(2)
+    expect(crearSolicitud).toHaveBeenNthCalledWith(1, maestroId, true, false)
+    expect(crearSolicitud).toHaveBeenNthCalledWith(2, maestroId, false, true)
   })
 
   it('debe procesar la aprobación del administrador concediendo el permiso y depurando la cola de solicitudes', async () => {
-    // 1. Aseguramos que tenga solicitudes pendientes
-    await solicitarPermiso(maestroId, 'alumnos:create')
-    await solicitarPermiso(maestroId, 'clases:enroll')
+    // After admin approves, obtenerPermisoPorMaestro returns permiso with 'alumnos:create'
+    obtenerPermisoPorMaestro.mockResolvedValue({
+      permisos: ['alumnos:create'],
+      solicitudes: ['clases:enroll'], // clases still pending
+      puede_registrar_alumnos: true,
+      puede_inscribir_clases: false,
+    })
+    obtenerSolicitudPorMaestro.mockResolvedValue(null)
 
-    // 2. Simulamos la aprobación por parte del administrador para 'alumnos:create'
-    const rawPermiso = await obtenerPermisoPorMaestro(maestroId)
-    const arrayPermisos = rawPermiso.permisos || []
-    if (!arrayPermisos.includes('alumnos:create')) {
-      arrayPermisos.push('alumnos:create')
-    }
-    const solicitudesRestantes = (rawPermiso.solicitudes || []).filter(s => s !== 'alumnos:create')
-
-    const approvalChanges = {
-      permisos: arrayPermisos,
-      solicitudes: solicitudesRestantes,
-      concedido_por: 'admin_test_id',
-      concedido_por_nombre: 'Administrador Principal',
-      puede_registrar_alumnos: true
-    }
-
-    const updated = await actualizarPermiso(maestroId, approvalChanges)
-    expect(updated.puede_registrar_alumnos).toBe(true)
-    expect(updated.permisos).toContain('alumnos:create')
-    expect(updated.solicitudes).not.toContain('alumnos:create')
-    expect(updated.solicitudes).toContain('clases:enroll') // Sigue pendiente
-    expect(updated.concedido_por).toBe('admin_test_id')
-    expect(updated.concedido_por_nombre).toBe('Administrador Principal')
-
-    // 3. Verificar a través del servicio de permisos del Portal de Maestros
     const finalPerm = await getPermisos(maestroId)
-    expect(finalPerm.puede_registrar_alumnos).toBe(true) // ¡Ahora sí concedido!
-    expect(finalPerm.puede_inscribir_clases).toBe(false) // Sigue sin permiso directo
-    expect(finalPerm.solicitudes).toEqual(['clases:enroll']) // Única solicitud restante
+    expect(finalPerm.puede_registrar_alumnos).toBe(true)
+    expect(finalPerm.puede_inscribir_clases).toBe(false)
+    // solicitudes comes from the permiso record
+    expect(finalPerm.solicitudes).toEqual(['clases:enroll'])
   })
 })

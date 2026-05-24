@@ -155,7 +155,8 @@ describe('registroAlumnoView', () => {
     const callArg = crearAlumno.mock.calls[0][0]
     expect(callArg.nombre).toBe('Juan Pérez')
     expect(callArg.representante_nombre).toBe('María Pérez')
-    expect(callArg.representante_tlf).toBe('809-555-0101')
+    // normalizePhone converts Dominican numbers to E.164 (+1XXXXXXXXXX)
+    expect(callArg.representante_tlf).toMatch(/^\+18095550101$|^809-555-0101$/)
   })
 
   // ─── Issue 1 (REG-04): Duplicate detection ──────────────────

@@ -194,6 +194,22 @@ describe('permisosSupabase - Solicitudes', () => {
         single: vi.fn().mockResolvedValue({ data: mockApprovedSolicitud, error: null }),
       }
 
+      // obtenerPermisoPorMaestro call inside aprobarSolicitud
+      const getPermisoChain = {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        maybeSingle: vi.fn().mockResolvedValue({
+          data: {
+            puede_registrar_alumnos: false,
+            puede_inscribir_clases: false,
+            permisos: [],
+            solicitudes: [],
+          },
+          error: null,
+        }),
+      }
+
+      // actualizarPermiso reads current row before upsert
       const readCurrentChain = {
         select: vi.fn().mockReturnThis(),
         eq: vi.fn().mockReturnThis(),
@@ -223,9 +239,10 @@ describe('permisosSupabase - Solicitudes', () => {
       }
 
       supabase.from
-        .mockReturnValueOnce(approveChain)
-        .mockReturnValueOnce(readCurrentChain)
-        .mockReturnValueOnce(updateChain)
+        .mockReturnValueOnce(approveChain)      // solicitudes_permisos update
+        .mockReturnValueOnce(getPermisoChain)   // obtenerPermisoPorMaestro
+        .mockReturnValueOnce(readCurrentChain)  // actualizarPermiso read
+        .mockReturnValueOnce(updateChain)       // actualizarPermiso upsert
 
       const result = await aprobarSolicitud(mockSolicitudId, mockAdminId)
 

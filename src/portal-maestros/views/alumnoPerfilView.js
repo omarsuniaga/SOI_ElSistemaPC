@@ -153,7 +153,7 @@ export async function renderAlumnoPerfilView(container, { alumnoId }) {
     // Obtener datos del alumno
     const { data: alumno, error: alumnoError } = await supabase
       .from('alumnos')
-      .select('id, nombre_completo, instrumento_principal, tlf_alumno, fecha_nacimiento, created_at, nivel_actual')
+      .select('id, nombre_completo, instrumento_principal, tlf_alumno, fecha_nacimiento, created_at, nivel_actual, representante_nombre, representante_tlf, correo_representante, direccion')
       .eq('id', alumnoId)
       .single()
 
@@ -445,10 +445,42 @@ export async function renderAlumnoPerfilView(container, { alumnoId }) {
               <div class="pm-zen-detail">
                 <i class="bi bi-telephone-fill"></i>
                 <div>
-                  <span>Teléfono</span>
-                  <strong>${formatPhone(alumno.tlf_alumno) || 'No registrado'}</strong>
+                  <span>Teléfono alumno</span>
+                  <strong>${formatPhone(alumno.tlf_alumno) || '—'}</strong>
                 </div>
               </div>
+              ${alumno.representante_nombre ? `
+              <div class="pm-zen-detail">
+                <i class="bi bi-person-vcard"></i>
+                <div>
+                  <span>Representante</span>
+                  <strong>${escHTML(alumno.representante_nombre)}</strong>
+                </div>
+              </div>` : ''}
+              ${alumno.representante_tlf ? `
+              <div class="pm-zen-detail">
+                <i class="bi bi-telephone"></i>
+                <div>
+                  <span>Teléfono representante</span>
+                  <strong>${formatPhone(alumno.representante_tlf)}</strong>
+                </div>
+              </div>` : ''}
+              ${alumno.correo_representante ? `
+              <div class="pm-zen-detail">
+                <i class="bi bi-envelope"></i>
+                <div>
+                  <span>Correo representante</span>
+                  <strong>${escHTML(alumno.correo_representante)}</strong>
+                </div>
+              </div>` : ''}
+              ${alumno.direccion ? `
+              <div class="pm-zen-detail">
+                <i class="bi bi-geo-alt"></i>
+                <div>
+                  <span>Dirección</span>
+                  <strong>${escHTML(alumno.direccion)}</strong>
+                </div>
+              </div>` : ''}
               <div class="pm-zen-detail">
                 <i class="bi bi-calendar-check"></i>
                 <div>

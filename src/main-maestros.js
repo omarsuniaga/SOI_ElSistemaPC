@@ -562,9 +562,8 @@ function _renderShell(app, maestro, permisos) {
 
   const closeSearch = () => {
     headerEl?.classList.remove('search-active')
-    if (searchInput) {
-      searchInput.value = ''
-    }
+    if (searchInput) searchInput.value = ''
+    document.getElementById('pm-header-search-dropdown')?.remove()
   }
 
   searchToggleBtn?.addEventListener('click', (e) => {
@@ -577,15 +576,75 @@ function _renderShell(app, maestro, permisos) {
     closeSearch()
   })
 
+  // Reactive header search — dropdown with results
+  let _searchDropdown = null
+  let _searchTimer = null
+
+  const removeDropdown = () => {
+    _searchDropdown?.remove()
+    _searchDropdown = null
+  }
+
+  const showDropdown = (items) => {
+    removeDropdown()
+    if (!items.length) return
+    const dd = document.createElement('div')
+    dd.id = 'pm-header-search-dropdown'
+    dd.setAttribute('role', 'listbox')
+    dd.innerHTML = items.map(a => `
+      <div class="pm-hsd-item" role="option" tabindex="0" data-id="${a.id}">
+        <i class="bi bi-person-fill pm-hsd-icon"></i>
+        <div class="pm-hsd-info">
+          <span class="pm-hsd-name">${a.nombre_completo}</span>
+          ${a.instrumento_principal ? `<span class="pm-hsd-meta">${a.instrumento_principal}</span>` : ''}
+        </div>
+        <i class="bi bi-chevron-right pm-hsd-arrow"></i>
+      </div>`).join('')
+    document.body.appendChild(dd)
+
+    // Position below the search bar
+    const rect = searchInput.getBoundingClientRect()
+    dd.style.cssText = `position:fixed;top:${rect.bottom + 4}px;left:${Math.max(8, rect.left)}px;width:${Math.min(320, window.innerWidth - 16)}px;z-index:9999;background:var(--pm-surface);border:1px solid var(--pm-border);border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,0.18);overflow:hidden;`
+    _searchDropdown = dd
+
+    dd.querySelectorAll('.pm-hsd-item').forEach(row => {
+      const go = () => { closeSearch(); removeDropdown(); router.navigate(`alumno?id=${row.dataset.id}`) }
+      row.addEventListener('click', go)
+      row.addEventListener('keypress', (e) => { if (e.key === 'Enter') go() })
+    })
+  }
+
+  searchInput?.addEventListener('input', () => {
+    const q = searchInput.value.trim()
+    clearTimeout(_searchTimer)
+    if (q.length < 2) { removeDropdown(); return }
+    _searchTimer = setTimeout(async () => {
+      try {
+        const { data } = await supabase
+          .from('alumnos')
+          .select('id, nombre_completo, instrumento_principal')
+          .ilike('nombre_completo', `%${q}%`)
+          .limit(8)
+        showDropdown(data || [])
+      } catch { removeDropdown() }
+    }, 250)
+  })
+
   searchInput?.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') {
-      closeSearch()
-    } else if (e.key === 'Enter') {
-      const q = e.target.value.trim()
-      if (q.length > 1) {
-        closeSearch()
-        router.navigate(`alumno?id=${encodeURIComponent(q)}`)
-      }
+    if (e.key === 'Escape') { closeSearch(); removeDropdown() }
+  })
+
+  // Inject dropdown styles once
+  if (!document.getElementById('pm-hsd-styles')) {
+    const s = document.createElement('style')
+    s.id = 'pm-hsd-styles'
+    s.textContent = `.pm-hsd-item{display:flex;align-items:center;gap:0.625rem;padding:0.75rem 1rem;cursor:pointer;border-bottom:1px solid var(--pm-border);transition:background 0.1s}.pm-hsd-item:last-child{border-bottom:none}.pm-hsd-item:hover,.pm-hsd-item:focus{background:var(--pm-surface-2);outline:none}.pm-hsd-icon{font-size:1rem;color:var(--pm-primary);flex-shrink:0}.pm-hsd-info{flex:1;min-width:0}.pm-hsd-name{display:block;font-size:0.875rem;font-weight:500;color:var(--pm-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.pm-hsd-meta{font-size:0.7rem;color:var(--pm-text-muted)}.pm-hsd-arrow{color:var(--pm-text-muted);font-size:0.75rem}`
+    document.head.appendChild(s)
+  }
+
+  document.addEventListener('click', (e) => {
+    if (!searchInput?.contains(e.target) && !_searchDropdown?.contains(e.target)) {
+      removeDropdown()
     }
   })
 

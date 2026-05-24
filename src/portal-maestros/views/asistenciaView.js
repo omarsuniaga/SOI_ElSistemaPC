@@ -266,6 +266,7 @@ export async function renderAsistenciaView(containerOrId, { claseId, fecha } = {
     _renderVista(container, {
       clase, horario, alumnos, estado, justificaciones,
       maestro, fechaHoy, claseId, sesionId, hasConflict, serverDSL, snapshots, salonNombre, rutaId,
+      sesionExistenteData,
       _justifModal
     })
 
@@ -276,7 +277,7 @@ export async function renderAsistenciaView(containerOrId, { claseId, fecha } = {
 }
 
 function _renderVista(container, ctx) {
-  const { clase, horario, alumnos, estado, justificaciones, maestro, fechaHoy, claseId, snapshots, serverDSL, hasConflict, salonNombre, rutaId, _justifModal } = ctx
+  const { clase, horario, alumnos, estado, justificaciones, maestro, fechaHoy, claseId, snapshots, serverDSL, hasConflict, salonNombre, rutaId, sesionExistenteData, _justifModal } = ctx
   let sesionId = ctx.sesionId
 
   // Cleanup registry — all destroyable sub-components register here

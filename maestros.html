@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#5856D6" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+  <link rel="manifest" href="/manifest.json" />
+  <title>Portal Maestros - SOI</title>
+  
+  <!-- PWA Meta Tags -->
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="SOI Maestros" />
+  <meta name="application-name" content="SOI Maestros" />
+  <meta name="msapplication-TileColor" content="#5856D6" />
+  <meta name="msapplication-config" content="none" />
+  
+  <style>
+    body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #ffffff; }
+    #portal-app { min-height: 100vh; }
+    .pm-loading-splash { 
+      display: flex; 
+      flex-direction: column; 
+      align-items: center; 
+      justify-content: center; 
+      height: 100vh; 
+      background: #fbfbfd;
+      animation: fadeIn 0.5s ease;
+    }
+    .pm-spinner { 
+      width: 44px; 
+      height: 44px; 
+      border: 3.5px solid rgba(0, 122, 255, 0.15); 
+      border-top-color: #007aff; 
+      border-radius: 50%; 
+      animation: pm-spin 0.8s cubic-bezier(0.4, 0, 0.2, 1) infinite; 
+    }
+    @keyframes pm-spin { 
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); } 
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    .pm-loading-text { 
+      margin-top: 24px; 
+      color: #1d1d1f; 
+      font-size: 15px; 
+      font-weight: 500;
+      letter-spacing: -0.01em;
+    }
+
+  </style>
+  <script type="module" crossorigin src="/assets/rolldown-runtime-tcWNtVWY.js"></script>
+  <script type="module" crossorigin src="/assets/preload-helper-CsoeaaUJ.js"></script>
+  <script type="module" crossorigin src="/assets/vendor-BWfrAznO.js"></script>
+  <script type="module" crossorigin src="/assets/supabase-C4ics26R.js"></script>
+  <script type="module" crossorigin src="/assets/alumnos-DymqG36Y.js"></script>
+  <script type="module" crossorigin src="/assets/clasesApi-3E3-66yq.js"></script>
+  <script type="module" crossorigin src="/assets/AppModal-CLA9fW7x.js"></script>
+  <script type="module" crossorigin src="/assets/AppToast-BOjiJExQ.js"></script>
+  <script type="module" crossorigin src="/assets/clasesView-ZzEVIV_i.js"></script>
+  <script type="module" crossorigin src="/assets/idb-DOPm7uLh.js"></script>
+  <script type="module" crossorigin src="/assets/academicService-DX1WEsMf.js"></script>
+  <script type="module" crossorigin src="/assets/maestroAuth-Cae-9DFh.js"></script>
+  <script type="module" crossorigin src="/assets/portalUtils-CisZ9vg-.js"></script>
+  <script type="module" crossorigin src="/assets/ausenciaModal-C0HADYv1.js"></script>
+  <script type="module" crossorigin src="/assets/groqService-CcQv6lIL.js"></script>
+  <script type="module" crossorigin src="/assets/offlineQueue-Cjwl3aiF.js"></script>
+  <script type="module" crossorigin src="/assets/permisosSupabase-klEyJeUD.js"></script>
+  <script type="module" crossorigin src="/assets/permisoService-DqFoRP7a.js"></script>
+  <script type="module" crossorigin src="/assets/pushService-DQD3mJWH.js"></script>
+  <script type="module" crossorigin src="/assets/main-maestros-CyRpArzK.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/vendor-DPfg2iol.css">
+  <link rel="stylesheet" crossorigin href="/assets/clasesView-8JgHMy54.css">
+  <link rel="stylesheet" crossorigin href="/assets/main-maestros-kQKGjyNe.css">
+</head>
+<body>
+  <a href="#portal-app" class="pm-skip-link">Saltar al contenido principal</a>
+  <div id="portal-app" tabindex="-1">
+    <div class="pm-loading-splash">
+      <div class="pm-spinner"></div>
+      <div class="pm-loading-text">Cargando Portal Maestros...</div>
+    </div>
+  </div>
+
+</body>
+</html>

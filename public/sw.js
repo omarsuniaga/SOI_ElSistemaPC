@@ -210,7 +210,12 @@ async function handleBackgroundAction(action, data) {
 }
 
 function resolveNotificationUrl(data) {
-  if (data.url) return data.url; // El backend ya envió URL completa o hash
+  // 1. Explicit hash URL from backend (already resolved)
+  if (data.url) return data.url;
+
+  // 2. deepLink from Edge Functions — use directly if it's a hash, ignore custom schemes
+  if (data.deepLink && data.deepLink.startsWith('#')) return data.deepLink;
+
   const tipo = data.tipo || data.type || '';
   const claseId = data.clase_id || data.claseId;
   const alumnoId = data.alumno_id || data.alumnoId;

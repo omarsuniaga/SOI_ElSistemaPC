@@ -52,7 +52,9 @@ function buildNotificationPayload(
   maestroNombre: string,
   clasesNombres: string[],
   estado: string,
-  notifCount: number
+  notifCount: number,
+  claseId?: string,
+  fecha?: string
 ): NotificationPayload {
   const stateEmoji = {
     VERDE: '🟢',
@@ -71,10 +73,16 @@ function buildNotificationPayload(
   const clasesList = clasesNombres.slice(0, 3).join(', ')
   const clasesMore = clasesNombres.length > 3 ? ` y ${clasesNombres.length - 3} más` : ''
 
+  // When there's a single class with known ID, deep-link directly to it
+  const hoy = new Date().toISOString().split('T')[0]
+  const deepLink = claseId
+    ? `#/asistencia?clase=${claseId}&fecha=${fecha || hoy}`
+    : '#/hoy'
+
   return {
     title: `Asistencias Pendientes - ${estado}`,
     body: `Saludos ${maestroNombre}, falta registrar asistencias y observaciones de ${clasesList}${clasesMore}.\n\n${stateLabel}`,
-    deepLink: 'maestro://asistencias',
+    deepLink,
     icon: stateEmoji
   }
 }
@@ -158,11 +166,16 @@ async function escalateNotifications() {
           ? reg.clases.map((c: any) => c.nombre)
           : [reg.clases?.nombre || 'Unknown']
 
+        // Pass clase_id only when there's a single class — enables direct deep-link
+        const singleClaseId = clasesNombres.length === 1 ? reg.clase_id : undefined
+        const fechaHoy = new Date().toISOString().split('T')[0]
         const payload = buildNotificationPayload(
           reg.maestros?.nombre_completo || 'Maestro',
           clasesNombres,
           state,
-          reg.notif_count
+          reg.notif_count,
+          singleClaseId,
+          fechaHoy
         )
 
         // Create notification record

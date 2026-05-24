@@ -222,15 +222,24 @@ function generarHTML(datos) {
         <h2 class="pm-section-title">Asistencia</h2>
         <div class="pm-attendance-bars">
           <div class="pm-attendance-bar-item">
-            <div class="pm-attendance-bar-label"><span>Presentes</span><span>${totalPresentes} (${pctPresentes}%)</span></div>
+            <div class="pm-attendance-bar-label">
+              <span><i class="bi bi-check-circle-fill" style="color:#30d158"></i> Presentes</span>
+              <span>${totalPresentes} &nbsp;·&nbsp; ${pctPresentes}%</span>
+            </div>
             <div class="pm-attendance-bar-track"><div class="pm-attendance-bar-fill success" style="width:${pctPresentes}%"></div></div>
           </div>
           <div class="pm-attendance-bar-item">
-            <div class="pm-attendance-bar-label"><span>Ausentes</span><span>${totalAusentes} (${pctAusentes}%)</span></div>
+            <div class="pm-attendance-bar-label">
+              <span><i class="bi bi-x-circle-fill" style="color:#ff3b30"></i> Ausentes</span>
+              <span>${totalAusentes} &nbsp;·&nbsp; ${pctAusentes}%</span>
+            </div>
             <div class="pm-attendance-bar-track"><div class="pm-attendance-bar-fill danger" style="width:${pctAusentes}%"></div></div>
           </div>
           <div class="pm-attendance-bar-item">
-            <div class="pm-attendance-bar-label"><span>Justificados</span><span>${totalJustificados} (${pctJustificados}%)</span></div>
+            <div class="pm-attendance-bar-label">
+              <span><i class="bi bi-exclamation-circle-fill" style="color:#ff9500"></i> Justificados</span>
+              <span>${totalJustificados} &nbsp;·&nbsp; ${pctJustificados}%</span>
+            </div>
             <div class="pm-attendance-bar-track"><div class="pm-attendance-bar-fill warning" style="width:${pctJustificados}%"></div></div>
           </div>
         </div>
@@ -256,32 +265,75 @@ function generarHTML(datos) {
       <section class="pm-dashboard-section" aria-label="Resumen por clase">
         <h2 class="pm-section-title">Clases</h2>
         <div class="pm-classes-list" id="pm-clases-grid">
-          ${clasesData.map(clase => `
-          <div class="pm-class-card" data-clase-id="${clase.id}" role="article" aria-label="Clase ${escHTML(clase.nombre)}">
-            <div class="pm-class-header">
-              <div>
-                <span class="pm-class-name">${escHTML(clase.nombre)}</span>
-                <span class="pm-class-inst">${escHTML(clase.instrumento || '')}</span>
+          ${clasesData.map(clase => {
+            const att = clase.avgAttendance
+            const attColor = att < 70 ? 'danger' : att < 85 ? 'warning' : 'success'
+            const attGradient = att < 70
+              ? 'linear-gradient(135deg,#ff3b30,#ff6b6b)'
+              : att < 85
+                ? 'linear-gradient(135deg,#ff9500,#ffcc00)'
+                : 'linear-gradient(135deg,#30d158,#34c759)'
+            const sparkHTML = clase.sessionAttendance.length > 0
+              ? clase.sessionAttendance.map((v, i, arr) => {
+                  const pct = Math.max(8, v)
+                  const col = v < 70 ? '#ff3b30' : v < 85 ? '#ff9500' : '#30d158'
+                  const isLast = i === arr.length - 1
+                  return `<div class="pm-spark-bar ${isLast ? 'pm-spark-last' : ''}" style="height:${pct}%;background:${col};" title="${v}%"></div>`
+                }).join('')
+              : '<span class="pm-spark-empty">—</span>'
+
+            return `
+            <div class="pm-class-card2" data-clase-id="${clase.id}" role="article" aria-label="Clase ${escHTML(clase.nombre)}">
+              <div class="pm-class-card2__accent" style="background:${attGradient}"></div>
+              <div class="pm-class-card2__body">
+                <div class="pm-class-card2__top">
+                  <div class="pm-class-card2__info">
+                    <span class="pm-class-card2__name">${escHTML(clase.nombre)}</span>
+                    ${clase.instrumento ? `<span class="pm-class-card2__inst"><i class="bi bi-music-note-beamed"></i> ${escHTML(clase.instrumento)}</span>` : ''}
+                  </div>
+                  <div class="pm-class-card2__badge-wrap">
+                    <span class="pm-class-card2__pct ${attColor}" aria-label="Asistencia ${att}%">${att}%</span>
+                    <button class="pm-class-btn2" data-clase-id="${clase.id}" aria-label="Ver alumnos" title="Ver alumnos">
+                      <i class="bi bi-people-fill"></i>
+                    </button>
+                  </div>
+                </div>
+
+                <div class="pm-class-card2__spark" aria-label="Tendencia de asistencia últimas sesiones">
+                  ${sparkHTML}
+                </div>
+
+                <div class="pm-class-card2__stats">
+                  <div class="pm-cs2 pm-cs2--success">
+                    <i class="bi bi-check-circle-fill"></i>
+                    <span class="pm-cs2__val">${clase.sesionesCompletadas}</span>
+                    <span class="pm-cs2__lbl">REG.</span>
+                  </div>
+                  <div class="pm-cs2 pm-cs2--warning">
+                    <i class="bi bi-clock-fill"></i>
+                    <span class="pm-cs2__val">${clase.sesionesPendientes}</span>
+                    <span class="pm-cs2__lbl">PEN.</span>
+                  </div>
+                  <div class="pm-cs2 pm-cs2--blue">
+                    <i class="bi bi-people-fill"></i>
+                    <span class="pm-cs2__val">${clase.totalAlumnos}</span>
+                    <span class="pm-cs2__lbl">ALUM.</span>
+                  </div>
+                  <div class="pm-cs2 pm-cs2--purple">
+                    <i class="bi bi-journal-check"></i>
+                    <span class="pm-cs2__val">${clase.progress}%</span>
+                    <span class="pm-cs2__lbl">CONT.</span>
+                  </div>
+                </div>
+
+                ${clase.riskStudents.length > 0 ? `
+                <div class="pm-class-card2__risk">
+                  <i class="bi bi-exclamation-triangle-fill"></i>
+                  ${clase.riskStudents.length} alumno${clase.riskStudents.length > 1 ? 's' : ''} con asistencia &lt;70%
+                </div>` : ''}
               </div>
-              <span class="pm-class-badge ${clase.avgAttendance < 70 ? 'danger' : clase.avgAttendance < 85 ? 'warning' : 'success'}" aria-label="Asistencia media ${clase.avgAttendance}%">
-                ${clase.avgAttendance}%
-              </span>
-            </div>
-            <div class="pm-class-chart" aria-label="Evolución de asistencia">
-              <svg viewBox="0 0 160 36" width="100%" height="28">
-                ${barChartContent(clase.sessionAttendance, 100, 160, 36)}
-              </svg>
-            </div>
-            <div class="pm-class-stats">
-              <div class="pm-class-stat"><span>${clase.sesionesCompletadas}</span><small>Reg.</small></div>
-              <div class="pm-class-stat"><span>${clase.sesionesPendientes}</span><small>Pen.</small></div>
-              <div class="pm-class-stat"><span>${clase.totalAlumnos}</span><small>Alum.</small></div>
-              <div class="pm-class-stat"><span>${clase.progress}%</span><small>Cont.</small></div>
-            </div>
-            ${clase.riskStudents.length > 0 ? `
-            <div class="pm-class-risk"><i class="bi bi-exclamation-circle"></i> ${clase.riskStudents.length} con &lt;70%</div>` : ''}
-            <button class="pm-class-btn" data-clase-id="${clase.id}" aria-label="Ver alumnos de la clase" title="Ver alumnos">⋮</button>
-          </div>`).join('')}
+            </div>`
+          }).join('')}
         </div>
       </section>
 
@@ -323,16 +375,16 @@ function generarHTML(datos) {
       .pm-section-title { font-size: 0.9375rem; font-weight: 600; color: var(--pm-text); margin: 0 0 0.75rem; display: flex; align-items: center; gap: 0.5rem; }
       .pm-section-badge { background: var(--pm-danger); color: white; font-size: 0.6875rem; font-weight: 600; padding: 0.125rem 0.5rem; border-radius: 6px; margin-left: auto; }
 
-      .pm-attendance-bars { display: flex; flex-direction: column; gap: 0.625rem; }
-      .pm-attendance-bar-item { display: flex; flex-direction: column; gap: 0.25rem; }
-      .pm-attendance-bar-label { display: flex; justify-content: space-between; font-size: 0.8125rem; }
-      .pm-attendance-bar-label span:first-child { color: var(--pm-text); }
-      .pm-attendance-bar-value { color: var(--pm-text-muted); font-size: 0.75rem; }
-      .pm-attendance-bar-track { height: 6px; background: var(--pm-border); border-radius: 3px; overflow: hidden; }
-      .pm-attendance-bar-fill { height: 100%; border-radius: 3px; transition: width 0.4s ease; }
-      .pm-attendance-bar-fill.success { background: var(--pm-success); }
-      .pm-attendance-bar-fill.danger { background: var(--pm-danger); }
-      .pm-attendance-bar-fill.warning { background: var(--pm-warning); }
+      .pm-attendance-bars { display: flex; flex-direction: column; gap: 0.75rem; }
+      .pm-attendance-bar-item { display: flex; flex-direction: column; gap: 0.375rem; }
+      .pm-attendance-bar-label { display: flex; justify-content: space-between; align-items: center; }
+      .pm-attendance-bar-label span:first-child { font-size: 0.8125rem; font-weight: 500; color: var(--pm-text); display: flex; align-items: center; gap: 0.375rem; }
+      .pm-attendance-bar-label span:last-child { font-size: 0.75rem; font-weight: 600; color: var(--pm-text-muted); }
+      .pm-attendance-bar-track { height: 8px; background: var(--pm-border); border-radius: 4px; overflow: hidden; }
+      .pm-attendance-bar-fill { height: 100%; border-radius: 4px; transition: width 0.6s cubic-bezier(.22,.61,.36,1); }
+      .pm-attendance-bar-fill.success { background: linear-gradient(90deg,#30d158,#34c759); }
+      .pm-attendance-bar-fill.danger  { background: linear-gradient(90deg,#ff3b30,#ff6b6b); }
+      .pm-attendance-bar-fill.warning { background: linear-gradient(90deg,#ff9500,#ffcc00); }
 
       .pm-risk-list { display: flex; flex-direction: column; gap: 0.5rem; }
       .pm-risk-item { display: flex; align-items: center; gap: 0.75rem; padding: 0.625rem 0.75rem; background: var(--pm-surface); border-radius: 10px; cursor: pointer; transition: transform 0.15s ease; }
@@ -343,21 +395,170 @@ function generarHTML(datos) {
       .pm-risk-class { font-size: 0.6875rem; color: var(--pm-text-muted); }
       .pm-risk-pct { font-size: 0.8125rem; font-weight: 700; color: var(--pm-danger); background: var(--pm-danger-bg); padding: 0.25rem 0.5rem; border-radius: 6px; }
 
-      .pm-classes-list { display: flex; flex-direction: column; gap: 0.625rem; }
+      /* ── Class card v2 ─────────────────────────────────────── */
+      .pm-classes-list { display: flex; flex-direction: column; gap: 0.75rem; }
+
+      .pm-class-card2 {
+        display: flex;
+        background: var(--pm-surface);
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.12), 0 0 0 1px rgba(255,255,255,0.04);
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
+      }
+      .pm-class-card2:active { transform: scale(0.99); }
+
+      .pm-class-card2__accent {
+        width: 4px;
+        flex-shrink: 0;
+        border-radius: 0;
+      }
+      .pm-class-card2__body {
+        flex: 1;
+        padding: 0.875rem 0.875rem 0.875rem 0.75rem;
+        min-width: 0;
+      }
+
+      .pm-class-card2__top {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 0.5rem;
+        margin-bottom: 0.625rem;
+      }
+      .pm-class-card2__info { flex: 1; min-width: 0; }
+      .pm-class-card2__name {
+        display: block;
+        font-size: 0.9375rem;
+        font-weight: 700;
+        color: var(--pm-text);
+        line-height: 1.25;
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      }
+      .pm-class-card2__inst {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+        font-size: 0.6875rem;
+        color: var(--pm-text-muted);
+        margin-top: 0.125rem;
+      }
+      .pm-class-card2__badge-wrap {
+        display: flex;
+        align-items: center;
+        gap: 0.375rem;
+        flex-shrink: 0;
+      }
+      .pm-class-card2__pct {
+        font-size: 1rem;
+        font-weight: 800;
+        padding: 0.25rem 0.625rem;
+        border-radius: 10px;
+        line-height: 1;
+      }
+      .pm-class-card2__pct.success {
+        background: rgba(52,199,89,0.15);
+        color: #30d158;
+      }
+      .pm-class-card2__pct.warning {
+        background: rgba(255,149,0,0.15);
+        color: #ff9500;
+      }
+      .pm-class-card2__pct.danger  {
+        background: rgba(255,59,48,0.15);
+        color: #ff3b30;
+      }
+
+      /* Spark chart */
+      .pm-class-card2__spark {
+        display: flex;
+        align-items: flex-end;
+        gap: 3px;
+        height: 32px;
+        margin: 0 0 0.625rem;
+        padding: 4px 0 0;
+      }
+      .pm-spark-bar {
+        flex: 1;
+        border-radius: 3px 3px 0 0;
+        min-height: 4px;
+        opacity: 0.75;
+        transition: opacity 0.2s;
+      }
+      .pm-spark-bar.pm-spark-last { opacity: 1; }
+      .pm-spark-empty {
+        font-size: 0.75rem;
+        color: var(--pm-text-muted);
+        align-self: center;
+      }
+
+      /* Stats row */
+      .pm-class-card2__stats {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        border-top: 1px solid var(--pm-border);
+        padding-top: 0.5rem;
+        gap: 0;
+      }
+      .pm-cs2 {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 0.25rem 0.125rem;
+        gap: 0.0625rem;
+      }
+      .pm-cs2 i {
+        font-size: 0.6875rem;
+        margin-bottom: 0.125rem;
+        opacity: 0.7;
+      }
+      .pm-cs2__val {
+        font-size: 1rem;
+        font-weight: 800;
+        color: var(--pm-text);
+        line-height: 1;
+      }
+      .pm-cs2__lbl {
+        font-size: 0.5rem;
+        color: var(--pm-text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        font-weight: 600;
+      }
+      .pm-cs2--success { color: #30d158; }
+      .pm-cs2--success .pm-cs2__val { color: #30d158; }
+      .pm-cs2--warning { color: #ff9500; }
+      .pm-cs2--warning .pm-cs2__val { color: #ff9500; }
+      .pm-cs2--blue { color: #0a84ff; }
+      .pm-cs2--blue .pm-cs2__val { color: var(--pm-text); }
+      .pm-cs2--purple { color: #bf5af2; }
+      .pm-cs2--purple .pm-cs2__val { color: var(--pm-text); }
+
+      .pm-class-card2__risk {
+        margin-top: 0.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.375rem;
+        padding: 0.375rem 0.625rem;
+        background: rgba(255,59,48,0.1);
+        border-radius: 8px;
+        font-size: 0.6875rem;
+        color: #ff3b30;
+        font-weight: 500;
+      }
+      .pm-class-btn2 {
+        background: var(--pm-surface-2);
+        border: none;
+        padding: 0.375rem 0.5rem;
+        border-radius: 8px;
+        color: var(--pm-text-muted);
+        cursor: pointer;
+        font-size: 0.75rem;
+        transition: background 0.15s, color 0.15s;
+      }
+      .pm-class-btn2:hover { background: var(--pm-border); color: var(--pm-text); }
+      /* Legacy .pm-class-card kept for compatibility */
       .pm-class-card { background: var(--pm-surface); border-radius: 12px; padding: 0.875rem; position: relative; }
-      .pm-class-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem; }
-      .pm-class-name { display: block; font-size: 0.9375rem; font-weight: 600; color: var(--pm-text); }
-      .pm-class-inst { font-size: 0.6875rem; color: var(--pm-text-muted); }
-      .pm-class-badge { font-size: 0.875rem; font-weight: 700; padding: 0.25rem 0.625rem; border-radius: 8px; }
-      .pm-class-badge.success { background: var(--pm-success-bg); color: var(--pm-success); }
-      .pm-class-badge.warning { background: var(--pm-warning-bg); color: var(--pm-warning); }
-      .pm-class-badge.danger { background: var(--pm-danger-bg); color: var(--pm-danger); }
-      .pm-class-chart { margin: 0.375rem 0; height: 28px; }
-      .pm-class-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.25rem; padding-top: 0.625rem; border-top: 1px solid var(--pm-border); }
-      .pm-class-stat { text-align: center; padding: 0.25rem; }
-      .pm-class-stat span { display: block; font-size: 0.9375rem; font-weight: 700; color: var(--pm-text); }
-      .pm-class-stat small { font-size: 0.5625rem; color: var(--pm-text-muted); text-transform: uppercase; }
-      .pm-class-risk { margin-top: 0.5rem; padding: 0.375rem 0.625rem; background: var(--pm-danger-bg); border-radius: 6px; font-size: 0.6875rem; color: var(--pm-danger); display: flex; align-items: center; gap: 0.375rem; }
       .pm-class-btn { position: absolute; top: 0.625rem; right: 0.625rem; background: none; border: none; padding: 0.25rem; color: var(--pm-text-muted); cursor: pointer; font-size: 1.25rem; }
 
       .pm-search-wrapper { position: relative; margin-bottom: 0.5rem; }
@@ -442,11 +643,11 @@ function bindEvents(container) {
     item.addEventListener('keypress', (e) => { if (e.key === 'Enter') handler() })
   })
 
-  // Botón expandir alumnos por clase
-  container.querySelectorAll('.pm-class-btn').forEach(btn => {
+  // Botón expandir alumnos por clase (soporta ambos selectores: legacy y v2)
+  container.querySelectorAll('.pm-class-btn, .pm-class-btn2').forEach(btn => {
     btn.addEventListener('click', async (e) => {
       e.stopPropagation()
-      const card = btn.closest('.pm-class-card')
+      const card = btn.closest('.pm-class-card2, .pm-class-card')
       const existente = card.querySelector('.pm-clase-students-panel')
       if (existente) { existente.remove(); return }
 

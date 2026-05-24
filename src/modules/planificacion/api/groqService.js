@@ -1,15 +1,76 @@
-import { config } from '../../../core/config/config.js'
-import { parseDsl, getTokenSummary } from '../utils/dslParser.js'
+/**
+ * Groq service — modules/planificacion
+ *
+ * All Groq API calls go through the `groq-proxy` Supabase Edge Function.
+ * The Groq API key lives in Edge Function secrets and is NEVER sent to the browser.
+ */
 
-const BASE_PROMPT = `Eres un asistente pedagógico musical. Recebir el registro de clase de un maestro.
-Estructura la información usando este DSL:
-- #Nombre = alumno mencionado
-- [texto] = contenido dado
-- (texto) = sugerencia de mejora
-- {texto} = tarea asignada
-- $término = medida técnica
-- N/5 = calificación
-Responde SOLO con el texto estructurado en DSL, sin explicaciones.`
+import { config } from '../../../core/config/config.js'
+import { supabase } from '../../../lib/supabaseClient.js'
+import { parseDsl } from '../utils/dslParser.js'
+
+// ---------------------------------------------------------------------------
+// Proxy helpers
+// ---------------------------------------------------------------------------
+
+function proxyBase() {
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL ?? ''
+  return `${supabaseUrl}/functions/v1/groq-proxy`
+}
+
+async function authHeaders() {
+  const { data: { session } } = await supabase.auth.getSession()
+  const token = session?.access_token ?? ''
+  return {
+    Authorization: `Bearer ${token}`,
+    'Content-Type': 'application/json',
+    apikey: import.meta.env.VITE_SUPABASE_ANON_KEY ?? '',
+  }
+}
+
+async function proxyChat(messages, { maxTokens, temperature, responseFormat } = {}) {
+  const headers = await authHeaders()
+  const body = {
+    model: config.groq.model,
+    messages,
+    ...(maxTokens     && { max_tokens: maxTokens }),
+    ...(temperature   !== undefined && { temperature }),
+    ...(responseFormat && { response_format: responseFormat }),
+  }
+  const res = await fetch(`${proxyBase()}/chat`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(body),
+  })
+  const data = await res.json()
+  if (!res.ok || data.error) throw new Error(data.error?.message ?? `Groq proxy error ${res.status}`)
+  return data.choices[0].message.content.trim()
+}
+
+async function proxyTranscribe(audioBlob, fileName = 'audio.webm') {
+  const { data: { session } } = await supabase.auth.getSession()
+  const token = session?.access_token ?? ''
+
+  const formData = new FormData()
+  formData.append('file', new File([audioBlob], fileName, { type: audioBlob.type || 'audio/webm' }))
+  formData.append('model', config.groq.whisperModel)
+
+  const res = await fetch(`${proxyBase()}/transcribe`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      apikey: import.meta.env.VITE_SUPABASE_ANON_KEY ?? '',
+    },
+    body: formData,
+  })
+  const data = await res.json()
+  if (!res.ok || data.error) throw new Error(data.error?.message ?? `Groq proxy error ${res.status}`)
+  return data.text ?? ''
+}
+
+// ---------------------------------------------------------------------------
+// Mock helpers (demo mode / no proxy available)
+// ---------------------------------------------------------------------------
 
 const MOCK_RESPONSES = {
   'escala do': '#Pedro [Escala Do Mayor] $1Octava (Practicar digitación) {Estudiar escala Do Mayor 10min/día} 4/5\n#Lucía [Escala Do# Mayor] $1Octava (Mayor velocidad) {Practicar cambio de posición} 3/5',
@@ -19,18 +80,28 @@ const MOCK_RESPONSES = {
 function getMockEnrichResponse(input) {
   const lower = input.toLowerCase()
   for (const [key, response] of Object.entries(MOCK_RESPONSES)) {
-    if (lower.includes(key)) {
-      return response
-    }
+    if (lower.includes(key)) return response
   }
-
   const parsed = parseDsl(input)
-  if (parsed.alumnos.length > 0) {
-    return input
-  }
-
-  return MOCK_RESPONSES.default.replace('Alumno', 'Estudiante').replace('Contenido dado', input.substring(0, 30))
+  if (parsed.alumnos?.length > 0) return input
+  return MOCK_RESPONSES.default
+    .replace('Alumno', 'Estudiante')
+    .replace('Contenido dado', input.substring(0, 30))
 }
+
+const BASE_PROMPT = `Eres un asistente pedagógico musical. Recibis el registro de clase de un maestro.
+Estructura la información usando este DSL:
+- #Nombre = alumno mencionado
+- [texto] = contenido dado
+- (texto) = sugerencia de mejora
+- {texto} = tarea asignada
+- $término = medida técnica
+- N/5 = calificación
+Responde SOLO con el texto estructurado en DSL, sin explicaciones.`
+
+// ---------------------------------------------------------------------------
+// Public API
+// ---------------------------------------------------------------------------
 
 export async function enrichText(texto) {
   if (!texto || texto.trim().length === 0) {
@@ -38,56 +109,18 @@ export async function enrichText(texto) {
   }
 
   if (config.isDemoMode) {
-    const mockResult = getMockEnrichResponse(texto)
-    return { success: true, message: 'Demo mode - respuesta mock', dsl: mockResult, debug: { isMock: true } }
-  }
-
-  if (!config.groq.apiKey) {
-    return { success: false, message: 'API key no configurada', dsl: getMockEnrichResponse(texto), debug: { isMock: true, fallback: true } }
+    return { success: true, message: 'Demo mode', dsl: getMockEnrichResponse(texto), debug: { isMock: true } }
   }
 
   try {
-    const fullPrompt = `${BASE_PROMPT}\n\nTexto del maestro: "${texto}"`
-
-    const response = await fetch(`${config.groq.endpoint}/chat/completions`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${config.groq.apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: config.groq.model,
-        messages: [
-          { role: 'system', content: BASE_PROMPT },
-          { role: 'user', content: `Texto del maestro: "${texto}"` }
-        ],
-        max_tokens: config.groq.maxTokens,
-        temperature: config.groq.temperature,
-      }),
-    })
-
-    if (!response.ok) {
-      const error = await response.json()
-      throw new Error(error.error?.message || 'Error en API GROQ')
-    }
-
-    const data = await response.json()
-    const dslResponse = data.choices[0]?.message?.content || ''
-
-    return {
-      success: true,
-      message: 'Enriquecido correctamente',
-      dsl: dslResponse.trim(),
-      debug: { isMock: false, model: config.groq.model },
-    }
+    const dsl = await proxyChat([
+      { role: 'system', content: BASE_PROMPT },
+      { role: 'user', content: `Texto del maestro: "${texto}"` },
+    ], { maxTokens: config.groq.maxTokens, temperature: config.groq.temperature })
+    return { success: true, message: 'Enriquecido correctamente', dsl, debug: { isMock: false } }
   } catch (error) {
     console.error('GROQ enrichText error:', error)
-    return {
-      success: false,
-      message: `Error: ${error.message}`,
-      dsl: getMockEnrichResponse(texto),
-      debug: { isMock: true, fallback: true, error: error.message },
-    }
+    return { success: false, message: `Error: ${error.message}`, dsl: getMockEnrichResponse(texto), debug: { isMock: true, fallback: true, error: error.message } }
   }
 }
 
@@ -97,69 +130,22 @@ export async function transcribeAudio(audioBlob) {
   }
 
   if (config.isDemoMode) {
-    return {
-      success: true,
-      message: 'Demo mode - transcript mock',
-      transcript: 'hoy dimos escala do con pedro se porto mal',
-      debug: { isMock: true },
-    }
-  }
-
-  if (!config.groq.apiKey) {
-    return {
-      success: false,
-      message: 'API key no configurada',
-      transcript: 'today we did do scale with peter',
-      debug: { isMock: true, fallback: true },
-    }
+    return { success: true, message: 'Demo mode', transcript: 'hoy dimos escala do con pedro se porto mal', debug: { isMock: true } }
   }
 
   try {
-    const formData = new FormData()
-    const audioFile = new File([audioBlob], 'audio.webm', { type: 'audio/webm' })
-    formData.append('file', audioFile)
-    formData.append('model', config.groq.whisperModel)
-
-    const response = await fetch(`https://api.groq.com/openai/v1/audio/transcriptions`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${config.groq.apiKey}`,
-      },
-      body: formData,
-    })
-
-    if (!response.ok) {
-      const error = await response.json()
-      throw new Error(error.error?.message || 'Error en Whisper API')
-    }
-
-    const data = await response.json()
-    return {
-      success: true,
-      message: 'Transcripción exitosa',
-      transcript: data.text || '',
-      debug: { isMock: false, model: config.groq.whisperModel },
-    }
+    const transcript = await proxyTranscribe(audioBlob)
+    return { success: true, message: 'Transcripción exitosa', transcript, debug: { isMock: false } }
   } catch (error) {
     console.error('GROQ transcribeAudio error:', error)
-    return {
-      success: false,
-      message: `Error: ${error.message}`,
-      transcript: '',
-      debug: { isMock: true, fallback: true, error: error.message },
-    }
+    return { success: false, message: `Error: ${error.message}`, transcript: '', debug: { isMock: true, fallback: true, error: error.message } }
   }
 }
 
 export async function transcribeAndParse(audioBlob) {
   const transcriptResult = await transcribeAudio(audioBlob)
-
-  if (!transcriptResult.success) {
-    return transcriptResult
-  }
-
+  if (!transcriptResult.success) return transcriptResult
   const enrichResult = await enrichText(transcriptResult.transcript)
-
   return {
     success: enrichResult.success,
     message: `Transcripción: ${transcriptResult.message}, Enriquecimiento: ${enrichResult.message}`,
@@ -175,14 +161,6 @@ export async function enrichFromText(texto) {
 
 // ── Curriculum AI Functions ──────────────────────────────────────────────────
 
-/**
- * Ask GROQ which curriculum objectives were likely covered by a plan.
- * Returns array of { alumno, objetivo_id, nivel, razon }.
- *
- * @param {{ tema, objetivos, contenido, notas_dsl }} plan
- * @param {string[]} alumnos  — list of student names parsed from DSL
- * @param {Array<{id, descripcion}>} objetivos_curriculo
- */
 export async function extraerCobertura(plan, alumnos, objetivos_curriculo) {
   const prompt = `Eres un asistente pedagógico musical. Dado el contenido de un plan de clase y una lista de objetivos curriculares, identifica cuáles objetivos probablemente se cubrieron.
 
@@ -203,41 +181,23 @@ Responde SOLO en JSON válido con este formato exacto:
     { "alumno": "nombre", "objetivo_id": "uuid", "nivel": "iniciando|en_proceso|logrado", "razon": "breve justificación" }
   ]
 }
-Solo incluye objetivos que tengan evidencia real en el plan. No inventes coberturas. Si no hay evidencia clara, devuelve coberturas vacías.`
+Solo incluye objetivos que tengan evidencia real en el plan. No inventes coberturas.`
 
-  if (config.isDemoMode || !config.groq.apiKey) {
+  if (config.isDemoMode) {
     const mockCoberturas = alumnos.slice(0, 2).flatMap(alumno =>
       objetivos_curriculo.slice(0, 2).map(o => ({
-        alumno,
-        objetivo_id: o.id,
-        nivel: 'en_proceso',
-        razon: 'Demo: objetivo relacionado con el tema'
+        alumno, objetivo_id: o.id, nivel: 'en_proceso', razon: 'Demo: objetivo relacionado con el tema'
       }))
     )
     return { success: true, coberturas: mockCoberturas, isMock: true }
   }
 
   try {
-    const response = await fetch(`${config.groq.endpoint}/chat/completions`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${config.groq.apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: config.groq.model,
-        messages: [{ role: 'user', content: prompt }],
-        max_tokens: 1500,
-        temperature: 0.3,
-        response_format: { type: 'json_object' },
-      }),
-    })
-    if (!response.ok) {
-      const err = await response.json()
-      throw new Error(err.error?.message || 'Error GROQ extraerCobertura')
-    }
-    const data = await response.json()
-    const parsed = JSON.parse(data.choices[0]?.message?.content || '{"coberturas":[]}')
+    const content = await proxyChat(
+      [{ role: 'user', content: prompt }],
+      { maxTokens: 1500, temperature: 0.3, responseFormat: { type: 'json_object' } }
+    )
+    const parsed = JSON.parse(content || '{"coberturas":[]}')
     return { success: true, coberturas: parsed.coberturas || [], isMock: false }
   } catch (error) {
     console.error('extraerCobertura error:', error)
@@ -245,13 +205,6 @@ Solo incluye objetivos que tengan evidencia real en el plan. No inventes cobertu
   }
 }
 
-/**
- * Generate a draft plan for a student based on pending objectives and recent themes.
- *
- * @param {{ nombre, instrumento, nivel }} alumno
- * @param {Array<{descripcion}>} objetivos_pendientes
- * @param {string[]} ultimos_temas  — last 3 executed plan themes
- */
 export async function sugerirPlan(alumno, objetivos_pendientes, ultimos_temas) {
   const prompt = `Eres un asistente pedagógico musical. Genera un borrador de plan de clase personalizado.
 
@@ -272,40 +225,25 @@ Responde SOLO en JSON válido con este formato exacto:
 }
 Sé específico y pedagógicamente relevante para el instrumento y nivel.`
 
-  if (config.isDemoMode || !config.groq.apiKey) {
+  if (config.isDemoMode) {
     return {
       success: true,
       plan: {
         tema: `Clase de ${alumno.instrumento} — Nivel ${alumno.nivel}`,
         objetivos: objetivos_pendientes[0]?.descripcion || 'Repaso general',
         contenido: 'Ejercicios de calentamiento, escala mayor, pieza del repertorio.',
-        recursos: ['Partitura del repertorio', 'Metrónomo']
+        recursos: ['Partitura del repertorio', 'Metrónomo'],
       },
-      isMock: true
+      isMock: true,
     }
   }
 
   try {
-    const response = await fetch(`${config.groq.endpoint}/chat/completions`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${config.groq.apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: config.groq.model,
-        messages: [{ role: 'user', content: prompt }],
-        max_tokens: 800,
-        temperature: 0.7,
-        response_format: { type: 'json_object' },
-      }),
-    })
-    if (!response.ok) {
-      const err = await response.json()
-      throw new Error(err.error?.message || 'Error GROQ sugerirPlan')
-    }
-    const data = await response.json()
-    const parsed = JSON.parse(data.choices[0]?.message?.content || '{}')
+    const content = await proxyChat(
+      [{ role: 'user', content: prompt }],
+      { maxTokens: 800, temperature: 0.7, responseFormat: { type: 'json_object' } }
+    )
+    const parsed = JSON.parse(content || '{}')
     return { success: true, plan: parsed, isMock: false }
   } catch (error) {
     console.error('sugerirPlan error:', error)
@@ -313,15 +251,6 @@ Sé específico y pedagógicamente relevante para el instrumento y nivel.`
   }
 }
 
-/**
- * Generate qualitative pedagogical feedback for a teacher based on their
- * executed plans and curriculum coverage.
- *
- * @param {string} instrumento
- * @param {Array<{tema, contenido, objetivos}>} planes_ejecutados  — last 8 weeks
- * @param {object} curriculo  — full curriculum object from obtenerCurriculo()
- * @param {string} resumen_cobertura  — human-readable summary of objective coverage
- */
 export async function analizarEnfoque(instrumento, planes_ejecutados, curriculo, resumen_cobertura) {
   const pilares_texto = curriculo?.curriculo_pilares?.map(p =>
     `Pilar "${p.nombre}": ${p.curriculo_objetivos?.map(o => o.descripcion).join('; ')}`
@@ -351,34 +280,19 @@ Escribe 2-3 párrafos:
 
 Tono: colega experto, respetuoso, propositivo. Sin tecnicismos innecesarios. Responde en español.`
 
-  if (config.isDemoMode || !config.groq.apiKey) {
+  if (config.isDemoMode) {
     return {
       success: true,
-      feedback: `Tu enfoque en las últimas semanas muestra consistencia y dedicación. Se nota claridad en la presentación de contenidos técnicos.\n\nHay oportunidad de ampliar el trabajo en repertorio variado y lectura a primera vista, áreas que aparecen menos frecuentes en los planes recientes.\n\nPara las próximas semanas, te sugiero incorporar al menos una pieza nueva por mes y dedicar 5-10 minutos de cada clase a ejercicios de lectura rítmica.`,
-      isMock: true
+      feedback: `Tu enfoque en las últimas semanas muestra consistencia y dedicación. Se nota claridad en la presentación de contenidos técnicos.\n\nHay oportunidad de ampliar el trabajo en repertorio variado y lectura a primera vista.\n\nPara las próximas semanas, incorporá al menos una pieza nueva por mes y dedicá 5-10 minutos a ejercicios de lectura rítmica.`,
+      isMock: true,
     }
   }
 
   try {
-    const response = await fetch(`${config.groq.endpoint}/chat/completions`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${config.groq.apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: config.groq.model,
-        messages: [{ role: 'user', content: prompt }],
-        max_tokens: 600,
-        temperature: 0.8,
-      }),
-    })
-    if (!response.ok) {
-      const err = await response.json()
-      throw new Error(err.error?.message || 'Error GROQ analizarEnfoque')
-    }
-    const data = await response.json()
-    const feedback = data.choices[0]?.message?.content?.trim() || ''
+    const feedback = await proxyChat(
+      [{ role: 'user', content: prompt }],
+      { maxTokens: 600, temperature: 0.8 }
+    )
     return { success: true, feedback, isMock: false }
   } catch (error) {
     console.error('analizarEnfoque error:', error)

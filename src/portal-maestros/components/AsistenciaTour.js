@@ -255,10 +255,10 @@ export class AsistenciaTour {
     targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' })
 
     // Esperar a que el scroll termine antes de calcular posición
-    setTimeout(() => this._positionOnElement(targetEl, index), 400)
+    setTimeout(() => this._positionOnElement(targetEl, step, index), 400)
   }
 
-  _positionOnElement(targetEl, index) {
+  _positionOnElement(targetEl, step, index) {
     // BUG FIX #3: usar solo getBoundingClientRect() — ya son coords del viewport.
     // El overlay, spotlight y tooltip son position:fixed → viven en el mismo
     // sistema de coordenadas. NO sumar scrollY.

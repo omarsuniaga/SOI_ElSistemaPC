@@ -617,7 +617,7 @@ function _renderShell(app, maestro, permisos) {
   searchInput?.addEventListener('input', () => {
     const q = searchInput.value.trim()
     clearTimeout(_searchTimer)
-    if (q.length < 2) { removeDropdown(); return }
+    if (q.length < 1) { removeDropdown(); return }
     _searchTimer = setTimeout(async () => {
       try {
         const { data } = await supabase
@@ -627,7 +627,7 @@ function _renderShell(app, maestro, permisos) {
           .limit(8)
         showDropdown(data || [])
       } catch { removeDropdown() }
-    }, 250)
+    }, 200)
   })
 
   searchInput?.addEventListener('keydown', (e) => {

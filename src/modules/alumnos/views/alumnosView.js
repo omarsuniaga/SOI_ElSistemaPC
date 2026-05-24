@@ -1,4 +1,5 @@
 import '../styles/alumnos.css'
+import { formatPhone, normalizePhone, whatsappLink } from '../../../shared/utils/phoneUtils.js'
 import { AppModal } from '../../../shared/components/AppModal.js'
 import { AppToast } from '../../../shared/components/AppToast.js'
 import {
@@ -6,6 +7,7 @@ import {
   crearAlumno,
   actualizarAlumno,
   eliminarAlumno,
+  obtenerInscripcionesAlumno,
   PARENTESCOS,
   getParentescoLabel,
 } from '../api/alumnosApi.js'
@@ -182,7 +184,7 @@ function renderTableRows(alumnos) {
           </button>
           ${a.telefono ? `
             <button class="btn btn-sm btn-success bg-gradient text-white rounded-pill px-3 shadow-sm d-flex align-items-center gap-2" data-action="whatsapp" data-id="${a.id}" title="Enviar WhatsApp" style="min-height: 32px;">
-              <i class="bi bi-whatsapp"></i> <span class="d-none d-sm-inline fw-medium">${escapeHTML(a.telefono)}</span>
+              <i class="bi bi-whatsapp"></i> <span class="d-none d-sm-inline fw-medium">${formatPhone(a.telefono)}</span>
             </button>
           ` : '<span class="badge bg-light text-muted border d-none d-sm-inline-block">Sin número</span>'}
           <i class="bi bi-chevron-right text-muted ms-1" style="font-size: 1.1rem; transition: transform 0.2s ease;"></i>
@@ -241,8 +243,6 @@ function openWhatsAppModal(id) {
   const alumno = state.alumnosOriginales.find(a => a.id === id)
   if (!alumno || !alumno.telefono) return
 
-  const telefonoLimpio = alumno.telefono.replace(/\D/g, '')
-
   AppModal.open({
     title: 'Enviar WhatsApp a ' + escapeHTML(alumno.nombre),
     size: 'md',
@@ -251,7 +251,7 @@ function openWhatsAppModal(id) {
       <div class="mb-3">
         <label class="form-label-compact">Número de destino</label>
         <p class="form-control-plaintext fw-bold mb-0">
-          <i class="bi bi-whatsapp text-success me-1"></i> +${telefonoLimpio}
+          <i class="bi bi-whatsapp text-success me-1"></i> ${formatPhone(alumno.telefono)}
         </p>
       </div>
       <div class="mb-3">
@@ -264,8 +264,8 @@ function openWhatsAppModal(id) {
     `,
     onSave: async (modalBody) => {
       const msg = modalBody.querySelector('#modal-whatsapp-msg').value.trim()
-      const url = `https://wa.me/${telefonoLimpio}?text=${encodeURIComponent(msg)}`
-      window.open(url, '_blank')
+      const url = whatsappLink(alumno.telefono, msg)
+      if (url) window.open(url, '_blank')
     }
   })
 }
@@ -432,17 +432,17 @@ async function collectAndValidateAlumno(modalBody, existingAlumno = null) {
   return {
     nombre: nombre,
     email: email || null,
-    telefono: telefono,
+    telefono: normalizePhone(telefono) || telefono,
     cedula: cedula || null,
     fecha_nacimiento: fechaNacimiento || null,
     genero: genero || null,
     instrumento: instrumento,
     is_active: esActivo,
     familiar_nombre: familiarNombre || null,
-    familiar_telefono: familiarTelefono,
+    familiar_telefono: normalizePhone(familiarTelefono) || familiarTelefono || null,
     familiar_parentesco: familiarParentesco || null,
     contacto_emergencia_nombre: modalBody.querySelector('#modal-contacto-emergencia-nombre').value.trim() || null,
-    contacto_emergencia_telefono: modalBody.querySelector('#modal-contacto-emergencia-telefono').value.trim() || null,
+    contacto_emergencia_telefono: normalizePhone(modalBody.querySelector('#modal-contacto-emergencia-telefono').value.trim()) || modalBody.querySelector('#modal-contacto-emergencia-telefono').value.trim() || null,
     contacto_emergencia_parentesco: modalBody.querySelector('#modal-contacto-emergencia-parentesco').value || null,
     condiciones_medicas: modalBody.querySelector('#modal-condiciones-medicas').value.trim() || null,
     alergias: modalBody.querySelector('#modal-alergias').value.trim() || null,
@@ -565,7 +565,7 @@ function openViewModal(id) {
           ${alumno.telefono ? `
             <div class="mb-2">
               <label class="form-label fw-bold">Teléfono (WhatsApp)</label>
-              <p class="form-control-plaintext"><a href="https://wa.me/${alumno.telefono.replace(/\D/g, '')}" target="_blank" class="text-success text-decoration-none"><i class="bi bi-whatsapp"></i> ${escapeHTML(alumno.telefono)}</a></p>
+              <p class="form-control-plaintext"><a href="${whatsappLink(alumno.telefono)}" target="_blank" class="text-success text-decoration-none"><i class="bi bi-whatsapp"></i> ${formatPhone(alumno.telefono)}</a></p>
             </div>
           ` : ''}
         </div>
@@ -600,7 +600,7 @@ function openViewModal(id) {
         <div class="col-md-4">
           <div class="mb-2">
             <label class="form-label fw-bold">Teléfono</label>
-            <p class="form-control-plaintext">${alumno.contacto_emergencia_telefono ? `<a href="tel:${escapeHTML(alumno.contacto_emergencia_telefono)}">${escapeHTML(alumno.contacto_emergencia_telefono)}</a>` : '-'}</p>
+            <p class="form-control-plaintext">${alumno.contacto_emergencia_telefono ? `<a href="tel:${alumno.contacto_emergencia_telefono}">${formatPhone(alumno.contacto_emergencia_telefono)}</a>` : '-'}</p>
           </div>
         </div>
         <div class="col-md-4">
@@ -626,7 +626,7 @@ function openViewModal(id) {
         <div class="col-md-4">
           <div class="mb-2">
             <label class="form-label fw-bold">Teléfono</label>
-            <p class="form-control-plaintext">${alumno.familiar_telefono ? `<a href="tel:${escapeHTML(alumno.familiar_telefono)}">${escapeHTML(alumno.familiar_telefono)}</a>` : '-'}</p>
+            <p class="form-control-plaintext">${alumno.familiar_telefono ? `<a href="tel:${alumno.familiar_telefono}">${formatPhone(alumno.familiar_telefono)}</a>` : '-'}</p>
           </div>
         </div>
         <div class="col-md-4">
@@ -705,12 +705,18 @@ function openDeleteModal(id) {
   }
 
   state.deletingId = id
+  
+  // 1. Abrimos el modal con cargando
   AppModal.open({
     title: '⚠️ Eliminar Alumno',
-    size: 'sm',
+    size: 'md',
     saveText: 'Eliminar',
-    body: `<p>¿Eliminar al alumno <strong>${escapeHTML(alumno.nombre)}</strong>?</p>
-           <p class="text-muted small mb-0">Esta acción no se puede deshacer.</p>`,
+    body: `<div class="d-flex flex-column align-items-center justify-content-center py-5">
+             <div class="spinner-border text-primary mb-3" role="status">
+               <span class="visually-hidden">Cargando...</span>
+             </div>
+             <p class="text-muted mb-0">Analizando estado de inscripciones...</p>
+           </div>`,
     onSave: async () => {
       await eliminarAlumno(id)
       state.alumnosOriginales = state.alumnosOriginales.filter(a => a.id !== id)
@@ -719,6 +725,82 @@ function openDeleteModal(id) {
       AppToast.success('Alumno eliminado correctamente')
     }
   })
+  
+  // Ocultamos temporalmente el botón de guardar hasta tener la respuesta
+  const saveBtn = document.querySelector('#app-global-modal .app-modal-btn-save')
+  if (saveBtn) saveBtn.style.display = 'none'
+
+  // 2. Realizamos la consulta asíncrona de inscripciones
+  setTimeout(async () => {
+    try {
+      if (state.deletingId !== id) return // evitar race conditions
+
+      const inscripciones = await obtenerInscripcionesAlumno(id)
+      
+      const bodyEl = document.querySelector('#app-global-modal .app-modal-body')
+      if (!bodyEl || state.deletingId !== id) return
+
+      // Volver a mostrar el botón de guardar
+      if (saveBtn) saveBtn.style.display = ''
+
+      if (inscripciones.length === 0) {
+        // Contacto huérfano - Eliminación segura
+        bodyEl.innerHTML = `
+          <div class="alert alert-success d-flex align-items-start gap-3 border-0 rounded-4 p-3 mb-4" style="background: rgba(40, 167, 69, 0.08); color: #155724;">
+            <i class="bi bi-person-check-fill fs-3 text-success mt-1"></i>
+            <div>
+              <h6 class="alert-heading fw-bold mb-1" style="color: #0f6826;">Contacto Huérfano / Eliminación Segura</h6>
+              <p class="mb-0 small" style="opacity: 0.9;">Este alumno no posee matrículas registradas ni está inscrito en ninguna clase activa en el período actual. Su eliminación no afectará datos académicos.</p>
+            </div>
+          </div>
+          <p class="mb-2">¿Estás seguro de que querés eliminar permanentemente al alumno <strong>${escapeHTML(alumno.nombre)}</strong>?</p>
+          <p class="text-muted small mb-0"><i class="bi bi-info-circle me-1"></i> Esta acción es irreversible y limpiará todo su registro de contacto del sistema.</p>
+        `
+      } else {
+        // Alumno con clases activas - Alerta Crítica
+        const clasesHtml = inscripciones.map(i => `
+          <li class="d-flex align-items-center gap-2 py-2 border-bottom border-light">
+            <i class="bi bi-journal-bookmark-fill text-danger fs-5"></i>
+            <span class="fw-semibold text-dark" style="font-size: 0.9rem;">${escapeHTML(i.clase_nombre)}</span>
+          </li>
+        `).join('')
+
+        bodyEl.innerHTML = `
+          <div class="alert alert-danger d-flex align-items-start gap-3 border-0 rounded-4 p-3 mb-4" style="background: rgba(220, 53, 69, 0.08); color: #721c24;">
+            <i class="bi bi-exclamation-triangle-fill fs-3 text-danger mt-1"></i>
+            <div>
+              <h6 class="alert-heading fw-bold mb-1" style="color: #af232f;">¡Alumno con Clases Activas!</h6>
+              <p class="mb-2 small" style="opacity: 0.9;">Este alumno está matriculado e inscrito en las siguientes clases del período actual:</p>
+              <ul class="list-unstyled mb-2 ps-0" style="max-height: 150px; overflow-y: auto;">
+                ${clasesHtml}
+              </ul>
+              <p class="mb-0 small fw-bold mt-2"><i class="bi bi-slash-circle-fill me-1"></i> ADVERTENCIA CRÍTICA: Eliminar a este alumno borrará físicamente su registro de asistencia, calificaciones históricas y matrículas activas.</p>
+            </div>
+          </div>
+          <p class="mb-2">¿Realmente querés eliminar permanentemente al alumno <strong>${escapeHTML(alumno.nombre)}</strong> y todos sus registros?</p>
+          <p class="text-muted small mb-0"><i class="bi bi-exclamation-octagon-fill text-danger me-1"></i> Esta acción no se puede deshacer y puede provocar inconsistencias en los reportes de estas clases.</p>
+        `
+      }
+    } catch (err) {
+      console.error(err)
+      if (state.deletingId !== id) return
+
+      const bodyEl = document.querySelector('#app-global-modal .app-modal-body')
+      if (bodyEl) {
+        if (saveBtn) saveBtn.style.display = ''
+        bodyEl.innerHTML = `
+          <div class="alert alert-warning d-flex align-items-start gap-3 border-0 rounded-4 p-3 mb-3">
+            <i class="bi bi-exclamation-triangle-fill fs-4 text-warning"></i>
+            <div>
+              <h6 class="alert-heading fw-bold mb-1">Error de Verificación</h6>
+              <p class="mb-0 small">No se pudo comprobar si el alumno tiene clases activas. Procedé con precaución.</p>
+            </div>
+          </div>
+          <p>¿Querés eliminar al alumno <strong>${escapeHTML(alumno.nombre)}</strong> de todas formas?</p>
+        `
+      }
+    }
+  }, 300)
 }
 
 function refreshTable() {

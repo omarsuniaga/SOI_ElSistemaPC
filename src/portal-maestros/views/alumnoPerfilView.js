@@ -1,6 +1,7 @@
 import { supabase } from '../../lib/supabaseClient.js'
 import { getMaestroLocal } from '../auth/maestroAuth.js'
 import { escHTML } from '../utils/portalUtils.js'
+import { formatPhone } from '../../shared/utils/phoneUtils.js'
 
 async function _renderEvaluaciones(container, alumnoId) {
   const root = container.querySelector('#pm-alumno-progreso-root')
@@ -445,7 +446,7 @@ export async function renderAlumnoPerfilView(container, { alumnoId }) {
                 <i class="bi bi-telephone-fill"></i>
                 <div>
                   <span>Teléfono</span>
-                  <strong>${escHTML(alumno.tlf_alumno || 'No registrado')}</strong>
+                  <strong>${formatPhone(alumno.tlf_alumno) || 'No registrado'}</strong>
                 </div>
               </div>
               <div class="pm-zen-detail">

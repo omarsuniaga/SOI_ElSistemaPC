@@ -12,6 +12,7 @@ import { registrarAlumnoModal } from '../components/registrarAlumnoModal.js';
 import { gestionarClasesModal } from '../components/gestionarClasesModal.js';
 import { renderGestionAlumnosClasesView } from './gestionAlumnosClasesView.js';
 import { escHTML, getInitials } from '../utils/portalUtils.js';
+import { normalizePhone } from '../../shared/utils/phoneUtils.js';
 
 // Estado local de la vista
 const viewState = {
@@ -611,7 +612,7 @@ function initListeners(maestro) {
 // ─── GUARDAR PERFIL ──────────────────────────────────────────
 async function guardarPerfil(maestroOriginal) {
   const nombre = document.getElementById('perfilNombre').value.trim();
-  const telefono = document.getElementById('perfilTelefono').value.trim();
+  const telefono = normalizePhone(document.getElementById('perfilTelefono').value.trim()) || document.getElementById('perfilTelefono').value.trim();
   const especialidad = document.getElementById('perfilEspecialidad').value.trim();
   const disponibilidad = collectDisponibilidad();
 

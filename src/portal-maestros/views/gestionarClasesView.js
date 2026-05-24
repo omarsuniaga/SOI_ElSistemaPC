@@ -59,7 +59,6 @@ let _enrolledIds = new Set()
 
 export async function renderGestionarClasesView(container) {
   container.innerHTML = _skeletonHTML()
-  _injectStyles()
 
   const maestro = getMaestroLocal()
   if (!maestro) {
@@ -531,10 +530,10 @@ function _emptyState(icon, title, msg) {
 
 // ── Styles ────────────────────────────────────────────────────────────────────
 
-function _injectStyles() {
-  if (document.getElementById('gcv-styles')) return
+// Styles are in 12-views-gestion.css — _injectStyles() removed.
+// eslint-disable-next-line no-unused-vars
+function _injectStyles_legacy() { /* noop — kept to avoid parse errors with backtick below */
   const style = document.createElement('style')
-  style.id = 'gcv-styles'
   style.textContent = `
     .gcv-root {
       padding: 1.5rem;

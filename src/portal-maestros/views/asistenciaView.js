@@ -1857,6 +1857,8 @@ async function _autoSave(immediate = false, skipMutex = false) {
   }
 
   container.querySelector('#pm-asist-back').onclick = () => {
+    tour.destroy()
+    try { _justifModal.close() } catch (_) {}
     _cleanups.forEach(fn => { try { fn() } catch (_) {} })
     window.location.hash = '#/hoy'
   };
@@ -2000,6 +2002,7 @@ async function _autoSave(immediate = false, skipMutex = false) {
   return () => {
     console.log('[AsistenciaView] Cleanup ejecutado por el Router');
     tour.destroy()
+    try { _justifModal.close() } catch (_) {}
     _cleanups.forEach(fn => { try { fn() } catch (_) {} });
   };
 }

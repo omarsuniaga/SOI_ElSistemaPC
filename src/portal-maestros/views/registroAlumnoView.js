@@ -1,4 +1,5 @@
 import { escHTML, getInitials } from '../utils/portalUtils.js'
+import { normalizePhone } from '../../shared/utils/phoneUtils.js'
 import { getPermisos } from '../services/permisoService.js'
 import { getMaestroLocal } from '../auth/maestroAuth.js'
 import { crearAlumno, validarEmail, validarCedula } from '../../modules/alumnos/api/alumnosApi.js'
@@ -368,8 +369,8 @@ async function handleSubmit() {
       instrumento_principal: data.instrumento,
       representante_nombre: data.repNombre,
       familiar_nombre: data.repNombre,
-      representante_tlf: data.repTlf,
-      familiar_telefono: data.repTlf,
+      representante_tlf: normalizePhone(data.repTlf) || data.repTlf,
+      familiar_telefono: normalizePhone(data.repTlf) || data.repTlf,
       representante_cedula: data.repCedula || null,
       correo_representante: data.repEmail || null,
       direccion: data.direccion || null,

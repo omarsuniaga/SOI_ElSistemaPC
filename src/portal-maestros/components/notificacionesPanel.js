@@ -119,9 +119,11 @@ export const notificacionesPanel = {
       const anyUnread = g.items.some(n => n.estado !== 'leida');
       const route = _routeForTipo(g.tipo, g.items[0]);
 
+      const isSinRegistrar = g.tipo === 'sesion_sin_registrar'
+
       return `
         <div
-          class="pm-notif-item ${anyUnread ? '' : 'leida'}"
+          class="pm-notif-item ${anyUnread ? '' : 'leida'} ${isSinRegistrar ? 'pm-notif-item--urgent' : ''}"
           data-ids="${g.items.map(n => n.id).join(',')}"
           data-route="${route}"
           title="${isGroup ? 'Ver todo' : g.items[0].titulo}"
@@ -135,11 +137,17 @@ export const notificacionesPanel = {
             </div>
             <div class="pm-notif-msg">
               ${isGroup
-                ? `${g.count} alertas de este tipo`
+                ? `${g.count} clases sin registrar`
                 : g.items[0].mensaje
               }
             </div>
-            <div class="pm-notif-time">${formatRelativeTime(g.items[0].created_at)}</div>
+            <div class="pm-notif-footer-row">
+              <span class="pm-notif-time">${formatRelativeTime(g.items[0].created_at)}</span>
+              ${isSinRegistrar && route !== '#/'
+                ? `<a class="pm-notif-cta" data-route="${route}" href="javascript:void(0)">Registrar ahora →</a>`
+                : ''
+              }
+            </div>
           </div>
           <div class="pm-notif-actions">
             <button class="pm-notif-btn-mark" data-ids="${g.items.map(n => n.id).join(',')}" title="Marcar como leída">
@@ -154,11 +162,26 @@ export const notificacionesPanel = {
       `;
     }).join('');
 
+    // Click en CTA "Registrar ahora" — navegar directo sin propagar al item
+    listEl.querySelectorAll('.pm-notif-cta').forEach(cta => {
+      cta.addEventListener('click', (e) => {
+        e.stopPropagation()
+        const ids = cta.closest('.pm-notif-item').dataset.ids.split(',')
+        ids.forEach(id => marcarLeida(id))
+        const route = cta.dataset.route
+        if (route && route !== '#/') {
+          window.location.hash = route.replace(/^#/, '')
+          notificacionesPanel.close()
+        }
+      })
+    })
+
     // Click en item: marcar leída(s) y navegar a la ruta relevante
     listEl.querySelectorAll('.pm-notif-item').forEach(el => {
       el.addEventListener('click', (e) => {
-        // Evitar si el click fue en un botón de acción
-        if (e.target.closest('.pm-notif-actions')) return;
+        // Evitar si el click fue en un botón de acción o CTA
+        if (e.target.closest('.pm-notif-actions')) return
+        if (e.target.closest('.pm-notif-cta')) return
 
         const ids = el.dataset.ids.split(',');
         ids.forEach(id => marcarLeida(id));
@@ -376,10 +399,37 @@ if (!document.getElementById('pm-notif-styles')) {
       -webkit-box-orient: vertical;
       overflow: hidden;
     }
+    .pm-notif-footer-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 0.4rem;
+      gap: 0.5rem;
+    }
     .pm-notif-time {
       font-size: 0.7rem;
       color: var(--pm-text-muted);
-      margin-top: 0.4rem;
+    }
+    /* CTA "Registrar ahora" */
+    .pm-notif-cta {
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--pm-danger, #ef4444);
+      text-decoration: none;
+      white-space: nowrap;
+      padding: 2px 8px;
+      border-radius: 99px;
+      border: 1px solid currentColor;
+      line-height: 1.6;
+      transition: background 0.15s, color 0.15s;
+    }
+    .pm-notif-cta:hover {
+      background: var(--pm-danger, #ef4444);
+      color: #fff;
+    }
+    /* Borde izquierdo urgente para clases sin registrar */
+    .pm-notif-item--urgent {
+      border-left: 3px solid var(--pm-danger, #ef4444);
     }
     .pm-notif-dot {
       width: 8px;

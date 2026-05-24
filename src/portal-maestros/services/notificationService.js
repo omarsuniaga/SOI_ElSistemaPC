@@ -256,17 +256,27 @@ async function _checkLocalAlerts(maestroId) {
 
       const clase = clasesMap[h.clase_id]
       const refId = `${h.clase_id}_${fechaHoy}`
-      const exists = notificacionesCache.some(n => n.referencia_id === refId && n.tipo === 'in_app')
+      const exists = notificacionesCache.some(n => n.referencia_id === refId && n.tipo === 'sesion_sin_registrar')
       if (exists) continue
 
+      const horaFin   = h.hora_fin   ? h.hora_fin.slice(0, 5)   : ''
+      const horaInicio = h.hora_inicio ? h.hora_inicio.slice(0, 5) : ''
+      const horario   = horaInicio && horaFin ? ` (${horaInicio}–${horaFin})` : ''
+      const minutos   = Math.round(minutosDesdeElFin)
+      const tiempoMsg = minutos >= 60
+        ? `hace ${Math.floor(minutos / 60)}h ${minutos % 60}min`
+        : `hace ${minutos} min`
+
       notificacionesCache.unshift({
-        id: 'local_' + refId,
-        tipo: 'in_app',
-        titulo: 'Clase sin registrar',
-        mensaje: `${clase?.nombre || 'Tu clase'} terminó hace ${Math.round(minutosDesdeElFin)} min y no registraste asistencia.`,
-        estado: 'pendiente',
-        created_at: new Date().toISOString(),
+        id:           'local_' + refId,
+        tipo:         'sesion_sin_registrar',
+        titulo:       'Clase sin registrar',
+        mensaje:      `${clase?.nombre || 'Tu clase'}${horario} terminó ${tiempoMsg}. Registrá la asistencia para que quede guardada.`,
+        estado:       'pendiente',
+        created_at:   new Date().toISOString(),
         referencia_id: refId,
+        clase_id:     h.clase_id,
+        fecha:        fechaHoy,
       })
     }
 
@@ -285,14 +295,19 @@ async function _checkLocalAlerts(maestroId) {
       const exists = notificacionesCache.some(n => n.referencia_id === refId)
       if (exists) continue
 
+      const horaInicioStr = h.hora_inicio ? h.hora_inicio.slice(0, 5) : ''
+      const minsRestantes = Math.round(minutosParaInicio)
+
       notificacionesCache.unshift({
-        id: 'local_' + refId,
-        tipo: 'recordatorio_clase',
-        titulo: 'Clase por empezar',
-        mensaje: `${clase?.nombre || 'Tu clase'} empieza en ${Math.round(minutosParaInicio)} minutos.`,
-        estado: 'pendiente',
-        created_at: new Date().toISOString(),
+        id:           'local_' + refId,
+        tipo:         'recordatorio_clase',
+        titulo:       'Clase por empezar',
+        mensaje:      `${clase?.nombre || 'Tu clase'}${horaInicioStr ? ` a las ${horaInicioStr}` : ''} empieza en ${minsRestantes} ${minsRestantes === 1 ? 'minuto' : 'minutos'}. Prepará la planificación.`,
+        estado:       'pendiente',
+        created_at:   new Date().toISOString(),
         referencia_id: refId,
+        clase_id:     h.clase_id,
+        fecha:        fechaHoy,
       })
     }
 

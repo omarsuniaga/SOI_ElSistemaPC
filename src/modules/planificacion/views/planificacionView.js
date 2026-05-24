@@ -11,6 +11,8 @@ import {
 } from '../api/planificacionApi.js'
 import { supabase } from '../../../lib/supabaseClient.js'
 import { escapeHTML } from '../../clases/utils/clasesUtils.js'
+import { HelpPanel } from '../../../shared/components/HelpPanel.js'
+import { openCoberturaModal } from '../components/coberturaModal.js'
 
 // ── DSL Template Library ─────────────────────────────────────────────────────
 const DSL_TEMPLATES = [
@@ -66,6 +68,7 @@ const state = {
   planesOriginales: [],
   cargando: false,
   viewMode: 'maestro', // 'maestro' | 'admin' | 'plantillas'
+  activeTab: 'planes',
   seleccionados: new Set(),
   container: null
 }
@@ -152,6 +155,9 @@ function renderContent(container) {
           </div>
         </div>
         <div class="planificacion-header-actions">
+          <button class="btn-help-trigger" id="btn-help-planificacion" title="¿Cómo funciona esta pantalla?" aria-label="Ayuda">
+            <i class="bi bi-question"></i>
+          </button>
           ${isAdmin ? `
             <button class="btn btn-outline-success btn-sm" id="btn-aprobar-bulk" style="display:none">
               <i class="bi bi-check-all me-1"></i>Aprobar Seleccionados
@@ -181,6 +187,23 @@ function renderContent(container) {
         </div>
       </div>
 
+      ${!isAdmin ? `
+      <ul class="nav nav-tabs mb-3" id="planificacion-tabs">
+        <li class="nav-item">
+          <button class="nav-link active" data-tab="planes">
+            <i class="bi bi-journal-text me-1"></i>
+            Mis planes
+          </button>
+        </li>
+        <li class="nav-item">
+          <button class="nav-link" data-tab="plantillas">
+            <i class="bi bi-file-earmark-template me-1"></i>Plantillas
+          </button>
+        </li>
+      </ul>
+      ` : ''}
+
+      <div id="tab-content-planes">
       <!-- Table -->
       <div class="page-glass rounded">
         <div class="table-responsive">
@@ -202,6 +225,16 @@ function renderContent(container) {
         </div>
         <div id="empty-container">${state.planes.length === 0 ? _renderEmpty() : ''}</div>
       </div>
+      </div>
+
+      ${!isAdmin ? `
+      <div id="tab-content-plantillas" style="display:none">
+        <div class="alert alert-info border-0 py-3" style="font-size:0.875rem;">
+          <i class="bi bi-file-earmark-template me-2"></i>
+          Las plantillas de planificación estarán disponibles próximamente.
+        </div>
+      </div>
+      ` : ''}
     </div>
   `
 }
@@ -270,6 +303,11 @@ function _renderTableRows(planes) {
             ${isAdmin && p.canApprove() ? `
               <button class="btn btn-sm btn-outline-success btn-icon-compact" data-action="approve" data-id="${p.id}" title="Aprobar">
                 <i class="bi bi-check-circle"></i>
+              </button>
+            ` : ''}
+            ${!isAdmin && p.estado === 'planificado' ? `
+              <button class="btn btn-sm btn-outline-success btn-icon-compact" data-action="ejecutar" data-id="${p.id}" title="Marcar como ejecutado">
+                <i class="bi bi-play-fill"></i>
               </button>
             ` : ''}
             <button class="btn btn-sm btn-outline-secondary btn-icon-compact" data-action="view" data-id="${p.id}" title="Ver detalle">
@@ -416,6 +454,19 @@ function _attachEvents(container) {
   container.querySelector('#buscar-plan')?.addEventListener('input', _applyFilters)
   container.querySelector('#select-estado')?.addEventListener('change', _applyFilters)
 
+  container.querySelector('#btn-help-planificacion')?.addEventListener('click', () => {
+    HelpPanel.open({
+      title: 'Planificación',
+      intro: 'Módulo para gestionar los planes de clase. Cada plan documenta qué se trabajará en una clase, en qué fecha, y si fue ejecutado o no.',
+      sections: [
+        { icon: 'bi-journal-text',           title: 'Tab Mis planes',          description: 'Lista tus planes personales. Filtrá por estado (planificado, ejecutado, cancelado) y creá nuevos desde "Nuevo plan".',                                    color: '#3b82f6' },
+        { icon: 'bi-file-earmark-template',  title: 'Tab Plantillas',          description: 'Plantillas reutilizables en formato DSL. Sirven como base para crear nuevos planes rápidamente.',                                                          color: '#6366f1' },
+        { icon: 'bi-journal-check',          title: 'Todas las planes (admin)', description: 'Solo visible para administradores. Muestra los planes de todos los maestros para supervisión.',                                                            color: '#10b981' },
+        { icon: 'bi-circle-fill',            title: 'Estados del plan',         description: '"Planificado" = no dictado aún. "Ejecutado" = clase dada. "Cancelado" = no se realizó. Mantenerlos actualizados mejora los reportes.',                    color: '#f59e0b' },
+      ],
+    })
+  })
+
   if (!isAdmin) {
     container.querySelector('#btn-nuevo-plan')?.addEventListener('click', () => openEditModal(null))
   }
@@ -442,6 +493,19 @@ function _attachEvents(container) {
     })
   }
 
+  // Tab switching
+  container.querySelectorAll('#planificacion-tabs .nav-link').forEach(btn => {
+    btn.addEventListener('click', () => {
+      state.activeTab = btn.dataset.tab
+      const planesDiv = container.querySelector('#tab-content-planes')
+      const plantillasDiv = container.querySelector('#tab-content-plantillas')
+      if (planesDiv) planesDiv.style.display = state.activeTab === 'plantillas' ? 'none' : 'block'
+      if (plantillasDiv) plantillasDiv.style.display = state.activeTab === 'plantillas' ? 'block' : 'none'
+      container.querySelectorAll('#planificacion-tabs .nav-link').forEach(b => b.classList.remove('active'))
+      btn.classList.add('active')
+    })
+  })
+
   // Row-level delegates
   container.querySelector('#planes-tbody')?.addEventListener('change', (e) => {
     if (!e.target.classList.contains('plan-check')) return
@@ -459,6 +523,7 @@ function _attachEvents(container) {
     if (action === 'delete')  openDeleteModal(id)
     if (action === 'approve') _approveOne(id)
     if (action === 'view')    _viewDetail(id)
+    if (action === 'ejecutar') _ejecutarPlan(id)
   })
 }
 
@@ -624,6 +689,61 @@ async function _approveOne(id) {
   } catch (err) {
     AppToast.error(err.message)
   }
+}
+
+async function _ejecutarPlan(id) {
+  const plan = state.planesOriginales.find(p => p.id === id)
+  if (!plan) return
+
+  let instrumento = plan.instrumento
+  let nivel = null
+  const claseId = plan.clase_id
+
+  if (claseId) {
+    const { data: clase } = await supabase
+      .from('clases')
+      .select('instrumento, plan_estudio')
+      .eq('id', claseId)
+      .single()
+    if (clase) {
+      instrumento = instrumento || clase.instrumento
+      nivel = clase.plan_estudio
+    }
+  }
+
+  const { data: { user } } = await supabase.auth.getUser()
+  const { data: maestro } = await supabase
+    .from('maestros')
+    .select('id')
+    .eq('user_id', user.id)
+    .single()
+  const maestroId = maestro?.id
+
+  openCoberturaModal({
+    plan,
+    claseId,
+    instrumento,
+    nivel,
+    maestroId,
+    onConfirm: async () => {
+      try {
+        await actualizarPlanificacion(id, { estado: 'ejecutado' })
+        AppToast.success('Plan marcado como ejecutado')
+        renderPlanificacionView(state.container, { viewMode: state.viewMode })
+      } catch (err) {
+        AppToast.error(err.message)
+      }
+    },
+    onSkip: async () => {
+      try {
+        await actualizarPlanificacion(id, { estado: 'ejecutado' })
+        AppToast.success('Plan ejecutado (sin cobertura)')
+        renderPlanificacionView(state.container, { viewMode: state.viewMode })
+      } catch (err) {
+        AppToast.error(err.message)
+      }
+    }
+  })
 }
 
 async function openDeleteModal(id) {

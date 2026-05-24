@@ -102,7 +102,7 @@ import { renderRegisterView } from './portal-maestros/views/registerView.js'
 import { renderPendingApprovalView } from './portal-maestros/views/pendingApprovalView.js'
 import { renderHoyView } from './portal-maestros/views/hoyView.js'
 import { renderCalendarioView } from './portal-maestros/views/calendarioView.js'
-import { renderMetricasView } from './portal-maestros/views/metricasView.js'
+import { renderMetricasView, getAlumnoIndexFromMetricas } from './portal-maestros/views/metricasView.js'
 import { renderAsistenciaView } from './portal-maestros/views/asistenciaView.js'
 import { renderClaseEmergenteView } from './portal-maestros/views/claseEmergenteView.js'
 import { renderPerfilView } from './portal-maestros/views/perfilView.js'
@@ -618,6 +618,20 @@ function _renderShell(app, maestro, permisos) {
     const q = searchInput.value.trim()
     clearTimeout(_searchTimer)
     if (q.length < 1) { removeDropdown(); return }
+
+    // If metricas data is loaded in memory, filter locally — zero network, zero delay
+    const localIndex = getAlumnoIndexFromMetricas()
+    if (localIndex) {
+      const lower = q.toLowerCase()
+      const hits = localIndex
+        .filter(a => a.nombre_completo?.toLowerCase().includes(lower))
+        .slice(0, 8)
+        .map(a => ({ ...a, instrumento_principal: a.clases?.join(', ') || null }))
+      showDropdown(hits)
+      return
+    }
+
+    // Fallback: query Supabase (any other view)
     _searchTimer = setTimeout(async () => {
       try {
         const { data } = await supabase

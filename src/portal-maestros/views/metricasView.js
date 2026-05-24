@@ -706,6 +706,24 @@ function bindEvents(container) {
 }
 
 // ── Render principal ───────────────────────────────────────────
+/**
+ * Returns a deduplicated student index from the currently loaded metricas data.
+ * Used by the header search to avoid a Supabase round-trip when on this view.
+ * Returns null when metricas data hasn't been loaded yet.
+ */
+export function getAlumnoIndexFromMetricas() {
+  if (!estadoActual.clasesData.length && !Object.keys(estadoActual.inscripcionesPorClase).length) return null
+  const map = new Map()
+  for (const [claseId, alumnos] of Object.entries(estadoActual.inscripcionesPorClase)) {
+    const clase = estadoActual.clasesData.find(c => c.id === claseId)
+    for (const alum of alumnos) {
+      if (!map.has(alum.id)) map.set(alum.id, { ...alum, clases: [] })
+      if (clase) map.get(alum.id).clases.push(clase.nombre)
+    }
+  }
+  return [...map.values()]
+}
+
 export async function renderMetricasView(container) {
   container.innerHTML = `<div class="pm-loading"><div class="pm-spinner"></div></div>`
 

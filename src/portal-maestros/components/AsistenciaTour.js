@@ -148,6 +148,9 @@ export class AsistenciaTour {
     this._overlay.offsetHeight
     this._overlay.style.opacity = '1'
     this._showStep(0)
+    // Marcar como visto en cuanto arranca — así aunque el usuario cierre
+    // el browser o navegue antes de finalizar, no vuelve a aparecer solo.
+    localStorage.setItem(STORAGE_KEY, 'true')
   }
 
   /**

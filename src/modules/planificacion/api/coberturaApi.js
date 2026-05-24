@@ -1,4 +1,4 @@
-import { supabase } from '../../../core/supabase/supabaseClient.js'
+import { supabase } from '../../../lib/supabaseClient.js'
 
 /**
  * Upsert coverage records (one per alumno+objetivo).

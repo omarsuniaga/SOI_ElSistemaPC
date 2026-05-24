@@ -1,21 +1,18 @@
 /**
- * Compute SHA256 hash for dedup key (browser/Node 18+ compatible)
+ * Compute SHA256 hash for dedup key using the Web Crypto API.
  * @param {string} input - Input string to hash
  * @returns {Promise<string>} 256-bit hex hash
  */
 async function sha256(input) {
-  // Use Web Crypto API if available (Browser or Node 18+)
-  if (typeof globalThis.crypto !== 'undefined' && globalThis.crypto.subtle) {
-    const msgUint8 = new TextEncoder().encode(input)
-    const hashBuffer = await globalThis.crypto.subtle.digest('SHA-256', msgUint8)
-    return Array.from(new Uint8Array(hashBuffer))
-      .map(b => b.toString(16).padStart(2, '0'))
-      .join('')
+  if (!globalThis.crypto?.subtle) {
+    throw new Error('Web Crypto API is required to compute observation dedup keys.')
   }
 
-  // Fallback for older Node.js or environments without subtle crypto
-  const crypto = await import('node:crypto')
-  return crypto.createHash('sha256').update(input).digest('hex')
+  const msgUint8 = new TextEncoder().encode(input)
+  const hashBuffer = await globalThis.crypto.subtle.digest('SHA-256', msgUint8)
+  return Array.from(new Uint8Array(hashBuffer))
+    .map(b => b.toString(16).padStart(2, '0'))
+    .join('')
 }
 
 /**
@@ -46,6 +43,8 @@ export async function promoteSessionObservations(
     return result
   }
 
+  const alumnoIdSet = new Set(alumnoIds)
+
   // Build set of existing dedup keys for O(1) lookup
   // We compute missing hashes in parallel if needed
   const existingDedupArray = await Promise.all(
@@ -57,7 +56,7 @@ export async function promoteSessionObservations(
 
   // Filter by alumno_ids and es_borrador
   const filteredRows = observacionesSessionRows.filter(row =>
-    row.es_borrador === true && alumnoIds.includes(row.alumno_id)
+    row.es_borrador === true && alumnoIdSet.has(row.alumno_id)
   )
 
   // Process each row

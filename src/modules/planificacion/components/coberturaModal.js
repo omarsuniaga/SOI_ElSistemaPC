@@ -13,7 +13,7 @@ import { upsertCobertura } from '../api/coberturaApi.js'
 import { extraerCobertura } from '../api/groqService.js'
 import { parseDsl } from '../utils/dslParser.js'
 import { AppToast } from '../../../shared/components/AppToast.js'
-import { supabase } from '../../../core/supabase/supabaseClient.js'
+import { supabase } from '../../../lib/supabaseClient.js'
 
 const escapeHTML = s => String(s).replace(/[&<>"']/g, c =>
   ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]))

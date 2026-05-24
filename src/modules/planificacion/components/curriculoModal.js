@@ -15,7 +15,7 @@ import {
   actualizarObjetivo,
   eliminarObjetivo,
 } from '../api/curriculoApi.js'
-import { supabase } from '../../../core/supabase/supabaseClient.js'
+import { supabase } from '../../../lib/supabaseClient.js'
 import { AppToast } from '../../../shared/components/AppToast.js'
 
 const STYLE = `

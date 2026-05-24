@@ -199,6 +199,14 @@ function generarHTML(datos) {
         </select>
       </header>
 
+      <section class="pm-dashboard-section pm-search-section--top" aria-label="Buscar alumno">
+        <div class="pm-search-wrapper">
+          <i class="bi bi-search" aria-hidden="true"></i>
+          <input id="pm-alumno-search" type="search" placeholder="Buscar alumno..." aria-label="Buscar alumno por nombre" autocomplete="off">
+        </div>
+        <div id="pm-alumno-search-results" class="pm-search-results" role="listbox"></div>
+      </section>
+
       <section class="pm-dashboard-overview" aria-label="Indicadores generales">
         <div class="pm-overview-card primary">
           <div class="pm-overview-ring" aria-label="Asistencia general ${asistenciaPromedio}%">
@@ -337,14 +345,6 @@ function generarHTML(datos) {
         </div>
       </section>
 
-      <section class="pm-dashboard-section" aria-label="Buscar alumno">
-        <h2 class="pm-section-title">Buscar Alumno</h2>
-        <div class="pm-search-wrapper">
-          <i class="bi bi-search" aria-hidden="true"></i>
-          <input id="pm-alumno-search" type="text" placeholder="Nombre del alumno..." aria-label="Buscar alumno por nombre">
-        </div>
-        <div id="pm-alumno-search-results" class="pm-search-results" role="listbox"></div>
-      </section>
     </div>
 
     <style>
@@ -561,6 +561,7 @@ function generarHTML(datos) {
       .pm-class-card { background: var(--pm-surface); border-radius: 12px; padding: 0.875rem; position: relative; }
       .pm-class-btn { position: absolute; top: 0.625rem; right: 0.625rem; background: none; border: none; padding: 0.25rem; color: var(--pm-text-muted); cursor: pointer; font-size: 1.25rem; }
 
+      .pm-search-section--top { padding-top: 0.875rem; padding-bottom: 0; }
       .pm-search-wrapper { position: relative; margin-bottom: 0.5rem; }
       .pm-search-wrapper i { position: absolute; left: 0.875rem; top: 50%; transform: translateY(-50%); color: var(--pm-text-muted); font-size: 0.875rem; }
       .pm-search-wrapper input { width: 100%; padding: 0.75rem 0.75rem 0.75rem 2.25rem; border: 1px solid var(--pm-border); border-radius: 10px; font-size: 0.875rem; background: var(--pm-surface); color: var(--pm-text); outline: none; transition: border-color 0.2s; }
@@ -711,64 +712,62 @@ function bindEvents(container) {
     })
   })
 
-  // Búsqueda de alumnos (solo de las clases del maestro)
+  // Búsqueda reactiva — filtra localmente desde los datos ya cargados en memoria
   const searchInput = container.querySelector('#pm-alumno-search')
   const searchResults = container.querySelector('#pm-alumno-search-results')
-  let searchTimer
 
-  searchInput?.addEventListener('input', () => {
-    clearTimeout(searchTimer)
-    const q = searchInput.value.trim()
-    if (!q) { searchResults.style.display = 'none'; return }
-    searchTimer = setTimeout(async () => {
-      try {
-        const todosLosAlumnos = Object.values(estadoActual.inscripcionesPorClase).flat()
-        const idsUnicos = [...new Set(todosLosAlumnos.map(a => a.id))]
-        if (idsUnicos.length === 0) {
-          searchResults.innerHTML = '<p class="pm-empty" style="padding:0.75rem;">No se encontraron alumnos.</p>'
-          searchResults.style.display = 'block'
-          return
+  // Build a deduplicated in-memory index: { id, nombre_completo, instrumento, clases[] }
+  const alumnoIndex = (() => {
+    const map = new Map()
+    for (const [claseId, alumnos] of Object.entries(estadoActual.inscripcionesPorClase)) {
+      const clase = estadoActual.clasesData.find(c => c.id === claseId)
+      for (const alum of alumnos) {
+        if (!map.has(alum.id)) {
+          map.set(alum.id, { ...alum, clases: [] })
         }
-
-        const { data: alumnos } = await supabase
-          .from('alumnos')
-          .select('id, nombre_completo, instrumento_principal')
-          .in('id', idsUnicos)
-          .ilike('nombre_completo', `%${q}%`)
-          .limit(10)
-
-        if (!alumnos?.length) {
-          searchResults.innerHTML = '<p class="pm-empty" style="padding:0.75rem;">Sin resultados.</p>'
-          searchResults.style.display = 'block'
-          return
-        }
-
-        searchResults.innerHTML = alumnos.map(a => `
-          <div class="pm-search-result-item" role="option" data-id="${a.id}" tabindex="0">
-            <div class="pm-search-result-avatar"><i class="bi bi-person-fill"></i></div>
-            <div class="pm-search-result-info">
-              <span class="pm-search-result-name">${escHTML(a.nombre_completo)}</span>
-              <span class="pm-search-result-meta">${escHTML(a.instrumento_principal || '—')}</span>
-            </div>
-            <i class="bi bi-chevron-right pm-search-result-arrow"></i>
-          </div>`).join('')
-        searchResults.style.display = 'block'
-
-        searchResults.querySelectorAll('.pm-search-result-item').forEach(row => {
-          const handler = () => window.location.hash = `#/alumno?id=${row.dataset.id}`
-          row.addEventListener('click', handler)
-          row.addEventListener('keypress', (e) => { if (e.key === 'Enter') handler() })
-        })
-      } catch {
-        searchResults.innerHTML = '<p class="pm-empty" style="color:var(--pm-danger);padding:0.75rem;">Error al buscar.</p>'
-        searchResults.style.display = 'block'
+        if (clase) map.get(alum.id).clases.push(clase.nombre)
       }
-    }, 300)
-  })
+    }
+    return [...map.values()]
+  })()
+
+  const renderResults = (q) => {
+    if (!q) { searchResults.classList.remove('show'); return }
+
+    const lower = q.toLowerCase()
+    const matches = alumnoIndex
+      .filter(a => a.nombre_completo?.toLowerCase().includes(lower))
+      .slice(0, 10)
+
+    if (!matches.length) {
+      searchResults.innerHTML = '<p class="pm-empty" style="padding:0.75rem 1rem;">Sin resultados.</p>'
+      searchResults.classList.add('show')
+      return
+    }
+
+    searchResults.innerHTML = matches.map(a => `
+      <div class="pm-search-result-item" role="option" data-id="${a.id}" tabindex="0">
+        <div class="pm-search-result-avatar"><i class="bi bi-person-fill"></i></div>
+        <div class="pm-search-result-info">
+          <span class="pm-search-result-name">${escHTML(a.nombre_completo)}</span>
+          <span class="pm-search-result-meta">${escHTML(a.clases.join(', ') || '—')}</span>
+        </div>
+        <i class="bi bi-chevron-right pm-search-result-arrow"></i>
+      </div>`).join('')
+    searchResults.classList.add('show')
+
+    searchResults.querySelectorAll('.pm-search-result-item').forEach(row => {
+      const handler = () => { window.location.hash = `#/alumno?id=${row.dataset.id}` }
+      row.addEventListener('click', handler)
+      row.addEventListener('keypress', (e) => { if (e.key === 'Enter') handler() })
+    })
+  }
+
+  searchInput?.addEventListener('input', () => renderResults(searchInput.value.trim()))
 
   document.addEventListener('click', (e) => {
     if (!searchInput?.contains(e.target) && !searchResults?.contains(e.target)) {
-      searchResults.style.display = 'none'
+      searchResults.classList.remove('show')
     }
   })
 }

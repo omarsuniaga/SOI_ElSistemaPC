@@ -142,12 +142,18 @@ export class AsistenciaTour {
   start() {
     if (!this._overlay) return
     this._step = 0
-    this._overlay.style.display = 'block'
+
+    // Mostrar todos los elementos del tour
+    this._tooltip.style.display   = 'block'
+    this._spotlight.style.display = 'block'
+    this._overlay.style.display   = 'block'
+
     // Forzar reflow antes de transición
     // eslint-disable-next-line no-unused-expressions
     this._overlay.offsetHeight
     this._overlay.style.opacity = '1'
     this._showStep(0)
+
     // Marcar como visto en cuanto arranca — así aunque el usuario cierre
     // el browser o navegue antes de finalizar, no vuelve a aparecer solo.
     localStorage.setItem(STORAGE_KEY, 'true')
@@ -197,13 +203,15 @@ export class AsistenciaTour {
   }
 
   _injectDOM() {
-    // El overlay es un div simple que cubre el viewport.
-    // Spotlight y tooltip se agregan al body directamente para evitar
-    // el problema de stacking context dentro del container de la vista.
+    // Limpiar elementos huérfanos de instancias anteriores que no fueron
+    // destruidas correctamente (navegación rápida, HMR, etc.)
+    document.getElementById('pm-tour-overlay')?.remove()
+    document.getElementById('pm-tour-spotlight')?.remove()
+    document.getElementById('pm-tour-tooltip')?.remove()
+
     const overlay = document.createElement('div')
     overlay.id        = 'pm-tour-overlay'
     overlay.className = 'pm-tour-overlay'
-    // Accessibility
     overlay.setAttribute('role', 'dialog')
     overlay.setAttribute('aria-modal', 'true')
     overlay.setAttribute('aria-label', 'Guía interactiva')
@@ -213,12 +221,14 @@ export class AsistenciaTour {
     const spotlight = document.createElement('div')
     spotlight.id        = 'pm-tour-spotlight'
     spotlight.className = 'pm-tour-spotlight'
+    spotlight.style.display = 'none'   // oculto hasta que el tour arranque
     document.body.appendChild(spotlight)
     this._spotlight = spotlight
 
     const tooltip = document.createElement('div')
     tooltip.id        = 'pm-tour-tooltip'
     tooltip.className = 'pm-tour-tooltip'
+    tooltip.style.display = 'none'     // oculto hasta que el tour arranque
     tooltip.innerHTML = `
       <h4 id="pm-tour-title"></h4>
       <p  id="pm-tour-body"></p>

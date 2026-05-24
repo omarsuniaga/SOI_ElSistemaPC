@@ -13,6 +13,7 @@ import { gestionarClasesModal } from '../components/gestionarClasesModal.js';
 import { renderGestionAlumnosClasesView } from './gestionAlumnosClasesView.js';
 import { escHTML, getInitials } from '../utils/portalUtils.js';
 import { normalizePhone } from '../../shared/utils/phoneUtils.js';
+import { pushDiagnostic } from '../components/pushDiagnostic.js';
 
 // Estado local de la vista
 const viewState = {
@@ -235,6 +236,9 @@ function renderNotifications(container, maestro) {
       <div class="pm-settings-actions-row">
         <button class="btn-apple-utility" id="btn-probar-notificacion">
           <i class="bi bi-send"></i> Probar notificación
+        </button>
+        <button class="btn-apple-utility" id="btn-push-diagnostic">
+          <i class="bi bi-broadcast"></i> Diagnosticar
         </button>
       </div>
       ${!supported ? `<p class="apple-caption mt-2" style="color:var(--pm-danger)">Push no soportado en este navegador.</p>` : ''}
@@ -533,6 +537,9 @@ function initListeners(maestro) {
   // Configuración detallada notificaciones
   document.getElementById('btn-abrir-config-notif')?.addEventListener('click', () => notifConfigModal.open());
 
+  // Diagnóstico de push
+  document.getElementById('btn-push-diagnostic')?.addEventListener('click', () => pushDiagnostic.open());
+
   // Botón probar notificación
   document.getElementById('btn-probar-notificacion')?.addEventListener('click', async () => {
     const btn = document.getElementById('btn-probar-notificacion');
@@ -654,6 +661,11 @@ async function guardarPerfil(maestroOriginal) {
 
     viewState.dirty = false;
     window.dispatchEvent(new CustomEvent('showToast', { detail: { message: 'Perfil actualizado', type: 'success' } }));
+
+    // Sincronizar y re-evaluar SOI Smart Insights de inmediato
+    if (window.pwaInstaller) {
+      window.pwaInstaller.evaluateInsights();
+    }
   } catch (error) {
     window.dispatchEvent(new CustomEvent('showToast', { detail: { message: 'Error al guardar: ' + error.message, type: 'danger' } }));
   } finally {

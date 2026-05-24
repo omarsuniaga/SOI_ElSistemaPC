@@ -649,7 +649,7 @@ function _setupGlobalAppEvents() {
               const app = document.getElementById('portal-app')
               if (!app) return
 
-              // Detect actual permission gains to show targeted toast
+              // Detect permission gains and losses
               const ganados = []
               if (nuevosPermisos.puede_registrar_alumnos && !_permisos?.puede_registrar_alumnos) {
                 ganados.push('Registrar Alumnos')
@@ -657,9 +657,22 @@ function _setupGlobalAppEvents() {
               if (nuevosPermisos.puede_inscribir_clases && !_permisos?.puede_inscribir_clases) {
                 ganados.push('Gestionar e Inscribir Clases')
               }
+              const perdidos = []
+              if (_permisos?.puede_registrar_alumnos && !nuevosPermisos.puede_registrar_alumnos) {
+                perdidos.push('Registrar Alumnos')
+              }
+              if (_permisos?.puede_inscribir_clases && !nuevosPermisos.puede_inscribir_clases) {
+                perdidos.push('Gestionar e Inscribir Clases')
+              }
 
               // Capture current route BEFORE shell wipes the DOM
               const currentRoute = (router.currentRoute?.() || 'perfil').split('?')[0]
+
+              // If the maestro is currently on a now-forbidden route, redirect to 'hoy'
+              const routeNowForbidden =
+                (currentRoute === 'registrar-alumno' && !nuevosPermisos.puede_registrar_alumnos) ||
+                (currentRoute === 'gestionar-clases' && !nuevosPermisos.puede_inscribir_clases)
+              const safeRoute = routeNowForbidden ? 'hoy' : currentRoute
 
               // Re-render shell with updated permissions (updates nav tabs instantly)
               _renderShell(app, maestroLocal, nuevosPermisos)
@@ -670,13 +683,14 @@ function _setupGlobalAppEvents() {
               // CRITICAL: clear stale render cache so the active view re-renders
               _viewRendered.clear()
 
-              // Reset router's internal _currentRoute so _dispatch doesn't short-circuit
-              await _renderView(currentRoute)
-              // Also sync router state so nav tab highlighting is correct
-              router.navigate(currentRoute)
+              // Navigate to safe route (may differ from current if permission revoked)
+              await _renderView(safeRoute)
+              router.navigate(safeRoute)
 
               if (ganados.length > 0) {
                 AppToast.success(`¡Nuevos permisos activados: ${ganados.join(', ')}! Ahora podés acceder desde el Perfil o la barra de navegación.`)
+              } else if (perdidos.length > 0) {
+                AppToast.show(`El administrador removió tu acceso a: ${perdidos.join(', ')}.`, 'warning')
               } else {
                 AppToast.show('Tus permisos fueron actualizados por el administrador.', 'info')
               }
@@ -958,9 +972,17 @@ async function _renderView(route, params = {}, { silent = false } = {}) {
         _activeViewCleanup = null
         break
       case 'registrar-alumno':
+        if (!_permisos?.puede_registrar_alumnos) {
+          router.navigate('hoy')
+          return
+        }
         renderRegistroAlumnoView(targetContainer)
         break
       case 'gestionar-clases':
+        if (!_permisos?.puede_inscribir_clases) {
+          router.navigate('hoy')
+          return
+        }
         _activeViewCleanup = await renderGestionarClasesView(targetContainer)
         break
       default:

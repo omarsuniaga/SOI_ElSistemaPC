@@ -13,6 +13,8 @@ import { supabase } from '../../../lib/supabaseClient.js'
 import { escapeHTML } from '../../clases/utils/clasesUtils.js'
 import { HelpPanel } from '../../../shared/components/HelpPanel.js'
 import { openCoberturaModal } from '../components/coberturaModal.js'
+import { renderAsistentePedagogicoPanel } from '../components/asistentePedagogicoPanel.js'
+import { openCurriculoListModal } from '../components/curriculoModal.js'
 
 // ── DSL Template Library ─────────────────────────────────────────────────────
 const DSL_TEMPLATES = [
@@ -69,6 +71,7 @@ const state = {
   cargando: false,
   viewMode: 'maestro', // 'maestro' | 'admin' | 'plantillas'
   activeTab: 'planes',
+  asistenteRendered: false,
   seleccionados: new Set(),
   container: null
 }
@@ -79,6 +82,7 @@ export async function renderPlanificacionView(container, { viewMode = 'maestro' 
   state.container = container
   state.viewMode = viewMode
   state.seleccionados = new Set()
+  state.asistenteRendered = false
 
   if (viewMode === 'plantillas') {
     renderTemplatesContent(container)
@@ -159,6 +163,9 @@ function renderContent(container) {
             <i class="bi bi-question"></i>
           </button>
           ${isAdmin ? `
+            <button class="btn btn-outline-secondary btn-sm" id="btn-curriculo-admin">
+              <i class="bi bi-journal-bookmark me-1"></i>Currículo
+            </button>
             <button class="btn btn-outline-success btn-sm" id="btn-aprobar-bulk" style="display:none">
               <i class="bi bi-check-all me-1"></i>Aprobar Seleccionados
             </button>
@@ -200,6 +207,11 @@ function renderContent(container) {
             <i class="bi bi-file-earmark-template me-1"></i>Plantillas
           </button>
         </li>
+        <li class="nav-item">
+          <button class="nav-link" data-tab="asistente">
+            <i class="bi bi-robot me-1"></i>Asistente IA
+          </button>
+        </li>
       </ul>
       ` : ''}
 
@@ -234,6 +246,7 @@ function renderContent(container) {
           Las plantillas de planificación estarán disponibles próximamente.
         </div>
       </div>
+      <div id="tab-content-asistente" style="display:none"></div>
       ` : ''}
     </div>
   `
@@ -497,14 +510,35 @@ function _attachEvents(container) {
   container.querySelectorAll('#planificacion-tabs .nav-link').forEach(btn => {
     btn.addEventListener('click', () => {
       state.activeTab = btn.dataset.tab
-      const planesDiv = container.querySelector('#tab-content-planes')
-      const plantillasDiv = container.querySelector('#tab-content-plantillas')
-      if (planesDiv) planesDiv.style.display = state.activeTab === 'plantillas' ? 'none' : 'block'
-      if (plantillasDiv) plantillasDiv.style.display = state.activeTab === 'plantillas' ? 'block' : 'none'
+
+      const allContent = ['planes', 'plantillas', 'asistente']
+      allContent.forEach(tab => {
+        const div = container.querySelector(`#tab-content-${tab}`)
+        if (div) div.style.display = state.activeTab === tab ? 'block' : 'none'
+      })
+
       container.querySelectorAll('#planificacion-tabs .nav-link').forEach(b => b.classList.remove('active'))
       btn.classList.add('active')
+
+      if (state.activeTab === 'asistente' && !state.asistenteRendered) {
+        const asistenteDiv = container.querySelector('#tab-content-asistente')
+        if (asistenteDiv) {
+          renderAsistentePedagogicoPanel(asistenteDiv)
+          state.asistenteRendered = true
+        }
+      }
     })
   })
+
+  document.addEventListener('planificacion:nuevoPlan', (e) => {
+    openEditModal(null)
+  }, { once: true })
+
+  if (isAdmin) {
+    container.querySelector('#btn-curriculo-admin')?.addEventListener('click', () => {
+      openCurriculoListModal()
+    })
+  }
 
   // Row-level delegates
   container.querySelector('#planes-tbody')?.addEventListener('change', (e) => {

@@ -4,7 +4,6 @@
  */
 
 import { obtenerPermisoPorMaestro, crearSolicitud, obtenerSolicitudPorMaestro } from '../../modules/permisos/api/permisosSupabase.js'
-import { getMaestroLocal } from '../auth/maestroAuth.js'
 
 /**
  * Obtiene los permisos de un maestro
@@ -27,9 +26,6 @@ export async function getPermisos(maestroId) {
   }
 
   try {
-    const permiso = await obtenerPermisoPorMaestro(maestroId)
-    if (!permiso) return failClosed
-
     // Obtener solicitud actual para verificar estado pendiente
     let solicitud_actual = null
     try {
@@ -39,13 +35,38 @@ export async function getPermisos(maestroId) {
       console.debug('[PermisoService] No solicitud found or table not ready:', err.message)
     }
 
-    // Mapeo desde arreglo de permisos (prioridad) o booleanos (fallback)
+    const permiso = await obtenerPermisoPorMaestro(maestroId)
+    if (!permiso) {
+      const solicitudAprobada = solicitud_actual?.estado === 'aprobado' ? solicitud_actual : null
+      return {
+        ...failClosed,
+        puede_registrar_alumnos: solicitudAprobada?.solicita_alumnos ?? false,
+        puede_inscribir_clases: solicitudAprobada?.solicita_clases ?? false,
+        solicitud_actual,
+      }
+    }
+
+    // Mapeo desde arreglo de permisos (prioridad) o booleanos (fallback).
+    // Compatibilidad: existen datos históricos con nombres legacy
+    // ('registrar_alumnos'/'inscribir_clases') y datos nuevos con scopes
+    // ('alumnos:create'/'clases:enroll').
     const permisosArray = permiso.permisos || []
     const solicitudes = permiso.solicitudes || []
+    const solicitudAprobada = solicitud_actual?.estado === 'aprobado' ? solicitud_actual : null
+    const puedeRegistrarAlumnos =
+      permisosArray.includes('alumnos:create') ||
+      permisosArray.includes('registrar_alumnos') ||
+      (permiso.puede_registrar_alumnos ?? false) ||
+      (solicitudAprobada?.solicita_alumnos ?? false)
+    const puedeInscribirClases =
+      permisosArray.includes('clases:enroll') ||
+      permisosArray.includes('inscribir_clases') ||
+      (permiso.puede_inscribir_clases ?? false) ||
+      (solicitudAprobada?.solicita_clases ?? false)
 
     return {
-      puede_registrar_alumnos: permisosArray.includes('alumnos:create') || (permiso.puede_registrar_alumnos ?? false),
-      puede_inscribir_clases: permisosArray.includes('clases:enroll') || (permiso.puede_inscribir_clases ?? false),
+      puede_registrar_alumnos: puedeRegistrarAlumnos,
+      puede_inscribir_clases: puedeInscribirClases,
       puede_planificar: permisosArray.includes('planificacion:write') || false,
       puede_asistir: permisosArray.includes('asistencias:write') || false,
       solicitudes: solicitudes,

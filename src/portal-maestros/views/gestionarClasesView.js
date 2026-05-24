@@ -10,6 +10,7 @@
 import { obtenerClasesPorMaestro, obtenerAlumnosInscritos, inscribirAlumno, desinscribirAlumno } from '../../modules/clases/api/clasesApi.js'
 import { obtenerAlumnos, crearAlumno } from '../../modules/alumnos/api/alumnosApi.js'
 import { getMaestroLocal } from '../auth/maestroAuth.js'
+import { getPermisos, solicitarPermiso } from '../services/permisoService.js'
 import { AppToast } from '../../shared/components/AppToast.js'
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -53,12 +54,10 @@ function formatHorarios(horarios) {
 let _selectedClaseId = null
 let _allStudents = []     // Cache of all active students for search
 let _enrolledIds = new Set()
-let _container = null
 
 // ── Main render ───────────────────────────────────────────────────────────────
 
 export async function renderGestionarClasesView(container) {
-  _container = container
   container.innerHTML = _skeletonHTML()
   _injectStyles()
 
@@ -69,6 +68,13 @@ export async function renderGestionarClasesView(container) {
   }
 
   try {
+    const permisos = await getPermisos(maestro.id)
+    if (!permisos.puede_inscribir_clases) {
+      container.innerHTML = _noPermissionState(permisos)
+      _attachPermissionEvents(maestro.id)
+      return
+    }
+
     const [clases, todosAlumnos] = await Promise.all([
       obtenerClasesPorMaestro(maestro.id),
       obtenerAlumnos().catch(() => []),
@@ -86,6 +92,76 @@ export async function renderGestionarClasesView(container) {
     console.error('[GestionarClases]', err)
     container.innerHTML = _emptyState('bi-exclamation-triangle', 'Error al cargar', escHTML(err.message))
   }
+}
+
+function _hasPendingClassRequest(permisos) {
+  const solicitudes = permisos?.solicitudes || []
+  const solicitudActual = permisos?.solicitud_actual
+
+  return (
+    solicitudes.includes('clases:enroll') ||
+    solicitudes.includes('inscribir_clases') ||
+    (solicitudActual?.estado === 'pendiente' && solicitudActual?.solicita_clases)
+  )
+}
+
+function _noPermissionState(permisos) {
+  const pending = _hasPendingClassRequest(permisos)
+
+  return `
+    <div class="gcv-root">
+      <div class="gcv-permission-card">
+        <div class="gcv-permission-icon">
+          <i class="bi bi-shield-exclamation"></i>
+        </div>
+        <h2 class="gcv-permission-title">Acceso de Colaborador Requerido</h2>
+        <p class="gcv-permission-copy">
+          Para gestionar clases e inscribir alumnos, necesitás que Admin active tu permiso de clases.
+        </p>
+        <div id="gcv-permission-action">
+          ${pending ? `
+            <div class="gcv-pending-badge">
+              <i class="bi bi-clock-history"></i>
+              Solicitud Pendiente de Aprobación
+            </div>
+          ` : `
+            <button class="gcv-btn gcv-btn-primary" id="gcv-btn-request-classes" type="button">
+              <i class="bi bi-send-fill"></i>
+              Solicitar Permiso de Clases
+            </button>
+          `}
+        </div>
+      </div>
+    </div>
+  `
+}
+
+function _attachPermissionEvents(maestroId) {
+  const btn = document.getElementById('gcv-btn-request-classes')
+  if (!btn) return
+
+  btn.addEventListener('click', async () => {
+    btn.disabled = true
+    const originalHTML = btn.innerHTML
+    btn.innerHTML = '<span class="gcv-spinner-sm"></span> Enviando...'
+
+    try {
+      await solicitarPermiso(maestroId, 'clases:enroll')
+      AppToast.success('Solicitud de permiso enviada correctamente.')
+      const action = document.getElementById('gcv-permission-action')
+      if (action) {
+        action.innerHTML = `
+          <div class="gcv-pending-badge">
+            <i class="bi bi-clock-history"></i>
+            Solicitud Pendiente de Aprobación
+          </div>`
+      }
+    } catch (err) {
+      AppToast.error('Error al solicitar: ' + err.message)
+      btn.disabled = false
+      btn.innerHTML = originalHTML
+    }
+  })
 }
 
 // ── Shell layout ──────────────────────────────────────────────────────────────
@@ -468,6 +544,7 @@ function _injectStyles() {
       display: flex;
       flex-direction: column;
       gap: 1.25rem;
+      color: var(--pm-text, #1e293b);
     }
 
     /* ── Header ── */
@@ -522,7 +599,7 @@ function _injectStyles() {
       overflow-y: auto;
     }
     .gcv-clase-card {
-      background: var(--pm-card, #fff);
+      background: var(--pm-surface, #fff);
       border: 1.5px solid var(--pm-border, #e2e8f0);
       border-radius: 14px;
       padding: 1rem;
@@ -595,8 +672,9 @@ function _injectStyles() {
     }
     .gcv-horario-chip {
       display: inline-block;
-      background: var(--pm-bg-secondary, #f1f5f9);
+      background: var(--pm-surface-2, #f1f5f9);
       color: var(--pm-text, #1e293b);
+      border: 1px solid var(--pm-border, transparent);
       border-radius: 20px;
       padding: .15rem .6rem;
       font-size: .7rem;
@@ -609,7 +687,7 @@ function _injectStyles() {
 
     /* ── Detail panel ── */
     .gcv-panel {
-      background: var(--pm-card, #fff);
+      background: var(--pm-surface, #fff);
       border: 1.5px solid var(--pm-border, #e2e8f0);
       border-radius: 16px;
       overflow-y: auto;
@@ -656,7 +734,7 @@ function _injectStyles() {
       display: flex;
       align-items: center;
       gap: .5rem;
-      background: var(--pm-bg-secondary, #f8fafc);
+      background: var(--pm-surface-2, #f8fafc);
       border: 1.5px solid var(--pm-border, #e2e8f0);
       border-radius: 10px;
       padding: .4rem .75rem;
@@ -694,7 +772,7 @@ function _injectStyles() {
 
     /* ── New student form ── */
     .gcv-new-form {
-      background: var(--pm-bg-secondary, #f8fafc);
+      background: var(--pm-surface-2, #f8fafc);
       border: 1.5px solid var(--pm-border, #e2e8f0);
       border-radius: 12px;
       padding: 1.1rem;
@@ -711,7 +789,7 @@ function _injectStyles() {
       gap: .65rem;
     }
     .gcv-input {
-      background: var(--pm-card, #fff);
+      background: var(--pm-surface, #fff);
       border: 1.5px solid var(--pm-border, #e2e8f0);
       border-radius: 8px;
       padding: .5rem .85rem;
@@ -768,7 +846,7 @@ function _injectStyles() {
       transition: background .15s, border-color .15s;
     }
     .gcv-student-row:hover {
-      background: var(--pm-bg-secondary, #f8fafc);
+      background: var(--pm-surface-2, #f8fafc);
       border-color: var(--pm-border, #e2e8f0);
     }
     .gcv-student-selectable { cursor: pointer; }
@@ -858,7 +936,7 @@ function _injectStyles() {
     }
     .gcv-btn-primary:hover { opacity: .9; transform: translateY(-1px); }
     .gcv-btn-ghost {
-      background: var(--pm-bg-secondary, #f1f5f9);
+      background: var(--pm-surface-2, #f1f5f9);
       color: var(--pm-text, #1e293b);
     }
     .gcv-btn-ghost:hover { background: var(--pm-border, #e2e8f0); }
@@ -888,6 +966,55 @@ function _injectStyles() {
       font-size: .85rem;
       color: var(--pm-text-muted, #64748b);
       margin: 0;
+    }
+
+
+    /* Permission state */
+    .gcv-permission-card {
+      width: min(100%, 520px);
+      margin: 2rem auto;
+      padding: 3rem 2rem;
+      text-align: center;
+      background: var(--pm-surface-2, #f8fafc);
+      border: 1px solid var(--pm-border, #e2e8f0);
+      border-radius: 18px;
+      box-shadow: 0 18px 45px rgba(15, 23, 42, .08);
+    }
+    .gcv-permission-icon {
+      width: 80px;
+      height: 80px;
+      margin: 0 auto 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      background: rgba(59, 130, 246, .12);
+      color: var(--pm-primary, #3b82f6);
+      font-size: 2.5rem;
+    }
+    .gcv-permission-title {
+      color: var(--pm-text, #1e293b);
+      font-size: 1.4rem;
+      font-weight: 800;
+      margin: 0 0 .75rem;
+    }
+    .gcv-permission-copy {
+      color: var(--pm-text-muted, #64748b);
+      line-height: 1.55;
+      max-width: 410px;
+      margin: 0 auto 1.5rem;
+    }
+    .gcv-pending-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: .5rem;
+      padding: .85rem 1rem;
+      border-radius: 12px;
+      background: rgba(234, 179, 8, .12);
+      border: 1px solid rgba(234, 179, 8, .34);
+      color: #eab308;
+      font-weight: 700;
+      font-size: .85rem;
     }
 
     /* ── Loading ── */
@@ -928,6 +1055,46 @@ function _injectStyles() {
     @keyframes gcv-shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
 
     /* ── Utility ── */
+
+    [data-bs-theme="dark"] .gcv-clase-card,
+    [data-bs-theme="dark"] .gcv-panel,
+    [data-portal-theme="dark"] .gcv-clase-card,
+    [data-portal-theme="dark"] .gcv-panel {
+      background: rgba(28, 28, 30, .92);
+      border-color: rgba(148, 163, 184, .28);
+      box-shadow: 0 18px 45px rgba(0, 0, 0, .18);
+    }
+    [data-bs-theme="dark"] .gcv-clase-card.active,
+    [data-portal-theme="dark"] .gcv-clase-card.active {
+      background: linear-gradient(135deg, rgba(37, 99, 235, .22), rgba(124, 58, 237, .14));
+      border-color: var(--pm-primary, #3b82f6);
+    }
+    [data-bs-theme="dark"] .gcv-search-bar,
+    [data-bs-theme="dark"] .gcv-new-form,
+    [data-bs-theme="dark"] .gcv-input,
+    [data-bs-theme="dark"] .gcv-btn-ghost,
+    [data-bs-theme="dark"] .gcv-horario-chip,
+    [data-portal-theme="dark"] .gcv-search-bar,
+    [data-portal-theme="dark"] .gcv-new-form,
+    [data-portal-theme="dark"] .gcv-input,
+    [data-portal-theme="dark"] .gcv-btn-ghost,
+    [data-portal-theme="dark"] .gcv-horario-chip {
+      background: rgba(15, 23, 42, .72);
+      border-color: rgba(148, 163, 184, .28);
+      color: var(--pm-text, #f8fafc);
+    }
+    [data-bs-theme="dark"] .gcv-student-row:hover,
+    [data-portal-theme="dark"] .gcv-student-row:hover {
+      background: rgba(15, 23, 42, .55);
+      border-color: rgba(148, 163, 184, .24);
+    }
+    [data-bs-theme="dark"] .gcv-permission-card,
+    [data-portal-theme="dark"] .gcv-permission-card {
+      background: rgba(28, 28, 30, .92);
+      border-color: rgba(148, 163, 184, .28);
+      box-shadow: 0 18px 45px rgba(0, 0, 0, .24);
+    }
+
     .d-none { display: none !important; }
   `
   document.head.appendChild(style)

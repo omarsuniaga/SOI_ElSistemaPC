@@ -637,7 +637,7 @@ function _setupGlobalAppEvents() {
         .on(
           'postgres_changes',
           {
-            event: 'UPDATE',
+            event: '*',
             schema: 'public',
             table: 'permisos_maestros',
             filter: `maestro_id=eq.${maestroLocal.id}`,

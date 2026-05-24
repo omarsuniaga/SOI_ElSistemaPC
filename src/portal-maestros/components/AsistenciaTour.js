@@ -305,16 +305,23 @@ export class AsistenciaTour {
 
   _close() {
     if (!this._overlay) return
+
+    // Marcar como completado antes de cualquier animación
+    localStorage.setItem(STORAGE_KEY, 'true')
+
+    // Remover listeners
+    if (this._onKeydown) document.removeEventListener('keydown', this._onKeydown)
+    if (this._onResize)  window.removeEventListener('resize',   this._onResize)
+
+    // Ocultar tooltip y spotlight inmediatamente — son position:fixed en body
+    // y tienen pointer-events:auto, así que deben desaparecer al instante
+    if (this._tooltip)   { this._tooltip.style.display   = 'none' }
+    if (this._spotlight) { this._spotlight.style.display = 'none' }
+
+    // Fade-out del overlay y luego ocultarlo
     this._overlay.style.opacity = '0'
     setTimeout(() => {
       if (this._overlay) this._overlay.style.display = 'none'
-      // Spotlight y tooltip siguen en el body pero invisibles
-      if (this._spotlight) this._spotlight.style.width = '0'
     }, 300)
-    localStorage.setItem(STORAGE_KEY, 'true')
-
-    // Remover listeners de doc/window ahora que el tour cerró
-    if (this._onKeydown) document.removeEventListener('keydown', this._onKeydown)
-    if (this._onResize)  window.removeEventListener('resize',   this._onResize)
   }
 }

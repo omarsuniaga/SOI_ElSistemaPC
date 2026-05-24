@@ -230,15 +230,15 @@ export async function renderImportView(container) {
         {
           "nombre": "Guitarra Básico A",
           "instrumento": "Guitarra",
-          "nivel": "básico",
-          "capacidad": 8,
+          "tipo_clase": "grupal",
+          "capacidad_maxima": 8,
           "activo": true
         },
         {
           "nombre": "Piano Intermedio",
           "instrumento": "Piano",
-          "nivel": "intermedio",
-          "capacidad": 5,
+          "tipo_clase": "individual",
+          "capacidad_maxima": 5,
           "activo": true
         }
       ],

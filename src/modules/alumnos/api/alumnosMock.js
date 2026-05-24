@@ -73,3 +73,21 @@ export async function validarCedula(cedula) {
   await delay(100)
   return alumnos.some(a => a.representante_cedula === cedula.trim())
 }
+
+// Simulated active class enrollments for Demo/Mock Mode
+let inscripciones = [
+  { alumno_id: '1', clase_id: 'clase_001', clase_nombre: 'Violín Principiantes A' },
+  { alumno_id: '1', clase_id: 'clase_005', clase_nombre: 'Coro Infantil' },
+  { alumno_id: '2', clase_id: 'clase_001', clase_nombre: 'Violín Principiantes A' },
+  { alumno_id: '4', clase_id: 'clase_004', clase_nombre: 'Flauta Travesera' },
+]
+
+export async function obtenerInscripcionesAlumno(alumnoId) {
+  await delay(200)
+  return inscripciones
+    .filter(i => i.alumno_id === alumnoId)
+    .map(i => ({
+      clase_id: i.clase_id,
+      clase_nombre: i.clase_nombre
+    }))
+}

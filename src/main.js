@@ -61,6 +61,7 @@ import { registerRoutesConfig } from './modules/config/index.js';
 import { registerRoutesAcademicAdmin } from './modules/academic-admin/academic-admin.router.js';
 import { registerRoutesAdminDashboard } from './modules/admin-dashboard/admin-dashboard.router.js';
 import { registerRoutesPermisos } from './modules/permisos/index.js';
+import { registerRoutesPedagogico } from './modules/pedagogico/index.js';
 
 // ============================================================================
 // MÓDULOS REGISTRY - Define todos los módulos de la aplicación
@@ -171,6 +172,14 @@ const MODULES_REGISTRY = [
     register: registerRoutesPermisos
   },
   {
+    id: 'pedagogico',
+    label: 'Pedagógico',
+    icon: 'bi-journal-check',
+    description: 'Dashboard, seguimiento y reportes pedagógicos',
+    enabled: true,
+    register: registerRoutesPedagogico
+  },
+  {
     id: 'config',
     label: 'Configuración',
     icon: 'bi-gear',
@@ -227,14 +236,11 @@ const NAV_GROUPS = [
     label: 'Pedagógico',
     icon: 'bi-journal-check',
     items: [
-      { id: 'asistencias',   label: 'Asistencias',   icon: 'bi-calendar-check' },
-      { id: 'asistencias-reportes', label: 'Reportes', icon: 'bi-graph-up' },
-      { id: 'planificacion', label: 'Planificación',  icon: 'bi-journal-text' },
-      { id: 'planificacion-plantillas', label: 'Plantillas', icon: 'bi-file-earmark-template' },
-      { id: 'planificacion-maestros', label: 'Todas las Planificaciones', icon: 'bi-journal-check' },
-      { id: 'planificacion-curricular', label: 'Currículo',  icon: 'bi-diagram-3' },
-      { id: 'progresos',     label: 'Progresos',      icon: 'bi-graph-up' },
-      { id: 'observaciones', label: 'Observaciones',  icon: 'bi-chat-quote' },
+      { id: 'pedagogico-dashboard',   label: 'Dashboard',        icon: 'bi-grid-1x2' },
+      { id: 'planificacion',          label: 'Planificación',    icon: 'bi-journal-text' },
+      { id: 'planificacion-maestros', label: 'Todas las Planes', icon: 'bi-journal-check' },
+      { id: 'pedagogico-seguimiento', label: 'Seguimiento',      icon: 'bi-person-lines-fill' },
+      { id: 'pedagogico-reportes',    label: 'Reportes',         icon: 'bi-file-earmark-bar-graph' },
     ],
   },
   {

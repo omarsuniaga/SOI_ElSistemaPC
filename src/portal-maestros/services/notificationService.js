@@ -319,6 +319,46 @@ export async function marcarLeida(id) {
   }
 }
 
+/**
+ * Elimina una notificación del caché local y, si no es local, de la base de datos Supabase.
+ * Esto evita errores de sintaxis UUID para IDs virtuales de frontend ('local_...').
+ * @param {string} id - ID de la notificación
+ * @returns {Promise<{success: boolean, error?: any}>}
+ */
+export async function eliminarNotificacion(id) {
+  const maestro = getMaestroLocal();
+
+  // 1. Eliminar del caché en memoria local inmediatamente para respuesta instantánea en la UI
+  notificacionesCache = notificacionesCache.filter(n => n.id !== id);
+  notifyListeners();
+
+  // Persistir el caché en localStorage
+  if (maestro) _persistCache(maestro.id);
+
+  // 2. Si es una notificación virtual/local, no interactuamos con Supabase
+  if (String(id).startsWith('local_')) {
+    return { success: true };
+  }
+
+  // 3. Si es una notificación persistida en base de datos, ejecutar DELETE real
+  try {
+    const { error } = await supabase
+      .from('notificaciones')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      console.error('[NotifService] Error al eliminar en base de datos:', error.message);
+      return { success: false, error };
+    }
+    return { success: true };
+  } catch (e) {
+    console.error('[NotifService] Excepción al eliminar:', e);
+    return { success: false, error: e };
+  }
+}
+
+
 export async function marcarTodasLeidas() {
   const maestro = getMaestroLocal();
   notificacionesCache.forEach(n => { if (n.estado !== 'leida') n.estado = 'leida'; });

@@ -76,28 +76,15 @@ const IMPORT_ENTITIES = {
     description: 'Clases programadas (tabla: clases)',
     fields: [
       { name: 'nombre', type: 'string', required: true, label: 'Nombre de la clase' },
+      { name: 'programa_id', type: 'string', required: false, label: 'ID del programa (UUID)' },
+      { name: 'maestro_principal_id', type: 'string', required: false, label: 'ID del maestro (UUID)' },
+      { name: 'maestro_nombre', type: 'string', required: false, label: 'Nombre del maestro (lookup)', virtual: true },
       { name: 'instrumento', type: 'string', required: false, label: 'Instrumento' },
-      { name: 'nivel', type: 'string', required: false, label: 'Nivel' },
-      { name: 'capacidad', type: 'number', required: false, label: 'Capacidad' },
+      { name: 'tipo_clase', type: 'string', required: false, label: 'Tipo de clase' },
+      { name: 'descripcion', type: 'string', required: false, label: 'Descripción' },
+      { name: 'plan_estudio', type: 'string', required: false, label: 'Plan de estudio / Nivel', alias: 'nivel' },
+      { name: 'capacidad_maxima', type: 'number', required: false, label: 'Capacidad máxima', default: 20, alias: 'capacidad' },
       { name: 'activo', type: 'boolean', required: false, label: 'Activo', default: true }
-    ],
-    table: 'clases',
-    idField: 'id'
-  },
-  
-  clases: {
-    label: 'Clases/Cursos',
-    description: 'Clases programadas (instancias de programas)',
-    fields: [
-      { name: 'nombre', type: 'string', required: true, label: 'Nombre de la clase' },
-      { name: 'programa_id', type: 'string', required: false, label: 'ID del programa (referencia)' },
-      { name: 'maestro_principal_id', type: 'string', required: false, label: 'ID del maestro (referencia)' },
-      { name: 'salon_id', type: 'string', required: false, label: 'ID del salón (referencia)' },
-      { name: 'instrumento', type: 'string', required: false, label: 'Instrumento' },
-      { name: 'nivel', type: 'string', required: false, label: 'Nivel' },
-      { name: 'horario', type: 'string', required: false, label: 'Horario (JSON)' },
-      { name: 'capacidad', type: 'number', required: false, label: 'Capacidad máxima' },
-      { name: 'es_activo', type: 'boolean', required: false, label: 'Activo', default: 'true' }
     ],
     table: 'clases',
     idField: 'id'
@@ -256,21 +243,40 @@ function convertValue(value, fieldType, fieldOptions) {
   }
 }
 
+async function resolveLookups(entityKey, record, cleanRecord) {
+  // clases: resolve maestro_nombre → maestro_principal_id
+  if (entityKey === 'clases' && !cleanRecord.maestro_principal_id && record.maestro_nombre) {
+    const nombre = String(record.maestro_nombre).trim()
+    const { data } = await supabase
+      .from('maestros')
+      .select('id')
+      .ilike('nombre_completo', `%${nombre}%`)
+      .limit(1)
+      .maybeSingle()
+    if (data) cleanRecord.maestro_principal_id = data.id
+  }
+}
+
 export async function importData(entityKey, records) {
   const entity = IMPORT_ENTITIES[entityKey]
   if (!entity) throw new Error('Entidad no válida')
-  
+
   const results = { success: 0, errors: [], total: records.length }
-  
+
   for (let i = 0; i < records.length; i++) {
     const record = records[i]
     const cleanRecord = {}
-    
-    // Process all fields
+
+    // Process all non-virtual fields — resolve alias if the canonical name is absent
     for (const field of entity.fields) {
-      const value = record[field.name]
+      if (field.virtual) continue
+      const value = field.name in record
+        ? record[field.name]
+        : (field.alias && field.alias in record ? record[field.alias] : undefined)
       cleanRecord[field.name] = convertValue(value, field.type, field.options)
     }
+
+    await resolveLookups(entityKey, record, cleanRecord)
     
     cleanRecord.created_at = new Date().toISOString()
     
@@ -385,12 +391,15 @@ export async function previewImport(entityKey, records) {
     const issues = []
     
     for (const field of entity.fields) {
-      const value = record[field.name]
-      
-      if (field.required && !value) {
-        issues.push(`Falta campo requerido: ${field.name}`)
+      if (field.virtual) continue
+      const value = field.name in record
+        ? record[field.name]
+        : (field.alias && field.alias in record ? record[field.alias] : undefined)
+
+      if (field.required && (value === undefined || value === null || value === '')) {
+        issues.push(`Falta campo requerido: ${field.label || field.name}`)
       }
-      
+
       cleanRecord[field.name] = convertValue(value, field.type, field.options)
     }
     

@@ -12,6 +12,9 @@ import {
 } from '../api/maestrosApi.js'
 import { escapeHTML, getStatusColor, getStatusLabel, getInitials } from '../utils/maestrosUtils.js'
 import { obtenerClasesPorMaestro, actualizarClase } from '../../clases/api/clasesApi.js'
+import { openClaseModal } from '../../clases/components/claseModal.js'
+import { supabase } from '../../../lib/supabaseClient.js'
+import { HelpPanel } from '../../../shared/components/HelpPanel.js'
 
 const state = {
   maestros: [],
@@ -182,6 +185,9 @@ function renderContent(container) {
         </div>
         
         <div class="maestros-header-actions">
+          <button class="btn-help-trigger" id="btn-help-maestros" title="¿Cómo funciona esta pantalla?" aria-label="Ayuda">
+            <i class="bi bi-question"></i>
+          </button>
           <button class="btn btn-outline-success btn-sm-compact me-2" id="btnExportarCSV" title="Exportar CSV">
             <i class="bi bi-file-earmark-spreadsheet"></i> CSV
           </button>
@@ -266,6 +272,20 @@ function attachEvents(container) {
   currentContainer = container
 
   container.querySelector('#btnAgregarMaestro').addEventListener('click', () => openCreateModal())
+
+  container.querySelector('#btn-help-maestros')?.addEventListener('click', () => {
+    HelpPanel.open({
+      title: 'Maestros',
+      intro: 'Gestión del plantel docente. Desde acá podés ver, agregar, editar y desactivar maestros, y acceder al perfil completo de cada uno.',
+      sections: [
+        { icon: 'bi-search',        title: 'Buscador y filtros',  description: 'Filtrá por nombre, instrumento o estado (activo/inactivo) en tiempo real.',                                                                                             color: '#6b7280' },
+        { icon: 'bi-person-badge',  title: 'Tarjeta de maestro',  description: 'Nombre, instrumento principal, clases activas y estado. Badge verde = activo, gris = inactivo.',                                                                        color: '#3b82f6' },
+        { icon: 'bi-eye',           title: 'Ver perfil',           description: 'Perfil completo: datos personales, clases (titular y suplente), horarios y ocupación.',                                                                                color: '#10b981' },
+        { icon: 'bi-pencil',        title: 'Editar desde el perfil', description: 'Desde el perfil podés editar cualquier clase que dicte directamente, sin salir del modal.',                                                                         color: '#f59e0b' },
+        { icon: 'bi-person-x',      title: 'Desactivar maestro',   description: 'Desactivar oculta al maestro de listas operativas pero conserva su historial. No elimina datos.',                                                                      color: '#ef4444' },
+      ],
+    })
+  })
 
   container.querySelector('#btnExportarCSV')?.addEventListener('click', () => exportarMaestrosCSV())
 
@@ -547,10 +567,16 @@ function openViewModal(id) {
         <p class="form-control-plaintext">${escapeHTML(maestro.bio || 'Sin biografía')}</p>
       </div>
       <hr>
-      <div class="mb-4">
-        <label class="form-label fw-bold"><i class="bi bi-book"></i> Clases Asignadas</label>
-        <div id="maestro-clases-container" class="mt-2">
-          <div class="text-muted"><div class="spinner-border spinner-border-sm text-primary me-2"></div> Cargando clases...</div>
+      <div class="mb-2">
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <span class="fw-bold" style="font-size:0.95rem;"><i class="bi bi-journal-text me-1 text-primary"></i> Clases Asignadas</span>
+          <span id="maestro-clases-badge" class="badge bg-primary-subtle text-primary rounded-pill" style="font-size:0.75rem;">Cargando...</span>
+        </div>
+        <div id="maestro-clases-container">
+          <div class="d-flex align-items-center gap-2 text-muted py-2">
+            <div class="spinner-border spinner-border-sm text-primary"></div>
+            <small>Cargando clases...</small>
+          </div>
         </div>
       </div>
       
@@ -573,52 +599,165 @@ function openViewModal(id) {
         setTimeout(() => openDeleteModal(id), 300)
       })
 
-      // Fetch and render classes
-      const container = modalBody.querySelector('#maestro-clases-container')
-      try {
-        const clases = await obtenerClasesPorMaestro(id)
-        if (clases.length === 0) {
-          container.innerHTML = '<p class="text-muted small">No tiene clases asignadas actualmente.</p>'
-        } else {
-          container.innerHTML = '<ul class="list-group">' + clases.map(c => `
-            <li class="list-group-item d-flex justify-content-between align-items-center">
-              <div>
-                <strong style="font-size: 0.95rem;">${escapeHTML(c.nombre)}</strong>
-                <div class="small text-muted">${escapeHTML(c.instrumento || 'Sin instrumento')}</div>
-              </div>
-              <button class="btn btn-sm btn-outline-danger btn-desvincular-clase" data-clase-id="${c.id}" data-clase-nombre="${escapeHTML(c.nombre)}" title="Desvincular Maestro">
-                <i class="bi bi-x-circle"></i> Desvincular
-              </button>
-            </li>
-          `).join('') + '</ul>'
+      // ── Carga y render de clases ─────────────────────────────────────────
+      const clasesContainer = modalBody.querySelector('#maestro-clases-container')
+      const badge = modalBody.querySelector('#maestro-clases-badge')
 
-          // Add event listeners for desvincular
-          container.querySelectorAll('.btn-desvincular-clase').forEach(btn => {
-            btn.addEventListener('click', async (e) => {
+      const renderClasesSection = async () => {
+        try {
+          const [clases, maestrosRes, salonesRes, programasRes, alumnosRes] = await Promise.all([
+            obtenerClasesPorMaestro(id),
+            supabase.from('maestros').select('*').order('nombre_completo', { ascending: true }),
+            supabase.from('salones').select('*').order('nombre', { ascending: true }),
+            supabase.from('programas').select('*').order('nombre', { ascending: true }),
+            supabase.from('alumnos').select('*').eq('activo', true).order('nombre_completo', { ascending: true }),
+          ])
+
+          const catalogos = {
+            maestros: maestrosRes.data || [],
+            salones:  salonesRes.data  || [],
+            programas: programasRes.data || [],
+            alumnos:  alumnosRes.data  || [],
+          }
+
+          badge.textContent = `${clases.length} clase${clases.length !== 1 ? 's' : ''}`
+
+          if (clases.length === 0) {
+            clasesContainer.innerHTML = `
+              <div class="text-center py-4 text-muted">
+                <i class="bi bi-journal-x" style="font-size:2rem; opacity:0.4;"></i>
+                <p class="mt-2 mb-0 small">Sin clases asignadas actualmente.</p>
+              </div>`
+            return
+          }
+
+          const DIAS = { lunes:'Lun', martes:'Mar', miercoles:'Mié', jueves:'Jue', viernes:'Vie', sabado:'Sáb', domingo:'Dom' }
+          const fmtHora = (t) => t?.slice(0,5) || ''
+          const fmtHorario = (h) => `${DIAS[h.dia] || h.dia} ${fmtHora(h.hora_inicio)}–${fmtHora(h.hora_fin)}`
+
+          clasesContainer.innerHTML = `
+            <div class="d-flex flex-column gap-2">
+              ${clases.map(c => {
+                // BUG FIX: Clase model no mapea `activo`, usar `estado` (string de BD)
+                const esActiva   = c.estado === 'activa' || c.estado == null
+                const ocupacion  = c.capacidad_maxima ? Math.round((c.total_alumnos / c.capacidad_maxima) * 100) : null
+                const ocupColor  = ocupacion >= 90 ? '#ef4444' : ocupacion >= 70 ? '#f59e0b' : '#10b981'
+                const horarioPills = c.horarios.map(h =>
+                  `<span style="background:var(--bs-tertiary-bg);border:1px solid var(--bs-border-color);border-radius:20px;padding:1px 8px;font-size:0.7rem;white-space:nowrap;">${fmtHorario(h)}</span>`
+                ).join('')
+
+                return `
+                  <div class="clase-card" data-clase-id="${c.id}" style="
+                    border-radius: 10px;
+                    border: 1px solid var(--bs-border-color);
+                    overflow: hidden;
+                    transition: box-shadow 0.15s;
+                    ${!esActiva ? 'opacity:0.6;' : ''}
+                  ">
+                    <div class="d-flex align-items-stretch">
+
+                      <!-- Indicador de rol -->
+                      <div style="width:4px;flex-shrink:0;background:${c.es_suplente ? '#f59e0b' : '#6366f1'};"></div>
+
+                      <!-- Info -->
+                      <div class="flex-grow-1 px-3 py-2 overflow-hidden">
+                        <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
+                          <span class="fw-semibold text-truncate" style="font-size:0.87rem;" title="${escapeHTML(c.nombre)}">${escapeHTML(c.nombre)}</span>
+                          ${!esActiva ? `<span style="font-size:0.62rem;padding:1px 7px;border-radius:20px;background:#f1f5f9;color:#64748b;border:1px solid #e2e8f0;">Inactiva</span>` : ''}
+                          ${c.es_suplente ? `<span style="font-size:0.62rem;padding:1px 7px;border-radius:20px;background:#fffbeb;color:#92400e;border:1px solid #fde68a;">Suplente</span>` : ''}
+                        </div>
+
+                        <div class="d-flex align-items-center gap-2 flex-wrap mb-1" style="font-size:0.75rem;color:var(--bs-secondary-color);">
+                          ${c.instrumento ? `<span>${escapeHTML(c.instrumento)}</span><span style="opacity:0.3;">·</span>` : ''}
+                          ${c.horarios.length ? horarioPills : `<span class="fst-italic" style="opacity:0.5;">Sin horario</span>`}
+                        </div>
+
+                        <div class="d-flex align-items-center gap-1" style="font-size:0.72rem;">
+                          <i class="bi bi-people" style="color:var(--bs-secondary-color);"></i>
+                          <span style="color:var(--bs-secondary-color);">${c.total_alumnos}${c.capacidad_maxima ? `/${c.capacidad_maxima}` : ''}</span>
+                          ${ocupacion !== null ? `
+                            <div style="flex:1;max-width:60px;height:4px;background:var(--bs-tertiary-bg);border-radius:2px;overflow:hidden;margin-left:4px;">
+                              <div style="width:${ocupacion}%;height:100%;background:${ocupColor};border-radius:2px;transition:width 0.3s;"></div>
+                            </div>
+                            <span style="color:${ocupColor};font-weight:600;">${ocupacion}%</span>` : ''}
+                        </div>
+                      </div>
+
+                      <!-- Acciones -->
+                      <div class="d-flex flex-column" style="border-left:1px solid var(--bs-border-color);flex-shrink:0;">
+                        <button class="btn btn-link btn-editar-clase d-flex flex-column align-items-center justify-content-center gap-1 flex-fill px-3"
+                          data-clase-id="${c.id}" title="Editar"
+                          style="font-size:0.65rem;color:#6366f1;text-decoration:none;border-radius:0;border-bottom:1px solid var(--bs-border-color);">
+                          <i class="bi bi-pencil" style="font-size:0.95rem;"></i>
+                          Editar
+                        </button>
+                        <button class="btn btn-link btn-desvincular-clase d-flex flex-column align-items-center justify-content-center gap-1 flex-fill px-3"
+                          data-clase-id="${c.id}"
+                          data-clase-nombre="${escapeHTML(c.nombre)}"
+                          data-es-suplente="${c.es_suplente}"
+                          title="Quitar"
+                          style="font-size:0.65rem;color:#ef4444;text-decoration:none;border-radius:0;">
+                          <i class="bi bi-person-dash" style="font-size:0.95rem;"></i>
+                          Quitar
+                        </button>
+                      </div>
+
+                    </div>
+                  </div>`
+              }).join('')}
+            </div>`
+
+          // ── Editar clase ────────────────────────────────────────────────
+          clasesContainer.querySelectorAll('.btn-editar-clase').forEach(btn => {
+            btn.addEventListener('click', (e) => {
               const claseId = e.currentTarget.dataset.claseId
+              const clase = clases.find(c => c.id === claseId)
+              if (!clase) return
+              AppModal.close()
+              setTimeout(() => {
+                openClaseModal(clase, {
+                  ...catalogos,
+                  onSuccess: () => {
+                    setTimeout(() => openViewModal(id), 300)
+                  }
+                })
+              }, 300)
+            })
+          })
+
+          // ── Desvincular maestro ─────────────────────────────────────────
+          clasesContainer.querySelectorAll('.btn-desvincular-clase').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+              const claseId    = e.currentTarget.dataset.claseId
               const claseNombre = e.currentTarget.dataset.claseNombre
-              if (confirm(`¿Seguro que deseas desvincular a este maestro de la clase "${claseNombre}"?`)) {
-                try {
-                  e.currentTarget.disabled = true
-                  e.currentTarget.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>'
-                  await actualizarClase(claseId, { maestro_principal_id: null }, true) // force true to avoid overlap checks issues
-                  showToast('Maestro desvinculado de la clase', 'success')
-                  
-                  // Re-render modal by closing and opening it again quickly
-                  AppModal.close()
-                  setTimeout(() => openViewModal(id), 300)
-                } catch(error) {
-                  showToast('Error al desvincular: ' + error.message, 'error')
-                  e.currentTarget.disabled = false
-                  e.currentTarget.innerHTML = '<i class="bi bi-x-circle"></i> Desvincular'
-                }
+              const esSuplente = e.currentTarget.dataset.esSuplente === 'true'
+              const campo = esSuplente ? 'maestro_suplente_id' : 'maestro_principal_id'
+              if (!confirm(`¿Quitar a este maestro de "${claseNombre}"?`)) return
+              try {
+                e.currentTarget.disabled = true
+                e.currentTarget.innerHTML = '<span class="spinner-border spinner-border-sm"></span>'
+                await actualizarClase(claseId, { [campo]: null }, true)
+                showToast('Maestro desvinculado correctamente', 'success')
+                AppModal.close()
+                setTimeout(() => openViewModal(id), 300)
+              } catch (err) {
+                showToast('Error al desvincular: ' + err.message, 'error')
+                e.currentTarget.disabled = false
+                e.currentTarget.innerHTML = '<i class="bi bi-person-dash" style="font-size:1rem;"></i><span>Quitar</span>'
               }
             })
           })
+
+        } catch (err) {
+          badge.textContent = 'Error'
+          clasesContainer.innerHTML = `
+            <div class="alert alert-danger py-2 mb-0 small">
+              <i class="bi bi-exclamation-triangle me-1"></i> Error al cargar las clases.
+            </div>`
         }
-      } catch (error) {
-        container.innerHTML = '<p class="text-danger small"><i class="bi bi-exclamation-triangle"></i> Error al cargar las clases.</p>'
       }
+
+      renderClasesSection()
     }
   })
 }

@@ -8,7 +8,7 @@ vi.mock('../../../permisos/api/permisosSupabase.js', () => ({
   rechazarSolicitud: vi.fn(),
 }))
 
-vi.mock('../../../lib/supabaseClient.js', () => ({
+vi.mock('../../../../lib/supabaseClient.js', () => ({
   supabase: {
     auth: {
       getUser: vi.fn(() =>
@@ -141,6 +141,6 @@ describe('solicitudesPermisosView', () => {
 
     expect(container.textContent).toContain('Prof. García')
     expect(container.textContent).toContain('Prof. López')
-    expect(container.querySelectorAll('[data-solicitud-id]')).toHaveLength(2)
+    expect(container.querySelectorAll('.admin-solicitud-card')).toHaveLength(2)
   })
 })

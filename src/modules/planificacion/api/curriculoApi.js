@@ -1,4 +1,4 @@
-import { supabase } from '../../../core/supabase/supabaseClient.js'
+import { supabase } from '../../../lib/supabaseClient.js'
 
 /**
  * Get the active curriculum for a given instrumento + nivel pair.

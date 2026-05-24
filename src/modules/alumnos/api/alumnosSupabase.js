@@ -192,3 +192,20 @@ export async function obtenerAlumnosActivos() {
   if (error) throw new Error('No se pudieron cargar los alumnos')
   return data.map(normalizeAlumno)
 }
+
+export async function obtenerInscripcionesAlumno(alumnoId) {
+  const { data, error } = await supabase
+    .from('alumnos_clases')
+    .select('clase_id, clase:clases(nombre)')
+    .eq('alumno_id', alumnoId)
+
+  if (error) {
+    console.error('Error cargando inscripciones de alumno:', error.message)
+    throw new Error('No se pudieron cargar las clases del alumno')
+  }
+
+  return (data || []).map(row => ({
+    clase_id: row.clase_id,
+    clase_nombre: row.clase?.nombre ?? 'Clase sin nombre'
+  }))
+}

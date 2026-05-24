@@ -19,6 +19,7 @@ import {
   timeToMinutes,
 } from '../utils/clasesUtils.js'
 import { openClaseModal } from '../components/claseModal.js'
+import { HelpPanel } from '../../../shared/components/HelpPanel.js'
 
 const state = {
   clases: [],
@@ -108,6 +109,9 @@ function renderContent(container) {
         </div>
         
         <div class="clases-header-actions">
+          <button class="btn-help-trigger" id="btn-help-clases" title="¿Cómo funciona esta pantalla?" aria-label="Ayuda">
+            <i class="bi bi-question"></i>
+          </button>
           <div class="view-segmented-control">
             <button class="view-segment-btn ${state.vista === 'tabla' ? 'active' : ''}" id="btn-vista-tabla" title="Vista de lista">
               <i class="bi bi-list-ul"></i>
@@ -538,6 +542,20 @@ async function openClasePerfilModal(clase) {
 }
 
 function attachGlobalEvents(container) {
+  container.querySelector('#btn-help-clases')?.addEventListener('click', () => {
+    HelpPanel.open({
+      title: 'Clases',
+      intro: 'Gestión completa de clases: creación, horarios, asignación de maestros, inscripción de alumnos y control de capacidad.',
+      sections: [
+        { icon: 'bi-easel2',           title: 'Lista de clases',          description: 'Todas las clases del sistema. Filtrá por instrumento, nivel y estado. Las activas aparecen primero.',                                                          color: '#3b82f6' },
+        { icon: 'bi-clock',            title: 'Horarios',                 description: 'Cada clase puede tener múltiples horarios semanales. El sistema detecta conflictos de salón y de maestro automáticamente.',                                    color: '#6366f1' },
+        { icon: 'bi-people',           title: 'Inscripción de alumnos',   description: '"Grupal": todos comparten el horario. "Rotativa (Turnos)": cada alumno tiene su propio horario individual dentro de la clase.',                               color: '#10b981' },
+        { icon: 'bi-bar-chart',        title: 'Capacidad',                description: 'Barra de ocupación: inscriptos vs capacidad máxima. Rojo cuando supera el 90%.',                                                                               color: '#f59e0b' },
+        { icon: 'bi-person-workspace', title: 'Maestro titular y suplente', description: 'Cada clase tiene un maestro principal (obligatorio) y puede tener suplente (opcional). Ambos aparecen en el perfil del maestro.',                            color: '#6b7280' },
+      ],
+    })
+  })
+
   container.querySelector('#btnAgregarClase')?.addEventListener('click', () => {
     openClaseModal(null, {
       maestros: state.maestros,

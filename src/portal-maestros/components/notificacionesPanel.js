@@ -1,6 +1,5 @@
-import { fetchNotificaciones, onNotificacionesChange, marcarLeida, marcarTodasLeidas, getDedupCount } from '../services/notificationService.js';
+import { fetchNotificaciones, onNotificacionesChange, marcarLeida, marcarTodasLeidas, eliminarNotificacion, getDedupCount } from '../services/notificationService.js';
 import { enableTrap } from '../utils/focusTrap.js';
-import { supabase } from '../../lib/supabaseClient.js';
 
 // -- Listener: NAVIGATE_TO desde el SW (toque en notificación OS) ----------------
 // El SW envía este mensaje cuando el usuario toca una notificación del SO
@@ -192,14 +191,8 @@ export const notificacionesPanel = {
 
         let deleteSuccess = true;
         for (const id of ids) {
-          // Usar DELETE directo para evitar violación de la CHECK CONSTRAINT de estado en Supabase
-          const { error } = await supabase
-            .from('notificaciones')
-            .delete()
-            .eq('id', id);
-          
-          if (error) {
-            console.error('[NotifPanel] Error al eliminar:', error.message);
+          const res = await eliminarNotificacion(id);
+          if (!res.success) {
             deleteSuccess = false;
           }
         }

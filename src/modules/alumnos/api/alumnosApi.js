@@ -13,6 +13,7 @@ export const actualizarAlumno = (...args) => getApi().actualizarAlumno(...args)
 export const eliminarAlumno = (...args) => getApi().eliminarAlumno(...args)
 export const validarEmail = (...args) => getApi().validarEmail(...args)
 export const validarCedula = (...args) => getApi().validarCedula(...args)
+export const obtenerInscripcionesAlumno = (...args) => getApi().obtenerInscripcionesAlumno(...args)
 
 // Re-exportar constantes (copiadas para evitar problemas de inicialización circular)
 export const PARENTESCOS = [

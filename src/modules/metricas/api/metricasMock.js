@@ -60,3 +60,21 @@ export async function getHistorialEstadoAlumno(alumnoId) {
 export async function getRachaAusencias(alumnoId) {
   return 0
 }
+
+export async function getRiesgoAbandono({ nivel = null } = {}) {
+  const riesgo = [
+    { nombre_completo: 'Mateo Fernández', score_riesgo: 88, nivel_riesgo: 'alto' },
+    { nombre_completo: 'Lucía Benítez', score_riesgo: 65, nivel_riesgo: 'medio' },
+    { nombre_completo: 'Santiago Morales', score_riesgo: 35, nivel_riesgo: 'bajo' }
+  ]
+  if (nivel) return riesgo.filter(r => r.nivel_riesgo === nivel)
+  return riesgo
+}
+
+export async function getAlumnosDestacados() {
+  return [
+    { nombre_completo: 'Valeria Russo', promedio: 9.85, programa: 'Violín Cátedra' },
+    { nombre_completo: 'Thiago Silva', promedio: 9.72, programa: 'Violín Inicial' },
+    { nombre_completo: 'Delfina Lombardi', promedio: 9.60, programa: 'Violín Cátedra' }
+  ]
+}

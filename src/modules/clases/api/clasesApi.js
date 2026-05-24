@@ -187,6 +187,7 @@ export async function crearClase(claseData, force = false) {
       hora_inicio: h.hora_inicio,
       hora_fin: h.hora_fin,
       salon_id: h.salon_id || null,
+      maestro_id: claseCreada.maestro_principal_id // Sincronizar maestro_id en clase_horarios
     }))
 
     const { error: errorHorarios } = await supabase.from('clase_horarios').insert(horariosData)
@@ -251,7 +252,16 @@ export async function actualizarClase(id, actualizaciones, force = false) {
   }
 
   if (actualizaciones.horarios) {
-    await supabase.from('clase_horarios').delete().eq('clase_id', id)
+    const { error: errorDelete } = await supabase
+      .from('clase_horarios')
+      .delete()
+      .eq('clase_id', id)
+
+    if (errorDelete) {
+      console.error('Error eliminando horarios anteriores:', errorDelete.message)
+      throw new Error('No se pudieron actualizar los horarios de la clase')
+    }
+
     if (actualizaciones.horarios.length > 0) {
       const horariosData = actualizaciones.horarios.map(h => ({
         clase_id: id,
@@ -259,10 +269,20 @@ export async function actualizarClase(id, actualizaciones, force = false) {
         hora_inicio: h.hora_inicio,
         hora_fin: h.hora_fin,
         salon_id: h.salon_id || null,
+        maestro_id: fusionada.maestro_principal_id // Sincronizar maestro_id si la tabla lo tiene
       }))
-      await supabase.from('clase_horarios').insert(horariosData)
+
+      const { error: errorInsert } = await supabase
+        .from('clase_horarios')
+        .insert(horariosData)
+
+      if (errorInsert) {
+        console.error('Error insertando nuevos horarios:', errorInsert.message)
+        throw new Error('No se pudieron guardar los nuevos horarios de la clase: ' + errorInsert.message)
+      }
     }
   }
+
 
   return obtenerClase(id)
 }
@@ -278,12 +298,23 @@ export async function eliminarClase(id) {
 export async function obtenerClasesPorMaestro(maestroId) {
   const { data, error } = await supabase
     .from('clases')
-    .select('*')
-    .eq('maestro_principal_id', maestroId)
+    .select(`
+      *,
+      clase_horarios ( dia, hora_inicio, hora_fin, salon_id ),
+      alumnos_clases ( id )
+    `)
+    .or(`maestro_principal_id.eq.${maestroId},maestro_suplente_id.eq.${maestroId}`)
     .order('nombre', { ascending: true })
 
   if (error) throw error
-  return (data || []).map(normalizeClase)
+
+  return (data || []).map(c => {
+    const clase = normalizeClase(c)
+    clase.horarios = c.clase_horarios || []
+    clase.total_alumnos = (c.alumnos_clases || []).length
+    clase.es_suplente = c.maestro_principal_id !== maestroId
+    return clase
+  })
 }
 
 export async function inscribirAlumno(claseId, alumnoId, horaInicio = null, horaFin = null) {

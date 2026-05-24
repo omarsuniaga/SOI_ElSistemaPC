@@ -117,6 +117,7 @@ const SIZES = { sm: '400px', md: '520px', lg: '720px', xl: '960px' }
 export const AppModal = {
   _saveHandler: null,
   _cancelHandler: null,
+  _keydownHandler: null,
 
   open({ title = '', body = '', saveText = 'Guardar', cancelText = 'Cancelar', deleteText = 'Eliminar', onSave = null, onCancel = null, onDelete = null, onShow = null, onOpen = null, size = 'md', hideSave = false } = {}) {
     ensureDOM()
@@ -165,6 +166,13 @@ export const AppModal = {
 
     // Wire handlers — remove old ones first
     this._detachHandlers()
+
+    this._keydownHandler = (e) => {
+      if (e.key === 'Escape') {
+        this._cancelHandler ? this._cancelHandler() : this.close()
+      }
+    }
+    document.addEventListener('keydown', this._keydownHandler)
 
     this._saveHandler = async () => {
       if (onSave) {
@@ -244,12 +252,13 @@ export const AppModal = {
     els.dialog.style.opacity = '0'
     els.dialog.style.transform = 'translateY(20px) scale(0.97)'
 
+    this._detachHandlers()
+
     setTimeout(() => {
       els.backdrop.style.display = 'none'
       els.modal.style.display = 'none'
       els.body.innerHTML = ''
       document.body.style.overflow = ''
-      this._detachHandlers()
     }, 220)
   },
 
@@ -264,9 +273,13 @@ export const AppModal = {
     if (this._deleteHandler) {
       els.btnDelete.removeEventListener('click', this._deleteHandler)
     }
+    if (this._keydownHandler) {
+      document.removeEventListener('keydown', this._keydownHandler)
+    }
     this._saveHandler = null
     this._cancelHandler = null
     this._deleteHandler = null
+    this._keydownHandler = null
   },
 
   // Reset save button after error (call from onSave catch if you handle errors yourself)

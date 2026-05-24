@@ -33,7 +33,7 @@ export async function renderSolicitudesPermisosView(container) {
       </div>
     </div>`
 
-  loadAndRenderSolicitudes(container, user.id)
+  await loadAndRenderSolicitudes(container, user.id)
 }
 
 async function loadAndRenderSolicitudes(container, adminId) {

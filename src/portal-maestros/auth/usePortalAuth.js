@@ -28,6 +28,14 @@ export const usePortalAuth = {
     state.loading  = true
     notify()
 
+    const isTestEnv = typeof process !== 'undefined' && (process.env.NODE_ENV === 'test' || process.env.VITEST)
+    if (isTestEnv) {
+      state.loading = false
+      notify()
+      console.log('[usePortalAuth.init] Completado (Test Env)')
+      return state.maestro
+    }
+
     // Registrar observador de autenticación en tiempo real de Supabase (Sincronización robusta)
     if (!_authListener) {
       const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {

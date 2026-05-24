@@ -12,6 +12,7 @@ import {
   testNotification
 } from '../services/pushService.js'
 import { enableTrap } from '../utils/focusTrap.js'
+import { escapeHTML } from '../../shared/utils/sanitize.js'
 
 export const pushDiagnostic = {
   container: null,
@@ -448,11 +449,11 @@ export const pushDiagnostic = {
           : 'Notificación enviada (modo local).'}`
       } else {
         resultDiv.className = 'push-diagnostic-result error'
-        resultDiv.innerHTML = `❌ ${result.error}`
+        resultDiv.innerHTML = `❌ ${escapeHTML(result.error)}`
       }
     } catch (err) {
       resultDiv.className = 'push-diagnostic-result error'
-      resultDiv.innerHTML = `❌ Error: ${err.message}`
+      resultDiv.innerHTML = `❌ Error: ${escapeHTML(err.message)}`
     }
   },
 

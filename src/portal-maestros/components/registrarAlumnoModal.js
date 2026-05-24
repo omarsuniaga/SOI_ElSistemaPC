@@ -4,6 +4,8 @@
  */
 
 import { supabase } from '../../lib/supabaseClient.js'
+import { sanitizeFormData } from '../../shared/utils/sanitize.js'
+import { Validators } from '../../shared/utils/validators.js'
 
 export function registrarAlumnoModal() {
   let isOpen = false
@@ -123,21 +125,35 @@ export function registrarAlumnoModal() {
       originalText = submitBtn.innerHTML
       submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Registrando...'
 
-      const formData = {
-        nombre: modal.querySelector('#alumno-nombre').value.trim(),
+      const raw = {
+        nombre:   modal.querySelector('#alumno-nombre').value.trim(),
         apellido: modal.querySelector('#alumno-apellido').value.trim(),
-        correo: modal.querySelector('#alumno-email').value.trim() || null,
-        dni: modal.querySelector('#alumno-dni').value.trim() || null,
-        estado: modal.querySelector('#alumno-estado').value,
-        // Otros campos que podrían ser necesarios
+        correo:   modal.querySelector('#alumno-email').value.trim() || null,
+        dni:      modal.querySelector('#alumno-dni').value.trim() || null,
+        estado:   modal.querySelector('#alumno-estado').value,
         creado_por: maestroId,
-        creado_en: new Date().toISOString()
+        creado_en:  new Date().toISOString(),
       }
 
-      // Validar que los campos requeridos no estén vacíos
-      if (!formData.nombre || !formData.apellido || !formData.estado) {
-        throw new Error('Por favor completa los campos requeridos')
-      }
+      // Sanitize all free-text fields before validation and DB insert
+      const formData = sanitizeFormData(raw, {
+        nombre:   { maxLength: 100 },
+        apellido: { maxLength: 100 },
+        correo:   { maxLength: 254 },
+        dni:      { maxLength: 20 },
+      })
+
+      // Validate required fields and formats
+      const errors = Validators.run([
+        { test: () => Validators.required(formData.nombre),            message: 'El nombre es requerido.' },
+        { test: () => Validators.length(formData.nombre, 2, 100),      message: 'El nombre debe tener entre 2 y 100 caracteres.' },
+        { test: () => Validators.required(formData.apellido),          message: 'El apellido es requerido.' },
+        { test: () => Validators.length(formData.apellido, 2, 100),    message: 'El apellido debe tener entre 2 y 100 caracteres.' },
+        { test: () => Validators.email(formData.correo),               message: 'El correo no tiene un formato válido.' },
+        { test: () => !formData.dni || Validators.cedula(formData.dni), message: 'El DNI/Cédula solo puede contener dígitos (5-20).' },
+        { test: () => Validators.required(formData.estado),            message: 'El estado es requerido.' },
+      ])
+      if (errors.length > 0) throw new Error(errors[0])
 
       // Insertar alumno
       const { data, error } = await supabase

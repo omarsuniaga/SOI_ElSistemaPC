@@ -7,7 +7,7 @@
  *
  * Usage: renderAsistentePedagogicoPanel(container)
  */
-import { supabase } from '../../../core/supabase/supabaseClient.js'
+import { supabase } from '../../../lib/supabaseClient.js'
 import { obtenerCurriculo } from '../api/curriculoApi.js'
 import { obtenerCoberturaPorAlumno } from '../api/coberturaApi.js'
 import { sugerirPlan, analizarEnfoque } from '../api/groqService.js'

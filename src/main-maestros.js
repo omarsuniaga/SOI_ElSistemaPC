@@ -28,7 +28,7 @@ if ('serviceWorker' in navigator) {
 }
 
 // PWA: Banner de instalación automática
-import { pwaInstaller } from './portal-maestros/components/pwaInstaller.js'
+import './portal-maestros/components/pwaInstaller.js'
 
 import './portal-maestros/styles/index.css'
 
@@ -36,25 +36,22 @@ import './portal-maestros/styles/index.css'
 // NUEVOS SERVICIOS - Portal Professionalization
 // ============================================
 
-// Error Boundary - captura errores globales
-import { renderErrorBoundary } from './components/ErrorBoundary.js'
-
 // Error Reporter - Sentry integration
-import { initErrorReporter, reportError, setErrorUser } from './services/errorReporter.js'
+import { initErrorReporter, reportError } from './services/errorReporter.js'
 
 // Analytics - tracking (GDPR compliant)
-import { initAnalytics, trackPageView, setUser as setAnalyticsUser } from './services/analyticsService.js'
+import { initAnalytics } from './services/analyticsService.js'
 
 // GDPR Service — imported but not yet wired
 
 // Rate Limiter
-import { initRateLimit, checkRateLimit } from './middleware/rateLimit.js'
+import { initRateLimit } from './middleware/rateLimit.js'
 
 // CSRF Protection
-import { initCSRF, generateToken } from './middleware/csrfProtection.js'
+import { initCSRF } from './middleware/csrfProtection.js'
 
 // Web Vitals
-import { initWebVitals, getWebVitals } from './services/webVitals.js'
+import { initWebVitals } from './services/webVitals.js'
 
 // Inicializar servicios
 console.log('[SOI] Initializing professionalization services...')
@@ -87,7 +84,7 @@ import { processQueue, getQueue } from './portal-maestros/services/offlineQueue.
 import { supabase } from './lib/supabaseClient.js'
 import { prefetchMonthData, getMisClases, getHorariosClases, getSesiones } from './portal-maestros/services/maestroDataService.js'
 import { scheduleLocalAlerts } from './portal-maestros/services/pushService.js'
-import { AppModal } from './shared/components/AppModal.js'
+
 
 // Icons only -- NO Bootstrap CSS/JS in portal
 import 'bootstrap-icons/font/bootstrap-icons.css'
@@ -174,8 +171,6 @@ const ALL_TABS = (permisos) => IS_ADMIN ? ADMIN_TABS : buildMaestroTabs(permisos
 
 let _maestro = null
 let _permisos = null
-let _globalAppKeys = []
-
 const router = createPortalRouter()
 window.router = router // Exponer para las vistas
 
@@ -760,7 +755,7 @@ function _setActiveTab(route) {
 
 const _viewContainers = {}
 let _activeViewCleanup = null
-let _viewRendered = new Set()
+const _viewRendered = new Set()
 
 function _initViewContainers() {
   const container = document.getElementById('pm-view-container')
@@ -1002,7 +997,7 @@ async function _scheduleSwAlerts() {
     const [clases, horarios, sesiones] = await Promise.all([
       getMisClases(),
       getMisClases().then(c => getHorariosClases(c.map(x => x.id))),
-      getMisClases().then(c => getSesiones(_maestro.id, fechaHoy, fechaHoy)),
+      getMisClases().then(() => getSesiones(_maestro.id, fechaHoy, fechaHoy)),
     ])
 
     const clasesMap = Object.fromEntries(clases.map(c => [c.id, c]))
@@ -1031,27 +1026,6 @@ export function invalidateAllViews() {
 
 export function invalidateView(name) {
   _viewRendered.delete(name)
-}
-
-// ── Admin Bridge (Dev only) ────────────────────────────────
-
-function _createAdminBridgeIfDev() {
-  // Solo agregar el botón Admin en desarrollo, no en producción
-  if (import.meta.env.MODE === 'production') {
-    return
-  }
-
-  const adminBridge = document.createElement('a')
-  adminBridge.href = '/admin.html'
-  adminBridge.className = 'admin-bridge'
-  adminBridge.title = 'Panel de Administración (Dev only)'
-  adminBridge.innerHTML = `
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
-    </svg>
-    <span>Admin</span>
-  `
-  document.body.appendChild(adminBridge)
 }
 
 // ── Bootstrap ───────────────────────────────────────────────
@@ -1155,8 +1129,6 @@ async function initPortal() {
   // 4. Initial sync attempt
   _triggerSync()
 
-  // 5. Add admin bridge only in development
-  _createAdminBridgeIfDev()
 }
 
 // Global error trap — shows errors visually + report to services

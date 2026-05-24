@@ -584,8 +584,8 @@ function _toggleBulkBtn() {
 }
 
 // ── Modals ────────────────────────────────────────────────────────────────────
-async function openEditModal(id) {
-  const plan = id ? state.planesOriginales.find(p => p.id === id) : new Planificacion()
+async function openEditModal(id, prefill = {}) {
+  const plan = id ? state.planesOriginales.find(p => p.id === id) : new Planificacion(prefill)
 
   AppModal.open({
     title: id ? 'Editar Plan de Clase' : 'Nuevo Plan de Clase',

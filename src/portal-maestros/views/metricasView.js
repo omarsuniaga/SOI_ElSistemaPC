@@ -199,14 +199,6 @@ function generarHTML(datos) {
         </select>
       </header>
 
-      <section class="pm-dashboard-section pm-search-top" aria-label="Buscar alumno">
-        <div class="pm-search-wrapper">
-          <i class="bi bi-search" aria-hidden="true"></i>
-          <input id="pm-alumno-search" type="search" placeholder="Buscar alumno..." aria-label="Buscar alumno por nombre" autocomplete="off">
-        </div>
-        <div id="pm-alumno-search-results" class="pm-search-results" role="listbox"></div>
-      </section>
-
       <section class="pm-dashboard-overview" aria-label="Indicadores generales">
         <div class="pm-overview-card primary">
           <div class="pm-overview-ring" aria-label="Asistencia general ${asistenciaPromedio}%">
@@ -561,7 +553,6 @@ function generarHTML(datos) {
       .pm-class-card { background: var(--pm-surface); border-radius: 12px; padding: 0.875rem; position: relative; }
       .pm-class-btn { position: absolute; top: 0.625rem; right: 0.625rem; background: none; border: none; padding: 0.25rem; color: var(--pm-text-muted); cursor: pointer; font-size: 1.25rem; }
 
-      .pm-search-top { padding-top: 0.875rem; padding-bottom: 0.25rem; }
       .pm-search-wrapper { position: relative; margin-bottom: 0.5rem; }
       .pm-search-wrapper i { position: absolute; left: 0.875rem; top: 50%; transform: translateY(-50%); color: var(--pm-text-muted); font-size: 0.875rem; }
       .pm-search-wrapper input { width: 100%; padding: 0.75rem 0.75rem 0.75rem 2.25rem; border: 1px solid var(--pm-border); border-radius: 10px; font-size: 0.875rem; background: var(--pm-surface); color: var(--pm-text); outline: none; transition: border-color 0.2s; }
@@ -712,61 +703,6 @@ function bindEvents(container) {
     })
   })
 
-  // ── Búsqueda reactiva local ────────────────────────────────────
-  const searchInput  = container.querySelector('#pm-alumno-search')
-  const searchResults = container.querySelector('#pm-alumno-search-results')
-  if (!searchInput || !searchResults) return
-
-  // Índice en memoria: deduplica alumnos y adjunta nombres de clase
-  const alumnoIndex = (() => {
-    const map = new Map()
-    for (const [claseId, alumnos] of Object.entries(estadoActual.inscripcionesPorClase)) {
-      const clase = estadoActual.clasesData.find(c => c.id === claseId)
-      for (const alum of alumnos) {
-        if (!map.has(alum.id)) map.set(alum.id, { ...alum, clases: [] })
-        if (clase) map.get(alum.id).clases.push(clase.nombre)
-      }
-    }
-    return [...map.values()]
-  })()
-
-  const renderSearch = (q) => {
-    if (!q) { searchResults.classList.remove('show'); return }
-    const lower = q.toLowerCase()
-    const hits = alumnoIndex.filter(a => a.nombre_completo?.toLowerCase().includes(lower)).slice(0, 10)
-
-    if (!hits.length) {
-      searchResults.innerHTML = '<p class="pm-empty" style="padding:0.75rem 1rem;margin:0;">Sin resultados.</p>'
-      searchResults.classList.add('show')
-      return
-    }
-
-    searchResults.innerHTML = hits.map(a => `
-      <div class="pm-search-result-item" role="option" tabindex="0" data-id="${a.id}">
-        <div class="pm-search-result-avatar"><i class="bi bi-person-fill"></i></div>
-        <div class="pm-search-result-info">
-          <span class="pm-search-result-name">${escHTML(a.nombre_completo)}</span>
-          <span class="pm-search-result-meta">${escHTML(a.clases.join(', ') || '—')}</span>
-        </div>
-        <i class="bi bi-chevron-right pm-search-result-arrow"></i>
-      </div>`).join('')
-    searchResults.classList.add('show')
-
-    searchResults.querySelectorAll('.pm-search-result-item').forEach(row => {
-      const go = () => { window.location.hash = `#/alumno?id=${row.dataset.id}` }
-      row.addEventListener('click', go)
-      row.addEventListener('keypress', (e) => { if (e.key === 'Enter') go() })
-    })
-  }
-
-  searchInput.addEventListener('input', () => renderSearch(searchInput.value.trim()))
-  searchInput.addEventListener('keydown', (e) => { if (e.key === 'Escape') { searchInput.value = ''; searchResults.classList.remove('show') } })
-
-  document.addEventListener('click', (e) => {
-    if (!searchInput.contains(e.target) && !searchResults.contains(e.target)) {
-      searchResults.classList.remove('show')
-    }
-  }, { capture: false })
 }
 
 // ── Render principal ───────────────────────────────────────────

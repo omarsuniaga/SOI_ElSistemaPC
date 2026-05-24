@@ -242,15 +242,15 @@ async function _updateSyncIndicator() {
   try {
     const queue = await getQueue()
     if (queue.length === 0) {
-      indicator.className = 'pm-sync-indicator synced'
-      indicator.innerHTML = '✓ <span class="pm-hide-mobile">Sincronizado</span>'
+      indicator.className = 'pm-online-dot synced'
+      indicator.title = 'Sincronizado'
     } else {
-      indicator.className = 'pm-sync-indicator pending'
-      indicator.innerHTML = `⏳ <span class="pm-hide-mobile">Pendiente (${queue.length})</span>`
+      indicator.className = 'pm-online-dot pending'
+      indicator.title = `Pendiente (${queue.length})`
     }
   } catch {
-    indicator.className = 'pm-sync-indicator error'
-    indicator.innerHTML = '⚠️ <span class="pm-hide-mobile">Error de sync</span>'
+    indicator.className = 'pm-online-dot error'
+    indicator.title = 'Error de sincronización'
   }
 }
 
@@ -439,26 +439,35 @@ function _renderShell(app, maestro, permisos) {
     <!-- Main content area -->
     <div class="pm-main-area">
       <!-- Header -->
-      <header class="pm-header">
-        <div class="pm-header-left">
+      <header class="pm-header" id="pm-header">
+        <div class="pm-header-left" id="pm-header-left">
           <span class="pm-header-greeting">${IS_ADMIN ? 'Panel Admin' : 'Hola,'}</span>
           <span class="pm-header-title">
             ${IS_ADMIN
         ? (maestro?.nombre_completo?.split(' ')[0] ?? 'Administrador')
         : (maestro?.nombre_completo?.split(' ')[0] ?? 'Maestro')
       }
+            <span class="pm-online-dot" id="pm-sync-indicator" title="Sincronizado"></span>
           </span>
         </div>
 
+        <!-- Dynamic WhatsApp-Style Search Container -->
+        <div class="pm-header-search-container" id="pm-header-search-container">
+          <button id="pm-search-back-btn" class="pm-icon-btn pm-search-back-btn" title="Cerrar búsqueda">
+            <i class="bi bi-arrow-left"></i>
+          </button>
+          <div class="pm-header-search" id="pm-header-search">
+            <i class="bi bi-search"></i>
+            <input type="search" placeholder="Buscar alumno..." id="pm-header-search-input" autocomplete="off" />
+          </div>
+        </div>
+
         <!-- Header right controls -->
-        <div class="pm-header-right">
-          <!-- Search (desktop only) -->
-          ${bp === 'desktop' ? `
-            <div class="pm-header-search">
-              <i class="bi bi-search"></i>
-              <input type="search" placeholder="Buscar alumno..." id="pm-header-search-input" />
-            </div>
-          ` : ''}
+        <div class="pm-header-right" id="pm-header-right">
+          <!-- Botón de búsqueda para mobile/tablet (WhatsApp Lupa) -->
+          <button id="pm-search-toggle-btn" class="pm-icon-btn pm-search-toggle-btn" title="Buscar alumno">
+            <i class="bi bi-search"></i>
+          </button>
 
           <span class="pm-sync-indicator synced" id="pm-sync-indicator">✓</span>
 
@@ -474,11 +483,6 @@ function _renderShell(app, maestro, permisos) {
           <!-- Botón instalación PWA -->
           <button id="pm-btn-install" class="pm-icon-btn pm-hide-mobile" title="Instalar app">
             <i class="bi bi-download"></i>
-          </button>
-
-          <!-- Botón diagnóstico de push -->
-          <button id="pm-btn-push-diagnostic" class="pm-icon-btn pm-hide-mobile" title="Diagnosticar Notificaciones" style="opacity: 0.7;">
-            <i class="bi bi-broadcast"></i>
           </button>
 
           <button id="pm-btn-perfil" class="pm-avatar-btn" title="Perfil">
@@ -543,12 +547,43 @@ function _renderShell(app, maestro, permisos) {
   })
 
 
-  // Header search (desktop)
+  // WhatsApp-style header search
+  const headerEl = document.getElementById('pm-header')
   const searchInput = document.getElementById('pm-header-search-input')
+  const searchToggleBtn = document.getElementById('pm-search-toggle-btn')
+  const searchBackBtn = document.getElementById('pm-search-back-btn')
+
+  const openSearch = () => {
+    headerEl?.classList.add('search-active')
+    setTimeout(() => {
+      searchInput?.focus()
+    }, 50)
+  }
+
+  const closeSearch = () => {
+    headerEl?.classList.remove('search-active')
+    if (searchInput) {
+      searchInput.value = ''
+    }
+  }
+
+  searchToggleBtn?.addEventListener('click', (e) => {
+    e.stopPropagation()
+    openSearch()
+  })
+
+  searchBackBtn?.addEventListener('click', (e) => {
+    e.stopPropagation()
+    closeSearch()
+  })
+
   searchInput?.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') {
+    if (e.key === 'Escape') {
+      closeSearch()
+    } else if (e.key === 'Enter') {
       const q = e.target.value.trim()
       if (q.length > 1) {
+        closeSearch()
         router.navigate(`alumno?id=${encodeURIComponent(q)}`)
       }
     }
@@ -564,11 +599,6 @@ function _renderShell(app, maestro, permisos) {
   // Eventos de notificaciones
   document.getElementById('pm-bell-btn')?.addEventListener('click', () => {
     notificacionesPanel.open()
-  })
-
-  // Evento de diagnóstico de push
-  document.getElementById('pm-btn-push-diagnostic')?.addEventListener('click', () => {
-    pushDiagnostic.open()
   })
 
   // Evento de instalación PWA
@@ -801,7 +831,19 @@ async function _renderView(route, params = {}, { silent = false } = {}) {
 
   // En modo silent (preload), solo renderizar contenido sin cambiar visibilidad
   if (!silent) {
+    // Cerrar buscador estilo WhatsApp al navegar
+    const headerEl = document.getElementById('pm-header')
+    if (headerEl && headerEl.classList.contains('search-active')) {
+      headerEl.classList.remove('search-active')
+      const input = document.getElementById('pm-header-search-input')
+      if (input) input.value = ''
+    }
     _setActiveTab(baseRoute)
+
+    // Re-evaluar alertas superiores (SOI Smart Insights) al cambiar de vista
+    if (window.pwaInstaller) {
+      window.pwaInstaller.evaluateInsights()
+    }
   }
 
   const targetContainer = _viewContainers[baseRoute]
@@ -1122,6 +1164,11 @@ async function initPortal() {
 
       // Programar alertas locales del día en el Service Worker
       _scheduleSwAlerts()
+
+      // Evaluar alertas superiores (SOI Smart Insights)
+      if (window.pwaInstaller) {
+        window.pwaInstaller.evaluateInsights()
+      }
     })
     .catch(err => console.warn('[Prefetch] Error:', err.message))
 

@@ -29,11 +29,6 @@
     padding: 0 0.75rem;
   }
 
-  /* Ocultar header tabs en móvil - solo visible en desktop */
-  .pm-header-tabs {
-    display: none !important;
-  }
-
   /* Footer nav: siempre visible en móvil */
   .pm-footer-nav {
     display: block !important;
@@ -256,17 +251,37 @@
 }
 
 /* ═══════════════════════════════════════════════════════════
-    TABLET (768px – 1023px) — iPad, Android tablets
-    ═══════════════════════════════════════════════════════════ */
+   TABLET PORTRAIT (768px–1023px, vertical)
+   Navegación: footer nav (igual que mobile)
+   Header tabs: eliminados
+   ═══════════════════════════════════════════════════════════ */
 
-@media (min-width: 768px) and (max-width: 1023px) {
+@media (min-width: 768px) and (max-width: 1023px) and (orientation: portrait) {
 
-  /* Hide sidebar on tablet */
+  /* Sin sidebar — footer nav es la navegación principal */
   .pm-sidebar {
     display: none !important;
   }
 
-  /* Login: center form, hide branding */
+  /* Footer nav visible, igual que mobile */
+  .pm-footer-nav {
+    display: block !important;
+  }
+
+  /* Header limpio — sin tabs */
+  .pm-header {
+    height: var(--pm-header-h);
+    padding: 0 1.25rem;
+  }
+
+  /* View con padding-bottom para no solaparse con footer nav */
+  .pm-view {
+    padding: 0;
+    padding-bottom: calc(var(--pm-bottom-nav-h) + 0.5rem);
+    max-width: none;
+  }
+
+  /* Login: centrar formulario */
   .pm-login-branding {
     display: none !important;
   }
@@ -280,88 +295,29 @@
   }
 
   .pm-login-card {
-    max-width: 420px;
+    max-width: 440px;
     padding: 2rem;
   }
 
-  /* Main area for tablet */
-  .pm-main-area {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    min-width: 0;
-    overflow: hidden;
+  /* Footer nav pill: un poco más ancha que en mobile */
+  .pm-footer-nav__inner {
+    border-radius: 20px;
+    height: 60px;
+    max-width: 600px;
+    margin: 0 auto;
   }
 
-  /* ── Header: tabs horizontales ─────────────────────────────────── */
-  .pm-header {
-    height: var(--pm-header-h);
-    padding: 0 1.25rem;
-    display: flex;
-    align-items: center;
+  .pm-nav-tab i {
+    font-size: 1.3rem;
   }
 
-  /* Footer nav: oculto en tablet — se usa header-tabs */
-  .pm-footer-nav {
-    display: none !important;
+  .pm-nav-tab span {
+    font-size: 0.6rem;
   }
 
-  /* Header tabs: navegación principal en tablet */
-  .pm-header-tabs {
-    display: flex !important;
-    align-items: center;
-    gap: 0.25rem;
-    margin-left: var(--pm-space-4);
-  }
-
-  .pm-header-tab {
-    padding: var(--pm-space-1) var(--pm-space-3);
-    border-radius: var(--pm-radius-xs);
-    font-size: 0.75rem;
-    font-weight: 600;
-    cursor: pointer;
-    white-space: nowrap;
-    transition: background var(--pm-transition-fast), color var(--pm-transition-fast);
-    background: none;
-    border: none;
-    color: var(--pm-header-text, rgba(255, 255, 255, 0.7));
-    display: flex;
-    align-items: center;
-    gap: var(--pm-space-1);
-  }
-
-  .pm-header-tab i {
-    font-size: 0.85rem;
-    color: var(--pm-header-text, rgba(255, 255, 255, 0.7));
-  }
-
-  .pm-header-tab:hover {
-    background: var(--pm-header-hover, rgba(255, 255, 255, 0.15));
-    color: var(--pm-header-text-active, #fff);
-  }
-
-  .pm-header-tab:hover i {
-    color: var(--pm-header-text-active, #fff);
-  }
-
-  .pm-header-tab.active {
-    background: var(--pm-header-active, rgba(255, 255, 255, 0.25));
-    color: var(--pm-header-text-active, #fff);
-  }
-
-  .pm-header-tab.active i {
-    color: var(--pm-header-text-active, #fff);
-  }
-
-  /* ── View container: padding para legibilidad en tablet ─────────── */
-  .pm-view {
-    padding: 0 var(--pm-space-4);
-    max-width: none;
-  }
-
-  /* ── KPI Cards: 3 columnas ────────────────────────────────────── */
+  /* KPI Cards: 4 columnas en portrait tablet */
   .pm-metricas-kpis {
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(4, 1fr);
     gap: 0.75rem;
   }
 
@@ -377,7 +333,7 @@
     font-size: 0.65rem;
   }
 
-  /* ── Clase cards: grid 2 cols ─────────────────────────────────── */
+  /* Clase cards: 2 cols */
   .pm-metricas-clases {
     grid-template-columns: repeat(2, 1fr);
     gap: 0.75rem;
@@ -388,7 +344,7 @@
     gap: 0.5rem;
   }
 
-  /* ── Ausencias: 2 cols ─────────────────────────────────────────── */
+  /* Ausencias: 2 cols */
   .ausencias-dashboard {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -399,16 +355,174 @@
     padding: 1.25rem;
   }
 
-  .stat-icon {
-    width: 44px;
-    height: 44px;
-  }
-
   .stat-number {
     font-size: 1.75rem;
   }
 
-  /* ── Modales: centered ─────────────────────────────────────────── */
+  /* Modales: centrados */
+  .pm-modal-overlay {
+    align-items: center;
+    padding: 1rem;
+  }
+
+  .pm-modal-content {
+    max-width: 520px;
+    border-radius: var(--pm-radius);
+  }
+
+  .pm-cal-day {
+    font-size: 0.85rem;
+  }
+
+  .pm-planif-programas {
+    gap: 0.75rem;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   TABLET LANDSCAPE (768px–1023px, horizontal)
+   Navegación: sidebar (igual que desktop)
+   Header tabs: eliminados
+   ═══════════════════════════════════════════════════════════ */
+
+@media (min-width: 768px) and (max-width: 1023px) and (orientation: landscape) {
+
+  /* Layout horizontal: sidebar + contenido, igual que desktop */
+  #portal-app {
+    flex-direction: row;
+  }
+
+  /* Sidebar visible y fijo */
+  .pm-sidebar {
+    display: flex !important;
+    flex-direction: column;
+    width: 220px;
+    flex-shrink: 0;
+    background: var(--pm-surface-2);
+    border-right: 1px solid var(--pm-border);
+    overflow-y: auto;
+    z-index: var(--pm-z-sidebar);
+    /* Resetear el transform del drawer mobile */
+    position: relative;
+    transform: none !important;
+    transition: none;
+  }
+
+  .pm-sidebar-header {
+    padding: var(--pm-space-3) var(--pm-space-4);
+    border-bottom: 1px solid var(--pm-border);
+  }
+
+  .pm-sidebar-logo {
+    display: flex;
+    align-items: center;
+    gap: var(--pm-space-2);
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--pm-primary);
+  }
+
+  .pm-sidebar-logo i {
+    font-size: 1.3rem;
+  }
+
+  .pm-sidebar-nav {
+    flex: 1;
+    padding: var(--pm-space-2);
+    display: flex;
+    flex-direction: column;
+    gap: var(--pm-space-1);
+  }
+
+  .pm-sidebar-link {
+    display: flex;
+    align-items: center;
+    gap: var(--pm-space-2);
+    padding: var(--pm-space-2) var(--pm-space-3);
+    border-radius: var(--pm-radius);
+    color: var(--pm-text-muted);
+    text-decoration: none;
+    font-size: 0.85rem;
+    font-weight: 500;
+    transition: all var(--pm-transition-fast);
+    cursor: pointer;
+    border: none;
+    background: none;
+    width: 100%;
+    text-align: left;
+  }
+
+  .pm-sidebar-link i {
+    font-size: 1rem;
+    width: 20px;
+    text-align: center;
+  }
+
+  .pm-sidebar-link:hover {
+    background: var(--pm-bg-hover);
+    color: var(--pm-text);
+  }
+
+  .pm-sidebar-link.active {
+    background: var(--pm-primary);
+    color: #fff;
+  }
+
+  .pm-sidebar-footer {
+    padding: var(--pm-space-2);
+    border-top: 1px solid var(--pm-border);
+  }
+
+  /* Footer nav oculto — usa sidebar */
+  .pm-footer-nav {
+    display: none !important;
+  }
+
+  /* View sin padding-bottom de footer nav */
+  .pm-view {
+    flex: 1;
+    padding: var(--pm-space-3);
+    padding-bottom: var(--pm-space-3);
+    overflow-y: auto;
+    overflow-x: hidden;
+    max-width: none;
+  }
+
+  /* Header compacto en landscape */
+  .pm-header {
+    height: var(--pm-header-h);
+    padding: 0 1.25rem;
+  }
+
+  /* Login */
+  .pm-login-branding {
+    display: none !important;
+  }
+
+  .pm-login-form {
+    display: flex !important;
+    flex: 1;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+  }
+
+  .pm-login-card {
+    max-width: 400px;
+  }
+
+  /* KPI Cards: 4 columnas */
+  .pm-metricas-kpis {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.75rem;
+  }
+
+  .pm-metricas-clases {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+  }
+
+  /* Modales: centrados */
   .pm-modal-overlay {
     align-items: center;
     padding: 1rem;
@@ -419,35 +533,8 @@
     border-radius: var(--pm-radius);
   }
 
-  /* ── Calendario: mes completo ─────────────────────────────────── */
   .pm-cal-day {
     font-size: 0.85rem;
-  }
-
-  /* ── Sidebar: drawer 80vw ──────────────────────────────────────── */
-  .pm-sidebar {
-    position: fixed;
-    left: 0;
-    top: 0;
-    bottom: 0;
-    width: min(320px, 80vw);
-    z-index: var(--pm-z-sidebar);
-    transform: translateX(-100%);
-    transition: transform var(--pm-transition-slow);
-  }
-
-  .pm-sidebar.open {
-    transform: translateX(0);
-  }
-
-  /* ── Login ───────────────────────────────────────────────────── */
-  .pm-login-card {
-    max-width: 420px;
-  }
-
-  /* ── Planificacion ────────────────────────────────────────────── */
-  .pm-planif-programas {
-    gap: 0.75rem;
   }
 }
 
@@ -607,11 +694,6 @@
     flex-direction: column;
     min-width: 0;
     overflow: hidden;
-  }
-
-  /* ── Header tabs: hidden on desktop (use sidebar instead) ───── */
-  .pm-header-tabs {
-    display: none !important;
   }
 
   /* Ocultar footer nav en desktop */

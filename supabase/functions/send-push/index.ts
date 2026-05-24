@@ -42,7 +42,9 @@ Deno.serve(async (req) => {
     )
 
     const body = await req.json().catch(() => ({}))
-    const { title = 'Portal Maestros', body: notificationBody = 'Nueva notificación', data = {}, actions = [] } = body
+    const { title = 'Portal Maestros', body: notificationBody = 'Nueva notificación', data = {}, actions = [], deepLink } = body
+    // Merge deepLink into notification data so the SW can navigate on click
+    const notifData = deepLink ? { ...data, deepLink } : data
     
     let targetProfileId = body.profile_id || null
     const maestroId = body.maestro_id || body.maestroId || null
@@ -86,7 +88,7 @@ Deno.serve(async (req) => {
     const payload = JSON.stringify({
       title,
       body: notificationBody,
-      data,
+      data: notifData,
       actions
     })
 

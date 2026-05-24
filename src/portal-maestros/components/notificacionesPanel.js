@@ -6,8 +6,10 @@ import { enableTrap } from '../utils/focusTrap.js';
 // y el portal ya está abierto en una pestaña.
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.addEventListener('message', (event) => {
-    if (event.data?.type === 'NAVIGATE_TO' && event.data.hash) {
-      window.location.hash = event.data.hash;
+    if (event.data?.type === 'NAVIGATE_TO') {
+      // SW sends `url` (hash string like '#/asistencia?clase=...&fecha=...')
+      const target = event.data.url || event.data.hash;
+      if (target) window.location.hash = target.startsWith('#') ? target.slice(1) : target;
     }
   });
 }

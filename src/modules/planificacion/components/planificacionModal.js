@@ -7,6 +7,7 @@ import { Planificacion } from '../models/planificacion.model.js';
 import { createDslEditorWithToolbar } from './dslToolbar.js';
 import { createAlumnoPickerModal } from './alumnoPickerModal.js';
 import { getAlumnos } from '../../alumnos/api/alumnosApi.js';
+import { obtenerCurriculo } from '../api/curriculoApi.js';
 
 export const PLANTILLAS_PLANIFICACION = [
   {
@@ -239,11 +240,83 @@ export function openPlanificacionModal(mode, data = null, clases = [], maestros 
     }
   };
 
+  // Curriculo guide side panel (DOM injection)
+  const modalBody = modalEl.querySelector('.pm-plan-body')
+  if (modalBody) {
+    const guideHtml = `
+      <div style="position:sticky;top:0;width:220px;flex-shrink:0" id="pl-curriculo-wrapper">
+        <div class="card border-0 bg-body-secondary">
+          <div class="card-header bg-transparent py-2 border-bottom">
+            <span class="small fw-semibold"><i class="bi bi-journal-bookmark me-1 text-primary"></i>Guía curricular</span>
+          </div>
+          <div class="card-body p-2 small" id="pl-curriculo-body" style="max-height:350px;overflow-y:auto">
+            <div class="text-muted text-center small py-3">Seleccioná una clase para ver la guía</div>
+          </div>
+        </div>
+      </div>`
+    const wrapper = document.createElement('div')
+    wrapper.style.cssText = 'display:flex;gap:1rem;align-items:flex-start'
+    // Wrap existing body content
+    const fragment = document.createDocumentFragment()
+    while (modalBody.firstChild) fragment.appendChild(modalBody.firstChild)
+    const innerDiv = document.createElement('div')
+    innerDiv.style.cssText = 'flex:1;min-width:0'
+    innerDiv.appendChild(fragment)
+    wrapper.appendChild(innerDiv)
+    wrapper.insertAdjacentHTML('beforeend', guideHtml)
+    modalBody.appendChild(wrapper)
+
+    // Wire clase change to load curriculo guide
+    const claseSelectForGuide = modalEl.querySelector('#pl-clase_id')
+    if (claseSelectForGuide) {
+      const onClaseChange = () => {
+        const selectedClaseId = claseSelectForGuide.value
+        if (!selectedClaseId) return
+        const selectedClase = clases.find(c => c.id === selectedClaseId)
+        if (selectedClase?.instrumento && selectedClase?.plan_estudio) {
+          _loadCurriculoGuide(selectedClase.instrumento, selectedClase.plan_estudio, modalEl)
+        }
+      }
+      claseSelectForGuide.addEventListener('change', onClaseChange)
+      // Load immediately if editing an existing plan with a clase
+      if (plan.clase_id) {
+        const existingClase = clases.find(c => c.id === plan.clase_id)
+        if (existingClase?.instrumento && existingClase?.plan_estudio) {
+          _loadCurriculoGuide(existingClase.instrumento, existingClase.plan_estudio, modalEl)
+        }
+      }
+    }
+  }
+
   // Mostrar modal
   requestAnimationFrame(() => {
     modalEl.classList.add('open');
     modalEl.querySelector('#pl-tema')?.focus();
   });
+}
+
+async function _loadCurriculoGuide(instrumento, nivel, modalEl) {
+  const body = modalEl.querySelector('#pl-curriculo-body')
+  if (!body) return
+  body.innerHTML = `<div class="text-center py-2"><div class="spinner-border spinner-border-sm text-muted"></div></div>`
+  try {
+    const curriculo = await obtenerCurriculo(instrumento, nivel)
+    if (!curriculo) {
+      body.innerHTML = `<p class="text-muted small text-center py-2">Sin guía curricular<br>para ${instrumento} — ${nivel}</p>`
+      return
+    }
+    body.innerHTML = curriculo.curriculo_pilares.map(p => `
+      <div class="mb-2">
+        <div class="fw-semibold text-uppercase text-muted mb-1" style="font-size:.7rem;letter-spacing:.05em">${p.nombre}</div>
+        ${p.curriculo_objetivos.map(o => `
+          <div class="d-flex align-items-start gap-1 mb-1">
+            <i class="bi bi-circle text-muted" style="font-size:.65rem;margin-top:3px;flex-shrink:0"></i>
+            <span style="font-size:.78rem">${o.descripcion}</span>
+          </div>`).join('')}
+      </div>`).join('')
+  } catch (err) {
+    body.innerHTML = `<p class="text-danger small">${err.message}</p>`
+  }
 }
 
 function _buildModalHTML(isEdit, plan, clases, maestros) {

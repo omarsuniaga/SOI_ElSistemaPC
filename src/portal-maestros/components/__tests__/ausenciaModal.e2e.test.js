@@ -73,6 +73,10 @@ function openModal() {
 
 /** Fill in dates and motivo, the minimum required fields. */
 function fillRequiredFields({ fechaInicio = '2026-06-01', fechaFin = '2026-06-01', motivo = 'Motivo válido de prueba' } = {}) {
+  // Click "Varios días" (rango) button to enable range fields and match what E2E tests expect
+  const rangoBtn = document.querySelector('.am-dur-btn[data-dur="rango"]');
+  if (rangoBtn) rangoBtn.click();
+
   const startEl = document.getElementById('fecha-inicio');
   const endEl = document.getElementById('fecha-fin');
   const motivoEl = document.getElementById('motivo');
@@ -202,9 +206,8 @@ describe('AusenciaModal E2E — full flow', () => {
   it('tracks tipo-ausencia selection in state', () => {
     openModal();
 
-    const select = document.getElementById('tipo-ausencia');
-    select.value = 'enfermedad';
-    select.dispatchEvent(new Event('change'));
+    const btn = document.querySelector('.am-tipo-btn[data-tipo="enfermedad"]');
+    if (btn) btn.click();
 
     expect(ausenciaModal.state.tipoAusencia).toBe('enfermedad');
   });
@@ -212,9 +215,8 @@ describe('AusenciaModal E2E — full flow', () => {
   it('tracks urgencia selection in state', () => {
     openModal();
 
-    const select = document.getElementById('urgencia');
-    select.value = 'alta';
-    select.dispatchEvent(new Event('change'));
+    const btn = document.querySelector('.am-urg-btn[data-urg="alta"]');
+    if (btn) btn.click();
 
     expect(ausenciaModal.state.urgencia).toBe('alta');
   });
@@ -237,7 +239,7 @@ describe('AusenciaModal E2E — full flow', () => {
     const panel = document.getElementById('reschedule-panel');
     expect(panel.style.display).toBe('none');
 
-    document.getElementById('coverage-reschedule').click();
+    document.querySelector('input[name="coverage-type"][value="reschedule"]').click();
 
     expect(ausenciaModal.state.coverageType).toBe('reschedule');
     expect(panel.style.display).not.toBe('none');
@@ -247,12 +249,12 @@ describe('AusenciaModal E2E — full flow', () => {
     openModal();
 
     // First switch to reschedule
-    const rescheduleRadio = document.getElementById('coverage-reschedule');
+    const rescheduleRadio = document.querySelector('input[name="coverage-type"][value="reschedule"]');
     rescheduleRadio.checked = true;
     rescheduleRadio.dispatchEvent(new Event('change'));
 
     // Then switch back to activities
-    const activitiesRadio = document.getElementById('coverage-activities');
+    const activitiesRadio = document.querySelector('input[name="coverage-type"][value="activities"]');
     activitiesRadio.checked = true;
     activitiesRadio.dispatchEvent(new Event('change'));
 
@@ -338,7 +340,7 @@ describe('AusenciaModal E2E — full flow', () => {
     fillRequiredFields();
 
     // Switch to reschedule and pick a salon
-    document.getElementById('coverage-reschedule').click();
+    document.querySelector('input[name="coverage-type"][value="reschedule"]').click();
     document.getElementById('emergente-fecha').value = '2026-06-05';
     document.getElementById('emergente-fecha').dispatchEvent(new Event('change'));
     document.getElementById('emergente-hora').value = '14:00';
@@ -419,8 +421,8 @@ describe('AusenciaModal E2E — full flow', () => {
     const onSave = openModal();
     fillRequiredFields();
 
-    document.getElementById('tipo-ausencia').value = 'enfermedad';
-    document.getElementById('tipo-ausencia').dispatchEvent(new Event('change'));
+    const btn = document.querySelector('.am-tipo-btn[data-tipo="enfermedad"]');
+    if (btn) btn.click();
     // No file attached
 
     await onSave();

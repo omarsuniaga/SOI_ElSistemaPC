@@ -1,0 +1,422 @@
+/* ============================================================================
+   SOI ACADEMIC PORTAL — HORARIO BUILDER STYLES
+   ============================================================================ */
+
+:root {
+  --hb-primary: #6366f1;
+  --hb-primary-hover: #4f46e5;
+  --hb-primary-light: rgba(99, 102, 241, 0.1);
+  --hb-success: #10b981;
+  --hb-success-light: rgba(16, 185, 129, 0.15);
+  --hb-warning: #f59e0b;
+  --hb-warning-light: rgba(245, 158, 11, 0.15);
+  --hb-danger: #ef4444;
+  --hb-danger-light: rgba(239, 68, 68, 0.15);
+  --hb-gray-100: #f3f4f6;
+  --hb-gray-200: #e5e7eb;
+  --hb-gray-300: #d1d5db;
+  --hb-gray-700: #374151;
+  --hb-gray-800: #1f2937;
+  --hb-card-bg: #ffffff;
+  --hb-border: #e5e7eb;
+  --hb-text: #1f2937;
+  --hb-text-muted: #6b7280;
+  --hb-grid-bg: #f9fafb;
+}
+
+[data-bs-theme="dark"] {
+  --hb-primary: #818cf8;
+  --hb-primary-hover: #6366f1;
+  --hb-primary-light: rgba(129, 140, 248, 0.15);
+  --hb-success: #34d399;
+  --hb-success-light: rgba(52, 211, 153, 0.2);
+  --hb-warning: #fbbf24;
+  --hb-warning-light: rgba(251, 191, 36, 0.2);
+  --hb-danger: #f87171;
+  --hb-danger-light: rgba(248, 113, 113, 0.2);
+  --hb-gray-100: #1f2937;
+  --hb-gray-200: #374151;
+  --hb-gray-300: #4b5563;
+  --hb-gray-700: #d1d5db;
+  --hb-gray-800: #f3f4f6;
+  --hb-card-bg: #111827;
+  --hb-border: #374151;
+  --hb-text: #f9fafb;
+  --hb-text-muted: #9ca3af;
+  --hb-grid-bg: #1f2937;
+}
+
+.hb-container {
+  padding: 1.5rem;
+  max-width: 1600px;
+  margin: 0 auto;
+  font-family: 'Outfit', 'Inter', system-ui, sans-serif;
+  color: var(--hb-text);
+  animation: fadeIn 0.4s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Glassmorphism Header */
+.hb-header {
+  background: var(--hb-card-bg);
+  border: 1px solid var(--hb-border);
+  padding: 1.5rem;
+  border-radius: 16px;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.hb-title-group h1 {
+  font-size: 1.75rem;
+  font-weight: 700;
+  margin: 0;
+  background: linear-gradient(135deg, var(--hb-primary), #a78bfa);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.hb-title-group p {
+  color: var(--hb-text-muted);
+  margin: 0.25rem 0 0 0;
+  font-size: 0.9rem;
+}
+
+/* Grid Layouts */
+.hb-layout-grid {
+  display: grid;
+  grid-template-columns: 350px 1fr;
+  gap: 1.5rem;
+  align-items: start;
+}
+
+@media (max-width: 1024px) {
+  .hb-layout-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Custom Cards */
+.hb-card {
+  background: var(--hb-card-bg);
+  border: 1px solid var(--hb-border);
+  border-radius: 16px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05);
+  margin-bottom: 1.5rem;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.hb-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 30px -4px rgba(0, 0, 0, 0.08);
+}
+
+.hb-card-title {
+  font-size: 1.15rem;
+  font-weight: 600;
+  margin-bottom: 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--hb-primary);
+  border-bottom: 1px dashed var(--hb-border);
+  padding-bottom: 0.75rem;
+}
+
+/* Forms & Constraints */
+.hb-form-group {
+  margin-bottom: 1rem;
+}
+
+.hb-form-group label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--hb-text-muted);
+  margin-bottom: 0.35rem;
+  display: block;
+}
+
+.hb-form-control {
+  width: 100%;
+  padding: 0.65rem 0.85rem;
+  border-radius: 10px;
+  border: 1px solid var(--hb-border);
+  background: var(--hb-gray-100);
+  color: var(--hb-text);
+  font-size: 0.9rem;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.hb-form-control:focus {
+  outline: none;
+  border-color: var(--hb-primary);
+  box-shadow: 0 0 0 3px var(--hb-primary-light);
+}
+
+/* Beautiful Interactive Availability Grid */
+.hb-calendar-container {
+  overflow-x: auto;
+  border-radius: 16px;
+  border: 1px solid var(--hb-border);
+  background: var(--hb-card-bg);
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05);
+}
+
+.hb-calendar-grid {
+  display: grid;
+  grid-template-columns: 80px repeat(6, 1fr);
+  min-width: 800px;
+}
+
+.hb-cal-header {
+  font-weight: 600;
+  text-align: center;
+  padding: 0.75rem;
+  background: var(--hb-primary-light);
+  color: var(--hb-primary);
+  border-bottom: 1px solid var(--hb-border);
+  border-left: 1px solid var(--hb-border);
+}
+
+.hb-cal-header:first-child {
+  border-left: none;
+  background: transparent;
+}
+
+.hb-time-label {
+  grid-column: 1;
+  text-align: right;
+  padding-right: 0.75rem;
+  padding-top: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--hb-text-muted);
+  border-bottom: 1px solid var(--hb-border);
+}
+
+.hb-day-cell {
+  position: relative;
+  min-height: 50px;
+  border-bottom: 1px solid var(--hb-border);
+  border-left: 1px solid var(--hb-border);
+  background: var(--hb-grid-bg);
+  transition: background-color 0.15s;
+}
+
+.hb-day-cell:hover {
+  background: rgba(99, 102, 241, 0.02);
+}
+
+/* Availability block highlights inside grid */
+.hb-slot-available {
+  background: var(--hb-success-light);
+  border-left: 3px solid var(--hb-success);
+  position: absolute;
+  left: 4px;
+  right: 4px;
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 0.7rem;
+  color: var(--hb-success);
+  font-weight: 600;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1;
+}
+
+.hb-slot-assigned {
+  background: var(--hb-primary-light);
+  border: 1px solid var(--hb-primary);
+  border-left: 4px solid var(--hb-primary);
+  position: absolute;
+  left: 6px;
+  right: 6px;
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.12);
+  z-index: 5;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hb-slot-assigned:hover {
+  transform: scale(1.02);
+  box-shadow: 0 6px 18px rgba(99, 102, 241, 0.2);
+  z-index: 10;
+}
+
+/* Teacher availability list cards */
+.hb-teacher-badge {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem;
+  border-radius: 12px;
+  border: 1px solid var(--hb-border);
+  margin-bottom: 0.5rem;
+  background: var(--hb-gray-100);
+  transition: transform 0.2s;
+}
+
+.hb-teacher-badge:hover {
+  transform: translateX(4px);
+}
+
+.hb-teacher-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.hb-teacher-name {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.hb-teacher-spec {
+  font-size: 0.75rem;
+  color: var(--hb-text-muted);
+}
+
+.hb-teacher-status {
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+.hb-teacher-status.available {
+  background: var(--hb-success-light);
+  color: var(--hb-success);
+}
+
+.hb-teacher-status.partial {
+  background: var(--hb-warning-light);
+  color: var(--hb-warning);
+}
+
+/* Drag & Drop Visual styling */
+.hb-dragging {
+  opacity: 0.6;
+  transform: scale(0.98);
+}
+
+.hb-drag-hover {
+  background: rgba(99, 102, 241, 0.08) !important;
+}
+
+/* Conflict & Metrics Panels */
+.hb-metric-pill {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  background: var(--hb-gray-100);
+  border: 1px solid var(--hb-border);
+  border-radius: 12px;
+  font-size: 0.85rem;
+}
+
+.hb-metric-pill i {
+  font-size: 1.25rem;
+  color: var(--hb-primary);
+}
+
+.hb-metric-num {
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+.hb-conflict-item {
+  border-left: 4px solid var(--hb-danger);
+  background: var(--hb-danger-light);
+  padding: 0.75rem 1rem;
+  border-radius: 0 8px 8px 0;
+  margin-bottom: 0.75rem;
+  font-size: 0.85rem;
+  color: var(--hb-text);
+}
+
+.hb-conflict-item h5 {
+  font-weight: 700;
+  margin: 0 0 0.25rem 0;
+  font-size: 0.9rem;
+}
+
+.hb-conflict-item p {
+  margin: 0;
+  color: var(--hb-text-muted);
+}
+
+/* Modal and Schedule Preview styling */
+.hb-preview-actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+  margin-top: 1rem;
+}
+
+.hb-btn {
+  padding: 0.6rem 1.25rem;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s, transform 0.15s;
+}
+
+.hb-btn-primary {
+  background: var(--hb-primary);
+  color: #ffffff;
+}
+
+.hb-btn-primary:hover {
+  background: var(--hb-primary-hover);
+  transform: translateY(-1px);
+}
+
+.hb-btn-secondary {
+  background: var(--hb-gray-200);
+  color: var(--hb-text);
+}
+
+.hb-btn-secondary:hover {
+  background: var(--hb-gray-300);
+}
+
+.hb-toast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  padding: 1rem 1.5rem;
+  border-radius: 12px;
+  background: var(--hb-card-bg);
+  box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.2);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  border-left: 4px solid var(--hb-primary);
+  animation: slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}

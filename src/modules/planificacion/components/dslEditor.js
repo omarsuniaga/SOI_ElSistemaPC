@@ -1,6 +1,13 @@
 import { highlightDsl, parseDsl, TOKEN_COLORS } from '../utils/dslParser.js'
 
 const DEBOUNCE_MS = 175
+const DSL_EDITOR_PLACEHOLDER = [
+  'Ejemplo:',
+  '#Pedro [Escala de Do mayor] $tempo60 (Mantener dedos curvos) {Practicar 10 min diarios} 4/5 >ObjetivoTecnica',
+  '#Lucía [Lectura rítmica] (Contar en voz alta antes de tocar) {Repetir compases 1-4} 3/5',
+  '',
+  'Guía: #Alumno | [contenido] | (sugerencia) | {tarea} | $medida técnica | N/5 | >objetivo',
+].join('\n')
 
 let debounceTimer = null
 let isHighlighted = false
@@ -17,7 +24,7 @@ export function createDslEditor(initialContent = '', onChange = null) {
   editor.className = 'dsl-editor form-control'
   editor.contentEditable = 'true'
   editor.spellcheck = 'false'
-  editor.setAttribute('data-placeholder', 'Escribe aquí usando notación DSL: #Alumno [Contenido] (Sugerencia) {Tarea} $Medida 4/5 >Objetivo')
+  editor.setAttribute('data-placeholder', DSL_EDITOR_PLACEHOLDER)
   editor.innerHTML = initialContent ? highlightDsl(initialContent) : ''
 
   const highlightLayer = document.createElement('div')

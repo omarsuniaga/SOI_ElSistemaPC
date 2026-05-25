@@ -66,10 +66,9 @@ describe('ausenciaModal', () => {
 
     expect(AppModal.open).toHaveBeenCalledWith(expect.objectContaining({ title: 'Nueva Solicitud de Ausencia' }));
     expect(document.body.textContent).toContain('Clases afectadas');
-    expect(document.body.textContent).toContain('Opciones de cobertura');
+    expect(document.body.textContent).toContain('Cobertura');
     expect(document.body.textContent).toContain('Documento soporte');
-    expect(document.body.textContent).toContain('Mensaje WhatsApp');
-    expect(document.body.textContent).toContain('Notificación al director');
+    expect(document.body.textContent).toContain('Notificar al director');
   });
 
   it('loads affected classes when the date range changes and captures replacement activity', async () => {
@@ -86,6 +85,9 @@ describe('ausenciaModal', () => {
     ]);
 
     ausenciaModal.open();
+    const rangoBtn = document.querySelector('.am-dur-btn[data-dur="rango"]');
+    if (rangoBtn) rangoBtn.click();
+
     document.getElementById('fecha-inicio').value = '2026-05-20';
     document.getElementById('fecha-inicio').dispatchEvent(new Event('change'));
     document.getElementById('fecha-fin').value = '2026-05-20';
@@ -107,7 +109,7 @@ describe('ausenciaModal', () => {
     findAvailableSalons.mockResolvedValue([{ id: 's1', nombre: 'Salón A', capacidad: 12 }]);
 
     ausenciaModal.open();
-    document.getElementById('coverage-reschedule').click();
+    document.querySelector('input[name="coverage-type"][value="reschedule"]').click();
     document.getElementById('emergente-fecha').value = '2026-05-22';
     document.getElementById('emergente-fecha').dispatchEvent(new Event('change'));
     document.getElementById('emergente-hora').value = '10:00';
@@ -131,6 +133,9 @@ describe('ausenciaModal', () => {
     });
 
     ausenciaModal.open();
+    const rangoBtn = document.querySelector('.am-dur-btn[data-dur="rango"]');
+    if (rangoBtn) rangoBtn.click();
+
     document.getElementById('fecha-inicio').value = '2026-05-20';
     document.getElementById('fecha-fin').value = '2026-05-20';
     document.getElementById('motivo').value = 'Motivo institucional válido';

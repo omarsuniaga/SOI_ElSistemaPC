@@ -7,10 +7,11 @@
 #portal-app {
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
-  min-height: 100dvh;
+  height: 100vh;
+  height: 100dvh;
   width: 100%;
   max-width: 100vw;
+  overflow: hidden;
 }
 
 /* ── Header iOS (Glassmorphism) ─────────────────────────────── */
@@ -348,12 +349,13 @@
   overflow-y: auto;
 }
 
-/* Main area wrapper */
+/* Main area wrapper — ocupa todo el espacio restante bajo el header, sin scroll propio */
 .pm-main-area {
   flex: 1;
   display: flex;
   flex-direction: column;
   min-width: 0;
+  min-height: 0;
   overflow: hidden;
 }
 
@@ -505,9 +507,9 @@
   color: var(--pm-placeholder-search);
 }
 
-/* Ocultación por defecto de botones de alternancia y atrás */
+/* ── Búsqueda: desktop = barra visible, mobile = icono toggle ── */
 .pm-search-toggle-btn {
-  display: none !important;
+  display: none;
 }
 
 .pm-search-back-btn {
@@ -561,6 +563,86 @@
   .pm-nav-tab:active {
     transform: scale(0.92);
     color: var(--pm-primary);
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   MOBILE (< 768px) — Layout compacto
+   ══════════════════════════════════════════════════════════════ */
+@media (max-width: 767px) {
+
+  /* Header: compactar título */
+  .pm-header {
+    padding: 0 0.75rem;
+    gap: 0.5rem;
+  }
+
+  .pm-header-greeting {
+    display: none; /* "PORTAL MAESTROS" ocupa espacio innecesario en mobile */
+  }
+
+  .pm-header-title {
+    font-size: 1rem !important;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 40vw !important;
+  }
+
+  /* Header right: ocultar theme toggle en mobile (se accede desde perfil) */
+  #pm-theme-toggle-container {
+    display: none;
+  }
+
+  /* Barra de búsqueda: oculta por defecto en mobile */
+  .pm-header-search-container {
+    display: none;
+  }
+
+  /* Icono lupa: visible en mobile */
+  .pm-search-toggle-btn {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Cuando search está activo: mostrar barra, ocultar todo lo demás */
+  .pm-header.search-active .pm-header-search-container {
+    display: flex !important;
+    flex: 1;
+    width: 100%;
+  }
+
+  .pm-header.search-active .pm-search-back-btn {
+    display: flex !important;
+  }
+
+  .pm-header.search-active .pm-search-toggle-btn {
+    display: none !important;
+  }
+
+  /* Footer nav: más visible en dark mode mobile */
+  .pm-footer-nav {
+    padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
+  }
+
+  .pm-footer-nav__inner {
+    border-radius: 16px;
+    border: 1px solid var(--pm-border);
+  }
+
+  [data-portal-theme="dark"] .pm-footer-nav__inner,
+  [data-bs-theme="dark"] .pm-footer-nav__inner {
+    background: rgba(15, 23, 42, 0.95);
+    border-color: rgba(255, 255, 255, 0.1);
+    box-shadow: 0 -2px 20px rgba(0, 0, 0, 0.4);
+  }
+
+  /* pm-hide-mobile: ocultar elementos decorativos en mobile */
+  .pm-hide-mobile {
+    display: none !important;
   }
 }
 

@@ -3,6 +3,67 @@ import { getMaestroLocal } from '../auth/maestroAuth.js'
 import { escHTML } from '../utils/portalUtils.js'
 import { formatPhone } from '../../shared/utils/phoneUtils.js'
 
+/**
+ * Formatea un número de teléfono para usar en wa.me (formato internacional sin +)
+ * Maneja números dominicanos (809/829/849) agregando el código de país 1.
+ */
+function formatPhoneForWA(phone) {
+  if (!phone) return null
+  const digits = phone.replace(/\D/g, '')
+  if (digits.length === 10 && /^(809|829|849)/.test(digits)) return '1' + digits
+  if (digits.length === 11 && digits.startsWith('1')) return digits
+  if (digits.length >= 10) return digits
+  return null
+}
+
+// ─── Gestión de plantillas WhatsApp ────────────────────────────────────────
+const WA_TEMPLATES_KEY = id => `soi_wa_templates_${id}`
+
+const DEFAULT_TEMPLATES = [
+  { id: 'tpl-1', label: '📋 Asistencia',   text: 'Hola Saludos, le escribo de "El Sistema Punta Cana" para informarle sobre las asistencias de clases de {alumno}. Por favor comuníquese con nosotros para más detalles.' },
+  { id: 'tpl-2', label: '📝 Evaluación',   text: 'Hola Saludos, le informamos que {alumno} tiene evaluaciones recientes disponibles para revisión. Puede consultar su progreso con nosotros.' },
+  { id: 'tpl-3', label: '📅 Recordatorio', text: 'Hola Saludos, le recordamos que {alumno} tiene clase próximamente. Cualquier ausencia debe ser justificada con anticipación.' },
+  { id: 'tpl-4', label: '🤝 Reunión',      text: 'Hola Saludos, me gustaría coordinar una reunión para conversar sobre el progreso de {alumno}. ¿Cuándo le viene bien?' },
+]
+
+function waLoadTemplates(maestroId) {
+  try {
+    const raw = localStorage.getItem(WA_TEMPLATES_KEY(maestroId))
+    return raw ? JSON.parse(raw) : DEFAULT_TEMPLATES.map(t => ({ ...t }))
+  } catch { return DEFAULT_TEMPLATES.map(t => ({ ...t })) }
+}
+
+function waSaveTemplates(maestroId, templates) {
+  localStorage.setItem(WA_TEMPLATES_KEY(maestroId), JSON.stringify(templates))
+}
+
+function waApplyVars(text, { alumno, contacto }) {
+  return text.replace(/\{alumno\}/g, alumno).replace(/\{contacto\}/g, contacto)
+}
+// ───────────────────────────────────────────────────────────────────────────
+
+/**
+ * Converts contenido_dsl to readable plain text.
+ * Strips DSL bracket markers like [tipo:valor] or [bloque] → readable label.
+ */
+function parseDslToText(dsl) {
+  if (!dsl) return ''
+  return dsl
+    // Remove bracket-wrapped labels like [Objetivo:], [Actividad:], etc. and keep the value
+    .replace(/\[([^\]]+)\]/g, (_, inner) => {
+      // If it contains a colon, treat as label:value → "Label: value"
+      const colonIdx = inner.indexOf(':')
+      if (colonIdx > 0) {
+        const label = inner.slice(0, colonIdx).trim()
+        const value = inner.slice(colonIdx + 1).trim()
+        return value ? `${label}: ${value}` : label
+      }
+      return inner.trim()
+    })
+    .replace(/\n{3,}/g, '\n\n')
+    .trim()
+}
+
 async function _renderEvaluaciones(container, alumnoId) {
   const root = container.querySelector('#pm-alumno-progreso-root')
   if (!root) return
@@ -84,37 +145,148 @@ async function _renderEvaluaciones(container, alumnoId) {
     }
 
     root.innerHTML = `
-      <div class="pm-student-panel__progress-bar" style="margin-bottom:0.75rem;">
-        <div class="pm-student-panel__progress-fill" style="width:${avance}%"></div>
+      <style>
+        .pm-eval-progress-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          margin-bottom: 0.5rem;
+        }
+        .pm-eval-progress-label {
+          font-size: 0.78rem;
+          color: var(--pm-text-muted);
+          font-weight: 500;
+        }
+        .pm-eval-progress-pct {
+          font-size: 1.4rem;
+          font-weight: 700;
+          line-height: 1;
+        }
+        .pm-eval-progress-sub {
+          font-size: 0.72rem;
+          color: var(--pm-text-muted);
+          margin: 0.35rem 0 1rem;
+        }
+        .pm-eval-indicadores {
+          display: flex;
+          flex-direction: column;
+          gap: 0.4rem;
+        }
+        .pm-eval-indicador {
+          border-radius: 10px;
+          overflow: hidden;
+          border: 1px solid var(--pm-border);
+          cursor: pointer;
+          transition: box-shadow 0.15s;
+        }
+        .pm-eval-indicador:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+        .pm-eval-indicador--green { border-left: 4px solid var(--pm-success); }
+        .pm-eval-indicador--yellow { border-left: 4px solid var(--pm-warning); }
+        .pm-eval-indicador--red { border-left: 4px solid var(--pm-danger); }
+        .pm-eval-indicador--gray { border-left: 4px solid var(--pm-border); }
+        .pm-eval-indicador-header {
+          display: flex;
+          align-items: center;
+          gap: 0.6rem;
+          padding: 0.6rem 0.75rem;
+          background: var(--pm-surface-2);
+        }
+        .pm-eval-semaforo { font-size: 1rem; flex-shrink: 0; }
+        .pm-eval-info { flex: 1; min-width: 0; }
+        .pm-eval-nombre {
+          display: block;
+          font-size: 0.82rem;
+          font-weight: 600;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          color: var(--pm-text);
+        }
+        .pm-eval-node {
+          display: block;
+          font-size: 0.68rem;
+          color: var(--pm-text-muted);
+          margin-top: 1px;
+        }
+        .pm-eval-nota {
+          font-size: 1.05rem;
+          font-weight: 700;
+          flex-shrink: 0;
+          min-width: 1.5rem;
+          text-align: right;
+        }
+        .pm-eval-toggle { font-size: 0.75rem; color: var(--pm-text-muted); flex-shrink: 0; }
+        .pm-eval-timeline {
+          background: var(--pm-surface);
+          border-top: 1px solid var(--pm-border);
+        }
+        .pm-eval-entry {
+          padding: 0.5rem 0.75rem;
+          border-bottom: 1px solid var(--pm-border);
+        }
+        .pm-eval-entry:last-child { border-bottom: none; }
+        .pm-eval-entry-meta {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          font-size: 0.78rem;
+          color: var(--pm-text-muted);
+          margin-bottom: 0.2rem;
+        }
+        .pm-eval-entry-obs {
+          font-size: 0.8rem;
+          margin: 0.2rem 0 0;
+          color: var(--pm-text);
+          line-height: 1.45;
+        }
+        .pm-eval-entry-tarea {
+          font-size: 0.73rem;
+          color: var(--pm-text-muted);
+          margin: 0.15rem 0 0;
+        }
+      </style>
+
+      <div class="pm-eval-progress-header">
+        <span class="pm-eval-progress-label">🎯 Progreso académico</span>
+        <span class="pm-eval-progress-pct" style="color:${avance >= 70 ? 'var(--pm-success)' : avance >= 40 ? 'var(--pm-warning)' : 'var(--pm-danger)'}">${avance}%</span>
       </div>
-      <p style="font-size:0.85rem;color:var(--pm-text-muted);margin-bottom:1rem;">
-        🎯 Progreso Académico — <strong>${avance}% avance</strong>
-        (${aprobados}/${indicators.length} indicadores aprobados)
-      </p>
+      <div class="pm-student-panel__progress-bar" style="height:6px;border-radius:3px;background:var(--pm-border);">
+        <div class="pm-student-panel__progress-fill" style="width:${avance}%;height:100%;border-radius:3px;background:${avance >= 70 ? 'var(--pm-success)' : avance >= 40 ? 'var(--pm-warning)' : 'var(--pm-danger)'};"></div>
+      </div>
+      <p class="pm-eval-progress-sub">${aprobados} de ${indicators.length} indicadores aprobados</p>
+
       <div class="pm-eval-indicadores">
-        ${indicators.map(ind => `
-          <div class="pm-eval-indicador ${semaforoClass(ind.latest.nota)}" data-ind-id="${ind.id}">
-            <div class="pm-eval-indicador-header">
-              <span class="pm-eval-semaforo">${semaforo(ind.latest.nota)}</span>
-              <span class="pm-eval-nombre">${escHTML(ind.nombre)}</span>
-              <span class="pm-eval-node" style="font-size:0.75rem;color:var(--pm-text-muted);margin-left:auto;">${escHTML(ind.nodeName)}</span>
-              <span class="pm-eval-nota" style="font-weight:700;margin-left:0.5rem;">${ind.latest.nota ?? '—'}</span>
-              <i class="bi bi-chevron-down pm-eval-toggle" style="margin-left:0.5rem;font-size:0.8rem;"></i>
-            </div>
-            <div class="pm-eval-timeline" style="display:none;">
-              ${ind.history.map(ev => `
-                <div class="pm-eval-entry" style="padding:0.5rem 0;border-bottom:1px solid var(--pm-border,#eee);">
-                  <span style="font-size:0.8rem;color:var(--pm-text-muted);">
-                    ${new Date(ev.created_at).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' })}
-                  </span>
-                  <strong style="margin-left:0.5rem;">${semaforo(ev.nota)} ${ev.nota ?? '—'}</strong>
-                  ${ev.observations ? `<p style="margin:0.25rem 0 0;font-size:0.8rem;">${escHTML(ev.observations)}</p>` : ''}
-                  ${ev.tarea ? `<p style="margin:0.2rem 0 0;font-size:0.75rem;color:var(--pm-text-muted);">Tarea: ${escHTML(ev.tarea)}</p>` : ''}
+        ${indicators.length === 0
+          ? `<p style="font-size:0.82rem;color:var(--pm-text-muted);text-align:center;padding:1rem 0;">Sin indicadores evaluados aún</p>`
+          : indicators.map(ind => {
+            const notaColor = ind.latest.nota >= 4 ? 'var(--pm-success)' : ind.latest.nota >= 2 ? 'var(--pm-warning)' : 'var(--pm-danger)'
+            return `
+              <div class="pm-eval-indicador ${semaforoClass(ind.latest.nota)}" data-ind-id="${ind.id}">
+                <div class="pm-eval-indicador-header">
+                  <span class="pm-eval-semaforo">${semaforo(ind.latest.nota)}</span>
+                  <div class="pm-eval-info">
+                    <span class="pm-eval-nombre">${escHTML(ind.nombre || 'Indicador')}</span>
+                    ${ind.nodeName ? `<span class="pm-eval-node">${escHTML(ind.nodeName)}</span>` : ''}
+                  </div>
+                  <span class="pm-eval-nota" style="color:${ind.latest.nota != null ? notaColor : 'var(--pm-text-muted)'}">${ind.latest.nota ?? '—'}</span>
+                  <i class="bi bi-chevron-down pm-eval-toggle"></i>
                 </div>
-              `).join('')}
-            </div>
-          </div>
-        `).join('')}
+                <div class="pm-eval-timeline" style="display:none;">
+                  ${ind.history.map(ev => `
+                    <div class="pm-eval-entry">
+                      <div class="pm-eval-entry-meta">
+                        <span>${new Date(ev.created_at).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
+                        <strong style="color:${ev.nota != null ? notaColor : 'inherit'}">${semaforo(ev.nota)} ${ev.nota ?? '—'}</strong>
+                      </div>
+                      ${ev.observations ? `<p class="pm-eval-entry-obs">${escHTML(ev.observations)}</p>` : ''}
+                      ${ev.tarea ? `<p class="pm-eval-entry-tarea">📋 ${escHTML(ev.tarea)}</p>` : ''}
+                    </div>
+                  `).join('')}
+                </div>
+              </div>
+            `
+          }).join('')
+        }
       </div>
     `
 
@@ -169,20 +341,38 @@ export async function renderAlumnoPerfilView(container, { alumnoId }) {
       return
     }
 
-    // Obtener clases del alumno con más detalle
-    const { data: inscripciones } = await supabase
+    // Obtener IDs de clases inscritas (sin join — evita bloqueo RLS en clases)
+    const { data: inscripcionesRaw } = await supabase
       .from('alumnos_clases')
-      .select('clase:clases(id, nombre, instrumento, nivel)')
+      .select('clase_id')
       .eq('alumno_id', alumnoId)
       .eq('activo', true)
+    const inscritaIds = (inscripcionesRaw || []).map(r => r.clase_id).filter(Boolean)
 
-    // Obtener sesiones del alumno (últimas 50 para estadísticas)
+    // Los datos de asistencia viven en el JSONB asistencia[] de sesiones_clase
+    // estados: 'P' | 'A' | 'J' | 'T'
     const { data: sesiones } = await supabase
       .from('sesiones_clase')
       .select('id, clase_id, fecha, contenido_dsl, asistencia')
-      .contains('asistencia', [{ alumno_id: alumnoId }])
+      .filter('asistencia', 'cs', JSON.stringify([{ alumno_id: alumnoId }]))
       .order('fecha', { ascending: false })
-      .limit(50)
+      .limit(60)
+
+    // Aplanar a filas simples y extraer el registro del alumno de cada sesión
+    const asistenciaRows = (sesiones || []).map(s => {
+      const reg = s.asistencia?.find(a => a.alumno_id === alumnoId)
+      return reg ? {
+        fecha:         s.fecha,
+        estado:        reg.estado,          // 'P' | 'A' | 'J' | 'T'
+        clase_id:      s.clase_id,
+        sesion_id:     s.id,
+        contenido_dsl: s.contenido_dsl,
+        observaciones: reg.observaciones || null
+      } : null
+    }).filter(Boolean)
+
+    // Mapa de contenido DSL por sesión (ya está en asistenciaRows)
+    const sesionDslMap = new Map(asistenciaRows.map(r => [r.sesion_id, r.contenido_dsl]))
 
     // Obtener todas las evaluaciones del alumno
     const { data: evaluaciones } = await supabase
@@ -200,45 +390,58 @@ export async function renderAlumnoPerfilView(container, { alumnoId }) {
       .order('fecha_inicio', { ascending: false })
       .limit(10)
 
-    // Calcular estadísticas de asistencia
-    const totalSesiones = sesiones?.length || 0
-    const asistenciaData = sesiones?.map(s => {
-      const reg = s.asistencia?.find(a => a.alumno_id === alumnoId)
-      return reg?.estado || null
-    }) || []
-    const presentes = asistenciaData.filter(a => a === 'P').length
-    const ausentes = asistenciaData.filter(a => a === 'A').length
-    const justifica = asistenciaData.filter(a => a === 'J').length
-    const tardanzas = asistenciaData.filter(a => a === 'T').length
+    // Obtener justificaciones del alumno (para mostrar motivo en historial)
+    const { data: justificaciones } = await supabase
+      .from('justificaciones')
+      .select('sesion_id, motivo, evidencia_url, estado, fecha')
+      .eq('alumno_id', alumnoId)
+      .order('fecha', { ascending: false })
+    const justifMap = new Map((justificaciones || []).map(j => [j.sesion_id, j]))
+
+    // Estados directos del JSONB: 'P' | 'A' | 'J' | 'T'
+    const totalSesiones = asistenciaRows.length
+    const presentes  = asistenciaRows.filter(r => r.estado === 'P').length
+    const ausentes   = asistenciaRows.filter(r => r.estado === 'A').length
+    const justifica  = asistenciaRows.filter(r => r.estado === 'J').length
+    const tardanzas  = asistenciaRows.filter(r => r.estado === 'T').length
     const pctAsistencia = totalSesiones > 0 ? Math.round((presentes / totalSesiones) * 100) : 0
 
     // Calcular estadísticas de rendimiento (notas)
     const notasValidas = evaluaciones?.filter(e => e.nota != null && e.nota !== 0) || []
-    const promedioNotas = notasValidas.length > 0 
+    const promedioNotas = notasValidas.length > 0
       ? Math.round(notasValidas.reduce((sum, e) => sum + e.nota, 0) / notasValidas.length * 10) / 10
       : 0
     const indicadoresAprobados = notasValidas.filter(e => e.nota >= 4).length
-    const indicadoresTotales = notasValidas.length
+    const indicadoresTotales   = notasValidas.length
     const pctAprobacion = indicadoresTotales > 0 ? Math.round((indicadoresAprobados / indicadoresTotales) * 100) : 0
 
-    // Agrupar sesiones por clase para estadísticas por materia
+    // Agrupar por clase
     const sesionesPorClase = {}
-    sesiones?.forEach(s => {
-      if (!sesionesPorClase[s.clase_id]) sesionesPorClase[s.clase_id] = { P: 0, A: 0, J: 0, T: 0, total: 0 }
-      const reg = s.asistencia?.find(a => a.alumno_id === alumnoId)
-      if (reg?.estado) {
-        sesionesPorClase[s.clase_id][reg.estado]++
-        sesionesPorClase[s.clase_id].total++
+    asistenciaRows.forEach(r => {
+      if (!sesionesPorClase[r.clase_id]) sesionesPorClase[r.clase_id] = { P: 0, A: 0, J: 0, T: 0, total: 0 }
+      if (r.estado) {
+        sesionesPorClase[r.clase_id][r.estado] = (sesionesPorClase[r.clase_id][r.estado] || 0) + 1
+        sesionesPorClase[r.clase_id].total++
       }
     })
 
-    // Obtener nombres de las clases
-    const claseIds = Object.keys(sesionesPorClase)
-    const { data: clasesInfo } = await supabase
-      .from('clases')
-      .select('id, nombre, instrumento')
-      .in('id', claseIds)
+    // Construir mapa de clases (unión de inscritas + con registro de asistencia)
+    const claseIdSet = new Set([
+      ...inscritaIds,
+      ...Object.keys(sesionesPorClase)
+    ])
+    const { data: clasesInfo } = claseIdSet.size > 0
+      ? await supabase.from('clases').select('id, nombre, instrumento, nivel').in('id', [...claseIdSet])
+      : { data: [] }
     const claseMap = new Map((clasesInfo || []).map(c => [c.id, c]))
+
+    // Sesiones donde estuvo presente y hay contenido DSL
+    const sesionesPresentes = asistenciaRows.filter(r =>
+      r.estado === 'P' && r.contenido_dsl?.trim()
+    )
+
+    // Evaluaciones que tienen observaciones del maestro
+    const conObservaciones = evaluaciones?.filter(e => e.observations?.trim()) || []
 
     // Calcular edad
     let edad = '—'
@@ -292,64 +495,115 @@ export async function renderAlumnoPerfilView(container, { alumnoId }) {
           <!-- 📊 Panel de Métricas Principales -->
           <div class="pm-zen-mosaic" style="grid-template-columns: repeat(2, 1fr);">
             <div class="pm-zen-card pm-zen-card--large pm-glass" style="grid-column: span 2;">
-              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.75rem;">
-                <span class="pm-zen-card__label" style="font-size:0.85rem;">📈 Rendimiento Académico</span>
-                <span style="font-size:1.5rem;font-weight:700;color:${promedioNotas >= 4 ? 'var(--pm-success)' : promedioNotas >= 2 ? 'var(--pm-warning)' : 'var(--pm-danger)'}">${promedioNotas.toFixed(1)}</span>
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5rem;">
+                <span class="pm-zen-card__label" style="font-size:0.78rem;font-weight:500;">📈 Rendimiento Académico</span>
+                ${indicadoresTotales > 0
+                  ? `<span style="font-size:1.4rem;font-weight:700;line-height:1;color:${promedioNotas >= 4 ? 'var(--pm-success)' : promedioNotas >= 2 ? 'var(--pm-warning)' : 'var(--pm-danger)'}">${promedioNotas.toFixed(1)}</span>`
+                  : `<span style="font-size:0.8rem;color:var(--pm-text-muted);">Sin datos</span>`
+                }
               </div>
-              <div class="pm-student-panel__progress-bar" style="height:8px;border-radius:4px;background:var(--pm-border);">
-                <div class="pm-student-panel__progress-fill" style="width:${pctAprobacion}%;background:${promedioNotas >= 4 ? 'var(--pm-success)' : promedioNotas >= 2 ? 'var(--pm-warning)' : 'var(--pm-danger)'};height:100%;border-radius:4px;"></div>
+              ${indicadoresTotales > 0 ? `
+              <div class="pm-student-panel__progress-bar" style="height:6px;border-radius:3px;background:var(--pm-border);">
+                <div style="width:${pctAprobacion}%;background:${promedioNotas >= 4 ? 'var(--pm-success)' : promedioNotas >= 2 ? 'var(--pm-warning)' : 'var(--pm-danger)'};height:100%;border-radius:3px;"></div>
               </div>
-              <p style="font-size:0.75rem;color:var(--pm-text-muted);margin-top:0.5rem;display:flex;justify-content:space-between;">
-                <span>${indicadoresAprobados}/${indicadoresTotales} indicadores aprobados (${pctAprobacion}%)</span>
-              </p>
+              <p style="font-size:0.72rem;color:var(--pm-text-muted);margin-top:0.4rem;">
+                ${indicadoresAprobados} de ${indicadoresTotales} indicadores aprobados · ${pctAprobacion}%
+              </p>` : `<p style="font-size:0.72rem;color:var(--pm-text-muted);margin-top:0.25rem;">Aún no hay evaluaciones registradas</p>`}
             </div>
 
             <div class="pm-zen-card pm-glass">
               <span class="pm-zen-card__label">✅ Asistencia</span>
-              <span class="pm-zen-card__value" style="font-size:1.8rem;">${pctAsistencia}%</span>
-              <p class="pm-zen-card__sub" style="font-size:0.7rem;">
-                <span style="color:var(--pm-success)">${presentes} P</span> • 
-                <span style="color:var(--pm-danger)">${ausentes} A</span> • 
-                <span style="color:var(--pm-warning)">${justifica} J</span>
-              </p>
+              ${totalSesiones > 0
+                ? `<div style="display:flex;align-items:baseline;gap:0.25rem;">
+                     <span class="pm-zen-card__value" style="font-size:1.8rem;color:${pctAsistencia >= 75 ? 'var(--pm-success)' : pctAsistencia >= 50 ? 'var(--pm-warning)' : 'var(--pm-danger)'};line-height:1;">${presentes}</span>
+                     <span style="font-size:1rem;color:var(--pm-text-muted);font-weight:500;">/ ${totalSesiones}</span>
+                   </div>
+                   <p class="pm-zen-card__sub" style="font-size:0.7rem;margin-top:2px;">
+                     ${pctAsistencia}% asistencia
+                     ${ausentes > 0 ? `· <span style="color:var(--pm-danger)">${ausentes} ausente${ausentes > 1 ? 's' : ''}</span>` : ''}
+                     ${justifica > 0 ? `· <span style="color:var(--pm-warning)">${justifica} justif.</span>` : ''}
+                     ${tardanzas > 0 ? `· <span style="color:#FF9500">${tardanzas} tarde${tardanzas > 1 ? 's' : ''}</span>` : ''}
+                   </p>`
+                : `<span class="pm-zen-card__value" style="font-size:1.1rem;color:var(--pm-text-muted);">Sin clases</span>
+                   <p class="pm-zen-card__sub" style="font-size:0.7rem;">No hay sesiones registradas</p>`
+              }
             </div>
 
             <div class="pm-zen-card pm-glass">
               <span class="pm-zen-card__label">📅 Clases Activas</span>
-              <span class="pm-zen-card__value" style="font-size:1.8rem;">${inscripciones?.length || 0}</span>
-              <p class="pm-zen-card__sub" style="font-size:0.7rem;">Materias inscritas</p>
+              ${inscritaIds.length > 0
+                ? `<span class="pm-zen-card__value" style="font-size:1.8rem;">${inscritaIds.length}</span>
+                   <p class="pm-zen-card__sub" style="font-size:0.7rem;">Materias inscritas</p>`
+                : `<span class="pm-zen-card__value" style="font-size:1.1rem;color:var(--pm-text-muted);">Sin inscripción</span>
+                   <p class="pm-zen-card__sub" style="font-size:0.7rem;">No está en ninguna clase activa</p>`
+              }
             </div>
           </div>
 
-          <!-- 🎵 Clases Activas -->
-          ${inscripciones && inscripciones.length > 0 ? `
+          <!-- 🎵 Clases Inscritas -->
+          ${inscritaIds.length > 0 ? `
           <div class="pm-zen-section">
             <h3 class="pm-zen-section-title">🎵 Clases Inscritas</h3>
             <div class="pm-zen-clases-grid">
-              ${inscripciones.map(ins => {
-                const stats = sesionesPorClase[ins.clase.id] || { P: 0, A: 0, J: 0, total: 0 }
-                const pctClase = stats.total > 0 ? Math.round((stats.P / stats.total) * 100) : 100
+              ${inscritaIds.map(claseId => {
+                const clase = claseMap.get(claseId)
+                if (!clase) return ''
+                const stats = sesionesPorClase[claseId] || { P: 0, A: 0, J: 0, T: 0, total: 0 }
+                const pctClase = stats.total > 0 ? Math.round((stats.P / stats.total) * 100) : null
                 return `
                   <div class="pm-zen-clase-card pm-glass">
                     <div class="pm-zen-clase-header">
-                      <strong>${escHTML(ins.clase.nombre)}</strong>
-                      <span class="pm-zen-clase-nivel">Nivel ${ins.clase.nivel || 1}</span>
+                      <strong>${escHTML(clase.nombre)}</strong>
+                      ${clase.nivel ? `<span class="pm-zen-clase-nivel">Nivel ${clase.nivel}</span>` : ''}
                     </div>
-                    <p class="pm-zen-clase-inst">${escHTML(ins.clase.instrumento || '')}</p>
+                    <p class="pm-zen-clase-inst">${escHTML(clase.instrumento || '')}</p>
                     <div class="pm-zen-clase-stats">
-                      <div class="pm-zen-clase-stat">
-                        <span class="pm-zen-stat-value" style="color:var(--pm-success)">${stats.P}</span>
-                        <span class="pm-zen-stat-label">Presente</span>
+                      <div class="pm-zen-clase-stat" style="flex:1.2;">
+                        <div style="display:flex;align-items:baseline;gap:3px;">
+                          <span class="pm-zen-stat-value" style="color:${pctClase === null ? 'var(--pm-text-muted)' : pctClase >= 75 ? 'var(--pm-success)' : pctClase >= 50 ? 'var(--pm-warning)' : 'var(--pm-danger)'};">${stats.P}</span>
+                          <span style="font-size:0.7rem;color:var(--pm-text-muted);">/ ${stats.total || '—'}</span>
+                        </div>
+                        <span class="pm-zen-stat-label">${pctClase !== null ? pctClase + '%' : 'Sin datos'}</span>
                       </div>
-                      <div class="pm-zen-clase-stat">
-                        <span class="pm-zen-stat-value" style="color:var(--pm-danger)">${stats.A}</span>
-                        <span class="pm-zen-stat-label">Ausente</span>
-                      </div>
-                      <div class="pm-zen-clase-stat">
-                        <span class="pm-zen-stat-value">${pctClase}%</span>
-                        <span class="pm-zen-stat-label">Asistencia</span>
-                      </div>
+                      ${stats.A > 0 ? `<div class="pm-zen-clase-stat">
+                        <span class="pm-zen-stat-value" style="color:var(--pm-danger);">${stats.A}</span>
+                        <span class="pm-zen-stat-label">Ausente${stats.A > 1 ? 's' : ''}</span>
+                      </div>` : ''}
+                      ${stats.J > 0 ? `<div class="pm-zen-clase-stat">
+                        <span class="pm-zen-stat-value" style="color:var(--pm-warning);">${stats.J}</span>
+                        <span class="pm-zen-stat-label">Justif.</span>
+                      </div>` : ''}
+                      ${stats.T > 0 ? `<div class="pm-zen-clase-stat">
+                        <span class="pm-zen-stat-value" style="color:#FF9500;">${stats.T}</span>
+                        <span class="pm-zen-stat-label">Tarde${stats.T > 1 ? 's' : ''}</span>
+                      </div>` : ''}
+                      ${stats.total === 0 ? `<div class="pm-zen-clase-stat">
+                        <span class="pm-zen-stat-value" style="color:var(--pm-text-muted);">—</span>
+                        <span class="pm-zen-stat-label">Sin registros</span>
+                      </div>` : ''}
                     </div>
+                  </div>
+                `
+              }).join('')}
+            </div>
+          </div>
+          ` : ''}
+
+          <!-- 📖 Bitácora de Clases -->
+          ${sesionesPresentes.length > 0 ? `
+          <div class="pm-zen-section">
+            <h3 class="pm-zen-section-title">📖 Bitácora de Clases</h3>
+            <div class="pm-zen-bitacora">
+              ${sesionesPresentes.map(r => {
+                const clase = claseMap.get(r.clase_id)
+                const contenido = parseDslToText(r.contenido_dsl)
+                return `
+                  <div class="pm-zen-bitacora-item pm-glass">
+                    <div class="pm-zen-bitacora-header">
+                      <span class="pm-zen-bitacora-clase">${escHTML(clase?.nombre || 'Clase')}</span>
+                      <span class="pm-zen-bitacora-fecha">${new Date(r.fecha).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: '2-digit' })}</span>
+                    </div>
+                    <p class="pm-zen-bitacora-contenido">${escHTML(contenido)}</p>
                   </div>
                 `
               }).join('')}
@@ -359,9 +613,13 @@ export async function renderAlumnoPerfilView(container, { alumnoId }) {
 
           <!-- 📝 Últimas Evaluaciones -->
           ${notasValidas.length > 0 ? `
-          <div class="pm-zen-section">
-            <h3 class="pm-zen-section-title">📝 Últimas Evaluaciones</h3>
-            <div class="pm-zen-evaluaciones">
+          <details class="pm-zen-section pm-zen-accordion">
+            <summary class="pm-zen-accordion-header">
+              <span class="pm-zen-section-title" style="margin:0;">📝 Últimas Evaluaciones</span>
+              <span class="pm-zen-accordion-meta">${notasValidas.length} registro${notasValidas.length !== 1 ? 's' : ''}</span>
+              <i class="bi bi-chevron-down pm-accordion-chevron"></i>
+            </summary>
+            <div class="pm-zen-evaluaciones" style="margin-top:0.75rem;">
               ${notasValidas.slice(0, 8).map(ev => {
                 const fecha = new Date(ev.created_at)
                 const color = ev.nota >= 4 ? 'var(--pm-success)' : ev.nota >= 2 ? 'var(--pm-warning)' : 'var(--pm-danger)'
@@ -381,34 +639,82 @@ export async function renderAlumnoPerfilView(container, { alumnoId }) {
                 `
               }).join('')}
             </div>
-          </div>
+          </details>
+          ` : ''}
+
+          <!-- 💬 Desenvolvimiento del Alumno -->
+          ${conObservaciones.length > 0 ? `
+          <details class="pm-zen-section pm-zen-accordion">
+            <summary class="pm-zen-accordion-header">
+              <span class="pm-zen-section-title" style="margin:0;">💬 Desenvolvimiento</span>
+              <span class="pm-zen-accordion-meta">${conObservaciones.length} observación${conObservaciones.length !== 1 ? 'es' : ''}</span>
+              <i class="bi bi-chevron-down pm-accordion-chevron"></i>
+            </summary>
+            <div class="pm-zen-desenvolvimiento" style="margin-top:0.75rem;">
+              ${conObservaciones.map(ev => {
+                const notaColor = ev.nota >= 4 ? 'var(--pm-success)' : ev.nota >= 2 ? 'var(--pm-warning)' : 'var(--pm-danger)'
+                return `
+                  <div class="pm-zen-desenv-item">
+                    <div class="pm-zen-desenv-dot" style="background:${ev.nota != null ? notaColor : 'var(--pm-primary)'}"></div>
+                    <div class="pm-zen-desenv-content">
+                      <div class="pm-zen-desenv-header">
+                        <span class="pm-zen-desenv-fecha">${new Date(ev.created_at).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
+                        ${ev.nota != null ? `<span class="pm-zen-desenv-nota" style="color:${notaColor};">Nota: ${ev.nota}</span>` : ''}
+                      </div>
+                      <p class="pm-zen-desenv-obs">${escHTML(ev.observations)}</p>
+                      ${ev.tarea ? `<p class="pm-zen-desenv-tarea">📋 ${escHTML(ev.tarea)}</p>` : ''}
+                    </div>
+                  </div>
+                `
+              }).join('')}
+            </div>
+          </details>
           ` : ''}
 
           <!-- 📅 Historial de Asistencia -->
-          <div class="pm-zen-section">
-            <h3 class="pm-zen-section-title">📅 Historial de Asistencia</h3>
-            <div class="pm-zen-asistencia-timeline">
-              ${sesiones?.slice(0, 15).map(s => {
-                const reg = s.asistencia?.find(a => a.alumno_id === alumnoId)
-                const estado = reg?.estado || null
-                const labels = { 'P': 'Presente', 'A': 'Ausente', 'J': 'Justificado', 'T': 'Tardanza' }
-                const colors = { 'P': 'var(--pm-success)', 'A': 'var(--pm-danger)', 'J': 'var(--pm-warning)', 'T': '#FF9500' }
-                const clase = claseMap.get(s.clase_id)
-                return estado ? `
-                  <div class="pm-zen-asistencia-item">
-                    <div class="pm-zen-asistencia-dot" style="background:${colors[estado] || 'var(--pm-border)'}"></div>
-                    <div class="pm-zen-asistencia-content">
-                      <div class="pm-zen-asistencia-header">
-                        <strong>${labels[estado] || 'Sin registro'}</strong>
-                        <span>${new Date(s.fecha).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: '2-digit' })}</span>
+          <details class="pm-zen-section pm-zen-accordion" ${asistenciaRows.length > 0 ? 'open' : ''}>
+            <summary class="pm-zen-accordion-header">
+              <span class="pm-zen-section-title" style="margin:0;">📅 Historial de Asistencia</span>
+              <span class="pm-zen-accordion-meta">${totalSesiones} sesión${totalSesiones !== 1 ? 'es' : ''}</span>
+              <i class="bi bi-chevron-down pm-accordion-chevron"></i>
+            </summary>
+            <div class="pm-zen-asistencia-timeline" style="margin-top:0.75rem;">
+              ${asistenciaRows.length === 0
+                ? `<p class="pm-zen-empty">Sin registros de asistencia</p>`
+                : asistenciaRows.slice(0, 30).map(r => {
+                    const labels = { P: 'Presente', A: 'Ausente', J: 'Justificado', T: 'Tardanza' }
+                    const colors = { P: 'var(--pm-success)', A: 'var(--pm-danger)', J: 'var(--pm-warning)', T: '#FF9500' }
+                    const clase = claseMap.get(r.clase_id)
+                    const justif = r.estado === 'J' ? justifMap.get(r.sesion_id) : null
+                    const justifEstadoColor = { pendiente: 'var(--pm-warning)', aprobado: 'var(--pm-success)', rechazado: 'var(--pm-danger)' }
+                    return `
+                      <div class="pm-zen-asistencia-item">
+                        <div class="pm-zen-asistencia-dot" style="background:${colors[r.estado] || 'var(--pm-border)'}"></div>
+                        <div class="pm-zen-asistencia-content">
+                          <div class="pm-zen-asistencia-header">
+                            <strong style="color:${colors[r.estado] || 'inherit'}">${labels[r.estado] || r.estado}</strong>
+                            <span>${new Date(r.fecha).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: '2-digit' })}</span>
+                          </div>
+                          <span class="pm-zen-asistencia-clase">${escHTML(clase?.nombre || 'Clase')}</span>
+                          ${justif ? `
+                            <div class="pm-zen-justif-box">
+                              <div class="pm-zen-justif-header">
+                                <i class="bi bi-file-earmark-text" style="font-size:0.75rem;"></i>
+                                <span>Justificación</span>
+                                <span class="pm-zen-justif-estado" style="color:${justifEstadoColor[justif.estado] || 'var(--pm-text-muted)'};">${justif.estado}</span>
+                              </div>
+                              <p class="pm-zen-justif-motivo">${escHTML(justif.motivo)}</p>
+                              ${justif.evidencia_url ? `<a class="pm-zen-justif-evidencia" href="${justif.evidencia_url}" target="_blank" rel="noopener"><i class="bi bi-paperclip"></i> Ver evidencia</a>` : ''}
+                            </div>
+                          ` : r.estado === 'J' ? `<span class="pm-zen-asistencia-obs" style="color:var(--pm-warning);">Justificado — sin detalle registrado</span>` : ''}
+                          ${r.observaciones ? `<span class="pm-zen-asistencia-obs">${escHTML(r.observaciones)}</span>` : ''}
+                        </div>
                       </div>
-                      <span class="pm-zen-asistencia-clase">${escHTML(clase?.nombre || 'Clase')}</span>
-                    </div>
-                  </div>
-                ` : ''
-              }).join('') || '<p class="pm-zen-empty">Sin registros de asistencia</p>'}
+                    `
+                  }).join('')
+              }
             </div>
-          </div>
+          </details>
 
           <!-- 🚨 Ausencias Recientes -->
           ${ausencias && ausencias.length > 0 ? `
@@ -444,10 +750,20 @@ export async function renderAlumnoPerfilView(container, { alumnoId }) {
             <div class="pm-zen-details-grid">
               <div class="pm-zen-detail">
                 <i class="bi bi-telephone-fill"></i>
-                <div>
+                <div style="flex:1;min-width:0;">
                   <span>${alumno.tlf_alumno ? 'Teléfono alumno' : alumno.representante_tlf ? 'Teléfono representante' : 'Teléfono'}</span>
                   <strong>${formatPhone(alumno.tlf_alumno || alumno.representante_tlf) || '—'}</strong>
                 </div>
+                ${(alumno.tlf_alumno || alumno.representante_tlf) ? `
+                <button
+                  id="btn-whatsapp-alumno"
+                  class="pm-btn-whatsapp"
+                  data-phone="${alumno.tlf_alumno || alumno.representante_tlf}"
+                  title="Enviar mensaje por WhatsApp"
+                >
+                  <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+                  WhatsApp
+                </button>` : ''}
               </div>
               ${alumno.representante_nombre ? `
               <div class="pm-zen-detail">
@@ -627,6 +943,13 @@ export async function renderAlumnoPerfilView(container, { alumnoId }) {
           font-size: 0.7rem;
           color: var(--pm-text-muted);
         }
+        .pm-zen-asistencia-obs {
+          display: block;
+          font-size: 0.68rem;
+          color: var(--pm-text-muted);
+          font-style: italic;
+          margin-top: 1px;
+        }
         .pm-zen-ausencias {
           display: flex;
           flex-direction: column;
@@ -665,11 +988,538 @@ export async function renderAlumnoPerfilView(container, { alumnoId }) {
           color: var(--pm-text-muted);
           margin: 0.25rem 0 0;
         }
+        /* Botón WhatsApp */
+        .pm-btn-whatsapp {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.35rem;
+          padding: 0.35rem 0.75rem;
+          border-radius: 20px;
+          border: none;
+          background: #25D366;
+          color: white;
+          font-size: 0.75rem;
+          font-weight: 600;
+          cursor: pointer;
+          flex-shrink: 0;
+          transition: background 0.15s, transform 0.1s;
+        }
+        .pm-btn-whatsapp:hover { background: #1ebe5a; transform: scale(1.03); }
+        .pm-btn-whatsapp:active { transform: scale(0.97); }
+        /* Modal WhatsApp */
+        #pm-wa-modal { display: none; }
+        #pm-wa-modal.open { display: block; }
+        .pm-wa-backdrop {
+          position: fixed;
+          inset: 0;
+          background: rgba(0,0,0,0.45);
+          z-index: 1050;
+        }
+        .pm-wa-dialog {
+          position: fixed;
+          bottom: 0;
+          left: 0;
+          right: 0;
+          z-index: 1051;
+          background: var(--pm-surface, #fff);
+          border-radius: 20px 20px 0 0;
+          max-width: 520px;
+          margin: 0 auto;
+          box-shadow: 0 -4px 30px rgba(0,0,0,0.15);
+          animation: waSlideUp 0.25s ease;
+        }
+        @keyframes waSlideUp {
+          from { transform: translateY(100%); }
+          to   { transform: translateY(0); }
+        }
+        .pm-wa-header {
+          display: flex;
+          align-items: center;
+          gap: 0.6rem;
+          padding: 1rem 1rem 0.75rem;
+          border-bottom: 1px solid var(--pm-border);
+          font-weight: 600;
+          font-size: 0.9rem;
+        }
+        .pm-wa-header span { flex: 1; }
+        .pm-wa-close {
+          background: none;
+          border: none;
+          font-size: 1rem;
+          cursor: pointer;
+          color: var(--pm-text-muted);
+          padding: 0 0.25rem;
+        }
+        .pm-wa-body { padding: 0.85rem 1rem; }
+        .pm-wa-label {
+          font-size: 0.72rem;
+          font-weight: 600;
+          color: var(--pm-text-muted);
+          text-transform: uppercase;
+          letter-spacing: 0.04em;
+          margin: 0 0 0.5rem;
+        }
+        .pm-wa-templates {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 0.4rem;
+        }
+        .pm-wa-tpl {
+          padding: 0.3rem 0.75rem;
+          border-radius: 16px;
+          border: 1px solid var(--pm-border);
+          background: var(--pm-surface-2);
+          font-size: 0.78rem;
+          cursor: pointer;
+          transition: all 0.15s;
+          color: var(--pm-text);
+        }
+        .pm-wa-tpl:hover { border-color: #25D366; color: #25D366; }
+        .pm-wa-tpl.active { background: #25D36615; border-color: #25D366; color: #1a9e4d; font-weight: 600; }
+        .pm-wa-textarea {
+          width: 100%;
+          border: 1px solid var(--pm-border);
+          border-radius: 10px;
+          padding: 0.65rem 0.75rem;
+          font-size: 0.85rem;
+          line-height: 1.5;
+          resize: vertical;
+          background: var(--pm-surface-2);
+          color: var(--pm-text);
+          font-family: inherit;
+          box-sizing: border-box;
+          outline: none;
+          transition: border-color 0.15s;
+        }
+        .pm-wa-textarea:focus { border-color: #25D366; }
+        .pm-wa-footer {
+          display: flex;
+          gap: 0.5rem;
+          padding: 0.75rem 1rem 1.25rem;
+          border-top: 1px solid var(--pm-border);
+        }
+        .pm-wa-cancel {
+          flex: 1;
+          padding: 0.6rem;
+          border-radius: 10px;
+          border: 1px solid var(--pm-border);
+          background: var(--pm-surface-2);
+          color: var(--pm-text-muted);
+          font-size: 0.85rem;
+          cursor: pointer;
+        }
+        .pm-wa-send {
+          flex: 2;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 0.4rem;
+          padding: 0.6rem;
+          border-radius: 10px;
+          background: #25D366;
+          color: white;
+          font-size: 0.85rem;
+          font-weight: 600;
+          text-decoration: none;
+          transition: background 0.15s;
+        }
+        .pm-wa-send:hover { background: #1ebe5a; }
+        .pm-wa-tpl-row { display:flex; align-items:center; justify-content:space-between; margin-bottom:0.5rem; }
+        .pm-wa-tpl-row .pm-wa-label { margin:0; }
+        .pm-wa-manage-btn {
+          font-size: 0.72rem; background: none; border: 1px solid var(--pm-border);
+          border-radius: 8px; padding: 2px 10px; cursor: pointer; color: var(--pm-text-muted);
+        }
+        .pm-wa-manage-btn:hover { border-color: var(--pm-primary); color: var(--pm-primary); }
+        .pm-wa-hint { font-size: 0.68rem; color: var(--pm-text-muted); margin: 0.3rem 0 0; }
+        .pm-wa-hint code { background: var(--pm-surface-2); padding: 1px 4px; border-radius: 4px; }
+        .pm-wa-back {
+          background: none; border: none; font-size: 0.9rem; cursor: pointer;
+          color: var(--pm-primary); font-weight: 600; padding: 0 0.5rem 0 0;
+        }
+        .pm-wa-add-tpl {
+          display: block; width: 100%; margin-top: 0.75rem; padding: 0.55rem;
+          border: 1px dashed var(--pm-border); border-radius: 10px; background: none;
+          color: var(--pm-primary); font-size: 0.82rem; cursor: pointer; text-align: center;
+        }
+        .pm-wa-add-tpl:hover { background: var(--pm-surface-2); }
+        .pm-wa-mgr-item {
+          background: var(--pm-surface-2); border-radius: 10px;
+          padding: 0.65rem 0.75rem; margin-bottom: 0.6rem;
+        }
+        .pm-wa-mgr-item-header { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.4rem; }
+        .pm-wa-mgr-label {
+          flex: 1; border: 1px solid var(--pm-border); border-radius: 7px;
+          padding: 0.3rem 0.5rem; font-size: 0.82rem; font-weight: 600;
+          background: var(--pm-surface); color: var(--pm-text);
+        }
+        .pm-wa-mgr-del {
+          background: none; border: none; cursor: pointer; font-size: 1rem;
+          opacity: 0.5; flex-shrink: 0;
+        }
+        .pm-wa-mgr-del:hover { opacity: 1; }
+        .pm-wa-mgr-text {
+          width: 100%; border: 1px solid var(--pm-border); border-radius: 7px;
+          padding: 0.4rem 0.5rem; font-size: 0.8rem; resize: vertical;
+          background: var(--pm-surface); color: var(--pm-text);
+          font-family: inherit; box-sizing: border-box; line-height: 1.45;
+        }
+        .pm-wa-mgr-save {
+          margin-top: 0.4rem; padding: 0.3rem 0.85rem; border-radius: 7px;
+          border: none; background: var(--pm-primary); color: white;
+          font-size: 0.78rem; cursor: pointer; font-weight: 600;
+        }
+        .pm-wa-mgr-save:hover { opacity: 0.85; }
+        /* Acordeón */
+        .pm-zen-accordion { list-style: none; }
+        .pm-zen-accordion summary { list-style: none; }
+        .pm-zen-accordion summary::-webkit-details-marker { display: none; }
+        .pm-zen-accordion-header {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          cursor: pointer;
+          padding: 0.1rem 0;
+          user-select: none;
+        }
+        .pm-zen-accordion-header:hover .pm-zen-section-title { opacity: 0.8; }
+        .pm-zen-accordion-meta {
+          font-size: 0.7rem;
+          color: var(--pm-text-muted);
+          background: var(--pm-surface-2);
+          padding: 2px 7px;
+          border-radius: 10px;
+          flex-shrink: 0;
+        }
+        .pm-accordion-chevron {
+          margin-left: auto;
+          font-size: 0.8rem;
+          color: var(--pm-text-muted);
+          transition: transform 0.2s ease;
+          flex-shrink: 0;
+        }
+        details[open] .pm-accordion-chevron { transform: rotate(180deg); }
+        /* Justificaciones */
+        .pm-zen-justif-box {
+          margin-top: 0.35rem;
+          background: var(--pm-warning)15;
+          border: 1px solid var(--pm-warning)40;
+          border-radius: 8px;
+          padding: 0.5rem 0.65rem;
+        }
+        .pm-zen-justif-header {
+          display: flex;
+          align-items: center;
+          gap: 0.35rem;
+          font-size: 0.72rem;
+          font-weight: 600;
+          color: var(--pm-text-muted);
+          margin-bottom: 0.25rem;
+        }
+        .pm-zen-justif-estado {
+          margin-left: auto;
+          font-size: 0.68rem;
+          text-transform: capitalize;
+          font-weight: 700;
+        }
+        .pm-zen-justif-motivo {
+          font-size: 0.8rem;
+          line-height: 1.45;
+          margin: 0;
+          color: var(--pm-text);
+        }
+        .pm-zen-justif-evidencia {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.25rem;
+          font-size: 0.72rem;
+          color: var(--pm-primary);
+          margin-top: 0.3rem;
+          text-decoration: none;
+        }
+        .pm-zen-justif-evidencia:hover { text-decoration: underline; }
+        /* Bitácora de Clases */
+        .pm-zen-bitacora {
+          display: flex;
+          flex-direction: column;
+          gap: 0.75rem;
+        }
+        .pm-zen-bitacora-item {
+          padding: 0.75rem;
+          border-radius: var(--pm-radius-sm);
+          background: var(--pm-surface-2);
+          border-left: 3px solid var(--pm-primary);
+        }
+        .pm-zen-bitacora-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 0.35rem;
+        }
+        .pm-zen-bitacora-clase {
+          font-size: 0.8rem;
+          font-weight: 600;
+          color: var(--pm-primary);
+        }
+        .pm-zen-bitacora-fecha {
+          font-size: 0.72rem;
+          color: var(--pm-text-muted);
+        }
+        .pm-zen-bitacora-contenido {
+          font-size: 0.8rem;
+          line-height: 1.5;
+          margin: 0;
+          color: var(--pm-text);
+          white-space: pre-wrap;
+        }
+        /* Desenvolvimiento */
+        .pm-zen-desenvolvimiento {
+          display: flex;
+          flex-direction: column;
+          gap: 0;
+          position: relative;
+          padding-left: 1.25rem;
+        }
+        .pm-zen-desenvolvimiento::before {
+          content: '';
+          position: absolute;
+          left: 5px;
+          top: 8px;
+          bottom: 8px;
+          width: 2px;
+          background: var(--pm-border);
+          border-radius: 1px;
+        }
+        .pm-zen-desenv-item {
+          display: flex;
+          gap: 0.75rem;
+          padding-bottom: 1rem;
+          position: relative;
+        }
+        .pm-zen-desenv-dot {
+          width: 12px;
+          height: 12px;
+          border-radius: 50%;
+          flex-shrink: 0;
+          margin-top: 3px;
+          position: absolute;
+          left: -1.35rem;
+          border: 2px solid var(--pm-surface);
+        }
+        .pm-zen-desenv-content {
+          flex: 1;
+          background: var(--pm-surface-2);
+          border-radius: var(--pm-radius-sm);
+          padding: 0.6rem 0.75rem;
+        }
+        .pm-zen-desenv-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 0.3rem;
+        }
+        .pm-zen-desenv-fecha {
+          font-size: 0.72rem;
+          color: var(--pm-text-muted);
+        }
+        .pm-zen-desenv-nota {
+          font-size: 0.72rem;
+          font-weight: 700;
+        }
+        .pm-zen-desenv-obs {
+          font-size: 0.82rem;
+          line-height: 1.55;
+          margin: 0;
+          color: var(--pm-text);
+        }
+        .pm-zen-desenv-tarea {
+          font-size: 0.73rem;
+          color: var(--pm-text-muted);
+          margin: 0.3rem 0 0;
+        }
       </style>
     `
 
     // Eventos
     container.querySelector('#pm-alumno-back').onclick = () => window.history.back()
+
+    // ── Modal WhatsApp con gestión de plantillas ──────────────────────────
+    const waPhone = formatPhoneForWA(alumno.tlf_alumno || alumno.representante_tlf)
+    if (waPhone) {
+      const nombreAlumno  = alumno.nombre_completo || 'el alumno'
+      const nombreContacto = alumno.representante_nombre || nombreAlumno
+      const vars = { alumno: nombreAlumno, contacto: nombreContacto }
+
+      const waModal = document.createElement('div')
+      waModal.id = 'pm-wa-modal'
+      waModal.innerHTML = `
+        <div class="pm-wa-backdrop"></div>
+        <div class="pm-wa-dialog">
+          <!-- Vista: Enviar mensaje -->
+          <div id="pm-wa-view-send">
+            <div class="pm-wa-header">
+              <svg viewBox="0 0 24 24" fill="#25D366" width="20" height="20"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+              <span>Mensaje para <strong>${escHTML(nombreContacto)}</strong></span>
+              <button class="pm-wa-close" id="pm-wa-close">✕</button>
+            </div>
+            <div class="pm-wa-body">
+              <div class="pm-wa-tpl-row">
+                <p class="pm-wa-label">Plantillas</p>
+                <button class="pm-wa-manage-btn" id="pm-wa-manage">✏️ Gestionar</button>
+              </div>
+              <div class="pm-wa-templates" id="pm-wa-tpl-list"></div>
+              <p class="pm-wa-label" style="margin-top:0.85rem;">Mensaje</p>
+              <textarea id="pm-wa-text" class="pm-wa-textarea" rows="5" placeholder="Escribí tu mensaje aquí..."></textarea>
+              <p class="pm-wa-hint">Usá <code>{alumno}</code> y <code>{contacto}</code> como variables dinámicas.</p>
+            </div>
+            <div class="pm-wa-footer">
+              <button class="pm-wa-cancel" id="pm-wa-cancel">Cancelar</button>
+              <a id="pm-wa-send" class="pm-wa-send" href="#" target="_blank" rel="noopener">
+                <svg viewBox="0 0 24 24" fill="currentColor" width="15" height="15"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+                Abrir en WhatsApp
+              </a>
+            </div>
+          </div>
+
+          <!-- Vista: Gestionar plantillas -->
+          <div id="pm-wa-view-mgr" style="display:none;">
+            <div class="pm-wa-header">
+              <button class="pm-wa-back" id="pm-wa-back">‹ Volver</button>
+              <span style="flex:1;font-weight:600;">Gestionar plantillas</span>
+              <button class="pm-wa-close" id="pm-wa-close2">✕</button>
+            </div>
+            <div class="pm-wa-body" style="max-height:55vh;overflow-y:auto;">
+              <div id="pm-wa-tpl-mgr-list"></div>
+              <button class="pm-wa-add-tpl" id="pm-wa-add-tpl">+ Nueva plantilla</button>
+            </div>
+          </div>
+        </div>
+      `
+      container.appendChild(waModal)
+
+      // Referencias
+      const viewSend    = waModal.querySelector('#pm-wa-view-send')
+      const viewMgr     = waModal.querySelector('#pm-wa-view-mgr')
+      const tplList     = waModal.querySelector('#pm-wa-tpl-list')
+      const tplMgrList  = waModal.querySelector('#pm-wa-tpl-mgr-list')
+      const textarea    = waModal.querySelector('#pm-wa-text')
+      const sendLink    = waModal.querySelector('#pm-wa-send')
+
+      // ── Helpers ──────────────────────────────────────────────────────────
+      function getTemplates() { return waLoadTemplates(maestro.id) }
+      function saveTemplates(tpls) { waSaveTemplates(maestro.id, tpls) }
+
+      function updateSendLink() {
+        const msg = textarea.value.trim()
+        sendLink.href = msg
+          ? `https://wa.me/${waPhone}?text=${encodeURIComponent(msg)}`
+          : `https://wa.me/${waPhone}`
+      }
+
+      function selectTemplate(tpl) {
+        tplList.querySelectorAll('.pm-wa-tpl').forEach(b => b.classList.remove('active'))
+        tplList.querySelector(`[data-id="${tpl.id}"]`)?.classList.add('active')
+        textarea.value = waApplyVars(tpl.text, vars)
+        updateSendLink()
+      }
+
+      // ── Render chips de plantillas (vista enviar) ─────────────────────
+      function renderTplChips() {
+        const tpls = getTemplates()
+        tplList.innerHTML = tpls.length
+          ? tpls.map(t => `<button class="pm-wa-tpl" data-id="${t.id}">${escHTML(t.label)}</button>`).join('')
+          : `<span style="font-size:0.78rem;color:var(--pm-text-muted);">Sin plantillas — creá una en Gestionar.</span>`
+        tplList.querySelectorAll('.pm-wa-tpl').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const tpl = getTemplates().find(t => t.id === btn.dataset.id)
+            if (tpl) selectTemplate(tpl)
+          })
+        })
+        // Seleccionar primera por defecto
+        const first = getTemplates()[0]
+        if (first) selectTemplate(first)
+      }
+
+      // ── Render lista de gestión ───────────────────────────────────────
+      function renderMgrList() {
+        const tpls = getTemplates()
+        tplMgrList.innerHTML = tpls.length === 0
+          ? `<p style="font-size:0.82rem;color:var(--pm-text-muted);text-align:center;padding:1rem 0;">Sin plantillas todavía.</p>`
+          : tpls.map(t => `
+            <div class="pm-wa-mgr-item" data-id="${t.id}">
+              <div class="pm-wa-mgr-item-header">
+                <input class="pm-wa-mgr-label" value="${escHTML(t.label)}" placeholder="Nombre de la plantilla" />
+                <button class="pm-wa-mgr-del" data-id="${t.id}" title="Eliminar">🗑</button>
+              </div>
+              <textarea class="pm-wa-mgr-text" rows="3">${escHTML(t.text)}</textarea>
+              <button class="pm-wa-mgr-save" data-id="${t.id}">Guardar</button>
+            </div>
+          `).join('')
+
+        // Guardar cambios de una plantilla
+        tplMgrList.querySelectorAll('.pm-wa-mgr-save').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const item = btn.closest('.pm-wa-mgr-item')
+            const id   = btn.dataset.id
+            const tpls = getTemplates()
+            const idx  = tpls.findIndex(t => t.id === id)
+            if (idx === -1) return
+            tpls[idx].label = item.querySelector('.pm-wa-mgr-label').value.trim() || tpls[idx].label
+            tpls[idx].text  = item.querySelector('.pm-wa-mgr-text').value.trim()
+            saveTemplates(tpls)
+            btn.textContent = '✓ Guardado'
+            setTimeout(() => { btn.textContent = 'Guardar' }, 1500)
+          })
+        })
+
+        // Eliminar plantilla
+        tplMgrList.querySelectorAll('.pm-wa-mgr-del').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const tpls = getTemplates().filter(t => t.id !== btn.dataset.id)
+            saveTemplates(tpls)
+            renderMgrList()
+          })
+        })
+      }
+
+      // ── Nueva plantilla ───────────────────────────────────────────────
+      waModal.querySelector('#pm-wa-add-tpl').addEventListener('click', () => {
+        const tpls = getTemplates()
+        tpls.push({ id: `tpl-${Date.now()}`, label: '✏️ Nueva plantilla', text: 'Hola {contacto}, le escribo sobre {alumno}.' })
+        saveTemplates(tpls)
+        renderMgrList()
+      })
+
+      // ── Navegación entre vistas ───────────────────────────────────────
+      waModal.querySelector('#pm-wa-manage').addEventListener('click', () => {
+        viewSend.style.display = 'none'
+        viewMgr.style.display  = 'block'
+        renderMgrList()
+      })
+      waModal.querySelector('#pm-wa-back').addEventListener('click', () => {
+        viewMgr.style.display  = 'none'
+        viewSend.style.display = 'block'
+        renderTplChips()
+      })
+
+      // ── Abrir / cerrar modal ──────────────────────────────────────────
+      const openModal  = () => { waModal.classList.add('open'); renderTplChips() }
+      const closeModal = () => {
+        waModal.classList.remove('open')
+        viewMgr.style.display  = 'none'
+        viewSend.style.display = 'block'
+      }
+
+      container.querySelector('#btn-whatsapp-alumno')?.addEventListener('click', openModal)
+      waModal.querySelector('#pm-wa-close').addEventListener('click', closeModal)
+      waModal.querySelector('#pm-wa-close2').addEventListener('click', closeModal)
+      waModal.querySelector('#pm-wa-cancel').addEventListener('click', closeModal)
+      waModal.querySelector('.pm-wa-backdrop').addEventListener('click', closeModal)
+
+      textarea.addEventListener('input', updateSendLink)
+      sendLink.addEventListener('click', () => setTimeout(closeModal, 300))
+    }
+
     _renderEvaluaciones(container, alumnoId)
 
   } catch (err) {

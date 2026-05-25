@@ -108,6 +108,7 @@ describe('registrarAlumnoModal', () => {
     // Fill in required fields
     document.querySelector('#alumno-nombre').value = 'Juan'
     document.querySelector('#alumno-apellido').value = 'Pérez'
+    document.querySelector('#alumno-tlf').value = '8091234567'
     document.querySelector('#alumno-estado').value = 'activo'
 
     const submitBtn = document.querySelector('#btn-registrar-alumno')
@@ -139,6 +140,7 @@ describe('registrarAlumnoModal', () => {
     // Fill in fields
     document.querySelector('#alumno-nombre').value = 'Juan'
     document.querySelector('#alumno-apellido').value = 'Pérez'
+    document.querySelector('#alumno-tlf').value = '8091234567'
     document.querySelector('#alumno-estado').value = 'activo'
 
     const submitBtn = document.querySelector('#btn-registrar-alumno')
@@ -169,6 +171,7 @@ describe('registrarAlumnoModal', () => {
     const nombreInput = document.querySelector('#alumno-nombre')
     nombreInput.value = 'Juan'
     document.querySelector('#alumno-apellido').value = 'Pérez'
+    document.querySelector('#alumno-tlf').value = '8091234567'
     document.querySelector('#alumno-estado').value = 'activo'
 
     const submitBtn = document.querySelector('#btn-registrar-alumno')
@@ -199,6 +202,7 @@ describe('registrarAlumnoModal', () => {
 
     document.querySelector('#alumno-nombre').value = 'Juan'
     document.querySelector('#alumno-apellido').value = 'Pérez'
+    document.querySelector('#alumno-tlf').value = '8091234567'
     document.querySelector('#alumno-estado').value = 'activo'
 
     const submitBtn = document.querySelector('#btn-registrar-alumno')
@@ -240,6 +244,7 @@ describe('registrarAlumnoModal', () => {
 
     document.querySelector('#alumno-nombre').value = 'Juan'
     document.querySelector('#alumno-apellido').value = 'Pérez'
+    document.querySelector('#alumno-tlf').value = '8091234567'
     document.querySelector('#alumno-estado').value = 'activo'
 
     const submitBtn = document.querySelector('#btn-registrar-alumno')
@@ -271,6 +276,7 @@ describe('registrarAlumnoModal', () => {
 
     document.querySelector('#alumno-nombre').value = 'Juan'
     document.querySelector('#alumno-apellido').value = 'Pérez'
+    document.querySelector('#alumno-tlf').value = '8091234567'
     document.querySelector('#alumno-estado').value = 'activo'
 
     const submitBtn = document.querySelector('#btn-registrar-alumno')

@@ -1,0 +1,85 @@
+<h2>Sprint 3 — Flujo de publicación</h2>
+<p class="subtitle">El director terminó de armar el horario. ¿Cómo lo publica y notifica a los maestros?</p>
+
+<div class="cards" style="grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:1.25rem;margin-top:1rem;">
+
+  <!-- Opción A: Publicar directo -->
+  <div class="card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="card-image" style="padding:1rem;background:#f8fafc;display:flex;flex-direction:column;gap:0.5rem;min-height:140px;justify-content:center;align-items:center;">
+      <div style="font-size:0.6rem;font-weight:700;color:#64748b;margin-bottom:0.25rem;">PUBLICAR DIRECTO</div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:0.5rem;">
+        <div style="background:#6366f1;color:#fff;border-radius:0.5rem;padding:0.5rem 1rem;font-size:0.7rem;font-weight:700;cursor:pointer;">
+          📢 Publicar horario
+        </div>
+        <div style="display:flex;gap:0.4rem;margin-top:0.25rem;">
+          <div style="background:#dcfce7;border-radius:0.3rem;padding:0.2rem 0.5rem;font-size:0.55rem;color:#15803d;">✉ 6 maestros notificados</div>
+        </div>
+        <div style="font-size:0.55rem;color:#64748b;text-align:center;">Un click → se aplica y notifica por email</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>A — Publicar directo</h3>
+      <p>Un botón "Publicar horario". Al confirmar, el horario se aplica a todas las clases y se envía una notificación in-app a cada maestro con su horario personal.</p>
+    </div>
+  </div>
+
+  <!-- Opción B: Preview por audiencia antes de publicar -->
+  <div class="card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="card-image" style="padding:0.75rem;background:#f8fafc;display:flex;flex-direction:column;gap:0.4rem;min-height:140px;">
+      <div style="font-size:0.6rem;font-weight:700;color:#64748b;margin-bottom:0.1rem;">PREVIEW → PUBLICAR</div>
+      <!-- Steps -->
+      <div style="display:flex;align-items:center;gap:0.4rem;font-size:0.55rem;">
+        <div style="background:#6366f1;color:#fff;border-radius:50%;width:16px;height:16px;display:flex;align-items:center;justify-content:center;font-size:0.5rem;font-weight:700;flex-shrink:0;">1</div>
+        <div style="background:#f0f4ff;border-radius:0.3rem;padding:0.2rem 0.5rem;color:#374151;flex:1;">
+          Preview: ver cómo verá cada maestro su horario
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:0.4rem;font-size:0.55rem;">
+        <div style="background:#6366f1;color:#fff;border-radius:50%;width:16px;height:16px;display:flex;align-items:center;justify-content:center;font-size:0.5rem;font-weight:700;flex-shrink:0;">2</div>
+        <div style="background:#f0f4ff;border-radius:0.3rem;padding:0.2rem 0.5rem;color:#374151;flex:1;">
+          Seleccionar destinatarios (todos o algunos)
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:0.4rem;font-size:0.55rem;">
+        <div style="background:#22c55e;color:#fff;border-radius:50%;width:16px;height:16px;display:flex;align-items:center;justify-content:center;font-size:0.5rem;font-weight:700;flex-shrink:0;">3</div>
+        <div style="background:#dcfce7;border-radius:0.3rem;padding:0.2rem 0.5rem;color:#15803d;flex:1;">
+          Confirmar publicación → notificar
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>B — Preview → Publicar</h3>
+      <p>Antes de publicar, el director puede ver cómo quedará el horario desde la perspectiva de cada maestro, salón o alumno. Luego elige a quién notificar y confirma.</p>
+      <div style="margin-top:0.5rem;font-size:0.75rem;color:#22c55e;font-weight:600;">✓ Recomendado — control total antes de confirmar</div>
+    </div>
+  </div>
+
+  <!-- Opción C: Publicación por etapas -->
+  <div class="card" data-choice="c" onclick="toggleSelect(this)">
+    <div class="card-image" style="padding:0.75rem;background:#f8fafc;display:flex;flex-direction:column;gap:0.35rem;min-height:140px;">
+      <div style="font-size:0.6rem;font-weight:700;color:#64748b;margin-bottom:0.1rem;">PUBLICACIÓN POR ETAPAS</div>
+      <div style="display:flex;gap:0.4rem;flex-wrap:wrap;">
+        <div style="background:#fef9c3;border:1px solid #f59e0b;border-radius:0.3rem;padding:0.25rem 0.5rem;font-size:0.52rem;color:#92400e;">
+          📋 Borrador<br><span style="opacity:0.7;">Solo visible para admin</span>
+        </div>
+        <div style="font-size:0.8rem;color:#94a3b8;align-self:center;">→</div>
+        <div style="background:#dbeafe;border:1px solid #3b82f6;border-radius:0.3rem;padding:0.25rem 0.5rem;font-size:0.52rem;color:#1e40af;">
+          🔍 Revisión<br><span style="opacity:0.7;">Maestros pueden ver</span>
+        </div>
+        <div style="font-size:0.8rem;color:#94a3b8;align-self:center;">→</div>
+        <div style="background:#dcfce7;border:1px solid #22c55e;border-radius:0.3rem;padding:0.25rem 0.5rem;font-size:0.52rem;color:#15803d;">
+          ✅ Publicado<br><span style="opacity:0.7;">Oficial y notificado</span>
+        </div>
+      </div>
+      <div style="font-size:0.55rem;color:#64748b;margin-top:0.1rem;">Los maestros pueden revisar y dar feedback antes de que sea oficial</div>
+    </div>
+    <div class="card-body">
+      <h3>C — Por etapas (borrador → revisión → publicado)</h3>
+      <p>Flujo de 3 estados. En "revisión" los maestros ven el horario tentativo y pueden reportar inconvenientes. El director lee el feedback y publica la versión final.</p>
+      <div style="margin-top:0.5rem;font-size:0.75rem;color:#f59e0b;font-weight:600;">★ Más colaborativo — más complejo</div>
+    </div>
+  </div>
+
+</div>
+
+<p style="margin-top:1rem;font-size:0.8rem;opacity:0.6;text-align:center;">Hacé click en la opción que preferís o contame en el chat</p>

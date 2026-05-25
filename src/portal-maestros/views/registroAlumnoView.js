@@ -226,10 +226,6 @@ function renderForm(container) {
         </div>
       </div>
 
-      <footer class="pm-settings-footer">
-        <p>SOI Sistema Operativo Institucional</p>
-        <p class="pm-settings-footer__version">v2.5.0 &copy; 2026</p>
-      </footer>
     </div>
 
     <style>

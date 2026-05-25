@@ -614,7 +614,7 @@ async function openEditModal(id, prefill = {}) {
             <button type="button" class="btn btn-xs btn-outline-secondary" onclick="document.getElementById('plan-contenido').value += '{Actividad} '">+ Actividad</button>
             <button type="button" class="btn btn-xs btn-outline-secondary" onclick="document.getElementById('plan-contenido').value += '# Nota: '">+ Nota</button>
           </div>
-          <textarea class="form-control input-dense font-monospace" id="plan-contenido" rows="6" placeholder="[Indicador] Descripción del indicador&#10;{Actividad} Descripción de la actividad">${escapeHTML(plan.contenido)}</textarea>
+          <textarea class="form-control input-dense font-monospace" id="plan-contenido" rows="6" placeholder="#Pedro [Escala de Do mayor] $tempo60 (Mantener dedos curvos) {Practicar 10 min diarios} 4/5 >ObjetivoTecnica&#10;#Lucía [Lectura rítmica] (Contar en voz alta antes de tocar) {Repetir compases 1-4} 3/5&#10;&#10;Guía: #Alumno | [contenido] | (sugerencia) | {tarea} | $medida técnica | N/5 | >objetivo">${escapeHTML(plan.contenido)}</textarea>
         </div>
         <div class="col-md-4">
           <label class="form-label-compact">Fecha de inicio</label>

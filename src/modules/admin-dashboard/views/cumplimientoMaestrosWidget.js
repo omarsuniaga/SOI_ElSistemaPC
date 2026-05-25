@@ -207,6 +207,9 @@ export class CumplimientoMaestrosWidget {
           <button id="btnRefresh" class="btn-premium-action btn-premium-secondary ms-auto">
             <i class="bi bi-arrow-clockwise"></i> Actualizar
           </button>
+          <button id="btnGotoNotificaciones" class="btn-premium-action btn-premium-primary ms-2" style="background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); border: none; color: white;">
+            <i class="bi bi-bell-fill animate-bell"></i> Centro de Actividad
+          </button>
         </div>
 
         <!-- Stats Overview Cards -->
@@ -319,6 +322,13 @@ export class CumplimientoMaestrosWidget {
 
     btnRefresh?.addEventListener('click', () => {
       this.init()
+    })
+
+    const btnGotoNotificaciones = document.getElementById('btnGotoNotificaciones')
+    btnGotoNotificaciones?.addEventListener('click', () => {
+      import('../../../core/router/router.js').then(({ router }) => {
+        router.navigate('admin-notificaciones')
+      })
     })
 
     // Action buttons

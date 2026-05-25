@@ -4,6 +4,7 @@
  */
 
 import { supabase } from '../../lib/supabaseClient.js'
+import * as bootstrap from 'bootstrap'
 
 export function gestionarClasesModal() {
   let isOpen = false

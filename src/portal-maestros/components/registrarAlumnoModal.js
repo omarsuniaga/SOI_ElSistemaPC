@@ -4,6 +4,7 @@
  */
 
 import { supabase } from '../../lib/supabaseClient.js'
+import * as bootstrap from 'bootstrap'
 import { sanitizeFormData } from '../../shared/utils/sanitize.js'
 import { Validators } from '../../shared/utils/validators.js'
 

@@ -1,9 +1,9 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('../../api/ausenciaAprobacionApi.js', () => ({
-  aprobarAusencia: vi.fn(),
-  obtenerAusenciasPendientes: vi.fn(),
-  rechazarAusencia: vi.fn(),
+  aprobarAusencia: vi.fn(() => Promise.resolve({})),
+  obtenerAusenciasPendientes: vi.fn(() => Promise.resolve([])),
+  rechazarAusencia: vi.fn(() => Promise.resolve({})),
 }));
 
 import {
@@ -21,6 +21,10 @@ describe('ausenciasAdminView', () => {
     document.body.appendChild(container);
     vi.clearAllMocks();
     vi.spyOn(window, 'dispatchEvent');
+  });
+
+  afterEach(() => {
+    container.remove();
   });
 
   it('renders pending absences for director approval', async () => {

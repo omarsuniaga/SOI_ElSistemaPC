@@ -2,6 +2,21 @@ import { highlightDSL } from '../utils/dslParser.js';
 import autocompletePopup, { getCursorPosition, isOpen, handleKeyDown as acHandleKeyDown } from './AutocompletePopup.js';
 import * as catalogService from '../services/catalogService.js';
 
+const DSL_PLACEHOLDER_HTML = `
+  <div class="pm-dsl-placeholder-title">Ejemplo rápido</div>
+  <div class="pm-dsl-placeholder-example">
+    <span>#Pedro</span>
+    <span>[Escala de Do]</span>
+    <span>$tempo60</span>
+    <span>(dedos curvos)</span>
+    <span>{practicar 10 min}</span>
+    <span>4/5</span>
+  </div>
+  <div class="pm-dsl-placeholder-guide">
+    # alumno · [] contenido · () sugerencia · {} tarea · $ medida · 4/5 evaluación
+  </div>
+`;
+
 /**
  * Componente: DslEditor
  * Editor con resaltado de sintaxis en tiempo real para el lenguaje DSL Pedagógico.
@@ -26,7 +41,7 @@ export function createDslEditor(container, { initialContent = '', onChange, onAl
         contenteditable="true" 
         spellcheck="false"
       ></div>
-      <div class="pm-dsl-placeholder" id="pm-dsl-placeholder">Escribe el registro de la clase... Usa #alumno, [contenido], (sugerencia)...</div>
+      <div class="pm-dsl-placeholder" id="pm-dsl-placeholder">${DSL_PLACEHOLDER_HTML}</div>
     </div>
   `;
 

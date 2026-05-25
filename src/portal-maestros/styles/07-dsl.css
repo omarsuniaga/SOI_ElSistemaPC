@@ -142,11 +142,44 @@
   position: absolute;
   top: 1rem;
   left: 1.1rem;
+  right: 1.1rem;
   color: var(--pm-text-muted);
   pointer-events: none;
   z-index: 1;
-  font-size: 0.95rem;
-  line-height: 1.6;
+  font-size: 0.82rem;
+  line-height: 1.35;
+  opacity: 0.78;
+}
+
+.pm-dsl-placeholder-title {
+  margin-bottom: 0.45rem;
+  color: var(--pm-text);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.pm-dsl-placeholder-example {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-bottom: 0.5rem;
+}
+
+.pm-dsl-placeholder-example span {
+  padding: 0.12rem 0.38rem;
+  border: 1px solid var(--pm-border);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--pm-surface) 86%, var(--apple-primary));
+  color: var(--pm-text);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  white-space: nowrap;
+}
+
+.pm-dsl-placeholder-guide {
+  max-width: 100%;
+  color: var(--pm-text-muted);
+  font-size: 0.78rem;
+  white-space: normal;
 }
 
 /* ── DSL Tooltip (hover) ────────────────────────────────────── */

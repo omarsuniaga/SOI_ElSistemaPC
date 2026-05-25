@@ -125,6 +125,8 @@ import { renderRegistroAlumnoView } from './portal-maestros/views/registroAlumno
 import { renderGestionarClasesView } from './portal-maestros/views/gestionarClasesView.js'
 import { renderAprobacionView } from './modules/admin-aprobacion/views/aprobacionView.js'
 import { renderAusenciasAdminView } from './modules/admin-aprobacion/views/ausenciasAdminView.js'
+import { adminAusenciasInsights } from './modules/admin-aprobacion/components/adminAusenciasInsights.js'
+import { renderAdminNotificacionesView } from './modules/admin-notificaciones/views/adminNotificacionesView.js'
 import { getPermisos } from './portal-maestros/services/permisoService.js'
 
 // Nuevos componentes de UI
@@ -138,7 +140,9 @@ import { setNavigationCallbacks } from './portal-maestros/services/navigationHoo
 // Módulo de Rutas Académicas
 import './modules/academic-routes/styles/academic-routes.css'
 
-const IS_ADMIN = window.__SOI_MODE__ === 'admin'
+// IS_ADMIN se determina desde la DB tras autenticar (maestros.es_admin)
+// No depende de window.__SOI_MODE__ ni de ningún flag hardcodeado
+let IS_ADMIN = false
 
 function buildMaestroTabs(permisos) {
   const tabs = [
@@ -162,12 +166,18 @@ const ADMIN_TABS = [
   { id: 'admin-alumnos', label: 'Alumnos', icon: 'bi-people-fill' },
   { id: 'admin-programas', label: 'Programas', icon: 'bi-grid-1x2' },
   { id: 'admin-maestros', label: 'Maestros', icon: 'bi-person-badge' },
-  { id: 'admin-aprobacion', label: 'Aprobación', icon: 'bi-check-circle-fill' },
+  { id: 'admin-notificaciones', label: 'Actividad', icon: 'bi-bell-fill' },
   { id: 'admin-ausencias', label: 'Ausencias', icon: 'bi-calendar-x' },
   { id: 'admin-metricas', label: 'Métricas', icon: 'bi-bar-chart-line' },
 ]
 
-const ALL_TABS = (permisos) => IS_ADMIN ? ADMIN_TABS : buildMaestroTabs(permisos)
+// Admin con clases (ej: desarrollador) ve ambos grupos de tabs
+// Admin sin clases ve solo tabs de admin
+// Maestro normal ve solo tabs de maestro
+const ALL_TABS = (permisos) => {
+  if (!IS_ADMIN) return buildMaestroTabs(permisos)
+  return [...ADMIN_TABS, ...buildMaestroTabs(permisos)]
+}
 
 let _maestro = null
 let _permisos = null
@@ -378,6 +388,7 @@ function _setupRouterRoutes() {
     router.on('admin-sesiones', (route, params) => _renderView('admin-sesiones', params))
     router.on('admin-aprobacion', (route, params) => _renderView('admin-aprobacion', params))
     router.on('admin-ausencias', (route, params) => _renderView('admin-ausencias', params))
+    router.on('admin-notificaciones', (route, params) => _renderView('admin-notificaciones', params))
     // Admin default route
     router.onNotFound(() => _renderView('admin-alumnos'))
   } else {
@@ -441,11 +452,11 @@ function _renderShell(app, maestro, permisos) {
       <!-- Header -->
       <header class="pm-header" id="pm-header">
         <div class="pm-header-left" id="pm-header-left">
-          <span class="pm-header-greeting">${IS_ADMIN ? 'Panel Admin' : 'Hola,'}</span>
-          <span class="pm-header-title">
+          <span class="pm-header-greeting">${IS_ADMIN ? 'Panel Admin' : 'Portal Maestros'}</span>
+          <span class="pm-header-title" style="font-size:clamp(1rem,3.5vw,1.5rem);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:52vw;">
             ${IS_ADMIN
-        ? (maestro?.nombre_completo?.split(' ')[0] ?? 'Administrador')
-        : (maestro?.nombre_completo?.split(' ')[0] ?? 'Maestro')
+        ? (maestro?.nombre_completo ?? 'Administrador')
+        : ('Prof. ' + (maestro?.nombre_completo ?? ''))
       }
             <span class="pm-online-dot" id="pm-sync-indicator" title="Sincronizado"></span>
           </span>
@@ -469,8 +480,6 @@ function _renderShell(app, maestro, permisos) {
             <i class="bi bi-search"></i>
           </button>
 
-          <span class="pm-sync-indicator synced" id="pm-sync-indicator">✓</span>
-
           <!-- Toggle de tema -->
           <div id="pm-theme-toggle-container"></div>
 
@@ -480,11 +489,6 @@ function _renderShell(app, maestro, permisos) {
             <span class="pm-ausencias-badge" id="pm-notif-badge" style="display: none; background: var(--pm-danger);">0</span>
           </button>
           
-          <!-- Botón instalación PWA -->
-          <button id="pm-btn-install" class="pm-icon-btn pm-hide-mobile" title="Instalar app">
-            <i class="bi bi-download"></i>
-          </button>
-
           <button id="pm-btn-perfil" class="pm-avatar-btn" title="Perfil">
             ${maestro?.avatar_url
         ? `<img src="${maestro.avatar_url}" alt="Avatar">`
@@ -674,12 +678,7 @@ function _renderShell(app, maestro, permisos) {
     notificacionesPanel.open()
   })
 
-  // Evento de instalación PWA
-  document.getElementById('pm-btn-install')?.addEventListener('click', () => {
-    if (window.pwaInstaller) {
-      window.pwaInstaller.promptInstall()
-    }
-  })
+  // Instalación PWA movida al Perfil (perfilView.js → renderInstallApp)
 
   const route = (router.currentRoute?.() || 'hoy').split('?')[0]
   _setActiveTab(route)
@@ -869,7 +868,7 @@ function _initViewContainers() {
   const adminViews = [
     'admin-alumnos', 'admin-programas', 'admin-maestros',
     'admin-metricas', 'admin-config', 'admin-clases', 'admin-sesiones',
-    'admin-aprobacion', 'admin-ausencias',
+    'admin-aprobacion', 'admin-ausencias', 'admin-notificaciones',
   ]
 
   views.forEach(viewName => {
@@ -916,6 +915,10 @@ async function _renderView(route, params = {}, { silent = false } = {}) {
     // Re-evaluar alertas superiores (SOI Smart Insights) al cambiar de vista
     if (window.pwaInstaller) {
       window.pwaInstaller.evaluateInsights()
+    }
+    // Admin: re-evaluar banner de ausencias pendientes
+    if (window.adminAusenciasInsights) {
+      window.adminAusenciasInsights.evaluate()
     }
   }
 
@@ -1063,6 +1066,10 @@ async function _renderView(route, params = {}, { silent = false } = {}) {
         await renderAusenciasAdminView(targetContainer)
         _activeViewCleanup = null
         break
+      case 'admin-notificaciones':
+        await renderAdminNotificacionesView(targetContainer)
+        _activeViewCleanup = null
+        break
       case 'registrar-alumno':
         if (!_permisos?.puede_registrar_alumnos) {
           router.navigate('hoy')
@@ -1155,6 +1162,10 @@ async function initPortal() {
   const maestro = await usePortalAuth.init()
   console.log('[Init] Auth completado:', maestro ? 'con maestro' : 'sin maestro')
 
+  // Determinar modo admin desde el campo es_admin de la tabla maestros
+  IS_ADMIN = maestro?.es_admin === true
+  console.log('[Init] IS_ADMIN:', IS_ADMIN)
+
   // Determinar si estamos en una ruta pública
   const routerInstance = window.router || createPortalRouter()
   const publicRoutes = ['login', 'register', 'pending-approval']
@@ -1201,6 +1212,11 @@ async function initPortal() {
   _renderShell(app, maestro, permisos)
   console.log('[Init] Shell renderizado')
 
+  // 3.1 Admin: inicializar banner de ausencias pendientes
+  if (IS_ADMIN) {
+    adminAusenciasInsights.init()
+  }
+
   // 4. Init view containers AFTER shell (shell creates #pm-view-container)
   _initViewContainers()
 
@@ -1241,6 +1257,10 @@ async function initPortal() {
       // Evaluar alertas superiores (SOI Smart Insights)
       if (window.pwaInstaller) {
         window.pwaInstaller.evaluateInsights()
+      }
+      // Admin: primera evaluación del banner de ausencias pendientes
+      if (window.adminAusenciasInsights) {
+        window.adminAusenciasInsights.evaluate()
       }
     })
     .catch(err => console.warn('[Prefetch] Error:', err.message))

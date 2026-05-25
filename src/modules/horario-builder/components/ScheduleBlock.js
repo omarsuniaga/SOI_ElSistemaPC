@@ -40,13 +40,13 @@ export function createScheduleBlock(assignment, { draggable = false } = {}) {
          ${locked ? '🔒' : '🔓'}
        </button>`
     : (locked ? '<span class="sb-lock-icon">🔒</span>' : '');
-  const draggablAttr   = isActuallyDraggable ? 'draggable="true"' : '';
+  const draggableAttr   = isActuallyDraggable ? 'draggable="true"' : '';
 
   return `
     <div class="schedule-block"
          data-clase-id="${clase_id}"
          data-locked="${locked}"
-         ${draggablAttr}
+         ${draggableAttr}
          style="border-radius:0.4rem;overflow:hidden;${conflictStyle}cursor:${isActuallyDraggable ? 'grab' : 'default'};user-select:none;margin-bottom:2px;">
       <!-- Instrument header bar -->
       <div class="sb-header" style="background:${instrColor};padding:3px 6px;display:flex;align-items:center;justify-content:space-between;gap:4px;">

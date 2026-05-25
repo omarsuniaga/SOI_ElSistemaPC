@@ -36,6 +36,7 @@ import './style.css';
 import './styles/bootstrap-support.css';
 import './styles/sidebar.css';
 import './modules/academic-admin/styles/academic-admin.css';
+import './modules/horario-builder/styles/horario-builder.css';
 
 // Core
 import { router } from './core/router/router.js';
@@ -62,6 +63,8 @@ import { registerRoutesAcademicAdmin } from './modules/academic-admin/academic-a
 import { registerRoutesAdminDashboard } from './modules/admin-dashboard/admin-dashboard.router.js';
 import { registerRoutesPermisos } from './modules/permisos/index.js';
 import { registerRoutesPedagogico } from './modules/pedagogico/index.js';
+import { registerRoutesHorarioBuilder } from './modules/horario-builder/index.js';
+import { registerRoutesAdminNotificaciones } from './modules/admin-notificaciones/index.js';
 
 // ============================================================================
 // MÓDULOS REGISTRY - Define todos los módulos de la aplicación
@@ -90,6 +93,14 @@ const MODULES_REGISTRY = [
     description: 'Panel de control, reportes y analítica de maestros',
     enabled: true,
     register: registerRoutesAdminDashboard
+  },
+  {
+    id: 'admin-notificaciones',
+    label: 'Centro de Actividad',
+    icon: 'bi-bell',
+    description: 'Alertas tempranas de riesgo y sustituciones sugeridas',
+    enabled: true,
+    register: registerRoutesAdminNotificaciones
   },
   {
     id: 'maestros',
@@ -122,6 +133,14 @@ const MODULES_REGISTRY = [
     description: 'Gestión de clases y horarios',
     enabled: true,
     register: registerRoutesClases
+  },
+  {
+    id: 'horario-builder',
+    label: 'Constructor de Horarios',
+    icon: 'bi-calendar-range',
+    description: 'Motor de asignación y optimización de horarios',
+    enabled: true,
+    register: registerRoutesHorarioBuilder
   },
   {
     id: 'asistencias',
@@ -220,6 +239,7 @@ const NAV_GROUPS = [
       { id: 'programas',  label: 'Programas', icon: 'bi-book' },
       { id: 'clases',     label: 'Clases',    icon: 'bi-easel2' },
       { id: 'salones',    label: 'Salones',   icon: 'bi-door-open' },
+      { id: 'horario-builder', label: 'Constructor Horarios', icon: 'bi-calendar-range' },
     ],
   },
   {
@@ -249,6 +269,7 @@ const NAV_GROUPS = [
     icon: 'bi-bar-chart-line',
     items: [
       { id: 'metricas', label: 'Dashboard', icon: 'bi-bar-chart-line' },
+      { id: 'admin-notificaciones', label: 'Centro de Actividad', icon: 'bi-bell' },
       { id: 'admin-dashboard', label: 'Cumplimiento Maestros', icon: 'bi-clipboard-check' },
       { id: 'admin-dashboard-reportes', label: 'Reportes Director', icon: 'bi-file-earmark-pdf' },
       { id: 'admin-dashboard-analitca-llenado', label: 'Analítica Llenado', icon: 'bi-graph-up' },
@@ -462,6 +483,8 @@ function registerModules() {
       console.error(`Error registering module ${module.id}:`, error);
     }
   });
+
+  // Centro de Actividad se registra dinámicamente desde MODULES_REGISTRY
 }
 
 // ============================================================================

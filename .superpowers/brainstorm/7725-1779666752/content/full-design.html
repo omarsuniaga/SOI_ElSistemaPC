@@ -1,0 +1,126 @@
+<h2>Diseño completo — Horario Builder</h2>
+<p class="subtitle">Resumen de arquitectura y decisiones. Confirmá o pedí ajustes antes de escribir el spec.</p>
+
+<div style="display:flex;flex-direction:column;gap:1.25rem;margin-top:1.25rem;">
+
+  <!-- Sprint 1 -->
+  <div style="border:2px solid #6366f1;border-radius:1rem;padding:1.25rem;background:rgba(99,102,241,0.05);">
+    <div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:0.75rem;">
+      <span style="background:#6366f1;color:#fff;border-radius:999px;padding:0.2rem 0.75rem;font-size:0.8rem;font-weight:700;">SPRINT 1</span>
+      <strong>Grilla Visual + Conflictos en tiempo real</strong>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;font-size:0.8rem;">
+      <div>
+        <div style="font-weight:700;color:#6366f1;margin-bottom:0.35rem;font-size:0.75rem;">PANTALLA PRINCIPAL</div>
+        <ul style="list-style:none;display:flex;flex-direction:column;gap:0.2rem;color:#374151;">
+          <li>📅 Toggle de vista: <strong>Grilla × Maestro × Salón × Alumno</strong></li>
+          <li>🎨 Bloques: header = color instrumento, dot = color maestro</li>
+          <li>⚠️ Conflictos: borde rojo en bloque + panel colapsable al pie</li>
+          <li>💾 Botón "Guardar borrador" siempre visible</li>
+          <li>🔄 Botón "Regenerar" para re-correr el algoritmo</li>
+        </ul>
+      </div>
+      <div>
+        <div style="font-weight:700;color:#6366f1;margin-bottom:0.35rem;font-size:0.75rem;">LÓGICA</div>
+        <ul style="list-style:none;display:flex;flex-direction:column;gap:0.2rem;color:#374151;">
+          <li>Motor MRV ya implementado en <code style="font-size:0.7rem;background:#f1f5f9;padding:1px 4px;border-radius:3px;">schedulingEngine.js</code></li>
+          <li>Detección de conflictos: maestro duplicado + salón duplicado</li>
+          <li>Colores de instrumento: mapa fijo (12 colores) en constante</li>
+          <li>Colores de maestro: <code style="font-size:0.7rem;background:#f1f5f9;padding:1px 4px;border-radius:3px;">hashStringToColor()</code> ya implementado</li>
+          <li>Estado: <code style="font-size:0.7rem;background:#f1f5f9;padding:1px 4px;border-radius:3px;">borrador</code> persiste en <code style="font-size:0.7rem;background:#f1f5f9;padding:1px 4px;border-radius:3px;">schedule_runs</code></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sprint 2 -->
+  <div style="border:2px solid #f59e0b;border-radius:1rem;padding:1.25rem;background:rgba(245,158,11,0.05);">
+    <div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:0.75rem;">
+      <span style="background:#f59e0b;color:#fff;border-radius:999px;padding:0.2rem 0.75rem;font-size:0.8rem;font-weight:700;">SPRINT 2</span>
+      <strong>Editor Drag & Drop</strong>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;font-size:0.8rem;">
+      <div>
+        <div style="font-weight:700;color:#b45309;margin-bottom:0.35rem;font-size:0.75rem;">INTERACCIÓN</div>
+        <ul style="list-style:none;display:flex;flex-direction:column;gap:0.2rem;color:#374151;">
+          <li>🖱️ Arrastrás un bloque → slots se pintan verde/gris</li>
+          <li>⚠️ Al soltar en slot conflictivo → modal de confirmación</li>
+          <li>↩️ Undo/Redo: stack de máximo 20 operaciones</li>
+          <li>🔒 Bloquear clase: pin icon en bloque → no se puede mover</li>
+          <li>✏️ Click en bloque → editar duración o maestro alternativo</li>
+        </ul>
+      </div>
+      <div>
+        <div style="font-weight:700;color:#b45309;margin-bottom:0.35rem;font-size:0.75rem;">LÓGICA</div>
+        <ul style="list-style:none;display:flex;flex-direction:column;gap:0.2rem;color:#374151;">
+          <li>HTML5 Drag & Drop API (sin librerías extra)</li>
+          <li>Re-validación de conflictos en cada drop</li>
+          <li>Bloques bloqueados: flag <code style="font-size:0.7rem;background:#f1f5f9;padding:1px 4px;border-radius:3px;">locked: true</code> en assignment</li>
+          <li>Historial en memoria: array de snapshots de assignments</li>
+          <li>Guardado automático de borrador al soltar (debounce 2s)</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sprint 3 -->
+  <div style="border:2px solid #22c55e;border-radius:1rem;padding:1.25rem;background:rgba(34,197,94,0.05);">
+    <div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:0.75rem;">
+      <span style="background:#22c55e;color:#fff;border-radius:999px;padding:0.2rem 0.75rem;font-size:0.8rem;font-weight:700;">SPRINT 3</span>
+      <strong>Vistas por audiencia + Publicación por etapas</strong>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;font-size:0.8rem;">
+      <div>
+        <div style="font-weight:700;color:#15803d;margin-bottom:0.35rem;font-size:0.75rem;">VISTAS</div>
+        <ul style="list-style:none;display:flex;flex-direction:column;gap:0.2rem;color:#374151;">
+          <li>👤 <strong>Por maestro:</strong> swimlanes, carga horaria semanal</li>
+          <li>🏫 <strong>Por salón:</strong> ocupación y capacidad utilizada</li>
+          <li>🎓 <strong>Por alumno:</strong> horario personal filtrado por nombre</li>
+          <li>📄 Exportar PDF/Excel disponible en cualquier vista</li>
+        </ul>
+      </div>
+      <div>
+        <div style="font-weight:700;color:#15803d;margin-bottom:0.35rem;font-size:0.75rem;">FLUJO DE PUBLICACIÓN</div>
+        <ul style="list-style:none;display:flex;flex-direction:column;gap:0.2rem;color:#374151;">
+          <li>📋 <strong>Borrador</strong> → solo visible para el admin</li>
+          <li>🔍 <strong>Revisión</strong> → maestros ven su horario tentativo en el portal</li>
+          <li>💬 Maestros pueden reportar inconvenientes (texto libre)</li>
+          <li>✅ <strong>Publicado</strong> → oficial, notificación in-app a cada maestro</li>
+          <li>🔔 Notificación muestra horario personal del maestro directamente</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Arquitectura de archivos -->
+  <div style="border:1px solid #e2e8f0;border-radius:1rem;padding:1.25rem;background:#f8fafc;">
+    <div style="font-weight:700;margin-bottom:0.75rem;font-size:0.85rem;">📁 Arquitectura de archivos (nuevos/modificados)</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;font-size:0.72rem;font-family:monospace;">
+      <div style="color:#6366f1;">horario-builder/
+  components/
+    ScheduleGrid.js        ← NUEVO
+    ScheduleBlock.js       ← NUEVO
+    ConflictPanel.js       ← NUEVO
+    ViewToggle.js          ← NUEVO
+    DragDropManager.js     ← NUEVO
+    PublishWizard.js       ← NUEVO</div>
+      <div style="color:#374151;">  views/
+    horarioBuilderView.js  ← REESCRIBIR
+  engine/
+    schedulingEngine.js    ← EXISTE ✓
+    conflictDetector.js    ← NUEVO
+  api/
+    horarioBuilderApi.js   ← EXISTE ✓
+  utils/
+    horarioExporter.js     ← EXISTE ✓
+    colorMap.js            ← NUEVO</div>
+    </div>
+  </div>
+
+</div>
+
+<div style="margin-top:1.25rem;padding:1rem;border-radius:0.75rem;background:rgba(99,102,241,0.08);border:1px solid rgba(99,102,241,0.2);">
+  <p style="margin:0;font-size:0.82rem;color:#374151;">
+    <strong>¿Este diseño te parece bien?</strong> Si confirmás, escribo el spec doc y arrancamos con el plan de implementación.
+  </p>
+</div>

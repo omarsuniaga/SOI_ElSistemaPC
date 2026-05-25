@@ -15,11 +15,13 @@ const VIEW_LABELS = {
  * @returns {string} HTML string
  */
 export function createViewToggle(activeView = 'grid') {
+  if (!VIEW_LABELS[activeView]) activeView = 'grid';
+
   const pills = VIEWS.map(v => {
     const { label, icon } = VIEW_LABELS[v];
     const isActive = v === activeView;
     return `
-      <button class="vt-pill ${isActive ? 'vt-pill--active' : ''}"
+      <button role="tab" aria-selected="${isActive}" class="vt-pill ${isActive ? 'vt-pill--active' : ''}"
               data-view="${v}"
               style="
                 display:inline-flex;align-items:center;gap:5px;

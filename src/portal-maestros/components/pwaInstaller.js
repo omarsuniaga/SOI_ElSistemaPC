@@ -1,15 +1,15 @@
 /**
- * PWA Installer — Smart Banner + Install Prompt
+ * SOI Smart Insights Bar — Cápsula Superior de Alertas Contextuales
  *
  * Comportamiento:
- * - Si la app ya corre en standalone (instalada) → no muestra nada.
- * - Si el navegador soporta BeforeInstallPromptEvent (Chrome/Edge desktop y Android)
- *   → captura el prompt y muestra el smart banner con botón nativo de instalación.
- * - Si es iOS (Safari) → muestra el smart banner con botón que abre modal de instrucciones manuales.
- * - El banner se muestra SIEMPRE al abrir la app en el navegador.
- *   Solo desaparece si el usuario lo cierra explícitamente (persiste por sesión,
- *   pero vuelve a aparecer en la próxima visita).
+ * - Evalúa dinámicamente tareas pendientes y recordatorios críticos para el docente.
+ * - Flota de forma premium estilo Dynamic Island/iOS con glassmorphism, sin empujar el layout.
+ * - Soporta desestimación selectiva por 7 días en localStorage.
+ * - Preserva las guías de instalación manuales y nativas para el botón del header.
  */
+
+import { getMaestroLocal } from '../auth/maestroAuth.js';
+import { getSesiones, getMisClases } from '../services/maestroDataService.js';
 
 let deferredPrompt = null;
 let smartBannerEl = null;
@@ -21,53 +21,224 @@ export const pwaInstaller = {
     window.pwaInstaller = this;
     this._injectStyles();
 
-    // Si ya está instalada como PWA standalone, no mostrar nada.
-    if (this._isStandalone()) return;
-
-    const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
-
-    // Escuchar el prompt nativo del navegador (Chrome/Edge desktop y Android)
+    // Capturar el prompt de instalación nativo para el botón del header
     window.addEventListener('beforeinstallprompt', (e) => {
       e.preventDefault();
       deferredPrompt = e;
-      this._updateBannerButton(); // Actualizar si el banner ya está visible
     });
 
     window.addEventListener('appinstalled', () => {
-      this._dismissBanner(true);
+      localStorage.setItem('pwa-installed', 'true');
       deferredPrompt = null;
     });
-
-    // Mostrar el smart banner siempre (con pequeño delay para que el layout esté listo)
-    setTimeout(() => this._showSmartBanner(), 300);
   },
 
-  // ── Smart Banner (siempre visible en el navegador) ──────────────────────────
+  // ── Motor de Evaluación de Insights / Alertas ──────────────────────────────
 
-  _showSmartBanner() {
-    if (smartBannerEl || this._isStandalone()) return;
+  async evaluateInsights() {
+    const maestro = getMaestroLocal();
+    if (!maestro?.id) return;
 
-    const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
-    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    try {
+      // 1. Obtener datos clave en paralelo (aprovechando la cache en memoria)
+      const misClases = await getMisClases();
+      
+      const hoy = new Date();
+      const sieteDiasAgo = new Date(hoy.getTime() - 7 * 24 * 60 * 60 * 1000);
+      const hasta = hoy.toISOString().split('T')[0];
+      const desde = sieteDiasAgo.toISOString().split('T')[0];
+      
+      const sesiones = await getSesiones(maestro.id, desde, hasta);
+
+      // 2. Definir y evaluar alertas en orden de prioridad (Alta -> Media -> Baja)
+      const activeAlerts = [];
+
+      // A. ALTA: Clases en borrador (pendientes de guardar)
+      const borradores = (sesiones || []).filter(s => s.borrador === true);
+      if (borradores.length > 0) {
+        const classMap = Object.fromEntries((misClases || []).map(c => [c.id, c.nombre]));
+        
+        if (borradores.length === 1) {
+          const s = borradores[0];
+          const className = classMap[s.clase_id] || 'Clase';
+          const formattedDate = s.fecha ? s.fecha.split('-').reverse().slice(0, 2).join('/') : '';
+          const dateStr = formattedDate ? ` del ${formattedDate}` : '';
+          
+          activeAlerts.push({
+            id: 'draft-sessions',
+            priority: 'high',
+            icon: 'bi-exclamation-triangle-fill',
+            text: `Tenés el registro de ${className}${dateStr} en borrador.`,
+            actionLabel: 'Revisar',
+            action: () => {
+              if (window.router) window.router.navigate(`asistencia?clase=${s.clase_id}&fecha=${s.fecha}`);
+            }
+          });
+        } else {
+          // Si hay múltiples borradores, mostrar el contador general pero llevar al primero
+          const s = borradores[0];
+          activeAlerts.push({
+            id: 'draft-sessions',
+            priority: 'high',
+            icon: 'bi-exclamation-triangle-fill',
+            text: `Tenés ${borradores.length} registros de clase en borrador.`,
+            actionLabel: 'Revisar',
+            action: () => {
+              if (window.router) window.router.navigate(`asistencia?clase=${s.clase_id}&fecha=${s.fecha}`);
+            }
+          });
+        }
+      }
+
+      // B. ALTA: Sesiones pasadas sin asistencia registrada (últimos 7 días, excluye hoy)
+      const claseIds = new Set((misClases || []).map(c => c.id));
+      const sinRegistrar = (sesiones || []).filter(s => {
+        if (s.fecha >= hasta) return false; // excluir hoy y futuro
+        if (!claseIds.has(s.clase_id)) return false;
+        const tieneAsistencia = Array.isArray(s.asistencia) && s.asistencia.length > 0;
+        const tieneContenido  = typeof s.contenido === 'string' && s.contenido.trim().length > 0;
+        return !tieneAsistencia && !(s.borrador === false && tieneContenido);
+      });
+
+      if (sinRegistrar.length > 0) {
+        const classMap = Object.fromEntries((misClases || []).map(c => [c.id, c.nombre]));
+        const primera = sinRegistrar[0];
+        const nombreClase = classMap[primera.clase_id] || 'Clase';
+        const fechaCorta  = primera.fecha ? primera.fecha.split('-').reverse().slice(0, 2).join('/') : '';
+
+        activeAlerts.push({
+          id: 'sessions-without-attendance',
+          priority: 'high',
+          icon: 'bi-clipboard-x-fill',
+          text: sinRegistrar.length === 1
+            ? `${nombreClase} del ${fechaCorta} quedó sin registrar asistencia.`
+            : `Tenés ${sinRegistrar.length} clases sin asistencia registrada esta semana.`,
+          actionLabel: 'Registrar',
+          action: () => {
+            if (window.router) window.router.navigate(`asistencia?clase=${primera.clase_id}&fecha=${primera.fecha}`);
+          }
+        });
+      }
+
+      // D. MEDIA: Perfil incompleto (falta teléfono)
+      const tieneTelefono = maestro.telefono || maestro.tlf;
+      if (!tieneTelefono) {
+        activeAlerts.push({
+          id: 'profile-incomplete',
+          priority: 'medium',
+          icon: 'bi-person-exclamation',
+          text: 'Completá tu número de teléfono en tu perfil de usuario.',
+          actionLabel: 'Completar',
+          action: () => {
+            if (window.router) window.router.navigate('perfil');
+          }
+        });
+      }
+
+      // E. BAJA: Sin clases asignadas
+      if (!misClases || misClases.length === 0) {
+        activeAlerts.push({
+          id: 'no-classes-assigned',
+          priority: 'low',
+          icon: 'bi-info-circle-fill',
+          text: 'No tenés clases asignadas en el sistema actualmente.',
+          actionLabel: 'Soporte',
+          action: () => {
+            if (window.router) window.router.navigate('perfil');
+          }
+        });
+      }
+
+      // 3. Filtrar alertas desestimadas en localStorage (duración: 7 días)
+      const validAlerts = activeAlerts.filter(alert => {
+        const dismissedTime = localStorage.getItem(`soi-dismissed-${alert.id}`);
+        if (!dismissedTime) return true;
+
+        const diff = Date.now() - parseInt(dismissedTime, 10);
+        const sieteDiasMs = 7 * 24 * 60 * 60 * 1000;
+        return diff > sieteDiasMs; // Retornar true solo si ya pasaron los 7 días
+      });
+
+      // 4. Renderizar la alerta de mayor prioridad
+      if (validAlerts.length > 0) {
+        const nextAlert = validAlerts[0];
+        if (this.currentAlertId === nextAlert.id && this.currentAlertText === nextAlert.text) {
+          // Si es la misma alerta y el mismo texto, mantenerla sin cambios ni parpadeos
+          return;
+        }
+        this._showInsightBanner(nextAlert);
+      } else {
+        this.dismissBanner();
+      }
+
+    } catch (err) {
+      console.warn('[SmartInsights] Error al evaluar alertas:', err);
+    }
+  },
+
+  // ── Renderizado de la Cápsula Flotante (Dynamic Island style) ───────────────
+
+  _showInsightBanner(alert) {
+    // Si ya existe el banner y es otra alerta, hacer transición en lugar de destruir y recrear
+    const existingBanner = document.getElementById('pwa-smart-banner') || smartBannerEl;
+    if (existingBanner) {
+      const capsuleEl = existingBanner.querySelector('.psb-capsule');
+      if (capsuleEl) {
+        capsuleEl.style.transition = 'opacity 0.2s ease';
+        capsuleEl.style.opacity = '0';
+        
+        setTimeout(() => {
+          const dotEl = capsuleEl.querySelector('.psb-severity-dot');
+          if (dotEl) {
+            dotEl.className = `psb-severity-dot ${alert.priority}`;
+            dotEl.innerHTML = `<i class="bi ${alert.icon}"></i>`;
+          }
+          const titleEl = capsuleEl.querySelector('.psb-title');
+          if (titleEl) {
+            titleEl.textContent = alert.text;
+          }
+          const actionBtn = capsuleEl.querySelector('#pwa-banner-action');
+          if (actionBtn) {
+            actionBtn.innerHTML = `<span>${alert.actionLabel}</span>`;
+            const newActionBtn = actionBtn.cloneNode(true);
+            actionBtn.parentNode.replaceChild(newActionBtn, actionBtn);
+            newActionBtn.addEventListener('click', () => {
+              alert.action();
+            });
+          }
+          
+          const closeBtn = capsuleEl.querySelector('#pwa-banner-close');
+          if (closeBtn) {
+            const newCloseBtn = closeBtn.cloneNode(true);
+            closeBtn.parentNode.replaceChild(newCloseBtn, closeBtn);
+            newCloseBtn.addEventListener('click', () => {
+              localStorage.setItem(`soi-dismissed-${alert.id}`, Date.now().toString());
+              this.dismissBanner();
+            });
+          }
+          
+          this.currentAlertId = alert.id;
+          this.currentAlertText = alert.text;
+          capsuleEl.style.opacity = '1';
+        }, 200);
+        return;
+      }
+    }
 
     smartBannerEl = document.createElement('div');
     smartBannerEl.id = 'pwa-smart-banner';
-    smartBannerEl.setAttribute('role', 'banner');
-    smartBannerEl.setAttribute('aria-label', 'Instalar aplicación SOI Maestros');
+    smartBannerEl.setAttribute('role', 'status');
+    smartBannerEl.setAttribute('aria-live', 'polite');
     smartBannerEl.innerHTML = `
-      <div class="psb-content">
-        <div class="psb-icon">
-          <img src="/icons/icon-192.png" alt="SOI" onerror="this.parentElement.innerHTML='<i class=\\"bi bi-mortarboard-fill psb-icon-fallback\\"></i>'">
+      <div class="psb-capsule" style="opacity: 1;">
+        <div class="psb-severity-dot ${alert.priority}">
+          <i class="bi ${alert.icon}"></i>
         </div>
         <div class="psb-info">
-          <strong class="psb-title">SOI Maestros</strong>
-          <span class="psb-subtitle">${isMobile ? 'Instala la app · Acceso directo' : 'Abrí como aplicación de escritorio'}</span>
+          <span class="psb-title">${alert.text}</span>
         </div>
-        <button class="psb-action" id="pwa-banner-action" aria-label="${isIOS ? 'Ver cómo instalar' : 'Abrir en aplicación'}">
-          ${isIOS
-            ? `<i class="bi bi-box-arrow-up"></i> <span>Instalar</span>`
-            : `<i class="bi bi-window-plus"></i> <span>Abrir en aplicación</span>`
-          }
+        <button class="psb-action" id="pwa-banner-action">
+          <span>${alert.actionLabel}</span>
         </button>
         <button class="psb-close" id="pwa-banner-close" aria-label="Cerrar aviso">
           <i class="bi bi-x"></i>
@@ -75,72 +246,49 @@ export const pwaInstaller = {
       </div>
     `;
 
-    // Insertar al inicio del body para que quede ARRIBA de todo
     document.body.prepend(smartBannerEl);
+    this.currentAlertId = alert.id;
+    this.currentAlertText = alert.text;
 
-    // Ajustar el contenido principal para no quedar tapado
-    this._pushBodyDown();
-
-    // Animación de entrada
+    // Animación de entrada fluida amortiguada
     requestAnimationFrame(() => {
       requestAnimationFrame(() => smartBannerEl?.classList.add('psb-visible'));
     });
 
-    // Eventos
     document.getElementById('pwa-banner-action').addEventListener('click', () => {
-      if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
-        this._showIOSGuide();
-      } else if (deferredPrompt) {
-        this._triggerNativeInstall();
-      } else {
-        this._showDesktopGuide();
-      }
+      alert.action();
     });
 
     document.getElementById('pwa-banner-close').addEventListener('click', () => {
-      this._dismissBanner(false);
+      // Guardar descarte en localStorage
+      localStorage.setItem(`soi-dismissed-${alert.id}`, Date.now().toString());
+      this.dismissBanner();
     });
   },
 
-  _updateBannerButton() {
-    // Cuando llega el deferredPrompt, actualizar el texto del botón si el banner ya está visible
-    const btn = document.getElementById('pwa-banner-action');
-    if (btn && deferredPrompt) {
-      btn.innerHTML = `<i class="bi bi-window-plus"></i> <span>Abrir en aplicación</span>`;
-    }
-  },
-
-  _dismissBanner(permanent = false) {
+  dismissBanner() {
+    this.currentAlertId = null;
+    this.currentAlertText = null;
     if (!smartBannerEl) return;
     smartBannerEl.classList.remove('psb-visible');
-    this._resetBodyPadding();
+    const el = smartBannerEl;
+    smartBannerEl = null;
     setTimeout(() => {
-      smartBannerEl?.remove();
-      smartBannerEl = null;
-    }, 350);
-    // Solo si se instaló de verdad, marcarlo como permanente
-    if (permanent) {
-      localStorage.setItem('pwa-installed', 'true');
-    }
+      el.remove();
+    }, 400);
   },
 
-  _pushBodyDown() {
-    // Añadir padding-top al contenedor principal para que no tape contenido
-    const main = document.querySelector('#app, .pm-portal-container, main, body > div:not(#pwa-smart-banner)');
-    if (main) {
-      main.style.transition = 'padding-top 0.35s ease';
-      main.style.paddingTop = '60px';
+  // ── Public API (Guías e Instalación del Header) ──────────────────────────────
+
+  promptInstall() {
+    if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+      this._showIOSGuide();
+    } else if (deferredPrompt) {
+      this._triggerNativeInstall();
+    } else {
+      this._showDesktopGuide();
     }
   },
-
-  _resetBodyPadding() {
-    const main = document.querySelector('#app, .pm-portal-container, main, body > div:not(#pwa-smart-banner)');
-    if (main) {
-      main.style.paddingTop = '';
-    }
-  },
-
-  // ── Install nativo (Chrome/Edge desktop y Android) ──────────────────────────
 
   async _triggerNativeInstall() {
     if (!deferredPrompt) {
@@ -151,7 +299,7 @@ export const pwaInstaller = {
       await deferredPrompt.prompt();
       const { outcome } = await deferredPrompt.userChoice;
       if (outcome === 'accepted') {
-        this._dismissBanner(true);
+        localStorage.setItem('pwa-installed', 'true');
       }
     } catch (err) {
       console.warn('[PWA] Error al mostrar prompt:', err);
@@ -159,8 +307,6 @@ export const pwaInstaller = {
       deferredPrompt = null;
     }
   },
-
-  // ── Modal de instrucciones iOS ───────────────────────────────────────────────
 
   _showIOSGuide() {
     if (guideModalEl) return;
@@ -173,7 +319,7 @@ export const pwaInstaller = {
             <i class="bi bi-phone"></i>
           </div>
           <h3 id="pgm-title">Instalar en iPhone / iPad</h3>
-          <p class="pgm-subtitle">Añade SOI Maestros a tu pantalla de inicio</p>
+          <p class="pgm-subtitle">Añadí SOI Maestros a tu pantalla de inicio</p>
           <ol class="pgm-steps">
             <li>
               <span class="pgm-step-num">1</span>
@@ -204,8 +350,6 @@ export const pwaInstaller = {
       if (e.target.id === 'pgm-overlay') close();
     });
   },
-
-  // ── Modal de instrucciones Desktop ──────────────────────────────────────────
 
   _showDesktopGuide() {
     if (guideModalEl) return;
@@ -250,20 +394,6 @@ export const pwaInstaller = {
     });
   },
 
-  // ── Public API ──────────────────────────────────────────────────────────────
-
-  promptInstall() {
-    if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
-      this._showIOSGuide();
-    } else if (deferredPrompt) {
-      this._triggerNativeInstall();
-    } else {
-      this._showDesktopGuide();
-    }
-  },
-
-  // ── Helpers ─────────────────────────────────────────────────────────────────
-
   _isStandalone() {
     return (
       window.matchMedia('(display-mode: standalone)').matches ||
@@ -279,126 +409,138 @@ export const pwaInstaller = {
     const style = document.createElement('style');
     style.id = 'pwa-installer-styles';
     style.textContent = `
-      /* ── Smart Banner ──────────────────────────────── */
+      /* ── SOI Smart Insights Banner (Inline above Header) ── */
       #pwa-smart-banner {
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
+        position: relative;
+        width: 100%;
         z-index: 10000;
-        transform: translateY(-100%);
-        transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+        opacity: 0;
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.3s ease, opacity 0.3s ease;
       }
 
       #pwa-smart-banner.psb-visible {
-        transform: translateY(0);
+        opacity: 1;
+        max-height: 80px;
       }
 
-      .psb-content {
+      .psb-capsule {
         display: flex;
         align-items: center;
-        gap: 10px;
-        padding: 8px 12px;
-        background: rgba(20, 20, 30, 0.96);
-        backdrop-filter: blur(12px);
-        -webkit-backdrop-filter: blur(12px);
-        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-        min-height: 52px;
+        gap: 12px;
+        padding: 8px 16px;
+        background: #f5f5f7;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+        min-height: 48px;
       }
 
-      .psb-icon {
-        width: 36px;
-        height: 36px;
-        border-radius: 9px;
-        overflow: hidden;
+      /* Dark mode styles for capsule */
+      [data-portal-theme="dark"] .psb-capsule,
+      [data-bs-theme="dark"] .psb-capsule {
+        background: rgba(30, 41, 59, 0.88);
+        border-color: rgba(255, 255, 255, 0.08);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+      }
+
+      .psb-severity-dot {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
         flex-shrink: 0;
-        background: linear-gradient(135deg, #5856D6, #7C7AE6);
+      }
+
+      .psb-severity-dot.high {
+        background: rgba(255, 59, 48, 0.15);
+        color: #ff3b30;
+      }
+
+      .psb-severity-dot.medium {
+        background: rgba(255, 149, 0, 0.15);
+        color: #ff9500;
+      }
+
+      .psb-severity-dot.low {
+        background: rgba(9, 132, 227, 0.15);
+        color: #0984e3;
+      }
+
+      .psb-severity-dot i {
+        font-size: 15px;
         display: flex;
         align-items: center;
         justify-content: center;
       }
 
-      .psb-icon img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-        border-radius: 8px;
-      }
-
-      .psb-icon-fallback {
-        font-size: 18px;
-        color: white;
-      }
-
       .psb-info {
         flex: 1;
-        display: flex;
-        flex-direction: column;
-        gap: 1px;
         min-width: 0;
       }
 
       .psb-title {
         font-size: 13px;
-        font-weight: 700;
-        color: #fff;
-        white-space: nowrap;
+        font-weight: 600;
+        color: #1d1d1f;
+        line-height: 1.35;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
         overflow: hidden;
-        text-overflow: ellipsis;
       }
 
-      .psb-subtitle {
-        font-size: 11px;
-        color: rgba(255, 255, 255, 0.55);
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
+      /* Dark mode text */
+      [data-portal-theme="dark"] .psb-title,
+      [data-bs-theme="dark"] .psb-title {
+        color: #f1f5f9;
       }
 
       .psb-action {
-        display: flex;
-        align-items: center;
-        gap: 5px;
-        padding: 7px 14px;
-        background: #5856D6;
-        color: #fff;
+        background: var(--pm-primary, #5856D6);
+        color: white !important;
         border: none;
-        border-radius: 20px;
-        font-size: 13px;
-        font-weight: 600;
+        border-radius: 16px;
+        padding: 5px 12px;
+        font-size: 11.5px;
+        font-weight: 700;
         cursor: pointer;
+        transition: background 0.2s, transform 0.1s;
         white-space: nowrap;
         flex-shrink: 0;
-        transition: background 0.2s, transform 0.15s;
-        letter-spacing: -0.01em;
       }
 
       .psb-action:hover {
-        background: #6a68e0;
-        transform: scale(1.03);
+        background: #4745b4;
+        transform: translateY(-0.5px);
       }
 
       .psb-action:active {
-        transform: scale(0.97);
+        transform: scale(0.96);
       }
 
       .psb-close {
         background: transparent;
         border: none;
-        color: rgba(255, 255, 255, 0.35);
-        cursor: pointer;
-        padding: 4px 6px;
+        color: #86868b;
         font-size: 16px;
-        flex-shrink: 0;
-        transition: color 0.2s;
-        line-height: 1;
+        cursor: pointer;
+        padding: 4px;
         display: flex;
         align-items: center;
+        justify-content: center;
+        transition: color 0.2s;
+        flex-shrink: 0;
       }
 
       .psb-close:hover {
-        color: rgba(255, 255, 255, 0.8);
+        color: #1d1d1f;
+      }
+
+      [data-portal-theme="dark"] .psb-close:hover,
+      [data-bs-theme="dark"] .psb-close:hover {
+        color: #ffffff;
       }
 
       /* ── Guide Modal ───────────────────────────────── */
@@ -563,5 +705,5 @@ export const pwaInstaller = {
   },
 };
 
-// Auto-inicializar al cargar el módulo
+// Auto-inicializar al cargar el módulo para capturar antes de la carga completa
 pwaInstaller.init();

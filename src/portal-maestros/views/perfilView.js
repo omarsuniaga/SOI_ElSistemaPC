@@ -1,5 +1,6 @@
 import { getMaestroLocal, clearMaestroLocal, logoutPortal, STORAGE_KEY } from '../auth/maestroAuth.js';
 import { supabase } from '../../lib/supabaseClient.js';
+import { updateDisponibilidad } from '../api/disponibilidadApi.js';
 import {
   subscribeToPush, unsubscribeFromPush,
   isPushSupported, isPushSubscribed,
@@ -8,9 +9,6 @@ import {
 import { AppModal } from '../../shared/components/AppModal.js';
 import { ausenciaModal } from '../components/ausenciaModal.js';
 import { notifConfigModal } from '../components/notifConfigModal.js';
-import { registrarAlumnoModal } from '../components/registrarAlumnoModal.js';
-import { gestionarClasesModal } from '../components/gestionarClasesModal.js';
-import { renderGestionAlumnosClasesView } from './gestionAlumnosClasesView.js';
 import { escHTML, getInitials } from '../utils/portalUtils.js';
 import { normalizePhone } from '../../shared/utils/phoneUtils.js';
 import { pushDiagnostic } from '../components/pushDiagnostic.js';
@@ -93,9 +91,8 @@ export function renderPerfilView(container) {
   // Contenedor dinámico de colaboración
   colDer.insertAdjacentHTML('beforeend', `<div id="pm-collaboration-container"></div>`);
 
-  // Contenedor para gestión de alumnos y clases (se muestra solo si hay permisos aprobados)
-  colDer.insertAdjacentHTML('beforeend', `<div id="pm-gestion-container" style="display:none;"></div>`);
 
+  renderInstallApp(colDer);
   renderSession(colDer);
   checkPerfilIncompleto(maestro);
   initListeners(maestro);
@@ -110,12 +107,6 @@ export function renderPerfilView(container) {
         renderCollaborationPermissions(collabContainer, perm, maestro.id, solicitarPermiso);
       }
 
-      // Si hay permisos aprobados, mostrar gestión de alumnos/clases
-      const gestionContainer = document.getElementById('pm-gestion-container');
-      if (gestionContainer && (perm.puede_registrar_alumnos || perm.puede_inscribir_clases)) {
-        gestionContainer.style.display = 'block';
-        await renderGestionAlumnosClasesView(gestionContainer);
-      }
     } catch (err) {
       console.warn('[PerfilView] Error cargando permisos de colaboración:', err.message);
     }
@@ -261,6 +252,64 @@ function renderAbsences(container) {
         <button class="btn-apple-utility" id="pm-btn-solicitar-ausencia"><i class="bi bi-plus-lg" aria-hidden="true"></i> Solicitar</button>
       </div>
     </section>`);
+}
+
+// ─── SECCIÓN INSTALAR APP ────────────────────────────────────
+function renderInstallApp(container) {
+  container.insertAdjacentHTML('beforeend', `
+    <section class="card-apple pm-settings-section" aria-labelledby="install-title" id="pm-install-section">
+      <div class="pm-settings-section__header">
+        <i class="bi bi-phone-fill pm-icon-blue" aria-hidden="true"></i>
+        <div>
+          <h3 id="install-title" class="pm-settings-section__title">Instalar App</h3>
+          <p class="pm-settings-section__desc">Acceso rápido desde tu dispositivo</p>
+        </div>
+      </div>
+      <div id="pm-install-body">
+        <p style="font-size:0.82rem;color:var(--pm-text-muted);margin:0 0 0.75rem;">
+          Instalá el portal como aplicación nativa para usarlo sin navegador, con acceso offline y notificaciones push.
+        </p>
+        <div class="pm-settings-actions-row">
+          <button class="btn-apple-primary w-100" id="pm-btn-install-profile" style="gap:0.5rem;">
+            <i class="bi bi-download"></i> Instalar en este dispositivo
+          </button>
+        </div>
+        <p id="pm-install-note" class="pm-install-note" style="display:none;"></p>
+      </div>
+    </section>`);
+
+  // Lógica del botón
+  const btn = document.getElementById('pm-btn-install-profile');
+  const note = document.getElementById('pm-install-note');
+
+  const isInstalled = window.matchMedia('(display-mode: standalone)').matches
+    || window.navigator.standalone === true
+    || localStorage.getItem('pwa-installed') === 'true';
+
+  if (isInstalled) {
+    btn.innerHTML = '<i class="bi bi-check-circle-fill"></i> App ya instalada';
+    btn.disabled = true;
+    btn.style.opacity = '0.6';
+    return;
+  }
+
+  btn?.addEventListener('click', () => {
+    if (window.pwaInstaller) {
+      window.pwaInstaller.promptInstall();
+    } else {
+      note.style.display = 'block';
+      note.innerHTML = `
+        <strong>Instalación manual:</strong><br>
+        • <b>Chrome/Edge (Android/PC):</b> Menú ⋮ → "Instalar app"<br>
+        • <b>Safari (iPhone/iPad):</b> Compartir <i class="bi bi-box-arrow-up"></i> → "Añadir a pantalla inicio"<br>
+        • <b>Firefox:</b> no admite PWA nativa.`;
+    }
+  });
+
+  // Si el prompt nativo no está disponible, mostrar fallback desde el inicio
+  window.addEventListener('beforeinstallprompt', () => {
+    if (btn) btn.disabled = false;
+  }, { once: true });
 }
 
 // ─── SECCIÓN SESIÓN ──────────────────────────────────────────
@@ -411,26 +460,9 @@ function renderCollaborationPermissions(container, perm, maestroId, solicitarPer
       const route = btn.dataset.route;
 
       if (route === 'registrar-alumno') {
-        const modal = registrarAlumnoModal();
-        modal.show(maestroId);
-
-        // Listen for alumno-registrado event to refresh if needed
-        const handleAlumnoRegistrado = (event) => {
-          // Optionally refresh any list in the UI
-          window.removeEventListener('alumno-registrado', handleAlumnoRegistrado);
-        };
-        window.addEventListener('alumno-registrado', handleAlumnoRegistrado);
-
+        if (window.router) window.router.navigate('registrar-alumno');
       } else if (route === 'gestionar-clases') {
-        const modal = gestionarClasesModal();
-        modal.show(maestroId);
-
-        // Listen for clase-creada event to refresh if needed
-        const handleClaseCreada = (event) => {
-          // Optionally refresh any list in the UI
-          window.removeEventListener('clase-creada', handleClaseCreada);
-        };
-        window.addEventListener('clase-creada', handleClaseCreada);
+        if (window.router) window.router.navigate('gestionar-clases');
       }
     });
   });
@@ -635,13 +667,20 @@ async function guardarPerfil(maestroOriginal) {
   btn.innerHTML = `<span class="pm-settings-spinner"></span><span>Guardando...</span>`;
 
   try {
+    // 1. Validar y actualizar disponibilidad usando disponibilidadApi
+    const resDisp = await updateDisponibilidad(maestroOriginal.id, disponibilidad);
+    if (!resDisp.success) {
+      const errorMsg = resDisp.errors.join('\n');
+      throw new Error(errorMsg);
+    }
+
+    // 2. Actualizar los otros campos del perfil
     const { error } = await supabase
       .from('maestros')
       .update({ 
         nombre_completo: nombre, 
         tlf: telefono, 
-        especialidad, 
-        disponibilidad 
+        especialidad 
       })
       .eq('id', maestroOriginal.id);
 
@@ -986,6 +1025,75 @@ const styles = `
     color: var(--pm-text-muted);
     margin: 0;
     text-align: right;
+  }
+
+  /* Lista alumnos/clases en gestionAlumnosClasesView */
+  .pgac-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    margin-top: 0.6rem;
+  }
+  .pgac-list-item {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    padding: 0.5rem 0.6rem;
+    background: var(--pm-surface-2);
+    border-radius: 8px;
+    border: 1px solid var(--pm-border);
+    transition: background 0.15s;
+  }
+  .pgac-list-item:hover { background: var(--pm-border); }
+  .pgac-list-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: rgba(59,130,246,0.15);
+    color: var(--pm-primary, #3b82f6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+  .pgac-list-avatar--teal {
+    background: rgba(20,184,166,0.15);
+    color: #14b8a6;
+  }
+  .pgac-list-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+    min-width: 0;
+  }
+  .pgac-list-name {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--pm-text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .pgac-list-sub {
+    font-size: 0.72rem;
+    color: var(--pm-text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* Nota instalación manual */
+  .pm-install-note {
+    font-size: 0.78rem;
+    color: var(--pm-text-muted);
+    background: var(--pm-surface-2);
+    border: 1px solid var(--pm-border);
+    border-radius: 8px;
+    padding: 0.65rem 0.85rem;
+    margin-top: 0.65rem;
+    line-height: 1.6;
   }
 `;
 

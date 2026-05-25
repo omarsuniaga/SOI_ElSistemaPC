@@ -20,9 +20,9 @@ describe('ausenciaAprobacionCard', () => {
     const card = createAusenciaAprobacionCard(ausencia);
 
     expect(card.textContent).toContain('Ada Lovelace');
-    expect(card.textContent).toContain('personal');
-    expect(card.textContent).toContain('alta');
-    expect(card.textContent).toContain('Clases afectadas: 2');
+    expect(card.textContent).toContain('Personal');
+    expect(card.textContent).toContain('Alta');
+    expect(card.textContent).toContain('2 clases afectadas');
     expect(card.textContent).toContain('Motivo familiar');
   });
 

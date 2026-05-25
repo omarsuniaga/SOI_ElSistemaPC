@@ -122,9 +122,15 @@ function renderResumenTab() {
 function renderAlertasTab() {
   return `
     <div class="page-glass p-4">
-      <div class="d-flex justify-content-between align-items-center mb-4">
-        <h5 class="fw-bold m-0">Alertas de Seguimiento Académico</h5>
-        <span class="badge bg-danger">${state.resumenAlertas?.rojas || 0} Críticas</span>
+      <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
+        <h5 class="fw-bold m-0"><i class="bi bi-exclamation-triangle-fill text-danger me-2"></i>Alertas de Seguimiento Académico</h5>
+        <div class="d-flex gap-2 flex-wrap">
+          <button id="btn-goto-notifications" class="btn btn-sm btn-primary rounded-pill px-3 py-1.5 fw-semibold d-flex align-items-center gap-2 shadow-sm transition-all" style="font-size: 0.8rem; background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); border: none;">
+            <i class="bi bi-bell-fill animate-bell"></i>
+            <span>Ir al Centro de Actividad</span>
+          </button>
+          <span class="badge bg-danger d-flex align-items-center justify-content-center px-3 rounded-pill" style="font-size: 0.85rem;">${state.resumenAlertas?.rojas || 0} Críticas</span>
+        </div>
       </div>
       <div id="alertas-list-container">
         <div class="text-center py-5"><div class="spinner-border spinner-border-sm text-primary"></div></div>
@@ -209,6 +215,13 @@ async function _onTabChange() {
   }
 
   if (state.activeTab === 'alertas') {
+    // Vincular botón de Centro de Actividad
+    state.container.querySelector('#btn-goto-notifications')?.addEventListener('click', () => {
+      import('../../../core/router/router.js').then(({ router }) => {
+        router.navigate('admin-notificaciones')
+      })
+    })
+
     const alertas = await getAlertasActivas()
     const area = state.container.querySelector('#alertas-list-container')
     if (area) {

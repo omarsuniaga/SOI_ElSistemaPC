@@ -1,8 +1,16 @@
+// src/modules/horario-builder/engine/conflictDetector.js
+
 function timeToMinutes(timeStr) {
   const [h, m] = timeStr.split(':').map(Number);
   return h * 60 + m;
 }
 
+/**
+ * Returns true if assignments a and b have overlapping time windows.
+ * gap expands both ends bidirectionally: A overlaps B if A starts before
+ * B ends+gap AND B starts before A ends+gap. This enforces a minimum gap
+ * between consecutive classes (e.g., gap=15 flags classes with <15 min between them).
+ */
 function overlaps(a, b, gap = 0) {
   const aStart = timeToMinutes(a.hora_inicio);
   const aEnd   = timeToMinutes(a.hora_fin);

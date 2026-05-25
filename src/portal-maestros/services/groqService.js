@@ -193,6 +193,14 @@ CAMPO DSL:
 - Las calificaciones van al final: "4/5"
 
 Si el texto no contiene información de progreso evaluable → devolvé progreso: [] y resumen: "Registro general de clase sin evaluaciones individuales detectadas"
+
+REGLAS CRÍTICAS PARA EL JSON:
+- Nunca uses comillas dobles (") dentro del valor de un string — usá comillas simples (') si necesitás citar algo
+- Todos los strings en una sola línea, sin saltos de línea internos
+- El campo "observacion" máximo 80 caracteres, sin comillas adentro
+- El campo "contenido" máximo 60 caracteres, sin comillas adentro
+- El campo "dsl" puede ser largo pero sin comillas dobles internas — si necesitás citar algo usá comillas simples
+- Verificá mentalmente que tu JSON es válido antes de responder
 `
 
 const PROPOSE_CURRICULUM_PROMPT = `
@@ -285,6 +293,74 @@ export async function structureTextToDSL(text, context = {}) {
 }
 
 /**
+ * Attempt to parse a JSON string from Groq, repairing common issues:
+ * - Strips markdown code fences
+ * - Replaces curly/smart quotes with straight quotes
+ * - Escapes unescaped double quotes inside string values (char-by-char)
+ * Falls back gracefully at each stage.
+ */
+function parseGroqJSON(raw) {
+  // 1. Strip code fences and trim
+  let s = raw.replace(/^\s*```(?:json)?\s*/i, '').replace(/\s*```\s*$/i, '').trim()
+
+  // 2. Replace curly/smart quotes with straight ASCII quotes
+  s = s.replace(/[‘’]/g, "'").replace(/[“”]/g, '"')
+
+  // 3. First attempt: direct parse
+  try { return JSON.parse(s) } catch (_) { /* continue to repair */ }
+
+  // 4. Repair: walk char-by-char, escape unescaped double quotes inside strings
+  try { return JSON.parse(_fixUnescapedQuotes(s)) } catch (_) { /* continue */ }
+
+  // 5. Last resort: find outermost { } and try again
+  const m = s.match(/\{[\s\S]*\}/)
+  if (m) {
+    try { return JSON.parse(m[0]) } catch (_) { /* fall through */ }
+    try { return JSON.parse(_fixUnescapedQuotes(m[0])) } catch (_) { /* fall through */ }
+  }
+
+  // Nothing worked — throw so the caller can handle it
+  throw new SyntaxError('Unable to repair Groq JSON response')
+}
+
+function _fixUnescapedQuotes(str) {
+  let out = ''
+  let inStr = false
+  let i = 0
+  while (i < str.length) {
+    const ch = str[i]
+    // Handle escape sequences inside strings
+    if (inStr && ch === '\\') {
+      out += ch + (str[i + 1] ?? '')
+      i += 2
+      continue
+    }
+    if (ch === '"') {
+      if (!inStr) {
+        inStr = true
+        out += ch
+      } else {
+        // Peek ahead (skip spaces) to decide if this is a closing quote
+        let j = i + 1
+        while (j < str.length && (str[j] === ' ' || str[j] === '\t')) j++
+        const next = str[j]
+        if (next === ',' || next === ':' || next === '}' || next === ']' || next === '\n' || next === '\r' || j >= str.length) {
+          inStr = false
+          out += ch
+        } else {
+          // Unescaped quote inside a string — escape it
+          out += '\\"'
+        }
+      }
+    } else {
+      out += ch
+    }
+    i++
+  }
+  return out
+}
+
+/**
  * Analyzes a free-text observation with full class context.
  * Extracts structured progress records per student.
  *
@@ -324,10 +400,8 @@ ${recientesStr || 'sin sesiones previas registradas'}
       0.1
     )
 
-    // Parse JSON — Groq sometimes wraps in markdown code blocks (with leading whitespace/newlines)
-    const cleaned = raw.replace(/^\s*```(?:json)?\s*/i, '').replace(/\s*```\s*$/i, '').trim()
-    console.debug('[GROQ] analyzeObservation cleaned:', cleaned)
-    const parsed = JSON.parse(cleaned)
+    // Parse JSON with repair fallback (handles unescaped quotes, smart quotes, code fences)
+    const parsed = parseGroqJSON(raw)
 
     return {
       dsl: parsed.dsl || '',

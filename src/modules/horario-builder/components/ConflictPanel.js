@@ -1,4 +1,5 @@
 // src/modules/horario-builder/components/ConflictPanel.js
+import { escapeHtml } from '../utils/escapeHtml.js';
 
 const DAY_LABELS = {
   lunes: 'Lun', martes: 'Mar', 'miércoles': 'Mié',
@@ -19,7 +20,7 @@ export function createConflictPanel(conflicts = [], expanded = false) {
   const count = conflicts.length;
   const rows = conflicts.map((c, i) => {
     const typeLabel = c.type === 'teacher' ? '👤 Maestro' : '🏫 Salón';
-    const day = DAY_LABELS[c.day] ?? c.day;
+    const day = escapeHtml(DAY_LABELS[c.day] ?? c.day);
     return `
       <div class="cp-row"
            data-conflict-ids="${c.ids.join(',')}"
@@ -31,8 +32,8 @@ export function createConflictPanel(conflicts = [], expanded = false) {
              cursor:pointer;
              transition:background 0.1s;
            ">
-        <span style="background:#fecaca;color:#991b1b;border-radius:4px;padding:1px 5px;font-size:0.6rem;font-weight:700;flex-shrink:0;margin-top:1px;">${typeLabel}</span>
-        <span style="font-size:0.72rem;color:#7f1d1d;line-height:1.4;">${day} ${c.hora_inicio} — ${c.description}</span>
+        <span style="background:#fecaca;color:#991b1b;border-radius:4px;padding:1px 5px;font-size:0.6rem;font-weight:700;flex-shrink:0;margin-top:1px;">${escapeHtml(c.type)}</span>
+        <span style="font-size:0.72rem;color:#7f1d1d;line-height:1.4;">${day} ${c.hora_inicio} — ${escapeHtml(c.description)}</span>
       </div>
     `;
   }).join('');

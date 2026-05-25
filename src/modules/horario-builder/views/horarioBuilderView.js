@@ -7,38 +7,12 @@ import { createViewToggle, VIEWS } from '../components/ViewToggle.js';
 import { createConflictPanel, attachConflictPanelListeners } from '../components/ConflictPanel.js';
 import { PERIODOS } from '../models/scheduleConstraints.model.js';
 import { renderPublishWizard } from '../components/PublishWizard.js';
-import { getRunFeedback, addFeedback, updateScheduleRunEstado } from '../api/scheduleFeedbackApi.js';
-import { supabase } from '../../../lib/supabaseClient.js';
+import { getRunFeedback, addFeedback, updateScheduleRunEstado, getCurrentUserIsAdmin } from '../api/scheduleFeedbackApi.js';
 
 // ─── STATE ──────────────────────────────────────────────────────
 
-let state = {
-  assignments: [],
-  conflicts: [],
-  activeView: 'grid',
-  activePeriodo: PERIODOS[0].id,
-  draggable: false,
-  conflictPanelExpanded: false,
-  scheduleRuns: [],
-  loading: false,
-  error: null,
-  undoStack: [],
-  redoStack: [],
-  estado: 'borrador',
-  runId: null,
-  isAdmin: false,
-  feedback: [],
-  publishWizardOpen: false
-};
-
-let _container = null;
-let _ddInstance = null;
-
-// ─── PUBLIC API ─────────────────────────────────────────────────
-
-export function init(container) {
-  _container = container;
-  state = {
+function initialState() {
+  return {
     assignments: [],
     conflicts: [],
     activeView: 'grid',
@@ -56,6 +30,18 @@ export function init(container) {
     feedback: [],
     publishWizardOpen: false
   };
+}
+
+let state = initialState();
+
+let _container = null;
+let _ddInstance = null;
+
+// ─── PUBLIC API ─────────────────────────────────────────────────
+
+export function init(container) {
+  _container = container;
+  state = initialState();
 
   renderShell();
   wireListeners();
@@ -66,19 +52,9 @@ export function init(container) {
     .catch(err => console.warn('[horarioBuilderView] getScheduleRuns failed:', err));
 
   // Non-blocking admin detection
-  (async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const { data } = await supabase
-          .from('maestros')
-          .select('es_admin')
-          .eq('usuario_id', user.id)
-          .single();
-        state.isAdmin = data?.es_admin === true;
-      }
-    } catch (_) { /* non-critical */ }
-  })();
+  getCurrentUserIsAdmin()
+    .then(isAdmin => { state.isAdmin = isAdmin; })
+    .catch(() => { /* non-critical */ });
 }
 
 // ─── RENDER HELPERS ─────────────────────────────────────────────
@@ -204,8 +180,8 @@ function renderPublishPanel() {
     },
     async onFeedbackAdd({ comentario, tipo }) {
       try {
-        await addFeedback({ runId: state.runId, comentario, tipo });
-        state.feedback = await getRunFeedback(state.runId);
+        const newItem = await addFeedback({ runId: state.runId, comentario, tipo });
+        state.feedback = [...state.feedback, newItem];
         renderPublishPanel();
       } catch (err) {
         console.error('[horario-builder] feedback add failed:', err);

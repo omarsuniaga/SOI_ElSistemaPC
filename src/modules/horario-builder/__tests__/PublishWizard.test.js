@@ -139,6 +139,21 @@ describe('PublishWizard', () => {
     expect(onFeedbackAdd).not.toHaveBeenCalled();
   });
 
+  // Test XSS: malicious feedback is escaped, not executed
+  it('does not render script tags from malicious feedback as HTML', () => {
+    const container = document.createElement('div');
+    renderPublishWizard(container, {
+      runId: 'r1',
+      estadoActual: 'revision',
+      isAdmin: false,
+      feedback: [{ tipo: 'observacion', comentario: '<script>window.__xss=1</script>' }],
+      onEstadoChange: vi.fn(),
+      onFeedbackAdd: vi.fn()
+    });
+    expect(window.__xss).toBeUndefined();
+    expect(container.querySelector('.pw-feedback-list').innerHTML).not.toContain('<script>');
+  });
+
   // Test 7: Feedback list renders all passed feedback items
   it('renders all feedback items in the list', () => {
     const feedback = [

@@ -124,3 +124,47 @@ export async function eliminarObjetivo(id) {
   const { error } = await supabase.from('curriculo_objetivos').delete().eq('id', id)
   if (error) throw error
 }
+
+// ── Adopt AI Proposal ────────────────────────────────────────────────────────
+
+/**
+ * Creates a complete curriculum from an AI proposal in a single transaction.
+ * Calls crearCurriculo → crearPilar (per pilar) → crearObjetivo (per objetivo).
+ * Throws on any step failure — no rollback (partial curriculo can be deleted via editor).
+ *
+ * @param {object} opts
+ * @param {string} opts.instrumento
+ * @param {string} opts.nivel
+ * @param {string} opts.descripcion - AI-generated summary used as curriculo description
+ * @param {Array}  opts.pilares - [{ nombre, tipo, objetivos: [{ descripcion }] }]
+ * @returns {Promise<{ id: string }>} - the created curriculo
+ */
+export async function adoptarPropuesta({ instrumento, nivel, descripcion, pilares }) {
+  if (!instrumento || instrumento.trim() === '') {
+    throw new Error('El instrumento es obligatorio para crear el plan.')
+  }
+  if (!pilares || pilares.length === 0) {
+    throw new Error('La propuesta debe tener al menos un pilar.')
+  }
+
+  // Step 1: create curriculo
+  const curriculo = await crearCurriculo({
+    instrumento: instrumento.trim(),
+    nivel: nivel?.trim() || '',
+    descripcion: descripcion?.trim() || 'Plan generado por IA',
+  })
+
+  // Step 2: create pilares and their objetivos in order
+  for (let i = 0; i < pilares.length; i++) {
+    const pilarData = pilares[i]
+    const pilar = await crearPilar(curriculo.id, pilarData.nombre || `Pilar ${i + 1}`, i)
+
+    const objetivos = pilarData.objetivos || []
+    for (let j = 0; j < objetivos.length; j++) {
+      await crearObjetivo(pilar.id, objetivos[j].descripcion || `Objetivo ${j + 1}`, j)
+    }
+  }
+
+  return curriculo
+}
+

@@ -43,6 +43,7 @@ import { fetchInsights } from '../services/progressInsightService.js'
 import { proposeCurriculum } from '../services/groqService.js'
 import { createCurriculumProposalPanel } from '../components/CurriculumProposalPanel.js'
 import { adoptarPropuesta } from '../../modules/planificacion/api/curriculoApi.js'
+import { fetchNotificaciones } from '../services/notificationService.js'
 /**
  * Vista Asistencia Optimizada (F3+): toma de asistencia con micro-interacciones.
  *
@@ -1826,6 +1827,7 @@ async function _autoSave(immediate = false, skipMutex = false) {
         navInvalidateView('hoy');
         navInvalidateView('calendario');
         navInvalidateView('metricas');
+        fetchNotificaciones().catch(e => console.warn('[asistenciaView] Error al actualizar notificaciones:', e));
       }
 
       // 3. Procesar cierre de sesión y recálculo de progreso

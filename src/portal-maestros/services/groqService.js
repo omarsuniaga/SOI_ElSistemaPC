@@ -195,6 +195,40 @@ CAMPO DSL:
 Si el texto no contiene información de progreso evaluable → devolvé progreso: [] y resumen: "Registro general de clase sin evaluaciones individuales detectadas"
 `
 
+const PROPOSE_CURRICULUM_PROMPT = `
+Eres un pedagogo musical especializado en diseño curricular.
+
+Analizas registros reales de clase de un período determinado y propones
+un plan curricular estructurado en pilares y objetivos.
+
+FORMATO DE RESPUESTA (JSON válido, sin texto adicional):
+{
+  "pilares": [
+    {
+      "nombre": "Nombre del pilar",
+      "tipo": "tecnica|repertorio|teoria|interpretacion",
+      "objetivos": [
+        {
+          "descripcion": "Nombre conciso del objetivo (máximo 60 caracteres)",
+          "prioridad": "alta|media|consolidacion"
+        }
+      ]
+    }
+  ],
+  "resumen": "Una frase que describe el foco pedagógico detectado (máximo 120 caracteres)"
+}
+
+REGLAS DE CONSTRUCCIÓN:
+- Máximo 4 pilares — usa solo los tipos que aparecen en los datos
+- De 2 a 6 objetivos por pilar
+- Los registros con estado LOGRADO indican consolidación — inclúyelos con prioridad "consolidacion"
+- Los registros EN_PROGRESO son el foco principal — asígnales prioridad "alta"
+- Los registros INICIADO son objetivos emergentes — inclúyelos solo si frecuencia >= 2, prioridad "media"
+- Nombres de objetivos: concisos, pedagógicamente precisos, máximo 60 caracteres
+- No inventes contenidos que no estén presentes en los registros
+- Si no hay suficientes datos para un pilar, omítelo
+`
+
 // ---------------------------------------------------------------------------
 // Public API (same signatures as before — drop-in replacement)
 // ---------------------------------------------------------------------------
@@ -303,6 +337,58 @@ ${recientesStr || 'sin sesiones previas registradas'}
   } catch (err) {
     console.error('[GROQ] Error en analyzeObservation:', err, '| raw:', typeof raw !== 'undefined' ? raw : '(no response)')
     throw new Error('No se pudo analizar la observación. Verificá la conexión con el servicio IA.')
+  }
+}
+
+/**
+ * Proposes a structured curriculum plan from aggregated progress insights.
+ *
+ * @param {object} insights - Result of progressInsightService.fetchInsights()
+ * @param {number} insights.totalSesiones
+ * @param {string} insights.fechaDesde
+ * @param {Array}  insights.registros
+ * @param {object} context
+ * @param {string} context.instrumento
+ * @param {string} context.nivel
+ * @param {string} context.nombreClase
+ * @returns {Promise<{ pilares: Array, resumen: string }>}
+ */
+export async function proposeCurriculum(insights, context = {}) {
+  const contextBlock = `
+CONTEXTO:
+- Clase: ${context.nombreClase || 'no especificado'}
+- Instrumento: ${context.instrumento || 'no especificado'}
+- Nivel estimado: ${context.nivel || 'no especificado'}
+- Total sesiones analizadas: ${insights.totalSesiones}
+- Período desde: ${insights.fechaDesde}
+
+REGISTROS (ordenados por frecuencia de aparición en sesiones):
+${JSON.stringify(insights.registros, null, 2)}
+`
+
+  const systemPrompt = PROPOSE_CURRICULUM_PROMPT + '\n\n' + contextBlock
+
+  try {
+    const raw = await proxyChat(
+      [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: 'Genera la propuesta curricular basada en estos registros.' },
+      ],
+      0.2
+    )
+
+    // Strip markdown code blocks — Groq sometimes wraps response in ```json
+    const cleaned = raw.replace(/^\s*```(?:json)?\s*/i, '').replace(/\s*```\s*$/i, '').trim()
+    console.debug('[GROQ] proposeCurriculum cleaned:', cleaned)
+    const parsed = JSON.parse(cleaned)
+
+    return {
+      pilares: Array.isArray(parsed.pilares) ? parsed.pilares : [],
+      resumen: parsed.resumen || '',
+    }
+  } catch (err) {
+    console.error('[GROQ] Error en proposeCurriculum:', err, '| raw:', typeof raw !== 'undefined' ? raw : '(no response)')
+    throw new Error('No se pudo generar la propuesta curricular. Verifica la conexión con el servicio de IA.')
   }
 }
 

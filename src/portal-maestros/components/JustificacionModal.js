@@ -9,7 +9,7 @@
  */
 import { enableTrap } from '../utils/focusTrap.js';
 
-export function createJustificacionModal(parentContainer, { onSave, onCancel }) {
+export function createJustificacionModal(parentContainer, { onSave, onCancel, onDelete }) {
   let modalEl = document.getElementById('pm-justif-modal');
 
   if (!modalEl) {
@@ -72,6 +72,13 @@ export function createJustificacionModal(parentContainer, { onSave, onCancel }) 
         </div>
         
         <div class="pm-justif-footer">
+          <button class="pm-justif-delete" id="pm-justif-delete" style="display:none;" title="Eliminar justificación">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+              <path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/>
+            </svg>
+            Eliminar
+          </button>
           <button class="pm-justif-cancel" id="pm-justif-cancel">Cancelar</button>
           <button class="pm-justif-save" id="pm-justif-save">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -292,6 +299,25 @@ export function createJustificacionModal(parentContainer, { onSave, onCancel }) 
           align-items: center;
           justify-content: center;
         }
+        .pm-justif-delete {
+          margin-right: auto;
+          background: transparent;
+          border: 1px solid var(--pm-danger);
+          border-radius: 8px;
+          padding: 0.5rem 0.9rem;
+          font-size: 0.825rem;
+          font-weight: 500;
+          color: var(--pm-danger);
+          cursor: pointer;
+          transition: all 0.15s ease;
+          display: flex;
+          align-items: center;
+          gap: 0.4rem;
+        }
+        .pm-justif-delete:hover {
+          background: var(--pm-danger);
+          color: white;
+        }
         .pm-justif-footer {
           display: flex;
           align-items: center;
@@ -364,6 +390,7 @@ export function createJustificacionModal(parentContainer, { onSave, onCancel }) 
   const filePreview = modalEl.querySelector('.pm-justif-file-preview');
   const previewImg = modalEl.querySelector('#pm-justif-preview-img');
   const removeBtn = modalEl.querySelector('#pm-justif-remove-file');
+  const deleteBtn = modalEl.querySelector('#pm-justif-delete');
 
   /**
    * Abre el modal para crear o editar una justificación
@@ -378,15 +405,17 @@ export function createJustificacionModal(parentContainer, { onSave, onCancel }) 
     _isEditing = !!justificacionExistente;
     _prevEstado = prevEstado;  // null = crear, 'J' = editar
 
-    // Actualizar título según modo
+    // Actualizar título y botón eliminar según modo
     if (_isEditing) {
       titleEl.textContent = 'Editar Justificación';
       subtitleEl.textContent = 'Modifica el motivo de la inasistencia';
       btnTextEl.textContent = 'Actualizar';
+      deleteBtn.style.display = 'flex';
     } else {
       titleEl.textContent = 'Justificar Inasistencia';
       subtitleEl.textContent = 'Registra el motivo de la ausencia';
       btnTextEl.textContent = 'Guardar Justificación';
+      deleteBtn.style.display = 'none';
     }
 
     // Pre-llenar datos
@@ -435,6 +464,13 @@ export function createJustificacionModal(parentContainer, { onSave, onCancel }) 
   // Eventos
   modalEl.querySelector('#pm-justif-close').onclick = () => close(true);
   modalEl.querySelector('#pm-justif-cancel').onclick = () => close(true);
+
+  deleteBtn.onclick = () => {
+    if (!_currentAlumno) return;
+    if (!confirm(`¿Eliminar la justificación de ${_currentAlumno.nombre_completo}?`)) return;
+    if (onDelete) onDelete({ alumnoId: _currentAlumno.id, justificacionId: _currentJustificacion?.id, existingUrl: _currentJustificacion?.evidencia_url || _currentJustificacion?.evidencia_base64 });
+    close(false); // no rollback: la vista maneja el estado
+  };
   
   // Click en backdrop cierra (se considera cancelar)
   modalEl.querySelector('.pm-justif-backdrop').onclick = () => close(true);

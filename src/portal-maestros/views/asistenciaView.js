@@ -219,55 +219,11 @@ export async function renderAsistenciaView(containerOrId, { claseId, fecha } = {
       }
     }
 
-    // === Crear modal de justificación (con acceso al closure) ===
-    const _justifModal = createJustificacionModal(document.body, {
-      onSave: async ({ alumnoId, motivo, evidenciaFile, evidenciaPreview, justificacionId, existingUrl, isEdit }) => {
-        try {
-          if (isEdit && justificacionId) {
-            // Update: reemplazar evidencia solo si hay archivo nuevo
-            let urlToSave = existingUrl;
-            if (evidenciaFile) {
-              if (existingUrl) {
-                const match = existingUrl.match(/\/storage\/v1\/object\/public\/[^/]+\/(.+)/)
-                if (match) await supabase.storage.from('documentos').remove([match[1]]).catch(() => {})
-              }
-              const { data: uploadData } = await supabase.storage.from('documentos').upload(
-                `justificaciones/${Date.now()}_${Math.random().toString(36).slice(2)}.${evidenciaFile.name.split('.').pop()}`,
-                evidenciaFile
-              ).catch(() => ({ data: null }))
-              if (uploadData) {
-                const { data: urlData } = supabase.storage.from('documentos').getPublicUrl(uploadData.path)
-                urlToSave = urlData.publicUrl
-              }
-            }
-            const { error } = await supabase.from('justificaciones').update({ motivo, evidencia_url: urlToSave }).eq('id', justificacionId).select().single()
-            if (error) throw error
-          } else {
-            const result = await guardarJustificacion(
-              { sesionId, alumnoId, claseId, fecha: fechaHoy, motivo, creadoPor: maestro.id },
-              evidenciaFile
-            )
-            if (result.error) throw result.error
-          }
-          _justifModal.close()  // Cerrar modal tras guardar exitoso
-        } catch (err) {
-          console.error('[justificacion] Error guardando:', err)
-        }
-      },
-      onCancel: (alumnoId, prevEstado) => {
-        // Rollback: restaurar estado anterior del alumno
-        estado[alumnoId] = prevEstado
-        renderLista(alumnoId)
-        _updateProgress()
-      }
-    });
-
     // === Render ===
     _renderVista(container, {
       clase, horario, alumnos, estado, justificaciones,
       maestro, fechaHoy, claseId, sesionId, hasConflict, serverDSL, snapshots, salonNombre, rutaId,
       sesionExistenteData,
-      _justifModal
     })
 
   } catch (err) {
@@ -277,7 +233,7 @@ export async function renderAsistenciaView(containerOrId, { claseId, fecha } = {
 }
 
 function _renderVista(container, ctx) {
-  const { clase, horario, alumnos, estado, justificaciones, maestro, fechaHoy, claseId, snapshots, serverDSL, hasConflict, salonNombre, rutaId, sesionExistenteData, _justifModal } = ctx
+  const { clase, horario, alumnos, estado, justificaciones, maestro, fechaHoy, claseId, snapshots, serverDSL, hasConflict, salonNombre, rutaId, sesionExistenteData } = ctx
   let sesionId = ctx.sesionId
 
   // Cleanup registry — all destroyable sub-components register here
@@ -1051,6 +1007,69 @@ function _renderVista(container, ctx) {
     }
   }
 
+  // === Modal de Justificación ===
+  // Creado aquí para capturar el sesionId MUTABLE (let sesionId) que _autoSave actualiza.
+  // Si se creara en renderAsistenciaView, capturaría el const sesionId inicial (posiblemente null).
+  const _justifModal = createJustificacionModal(document.body, {
+    onSave: async ({ alumnoId, motivo, evidenciaFile, justificacionId, existingUrl, isEdit }) => {
+      const saveBtn = document.getElementById('pm-justif-save')
+      if (saveBtn) { saveBtn.disabled = true }
+      try {
+        let savedRecord = null
+        if (isEdit && justificacionId) {
+          // Update: reemplazar evidencia solo si hay archivo nuevo
+          let urlToSave = existingUrl
+          if (evidenciaFile) {
+            if (existingUrl) {
+              const match = existingUrl.match(/\/storage\/v1\/object\/public\/[^/]+\/(.+)/)
+              if (match) await supabase.storage.from('documentos').remove([match[1]]).catch(() => {})
+            }
+            const { data: uploadData } = await supabase.storage.from('documentos').upload(
+              `justificaciones/${Date.now()}_${Math.random().toString(36).slice(2)}.${evidenciaFile.name.split('.').pop()}`,
+              evidenciaFile
+            ).catch(() => ({ data: null }))
+            if (uploadData) {
+              const { data: urlData } = supabase.storage.from('documentos').getPublicUrl(uploadData.path)
+              urlToSave = urlData.publicUrl
+            }
+          }
+          const { data, error } = await supabase
+            .from('justificaciones')
+            .update({ motivo, evidencia_url: urlToSave })
+            .eq('id', justificacionId)
+            .select()
+            .single()
+          if (error) throw error
+          savedRecord = data
+        } else {
+          // Asegurar que haya sesión antes de guardar
+          if (!sesionId) await _autoSave(true, false)
+          const result = await guardarJustificacion(
+            { sesionId, alumnoId, claseId, fecha: fechaHoy, motivo, creadoPor: maestro.id },
+            evidenciaFile
+          )
+          if (result.error) throw result.error
+          savedRecord = result.data
+        }
+        // Actualizar en memoria para que la próxima apertura del modal pre-llene el formulario
+        if (savedRecord) justificaciones[alumnoId] = savedRecord
+        _justifModal.close()
+      } catch (err) {
+        console.error('[justificacion] Error guardando:', err)
+        alert('Error al guardar la justificación: ' + err.message)
+      } finally {
+        if (saveBtn) { saveBtn.disabled = false }
+      }
+    },
+    onCancel: (alumnoId, prevEstado) => {
+      // Rollback: restaurar estado anterior del alumno
+      estado[alumnoId] = prevEstado
+      renderLista(alumnoId)
+      _updateProgress()
+    }
+  })
+  _cleanups.push(() => { try { _justifModal.close() } catch (_) {} })
+
   // === Auto-Draft ===
   let autoDraft = null
   const draftIndicator = container.querySelector('#pm-draft-indicator')
@@ -1403,6 +1422,7 @@ function _renderVista(container, ctx) {
           }
         }
         estado[id] = null;
+        delete justificaciones[id]; // limpiar cache en memoria
         renderLista(id);
         _updateProgress();
         await _autoSave(true);
@@ -1414,10 +1434,12 @@ function _renderVista(container, ctx) {
         _updateProgress();
         await _autoSave(true);
 
-        // Abrir modal: pre-cargar justificación existente si hay
-        let justifExistente = null;
-        if (sesionId) {
+        // Abrir modal: pre-cargar justificación existente si hay.
+        // Prioridad: en memoria (ya guardada esta sesión) → DB → vacío
+        let justifExistente = justificaciones[id] || null;
+        if (!justifExistente && sesionId) {
           justifExistente = await obtenerJustificacion(sesionId, id);
+          if (justifExistente) justificaciones[id] = justifExistente; // cachear
         }
         _justifModal.open(alumno, justifExistente, null); // null = crear (no rollback de J)
         announce(`Justificación marcada para ${alumno.nombre_completo}.`)

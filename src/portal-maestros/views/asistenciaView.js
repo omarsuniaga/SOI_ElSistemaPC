@@ -36,6 +36,9 @@ import { guardarJustificacion, obtenerJustificacion, eliminarJustificacion } fro
 import { promocionarObservacionesAlumnos } from '../services/observationPromotionService.js'
 import { registrarAsistenciaBulk } from '../../modules/asistencias/api/asistenciasApi.js'
 import { createAsyncMutex } from '../../shared/utils/asyncMutex.js'
+import { analyzeObservation } from '../services/groqService.js'
+import { saveProgressFromAI, saveProgressFromDSL } from '../services/progressAggregatorService.js'
+import { createProgressPreviewPanel } from '../components/ProgressPreviewPanel.js'
 /**
  * Vista Asistencia Optimizada (F3+): toma de asistencia con micro-interacciones.
  *
@@ -638,6 +641,32 @@ function _renderVista(container, ctx) {
     }
   })
 
+  // === Progress Preview Panel ===
+  const progressPanel = createProgressPreviewPanel(editorContainer.parentNode, {
+    onConfirm: async (records) => {
+      try {
+        const alumnosConId = alumnos.map(a => ({
+          id: a.id,
+          nombre: a.nombre_completo || a.nombre || '',
+          nombreCorto: (a.nombre_completo || a.nombre || '').split(' ')[0],
+        }))
+        const { saved, errors } = await saveProgressFromAI({
+          sesionId,
+          claseId,
+          maestroId: maestro.id,
+          fechaHoy,
+          progressRecords: records,
+          alumnos: alumnosConId,
+        })
+        if (errors.length) console.warn('[Progress] Errores parciales:', errors)
+        _showProgressFeedback(saved, editorContainer)
+      } catch (err) {
+        AppToast.error('Error al guardar progreso: ' + err.message)
+      }
+    },
+    onCancel: () => {},
+  })
+
   const toolbar = createDslToolbar(toolbarContainer, {
     onInsert: (text, cursorOffset, triggerAC) => editor.insertText(text, cursorOffset, triggerAC),
     getEditorContent: () => editor.getValue(),
@@ -677,7 +706,41 @@ function _renderVista(container, ctx) {
       } finally {
         if (structureBtn) structureBtn.disabled = false
       }
-    }
+    },
+    onAnalyzeClick: async (text) => {
+      try {
+        // Build class context — present students exclude absent (estado !== 'A')
+        const alumnosPresentes = alumnos.filter(a => estado[a.id] && estado[a.id] !== 'A')
+        const alumnosMapped = alumnos.map(a => ({
+          id: a.id,
+          nombre: a.nombre_completo || a.nombre || '',
+          nombreCorto: (a.nombre_completo || a.nombre || '').split(' ')[0],
+        }))
+        const presentesMapped = alumnosPresentes.map(a => ({
+          id: a.id,
+          nombre: a.nombre_completo || a.nombre || '',
+          nombreCorto: (a.nombre_completo || a.nombre || '').split(' ')[0],
+        }))
+
+        const contextoGroq = {
+          alumnos: alumnosMapped,
+          presentes: presentesMapped,
+          tipoClase: _inferirTipoClase(clase),
+          instrumento: clase.instrumento || '',
+          sesionesRecientes: (snapshots || [])
+            .slice(-2)
+            .map(s => s.contenido || '')
+            .filter(Boolean),
+          indicadorActivo: routeTreeBar?.getActiveIndicador()?.nombre || '',
+        }
+
+        const result = await analyzeObservation(text, contextoGroq)
+        progressPanel.open({ progreso: result.progreso, resumen: result.resumen })
+
+      } catch (err) {
+        AppToast.error('Error al analizar con IA: ' + err.message)
+      }
+    },
   });
 
   // === Route Selector + Planificacion Card ===
@@ -1011,6 +1074,22 @@ function _renderVista(container, ctx) {
   // Creado aquí para capturar el sesionId MUTABLE (let sesionId) que _autoSave actualiza.
   // Si se creara en renderAsistenciaView, capturaría el const sesionId inicial (posiblemente null).
   const _justifModal = createJustificacionModal(document.body, {
+    onDelete: async ({ alumnoId, justificacionId, existingUrl }) => {
+      // Eliminar archivo de Storage si existe
+      if (existingUrl) {
+        const match = existingUrl.match(/\/storage\/v1\/object\/public\/[^/]+\/(.+)/)
+        if (match) supabase.storage.from('documentos').remove([match[1]]).catch(() => {})
+      }
+      // Eliminar registro en DB
+      if (justificacionId) eliminarJustificacion(justificacionId).catch(console.warn)
+      // Limpiar estado local y deseleccionar alumno
+      estado[alumnoId] = null;
+      delete justificaciones[alumnoId];
+      renderLista(alumnoId);
+      _updateProgress();
+      await _autoSave(true);
+      announce(`Justificación eliminada.`)
+    },
     onSave: async ({ alumnoId, motivo, evidenciaFile, justificacionId, existingUrl, isEdit }) => {
       const saveBtn = document.getElementById('pm-justif-save')
       if (saveBtn) { saveBtn.disabled = true }
@@ -1220,6 +1299,27 @@ function _renderVista(container, ctx) {
         const parsed = { indicador_id: indicadorActivo.id, evaluaciones: resultado.evaluaciones }
         await saveObservation(sesionId, maestro.id, raw, parsed, resultado.dslGenerado || null)
 
+        // Auto-save !STATE tokens from DSL if present — fire-and-forget, does not block the save flow
+        const _parsedForProgress = parseDSL(raw)
+        if (_parsedForProgress.estados && _parsedForProgress.estados.length > 0) {
+          const _alumnosConId = alumnos.map(a => ({
+            id: a.id,
+            nombre: a.nombre_completo || a.nombre || '',
+            nombreCorto: (a.nombre_completo || a.nombre || '').split(' ')[0],
+          }))
+          saveProgressFromDSL({
+            sesionId,
+            claseId,
+            maestroId: maestro.id,
+            fechaHoy,
+            dslText: raw,
+            alumnos: _alumnosConId,
+          }).then(({ saved, errors }) => {
+            if (errors.length) console.warn('[Progress DSL] Errores:', errors)
+            if (saved.length) _showProgressFeedback(saved, editorContainer)
+          }).catch(err => console.warn('[Progress DSL] Error:', err.message))
+        }
+
         // Fase C: Pipeline de Promoción — Promover notas individuales a la ficha histórica del alumno
         const promo = await promocionarObservacionesAlumnos(
           sesionId, 
@@ -1408,25 +1508,17 @@ function _renderVista(container, ctx) {
       const alumno = alumnos.find(a => a.id === id);
       if (!alumno) return;
 
-      // Si ya está J, permitir quitarlo; si no, abrir modal para justificar
+      // Si ya está J → abrir modal en modo edición (ver/modificar motivo guardado)
+      // Si no está J → marcar J y abrir modal para registrar motivo
       if (estado[id] === 'J') {
-        // Quitar J: eliminar justificación + archivo de Storage
-        if (sesionId) {
-          const j = await obtenerJustificacion(sesionId, id)
-          if (j?.id) {
-            if (j.evidencia_url) {
-              const match = j.evidencia_url.match(/\/storage\/v1\/object\/public\/[^/]+\/(.+)/)
-              if (match) supabase.storage.from('documentos').remove([match[1]]).catch(() => {})
-            }
-            eliminarJustificacion(j.id).catch(console.warn)
-          }
+        // Modo edición: pre-cargar datos guardados
+        let justifExistente = justificaciones[id] || null;
+        if (!justifExistente && sesionId) {
+          justifExistente = await obtenerJustificacion(sesionId, id);
+          if (justifExistente) justificaciones[id] = justifExistente;
         }
-        estado[id] = null;
-        delete justificaciones[id]; // limpiar cache en memoria
-        renderLista(id);
-        _updateProgress();
-        await _autoSave(true);
-        announce(`Justificación eliminada para ${alumno.nombre_completo}.`)
+        _justifModal.open(alumno, justifExistente, null);
+        announce(`Editando justificación de ${alumno.nombre_completo}.`)
       } else {
         // Marcar J ANTES de abrir modal para que el botón quede visible
         estado[id] = 'J';
@@ -1434,14 +1526,8 @@ function _renderVista(container, ctx) {
         _updateProgress();
         await _autoSave(true);
 
-        // Abrir modal: pre-cargar justificación existente si hay.
-        // Prioridad: en memoria (ya guardada esta sesión) → DB → vacío
-        let justifExistente = justificaciones[id] || null;
-        if (!justifExistente && sesionId) {
-          justifExistente = await obtenerJustificacion(sesionId, id);
-          if (justifExistente) justificaciones[id] = justifExistente; // cachear
-        }
-        _justifModal.open(alumno, justifExistente, null); // null = crear (no rollback de J)
+        // Modo creación: modal vacío (sin datos previos)
+        _justifModal.open(alumno, null, null);
         announce(`Justificación marcada para ${alumno.nombre_completo}.`)
       }
       return;
@@ -1716,6 +1802,9 @@ async function _autoSave(immediate = false, skipMutex = false) {
             <button class="pm-btn pm-btn-secondary" id="btn-editar-asistencia">
               <i class="bi bi-pencil"></i> Editar Asistencia
             </button>
+            <button class="pm-btn pm-btn-primary" id="btn-descargar-pdf">
+              <i class="bi bi-file-earmark-pdf"></i> Descargar PDF de HOY
+            </button>
             <button class="pm-btn pm-btn-outline" id="btn-compartir-correo">
               <i class="bi bi-envelope"></i> Compartir por Correo
             </button>
@@ -1733,60 +1822,7 @@ async function _autoSave(immediate = false, skipMutex = false) {
           </div>
         </div>
       `;
-      container.querySelector('.pm-asist-root').appendChild(overlay);
-
-      // Estilos del overlay
-      if (!document.getElementById('pm-saved-styles')) {
-        const savedStyle = document.createElement('style');
-        savedStyle.id = 'pm-saved-styles';
-        savedStyle.textContent = `
-          .pm-saved-overlay {
-            position: absolute;
-            inset: 0;
-            background: var(--pm-bg, #0f1923);
-            z-index: 50;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            animation: pmSavedFadeIn 0.35s ease;
-          }
-          .pm-saved-options { text-align: center; padding: 2rem 1.5rem; width: 100%; max-width: 380px; }
-          .pm-saved-header { margin-bottom: 2rem; }
-          .pm-saved-check-anim i {
-            font-size: 3rem;
-            color: var(--pm-success, #22c55e);
-            animation: pmSavedPop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
-          }
-          .pm-saved-header h3 { margin: 1rem 0 0.5rem; font-size: 1.5rem; font-weight: 700; }
-          .pm-saved-header p { color: var(--pm-text-muted); margin: 0; font-size: 0.95rem; }
-          .pm-saved-actions { display: flex; flex-direction: column; gap: 0.75rem; margin: 0 auto 2rem; }
-          .pm-saved-nav {
-            display: flex;
-            justify-content: center;
-            gap: 1.5rem;
-            padding-top: 0.5rem;
-            border-top: 1px solid var(--pm-border, rgba(255,255,255,0.08));
-          }
-          .pm-saved-nav-btn {
-            background: none;
-            border: none;
-            color: var(--pm-text-muted, #888);
-            font-size: 1.5rem;
-            cursor: pointer;
-            padding: 0.75rem;
-            border-radius: 50%;
-            transition: all 0.2s ease;
-          }
-          .pm-saved-nav-btn:hover {
-            color: var(--pm-primary, #007aff);
-            background: rgba(0, 122, 255, 0.08);
-            transform: scale(1.1);
-          }
-          @keyframes pmSavedFadeIn { from { opacity: 0; } to { opacity: 1; } }
-          @keyframes pmSavedPop { 0% { transform: scale(0); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
-        `;
-        document.head.appendChild(savedStyle);
-      }
+      document.body.appendChild(overlay);
 
       // Attach event listeners
       const editarBtn = overlay.querySelector('#btn-editar-asistencia');
@@ -1828,6 +1864,33 @@ async function _autoSave(immediate = false, skipMutex = false) {
         window.location.hash = '#/calendario';
       };
 
+      const pdfBtn = overlay.querySelector('#btn-descargar-pdf');
+      if (pdfBtn) pdfBtn.onclick = async () => {
+        pdfBtn.disabled = true;
+        pdfBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Generando…';
+        try {
+          const { generarPdfHoy } = await import('../services/attendancePdfService.js');
+          await generarPdfHoy({
+            clase,
+            horario,
+            alumnos,
+            estado,
+            justificaciones,
+            fecha: fechaHoy,
+            dslContent,
+            salonNombre,
+            snapshots,
+            maestro,
+          });
+        } catch (e) {
+          console.error('[PDF] Error generando PDF:', e);
+          alert('No se pudo generar el PDF: ' + e.message);
+        } finally {
+          pdfBtn.disabled = false;
+          pdfBtn.innerHTML = '<i class="bi bi-file-earmark-pdf"></i> Descargar PDF de HOY';
+        }
+      };
+
     } catch (err) {
       console.error('Error al guardar sesión:', err);
       btn.textContent = err.message || 'Error al guardar';
@@ -1837,6 +1900,32 @@ async function _autoSave(immediate = false, skipMutex = false) {
     }
       }) // end _saveMutex.run
   };
+
+  function _inferirTipoClase(clase) {
+    const nombre = (clase?.nombre || '').toLowerCase()
+    const instrumento = (clase?.instrumento || '').toLowerCase()
+    if (/orquesta|ensamble|ensemble|coro|ensayo/.test(nombre)) return 'ensayo_general'
+    if (/teor[ií]a|solfeo|lenguaje\s+musical/.test(nombre)) return 'teoria'
+    if (instrumento) return 'instrumento'
+    return 'instrumento'
+  }
+
+  function _showProgressFeedback(saved, editorContainer) {
+    if (!saved || saved.length === 0) return
+
+    // Remove any existing badge
+    editorContainer.parentNode.querySelectorAll('.pm-progress-feedback').forEach(el => el.remove())
+
+    const names = [...new Set(saved.slice(0, 3).map(s => s.contenido || 'progreso'))]
+    const label = names.join(' · ') + (saved.length > 3 ? ` y ${saved.length - 3} más` : '')
+
+    const badge = document.createElement('div')
+    badge.className = 'pm-progress-feedback'
+    badge.innerHTML = `<i class="bi bi-check-circle-fill"></i> <span>${saved.length} registro(s) guardados — ${label}</span>`
+    editorContainer.parentNode.insertBefore(badge, editorContainer.nextSibling)
+
+    setTimeout(() => badge.remove(), 4200)
+  }
 
   // === Helper functions (definidas aquí para evitar TDZ con let) ===
   function _resetFooter(container, originalBtn) {

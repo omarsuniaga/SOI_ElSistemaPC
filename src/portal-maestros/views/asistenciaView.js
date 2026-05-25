@@ -44,7 +44,7 @@ import { proposeCurriculum } from '../services/groqService.js'
 import { createCurriculumProposalPanel } from '../components/CurriculumProposalPanel.js'
 import { adoptarPropuesta } from '../../modules/planificacion/api/curriculoApi.js'
 import { fetchNotificaciones } from '../services/notificationService.js'
-import { generateDailyReport, generateMonthlyAttendance } from '../services/reportService.js'
+import { generateDailyReport, generateMonthlyAttendance, generateMonthlyPedagogical } from '../services/reportService.js'
 
 /**
  * Vista Asistencia Optimizada (F3+): toma de asistencia con micro-interacciones.
@@ -1929,6 +1929,9 @@ async function _autoSave(immediate = false, skipMutex = false) {
             <button class="pm-btn pm-btn-secondary" id="btn-resumen-mes-overlay">
               <i class="bi bi-bar-chart-line"></i> Resumen del mes (PDF)
             </button>
+            <button class="pm-btn pm-btn-secondary" id="btn-informe-ped-overlay">
+              <i class="bi bi-mortarboard"></i> Informe pedagógico (PDF)
+            </button>
             <button class="pm-btn pm-btn-outline" id="btn-compartir-correo">
               <i class="bi bi-envelope"></i> Compartir por Correo
             </button>
@@ -2005,6 +2008,16 @@ async function _autoSave(immediate = false, skipMutex = false) {
         await generateMonthlyAttendance(claseId, now.getFullYear(), now.getMonth() + 1);
         resumenMesBtn.disabled = false;
         resumenMesBtn.innerHTML = '<i class="bi bi-bar-chart-line"></i> Resumen del mes (PDF)';
+      };
+
+      const informePedBtn = overlay.querySelector('#btn-informe-ped-overlay');
+      if (informePedBtn) informePedBtn.onclick = async () => {
+        informePedBtn.disabled = true;
+        informePedBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Generando…';
+        const now = new Date();
+        await generateMonthlyPedagogical(claseId, now.getFullYear(), now.getMonth() + 1);
+        informePedBtn.disabled = false;
+        informePedBtn.innerHTML = '<i class="bi bi-mortarboard"></i> Informe pedagógico (PDF)';
       };
 
     } catch (err) {

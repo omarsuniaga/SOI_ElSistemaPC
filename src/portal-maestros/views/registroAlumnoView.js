@@ -229,42 +229,19 @@ function renderForm(container) {
     </div>
 
     <style>
+      /* Base — use CSS vars so dark mode works automatically */
+      .registro-alumno-view { background: var(--pm-bg); color: var(--pm-text); }
+      .registro-alumno-view .pm-settings { background: var(--pm-bg); }
+      .registro-alumno-view .pm-settings-section { background: var(--pm-surface); border-color: var(--pm-border); }
+      .registro-alumno-view .card-apple { background: var(--pm-surface); color: var(--pm-text); border-color: var(--pm-border); }
+      .registro-alumno-view .input-apple,
+      .registro-alumno-view select.input-apple { background: var(--pm-surface-2, var(--pm-surface)); color: var(--pm-text); border-color: var(--pm-border); }
+      .registro-alumno-view .input-apple::placeholder { color: var(--pm-text-muted); opacity: .9; }
+      .registro-alumno-view .apple-caption,
+      .registro-alumno-view .pm-settings-section__desc { color: var(--pm-text-muted, rgba(128,128,128,0.8)); }
       .input-apple[aria-invalid="true"] {
         border-color: var(--pm-danger, #ef4444);
         box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15);
-      }
-      .registro-alumno-view .card-apple {
-        background: var(--pm-surface);
-        color: var(--pm-text);
-        border-color: var(--pm-border);
-      }
-      .registro-alumno-view .pm-settings-section__title,
-      .registro-alumno-view .apple-display-md {
-        color: var(--pm-text);
-      }
-      .registro-alumno-view .input-apple,
-      .registro-alumno-view select.input-apple {
-        background: var(--pm-surface);
-        color: var(--pm-text);
-        border-color: var(--pm-border);
-      }
-      .registro-alumno-view .input-apple::placeholder {
-        color: var(--pm-text-muted);
-        opacity: .9;
-      }
-      [data-bs-theme="dark"] .registro-alumno-view .card-apple,
-      [data-portal-theme="dark"] .registro-alumno-view .card-apple {
-        background: rgba(28, 28, 30, .92);
-        border-color: rgba(148, 163, 184, .28);
-        box-shadow: 0 18px 45px rgba(0, 0, 0, .24);
-      }
-      [data-bs-theme="dark"] .registro-alumno-view .input-apple,
-      [data-bs-theme="dark"] .registro-alumno-view select.input-apple,
-      [data-portal-theme="dark"] .registro-alumno-view .input-apple,
-      [data-portal-theme="dark"] .registro-alumno-view select.input-apple {
-        background: rgba(15, 23, 42, .72);
-        color: var(--pm-text);
-        border-color: rgba(148, 163, 184, .35);
       }
       .pm-field-error {
         display: block;

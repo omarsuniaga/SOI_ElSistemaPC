@@ -154,17 +154,20 @@ export async function adoptarPropuesta({ instrumento, nivel, descripcion, pilare
     descripcion: descripcion?.trim() || 'Plan generado por IA',
   })
 
-  // Step 2: create pilares and their objetivos in order
+  // Step 2: create pilares and their objetivos in order; collect all objetivos
+  const allObjetivos = []
+
   for (let i = 0; i < pilares.length; i++) {
     const pilarData = pilares[i]
     const pilar = await crearPilar(curriculo.id, pilarData.nombre || `Pilar ${i + 1}`, i)
 
     const objetivos = pilarData.objetivos || []
     for (let j = 0; j < objetivos.length; j++) {
-      await crearObjetivo(pilar.id, objetivos[j].descripcion || `Objetivo ${j + 1}`, j)
+      const objetivo = await crearObjetivo(pilar.id, objetivos[j].descripcion || `Objetivo ${j + 1}`, j)
+      allObjetivos.push({ id: objetivo.id, descripcion: objetivo.descripcion })
     }
   }
 
-  return curriculo
+  return { curriculo, allObjetivos }
 }
 

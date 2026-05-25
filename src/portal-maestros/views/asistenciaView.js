@@ -1723,7 +1723,7 @@ async function _autoSave(immediate = false, skipMutex = false) {
     btnReporteD.innerHTML = '📄 Reporte'
     btnReporteD.title = 'Genera el Reporte Diario de Asistencia (PDF)'
     btnReporteD.style.flex = '1'
-    btnReporteD.style.display = (sesionId && sesionExistenteData && sesionExistenteData.borrador === false) ? '' : 'none'
+    btnReporteD.style.display = 'none'
     btnReporteD.addEventListener('click', async (e) => {
       e.preventDefault()
       if (!sesionId) return
@@ -1742,7 +1742,7 @@ async function _autoSave(immediate = false, skipMutex = false) {
     btnResumenM.innerHTML = '📊 Resumen'
     btnResumenM.title = 'Genera el Resumen Mensual de Asistencia (PDF)'
     btnResumenM.style.flex = '1'
-    btnResumenM.style.display = (sesionId && sesionExistenteData && sesionExistenteData.borrador === false) ? '' : 'none'
+    btnResumenM.style.display = 'none'
     const now = new Date()
     btnResumenM.addEventListener('click', async (e) => {
       e.preventDefault()

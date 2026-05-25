@@ -117,6 +117,23 @@ REGLAS DE INFERENCIA:
 - Escalas, posiciones, arco → tipo: tecnica
 - Ritmo, compás, armonía → tipo: teoria
 
+CONTEXTO DE TIPO DE CLASE (inferir desde tipoClase del contexto):
+- tipoClase: "instrumento" (ej: violín, piano, flauta) →
+    El progreso es ejecución del instrumento. tipo preferido: "tecnica" o "repertorio".
+    Los avances individuales reflejan desarrollo del intérprete.
+- tipoClase: "ensayo_general" (orquesta, ensamble, coro) →
+    El progreso es principalmente "repertorio" (obra colectiva).
+    Pero SI el maestro menciona un alumno específico → también registrar progreso individual tipo "interpretacion".
+    Inferir que el trabajo colectivo impacta el desarrollo individual de cada presente.
+- tipoClase: "teoria" → tipo preferido: "teoria"
+- tipoClase desconocido → inferir desde el instrumento/nombre de la clase
+
+RESOLUCIÓN DE "TODOS":
+- "todos" en el texto del maestro = SOLO los alumnos presentes en esta sesión.
+- La lista de presentes se pasa en el contexto como `presentes[]` (subset de `alumnos[]`).
+- Nunca expandir "todos" a alumnos ausentes.
+- Si `presentes` está vacío en el contexto → usar `alumnos[]` completo como fallback.
+
 NOMBRES DE ALUMNOS:
 - Resolvé nombres parciales usando la lista de alumnos del contexto
 - "Yereni" → resolvé a "Yereni Michel" si está en la lista
@@ -328,18 +345,42 @@ horario
 
 ### Construcción del contexto Groq:
 ```js
+// Presentes = alumnos cuyo estado en el objeto `estado` NO es null/undefined
+const alumnosPresentes = alumnos.filter(a => estado[a.id] && estado[a.id] !== 'A')
+
 const contextoGroq = {
   alumnos: alumnos.map(a => ({
     id: a.id,
     nombre: a.nombre,
     nombreCorto: a.nombre.split(' ')[0]
   })),
+  presentes: alumnosPresentes.map(a => ({
+    id: a.id,
+    nombre: a.nombre,
+    nombreCorto: a.nombre.split(' ')[0]
+  })),
+  // tipoClase se infiere desde clase.instrumento o clase.tipo si existe
+  // "Violín", "Piano", "Flauta" → "instrumento"
+  // "Orquesta", "Ensamble", "Coro", "Ensayo" → "ensayo_general"
+  // "Teoría", "Solfeo" → "teoria"
+  tipoClase: _inferirTipoClase(clase),
+  instrumento: clase.instrumento || '',
   repertorio: [],  // TODO Fase 2: cargar desde plan_objetivos si existe
   sesionesRecientes: (snapshots || [])
     .slice(-2)
     .map(s => s.contenido || '')
     .filter(Boolean),
   indicadorActivo: '',  // TODO Fase 2: del plan activo
+}
+
+// Helper (definir en asistenciaView.js):
+function _inferirTipoClase(clase) {
+  const nombre = (clase.nombre || '').toLowerCase()
+  const instrumento = (clase.instrumento || '').toLowerCase()
+  if (/orquesta|ensamble|ensemble|coro|ensayo/.test(nombre)) return 'ensayo_general'
+  if (/teor[ií]a|solfeo|lenguaje/.test(nombre)) return 'teoria'
+  if (instrumento) return 'instrumento'
+  return 'instrumento' // default
 }
 ```
 

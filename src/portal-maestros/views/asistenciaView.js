@@ -745,16 +745,23 @@ function _renderVista(container, ctx) {
       try {
         // Build class context — present students exclude absent (estado !== 'A')
         const alumnosPresentes = alumnos.filter(a => estado[a.id] && estado[a.id] !== 'A')
-        const alumnosMapped = alumnos.map(a => ({
-          id: a.id,
-          nombre: a.nombre_completo || a.nombre || '',
-          nombreCorto: (a.nombre_completo || a.nombre || '').split(' ')[0],
-        }))
-        const presentesMapped = alumnosPresentes.map(a => ({
-          id: a.id,
-          nombre: a.nombre_completo || a.nombre || '',
-          nombreCorto: (a.nombre_completo || a.nombre || '').split(' ')[0],
-        }))
+        // Build nombreCorto that is unique within the roster.
+        // Default: first name. If two students share the same first name → use "Nombre Apellido".
+        const _buildNombreCorto = (fullName, allNames) => {
+          const parts = fullName.trim().split(/\s+/)
+          const first = parts[0]
+          const hasDuplicate = allNames.filter(n => n.trim().split(/\s+/)[0] === first).length > 1
+          return hasDuplicate ? parts.slice(0, 2).join(' ') : first
+        }
+        const allNombresFull = alumnos.map(a => a.nombre_completo || a.nombre || '')
+        const alumnosMapped = alumnos.map(a => {
+          const nombre = a.nombre_completo || a.nombre || ''
+          return { id: a.id, nombre, nombreCorto: _buildNombreCorto(nombre, allNombresFull) }
+        })
+        const presentesMapped = alumnosPresentes.map(a => {
+          const nombre = a.nombre_completo || a.nombre || ''
+          return { id: a.id, nombre, nombreCorto: _buildNombreCorto(nombre, allNombresFull) }
+        })
 
         const contextoGroq = {
           alumnos: alumnosMapped,

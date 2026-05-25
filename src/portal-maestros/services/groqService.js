@@ -6,6 +6,7 @@
  */
 
 import { supabase } from '../../lib/supabaseClient.js'
+import { segmentObservation, inferTipo } from '../utils/observationParser.js'
 
 const GROQ_CONFIG = {
   model: 'llama-3.1-8b-instant',
@@ -49,9 +50,27 @@ async function proxyChat(messages, temperature = GROQ_CONFIG.temperature) {
     headers,
     body: JSON.stringify({ model: GROQ_CONFIG.model, messages, temperature }),
   })
-  const data = await res.json()
-  if (!res.ok || data.error) throw new Error(data.error?.message ?? `Groq proxy error ${res.status}`)
-  return data.choices[0].message.content.trim()
+
+  let data
+  try {
+    data = await res.json()
+  } catch (parseErr) {
+    throw new Error(`Groq proxy returned non-JSON (status ${res.status})`)
+  }
+
+  if (!res.ok || data.error) {
+    const msg = data.error?.message ?? data.error ?? `Groq proxy error ${res.status}`
+    console.error('[GROQ] proxyChat error response:', res.status, data)
+    throw new Error(msg)
+  }
+
+  const content = data.choices?.[0]?.message?.content
+  if (!content) {
+    console.error('[GROQ] proxyChat: empty or missing content in response', data)
+    throw new Error('Groq devolvió una respuesta vacía')
+  }
+
+  return content.trim()
 }
 
 /**
@@ -139,69 +158,25 @@ MAL: "#María [Escalas] (mejoró) {practicar} 4/5 >CÓDIGO"
 BIEN: "#María [Escalas] (mejoró notablemente en la ejecución económica) {Escala F mayor en 3 octavas} 5/5"
 `
 
-const ANALYZE_OBSERVATION_PROMPT = `
-Sos un asistente pedagógico musical especializado en análisis de registros de clase.
+// Minimal prompt — JS pre-parser already resolved: who, state, note, task.
+// Groq only needs to enrich each group with a clean content label and observation summary.
+const ENRICH_GROUPS_PROMPT = `Sos un asistente pedagógico musical.
+Recibís grupos de progreso ya detectados por código. Para cada grupo, completá SOLO dos campos:
+- "contenido": etiqueta concisa de qué se trabajó (máx 50 chars, español neutro)
+- "observacion": descripción pedagógica del nivel actual (máx 80 chars, español neutro, sin comillas dobles adentro)
 
-Recibís una observación libre de un maestro de música y un contexto de la clase.
-Tu tarea es analizar el texto y devolver ÚNICAMENTE un JSON válido con tres campos, sin texto extra.
+Respondé ÚNICAMENTE con un array JSON con tantos objetos como grupos recibís, en el mismo orden.
+Sin texto extra. Sin markdown. Sin explicaciones.
 
-FORMATO DE RESPUESTA:
-{
-  "dsl": "texto en formato DSL usando tokens #Nombre [contenido] !ESTADO (sugerencia) {tarea} N/5",
-  "progreso": [
-    {
-      "alumnos": ["nombre completo según lista del contexto"],
-      "contenido": "qué se trabajó (conciso, máx 60 chars)",
-      "tipo": "tecnica | repertorio | teoria | interpretacion | otro",
-      "estado": "LOGRADO | EN_PROGRESO | INICIADO",
-      "nota": null,
-      "tarea": null,
-      "observacion": "descripción del nivel actual (máx 100 chars)",
-      "es_colectivo": false
-    }
-  ],
-  "resumen": "Una frase que resume el foco pedagógico de la sesión (máx 120 chars)"
-}
+Formato exacto:
+[{"contenido":"...","observacion":"..."},{"contenido":"...","observacion":"..."}]
 
-REGLAS DE INFERENCIA DE ESTADO:
-- "lograron", "alcanzaron", "dominaron", "ya saben", "lo hicieron bien" → LOGRADO
-- "avanzando", "mejorando", "progresando", "casi", "van bien", "muestran progreso" → EN_PROGRESO
-- "empezaron", "conocieron", "introdujeron", "por primera vez", "vieron" → INICIADO
-- Sin indicador claro → EN_PROGRESO (default conservador)
-
-REGLAS DE TIPO (usar tipoClase del contexto):
-- tipoClase "instrumento": progreso es ejecución del instrumento → tipo preferido "tecnica" o "repertorio"
-- tipoClase "ensayo_general": progreso colectivo → tipo "repertorio"; mención individual → tipo "interpretacion"
-- tipoClase "teoria": tipo "teoria"
-- Obras musicales con nombre propio (Danzón, Minueto, Sonata, etc.) → tipo "repertorio"
-- Escalas, posiciones, arco, digitación → tipo "tecnica"
-- Ritmo, compás, armonía, lectura → tipo "teoria"
-
-RESOLUCIÓN DE NOMBRES:
-- Resolvé nombres parciales usando la lista "alumnos" del contexto: "Yereni" → nombre completo de la lista
-- "todos" en el texto = SOLO los alumnos de la lista "presentes" (no toda la clase)
-- Si presentes está vacío → usar lista completa "alumnos"
-- Si no podés resolver un nombre → usá el nombre tal como lo escribió el maestro
-
-PASAJES Y DETALLES:
-- "compases 333 al 348" → incluílo en contenido: "Danzón c.333-348"
-- Detalles técnicos del pasaje van en observacion
-
-CAMPO DSL:
-- Usá los tokens estándar del DSL
-- Incluí !LOGRADO / !EN_PROGRESO / !INICIADO para los estados extraídos
-- Las calificaciones van al final: "4/5"
-
-Si el texto no contiene información de progreso evaluable → devolvé progreso: [] y resumen: "Registro general de clase sin evaluaciones individuales detectadas"
-
-REGLAS CRÍTICAS PARA EL JSON:
-- Nunca uses comillas dobles (") dentro del valor de un string — usá comillas simples (') si necesitás citar algo
-- Todos los strings en una sola línea, sin saltos de línea internos
-- El campo "observacion" máximo 80 caracteres, sin comillas adentro
-- El campo "contenido" máximo 60 caracteres, sin comillas adentro
-- El campo "dsl" puede ser largo pero sin comillas dobles internas — si necesitás citar algo usá comillas simples
-- Verificá mentalmente que tu JSON es válido antes de responder
-`
+REGLAS:
+- Si el fragmento menciona compases específicos → incluilos en contenido: "Danzón c.333-348"
+- Si es comportamiento, actitud o asistencia → contenido: "Comportamiento" o "Asistencia"
+- Usá español neutro (no voseo, no regionalismos)
+- Máximo 50 chars en contenido, 80 en observacion
+- Nunca uses comillas dobles dentro de un string — usá comillas simples si necesitás citar`
 
 const PROPOSE_CURRICULUM_PROMPT = `
 Eres un pedagogo musical especializado en diseño curricular.
@@ -301,10 +276,10 @@ export async function structureTextToDSL(text, context = {}) {
  */
 function parseGroqJSON(raw) {
   // 1. Strip code fences and trim
-  let s = raw.replace(/^\s*```(?:json)?\s*/i, '').replace(/\s*```\s*$/i, '').trim()
+  let s = raw.replace(/^\s*```(?:json)?\s*/i, ‘’).replace(/\s*```\s*$/i, ‘’).trim()
 
   // 2. Replace curly/smart quotes with straight ASCII quotes
-  s = s.replace(/[‘’]/g, "'").replace(/[“”]/g, '"')
+  s = s.replace(/[‘’]/g, “’”).replace(/[“”]/g, ‘”’)
 
   // 3. First attempt: direct parse
   try { return JSON.parse(s) } catch (_) { /* continue to repair */ }
@@ -312,15 +287,59 @@ function parseGroqJSON(raw) {
   // 4. Repair: walk char-by-char, escape unescaped double quotes inside strings
   try { return JSON.parse(_fixUnescapedQuotes(s)) } catch (_) { /* continue */ }
 
-  // 5. Last resort: find outermost { } and try again
-  const m = s.match(/\{[\s\S]*\}/)
-  if (m) {
-    try { return JSON.parse(m[0]) } catch (_) { /* fall through */ }
-    try { return JSON.parse(_fixUnescapedQuotes(m[0])) } catch (_) { /* fall through */ }
+  // 5. Repair truncated JSON — model ran out of tokens and cut the response mid-object.
+  //    Close any open arrays and objects by counting unclosed brackets.
+  try { return JSON.parse(_closeTruncatedJSON(s)) } catch (_) { /* continue */ }
+  try { return JSON.parse(_closeTruncatedJSON(_fixUnescapedQuotes(s))) } catch (_) { /* continue */ }
+
+  // 6. Last resort: find outermost { } or [ ] and try again (with truncation repair)
+  const mObj = s.match(/\{[\s\S]*/)
+  if (mObj) {
+    const candidate = _closeTruncatedJSON(mObj[0])
+    try { return JSON.parse(candidate) } catch (_) { /* fall through */ }
+    try { return JSON.parse(_fixUnescapedQuotes(candidate)) } catch (_) { /* fall through */ }
+  }
+  const mArr = s.match(/\[[\s\S]*/)
+  if (mArr) {
+    const candidate = _closeTruncatedJSON(mArr[0])
+    try { return JSON.parse(candidate) } catch (_) { /* fall through */ }
+    try { return JSON.parse(_fixUnescapedQuotes(candidate)) } catch (_) { /* fall through */ }
   }
 
   // Nothing worked — throw so the caller can handle it
-  throw new SyntaxError('Unable to repair Groq JSON response')
+  throw new SyntaxError(‘Unable to repair Groq JSON response’)
+}
+
+
+/**
+ * Attempts to close a truncated JSON string by appending missing brackets/braces.
+ * Handles the case where the model runs out of tokens mid-response.
+ */
+function _closeTruncatedJSON(str) {
+  const stack = []
+  let inStr = false
+  let i = 0
+
+  while (i < str.length) {
+    const ch = str[i]
+    if (inStr) {
+      if (ch === ‘\\’) { i += 2; continue }
+      if (ch === ‘”’) inStr = false
+    } else {
+      if (ch === ‘”’) inStr = true
+      else if (ch === ‘{‘) stack.push(‘}’)
+      else if (ch === ‘[‘) stack.push(‘]’)
+      else if (ch === ‘}’ || ch === ‘]’) stack.pop()
+    }
+    i++
+  }
+
+  // If we’re still inside a string, close it first
+  let tail = inStr ? ‘”’ : ‘’
+  // Close any open structures in reverse order
+  tail += stack.reverse().join(‘’)
+
+  return str + tail
 }
 
 function _fixUnescapedQuotes(str) {
@@ -362,7 +381,11 @@ function _fixUnescapedQuotes(str) {
 
 /**
  * Analyzes a free-text observation with full class context.
- * Extracts structured progress records per student.
+ *
+ * Architecture:
+ *   1. JS pre-parser (observationParser.js) — detects: who, state, note, task (free, instant)
+ *   2. Groq enrich call — only fills: contenido + observacion per group (tiny output)
+ *   3. JS post-processor — expands student groups, infers tipo, builds DSL string
  *
  * @param {string} text - Teacher's free-text observation
  * @param {object} context
@@ -370,48 +393,112 @@ function _fixUnescapedQuotes(str) {
  * @param {Array<{id,nombre,nombreCorto}>} context.presentes
  * @param {string} context.tipoClase - 'instrumento' | 'ensayo_general' | 'teoria'
  * @param {string} context.instrumento
- * @param {string[]} context.sesionesRecientes
  * @param {string} [context.indicadorActivo]
  * @returns {Promise<{dsl: string, progreso: Array, resumen: string}>}
  */
 export async function analyzeObservation(text, context = {}) {
-  const alumnosStr = (context.alumnos || []).map(a => `${a.nombre} (${a.nombreCorto})`).join(', ')
-  const presentesStr = (context.presentes || []).map(a => a.nombre).join(', ')
-  const recientesStr = (context.sesionesRecientes || []).join('\n---\n')
+  const alumnos  = context.alumnos  || []
+  const presentes = context.presentes?.length ? context.presentes : alumnos
 
-  const contextBlock = `
-CONTEXTO DE LA CLASE:
-- Instrumento / tipo: ${context.instrumento || 'no especificado'} (tipoClase: ${context.tipoClase || 'instrumento'})
-- Alumnos en clase: ${alumnosStr || 'no especificados'}
-- Alumnos presentes hoy: ${presentesStr || alumnosStr || 'todos'}
-- Indicador activo del plan: ${context.indicadorActivo || 'ninguno'}
-- Sesiones recientes:
-${recientesStr || 'sin sesiones previas registradas'}
-`
+  // ── Step 1: JS pre-parse (free, no API call) ──────────────────────────────
+  const groups = segmentObservation(text, { ...context, alumnos, presentes })
 
-  const systemPrompt = ANALYZE_OBSERVATION_PROMPT + '\n\n' + contextBlock
+  if (!groups.length) {
+    return { dsl: '', progreso: [], resumen: 'Registro general de clase sin evaluaciones detectadas.' }
+  }
 
+  // ── Step 2: Groq enrichment — only contenido + observacion per group ──────
+  // Input to Groq: compact list of fragments (no student names, no state, no notes)
+  const fragmentsPayload = groups.map((g, i) =>
+    `${i + 1}. "${g.fragment}" (instrumento: ${context.instrumento || 'música'}, tipoClase: ${context.tipoClase || 'instrumento'})`
+  ).join('\n')
+
+  let enriched = groups.map(() => ({ contenido: '', observacion: '' })) // safe default
+
+  let raw
   try {
-    const raw = await proxyChat(
+    raw = await proxyChat(
       [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: text },
+        { role: 'system', content: ENRICH_GROUPS_PROMPT },
+        { role: 'user',   content: fragmentsPayload },
       ],
       0.1
     )
-
-    // Parse JSON with repair fallback (handles unescaped quotes, smart quotes, code fences)
     const parsed = parseGroqJSON(raw)
-
-    return {
-      dsl: parsed.dsl || '',
-      progreso: Array.isArray(parsed.progreso) ? parsed.progreso : [],
-      resumen: parsed.resumen || '',
+    if (Array.isArray(parsed) && parsed.length === groups.length) {
+      enriched = parsed
+    } else if (Array.isArray(parsed)) {
+      // Length mismatch — use what we have, pad the rest
+      enriched = groups.map((_, i) => parsed[i] || { contenido: '', observacion: '' })
     }
   } catch (err) {
-    console.error('[GROQ] Error en analyzeObservation:', err, '| raw:', typeof raw !== 'undefined' ? raw : '(no response)')
-    throw new Error('No se pudo analizar la observación. Verificá la conexión con el servicio IA.')
+    console.warn('[GROQ] Enrich call failed, using fallback:', err.message, '| raw:', raw ?? '(no response)')
+    // Non-fatal: we still return JS-parsed data, just without enriched content labels
   }
+
+  // ── Step 3: JS post-process — assemble final progreso records ────────────
+  const progreso = groups.map((g, i) => {
+    const e = enriched[i] || {}
+    const contenido = (e.contenido || '').trim() || _extractFallbackContent(g.fragment)
+    const tipo = inferTipo(contenido + ' ' + g.fragment, context.tipoClase)
+
+    return {
+      alumnos:     g.alumnos.map(a => a.nombre || a.nombreCorto),
+      contenido,
+      tipo,
+      estado:      g.estado,
+      nota:        g.nota,
+      tarea:       g.tarea,
+      observacion: (e.observacion || '').trim() || null,
+      es_colectivo: g.esColectivo,
+    }
+  })
+
+  // ── DSL string — built from structured data, no AI needed ─────────────────
+  const dsl = _buildDSL(progreso, presentes)
+
+  // ── Summary — one sentence from Groq output or JS fallback ───────────────
+  const resumen = _buildResumen(progreso, context.instrumento)
+
+  return { dsl, progreso, resumen }
+}
+
+/** Extracts a short content label from raw fragment text as last-resort fallback. */
+function _extractFallbackContent(fragment) {
+  // Remove student names, state words, notes — keep the content noun phrase
+  return fragment
+    .replace(/\d\/5/g, '')
+    .replace(/\{[^}]*\}/g, '')
+    .replace(/\([^)]*\)/g, '')
+    .replace(/\b(todos|todo|grupo|clase|el|la|los|las|un|una)\b/gi, '')
+    .trim()
+    .slice(0, 50) || 'Clase'
+}
+
+/** Builds a DSL string from structured progreso records. */
+function _buildDSL(progreso, presentes) {
+  return progreso.map(rec => {
+    const names = rec.es_colectivo
+      ? '#Todos'
+      : rec.alumnos.map(n => `#${n.split(' ')[0]}`).join(', ')
+    const estado = `!${rec.estado}`
+    const nota   = rec.nota ? ` ${rec.nota}/5` : ''
+    const tarea  = rec.tarea ? ` {${rec.tarea}}` : ''
+    const obs    = rec.observacion ? ` (${rec.observacion})` : ''
+    return `${names} [${rec.contenido}] ${estado}${nota}${obs}${tarea}`
+  }).join(' · ')
+}
+
+/** Builds a one-sentence summary from structured records. */
+function _buildResumen(progreso, instrumento) {
+  if (!progreso.length) return 'Registro de clase sin evaluaciones detectadas.'
+  const tipos = [...new Set(progreso.map(r => r.tipo))].join(', ')
+  const estados = progreso.map(r => r.estado)
+  const dominante = estados.sort((a, b) =>
+    estados.filter(x => x === b).length - estados.filter(x => x === a).length
+  )[0]
+  const estadoLabel = { LOGRADO: 'con logros consolidados', EN_PROGRESO: 'en progreso', INICIADO: 'iniciando contenidos' }[dominante] || 'evaluada'
+  return `Sesión de ${instrumento || 'música'} — ${tipos} — ${estadoLabel}.`
 }
 
 /**

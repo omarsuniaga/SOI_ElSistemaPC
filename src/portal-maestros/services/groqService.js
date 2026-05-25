@@ -290,8 +290,9 @@ ${recientesStr || 'sin sesiones previas registradas'}
       0.1
     )
 
-    // Parse JSON — Groq sometimes wraps in markdown code blocks
-    const cleaned = raw.replace(/^```(?:json)?\n?/m, '').replace(/\n?```$/m, '').trim()
+    // Parse JSON — Groq sometimes wraps in markdown code blocks (with leading whitespace/newlines)
+    const cleaned = raw.replace(/^\s*```(?:json)?\s*/i, '').replace(/\s*```\s*$/i, '').trim()
+    console.debug('[GROQ] analyzeObservation cleaned:', cleaned)
     const parsed = JSON.parse(cleaned)
 
     return {
@@ -300,7 +301,7 @@ ${recientesStr || 'sin sesiones previas registradas'}
       resumen: parsed.resumen || '',
     }
   } catch (err) {
-    console.error('[GROQ] Error en analyzeObservation:', err)
+    console.error('[GROQ] Error en analyzeObservation:', err, '| raw:', typeof raw !== 'undefined' ? raw : '(no response)')
     throw new Error('No se pudo analizar la observación. Verificá la conexión con el servicio IA.')
   }
 }

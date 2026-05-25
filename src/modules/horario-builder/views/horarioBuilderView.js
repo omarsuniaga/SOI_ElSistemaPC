@@ -106,6 +106,13 @@ function renderGrid() {
 function renderConflictPanel() {
   const wrapper = _container.querySelector('#hb-conflict-panel-wrapper');
   if (!wrapper) return;
+
+  // Snapshot expanded state from DOM before re-render
+  const cpBody = wrapper.querySelector('.cp-body');
+  if (cpBody) {
+    state.conflictPanelExpanded = cpBody.style.display === 'block';
+  }
+
   wrapper.innerHTML = createConflictPanel(state.conflicts, state.conflictPanelExpanded);
   attachConflictPanelListeners(wrapper, state.conflicts, (conflict) => {
     const view = _container.querySelector('.hb-view');
@@ -267,12 +274,16 @@ async function handleSave() {
       periodo_id: state.activePeriodo,
       estado: 'borrador'
     });
+    state.error = null;
     showToast('Horario guardado como borrador', 'success');
   } catch (err) {
     console.error('[horarioBuilderView] handleSave error:', err);
+    state.error = err.message;
     showToast('Error al guardar: ' + err.message, 'danger');
-    if (btn) btn.disabled = false;
   } finally {
-    if (btn) btn.innerHTML = '<i class="bi bi-floppy-fill"></i> Guardar';
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="bi bi-floppy-fill"></i> Guardar';
+    }
   }
 }

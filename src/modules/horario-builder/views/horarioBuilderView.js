@@ -6,6 +6,9 @@ import { createScheduleGrid, attachScheduleGridListeners } from '../components/S
 import { createViewToggle, VIEWS } from '../components/ViewToggle.js';
 import { createConflictPanel, attachConflictPanelListeners } from '../components/ConflictPanel.js';
 import { PERIODOS } from '../models/scheduleConstraints.model.js';
+import { renderPublishWizard } from '../components/PublishWizard.js';
+import { getRunFeedback, addFeedback, updateScheduleRunEstado } from '../api/scheduleFeedbackApi.js';
+import { supabase } from '../../../lib/supabaseClient.js';
 
 // ─── STATE ──────────────────────────────────────────────────────
 
@@ -20,7 +23,12 @@ let state = {
   loading: false,
   error: null,
   undoStack: [],
-  redoStack: []
+  redoStack: [],
+  estado: 'borrador',
+  runId: null,
+  isAdmin: false,
+  feedback: [],
+  publishWizardOpen: false
 };
 
 let _container = null;
@@ -41,7 +49,12 @@ export function init(container) {
     loading: false,
     error: null,
     undoStack: [],
-    redoStack: []
+    redoStack: [],
+    estado: 'borrador',
+    runId: null,
+    isAdmin: false,
+    feedback: [],
+    publishWizardOpen: false
   };
 
   renderShell();
@@ -51,6 +64,21 @@ export function init(container) {
   getScheduleRuns()
     .then(runs => { state.scheduleRuns = runs || []; })
     .catch(err => console.warn('[horarioBuilderView] getScheduleRuns failed:', err));
+
+  // Non-blocking admin detection
+  (async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data } = await supabase
+          .from('maestros')
+          .select('es_admin')
+          .eq('usuario_id', user.id)
+          .single();
+        state.isAdmin = data?.es_admin === true;
+      }
+    } catch (_) { /* non-critical */ }
+  })();
 }
 
 // ─── RENDER HELPERS ─────────────────────────────────────────────
@@ -89,6 +117,9 @@ function renderShell() {
         <button class="btn btn-sm btn-success" id="hb-save-btn" disabled>
           <i class="bi bi-floppy-fill"></i> Guardar
         </button>
+        <button class="btn btn-sm btn-outline-primary" id="hb-publish-btn" disabled>
+          <i class="bi bi-globe"></i> Publicar
+        </button>
       </div>
 
       <!-- Conflict panel -->
@@ -96,6 +127,9 @@ function renderShell() {
 
       <!-- Grid area -->
       <div id="hb-grid-wrapper" class="hb-grid-wrapper"></div>
+
+      <!-- Publish wizard panel -->
+      <div id="hb-publish-wrapper" class="mt-3" style="display:none"></div>
 
       <!-- Loading / error overlay -->
       <div id="hb-status"></div>
@@ -143,6 +177,41 @@ function renderViewToggle() {
   const slot = _container.querySelector('#hb-view-toggle-slot');
   if (!slot) return;
   slot.innerHTML = createViewToggle(state.activeView);
+}
+
+async function renderPublishPanel() {
+  const wrapper = _container.querySelector('#hb-publish-wrapper');
+  if (!wrapper) return;
+  if (!state.publishWizardOpen || !state.runId) {
+    wrapper.style.display = 'none';
+    return;
+  }
+  wrapper.style.display = '';
+
+  renderPublishWizard(wrapper, {
+    runId: state.runId,
+    estadoActual: state.estado,
+    isAdmin: state.isAdmin,
+    feedback: state.feedback,
+    async onEstadoChange(newEstado) {
+      try {
+        await updateScheduleRunEstado(state.runId, newEstado);
+        state.estado = newEstado;
+        renderPublishPanel();
+      } catch (err) {
+        console.error('[horario-builder] estado update failed:', err);
+      }
+    },
+    async onFeedbackAdd({ comentario, tipo }) {
+      try {
+        await addFeedback({ runId: state.runId, comentario, tipo });
+        state.feedback = await getRunFeedback(state.runId);
+        renderPublishPanel();
+      } catch (err) {
+        console.error('[horario-builder] feedback add failed:', err);
+      }
+    }
+  });
 }
 
 function setLoading(on) {
@@ -278,7 +347,7 @@ function wireListeners() {
     }
   });
 
-  _container.addEventListener('click', e => {
+  _container.addEventListener('click', async e => {
     // View toggle pill
     const pill = e.target.closest('.vt-pill[data-view]');
     if (pill) {
@@ -346,6 +415,20 @@ function wireListeners() {
       handleSave();
       return;
     }
+
+    // Publish button
+    if (e.target.closest('#hb-publish-btn')) {
+      state.publishWizardOpen = !state.publishWizardOpen;
+      if (state.publishWizardOpen && state.runId) {
+        try {
+          state.feedback = await getRunFeedback(state.runId);
+        } catch (e) {
+          state.feedback = [];
+        }
+      }
+      renderPublishPanel();
+      return;
+    }
   });
 }
 
@@ -405,11 +488,17 @@ async function handleSave() {
   if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Guardando…'; }
 
   try {
-    await saveScheduleRun({
+    const saved = await saveScheduleRun({
       assignments: state.assignments,
       periodo_id: state.activePeriodo,
       estado: 'borrador'
     });
+    if (saved?.id) {
+      state.runId = saved.id;
+      state.estado = 'borrador';
+      const publishBtn = _container.querySelector('#hb-publish-btn');
+      if (publishBtn) publishBtn.disabled = false;
+    }
     state.error = null;
     showToast('Horario guardado como borrador', 'success');
   } catch (err) {

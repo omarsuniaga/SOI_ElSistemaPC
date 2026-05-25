@@ -35,8 +35,9 @@ function resolveAlumno(name, alumnos) {
   return alumnos.find(a =>
     normalize(a.nombre) === n ||
     normalize(a.nombreCorto || a.nombre.split(' ')[0]) === n ||
-    normalize(a.nombre).includes(n) ||
-    n.includes(normalize(a.nombreCorto || a.nombre.split(' ')[0]))
+    // Substring checks guarded to avoid false positives on very short strings
+    (n.length >= 3 && normalize(a.nombre).includes(n)) ||
+    (n.length >= 3 && n.includes(normalize(a.nombreCorto || a.nombre.split(' ')[0])))
   ) ?? null
 }
 
@@ -127,7 +128,7 @@ export async function saveProgressFromAI({ sesionId, claseId, maestroId, fechaHo
         evaluacion_tipo: 'observacion',
         estado_cualitativo: record.estado || 'EN_PROGRESO',
         calificacion: record.nota ?? null,
-        contenido_dsl: record.contenido || null,
+        contenido_dsl: record.contenido || '',  // empty string sentinel — NULL breaks the upsert conflict key
         observaciones: record.observacion || null,
         indicadores: {
           tipo: record.tipo || 'otro',
@@ -152,7 +153,7 @@ export async function saveProgressFromAI({ sesionId, claseId, maestroId, fechaHo
     return { saved, errors }
   } catch (err) {
     console.warn('[Progress] Error al guardar progreso:', err.message)
-    return { saved: [], errors: [err.message] }
+    return { saved: [], errors: [...errors, err.message] }
   }
 }
 

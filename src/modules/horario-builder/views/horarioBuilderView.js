@@ -229,29 +229,41 @@ function initDD() {
       initDD();
     },
     async onConflict({ assignment, targetDay, targetHour, conflicts }) {
-      const description = conflicts.map(c => c.description).join('\n');
-      const confirmed = await showConflictMoveModal({ conflictDescription: description });
-      if (!confirmed) return;
+      // Disable interactive controls while modal is open to prevent race conditions
+      const dragToggle = _container.querySelector('#hb-drag-toggle');
+      const undoBtn = _container.querySelector('#hb-undo-btn');
+      const redoBtn = _container.querySelector('#hb-redo-btn');
+      [dragToggle, undoBtn, redoBtn].forEach(b => { if (b) b.disabled = true; });
 
-      state.undoStack.push(JSON.parse(JSON.stringify(state.assignments)));
-      state.redoStack = [];
-      const idx = state.assignments.findIndex(a => a.clase_id === assignment.clase_id);
-      if (idx === -1) return;
-      const moved = { ...state.assignments[idx] };
-      const duration = minutesBetween(moved.hora_inicio, moved.hora_fin);
-      moved.dia = targetDay;
-      moved.hora_inicio = targetHour;
-      moved.hora_fin = addMinutes(targetHour, duration);
-      state.assignments[idx] = moved;
+      try {
+        const description = conflicts.map(c => c.description).join('\n');
+        const confirmed = await showConflictMoveModal({ conflictDescription: description });
+        if (!confirmed) return;
 
-      const result = detectConflicts(state.assignments, { returnAnnotated: true });
-      state.conflicts = result.conflicts;
-      state.assignments = result.assignments;
+        state.undoStack.push(JSON.parse(JSON.stringify(state.assignments)));
+        state.redoStack = [];
+        const idx = state.assignments.findIndex(a => a.clase_id === assignment.clase_id);
+        if (idx === -1) return;
+        const moved = { ...state.assignments[idx] };
+        const duration = minutesBetween(moved.hora_inicio, moved.hora_fin);
+        moved.dia = targetDay;
+        moved.hora_inicio = targetHour;
+        moved.hora_fin = addMinutes(targetHour, duration);
+        state.assignments[idx] = moved;
 
-      renderGrid();
-      renderConflictPanel();
-      updateUndoRedoButtons();
-      initDD();
+        const result = detectConflicts(state.assignments, { returnAnnotated: true });
+        state.conflicts = result.conflicts;
+        state.assignments = result.assignments;
+
+        renderGrid();
+        renderConflictPanel();
+        updateUndoRedoButtons();
+        initDD();
+      } finally {
+        // Re-enable controls (updateUndoRedoButtons will correct undo/redo state)
+        if (dragToggle) dragToggle.disabled = false;
+        updateUndoRedoButtons();
+      }
     }
   });
 }

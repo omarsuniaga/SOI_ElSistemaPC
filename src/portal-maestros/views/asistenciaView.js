@@ -37,7 +37,7 @@ import { promocionarObservacionesAlumnos } from '../services/observationPromotio
 import { registrarAsistenciaBulk } from '../../modules/asistencias/api/asistenciasApi.js'
 import { createAsyncMutex } from '../../shared/utils/asyncMutex.js'
 import { analyzeObservation } from '../services/groqService.js'
-import { saveProgressFromAI, saveProgressFromDSL } from '../services/progressAggregatorService.js'
+import { saveProgressFromAI, saveProgressFromDSL, linkProgresosToObjetivos } from '../services/progressAggregatorService.js'
 import { createProgressPreviewPanel } from '../components/ProgressPreviewPanel.js'
 import { fetchInsights } from '../services/progressInsightService.js'
 import { proposeCurriculum } from '../services/groqService.js'
@@ -682,8 +682,14 @@ function _renderVista(container, ctx) {
     {
       onAdopt: async ({ instrumento, nivel, resumen, pilares }) => {
         try {
-          await adoptarPropuesta({ instrumento, nivel, descripcion: resumen, pilares })
-          AppToast.success('¡Plan curricular creado correctamente!')
+          const { curriculo, allObjetivos } = await adoptarPropuesta({
+            instrumento, nivel, descripcion: resumen, pilares,
+          })
+          const { linked } = await linkProgresosToObjetivos({ claseId, objetivos: allObjetivos })
+          const msg = linked > 0
+            ? `Plan creado · ${linked} registro${linked !== 1 ? 's' : ''} vinculado${linked !== 1 ? 's' : ''}`
+            : 'Plan curricular creado correctamente.'
+          AppToast.success(msg)
         } catch (err) {
           AppToast.error('Error al crear el plan: ' + err.message)
         }

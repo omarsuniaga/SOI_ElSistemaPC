@@ -23,6 +23,7 @@ export function createConflictPanel(conflicts = [], expanded = false) {
     return `
       <div class="cp-row"
            data-conflict-ids="${c.ids.join(',')}"
+           data-conflict-index="${i}"
            style="
              display:flex;align-items:flex-start;gap:0.5rem;
              padding:0.5rem 0.75rem;
@@ -66,9 +67,10 @@ export function createConflictPanel(conflicts = [], expanded = false) {
  * Attaches the toggle click listener to the conflict panel in the DOM.
  * Call after injecting createConflictPanel() HTML into the page.
  * @param {HTMLElement} container - Parent element containing the panel
- * @param {Function} onRowClick - Called with conflict ids array when a row is clicked
+ * @param {Array} conflicts - The same conflicts array passed to createConflictPanel()
+ * @param {Function} onRowClick - Called with the full conflict object when a row is clicked
  */
-export function attachConflictPanelListeners(container, onRowClick) {
+export function attachConflictPanelListeners(container, conflicts, onRowClick) {
   const header = container.querySelector('#cp-header');
   const body   = container.querySelector('#cp-body');
   const chev   = container.querySelector('#cp-chevron');
@@ -81,8 +83,8 @@ export function attachConflictPanelListeners(container, onRowClick) {
 
   container.querySelectorAll('.cp-row').forEach(row => {
     row.addEventListener('click', () => {
-      const ids = row.dataset.conflictIds.split(',');
-      onRowClick?.(ids);
+      const i = parseInt(row.dataset.conflictIndex, 10);
+      onRowClick?.(conflicts[i]);
     });
   });
 }

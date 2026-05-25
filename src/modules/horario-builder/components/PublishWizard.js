@@ -13,6 +13,29 @@ const STAGE_LABELS = {
 };
 
 /**
+ * Builds a feedback item DOM element safely using textContent.
+ * Prevents XSS by avoiding innerHTML injection of user data.
+ *
+ * @param {Object} item - Feedback item with { tipo, comentario }
+ * @returns {HTMLLIElement}
+ */
+function buildFeedbackItem(item) {
+  const li = document.createElement('li');
+  li.className = 'pw-feedback-item d-flex align-items-start gap-2 mb-1';
+
+  const badge = document.createElement('span');
+  badge.className = 'badge bg-secondary';
+  badge.textContent = item.tipo;  // safe — textContent, not innerHTML
+
+  const text = document.createElement('span');
+  text.textContent = item.comentario;  // safe
+
+  li.appendChild(badge);
+  li.appendChild(text);
+  return li;
+}
+
+/**
  * Renders the PublishWizard into a container element.
  *
  * @param {HTMLElement} container
@@ -53,13 +76,9 @@ export function renderPublishWizard(container, {
     `;
   }).join('');
 
-  // Build feedback list items
-  const feedbackItemsHTML = feedback.map(item => `
-    <li class="pw-feedback-item d-flex align-items-start gap-2 mb-1">
-      <span class="badge bg-secondary">${item.tipo}</span>
-      <span>${item.comentario}</span>
-    </li>
-  `).join('');
+  // Placeholder for feedback list (will be populated safely via DOM API)
+  // This prevents XSS by avoiding innerHTML interpolation of user data
+  const feedbackPlaceholder = '';
 
   // Build approve button (admin only)
   const approveHTML = isAdmin
@@ -89,7 +108,6 @@ export function renderPublishWizard(container, {
         <div class="pw-panel" data-panel="revision" ${estadoActual !== 'revision' ? 'hidden' : ''}>
           <h6>Comentarios y revisión</h6>
           <ul class="pw-feedback-list list-unstyled mb-2">
-            ${feedbackItemsHTML}
           </ul>
           <div class="pw-feedback-form d-flex gap-2">
             <input type="text" class="form-control form-control-sm pw-feedback-input"
@@ -141,5 +159,12 @@ export function renderPublishWizard(container, {
     feedbackInput.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') submitFeedback();
     });
+  }
+
+  // Populate feedback list safely using DOM API (prevents XSS)
+  const feedbackList = container.querySelector('.pw-feedback-list');
+  if (feedbackList) {
+    feedbackList.innerHTML = '';  // clear any placeholder
+    (feedback || []).forEach(item => feedbackList.appendChild(buildFeedbackItem(item)));
   }
 }

@@ -81,8 +81,7 @@ export async function generateDailyReport(sesionId) {
     const [sesionRes, obsRes] = await Promise.all([
       supabase
         .from('sesiones_clase')
-        .select(`id, fecha, numero_sesion, tipo_sesion, asistencia,
-                 clases ( id, nombre, instrumento, maestros ( nombre_completo ) )`)
+        .select('id, fecha, clase_id, asistencia')
         .eq('id', sesionId)
         .single(),
       supabase
@@ -96,11 +95,38 @@ export async function generateDailyReport(sesionId) {
     const sesion = sesionRes.data
     const obs = obsRes.data
 
+    // Fetch class details
+    const { data: claseData, error: claseErr } = await supabase
+      .from('clases')
+      .select('id, nombre, instrumento, maestro_id')
+      .eq('id', sesion.clase_id)
+      .single()
+    if (claseErr) throw claseErr
+
+    // Fetch maestro details
+    let maestroNombre = 'Docente'
+    if (claseData.maestro_id) {
+      const { data: maestroData } = await supabase
+        .from('maestros')
+        .select('nombre_completo')
+        .eq('id', claseData.maestro_id)
+        .single()
+      if (maestroData) maestroNombre = maestroData.nombre_completo
+    }
+
+    // Count sessions up to this date
+    const { count } = await supabase
+      .from('sesiones_clase')
+      .select('id', { count: 'exact', head: true })
+      .eq('clase_id', claseData.id)
+      .lte('fecha', sesion.fecha)
+    const numeroSesion = count || 1
+
     // Fetch alumnos of the class
     const { data: alumnos, error: alumnosErr } = await supabase
       .from('alumnos')
       .select('id, nombre_completo, nombre_corto')
-      .eq('clase_id', sesion.clases.id)
+      .eq('clase_id', claseData.id)
       .order('nombre_completo')
     if (alumnosErr) throw alumnosErr
 
@@ -139,9 +165,9 @@ export async function generateDailyReport(sesionId) {
 
     // 3. Build HTML
     const docTag = `REPORTE DIARIO · ${formatDate(sesion.fecha)}`
-    const clase = sesion.clases.nombre
-    const docente = sesion.clases.maestros?.nombre_completo ?? 'Docente'
-    const periodo = `Sesión #${sesion.numero_sesion} · ${formatDate(sesion.fecha)}`
+    const clase = claseData.nombre
+    const docente = maestroNombre
+    const periodo = `Sesión #${numeroSesion} · ${formatDate(sesion.fecha)}`
 
     const headerHtml = header({ docTag, clase, docente, periodo })
 
@@ -237,7 +263,7 @@ export async function generateMonthlyAttendance(claseId, year, month) {
     // Parallel fetch
     const [sesionesRes, justRes, prevSesRes, claseRes, alumnosRes] = await Promise.all([
       supabase.from('sesiones_clase')
-        .select('id, fecha, numero_sesion, asistencia')
+        .select('id, fecha, asistencia')
         .eq('clase_id', claseId)
         .gte('fecha', rangeStart).lte('fecha', rangeEnd)
         .order('fecha'),
@@ -250,7 +276,7 @@ export async function generateMonthlyAttendance(claseId, year, month) {
         .eq('clase_id', claseId)
         .gte('fecha', prevStart).lte('fecha', prevEnd),
       supabase.from('clases')
-        .select('nombre, instrumento, maestros(nombre_completo)')
+        .select('id, nombre, instrumento, maestro_id')
         .eq('id', claseId)
         .single(),
       supabase.from('alumnos')
@@ -266,13 +292,32 @@ export async function generateMonthlyAttendance(claseId, year, month) {
     const sesiones = sesionesRes.data || []
     const justificaciones = justRes.data || []
     const prevSesiones = prevSesRes.data || []
-    const clase = claseRes.data
+    const claseData = claseRes.data
     const alumnos = alumnosRes.data || []
 
     if (sesiones.length === 0) {
       AppToast.error('No hay sesiones registradas para este período.')
       return
     }
+
+    // Fetch maestro
+    let maestroNombre = 'Docente'
+    if (claseData.maestro_id) {
+      const { data: maestroData } = await supabase
+        .from('maestros')
+        .select('nombre_completo')
+        .eq('id', claseData.maestro_id)
+        .single()
+      if (maestroData) maestroNombre = maestroData.nombre_completo
+    }
+
+    // Count sessions before this month
+    const { count: prevCount } = await supabase
+      .from('sesiones_clase')
+      .select('id', { count: 'exact', head: true })
+      .eq('clase_id', claseId)
+      .lt('fecha', rangeStart)
+    const baseIndex = prevCount || 0
 
     const landscape = alumnos.length > 18 || sesiones.length > 16
 
@@ -311,8 +356,8 @@ export async function generateMonthlyAttendance(claseId, year, month) {
     const docTag = `RESUMEN MENSUAL · ${monthName(month).toUpperCase()} ${year}`
     const headerData = {
       docTag,
-      clase: clase.nombre,
-      docente: clase.maestros?.nombre_completo ?? 'Docente',
+      clase: claseData.nombre,
+      docente: maestroNombre,
       periodo: `${monthName(month)} ${year}`,
       extraItems: [{ label: 'Sesiones', value: sesiones.length }, { label: 'Alumnos', value: alumnos.length }]
     }
@@ -326,7 +371,7 @@ export async function generateMonthlyAttendance(claseId, year, month) {
 
     // Table header: #, Alumno, S1..SN, P, A, J
     const thSessions = sesiones.map((s, i) =>
-      `<th style="text-align:center;font-size:6pt">S${s.numero_sesion}</th>`
+      `<th style="text-align:center;font-size:6pt">S${baseIndex + i + 1}</th>`
     ).join('')
 
     const tableRows = alumnos.map((al, i) => {
@@ -375,7 +420,7 @@ export async function generateMonthlyAttendance(claseId, year, month) {
         ${header(headerData)}
         ${chips}
         ${attTable}
-        ${footer(1, justificaciones.length > 0 ? 2 : 1, `${monthName(month)} ${year}`)}
+        ${footer(1, (justificaciones.length > 0 || prevTotal > 0) ? 2 : 1, `${monthName(month)} ${year}`)}
       </div>
     `
 
@@ -481,7 +526,7 @@ export async function generateMonthlyPedagogical(claseId, year, month) {
       prevSesRes, justRes
     ] = await Promise.all([
       supabase.from('sesiones_clase')
-        .select('id, fecha, numero_sesion, tipo_sesion, asistencia')
+        .select('id, fecha, asistencia')
         .eq('clase_id', claseId).gte('fecha', rangeStart).lte('fecha', rangeEnd).order('fecha'),
       supabase.from('observaciones_sesion')
         .select('sesion_clase_id, contenido_ia_dsl, contenido_dsl')
@@ -496,7 +541,7 @@ export async function generateMonthlyPedagogical(claseId, year, month) {
                  curriculo_objetivos(descripcion, categoria)`)
         .eq('clase_id', claseId).gte('created_at', rangeStart).lte('created_at', rangeEnd),
       supabase.from('clases')
-        .select('nombre, instrumento, maestros(nombre_completo)')
+        .select('id, nombre, instrumento, maestro_id')
         .eq('id', claseId).single(),
       supabase.from('alumnos')
         .select('id, nombre_completo, nombre_corto')
@@ -515,7 +560,7 @@ export async function generateMonthlyPedagogical(claseId, year, month) {
     const sesiones    = sesRes.data || []
     const obsData     = obsRes.data || []
     const progresos   = progRes.data || []
-    const clase       = claseRes.data
+    const claseData   = claseRes.data
     const alumnos     = alumnosRes.data || []
     const prevSesiones= prevSesRes.data || []
     const justificaciones = justRes.data || []
@@ -524,6 +569,25 @@ export async function generateMonthlyPedagogical(claseId, year, month) {
       AppToast.error('No hay sesiones registradas para este período.')
       return
     }
+
+    // Fetch maestro details
+    let maestroNombre = 'Docente'
+    if (claseData.maestro_id) {
+      const { data: maestroData } = await supabase
+        .from('maestros')
+        .select('nombre_completo')
+        .eq('id', claseData.maestro_id)
+        .single()
+      if (maestroData) maestroNombre = maestroData.nombre_completo
+    }
+
+    // Count sessions before this month
+    const { count: prevCount } = await supabase
+      .from('sesiones_clase')
+      .select('id', { count: 'exact', head: true })
+      .eq('clase_id', claseId)
+      .lt('fecha', rangeStart)
+    const baseIndex = prevCount || 0
 
     const obsMap = {}
     obsData.forEach(o => { obsMap[o.sesion_clase_id] = o })
@@ -572,14 +636,14 @@ export async function generateMonthlyPedagogical(claseId, year, month) {
     while (topObs.length < 4) topObs.push({ type: 'info', label: 'Nota', text: '—' })
 
     // Session grid cards
-    const sessionCards = sesiones.map(s => {
+    const sessionCards = sesiones.map((s, i) => {
       const st = calcAttendanceStats(s.asistencia)
       const obs = obsMap[s.id]
       const rawContent = obs?.contenido_ia_dsl || obs?.contenido_dsl || ''
       const firstContent = rawContent.split(/[\n,]/)[0]?.replace(/^[\-\*\d\.]+\s*/, '').trim() || 'Sin contenido registrado'
       return `
         <div class="session-card">
-          <div class="sc-top">S${s.numero_sesion} · ${esc(formatDate(s.fecha))}</div>
+          <div class="sc-top">S${baseIndex + i + 1} · ${esc(formatDate(s.fecha))}</div>
           <div style="font-size:6pt;color:var(--ink3);margin-bottom:2px">${esc(firstContent.slice(0, 45))}</div>
           <div class="sc-att">
             <span class="att-cell att-P">P:${st.P}</span>
@@ -593,8 +657,8 @@ export async function generateMonthlyPedagogical(claseId, year, month) {
     const docTag = `INFORME PEDAGÓGICO · ${monthName(month).toUpperCase()} ${year}`
     const headerData = {
       docTag,
-      clase: clase.nombre,
-      docente: clase.maestros?.nombre_completo ?? 'Docente',
+      clase: claseData.nombre,
+      docente: maestroNombre,
       periodo: `${monthName(month)} ${year}`,
       extraItems: [{ label: 'Sesiones', value: sesiones.length }, { label: 'Alumnos', value: alumnos.length }]
     }
@@ -724,8 +788,8 @@ export async function generateMonthlyPedagogical(claseId, year, month) {
     // ---- PAGE 3 — Comparativa + Groq patterns + Recommendations ----
     // Fetch Groq analysis (graceful fallback if unavailable)
     const groqContext = {
-      clase: clase.nombre,
-      docente: clase.maestros?.nombre_completo ?? 'Docente',
+      clase: claseData.nombre,
+      docente: maestroNombre,
       mes: `${monthName(month)} ${year}`,
       totalAlumnos: alumnos.length
     }

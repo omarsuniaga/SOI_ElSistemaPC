@@ -423,7 +423,7 @@ export async function generateMonthlyPatterns(sesiones, progresos, context) {
   }).join('\n')
 
   const progresosResumen = progresos.map(p =>
-    `${p.alumnos?.nombre_completo ?? 'Alumno'} — ${p.objetivo_descripcion ?? p.contenido_dsl ?? ''}: ${p.tipo}`
+    `${p.alumnos?.nombre_completo ?? 'Alumno'} — ${p.curriculo_objetivos?.descripcion ?? p.contenido_dsl ?? ''}: ${p.tipo}`
   ).join('\n')
 
   const prompt = `Eres el asistente pedagógico del Departamento Académico de El Sistema Punta Cana.
@@ -454,7 +454,7 @@ Usa español neutro, tono formal-institucional, sin voseo.`
   try {
     const raw = await proxyChat([{ role: 'user', content: prompt }], 0.3)
     // Strip potential markdown code fences
-    const jsonStr = raw.replace(/^```json?\s*/i, '').replace(/\s*```$/i, '').trim()
+    const jsonStr = raw.replace(/^\s*```(?:json)?\s*/i, '').replace(/\s*```\s*$/i, '').trim()
     return JSON.parse(jsonStr)
   } catch (err) {
     console.error('[groqService] generateMonthlyPatterns failed:', err)

@@ -400,3 +400,69 @@ export async function callGroq(messages) {
     throw err
   }
 }
+
+/**
+ * Analyze monthly session + progress data and generate institutional narrative.
+ *
+ * @param {Array} sesiones  — array of sesiones_clase rows
+ * @param {Array} progresos — array of progresos rows with alumno names
+ * @param {Object} context  — { clase: string, docente: string, mes: string, totalAlumnos: number }
+ * @returns {Promise<{
+ *   patrones: { positivos: string[], atencion: string[] },
+ *   recomendaciones: { academico: string, logistica: string, talentos: string, refuerzo: string },
+ *   notaDireccion: string
+ * }>}
+ */
+export async function generateMonthlyPatterns(sesiones, progresos, context) {
+  const sesionesResumen = sesiones.map(s => {
+    const att = s.asistencia || []
+    const P = att.filter(a => a.estado === 'P').length
+    const A = att.filter(a => a.estado === 'A').length
+    const J = att.filter(a => a.estado === 'J').length
+    return `Sesión ${s.numero_sesion} (${s.fecha}): ${P} presentes, ${A} ausentes, ${J} justificados`
+  }).join('\n')
+
+  const progresosResumen = progresos.map(p =>
+    `${p.alumnos?.nombre_completo ?? 'Alumno'} — ${p.objetivo_descripcion ?? p.contenido_dsl ?? ''}: ${p.tipo}`
+  ).join('\n')
+
+  const prompt = `Eres el asistente pedagógico del Departamento Académico de El Sistema Punta Cana.
+Analiza los datos del mes de ${context.mes} para la clase "${context.clase}" (docente: ${context.docente}, ${context.totalAlumnos} alumnos).
+
+DATOS DE ASISTENCIA:
+${sesionesResumen}
+
+DATOS DE PROGRESO:
+${progresosResumen}
+
+Devuelve un JSON con esta estructura exacta (sin texto adicional, solo el JSON):
+{
+  "patrones": {
+    "positivos": ["máximo 3 patrones positivos detectados"],
+    "atencion": ["máximo 3 situaciones que requieren atención"]
+  },
+  "recomendaciones": {
+    "academico": "recomendación académica en 2 oraciones",
+    "logistica": "recomendación logística/administrativa en 2 oraciones",
+    "talentos": "recomendación sobre talentos o alumnos destacados en 2 oraciones",
+    "refuerzo": "recomendación sobre alumnos que necesitan refuerzo en 2 oraciones"
+  },
+  "notaDireccion": "nota ejecutiva de 3-4 oraciones para el director, destacando lo más relevante del mes"
+}
+Usa español neutro, tono formal-institucional, sin voseo.`
+
+  try {
+    const raw = await proxyChat([{ role: 'user', content: prompt }], 0.3)
+    // Strip potential markdown code fences
+    const jsonStr = raw.replace(/^```json?\s*/i, '').replace(/\s*```$/i, '').trim()
+    return JSON.parse(jsonStr)
+  } catch (err) {
+    console.error('[groqService] generateMonthlyPatterns failed:', err)
+    return {
+      patrones: { positivos: [], atencion: [] },
+      recomendaciones: { academico: '', logistica: '', talentos: '', refuerzo: '' },
+      notaDireccion: ''
+    }
+  }
+}
+

@@ -30,10 +30,15 @@ describe('adminNotifApi Proactive Engines', () => {
 
   describe('fetchAdminFeed - Auto-Substitution Suggester', () => {
     it('should query and associate suggested active substitutes with the same instrument', async () => {
-      // Mock para profiles (maestros activos)
+      // Mock para profiles
       const mockProfiles = [
-        { id: 'm2', nombre_completo: 'John Coltrane', email: 'john@jazz.com', instrumento: 'Saxofón' },
-        { id: 'm3', nombre_completo: 'Miles Davis', email: 'miles@jazz.com', instrumento: 'Trompeta' }
+        { id: 'm2', nombre_completo: 'John Coltrane', email: 'john@jazz.com' }
+      ]
+
+      // Mock para maestros activos (especialidad/instrumento)
+      const mockMaestros = [
+        { id: 'm2', nombre_completo: 'John Coltrane', correo: 'john@jazz.com', especialidad: 'Saxofón', activo: true },
+        { id: 'm3', nombre_completo: 'Miles Davis', correo: 'miles@jazz.com', especialidad: 'Trompeta', activo: true }
       ]
 
       // Mock para ausencias
@@ -59,6 +64,9 @@ describe('adminNotifApi Proactive Engines', () => {
         }
         if (table === 'profiles') {
           return createMockChain({ data: mockProfiles, error: null })
+        }
+        if (table === 'maestros') {
+          return createMockChain({ data: mockMaestros, error: null })
         }
         return createMockChain({ data: [], error: null })
       })

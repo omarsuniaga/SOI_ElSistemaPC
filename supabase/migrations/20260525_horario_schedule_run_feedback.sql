@@ -32,7 +32,7 @@ CREATE POLICY "admins_all_feedback" ON schedule_run_feedback
   USING (
     EXISTS (
       SELECT 1 FROM maestros
-      WHERE maestros.usuario_id = auth.uid()
+      WHERE maestros.user_id = auth.uid()
         AND maestros.es_admin = true
     )
   );

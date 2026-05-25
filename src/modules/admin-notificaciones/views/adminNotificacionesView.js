@@ -18,6 +18,8 @@
 import { fetchAdminFeed } from '../api/adminNotifApi.js'
 import { aprobarAusencia, rechazarAusencia } from '../../admin-aprobacion/api/ausenciaAprobacionApi.js'
 import { supabase } from '../../../lib/supabaseClient.js'
+import { AppModal } from '../../../shared/components/AppModal.js'
+import { router } from '../../../core/router/router.js'
 
 // ── Styles ────────────────────────────────────────────────────────────────────
 
@@ -634,11 +636,15 @@ export async function renderAdminNotificacionesView(container) {
     container.innerHTML = `
       <div class="anv-root">
         <div class="anv-header">
-          <div class="anv-title-row">
+          <div class="anv-title-row d-flex justify-content-between align-items-center flex-wrap gap-2">
             <div class="anv-title-left">
               <div class="anv-icon-wrap"><i class="bi bi-bell-fill"></i></div>
               <h2 class="anv-title">Centro de Actividad</h2>
             </div>
+            <button id="anv-btn-help" class="btn btn-sm btn-outline-light rounded-pill px-3 py-1.5 fw-semibold d-flex align-items-center gap-2 transition-all" style="background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.25); color: white; cursor: pointer;">
+              <i class="bi bi-question-circle-fill"></i>
+              <span>Guía del Usuario</span>
+            </button>
           </div>
           <p class="anv-subtitle">Gobernanza escolar proactiva y control operativo en tiempo real.</p>
           
@@ -703,6 +709,12 @@ export async function renderAdminNotificacionesView(container) {
         _renderFilters()
         _renderTimeline()
       })
+    })
+
+    // Wire help guide button
+    const btnHelp = container.querySelector('#anv-btn-help')
+    btnHelp?.addEventListener('click', () => {
+      _openHelpGuideModal()
     })
   }
 
@@ -818,14 +830,15 @@ export async function renderAdminNotificacionesView(container) {
     const cat = CAT_COLORS[event.category] || { bg: 'rgba(99,102,241,0.12)', color: '#6366f1' }
     const catLabel = CAT_LABELS[event.category] || event.category
 
-    // Post-decision state chip for resolved ausencias
+    // Post-decision state chip for resolved events (ausencias and maestros)
     let estadoChipHTML = ''
-    if (event.source === 'ausencia' && !event.actionable) {
-      const ec = ESTADO_CONFIG[event.estado]
+    if ((event.source === 'ausencia' || event.source === 'maestro') && !event.actionable) {
+      const estadoKey = event.estado === 'activo' ? 'aprobada' : (event.estado === 'rechazado' ? 'rechazada' : event.estado)
+      const ec = ESTADO_CONFIG[estadoKey]
       if (ec) {
         estadoChipHTML = `
           <span class="anv-estado-chip" style="background:${ec.bg};color:${ec.color}">
-            <i class="bi ${ec.icon}"></i> ${ec.label}
+            <i class="bi ${ec.icon}"></i> ${ec.label === 'Aprobada' && event.source === 'maestro' ? 'Aprobado' : (ec.label === 'Rechazada' && event.source === 'maestro' ? 'Rechazado' : ec.label)}
           </span>
         `
       }
@@ -856,7 +869,7 @@ export async function renderAdminNotificacionesView(container) {
       `
     }
 
-    // Inline actions for pending ausencias
+    // Inline actions for pending ausencias and maestros
     let actionsHTML = ''
     if (event.actionable && event.source === 'ausencia') {
       actionsHTML = `
@@ -869,6 +882,20 @@ export async function renderAdminNotificacionesView(container) {
           </button>
           <button class="anv-action-btn anv-btn-goto" data-action="goto" data-route="admin-ausencias">
             <i class="bi bi-arrow-right-circle"></i> Ver detalle
+          </button>
+        </div>
+      `
+    } else if (event.actionable && event.source === 'maestro') {
+      actionsHTML = `
+        <div class="anv-inline-actions">
+          <button class="anv-action-btn anv-btn-approve" data-action="approve-maestro" data-id="${event.sourceId}">
+            <i class="bi bi-check-circle"></i> Aprobar
+          </button>
+          <button class="anv-action-btn anv-btn-reject" data-action="reject-maestro" data-id="${event.sourceId}">
+            <i class="bi bi-x-circle"></i> Rechazar
+          </button>
+          <button class="anv-action-btn anv-btn-goto" data-action="goto" data-route="${event.actionRoute}">
+            <i class="bi bi-arrow-right-circle"></i> Ver Aprobaciones
           </button>
         </div>
       `
@@ -908,7 +935,8 @@ export async function renderAdminNotificacionesView(container) {
         e.stopPropagation()
         const action = btn.dataset.action
         if (action === 'goto') {
-          if (window.router) window.router.navigate(btn.dataset.route)
+          const r = window.router || router
+          if (r) r.navigate(btn.dataset.route)
           return
         }
 
@@ -924,7 +952,7 @@ export async function renderAdminNotificacionesView(container) {
         }
 
         // Approve / Reject inline con transición atómica in-place
-        el.querySelectorAll('[data-action="approve"],[data-action="reject"]').forEach(b => b.disabled = true)
+        el.querySelectorAll('[data-action="approve"],[data-action="reject"],[data-action="approve-maestro"],[data-action="reject-maestro"]').forEach(b => b.disabled = true)
         
         if (action === 'approve') {
           btn.innerHTML = '<span class="anv-spinner" style="width:0.8rem;height:0.8rem;border-width:2px;margin:0"></span>'
@@ -974,6 +1002,66 @@ export async function renderAdminNotificacionesView(container) {
           } catch (err) {
             window.dispatchEvent(new CustomEvent('showToast', { detail: { message: 'Error: ' + err.message, type: 'error' } }))
             el.querySelectorAll('[data-action="approve"],[data-action="reject"]').forEach(b => b.disabled = false)
+            btn.innerHTML = '<i class="bi bi-x-circle"></i> Rechazar'
+          }
+        } else if (action === 'approve-maestro') {
+          btn.innerHTML = '<span class="anv-spinner" style="width:0.8rem;height:0.8rem;border-width:2px;margin:0"></span>'
+          try {
+            const { error } = await supabase
+              .from('profiles')
+              .update({ estado: 'activo' })
+              .eq('id', event.sourceId)
+            
+            if (error) throw error
+
+            window.dispatchEvent(new CustomEvent('showToast', { detail: { message: 'Maestro aprobado con éxito', type: 'success' } }))
+            
+            // Reemplazo atómico in-place
+            event.actionable = false
+            event.estado = 'activo'
+            event.priority = 'info'
+            event.icon = 'bi-person-check-fill'
+            event.iconColor = '#22c55e'
+            event.titulo = `Maestro registrado aprobado: ${event.titulo.replace('Nuevo maestro registrado esperando aprobación: ', '')}`
+
+            const freshEl = _buildEventEl(event, onRefresh)
+            freshEl.style.animation = 'anv-fadein 0.3s ease'
+            el.replaceWith(freshEl)
+
+            _renderKPIs()
+          } catch (err) {
+            window.dispatchEvent(new CustomEvent('showToast', { detail: { message: 'Error: ' + err.message, type: 'error' } }))
+            el.querySelectorAll('[data-action="approve-maestro"],[data-action="reject-maestro"]').forEach(b => b.disabled = false)
+            btn.innerHTML = '<i class="bi bi-check-circle"></i> Aprobar'
+          }
+        } else if (action === 'reject-maestro') {
+          btn.innerHTML = '<span class="anv-spinner" style="width:0.8rem;height:0.8rem;border-width:2px;margin:0"></span>'
+          try {
+            const { error } = await supabase
+              .from('profiles')
+              .update({ estado: 'rechazado' })
+              .eq('id', event.sourceId)
+            
+            if (error) throw error
+
+            window.dispatchEvent(new CustomEvent('showToast', { detail: { message: 'Maestro rechazado con éxito', type: 'success' } }))
+            
+            // Reemplazo atómico in-place
+            event.actionable = false
+            event.estado = 'rechazado'
+            event.priority = 'info'
+            event.icon = 'bi-person-dash-fill'
+            event.iconColor = '#ef4444'
+            event.titulo = `Maestro registrado rechazado: ${event.titulo.replace('Nuevo maestro registrado esperando aprobación: ', '')}`
+
+            const freshEl = _buildEventEl(event, onRefresh)
+            freshEl.style.animation = 'anv-fadein 0.3s ease'
+            el.replaceWith(freshEl)
+
+            _renderKPIs()
+          } catch (err) {
+            window.dispatchEvent(new CustomEvent('showToast', { detail: { message: 'Error: ' + err.message, type: 'error' } }))
+            el.querySelectorAll('[data-action="approve-maestro"],[data-action="reject-maestro"]').forEach(b => b.disabled = false)
             btn.innerHTML = '<i class="bi bi-x-circle"></i> Rechazar'
           }
         }
@@ -1071,6 +1159,98 @@ export async function renderAdminNotificacionesView(container) {
     } finally {
       if (refreshBtn) refreshBtn.classList.remove('spinning')
     }
+  }
+
+  function _openHelpGuideModal() {
+    const helpContent = `
+      <style>
+        .anv-help-body {
+          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+          color: var(--bs-body-color, #212529);
+        }
+        .anv-help-section {
+          background: rgba(var(--bs-primary-rgb, 13, 110, 253), 0.03);
+          border: 1px solid rgba(var(--bs-border-color-rgb, 222, 226, 230), 0.15);
+          border-radius: 12px;
+          padding: 1.25rem;
+          margin-bottom: 1rem;
+          transition: transform 0.2s;
+        }
+        .anv-help-section:hover {
+          transform: translateY(-2px);
+          border-color: rgba(var(--bs-primary-rgb, 13, 110, 253), 0.25);
+        }
+        .anv-help-icon {
+          width: 32px;
+          height: 32px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: 8px;
+          font-size: 1.1rem;
+          margin-right: 0.75rem;
+        }
+      </style>
+      <div class="anv-help-body container-fluid">
+        <p class="small text-muted mb-4">Esta guía te orientará en el uso del <strong>Centro de Actividad</strong>, el motor inteligente y predictivo de gobernanza y control operativo escolar.</p>
+        
+        <div class="anv-help-section">
+          <div class="d-flex align-items-center mb-3">
+            <div class="anv-help-icon bg-danger bg-opacity-10 text-danger"><i class="bi bi-calendar-x-fill"></i></div>
+            <h6 class="fw-bold mb-0">Gestión de Ausencias & Suplentes</h6>
+          </div>
+          <p class="extra-small text-secondary mb-2 lh-base">
+            Cuando un maestro solicita una ausencia, el sistema activa automáticamente el **Auto-Substitution Suggester** (Motor de Reemplazo).
+          </p>
+          <ul class="extra-small text-secondary mb-0 ps-3 lh-base">
+            <li><strong>Recomendación Inteligente:</strong> El sistema identifica en tiempo real a otros maestros activos que enseñen la misma especialidad (instrumento) y te los presenta como candidatos aptos para cubrir la vacante.</li>
+            <li><strong>Acción Inline:</strong> Hacé clic en <strong>"Proponer"</strong> al lado de un candidato sugerido para asignarlo provisionalmente. También podés <strong>Aprobar</strong> o <strong>Rechazar</strong> la solicitud de ausencia directo desde la tarjeta con actualización atómica (in-place).</li>
+          </ul>
+        </div>
+
+        <div class="anv-help-section">
+          <div class="d-flex align-items-center mb-3">
+            <div class="anv-help-icon bg-warning bg-opacity-10 text-warning"><i class="bi bi-exclamation-triangle-fill"></i></div>
+            <h6 class="fw-bold mb-0">Early Warning Risk Engine (Alertas de Riesgo)</h6>
+          </div>
+          <p class="extra-small text-secondary mb-2 lh-base">
+            El sistema audita continuamente la asistencia estudiantil en busca de anomalías para prevenir la deserción:
+          </p>
+          <ul class="extra-small text-secondary mb-0 ps-3 lh-base">
+            <li><strong>Riesgo de Deserción (Prioridad Alta - Rojo):</strong> Se dispara cuando un alumno acumula <strong>3 o más inasistencias consecutivas</strong> en los últimos 30 días. <em>Recomendación: Contactar de urgencia al tutor.</em></li>
+            <li><strong>Bajo Compliance (Prioridad Media - Naranja):</strong> Se dispara si el porcentaje general de asistencia de un estudiante cae por debajo del <strong>70%</strong>. <em>Recomendación: Agendar reunión de seguimiento.</em></li>
+          </ul>
+        </div>
+
+        <div class="anv-help-section">
+          <div class="d-flex align-items-center mb-3">
+            <div class="anv-help-icon bg-success bg-opacity-10 text-success"><i class="bi bi-broadcast"></i></div>
+            <h6 class="fw-bold mb-0">Control en Vivo (Realtime WebSockets)</h6>
+          </div>
+          <p class="extra-small text-secondary mb-0 lh-base">
+            El Centro de Actividad está conectado permanentemente a Supabase mediante WebSockets. El badge superior de **"Feed en Vivo"** te indica la salud de la conexión. Si ocurren eventos en la escuela mientras estás en otra pestaña, recibirás **notificaciones de escritorio del sistema (Web Push)** para que no te pierdas nada.
+          </p>
+        </div>
+
+        <div class="anv-help-section">
+          <div class="d-flex align-items-center mb-3">
+            <div class="anv-help-icon bg-info bg-opacity-10 text-info"><i class="bi bi-funnel-fill"></i></div>
+            <h6 class="fw-bold mb-0">Buscador & KPIs en Caliente</h6>
+          </div>
+          <p class="extra-small text-secondary mb-0 lh-base">
+            Filtrá todo el feed interactivo al instante escribiendo en el buscador (docente, alumno, instrumento o motivo) o haciendo clic en cualquiera de las 4 tarjetas de KPIs del mini-dashboard superior.
+          </p>
+        </div>
+      </div>
+    `;
+
+    AppModal.open({
+      title: 'Guía del Usuario — Centro de Actividad',
+      body: helpContent,
+      size: 'lg',
+      hideSave: true,
+      cancelText: 'Entendido'
+    });
   }
 
   // Inicialización

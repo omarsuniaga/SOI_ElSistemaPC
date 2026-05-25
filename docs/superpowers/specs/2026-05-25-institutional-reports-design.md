@@ -181,7 +181,7 @@ const { data: alumnos } = await supabase
 │ Clase: Violín Intermedio B · Docente: Vargas · Ses. #5 · 15/05/2026 │
 └──────────────────────────────────────────────────────────────────────┘
 ┌─ MÉTRICAS (4 chips) ─────────────────────────────────────────────────┐
-│  ✓ 11 Presentes   ✗ 1 Ausente   📋 0 Justif.   ⏰ 0 Tardanzas       │
+│  ✓ 11 Presentes   ✗ 1 Ausente   📋 0 Justificados   ⏰ 0 Tardanzas   │
 └──────────────────────────────────────────────────────────────────────┘
 ┌─ REGISTRO DE ASISTENCIA ─────────────────────────────────────────────┐
 │  #   Alumno                     Estado   Observación                 │
@@ -204,9 +204,12 @@ const { data: alumnos } = await supabase
 ### Attendance state colors
 - P (Presente) → `#e7f5ec` / `#1f6e3e`
 - A (Ausente) → `#fde8e8` / `#a31b1b`
-- J (Justificado) → `#fef6e8` / `#a35c00`
+- J (Justificado — incluye licencias médicas y permisos) → `#fef6e8` / `#a35c00`
 - T (Tardanza) → `#ecfeff` / `#0e7490`
-- L (Licencia) → `#f0f4ff` / `#1e3a5f`
+
+**Note:** L (Licencia) is removed as a separate state. Any absence with documentation
+(medical license, family permit, institutional event) is recorded as J (Justificado).
+The detail/reason is captured in the `justificaciones` table.
 
 ---
 
@@ -252,14 +255,14 @@ PÁG 1
 │ ESP · El Sistema Punta Cana   Clase · Docente · Período · Días háb. │
 └──────────────────────────────────────────────────────────────────────┘
 ┌─ RESUMEN (4 métricas grandes) ───────────────────────────────────────┐
-│  142 Presentes (89%)   9 Ausentes (6%)   5 Justif. (3%)   3 L (2%) │
+│  142 Presentes (89%)   9 Ausentes (6%)   5 Justificados (3%)        │
 └──────────────────────────────────────────────────────────────────────┘
 ┌─ TABLA DIARIA: Alumno × Sesiones del mes ────────────────────────────┐
-│  #   Alumno              S1  S2  S3 ... S8   P   A   J   L          │
-│  1   García, Isabella    P   P   P  ... P   8   0   0   0           │
-│  2   Domínguez, Santiago A   A   A  ... P   5   3   0   0           │
+│  #   Alumno              S1  S2  S3 ... S8   P   A   J              │
+│  1   García, Isabella    P   P   P  ... P   8   0   0               │
+│  2   Domínguez, Santiago A   A   A  ... P   5   3   0               │
 │  ...                                                                 │
-│  TOTALES                                 89  4   3   3              │
+│  TOTALES                                 89  4   5                  │
 └──────────────────────────────────────────────────────────────────────┘
 ┌─ PIE PÁG 1 ──────────────────────────────────────────────────────────┘
 
@@ -277,6 +280,8 @@ PÁG 2 (si hace falta)
 ```
 
 **Auto-landscape trigger:** `if (alumnos.length > 18 || sesiones.length > 16) useLandscape()`
+
+**Attendance states in this document: P · A · J · T (4 states only — no L)**
 
 ---
 

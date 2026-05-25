@@ -18,7 +18,7 @@ import { createToolbarHelpModal } from './toolbarHelpModal.js';
  * @param {HTMLElement} container
  * @param {{ onInsert: Function, onLoading: Function, onIaProposal: Function, getEditorContent: Function, aiService?: object, onImproveClick?: Function, onStructureClick?: Function }} options
  */
-export function createDslToolbar(container, { onInsert, onLoading, onIaProposal, getEditorContent, aiService, onImproveClick, onStructureClick }) {
+export function createDslToolbar(container, { onInsert, onLoading, onIaProposal, getEditorContent, aiService, onImproveClick, onStructureClick, onAnalyzeClick }) {
 
   // Contexto mutable: se actualiza desde fuera vía setContext()
   let _ctx = { presentes: [], indicadorActivo: null, indicadoresDisponibles: [] }
@@ -47,6 +47,7 @@ export function createDslToolbar(container, { onInsert, onLoading, onIaProposal,
       <div class="pm-dsl-divider"></div>
       <button class="pm-dsl-tool-btn ai" id="btn-generar-informe" title="Generar informe para padres/tutores">📋</button>
       <button class="pm-dsl-tool-btn ai" id="btn-ia-magic" title="Estructurar con IA">🚀</button>
+      <button class="pm-dsl-tool-btn ai" id="btn-analizar-progreso" title="Analizar progreso con IA">🎯</button>
       <div class="pm-dsl-divider"></div>
       <button class="pm-dsl-tool-btn" id="btn-help" title="Ayuda">❓</button>
 
@@ -174,6 +175,26 @@ export function createDslToolbar(container, { onInsert, onLoading, onIaProposal,
 
   container.querySelector('#btn-generar-informe').onclick = handleGenerateReport;
   container.querySelector('#btn-ia-magic').onclick = handleStructure;
+
+  const analyzeBtn = container.querySelector('#btn-analizar-progreso')
+  if (analyzeBtn) {
+    analyzeBtn.onclick = async () => {
+      const rawText = getEditorContent ? getEditorContent() : ''
+      if (!rawText.trim()) return
+      if (onAnalyzeClick) {
+        analyzeBtn.disabled = true
+        analyzeBtn.textContent = '⏳'
+        try {
+          await onAnalyzeClick(rawText)
+        } catch (err) {
+          // error handled by caller
+        } finally {
+          analyzeBtn.disabled = false
+          analyzeBtn.textContent = '🎯'
+        }
+      }
+    }
+  }
 
 
   // === Snippets Popup ===

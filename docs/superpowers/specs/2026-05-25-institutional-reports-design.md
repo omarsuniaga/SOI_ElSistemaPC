@@ -181,7 +181,7 @@ const { data: alumnos } = await supabase
 │ Clase: Violín Intermedio B · Docente: Vargas · Ses. #5 · 15/05/2026 │
 └──────────────────────────────────────────────────────────────────────┘
 ┌─ MÉTRICAS (4 chips) ─────────────────────────────────────────────────┐
-│  ✓ 11 Presentes   ✗ 1 Ausente   📋 0 Justificados   ⏰ 0 Tardanzas   │
+│  ✓ 11 Presentes   ✗ 1 Ausente   📋 0 Justificados                    │
 └──────────────────────────────────────────────────────────────────────┘
 ┌─ REGISTRO DE ASISTENCIA ─────────────────────────────────────────────┐
 │  #   Alumno                     Estado   Observación                 │
@@ -204,12 +204,10 @@ const { data: alumnos } = await supabase
 ### Attendance state colors
 - P (Presente) → `#e7f5ec` / `#1f6e3e`
 - A (Ausente) → `#fde8e8` / `#a31b1b`
-- J (Justificado — incluye licencias médicas y permisos) → `#fef6e8` / `#a35c00`
-- T (Tardanza) → `#ecfeff` / `#0e7490`
+- J (Justificado — includes medical licenses, family permits, institutional events) → `#fef6e8` / `#a35c00`
 
-**Note:** L (Licencia) is removed as a separate state. Any absence with documentation
-(medical license, family permit, institutional event) is recorded as J (Justificado).
-The detail/reason is captured in the `justificaciones` table.
+**Note:** Only 3 states: P · A · J. T (Tardanza) and L (Licencia) are not recorded
+in `asistenciaView.js` and therefore do not exist in the data. Do not render them.
 
 ---
 
@@ -281,7 +279,7 @@ PÁG 2 (si hace falta)
 
 **Auto-landscape trigger:** `if (alumnos.length > 18 || sesiones.length > 16) useLandscape()`
 
-**Attendance states in this document: P · A · J · T (4 states only — no L)**
+**Attendance states in all documents: P · A · J (3 states only — no T, no L)**
 
 ---
 
@@ -328,17 +326,34 @@ groqService.generateMonthlyPatterns(sesiones, progresos, context)
 ```
 ┌─ CABECERA ───────────────────────────────────────────────────────────┐
 ┌─ PERFILES INDIVIDUALES (3 columnas) ─────────────────────────────────┐
-│ ┌──────────────────┐ ┌──────────────────┐ ┌──────────────────┐      │
-│ │ IG  Isabella G.  │ │ MB  Mateo B.     │ │ SD  Santiago D.  │      │
-│ │ [Destacada]      │ │ [En Mejora]      │ │ [En Riesgo]      │      │
-│ │ Asistencia:      │ │ Asistencia:      │ │ Asistencia:      │      │
-│ │ P P P P P P P P  │ │ P P P P P P P P  │ │ A A A P P P P P  │      │
-│ │ Progreso:        │ │ Progreso:        │ │ Progreso:        │      │
-│ │ ▓▓▓ LOGRADO      │ │ ▓▓▓ EN PROG.     │ │ ▓▓░ INICIADO     │      │
-│ │ Nota pedagógica  │ │ Nota pedagógica  │ │ ⚠️ Alerta        │      │
-│ └──────────────────┘ └──────────────────┘ └──────────────────┘      │
+│ ┌────────────────────────┐ ┌────────────────────────┐ ┌──────────────┐
+│ │ IG  Isabella G. Torres │ │ SD  Santiago D. Cruz   │ │ ...          │
+│ │     [Destacada]        │ │     [En Riesgo]        │ │              │
+│ ├────────────────────────┤ ├────────────────────────┤ │              │
+│ │ ASISTENCIA             │ │ ASISTENCIA             │ │              │
+│ │ Presentes:    8 de 8   │ │ Presentes:    5 de 8   │ │              │
+│ │ Ausentes:     0        │ │ Ausentes:     3        │ │              │
+│ │ Justificados: 0        │ │ Justificados: 0        │ │              │
+│ ├────────────────────────┤ ├────────────────────────┤ │              │
+│ │ (sin justificaciones)  │ │ JUSTIFICACIONES        │ │              │
+│ │                        │ │ • Transporte — 02/05   │ │              │
+│ │                        │ │ • Transporte — 06/05   │ │              │
+│ │                        │ │ • Sin aviso   — 08/05  │ │              │
+│ ├────────────────────────┤ ├────────────────────────┤ │              │
+│ │ PROGRESO               │ │ PROGRESO               │ │              │
+│ │ ▓▓▓ LOGRADO Sol Mayor  │ │ ▓▓░ INICIADO Allegretto│ │              │
+│ │ ▓▓░ EN PROG. Allegretto│ │ ▓░░ INICIADO Compás 3/4│ │              │
+│ ├────────────────────────┤ ├────────────────────────┤ │              │
+│ │ Liderazgo notable en   │ │ ⚠️ Requiere refuerzo   │ │              │
+│ │ ensayos grupales.      │ │ de contenidos perdidos.│ │              │
+│ └────────────────────────┘ └────────────────────────┘ └──────────────┘
 └──────────────────────────────────────────────────────────────────────┘
 ```
+
+**Card rules:**
+- Justificaciones section only renders if alumno has J records — omitted otherwise
+- If alumno has 0 progreso records → show "Sin registros de progreso este mes"
+- Badge color: Destacado=teal, En Mejora=blue, Estable=gray, En Riesgo=red
 
 **Badge colors:**
 - Destacado → teal `#0e7490`

@@ -13,6 +13,25 @@ export async function renderReportesPedagogicosView(container) {
     ])
     container.innerHTML = _render(rendimientoClases, alumnosRiesgo)
 
+    container.querySelectorAll('.btn-generar-pedagogico').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        e.preventDefault()
+        const claseId = btn.getAttribute('data-clase-id')
+        btn.disabled = true
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>'
+        try {
+          const { generateMonthlyPedagogical } = await import('../../../portal-maestros/services/reportService.js')
+          const now = new Date()
+          await generateMonthlyPedagogical(claseId, now.getFullYear(), now.getMonth() + 1)
+        } catch (err) {
+          console.error('[reportesPedagogicos] Error:', err)
+        } finally {
+          btn.disabled = false
+          btn.innerHTML = '🎓 Generar'
+        }
+      })
+    })
+
     container.querySelector('#btn-help-reportes')?.addEventListener('click', () => {
       HelpPanel.open({
         title: 'Reportes Pedagógicos',
@@ -130,6 +149,7 @@ function _render(clases, alumnosRiesgo) {
                 <th class="text-center">Asistencia</th>
                 <th class="text-center">Prom. Nota</th>
                 <th class="text-center">Ocupación</th>
+                <th class="text-center">Reporte</th>
               </tr>
             </thead>
             <tbody>
@@ -159,8 +179,13 @@ function _render(clases, alumnosRiesgo) {
                         <span style="font-size:0.72rem;color:var(--bs-secondary-color);min-width:28px;">${c.ocupacion}%</span>
                       </div>` : '<span class="text-muted">–</span>'}
                   </td>
+                  <td class="text-center">
+                    <button class="btn btn-sm btn-light btn-generar-pedagogico py-1 px-2 text-primary" data-clase-id="${c.id}" title="Generar Informe Pedagógico Mensual" style="font-size:0.75rem; font-weight:600; border: 1px solid var(--bs-border-color);">
+                      🎓 Generar
+                    </button>
+                  </td>
                 </tr>`).join('') : `
-                <tr><td colspan="5" class="text-center text-muted py-4">Sin clases activas</td></tr>`}
+                <tr><td colspan="6" class="text-center text-muted py-4">Sin clases activas</td></tr>`}
             </tbody>
           </table>
         </div>

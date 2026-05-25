@@ -10,6 +10,7 @@ const TOKEN_PATTERNS = {
   nodos: />NODO:([A-Z_]+)/g,
   capas: /:::CAPA:\s*([A-Z_]+)/g,
   calificacion: /(\d)\/(\d)/g,
+  estados: /!(LOGRADO|EN_PROGRESO|INICIADO)/gi,
 }
 
 /**
@@ -34,6 +35,7 @@ export const TOKEN_COLORS = {
   niveles: '#5856d6',
   nodos: '#af52de',
   capas: '#ff9500',
+  estados: { LOGRADO: '#198754', EN_PROGRESO: '#0d6efd', INICIADO: '#6c757d' },
 }
 
 export const CAPA_MAP = {
@@ -87,6 +89,7 @@ function parseDSLSection(text) {
     niveles: extractTokens(text, TOKEN_PATTERNS.niveles),
     nodos: extractTokens(text, TOKEN_PATTERNS.nodos),
     capas: extractTokens(text, TOKEN_PATTERNS.capas),
+    estados: extractTokens(text, TOKEN_PATTERNS.estados).map(e => e.toUpperCase()),
   }
 }
 
@@ -106,6 +109,7 @@ export function parseDSL(text) {
       niveles: [],
       nodos: [],
       capas: [],
+      estados: [],
       por_capas: {}
     }
   }
@@ -196,6 +200,16 @@ export function highlightDSL(text) {
     return pushPlaceholder(`<span class="dsl-token dsl-medida" data-medida="${medida}">$${medida}</span>`)
   })
 
+  // Estados de progreso
+  result = result.replace(/!(LOGRADO|EN_PROGRESO|INICIADO)/gi, (_, estado) => {
+    const estadoUp = estado.toUpperCase()
+    const colorMap = { LOGRADO: '#198754', EN_PROGRESO: '#0d6efd', INICIADO: '#6c757d' }
+    const color = colorMap[estadoUp] ?? '#6c757d'
+    return pushPlaceholder(
+      `<span class="dsl-token dsl-estado" style="color:${color};font-weight:700;background:${color}18;padding:1px 4px;border-radius:3px">!${estadoUp}</span>`
+    )
+  })
+
   // Calificación
   result = result.replace(TOKEN_PATTERNS.calificacion, (_, v, s) => {
     return pushPlaceholder(`<span class="dsl-token dsl-calificacion" data-valor="${v}" data-sobre="${s}">${v}/${s}</span>`)
@@ -227,6 +241,7 @@ export function getTokenSummary(parsed) {
   if (parsed.tareas.length > 0) summary.push(`${parsed.tareas.length} tarea(s)`)
   if (parsed.medidas.length > 0) summary.push(`${parsed.medidas.length} medida(s)`)
   if (parsed.calificacion) summary.push(`calificación: ${parsed.calificacion.valor}/${parsed.calificacion.sobre}`)
+  if (parsed.estados && parsed.estados.length > 0) summary.push(`${parsed.estados.length} estado(s)`)
   if (parsed.objetivos.length > 0) summary.push(`${parsed.objetivos.length} objetivo(s)`)
   if (parsed.niveles.length > 0) summary.push(`${parsed.niveles.length} nivel(es)`)
   if (parsed.nodos.length > 0) summary.push(`${parsed.nodos.length} nodo(s)`)

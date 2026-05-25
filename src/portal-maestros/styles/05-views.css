@@ -2517,3 +2517,179 @@
   from { opacity: 1; }
   to   { opacity: 0; }
 }
+
+/* ── Curriculum Proposal Panel ───────────────────────────────── */
+.cpp-panel {
+  margin-top: 0.75rem;
+  border: 1px solid var(--pm-border);
+  border-radius: var(--pm-radius-md, 8px);
+  overflow: hidden;
+  background: var(--pm-surface);
+}
+
+.cpp-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  padding: 0.75rem 1rem;
+  background: color-mix(in srgb, #6f42c1 6%, transparent);
+  border-bottom: 1px solid var(--pm-border);
+}
+
+.cpp-icon { font-size: 1.1rem; flex-shrink: 0; margin-top: 1px; }
+
+.cpp-header-text strong {
+  font-size: 0.85rem;
+  color: var(--pm-text);
+}
+
+.cpp-resumen {
+  font-size: 0.75rem;
+  color: var(--pm-text-muted);
+  margin-top: 2px;
+  font-style: italic;
+}
+
+.cpp-pilares {
+  padding: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.cpp-pilar {
+  border: 1px solid var(--pm-border);
+  border-radius: 6px;
+  padding: 0.5rem 0.65rem;
+  font-size: 0.82rem;
+}
+
+.cpp-pilar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.cpp-pilar-title {
+  font-weight: 700;
+  font-size: 0.83rem;
+  color: var(--pm-text);
+  cursor: text;
+  padding: 1px 3px;
+  border-radius: 3px;
+}
+.cpp-pilar-title:hover { background: rgba(255,255,255,0.07); }
+
+.cpp-remove-pilar,
+.cpp-remove-obj {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--pm-text-muted);
+  font-size: 0.72rem;
+  padding: 1px 4px;
+  border-radius: 3px;
+  line-height: 1;
+}
+.cpp-remove-pilar:hover,
+.cpp-remove-obj:hover { color: var(--pm-danger, #dc3545); background: #dc354518; }
+
+.cpp-objetivos {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding-left: 0.25rem;
+}
+
+.cpp-objetivo-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  padding: 2px 0;
+}
+
+.cpp-objetivo-text {
+  color: var(--pm-text);
+  font-size: 0.81rem;
+  cursor: text;
+  flex: 1;
+  min-width: 0;
+  padding: 1px 3px;
+  border-radius: 3px;
+}
+.cpp-objetivo-text:hover { background: rgba(255,255,255,0.07); }
+
+.cpp-prioridad-badge {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  flex-shrink: 0;
+}
+
+.cpp-no-obj {
+  font-size: 0.75rem;
+  color: var(--pm-text-muted);
+  font-style: italic;
+  padding: 2px 0;
+}
+
+.cpp-empty {
+  padding: 1rem;
+  text-align: center;
+  color: var(--pm-text-muted);
+  font-size: 0.82rem;
+  font-style: italic;
+}
+
+.cpp-footer {
+  border-top: 1px solid var(--pm-border);
+  padding: 0.65rem 0.75rem;
+  background: var(--pm-surface);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.cpp-fields {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.cpp-field-label {
+  font-size: 0.75rem;
+  color: var(--pm-text-muted);
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1;
+  min-width: 120px;
+}
+
+.cpp-input {
+  background: var(--pm-bg, #0f1923);
+  border: 1px solid var(--pm-border);
+  border-radius: 4px;
+  color: var(--pm-text);
+  font-size: 0.82rem;
+  padding: 4px 8px;
+  outline: none;
+  width: 100%;
+}
+.cpp-input:focus { border-color: var(--pm-primary, #0d6efd); }
+
+.cpp-inline-input {
+  font-size: inherit;
+  padding: 1px 4px;
+  width: auto;
+  min-width: 120px;
+}
+
+.cpp-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}

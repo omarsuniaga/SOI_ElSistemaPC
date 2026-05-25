@@ -39,6 +39,10 @@ import { createAsyncMutex } from '../../shared/utils/asyncMutex.js'
 import { analyzeObservation } from '../services/groqService.js'
 import { saveProgressFromAI, saveProgressFromDSL } from '../services/progressAggregatorService.js'
 import { createProgressPreviewPanel } from '../components/ProgressPreviewPanel.js'
+import { fetchInsights } from '../services/progressInsightService.js'
+import { proposeCurriculum } from '../services/groqService.js'
+import { createCurriculumProposalPanel } from '../components/CurriculumProposalPanel.js'
+import { adoptarPropuesta } from '../../modules/planificacion/api/curriculoApi.js'
 /**
  * Vista Asistencia Optimizada (F3+): toma de asistencia con micro-interacciones.
  *
@@ -581,6 +585,11 @@ function _renderVista(container, ctx) {
           
           <!-- EL ARBOL AHORA VIVE AQUI DENTRO -->
           <div id="pm-route-tree-container" class="pm-route-tree-dropdown-box"></div>
+          <div id="pm-curriculo-proposal-trigger" style="padding:0.5rem 0.75rem 0.75rem;">
+            <button class="pm-btn pm-btn-outline" id="btn-proponer-curriculo" style="width:100%;font-size:0.82rem;">
+              <i class="bi bi-stars"></i> Proponer plan curricular con IA
+            </button>
+          </div>
         </div>
       </div>
 
@@ -666,6 +675,22 @@ function _renderVista(container, ctx) {
     },
     onCancel: () => {},
   })
+
+  // === Curriculum Proposal Panel ===
+  const curricPanel = createCurriculumProposalPanel(
+    container.querySelector('#pm-planificacion-dropdown') || container,
+    {
+      onAdopt: async ({ instrumento, nivel, resumen, pilares }) => {
+        try {
+          await adoptarPropuesta({ instrumento, nivel, descripcion: resumen, pilares })
+          AppToast.success('¡Plan curricular creado correctamente!')
+        } catch (err) {
+          AppToast.error('Error al crear el plan: ' + err.message)
+        }
+      },
+      onCancel: () => {},
+    }
+  )
 
   const toolbar = createDslToolbar(toolbarContainer, {
     onInsert: (text, cursorOffset, triggerAC) => editor.insertText(text, cursorOffset, triggerAC),
@@ -970,6 +995,43 @@ function _renderVista(container, ctx) {
         console.warn('[asistencia] Error cargando planificación unificada:', err);
       }
     })();
+  }
+
+  // Wire "Proponer plan curricular" button
+  const btnProponerCurriculo = container.querySelector('#btn-proponer-curriculo')
+  if (btnProponerCurriculo) {
+    btnProponerCurriculo.onclick = async () => {
+      btnProponerCurriculo.disabled = true
+      btnProponerCurriculo.innerHTML = '<i class="bi bi-hourglass-split"></i> Analizando...'
+
+      try {
+        const insights = await fetchInsights(claseId, 12)
+
+        if (insights.registros.length === 0) {
+          AppToast.error('No hay registros de progreso suficientes en las últimas 12 semanas para generar una propuesta.')
+          return
+        }
+
+        const proposal = await proposeCurriculum(insights, {
+          instrumento: clase?.instrumento || '',
+          nivel: '',
+          nombreClase: clase?.nombre || '',
+        })
+
+        curricPanel.open({
+          pilares: proposal.pilares,
+          resumen: proposal.resumen,
+          instrumento: clase?.instrumento || '',
+          nivel: '',
+        })
+
+      } catch (err) {
+        AppToast.error('Error al generar propuesta: ' + err.message)
+      } finally {
+        btnProponerCurriculo.disabled = false
+        btnProponerCurriculo.innerHTML = '<i class="bi bi-stars"></i> Proponer plan curricular con IA'
+      }
+    }
   }
 
   // Botón "Copiar como planificación"

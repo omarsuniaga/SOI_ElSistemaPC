@@ -10,7 +10,7 @@ const TOKEN_PATTERNS = {
   nodos: />NODO:([A-Z_]+)/g,
   capas: /:::CAPA:\s*([A-Z_]+)/g,
   calificacion: /(\d)\/(\d)/g,
-  estados: /!(LOGRADO|EN_PROGRESO|INICIADO)/gi,
+  estados: /!(LOGRADO|EN_PROGRESO|INICIADO)\b/gi,
 }
 
 /**
@@ -20,7 +20,7 @@ const TOKEN_PATTERNS = {
  */
 export function detectInputMode(text) {
   if (!text || typeof text !== 'string' || !text.trim()) return 'dsl'
-  const hasTokens = /[#\[\(\{\$>]/.test(text)
+  const hasTokens = /[#\[\(\{\$>!]/.test(text)
   return hasTokens ? 'dsl' : 'natural'
 }
 

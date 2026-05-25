@@ -10,6 +10,7 @@ const EMPTY_STATE = '<p class="text-muted text-center py-4">No hay asignaciones 
  * @returns {string}
  */
 function roundToHour(timeStr) {
+  if (!timeStr || !timeStr.includes(':')) return '00:00';
   const [h] = timeStr.split(':');
   return `${h.padStart(2, '0')}:00`;
 }
@@ -18,17 +19,19 @@ function roundToHour(timeStr) {
  * Renders a weekly grid (table-like) view grouped by hour × day.
  * @param {Array}   assignments
  * @param {boolean} draggable
+ * @param {string}  periodoId - Current period ID (for display only)
  * @returns {string} HTML
  */
-function renderGridView(assignments, draggable) {
+function renderGridView(assignments, draggable, periodoId) {
   // Build map: hour -> day -> [assignment]
   const hourDayMap = new Map();
   for (const a of assignments) {
     const hour = roundToHour(a.hora_inicio);
     if (!hourDayMap.has(hour)) hourDayMap.set(hour, new Map());
     const dayMap = hourDayMap.get(hour);
-    if (!dayMap.has(a.dia)) dayMap.set(a.dia, []);
-    dayMap.get(a.dia).push(a);
+    const dayKey = (a.dia || '').toLowerCase();
+    if (!dayMap.has(dayKey)) dayMap.set(dayKey, []);
+    dayMap.get(dayKey).push(a);
   }
   const hours = [...hourDayMap.keys()].sort();
 
@@ -53,9 +56,10 @@ function renderGridView(assignments, draggable) {
   return `
     <div class="schedule-grid-wrapper" style="overflow-x:auto;">
       <table class="schedule-grid" style="width:100%;border-collapse:collapse;">
+        ${periodoId ? `<caption class="text-muted" style="caption-side:top;font-size:0.75rem;padding-bottom:4px;">${periodoId}</caption>` : ''}
         <thead>
           <tr>
-            <th class="sg-hour-col" style="min-width:56px;"></th>
+            <th class="sg-hour-col" aria-label="Hora" style="min-width:56px;"></th>
             ${headerCells}
           </tr>
         </thead>
@@ -117,7 +121,7 @@ export function createScheduleGrid({ assignments, activeView, draggable = false,
       return renderGroupedView(assignments, 'clase_nombre', draggable);
     case 'grid':
     default:
-      return renderGridView(assignments, draggable);
+      return renderGridView(assignments, draggable, periodoId);
   }
 }
 

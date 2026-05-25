@@ -31,7 +31,7 @@ export function showConflictMoveModal({ conflictDescription }) {
             </h5>
           </div>
           <div class="modal-body">
-            <p>${conflictDescription}</p>
+            <p></p>
             <p class="text-muted small">¿Querés mover la clase de todas formas?</p>
           </div>
           <div class="modal-footer">
@@ -41,6 +41,9 @@ export function showConflictMoveModal({ conflictDescription }) {
         </div>
       </div>
     `;
+
+    const bodyP = modal.querySelector('.modal-body p');
+    if (bodyP) bodyP.textContent = conflictDescription;
 
     function cleanup(result) {
       document.body.removeChild(modal);
@@ -98,15 +101,19 @@ export function initDragDrop(gridContainer, { assignments, onMove, onConflict })
     if (!cell) return;
     e.preventDefault();
     if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
-    cell.classList.add('hb-drop-target');
+    if (!cell.classList.contains('hb-drop-target')) {
+      cell.classList.add('hb-drop-target');
+    }
   }, { signal });
 
   gridContainer.addEventListener('dragleave', (e) => {
     const cell = e.target.closest('[data-day][data-hour]');
-    if (cell) cell.classList.remove('hb-drop-target');
+    if (!cell) return;
+    if (cell.contains(e.relatedTarget)) return; // still inside cell
+    cell.classList.remove('hb-drop-target');
   }, { signal });
 
-  gridContainer.addEventListener('drop', async (e) => {
+  gridContainer.addEventListener('drop', (e) => {
     const cell = e.target.closest('[data-day][data-hour]');
     if (!cell) return;
     e.preventDefault();

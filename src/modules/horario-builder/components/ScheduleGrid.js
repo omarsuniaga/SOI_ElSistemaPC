@@ -1,6 +1,7 @@
 // src/modules/horario-builder/components/ScheduleGrid.js
 import { DIAS_SEMANA } from '../models/scheduleConstraints.model.js';
 import { createScheduleBlock } from './ScheduleBlock.js';
+import { escapeHtml } from '../utils/escapeHtml.js';
 
 const EMPTY_STATE = '<p class="text-muted text-center py-4">No hay asignaciones para mostrar.</p>';
 
@@ -90,7 +91,7 @@ function renderGroupedView(assignments, groupKey, draggable) {
     const blocks = items.map(a => createScheduleBlock(a, { draggable })).join('');
     return `
       <div class="sg-group" style="margin-bottom:1rem;">
-        <h4 class="sg-group-title" style="font-size:0.85rem;font-weight:700;color:#1e293b;margin-bottom:0.5rem;">${groupName}</h4>
+        <h4 class="sg-group-title" style="font-size:0.85rem;font-weight:700;color:#1e293b;margin-bottom:0.5rem;">${escapeHtml(groupName)}</h4>
         <div class="sg-group-blocks" style="display:flex;flex-wrap:wrap;gap:6px;">${blocks}</div>
       </div>
     `;
@@ -131,6 +132,5 @@ export function createScheduleGrid({ assignments, activeView, draggable = false,
  *
  * @param {HTMLElement} container
  */
-export function attachScheduleGridListeners(container) {
-  // No-op — D&D listeners will be attached in Task 8
-}
+// Reserved for future use; D&D is managed by DragDropManager.
+export function attachScheduleGridListeners(_container) {}

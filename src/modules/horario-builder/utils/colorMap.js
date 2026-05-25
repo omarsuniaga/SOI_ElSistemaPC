@@ -19,7 +19,7 @@ export const INSTRUMENT_COLORS = {
  * Case-insensitive. Falls back to #94a3b8 (slate) for unknown instruments.
  */
 export function getInstrumentColor(instrument = '') {
-  return INSTRUMENT_COLORS[instrument.toLowerCase()] ?? '#94a3b8';
+  return INSTRUMENT_COLORS[instrument.toLowerCase()] ?? INSTRUMENT_COLORS.general;
 }
 
 /**

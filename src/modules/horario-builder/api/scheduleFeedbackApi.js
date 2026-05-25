@@ -38,6 +38,22 @@ export async function addFeedback({ runId, comentario, tipo = 'observacion' }) {
 }
 
 /**
+ * Returns whether the currently authenticated user is an admin.
+ * @returns {Promise<boolean>}
+ */
+export async function getCurrentUserIsAdmin() {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return false;
+  const { data, error } = await supabase
+    .from('maestros')
+    .select('es_admin')
+    .eq('usuario_id', user.id)
+    .single();
+  if (error || !data) return false;
+  return data.es_admin === true;
+}
+
+/**
  * Update the estado of a schedule run.
  *
  * @param {string} runId   - UUID of the schedule run

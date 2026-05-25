@@ -139,6 +139,62 @@ MAL: "#María [Escalas] (mejoró) {practicar} 4/5 >CÓDIGO"
 BIEN: "#María [Escalas] (mejoró notablemente en la ejecución económica) {Escala F mayor en 3 octavas} 5/5"
 `
 
+const ANALYZE_OBSERVATION_PROMPT = `
+Sos un asistente pedagógico musical especializado en análisis de registros de clase.
+
+Recibís una observación libre de un maestro de música y un contexto de la clase.
+Tu tarea es analizar el texto y devolver ÚNICAMENTE un JSON válido con tres campos, sin texto extra.
+
+FORMATO DE RESPUESTA:
+{
+  "dsl": "texto en formato DSL usando tokens #Nombre [contenido] !ESTADO (sugerencia) {tarea} N/5",
+  "progreso": [
+    {
+      "alumnos": ["nombre completo según lista del contexto"],
+      "contenido": "qué se trabajó (conciso, máx 60 chars)",
+      "tipo": "tecnica | repertorio | teoria | interpretacion | otro",
+      "estado": "LOGRADO | EN_PROGRESO | INICIADO",
+      "nota": null,
+      "tarea": null,
+      "observacion": "descripción del nivel actual (máx 100 chars)",
+      "es_colectivo": false
+    }
+  ],
+  "resumen": "Una frase que resume el foco pedagógico de la sesión (máx 120 chars)"
+}
+
+REGLAS DE INFERENCIA DE ESTADO:
+- "lograron", "alcanzaron", "dominaron", "ya saben", "lo hicieron bien" → LOGRADO
+- "avanzando", "mejorando", "progresando", "casi", "van bien", "muestran progreso" → EN_PROGRESO
+- "empezaron", "conocieron", "introdujeron", "por primera vez", "vieron" → INICIADO
+- Sin indicador claro → EN_PROGRESO (default conservador)
+
+REGLAS DE TIPO (usar tipoClase del contexto):
+- tipoClase "instrumento": progreso es ejecución del instrumento → tipo preferido "tecnica" o "repertorio"
+- tipoClase "ensayo_general": progreso colectivo → tipo "repertorio"; mención individual → tipo "interpretacion"
+- tipoClase "teoria": tipo "teoria"
+- Obras musicales con nombre propio (Danzón, Minueto, Sonata, etc.) → tipo "repertorio"
+- Escalas, posiciones, arco, digitación → tipo "tecnica"
+- Ritmo, compás, armonía, lectura → tipo "teoria"
+
+RESOLUCIÓN DE NOMBRES:
+- Resolvé nombres parciales usando la lista "alumnos" del contexto: "Yereni" → nombre completo de la lista
+- "todos" en el texto = SOLO los alumnos de la lista "presentes" (no toda la clase)
+- Si presentes está vacío → usar lista completa "alumnos"
+- Si no podés resolver un nombre → usá el nombre tal como lo escribió el maestro
+
+PASAJES Y DETALLES:
+- "compases 333 al 348" → incluílo en contenido: "Danzón c.333-348"
+- Detalles técnicos del pasaje van en observacion
+
+CAMPO DSL:
+- Usá los tokens estándar del DSL
+- Incluí !LOGRADO / !EN_PROGRESO / !INICIADO para los estados extraídos
+- Las calificaciones van al final: "4/5"
+
+Si el texto no contiene información de progreso evaluable → devolvé progreso: [] y resumen: "Registro general de clase sin evaluaciones individuales detectadas"
+`
+
 // ---------------------------------------------------------------------------
 // Public API (same signatures as before — drop-in replacement)
 // ---------------------------------------------------------------------------
@@ -191,6 +247,61 @@ export async function structureTextToDSL(text, context = {}) {
   } catch (err) {
     console.error('[GROQ] Error en structureTextToDSL:', err)
     throw err
+  }
+}
+
+/**
+ * Analyzes a free-text observation with full class context.
+ * Extracts structured progress records per student.
+ *
+ * @param {string} text - Teacher's free-text observation
+ * @param {object} context
+ * @param {Array<{id,nombre,nombreCorto}>} context.alumnos
+ * @param {Array<{id,nombre,nombreCorto}>} context.presentes
+ * @param {string} context.tipoClase - 'instrumento' | 'ensayo_general' | 'teoria'
+ * @param {string} context.instrumento
+ * @param {string[]} context.sesionesRecientes
+ * @param {string} [context.indicadorActivo]
+ * @returns {Promise<{dsl: string, progreso: Array, resumen: string}>}
+ */
+export async function analyzeObservation(text, context = {}) {
+  const alumnosStr = (context.alumnos || []).map(a => `${a.nombre} (${a.nombreCorto})`).join(', ')
+  const presentesStr = (context.presentes || []).map(a => a.nombre).join(', ')
+  const recientesStr = (context.sesionesRecientes || []).join('\n---\n')
+
+  const contextBlock = `
+CONTEXTO DE LA CLASE:
+- Instrumento / tipo: ${context.instrumento || 'no especificado'} (tipoClase: ${context.tipoClase || 'instrumento'})
+- Alumnos en clase: ${alumnosStr || 'no especificados'}
+- Alumnos presentes hoy: ${presentesStr || alumnosStr || 'todos'}
+- Indicador activo del plan: ${context.indicadorActivo || 'ninguno'}
+- Sesiones recientes:
+${recientesStr || 'sin sesiones previas registradas'}
+`
+
+  const systemPrompt = ANALYZE_OBSERVATION_PROMPT + '\n\n' + contextBlock
+
+  try {
+    const raw = await proxyChat(
+      [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: text },
+      ],
+      0.1
+    )
+
+    // Parse JSON — Groq sometimes wraps in markdown code blocks
+    const cleaned = raw.replace(/^```(?:json)?\n?/m, '').replace(/\n?```$/m, '').trim()
+    const parsed = JSON.parse(cleaned)
+
+    return {
+      dsl: parsed.dsl || '',
+      progreso: Array.isArray(parsed.progreso) ? parsed.progreso : [],
+      resumen: parsed.resumen || '',
+    }
+  } catch (err) {
+    console.error('[GROQ] Error en analyzeObservation:', err)
+    throw new Error('No se pudo analizar la observación. Verificá la conexión con el servicio IA.')
   }
 }
 

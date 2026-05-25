@@ -1923,8 +1923,11 @@ async function _autoSave(immediate = false, skipMutex = false) {
             <button class="pm-btn pm-btn-secondary" id="btn-editar-asistencia">
               <i class="bi bi-pencil"></i> Editar Asistencia
             </button>
-            <button class="pm-btn pm-btn-primary" id="btn-descargar-pdf">
-              <i class="bi bi-file-earmark-pdf"></i> Descargar PDF de HOY
+            <button class="pm-btn pm-btn-primary" id="btn-reporte-dia-overlay">
+              <i class="bi bi-file-earmark-pdf"></i> Reporte del día (PDF)
+            </button>
+            <button class="pm-btn pm-btn-secondary" id="btn-resumen-mes-overlay">
+              <i class="bi bi-bar-chart-line"></i> Resumen del mes (PDF)
             </button>
             <button class="pm-btn pm-btn-outline" id="btn-compartir-correo">
               <i class="bi bi-envelope"></i> Compartir por Correo
@@ -1985,31 +1988,23 @@ async function _autoSave(immediate = false, skipMutex = false) {
         window.location.hash = '#/calendario';
       };
 
-      const pdfBtn = overlay.querySelector('#btn-descargar-pdf');
-      if (pdfBtn) pdfBtn.onclick = async () => {
-        pdfBtn.disabled = true;
-        pdfBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Generando…';
-        try {
-          const { generarPdfHoy } = await import('../services/attendancePdfService.js');
-          await generarPdfHoy({
-            clase,
-            horario,
-            alumnos,
-            estado,
-            justificaciones,
-            fecha: fechaHoy,
-            dslContent,
-            salonNombre,
-            snapshots,
-            maestro,
-          });
-        } catch (e) {
-          console.error('[PDF] Error generando PDF:', e);
-          alert('No se pudo generar el PDF: ' + e.message);
-        } finally {
-          pdfBtn.disabled = false;
-          pdfBtn.innerHTML = '<i class="bi bi-file-earmark-pdf"></i> Descargar PDF de HOY';
-        }
+      const reporteDiaBtn = overlay.querySelector('#btn-reporte-dia-overlay');
+      if (reporteDiaBtn) reporteDiaBtn.onclick = async () => {
+        reporteDiaBtn.disabled = true;
+        reporteDiaBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Generando…';
+        await generateDailyReport(sesionId);
+        reporteDiaBtn.disabled = false;
+        reporteDiaBtn.innerHTML = '<i class="bi bi-file-earmark-pdf"></i> Reporte del día (PDF)';
+      };
+
+      const resumenMesBtn = overlay.querySelector('#btn-resumen-mes-overlay');
+      if (resumenMesBtn) resumenMesBtn.onclick = async () => {
+        resumenMesBtn.disabled = true;
+        resumenMesBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Generando…';
+        const now = new Date();
+        await generateMonthlyAttendance(claseId, now.getFullYear(), now.getMonth() + 1);
+        resumenMesBtn.disabled = false;
+        resumenMesBtn.innerHTML = '<i class="bi bi-bar-chart-line"></i> Resumen del mes (PDF)';
       };
 
     } catch (err) {

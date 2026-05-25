@@ -1,6 +1,7 @@
 import { fetchSchedulingData, saveScheduleRun, getScheduleRuns } from '../api/horarioBuilderApi.js';
 import { generateOptimizedSchedule } from '../engine/schedulingEngine.js';
 import { detectConflicts } from '../engine/conflictDetector.js';
+import { initDragDrop, showConflictMoveModal } from '../engine/DragDropManager.js';
 import { createScheduleGrid, attachScheduleGridListeners } from '../components/ScheduleGrid.js';
 import { createViewToggle, VIEWS } from '../components/ViewToggle.js';
 import { createConflictPanel, attachConflictPanelListeners } from '../components/ConflictPanel.js';
@@ -17,10 +18,13 @@ let state = {
   conflictPanelExpanded: false,
   scheduleRuns: [],
   loading: false,
-  error: null
+  error: null,
+  undoStack: [],
+  redoStack: []
 };
 
 let _container = null;
+let _ddInstance = null;
 
 // ─── PUBLIC API ─────────────────────────────────────────────────
 
@@ -35,7 +39,9 @@ export function init(container) {
     conflictPanelExpanded: false,
     scheduleRuns: [],
     loading: false,
-    error: null
+    error: null,
+    undoStack: [],
+    redoStack: []
   };
 
   renderShell();
@@ -70,6 +76,12 @@ function renderShell() {
         <div class="flex-grow-1"></div>
         <button class="btn btn-sm btn-outline-secondary" id="hb-drag-toggle" title="Activar modo edición drag &amp; drop">
           <i class="bi ${lockIcon}"></i> ${lockLabel}
+        </button>
+        <button class="btn btn-sm" id="hb-undo-btn" disabled title="Deshacer">
+          <i class="bi bi-arrow-counterclockwise"></i>
+        </button>
+        <button class="btn btn-sm" id="hb-redo-btn" disabled title="Rehacer">
+          <i class="bi bi-arrow-clockwise"></i>
         </button>
         <button class="btn btn-sm btn-primary" id="hb-generate-btn">
           <i class="bi bi-lightning-fill"></i> Generar
@@ -164,6 +176,86 @@ function showToast(message, type = 'success') {
   }, 3500);
 }
 
+// ─── HELPERS ─────────────────────────────────────────────────────
+
+function minutesBetween(start, end) {
+  const [sh, sm] = start.split(':').map(Number);
+  const [eh, em] = end.split(':').map(Number);
+  return (eh * 60 + em) - (sh * 60 + sm);
+}
+
+function addMinutes(timeStr, minutes) {
+  const [h, m] = timeStr.split(':').map(Number);
+  const total = h * 60 + m + minutes;
+  const nh = Math.floor(total / 60);
+  const nm = total % 60;
+  return `${String(nh).padStart(2, '0')}:${String(nm).padStart(2, '0')}`;
+}
+
+function updateUndoRedoButtons() {
+  const undoBtn = _container?.querySelector('#hb-undo-btn');
+  const redoBtn = _container?.querySelector('#hb-redo-btn');
+  if (undoBtn) undoBtn.disabled = state.undoStack.length === 0;
+  if (redoBtn) redoBtn.disabled = state.redoStack.length === 0;
+}
+
+function initDD() {
+  if (_ddInstance) _ddInstance.destroy();
+  if (!state.draggable) return;
+
+  const gridWrapper = _container.querySelector('#hb-grid-wrapper');
+  _ddInstance = initDragDrop(gridWrapper, {
+    assignments: state.assignments,
+    onMove({ claseId, fromDay, fromHour, toDay, toHour }) {
+      state.undoStack.push(JSON.parse(JSON.stringify(state.assignments)));
+      state.redoStack = [];
+
+      const idx = state.assignments.findIndex(a => a.clase_id === claseId);
+      if (idx === -1) return;
+      const moved = { ...state.assignments[idx] };
+      const duration = minutesBetween(moved.hora_inicio, moved.hora_fin);
+      moved.dia = toDay;
+      moved.hora_inicio = toHour;
+      moved.hora_fin = addMinutes(toHour, duration);
+      state.assignments[idx] = moved;
+
+      const { conflicts, assignments } = detectConflicts(state.assignments, { returnAnnotated: true });
+      state.conflicts = conflicts;
+      state.assignments = assignments;
+
+      renderGrid();
+      renderConflictPanel();
+      updateUndoRedoButtons();
+      initDD();
+    },
+    async onConflict({ assignment, targetDay, targetHour, conflicts }) {
+      const description = conflicts.map(c => c.description).join('\n');
+      const confirmed = await showConflictMoveModal({ conflictDescription: description });
+      if (!confirmed) return;
+
+      state.undoStack.push(JSON.parse(JSON.stringify(state.assignments)));
+      state.redoStack = [];
+      const idx = state.assignments.findIndex(a => a.clase_id === assignment.clase_id);
+      if (idx === -1) return;
+      const moved = { ...state.assignments[idx] };
+      const duration = minutesBetween(moved.hora_inicio, moved.hora_fin);
+      moved.dia = targetDay;
+      moved.hora_inicio = targetHour;
+      moved.hora_fin = addMinutes(targetHour, duration);
+      state.assignments[idx] = moved;
+
+      const result = detectConflicts(state.assignments, { returnAnnotated: true });
+      state.conflicts = result.conflicts;
+      state.assignments = result.assignments;
+
+      renderGrid();
+      renderConflictPanel();
+      updateUndoRedoButtons();
+      initDD();
+    }
+  });
+}
+
 // ─── EVENT WIRING ────────────────────────────────────────────────
 
 function wireListeners() {
@@ -197,6 +289,37 @@ function wireListeners() {
           : '<i class="bi bi-lock-fill"></i> Editar';
       }
       renderGrid();
+      initDD();
+      return;
+    }
+
+    // Undo
+    if (e.target.closest('#hb-undo-btn')) {
+      if (state.undoStack.length === 0) return;
+      state.redoStack.push(JSON.parse(JSON.stringify(state.assignments)));
+      state.assignments = state.undoStack.pop();
+      const result = detectConflicts(state.assignments, { returnAnnotated: true });
+      state.conflicts = result.conflicts;
+      state.assignments = result.assignments;
+      renderGrid();
+      renderConflictPanel();
+      updateUndoRedoButtons();
+      initDD();
+      return;
+    }
+
+    // Redo
+    if (e.target.closest('#hb-redo-btn')) {
+      if (state.redoStack.length === 0) return;
+      state.undoStack.push(JSON.parse(JSON.stringify(state.assignments)));
+      state.assignments = state.redoStack.pop();
+      const result = detectConflicts(state.assignments, { returnAnnotated: true });
+      state.conflicts = result.conflicts;
+      state.assignments = result.assignments;
+      renderGrid();
+      renderConflictPanel();
+      updateUndoRedoButtons();
+      initDD();
       return;
     }
 
@@ -247,6 +370,7 @@ async function handleGenerate() {
 
     renderGrid();
     renderConflictPanel();
+    initDD();
 
     const saveBtn = _container.querySelector('#hb-save-btn');
     if (saveBtn) saveBtn.disabled = state.assignments.length === 0;

@@ -276,10 +276,10 @@ export async function structureTextToDSL(text, context = {}) {
  */
 function parseGroqJSON(raw) {
   // 1. Strip code fences and trim
-  let s = raw.replace(/^\s*```(?:json)?\s*/i, ‘’).replace(/\s*```\s*$/i, ‘’).trim()
+  let s = raw.replace(/^\s*```(?:json)?\s*/i, "").replace(/\s*```\s*$/i, "").trim()
 
   // 2. Replace curly/smart quotes with straight ASCII quotes
-  s = s.replace(/[‘’]/g, “’”).replace(/[“”]/g, ‘”’)
+  s = s.replace(/['']/g, "'").replace(/[""]/g, '"')
 
   // 3. First attempt: direct parse
   try { return JSON.parse(s) } catch (_) { /* continue to repair */ }
@@ -307,7 +307,7 @@ function parseGroqJSON(raw) {
   }
 
   // Nothing worked — throw so the caller can handle it
-  throw new SyntaxError(‘Unable to repair Groq JSON response’)
+  throw new SyntaxError('Unable to repair Groq JSON response')
 }
 
 
@@ -323,21 +323,21 @@ function _closeTruncatedJSON(str) {
   while (i < str.length) {
     const ch = str[i]
     if (inStr) {
-      if (ch === ‘\\’) { i += 2; continue }
-      if (ch === ‘”’) inStr = false
+      if (ch === '\\') { i += 2; continue }
+      if (ch === '"') inStr = false
     } else {
-      if (ch === ‘”’) inStr = true
-      else if (ch === ‘{‘) stack.push(‘}’)
-      else if (ch === ‘[‘) stack.push(‘]’)
-      else if (ch === ‘}’ || ch === ‘]’) stack.pop()
+      if (ch === '"') inStr = true
+      else if (ch === '{') stack.push('}')
+      else if (ch === '[') stack.push(']')
+      else if (ch === '}' || ch === ']') stack.pop()
     }
     i++
   }
 
-  // If we’re still inside a string, close it first
-  let tail = inStr ? ‘”’ : ‘’
+  // If we're still inside a string, close it first
+  let tail = inStr ? '"' : ''
   // Close any open structures in reverse order
-  tail += stack.reverse().join(‘’)
+  tail += stack.reverse().join('')
 
   return str + tail
 }

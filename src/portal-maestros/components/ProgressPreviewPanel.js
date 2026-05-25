@@ -18,6 +18,16 @@ const ESTADO_LABELS = {
 
 const ESTADOS_CYCLE = ['LOGRADO', 'EN_PROGRESO', 'INICIADO']
 
+/** Escapes HTML special chars to prevent XSS in innerHTML. */
+function esc(str) {
+  return String(str ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
 /**
  * @param {HTMLElement} container — element to append the panel into
  * @param {object} opts
@@ -29,10 +39,10 @@ export function createProgressPreviewPanel(container, { onConfirm, onCancel }) {
   let _panelEl = null
 
   function _renderRecord(rec, idx) {
-    const alumnosStr = (rec.alumnos || []).join(', ')
+    const alumnosStr = esc((rec.alumnos || []).join(', '))
     const estadoInfo = ESTADO_LABELS[rec.estado] ?? ESTADO_LABELS.EN_PROGRESO
-    const notaStr = rec.nota ? `· ${rec.nota}/5` : ''
-    const tareaStr = rec.tarea ? `<div class="ppp-tarea">📝 ${rec.tarea}</div>` : ''
+    const notaStr = rec.nota ? `· ${esc(rec.nota)}/5` : ''
+    const tareaStr = rec.tarea ? `<div class="ppp-tarea">📝 ${esc(rec.tarea)}</div>` : ''
 
     return `
       <div class="ppp-card" data-idx="${idx}">
@@ -41,7 +51,7 @@ export function createProgressPreviewPanel(container, { onConfirm, onCancel }) {
           <button class="ppp-remove" data-idx="${idx}" title="Quitar este registro">✕</button>
         </div>
         <div class="ppp-card-body">
-          <span class="ppp-contenido">${rec.contenido || '—'}</span>
+          <span class="ppp-contenido">${esc(rec.contenido) || '—'}</span>
           <span class="ppp-sep">·</span>
           <button
             class="ppp-estado-btn"
@@ -50,7 +60,7 @@ export function createProgressPreviewPanel(container, { onConfirm, onCancel }) {
             title="Click para cambiar estado"
           >${estadoInfo.label}${notaStr}</button>
         </div>
-        ${rec.observacion ? `<div class="ppp-obs">${rec.observacion}</div>` : ''}
+        ${rec.observacion ? `<div class="ppp-obs">${esc(rec.observacion)}</div>` : ''}
         ${tareaStr}
       </div>
     `
@@ -65,7 +75,7 @@ export function createProgressPreviewPanel(container, { onConfirm, onCancel }) {
         <span class="ppp-icon">🎯</span>
         <div class="ppp-header-text">
           <strong>La IA detectó estos avances</strong>
-          ${resumen ? `<div class="ppp-resumen">${resumen}</div>` : ''}
+          ${resumen ? `<div class="ppp-resumen">${esc(resumen)}</div>` : ''}
         </div>
       </div>
       <div class="ppp-cards">

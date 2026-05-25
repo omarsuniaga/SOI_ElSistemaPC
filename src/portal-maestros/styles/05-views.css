@@ -496,6 +496,52 @@
 /* ── Asistencia View ────────────────────────────────────────── */
 .pm-asist-root { padding-bottom: 5rem; }
 
+/* ── Saved Overlay ──────────────────────────────────────────── */
+.pm-saved-overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--pm-bg, #0f1923);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: pmSavedFadeIn 0.35s ease;
+}
+.pm-saved-options { text-align: center; padding: 2rem 1.5rem; width: 100%; max-width: 380px; }
+.pm-saved-header { margin-bottom: 2rem; }
+.pm-saved-check-anim i {
+  font-size: 3rem;
+  color: var(--pm-success, #22c55e);
+  animation: pmSavedPop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.pm-saved-header h3 { margin: 1rem 0 0.5rem; font-size: 1.5rem; font-weight: 700; }
+.pm-saved-header p { color: var(--pm-text-muted); margin: 0; font-size: 0.95rem; }
+.pm-saved-actions { display: flex; flex-direction: column; gap: 0.75rem; margin: 0 auto 2rem; }
+.pm-saved-nav {
+  display: flex;
+  justify-content: center;
+  gap: 1.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--pm-border, rgba(255,255,255,0.08));
+}
+.pm-saved-nav-btn {
+  background: none;
+  border: none;
+  color: var(--pm-text-muted, #888);
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 0.75rem;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+}
+.pm-saved-nav-btn:hover {
+  color: var(--pm-primary, #007aff);
+  background: rgba(0, 122, 255, 0.08);
+  transform: scale(1.1);
+}
+@keyframes pmSavedFadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes pmSavedPop { 0% { transform: scale(0); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+
 .pm-asist-header {
   display: flex;
   align-items: center;
@@ -2315,4 +2361,159 @@
 @keyframes pmFadeIn {
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Progress Preview Panel ──────────────────────────────────── */
+.pm-progress-preview {
+  margin-top: 0.75rem;
+  border: 1px solid var(--pm-border);
+  border-radius: var(--pm-radius-md, 8px);
+  overflow: hidden;
+  background: var(--pm-surface);
+}
+
+.ppp-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  padding: 0.75rem 1rem;
+  background: color-mix(in srgb, var(--pm-primary, #0d6efd) 6%, transparent);
+  border-bottom: 1px solid var(--pm-border);
+}
+
+.ppp-icon { font-size: 1.1rem; flex-shrink: 0; margin-top: 1px; }
+
+.ppp-header-text strong {
+  font-size: 0.85rem;
+  color: var(--pm-text);
+}
+
+.ppp-resumen {
+  font-size: 0.75rem;
+  color: var(--pm-text-muted);
+  margin-top: 2px;
+  font-style: italic;
+}
+
+.ppp-cards {
+  padding: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.ppp-card {
+  border: 1px solid var(--pm-border);
+  border-radius: 6px;
+  padding: 0.5rem 0.65rem;
+  background: var(--pm-bg, #0f1923);
+  font-size: 0.82rem;
+}
+
+.ppp-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.ppp-alumnos {
+  font-weight: 700;
+  color: var(--pm-primary, #0d6efd);
+  font-size: 0.8rem;
+}
+
+.ppp-remove {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--pm-text-muted);
+  font-size: 0.75rem;
+  padding: 1px 4px;
+  border-radius: 3px;
+  line-height: 1;
+}
+.ppp-remove:hover { color: var(--pm-danger, #dc3545); background: #dc354518; }
+
+.ppp-card-body {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.ppp-contenido {
+  color: var(--pm-text);
+  font-size: 0.82rem;
+}
+
+.ppp-sep { color: var(--pm-text-muted); font-size: 0.75rem; }
+
+.ppp-estado-btn {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 20px;
+  border: 1px solid;
+  cursor: pointer;
+  transition: opacity 0.15s;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+.ppp-estado-btn:hover { opacity: 0.75; }
+
+.ppp-obs {
+  font-size: 0.75rem;
+  color: var(--pm-text-muted);
+  font-style: italic;
+  margin-top: 3px;
+}
+
+.ppp-tarea {
+  font-size: 0.75rem;
+  color: var(--pm-text-muted);
+  margin-top: 2px;
+}
+
+.ppp-empty {
+  padding: 1rem;
+  text-align: center;
+  color: var(--pm-text-muted);
+  font-size: 0.82rem;
+  font-style: italic;
+}
+
+.ppp-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  padding: 0.6rem 0.75rem;
+  border-top: 1px solid var(--pm-border);
+  background: var(--pm-surface);
+}
+
+/* ── Progress Feedback Badge ─────────────────────────────────── */
+.pm-progress-feedback {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--pm-success, #198754);
+  padding: 6px 10px;
+  background: color-mix(in srgb, var(--pm-success, #198754) 12%, transparent);
+  border-radius: 6px;
+  border-left: 3px solid var(--pm-success, #198754);
+  margin-top: 0.5rem;
+  animation: pmProgressFadeIn 0.3s ease, pmProgressFadeOut 0.4s ease 3.6s forwards;
+}
+
+@keyframes pmProgressFadeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: none; }
+}
+
+@keyframes pmProgressFadeOut {
+  from { opacity: 1; }
+  to   { opacity: 0; }
 }

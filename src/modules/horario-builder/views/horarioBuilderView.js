@@ -179,7 +179,7 @@ function renderViewToggle() {
   slot.innerHTML = createViewToggle(state.activeView);
 }
 
-async function renderPublishPanel() {
+function renderPublishPanel() {
   const wrapper = _container.querySelector('#hb-publish-wrapper');
   if (!wrapper) return;
   if (!state.publishWizardOpen || !state.runId) {
@@ -498,9 +498,11 @@ async function handleSave() {
       state.estado = 'borrador';
       const publishBtn = _container.querySelector('#hb-publish-btn');
       if (publishBtn) publishBtn.disabled = false;
+      showToast('Horario guardado como borrador', 'success');
+    } else {
+      showToast('Guardado incompleto: no se obtuvo ID del registro', 'warning');
     }
     state.error = null;
-    showToast('Horario guardado como borrador', 'success');
   } catch (err) {
     console.error('[horarioBuilderView] handleSave error:', err);
     state.error = err.message;

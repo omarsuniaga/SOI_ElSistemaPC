@@ -1717,42 +1717,43 @@ async function _autoSave(immediate = false, skipMutex = false) {
   // Reportes Institucionales (PDF)
   const actionsContainer = container.querySelector('.pm-asist-actions-fixed')
   if (actionsContainer) {
-    if (sesionId) {
-      const btnReporteD = document.createElement('button')
-      btnReporteD.className = 'pm-asist-btn-obs'
+    const btnReporteD = document.createElement('button')
+    btnReporteD.id = 'btn-reporte-dia'
+    btnReporteD.className = 'pm-asist-btn-obs'
+    btnReporteD.innerHTML = '📄 Reporte'
+    btnReporteD.title = 'Genera el Reporte Diario de Asistencia (PDF)'
+    btnReporteD.style.flex = '1'
+    btnReporteD.style.display = (sesionId && sesionExistenteData && sesionExistenteData.borrador === false) ? '' : 'none'
+    btnReporteD.addEventListener('click', async (e) => {
+      e.preventDefault()
+      if (!sesionId) return
+      btnReporteD.disabled = true
+      btnReporteD.innerHTML = '⏳...'
+      await generateDailyReport(sesionId)
+      btnReporteD.disabled = false
       btnReporteD.innerHTML = '📄 Reporte'
-      btnReporteD.title = 'Genera el Reporte Diario de Asistencia (PDF)'
-      btnReporteD.style.flex = '1'
-      btnReporteD.addEventListener('click', async (e) => {
-        e.preventDefault()
-        btnReporteD.disabled = true
-        btnReporteD.innerHTML = '⏳...'
-        await generateDailyReport(sesionId)
-        btnReporteD.disabled = false
-        btnReporteD.innerHTML = '📄 Reporte'
-      })
-      const btnGuardar = actionsContainer.querySelector('#btn-guardar')
-      actionsContainer.insertBefore(btnReporteD, btnGuardar)
-    }
+    })
+    const btnGuardar = actionsContainer.querySelector('#btn-guardar')
+    actionsContainer.insertBefore(btnReporteD, btnGuardar)
 
-    if (claseId) {
-      const btnResumenM = document.createElement('button')
-      btnResumenM.className = 'pm-asist-btn-obs'
+    const btnResumenM = document.createElement('button')
+    btnResumenM.id = 'btn-resumen-mes'
+    btnResumenM.className = 'pm-asist-btn-obs'
+    btnResumenM.innerHTML = '📊 Resumen'
+    btnResumenM.title = 'Genera el Resumen Mensual de Asistencia (PDF)'
+    btnResumenM.style.flex = '1'
+    btnResumenM.style.display = (sesionId && sesionExistenteData && sesionExistenteData.borrador === false) ? '' : 'none'
+    const now = new Date()
+    btnResumenM.addEventListener('click', async (e) => {
+      e.preventDefault()
+      if (!claseId) return
+      btnResumenM.disabled = true
+      btnResumenM.innerHTML = '⏳...'
+      await generateMonthlyAttendance(claseId, now.getFullYear(), now.getMonth() + 1)
+      btnResumenM.disabled = false
       btnResumenM.innerHTML = '📊 Resumen'
-      btnResumenM.title = 'Genera el Resumen Mensual de Asistencia (PDF)'
-      btnResumenM.style.flex = '1'
-      const now = new Date()
-      btnResumenM.addEventListener('click', async (e) => {
-        e.preventDefault()
-        btnResumenM.disabled = true
-        btnResumenM.innerHTML = '⏳...'
-        await generateMonthlyAttendance(claseId, now.getFullYear(), now.getMonth() + 1)
-        btnResumenM.disabled = false
-        btnResumenM.innerHTML = '📊 Resumen'
-      })
-      const btnGuardar = actionsContainer.querySelector('#btn-guardar')
-      actionsContainer.insertBefore(btnResumenM, btnGuardar)
-    }
+    })
+    actionsContainer.insertBefore(btnResumenM, btnGuardar)
   }
 
   container.querySelector('#btn-guardar').onclick = async () => {
@@ -1894,6 +1895,12 @@ async function _autoSave(immediate = false, skipMutex = false) {
 
       btn.textContent = '✓ Guardado';
       btn.style.background = 'var(--apple-success)';
+
+      // Mostrar los botones de reporte una vez guardado
+      const rBtn = actionsContainer?.querySelector('#btn-reporte-dia')
+      if (rBtn) rBtn.style.display = ''
+      const mBtn = actionsContainer?.querySelector('#btn-resumen-mes')
+      if (mBtn) mBtn.style.display = ''
 
       // Announce save success
       const presentes = Object.values(estado).filter(v => v === 'P').length

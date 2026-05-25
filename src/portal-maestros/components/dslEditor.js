@@ -3,17 +3,12 @@ import autocompletePopup, { getCursorPosition, isOpen, handleKeyDown as acHandle
 import * as catalogService from '../services/catalogService.js';
 
 const DSL_PLACEHOLDER_HTML = `
-  <div class="pm-dsl-placeholder-title">Ejemplo rápido</div>
-  <div class="pm-dsl-placeholder-example">
-    <span>#Pedro</span>
-    <span>[Escala de Do]</span>
-    <span>$tempo60</span>
-    <span>(dedos curvos)</span>
-    <span>{practicar 10 min}</span>
-    <span>4/5</span>
+  <div class="pm-dsl-placeholder-title">✨ Escribí lo que pasó en clase con tus propias palabras</div>
+  <div class="pm-dsl-placeholder-example" style="font-style:italic;color:var(--pm-text-muted,#888);font-size:0.85rem;margin-bottom:6px">
+    "Yereni y Santa avanzaron muy bien hoy con el cambio de posición. Santiago necesita practicar más el arco."
   </div>
   <div class="pm-dsl-placeholder-guide">
-    # alumno · [] contenido · () sugerencia · {} tarea · $ medida · 4/5 evaluación
+    Presioná <strong>✨ Analizar con IA</strong> y Groq va a extraer los avances automáticamente. · O usá los tokens del toolbar si preferís escribir directo: # alumno · [] contenido · {} tarea
   </div>
 `;
 

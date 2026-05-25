@@ -137,8 +137,8 @@ export function createProgressPreviewPanel(container, { onConfirm, onCancel }) {
     _panelEl.style.display = 'block'
     _render(resumen)
 
-    // Scroll panel into view
-    setTimeout(() => _panelEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 50)
+    // Scroll panel into view — use 'start' so it always becomes visible even if below viewport
+    setTimeout(() => _panelEl.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80)
   }
 
   function close() {

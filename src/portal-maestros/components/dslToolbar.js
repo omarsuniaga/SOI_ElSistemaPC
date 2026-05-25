@@ -47,7 +47,7 @@ export function createDslToolbar(container, { onInsert, onLoading, onIaProposal,
       <div class="pm-dsl-divider"></div>
       <button class="pm-dsl-tool-btn ai" id="btn-generar-informe" title="Generar informe para padres/tutores">📋</button>
       <button class="pm-dsl-tool-btn ai" id="btn-ia-magic" title="Estructurar con IA">🚀</button>
-      <button class="pm-dsl-tool-btn ai" id="btn-analizar-progreso" title="Analizar progreso con IA">🎯</button>
+      <button class="pm-dsl-tool-btn ai ai-primary" id="btn-analizar-progreso" title="La IA lee tu texto y extrae los avances de cada alumno automáticamente">✨ Analizar con IA</button>
       <div class="pm-dsl-divider"></div>
       <button class="pm-dsl-tool-btn" id="btn-help" title="Ayuda">❓</button>
 
@@ -101,10 +101,33 @@ export function createDslToolbar(container, { onInsert, onLoading, onIaProposal,
         background: var(--pm-border); 
         transform: translateY(1px); 
       }
-      .pm-dsl-tool-btn.ai { 
-        border-color: var(--pm-primary); 
-        color: var(--pm-primary); 
-        background: rgba(99, 102, 241, 0.05); 
+      .pm-dsl-tool-btn.ai {
+        border-color: var(--pm-primary);
+        color: var(--pm-primary);
+        background: rgba(99, 102, 241, 0.05);
+      }
+      .pm-dsl-tool-btn.ai-primary {
+        padding: 0 0.85rem;
+        font-weight: 700;
+        font-size: 0.82rem;
+        background: var(--pm-primary, #6366f1);
+        color: #fff;
+        border-color: var(--pm-primary, #6366f1);
+        gap: 4px;
+        min-width: unset;
+        width: auto;
+        letter-spacing: 0.01em;
+      }
+      .pm-dsl-tool-btn.ai-primary:hover {
+        background: var(--pm-primary-dark, #4f46e5);
+        border-color: var(--pm-primary-dark, #4f46e5);
+        color: #fff;
+        transform: translateY(-1px);
+      }
+      .pm-dsl-tool-btn.ai-primary:disabled {
+        opacity: 0.7;
+        cursor: not-allowed;
+        transform: none;
       }
 
       
@@ -183,14 +206,14 @@ export function createDslToolbar(container, { onInsert, onLoading, onIaProposal,
       if (!rawText.trim()) return
       if (onAnalyzeClick) {
         analyzeBtn.disabled = true
-        analyzeBtn.textContent = '⏳'
+        analyzeBtn.textContent = '⏳ Analizando...'
         try {
           await onAnalyzeClick(rawText)
         } catch (err) {
           // error handled by caller
         } finally {
           analyzeBtn.disabled = false
-          analyzeBtn.textContent = '🎯'
+          analyzeBtn.textContent = '✨ Analizar con IA'
         }
       }
     }

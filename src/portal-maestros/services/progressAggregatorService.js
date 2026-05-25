@@ -203,3 +203,86 @@ export async function saveProgressFromDSL({ sesionId, claseId, maestroId, fechaH
 
   return saveProgressFromAI({ sesionId, claseId, maestroId, fechaHoy, progressRecords: records, alumnos })
 }
+
+/**
+ * Retroactively links progresos records (objetivo_id IS NULL) to curriculo_objetivos
+ * using local fuzzy matching on contenido_dsl vs objetivo.descripcion.
+ *
+ * Matching rules (in priority order):
+ *   1. Exact match after normalize()
+ *   2. objetivo.descripcion contains contenido_dsl (both >= 5 chars)
+ *   3. contenido_dsl contains objetivo.descripcion (both >= 5 chars)
+ *
+ * @param {object} opts
+ * @param {string} opts.claseId
+ * @param {Array<{id: string, descripcion: string}>} opts.objetivos - flat list from all pilares
+ * @returns {Promise<{ linked: number }>}
+ */
+export async function linkProgresosToObjetivos({ claseId, objetivos }) {
+  if (!claseId || !objetivos || objetivos.length === 0) return { linked: 0 }
+
+  // 1. Fetch unlinked progresos for this class
+  const { data: progresos, error: fetchError } = await supabase
+    .from('progresos')
+    .select('id, contenido_dsl')
+    .eq('clase_id', claseId)
+    .is('objetivo_id', null)
+    .not('contenido_dsl', 'is', null)
+    .neq('contenido_dsl', '')
+
+  if (fetchError) {
+    console.warn('[Progress] linkProgresosToObjetivos fetch error:', fetchError.message)
+    return { linked: 0 }
+  }
+  if (!progresos || progresos.length === 0) return { linked: 0 }
+
+  // 2. Normalize objetivos once
+  const normObjetivos = objetivos.map(o => ({
+    id: o.id,
+    norm: normalize(o.descripcion),
+    raw: o.descripcion,
+  }))
+
+  // 3. Build map: objetivoId → matched progreso ids[]
+  const matchMap = new Map()  // objetivoId → string[]
+
+  for (const progreso of progresos) {
+    const normP = normalize(progreso.contenido_dsl)
+    if (!normP) continue
+
+    // Try exact match first, then substring
+    let matched = normObjetivos.find(o => o.norm === normP)
+    if (!matched && normP.length >= 5) {
+      matched = normObjetivos.find(o => o.norm.length >= 5 && o.norm.includes(normP))
+    }
+    if (!matched && normP.length >= 5) {
+      matched = normObjetivos.find(o => o.norm.length >= 5 && normP.includes(o.norm))
+    }
+
+    if (matched) {
+      const ids = matchMap.get(matched.id) || []
+      ids.push(progreso.id)
+      matchMap.set(matched.id, ids)
+    }
+  }
+
+  if (matchMap.size === 0) return { linked: 0 }
+
+  // 4. Batch update — one UPDATE per matched objetivo
+  let linked = 0
+  for (const [objetivoId, ids] of matchMap.entries()) {
+    const { error: updateError } = await supabase
+      .from('progresos')
+      .update({ objetivo_id: objetivoId })
+      .in('id', ids)
+
+    if (updateError) {
+      console.warn('[Progress] linkProgresosToObjetivos update error:', updateError.message)
+    } else {
+      linked += ids.length
+    }
+  }
+
+  console.debug(`[Progress] linkProgresosToObjetivos: linked ${linked} records`)
+  return { linked }
+}

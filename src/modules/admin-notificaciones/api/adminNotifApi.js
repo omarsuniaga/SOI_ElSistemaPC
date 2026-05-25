@@ -55,7 +55,8 @@ async function _fetchAusencias() {
     .from('ausencias_maestros')
     .select(`
       id, maestro_id, tipo_ausencia, urgencia, fecha_inicio, fecha_fin,
-      estado, motivo, created_at, decidido_en
+      estado, motivo, created_at, decidido_en,
+      maestros:maestro_id(nombre_completo, correo, instrumento)
     `)
     .in('estado', ['pendiente', 'aprobada', 'rechazada'])
     .gte('created_at', `${since}T00:00:00`)

@@ -451,6 +451,7 @@ export async function analyzeObservation(text, context = {}) {
       tarea:       g.tarea,
       observacion: (e.observacion || '').trim() || null,
       es_colectivo: g.esColectivo,
+      alerta: g.alerta || false,
     }
   })
 

@@ -75,6 +75,35 @@ export function detectTask(text) {
   return null
 }
 
+// ─── Alert detection ─────────────────────────────────────────────────────────
+
+const ALERT_BEHAVIOR_KEYWORDS = [
+  'mal comportamiento', 'mala conducta', 'conducta disruptiva', 'comportamiento negativo',
+  'falta de respeto', 'irrespetuoso', 'irrespetuosa', 'agresivo', 'agresiva',
+  'pelea', 'peleó', 'golpeó', 'insulto', 'insultó',
+  'no atiende', 'no presta atención', 'distrae', 'distraer', 'molesta', 'molestó',
+  'indisciplina', 'indisciplinado', 'indisciplinada',
+  'actitud negativa', 'actitud problema', 'mala actitud',
+  'lloró', 'llanto', 'berrinche',
+  'no quiso', 'se negó', 'se niego',
+  'ausentismo', 'llegó tarde', 'llegó muy tarde', 'inasistencia injustificada',
+]
+
+/**
+ * Detects if a text fragment describes a negative behavioral/disciplinary situation.
+ * These records should be visually flagged as alerts for teacher attention.
+ * @param {string} text
+ * @param {string} tipo - already-inferred tipo
+ * @returns {boolean}
+ */
+export function detectAlert(text, tipo) {
+  const lower = text.toLowerCase()
+  // Direct tipo match
+  if (tipo === 'comportamiento' || tipo === 'conducta') return true
+  // Keyword scan
+  return ALERT_BEHAVIOR_KEYWORDS.some(kw => lower.includes(kw))
+}
+
 // ─── Tipo inference ──────────────────────────────────────────────────────────
 
 const TIPO_KEYWORDS = {
@@ -224,6 +253,7 @@ export function segmentObservation(text, context = {}) {
       ? ['Todos']
       : mentioned.map(a => a.nombreCorto || a.nombre)
 
+    const tipo = inferTipo(sentence, tipoClase)
     groups.push({
       alumnos:    mentioned,
       alumnoTags,
@@ -232,6 +262,7 @@ export function segmentObservation(text, context = {}) {
       nota:       detectNote(sentence),
       tarea:      detectTask(sentence),
       esColectivo: isColectivo,
+      alerta:      detectAlert(sentence, tipo),
       tipoClase,
     })
   }

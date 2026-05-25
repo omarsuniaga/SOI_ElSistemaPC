@@ -117,6 +117,31 @@ async function handleAction(profileId, nuevoEstado, contentEl) {
 
     if (error) throw error
 
+    // After approving, grant basic permissions so Realtime fires on teacher's browser
+    if (nuevoEstado === 'activo') {
+      try {
+        const { data: maestroRow } = await supabase
+          .from('maestros')
+          .select('id')
+          .eq('user_id', profileId)
+          .maybeSingle()
+
+        if (maestroRow?.id) {
+          await supabase
+            .from('permisos_maestros')
+            .upsert({
+              maestro_id: maestroRow.id,
+              puede_registrar_alumnos: true,
+              puede_inscribir_clases: true,
+              permisos: ['alumnos:create', 'clases:enroll', 'registrar_alumnos', 'inscribir_clases'],
+            }, { onConflict: 'maestro_id' })
+        }
+      } catch (permErr) {
+        // Non-fatal: teacher can still request permissions manually
+        console.warn('[AprobacionView] Could not grant default permissions:', permErr.message)
+      }
+    }
+
     // Remove the row with animation
     row.style.transition = 'opacity 0.3s ease'
     row.style.opacity = '0'

@@ -451,7 +451,399 @@ function compBar(label, d, barClass) {
   `
 }
 
+// ---------------------------------------------------------------------------
+// Doc 3 — Monthly Pedagogical Report (always landscape, always 3 pages)
+// ---------------------------------------------------------------------------
+
+/**
+ * Generate and print Monthly Pedagogical Report.
+ * @param {string} claseId — UUID of the class
+ * @param {number} year    — e.g. 2026
+ * @param {number} month   — 1–12
+ */
 export async function generateMonthlyPedagogical(claseId, year, month) {
-  AppToast.info('Función no implementada aún.')
+  try {
+    const mm = padMM(month)
+    const lastDay = lastDayOfMonth(year, month)
+    const rangeStart = `${year}-${mm}-01`
+    const rangeEnd   = `${year}-${mm}-${lastDay}`
+
+    const prevMonth   = month === 1 ? 12 : month - 1
+    const prevYear    = month === 1 ? year - 1 : year
+    const prevMM      = padMM(prevMonth)
+    const prevLastDay = lastDayOfMonth(prevYear, prevMonth)
+    const prevStart   = `${prevYear}-${prevMM}-01`
+    const prevEnd     = `${prevYear}-${prevMM}-${prevLastDay}`
+
+    // Parallel data fetch
+    const [
+      sesRes, obsRes, progRes, claseRes, alumnosRes,
+      prevSesRes, justRes
+    ] = await Promise.all([
+      supabase.from('sesiones_clase')
+        .select('id, fecha, numero_sesion, tipo_sesion, asistencia')
+        .eq('clase_id', claseId).gte('fecha', rangeStart).lte('fecha', rangeEnd).order('fecha'),
+      supabase.from('observaciones_sesion')
+        .select('sesion_clase_id, contenido_ia_dsl, contenido_dsl')
+        .in('sesion_clase_id',
+          // will be filtered after sesiones are loaded — fetch broad and filter
+          (await supabase.from('sesiones_clase').select('id').eq('clase_id', claseId)
+            .gte('fecha', rangeStart).lte('fecha', rangeEnd)).data?.map(s => s.id) || []
+        ),
+      supabase.from('progresos')
+        .select(`id, alumno_id, objetivo_id, tipo, contenido_dsl, created_at,
+                 alumnos(nombre_completo, nombre_corto),
+                 curriculo_objetivos(descripcion, categoria)`)
+        .eq('clase_id', claseId).gte('created_at', rangeStart).lte('created_at', rangeEnd),
+      supabase.from('clases')
+        .select('nombre, instrumento, maestros(nombre_completo)')
+        .eq('id', claseId).single(),
+      supabase.from('alumnos')
+        .select('id, nombre_completo, nombre_corto')
+        .eq('clase_id', claseId).order('nombre_completo'),
+      supabase.from('sesiones_clase')
+        .select('id, asistencia')
+        .eq('clase_id', claseId).gte('fecha', prevStart).lte('fecha', prevEnd),
+      supabase.from('justificaciones')
+        .select('alumno_id, fecha, tipo, motivo')
+        .eq('clase_id', claseId).gte('fecha', rangeStart).lte('fecha', rangeEnd)
+    ])
+
+    if (sesRes.error) throw sesRes.error
+    if (claseRes.error) throw claseRes.error
+
+    const sesiones    = sesRes.data || []
+    const obsData     = obsRes.data || []
+    const progresos   = progRes.data || []
+    const clase       = claseRes.data
+    const alumnos     = alumnosRes.data || []
+    const prevSesiones= prevSesRes.data || []
+    const justificaciones = justRes.data || []
+
+    if (sesiones.length === 0) {
+      AppToast.error('No hay sesiones registradas para este período.')
+      return
+    }
+
+    const obsMap = {}
+    obsData.forEach(o => { obsMap[o.sesion_clase_id] = o })
+
+    // Aggregate totals
+    let totalP = 0, totalA = 0, totalJ = 0
+    sesiones.forEach(s => {
+      const st = calcAttendanceStats(s.asistencia); totalP += st.P; totalA += st.A; totalJ += st.J
+    })
+    const grandTotal = totalP + totalA + totalJ
+    const pct = (n, tot) => tot > 0 ? Math.round((n / tot) * 100) : 0
+
+    let prevP = 0, prevA = 0, prevJ = 0
+    prevSesiones.forEach(s => {
+      const st = calcAttendanceStats(s.asistencia); prevP += st.P; prevA += st.A; prevJ += st.J
+    })
+    const prevTotal = prevP + prevA + prevJ
+
+    // Collect unique content items across all sessions
+    const contentSet = new Set()
+    sesiones.forEach(s => {
+      const obs = obsMap[s.id]
+      if (!obs) return
+      const raw = obs.contenido_ia_dsl || obs.contenido_dsl || ''
+      raw.split(/[\n,]/).forEach(item => {
+        const clean = item.replace(/^\s*[\-\*\d\.]+\s*/, '').trim()
+        if (clean.length > 2 && clean.length < 60) contentSet.add(clean)
+      })
+    })
+    const allContentItems = [...contentSet].slice(0, 16)
+
+    // Collect obs blocks across sessions
+    const allObs = []
+    sesiones.forEach(s => {
+      const obs = obsMap[s.id]
+      if (!obs) return
+      const raw = obs.contenido_ia_dsl || obs.contenido_dsl || ''
+      raw.split('\n').forEach(line => {
+        if (/destacad|excelente/i.test(line)) allObs.push({ type: 'pos', label: 'Destacado Académico', text: line.replace(/^[\-\*]\s*/, '') })
+        else if (/alerta|ausencia|riesgo/i.test(line)) allObs.push({ type: 'neg', label: 'Alerta Asistencia', text: line.replace(/^[\-\*]\s*/, '') })
+        else if (/novedad|administrativ/i.test(line)) allObs.push({ type: 'info', label: 'Novedad Administrativa', text: line.replace(/^[\-\*]\s*/, '') })
+        else if (/nota|pedagóg/i.test(line)) allObs.push({ type: 'warn', label: 'Nota Pedagógica', text: line.replace(/^[\-\*]\s*/, '') })
+      })
+    })
+    const topObs = allObs.slice(0, 4)
+    while (topObs.length < 4) topObs.push({ type: 'info', label: 'Nota', text: '—' })
+
+    // Session grid cards
+    const sessionCards = sesiones.map(s => {
+      const st = calcAttendanceStats(s.asistencia)
+      const obs = obsMap[s.id]
+      const rawContent = obs?.contenido_ia_dsl || obs?.contenido_dsl || ''
+      const firstContent = rawContent.split(/[\n,]/)[0]?.replace(/^[\-\*\d\.]+\s*/, '').trim() || 'Sin contenido registrado'
+      return `
+        <div class="session-card">
+          <div class="sc-top">S${s.numero_sesion} · ${esc(formatDate(s.fecha))}</div>
+          <div style="font-size:6pt;color:var(--ink3);margin-bottom:2px">${esc(firstContent.slice(0, 45))}</div>
+          <div class="sc-att">
+            <span class="att-cell att-P">P:${st.P}</span>
+            <span class="att-cell att-A">A:${st.A}</span>
+            <span class="att-cell att-J">J:${st.J}</span>
+          </div>
+        </div>
+      `
+    }).join('')
+
+    const docTag = `INFORME PEDAGÓGICO · ${monthName(month).toUpperCase()} ${year}`
+    const headerData = {
+      docTag,
+      clase: clase.nombre,
+      docente: clase.maestros?.nombre_completo ?? 'Docente',
+      periodo: `${monthName(month)} ${year}`,
+      extraItems: [{ label: 'Sesiones', value: sesiones.length }, { label: 'Alumnos', value: alumnos.length }]
+    }
+
+    // ---- PAGE 1 ----
+    const p1 = `
+      <div class="page land">
+        ${header(headerData)}
+        ${metricChips([
+          { label: 'Sesiones',   value: sesiones.length,                  type: 'navy' },
+          { label: '% Asistencia', value: pct(totalP, grandTotal) + '%',  type: 'ok'   },
+          { label: 'Presentes',  value: totalP,                           type: 'ok'   },
+          { label: 'Ausentes',   value: totalA,                           type: 'bad'  },
+          { label: 'Justif.',    value: totalJ,                           type: 'warn' },
+          { label: 'Contenidos', value: allContentItems.length,           type: 'info' },
+        ])}
+        <p class="rpt-section-title">Contenidos trabajados</p>
+        ${contentChips(allContentItems)}
+        <p class="rpt-section-title">Observaciones institucionales</p>
+        <div class="rpt-obs">
+          ${topObs.map(o => obsBlock(o.type, o.label, o.text)).join('')}
+        </div>
+        <p class="rpt-section-title">Cronograma de sesiones</p>
+        <div class="session-grid">${sessionCards}</div>
+        ${footer(1, 3, `${monthName(month)} ${year}`)}
+      </div>
+    `
+
+    // ---- PAGE 2 — Individual profiles ----
+    const cols = alumnos.length > 12 ? 'cols-4' : 'cols-3'
+    const attMap = buildAlumnoAttMap(sesiones)
+
+    // Group justifications by alumno
+    const justByAlumno = {}
+    justificaciones.forEach(j => {
+      if (!justByAlumno[j.alumno_id]) justByAlumno[j.alumno_id] = []
+      justByAlumno[j.alumno_id].push(j)
+    })
+
+    // Group progresos by alumno
+    const progByAlumno = {}
+    progresos.forEach(p => {
+      if (!progByAlumno[p.alumno_id]) progByAlumno[p.alumno_id] = []
+      progByAlumno[p.alumno_id].push(p)
+    })
+
+    const profileCards = alumnos.map(al => {
+      const alumAtt = attMap[al.id] || {}
+      let aP = 0, aA = 0, aJ = 0
+      sesiones.forEach(s => {
+        const est = alumAtt[s.id]
+        if (est === 'P') aP++; if (est === 'A') aA++; if (est === 'J') aJ++
+      })
+      const total = sesiones.length
+
+      // Badge
+      const attPct = pct(aP, total)
+      let badge, badgeClass
+      if (attPct >= 90 && (progByAlumno[al.id]?.some(p => p.tipo === 'LOGRADO'))) {
+        badge = 'Destacado'; badgeClass = 'badge-destacado'
+      } else if (attPct < 60) {
+        badge = 'En Riesgo'; badgeClass = 'badge-riesgo'
+      } else if (attPct >= 75) {
+        badge = 'Estable'; badgeClass = 'badge-estable'
+      } else {
+        badge = 'En Mejora'; badgeClass = 'badge-mejora'
+      }
+
+      // Initials
+      const names = al.nombre_completo.split(' ')
+      const initials = esc((names[0]?.[0] ?? '') + (names[2]?.[0] ?? names[1]?.[0] ?? ''))
+
+      // Justifications section
+      const justs = justByAlumno[al.id] || []
+      const justSection = justs.length > 0 ? `
+        <div class="pc-section">
+          <div class="pc-section-title">Justificaciones</div>
+          ${justs.slice(0, 4).map(j =>
+            `<div class="pc-just-item" style="font-size:6pt">${esc(j.motivo || j.tipo)} — ${esc(formatDate(j.fecha))}</div>`
+          ).join('')}
+        </div>
+      ` : ''
+
+      // Progress section
+      const progs = progByAlumno[al.id] || []
+      const progSection = progs.length > 0 ? `
+        <div class="pc-section">
+          <div class="pc-section-title">Progreso</div>
+          ${progs.slice(0, 3).map(p => {
+            const label = p.curriculo_objetivos?.descripcion || p.contenido_dsl || 'Objetivo'
+            const pctVal = p.tipo === 'LOGRADO' ? 100 : p.tipo === 'EN_PROGRESO' ? 60 : 30
+            return progressBar(p.tipo, label.slice(0, 28), pctVal)
+          }).join('')}
+        </div>
+      ` : `<div class="pc-section" style="color:var(--ink3);font-size:6pt">Sin registros de progreso este mes</div>`
+
+      return `
+        <div class="profile-card">
+          <div class="pc-head">
+            <div class="pc-avatar">${initials}</div>
+            <div>
+              <div class="pc-name">${esc(al.nombre_corto || al.nombre_completo)}</div>
+              <span class="pc-badge ${badgeClass}">${esc(badge)}</span>
+            </div>
+          </div>
+          <div class="pc-section">
+            <div class="pc-section-title">Asistencia</div>
+            <div class="pc-row"><span>Presentes:</span><span><strong>${aP}</strong> de ${total}</span></div>
+            <div class="pc-row"><span>Ausentes:</span><span><strong>${aA}</strong></span></div>
+            <div class="pc-row"><span>Justificados:</span><span><strong>${aJ}</strong></span></div>
+          </div>
+          ${justSection}
+          ${progSection}
+        </div>
+      `
+    }).join('')
+
+    const p2 = `
+      <div class="page land">
+        ${header(headerData)}
+        <p class="rpt-section-title">Perfiles individuales</p>
+        <div class="profile-grid ${cols}">${profileCards}</div>
+        ${footer(2, 3, `${monthName(month)} ${year}`)}
+      </div>
+    `
+
+    // ---- PAGE 3 — Comparativa + Groq patterns + Recommendations ----
+    // Fetch Groq analysis (graceful fallback if unavailable)
+    const groqContext = {
+      clase: clase.nombre,
+      docente: clase.maestros?.nombre_completo ?? 'Docente',
+      mes: `${monthName(month)} ${year}`,
+      totalAlumnos: alumnos.length
+    }
+    const groqData = await generateMonthlyPatterns(sesiones, progresos, groqContext)
+
+    const dP = (() => {
+      const c = pct(totalP, grandTotal), p = pct(prevP, prevTotal || 1)
+      const d = c - p
+      return { cur: c, prev: p, diff: d, label: `${d > 0 ? '+' : ''}${d}%`, cls: d >= 0 ? 'delta-up' : 'delta-down' }
+    })()
+    const dA = (() => {
+      const c = pct(totalA, grandTotal), p = pct(prevA, prevTotal || 1)
+      const d = c - p
+      return { cur: c, prev: p, diff: d, label: `${d > 0 ? '+' : ''}${d}%`, cls: d < 0 ? 'delta-up' : 'delta-down' }
+    })()
+
+    const prevContentCount = prevSesiones.length * 2 // approximate
+    const curContentCount  = allContentItems.length
+
+    const comparativa = `
+      <div style="display:grid;grid-template-columns:60% 40%;gap:6mm">
+        <div>
+          <p class="rpt-section-title">Comparativa estadística</p>
+          ${compBar('Presentes', dP, 'bar-ok')}
+          ${compBar('Ausentes',  dA, 'bar-bad')}
+          <div style="margin-top:4px">
+            <table class="rpt-table" style="font-size:7pt">
+              <thead><tr>
+                <th>Indicador</th>
+                <th>${monthName(prevMonth)} ${prevYear}</th>
+                <th>${monthName(month)} ${year}</th>
+                <th>Δ</th>
+              </tr></thead>
+              <tbody>
+                <tr><td>Contenidos cubiertos</td><td>${prevContentCount}</td><td>${curContentCount}</td>
+                    <td class="${curContentCount >= prevContentCount ? 'delta-up' : 'delta-down'}" style="font-weight:700">
+                      ${curContentCount >= prevContentCount ? '+' : ''}${curContentCount - prevContentCount}
+                    </td></tr>
+                <tr><td>Logros individuales</td>
+                    <td>${prevSesiones.length > 0 ? '—' : '0'}</td>
+                    <td>${progresos.filter(p => p.tipo === 'LOGRADO').length}</td>
+                    <td class="delta-up" style="font-weight:700">${progresos.filter(p => p.tipo === 'LOGRADO').length}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div>
+          <p class="rpt-section-title">Patrones detectados</p>
+          ${groqData.patrones.positivos.length > 0 ? `
+            <div style="margin-bottom:4px">
+              <div style="font-size:6.5pt;font-weight:700;color:var(--ok);margin-bottom:2px">✅ Positivos</div>
+              ${groqData.patrones.positivos.map(p => `<div style="font-size:7pt;margin-bottom:2px">• ${esc(p)}</div>`).join('')}
+            </div>
+          ` : ''}
+          ${groqData.patrones.atencion.length > 0 ? `
+            <div>
+              <div style="font-size:6.5pt;font-weight:700;color:var(--warn);margin-bottom:2px">⚠️ Atención requerida</div>
+              ${groqData.patrones.atencion.map(p => `<div style="font-size:7pt;margin-bottom:2px">• ${esc(p)}</div>`).join('')}
+            </div>
+          ` : ''}
+          ${(!groqData.patrones.positivos.length && !groqData.patrones.atencion.length)
+            ? `<div style="font-size:7pt;color:var(--ink3)">(Análisis no disponible)</div>`
+            : ''}
+        </div>
+      </div>
+    `
+
+    const recos = groqData.recomendaciones
+    const recosHtml = `
+      <p class="rpt-section-title" style="margin-top:4mm">Recomendaciones institucionales</p>
+      <div class="reco-grid">
+        <div class="reco-card">
+          <div class="reco-title">📚 Académico</div>
+          <div>${esc(recos.academico || '(Sin datos suficientes)')}</div>
+        </div>
+        <div class="reco-card">
+          <div class="reco-title">📋 Logística</div>
+          <div>${esc(recos.logistica || '(Sin datos suficientes)')}</div>
+        </div>
+        <div class="reco-card">
+          <div class="reco-title">⭐ Talentos</div>
+          <div>${esc(recos.talentos || '(Sin datos suficientes)')}</div>
+        </div>
+        <div class="reco-card">
+          <div class="reco-title">🎯 Refuerzo</div>
+          <div>${esc(recos.refuerzo || '(Sin datos suficientes)')}</div>
+        </div>
+      </div>
+    `
+
+    const notaDir = groqData.notaDireccion ? `
+      <div class="nota-dir">
+        <div class="nota-title">📝 Nota para Dirección Ejecutiva</div>
+        <div>${esc(groqData.notaDireccion)}</div>
+      </div>
+    ` : ''
+
+    const p3 = `
+      <div class="page land">
+        ${header(headerData)}
+        ${comparativa}
+        ${recosHtml}
+        ${notaDir}
+        ${footer(3, 3, `${monthName(month)} ${year}`)}
+      </div>
+    `
+
+    const html = wrapDocument(p1 + p2 + p3, true)
+    const opened = openReport(html)
+    if (!opened) {
+      AppToast.warn('El navegador bloqueó la ventana emergente. Permite las ventanas emergentes e intenta de nuevo.')
+    }
+
+  } catch (err) {
+    console.error('[reportService] generateMonthlyPedagogical:', err)
+    AppToast.error('Error al generar el informe pedagógico: ' + err.message)
+  }
 }
+
 

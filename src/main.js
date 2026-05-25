@@ -40,6 +40,7 @@ import './modules/horario-builder/styles/horario-builder.css';
 
 // Core
 import { router } from './core/router/router.js';
+window.router = router;
 import { config } from './core/config/config.js';
 
 // Auth
@@ -65,6 +66,7 @@ import { registerRoutesPermisos } from './modules/permisos/index.js';
 import { registerRoutesPedagogico } from './modules/pedagogico/index.js';
 import { registerRoutesHorarioBuilder } from './modules/horario-builder/index.js';
 import { registerRoutesAdminNotificaciones } from './modules/admin-notificaciones/index.js';
+import { registerRoutesAdminAprobacion } from './modules/admin-aprobacion/index.js';
 
 // ============================================================================
 // MÓDULOS REGISTRY - Define todos los módulos de la aplicación
@@ -101,6 +103,14 @@ const MODULES_REGISTRY = [
     description: 'Alertas tempranas de riesgo y sustituciones sugeridas',
     enabled: true,
     register: registerRoutesAdminNotificaciones
+  },
+  {
+    id: 'admin-aprobacion',
+    label: 'Aprobación de Maestros',
+    icon: 'bi-person-check',
+    description: 'Aprobación de maestros y gestión de ausencias',
+    enabled: true,
+    register: registerRoutesAdminAprobacion
   },
   {
     id: 'maestros',
@@ -269,7 +279,6 @@ const NAV_GROUPS = [
     icon: 'bi-bar-chart-line',
     items: [
       { id: 'metricas', label: 'Dashboard', icon: 'bi-bar-chart-line' },
-      { id: 'admin-notificaciones', label: 'Centro de Actividad', icon: 'bi-bell' },
       { id: 'admin-dashboard', label: 'Cumplimiento Maestros', icon: 'bi-clipboard-check' },
       { id: 'admin-dashboard-reportes', label: 'Reportes Director', icon: 'bi-file-earmark-pdf' },
       { id: 'admin-dashboard-analitca-llenado', label: 'Analítica Llenado', icon: 'bi-graph-up' },
@@ -281,6 +290,9 @@ const NAV_GROUPS = [
     label: 'Sistema',
     icon: 'bi-gear',
     items: [
+      { id: 'admin-notificaciones', label: 'Centro de Actividad', icon: 'bi-bell' },
+      { id: 'admin-aprobacion', label: 'Aprobaciones', icon: 'bi-person-check' },
+      { id: 'admin-ausencias', label: 'Gestión Ausencias', icon: 'bi-calendar-x' },
       { id: 'configuracion', label: 'Configuración', icon: 'bi-sliders' },
       { id: 'permisos', label: 'Permisos', icon: 'bi-shield-lock' },
       { id: 'importar-datos', label: 'Importar Datos', icon: 'bi-cloud-upload' },

@@ -47,7 +47,7 @@ export async function getCurrentUserIsAdmin() {
   const { data, error } = await supabase
     .from('maestros')
     .select('es_admin')
-    .eq('usuario_id', user.id)
+    .eq('user_id', user.id)
     .single();
   if (error || !data) return false;
   return data.es_admin === true;

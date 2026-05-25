@@ -51,12 +51,11 @@ const TIPO_AUSENCIA = {
 
 async function _fetchAusencias() {
   const since = daysAgo(30)
-  const { data, error } = await supabase
+  const { data: ausencias, error } = await supabase
     .from('ausencias_maestros')
     .select(`
       id, maestro_id, tipo_ausencia, urgencia, fecha_inicio, fecha_fin,
-      estado, motivo, created_at, decidido_en,
-      maestros:maestro_id(nombre_completo, correo, instrumento)
+      estado, motivo, created_at, decidido_en
     `)
     .in('estado', ['pendiente', 'aprobada', 'rechazada'])
     .gte('created_at', `${since}T00:00:00`)
@@ -64,7 +63,50 @@ async function _fetchAusencias() {
     .limit(50)
 
   if (error) throw error
-  return data || []
+  if (!ausencias || ausencias.length === 0) return []
+
+  const maestroIds = [...new Set(ausencias.map(a => a.maestro_id).filter(Boolean))]
+  if (maestroIds.length > 0) {
+    const { data: perfiles, error: perfError } = await supabase
+      .from('profiles')
+      .select('id, nombre_completo, email')
+      .in('id', maestroIds)
+
+    if (!perfError && perfiles) {
+      const correos = perfiles.map(p => p.email).filter(Boolean)
+      let maestrosMap = new Map()
+      
+      if (correos.length > 0) {
+        const { data: maestrosData } = await supabase
+          .from('maestros')
+          .select('correo, especialidad')
+          .in('correo', correos)
+        
+        if (maestrosData) {
+          maestrosMap = new Map(maestrosData.map(m => [m.correo.toLowerCase(), m.especialidad]))
+        }
+      }
+
+      const perfMap = new Map(perfiles.map(p => {
+        const especialidad = maestrosMap.get(p.email?.toLowerCase()) || null
+        return [p.id, {
+          nombre_completo: p.nombre_completo,
+          correo: p.email,
+          instrumento: especialidad
+        }]
+      }))
+
+      return ausencias.map(a => {
+        const m = perfMap.get(a.maestro_id)
+        return {
+          ...a,
+          maestros: m || a.maestros || null
+        }
+      })
+    }
+  }
+
+  return ausencias.map(a => ({ ...a, maestros: a.maestros || null }))
 }
 
 function _ausenciaToEvent(a, activeMaestros = []) {
@@ -181,9 +223,9 @@ async function _fetchAlumnosRecientes() {
   const since = daysAgo(7)
   const { data, error } = await supabase
     .from('alumnos')
-    .select('id, nombre_completo, creado_en, created_at')
-    .gte('creado_en', `${since}T00:00:00`)
-    .order('creado_en', { ascending: false })
+    .select('id, nombre_completo, created_at')
+    .gte('created_at', `${since}T00:00:00`)
+    .order('created_at', { ascending: false })
     .limit(20)
 
   if (error) {
@@ -207,8 +249,8 @@ function _alumnosToEvents(alumnos) {
     titulo:    `Nuevo alumno registrado: ${a.nombre_completo || 'Alumno'}`,
     subtitulo: `Estado: activo`,
     motivo:    '',
-    timestamp: a.creado_en || a.created_at,
-    timeAgo:   timeAgo(a.creado_en || a.created_at),
+    timestamp: a.created_at,
+    timeAgo:   timeAgo(a.created_at),
     actionRoute: null,
     actionLabel: null,
   }))
@@ -219,7 +261,7 @@ function _alumnosToEvents(alumnos) {
 async function _fetchMaestrosPendientes() {
   const { data, error } = await supabase
     .from('profiles')
-    .select('id, email, nombre_completo, created_at, instrumento')
+    .select('id, email, nombre_completo, created_at')
     .eq('rol', 'maestro')
     .eq('estado', 'pendiente')
     .order('created_at', { ascending: false })
@@ -244,7 +286,7 @@ function _maestroToEvent(p) {
     iconColor: '#ef4444',
     category:  'maestro',
     titulo:    `Nuevo maestro registrado esperando aprobación: ${p.nombre_completo || 'Maestro'}`,
-    subtitulo: `Email: ${p.email} · Instrumento: ${p.instrumento || 'No especificado'}`,
+    subtitulo: `Email: ${p.email}`,
     motivo:    '',
     timestamp: p.created_at,
     timeAgo:   timeAgo(p.created_at),
@@ -257,16 +299,20 @@ function _maestroToEvent(p) {
 
 async function _fetchActiveMaestros() {
   const { data, error } = await supabase
-    .from('profiles')
-    .select('id, nombre_completo, email, instrumento')
-    .eq('rol', 'maestro')
-    .eq('estado', 'activo')
+    .from('maestros')
+    .select('id, nombre_completo, correo, especialidad')
+    .eq('activo', true)
 
   if (error) {
     console.warn('[adminNotifApi] active maestros fetch warn:', error.message)
     return []
   }
-  return data || []
+  return (data || []).map(m => ({
+    id: m.id,
+    nombre_completo: m.nombre_completo,
+    email: m.correo,
+    instrumento: m.especialidad
+  }))
 }
 
 async function _fetchEarlyWarningRisks() {

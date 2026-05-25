@@ -754,7 +754,12 @@ function _setupGlobalAppEvents() {
               const routeNowForbidden =
                 (currentRoute === 'registrar-alumno' && !nuevosPermisos.puede_registrar_alumnos) ||
                 (currentRoute === 'gestionar-clases' && !nuevosPermisos.puede_inscribir_clases)
-              const safeRoute = routeNowForbidden ? 'hoy' : currentRoute
+              let safeRoute = routeNowForbidden ? 'hoy' : currentRoute
+
+              // If teacher was on pending-approval and just got approved, send them to hoy
+              if (currentRoute === 'pending-approval' && ganados.length > 0) {
+                safeRoute = 'hoy'
+              }
 
               // Re-render shell with updated permissions (updates nav tabs instantly)
               _renderShell(app, maestroLocal, nuevosPermisos)

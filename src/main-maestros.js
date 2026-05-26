@@ -143,6 +143,7 @@ import './modules/academic-routes/styles/academic-routes.css'
 // IS_ADMIN se determina desde la DB tras autenticar (maestros.es_admin)
 // No depende de window.__SOI_MODE__ ni de ningún flag hardcodeado
 let IS_ADMIN = false
+let _permisosChannel = null
 
 function buildMaestroTabs(permisos) {
   const tabs = [
@@ -712,9 +713,15 @@ function _setupGlobalAppEvents() {
 
   // PERM-REALTIME: Subscribe to permisos_maestros changes for instant shell updates
   if (!IS_ADMIN) {
+    // Cleanup canal anterior antes de re-suscribir (evita CHANNEL_ERROR por canales huérfanos)
+    if (typeof _permisosChannel !== 'undefined' && _permisosChannel) {
+      supabase.removeChannel(_permisosChannel)
+      _permisosChannel = null
+    }
+
     const maestroLocal = _maestro
     if (maestroLocal?.id) {
-      const permisosChannel = supabase
+      _permisosChannel = supabase
         .channel(`permisos-maestro:${maestroLocal.id}`)
         .on(
           'postgres_changes',

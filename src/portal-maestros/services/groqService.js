@@ -181,13 +181,18 @@ Formato exacto de respuesta:
   ]
 }
 
+Cada grupo incluye un campo "alert_type" que el sistema ya detectó: CONDUCTA, ATENCION, RIESGO_PEDAGOGICO, o null.
+
 Reglas estrictas:
 - No cambies alumnos.
 - No cambies estados.
 - No inventes logros que no estén sugeridos.
+- No uses palabras como "correctamente", "domina", "logró", "aplica bien" o similares si el fragmento no contiene evidencia explícita de logro. Si el fragmento solo describe que se vio o trabajó un material, descríbelo de forma neutral (ej: "Trabajó la lección").
 - Si el fragmento menciona compases específicos, inclúyelos en el contenido (ej. "Danzón c.33-40").
-- Si el fragmento trata de conducta, disciplina o actitud, usa "Comportamiento" en contenido. Nunca clasifiques dificultades técnicas de ejecución o motricidad fina como "Comportamiento" (deben ir como "Técnica" o "Práctica").
-- Si el fragmento trata de inasistencia o llegada tarde, usa "Asistencia" en contenido.
+- Si "alert_type" es "ATENCION": usa "Atención y concentración" en contenido. NUNCA uses "Comportamiento" ni "Enfoque" para este tipo de alerta.
+- Si "alert_type" es "RIESGO_PEDAGOGICO": usa el nombre técnico de la dificultad en contenido (ej: "Técnica del arco", "Posición del violín"). NUNCA uses "Comportamiento".
+- Si "alert_type" es "CONDUCTA": usa "Comportamiento" en contenido. Reserva este término SOLO para conducta disruptiva, falta de respeto o indisciplina explícita.
+- Si "alert_type" es null y el fragmento trata de inasistencia o llegada tarde, usa "Asistencia" en contenido.
 - Escribe siempre en un español neutro impecable y profesional (no uses voseo ni modismos locales).
 `
 
@@ -455,7 +460,9 @@ export async function analyzeObservation(text, context = {}) {
       id: `g_${i + 1}`,
       fragment: _removeStudentNames(g.fragment, presentes),
       estado: g.estado?.value || g.estado,
-      tipo: inferTipo(g.fragment, context.tipoClase)
+      tipo: inferTipo(g.fragment, context.tipoClase),
+      scope: g.scope || 'grupo',
+      alert_type: g.alertDetails?.type || null
     }))
   }
 
@@ -493,15 +500,20 @@ export async function analyzeObservation(text, context = {}) {
     const tipo = inferTipo(contenido + ' ' + g.fragment, context.tipoClase)
 
     return {
-      alumnos:     g.alumnos.map(a => a.nombre || a.nombre_completo || a.nombreCorto),
+      alumnos:               g.alumnos.map(a => a.nombre || a.nombre_completo || a.nombreCorto),
       contenido,
       tipo,
-      estado:      g.estado?.value || g.estado, // Save raw string value to DB
-      nota:        g.nota,
-      tarea:       g.tarea,
-      observacion: (e.observacion || '').trim() || null,
-      es_colectivo: g.esColectivo,
-      alerta: g.alerta || false,
+      estado:                g.estado?.value || g.estado, // Save raw string value to DB
+      nota:                  g.nota,
+      tarea:                 g.tarea,
+      observacion:           (e.observacion || '').trim() || null,
+      es_colectivo:          g.esColectivo,
+      alerta:                g.alerta || false,
+      alertaTipo:            g.alertDetails?.type || null,
+      alertDetails:          g.alertDetails,
+      scope:                 g.scope || 'grupo',
+      excludeIds:            g.excludeIds || [],
+      requires_confirmation: g.requires_confirmation || false
     }
   })
 

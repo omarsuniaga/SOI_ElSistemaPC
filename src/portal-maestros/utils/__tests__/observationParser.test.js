@@ -107,6 +107,32 @@ describe('Hardened Observation Parser (v2) Tests', () => {
       expect(groups[1].alumnos[0].id).toBe('1')
       expect(groups[1].estado.value).toBe('DIFICULTAD')
       expect(groups[1].alerta).toBe(true)
+      expect(groups[1].alertDetails.type).toBe('RIESGO_PEDAGOGICO')
+    })
+
+    it('should automatically exclude students with individual difficulties from "los demas" collective scope', () => {
+      const txt = 'Evans Rodriguez no logró ubicar el dedo. Los demás alumnos visiblemente sienten un poco más de confianza.'
+      const groups = segmentObservation(txt, { alumnos: roster })
+      
+      expect(groups).toHaveLength(2)
+      expect(groups[0].alumnos[0].id).toBe('1')
+      expect(groups[0].estado.value).toBe('DIFICULTAD')
+
+      // "Los demás" group should exclude Evans
+      expect(groups[1].scope).toBe('grupo_excluyendo')
+      expect(groups[1].alumnos).toHaveLength(1)
+      expect(groups[1].alumnos[0].id).toBe('3') // Only Matias
+      expect(groups[1].excludeIds).toContain('1')
+    })
+
+    it('should flag indeterminate sub-groups ("algunos") with confirmation required', () => {
+      const txt = 'Algunos alumnos ya están tocando estrellita.'
+      const groups = segmentObservation(txt, { alumnos: roster })
+      
+      expect(groups).toHaveLength(1)
+      expect(groups[0].scope).toBe('subgrupo_indeterminado')
+      expect(groups[0].requires_confirmation).toBe(true)
+      expect(groups[0].alumnos).toHaveLength(0)
     })
   })
 

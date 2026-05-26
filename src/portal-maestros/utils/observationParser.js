@@ -136,30 +136,58 @@ export function detectTask(text) {
   return null
 }
 
-// ─── Alert detection ─────────────────────────────────────────────────────────
+// ─── Alert detection (Fine categorisation) ───────────────────────────────────
 
-const ALERT_BEHAVIOR_KEYWORDS = [
-  'mal comportamiento', 'mala conducta', 'conducta disruptiva', 'comportamiento negativo',
-  'falta de respeto', 'irrespetuoso', 'irrespetuosa', 'agresivo', 'agresiva',
-  'pelea', 'peleó', 'golpeó', 'insulto', 'insultó',
-  'no atiende', 'no presta atención', 'distrae', 'distraer', 'molesta', 'molestó',
-  'indisciplina', 'indisciplinado', 'indisciplinada',
-  'actitud negativa', 'actitud problema', 'mala actitud',
-  'lloró', 'llanto', 'berrinche',
-  'no quiso', 'se negó', 'se niego',
-  'ausentismo', 'llegó tarde', 'llegó muy tarde', 'inasistencia injustificada',
-]
+export const ALERT_TYPES = {
+  CONDUCTA: [
+    'mal comportamiento', 'mala conducta', 'conducta disruptiva', 'comportamiento negativo',
+    'falta de respeto', 'irrespetuoso', 'irrespetuosa', 'agresivo', 'agresiva',
+    'pelea', 'peleo', 'golpeo', 'insulto', 'insulto', 'indisciplina', 'indisciplinado',
+    'indisciplinada', 'actitud negativa', 'actitud problema', 'mala actitud',
+    'no quiso', 'se nego', 'berrinche'
+  ],
+  ATENCION: [
+    'dificultad en la atencion', 'atencion y concentracion', 'concentracion',
+    'se distrae', 'no logra concentrarse', 'no atiende', 'no presta atencion',
+    'distrae', 'falta de atencion', 'falta de concentracion'
+  ],
+  RIESGO_PEDAGOGICO: [
+    'frustracion', 'atraso', 'acumulando fallas', 'riesgo', 'cuesta mas', 'le cuesta',
+    'les cuesta', 'se le dificulta', 'se les dificulta', 'dificultad tecnica'
+  ]
+}
 
 /**
- * Detects if a text fragment describes a negative behavioral/disciplinary situation.
+ * Detects if a text fragment contains pedagogical or behavioral alerts.
+ * Returns an object with type and message.
  * @param {string} text
- * @param {string} tipo
- * @returns {boolean}
+ * @param {string} tipo - Inferred class category
+ * @returns {{active: boolean, type: 'CONDUCTA'|'ATENCION'|'RIESGO_PEDAGOGICO'|null, mensaje: string|null}}
  */
+export function detectPedagogicalAlert(text, tipo) {
+  const normalized = normalizeText(text)
+  
+  if (tipo === 'comportamiento' || tipo === 'conducta') {
+    return { active: true, type: 'CONDUCTA', mensaje: 'Alerta de comportamiento detectada.' }
+  }
+  
+  for (const [alertType, keywords] of Object.entries(ALERT_TYPES)) {
+    if (keywords.some(kw => normalized.includes(normalizeText(kw)))) {
+      const label = alertType === 'RIESGO_PEDAGOGICO' ? 'Riesgo Pedagógico' : alertType === 'ATENCION' ? 'Atención y Concentración' : 'Conducta'
+      return {
+        active: true,
+        type: alertType,
+        mensaje: `Alerta de ${label.toLowerCase()} detectada.`
+      }
+    }
+  }
+  
+  return { active: false, type: null, mensaje: null }
+}
+
+/** Legacy support - returns a boolean if any alert is active */
 export function detectAlert(text, tipo) {
-  const lower = text.toLowerCase()
-  if (tipo === 'comportamiento' || tipo === 'conducta') return true
-  return ALERT_BEHAVIOR_KEYWORDS.some(kw => lower.includes(kw))
+  return detectPedagogicalAlert(text, tipo).active
 }
 
 // ─── Tipo inference ──────────────────────────────────────────────────────────
@@ -305,7 +333,18 @@ export function segmentSentences(text) {
 // ─── Group segmentation ───────────────────────────────────────────────────────
 
 /**
- * Segments a teacher observation into named groups.
+ * Segments a teacher observation into named groups with advanced pedagogical scopes.
+ *
+ * Strategy: paragraph-first segmentation.
+ * Teachers naturally write one paragraph per subject (Evans, the group, some students).
+ * Splitting by sentence loses that context and creates too many redundant cards.
+ *
+ * Algorithm:
+ *   1. Split by paragraph (double newline or clear topic shift)
+ *   2. Within each paragraph, detect the primary subject (individual / grupo / exclusion / algunos)
+ *   3. Merge sentences within the same paragraph into one fragment
+ *   4. Track individual students with difficulties for "los demás" exclusion
+ *
  * @param {string} text
  * @param {object} context
  * @returns {ParsedGroup[]}
@@ -315,38 +354,240 @@ export function segmentObservation(text, context = {}) {
   const presentes = context.presentes?.length ? context.presentes : alumnos
   const lookup = buildRosterLookup(presentes)
 
-  const sentences = segmentSentences(text)
-  if (!sentences.length) return []
+  // ── Step 1: split into paragraphs ────────────────────────────────────────
+  const rawParagraphs = text
+    .split(/\n{2,}/)                     // explicit blank lines
+    .map(p => p.replace(/\n/g, ' ').trim())
+    .filter(p => p.length > 10)
 
-  const groups = []
+  const paragraphs = rawParagraphs.flatMap(paragraph => {
+    const sentences = segmentSentences(paragraph)
+    if (sentences.length <= 1) return [paragraph]
 
-  for (const sentence of sentences) {
-    const { students: mentioned, ambiguous, requires_confirmation } = findMentionedStudents(sentence, lookup, presentes, alumnos)
-    const isColectivo = mentioned.length > 1 || /\btodos\b|\bgrupo\b/.test(sentence.toLowerCase())
+    const scopedSentences = sentences.filter(sentence => {
+      if (_isMetaCommentary(sentence)) return false          // skip filler sentences
+      const lower = sentence.toLowerCase()
+      const hasStudents = findMentionedStudents(sentence, lookup, presentes, alumnos).students.length > 0
+      const hasGroupScope = /\btodos\b|\btodo el grupo\b|\btoda la clase\b|\balgunos\b/i.test(lower)
+      const hasExclusionScope = /(?:los dem[a\u00e1]s|el resto del grupo|los otros alumnos)/i.test(sentence)
+      return hasStudents || hasGroupScope || hasExclusionScope
+    })
 
-    const alumnoTags = isColectivo
-      ? ['Todos']
-      : mentioned.map(a => a.nombreCorto || a.nombre_corto || a.nombre || a.nombre_completo)
+    return scopedSentences.length > 1 ? sentences.filter(s => !_isMetaCommentary(s)) : [paragraph]
+  })
 
-    const tipo = inferTipo(sentence, tipoClase)
-    const stateObj = detectState(sentence)
+  if (!paragraphs.length) return []
 
-    groups.push({
+  const initialGroups = []
+  // Track individuals explicitly named with a difficulty (for "los demás" exclusion)
+  const individualDifficulties = new Set()
+
+  // ── Step 2: process each paragraph as one semantic unit ──────────────────
+  for (const paragraph of paragraphs) {
+    const lower = paragraph.toLowerCase()
+
+    const hasExclusionCue = /(?:los dem[a\u00e1]s|el resto del grupo|los otros alumnos)/i.test(paragraph)
+    const isIndeterminado = /\balgunos\b/i.test(lower) &&
+                            !findMentionedStudents(paragraph, lookup, presentes, alumnos).students.length
+
+    const { students: mentioned, ambiguous, requires_confirmation } = findMentionedStudents(paragraph, lookup, presentes, alumnos)
+    const startsWithExclusionCue = /^\s*(?:los dem[a\u00e1]s|el resto del grupo|los otros alumnos)\b/i.test(paragraph)
+    const isExclusion = hasExclusionCue && (!mentioned.length || startsWithExclusionCue)
+    // If no specific student mentioned and not a targeted exclusion/subgroup,
+    // treat the paragraph as a collective observation for the whole group.
+    const isImplicitColectivo = !mentioned.length && !isExclusion && !isIndeterminado
+    const isColectivo = mentioned.length > 1 ||
+                        /\btodos\b|\btodo el grupo\b|\btoda la clase\b/.test(lower) ||
+                        isExclusion ||
+                        isImplicitColectivo
+
+    const tipo     = inferTipo(paragraph, tipoClase)
+    const stateObj = detectState(paragraph)
+    const alertObj = detectPedagogicalAlert(paragraph, tipo)
+    const effectiveAlertObj = alertObj.active
+      ? alertObj
+      : stateObj.value === 'DIFICULTAD'
+        ? { active: true, type: 'RIESGO_PEDAGOGICO', mensaje: 'Riesgo pedagógico detectado.' }
+        : alertObj
+
+    // Track individual students flagged with difficulty for exclusion later
+    if (!isColectivo && !isExclusion && mentioned.length === 1 &&
+        (stateObj.value === 'DIFICULTAD' || effectiveAlertObj.active)) {
+      individualDifficulties.add(mentioned[0].id || mentioned[0].nombre || mentioned[0].nombre_completo)
+    }
+
+    initialGroups.push({
       alumnos:              mentioned,
-      alumnoTags,
-      fragment:             sentence,
+      alumnoTags:           [],
+      fragment:             paragraph,
       estado:               stateObj,
-      nota:                 detectNote(sentence),
-      tarea:                detectTask(sentence),
+      nota:                 detectNote(paragraph),
+      tarea:                detectTask(paragraph),
       esColectivo:          isColectivo,
-      alerta:               detectAlert(sentence, tipo) || stateObj.value === 'DIFICULTAD',
+      isExclusion,
+      isIndeterminado,
+      alerta:               effectiveAlertObj.active || stateObj.value === 'DIFICULTAD',
+      alertDetails:         effectiveAlertObj,
       tipoClase,
       ambiguous,
-      requires_confirmation
+      requires_confirmation,
+      scope:                'individual',
     })
   }
 
-  return _mergeAdjacentGroups(groups)
+  // ── Step 2.5: inherit implicit subject ("el alumno", "la alumna", "su") ──
+  _attachImplicitSubject(initialGroups)
+
+  // ── Step 3: resolve scopes using accumulated difficulty context ───────────
+  for (const group of initialGroups) {
+    if (group.isExclusion) {
+      const excludedIds = Array.from(individualDifficulties)
+      group.alumnos = presentes.filter(a => {
+        const id = a.id || a.nombre || a.nombre_completo
+        return !excludedIds.includes(id)
+      })
+      group.esColectivo         = true
+      group.scope               = 'grupo_excluyendo'
+      group.excludeIds          = excludedIds
+      group.alumnoTags          = ['Todos (excluyendo)']
+    } else if (group.isIndeterminado) {
+      group.alumnos             = []
+      group.esColectivo         = false
+      group.scope               = 'subgrupo_indeterminado'
+      group.requires_confirmation = true
+      group.alumnoTags          = ['Algunos']
+    } else {
+      group.scope = group.esColectivo ? 'grupo' : 'individual'
+      if (group.esColectivo && !group.alumnos.length) {
+        // Implicit collective — fill with all present students
+        group.alumnos    = presentes
+        group.alumnoTags = ['Todos']
+      } else {
+        group.alumnoTags = group.esColectivo
+          ? ['Todos']
+          : group.alumnos.map(a => a.nombreCorto || a.nombre_corto || a.nombre || a.nombre_completo)
+      }
+    }
+  }
+
+  // ── Step 4: split DIFICULTAD paragraphs by alert type ────────────────────
+  // If one paragraph has both RIESGO_PEDAGOGICO and ATENCION cues, split into 2 cards
+  return _splitDualAlerts(initialGroups, presentes, lookup)
+}
+
+/**
+ * Returns true if a sentence is meta-commentary (institutional reflection, pedagogical
+ * goals, continuity statements) rather than a direct observation record.
+ * These sentences should NOT generate progress cards.
+ *
+ * Examples that should be filtered:
+ *   "Es fundamental que continuemos trabajando en la práctica..."
+ *   "Es importante señalar que debemos asegurarnos de que todos progresen."
+ *   "Lo que es un gran desafío para el grupo."
+ */
+function _isMetaCommentary(text) {
+  const n = normalizeText(text)
+  return (
+    /^es fundamental\b/.test(n)      ||
+    /^es importante (que|senalar|notar|destacar)\b/.test(n) ||
+    /\bdebemos continuar\b/.test(n)  ||
+    /\bpara asegurarnos\b/.test(n)   ||
+    /\bde manera equilibrada\b/.test(n) ||
+    /\bcontinuemos trabajando\b/.test(n) ||
+    /\bseguir trabajando\b/.test(n)  ||
+    /\bcontinuar practicando\b/.test(n)
+  )
+}
+
+/**
+ * Resolves implicit subject references ("el alumno", "la alumna", "su") by
+ * inheriting the last explicitly named individual student when no students are
+ * found in a paragraph. This handles the common pattern:
+ *
+ *   "Evans tiene dificultad con el arco."  ← names Evans explicitly
+ *   "El alumno además se distrae mucho."   ← implicit — still Evans
+ *
+ * Mutates groups in place.
+ * @param {Array} groups
+ */
+function _attachImplicitSubject(groups) {
+  const IMPLICIT_RE = /\b(?:el alumno|la alumna|este alumno|esta alumna|dicho alumno|dicha alumna)\b/i
+
+  let lastStudents = []
+  let lastIsIndividual = false
+
+  for (const group of groups) {
+    const hasExplicit = group.alumnos?.length > 0
+
+    if (hasExplicit) {
+      if (!group.esColectivo && !group.isExclusion && !group.isIndeterminado) {
+        lastStudents    = group.alumnos
+        lastIsIndividual = true
+      } else {
+        // Reset on collective/group paragraphs so we don't over-inherit
+        lastIsIndividual = false
+      }
+      continue
+    }
+
+    // No explicit students — check if text uses a back-reference pronoun
+    if (lastIsIndividual && lastStudents.length && IMPLICIT_RE.test(group.fragment)) {
+      group.alumnos           = [...lastStudents]
+      group.esColectivo       = lastStudents.length > 1
+      group.inherited_subject = true
+    }
+  }
+}
+
+/**
+ * If a paragraph has both a technical risk AND an attention alert,
+ * split it into two separate records so the teacher sees them distinctly.
+ */
+function _splitDualAlerts(groups, presentes, lookup) {
+  const result = []
+  for (const g of groups) {
+    if (!g.alerta || g.esColectivo || g.isIndeterminado) {
+      result.push(g)
+      continue
+    }
+
+    const sentences = segmentSentences(g.fragment)
+    const hasTechRisk = sentences.some(s => {
+      const n = normalizeText(s)
+      return ALERT_TYPES.RIESGO_PEDAGOGICO.some(kw => n.includes(normalizeText(kw)))
+    })
+    const hasAttention = sentences.some(s => {
+      const n = normalizeText(s)
+      return ALERT_TYPES.ATENCION.some(kw => n.includes(normalizeText(kw)))
+    })
+
+    if (hasTechRisk && hasAttention) {
+      // Sentence 1..N-1 = technical risk, last attention sentence = attention card
+      const attentionSentences = sentences.filter(s => {
+        const n = normalizeText(s)
+        return ALERT_TYPES.ATENCION.some(kw => n.includes(normalizeText(kw)))
+      })
+      const techSentences = sentences.filter(s => !attentionSentences.includes(s))
+
+      if (techSentences.length) {
+        result.push({
+          ...g,
+          fragment:     techSentences.join(' '),
+          alertDetails: { active: true, type: 'RIESGO_PEDAGOGICO', mensaje: 'Riesgo pedagógico detectado.' },
+        })
+      }
+      if (attentionSentences.length) {
+        result.push({
+          ...g,
+          fragment:     attentionSentences.join(' '),
+          alertDetails: { active: true, type: 'ATENCION', mensaje: 'Alerta de atención y concentración detectada.' },
+        })
+      }
+    } else {
+      result.push(g)
+    }
+  }
+  return result
 }
 
 function _mergeAdjacentGroups(groups) {
@@ -359,10 +600,22 @@ function _mergeAdjacentGroups(groups) {
       prev.alumnos.map(a => a.id || a.nombre || a.nombre_completo),
       curr.alumnos.map(a => a.id || a.nombre || a.nombre_completo)
     )
-    if (sameStudents && prev.estado.value === curr.estado.value) {
+    const sameStateValue = prev.estado.value === curr.estado.value
+    const isBothDificultad = prev.estado.value === 'DIFICULTAD' && curr.estado.value === 'DIFICULTAD'
+
+    if (sameStudents && (sameStateValue || isBothDificultad)) {
       prev.fragment += ' ' + curr.fragment
       prev.nota  = prev.nota  ?? curr.nota
       prev.tarea = prev.tarea ?? curr.tarea
+      if (curr.alerta) {
+        prev.alerta = true
+        if (curr.alertDetails && curr.alertDetails.active) {
+          prev.alertDetails = curr.alertDetails
+        }
+      }
+      if (curr.estado.confidence > prev.estado.confidence) {
+        prev.estado = curr.estado
+      }
     } else {
       merged.push(curr)
     }

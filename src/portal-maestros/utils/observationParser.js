@@ -271,7 +271,7 @@ export function findMentionedStudents(text, lookup, presentes, alumnos) {
   const lower = text.toLowerCase()
   const roster = presentes?.length ? presentes : alumnos
 
-  if (/\btodos\b|\btodo el grupo\b|\btoda la clase\b|\bel grupo\b/.test(lower)) {
+  if (/\btodos(?!\s+los\s+(?:compases|dedos|ejercicios|dias|metodos|aspectos|materiales|detalles|objetivos|retos|elementos|puntos|errores|fallas))\b|\btodo el grupo\b|\btoda la clase\b|\bel grupo\b/.test(lower)) {
     return {
       students: roster,
       ambiguous: false,
@@ -349,6 +349,8 @@ export function segmentSentences(text) {
  * @param {object} context
  * @returns {ParsedGroup[]}
  */
+const IMPLICIT_RE = /\b(?:el alumno|la alumna|este alumno|esta alumna|dicho alumno|dicha alumna)\b/i
+
 export function segmentObservation(text, context = {}) {
   const { alumnos = [], tipoClase = 'instrumento' } = context
   const presentes = context.presentes?.length ? context.presentes : alumnos
@@ -361,19 +363,20 @@ export function segmentObservation(text, context = {}) {
     .filter(p => p.length > 10)
 
   const paragraphs = rawParagraphs.flatMap(paragraph => {
-    const sentences = segmentSentences(paragraph)
-    if (sentences.length <= 1) return [paragraph]
+    const sentences = segmentSentences(paragraph).filter(s => !_isMetaCommentary(s))
+    if (sentences.length === 0) return []
+    if (sentences.length === 1) return [sentences[0]]
 
     const scopedSentences = sentences.filter(sentence => {
-      if (_isMetaCommentary(sentence)) return false          // skip filler sentences
       const lower = sentence.toLowerCase()
       const hasStudents = findMentionedStudents(sentence, lookup, presentes, alumnos).students.length > 0
-      const hasGroupScope = /\btodos\b|\btodo el grupo\b|\btoda la clase\b|\balgunos\b/i.test(lower)
+      const hasGroupScope = /\btodos(?!\s+los\s+(?:compases|dedos|ejercicios|dias|metodos|aspectos|materiales|detalles|objetivos|retos|elementos|puntos|errores|fallas))\b|\btodo el grupo\b|\btoda la clase\b|\balgunos\b/i.test(lower)
       const hasExclusionScope = /(?:los dem[a\u00e1]s|el resto del grupo|los otros alumnos)/i.test(sentence)
-      return hasStudents || hasGroupScope || hasExclusionScope
+      const hasImplicitSubject = IMPLICIT_RE.test(sentence)
+      return hasStudents || hasGroupScope || hasExclusionScope || hasImplicitSubject
     })
 
-    return scopedSentences.length > 1 ? sentences.filter(s => !_isMetaCommentary(s)) : [paragraph]
+    return scopedSentences.length > 1 ? sentences : [sentences.join(' ')]
   })
 
   if (!paragraphs.length) return []
@@ -397,7 +400,7 @@ export function segmentObservation(text, context = {}) {
     // treat the paragraph as a collective observation for the whole group.
     const isImplicitColectivo = !mentioned.length && !isExclusion && !isIndeterminado
     const isColectivo = mentioned.length > 1 ||
-                        /\btodos\b|\btodo el grupo\b|\btoda la clase\b/.test(lower) ||
+                        /\btodos(?!\s+los\s+(?:compases|dedos|ejercicios|dias|metodos|aspectos|materiales|detalles|objetivos|retos|elementos|puntos|errores|fallas))\b|\btodo el grupo\b|\btoda la clase\b/.test(lower) ||
                         isExclusion ||
                         isImplicitColectivo
 
@@ -511,8 +514,6 @@ function _isMetaCommentary(text) {
  * @param {Array} groups
  */
 function _attachImplicitSubject(groups) {
-  const IMPLICIT_RE = /\b(?:el alumno|la alumna|este alumno|esta alumna|dicho alumno|dicha alumna)\b/i
-
   let lastStudents = []
   let lastIsIndividual = false
 

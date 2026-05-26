@@ -285,7 +285,7 @@ export function findMentionedStudents(text, lookup, presentes, alumnos) {
 export function segmentSentences(text) {
   const protectedText = text
     .replace(/Lec\./gi, 'Lec§')
-    .replace(/c\.\s*(\d+)/gi, 'c§$1')
+    .replace(/c\./gi, 'c§')
     .replace(/n\.º/gi, 'n§º')
     .replace(/(\d)[.](\d)/g, '$1§$2')
 

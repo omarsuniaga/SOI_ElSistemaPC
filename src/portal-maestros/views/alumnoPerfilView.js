@@ -318,7 +318,6 @@ async function _renderProgresos(container, alumnoId, offset = 0) {
     }
   }
 }
-}
 
 async function _renderEvaluaciones(container, alumnoId) {
   const root = container.querySelector('#pm-alumno-progreso-root')

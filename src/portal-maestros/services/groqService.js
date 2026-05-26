@@ -160,23 +160,36 @@ BIEN: "#María [Escalas] (mejoró notablemente en la ejecución económica) {Esc
 
 // Minimal prompt — JS pre-parser already resolved: who, state, note, task.
 // Groq only needs to enrich each group with a clean content label and observation summary.
-const ENRICH_GROUPS_PROMPT = `Sos un asistente pedagógico musical.
-Recibís grupos de progreso ya detectados por código. Para cada grupo, completá SOLO dos campos:
-- "contenido": etiqueta concisa de qué se trabajó (máx 50 chars, español neutro)
-- "observacion": descripción pedagógica del nivel actual (máx 80 chars, español neutro, sin comillas dobles adentro)
+const ENRICH_GROUPS_PROMPT = `Eres un asistente pedagógico musical.
 
-Respondé ÚNICAMENTE con un array JSON con tantos objetos como grupos recibís, en el mismo orden.
-Sin texto extra. Sin markdown. Sin explicaciones.
+Recibes grupos de progreso ya detectados por código de un texto de observación musical.
+Tu tarea es completar únicamente dos campos por grupo:
 
-Formato exacto:
-[{"contenido":"...","observacion":"..."},{"contenido":"...","observacion":"..."}]
+- "contenido": etiqueta breve y concisa de lo trabajado (ej. "Violín Lec. 11", "Escala de Sol mayor"). Máximo 50 caracteres.
+- "observacion": resumen pedagógico y cualitativo del nivel actual del alumno. Máximo 80 caracteres.
 
-REGLAS:
-- Si el fragmento menciona compases específicos → incluilos en contenido: "Danzón c.333-348"
-- Si es comportamiento, actitud o asistencia → contenido: "Comportamiento" o "Asistencia"
-- Usá español neutro (no voseo, no regionalismos)
-- Máximo 50 chars en contenido, 80 en observacion
-- Nunca uses comillas dobles dentro de un string — usá comillas simples si necesitás citar`
+Responde únicamente con JSON válido, sin markdown (sin bloques de código \`\`\`json) y sin explicaciones adicionales.
+
+Formato exacto de respuesta:
+{
+  "items": [
+    {
+      "id": "g_1",
+      "contenido": "...",
+      "observacion": "..."
+    }
+  ]
+}
+
+Reglas estrictas:
+- No cambies alumnos.
+- No cambies estados.
+- No inventes logros que no estén sugeridos.
+- Si el fragmento menciona compases específicos, inclúyelos en el contenido (ej. "Danzón c.33-40").
+- Si el fragmento trata de conducta, disciplina o actitud, usa "Comportamiento" en contenido. Nunca clasifiques dificultades técnicas de ejecución o motricidad fina como "Comportamiento" (deben ir como "Técnica" o "Práctica").
+- Si el fragmento trata de inasistencia o llegada tarde, usa "Asistencia" en contenido.
+- Escribe siempre en un español neutro impecable y profesional (no uses voseo ni modismos locales).
+`
 
 const PROPOSE_CURRICULUM_PROMPT = `
 Eres un pedagogo musical especializado en diseño curricular.
@@ -396,6 +409,33 @@ function _fixUnescapedQuotes(str) {
  * @param {string} [context.indicadorActivo]
  * @returns {Promise<{dsl: string, progreso: Array, resumen: string}>}
  */
+/** Sanitizes raw fragments by removing real student names. */
+function _removeStudentNames(fragment, presentes) {
+  let clean = fragment
+  for (const a of presentes) {
+    const full = (a.nombre || a.nombre_completo || '').toLowerCase().trim()
+    const short = (a.nombreCorto || a.nombre_corto || a.nombre || a.nombre_completo || '').toLowerCase().trim()
+    
+    const cleanReg = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    
+    if (full) {
+      clean = clean.replace(new RegExp(cleanReg(full), 'gi'), '')
+    }
+    if (short && short !== full) {
+      clean = clean.replace(new RegExp(cleanReg(short), 'gi'), '')
+    }
+    const first = (a.nombre || a.nombre_completo || '').toLowerCase().trim().split(' ')[0]
+    if (first) {
+      clean = clean.replace(new RegExp(`#${cleanReg(first)}`, 'gi'), '')
+      clean = clean.replace(new RegExp(`\\b${cleanReg(first)}\\b`, 'gi'), '')
+    }
+  }
+  return clean.replace(/\s+/g, ' ').replace(/^\s*[,.;]\s*/, '').trim()
+}
+
+/**
+ * Parses free-text observation into a structured progress payload using determinist parser + Groq.
+ */
 export async function analyzeObservation(text, context = {}) {
   const alumnos  = context.alumnos  || []
   const presentes = context.presentes?.length ? context.presentes : alumnos
@@ -407,11 +447,17 @@ export async function analyzeObservation(text, context = {}) {
     return { dsl: '', progreso: [], resumen: 'Registro general de clase sin evaluaciones detectadas.' }
   }
 
-  // ── Step 2: Groq enrichment — only contenido + observacion per group ──────
-  // Input to Groq: compact list of fragments (no student names, no state, no notes)
-  const fragmentsPayload = groups.map((g, i) =>
-    `${i + 1}. "${g.fragment}" (instrumento: ${context.instrumento || 'música'}, tipoClase: ${context.tipoClase || 'instrumento'})`
-  ).join('\n')
+  // ── Step 2: Groq enrichment — send clean JSON contract ────────────────────
+  const payload = {
+    instrumento: context.instrumento || 'música',
+    tipoClase: context.tipoClase || 'instrumento',
+    groups: groups.map((g, i) => ({
+      id: `g_${i + 1}`,
+      fragment: _removeStudentNames(g.fragment, presentes),
+      estado: g.estado?.value || g.estado,
+      tipo: inferTipo(g.fragment, context.tipoClase)
+    }))
+  }
 
   let enriched = groups.map(() => ({ contenido: '', observacion: '' })) // safe default
 
@@ -420,20 +466,24 @@ export async function analyzeObservation(text, context = {}) {
     raw = await proxyChat(
       [
         { role: 'system', content: ENRICH_GROUPS_PROMPT },
-        { role: 'user',   content: fragmentsPayload },
+        { role: 'user',   content: JSON.stringify(payload) },
       ],
       0.1
     )
     const parsed = parseGroqJSON(raw)
-    if (Array.isArray(parsed) && parsed.length === groups.length) {
-      enriched = parsed
-    } else if (Array.isArray(parsed)) {
-      // Length mismatch — use what we have, pad the rest
-      enriched = groups.map((_, i) => parsed[i] || { contenido: '', observacion: '' })
+    const items = parsed && Array.isArray(parsed.items) ? parsed.items : (Array.isArray(parsed) ? parsed : null)
+    
+    if (items && items.length === groups.length) {
+      enriched = items
+    } else if (items) {
+      // Length mismatch — map securely by ID if available
+      enriched = groups.map((_, i) => {
+        const found = items.find(item => item.id === `g_${i + 1}`) || items[i]
+        return found || { contenido: '', observacion: '' }
+      })
     }
   } catch (err) {
     console.warn('[GROQ] Enrich call failed, using fallback:', err.message, '| raw:', raw ?? '(no response)')
-    // Non-fatal: we still return JS-parsed data, just without enriched content labels
   }
 
   // ── Step 3: JS post-process — assemble final progreso records ────────────
@@ -443,10 +493,10 @@ export async function analyzeObservation(text, context = {}) {
     const tipo = inferTipo(contenido + ' ' + g.fragment, context.tipoClase)
 
     return {
-      alumnos:     g.alumnos.map(a => a.nombre || a.nombreCorto),
+      alumnos:     g.alumnos.map(a => a.nombre || a.nombre_completo || a.nombreCorto),
       contenido,
       tipo,
-      estado:      g.estado,
+      estado:      g.estado?.value || g.estado, // Save raw string value to DB
       nota:        g.nota,
       tarea:       g.tarea,
       observacion: (e.observacion || '').trim() || null,
@@ -481,7 +531,9 @@ function _buildDSL(progreso, presentes) {
   return progreso.map(rec => {
     const names = rec.es_colectivo
       ? '#Todos'
-      : rec.alumnos.map(n => `#${n.split(' ')[0]}`).join(', ')
+      : rec.alumnos?.length
+        ? rec.alumnos.map(n => `#${n.replace(/\s+/g, '_')}`).join(', ')
+        : '#General'
     const estado = `!${rec.estado}`
     const nota   = rec.nota ? ` ${rec.nota}/5` : ''
     const tarea  = rec.tarea ? ` {${rec.tarea}}` : ''
@@ -615,9 +667,7 @@ Usa español neutro, tono formal-institucional, sin voseo.`
 
   try {
     const raw = await proxyChat([{ role: 'user', content: prompt }], 0.3)
-    // Strip potential markdown code fences
-    const jsonStr = raw.replace(/^\s*```(?:json)?\s*/i, '').replace(/\s*```\s*$/i, '').trim()
-    return JSON.parse(jsonStr)
+    return parseGroqJSON(raw)
   } catch (err) {
     console.error('[groqService] generateMonthlyPatterns failed:', err)
     return {

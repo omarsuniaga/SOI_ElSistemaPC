@@ -6,6 +6,8 @@
  * Records with alerta:true are rendered with a red warning style.
  */
 
+import { detectContradictions } from '../utils/observationParser.js'
+
 const ESTADO_LABELS = {
   LOGRADO:     { label: 'Logrado',     color: 'var(--pm-success, #198754)', bg: '#19875418' },
   EN_PROGRESO: { label: 'En Progreso', color: 'var(--pm-primary, #0d6efd)', bg: '#0d6efd18' },
@@ -90,6 +92,17 @@ export function createProgressPreviewPanel(container, { onConfirm, onCancel }) {
       ? `<div class="ppp-alert-banner">⚠️ ${alertCount} registro${alertCount > 1 ? 's' : ''} de conducta detectado${alertCount > 1 ? 's' : ''} — revisá antes de guardar</div>`
       : ''
 
+    const contradictions = detectContradictions(_records)
+    const contradictionBanner = contradictions.length > 0 ? `
+      <div class="ppp-clarification-banner">
+        <div class="ppp-clarification-title">✏️ El texto puede ser más específico</div>
+        <div class="ppp-clarification-body">
+          ${contradictions.map(c => `<div class="ppp-clarification-item">• ${esc(c.reason)}</div>`).join('')}
+        </div>
+        <div class="ppp-clarification-hint">Podés guardar igual o editar el texto arriba para separar mejor las ideas.</div>
+      </div>
+    ` : ''
+
     _panelEl.innerHTML = `
       <div class="ppp-header">
         <span class="ppp-icon">🎯</span>
@@ -99,6 +112,7 @@ export function createProgressPreviewPanel(container, { onConfirm, onCancel }) {
         </div>
       </div>
       ${alertBanner}
+      ${contradictionBanner}
       <div class="ppp-cards">
         ${hasRecords
           ? _records.map((r, i) => _renderRecord(r, i)).join('')
@@ -219,6 +233,39 @@ function _injectStyles() {
       font-style: italic;
       font-size: 0.8rem;
       margin-top: 0.2rem;
+    }
+
+    /* ── Clarification banner ────────────────────────────────── */
+    .ppp-clarification-banner {
+      margin: 0 0 0.5rem 0;
+      padding: 0.6rem 0.75rem;
+      background: #f0f4ff;
+      border: 1px solid #93c5fd;
+      border-radius: 6px;
+      font-size: 0.82rem;
+    }
+    .dark .ppp-clarification-banner,
+    [data-theme="dark"] .ppp-clarification-banner {
+      background: #1e2a3a;
+      border-color: #3b82f6;
+    }
+    .ppp-clarification-title {
+      font-weight: 700;
+      color: #1d4ed8;
+      margin-bottom: 0.25rem;
+    }
+    .ppp-clarification-item {
+      color: #1e40af;
+      margin: 0.1rem 0;
+    }
+    .dark .ppp-clarification-item,
+    [data-theme="dark"] .ppp-clarification-item {
+      color: #93c5fd;
+    }
+    .ppp-clarification-hint {
+      color: #6b7280;
+      margin-top: 0.35rem;
+      font-style: italic;
     }
   `
   document.head.appendChild(style)

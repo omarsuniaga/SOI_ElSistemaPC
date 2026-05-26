@@ -80,9 +80,19 @@ function resolveAlumnos(alumnoNames, alumnos) {
 async function upsertProgressRows(rows) {
   if (rows.length === 0) return { data: [], error: null }
 
+  // Deduplicate by the conflict key — same (alumno, clase, sesion, contenido)
+  // can appear twice when "todos" expands across two records with similar content.
+  const seen = new Set()
+  const deduped = rows.filter(row => {
+    const key = `${row.alumno_id}|${row.clase_id}|${row.sesion_clase_id}|${row.contenido_dsl}`
+    if (seen.has(key)) return false
+    seen.add(key)
+    return true
+  })
+
   const { data, error } = await supabase
     .from('progresos')
-    .upsert(rows, {
+    .upsert(deduped, {
       onConflict: 'alumno_id,clase_id,sesion_clase_id,contenido_dsl',
       ignoreDuplicates: false,
     })

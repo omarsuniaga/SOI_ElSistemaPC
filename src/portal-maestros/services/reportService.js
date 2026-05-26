@@ -122,13 +122,15 @@ export async function generateDailyReport(sesionId) {
       .lte('fecha', sesion.fecha)
     const numeroSesion = count || 1
 
-    // Fetch alumnos of the class
-    const { data: alumnos, error: alumnosErr } = await supabase
-      .from('alumnos')
-      .select('id, nombre_completo, nombre_corto')
+    // Fetch alumnos of the class (via alumnos_clases join table)
+    const { data: alumnosClases, error: alumnosErr } = await supabase
+      .from('alumnos_clases')
+      .select('alumnos(id, nombre_completo)')
       .eq('clase_id', claseData.id)
-      .order('nombre_completo')
+      .eq('activo', true)
+      .order('alumnos(nombre_completo)')
     if (alumnosErr) throw alumnosErr
+    const alumnos = (alumnosClases || []).map(r => r.alumnos).filter(Boolean)
 
     if (!alumnos || alumnos.length === 0) {
       AppToast.error('No hay alumnos registrados para esta clase.')
@@ -279,10 +281,10 @@ export async function generateMonthlyAttendance(claseId, year, month) {
         .select('id, nombre, instrumento, maestro_id')
         .eq('id', claseId)
         .single(),
-      supabase.from('alumnos')
-        .select('id, nombre_completo, nombre_corto')
+      supabase.from('alumnos_clases')
+        .select('alumnos(id, nombre_completo)')
         .eq('clase_id', claseId)
-        .order('nombre_completo')
+        .eq('activo', true)
     ])
 
     for (const res of [sesionesRes, claseRes, alumnosRes]) {
@@ -293,7 +295,7 @@ export async function generateMonthlyAttendance(claseId, year, month) {
     const justificaciones = justRes.data || []
     const prevSesiones = prevSesRes.data || []
     const claseData = claseRes.data
-    const alumnos = alumnosRes.data || []
+    const alumnos = (alumnosRes.data || []).map(r => r.alumnos).filter(Boolean).sort((a, b) => a.nombre_completo.localeCompare(b.nombre_completo))
 
     if (sesiones.length === 0) {
       AppToast.error('No hay sesiones registradas para este período.')
@@ -385,7 +387,7 @@ export async function generateMonthlyAttendance(claseId, year, month) {
 
       return `<tr>
         <td>${i + 1}</td>
-        <td>${esc(al.nombre_corto || al.nombre_completo)}</td>
+        <td>${esc(al.nombre_completo.split(' ')[0] + ' ' + (al.nombre_completo.split(' ')[2] || al.nombre_completo.split(' ')[1] || ''))}</td>
         ${cells}
         <td style="text-align:center;font-weight:700;color:var(--ok)">${aP}</td>
         <td style="text-align:center;font-weight:700;color:var(--bad)">${aA}</td>
@@ -537,15 +539,16 @@ export async function generateMonthlyPedagogical(claseId, year, month) {
         ),
       supabase.from('progresos')
         .select(`id, alumno_id, objetivo_id, tipo, contenido_dsl, created_at,
-                 alumnos(nombre_completo, nombre_corto),
+                 alumnos(nombre_completo),
                  curriculo_objetivos(descripcion, categoria)`)
         .eq('clase_id', claseId).gte('created_at', rangeStart).lte('created_at', rangeEnd),
       supabase.from('clases')
         .select('id, nombre, instrumento, maestro_id')
         .eq('id', claseId).single(),
-      supabase.from('alumnos')
-        .select('id, nombre_completo, nombre_corto')
-        .eq('clase_id', claseId).order('nombre_completo'),
+      supabase.from('alumnos_clases')
+        .select('alumnos(id, nombre_completo)')
+        .eq('clase_id', claseId)
+        .eq('activo', true),
       supabase.from('sesiones_clase')
         .select('id, asistencia')
         .eq('clase_id', claseId).gte('fecha', prevStart).lte('fecha', prevEnd),
@@ -561,7 +564,7 @@ export async function generateMonthlyPedagogical(claseId, year, month) {
     const obsData     = obsRes.data || []
     const progresos   = progRes.data || []
     const claseData   = claseRes.data
-    const alumnos     = alumnosRes.data || []
+    const alumnos     = (alumnosRes.data || []).map(r => r.alumnos).filter(Boolean).sort((a, b) => a.nombre_completo.localeCompare(b.nombre_completo))
     const prevSesiones= prevSesRes.data || []
     const justificaciones = justRes.data || []
 
@@ -760,7 +763,7 @@ export async function generateMonthlyPedagogical(claseId, year, month) {
           <div class="pc-head">
             <div class="pc-avatar">${initials}</div>
             <div>
-              <div class="pc-name">${esc(al.nombre_corto || al.nombre_completo)}</div>
+              <div class="pc-name">${esc(al.nombre_completo.split(' ')[0] + ' ' + (al.nombre_completo.split(' ')[2] || al.nombre_completo.split(' ')[1] || ''))}</div>
               <span class="pc-badge ${badgeClass}">${esc(badge)}</span>
             </div>
           </div>

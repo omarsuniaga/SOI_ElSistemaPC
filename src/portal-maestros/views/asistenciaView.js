@@ -38,6 +38,27 @@ import { registrarAsistenciaBulk } from '../../modules/asistencias/api/asistenci
 import { createAsyncMutex } from '../../shared/utils/asyncMutex.js'
 import { analyzeObservation } from '../services/groqService.js'
 import { saveProgressFromAI, saveProgressFromDSL, linkProgresosToObjetivos } from '../services/progressAggregatorService.js'
+
+/**
+ * Wraps an async function with consistent error handling.
+ * Logs to console and shows AppToast on failure.
+ * Returns null on error instead of throwing.
+ */
+async function safeAsync(fn, { onError, silent = false } = {}) {
+  try {
+    return await fn()
+  } catch (err) {
+    console.error('[safeAsync]', err)
+    if (onError) {
+      onError(err)
+    } else if (!silent) {
+      if (typeof AppToast !== 'undefined' && AppToast) {
+        AppToast.error('Error inesperado: ' + (err.message || err))
+      }
+    }
+    return null
+  }
+}
 import { createProgressPreviewPanel } from '../components/ProgressPreviewPanel.js'
 import { fetchInsights } from '../services/progressInsightService.js'
 import { proposeCurriculum } from '../services/groqService.js'
@@ -751,7 +772,7 @@ function _renderVista(container, ctx) {
       }
     },
     onAnalyzeClick: async (text) => {
-      try {
+      await safeAsync(async () => {
         // Build class context — present students exclude absent (estado !== 'A')
         const alumnosPresentes = alumnos.filter(a => estado[a.id] && estado[a.id] !== 'A')
         // Build nombreCorto that is unique within the roster.
@@ -784,13 +805,26 @@ function _renderVista(container, ctx) {
           indicadorActivo: routeTreeBar?.getActiveIndicador()?.nombre || '',
         }
 
-        const result = await analyzeObservation(text, contextoGroq)
         container.querySelector('#btn-guardar')?.style.setProperty('display', 'none')
-        progressPanel.open({ progreso: result.progreso, resumen: result.resumen })
+        const result = await analyzeObservation(text, contextoGroq)
 
-      } catch (err) {
-        AppToast.error('Error al analizar con IA: ' + err.message)
-      }
+        if (!result?.progreso?.length) {
+          container.querySelector('#btn-guardar')?.style.removeProperty('display')
+          if (typeof AppToast !== 'undefined' && AppToast) {
+            AppToast.warning('La IA no detectó registros de progreso en este texto.')
+          }
+          return
+        }
+
+        progressPanel.open({ progreso: result.progreso, resumen: result.resumen })
+      }, {
+        onError: (err) => {
+          container.querySelector('#btn-guardar')?.style.removeProperty('display')
+          if (typeof AppToast !== 'undefined' && AppToast) {
+            AppToast.error('Error al analizar con IA: ' + err.message)
+          }
+        }
+      })
     },
   });
 

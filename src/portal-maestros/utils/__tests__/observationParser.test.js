@@ -25,14 +25,14 @@ describe('Hardened Observation Parser (v2) Tests', () => {
       const stateObj = detectState(txt)
       expect(stateObj.value).toBe('DIFICULTAD')
       expect(stateObj.confidence).toBeGreaterThan(0.5)
-      expect(stateObj.evidence).toContain('no logró')
+      expect(stateObj.evidence).toContain('no logro')
     })
 
     it('should classify LOGRADO when positive keywords dominate', () => {
       const txt = 'Matias dominó la escala de Sol mayor de forma excelente'
       const stateObj = detectState(txt)
       expect(stateObj.value).toBe('LOGRADO')
-      expect(stateObj.evidence).toContain('dominó')
+      expect(stateObj.evidence).toContain('domino')
     })
 
     it('should fallback to EN_PROGRESO when no keywords match', () => {

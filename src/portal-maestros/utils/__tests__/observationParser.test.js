@@ -136,4 +136,108 @@ describe('Hardened Observation Parser (v2) Tests', () => {
     })
   })
 
+  // 6. Meta-commentary filter
+  describe('_isMetaCommentary (via segmentObservation)', () => {
+    const roster = [
+      { id: '1', nombre: 'Matias Carmen Paredes', nombreCorto: 'Matias Carmen' }
+    ]
+
+    it('should NOT generate a group for institutional meta-commentary sentences', () => {
+      const txt = 'Es fundamental que continuemos trabajando en la práctica para asegurarnos de que todos progresen.'
+      const groups = segmentObservation(txt, { alumnos: roster, presentes: roster })
+      expect(groups).toHaveLength(0)
+    })
+
+    it('should generate a group when "continuó trabajando" refers to a specific student, not meta-commentary', () => {
+      const txt = 'Matias continuó trabajando en la escala de Sol y mostró mejoras.'
+      const groups = segmentObservation(txt, { alumnos: roster, presentes: roster })
+      expect(groups).toHaveLength(1)
+      expect(groups[0].alumnos[0].id).toBe('1')
+    })
+  })
+
+  // 7. Implicit subject inheritance
+  describe('_attachImplicitSubject (via segmentObservation)', () => {
+    const roster = [
+      { id: '1', nombre: 'Evans Rodriguez Leonardo', nombreCorto: 'Evans Rodriguez' },
+      { id: '2', nombre: 'Matias Carmen Paredes', nombreCorto: 'Matias Carmen' }
+    ]
+
+    it('should inherit last individual student when "el alumno" pronoun appears', () => {
+      const txt = 'Evans logró ubicar el primer dedo correctamente. El alumno además demostró buena postura.'
+      const groups = segmentObservation(txt, { alumnos: roster, presentes: roster })
+      expect(groups).toHaveLength(2)
+      expect(groups[0].alumnos[0].id).toBe('1')
+      expect(groups[1].alumnos[0].id).toBe('1') // hereda Evans
+    })
+
+    it('should NOT inherit when the previous subject is a collective group', () => {
+      const txt = 'Toda la clase trabajó con entusiasmo hoy. El alumno mostró avances generales.'
+      const groups = segmentObservation(txt, { alumnos: roster, presentes: roster })
+      // El segundo grupo no debe heredar ningún alumno individual
+      const inheritedGroup = groups.find(g => g.fragment.includes('El alumno'))
+      if (inheritedGroup) {
+        // Si existe, su scope debe ser colectivo o sin alumno individual específico
+        expect(inheritedGroup.alumnos.length).not.toBe(1)
+      }
+    })
+  })
+
+  // 8. Implicit collective (paragraphs with no named students → grupo)
+  describe('isImplicitColectivo (via segmentObservation)', () => {
+    const roster = [
+      { id: '1', nombre: 'Evans Rodriguez Leonardo', nombreCorto: 'Evans Rodriguez' },
+      { id: '2', nombre: 'Matias Carmen Paredes', nombreCorto: 'Matias Carmen' }
+    ]
+
+    it('should assign scope "grupo" and fill alumnos with presentes when no student is named', () => {
+      const txt = 'Hoy revisamos la lección 11 de CrickBoom y practicamos los compases 33 al 40.'
+      const groups = segmentObservation(txt, { alumnos: roster, presentes: roster })
+      expect(groups).toHaveLength(1)
+      expect(groups[0].scope).toBe('grupo')
+      expect(groups[0].alumnos.length).toBe(2)
+    })
+  })
+
+  // 9. Integration — full CrickBoom observation text
+  describe('Integration: full CrickBoom observation', () => {
+    const roster = [
+      { id: '1', nombre: 'Evans Rodriguez Leonardo', nombreCorto: 'Evans Rodriguez' },
+      { id: '2', nombre: 'Matias Carmen Paredes', nombreCorto: 'Matias Carmen' },
+      { id: '3', nombre: 'Alfred Smith Jones', nombreCorto: 'Alfred Smith' }
+    ]
+
+    it('should produce exactly 4 groups and filter the meta-commentary sentence', () => {
+      const txt = [
+        'Hoy en clase, revisamos la lección n° 11 de CrickBoom y practicamos los compases 33 al 40.',
+        'Matias dominó muy bien la pieza y tocó con seguridad todos los compases.',
+        'Evans sigue mostrando dificultad para colocar correctamente la mano izquierda.',
+        'Algunos alumnos ya están tocando Estrellita con ambas manos.',
+        'Es fundamental que continuemos trabajando en la práctica y la repetición para asegurarnos de que todos los alumnos estén progresando de manera equilibrada.'
+      ].join(' ')
+
+      const groups = segmentObservation(txt, { alumnos: roster, presentes: roster })
+
+      // La oración meta-commentary debe ser filtrada → 4 grupos, no 5
+      expect(groups).toHaveLength(4)
+
+      // Grupo 0: lección colectiva (sin alumnos nombrados → isImplicitColectivo)
+      expect(groups[0].scope).toBe('grupo')
+
+      // Grupo 1: Matias con LOGRADO
+      expect(groups[1].alumnos[0].id).toBe('2')
+      expect(groups[1].estado.value).toBe('LOGRADO')
+
+      // Grupo 2: Evans con alerta RIESGO_PEDAGOGICO
+      expect(groups[2].alumnos[0].id).toBe('1')
+      expect(groups[2].alerta).toBe(true)
+      expect(groups[2].alertDetails.type).toBe('RIESGO_PEDAGOGICO')
+
+      // Grupo 3: "Algunos alumnos" → subgrupo indeterminado
+      expect(groups[3].scope).toBe('subgrupo_indeterminado')
+      expect(groups[3].requires_confirmation).toBe(true)
+    })
+  })
+
 })
+

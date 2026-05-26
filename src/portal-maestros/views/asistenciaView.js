@@ -22,6 +22,7 @@ import { AppToast } from '../../shared/components/AppToast.js'
 import { invalidateView as navInvalidateView } from '../services/navigationHooks.js'
 import { createRouteTreeBar } from '../components/routeTreeBar.js'
 import { createStudentProgressPanel } from '../components/studentProgressPanel.js'
+import { createSessionSummaryPanel } from '../components/SessionSummaryPanel.js'
 import { resolveDSL, saveEvaluaciones } from '../services/evaluationService.js'
 import { processarEvaluacion } from '../services/evaluationService.js'
 import { createAutoDraft, saveDraft, loadDraft, discardDraft, saveObservation } from '../services/autoDraftService.js'
@@ -1971,6 +1972,9 @@ async function _autoSave(immediate = false, skipMutex = false) {
             <p>¿Qué deseas hacer ahora?</p>
           </div>
           <div class="pm-saved-actions">
+            <button class="pm-btn pm-btn-primary" id="btn-resumen-pedagogico">
+              <i class="bi bi-bar-chart-steps"></i> Resumen pedagógico
+            </button>
             <button class="pm-btn pm-btn-secondary" id="btn-editar-asistencia">
               <i class="bi bi-pencil"></i> Editar Asistencia
             </button>
@@ -2003,11 +2007,24 @@ async function _autoSave(immediate = false, skipMutex = false) {
       document.body.appendChild(overlay);
 
       // Attach event listeners
+      const resumenPedBtn = overlay.querySelector('#btn-resumen-pedagogico');
       const editarBtn = overlay.querySelector('#btn-editar-asistencia');
       const correoBtn = overlay.querySelector('#btn-compartir-correo');
       const whatsBtn = overlay.querySelector('#btn-compartir-whatsapp');
       const volverHoyBtn = overlay.querySelector('#btn-volver-hoy');
       const calBtn = overlay.querySelector('#btn-ir-calendario');
+
+      const summaryPanel = createSessionSummaryPanel();
+      if (resumenPedBtn) {
+        resumenPedBtn.onclick = () => {
+          summaryPanel.open({
+            sesionId,
+            claseNombre: clase?.nombre || 'Clase',
+            fecha: fechaHoy,
+            supabase,
+          });
+        };
+      }
 
       if (editarBtn) editarBtn.onclick = () => {
         overlay.remove();

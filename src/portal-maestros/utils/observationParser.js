@@ -6,39 +6,104 @@
  * Groq is only called afterward to enrich content descriptions and observations.
  */
 
-// ─── State keyword tables ────────────────────────────────────────────────────
-
-const STATE_KEYWORDS = {
-  LOGRADO: [
-    'logr', 'alcanc', 'domin', 'ya sab', 'lo hicieron bien', 'excelente',
-    'muy bien', 'perfecto', 'lo tiene', 'salió bien', 'lo logr',
-    'completó', 'terminó', 'superó', 'dominan',
-  ],
-  INICIADO: [
-    'empez', 'conocier', 'introduj', 'primera vez', 'vieron', 'presentamos',
-    'presenté', 'nuevo', 'comenzar', 'comenzó', 'inicio',
-  ],
-  EN_PROGRESO: [
-    'avanzando', 'mejorando', 'progresando', 'casi', 'van bien',
-    'muestran', 'falta', 'necesita', 'le cuesta', 'les cuesta',
-    'dificultad', 'trabaj', 'practicamos', 'practicaron', 'repasamos',
-    'repasar', 'continuar', 'seguir', 'sigue', 'siguen',
-  ],
-}
+// ─── Normalizer ──────────────────────────────────────────────────────────────
 
 /**
- * Detects the most likely state from a text fragment.
+ * Normalizes text: lowercase, removes accents/diacritics, cleans spacing.
+ * @param {string} text
+ * @returns {string}
+ */
+export function normalizeText(text = '') {
+  return text
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^\p{L}\p{N}\s#]/gu, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+// ─── State keyword rules ─────────────────────────────────────────────────────
+
+const STATE_RULES = [
+  {
+    estado: 'DIFICULTAD',
+    peso: 4,
+    keywords: [
+      'no logro', 'no logra', 'no pudo', 'no puede', 'dificultad',
+      'le cuesta', 'les cuesta', 'se le dificulta', 'se les dificulta',
+      'confunde', 'confunden', 'sigue mostrando dificultad',
+      'siguen mostrando dificultad', 'necesita reforzar', 'necesitan reforzar',
+      'falta practica', 'falta mejorar', 'todavia no'
+    ]
+  },
+  {
+    estado: 'LOGRADO',
+    peso: 3,
+    keywords: [
+      'logro', 'logra correctamente', 'domina', 'domino', 'dominan',
+      'excelente', 'muy bien', 'supero', 'superaron', 'perfecto',
+      'completo correctamente', 'completaron correctamente', 'ya sabe', 'ya saben'
+    ]
+  },
+  {
+    estado: 'INICIADO',
+    peso: 2,
+    keywords: [
+      'inicio', 'comenzo', 'comenzaron', 'primera vez', 'se introdujo',
+      'se introdujeron', 'nuevo contenido', 'empez', 'conocier', 'presentamos'
+    ]
+  },
+  {
+    estado: 'EN_PROGRESO',
+    peso: 1,
+    keywords: [
+      'trabajo', 'trabajaron', 'practico', 'practicaron', 'repaso', 'repasaron',
+      'continua', 'continuan', 'sigue', 'siguen', 'mejorando', 'avanzando',
+      'progresando', 'van bien', 'casi'
+    ]
+  }
+]
+
+/**
+ * Detects the most likely state from a text fragment using a weighted rule system.
  * Returns 'EN_PROGRESO' as conservative default.
  * @param {string} text
- * @returns {'LOGRADO'|'EN_PROGRESO'|'INICIADO'}
+ * @returns {{value: 'LOGRADO'|'EN_PROGRESO'|'INICIADO'|'DIFICULTAD', confidence: number, evidence: string[]}}
  */
 export function detectState(text) {
-  const lower = text.toLowerCase()
-  // LOGRADO takes priority over EN_PROGRESO if both match
-  for (const [state, keywords] of Object.entries(STATE_KEYWORDS)) {
-    if (keywords.some(kw => lower.includes(kw))) return state
+  const normalized = normalizeText(text)
+  const matches = []
+
+  for (const rule of STATE_RULES) {
+    for (const kw of rule.keywords) {
+      const normalizedKw = normalizeText(kw)
+      if (normalized.includes(normalizedKw)) {
+        matches.push({
+          estado: rule.estado,
+          peso: rule.peso,
+          evidence: kw
+        })
+      }
+    }
   }
-  return 'EN_PROGRESO'
+
+  if (!matches.length) {
+    return {
+      value: 'EN_PROGRESO',
+      confidence: 0.4,
+      evidence: []
+    }
+  }
+
+  // Sort by weight descending (highest weight wins)
+  matches.sort((a, b) => b.peso - a.peso)
+
+  return {
+    value: matches[0].estado,
+    confidence: Math.min(0.95, 0.55 + matches.length * 0.15),
+    evidence: matches.map(m => m.evidence)
+  }
 }
 
 // ─── Note detection ──────────────────────────────────────────────────────────
@@ -49,10 +114,8 @@ export function detectState(text) {
  * @returns {number|null}
  */
 export function detectNote(text) {
-  // Match "4/5", "3.5/5", "4 / 5"
   const m = text.match(/(\d(?:[.,]\d)?)\s*\/\s*5/)
   if (m) return parseFloat(m[1].replace(',', '.'))
-  // Match "nota: 4" or "nota 4"
   const m2 = text.match(/nota[:\s]+(\d(?:[.,]\d)?)/i)
   if (m2) return parseFloat(m2[1].replace(',', '.'))
   return null
@@ -66,10 +129,8 @@ export function detectNote(text) {
  * @returns {string|null}
  */
 export function detectTask(text) {
-  // DSL: {tarea explícita}
   const dsl = text.match(/\{([^}]+)\}/)
   if (dsl) return dsl[1].trim()
-  // Natural: "para la próxima...", "tarea: ...", "practicar en casa..."
   const natural = text.match(/(?:tarea[:\s]+|para la pr[oó]xima[,:\s]+|practicar en casa[,:\s]+)([^.!?\n]{5,80})/i)
   if (natural) return natural[1].trim()
   return null
@@ -91,16 +152,13 @@ const ALERT_BEHAVIOR_KEYWORDS = [
 
 /**
  * Detects if a text fragment describes a negative behavioral/disciplinary situation.
- * These records should be visually flagged as alerts for teacher attention.
  * @param {string} text
- * @param {string} tipo - already-inferred tipo
+ * @param {string} tipo
  * @returns {boolean}
  */
 export function detectAlert(text, tipo) {
   const lower = text.toLowerCase()
-  // Direct tipo match
   if (tipo === 'comportamiento' || tipo === 'conducta') return true
-  // Keyword scan
   return ALERT_BEHAVIOR_KEYWORDS.some(kw => lower.includes(kw))
 }
 
@@ -137,95 +195,119 @@ export function inferTipo(text, tipoClase = 'instrumento') {
 // ─── Student name matching ────────────────────────────────────────────────────
 
 /**
- * Builds a fast lookup map: any name variant → alumno object.
- * Indexes: nombreCorto, first name, full name (all lowercase).
+ * Builds a lookup map: name variant → Array of candidate student objects.
+ * Accrue duplicates for ambiguity resolution.
  * @param {Array<{id, nombre, nombreCorto}>} roster
- * @returns {Map<string, object>}
+ * @returns {Map<string, object[]>}
  */
 export function buildRosterLookup(roster) {
   const map = new Map()
 
-  // First pass: index full name + nombreCorto (always safe — these are unique by design)
-  for (const a of roster) {
-    const full  = (a.nombre || '').toLowerCase().trim()
-    const short = (a.nombreCorto || a.nombre || '').toLowerCase().trim()
-    if (full)  map.set(full,  a)
-    if (short && short !== full) map.set(short, a)
+  function addToIndex(key, alumno) {
+    if (!key) return
+    const normalized = normalizeText(key)
+    const list = map.get(normalized) || []
+    if (!list.some(a => a.id === alumno.id)) {
+      list.push(alumno)
+    }
+    map.set(normalized, list)
   }
 
-  // Second pass: index first name ONLY if it doesn't collide with another student
-  const firstNames = roster.map(a => (a.nombre || '').toLowerCase().trim().split(' ')[0])
   for (const a of roster) {
-    const first = (a.nombre || '').toLowerCase().trim().split(' ')[0]
+    const full = (a.nombre || a.nombre_completo || '').toLowerCase().trim()
+    const short = (a.nombreCorto || a.nombre_corto || a.nombre || a.nombre_completo || '').toLowerCase().trim()
+    if (full) addToIndex(full, a)
+    if (short && short !== full) addToIndex(short, a)
+  }
+
+  // Index first name
+  const firstNames = roster.map(a => (a.nombre || a.nombre_completo || '').toLowerCase().trim().split(' ')[0])
+  for (const a of roster) {
+    const first = (a.nombre || a.nombre_completo || '').toLowerCase().trim().split(' ')[0]
     if (!first) continue
-    const isDuplicate = firstNames.filter(f => f === first).length > 1
-    if (!isDuplicate && !map.has(first)) map.set(first, a)
+    addToIndex(first, a)
   }
 
   return map
 }
 
 /**
- * Finds all alumni mentioned in a text fragment.
- * Returns array of alumno objects from roster.
+ * Finds all students mentioned in a text fragment, tracking ambiguity.
  * @param {string} text
- * @param {Map} lookup - from buildRosterLookup()
- * @param {Array} presentes - presentes array (for "todos")
- * @param {Array} alumnos - full roster (fallback for "todos")
- * @returns {Array<object>} matched alumno objects
+ * @param {Map} lookup
+ * @param {Array} presentes
+ * @param {Array} alumnos
+ * @returns {{students: Array, ambiguous: boolean, requires_confirmation: boolean}}
  */
 export function findMentionedStudents(text, lookup, presentes, alumnos) {
   const lower = text.toLowerCase()
   const roster = presentes?.length ? presentes : alumnos
 
-  // "todos" / "todo el grupo" / "la clase" → all present
   if (/\btodos\b|\btodo el grupo\b|\btoda la clase\b|\bel grupo\b/.test(lower)) {
-    return roster
-  }
-
-  const found = []
-  const seen = new Set()
-
-  // Try matching every known name variant against the text
-  for (const [key, alumno] of lookup.entries()) {
-    if (seen.has(alumno.id || alumno.nombre)) continue
-    // Use word-boundary-like check: name must be preceded/followed by non-alpha
-    const escaped = key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-    if (new RegExp(`(?<![a-záéíóúñ])${escaped}(?![a-záéíóúñ])`, 'i').test(text)) {
-      found.push(alumno)
-      seen.add(alumno.id || alumno.nombre)
+    return {
+      students: roster,
+      ambiguous: false,
+      requires_confirmation: false
     }
   }
 
-  return found
+  const foundMap = new Map()
+  let ambiguous = false
+
+  for (const [key, candidates] of lookup.entries()) {
+    const escaped = key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    if (new RegExp(`(?<![a-záéíóúñ])${escaped}(?![a-záéíóúñ])`, 'i').test(text)) {
+      if (candidates.length > 1) {
+        ambiguous = true
+      }
+      candidates.forEach(alumno => {
+        foundMap.set(alumno.id || alumno.nombre || alumno.nombre_completo, alumno)
+      })
+    }
+  }
+
+  const found = Array.from(foundMap.values())
+
+  return {
+    students: found,
+    ambiguous,
+    requires_confirmation: ambiguous
+  }
+}
+
+// ─── Sentence Segmentation ───────────────────────────────────────────────────
+
+/**
+ * Splits text into sentences protecting musical and decimal abbreviations.
+ * @param {string} text
+ * @returns {string[]}
+ */
+export function segmentSentences(text) {
+  const protectedText = text
+    .replace(/Lec\./gi, 'Lec§')
+    .replace(/c\.\s*(\d+)/gi, 'c§$1')
+    .replace(/n\.º/gi, 'n§º')
+    .replace(/(\d)[.](\d)/g, '$1§$2')
+
+  return protectedText
+    .replace(/([.!?;])\s+/g, '$1\n')
+    .split('\n')
+    .map(s => s
+      .replace(/Lec§/gi, 'Lec.')
+      .replace(/c§/gi, 'c.')
+      .replace(/n§º/gi, 'n.º')
+      .replace(/(\d)§(\d)/g, '$1.$2')
+      .trim()
+    )
+    .filter(Boolean)
 }
 
 // ─── Group segmentation ───────────────────────────────────────────────────────
 
 /**
- * Pre-parse result structure
- * @typedef {Object} ParsedGroup
- * @property {Array<object>} alumnos   - matched alumno objects (or [] if unresolved)
- * @property {string[]}     alumnoTags - compact tags for Groq ("Todos", short name)
- * @property {string}       fragment   - raw text fragment for this group
- * @property {string}       estado     - LOGRADO | EN_PROGRESO | INICIADO
- * @property {number|null}  nota
- * @property {string|null}  tarea
- * @property {boolean}      esColectivo
- * @property {string}       tipoClase
- */
-
-/**
  * Segments a teacher observation into named groups.
- *
- * Strategy: split on sentence boundaries, then detect which alumno(s)
- * each sentence refers to. Merge consecutive sentences about the same group.
- *
  * @param {string} text
  * @param {object} context
- * @param {Array}  context.alumnos
- * @param {Array}  context.presentes
- * @param {string} context.tipoClase
  * @returns {ParsedGroup[]}
  */
 export function segmentObservation(text, context = {}) {
@@ -233,41 +315,37 @@ export function segmentObservation(text, context = {}) {
   const presentes = context.presentes?.length ? context.presentes : alumnos
   const lookup = buildRosterLookup(presentes)
 
-  // Split into sentences
-  const sentences = text
-    .replace(/([.!?;])\s+/g, '$1\n')
-    .split('\n')
-    .map(s => s.trim())
-    .filter(Boolean)
-
+  const sentences = segmentSentences(text)
   if (!sentences.length) return []
 
-  /** @type {ParsedGroup[]} */
   const groups = []
 
   for (const sentence of sentences) {
-    const mentioned = findMentionedStudents(sentence, lookup, presentes, alumnos)
+    const { students: mentioned, ambiguous, requires_confirmation } = findMentionedStudents(sentence, lookup, presentes, alumnos)
     const isColectivo = mentioned.length > 1 || /\btodos\b|\bgrupo\b/.test(sentence.toLowerCase())
 
     const alumnoTags = isColectivo
       ? ['Todos']
-      : mentioned.map(a => a.nombreCorto || a.nombre)
+      : mentioned.map(a => a.nombreCorto || a.nombre_corto || a.nombre || a.nombre_completo)
 
     const tipo = inferTipo(sentence, tipoClase)
+    const stateObj = detectState(sentence)
+
     groups.push({
-      alumnos:    mentioned,
+      alumnos:              mentioned,
       alumnoTags,
-      fragment:   sentence,
-      estado:     detectState(sentence),
-      nota:       detectNote(sentence),
-      tarea:      detectTask(sentence),
-      esColectivo: isColectivo,
-      alerta:      detectAlert(sentence, tipo),
+      fragment:             sentence,
+      estado:               stateObj,
+      nota:                 detectNote(sentence),
+      tarea:                detectTask(sentence),
+      esColectivo:          isColectivo,
+      alerta:               detectAlert(sentence, tipo) || stateObj.value === 'DIFICULTAD',
       tipoClase,
+      ambiguous,
+      requires_confirmation
     })
   }
 
-  // Merge consecutive groups with same students + same state (common pattern: 2-sentence descriptions)
   return _mergeAdjacentGroups(groups)
 }
 
@@ -278,11 +356,10 @@ function _mergeAdjacentGroups(groups) {
     const prev = merged[merged.length - 1]
     const curr = groups[i]
     const sameStudents = _sameSet(
-      prev.alumnos.map(a => a.id || a.nombre),
-      curr.alumnos.map(a => a.id || a.nombre)
+      prev.alumnos.map(a => a.id || a.nombre || a.nombre_completo),
+      curr.alumnos.map(a => a.id || a.nombre || a.nombre_completo)
     )
-    if (sameStudents && prev.estado === curr.estado) {
-      // Merge fragment, keep first note/tarea unless current has one
+    if (sameStudents && prev.estado.value === curr.estado.value) {
       prev.fragment += ' ' + curr.fragment
       prev.nota  = prev.nota  ?? curr.nota
       prev.tarea = prev.tarea ?? curr.tarea
@@ -297,4 +374,56 @@ function _sameSet(a, b) {
   if (a.length !== b.length) return false
   const setA = new Set(a)
   return b.every(x => setA.has(x))
+}
+
+// ─── Contradiction detection ──────────────────────────────────────────────────
+
+/**
+ * Detects contradictory records.
+ * @param {Array} progreso
+ * @returns {Array<{idxA: number, idxB: number, reason: string}>}
+ */
+export function detectContradictions(progreso) {
+  const conflicts = []
+
+  for (let i = 0; i < progreso.length; i++) {
+    for (let j = i + 1; j < progreso.length; j++) {
+      const a = progreso[i]
+      const b = progreso[j]
+
+      if (!_sameAlumnoSet(a.alumnos, b.alumnos)) continue
+      if (!_similarContent(a.contenido, b.contenido)) continue
+
+      const notaConflict = a.nota != null && b.nota != null && Math.abs(a.nota - b.nota) > 1.5
+
+      const stateConflict = a.estado !== b.estado &&
+        ((a.estado === 'LOGRADO' && b.estado === 'INICIADO') ||
+         (a.estado === 'INICIADO' && b.estado === 'LOGRADO'))
+
+      if (notaConflict || stateConflict) {
+        const reason = notaConflict
+          ? `Notas contradictorias: ${a.nota}/5 vs ${b.nota}/5 para "${a.contenido}"`
+          : `Estados contradictorios: ${a.estado} vs ${b.estado} para "${a.contenido}"`
+        conflicts.push({ idxA: i, idxB: j, reason })
+      }
+    }
+  }
+
+  return conflicts
+}
+
+function _sameAlumnoSet(a, b) {
+  if (!a?.length || !b?.length) return false
+  if (a.length !== b.length) return false
+  const setA = new Set(a.map(n => n.toLowerCase()))
+  return b.every(n => setA.has(n.toLowerCase()))
+}
+
+function _similarContent(a, b) {
+  if (!a || !b) return false
+  const normalize = s => s.toLowerCase().replace(/[^a-záéíóúñ0-9]/g, ' ').trim()
+  const na = normalize(a)
+  const nb = normalize(b)
+  if (na === nb) return true
+  return na.includes(nb) || nb.includes(na)
 }

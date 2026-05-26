@@ -671,12 +671,21 @@ function _renderVista(container, ctx) {
           alumnos: alumnosConId,
         })
         if (errors.length) console.warn('[Progress] Errores parciales:', errors)
-        _showProgressFeedback(saved, editorContainer)
+        // Restore the save button and immediately trigger the full session save
+        // (which handles attendance, session state update and shows the overlay)
+        const btnGuardar = container.querySelector('#btn-guardar')
+        if (btnGuardar) {
+          btnGuardar.style.removeProperty('display')
+          btnGuardar.click()
+        }
       } catch (err) {
+        container.querySelector('#btn-guardar')?.style.removeProperty('display')
         AppToast.error('Error al guardar progreso: ' + err.message)
       }
     },
-    onCancel: () => {},
+    onCancel: () => {
+      container.querySelector('#btn-guardar')?.style.removeProperty('display')
+    },
   })
 
   // === Curriculum Proposal Panel ===
@@ -776,6 +785,7 @@ function _renderVista(container, ctx) {
         }
 
         const result = await analyzeObservation(text, contextoGroq)
+        container.querySelector('#btn-guardar')?.style.setProperty('display', 'none')
         progressPanel.open({ progreso: result.progreso, resumen: result.resumen })
 
       } catch (err) {

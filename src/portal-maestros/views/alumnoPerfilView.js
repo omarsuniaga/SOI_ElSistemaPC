@@ -64,6 +64,224 @@ function parseDslToText(dsl) {
     .trim()
 }
 
+// ─── Estado config ────────────────────────────────────────────────────────────
+const ESTADO_CFG = {
+  LOGRADO:     { label: 'Logrado',     color: '#198754', bg: '#19875418', icon: '✅' },
+  EN_PROGRESO: { label: 'En progreso', color: '#0d6efd', bg: '#0d6efd18', icon: '📈' },
+  INICIADO:    { label: 'Iniciado',    color: '#6c757d', bg: '#6c757d18', icon: '🔰' },
+  DIFICULTAD:  { label: 'Dificultad',  color: '#dc3545', bg: '#dc354518', icon: '⚠️' },
+}
+
+/**
+ * Renders the AI-generated progress history from the `progresos` table.
+ * Groups records by contenido_dsl and shows a chronological timeline per content.
+ */
+async function _renderProgresos(container, alumnoId) {
+  const root = container.querySelector('#pm-alumno-progresos-root')
+  if (!root) return
+
+  try {
+    const { data: rows, error } = await supabase
+      .from('progresos')
+      .select('id, contenido_dsl, estado_cualitativo, calificacion, observaciones, fecha_evaluacion, clase_id, indicadores')
+      .eq('alumno_id', alumnoId)
+      .not('contenido_dsl', 'is', null)
+      .neq('contenido_dsl', '')
+      .order('fecha_evaluacion', { ascending: false })
+      .limit(60)
+
+    if (error) throw error
+
+    if (!rows || rows.length === 0) {
+      root.innerHTML = `<p style="font-size:0.82rem;color:var(--pm-text-muted);text-align:center;padding:1rem 0;">Sin registros de progreso generados por IA aún.</p>`
+      return
+    }
+
+    // Fetch class names in one query
+    const claseIds = [...new Set(rows.map(r => r.clase_id).filter(Boolean))]
+    const { data: clasesData } = claseIds.length
+      ? await supabase.from('clases').select('id, nombre').in('id', claseIds)
+      : { data: [] }
+    const claseMap = new Map((clasesData || []).map(c => [c.id, c.nombre]))
+
+    // Group by contenido_dsl — one card per unique content, timeline inside
+    const byContent = new Map()
+    for (const row of rows) {
+      const key = row.contenido_dsl
+      if (!byContent.has(key)) {
+        byContent.set(key, { contenido: key, entries: [] })
+      }
+      byContent.get(key).entries.push(row)
+    }
+
+    const contents = Array.from(byContent.values())
+
+    root.innerHTML = `
+      <div class="pm-prog-list">
+        ${contents.map(({ contenido, entries }) => {
+          const latest     = entries[0]
+          const cfg        = ESTADO_CFG[latest.estado_cualitativo] ?? ESTADO_CFG.EN_PROGRESO
+          const lastFecha  = new Date(latest.fecha_evaluacion).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: '2-digit' })
+          return `
+            <details class="pm-prog-card">
+              <summary class="pm-prog-card__summary">
+                <span class="pm-prog-card__icon" style="color:${cfg.color}">${cfg.icon}</span>
+                <div class="pm-prog-card__info">
+                  <span class="pm-prog-card__name">${escHTML(contenido)}</span>
+                  <span class="pm-prog-card__meta">${entries.length} registro${entries.length !== 1 ? 's' : ''} · último: ${lastFecha}</span>
+                </div>
+                <span class="pm-prog-card__badge" style="color:${cfg.color};background:${cfg.bg}">${cfg.label}</span>
+                <i class="bi bi-chevron-down pm-prog-card__chevron"></i>
+              </summary>
+              <div class="pm-prog-card__timeline">
+                ${entries.map(e => {
+                  const eCfg    = ESTADO_CFG[e.estado_cualitativo] ?? ESTADO_CFG.EN_PROGRESO
+                  const fecha   = new Date(e.fecha_evaluacion).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' })
+                  const clase   = claseMap.get(e.clase_id) || 'Clase'
+                  const tarea   = e.indicadores?.tarea
+                  const nota    = e.calificacion != null ? `${e.calificacion}/5` : null
+                  return `
+                    <div class="pm-prog-entry">
+                      <div class="pm-prog-entry__dot" style="background:${eCfg.color}"></div>
+                      <div class="pm-prog-entry__body">
+                        <div class="pm-prog-entry__header">
+                          <span class="pm-prog-entry__fecha">${fecha}</span>
+                          <span class="pm-prog-entry__clase">${escHTML(clase)}</span>
+                          ${nota ? `<span class="pm-prog-entry__nota" style="color:${eCfg.color}">${nota}</span>` : ''}
+                        </div>
+                        <span class="pm-prog-entry__estado" style="color:${eCfg.color}">${eCfg.icon} ${eCfg.label}</span>
+                        ${e.observaciones ? `<p class="pm-prog-entry__obs">${escHTML(e.observaciones)}</p>` : ''}
+                        ${tarea ? `<p class="pm-prog-entry__tarea">📋 ${escHTML(tarea)}</p>` : ''}
+                      </div>
+                    </div>
+                  `
+                }).join('')}
+              </div>
+            </details>
+          `
+        }).join('')}
+      </div>
+      <style>
+        .pm-prog-list { display: flex; flex-direction: column; gap: 0.5rem; }
+        .pm-prog-card {
+          border: 1px solid var(--pm-border);
+          border-radius: 10px;
+          overflow: hidden;
+          background: var(--pm-surface-2);
+        }
+        .pm-prog-card__summary {
+          display: flex;
+          align-items: center;
+          gap: 0.6rem;
+          padding: 0.65rem 0.75rem;
+          cursor: pointer;
+          list-style: none;
+          user-select: none;
+        }
+        .pm-prog-card__summary::-webkit-details-marker { display: none; }
+        .pm-prog-card__icon { font-size: 1.1rem; flex-shrink: 0; }
+        .pm-prog-card__info { flex: 1; min-width: 0; }
+        .pm-prog-card__name {
+          display: block;
+          font-size: 0.85rem;
+          font-weight: 600;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          color: var(--pm-text);
+        }
+        .pm-prog-card__meta {
+          display: block;
+          font-size: 0.68rem;
+          color: var(--pm-text-muted);
+          margin-top: 1px;
+        }
+        .pm-prog-card__badge {
+          font-size: 0.7rem;
+          font-weight: 700;
+          padding: 2px 8px;
+          border-radius: 99px;
+          flex-shrink: 0;
+        }
+        .pm-prog-card__chevron {
+          font-size: 0.75rem;
+          color: var(--pm-text-muted);
+          transition: transform 0.2s;
+          flex-shrink: 0;
+        }
+        details[open] .pm-prog-card__chevron { transform: rotate(180deg); }
+        .pm-prog-card__timeline {
+          border-top: 1px solid var(--pm-border);
+          padding: 0.5rem 0.75rem 0.5rem 1rem;
+          display: flex;
+          flex-direction: column;
+          gap: 0;
+          position: relative;
+        }
+        .pm-prog-card__timeline::before {
+          content: '';
+          position: absolute;
+          left: 1.15rem;
+          top: 0.75rem;
+          bottom: 0.75rem;
+          width: 2px;
+          background: var(--pm-border);
+          border-radius: 1px;
+        }
+        .pm-prog-entry {
+          display: flex;
+          gap: 0.75rem;
+          padding: 0.4rem 0;
+          position: relative;
+        }
+        .pm-prog-entry__dot {
+          width: 10px;
+          height: 10px;
+          border-radius: 50%;
+          flex-shrink: 0;
+          margin-top: 4px;
+          border: 2px solid var(--pm-surface-2);
+          position: relative;
+          z-index: 1;
+        }
+        .pm-prog-entry__body { flex: 1; }
+        .pm-prog-entry__header {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          flex-wrap: wrap;
+          margin-bottom: 0.1rem;
+        }
+        .pm-prog-entry__fecha { font-size: 0.72rem; color: var(--pm-text-muted); font-weight: 600; }
+        .pm-prog-entry__clase {
+          font-size: 0.68rem;
+          color: var(--pm-text-muted);
+          background: var(--pm-surface);
+          padding: 1px 6px;
+          border-radius: 4px;
+        }
+        .pm-prog-entry__nota { font-size: 0.72rem; font-weight: 700; margin-left: auto; }
+        .pm-prog-entry__estado { font-size: 0.72rem; font-weight: 600; }
+        .pm-prog-entry__obs {
+          font-size: 0.78rem;
+          color: var(--pm-text);
+          margin: 0.15rem 0 0;
+          line-height: 1.45;
+          font-style: italic;
+        }
+        .pm-prog-entry__tarea {
+          font-size: 0.72rem;
+          color: var(--pm-text-muted);
+          margin: 0.1rem 0 0;
+        }
+      </style>
+    `
+  } catch (err) {
+    const r = container.querySelector('#pm-alumno-progresos-root')
+    if (r) r.innerHTML = `<p style="color:var(--pm-danger);font-size:0.82rem;">Error al cargar historial: ${escHTML(err.message)}</p>`
+  }
+}
+
 async function _renderEvaluaciones(container, alumnoId) {
   const root = container.querySelector('#pm-alumno-progreso-root')
   if (!root) return
@@ -815,6 +1033,16 @@ export async function renderAlumnoPerfilView(container, { alumnoId }) {
               <div class="pm-loading-zen"><div class="pm-pulse"></div></div>
             </div>
           </div>
+
+          <!-- 🎯 Historial de Progreso (IA) -->
+          <div class="pm-zen-section">
+            <div class="pm-zen-section-header">
+              <h3 class="pm-zen-section-title">🎯 Historial de Progreso (IA)</h3>
+            </div>
+            <div id="pm-alumno-progresos-root" class="pm-zen-progress-container">
+              <div class="pm-loading-zen"><div class="pm-pulse"></div></div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -1521,6 +1749,7 @@ export async function renderAlumnoPerfilView(container, { alumnoId }) {
     }
 
     _renderEvaluaciones(container, alumnoId)
+    _renderProgresos(container, alumnoId)
 
   } catch (err) {
     console.error('[AlumnoPerfil] Error crítico:', err)

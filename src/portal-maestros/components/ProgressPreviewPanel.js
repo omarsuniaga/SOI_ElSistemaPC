@@ -26,6 +26,31 @@ function esc(str) {
     .replace(/'/g, '&#39;')
 }
 
+const ALERT_TYPE_LABELS = {
+  CONDUCTA:          { label: 'conducta',           icon: '🚨' },
+  ATENCION:          { label: 'atención',            icon: '🔔' },
+  RIESGO_PEDAGOGICO: { label: 'riesgo pedagógico',  icon: '📉' },
+}
+
+/**
+ * Builds a human-readable summary line for the alert banner.
+ * Groups alerts by type and lists them: "1 riesgo pedagógico · 1 atención".
+ */
+function _buildAlertBannerText(alertRecords) {
+  const counts = {}
+  for (const r of alertRecords) {
+    const key = r.alertaTipo ?? r.alertDetails?.type ?? 'CONDUCTA'
+    counts[key] = (counts[key] ?? 0) + 1
+  }
+
+  const parts = Object.entries(counts).map(([tipo, n]) => {
+    const info = ALERT_TYPE_LABELS[tipo] ?? { label: tipo.toLowerCase(), icon: '⚠️' }
+    return `${info.icon} ${n} ${info.label}${n > 1 ? 's' : ''}`
+  })
+
+  return `${parts.join(' · ')} — revisá antes de guardar`
+}
+
 /**
  * @param {HTMLElement} container
  * @param {object} opts
@@ -36,24 +61,52 @@ export function createProgressPreviewPanel(container, { onConfirm, onCancel }) {
   let _records = []
   let _panelEl = null
 
+  /** Returns the scope chip HTML based on the record's scope field. */
+  function _scopeChip(rec) {
+    const scope   = rec.scope || (rec.es_colectivo ? 'grupo' : 'individual')
+    const alumnos = rec.alumnos || []
+
+    if (rec.requires_confirmation) {
+      return `<span class="ppp-scope-chip ppp-scope--unknown">❓ Subgrupo sin identificar</span>`
+    }
+    switch (scope) {
+      case 'grupo':
+      case 'all':
+        return `<span class="ppp-scope-chip ppp-scope--all">👥 Todos los presentes</span>`
+      case 'grupo_excluyendo':
+      case 'group_excluding':
+        return `<span class="ppp-scope-chip ppp-scope--excluding">👥 Resto del grupo</span>`
+      case 'subgrupo_indeterminado':
+      case 'subgroup_unknown':
+        return `<span class="ppp-scope-chip ppp-scope--unknown">❓ Subgrupo sin identificar</span>`
+      case 'individual':
+      default:
+        if (!alumnos.length) return ''
+        return alumnos.length === 1
+          ? `<span class="ppp-scope-chip ppp-scope--individual">👤 ${esc(alumnos[0])}</span>`
+          : `<span class="ppp-scope-chip ppp-scope--individual">👤 ${esc(alumnos.join(', '))}</span>`
+    }
+  }
+
   function _renderRecord(rec, idx) {
-    const alumnosStr = esc((rec.alumnos || []).join(', '))
     const estadoInfo = ESTADO_LABELS[rec.estado] ?? ESTADO_LABELS.EN_PROGRESO
     const notaStr    = rec.nota ? ` · ${esc(rec.nota)}/5` : ''
     const tareaStr   = rec.tarea ? `<div class="ppp-tarea">📝 ${esc(rec.tarea)}</div>` : ''
     const isAlerta   = !!rec.alerta
+    const scopeChip  = _scopeChip(rec)
 
     if (isAlerta) {
-      // ── Alert card — behavioral/disciplinary issue ──────────────────────────
+      // ── Alert card ──────────────────────────────────────────────────────────
+      const alertLabel = ALERT_TYPE_LABELS[rec.alertaTipo] ?? { label: 'Alerta pedagógica', icon: '⚠️' }
       return `
         <div class="ppp-card ppp-card--alerta" data-idx="${idx}">
           <div class="ppp-card-header">
-            <span class="ppp-alerta-badge">⚠️ Atención requerida</span>
+            <span class="ppp-alerta-badge">${alertLabel.icon} ${esc(alertLabel.label === 'conducta' ? 'Conducta' : alertLabel.label === 'atención' ? 'Atención pedagógica' : 'Riesgo pedagógico')}</span>
             <button class="ppp-remove" data-idx="${idx}" title="Quitar este registro">✕</button>
           </div>
-          <div class="ppp-alerta-alumno">${alumnosStr}</div>
+          ${scopeChip ? `<div class="ppp-scope-row">${scopeChip}</div>` : ''}
           <div class="ppp-card-body">
-            <span class="ppp-contenido ppp-contenido--alerta">${esc(rec.contenido) || 'Comportamiento'}</span>
+            <span class="ppp-contenido ppp-contenido--alerta">${esc(rec.contenido) || '—'}</span>
           </div>
           ${rec.observacion ? `<div class="ppp-obs ppp-obs--alerta">${esc(rec.observacion)}</div>` : ''}
           ${tareaStr}
@@ -65,7 +118,7 @@ export function createProgressPreviewPanel(container, { onConfirm, onCancel }) {
     return `
       <div class="ppp-card" data-idx="${idx}">
         <div class="ppp-card-header">
-          <span class="ppp-alumnos">${alumnosStr}</span>
+          ${scopeChip || `<span class="ppp-alumnos">${esc((rec.alumnos || []).join(', '))}</span>`}
           <button class="ppp-remove" data-idx="${idx}" title="Quitar este registro">✕</button>
         </div>
         <div class="ppp-card-body">
@@ -87,9 +140,10 @@ export function createProgressPreviewPanel(container, { onConfirm, onCancel }) {
   function _render(resumen) {
     if (!_panelEl) return
     const hasRecords  = _records.length > 0
-    const alertCount  = _records.filter(r => r.alerta).length
-    const alertBanner = alertCount > 0
-      ? `<div class="ppp-alert-banner">⚠️ ${alertCount} registro${alertCount > 1 ? 's' : ''} de conducta detectado${alertCount > 1 ? 's' : ''} — revisá antes de guardar</div>`
+    const alertRecords = _records.filter(r => r.alerta)
+    const alertCount   = alertRecords.length
+    const alertBanner  = alertCount > 0
+      ? `<div class="ppp-alert-banner">⚠️ ${_buildAlertBannerText(alertRecords)}</div>`
       : ''
 
     const contradictions = detectContradictions(_records)
@@ -266,6 +320,61 @@ function _injectStyles() {
       color: #6b7280;
       margin-top: 0.35rem;
       font-style: italic;
+    }
+
+    /* ── Scope chips ─────────────────────────────────────────── */
+    .ppp-scope-row {
+      margin: 0.1rem 0 0.2rem 0;
+    }
+    .ppp-scope-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 0.1rem 0.5rem;
+      border-radius: 99px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 100%;
+    }
+    .ppp-scope--all {
+      background: #e0f2fe;
+      color: #0369a1;
+    }
+    .dark .ppp-scope--all,
+    [data-theme="dark"] .ppp-scope--all {
+      background: #0c3554;
+      color: #7dd3fc;
+    }
+    .ppp-scope--individual {
+      background: #f0fdf4;
+      color: #15803d;
+    }
+    .dark .ppp-scope--individual,
+    [data-theme="dark"] .ppp-scope--individual {
+      background: #052e16;
+      color: #86efac;
+    }
+    .ppp-scope--excluding {
+      background: #fef9c3;
+      color: #854d0e;
+    }
+    .dark .ppp-scope--excluding,
+    [data-theme="dark"] .ppp-scope--excluding {
+      background: #3a2900;
+      color: #fde047;
+    }
+    .ppp-scope--unknown {
+      background: #faf5ff;
+      color: #7c3aed;
+      border: 1px dashed #c4b5fd;
+    }
+    .dark .ppp-scope--unknown,
+    [data-theme="dark"] .ppp-scope--unknown {
+      background: #1e1030;
+      color: #c4b5fd;
     }
   `
   document.head.appendChild(style)

@@ -176,7 +176,11 @@ const ADMIN_TABS = [
 // Admin sin clases ve solo tabs de admin
 // Maestro normal ve solo tabs de maestro
 const ALL_TABS = (permisos) => {
-  if (!IS_ADMIN) return buildMaestroTabs(permisos)
+  // DEBUG: Validar estado de IS_ADMIN antes de usarlo
+  if (!IS_ADMIN) {
+    return buildMaestroTabs(permisos)
+  }
+  // Admin mode: mostrar ambos grupos
   return [...ADMIN_TABS, ...buildMaestroTabs(permisos)]
 }
 
@@ -1175,8 +1179,9 @@ async function initPortal() {
   console.log('[Init] Auth completado:', maestro ? 'con maestro' : 'sin maestro')
 
   // Determinar modo admin desde el campo es_admin de la tabla maestros
-  IS_ADMIN = maestro?.es_admin === true
-  console.log('[Init] IS_ADMIN:', IS_ADMIN)
+  // Validar que es_admin sea booleano verdadero (no 1, no truthy)
+  IS_ADMIN = Boolean(maestro?.es_admin === true)
+  console.log('[Init] IS_ADMIN:', IS_ADMIN, '| maestro.es_admin:', maestro?.es_admin, '| tipo:', typeof maestro?.es_admin)
 
   // Determinar si estamos en una ruta pública
   const routerInstance = window.router || createPortalRouter()

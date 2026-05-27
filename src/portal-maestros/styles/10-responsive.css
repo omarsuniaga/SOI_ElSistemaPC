@@ -90,17 +90,21 @@
 
   /* ── Footer nav: pill-shaped, Apple-style ────────────────────── */
   .pm-footer-nav {
-    padding: 0.5rem 0.75rem calc(0.5rem + env(safe-area-inset-bottom, 0));
+    padding: 0.5rem 0.75rem 0.5rem;
+    bottom: 0;
+    position: fixed;
   }
 
   .pm-footer-nav__inner {
     border-radius: 20px;
     height: 56px;
+    pointer-events: auto;
   }
 
   .pm-nav-tab {
     gap: 2px;
     padding: 4px 2px 6px;
+    pointer-events: auto;
   }
 
   .pm-nav-tab i {

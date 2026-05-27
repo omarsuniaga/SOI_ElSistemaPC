@@ -786,6 +786,10 @@ export async function renderAdminNotificacionesView(container) {
   function _setupRealtimeSubscription() {
     if (_realtimeChannel) return
 
+    // Remover canal previo con el mismo nombre si existe (sobrevive navegación SPA)
+    const stale = supabase.getChannels().find(ch => ch.topic === 'realtime:admin-feed-channel')
+    if (stale) supabase.removeChannel(stale)
+
     _realtimeChannel = supabase
       .channel('admin-feed-channel')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'ausencias_maestros' }, async (payload) => {
@@ -1259,4 +1263,12 @@ export async function renderAdminNotificacionesView(container) {
 
   // Conectar botón refresh
   container.querySelector('#anv-refresh-btn')?.addEventListener('click', () => _load(false))
+
+  // Retornar cleanup para que el router remueva el canal cuando navegue a otra vista
+  return function cleanup() {
+    if (_realtimeChannel) {
+      supabase.removeChannel(_realtimeChannel)
+      _realtimeChannel = null
+    }
+  }
 }

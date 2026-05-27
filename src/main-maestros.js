@@ -153,11 +153,9 @@ function buildMaestroTabs(permisos, isAdmin = false) {
     { id: 'hoy', label: 'Hoy', icon: 'bi-house-door' },
     { id: 'planificacion', label: 'Plan', icon: 'bi-signpost-split' },
   ]
-  // Métricas solo se agrega al maestro si NO es admin
-  // (admin ya tiene admin-metricas en ADMIN_TABS, evita duplicado)
-  if (!isAdmin) {
-    tabs.push({ id: 'metricas', label: 'Métricas', icon: 'bi-bar-chart-line' })
-  }
+  // Métricas del maestro (sus propias clases/alumnos) — siempre presente.
+  // Es distinta a admin-metricas (métricas del sistema).
+  tabs.push({ id: 'metricas', label: 'Métricas', icon: 'bi-bar-chart-line' })
   // PERM-05: Only show "Registrar Alumno" tab if teacher has permission
   if (permisos?.puede_registrar_alumnos) {
     tabs.push({ id: 'registrar-alumno', label: 'Registrar', icon: 'bi-person-plus' })

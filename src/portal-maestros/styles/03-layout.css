@@ -178,31 +178,32 @@
 
 .pm-footer-nav {
   flex-shrink: 0;
-  padding: 0 max(0.5rem, env(safe-area-inset-right)) var(--env-safe-area-bottom, env(safe-area-inset-bottom, 0.5rem)) max(0.5rem, env(safe-area-inset-left));
+  padding: 0 max(0.5rem, env(safe-area-inset-right)) max(0.5rem, env(safe-area-inset-bottom, 0)) max(0.5rem, env(safe-area-inset-left));
   background: transparent;
-  /* border-top: none; */
   display: block;
-  position: relative;
-  z-index: 100;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 999;
   width: 100%;
+  pointer-events: none;
 }
 
 /* Capa sólida detrás del menú - gradiente de transparente arriba a color de fondo abajo */
 .pm-footer-nav::before {
   content: '';
-  position: absolute;
-  top: -50px;
-  left: -10%;
-  right: -10%;
-  bottom: -10px;
-  /* Gradiente: transparente arriba → color de fondo desde la mitad */
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 120px;
   background: linear-gradient(to bottom,
       transparent 0%,
       rgba(255, 255, 255, 0.3) 40%,
-      rgba(255, 255, 255, 0.9) 100%);
+      rgba(255, 255, 255, 0.95) 100%);
   pointer-events: none;
   z-index: -1;
-  border-radius: 24px 24px 0 0;
 }
 
 /* Dark mode - gradiente oscuro */
@@ -223,10 +224,11 @@
   background: var(--pm-surface);
   border-radius: var(--pm-radius);
   position: relative;
+  pointer-events: auto;
   /* Frosted glass base */
   background: rgba(255, 255, 255, 0.72);
   backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backflow-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
   border: 1px solid rgba(0, 0, 0, 0.06);
   box-shadow:
     0 -1px 0 rgba(0, 0, 0, 0.04),
@@ -278,6 +280,7 @@
   user-select: none;
   min-width: 0;
   min-height: var(--pm-touch-min, 44px);
+  pointer-events: auto;
 }
 
 .pm-nav-tab i {

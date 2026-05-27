@@ -904,9 +904,12 @@ export async function renderAdminNotificacionesView(container) {
         </div>
       `
     } else if (event.actionRoute) {
+      const paramsAttr = event.actionParams
+        ? ` data-params='${JSON.stringify(event.actionParams)}'`
+        : ''
       actionsHTML = `
         <div class="anv-inline-actions">
-          <button class="anv-action-btn anv-btn-goto" data-action="goto" data-route="${event.actionRoute}">
+          <button class="anv-action-btn anv-btn-goto" data-action="goto" data-route="${event.actionRoute}"${paramsAttr}>
             <i class="bi bi-arrow-right-circle"></i> ${event.actionLabel || 'Ver'}
           </button>
         </div>
@@ -940,7 +943,10 @@ export async function renderAdminNotificacionesView(container) {
         const action = btn.dataset.action
         if (action === 'goto') {
           const r = window.router || router
-          if (r) r.navigate(btn.dataset.route)
+          if (r) {
+            const params = btn.dataset.params ? JSON.parse(btn.dataset.params) : {}
+            r.navigate(btn.dataset.route, params)
+          }
           return
         }
 

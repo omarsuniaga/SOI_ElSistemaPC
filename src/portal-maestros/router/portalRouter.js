@@ -32,7 +32,10 @@ export function createPortalRouter() {
     _guardEnabled = true
   }
 
-  function navigate(route) {
+  // _pendingParams: params passed via navigate() that _dispatch will forward to the handler
+  let _pendingParams = null
+
+  function navigate(route, params = {}) {
     if (_guardEnabled && _authCheck && !_publicRoutes.includes(route)) {
       if (!_authCheck()) {
         localStorage.setItem('intended-route', route)
@@ -40,6 +43,11 @@ export function createPortalRouter() {
         _dispatch('login')
         return
       }
+    }
+    if (params && Object.keys(params).length > 0) {
+      _pendingParams = params
+      // Force re-dispatch even if already on this route (e.g. open a specific record)
+      _currentRoute = null
     }
     const url = `#/${route}`
     history.pushState({ route }, '', url)
@@ -111,6 +119,12 @@ export function createPortalRouter() {
           }
         }
       }
+    }
+
+    // Merge any params passed via navigate() with route-pattern params
+    if (_pendingParams) {
+      params = { ...params, ..._pendingParams }
+      _pendingParams = null
     }
 
     const fn = handler || notFoundFn

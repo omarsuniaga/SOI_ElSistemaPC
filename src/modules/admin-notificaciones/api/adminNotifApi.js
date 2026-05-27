@@ -376,7 +376,7 @@ async function _fetchEarlyWarningRisks() {
         motivo: `Acción recomendada: Contactar de urgencia al tutor legal o revisar ficha médica.`,
         timestamp: new Date().toISOString(),
         timeAgo: 'ahora mismo',
-        actionRoute: 'admin-alumnos',
+        actionRoute: `alumno?id=${studentId}`,
         actionLabel: 'Ver Ficha'
       })
       continue
@@ -401,7 +401,7 @@ async function _fetchEarlyWarningRisks() {
         motivo: `Acción recomendada: Coordinar entrevista de seguimiento y analizar tutoría.`,
         timestamp: new Date().toISOString(),
         timeAgo: 'ahora mismo',
-        actionRoute: 'admin-alumnos',
+        actionRoute: `alumno?id=${studentId}`,
         actionLabel: 'Ver Ficha'
       })
     }

@@ -86,7 +86,9 @@ import { prefetchMonthData, getMisClases, getHorariosClases, getSesiones } from 
 import { scheduleLocalAlerts } from './portal-maestros/services/pushService.js'
 
 
-// Icons only -- NO Bootstrap CSS/JS in portal
+// Bootstrap CSS completo — requerido por vistas admin (alumnosView, maestrosView, programasView)
+// que usan .container, .row, .col-*, var(--bs-*), etc.
+import 'bootstrap/dist/css/bootstrap.min.css'
 import 'bootstrap-icons/font/bootstrap-icons.css'
 
 // Toast system -- sin dependencia de Bootstrap JS
@@ -145,13 +147,17 @@ import './modules/academic-routes/styles/academic-routes.css'
 let IS_ADMIN = false
 let _permisosChannel = null
 
-function buildMaestroTabs(permisos) {
+function buildMaestroTabs(permisos, isAdmin = false) {
   const tabs = [
     { id: 'calendario', label: 'Calendario', icon: 'bi-calendar3' },
     { id: 'hoy', label: 'Hoy', icon: 'bi-house-door' },
     { id: 'planificacion', label: 'Plan', icon: 'bi-signpost-split' },
-    { id: 'metricas', label: 'Métricas', icon: 'bi-bar-chart-line' },
   ]
+  // Métricas solo se agrega al maestro si NO es admin
+  // (admin ya tiene admin-metricas en ADMIN_TABS, evita duplicado)
+  if (!isAdmin) {
+    tabs.push({ id: 'metricas', label: 'Métricas', icon: 'bi-bar-chart-line' })
+  }
   // PERM-05: Only show "Registrar Alumno" tab if teacher has permission
   if (permisos?.puede_registrar_alumnos) {
     tabs.push({ id: 'registrar-alumno', label: 'Registrar', icon: 'bi-person-plus' })
@@ -176,12 +182,11 @@ const ADMIN_TABS = [
 // Admin sin clases ve solo tabs de admin
 // Maestro normal ve solo tabs de maestro
 const ALL_TABS = (permisos) => {
-  // DEBUG: Validar estado de IS_ADMIN antes de usarlo
   if (!IS_ADMIN) {
-    return buildMaestroTabs(permisos)
+    return buildMaestroTabs(permisos, false)
   }
-  // Admin mode: mostrar ambos grupos
-  return [...ADMIN_TABS, ...buildMaestroTabs(permisos)]
+  // Admin mode: ADMIN_TABS primero, luego tabs de maestro sin Métricas (ya está en admin)
+  return [...ADMIN_TABS, ...buildMaestroTabs(permisos, true)]
 }
 
 let _maestro = null

@@ -2,6 +2,7 @@ import { supabase } from '../../lib/supabaseClient.js'
 import { getMaestroLocal } from '../auth/maestroAuth.js'
 import { escHTML } from '../utils/portalUtils.js'
 import { formatPhone } from '../../shared/utils/phoneUtils.js'
+import { PlanEstudiosPanel } from '../components/PlanEstudiosPanel.js'
 
 /**
  * Formatea un número de teléfono para usar en wa.me (formato internacional sin +)
@@ -1785,7 +1786,20 @@ export async function renderAlumnoPerfilView(container, { alumnoId }) {
       sendLink.addEventListener('click', () => setTimeout(closeModal, 300))
     }
 
-    _renderEvaluaciones(container, alumnoId)
+    // Plan de Estudios — bitácora de dominio individual
+    const planRoot = container.querySelector('#pm-alumno-progreso-root')
+    if (planRoot) {
+      const panel = new PlanEstudiosPanel({
+        container: planRoot,
+        alumnoId,
+        maestroId: maestro.id,
+      })
+      panel.init().catch(err => {
+        console.error('[AlumnoPerfil] PlanEstudiosPanel error:', err)
+        planRoot.innerHTML = `<p style="color:var(--pm-danger);font-size:0.82rem;">Error al cargar plan de estudios: ${escHTML(err.message)}</p>`
+      })
+    }
+
     _renderProgresos(container, alumnoId)
 
   } catch (err) {

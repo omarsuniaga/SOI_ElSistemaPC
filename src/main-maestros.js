@@ -1088,8 +1088,7 @@ async function _renderView(route, params = {}, { silent = false } = {}) {
         _activeViewCleanup = null
         break
       case 'admin-notificaciones':
-        await renderAdminNotificacionesView(targetContainer)
-        _activeViewCleanup = null
+        _activeViewCleanup = await renderAdminNotificacionesView(targetContainer)
         break
       case 'registrar-alumno':
         if (!_permisos?.puede_registrar_alumnos) {

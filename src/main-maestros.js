@@ -352,11 +352,14 @@ function _showLoginScreen() {
     return
   }
 
-  // Sin shell montado (primer load sin sesión): renderizar directo en el app
-  app.innerHTML = ''
-  renderLoginView(app, {
-    onSuccess: () => initPortal()
-  })
+  // First unauthenticated load: mount public view containers so login links
+  // can navigate to register through the SPA router.
+  app.innerHTML = '<main class="pm-view" id="pm-view-container"></main>'
+  _initViewContainers()
+  _setupRouterRoutes()
+  router.setAuthGuard(() => usePortalAuth.isAuthenticated(), publicRoutes)
+  history.replaceState({ route: 'login' }, '', '#/login')
+  _renderView('login')
 }
 
 // Factorizar el setup de rutas para reuso
@@ -456,7 +459,7 @@ function _renderShell(app, maestro, permisos) {
     </aside>
 
     <!-- Main content area -->
-    <div class="pm-main-area">
+    <div class="pm-main-area ${IS_ADMIN ? 'pm-main-area--admin' : ''}">
       <!-- Header -->
       <header class="pm-header" id="pm-header">
         <div class="pm-header-left" id="pm-header-left">
@@ -511,11 +514,12 @@ function _renderShell(app, maestro, permisos) {
       <main class="pm-view" id="pm-view-container"></main>
 
       <!-- Footer Nav (mobile/tablet only - hidden on desktop) -->
-      <nav class="pm-footer-nav" id="pm-footer-nav">
+      <nav class="pm-footer-nav ${IS_ADMIN ? 'pm-footer-nav--admin' : ''}" id="pm-footer-nav">
         <div class="pm-footer-nav__inner">
           ${tabs.map(tab => `
-            <button class="pm-nav-tab" data-route="${tab.id}" title="${tab.label}">
+            <button class="pm-nav-tab" data-route="${tab.id}" title="${tab.label}" aria-label="${tab.label}">
               <i class="bi ${tab.icon}"></i>
+              <span>${tab.label}</span>
             </button>
           `).join('')}
         </div>

@@ -576,7 +576,7 @@ import{n as e}from"./rolldown-runtime-tcWNtVWY.js";import{i as t}from"./supabase
     `).eq(`sesion_clase_id`,e);l&&j(`No se pudieron cargar las observaciones`,l);let{data:u,error:d}=await t.from(`contenidos_sesion`).select(`
       id, descripcion, nivel_logro,
       planificaciones ( titulo, contenidos )
-    `).eq(`sesion_clase_id`,e);return d&&j(`No se pudieron cargar los contenidos`,d),{sesion:{id:n.id,fecha:n.fecha,horaInicio:n.hora_inicio,horaFin:n.hora_fin,temaPrincipal:n.tema_principal,observacionesGenerales:n.observaciones_generales,estado:n.estado,claseNombre:n.clases?.nombre??`—`,instrumento:n.clases?.instrumento??`—`,maestroNombre:n.clases?.maestros?.nombre_completo??`—`},asistencias:(i||[]).map(e=>({id:e.id,estado:e.estado,justificacionTexto:e.justificacion_texto,observacion:e.observaciones,alumnoId:e.alumno_id,alumnoNombre:e.alumnos?.nombre_completo??`—`,justificacion:s[e.alumno_id]??null})),observaciones:(c||[]).map(e=>({id:e.id,tipo:e.tipo,titulo:e.titulo,descripcion:e.descripcion??e.observacion,prioridad:e.prioridad,alumnoId:e.alumnos?.id,alumnoNombre:e.alumnos?.nombre_completo??`—`})),contenidos:(u||[]).map(e=>({id:e.id,descripcion:e.descripcion,nivelLogro:e.nivel_logro,planTitulo:e.planificaciones?.titulo}))}}async function Xt(){let{data:e,error:n}=await t.from(`periodos`).select(`id, nombre, fecha_inicio, fecha_fin, activo`).order(`fecha_inicio`,{ascending:!1});return n&&j(`No se pudieron cargar los períodos`,n),e||[]}async function Zt(){let{data:e,error:n}=await t.from(`periodos`).select(`id, nombre, fecha_inicio, fecha_fin`).eq(`activo`,!0).single();return n?null:e}async function Qt(){let{data:e,error:n}=await t.from(`clases`).select(`id, nombre, instrumento`).order(`nombre`,{ascending:!0});return n&&j(`No se pudieron cargar las clases`,n),e||[]}async function $t(e){e?.length||j(`No hay asistencias para registrar`);let n=[...new Set(e.map(e=>e.alumno_id))];n.some(e=>!e)&&j(`Todas las asistencias deben tener alumno_id`);let{data:r,error:i}=await t.from(`alumnos`).select(`id`).in(`id`,n);i&&j(`No se pudo validar alumnos en la base de datos`,i);let a=new Set(r?.map(e=>e.id)||[]),o=n.filter(e=>!a.has(e));o.length>0&&j(`Los siguientes alumnos no existen: ${o.join(`, `)}`);let s=e.map(e=>{if(!e.sesion_clase_id)throw Error(`sesion_clase_id es requerido para alumno ${e.alumno_id}`);if(!e.clase_id)throw Error(`clase_id es requerido para alumno ${e.alumno_id}`);if(!e.fecha)throw Error(`fecha es requerido para alumno ${e.alumno_id}`);return{sesion_clase_id:e.sesion_clase_id,clase_id:e.clase_id,alumno_id:e.alumno_id,fecha:e.fecha,estado:Wt(e.estado),justificacion_texto:(e.justificacion_texto||``).trim()||null,observaciones:(e.observaciones||``).trim()||null,...e.registrado_por?{registrado_por:e.registrado_por}:{}}}),{data:c,error:l}=await t.from(`asistencias`).upsert(s,{onConflict:`clase_id,alumno_id,fecha`}).select();if(l&&Kt(l)){console.warn(`[registrarAsistenciaBulk] Constraint detected, trying plain INSERT:`,l.message);let{data:e,error:n}=await t.from(`asistencias`).insert(s,{returning:`representation`}).select();return n&&j(`No se pudieron registrar las asistencias (UPSERT y INSERT fallidos)`,l),e||[]}return l&&j(`No se pudieron registrar las asistencias`,l),c}async function en({periodoId:e,fecha:n,claseId:r}={}){try{let i,a;if(e){let{data:n,error:r}=await t.from(`periodos`).select(`fecha_inicio, fecha_fin`).eq(`id`,e).single();r&&console.warn(`No se pudo cargar el período, mostrando todas las sesiones`,r),n&&(i=n.fecha_inicio,a=n.fecha_fin)}let o=t.from(`vw_asistencias_consolidada`).select(`
+    `).eq(`sesion_clase_id`,e);return d&&j(`No se pudieron cargar los contenidos`,d),{sesion:{id:n.id,fecha:n.fecha,horaInicio:n.hora_inicio,horaFin:n.hora_fin,temaPrincipal:n.tema_principal,observacionesGenerales:n.observaciones_generales,estado:n.estado,claseNombre:n.clases?.nombre??`—`,instrumento:n.clases?.instrumento??`—`,maestroNombre:n.clases?.maestros?.nombre_completo??`—`},asistencias:(i||[]).map(e=>({id:e.id,estado:e.estado,justificacionTexto:e.justificacion_texto,observacion:e.observaciones,alumnoId:e.alumno_id,alumnoNombre:e.alumnos?.nombre_completo??`—`,justificacion:s[e.alumno_id]??null})),observaciones:(c||[]).map(e=>({id:e.id,tipo:e.tipo,titulo:e.titulo,descripcion:e.descripcion??e.observacion,prioridad:e.prioridad,alumnoId:e.alumnos?.id,alumnoNombre:e.alumnos?.nombre_completo??`—`})),contenidos:(u||[]).map(e=>({id:e.id,descripcion:e.descripcion,nivelLogro:e.nivel_logro,planTitulo:e.planificaciones?.titulo}))}}async function Xt(){let{data:e,error:n}=await t.from(`periodos`).select(`id, nombre, fecha_inicio, fecha_fin, activo`).order(`fecha_inicio`,{ascending:!1});return n&&j(`No se pudieron cargar los períodos`,n),e||[]}async function Zt(){let{data:e,error:n}=await t.from(`periodos`).select(`id, nombre, fecha_inicio, fecha_fin`).eq(`activo`,!0).single();return n?null:e}async function Qt(){let{data:e,error:n}=await t.from(`clases`).select(`id, nombre, instrumento`).order(`nombre`,{ascending:!0});return n&&j(`No se pudieron cargar las clases`,n),e||[]}async function $t(e){e?.length||j(`No hay asistencias para registrar`);let n=[...new Set(e.map(e=>e.alumno_id))];n.some(e=>!e)&&j(`Todas las asistencias deben tener alumno_id`);let{data:r,error:i}=await t.from(`alumnos`).select(`id`).in(`id`,n);i&&j(`No se pudo validar alumnos en la base de datos`,i);let a=new Set(r?.map(e=>e.id)||[]),o=n.filter(e=>!a.has(e));o.length>0&&j(`Los siguientes alumnos no existen: ${o.join(`, `)}`);let s=e.filter(e=>e.sesion_clase_id?!0:(console.warn(`[asistenciasApi] Saltando alumno ${e.alumno_id} sin sesion_clase_id (se sincronizará vía offline queue)`),!1)).map(e=>{if(!e.clase_id)throw Error(`clase_id es requerido para alumno ${e.alumno_id}`);if(!e.fecha)throw Error(`fecha es requerido para alumno ${e.alumno_id}`);return{sesion_clase_id:e.sesion_clase_id,clase_id:e.clase_id,alumno_id:e.alumno_id,fecha:e.fecha,estado:Wt(e.estado),justificacion_texto:(e.justificacion_texto||``).trim()||null,observaciones:(e.observaciones||``).trim()||null,...e.registrado_por?{registrado_por:e.registrado_por}:{}}});if(s.length===0)return console.warn(`[asistenciasApi] No hay registros válidos con sesion_clase_id para insertar`),[];let{data:c,error:l}=await t.from(`asistencias`).upsert(s,{onConflict:`clase_id,alumno_id,fecha`}).select();if(l&&Kt(l)){console.warn(`[registrarAsistenciaBulk] Constraint detected, trying plain INSERT:`,l.message);let{data:e,error:n}=await t.from(`asistencias`).insert(s,{returning:`representation`}).select();return n&&j(`No se pudieron registrar las asistencias (UPSERT y INSERT fallidos)`,l),e||[]}return l&&j(`No se pudieron registrar las asistencias`,l),c}async function en({periodoId:e,fecha:n,claseId:r}={}){try{let i,a;if(e){let{data:n,error:r}=await t.from(`periodos`).select(`fecha_inicio, fecha_fin`).eq(`id`,e).single();r&&console.warn(`No se pudo cargar el período, mostrando todas las sesiones`,r),n&&(i=n.fecha_inicio,a=n.fecha_fin)}let o=t.from(`vw_asistencias_consolidada`).select(`
         fecha,
         sesion_clase_id,
         clase_id,
@@ -594,7 +594,7 @@ import{n as e}from"./rolldown-runtime-tcWNtVWY.js";import{i as t}from"./supabase
         total_registros,
         asistencias_detalle,
         justificaciones_detalle
-      `);i&&(o=o.gte(`fecha`,i)),a&&(o=o.lte(`fecha`,a)),n&&(o=o.eq(`fecha`,n)),r&&(o=o.eq(`clase_id`,r));let{data:s,error:c}=await o.order(`fecha`,{ascending:!1}).order(`hora_inicio`,{ascending:!0});c&&j(`No se pudieron cargar las sesiones consolidadas`,c),Array.isArray(s)||(console.warn(`sesiones no es un array, usando array vacío`,s),s=[]),s=s.filter(e=>e.borrador===!1),console.log(`📊 Filtro de borradores: ${s.length} sesiones reales`),console.log(`📊 getReporteConsolidado DEBUG:`,{periodoId:e,sesionesCount:s.length,dataSource:`vw_asistencias_consolidada`,firstSesion:s[0]?{fecha:s[0].fecha,nombre_clase:s[0].nombre_clase,presentes:s[0].presentes,ausentes:s[0].ausentes,justificados:s[0].justificados}:`NO SESIONES`});let l={};s&&s.length>0&&s.forEach(e=>{let t={clase_id:e.clase_id,clase_nombre:e.nombre_clase,fecha:e.fecha,hora_inicio:e.hora_inicio,hora_fin:e.hora_fin,maestro_nombre:e.maestro_principal||`Sin asignar`,maestro_auxiliar_nombre:e.maestro_auxiliar||null,observacion_clase:e.observacion_clase||null,observacion_sesion:e.observacion_sesion||null,presentes:e.presentes||0,ausentes:e.ausentes||0,justificados:e.justificados||0,total_alumnos:e.total_registros||0,asistencias:e.asistencias_detalle?Array.isArray(e.asistencias_detalle)?e.asistencias_detalle:JSON.parse(e.asistencias_detalle||`[]`):[],justificaciones:e.justificaciones_detalle?Array.isArray(e.justificaciones_detalle)?e.justificaciones_detalle:JSON.parse(e.justificaciones_detalle||`[]`):[]};l[e.fecha]||(l[e.fecha]=[]),l[e.fecha].push(t)});let u=Object.entries(l).sort(([e],[t])=>t.localeCompare(e)).map(([e,t])=>({fecha:e,clases:t.sort((e,t)=>(e.hora_inicio||``).localeCompare(t.hora_inicio||``))})),d=u.flatMap(e=>e.clases);return{timelineByDate:u,resumenGlobal:{totalClases:d.length,totalPresentes:d.reduce((e,t)=>e+t.presentes,0),totalAusentes:d.reduce((e,t)=>e+t.ausentes,0),totalJustificados:d.reduce((e,t)=>e+t.justificados,0),totalRegistros:d.reduce((e,t)=>e+t.total_alumnos,0),totalSesiones:s.length}}}catch(e){j(`Error en getReporteConsolidado`,e)}}var tn=[`lunes`,`martes`,`miércoles`,`jueves`,`viernes`,`sábado`,`domingo`],nn=/^([01]\d|2[0-3]):([0-5]\d)$/;function M(e){let[t,n]=e.split(`:`).map(Number);return t*60+n}function rn(e,t){let n=M(e.inicio),r=M(e.fin),i=M(t.inicio);return n<M(t.fin)&&i<r}function an(e,t){let n=[];for(let r=0;r<e.length;r++){let i=e[r];if(!nn.test(i.inicio)||!nn.test(i.fin)){n.push(`${t}: franja ${r+1} tiene formato de hora inválido (use HH:MM)`);continue}if(M(i.inicio)>=M(i.fin)){n.push(`${t}: franja ${r+1} — la hora de inicio (${i.inicio}) debe ser anterior a la de fin (${i.fin})`);continue}for(let a=r+1;a<e.length;a++)rn(i,e[a])&&n.push(`${t}: las franjas ${r+1} y ${a+1} se solapan`)}return n}function on(e){if(!e||typeof e!=`object`)return{valid:!1,errors:[`Disponibilidad debe ser un objeto`]};let t=[];for(let[n,r]of Object.entries(e)){if(!tn.includes(n)){t.push(`Día inválido: "${n}"`);continue}if(!Array.isArray(r)){t.push(`${n}: las franjas deben ser un array`);continue}let e=an(r,n);t.push(...e)}return{valid:t.length===0,errors:t}}async function sn(e,n){let r=on(n);if(!r.valid)return{success:!1,errors:r.errors};let{error:i}=await t.from(`maestros`).update({disponibilidad:n}).eq(`id`,e);return i?(console.error(`[DisponibilidadApi] Error updating:`,i.message),{success:!1,errors:[i.message]}):{success:!0}}async function cn(e){let n=t.from(`maestros`).select(`id, nombre_completo, especialidad, habilidades, disponibilidad`).eq(`activo`,!0).order(`nombre_completo`,{ascending:!0});e?.length&&(n=n.in(`id`,e));let{data:r,error:i}=await n;if(i)throw console.error(`[DisponibilidadApi] Error fetching bulk:`,i.message),Error(`No se pudieron cargar las disponibilidades`);return r.map(e=>({id:e.id,nombre:e.nombre_completo||``,especialidad:e.especialidad||``,habilidades:Array.isArray(e.habilidades)?e.habilidades:[],disponibilidad:e.disponibilidad||{}}))}function ln(e){if(!e||!e.trim())return null;let t=e.replace(/\D/g,``);if(t.length<7)return null;let n=t;return n.length>11&&(n=n.startsWith(`1`)?n.slice(0,11):n.slice(0,10)),n.length===11&&n.startsWith(`1`)?`+`+n:n.length===10?`+1`+n:n}function N(e){if(!e||!e.trim())return`—`;let t=e.replace(/\D/g,``),n=t.length===11&&t.startsWith(`1`)?t.slice(1):t.length===10?t:null;return n?`(${n.slice(0,3)}) ${n.slice(3,6)}-${n.slice(6)}`:e}function un(e,t=``){if(!e)return null;let n=e.replace(/\D/g,``);if(n.length<7)return null;let r=`https://wa.me/${n}`;return t?`${r}?text=${encodeURIComponent(t)}`:r}function dn(e){return e?new Date(e).toLocaleDateString(`es-ES`,{year:`numeric`,month:`short`,day:`numeric`}):`Fecha desconocida`}function fn(e){if(!e)return null;let t=new Date,n=new Date(e),r=t.getFullYear()-n.getFullYear(),i=t.getMonth()-n.getMonth();return(i<0||i===0&&t.getDate()<n.getDate())&&r--,r}function P(e){return e?e.replace(/[&<>]/g,function(e){return e===`&`?`&amp;`:e===`<`?`&lt;`:e===`>`?`&gt;`:e}):``}function pn(e){return{M:`Masculino`,F:`Femenino`,O:`Otro`,N:`No binario`}[e?.toUpperCase()]||`No especificado`}function mn(e){return e?`bg-success`:`bg-secondary`}function hn(e){return e?`Activo`:`Inactivo`}function gn(e){return e?e.split(` `).map(e=>e[0]).join(``).toUpperCase().slice(0,2):`?`}var F={alumnos:[],alumnosOriginales:[],cargando:!1,editando:null,viewingId:null,deletingId:null,filtroGenero:``,filtroEstado:`todos`},I=null,_n={nombreMax:100,emailMax:100,cedulaMax:20,telefonoMax:20,acudienteMax:100,direccionMax:255,sectionMax:100};async function vn(e){try{F.cargando=!0,yn(e);let t=await pt();F.alumnos=t,F.alumnosOriginales=[...t],F.cargando=!1,xn(e),wn(e)}catch(t){console.error(t),bn(e,t.message)}}function yn(e){e.innerHTML=`
+      `);i&&(o=o.gte(`fecha`,i)),a&&(o=o.lte(`fecha`,a)),n&&(o=o.eq(`fecha`,n)),r&&(o=o.eq(`clase_id`,r));let{data:s,error:c}=await o.order(`fecha`,{ascending:!1}).order(`hora_inicio`,{ascending:!0});c&&j(`No se pudieron cargar las sesiones consolidadas`,c),Array.isArray(s)||(console.warn(`sesiones no es un array, usando array vacío`,s),s=[]),s=s.filter(e=>e.borrador===!1),console.log(`📊 Filtro de borradores: ${s.length} sesiones reales`),console.log(`📊 getReporteConsolidado DEBUG:`,{periodoId:e,sesionesCount:s.length,dataSource:`vw_asistencias_consolidada`,firstSesion:s[0]?{fecha:s[0].fecha,nombre_clase:s[0].nombre_clase,presentes:s[0].presentes,ausentes:s[0].ausentes,justificados:s[0].justificados}:`NO SESIONES`});let l={};s&&s.length>0&&s.forEach(e=>{let t={clase_id:e.clase_id,clase_nombre:e.nombre_clase,fecha:e.fecha,hora_inicio:e.hora_inicio,hora_fin:e.hora_fin,maestro_nombre:e.maestro_principal||`Sin asignar`,maestro_auxiliar_nombre:e.maestro_auxiliar||null,observacion_clase:e.observacion_clase||null,observacion_sesion:e.observacion_sesion||null,presentes:e.presentes||0,ausentes:e.ausentes||0,justificados:e.justificados||0,total_alumnos:e.total_registros||0,asistencias:e.asistencias_detalle?Array.isArray(e.asistencias_detalle)?e.asistencias_detalle:JSON.parse(e.asistencias_detalle||`[]`):[],justificaciones:e.justificaciones_detalle?Array.isArray(e.justificaciones_detalle)?e.justificaciones_detalle:JSON.parse(e.justificaciones_detalle||`[]`):[]};l[e.fecha]||(l[e.fecha]=[]),l[e.fecha].push(t)});let u=Object.entries(l).sort(([e],[t])=>t.localeCompare(e)).map(([e,t])=>({fecha:e,clases:t.sort((e,t)=>(e.hora_inicio||``).localeCompare(t.hora_inicio||``))})),d=u.flatMap(e=>e.clases);return{timelineByDate:u,resumenGlobal:{totalClases:d.length,totalPresentes:d.reduce((e,t)=>e+t.presentes,0),totalAusentes:d.reduce((e,t)=>e+t.ausentes,0),totalJustificados:d.reduce((e,t)=>e+t.justificados,0),totalRegistros:d.reduce((e,t)=>e+t.total_alumnos,0),totalSesiones:s.length}}}catch(e){j(`Error en getReporteConsolidado`,e)}}var tn=[`lunes`,`martes`,`miércoles`,`jueves`,`viernes`,`sábado`,`domingo`],nn=/^([01]\d|2[0-3]):([0-5]\d)$/;function M(e){let[t,n]=e.split(`:`).map(Number);return t*60+n}function rn(e,t){let n=M(e.inicio),r=M(e.fin),i=M(t.inicio);return n<M(t.fin)&&i<r}function an(e,t){let n=[];for(let r=0;r<e.length;r++){let i=e[r];if(!nn.test(i.inicio)||!nn.test(i.fin)){n.push(`${t}: franja ${r+1} tiene formato de hora inválido (use HH:MM)`);continue}if(M(i.inicio)>=M(i.fin)){n.push(`${t}: franja ${r+1} — la hora de inicio (${i.inicio}) debe ser anterior a la de fin (${i.fin})`);continue}for(let a=r+1;a<e.length;a++)rn(i,e[a])&&n.push(`${t}: las franjas ${r+1} y ${a+1} se solapan`)}return n}function on(e){if(!e||typeof e!=`object`)return{valid:!1,errors:[`Disponibilidad debe ser un objeto`]};let t=[];for(let[n,r]of Object.entries(e)){if(!tn.includes(n)){t.push(`Día inválido: "${n}"`);continue}if(!Array.isArray(r)){t.push(`${n}: las franjas deben ser un array`);continue}let e=an(r,n);t.push(...e)}return{valid:t.length===0,errors:t}}async function sn(e,n){let r=on(n);if(!r.valid)return{success:!1,errors:r.errors};let{error:i}=await t.from(`maestros`).update({disponibilidad:n}).eq(`id`,e);return i?(console.error(`[DisponibilidadApi] Error updating:`,i.message),{success:!1,errors:[i.message]}):{success:!0}}async function cn(e){let n=t.from(`maestros`).select(`id, nombre_completo, especialidad, habilidades, disponibilidad`).eq(`activo`,!0).order(`nombre_completo`,{ascending:!0});e?.length&&(n=n.in(`id`,e));let{data:r,error:i}=await n;if(i)throw console.error(`[DisponibilidadApi] Error fetching bulk:`,i.message),Error(`No se pudieron cargar las disponibilidades`);return r.map(e=>({id:e.id,nombre:e.nombre_completo||``,especialidad:e.especialidad||``,habilidades:Array.isArray(e.habilidades)?e.habilidades:[],disponibilidad:e.disponibilidad||{}}))}function ln(e){if(!e||!e.trim())return null;let t=e.replace(/\D/g,``);if(t.length<7)return null;let n=t;return n.length>11&&(n=n.startsWith(`1`)?n.slice(0,11):n.slice(0,10)),n.length===11&&n.startsWith(`1`)?`+`+n:n.length===10?`+1`+n:n}function N(e){if(!e||!e.trim())return`—`;let t=e.replace(/\D/g,``),n=t.length===11&&t.startsWith(`1`)?t.slice(1):t.length===10?t:null;return n?`(${n.slice(0,3)}) ${n.slice(3,6)}-${n.slice(6)}`:e}function un(e,t=``){if(!e)return null;let n=e.replace(/\D/g,``);if(n.length<7)return null;let r=`https://wa.me/${n}`;return t?`${r}?text=${encodeURIComponent(t)}`:r}function dn(e){return e?new Date(e).toLocaleDateString(`es-ES`,{year:`numeric`,month:`short`,day:`numeric`}):`Fecha desconocida`}function fn(e){if(!e)return null;let t=new Date,n=new Date(e),r=t.getFullYear()-n.getFullYear(),i=t.getMonth()-n.getMonth();return(i<0||i===0&&t.getDate()<n.getDate())&&r--,r}function P(e){return e?e.replace(/[&<>]/g,function(e){return e===`&`?`&amp;`:e===`<`?`&lt;`:e===`>`?`&gt;`:e}):``}function pn(e){return{M:`Masculino`,F:`Femenino`,O:`Otro`,N:`No binario`}[e?.toUpperCase()]||`No especificado`}function mn(e){return e?`bg-success`:`bg-secondary`}function hn(e){return e?`Activo`:`Inactivo`}function gn(e){return e?e.split(` `).map(e=>e[0]).join(``).toUpperCase().slice(0,2):`?`}var F={alumnos:[],alumnosOriginales:[],cargando:!1,editando:null,viewingId:null,deletingId:null,filtroGenero:``,filtroEstado:`todos`},I=null,L={nombreMax:100,emailMax:100,cedulaMax:20,telefonoMax:20,acudienteMax:100,direccionMax:255,sectionMax:100};async function _n(e){try{F.cargando=!0,vn(e);let t=await pt();F.alumnos=t,F.alumnosOriginales=[...t],F.cargando=!1,bn(e),Cn(e)}catch(t){console.error(t),yn(e,t.message)}}function vn(e){e.innerHTML=`
     <div class="d-flex justify-content-center align-items-center" style="min-height: 400px;">
       <div class="text-center">
         <div class="spinner-border text-primary mb-3" role="status">
@@ -603,7 +603,7 @@ import{n as e}from"./rolldown-runtime-tcWNtVWY.js";import{i as t}from"./supabase
         <p class="text-muted">Cargando alumnos...</p>
       </div>
     </div>
-  `}function bn(e,t){e.innerHTML=`
+  `}function yn(e,t){e.innerHTML=`
     <div class="container mt-5">
       <div class="row justify-content-center">
         <div class="col-md-6">
@@ -620,7 +620,7 @@ import{n as e}from"./rolldown-runtime-tcWNtVWY.js";import{i as t}from"./supabase
         </div>
       </div>
     </div>
-  `,document.getElementById(`retryBtn`)?.addEventListener(`click`,()=>vn(e))}function xn(e){e.innerHTML=`
+  `,document.getElementById(`retryBtn`)?.addEventListener(`click`,()=>_n(e))}function bn(e){e.innerHTML=`
     <div class="page-container">
       <div class="alumnos-header-premium mb-4">
         <div class="d-flex align-items-center gap-3">
@@ -661,15 +661,15 @@ import{n as e}from"./rolldown-runtime-tcWNtVWY.js";import{i as t}from"./supabase
 
       <div class="page-glass rounded w-100">
         <div class="list-group list-group-flush w-100" id="alumnosTBody">
-          ${Sn(F.alumnos)}
+          ${xn(F.alumnos)}
         </div>
         <div id="emptyContainer">
-          ${F.alumnos.length===0?Cn():``}
+          ${F.alumnos.length===0?Sn():``}
         </div>
       </div>
 
     </div>
-  `}function Sn(e){return e.length?e.map(e=>{let t=e.nombre||`-`,n=e.is_active??!0,r=`border-accent-${n?`success`:`secondary`}`,i=`bg-${n?`success`:`secondary`}`;return`
+  `}function xn(e){return e.length?e.map(e=>{let t=e.nombre||`-`,n=e.is_active??!0,r=`border-accent-${n?`success`:`secondary`}`,i=`bg-${n?`success`:`secondary`}`;return`
       <div class="list-group-item list-group-item-action d-flex align-items-center justify-content-between p-3 w-100 border-start-accent ${r}" data-id="${e.id}" style="cursor: pointer;">
         <div class="d-flex align-items-center gap-3 flex-grow-1 overflow-hidden">
           <div class="position-relative flex-shrink-0">
@@ -697,7 +697,7 @@ import{n as e}from"./rolldown-runtime-tcWNtVWY.js";import{i as t}from"./supabase
           <i class="bi bi-chevron-right text-muted ms-1" style="font-size: 1.1rem; transition: transform 0.2s ease;"></i>
         </div>
       </div>
-    `}).join(``):``}function Cn(){return`
+    `}).join(``):``}function Sn(){return`
     <div class="text-center py-5 w-100 list-group-item text-muted" style="background: transparent; border: none;">
       <div class="mb-3">
         <i class="bi bi-inbox" style="font-size: 3rem; color: var(--bs-secondary);"></i>
@@ -705,7 +705,7 @@ import{n as e}from"./rolldown-runtime-tcWNtVWY.js";import{i as t}from"./supabase
       <h4>No hay alumnos</h4>
       <p class="text-muted mb-0">Crea tu primer alumno haciendo clic en el botón "Nuevo"</p>
     </div>
-  `}function wn(e){I=e,e.querySelector(`#btnAgregarAlumno`)?.addEventListener(`click`,()=>kn()),e.querySelector(`#btnExportarCSV`)?.addEventListener(`click`,()=>Pn()),e.querySelector(`#buscar`)?.addEventListener(`input`,L),e.querySelector(`#filtroEstado`)?.addEventListener(`change`,L),e.querySelector(`#alumnosTBody`)?.addEventListener(`click`,async e=>{let t=e.target.closest(`.list-group-item[data-id]`);if(t&&!e.target.closest(`[data-action]`)){jn(t.dataset.id);return}let n=e.target.closest(`[data-action]`);if(!n)return;let r=n.dataset.id;n.dataset.action===`edit`?An(r):n.dataset.action===`delete`?Mn(r):n.dataset.action===`whatsapp`&&Tn(r)})}function Tn(e){let t=F.alumnosOriginales.find(t=>t.id===e);!t||!t.telefono||o.open({title:`Enviar WhatsApp a `+P(t.nombre),size:`md`,saveText:`Enviar WhatsApp`,body:`
+  `}function Cn(e){I=e,e.querySelector(`#btnAgregarAlumno`)?.addEventListener(`click`,()=>On()),e.querySelector(`#btnExportarCSV`)?.addEventListener(`click`,()=>Nn()),e.querySelector(`#buscar`)?.addEventListener(`input`,R),e.querySelector(`#filtroEstado`)?.addEventListener(`change`,R),e.querySelector(`#alumnosTBody`)?.addEventListener(`click`,async e=>{let t=e.target.closest(`.list-group-item[data-id]`);if(t&&!e.target.closest(`[data-action]`)){An(t.dataset.id);return}let n=e.target.closest(`[data-action]`);if(!n)return;let r=n.dataset.id;n.dataset.action===`edit`?kn(r):n.dataset.action===`delete`?jn(r):n.dataset.action===`whatsapp`&&wn(r)})}function wn(e){let t=F.alumnosOriginales.find(t=>t.id===e);!t||!t.telefono||o.open({title:`Enviar WhatsApp a `+P(t.nombre),size:`md`,saveText:`Enviar WhatsApp`,body:`
       <div class="mb-3">
         <label class="form-label-compact">Número de destino</label>
         <p class="form-control-plaintext fw-bold mb-0">
@@ -719,10 +719,10 @@ import{n as e}from"./rolldown-runtime-tcWNtVWY.js";import{i as t}from"./supabase
       <p class="text-muted small mb-0">
         Se abrirá WhatsApp Web (o la aplicación) con el mensaje listo para ser enviado.
       </p>
-    `,onSave:async e=>{let n=e.querySelector(`#modal-whatsapp-msg`).value.trim(),r=un(t.telefono,n);r&&window.open(r,`_blank`)}})}function L(){let e=I.querySelector(`#buscar`)?.value.trim().toLowerCase()||``,t=I.querySelector(`#filtroEstado`)?.value||`todos`;F.alumnos=F.alumnosOriginales.filter(n=>{let r=!e||(n.nombre||``).toLowerCase().includes(e)||(n.instrumento||``).toLowerCase().includes(e)||(n.telefono||``).toLowerCase().includes(e)||(n.familiar_nombre||``).toLowerCase().includes(e),i=t===`todos`||t===`activo`&&n.is_active||t===`inactivo`&&!n.is_active;return r&&i}),Nn()}function En(e=``){return xt.map(t=>`<option value="${t.value}" ${t.value===e?`selected`:``}>${t.label}</option>`).join(``)}function Dn(e=null){let t=e||{};return`<form class="row g-2">
+    `,onSave:async e=>{let n=e.querySelector(`#modal-whatsapp-msg`).value.trim(),r=un(t.telefono,n);r&&window.open(r,`_blank`)}})}function R(){let e=I.querySelector(`#buscar`)?.value.trim().toLowerCase()||``,t=I.querySelector(`#filtroEstado`)?.value||`todos`;F.alumnos=F.alumnosOriginales.filter(n=>{let r=!e||(n.nombre||``).toLowerCase().includes(e)||(n.instrumento||``).toLowerCase().includes(e)||(n.telefono||``).toLowerCase().includes(e)||(n.familiar_nombre||``).toLowerCase().includes(e),i=t===`todos`||t===`activo`&&n.is_active||t===`inactivo`&&!n.is_active;return r&&i}),Mn()}function Tn(e=``){return xt.map(t=>`<option value="${t.value}" ${t.value===e?`selected`:``}>${t.label}</option>`).join(``)}function En(e=null){let t=e||{};return`<form class="row g-2">
     <div class="col-12">
       <label class="form-label-compact">Nombre Completo *</label>
-      <input type="text" class="form-control input-dense" id="modal-nombre" maxlength="${_n.nombreMax}" required placeholder="Juan Pérez" autocomplete="off" value="${P(t.nombre||``)}">
+      <input type="text" class="form-control input-dense" id="modal-nombre" maxlength="${L.nombreMax}" required placeholder="Juan Pérez" autocomplete="off" value="${P(t.nombre||``)}">
     </div>
     <div class="col-md-6">
       <label class="form-label-compact">Teléfono (WhatsApp) *</label>
@@ -730,11 +730,11 @@ import{n as e}from"./rolldown-runtime-tcWNtVWY.js";import{i as t}from"./supabase
     </div>
     <div class="col-md-6">
       <label class="form-label-compact">Email</label>
-      <input type="email" class="form-control input-dense" id="modal-email" maxlength="${_n.emailMax}" placeholder="representante@ejemplo.com" autocomplete="off" value="${P(t.email||``)}">
+      <input type="email" class="form-control input-dense" id="modal-email" maxlength="${L.emailMax}" placeholder="representante@ejemplo.com" autocomplete="off" value="${P(t.email||``)}">
     </div>
     <div class="col-md-6">
       <label class="form-label-compact">Cédula del Alumno</label>
-      <input type="text" class="form-control input-dense" id="modal-cedula" maxlength="${_n.cedulaMax}" placeholder="12345678" autocomplete="off" value="${P(t.cedula||``)}">
+      <input type="text" class="form-control input-dense" id="modal-cedula" maxlength="${L.cedulaMax}" placeholder="12345678" autocomplete="off" value="${P(t.cedula||``)}">
     </div>
     <div class="col-md-6">
       <label class="form-label-compact">Fecha de Nacimiento</label>
@@ -752,11 +752,11 @@ import{n as e}from"./rolldown-runtime-tcWNtVWY.js";import{i as t}from"./supabase
     </div>
     <div class="col-md-6">
       <label class="form-label-compact">Instrumento *</label>
-      <input type="text" class="form-control input-dense" id="modal-instrumento" required maxlength="${_n.sectionMax}" placeholder="Violín, Piano..." autocomplete="off" value="${P(t.instrumento||``)}">
+      <input type="text" class="form-control input-dense" id="modal-instrumento" required maxlength="${L.sectionMax}" placeholder="Violín, Piano..." autocomplete="off" value="${P(t.instrumento||``)}">
     </div>
     <div class="col-12">
       <label class="form-label-compact">Dirección</label>
-      <input type="text" class="form-control input-dense" id="modal-direccion" maxlength="${_n.direccionMax}" placeholder="Dirección completa" autocomplete="off" value="${P(t.direccion||``)}">
+      <input type="text" class="form-control input-dense" id="modal-direccion" maxlength="${L.direccionMax}" placeholder="Dirección completa" autocomplete="off" value="${P(t.direccion||``)}">
     </div>
     
     <div class="col-12 mt-3">
@@ -774,7 +774,7 @@ import{n as e}from"./rolldown-runtime-tcWNtVWY.js";import{i as t}from"./supabase
           <div class="col-md-4">
             <label class="form-label-compact">Parentesco</label>
             <select class="form-select input-dense" id="modal-contacto-emergencia-parentesco">
-              ${En(t.contacto_emergencia_parentesco)}
+              ${Tn(t.contacto_emergencia_parentesco)}
             </select>
           </div>
         </div>
@@ -796,7 +796,7 @@ import{n as e}from"./rolldown-runtime-tcWNtVWY.js";import{i as t}from"./supabase
           <div class="col-md-4">
             <label class="form-label-compact">Parentesco</label>
             <select class="form-select input-dense" id="modal-familiar-parentesco-input">
-              ${En(t.familiar_parentesco)}
+              ${Tn(t.familiar_parentesco)}
             </select>
           </div>
         </div>
@@ -829,7 +829,7 @@ import{n as e}from"./rolldown-runtime-tcWNtVWY.js";import{i as t}from"./supabase
         <label class="form-check-label" for="modal-esActivo">Alumno activo</label>
       </div>
     </div>
-  </form>`}async function On(e,t=null){let n=e.querySelector(`#modal-nombre`).value.trim(),r=e.querySelector(`#modal-email`).value.trim().toLowerCase(),a=e.querySelector(`#modal-telefono`).value.trim(),o=e.querySelector(`#modal-cedula`).value.trim(),s=e.querySelector(`#modal-fechaNacimiento`).value,c=e.querySelector(`#modal-genero`).value,l=e.querySelector(`#modal-instrumento`).value.trim(),u=e.querySelector(`#modal-familiar-nombre`).value.trim(),d=e.querySelector(`#modal-familiar-telefono-input`).value.trim()||a,f=e.querySelector(`#modal-familiar-parentesco-input`).value,p=e.querySelector(`#modal-esActivo`).checked;return n?l?a?{nombre:n,email:r||null,telefono:ln(a)||a,cedula:o||null,fecha_nacimiento:s||null,genero:c||null,instrumento:l,is_active:p,familiar_nombre:u||null,familiar_telefono:ln(d)||d||null,familiar_parentesco:f||null,contacto_emergencia_nombre:e.querySelector(`#modal-contacto-emergencia-nombre`).value.trim()||null,contacto_emergencia_telefono:ln(e.querySelector(`#modal-contacto-emergencia-telefono`).value.trim())||e.querySelector(`#modal-contacto-emergencia-telefono`).value.trim()||null,contacto_emergencia_parentesco:e.querySelector(`#modal-contacto-emergencia-parentesco`).value||null,condiciones_medicas:e.querySelector(`#modal-condiciones-medicas`).value.trim()||null,alergias:e.querySelector(`#modal-alergias`).value.trim()||null,medicamentos:e.querySelector(`#modal-medicamentos`).value.trim()||null}:(i.error(`El teléfono es obligatorio para WhatsApp`),null):(i.error(`El instrumento es obligatorio`),null):(i.error(`El nombre es obligatorio`),null)}function kn(){F.editando=null,o.open({title:`Crear Nuevo Alumno`,size:`lg`,body:Dn(),saveText:`Guardar`,onSave:async e=>{let t=await On(e);if(!t)return!1;let n=await ht(t);F.alumnosOriginales.push(n),L(),i.success(`Alumno creado exitosamente`)}})}function An(e){let t=F.alumnosOriginales.find(t=>t.id===e);if(!t){i.error(`Alumno no encontrado`);return}F.editando=e,o.open({title:`Editar Alumno`,size:`lg`,body:Dn(t),saveText:`Guardar cambios`,onSave:async e=>{try{let n=await On(e,t);if(!n)return!1;await gt(F.editando,n);let r=F.alumnosOriginales.findIndex(e=>e.id===F.editando);r!==-1&&(F.alumnosOriginales[r]={...F.alumnosOriginales[r],...n}),L(),i.success(`Alumno actualizado correctamente`)}catch(e){return console.error(`[alumnosView] Error al actualizar alumno:`,e),i.error(e.message||`Error al guardar los cambios`),!1}}})}function jn(e){let t=F.alumnosOriginales.find(t=>t.id===e);if(!t){i.error(`Alumno no encontrado`);return}F.viewingId=e,o.open({title:P(t.nombre),hideSave:!0,cancelText:`Cerrar`,size:`lg`,body:`
+  </form>`}async function Dn(e,t=null){let n=e.querySelector(`#modal-nombre`).value.trim(),r=e.querySelector(`#modal-email`).value.trim().toLowerCase(),a=e.querySelector(`#modal-telefono`).value.trim(),o=e.querySelector(`#modal-cedula`).value.trim(),s=e.querySelector(`#modal-fechaNacimiento`).value,c=e.querySelector(`#modal-genero`).value,l=e.querySelector(`#modal-instrumento`).value.trim(),u=e.querySelector(`#modal-familiar-nombre`).value.trim(),d=e.querySelector(`#modal-familiar-telefono-input`).value.trim()||a,f=e.querySelector(`#modal-familiar-parentesco-input`).value,p=e.querySelector(`#modal-esActivo`).checked;return n?l?a?{nombre:n,email:r||null,telefono:ln(a)||a,cedula:o||null,fecha_nacimiento:s||null,genero:c||null,instrumento:l,is_active:p,familiar_nombre:u||null,familiar_telefono:ln(d)||d||null,familiar_parentesco:f||null,contacto_emergencia_nombre:e.querySelector(`#modal-contacto-emergencia-nombre`).value.trim()||null,contacto_emergencia_telefono:ln(e.querySelector(`#modal-contacto-emergencia-telefono`).value.trim())||e.querySelector(`#modal-contacto-emergencia-telefono`).value.trim()||null,contacto_emergencia_parentesco:e.querySelector(`#modal-contacto-emergencia-parentesco`).value||null,condiciones_medicas:e.querySelector(`#modal-condiciones-medicas`).value.trim()||null,alergias:e.querySelector(`#modal-alergias`).value.trim()||null,medicamentos:e.querySelector(`#modal-medicamentos`).value.trim()||null}:(i.error(`El teléfono es obligatorio para WhatsApp`),null):(i.error(`El instrumento es obligatorio`),null):(i.error(`El nombre es obligatorio`),null)}function On(){F.editando=null,o.open({title:`Crear Nuevo Alumno`,size:`lg`,body:En(),saveText:`Guardar`,onSave:async e=>{let t=await Dn(e);if(!t)return!1;let n=await ht(t);F.alumnosOriginales.push(n),R(),i.success(`Alumno creado exitosamente`)}})}function kn(e){let t=F.alumnosOriginales.find(t=>t.id===e);if(!t){i.error(`Alumno no encontrado`);return}F.editando=e,o.open({title:`Editar Alumno`,size:`lg`,body:En(t),saveText:`Guardar cambios`,onSave:async e=>{try{let n=await Dn(e,t);if(!n)return!1;await gt(F.editando,n);let r=F.alumnosOriginales.findIndex(e=>e.id===F.editando);r!==-1&&(F.alumnosOriginales[r]={...F.alumnosOriginales[r],...n}),R(),i.success(`Alumno actualizado correctamente`)}catch(e){return console.error(`[alumnosView] Error al actualizar alumno:`,e),i.error(e.message||`Error al guardar los cambios`),!1}}})}function An(e){let t=F.alumnosOriginales.find(t=>t.id===e);if(!t){i.error(`Alumno no encontrado`);return}F.viewingId=e,o.open({title:P(t.nombre),hideSave:!0,cancelText:`Cerrar`,size:`lg`,body:`
       <div class="row">
         <div class="col-md-6">
           <div class="mb-2">
@@ -996,12 +996,12 @@ import{n as e}from"./rolldown-runtime-tcWNtVWY.js";import{i as t}from"./supabase
           <i class="bi bi-pencil me-1"></i> Editar Perfil
         </button>
       </div>
-    `,onShow:e=>{e.querySelector(`#modal-view-btn-edit`)?.addEventListener(`click`,()=>{o.close(),setTimeout(()=>An(t.id),300)}),e.querySelector(`#modal-view-btn-delete`)?.addEventListener(`click`,()=>{o.close(),setTimeout(()=>Mn(t.id),300)})}})}function Mn(e){let t=F.alumnosOriginales.find(t=>t.id===e);if(!t){i.error(`Alumno no encontrado`);return}F.deletingId=e,o.open({title:`⚠️ Eliminar Alumno`,size:`md`,saveText:`Eliminar`,body:`<div class="d-flex flex-column align-items-center justify-content-center py-5">
+    `,onShow:e=>{e.querySelector(`#modal-view-btn-edit`)?.addEventListener(`click`,()=>{o.close(),setTimeout(()=>kn(t.id),300)}),e.querySelector(`#modal-view-btn-delete`)?.addEventListener(`click`,()=>{o.close(),setTimeout(()=>jn(t.id),300)})}})}function jn(e){let t=F.alumnosOriginales.find(t=>t.id===e);if(!t){i.error(`Alumno no encontrado`);return}F.deletingId=e,o.open({title:`⚠️ Eliminar Alumno`,size:`md`,saveText:`Eliminar`,body:`<div class="d-flex flex-column align-items-center justify-content-center py-5">
              <div class="spinner-border text-primary mb-3" role="status">
                <span class="visually-hidden">Cargando...</span>
              </div>
              <p class="text-muted mb-0">Analizando estado de inscripciones...</p>
-           </div>`,onSave:async()=>{await _t(e),F.alumnosOriginales=F.alumnosOriginales.filter(t=>t.id!==e),L(),o.close(),i.success(`Alumno eliminado correctamente`)}});let n=document.querySelector(`#app-global-modal .app-modal-btn-save`);n&&(n.style.display=`none`),setTimeout(async()=>{try{if(F.deletingId!==e)return;let r=await bt(e),i=document.querySelector(`#app-global-modal .app-modal-body`);if(!i||F.deletingId!==e)return;n&&(n.style.display=``),r.length===0?i.innerHTML=`
+           </div>`,onSave:async()=>{await _t(e),F.alumnosOriginales=F.alumnosOriginales.filter(t=>t.id!==e),R(),o.close(),i.success(`Alumno eliminado correctamente`)}});let n=document.querySelector(`#app-global-modal .app-modal-btn-save`);n&&(n.style.display=`none`),setTimeout(async()=>{try{if(F.deletingId!==e)return;let r=await bt(e),i=document.querySelector(`#app-global-modal .app-modal-body`);if(!i||F.deletingId!==e)return;n&&(n.style.display=``),r.length===0?i.innerHTML=`
           <div class="alert alert-success d-flex align-items-start gap-3 border-0 rounded-4 p-3 mb-4" style="background: rgba(40, 167, 69, 0.08); color: #155724;">
             <i class="bi bi-person-check-fill fs-3 text-success mt-1"></i>
             <div>
@@ -1039,23 +1039,23 @@ import{n as e}from"./rolldown-runtime-tcWNtVWY.js";import{i as t}from"./supabase
             </div>
           </div>
           <p>¿Querés eliminar al alumno <strong>${P(t.nombre)}</strong> de todas formas?</p>
-        `)}},300)}function Nn(){let e=I.querySelector(`#alumnosTBody`);if(!e)return;F.alumnos.length===0?e.innerHTML=Cn():e.innerHTML=Sn(F.alumnos);let t=I.querySelector(`#emptyContainer`);t&&(t.innerHTML=F.alumnos.length===0?Cn():``);let n=I.querySelector(`.alumnos-header-premium p.text-muted`);n&&(n.textContent=`${F.alumnos.length} alumnos en total`)}function Pn(){if(F.alumnosOriginales.length===0){i.error(`No hay alumnos para exportar`);return}let e=[[`Nombre`,`Email`,`Teléfono`,`Estado`,`Fecha Nac.`,`Sección`],...F.alumnosOriginales.map(e=>[e.nombre||``,e.email||``,e.telefono||``,e.estado||`activo`,e.fecha_nacimiento||``,e.section||``])].map(e=>e.map(e=>`"${String(e).replace(/"/g,`""`)}"`).join(`,`)).join(`
-`),t=new Blob([e],{type:`text/csv;charset=utf-8;`}),n=document.createElement(`a`);n.href=URL.createObjectURL(t),n.download=`alumnos-${new Date().toISOString().split(`T`)[0]}.csv`,n.click(),i.success(`CSV exportado exitosamente`)}var R=class{constructor(e={}){this.id=e.id||null,this.nombre=e.nombre||``,this.descripcion=e.descripcion||``,this.nivel=e.nivel||``,this.duracion_anios=e.duracion_anios||null,this.activo=e.activo===void 0?!0:e.activo,this.created_at=e.created_at||null,this.updated_at=e.updated_at||null}validate(e=[]){let t=[];return!this.nombre||!this.nombre.trim()?t.push(`El nombre del programa es obligatorio`):this.nombre.length>100&&t.push(`El nombre no puede exceder los 100 caracteres`),this.nivel?e.length>0&&!e.includes(this.nivel)&&t.push(`El nivel seleccionado no es válido`):t.push(`El nivel es obligatorio`),this.descripcion&&this.descripcion.length>500&&t.push(`La descripción no puede exceder los 500 caracteres`),this.duracion_anios!==null&&(isNaN(this.duracion_anios)||this.duracion_anios<0)&&t.push(`La duración debe ser un número positivo`),t}toJSON(){return{nombre:this.nombre.trim(),descripcion:this.descripcion?this.descripcion.trim():``,nivel:this.nivel,duracion_anios:this.duracion_anios,activo:this.activo}}},Fn=[{value:``,label:`Sin nivel específico`},{value:`1`,label:`1° Año`},{value:`2`,label:`2° Año`},{value:`3`,label:`3° Año`},{value:`4`,label:`4° Año`},{value:`5`,label:`5° Año`},{value:`6`,label:`6° Año`},{value:`inicial`,label:`Nivel Inicial`},{value:`intermedio`,label:`Nivel Intermedio`},{value:`avanzado`,label:`Nivel Avanzado`},{value:`preuniversitario`,label:`Pre-Universitario`}];function In(e){let t=Fn.find(t=>t.value===e);return t?t.label:e||`-`}async function Ln(){let{data:e,error:n}=await t.from(`programas`).select(`*`).order(`nombre`,{ascending:!0});if(n)throw console.error(`Error cargando programas:`,n.message),n;return(e||[]).map(e=>new R(e))}async function Rn(e){let n=new R(e),r=Fn.map(e=>e.value).filter(Boolean),i=n.validate(r);if(i.length>0)throw Error(i.join(`. `));let{data:a,error:o}=await t.from(`programas`).insert([n.toJSON()]).select();if(o)throw console.error(`Error creando programa:`,o.message),o;return new R(a[0])}async function zn(e,n){let r=new R(n),i=Fn.map(e=>e.value).filter(Boolean),a=r.validate(i);if(a.length>0)throw Error(a.join(`. `));let{data:o,error:s}=await t.from(`programas`).update(r.toJSON()).eq(`id`,e).select();if(s)throw console.error(`Error actualizando programa:`,s.message),s;return new R(o[0])}async function Bn(e){let{error:n}=await t.from(`programas`).delete().eq(`id`,e);if(n)throw console.error(`Error eliminando programa:`,n.message),n}async function Vn(e){let{jsPDF:t}=await a(async()=>{let{jsPDF:e}=await import(`./jspdf.es.min-DjkFa24L.js`);return{jsPDF:e}},__vite__mapDeps([0,1,2,3])),{default:n}=await a(async()=>{let{default:e}=await import(`./jspdf.plugin.autotable-BzE1EGzy.js`);return{default:e}},[]),r=new t;r.setFontSize(18),r.text(`Programas Académicos`,14,22),r.setFontSize(10),r.text(`Fecha: ${new Date().toLocaleDateString(`es-ES`)}`,14,30),n(r,{head:[[`Nombre`,`Nivel`,`Descripción`,`Estado`,`Creado`]],body:e.map(e=>[e.nombre,In(e.nivel),e.descripcion?e.descripcion.substring(0,50)+(e.descripcion.length>50?`...`:``):`-`,e.activo?`Activo`:`Inactivo`,e.created_at?new Date(e.created_at).toLocaleDateString(`es-ES`):`-`]),startY:35,styles:{fontSize:9},headStyles:{fillColor:[41,128,185]}}),r.save(`programas.pdf`)}var z={programas:[],programasOriginales:[],cargando:!1},Hn={nombreMax:100,descripcionMax:500};function B(e){return e?String(e).replace(/&/g,`&amp;`).replace(/</g,`&lt;`).replace(/>/g,`&gt;`).replace(/"/g,`&quot;`).replace(/'/g,`&#039;`):``}function Un(e){return e?new Date(e).toLocaleDateString(`es-ES`,{year:`numeric`,month:`short`,day:`numeric`}):`N/A`}function Wn(e){if(!e)return`?`;let t=String(e).trim().split(/\s+/);return t.length===1?t[0].charAt(0).toUpperCase():(t[0].charAt(0)+t[t.length-1].charAt(0)).toUpperCase()}function Gn(e=``){return Fn.map(t=>`<option value="${t.value}" ${t.value===e?`selected`:``}>${t.label}</option>`).join(``)}async function Kn(e){try{z.cargando=!0,qn(e);let t=await Ln();z.programas=t,z.programasOriginales=[...t],z.cargando=!1,Yn(e),Qn(e)}catch(t){console.error(`[ProgramasView]`,t),Jn(e,t.message)}}function qn(e){e.innerHTML=`
+        `)}},300)}function Mn(){let e=I.querySelector(`#alumnosTBody`);if(!e)return;F.alumnos.length===0?e.innerHTML=Sn():e.innerHTML=xn(F.alumnos);let t=I.querySelector(`#emptyContainer`);t&&(t.innerHTML=F.alumnos.length===0?Sn():``);let n=I.querySelector(`.alumnos-header-premium p.text-muted`);n&&(n.textContent=`${F.alumnos.length} alumnos en total`)}function Nn(){if(F.alumnosOriginales.length===0){i.error(`No hay alumnos para exportar`);return}let e=[[`Nombre`,`Email`,`Teléfono`,`Estado`,`Fecha Nac.`,`Sección`],...F.alumnosOriginales.map(e=>[e.nombre||``,e.email||``,e.telefono||``,e.estado||`activo`,e.fecha_nacimiento||``,e.section||``])].map(e=>e.map(e=>`"${String(e).replace(/"/g,`""`)}"`).join(`,`)).join(`
+`),t=new Blob([e],{type:`text/csv;charset=utf-8;`}),n=document.createElement(`a`);n.href=URL.createObjectURL(t),n.download=`alumnos-${new Date().toISOString().split(`T`)[0]}.csv`,n.click(),i.success(`CSV exportado exitosamente`)}var z=class{constructor(e={}){this.id=e.id||null,this.nombre=e.nombre||``,this.descripcion=e.descripcion||``,this.nivel=e.nivel||``,this.duracion_anios=e.duracion_anios||null,this.activo=e.activo===void 0?!0:e.activo,this.created_at=e.created_at||null,this.updated_at=e.updated_at||null}validate(e=[]){let t=[];return!this.nombre||!this.nombre.trim()?t.push(`El nombre del programa es obligatorio`):this.nombre.length>100&&t.push(`El nombre no puede exceder los 100 caracteres`),this.nivel?e.length>0&&!e.includes(this.nivel)&&t.push(`El nivel seleccionado no es válido`):t.push(`El nivel es obligatorio`),this.descripcion&&this.descripcion.length>500&&t.push(`La descripción no puede exceder los 500 caracteres`),this.duracion_anios!==null&&(isNaN(this.duracion_anios)||this.duracion_anios<0)&&t.push(`La duración debe ser un número positivo`),t}toJSON(){return{nombre:this.nombre.trim(),descripcion:this.descripcion?this.descripcion.trim():``,nivel:this.nivel,duracion_anios:this.duracion_anios,activo:this.activo}}},Pn=[{value:``,label:`Sin nivel específico`},{value:`1`,label:`1° Año`},{value:`2`,label:`2° Año`},{value:`3`,label:`3° Año`},{value:`4`,label:`4° Año`},{value:`5`,label:`5° Año`},{value:`6`,label:`6° Año`},{value:`inicial`,label:`Nivel Inicial`},{value:`intermedio`,label:`Nivel Intermedio`},{value:`avanzado`,label:`Nivel Avanzado`},{value:`preuniversitario`,label:`Pre-Universitario`}];function Fn(e){let t=Pn.find(t=>t.value===e);return t?t.label:e||`-`}async function In(){let{data:e,error:n}=await t.from(`programas`).select(`*`).order(`nombre`,{ascending:!0});if(n)throw console.error(`Error cargando programas:`,n.message),n;return(e||[]).map(e=>new z(e))}async function Ln(e){let n=new z(e),r=Pn.map(e=>e.value).filter(Boolean),i=n.validate(r);if(i.length>0)throw Error(i.join(`. `));let{data:a,error:o}=await t.from(`programas`).insert([n.toJSON()]).select();if(o)throw console.error(`Error creando programa:`,o.message),o;return new z(a[0])}async function Rn(e,n){let r=new z(n),i=Pn.map(e=>e.value).filter(Boolean),a=r.validate(i);if(a.length>0)throw Error(a.join(`. `));let{data:o,error:s}=await t.from(`programas`).update(r.toJSON()).eq(`id`,e).select();if(s)throw console.error(`Error actualizando programa:`,s.message),s;return new z(o[0])}async function zn(e){let{error:n}=await t.from(`programas`).delete().eq(`id`,e);if(n)throw console.error(`Error eliminando programa:`,n.message),n}async function Bn(e){let{jsPDF:t}=await a(async()=>{let{jsPDF:e}=await import(`./jspdf.es.min-DjkFa24L.js`);return{jsPDF:e}},__vite__mapDeps([0,1,2,3])),{default:n}=await a(async()=>{let{default:e}=await import(`./jspdf.plugin.autotable-BzE1EGzy.js`);return{default:e}},[]),r=new t;r.setFontSize(18),r.text(`Programas Académicos`,14,22),r.setFontSize(10),r.text(`Fecha: ${new Date().toLocaleDateString(`es-ES`)}`,14,30),n(r,{head:[[`Nombre`,`Nivel`,`Descripción`,`Estado`,`Creado`]],body:e.map(e=>[e.nombre,Fn(e.nivel),e.descripcion?e.descripcion.substring(0,50)+(e.descripcion.length>50?`...`:``):`-`,e.activo?`Activo`:`Inactivo`,e.created_at?new Date(e.created_at).toLocaleDateString(`es-ES`):`-`]),startY:35,styles:{fontSize:9},headStyles:{fillColor:[41,128,185]}}),r.save(`programas.pdf`)}var B={programas:[],programasOriginales:[],cargando:!1},Vn={nombreMax:100,descripcionMax:500};function V(e){return e?String(e).replace(/&/g,`&amp;`).replace(/</g,`&lt;`).replace(/>/g,`&gt;`).replace(/"/g,`&quot;`).replace(/'/g,`&#039;`):``}function Hn(e){return e?new Date(e).toLocaleDateString(`es-ES`,{year:`numeric`,month:`short`,day:`numeric`}):`N/A`}function Un(e){if(!e)return`?`;let t=String(e).trim().split(/\s+/);return t.length===1?t[0].charAt(0).toUpperCase():(t[0].charAt(0)+t[t.length-1].charAt(0)).toUpperCase()}function Wn(e=``){return Pn.map(t=>`<option value="${t.value}" ${t.value===e?`selected`:``}>${t.label}</option>`).join(``)}async function Gn(e){try{B.cargando=!0,Kn(e);let t=await In();B.programas=t,B.programasOriginales=[...t],B.cargando=!1,Jn(e),Qn(e)}catch(t){console.error(`[ProgramasView]`,t),qn(e,t.message)}}function Kn(e){e.innerHTML=`
     <div class="d-flex justify-content-center align-items-center" style="min-height: 400px;">
       <div class="text-center">
         <div class="spinner-border text-primary mb-3" role="status"></div>
         <p class="text-muted">Cargando programas...</p>
       </div>
     </div>
-  `}function Jn(e,t){e.innerHTML=`
+  `}function qn(e,t){e.innerHTML=`
     <div class="container mt-5">
       <div class="alert alert-danger" role="alert">
         <h4 class="alert-heading"><i class="bi bi-exclamation-triangle"></i> Error al cargar</h4>
-        <p>${B(t)}</p>
+        <p>${V(t)}</p>
         <button class="btn btn-primary btn-sm" id="retryBtn">Reintentar</button>
       </div>
     </div>
-  `,e.querySelector(`#retryBtn`)?.addEventListener(`click`,()=>Kn(e))}function Yn(e){e.innerHTML=`
+  `,e.querySelector(`#retryBtn`)?.addEventListener(`click`,()=>Gn(e))}function Jn(e){e.innerHTML=`
     <div class="page-container">
       <div class="programas-header-premium mb-4">
         <div class="d-flex align-items-center gap-3">
@@ -1064,7 +1064,7 @@ import{n as e}from"./rolldown-runtime-tcWNtVWY.js";import{i as t}from"./supabase
           </div>
           <div>
             <h1 class="programas-title-premium page-title mb-0">Programas</h1>
-            <p class="text-muted small mb-0">${z.programas.length} programas en total</p>
+            <p class="text-muted small mb-0">${B.programas.length} programas en total</p>
           </div>
         </div>
         
@@ -1096,14 +1096,14 @@ import{n as e}from"./rolldown-runtime-tcWNtVWY.js";import{i as t}from"./supabase
 
       <div class="page-glass rounded w-100">
         <div class="list-group list-group-flush w-100" id="programasTBody">
-          ${Xn(z.programas)}
+          ${Yn(B.programas)}
         </div>
         <div id="emptyContainer">
-          ${z.programas.length===0?Zn():``}
+          ${B.programas.length===0?Xn():``}
         </div>
       </div>
     </div>
-  `}function Xn(e){return e.length?e.map(e=>{let t=Wn(e.nombre),n=In(e.nivel),r=B(e.descripcion||`Sin descripción`),i=`border-accent-${e.activo?`success`:`secondary`}`,a=`bg-${e.activo?`success`:`secondary`}`;return`
+  `}function Yn(e){return e.length?e.map(e=>{let t=Un(e.nombre),n=Fn(e.nivel),r=V(e.descripcion||`Sin descripción`),i=`border-accent-${e.activo?`success`:`secondary`}`,a=`bg-${e.activo?`success`:`secondary`}`;return`
       <div class="list-group-item list-group-item-action d-flex align-items-center justify-content-between p-3 w-100 border-start-accent ${i}" data-id="${e.id}" style="cursor: pointer;">
         <div class="d-flex align-items-center gap-3 flex-grow-1 overflow-hidden">
           <div class="position-relative flex-shrink-0">
@@ -1113,7 +1113,7 @@ import{n as e}from"./rolldown-runtime-tcWNtVWY.js";import{i as t}from"./supabase
             <span class="position-absolute bottom-0 end-0 p-1 ${a} border border-light rounded-circle" style="transform: translate(10%, 10%);"></span>
           </div>
           <div class="d-flex flex-column flex-grow-1 overflow-hidden pe-3">
-            <span class="fw-bold text-truncate" style="font-size: 1.05rem;">${B(e.nombre)}</span>
+            <span class="fw-bold text-truncate" style="font-size: 1.05rem;">${V(e.nombre)}</span>
             <small class="text-muted text-truncate">${n} • ${r.substring(0,50)}${r.length>50?`...`:``}</small>
           </div>
         </div>
@@ -1121,21 +1121,21 @@ import{n as e}from"./rolldown-runtime-tcWNtVWY.js";import{i as t}from"./supabase
           <i class="bi bi-chevron-right" style="font-size: 1.1rem; transition: transform 0.2s ease;"></i>
         </div>
       </div>
-    `}).join(``):``}function Zn(){return`
+    `}).join(``):``}function Xn(){return`
     <div class="text-center py-5 text-muted">
       <i class="bi bi-inbox fs-1 d-block mb-2"></i>
       <p>No hay programas que coincidan con la búsqueda.</p>
     </div>
-  `}var V=null;function Qn(e){V=e,e.querySelector(`#btnAgregarPrograma`)?.addEventListener(`click`,()=>tr()),e.querySelector(`#btnExportarPDF`)?.addEventListener(`click`,async()=>{try{await Vn(z.programas),i.success(`PDF generado exitosamente`)}catch{i.error(`Error al generar PDF`)}}),e.querySelector(`#buscar`)?.addEventListener(`input`,$n),e.querySelector(`#filtroEstado`)?.addEventListener(`change`,$n),e.querySelector(`#programasTBody`)?.addEventListener(`click`,e=>{let t=e.target.closest(`button[data-action]`);if(!t){let t=e.target.closest(`.list-group-item[data-id]`);t&&ir(t.dataset.id);return}let{action:n,id:r}=t.dataset;n===`edit`&&nr(r),n===`delete`&&ar(r)})}function $n(){let e=V.querySelector(`#buscar`)?.value.trim().toLowerCase()||``,t=V.querySelector(`#filtroEstado`)?.value||`todos`;z.programas=z.programasOriginales.filter(n=>{let r=!e||n.nombre.toLowerCase().includes(e)||(n.descripcion||``).toLowerCase().includes(e),i=t===`todos`||t===`activo`&&n.activo||t===`inactivo`&&!n.activo;return r&&i}),er()}function er(){let e=V.querySelector(`#programasTBody`);e&&(e.innerHTML=Xn(z.programas));let t=V.querySelector(`#emptyContainer`);t&&(t.innerHTML=z.programas.length===0?Zn():``)}function tr(){rr({title:`Nuevo Programa`,saveText:`Crear Programa`})}function nr(e){let t=z.programasOriginales.find(t=>t.id===e);if(!t)return i.error(`Programa no encontrado`);rr({title:`Editar Programa`,saveText:`Guardar Cambios`,programa:t})}function rr({title:e,saveText:t,programa:n=null}){o.open({title:e,saveText:t,body:`
+  `}var Zn=null;function Qn(e){Zn=e,e.querySelector(`#btnAgregarPrograma`)?.addEventListener(`click`,()=>tr()),e.querySelector(`#btnExportarPDF`)?.addEventListener(`click`,async()=>{try{await Bn(B.programas),i.success(`PDF generado exitosamente`)}catch{i.error(`Error al generar PDF`)}}),e.querySelector(`#buscar`)?.addEventListener(`input`,$n),e.querySelector(`#filtroEstado`)?.addEventListener(`change`,$n),e.querySelector(`#programasTBody`)?.addEventListener(`click`,e=>{let t=e.target.closest(`button[data-action]`);if(!t){let t=e.target.closest(`.list-group-item[data-id]`);t&&ir(t.dataset.id);return}let{action:n,id:r}=t.dataset;n===`edit`&&nr(r),n===`delete`&&ar(r)})}function $n(){let e=Zn.querySelector(`#buscar`)?.value.trim().toLowerCase()||``,t=Zn.querySelector(`#filtroEstado`)?.value||`todos`;B.programas=B.programasOriginales.filter(n=>{let r=!e||n.nombre.toLowerCase().includes(e)||(n.descripcion||``).toLowerCase().includes(e),i=t===`todos`||t===`activo`&&n.activo||t===`inactivo`&&!n.activo;return r&&i}),er()}function er(){let e=Zn.querySelector(`#programasTBody`);e&&(e.innerHTML=Yn(B.programas));let t=Zn.querySelector(`#emptyContainer`);t&&(t.innerHTML=B.programas.length===0?Xn():``)}function tr(){rr({title:`Nuevo Programa`,saveText:`Crear Programa`})}function nr(e){let t=B.programasOriginales.find(t=>t.id===e);if(!t)return i.error(`Programa no encontrado`);rr({title:`Editar Programa`,saveText:`Guardar Cambios`,programa:t})}function rr({title:e,saveText:t,programa:n=null}){o.open({title:e,saveText:t,body:`
       <form id="form-programa" class="row g-3">
         <div class="col-12">
           <label class="form-label-compact">Nombre del Programa *</label>
-          <input type="text" class="form-control input-dense" id="prog-nombre" required maxlength="${Hn.nombreMax}" value="${B(n?.nombre||``)}">
+          <input type="text" class="form-control input-dense" id="prog-nombre" required maxlength="${Vn.nombreMax}" value="${V(n?.nombre||``)}">
         </div>
         <div class="col-md-6">
           <label class="form-label-compact">Nivel / Año *</label>
           <select class="form-select input-dense" id="prog-nivel">
-            ${Gn(n?.nivel||``)}
+            ${Wn(n?.nivel||``)}
           </select>
         </div>
         <div class="col-md-6">
@@ -1144,7 +1144,7 @@ import{n as e}from"./rolldown-runtime-tcWNtVWY.js";import{i as t}from"./supabase
         </div>
         <div class="col-12">
           <label class="form-label-compact">Descripción</label>
-          <textarea class="form-control input-dense" id="prog-descripcion" rows="3" maxlength="${Hn.descripcionMax}">${B(n?.descripcion||``)}</textarea>
+          <textarea class="form-control input-dense" id="prog-descripcion" rows="3" maxlength="${Vn.descripcionMax}">${V(n?.descripcion||``)}</textarea>
         </div>
         <div class="col-12">
           <div class="form-check">
@@ -1153,14 +1153,14 @@ import{n as e}from"./rolldown-runtime-tcWNtVWY.js";import{i as t}from"./supabase
           </div>
         </div>
       </form>
-    `,onSave:async e=>{let t={nombre:e.querySelector(`#prog-nombre`).value.trim(),nivel:e.querySelector(`#prog-nivel`).value,duracion_anios:e.querySelector(`#prog-duracion`).value?parseFloat(e.querySelector(`#prog-duracion`).value):null,descripcion:e.querySelector(`#prog-descripcion`).value.trim(),activo:e.querySelector(`#prog-activo`).checked},r=new R(t),a=Fn.map(e=>e.value).filter(Boolean),o=r.validate(a);if(o.length>0)return i.error(o[0]),!1;try{if(n){let e=await zn(n.id,t),r=z.programasOriginales.findIndex(e=>e.id===n.id);z.programasOriginales[r]=e,i.success(`Programa actualizado`)}else{let e=await Rn(t);z.programasOriginales.unshift(e),i.success(`Programa creado`)}return $n(),!0}catch(e){return i.error(e.message),!1}}})}function ir(e){let t=z.programasOriginales.find(t=>t.id===e);t&&o.open({title:`Perfil del Programa`,hideSave:!0,cancelText:`Cerrar`,body:`
+    `,onSave:async e=>{let t={nombre:e.querySelector(`#prog-nombre`).value.trim(),nivel:e.querySelector(`#prog-nivel`).value,duracion_anios:e.querySelector(`#prog-duracion`).value?parseFloat(e.querySelector(`#prog-duracion`).value):null,descripcion:e.querySelector(`#prog-descripcion`).value.trim(),activo:e.querySelector(`#prog-activo`).checked},r=new z(t),a=Pn.map(e=>e.value).filter(Boolean),o=r.validate(a);if(o.length>0)return i.error(o[0]),!1;try{if(n){let e=await Rn(n.id,t),r=B.programasOriginales.findIndex(e=>e.id===n.id);B.programasOriginales[r]=e,i.success(`Programa actualizado`)}else{let e=await Ln(t);B.programasOriginales.unshift(e),i.success(`Programa creado`)}return $n(),!0}catch(e){return i.error(e.message),!1}}})}function ir(e){let t=B.programasOriginales.find(t=>t.id===e);t&&o.open({title:`Perfil del Programa`,hideSave:!0,cancelText:`Cerrar`,body:`
       <div class="programa-profile">
         <!-- Header Banner / Avatar Section -->
         <div class="d-flex align-items-center gap-3 mb-4 pb-3 border-bottom border-light-subtle">
           <div class="position-relative" style="flex-shrink: 0;">
             <div class="avatar-large bg-primary bg-opacity-10 text-primary border border-primary-subtle d-flex align-items-center justify-content-center fw-bold" 
                  style="width: 60px; height: 60px; font-size: 1.6rem; border-radius: 50%;">
-              ${Wn(t.nombre)}
+              ${Un(t.nombre)}
             </div>
             <span class="position-absolute bottom-0 end-0 p-1 bg-${t.activo?`success`:`danger`} border border-light rounded-circle" 
                   style="transform: translate(10%, 10%);"
@@ -1168,8 +1168,8 @@ import{n as e}from"./rolldown-runtime-tcWNtVWY.js";import{i as t}from"./supabase
             </span>
           </div>
           <div class="overflow-hidden">
-            <h4 class="h5 mb-1 fw-bold text-truncate" style="letter-spacing: -0.01em;">${B(t.nombre)}</h4>
-            <span class="badge bg-primary bg-opacity-10 text-primary border border-primary-subtle">${In(t.nivel)}</span>
+            <h4 class="h5 mb-1 fw-bold text-truncate" style="letter-spacing: -0.01em;">${V(t.nombre)}</h4>
+            <span class="badge bg-primary bg-opacity-10 text-primary border border-primary-subtle">${Fn(t.nivel)}</span>
           </div>
         </div>
 
@@ -1206,7 +1206,7 @@ import{n as e}from"./rolldown-runtime-tcWNtVWY.js";import{i as t}from"./supabase
                 <i class="bi bi-file-text me-1 text-primary"></i> Descripción
               </label>
               <p class="mb-0 programa-profile-desc" style="font-size: 0.9rem; line-height: 1.5; white-space: pre-line;">
-                ${B(t.descripcion||`Sin descripción detallada.`)}
+                ${V(t.descripcion||`Sin descripción detallada.`)}
               </p>
             </div>
           </div>
@@ -1218,13 +1218,13 @@ import{n as e}from"./rolldown-runtime-tcWNtVWY.js";import{i as t}from"./supabase
                   <label class="programa-profile-label small text-uppercase fw-bold mb-1 d-block" style="font-size: 0.72rem; letter-spacing: 0.05em;">
                     <i class="bi bi-calendar-check me-1"></i> Creado
                   </label>
-                  <p class="mb-0 programa-profile-value small" style="opacity: 0.85;">${Un(t.created_at)}</p>
+                  <p class="mb-0 programa-profile-value small" style="opacity: 0.85;">${Hn(t.created_at)}</p>
                 </div>
                 <div class="col-sm-6">
                   <label class="programa-profile-label small text-uppercase fw-bold mb-1 d-block" style="font-size: 0.72rem; letter-spacing: 0.05em;">
                     <i class="bi bi-calendar-event me-1"></i> Modificado
                   </label>
-                  <p class="mb-0 programa-profile-value small" style="opacity: 0.85;">${t.updated_at?Un(t.updated_at):Un(t.created_at)}</p>
+                  <p class="mb-0 programa-profile-value small" style="opacity: 0.85;">${t.updated_at?Hn(t.updated_at):Hn(t.created_at)}</p>
                 </div>
               </div>
             </div>
@@ -1241,30 +1241,30 @@ import{n as e}from"./rolldown-runtime-tcWNtVWY.js";import{i as t}from"./supabase
           </div>
         </div>
       </div>
-    `,onShow:n=>{n.querySelector(`#view-edit-btn`).addEventListener(`click`,()=>{o.close(),setTimeout(()=>nr(e),300)}),n.querySelector(`#view-delete-btn`).addEventListener(`click`,()=>{o.close(),setTimeout(()=>ar(e),300)}),n.querySelector(`#copy-id-btn`)?.addEventListener(`click`,()=>{navigator.clipboard.writeText(t.id),i.success(`ID copiado al portapapeles`)})}})}function ar(e){let t=z.programasOriginales.find(t=>t.id===e);t&&o.open({title:`⚠️ Eliminar Programa`,saveText:`Confirmar Eliminación`,body:`
-      <p>¿Estás seguro de eliminar el programa <strong>${B(t.nombre)}</strong>?</p>
+    `,onShow:n=>{n.querySelector(`#view-edit-btn`).addEventListener(`click`,()=>{o.close(),setTimeout(()=>nr(e),300)}),n.querySelector(`#view-delete-btn`).addEventListener(`click`,()=>{o.close(),setTimeout(()=>ar(e),300)}),n.querySelector(`#copy-id-btn`)?.addEventListener(`click`,()=>{navigator.clipboard.writeText(t.id),i.success(`ID copiado al portapapeles`)})}})}function ar(e){let t=B.programasOriginales.find(t=>t.id===e);t&&o.open({title:`⚠️ Eliminar Programa`,saveText:`Confirmar Eliminación`,body:`
+      <p>¿Estás seguro de eliminar el programa <strong>${V(t.nombre)}</strong>?</p>
       <p class="text-danger small mb-0"><i class="bi bi-exclamation-triangle-fill me-1"></i> Esta acción no se puede deshacer.</p>
-    `,onSave:async()=>{try{return await Bn(e),z.programasOriginales=z.programasOriginales.filter(t=>t.id!==e),$n(),i.success(`Programa eliminado`),!0}catch{return i.error(`Error al eliminar`),!1}}})}function or(e){return e?{...e,user_id:e.user_id??null,nombre:e.nombre_completo??``,email:e.correo??``,telefono:e.tlf??``,instrumento:e.especialidad??``,bio:e.resena??``,is_active:e.activo??!0,especialidades:Array.isArray(e.especialidades)?e.especialidades:[]}:null}async function sr(){let{data:e,error:n}=await t.from(`maestros`).select(`*`).order(`nombre_completo`,{ascending:!0});if(n)throw console.error(`Error cargando maestros:`,n.message),Error(`No se pudieron cargar los maestros`);return e.map(or)}async function cr(e){let n=(e.nombre||e.nombre_completo||``).trim();if(!n)throw Error(`El nombre es obligatorio`);let r={nombre_completo:n,correo:(e.email||e.correo||``).trim().toLowerCase()||null,tlf:(e.telefono||e.tlf||``).trim()||null,especialidad:(e.instrumento||e.especialidad||``).trim()||null,resena:(e.bio||e.resena||``).trim()||null,activo:e.is_active===void 0?e.activo===void 0?!0:e.activo:e.is_active,especialidades:Array.isArray(e.especialidades)?e.especialidades:[],user_id:e.user_id||null},{data:i,error:a}=await t.from(`maestros`).insert([r]).select();if(a)throw console.error(`Error creando maestro:`,a.message),Error(`No se pudo crear el maestro`);return or(i[0])}async function lr(e,n){let r={},i=n.nombre||n.nombre_completo;i!==void 0&&(r.nombre_completo=i.trim());let a=n.email||n.correo;a!==void 0&&(r.correo=a.trim().toLowerCase());let o=n.telefono||n.tlf;o!==void 0&&(r.tlf=o.trim());let s=n.instrumento||n.especialidad;s!==void 0&&(r.especialidad=s.trim());let c=n.bio||n.resena;c!==void 0&&(r.resena=c.trim()),n.is_active!==void 0&&(r.activo=n.is_active),n.activo!==void 0&&(r.activo=n.activo),n.especialidades!==void 0&&(r.especialidades=Array.isArray(n.especialidades)?n.especialidades:[]);let{data:l,error:u}=await t.from(`maestros`).update(r).eq(`id`,e).select();if(u)throw console.error(`Error actualizando maestro:`,u.message),Error(`No se pudo actualizar el maestro`);return or(l[0])}async function ur(e){let{error:n}=await t.from(`maestros`).update({activo:!1}).eq(`id`,e);if(n)throw console.error(`Error inactivando maestro:`,n.message),Error(`No se pudo desactivar el maestro`)}async function dr(e){let{error:n}=await t.from(`maestros`).update({activo:!0}).eq(`id`,e);if(n)throw console.error(`Error activando maestro:`,n.message),Error(`No se pudo activar el maestro`)}async function fr(e){let{data:n,error:r}=await t.from(`maestros`).select(`id`).eq(`correo`,e.trim().toLowerCase()).maybeSingle();return r&&r.code!==`PGRST116`&&console.error(`Error validando email:`,r.message),!!n}function H(e){return e?e.replace(/[&<>]/g,function(e){return e===`&`?`&amp;`:e===`<`?`&lt;`:e===`>`?`&gt;`:e}):``}function pr(e){return e?`success`:`secondary`}function mr(e){return e?`Activo`:`Inactivo`}function hr(e){return e?e.split(` `).map(e=>e[0]).join(``).toUpperCase().slice(0,2):`?`}var U={maestros:[],salones:[],programas:[],alumnos:[],onSuccess:null},gr={nombreMax:100,notasMax:500};async function _r(e=null,t={}){U={...U,...t};let n=!!e,r=[],a=[];if(n){i.info(`Cargando datos de la clase...`);let t=await u(e.id);r=(t||[]).map(e=>e.alumno_id),a=t||[]}let s=n?`Editar Clase: ${e.nombre}`:`Nueva Clase`,c=n?`Guardar Cambios`:`Crear Clase`;o.open({title:s,saveText:c,size:`lg`,body:vr(e,r,a),onShow:t=>{br(t,e)},onSave:async t=>await xr(t,e)})}function vr(e,t,n=[]){return`
+    `,onSave:async()=>{try{return await zn(e),B.programasOriginales=B.programasOriginales.filter(t=>t.id!==e),$n(),i.success(`Programa eliminado`),!0}catch{return i.error(`Error al eliminar`),!1}}})}function or(e){return e?{...e,user_id:e.user_id??null,nombre:e.nombre_completo??``,email:e.correo??``,telefono:e.tlf??``,instrumento:e.especialidad??``,bio:e.resena??``,is_active:e.activo??!0,especialidades:Array.isArray(e.especialidades)?e.especialidades:[]}:null}async function sr(){let{data:e,error:n}=await t.from(`maestros`).select(`*`).order(`nombre_completo`,{ascending:!0});if(n)throw console.error(`Error cargando maestros:`,n.message),Error(`No se pudieron cargar los maestros`);return e.map(or)}async function cr(e,n){let r={},i=n.nombre||n.nombre_completo;i!==void 0&&(r.nombre_completo=i.trim());let a=n.email||n.correo;a!==void 0&&(r.correo=a.trim().toLowerCase());let o=n.telefono||n.tlf;o!==void 0&&(r.tlf=o.trim());let s=n.instrumento||n.especialidad;s!==void 0&&(r.especialidad=s.trim());let c=n.bio||n.resena;c!==void 0&&(r.resena=c.trim()),n.is_active!==void 0&&(r.activo=n.is_active),n.activo!==void 0&&(r.activo=n.activo),n.especialidades!==void 0&&(r.especialidades=Array.isArray(n.especialidades)?n.especialidades:[]);let{data:l,error:u}=await t.from(`maestros`).update(r).eq(`id`,e).select();if(u)throw console.error(`Error actualizando maestro:`,u.message),Error(`No se pudo actualizar el maestro`);return or(l[0])}async function lr(e){let{error:n}=await t.from(`maestros`).update({activo:!1}).eq(`id`,e);if(n)throw console.error(`Error inactivando maestro:`,n.message),Error(`No se pudo desactivar el maestro`)}async function ur(e){let{error:n}=await t.from(`maestros`).update({activo:!0}).eq(`id`,e);if(n)throw console.error(`Error activando maestro:`,n.message),Error(`No se pudo activar el maestro`)}async function dr(e){let{data:n,error:r}=await t.from(`maestros`).select(`id`).eq(`correo`,e.trim().toLowerCase()).maybeSingle();return r&&r.code!==`PGRST116`&&console.error(`Error validando email:`,r.message),!!n}function H(e){return e?e.replace(/[&<>]/g,function(e){return e===`&`?`&amp;`:e===`<`?`&lt;`:e===`>`?`&gt;`:e}):``}function fr(e){return e?`success`:`secondary`}function pr(e){return e?`Activo`:`Inactivo`}function mr(e){return e?e.split(` `).map(e=>e[0]).join(``).toUpperCase().slice(0,2):`?`}var U={maestros:[],salones:[],programas:[],alumnos:[],onSuccess:null},hr={nombreMax:100,notasMax:500};async function gr(e=null,t={}){U={...U,...t};let n=!!e,r=[],a=[];if(n){i.info(`Cargando datos de la clase...`);let t=await u(e.id);r=(t||[]).map(e=>e.alumno_id),a=t||[]}let s=n?`Editar Clase: ${e.nombre}`:`Nueva Clase`,c=n?`Guardar Cambios`:`Crear Clase`;o.open({title:s,saveText:c,size:`lg`,body:_r(e,r,a),onShow:t=>{yr(t,e)},onSave:async t=>await br(t,e)})}function _r(e,t,n=[]){return`
     <form class="row g-3" id="formClase">
       <div class="col-md-6">
         <label class="form-label-compact">Nombre de la Clase *</label>
-        <input type="text" class="form-control input-dense" id="modal-nombre" required placeholder="Ej: Violín Básico A" value="${f(e?.nombre||``)}" maxlength="${gr.nombreMax}">
+        <input type="text" class="form-control input-dense" id="modal-nombre" required placeholder="Ej: Violín Básico A" value="${f(e?.nombre||``)}" maxlength="${hr.nombreMax}">
       </div>
       <div class="col-md-6">
         <label class="form-label-compact">Instrumento *</label>
         <input type="text" class="form-control input-dense" id="modal-instrumento" list="instrumentos-list" required placeholder="Seleccionar..." value="${f(e?.instrumento||``)}">
-        ${Er()}
+        ${Tr()}
       </div>
       <div class="col-md-6">
         <label class="form-label-compact">Programa *</label>
         <select class="form-select input-dense" id="modal-programa_id" required>
-          ${wr(e?.programa_id)}
+          ${Cr(e?.programa_id)}
         </select>
       </div>
       <div class="col-md-6">
         <label class="form-label-compact">Maestro Titular *</label>
         <select class="form-select input-dense" id="modal-maestro_id" required>
-          ${Sr(e?.maestro_principal_id)}
+          ${xr(e?.maestro_principal_id)}
         </select>
       </div>
       <div class="col-md-6">
@@ -1275,7 +1275,7 @@ import{n as e}from"./rolldown-runtime-tcWNtVWY.js";import{i as t}from"./supabase
           </div>
         </div>
         <select class="form-select input-dense" id="modal-maestro_suplente_id" style="display: ${e?.tiene_suplente?`block`:`none`}; margin-top: 8px;">
-          ${Sr(e?.maestro_suplente_id)}
+          ${xr(e?.maestro_suplente_id)}
         </select>
       </div>
       <div class="col-md-6">
@@ -1285,7 +1285,7 @@ import{n as e}from"./rolldown-runtime-tcWNtVWY.js";import{i as t}from"./supabase
       <div class="col-md-6">
         <label class="form-label-compact">Estado</label>
         <select class="form-select input-dense" id="modal-estado">
-          ${Tr(e?.estado||`activa`)}
+          ${wr(e?.estado||`activa`)}
         </select>
       </div>
       
@@ -1317,26 +1317,26 @@ import{n as e}from"./rolldown-runtime-tcWNtVWY.js";import{i as t}from"./supabase
           </button>
         </div>
         <div id="modal-horarios-container" class="mb-3">
-          ${Or(e?.horarios||[])}
+          ${Dr(e?.horarios||[])}
         </div>
       </div>
 
       <div class="col-12">
         <label class="form-label-compact">Notas Pedagógicas</label>
-        <textarea class="form-control input-dense" id="modal-notas_pedagogicas" rows="2" placeholder="Observaciones sobre el grupo o metodología..." maxlength="${gr.notasMax}">${f(e?.descripcion||``)}</textarea>
+        <textarea class="form-control input-dense" id="modal-notas_pedagogicas" rows="2" placeholder="Observaciones sobre el grupo o metodología..." maxlength="${hr.notasMax}">${f(e?.descripcion||``)}</textarea>
       </div>
 
       <div class="col-12 mt-3 border-top pt-3" id="seccion-alumnos-grupal" style="display:${e?.tipo_clase===`rotativa`?`none`:`block`}">
         <label class="form-label-compact mb-2"><i class="bi bi-people me-1"></i>Inscribir Alumnos</label>
-        ${kr(t)}
+        ${Or(t)}
       </div>
 
       <div class="col-12 mt-3 border-top pt-3" id="seccion-alumnos-rotativa" style="display:${e?.tipo_clase===`rotativa`?`block`:`none`}">
         <label class="form-label-compact mb-2"><i class="bi bi-person-lines-fill me-1"></i>Turnos individuales</label>
-        ${yr(n)}
+        ${vr(n)}
       </div>
     </form>
-  `}function yr(e=[]){let t=U.alumnos||[],n=(e=``,n=``,r=``)=>(t.find(t=>t.id===e),`
+  `}function vr(e=[]){let t=U.alumnos||[],n=(e=``,n=``,r=``)=>(t.find(t=>t.id===e),`
       <div class="slot-row d-flex align-items-center gap-2 mb-2 p-2 rounded border bg-body-tertiary">
         <select class="form-select form-select-sm slot-alumno-select flex-grow-1" style="min-width:0;" required>
           <option value="">Seleccionar alumno…</option>
@@ -1364,7 +1364,7 @@ import{n as e}from"./rolldown-runtime-tcWNtVWY.js";import{i as t}from"./supabase
       <small class="text-muted" id="slots-count">
         ${e.length||0} turno${e.length===1?``:`s`} asignado${e.length===1?``:`s`}
       </small>
-    </div>`}function br(e,t){let n=e.querySelector(`#modal-tiene_suplente`),r=e.querySelector(`#modal-maestro_suplente_id`);n&&r&&n.addEventListener(`change`,e=>{r.style.display=e.target.checked?`block`:`none`,e.target.checked||(r.value=``)}),e.querySelector(`#btn-add-horario`).addEventListener(`click`,()=>{let t=e.querySelector(`#modal-horarios-container`),n=t.children.length,r=document.createElement(`div`);r.innerHTML=Dr(null,n),t.appendChild(r.firstElementChild)}),e.querySelector(`#modal-horarios-container`).addEventListener(`click`,t=>{let n=t.target.closest(`.btn-remove-horario`);n&&(e.querySelector(`#modal-horarios-container`).children.length>1?n.closest(`.horario-row`).remove():i.warning(`La clase debe tener al menos un horario`))});let a=e.querySelector(`#seccion-alumnos-grupal`),o=e.querySelector(`#seccion-alumnos-rotativa`);e.querySelectorAll(`input[name="modal-tipo_clase"]`).forEach(t=>{t.addEventListener(`change`,()=>{let t=e.querySelector(`input[name="modal-tipo_clase"]:checked`)?.value===`rotativa`;a.style.display=t?`none`:`block`,o.style.display=t?`block`:`none`})});let s=e.querySelector(`#slots-container`),c=e.querySelector(`#slots-count`),l=()=>{let e=s.querySelectorAll(`.slot-row`).length;c.textContent=`${e} turno${e===1?``:`s`} asignado${e===1?``:`s`}`};e.querySelector(`#btn-add-slot`)?.addEventListener(`click`,()=>{let e=U.alumnos||[],t=document.createElement(`div`);t.innerHTML=(yr([]).split(`id="slots-container"`)[1],``);let n=document.createElement(`div`);n.className=`slot-row d-flex align-items-center gap-2 mb-2 p-2 rounded border bg-body-tertiary`,n.innerHTML=`
+    </div>`}function yr(e,t){let n=e.querySelector(`#modal-tiene_suplente`),r=e.querySelector(`#modal-maestro_suplente_id`);n&&r&&n.addEventListener(`change`,e=>{r.style.display=e.target.checked?`block`:`none`,e.target.checked||(r.value=``)}),e.querySelector(`#btn-add-horario`).addEventListener(`click`,()=>{let t=e.querySelector(`#modal-horarios-container`),n=t.children.length,r=document.createElement(`div`);r.innerHTML=Er(null,n),t.appendChild(r.firstElementChild)}),e.querySelector(`#modal-horarios-container`).addEventListener(`click`,t=>{let n=t.target.closest(`.btn-remove-horario`);n&&(e.querySelector(`#modal-horarios-container`).children.length>1?n.closest(`.horario-row`).remove():i.warning(`La clase debe tener al menos un horario`))});let a=e.querySelector(`#seccion-alumnos-grupal`),o=e.querySelector(`#seccion-alumnos-rotativa`);e.querySelectorAll(`input[name="modal-tipo_clase"]`).forEach(t=>{t.addEventListener(`change`,()=>{let t=e.querySelector(`input[name="modal-tipo_clase"]:checked`)?.value===`rotativa`;a.style.display=t?`none`:`block`,o.style.display=t?`block`:`none`})});let s=e.querySelector(`#slots-container`),c=e.querySelector(`#slots-count`),l=()=>{let e=s.querySelectorAll(`.slot-row`).length;c.textContent=`${e} turno${e===1?``:`s`} asignado${e===1?``:`s`}`};e.querySelector(`#btn-add-slot`)?.addEventListener(`click`,()=>{let e=U.alumnos||[],t=document.createElement(`div`);t.innerHTML=(vr([]).split(`id="slots-container"`)[1],``);let n=document.createElement(`div`);n.className=`slot-row d-flex align-items-center gap-2 mb-2 p-2 rounded border bg-body-tertiary`,n.innerHTML=`
       <select class="form-select form-select-sm slot-alumno-select flex-grow-1" style="min-width:0;" required>
         <option value="">Seleccionar alumno…</option>
         ${e.map(e=>`<option value="${e.id}">${f(e.nombre_completo)}${e.instrumento_principal?` — ${f(e.instrumento_principal)}`:``}</option>`).join(``)}
@@ -1376,7 +1376,7 @@ import{n as e}from"./rolldown-runtime-tcWNtVWY.js";import{i as t}from"./supabase
       </div>
       <button type="button" class="btn btn-sm btn-link text-danger p-0 btn-remove-slot" title="Quitar turno">
         <i class="bi bi-x-circle-fill fs-5"></i>
-      </button>`,s.appendChild(n),l()}),s?.addEventListener(`click`,e=>{if(e.target.closest(`.btn-remove-slot`)){if(s.querySelectorAll(`.slot-row`).length<=1){i.warning(`Debe haber al menos un turno en una clase rotativa`);return}e.target.closest(`.slot-row`).remove(),l()}});let u=e.querySelector(`#search-modal-alumnos`),d=e.querySelectorAll(`.alumno-check-item`);u?.addEventListener(`input`,e=>{let t=e.target.value.toLowerCase().trim();d.forEach(e=>{let n=e.dataset.nombre.includes(t)||e.dataset.instrumento.includes(t);e.style.display=n?`block`:`none`})});let p=e.querySelectorAll(`.alumnos-list input[type="checkbox"]`),m=e.querySelector(`#alumnos-selection-count`),h=()=>{let e=Array.from(p).filter(e=>e.checked).length;m&&(m.textContent=`${e} alumnos seleccionados`)};p.forEach(e=>e.addEventListener(`change`,h)),h()}async function xr(e,t){let n=!!t,r=(()=>{let t=e.querySelector(`#modal-maestro_suplente_id`).value,n=e.querySelector(`#modal-tiene_suplente`).checked;return{nombre:e.querySelector(`#modal-nombre`).value.trim(),programa_id:e.querySelector(`#modal-programa_id`).value,maestro_principal_id:e.querySelector(`#modal-maestro_id`).value,maestro_suplente_id:n?t:null,tiene_suplente:n,instrumento:e.querySelector(`#modal-instrumento`).value.trim(),capacidad_maxima:parseInt(e.querySelector(`#modal-max_alumnos`).value)||20,estado:e.querySelector(`#modal-estado`).value,tipo_clase:e.querySelector(`input[name="modal-tipo_clase"]:checked`)?.value||`grupal`,descripcion:e.querySelector(`#modal-notas_pedagogicas`).value.trim(),horarios:Array.from(e.querySelectorAll(`.horario-row`)).map(e=>({dia:e.querySelector(`[name="horario-dia"]`).value,hora_inicio:e.querySelector(`[name="horario-hora_inicio"]`).value,hora_fin:e.querySelector(`[name="horario-hora_fin"]`).value,salon_id:e.querySelector(`[name="horario-salon_id"]`).value||null}))}})(),a=new d(r).validate();if(a.length>0)return i.error(a[0]),!1;let o=()=>Array.from(e.querySelectorAll(`#slots-container .slot-row`)).map(e=>({alumno_id:e.querySelector(`.slot-alumno-select`).value,hora_inicio:e.querySelector(`.slot-hora-inicio`).value,hora_fin:e.querySelector(`.slot-hora-fin`).value})).filter(e=>e.alumno_id),s=async t=>{let n=Array.from(e.querySelectorAll(`.alumnos-list input[type="checkbox"]:checked`)).map(e=>e.value),r=(await u(t)).map(e=>e.alumno_id),i=n.filter(e=>!r.includes(e)),a=r.filter(e=>!n.includes(e));await Promise.all([...i.map(e=>_(t,e)),...a.map(e=>l(t,e))])},c=async e=>{let t=o();if(t.length===0)return i.warning(`Agregá al menos un turno`),!1;if(t.find(e=>!e.hora_inicio||!e.hora_fin))return i.error(`Todos los turnos deben tener hora de inicio y fin`),!1;let n=(await u(e)).map(e=>e.alumno_id),r=t.map(e=>e.alumno_id),a=n.filter(e=>!r.includes(e));return await Promise.all(a.map(t=>l(e,t))),await Promise.all(t.map(t=>n.includes(t.alumno_id)?te(e,t.alumno_id,t.hora_inicio,t.hora_fin):_(e,t.alumno_id,t.hora_inicio,t.hora_fin))),!0};try{let a;if(n)if(a=await ie(t.id,r),r.tipo_clase===`rotativa`){if(!await c(a.id))return!1}else await s(a.id);else if(a=await h(r),r.tipo_clase===`rotativa`){if(!await c(a.id))return!1}else{let t=Array.from(e.querySelectorAll(`.alumnos-list input[type="checkbox"]:checked`)).map(e=>e.value);t.length>0&&await Promise.all(t.map(e=>_(a.id,e)))}return i.success(n?`Clase actualizada`:`Clase creada`),U.onSuccess&&U.onSuccess(),!0}catch(e){return e.isConflict?i.warning(`Conflicto detected: ${e.message}`):i.error(e.message),!1}}function Sr(e=``){return`<option value="">Seleccionar maestro...</option>`+U.maestros.map(t=>`<option value="${t.id}" ${t.id===e?`selected`:``}>${f(t.nombre_completo||t.nombre)}</option>`).join(``)}function Cr(e=``){return`<option value="">Sin salón (Online/Otro)</option>`+U.salones.map(t=>`<option value="${t.id}" ${t.id===e?`selected`:``}>${f(t.nombre)}</option>`).join(``)}function wr(e=``){return`<option value="">Seleccionar programa...</option>`+U.programas.map(t=>`<option value="${t.id}" ${t.id===e?`selected`:``}>${f(t.nombre)}</option>`).join(``)}function Tr(e=`activa`){return d.getEstados().map(t=>`<option value="${t}" ${t===e?`selected`:``}>${d.getEstadoLabel(t)}</option>`).join(``)}function Er(){return`<datalist id="instrumentos-list">${[`Violín`,`Viola`,`Cello`,`Piano`,`Flauta`,`Teoría`,`Coro`].map(e=>`<option value="${e}">`).join(``)}</datalist>`}function Dr(e,t){return`
+      </button>`,s.appendChild(n),l()}),s?.addEventListener(`click`,e=>{if(e.target.closest(`.btn-remove-slot`)){if(s.querySelectorAll(`.slot-row`).length<=1){i.warning(`Debe haber al menos un turno en una clase rotativa`);return}e.target.closest(`.slot-row`).remove(),l()}});let u=e.querySelector(`#search-modal-alumnos`),d=e.querySelectorAll(`.alumno-check-item`);u?.addEventListener(`input`,e=>{let t=e.target.value.toLowerCase().trim();d.forEach(e=>{let n=e.dataset.nombre.includes(t)||e.dataset.instrumento.includes(t);e.style.display=n?`block`:`none`})});let p=e.querySelectorAll(`.alumnos-list input[type="checkbox"]`),m=e.querySelector(`#alumnos-selection-count`),h=()=>{let e=Array.from(p).filter(e=>e.checked).length;m&&(m.textContent=`${e} alumnos seleccionados`)};p.forEach(e=>e.addEventListener(`change`,h)),h()}async function br(e,t){let n=!!t,r=(()=>{let t=e.querySelector(`#modal-maestro_suplente_id`).value,n=e.querySelector(`#modal-tiene_suplente`).checked;return{nombre:e.querySelector(`#modal-nombre`).value.trim(),programa_id:e.querySelector(`#modal-programa_id`).value,maestro_principal_id:e.querySelector(`#modal-maestro_id`).value,maestro_suplente_id:n?t:null,tiene_suplente:n,instrumento:e.querySelector(`#modal-instrumento`).value.trim(),capacidad_maxima:parseInt(e.querySelector(`#modal-max_alumnos`).value)||20,estado:e.querySelector(`#modal-estado`).value,tipo_clase:e.querySelector(`input[name="modal-tipo_clase"]:checked`)?.value||`grupal`,descripcion:e.querySelector(`#modal-notas_pedagogicas`).value.trim(),horarios:Array.from(e.querySelectorAll(`.horario-row`)).map(e=>({dia:e.querySelector(`[name="horario-dia"]`).value,hora_inicio:e.querySelector(`[name="horario-hora_inicio"]`).value,hora_fin:e.querySelector(`[name="horario-hora_fin"]`).value,salon_id:e.querySelector(`[name="horario-salon_id"]`).value||null}))}})(),a=new d(r).validate();if(a.length>0)return i.error(a[0]),!1;let o=()=>Array.from(e.querySelectorAll(`#slots-container .slot-row`)).map(e=>({alumno_id:e.querySelector(`.slot-alumno-select`).value,hora_inicio:e.querySelector(`.slot-hora-inicio`).value,hora_fin:e.querySelector(`.slot-hora-fin`).value})).filter(e=>e.alumno_id),s=async t=>{let n=Array.from(e.querySelectorAll(`.alumnos-list input[type="checkbox"]:checked`)).map(e=>e.value),r=(await u(t)).map(e=>e.alumno_id),i=n.filter(e=>!r.includes(e)),a=r.filter(e=>!n.includes(e));await Promise.all([...i.map(e=>_(t,e)),...a.map(e=>l(t,e))])},c=async e=>{let t=o();if(t.length===0)return i.warning(`Agregá al menos un turno`),!1;if(t.find(e=>!e.hora_inicio||!e.hora_fin))return i.error(`Todos los turnos deben tener hora de inicio y fin`),!1;let n=(await u(e)).map(e=>e.alumno_id),r=t.map(e=>e.alumno_id),a=n.filter(e=>!r.includes(e));return await Promise.all(a.map(t=>l(e,t))),await Promise.all(t.map(t=>n.includes(t.alumno_id)?te(e,t.alumno_id,t.hora_inicio,t.hora_fin):_(e,t.alumno_id,t.hora_inicio,t.hora_fin))),!0};try{let a;if(n)if(a=await ie(t.id,r),r.tipo_clase===`rotativa`){if(!await c(a.id))return!1}else await s(a.id);else if(a=await h(r),r.tipo_clase===`rotativa`){if(!await c(a.id))return!1}else{let t=Array.from(e.querySelectorAll(`.alumnos-list input[type="checkbox"]:checked`)).map(e=>e.value);t.length>0&&await Promise.all(t.map(e=>_(a.id,e)))}return i.success(n?`Clase actualizada`:`Clase creada`),U.onSuccess&&U.onSuccess(),!0}catch(e){return e.isConflict?i.warning(`Conflicto detected: ${e.message}`):i.error(e.message),!1}}function xr(e=``){return`<option value="">Seleccionar maestro...</option>`+U.maestros.map(t=>`<option value="${t.id}" ${t.id===e?`selected`:``}>${f(t.nombre_completo||t.nombre)}</option>`).join(``)}function Sr(e=``){return`<option value="">Sin salón (Online/Otro)</option>`+U.salones.map(t=>`<option value="${t.id}" ${t.id===e?`selected`:``}>${f(t.nombre)}</option>`).join(``)}function Cr(e=``){return`<option value="">Seleccionar programa...</option>`+U.programas.map(t=>`<option value="${t.id}" ${t.id===e?`selected`:``}>${f(t.nombre)}</option>`).join(``)}function wr(e=`activa`){return d.getEstados().map(t=>`<option value="${t}" ${t===e?`selected`:``}>${d.getEstadoLabel(t)}</option>`).join(``)}function Tr(){return`<datalist id="instrumentos-list">${[`Violín`,`Viola`,`Cello`,`Piano`,`Flauta`,`Teoría`,`Coro`].map(e=>`<option value="${e}">`).join(``)}</datalist>`}function Er(e,t){return`
     <div class="horario-row bg-body-tertiary p-2 rounded mb-2 border" data-index="${t}">
       <div class="row g-2 align-items-center">
         <div class="col-md-4">
@@ -1396,12 +1396,12 @@ import{n as e}from"./rolldown-runtime-tcWNtVWY.js";import{i as t}from"./supabase
         </div>
         <div class="col-12 mt-1">
           <select class="form-select form-select-sm" name="horario-salon_id">
-            ${Cr(e?.salon_id)}
+            ${Sr(e?.salon_id)}
           </select>
         </div>
       </div>
     </div>
-  `}function Or(e=[]){return e.length===0?Dr(null,0):e.map((e,t)=>Dr(e,t)).join(``)}function kr(e=[]){return`
+  `}function Dr(e=[]){return e.length===0?Er(null,0):e.map((e,t)=>Er(e,t)).join(``)}function Or(e=[]){return`
     <div class="alumnos-selector-container">
       <div class="input-group input-group-sm mb-2">
         <span class="input-group-text"><i class="bi bi-search"></i></span>
@@ -1419,7 +1419,7 @@ import{n as e}from"./rolldown-runtime-tcWNtVWY.js";import{i as t}from"./supabase
       </div>
       <div class="text-end mt-1"><small class="text-muted" id="alumnos-selection-count">0 seleccionados</small></div>
     </div>
-  `}var Ar=`app-help-panel`,jr=`app-help-overlay`,Mr=!1;function Nr(){if(Mr)return;Mr=!0;let e=document.createElement(`style`);e.id=`app-help-panel-styles`,e.textContent=`
+  `}var kr=`app-help-panel`,Ar=`app-help-overlay`,jr=!1;function Mr(){if(jr)return;jr=!0;let e=document.createElement(`style`);e.id=`app-help-panel-styles`,e.textContent=`
     /* ── Overlay ─────────────────────────────────────────── */
     #app-help-overlay {
       display: none;
@@ -1574,7 +1574,7 @@ import{n as e}from"./rolldown-runtime-tcWNtVWY.js";import{i as t}from"./supabase
       color: var(--bs-primary, #3b82f6);
       background: var(--bs-primary-bg-subtle, #eff6ff);
     }
-  `,document.head.appendChild(e)}function Pr(){if(document.getElementById(Ar))return;Nr();let e=document.createElement(`div`);e.id=jr,document.body.appendChild(e);let t=document.createElement(`div`);t.id=Ar,t.setAttribute(`role`,`complementary`),t.setAttribute(`aria-label`,`Ayuda`),t.innerHTML=`
+  `,document.head.appendChild(e)}function Nr(){if(document.getElementById(kr))return;Mr();let e=document.createElement(`div`);e.id=Ar,document.body.appendChild(e);let t=document.createElement(`div`);t.id=kr,t.setAttribute(`role`,`complementary`),t.setAttribute(`aria-label`,`Ayuda`),t.innerHTML=`
     <div id="ahp-header">
       <div id="ahp-badge"><i class="bi bi-question"></i></div>
       <span id="ahp-title">Ayuda</span>
@@ -1583,7 +1583,7 @@ import{n as e}from"./rolldown-runtime-tcWNtVWY.js";import{i as t}from"./supabase
       </button>
     </div>
     <div id="ahp-body"></div>
-  `,document.body.appendChild(t),e.addEventListener(`click`,()=>W.close()),t.querySelector(`#ahp-close`).addEventListener(`click`,()=>W.close()),document.addEventListener(`keydown`,e=>{e.key===`Escape`&&W.close()})}var W={open({title:e,intro:t,sections:n=[]}){Pr();let r=document.getElementById(Ar),i=document.getElementById(jr);document.getElementById(`ahp-title`).textContent=e||`Ayuda`,document.getElementById(`ahp-body`).innerHTML=`
+  `,document.body.appendChild(t),e.addEventListener(`click`,()=>W.close()),t.querySelector(`#ahp-close`).addEventListener(`click`,()=>W.close()),document.addEventListener(`keydown`,e=>{e.key===`Escape`&&W.close()})}var W={open({title:e,intro:t,sections:n=[]}){Nr();let r=document.getElementById(kr),i=document.getElementById(Ar);document.getElementById(`ahp-title`).textContent=e||`Ayuda`,document.getElementById(`ahp-body`).innerHTML=`
       ${t?`<p class="ahp-intro">${t}</p>`:``}
       ${n.length?`<div class="ahp-label">En esta pantalla</div>`:``}
       ${n.map(e=>{let t=e.color||`#6b7280`;return`
@@ -1594,7 +1594,7 @@ import{n as e}from"./rolldown-runtime-tcWNtVWY.js";import{i as t}from"./supabase
               <p class="ahp-item-desc">${e.description}</p>
             </div>
           </div>`}).join(``)}
-    `,i.style.display=`block`,requestAnimationFrame(()=>{i.classList.add(`hp-visible`),r.classList.add(`hp-visible`)})},close(){let e=document.getElementById(Ar),t=document.getElementById(jr);!e||!e.classList.contains(`hp-visible`)||(e.classList.remove(`hp-visible`),t.classList.remove(`hp-visible`),setTimeout(()=>{t&&(t.style.display=`none`)},280))}},G={maestros:[],maestrosOriginales:[],editando:null,deletingId:null},Fr={nombreMax:100},K=null,Ir=[`Piano`,`Guitarra`,`Violín`,`Viola`,`Cello`,`Contrabajo`,`Flauta`,`Clarinete`,`Oboe`,`Fagot`,`Saxofón`,`Trompeta`,`Trombón`,`Corno`,`Tuba`,`Percusión`,`Batería`,`Canto`,`Teoría`,`Solfeo`,`Dirección`,`Composición`,`Arreglos`];async function Lr(e){try{Rr(e);let t=await sr();G.maestros=t,G.maestrosOriginales=[...t],Ur(e),Gr(e)}catch(t){console.error(t),zr(e,t.message)}}function Rr(e){e.innerHTML=`
+    `,i.style.display=`block`,requestAnimationFrame(()=>{i.classList.add(`hp-visible`),r.classList.add(`hp-visible`)})},close(){let e=document.getElementById(kr),t=document.getElementById(Ar);!e||!e.classList.contains(`hp-visible`)||(e.classList.remove(`hp-visible`),t.classList.remove(`hp-visible`),setTimeout(()=>{t&&(t.style.display=`none`)},280))}},G={maestros:[],maestrosOriginales:[],editando:null,deletingId:null},Pr={nombreMax:100},K=null,Fr=[`Piano`,`Guitarra`,`Violín`,`Viola`,`Cello`,`Contrabajo`,`Flauta`,`Clarinete`,`Oboe`,`Fagot`,`Saxofón`,`Trompeta`,`Trombón`,`Corno`,`Tuba`,`Percusión`,`Batería`,`Canto`,`Teoría`,`Solfeo`,`Dirección`,`Composición`,`Arreglos`];async function Ir(e){try{Lr(e);let t=await sr();G.maestros=t,G.maestrosOriginales=[...t],Hr(e),Wr(e)}catch(t){console.error(t),Rr(e,t.message)}}function Lr(e){e.innerHTML=`
     <div class="d-flex justify-content-center align-items-center" style="min-height: 400px;">
       <div class="text-center">
         <div class="spinner-border text-primary mb-3" role="status">
@@ -1603,7 +1603,7 @@ import{n as e}from"./rolldown-runtime-tcWNtVWY.js";import{i as t}from"./supabase
         <p class="text-muted">Cargando maestros...</p>
       </div>
     </div>
-  `}function zr(e,t){e.innerHTML=`
+  `}function Rr(e,t){e.innerHTML=`
     <div class="container mt-5">
       <div class="row justify-content-center">
         <div class="col-md-6">
@@ -1620,7 +1620,7 @@ import{n as e}from"./rolldown-runtime-tcWNtVWY.js";import{i as t}from"./supabase
         </div>
       </div>
     </div>
-  `,e.querySelector(`#retryBtn`)?.addEventListener(`click`,()=>Lr(e))}function Br(e=[],t=`modal-especialidades-input`){return`
+  `,e.querySelector(`#retryBtn`)?.addEventListener(`click`,()=>Ir(e))}function zr(e=[],t=`modal-especialidades-input`){return`
     <div class="mb-3">
       <label class="form-label-compact">Especialidades</label>
       <div class="especialidades-chips-container" id="modal-especialidades-container">
@@ -1641,14 +1641,14 @@ import{n as e}from"./rolldown-runtime-tcWNtVWY.js";import{i as t}from"./supabase
         <div class="mt-2">
           <small class="text-muted">Sugerencias:</small>
           <div class="d-flex flex-wrap gap-1 mt-1">
-            ${Ir.slice(0,8).map(e=>`
+            ${Fr.slice(0,8).map(e=>`
               <button type="button" class="btn btn-link btn-sm p-0 suggest-chip" data-especialidad="${H(e)}">${H(e)}</button>
             `).join(`, `)}
           </div>
         </div>
       </div>
     </div>
-  `}function Vr(e){let t=e.querySelector(`.especialidades-chips-container`);if(!t)return[];let n=t.querySelectorAll(`.chip-item`);return Array.from(n).map(e=>e.textContent.replace(/×$/,``).trim())}function Hr(e,t){let n=e.querySelector(`#modal-especialidades-input`),r=e.querySelector(`#btnAddEspecialidad`),i=e.querySelector(`.especialidades-chips-container`),a=r=>{let a=r.trim();if(a){if(!Vr(e).includes(a)){let e=i.querySelector(`.chips-wrapper`),n=document.createElement(`span`);n.className=`badge bg-primary-subtle text-primary rounded-pill chip-item`,n.innerHTML=`${H(a)}<i class="bi bi-x-lg chip-remove" data-especialidad="${H(a)}" style="cursor:pointer;margin-left:4px;"></i>`,e.appendChild(n),t&&t()}n.value=``}};n?.addEventListener(`keypress`,e=>{e.key===`Enter`&&(e.preventDefault(),a(n.value))}),r?.addEventListener(`click`,()=>a(n.value)),i?.addEventListener(`click`,e=>{e.target.classList.contains(`chip-remove`)&&(e.target.closest(`.chip-item`).remove(),t&&t()),e.target.classList.contains(`suggest-chip`)&&(e.preventDefault(),a(e.target.dataset.especialidad))})}function Ur(e){e.innerHTML=`
+  `}function Br(e){let t=e.querySelector(`.especialidades-chips-container`);if(!t)return[];let n=t.querySelectorAll(`.chip-item`);return Array.from(n).map(e=>e.textContent.replace(/×$/,``).trim())}function Vr(e,t){let n=e.querySelector(`#modal-especialidades-input`),r=e.querySelector(`#btnAddEspecialidad`),i=e.querySelector(`.especialidades-chips-container`),a=r=>{let a=r.trim();if(a){if(!Br(e).includes(a)){let e=i.querySelector(`.chips-wrapper`),n=document.createElement(`span`);n.className=`badge bg-primary-subtle text-primary rounded-pill chip-item`,n.innerHTML=`${H(a)}<i class="bi bi-x-lg chip-remove" data-especialidad="${H(a)}" style="cursor:pointer;margin-left:4px;"></i>`,e.appendChild(n),t&&t()}n.value=``}};n?.addEventListener(`keypress`,e=>{e.key===`Enter`&&(e.preventDefault(),a(n.value))}),r?.addEventListener(`click`,()=>a(n.value)),i?.addEventListener(`click`,e=>{e.target.classList.contains(`chip-remove`)&&(e.target.closest(`.chip-item`).remove(),t&&t()),e.target.classList.contains(`suggest-chip`)&&(e.preventDefault(),a(e.target.dataset.especialidad))})}function Hr(e){e.innerHTML=`
     <div class="page-container">
       <div class="maestros-header-premium mb-4">
         <div class="d-flex align-items-center gap-3">
@@ -1692,18 +1692,18 @@ import{n as e}from"./rolldown-runtime-tcWNtVWY.js";import{i as t}from"./supabase
 
       <div class="page-glass rounded w-100">
         <div class="list-group list-group-flush w-100" id="maestrosTBody">
-          ${Wr(G.maestros)}
+          ${Ur(G.maestros)}
         </div>
       </div>
 
       <div class="toast-container position-fixed top-0 end-0 p-3" id="toastContainer"></div>
     </div>
-  `}function Wr(e){return e.length?e.map(e=>{let t=e.nombre||e.name||`-`,n=e.is_active??!0,r=`border-accent-${n?`success`:`secondary`}`,i=`bg-${n?`success`:`secondary`}`;return`
+  `}function Ur(e){return e.length?e.map(e=>{let t=e.nombre||e.name||`-`,n=e.is_active??!0,r=`border-accent-${n?`success`:`secondary`}`,i=`bg-${n?`success`:`secondary`}`;return`
       <div class="list-group-item list-group-item-action d-flex align-items-center justify-content-between p-3 w-100 border-start-accent ${r}" data-id="${e.id}" style="cursor: pointer;">
         <div class="d-flex align-items-center gap-3 flex-grow-1 overflow-hidden">
           <div class="position-relative flex-shrink-0">
             <div class="avatar-compact bg-primary bg-opacity-10 text-primary border border-primary-subtle d-flex align-items-center justify-content-center rounded-circle" style="width: 48px; height: 48px; font-size: 1.2rem; font-weight: 600;">
-              ${hr(t)}
+              ${mr(t)}
             </div>
             <span class="position-absolute bottom-0 end-0 p-1 ${i} border border-light rounded-circle" style="transform: translate(10%, 10%);"></span>
           </div>
@@ -1727,7 +1727,7 @@ import{n as e}from"./rolldown-runtime-tcWNtVWY.js";import{i as t}from"./supabase
       <div class="text-center py-5 w-100 text-muted list-group-item" style="background: transparent; border: none;">
         <i class="bi bi-inbox fs-1 d-block mb-3" style="color: var(--bs-secondary);"></i>
         No hay maestros registrados.
-      </div>`}function Gr(e){K=e,e.querySelector(`#btnAgregarMaestro`).addEventListener(`click`,()=>Jr()),e.querySelector(`#btn-help-maestros`)?.addEventListener(`click`,()=>{W.open({title:`Maestros`,intro:`Gestión del plantel docente. Desde acá podés ver, agregar, editar y desactivar maestros, y acceder al perfil completo de cada uno.`,sections:[{icon:`bi-search`,title:`Buscador y filtros`,description:`Filtrá por nombre, instrumento o estado (activo/inactivo) en tiempo real.`,color:`#6b7280`},{icon:`bi-person-badge`,title:`Tarjeta de maestro`,description:`Nombre, instrumento principal, clases activas y estado. Badge verde = activo, gris = inactivo.`,color:`#3b82f6`},{icon:`bi-eye`,title:`Ver perfil`,description:`Perfil completo: datos personales, clases (titular y suplente), horarios y ocupación.`,color:`#10b981`},{icon:`bi-pencil`,title:`Editar desde el perfil`,description:`Desde el perfil podés editar cualquier clase que dicte directamente, sin salir del modal.`,color:`#f59e0b`},{icon:`bi-person-x`,title:`Desactivar maestro`,description:`Desactivar oculta al maestro de listas operativas pero conserva su historial. No elimina datos.`,color:`#ef4444`}]})}),e.querySelector(`#btnExportarCSV`)?.addEventListener(`click`,()=>ei()),e.querySelector(`#buscar`).addEventListener(`input`,()=>qr()),e.querySelector(`#filtroEstado`).addEventListener(`change`,()=>qr()),e.querySelector(`#maestrosTBody`).addEventListener(`click`,e=>{let t=e.target.closest(`.list-group-item[data-id]`);if(t&&!e.target.closest(`[data-action]`)){Xr(t.dataset.id);return}let n=e.target.closest(`[data-action]`);if(!n)return;let r=n.dataset.id,i=n.dataset.action;i===`edit`?Yr(r):i===`delete`?Zr(r):i===`whatsapp`&&Kr(r)})}function Kr(e){let t=G.maestrosOriginales.find(t=>t.id===e);if(!t||!t.telefono)return;let n=t.telefono.replace(/\D/g,``);o.open({title:`Enviar WhatsApp a `+H(t.nombre||t.name||``),size:`md`,saveText:`Enviar WhatsApp`,body:`
+      </div>`}function Wr(e){K=e,e.querySelector(`#btnAgregarMaestro`).addEventListener(`click`,()=>qr()),e.querySelector(`#btn-help-maestros`)?.addEventListener(`click`,()=>{W.open({title:`Maestros`,intro:`Gestión del plantel docente. Desde acá podés ver, agregar, editar y desactivar maestros, y acceder al perfil completo de cada uno.`,sections:[{icon:`bi-search`,title:`Buscador y filtros`,description:`Filtrá por nombre, instrumento o estado (activo/inactivo) en tiempo real.`,color:`#6b7280`},{icon:`bi-person-badge`,title:`Tarjeta de maestro`,description:`Nombre, instrumento principal, clases activas y estado. Badge verde = activo, gris = inactivo.`,color:`#3b82f6`},{icon:`bi-eye`,title:`Ver perfil`,description:`Perfil completo: datos personales, clases (titular y suplente), horarios y ocupación.`,color:`#10b981`},{icon:`bi-pencil`,title:`Editar desde el perfil`,description:`Desde el perfil podés editar cualquier clase que dicte directamente, sin salir del modal.`,color:`#f59e0b`},{icon:`bi-person-x`,title:`Desactivar maestro`,description:`Desactivar oculta al maestro de listas operativas pero conserva su historial. No elimina datos.`,color:`#ef4444`}]})}),e.querySelector(`#btnExportarCSV`)?.addEventListener(`click`,()=>$r()),e.querySelector(`#buscar`).addEventListener(`input`,()=>Kr()),e.querySelector(`#filtroEstado`).addEventListener(`change`,()=>Kr()),e.querySelector(`#maestrosTBody`).addEventListener(`click`,e=>{let t=e.target.closest(`.list-group-item[data-id]`);if(t&&!e.target.closest(`[data-action]`)){Yr(t.dataset.id);return}let n=e.target.closest(`[data-action]`);if(!n)return;let r=n.dataset.id,i=n.dataset.action;i===`edit`?Jr(r):i===`delete`?Xr(r):i===`whatsapp`&&Gr(r)})}function Gr(e){let t=G.maestrosOriginales.find(t=>t.id===e);if(!t||!t.telefono)return;let n=t.telefono.replace(/\D/g,``);o.open({title:`Enviar WhatsApp a `+H(t.nombre||t.name||``),size:`md`,saveText:`Enviar WhatsApp`,body:`
       <div class="mb-3">
         <label class="form-label-compact">Número de destino</label>
         <p class="form-control-plaintext fw-bold mb-0">
@@ -1741,15 +1741,19 @@ import{n as e}from"./rolldown-runtime-tcWNtVWY.js";import{i as t}from"./supabase
       <p class="text-muted small mb-0">
         Se abrirá WhatsApp Web (o la aplicación) con el mensaje listo para ser enviado.
       </p>
-    `,onSave:async e=>{let t=e.querySelector(`#modal-whatsapp-msg`).value.trim(),r=`https://wa.me/${n}?text=${encodeURIComponent(t)}`;window.open(r,`_blank`)}})}function qr(){let e=K.querySelector(`#buscar`).value.trim().toLowerCase(),t=K.querySelector(`#filtroEstado`).value;G.maestros=G.maestrosOriginales.filter(n=>{let r=(n.nombre||n.name||``).toLowerCase(),i=!e||r.includes(e)||(n.email||``).toLowerCase().includes(e)||(n.instrumento||``).toLowerCase().includes(e)||(n.especialidad||``).toLowerCase().includes(e)||(n.especialidades||[]).some(t=>t.toLowerCase().includes(e)),a=n.is_active??!0;return i&&(t===`todos`||t===`activo`&&a||t===`inactivo`&&!a)}),Qr()}function Jr(){G.editando=null,o.open({title:`Crear Nuevo Maestro`,body:`<form class="row g-2" novalidate>
+    `,onSave:async e=>{let t=e.querySelector(`#modal-whatsapp-msg`).value.trim(),r=`https://wa.me/${n}?text=${encodeURIComponent(t)}`;window.open(r,`_blank`)}})}function Kr(){let e=K.querySelector(`#buscar`).value.trim().toLowerCase(),t=K.querySelector(`#filtroEstado`).value;G.maestros=G.maestrosOriginales.filter(n=>{let r=(n.nombre||n.name||``).toLowerCase(),i=!e||r.includes(e)||(n.email||``).toLowerCase().includes(e)||(n.instrumento||``).toLowerCase().includes(e)||(n.especialidad||``).toLowerCase().includes(e)||(n.especialidades||[]).some(t=>t.toLowerCase().includes(e)),a=n.is_active??!0;return i&&(t===`todos`||t===`activo`&&a||t===`inactivo`&&!a)}),Zr()}function qr(){G.editando=null,o.open({title:`Crear Nuevo Maestro`,body:`<form class="row g-2" novalidate>
       <div class="col-12">
         <label class="form-label-compact">Nombre Completo *</label>
-        <input type="text" class="form-control input-dense" id="modal-nombre" required maxlength="${Fr.nombreMax}" placeholder="Juan Pérez">
-        <small class="text-muted" id="modal-nombreCount">0/${Fr.nombreMax}</small>
+        <input type="text" class="form-control input-dense" id="modal-nombre" required maxlength="${Pr.nombreMax}" placeholder="Juan Pérez">
+        <small class="text-muted" id="modal-nombreCount">0/${Pr.nombreMax}</small>
       </div>
       <div class="col-md-6">
         <label class="form-label-compact">Email *</label>
         <input type="email" class="form-control input-dense" id="modal-email" required placeholder="email@ejemplo.com">
+      </div>
+      <div class="col-md-6">
+        <label class="form-label-compact">Contraseña *</label>
+        <input type="password" class="form-control input-dense" id="modal-password" required placeholder="Contraseña para iniciar sesión" minlength="6">
       </div>
       <div class="col-md-6">
         <label class="form-label-compact">Teléfono</label>
@@ -1759,26 +1763,16 @@ import{n as e}from"./rolldown-runtime-tcWNtVWY.js";import{i as t}from"./supabase
         <label class="form-label-compact">Instrumento *</label>
         <input type="text" class="form-control input-dense" id="modal-instrumento" required placeholder="Violín">
       </div>
-      <div class="col-md-6">
-        <label class="form-label-compact">Especialidad</label>
-        <input type="text" class="form-control input-dense" id="modal-especialidad" placeholder="Dirección">
-      </div>
-      ${Br([],`modal-especialidades-input`)}
+      ${zr([],`modal-especialidades-input`)}
       <div class="col-12">
         <label class="form-label-compact">Biografía</label>
         <textarea class="form-control input-dense" id="modal-bio" rows="2" placeholder="Breve descripción..."></textarea>
       </div>
-      <div class="col-12">
-        <div class="form-check">
-          <input class="form-check-input" type="checkbox" id="modal-esActivo" checked>
-          <label class="form-check-label" for="modal-esActivo">Maestro activo</label>
-        </div>
-      </div>
-    </form>`,onShow:e=>Hr(e),saveText:`Guardar`,onSave:async e=>{let t=e.querySelector(`#modal-nombre`).value.trim(),n=e.querySelector(`#modal-email`).value.trim().toLowerCase(),r=e.querySelector(`#modal-telefono`).value.trim(),i=e.querySelector(`#modal-instrumento`).value.trim(),a=e.querySelector(`#modal-especialidad`).value.trim(),o=e.querySelector(`#modal-bio`).value.trim(),s=e.querySelector(`#modal-esActivo`).checked;if(!t)return q(`El nombre es obligatorio`,`error`),!1;if(!n)return q(`El email es obligatorio`,`error`),!1;if(!$r(n))return q(`El formato del email no es válido`,`error`),!1;if(n&&await fr(n))return q(`El email ya está registrado`,`error`),!1;let c=Vr(e),l=await cr({nombre:t,email:n||null,telefono:r||null,instrumento:i||null,especialidad:a||null,bio:o||null,is_active:s,especialidades:c});G.maestrosOriginales.push(l),qr(),q(`Maestro creado exitosamente`,`success`)}})}function Yr(e){let t=G.maestrosOriginales.find(t=>t.id===e);if(!t){q(`Maestro no encontrado`,`error`);return}G.editando=e,o.open({title:`Editar Maestro`,body:`<form class="row g-2" novalidate>
+    </form>`,onShow:e=>Vr(e),saveText:`Guardar`,onSave:async e=>{let n=e.querySelector(`#modal-nombre`).value.trim(),r=e.querySelector(`#modal-email`).value.trim().toLowerCase(),i=e.querySelector(`#modal-password`)?.value,a=e.querySelector(`#modal-telefono`).value.trim(),o=e.querySelector(`#modal-instrumento`).value.trim(),s=e.querySelector(`#modal-bio`).value.trim();if(!n)return q(`El nombre es obligatorio`,`error`),!1;if(!r)return q(`El email es obligatorio`,`error`),!1;if(!Qr(r))return q(`El formato del email no es válido`,`error`),!1;if(!i||i.length<6)return q(`La contraseña debe tener al menos 6 caracteres`,`error`),!1;if(!o)return q(`El instrumento es obligatorio`,`error`),!1;if(r&&await dr(r))return q(`El email ya está registrado`,`error`),!1;let c=Br(e);try{let{data:e,error:l}=await t.auth.signUp({email:r,password:i,options:{data:{full_name:n,rol:`maestro`}}});if(l)return q(l.message||`Error al crear usuario`,`error`),!1;if(!e?.user)return q(`No se pudo crear el usuario`,`error`),!1;let u=e.user.id;await t.from(`profiles`).update({estado:`activo`}).eq(`id`,u),await t.from(`maestros`).update({tlf:a||null,especialidad:o||null,resena:s||null,especialidades:c}).eq(`user_id`,u);let d=await sr();G.maestros=d,G.maestrosOriginales=[...d],Kr(),q(`Maestro creado exitosamente. Ya puede iniciar sesión.`,`success`)}catch(e){console.error(`Error creando maestro:`,e),q(`Error al crear el maestro: `+e.message,`error`)}}})}function Jr(e){let t=G.maestrosOriginales.find(t=>t.id===e);if(!t){q(`Maestro no encontrado`,`error`);return}G.editando=e,o.open({title:`Editar Maestro`,body:`<form class="row g-2" novalidate>
       <div class="col-12">
         <label class="form-label-compact">Nombre Completo *</label>
-        <input type="text" class="form-control input-dense" id="modal-nombre" required maxlength="${Fr.nombreMax}" value="${H(t.nombre||t.name||``)}">
-        <small class="text-muted" id="modal-nombreCount">${(t.nombre||t.name||``).length}/${Fr.nombreMax}</small>
+        <input type="text" class="form-control input-dense" id="modal-nombre" required maxlength="${Pr.nombreMax}" value="${H(t.nombre||t.name||``)}">
+        <small class="text-muted" id="modal-nombreCount">${(t.nombre||t.name||``).length}/${Pr.nombreMax}</small>
       </div>
       <div class="col-md-6">
         <label class="form-label-compact">Email *</label>
@@ -1796,7 +1790,7 @@ import{n as e}from"./rolldown-runtime-tcWNtVWY.js";import{i as t}from"./supabase
         <label class="form-label-compact">Especialidad</label>
         <input type="text" class="form-control input-dense" id="modal-especialidad" value="${H(t.especialidad||``)}">
       </div>
-      ${Br(t.especialidades||[],`modal-especialidades-input`)}
+      ${zr(t.especialidades||[],`modal-especialidades-input`)}
       <div class="col-12">
         <label class="form-label-compact">Biografía</label>
         <textarea class="form-control input-dense" id="modal-bio" rows="2">${H(t.bio||``)}</textarea>
@@ -1807,7 +1801,7 @@ import{n as e}from"./rolldown-runtime-tcWNtVWY.js";import{i as t}from"./supabase
           <label class="form-check-label" for="modal-esActivo">Maestro activo</label>
         </div>
       </div>
-    </form>`,onShow:e=>Hr(e),saveText:`Guardar cambios`,onSave:async e=>{let n=e.querySelector(`#modal-nombre`).value.trim(),r=e.querySelector(`#modal-email`).value.trim().toLowerCase(),i=e.querySelector(`#modal-telefono`).value.trim(),a=e.querySelector(`#modal-instrumento`).value.trim(),o=e.querySelector(`#modal-especialidad`).value.trim(),s=e.querySelector(`#modal-bio`).value.trim(),c=e.querySelector(`#modal-esActivo`).checked;if(!n)return q(`El nombre es obligatorio`,`error`),!1;if(!r)return q(`El email es obligatorio`,`error`),!1;if(!$r(r))return q(`El formato del email no es válido`,`error`),!1;if(r&&t.email!==r&&await fr(r))return q(`El email ya está registrado`,`error`),!1;let l=Vr(e),u={nombre:n,email:r||null,telefono:i||null,instrumento:a||null,especialidad:o||null,bio:s||null,is_active:c,especialidades:l};await lr(G.editando,u);let d=G.maestrosOriginales.findIndex(e=>e.id===G.editando);d!==-1&&(G.maestrosOriginales[d]={...G.maestrosOriginales[d],...u}),qr(),q(`Maestro actualizado correctamente`,`success`)}})}function Xr(e){let n=G.maestrosOriginales.find(t=>t.id===e);if(!n){q(`Maestro no encontrado`,`error`);return}let r=n.nombre||n.name||`-`,i=n.is_active??!0;o.open({title:r,hideSave:!0,cancelText:`Cerrar`,body:`
+    </form>`,onShow:e=>Vr(e),saveText:`Guardar cambios`,onSave:async e=>{let n=e.querySelector(`#modal-nombre`).value.trim(),r=e.querySelector(`#modal-email`).value.trim().toLowerCase(),i=e.querySelector(`#modal-telefono`).value.trim(),a=e.querySelector(`#modal-instrumento`).value.trim(),o=e.querySelector(`#modal-especialidad`).value.trim(),s=e.querySelector(`#modal-bio`).value.trim(),c=e.querySelector(`#modal-esActivo`).checked;if(!n)return q(`El nombre es obligatorio`,`error`),!1;if(!r)return q(`El email es obligatorio`,`error`),!1;if(!Qr(r))return q(`El formato del email no es válido`,`error`),!1;if(r&&t.email!==r&&await dr(r))return q(`El email ya está registrado`,`error`),!1;let l=Br(e),u={nombre:n,email:r||null,telefono:i||null,instrumento:a||null,especialidad:o||null,bio:s||null,is_active:c,especialidades:l};await cr(G.editando,u);let d=G.maestrosOriginales.findIndex(e=>e.id===G.editando);d!==-1&&(G.maestrosOriginales[d]={...G.maestrosOriginales[d],...u}),Kr(),q(`Maestro actualizado correctamente`,`success`)}})}function Yr(e){let n=G.maestrosOriginales.find(t=>t.id===e);if(!n){q(`Maestro no encontrado`,`error`);return}let r=n.nombre||n.name||`-`,i=n.is_active??!0;o.open({title:r,hideSave:!0,cancelText:`Cerrar`,body:`
       <div class="row">
         <div class="col-md-6">
           <div class="mb-3">
@@ -1841,7 +1835,7 @@ import{n as e}from"./rolldown-runtime-tcWNtVWY.js";import{i as t}from"./supabase
           <div class="mb-3">
             <label class="form-label fw-bold">Estado</label>
             <p class="form-control-plaintext">
-              <span class="badge ${pr(i)}">${mr(i)}</span>
+              <span class="badge ${fr(i)}">${pr(i)}</span>
             </p>
           </div>
         </div>
@@ -1873,7 +1867,7 @@ import{n as e}from"./rolldown-runtime-tcWNtVWY.js";import{i as t}from"./supabase
           <i class="bi bi-pencil me-1"></i> Editar Perfil
         </button>
       </div>
-    `,onShow:async n=>{n.querySelector(`#modal-view-btn-edit`)?.addEventListener(`click`,()=>{o.close(),setTimeout(()=>Yr(e),300)}),n.querySelector(`#modal-view-btn-delete`)?.addEventListener(`click`,()=>{o.close(),setTimeout(()=>Zr(e),300)});let r=n.querySelector(`#maestro-clases-container`),i=n.querySelector(`#maestro-clases-badge`);(async()=>{try{let[n,a,s,c,l]=await Promise.all([ae(e),t.from(`maestros`).select(`*`).order(`nombre_completo`,{ascending:!0}),t.from(`salones`).select(`*`).order(`nombre`,{ascending:!0}),t.from(`programas`).select(`*`).order(`nombre`,{ascending:!0}),t.from(`alumnos`).select(`*`).eq(`activo`,!0).order(`nombre_completo`,{ascending:!0})]),u={maestros:a.data||[],salones:s.data||[],programas:c.data||[],alumnos:l.data||[]};if(i.textContent=`${n.length} clase${n.length===1?``:`s`}`,n.length===0){r.innerHTML=`
+    `,onShow:async n=>{n.querySelector(`#modal-view-btn-edit`)?.addEventListener(`click`,()=>{o.close(),setTimeout(()=>Jr(e),300)}),n.querySelector(`#modal-view-btn-delete`)?.addEventListener(`click`,()=>{o.close(),setTimeout(()=>Xr(e),300)});let r=n.querySelector(`#maestro-clases-container`),i=n.querySelector(`#maestro-clases-badge`);(async()=>{try{let[n,a,s,c,l]=await Promise.all([ae(e),t.from(`maestros`).select(`*`).order(`nombre_completo`,{ascending:!0}),t.from(`salones`).select(`*`).order(`nombre`,{ascending:!0}),t.from(`programas`).select(`*`).order(`nombre`,{ascending:!0}),t.from(`alumnos`).select(`*`).eq(`activo`,!0).order(`nombre_completo`,{ascending:!0})]),u={maestros:a.data||[],salones:s.data||[],programas:c.data||[],alumnos:l.data||[]};if(i.textContent=`${n.length} clase${n.length===1?``:`s`}`,n.length===0){r.innerHTML=`
               <div class="text-center py-4 text-muted">
                 <i class="bi bi-journal-x" style="font-size:2rem; opacity:0.4;"></i>
                 <p class="mt-2 mb-0 small">Sin clases asignadas actualmente.</p>
@@ -1937,12 +1931,12 @@ import{n as e}from"./rolldown-runtime-tcWNtVWY.js";import{i as t}from"./supabase
 
                     </div>
                   </div>`}).join(``)}
-            </div>`,r.querySelectorAll(`.btn-editar-clase`).forEach(t=>{t.addEventListener(`click`,t=>{let r=t.currentTarget.dataset.claseId,i=n.find(e=>e.id===r);i&&(o.close(),setTimeout(()=>{_r(i,{...u,onSuccess:()=>{setTimeout(()=>Xr(e),300)}})},300))})}),r.querySelectorAll(`.btn-desvincular-clase`).forEach(t=>{t.addEventListener(`click`,async t=>{let n=t.currentTarget.dataset.claseId,r=t.currentTarget.dataset.claseNombre,i=t.currentTarget.dataset.esSuplente===`true`?`maestro_suplente_id`:`maestro_principal_id`;if(confirm(`¿Quitar a este maestro de "${r}"?`))try{t.currentTarget.disabled=!0,t.currentTarget.innerHTML=`<span class="spinner-border spinner-border-sm"></span>`,await ie(n,{[i]:null},!0),q(`Maestro desvinculado correctamente`,`success`),o.close(),setTimeout(()=>Xr(e),300)}catch(e){q(`Error al desvincular: `+e.message,`error`),t.currentTarget.disabled=!1,t.currentTarget.innerHTML=`<i class="bi bi-person-dash" style="font-size:1rem;"></i><span>Quitar</span>`}})})}catch{i.textContent=`Error`,r.innerHTML=`
+            </div>`,r.querySelectorAll(`.btn-editar-clase`).forEach(t=>{t.addEventListener(`click`,t=>{let r=t.currentTarget.dataset.claseId,i=n.find(e=>e.id===r);i&&(o.close(),setTimeout(()=>{gr(i,{...u,onSuccess:()=>{setTimeout(()=>Yr(e),300)}})},300))})}),r.querySelectorAll(`.btn-desvincular-clase`).forEach(t=>{t.addEventListener(`click`,async t=>{let n=t.currentTarget.dataset.claseId,r=t.currentTarget.dataset.claseNombre,i=t.currentTarget.dataset.esSuplente===`true`?`maestro_suplente_id`:`maestro_principal_id`;if(confirm(`¿Quitar a este maestro de "${r}"?`))try{t.currentTarget.disabled=!0,t.currentTarget.innerHTML=`<span class="spinner-border spinner-border-sm"></span>`,await ie(n,{[i]:null},!0),q(`Maestro desvinculado correctamente`,`success`),o.close(),setTimeout(()=>Yr(e),300)}catch(e){q(`Error al desvincular: `+e.message,`error`),t.currentTarget.disabled=!1,t.currentTarget.innerHTML=`<i class="bi bi-person-dash" style="font-size:1rem;"></i><span>Quitar</span>`}})})}catch{i.textContent=`Error`,r.innerHTML=`
             <div class="alert alert-danger py-2 mb-0 small">
               <i class="bi bi-exclamation-triangle me-1"></i> Error al cargar las clases.
-            </div>`}})()}})}function Zr(e){let t=G.maestrosOriginales.find(t=>t.id===e);if(!t){q(`Maestro no encontrado`,`error`);return}G.deletingId=e;let n=t.nombre||t.name||``,r=t.is_active!==!1;o.open({title:r?`⏸️ Desactivar Maestro`:`▶️ Reactivar Maestro`,size:`sm`,saveText:r?`Desactivar`:`Reactivar`,body:r?`<p>¿Desactivar al maestro <strong>${H(n)}</strong>?</p>
+            </div>`}})()}})}function Xr(e){let t=G.maestrosOriginales.find(t=>t.id===e);if(!t){q(`Maestro no encontrado`,`error`);return}G.deletingId=e;let n=t.nombre||t.name||``,r=t.is_active!==!1;o.open({title:r?`⏸️ Desactivar Maestro`:`▶️ Reactivar Maestro`,size:`sm`,saveText:r?`Desactivar`:`Reactivar`,body:r?`<p>¿Desactivar al maestro <strong>${H(n)}</strong>?</p>
          <p class="text-muted small mb-0">El maestro no aparecerá en las listas, pero sus datos se conservarán.</p>`:`<p>¿Reactivar al maestro <strong>${H(n)}</strong>?</p>
-         <p class="text-muted small mb-0">El maestro volverá a aparecer en las listas.</p>`,onSave:async()=>{r?(await ur(e),q(`Maestro desactivado correctamente`,`success`)):(await dr(e),q(`Maestro reactivado correctamente`,`success`)),qr()}})}function Qr(){let e=K.querySelector(`#maestrosTBody`);if(!e)return;e.innerHTML=Wr(G.maestros);let t=K.querySelector(`.maestros-header-premium p.text-muted`);t&&(t.textContent=`${G.maestros.length} maestros en total`)}function $r(e){return/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)}function ei(){if(G.maestrosOriginales.length===0){q(`No hay maestros para exportar`,`error`);return}let e=[[`Nombre`,`Email`,`Teléfono`,`Instrumento`,`Especialidad`,`Estado`],...G.maestrosOriginales.map(e=>[e.nombre||``,e.email||``,e.telefono||``,e.instrumento||``,e.especialidad||``,e.is_active===!1?`Inactivo`:`Activo`])].map(e=>e.map(e=>`"${String(e).replace(/"/g,`""`)}"`).join(`,`)).join(`
+         <p class="text-muted small mb-0">El maestro volverá a aparecer en las listas.</p>`,onSave:async()=>{r?(await lr(e),q(`Maestro desactivado correctamente`,`success`)):(await ur(e),q(`Maestro reactivado correctamente`,`success`)),Kr()}})}function Zr(){let e=K.querySelector(`#maestrosTBody`);if(!e)return;e.innerHTML=Ur(G.maestros);let t=K.querySelector(`.maestros-header-premium p.text-muted`);t&&(t.textContent=`${G.maestros.length} maestros en total`)}function Qr(e){return/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)}function $r(){if(G.maestrosOriginales.length===0){q(`No hay maestros para exportar`,`error`);return}let e=[[`Nombre`,`Email`,`Teléfono`,`Instrumento`,`Especialidad`,`Estado`],...G.maestrosOriginales.map(e=>[e.nombre||``,e.email||``,e.telefono||``,e.instrumento||``,e.especialidad||``,e.is_active===!1?`Inactivo`:`Activo`])].map(e=>e.map(e=>`"${String(e).replace(/"/g,`""`)}"`).join(`,`)).join(`
 `),t=new Blob([e],{type:`text/csv;charset=utf-8;`}),n=document.createElement(`a`);n.href=URL.createObjectURL(t),n.download=`maestros-${new Date().toISOString().split(`T`)[0]}.csv`,n.click(),q(`CSV exportado exitosamente`,`success`)}function q(e,t=`info`){let n=K.querySelector(`#toastContainer`);if(!n)return;let i=t===`success`?`bg-success`:t===`error`?`bg-danger`:`bg-info`,a=t===`success`?`bi-check-circle`:t===`error`?`bi-exclamation-circle`:`bi-info-circle`,o=t===`success`?`Éxito`:t===`error`?`Error`:`Información`,s=document.createElement(`div`);s.className=`toast`,s.setAttribute(`role`,`alert`),s.setAttribute(`aria-live`,`assertive`),s.setAttribute(`aria-atomic`,`true`),s.innerHTML=`
     <div class="toast-header ${i} text-white">
       <i class="bi ${a} me-2"></i>
@@ -1950,7 +1944,7 @@ import{n as e}from"./rolldown-runtime-tcWNtVWY.js";import{i as t}from"./supabase
       <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
     </div>
     <div class="toast-body">${H(e)}</div>
-  `,n.appendChild(s),new r(s,{autohide:!0,delay:3e3}).show(),s.addEventListener(`hidden.bs.toast`,()=>s.remove())}var ti=e({getAlertasActivas:()=>oi,getAlertasRojas:()=>si,getAlumnosDestacados:()=>hi,getAlumnosEnRiesgoAcademico:()=>gi,getAlumnosEnRiesgoAlto:()=>ai,getCorrelacionAsistenciaRendimiento:()=>yi,getDestacadosYRiesgoAcademico:()=>mi,getEstadisticasPeriodoActivo:()=>pi,getEstadisticasPeriodos:()=>fi,getHistorialEstadoAlumno:()=>bi,getPatronAsistencia:()=>di,getRachaAusencias:()=>_i,getRendimientoMaestro:()=>ui,getRendimientoMaestros:()=>li,getResumenAlertas:()=>ci,getResumenAlumno:()=>ri,getResumenAlumnos:()=>ni,getRiesgoAbandono:()=>ii,getTasaAsistenciaPeriodo:()=>vi,registrarCambioEstadoAlumno:()=>xi});async function ni(){let{data:e,error:n}=await t.from(`vw_resumen_alumno`).select(`*`).order(`nombre_completo`);if(n)throw Error(`No se pudo cargar el resumen de alumnos`);return e}async function ri(e){let{data:n,error:r}=await t.from(`vw_resumen_alumno`).select(`*`).eq(`id`,e).single();if(r)throw Error(`No se pudo cargar el resumen del alumno`);return n}async function ii({nivel:e=null}={}){let n=t.from(`vw_riesgo_abandono`).select(`*`).order(`score_riesgo`,{ascending:!1});e&&(n=n.eq(`nivel_riesgo`,e));let{data:r,error:i}=await n;if(i)throw Error(`No se pudo cargar el análisis de riesgo`);return r}async function ai(){return ii({nivel:`alto`})}async function oi({color:e=null,alumnoId:n=null}={}){let r=t.from(`vw_alertas_activas`).select(`*`).order(`fecha_referencia`,{ascending:!0});e&&(r=r.eq(`color`,e)),n&&(r=r.eq(`alumno_id`,n));let{data:i,error:a}=await r;if(a)throw Error(`No se pudieron cargar las alertas`);return i}async function si(){return oi({color:`rojo`})}async function ci(){let{data:e,error:n}=await t.from(`vw_alertas_activas`).select(`color, tipo_alerta`);if(n)throw Error(`No se pudo obtener el resumen de alertas`);return{total:e.length,rojas:e.filter(e=>e.color===`rojo`).length,naranjas:e.filter(e=>e.color===`naranja`).length,amarillas:e.filter(e=>e.color===`amarillo`).length,porTipo:e.reduce((e,t)=>(e[t.tipo_alerta]=(e[t.tipo_alerta]||0)+1,e),{})}}async function li(){let{data:e,error:n}=await t.from(`vw_rendimiento_maestro`).select(`*`);if(n)throw Error(`No se pudo cargar el rendimiento de maestros`);return e}async function ui(e){let{data:n,error:r}=await t.from(`vw_rendimiento_maestro`).select(`*`).eq(`maestro_id`,e).single();if(r)throw Error(`No se pudo cargar el rendimiento del maestro`);return n}async function di({instrumento:e=null}={}){let n=t.from(`vw_patron_asistencia`).select(`*`).order(`dia_semana_num`);e&&(n=n.eq(`instrumento_principal`,e));let{data:r,error:i}=await n;if(i)throw Error(`No se pudo cargar el patrón de asistencia`);return r}async function fi(){let{data:e,error:n}=await t.from(`vw_estadisticas_periodo`).select(`*`);if(n)throw Error(`No se pudieron cargar las estadísticas por período`);return e}async function pi(){let{data:e,error:n}=await t.from(`vw_estadisticas_periodo`).select(`*`).eq(`activo`,!0).order(`fecha_inicio`,{ascending:!1}).limit(1);if(n)throw Error(`No se pudieron cargar las estadísticas del período activo: `+n.message);return e&&e.length>0?e[0]:null}async function mi({categoria:e=null}={}){let n=t.from(`vw_destacados_y_riesgo_academico`).select(`*`);e&&(n=n.eq(`categoria`,e));let{data:r,error:i}=await n;if(i)throw Error(`No se pudo cargar el análisis académico`);return r}async function hi(){return mi({categoria:`destacado`})}async function gi(){return mi({categoria:`riesgo_academico`})}async function _i(e){let{data:n,error:r}=await t.rpc(`fn_racha_ausencias`,{p_alumno_id:e});if(r)throw Error(`No se pudo calcular la racha de ausencias`);return n}async function vi(e,n,r=null){let i={p_alumno_id:e,p_desde:n};r&&(i.p_hasta=r);let{data:a,error:o}=await t.rpc(`fn_tasa_asistencia_periodo`,i);if(o)throw Error(`No se pudo calcular la tasa de asistencia`);return a}async function yi(){let{data:e,error:n}=await t.rpc(`fn_correlacion_asistencia_rendimiento`);if(n)throw Error(`No se pudo calcular la correlación`);return e}async function bi(e){let{data:n,error:r}=await t.from(`historial_estado_alumno`).select(`*`).eq(`alumno_id`,e).order(`fecha`,{ascending:!1});if(r)throw Error(`No se pudo cargar el historial`);return n}async function xi(e,n,r,i=null){if(![`activo`,`baja_voluntaria`,`baja_academica`,`suspendido`,`egresado`].includes(n))throw Error(`Estado no válido`);let{data:a,error:o}=await t.from(`historial_estado_alumno`).insert([{alumno_id:e,estado:n,motivo:r?.trim()||null,registrado_por:i||null,fecha:new Date().toISOString().split(`T`)[0]}]).select();if(o)throw Error(`No se pudo registrar el cambio de estado`);return a[0]}async function J(e){let t={"/assets/data/mocks/alumnos.json":()=>a(()=>import(`./alumnos-DymqG36Y.js`).then(e=>e.n),__vite__mapDeps([4,1])),"/assets/data/mocks/clases.json":()=>a(()=>import(`./clases-IDMUxON6.js`).then(e=>e.t),__vite__mapDeps([5,1])),"/assets/data/mocks/sesiones.json":()=>a(()=>import(`./sesiones-t6hlrI4y.js`).then(e=>e.t),__vite__mapDeps([6,1])),"/assets/data/mocks/maestro_tareas.json":()=>a(()=>import(`./maestro_tareas-DDJI2X00.js`),[]),"/assets/data/mocks/metricas_periodo.json":()=>a(()=>import(`./metricas_periodo-DdZAbOg7.js`),[]),"/assets/data/mocks/alertas_config.json":()=>a(()=>import(`./alertas_config-C6ytg76N.js`),[]),"/assets/data/mocks/objetivos_gamificacion.json":()=>a(()=>import(`./objetivos_gamificacion-BrqY9FHv.js`),[]),"/assets/data/mocks/ausencias.json":()=>a(()=>import(`./ausencias-C9ld-ISx.js`),[]),"/assets/data/mocks/planificacion-curricular.json":()=>a(()=>import(`./planificacion-curricular-2PU0yhcD.js`),[])}[e];if(t){let e=await t();return e.default||e}return console.warn(`loadJsonMock: ruta no mapeada: ${e}`),null}var Si=e({getAlertasActivas:()=>ji,getAlertasConfig:()=>ki,getAlumnosDestacados:()=>Ii,getEstadisticasPeriodo:()=>Ei,getEstadisticasPeriodoActivo:()=>Di,getHistorialEstadoAlumno:()=>Ni,getRachaAusencias:()=>Pi,getResumenAlertas:()=>Mi,getResumenAlumno:()=>Ti,getResumenAlumnos:()=>wi,getRiesgoAbandono:()=>Fi,getTasaAsistenciaPeriodo:()=>Oi,updateAlertaConfig:()=>Ai}),Ci=`/assets/data/mocks/metricas_periodo.json`;async function wi(){return(await J(Ci)).estadisticas_periodo[0]?.total_alumnos||0}async function Ti(e){return null}async function Ei(){return(await J(Ci)).configuraciones}async function Di(){let e=await J(Ci),t=e.configuraciones.find(e=>e.activo),n=e.estadisticas_periodo.find(e=>e.periodo_id===t?.id);return t?{...t,...n}:null}async function Oi(e,t,n=null){return 87.5}async function ki(){return await J(`/assets/data/mocks/alertas_config.json`)}async function Ai(e,t){return console.log(`Mock: updateAlertaConfig`,e,t),{id:e,...t}}async function ji(e={}){return(await J(`/assets/data/mocks/alertas_config.json`)).alertas.filter(e=>e.activo)}async function Mi(){let e=(await J(`/assets/data/mocks/alertas_config.json`)).alertas.filter(e=>e.activo);return{total:e.length,rojas:e.filter(e=>e.color===`rojo`).length,naranjas:e.filter(e=>e.color===`naranja`).length,amarillas:e.filter(e=>e.color===`amarillo`).length}}async function Ni(e){return[]}async function Pi(e){return 0}async function Fi({nivel:e=null}={}){let t=[{nombre_completo:`Mateo Fernández`,score_riesgo:88,nivel_riesgo:`alto`},{nombre_completo:`Lucía Benítez`,score_riesgo:65,nivel_riesgo:`medio`},{nombre_completo:`Santiago Morales`,score_riesgo:35,nivel_riesgo:`bajo`}];return e?t.filter(t=>t.nivel_riesgo===e):t}async function Ii(){return[{nombre_completo:`Valeria Russo`,promedio:9.85,programa:`Violín Cátedra`},{nombre_completo:`Thiago Silva`,promedio:9.72,programa:`Violín Inicial`},{nombre_completo:`Delfina Lombardi`,promedio:9.6,programa:`Violín Cátedra`}]}var Y=()=>He.isDemoMode?Si:ti,Li=(...e)=>Y().getEstadisticasPeriodoActivo(...e),Ri=(...e)=>Y().getTasaAsistenciaPeriodo(...e),zi=(...e)=>Y().getAlertasActivas(...e),Bi=(...e)=>Y().getResumenAlertas(...e),Vi=(...e)=>Y().getRiesgoAbandono(...e),Hi=(...e)=>Y().getAlumnosDestacados(...e);function Ui({label:e,value:t,color:n=`primary`,icon:r=`bi-graph-up`}){let i=`bg-${n}`,a=`text-${n}`;return`
+  `,n.appendChild(s),new r(s,{autohide:!0,delay:3e3}).show(),s.addEventListener(`hidden.bs.toast`,()=>s.remove())}var ei=e({getAlertasActivas:()=>ai,getAlertasRojas:()=>oi,getAlumnosDestacados:()=>mi,getAlumnosEnRiesgoAcademico:()=>hi,getAlumnosEnRiesgoAlto:()=>ii,getCorrelacionAsistenciaRendimiento:()=>vi,getDestacadosYRiesgoAcademico:()=>pi,getEstadisticasPeriodoActivo:()=>fi,getEstadisticasPeriodos:()=>di,getHistorialEstadoAlumno:()=>yi,getPatronAsistencia:()=>ui,getRachaAusencias:()=>gi,getRendimientoMaestro:()=>li,getRendimientoMaestros:()=>ci,getResumenAlertas:()=>si,getResumenAlumno:()=>ni,getResumenAlumnos:()=>ti,getRiesgoAbandono:()=>ri,getTasaAsistenciaPeriodo:()=>_i,registrarCambioEstadoAlumno:()=>bi});async function ti(){let{data:e,error:n}=await t.from(`vw_resumen_alumno`).select(`*`).order(`nombre_completo`);if(n)throw Error(`No se pudo cargar el resumen de alumnos`);return e}async function ni(e){let{data:n,error:r}=await t.from(`vw_resumen_alumno`).select(`*`).eq(`id`,e).single();if(r)throw Error(`No se pudo cargar el resumen del alumno`);return n}async function ri({nivel:e=null}={}){let n=t.from(`vw_riesgo_abandono`).select(`*`).order(`score_riesgo`,{ascending:!1});e&&(n=n.eq(`nivel_riesgo`,e));let{data:r,error:i}=await n;if(i)throw Error(`No se pudo cargar el análisis de riesgo`);return r}async function ii(){return ri({nivel:`alto`})}async function ai({color:e=null,alumnoId:n=null}={}){let r=t.from(`vw_alertas_activas`).select(`*`).order(`fecha_referencia`,{ascending:!0});e&&(r=r.eq(`color`,e)),n&&(r=r.eq(`alumno_id`,n));let{data:i,error:a}=await r;if(a)throw Error(`No se pudieron cargar las alertas`);return i}async function oi(){return ai({color:`rojo`})}async function si(){let{data:e,error:n}=await t.from(`vw_alertas_activas`).select(`color, tipo_alerta`);if(n)throw Error(`No se pudo obtener el resumen de alertas`);return{total:e.length,rojas:e.filter(e=>e.color===`rojo`).length,naranjas:e.filter(e=>e.color===`naranja`).length,amarillas:e.filter(e=>e.color===`amarillo`).length,porTipo:e.reduce((e,t)=>(e[t.tipo_alerta]=(e[t.tipo_alerta]||0)+1,e),{})}}async function ci(){let{data:e,error:n}=await t.from(`vw_rendimiento_maestro`).select(`*`);if(n)throw Error(`No se pudo cargar el rendimiento de maestros`);return e}async function li(e){let{data:n,error:r}=await t.from(`vw_rendimiento_maestro`).select(`*`).eq(`maestro_id`,e).single();if(r)throw Error(`No se pudo cargar el rendimiento del maestro`);return n}async function ui({instrumento:e=null}={}){let n=t.from(`vw_patron_asistencia`).select(`*`).order(`dia_semana_num`);e&&(n=n.eq(`instrumento_principal`,e));let{data:r,error:i}=await n;if(i)throw Error(`No se pudo cargar el patrón de asistencia`);return r}async function di(){let{data:e,error:n}=await t.from(`vw_estadisticas_periodo`).select(`*`);if(n)throw Error(`No se pudieron cargar las estadísticas por período`);return e}async function fi(){let{data:e,error:n}=await t.from(`vw_estadisticas_periodo`).select(`*`).eq(`activo`,!0).order(`fecha_inicio`,{ascending:!1}).limit(1);if(n)throw Error(`No se pudieron cargar las estadísticas del período activo: `+n.message);return e&&e.length>0?e[0]:null}async function pi({categoria:e=null}={}){let n=t.from(`vw_destacados_y_riesgo_academico`).select(`*`);e&&(n=n.eq(`categoria`,e));let{data:r,error:i}=await n;if(i)throw Error(`No se pudo cargar el análisis académico`);return r}async function mi(){return pi({categoria:`destacado`})}async function hi(){return pi({categoria:`riesgo_academico`})}async function gi(e){let{data:n,error:r}=await t.rpc(`fn_racha_ausencias`,{p_alumno_id:e});if(r)throw Error(`No se pudo calcular la racha de ausencias`);return n}async function _i(e,n,r=null){let i={p_alumno_id:e,p_desde:n};r&&(i.p_hasta=r);let{data:a,error:o}=await t.rpc(`fn_tasa_asistencia_periodo`,i);if(o)throw Error(`No se pudo calcular la tasa de asistencia`);return a}async function vi(){let{data:e,error:n}=await t.rpc(`fn_correlacion_asistencia_rendimiento`);if(n)throw Error(`No se pudo calcular la correlación`);return e}async function yi(e){let{data:n,error:r}=await t.from(`historial_estado_alumno`).select(`*`).eq(`alumno_id`,e).order(`fecha`,{ascending:!1});if(r)throw Error(`No se pudo cargar el historial`);return n}async function bi(e,n,r,i=null){if(![`activo`,`baja_voluntaria`,`baja_academica`,`suspendido`,`egresado`].includes(n))throw Error(`Estado no válido`);let{data:a,error:o}=await t.from(`historial_estado_alumno`).insert([{alumno_id:e,estado:n,motivo:r?.trim()||null,registrado_por:i||null,fecha:new Date().toISOString().split(`T`)[0]}]).select();if(o)throw Error(`No se pudo registrar el cambio de estado`);return a[0]}async function J(e){let t={"/assets/data/mocks/alumnos.json":()=>a(()=>import(`./alumnos-DymqG36Y.js`).then(e=>e.n),__vite__mapDeps([4,1])),"/assets/data/mocks/clases.json":()=>a(()=>import(`./clases-IDMUxON6.js`).then(e=>e.t),__vite__mapDeps([5,1])),"/assets/data/mocks/sesiones.json":()=>a(()=>import(`./sesiones-t6hlrI4y.js`).then(e=>e.t),__vite__mapDeps([6,1])),"/assets/data/mocks/maestro_tareas.json":()=>a(()=>import(`./maestro_tareas-DDJI2X00.js`),[]),"/assets/data/mocks/metricas_periodo.json":()=>a(()=>import(`./metricas_periodo-DdZAbOg7.js`),[]),"/assets/data/mocks/alertas_config.json":()=>a(()=>import(`./alertas_config-C6ytg76N.js`),[]),"/assets/data/mocks/objetivos_gamificacion.json":()=>a(()=>import(`./objetivos_gamificacion-BrqY9FHv.js`),[]),"/assets/data/mocks/ausencias.json":()=>a(()=>import(`./ausencias-C9ld-ISx.js`),[]),"/assets/data/mocks/planificacion-curricular.json":()=>a(()=>import(`./planificacion-curricular-2PU0yhcD.js`),[])}[e];if(t){let e=await t();return e.default||e}return console.warn(`loadJsonMock: ruta no mapeada: ${e}`),null}var xi=e({getAlertasActivas:()=>Ai,getAlertasConfig:()=>Oi,getAlumnosDestacados:()=>Fi,getEstadisticasPeriodo:()=>Ti,getEstadisticasPeriodoActivo:()=>Ei,getHistorialEstadoAlumno:()=>Mi,getRachaAusencias:()=>Ni,getResumenAlertas:()=>ji,getResumenAlumno:()=>wi,getResumenAlumnos:()=>Ci,getRiesgoAbandono:()=>Pi,getTasaAsistenciaPeriodo:()=>Di,updateAlertaConfig:()=>ki}),Si=`/assets/data/mocks/metricas_periodo.json`;async function Ci(){return(await J(Si)).estadisticas_periodo[0]?.total_alumnos||0}async function wi(e){return null}async function Ti(){return(await J(Si)).configuraciones}async function Ei(){let e=await J(Si),t=e.configuraciones.find(e=>e.activo),n=e.estadisticas_periodo.find(e=>e.periodo_id===t?.id);return t?{...t,...n}:null}async function Di(e,t,n=null){return 87.5}async function Oi(){return await J(`/assets/data/mocks/alertas_config.json`)}async function ki(e,t){return console.log(`Mock: updateAlertaConfig`,e,t),{id:e,...t}}async function Ai(e={}){return(await J(`/assets/data/mocks/alertas_config.json`)).alertas.filter(e=>e.activo)}async function ji(){let e=(await J(`/assets/data/mocks/alertas_config.json`)).alertas.filter(e=>e.activo);return{total:e.length,rojas:e.filter(e=>e.color===`rojo`).length,naranjas:e.filter(e=>e.color===`naranja`).length,amarillas:e.filter(e=>e.color===`amarillo`).length}}async function Mi(e){return[]}async function Ni(e){return 0}async function Pi({nivel:e=null}={}){let t=[{nombre_completo:`Mateo Fernández`,score_riesgo:88,nivel_riesgo:`alto`},{nombre_completo:`Lucía Benítez`,score_riesgo:65,nivel_riesgo:`medio`},{nombre_completo:`Santiago Morales`,score_riesgo:35,nivel_riesgo:`bajo`}];return e?t.filter(t=>t.nivel_riesgo===e):t}async function Fi(){return[{nombre_completo:`Valeria Russo`,promedio:9.85,programa:`Violín Cátedra`},{nombre_completo:`Thiago Silva`,promedio:9.72,programa:`Violín Inicial`},{nombre_completo:`Delfina Lombardi`,promedio:9.6,programa:`Violín Cátedra`}]}var Y=()=>He.isDemoMode?xi:ei,Ii=(...e)=>Y().getEstadisticasPeriodoActivo(...e),Li=(...e)=>Y().getTasaAsistenciaPeriodo(...e),Ri=(...e)=>Y().getAlertasActivas(...e),zi=(...e)=>Y().getResumenAlertas(...e),Bi=(...e)=>Y().getRiesgoAbandono(...e),Vi=(...e)=>Y().getAlumnosDestacados(...e);function Hi({label:e,value:t,color:n=`primary`,icon:r=`bi-graph-up`}){let i=`bg-${n}`,a=`text-${n}`;return`
     <div class="card border-0 shadow-sm h-100 pm-metric-card">
       <div class="card-body p-3">
         <div class="d-flex align-items-center gap-3">
@@ -1964,7 +1958,7 @@ import{n as e}from"./rolldown-runtime-tcWNtVWY.js";import{i as t}from"./supabase
         </div>
       </div>
     </div>
-  `}var X={activeTab:localStorage.getItem(`pm_metrics_tab`)||`resumen`,stats:null,alertas:[],riesgo:[],cargando:!1,container:null};async function Wi(e){if(e)try{X.container=e,X.cargando=!0,Gi(e),X.stats=await Li(),X.resumenAlertas=await Bi(),X.cargando=!1,qi(e),$i(e)}catch(t){console.error(t),Ki(e,t.message)}}function Gi(e){e.innerHTML=`<div class="d-flex justify-content-center align-items-center" style="min-height: 400px;"><div class="spinner-border text-primary" role="status"></div></div>`}function Ki(e,t){e.innerHTML=`<div class="alert alert-danger m-3"><h5>Error analítico</h5><p>${f(t)}</p></div>`}function qi(e){e.innerHTML=`
+  `}var X={activeTab:localStorage.getItem(`pm_metrics_tab`)||`resumen`,stats:null,alertas:[],riesgo:[],cargando:!1,container:null};async function Ui(e){if(e)try{X.container=e,X.cargando=!0,Wi(e),X.stats=await Ii(),X.resumenAlertas=await zi(),X.cargando=!1,Ki(e),Qi(e)}catch(t){console.error(t),Gi(e,t.message)}}function Wi(e){e.innerHTML=`<div class="d-flex justify-content-center align-items-center" style="min-height: 400px;"><div class="spinner-border text-primary" role="status"></div></div>`}function Gi(e,t){e.innerHTML=`<div class="alert alert-danger m-3"><h5>Error analítico</h5><p>${f(t)}</p></div>`}function Ki(e){e.innerHTML=`
     <div class="page-container">
       <div class="page-header d-flex justify-content-between align-items-center flex-wrap gap-2">
         <div class="d-flex align-items-center gap-2">
@@ -1986,22 +1980,22 @@ import{n as e}from"./rolldown-runtime-tcWNtVWY.js";import{i as t}from"./supabase
       </div>
 
       <div id="hub-content">
-        ${Ji()}
+        ${qi()}
       </div>
     </div>
-  `}function Ji(){switch(X.activeTab){case`resumen`:return Yi();case`alertas`:return Xi();case`riesgo`:return Zi();case`ia`:return Qi();default:return Yi()}}function Yi(){let e=X.stats||{},t=X.resumenAlertas||{total:0,rojas:0};return`
+  `}function qi(){switch(X.activeTab){case`resumen`:return Ji();case`alertas`:return Yi();case`riesgo`:return Xi();case`ia`:return Zi();default:return Ji()}}function Ji(){let e=X.stats||{},t=X.resumenAlertas||{total:0,rojas:0};return`
     <div class="row g-3">
       <div class="col-md-6 col-lg-3">
-        ${Ui({label:`Alumnos Activos`,value:e.total_alumnos||0,icon:`bi-people`,color:`primary`})}
+        ${Hi({label:`Alumnos Activos`,value:e.total_alumnos||0,icon:`bi-people`,color:`primary`})}
       </div>
       <div class="col-md-6 col-lg-3">
-        ${Ui({label:`Promedio Global`,value:(e.promedio_general||0).toFixed(2),icon:`bi-star`,color:`success`})}
+        ${Hi({label:`Promedio Global`,value:(e.promedio_general||0).toFixed(2),icon:`bi-star`,color:`success`})}
       </div>
       <div class="col-md-6 col-lg-3">
-        ${Ui({label:`Alertas Rojas`,value:t.rojas,icon:`bi-exclamation-octagon`,color:`danger`})}
+        ${Hi({label:`Alertas Rojas`,value:t.rojas,icon:`bi-exclamation-octagon`,color:`danger`})}
       </div>
       <div class="col-md-6 col-lg-3">
-        ${Ui({label:`Asistencia Hoy`,value:(e.asistencia_hoy_porcentaje||0)+`%`,icon:`bi-check2-circle`,color:`info`})}
+        ${Hi({label:`Asistencia Hoy`,value:(e.asistencia_hoy_porcentaje||0)+`%`,icon:`bi-check2-circle`,color:`info`})}
       </div>
       
       <div class="col-12 mt-4">
@@ -2011,7 +2005,7 @@ import{n as e}from"./rolldown-runtime-tcWNtVWY.js";import{i as t}from"./supabase
         </div>
       </div>
     </div>
-  `}function Xi(){return`
+  `}function Yi(){return`
     <div class="page-glass p-4">
       <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
         <h5 class="fw-bold m-0"><i class="bi bi-exclamation-triangle-fill text-danger me-2"></i>Alertas de Seguimiento Académico</h5>
@@ -2027,7 +2021,7 @@ import{n as e}from"./rolldown-runtime-tcWNtVWY.js";import{i as t}from"./supabase
         <div class="text-center py-5"><div class="spinner-border spinner-border-sm text-primary"></div></div>
       </div>
     </div>
-  `}function Zi(){return`
+  `}function Xi(){return`
     <div class="page-glass p-4">
       <h5 class="fw-bold mb-4">Análisis Proactivo de Riesgo de Abandono</h5>
       <div class="alert alert-info small mb-4">
@@ -2037,7 +2031,7 @@ import{n as e}from"./rolldown-runtime-tcWNtVWY.js";import{i as t}from"./supabase
         <div class="text-center py-5"><div class="spinner-border spinner-border-sm text-primary"></div></div>
       </div>
     </div>
-  `}function Qi(){return`
+  `}function Zi(){return`
     <div class="text-center py-5">
       <i class="bi bi-robot fs-1 text-primary d-block mb-3"></i>
       <h5>SOI Intelligence</h5>
@@ -2052,7 +2046,7 @@ import{n as e}from"./rolldown-runtime-tcWNtVWY.js";import{i as t}from"./supabase
       </div>
       <div id="ia-result-area" class="mt-4 text-start" style="max-width: 600px; margin: 0 auto;"></div>
     </div>
-  `}function $i(e){e.querySelectorAll(`[data-tab]`).forEach(t=>{t.addEventListener(`click`,()=>{X.activeTab=t.dataset.tab,localStorage.setItem(`pm_metrics_tab`,X.activeTab),qi(e),$i(e),ea()})}),e.querySelector(`#btn-guia-analisis`)?.addEventListener(`click`,()=>{na()}),ea()}async function ea(){if(X.activeTab===`resumen`){let e=await Hi(),t=X.container.querySelector(`#destacados-placeholder`);t&&(t.className=``,t.innerHTML=`
+  `}function Qi(e){e.querySelectorAll(`[data-tab]`).forEach(t=>{t.addEventListener(`click`,()=>{X.activeTab=t.dataset.tab,localStorage.setItem(`pm_metrics_tab`,X.activeTab),Ki(e),Qi(e),$i()})}),e.querySelector(`#btn-guia-analisis`)?.addEventListener(`click`,()=>{ta()}),$i()}async function $i(){if(X.activeTab===`resumen`){let e=await Vi(),t=X.container.querySelector(`#destacados-placeholder`);t&&(t.className=``,t.innerHTML=`
         <table class="table table-compact table-hover mb-0">
           <tbody class="small">
             ${e.slice(0,5).map(e=>`
@@ -2064,7 +2058,7 @@ import{n as e}from"./rolldown-runtime-tcWNtVWY.js";import{i as t}from"./supabase
             `).join(``)}
           </tbody>
         </table>
-      `)}if(X.activeTab===`alertas`){X.container.querySelector(`#btn-goto-notifications`)?.addEventListener(`click`,()=>{a(async()=>{let{router:e}=await import(`./router-BK3enFMp.js`).then(e=>e.n);return{router:e}},__vite__mapDeps([7,1,8,9])).then(({router:e})=>{e.navigate(`admin-notificaciones`)})});let e=await zi(),t=X.container.querySelector(`#alertas-list-container`);t&&(t.innerHTML=e.length===0?`<p class="text-center text-muted">No hay alertas activas.</p>`:e.map(e=>`
+      `)}if(X.activeTab===`alertas`){X.container.querySelector(`#btn-goto-notifications`)?.addEventListener(`click`,()=>{a(async()=>{let{router:e}=await import(`./router-BK3enFMp.js`).then(e=>e.n);return{router:e}},__vite__mapDeps([7,1,8,9])).then(({router:e})=>{e.navigate(`admin-notificaciones`)})});let e=await Ri(),t=X.container.querySelector(`#alertas-list-container`);t&&(t.innerHTML=e.length===0?`<p class="text-center text-muted">No hay alertas activas.</p>`:e.map(e=>`
           <div class="alert-item d-flex align-items-center gap-3 p-3 border-bottom">
             <div class="bg-${e.color} rounded-circle" style="width:12px;height:12px;"></div>
             <div class="flex-grow-1">
@@ -2073,7 +2067,7 @@ import{n as e}from"./rolldown-runtime-tcWNtVWY.js";import{i as t}from"./supabase
             </div>
             <div class="text-end small text-muted">${e.fecha_referencia}</div>
           </div>
-        `).join(``))}if(X.activeTab===`riesgo`){let e=await Vi(),t=X.container.querySelector(`#riesgo-list-container`);t&&(t.innerHTML=`
+        `).join(``))}if(X.activeTab===`riesgo`){let e=await Bi(),t=X.container.querySelector(`#riesgo-list-container`);t&&(t.innerHTML=`
         <table class="table table-compact table-hover">
           <thead><tr><th>Alumno</th><th class="text-center">Score</th><th>Nivel</th></tr></thead>
           <tbody class="small">
@@ -2086,13 +2080,13 @@ import{n as e}from"./rolldown-runtime-tcWNtVWY.js";import{i as t}from"./supabase
             `).join(``)}
           </tbody>
         </table>
-      `)}X.activeTab===`ia`&&ta()}function ta(){X.container.querySelector(`#btn-run-ia`)?.addEventListener(`click`,async()=>{let e=X.container.querySelector(`#ia-result-area`);e&&(e.innerHTML=`<div class="text-center"><div class="spinner-border spinner-border-sm text-primary"></div><p class="small mt-2">Analizando datos...</p></div>`,setTimeout(()=>{e.innerHTML=`
+      `)}X.activeTab===`ia`&&ea()}function ea(){X.container.querySelector(`#btn-run-ia`)?.addEventListener(`click`,async()=>{let e=X.container.querySelector(`#ia-result-area`);e&&(e.innerHTML=`<div class="text-center"><div class="spinner-border spinner-border-sm text-primary"></div><p class="small mt-2">Analizando datos...</p></div>`,setTimeout(()=>{e.innerHTML=`
         <div class="page-glass p-3 border-primary border-start border-4">
           <p class="small mb-2"><strong>Análisis Institucional:</strong></p>
           <p class="extra-small text-secondary">Basado en el rendimiento del período actual, se observa una mejora del 12% en la asistencia del grupo de Cuerdas. Sin embargo, 3 alumnos muestran un patrón de riesgo por inasistencias en la última racha de 15 días.</p>
           <button class="btn btn-xs btn-outline-primary mt-2" id="btn-copy-report">Copiar Reporte</button>
         </div>
-      `,X.container.querySelector(`#btn-copy-report`)?.addEventListener(`click`,()=>{navigator.clipboard.writeText(e.querySelector(`p.text-secondary`).innerText),i.show(`Reporte copiado al portapapeles`,`success`)})},1500))})}function na(){o.open({title:`Guía de Análisis Académico`,body:`
+      `,X.container.querySelector(`#btn-copy-report`)?.addEventListener(`click`,()=>{navigator.clipboard.writeText(e.querySelector(`p.text-secondary`).innerText),i.show(`Reporte copiado al portapapeles`,`success`)})},1500))})}function ta(){o.open({title:`Guía de Análisis Académico`,body:`
     <style>
       .guia-modal-body {
         font-family: 'Outfit', 'Inter', -apple-system, sans-serif;
@@ -2386,7 +2380,7 @@ import{n as e}from"./rolldown-runtime-tcWNtVWY.js";import{i as t}from"./supabase
         </div>
       </div>
     </div>
-  `,size:`lg`,hideSave:!0,cancelText:`Entendido`,onShow:e=>{let t=e.querySelectorAll(`#guia-modal-tabs button`),n=e.querySelectorAll(`.guia-panel`);t.forEach(r=>{r.addEventListener(`click`,()=>{t.forEach(e=>e.classList.remove(`active`)),r.classList.add(`active`),n.forEach(e=>e.classList.add(`d-none`));let i=e.querySelector(`#pane-${r.dataset.guia}`);i&&i.classList.remove(`d-none`)})})}})}var ra=class{constructor(e,t={}){this.container=e,this.data=t.data||[],this.onSelect=t.onSelect||(()=>{}),this.expandedNodes=new Set,this.selectedNodeId=null,this.icons={block:`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>`,level:`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 17h20M2 12h20M2 7h20"></path></svg>`,node:`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="3"></circle></svg>`,indicator:`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`,expander:`<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>`},this._injectStyles(),this.render(),this._bindEvents()}setData(e){this.data=e,this.render()}render(){this.container.innerHTML=`
+  `,size:`lg`,hideSave:!0,cancelText:`Entendido`,onShow:e=>{let t=e.querySelectorAll(`#guia-modal-tabs button`),n=e.querySelectorAll(`.guia-panel`);t.forEach(r=>{r.addEventListener(`click`,()=>{t.forEach(e=>e.classList.remove(`active`)),r.classList.add(`active`),n.forEach(e=>e.classList.add(`d-none`));let i=e.querySelector(`#pane-${r.dataset.guia}`);i&&i.classList.remove(`d-none`)})})}})}var na=class{constructor(e,t={}){this.container=e,this.data=t.data||[],this.onSelect=t.onSelect||(()=>{}),this.expandedNodes=new Set,this.selectedNodeId=null,this.icons={block:`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>`,level:`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 17h20M2 12h20M2 7h20"></path></svg>`,node:`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="3"></circle></svg>`,indicator:`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`,expander:`<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>`},this._injectStyles(),this.render(),this._bindEvents()}setData(e){this.data=e,this.render()}render(){this.container.innerHTML=`
       <div class="academic-tree">
         ${this._generateTreeHTML(this.data)}
       </div>
@@ -2514,7 +2508,7 @@ import{n as e}from"./rolldown-runtime-tcWNtVWY.js";import{i as t}from"./supabase
       [data-bs-theme="dark"] .tree-node.is-selected > .tree-node-content {
         background: var(--apple-primary, #0066cc);
       }
-    `,document.head.appendChild(e)}};async function ia(){let{data:e,error:n}=await t.from(`routes`).select(`*`).order(`name`);if(n)throw console.error(`Error fetching routes:`,n.message),Error(`No se pudieron cargar las rutas`);return e}async function aa(e){let{data:n,error:r}=await t.from(`route_versions`).select(`*`).eq(`route_id`,e).order(`version_number`,{ascending:!1});if(r)throw console.error(`Error fetching route versions:`,r.message),Error(`No se pudieron cargar las versiones de la ruta`);return n}async function oa(e){if(!e)return[];try{let{data:n,error:r}=await t.from(`blocks`).select(`*`).eq(`route_version_id`,e).order(`order_index`);if(r)throw r;if(!n.length)return[];let i=n.map(e=>e.id),{data:a,error:o}=await t.from(`levels`).select(`*`).in(`block_id`,i).order(`order_index`);if(o)throw o;let s=a.map(e=>e.id),{data:c,error:l}=await t.from(`nodes`).select(`*`).in(`level_id`,s).order(`order_index`).limit(5e3);if(l)throw l;let u=c.map(e=>e.id),{data:d,error:f}=await t.from(`indicators`).select(`*`).in(`node_id`,u).order(`order_index`).limit(1e4);if(f)throw f;return n.map(e=>({...e,type:`block`,children:a.filter(t=>t.block_id===e.id).map(e=>({...e,type:`level`,children:c.filter(t=>t.level_id===e.id).map(e=>({...e,type:`node`,children:d.filter(t=>t.node_id===e.id).map(e=>({...e,type:`indicator`}))}))}))}))}catch(e){throw console.error(`Error building academic tree:`,e.message),Error(`Error al construir el árbol académico`)}}async function sa(e){let{data:n,error:r}=await t.from(`node_resources`).select(`*`).eq(`node_id`,e).order(`order_index`);if(r)throw r;return n}async function ca(e){let{id:n,...r}=e;if(n){let{data:e,error:i}=await t.from(`node_resources`).update(r).eq(`id`,n).select().single();if(i)throw i;return e}else{let{data:e,error:n}=await t.from(`node_resources`).insert([r]).select().single();if(n)throw n;return e}}async function la(e){let{error:n}=await t.from(`node_resources`).delete().eq(`id`,e);if(n)throw n;return!0}async function ua(e,n){let{data:r,error:i}=await t.from(`nodes`).update(n).eq(`id`,e).select().single();if(i)throw i;return r}var da=class{constructor(e,t={}){this.container=e,this.node=null,this.resources=[],this.onUpdate=t.onUpdate||(()=>{}),this._injectStyles(),this.renderEmpty()}async setNode(e){if(!e){this.node=null,this.resources=[],this.renderEmpty();return}this.node=e,this.renderLoading();try{this.resources=await sa(e.id),this.render()}catch(e){console.error(`Error loading resources:`,e),this.renderError(`No se pudieron cargar los recursos del nodo.`)}}renderEmpty(){this.container.innerHTML=`
+    `,document.head.appendChild(e)}};async function ra(){let{data:e,error:n}=await t.from(`routes`).select(`*`).order(`name`);if(n)throw console.error(`Error fetching routes:`,n.message),Error(`No se pudieron cargar las rutas`);return e}async function ia(e){let{data:n,error:r}=await t.from(`route_versions`).select(`*`).eq(`route_id`,e).order(`version_number`,{ascending:!1});if(r)throw console.error(`Error fetching route versions:`,r.message),Error(`No se pudieron cargar las versiones de la ruta`);return n}async function aa(e){if(!e)return[];try{let{data:n,error:r}=await t.from(`blocks`).select(`*`).eq(`route_version_id`,e).order(`order_index`);if(r)throw r;if(!n.length)return[];let i=n.map(e=>e.id),{data:a,error:o}=await t.from(`levels`).select(`*`).in(`block_id`,i).order(`order_index`);if(o)throw o;let s=a.map(e=>e.id),{data:c,error:l}=await t.from(`nodes`).select(`*`).in(`level_id`,s).order(`order_index`).limit(5e3);if(l)throw l;let u=c.map(e=>e.id),{data:d,error:f}=await t.from(`indicators`).select(`*`).in(`node_id`,u).order(`order_index`).limit(1e4);if(f)throw f;return n.map(e=>({...e,type:`block`,children:a.filter(t=>t.block_id===e.id).map(e=>({...e,type:`level`,children:c.filter(t=>t.level_id===e.id).map(e=>({...e,type:`node`,children:d.filter(t=>t.node_id===e.id).map(e=>({...e,type:`indicator`}))}))}))}))}catch(e){throw console.error(`Error building academic tree:`,e.message),Error(`Error al construir el árbol académico`)}}async function oa(e){let{data:n,error:r}=await t.from(`node_resources`).select(`*`).eq(`node_id`,e).order(`order_index`);if(r)throw r;return n}async function sa(e){let{id:n,...r}=e;if(n){let{data:e,error:i}=await t.from(`node_resources`).update(r).eq(`id`,n).select().single();if(i)throw i;return e}else{let{data:e,error:n}=await t.from(`node_resources`).insert([r]).select().single();if(n)throw n;return e}}async function ca(e){let{error:n}=await t.from(`node_resources`).delete().eq(`id`,e);if(n)throw n;return!0}async function la(e,n){let{data:r,error:i}=await t.from(`nodes`).update(n).eq(`id`,e).select().single();if(i)throw i;return r}var ua=class{constructor(e,t={}){this.container=e,this.node=null,this.resources=[],this.onUpdate=t.onUpdate||(()=>{}),this._injectStyles(),this.renderEmpty()}async setNode(e){if(!e){this.node=null,this.resources=[],this.renderEmpty();return}this.node=e,this.renderLoading();try{this.resources=await oa(e.id),this.render()}catch(e){console.error(`Error loading resources:`,e),this.renderError(`No se pudieron cargar los recursos del nodo.`)}}renderEmpty(){this.container.innerHTML=`
       <div class="resource-editor-empty">
         <i class="bi bi-diagram-3"></i>
         <h3>Selecciona un nodo</h3>
@@ -2595,7 +2589,7 @@ import{n as e}from"./rolldown-runtime-tcWNtVWY.js";import{i as t}from"./supabase
           <button class="icon-btn delete-res" title="Eliminar"><i class="bi bi-trash"></i></button>
         </div>
       </div>
-    `}_bindEvents(){this.container.querySelector(`#save-node-metadata`)?.addEventListener(`click`,async()=>{let e=this.container.querySelector(`#node-name`).value,t=this.container.querySelector(`#node-critical`)?.checked,n=this.container.querySelector(`#save-node-metadata`);n.disabled=!0,n.textContent=`Guardando...`;try{let n={name:e};this.node.type===`node`&&(n.is_critical=t),this.node.type===`indicator`&&(n.description=e),await ua(this.node.id,n),Object.assign(this.node,n),this.onUpdate(this.node),this.render()}catch(e){alert(`Error al guardar: `+e.message)}finally{n.disabled=!1,n.textContent=`Guardar Cambios`}}),this.container.querySelector(`#add-resource-btn`)?.addEventListener(`click`,()=>{this._showResourceModal()}),this.container.querySelectorAll(`.edit-res`).forEach(e=>{e.addEventListener(`click`,()=>{let t=e.closest(`.resource-card`).dataset.id,n=this.resources.find(e=>e.id===t);this._showResourceModal(n)})}),this.container.querySelectorAll(`.delete-res`).forEach(e=>{e.addEventListener(`click`,async()=>{let t=e.closest(`.resource-card`).dataset.id;if(confirm(`¿Estás seguro de que deseas eliminar este recurso?`))try{await la(t),this.resources=this.resources.filter(e=>e.id!==t),this.render()}catch(e){alert(`Error al eliminar: `+e.message)}})})}_showResourceModal(e=null){let t=!!e,n=`resourceModal`,r=document.getElementById(n);r&&r.remove(),r=document.createElement(`div`),r.id=n,r.className=`modal fade apple-modal`,r.tabIndex=-1,r.innerHTML=`
+    `}_bindEvents(){this.container.querySelector(`#save-node-metadata`)?.addEventListener(`click`,async()=>{let e=this.container.querySelector(`#node-name`).value,t=this.container.querySelector(`#node-critical`)?.checked,n=this.container.querySelector(`#save-node-metadata`);n.disabled=!0,n.textContent=`Guardando...`;try{let n={name:e};this.node.type===`node`&&(n.is_critical=t),this.node.type===`indicator`&&(n.description=e),await la(this.node.id,n),Object.assign(this.node,n),this.onUpdate(this.node),this.render()}catch(e){alert(`Error al guardar: `+e.message)}finally{n.disabled=!1,n.textContent=`Guardar Cambios`}}),this.container.querySelector(`#add-resource-btn`)?.addEventListener(`click`,()=>{this._showResourceModal()}),this.container.querySelectorAll(`.edit-res`).forEach(e=>{e.addEventListener(`click`,()=>{let t=e.closest(`.resource-card`).dataset.id,n=this.resources.find(e=>e.id===t);this._showResourceModal(n)})}),this.container.querySelectorAll(`.delete-res`).forEach(e=>{e.addEventListener(`click`,async()=>{let t=e.closest(`.resource-card`).dataset.id;if(confirm(`¿Estás seguro de que deseas eliminar este recurso?`))try{await ca(t),this.resources=this.resources.filter(e=>e.id!==t),this.render()}catch(e){alert(`Error al eliminar: `+e.message)}})})}_showResourceModal(e=null){let t=!!e,n=`resourceModal`,r=document.getElementById(n);r&&r.remove(),r=document.createElement(`div`),r.id=n,r.className=`modal fade apple-modal`,r.tabIndex=-1,r.innerHTML=`
       <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
           <div class="modal-header">
@@ -2636,7 +2630,7 @@ import{n as e}from"./rolldown-runtime-tcWNtVWY.js";import{i as t}from"./supabase
           </div>
         </div>
       </div>
-    `,document.body.appendChild(r);let i=new bootstrap.Modal(r);i.show(),r.querySelectorAll(`.type-option`).forEach(e=>{e.addEventListener(`click`,()=>{r.querySelectorAll(`.type-option`).forEach(e=>e.classList.remove(`active`)),e.classList.add(`active`)})}),r.querySelector(`#save-resource-confirm-btn`).addEventListener(`click`,async()=>{let n=r.querySelector(`#resource-form`),a=new FormData(n),o={node_id:this.node.id,resource_type:a.get(`resource_type`),title:a.get(`title`),url:a.get(`url`),content:a.get(`content`),order_index:e?.order_index||this.resources.length};if(t&&(o.id=e.id),!o.title){alert(`El título es obligatorio`);return}try{let e=await ca(o);if(t){let t=this.resources.findIndex(t=>t.id===e.id);this.resources[t]=e}else this.resources.push(e);this.render(),i.hide()}catch(e){alert(`Error al guardar recurso: `+e.message)}})}_injectStyles(){if(document.getElementById(`resource-editor-styles`))return;let e=document.createElement(`style`);e.id=`resource-editor-styles`,e.textContent=`
+    `,document.body.appendChild(r);let i=new bootstrap.Modal(r);i.show(),r.querySelectorAll(`.type-option`).forEach(e=>{e.addEventListener(`click`,()=>{r.querySelectorAll(`.type-option`).forEach(e=>e.classList.remove(`active`)),e.classList.add(`active`)})}),r.querySelector(`#save-resource-confirm-btn`).addEventListener(`click`,async()=>{let n=r.querySelector(`#resource-form`),a=new FormData(n),o={node_id:this.node.id,resource_type:a.get(`resource_type`),title:a.get(`title`),url:a.get(`url`),content:a.get(`content`),order_index:e?.order_index||this.resources.length};if(t&&(o.id=e.id),!o.title){alert(`El título es obligatorio`);return}try{let e=await sa(o);if(t){let t=this.resources.findIndex(t=>t.id===e.id);this.resources[t]=e}else this.resources.push(e);this.render(),i.hide()}catch(e){alert(`Error al guardar recurso: `+e.message)}})}_injectStyles(){if(document.getElementById(`resource-editor-styles`))return;let e=document.createElement(`style`);e.id=`resource-editor-styles`,e.textContent=`
       .resource-editor {
         padding: 32px;
         max-width: 900px;
@@ -2892,7 +2886,7 @@ import{n as e}from"./rolldown-runtime-tcWNtVWY.js";import{i as t}from"./supabase
         from { opacity: 0; transform: translateY(10px); }
         to { opacity: 1; transform: translateY(0); }
       }
-    `,document.head.appendChild(e)}};async function fa(e){pa(),e.innerHTML=`
+    `,document.head.appendChild(e)}};async function da(e){fa(),e.innerHTML=`
     <div class="admin-view-container">
       <div class="admin-sidebar">
         <div class="sidebar-header">
@@ -2917,12 +2911,12 @@ import{n as e}from"./rolldown-runtime-tcWNtVWY.js";import{i as t}from"./supabase
         <!-- NodeResourceEditor se renderiza aquí -->
       </div>
     </div>
-  `;let t=e.querySelector(`#tree-container`),n=e.querySelector(`#detail-container`),r=e.querySelector(`#route-selector`),i=e.querySelector(`#version-selector`),a=new da(n,{onUpdate:e=>{console.log(`Node updated:`,e)}}),o=new ra(t,{onSelect:e=>{a.setNode(e)}});try{(await ia()).forEach(e=>{let t=document.createElement(`option`);t.value=e.id,t.textContent=e.name,r.appendChild(t)})}catch(e){console.error(`Error loading routes:`,e)}r.addEventListener(`change`,async()=>{let e=r.value;if(i.innerHTML=`<option value="">Versión...</option>`,i.disabled=!0,t.innerHTML=`<div class="tree-placeholder"><p>Cargando versiones...</p></div>`,!e){t.innerHTML=`<div class="tree-placeholder"><p>Selecciona una ruta para comenzar.</p></div>`;return}try{(await aa(e)).forEach(e=>{let t=document.createElement(`option`);t.value=e.id,t.textContent=`V${e.version_number} - ${new Date(e.created_at).toLocaleDateString()}`,i.appendChild(t)}),i.disabled=!1,t.innerHTML=`<div class="tree-placeholder"><p>Selecciona una versión.</p></div>`}catch{t.innerHTML=`<div class="tree-placeholder text-danger"><p>Error al cargar versiones.</p></div>`}}),i.addEventListener(`change`,async()=>{let e=i.value;if(e){t.innerHTML=`
+  `;let t=e.querySelector(`#tree-container`),n=e.querySelector(`#detail-container`),r=e.querySelector(`#route-selector`),i=e.querySelector(`#version-selector`),a=new ua(n,{onUpdate:e=>{console.log(`Node updated:`,e)}}),o=new na(t,{onSelect:e=>{a.setNode(e)}});try{(await ra()).forEach(e=>{let t=document.createElement(`option`);t.value=e.id,t.textContent=e.name,r.appendChild(t)})}catch(e){console.error(`Error loading routes:`,e)}r.addEventListener(`change`,async()=>{let e=r.value;if(i.innerHTML=`<option value="">Versión...</option>`,i.disabled=!0,t.innerHTML=`<div class="tree-placeholder"><p>Cargando versiones...</p></div>`,!e){t.innerHTML=`<div class="tree-placeholder"><p>Selecciona una ruta para comenzar.</p></div>`;return}try{(await ia(e)).forEach(e=>{let t=document.createElement(`option`);t.value=e.id,t.textContent=`V${e.version_number} - ${new Date(e.created_at).toLocaleDateString()}`,i.appendChild(t)}),i.disabled=!1,t.innerHTML=`<div class="tree-placeholder"><p>Selecciona una versión.</p></div>`}catch{t.innerHTML=`<div class="tree-placeholder text-danger"><p>Error al cargar versiones.</p></div>`}}),i.addEventListener(`change`,async()=>{let e=i.value;if(e){t.innerHTML=`
       <div class="tree-loading">
         <div class="spinner-border spinner-border-sm text-primary"></div>
         <span>Construyendo mapa curricular...</span>
       </div>
-    `;try{let t=await oa(e);o.setData(t)}catch{t.innerHTML=`<div class="tree-placeholder text-danger"><p>Error al cargar el árbol curricular.</p></div>`}}})}function pa(){if(document.getElementById(`academic-admin-layout-styles`))return;let e=document.createElement(`style`);e.id=`academic-admin-layout-styles`,e.textContent=`
+    `;try{let t=await aa(e);o.setData(t)}catch{t.innerHTML=`<div class="tree-placeholder text-danger"><p>Error al cargar el árbol curricular.</p></div>`}}})}function fa(){if(document.getElementById(`academic-admin-layout-styles`))return;let e=document.createElement(`style`);e.id=`academic-admin-layout-styles`,e.textContent=`
     .admin-view-container {
       display: flex;
       height: 100vh;
@@ -3019,14 +3013,14 @@ import{n as e}from"./rolldown-runtime-tcWNtVWY.js";import{i as t}from"./supabase
     .tree-viewport::-webkit-scrollbar-track { background: transparent; }
     .tree-viewport::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.1); border-radius: 10px; }
     [data-bs-theme="dark"] .tree-viewport::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); }
-  `,document.head.appendChild(e)}var Z={clases:[],clasesOriginales:[],maestros:[],salones:[],programas:[],alumnos:[],cargando:!1,filtroEstado:`todos`,filtroInstrumento:``,vista:`tabla`,container:null,mostrarDiasVacios:!0};async function ma(e){if(e)try{Z.container=e,Z.cargando=!0,ha(e);let[n,r,i,a,o]=await Promise.all([g(),t.from(`maestros`).select(`*`).order(`nombre_completo`,{ascending:!0}),t.from(`salones`).select(`*`).order(`nombre`,{ascending:!0}),t.from(`programas`).select(`*`).order(`nombre`,{ascending:!0}),t.from(`alumnos`).select(`*`).eq(`activo`,!0).order(`nombre_completo`,{ascending:!0})]);Z.clases=n,Z.clasesOriginales=[...n],Z.maestros=r.data||[],Z.salones=i.data||[],Z.programas=a.data||[],Z.alumnos=o.data||[],Z.cargando=!1,_a(e),Ca(e)}catch(t){console.error(t),ga(e,t.message)}}function ha(e){e.innerHTML=`
+  `,document.head.appendChild(e)}var Z={clases:[],clasesOriginales:[],maestros:[],salones:[],programas:[],alumnos:[],cargando:!1,filtroEstado:`todos`,filtroInstrumento:``,vista:`tabla`,container:null,mostrarDiasVacios:!0};async function pa(e){if(e)try{Z.container=e,Z.cargando=!0,ma(e);let[n,r,i,a,o]=await Promise.all([g(),t.from(`maestros`).select(`*`).order(`nombre_completo`,{ascending:!0}),t.from(`salones`).select(`*`).order(`nombre`,{ascending:!0}),t.from(`programas`).select(`*`).order(`nombre`,{ascending:!0}),t.from(`alumnos`).select(`*`).eq(`activo`,!0).order(`nombre_completo`,{ascending:!0})]);Z.clases=n,Z.clasesOriginales=[...n],Z.maestros=r.data||[],Z.salones=i.data||[],Z.programas=a.data||[],Z.alumnos=o.data||[],Z.cargando=!1,ga(e),Sa(e)}catch(t){console.error(t),ha(e,t.message)}}function ma(e){e.innerHTML=`
     <div class="d-flex justify-content-center align-items-center" style="min-height: 400px;">
       <div class="text-center">
         <div class="spinner-border text-primary mb-3" role="status"></div>
         <p class="text-muted">Cargando clases...</p>
       </div>
     </div>
-  `}function ga(e,t){e.innerHTML=`
+  `}function ha(e,t){e.innerHTML=`
     <div class="container mt-5 text-center">
       <div class="alert alert-danger d-inline-block" role="alert">
         <h4 class="alert-heading"><i class="bi bi-exclamation-triangle"></i> Error al cargar</h4>
@@ -3034,7 +3028,7 @@ import{n as e}from"./rolldown-runtime-tcWNtVWY.js";import{i as t}from"./supabase
         <button class="btn btn-primary btn-sm" id="retryBtn">Reintentar</button>
       </div>
     </div>
-  `,e.querySelector(`#retryBtn`)?.addEventListener(`click`,()=>ma(e))}function _a(e){e.innerHTML=`
+  `,e.querySelector(`#retryBtn`)?.addEventListener(`click`,()=>pa(e))}function ga(e){e.innerHTML=`
     <div class="page-container">
       <div class="clases-header-premium mb-4">
         <div class="d-flex align-items-center gap-3">
@@ -3083,16 +3077,16 @@ import{n as e}from"./rolldown-runtime-tcWNtVWY.js";import{i as t}from"./supabase
       </div>
 
       <div id="view-content">
-        ${Z.vista===`tabla`?va():xa()}
+        ${Z.vista===`tabla`?_a():ba()}
       </div>
     </div>
-  `}function va(){return Z.clases.length===0?ba():`
+  `}function _a(){return Z.clases.length===0?ya():`
     <div class="page-glass rounded w-100">
       <div class="list-group list-group-flush w-100" id="clasesListBody">
-        ${Z.clases.map(e=>ya(e)).join(``)}
+        ${Z.clases.map(e=>va(e)).join(``)}
       </div>
     </div>
-  `}function ya(e){let t=e.nombre||`Sin nombre`,n=Z.maestros.find(t=>t.id===e.maestro_principal_id),r=n?n.nombre_completo||n.nombre:`Sin maestro`,i=p(t),a=e.estado||`activa`,o=`border-accent-${a===`activa`?`success`:a===`suspendida`?`warning`:`secondary`}`,s=`bg-${a===`activa`?`success`:a===`suspendida`?`warning`:`secondary`}`,c=(e.horarios||[]).slice(0,3),l=c.length>0?c.map(e=>`${(e.dia||``).slice(0,2).toUpperCase()} ${(e.hora_inicio||``).slice(0,5)}`).join(` • `):`Sin horarios`;return`
+  `}function va(e){let t=e.nombre||`Sin nombre`,n=Z.maestros.find(t=>t.id===e.maestro_principal_id),r=n?n.nombre_completo||n.nombre:`Sin maestro`,i=p(t),a=e.estado||`activa`,o=`border-accent-${a===`activa`?`success`:a===`suspendida`?`warning`:`secondary`}`,s=`bg-${a===`activa`?`success`:a===`suspendida`?`warning`:`secondary`}`,c=(e.horarios||[]).slice(0,3),l=c.length>0?c.map(e=>`${(e.dia||``).slice(0,2).toUpperCase()} ${(e.hora_inicio||``).slice(0,5)}`).join(` • `):`Sin horarios`;return`
     <div class="list-group-item list-group-item-action d-flex align-items-center justify-content-between p-3 w-100 border-start-accent ${o}" data-id="${e.id}" style="cursor: pointer;">
       <div class="d-flex align-items-center gap-3 flex-grow-1 overflow-hidden">
         <div class="position-relative flex-shrink-0">
@@ -3113,12 +3107,12 @@ import{n as e}from"./rolldown-runtime-tcWNtVWY.js";import{i as t}from"./supabase
         <i class="bi bi-chevron-right" style="font-size: 1.1rem; transition: transform 0.2s ease;"></i>
       </div>
     </div>
-  `}function ba(){return`
+  `}function ya(){return`
     <div class="text-center py-5 text-muted">
       <i class="bi bi-inbox fs-1 d-block mb-2"></i>
       <p>No se encontraron clases.</p>
     </div>
-  `}function xa(){if(Z.clases.length===0)return ba();let e=[`lunes`,`martes`,`miércoles`,`jueves`,`viernes`,`sábado`],t={lunes:`Lunes`,martes:`Martes`,miércoles:`Miércoles`,jueves:`Jueves`,viernes:`Viernes`,sábado:`Sábado`},n={lunes:[],martes:[],miércoles:[],jueves:[],viernes:[],sábado:[]};Z.clases.forEach(e=>{(e.horarios||[]).forEach(t=>{let r=(t.dia||``).toLowerCase().trim();n[r]&&n[r].push({...t,clase:e})})}),Object.keys(n).forEach(e=>{n[e].sort((e,t)=>oe(e.hora_inicio)-oe(t.hora_inicio))});let r=Z.mostrarDiasVacios?``:`hide-empty-days`;return`
+  `}function ba(){if(Z.clases.length===0)return ya();let e=[`lunes`,`martes`,`miércoles`,`jueves`,`viernes`,`sábado`],t={lunes:`Lunes`,martes:`Martes`,miércoles:`Miércoles`,jueves:`Jueves`,viernes:`Viernes`,sábado:`Sábado`},n={lunes:[],martes:[],miércoles:[],jueves:[],viernes:[],sábado:[]};Z.clases.forEach(e=>{(e.horarios||[]).forEach(t=>{let r=(t.dia||``).toLowerCase().trim();n[r]&&n[r].push({...t,clase:e})})}),Object.keys(n).forEach(e=>{n[e].sort((e,t)=>oe(e.hora_inicio)-oe(t.hora_inicio))});let r=Z.mostrarDiasVacios?``:`hide-empty-days`;return`
     <div class="weekly-schedule-container">
       <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2 px-1 weekly-schedule-toolbar">
         <span class="small text-muted fw-semibold"><i class="bi bi-calendar-week me-1"></i>Agenda Semanal</span>
@@ -3158,7 +3152,7 @@ import{n as e}from"./rolldown-runtime-tcWNtVWY.js";import{i as t}from"./supabase
           `}).join(``)}
       </div>
     </div>
-  `}async function Sa(e){if(e){o.open({title:`Cargando...`,hideSave:!0,size:`md`,body:`
+  `}async function xa(e){if(e){o.open({title:`Cargando...`,hideSave:!0,size:`md`,body:`
       <div class="text-center py-5">
         <div class="spinner-border text-primary mb-3" role="status"></div>
         <p class="text-muted">Cargando perfil de la clase...</p>
@@ -3278,7 +3272,7 @@ import{n as e}from"./rolldown-runtime-tcWNtVWY.js";import{i as t}from"./supabase
           </div>
         </div>
       </div>
-    `;o.open({title:`Perfil de Clase: ${e.nombre}`,hideSave:!0,size:`md`,body:ie,onShow:t=>{let n=t.closest(`.app-modal-dialog`)?.querySelector(`.app-modal-footer`);n&&n.style.setProperty(`display`,`none`,`important`),t.querySelector(`.btn-profile-edit`)?.addEventListener(`click`,()=>{o.close(),setTimeout(()=>{_r(e,{maestros:Z.maestros,salones:Z.salones,programas:Z.programas,alumnos:Z.alumnos,onSuccess:()=>ma(Z.container)})},250)}),t.querySelector(`.btn-profile-delete`)?.addEventListener(`click`,()=>{o.close(),setTimeout(()=>{Ta(e.id)},250)}),t.querySelector(`.btn-profile-close`)?.addEventListener(`click`,()=>{o.close()})}})}catch(e){console.error(e),i.error(`Error al cargar la información detallada de la clase`),o.close()}}}function Ca(e){e.querySelector(`#btn-help-clases`)?.addEventListener(`click`,()=>{W.open({title:`Clases`,intro:`Gestión completa de clases: creación, horarios, asignación de maestros, inscripción de alumnos y control de capacidad.`,sections:[{icon:`bi-easel2`,title:`Lista de clases`,description:`Todas las clases del sistema. Filtrá por instrumento, nivel y estado. Las activas aparecen primero.`,color:`#3b82f6`},{icon:`bi-clock`,title:`Horarios`,description:`Cada clase puede tener múltiples horarios semanales. El sistema detecta conflictos de salón y de maestro automáticamente.`,color:`#6366f1`},{icon:`bi-people`,title:`Inscripción de alumnos`,description:`"Grupal": todos comparten el horario. "Rotativa (Turnos)": cada alumno tiene su propio horario individual dentro de la clase.`,color:`#10b981`},{icon:`bi-bar-chart`,title:`Capacidad`,description:`Barra de ocupación: inscriptos vs capacidad máxima. Rojo cuando supera el 90%.`,color:`#f59e0b`},{icon:`bi-person-workspace`,title:`Maestro titular y suplente`,description:`Cada clase tiene un maestro principal (obligatorio) y puede tener suplente (opcional). Ambos aparecen en el perfil del maestro.`,color:`#6b7280`}]})}),e.querySelector(`#btnAgregarClase`)?.addEventListener(`click`,()=>{_r(null,{maestros:Z.maestros,salones:Z.salones,programas:Z.programas,alumnos:Z.alumnos,onSuccess:()=>ma(e)})}),e.querySelector(`#btn-vista-tabla`)?.addEventListener(`click`,()=>{Z.vista=`tabla`,_a(e),Ca(e)}),e.querySelector(`#btn-vista-calendario`)?.addEventListener(`click`,()=>{Z.vista=`calendario`,_a(e),Ca(e)}),e.querySelector(`#buscar`)?.addEventListener(`input`,wa),e.querySelector(`#filtroEstado`)?.addEventListener(`change`,wa);let t=e.querySelector(`#view-content`);t?.addEventListener(`change`,t=>{if(t.target&&t.target.id===`toggle-empty-days`){Z.mostrarDiasVacios=t.target.checked;let n=e.querySelector(`.weekly-schedule-grid`);n&&(Z.mostrarDiasVacios?n.classList.remove(`hide-empty-days`):n.classList.add(`hide-empty-days`))}}),t?.addEventListener(`click`,e=>{let t=e.target.closest(`.list-group-item[data-id], .time-block-card[data-id]`);if(t){let e=t.dataset.id,n=Z.clasesOriginales.find(t=>t.id===e);n&&Sa(n)}})}function wa(){let e=Z.container.querySelector(`#buscar`)?.value.trim().toLowerCase()||``,t=Z.container.querySelector(`#filtroEstado`)?.value||`todos`;Z.clases=Z.clasesOriginales.filter(n=>{let r=!e||n.nombre.toLowerCase().includes(e)||n.instrumento.toLowerCase().includes(e),i=t===`todos`||n.estado===t;return r&&i});let n=Z.container.querySelector(`#view-content`);n&&(n.innerHTML=Z.vista===`tabla`?va():xa())}function Ta(e){let t=Z.clasesOriginales.find(t=>t.id===e);t&&o.open({title:`⚠️ Eliminar Clase`,saveText:`Eliminar Definitivamente`,body:`<p>¿Estás seguro de eliminar la clase <strong>${f(t.nombre)}</strong>? Esta acción no se puede deshacer.</p>`,onSave:async()=>{try{return await ne(e),i.success(`Clase eliminada`),ma(Z.container),!0}catch(e){return i.error(e.message),!1}}})}async function Ea(e){e.innerHTML=`
+    `;o.open({title:`Perfil de Clase: ${e.nombre}`,hideSave:!0,size:`md`,body:ie,onShow:t=>{let n=t.closest(`.app-modal-dialog`)?.querySelector(`.app-modal-footer`);n&&n.style.setProperty(`display`,`none`,`important`),t.querySelector(`.btn-profile-edit`)?.addEventListener(`click`,()=>{o.close(),setTimeout(()=>{gr(e,{maestros:Z.maestros,salones:Z.salones,programas:Z.programas,alumnos:Z.alumnos,onSuccess:()=>pa(Z.container)})},250)}),t.querySelector(`.btn-profile-delete`)?.addEventListener(`click`,()=>{o.close(),setTimeout(()=>{wa(e.id)},250)}),t.querySelector(`.btn-profile-close`)?.addEventListener(`click`,()=>{o.close()})}})}catch(e){console.error(e),i.error(`Error al cargar la información detallada de la clase`),o.close()}}}function Sa(e){e.querySelector(`#btn-help-clases`)?.addEventListener(`click`,()=>{W.open({title:`Clases`,intro:`Gestión completa de clases: creación, horarios, asignación de maestros, inscripción de alumnos y control de capacidad.`,sections:[{icon:`bi-easel2`,title:`Lista de clases`,description:`Todas las clases del sistema. Filtrá por instrumento, nivel y estado. Las activas aparecen primero.`,color:`#3b82f6`},{icon:`bi-clock`,title:`Horarios`,description:`Cada clase puede tener múltiples horarios semanales. El sistema detecta conflictos de salón y de maestro automáticamente.`,color:`#6366f1`},{icon:`bi-people`,title:`Inscripción de alumnos`,description:`"Grupal": todos comparten el horario. "Rotativa (Turnos)": cada alumno tiene su propio horario individual dentro de la clase.`,color:`#10b981`},{icon:`bi-bar-chart`,title:`Capacidad`,description:`Barra de ocupación: inscriptos vs capacidad máxima. Rojo cuando supera el 90%.`,color:`#f59e0b`},{icon:`bi-person-workspace`,title:`Maestro titular y suplente`,description:`Cada clase tiene un maestro principal (obligatorio) y puede tener suplente (opcional). Ambos aparecen en el perfil del maestro.`,color:`#6b7280`}]})}),e.querySelector(`#btnAgregarClase`)?.addEventListener(`click`,()=>{gr(null,{maestros:Z.maestros,salones:Z.salones,programas:Z.programas,alumnos:Z.alumnos,onSuccess:()=>pa(e)})}),e.querySelector(`#btn-vista-tabla`)?.addEventListener(`click`,()=>{Z.vista=`tabla`,ga(e),Sa(e)}),e.querySelector(`#btn-vista-calendario`)?.addEventListener(`click`,()=>{Z.vista=`calendario`,ga(e),Sa(e)}),e.querySelector(`#buscar`)?.addEventListener(`input`,Ca),e.querySelector(`#filtroEstado`)?.addEventListener(`change`,Ca);let t=e.querySelector(`#view-content`);t?.addEventListener(`change`,t=>{if(t.target&&t.target.id===`toggle-empty-days`){Z.mostrarDiasVacios=t.target.checked;let n=e.querySelector(`.weekly-schedule-grid`);n&&(Z.mostrarDiasVacios?n.classList.remove(`hide-empty-days`):n.classList.add(`hide-empty-days`))}}),t?.addEventListener(`click`,e=>{let t=e.target.closest(`.list-group-item[data-id], .time-block-card[data-id]`);if(t){let e=t.dataset.id,n=Z.clasesOriginales.find(t=>t.id===e);n&&xa(n)}})}function Ca(){let e=Z.container.querySelector(`#buscar`)?.value.trim().toLowerCase()||``,t=Z.container.querySelector(`#filtroEstado`)?.value||`todos`;Z.clases=Z.clasesOriginales.filter(n=>{let r=!e||n.nombre.toLowerCase().includes(e)||n.instrumento.toLowerCase().includes(e),i=t===`todos`||n.estado===t;return r&&i});let n=Z.container.querySelector(`#view-content`);n&&(n.innerHTML=Z.vista===`tabla`?_a():ba())}function wa(e){let t=Z.clasesOriginales.find(t=>t.id===e);t&&o.open({title:`⚠️ Eliminar Clase`,saveText:`Eliminar Definitivamente`,body:`<p>¿Estás seguro de eliminar la clase <strong>${f(t.nombre)}</strong>? Esta acción no se puede deshacer.</p>`,onSave:async()=>{try{return await ne(e),i.success(`Clase eliminada`),pa(Z.container),!0}catch(e){return i.error(e.message),!1}}})}async function Ta(e){e.innerHTML=`
     <div class="pm-view-header">
       <h2><i class="bi bi-person-check"></i> Aprobación de Maestros</h2>
       <p class="pm-view-subtitle">Revisá y aprobá las solicitudes de registro de maestros</p>
@@ -3289,7 +3283,15 @@ import{n as e}from"./rolldown-runtime-tcWNtVWY.js";import{i as t}from"./supabase
         <span>Cargando solicitudes...</span>
       </div>
     </div>
-  `;try{let{data:n,error:r}=await t.from(`profiles`).select(`id, email, nombre_completo, created_at`).eq(`rol`,`maestro`).eq(`estado`,`pendiente`).order(`created_at`,{ascending:!0});if(r)throw r;let i=e.querySelector(`#aprobacion-content`);if(!n||n.length===0){i.innerHTML=`
+  `;try{let{data:n,error:r}=await t.from(`profiles`).select(`
+        id,
+        email,
+        nombre_completo,
+        created_at,
+        maestros!user_id (
+          especialidad
+        )
+      `).eq(`rol`,`maestro`).eq(`estado`,`pendiente`).order(`created_at`,{ascending:!0});if(r)throw r;let i=e.querySelector(`#aprobacion-content`);if(!n||n.length===0){i.innerHTML=`
         <div class="pm-empty-state" style="text-align: center; padding: 3rem 1rem;">
           <div style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.5;">
             <i class="bi bi-inbox"></i>
@@ -3310,11 +3312,11 @@ import{n as e}from"./rolldown-runtime-tcWNtVWY.js";import{i as t}from"./supabase
             </tr>
           </thead>
           <tbody>
-            ${n.map(e=>`
+            ${n.map(e=>{let t=e.maestros?.length>0?e.maestros[0].especialidad:null;return`
               <tr data-profile-id="${e.id}">
                 <td>${Oa(e.nombre_completo||`—`)}</td>
                 <td>${Oa(e.email)}</td>
-                <td>${Oa(e.instrumento||`—`)}</td>
+                <td>${Oa(t||`—`)}</td>
                 <td>${ka(e.created_at)}</td>
                 <td class="aprobacion-actions">
                   <button class="btn btn-success btn-sm btn-aprobar" data-id="${e.id}">
@@ -3325,26 +3327,35 @@ import{n as e}from"./rolldown-runtime-tcWNtVWY.js";import{i as t}from"./supabase
                   </button>
                 </td>
               </tr>
-            `).join(``)}
+            `}).join(``)}
           </tbody>
         </table>
       </div>
-    `,i.querySelectorAll(`.btn-aprobar`).forEach(e=>{e.addEventListener(`click`,()=>Da(e.dataset.id,`activo`,i))}),i.querySelectorAll(`.btn-rechazar`).forEach(e=>{e.addEventListener(`click`,()=>Da(e.dataset.id,`rechazado`,i))})}catch(t){let n=e.querySelector(`#aprobacion-content`);n.innerHTML=`
+    `,i.querySelectorAll(`.btn-aprobar`).forEach(e=>{e.addEventListener(`click`,()=>Ea(e.dataset.id,i))}),i.querySelectorAll(`.btn-rechazar`).forEach(e=>{e.addEventListener(`click`,()=>Da(e.dataset.id,`rechazado`,null,i))})}catch(t){let n=e.querySelector(`#aprobacion-content`);n.innerHTML=`
       <div class="pm-error" style="text-align: center; padding: 2rem;">
         <p><i class="bi bi-exclamation-triangle"></i> Error al cargar solicitudes: ${t.message}</p>
         <button class="btn btn-outline-light btn-sm" onclick="this.closest('[id]').__reload?.()">
           Intentar de nuevo
         </button>
       </div>
-    `,console.error(`[AprobacionView] Error:`,t.message)}}async function Da(e,n,r){let i=r.querySelector(`tr[data-profile-id="${e}"]`);if(i){i.querySelectorAll(`button`).forEach(e=>e.disabled=!0);try{let{error:a}=await t.from(`profiles`).update({estado:n}).eq(`id`,e);if(a)throw a;if(n===`activo`)try{let{data:n}=await t.from(`maestros`).select(`id`).eq(`user_id`,e).maybeSingle();n?.id&&await t.from(`permisos_maestros`).upsert({maestro_id:n.id,puede_registrar_alumnos:!0,puede_inscribir_clases:!0,permisos:[`alumnos:create`,`clases:enroll`,`registrar_alumnos`,`inscribir_clases`]},{onConflict:`maestro_id`})}catch(e){console.warn(`[AprobacionView] Could not grant default permissions:`,e.message)}i.style.transition=`opacity 0.3s ease`,i.style.opacity=`0`,setTimeout(()=>i.remove(),300),window.dispatchEvent(new CustomEvent(`showToast`,{detail:{message:n===`activo`?`Maestro aprobado correctamente`:`Maestro rechazado`,type:`success`}}));let o=r.querySelector(`tbody`);o&&o.querySelectorAll(`tr`).length===0&&(r.innerHTML=`
-        <div class="pm-empty-state" style="text-align: center; padding: 3rem 1rem;">
-          <div style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.5;">
-            <i class="bi bi-inbox"></i>
+    `,console.error(`[AprobacionView] Error:`,t.message)}}function Ea(e,t){o.open({title:`Aprobar Usuario`,size:`sm`,saveText:`Aprobar`,body:`
+      <p>Seleccioná el rol para este usuario:</p>
+      <div class="mb-3">
+        <label class="form-label-compact">Rol</label>
+        <select class="form-select" id="aprobacion-rol-select">
+          <option value="maestro">Maestro</option>
+          <option value="admin">Admin</option>
+        </select>
+      </div>
+    `,onSave:async n=>{let r=n.querySelector(`#aprobacion-rol-select`).value;await Da(e,`activo`,r,t)}})}async function Da(e,n,r,i){let a=i?.querySelector(`tr[data-profile-id="${e}"]`);if(!(!a&&i)){a?.querySelectorAll(`button`).forEach(e=>e.disabled=!0);try{let o={estado:n};r&&(o.rol=r);let{error:s}=await t.from(`profiles`).update(o).eq(`id`,e);if(s)throw s;if(n===`activo`)try{let{data:n}=await t.from(`maestros`).select(`id`).eq(`user_id`,e).maybeSingle();n?.id&&await t.from(`permisos_maestros`).upsert({maestro_id:n.id,puede_registrar_alumnos:!0,puede_inscribir_clases:!0,permisos:[`alumnos:create`,`clases:enroll`,`registrar_alumnos`,`inscribir_clases`]},{onConflict:`maestro_id`})}catch(e){console.warn(`[AprobacionView] Could not grant default permissions:`,e.message)}a&&(a.style.transition=`opacity 0.3s ease`,a.style.opacity=`0`,setTimeout(()=>a.remove(),300));let c=r===`admin`?`Admin`:`Maestro`;if(window.dispatchEvent(new CustomEvent(`showToast`,{detail:{message:n===`activo`?`${c} aprobado correctamente`:`Usuario rechazado`,type:`success`}})),i){let e=i.querySelector(`tbody`);e&&e.querySelectorAll(`tr`).length===0&&(i.innerHTML=`
+          <div class="pm-empty-state" style="text-align: center; padding: 3rem 1rem;">
+            <div style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.5;">
+              <i class="bi bi-inbox"></i>
+            </div>
+            <h3>No hay maestros pendientes de aprobación</h3>
+            <p style="opacity: 0.6;">Los nuevos registros aparecerán aquí automáticamente.</p>
           </div>
-          <h3>No hay maestros pendientes de aprobación</h3>
-          <p style="opacity: 0.6;">Los nuevos registros aparecerán aquí automáticamente.</p>
-        </div>
-      `)}catch(e){i.querySelectorAll(`button`).forEach(e=>e.disabled=!1),window.dispatchEvent(new CustomEvent(`showToast`,{detail:{message:`Error al ${n===`activo`?`aprobar`:`rechazar`} maestro: ${e.message}`,type:`error`}})),console.error(`[AprobacionView] Action error:`,e.message)}}}function Oa(e){return e?String(e).replace(/&/g,`&amp;`).replace(/</g,`&lt;`).replace(/>/g,`&gt;`).replace(/"/g,`&quot;`):``}function ka(e){if(!e)return`—`;try{return new Date(e).toLocaleDateString(`es-ES`,{year:`numeric`,month:`short`,day:`numeric`})}catch{return e}}async function Aa(){let{data:e,error:n}=await t.from(`ausencias_maestros`).select(`
+        `)}}catch(e){a?.querySelectorAll(`button`).forEach(e=>e.disabled=!1),window.dispatchEvent(new CustomEvent(`showToast`,{detail:{message:`Error al ${n===`activo`?`aprobar`:`rechazar`} usuario: ${e.message}`,type:`error`}})),console.error(`[AprobacionView] Action error:`,e.message)}}}function Oa(e){return e?String(e).replace(/&/g,`&amp;`).replace(/</g,`&lt;`).replace(/>/g,`&gt;`).replace(/"/g,`&quot;`):``}function ka(e){if(!e)return`—`;try{return new Date(e).toLocaleDateString(`es-ES`,{year:`numeric`,month:`short`,day:`numeric`})}catch{return e}}async function Aa(){let{data:e,error:n}=await t.from(`ausencias_maestros`).select(`
       id,
       maestro_id,
       tipo_ausencia,
@@ -4648,4 +4659,4 @@ import{n as e}from"./rolldown-runtime-tcWNtVWY.js";import{i as t}from"./supabase
           </p>
         </div>
       </div>
-    `,size:`lg`,hideSave:!0,cancelText:`Entendido`})}return s(),await m(),e.querySelector(`#anv-refresh-btn`)?.addEventListener(`click`,()=>m(!1)),function(){a&&=(t.removeChannel(a),null)}}export{je as $,Rt as A,Ft as B,Zt as C,$t as D,qt as E,jt as F,Ct as G,Et as H,It as I,pt as J,ht as K,Dt as L,Vt as M,Lt as N,Ht as O,Pt as P,Ve as Q,Nt as R,Yt as S,en as T,Tt as U,Mt as V,kt as W,vt as X,yt as Y,He as Z,ln as _,ma as a,Ce as at,Gt as b,zi as c,ce as ct,Ri as d,C as et,Lr as f,N as g,vn as h,Ea as i,De as it,Bt as j,zt as k,Li as l,Kn as m,Ya as n,Ee as nt,fa as o,ke as ot,W as p,mt as q,Aa as r,xe as rt,Wi as s,Oe as st,go as t,Se as tt,Bi as u,cn as v,Xt as w,Qt as x,sn as y,At as z};
+    `,size:`lg`,hideSave:!0,cancelText:`Entendido`})}return s(),await m(),e.querySelector(`#anv-refresh-btn`)?.addEventListener(`click`,()=>m(!1)),function(){a&&=(t.removeChannel(a),null)}}export{je as $,Rt as A,Ft as B,Zt as C,$t as D,qt as E,jt as F,Ct as G,Et as H,It as I,pt as J,ht as K,Dt as L,Vt as M,Lt as N,Ht as O,Pt as P,Ve as Q,Nt as R,Yt as S,en as T,Tt as U,Mt as V,kt as W,vt as X,yt as Y,He as Z,ln as _,pa as a,Ce as at,Gt as b,Ri as c,ce as ct,Li as d,C as et,Ir as f,N as g,_n as h,Ta as i,De as it,Bt as j,zt as k,Ii as l,Gn as m,Ya as n,Ee as nt,da as o,ke as ot,W as p,mt as q,Aa as r,xe as rt,Ui as s,Oe as st,go as t,Se as tt,zi as u,cn as v,Xt as w,Qt as x,sn as y,At as z};

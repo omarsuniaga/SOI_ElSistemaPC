@@ -1,4 +1,5 @@
 import { supabase } from '../../../lib/supabaseClient.js'
+import { AppModal } from '../../../shared/components/AppModal.js'
 
 /**
  * Renderiza la vista de aprobación de maestros para el panel admin.
@@ -22,7 +23,17 @@ export async function renderAprobacionView(container) {
   try {
     const { data: pendientes, error } = await supabase
       .from('profiles')
-      .select('id, email, nombre_completo, created_at')
+      .select(
+        `
+        id,
+        email,
+        nombre_completo,
+        created_at,
+        maestros!user_id (
+          especialidad
+        )
+      `,
+      )
       .eq('rol', 'maestro')
       .eq('estado', 'pendiente')
       .order('created_at', { ascending: true })
@@ -59,11 +70,14 @@ export async function renderAprobacionView(container) {
             </tr>
           </thead>
           <tbody>
-            ${pendientes.map(p => `
+            ${pendientes
+              .map((p) => {
+                const instrumento = p.maestros?.length > 0 ? p.maestros[0].especialidad : null
+                return `
               <tr data-profile-id="${p.id}">
                 <td>${escHTML(p.nombre_completo || '—')}</td>
                 <td>${escHTML(p.email)}</td>
-                <td>${escHTML(p.instrumento || '—')}</td>
+                <td>${escHTML(instrumento || '—')}</td>
                 <td>${formatDate(p.created_at)}</td>
                 <td class="aprobacion-actions">
                   <button class="btn btn-success btn-sm btn-aprobar" data-id="${p.id}">
@@ -74,19 +88,23 @@ export async function renderAprobacionView(container) {
                   </button>
                 </td>
               </tr>
-            `).join('')}
+            `
+              })
+              .join('')}
           </tbody>
         </table>
       </div>
     `
 
     // Attach event handlers for approve/reject
-    contentEl.querySelectorAll('.btn-aprobar').forEach(btn => {
-      btn.addEventListener('click', () => handleAction(btn.dataset.id, 'activo', contentEl))
+    contentEl.querySelectorAll('.btn-aprobar').forEach((btn) => {
+      btn.addEventListener('click', () => openApproveModal(btn.dataset.id, contentEl))
     })
 
-    contentEl.querySelectorAll('.btn-rechazar').forEach(btn => {
-      btn.addEventListener('click', () => handleAction(btn.dataset.id, 'rechazado', contentEl))
+    contentEl.querySelectorAll('.btn-rechazar').forEach((btn) => {
+      btn.addEventListener('click', () =>
+        handleAction(btn.dataset.id, 'rechazado', null, contentEl),
+      )
     })
   } catch (err) {
     const contentEl = container.querySelector('#aprobacion-content')
@@ -102,18 +120,40 @@ export async function renderAprobacionView(container) {
   }
 }
 
-async function handleAction(profileId, nuevoEstado, contentEl) {
-  const row = contentEl.querySelector(`tr[data-profile-id="${profileId}"]`)
-  if (!row) return
+function openApproveModal(profileId, contentEl) {
+  AppModal.open({
+    title: 'Aprobar Usuario',
+    size: 'sm',
+    saveText: 'Aprobar',
+    body: `
+      <p>Seleccioná el rol para este usuario:</p>
+      <div class="mb-3">
+        <label class="form-label-compact">Rol</label>
+        <select class="form-select" id="aprobacion-rol-select">
+          <option value="maestro">Maestro</option>
+          <option value="admin">Admin</option>
+        </select>
+      </div>
+    `,
+    onSave: async (modalBody) => {
+      const rol = modalBody.querySelector('#aprobacion-rol-select').value
+      await handleAction(profileId, 'activo', rol, contentEl)
+    },
+  })
+}
+
+async function handleAction(profileId, nuevoEstado, rol, contentEl) {
+  const row = contentEl?.querySelector(`tr[data-profile-id="${profileId}"]`)
+  if (!row && contentEl) return
 
   // Disable buttons while processing
-  row.querySelectorAll('button').forEach(b => b.disabled = true)
+  row?.querySelectorAll('button').forEach((b) => (b.disabled = true))
 
   try {
-    const { error } = await supabase
-      .from('profiles')
-      .update({ estado: nuevoEstado })
-      .eq('id', profileId)
+    const updateData = { estado: nuevoEstado }
+    if (rol) updateData.rol = rol
+
+    const { error } = await supabase.from('profiles').update(updateData).eq('id', profileId)
 
     if (error) throw error
 
@@ -127,14 +167,20 @@ async function handleAction(profileId, nuevoEstado, contentEl) {
           .maybeSingle()
 
         if (maestroRow?.id) {
-          await supabase
-            .from('permisos_maestros')
-            .upsert({
+          await supabase.from('permisos_maestros').upsert(
+            {
               maestro_id: maestroRow.id,
               puede_registrar_alumnos: true,
               puede_inscribir_clases: true,
-              permisos: ['alumnos:create', 'clases:enroll', 'registrar_alumnos', 'inscribir_clases'],
-            }, { onConflict: 'maestro_id' })
+              permisos: [
+                'alumnos:create',
+                'clases:enroll',
+                'registrar_alumnos',
+                'inscribir_clases',
+              ],
+            },
+            { onConflict: 'maestro_id' },
+          )
         }
       } catch (permErr) {
         // Non-fatal: teacher can still request permissions manually
@@ -143,47 +189,54 @@ async function handleAction(profileId, nuevoEstado, contentEl) {
     }
 
     // Remove the row with animation
-    row.style.transition = 'opacity 0.3s ease'
-    row.style.opacity = '0'
-    setTimeout(() => row.remove(), 300)
+    if (row) {
+      row.style.transition = 'opacity 0.3s ease'
+      row.style.opacity = '0'
+      setTimeout(() => row.remove(), 300)
+    }
 
     // Show success toast
-    window.dispatchEvent(new CustomEvent('showToast', {
-      detail: {
-        message: nuevoEstado === 'activo'
-          ? 'Maestro aprobado correctamente'
-          : 'Maestro rechazado',
-        type: 'success'
-      }
-    }))
+    const rolLabel = rol === 'admin' ? 'Admin' : 'Maestro'
+    window.dispatchEvent(
+      new CustomEvent('showToast', {
+        detail: {
+          message:
+            nuevoEstado === 'activo' ? `${rolLabel} aprobado correctamente` : 'Usuario rechazado',
+          type: 'success',
+        },
+      }),
+    )
 
     // Check if table is now empty
-    const tbody = contentEl.querySelector('tbody')
-    if (tbody && tbody.querySelectorAll('tr').length === 0) {
-      contentEl.innerHTML = `
-        <div class="pm-empty-state" style="text-align: center; padding: 3rem 1rem;">
-          <div style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.5;">
-            <i class="bi bi-inbox"></i>
+    if (contentEl) {
+      const tbody = contentEl.querySelector('tbody')
+      if (tbody && tbody.querySelectorAll('tr').length === 0) {
+        contentEl.innerHTML = `
+          <div class="pm-empty-state" style="text-align: center; padding: 3rem 1rem;">
+            <div style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.5;">
+              <i class="bi bi-inbox"></i>
+            </div>
+            <h3>No hay maestros pendientes de aprobación</h3>
+            <p style="opacity: 0.6;">Los nuevos registros aparecerán aquí automáticamente.</p>
           </div>
-          <h3>No hay maestros pendientes de aprobación</h3>
-          <p style="opacity: 0.6;">Los nuevos registros aparecerán aquí automáticamente.</p>
-        </div>
-      `
+        `
+      }
     }
   } catch (err) {
     // Re-enable buttons on error
-    row.querySelectorAll('button').forEach(b => b.disabled = false)
+    row?.querySelectorAll('button').forEach((b) => (b.disabled = false))
 
-    window.dispatchEvent(new CustomEvent('showToast', {
-      detail: {
-        message: `Error al ${nuevoEstado === 'activo' ? 'aprobar' : 'rechazar'} maestro: ${err.message}`,
-        type: 'error'
-      }
-    }))
+    window.dispatchEvent(
+      new CustomEvent('showToast', {
+        detail: {
+          message: `Error al ${nuevoEstado === 'activo' ? 'aprobar' : 'rechazar'} usuario: ${err.message}`,
+          type: 'error',
+        },
+      }),
+    )
     console.error('[AprobacionView] Action error:', err.message)
   }
 }
-
 function escHTML(str) {
   if (!str) return ''
   return String(str)

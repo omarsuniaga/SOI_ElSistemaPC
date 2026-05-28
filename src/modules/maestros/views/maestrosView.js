@@ -32,10 +32,29 @@ let currentContainer = null
 // ─── Entry point ────────────────────────────────────────────────────────────
 
 const ESPECTACULOS_PREDEFINIDOS = [
-  'Piano', 'Guitarra', 'Violín', 'Viola', 'Cello', 'Contrabajo',
-  'Flauta', 'Clarinete', 'Oboe', 'Fagot', 'Saxofón', 'Trompeta',
-  'Trombón', 'Corno', 'Tuba', 'Percusión', 'Batería', 'Canto',
-  'Teoría', 'Solfeo', 'Dirección', 'Composición', 'Arreglos'
+  'Piano',
+  'Guitarra',
+  'Violín',
+  'Viola',
+  'Cello',
+  'Contrabajo',
+  'Flauta',
+  'Clarinete',
+  'Oboe',
+  'Fagot',
+  'Saxofón',
+  'Trompeta',
+  'Trombón',
+  'Corno',
+  'Tuba',
+  'Percusión',
+  'Batería',
+  'Canto',
+  'Teoría',
+  'Solfeo',
+  'Dirección',
+  'Composición',
+  'Arreglos',
 ]
 
 export async function renderMaestrosView(container) {
@@ -86,7 +105,9 @@ function renderError(container, mensaje) {
       </div>
     </div>
   `
-  container.querySelector('#retryBtn')?.addEventListener('click', () => renderMaestrosView(container))
+  container
+    .querySelector('#retryBtn')
+    ?.addEventListener('click', () => renderMaestrosView(container))
 }
 
 function renderEspecialidadesChips(especialidades = [], inputId = 'modal-especialidades-input') {
@@ -96,12 +117,16 @@ function renderEspecialidadesChips(especialidades = [], inputId = 'modal-especia
       <label class="form-label-compact">Especialidades</label>
       <div class="especialidades-chips-container" id="${containerId}">
         <div class="chips-wrapper d-flex flex-wrap gap-1 mb-2">
-          ${especialidades.map(e => `
+          ${especialidades
+            .map(
+              (e) => `
             <span class="badge bg-primary-subtle text-primary rounded-pill chip-item">
               ${escapeHTML(e)}
               <i class="bi bi-x-lg chip-remove" data-especialidad="${escapeHTML(e)}" style="cursor:pointer;margin-left:4px;"></i>
             </span>
-          `).join('')}
+          `,
+            )
+            .join('')}
         </div>
         <div class="d-flex gap-2">
           <input type="text" class="form-control input-dense" id="${inputId}" placeholder="Escribir y presionar Enter...">
@@ -112,9 +137,13 @@ function renderEspecialidadesChips(especialidades = [], inputId = 'modal-especia
         <div class="mt-2">
           <small class="text-muted">Sugerencias:</small>
           <div class="d-flex flex-wrap gap-1 mt-1">
-            ${ESPECTACULOS_PREDEFINIDOS.slice(0, 8).map(e => `
+            ${ESPECTACULOS_PREDEFINIDOS.slice(0, 8)
+              .map(
+                (e) => `
               <button type="button" class="btn btn-link btn-sm p-0 suggest-chip" data-especialidad="${escapeHTML(e)}">${escapeHTML(e)}</button>
-            `).join(', ')}
+            `,
+              )
+              .join(', ')}
           </div>
         </div>
       </div>
@@ -126,7 +155,7 @@ function getEspecialidadesFromModal(modalBody) {
   const container = modalBody.querySelector('.especialidades-chips-container')
   if (!container) return []
   const chips = container.querySelectorAll('.chip-item')
-  return Array.from(chips).map(chip => chip.textContent.replace(/×$/, '').trim())
+  return Array.from(chips).map((chip) => chip.textContent.replace(/×$/, '').trim())
 }
 
 function attachEspecialidadesEvents(modalBody, onChange) {
@@ -232,12 +261,13 @@ function renderTableRows(maestros) {
         No hay maestros registrados.
       </div>`
   }
-  return maestros.map(a => {
-    const nombre = a.nombre || a.name || '-'
-    const isActive = a.is_active ?? true
-    const accentClass = `border-accent-${isActive ? 'success' : 'secondary'}`
-    const statusDotClass = `bg-${isActive ? 'success' : 'secondary'}`
-    return `
+  return maestros
+    .map((a) => {
+      const nombre = a.nombre || a.name || '-'
+      const isActive = a.is_active ?? true
+      const accentClass = `border-accent-${isActive ? 'success' : 'secondary'}`
+      const statusDotClass = `bg-${isActive ? 'success' : 'secondary'}`
+      return `
       <div class="list-group-item list-group-item-action d-flex align-items-center justify-content-between p-3 w-100 border-start-accent ${accentClass}" data-id="${a.id}" style="cursor: pointer;">
         <div class="d-flex align-items-center gap-3 flex-grow-1 overflow-hidden">
           <div class="position-relative flex-shrink-0">
@@ -254,16 +284,21 @@ function renderTableRows(maestros) {
           </div>
         </div>
         <div class="d-flex align-items-center gap-2 flex-shrink-0">
-          ${a.telefono ? `
+          ${
+            a.telefono
+              ? `
             <button class="btn btn-sm btn-success bg-gradient text-white rounded-pill px-3 shadow-sm d-flex align-items-center gap-2" data-action="whatsapp" data-id="${a.id}" title="Enviar WhatsApp" style="min-height: 32px;" ${!isActive ? 'disabled' : ''}>
               <i class="bi bi-whatsapp"></i> <span class="d-none d-sm-inline fw-medium">${escapeHTML(a.telefono)}</span>
             </button>
-          ` : '<span class="badge bg-light text-muted border d-none d-sm-inline-block">Sin número</span>'}
+          `
+              : '<span class="badge bg-light text-muted border d-none d-sm-inline-block">Sin número</span>'
+          }
           <i class="bi bi-chevron-right text-muted ms-1" style="font-size: 1.1rem; transition: transform 0.2s ease;"></i>
         </div>
       </div>
     `
-  }).join('')
+    })
+    .join('')
 }
 
 // ─── Events ─────────────────────────────────────────────────────────────────
@@ -276,13 +311,43 @@ function attachEvents(container) {
   container.querySelector('#btn-help-maestros')?.addEventListener('click', () => {
     HelpPanel.open({
       title: 'Maestros',
-      intro: 'Gestión del plantel docente. Desde acá podés ver, agregar, editar y desactivar maestros, y acceder al perfil completo de cada uno.',
+      intro:
+        'Gestión del plantel docente. Desde acá podés ver, agregar, editar y desactivar maestros, y acceder al perfil completo de cada uno.',
       sections: [
-        { icon: 'bi-search',        title: 'Buscador y filtros',  description: 'Filtrá por nombre, instrumento o estado (activo/inactivo) en tiempo real.',                                                                                             color: '#6b7280' },
-        { icon: 'bi-person-badge',  title: 'Tarjeta de maestro',  description: 'Nombre, instrumento principal, clases activas y estado. Badge verde = activo, gris = inactivo.',                                                                        color: '#3b82f6' },
-        { icon: 'bi-eye',           title: 'Ver perfil',           description: 'Perfil completo: datos personales, clases (titular y suplente), horarios y ocupación.',                                                                                color: '#10b981' },
-        { icon: 'bi-pencil',        title: 'Editar desde el perfil', description: 'Desde el perfil podés editar cualquier clase que dicte directamente, sin salir del modal.',                                                                         color: '#f59e0b' },
-        { icon: 'bi-person-x',      title: 'Desactivar maestro',   description: 'Desactivar oculta al maestro de listas operativas pero conserva su historial. No elimina datos.',                                                                      color: '#ef4444' },
+        {
+          icon: 'bi-search',
+          title: 'Buscador y filtros',
+          description: 'Filtrá por nombre, instrumento o estado (activo/inactivo) en tiempo real.',
+          color: '#6b7280',
+        },
+        {
+          icon: 'bi-person-badge',
+          title: 'Tarjeta de maestro',
+          description:
+            'Nombre, instrumento principal, clases activas y estado. Badge verde = activo, gris = inactivo.',
+          color: '#3b82f6',
+        },
+        {
+          icon: 'bi-eye',
+          title: 'Ver perfil',
+          description:
+            'Perfil completo: datos personales, clases (titular y suplente), horarios y ocupación.',
+          color: '#10b981',
+        },
+        {
+          icon: 'bi-pencil',
+          title: 'Editar desde el perfil',
+          description:
+            'Desde el perfil podés editar cualquier clase que dicte directamente, sin salir del modal.',
+          color: '#f59e0b',
+        },
+        {
+          icon: 'bi-person-x',
+          title: 'Desactivar maestro',
+          description:
+            'Desactivar oculta al maestro de listas operativas pero conserva su historial. No elimina datos.',
+          color: '#ef4444',
+        },
       ],
     })
   })
@@ -292,7 +357,7 @@ function attachEvents(container) {
   container.querySelector('#buscar').addEventListener('input', () => applyFilters())
   container.querySelector('#filtroEstado').addEventListener('change', () => applyFilters())
 
-  container.querySelector('#maestrosTBody').addEventListener('click', e => {
+  container.querySelector('#maestrosTBody').addEventListener('click', (e) => {
     const row = e.target.closest('.list-group-item[data-id]')
     if (row && !e.target.closest('[data-action]')) {
       openViewModal(row.dataset.id)
@@ -310,7 +375,7 @@ function attachEvents(container) {
 }
 
 function openWhatsAppModal(id) {
-  const maestro = state.maestrosOriginales.find(a => a.id === id)
+  const maestro = state.maestrosOriginales.find((a) => a.id === id)
   if (!maestro || !maestro.telefono) return
 
   const telefonoLimpio = maestro.telefono.replace(/\D/g, '')
@@ -338,7 +403,7 @@ function openWhatsAppModal(id) {
       const msg = modalBody.querySelector('#modal-whatsapp-msg').value.trim()
       const url = `https://wa.me/${telefonoLimpio}?text=${encodeURIComponent(msg)}`
       window.open(url, '_blank')
-    }
+    },
   })
 }
 
@@ -348,17 +413,19 @@ function applyFilters() {
   const searchTerm = currentContainer.querySelector('#buscar').value.trim().toLowerCase()
   const filtroEstado = currentContainer.querySelector('#filtroEstado').value
 
-  state.maestros = state.maestrosOriginales.filter(a => {
+  state.maestros = state.maestrosOriginales.filter((a) => {
     const nombre = (a.nombre || a.name || '').toLowerCase()
-    const matchSearch = !searchTerm ||
+    const matchSearch =
+      !searchTerm ||
       nombre.includes(searchTerm) ||
       (a.email || '').toLowerCase().includes(searchTerm) ||
       (a.instrumento || '').toLowerCase().includes(searchTerm) ||
       (a.especialidad || '').toLowerCase().includes(searchTerm) ||
-      (a.especialidades || []).some(e => e.toLowerCase().includes(searchTerm))
+      (a.especialidades || []).some((e) => e.toLowerCase().includes(searchTerm))
 
     const isActive = a.is_active ?? true
-    const matchEstado = filtroEstado === 'todos' ||
+    const matchEstado =
+      filtroEstado === 'todos' ||
       (filtroEstado === 'activo' && isActive) ||
       (filtroEstado === 'inactivo' && !isActive)
 
@@ -385,6 +452,10 @@ function openCreateModal() {
         <input type="email" class="form-control input-dense" id="modal-email" required placeholder="email@ejemplo.com">
       </div>
       <div class="col-md-6">
+        <label class="form-label-compact">Contraseña *</label>
+        <input type="password" class="form-control input-dense" id="modal-password" required placeholder="Contraseña para iniciar sesión" minlength="6">
+      </div>
+      <div class="col-md-6">
         <label class="form-label-compact">Teléfono</label>
         <input type="text" class="form-control input-dense" id="modal-telefono" placeholder="+58 412 1234567">
       </div>
@@ -392,20 +463,10 @@ function openCreateModal() {
         <label class="form-label-compact">Instrumento *</label>
         <input type="text" class="form-control input-dense" id="modal-instrumento" required placeholder="Violín">
       </div>
-      <div class="col-md-6">
-        <label class="form-label-compact">Especialidad</label>
-        <input type="text" class="form-control input-dense" id="modal-especialidad" placeholder="Dirección">
-      </div>
       ${renderEspecialidadesChips([], 'modal-especialidades-input')}
       <div class="col-12">
         <label class="form-label-compact">Biografía</label>
         <textarea class="form-control input-dense" id="modal-bio" rows="2" placeholder="Breve descripción..."></textarea>
-      </div>
-      <div class="col-12">
-        <div class="form-check">
-          <input class="form-check-input" type="checkbox" id="modal-esActivo" checked>
-          <label class="form-check-label" for="modal-esActivo">Maestro activo</label>
-        </div>
       </div>
     </form>`,
     onShow: (modalBody) => attachEspecialidadesEvents(modalBody),
@@ -413,34 +474,98 @@ function openCreateModal() {
     onSave: async (modalBody) => {
       const nombre = modalBody.querySelector('#modal-nombre').value.trim()
       const email = modalBody.querySelector('#modal-email').value.trim().toLowerCase()
+      const password = modalBody.querySelector('#modal-password')?.value
       const telefono = modalBody.querySelector('#modal-telefono').value.trim()
       const instrumento = modalBody.querySelector('#modal-instrumento').value.trim()
-      const especialidad = modalBody.querySelector('#modal-especialidad').value.trim()
       const bio = modalBody.querySelector('#modal-bio').value.trim()
-      const esActivo = modalBody.querySelector('#modal-esActivo').checked
 
-      if (!nombre) { showToast('El nombre es obligatorio', 'error'); return false }
-      if (!email) { showToast('El email es obligatorio', 'error'); return false }
-      if (!isValidEmail(email)) { showToast('El formato del email no es válido', 'error'); return false }
+      if (!nombre) {
+        showToast('El nombre es obligatorio', 'error')
+        return false
+      }
+      if (!email) {
+        showToast('El email es obligatorio', 'error')
+        return false
+      }
+      if (!isValidEmail(email)) {
+        showToast('El formato del email no es válido', 'error')
+        return false
+      }
+      if (!password || password.length < 6) {
+        showToast('La contraseña debe tener al menos 6 caracteres', 'error')
+        return false
+      }
+      if (!instrumento) {
+        showToast('El instrumento es obligatorio', 'error')
+        return false
+      }
 
       if (email) {
         const emailExiste = await validarEmail(email)
-        if (emailExiste) { showToast('El email ya está registrado', 'error'); return false }
+        if (emailExiste) {
+          showToast('El email ya está registrado', 'error')
+          return false
+        }
       }
 
       const especialidades = getEspecialidadesFromModal(modalBody)
-      const datosMaestro = { nombre, email: email || null, telefono: telefono || null, instrumento: instrumento || null, especialidad: especialidad || null, bio: bio || null, is_active: esActivo, especialidades }
-      const nuevo = await crearMaestro(datosMaestro)
-      state.maestrosOriginales.push(nuevo)
-      applyFilters()
-      showToast('Maestro creado exitosamente', 'success')
-    }
+
+      try {
+        // 1. Crear auth user
+        const { data: authData, error: signUpError } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            data: { full_name: nombre, rol: 'maestro' },
+          },
+        })
+
+        if (signUpError) {
+          showToast(signUpError.message || 'Error al crear usuario', 'error')
+          return false
+        }
+
+        if (!authData?.user) {
+          showToast('No se pudo crear el usuario', 'error')
+          return false
+        }
+
+        const userId = authData.user.id
+
+        // 2. Activar perfil inmediatamente (admin lo está creando)
+        await supabase.from('profiles').update({ estado: 'activo' }).eq('id', userId)
+
+        // 3. Actualizar maestros con datos adicionales
+        await supabase
+          .from('maestros')
+          .update({
+            tlf: telefono || null,
+            especialidad: instrumento || null,
+            resena: bio || null,
+            especialidades,
+          })
+          .eq('user_id', userId)
+
+        // 4. Recargar la lista (el trigger ya creó el row en maestros)
+        const maestros = await obtenerMaestros()
+        state.maestros = maestros
+        state.maestrosOriginales = [...maestros]
+        applyFilters()
+        showToast('Maestro creado exitosamente. Ya puede iniciar sesión.', 'success')
+      } catch (error) {
+        console.error('Error creando maestro:', error)
+        showToast('Error al crear el maestro: ' + error.message, 'error')
+      }
+    },
   })
 }
 
 function openEditModal(id) {
-  const maestro = state.maestrosOriginales.find(a => a.id === id)
-  if (!maestro) { showToast('Maestro no encontrado', 'error'); return }
+  const maestro = state.maestrosOriginales.find((a) => a.id === id)
+  if (!maestro) {
+    showToast('Maestro no encontrado', 'error')
+    return
+  }
 
   state.editando = id
   AppModal.open({
@@ -490,29 +615,54 @@ function openEditModal(id) {
       const bio = modalBody.querySelector('#modal-bio').value.trim()
       const esActivo = modalBody.querySelector('#modal-esActivo').checked
 
-      if (!nombre) { showToast('El nombre es obligatorio', 'error'); return false }
-      if (!email) { showToast('El email es obligatorio', 'error'); return false }
-      if (!isValidEmail(email)) { showToast('El formato del email no es válido', 'error'); return false }
+      if (!nombre) {
+        showToast('El nombre es obligatorio', 'error')
+        return false
+      }
+      if (!email) {
+        showToast('El email es obligatorio', 'error')
+        return false
+      }
+      if (!isValidEmail(email)) {
+        showToast('El formato del email no es válido', 'error')
+        return false
+      }
 
       if (email && maestro.email !== email) {
         const emailExiste = await validarEmail(email)
-        if (emailExiste) { showToast('El email ya está registrado', 'error'); return false }
+        if (emailExiste) {
+          showToast('El email ya está registrado', 'error')
+          return false
+        }
       }
 
       const especialidades = getEspecialidadesFromModal(modalBody)
-      const datosMaestro = { nombre, email: email || null, telefono: telefono || null, instrumento: instrumento || null, especialidad: especialidad || null, bio: bio || null, is_active: esActivo, especialidades }
+      const datosMaestro = {
+        nombre,
+        email: email || null,
+        telefono: telefono || null,
+        instrumento: instrumento || null,
+        especialidad: especialidad || null,
+        bio: bio || null,
+        is_active: esActivo,
+        especialidades,
+      }
       await actualizarMaestro(state.editando, datosMaestro)
-      const idx = state.maestrosOriginales.findIndex(a => a.id === state.editando)
-      if (idx !== -1) state.maestrosOriginales[idx] = { ...state.maestrosOriginales[idx], ...datosMaestro }
+      const idx = state.maestrosOriginales.findIndex((a) => a.id === state.editando)
+      if (idx !== -1)
+        state.maestrosOriginales[idx] = { ...state.maestrosOriginales[idx], ...datosMaestro }
       applyFilters()
       showToast('Maestro actualizado correctamente', 'success')
-    }
+    },
   })
 }
 
 function openViewModal(id) {
-  const maestro = state.maestrosOriginales.find(a => a.id === id)
-  if (!maestro) { showToast('Maestro no encontrado', 'error'); return }
+  const maestro = state.maestrosOriginales.find((a) => a.id === id)
+  if (!maestro) {
+    showToast('Maestro no encontrado', 'error')
+    return
+  }
 
   const nombre = maestro.nombre || maestro.name || '-'
   const isActive = maestro.is_active ?? true
@@ -548,9 +698,16 @@ function openViewModal(id) {
           <div class="mb-3">
             <label class="form-label fw-bold">Especialidades</label>
             <p class="form-control-plaintext">
-              ${(maestro.especialidades || []).length 
-                ? maestro.especialidades.map(e => `<span class="badge bg-primary-subtle text-primary me-1">${escapeHTML(e)}</span>`).join('')
-                : 'Sin especialidades'}
+              ${
+                (maestro.especialidades || []).length
+                  ? maestro.especialidades
+                      .map(
+                        (e) =>
+                          `<span class="badge bg-primary-subtle text-primary me-1">${escapeHTML(e)}</span>`,
+                      )
+                      .join('')
+                  : 'Sin especialidades'
+              }
             </p>
           </div>
           <div class="mb-3">
@@ -610,14 +767,18 @@ function openViewModal(id) {
             supabase.from('maestros').select('*').order('nombre_completo', { ascending: true }),
             supabase.from('salones').select('*').order('nombre', { ascending: true }),
             supabase.from('programas').select('*').order('nombre', { ascending: true }),
-            supabase.from('alumnos').select('*').eq('activo', true).order('nombre_completo', { ascending: true }),
+            supabase
+              .from('alumnos')
+              .select('*')
+              .eq('activo', true)
+              .order('nombre_completo', { ascending: true }),
           ])
 
           const catalogos = {
             maestros: maestrosRes.data || [],
-            salones:  salonesRes.data  || [],
+            salones: salonesRes.data || [],
             programas: programasRes.data || [],
-            alumnos:  alumnosRes.data  || [],
+            alumnos: alumnosRes.data || [],
           }
 
           badge.textContent = `${clases.length} clase${clases.length !== 1 ? 's' : ''}`
@@ -631,22 +792,38 @@ function openViewModal(id) {
             return
           }
 
-          const DIAS = { lunes:'Lun', martes:'Mar', miercoles:'Mié', jueves:'Jue', viernes:'Vie', sabado:'Sáb', domingo:'Dom' }
-          const fmtHora = (t) => t?.slice(0,5) || ''
-          const fmtHorario = (h) => `${DIAS[h.dia] || h.dia} ${fmtHora(h.hora_inicio)}–${fmtHora(h.hora_fin)}`
+          const DIAS = {
+            lunes: 'Lun',
+            martes: 'Mar',
+            miercoles: 'Mié',
+            jueves: 'Jue',
+            viernes: 'Vie',
+            sabado: 'Sáb',
+            domingo: 'Dom',
+          }
+          const fmtHora = (t) => t?.slice(0, 5) || ''
+          const fmtHorario = (h) =>
+            `${DIAS[h.dia] || h.dia} ${fmtHora(h.hora_inicio)}–${fmtHora(h.hora_fin)}`
 
           clasesContainer.innerHTML = `
             <div class="d-flex flex-column gap-2">
-              ${clases.map(c => {
-                // BUG FIX: Clase model no mapea `activo`, usar `estado` (string de BD)
-                const esActiva   = c.estado === 'activa' || c.estado == null
-                const ocupacion  = c.capacidad_maxima ? Math.round((c.total_alumnos / c.capacidad_maxima) * 100) : null
-                const ocupColor  = ocupacion >= 90 ? '#ef4444' : ocupacion >= 70 ? '#f59e0b' : '#10b981'
-                const horarioPills = c.horarios.map(h =>
-                  `<span style="background:var(--bs-tertiary-bg);border:1px solid var(--bs-border-color);border-radius:20px;padding:1px 8px;font-size:0.7rem;white-space:nowrap;">${fmtHorario(h)}</span>`
-                ).join('')
+              ${clases
+                .map((c) => {
+                  // BUG FIX: Clase model no mapea `activo`, usar `estado` (string de BD)
+                  const esActiva = c.estado === 'activa' || c.estado == null
+                  const ocupacion = c.capacidad_maxima
+                    ? Math.round((c.total_alumnos / c.capacidad_maxima) * 100)
+                    : null
+                  const ocupColor =
+                    ocupacion >= 90 ? '#ef4444' : ocupacion >= 70 ? '#f59e0b' : '#10b981'
+                  const horarioPills = c.horarios
+                    .map(
+                      (h) =>
+                        `<span style="background:var(--bs-tertiary-bg);border:1px solid var(--bs-border-color);border-radius:20px;padding:1px 8px;font-size:0.7rem;white-space:nowrap;">${fmtHorario(h)}</span>`,
+                    )
+                    .join('')
 
-                return `
+                  return `
                   <div class="clase-card" data-clase-id="${c.id}" style="
                     border-radius: 10px;
                     border: 1px solid var(--bs-border-color);
@@ -675,11 +852,15 @@ function openViewModal(id) {
                         <div class="d-flex align-items-center gap-1" style="font-size:0.72rem;">
                           <i class="bi bi-people" style="color:var(--bs-secondary-color);"></i>
                           <span style="color:var(--bs-secondary-color);">${c.total_alumnos}${c.capacidad_maxima ? `/${c.capacidad_maxima}` : ''}</span>
-                          ${ocupacion !== null ? `
+                          ${
+                            ocupacion !== null
+                              ? `
                             <div style="flex:1;max-width:60px;height:4px;background:var(--bs-tertiary-bg);border-radius:2px;overflow:hidden;margin-left:4px;">
                               <div style="width:${ocupacion}%;height:100%;background:${ocupColor};border-radius:2px;transition:width 0.3s;"></div>
                             </div>
-                            <span style="color:${ocupColor};font-weight:600;">${ocupacion}%</span>` : ''}
+                            <span style="color:${ocupColor};font-weight:600;">${ocupacion}%</span>`
+                              : ''
+                          }
                         </div>
                       </div>
 
@@ -704,14 +885,15 @@ function openViewModal(id) {
 
                     </div>
                   </div>`
-              }).join('')}
+                })
+                .join('')}
             </div>`
 
           // ── Editar clase ────────────────────────────────────────────────
-          clasesContainer.querySelectorAll('.btn-editar-clase').forEach(btn => {
+          clasesContainer.querySelectorAll('.btn-editar-clase').forEach((btn) => {
             btn.addEventListener('click', (e) => {
               const claseId = e.currentTarget.dataset.claseId
-              const clase = clases.find(c => c.id === claseId)
+              const clase = clases.find((c) => c.id === claseId)
               if (!clase) return
               AppModal.close()
               setTimeout(() => {
@@ -719,16 +901,16 @@ function openViewModal(id) {
                   ...catalogos,
                   onSuccess: () => {
                     setTimeout(() => openViewModal(id), 300)
-                  }
+                  },
                 })
               }, 300)
             })
           })
 
           // ── Desvincular maestro ─────────────────────────────────────────
-          clasesContainer.querySelectorAll('.btn-desvincular-clase').forEach(btn => {
+          clasesContainer.querySelectorAll('.btn-desvincular-clase').forEach((btn) => {
             btn.addEventListener('click', async (e) => {
-              const claseId    = e.currentTarget.dataset.claseId
+              const claseId = e.currentTarget.dataset.claseId
               const claseNombre = e.currentTarget.dataset.claseNombre
               const esSuplente = e.currentTarget.dataset.esSuplente === 'true'
               const campo = esSuplente ? 'maestro_suplente_id' : 'maestro_principal_id'
@@ -743,11 +925,11 @@ function openViewModal(id) {
               } catch (err) {
                 showToast('Error al desvincular: ' + err.message, 'error')
                 e.currentTarget.disabled = false
-                e.currentTarget.innerHTML = '<i class="bi bi-person-dash" style="font-size:1rem;"></i><span>Quitar</span>'
+                e.currentTarget.innerHTML =
+                  '<i class="bi bi-person-dash" style="font-size:1rem;"></i><span>Quitar</span>'
               }
             })
           })
-
         } catch (err) {
           badge.textContent = 'Error'
           clasesContainer.innerHTML = `
@@ -758,13 +940,16 @@ function openViewModal(id) {
       }
 
       renderClasesSection()
-    }
+    },
   })
 }
 
 function openDeleteModal(id) {
-  const maestro = state.maestrosOriginales.find(a => a.id === id)
-  if (!maestro) { showToast('Maestro no encontrado', 'error'); return }
+  const maestro = state.maestrosOriginales.find((a) => a.id === id)
+  if (!maestro) {
+    showToast('Maestro no encontrado', 'error')
+    return
+  }
 
   state.deletingId = id
   const nombre = maestro.nombre || maestro.name || ''
@@ -788,7 +973,7 @@ function openDeleteModal(id) {
         showToast('Maestro reactivado correctamente', 'success')
       }
       applyFilters()
-    }
+    },
   })
 }
 
@@ -813,17 +998,17 @@ function exportarMaestrosCSV() {
   }
 
   const headers = ['Nombre', 'Email', 'Teléfono', 'Instrumento', 'Especialidad', 'Estado']
-  const rows = state.maestrosOriginales.map(m => [
+  const rows = state.maestrosOriginales.map((m) => [
     m.nombre || '',
     m.email || '',
     m.telefono || '',
     m.instrumento || '',
     m.especialidad || '',
-    m.is_active !== false ? 'Activo' : 'Inactivo'
+    m.is_active !== false ? 'Activo' : 'Inactivo',
   ])
 
   const csvContent = [headers, ...rows]
-    .map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+    .map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(','))
     .join('\n')
 
   const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
@@ -840,7 +1025,12 @@ function showToast(message, type = 'info') {
   if (!toastContainer) return
 
   const bgClass = type === 'success' ? 'bg-success' : type === 'error' ? 'bg-danger' : 'bg-info'
-  const iconClass = type === 'success' ? 'bi-check-circle' : type === 'error' ? 'bi-exclamation-circle' : 'bi-info-circle'
+  const iconClass =
+    type === 'success'
+      ? 'bi-check-circle'
+      : type === 'error'
+        ? 'bi-exclamation-circle'
+        : 'bi-info-circle'
   const label = type === 'success' ? 'Éxito' : type === 'error' ? 'Error' : 'Información'
 
   const toastEl = document.createElement('div')

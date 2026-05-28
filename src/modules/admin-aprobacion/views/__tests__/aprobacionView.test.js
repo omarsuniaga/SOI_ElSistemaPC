@@ -6,7 +6,7 @@ vi.mock('../../../../lib/supabaseClient.js', () => ({
       getSession: vi.fn(),
     },
     from: vi.fn(),
-  }
+  },
 }))
 
 import { supabase } from '../../../../lib/supabaseClient.js'
@@ -16,9 +16,32 @@ describe('aprobacionView', () => {
   let container
 
   const mockPendientes = [
-    { id: 'p1', email: 'maestro1@test.com', nombre_completo: 'Ana López', instrumento: 'Violín', created_at: '2026-05-15T10:00:00Z' },
-    { id: 'p2', email: 'maestro2@test.com', nombre_completo: 'Carlos Ruiz', instrumento: 'Piano', created_at: '2026-05-16T14:30:00Z' },
+    {
+      id: 'p1',
+      email: 'maestro1@test.com',
+      nombre_completo: 'Ana López',
+      maestros: [{ especialidad: 'Violín' }],
+      created_at: '2026-05-15T10:00:00Z',
+    },
+    {
+      id: 'p2',
+      email: 'maestro2@test.com',
+      nombre_completo: 'Carlos Ruiz',
+      maestros: [{ especialidad: 'Piano' }],
+      created_at: '2026-05-16T14:30:00Z',
+    },
   ]
+
+  function mockSelectChain(returnData) {
+    return {
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      in: vi.fn().mockReturnThis(),
+      maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
+      order: vi.fn().mockResolvedValue({ data: returnData, error: null }),
+      update: vi.fn().mockReturnThis(),
+    }
+  }
 
   beforeEach(() => {
     container = document.createElement('div')
@@ -28,7 +51,7 @@ describe('aprobacionView', () => {
     // Mock session for admin
     supabase.auth.getSession.mockResolvedValue({
       data: { session: { user: { id: 'admin-123' } } },
-      error: null
+      error: null,
     })
 
     // Mock window dispatch for toast events
@@ -41,12 +64,7 @@ describe('aprobacionView', () => {
   })
 
   it('renders a table with pending teachers', async () => {
-    supabase.from.mockReturnValue({
-      select: vi.fn().mockReturnThis(),
-      eq: vi.fn().mockReturnThis(),
-      in: vi.fn().mockReturnThis(),
-      order: vi.fn().mockResolvedValue({ data: mockPendientes, error: null })
-    })
+    supabase.from.mockReturnValue(mockSelectChain(mockPendientes))
 
     await renderAprobacionView(container)
 
@@ -58,12 +76,7 @@ describe('aprobacionView', () => {
   })
 
   it('shows empty message when no pending teachers', async () => {
-    supabase.from.mockReturnValue({
-      select: vi.fn().mockReturnThis(),
-      eq: vi.fn().mockReturnThis(),
-      in: vi.fn().mockReturnThis(),
-      order: vi.fn().mockResolvedValue({ data: [], error: null })
-    })
+    supabase.from.mockReturnValue(mockSelectChain([]))
 
     await renderAprobacionView(container)
 
@@ -71,12 +84,7 @@ describe('aprobacionView', () => {
   })
 
   it('shows Aprobar and Rechazar buttons for each pending teacher', async () => {
-    supabase.from.mockReturnValue({
-      select: vi.fn().mockReturnThis(),
-      eq: vi.fn().mockReturnThis(),
-      in: vi.fn().mockReturnThis(),
-      order: vi.fn().mockResolvedValue({ data: mockPendientes, error: null })
-    })
+    supabase.from.mockReturnValue(mockSelectChain(mockPendientes))
 
     await renderAprobacionView(container)
 
@@ -86,14 +94,14 @@ describe('aprobacionView', () => {
     expect(rechazarBtns.length).toBe(2)
   })
 
-  it('calls supabase update with estado=activo on Aprobar click', async () => {
+  it('calls supabase update with estado=activo and rol=maestro on Aprobar click', async () => {
     const updateMock = vi.fn().mockReturnThis()
-    const eqMock = vi.fn().mockResolvedValue({ data: null, error: null })
 
     supabase.from.mockReturnValue({
       select: vi.fn().mockReturnThis(),
       eq: vi.fn().mockReturnThis(),
       in: vi.fn().mockReturnThis(),
+      maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
       order: vi.fn().mockResolvedValue({ data: mockPendientes, error: null }),
       update: updateMock,
     })
@@ -103,19 +111,23 @@ describe('aprobacionView', () => {
     const aprobarBtn = container.querySelector('.btn-aprobar')
     aprobarBtn.click()
 
+    // Modal opens — click the save button
+    await vi.waitUntil(() => document.querySelector('.app-modal-btn-save'), { timeout: 1000 })
+    document.querySelector('.app-modal-btn-save').click()
+
     await vi.waitUntil(() => updateMock.mock.calls.length > 0, { timeout: 1000 })
 
-    expect(updateMock).toHaveBeenCalledWith({ estado: 'activo' })
+    expect(updateMock).toHaveBeenCalledWith({ estado: 'activo', rol: 'maestro' })
   })
 
   it('calls supabase update with estado=rechazado on Rechazar click', async () => {
     const updateMock = vi.fn().mockReturnThis()
-    const eqMock = vi.fn().mockResolvedValue({ data: null, error: null })
 
     supabase.from.mockReturnValue({
       select: vi.fn().mockReturnThis(),
       eq: vi.fn().mockReturnThis(),
       in: vi.fn().mockReturnThis(),
+      maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
       order: vi.fn().mockResolvedValue({ data: mockPendientes, error: null }),
       update: updateMock,
     })

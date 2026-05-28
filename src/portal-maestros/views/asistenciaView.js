@@ -2057,7 +2057,6 @@ function _renderVista(container, ctx) {
           }
         }
       }
-        }
 
         // 2. Si hay sesión existente, marcarla como registrada (borrador = false)
         if (sesionId && (tieneAsistenciaMarcada || tieneContenido)) {

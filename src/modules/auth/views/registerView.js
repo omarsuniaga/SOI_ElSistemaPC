@@ -273,9 +273,8 @@ function attachEvents(container) {
     const type = passwordInput.type === 'password' ? 'text' : 'password'
     passwordInput.type = type
     confirmPasswordInput.type = type
-    togglePassword.innerHTML = type === 'password' 
-      ? '<i class="bi bi-eye"></i>' 
-      : '<i class="bi bi-eye-slash"></i>'
+    togglePassword.innerHTML =
+      type === 'password' ? '<i class="bi bi-eye"></i>' : '<i class="bi bi-eye-slash"></i>'
   })
 
   linkLogin?.addEventListener('click', (e) => {
@@ -319,7 +318,7 @@ function validateConfirmPassword() {
 }
 
 function validatePassword(password) {
-  return PASSWORD_REQUIREMENTS.every(req => req.test(password))
+  return PASSWORD_REQUIREMENTS.every((req) => req.test(password))
 }
 
 async function handleRegister(container) {
@@ -353,7 +352,7 @@ async function handleRegister(container) {
   updateButtonState(true)
 
   try {
-    const result = await useAuth.register(email, password, { full_name: name })
+    const result = await useAuth.register(email, password, { full_name: name, rol: 'maestro' })
 
     if (result.success) {
       if (result.needsConfirmation) {
@@ -402,8 +401,22 @@ function showToast(message, type, container) {
   if (!toastContainer) return
 
   const toastId = 'toast-' + Date.now()
-  const bgClass = type === 'success' ? 'bg-success' : type === 'error' ? 'bg-danger' : type === 'info' ? 'bg-info' : 'bg-warning'
-  const iconClass = type === 'success' ? 'bi-check-circle' : type === 'error' ? 'bi-exclamation-circle' : type === 'info' ? 'bi-info-circle' : 'bi-exclamation-triangle'
+  const bgClass =
+    type === 'success'
+      ? 'bg-success'
+      : type === 'error'
+        ? 'bg-danger'
+        : type === 'info'
+          ? 'bg-info'
+          : 'bg-warning'
+  const iconClass =
+    type === 'success'
+      ? 'bi-check-circle'
+      : type === 'error'
+        ? 'bi-exclamation-circle'
+        : type === 'info'
+          ? 'bi-info-circle'
+          : 'bi-exclamation-triangle'
 
   const toastHTML = `
     <div id="${toastId}" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
@@ -433,7 +446,7 @@ function showToast(message, type, container) {
 
 function escapeHTML(str) {
   if (!str) return ''
-  return str.replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m]))
+  return str.replace(/[&<>]/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[m])
 }
 
 export default { renderRegisterView }

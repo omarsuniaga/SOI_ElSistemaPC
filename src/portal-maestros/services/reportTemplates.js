@@ -10,9 +10,8 @@
  */
 
 export const REPORT_CSS = `
-  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: Inter, Arial, sans-serif; color: #1a1d29; background: #fff; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; color: #1a1d29; background: #fff; }
 
   :root {
     --navy: #1e3a5f;
@@ -234,7 +233,7 @@ export function header(data) {
     : `<div class="rpt-esp-circle">ESP</div>`
 
   const extraHtml = (data.extraItems || [])
-    .map(item => `<span><strong>${esc(item.label)}:</strong> ${esc(item.value)}</span>`)
+    .map((item) => `<span><strong>${esc(item.label)}:</strong> ${esc(item.value)}</span>`)
     .join('')
 
   return `
@@ -287,12 +286,16 @@ export function footer(pageNum, total, dateStr) {
  *   type: 'ok' | 'bad' | 'warn' | 'info' | 'navy'
  */
 export function metricChips(metrics) {
-  const chips = metrics.map(m => `
+  const chips = metrics
+    .map(
+      (m) => `
     <div class="rpt-chip chip-${esc(m.type)}">
       <span class="chip-val">${esc(String(m.value))}</span>
       <span class="chip-lbl">${esc(m.label)}</span>
     </div>
-  `).join('')
+  `,
+    )
+    .join('')
   return `<div class="rpt-chips">${chips}</div>`
 }
 
@@ -314,7 +317,8 @@ export function attendanceCell(code) {
  */
 export function progressBar(estado, label, pct = 60) {
   const fillPct = estado === 'LOGRADO' ? 100 : pct
-  const estadoLabel = { LOGRADO: 'Logrado', EN_PROGRESO: 'En progreso', INICIADO: 'Iniciado' }[estado] ?? estado
+  const estadoLabel =
+    { LOGRADO: 'Logrado', EN_PROGRESO: 'En progreso', INICIADO: 'Iniciado' }[estado] ?? estado
   return `
     <div class="prog-row prog-${esc(estado)}">
       <div class="prog-label">
@@ -346,29 +350,65 @@ export function obsBlock(type, label, text) {
 }
 
 /**
+ * Comparative bar row HTML (shared between monthly attendance & pedagogical reports).
+ * @param {string} label   — e.g. "Presentes"
+ * @param {Object} d       — { cur: number, prev: number, diff: number, label: string, cls: string }
+ * @param {string} barClass — CSS class for bar color
+ */
+export function compBar(label, d, barClass) {
+  return `
+    <div class="comp-row">
+      <span class="comp-label">${esc(label)}</span>
+      <div style="flex:1;display:flex;gap:4px;align-items:center">
+        <div class="comp-bar-wrap" style="max-width:100px">
+          <div class="comp-bar ${esc(barClass)}" style="width:${d.prev}%"></div>
+        </div>
+        <span style="font-size:6.5pt;color:var(--ink3);width:28px">${d.prev}%</span>
+        <span style="font-size:7pt;color:var(--ink3)">→</span>
+        <div class="comp-bar-wrap" style="max-width:100px">
+          <div class="comp-bar ${esc(barClass)}" style="width:${d.cur}%"></div>
+        </div>
+        <span style="font-size:6.5pt;color:var(--ink3);width:28px">${d.cur}%</span>
+      </div>
+      <span class="comp-delta ${esc(d.cls)}">${esc(d.label)}</span>
+    </div>
+  `
+}
+
+/**
  * Row of content chips from DSL tokens.
  * @param {string[]} items — content labels
  */
 export function contentChips(items) {
   if (!items || items.length === 0) return ''
-  const chips = items.map(c => `<span class="content-chip">${esc(c)}</span>`).join('')
+  const chips = items.map((c) => `<span class="content-chip">${esc(c)}</span>`).join('')
   return `<div class="rpt-content-chips">${chips}</div>`
 }
 
 /**
- * Open an HTML string in a new window and trigger print dialog.
+ * Open an HTML string in a hidden iframe and trigger print dialog.
+ * Avoids popup blockers (Bug #1/#2). Waits 2s for fonts before print.
  * @param {string} html — full HTML document string
  */
 export function openReport(html) {
-  const win = window.open('', '_blank')
+  const iframe = document.createElement('iframe')
+  iframe.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;border:none'
+  document.body.appendChild(iframe)
+  const win = iframe.contentWindow
   if (!win) {
-    return false // popup blocked
+    document.body.removeChild(iframe)
+    return false
   }
   win.document.open()
   win.document.write(html)
   win.document.close()
-  // Short delay so fonts can load before print dialog opens
-  setTimeout(() => win.print(), 600)
+  setTimeout(() => {
+    win.print()
+    // Cleanup after print dialog closes
+    setTimeout(() => {
+      if (iframe.parentNode) document.body.removeChild(iframe)
+    }, 1000)
+  }, 2000)
   return true
 }
 

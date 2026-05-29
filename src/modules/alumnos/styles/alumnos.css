@@ -92,6 +92,19 @@
   transform: scale(1.1);
 }
 
+/* Report badges - theme aware */
+.reporte-theme-badge {
+  background-color: rgba(var(--bs-primary-rgb), 0.1) !important;
+  border-color: rgba(var(--bs-primary-rgb), 0.25) !important;
+  color: var(--bs-primary) !important;
+}
+
+[data-bs-theme="dark"] .reporte-theme-badge {
+  background-color: #0b2a5b !important;
+  border-color: rgba(147, 197, 253, 0.35) !important;
+  color: #dbeafe !important;
+}
+
 /* Card border accents */
 .border-start-accent {
   border-left: 4px solid transparent !important;

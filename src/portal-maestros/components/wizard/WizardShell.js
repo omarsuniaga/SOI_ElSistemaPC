@@ -14,8 +14,12 @@ import { crearWizard, avanzar, retroceder, irAPaso, marcarEnviado } from './wiza
 import { guardarBorrador, cargarBorrador, limpiarBorrador } from './draftStorage.js'
 import { renderProgressBar } from './ProgressBar.js'
 import { renderStepNav } from './StepNav.js'
-import { descargarFichaAlumno, descargarConstancia } from '../../../modules/alumnos/domain/generarPdfInscripcion.js'
+import {
+  descargarFichaAlumno,
+  descargarConstancia,
+} from '../../../modules/alumnos/domain/generarPdfInscripcion.js'
 import { mountPreloadSearch } from './PreloadSearch.js'
+import { supabase } from '../../../lib/supabaseClient.js'
 
 /**
  * Render the static wizard shell (progress + nav + content area + footer buttons).
@@ -25,7 +29,20 @@ import { mountPreloadSearch } from './PreloadSearch.js'
  *           steps, maxReachedStep }} opts
  * @returns {string} HTML string
  */
-export function renderWizardShell({ currentStep, totalSteps, title, content, canGoPrev, canGoNext, isLastStep, isLastRequiredStep, isLastOptionalStep, isOptionalStep, steps, maxReachedStep }) {
+export function renderWizardShell({
+  currentStep,
+  totalSteps,
+  title,
+  content,
+  canGoPrev,
+  canGoNext,
+  isLastStep,
+  isLastRequiredStep,
+  isLastOptionalStep,
+  isOptionalStep,
+  steps,
+  maxReachedStep,
+}) {
   const progressBar = renderProgressBar({ currentStep, totalSteps })
   const stepNav = renderStepNav({ steps, currentStep, maxReachedStep })
 
@@ -55,25 +72,26 @@ export function renderWizardShell({ currentStep, totalSteps, title, content, can
             <i class="bi bi-floppy"></i> Guardar borrador
           </button>
           <div class="d-flex gap-2 flex-wrap">
-            ${isLastOptionalStep
-              ? `<button type="button" id="wiz-btn-submit" class="btn btn-success">
+            ${
+              isLastOptionalStep
+                ? `<button type="button" id="wiz-btn-submit" class="btn btn-success">
                    <i class="bi bi-check-circle"></i> Finalizar inscripción completa
                  </button>`
-              : isLastRequiredStep
-                ? `<button type="button" id="wiz-btn-submit-basic" class="btn btn-outline-success">
+                : isLastRequiredStep
+                  ? `<button type="button" id="wiz-btn-submit-basic" class="btn btn-outline-success">
                      <i class="bi bi-check2"></i> Finalizar inscripción
                    </button>
                    <button type="button" id="wiz-btn-next" class="btn btn-primary">
                      Agregar perfil <i class="bi bi-arrow-right"></i>
                    </button>`
-                : isOptionalStep
-                  ? `<button type="button" id="wiz-btn-submit-basic" class="btn btn-outline-secondary btn-sm">
+                  : isOptionalStep
+                    ? `<button type="button" id="wiz-btn-submit-basic" class="btn btn-outline-secondary btn-sm">
                        <i class="bi bi-skip-forward"></i> Completar después
                      </button>
                      <button type="button" id="wiz-btn-next" class="btn btn-primary">
                        Siguiente <i class="bi bi-arrow-right"></i>
                      </button>`
-                  : `<button type="button" id="wiz-btn-next" class="btn btn-primary">
+                    : `<button type="button" id="wiz-btn-next" class="btn btn-primary">
                        Siguiente <i class="bi bi-arrow-right"></i>
                      </button>`
             }
@@ -133,12 +151,31 @@ export function mountWizard(container, stepModules, onSubmit, pasosObligatorios)
   }
 
   async function doSubmit(btn) {
-    if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Guardando...' }
+    if (btn) {
+      btn.disabled = true
+      btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Guardando...'
+    }
     try {
       const step = getCurrentStep()
       const stepData = step.getState(container)
       state = { ...state, draft: { ...state.draft, ...stepData } }
-      const alumnoGuardado = await onSubmit({ ...state.draft, fecha_aceptacion_compromisos: new Date().toISOString() })
+      const alumnoGuardado = await onSubmit({
+        ...state.draft,
+        fecha_aceptacion_compromisos: new Date().toISOString(),
+      })
+
+      const postulanteId = state.draft._postulante_id
+      if (postulanteId && alumnoGuardado?.id) {
+        try {
+          await supabase
+            .from('postulantes')
+            .update({ estado: 'inscrito', alumno_id: alumnoGuardado.id })
+            .eq('id', postulanteId)
+        } catch (_e) {
+          console.warn('[Wizard] Could not update postulante estado:', _e.message)
+        }
+      }
+
       limpiarBorrador()
       state = marcarEnviado(state)
 
@@ -176,13 +213,24 @@ export function mountWizard(container, stepModules, onSubmit, pasosObligatorios)
         </div>`
 
       container.querySelector('#btn-pdf-ficha')?.addEventListener('click', () => {
-        try { descargarFichaAlumno(alumnoParaPdf) } catch (e) { console.error('Error generando ficha:', e) }
+        try {
+          descargarFichaAlumno(alumnoParaPdf)
+        } catch (e) {
+          console.error('Error generando ficha:', e)
+        }
       })
       container.querySelector('#btn-pdf-constancia')?.addEventListener('click', () => {
-        try { descargarConstancia(alumnoParaPdf) } catch (e) { console.error('Error generando constancia:', e) }
+        try {
+          descargarConstancia(alumnoParaPdf)
+        } catch (e) {
+          console.error('Error generando constancia:', e)
+        }
       })
     } catch (_err) {
-      if (btn) { btn.disabled = false; btn.innerHTML = btn.dataset.label ?? 'Finalizar' }
+      if (btn) {
+        btn.disabled = false
+        btn.innerHTML = btn.dataset.label ?? 'Finalizar'
+      }
       const slot = container.querySelector('#wizard-step-slot')
       if (slot) {
         const err = document.createElement('div')
@@ -234,7 +282,9 @@ export function mountWizard(container, stepModules, onSubmit, pasosObligatorios)
         state = { ...state, draft: { ...state.draft, ...stepData } }
         guardarBorrador(state.draft)
         draftBtn.textContent = '¡Guardado!'
-        setTimeout(() => { draftBtn.innerHTML = '<i class="bi bi-floppy"></i> Guardar borrador' }, 1500)
+        setTimeout(() => {
+          draftBtn.innerHTML = '<i class="bi bi-floppy"></i> Guardar borrador'
+        }, 1500)
       })
     }
 

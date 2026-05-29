@@ -519,13 +519,17 @@ export async function fetchMaestrosParaNotificar() {
 }
 
 /**
- * Send a notification to one or more maestros (inserts into `notificaciones`).
+ * Send a notification to one or more maestros.
+ * 1. Inserts into `notificaciones` (in-app, real-time).
+ * 2. Fires the `send-push` Edge Function for each recipient to reach offline devices.
  * @param {string[]} profileIds
  * @param {{ titulo: string, mensaje: string, deep_link?: string }} payload
+ * @returns {Promise<{ sent: number, pushed: number }>}
  */
 export async function sendNotificacionToMaestros(profileIds, { titulo, mensaje, deep_link = '/notificaciones' }) {
   if (!profileIds?.length) throw new Error('Se requiere al menos un destinatario')
 
+  // 1. In-app notification (notificaciones table)
   const rows = profileIds.map(profile_id => ({
     profile_id,
     tipo: 'aviso_admin',
@@ -537,6 +541,75 @@ export async function sendNotificacionToMaestros(profileIds, { titulo, mensaje, 
 
   const { error } = await supabase.from('notificaciones').insert(rows)
   if (error) throw error
-  return { sent: rows.length }
+
+  // 2. Web Push via Edge Function (best-effort — don't fail the whole call if push errors)
+  let pushed = 0
+  try {
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+    const anonKey    = import.meta.env.VITE_SUPABASE_ANON_KEY
+    // Fire one request per recipient (Edge Function handles single profile_id)
+    const pushResults = await Promise.allSettled(
+      profileIds.map(profile_id =>
+        fetch(`${supabaseUrl}/functions/v1/send-push`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${anonKey}`,
+            'apikey': anonKey,
+          },
+          body: JSON.stringify({
+            profile_id,
+            title: titulo,
+            body: mensaje,
+            data: { tipo: 'aviso_admin', deepLink: deep_link },
+          }),
+        }).then(r => r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`)))
+      )
+    )
+    pushed = pushResults.filter(r => r.status === 'fulfilled' && r.value?.sent > 0).length
+  } catch (pushErr) {
+    console.warn('[adminNotifApi] Web push dispatch failed (in-app notif still sent):', pushErr.message)
+  }
+
+  return { sent: rows.length, pushed }
+}
+
+/**
+ * Fetch the history of admin-sent notifications (aviso_admin type) for the history tab.
+ * Groups by (titulo, mensaje, created_at minute) to show one row per broadcast.
+ * @param {{ limit?: number }} options
+ * @returns {Promise<Array<{ titulo, mensaje, deep_link, created_at, recipientCount }>>}
+ */
+export async function fetchNotificacionesEnviadas({ limit = 50 } = {}) {
+  const { data, error } = await supabase
+    .from('notificaciones')
+    .select('id, titulo, mensaje, deep_link, estado, created_at, profile_id')
+    .eq('tipo', 'aviso_admin')
+    .order('created_at', { ascending: false })
+    .limit(limit * 20) // over-fetch to group
+
+  if (error) throw error
+  if (!data?.length) return []
+
+  // Group by (titulo + mensaje + truncated-minute) → one "broadcast" entry
+  const groups = new Map()
+  for (const row of data) {
+    const minute = row.created_at?.slice(0, 16) // "2026-05-28T14:23"
+    const key = `${row.titulo}|${minute}`
+    if (!groups.has(key)) {
+      groups.set(key, {
+        titulo: row.titulo,
+        mensaje: row.mensaje,
+        deep_link: row.deep_link,
+        created_at: row.created_at,
+        recipients: [],
+      })
+    }
+    groups.get(key).recipients.push(row.profile_id)
+  }
+
+  return [...groups.values()]
+    .slice(0, limit)
+    .map(g => ({ ...g, recipientCount: g.recipients.length }))
 }
 

@@ -951,8 +951,14 @@ export async function renderAdminNotificacionesView(container) {
         if (action === 'goto') {
           const r = window.router || router
           if (r) {
-            const params = btn.dataset.params ? JSON.parse(btn.dataset.params) : {}
-            r.navigate(btn.dataset.route, params)
+            // Support routes with inline query params: "alumno?id=UUID"
+            const rawRoute = btn.dataset.route || ''
+            const [routePath, queryStr] = rawRoute.split('?')
+            let params = btn.dataset.params ? JSON.parse(btn.dataset.params) : {}
+            if (queryStr) {
+              new URLSearchParams(queryStr).forEach((v, k) => { params[k] = v })
+            }
+            r.navigate(routePath, params)
           }
           return
         }

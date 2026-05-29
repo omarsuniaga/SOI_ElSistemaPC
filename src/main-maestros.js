@@ -13,22 +13,23 @@ disablePullToRefresh()
 if ('serviceWorker' in navigator && import.meta.env.PROD) {
   const registerSW = async () => {
     try {
-      const registration = await navigator.serviceWorker.register('/sw.js');
-      console.log('[PWA] Service Worker registered:', registration.scope);
+      const registration = await navigator.serviceWorker.register('/sw.js')
+      console.log('[PWA] Service Worker registered:', registration.scope)
     } catch (error) {
-      console.log('[PWA] Service Worker registration failed:', error);
+      console.log('[PWA] Service Worker registration failed:', error)
     }
-  };
+  }
 
   if (document.readyState === 'complete') {
-    registerSW();
+    registerSW()
   } else {
-    window.addEventListener('load', registerSW);
+    window.addEventListener('load', registerSW)
   }
 } else if ('serviceWorker' in navigator && import.meta.env.DEV) {
-  navigator.serviceWorker.getRegistrations()
-    .then(registrations => registrations.forEach(registration => registration.unregister()))
-    .catch(error => console.log('[PWA] Service Worker cleanup failed:', error))
+  navigator.serviceWorker
+    .getRegistrations()
+    .then((registrations) => registrations.forEach((registration) => registration.unregister()))
+    .catch((error) => console.log('[PWA] Service Worker cleanup failed:', error))
 }
 
 // PWA: Banner de instalación automática
@@ -86,9 +87,13 @@ import { usePortalAuth, logoutMaestro } from './portal-maestros/auth/usePortalAu
 import { createPortalRouter } from './portal-maestros/router/portalRouter.js'
 import { processQueue, getQueue } from './portal-maestros/services/offlineQueue.js'
 import { supabase } from './lib/supabaseClient.js'
-import { prefetchMonthData, getMisClases, getHorariosClases, getSesiones } from './portal-maestros/services/maestroDataService.js'
+import {
+  prefetchMonthData,
+  getMisClases,
+  getHorariosClases,
+  getSesiones,
+} from './portal-maestros/services/maestroDataService.js'
 import { scheduleLocalAlerts } from './portal-maestros/services/pushService.js'
-
 
 // Bootstrap CSS completo — requerido por vistas admin (alumnosView, maestrosView, programasView)
 // que usan .container, .row, .col-*, var(--bs-*), etc.
@@ -98,17 +103,19 @@ import 'bootstrap-icons/font/bootstrap-icons.css'
 // Toast system -- sin dependencia de Bootstrap JS
 import { AppToast } from './shared/components/AppToast.js'
 window.addEventListener('showToast', (e) => {
-  const { message, type = 'info' } = e.detail || {};
-  if (message) AppToast.show(message, type);
-});
-
+  const { message, type = 'info' } = e.detail || {}
+  if (message) AppToast.show(message, type)
+})
 
 import { renderLoginView } from './portal-maestros/views/loginView.js'
 import { renderRegisterView } from './portal-maestros/views/registerView.js'
 import { renderPendingApprovalView } from './portal-maestros/views/pendingApprovalView.js'
 import { renderHoyView } from './portal-maestros/views/hoyView.js'
 import { renderCalendarioView } from './portal-maestros/views/calendarioView.js'
-import { renderMetricasView, getAlumnoIndexFromMetricas } from './portal-maestros/views/metricasView.js'
+import {
+  renderMetricasView,
+  getAlumnoIndexFromMetricas,
+} from './portal-maestros/views/metricasView.js'
 import { renderAsistenciaView } from './portal-maestros/views/asistenciaView.js'
 import { renderClaseEmergenteView } from './portal-maestros/views/claseEmergenteView.js'
 import { renderPerfilView } from './portal-maestros/views/perfilView.js'
@@ -137,7 +144,13 @@ import { getPermisos } from './portal-maestros/services/permisoService.js'
 // Nuevos componentes de UI
 import { themeToggle } from './portal-maestros/components/themeToggle.js'
 import { notificacionesPanel } from './portal-maestros/components/notificacionesPanel.js'
-import { onNotificacionesChange, getUnreadCount, fetchNotificaciones, startRealtime, stopRealtime } from './portal-maestros/services/notificationService.js'
+import {
+  onNotificacionesChange,
+  getUnreadCount,
+  fetchNotificaciones,
+  startRealtime,
+  stopRealtime,
+} from './portal-maestros/services/notificationService.js'
 
 import { pushDiagnostic } from './portal-maestros/components/pushDiagnostic.js'
 import { setNavigationCallbacks } from './portal-maestros/services/navigationHooks.js'
@@ -317,10 +330,10 @@ function _showLoginScreen() {
   // Si estamos en una ruta pública que no sea login (ej: register), dejar que el router la maneje
   const publicRoutes = ['login', 'register', 'pending-approval']
   const current = (router.currentRoute?.() || 'login').split('?')[0]
-  
+
   if (publicRoutes.includes(current) && current !== 'login') {
     console.log('[Auth] Manteniendo ruta pública:', current)
-    
+
     if (!document.getElementById('pm-view-container')) {
       app.innerHTML = '<main class="pm-view" id="pm-view-container"></main>'
     }
@@ -346,7 +359,7 @@ function _showLoginScreen() {
         } else {
           initPortal()
         }
-      }
+      },
     })
     return
   }
@@ -397,7 +410,9 @@ function _setupRouterRoutes() {
     router.on('admin-sesiones', (route, params) => _renderView('admin-sesiones', params))
     router.on('admin-aprobacion', (route, params) => _renderView('admin-aprobacion', params))
     router.on('admin-ausencias', (route, params) => _renderView('admin-ausencias', params))
-    router.on('admin-notificaciones', (route, params) => _renderView('admin-notificaciones', params))
+    router.on('admin-notificaciones', (route, params) =>
+      _renderView('admin-notificaciones', params),
+    )
     // Admin default route
     router.onNotFound(() => _renderView('admin-alumnos'))
   } else {
@@ -416,13 +431,17 @@ export function getBreakpoint() {
 }
 
 let _currentBreakpoint = getBreakpoint()
-window.addEventListener('resize', () => {
-  const next = getBreakpoint()
-  if (next !== _currentBreakpoint) {
-    _currentBreakpoint = next
-    document.body.dataset.pmLayout = next
-  }
-}, { passive: true })
+window.addEventListener(
+  'resize',
+  () => {
+    const next = getBreakpoint()
+    if (next !== _currentBreakpoint) {
+      _currentBreakpoint = next
+      document.body.dataset.pmLayout = next
+    }
+  },
+  { passive: true },
+)
 
 function _renderShell(app, maestro, permisos) {
   _maestro = maestro
@@ -441,12 +460,16 @@ function _renderShell(app, maestro, permisos) {
         </div>
       </div>
       <nav class="pm-sidebar-nav">
-        ${tabs.map(tab => `
+        ${tabs
+          .map(
+            (tab) => `
           <a class="pm-sidebar-link" data-route="${tab.id}" title="${tab.label}">
             <i class="bi ${tab.icon}"></i>
             <span>${tab.label}</span>
           </a>
-        `).join('')}
+        `,
+          )
+          .join('')}
       </nav>
       <div class="pm-sidebar-footer">
         <button id="pm-btn-perfil-sidebar" class="pm-sidebar-link" data-route="perfil">
@@ -463,10 +486,11 @@ function _renderShell(app, maestro, permisos) {
         <div class="pm-header-left" id="pm-header-left">
           <span class="pm-header-greeting">${IS_ADMIN ? 'Panel Admin' : 'Portal Maestros'}</span>
           <span class="pm-header-title" style="font-size:clamp(1rem,3.5vw,1.5rem);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:52vw;">
-            ${IS_ADMIN
-        ? (maestro?.nombre_completo ?? 'Administrador')
-        : ('Prof. ' + (maestro?.nombre_completo ?? ''))
-      }
+            ${
+              IS_ADMIN
+                ? (maestro?.nombre_completo ?? 'Administrador')
+                : 'Prof. ' + (maestro?.nombre_completo ?? '')
+            }
             <span class="pm-online-dot" id="pm-sync-indicator" title="Sincronizado"></span>
           </span>
         </div>
@@ -499,10 +523,11 @@ function _renderShell(app, maestro, permisos) {
           </button>
           
           <button id="pm-btn-perfil" class="pm-avatar-btn" title="Perfil">
-            ${maestro?.avatar_url
-        ? `<img src="${maestro.avatar_url}" alt="Avatar">`
-        : `<i class="bi bi-person-circle"></i>`
-      }
+            ${
+              maestro?.avatar_url
+                ? `<img src="${maestro.avatar_url}" alt="Avatar">`
+                : `<i class="bi bi-person-circle"></i>`
+            }
           </button>
         </div>
 
@@ -514,12 +539,16 @@ function _renderShell(app, maestro, permisos) {
       <!-- Footer Nav (mobile/tablet only - hidden on desktop) -->
       <nav class="pm-footer-nav ${IS_ADMIN ? 'pm-footer-nav--admin' : ''}" id="pm-footer-nav">
         <div class="pm-footer-nav__inner">
-          ${tabs.map(tab => `
+          ${tabs
+            .map(
+              (tab) => `
             <button class="pm-nav-tab" data-route="${tab.id}" title="${tab.label}" aria-label="${tab.label}">
               <i class="bi ${tab.icon}"></i>
               <span>${tab.label}</span>
             </button>
-          `).join('')}
+          `,
+            )
+            .join('')}
         </div>
       </nav>
     </div>
@@ -536,7 +565,7 @@ function _renderShell(app, maestro, permisos) {
   // Footer nav events - SPA navigation
   const footerNav = document.getElementById('pm-footer-nav')
   if (footerNav) {
-    footerNav.querySelectorAll('.pm-nav-tab').forEach(tab => {
+    footerNav.querySelectorAll('.pm-nav-tab').forEach((tab) => {
       tab.addEventListener('click', (e) => {
         e.preventDefault()
         router.navigate(tab.dataset.route)
@@ -547,7 +576,7 @@ function _renderShell(app, maestro, permisos) {
   // Sidebar nav events - SPA navigation (desktop + landscape tablet)
   const sidebar = document.getElementById('pm-sidebar')
   if (sidebar) {
-    sidebar.querySelectorAll('.pm-sidebar-link').forEach(link => {
+    sidebar.querySelectorAll('.pm-sidebar-link').forEach((link) => {
       link.addEventListener('click', (e) => {
         e.preventDefault()
         router.navigate(link.dataset.route)
@@ -559,7 +588,6 @@ function _renderShell(app, maestro, permisos) {
     e.preventDefault()
     router.navigate('perfil')
   })
-
 
   // WhatsApp-style header search
   const headerEl = document.getElementById('pm-header')
@@ -605,7 +633,9 @@ function _renderShell(app, maestro, permisos) {
     const dd = document.createElement('div')
     dd.id = 'pm-header-search-dropdown'
     dd.setAttribute('role', 'listbox')
-    dd.innerHTML = items.map(a => `
+    dd.innerHTML = items
+      .map(
+        (a) => `
       <div class="pm-hsd-item" role="option" tabindex="0" data-id="${a.id}">
         <i class="bi bi-person-fill pm-hsd-icon"></i>
         <div class="pm-hsd-info">
@@ -613,7 +643,9 @@ function _renderShell(app, maestro, permisos) {
           ${a.instrumento_principal ? `<span class="pm-hsd-meta">${a.instrumento_principal}</span>` : ''}
         </div>
         <i class="bi bi-chevron-right pm-hsd-arrow"></i>
-      </div>`).join('')
+      </div>`,
+      )
+      .join('')
     document.body.appendChild(dd)
 
     // Position below the search bar
@@ -621,26 +653,35 @@ function _renderShell(app, maestro, permisos) {
     dd.style.cssText = `position:fixed;top:${rect.bottom + 4}px;left:${Math.max(8, rect.left)}px;width:${Math.min(320, window.innerWidth - 16)}px;z-index:9999;background:var(--pm-surface);border:1px solid var(--pm-border);border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,0.18);overflow:hidden;`
     _searchDropdown = dd
 
-    dd.querySelectorAll('.pm-hsd-item').forEach(row => {
-      const go = () => { closeSearch(); removeDropdown(); router.navigate(`alumno?id=${row.dataset.id}`) }
+    dd.querySelectorAll('.pm-hsd-item').forEach((row) => {
+      const go = () => {
+        closeSearch()
+        removeDropdown()
+        router.navigate('alumno', { id: row.dataset.id })
+      }
       row.addEventListener('click', go)
-      row.addEventListener('keypress', (e) => { if (e.key === 'Enter') go() })
+      row.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') go()
+      })
     })
   }
 
   searchInput?.addEventListener('input', () => {
     const q = searchInput.value.trim()
     clearTimeout(_searchTimer)
-    if (q.length < 1) { removeDropdown(); return }
+    if (q.length < 1) {
+      removeDropdown()
+      return
+    }
 
     // If metricas data is loaded in memory, filter locally — zero network, zero delay
     const localIndex = getAlumnoIndexFromMetricas()
     if (localIndex) {
       const lower = q.toLowerCase()
       const hits = localIndex
-        .filter(a => a.nombre_completo?.toLowerCase().includes(lower))
+        .filter((a) => a.nombre_completo?.toLowerCase().includes(lower))
         .slice(0, 8)
-        .map(a => ({ ...a, instrumento_principal: a.clases?.join(', ') || null }))
+        .map((a) => ({ ...a, instrumento_principal: a.clases?.join(', ') || null }))
       showDropdown(hits)
       return
     }
@@ -654,12 +695,17 @@ function _renderShell(app, maestro, permisos) {
           .ilike('nombre_completo', `%${q}%`)
           .limit(8)
         showDropdown(data || [])
-      } catch { removeDropdown() }
+      } catch {
+        removeDropdown()
+      }
     }, 200)
   })
 
   searchInput?.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') { closeSearch(); removeDropdown() }
+    if (e.key === 'Escape') {
+      closeSearch()
+      removeDropdown()
+    }
   })
 
   // Inject dropdown styles once
@@ -705,20 +751,20 @@ function _setupGlobalAppEvents() {
 
   // Suscribirse al badge de notificaciones
   onNotificacionesChange(() => {
-    const badge = document.getElementById('pm-notif-badge');
-    if (!badge) return;
-    const count = getUnreadCount();
+    const badge = document.getElementById('pm-notif-badge')
+    if (!badge) return
+    const count = getUnreadCount()
     if (count > 0) {
-      badge.textContent = count > 9 ? '9+' : count;
-      badge.style.display = 'flex';
+      badge.textContent = count > 9 ? '9+' : count
+      badge.style.display = 'flex'
     } else {
-      badge.style.display = 'none';
+      badge.style.display = 'none'
     }
-  });
+  })
 
   // Disparar primera carga y abrir canal Realtime de notificaciones
-  fetchNotificaciones();
-  startRealtime();
+  fetchNotificaciones()
+  startRealtime()
 
   // PERM-REALTIME: Subscribe to permisos_maestros changes for instant shell updates
   if (!IS_ADMIN) {
@@ -762,8 +808,7 @@ function _setupGlobalAppEvents() {
 
               // If the maestro is currently on a now-forbidden route, redirect to 'hoy'
               const routeNowForbidden =
-
-                (currentRoute === 'gestionar-clases' && !nuevosPermisos.puede_inscribir_clases)
+                currentRoute === 'gestionar-clases' && !nuevosPermisos.puede_inscribir_clases
               let safeRoute = routeNowForbidden ? 'hoy' : currentRoute
 
               // If teacher was on pending-approval and just got approved, send them to hoy
@@ -775,7 +820,10 @@ function _setupGlobalAppEvents() {
               _renderShell(app, maestroLocal, nuevosPermisos)
               _initViewContainers()
               _setupRouterRoutes()
-              router.setAuthGuard(() => usePortalAuth.isAuthenticated(), ['login', 'register', 'pending-approval'])
+              router.setAuthGuard(
+                () => usePortalAuth.isAuthenticated(),
+                ['login', 'register', 'pending-approval'],
+              )
 
               // CRITICAL: clear stale render cache so the active view re-renders
               _viewRendered.clear()
@@ -785,25 +833,34 @@ function _setupGlobalAppEvents() {
               router.navigate(safeRoute)
 
               if (ganados.length > 0) {
-                AppToast.success(`¡Nuevos permisos activados: ${ganados.join(', ')}! Ahora podés acceder desde el Perfil o la barra de navegación.`)
+                AppToast.success(
+                  `¡Nuevos permisos activados: ${ganados.join(', ')}! Ahora podés acceder desde el Perfil o la barra de navegación.`,
+                )
               } else if (perdidos.length > 0) {
-                AppToast.show(`El administrador removió tu acceso a: ${perdidos.join(', ')}.`, 'warning')
+                AppToast.show(
+                  `El administrador removió tu acceso a: ${perdidos.join(', ')}.`,
+                  'warning',
+                )
               } else {
                 AppToast.show('Tus permisos fueron actualizados por el administrador.', 'info')
               }
             } catch (err) {
               console.warn('[Realtime] Error actualizando permisos:', err.message)
             }
-          }
+          },
         )
-        .subscribe(status => {
+        .subscribe((status) => {
           console.log('[Realtime] Canal permisos_maestros:', status)
         })
 
       // Clean up on page unload
-      window.addEventListener('beforeunload', () => {
-        supabase.removeChannel(permisosChannel)
-      }, { once: true })
+      window.addEventListener(
+        'beforeunload',
+        () => {
+          supabase.removeChannel(permisosChannel)
+        },
+        { once: true },
+      )
     }
   }
 
@@ -811,20 +868,36 @@ function _setupGlobalAppEvents() {
   document.addEventListener('keydown', (e) => {
     if (getBreakpoint() !== 'desktop') return
     if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return
-    
+
     // Simple state machine for shortcuts
     if (!window._globalAppKeys) window._globalAppKeys = []
     const _keys = window._globalAppKeys
-    
+
     _keys.push(e.key.toLowerCase())
     if (_keys[_keys.length - 2] === 'g') {
       switch (e.key.toLowerCase()) {
-        case 'h': router.navigate('hoy'); _keys.length = 0; break
-        case 'c': router.navigate('calendario'); _keys.length = 0; break
-        case 'r': router.navigate('ruta'); _keys.length = 0; break
-        case 'm': router.navigate('metricas'); _keys.length = 0; break
-        case 'p': router.navigate('perfil'); _keys.length = 0; break
-        default: break
+        case 'h':
+          router.navigate('hoy')
+          _keys.length = 0
+          break
+        case 'c':
+          router.navigate('calendario')
+          _keys.length = 0
+          break
+        case 'r':
+          router.navigate('ruta')
+          _keys.length = 0
+          break
+        case 'm':
+          router.navigate('metricas')
+          _keys.length = 0
+          break
+        case 'p':
+          router.navigate('perfil')
+          _keys.length = 0
+          break
+        default:
+          break
       }
     }
     if (_keys.length > 3) _keys.splice(0, _keys.length - 2)
@@ -832,29 +905,33 @@ function _setupGlobalAppEvents() {
 
   // Breakpoint change handler
   let _resizeTimer = null
-  window.addEventListener('resize', () => {
-    clearTimeout(_resizeTimer)
-    _resizeTimer = setTimeout(() => {
-      const next = getBreakpoint()
-      if (next !== _currentBreakpoint) {
-        _currentBreakpoint = next
-        document.body.dataset.pmLayout = next
-        _renderShell(document.getElementById('portal-app'), _maestro)
-        _initViewContainers()
-        
-        // El nuevo DOM necesita re-activar el tab correcto
-        const route = (router.currentRoute?.() || 'hoy').split('?')[0]
-        _setActiveTab(route)
-      }
-    }, 250)
-  }, { passive: true })
+  window.addEventListener(
+    'resize',
+    () => {
+      clearTimeout(_resizeTimer)
+      _resizeTimer = setTimeout(() => {
+        const next = getBreakpoint()
+        if (next !== _currentBreakpoint) {
+          _currentBreakpoint = next
+          document.body.dataset.pmLayout = next
+          _renderShell(document.getElementById('portal-app'), _maestro)
+          _initViewContainers()
+
+          // El nuevo DOM necesita re-activar el tab correcto
+          const route = (router.currentRoute?.() || 'hoy').split('?')[0]
+          _setActiveTab(route)
+        }
+      }, 250)
+    },
+    { passive: true },
+  )
 }
 
 function _setActiveTab(route) {
-  document.querySelectorAll('.pm-nav-tab').forEach(tab => {
+  document.querySelectorAll('.pm-nav-tab').forEach((tab) => {
     tab.classList.toggle('active', tab.dataset.route === route)
   })
-  document.querySelectorAll('.pm-sidebar-link').forEach(link => {
+  document.querySelectorAll('.pm-sidebar-link').forEach((link) => {
     link.classList.toggle('active', link.dataset.route === route)
   })
 }
@@ -872,21 +949,43 @@ function _initViewContainers() {
   container.innerHTML = ''
 
   const views = [
-    'login', 'logout', 'register', 'pending-approval',
-    'calendario', 'clases', 'hoy', 'asistencia',
-    'metricas', 'perfil', 'clase-emergente', 'planificacion',
-    'alumno', 'gamificacion', 'ruta', 'crear-clase', 'ruta-plan-builder',
-    'ruta-semanal', 'ruta-libreria', 'ruta-detalle',
+    'login',
+    'logout',
+    'register',
+    'pending-approval',
+    'calendario',
+    'clases',
+    'hoy',
+    'asistencia',
+    'metricas',
+    'perfil',
+    'clase-emergente',
+    'planificacion',
+    'alumno',
+    'gamificacion',
+    'ruta',
+    'crear-clase',
+    'ruta-plan-builder',
+    'ruta-semanal',
+    'ruta-libreria',
+    'ruta-detalle',
     'gestionar-clases',
   ]
 
   const adminViews = [
-    'admin-alumnos', 'admin-programas', 'admin-maestros',
-    'admin-metricas', 'admin-config', 'admin-clases', 'admin-sesiones',
-    'admin-aprobacion', 'admin-ausencias', 'admin-notificaciones',
+    'admin-alumnos',
+    'admin-programas',
+    'admin-maestros',
+    'admin-metricas',
+    'admin-config',
+    'admin-clases',
+    'admin-sesiones',
+    'admin-aprobacion',
+    'admin-ausencias',
+    'admin-notificaciones',
   ]
 
-  views.forEach(viewName => {
+  views.forEach((viewName) => {
     const el = document.createElement('div')
     el.id = `pm-view-${viewName}`
     el.className = 'pm-view-content'
@@ -896,7 +995,7 @@ function _initViewContainers() {
   })
 
   if (IS_ADMIN) {
-    adminViews.forEach(viewName => {
+    adminViews.forEach((viewName) => {
       const el = document.createElement('div')
       el.id = `pm-view-${viewName}`
       el.className = 'pm-view-content'
@@ -910,9 +1009,7 @@ function _initViewContainers() {
 // ── Renderizado de vistas (SPA sin reload) ───────────────────
 
 async function _renderView(route, params = {}, { silent = false } = {}) {
-  const queryStr = window.location.hash.includes('?')
-    ? window.location.hash.split('?')[1]
-    : ''
+  const queryStr = window.location.hash.includes('?') ? window.location.hash.split('?')[1] : ''
   const urlParams = new URLSearchParams(queryStr)
   const baseRoute = route.split('?')[0]
 
@@ -951,7 +1048,7 @@ async function _renderView(route, params = {}, { silent = false } = {}) {
       _activeViewCleanup = null
     }
 
-    Object.values(_viewContainers).forEach(el => {
+    Object.values(_viewContainers).forEach((el) => {
       el.style.display = 'none'
       el.classList.remove('active')
     })
@@ -968,7 +1065,7 @@ async function _renderView(route, params = {}, { silent = false } = {}) {
   // Show spinner only if loading takes >300ms (keep stale content visible meanwhile)
   const spinnerTimeout = setTimeout(() => {
     // Remove any existing spinners first
-    targetContainer.querySelectorAll('.pm-loading-overlay').forEach(el => el.remove())
+    targetContainer.querySelectorAll('.pm-loading-overlay').forEach((el) => el.remove())
 
     const spinner = document.createElement('div')
     spinner.className = 'pm-loading pm-loading-overlay'
@@ -983,12 +1080,12 @@ async function _renderView(route, params = {}, { silent = false } = {}) {
         break
       case 'register':
         renderRegisterView(targetContainer, {
-          onSuccess: () => router.navigate('pending-approval')
+          onSuccess: () => router.navigate('pending-approval'),
         })
         break
       case 'pending-approval':
         renderPendingApprovalView(targetContainer, {
-          onBackToLogin: () => router.navigate('login')
+          onBackToLogin: () => router.navigate('login'),
         })
         break
       case 'logout':
@@ -1002,11 +1099,15 @@ async function _renderView(route, params = {}, { silent = false } = {}) {
         break
       case 'hoy':
         _activeViewCleanup = await renderHoyView(targetContainer, {
-          onClaseClick: (id) => router.navigate(`asistencia?clase=${id}`)
+          onClaseClick: (id) => router.navigate(`asistencia?clase=${id}`),
         })
         break
       case 'asistencia':
-        _activeViewCleanup = await renderAsistenciaView(targetContainer, { claseId: urlParams.get('clase'), fecha: urlParams.get('fecha') })
+        _activeViewCleanup = await renderAsistenciaView(targetContainer, {
+          claseId: urlParams.get('clase'),
+          fecha: urlParams.get('fecha'),
+          sesionId: urlParams.get('sesion'),
+        })
         break
       case 'metricas':
         _activeViewCleanup = renderMetricasView(targetContainer)
@@ -1021,14 +1122,16 @@ async function _renderView(route, params = {}, { silent = false } = {}) {
         _activeViewCleanup = await renderPlanificacionView(targetContainer)
         break
       case 'alumno':
-        _activeViewCleanup = renderAlumnoPerfilView(targetContainer, { alumnoId: urlParams.get('id') })
+        _activeViewCleanup = renderAlumnoPerfilView(targetContainer, {
+          alumnoId: urlParams.get('id') || params.id,
+        })
         break
       case 'gamificacion':
         await renderGamificacionView(targetContainer)
         break
       case 'ruta':
         await renderRutaGameificadaView(targetContainer, {
-          onTopicSelected: (id) => router.navigate(`asistencia?clase=${id}`)
+          onTopicSelected: (id) => router.navigate(`asistencia?clase=${id}`),
         })
         break
       case 'crear-clase':
@@ -1041,13 +1144,13 @@ async function _renderView(route, params = {}, { silent = false } = {}) {
         renderWeeklyPlanView(targetContainer, { alumnoId: urlParams.get('id') })
         break
       case 'ruta-libreria':
-        RouteLibraryView.render().then(view => {
+        RouteLibraryView.render().then((view) => {
           targetContainer.innerHTML = ''
           targetContainer.appendChild(view)
         })
         break
       case 'ruta-detalle':
-        RouteDetailView.render(params).then(view => {
+        RouteDetailView.render(params).then((view) => {
           targetContainer.innerHTML = ''
           targetContainer.appendChild(view)
         })
@@ -1100,9 +1203,15 @@ async function _renderView(route, params = {}, { silent = false } = {}) {
     // Vistas que se cachean tras primer render (no se re-renderizan al navegar)
     // Excluidas: asistencia (depende de query params), alumno (depende de id)
     const CACHEABLE_VIEWS = new Set([
-      'hoy', 'calendario', 'metricas', 'perfil', 'ruta',
-      'gamificacion', 'crear-clase', 'planificacion',
-      'ruta-libreria'
+      'hoy',
+      'calendario',
+      'metricas',
+      'perfil',
+      'ruta',
+      'gamificacion',
+      'crear-clase',
+      'planificacion',
+      'ruta-libreria',
     ])
     if (CACHEABLE_VIEWS.has(baseRoute)) {
       _viewRendered.add(baseRoute)
@@ -1124,21 +1233,21 @@ async function _scheduleSwAlerts() {
 
     const [clases, horarios, sesiones] = await Promise.all([
       getMisClases(),
-      getMisClases().then(c => getHorariosClases(c.map(x => x.id))),
+      getMisClases().then((c) => getHorariosClases(c.map((x) => x.id))),
       getMisClases().then(() => getSesiones(_maestro.id, fechaHoy, fechaHoy)),
     ])
 
-    const clasesMap = Object.fromEntries(clases.map(c => [c.id, c]))
+    const clasesMap = Object.fromEntries(clases.map((c) => [c.id, c]))
     const horariosHoy = horarios
-      .filter(h => h.dia?.toLowerCase() === diaHoy)
-      .map(h => ({
+      .filter((h) => h.dia?.toLowerCase() === diaHoy)
+      .map((h) => ({
         ...h,
         clase_nombre: clasesMap[h.clase_id]?.nombre || 'Clase',
       }))
 
     const sesionesRegistradas = sesiones
-      .filter(s => s.borrador === false || s.estado === 'registrada')
-      .map(s => s.clase_id)
+      .filter((s) => s.borrador === false || s.estado === 'registrada')
+      .map((s) => s.clase_id)
 
     await scheduleLocalAlerts(horariosHoy, sesionesRegistradas)
   } catch (err) {
@@ -1172,7 +1281,14 @@ async function initPortal() {
   // Determinar modo admin desde el campo es_admin de la tabla maestros
   // Validar que es_admin sea booleano verdadero (no 1, no truthy)
   IS_ADMIN = Boolean(maestro?.es_admin === true)
-  console.log('[Init] IS_ADMIN:', IS_ADMIN, '| maestro.es_admin:', maestro?.es_admin, '| tipo:', typeof maestro?.es_admin)
+  console.log(
+    '[Init] IS_ADMIN:',
+    IS_ADMIN,
+    '| maestro.es_admin:',
+    maestro?.es_admin,
+    '| tipo:',
+    typeof maestro?.es_admin,
+  )
 
   // Determinar si estamos en una ruta pública
   const routerInstance = window.router || createPortalRouter()
@@ -1189,7 +1305,7 @@ async function initPortal() {
   // Si no hay maestro pero es ruta pública, necesitamos inicializar el shell mínimo o los contenedores
   if (!maestro && isPublicRoute) {
     console.log('[Init] No maestro pero ruta pública detectada:', currentPath)
-    
+
     // Inyectar un contenedor de vistas mínimo si no existe (ya que no hay shell)
     if (!document.getElementById('pm-view-container')) {
       app.innerHTML = '<main class="pm-view" id="pm-view-container"></main>'
@@ -1197,7 +1313,7 @@ async function initPortal() {
 
     // Inicializar contenedores de vista sin shell completo
     _initViewContainers()
-    
+
     // Configurar router y activar guard
     _setupRouterRoutes()
     router.setAuthGuard(() => usePortalAuth.isAuthenticated(), publicRoutes)
@@ -1238,7 +1354,10 @@ async function initPortal() {
   _setupRouterRoutes()
 
   // 3.1 Activar guard de rutas
-  router.setAuthGuard(() => usePortalAuth.isAuthenticated(), ['login', 'register', 'pending-approval'])
+  router.setAuthGuard(
+    () => usePortalAuth.isAuthenticated(),
+    ['login', 'register', 'pending-approval'],
+  )
 
   router.start()
 
@@ -1250,7 +1369,7 @@ async function initPortal() {
       // Precargar vistas restantes (datos ya en cache = instantáneo)
       const PRELOAD_VIEWS = ['hoy', 'calendario', 'metricas']
       const current = (router.currentRoute?.() || 'hoy').split('?')[0]
-      const pending = PRELOAD_VIEWS.filter(v => v !== current && !_viewRendered.has(v))
+      const pending = PRELOAD_VIEWS.filter((v) => v !== current && !_viewRendered.has(v))
 
       await pending.reduce((chain, viewName) => {
         return chain.then(() => {
@@ -1271,24 +1390,19 @@ async function initPortal() {
         window.adminAusenciasInsights.evaluate()
       }
     })
-    .catch(err => console.warn('[Prefetch] Error:', err.message))
+    .catch((err) => console.warn('[Prefetch] Error:', err.message))
 
   // 4. Initial sync attempt
   _triggerSync()
-
 }
 
 // Global error trap — shows errors visually + report to services
 window.addEventListener('error', (e) => {
   // Filter out non-critical errors
-  const ignoredPatterns = [
-    'useCache',
-    'WebSocket',
-    'content.js',
-  ]
+  const ignoredPatterns = ['useCache', 'WebSocket', 'content.js']
 
   const errorMsg = e.message || ''
-  const isIgnored = ignoredPatterns.some(p => errorMsg.includes(p))
+  const isIgnored = ignoredPatterns.some((p) => errorMsg.includes(p))
 
   if (isIgnored) {
     console.warn('[Ignored Error]', errorMsg)
@@ -1303,7 +1417,8 @@ window.addEventListener('error', (e) => {
   })
 
   const app = document.getElementById('portal-app')
-  if (app) app.innerHTML = `
+  if (app)
+    app.innerHTML = `
     <div style="padding:40px; color:#fff; font-family:'Outfit',sans-serif; background:radial-gradient(circle at top right, #1e293b, #0f172a); z-index:9999; position:fixed; top:0; left:0; right:0; bottom:0; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center;">
       <div style="background:rgba(255,255,255,0.05); backdrop-filter:blur(10px); border:1px solid rgba(255,255,255,0.1); border-radius:24px; padding:40px; max-width:600px; width:90%; box-shadow:0 25px 50px -12px rgba(0,0,0,0.5);">
         <div style="width:80px; height:80px; background:rgba(239,68,68,0.1); color:#ef4444; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:40px; margin:0 auto 24px;">
@@ -1331,7 +1446,8 @@ window.addEventListener('unhandledrejection', (e) => {
   })
 
   const app = document.getElementById('portal-app')
-  if (app) app.innerHTML = `
+  if (app)
+    app.innerHTML = `
     <div style="padding:40px; color:#fff; font-family:'Outfit',sans-serif; background:radial-gradient(circle at top right, #1e293b, #0f172a); z-index:9999; position:fixed; top:0; left:0; right:0; bottom:0; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center;">
       <div style="background:rgba(255,255,255,0.05); backdrop-filter:blur(10px); border:1px solid rgba(255,255,255,0.1); border-radius:24px; padding:40px; max-width:600px; width:90%; box-shadow:0 25px 50px -12px rgba(0,0,0,0.5);">
         <div style="width:80px; height:80px; background:rgba(239,68,68,0.1); color:#ef4444; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:40px; margin:0 auto 24px;">
@@ -1350,7 +1466,8 @@ window.addEventListener('unhandledrejection', (e) => {
     </div>`
 })
 
-initPortal().catch(err => {
+initPortal().catch((err) => {
   const app = document.getElementById('portal-app')
-  if (app) app.innerHTML = `<div style="padding:20px;color:red;font-family:monospace;background:#fff;z-index:9999;position:fixed;top:0;left:0;right:0;bottom:0;overflow:auto;"><h2>❌ initPortal() falló</h2><pre>${err?.message || err}\n${err?.stack || ''}</pre></div>`
+  if (app)
+    app.innerHTML = `<div style="padding:20px;color:red;font-family:monospace;background:#fff;z-index:9999;position:fixed;top:0;left:0;right:0;bottom:0;overflow:auto;"><h2>❌ initPortal() falló</h2><pre>${err?.message || err}\n${err?.stack || ''}</pre></div>`
 })

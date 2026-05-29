@@ -18,11 +18,7 @@ import { parseDSL } from '../utils/dslParser.js'
  * Normalizes a string for fuzzy matching: lowercase, remove accents, trim.
  */
 function normalize(str) {
-  return (str || '')
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
-    .trim()
+  return (str || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim()
 }
 
 /**
@@ -32,13 +28,16 @@ function normalize(str) {
  */
 function resolveAlumno(name, alumnos) {
   const n = normalize(name)
-  return alumnos.find(a =>
-    normalize(a.nombre) === n ||
-    normalize(a.nombreCorto || a.nombre.split(' ')[0]) === n ||
-    // Substring checks guarded to avoid false positives on very short strings
-    (n.length >= 3 && normalize(a.nombre).includes(n)) ||
-    (n.length >= 3 && n.includes(normalize(a.nombreCorto || a.nombre.split(' ')[0])))
-  ) ?? null
+  return (
+    alumnos.find(
+      (a) =>
+        normalize(a.nombre) === n ||
+        normalize(a.nombreCorto || a.nombre.split(' ')[0]) === n ||
+        // Substring checks guarded to avoid false positives on very short strings
+        (n.length >= 3 && normalize(a.nombre).includes(n)) ||
+        (n.length >= 3 && n.includes(normalize(a.nombreCorto || a.nombre.split(' ')[0]))),
+    ) ?? null
+  )
 }
 
 /**
@@ -64,7 +63,7 @@ function resolveAlumnos(alumnoNames, alumnos) {
 
   // Deduplicate by id
   const seen = new Set()
-  const deduped = resolved.filter(a => {
+  const deduped = resolved.filter((a) => {
     if (seen.has(a.id)) return false
     seen.add(a.id)
     return true
@@ -83,7 +82,7 @@ async function upsertProgressRows(rows) {
   // Deduplicate by the conflict key — same (alumno, clase, sesion, contenido)
   // can appear twice when "todos" expands across two records with similar content.
   const seen = new Set()
-  const deduped = rows.filter(row => {
+  const deduped = rows.filter((row) => {
     const key = `${row.alumno_id}|${row.clase_id}|${row.sesion_clase_id}|${row.contenido_dsl}`
     if (seen.has(key)) return false
     seen.add(key)
@@ -118,8 +117,19 @@ async function upsertProgressRows(rows) {
  * @param {Array}  opts.alumnos — [{id, nombre, nombreCorto}] all class students
  * @returns {Promise<{saved: Array, errors: string[]}>}
  */
-export async function saveProgressFromAI({ sesionId, claseId, maestroId, fechaHoy, progressRecords, alumnos }) {
+export async function saveProgressFromAI({
+  sesionId,
+  claseId,
+  maestroId,
+  fechaHoy,
+  progressRecords,
+  alumnos,
+}) {
   if (!progressRecords || progressRecords.length === 0) return { saved: [], errors: [] }
+  if (!claseId) {
+    console.warn('[Progress] Skip saveProgressFromAI — emergente session sin clase_id')
+    return { saved: [], errors: [] }
+  }
 
   const rows = []
   const errors = []
@@ -138,7 +148,7 @@ export async function saveProgressFromAI({ sesionId, claseId, maestroId, fechaHo
         evaluacion_tipo: 'observacion',
         estado_cualitativo: record.estado || 'EN_PROGRESO',
         calificacion: record.nota ?? null,
-        contenido_dsl: record.contenido || '',  // empty string sentinel — NULL breaks the upsert conflict key
+        contenido_dsl: record.contenido || '', // empty string sentinel — NULL breaks the upsert conflict key
         observaciones: record.observacion || null,
         indicadores: {
           tipo: record.tipo || 'otro',
@@ -154,7 +164,7 @@ export async function saveProgressFromAI({ sesionId, claseId, maestroId, fechaHo
     const { data, error } = await upsertProgressRows(rows)
     if (error) throw error
 
-    const saved = (data || []).map(r => ({
+    const saved = (data || []).map((r) => ({
       alumnoId: r.alumno_id,
       contenido: r.contenido_dsl,
       estado: r.estado_cualitativo,
@@ -181,8 +191,19 @@ export async function saveProgressFromAI({ sesionId, claseId, maestroId, fechaHo
  * @param {Array}  opts.alumnos
  * @returns {Promise<{saved: Array, errors: string[]}>}
  */
-export async function saveProgressFromDSL({ sesionId, claseId, maestroId, fechaHoy, dslText, alumnos }) {
+export async function saveProgressFromDSL({
+  sesionId,
+  claseId,
+  maestroId,
+  fechaHoy,
+  dslText,
+  alumnos,
+}) {
   if (!dslText || !dslText.trim()) return { saved: [], errors: [] }
+  if (!claseId) {
+    console.warn('[Progress] Skip saveProgressFromDSL — emergente session sin clase_id')
+    return { saved: [], errors: [] }
+  }
 
   const lines = dslText.split('\n')
   const records = []
@@ -192,8 +213,8 @@ export async function saveProgressFromDSL({ sesionId, claseId, maestroId, fechaH
     if (!parsed.estados || parsed.estados.length === 0) continue
     if (!parsed.contenido || parsed.contenido.length === 0) continue
 
-    const estado = parsed.estados[0]  // first !STATE on the line
-    const contenido = parsed.contenido[0]  // first [contenido] on the line
+    const estado = parsed.estados[0] // first !STATE on the line
+    const contenido = parsed.contenido[0] // first [contenido] on the line
     const alumnoNames = parsed.alumnos.length > 0 ? parsed.alumnos : ['todos']
     const nota = parsed.calificacion?.valor ?? null
 
@@ -211,7 +232,14 @@ export async function saveProgressFromDSL({ sesionId, claseId, maestroId, fechaH
 
   if (records.length === 0) return { saved: [], errors: [] }
 
-  return saveProgressFromAI({ sesionId, claseId, maestroId, fechaHoy, progressRecords: records, alumnos })
+  return saveProgressFromAI({
+    sesionId,
+    claseId,
+    maestroId,
+    fechaHoy,
+    progressRecords: records,
+    alumnos,
+  })
 }
 
 /**
@@ -247,26 +275,26 @@ export async function linkProgresosToObjetivos({ claseId, objetivos }) {
   if (!progresos || progresos.length === 0) return { linked: 0 }
 
   // 2. Normalize objetivos once
-  const normObjetivos = objetivos.map(o => ({
+  const normObjetivos = objetivos.map((o) => ({
     id: o.id,
     norm: normalize(o.descripcion),
     raw: o.descripcion,
   }))
 
   // 3. Build map: objetivoId → matched progreso ids[]
-  const matchMap = new Map()  // objetivoId → string[]
+  const matchMap = new Map() // objetivoId → string[]
 
   for (const progreso of progresos) {
     const normP = normalize(progreso.contenido_dsl)
     if (!normP) continue
 
     // Try exact match first, then substring
-    let matched = normObjetivos.find(o => o.norm === normP)
+    let matched = normObjetivos.find((o) => o.norm === normP)
     if (!matched && normP.length >= 5) {
-      matched = normObjetivos.find(o => o.norm.length >= 5 && o.norm.includes(normP))
+      matched = normObjetivos.find((o) => o.norm.length >= 5 && o.norm.includes(normP))
     }
     if (!matched && normP.length >= 5) {
-      matched = normObjetivos.find(o => o.norm.length >= 5 && normP.includes(o.norm))
+      matched = normObjetivos.find((o) => o.norm.length >= 5 && normP.includes(o.norm))
     }
 
     if (matched) {

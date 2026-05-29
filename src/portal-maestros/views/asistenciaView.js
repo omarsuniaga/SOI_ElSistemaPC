@@ -104,7 +104,83 @@ import {
  * Accepts either a DOM element or a string container ID as first argument.
  * When claseId and fecha are provided, loads the class directly via obtenerAsistenciaClase.
  */
-export async function renderAsistenciaView(containerOrId, { claseId, fecha } = {}) {
+/**
+ * Renderiza una sesión emergente (sin clase_id) en la vista de asistencia.
+ * Carga la sesión por ID, construye un objeto clase sintético desde
+ * el campo `actividad`, y extrae los alumnos del campo `asistencia` (jsonb).
+ */
+async function _renderEmergenteSesion(container, { sesionId, fecha, maestro }) {
+  try {
+    const { data: sesion, error } = await supabase
+      .from('sesiones_clase')
+      .select('*')
+      .eq('id', sesionId)
+      .single()
+
+    if (error || !sesion) {
+      container.innerHTML = `<p class="pm-empty">Sesión no encontrada.</p>`
+      return
+    }
+
+    const fechaHoy = fecha || sesion.fecha || new Date().toISOString().split('T')[0]
+    const clase = {
+      id: sesionId,
+      nombre: sesion.actividad || 'Clase Emergente',
+      instrumento: '',
+    }
+
+    localStorage.setItem('pm_active_clase_id', sesionId)
+
+    // Extraer IDs del jsonb asistencia
+    const asistenciaData = Array.isArray(sesion.asistencia) ? sesion.asistencia : []
+    const alumnoIds = asistenciaData.map((a) => a.alumno_id).filter(Boolean)
+
+    let alumnos = []
+    if (alumnoIds.length > 0) {
+      const { data: alumnosData } = await supabase
+        .from('alumnos')
+        .select('id, nombre_completo, instrumento_principal')
+        .in('id', alumnoIds)
+      alumnos = alumnosData || []
+    }
+
+    const estado = {}
+    const justificaciones = {}
+    alumnos.forEach((a) => {
+      estado[a.id] = null
+    })
+
+    // Restaurar estados guardados en la sesión
+    asistenciaData.forEach((item) => {
+      if (item.estado && alumnos.some((a) => a.id === item.alumno_id)) {
+        estado[item.alumno_id] = item.estado
+      }
+    })
+
+    _renderVista(container, {
+      clase,
+      horario: null,
+      alumnos,
+      estado,
+      justificaciones,
+      maestro,
+      fechaHoy,
+      claseId: null,
+      sesionId,
+      hasConflict: false,
+      serverDSL: sesion.contenido || '',
+      snapshots: [],
+      salonNombre: null,
+      rutaId: null,
+      sesionExistenteData: sesion,
+    })
+  } catch (err) {
+    console.error('[asistenciaView] Error en sesión emergente:', err.message, err.stack)
+    container.innerHTML = `<p class="pm-empty" style="color:var(--pm-danger)">Error: ${escHTML(err.message)}</p>`
+  }
+}
+
+export async function renderAsistenciaView(containerOrId, { claseId, fecha, sesionId } = {}) {
   // Resolve container: accept both DOM element and string ID
   const container =
     typeof containerOrId === 'string' ? document.getElementById(containerOrId) : containerOrId
@@ -123,6 +199,9 @@ export async function renderAsistenciaView(containerOrId, { claseId, fecha } = {
   }
 
   if (!claseId) {
+    if (sesionId) {
+      return _renderEmergenteSesion(container, { sesionId, fecha, maestro, containerOrId })
+    }
     container.innerHTML = `<p class="pm-empty">No se indicó la clase.</p>`
     return
   }
@@ -162,7 +241,7 @@ export async function renderAsistenciaView(containerOrId, { claseId, fecha } = {
 
     const horario = todosHorarios.find((h) => h.dia?.toLowerCase() === diaHoy)
 
-    const alumnos = (todasInscripciones || [])
+    let alumnos = (todasInscripciones || [])
       .map((i) => i.alumnos)
       .filter(Boolean)
       .sort((a, b) => {
@@ -172,6 +251,27 @@ export async function renderAsistenciaView(containerOrId, { claseId, fecha } = {
       })
 
     const sesionExistenteData = sesionRes.data?.[0]
+    const selectedEmergentStudentIds = Array.isArray(sesionExistenteData?.asistencia)
+      ? sesionExistenteData.asistencia.map((item) => item?.alumno_id).filter(Boolean)
+      : []
+    if (sesionExistenteData?.tipo === 'emergente' && selectedEmergentStudentIds.length > 0) {
+      const selectedSet = new Set(selectedEmergentStudentIds)
+      const loadedIds = new Set(alumnos.map((a) => a.id))
+      const missingIds = selectedEmergentStudentIds.filter((id) => !loadedIds.has(id))
+      if (missingIds.length > 0) {
+        try {
+          const { data: alumnosExtra } = await supabase
+            .from('alumnos')
+            .select('id, nombre_completo, instrumento_principal')
+            .in('id', missingIds)
+          alumnos = alumnos.concat(alumnosExtra || [])
+        } catch (_e) {
+          console.warn('[asistencia] No se pudieron cargar alumnos extra de clase emergente:', _e)
+        }
+      }
+      alumnos = alumnos.filter((a) => selectedSet.has(a.id))
+    }
+
     const sesionId = sesionExistenteData?.id || null
     const serverUpdatedAt = sesionExistenteData?.updated_at || null
     const serverDSL = sesionExistenteData?.contenido || ''
@@ -193,7 +293,7 @@ export async function renderAsistenciaView(containerOrId, { claseId, fecha } = {
     const salonNombre = salonesData.length > 0 ? salonesData[0].nombre : null
 
     // Detectar conflicto
-    const localKey = `pm_asistencia_${claseId}_${fechaHoy}`
+    const localKey = `pm_asistencia_${claseId || sesionId}_${fechaHoy}`
     const localUpdatedAt = localStorage.getItem(`${localKey}_updated`)
     let hasConflict = false
     if (serverUpdatedAt && localUpdatedAt) {
@@ -265,7 +365,7 @@ export async function renderAsistenciaView(containerOrId, { claseId, fecha } = {
     // Normalize any full DB values back to UI abbreviations
     const ESTADO_DB_TO_UI = { presente: 'P', ausente: 'A', justificado: 'J', tarde: 'T' }
     serverAsistencia.forEach((item) => {
-      if (estado.hasOwnProperty(item.alumno_id)) {
+      if (Object.prototype.hasOwnProperty.call(estado, item.alumno_id)) {
         const estadoNorm = ESTADO_DB_TO_UI[item.estado] ?? item.estado
         estado[item.alumno_id] = estadoNorm
       }
@@ -281,7 +381,7 @@ export async function renderAsistenciaView(containerOrId, { claseId, fecha } = {
           .eq('sesion_id', sesionId)
           .then((r) => r.data || [])
         justificacionesRegistradas.forEach((j) => {
-          if (estado.hasOwnProperty(j.alumno_id)) {
+          if (Object.prototype.hasOwnProperty.call(estado, j.alumno_id)) {
             estado[j.alumno_id] = 'J'
           }
         })
@@ -1862,7 +1962,7 @@ function _renderVista(container, ctx) {
         }))
 
       const payload = {
-        clase_id: claseId,
+        ...(sesionId ? {} : { clase_id: claseId }),
         maestro_id: maestro.id,
         fecha: fechaHoy,
         estado: 'pendiente',
@@ -1990,7 +2090,7 @@ function _renderVista(container, ctx) {
         const asistencia = alumnos
           .filter((a) => estado[a.id])
           .map((a) => ({
-            clase_id: claseId,
+            ...(claseId ? { clase_id: claseId } : {}),
             alumno_id: a.id,
             fecha: fechaHoy,
             estado: estado[a.id],
@@ -2022,41 +2122,46 @@ function _renderVista(container, ctx) {
           if (sData) sesionId = sData.id
         }
 
-      // 1.5 Registrar asistencias individuales en la tabla asistencias
-      if (tieneAsistenciaMarcada) {
-        try {
-          const asistenciaConSesion = asistencia.map((a) => ({
-            ...a,
-            ...(sesionId && { sesion_clase_id: sesionId }),
-          }))
-          await registrarAsistenciaBulk(asistenciaConSesion)
-          console.log('[asistencia] Registradas asistencias individuales:', asistenciaConSesion.length)
-        } catch (bulkErr) {
-          console.error('[asistencia] Error registrando asistencias en bulk:', bulkErr)
-          // Bug #10: si falla (offline/sin sesionId), encolar para sync posterior
-          if (!navigator.onLine || !sesionId) {
-            console.warn('[asistencia] Encolando asistencias para sync offline...')
-            for (const a of asistencia) {
-              await enqueue({
-                tabla: 'asistencias',
-                operacion: 'upsert',
-                payload: {
-                  clase_id: claseId,
-                  alumno_id: a.alumno_id,
-                  fecha: fechaHoy,
-                  estado: a.estado,
-                  registrado_por: maestro.id,
-                  ...(sesionId ? { sesion_clase_id: sesionId } : {}),
-                },
-              })
-            }
-          } else {
-            throw new Error(
-              'No se pudieron registrar las asistencias individuales: ' + bulkErr.message,
+        // 1.5 Registrar asistencias individuales en la tabla asistencias
+        // Se saltea para sesiones emergentes (sin clase_id) porque el jsonb
+        // `asistencia` en sesiones_clase ya persiste los datos.
+        if (tieneAsistenciaMarcada && claseId) {
+          try {
+            const asistenciaConSesion = asistencia.map((a) => ({
+              ...a,
+              ...(sesionId && { sesion_clase_id: sesionId }),
+            }))
+            await registrarAsistenciaBulk(asistenciaConSesion)
+            console.log(
+              '[asistencia] Registradas asistencias individuales:',
+              asistenciaConSesion.length,
             )
+          } catch (bulkErr) {
+            console.error('[asistencia] Error registrando asistencias en bulk:', bulkErr)
+            // Bug #10: si falla (offline/sin sesionId), encolar para sync posterior
+            if (!navigator.onLine || !sesionId) {
+              console.warn('[asistencia] Encolando asistencias para sync offline...')
+              for (const a of asistencia) {
+                await enqueue({
+                  tabla: 'asistencias',
+                  operacion: 'upsert',
+                  payload: {
+                    clase_id: claseId,
+                    alumno_id: a.alumno_id,
+                    fecha: fechaHoy,
+                    estado: a.estado,
+                    registrado_por: maestro.id,
+                    ...(sesionId ? { sesion_clase_id: sesionId } : {}),
+                  },
+                })
+              }
+            } else {
+              throw new Error(
+                'No se pudieron registrar las asistencias individuales: ' + bulkErr.message,
+              )
+            }
           }
         }
-      }
 
         // 2. Si hay sesión existente, marcarla como registrada (borrador = false)
         if (sesionId && (tieneAsistenciaMarcada || tieneContenido)) {

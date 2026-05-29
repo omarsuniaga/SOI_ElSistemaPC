@@ -27,7 +27,7 @@ CREATE POLICY "Full access for admins" ON public.node_resources
         EXISTS (
             SELECT 1 FROM public.profiles
             WHERE profiles.id = auth.uid()
-            AND profiles.role = 'admin'
+            AND profiles.rol = 'admin'
         )
     );
 

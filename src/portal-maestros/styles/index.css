@@ -19,3 +19,6 @@
 
 /* Vistas específicas: gestionar-clases, registrar-alumno */
 @import url('./12-views-gestion.css');
+
+/* Wizard de inscripción: tokens visuales sobre Bootstrap */
+@import url('./13-wizard.css');

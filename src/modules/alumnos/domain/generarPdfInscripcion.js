@@ -8,6 +8,7 @@
 
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
+import { getDocumentosInstitucionales } from '../../config/api/configApi.js'
 
 const BRAND = {
   nombre: 'El Sistema Punta Cana',
@@ -328,21 +329,35 @@ export function generarFichaAlumno(alumno) {
 // ── CONSTANCIA DE INSCRIPCIÓN ─────────────────────────────────────────────
 
 /**
- * Genera la constancia de inscripción para el alumno y representante.
+ * Genera el serial institucional de la constancia.
+ * Formato: SOI-PC-YYYY-XXXXXXXX
+ */
+function generarSerial(alumno) {
+  const year = new Date().getFullYear()
+  const base = alumno.id
+    ? alumno.id.replace(/-/g, '').slice(-8).toUpperCase()
+    : Date.now().toString(36).toUpperCase().slice(-8)
+  return `SOI-PC-${year}-${base}`
+}
+
+/**
+ * Genera la constancia de inscripción para el representante.
  * @param {object} alumno
+ * @param {{ reglamento?: string, horario?: string, bienvenida?: string }} docs
  * @returns {jsPDF}
  */
-export function generarConstanciaInscripcion(alumno) {
+export function generarConstanciaInscripcion(alumno, docs = {}) {
   const doc = new jsPDF({ unit: 'mm', format: 'letter' })
   const W = doc.internal.pageSize.getWidth()
   const H = doc.internal.pageSize.getHeight()
   const fecha = new Date().toLocaleDateString('es-DO', { day: '2-digit', month: 'long', year: 'numeric' })
+  const serial = generarSerial(alumno)
 
-  drawHeader(doc, 'CONSTANCIA DE INSCRIPCIÓN', fecha)
+  drawHeader(doc, 'CONSTANCIA DE INSCRIPCIÓN', `Serie: ${serial} — ${fecha}`)
 
   let y = 48
 
-  // Cuerpo del documento
+  // Saludo formal
   doc.setFontSize(11)
   doc.setFont('helvetica', 'bold')
   doc.setTextColor(...BRAND.color_primary)
@@ -361,70 +376,107 @@ export function generarConstanciaInscripcion(alumno) {
     `ha sido debidamente inscrito/a en el programa de formación musical de`,
     `${BRAND.nombre} a partir del día ${fecha}.`,
     '',
-    `El alumno/a recibirá clases de ${interesLabel(alumno.interes_musical).toLowerCase()} y${alumno.requiere_iniciacion_musical
-      ? ' participará en el programa de iniciación musical durante los primeros 6 meses,'
+    `El alumno/a${alumno.requiere_iniciacion_musical
+      ? ' participará en el programa de iniciación musical durante sus primeros meses,'
       : ' ha demostrado conocimientos musicales previos,'}`,
-    `siendo su instrumento de interés: ${padStr(alumno.instrumento_interes)}.`,
+    `con interés en ${interesLabel(alumno.interes_musical).toLowerCase()} — instrumento: ${padStr(alumno.instrumento_interes)}.`,
     '',
     `El representante, ${padStr(alumno.representante_nombre)} (${padStr(alumno.representante_parentesco)}),`,
-    `cédula ${padStr(alumno.representante_cedula)}, ha aceptado los términos del programa,`,
-    `incluyendo el aporte mensual de RD$600, consciente de que el alumno/a recibe una`,
-    `beca valorada en RD$4,500 que se mantendrá siempre que demuestre rendimiento,`,
-    `interés y asistencia notable.`,
+    `ha aceptado los términos del programa, incluyendo el aporte mensual de RD$600,`,
+    `consciente de que el alumno/a recibe una beca valorada en RD$4,500 que se`,
+    `mantendrá mientras demuestre rendimiento, interés y asistencia notable.`,
   ]
 
   cuerpo.forEach(linea => {
-    doc.text(linea, 14, y)
-    y += 6
+    if (linea === '') { y += 3; return }
+    const lines = doc.splitTextToSize(linea, W - 28)
+    doc.text(lines, 14, y)
+    y += lines.length * 6
   })
 
+  y += 4
+
+  // ── Al presentar esta constancia ──────────────────────────────────────
+  doc.setFillColor(...BRAND.color_light)
+  doc.roundedRect(10, y, W - 20, 44, 2, 2, 'F')
   y += 6
 
-  // Lista de materiales
   doc.setFont('helvetica', 'bold')
-  doc.setFontSize(10)
-  doc.text('Al presentar esta constancia en caja, el alumno/a recibirá:', 14, y)
+  doc.setFontSize(9.5)
+  doc.setTextColor(...BRAND.color_primary)
+  doc.text('Al presentar esta constancia en caja recibirá:', 14, y)
   y += 7
 
   doc.setFont('helvetica', 'normal')
+  doc.setFontSize(9)
+  doc.setTextColor(...BRAND.color_dark)
   const items = [
-    '✓  Tarjeta de pagos mensuales',
-    '✓  Horario de clases asignado',
-    '✓  Lista de útiles: lápiz, cuaderno pentagramado, borrador',
-    '✓  T-Shirt oficial de El Sistema Punta Cana',
+    '✓   Tarjeta de pagos mensuales',
+    '✓   Horario de clases asignado',
+    '✓   Lista de útiles: lápiz HB, cuaderno pentagramado, borrador',
+    '✓   T-Shirt oficial de El Sistema Punta Cana',
   ]
-  items.forEach(item => {
-    doc.text(item, 20, y)
-    y += 6
-  })
+  items.forEach(item => { doc.text(item, 16, y); y += 6 })
 
+  y += 2
   doc.setFont('helvetica', 'bold')
   doc.setTextColor(180, 0, 0)
-  doc.text('* Realizar pago de RD$600 en caja al momento de recibir los materiales.', 14, y)
-  y += 14
-
-  // Firmas
-  doc.setTextColor(...BRAND.color_dark)
-  doc.setDrawColor(100, 100, 100)
-  doc.setLineWidth(0.3)
-  doc.line(14, y, 90, y)
-  doc.line(W / 2 + 10, y, W - 14, y)
-  y += 5
   doc.setFontSize(8.5)
+  doc.text('Pago obligatorio: RD$600 en caja al retirar los materiales.', 14, y)
+  doc.setTextColor(...BRAND.color_dark)
+  y += 10
+
+  // ── Links institucionales ─────────────────────────────────────────────
+  const links = [
+    docs.horario    && { icon: '📅', label: 'Consultar horario de clases:', url: docs.horario },
+    docs.reglamento && { icon: '📋', label: 'Reglamento del programa:',     url: docs.reglamento },
+    docs.bienvenida && { icon: '⭐', label: 'Manual de bienvenida:',        url: docs.bienvenida },
+  ].filter(Boolean)
+
+  if (links.length > 0) {
+    doc.setFontSize(9)
+    doc.setFont('helvetica', 'bold')
+    doc.setTextColor(...BRAND.color_primary)
+    doc.text('Recursos para el representante:', 14, y)
+    y += 6
+
+    doc.setFont('helvetica', 'normal')
+    links.forEach(({ icon, label, url }) => {
+      doc.setTextColor(...BRAND.color_dark)
+      doc.text(`${icon}  ${label}`, 14, y)
+      y += 5
+      doc.setTextColor(0, 86, 179)
+      const urlLines = doc.splitTextToSize(url, W - 30)
+      doc.textWithLink(urlLines[0], 18, y, { url })
+      y += 7
+    })
+    y += 2
+  }
+
+  // ── Firmas ────────────────────────────────────────────────────────────
+  if (y > H - 50) { drawFooter(doc); doc.addPage(); y = 20 }
+
+  doc.setTextColor(...BRAND.color_dark)
+  doc.setDrawColor(120, 120, 120)
+  doc.setLineWidth(0.3)
+  doc.line(14, y + 18, 88, y + 18)
+  doc.line(W / 2 + 8, y + 18, W - 14, y + 18)
+
+  doc.setFontSize(8)
   doc.setFont('helvetica', 'bold')
-  doc.text('Firma y sello — El Sistema Punta Cana', 14, y)
-  doc.text('Firma del Representante', W / 2 + 10, y)
-  y += 4
+  doc.text('Director del Programa', 14, y + 23)
+  doc.text('Firma del Representante', W / 2 + 8, y + 23)
+
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(7.5)
-  doc.text('Director del Programa', 14, y)
-  doc.text(`${padStr(alumno.representante_nombre)}`, W / 2 + 10, y)
+  doc.text(BRAND.nombre, 14, y + 28)
+  doc.text(padStr(alumno.representante_nombre), W / 2 + 8, y + 28)
+  doc.text(`Cédula: ${padStr(alumno.representante_cedula)}`, W / 2 + 8, y + 32)
 
-  // Número de constancia (por ID del alumno o timestamp)
-  const constanciaId = (alumno.id ?? Date.now()).toString().slice(-8).toUpperCase()
+  // Serial en pie
   doc.setFontSize(7)
   doc.setTextColor(150, 150, 150)
-  doc.text(`Constancia N° ${constanciaId}`, W - 14, H - 14, { align: 'right' })
+  doc.text(`Serie: ${serial}`, W - 14, H - 14, { align: 'right' })
 
   drawFooter(doc)
   return doc
@@ -442,10 +494,13 @@ export function descargarFichaAlumno(alumno) {
 
 /**
  * Descarga la constancia de inscripción como PDF.
+ * Fetches institutional document URLs from config automatically.
  * @param {object} alumno
  */
-export function descargarConstancia(alumno) {
-  const doc = generarConstanciaInscripcion(alumno)
+export async function descargarConstancia(alumno) {
+  let docs = {}
+  try { docs = await getDocumentosInstitucionales() } catch { /* sin config, igual genera */ }
+  const doc = generarConstanciaInscripcion(alumno, docs)
   const nombre = (alumno.nombre_completo ?? 'alumno').toLowerCase().replace(/\s+/g, '-')
   doc.save(`constancia-inscripcion-${nombre}.pdf`)
 }

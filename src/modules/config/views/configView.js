@@ -1,7 +1,8 @@
 import {
   getGroqApiKey, setGroqApiKey,
   getOpenRouterApiKey, setOpenRouterApiKey,
-  getPreferredModel, setPreferredModel
+  getPreferredModel, setPreferredModel,
+  getDocumentosInstitucionales, setDocumentosInstitucionales,
 } from '../api/configApi.js'
 import {
   getNotificationPreferences, saveNotificationPreferences,
@@ -45,10 +46,11 @@ function getUsageStats() {
 }
 
 export async function renderConfigView(container) {
-  const [groqKey, openrouterKey, preferredModel] = await Promise.all([
+  const [groqKey, openrouterKey, preferredModel, docs] = await Promise.all([
     getGroqApiKey() || getLocalStorageKey('groq-key') || '',
     getOpenRouterApiKey() || getLocalStorageKey('openrouter-key') || '',
-    getPreferredModel() || 'google/gemini-2.0-flash-exp'
+    getPreferredModel() || 'google/gemini-2.0-flash-exp',
+    getDocumentosInstitucionales(),
   ])
 
   const currentModel = FREE_MODELS.find(m => m.id === preferredModel) || FREE_MODELS[0]
@@ -294,6 +296,67 @@ export async function renderConfigView(container) {
               <button class="btn btn-outline-secondary btn-sm" id="clear-cache">
                 <i class="bi bi-trash me-1"></i> Limpiar Cache
               </button>
+            </div>
+          </div>
+
+          <!-- Documentos institucionales -->
+          <div class="card shadow-sm mb-4">
+            <div class="card-header bg-warning bg-opacity-10">
+              <h5 class="mb-0">
+                <i class="bi bi-file-earmark-pdf me-2 text-danger"></i>
+                Documentos Institucionales
+              </h5>
+              <small class="text-muted">URLs de PDFs que se incluyen en la constancia de inscripción</small>
+            </div>
+            <div class="card-body">
+              <div class="mb-3">
+                <label class="form-label fw-semibold" for="url-reglamento">
+                  <i class="bi bi-journal-text me-1 text-danger"></i> Reglamento del programa
+                </label>
+                <input
+                  type="url"
+                  class="form-control"
+                  id="url-reglamento"
+                  placeholder="https://drive.google.com/..."
+                  value="${docs.reglamento ?? ''}"
+                >
+                <div class="form-text">Se imprime como enlace en la constancia del representante.</div>
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label fw-semibold" for="url-horario">
+                  <i class="bi bi-calendar-week me-1 text-primary"></i> Horario de clases
+                </label>
+                <input
+                  type="url"
+                  class="form-control"
+                  id="url-horario"
+                  placeholder="https://drive.google.com/..."
+                  value="${docs.horario ?? ''}"
+                >
+                <div class="form-text">Horario general del programa (PDF o imagen en Google Drive).</div>
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label fw-semibold" for="url-bienvenida">
+                  <i class="bi bi-star me-1 text-warning"></i> Carta de bienvenida / Manual del alumno
+                </label>
+                <input
+                  type="url"
+                  class="form-control"
+                  id="url-bienvenida"
+                  placeholder="https://drive.google.com/..."
+                  value="${docs.bienvenida ?? ''}"
+                >
+                <div class="form-text">Opcional — documento de bienvenida para nuevos alumnos.</div>
+              </div>
+
+              <div class="d-flex gap-2 align-items-center">
+                <button class="btn btn-warning" id="save-docs">
+                  <i class="bi bi-save me-2"></i>Guardar documentos
+                </button>
+                <div id="docs-status"></div>
+              </div>
             </div>
           </div>
 
@@ -610,6 +673,23 @@ export async function renderConfigView(container) {
     } catch (err) {
       statusDiv.innerHTML = `<div class="alert alert-danger mb-0">Error: ${err.message}</div>`
       console.error('Error sending test notification:', err)
+    }
+  })
+
+  // ── Documentos institucionales ──
+  document.getElementById('save-docs').addEventListener('click', async () => {
+    const statusDiv = document.getElementById('docs-status')
+    statusDiv.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>'
+    try {
+      await setDocumentosInstitucionales({
+        reglamento: document.getElementById('url-reglamento').value.trim() || null,
+        horario:    document.getElementById('url-horario').value.trim() || null,
+        bienvenida: document.getElementById('url-bienvenida').value.trim() || null,
+      })
+      statusDiv.innerHTML = '<span class="text-success"><i class="bi bi-check-circle me-1"></i>Guardado</span>'
+      setTimeout(() => { statusDiv.innerHTML = '' }, 2500)
+    } catch (err) {
+      statusDiv.innerHTML = `<span class="text-danger"><i class="bi bi-x-circle me-1"></i>${err.message}</span>`
     }
   })
 

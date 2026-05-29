@@ -10,7 +10,7 @@ disablePullToRefresh()
 // ============================================
 // PWA: Registrar Service Worker
 // ============================================
-if ('serviceWorker' in navigator) {
+if ('serviceWorker' in navigator && import.meta.env.PROD) {
   const registerSW = async () => {
     try {
       const registration = await navigator.serviceWorker.register('/sw.js');
@@ -25,6 +25,10 @@ if ('serviceWorker' in navigator) {
   } else {
     window.addEventListener('load', registerSW);
   }
+} else if ('serviceWorker' in navigator && import.meta.env.DEV) {
+  navigator.serviceWorker.getRegistrations()
+    .then(registrations => registrations.forEach(registration => registration.unregister()))
+    .catch(error => console.log('[PWA] Service Worker cleanup failed:', error))
 }
 
 // PWA: Banner de instalación automática
@@ -123,8 +127,6 @@ import { renderMaestrosView } from './modules/maestros/views/maestrosView.js'
 import { renderDashboardMetricasView as renderAdminMetricasView } from './modules/metricas/views/dashboardMetricasView.js'
 import { renderAcademicAdminView } from './modules/academic-admin/views/academicAdminView.js'
 import { renderClasesView } from './modules/clases/views/clasesView.js'
-// registroAlumnoView replaced by wizard (ADR D12)
-import { renderWizardInscripcionAlumnoView } from './portal-maestros/views/wizardInscripcionAlumnoView.js'
 import { renderGestionarClasesView } from './portal-maestros/views/gestionarClasesView.js'
 import { renderAprobacionView } from './modules/admin-aprobacion/views/aprobacionView.js'
 import { renderAusenciasAdminView } from './modules/admin-aprobacion/views/ausenciasAdminView.js'
@@ -157,10 +159,6 @@ function buildMaestroTabs(permisos, isAdmin = false) {
   // Métricas del maestro (sus propias clases/alumnos) — siempre presente.
   // Es distinta a admin-metricas (métricas del sistema).
   tabs.push({ id: 'metricas', label: 'Métricas', icon: 'bi-bar-chart-line' })
-  // PERM-05: Only show "Registrar Alumno" tab if teacher has permission
-  if (permisos?.puede_registrar_alumnos) {
-    tabs.push({ id: 'registrar-alumno', label: 'Registrar', icon: 'bi-person-plus' })
-  }
   // PERM-06: Only show "Gestionar Clases" tab if teacher has enrollment permission
   if (permisos?.puede_inscribir_clases) {
     tabs.push({ id: 'gestionar-clases', label: 'Clases', icon: 'bi-mortarboard' })
@@ -383,7 +381,6 @@ function _setupRouterRoutes() {
   router.on('ruta-semanal', (route, params) => _renderView('ruta-semanal', params))
   router.on('ruta-libreria', (route, params) => _renderView('ruta-libreria', params))
   router.on('ruta-detalle/:id', (route, params) => _renderView('ruta-detalle', params))
-  router.on('registrar-alumno', (route, params) => _renderView('registrar-alumno', params))
   router.on('gestionar-clases', (route, params) => _renderView('gestionar-clases', params))
 
   router.on('register', (route, params) => _renderView('register', params))
@@ -752,16 +749,10 @@ function _setupGlobalAppEvents() {
 
               // Detect permission gains and losses
               const ganados = []
-              if (nuevosPermisos.puede_registrar_alumnos && !_permisos?.puede_registrar_alumnos) {
-                ganados.push('Registrar Alumnos')
-              }
               if (nuevosPermisos.puede_inscribir_clases && !_permisos?.puede_inscribir_clases) {
                 ganados.push('Gestionar e Inscribir Clases')
               }
               const perdidos = []
-              if (_permisos?.puede_registrar_alumnos && !nuevosPermisos.puede_registrar_alumnos) {
-                perdidos.push('Registrar Alumnos')
-              }
               if (_permisos?.puede_inscribir_clases && !nuevosPermisos.puede_inscribir_clases) {
                 perdidos.push('Gestionar e Inscribir Clases')
               }
@@ -771,7 +762,7 @@ function _setupGlobalAppEvents() {
 
               // If the maestro is currently on a now-forbidden route, redirect to 'hoy'
               const routeNowForbidden =
-                (currentRoute === 'registrar-alumno' && !nuevosPermisos.puede_registrar_alumnos) ||
+
                 (currentRoute === 'gestionar-clases' && !nuevosPermisos.puede_inscribir_clases)
               let safeRoute = routeNowForbidden ? 'hoy' : currentRoute
 
@@ -885,7 +876,7 @@ function _initViewContainers() {
     'calendario', 'clases', 'hoy', 'asistencia',
     'metricas', 'perfil', 'clase-emergente', 'planificacion',
     'alumno', 'gamificacion', 'ruta', 'crear-clase', 'ruta-plan-builder',
-    'ruta-semanal', 'ruta-libreria', 'ruta-detalle', 'registrar-alumno',
+    'ruta-semanal', 'ruta-libreria', 'ruta-detalle',
     'gestionar-clases',
   ]
 
@@ -1092,13 +1083,6 @@ async function _renderView(route, params = {}, { silent = false } = {}) {
         break
       case 'admin-notificaciones':
         _activeViewCleanup = await renderAdminNotificacionesView(targetContainer)
-        break
-      case 'registrar-alumno':
-        if (!_permisos?.puede_registrar_alumnos) {
-          router.navigate('hoy')
-          return
-        }
-        renderWizardInscripcionAlumnoView(targetContainer)
         break
       case 'gestionar-clases':
         if (!_permisos?.puede_inscribir_clases) {

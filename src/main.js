@@ -6,8 +6,8 @@
 import { disablePullToRefresh } from './shared/utils/pullToRefreshBlocker.js'
 disablePullToRefresh()
 
-// PWA: Registrar Service Worker (también en desarrollo para probar)
-if ('serviceWorker' in navigator) {
+// PWA: Registrar Service Worker
+if ('serviceWorker' in navigator && import.meta.env.PROD) {
   const registerSW = async () => {
     try {
       const registration = await navigator.serviceWorker.register('/sw.js');
@@ -22,6 +22,10 @@ if ('serviceWorker' in navigator) {
   } else {
     window.addEventListener('load', registerSW);
   }
+} else if ('serviceWorker' in navigator && import.meta.env.DEV) {
+  navigator.serviceWorker.getRegistrations()
+    .then(registrations => registrations.forEach(registration => registration.unregister()))
+    .catch(error => console.log('[PWA] Service Worker cleanup failed:', error))
 }
 
 // PWA: Banner de instalación automática
@@ -257,9 +261,10 @@ const NAV_GROUPS = [
     label: 'Personas',
     icon: 'bi-people',
     items: [
-      { id: 'alumnos',              label: 'Alumnos',             icon: 'bi-people' },
-      { id: 'alumnos-reporte-mes', label: 'Inscritos por Mes',  icon: 'bi-file-earmark-bar-graph' },
-      { id: 'maestros',             label: 'Maestros',            icon: 'bi-person-check' },
+      { id: 'alumnos',              label: 'Alumnos',            icon: 'bi-people' },
+      { id: 'alumnos-inscribir',   label: 'Inscribir Alumno',  icon: 'bi-person-plus' },
+      { id: 'alumnos-reporte-mes', label: 'Inscritos por Mes', icon: 'bi-file-earmark-bar-graph' },
+      { id: 'maestros',             label: 'Maestros',           icon: 'bi-person-check' },
     ],
   },
   {

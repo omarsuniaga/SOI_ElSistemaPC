@@ -15,11 +15,12 @@
  *  - Transiciones atómicas in-place con desvanecimiento (cero lag de recarga).
  */
 
-import { fetchAdminFeed } from '../api/adminNotifApi.js'
+import { fetchAdminFeed, fetchMaestrosParaNotificar, sendNotificacionToMaestros } from '../api/adminNotifApi.js'
 import { aprobarAusencia, rechazarAusencia } from '../../admin-aprobacion/api/ausenciaAprobacionApi.js'
 import { supabase } from '../../../lib/supabaseClient.js'
 import { AppModal } from '../../../shared/components/AppModal.js'
 import { router } from '../../../core/router/router.js'
+import { resetAdminNotifBadge } from '../realtimeService.js'
 
 // ── Styles ────────────────────────────────────────────────────────────────────
 
@@ -641,10 +642,16 @@ export async function renderAdminNotificacionesView(container) {
               <div class="anv-icon-wrap"><i class="bi bi-bell-fill"></i></div>
               <h2 class="anv-title">Centro de Actividad</h2>
             </div>
-            <button id="anv-btn-help" class="btn btn-sm btn-outline-light rounded-pill px-3 py-1.5 fw-semibold d-flex align-items-center gap-2 transition-all" style="background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.25); color: white; cursor: pointer;">
-              <i class="bi bi-question-circle-fill"></i>
-              <span>Guía del Usuario</span>
-            </button>
+            <div class="d-flex gap-2">
+              <button id="anv-btn-send-notif" class="btn btn-sm btn-warning rounded-pill px-3 fw-semibold d-flex align-items-center gap-2">
+                <i class="bi bi-send-fill"></i>
+                <span>Enviar notificación</span>
+              </button>
+              <button id="anv-btn-help" class="btn btn-sm btn-outline-light rounded-pill px-3 fw-semibold d-flex align-items-center gap-2" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.25); color: white;">
+                <i class="bi bi-question-circle-fill"></i>
+                <span>Guía</span>
+              </button>
+            </div>
           </div>
           <p class="anv-subtitle">Gobernanza escolar proactiva y control operativo en tiempo real.</p>
           
@@ -1263,12 +1270,113 @@ export async function renderAdminNotificacionesView(container) {
     });
   }
 
+  // ── Modal: enviar notificación a maestros ──────────────────────────────
+  async function _openSendModal() {
+    let maestros = []
+    try { maestros = await fetchMaestrosParaNotificar() } catch { /* continúa con lista vacía */ }
+
+    const opcionesMaestros = maestros.map(m =>
+      `<option value="${m.profile_id}">${m.nombre}</option>`
+    ).join('')
+
+    AppModal.open({
+      title: '<i class="bi bi-send-fill me-2 text-warning"></i>Enviar notificación a maestros',
+      body: `
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Destinatarios</label>
+          <select class="form-select" id="sn-destinatarios" multiple size="5">
+            <option value="__all__" style="font-weight:700">📢 Todos los maestros activos</option>
+            ${opcionesMaestros}
+          </select>
+          <div class="form-text">Ctrl+click para seleccionar varios. "Todos" hace envío masivo.</div>
+        </div>
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Título</label>
+          <input type="text" class="form-control" id="sn-titulo" placeholder="Ej: Recordatorio de asistencia" maxlength="80">
+        </div>
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Mensaje</label>
+          <textarea class="form-control" id="sn-mensaje" rows="3" placeholder="Escribe el mensaje aquí..." maxlength="300"></textarea>
+          <div class="form-text" id="sn-char-count">0 / 300</div>
+        </div>
+        <div id="sn-status"></div>
+      `,
+      hideSave: true,
+      onShow: () => {
+        const msgEl = document.getElementById('sn-mensaje')
+        const countEl = document.getElementById('sn-char-count')
+        msgEl?.addEventListener('input', () => {
+          if (countEl) countEl.textContent = `${msgEl.value.length} / 300`
+        })
+      },
+    })
+
+    // Inject send button into modal footer after open
+    setTimeout(() => {
+      const footer = document.querySelector('.modal-footer')
+      if (!footer) return
+      const sendBtn = document.createElement('button')
+      sendBtn.type = 'button'
+      sendBtn.className = 'btn btn-warning fw-semibold'
+      sendBtn.id = 'sn-btn-send'
+      sendBtn.innerHTML = '<i class="bi bi-send me-1"></i>Enviar'
+      footer.appendChild(sendBtn)
+
+      sendBtn.addEventListener('click', async () => {
+        const tituloEl = document.getElementById('sn-titulo')
+        const mensajeEl = document.getElementById('sn-mensaje')
+        const destEl = document.getElementById('sn-destinatarios')
+        const statusEl = document.getElementById('sn-status')
+
+        const titulo = tituloEl?.value.trim()
+        const mensaje = mensajeEl?.value.trim()
+        const selected = Array.from(destEl?.selectedOptions || []).map(o => o.value)
+
+        if (!titulo) { tituloEl?.classList.add('is-invalid'); return }
+        if (!mensaje) { mensajeEl?.classList.add('is-invalid'); return }
+        if (!selected.length) {
+          if (statusEl) statusEl.innerHTML = '<div class="alert alert-warning py-2 mb-0">Seleccioná al menos un destinatario.</div>'
+          return
+        }
+
+        sendBtn.disabled = true
+        sendBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Enviando...'
+
+        try {
+          let profileIds = selected
+          if (selected.includes('__all__')) {
+            profileIds = maestros.map(m => m.profile_id)
+          }
+
+          const { sent } = await sendNotificacionToMaestros(profileIds, { titulo, mensaje })
+          if (statusEl) statusEl.innerHTML = `
+            <div class="alert alert-success py-2 mb-0">
+              <i class="bi bi-check-circle me-1"></i>
+              Notificación enviada a <strong>${sent}</strong> maestro${sent !== 1 ? 's' : ''}.
+            </div>`
+          sendBtn.innerHTML = '<i class="bi bi-check2 me-1"></i>Enviado'
+          setTimeout(() => AppModal.open({ body: '' }), 1800) // close by reopening blank
+        } catch (err) {
+          if (statusEl) statusEl.innerHTML = `<div class="alert alert-danger py-2 mb-0">Error: ${err.message}</div>`
+          sendBtn.disabled = false
+          sendBtn.innerHTML = '<i class="bi bi-send me-1"></i>Enviar'
+        }
+      })
+    }, 50)
+  }
+
   // Inicialización
   _shell()
   await _load()
 
+  // Reset badge al entrar a esta vista
+  resetAdminNotifBadge()
+
   // Conectar botón refresh
   container.querySelector('#anv-refresh-btn')?.addEventListener('click', () => _load(false))
+
+  // Botón enviar notificación
+  container.querySelector('#anv-btn-send-notif')?.addEventListener('click', () => _openSendModal())
 
   // Retornar cleanup para que el router remueva el canal cuando navegue a otra vista
   return function cleanup() {

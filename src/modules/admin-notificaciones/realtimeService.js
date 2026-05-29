@@ -126,3 +126,10 @@ export function stopAdminRealtimeNotifications() {
   _badgeCallback = null
   clearTimeout(_debounceTimer)
 }
+
+/**
+ * Reset the badge to 0 — call when the admin enters the notifications view.
+ */
+export function resetAdminNotifBadge() {
+  _badgeCallback?.(0)
+}

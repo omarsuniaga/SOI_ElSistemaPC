@@ -71,6 +71,7 @@ import { registerRoutesPedagogico } from './modules/pedagogico/index.js';
 import { registerRoutesHorarioBuilder } from './modules/horario-builder/index.js';
 import { registerRoutesAdminNotificaciones } from './modules/admin-notificaciones/index.js';
 import { registerRoutesAdminAprobacion } from './modules/admin-aprobacion/index.js';
+import { startAdminRealtimeNotifications, stopAdminRealtimeNotifications } from './modules/admin-notificaciones/realtimeService.js';
 
 // ============================================================================
 // MÓDULOS REGISTRY - Define todos los módulos de la aplicación
@@ -318,6 +319,22 @@ function _getGroupForRoute(route) {
 // ============================================================================
 let _navAbortController = null;
 
+/**
+ * Update the pending-count badge on the "Centro de Actividad" nav button.
+ * Called by the Realtime service whenever counts change.
+ * @param {number} count
+ */
+function _updateNotifBadge(count) {
+  const badge = document.getElementById('sidebar-notif-badge')
+  if (!badge) return
+  if (count > 0) {
+    badge.textContent = count > 99 ? '99+' : String(count)
+    badge.style.display = 'inline-flex'
+  } else {
+    badge.style.display = 'none'
+  }
+}
+
 function renderNavbar(_container, isAuthenticated = false) {
   // Limpiar instancias previas (DOM + todos los listeners globales de una vez)
   _navAbortController?.abort();
@@ -359,6 +376,7 @@ function renderNavbar(_container, isAuthenticated = false) {
               <button class="nav-item-btn ${item.id === currentRoute ? 'active' : ''}" data-route="${item.id}">
                 <i class="bi ${item.icon}"></i>
                 <span>${item.label}</span>
+                ${item.id === 'admin-notificaciones' ? '<span class="notif-badge" id="sidebar-notif-badge" style="display:none"></span>' : ''}
               </button>
             `).join('')}
           </div>
@@ -559,16 +577,18 @@ async function startApp() {
   useAuth.subscribe((state) => {
     if (state.user) {
       renderNavbar(app, true);
+      startAdminRealtimeNotifications(_updateNotifBadge);
     } else {
+      stopAdminRealtimeNotifications();
       app.innerHTML = '';
       const nav = document.querySelector('.app-navbar');
       if (nav) nav.remove();
-      
+
       // Cleanup DOM elements specific to admin view
       document.querySelector('.app-sidebar')?.remove();
       document.querySelector('.app-bottom-nav')?.remove();
       document.querySelector('.mobile-sub-sheet')?.remove();
-      
+
       router.navigate('login');
     }
   });

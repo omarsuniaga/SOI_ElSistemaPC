@@ -947,3 +947,32 @@ body:has(.app-sidebar) #app {
     width: 100%;
   }
 }
+
+/* ──────────────────────────────────────────────────────────────────────── */
+/* NOTIFICATION BADGE on sidebar nav items                                  */
+/* ──────────────────────────────────────────────────────────────────────── */
+
+.notif-badge {
+  margin-left: auto;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: #ef4444;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 18px;
+  text-align: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  animation: notif-pop 0.25s ease;
+  box-shadow: 0 1px 4px rgba(239, 68, 68, 0.45);
+}
+
+@keyframes notif-pop {
+  0%   { transform: scale(0.6); opacity: 0; }
+  70%  { transform: scale(1.15); }
+  100% { transform: scale(1);   opacity: 1; }
+}

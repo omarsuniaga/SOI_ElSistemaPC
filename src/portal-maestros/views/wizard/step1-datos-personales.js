@@ -10,7 +10,13 @@ export const title = 'Datos del Alumno'
 
 export function render(draft, errors = {}) {
   const edad = draft.fecha_nacimiento
-    ? (() => { try { return calcularEdad(draft.fecha_nacimiento) } catch { return '' } })()
+    ? (() => {
+        try {
+          return calcularEdad(draft.fecha_nacimiento)
+        } catch {
+          return ''
+        }
+      })()
     : ''
 
   return `
@@ -22,17 +28,35 @@ export function render(draft, errors = {}) {
           ${renderFormField({ name: 'fecha_nacimiento', label: 'Fecha de nacimiento', type: 'date', value: draft.fecha_nacimiento ?? '', error: errors.fecha_nacimiento ?? '', required: true })}
         </div>
         <div class="col-sm-4">
-          <label class="form-label">Edad actual</label>
-          <input type="text" class="form-control bg-light" id="edad-display" value="${edad !== '' ? edad + ' años' : '—'}" readonly tabindex="-1">
+          ${renderFormField({ name: 'edad_display', label: 'Edad actual', type: 'text', value: edad !== '' ? edad + ' años' : '—', readOnly: true })}
         </div>
       </div>
 
       <div class="row g-2 mb-3">
         <div class="col-6">
-          ${renderFormField({ name: 'sabe_leer', label: '¿Sabe leer?', type: 'radio', value: draft.sabe_leer === true ? 'true' : draft.sabe_leer === false ? 'false' : '', options: [{ value: 'true', label: 'Sí' }, { value: 'false', label: 'No' }] })}
+          ${renderFormField({
+            name: 'sabe_leer',
+            label: '¿Sabe leer?',
+            type: 'radio',
+            value: draft.sabe_leer === true ? 'true' : draft.sabe_leer === false ? 'false' : '',
+            options: [
+              { value: 'true', label: 'Sí' },
+              { value: 'false', label: 'No' },
+            ],
+          })}
         </div>
         <div class="col-6">
-          ${renderFormField({ name: 'sabe_escribir', label: '¿Sabe escribir?', type: 'radio', value: draft.sabe_escribir === true ? 'true' : draft.sabe_escribir === false ? 'false' : '', options: [{ value: 'true', label: 'Sí' }, { value: 'false', label: 'No' }] })}
+          ${renderFormField({
+            name: 'sabe_escribir',
+            label: '¿Sabe escribir?',
+            type: 'radio',
+            value:
+              draft.sabe_escribir === true ? 'true' : draft.sabe_escribir === false ? 'false' : '',
+            options: [
+              { value: 'true', label: 'Sí' },
+              { value: 'false', label: 'No' },
+            ],
+          })}
         </div>
       </div>
 
@@ -93,7 +117,7 @@ export function render(draft, errors = {}) {
     <script>
     (function() {
       const fechaEl = document.querySelector('[name="fecha_nacimiento"]')
-      const edadEl = document.getElementById('edad-display')
+      const edadEl = document.getElementById('wiz-edad_display')
       const municipioEl = document.querySelector('[name="municipio_residencia"]')
       const sectorBlock = document.getElementById('sector-calle-block')
 

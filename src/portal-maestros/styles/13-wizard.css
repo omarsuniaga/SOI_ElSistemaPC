@@ -1,0 +1,177 @@
+/* ============================================================
+   PORTAL MAESTROS — Wizard Inscripción UI
+   Scoped under .wizard-inscripcion to override Bootstrap 5.3
+   with --pm-* design tokens. No JS changes required.
+   ============================================================ */
+
+/* ═══════════════════════════════════════════════════════════════
+   Phase 1: Container & Card Foundation
+   ═══════════════════════════════════════════════════════════════ */
+
+.wizard-inscripcion {
+  max-width: var(--pm-content-max-w);
+  margin: 0 auto;
+}
+
+.wizard-inscripcion .card {
+  border-radius: var(--pm-radius);
+  box-shadow: var(--pm-shadow);
+  border: 1px solid var(--pm-border);
+}
+
+/* PreloadSearch is rendered before .wizard-inscripcion exists,
+   so style it directly with the same card token treatment. */
+.preload-search.card {
+  border-radius: var(--pm-radius);
+  box-shadow: var(--pm-shadow);
+  border: 1px solid var(--pm-border);
+  max-width: var(--pm-content-max-w);
+  margin: var(--pm-space-4) auto;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Phase 2: Progress Bar + StepNav
+   ═══════════════════════════════════════════════════════════════ */
+
+.wizard-inscripcion .progress {
+  height: 6px;
+  border-radius: 99px;
+  background: var(--pm-border);
+}
+
+.wizard-inscripcion .progress-bar {
+  background: var(--pm-primary);
+  transition: width var(--pm-transition-spring);
+}
+
+.wizard-inscripcion .nav-pills .nav-link {
+  border-radius: var(--pm-radius-sm);
+  color: var(--pm-text);
+  padding: var(--pm-space-2) var(--pm-space-3);
+  font-weight: 500;
+  transition:
+    background var(--pm-transition-fast),
+    color var(--pm-transition-fast);
+}
+
+.wizard-inscripcion .nav-pills .nav-link.active {
+  background: var(--pm-primary);
+  color: #fff;
+}
+
+.wizard-inscripcion .nav-pills .nav-link[disabled],
+.wizard-inscripcion .nav-pills .nav-link:disabled {
+  color: var(--pm-text-muted);
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+/* Visited-but-not-active steps — completed visual state */
+.wizard-inscripcion .nav-pills .nav-link:not(.active):not([disabled]) {
+  background: var(--pm-bg-hover);
+  color: var(--pm-primary);
+}
+
+.wizard-inscripcion .nav-pills .nav-link:hover:not(.active):not([disabled]) {
+  background: rgba(0, 122, 255, 0.12);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Phase 3: Form Fields + PreloadSearch
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Override Bootstrap's .mb-3 (1rem) with tokenized spacing */
+.wizard-inscripcion .mb-3 {
+  margin-bottom: var(--pm-space-4);
+}
+
+.wizard-inscripcion .form-label {
+  color: var(--pm-text-muted);
+  font-weight: 500;
+  font-size: 0.85rem;
+}
+
+.wizard-inscripcion .card-title {
+  font-weight: 600;
+  color: var(--pm-text);
+}
+
+.wizard-inscripcion .preload-search .list-group-item {
+  border-radius: var(--pm-radius-sm);
+  border: 1px solid var(--pm-border);
+  background: var(--pm-surface);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Phase 4: Card Sections — Header, Body, Footer
+   ═══════════════════════════════════════════════════════════════ */
+
+.wizard-inscripcion .card-header {
+  padding: var(--pm-space-4);
+  border-bottom: 1px solid var(--pm-border);
+  background: var(--pm-surface);
+}
+
+.wizard-inscripcion .card-body {
+  padding: var(--pm-space-5);
+}
+
+.wizard-inscripcion .card-footer {
+  background: var(--pm-surface-2);
+  padding: var(--pm-space-4);
+  gap: var(--pm-space-3) !important;
+  border-top: 1px solid var(--pm-border);
+}
+
+/* Override Bootstrap's .gap-2 (0.5rem) utility inside card-footer */
+.wizard-inscripcion .card-footer .d-flex.gap-2 {
+  gap: var(--pm-space-3) !important;
+}
+
+/* Success icon — replace Bootstrap text-success with token */
+.wizard-inscripcion .bi-check-circle-fill.text-success {
+  color: var(--pm-success) !important;
+}
+
+/* Section separators within wizard */
+.wizard-inscripcion hr {
+  border-top: 1px solid var(--pm-border);
+  opacity: 1;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Responsive Polish
+   ═══════════════════════════════════════════════════════════════ */
+
+@media (max-width: 767px) {
+  .preload-search.card {
+    margin: var(--pm-space-3);
+  }
+
+  .wizard-inscripcion {
+    padding: 0 var(--pm-space-3);
+  }
+
+  .wizard-inscripcion .card-body {
+    padding: var(--pm-space-4);
+  }
+
+  .wizard-inscripcion .card-footer {
+    flex-direction: column;
+  }
+
+  .wizard-inscripcion .card-footer .d-flex.justify-content-between {
+    flex-direction: column;
+    gap: var(--pm-space-3);
+    width: 100%;
+  }
+
+  .wizard-inscripcion .card-footer .d-flex.justify-content-between .btn {
+    width: 100%;
+  }
+
+  .wizard-inscripcion .nav-pills .nav-link {
+    padding: var(--pm-space-1) var(--pm-space-2);
+    font-size: 0.8rem;
+  }
+}

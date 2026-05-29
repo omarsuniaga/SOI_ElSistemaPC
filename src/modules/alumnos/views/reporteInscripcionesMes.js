@@ -1,20 +1,43 @@
-/**
- * Vista: Reporte mensual de inscripciones — Admin
- * Permite filtrar por mes/año y descargar el PDF.
- */
-
 import { obtenerAlumnosPorMes } from '../api/alumnosApi.js'
 import { descargarReporteMensual } from '../domain/generarReporteMensual.js'
+import { openEditAlumnoModal } from '../domain/editarAlumnoModal.js'
 
 const MESES = [
-  '', 'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-  'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
+  '',
+  'Enero',
+  'Febrero',
+  'Marzo',
+  'Abril',
+  'Mayo',
+  'Junio',
+  'Julio',
+  'Agosto',
+  'Septiembre',
+  'Octubre',
+  'Noviembre',
+  'Diciembre',
+]
+
+const CAMPOS_REQUERIDOS = [
+  { key: 'fecha_nacimiento', label: 'Fecha de nacimiento' },
+  { key: 'nacionalidad', label: 'Nacionalidad' },
+  { key: 'municipio_residencia', label: 'Municipio de residencia' },
+  { key: 'sector_calle_numero', label: 'Dirección / Sector' },
+  { key: 'madre_nombre', label: 'Nombre de la madre' },
+  { key: 'madre_tlf_whatsapp', label: 'Teléfono de la madre' },
+  { key: 'representante_nombre', label: 'Nombre del representante' },
+  { key: 'representante_parentesco', label: 'Parentesco del representante' },
+  { key: 'representante_tlf', label: 'Teléfono del representante' },
+  { key: 'interes_musical', label: 'Interés musical' },
+  { key: 'instrumento_interes', label: 'Instrumento de interés' },
+  { key: 'centro_estudios', label: 'Centro de estudios' },
+  { key: 'acepta_pago_600', label: 'Acepta pago RD$600' },
+  { key: 'autoriza_fotos_redes', label: 'Autoriza fotos/redes' },
 ]
 
 function buildMonthOptions() {
   const hoy = new Date()
   let html = ''
-  // Últimos 24 meses
   for (let i = 0; i < 24; i++) {
     const d = new Date(hoy.getFullYear(), hoy.getMonth() - i, 1)
     const y = d.getFullYear()
@@ -25,137 +48,185 @@ function buildMonthOptions() {
   return html
 }
 
-function conductaLabel(val) {
-  return { no: 'Sin problemas', pocas_veces: 'Pocas veces', si: 'Sí', violento: 'Violento' }[val] ?? (val ?? '—')
-}
-
-function interesLabel(val) {
-  return { cantar: 'Cantar', instrumento: 'Instrumento', ambas: 'Ambas' }[val] ?? (val ?? '—')
-}
-
-function pad(val) {
-  const s = String(val ?? '').trim()
-  return s || '—'
-}
-
 function edad(fechaStr) {
-  if (!fechaStr) return '—'
+  if (!fechaStr) return null
   try {
     const [y, m, d] = fechaStr.split('-').map(Number)
     const hoy = new Date()
     let age = hoy.getFullYear() - y
     if (hoy.getMonth() + 1 < m || (hoy.getMonth() + 1 === m && hoy.getDate() < d)) age--
-    return `${age} años`
-  } catch { return '—' }
+    return age
+  } catch {
+    return null
+  }
 }
 
-function renderTabla(alumnos) {
+function campoCompleto(val) {
+  if (val === null || val === undefined) return false
+  if (typeof val === 'boolean') return true
+  if (typeof val === 'string') return val.trim() !== ''
+  return true
+}
+
+function calcularCompletitud(alumno) {
+  const camposFaltantes = CAMPOS_REQUERIDOS.filter((c) => !campoCompleto(alumno[c.key]))
+  const completados = CAMPOS_REQUERIDOS.length - camposFaltantes.length
+  const porcentaje = Math.round((completados / CAMPOS_REQUERIDOS.length) * 100)
+  let estado
+  if (porcentaje === 100) estado = 'completa'
+  else if (porcentaje >= 70) estado = 'casi_completa'
+  else estado = 'incompleta'
+
+  return { completados, total: CAMPOS_REQUERIDOS.length, porcentaje, camposFaltantes, estado }
+}
+
+function badgeHtml(estado, porcentaje) {
+  const styles = {
+    completa: { rgb: 'var(--bs-success-rgb)', color: 'var(--bs-success)' },
+    casi_completa: { rgb: 'var(--bs-warning-rgb)', color: 'var(--bs-warning)' },
+    incompleta: { rgb: 'var(--bs-danger-rgb)', color: 'var(--bs-danger)' },
+  }
+  const s = styles[estado]
+  const label =
+    estado === 'completa'
+      ? 'Completa'
+      : `${porcentaje}% — ${estado === 'casi_completa' ? 'Faltan campos' : 'Incompleta'}`
+  const icon =
+    estado === 'completa'
+      ? 'bi-check-circle-fill'
+      : estado === 'casi_completa'
+        ? 'bi-exclamation-circle-fill'
+        : 'bi-x-circle-fill'
+
+  return `<span class="badge border px-2 py-1"
+            style="background-color: rgba(var(--bs-${estado === 'completa' ? 'success' : estado === 'casi_completa' ? 'warning' : 'danger'}-rgb), 0.12); color: var(--bs-${estado === 'completa' ? 'success' : estado === 'casi_completa' ? 'warning' : 'danger'}); border-color: rgba(var(--bs-${estado === 'completa' ? 'success' : estado === 'casi_completa' ? 'warning' : 'danger'}-rgb), 0.3) !important;">
+            <i class="bi ${icon} me-1"></i>${label}
+          </span>`
+}
+
+function renderResumen(alumnos) {
+  if (!alumnos.length) return ''
+  const total = alumnos.length
+  const completas = alumnos.filter((a) => calcularCompletitud(a).estado === 'completa').length
+  const incompletas = alumnos.filter((a) => calcularCompletitud(a).estado === 'incompleta').length
+  const casiCompletas = alumnos.filter(
+    (a) => calcularCompletitud(a).estado === 'casi_completa',
+  ).length
+
+  return `
+    <div class="row g-3 mt-1 mb-2">
+      <div class="col-6 col-md-3">
+        <div class="card text-center border-primary h-100">
+          <div class="card-body py-3">
+            <div class="fs-2 fw-bold text-primary">${total}</div>
+            <div class="small text-muted">Total inscritos</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="card text-center border-success h-100">
+          <div class="card-body py-3">
+            <div class="fs-2 fw-bold text-success">${completas}</div>
+            <div class="small text-muted">Completas</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="card text-center border-warning h-100">
+          <div class="card-body py-3">
+            <div class="fs-2 fw-bold text-warning-emphasis">${casiCompletas}</div>
+            <div class="small text-muted">Casi completas</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="card text-center border-danger h-100">
+          <div class="card-body py-3">
+            <div class="fs-2 fw-bold text-danger">${incompletas}</div>
+            <div class="small text-muted">Incompletas</div>
+          </div>
+        </div>
+      </div>
+    </div>`
+}
+
+function renderLista(alumnos) {
   if (!alumnos.length) {
     return `<div class="alert alert-info mt-3">
               <i class="bi bi-info-circle me-2"></i>No hay alumnos inscritos en este período.
             </div>`
   }
 
-  const filas = alumnos.map((a, i) => `
-    <tr>
-      <td class="text-center text-muted">${i + 1}</td>
-      <td>
-        <div class="fw-semibold">${pad(a.nombre_completo)}</div>
-        <small class="text-muted">${edad(a.fecha_nacimiento)} · ${pad(a.nacionalidad)}</small>
-      </td>
-      <td>${pad(a.municipio_residencia)}</td>
-      <td>
-        <div>${pad(a.representante_nombre)}</div>
-        <small class="text-muted">${pad(a.representante_tlf)}</small>
-      </td>
-      <td class="text-center">${interesLabel(a.interes_musical)}</td>
-      <td class="text-center">${pad(a.instrumento_interes)}</td>
-      <td class="text-center">
-        ${a.requiere_iniciacion_musical
-          ? '<span class="badge bg-warning text-dark">Iniciación</span>'
-          : '<span class="badge bg-success">Avanzado</span>'}
-      </td>
-      <td class="text-center">
-        ${a.acepta_pago_600
-          ? '<i class="bi bi-check-circle-fill text-success"></i>'
-          : '<i class="bi bi-x-circle text-danger"></i>'}
-      </td>
-      <td class="text-center">
-        ${a.familia_monoparental
-          ? '<span class="badge bg-secondary">Sí</span>'
-          : '<span class="text-muted">No</span>'}
-      </td>
-      <td class="text-center">
-        ${a.beneficiario_subsidio_estado
-          ? '<span class="badge bg-info text-dark">Sí</span>'
-          : '<span class="text-muted">No</span>'}
-      </td>
-    </tr>`).join('')
+  const items = alumnos
+    .map((a, i) => {
+      const { porcentaje, camposFaltantes, estado, completados, total } = calcularCompletitud(a)
+      const telefono = a.representante_tlf || a.madre_tlf_whatsapp || '—'
+      const edadVal = edad(a.fecha_nacimiento)
+      const edadStr = edadVal !== null ? `${edadVal} años` : ''
+
+      const missingBadges =
+        camposFaltantes.length > 0
+          ? `<div class="d-flex flex-wrap gap-1 mt-1">
+             ${camposFaltantes
+               .slice(0, 4)
+               .map(
+                 (c) =>
+                   `<span class="badge reporte-theme-badge border px-1 py-0" style="font-size:.6rem;">${c.label}</span>`,
+               )
+               .join('')}
+             ${camposFaltantes.length > 4 ? `<span class="badge reporte-theme-badge border px-1 py-0" style="font-size:.6rem">+${camposFaltantes.length - 4}</span>` : ''}
+           </div>`
+          : ''
+
+      return `
+      <div class="list-group-item list-group-item-action px-3 py-2" data-alumno-id="${a.id}" role="button">
+        <div class="d-flex align-items-center gap-3">
+          <div class="flex-shrink-0 text-center" style="width:28px">
+            <span class="text-muted small">${i + 1}</span>
+          </div>
+          <div class="flex-grow-1 min-width-0">
+            <div class="fw-semibold text-truncate">${a.nombre_completo || '—'}</div>
+            <div class="small text-muted">
+              ${telefono !== '—' ? `<i class="bi bi-telephone me-1"></i>${telefono}` : ''}
+              ${edadStr ? `<span class="ms-2"><i class="bi bi-calendar3 me-1"></i>${edadStr}</span>` : ''}
+            </div>
+            ${missingBadges}
+          </div>
+          <div class="flex-shrink-0 text-end ms-2">
+            ${badgeHtml(estado, porcentaje)}
+            <div class="small text-muted mt-1">${completados}/${total}</div>
+          </div>
+          <div class="flex-shrink-0 text-muted">
+            <i class="bi bi-arrow-up-right-square"></i>
+          </div>
+        </div>
+      </div>`
+    })
+    .join('')
 
   return `
-    <div class="table-responsive mt-3">
-      <table class="table table-sm table-hover align-middle" id="tabla-reporte">
-        <thead class="table-dark">
-          <tr>
-            <th style="width:36px">#</th>
-            <th>Alumno</th>
-            <th>Municipio</th>
-            <th>Representante</th>
-            <th class="text-center">Interés</th>
-            <th class="text-center">Instrumento</th>
-            <th class="text-center">Nivel</th>
-            <th class="text-center">Pagó 600</th>
-            <th class="text-center">Monopar.</th>
-            <th class="text-center">Subsidio</th>
-          </tr>
-        </thead>
-        <tbody>${filas}</tbody>
-      </table>
+    <div class="card shadow-sm mt-3">
+      <div class="card-header bg-white py-2 d-flex justify-content-between align-items-center">
+        <span class="fw-semibold small text-muted">ALUMNOS INSCRITOS</span>
+        <span class="badge reporte-theme-badge rounded-pill">${alumnos.length}</span>
+      </div>
+      <div class="list-group list-group-flush" id="lista-inscritos">
+        ${items}
+      </div>
     </div>`
 }
 
-function renderResumen(alumnos) {
-  if (!alumnos.length) return ''
-  const con = alumnos.filter(a => a.tiene_conocimientos_musicales === true).length
-  const ini = alumnos.filter(a => a.requiere_iniciacion_musical === true).length
-  const sub = alumnos.filter(a => a.beneficiario_subsidio_estado === true).length
-  const mono = alumnos.filter(a => a.familia_monoparental === true).length
-
-  return `
-    <div class="row g-3 mt-1 mb-2">
-      <div class="col-6 col-md-3">
-        <div class="card text-center border-primary">
-          <div class="card-body py-2">
-            <div class="fs-2 fw-bold text-primary">${alumnos.length}</div>
-            <div class="small text-muted">Inscritos</div>
-          </div>
-        </div>
-      </div>
-      <div class="col-6 col-md-3">
-        <div class="card text-center border-warning">
-          <div class="card-body py-2">
-            <div class="fs-2 fw-bold text-warning">${ini}</div>
-            <div class="small text-muted">Requieren iniciación</div>
-          </div>
-        </div>
-      </div>
-      <div class="col-6 col-md-3">
-        <div class="card text-center border-secondary">
-          <div class="card-body py-2">
-            <div class="fs-2 fw-bold text-secondary">${mono}</div>
-            <div class="small text-muted">Fam. monoparental</div>
-          </div>
-        </div>
-      </div>
-      <div class="col-6 col-md-3">
-        <div class="card text-center border-info">
-          <div class="card-body py-2">
-            <div class="fs-2 fw-bold text-info">${sub}</div>
-            <div class="small text-muted">Beneficiarios subsidio</div>
-          </div>
-        </div>
-      </div>
-    </div>`
+function initOpenEditOnClick(container) {
+  container.addEventListener('click', (e) => {
+    const item = e.target.closest('[data-alumno-id]')
+    if (!item) return
+    const id = item.dataset.alumnoId
+    if (!id) return
+    const btn = item.closest('#reporte-resultado')?.querySelector('#btn-filtrar')
+    openEditAlumnoModal(id, {
+      onSaved: () => btn?.click(),
+    })
+  })
 }
 
 export async function renderReporteInscripcionesMes(container) {
@@ -166,7 +237,8 @@ export async function renderReporteInscripcionesMes(container) {
 
   async function cargar(year, month) {
     const resultDiv = container.querySelector('#reporte-resultado')
-    if (resultDiv) resultDiv.innerHTML = `
+    if (resultDiv)
+      resultDiv.innerHTML = `
       <div class="text-center py-4">
         <div class="spinner-border text-primary" role="status"></div>
         <p class="mt-2 text-muted">Cargando inscritos de ${MESES[month]} ${year}...</p>
@@ -176,20 +248,22 @@ export async function renderReporteInscripcionesMes(container) {
       alumnosActuales = await obtenerAlumnosPorMes(year, month)
 
       if (resultDiv) {
-        resultDiv.innerHTML = renderResumen(alumnosActuales) + renderTabla(alumnosActuales)
+        resultDiv.innerHTML = renderResumen(alumnosActuales) + renderLista(alumnosActuales)
+        initOpenEditOnClick(resultDiv)
       }
 
-      // Actualizar botón de descarga
       const btnPdf = container.querySelector('#btn-descargar-pdf')
       if (btnPdf) {
         btnPdf.disabled = alumnosActuales.length === 0
-        btnPdf.textContent = alumnosActuales.length > 0
-          ? `Descargar PDF (${alumnosActuales.length} alumnos)`
-          : 'Sin inscritos'
+        btnPdf.textContent =
+          alumnosActuales.length > 0
+            ? `Descargar PDF (${alumnosActuales.length} alumnos)`
+            : 'Sin inscritos'
       }
     } catch (err) {
       console.error(err)
-      if (resultDiv) resultDiv.innerHTML = `
+      if (resultDiv)
+        resultDiv.innerHTML = `
         <div class="alert alert-danger mt-3">
           <i class="bi bi-exclamation-triangle me-2"></i>Error al cargar los datos. Por favor intenta de nuevo.
         </div>`
@@ -229,11 +303,14 @@ export async function renderReporteInscripcionesMes(container) {
       <div id="reporte-resultado"></div>
     </div>`
 
-  // Eventos
   container.querySelector('#btn-filtrar')?.addEventListener('click', () => {
     const val = container.querySelector('#select-mes')?.value ?? ''
     const [y, m] = val.split('-').map(Number)
-    if (y && m) { currentYear = y; currentMonth = m; cargar(y, m) }
+    if (y && m) {
+      currentYear = y
+      currentMonth = m
+      cargar(y, m)
+    }
   })
 
   container.querySelector('#btn-descargar-pdf')?.addEventListener('click', () => {
@@ -245,6 +322,5 @@ export async function renderReporteInscripcionesMes(container) {
     }
   })
 
-  // Carga inicial
   cargar(currentYear, currentMonth)
 }

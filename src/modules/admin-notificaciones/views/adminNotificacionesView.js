@@ -15,7 +15,7 @@
  *  - Transiciones atómicas in-place con desvanecimiento (cero lag de recarga).
  */
 
-import { fetchAdminFeed, fetchMaestrosParaNotificar, sendNotificacionToMaestros } from '../api/adminNotifApi.js'
+import { fetchAdminFeed, fetchMaestrosParaNotificar, sendNotificacionToMaestros, fetchNotificacionesEnviadas } from '../api/adminNotifApi.js'
 import { aprobarAusencia, rechazarAusencia } from '../../admin-aprobacion/api/ausenciaAprobacionApi.js'
 import { supabase } from '../../../lib/supabaseClient.js'
 import { AppModal } from '../../../shared/components/AppModal.js'
@@ -643,6 +643,10 @@ export async function renderAdminNotificacionesView(container) {
               <h2 class="anv-title">Centro de Actividad</h2>
             </div>
             <div class="d-flex gap-2">
+              <button id="anv-btn-historial" class="btn btn-sm btn-outline-light rounded-pill px-3 fw-semibold d-flex align-items-center gap-2" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.25); color: white;">
+                <i class="bi bi-clock-history"></i>
+                <span>Historial</span>
+              </button>
               <button id="anv-btn-send-notif" class="btn btn-sm btn-warning rounded-pill px-3 fw-semibold d-flex align-items-center gap-2">
                 <i class="bi bi-send-fill"></i>
                 <span>Enviar notificación</span>
@@ -1371,6 +1375,69 @@ export async function renderAdminNotificacionesView(container) {
     }, 50)
   }
 
+  // ── Modal: historial de notificaciones enviadas ───────────────────────────
+  async function _openHistorialModal() {
+    const loadingBody = `<div class="d-flex align-items-center gap-2 py-3 text-muted">
+      <div class="spinner-border spinner-border-sm"></div><span>Cargando historial…</span>
+    </div>`
+
+    AppModal.open({
+      title: '<i class="bi bi-clock-history me-2"></i>Historial de notificaciones enviadas',
+      body: loadingBody,
+      hideSave: true,
+      cancelText: 'Cerrar',
+    })
+
+    let entries = []
+    try {
+      entries = await fetchNotificacionesEnviadas({ limit: 30 })
+    } catch (err) {
+      AppModal.open({
+        title: 'Error',
+        body: `<div class="alert alert-danger">No se pudo cargar el historial: ${err.message}</div>`,
+        hideSave: true,
+        cancelText: 'Cerrar',
+      })
+      return
+    }
+
+    if (!entries.length) {
+      AppModal.open({
+        title: '<i class="bi bi-clock-history me-2"></i>Historial de notificaciones enviadas',
+        body: `<div class="text-center py-4 text-muted">
+          <i class="bi bi-inbox fs-1 d-block mb-2" style="opacity:0.3"></i>
+          <p class="mb-0">Todavía no se enviaron notificaciones.</p>
+        </div>`,
+        hideSave: true,
+        cancelText: 'Cerrar',
+      })
+      return
+    }
+
+    const fmtDate = iso => {
+      if (!iso) return ''
+      const d = new Date(iso)
+      return d.toLocaleString('es-DO', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+    }
+
+    const rows = entries.map(e => `
+      <div class="border rounded p-3 mb-2" style="font-size:0.875rem;">
+        <div class="d-flex justify-content-between align-items-start gap-2 mb-1">
+          <strong class="text-truncate" style="max-width:70%;">${e.titulo || '(sin título)'}</strong>
+          <span class="badge bg-secondary flex-shrink-0">${e.recipientCount} destinatario${e.recipientCount !== 1 ? 's' : ''}</span>
+        </div>
+        <p class="text-muted mb-1" style="white-space:pre-wrap;word-break:break-word;">${e.mensaje || ''}</p>
+        <small class="text-muted"><i class="bi bi-clock me-1"></i>${fmtDate(e.created_at)}</small>
+      </div>`).join('')
+
+    AppModal.open({
+      title: `<i class="bi bi-clock-history me-2"></i>Historial <span class="badge bg-secondary ms-1">${entries.length}</span>`,
+      body: `<div style="max-height:420px;overflow-y:auto;">${rows}</div>`,
+      hideSave: true,
+      cancelText: 'Cerrar',
+    })
+  }
+
   // Inicialización
   _shell()
   await _load()
@@ -1383,6 +1450,9 @@ export async function renderAdminNotificacionesView(container) {
 
   // Botón enviar notificación
   container.querySelector('#anv-btn-send-notif')?.addEventListener('click', () => _openSendModal())
+
+  // Botón historial
+  container.querySelector('#anv-btn-historial')?.addEventListener('click', () => _openHistorialModal())
 
   // Retornar cleanup para que el router remueva el canal cuando navegue a otra vista
   return function cleanup() {

@@ -496,3 +496,47 @@ export async function fetchAdminPendingCount() {
   return ausenciasCount + maestrosCount
 }
 
+// ── Envío de notificaciones a maestros ────────────────────────────────────────
+
+/**
+ * Fetch active maestros with their profile_id for the recipient selector.
+ * @returns {Promise<Array<{profile_id, nombre, email}>>}
+ */
+export async function fetchMaestrosParaNotificar() {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('id, nombre_completo, email')
+    .eq('rol', 'maestro')
+    .eq('estado', 'activo')
+    .order('nombre_completo', { ascending: true })
+
+  if (error) throw error
+  return (data || []).map(p => ({
+    profile_id: p.id,
+    nombre: p.nombre_completo || p.email || 'Maestro',
+    email: p.email,
+  }))
+}
+
+/**
+ * Send a notification to one or more maestros (inserts into `notificaciones`).
+ * @param {string[]} profileIds
+ * @param {{ titulo: string, mensaje: string, deep_link?: string }} payload
+ */
+export async function sendNotificacionToMaestros(profileIds, { titulo, mensaje, deep_link = '/notificaciones' }) {
+  if (!profileIds?.length) throw new Error('Se requiere al menos un destinatario')
+
+  const rows = profileIds.map(profile_id => ({
+    profile_id,
+    tipo: 'aviso_admin',
+    titulo,
+    mensaje,
+    deep_link,
+    estado: 'pendiente',
+  }))
+
+  const { error } = await supabase.from('notificaciones').insert(rows)
+  if (error) throw error
+  return { sent: rows.length }
+}
+

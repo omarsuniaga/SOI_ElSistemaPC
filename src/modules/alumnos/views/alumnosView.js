@@ -675,6 +675,168 @@ function openViewModal(id) {
         </div>
       </div>
       
+      <!-- ── Wizard fields: Perfil Musical ───────────────────────────────── -->
+      ${(alumno.tiene_conocimientos_musicales !== undefined || alumno.interes_musical) ? `
+      <div class="row mt-3 pt-2 border-top">
+        <div class="col-12">
+          <h6 class="text-info"><i class="bi bi-music-note-beamed me-1"></i>Perfil Musical</h6>
+        </div>
+        <div class="col-md-4">
+          <div class="mb-2">
+            <label class="form-label fw-bold">Conocimientos previos</label>
+            <p class="form-control-plaintext">${alumno.tiene_conocimientos_musicales ? 'Sí' : 'No'}</p>
+          </div>
+        </div>
+        ${alumno.tiene_conocimientos_musicales ? `
+        <div class="col-md-4">
+          <div class="mb-2">
+            <label class="form-label fw-bold">Instrumento previo</label>
+            <p class="form-control-plaintext">${escapeHTML(alumno.instrumento_previo || '-')}</p>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="mb-2">
+            <label class="form-label fw-bold">Nivel lectura musical</label>
+            <p class="form-control-plaintext">${escapeHTML(alumno.nivel_lectura_musical || '-')}</p>
+          </div>
+        </div>
+        ` : ''}
+        <div class="col-md-4">
+          <div class="mb-2">
+            <label class="form-label fw-bold">Interés musical</label>
+            <p class="form-control-plaintext">${escapeHTML(alumno.interes_musical || '-')}</p>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="mb-2">
+            <label class="form-label fw-bold">Instrumento de interés</label>
+            <p class="form-control-plaintext">${escapeHTML(alumno.instrumento_interes || '-')}</p>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="mb-2">
+            <label class="form-label fw-bold">Requiere iniciación musical</label>
+            <p class="form-control-plaintext">${alumno.iniciacion_musical_requerida ? 'Sí' : 'No'}</p>
+          </div>
+        </div>
+        ${alumno.iniciacion_musical_requerida ? `
+        <div class="col-md-6">
+          <div class="mb-2">
+            <label class="form-label fw-bold">Apto para audición desde</label>
+            <p class="form-control-plaintext">${escapeHTML(alumno.fecha_elegible_audicion || '-')}</p>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="mb-2">
+            <label class="form-label fw-bold">Fin período iniciación</label>
+            <p class="form-control-plaintext">${escapeHTML(alumno.fecha_fin_iniciacion || '-')}</p>
+          </div>
+        </div>
+        ` : ''}
+      </div>
+      ` : ''}
+
+      <!-- ── Wizard fields: Salud ──────────────────────────────────────────── -->
+      ${(alumno.problemas_conducta !== undefined || alumno.alergias_descripcion || alumno.tiene_condicion_transmisible) ? `
+      <div class="row mt-3 pt-2 border-top">
+        <div class="col-12">
+          <h6 class="text-warning"><i class="bi bi-bandaid me-1"></i>Salud y Conducta (Wizard)</h6>
+        </div>
+        ${alumno.alergias_descripcion ? `
+        <div class="col-md-6">
+          <div class="mb-2">
+            <label class="form-label fw-bold">Descripción alergias</label>
+            <p class="form-control-plaintext">${escapeHTML(alumno.alergias_descripcion)}</p>
+          </div>
+        </div>
+        ` : ''}
+        ${alumno.tiene_condicion_transmisible && alumno.condicion_transmisible_descripcion ? `
+        <div class="col-md-6">
+          <div class="mb-2">
+            <label class="form-label fw-bold">Condición transmisible</label>
+            <p class="form-control-plaintext">${escapeHTML(alumno.condicion_transmisible_descripcion)}</p>
+          </div>
+        </div>
+        ` : ''}
+        ${alumno.alergia_medicamento && alumno.alergia_medicamento_descripcion ? `
+        <div class="col-md-6">
+          <div class="mb-2">
+            <label class="form-label fw-bold">Alergia medicamento</label>
+            <p class="form-control-plaintext">${escapeHTML(alumno.alergia_medicamento_descripcion)}</p>
+          </div>
+        </div>
+        ` : ''}
+        <div class="col-md-6">
+          <div class="mb-2">
+            <label class="form-label fw-bold">Impedimento social</label>
+            <p class="form-control-plaintext">${alumno.impedimento_social ? 'Sí' : 'No'}</p>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="mb-2">
+            <label class="form-label fw-bold">Problemas de conducta</label>
+            <p class="form-control-plaintext">${escapeHTML(alumno.problemas_conducta || 'no')}</p>
+          </div>
+        </div>
+      </div>
+      ` : ''}
+
+      <!-- ── Wizard fields: Datos Escolares ───────────────────────────────── -->
+      ${(alumno.centro_estudios || alumno.grado_nivel || alumno.padres_en_vida) ? `
+      <div class="row mt-3 pt-2 border-top">
+        <div class="col-12">
+          <h6 class="text-secondary"><i class="bi bi-mortarboard me-1"></i>Datos Escolares</h6>
+        </div>
+        <div class="col-md-4">
+          <div class="mb-2">
+            <label class="form-label fw-bold">Centro de estudios</label>
+            <p class="form-control-plaintext">${escapeHTML(alumno.centro_estudios || '-')}</p>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="mb-2">
+            <label class="form-label fw-bold">Grado / Nivel</label>
+            <p class="form-control-plaintext">${escapeHTML(alumno.grado_nivel || '-')}</p>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="mb-2">
+            <label class="form-label fw-bold">Padres en vida</label>
+            <p class="form-control-plaintext">${escapeHTML(alumno.padres_en_vida || '-')}</p>
+          </div>
+        </div>
+      </div>
+      ` : ''}
+
+      <!-- ── Wizard fields: Compromisos ───────────────────────────────────── -->
+      ${(alumno.acepta_beca_4500 !== undefined || alumno.acepta_pago_600 !== undefined) ? `
+      <div class="row mt-3 pt-2 border-top">
+        <div class="col-12">
+          <h6 class="text-success"><i class="bi bi-check-circle me-1"></i>Compromisos</h6>
+        </div>
+        <div class="col-md-4">
+          <div class="mb-2">
+            <label class="form-label fw-bold">Acepta beca RD$4,500</label>
+            <p class="form-control-plaintext">${alumno.acepta_beca_4500 ? '<span class="badge bg-success">Sí</span>' : '<span class="badge bg-secondary">No</span>'}</p>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="mb-2">
+            <label class="form-label fw-bold">Acepta aporte RD$600</label>
+            <p class="form-control-plaintext">${alumno.acepta_pago_600 ? '<span class="badge bg-success">Sí</span>' : '<span class="badge bg-secondary">No</span>'}</p>
+          </div>
+        </div>
+        ${alumno.fecha_aceptacion_compromisos ? `
+        <div class="col-md-4">
+          <div class="mb-2">
+            <label class="form-label fw-bold">Fecha aceptación</label>
+            <p class="form-control-plaintext small">${formatDate(alumno.fecha_aceptacion_compromisos)}</p>
+          </div>
+        </div>
+        ` : ''}
+      </div>
+      ` : ''}
+
       <div class="d-flex justify-content-end gap-2 pt-3 border-top mt-4">
         <button class="btn btn-outline-danger" id="modal-view-btn-delete">
           <i class="bi bi-trash me-1"></i> Eliminar

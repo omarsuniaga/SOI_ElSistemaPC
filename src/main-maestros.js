@@ -123,7 +123,8 @@ import { renderMaestrosView } from './modules/maestros/views/maestrosView.js'
 import { renderDashboardMetricasView as renderAdminMetricasView } from './modules/metricas/views/dashboardMetricasView.js'
 import { renderAcademicAdminView } from './modules/academic-admin/views/academicAdminView.js'
 import { renderClasesView } from './modules/clases/views/clasesView.js'
-import { renderRegistroAlumnoView } from './portal-maestros/views/registroAlumnoView.js'
+// registroAlumnoView replaced by wizard (ADR D12)
+import { renderWizardInscripcionAlumnoView } from './portal-maestros/views/wizardInscripcionAlumnoView.js'
 import { renderGestionarClasesView } from './portal-maestros/views/gestionarClasesView.js'
 import { renderAprobacionView } from './modules/admin-aprobacion/views/aprobacionView.js'
 import { renderAusenciasAdminView } from './modules/admin-aprobacion/views/ausenciasAdminView.js'
@@ -1097,7 +1098,7 @@ async function _renderView(route, params = {}, { silent = false } = {}) {
           router.navigate('hoy')
           return
         }
-        renderRegistroAlumnoView(targetContainer)
+        renderWizardInscripcionAlumnoView(targetContainer)
         break
       case 'gestionar-clases':
         if (!_permisos?.puede_inscribir_clases) {

@@ -16,7 +16,7 @@ function ensureDOM() {
     display:none;position:fixed;inset:0;
     background:var(--pm-backdrop, rgba(0,0,0,0.55));
     backdrop-filter:blur(4px);
-    z-index:2000;
+    z-index:11000;
     transition:opacity .2s ease;
     opacity:0;
   `
@@ -29,7 +29,7 @@ function ensureDOM() {
   modal.setAttribute('aria-modal', 'true')
   modal.style.cssText = `
     display:none;position:fixed;inset:0;
-    z-index:2001;
+    z-index:11001;
     overflow-y:auto;
     padding:1.5rem;
     align-items:center;

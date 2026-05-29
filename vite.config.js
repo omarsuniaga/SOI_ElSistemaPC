@@ -15,7 +15,7 @@ const CSP = [
   // Fonts: self only (no Google Fonts)
   "font-src 'self'",
   // API calls: Supabase REST + Realtime, Groq AI
-  "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.groq.com",
+  "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.groq.com https://docs.google.com",
   // Workers: blob (pdf.js spawns a worker from blob URL)
   "worker-src 'self' blob:",
   // Media: self + blob (audio recording)

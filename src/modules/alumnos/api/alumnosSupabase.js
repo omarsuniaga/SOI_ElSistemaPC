@@ -35,6 +35,37 @@ function normalizeAlumno(a) {
     condiciones_medicas: a.condiciones_medicas ?? '',
     alergias: a.alergias ?? '',
     medicamentos: a.medicamentos ?? '',
+    // Wizard fields — pass through from DB row (spread above covers them, explicit for clarity)
+    sabe_leer: a.sabe_leer ?? false,
+    sabe_escribir: a.sabe_escribir ?? false,
+    nacionalidad: a.nacionalidad ?? null,
+    tiene_pasaporte: a.tiene_pasaporte ?? false,
+    como_se_entero: a.como_se_entero ?? null,
+    ubicacion_maps_url: a.ubicacion_maps_url ?? null,
+    tiene_conocimientos_musicales: a.tiene_conocimientos_musicales ?? false,
+    instrumento_previo: a.instrumento_previo ?? null,
+    nivel_lectura_musical: a.nivel_lectura_musical ?? null,
+    interes_musical: a.interes_musical ?? null,
+    instrumento_interes: a.instrumento_interes ?? null,
+    iniciacion_musical_requerida: a.iniciacion_musical_requerida ?? false,
+    fecha_elegible_audicion: a.fecha_elegible_audicion ?? null,
+    fecha_fin_iniciacion: a.fecha_fin_iniciacion ?? null,
+    alergias_descripcion: a.alergias_descripcion ?? null,
+    tiene_condicion_transmisible: a.tiene_condicion_transmisible ?? false,
+    condicion_transmisible_descripcion: a.condicion_transmisible_descripcion ?? null,
+    alergia_medicamento: a.alergia_medicamento ?? false,
+    alergia_medicamento_descripcion: a.alergia_medicamento_descripcion ?? null,
+    impedimento_social: a.impedimento_social ?? false,
+    problemas_conducta: a.problemas_conducta ?? 'no',
+    centro_estudios: a.centro_estudios ?? null,
+    grado_nivel: a.grado_nivel ?? null,
+    padres_en_vida: a.padres_en_vida ?? null,
+    representante_nombre: a.representante_nombre ?? null,
+    representante_parentesco: a.representante_parentesco ?? null,
+    representante_tlf: a.representante_tlf ?? null,
+    acepta_beca_4500: a.acepta_beca_4500 ?? false,
+    acepta_pago_600: a.acepta_pago_600 ?? false,
+    fecha_aceptacion_compromisos: a.fecha_aceptacion_compromisos ?? null,
   }
 }
 
@@ -74,7 +105,7 @@ export async function crearAlumno(alumno) {
   const datosLimpios = {
     nombre_completo: nombre,
     correo_representante: (alumno.email || '').trim().toLowerCase() || null,
-    representante_cedula: (alumno.cedula || '').trim() || null,
+    representante_cedula: (alumno.cedula || alumno.representante_cedula || '').trim() || null,
     instrumento_principal: (alumno.instrumento || '').trim() || null,
     activo: alumno.is_active !== undefined ? alumno.is_active : true,
     familiar_nombre: (alumno.familiar_nombre || '').trim() || null,
@@ -86,6 +117,68 @@ export async function crearAlumno(alumno) {
     condiciones_medicas: (alumno.condiciones_medicas || '').trim() || null,
     alergias: (alumno.alergias || '').trim() || null,
     medicamentos: (alumno.medicamentos || '').trim() || null,
+    // ── Step 1 — Datos del Alumno ───────────────────────────────
+    sabe_leer: alumno.sabe_leer ?? null,
+    sabe_escribir: alumno.sabe_escribir ?? null,
+    nacionalidad: alumno.nacionalidad ?? null,
+    tiene_pasaporte: alumno.tiene_pasaporte ?? false,
+    como_se_entero: alumno.como_se_entero ?? null,
+    municipio_residencia: alumno.municipio_residencia ?? null,
+    sector_calle_numero: alumno.sector_calle_numero ?? null,
+    ubicacion_maps_url: alumno.ubicacion_maps_url ?? null,
+    // ── Step 2 — Madre ─────────────────────────────────────────
+    madre_nombre: alumno.madre_nombre ?? null,
+    madre_cedula: alumno.madre_cedula ?? null,
+    madre_tlf_whatsapp: alumno.madre_tlf_whatsapp ?? null,
+    // ── Step 3 — Padre ─────────────────────────────────────────
+    padre_nombre: alumno.padre_nombre ?? null,
+    padre_cedula: alumno.padre_cedula ?? null,
+    padre_tlf_whatsapp: alumno.padre_tlf_whatsapp ?? null,
+    // ── Step 4 — Representante, Familia y Entorno ──────────────
+    representante_nombre: alumno.representante_nombre ?? null,
+    representante_parentesco: alumno.representante_parentesco ?? null,
+    representante_tlf: alumno.representante_tlf ?? null,
+    otro_responsable_nombre: alumno.otro_responsable_nombre ?? null,
+    otro_responsable_cedula: alumno.otro_responsable_cedula ?? null,
+    otro_responsable_tlf: alumno.otro_responsable_tlf ?? null,
+    contacto_emergencia_2_nombre: alumno.contacto_emergencia_2_nombre ?? null,
+    contacto_emergencia_2_telefono: alumno.contacto_emergencia_2_telefono ?? null,
+    familia_monoparental: alumno.familia_monoparental ?? null,
+    beneficiario_subsidio_estado: alumno.beneficiario_subsidio_estado ?? null,
+    subsidio_descripcion: alumno.subsidio_descripcion ?? null,
+    apoyo_actividades: alumno.apoyo_actividades ?? null,
+    // ── Step 5 — Perfil Musical y Motivación ───────────────────
+    tiene_conocimientos_musicales: alumno.tiene_conocimientos_musicales ?? null,
+    instrumento_previo: alumno.instrumento_previo ?? null,
+    nivel_lectura_musical: alumno.nivel_lectura_musical ?? null,
+    interes_musical: alumno.interes_musical ?? null,
+    instrumento_interes: alumno.instrumento_interes ?? null,
+    requiere_iniciacion_musical: alumno.tiene_conocimientos_musicales !== true,
+    fecha_ingreso_iniciacion: alumno.tiene_conocimientos_musicales !== true ? new Date().toISOString().slice(0, 10) : null,
+    por_que_unirse: alumno.por_que_unirse ?? null,
+    sentimiento_musica_clasica: alumno.sentimiento_musica_clasica ?? null,
+    sentimiento_aprender_instrumento: alumno.sentimiento_aprender_instrumento ?? null,
+    aspiracion_instrumento: alumno.aspiracion_instrumento ?? null,
+    musico_favorito: alumno.musico_favorito ?? null,
+    preferencia_aprendizaje_musical: alumno.preferencia_aprendizaje_musical ?? null,
+    // ── Step 6 — Salud, Conducta y Escolar ─────────────────────
+    tiene_alergias: alumno.tiene_alergias ?? null,
+    alergias_descripcion: alumno.alergias_descripcion ?? null,
+    tiene_condicion_transmisible: alumno.tiene_condicion_transmisible ?? null,
+    condicion_transmisible_desc: alumno.condicion_transmisible_desc ?? null,
+    tiene_alergia_medicamento: alumno.tiene_alergia_medicamento ?? null,
+    alergia_medicamento_desc: alumno.alergia_medicamento_desc ?? null,
+    impedimento_social: alumno.impedimento_social ?? null,
+    problemas_conducta: alumno.problemas_conducta || null,
+    centro_estudios: alumno.centro_estudios ?? null,
+    grado_nivel: alumno.grado_nivel ?? null,
+    padres_en_vida: alumno.padres_en_vida || null,
+    // ── Step 7 — Compromisos y Autorizaciones ──────────────────
+    acepta_beca_4500: alumno.acepta_beca_4500 ?? false,
+    fecha_aceptacion_beca: alumno.acepta_beca_4500 ? new Date().toISOString() : null,
+    acepta_pago_600: alumno.acepta_pago_600 ?? false,
+    fecha_aceptacion_pago: alumno.acepta_pago_600 ? new Date().toISOString() : null,
+    autoriza_fotos_redes: alumno.autoriza_fotos_redes ?? false,
   }
 
   const { data, error } = await supabase
@@ -208,4 +301,26 @@ export async function obtenerInscripcionesAlumno(alumnoId) {
     clase_id: row.clase_id,
     clase_nombre: row.clase?.nombre ?? 'Clase sin nombre'
   }))
+}
+
+/**
+ * Obtiene los alumnos inscritos en un mes/año específico.
+ * @param {number} year
+ * @param {number} month  1-based (1=enero, 12=diciembre)
+ * @returns {Promise<object[]>}
+ */
+export async function obtenerAlumnosPorMes(year, month) {
+  const start = `${year}-${String(month).padStart(2, '0')}-01`
+  const lastDay = new Date(year, month, 0).getDate()
+  const end = `${year}-${String(month).padStart(2, '0')}-${lastDay}`
+
+  const { data, error } = await supabase
+    .from('alumnos')
+    .select('*')
+    .gte('created_at', `${start}T00:00:00`)
+    .lte('created_at', `${end}T23:59:59`)
+    .order('created_at', { ascending: true })
+
+  if (error) throw new Error('No se pudieron cargar los alumnos del mes')
+  return data.map(normalizeAlumno)
 }

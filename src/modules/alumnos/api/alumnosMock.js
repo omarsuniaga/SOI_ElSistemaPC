@@ -91,3 +91,13 @@ export async function obtenerInscripcionesAlumno(alumnoId) {
       clase_nombre: i.clase_nombre
     }))
 }
+
+export async function obtenerAlumnosPorMes(year, month) {
+  await delay(300)
+  return alumnos
+    .filter(a => {
+      const d = new Date(a.created_at ?? a.fecha_ingreso ?? '')
+      return d.getFullYear() === year && d.getMonth() + 1 === month
+    })
+    .map(normalizeAlumno)
+}

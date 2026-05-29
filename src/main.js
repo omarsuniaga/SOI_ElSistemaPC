@@ -257,8 +257,9 @@ const NAV_GROUPS = [
     label: 'Personas',
     icon: 'bi-people',
     items: [
-      { id: 'alumnos',  label: 'Alumnos',  icon: 'bi-people' },
-      { id: 'maestros', label: 'Maestros', icon: 'bi-person-check' },
+      { id: 'alumnos',              label: 'Alumnos',             icon: 'bi-people' },
+      { id: 'alumnos-reporte-mes', label: 'Inscritos por Mes',  icon: 'bi-file-earmark-bar-graph' },
+      { id: 'maestros',             label: 'Maestros',            icon: 'bi-person-check' },
     ],
   },
   {

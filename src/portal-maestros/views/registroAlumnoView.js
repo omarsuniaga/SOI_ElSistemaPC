@@ -1,3 +1,8 @@
+/**
+ * @deprecated Use wizardInscripcionAlumnoView.js instead (ADR D12).
+ * Route 'registrar-alumno' now mounts renderWizardInscripcionAlumnoView.
+ * This file is kept to avoid breaking existing tests / legacy consumers.
+ */
 import { escHTML } from '../utils/portalUtils.js'
 import { normalizePhone } from '../../shared/utils/phoneUtils.js'
 import { getPermisos } from '../services/permisoService.js'

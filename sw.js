@@ -1,4 +1,4 @@
-const CACHE_NAME = 'sistema-academico-v2';
+const CACHE_NAME = 'sistema-academico-v3';
 const STATIC_PRECACHE = ['/', '/index.html']; // Ampliar con build tool
 
 self.addEventListener('install', event => {
@@ -35,8 +35,15 @@ self.addEventListener('fetch', event => {
   // Solo mismo origen y GET
   if (url.origin !== self.location.origin || request.method !== 'GET') return;
 
-  // Ignorar herramientas de desarrollo (Vite HMR, etc.)
-  if (url.pathname.includes('@vite') || url.pathname.includes('@fs') || url.search.includes('import') || url.search.includes('t=')) return;
+  // Ignorar herramientas de desarrollo (Vite HMR, imports CSS/ESM, node_modules, etc.)
+  if (
+    url.pathname.includes('@vite') ||
+    url.pathname.includes('@fs') ||
+    url.pathname.startsWith('/node_modules/') ||
+    url.search.includes('import') ||
+    url.search.includes('direct') ||
+    url.search.includes('t=')
+  ) return;
 
   // Estrategia según tipo de recurso
   if (request.mode === 'navigate' || url.pathname.endsWith('.html') || url.pathname === '/') {
@@ -72,7 +79,9 @@ async function staleWhileRevalidate(request) {
   const cache = await caches.open(CACHE_NAME);
   const cached = await cache.match(request);
   const fetchPromise = fetch(request).then(response => {
-    if (response && response.ok) cache.put(request, response.clone());
+    if (response && response.ok && !isHtmlFallbackForAsset(request, response)) {
+      cache.put(request, response.clone());
+    }
     return response;
   }).catch(() => cached);
   return cached || fetchPromise;
@@ -91,6 +100,13 @@ async function cacheFirst(request) {
   } catch {
     return new Response('Recurso no disponible offline', { status: 503 });
   }
+}
+
+function isHtmlFallbackForAsset(request, response) {
+  const url = new URL(request.url);
+  const isAsset = url.pathname.match(/\.(css|js|png|jpg|jpeg|gif|svg|ico|woff2?)$/);
+  const contentType = response.headers.get('content-type') || '';
+  return Boolean(isAsset && contentType.includes('text/html'));
 }
 
 // ─── PUSH NOTIFICATIONS ────────────────────────────────────

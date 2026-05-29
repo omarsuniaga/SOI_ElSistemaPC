@@ -1,4 +1,4 @@
-import{i as e}from"./supabase-C4ics26R.js";var t={ausencias:[],loading:!0};function n(){return`
+import{i as e}from"./supabase-DJmkTfk1.js";var t={ausencias:[],loading:!0};function n(){return`
     <div class="ausencia-historial">
       <div id=" historialLoading" class="text-center py-3 ${t.loading?``:`d-none`}">
         <div class="spinner-border spinner-border-sm text-primary"></div>

@@ -1,5 +1,5 @@
 const __vite__mapDeps=(i,m=__vite__mapDeps,d=(m.f||(m.f=["assets/offlineQueue-Cjwl3aiF.js","assets/rolldown-runtime-tcWNtVWY.js","assets/idb-DOPm7uLh.js"])))=>i.map(i=>d[i]);
-import{n as e}from"./rolldown-runtime-tcWNtVWY.js";import{i as t}from"./supabase-C4ics26R.js";import{t as n}from"./preload-helper-CsoeaaUJ.js";var r=e({academicService:()=>i}),i={async getStudent(e){let{data:n,error:r}=await t.from(`students`).select(`name, last_name, instrument_principal`).eq(`id`,e).single();if(r)throw r;return n},async fetchRoutes(){let{data:e,error:n}=await t.from(`routes`).select(`
+import{n as e}from"./rolldown-runtime-tcWNtVWY.js";import{i as t}from"./supabase-DJmkTfk1.js";import{t as n}from"./preload-helper-CsoeaaUJ.js";var r=e({academicService:()=>i}),i={async getStudent(e){let{data:n,error:r}=await t.from(`students`).select(`name, last_name, instrument_principal`).eq(`id`,e).single();if(r)throw r;return n},async fetchRoutes(){let{data:e,error:n}=await t.from(`routes`).select(`
         id,
         name,
         description,

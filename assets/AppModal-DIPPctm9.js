@@ -2,12 +2,12 @@ import{n as e}from"./rolldown-runtime-tcWNtVWY.js";var t=e({AppModal:()=>c}),n=`
     display:none;position:fixed;inset:0;
     background:var(--pm-backdrop, rgba(0,0,0,0.55));
     backdrop-filter:blur(4px);
-    z-index:2000;
+    z-index:11000;
     transition:opacity .2s ease;
     opacity:0;
   `,document.body.appendChild(e);let t=document.createElement(`div`);t.id=n,t.setAttribute(`role`,`dialog`),t.setAttribute(`aria-modal`,`true`),t.style.cssText=`
     display:none;position:fixed;inset:0;
-    z-index:2001;
+    z-index:11001;
     overflow-y:auto;
     padding:1.5rem;
     align-items:center;

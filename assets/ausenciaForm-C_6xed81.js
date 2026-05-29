@@ -1,4 +1,4 @@
-import"./supabase-C4ics26R.js";function e(e){return`
+import"./supabase-DJmkTfk1.js";function e(e){return`
     <form id="ausenciaForm" class="row g-3">
       <div class="col-md-6">
         <label class="form-label label-apple">Fecha de inicio</label>

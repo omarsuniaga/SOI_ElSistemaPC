@@ -86,7 +86,7 @@ export async function loginMaestro(email, password) {
       .maybeSingle()
 
     const adminMaestro = maestroRow
-      ? { ...maestroRow, es_admin: true }
+      ? { ...maestroRow, es_admin: true, es_maestro: true }
       : {
           id: data.user.id,
           user_id: data.user.id,
@@ -231,7 +231,7 @@ export async function detectarRolMaestro() {
         .maybeSingle()
 
       const adminMaestro = maestroRow
-        ? { ...maestroRow, es_admin: true }
+        ? { ...maestroRow, es_admin: true, es_maestro: true }
         : {
             id: session.user.id,
             user_id: session.user.id,

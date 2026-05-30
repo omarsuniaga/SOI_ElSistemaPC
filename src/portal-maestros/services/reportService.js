@@ -277,12 +277,11 @@ export async function generateDailyReport(sesionId) {
 
     const html = wrapDocument(pageHtml, landscape)
 
-    // 4. Open and print
-    const opened = openReport(html)
+    // 4. Open and print (falls back to file download if popup blocked)
+    const date = sesion.fecha?.replace(/-/g, '') || 'fecha'
+    const opened = openReport(html, `reporte-diario-${date}`)
     if (!opened) {
-      AppToast.warn(
-        'No se pudo abrir el diálogo de impresión. Intentá de nuevo o verificá que el navegador no esté bloqueando el contenido.',
-      )
+      AppToast.info('El reporte se descargó como archivo. Abrilo en el navegador y usá Imprimir → Guardar como PDF.')
     }
   } catch (err) {
     console.error('[reportService] generateDailyReport:', err)
@@ -565,11 +564,9 @@ export async function generateMonthlyAttendance(claseId, year, month) {
     }
 
     const html = wrapDocument(page1 + page2, landscape)
-    const opened = openReport(html)
+    const opened = openReport(html, `resumen-asistencia-${year}-${padMM(month)}`)
     if (!opened) {
-      AppToast.warn(
-        'No se pudo abrir el diálogo de impresión. Intentá de nuevo o verificá que el navegador no esté bloqueando el contenido.',
-      )
+      AppToast.info('El reporte se descargó como archivo. Abrilo en el navegador y usá Imprimir → Guardar como PDF.')
     }
   } catch (err) {
     console.error('[reportService] generateMonthlyAttendance:', err)
@@ -1102,11 +1099,9 @@ export async function generateMonthlyPedagogical(claseId, year, month) {
     `
 
     const html = wrapDocument(p1 + p2 + p3, true)
-    const opened = openReport(html)
+    const opened = openReport(html, `informe-pedagogico-${year}-${padMM(month)}`)
     if (!opened) {
-      AppToast.warn(
-        'No se pudo abrir el diálogo de impresión. Intentá de nuevo o verificá que el navegador no esté bloqueando el contenido.',
-      )
+      AppToast.info('El reporte se descargó como archivo. Abrilo en el navegador y usá Imprimir → Guardar como PDF.')
     }
   } catch (err) {
     console.error('[reportService] generateMonthlyPedagogical:', err)

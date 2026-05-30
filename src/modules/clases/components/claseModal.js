@@ -16,6 +16,7 @@ import {
   formatHora
 } from '../utils/clasesUtils.js'
 import { Clase } from '../models/clase.model.js'
+import { openRutaSelectorModal, listarRutas } from '../../planificacion/api/rutasApi.js'
 
 /**
  * claseModal - Componente modular para la gestión de clases académicas.
@@ -80,6 +81,16 @@ function _getClaseFormHTML(clase, inscritosIds, inscritosSlots = []) {
         <label class="form-label-compact">Instrumento *</label>
         <input type="text" class="form-control input-dense" id="modal-instrumento" list="instrumentos-list" required placeholder="Seleccionar..." value="${escapeHTML(clase?.instrumento || '')}">
         ${_getInstrumentosDatalist()}
+      </div>
+      <div class="col-md-6">
+        <label class="form-label-compact">Ruta de Contenido</label>
+        <div class="d-flex gap-2">
+          <input type="text" class="form-control input-dense" id="modal-ruta-display" readonly placeholder="Seleccionar ruta..." value="${clase?.ruta_id ? 'Ruta seleccionada' : ''}">
+          <button type="button" class="btn btn-outline-primary btn-sm" id="btn-seleccionar-ruta" style="white-space: nowrap;">
+            <i class="bi bi-diagram-3 me-1"></i>Elegir
+          </button>
+        </div>
+        <input type="hidden" id="modal-ruta_id" value="${clase?.ruta_id || ''}">
       </div>
       <div class="col-md-6">
         <label class="form-label-compact">Programa *</label>
@@ -213,6 +224,25 @@ function _getSlotBuilderHTML(inscritosSlots = []) {
 }
 
 function _attachModalEvents(modalBody, clase) {
+  // Botón para seleccionar ruta
+  const btnSeleccionarRuta = modalBody.querySelector('#btn-seleccionar-ruta')
+  if (btnSeleccionarRuta) {
+    btnSeleccionarRuta.addEventListener('click', async (e) => {
+      e.preventDefault()
+      const instrumento = modalBody.querySelector('#modal-instrumento')?.value?.trim()
+      if (!instrumento) {
+        AppToast.warning('Selecciona un instrumento primero')
+        return
+      }
+
+      openRutaSelectorModal(instrumento, 'Cualquier Nivel', (rutaId) => {
+        modalBody.querySelector('#modal-ruta_id').value = rutaId
+        modalBody.querySelector('#modal-ruta-display').value = 'Ruta seleccionada ✓'
+        AppToast.success('Ruta asignada a la clase')
+      })
+    })
+  }
+
   // Switch para maestro suplente
   const switchSuplente = modalBody.querySelector('#modal-tiene_suplente')
   const selectSuplente = modalBody.querySelector('#modal-maestro_suplente_id')
@@ -347,6 +377,7 @@ async function _handleSave(modalBody, originalClase) {
       estado: modalBody.querySelector('#modal-estado').value,
       tipo_clase: modalBody.querySelector('input[name="modal-tipo_clase"]:checked')?.value || 'grupal',
       descripcion: modalBody.querySelector('#modal-notas_pedagogicas').value.trim(),
+      ruta_id: modalBody.querySelector('#modal-ruta_id')?.value || null,
       horarios: Array.from(modalBody.querySelectorAll('.horario-row')).map(row => ({
         dia: row.querySelector('[name="horario-dia"]').value,
         hora_inicio: row.querySelector('[name="horario-hora_inicio"]').value,

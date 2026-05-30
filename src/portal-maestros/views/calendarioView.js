@@ -281,6 +281,9 @@ function _renderCalendario(container, anio, mes, hoy, estadoMap, { onFechaClick,
           <div class="pm-cal-legend-dot" style="background:var(--pm-success)"></div> Registrada
         </div>
         <div class="pm-cal-legend-item">
+          <div class="pm-cal-legend-dot" style="background:#0891b2"></div> Cubierta por actividad especial
+        </div>
+        <div class="pm-cal-legend-item">
           <div class="pm-cal-legend-dot" style="background:var(--pm-warning)"></div> Pendiente
         </div>
         <div class="pm-cal-legend-item">

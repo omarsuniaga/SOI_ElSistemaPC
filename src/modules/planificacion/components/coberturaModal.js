@@ -9,6 +9,7 @@
  * onSkip() is called if teacher clicks "Saltar".
  */
 import { obtenerCurriculo } from '../api/curriculoApi.js'
+import { obtenerRuta } from '../api/rutasApi.js'
 import { upsertCobertura } from '../api/coberturaApi.js'
 import { extraerCobertura } from '../api/groqService.js'
 import { parseDsl } from '../utils/dslParser.js'
@@ -89,7 +90,37 @@ export async function openCoberturaModal({ plan, claseId, instrumento, nivel, ma
   modal.show()
 
   try {
-    const curriculo = instrumento && nivel ? await obtenerCurriculo(instrumento, nivel) : null
+    let todosObjetivos = []
+    let ruta = null
+
+    // Try to get clase and its ruta first
+    if (claseId) {
+      const { data: claseData } = await supabase
+        .from('clases')
+        .select('ruta_id')
+        .eq('id', claseId)
+        .single()
+
+      if (claseData?.ruta_id) {
+        ruta = await obtenerRuta(claseData.ruta_id)
+        // Map ruta objectives to match curriculum structure
+        todosObjetivos = ruta.objetivos.map(o => ({
+          id: o.objetivo_id,
+          descripcion: o.descripcion,
+          pilar_nombre: null
+        }))
+      }
+    }
+
+    // Fallback to generic curriculum if no ruta
+    if (todosObjetivos.length === 0 && instrumento && nivel) {
+      const curriculo = await obtenerCurriculo(instrumento, nivel)
+      if (curriculo) {
+        todosObjetivos = curriculo.curriculo_pilares.flatMap(p =>
+          p.curriculo_objetivos.map(o => ({ ...o, pilar_nombre: p.nombre }))
+        )
+      }
+    }
 
     const dslText = plan.notas_dsl || plan.contenido || ''
     const parsed = parseDsl(dslText)
@@ -112,12 +143,6 @@ export async function openCoberturaModal({ plan, claseId, instrumento, nivel, ma
         .eq('clase_id', claseId)
       alumnosConId = (data || []).map(r => r.alumnos).filter(Boolean)
     }
-
-    const todosObjetivos = curriculo
-      ? curriculo.curriculo_pilares.flatMap(p =>
-          p.curriculo_objetivos.map(o => ({ ...o, pilar_nombre: p.nombre }))
-        )
-      : []
 
     let aiCoberturas = []
     if (curriculo && todosObjetivos.length > 0) {
@@ -170,7 +195,7 @@ export async function openCoberturaModal({ plan, claseId, instrumento, nivel, ma
       body.innerHTML = `
         <div class="alert alert-info">
           <i class="bi bi-info-circle me-2"></i>
-          No hay currículo activo para este instrumento/nivel, o no se encontraron alumnos.
+          No hay ruta de contenidos asignada o currículo activo, o no se encontraron alumnos.
           Podés saltar este paso.
         </div>`
       return

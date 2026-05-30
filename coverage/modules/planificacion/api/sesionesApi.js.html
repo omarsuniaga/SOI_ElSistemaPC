@@ -25,14 +25,14 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/127</span>
+                <span class='fraction'>0/137</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>0/108</span>
+                <span class='fraction'>0/115</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/113</span>
+                <span class='fraction'>0/123</span>
             </div>
         
             
@@ -330,7 +330,31 @@
 <a name='L265'></a><a href='#L265'>265</a>
 <a name='L266'></a><a href='#L266'>266</a>
 <a name='L267'></a><a href='#L267'>267</a>
-<a name='L268'></a><a href='#L268'>268</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L268'></a><a href='#L268'>268</a>
+<a name='L269'></a><a href='#L269'>269</a>
+<a name='L270'></a><a href='#L270'>270</a>
+<a name='L271'></a><a href='#L271'>271</a>
+<a name='L272'></a><a href='#L272'>272</a>
+<a name='L273'></a><a href='#L273'>273</a>
+<a name='L274'></a><a href='#L274'>274</a>
+<a name='L275'></a><a href='#L275'>275</a>
+<a name='L276'></a><a href='#L276'>276</a>
+<a name='L277'></a><a href='#L277'>277</a>
+<a name='L278'></a><a href='#L278'>278</a>
+<a name='L279'></a><a href='#L279'>279</a>
+<a name='L280'></a><a href='#L280'>280</a>
+<a name='L281'></a><a href='#L281'>281</a>
+<a name='L282'></a><a href='#L282'>282</a>
+<a name='L283'></a><a href='#L283'>283</a>
+<a name='L284'></a><a href='#L284'>284</a>
+<a name='L285'></a><a href='#L285'>285</a>
+<a name='L286'></a><a href='#L286'>286</a>
+<a name='L287'></a><a href='#L287'>287</a>
+<a name='L288'></a><a href='#L288'>288</a>
+<a name='L289'></a><a href='#L289'>289</a>
+<a name='L290'></a><a href='#L290'>290</a>
+<a name='L291'></a><a href='#L291'>291</a>
+<a name='L292'></a><a href='#L292'>292</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -421,7 +445,31 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -688,12 +736,36 @@ export async function <span class="fstat-no" title="function not covered" >crear
 <span class="cstat-no" title="statement not covered" >    throw new Error('El tema es obligatorio')</span>
   }
 &nbsp;
+  // Obtener el horario correspondiente al día de la semana para llenar salon_id e horario_id
+  let horarioId = <span class="cstat-no" title="statement not covered" >null</span>
+  let salonId = <span class="cstat-no" title="statement not covered" >null</span>
+&nbsp;
+<span class="cstat-no" title="statement not covered" >  if (!USE_MOCK) {</span>
+    const fecha = <span class="cstat-no" title="statement not covered" >new Date(sesion.fecha)</span>
+    const diasSemana = <span class="cstat-no" title="statement not covered" >['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado']</span>
+    const diaString = <span class="cstat-no" title="statement not covered" >diasSemana[fecha.getDay()].toLowerCase()</span>
+&nbsp;
+    const { data: horarios, error: errorHorarios } = <span class="cstat-no" title="statement not covered" >await supabase</span>
+      .from('clase_horarios')
+      .select('id, salon_id')
+      .eq('clase_id', sesion.clase_id)
+      .eq('dia', diaString)
+      .limit(1)
+&nbsp;
+<span class="cstat-no" title="statement not covered" >    if (!errorHorarios &amp;&amp; horarios &amp;&amp; horarios.length &gt; 0) {</span>
+<span class="cstat-no" title="statement not covered" >      horarioId = horarios[0].id</span>
+<span class="cstat-no" title="statement not covered" >      salonId = horarios[0].salon_id</span>
+    }
+  }
+&nbsp;
   const datosLimpios = <span class="cstat-no" title="statement not covered" >{</span>
     clase_id: sesion.clase_id,
     maestro_id: sesion.maestro_id || null,
     fecha: sesion.fecha,
     hora_inicio: sesion.hora_inicio || null,
     hora_fin: sesion.hora_fin || null,
+    horario_id: horarioId,
+    salon_id: salonId,
     tema: sesion.tema.trim(),
     contenido: sesion.contenido?.trim() || null,
     motivo: sesion.motivo?.trim() || null,
@@ -871,7 +943,7 @@ export async function <span class="fstat-no" title="function not covered" >obten
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-05-11T03:20:00.789Z
+                at 2026-05-30T22:08:25.251Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>

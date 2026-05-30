@@ -1,29 +1,45 @@
 /**
- * SessionSummaryPanel.js
+ * SessionSummaryPanel.js (v2 — grouped)
  *
- * Shows AI-generated progress records for a saved session.
- * Teacher can edit estado (cycles LOGRADO → EN_PROGRESO → INICIADO) with
- * immediate upsert to Supabase, and share a plain-text summary via WhatsApp.
+ * Shows progress records for a saved session grouped by contenido_dsl.
+ * Reads from `progresos` table, fetches alumno names from `alumnos`.
  *
  * Usage:
  *   const panel = createSessionSummaryPanel()
  *   panel.open({ sesionId, claseNombre, fecha, supabase })
  *   panel.close()
+ *
+ * Changes in v2:
+ *   - Records grouped by normalized contenido_dsl (trim + lowercase)
+ *   - Group shows combined alumnos, single observaciones/tarea
+ *   - Estado 'mixto' when group has differing estados
+ *   - Same public API as v1: open({ sesionId, claseNombre, fecha, supabase })
  */
 
+// ── Estado badge display config ─────────────────────────────────────────────
+
+const ESTADO_BADGES = {
+  LOGRADO: { label: 'LOGRADO', cls: 'ssp-estado-logrado' },
+  EN_PROGRESO: { label: 'EN_PROGRESO', cls: 'ssp-estado-en-progreso' },
+  INICIADO: { label: 'INICIADO', cls: 'ssp-estado-iniciado' },
+  MIXTO: { label: 'MIXTO', cls: 'ssp-estado-mixto' },
+}
+
+const ESTADO_CHIPS = {
+  LOGRADO: 'ssp-chip-logrado',
+  EN_PROGRESO: 'ssp-chip-en-progreso',
+  INICIADO: 'ssp-chip-iniciado',
+}
+
+// For WhatsApp text display
 const ESTADO_LABELS = {
-  LOGRADO:     { label: 'Logrado',     color: 'var(--pm-success, #198754)', bg: '#19875418' },
-  EN_PROGRESO: { label: 'En Progreso', color: 'var(--pm-primary, #0d6efd)', bg: '#0d6efd18' },
-  INICIADO:    { label: 'Iniciado',    color: 'var(--pm-muted,   #6c757d)', bg: '#6c757d18' },
+  LOGRADO: 'LOGRADO',
+  EN_PROGRESO: 'EN_PROGRESO',
+  INICIADO: 'INICIADO',
+  MIXTO: 'MIXTO',
 }
 
-const ESTADOS_CYCLE = ['LOGRADO', 'EN_PROGRESO', 'INICIADO']
-
-const ALERT_TYPE_LABELS = {
-  CONDUCTA:          { label: 'Conducta',              icon: '🚨' },
-  ATENCION:          { label: 'Atención y concentración', icon: '🔔' },
-  RIESGO_PEDAGOGICO: { label: 'Riesgo pedagógico',     icon: '📉' },
-}
+// ── Helpers ─────────────────────────────────────────────────────────────────
 
 /** Escapes HTML special chars to prevent XSS in innerHTML. */
 function esc(str) {
@@ -35,82 +51,107 @@ function esc(str) {
     .replace(/'/g, '&#39;')
 }
 
+/**
+ * Normalizes contenido_dsl for grouping: trim + lowercase.
+ */
+function normalizeKey(str) {
+  return (str || '').trim().toLowerCase()
+}
+
+/**
+ * Groups progress records by normalized contenido_dsl.
+ *
+ * @param {Array} records  — raw records from DB with alumno_nombre resolved
+ * @returns {Array<{contenido, estado, alumnos, observaciones, tarea}>}
+ */
+function groupRecords(records) {
+  const map = new Map()
+
+  for (const rec of records) {
+    const key = normalizeKey(rec.contenido_dsl)
+    if (!key) continue // skip empty content
+
+    if (!map.has(key)) {
+      map.set(key, {
+        contenido: rec.contenido_dsl,
+        estado: rec.estado_cualitativo,
+        alumnos: [
+          {
+            id: rec.alumno_id,
+            nombre: rec.alumno_nombre || 'Alumno',
+            estado: rec.estado_cualitativo,
+          },
+        ],
+        observaciones: rec.observaciones || null,
+        tarea: rec.tarea || null,
+      })
+    } else {
+      const group = map.get(key)
+
+      // Add alumno with individual estado
+      group.alumnos.push({
+        id: rec.alumno_id,
+        nombre: rec.alumno_nombre || 'Alumno',
+        estado: rec.estado_cualitativo,
+      })
+
+      // Detect mixto estado
+      if (group.estado !== 'MIXTO' && group.estado !== rec.estado_cualitativo) {
+        group.estado = 'MIXTO'
+      }
+
+      // Take first non-empty observaciones / tarea
+      if (!group.observaciones && rec.observaciones) {
+        group.observaciones = rec.observaciones
+      }
+      if (!group.tarea && rec.tarea) {
+        group.tarea = rec.tarea
+      }
+    }
+  }
+
+  return Array.from(map.values())
+}
+
+// ── Factory ─────────────────────────────────────────────────────────────────
+
 export function createSessionSummaryPanel() {
   let _panelEl = null
-  let _records = []
+  let _groups = []
   let _supabase = null
 
-  function _renderRecord(rec, idx) {
-    const isAlerta = !!rec.alerta
-    const alumnosStr = Array.isArray(rec.alumnos) && rec.alumnos.length
-      ? rec.alumnos.join(', ')
-      : (rec.scope === 'grupo' || rec.scope === 'all') ? 'Todos los presentes' : '—'
-
-    if (isAlerta) {
-      const alertInfo = ALERT_TYPE_LABELS[rec.alertaTipo] ?? { label: 'Alerta', icon: '⚠️' }
-      return `
-        <div class="ssp-card ssp-card--alerta">
-          <div class="ssp-card-header">
-            <span class="ssp-alerta-badge">${alertInfo.icon} ${esc(alertInfo.label)}</span>
-            <span class="ssp-alumno">${esc(alumnosStr)}</span>
-          </div>
-          <div class="ssp-contenido ssp-contenido--alerta">${esc(rec.contenido_dsl) || '—'}</div>
-          ${rec.observacion ? `<div class="ssp-obs">${esc(rec.observacion)}</div>` : ''}
-          ${rec.tarea ? `<div class="ssp-tarea">📝 ${esc(rec.tarea)}</div>` : ''}
-        </div>
-      `
-    }
-
-    const estadoInfo = ESTADO_LABELS[rec.estado] ?? ESTADO_LABELS.EN_PROGRESO
-    return `
-      <div class="ssp-card">
-        <div class="ssp-card-header">
-          <span class="ssp-alumno">${esc(alumnosStr)}</span>
-          <button
-            class="ssp-estado-btn"
-            data-idx="${idx}"
-            style="color:${estadoInfo.color};background:${estadoInfo.bg};border-color:${estadoInfo.color}"
-            title="Click para cambiar estado"
-          >${estadoInfo.label}</button>
-        </div>
-        <div class="ssp-contenido">${esc(rec.contenido_dsl) || '—'}</div>
-        ${rec.observacion ? `<div class="ssp-obs">${esc(rec.observacion)}</div>` : ''}
-        ${rec.tarea ? `<div class="ssp-tarea">📝 ${esc(rec.tarea)}</div>` : ''}
-      </div>
-    `
-  }
+  // ── WhatsApp text builder ───────────────────────────────────────────────
 
   function _buildWhatsAppText(claseNombre, fecha) {
     const fechaFmt = (() => {
       try {
         const [y, m, d] = fecha.split('-')
         return `${d}/${m}/${y}`
-      } catch { return fecha }
+      } catch {
+        return fecha
+      }
     })()
 
-    const alertas = _records.filter(r => r.alerta)
-    const progresos = _records.filter(r => !r.alerta)
+    const lines = [`📚 Clase ${claseNombre} — ${fechaFmt}`]
 
-    const lines = [`📚 Resumen clase ${claseNombre} — ${fechaFmt}`]
+    for (const group of _groups) {
+      const estadoLabel = ESTADO_LABELS[group.estado] || group.estado
+      const alumnoList =
+        group.estado === 'MIXTO'
+          ? group.alumnos
+              .map((a) => {
+                const indLabel = ESTADO_LABELS[a.estado] || a.estado
+                return `${a.nombre} (${indLabel})`
+              })
+              .join(', ')
+          : group.alumnos.map((a) => a.nombre).join(', ')
 
-    if (alertas.length) {
-      lines.push('', '⚠️ Alertas:')
-      for (const r of alertas) {
-        const alumno = Array.isArray(r.alumnos) && r.alumnos.length ? r.alumnos[0] : 'Alumno'
-        const info = ALERT_TYPE_LABELS[r.alertaTipo] ?? { label: 'Alerta' }
-        const tarea = r.tarea ? ` — ${r.tarea}` : ''
-        lines.push(`• ${alumno}: ${info.label}${tarea}`)
-      }
-    }
+      lines.push('')
+      lines.push(`🔹 ${group.contenido} — ${estadoLabel}`)
+      lines.push(`   Alumnos: ${alumnoList}`)
 
-    if (progresos.length) {
-      lines.push('', '✅ Logros:')
-      for (const r of progresos) {
-        const alumno = Array.isArray(r.alumnos) && r.alumnos.length
-          ? r.alumnos.join(', ')
-          : 'Todos'
-        const estado = ESTADO_LABELS[r.estado]?.label ?? r.estado
-        lines.push(`• ${alumno}: ${r.contenido_dsl || '—'} — ${estado}`)
+      if (group.tarea) {
+        lines.push(`   📝 Tarea: ${group.tarea}`)
       }
     }
 
@@ -118,12 +159,48 @@ export function createSessionSummaryPanel() {
     return lines.join('\n')
   }
 
+  // ── Render helpers ──────────────────────────────────────────────────────
+
+  function _renderGroup(group, idx) {
+    const badgeInfo = ESTADO_BADGES[group.estado] || ESTADO_BADGES.EN_PROGRESO
+    const alumnosCount = group.alumnos.length
+    const isMixed = group.estado === 'MIXTO'
+
+    const alumnosHtml = group.alumnos
+      .map((a) => {
+        const chipCls = isMixed
+          ? `ssp-alumno-chip ${ESTADO_CHIPS[a.estado] || ''}`
+          : 'ssp-alumno-chip'
+        return `<span class="${chipCls}">${esc(a.nombre)}</span>`
+      })
+      .join('')
+
+    const obsHtml = group.observaciones
+      ? `<div class="ssp-group-obs">${esc(group.observaciones)}</div>`
+      : ''
+
+    const tareaHtml = group.tarea
+      ? `<div class="ssp-group-tarea">📝 Tarea: ${esc(group.tarea)}</div>`
+      : ''
+
+    return `
+      <div class="ssp-group">
+        <div class="ssp-group-header">
+          <span class="ssp-group-contenido">${esc(group.contenido)}</span>
+          <span class="ssp-group-count">${alumnosCount} alumno${alumnosCount !== 1 ? 's' : ''}</span>
+          <span class="ssp-estado-badge ${badgeInfo.cls}">${badgeInfo.label}</span>
+        </div>
+        <div class="ssp-group-alumnos">${alumnosHtml}</div>
+        ${obsHtml}
+        ${tareaHtml}
+      </div>
+    `
+  }
+
   function _render(claseNombre, fecha) {
     if (!_panelEl) return
 
-    const alertas  = _records.filter(r => r.alerta)
-    const progresos = _records.filter(r => !r.alerta)
-    const hasRecords = _records.length > 0
+    const hasGroups = _groups.length > 0
 
     _panelEl.innerHTML = `
       <div class="ssp-backdrop"></div>
@@ -136,22 +213,21 @@ export function createSessionSummaryPanel() {
           </div>
         </div>
 
-        ${!hasRecords ? `
+        ${
+          !hasGroups
+            ? `
           <div class="ssp-empty">
             No hay registros de progreso para esta sesión.<br>
             Usá el botón 🎯 <strong>Analizar</strong> en el editor para generarlos.
           </div>
-        ` : `
-          ${alertas.length ? `
-            <div class="ssp-section-title ssp-section-title--alerta">⚠️ Alertas (${alertas.length})</div>
-            ${alertas.map((r, i) => _renderRecord(r, i)).join('')}
-          ` : ''}
-
-          ${progresos.length ? `
-            <div class="ssp-section-title">✅ Progresos (${progresos.length})</div>
-            ${progresos.map((r, i) => _renderRecord(r, alertas.length + i)).join('')}
-          ` : ''}
-        `}
+        `
+            : `
+          <div class="ssp-section-title">✅ Grupos de progreso (${_groups.length})</div>
+          <div class="ssp-body">
+            ${_groups.map((g) => _renderGroup(g)).join('')}
+          </div>
+        `
+        }
 
         <div class="ssp-footer">
           <button class="pm-btn pm-btn-success ssp-btn-wa" id="ssp-whatsapp">
@@ -164,11 +240,6 @@ export function createSessionSummaryPanel() {
 
     _injectStyles()
 
-    // Wire estado cycle buttons
-    _panelEl.querySelectorAll('.ssp-estado-btn').forEach(btn => {
-      btn.onclick = () => _cycleEstado(parseInt(btn.dataset.idx), claseNombre, fecha)
-    })
-
     // Wire WhatsApp
     _panelEl.querySelector('#ssp-whatsapp').onclick = () => {
       const text = _buildWhatsAppText(claseNombre, fecha)
@@ -180,30 +251,7 @@ export function createSessionSummaryPanel() {
     _panelEl.querySelector('.ssp-backdrop').onclick = close
   }
 
-  async function _cycleEstado(idx, claseNombre, fecha) {
-    const rec = _records[idx]
-    if (!rec || !_supabase) return
-
-    const currentIdx = ESTADOS_CYCLE.indexOf(rec.estado)
-    const nextEstado = ESTADOS_CYCLE[(currentIdx + 1) % ESTADOS_CYCLE.length]
-
-    // Optimistic update
-    _records[idx] = { ...rec, estado: nextEstado }
-    _render(claseNombre, fecha)
-
-    // Persist to DB
-    const { error } = await _supabase
-      .from('progresos')
-      .update({ estado: nextEstado })
-      .eq('id', rec.id)
-
-    if (error) {
-      console.error('[SessionSummaryPanel] Error actualizando estado:', error)
-      // Rollback
-      _records[idx] = rec
-      _render(claseNombre, fecha)
-    }
-  }
+  // ── Public API ──────────────────────────────────────────────────────────
 
   async function open({ sesionId, claseNombre, fecha, supabase }) {
     _supabase = supabase
@@ -230,20 +278,47 @@ export function createSessionSummaryPanel() {
     _injectStyles()
     _panelEl.querySelector('.ssp-backdrop').onclick = close
 
-    // Load data
+    // Fetch progresos
     const { data, error } = await supabase
       .from('progresos')
-      .select('id, alumno_id, contenido_dsl, estado, observacion, tarea, alerta, alertaTipo, scope, alumnos')
+      .select('id, alumno_id, contenido_dsl, estado_cualitativo, observaciones, indicadores')
       .eq('sesion_clase_id', sesionId)
-      .order('alerta', { ascending: false })
+      .order('created_at', { ascending: true })
 
     if (error) {
       console.error('[SessionSummaryPanel] Error cargando progresos:', error)
-      _records = []
-    } else {
-      _records = data || []
+      _groups = []
+      _render(claseNombre, fecha)
+      return
     }
 
+    // Normalize records — extract tarea from indicadores jsonb
+    const raw = data || []
+    const records = raw.map((r) => ({
+      id: r.id,
+      alumno_id: r.alumno_id,
+      contenido_dsl: r.contenido_dsl,
+      estado_cualitativo: r.estado_cualitativo || 'EN_PROGRESO',
+      observaciones: r.observaciones,
+      tarea: r.indicadores?.tarea || null,
+    }))
+
+    // Fetch alumno names in batch
+    const alumnoIds = [...new Set(records.map((r) => r.alumno_id).filter(Boolean))]
+    if (alumnoIds.length > 0) {
+      const { data: alumnos } = await supabase
+        .from('alumnos')
+        .select('id, nombre_completo')
+        .in('id', alumnoIds)
+
+      const nombreMap = new Map((alumnos || []).map((a) => [a.id, a.nombre_completo]))
+      records.forEach((r) => {
+        r.alumno_nombre = nombreMap.get(r.alumno_id) || 'Alumno'
+      })
+    }
+
+    // Group records by normalized contenido_dsl
+    _groups = groupRecords(records)
     _render(claseNombre, fecha)
   }
 
@@ -252,15 +327,18 @@ export function createSessionSummaryPanel() {
       _panelEl.style.display = 'none'
       _panelEl.innerHTML = ''
     }
-    _records = []
+    _groups = []
     _supabase = null
   }
 
   return { open, close }
 }
 
+// ── Injected styles (grouped layout) ────────────────────────────────────────
+
 function _injectStyles() {
   if (document.getElementById('ssp-styles')) return
+
   const style = document.createElement('style')
   style.id = 'ssp-styles'
   style.textContent = `
@@ -311,7 +389,7 @@ function _injectStyles() {
       margin-top: 0.1rem;
     }
 
-    /* ── Section titles ────────────────────────────── */
+    /* ── Section title ─────────────────────────────── */
     .ssp-section-title {
       font-size: 0.78rem;
       font-weight: 700;
@@ -320,80 +398,91 @@ function _injectStyles() {
       letter-spacing: 0.05em;
       margin-top: 0.25rem;
     }
-    .ssp-section-title--alerta { color: #dc3545; }
 
-    /* ── Cards ─────────────────────────────────────── */
-    .ssp-card {
+    /* ── Body (group container) ────────────────────── */
+    .ssp-body {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    /* ── Group card ────────────────────────────────── */
+    .ssp-group {
       background: var(--pm-surface-2, #f8f9fa);
       border: 1px solid var(--pm-border, #dee2e6);
       border-radius: var(--pm-radius-sm, 8px);
-      padding: 0.6rem 0.75rem;
+      padding: 0.7rem 0.8rem;
       display: flex;
       flex-direction: column;
-      gap: 0.2rem;
-    }
-    .ssp-card--alerta {
-      border-color: #dc3545 !important;
-      background: #fff5f5 !important;
-    }
-    .dark .ssp-card--alerta,
-    [data-theme="dark"] .ssp-card--alerta {
-      background: #2a1215 !important;
+      gap: 0.4rem;
     }
 
-    /* ── Card internals ────────────────────────────── */
-    .ssp-card-header {
+    .ssp-group-header {
       display: flex;
-      justify-content: space-between;
       align-items: center;
       gap: 0.5rem;
+      flex-wrap: wrap;
     }
-    .ssp-alumno {
-      font-size: 0.82rem;
+    .ssp-group-contenido {
+      font-size: 0.85rem;
       font-weight: 600;
       color: var(--pm-text, #212529);
-      white-space: nowrap;
+      flex: 1;
+      min-width: 0;
       overflow: hidden;
       text-overflow: ellipsis;
+      white-space: nowrap;
     }
-    .ssp-alerta-badge {
+    .ssp-group-count {
       font-size: 0.72rem;
-      font-weight: 700;
-      color: #dc3545;
-      text-transform: uppercase;
-      letter-spacing: 0.03em;
+      color: var(--pm-text-muted, #6c757d);
+      white-space: nowrap;
     }
-    .ssp-contenido {
-      font-size: 0.85rem;
+
+    /* ── Estado badges ─────────────────────────────── */
+    .ssp-estado-badge {
+      font-size: 0.68rem;
+      font-weight: 700;
+      padding: 0.15rem 0.5rem;
+      border-radius: 99px;
+      color: #fff;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .ssp-estado-logrado      { background: #198754; }
+    .ssp-estado-en-progreso  { background: #0d6efd; }
+    .ssp-estado-iniciado     { background: #6c757d; }
+    .ssp-estado-mixto        { background: #fd7e14; }
+
+    /* ── Alumno chips ──────────────────────────────── */
+    .ssp-group-alumnos {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.3rem;
+    }
+    .ssp-alumno-chip {
+      font-size: 0.75rem;
+      padding: 0.15rem 0.5rem;
+      border-radius: 99px;
+      background: var(--pm-surface, #fff);
+      border: 1.5px solid var(--pm-border, #dee2e6);
       color: var(--pm-text, #212529);
     }
-    .ssp-contenido--alerta {
-      color: #dc3545;
-      font-weight: 600;
-    }
-    .ssp-obs {
+    .ssp-chip-logrado      { border-color: #198754; background: #19875412; }
+    .ssp-chip-en-progreso  { border-color: #0d6efd; background: #0d6efd12; }
+    .ssp-chip-iniciado     { border-color: #6c757d; background: #6c757d12; }
+
+    /* ── Group observaciones / tarea ───────────────── */
+    .ssp-group-obs {
       font-size: 0.78rem;
       color: var(--pm-text-muted, #6c757d);
       font-style: italic;
+      margin-top: 0.1rem;
     }
-    .ssp-tarea {
+    .ssp-group-tarea {
       font-size: 0.78rem;
       color: var(--pm-text-muted, #6c757d);
     }
-
-    /* ── Estado button ─────────────────────────────── */
-    .ssp-estado-btn {
-      font-size: 0.72rem;
-      font-weight: 600;
-      padding: 0.15rem 0.5rem;
-      border-radius: 99px;
-      border: 1.5px solid;
-      cursor: pointer;
-      white-space: nowrap;
-      background: transparent;
-      transition: opacity 0.15s;
-    }
-    .ssp-estado-btn:hover { opacity: 0.75; }
 
     /* ── Empty & loading ───────────────────────────── */
     .ssp-empty {
@@ -418,6 +507,27 @@ function _injectStyles() {
       margin-top: 0.25rem;
       padding-top: 0.75rem;
       border-top: 1px solid var(--pm-border, #dee2e6);
+    }
+
+    .ssp-footer .pm-btn {
+      width: auto;
+      padding: 0.5rem 1rem;
+      font-size: 0.85rem;
+    }
+    .pm-btn-success {
+      background: var(--pm-success, #25D366);
+      color: #fff;
+    }
+    .pm-btn-success:hover {
+      opacity: 0.9;
+    }
+    .pm-btn-outline {
+      background: transparent;
+      border: 1.5px solid var(--pm-border, #dee2e6);
+      color: var(--pm-text, #212529);
+    }
+    .pm-btn-outline:hover {
+      background: var(--pm-surface-2, #f8f9fa);
     }
     .ssp-btn-wa { flex: 1; }
     .ssp-btn-close { flex-shrink: 0; }

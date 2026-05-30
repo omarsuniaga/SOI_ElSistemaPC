@@ -33,5 +33,9 @@ export function getModoActual(maestro) {
  */
 export function setModo(modo) {
   localStorage.setItem(PM_MODO_KEY, modo)
-  window.location.reload()
+  if (modo === 'admin') {
+    window.location.href = '/admin'
+  } else {
+    window.location.reload()
+  }
 }

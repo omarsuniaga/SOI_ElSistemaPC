@@ -23,30 +23,30 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">45.16% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>14/31</span>
+                <span class='fraction'>0/31</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">33.33% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>2/6</span>
+                <span class='fraction'>0/6</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">57.14% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>4/7</span>
+                <span class='fraction'>0/7</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">43.33% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>13/30</span>
+                <span class='fraction'>0/30</span>
             </div>
         
             
@@ -156,16 +156,16 @@
 <a name='L91'></a><a href='#L91'>91</a>
 <a name='L92'></a><a href='#L92'>92</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">18x</span>
-<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -176,7 +176,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -184,8 +184,8 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">9x</span>
-<span class="cline-any cline-yes">9x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -199,8 +199,8 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">8x</span>
-<span class="cline-any cline-yes">8x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -208,8 +208,8 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -247,16 +247,16 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import { openDB } from 'idb'
 &nbsp;
-const DB_NAME    = 'portal-maestros'
-const DB_VERSION = 1
-const STORE_NAME = 'sync_queue'
+const DB_NAME    = <span class="cstat-no" title="statement not covered" >'portal-maestros'</span>
+const DB_VERSION = <span class="cstat-no" title="statement not covered" >1</span>
+const STORE_NAME = <span class="cstat-no" title="statement not covered" >'sync_queue'</span>
 &nbsp;
 /** @type {import('idb').IDBPDatabase | null} */
-let _db = null
+let _db = <span class="cstat-no" title="statement not covered" >null</span>
 &nbsp;
-async function getDB() {
-  if (_db) return _db
-  _db = await openDB(DB_NAME, DB_VERSION, {
+async function <span class="fstat-no" title="function not covered" >getDB(</span>) {
+<span class="cstat-no" title="statement not covered" >  if (_db) <span class="cstat-no" title="statement not covered" >return _db</span></span>
+<span class="cstat-no" title="statement not covered" >  _db = await openDB(DB_NAME, DB_VERSION, {</span>
 <span class="fstat-no" title="function not covered" >    upgrade(</span>db) {
 <span class="cstat-no" title="statement not covered" >      if (!db.objectStoreNames.contains(STORE_NAME)) {</span>
         const store = <span class="cstat-no" title="statement not covered" >db.createObjectStore(STORE_NAME, {</span>
@@ -267,16 +267,16 @@ async function getDB() {
       }
     },
   })
-  return _db
+<span class="cstat-no" title="statement not covered" >  return _db</span>
 }
 &nbsp;
 /**
  * Agrega una operación a la cola de sincronización.
  * @param {{ tabla: string, operacion: 'insert'|'update'|'delete', payload: object }} item
  */
-export async function enqueue({ tabla, operacion, payload }) {
-  const db = await getDB()
-  await db.add(STORE_NAME, {
+export async function <span class="fstat-no" title="function not covered" >enqueue(</span>{ tabla, operacion, payload }) {
+  const db = <span class="cstat-no" title="statement not covered" >await getDB()</span>
+<span class="cstat-no" title="statement not covered" >  await db.add(STORE_NAME, {</span>
     tabla,
     operacion,
     payload,
@@ -289,18 +289,18 @@ export async function enqueue({ tabla, operacion, payload }) {
  * Devuelve todos los items pendientes en la cola, en orden FIFO.
  * @returns {Promise&lt;Array&gt;}
  */
-export async function getQueue() {
-  const db = await getDB()
-  return db.getAll(STORE_NAME)
+export async function <span class="fstat-no" title="function not covered" >getQueue(</span>) {
+  const db = <span class="cstat-no" title="statement not covered" >await getDB()</span>
+<span class="cstat-no" title="statement not covered" >  return db.getAll(STORE_NAME)</span>
 }
 &nbsp;
 /**
  * Elimina un item de la cola por su id (tras sincronización exitosa).
  * @param {number} id
  */
-export async function dequeue(id) {
-  const db = await getDB()
-  await db.delete(STORE_NAME, id)
+export async function <span class="fstat-no" title="function not covered" >dequeue(</span>id) {
+  const db = <span class="cstat-no" title="statement not covered" >await getDB()</span>
+<span class="cstat-no" title="statement not covered" >  await db.delete(STORE_NAME, id)</span>
 }
 &nbsp;
 /**
@@ -343,7 +343,7 @@ export async function <span class="fstat-no" title="function not covered" >proce
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-05-11T03:20:00.789Z
+                at 2026-05-30T22:08:25.251Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

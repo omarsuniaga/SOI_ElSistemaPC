@@ -9,6 +9,7 @@
 
 import { supabase } from '../../lib/supabaseClient.js'
 import { parseDSL } from '../utils/dslParser.js'
+import { getAlumnosBySeccion } from '../data/seccionesOrquestales.js'
 
 // ---------------------------------------------------------------------------
 // Name resolution helpers
@@ -117,6 +118,82 @@ async function upsertProgressRows(rows) {
  * @param {Array}  opts.alumnos — [{id, nombre, nombreCorto}] all class students
  * @returns {Promise<{saved: Array, errors: string[]}>}
  */
+/**
+ * Saves progress records directly from structured evaluations (with alumno_id pre-resolved).
+ * Bypasses name resolution — ideal for the observation save flow where IDs are already known.
+ *
+ * @param {object} opts
+ * @param {string} opts.sesionId
+ * @param {string} opts.claseId
+ * @param {string} opts.maestroId
+ * @param {string} opts.fechaHoy  — 'YYYY-MM-DD'
+ * @param {string} opts.contenido — the topic/indicator name
+ * @param {Array<{ alumno_id: string, nota: number|null, observacion: string|null, tarea: string|null }>} opts.evaluaciones
+ * @returns {Promise<{saved: number, error: string|null}>}
+ */
+export async function saveProgressFromEvaluaciones({
+  sesionId,
+  claseId,
+  maestroId,
+  fechaHoy,
+  contenido,
+  evaluaciones,
+  alumnos, // optional — needed for seccion expansion
+}) {
+  if (!evaluaciones || evaluaciones.length === 0) return { saved: 0, error: null }
+  if (!claseId) return { saved: 0, error: null }
+
+  // Expand evaluaciones that reference a section instead of individial alumno_id
+  const evaluacionesExpandidas = (evaluaciones || []).flatMap((ev) => {
+    if (ev.seccion && !ev.alumno_id && alumnos && alumnos.length > 0) {
+      const expanded = getAlumnosBySeccion(ev.seccion, alumnos)
+      if (expanded.length === 0) return [] // seccion not found or no match → skip
+      return expanded.map((a) => ({ ...ev, alumno_id: a.id, seccion: undefined }))
+    }
+    return ev
+  })
+
+  const rows = evaluacionesExpandidas.map((ev) => {
+    let estado = 'EN_PROGRESO'
+    if (ev.nota !== null && ev.nota !== undefined) {
+      if (ev.nota >= 4) estado = 'LOGRADO'
+      else if (ev.nota >= 2) estado = 'EN_PROGRESO'
+      else estado = 'INICIADO'
+    }
+
+    return {
+      alumno_id: ev.alumno_id,
+      clase_id: claseId,
+      sesion_clase_id: sesionId,
+      maestro_id: maestroId,
+      fecha_evaluacion: fechaHoy,
+      evaluacion_tipo: 'observacion',
+      estado_cualitativo: estado,
+      calificacion: ev.nota ?? null,
+      contenido_dsl: contenido || '',
+      observaciones: ev.observacion || null,
+      indicadores: {
+        tipo: 'tecnica',
+        es_colectivo: false,
+        tarea: ev.tarea || null,
+      },
+      objetivo_id: null,
+    }
+  })
+
+  try {
+    const { data, error } = await upsertProgressRows(rows)
+    if (error) {
+      console.error('[Progress] saveProgressFromEvaluaciones error:', error)
+      return { saved: 0, error: error.message }
+    }
+    return { saved: (data || []).length, error: null }
+  } catch (err) {
+    console.error('[Progress] saveProgressFromEvaluaciones exception:', err)
+    return { saved: 0, error: err.message }
+  }
+}
+
 export async function saveProgressFromAI({
   sesionId,
   claseId,

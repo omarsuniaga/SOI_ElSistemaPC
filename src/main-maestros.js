@@ -187,6 +187,7 @@ function buildMaestroTabs(permisos, isAdmin = false) {
 const ADMIN_TABS = [
   { id: 'admin-alumnos', label: 'Alumnos', icon: 'bi-people-fill' },
   { id: 'admin-programas', label: 'Programas', icon: 'bi-grid-1x2' },
+  { id: 'admin-clases', label: 'Clases', icon: 'bi-mortarboard-fill' },
   { id: 'admin-maestros', label: 'Maestros', icon: 'bi-person-badge' },
   { id: 'admin-notificaciones', label: 'Actividad', icon: 'bi-bell-fill' },
   { id: 'admin-ausencias', label: 'Ausencias', icon: 'bi-calendar-x' },

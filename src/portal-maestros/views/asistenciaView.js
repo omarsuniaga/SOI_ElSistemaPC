@@ -2384,36 +2384,65 @@ function _renderVista(container, ctx) {
           }
 
         const reporteDiaBtn = overlay.querySelector('#btn-reporte-dia-overlay')
-        if (reporteDiaBtn)
+        if (reporteDiaBtn) {
           reporteDiaBtn.onclick = async () => {
+            const originalHtml = reporteDiaBtn.innerHTML
             reporteDiaBtn.disabled = true
             reporteDiaBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Generando…'
-            await generateDailyReport(sesionId)
-            reporteDiaBtn.disabled = false
-            reporteDiaBtn.innerHTML = '<i class="bi bi-file-earmark-pdf"></i> Reporte del día (PDF)'
+            try {
+              await generateDailyReport(sesionId)
+            } finally {
+              reporteDiaBtn.disabled = false
+              reporteDiaBtn.innerHTML = originalHtml
+            }
           }
+        }
 
         const resumenMesBtn = overlay.querySelector('#btn-resumen-mes-overlay')
-        if (resumenMesBtn)
-          resumenMesBtn.onclick = async () => {
+        if (resumenMesBtn) {
+          // Los reportes mensuales requieren un claseId — no aplican para sesiones emergentes
+          if (!claseId) {
             resumenMesBtn.disabled = true
-            resumenMesBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Generando…'
-            const now = new Date()
-            await generateMonthlyAttendance(claseId, now.getFullYear(), now.getMonth() + 1)
-            resumenMesBtn.disabled = false
-            resumenMesBtn.innerHTML = '<i class="bi bi-bar-chart-line"></i> Resumen del mes (PDF)'
+            resumenMesBtn.title = 'No disponible para actividades especiales'
+            resumenMesBtn.style.opacity = '0.5'
+          } else {
+            resumenMesBtn.onclick = async () => {
+              const originalHtml = resumenMesBtn.innerHTML
+              resumenMesBtn.disabled = true
+              resumenMesBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Generando…'
+              try {
+                const now = new Date()
+                await generateMonthlyAttendance(claseId, now.getFullYear(), now.getMonth() + 1)
+              } finally {
+                resumenMesBtn.disabled = false
+                resumenMesBtn.innerHTML = originalHtml
+              }
+            }
           }
+        }
 
         const informePedBtn = overlay.querySelector('#btn-informe-ped-overlay')
-        if (informePedBtn)
-          informePedBtn.onclick = async () => {
+        if (informePedBtn) {
+          // Los informes pedagógicos requieren un claseId — no aplican para sesiones emergentes
+          if (!claseId) {
             informePedBtn.disabled = true
-            informePedBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Generando…'
-            const now = new Date()
-            await generateMonthlyPedagogical(claseId, now.getFullYear(), now.getMonth() + 1)
-            informePedBtn.disabled = false
-            informePedBtn.innerHTML = '<i class="bi bi-mortarboard"></i> Informe pedagógico (PDF)'
+            informePedBtn.title = 'No disponible para actividades especiales'
+            informePedBtn.style.opacity = '0.5'
+          } else {
+            informePedBtn.onclick = async () => {
+              const originalHtml = informePedBtn.innerHTML
+              informePedBtn.disabled = true
+              informePedBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Generando…'
+              try {
+                const now = new Date()
+                await generateMonthlyPedagogical(claseId, now.getFullYear(), now.getMonth() + 1)
+              } finally {
+                informePedBtn.disabled = false
+                informePedBtn.innerHTML = originalHtml
+              }
+            }
           }
+        }
       } catch (err) {
         console.error('Error al guardar sesión:', err)
         btn.textContent = err.message || 'Error al guardar'

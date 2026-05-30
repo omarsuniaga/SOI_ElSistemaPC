@@ -109,13 +109,25 @@ export async function generateDailyReport(sesionId) {
 
     if (sesionErr) throw sesionErr
 
-    // Fetch class details
-    const { data: claseData, error: claseErr } = await supabase
-      .from('clases')
-      .select('id, nombre, instrumento, maestro_id')
-      .eq('id', sesion.clase_id)
-      .single()
-    if (claseErr) throw claseErr
+    // Fetch class details — for emergent sessions (clase_id = null) use session data directly
+    let claseData
+    if (sesion.clase_id) {
+      const { data: cd, error: claseErr } = await supabase
+        .from('clases')
+        .select('id, nombre, instrumento, maestro_id')
+        .eq('id', sesion.clase_id)
+        .single()
+      if (claseErr) throw claseErr
+      claseData = cd
+    } else {
+      // Sesión emergente: construir objeto clase sintético desde la sesión
+      claseData = {
+        id: sesionId,
+        nombre: sesion.actividad || 'Actividad Especial',
+        instrumento: sesion.motivo || '',
+        maestro_id: sesion.maestro_id,
+      }
+    }
 
     // Fetch maestro details
     let maestroNombre = 'Docente'
@@ -128,26 +140,43 @@ export async function generateDailyReport(sesionId) {
       if (maestroData) maestroNombre = maestroData.nombre_completo
     }
 
-    // Count sessions up to this date
-    const { count } = await supabase
-      .from('sesiones_clase')
-      .select('id', { count: 'exact', head: true })
-      .eq('clase_id', claseData.id)
-      .lte('fecha', sesion.fecha)
-    const numeroSesion = count || 1
+    // Count sessions up to this date (solo para clases regulares)
+    let numeroSesion = 1
+    if (sesion.clase_id) {
+      const { count } = await supabase
+        .from('sesiones_clase')
+        .select('id', { count: 'exact', head: true })
+        .eq('clase_id', sesion.clase_id)
+        .lte('fecha', sesion.fecha)
+      numeroSesion = count || 1
+    }
 
-    // Fetch alumnos of the class (via alumnos_clases join table)
-    const { data: alumnosClases, error: alumnosErr } = await supabase
-      .from('alumnos_clases')
-      .select('alumnos(id, nombre_completo)')
-      .eq('clase_id', claseData.id)
-      .eq('activo', true)
-      .order('alumnos(nombre_completo)')
-    if (alumnosErr) throw alumnosErr
-    const alumnos = (alumnosClases || []).map((r) => r.alumnos).filter(Boolean)
+    // Fetch alumnos: para clases regulares desde alumnos_clases;
+    // para emergentes desde el JSONB asistencia de la sesión
+    let alumnos = []
+    if (sesion.clase_id) {
+      const { data: alumnosClases, error: alumnosErr } = await supabase
+        .from('alumnos_clases')
+        .select('alumnos(id, nombre_completo)')
+        .eq('clase_id', sesion.clase_id)
+        .eq('activo', true)
+        .order('alumnos(nombre_completo)')
+      if (alumnosErr) throw alumnosErr
+      alumnos = (alumnosClases || []).map((r) => r.alumnos).filter(Boolean)
+    } else {
+      // Emergente: cargar alumnos desde la asistencia JSONB
+      const alumnoIds = (sesion.asistencia || []).map((a) => a.alumno_id).filter(Boolean)
+      if (alumnoIds.length > 0) {
+        const { data: alumnosData } = await supabase
+          .from('alumnos')
+          .select('id, nombre_completo')
+          .in('id', alumnoIds)
+        alumnos = alumnosData || []
+      }
+    }
 
     if (!alumnos || alumnos.length === 0) {
-      AppToast.error('No hay alumnos registrados para esta clase.')
+      AppToast.error('No hay alumnos registrados para esta actividad.')
       return
     }
 
@@ -252,7 +281,7 @@ export async function generateDailyReport(sesionId) {
     const opened = openReport(html)
     if (!opened) {
       AppToast.warn(
-        'El navegador bloqueó la ventana emergente. Permite las ventanas emergentes para este sitio e intenta de nuevo.',
+        'No se pudo abrir el diálogo de impresión. Intentá de nuevo o verificá que el navegador no esté bloqueando el contenido.',
       )
     }
   } catch (err) {
@@ -539,7 +568,7 @@ export async function generateMonthlyAttendance(claseId, year, month) {
     const opened = openReport(html)
     if (!opened) {
       AppToast.warn(
-        'El navegador bloqueó la ventana emergente. Permite las ventanas emergentes e intenta de nuevo.',
+        'No se pudo abrir el diálogo de impresión. Intentá de nuevo o verificá que el navegador no esté bloqueando el contenido.',
       )
     }
   } catch (err) {
@@ -1076,7 +1105,7 @@ export async function generateMonthlyPedagogical(claseId, year, month) {
     const opened = openReport(html)
     if (!opened) {
       AppToast.warn(
-        'El navegador bloqueó la ventana emergente. Permite las ventanas emergentes e intenta de nuevo.',
+        'No se pudo abrir el diálogo de impresión. Intentá de nuevo o verificá que el navegador no esté bloqueando el contenido.',
       )
     }
   } catch (err) {

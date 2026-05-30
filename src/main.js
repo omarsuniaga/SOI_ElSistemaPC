@@ -262,10 +262,10 @@ const NAV_GROUPS = [
     label: 'Personas',
     icon: 'bi-people',
     items: [
-      { id: 'alumnos',              label: 'Alumnos',            icon: 'bi-people' },
-      { id: 'alumnos-inscribir',   label: 'Inscribir Alumno',  icon: 'bi-person-plus' },
-      { id: 'alumnos-reporte-mes', label: 'Inscritos por Mes', icon: 'bi-file-earmark-bar-graph' },
-      { id: 'maestros',             label: 'Maestros',           icon: 'bi-person-check' },
+      { id: 'alumnos',  label: 'Alumnos',  icon: 'bi-people' },
+      { id: 'maestros', label: 'Maestros', icon: 'bi-person-check' },
+      { id: 'postulados',            label: 'Postulados',         icon: 'bi-person-plus-fill' },
+      { id: 'postulados-calendario', label: 'Calendario Citas',   icon: 'bi-calendar-event' },
     ],
   },
   {

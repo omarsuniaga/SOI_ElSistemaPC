@@ -80,7 +80,7 @@ export function renderLoginView(container, { onSuccess }) {
         <p class="pm-error-msg" id="pm-login-error" aria-live="polite"></p>
 
         <p class="pm-login-register-link">
-          <a href="#" data-route="register" class="pm-link">¿No tenés cuenta? Registrate como maestro</a>
+          <a href="#" data-route="register" class="pm-link">¿No tienes cuenta? Regístrate como maestro</a>
         </p>
       </div>
     </div>
@@ -174,6 +174,12 @@ export function renderLoginView(container, { onSuccess }) {
         onSuccess(intended)
       }
     } else {
+      if (result.pendingApproval) {
+        if (window.router) {
+          window.router.navigate('pending-approval')
+          return
+        }
+      }
       errorMsg.textContent = result.error
       setLoading(false)
       localStorage.removeItem('pm-session-expires')

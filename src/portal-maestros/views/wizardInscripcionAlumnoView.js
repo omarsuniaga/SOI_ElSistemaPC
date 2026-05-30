@@ -2,7 +2,6 @@
  * wizardInscripcionAlumnoView — Wizard de inscripción de alumnos, 7 pasos.
  */
 
-import { getMaestroLocal } from '../auth/maestroAuth.js'
 import { mountWizard } from '../components/wizard/WizardShell.js'
 import { crearAlumno } from '../../modules/alumnos/api/alumnosApi.js'
 
@@ -22,17 +21,6 @@ export const PASOS_OBLIGATORIOS = 5
  * @param {HTMLElement} container
  */
 export async function renderWizardInscripcionAlumnoView(container) {
-  const maestro = getMaestroLocal()
-
-  if (!maestro) {
-    container.innerHTML = `
-      <div class="pm-settings-empty">
-        <i class="bi bi-shield-lock"></i>
-        <p>No hay sesión activa. Inicia sesión para continuar.</p>
-      </div>`
-    return
-  }
-
   async function handleSubmit(draft) {
     const alumno = await crearAlumno(draft)
     return alumno

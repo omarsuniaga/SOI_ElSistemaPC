@@ -56,7 +56,7 @@ export class PlanificacionHook {
     this.notifyListeners()
 
     try {
-      this.planificaciones = await obtenerPlanificaciones()
+      this.planificaciones = await obtenerPlanificaciones(this.maestroActualId)
       this.cargando = false
       this.notifyListeners()
       return this.planificaciones

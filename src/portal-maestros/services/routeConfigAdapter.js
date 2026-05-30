@@ -6,12 +6,17 @@ import { supabase } from '../../lib/supabaseClient.js';
  */
 export const RouteConfigAdapter = {
   // --- 1. CLASES ---
-  async getClasses() {
-    const { data, error } = await supabase
+  async getClasses(maestroId = null) {
+    let query = supabase
       .from('plan_clases')
       .select('*')
-      .eq('activo', true)
-      .order('nombre');
+      .eq('activo', true);
+
+    if (maestroId) {
+      query = query.eq('maestro_id', maestroId);
+    }
+
+    const { data, error } = await query.order('nombre');
     
     if (error) {
       console.error('Error loading classes:', error);
@@ -23,16 +28,21 @@ export const RouteConfigAdapter = {
   /**
    * Resuelve inteligentemente qué planificación asignar a una clase real.
    * @param {Object} clase - Objeto de la tabla 'clases' (nombre, instrumento, etc)
+   * @param {String} [maestroId] - Opcional uuid del maestro
    */
-  async resolveSmartPlan(clase) {
-    const allPlanes = await this.getClasses();
+  async resolveSmartPlan(clase, maestroId = null) {
+    const allPlanes = await this.getClasses(maestroId || clase.maestro_id);
     if (!allPlanes.length) return null;
+
+    // 0. Coincidencia exacta por clase_id
+    let match = allPlanes.find(p => p.clase_id === clase.id);
+    if (match) return match;
 
     const nombreClase = (clase.nombre || '').toLowerCase();
     const instrumento = (clase.instrumento || '').toLowerCase();
 
     // 1. Coincidencia exacta por nombre
-    let match = allPlanes.find(p => (p.nombre || '').toLowerCase() === nombreClase);
+    match = allPlanes.find(p => (p.nombre || '').toLowerCase() === nombreClase);
     if (match) return match;
 
     // 2. Coincidencia por instrumento
@@ -50,10 +60,17 @@ export const RouteConfigAdapter = {
     return match || allPlanes[0];
   },
 
-  async addClass(name) {
+  async addClass(name, maestroId = null, claseId = null) {
+    const insertData = { nombre: name };
+    if (maestroId) {
+      insertData.maestro_id = maestroId;
+    }
+    if (claseId) {
+      insertData.clase_id = claseId;
+    }
     const { data, error } = await supabase
       .from('plan_clases')
-      .insert([{ nombre: name }])
+      .insert([insertData])
       .select()
       .single();
     
@@ -271,11 +288,11 @@ export const RouteConfigAdapter = {
   },
 
   // --- MÉTODOS DE COMPATIBILIDAD ---
-  async getRouteHierarchy(classId) {
+  async getRouteHierarchy(classId, maestroId = null) {
     // Si no hay ID, intentamos cargar la primera clase activa
     let targetClassId = classId;
     if (!targetClassId) {
-      const classes = await this.getClasses();
+      const classes = await this.getClasses(maestroId);
       if (classes.length > 0) targetClassId = classes[0].id;
       else return null;
     }

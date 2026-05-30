@@ -117,7 +117,7 @@ export function renderRegisterView(container, { onSuccess }) {
           <p class="pm-error-msg" id="pm-reg-error" aria-live="polite"></p>
 
           <p class="pm-login-register-link">
-            <a href="#" data-route="login" class="pm-link">¿Ya tenés cuenta? Iniciar sesión</a>
+            <a href="#" data-route="login" class="pm-link">¿Ya tienes cuenta? Iniciar sesión</a>
           </p>
         </div>
       </div>
@@ -214,10 +214,22 @@ export function renderRegisterView(container, { onSuccess }) {
 
     if (error) {
       errorMsg.textContent = error.message === 'User already registered'
-        ? 'Este correo ya está registrado'
+        ? 'Este correo ya está registrado. Si ya sos maestro, intentá iniciar sesión.'
         : error.message || 'Error al registrarse. Intentá de nuevo.'
       setLoading(false)
       return
+    }
+
+    // Garantizar el row en profiles aunque el trigger DB falle
+    if (data?.user) {
+      await supabase.from('profiles').upsert({
+        id: data.user.id,
+        email,
+        nombre_completo: nombre,
+        resena: `Instrumento: ${instrumento}${resenaInput.value.trim() ? ' | ' + resenaInput.value.trim() : ''}`,
+        rol: 'maestro',
+        estado: 'pendiente',
+      }, { onConflict: 'id', ignoreDuplicates: false })
     }
 
     setLoading(false)

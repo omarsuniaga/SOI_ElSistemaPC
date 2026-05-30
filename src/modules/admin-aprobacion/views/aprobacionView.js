@@ -16,24 +16,14 @@ export async function renderAprobacionView(container) {
       <div class="pm-loading">
         <div class="pm-spinner"></div>
         <span>Cargando solicitudes...</span>
-      </div>
+      </div>  
     </div>
   `
 
   try {
     const { data: pendientes, error } = await supabase
       .from('profiles')
-      .select(
-        `
-        id,
-        email,
-        nombre_completo,
-        created_at,
-        maestros!user_id (
-          especialidad
-        )
-      `,
-      )
+      .select('id, email, nombre_completo, created_at')
       .eq('rol', 'maestro')
       .eq('estado', 'pendiente')
       .order('created_at', { ascending: true })
@@ -41,7 +31,7 @@ export async function renderAprobacionView(container) {
     if (error) {
       throw error
     }
-
+console.log('Estamos aqui:', pendientes)
     const contentEl = container.querySelector('#aprobacion-content')
 
     if (!pendientes || pendientes.length === 0) {
@@ -64,7 +54,7 @@ export async function renderAprobacionView(container) {
             <tr>
               <th>Nombre completo</th>
               <th>Email</th>
-              <th>Instrumento</th>
+              <th>Descripción</th>
               <th>Fecha de registro</th>
               <th>Acciones</th>
             </tr>
@@ -72,12 +62,12 @@ export async function renderAprobacionView(container) {
           <tbody>
             ${pendientes
               .map((p) => {
-                const instrumento = p.maestros?.length > 0 ? p.maestros[0].especialidad : null
+                const descripcion = null
                 return `
               <tr data-profile-id="${p.id}">
                 <td>${escHTML(p.nombre_completo || '—')}</td>
                 <td>${escHTML(p.email)}</td>
-                <td>${escHTML(instrumento || '—')}</td>
+                <td>${escHTML(p.instrumento || '—')}</td>
                 <td>${formatDate(p.created_at)}</td>
                 <td class="aprobacion-actions">
                   <button class="btn btn-success btn-sm btn-aprobar" data-id="${p.id}">
@@ -111,11 +101,13 @@ export async function renderAprobacionView(container) {
     contentEl.innerHTML = `
       <div class="pm-error" style="text-align: center; padding: 2rem;">
         <p><i class="bi bi-exclamation-triangle"></i> Error al cargar solicitudes: ${err.message}</p>
-        <button class="btn btn-outline-light btn-sm" onclick="this.closest('[id]').__reload?.()">
+        <button class="btn btn-outline-light btn-sm" id="btn-retry-aprobacion">
           Intentar de nuevo
         </button>
       </div>
     `
+    contentEl.querySelector('#btn-retry-aprobacion')
+      ?.addEventListener('click', () => renderAprobacionView(container))
     console.error('[AprobacionView] Error:', err.message)
   }
 }
@@ -142,6 +134,11 @@ function openApproveModal(profileId, contentEl) {
   })
 }
 
+/**
+ * Aprueba usando la RPC SECURITY DEFINER (atómico: actualiza profiles,
+ * confirma email, sincroniza metadata.rol, limpia/crea maestros, permisos).
+ * Rechaza con update directo a profiles (no necesita lógica extra).
+ */
 async function handleAction(profileId, nuevoEstado, rol, contentEl) {
   const row = contentEl?.querySelector(`tr[data-profile-id="${profileId}"]`)
   if (!row && contentEl) return
@@ -150,42 +147,85 @@ async function handleAction(profileId, nuevoEstado, rol, contentEl) {
   row?.querySelectorAll('button').forEach((b) => (b.disabled = true))
 
   try {
-    const updateData = { estado: nuevoEstado }
-    if (rol) updateData.rol = rol
-
-    const { error } = await supabase.from('profiles').update(updateData).eq('id', profileId)
-
-    if (error) throw error
-
-    // After approving, grant basic permissions so Realtime fires on teacher's browser
     if (nuevoEstado === 'activo') {
-      try {
-        const { data: maestroRow } = await supabase
-          .from('maestros')
-          .select('id')
-          .eq('user_id', profileId)
+      // ── APPROVE: intentar RPC primero, fallback a operaciones directas ──
+      let rpcOk = false
+      const { data: rpcData, error: rpcError } = await supabase.rpc('approve_maestro_profile', {
+        p_profile_id: profileId,
+        p_new_rol: rol || 'maestro',
+        p_new_estado: 'activo',
+      })
+
+      if (!rpcError && rpcData?.success) {
+        rpcOk = true
+      }
+
+      // Fallback directo si el RPC falla
+      if (!rpcOk) {
+        console.warn('[AprobacionView] RPC falló, usando operaciones directas:', rpcError?.message || rpcData?.error)
+
+        const { error: upErr, count } = await supabase
+          .from('profiles')
+          .update({ rol: rol || 'maestro', estado: 'activo' })
+          .eq('id', profileId)
+          .select()
+
+        if (upErr) throw new Error(`No se pudo actualizar el perfil: ${upErr.message}`)
+
+        // Verificar que el update realmente afectó la fila
+        const { data: check } = await supabase
+          .from('profiles')
+          .select('estado, rol')
+          .eq('id', profileId)
           .maybeSingle()
 
-        if (maestroRow?.id) {
-          await supabase.from('permisos_maestros').upsert(
-            {
-              maestro_id: maestroRow.id,
-              puede_registrar_alumnos: true,
-              puede_inscribir_clases: true,
-              permisos: [
-                'alumnos:create',
-                'clases:enroll',
-                'registrar_alumnos',
-                'inscribir_clases',
-              ],
-            },
-            { onConflict: 'maestro_id' },
+        if (check?.estado !== 'activo') {
+          // RLS está bloqueando — necesitamos re-loguear como admin para que el RPC funcione
+          throw new Error(
+            'No se pudo activar el perfil. Por favor cerrá sesión e iniciá sesión nuevamente como admin, luego intentá aprobar de nuevo.'
           )
         }
-      } catch (permErr) {
-        // Non-fatal: teacher can still request permissions manually
-        console.warn('[AprobacionView] Could not grant default permissions:', permErr.message)
       }
+
+      // Asegurar row en maestros si el rol es maestro
+      if (rol === 'maestro' || !rol) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('id, email, nombre_completo')
+          .eq('id', profileId)
+          .maybeSingle()
+
+        if (profile) {
+          const { data: existing } = await supabase
+            .from('maestros')
+            .select('id, user_id')
+            .or(`user_id.eq.${profile.id},correo.eq.${profile.email}`)
+            .maybeSingle()
+
+          if (!existing) {
+            await supabase.from('maestros').insert({
+              user_id: profile.id,
+              nombre_completo: profile.nombre_completo,
+              correo: profile.email,
+              instrumento: '',
+              activo: true,
+            })
+          } else if (!existing.user_id) {
+            await supabase
+              .from('maestros')
+              .update({ user_id: profile.id })
+              .eq('id', existing.id)
+          }
+        }
+      }
+    } else {
+      // ── REJECT: update directo (sin lógica adicional) ──────────────
+      const { error } = await supabase
+        .from('profiles')
+        .update({ estado: nuevoEstado })
+        .eq('id', profileId)
+
+      if (error) throw error
     }
 
     // Remove the row with animation

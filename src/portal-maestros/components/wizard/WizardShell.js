@@ -259,7 +259,7 @@ export function mountWizard(container, stepModules, onSubmit, pasosObligatorios)
       nextBtn.addEventListener('click', () => {
         const step = getCurrentStep()
         const stepData = step.getState(container)
-        state = avanzar(state, stepData, step.validate)
+        state = avanzar(state, stepData)
         guardarBorrador(state.draft)
         render()
       })
@@ -293,6 +293,10 @@ export function mountWizard(container, stepModules, onSubmit, pasosObligatorios)
     stepNavBtns.forEach((btn) => {
       btn.addEventListener('click', () => {
         const n = parseInt(btn.getAttribute('data-step'), 10)
+        const step = getCurrentStep()
+        const stepData = step.getState(container)
+        state = { ...state, draft: { ...state.draft, ...stepData } }
+        guardarBorrador(state.draft)
         state = irAPaso(state, n)
         render()
       })

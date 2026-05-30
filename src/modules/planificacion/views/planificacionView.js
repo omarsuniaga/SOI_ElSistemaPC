@@ -344,12 +344,12 @@ function _renderEmpty() {
     <div class="text-center py-5 px-3">
       <i class="bi bi-journal-x text-muted d-block mb-3" style="font-size: 3rem; opacity: .4"></i>
       <h5 class="text-muted fw-normal mb-1">
-        ${isAdmin ? 'No hay planificaciones registradas aún' : 'Todavía no tenés planes de clase'}
+        ${isAdmin ? 'No hay planificaciones registradas aún' : 'Todavía no tienes planes de clase'}
       </h5>
       <p class="text-muted small mb-0">
         ${isAdmin
           ? 'Una vez que los maestros creen sus planes, aparecerán aquí para revisión.'
-          : 'Creá tu primer plan de clase usando el botón de arriba o usá una plantilla.'}
+          : 'Crea tu primer plan de clase usando el botón de arriba o usa una plantilla.'}
       </p>
     </div>
   `

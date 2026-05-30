@@ -55,7 +55,7 @@ export async function renderRutaGameificadaView(container, { onTopicSelected } =
     _state.clases = await getMisClases(true)
 
     if (!_state.clases?.length) {
-      container.innerHTML = '<div class="pm-ruta-gamificada"><p class="pm-empty">No tenés clases asignadas.</p></div>'
+      container.innerHTML = '<div class="pm-ruta-gamificada"><p class="pm-empty">No tienes clases asignadas.</p></div>'
       return
     }
 

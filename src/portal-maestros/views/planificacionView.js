@@ -16,20 +16,20 @@ export async function renderPlanificacionView(container) {
 
   try {
     // 1. Obtener clases de PLANIFICACIÓN (plan_clases)
-    const planningClasses = await RouteConfigAdapter.getClasses()
+    const planningClasses = await RouteConfigAdapter.getClasses(maestro.id)
 
     // 2. Obtener clases de SESIÓN (para documentos y piloto automático)
     const { data: clases } = await supabase
       .from('clases')
       .select('id, nombre, instrumento')
-      .eq('maestro_id', maestro.id)
+      .or(`maestro_principal_id.eq.${maestro.id},maestro_suplente_id.eq.${maestro.id},maestro_id.eq.${maestro.id}`)
       .order('nombre')
 
     // 3. Función para renderizar la jerarquía HTML
     const getHierarchyHtml = async (classId = null) => {
       if (!classId) return '<p class="pm-empty">Seleccioná una clase para ver su ruta académica.</p>'
 
-      const levels = await RouteConfigAdapter.getRouteHierarchy(classId)
+      const levels = await RouteConfigAdapter.getRouteHierarchy(classId, maestro.id)
 
       if (!levels || levels.length === 0) {
         return '<p class="pm-empty">Esta clase aún no tiene una ruta configurada.</p>'
@@ -277,7 +277,7 @@ export async function renderPlanificacionView(container) {
           })
 
           importStatusText.textContent = 'Estructurando con IA...'
-          const currentPlanningClasses = await RouteConfigAdapter.getClasses()
+          const currentPlanningClasses = await RouteConfigAdapter.getClasses(maestro.id)
           const previewHtml = generateImportPreview(structure, currentPlanningClasses || [])
 
           AppModal.open({
@@ -295,7 +295,7 @@ export async function renderPlanificacionView(container) {
                   const className = modalBody.querySelector('#preview-class-name').value.trim()
                   if (!className) { alert('Asigná un nombre.'); return false; }
                   importStatusText.textContent = 'Creando clase...'
-                  const newClass = await RouteConfigAdapter.addClass(className)
+                  const newClass = await RouteConfigAdapter.addClass(className, maestro.id)
                   finalClassId = newClass.id
                 }
 

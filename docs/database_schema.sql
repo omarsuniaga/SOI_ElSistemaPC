@@ -666,7 +666,11 @@ CREATE TABLE public.plan_clases (
   nombre text NOT NULL,
   descripcion text,
   activo boolean DEFAULT true,
-  CONSTRAINT plan_clases_pkey PRIMARY KEY (id)
+  maestro_id uuid,
+  clase_id uuid,
+  CONSTRAINT plan_clases_pkey PRIMARY KEY (id),
+  CONSTRAINT plan_clases_maestro_id_fkey FOREIGN KEY (maestro_id) REFERENCES public.maestros(id) ON DELETE CASCADE,
+  CONSTRAINT plan_clases_clase_id_fkey FOREIGN KEY (clase_id) REFERENCES public.clases(id) ON DELETE SET NULL
 );
 CREATE TABLE public.plan_indicadores (
   id uuid NOT NULL DEFAULT uuid_generate_v4(),

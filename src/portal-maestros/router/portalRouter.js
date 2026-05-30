@@ -36,11 +36,20 @@ export function createPortalRouter() {
   let _pendingParams = null
 
   function navigate(route, params = {}) {
+    // Guard directo: no autenticado intentando ruta privada → login
     if (_guardEnabled && _authCheck && !_publicRoutes.includes(route)) {
       if (!_authCheck()) {
         localStorage.setItem('intended-route', route)
         history.pushState({ route: 'login' }, '', '#/login')
         _dispatch('login')
+        return
+      }
+    }
+    // Guard inverso: ya autenticado intentando ruta pública (login) → default
+    if (_guardEnabled && _authCheck && _publicRoutes.includes(route)) {
+      if (_authCheck()) {
+        history.replaceState({ route: DEFAULT_ROUTE }, '', `#/${DEFAULT_ROUTE}`)
+        _dispatch(DEFAULT_ROUTE)
         return
       }
     }
@@ -207,10 +216,8 @@ export function createPortalRouter() {
     })
 
     const initialRoute = currentRoute()
-    if (initialRoute !== DEFAULT_ROUTE) {
-      history.replaceState({ route: initialRoute }, '', `#/${initialRoute}`)
-    }
-    _dispatch(initialRoute)
+    // navigate() en lugar de _dispatch() para que pasen los guards de auth
+    navigate(initialRoute)
   }
 
   return { currentRoute, setAuthGuard, navigate, replace, on, onNotFound, start, _dispatch }

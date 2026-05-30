@@ -1,8 +1,6 @@
-import postulantesData from '../../../assets/data/mocks/postulantes.json'
+import { data } from './postuladosMock.js'
 
 const delay = (ms = 300) => new Promise((resolve) => setTimeout(resolve, ms))
-
-let data = [...postulantesData]
 
 function normalize(str) {
   return (str ?? '')
@@ -68,11 +66,16 @@ export async function backfillDesdePostulantes(dryRun = false) {
 
   if (!dryRun) {
     // Simulate marking postulantes as inscritos
-    data = data.map((p) =>
-      matches.some((m) => m.postulante_id === p.id)
-        ? { ...p, estado: 'inscrito', alumno_id: 'mock-' + p.id }
-        : p,
-    )
+    matches.forEach((m) => {
+      const idx = data.findIndex((p) => p.id === m.postulante_id)
+      if (idx !== -1) {
+        data[idx] = { 
+          ...data[idx], 
+          estado: 'inscrito', 
+          alumno_id: m.alumno_id 
+        }
+      }
+    })
   }
 
   return {
@@ -81,3 +84,7 @@ export async function backfillDesdePostulantes(dryRun = false) {
     dry_run: dryRun,
   }
 }
+
+export * from './postuladosMock.js'
+
+

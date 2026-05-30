@@ -26,6 +26,16 @@ function badgeHtml(r) {
 
 export function mountPreloadSearch(container) {
   return new Promise((resolve) => {
+    // Si el draft ya tiene _postulante_id (viene desde la vista de postulados),
+    // auto-saltar la búsqueda — los datos ya están cargados en el draft.
+    const existingDraft = (() => {
+      try { return JSON.parse(localStorage.getItem('wizard-inscripcion-draft') || 'null') } catch { return null }
+    })()
+    if (existingDraft?._postulante_id) {
+      resolve(null) // null = usar el draft ya guardado, no sobreescribir
+      return
+    }
+
     let filtro = 'pendiente'
 
     container.innerHTML = `
@@ -369,7 +379,7 @@ export function mountPreloadSearch(container) {
       } catch (err) {
         const msg =
           err.status === 401
-            ? 'No tenés permisos de administrador para sincronizar.'
+            ? 'No tienes permisos de administrador para sincronizar.'
             : err.message || 'Error al sincronizar'
 
         syncResult.innerHTML = `

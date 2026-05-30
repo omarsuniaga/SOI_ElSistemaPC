@@ -1187,7 +1187,7 @@ function _renderVista(container, ctx) {
   if (planificacionCard) {
     ;(async () => {
       try {
-        const planningClasses = await RouteConfigAdapter.getClasses()
+        const planningClasses = await RouteConfigAdapter.getClasses(maestro ? maestro.id : null)
 
         // 1. "Mis Rutas" son los planes que coinciden con el instrumento de la clase o guardados
         const savedPlanId = localStorage.getItem(`pm_default_plan_${claseId}`)

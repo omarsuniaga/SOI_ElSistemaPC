@@ -5,11 +5,14 @@ import { Planificacion } from '../models/planificacion.model.js'
  * PlanificacionApi - Adaptador para la persistencia de planes curriculares.
  */
 
-export async function obtenerPlanificaciones() {
-  const { data, error } = await supabase
-    .from('planificaciones')
-    .select('*')
-    .order('created_at', { ascending: false })
+export async function obtenerPlanificaciones(maestroId = null) {
+  let query = supabase.from('planificaciones').select('*')
+  
+  if (maestroId) {
+    query = query.eq('maestro_id', maestroId)
+  }
+
+  const { data, error } = await query.order('created_at', { ascending: false })
 
   if (error) throw error
   return (data || []).map(p => new Planificacion(p))
@@ -29,15 +32,18 @@ export async function obtenerPlanificacion(id) {
 /**
  * Obtiene planificaciones enriquecidas con datos de clase y maestro
  */
-export async function obtenerPlanificacionesConDetalles() {
-  const { data, error } = await supabase
-    .from('planificaciones')
-    .select(`
-      *,
-      clase:clases (nombre),
-      maestro:maestros (nombre_completo)
-    `)
-    .order('created_at', { ascending: false })
+export async function obtenerPlanificacionesConDetalles(maestroId = null) {
+  let query = supabase.from('planificaciones').select(`
+    *,
+    clase:clases (nombre),
+    maestro:maestros (nombre_completo)
+  `)
+  
+  if (maestroId) {
+    query = query.eq('maestro_id', maestroId)
+  }
+
+  const { data, error } = await query.order('created_at', { ascending: false })
 
   if (error) {
     console.error('Error cargando planificaciones:', error.message)

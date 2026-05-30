@@ -22,7 +22,7 @@ export function crearWizard(totalSteps) {
   return {
     currentStep: 1,
     totalSteps,
-    maxReachedStep: 1,
+    maxReachedStep: totalSteps,
     draft: {},
     errors: {},
     submitted: false,
@@ -44,10 +44,16 @@ export function avanzar(state, stepData, validateFn) {
   if (state.currentStep >= state.totalSteps) return state
 
   const mergedDraft = { ...state.draft, ...stepData }
-  const validation = validateFn(mergedDraft)
 
-  if (!validation.valid) {
-    return { ...state, draft: mergedDraft, errors: validation.errors }
+  if (validateFn) {
+    const { valid, errors } = validateFn(mergedDraft)
+    if (!valid) {
+      return {
+        ...state,
+        draft: mergedDraft,
+        errors: errors || {},
+      }
+    }
   }
 
   const nextStep = state.currentStep + 1

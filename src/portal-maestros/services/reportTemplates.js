@@ -386,30 +386,59 @@ export function contentChips(items) {
 }
 
 /**
- * Open an HTML string in a hidden iframe and trigger print dialog.
- * Avoids popup blockers (Bug #1/#2). Waits 2s for fonts before print.
- * @param {string} html — full HTML document string
+ * Abre el HTML del reporte en una ventana visible y dispara el diálogo de impresión.
+ * Si el navegador bloquea la ventana emergente, descarga el reporte como archivo HTML
+ * que el usuario puede abrir y guardar como PDF.
+ *
+ * @param {string} html     — documento HTML completo
+ * @param {string} filename — nombre base del archivo (sin extensión)
+ * @returns {boolean}       — true si se pudo abrir la ventana, false si se descargó como archivo
  */
-export function openReport(html) {
-  const iframe = document.createElement('iframe')
-  iframe.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;border:none'
-  document.body.appendChild(iframe)
-  const win = iframe.contentWindow
-  if (!win) {
-    document.body.removeChild(iframe)
-    return false
-  }
-  win.document.open()
-  win.document.write(html)
-  win.document.close()
-  setTimeout(() => {
-    win.print()
-    // Cleanup after print dialog closes
+export function openReport(html, filename = 'reporte') {
+  const reportWindow = window.open('', '_blank')
+
+  if (reportWindow) {
+    // Ventana abierta correctamente: escribir el HTML y disparar impresión
+    reportWindow.document.open()
+    reportWindow.document.write(html)
+    reportWindow.document.close()
+    reportWindow.focus()
+    // Esperar a que carguen fuentes y estilos antes de imprimir
+    reportWindow.onload = () => {
+      setTimeout(() => reportWindow.print(), 500)
+    }
+    // Fallback: si onload ya disparó antes de asignarlo
     setTimeout(() => {
-      if (iframe.parentNode) document.body.removeChild(iframe)
-    }, 1000)
-  }, 2000)
-  return true
+      try {
+        if (reportWindow && !reportWindow.closed) reportWindow.print()
+      } catch (_) {}
+    }, 1500)
+    return true
+  }
+
+  // Popup bloqueado → descargar como archivo HTML
+  downloadReport(html, filename)
+  return false
+}
+
+/**
+ * Descarga el HTML del reporte como archivo .html.
+ * El usuario puede abrirlo en el navegador y guardar como PDF (Ctrl+P → Guardar como PDF).
+ *
+ * @param {string} html     — documento HTML completo
+ * @param {string} filename — nombre base del archivo (sin extensión)
+ */
+export function downloadReport(html, filename = 'reporte') {
+  const date = new Date().toISOString().split('T')[0]
+  const blob = new Blob([html], { type: 'text/html;charset=utf-8' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `${filename}-${date}.html`
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+  setTimeout(() => URL.revokeObjectURL(url), 1000)
 }
 
 /**

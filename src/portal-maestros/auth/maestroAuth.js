@@ -77,15 +77,26 @@ export async function loginMaestro(email, password) {
       estado: 'activo',
     }, { onConflict: 'id', ignoreDuplicates: false })
 
-    const adminMaestro = {
-      id: data.user.user_metadata?.maestro_id || data.user.id,
-      user_id: data.user.id,
-      nombre_completo: data.user.user_metadata?.full_name || 'Administrador',
-      correo: data.user.email,
-      instrumento: 'Todos (Admin)',
-      resena: 'Acceso de Administrador',
-      es_admin: true,
-    }
+    // Si el admin también tiene perfil de maestro, usar sus datos reales
+    // para que getMisClases() y las queries de sesiones usen el ID correcto
+    const { data: maestroRow } = await supabase
+      .from('maestros')
+      .select('*')
+      .eq('user_id', data.user.id)
+      .maybeSingle()
+
+    const adminMaestro = maestroRow
+      ? { ...maestroRow, es_admin: true }
+      : {
+          id: data.user.id,
+          user_id: data.user.id,
+          nombre_completo: data.user.user_metadata?.full_name || 'Administrador',
+          correo: data.user.email,
+          instrumento: 'Todos (Admin)',
+          resena: 'Acceso de Administrador',
+          es_admin: true,
+        }
+
     localStorage.setItem(STORAGE_KEY, JSON.stringify(adminMaestro))
     if (typeof sessionStorage !== 'undefined') {
       sessionStorage.setItem('pm-session-active', 'true')
@@ -211,15 +222,26 @@ export async function detectarRolMaestro() {
     }
 
     if (userRole === 'admin') {
-      const adminMaestro = {
-        id: session.user.user_metadata?.maestro_id || session.user.id, // Si es maestro usa su UUID real, sino su UUID de Auth. Evita errores de tipo en Postgres.
-        user_id: session.user.id,
-        nombre_completo: session.user.user_metadata?.full_name || 'Administrador',
-        correo: session.user.email,
-        instrumento: 'Todos (Admin)',
-        resena: 'Acceso de Administrador',
-        es_admin: true,
-      }
+      // Si el admin también tiene perfil de maestro, usar sus datos reales
+      // para que getMisClases() y las queries de sesiones usen el ID correcto
+      const { data: maestroRow } = await supabase
+        .from('maestros')
+        .select('*')
+        .eq('user_id', session.user.id)
+        .maybeSingle()
+
+      const adminMaestro = maestroRow
+        ? { ...maestroRow, es_admin: true }
+        : {
+            id: session.user.id,
+            user_id: session.user.id,
+            nombre_completo: session.user.user_metadata?.full_name || 'Administrador',
+            correo: session.user.email,
+            instrumento: 'Todos (Admin)',
+            resena: 'Acceso de Administrador',
+            es_admin: true,
+          }
+
       localStorage.setItem(STORAGE_KEY, JSON.stringify(adminMaestro))
       if (typeof sessionStorage !== 'undefined') {
         sessionStorage.setItem('pm-session-active', 'true')

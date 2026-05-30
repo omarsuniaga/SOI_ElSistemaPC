@@ -9,6 +9,7 @@ import {
   getSesiones,
   getInscripcionesClases,
 } from '../services/maestroDataService.js'
+import { autoJustificarClasesProgramadas } from '../services/emergenteJustificacionService.js'
 
 const DIAS_HEADER = ['Do', 'Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sa']
 const UMBRAL_VENCIDA = 7
@@ -116,6 +117,22 @@ async function _calcularEstadoMes(maestroId, anio, mes) {
 
   const fechasRegistradas = new Set(sesiones.map((s) => s.fecha))
 
+  // Dates where a scheduled class was auto-justified due to an emergent session
+  const fechasCubiertasEmergente = new Set(
+    todasSesiones
+      .filter((s) => s.clase_id && s.emergente_id)
+      .map((s) => s.fecha),
+  )
+
+  // Fechas con sesiones emergentes (clase_id = null) — agrupadas por fecha
+  const emergentePorFecha = new Map()
+  todasSesiones
+    .filter((s) => !s.clase_id)
+    .forEach((s) => {
+      if (!emergentePorFecha.has(s.fecha)) emergentePorFecha.set(s.fecha, [])
+      emergentePorFecha.get(s.fecha).push(s)
+    })
+
   // 4. Calcular estado por día
   const estadoMap = new Map()
   const hoy = new Date()
@@ -128,8 +145,10 @@ async function _calcularEstadoMes(maestroId, anio, mes) {
     const fecha = `${y}-${m}-${dia}`
     const diaEs = DIAS_ES[d.getDay()]
     const tieneCl = diasConClase.has(diaEs)
+    const emergentesFecha = emergentePorFecha.get(fecha) || []
 
-    if (!tieneCl) {
+    // Si no hay clase programada pero sí hay sesión emergente, evaluarla
+    if (!tieneCl && emergentesFecha.length === 0) {
       estadoMap.set(fecha, 'sin-clase')
       continue
     }
@@ -147,6 +166,13 @@ async function _calcularEstadoMes(maestroId, anio, mes) {
       // Si ya tiene asistencia → registrada (verde)
       if (tieneAsistencia) {
         estadoMap.set(fecha, 'registrada')
+        continue
+      }
+
+      // If today has any auto-justified scheduled class → cubierta-emergente
+      // (use the Set to handle multi-class days correctly)
+      if (fechasCubiertasEmergente.has(fecha)) {
+        estadoMap.set(fecha, 'cubierta-emergente')
         continue
       }
 
@@ -170,7 +196,11 @@ async function _calcularEstadoMes(maestroId, anio, mes) {
       continue
     }
 
-    // Fechas pasadas: marcar como registrada si tienen sesión registrada
+    // Fechas pasadas: cubierta-emergente has priority over registrada
+    if (diffDias > 0 && fechasCubiertasEmergente.has(fecha)) {
+      estadoMap.set(fecha, 'cubierta-emergente')
+      continue
+    }
     if (diffDias > 0 && fechasRegistradas.has(fecha)) {
       estadoMap.set(fecha, 'registrada')
       continue
@@ -250,6 +280,9 @@ function _renderCalendario(container, anio, mes, hoy, estadoMap, { onFechaClick,
       <div class="pm-cal-legend">
         <div class="pm-cal-legend-item">
           <div class="pm-cal-legend-dot" style="background:var(--pm-success)"></div> Registrada
+        </div>
+        <div class="pm-cal-legend-item">
+          <div class="pm-cal-legend-dot" style="background:#0891b2"></div> Cubierta por actividad especial
         </div>
         <div class="pm-cal-legend-item">
           <div class="pm-cal-legend-dot" style="background:var(--pm-warning)"></div> Pendiente
@@ -365,6 +398,7 @@ async function _openActionDrawer(fecha) {
   let clasesDelMaestro = []
   let horarios = []
   let emergentes = []
+  let sesionesAutoJustificadas = []
 
   try {
     // Clases emergentes tienen prioridad — se consultan primero
@@ -382,6 +416,7 @@ async function _openActionDrawer(fecha) {
       .eq('maestro_id', maestro.id)
       .eq('fecha', fecha)
     sesiones = s || []
+    sesionesAutoJustificadas = sesiones.filter((s) => s.clase_id && s.emergente_id)
 
     const { data: c } = await supabase
       .from('clases')
@@ -416,26 +451,46 @@ async function _openActionDrawer(fecha) {
     })
     .sort((a, b) => (a.hora_inicio || '').localeCompare(b.hora_inicio || ''))
 
+  // Sesiones emergentes del día (clase_id = null) — tienen prioridad sobre las programadas
+  const emergentesSesiones = sesiones
+    .filter((s) => !s.clase_id)
+    .sort((a, b) => (a.hora_inicio || '').localeCompare(b.hora_inicio || ''))
+
   // 3. Renderizar contenido
-  // Si hay clases emergentes, solapan las programadas completamente
+  // Si hay emergentes → mostrar solo esas (reemplazan las programadas ese día)
+  // Si no → mostrar clases programadas del horario
   let clasesHTML = ''
-  if (emergentes.length > 0) {
-    clasesHTML = `
-      <div style="margin-bottom:0.75rem; padding:0.5rem 0.75rem; background:rgba(245,158,11,0.12); border-left:3px solid #d97706; border-radius:6px; font-size:0.82rem; color:#92400e;">
-        <i class="bi bi-exclamation-triangle-fill me-1"></i>
-        <strong>Clase emergente registrada</strong> — reemplaza las clases programadas de este día
-      </div>
-      ${emergentes.map(eme => `
-        <div class="pm-drawer-clase-item" style="border-left:3px solid #d97706;">
+  if (emergentesSesiones.length > 0) {
+    clasesHTML = emergentesSesiones
+      .map((s) => {
+        const tieneAsistencia = Array.isArray(s.asistencia) && s.asistencia.length > 0
+        const estaRegistrada =
+          s.estado === 'registrada' || s.estado === 'cerrada' || tieneAsistencia
+
+        return `
+        <div class="pm-drawer-clase-item" style="border-left: 3px solid var(--pm-warning);">
           <div class="pm-drawer-clase-info">
-            <span class="pm-drawer-clase-hora">${(eme.hora_inicio || '--:--').slice(0,5)} - ${(eme.hora_fin || '--:--').slice(0,5)}</span>
-            <span class="pm-drawer-clase-nombre">${escHTML(eme.nombre_clase || 'Clase emergente')}</span>
-            <span class="pm-drawer-clase-instrumento" style="color:#d97706;">${escHTML(eme.motivo || '')}</span>
+            <span class="pm-drawer-clase-hora">${(s.hora_inicio || '--:--').slice(0, 5)} - ${(s.hora_fin || '--:--').slice(0, 5)}</span>
+            <span class="pm-drawer-clase-nombre">${escHTML(s.actividad || 'Clase Emergente')}</span>
+            <span class="pm-drawer-clase-instrumento" style="color:var(--pm-warning);">
+              <i class="bi bi-lightning-charge-fill"></i> Actividad especial
+            </span>
           </div>
-          <span class="pm-badge pm-badge-warning" style="margin-left:auto;flex-shrink:0;">
-            <i class="bi bi-lightning-charge-fill me-1"></i>Emergente
-          </span>
-        </div>`).join('')}`
+          <div class="pm-drawer-clase-actions">
+            <button class="pm-btn btn-ver-sesion-emergente"
+              data-sesion="${s.id}"
+              style="background:var(--pm-${estaRegistrada ? 'success' : 'primary'}); border-color:var(--pm-${estaRegistrada ? 'success' : 'primary'});">
+              <i class="bi bi-${estaRegistrada ? 'eye' : 'person-check'}"></i>
+              ${estaRegistrada ? 'Ver asistencia' : 'Pasar asistencia'}
+            </button>
+          </div>
+          <div class="pm-clase-status ${estaRegistrada ? 'completed' : ''}" style="margin-left: auto;">
+            ${estaRegistrada ? '<i class="bi bi-check-circle-fill" style="color:var(--pm-success)"></i>' : ''}
+          </div>
+        </div>
+      `
+      })
+      .join('')
   } else if (clasesProgramadas.length > 0) {
     clasesHTML = clasesProgramadas
       .map((c) => {
@@ -465,7 +520,7 @@ async function _openActionDrawer(fecha) {
             <span class="pm-drawer-clase-nombre">${escHTML(c.nombre)}</span>
             <span class="pm-drawer-clase-instrumento">${escHTML(c.instrumento || '')}</span>
           </div>
-          
+
           <div class="pm-drawer-clase-actions">
             ${
               !tieneSesion
@@ -505,17 +560,54 @@ async function _openActionDrawer(fecha) {
       .join('')
   }
 
+  // Build suspended-classes section (shown below emergent when both exist)
+  let suspendidaSeccionHTML = ''
+  if (sesionesAutoJustificadas.length > 0) {
+    suspendidaSeccionHTML = `
+      <div style="margin-top:0.75rem;">
+        <p style="font-size:0.7rem; font-weight:600; color:#0891b2; text-transform:uppercase; letter-spacing:0.05em; margin:0 0 0.5rem;">
+          <i class="bi bi-slash-circle"></i> Clases suspendidas
+        </p>
+        ${sesionesAutoJustificadas
+          .sort((a, b) => (a.hora_inicio || '').localeCompare(b.hora_inicio || ''))
+          .map((s) => {
+            const clase = clasesDelMaestro.find((c) => c.id === s.clase_id)
+            return `
+            <div class="pm-drawer-clase-item" style="border-left:3px solid #0891b2; opacity:0.85;">
+              <div class="pm-drawer-clase-info">
+                <span class="pm-drawer-clase-hora">${(s.hora_inicio || '--:--').slice(0, 5)} - ${(s.hora_fin || '--:--').slice(0, 5)}</span>
+                <span class="pm-drawer-clase-nombre">${escHTML(clase?.nombre || 'Clase')}</span>
+                <span class="pm-drawer-clase-instrumento" style="color:#0891b2;">
+                  <i class="bi bi-check-circle-fill"></i> Justificada · Auto-registrada
+                </span>
+              </div>
+              <div class="pm-drawer-clase-actions">
+                <button class="pm-btn btn-ver-clase-suspendida" data-clase="${s.clase_id}"
+                  style="background:#0891b2; border-color:#0891b2; color:white;">
+                  <i class="bi bi-eye"></i> Ver
+                </button>
+              </div>
+            </div>
+          `
+          })
+          .join('')}
+      </div>
+    `
+  }
+
   drawer.innerHTML = `
     <div class="pm-drawer-content">
       <div class="pm-drawer-header">
         <div style="flex:1">
           <h3 style="margin:0; font-size:1.1rem; font-weight:700;">${fechaLocal.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })}</h3>
           <p style="margin:0.25rem 0 0; font-size:0.85rem; color:var(--pm-text-muted);">
-            ${emergentes.length > 0
-              ? `<span style="color:#d97706;font-weight:600;"><i class="bi bi-lightning-charge-fill me-1"></i>${emergentes.length} clase(s) emergente(s) — programadas solapadas</span>`
-              : clasesProgramadas.length > 0
-                ? `${clasesProgramadas.length} clase(s) programada(s)`
-                : 'Sin clases programadas'}
+            ${
+              emergentesSesiones.length > 0
+                ? `<span style="color:var(--pm-warning);"><i class="bi bi-lightning-charge-fill"></i> ${emergentesSesiones.length} actividad(es) especial(es)</span>`
+                : clasesProgramadas.length > 0
+                  ? `${clasesProgramadas.length} clase(s) programada(s)`
+                  : 'Sin clases programadas'
+            }
           </p>
         </div>
         <div class="d-flex align-items-center gap-2">
@@ -527,6 +619,7 @@ async function _openActionDrawer(fecha) {
       </div>
       <div class="pm-drawer-body">
         ${clasesHTML || '<p style="text-align:center;color:var(--pm-text-muted);padding:2rem 1rem;">No hay clases programadas para esta fecha</p>'}
+        ${suspendidaSeccionHTML}
         ${
           !isPast && !isToday
             ? `
@@ -591,6 +684,22 @@ async function _openActionDrawer(fecha) {
         })
     })
 
+  drawer.querySelectorAll('.btn-ver-sesion-emergente').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const sesionId = btn.dataset.sesion
+      close()
+      window.location.hash = `#/asistencia?sesion=${sesionId}&fecha=${fecha}`
+    })
+  })
+
+  drawer.querySelectorAll('.btn-ver-clase-suspendida').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const claseId = btn.dataset.clase
+      close()
+      window.location.hash = `#/asistencia?clase=${claseId}&fecha=${fecha}`
+    })
+  })
+
   const btnEmergente = drawer.querySelector('#pm-drawer-emergente')
   if (btnEmergente) {
     btnEmergente.addEventListener('click', () => {
@@ -647,12 +756,26 @@ async function _abrirModalClaseEmergente(fecha, clases) {
 
         if (error) throw error
 
-        // Redirigir a asistencia
+        // Auto-justify scheduled classes for the same date
+        const resultado = await autoJustificarClasesProgramadas(data, getMaestroLocal().id)
+        if (resultado.errores.length > 0) {
+          console.warn('[calendario] Auto-justificación parcial:', resultado.errores)
+          AppToast.warning(
+            `Clase emergente creada. ${resultado.justificadas} clase(s) justificada(s) automáticamente (${resultado.errores.length} con error).`,
+          )
+        } else if (resultado.justificadas > 0) {
+          AppToast.success(
+            `Clase emergente creada. ${resultado.justificadas} clase(s) programada(s) marcada(s) como justificadas.`,
+          )
+        } else {
+          AppToast.success('Clase emergente creada. Procedé a pasar asistencia.')
+        }
+
+        // Navigate to attendance
         const drawer = document.getElementById('pm-action-drawer')
         if (drawer) drawer.classList.remove('open')
 
         window.location.hash = `#/asistencia?sesion=${data.id}&fecha=${datos.fecha}`
-        AppToast.success('Clase emergente creada. Procedé a pasar asistencia.')
       } catch (err) {
         console.error('Error creando clase emergente:', err)
         AppToast.error('No se pudo crear la clase emergente')

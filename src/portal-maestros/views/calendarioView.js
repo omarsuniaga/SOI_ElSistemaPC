@@ -396,6 +396,7 @@ async function _openActionDrawer(fecha) {
   let sesiones = []
   let clasesDelMaestro = []
   let horarios = []
+  let sesionesAutoJustificadas = []
 
   try {
     const { data: s } = await supabase
@@ -404,6 +405,7 @@ async function _openActionDrawer(fecha) {
       .eq('maestro_id', maestro.id)
       .eq('fecha', fecha)
     sesiones = s || []
+    sesionesAutoJustificadas = sesiones.filter((s) => s.clase_id && s.emergente_id)
 
     const { data: c } = await supabase
       .from('clases')
@@ -547,6 +549,41 @@ async function _openActionDrawer(fecha) {
       .join('')
   }
 
+  // Build suspended-classes section (shown below emergent when both exist)
+  let suspendidaSeccionHTML = ''
+  if (sesionesAutoJustificadas.length > 0) {
+    suspendidaSeccionHTML = `
+      <div style="margin-top:0.75rem;">
+        <p style="font-size:0.7rem; font-weight:600; color:#0891b2; text-transform:uppercase; letter-spacing:0.05em; margin:0 0 0.5rem;">
+          <i class="bi bi-slash-circle"></i> Clases suspendidas
+        </p>
+        ${sesionesAutoJustificadas
+          .sort((a, b) => (a.hora_inicio || '').localeCompare(b.hora_inicio || ''))
+          .map((s) => {
+            const clase = clasesDelMaestro.find((c) => c.id === s.clase_id)
+            return `
+            <div class="pm-drawer-clase-item" style="border-left:3px solid #0891b2; opacity:0.85;">
+              <div class="pm-drawer-clase-info">
+                <span class="pm-drawer-clase-hora">${(s.hora_inicio || '--:--').slice(0, 5)} - ${(s.hora_fin || '--:--').slice(0, 5)}</span>
+                <span class="pm-drawer-clase-nombre">${escHTML(clase?.nombre || 'Clase')}</span>
+                <span class="pm-drawer-clase-instrumento" style="color:#0891b2;">
+                  <i class="bi bi-check-circle-fill"></i> Justificada · Auto-registrada
+                </span>
+              </div>
+              <div class="pm-drawer-clase-actions">
+                <button class="pm-btn btn-ver-clase-suspendida" data-clase="${s.clase_id}"
+                  style="background:#0891b2; border-color:#0891b2; color:white;">
+                  <i class="bi bi-eye"></i> Ver
+                </button>
+              </div>
+            </div>
+          `
+          })
+          .join('')}
+      </div>
+    `
+  }
+
   drawer.innerHTML = `
     <div class="pm-drawer-content">
       <div class="pm-drawer-header">
@@ -571,6 +608,7 @@ async function _openActionDrawer(fecha) {
       </div>
       <div class="pm-drawer-body">
         ${clasesHTML || '<p style="text-align:center;color:var(--pm-text-muted);padding:2rem 1rem;">No hay clases programadas para esta fecha</p>'}
+        ${suspendidaSeccionHTML}
         ${
           !isPast && !isToday
             ? `
@@ -640,6 +678,14 @@ async function _openActionDrawer(fecha) {
       const sesionId = btn.dataset.sesion
       close()
       window.location.hash = `#/asistencia?sesion=${sesionId}&fecha=${fecha}`
+    })
+  })
+
+  drawer.querySelectorAll('.btn-ver-clase-suspendida').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const claseId = btn.dataset.clase
+      close()
+      window.location.hash = `#/asistencia?clase=${claseId}&fecha=${fecha}`
     })
   })
 

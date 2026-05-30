@@ -22,6 +22,7 @@ export class Clase {
     this.tipo_clase = data.tipo_clase || 'grupal'
     this.nivel_id = data.nivel_id || null
     this.planificacion_id = data.planificacion_id || null
+    this.ruta_id = data.ruta_id || null
     this.created_at = data.created_at || null
     this.updated_at = data.updated_at || null
   }
@@ -151,6 +152,7 @@ export class Clase {
       estado: this.estado,
       descripcion: this.descripcion.trim() || null,
       tipo_clase: this.tipo_clase || 'grupal',
+      ruta_id: this.ruta_id || null,
     }
   }
 

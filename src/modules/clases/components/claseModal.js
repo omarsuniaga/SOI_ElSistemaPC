@@ -16,7 +16,7 @@ import {
   formatHora
 } from '../utils/clasesUtils.js'
 import { Clase } from '../models/clase.model.js'
-import { openRutaSelectorModal, listarRutas } from '../../planificacion/api/rutasApi.js'
+import { openRutaSelectorModal } from '../../planificacion/components/rutaSelectorModal.js'
 
 /**
  * claseModal - Componente modular para la gestión de clases académicas.

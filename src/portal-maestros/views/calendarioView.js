@@ -117,6 +117,13 @@ async function _calcularEstadoMes(maestroId, anio, mes) {
 
   const fechasRegistradas = new Set(sesiones.map((s) => s.fecha))
 
+  // Dates where a scheduled class was auto-justified due to an emergent session
+  const fechasCubiertasEmergente = new Set(
+    todasSesiones
+      .filter((s) => s.clase_id && s.emergente_id)
+      .map((s) => s.fecha),
+  )
+
   // Fechas con sesiones emergentes (clase_id = null) — agrupadas por fecha
   const emergentePorFecha = new Map()
   todasSesiones
@@ -162,6 +169,12 @@ async function _calcularEstadoMes(maestroId, anio, mes) {
         continue
       }
 
+      // If today has an auto-justified scheduled class → cubierta-emergente
+      if (sesionHoy && sesionHoy.clase_id && sesionHoy.emergente_id) {
+        estadoMap.set(fecha, 'cubierta-emergente')
+        continue
+      }
+
       // Verificar si la clase ya finalizó hoy
       const horaFinDia = horaFinPorDia.get(diaEs)
       if (horaFinDia) {
@@ -182,7 +195,11 @@ async function _calcularEstadoMes(maestroId, anio, mes) {
       continue
     }
 
-    // Fechas pasadas: marcar como registrada si tienen sesión registrada
+    // Fechas pasadas: cubierta-emergente has priority over registrada
+    if (diffDias > 0 && fechasCubiertasEmergente.has(fecha)) {
+      estadoMap.set(fecha, 'cubierta-emergente')
+      continue
+    }
     if (diffDias > 0 && fechasRegistradas.has(fecha)) {
       estadoMap.set(fecha, 'registrada')
       continue

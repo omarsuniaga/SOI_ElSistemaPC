@@ -169,8 +169,9 @@ async function _calcularEstadoMes(maestroId, anio, mes) {
         continue
       }
 
-      // If today has an auto-justified scheduled class → cubierta-emergente
-      if (sesionHoy && sesionHoy.clase_id && sesionHoy.emergente_id) {
+      // If today has any auto-justified scheduled class → cubierta-emergente
+      // (use the Set to handle multi-class days correctly)
+      if (fechasCubiertasEmergente.has(fecha)) {
         estadoMap.set(fecha, 'cubierta-emergente')
         continue
       }

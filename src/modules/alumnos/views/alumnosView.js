@@ -1,4 +1,5 @@
 import '../styles/alumnos.css'
+import { calcularCompletitud, NIVEL_COLOR, NIVEL_LABEL } from '../domain/completitudAlumno.js'
 import { formatPhone, normalizePhone, whatsappLink } from '../../../shared/utils/phoneUtils.js'
 import { AppModal } from '../../../shared/components/AppModal.js'
 import { AppToast } from '../../../shared/components/AppToast.js'
@@ -119,6 +120,15 @@ function renderContent(container) {
           <button class="btn btn-outline-success btn-sm-compact me-2" id="btnExportarCSV" title="Exportar CSV">
             <i class="bi bi-file-earmark-spreadsheet"></i> CSV
           </button>
+          <button class="btn btn-outline-secondary btn-sm-compact me-2" id="btnReporteMes" title="Inscritos por mes">
+            <i class="bi bi-bar-chart"></i> Reporte
+          </button>
+          <button class="btn btn-outline-danger btn-sm-compact me-2" id="btnPdfDemo" title="Vista previa PDFs">
+            <i class="bi bi-file-earmark-pdf"></i> PDFs
+          </button>
+          <button class="btn btn-success btn-sm-compact me-2" id="btnInscribir">
+            <i class="bi bi-person-plus me-1"></i>Inscribir
+          </button>
           <button class="btn btn-premium-action" id="btnAgregarAlumno">
             <i class="bi bi-plus-lg me-1.5"></i>Nuevo Alumno
           </button>
@@ -172,7 +182,17 @@ function renderTableRows(alumnos) {
             <span class="position-absolute bottom-0 end-0 p-1 ${statusDotClass} border border-light rounded-circle" style="transform: translate(10%, 10%);"></span>
           </div>
           <div class="d-flex flex-column flex-grow-1 overflow-hidden pe-3">
-            <span class="fw-bold text-truncate" style="font-size: 1.05rem;">${escapeHTML(nombre)}</span>
+            <div class="d-flex align-items-center gap-2">
+              <span class="fw-bold text-truncate" style="font-size: 1.05rem;">${escapeHTML(nombre)}</span>
+              ${(() => {
+                const { porcentaje, nivel } = calcularCompletitud(a)
+                if (nivel === 'completo') return ''
+                const color = NIVEL_COLOR[nivel]
+                return `<span class="badge bg-${color} bg-opacity-15 text-${color} border border-${color} border-opacity-25 small" title="Perfil ${porcentaje}% completo — ${NIVEL_LABEL[nivel]}">
+                  ${porcentaje}%
+                </span>`
+              })()}
+            </div>
             <small class="text-muted text-truncate">
               ${escapeHTML(a.instrumento || 'Sin instrumento especificado')} ${a.familiar_nombre ? `• Rep: ${escapeHTML(a.familiar_nombre)}` : ''}
             </small>
@@ -211,6 +231,10 @@ function attachGlobalEvents(container) {
 
   container.querySelector('#btnAgregarAlumno')?.addEventListener('click', () => openCreateModal())
 
+  container.querySelector('#btnInscribir')?.addEventListener('click', () => window.router?.navigate('alumnos-inscribir'))
+  container.querySelector('#btnReporteMes')?.addEventListener('click', () => window.router?.navigate('alumnos-reporte-mes'))
+  container.querySelector('#btnPdfDemo')?.addEventListener('click', () => window.router?.navigate('alumnos-pdf-demo'))
+
   container.querySelector('#btnExportarCSV')?.addEventListener('click', () => exportarAlumnosCSV())
 
   const searchInput = container.querySelector('#buscar')
@@ -222,7 +246,7 @@ function attachGlobalEvents(container) {
   tbody?.addEventListener('click', async (e) => {
     const row = e.target.closest('.list-group-item[data-id]')
     if (row && !e.target.closest('[data-action]')) {
-      openViewModal(row.dataset.id)
+      window.router?.navigate('alumno', { id: row.dataset.id })
       return
     }
 
@@ -230,7 +254,7 @@ function attachGlobalEvents(container) {
     if (!btn) return
     const id = btn.dataset.id
     if (btn.dataset.action === 'edit') {
-      openEditModal(id)
+      window.router?.navigate('alumno', { id })
     } else if (btn.dataset.action === 'delete') {
       openDeleteModal(id)
     } else if (btn.dataset.action === 'whatsapp') {

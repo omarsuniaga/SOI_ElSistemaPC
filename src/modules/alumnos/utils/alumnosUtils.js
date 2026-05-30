@@ -36,8 +36,8 @@ export function calcularEdad(fechaNacimiento) {
  * @returns {string}
  */
 export function escapeHTML(str) {
-  if (!str) return ''
-  return str.replace(/[&<>]/g, function(m) {
+  if (str == null) return ''
+  return String(str).replace(/[&<>]/g, function(m) {
     if (m === '&') return '&amp;'
     if (m === '<') return '&lt;'
     if (m === '>') return '&gt;'

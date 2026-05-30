@@ -91,7 +91,7 @@ export async function renderGestionAlumnosClasesView(container) {
         <div class="pgac-list">
           ${alumnos && alumnos.length > 0
             ? alumnos.map(renderAlumnoRow).join('')
-            : '<p style="font-size:0.82rem;color:var(--pm-text-muted);margin:0.5rem 0 0;">No tenés alumnos registrados aún.</p>'
+            : '<p style="font-size:0.82rem;color:var(--pm-text-muted);margin:0.5rem 0 0;">No tienes alumnos registrados aún.</p>'
           }
         </div>
       </div>
@@ -108,7 +108,7 @@ export async function renderGestionAlumnosClasesView(container) {
         <div class="pgac-list">
           ${clases && clases.length > 0
             ? clases.map(renderClaseRow).join('')
-            : '<p style="font-size:0.82rem;color:var(--pm-text-muted);margin:0.5rem 0 0;">No tenés clases creadas aún.</p>'
+            : '<p style="font-size:0.82rem;color:var(--pm-text-muted);margin:0.5rem 0 0;">No tienes clases creadas aún.</p>'
           }
         </div>
       </div>

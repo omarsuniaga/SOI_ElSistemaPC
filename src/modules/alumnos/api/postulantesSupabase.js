@@ -95,3 +95,6 @@ export async function backfillDesdePostulantes(dryRun = false) {
     dry_run: dryRun,
   }
 }
+
+export * from './postuladosSupabase.js'
+

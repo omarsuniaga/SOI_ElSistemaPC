@@ -328,7 +328,7 @@ async function _renderEvaluaciones(container, alumnoId) {
     // Traer intentos del alumno, sin join a nodes (evita duplicados del inner join)
     const { data: evaluaciones, error } = await supabase
       .from('indicator_attempts')
-      .select('id, nota, observations, tarea, created_at, indicator_id')
+      .select('id, nota, observations, tarea, created_at, indicator_id, covered_by_clase_id')
       .eq('student_id', alumnoId)
       .order('created_at', { ascending: false })
 
@@ -353,6 +353,14 @@ async function _renderEvaluaciones(container, alumnoId) {
       .select('id, name')
       .in('id', nodeIds)
     const nodeMap = new Map((nodesMeta || []).map(n => [n.id, n.name]))
+
+    // Obtener nombres de clases correspondientes
+    const claseIds = [...new Set(evaluaciones.map(e => e.covered_by_clase_id).filter(Boolean))]
+    const { data: clasesMeta } = claseIds.length > 0
+      ? await supabase.from('clases').select('id, nombre').in('id', claseIds)
+      : { data: [] }
+    const claseMapName = new Map((clasesMeta || []).map(c => [c.id, c.nombre]))
+
     const indicatorMap = new Map((indicatorsMeta || []).map(i => [i.id, i]))
 
     // Agrupar por indicador ID (un solo registro por indicador, el más reciente)
@@ -364,6 +372,7 @@ async function _renderEvaluaciones(container, alumnoId) {
         id: ev.indicator_id,
         nombre: meta?.nombre || '',
         nodeName: nodeMap.get(meta?.node_id) || '',
+        claseNombre: claseMapName.get(ev.covered_by_clase_id) || '',
         latest: ev,
         history: []
       })
@@ -522,7 +531,10 @@ async function _renderEvaluaciones(container, alumnoId) {
                   <span class="pm-eval-semaforo">${semaforo(ind.latest.nota)}</span>
                   <div class="pm-eval-info">
                     <span class="pm-eval-nombre">${escHTML(ind.nombre || 'Indicador')}</span>
-                    ${ind.nodeName ? `<span class="pm-eval-node">${escHTML(ind.nodeName)}</span>` : ''}
+                    <span class="pm-eval-node">
+                      ${escHTML(ind.nodeName || 'Tema')}
+                      ${ind.claseNombre ? ` • <span style="background:var(--pm-surface-3);color:var(--pm-text-muted);font-size:0.6rem;padding:2px 6px;border-radius:10px;font-weight:600;border:1px solid var(--pm-border);">${escHTML(ind.claseNombre)}</span>` : ''}
+                    </span>
                   </div>
                   <span class="pm-eval-nota" style="color:${ind.latest.nota != null ? notaColor : 'var(--pm-text-muted)'}">${ind.latest.nota ?? '—'}</span>
                   <i class="bi bi-chevron-down pm-eval-toggle"></i>
@@ -633,7 +645,7 @@ export async function renderAlumnoPerfilView(container, { alumnoId }) {
     // Obtener todas las evaluaciones del alumno
     const { data: evaluaciones } = await supabase
       .from('indicator_attempts')
-      .select('id, nota, observations, tarea, created_at, indicator_id')
+      .select('id, nota, observations, tarea, created_at, indicator_id, covered_by_clase_id')
       .eq('student_id', alumnoId)
       .order('created_at', { ascending: false })
       .limit(30)
@@ -664,9 +676,26 @@ export async function renderAlumnoPerfilView(container, { alumnoId }) {
 
     // Calcular estadísticas de rendimiento (notas)
     const notasValidas = evaluaciones?.filter(e => e.nota != null && e.nota !== 0) || []
-    const promedioNotas = notasValidas.length > 0
-      ? Math.round(notasValidas.reduce((sum, e) => sum + e.nota, 0) / notasValidas.length * 10) / 10
+    
+    // Agrupar notas por clase
+    const notasPorClase = {}
+    notasValidas.forEach(e => {
+      const claseId = e.covered_by_clase_id || 'sin_clase'
+      if (!notasPorClase[claseId]) notasPorClase[claseId] = []
+      notasPorClase[claseId].push(e.nota)
+    })
+
+    // Calcular el promedio de cada clase
+    const promediosClases = Object.values(notasPorClase).map(notas => {
+      const sum = notas.reduce((acc, n) => acc + n, 0)
+      return sum / notas.length
+    })
+
+    // El promedio general es el promedio de los promedios de las clases (weighted class average)
+    const promedioNotas = promediosClases.length > 0
+      ? Math.round((promediosClases.reduce((acc, p) => acc + p, 0) / promediosClases.length) * 10) / 10
       : 0
+
     const indicadoresAprobados = notasValidas.filter(e => e.nota >= 4).length
     const indicadoresTotales   = notasValidas.length
     const pctAprobacion = indicadoresTotales > 0 ? Math.round((indicadoresAprobados / indicadoresTotales) * 100) : 0
@@ -806,13 +835,29 @@ export async function renderAlumnoPerfilView(container, { alumnoId }) {
                 if (!clase) return ''
                 const stats = sesionesPorClase[claseId] || { P: 0, A: 0, J: 0, T: 0, total: 0 }
                 const pctClase = stats.total > 0 ? Math.round((stats.P / stats.total) * 100) : null
+                
+                // Calcular promedio específico para esta clase
+                const claseEvaluaciones = evaluaciones?.filter(ev => ev.covered_by_clase_id === claseId && ev.nota != null && ev.nota !== 0) || []
+                const classPromedio = claseEvaluaciones.length > 0
+                  ? Math.round(claseEvaluaciones.reduce((sum, ev) => sum + ev.nota, 0) / claseEvaluaciones.length * 10) / 10
+                  : null
+
                 return `
                   <div class="pm-zen-clase-card pm-glass">
                     <div class="pm-zen-clase-header">
                       <strong>${escHTML(clase.nombre)}</strong>
                       ${clase.nivel ? `<span class="pm-zen-clase-nivel">Nivel ${clase.nivel}</span>` : ''}
                     </div>
-                    <p class="pm-zen-clase-inst">${escHTML(clase.instrumento || '')}</p>
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                      <p class="pm-zen-clase-inst" style="margin:0;">${escHTML(clase.instrumento || '')}</p>
+                      ${classPromedio !== null ? `
+                        <span class="badge-apple" style="background:${classPromedio >= 4.0 ? 'rgba(52, 199, 89, 0.12)' : classPromedio >= 3.0 ? 'rgba(255, 149, 0, 0.12)' : 'rgba(255, 59, 48, 0.12)'}; color:${classPromedio >= 4.0 ? 'rgb(36, 172, 69)' : classPromedio >= 3.0 ? 'rgb(229, 134, 0)' : 'rgb(221, 35, 29)'}; font-size:0.7rem; font-weight:700; padding:2px 6px; border-radius:10px; display:inline-flex; align-items:center; gap:2px;">
+                          ⭐ ${classPromedio.toFixed(1)}
+                        </span>
+                      ` : `
+                        <span class="badge-apple" style="background:var(--pm-surface-3); color:var(--pm-text-muted); font-size:0.65rem; padding:2px 6px; border-radius:10px;">Sin notas</span>
+                      `}
+                    </div>
                     <div class="pm-zen-clase-stats">
                       <div class="pm-zen-clase-stat" style="flex:1.2;">
                         <div style="display:flex;align-items:baseline;gap:3px;">

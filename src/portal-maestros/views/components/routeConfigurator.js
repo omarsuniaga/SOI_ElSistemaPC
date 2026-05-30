@@ -1,6 +1,7 @@
 import { RouteConfigAdapter } from '../../services/routeConfigAdapter.js';
 import { escHTML } from '../../utils/portalUtils.js';
 import { AppModal } from '../../../shared/components/AppModal.js';
+import { getMaestroLocal } from '../../auth/maestroAuth.js';
 
 let containerRef = null;
 let state = {
@@ -133,7 +134,10 @@ async function openAddItemModal(type, parentId, onComplete) {
 
       try {
         switch(type) {
-          case 'Clase': await RouteConfigAdapter.addClass(value); break;
+          case 'Clase': 
+            const activeMaestro = getMaestroLocal();
+            await RouteConfigAdapter.addClass(value, activeMaestro ? activeMaestro.id : null); 
+            break;
           case 'Nivel': await RouteConfigAdapter.addLevel({ clase_id: parentId, nombre: value, numero_nivel: 1 }); break;
           case 'Tema': await RouteConfigAdapter.addNode({ nivel_id: parentId, nombre: value, tipo: 'TECNICA' }); break;
           case 'Objetivo': await RouteConfigAdapter.addObjective({ tema_id: parentId, nombre: value }); break;
@@ -152,7 +156,8 @@ async function openAddItemModal(type, parentId, onComplete) {
 
 async function loadClasses() {
   const wrapper = document.getElementById('pm-rc-classes-wrapper');
-  const classes = await RouteConfigAdapter.getClasses();
+  const activeMaestro = getMaestroLocal();
+  const classes = await RouteConfigAdapter.getClasses(activeMaestro ? activeMaestro.id : null);
   
   const currentExists = classes.some(c => c.id === state.activeClassId);
   if (!currentExists && classes.length > 0) {

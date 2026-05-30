@@ -364,8 +364,18 @@ async function _openActionDrawer(fecha) {
   let sesiones = []
   let clasesDelMaestro = []
   let horarios = []
+  let emergentes = []
 
   try {
+    // Clases emergentes tienen prioridad — se consultan primero
+    const { data: eme } = await supabase
+      .from('clases_emergentes')
+      .select('*')
+      .eq('maestro_id', maestro.id)
+      .eq('fecha', fecha)
+      .order('hora_inicio', { ascending: true, nullsFirst: false })
+    emergentes = eme || []
+
     const { data: s } = await supabase
       .from('sesiones_clase')
       .select('*')
@@ -407,8 +417,26 @@ async function _openActionDrawer(fecha) {
     .sort((a, b) => (a.hora_inicio || '').localeCompare(b.hora_inicio || ''))
 
   // 3. Renderizar contenido
+  // Si hay clases emergentes, solapan las programadas completamente
   let clasesHTML = ''
-  if (clasesProgramadas.length > 0) {
+  if (emergentes.length > 0) {
+    clasesHTML = `
+      <div style="margin-bottom:0.75rem; padding:0.5rem 0.75rem; background:rgba(245,158,11,0.12); border-left:3px solid #d97706; border-radius:6px; font-size:0.82rem; color:#92400e;">
+        <i class="bi bi-exclamation-triangle-fill me-1"></i>
+        <strong>Clase emergente registrada</strong> — reemplaza las clases programadas de este día
+      </div>
+      ${emergentes.map(eme => `
+        <div class="pm-drawer-clase-item" style="border-left:3px solid #d97706;">
+          <div class="pm-drawer-clase-info">
+            <span class="pm-drawer-clase-hora">${(eme.hora_inicio || '--:--').slice(0,5)} - ${(eme.hora_fin || '--:--').slice(0,5)}</span>
+            <span class="pm-drawer-clase-nombre">${escHTML(eme.nombre_clase || 'Clase emergente')}</span>
+            <span class="pm-drawer-clase-instrumento" style="color:#d97706;">${escHTML(eme.motivo || '')}</span>
+          </div>
+          <span class="pm-badge pm-badge-warning" style="margin-left:auto;flex-shrink:0;">
+            <i class="bi bi-lightning-charge-fill me-1"></i>Emergente
+          </span>
+        </div>`).join('')}`
+  } else if (clasesProgramadas.length > 0) {
     clasesHTML = clasesProgramadas
       .map((c) => {
         const tieneSesion =
@@ -483,7 +511,11 @@ async function _openActionDrawer(fecha) {
         <div style="flex:1">
           <h3 style="margin:0; font-size:1.1rem; font-weight:700;">${fechaLocal.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })}</h3>
           <p style="margin:0.25rem 0 0; font-size:0.85rem; color:var(--pm-text-muted);">
-            ${clasesProgramadas.length > 0 ? `${clasesProgramadas.length} clase(s) programada(s)` : 'Sin clases programadas'}
+            ${emergentes.length > 0
+              ? `<span style="color:#d97706;font-weight:600;"><i class="bi bi-lightning-charge-fill me-1"></i>${emergentes.length} clase(s) emergente(s) — programadas solapadas</span>`
+              : clasesProgramadas.length > 0
+                ? `${clasesProgramadas.length} clase(s) programada(s)`
+                : 'Sin clases programadas'}
           </p>
         </div>
         <div class="d-flex align-items-center gap-2">

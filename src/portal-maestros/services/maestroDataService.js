@@ -15,6 +15,7 @@ const CACHE_KEYS = {
   SALONES: 'salones',
   AUSENCIAS: 'ausencias',
   RUTAS: 'rutas',
+  EMERGENTES: 'emergentes',
 }
 
 async function _getMaestroId() {
@@ -24,7 +25,8 @@ async function _getMaestroId() {
 }
 
 export async function getMisClases(forceRefresh = false) {
-  const isTestEnv = typeof process !== 'undefined' && (process.env.NODE_ENV === 'test' || process.env.VITEST)
+  const isTestEnv =
+    typeof process !== 'undefined' && (process.env.NODE_ENV === 'test' || process.env.VITEST)
   if (isTestEnv) {
     return [
       {
@@ -32,8 +34,8 @@ export async function getMisClases(forceRefresh = false) {
         nombre: 'Violin 101',
         instrumento: 'Violin',
         capacidad_maxima: 20,
-        maestro_principal_id: 'dc73014a-9528-4081-84eb-f713b72031ff'
-      }
+        maestro_principal_id: 'dc73014a-9528-4081-84eb-f713b72031ff',
+      },
     ]
   }
 
@@ -48,7 +50,9 @@ export async function getMisClases(forceRefresh = false) {
   const { data, error } = await supabase
     .from('clases')
     .select('id, nombre, instrumento, plan_estudio, capacidad_maxima, maestro_principal_id')
-    .or(`maestro_principal_id.eq.${maestroId},maestro_suplente_id.eq.${maestroId},maestro_id.eq.${maestroId}`)
+    .or(
+      `maestro_principal_id.eq.${maestroId},maestro_suplente_id.eq.${maestroId},maestro_id.eq.${maestroId}`,
+    )
 
   if (error) {
     console.warn('[MaestroData] Error cargando clases:', error.message)
@@ -61,7 +65,8 @@ export async function getMisClases(forceRefresh = false) {
 }
 
 export async function getHorariosClases(claseIds, forceRefresh = false) {
-  const isTestEnv = typeof process !== 'undefined' && (process.env.NODE_ENV === 'test' || process.env.VITEST)
+  const isTestEnv =
+    typeof process !== 'undefined' && (process.env.NODE_ENV === 'test' || process.env.VITEST)
   if (isTestEnv) {
     return [
       {
@@ -69,15 +74,15 @@ export async function getHorariosClases(claseIds, forceRefresh = false) {
         dia: 'jueves',
         hora_inicio: '08:00:00',
         hora_fin: '09:00:00',
-        salon_id: 'salon-1'
-      }
+        salon_id: 'salon-1',
+      },
     ]
   }
 
   if (!claseIds || claseIds.length === 0) return []
 
   const cacheKey = `horarios_${claseIds.sort().join(',')}`
-  
+
   if (!forceRefresh) {
     const cached = viewCache.getCached(cacheKey)
     if (cached) return cached
@@ -113,7 +118,7 @@ export async function getSesiones(maestroId, desde, hasta, forceRefresh = false)
     if (monthKey) {
       const allSesiones = viewCache.getCached(monthKey)
       if (allSesiones) {
-        return allSesiones.filter(s => s.fecha >= desde && s.fecha <= hasta)
+        return allSesiones.filter((s) => s.fecha >= desde && s.fecha <= hasta)
       }
     }
 
@@ -166,7 +171,8 @@ function _getCacheKeys() {
 }
 
 export async function getInscripcionesClases(claseIds, forceRefresh = false) {
-  const isTestEnv = typeof process !== 'undefined' && (process.env.NODE_ENV === 'test' || process.env.VITEST)
+  const isTestEnv =
+    typeof process !== 'undefined' && (process.env.NODE_ENV === 'test' || process.env.VITEST)
   if (isTestEnv) {
     return [
       {
@@ -175,8 +181,8 @@ export async function getInscripcionesClases(claseIds, forceRefresh = false) {
         alumnos: {
           id: '1',
           nombre_completo: 'Estudiante 1',
-          instrumento_principal: 'Violin'
-        }
+          instrumento_principal: 'Violin',
+        },
       },
       {
         clase_id: '550e8400-e29b-41d4-a716-446655440000',
@@ -184,16 +190,16 @@ export async function getInscripcionesClases(claseIds, forceRefresh = false) {
         alumnos: {
           id: '2',
           nombre_completo: 'Estudiante 2',
-          instrumento_principal: 'Violin'
-        }
-      }
+          instrumento_principal: 'Violin',
+        },
+      },
     ]
   }
 
   if (!claseIds || claseIds.length === 0) return []
 
   const cacheKey = `inscripciones_${claseIds.sort().join(',')}`
-  
+
   if (!forceRefresh) {
     const cached = viewCache.getCached(cacheKey)
     if (cached) return cached
@@ -217,20 +223,22 @@ export async function getInscripcionesClases(claseIds, forceRefresh = false) {
 
 /**
  * Obtiene los alumnos de varias clases agrupados por clase_id.
- * @param {string[]} claseIds 
+ * @param {string[]} claseIds
  */
 export async function getAlumnosPorClaseIds(claseIds) {
   if (!claseIds || claseIds.length === 0) return {}
   const inscripciones = await getInscripcionesClases(claseIds)
   const map = {}
-  claseIds.forEach(id => { map[id] = [] })
+  claseIds.forEach((id) => {
+    map[id] = []
+  })
 
-  inscripciones.forEach(ins => {
+  inscripciones.forEach((ins) => {
     if (ins.alumnos && map[ins.clase_id]) {
       map[ins.clase_id].push({
         id: ins.alumnos.id,
         nombre_completo: ins.alumnos.nombre_completo,
-        instrumento_principal: ins.alumnos.instrumento_principal
+        instrumento_principal: ins.alumnos.instrumento_principal,
       })
     }
   })
@@ -241,16 +249,13 @@ export async function getSalones(salonIds, forceRefresh = false) {
   if (!salonIds || salonIds.length === 0) return []
 
   const cacheKey = `salones_${salonIds.sort().join(',')}`
-  
+
   if (!forceRefresh) {
     const cached = viewCache.getCached(cacheKey)
     if (cached) return cached
   }
 
-  const { data, error } = await supabase
-    .from('salones')
-    .select('id, nombre')
-    .in('id', salonIds)
+  const { data, error } = await supabase.from('salones').select('id, nombre').in('id', salonIds)
 
   if (error) {
     console.warn('[MaestroData] Error cargando salones:', error.message)
@@ -273,7 +278,7 @@ export async function prefetchMonthData() {
 
   // 1. Clases del maestro (base para todo lo demás)
   const clases = await getMisClases()
-  const claseIds = clases.map(c => c.id)
+  const claseIds = clases.map((c) => c.id)
   if (claseIds.length === 0) return
 
   // 2. Todo en paralelo: horarios, inscripciones, sesiones del mes, salones
@@ -283,9 +288,10 @@ export async function prefetchMonthData() {
   // Incluir 4 semanas atrás para métricas (puede cruzar al mes anterior)
   const hace4Semanas = new Date(hoy)
   hace4Semanas.setDate(hace4Semanas.getDate() - 28)
-  const desde = hace4Semanas < primerDiaMes
-    ? hace4Semanas.toISOString().split('T')[0]
-    : primerDiaMes.toISOString().split('T')[0]
+  const desde =
+    hace4Semanas < primerDiaMes
+      ? hace4Semanas.toISOString().split('T')[0]
+      : primerDiaMes.toISOString().split('T')[0]
   const hasta = ultimoDiaMes.toISOString().split('T')[0]
 
   const [horarios, inscripciones, , salones] = await Promise.all([
@@ -298,12 +304,44 @@ export async function prefetchMonthData() {
   ])
 
   // 3. Cargar salones basándonos en los horarios obtenidos
-  const salonIds = [...new Set(horarios.map(h => h.salon_id).filter(Boolean))]
+  const salonIds = [...new Set(horarios.map((h) => h.salon_id).filter(Boolean))]
   if (salonIds.length > 0) {
     await getSalones(salonIds)
   }
 
-  console.log(`[Prefetch] Mes cargado: ${clases.length} clases, ${horarios.length} horarios, ${inscripciones.length} inscripciones`)
+  console.log(
+    `[Prefetch] Mes cargado: ${clases.length} clases, ${horarios.length} horarios, ${inscripciones.length} inscripciones`,
+  )
+}
+
+/**
+ * Obtiene las clases emergentes de un maestro para una fecha específica.
+ * @param {string} maestroId
+ * @param {string} fecha - formato YYYY-MM-DD
+ * @returns {Promise<Array>}
+ */
+export async function getEmergentesHoy(maestroId, fecha) {
+  if (!maestroId || !fecha) return []
+
+  const cacheKey = `emergentes_${maestroId}_${fecha}`
+  const cached = viewCache.getCached(cacheKey)
+  if (cached) return cached
+
+  const { data, error } = await supabase
+    .from('clases_emergentes')
+    .select('*')
+    .eq('maestro_id', maestroId)
+    .eq('fecha', fecha)
+    .order('hora_inicio', { ascending: true, nullsFirst: false })
+
+  if (error) {
+    console.warn('[MaestroData] Error cargando clases emergentes:', error.message)
+    return []
+  }
+
+  const emergentes = data || []
+  viewCache.set(cacheKey, emergentes, 'emergentes')
+  return emergentes
 }
 
 export function invalidateClasesCache() {
@@ -333,24 +371,24 @@ export async function getRutasMaestro(claseId, instrumento = null) {
 
   // 1. Obtener el instrumento de la clase para saber qué filtrar
   const clases = await getMisClases()
-  const clase = clases.find(c => c.id === claseId)
-  const instrumentosClase = (clase?.instrumento || '').split(',').map(i => i.trim().toLowerCase())
+  const clase = clases.find((c) => c.id === claseId)
+  const instrumentosClase = (clase?.instrumento || '').split(',').map((i) => i.trim().toLowerCase())
 
   // 2. Si se provee instrumento, buscar coincidencia parcial
   // Si no, buscar rutas que matcheen con cualquiera de los instrumentos de la clase
-  const instrumentosBusqueda = instrumento
-    ? [instrumento.trim().toLowerCase()]
-    : instrumentosClase
+  const instrumentosBusqueda = instrumento ? [instrumento.trim().toLowerCase()] : instrumentosClase
 
   // 3. Query routes con route_versions published
   const { data, error } = await supabase
     .from('routes')
-    .select(`
+    .select(
+      `
       id,
       name,
       instrument,
       route_versions!inner(id, status)
-    `)
+    `,
+    )
     .eq('route_versions.status', 'published')
     .order('name', { ascending: true })
 
@@ -361,10 +399,10 @@ export async function getRutasMaestro(claseId, instrumento = null) {
 
   // 4. Filtrar en JS (ilike con array no funciona bien en todos los Supabase clients)
   const rutasFiltradas = (data || [])
-    .map(r => {
+    .map((r) => {
       // route_versions puede ser array u objeto según el join
       const rv = Array.isArray(r.route_versions)
-        ? r.route_versions.find(rv => rv.status === 'published')
+        ? r.route_versions.find((rv) => rv.status === 'published')
         : r.route_versions
       return {
         id: r.id,
@@ -373,13 +411,13 @@ export async function getRutasMaestro(claseId, instrumento = null) {
         route_version_id: rv?.id || null,
       }
     })
-    .filter(r => {
+    .filter((r) => {
       if (!r.route_version_id) return false
       if (instrumentosBusqueda.length === 0) return true
       const routeInstrument = (r.instrumento || '').toLowerCase()
       // Match si algún instrumento de la clase contiene el de la ruta o viceversa
-      return instrumentosBusqueda.some(ri =>
-        routeInstrument.includes(ri) || ri.includes(routeInstrument)
+      return instrumentosBusqueda.some(
+        (ri) => routeInstrument.includes(ri) || ri.includes(routeInstrument),
       )
     })
 
@@ -395,8 +433,9 @@ export default {
   getAlumnosPorClaseIds,
   getSalones,
   getRutasMaestro,
+  getEmergentesHoy,
   prefetchMonthData,
   invalidateClasesCache,
   invalidateAllCache,
-  CACHE_KEYS
+  CACHE_KEYS,
 }

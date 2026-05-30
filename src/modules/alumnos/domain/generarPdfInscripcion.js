@@ -1,506 +1,672 @@
 /**
  * Generador de PDFs de inscripción — El Sistema Punta Cana
  *
- * Genera dos documentos:
- *   1. Ficha del alumno (carpeta interna del programa)
- *   2. Constancia de inscripción (para el alumno y representante)
+ * Doc 1: Ficha técnica del alumno  (uso interno / carpeta física / Drive)
+ * Doc 2: Constancia de inscripción (entrega al representante)
  */
 
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import { getDocumentosInstitucionales } from '../../config/api/configApi.js'
 
-const BRAND = {
-  nombre: 'El Sistema Punta Cana',
-  color_primary: [0, 86, 179],     // azul
-  color_accent: [255, 193, 7],     // amarillo dorado
-  color_dark: [30, 30, 30],
-  color_light: [240, 245, 255],
+// ─── Paleta institucional ────────────────────────────────────────────────────
+
+const C = {
+  azul:       [20,  60, 130],   // azul institucional
+  azulMedio:  [40,  90, 170],
+  azulClaro:  [220, 232, 250],
+  dorado:     [198, 160,  20],
+  doradoClaro:[255, 245, 200],
+  blanco:     [255, 255, 255],
+  grisOscuro: [40,   40,  40],
+  grisMedio:  [100, 100, 100],
+  grisClaro:  [245, 245, 248],
+  rojo:       [180,  20,  20],
+  verde:      [20,  120,  60],
 }
 
-function padStr(val, fallback = '—') {
+// ─── Datos de demo ───────────────────────────────────────────────────────────
+
+export const ALUMNO_DEMO = {
+  id: 'demo-0001-uuid',
+  nombre_completo: 'María Gabriela Rodríguez Pérez',
+  fecha_nacimiento: '2013-06-15',
+  genero: 'F',
+  nacionalidad: 'Dominicana',
+  tiene_pasaporte: false,
+  sabe_leer: true,
+  sabe_escribir: true,
+  tlf_alumno: '8091234567',
+  como_se_entero: 'Redes sociales',
+  municipio_residencia: 'bavaro',
+  sector_calle_numero: 'Bávaro, Calle Los Corales #12',
+  direccion: 'Sector Los Corales, Bávaro, La Altagracia',
+  ubicacion_maps_url: 'https://maps.google.com',
+
+  madre_nombre: 'Carmen Pérez de Rodríguez',
+  madre_cedula: '001-1234567-8',
+  madre_tlf_whatsapp: '8097654321',
+
+  padre_nombre: 'José Rafael Rodríguez',
+  padre_cedula: '001-9876543-2',
+  padre_tlf_whatsapp: '8299876543',
+
+  representante_nombre: 'Carmen Pérez de Rodríguez',
+  representante_parentesco: 'Madre',
+  representante_cedula: '001-1234567-8',
+  representante_tlf: '8097654321',
+  correo_representante: 'carmen.perez@email.com',
+  otro_responsable_nombre: 'José Rafael Rodríguez',
+  otro_responsable_cedula: '001-9876543-2',
+  otro_responsable_tlf: '8299876543',
+  contacto_emergencia_nombre: 'Luisa Martínez',
+  contacto_emergencia_telefono: '8091112222',
+  beneficiario_subsidio_estado: false,
+  subsidio_descripcion: null,
+  apoyo_actividades: 'Disponible para apoyo en actividades los fines de semana',
+
+  instrumento_principal: 'Violín',
+  nivel_actual: 'Iniciación',
+  tiene_conocimientos_musicales: false,
+  instrumento_previo: null,
+  nivel_lectura_musical: 'Ninguno',
+  interes_musical: 'instrumento',
+  instrumento_interes: 'Violín',
+  sentimiento_musica_clasica: 'Me emociona mucho y me parece muy bonita',
+  sentimiento_aprender_instrumento: 'Estoy muy emocionada y quiero aprender rápido',
+  aspiracion_instrumento: 'Llegar a tocar en una orquesta',
+  musico_favorito: 'Beethoven',
+  preferencia_aprendizaje_musical: 'Visual y auditiva',
+  por_que_unirse: 'Siempre soñé con tocar un instrumento y El Sistema me da esa oportunidad',
+
+  alergias_descripcion: null,
+  condicion_transmisible_desc: null,
+  alergia_medicamento_desc: null,
+  problemas_conducta: 'no',
+  tiene_alergias: false,
+  tiene_condicion_transmisible: false,
+  tiene_alergia_medicamento: false,
+
+  centro_estudios: 'Colegio San Juan Bosco',
+  grado_nivel: '5to de Primaria',
+  padres_en_vida: 'ambos',
+
+  autoriza_fotos_redes: true,
+  acepta_beca_4500: true,
+  acepta_pago_600: true,
+  fecha_aceptacion_compromisos: new Date().toISOString(),
+  requiere_iniciacion_musical: true,
+  familia_monoparental: false,
+}
+
+// ─── Utilidades ──────────────────────────────────────────────────────────────
+
+function p(val, fallback = '—') {
   const s = String(val ?? '').trim()
   return s || fallback
 }
-
-function formatFecha(fechaStr) {
-  if (!fechaStr) return '—'
-  try {
-    const [y, m, d] = fechaStr.split('-')
-    return `${d}/${m}/${y}`
-  } catch {
-    return fechaStr
-  }
+function fecha(f) {
+  if (!f) return '—'
+  try { const [y, m, d] = f.split('-'); return `${d}/${m}/${y}` } catch { return f }
 }
-
-function calcEdad(fechaStr) {
-  if (!fechaStr) return '—'
+function edad(f) {
+  if (!f) return '—'
   try {
-    const [y, m, d] = fechaStr.split('-').map(Number)
+    const [y, m, d] = f.split('-').map(Number)
     const hoy = new Date()
-    let edad = hoy.getFullYear() - y
-    if (hoy.getMonth() + 1 < m || (hoy.getMonth() + 1 === m && hoy.getDate() < d)) edad--
-    return `${edad} años`
-  } catch {
-    return '—'
-  }
+    let e = hoy.getFullYear() - y
+    if (hoy.getMonth() + 1 < m || (hoy.getMonth() + 1 === m && hoy.getDate() < d)) e--
+    return `${e} años`
+  } catch { return '—' }
 }
-
-function si_no(val) {
-  if (val === true) return 'Sí'
-  if (val === false) return 'No'
+function sn(val) {
+  if (val === true  || val === 'true'  || val === 't') return 'Sí'
+  if (val === false || val === 'false' || val === 'f') return 'No'
   return '—'
 }
-
-function conductaLabel(val) {
-  const map = { no: 'No presenta problemas', pocas_veces: 'Pocas veces', si: 'Sí', violento: 'Conducta violenta' }
-  return map[val] ?? padStr(val)
+function municipio(val) {
+  const m = { punta_cana: 'Punta Cana', bavaro: 'Bávaro', veron: 'Verón',
+    friusa: 'Friusa', el_cortecito: 'El Cortecito', los_corales: 'Los Corales', otro: 'Otro' }
+  return m[val] ?? p(val)
+}
+function interes(val) {
+  const i = { cantar: 'Cantar', instrumento: 'Instrumento', ambas: 'Ambas' }
+  return i[val] ?? p(val)
+}
+function padresEnVida(val) {
+  const v = { ambos: 'Ambos', solo_madre: 'Solo madre', solo_padre: 'Solo padre', ninguno: 'Ninguno' }
+  return v[val] ?? p(val)
+}
+function conducta(val) {
+  const c = { no: 'Sin problemas', pocas_veces: 'Pocas veces', si: 'Sí presenta', violento: 'Conducta violenta' }
+  return c[val] ?? p(val)
+}
+function serial(alumno) {
+  const y = new Date().getFullYear()
+  const b = alumno.id ? alumno.id.replace(/-/g, '').slice(-8).toUpperCase() : Date.now().toString(36).toUpperCase().slice(-8)
+  return `SOI-PC-${y}-${b}`
+}
+function nowLong() {
+  return new Date().toLocaleDateString('es-DO', { day: '2-digit', month: 'long', year: 'numeric' })
 }
 
-function interesLabel(val) {
-  const map = { cantar: 'Cantar', instrumento: 'Instrumento', ambas: 'Ambas' }
-  return map[val] ?? padStr(val)
-}
+// ─── Primitivas de dibujo ────────────────────────────────────────────────────
 
-function municipioLabel(val) {
-  const map = {
-    punta_cana: 'Punta Cana', bavaro: 'Bávaro', veron: 'Verón', friusa: 'Friusa',
-    el_cortecito: 'El Cortecito', los_corales: 'Los Corales', otro: 'Otro',
-  }
-  return map[val] ?? padStr(val)
-}
+const W_LETTER = 215.9
+const H_LETTER = 279.4
+const MARGIN   = 14
 
-// ── Helpers de dibujo ──────────────────────────────────────────────────────
+function header(doc, titulo, subtitulo = '') {
+  // Banda azul principal
+  doc.setFillColor(...C.azul)
+  doc.rect(0, 0, W_LETTER, 32, 'F')
 
-function drawHeader(doc, titulo, subtitulo = '') {
-  const W = doc.internal.pageSize.getWidth()
+  // Banda dorada decorativa
+  doc.setFillColor(...C.dorado)
+  doc.rect(0, 32, W_LETTER, 2.5, 'F')
 
-  // Franja azul superior
-  doc.setFillColor(...BRAND.color_primary)
-  doc.rect(0, 0, W, 28, 'F')
+  // Franja lateral izquierda
+  doc.setFillColor(...C.dorado)
+  doc.rect(0, 0, 4, 34.5, 'F')
 
-  // Nombre del programa
-  doc.setTextColor(255, 255, 255)
-  doc.setFontSize(16)
+  // Nombre institución
+  doc.setTextColor(...C.blanco)
   doc.setFont('helvetica', 'bold')
-  doc.text(BRAND.nombre, 14, 11)
+  doc.setFontSize(15)
+  doc.text('EL SISTEMA PUNTA CANA', MARGIN + 2, 13)
 
-  // Título del documento
-  doc.setFontSize(11)
+  // Subtítulo institución
   doc.setFont('helvetica', 'normal')
-  doc.text(titulo, 14, 20)
+  doc.setFontSize(8)
+  doc.setTextColor(200, 215, 240)
+  doc.text('Programa de Formación Musical · República Dominicana', MARGIN + 2, 20)
+
+  // Título del documento (derecha)
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(9)
+  doc.setTextColor(...C.dorado)
+  doc.text(titulo, W_LETTER - MARGIN, 13, { align: 'right' })
 
   if (subtitulo) {
-    doc.setFontSize(8)
-    doc.text(subtitulo, 14, 26)
+    doc.setFont('helvetica', 'normal')
+    doc.setFontSize(7.5)
+    doc.setTextColor(190, 205, 230)
+    doc.text(subtitulo, W_LETTER - MARGIN, 20, { align: 'right' })
   }
 
-  // Franja dorada decorativa
-  doc.setFillColor(...BRAND.color_accent)
-  doc.rect(0, 28, W, 2, 'F')
-
-  doc.setTextColor(...BRAND.color_dark)
-  return 38 // y start
+  // Reset color
+  doc.setTextColor(...C.grisOscuro)
+  return 44
 }
 
-function drawSectionTitle(doc, label, y) {
-  const W = doc.internal.pageSize.getWidth()
-  doc.setFillColor(...BRAND.color_light)
-  doc.rect(10, y - 4, W - 20, 7, 'F')
-  doc.setFontSize(9)
+function footer(doc, pageNum = 1) {
+  doc.setFillColor(...C.azul)
+  doc.rect(0, H_LETTER - 12, W_LETTER, 12, 'F')
+  doc.setFillColor(...C.dorado)
+  doc.rect(0, H_LETTER - 12, 4, 12, 'F')
+
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(6.5)
+  doc.setTextColor(...C.blanco)
+  doc.text('El Sistema Punta Cana · Punta Cana, Rep. Dominicana', MARGIN + 2, H_LETTER - 4.5)
+  doc.text(`Pág. ${pageNum}`, W_LETTER - MARGIN, H_LETTER - 4.5, { align: 'right' })
+}
+
+function sectionBar(doc, label, y, color = C.azul) {
+  doc.setFillColor(...color)
+  doc.rect(MARGIN, y, W_LETTER - MARGIN * 2, 6.5, 'F')
   doc.setFont('helvetica', 'bold')
-  doc.setTextColor(...BRAND.color_primary)
-  doc.text(label.toUpperCase(), 14, y + 1)
-  doc.setTextColor(...BRAND.color_dark)
-  doc.setFont('helvetica', 'normal')
-  return y + 8
+  doc.setFontSize(8)
+  doc.setTextColor(...C.blanco)
+  doc.text(label, MARGIN + 3, y + 4.4)
+  doc.setTextColor(...C.grisOscuro)
+  return y + 9
 }
 
-function drawFooter(doc) {
-  const W = doc.internal.pageSize.getWidth()
-  const H = doc.internal.pageSize.getHeight()
-  const fecha = new Date().toLocaleDateString('es-DO', { day: '2-digit', month: 'long', year: 'numeric' })
-  doc.setFillColor(...BRAND.color_primary)
-  doc.rect(0, H - 10, W, 10, 'F')
-  doc.setTextColor(255, 255, 255)
-  doc.setFontSize(7)
-  doc.setFont('helvetica', 'normal')
-  doc.text(`${BRAND.nombre} — Documento generado el ${fecha}`, 14, H - 3.5)
-  doc.text('Punta Cana, República Dominicana', W - 14, H - 3.5, { align: 'right' })
-}
-
-// ── FICHA DEL ALUMNO ──────────────────────────────────────────────────────
-
-/**
- * Genera la ficha completa del alumno para la carpeta interna.
- * @param {object} alumno
- * @returns {jsPDF}
- */
-export function generarFichaAlumno(alumno) {
-  const doc = new jsPDF({ unit: 'mm', format: 'letter' })
-  const W = doc.internal.pageSize.getWidth()
-  const fecha = new Date().toLocaleDateString('es-DO', { day: '2-digit', month: 'long', year: 'numeric' })
-
-  let y = drawHeader(doc, 'FICHA DE INSCRIPCIÓN DEL ALUMNO', `Fecha de inscripción: ${fecha}`)
-
-  // ── Datos personales ──────────────────────────────────────────────────
-  y = drawSectionTitle(doc, '1. Datos del Alumno', y)
+function tabla(doc, body, y, opts = {}) {
   autoTable(doc, {
     startY: y,
-    margin: { left: 10, right: 10 },
+    margin: { left: MARGIN, right: MARGIN },
     theme: 'grid',
-    styles: { fontSize: 8, cellPadding: 1.5 },
-    headStyles: { fillColor: BRAND.color_primary, textColor: 255, fontStyle: 'bold', fontSize: 7.5 },
-    body: [
-      ['Nombre completo', padStr(alumno.nombre_completo), 'Fecha de nacimiento', formatFecha(alumno.fecha_nacimiento)],
-      ['Edad', calcEdad(alumno.fecha_nacimiento), 'Nacionalidad', padStr(alumno.nacionalidad)],
-      ['Sabe leer', si_no(alumno.sabe_leer), 'Sabe escribir', si_no(alumno.sabe_escribir)],
-      ['Tiene pasaporte', si_no(alumno.tiene_pasaporte), 'Municipio', municipioLabel(alumno.municipio_residencia)],
-      ['Cómo se enteró', padStr(alumno.como_se_entero), 'Sector / Calle', padStr(alumno.sector_calle_numero)],
-    ],
-    columnStyles: { 0: { fontStyle: 'bold', cellWidth: 38 }, 2: { fontStyle: 'bold', cellWidth: 38 } },
+    styles: {
+      fontSize: 8,
+      cellPadding: { top: 1.8, bottom: 1.8, left: 3, right: 3 },
+      lineColor: [210, 215, 225],
+      lineWidth: 0.2,
+      textColor: C.grisOscuro,
+      font: 'helvetica',
+    },
+    alternateRowStyles: { fillColor: C.grisClaro },
+    columnStyles: {
+      0: { fontStyle: 'bold', cellWidth: opts.labelW ?? 42, fillColor: C.azulClaro, textColor: C.azul },
+      2: { fontStyle: 'bold', cellWidth: opts.labelW ?? 42, fillColor: C.azulClaro, textColor: C.azul },
+    },
+    body,
+    ...opts.extra,
   })
-  y = doc.lastAutoTable.finalY + 4
+  return doc.lastAutoTable.finalY + 4
+}
 
-  if (alumno.direccion) {
-    autoTable(doc, {
-      startY: y, margin: { left: 10, right: 10 }, theme: 'grid',
-      styles: { fontSize: 8, cellPadding: 1.5 },
-      body: [['Dirección', padStr(alumno.direccion)], ['Enlace Maps', padStr(alumno.ubicacion_maps_url)]],
-      columnStyles: { 0: { fontStyle: 'bold', cellWidth: 38 } },
-    })
-    y = doc.lastAutoTable.finalY + 4
+function tablaSimple(doc, body, y, opts = {}) {
+  autoTable(doc, {
+    startY: y,
+    margin: { left: MARGIN, right: MARGIN },
+    theme: 'grid',
+    styles: {
+      fontSize: 8,
+      cellPadding: { top: 1.8, bottom: 1.8, left: 3, right: 3 },
+      lineColor: [210, 215, 225],
+      lineWidth: 0.2,
+      textColor: C.grisOscuro,
+    },
+    columnStyles: {
+      0: { fontStyle: 'bold', cellWidth: opts.labelW ?? 52, fillColor: C.azulClaro, textColor: C.azul },
+    },
+    body,
+    ...opts.extra,
+  })
+  return doc.lastAutoTable.finalY + 4
+}
+
+function newPage(doc, titulo, alumnoNombre, pageNum) {
+  footer(doc, pageNum - 1)
+  doc.addPage()
+  return header(doc, titulo, `Continuación · ${alumnoNombre}`)
+}
+
+function checkSpace(doc, y, needed, titulo, nombre, pageRef) {
+  if (y + needed > H_LETTER - 20) {
+    pageRef.n++
+    return newPage(doc, titulo, nombre, pageRef.n)
   }
+  return y
+}
 
-  // ── Madre ─────────────────────────────────────────────────────────────
-  y = drawSectionTitle(doc, '2. Datos de la Madre', y)
-  autoTable(doc, {
-    startY: y, margin: { left: 10, right: 10 }, theme: 'grid',
-    styles: { fontSize: 8, cellPadding: 1.5 },
-    body: [
-      ['Nombre completo', padStr(alumno.madre_nombre), 'Cédula / Pasaporte', padStr(alumno.madre_cedula)],
-      ['WhatsApp', padStr(alumno.madre_tlf_whatsapp), '', ''],
-    ],
-    columnStyles: { 0: { fontStyle: 'bold', cellWidth: 38 }, 2: { fontStyle: 'bold', cellWidth: 38 } },
-  })
-  y = doc.lastAutoTable.finalY + 4
+// ════════════════════════════════════════════════════════════════════════════
+// FICHA TÉCNICA DEL ALUMNO
+// ════════════════════════════════════════════════════════════════════════════
 
-  // ── Padre ─────────────────────────────────────────────────────────────
-  y = drawSectionTitle(doc, '3. Datos del Padre', y)
-  autoTable(doc, {
-    startY: y, margin: { left: 10, right: 10 }, theme: 'grid',
-    styles: { fontSize: 8, cellPadding: 1.5 },
-    body: [
-      ['Nombre completo', padStr(alumno.padre_nombre), 'Cédula / Pasaporte', padStr(alumno.padre_cedula)],
-      ['WhatsApp', padStr(alumno.padre_tlf_whatsapp), '', ''],
-    ],
-    columnStyles: { 0: { fontStyle: 'bold', cellWidth: 38 }, 2: { fontStyle: 'bold', cellWidth: 38 } },
-  })
-  y = doc.lastAutoTable.finalY + 4
+export function generarFichaAlumno(alumno) {
+  const doc  = new jsPDF({ unit: 'mm', format: 'letter' })
+  const page = { n: 1 }
+  const DOC_TITLE = 'FICHA TÉCNICA DEL ALUMNO'
+  const now  = nowLong()
 
-  // ── Representante y contactos ─────────────────────────────────────────
-  y = drawSectionTitle(doc, '4. Representante y Contactos', y)
-  autoTable(doc, {
-    startY: y, margin: { left: 10, right: 10 }, theme: 'grid',
-    styles: { fontSize: 8, cellPadding: 1.5 },
-    body: [
-      ['Representante', padStr(alumno.representante_nombre), 'Parentesco', padStr(alumno.representante_parentesco)],
-      ['Cédula', padStr(alumno.representante_cedula), 'Teléfono', padStr(alumno.representante_tlf)],
-      ['Otro responsable', padStr(alumno.otro_responsable_nombre), 'Cédula', padStr(alumno.otro_responsable_cedula)],
-      ['Tlf otro resp.', padStr(alumno.otro_responsable_tlf), 'Fam. monoparental', si_no(alumno.familia_monoparental)],
-      ['Emergencia #1', padStr(alumno.contacto_emergencia_nombre), 'Tlf', padStr(alumno.contacto_emergencia_telefono)],
-      ['Emergencia #2', padStr(alumno.contacto_emergencia_2_nombre), 'Tlf', padStr(alumno.contacto_emergencia_2_telefono)],
-    ],
-    columnStyles: { 0: { fontStyle: 'bold', cellWidth: 38 }, 2: { fontStyle: 'bold', cellWidth: 38 } },
-  })
-  y = doc.lastAutoTable.finalY + 4
+  let y = header(doc, DOC_TITLE, `Generado: ${now}`)
 
-  // ── Nueva página si falta espacio ─────────────────────────────────────
-  const H = doc.internal.pageSize.getHeight()
-  if (y > H - 80) {
-    drawFooter(doc)
-    doc.addPage()
-    y = drawHeader(doc, 'FICHA DE INSCRIPCIÓN DEL ALUMNO (cont.)', `Alumno: ${padStr(alumno.nombre_completo)}`)
-  }
+  // Watermark sutil
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(55)
+  doc.setTextColor(235, 240, 252)
+  doc.text('USO INTERNO', W_LETTER / 2, H_LETTER / 2 + 20, { align: 'center', angle: 45 })
+  doc.setTextColor(...C.grisOscuro)
 
-  // ── Situación social ──────────────────────────────────────────────────
-  y = drawSectionTitle(doc, '5. Situación Social', y)
-  autoTable(doc, {
-    startY: y, margin: { left: 10, right: 10 }, theme: 'grid',
-    styles: { fontSize: 8, cellPadding: 1.5 },
-    body: [
-      ['Beneficiario subsidio', si_no(alumno.beneficiario_subsidio_estado), 'Tipo subsidio', padStr(alumno.subsidio_descripcion)],
-      ['Apoyo al programa', { content: padStr(alumno.apoyo_actividades), colSpan: 3 }],
-    ],
-    columnStyles: { 0: { fontStyle: 'bold', cellWidth: 38 }, 2: { fontStyle: 'bold', cellWidth: 38 } },
-  })
-  y = doc.lastAutoTable.finalY + 4
+  // ── Encabezado alumno ────────────────────────────────────────────────────
+  doc.setFillColor(...C.azulClaro)
+  doc.roundedRect(MARGIN, y, W_LETTER - MARGIN * 2, 22, 2, 2, 'F')
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(13)
+  doc.setTextColor(...C.azul)
+  doc.text(p(alumno.nombre_completo), MARGIN + 4, y + 8)
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(8.5)
+  doc.setTextColor(...C.grisMedio)
+  const meta = [
+    `Edad: ${edad(alumno.fecha_nacimiento)}`,
+    `F. Nac.: ${fecha(alumno.fecha_nacimiento)}`,
+    `Instrumento: ${p(alumno.instrumento_principal)}`,
+    `Nivel: ${p(alumno.nivel_actual)}`,
+  ].join('    ·    ')
+  doc.text(meta, MARGIN + 4, y + 16)
+  doc.setTextColor(...C.grisOscuro)
+  y += 26
 
-  // ── Perfil musical ────────────────────────────────────────────────────
-  y = drawSectionTitle(doc, '6. Perfil Musical', y)
-  autoTable(doc, {
-    startY: y, margin: { left: 10, right: 10 }, theme: 'grid',
-    styles: { fontSize: 8, cellPadding: 1.5 },
-    body: [
-      ['Conocimientos musicales', si_no(alumno.tiene_conocimientos_musicales), 'Instrumento previo', padStr(alumno.instrumento_previo)],
-      ['Nivel lectura musical', padStr(alumno.nivel_lectura_musical), 'Interés', interesLabel(alumno.interes_musical)],
-      ['Instrumento de interés', padStr(alumno.instrumento_interes), 'Requiere iniciación', si_no(alumno.requiere_iniciacion_musical)],
-      ['Músico favorito', padStr(alumno.musico_favorito), 'Cómo prefiere aprender', padStr(alumno.preferencia_aprendizaje_musical)],
-    ],
-    columnStyles: { 0: { fontStyle: 'bold', cellWidth: 38 }, 2: { fontStyle: 'bold', cellWidth: 38 } },
-  })
-  y = doc.lastAutoTable.finalY + 4
+  // ── 1. Datos personales ──────────────────────────────────────────────────
+  y = sectionBar(doc, '1 · DATOS PERSONALES', y)
+  y = tabla(doc, [
+    ['Nombre completo',   p(alumno.nombre_completo),      'Fecha de nacimiento', fecha(alumno.fecha_nacimiento)],
+    ['Edad',             edad(alumno.fecha_nacimiento),   'Nacionalidad',        p(alumno.nacionalidad)],
+    ['Género',           p(alumno.genero),                'Tiene pasaporte',     sn(alumno.tiene_pasaporte)],
+    ['Sabe leer',        sn(alumno.sabe_leer),            'Sabe escribir',       sn(alumno.sabe_escribir)],
+    ['Cómo se enteró',   p(alumno.como_se_entero),        'Municipio',           municipio(alumno.municipio_residencia)],
+    ['Sector / Calle',   p(alumno.sector_calle_numero),   'Teléfono',            p(alumno.tlf_alumno)],
+  ], y)
+  y = tablaSimple(doc, [
+    ['Dirección completa', p(alumno.direccion)],
+    ['Enlace Google Maps', p(alumno.ubicacion_maps_url)],
+  ], y)
 
-  // Motivación (texto largo)
-  if (alumno.por_que_unirse || alumno.sentimiento_musica_clasica || alumno.aspiracion_instrumento) {
-    autoTable(doc, {
-      startY: y, margin: { left: 10, right: 10 }, theme: 'grid',
-      styles: { fontSize: 8, cellPadding: 1.5 },
-      body: [
-        ['Por qué quiere unirse', { content: padStr(alumno.por_que_unirse), colSpan: 3 }],
-        ['Sentimiento música clásica', { content: padStr(alumno.sentimiento_musica_clasica), colSpan: 3 }],
-        ['Sentimiento al aprender', { content: padStr(alumno.sentimiento_aprender_instrumento), colSpan: 3 }],
-        ['Aspiración', { content: padStr(alumno.aspiracion_instrumento), colSpan: 3 }],
-      ],
-      columnStyles: { 0: { fontStyle: 'bold', cellWidth: 45 } },
-    })
-    y = doc.lastAutoTable.finalY + 4
-  }
+  // ── 2. Madre ─────────────────────────────────────────────────────────────
+  y = checkSpace(doc, y, 40, DOC_TITLE, alumno.nombre_completo, page)
+  y = sectionBar(doc, '2 · DATOS DE LA MADRE', y)
+  y = tabla(doc, [
+    ['Nombre completo', p(alumno.madre_nombre), 'Cédula / Pasaporte', p(alumno.madre_cedula)],
+    ['WhatsApp',        p(alumno.madre_tlf_whatsapp), '', ''],
+  ], y)
 
-  // ── Salud ─────────────────────────────────────────────────────────────
-  y = drawSectionTitle(doc, '7. Salud y Conducta', y)
-  autoTable(doc, {
-    startY: y, margin: { left: 10, right: 10 }, theme: 'grid',
-    styles: { fontSize: 8, cellPadding: 1.5 },
-    body: [
-      ['Tiene alergias', si_no(alumno.tiene_alergias), 'Descripción', padStr(alumno.alergias_descripcion)],
-      ['Cond. transmisible', si_no(alumno.tiene_condicion_transmisible), 'Cuál', padStr(alumno.condicion_transmisible_desc)],
-      ['Alergia medicamento', si_no(alumno.tiene_alergia_medicamento), 'Cuál', padStr(alumno.alergia_medicamento_desc)],
-      ['Impedimento social', si_no(alumno.impedimento_social), 'Conducta', conductaLabel(alumno.problemas_conducta)],
-    ],
-    columnStyles: { 0: { fontStyle: 'bold', cellWidth: 38 }, 2: { fontStyle: 'bold', cellWidth: 38 } },
-  })
-  y = doc.lastAutoTable.finalY + 4
+  // ── 3. Padre ─────────────────────────────────────────────────────────────
+  y = sectionBar(doc, '3 · DATOS DEL PADRE', y)
+  y = tabla(doc, [
+    ['Nombre completo', p(alumno.padre_nombre), 'Cédula / Pasaporte', p(alumno.padre_cedula)],
+    ['WhatsApp',        p(alumno.padre_tlf_whatsapp), '', ''],
+  ], y)
 
-  // ── Educación ─────────────────────────────────────────────────────────
-  y = drawSectionTitle(doc, '8. Datos Escolares', y)
-  autoTable(doc, {
-    startY: y, margin: { left: 10, right: 10 }, theme: 'grid',
-    styles: { fontSize: 8, cellPadding: 1.5 },
-    body: [
-      ['Centro de estudios', padStr(alumno.centro_estudios), 'Grado / Nivel', padStr(alumno.grado_nivel)],
-      ['Padres en vida', padStr(alumno.padres_en_vida === 'ambos' ? 'Ambos' : alumno.padres_en_vida === 'solo_madre' ? 'Solo madre' : alumno.padres_en_vida === 'solo_padre' ? 'Solo padre' : alumno.padres_en_vida === 'ninguno' ? 'Ninguno' : '—'), '', ''],
-    ],
-    columnStyles: { 0: { fontStyle: 'bold', cellWidth: 38 }, 2: { fontStyle: 'bold', cellWidth: 38 } },
-  })
-  y = doc.lastAutoTable.finalY + 4
+  // ── 4. Representante ─────────────────────────────────────────────────────
+  y = checkSpace(doc, y, 60, DOC_TITLE, alumno.nombre_completo, page)
+  y = sectionBar(doc, '4 · REPRESENTANTE Y CONTACTOS', y)
+  y = tabla(doc, [
+    ['Representante',    p(alumno.representante_nombre),      'Parentesco',    p(alumno.representante_parentesco)],
+    ['Cédula',           p(alumno.representante_cedula),      'Teléfono',      p(alumno.representante_tlf)],
+    ['Correo',           p(alumno.correo_representante),      'Fam. monoparen.', sn(alumno.familia_monoparental)],
+    ['Otro responsable', p(alumno.otro_responsable_nombre),   'Cédula',        p(alumno.otro_responsable_cedula)],
+    ['Tlf otro resp.',   p(alumno.otro_responsable_tlf),      '', ''],
+    ['Emergencia 1',     p(alumno.contacto_emergencia_nombre), 'Tlf',          p(alumno.contacto_emergencia_telefono)],
+    ['Emergencia 2',     p(alumno.contacto_emergencia_2_nombre), 'Tlf',        p(alumno.contacto_emergencia_2_telefono)],
+  ], y)
 
-  // ── Compromisos ───────────────────────────────────────────────────────
-  y = drawSectionTitle(doc, '9. Compromisos y Autorizaciones', y)
-  autoTable(doc, {
-    startY: y, margin: { left: 10, right: 10 }, theme: 'grid',
-    styles: { fontSize: 8, cellPadding: 1.5 },
-    body: [
-      ['Acepta beca RD$4,500', si_no(alumno.acepta_beca_4500), 'Fecha', formatFecha(alumno.fecha_aceptacion_beca?.slice(0, 10))],
-      ['Acepta pago RD$600/mes', si_no(alumno.acepta_pago_600), 'Fecha', formatFecha(alumno.fecha_aceptacion_pago?.slice(0, 10))],
-      ['Autoriza fotos/redes', si_no(alumno.autoriza_fotos_redes), '', ''],
-    ],
-    columnStyles: { 0: { fontStyle: 'bold', cellWidth: 38 }, 2: { fontStyle: 'bold', cellWidth: 38 } },
-  })
-  y = doc.lastAutoTable.finalY + 10
+  // ── 5. Situación social ───────────────────────────────────────────────────
+  y = sectionBar(doc, '5 · SITUACIÓN SOCIAL', y)
+  y = tabla(doc, [
+    ['Beneficiario subsidio', sn(alumno.beneficiario_subsidio_estado), 'Descripción', p(alumno.subsidio_descripcion)],
+    ['Apoyo actividades', { content: p(alumno.apoyo_actividades), colSpan: 3 }],
+  ], y, { extra: { columnStyles: { 0: { fontStyle: 'bold', cellWidth: 42, fillColor: C.azulClaro, textColor: C.azul }, 2: { fontStyle: 'bold', cellWidth: 42, fillColor: C.azulClaro, textColor: C.azul } } } })
 
-  // ── Firma ─────────────────────────────────────────────────────────────
-  if (y < H - 40) {
-    doc.setDrawColor(100, 100, 100)
-    doc.setLineWidth(0.3)
-    doc.line(14, y + 20, 90, y + 20)
-    doc.line(W / 2 + 10, y + 20, W - 14, y + 20)
-    doc.setFontSize(7.5)
-    doc.setFont('helvetica', 'normal')
-    doc.text('Firma del Representante', 14, y + 25)
-    doc.text('Firma del Director — El Sistema PC', W / 2 + 10, y + 25)
-    doc.text(`Cédula: ${padStr(alumno.representante_cedula)}`, 14, y + 29)
-  }
+  // ── 6. Perfil musical ─────────────────────────────────────────────────────
+  y = checkSpace(doc, y, 70, DOC_TITLE, alumno.nombre_completo, page)
+  y = sectionBar(doc, '6 · PERFIL MUSICAL', y, C.dorado)
+  doc.setFillColor(...C.doradoClaro)
+  y = tabla(doc, [
+    ['Conocimientos musicales', sn(alumno.tiene_conocimientos_musicales), 'Instrumento previo',  p(alumno.instrumento_previo)],
+    ['Nivel lectura musical',   p(alumno.nivel_lectura_musical),          'Interés',             interes(alumno.interes_musical)],
+    ['Instrumento de interés',  p(alumno.instrumento_interes),            'Requiere iniciación', sn(alumno.requiere_iniciacion_musical)],
+    ['Músico favorito',         p(alumno.musico_favorito),                'Pref. aprendizaje',   p(alumno.preferencia_aprendizaje_musical)],
+  ], y)
+  y = tablaSimple(doc, [
+    ['Por qué quiere unirse',        p(alumno.por_que_unirse)],
+    ['Sentimiento música clásica',   p(alumno.sentimiento_musica_clasica)],
+    ['Sentimiento al aprender',      p(alumno.sentimiento_aprender_instrumento)],
+    ['Aspiración con instrumento',   p(alumno.aspiracion_instrumento)],
+  ], y, { labelW: 55 })
 
-  drawFooter(doc)
+  // ── 7. Salud y conducta ───────────────────────────────────────────────────
+  y = checkSpace(doc, y, 50, DOC_TITLE, alumno.nombre_completo, page)
+  y = sectionBar(doc, '7 · SALUD Y CONDUCTA', y, C.rojo)
+  y = tabla(doc, [
+    ['Tiene alergias',       sn(alumno.tiene_alergias),             'Cuáles',   p(alumno.alergias_descripcion)],
+    ['Cond. transmisible',   sn(alumno.tiene_condicion_transmisible),'Cuál',    p(alumno.condicion_transmisible_desc)],
+    ['Alergia medicamento',  sn(alumno.tiene_alergia_medicamento),  'Cuál',     p(alumno.alergia_medicamento_desc)],
+    ['Impedimento social',   sn(alumno.impedimento_social),         'Conducta', conducta(alumno.problemas_conducta)],
+  ], y)
+
+  // ── 8. Datos escolares ────────────────────────────────────────────────────
+  y = sectionBar(doc, '8 · DATOS ESCOLARES', y)
+  y = tabla(doc, [
+    ['Centro de estudios', p(alumno.centro_estudios), 'Grado / Nivel', p(alumno.grado_nivel)],
+    ['Padres en vida',     padresEnVida(alumno.padres_en_vida), '', ''],
+  ], y)
+
+  // ── 9. Compromisos ────────────────────────────────────────────────────────
+  y = checkSpace(doc, y, 55, DOC_TITLE, alumno.nombre_completo, page)
+  y = sectionBar(doc, '9 · COMPROMISOS Y AUTORIZACIONES', y, C.verde)
+  y = tabla(doc, [
+    ['Acepta beca RD$4,500',  sn(alumno.acepta_beca_4500),  'Acepta pago RD$600/mes', sn(alumno.acepta_pago_600)],
+    ['Autoriza fotos/redes',  sn(alumno.autoriza_fotos_redes), 'Fecha compromisos',  fecha(alumno.fecha_aceptacion_compromisos?.slice(0,10))],
+  ], y)
+
+  // ── Firmas ────────────────────────────────────────────────────────────────
+  y = checkSpace(doc, y, 45, DOC_TITLE, alumno.nombre_completo, page)
+  y += 8
+  doc.setDrawColor(...C.grisMedio)
+  doc.setLineWidth(0.3)
+
+  // Firma representante (izq)
+  doc.line(MARGIN, y + 18, MARGIN + 78, y + 18)
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(7.5)
+  doc.setTextColor(...C.grisOscuro)
+  doc.text('Firma del Representante', MARGIN, y + 23)
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(7)
+  doc.setTextColor(...C.grisMedio)
+  doc.text(p(alumno.representante_nombre), MARGIN, y + 27)
+  doc.text(`C.I.: ${p(alumno.representante_cedula)}`, MARGIN, y + 31)
+
+  // Firma director (der)
+  const xDir = W_LETTER / 2 + 8
+  doc.setDrawColor(...C.grisMedio)
+  doc.line(xDir, y + 18, W_LETTER - MARGIN, y + 18)
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(7.5)
+  doc.setTextColor(...C.grisOscuro)
+  doc.text('Encargado Administrativo', xDir, y + 23)
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(7)
+  doc.setTextColor(...C.grisMedio)
+  doc.text('El Sistema Punta Cana', xDir, y + 27)
+  doc.text(`Fecha: ${nowLong()}`, xDir, y + 31)
+
+  footer(doc, page.n)
   return doc
 }
 
-// ── CONSTANCIA DE INSCRIPCIÓN ─────────────────────────────────────────────
+// ════════════════════════════════════════════════════════════════════════════
+// CONSTANCIA DE INSCRIPCIÓN
+// ════════════════════════════════════════════════════════════════════════════
 
-/**
- * Genera el serial institucional de la constancia.
- * Formato: SOI-PC-YYYY-XXXXXXXX
- */
-function generarSerial(alumno) {
-  const year = new Date().getFullYear()
-  const base = alumno.id
-    ? alumno.id.replace(/-/g, '').slice(-8).toUpperCase()
-    : Date.now().toString(36).toUpperCase().slice(-8)
-  return `SOI-PC-${year}-${base}`
-}
-
-/**
- * Genera la constancia de inscripción para el representante.
- * @param {object} alumno
- * @param {{ reglamento?: string, horario?: string, bienvenida?: string }} docs
- * @returns {jsPDF}
- */
 export function generarConstanciaInscripcion(alumno, docs = {}) {
-  const doc = new jsPDF({ unit: 'mm', format: 'letter' })
-  const W = doc.internal.pageSize.getWidth()
-  const H = doc.internal.pageSize.getHeight()
-  const fecha = new Date().toLocaleDateString('es-DO', { day: '2-digit', month: 'long', year: 'numeric' })
-  const serial = generarSerial(alumno)
+  const doc  = new jsPDF({ unit: 'mm', format: 'letter' })
+  const ser  = serial(alumno)
+  const now  = nowLong()
 
-  drawHeader(doc, 'CONSTANCIA DE INSCRIPCIÓN', `Serie: ${serial} — ${fecha}`)
+  let y = header(doc, 'CONSTANCIA DE INSCRIPCIÓN', `Serie: ${ser}`)
 
-  let y = 48
-
-  // Saludo formal
-  doc.setFontSize(11)
+  // Sello "ORIGINAL" (esquina sup derecha)
   doc.setFont('helvetica', 'bold')
-  doc.setTextColor(...BRAND.color_primary)
-  doc.text('A QUIEN PUEDA INTERESAR:', 14, y)
+  doc.setFontSize(8)
+  doc.setTextColor(...C.dorado)
+  doc.setDrawColor(...C.dorado)
+  doc.setLineWidth(0.6)
+  doc.roundedRect(W_LETTER - MARGIN - 26, 5, 26, 10, 1, 1, 'S')
+  doc.text('ORIGINAL', W_LETTER - MARGIN - 13, 11.5, { align: 'center' })
+  doc.setTextColor(...C.grisOscuro)
+  doc.setLineWidth(0.2)
+
+  // ── Ciudad y fecha ────────────────────────────────────────────────────────
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(9.5)
+  doc.setTextColor(...C.grisMedio)
+  doc.text(`Punta Cana, ${now}`, W_LETTER - MARGIN, y, { align: 'right' })
+  y += 8
+
+  // ── A QUIEN PUEDA INTERESAR ───────────────────────────────────────────────
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(10.5)
+  doc.setTextColor(...C.azul)
+  doc.text('A QUIEN PUEDA INTERESAR:', MARGIN, y)
   y += 10
 
+  // ── Cuerpo de la carta ────────────────────────────────────────────────────
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(10)
-  doc.setTextColor(...BRAND.color_dark)
+  doc.setTextColor(...C.grisOscuro)
 
-  const cuerpo = [
-    `Por medio de la presente, ${BRAND.nombre} hace constar que:`,
+  const nombreAlumno = p(alumno.nombre_completo).toUpperCase()
+  const rep          = p(alumno.representante_nombre)
+  const repPar       = p(alumno.representante_parentesco)
+
+  const parrafos = [
+    `Por medio de la presente, El Sistema Punta Cana hace constar que:`,
     '',
-    `El alumno/a ${padStr(alumno.nombre_completo).toUpperCase()}, de ${calcEdad(alumno.fecha_nacimiento)},`,
-    `nacido/a el ${formatFecha(alumno.fecha_nacimiento)}, de nacionalidad ${padStr(alumno.nacionalidad)},`,
-    `ha sido debidamente inscrito/a en el programa de formación musical de`,
-    `${BRAND.nombre} a partir del día ${fecha}.`,
+    `El/La estudiante ${nombreAlumno}, de ${edad(alumno.fecha_nacimiento)},` +
+    ` nacido/a el ${fecha(alumno.fecha_nacimiento)}, de nacionalidad ${p(alumno.nacionalidad)},` +
+    ` ha sido debidamente inscrito/a en el Programa de Formación Musical de` +
+    ` El Sistema Punta Cana, a partir del día ${now}.`,
     '',
-    `El alumno/a${alumno.requiere_iniciacion_musical
-      ? ' participará en el programa de iniciación musical durante sus primeros meses,'
-      : ' ha demostrado conocimientos musicales previos,'}`,
-    `con interés en ${interesLabel(alumno.interes_musical).toLowerCase()} — instrumento: ${padStr(alumno.instrumento_interes)}.`,
+    alumno.requiere_iniciacion_musical
+      ? `El/La estudiante participará en el programa de iniciación musical, con interés en ` +
+        `${interes(alumno.interes_musical).toLowerCase()} — instrumento asignado: ${p(alumno.instrumento_interes)}.`
+      : `El/La estudiante cuenta con conocimientos musicales previos, con interés en ` +
+        `${interes(alumno.interes_musical).toLowerCase()} — instrumento: ${p(alumno.instrumento_interes)}.`,
     '',
-    `El representante, ${padStr(alumno.representante_nombre)} (${padStr(alumno.representante_parentesco)}),`,
-    `ha aceptado los términos del programa, incluyendo el aporte mensual de RD$600,`,
-    `consciente de que el alumno/a recibe una beca valorada en RD$4,500 que se`,
-    `mantendrá mientras demuestre rendimiento, interés y asistencia notable.`,
+    `El representante, ${rep} (${repPar}), ha aceptado los términos del programa,` +
+    ` incluyendo el aporte mensual de RD$600, con pleno conocimiento de que el/la estudiante` +
+    ` recibe una beca valorada en RD$4,500 mensuales, la cual se mantendrá mientras` +
+    ` demuestre rendimiento, interés y asistencia notable.`,
   ]
 
-  cuerpo.forEach(linea => {
-    if (linea === '') { y += 3; return }
-    const lines = doc.splitTextToSize(linea, W - 28)
-    doc.text(lines, 14, y)
-    y += lines.length * 6
+  parrafos.forEach(linea => {
+    if (!linea) { y += 4; return }
+    const lines = doc.splitTextToSize(linea, W_LETTER - MARGIN * 2)
+    doc.text(lines, MARGIN, y)
+    y += lines.length * 5.8
   })
 
-  y += 4
-
-  // ── Al presentar esta constancia ──────────────────────────────────────
-  doc.setFillColor(...BRAND.color_light)
-  doc.roundedRect(10, y, W - 20, 44, 2, 2, 'F')
   y += 6
 
-  doc.setFont('helvetica', 'bold')
-  doc.setFontSize(9.5)
-  doc.setTextColor(...BRAND.color_primary)
-  doc.text('Al presentar esta constancia en caja recibirá:', 14, y)
-  y += 7
+  // ── Caja: Al presentar esta constancia ───────────────────────────────────
+  const boxH = 60
+  doc.setFillColor(...C.azulClaro)
+  doc.setDrawColor(...C.azulMedio)
+  doc.setLineWidth(0.5)
+  doc.roundedRect(MARGIN, y, W_LETTER - MARGIN * 2, boxH, 3, 3, 'FD')
 
-  doc.setFont('helvetica', 'normal')
+  // Título caja
+  doc.setFillColor(...C.azul)
+  doc.roundedRect(MARGIN, y, W_LETTER - MARGIN * 2, 9, 3, 3, 'F')
+  doc.rect(MARGIN, y + 5, W_LETTER - MARGIN * 2, 4, 'F')
+  doc.setFont('helvetica', 'bold')
   doc.setFontSize(9)
-  doc.setTextColor(...BRAND.color_dark)
+  doc.setTextColor(...C.blanco)
+  doc.text('AL PRESENTAR ESTA CONSTANCIA EN CAJA RECIBIRÁ:', MARGIN + 4, y + 6.5)
+  y += 13
+
+  // Items
   const items = [
-    '✓   Tarjeta de pagos mensuales',
-    '✓   Horario de clases asignado',
-    '✓   Lista de útiles: lápiz HB, cuaderno pentagramado, borrador',
-    '✓   T-Shirt oficial de El Sistema Punta Cana',
+    ['bi-credit-card',  '✓  Tarjeta de pagos mensuales'],
+    ['bi-calendar',     '✓  Horario de clases asignado'],
+    ['bi-pencil',       '✓  Lista de útiles: lápiz HB, cuaderno pentagramado, borrador'],
+    ['bi-shirt',        '✓  T-Shirt oficial de El Sistema Punta Cana'],
   ]
-  items.forEach(item => { doc.text(item, 16, y); y += 6 })
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(9.5)
+  doc.setTextColor(...C.azul)
+  items.forEach(([, label]) => {
+    doc.text(label, MARGIN + 5, y)
+    y += 7
+  })
 
-  y += 2
+  y += 1
+  doc.setFillColor(...C.rojo)
+  doc.roundedRect(MARGIN + 3, y, W_LETTER - MARGIN * 2 - 6, 8, 1.5, 1.5, 'F')
   doc.setFont('helvetica', 'bold')
-  doc.setTextColor(180, 0, 0)
   doc.setFontSize(8.5)
-  doc.text('Pago obligatorio: RD$600 en caja al retirar los materiales.', 14, y)
-  doc.setTextColor(...BRAND.color_dark)
-  y += 10
+  doc.setTextColor(...C.blanco)
+  doc.text('PAGO OBLIGATORIO: RD$600 en caja al retirar los materiales', MARGIN + (W_LETTER - MARGIN * 2) / 2, y + 5.2, { align: 'center' })
+  y += 16
 
-  // ── Links institucionales ─────────────────────────────────────────────
+  // ── Recursos institucionales ──────────────────────────────────────────────
   const links = [
-    docs.horario    && { icon: '📅', label: 'Consultar horario de clases:', url: docs.horario },
-    docs.reglamento && { icon: '📋', label: 'Reglamento del programa:',     url: docs.reglamento },
-    docs.bienvenida && { icon: '⭐', label: 'Manual de bienvenida:',        url: docs.bienvenida },
+    docs.horario    && { icon: '📅', label: 'Consultar horario de clases:',    url: docs.horario },
+    docs.reglamento && { icon: '📋', label: 'Reglamento / Manual de convivencia:', url: docs.reglamento },
+    docs.bienvenida && { icon: '⭐', label: 'Manual de bienvenida al programa:', url: docs.bienvenida },
   ].filter(Boolean)
 
   if (links.length > 0) {
-    doc.setFontSize(9)
     doc.setFont('helvetica', 'bold')
-    doc.setTextColor(...BRAND.color_primary)
-    doc.text('Recursos para el representante:', 14, y)
+    doc.setFontSize(9)
+    doc.setTextColor(...C.azul)
+    doc.text('Recursos digitales para el representante:', MARGIN, y)
     y += 6
 
-    doc.setFont('helvetica', 'normal')
     links.forEach(({ icon, label, url }) => {
-      doc.setTextColor(...BRAND.color_dark)
-      doc.text(`${icon}  ${label}`, 14, y)
+      doc.setFont('helvetica', 'bold')
+      doc.setFontSize(8.5)
+      doc.setTextColor(...C.grisOscuro)
+      doc.text(`${icon}  ${label}`, MARGIN + 2, y)
       y += 5
-      doc.setTextColor(0, 86, 179)
-      const urlLines = doc.splitTextToSize(url, W - 30)
-      doc.textWithLink(urlLines[0], 18, y, { url })
+      doc.setFont('helvetica', 'normal')
+      doc.setFontSize(8)
+      doc.setTextColor(...C.azulMedio)
+      const urlLines = doc.splitTextToSize(url, W_LETTER - MARGIN * 2 - 10)
+      doc.textWithLink(urlLines[0], MARGIN + 6, y, { url })
       y += 7
     })
     y += 2
+  } else {
+    // Placeholder cuando no hay links configurados
+    doc.setFont('helvetica', 'italic')
+    doc.setFontSize(8)
+    doc.setTextColor(...C.grisMedio)
+    doc.text('Los recursos digitales serán comunicados por el coordinador del programa.', MARGIN, y)
+    y += 8
   }
 
-  // ── Firmas ────────────────────────────────────────────────────────────
-  if (y > H - 50) { drawFooter(doc); doc.addPage(); y = 20 }
+  // ── Firmas ────────────────────────────────────────────────────────────────
+  if (y > H_LETTER - 55) {
+    footer(doc, 1)
+    doc.addPage()
+    y = header(doc, 'CONSTANCIA DE INSCRIPCIÓN (cont.)', `Serie: ${ser}`)
+  }
 
-  doc.setTextColor(...BRAND.color_dark)
-  doc.setDrawColor(120, 120, 120)
+  y += 6
+  doc.setDrawColor(...C.grisMedio)
   doc.setLineWidth(0.3)
-  doc.line(14, y + 18, 88, y + 18)
-  doc.line(W / 2 + 8, y + 18, W - 14, y + 18)
+  doc.setTextColor(...C.grisOscuro)
 
-  doc.setFontSize(8)
+  // Firma director
+  doc.line(MARGIN, y + 20, MARGIN + 80, y + 20)
   doc.setFont('helvetica', 'bold')
-  doc.text('Director del Programa', 14, y + 23)
-  doc.text('Firma del Representante', W / 2 + 8, y + 23)
-
+  doc.setFontSize(8)
+  doc.text('Encargado Administrativo', MARGIN, y + 25)
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(7.5)
-  doc.text(BRAND.nombre, 14, y + 28)
-  doc.text(padStr(alumno.representante_nombre), W / 2 + 8, y + 28)
-  doc.text(`Cédula: ${padStr(alumno.representante_cedula)}`, W / 2 + 8, y + 32)
+  doc.setTextColor(...C.grisMedio)
+  doc.text('El Sistema Punta Cana', MARGIN, y + 29)
+  doc.text(now, MARGIN, y + 33)
 
-  // Serial en pie
-  doc.setFontSize(7)
-  doc.setTextColor(150, 150, 150)
-  doc.text(`Serie: ${serial}`, W - 14, H - 14, { align: 'right' })
+  // Firma representante
+  const xRep = W_LETTER / 2 + 6
+  doc.setTextColor(...C.grisOscuro)
+  doc.line(xRep, y + 20, W_LETTER - MARGIN, y + 20)
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(8)
+  doc.text('Firma del Representante', xRep, y + 25)
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(7.5)
+  doc.setTextColor(...C.grisMedio)
+  doc.text(p(alumno.representante_nombre), xRep, y + 29)
+  doc.text(`C.I.: ${p(alumno.representante_cedula)}`, xRep, y + 33)
 
-  drawFooter(doc)
+  // Serial al pie (antes del footer)
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(6.5)
+  doc.setTextColor(170, 170, 170)
+  doc.text(`Serie: ${ser}`, W_LETTER - MARGIN, H_LETTER - 15, { align: 'right' })
+
+  footer(doc, 1)
   return doc
 }
 
-/**
- * Descarga la ficha del alumno como PDF.
- * @param {object} alumno
- */
+// ─── Descargas ───────────────────────────────────────────────────────────────
+
 export function descargarFichaAlumno(alumno) {
-  const doc = generarFichaAlumno(alumno)
+  const doc    = generarFichaAlumno(alumno)
   const nombre = (alumno.nombre_completo ?? 'alumno').toLowerCase().replace(/\s+/g, '-')
   doc.save(`ficha-${nombre}.pdf`)
 }
 
-/**
- * Descarga la constancia de inscripción como PDF.
- * Fetches institutional document URLs from config automatically.
- * @param {object} alumno
- */
 export async function descargarConstancia(alumno) {
   let docs = {}
-  try { docs = await getDocumentosInstitucionales() } catch { /* sin config, igual genera */ }
-  const doc = generarConstanciaInscripcion(alumno, docs)
+  try { docs = await getDocumentosInstitucionales() } catch { /* genera sin links */ }
+  const doc    = generarConstanciaInscripcion(alumno, docs)
   const nombre = (alumno.nombre_completo ?? 'alumno').toLowerCase().replace(/\s+/g, '-')
-  doc.save(`constancia-inscripcion-${nombre}.pdf`)
+  doc.save(`constancia-${nombre}.pdf`)
+}
+
+export function descargarFichaDemo() {
+  descargarFichaAlumno(ALUMNO_DEMO)
+}
+
+export async function descargarConstanciaDemo() {
+  await descargarConstancia(ALUMNO_DEMO)
 }

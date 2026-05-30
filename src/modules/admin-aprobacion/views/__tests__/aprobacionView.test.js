@@ -6,6 +6,7 @@ vi.mock('../../../../lib/supabaseClient.js', () => ({
       getSession: vi.fn(),
     },
     from: vi.fn(),
+    rpc: vi.fn(),
   },
 }))
 
@@ -20,14 +21,16 @@ describe('aprobacionView', () => {
       id: 'p1',
       email: 'maestro1@test.com',
       nombre_completo: 'Ana López',
-      maestros: [{ especialidad: 'Violín' }],
+      solicitud_instrumento: 'Violín',
+      solicitud_resena: 'Maestra con experiencia en iniciación musical',
       created_at: '2026-05-15T10:00:00Z',
     },
     {
       id: 'p2',
       email: 'maestro2@test.com',
       nombre_completo: 'Carlos Ruiz',
-      maestros: [{ especialidad: 'Piano' }],
+      solicitud_instrumento: 'Piano',
+      solicitud_resena: 'Pianista especializado en repertorio clásico',
       created_at: '2026-05-16T14:30:00Z',
     },
   ]
@@ -71,8 +74,9 @@ describe('aprobacionView', () => {
     expect(container.querySelector('table')).toBeTruthy()
     expect(container.textContent).toContain('Ana López')
     expect(container.textContent).toContain('Carlos Ruiz')
-    expect(container.textContent).toContain('Violín')
-    expect(container.textContent).toContain('Piano')
+    expect(container.textContent).toContain('Descripción')
+    expect(container.textContent).toContain('Maestra con experiencia en iniciación musical')
+    expect(container.textContent).toContain('Pianista especializado en repertorio clásico')
   })
 
   it('shows empty message when no pending teachers', async () => {
@@ -94,8 +98,12 @@ describe('aprobacionView', () => {
     expect(rechazarBtns.length).toBe(2)
   })
 
-  it('calls supabase update with estado=activo and rol=maestro on Aprobar click', async () => {
-    const updateMock = vi.fn().mockReturnThis()
+  it('calls rpc approve_maestro_profile with correct params on Aprobar click', async () => {
+    const rpcMock = vi.fn().mockResolvedValue({
+      data: { success: true, rol: 'maestro', estado: 'activo' },
+      error: null,
+    })
+    supabase.rpc = rpcMock
 
     supabase.from.mockReturnValue({
       select: vi.fn().mockReturnThis(),
@@ -103,7 +111,6 @@ describe('aprobacionView', () => {
       in: vi.fn().mockReturnThis(),
       maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
       order: vi.fn().mockResolvedValue({ data: mockPendientes, error: null }),
-      update: updateMock,
     })
 
     await renderAprobacionView(container)
@@ -115,9 +122,13 @@ describe('aprobacionView', () => {
     await vi.waitUntil(() => document.querySelector('.app-modal-btn-save'), { timeout: 1000 })
     document.querySelector('.app-modal-btn-save').click()
 
-    await vi.waitUntil(() => updateMock.mock.calls.length > 0, { timeout: 1000 })
+    await vi.waitUntil(() => rpcMock.mock.calls.length > 0, { timeout: 1000 })
 
-    expect(updateMock).toHaveBeenCalledWith({ estado: 'activo', rol: 'maestro' })
+    expect(rpcMock).toHaveBeenCalledWith('approve_maestro_profile', {
+      p_profile_id: 'p1',
+      p_new_rol: 'maestro',
+      p_new_estado: 'activo',
+    })
   })
 
   it('calls supabase update with estado=rechazado on Rechazar click', async () => {
@@ -142,3 +153,4 @@ describe('aprobacionView', () => {
     expect(updateMock).toHaveBeenCalledWith({ estado: 'rechazado' })
   })
 })
+

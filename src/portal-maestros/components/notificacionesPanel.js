@@ -107,7 +107,7 @@ export const notificacionesPanel = {
       listEl.innerHTML = `
         <div class="text-center text-muted mt-5">
           <i class="bi bi-bell-slash" style="font-size: 2rem; opacity: 0.5;"></i>
-          <p class="mt-2">No tenés notificaciones recientes.</p>
+          <p class="mt-2">No tienes notificaciones recientes.</p>
         </div>
       `;
       return;

@@ -141,7 +141,7 @@ export const pwaInstaller = {
           id: 'no-classes-assigned',
           priority: 'low',
           icon: 'bi-info-circle-fill',
-          text: 'No tenés clases asignadas en el sistema actualmente.',
+          text: 'No tienes clases asignadas en el sistema actualmente.',
           actionLabel: 'Soporte',
           action: () => {
             if (window.router) window.router.navigate('perfil');

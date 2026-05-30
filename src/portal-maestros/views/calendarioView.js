@@ -9,6 +9,7 @@ import {
   getSesiones,
   getInscripcionesClases,
 } from '../services/maestroDataService.js'
+import { autoJustificarClasesProgramadas } from '../services/emergenteJustificacionService.js'
 
 const DIAS_HEADER = ['Do', 'Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sa']
 const UMBRAL_VENCIDA = 7
@@ -116,6 +117,15 @@ async function _calcularEstadoMes(maestroId, anio, mes) {
 
   const fechasRegistradas = new Set(sesiones.map((s) => s.fecha))
 
+  // Fechas con sesiones emergentes (clase_id = null) — agrupadas por fecha
+  const emergentePorFecha = new Map()
+  todasSesiones
+    .filter((s) => !s.clase_id)
+    .forEach((s) => {
+      if (!emergentePorFecha.has(s.fecha)) emergentePorFecha.set(s.fecha, [])
+      emergentePorFecha.get(s.fecha).push(s)
+    })
+
   // 4. Calcular estado por día
   const estadoMap = new Map()
   const hoy = new Date()
@@ -128,8 +138,10 @@ async function _calcularEstadoMes(maestroId, anio, mes) {
     const fecha = `${y}-${m}-${dia}`
     const diaEs = DIAS_ES[d.getDay()]
     const tieneCl = diasConClase.has(diaEs)
+    const emergentesFecha = emergentePorFecha.get(fecha) || []
 
-    if (!tieneCl) {
+    // Si no hay clase programada pero sí hay sesión emergente, evaluarla
+    if (!tieneCl && emergentesFecha.length === 0) {
       estadoMap.set(fecha, 'sin-clase')
       continue
     }
@@ -406,9 +418,47 @@ async function _openActionDrawer(fecha) {
     })
     .sort((a, b) => (a.hora_inicio || '').localeCompare(b.hora_inicio || ''))
 
+  // Sesiones emergentes del día (clase_id = null) — tienen prioridad sobre las programadas
+  const emergentesSesiones = sesiones
+    .filter((s) => !s.clase_id)
+    .sort((a, b) => (a.hora_inicio || '').localeCompare(b.hora_inicio || ''))
+
   // 3. Renderizar contenido
+  // Si hay emergentes → mostrar solo esas (reemplazan las programadas ese día)
+  // Si no → mostrar clases programadas del horario
   let clasesHTML = ''
-  if (clasesProgramadas.length > 0) {
+  if (emergentesSesiones.length > 0) {
+    clasesHTML = emergentesSesiones
+      .map((s) => {
+        const tieneAsistencia = Array.isArray(s.asistencia) && s.asistencia.length > 0
+        const estaRegistrada =
+          s.estado === 'registrada' || s.estado === 'cerrada' || tieneAsistencia
+
+        return `
+        <div class="pm-drawer-clase-item" style="border-left: 3px solid var(--pm-warning);">
+          <div class="pm-drawer-clase-info">
+            <span class="pm-drawer-clase-hora">${(s.hora_inicio || '--:--').slice(0, 5)} - ${(s.hora_fin || '--:--').slice(0, 5)}</span>
+            <span class="pm-drawer-clase-nombre">${escHTML(s.actividad || 'Clase Emergente')}</span>
+            <span class="pm-drawer-clase-instrumento" style="color:var(--pm-warning);">
+              <i class="bi bi-lightning-charge-fill"></i> Actividad especial
+            </span>
+          </div>
+          <div class="pm-drawer-clase-actions">
+            <button class="pm-btn btn-ver-sesion-emergente"
+              data-sesion="${s.id}"
+              style="background:var(--pm-${estaRegistrada ? 'success' : 'primary'}); border-color:var(--pm-${estaRegistrada ? 'success' : 'primary'});">
+              <i class="bi bi-${estaRegistrada ? 'eye' : 'person-check'}"></i>
+              ${estaRegistrada ? 'Ver asistencia' : 'Pasar asistencia'}
+            </button>
+          </div>
+          <div class="pm-clase-status ${estaRegistrada ? 'completed' : ''}" style="margin-left: auto;">
+            ${estaRegistrada ? '<i class="bi bi-check-circle-fill" style="color:var(--pm-success)"></i>' : ''}
+          </div>
+        </div>
+      `
+      })
+      .join('')
+  } else if (clasesProgramadas.length > 0) {
     clasesHTML = clasesProgramadas
       .map((c) => {
         const tieneSesion =
@@ -437,7 +487,7 @@ async function _openActionDrawer(fecha) {
             <span class="pm-drawer-clase-nombre">${escHTML(c.nombre)}</span>
             <span class="pm-drawer-clase-instrumento">${escHTML(c.instrumento || '')}</span>
           </div>
-          
+
           <div class="pm-drawer-clase-actions">
             ${
               !tieneSesion
@@ -483,7 +533,13 @@ async function _openActionDrawer(fecha) {
         <div style="flex:1">
           <h3 style="margin:0; font-size:1.1rem; font-weight:700;">${fechaLocal.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })}</h3>
           <p style="margin:0.25rem 0 0; font-size:0.85rem; color:var(--pm-text-muted);">
-            ${clasesProgramadas.length > 0 ? `${clasesProgramadas.length} clase(s) programada(s)` : 'Sin clases programadas'}
+            ${
+              emergentesSesiones.length > 0
+                ? `<span style="color:var(--pm-warning);"><i class="bi bi-lightning-charge-fill"></i> ${emergentesSesiones.length} actividad(es) especial(es)</span>`
+                : clasesProgramadas.length > 0
+                  ? `${clasesProgramadas.length} clase(s) programada(s)`
+                  : 'Sin clases programadas'
+            }
           </p>
         </div>
         <div class="d-flex align-items-center gap-2">
@@ -559,6 +615,14 @@ async function _openActionDrawer(fecha) {
         })
     })
 
+  drawer.querySelectorAll('.btn-ver-sesion-emergente').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const sesionId = btn.dataset.sesion
+      close()
+      window.location.hash = `#/asistencia?sesion=${sesionId}&fecha=${fecha}`
+    })
+  })
+
   const btnEmergente = drawer.querySelector('#pm-drawer-emergente')
   if (btnEmergente) {
     btnEmergente.addEventListener('click', () => {
@@ -615,12 +679,26 @@ async function _abrirModalClaseEmergente(fecha, clases) {
 
         if (error) throw error
 
-        // Redirigir a asistencia
+        // Auto-justify scheduled classes for the same date
+        const resultado = await autoJustificarClasesProgramadas(data, getMaestroLocal().id)
+        if (resultado.errores.length > 0) {
+          console.warn('[calendario] Auto-justificación parcial:', resultado.errores)
+          AppToast.warning(
+            `Clase emergente creada. ${resultado.justificadas} clase(s) justificada(s) automáticamente (${resultado.errores.length} con error).`,
+          )
+        } else if (resultado.justificadas > 0) {
+          AppToast.success(
+            `Clase emergente creada. ${resultado.justificadas} clase(s) programada(s) marcada(s) como justificadas.`,
+          )
+        } else {
+          AppToast.success('Clase emergente creada. Procedé a pasar asistencia.')
+        }
+
+        // Navigate to attendance
         const drawer = document.getElementById('pm-action-drawer')
         if (drawer) drawer.classList.remove('open')
 
         window.location.hash = `#/asistencia?sesion=${data.id}&fecha=${datos.fecha}`
-        AppToast.success('Clase emergente creada. Procedé a pasar asistencia.')
       } catch (err) {
         console.error('Error creando clase emergente:', err)
         AppToast.error('No se pudo crear la clase emergente')

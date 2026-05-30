@@ -63,6 +63,7 @@ import { analyzeObservation } from '../services/groqService.js'
 import {
   saveProgressFromAI,
   saveProgressFromDSL,
+  saveProgressFromEvaluaciones,
   linkProgresosToObjetivos,
 } from '../services/progressAggregatorService.js'
 
@@ -1653,13 +1654,21 @@ function _renderVista(container, ctx) {
             indicadorActivo.id,
             resultado.evaluaciones,
             maestro.id,
+            presentes,
           )
           if (error) throw error
         }
 
-        // Save observation record — guarda texto original + DSL de IA si corresponde
+        // Save observation record — guarda texto original + DSL de IA + texto mejorado para PDF
         const parsed = { indicador_id: indicadorActivo.id, evaluaciones: resultado.evaluaciones }
-        await saveObservation(sesionId, maestro.id, raw, parsed, resultado.dslGenerado || null)
+        await saveObservation(
+          sesionId,
+          maestro.id,
+          raw,
+          parsed,
+          resultado.dslGenerado || null,
+          resultado.textoMejorado || null,
+        )
 
         // Auto-save !STATE tokens from DSL if present — fire-and-forget, does not block the save flow
         const _parsedForProgress = parseDSL(raw)
@@ -1691,6 +1700,7 @@ function _renderVista(container, ctx) {
           maestro.id,
           resultado.evaluaciones,
           clase.nombre || 'Clase',
+          presentes,
         )
 
         if (!promo.success) {
@@ -1751,6 +1761,35 @@ function _renderVista(container, ctx) {
             } catch (lcErr) {
               console.warn('[asistencia] Error checking level completion:', lcErr)
             }
+          }
+        }
+
+        // Sincronizar a tabla `progresos` para que el Resumen Pedagógico funcione
+        if (resultado.evaluaciones.length > 0 && claseId && indicadorActivo?.nombre) {
+          const { saved, error } = await saveProgressFromEvaluaciones({
+            sesionId,
+            claseId,
+            maestroId: maestro.id,
+            fechaHoy,
+            contenido: indicadorActivo.nombre,
+            evaluaciones: resultado.evaluaciones,
+          })
+          if (error) {
+            console.warn('[asistencia] Error al sincronizar progresos:', error)
+          }
+        }
+
+        // Motor de Logros: recalcular progreso después de guardar evaluaciones
+        if (sesionId) {
+          const { academicService } =
+            await import('../../modules/academic-routes/services/academicService.js')
+          const { createAchievementsSummaryModal } =
+            await import('../components/AchievementsSummaryModal.js')
+
+          const achievements = await academicService.processSessionClosure(sesionId)
+
+          if (achievements && achievements.length > 0) {
+            await createAchievementsSummaryModal(container, achievements)
           }
         }
 

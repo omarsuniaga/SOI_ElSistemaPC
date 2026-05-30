@@ -43,9 +43,9 @@ export function parseToBlocks(raw) {
 
   return raw
     .split('\n')
-    .map(line => line.trim())
-    .filter(line => line.length > 0)
-    .map(line => {
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0)
+    .map((line) => {
       const parsed = parseDSL(line)
       return {
         alumnos: parsed.alumnos,
@@ -54,7 +54,7 @@ export function parseToBlocks(raw) {
         tarea: parsed.tareas.length > 0 ? parsed.tareas[0] : null,
       }
     })
-    .filter(block => block.alumnos.length > 0)
+    .filter((block) => block.alumnos.length > 0)
 }
 
 /**
@@ -69,8 +69,8 @@ export function parseToBlocks(raw) {
  */
 export function expandTodos(blocks, presentes) {
   // Separate #todos blocks from specific blocks
-  const todosBlocks = blocks.filter(b => b.alumnos.includes('todos'))
-  const specificBlocks = blocks.filter(b => !b.alumnos.includes('todos'))
+  const todosBlocks = blocks.filter((b) => b.alumnos.includes('todos'))
+  const specificBlocks = blocks.filter((b) => !b.alumnos.includes('todos'))
 
   // Map: alumno_id -> evaluation (specific blocks take precedence over todos)
   const result = new Map()
@@ -93,9 +93,7 @@ export function expandTodos(blocks, presentes) {
   for (const block of specificBlocks) {
     for (const mention of block.alumnos) {
       const lower = mention.toLowerCase()
-      const matched = presentes.filter(p =>
-        p.nombre_completo.toLowerCase().includes(lower)
-      )
+      const matched = presentes.filter((p) => p.nombre_completo.toLowerCase().includes(lower))
       for (const alumno of matched) {
         result.set(alumno.id, {
           alumno_id: alumno.id,
@@ -122,10 +120,8 @@ export function resolveDSL(raw, indicadorId, presentes) {
   const blocks = parseToBlocks(raw)
   const evaluaciones = expandTodos(blocks, presentes)
 
-  const evaluatedIds = new Set(evaluaciones.map(e => e.alumno_id))
-  const missing = presentes
-    .filter(p => !evaluatedIds.has(p.id))
-    .map(p => p.nombre_completo)
+  const evaluatedIds = new Set(evaluaciones.map((e) => e.alumno_id))
+  const missing = presentes.filter((p) => !evaluatedIds.has(p.id)).map((p) => p.nombre_completo)
 
   return {
     indicador_id: indicadorId,
@@ -145,7 +141,7 @@ export function calculateSemaphore(evaluaciones, totalAlumnos) {
   if (!evaluaciones || evaluaciones.length === 0) return 'gray'
 
   const allCovered = totalAlumnos > 0 && evaluaciones.length >= totalAlumnos
-  const allGreen = evaluaciones.every(e => e.nota != null && e.nota >= 4)
+  const allGreen = evaluaciones.every((e) => e.nota != null && e.nota >= 4)
 
   if (allCovered && allGreen) return 'green'
   return 'yellow'
@@ -164,13 +160,32 @@ export function calculateSemaphore(evaluaciones, totalAlumnos) {
  * @param {{ alumno_id: string, nota: number|null, observacion: string|null, tarea: string|null }[]} evaluaciones
  * @returns {Promise<{ data: object[]|null, error: object|null }>}
  */
-export async function saveEvaluaciones(sesionId, indicadorId, evaluaciones, teacherId) {
+export async function saveEvaluaciones(
+  sesionId,
+  indicadorId,
+  evaluaciones,
+  teacherId,
+  presentes = null,
+) {
   if (!teacherId) {
-    console.error('[evaluationService] Error: teacherId is required for saveEvaluaciones (RLS)');
-    return { error: { message: 'teacherId is required' } };
+    console.error('[evaluationService] Error: teacherId is required for saveEvaluaciones (RLS)')
+    return { error: { message: 'teacherId is required' } }
   }
 
-  const rows = evaluaciones.map(e => ({
+  // Defense-in-depth: filtrar solo alumnos presentes
+  let filtered = evaluaciones
+  if (presentes && presentes.length > 0) {
+    const presentesIds = new Set(presentes.map((p) => p.id))
+    const antes = evaluaciones.length
+    filtered = evaluaciones.filter((e) => presentesIds.has(e.alumno_id))
+    if (filtered.length < antes) {
+      console.warn(
+        `[evaluationService] saveEvaluaciones: filtrados ${antes - filtered.length} evaluaciones de alumnos ausentes`,
+      )
+    }
+  }
+
+  const rows = filtered.map((e) => ({
     session_id: sesionId,
     indicator_id: indicadorId,
     student_id: e.alumno_id,
@@ -180,12 +195,10 @@ export async function saveEvaluaciones(sesionId, indicadorId, evaluaciones, teac
     tarea: e.tarea,
   }))
 
-  const { data, error } = await supabase
-    .from('indicator_attempts')
-    .upsert(rows, {
-      onConflict: 'session_id,indicator_id,student_id',
-      ignoreDuplicates: false,
-    })
+  const { data, error } = await supabase.from('indicator_attempts').upsert(rows, {
+    onConflict: 'session_id,indicator_id,student_id',
+    ignoreDuplicates: false,
+  })
 
   return { data, error }
 }
@@ -210,7 +223,7 @@ export async function getSemaphoreForNode(nodoId, claseId) {
     return { semaphore: 'gray', indicators: [] }
   }
 
-  const indicatorIds = indicators.map(i => i.id)
+  const indicatorIds = indicators.map((i) => i.id)
 
   // 2. Get attempts for those indicators
   const { data: attempts, error: attError } = await supabase
@@ -271,7 +284,7 @@ export async function processarEvaluacion(rawText, indicadorId, presentes, indic
 
     // Si es lenguaje natural, convertir a DSL con IA (con contexto de alumnos e indicador activo)
     if (modo === 'natural') {
-      const presentesNombres = presentes.map(p => p.nombre_completo)
+      const presentesNombres = presentes.map((p) => p.nombre_completo)
       dslText = await structureTextToDSL(rawText, {
         presentes: presentesNombres,
         indicadorActivo: indicadorNombre,
@@ -281,16 +294,15 @@ export async function processarEvaluacion(rawText, indicadorId, presentes, indic
     // Parsear y expandir con la lógica existente
     const blocks = parseToBlocks(dslText)
     const evaluaciones = expandTodos(blocks, presentes)
-    const evaluatedIds = new Set(evaluaciones.map(e => e.alumno_id))
-    const missing = presentes
-      .filter(p => !evaluatedIds.has(p.id))
-      .map(p => p.nombre_completo)
+    const evaluatedIds = new Set(evaluaciones.map((e) => e.alumno_id))
+    const missing = presentes.filter((p) => !evaluatedIds.has(p.id)).map((p) => p.nombre_completo)
 
     return {
       modo,
       dslGenerado: modo === 'natural' ? dslText : null,
       evaluaciones,
       missing,
+      textoMejorado: buildTextoMejorado(rawText, evaluaciones, presentes),
       error: null,
     }
   } catch (err) {
@@ -300,6 +312,7 @@ export async function processarEvaluacion(rawText, indicadorId, presentes, indic
       dslGenerado: null,
       evaluaciones: [],
       missing: [],
+      textoMejorado: '',
       error: err.message || 'Error desconocido',
     }
   }
@@ -314,16 +327,60 @@ export async function processarEvaluacion(rawText, indicadorId, presentes, indic
  * @param {object[]} evaluaciones
  * @returns {Promise<{ success: boolean, error: string | null }>}
  */
-export async function guardarEvaluaciones(sesionId, indicadorId, evaluaciones, teacherId) {
+export async function guardarEvaluaciones(
+  sesionId,
+  indicadorId,
+  evaluaciones,
+  teacherId,
+  presentes = null,
+) {
   if (!evaluaciones || evaluaciones.length === 0) {
     return { success: true, error: null }
   }
 
-  const { error } = await saveEvaluaciones(sesionId, indicadorId, evaluaciones, teacherId)
+  const { error } = await saveEvaluaciones(
+    sesionId,
+    indicadorId,
+    evaluaciones,
+    teacherId,
+    presentes,
+  )
   if (error) {
     console.error('[evaluationService] Error guardando evaluaciones:', error)
     return { success: false, error: error.message }
   }
 
   return { success: true, error: null }
+}
+
+/**
+ * Builds a clean human-readable text from structured evaluations.
+ * Ideal for PDF display — prose, not DSL.
+ *
+ * @param {string} rawText - Texto original del maestro
+ * @param {{ alumno_id: string, nota: number|null, observacion: string|null, tarea: string|null }[]} evaluaciones
+ * @param {{ id: string, nombre_completo: string }[]} presentes
+ * @returns {string}
+ */
+export function buildTextoMejorado(rawText, evaluaciones, presentes) {
+  const nombreMap = new Map(presentes.map((p) => [p.id, p.nombre_completo]))
+
+  const parts = []
+
+  if (rawText?.trim()) {
+    parts.push(`Texto original: "${rawText.trim()}"`)
+    parts.push('')
+  }
+
+  parts.push('Evaluaciones:')
+
+  for (const ev of evaluaciones) {
+    const nombre = nombreMap.get(ev.alumno_id) || 'Alumno'
+    const nota = ev.nota !== null && ev.nota !== undefined ? `${ev.nota}/5` : '—'
+    const obs = ev.observacion?.trim() ? ev.observacion : '—'
+    const tarea = ev.tarea?.trim() ? ` | Tarea: ${ev.tarea}` : ''
+    parts.push(`• ${nombre}: ${obs} | Nota: ${nota}${tarea}`)
+  }
+
+  return parts.join('\n')
 }

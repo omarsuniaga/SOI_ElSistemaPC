@@ -25,7 +25,7 @@ export function createAutoDraft({ saveFn, debounceMs = 30000 }) {
     timer = setTimeout(async () => {
       timer = null
       await saveFn(content)
-      savedCallbacks.forEach(cb => cb(content))
+      savedCallbacks.forEach((cb) => cb(content))
     }, debounceMs)
   }
 
@@ -74,7 +74,12 @@ export async function saveDraft(sesionId, maestroId, contenidoRaw) {
   } else {
     const { data, error } = await supabase
       .from('observaciones_sesion')
-      .insert({ sesion_id: sesionId, maestro_id: maestroId, contenido_raw: contenidoRaw, es_borrador: true })
+      .insert({
+        sesion_id: sesionId,
+        maestro_id: maestroId,
+        contenido_raw: contenidoRaw,
+        es_borrador: true,
+      })
       .select()
       .single()
     if (error) throw error
@@ -108,10 +113,7 @@ export async function loadDraft(sesionId, maestroId) {
  * @returns {Promise<void>}
  */
 export async function discardDraft(draftId) {
-  const { error } = await supabase
-    .from('observaciones_sesion')
-    .delete()
-    .eq('id', draftId)
+  const { error } = await supabase.from('observaciones_sesion').delete().eq('id', draftId)
 
   if (error) throw error
 }
@@ -125,7 +127,14 @@ export async function discardDraft(draftId) {
  * @param {string|null} contenidoIaDsl - DSL generado por IA (null si el maestro escribió en DSL directo)
  * @returns {Promise<Object>} saved row
  */
-export async function saveObservation(sesionId, maestroId, contenidoRaw, contenidoParsed, contenidoIaDsl = null) {
+export async function saveObservation(
+  sesionId,
+  maestroId,
+  contenidoRaw,
+  contenidoParsed,
+  contenidoIaDsl = null,
+  contenidoIaMejorado = null,
+) {
   // Delete any active draft first
   const { error: deleteError } = await supabase
     .from('observaciones_sesion')
@@ -144,6 +153,7 @@ export async function saveObservation(sesionId, maestroId, contenidoRaw, conteni
       contenido_raw: contenidoRaw,
       contenido_parsed: contenidoParsed,
       contenido_ia_dsl: contenidoIaDsl,
+      contenido_ia_mejorado: contenidoIaMejorado,
       es_borrador: false,
     })
     .select()

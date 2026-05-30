@@ -626,6 +626,14 @@ window.addEventListener('routeChanged', (e) => {
   updatePortalButtonVisibility();
 });
 
+// Reset pm-modo to 'maestro' when returning to the teachers portal
+const teacherBridge = document.querySelector('.teacher-bridge');
+if (teacherBridge) {
+  teacherBridge.addEventListener('click', () => {
+    localStorage.setItem('pm-modo', 'maestro');
+  });
+}
+
 // ============================================================================
 // EXPORTAR PARA TESTING
 // ============================================================================

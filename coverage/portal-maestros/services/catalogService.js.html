@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/232</span>
+                <span class='fraction'>0/227</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/194</span>
+                <span class='fraction'>0/189</span>
             </div>
         
             
@@ -643,17 +643,7 @@
 <a name='L578'></a><a href='#L578'>578</a>
 <a name='L579'></a><a href='#L579'>579</a>
 <a name='L580'></a><a href='#L580'>580</a>
-<a name='L581'></a><a href='#L581'>581</a>
-<a name='L582'></a><a href='#L582'>582</a>
-<a name='L583'></a><a href='#L583'>583</a>
-<a name='L584'></a><a href='#L584'>584</a>
-<a name='L585'></a><a href='#L585'>585</a>
-<a name='L586'></a><a href='#L586'>586</a>
-<a name='L587'></a><a href='#L587'>587</a>
-<a name='L588'></a><a href='#L588'>588</a>
-<a name='L589'></a><a href='#L589'>589</a>
-<a name='L590'></a><a href='#L590'>590</a>
-<a name='L591'></a><a href='#L591'>591</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L581'></a><a href='#L581'>581</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -672,12 +662,6 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -695,11 +679,6 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -1088,6 +1067,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -1259,13 +1239,7 @@ import catalogCache from './catalogCache.js';
 export async function <span class="fstat-no" title="function not covered" >getAlumnos(</span>claseId) {
 <span class="cstat-no" title="statement not covered" >  if (!claseId) <span class="cstat-no" title="statement not covered" >return [];</span></span>
   
-  // 1. Intentar cache primero
-  const cached = <span class="cstat-no" title="statement not covered" >await catalogCache.getByIndex('alumnos', 'by_clase', claseId);</span>
-<span class="cstat-no" title="statement not covered" >  if (cached &amp;&amp; cached.length &gt; 0) {</span>
-<span class="cstat-no" title="statement not covered" >    return cached;</span>
-  }
-  
-  // 2. Cargar de Supabase
+  // Alumnos SIEMPRE del backend filtrado por claseId (no usar cache, evita stale data de otras clases)
 <span class="cstat-no" title="statement not covered" >  try {</span>
     const { data, error } = <span class="cstat-no" title="statement not covered" >await supabase</span>
       .from('alumnos_clases')
@@ -1281,14 +1255,9 @@ export async function <span class="fstat-no" title="function not covered" >getAl
         .filter(Boolean)
         .map(<span class="fstat-no" title="function not covered" >a </span>=&gt; (<span class="cstat-no" title="statement not covered" >{</span>
           id: a.id,
-          nombre: a.nombre_completo,
+          nombre: a.nombre_completo || '',
           instrumento: a.instrumento_principal
         }));
-      
-      // Guardar en cache
-<span class="cstat-no" title="statement not covered" >      for (const a of alumnos) {</span>
-<span class="cstat-no" title="statement not covered" >        await catalogCache.set('alumnos', { ...a, clase_id: claseId });</span>
-      }
       
 <span class="cstat-no" title="statement not covered" >      return alumnos;</span>
     }
@@ -1681,7 +1650,8 @@ export async function <span class="fstat-no" title="function not covered" >getOp
   }
   
   // Agregar opciones del historial del maestro (priorizadas)
-<span class="cstat-no" title="statement not covered" >  if (trigger) {</span>
+  // Solo para triggers que NO son alumnos (#), para evitar mezclar alumnos de otras clases
+<span class="cstat-no" title="statement not covered" >  if (trigger &amp;&amp; trigger !== '#') {</span>
     const historial = <span class="cstat-no" title="statement not covered" >await catalogCache.getTopUsed(trigger, 3);</span>
     const historialOptions = <span class="cstat-no" title="statement not covered" >historial</span>
       .flatMap(<span class="fstat-no" title="function not covered" >h </span>=&gt; <span class="cstat-no" title="statement not covered" >h.recent_selections || [])</span>
@@ -1840,7 +1810,7 @@ export default {
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-05-11T03:20:00.789Z
+                at 2026-05-30T22:08:25.251Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

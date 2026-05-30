@@ -116,38 +116,94 @@ function renderContent(container) {
           </div>
         </div>
         
-        <div class="alumnos-header-actions">
-          <button class="btn btn-outline-success btn-sm-compact me-2" id="btnExportarCSV" title="Exportar CSV">
+        <div class="alumnos-header-actions flex-wrap">
+          <button class="btn btn-outline-success btn-sm-compact" id="btnExportarCSV" title="Exportar CSV">
             <i class="bi bi-file-earmark-spreadsheet"></i> CSV
           </button>
-          <button class="btn btn-outline-secondary btn-sm-compact me-2" id="btnReporteMes" title="Inscritos por mes">
+          <button class="btn btn-outline-secondary btn-sm-compact" id="btnReporteMes" title="Inscritos por mes">
             <i class="bi bi-bar-chart"></i> Reporte
           </button>
-          <button class="btn btn-outline-danger btn-sm-compact me-2" id="btnPdfDemo" title="Vista previa PDFs">
+          <button class="btn btn-outline-danger btn-sm-compact" id="btnPdfDemo" title="Vista previa PDFs">
             <i class="bi bi-file-earmark-pdf"></i> PDFs
           </button>
-          <button class="btn btn-success btn-sm-compact me-2" id="btnInscribir">
+          <button class="btn btn-success btn-sm-compact" id="btnInscribir">
             <i class="bi bi-person-plus me-1"></i>Inscribir
           </button>
           <button class="btn btn-premium-action" id="btnAgregarAlumno">
-            <i class="bi bi-plus-lg me-1.5"></i>Nuevo Alumno
+            <i class="bi bi-plus-lg me-1"></i>Nuevo Alumno
           </button>
         </div>
       </div>
 
-      <div class="alumnos-filter-toolbar mb-4">
-        <div class="premium-search-container flex-grow-1">
+      <div class="alumnos-filter-toolbar mb-4 flex-wrap">
+        <div class="premium-search-container flex-grow-1" style="min-width: 180px;">
           <i class="bi bi-search search-icon-muted"></i>
           <input type="text" class="form-control premium-search-input" placeholder="Buscar alumno..." id="buscar" autocomplete="off">
         </div>
-        
-        <div class="premium-select-container">
-          <i class="bi bi-funnel select-icon-muted"></i>
-          <select class="form-select premium-filter-select" id="filtroEstado">
-            <option value="todos">Todos los estados</option>
-            <option value="activo">Activos</option>
-            <option value="inactivo">Inactivos</option>
-          </select>
+
+        <!-- Dropdown de Filtros Múltiples -->
+        <div class="dropdown">
+          <button class="btn btn-outline-secondary btn-sm-compact d-flex align-items-center gap-2 dropdown-toggle position-relative" type="button" id="btnDropdownFiltros" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false" style="min-height: 32px; border-radius: 8px;">
+            <i class="bi bi-funnel"></i> <span>Filtros</span>
+            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-primary d-none" id="filtrosBadgeCount" style="font-size: 0.65rem; padding: 0.25em 0.5em;">
+              0
+            </span>
+          </button>
+          <div class="dropdown-menu dropdown-menu-end p-3 shadow-lg border" aria-labelledby="btnDropdownFiltros" style="min-width: 270px; border-radius: 12px; background: var(--bs-body-bg); z-index: 1050;">
+            <h6 class="dropdown-header px-0 mb-2 text-primary d-flex align-items-center gap-2" style="font-size: 0.85rem; font-weight: 700; background: transparent; border: none; color: var(--bs-primary) !important;">
+              <i class="bi bi-sliders"></i> Segmentar Alumnos
+            </h6>
+            
+            <!-- Filtro WhatsApp -->
+            <div class="mb-2">
+              <label class="form-label-compact mb-1" style="font-size: 0.75rem; font-weight: 600; opacity: 0.85;">WhatsApp</label>
+              <div class="position-relative d-flex align-items-center w-100">
+                <i class="bi bi-whatsapp select-icon-muted" style="left: 10px; font-size: 0.85rem;"></i>
+                <select class="form-select premium-filter-select" id="filtroWhatsapp" style="padding-left: 28px !important;">
+                  <option value="todos">Todos</option>
+                  <option value="con_whatsapp">Con WhatsApp</option>
+                  <option value="sin_whatsapp">Sin WhatsApp</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Filtro Completitud -->
+            <div class="mb-2">
+              <label class="form-label-compact mb-1" style="font-size: 0.75rem; font-weight: 600; opacity: 0.85;">Completitud Perfil</label>
+              <div class="position-relative d-flex align-items-center w-100">
+                <i class="bi bi-shield-check select-icon-muted" style="left: 10px; font-size: 0.85rem;"></i>
+                <select class="form-select premium-filter-select" id="filtroCompletitud" style="padding-left: 28px !important;">
+                  <option value="todos">Todos los rangos</option>
+                  <option value="critico">Crítico (Rojo)</option>
+                  <option value="parcial">Parcial (Amarillo)</option>
+                  <option value="bueno">Bueno (Turquesa)</option>
+                  <option value="completo">Completo (Sin badge)</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Filtro Instrumento -->
+            <div class="mb-3">
+              <label class="form-label-compact mb-1" style="font-size: 0.75rem; font-weight: 600; opacity: 0.85;">Instrumento</label>
+              <div class="position-relative d-flex align-items-center w-100">
+                <i class="bi bi-music-note select-icon-muted" style="left: 10px; font-size: 0.85rem;"></i>
+                <select class="form-select premium-filter-select" id="filtroInstrumento" style="padding-left: 28px !important;">
+                  <option value="todos">Todos</option>
+                  <option value="con_instrumento">Con Instrumento</option>
+                  <option value="sin_instrumento">Sin Instrumento</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="d-flex justify-content-between align-items-center border-top pt-2 mt-2">
+              <button class="btn btn-link btn-sm text-decoration-none text-muted p-0" id="btnLimpiarFiltros" style="font-size: 0.75rem;">
+                <i class="bi bi-trash3 me-0.5"></i> Limpiar
+              </button>
+              <span class="text-muted" id="filtrosActivosCount" style="font-size: 0.72rem; font-weight: 600; opacity: 0.8;">
+                Filtros activos: 0
+              </span>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -172,6 +228,11 @@ function renderTableRows(alumnos) {
     const isActive = a.is_active ?? true
     const accentClass = `border-accent-${isActive ? 'success' : 'secondary'}`
     const statusDotClass = `bg-${isActive ? 'success' : 'secondary'}`
+    
+    const { porcentaje, nivel } = calcularCompletitud(a)
+    const tieneBadge = nivel !== 'completo'
+    const badgeColor = tieneBadge ? NIVEL_COLOR[nivel] : ''
+
     return `
       <div class="list-group-item list-group-item-action d-flex align-items-center justify-content-between p-3 w-100 border-start-accent ${accentClass}" data-id="${a.id}" style="cursor: pointer;">
         <div class="d-flex align-items-center gap-3 flex-grow-1 overflow-hidden">
@@ -184,29 +245,41 @@ function renderTableRows(alumnos) {
           <div class="d-flex flex-column flex-grow-1 overflow-hidden pe-3">
             <div class="d-flex align-items-center gap-2">
               <span class="fw-bold text-truncate" style="font-size: 1.05rem;">${escapeHTML(nombre)}</span>
-              ${(() => {
-                const { porcentaje, nivel } = calcularCompletitud(a)
-                if (nivel === 'completo') return ''
-                const color = NIVEL_COLOR[nivel]
-                return `<span class="badge bg-${color} bg-opacity-15 text-${color} border border-${color} border-opacity-25 small" title="Perfil ${porcentaje}% completo — ${NIVEL_LABEL[nivel]}">
-                  ${porcentaje}%
-                </span>`
-              })()}
             </div>
             <small class="text-muted text-truncate">
               ${escapeHTML(a.instrumento || 'Sin instrumento especificado')} ${a.familiar_nombre ? `• Rep: ${escapeHTML(a.familiar_nombre)}` : ''}
             </small>
           </div>
         </div>
-        <div class="d-flex align-items-center gap-2 flex-shrink-0">
-          <button class="btn btn-sm btn-outline-primary rounded-pill px-2 d-flex align-items-center justify-content-center" data-action="edit" data-id="${a.id}" title="Editar alumno" style="min-height: 32px; width: 32px;">
-            <i class="bi bi-pencil-square"></i>
-          </button>
-          ${a.telefono ? `
-            <button class="btn btn-sm btn-success bg-gradient text-white rounded-pill px-3 shadow-sm d-flex align-items-center gap-2" data-action="whatsapp" data-id="${a.id}" title="Enviar WhatsApp" style="min-height: 32px;">
-              <i class="bi bi-whatsapp"></i> <span class="d-none d-sm-inline fw-medium">${formatPhone(a.telefono)}</span>
+        
+        <!-- Acciones y Estados perfectamente alineados a la derecha -->
+        <div class="d-flex align-items-center gap-3 flex-shrink-0">
+          <!-- Columna Badge Completitud (52px de ancho fijo) -->
+          <div class="d-flex justify-content-center align-items-center flex-shrink-0" style="width: 52px;">
+            ${tieneBadge ? `
+              <span class="badge badge-completitud badge-completitud-${badgeColor}" title="Perfil ${porcentaje}% completo — ${NIVEL_LABEL[nivel]}">
+                ${porcentaje}%
+              </span>
+            ` : ''}
+          </div>
+          
+          <!-- Columna Botón Editar (36px de ancho fijo) -->
+          <div class="d-flex justify-content-center align-items-center flex-shrink-0" style="width: 36px;">
+            <button class="btn btn-sm btn-outline-primary rounded-circle d-flex align-items-center justify-content-center" data-action="edit" data-id="${a.id}" title="Editar alumno" style="height: 32px; width: 32px; min-height: 32px; padding: 0;">
+              <i class="bi bi-pencil-square"></i>
             </button>
-          ` : '<span class="badge bg-light text-muted border d-none d-sm-inline-block">Sin número</span>'}
+          </div>
+          
+          <!-- Columna Botón WhatsApp (36px de ancho fijo) -->
+          <div class="d-flex justify-content-center align-items-center flex-shrink-0" style="width: 36px;">
+            ${a.telefono ? `
+              <button class="btn btn-sm btn-success bg-gradient text-white rounded-circle d-flex align-items-center justify-content-center shadow-sm" data-action="whatsapp" data-id="${a.id}" title="Enviar WhatsApp" style="height: 32px; width: 32px; min-height: 32px; padding: 0;">
+                <i class="bi bi-whatsapp"></i>
+              </button>
+            ` : ''}
+          </div>
+          
+          <!-- Flecha de Navegación -->
           <i class="bi bi-chevron-right text-muted ms-1" style="font-size: 1.1rem; transition: transform 0.2s ease;"></i>
         </div>
       </div>
@@ -240,7 +313,20 @@ function attachGlobalEvents(container) {
   const searchInput = container.querySelector('#buscar')
   searchInput?.addEventListener('input', applyFilters)
 
-  container.querySelector('#filtroEstado')?.addEventListener('change', applyFilters)
+  container.querySelector('#filtroWhatsapp')?.addEventListener('change', applyFilters)
+  container.querySelector('#filtroCompletitud')?.addEventListener('change', applyFilters)
+  container.querySelector('#filtroInstrumento')?.addEventListener('change', applyFilters)
+
+  container.querySelector('#btnLimpiarFiltros')?.addEventListener('click', (e) => {
+    e.stopPropagation()
+    const wSelect = container.querySelector('#filtroWhatsapp')
+    const cSelect = container.querySelector('#filtroCompletitud')
+    const iSelect = container.querySelector('#filtroInstrumento')
+    if (wSelect) wSelect.value = 'todos'
+    if (cSelect) cSelect.value = 'todos'
+    if (iSelect) iSelect.value = 'todos'
+    applyFilters()
+  })
 
   const tbody = container.querySelector('#alumnosTBody')
   tbody?.addEventListener('click', async (e) => {
@@ -296,27 +382,64 @@ function openWhatsAppModal(id) {
 
 function applyFilters() {
   const searchTerm = currentContainer.querySelector('#buscar')?.value.trim().toLowerCase() || ''
-  const filtroEstado = currentContainer.querySelector('#filtroEstado')?.value || 'todos'
+  const filtroWhatsapp = currentContainer.querySelector('#filtroWhatsapp')?.value || 'todos'
+  const filtroCompletitud = currentContainer.querySelector('#filtroCompletitud')?.value || 'todos'
+  const filtroInstrumento = currentContainer.querySelector('#filtroInstrumento')?.value || 'todos'
 
   state.alumnos = state.alumnosOriginales.filter(a => {
+    // 1. Filtro de búsqueda por texto
     const matchSearch = !searchTerm ||
       (a.nombre || '').toLowerCase().includes(searchTerm) ||
       (a.instrumento || '').toLowerCase().includes(searchTerm) ||
       (a.telefono || '').toLowerCase().includes(searchTerm) ||
       (a.familiar_nombre || '').toLowerCase().includes(searchTerm)
 
-    const matchEstado = filtroEstado === 'todos' ||
-      (filtroEstado === 'activo' && a.is_active) ||
-      (filtroEstado === 'inactivo' && !a.is_active)
+    // 2. Filtro por WhatsApp (Tiene número de teléfono cargado)
+    const tieneWhatsapp = !!a.telefono && a.telefono.trim() !== ''
+    const matchWhatsapp = filtroWhatsapp === 'todos' ||
+      (filtroWhatsapp === 'con_whatsapp' && tieneWhatsapp) ||
+      (filtroWhatsapp === 'sin_whatsapp' && !tieneWhatsapp)
 
-    return matchSearch && matchEstado
+    // 3. Filtro por Completitud (Rango de Badge)
+    const { nivel } = calcularCompletitud(a)
+    const matchCompletitud = filtroCompletitud === 'todos' ||
+      (filtroCompletitud === nivel)
+
+    // 4. Filtro por Instrumento
+    const tieneInstrumento = !!a.instrumento && a.instrumento.trim() !== '' && a.instrumento.toLowerCase() !== 'sin instrumento especificado'
+    const matchInstrumento = filtroInstrumento === 'todos' ||
+      (filtroInstrumento === 'con_instrumento' && tieneInstrumento) ||
+      (filtroInstrumento === 'sin_instrumento' && !tieneInstrumento)
+
+    return matchSearch && matchWhatsapp && matchCompletitud && matchInstrumento
   })
+
+  // Calcular filtros activos para el Badge e Indicador
+  let activos = 0
+  if (filtroWhatsapp !== 'todos') activos++
+  if (filtroCompletitud !== 'todos') activos++
+  if (filtroInstrumento !== 'todos') activos++
+
+  const badgeEl = currentContainer.querySelector('#filtrosBadgeCount')
+  if (badgeEl) {
+    badgeEl.textContent = activos
+    if (activos > 0) {
+      badgeEl.classList.remove('d-none')
+    } else {
+      badgeEl.classList.add('d-none')
+    }
+  }
+
+  const labelEl = currentContainer.querySelector('#filtrosActivosCount')
+  if (labelEl) {
+    labelEl.textContent = `Filtros activos: ${activos}`
+  }
 
   refreshTable()
 }
 
 function getParentescoOptions(selectedValue = '') {
-  return PARENTESCOS.map(p => 
+  return PARENTESCOS.map(p =>
     `<option value="${p.value}" ${p.value === selectedValue ? 'selected' : ''}>${p.label}</option>`
   ).join('')
 }
@@ -891,7 +1014,7 @@ function openDeleteModal(id) {
   }
 
   state.deletingId = id
-  
+
   // 1. Abrimos el modal con cargando
   AppModal.open({
     title: '⚠️ Eliminar Alumno',
@@ -911,7 +1034,7 @@ function openDeleteModal(id) {
       AppToast.success('Alumno eliminado correctamente')
     }
   })
-  
+
   // Ocultamos temporalmente el botón de guardar hasta tener la respuesta
   const saveBtn = document.querySelector('#app-global-modal .app-modal-btn-save')
   if (saveBtn) saveBtn.style.display = 'none'
@@ -922,7 +1045,7 @@ function openDeleteModal(id) {
       if (state.deletingId !== id) return // evitar race conditions
 
       const inscripciones = await obtenerInscripcionesAlumno(id)
-      
+
       const bodyEl = document.querySelector('#app-global-modal .app-modal-body')
       if (!bodyEl || state.deletingId !== id) return
 
@@ -992,7 +1115,7 @@ function openDeleteModal(id) {
 function refreshTable() {
   const tbody = currentContainer.querySelector('#alumnosTBody')
   if (!tbody) return
-  
+
   if (state.alumnos.length === 0) {
     tbody.innerHTML = renderEmpty()
   } else {

@@ -778,10 +778,11 @@
 .pm-cal-day.has-sessions { background: var(--pm-surface-2); }
 .pm-cal-day.empty { opacity: .3; pointer-events: none; }
 
-.pm-cal-day.estado-registrada { background: var(--pm-success-bg); color: var(--pm-success-text); }
-.pm-cal-day.estado-pendiente   { background: var(--pm-warning-bg); color: var(--pm-warning-text); }
-.pm-cal-day.estado-vencida     { background: var(--pm-danger-bg); color: var(--pm-danger-text); }
-.pm-cal-day.estado-sin-clase   { color: var(--pm-text-muted); }
+.pm-cal-day.estado-registrada         { background: var(--pm-success-bg); color: var(--pm-success-text); }
+.pm-cal-day.estado-pendiente          { background: var(--pm-warning-bg); color: var(--pm-warning-text); }
+.pm-cal-day.estado-vencida            { background: var(--pm-danger-bg);  color: var(--pm-danger-text); }
+.pm-cal-day.estado-cubierta-emergente { background: #e0f2fe; color: #0c4a6e; }
+.pm-cal-day.estado-sin-clase          { color: var(--pm-text-muted); }
 .pm-cal-day.otro-mes           { opacity: .3; pointer-events: none; }
 
 .pm-cal-day::after {
@@ -794,9 +795,10 @@
   display: none;
 }
 
-.pm-cal-day.estado-registrada::after { display: block; background: var(--pm-success); }
-.pm-cal-day.estado-pendiente::after   { display: block; background: var(--pm-warning); }
-.pm-cal-day.estado-vencida::after    { display: block; background: var(--pm-danger); }
+.pm-cal-day.estado-registrada::after          { display: block; background: var(--pm-success); }
+.pm-cal-day.estado-pendiente::after           { display: block; background: var(--pm-warning); }
+.pm-cal-day.estado-vencida::after             { display: block; background: var(--pm-danger); }
+.pm-cal-day.estado-cubierta-emergente::after  { display: block; background: #0891b2; }
 
 .pm-cal-legend {
   display: flex;

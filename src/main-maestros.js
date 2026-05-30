@@ -162,21 +162,10 @@ import './modules/academic-routes/styles/academic-routes.css'
 // No depende de window.__SOI_MODE__ ni de ningún flag hardcodeado
 let IS_ADMIN = false
 
-// Clave de localStorage para el modo activo (solo relevante si el usuario
-// tiene ambos roles: es_admin && es_maestro)
-const PM_MODO_KEY = 'pm-modo'
+import { getModoActual, setModo as _setModo } from './portal-maestros/utils/modoUtils.js'
 
-function _getModoActual(maestro) {
-  if (!maestro?.es_admin) return 'maestro'
-  if (!maestro?.es_maestro) return 'admin'
-  // Usuario con ambos roles: respetar preferencia guardada, default 'admin'
-  return localStorage.getItem(PM_MODO_KEY) || 'admin'
-}
-
-function _setModo(modo) {
-  localStorage.setItem(PM_MODO_KEY, modo)
-  window.location.reload()
-}
+// Re-export for legacy callers and tests
+export { getModoActual as _getModoActual }
 let _permisosChannel = null
 
 function buildMaestroTabs(permisos, isAdmin = false) {
@@ -1315,7 +1304,7 @@ async function initPortal() {
   // Si el usuario tiene ambos roles (es_admin && es_maestro), respetar el
   // modo guardado en localStorage (pm-modo). Permite que un maestro-admin
   // opere como maestro sin ver la UI de admin.
-  const _modoActual = _getModoActual(maestro)
+  const _modoActual = getModoActual(maestro)
   IS_ADMIN = Boolean(maestro?.es_admin === true) && _modoActual === 'admin'
   console.log(
     '[Init] IS_ADMIN:',

@@ -1,4 +1,4 @@
-import{n as e}from"./rolldown-runtime-tcWNtVWY.js";import{i as t}from"./supabase-DJmkTfk1.js";import{t as n}from"./AppToast-BOjiJExQ.js";import{r}from"./groqService-CboUohPW.js";var i=`
+import{n as e}from"./rolldown-runtime-tcWNtVWY.js";import{i as t}from"./supabase-DJmkTfk1.js";import{t as n}from"./AppToast-BOjiJExQ.js";import{r}from"./groqService-CzM57djA.js";var i=`
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; color: #1a1d29; background: #fff; }
 
@@ -256,7 +256,7 @@ import{n as e}from"./rolldown-runtime-tcWNtVWY.js";import{i as t}from"./supabase
       </div>
       <span class="comp-delta ${a(t.cls)}">${a(t.label)}</span>
     </div>
-  `}function p(e){return!e||e.length===0?``:`<div class="rpt-content-chips">${e.map(e=>`<span class="content-chip">${a(e)}</span>`).join(``)}</div>`}function ee(e){let t=document.createElement(`iframe`);t.style.cssText=`position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;border:none`,document.body.appendChild(t);let n=t.contentWindow;return n?(n.document.open(),n.document.write(e),n.document.close(),setTimeout(()=>{n.print(),setTimeout(()=>{t.parentNode&&document.body.removeChild(t)},1e3)},2e3),!0):(document.body.removeChild(t),!1)}function m(e,t=!1){return`<!DOCTYPE html>
+  `}function p(e){return!e||e.length===0?``:`<div class="rpt-content-chips">${e.map(e=>`<span class="content-chip">${a(e)}</span>`).join(``)}</div>`}function m(e,t=`reporte`){let n=window.open(``,`_blank`);return n?(n.document.open(),n.document.write(e),n.document.close(),n.focus(),n.onload=()=>{setTimeout(()=>n.print(),500)},setTimeout(()=>{try{n&&!n.closed&&n.print()}catch{}},1500),!0):(h(e,t),!1)}function h(e,t=`reporte`){let n=new Date().toISOString().split(`T`)[0],r=new Blob([e],{type:`text/html;charset=utf-8`}),i=URL.createObjectURL(r),a=document.createElement(`a`);a.href=i,a.download=`${t}-${n}.html`,document.body.appendChild(a),a.click(),document.body.removeChild(a),setTimeout(()=>URL.revokeObjectURL(i),1e3)}function ee(e,t=!1){return`<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8">
@@ -269,38 +269,38 @@ import{n as e}from"./rolldown-runtime-tcWNtVWY.js";import{i as t}from"./supabase
 <body>
   ${e}
 </body>
-</html>`}var h=e({buildAlumnoAttMap:()=>_,calcAttendanceStats:()=>g,generateDailyReport:()=>S,generateMonthlyAttendance:()=>C,generateMonthlyPedagogical:()=>w});function g(e){let t=e||[];return{P:t.filter(e=>e.estado===`P`).length,A:t.filter(e=>e.estado===`A`).length,J:t.filter(e=>e.estado===`J`).length,total:t.length}}function _(e){let t={};for(let n of e)for(let e of n.asistencia||[])t[e.alumno_id]||(t[e.alumno_id]={}),t[e.alumno_id][n.id]=e.estado;return t}function v(e){return e?new Date(e+`T00:00:00`).toLocaleDateString(`es-DO`,{day:`2-digit`,month:`2-digit`,year:`numeric`}):``}function y(e){return[`Enero`,`Febrero`,`Marzo`,`Abril`,`Mayo`,`Junio`,`Julio`,`Agosto`,`Septiembre`,`Octubre`,`Noviembre`,`Diciembre`][e-1]??``}function b(e,t){return new Date(e,t,0).getDate()}function x(e){return String(e).padStart(2,`0`)}async function S(e){try{let{data:r,error:i}=await t.from(`sesiones_clase`).select(`id, fecha, clase_id, asistencia, contenido`).eq(`id`,e).single();if(i)throw i;let{data:u,error:f}=await t.from(`clases`).select(`id, nombre, instrumento, maestro_id`).eq(`id`,r.clase_id).single();if(f)throw f;let h=`Docente`;if(u.maestro_id){let{data:e}=await t.from(`maestros`).select(`nombre_completo`).eq(`id`,u.maestro_id).single();e&&(h=e.nombre_completo)}let{count:_}=await t.from(`sesiones_clase`).select(`id`,{count:`exact`,head:!0}).eq(`clase_id`,u.id).lte(`fecha`,r.fecha),y=_||1,{data:b,error:x}=await t.from(`alumnos_clases`).select(`alumnos(id, nombre_completo)`).eq(`clase_id`,u.id).eq(`activo`,!0).order(`alumnos(nombre_completo)`);if(x)throw x;let S=(b||[]).map(e=>e.alumnos).filter(Boolean);if(!S||S.length===0){n.error(`No hay alumnos registrados para esta clase.`);return}let C=r.asistencia||[],w=g(C),T={};C.forEach(e=>{T[e.alumno_id]=e});let E=S.length>20,D=r.contenido||``,O=D.split(/[\n,]/).map(e=>e.replace(/^\s*[\-\*\d\.]+\s*/,``).trim()).filter(e=>e.length>2&&e.length<60).slice(0,12),te=D.split(`
-`).filter(e=>e.trim()),k=[];for(let e of te)/destacad|excelente|logr/i.test(e)?k.push({type:`pos`,label:`Destacado`,text:e.replace(/^[\-\*]\s*/,``)}):/alerta|ausencia|riesgo|falt/i.test(e)?k.push({type:`neg`,label:`Alerta`,text:e.replace(/^[\-\*]\s*/,``)}):/novedad|nota|aviso/i.test(e)&&k.push({type:`info`,label:`Novedad`,text:e.replace(/^[\-\*]\s*/,``)});let A=k.slice(0,4).map(e=>d(e.type,e.label,e.text)).join(``),ne=`REPORTE DIARIO · ${v(r.fecha)}`,j=u.nombre,M=o({docTag:ne,clase:j,docente:h,periodo:`Sesión #${y} · ${v(r.fecha)}`}),re=c([{label:`Presentes`,value:w.P,type:`ok`},{label:`Ausentes`,value:w.A,type:`bad`},{label:`Justificados`,value:w.J,type:`warn`},{label:`Total`,value:S.length,type:`navy`}]),N=`
+</html>`}var g=e({buildAlumnoAttMap:()=>v,calcAttendanceStats:()=>_,generateDailyReport:()=>C,generateMonthlyAttendance:()=>w,generateMonthlyPedagogical:()=>T});function _(e){let t=e||[];return{P:t.filter(e=>e.estado===`P`).length,A:t.filter(e=>e.estado===`A`).length,J:t.filter(e=>e.estado===`J`).length,total:t.length}}function v(e){let t={};for(let n of e)for(let e of n.asistencia||[])t[e.alumno_id]||(t[e.alumno_id]={}),t[e.alumno_id][n.id]=e.estado;return t}function y(e){return e?new Date(e+`T00:00:00`).toLocaleDateString(`es-DO`,{day:`2-digit`,month:`2-digit`,year:`numeric`}):``}function b(e){return[`Enero`,`Febrero`,`Marzo`,`Abril`,`Mayo`,`Junio`,`Julio`,`Agosto`,`Septiembre`,`Octubre`,`Noviembre`,`Diciembre`][e-1]??``}function x(e,t){return new Date(e,t,0).getDate()}function S(e){return String(e).padStart(2,`0`)}async function C(e){try{let{data:r,error:i}=await t.from(`sesiones_clase`).select(`id, fecha, clase_id, asistencia, contenido`).eq(`id`,e).single();if(i)throw i;let u;if(r.clase_id){let{data:e,error:n}=await t.from(`clases`).select(`id, nombre, instrumento, maestro_id`).eq(`id`,r.clase_id).single();if(n)throw n;u=e}else u={id:e,nombre:r.actividad||`Actividad Especial`,instrumento:r.motivo||``,maestro_id:r.maestro_id};let f=`Docente`;if(u.maestro_id){let{data:e}=await t.from(`maestros`).select(`nombre_completo`).eq(`id`,u.maestro_id).single();e&&(f=e.nombre_completo)}let h=1;if(r.clase_id){let{count:e}=await t.from(`sesiones_clase`).select(`id`,{count:`exact`,head:!0}).eq(`clase_id`,r.clase_id).lte(`fecha`,r.fecha);h=e||1}let g=[];if(r.clase_id){let{data:e,error:n}=await t.from(`alumnos_clases`).select(`alumnos(id, nombre_completo)`).eq(`clase_id`,r.clase_id).eq(`activo`,!0).order(`alumnos(nombre_completo)`);if(n)throw n;g=(e||[]).map(e=>e.alumnos).filter(Boolean)}else{let e=(r.asistencia||[]).map(e=>e.alumno_id).filter(Boolean);if(e.length>0){let{data:n}=await t.from(`alumnos`).select(`id, nombre_completo`).in(`id`,e);g=n||[]}}if(!g||g.length===0){n.error(`No hay alumnos registrados para esta actividad.`);return}let v=r.asistencia||[],b=_(v),x={};v.forEach(e=>{x[e.alumno_id]=e});let S=g.length>20,C=r.contenido||``,w=C.split(/[\n,]/).map(e=>e.replace(/^\s*[\-\*\d\.]+\s*/,``).trim()).filter(e=>e.length>2&&e.length<60).slice(0,12),T=C.split(`
+`).filter(e=>e.trim()),E=[];for(let e of T)/destacad|excelente|logr/i.test(e)?E.push({type:`pos`,label:`Destacado`,text:e.replace(/^[\-\*]\s*/,``)}):/alerta|ausencia|riesgo|falt/i.test(e)?E.push({type:`neg`,label:`Alerta`,text:e.replace(/^[\-\*]\s*/,``)}):/novedad|nota|aviso/i.test(e)&&E.push({type:`info`,label:`Novedad`,text:e.replace(/^[\-\*]\s*/,``)});let D=E.slice(0,4).map(e=>d(e.type,e.label,e.text)).join(``),te=`REPORTE DIARIO · ${y(r.fecha)}`,ne=u.nombre,re=o({docTag:te,clase:ne,docente:f,periodo:`Sesión #${h} · ${y(r.fecha)}`}),O=c([{label:`Presentes`,value:b.P,type:`ok`},{label:`Ausentes`,value:b.A,type:`bad`},{label:`Justificados`,value:b.J,type:`warn`},{label:`Total`,value:g.length,type:`navy`}]),k=`
       <p class="rpt-section-title">Registro de asistencia</p>
       <table class="rpt-table">
         <thead><tr><th>#</th><th>Alumno</th><th>Estado</th><th>Observación</th></tr></thead>
-        <tbody>${S.map((e,t)=>{let n=T[e.id],r=n?.estado??`—`,i=[`P`,`A`,`J`].includes(r)?l(r):a(r),o=a(n?.observacion||``);return`<tr>
+        <tbody>${g.map((e,t)=>{let n=x[e.id],r=n?.estado??`—`,i=[`P`,`A`,`J`].includes(r)?l(r):a(r),o=a(n?.observacion||``);return`<tr>
         <td>${t+1}</td>
         <td>${a(e.nombre_completo)}</td>
         <td style="text-align:center">${i}</td>
         <td style="font-size:6.5pt;color:#6b7085">${o}</td>
       </tr>`}).join(``)}</tbody>
       </table>
-    `,P=O.length>0?`<p class="rpt-section-title">Contenido de la sesión</p>${p(O)}`:``,F=A?`<p class="rpt-section-title">Observaciones</p><div class="rpt-obs">${A}</div>`:``,ie=s(1,1,v(r.fecha));ee(m(`
-      <div class="${E?`page land`:`page`}">
-        ${M}
+    `,A=w.length>0?`<p class="rpt-section-title">Contenido de la sesión</p>${p(w)}`:``,j=D?`<p class="rpt-section-title">Observaciones</p><div class="rpt-obs">${D}</div>`:``,ie=s(1,1,y(r.fecha));m(ee(`
+      <div class="${S?`page land`:`page`}">
         ${re}
-        ${N}
-        ${P}
-        ${F}
+        ${O}
+        ${k}
+        ${A}
+        ${j}
         ${ie}
       </div>
-    `,E))||n.warn(`El navegador bloqueó la ventana emergente. Permite las ventanas emergentes para este sitio e intenta de nuevo.`)}catch(e){console.error(`[reportService] generateDailyReport:`,e),n.error(`Error al generar el reporte: `+e.message)}}async function C(e,r,i){try{let u=x(i),d=b(r,i),p=`${r}-${u}-01`,h=`${r}-${u}-${d}`,S=i===1?12:i-1,C=i===1?r-1:r,w=x(S),T=b(C,S),E=`${C}-${w}-01`,D=`${C}-${w}-${T}`,[O,te,k,A,ne]=await Promise.all([t.from(`sesiones_clase`).select(`id, fecha, asistencia`).eq(`clase_id`,e).gte(`fecha`,p).lte(`fecha`,h).order(`fecha`),t.from(`justificaciones`).select(`alumno_id, fecha, tipo, motivo, alumnos(nombre_completo)`).eq(`clase_id`,e).gte(`fecha`,p).lte(`fecha`,h),t.from(`sesiones_clase`).select(`id, asistencia`).eq(`clase_id`,e).gte(`fecha`,E).lte(`fecha`,D),t.from(`clases`).select(`id, nombre, instrumento, maestro_id`).eq(`id`,e).single(),t.from(`alumnos_clases`).select(`alumnos(id, nombre_completo)`).eq(`clase_id`,e).eq(`activo`,!0)]);for(let e of[O,A,ne])if(e.error)throw e.error;let j=O.data||[],M=te.data||[],re=k.data||[],N=A.data,P=(ne.data||[]).map(e=>e.alumnos).filter(Boolean).sort((e,t)=>e.nombre_completo.localeCompare(t.nombre_completo));if(j.length===0){n.error(`No hay sesiones registradas para este período.`);return}let F=`Docente`;if(N.maestro_id){let{data:e}=await t.from(`maestros`).select(`nombre_completo`).eq(`id`,N.maestro_id).single();e&&(F=e.nombre_completo)}let{count:ie}=await t.from(`sesiones_clase`).select(`id`,{count:`exact`,head:!0}).eq(`clase_id`,e).lt(`fecha`,p),I=ie||0,L=P.length>18||j.length>16,R=0,z=0,B=0;j.forEach(e=>{let t=g(e.asistencia);R+=t.P,z+=t.A,B+=t.J});let V=R+z+B,H=0,U=0,W=0;re.forEach(e=>{let t=g(e.asistencia);H+=t.P,U+=t.A,W+=t.J});let G=H+U+W,K=(e,t)=>t>0?Math.round(e/t*100):0,q=(e,t,n,r)=>{let i=K(e,n),a=K(t,r),o=i-a;return{cur:i,prev:a,diff:o,label:`${o>0?`+`:``}${o}%`,cls:o>=0?`delta-up`:`delta-down`}},J=q(R,H,V,G),Y=q(z,U,V,G),X=q(B,W,V,G),ae=_(j),oe={docTag:`RESUMEN MENSUAL · ${y(i).toUpperCase()} ${r}`,clase:N.nombre,docente:F,periodo:`${y(i)} ${r}`,extraItems:[{label:`Sesiones`,value:j.length},{label:`Alumnos`,value:P.length}]},se=c([{label:`Presentes`,value:`${R} (${K(R,V)}%)`,type:`ok`},{label:`Ausentes`,value:`${z} (${K(z,V)}%)`,type:`bad`},{label:`Justificados`,value:`${B} (${K(B,V)}%)`,type:`warn`},{label:`Sesiones`,value:j.length,type:`navy`}]),ce=`
+    `,S),`reporte-diario-${r.fecha?.replace(/-/g,``)||`fecha`}`)||n.info(`El reporte se descargó como archivo. Abrilo en el navegador y usá Imprimir → Guardar como PDF.`)}catch(e){console.error(`[reportService] generateDailyReport:`,e),n.error(`Error al generar el reporte: `+e.message)}}async function w(e,r,i){try{let u=S(i),d=x(r,i),p=`${r}-${u}-01`,h=`${r}-${u}-${d}`,g=i===1?12:i-1,C=i===1?r-1:r,w=S(g),T=x(C,g),E=`${C}-${w}-01`,D=`${C}-${w}-${T}`,[te,ne,re,O,k]=await Promise.all([t.from(`sesiones_clase`).select(`id, fecha, asistencia`).eq(`clase_id`,e).gte(`fecha`,p).lte(`fecha`,h).order(`fecha`),t.from(`justificaciones`).select(`alumno_id, fecha, tipo, motivo, alumnos(nombre_completo)`).eq(`clase_id`,e).gte(`fecha`,p).lte(`fecha`,h),t.from(`sesiones_clase`).select(`id, asistencia`).eq(`clase_id`,e).gte(`fecha`,E).lte(`fecha`,D),t.from(`clases`).select(`id, nombre, instrumento, maestro_id`).eq(`id`,e).single(),t.from(`alumnos_clases`).select(`alumnos(id, nombre_completo)`).eq(`clase_id`,e).eq(`activo`,!0)]);for(let e of[te,O,k])if(e.error)throw e.error;let A=te.data||[],j=ne.data||[],ie=re.data||[],ae=O.data,M=(k.data||[]).map(e=>e.alumnos).filter(Boolean).sort((e,t)=>e.nombre_completo.localeCompare(t.nombre_completo));if(A.length===0){n.error(`No hay sesiones registradas para este período.`);return}let N=`Docente`;if(ae.maestro_id){let{data:e}=await t.from(`maestros`).select(`nombre_completo`).eq(`id`,ae.maestro_id).single();e&&(N=e.nombre_completo)}let{count:oe}=await t.from(`sesiones_clase`).select(`id`,{count:`exact`,head:!0}).eq(`clase_id`,e).lt(`fecha`,p),P=oe||0,F=M.length>18||A.length>16,I=0,L=0,R=0;A.forEach(e=>{let t=_(e.asistencia);I+=t.P,L+=t.A,R+=t.J});let z=I+L+R,B=0,V=0,H=0;ie.forEach(e=>{let t=_(e.asistencia);B+=t.P,V+=t.A,H+=t.J});let U=B+V+H,W=(e,t)=>t>0?Math.round(e/t*100):0,G=(e,t,n,r)=>{let i=W(e,n),a=W(t,r),o=i-a;return{cur:i,prev:a,diff:o,label:`${o>0?`+`:``}${o}%`,cls:o>=0?`delta-up`:`delta-down`}},K=G(I,B,z,U),q=G(L,V,z,U),J=G(R,H,z,U),Y=v(A),X={docTag:`RESUMEN MENSUAL · ${b(i).toUpperCase()} ${r}`,clase:ae.nombre,docente:N,periodo:`${b(i)} ${r}`,extraItems:[{label:`Sesiones`,value:A.length},{label:`Alumnos`,value:M.length}]},se=c([{label:`Presentes`,value:`${I} (${W(I,z)}%)`,type:`ok`},{label:`Ausentes`,value:`${L} (${W(L,z)}%)`,type:`bad`},{label:`Justificados`,value:`${R} (${W(R,z)}%)`,type:`warn`},{label:`Sesiones`,value:A.length,type:`navy`}]),ce=`
       <p class="rpt-section-title">Asistencia diaria por alumno</p>
       <table class="rpt-table" style="font-size:6.5pt">
         <thead><tr>
           <th>#</th><th>Alumno</th>
-          ${j.map((e,t)=>`<th style="text-align:center;font-size:6pt">S${I+t+1}</th>`).join(``)}
+          ${A.map((e,t)=>`<th style="text-align:center;font-size:6pt">S${P+t+1}</th>`).join(``)}
           <th style="text-align:center;background:var(--ok)">P</th>
           <th style="text-align:center;background:var(--bad)">A</th>
           <th style="text-align:center;background:var(--warn)">J</th>
         </tr></thead>
-        <tbody>${P.map((e,t)=>{let n=ae[e.id]||{},r=0,i=0,o=0,s=j.map(e=>{let t=n[e.id]??`—`;return t===`P`&&r++,t===`A`&&i++,t===`J`&&o++,`<td style="text-align:center">${[`P`,`A`,`J`].includes(t)?l(t):a(t)}</td>`}).join(``);return`<tr>
+        <tbody>${M.map((e,t)=>{let n=Y[e.id]||{},r=0,i=0,o=0,s=A.map(e=>{let t=n[e.id]??`—`;return t===`P`&&r++,t===`A`&&i++,t===`J`&&o++,`<td style="text-align:center">${[`P`,`A`,`J`].includes(t)?l(t):a(t)}</td>`}).join(``);return`<tr>
         <td>${t+1}</td>
         <td>${a(e.nombre_completo.split(` `)[0]+` `+(e.nombre_completo.split(` `)[2]||e.nombre_completo.split(` `)[1]||``))}</td>
         ${s}
@@ -309,23 +309,23 @@ import{n as e}from"./rolldown-runtime-tcWNtVWY.js";import{i as t}from"./supabase
         <td style="text-align:center;font-weight:700;color:var(--warn)">${o}</td>
       </tr>`}).join(``)}${`<tr style="background:#f0f4ff;font-weight:700">
       <td colspan="2">TOTALES</td>
-      ${j.map(()=>`<td></td>`).join(``)}
-      <td style="text-align:center;color:var(--ok)">${R}</td>
-      <td style="text-align:center;color:var(--bad)">${z}</td>
-      <td style="text-align:center;color:var(--warn)">${B}</td>
+      ${A.map(()=>`<td></td>`).join(``)}
+      <td style="text-align:center;color:var(--ok)">${I}</td>
+      <td style="text-align:center;color:var(--bad)">${L}</td>
+      <td style="text-align:center;color:var(--warn)">${R}</td>
     </tr>`}</tbody>
       </table>
     `,le=`
-      <div class="${L?`page land`:`page`}">
-        ${o(oe)}
+      <div class="${F?`page land`:`page`}">
+        ${o(X)}
         ${se}
         ${ce}
-        ${s(1,M.length>0||G>0?2:1,`${y(i)} ${r}`)}
+        ${s(1,j.length>0||U>0?2:1,`${b(i)} ${r}`)}
       </div>
-    `,Z=``;if(M.length>0||G>0){let e=M.map((e,t)=>`<tr>
+    `,Z=``;if(j.length>0||U>0){let e=j.map((e,t)=>`<tr>
         <td>${t+1}</td>
         <td>${a(e.alumnos?.nombre_completo??``)}</td>
-        <td>${a(v(e.fecha))}</td>
+        <td>${a(y(e.fecha))}</td>
         <td>${a(e.tipo??`Justificado`)}</td>
         <td>${a(e.motivo??``)}</td>
       </tr>`).join(``),t=e?`
@@ -334,26 +334,26 @@ import{n as e}from"./rolldown-runtime-tcWNtVWY.js";import{i as t}from"./supabase
           <thead><tr><th>#</th><th>Alumno</th><th>Fecha</th><th>Tipo</th><th>Motivo</th></tr></thead>
           <tbody>${e}</tbody>
         </table>
-      `:``,n=G>0?`
-        <p class="rpt-section-title" style="margin-top:4mm">Comparativa vs ${y(S)} ${C}</p>
+      `:``,n=U>0?`
+        <p class="rpt-section-title" style="margin-top:4mm">Comparativa vs ${b(g)} ${C}</p>
         <div style="max-width:260mm">
-          ${f(`Presentes`,J,`bar-ok`)}
-          ${f(`Ausentes`,Y,`bar-bad`)}
-          ${f(`Justif.`,X,`bar-warn`)}
+          ${f(`Presentes`,K,`bar-ok`)}
+          ${f(`Ausentes`,q,`bar-bad`)}
+          ${f(`Justif.`,J,`bar-warn`)}
         </div>
       `:``;Z=`
-        <div class="${L?`page land`:`page`}">
-          ${o(oe)}
+        <div class="${F?`page land`:`page`}">
+          ${o(X)}
           ${t}
           ${n}
-          ${s(2,2,`${y(i)} ${r}`)}
+          ${s(2,2,`${b(i)} ${r}`)}
         </div>
-      `}ee(m(le+Z,L))||n.warn(`El navegador bloqueó la ventana emergente. Permite las ventanas emergentes e intenta de nuevo.`)}catch(e){console.error(`[reportService] generateMonthlyAttendance:`,e),n.error(`Error al generar el resumen: `+e.message)}}async function w(e,i,l){try{let h=x(l),S=b(i,l),C=`${i}-${h}-01`,w=`${i}-${h}-${S}`,T=l===1?12:l-1,E=l===1?i-1:i,D=x(T),O=b(E,T),te=`${E}-${D}-01`,k=`${E}-${D}-${O}`,[A,ne,j,M,re,N,P]=await Promise.all([t.from(`sesiones_clase`).select(`id, fecha, asistencia`).eq(`clase_id`,e).gte(`fecha`,C).lte(`fecha`,w).order(`fecha`),t.from(`observaciones_sesion`).select(`sesion_clase_id, contenido_ia_dsl, contenido_dsl`).in(`sesion_clase_id`,(await t.from(`sesiones_clase`).select(`id`).eq(`clase_id`,e).gte(`fecha`,C).lte(`fecha`,w)).data?.map(e=>e.id)||[]),t.from(`progresos`).select(`id, alumno_id, objetivo_id, tipo, contenido_dsl, created_at,
+      `}m(ee(le+Z,F),`resumen-asistencia-${r}-${S(i)}`)||n.info(`El reporte se descargó como archivo. Abrilo en el navegador y usá Imprimir → Guardar como PDF.`)}catch(e){console.error(`[reportService] generateMonthlyAttendance:`,e),n.error(`Error al generar el resumen: `+e.message)}}async function T(e,i,l){try{let h=S(l),g=x(i,l),C=`${i}-${h}-01`,w=`${i}-${h}-${g}`,T=l===1?12:l-1,E=l===1?i-1:i,D=S(T),te=x(E,T),ne=`${E}-${D}-01`,re=`${E}-${D}-${te}`,[O,k,A,j,ie,ae,M]=await Promise.all([t.from(`sesiones_clase`).select(`id, fecha, asistencia`).eq(`clase_id`,e).gte(`fecha`,C).lte(`fecha`,w).order(`fecha`),t.from(`observaciones_sesion`).select(`sesion_clase_id, contenido_ia_dsl, contenido_dsl`).in(`sesion_clase_id`,(await t.from(`sesiones_clase`).select(`id`).eq(`clase_id`,e).gte(`fecha`,C).lte(`fecha`,w)).data?.map(e=>e.id)||[]),t.from(`progresos`).select(`id, alumno_id, objetivo_id, tipo, contenido_dsl, created_at,
                  alumnos(nombre_completo),
-                 curriculo_objetivos(descripcion, categoria)`).eq(`clase_id`,e).gte(`created_at`,C).lte(`created_at`,w),t.from(`clases`).select(`id, nombre, instrumento, maestro_id`).eq(`id`,e).single(),t.from(`alumnos_clases`).select(`alumnos(id, nombre_completo)`).eq(`clase_id`,e).eq(`activo`,!0),t.from(`sesiones_clase`).select(`id, asistencia`).eq(`clase_id`,e).gte(`fecha`,te).lte(`fecha`,k),t.from(`justificaciones`).select(`alumno_id, fecha, tipo, motivo`).eq(`clase_id`,e).gte(`fecha`,C).lte(`fecha`,w)]);if(A.error)throw A.error;if(M.error)throw M.error;let F=A.data||[],ie=ne.data||[],I=j.data||[],L=M.data,R=(re.data||[]).map(e=>e.alumnos).filter(Boolean).sort((e,t)=>e.nombre_completo.localeCompare(t.nombre_completo)),z=N.data||[],B=P.data||[];if(F.length===0){n.error(`No hay sesiones registradas para este período.`);return}let V=`Docente`;if(L.maestro_id){let{data:e}=await t.from(`maestros`).select(`nombre_completo`).eq(`id`,L.maestro_id).single();e&&(V=e.nombre_completo)}let{count:H}=await t.from(`sesiones_clase`).select(`id`,{count:`exact`,head:!0}).eq(`clase_id`,e).lt(`fecha`,C),U=H||0,W={};ie.forEach(e=>{W[e.sesion_clase_id]=e});let G=0,K=0,q=0;F.forEach(e=>{let t=g(e.asistencia);G+=t.P,K+=t.A,q+=t.J});let J=G+K+q,Y=(e,t)=>t>0?Math.round(e/t*100):0,X=0,ae=0,oe=0;z.forEach(e=>{let t=g(e.asistencia);X+=t.P,ae+=t.A,oe+=t.J});let se=X+ae+oe,ce=new Set;F.forEach(e=>{let t=W[e.id];t&&(t.contenido_ia_dsl||t.contenido_dsl||``).split(/[\n,]/).forEach(e=>{let t=e.replace(/^\s*[\-\*\d\.]+\s*/,``).trim();t.length>2&&t.length<60&&ce.add(t)})});let le=[...ce].slice(0,16),Z=[];F.forEach(e=>{let t=W[e.id];t&&(t.contenido_ia_dsl||t.contenido_dsl||``).split(`
-`).forEach(e=>{/destacad|excelente/i.test(e)?Z.push({type:`pos`,label:`Destacado Académico`,text:e.replace(/^[\-\*]\s*/,``)}):/alerta|ausencia|riesgo/i.test(e)?Z.push({type:`neg`,label:`Alerta Asistencia`,text:e.replace(/^[\-\*]\s*/,``)}):/novedad|administrativ/i.test(e)?Z.push({type:`info`,label:`Novedad Administrativa`,text:e.replace(/^[\-\*]\s*/,``)}):/nota|pedagóg/i.test(e)&&Z.push({type:`warn`,label:`Nota Pedagógica`,text:e.replace(/^[\-\*]\s*/,``)})})});let ue=Z.slice(0,4);for(;ue.length<4;)ue.push({type:`info`,label:`Nota`,text:`—`});let de=F.map((e,t)=>{let n=g(e.asistencia),r=W[e.id],i=(r?.contenido_ia_dsl||r?.contenido_dsl||``).split(/[\n,]/)[0]?.replace(/^[\-\*\d\.]+\s*/,``).trim()||`Sin contenido registrado`;return`
+                 curriculo_objetivos(descripcion, categoria)`).eq(`clase_id`,e).gte(`created_at`,C).lte(`created_at`,w),t.from(`clases`).select(`id, nombre, instrumento, maestro_id`).eq(`id`,e).single(),t.from(`alumnos_clases`).select(`alumnos(id, nombre_completo)`).eq(`clase_id`,e).eq(`activo`,!0),t.from(`sesiones_clase`).select(`id, asistencia`).eq(`clase_id`,e).gte(`fecha`,ne).lte(`fecha`,re),t.from(`justificaciones`).select(`alumno_id, fecha, tipo, motivo`).eq(`clase_id`,e).gte(`fecha`,C).lte(`fecha`,w)]);if(O.error)throw O.error;if(j.error)throw j.error;let N=O.data||[],oe=k.data||[],P=A.data||[],F=j.data,I=(ie.data||[]).map(e=>e.alumnos).filter(Boolean).sort((e,t)=>e.nombre_completo.localeCompare(t.nombre_completo)),L=ae.data||[],R=M.data||[];if(N.length===0){n.error(`No hay sesiones registradas para este período.`);return}let z=`Docente`;if(F.maestro_id){let{data:e}=await t.from(`maestros`).select(`nombre_completo`).eq(`id`,F.maestro_id).single();e&&(z=e.nombre_completo)}let{count:B}=await t.from(`sesiones_clase`).select(`id`,{count:`exact`,head:!0}).eq(`clase_id`,e).lt(`fecha`,C),V=B||0,H={};oe.forEach(e=>{H[e.sesion_clase_id]=e});let U=0,W=0,G=0;N.forEach(e=>{let t=_(e.asistencia);U+=t.P,W+=t.A,G+=t.J});let K=U+W+G,q=(e,t)=>t>0?Math.round(e/t*100):0,J=0,Y=0,X=0;L.forEach(e=>{let t=_(e.asistencia);J+=t.P,Y+=t.A,X+=t.J});let se=J+Y+X,ce=new Set;N.forEach(e=>{let t=H[e.id];t&&(t.contenido_ia_dsl||t.contenido_dsl||``).split(/[\n,]/).forEach(e=>{let t=e.replace(/^\s*[\-\*\d\.]+\s*/,``).trim();t.length>2&&t.length<60&&ce.add(t)})});let le=[...ce].slice(0,16),Z=[];N.forEach(e=>{let t=H[e.id];t&&(t.contenido_ia_dsl||t.contenido_dsl||``).split(`
+`).forEach(e=>{/destacad|excelente/i.test(e)?Z.push({type:`pos`,label:`Destacado Académico`,text:e.replace(/^[\-\*]\s*/,``)}):/alerta|ausencia|riesgo/i.test(e)?Z.push({type:`neg`,label:`Alerta Asistencia`,text:e.replace(/^[\-\*]\s*/,``)}):/novedad|administrativ/i.test(e)?Z.push({type:`info`,label:`Novedad Administrativa`,text:e.replace(/^[\-\*]\s*/,``)}):/nota|pedagóg/i.test(e)&&Z.push({type:`warn`,label:`Nota Pedagógica`,text:e.replace(/^[\-\*]\s*/,``)})})});let ue=Z.slice(0,4);for(;ue.length<4;)ue.push({type:`info`,label:`Nota`,text:`—`});let de=N.map((e,t)=>{let n=_(e.asistencia),r=H[e.id],i=(r?.contenido_ia_dsl||r?.contenido_dsl||``).split(/[\n,]/)[0]?.replace(/^[\-\*\d\.]+\s*/,``).trim()||`Sin contenido registrado`;return`
         <div class="session-card">
-          <div class="sc-top">S${U+t+1} · ${a(v(e.fecha))}</div>
+          <div class="sc-top">S${V+t+1} · ${a(y(e.fecha))}</div>
           <div style="font-size:6pt;color:var(--ink3);margin-bottom:2px">${a(i.slice(0,45))}</div>
           <div class="sc-att">
             <span class="att-cell att-P">P:${n.P}</span>
@@ -361,10 +361,10 @@ import{n as e}from"./rolldown-runtime-tcWNtVWY.js";import{i as t}from"./supabase
             <span class="att-cell att-J">J:${n.J}</span>
           </div>
         </div>
-      `}).join(``),fe={docTag:`INFORME PEDAGÓGICO · ${y(l).toUpperCase()} ${i}`,clase:L.nombre,docente:V,periodo:`${y(l)} ${i}`,extraItems:[{label:`Sesiones`,value:F.length},{label:`Alumnos`,value:R.length}]},pe=`
+      `}).join(``),fe={docTag:`INFORME PEDAGÓGICO · ${b(l).toUpperCase()} ${i}`,clase:F.nombre,docente:z,periodo:`${b(l)} ${i}`,extraItems:[{label:`Sesiones`,value:N.length},{label:`Alumnos`,value:I.length}]},pe=`
       <div class="page land">
         ${o(fe)}
-        ${c([{label:`Sesiones`,value:F.length,type:`navy`},{label:`% Asistencia`,value:Y(G,J)+`%`,type:`ok`},{label:`Presentes`,value:G,type:`ok`},{label:`Ausentes`,value:K,type:`bad`},{label:`Justif.`,value:q,type:`warn`},{label:`Contenidos`,value:le.length,type:`info`}])}
+        ${c([{label:`Sesiones`,value:N.length,type:`navy`},{label:`% Asistencia`,value:q(U,K)+`%`,type:`ok`},{label:`Presentes`,value:U,type:`ok`},{label:`Ausentes`,value:W,type:`bad`},{label:`Justif.`,value:G,type:`warn`},{label:`Contenidos`,value:le.length,type:`info`}])}
         <p class="rpt-section-title">Contenidos trabajados</p>
         ${p(le)}
         <p class="rpt-section-title">Observaciones institucionales</p>
@@ -373,17 +373,17 @@ import{n as e}from"./rolldown-runtime-tcWNtVWY.js";import{i as t}from"./supabase
         </div>
         <p class="rpt-section-title">Cronograma de sesiones</p>
         <div class="session-grid">${de}</div>
-        ${s(1,3,`${y(l)} ${i}`)}
+        ${s(1,3,`${b(l)} ${i}`)}
       </div>
-    `,me=R.length>12?`cols-4`:`cols-3`,he=_(F),ge={};B.forEach(e=>{ge[e.alumno_id]||(ge[e.alumno_id]=[]),ge[e.alumno_id].push(e)});let Q={};I.forEach(e=>{Q[e.alumno_id]||(Q[e.alumno_id]=[]),Q[e.alumno_id].push(e)});let _e=R.map(e=>{let t=he[e.id]||{},n=0,r=0,i=0;F.forEach(e=>{let a=t[e.id];a===`P`&&n++,a===`A`&&r++,a===`J`&&i++});let o=F.length,s=Y(n,o),c,l;s>=90&&Q[e.id]?.some(e=>e.tipo===`LOGRADO`)?(c=`Destacado`,l=`badge-destacado`):s<60?(c=`En Riesgo`,l=`badge-riesgo`):s>=75?(c=`Estable`,l=`badge-estable`):(c=`En Mejora`,l=`badge-mejora`);let d=e.nombre_completo.split(` `),f=a((d[0]?.[0]??``)+(d[2]?.[0]??d[1]?.[0]??``)),p=ge[e.id]||[],ee=p.length>0?`
+    `,me=I.length>12?`cols-4`:`cols-3`,he=v(N),ge={};R.forEach(e=>{ge[e.alumno_id]||(ge[e.alumno_id]=[]),ge[e.alumno_id].push(e)});let Q={};P.forEach(e=>{Q[e.alumno_id]||(Q[e.alumno_id]=[]),Q[e.alumno_id].push(e)});let _e=I.map(e=>{let t=he[e.id]||{},n=0,r=0,i=0;N.forEach(e=>{let a=t[e.id];a===`P`&&n++,a===`A`&&r++,a===`J`&&i++});let o=N.length,s=q(n,o),c,l;s>=90&&Q[e.id]?.some(e=>e.tipo===`LOGRADO`)?(c=`Destacado`,l=`badge-destacado`):s<60?(c=`En Riesgo`,l=`badge-riesgo`):s>=75?(c=`Estable`,l=`badge-estable`):(c=`En Mejora`,l=`badge-mejora`);let d=e.nombre_completo.split(` `),f=a((d[0]?.[0]??``)+(d[2]?.[0]??d[1]?.[0]??``)),p=ge[e.id]||[],m=p.length>0?`
         <div class="pc-section">
           <div class="pc-section-title">Justificaciones</div>
-          ${p.slice(0,4).map(e=>`<div class="pc-just-item" style="font-size:6pt">${a(e.motivo||e.tipo)} — ${a(v(e.fecha))}</div>`).join(``)}
+          ${p.slice(0,4).map(e=>`<div class="pc-just-item" style="font-size:6pt">${a(e.motivo||e.tipo)} — ${a(y(e.fecha))}</div>`).join(``)}
         </div>
-      `:``,m=Q[e.id]||[],h=m.length>0?`
+      `:``,h=Q[e.id]||[],ee=h.length>0?`
         <div class="pc-section">
           <div class="pc-section-title">Progreso</div>
-          ${m.slice(0,3).map(e=>{let t=e.curriculo_objetivos?.descripcion||e.contenido_dsl||`Objetivo`,n=e.tipo===`LOGRADO`?100:e.tipo===`EN_PROGRESO`?60:30;return u(e.tipo,t.slice(0,28),n)}).join(``)}
+          ${h.slice(0,3).map(e=>{let t=e.curriculo_objetivos?.descripcion||e.contenido_dsl||`Objetivo`,n=e.tipo===`LOGRADO`?100:e.tipo===`EN_PROGRESO`?60:30;return u(e.tipo,t.slice(0,28),n)}).join(``)}
         </div>
       `:`<div class="pc-section" style="color:var(--ink3);font-size:6pt">Sin registros de progreso este mes</div>`;return`
         <div class="profile-card">
@@ -400,17 +400,17 @@ import{n as e}from"./rolldown-runtime-tcWNtVWY.js";import{i as t}from"./supabase
             <div class="pc-row"><span>Ausentes:</span><span><strong>${r}</strong></span></div>
             <div class="pc-row"><span>Justificados:</span><span><strong>${i}</strong></span></div>
           </div>
+          ${m}
           ${ee}
-          ${h}
         </div>
       `}).join(``),ve=`
       <div class="page land">
         ${o(fe)}
         <p class="rpt-section-title">Perfiles individuales</p>
         <div class="profile-grid ${me}">${_e}</div>
-        ${s(2,3,`${y(l)} ${i}`)}
+        ${s(2,3,`${b(l)} ${i}`)}
       </div>
-    `,ye={clase:L.nombre,docente:V,mes:`${y(l)} ${i}`,totalAlumnos:R.length},$=await r(F.map((e,t)=>({...e,numero_sesion:U+t+1})),I,ye),be=(()=>{let e=Y(G,J),t=Y(X,se||1),n=e-t;return{cur:e,prev:t,diff:n,label:`${n>0?`+`:``}${n}%`,cls:n>=0?`delta-up`:`delta-down`}})(),xe=(()=>{let e=Y(K,J),t=Y(ae,se||1),n=e-t;return{cur:e,prev:t,diff:n,label:`${n>0?`+`:``}${n}%`,cls:n<0?`delta-up`:`delta-down`}})(),Se=z.length*2,Ce=le.length,we=`
+    `,ye={clase:F.nombre,docente:z,mes:`${b(l)} ${i}`,totalAlumnos:I.length},$=await r(N.map((e,t)=>({...e,numero_sesion:V+t+1})),P,ye),be=(()=>{let e=q(U,K),t=q(J,se||1),n=e-t;return{cur:e,prev:t,diff:n,label:`${n>0?`+`:``}${n}%`,cls:n>=0?`delta-up`:`delta-down`}})(),xe=(()=>{let e=q(W,K),t=q(Y,se||1),n=e-t;return{cur:e,prev:t,diff:n,label:`${n>0?`+`:``}${n}%`,cls:n<0?`delta-up`:`delta-down`}})(),Se=L.length*2,Ce=le.length,we=`
       <div style="display:grid;grid-template-columns:60% 40%;gap:6mm">
         <div>
           <p class="rpt-section-title">Comparativa estadística</p>
@@ -420,8 +420,8 @@ import{n as e}from"./rolldown-runtime-tcWNtVWY.js";import{i as t}from"./supabase
             <table class="rpt-table" style="font-size:7pt">
               <thead><tr>
                 <th>Indicador</th>
-                <th>${y(T)} ${E}</th>
-                <th>${y(l)} ${i}</th>
+                <th>${b(T)} ${E}</th>
+                <th>${b(l)} ${i}</th>
                 <th>Δ</th>
               </tr></thead>
               <tbody>
@@ -430,9 +430,9 @@ import{n as e}from"./rolldown-runtime-tcWNtVWY.js";import{i as t}from"./supabase
                       ${Ce>=Se?`+`:``}${Ce-Se}
                     </td></tr>
                 <tr><td>Logros individuales</td>
-                    <td>${z.length>0?`—`:`0`}</td>
-                    <td>${I.filter(e=>e.tipo===`LOGRADO`).length}</td>
-                    <td class="delta-up" style="font-weight:700">${I.filter(e=>e.tipo===`LOGRADO`).length}</td>
+                    <td>${L.length>0?`—`:`0`}</td>
+                    <td>${P.filter(e=>e.tipo===`LOGRADO`).length}</td>
+                    <td class="delta-up" style="font-weight:700">${P.filter(e=>e.tipo===`LOGRADO`).length}</td>
                 </tr>
               </tbody>
             </table>
@@ -486,6 +486,6 @@ import{n as e}from"./rolldown-runtime-tcWNtVWY.js";import{i as t}from"./supabase
         ${we}
         ${Ee}
         ${De}
-        ${s(3,3,`${y(l)} ${i}`)}
+        ${s(3,3,`${b(l)} ${i}`)}
       </div>
-    `;ee(m(pe+ve+Oe,!0))||n.warn(`El navegador bloqueó la ventana emergente. Permite las ventanas emergentes e intenta de nuevo.`)}catch(e){console.error(`[reportService] generateMonthlyPedagogical:`,e),n.error(`Error al generar el informe pedagógico: `+e.message)}}export{h as i,C as n,w as r,S as t};
+    `;m(ee(pe+ve+Oe,!0),`informe-pedagogico-${i}-${S(l)}`)||n.info(`El reporte se descargó como archivo. Abrilo en el navegador y usá Imprimir → Guardar como PDF.`)}catch(e){console.error(`[reportService] generateMonthlyPedagogical:`,e),n.error(`Error al generar el informe pedagógico: `+e.message)}}export{g as i,w as n,T as r,C as t};

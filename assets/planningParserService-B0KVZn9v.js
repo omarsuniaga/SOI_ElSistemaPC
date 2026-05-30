@@ -1,4 +1,4 @@
-import{n as e}from"./groqService-CboUohPW.js";var t=`
+import{n as e}from"./groqService-CzM57djA.js";var t=`
 Eres un arquitecto pedagógico experto en el sistema SOI (Sistema Operativo Institucional).
 Tu tarea es analizar una planificación académica y extraer su estructura curricular en 4 niveles jerárquicos (que se colgarán de la Clase seleccionada).
 

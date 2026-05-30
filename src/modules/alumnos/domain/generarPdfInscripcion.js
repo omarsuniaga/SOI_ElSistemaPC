@@ -196,7 +196,7 @@ function header(doc, titulo, subtitulo = '') {
 
   // Reset color
   doc.setTextColor(...C.grisOscuro)
-  return 44
+  return 38
 }
 
 function footer(doc, pageNum = 1) {
@@ -220,7 +220,7 @@ function sectionBar(doc, label, y, color = C.azul) {
   doc.setTextColor(...C.blanco)
   doc.text(label, MARGIN + 3, y + 4.4)
   doc.setTextColor(...C.grisOscuro)
-  return y + 9
+  return y + 7.5
 }
 
 function tabla(doc, body, y, opts = {}) {
@@ -229,8 +229,8 @@ function tabla(doc, body, y, opts = {}) {
     margin: { left: MARGIN, right: MARGIN },
     theme: 'grid',
     styles: {
-      fontSize: 8,
-      cellPadding: { top: 1.8, bottom: 1.8, left: 3, right: 3 },
+      fontSize: 7.5,
+      cellPadding: { top: 1.2, bottom: 1.2, left: 2.5, right: 2.5 },
       lineColor: [210, 215, 225],
       lineWidth: 0.2,
       textColor: C.grisOscuro,
@@ -244,7 +244,7 @@ function tabla(doc, body, y, opts = {}) {
     body,
     ...opts.extra,
   })
-  return doc.lastAutoTable.finalY + 4
+  return doc.lastAutoTable.finalY + 2.5
 }
 
 function tablaSimple(doc, body, y, opts = {}) {
@@ -253,8 +253,8 @@ function tablaSimple(doc, body, y, opts = {}) {
     margin: { left: MARGIN, right: MARGIN },
     theme: 'grid',
     styles: {
-      fontSize: 8,
-      cellPadding: { top: 1.8, bottom: 1.8, left: 3, right: 3 },
+      fontSize: 7.5,
+      cellPadding: { top: 1.2, bottom: 1.2, left: 2.5, right: 2.5 },
       lineColor: [210, 215, 225],
       lineWidth: 0.2,
       textColor: C.grisOscuro,
@@ -265,7 +265,7 @@ function tablaSimple(doc, body, y, opts = {}) {
     body,
     ...opts.extra,
   })
-  return doc.lastAutoTable.finalY + 4
+  return doc.lastAutoTable.finalY + 2.5
 }
 
 function newPage(doc, titulo, alumnoNombre, pageNum) {
@@ -275,7 +275,7 @@ function newPage(doc, titulo, alumnoNombre, pageNum) {
 }
 
 function checkSpace(doc, y, needed, titulo, nombre, pageRef) {
-  if (y + needed > H_LETTER - 20) {
+  if (y + needed > H_LETTER - 22) {
     pageRef.n++
     return newPage(doc, titulo, nombre, pageRef.n)
   }
@@ -298,16 +298,16 @@ export function generarFichaAlumno(alumno) {
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(55)
   doc.setTextColor(235, 240, 252)
-  doc.text('USO INTERNO', W_LETTER / 2, H_LETTER / 2 + 20, { align: 'center', angle: 45 })
+  doc.text('USO INTERNO', W_LETTER / 2, H_LETTER / 2, { align: 'center', angle: 45 })
   doc.setTextColor(...C.grisOscuro)
 
   // ── Encabezado alumno ────────────────────────────────────────────────────
   doc.setFillColor(...C.azulClaro)
-  doc.roundedRect(MARGIN, y, W_LETTER - MARGIN * 2, 22, 2, 2, 'F')
+  doc.roundedRect(MARGIN, y, W_LETTER - MARGIN * 2, 18, 2, 2, 'F')
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(13)
   doc.setTextColor(...C.azul)
-  doc.text(p(alumno.nombre_completo), MARGIN + 4, y + 8)
+  doc.text(p(alumno.nombre_completo), MARGIN + 4, y + 7)
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(8.5)
   doc.setTextColor(...C.grisMedio)
@@ -317,9 +317,9 @@ export function generarFichaAlumno(alumno) {
     `Instrumento: ${p(alumno.instrumento_principal)}`,
     `Nivel: ${p(alumno.nivel_actual)}`,
   ].join('    ·    ')
-  doc.text(meta, MARGIN + 4, y + 16)
+  doc.text(meta, MARGIN + 4, y + 13)
   doc.setTextColor(...C.grisOscuro)
-  y += 26
+  y += 22
 
   // ── 1. Datos personales ──────────────────────────────────────────────────
   y = sectionBar(doc, '1 · DATOS PERSONALES', y)
@@ -336,19 +336,13 @@ export function generarFichaAlumno(alumno) {
     ['Enlace Google Maps', p(alumno.ubicacion_maps_url)],
   ], y)
 
-  // ── 2. Madre ─────────────────────────────────────────────────────────────
+  // ── 2. Madre / 3. Padre (tabla fusionada) ────────────────────────────────
   y = checkSpace(doc, y, 40, DOC_TITLE, alumno.nombre_completo, page)
-  y = sectionBar(doc, '2 · DATOS DE LA MADRE', y)
+  y = sectionBar(doc, '2 · DATOS DE LA MADRE / 3 · DATOS DEL PADRE', y)
   y = tabla(doc, [
-    ['Nombre completo', p(alumno.madre_nombre), 'Cédula / Pasaporte', p(alumno.madre_cedula)],
-    ['WhatsApp',        p(alumno.madre_tlf_whatsapp), '', ''],
-  ], y)
-
-  // ── 3. Padre ─────────────────────────────────────────────────────────────
-  y = sectionBar(doc, '3 · DATOS DEL PADRE', y)
-  y = tabla(doc, [
-    ['Nombre completo', p(alumno.padre_nombre), 'Cédula / Pasaporte', p(alumno.padre_cedula)],
-    ['WhatsApp',        p(alumno.padre_tlf_whatsapp), '', ''],
+    ['Nombre (Madre)', p(alumno.madre_nombre),         'Nombre (Padre)', p(alumno.padre_nombre)],
+    ['Cédula Madre',   p(alumno.madre_cedula),          'Cédula Padre',  p(alumno.padre_cedula)],
+    ['WhatsApp Madre', p(alumno.madre_tlf_whatsapp),    'WhatsApp Padre', p(alumno.padre_tlf_whatsapp)],
   ], y)
 
   // ── 4. Representante ─────────────────────────────────────────────────────
@@ -460,14 +454,14 @@ export function generarConstanciaInscripcion(alumno, docs = {}) {
 
   let y = header(doc, 'CONSTANCIA DE INSCRIPCIÓN', `Serie: ${ser}`)
 
-  // Sello "ORIGINAL" (esquina sup derecha)
+  // Sello "ORIGINAL" (debajo de la banda dorada, sobre el contenido)
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(8)
   doc.setTextColor(...C.dorado)
   doc.setDrawColor(...C.dorado)
   doc.setLineWidth(0.6)
-  doc.roundedRect(W_LETTER - MARGIN - 26, 5, 26, 10, 1, 1, 'S')
-  doc.text('ORIGINAL', W_LETTER - MARGIN - 13, 11.5, { align: 'center' })
+  doc.roundedRect(W_LETTER - MARGIN - 28, 36, 28, 7, 1, 1, 'S')
+  doc.text('ORIGINAL', W_LETTER - MARGIN - 14, 41, { align: 'center' })
   doc.setTextColor(...C.grisOscuro)
   doc.setLineWidth(0.2)
 
@@ -524,7 +518,13 @@ export function generarConstanciaInscripcion(alumno, docs = {}) {
   y += 6
 
   // ── Caja: Al presentar esta constancia ───────────────────────────────────
-  const boxH = 60
+  const items = [
+    ['bi-credit-card',  '✓  Tarjeta de pagos mensuales'],
+    ['bi-calendar',     '✓  Horario de clases asignado'],
+    ['bi-pencil',       '✓  Lista de útiles: lápiz HB, cuaderno pentagramado, borrador'],
+    ['bi-shirt',        '✓  T-Shirt oficial de El Sistema Punta Cana'],
+  ]
+  const boxH = 9 + (items.length * 7) + 12   // título + ítems + franja rojo
   doc.setFillColor(...C.azulClaro)
   doc.setDrawColor(...C.azulMedio)
   doc.setLineWidth(0.5)
@@ -541,12 +541,6 @@ export function generarConstanciaInscripcion(alumno, docs = {}) {
   y += 13
 
   // Items
-  const items = [
-    ['bi-credit-card',  '✓  Tarjeta de pagos mensuales'],
-    ['bi-calendar',     '✓  Horario de clases asignado'],
-    ['bi-pencil',       '✓  Lista de útiles: lápiz HB, cuaderno pentagramado, borrador'],
-    ['bi-shirt',        '✓  T-Shirt oficial de El Sistema Punta Cana'],
-  ]
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(9.5)
   doc.setTextColor(...C.azul)

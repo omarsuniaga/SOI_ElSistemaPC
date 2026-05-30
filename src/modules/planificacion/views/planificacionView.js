@@ -181,9 +181,25 @@ function renderContent(container) {
 
       <!-- Toolbar -->
       <div class="planificacion-filter-toolbar mb-4">
-        <div class="premium-search-container flex-grow-1">
+        <div class="premium-search-container flex-grow-1" style="min-width: 200px;">
           <i class="bi bi-search search-icon-muted"></i>
-          <input type="text" class="form-control premium-search-input" placeholder="Buscar por tema o clase..." id="buscar-plan">
+          <input type="text" class="form-control premium-search-input" placeholder="Buscar por tema..." id="buscar-plan">
+        </div>
+        ${isAdmin ? `
+        <div class="premium-select-container">
+          <i class="bi bi-person select-icon-muted"></i>
+          <select class="form-select premium-filter-select" id="select-maestro">
+            <option value="">Todos los maestros</option>
+            ${Array.from(new Set(state.planesOriginales.map(p => p.maestro_nombre).filter(n => n && n !== 'Sin asignar'))).sort().map(m => `<option value="${escapeHTML(m)}">${escapeHTML(m)}</option>`).join('')}
+          </select>
+        </div>
+        ` : ''}
+        <div class="premium-select-container">
+          <i class="bi bi-book select-icon-muted"></i>
+          <select class="form-select premium-filter-select" id="select-clase">
+            <option value="">Todas las clases</option>
+            ${Array.from(new Set(state.planesOriginales.map(p => p.clase_nombre).filter(n => n && n !== 'Sin asignar'))).sort().map(c => `<option value="${escapeHTML(c)}">${escapeHTML(c)}</option>`).join('')}
+          </select>
         </div>
         <div class="premium-select-container">
           <i class="bi bi-funnel select-icon-muted"></i>
@@ -466,6 +482,10 @@ function _attachEvents(container) {
 
   container.querySelector('#buscar-plan')?.addEventListener('input', _applyFilters)
   container.querySelector('#select-estado')?.addEventListener('change', _applyFilters)
+  container.querySelector('#select-clase')?.addEventListener('change', _applyFilters)
+  if (isAdmin) {
+    container.querySelector('#select-maestro')?.addEventListener('change', _applyFilters)
+  }
 
   container.querySelector('#btn-help-planificacion')?.addEventListener('click', () => {
     HelpPanel.open({
@@ -562,13 +582,17 @@ function _attachEvents(container) {
 }
 
 function _applyFilters() {
-  const term   = state.container.querySelector('#buscar-plan')?.value.toLowerCase() || ''
-  const estado = state.container.querySelector('#select-estado')?.value || ''
+  const term    = state.container.querySelector('#buscar-plan')?.value.toLowerCase() || ''
+  const estado  = state.container.querySelector('#select-estado')?.value || ''
+  const clase   = state.container.querySelector('#select-clase')?.value || ''
+  const maestro = state.container.querySelector('#select-maestro')?.value || ''
 
   state.planes = state.planesOriginales.filter(p => {
-    const matchSearch = (p.tema || '').toLowerCase().includes(term) || (p.clase_nombre || '').toLowerCase().includes(term)
-    const matchEstado = !estado || p.estado === estado
-    return matchSearch && matchEstado
+    const matchSearch  = (p.tema || '').toLowerCase().includes(term) || (p.clase_nombre || '').toLowerCase().includes(term)
+    const matchEstado  = !estado  || p.estado === estado
+    const matchClase   = !clase   || p.clase_nombre === clase
+    const matchMaestro = !maestro || p.maestro_nombre === maestro
+    return matchSearch && matchEstado && matchClase && matchMaestro
   })
 
   const tbody  = state.container.querySelector('#planes-tbody')

@@ -161,6 +161,22 @@ import './modules/academic-routes/styles/academic-routes.css'
 // IS_ADMIN se determina desde la DB tras autenticar (maestros.es_admin)
 // No depende de window.__SOI_MODE__ ni de ningún flag hardcodeado
 let IS_ADMIN = false
+
+// Clave de localStorage para el modo activo (solo relevante si el usuario
+// tiene ambos roles: es_admin && es_maestro)
+const PM_MODO_KEY = 'pm-modo'
+
+function _getModoActual(maestro) {
+  if (!maestro?.es_admin) return 'maestro'
+  if (!maestro?.es_maestro) return 'admin'
+  // Usuario con ambos roles: respetar preferencia guardada, default 'admin'
+  return localStorage.getItem(PM_MODO_KEY) || 'admin'
+}
+
+function _setModo(modo) {
+  localStorage.setItem(PM_MODO_KEY, modo)
+  window.location.reload()
+}
 let _permisosChannel = null
 
 function buildMaestroTabs(permisos, isAdmin = false) {
@@ -513,6 +529,15 @@ function _renderShell(app, maestro, permisos) {
             <i class="bi bi-search"></i>
           </button>
 
+          <!-- Switcher de modo (solo visible para usuarios con ambos roles) -->
+          ${maestro?.es_admin && maestro?.es_maestro ? `
+            <button id="pm-modo-switcher" title="${IS_ADMIN ? 'Cambiar a vista de maestro' : 'Cambiar a panel admin'}"
+              style="display:flex;align-items:center;gap:0.35rem;padding:0.3rem 0.65rem;border-radius:20px;border:1.5px solid var(--pm-primary);background:transparent;color:var(--pm-primary);font-size:0.72rem;font-weight:600;cursor:pointer;white-space:nowrap;">
+              <i class="bi ${IS_ADMIN ? 'bi-mortarboard' : 'bi-grid-1x2-fill'}"></i>
+              ${IS_ADMIN ? 'Mis clases' : 'Admin'}
+            </button>
+          ` : ''}
+
           <!-- Toggle de tema -->
           <div id="pm-theme-toggle-container"></div>
 
@@ -581,6 +606,14 @@ function _renderShell(app, maestro, permisos) {
         e.preventDefault()
         router.navigate(link.dataset.route)
       })
+    })
+  }
+
+  // Switcher de modo admin ↔ maestro
+  const btnSwitcher = document.getElementById('pm-modo-switcher')
+  if (btnSwitcher) {
+    btnSwitcher.addEventListener('click', () => {
+      _setModo(IS_ADMIN ? 'maestro' : 'admin')
     })
   }
 
@@ -1278,16 +1311,21 @@ async function initPortal() {
   const maestro = await usePortalAuth.init()
   console.log('[Init] Auth completado:', maestro ? 'con maestro' : 'sin maestro')
 
-  // Determinar modo admin desde el campo es_admin de la tabla maestros
-  // Validar que es_admin sea booleano verdadero (no 1, no truthy)
-  IS_ADMIN = Boolean(maestro?.es_admin === true)
+  // Determinar modo admin desde el campo es_admin de la tabla maestros.
+  // Si el usuario tiene ambos roles (es_admin && es_maestro), respetar el
+  // modo guardado en localStorage (pm-modo). Permite que un maestro-admin
+  // opere como maestro sin ver la UI de admin.
+  const _modoActual = _getModoActual(maestro)
+  IS_ADMIN = Boolean(maestro?.es_admin === true) && _modoActual === 'admin'
   console.log(
     '[Init] IS_ADMIN:',
     IS_ADMIN,
     '| maestro.es_admin:',
     maestro?.es_admin,
-    '| tipo:',
-    typeof maestro?.es_admin,
+    '| es_maestro:',
+    maestro?.es_maestro,
+    '| modo:',
+    _modoActual,
   )
 
   // Determinar si estamos en una ruta pública

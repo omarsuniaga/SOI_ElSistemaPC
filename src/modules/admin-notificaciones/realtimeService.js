@@ -1,13 +1,15 @@
 /**
- * realtimeService — Supabase Realtime subscription for admin notifications.
+ * realtimeService — Unified Supabase Realtime for admin notifications.
  *
- * Listens to INSERT/UPDATE events on the two main actionable sources:
- *   - ausencias_maestros (estado = 'pendiente')
- *   - profiles           (rol = 'maestro', estado = 'pendiente')
+ * Single channel listening to:
+ *   - ausencias_maestros (INSERT/UPDATE) → feeds badge, shows notification, triggers view reload
+ *   - profiles (INSERT/UPDATE rol=maestro) → feeds badge, shows notification, triggers view reload
+ *   - asistencias (INSERT) → triggers view reload
  *
- * On any change it re-fetches the pending count and calls the badge callback.
- * Also shows a native browser Notification when a high-priority event arrives
- * and the admin is NOT on the notifications view.
+ * Callbacks:
+ *   - badgeCallback: updates pending count in UI
+ *   - feedCallback: reloads the notification feed
+ *   - statusCallback: updates connection status indicator
  */
 
 import { supabase } from '../../lib/supabaseClient.js'
@@ -18,6 +20,8 @@ const lifecycle = new LifecycleManager('admin-notifications')
 
 let _channel = null
 let _badgeCallback = null
+let _feedCallback = null
+let _statusCallback = null
 let _debounceTimer = null
 
 // Debounce re-fetches so rapid DB writes don't spam queries
@@ -33,10 +37,16 @@ function _scheduleFetch() {
   }, 800)
 }
 
+function _scheduleFeedReload() {
+  clearTimeout(_debounceTimer)
+  _debounceTimer = setTimeout(async () => {
+    _feedCallback?.()
+  }, 300)
+}
+
 function _showBrowserNotification(title, body) {
   if (typeof Notification === 'undefined') return
   if (Notification.permission !== 'granted') return
-  // Only notify if admin is not currently on the notifications view
   const currentRoute = localStorage.getItem('current-view') || ''
   if (currentRoute === 'admin-notificaciones') return
   try {
@@ -44,98 +54,118 @@ function _showBrowserNotification(title, body) {
       body,
       icon: '/icons/icon-192x192.png',
       badge: '/icons/icon-72x72.png',
-      tag: 'admin-notif',          // collapses duplicates
+      tag: 'admin-notif',
       renotify: true,
     })
-  } catch { /* ignore — some browsers block programmatic Notification() */ }
+  } catch { /* ignore */ }
 }
 
 /**
- * Start the Realtime channel and request browser notification permission.
- * @param {function(number): void} badgeCallback  Called with the new pending count.
+ * Start unified Realtime channel.
+ * @param {function(number): void} badgeCallback - Updates badge with pending count
+ * @param {function(): void} feedCallback - Reloads the notification feed
+ * @param {function(string): void} statusCallback - Updates connection status (optional)
  */
-export function startAdminRealtimeNotifications(badgeCallback) {
-  if (_channel) return   // already running
+export function startAdminRealtimeNotifications(badgeCallback, feedCallback, statusCallback) {
+  if (_channel) return
   _badgeCallback = badgeCallback
+  _feedCallback = feedCallback
+  _statusCallback = statusCallback
 
-  // Request browser notification permission (non-blocking, user can decline)
   if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
     Notification.requestPermission().catch(() => {})
   }
 
   _channel = supabase
-    .channel('admin-notif-realtime')
+    .channel('admin-realtime-unified')
 
-    // New absence request
+    // Ausencias: INSERT
     .on(
       'postgres_changes',
       { event: 'INSERT', schema: 'public', table: 'ausencias_maestros' },
       (payload) => {
         _showBrowserNotification(
           '📅 Nueva solicitud de ausencia',
-          'Un maestro solicitó una ausencia — revisá el Centro de Actividad.',
+          'Un maestro solicitó una ausencia — revisá el Centro de Actividad.'
         )
         _scheduleFetch()
-      },
+        _scheduleFeedReload()
+      }
     )
 
-    // Absence status changed (e.g. re-submitted after rejection)
+    // Ausencias: UPDATE
     .on(
       'postgres_changes',
-      { event: 'UPDATE', schema: 'public', table: 'ausencias_maestros',
-        filter: 'estado=eq.pendiente' },
-      () => _scheduleFetch(),
+      { event: 'UPDATE', schema: 'public', table: 'ausencias_maestros' },
+      () => {
+        _scheduleFetch()
+        _scheduleFeedReload()
+      }
     )
 
-    // New teacher registration pending approval
+    // Profiles: INSERT (new maestro registration)
     .on(
       'postgres_changes',
-      { event: 'INSERT', schema: 'public', table: 'profiles',
-        filter: 'rol=eq.maestro' },
+      { event: 'INSERT', schema: 'public', table: 'profiles' },
       (payload) => {
-        const nombre = payload.new?.nombre_completo || 'Un maestro'
-        _showBrowserNotification(
-          '👤 Nuevo maestro pendiente de aprobación',
-          `${nombre} se registró y está esperando aprobación.`,
-        )
-        _scheduleFetch()
-      },
+        if (payload.new?.rol === 'maestro') {
+          const nombre = payload.new.nombre_completo || 'Un maestro'
+          _showBrowserNotification(
+            '👤 Nuevo maestro pendiente de aprobación',
+            `${nombre} se registró y está esperando aprobación.`
+          )
+          _scheduleFetch()
+          _scheduleFeedReload()
+        }
+      }
     )
 
-    // Teacher profile updated (e.g. estado changed back to 'pendiente')
+    // Profiles: UPDATE (maestro status changes)
     .on(
       'postgres_changes',
-      { event: 'UPDATE', schema: 'public', table: 'profiles',
-        filter: 'estado=eq.pendiente' },
-      () => _scheduleFetch(),
+      { event: 'UPDATE', schema: 'public', table: 'profiles' },
+      (payload) => {
+        if (payload.new?.rol === 'maestro') {
+          _scheduleFetch()
+          _scheduleFeedReload()
+        }
+      }
+    )
+
+    // Asistencias: INSERT (attendance records)
+    .on(
+      'postgres_changes',
+      { event: 'INSERT', schema: 'public', table: 'asistencias' },
+      () => _scheduleFeedReload()
     )
 
     .subscribe((status) => {
+      _statusCallback?.(status)
       if (status === 'SUBSCRIBED') {
-        // Fetch initial count once connected
         _scheduleFetch()
       } else if (status === 'CHANNEL_ERROR' || status === 'SUBSCRIPTION_ERROR') {
         console.warn('[realtimeService] Channel error, will retry on reconnect')
       }
     })
 
-  // Registrar canal para cleanup
   lifecycle.registerChannel(_channel)
 }
 
 /**
- * Tear down the Realtime channel (call on logout).
+ * Stop the Realtime channel.
  */
 export function stopAdminRealtimeNotifications() {
   lifecycle.destroy()
   _channel = null
   _badgeCallback = null
+  _feedCallback = null
+  _statusCallback = null
   clearTimeout(_debounceTimer)
   _debounceTimer = null
 }
 
 /**
- * Reset the badge to 0 — call when the admin enters the notifications view.
+ * Reset badge to 0 (call when admin enters notifications view).
  */
 export function resetAdminNotifBadge() {
   _badgeCallback?.(0)

@@ -19,7 +19,7 @@ import { fetchAdminFeed, fetchMaestrosParaNotificar, sendNotificacionToMaestros,
 import { supabase } from '../../../lib/supabaseClient.js'
 import { AppModal } from '../../../shared/components/AppModal.js'
 import { router } from '../../../core/router/router.js'
-import { resetAdminNotifBadge } from '../realtimeService.js'
+import { resetAdminNotifBadge, startAdminRealtimeNotifications, stopAdminRealtimeNotifications } from '../realtimeService.js'
 import { useAdminNotificationActions } from '../hooks/useAdminNotificationActions.js'
 
 // ── Styles ────────────────────────────────────────────────────────────────────
@@ -631,7 +631,6 @@ export async function renderAdminNotificacionesView(container) {
   let _allEvents  = []
   let _activeFilter = 'all'
   let _searchText = ''
-  let _realtimeChannel = null
 
   function _shell() {
     container.innerHTML = `
@@ -795,33 +794,13 @@ export async function renderAdminNotificacionesView(container) {
   }
 
   function _setupRealtimeSubscription() {
-    if (_realtimeChannel) return
-
-    // Remover canal previo con el mismo nombre si existe (sobrevive navegación SPA)
-    const stale = supabase.getChannels().find(ch => ch.topic === 'realtime:admin-feed-channel')
-    if (stale) supabase.removeChannel(stale)
-
-    _realtimeChannel = supabase
-      .channel('admin-feed-channel')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'ausencias_maestros' }, async (payload) => {
-        console.log('[Realtime WebSocket] Nueva ausencia detectada:', payload)
-        _showPushNotification('Nueva Ausencia Solicitada', 'Un maestro ha enviado una solicitud de ausencia urgente.')
-        await _load(true) // recarga silenciosa en segundo plano
-      })
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'ausencias_maestros' }, async () => {
-        await _load(true)
-      })
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'profiles' }, async (payload) => {
-        if (payload.new && payload.new.rol === 'maestro') {
-          console.log('[Realtime WebSocket] Nuevo maestro registrado:', payload)
-          _showPushNotification('Nuevo Registro de Seguridad', `${payload.new.nombre_completo} se ha registrado esperando aprobación.`)
-          await _load(true)
-        }
-      })
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'asistencias' }, async () => {
-        await _load(true)
-      })
-      .subscribe((status) => {
+    startAdminRealtimeNotifications(
+      // Badge callback (not used here, but required by service)
+      () => {},
+      // Feed callback: reload on realtime events
+      () => _load(true),
+      // Status callback: update connection indicator
+      (status) => {
         const refreshBtn = container.querySelector('#anv-refresh-btn')
         if (!refreshBtn) return
         if (status === 'SUBSCRIBED') {
@@ -833,7 +812,8 @@ export async function renderAdminNotificacionesView(container) {
           refreshBtn.style.borderColor = 'rgba(245,158,11,0.3)'
           refreshBtn.title = 'WebSockets inactivos. Haz clic para actualizar manualmente.'
         }
-      })
+      }
+    )
   }
 
   function _buildEventEl(event, onRefresh) {
@@ -1374,9 +1354,6 @@ export async function renderAdminNotificacionesView(container) {
 
   // Retornar cleanup para que el router remueva el canal cuando navegue a otra vista
   return function cleanup() {
-    if (_realtimeChannel) {
-      supabase.removeChannel(_realtimeChannel)
-      _realtimeChannel = null
-    }
+    stopAdminRealtimeNotifications()
   }
 }

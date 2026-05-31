@@ -3,7 +3,6 @@ import { AppModal } from '../../../shared/components/AppModal.js'
 import { AppToast } from '../../../shared/components/AppToast.js'
 import { Planificacion } from '../models/planificacion.model.js'
 import {
-  obtenerPlanificacionesConDetalles,
   actualizarPlanificacion,
   crearPlanificacion,
   eliminarPlanificacion,
@@ -16,6 +15,7 @@ import { openCoberturaModal } from '../components/coberturaModal.js'
 import { renderAsistentePedagogicoPanel } from '../components/asistentePedagogicoPanel.js'
 import { openCurriculoListModal } from '../components/curriculoModal.js'
 import { renderRutasManagementPanel } from '../components/rutasManagementPanel.js'
+import { usePlanificacion } from '../hooks/usePlanificacion.js'
 
 // ── DSL Template Library ─────────────────────────────────────────────────────
 const DSL_TEMPLATES = [
@@ -67,8 +67,7 @@ const DSL_TEMPLATES = [
 
 // ── State ─────────────────────────────────────────────────────────────────────
 const state = {
-  planes: [],
-  planesOriginales: [],
+  planes: [], // filtered/displayed list
   cargando: false,
   viewMode: 'maestro', // 'maestro' | 'admin' | 'plantillas'
   activeTab: 'planes',
@@ -77,6 +76,8 @@ const state = {
   seleccionados: new Set(),
   container: null
 }
+
+const hook = usePlanificacion()
 
 // ── Entry Point ───────────────────────────────────────────────────────────────
 export async function renderPlanificacionView(container, { viewMode = 'maestro' } = {}) {
@@ -96,9 +97,8 @@ export async function renderPlanificacionView(container, { viewMode = 'maestro' 
     state.cargando = true
     renderLoading(container)
 
-    const planes = await obtenerPlanificacionesConDetalles()
-    state.planes = planes
-    state.planesOriginales = [...planes]
+    await hook.fetchPlanificacionesConDetalles()
+    state.planes = [...hook.planificaciones]
     state.cargando = false
 
     renderContent(container)
@@ -142,8 +142,8 @@ function renderContent(container) {
   const headerTitle = isAdmin ? 'Todas las Planificaciones' : 'Mis Planes de Clase'
   const headerIcon  = isAdmin ? 'bi-shield-check' : 'bi-journal-check'
   const headerDesc  = isAdmin
-    ? `${state.planesOriginales.length} planes pendientes de revisión`
-    : `${state.planesOriginales.length} planes registrados`
+    ? `${hook.planificaciones.length} planes pendientes de revisión`
+    : `${hook.planificaciones.length} planes registrados`
 
   // Stats for admin mode
   const statsHtml = isAdmin ? _renderAdminStats() : ''
@@ -193,7 +193,7 @@ function renderContent(container) {
           <i class="bi bi-person select-icon-muted"></i>
           <select class="form-select premium-filter-select" id="select-maestro">
             <option value="">Todos los maestros</option>
-            ${Array.from(new Set(state.planesOriginales.map(p => p.maestro_nombre).filter(n => n && n !== 'Sin asignar'))).sort().map(m => `<option value="${escapeHTML(m)}">${escapeHTML(m)}</option>`).join('')}
+            ${Array.from(new Set(hook.planificaciones.map(p => p.maestro_nombre).filter(n => n && n !== 'Sin asignar'))).sort().map(m => `<option value="${escapeHTML(m)}">${escapeHTML(m)}</option>`).join('')}
           </select>
         </div>
         ` : ''}
@@ -201,7 +201,7 @@ function renderContent(container) {
           <i class="bi bi-book select-icon-muted"></i>
           <select class="form-select premium-filter-select" id="select-clase">
             <option value="">Todas las clases</option>
-            ${Array.from(new Set(state.planesOriginales.map(p => p.clase_nombre).filter(n => n && n !== 'Sin asignar'))).sort().map(c => `<option value="${escapeHTML(c)}">${escapeHTML(c)}</option>`).join('')}
+            ${Array.from(new Set(hook.planificaciones.map(p => p.clase_nombre).filter(n => n && n !== 'Sin asignar'))).sort().map(c => `<option value="${escapeHTML(c)}">${escapeHTML(c)}</option>`).join('')}
           </select>
         </div>
         <div class="premium-select-container">
@@ -278,7 +278,7 @@ function renderContent(container) {
 }
 
 function _renderAdminStats() {
-  const planes = state.planesOriginales
+  const planes = hook.planificaciones
   const pendientes = planes.filter(p => p.estado === 'ejecutado').length
   const revisados  = planes.filter(p => p.estado === 'revisado').length
   const total      = planes.length
@@ -604,7 +604,7 @@ function _applyFilters() {
   const clase   = state.container.querySelector('#select-clase')?.value || ''
   const maestro = state.container.querySelector('#select-maestro')?.value || ''
 
-  state.planes = state.planesOriginales.filter(p => {
+  state.planes = hook.planificaciones.filter(p => {
     const matchSearch  = (p.tema || '').toLowerCase().includes(term) || (p.clase_nombre || '').toLowerCase().includes(term)
     const matchEstado  = !estado  || p.estado === estado
     const matchClase   = !clase   || p.clase_nombre === clase
@@ -626,7 +626,7 @@ function _toggleBulkBtn() {
 
 // ── Modals ────────────────────────────────────────────────────────────────────
 async function openEditModal(id, prefill = {}) {
-  const plan = id ? state.planesOriginales.find(p => p.id === id) : new Planificacion(prefill)
+  const plan = id ? hook.getById(id) || new Planificacion(prefill) : new Planificacion(prefill)
 
   AppModal.open({
     title: id ? 'Editar Plan de Clase' : 'Nuevo Plan de Clase',
@@ -711,7 +711,7 @@ async function openEditModal(id, prefill = {}) {
 }
 
 function _viewDetail(id) {
-  const plan = state.planesOriginales.find(p => p.id === id)
+  const plan = hook.getById(id)
   if (!plan) return
   const config = Planificacion.getEstadoConfig(plan.estado)
 
@@ -767,7 +767,7 @@ async function _approveOne(id) {
 }
 
 async function _ejecutarPlan(id) {
-  const plan = state.planesOriginales.find(p => p.id === id)
+  const plan = hook.getById(id)
   if (!plan) return
 
   let instrumento = plan.instrumento
@@ -822,7 +822,7 @@ async function _ejecutarPlan(id) {
 }
 
 async function openDeleteModal(id) {
-  const plan = state.planesOriginales.find(p => p.id === id)
+  const plan = hook.getById(id)
   if (!plan) return
   AppModal.open({
     title: '⚠️ Eliminar Plan',

@@ -1,4 +1,4 @@
-import { obtenerPlanificaciones, obtenerPlanificacion } from '../api/planificacionApi.js'
+import { obtenerPlanificaciones, obtenerPlanificacion, obtenerPlanificacionesConDetalles } from '../api/planificacionApi.js'
 import {
   obtenerSesiones,
   crearSesion,
@@ -57,6 +57,24 @@ export class PlanificacionHook {
 
     try {
       this.planificaciones = await obtenerPlanificaciones(this.maestroActualId)
+      this.cargando = false
+      this.notifyListeners()
+      return this.planificaciones
+    } catch (err) {
+      this.error = err.message
+      this.cargando = false
+      this.notifyListeners()
+      throw err
+    }
+  }
+
+  async fetchPlanificacionesConDetalles() {
+    this.cargando = true
+    this.error = null
+    this.notifyListeners()
+
+    try {
+      this.planificaciones = await obtenerPlanificacionesConDetalles(this.maestroActualId)
       this.cargando = false
       this.notifyListeners()
       return this.planificaciones

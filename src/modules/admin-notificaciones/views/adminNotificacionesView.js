@@ -16,11 +16,11 @@
  */
 
 import { fetchAdminFeed, fetchMaestrosParaNotificar, sendNotificacionToMaestros, fetchNotificacionesEnviadas } from '../api/adminNotifApi.js'
-import { aprobarAusencia, rechazarAusencia } from '../../admin-aprobacion/api/ausenciaAprobacionApi.js'
 import { supabase } from '../../../lib/supabaseClient.js'
 import { AppModal } from '../../../shared/components/AppModal.js'
 import { router } from '../../../core/router/router.js'
 import { resetAdminNotifBadge } from '../realtimeService.js'
+import { useAdminNotificationActions } from '../hooks/useAdminNotificationActions.js'
 
 // ── Styles ────────────────────────────────────────────────────────────────────
 
@@ -948,14 +948,16 @@ export async function renderAdminNotificacionesView(container) {
     `
 
     // Wire actions
+    const actions = useAdminNotificationActions({ onKPIUpdate: _renderKPIs })
+
     el.querySelectorAll('[data-action]').forEach(btn => {
       btn.addEventListener('click', async (e) => {
         e.stopPropagation()
         const action = btn.dataset.action
+
         if (action === 'goto') {
           const r = window.router || router
           if (r) {
-            // Support routes with inline query params: "alumno?id=UUID"
             const rawRoute = btn.dataset.route || ''
             const [routePath, queryStr] = rawRoute.split('?')
             let params = btn.dataset.params ? JSON.parse(btn.dataset.params) : {}
@@ -972,124 +974,40 @@ export async function renderAdminNotificacionesView(container) {
           btn.disabled = true
           btn.innerHTML = '<i class="bi bi-check-lg"></i> Propuesto'
           btn.className = 'anv-suplente-btn notified'
-          window.dispatchEvent(new CustomEvent('showToast', {
-            detail: { message: `Propuesta de suplencia enviada a ${subName}`, type: 'success' }
-          }))
+          await actions.handleNotifySub(btn, event)
           return
         }
 
-        // Approve / Reject inline con transición atómica in-place
+        // Disable all action buttons
         el.querySelectorAll('[data-action="approve"],[data-action="reject"],[data-action="approve-maestro"],[data-action="reject-maestro"]').forEach(b => b.disabled = true)
-        
-        if (action === 'approve') {
-          btn.innerHTML = '<span class="anv-spinner" style="width:0.8rem;height:0.8rem;border-width:2px;margin:0"></span>'
-          try {
-            await aprobarAusencia(event.sourceId, '')
-            window.dispatchEvent(new CustomEvent('showToast', { detail: { message: 'Ausencia aprobada con éxito', type: 'success' } }))
-            
-            // Reemplazo atómico in-place
-            event.actionable = false
-            event.estado = 'aprobada'
-            event.priority = 'info'
-            event.icon = 'bi-calendar-check-fill'
-            event.iconColor = '#22c55e'
+        btn.innerHTML = '<span class="anv-spinner" style="width:0.8rem;height:0.8rem;border-width:2px;margin:0"></span>'
 
-            const freshEl = _buildEventEl(event, onRefresh)
-            freshEl.style.animation = 'anv-fadein 0.3s ease'
-            el.replaceWith(freshEl)
+        try {
+          let updatedEvent = null
 
-            _renderKPIs()
-            
-            if (window.adminAusenciasInsights) window.adminAusenciasInsights.evaluate()
-          } catch (err) {
-            window.dispatchEvent(new CustomEvent('showToast', { detail: { message: 'Error: ' + err.message, type: 'error' } }))
-            el.querySelectorAll('[data-action="approve"],[data-action="reject"]').forEach(b => b.disabled = false)
-            btn.innerHTML = '<i class="bi bi-check-circle"></i> Aprobar'
+          if (action === 'approve') {
+            updatedEvent = await actions.handleApproveAusencia(event)
+          } else if (action === 'reject') {
+            updatedEvent = await actions.handleRejectAusencia(event)
+          } else if (action === 'approve-maestro') {
+            updatedEvent = await actions.handleApproveMaestro(event)
+          } else if (action === 'reject-maestro') {
+            updatedEvent = await actions.handleRejectMaestro(event)
           }
-        } else if (action === 'reject') {
-          btn.innerHTML = '<span class="anv-spinner" style="width:0.8rem;height:0.8rem;border-width:2px;margin:0"></span>'
-          try {
-            await rechazarAusencia(event.sourceId, '')
-            window.dispatchEvent(new CustomEvent('showToast', { detail: { message: 'Ausencia rechazada con éxito', type: 'success' } }))
-            
-            // Reemplazo atómico in-place
-            event.actionable = false
-            event.estado = 'rechazada'
-            event.priority = 'info'
-            event.icon = 'bi-calendar-minus-fill'
-            event.iconColor = '#ef4444'
 
-            const freshEl = _buildEventEl(event, onRefresh)
+          // Atomic in-place replacement
+          if (updatedEvent) {
+            const freshEl = _buildEventEl(updatedEvent, onRefresh)
             freshEl.style.animation = 'anv-fadein 0.3s ease'
             el.replaceWith(freshEl)
-
-            _renderKPIs()
-
-            if (window.adminAusenciasInsights) window.adminAusenciasInsights.evaluate()
-          } catch (err) {
-            window.dispatchEvent(new CustomEvent('showToast', { detail: { message: 'Error: ' + err.message, type: 'error' } }))
-            el.querySelectorAll('[data-action="approve"],[data-action="reject"]').forEach(b => b.disabled = false)
-            btn.innerHTML = '<i class="bi bi-x-circle"></i> Rechazar'
           }
-        } else if (action === 'approve-maestro') {
-          btn.innerHTML = '<span class="anv-spinner" style="width:0.8rem;height:0.8rem;border-width:2px;margin:0"></span>'
-          try {
-            const { error } = await supabase
-              .from('profiles')
-              .update({ estado: 'activo' })
-              .eq('id', event.sourceId)
-            
-            if (error) throw error
-
-            window.dispatchEvent(new CustomEvent('showToast', { detail: { message: 'Maestro aprobado con éxito', type: 'success' } }))
-            
-            // Reemplazo atómico in-place
-            event.actionable = false
-            event.estado = 'activo'
-            event.priority = 'info'
-            event.icon = 'bi-person-check-fill'
-            event.iconColor = '#22c55e'
-            event.titulo = `Maestro registrado aprobado: ${event.titulo.replace('Nuevo maestro registrado esperando aprobación: ', '')}`
-
-            const freshEl = _buildEventEl(event, onRefresh)
-            freshEl.style.animation = 'anv-fadein 0.3s ease'
-            el.replaceWith(freshEl)
-
-            _renderKPIs()
-          } catch (err) {
-            window.dispatchEvent(new CustomEvent('showToast', { detail: { message: 'Error: ' + err.message, type: 'error' } }))
-            el.querySelectorAll('[data-action="approve-maestro"],[data-action="reject-maestro"]').forEach(b => b.disabled = false)
-            btn.innerHTML = '<i class="bi bi-check-circle"></i> Aprobar'
-          }
-        } else if (action === 'reject-maestro') {
-          btn.innerHTML = '<span class="anv-spinner" style="width:0.8rem;height:0.8rem;border-width:2px;margin:0"></span>'
-          try {
-            const { error } = await supabase
-              .from('profiles')
-              .update({ estado: 'rechazado' })
-              .eq('id', event.sourceId)
-            
-            if (error) throw error
-
-            window.dispatchEvent(new CustomEvent('showToast', { detail: { message: 'Maestro rechazado con éxito', type: 'success' } }))
-            
-            // Reemplazo atómico in-place
-            event.actionable = false
-            event.estado = 'rechazado'
-            event.priority = 'info'
-            event.icon = 'bi-person-dash-fill'
-            event.iconColor = '#ef4444'
-            event.titulo = `Maestro registrado rechazado: ${event.titulo.replace('Nuevo maestro registrado esperando aprobación: ', '')}`
-
-            const freshEl = _buildEventEl(event, onRefresh)
-            freshEl.style.animation = 'anv-fadein 0.3s ease'
-            el.replaceWith(freshEl)
-
-            _renderKPIs()
-          } catch (err) {
-            window.dispatchEvent(new CustomEvent('showToast', { detail: { message: 'Error: ' + err.message, type: 'error' } }))
-            el.querySelectorAll('[data-action="approve-maestro"],[data-action="reject-maestro"]').forEach(b => b.disabled = false)
-            btn.innerHTML = '<i class="bi bi-x-circle"></i> Rechazar'
+        } catch (err) {
+          el.querySelectorAll('[data-action]').forEach(b => b.disabled = false)
+          // Button restoration handled by action handlers' toast errors
+          if (action === 'approve' || action === 'reject') {
+            btn.innerHTML = action === 'approve' ? '<i class="bi bi-check-circle"></i> Aprobar' : '<i class="bi bi-x-circle"></i> Rechazar'
+          } else {
+            btn.innerHTML = action === 'approve-maestro' ? '<i class="bi bi-check-circle"></i> Aprobar' : '<i class="bi bi-x-circle"></i> Rechazar'
           }
         }
       })

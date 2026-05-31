@@ -12,8 +12,9 @@ export const backfillDesdePostulantes = (...args) => getApi().backfillDesdePostu
 
 // Nuevas funciones para el Módulo de Postulados
 export const actualizarEstadoPostulante = (...args) => getApi().actualizarEstadoPostulante(...args)
-export const listarPostulantesPorMes    = (...args) => getApi().listarPostulantesPorMes(...args)
-export const listarCitas                = (...args) => getApi().listarCitas(...args)
-export const hayConflictoCita           = (...args) => getApi().hayConflictoCita(...args)
-export const agregarNota                = (...args) => getApi().agregarNota(...args)
-export const eliminarPostulante         = (...args) => getApi().eliminarPostulante(...args)
+export const listarPostulantesPorMes = (...args) => getApi().listarPostulantesPorMes(...args)
+export const listarPostulantesPorRango = (...args) => getApi().listarPostulantesPorRango(...args)
+export const listarCitas = (...args) => getApi().listarCitas(...args)
+export const hayConflictoCita = (...args) => getApi().hayConflictoCita(...args)
+export const agregarNota = (...args) => getApi().agregarNota(...args)
+export const eliminarPostulante = (...args) => getApi().eliminarPostulante(...args)

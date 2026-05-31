@@ -30,13 +30,13 @@ export async function actualizarEstadoPostulante(id, nuevoEstado, meta = {}) {
   }
 
   const postulanteActual = data[index]
-  
+
   // Usar la máquina de estados pura para validar y aplicar
   const postulanteActualizado = aplicarTransicion(postulanteActual, nuevoEstado, meta)
-  
+
   // Guardar en memoria
   data[index] = postulanteActualizado
-  
+
   return postulanteActualizado
 }
 
@@ -50,8 +50,28 @@ export async function listarPostulantesPorMes(year, month) {
   return data.filter((p) => {
     if (!p.created_at) return false
     const date = new Date(p.created_at)
-    return date.getFullYear() === year && (date.getMonth() + 1) === month
+    return date.getFullYear() === year && date.getMonth() + 1 === month
   })
+}
+
+/**
+ * Lista postulantes registrados en un rango de fechas, ordenados por fecha descendente.
+ * @param {string} desde - ISO date string (ej. '2026-01-01')
+ * @param {string} hasta - ISO date string (ej. '2026-06-30')
+ * @returns {Promise<object[]>}
+ */
+export async function listarPostulantesPorRango(desde, hasta) {
+  await delay()
+  const desdeTime = new Date(desde).getTime()
+  const hastaTime = new Date(hasta + 'T23:59:59.999Z').getTime()
+
+  return data
+    .filter((p) => {
+      if (!p.created_at) return false
+      const time = new Date(p.created_at).getTime()
+      return time >= desdeTime && time <= hastaTime
+    })
+    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
 }
 
 /**
@@ -132,7 +152,6 @@ export async function eliminarPostulante(id) {
 
   // Eliminar el registro del array en memoria
   data.splice(index, 1)
-  
+
   return true
 }
-

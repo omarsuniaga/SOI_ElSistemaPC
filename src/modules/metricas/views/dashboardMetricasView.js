@@ -5,6 +5,7 @@ import {
   getResumenAlertas,
   getAlumnosDestacados,
 } from '../api/metricasApi.js'
+import { callDslRpc } from '../api/observabilidadApi.js'
 import { renderMetricCard } from '../components/MetricCard.js'
 import { escapeHTML } from '../../clases/utils/clasesUtils.js'
 import { systemLogsWidget } from './systemLogsWidget.js'
@@ -16,9 +17,25 @@ const state = {
   stats: null,
   cargando: false,
   container: null,
-  activeWidgetInstance: null,
+  activeWidgetInstances: [],
   _onlineListener: null,
   _offlineListener: null,
+}
+
+/**
+ * Destroy all active widget instances and clean up
+ */
+function _destroyAllWidgets() {
+  state.activeWidgetInstances.forEach((widget) => {
+    if (widget && typeof widget.destroy === 'function') {
+      try {
+        widget.destroy()
+      } catch (err) {
+        console.error('Error destroying widget:', err)
+      }
+    }
+  })
+  state.activeWidgetInstances = []
 }
 
 /**
@@ -28,11 +45,8 @@ export async function renderDashboardMetricasView(container) {
   if (!container) return
 
   try {
-    // Destruir instancia anterior si existe para evitar fugas de memoria
-    if (state.activeWidgetInstance && typeof state.activeWidgetInstance.destroy === 'function') {
-      state.activeWidgetInstance.destroy()
-      state.activeWidgetInstance = null
-    }
+    // Destruir instancias anteriores si existen para evitar fugas de memoria
+    _destroyAllWidgets()
 
     state.container = container
     state.cargando = true
@@ -230,10 +244,7 @@ function _attachEvents(container) {
   container.querySelectorAll('[data-tab]').forEach((btn) => {
     btn.addEventListener('click', () => {
       // Limpiar widgets anteriores si existen
-      if (state.activeWidgetInstance && typeof state.activeWidgetInstance.destroy === 'function') {
-        state.activeWidgetInstance.destroy()
-        state.activeWidgetInstance = null
-      }
+      _destroyAllWidgets()
 
       state.activeTab = btn.dataset.tab
       localStorage.setItem('pm_metrics_tab', state.activeTab)
@@ -293,6 +304,7 @@ async function _onTabChange() {
         await import('../../admin-dashboard/views/cumplimientoMaestrosWidget.js')
       const widget = new CumplimientoMaestrosWidget('cumplimiento-maestros-container')
       await widget.init()
+      state.activeWidgetInstances.push(widget)
     } catch (err) {
       console.error('Error al cargar el widget de CumplimientoMaestrosWidget:', err)
       const el = state.container.querySelector('#cumplimiento-maestros-container')
@@ -306,6 +318,7 @@ async function _onTabChange() {
         await import('../../admin-dashboard/views/analyticsFillingBehaviorWidget.js')
       const widget = analyticsFillingBehaviorWidget('comportamiento-llenado-container')
       await widget.init()
+      state.activeWidgetInstances.push(widget)
     } catch (err) {
       console.error('Error al cargar el widget de Comportamiento de Llenado:', err)
       const el = state.container.querySelector('#comportamiento-llenado-container')
@@ -317,14 +330,14 @@ async function _onTabChange() {
   if (state.activeTab === 'logs') {
     // Instanciar widget modular del Slice 2
     const logger = systemLogsWidget('system-logs-container')
-    state.activeWidgetInstance = logger
+    state.activeWidgetInstances.push(logger)
     await logger.init()
   }
 
   if (state.activeTab === 'auditoria') {
     // Instanciar widget modular del Slice 2
     const audit = auditTrailWidget('audit-trail-container')
-    state.activeWidgetInstance = audit
+    state.activeWidgetInstances.push(audit)
     await audit.init()
   }
 
@@ -338,24 +351,65 @@ function _attachGlobalEventsIA() {
     const area = state.container.querySelector('#ia-result-area')
     if (!area) return
     area.innerHTML =
-      '<div class="text-center"><div class="spinner-border spinner-border-sm text-primary"></div><p class="small mt-2">Analizando datos...</p></div>'
-    // Simulación de respuesta de IA (será reemplazado por groqService real)
-    setTimeout(() => {
+      '<div class="text-center"><div class="spinner-border spinner-border-sm text-primary"></div><p class="small mt-2">Compilando datos y analizando con IA...</p></div>'
+
+    try {
+      // Compilar datos mediante DataAdapter (mock o Supabase RPC según modo)
+      const dslData = await callDslRpc('global')
+
+      if (!dslData) {
+        area.innerHTML = `<div class="alert alert-warning small"><i class="bi bi-exclamation-circle me-1"></i> No hay datos disponibles para analizar.</div>`
+        return
+      }
+
+      // Aquí se llamaría a groqService para la síntesis con IA
+      // Por ahora mostramos los datos compilados
+      const analysis = _formatAnalysisFromDSL(dslData)
       area.innerHTML = `
         <div class="page-glass p-3 border-primary border-start border-4">
           <p class="small mb-2"><strong>Análisis Institucional:</strong></p>
-          <p class="extra-small text-secondary">Basado en el rendimiento del período actual, se observa una mejora del 12% en la asistencia del grupo de Cuerdas. Sin embargo, 3 alumnos muestran un patrón de riesgo por inasistencias en la última racha de 15 días.</p>
+          <p class="extra-small text-secondary">${escapeHTML(analysis)}</p>
           <button class="btn btn-xs btn-outline-primary mt-2" id="btn-copy-report">Copiar Reporte</button>
         </div>
       `
 
       // Adjuntar evento de copiado
       state.container.querySelector('#btn-copy-report')?.addEventListener('click', () => {
-        navigator.clipboard.writeText(area.querySelector('p.text-secondary').innerText)
+        navigator.clipboard.writeText(analysis)
         AppToast.show('Reporte copiado al portapapeles', 'success')
       })
-    }, 1500)
+    } catch (err) {
+      console.error('Error en análisis IA:', err)
+      area.innerHTML = `<div class="alert alert-danger small"><i class="bi bi-exclamation-triangle me-1"></i> Error al compilar análisis: ${escapeHTML(err.message)}</div>`
+    }
   })
+}
+
+/**
+ * Format DSL data into a narrative analysis
+ */
+function _formatAnalysisFromDSL(dslData) {
+  const parts = []
+
+  if (dslData.radarData && dslData.radarData.length > 0) {
+    const avg = (dslData.radarData.reduce((sum, d) => sum + (d.value || 0), 0) / dslData.radarData.length).toFixed(1)
+    parts.push(`Indicadores promedio: ${avg}%.`)
+  }
+
+  if (dslData.nodeDifficulty && dslData.nodeDifficulty.length > 0) {
+    const highRisk = dslData.nodeDifficulty.filter(n => n.difficulty > 0.7).length
+    if (highRisk > 0) {
+      parts.push(`Se detectaron ${highRisk} nodos de alto riesgo que requieren intervención.`)
+    }
+  }
+
+  if (dslData.complianceData) {
+    parts.push(`Estado de cumplimiento docente compilado en el período actual.`)
+  }
+
+  return parts.length > 0
+    ? parts.join(' ')
+    : 'Análisis completado. Consulta el Generador de Reportes para análisis más detallados.'
 }
 
 function _openGuiaAnaliticaModal() {
@@ -563,11 +617,8 @@ function _openGuiaAnaliticaModal() {
  * Elimina event listeners globales y destruye widgets hijos activos.
  */
 export function destroyDashboardMetricasView() {
-  // Destruir widget activo si existe
-  if (state.activeWidgetInstance && typeof state.activeWidgetInstance.destroy === 'function') {
-    state.activeWidgetInstance.destroy()
-    state.activeWidgetInstance = null
-  }
+  // Destruir todos los widgets activos
+  _destroyAllWidgets()
 
   // Remover listeners globales de red
   if (state._onlineListener) {

@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import {
   listarPostulantesPorMes,
+  listarPostulantesPorRango,
   actualizarEstadoPostulante,
   hayConflictoCita,
   agregarNota,
@@ -19,7 +20,7 @@ describe('Postulados Mock API', () => {
       // Tomamos una fecha de creación del mock data para testear de manera robusta
       const items = await listarPostulantesPorMes(2025, 4)
       expect(Array.isArray(items)).toBe(true)
-      
+
       // Comprobar que todos los filtrados tengan la fecha correspondiente
       items.forEach((p) => {
         const date = new Date(p.created_at)
@@ -36,13 +37,56 @@ describe('Postulados Mock API', () => {
     it('no mezcla postulantes de meses distintos', async () => {
       const items1 = await listarPostulantesPorMes(2025, 4)
       const items2 = await listarPostulantesPorMes(2025, 5)
-      
+
       const ids1 = items1.map((p) => p.id)
       const ids2 = items2.map((p) => p.id)
-      
+
       // La intersección de IDs debe ser vacía
       const interseccion = ids1.filter((id) => ids2.includes(id))
       expect(interseccion).toEqual([])
+    })
+  })
+
+  describe('listarPostulantesPorRango', () => {
+    it('filtra postulantes dentro del rango de fechas', async () => {
+      const desde = '2026-05-01'
+      const hasta = '2026-05-31'
+      const items = await listarPostulantesPorRango(desde, hasta)
+
+      expect(Array.isArray(items)).toBe(true)
+      expect(items.length).toBeGreaterThan(0)
+      items.forEach((p) => {
+        const time = new Date(p.created_at).getTime()
+        expect(time).toBeGreaterThanOrEqual(new Date(desde).getTime())
+        expect(time).toBeLessThanOrEqual(new Date(hasta + 'T23:59:59.999Z').getTime())
+      })
+    })
+
+    it('ordena resultados por created_at descendente', async () => {
+      const desde = '2026-01-01'
+      const hasta = '2026-12-31'
+      const items = await listarPostulantesPorRango(desde, hasta)
+
+      for (let i = 1; i < items.length; i++) {
+        const prev = new Date(items[i - 1].created_at).getTime()
+        const curr = new Date(items[i].created_at).getTime()
+        expect(prev).toBeGreaterThanOrEqual(curr)
+      }
+    })
+
+    it('devuelve array vacío si no hay postulantes en el rango', async () => {
+      const items = await listarPostulantesPorRango('2020-01-01', '2020-12-31')
+      expect(items).toEqual([])
+    })
+
+    it('maneja correctamente rango de un solo día', async () => {
+      // Todos los datos mock tienen created_at 2026-05-28
+      const items = await listarPostulantesPorRango('2026-05-28', '2026-05-28')
+      expect(items.length).toBeGreaterThan(0)
+      items.forEach((p) => {
+        const d = new Date(p.created_at).toISOString().slice(0, 10)
+        expect(d).toBe('2026-05-28')
+      })
     })
   })
 
@@ -67,14 +111,14 @@ describe('Postulados Mock API', () => {
     it('lanza Error en transición inválida (usa puedeTransicionar)', async () => {
       const postulado = data.find((p) => p.estado === 'postulado' || !p.estado)
       expect(postulado).toBeDefined()
-      
+
       // Forzar estado limpio
       postulado.estado = 'postulado'
 
       // postulado -> inscrito es inválido
-      await expect(
-        actualizarEstadoPostulante(postulado.id, 'inscrito')
-      ).rejects.toThrow('Transición inválida')
+      await expect(actualizarEstadoPostulante(postulado.id, 'inscrito')).rejects.toThrow(
+        'Transición inválida',
+      )
     })
 
     it('guarda fecha_cita cuando se transiciona a cita_agendada', async () => {
@@ -168,11 +212,11 @@ describe('Postulados Mock API', () => {
     it('elimina un postulante correctamente de la lista en memoria', async () => {
       const originalLength = data.length
       const p = data[0]
-      
+
       const resultado = await eliminarPostulante(p.id)
       expect(resultado).toBe(true)
       expect(data.length).toBe(originalLength - 1)
-      
+
       // Comprobar que ya no exista
       const encontrado = data.find((item) => item.id === p.id)
       expect(encontrado).toBeUndefined()

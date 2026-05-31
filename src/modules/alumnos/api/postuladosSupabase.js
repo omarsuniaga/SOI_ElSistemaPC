@@ -1,8 +1,8 @@
 /**
  * MIGRACIÓN SQL PARA LA TABLA 'postulantes'
- * 
+ *
  * Si ejecutas esto en la consola SQL de Supabase:
- * 
+ *
  * -- 1. Agregar las nuevas columnas de seguimiento y estado
  * ALTER TABLE postulantes
  * ADD COLUMN IF NOT EXISTS estado TEXT DEFAULT 'postulado'
@@ -14,7 +14,7 @@
  * ADD COLUMN IF NOT EXISTS fecha_cita TIMESTAMPTZ,
  * ADD COLUMN IF NOT EXISTS notas_seguimiento TEXT,
  * ADD COLUMN IF NOT EXISTS alumno_id UUID REFERENCES alumnos(id);
- * 
+ *
  * -- 2. Crear índices para optimizar búsquedas por mes y citas
  * CREATE INDEX IF NOT EXISTS idx_postulantes_created_at ON postulantes(created_at);
  * CREATE INDEX IF NOT EXISTS idx_postulantes_fecha_cita ON postulantes(fecha_cita);
@@ -28,11 +28,7 @@ import { puedeTransicionar } from '../domain/postuladoStateMachine.js'
  * Helper interno y exportado para coherencia.
  */
 export async function obtenerPostulante(id) {
-  const { data, error } = await supabase
-    .from('postulantes')
-    .select('*')
-    .eq('id', id)
-    .maybeSingle()
+  const { data, error } = await supabase.from('postulantes').select('*').eq('id', id).maybeSingle()
 
   if (error) {
     console.error('[postuladosSupabase] Error al obtener postulante:', error)
@@ -58,7 +54,7 @@ export async function actualizarEstadoPostulante(id, nuevoEstado, meta = {}) {
 
     if (!puedeTransicionar(estadoActual, nuevoEstado)) {
       throw new Error(
-        `Transición inválida: No se puede pasar de "${estadoActual}" a "${nuevoEstado}"`
+        `Transición inválida: No se puede pasar de "${estadoActual}" a "${nuevoEstado}"`,
       )
     }
 
@@ -134,6 +130,33 @@ export async function listarPostulantesPorMes(year, month) {
     return data ?? []
   } catch (err) {
     console.error('[postuladosSupabase] Error en listarPostulantesPorMes:', err.message)
+    throw err
+  }
+}
+
+/**
+ * Lista postulantes registrados en un rango de fechas, ordenados por fecha descendente.
+ * @param {string} desde - ISO date string (ej. '2026-01-01')
+ * @param {string} hasta - ISO date string (ej. '2026-06-30')
+ * @returns {Promise<object[]>}
+ */
+export async function listarPostulantesPorRango(desde, hasta) {
+  try {
+    const { data, error } = await supabase
+      .from('postulantes')
+      .select('*')
+      .gte('created_at', desde)
+      .lte('created_at', hasta + 'T23:59:59.999Z')
+      .order('created_at', { ascending: false })
+
+    if (error) {
+      console.error('[postuladosSupabase] Error al listar por rango:', error)
+      throw error
+    }
+
+    return data ?? []
+  } catch (err) {
+    console.error('[postuladosSupabase] Error en listarPostulantesPorRango:', err.message)
     throw err
   }
 }
@@ -249,10 +272,7 @@ export async function agregarNota(id, nota) {
  */
 export async function eliminarPostulante(id) {
   try {
-    const { error } = await supabase
-      .from('postulantes')
-      .delete()
-      .eq('id', id)
+    const { error } = await supabase.from('postulantes').delete().eq('id', id)
 
     if (error) {
       console.error('[postuladosSupabase] Error al eliminar postulante:', error)
@@ -265,4 +285,3 @@ export async function eliminarPostulante(id) {
     throw err
   }
 }
-

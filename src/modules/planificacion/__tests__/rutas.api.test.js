@@ -6,7 +6,7 @@ import {
   actualizarRuta,
   obtenerProgresoRuta,
   obtenerVariantesPendientes,
-  aprobarVariante
+  aprobarVariante,
 } from '../api/rutasApi.js'
 
 describe('Rutas API', () => {
@@ -19,8 +19,8 @@ describe('Rutas API', () => {
     duracion_semanas: 40,
     objetivos: [
       { descripcion: 'Escala Do Mayor', semana_inicio: 1, semana_fin: 2, orden: 1 },
-      { descripcion: 'Lectura', semana_inicio: 3, semana_fin: 3, orden: 2 }
-    ]
+      { descripcion: 'Lectura', semana_inicio: 3, semana_fin: 3, orden: 2 },
+    ],
   }
 
   it('creates a ruta with objectives', async () => {

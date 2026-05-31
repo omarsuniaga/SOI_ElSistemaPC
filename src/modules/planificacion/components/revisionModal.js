@@ -30,11 +30,20 @@ export function openRevisionModal(originalText, dslResult, onAccept) {
         <div class="col-12">
           <label class="form-label fw-bold text-muted small">📊 Resumen</label>
           <div class="d-flex flex-wrap gap-2">
-            ${summary !== 'Sin tokens' ? summary.split(', ').map(token => `
+            ${
+              summary !== 'Sin tokens'
+                ? summary
+                    .split(', ')
+                    .map(
+                      (token) => `
               <span class="badge bg-secondary bg-opacity-10 text-secondary border">
                 ${escapeHTML(token)}
               </span>
-            `).join('') : '<span class="text-muted">Sin tokens detectados</span>'}
+            `,
+                    )
+                    .join('')
+                : '<span class="text-muted">Sin tokens detectados</span>'
+            }
           </div>
         </div>
       </div>

@@ -184,9 +184,8 @@ function attachEvents(container) {
   togglePassword?.addEventListener('click', () => {
     const type = passwordInput.type === 'password' ? 'text' : 'password'
     passwordInput.type = type
-    togglePassword.innerHTML = type === 'password' 
-      ? '<i class="bi bi-eye"></i>' 
-      : '<i class="bi bi-eye-slash"></i>'
+    togglePassword.innerHTML =
+      type === 'password' ? '<i class="bi bi-eye"></i>' : '<i class="bi bi-eye-slash"></i>'
   })
 
   linkRegister?.addEventListener('click', (e) => {
@@ -248,10 +247,18 @@ function showToast(message, type, container) {
   const toastContainer = document.getElementById('toastContainer')
   if (!toastContainer) return
 
-  const msg = message && typeof message === 'object' ? message.message || message.error || JSON.stringify(message) : String(message || 'Error')
+  const msg =
+    message && typeof message === 'object'
+      ? message.message || message.error || JSON.stringify(message)
+      : String(message || 'Error')
   const toastId = 'toast-' + Date.now()
   const bgClass = type === 'success' ? 'bg-success' : type === 'error' ? 'bg-danger' : 'bg-info'
-  const iconClass = type === 'success' ? 'bi-check-circle' : type === 'error' ? 'bi-exclamation-circle' : 'bi-info-circle'
+  const iconClass =
+    type === 'success'
+      ? 'bi-check-circle'
+      : type === 'error'
+        ? 'bi-exclamation-circle'
+        : 'bi-info-circle'
 
   const toastHTML = `
     <div id="${toastId}" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
@@ -281,7 +288,7 @@ function showToast(message, type, container) {
 
 function escapeHTML(str) {
   if (!str) return ''
-  return str.replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m]))
+  return str.replace(/[&<>]/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[m])
 }
 
 export default { renderLoginView }

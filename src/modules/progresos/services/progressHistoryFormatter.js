@@ -15,7 +15,7 @@ async function sha256(text) {
     const msgUint8 = new TextEncoder().encode(text)
     const hashBuffer = await globalThis.crypto.subtle.digest('SHA-256', msgUint8)
     return Array.from(new Uint8Array(hashBuffer))
-      .map(b => b.toString(16).padStart(2, '0'))
+      .map((b) => b.toString(16).padStart(2, '0'))
       .join('')
   }
 
@@ -44,8 +44,7 @@ function getWeekKey(dateStr) {
   const d = new Date(dateStr + 'T00:00:00Z')
   const jan4 = new Date(d.getUTCFullYear(), 0, 4)
   const msPerDay = 86400000
-  const weekStartMs =
-    jan4 - (jan4.getUTCDay() || 7) * msPerDay + msPerDay
+  const weekStartMs = jan4 - (jan4.getUTCDay() || 7) * msPerDay + msPerDay
   const weekNum = Math.round((d - weekStartMs) / msPerDay / 7) + 1
   const year = d.getUTCFullYear()
   return `${year}-W${String(weekNum).padStart(2, '0')}`
@@ -159,7 +158,7 @@ function partitionByAlumnoAndBucket(rows, dateField, keyFn) {
  * @returns {Object} { calificacion: float | null }
  */
 function reduceGradeBucket(rows) {
-  const nonNull = rows.filter(r => r.calificacion !== null && r.calificacion !== undefined)
+  const nonNull = rows.filter((r) => r.calificacion !== null && r.calificacion !== undefined)
   if (nonNull.length === 0) return { calificacion: null }
 
   const sum = nonNull.reduce((acc, r) => acc + parseFloat(r.calificacion), 0)
@@ -175,7 +174,7 @@ function reduceAttendanceBucket(rows) {
   if (rows.length === 0) return { asistencia_rate: null }
 
   const counted = rows.filter(
-    r => r.estado === 'presente' || r.estado === 'tarde' || r.estado === 'justificado'
+    (r) => r.estado === 'presente' || r.estado === 'tarde' || r.estado === 'justificado',
   ).length
   return { asistencia_rate: counted / rows.length }
 }
@@ -188,7 +187,7 @@ function reduceAttendanceBucket(rows) {
 function reduceIndicatorBucket(rows) {
   if (rows.length === 0) return { passed: 0, total: 0 }
 
-  const passed = rows.filter(r => r.passed === true).length
+  const passed = rows.filter((r) => r.passed === true).length
   return { passed, total: rows.length }
 }
 
@@ -221,13 +220,13 @@ export function format({ alumnoIds, from, to, granularity = 'week', asis, prog, 
     }
     ranges = Array.from(uniqueEvalIds)
       .sort()
-      .map(id => ({
+      .map((id) => ({
         key: id,
         fecha_inicio: null,
         fecha_fin: null,
       }))
     dateField = 'evaluacion_id'
-    keyFn = id => id
+    keyFn = (id) => id
   }
 
   // Partition sources by alumno and bucket
@@ -246,7 +245,7 @@ export function format({ alumnoIds, from, to, granularity = 'week', asis, prog, 
     const alumnoObs = obsPart.get(alumnoId) || new Map()
 
     // Build buckets (including gap-fills)
-    const buckets = ranges.map(range => {
+    const buckets = ranges.map((range) => {
       const key = range.key
       const asisRows = alumnoAsis.get(key) || []
       const progRows = alumnoProg.get(key) || []
@@ -268,7 +267,7 @@ export function format({ alumnoIds, from, to, granularity = 'week', asis, prog, 
       }
       const sortedObs = Array.from(dedupMap.values())
         .sort((a, b) => new Date(a.fecha) - new Date(b.fecha))
-        .map(o => ({
+        .map((o) => ({
           id: o.id,
           texto: o.texto,
           source: o.tipo === 'sesion' ? 'sesion' : 'alumno',

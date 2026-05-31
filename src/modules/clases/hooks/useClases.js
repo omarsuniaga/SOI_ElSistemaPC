@@ -21,7 +21,7 @@ export class ClasesHook {
   subscribe(callback) {
     this.listeners.push(callback)
     return () => {
-      this.listeners = this.listeners.filter(l => l !== callback)
+      this.listeners = this.listeners.filter((l) => l !== callback)
     }
   }
 
@@ -29,7 +29,7 @@ export class ClasesHook {
    * Notificar a todos los suscriptores
    */
   notifyListeners() {
-    this.listeners.forEach(listener => {
+    this.listeners.forEach((listener) => {
       listener({
         clases: this.clases,
         claseActual: this.claseActual,
@@ -102,10 +102,11 @@ export class ClasesHook {
     if (!searchTerm) return this.clases
 
     const term = searchTerm.toLowerCase()
-    return this.clases.filter(c =>
-      (c.nombre || '').toLowerCase().includes(term) ||
-      (c.instrumento || '').toLowerCase().includes(term) ||
-      (c.estado || '').toLowerCase().includes(term)
+    return this.clases.filter(
+      (c) =>
+        (c.nombre || '').toLowerCase().includes(term) ||
+        (c.instrumento || '').toLowerCase().includes(term) ||
+        (c.estado || '').toLowerCase().includes(term),
     )
   }
 
@@ -116,7 +117,7 @@ export class ClasesHook {
    */
   filterByEstado(estado) {
     if (!estado || estado === 'todos') return this.clases
-    return this.clases.filter(c => c.estado === estado)
+    return this.clases.filter((c) => c.estado === estado)
   }
 
   /**
@@ -125,7 +126,7 @@ export class ClasesHook {
    * @returns {Array}
    */
   filterByMaestro(maestroId) {
-    return this.clases.filter(c => c.maestro_id === maestroId)
+    return this.clases.filter((c) => c.maestro_id === maestroId)
   }
 
   /**
@@ -134,7 +135,7 @@ export class ClasesHook {
    * @returns {Array}
    */
   filterByInstrumento(instrumento) {
-    return this.clases.filter(c => c.instrumento === instrumento)
+    return this.clases.filter((c) => c.instrumento === instrumento)
   }
 
   /**
@@ -143,7 +144,7 @@ export class ClasesHook {
    * @returns {Object|null}
    */
   getById(id) {
-    return this.clases.find(c => c.id === id) || null
+    return this.clases.find((c) => c.id === id) || null
   }
 
   /**
@@ -151,7 +152,7 @@ export class ClasesHook {
    * @returns {Array}
    */
   getActivas() {
-    return this.clases.filter(c => c.estado === 'activa')
+    return this.clases.filter((c) => c.estado === 'activa')
   }
 
   /**

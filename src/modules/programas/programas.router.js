@@ -1,6 +1,6 @@
-import { router } from '../../core/router/router.js';
-import { renderProgramasView } from './views/programasView.js';
+import { router } from '../../core/router/router.js'
+import { renderProgramasView } from './views/programasView.js'
 
 export function registerRoutesProgramas() {
-  router.register('programas', renderProgramasView);
+  router.register('programas', renderProgramasView)
 }

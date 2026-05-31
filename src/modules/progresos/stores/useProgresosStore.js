@@ -52,15 +52,15 @@ export const useProgresosStore = defineStore('progresos', () => {
       })
 
       // Transform to DashboardRow format
-      dashboardRows.value = Array.from(progressMap.values()).map(progress => {
+      dashboardRows.value = Array.from(progressMap.values()).map((progress) => {
         const estado_riesgo =
           progress.indicators.total === 0 &&
           progress.grades.count === 0 &&
           progress.attendance.total === 0
             ? 'sin_datos'
             : progress.risk.en_riesgo
-            ? 'en_riesgo'
-            : 'ok'
+              ? 'en_riesgo'
+              : 'ok'
 
         return {
           alumnoId: progress.alumnoId,
@@ -70,9 +70,7 @@ export const useProgresosStore = defineStore('progresos', () => {
               ? Math.round(progress.attendance.rate * 100) + '%'
               : null,
           promedio_notas:
-            progress.grades.promedio !== null
-              ? progress.grades.promedio.toFixed(2)
-              : null,
+            progress.grades.promedio !== null ? progress.grades.promedio.toFixed(2) : null,
           prom_indicadores_pct:
             progress.indicators.pass_rate !== null
               ? Math.round(progress.indicators.pass_rate * 100) + '%'

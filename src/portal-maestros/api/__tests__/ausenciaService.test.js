@@ -79,7 +79,14 @@ describe('ausenciaService', () => {
       }
       supabase.from.mockReturnValue(chain)
 
-      await expect(crearSolicitud({ maestro_id: 'x', fecha_inicio: '2026-06-01', fecha_fin: '2026-06-01', motivo: 'personal' })).rejects.toThrow('DB error')
+      await expect(
+        crearSolicitud({
+          maestro_id: 'x',
+          fecha_inicio: '2026-06-01',
+          fecha_fin: '2026-06-01',
+          motivo: 'personal',
+        }),
+      ).rejects.toThrow('DB error')
     })
   })
 
@@ -119,7 +126,9 @@ describe('ausenciaService', () => {
       }
       supabase.from.mockReturnValue(chain)
 
-      await expect(buscarClasesAfectadas('abc123', '2026-06-01', '2026-06-03')).rejects.toThrow('Query error')
+      await expect(buscarClasesAfectadas('abc123', '2026-06-01', '2026-06-03')).rejects.toThrow(
+        'Query error',
+      )
     })
   })
 
@@ -139,7 +148,11 @@ describe('ausenciaService', () => {
       }
       supabase.from.mockReturnValue(chain)
 
-      const result = await registrarAuditoria({ ausencia_id: 1, accion: 'creacion', usuario_id: 'user1' })
+      const result = await registrarAuditoria({
+        ausencia_id: 1,
+        accion: 'creacion',
+        usuario_id: 'user1',
+      })
 
       expect(result).toHaveProperty('accion', 'creacion')
       expect(result).toHaveProperty('ausencia_id', 1)
@@ -153,16 +166,16 @@ describe('ausenciaService', () => {
       }
       supabase.from.mockReturnValue(chain)
 
-      await expect(registrarAuditoria({ ausencia_id: 1, accion: 'creacion', usuario_id: 'user1' })).rejects.toThrow('Audit insert failed')
+      await expect(
+        registrarAuditoria({ ausencia_id: 1, accion: 'creacion', usuario_id: 'user1' }),
+      ).rejects.toThrow('Audit insert failed')
     })
   })
 
   describe('obtenerAusenciaConAuditoria', () => {
     it('should return ausencia with its audit trail', async () => {
       const ausencia = { id: 1, numero_ticket: 'AUS-2026-001', estado: 'pendiente' }
-      const audits = [
-        { id: 'a1', ausencia_id: 1, accion: 'creacion' },
-      ]
+      const audits = [{ id: 'a1', ausencia_id: 1, accion: 'creacion' }]
       let callCount = 0
       supabase.from.mockImplementation(() => {
         callCount++

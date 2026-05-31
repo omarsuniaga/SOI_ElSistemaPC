@@ -34,7 +34,9 @@ describe('ausenciaValidator', () => {
         documentacion: null,
       }
       const result = validarSolicitud(solicitud)
-      const anticipacionError = result.errores?.includes('Se requieren al menos 48 horas de anticipación')
+      const anticipacionError = result.errores?.includes(
+        'Se requieren al menos 48 horas de anticipación',
+      )
       expect(anticipacionError).toBeFalsy()
     })
 
@@ -46,7 +48,9 @@ describe('ausenciaValidator', () => {
         documentacion: null,
       }
       const result = validarSolicitud(solicitud)
-      const anticipacionError = result.errores?.includes('Se requieren al menos 48 horas de anticipación')
+      const anticipacionError = result.errores?.includes(
+        'Se requieren al menos 48 horas de anticipación',
+      )
       expect(anticipacionError).toBeFalsy()
     })
   })
@@ -97,7 +101,9 @@ describe('ausenciaValidator', () => {
         documentacion: null,
       }
       const result = validarSolicitud(solicitud)
-      const rangeError = result.errores?.includes('La fecha de fin no puede ser anterior a la fecha de inicio')
+      const rangeError = result.errores?.includes(
+        'La fecha de fin no puede ser anterior a la fecha de inicio',
+      )
       expect(rangeError).toBeFalsy()
     })
 
@@ -109,7 +115,9 @@ describe('ausenciaValidator', () => {
         documentacion: null,
       }
       const result = validarSolicitud(solicitud)
-      const rangeError = result.errores?.includes('La fecha de fin no puede ser anterior a la fecha de inicio')
+      const rangeError = result.errores?.includes(
+        'La fecha de fin no puede ser anterior a la fecha de inicio',
+      )
       expect(rangeError).toBeFalsy()
     })
   })

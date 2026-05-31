@@ -4,17 +4,29 @@ import { escHTML } from '../utils/portalUtils.js'
 
 /** Node type → emoji mapping */
 const NODE_ICONS = {
-  scales: '🎼', arpeggios: '🎹', left_hand: '✋', bow: '🎻',
-  sound: '🔊', intonation: '🎵', studies: '⚙️', repertoire: '📖',
+  scales: '🎼',
+  arpeggios: '🎹',
+  left_hand: '✋',
+  bow: '🎻',
+  sound: '🔊',
+  intonation: '🎵',
+  studies: '⚙️',
+  repertoire: '📖',
 }
 
 /** Status → color mapping */
 const STATUS_COLORS = {
-  approved: '#34C759', in_process: '#007AFF', pending: '#ccc', failed: '#FF3B30',
+  approved: '#34C759',
+  in_process: '#007AFF',
+  pending: '#ccc',
+  failed: '#FF3B30',
 }
 
 const STATUS_LABELS = {
-  approved: 'Aprobado', in_process: 'En proceso', pending: 'Pendiente', failed: 'Fallido',
+  approved: 'Aprobado',
+  in_process: 'En proceso',
+  pending: 'Pendiente',
+  failed: 'Fallido',
 }
 
 function getNodeIcon(name) {
@@ -63,11 +75,12 @@ export async function renderGamificacionView(container) {
     const { data: enrollments } = await supabase
       .from('inscripciones')
       .select('alumno_id, alumnos(id, nombre, apellido)')
-      .in('clase_id', clases.map(c => c.id))
+      .in(
+        'clase_id',
+        clases.map((c) => c.id),
+      )
 
-    const students = [...new Map(
-      enrollments?.map(e => [e.alumnos.id, e.alumnos]) || []
-    ).values()]
+    const students = [...new Map(enrollments?.map((e) => [e.alumnos.id, e.alumnos]) || []).values()]
 
     // 2. Render UI
     container.innerHTML = `
@@ -76,7 +89,7 @@ export async function renderGamificacionView(container) {
           <h2><i class="bi bi-trophy"></i> Progresos y Logros</h2>
           <select id="pm-student-select" class="pm-input">
             <option value="">Seleccionar alumno...</option>
-            ${students.map(s => `<option value="${s.id}">${escHTML(s.nombre)} ${escHTML(s.apellido)}</option>`).join('')}
+            ${students.map((s) => `<option value="${s.id}">${escHTML(s.nombre)} ${escHTML(s.apellido)}</option>`).join('')}
           </select>
         </div>
         <div id="pm-progress-content"></div>
@@ -142,7 +155,6 @@ export async function renderGamificacionView(container) {
       }
       await loadStudentProgress(container, studentId)
     })
-
   } catch (err) {
     container.innerHTML = `<p class="pm-empty">Error: ${escHTML(err.message)}</p>`
   }
@@ -199,7 +211,10 @@ async function loadStudentProgress(container, studentId) {
     const { data: nodes } = await supabase
       .from('nodes')
       .select('*, indicators(*)')
-      .in('level_id', (levels || []).map(l => l.id))
+      .in(
+        'level_id',
+        (levels || []).map((l) => l.id),
+      )
       .order('order_index', { ascending: true })
 
     // Get node progress
@@ -209,7 +224,7 @@ async function loadStudentProgress(container, studentId) {
       .eq('student_id', studentId)
 
     // Build summary
-    const approvedLevels = (levelProgress || []).filter(lp => lp.status === 'approved').length
+    const approvedLevels = (levelProgress || []).filter((lp) => lp.status === 'approved').length
     const totalLevels = levels?.length || 0
     const progressPct = totalLevels > 0 ? Math.round((approvedLevels / totalLevels) * 100) : 0
 
@@ -230,12 +245,13 @@ async function loadStudentProgress(container, studentId) {
       </div>
 
       <div class="pm-duolingo-path">
-        ${(levels || []).map(level => {
-          const lp = levelProgress?.find(p => p.level_id === level.id)
-          const status = lp?.status || 'pending'
-          const levelNodes = nodes?.filter(n => n.level_id === level.id) || []
+        ${(levels || [])
+          .map((level) => {
+            const lp = levelProgress?.find((p) => p.level_id === level.id)
+            const status = lp?.status || 'pending'
+            const levelNodes = nodes?.filter((n) => n.level_id === level.id) || []
 
-          return `
+            return `
             <div class="pm-level-circle" data-level-id="${level.id}">
               <div class="pm-circle ${status}">
                 ${status === 'approved' ? '✓' : status === 'in_process' ? level.level_number : status === 'failed' ? '✕' : '🔒'}
@@ -247,13 +263,14 @@ async function loadStudentProgress(container, studentId) {
                 </div>
                 <div class="pm-level-obj">${escHTML(level.main_objective || '')}</div>
                 <div class="pm-level-nodes">
-                  ${levelNodes.map(node => {
-                    const np = nodeProgress?.find(p => p.node_id === node.id)
-                    const nStatus = np?.status || 'pending'
-                    const indicators = node.indicators || []
-                    const attempts = np?.indicator_attempts || []
+                  ${levelNodes
+                    .map((node) => {
+                      const np = nodeProgress?.find((p) => p.node_id === node.id)
+                      const nStatus = np?.status || 'pending'
+                      const indicators = node.indicators || []
+                      const attempts = np?.indicator_attempts || []
 
-                    return `
+                      return `
                       <div class="pm-node-card" onclick="this.classList.toggle('expanded')">
                         <div class="pm-node-icon">${getNodeIcon(node.name)}</div>
                         <div class="pm-node-info">
@@ -262,31 +279,36 @@ async function loadStudentProgress(container, studentId) {
                         </div>
                         ${node.is_critical ? '<span style="color:var(--pm-danger);font-size:0.6rem;font-weight:700;">CRÍTICO</span>' : ''}
                         <div class="pm-indicators">
-                          ${indicators.length === 0
-                            ? '<p style="font-size:0.7rem;color:var(--pm-text-muted);">Sin indicadores</p>'
-                            : indicators.map(ind => {
-                              const attempt = attempts.find(a => a.indicator_id === ind.id)
-                              const iStatus = attempt?.status || 'pending'
-                              return `
+                          ${
+                            indicators.length === 0
+                              ? '<p style="font-size:0.7rem;color:var(--pm-text-muted);">Sin indicadores</p>'
+                              : indicators
+                                  .map((ind) => {
+                                    const attempt = attempts.find((a) => a.indicator_id === ind.id)
+                                    const iStatus = attempt?.status || 'pending'
+                                    return `
                                 <div class="pm-indicator">
                                   <span class="pm-indicator-dot" style="background:${STATUS_COLORS[iStatus]};"></span>
                                   <span class="pm-indicator-desc">${escHTML(ind.description)}</span>
                                   ${attempt?.created_at ? `<span class="pm-indicator-date">${new Date(attempt.created_at).toLocaleDateString('es')}</span>` : ''}
                                 </div>
                               `
-                            }).join('')}
+                                  })
+                                  .join('')
+                          }
                         </div>
                       </div>
                     `
-                  }).join('')}
+                    })
+                    .join('')}
                 </div>
               </div>
             </div>
           `
-        }).join('')}
+          })
+          .join('')}
       </div>
     `
-
   } catch (err) {
     contentEl.innerHTML = `<p class="pm-empty">Error: ${escHTML(err.message)}</p>`
   }

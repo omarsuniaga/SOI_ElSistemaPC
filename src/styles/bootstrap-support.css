@@ -13,7 +13,7 @@
 }
 
 /* Dark mode support */
-[data-bs-theme="dark"] {
+[data-bs-theme='dark'] {
   --bs-body-bg: #0f172a;
   --bs-body-color: #cbd5e1;
 
@@ -27,17 +27,21 @@
 body {
   background-color: var(--bs-body-bg);
   color: var(--bs-body-color);
-  transition: background-color 0.3s ease, color 0.3s ease;
+  transition:
+    background-color 0.3s ease,
+    color 0.3s ease;
 }
 
 /* Navbar customization */
 .navbar {
   background-color: #f8f9fa;
   border-bottom: 1px solid #e0e0e0;
-  transition: background-color 0.3s ease, border-color 0.3s ease;
+  transition:
+    background-color 0.3s ease,
+    border-color 0.3s ease;
 }
 
-[data-bs-theme="dark"] .navbar {
+[data-bs-theme='dark'] .navbar {
   background-color: #1a202c;
   border-bottom: 1px solid #4a5568;
 }
@@ -46,7 +50,11 @@ body {
 .card {
   background-color: var(--card-bg);
   border: 1px solid var(--card-border);
-  transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.3s ease, border-color 0.3s ease;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    background-color 0.3s ease,
+    border-color 0.3s ease;
 }
 
 .card:hover {

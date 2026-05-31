@@ -16,7 +16,7 @@ describe('Deep Link Handling', () => {
     expect(result).toEqual({
       claseId: '550e8400-e29b-41d4-a716-446655440000',
       fecha: '2026-05-21',
-      isValid: true
+      isValid: true,
     })
   })
 
@@ -34,7 +34,7 @@ describe('Deep Link Handling', () => {
     expect(global.mockNavigate).toHaveBeenCalledWith({
       view: 'asistencia',
       claseId: '550e8400-e29b-41d4-a716-446655440000',
-      fecha: '2026-05-21'
+      fecha: '2026-05-21',
     })
   })
 })

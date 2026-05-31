@@ -4,11 +4,11 @@
  */
 
 export const THRESHOLDS = {
-  attendance_min_rate: 0.70,
+  attendance_min_rate: 0.7,
   attendance_window_weeks: 4,
   grade_min_avg: 6.0,
   grade_window_count: 3,
-  indicator_min_pass_rate: 0.50,
+  indicator_min_pass_rate: 0.5,
   indicator_window_weeks: 4,
 }
 

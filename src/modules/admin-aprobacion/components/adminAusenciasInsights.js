@@ -19,11 +19,11 @@ let _evaluating = false
 
 // ── Tipos legibles ─────────────────────────────────────────────────────────
 const TIPO_LABELS = {
-  enfermedad:    'Médica',
-  personal:      'Personal',
-  capacitacion:  'Capacitación',
-  vacaciones:    'Vacaciones',
-  otro:          'Otro',
+  enfermedad: 'Médica',
+  personal: 'Personal',
+  capacitacion: 'Capacitación',
+  vacaciones: 'Vacaciones',
+  otro: 'Otro',
 }
 
 // ── Utilidades ─────────────────────────────────────────────────────────────
@@ -34,7 +34,7 @@ function _formatDate(dateStr) {
 }
 
 function _urgIcon(urg) {
-  if (urg === 'alta')  return '<i class="bi bi-exclamation-circle-fill" style="color:#ef4444"></i>'
+  if (urg === 'alta') return '<i class="bi bi-exclamation-circle-fill" style="color:#ef4444"></i>'
   if (urg === 'media') return '<i class="bi bi-exclamation-circle-fill" style="color:#f59e0b"></i>'
   return '<i class="bi bi-info-circle-fill" style="color:#22c55e"></i>'
 }
@@ -242,21 +242,23 @@ function _injectStyles() {
 // ── Badge en nav tabs ─────────────────────────────────────────────────────
 function _updateNavBadge(count) {
   // Aplica badge a ausencias Y al Centro de Actividad
-  document.querySelectorAll('[data-route="admin-ausencias"],[data-route="admin-notificaciones"]').forEach(el => {
-    let badge = el.querySelector('.aai-nav-badge')
+  document
+    .querySelectorAll('[data-route="admin-ausencias"],[data-route="admin-notificaciones"]')
+    .forEach((el) => {
+      let badge = el.querySelector('.aai-nav-badge')
 
-    if (count > 0) {
-      if (!badge) {
-        badge = document.createElement('span')
-        badge.className = 'aai-nav-badge'
-        el.appendChild(badge)
+      if (count > 0) {
+        if (!badge) {
+          badge = document.createElement('span')
+          badge.className = 'aai-nav-badge'
+          el.appendChild(badge)
+        }
+        badge.textContent = count > 99 ? '99+' : String(count)
+        badge.style.display = 'flex'
+      } else {
+        if (badge) badge.style.display = 'none'
       }
-      badge.textContent = count > 99 ? '99+' : String(count)
-      badge.style.display = 'flex'
-    } else {
-      if (badge) badge.style.display = 'none'
-    }
-  })
+    })
 }
 
 // ── Crear o recuperar el elemento del banner ──────────────────────────────
@@ -277,7 +279,9 @@ function _renderBanner(ausencias) {
   const count = ausencias.length
   const first = ausencias[0]
 
-  const previewHTML = count === 1 && first ? `
+  const previewHTML =
+    count === 1 && first
+      ? `
     <div class="aai-preview">
       <div class="aai-preview-row">
         ${_urgIcon(first.urgencia)}
@@ -286,11 +290,13 @@ function _renderBanner(ausencias) {
         <span style="opacity:.7">${_formatDate(first.fecha_inicio)}${first.fecha_fin && first.fecha_fin !== first.fecha_inicio ? ' → ' + _formatDate(first.fecha_fin) : ''}</span>
       </div>
     </div>
-  ` : ''
+  `
+      : ''
 
-  const subtitle = count === 1
-    ? 'Hay una solicitud esperando tu decisión'
-    : `${count} maestros esperan tu aprobación`
+  const subtitle =
+    count === 1
+      ? 'Hay una solicitud esperando tu decisión'
+      : `${count} maestros esperan tu aprobación`
 
   el.innerHTML = `
     <div class="aai-row">
@@ -353,7 +359,6 @@ function _isDismissed() {
 
 // ── API pública ────────────────────────────────────────────────────────────
 export const adminAusenciasInsights = {
-
   init() {
     window.adminAusenciasInsights = this
     _injectStyles()

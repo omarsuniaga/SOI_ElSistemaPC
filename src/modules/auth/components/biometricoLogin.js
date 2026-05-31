@@ -30,13 +30,14 @@ export class BiometricoLogin {
   render() {
     this.container.innerHTML = `
       <div class="biometrico-login">
-        ${this.credential
-          ? `<div class="text-center">
+        ${
+          this.credential
+            ? `<div class="text-center">
               <i class="bi bi-fingerprint" style="font-size:3rem;color:var(--bs-primary)"></i>
               <p class="mt-2">Usar biometricos guardados</p>
               <button class="btn btn-primary" id="biometrico-login-btn">Iniciar con Huella/Face</button>
             </div>`
-          : `<div class="text-center">
+            : `<div class="text-center">
               <i class="bi bi-camera" style="font-size:3rem;color:var(--bs-secondary)"></i>
               <p class="mt-2">Registrar método biométrico</p>
               <button class="btn btn-outline-primary" id="biometrico-register-btn">Activar Login Biométrico</button>
@@ -66,8 +67,8 @@ export class BiometricoLogin {
       const credencial = await navigator.credentials.get({
         publicKey: {
           challenge: new Uint8Array(32),
-          allowList: [{ type: 'public-key' }]
-        }
+          allowList: [{ type: 'public-key' }],
+        },
       })
       this.onSuccess?.(credencial)
     } catch (error) {
@@ -84,9 +85,9 @@ export class BiometricoLogin {
           user: { id: new Uint8Array(16), name: 'maestro' },
           pubKeyCredParams: [
             { type: 'public-key', alg: -7 },
-            { type: 'public-key', alg: -257 }
-          ]
-        }
+            { type: 'public-key', alg: -257 },
+          ],
+        },
       })
       localStorage.setItem('biometric_credential', JSON.stringify(credencial))
       this.credential = credencial

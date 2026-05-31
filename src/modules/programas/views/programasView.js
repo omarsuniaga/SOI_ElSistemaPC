@@ -36,7 +36,9 @@ function escapeHTML(str) {
 function formatDate(dateStr) {
   if (!dateStr) return 'N/A'
   return new Date(dateStr).toLocaleDateString('es-ES', {
-    year: 'numeric', month: 'short', day: 'numeric'
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
   })
 }
 
@@ -56,8 +58,9 @@ function getStatusLabel(activo) {
 }
 
 function getNivelOptions(selectedValue = '') {
-  return NIVELES.map(n => 
-    `<option value="${n.value}" ${n.value === selectedValue ? 'selected' : ''}>${n.label}</option>`
+  return NIVELES.map(
+    (n) =>
+      `<option value="${n.value}" ${n.value === selectedValue ? 'selected' : ''}>${n.label}</option>`,
   ).join('')
 }
 
@@ -103,7 +106,9 @@ function renderError(container, mensaje) {
       </div>
     </div>
   `
-  container.querySelector('#retryBtn')?.addEventListener('click', () => renderProgramasView(container))
+  container
+    .querySelector('#retryBtn')
+    ?.addEventListener('click', () => renderProgramasView(container))
 }
 
 function renderContent(container) {
@@ -161,14 +166,15 @@ function renderContent(container) {
 function renderTableRows(programas) {
   if (!programas.length) return ''
 
-  return programas.map(p => {
-    const initials = getInitials(p.nombre)
-    const nivel = getNivelLabel(p.nivel)
-    const descripcion = escapeHTML(p.descripcion || 'Sin descripción')
-    const accentClass = `border-accent-${p.activo ? 'success' : 'secondary'}`
-    const statusDotClass = `bg-${p.activo ? 'success' : 'secondary'}`
+  return programas
+    .map((p) => {
+      const initials = getInitials(p.nombre)
+      const nivel = getNivelLabel(p.nivel)
+      const descripcion = escapeHTML(p.descripcion || 'Sin descripción')
+      const accentClass = `border-accent-${p.activo ? 'success' : 'secondary'}`
+      const statusDotClass = `bg-${p.activo ? 'success' : 'secondary'}`
 
-    return `
+      return `
       <div class="list-group-item list-group-item-action d-flex align-items-center justify-content-between p-3 w-100 border-start-accent ${accentClass}" data-id="${p.id}" style="cursor: pointer;">
         <div class="d-flex align-items-center gap-3 flex-grow-1 overflow-hidden">
           <div class="position-relative flex-shrink-0">
@@ -187,7 +193,8 @@ function renderTableRows(programas) {
         </div>
       </div>
     `
-  }).join('')
+    })
+    .join('')
 }
 
 function renderEmpty() {
@@ -205,7 +212,7 @@ function attachGlobalEvents(container) {
   currentContainer = container
 
   container.querySelector('#btnAgregarPrograma')?.addEventListener('click', () => openCreateModal())
-  
+
   container.querySelector('#btnExportarPDF')?.addEventListener('click', async () => {
     try {
       await exportarProgramasPDF(state.programas)
@@ -236,12 +243,14 @@ function applyFilters() {
   const searchTerm = currentContainer.querySelector('#buscar')?.value.trim().toLowerCase() || ''
   const filtroEstado = currentContainer.querySelector('#filtroEstado')?.value || 'todos'
 
-  state.programas = state.programasOriginales.filter(p => {
-    const matchSearch = !searchTerm ||
+  state.programas = state.programasOriginales.filter((p) => {
+    const matchSearch =
+      !searchTerm ||
       p.nombre.toLowerCase().includes(searchTerm) ||
       (p.descripcion || '').toLowerCase().includes(searchTerm)
 
-    const matchEstado = filtroEstado === 'todos' ||
+    const matchEstado =
+      filtroEstado === 'todos' ||
       (filtroEstado === 'activo' && p.activo) ||
       (filtroEstado === 'inactivo' && !p.activo)
 
@@ -254,7 +263,7 @@ function applyFilters() {
 function refreshTable() {
   const tbody = currentContainer.querySelector('#programasTBody')
   if (tbody) tbody.innerHTML = renderTableRows(state.programas)
-  
+
   const empty = currentContainer.querySelector('#emptyContainer')
   if (empty) empty.innerHTML = state.programas.length === 0 ? renderEmpty() : ''
 }
@@ -264,7 +273,7 @@ function openCreateModal() {
 }
 
 function openEditModal(id) {
-  const prog = state.programasOriginales.find(p => p.id === id)
+  const prog = state.programasOriginales.find((p) => p.id === id)
   if (!prog) return AppToast.error('Programa no encontrado')
   _renderFormModal({ title: 'Editar Programa', saveText: 'Guardar Cambios', programa: prog })
 }
@@ -305,13 +314,15 @@ function _renderFormModal({ title, saveText, programa = null }) {
       const data = {
         nombre: modalBody.querySelector('#prog-nombre').value.trim(),
         nivel: modalBody.querySelector('#prog-nivel').value,
-        duracion_anios: modalBody.querySelector('#prog-duracion').value ? parseFloat(modalBody.querySelector('#prog-duracion').value) : null,
+        duracion_anios: modalBody.querySelector('#prog-duracion').value
+          ? parseFloat(modalBody.querySelector('#prog-duracion').value)
+          : null,
         descripcion: modalBody.querySelector('#prog-descripcion').value.trim(),
-        activo: modalBody.querySelector('#prog-activo').checked
+        activo: modalBody.querySelector('#prog-activo').checked,
       }
 
       const p = new Programa(data)
-      const validLevels = NIVELES.map(n => n.value).filter(Boolean)
+      const validLevels = NIVELES.map((n) => n.value).filter(Boolean)
       const errores = p.validate(validLevels)
 
       if (errores.length > 0) {
@@ -322,7 +333,7 @@ function _renderFormModal({ title, saveText, programa = null }) {
       try {
         if (programa) {
           const updated = await actualizarPrograma(programa.id, data)
-          const idx = state.programasOriginales.findIndex(x => x.id === programa.id)
+          const idx = state.programasOriginales.findIndex((x) => x.id === programa.id)
           state.programasOriginales[idx] = updated
           AppToast.success('Programa actualizado')
         } else {
@@ -336,12 +347,12 @@ function _renderFormModal({ title, saveText, programa = null }) {
         AppToast.error(err.message)
         return false
       }
-    }
+    },
   })
 }
 
 function openViewModal(id) {
-  const p = state.programasOriginales.find(x => x.id === id)
+  const p = state.programasOriginales.find((x) => x.id === id)
   if (!p) return
 
   AppModal.open({
@@ -450,12 +461,12 @@ function openViewModal(id) {
         navigator.clipboard.writeText(p.id)
         AppToast.success('ID copiado al portapapeles')
       })
-    }
+    },
   })
 }
 
 function openDeleteModal(id) {
-  const p = state.programasOriginales.find(x => x.id === id)
+  const p = state.programasOriginales.find((x) => x.id === id)
   if (!p) return
 
   AppModal.open({
@@ -468,7 +479,7 @@ function openDeleteModal(id) {
     onSave: async () => {
       try {
         await eliminarPrograma(id)
-        state.programasOriginales = state.programasOriginales.filter(x => x.id !== id)
+        state.programasOriginales = state.programasOriginales.filter((x) => x.id !== id)
         applyFilters()
         AppToast.success('Programa eliminado')
         return true
@@ -476,6 +487,6 @@ function openDeleteModal(id) {
         AppToast.error('Error al eliminar')
         return false
       }
-    }
+    },
   })
 }

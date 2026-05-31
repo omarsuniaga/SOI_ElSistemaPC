@@ -58,9 +58,32 @@ export function render(draft, errors = {}) {
       <hr class="my-3">
       <h6 class="fw-semibold text-secondary mb-3"><i class="bi bi-house-heart me-1"></i>Situación familiar y social</h6>
 
-      ${renderFormField({ name: 'familia_monoparental', label: '¿El alumno pertenece a una familia monoparental (sin padre o sin madre)?', type: 'radio', value: draft.familia_monoparental === true ? 'true' : draft.familia_monoparental === false ? 'false' : '', options: [{ value: 'true', label: 'Sí' }, { value: 'false', label: 'No' }] })}
+      ${renderFormField({
+        name: 'familia_monoparental',
+        label: '¿El alumno pertenece a una familia monoparental (sin padre o sin madre)?',
+        type: 'radio',
+        value:
+          draft.familia_monoparental === true
+            ? 'true'
+            : draft.familia_monoparental === false
+              ? 'false'
+              : '',
+        options: [
+          { value: 'true', label: 'Sí' },
+          { value: 'false', label: 'No' },
+        ],
+      })}
 
-      ${renderFormField({ name: 'beneficiario_subsidio_estado', label: '¿Algún miembro del hogar es beneficiario de un subsidio del Estado?', type: 'radio', value: tieneSubsidio ? 'true' : draft.beneficiario_subsidio_estado === false ? 'false' : '', options: [{ value: 'true', label: 'Sí' }, { value: 'false', label: 'No' }] })}
+      ${renderFormField({
+        name: 'beneficiario_subsidio_estado',
+        label: '¿Algún miembro del hogar es beneficiario de un subsidio del Estado?',
+        type: 'radio',
+        value: tieneSubsidio ? 'true' : draft.beneficiario_subsidio_estado === false ? 'false' : '',
+        options: [
+          { value: 'true', label: 'Sí' },
+          { value: 'false', label: 'No' },
+        ],
+      })}
 
       <div id="subsidio-block" style="${tieneSubsidio ? '' : 'display:none'}">
         ${renderFormField({ name: 'subsidio_descripcion', label: '¿Qué tipo de subsidio? (adjunte prueba de beneficio al momento de inscripción)', type: 'textarea', value: draft.subsidio_descripcion ?? '', hint: 'Ej: Supérate, Progresando con Solidaridad, SIUBEN...' })}
@@ -103,16 +126,23 @@ export function getState(container) {
 
   return {
     representante_nombre: form.querySelector('[name="representante_nombre"]')?.value?.trim() ?? '',
-    representante_parentesco: form.querySelector('[name="representante_parentesco"]')?.value?.trim() ?? '',
+    representante_parentesco:
+      form.querySelector('[name="representante_parentesco"]')?.value?.trim() ?? '',
     representante_cedula: form.querySelector('[name="representante_cedula"]')?.value?.trim() ?? '',
     representante_tlf: form.querySelector('[name="representante_tlf"]')?.value?.trim() ?? '',
-    otro_responsable_nombre: form.querySelector('[name="otro_responsable_nombre"]')?.value?.trim() ?? '',
-    otro_responsable_cedula: form.querySelector('[name="otro_responsable_cedula"]')?.value?.trim() ?? '',
+    otro_responsable_nombre:
+      form.querySelector('[name="otro_responsable_nombre"]')?.value?.trim() ?? '',
+    otro_responsable_cedula:
+      form.querySelector('[name="otro_responsable_cedula"]')?.value?.trim() ?? '',
     otro_responsable_tlf: form.querySelector('[name="otro_responsable_tlf"]')?.value?.trim() ?? '',
-    contacto_emergencia_nombre: form.querySelector('[name="contacto_emergencia_nombre"]')?.value?.trim() ?? '',
-    contacto_emergencia_telefono: form.querySelector('[name="contacto_emergencia_telefono"]')?.value?.trim() ?? '',
-    contacto_emergencia_2_nombre: form.querySelector('[name="contacto_emergencia_2_nombre"]')?.value?.trim() ?? '',
-    contacto_emergencia_2_telefono: form.querySelector('[name="contacto_emergencia_2_telefono"]')?.value?.trim() ?? '',
+    contacto_emergencia_nombre:
+      form.querySelector('[name="contacto_emergencia_nombre"]')?.value?.trim() ?? '',
+    contacto_emergencia_telefono:
+      form.querySelector('[name="contacto_emergencia_telefono"]')?.value?.trim() ?? '',
+    contacto_emergencia_2_nombre:
+      form.querySelector('[name="contacto_emergencia_2_nombre"]')?.value?.trim() ?? '',
+    contacto_emergencia_2_telefono:
+      form.querySelector('[name="contacto_emergencia_2_telefono"]')?.value?.trim() ?? '',
     familia_monoparental: boolRadio('familia_monoparental'),
     beneficiario_subsidio_estado: boolRadio('beneficiario_subsidio_estado'),
     subsidio_descripcion: form.querySelector('[name="subsidio_descripcion"]')?.value?.trim() ?? '',

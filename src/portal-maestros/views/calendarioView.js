@@ -119,9 +119,7 @@ async function _calcularEstadoMes(maestroId, anio, mes) {
 
   // Dates where a scheduled class was auto-justified due to an emergent session
   const fechasCubiertasEmergente = new Set(
-    todasSesiones
-      .filter((s) => s.clase_id && s.emergente_id)
-      .map((s) => s.fecha),
+    todasSesiones.filter((s) => s.clase_id && s.emergente_id).map((s) => s.fecha),
   )
 
   // Fechas con sesiones emergentes (clase_id = null) — agrupadas por fecha

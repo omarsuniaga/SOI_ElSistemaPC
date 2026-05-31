@@ -13,14 +13,16 @@ export async function renderReportesPedagogicosView(container) {
     ])
     container.innerHTML = _render(rendimientoClases, alumnosRiesgo)
 
-    container.querySelectorAll('.btn-generar-pedagogico').forEach(btn => {
+    container.querySelectorAll('.btn-generar-pedagogico').forEach((btn) => {
       btn.addEventListener('click', async (e) => {
         e.preventDefault()
         const claseId = btn.getAttribute('data-clase-id')
         btn.disabled = true
-        btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>'
+        btn.innerHTML =
+          '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>'
         try {
-          const { generateMonthlyPedagogical } = await import('../../../portal-maestros/services/reportService.js')
+          const { generateMonthlyPedagogical } =
+            await import('../../../portal-maestros/services/reportService.js')
           const now = new Date()
           await generateMonthlyPedagogical(claseId, now.getFullYear(), now.getMonth() + 1)
         } catch (err) {
@@ -35,13 +37,44 @@ export async function renderReportesPedagogicosView(container) {
     container.querySelector('#btn-help-reportes')?.addEventListener('click', () => {
       HelpPanel.open({
         title: 'Reportes Pedagógicos',
-        intro: 'Vista agregada del rendimiento por clase y alumnos en riesgo. Útil para detectar patrones y tomar decisiones de intervención.',
+        intro:
+          'Vista agregada del rendimiento por clase y alumnos en riesgo. Útil para detectar patrones y tomar decisiones de intervención.',
         sections: [
-          { icon: 'bi-table',                  title: 'Rendimiento por clase',  description: 'Cada clase activa con: alumnos inscriptos, % asistencia (4 semanas), promedio de calificaciones y nivel de ocupación.',                                  color: '#3b82f6' },
-          { icon: 'bi-bar-chart-fill',         title: 'Barra de ocupación',    description: 'Verde < 70% ocupado. Amarillo 70-90%. Rojo > 90%. Detecta clases saturadas.',                                                                            color: '#10b981' },
-          { icon: 'bi-percent',                title: 'Columna Asistencia',    description: 'Verde ≥ 80%, amarillo ≥ 60%, rojo < 60%. Basado en registros de las últimas 4 semanas.',                                                                  color: '#f59e0b' },
-          { icon: 'bi-star-half',              title: 'Columna Prom. Nota',    description: 'Promedio de calificaciones de la clase. Verde ≥ 7.0, amarillo ≥ 5.0, rojo < 5.0.',                                                                       color: '#6366f1' },
-          { icon: 'bi-exclamation-triangle-fill', title: 'Alumnos en riesgo', description: 'Asistencia < 70% en 4 semanas (mínimo 4 clases evaluadas). Ordenados de menor a mayor tasa.',                                                            color: '#ef4444' },
+          {
+            icon: 'bi-table',
+            title: 'Rendimiento por clase',
+            description:
+              'Cada clase activa con: alumnos inscriptos, % asistencia (4 semanas), promedio de calificaciones y nivel de ocupación.',
+            color: '#3b82f6',
+          },
+          {
+            icon: 'bi-bar-chart-fill',
+            title: 'Barra de ocupación',
+            description:
+              'Verde < 70% ocupado. Amarillo 70-90%. Rojo > 90%. Detecta clases saturadas.',
+            color: '#10b981',
+          },
+          {
+            icon: 'bi-percent',
+            title: 'Columna Asistencia',
+            description:
+              'Verde ≥ 80%, amarillo ≥ 60%, rojo < 60%. Basado en registros de las últimas 4 semanas.',
+            color: '#f59e0b',
+          },
+          {
+            icon: 'bi-star-half',
+            title: 'Columna Prom. Nota',
+            description:
+              'Promedio de calificaciones de la clase. Verde ≥ 7.0, amarillo ≥ 5.0, rojo < 5.0.',
+            color: '#6366f1',
+          },
+          {
+            icon: 'bi-exclamation-triangle-fill',
+            title: 'Alumnos en riesgo',
+            description:
+              'Asistencia < 70% en 4 semanas (mínimo 4 clases evaluadas). Ordenados de menor a mayor tasa.',
+            color: '#ef4444',
+          },
         ],
       })
     })
@@ -60,29 +93,38 @@ async function _fetchRendimientoPorClase() {
 
   if (!clases?.length) return []
 
-  const claseIds = clases.map(c => c.id)
+  const claseIds = clases.map((c) => c.id)
 
   const [inscritos, asistencias, progresos] = await Promise.all([
     supabase.from('alumnos_clases').select('clase_id, alumno_id').in('clase_id', claseIds),
-    supabase.from('asistencias').select('clase_id, estado')
+    supabase
+      .from('asistencias')
+      .select('clase_id, estado')
       .in('clase_id', claseIds)
       .gte('fecha', new Date(Date.now() - 28 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]),
-    supabase.from('progresos').select('clase_id, calificacion')
+    supabase
+      .from('progresos')
+      .select('clase_id, calificacion')
       .in('clase_id', claseIds)
       .not('calificacion', 'is', null),
   ])
 
-  return clases.map(c => {
-    const inscritosClase = (inscritos.data || []).filter(i => i.clase_id === c.id)
-    const asistClase     = (asistencias.data || []).filter(a => a.clase_id === c.id)
-    const progClase      = (progresos.data || []).filter(p => p.clase_id === c.id)
+  return clases.map((c) => {
+    const inscritosClase = (inscritos.data || []).filter((i) => i.clase_id === c.id)
+    const asistClase = (asistencias.data || []).filter((a) => a.clase_id === c.id)
+    const progClase = (progresos.data || []).filter((p) => p.clase_id === c.id)
 
-    const tasaAsist = asistClase.length > 0
-      ? Math.round((asistClase.filter(a => a.estado === 'P').length / asistClase.length) * 100) : null
-    const promNotas = progClase.length > 0
-      ? progClase.reduce((s, p) => s + p.calificacion, 0) / progClase.length : null
+    const tasaAsist =
+      asistClase.length > 0
+        ? Math.round((asistClase.filter((a) => a.estado === 'P').length / asistClase.length) * 100)
+        : null
+    const promNotas =
+      progClase.length > 0
+        ? progClase.reduce((s, p) => s + p.calificacion, 0) / progClase.length
+        : null
     const ocupacion = c.capacidad_maxima
-      ? Math.round((inscritosClase.length / c.capacidad_maxima) * 100) : null
+      ? Math.round((inscritosClase.length / c.capacidad_maxima) * 100)
+      : null
 
     return { ...c, totalAlumnos: inscritosClase.length, tasaAsist, promNotas, ocupacion }
   })
@@ -91,19 +133,21 @@ async function _fetchRendimientoPorClase() {
 async function _fetchAlumnosEnRiesgoCompleto() {
   const desde = new Date(Date.now() - 28 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
   const { data: asistencias } = await supabase
-    .from('asistencias').select('alumno_id, estado').gte('fecha', desde)
+    .from('asistencias')
+    .select('alumno_id, estado')
+    .gte('fecha', desde)
 
   if (!asistencias?.length) return []
 
   const porAlumno = {}
-  asistencias.forEach(a => {
+  asistencias.forEach((a) => {
     if (!porAlumno[a.alumno_id]) porAlumno[a.alumno_id] = { total: 0, presentes: 0 }
     porAlumno[a.alumno_id].total++
     if (a.estado === 'P') porAlumno[a.alumno_id].presentes++
   })
 
   const enRiesgoIds = Object.entries(porAlumno)
-    .filter(([, v]) => v.total >= 4 && (v.presentes / v.total) < THRESHOLDS.attendance_min_rate)
+    .filter(([, v]) => v.total >= 4 && v.presentes / v.total < THRESHOLDS.attendance_min_rate)
     .map(([id, v]) => ({ id, rate: v.presentes / v.total, total: v.total }))
 
   if (!enRiesgoIds.length) return []
@@ -111,17 +155,24 @@ async function _fetchAlumnosEnRiesgoCompleto() {
   const { data: alumnos } = await supabase
     .from('alumnos')
     .select('id, nombre_completo, instrumento_principal')
-    .in('id', enRiesgoIds.map(e => e.id))
+    .in(
+      'id',
+      enRiesgoIds.map((e) => e.id),
+    )
 
-  return (alumnos || []).map(a => ({
-    ...a,
-    ...enRiesgoIds.find(e => e.id === a.id),
-  })).sort((a, b) => a.rate - b.rate)
+  return (alumnos || [])
+    .map((a) => ({
+      ...a,
+      ...enRiesgoIds.find((e) => e.id === a.id),
+    }))
+    .sort((a, b) => a.rate - b.rate)
 }
 
 function _render(clases, alumnosRiesgo) {
-  const colorAsist = (v) => v === null ? 'secondary' : v >= 80 ? 'success' : v >= 60 ? 'warning' : 'danger'
-  const colorNota  = (v) => v === null ? 'secondary' : v >= 7 ? 'success' : v >= 5 ? 'warning' : 'danger'
+  const colorAsist = (v) =>
+    v === null ? 'secondary' : v >= 80 ? 'success' : v >= 60 ? 'warning' : 'danger'
+  const colorNota = (v) =>
+    v === null ? 'secondary' : v >= 7 ? 'success' : v >= 5 ? 'warning' : 'danger'
 
   return `
     <div class="page-container">
@@ -153,7 +204,11 @@ function _render(clases, alumnosRiesgo) {
               </tr>
             </thead>
             <tbody>
-              ${clases.length ? clases.map(c => `
+              ${
+                clases.length
+                  ? clases
+                      .map(
+                        (c) => `
                 <tr>
                   <td>
                     <div class="fw-semibold">${c.nombre}</div>
@@ -161,31 +216,43 @@ function _render(clases, alumnosRiesgo) {
                   </td>
                   <td class="text-center">${c.totalAlumnos}</td>
                   <td class="text-center">
-                    ${c.tasaAsist !== null
-                      ? `<span class="badge bg-${colorAsist(c.tasaAsist)}-subtle text-${colorAsist(c.tasaAsist)} rounded-pill">${c.tasaAsist}%</span>`
-                      : '<span class="text-muted">–</span>'}
+                    ${
+                      c.tasaAsist !== null
+                        ? `<span class="badge bg-${colorAsist(c.tasaAsist)}-subtle text-${colorAsist(c.tasaAsist)} rounded-pill">${c.tasaAsist}%</span>`
+                        : '<span class="text-muted">–</span>'
+                    }
                   </td>
                   <td class="text-center">
-                    ${c.promNotas !== null
-                      ? `<span class="fw-semibold text-${colorNota(c.promNotas)}">${c.promNotas.toFixed(1)}</span>`
-                      : '<span class="text-muted">–</span>'}
+                    ${
+                      c.promNotas !== null
+                        ? `<span class="fw-semibold text-${colorNota(c.promNotas)}">${c.promNotas.toFixed(1)}</span>`
+                        : '<span class="text-muted">–</span>'
+                    }
                   </td>
                   <td class="text-center">
-                    ${c.ocupacion !== null ? `
+                    ${
+                      c.ocupacion !== null
+                        ? `
                       <div class="d-flex align-items-center gap-2">
                         <div style="flex:1;height:6px;background:var(--bs-tertiary-bg);border-radius:3px;overflow:hidden;">
                           <div style="width:${Math.min(c.ocupacion, 100)}%;height:100%;background:${c.ocupacion >= 90 ? '#ef4444' : c.ocupacion >= 70 ? '#f59e0b' : '#10b981'};border-radius:3px;"></div>
                         </div>
                         <span style="font-size:0.72rem;color:var(--bs-secondary-color);min-width:28px;">${c.ocupacion}%</span>
-                      </div>` : '<span class="text-muted">–</span>'}
+                      </div>`
+                        : '<span class="text-muted">–</span>'
+                    }
                   </td>
                   <td class="text-center">
                     <button class="btn btn-sm btn-light btn-generar-pedagogico py-1 px-2 text-primary" data-clase-id="${c.id}" title="Generar Informe Pedagógico Mensual" style="font-size:0.75rem; font-weight:600; border: 1px solid var(--bs-border-color);">
                       🎓 Generar
                     </button>
                   </td>
-                </tr>`).join('') : `
-                <tr><td colspan="6" class="text-center text-muted py-4">Sin clases activas</td></tr>`}
+                </tr>`,
+                      )
+                      .join('')
+                  : `
+                <tr><td colspan="6" class="text-center text-muted py-4">Sin clases activas</td></tr>`
+              }
             </tbody>
           </table>
         </div>
@@ -194,7 +261,9 @@ function _render(clases, alumnosRiesgo) {
       <h6 class="text-muted text-uppercase mb-2" style="font-size:0.72rem;letter-spacing:0.08em;">
         Alumnos en riesgo — asistencia &lt; ${Math.round(THRESHOLDS.attendance_min_rate * 100)}% (4 semanas)
       </h6>
-      ${alumnosRiesgo.length ? `
+      ${
+        alumnosRiesgo.length
+          ? `
       <div class="card border-0 shadow-sm">
         <div class="table-responsive">
           <table class="table table-hover mb-0 align-middle" style="font-size:0.83rem;">
@@ -207,7 +276,9 @@ function _render(clases, alumnosRiesgo) {
               </tr>
             </thead>
             <tbody>
-              ${alumnosRiesgo.map(a => `
+              ${alumnosRiesgo
+                .map(
+                  (a) => `
                 <tr>
                   <td class="fw-semibold">${a.nombre_completo}</td>
                   <td class="text-muted">${a.instrumento_principal || '–'}</td>
@@ -215,16 +286,20 @@ function _render(clases, alumnosRiesgo) {
                     <span class="badge bg-danger-subtle text-danger rounded-pill">${Math.round(a.rate * 100)}%</span>
                   </td>
                   <td class="text-center text-muted">${a.total}</td>
-                </tr>`).join('')}
+                </tr>`,
+                )
+                .join('')}
             </tbody>
           </table>
         </div>
-      </div>` : `
+      </div>`
+          : `
       <div class="card border-0 shadow-sm">
         <div class="card-body text-center text-muted py-4">
           <i class="bi bi-check-circle-fill text-success fs-3 d-block mb-2"></i>
           <span style="font-size:0.875rem;">Sin alumnos en riesgo detectados en las últimas 4 semanas.</span>
         </div>
-      </div>`}
+      </div>`
+      }
     </div>`
 }

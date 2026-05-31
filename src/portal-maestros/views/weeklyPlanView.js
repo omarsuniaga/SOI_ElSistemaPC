@@ -1,6 +1,6 @@
-import { academicService } from '../../modules/academic-routes/services/academicService';
-import { supabase } from '../../lib/supabaseClient';
-import { escHTML } from '../utils/portalUtils';
+import { academicService } from '../../modules/academic-routes/services/academicService'
+import { supabase } from '../../lib/supabaseClient'
+import { escHTML } from '../utils/portalUtils'
 
 /**
  * Vista para gestionar la planificación semanal de un alumno.
@@ -8,7 +8,7 @@ import { escHTML } from '../utils/portalUtils';
  * @param {Object} options - { alumnoId }
  */
 export async function renderWeeklyPlanView(container, { alumnoId }) {
-  container.innerHTML = `<div class="pm-loading"><div class="pm-spinner"></div></div>`;
+  container.innerHTML = `<div class="pm-loading"><div class="pm-spinner"></div></div>`
 
   try {
     // 1. Obtener el plan académico activo del alumno
@@ -17,9 +17,9 @@ export async function renderWeeklyPlanView(container, { alumnoId }) {
       .select('*, route_versions(route_id, version_number, routes(name, instrument_id))')
       .eq('student_id', alumnoId)
       .eq('status', 'in_process')
-      .maybeSingle();
+      .maybeSingle()
 
-    if (pError) throw pError;
+    if (pError) throw pError
 
     if (!plan) {
       container.innerHTML = `
@@ -30,21 +30,21 @@ export async function renderWeeklyPlanView(container, { alumnoId }) {
             Asignar Ruta
           </button>
         </div>
-      `;
-      return;
+      `
+      return
     }
 
     // 2. Obtener estructura de la ruta para selección
-    const routeStructure = await academicService.getRouteDetail(plan.route_versions.route_id);
+    const routeStructure = await academicService.getRouteDetail(plan.route_versions.route_id)
 
     // 3. Obtener planificación existente
     const { data: existingEntries, error: eError } = await supabase
       .from('weekly_plan_entries')
       .select('*')
       .eq('academic_plan_id', plan.id)
-      .order('start_date', { ascending: false });
+      .order('start_date', { ascending: false })
 
-    if (eError) throw eError;
+    if (eError) throw eError
 
     // 4. Renderizar UI principal
     container.innerHTML = `
@@ -60,11 +60,16 @@ export async function renderWeeklyPlanView(container, { alumnoId }) {
       </div>
 
       <div id="entries-list" class="mt-4">
-        ${existingEntries.length === 0 ? `
+        ${
+          existingEntries.length === 0
+            ? `
           <div class="pm-placeholder">
             <p>No hay planificación registrada aún.</p>
           </div>
-        ` : existingEntries.map(entry => `
+        `
+            : existingEntries
+                .map(
+                  (entry) => `
           <div class="card-apple mb-3 pm-animate-slide-up" style="padding: 1rem;">
             <div class="d-flex justify-content-between align-items-start">
               <div>
@@ -81,10 +86,13 @@ export async function renderWeeklyPlanView(container, { alumnoId }) {
               </button>
             </div>
             <div class="mt-2" style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
-              ${(entry.planned_nodes || []).map(n => `<span class="badge-apple" style="background: var(--pm-bg-alt); font-size: 0.7rem;">${escHTML(n.title)}</span>`).join('')}
+              ${(entry.planned_nodes || []).map((n) => `<span class="badge-apple" style="background: var(--pm-bg-alt); font-size: 0.7rem;">${escHTML(n.title)}</span>`).join('')}
             </div>
           </div>
-        `).join('')}
+        `,
+                )
+                .join('')
+        }
       </div>
 
       <!-- Modal / Overlay para nueva entrada (Simplificado como un div que se muestra) -->
@@ -108,21 +116,33 @@ export async function renderWeeklyPlanView(container, { alumnoId }) {
           <div class="mb-3">
             <label class="apple-label">Objetivos (Nodos)</label>
             <div id="nodes-checklist" style="max-height: 200px; overflow-y: auto; background: var(--pm-bg-alt); padding: 0.5rem; border-radius: 8px;">
-              ${routeStructure.map(block => `
+              ${routeStructure
+                .map(
+                  (block) => `
                 <div class="mb-2">
                   <small style="font-weight: 700; color: var(--pm-text-muted); text-transform: uppercase; font-size: 0.65rem;">${escHTML(block.name)}</small>
-                  ${block.levels.map(level => `
-                    ${level.nodes.map(node => `
+                  ${block.levels
+                    .map(
+                      (level) => `
+                    ${level.nodes
+                      .map(
+                        (node) => `
                       <div class="form-check" style="padding-left: 1.5rem; margin-top: 0.25rem;">
                         <input class="form-check-input node-checkbox" type="checkbox" value="${node.id}" data-title="${escHTML(node.title)}" id="node-${node.id}">
                         <label class="form-check-label" for="node-${node.id}" style="font-size: 0.85rem;">
                           ${escHTML(node.title)}
                         </label>
                       </div>
-                    `).join('')}
-                  `).join('')}
+                    `,
+                      )
+                      .join('')}
+                  `,
+                    )
+                    .join('')}
                 </div>
-              `).join('')}
+              `,
+                )
+                .join('')}
             </div>
           </div>
 
@@ -132,60 +152,66 @@ export async function renderWeeklyPlanView(container, { alumnoId }) {
           </div>
         </div>
       </div>
-    `;
+    `
 
     // Lógica de eventos
-    const modal = container.querySelector('#planning-modal');
-    const btnNewWeek = container.querySelector('#btn-new-week');
-    const btnCancelModal = container.querySelector('#btn-cancel-modal');
-    const btnSavePlanning = container.querySelector('#btn-save-planning');
+    const modal = container.querySelector('#planning-modal')
+    const btnNewWeek = container.querySelector('#btn-new-week')
+    const btnCancelModal = container.querySelector('#btn-cancel-modal')
+    const btnSavePlanning = container.querySelector('#btn-save-planning')
 
     btnNewWeek.addEventListener('click', () => {
       // Pre-configurar fechas (próxima semana por defecto)
-      const now = new Date();
-      const nextMon = new Date(now);
-      nextMon.setDate(now.getDate() + (1 + 7 - now.getDay()) % 7);
-      const nextSun = new Date(nextMon);
-      nextSun.setDate(nextMon.getDate() + 6);
+      const now = new Date()
+      const nextMon = new Date(now)
+      nextMon.setDate(now.getDate() + ((1 + 7 - now.getDay()) % 7))
+      const nextSun = new Date(nextMon)
+      nextSun.setDate(nextMon.getDate() + 6)
 
-      container.querySelector('#start-date').value = nextMon.toISOString().split('T')[0];
-      container.querySelector('#end-date').value = nextSun.toISOString().split('T')[0];
-      modal.style.display = 'flex';
-    });
+      container.querySelector('#start-date').value = nextMon.toISOString().split('T')[0]
+      container.querySelector('#end-date').value = nextSun.toISOString().split('T')[0]
+      modal.style.display = 'flex'
+    })
 
     btnCancelModal.addEventListener('click', () => {
-      modal.style.display = 'none';
-    });
+      modal.style.display = 'none'
+    })
 
     btnSavePlanning.addEventListener('click', async () => {
-      const startDate = container.querySelector('#start-date').value;
-      const endDate = container.querySelector('#end-date').value;
-      const focus = container.querySelector('#week-focus').value;
-      
-      const selectedNodes = Array.from(container.querySelectorAll('.node-checkbox:checked')).map(cb => ({
-        node_id: cb.value,
-        title: cb.dataset.title
-      }));
+      const startDate = container.querySelector('#start-date').value
+      const endDate = container.querySelector('#end-date').value
+      const focus = container.querySelector('#week-focus').value
+
+      const selectedNodes = Array.from(container.querySelectorAll('.node-checkbox:checked')).map(
+        (cb) => ({
+          node_id: cb.value,
+          title: cb.dataset.title,
+        }),
+      )
 
       // Obtener indicadores automáticamente para esos nodos (simplificación)
-      const selectedIndicators = [];
-      routeStructure.forEach(b => b.levels.forEach(l => l.nodes.forEach(n => {
-        if (selectedNodes.some(sn => sn.node_id === n.id)) {
-          n.indicators.forEach(ind => {
-            selectedIndicators.push({
-              indicator_id: ind.id,
-              description: ind.description,
-              node_id: n.id,
-              node_name: n.title,
-              is_critical: n.is_critical
-            });
-          });
-        }
-      })));
+      const selectedIndicators = []
+      routeStructure.forEach((b) =>
+        b.levels.forEach((l) =>
+          l.nodes.forEach((n) => {
+            if (selectedNodes.some((sn) => sn.node_id === n.id)) {
+              n.indicators.forEach((ind) => {
+                selectedIndicators.push({
+                  indicator_id: ind.id,
+                  description: ind.description,
+                  node_id: n.id,
+                  node_name: n.title,
+                  is_critical: n.is_critical,
+                })
+              })
+            }
+          }),
+        ),
+      )
 
       try {
-        btnSavePlanning.disabled = true;
-        btnSavePlanning.innerHTML = '<div class="pm-spinner pm-spinner-sm"></div> Guardando...';
+        btnSavePlanning.disabled = true
+        btnSavePlanning.innerHTML = '<div class="pm-spinner pm-spinner-sm"></div> Guardando...'
 
         await academicService.createWeeklyEntry(plan.id, {
           week_number: existingEntries.length + 1,
@@ -193,20 +219,18 @@ export async function renderWeeklyPlanView(container, { alumnoId }) {
           end_date: endDate,
           focus: focus,
           planned_nodes: selectedNodes,
-          planned_indicators: selectedIndicators
-        });
+          planned_indicators: selectedIndicators,
+        })
 
-        alert('Planificación guardada');
-        renderWeeklyPlanView(container, { alumnoId }); // Recargar
-
+        alert('Planificación guardada')
+        renderWeeklyPlanView(container, { alumnoId }) // Recargar
       } catch (err) {
-        alert('Error: ' + err.message);
-        btnSavePlanning.disabled = false;
-        btnSavePlanning.textContent = 'Guardar';
+        alert('Error: ' + err.message)
+        btnSavePlanning.disabled = false
+        btnSavePlanning.textContent = 'Guardar'
       }
-    });
-
+    })
   } catch (err) {
-    container.innerHTML = `<div class="pm-placeholder"><i class="bi bi-exclamation-triangle"></i><p>Error: ${escHTML(err.message)}</p></div>`;
+    container.innerHTML = `<div class="pm-placeholder"><i class="bi bi-exclamation-triangle"></i><p>Error: ${escHTML(err.message)}</p></div>`
   }
 }

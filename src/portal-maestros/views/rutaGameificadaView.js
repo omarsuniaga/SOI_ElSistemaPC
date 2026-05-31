@@ -1,14 +1,26 @@
 import { getMaestroLocal as _getMaestroLocal } from '../auth/maestroAuth.js'
-import { getMisClases as _getMisClases, invalidateClasesCache } from '../services/maestroDataService.js'
+import {
+  getMisClases as _getMisClases,
+  invalidateClasesCache,
+} from '../services/maestroDataService.js'
 import { loadRouteTree as _loadRouteTree, resolveRutaIdForClase } from '../services/rutaService.js'
 import { rutaEvents } from '../../lib/rutaEventEmitter.js'
 import { renderBlockSection } from '../components/BlockSection.js'
 import { setRutaTema } from '../services/rutaTopicStore.js'
 
 // Allow test overrides via globals
-const getMaestroLocal = () => (typeof global !== 'undefined' && global.getMaestroLocal ? global.getMaestroLocal() : _getMaestroLocal())
-const getMisClases = (...args) => (typeof global !== 'undefined' && global.getMisClases ? global.getMisClases(...args) : _getMisClases(...args))
-const loadRouteTree = (...args) => (typeof global !== 'undefined' && global.loadRouteTree ? global.loadRouteTree(...args) : _loadRouteTree(...args))
+const getMaestroLocal = () =>
+  typeof global !== 'undefined' && global.getMaestroLocal
+    ? global.getMaestroLocal()
+    : _getMaestroLocal()
+const getMisClases = (...args) =>
+  typeof global !== 'undefined' && global.getMisClases
+    ? global.getMisClases(...args)
+    : _getMisClases(...args)
+const loadRouteTree = (...args) =>
+  typeof global !== 'undefined' && global.loadRouteTree
+    ? global.loadRouteTree(...args)
+    : _loadRouteTree(...args)
 
 let _state = {
   clases: [],
@@ -19,7 +31,7 @@ let _state = {
   expandedBlocks: new Set(),
   expandedLevels: new Set(),
   selectedIndicator: null,
-  onTopicSelected: null
+  onTopicSelected: null,
 }
 
 let _globalListenersAttached = false
@@ -30,23 +42,25 @@ let _globalListenersAttached = false
  * @param {{ onTopicSelected?: (claseId: string) => void }} options
  */
 export async function renderRutaGameificadaView(container, { onTopicSelected } = {}) {
-  _state = { 
-    clases: [], 
-    activeClaseId: null, 
-    rutaId: null, 
-    blocks: [], 
+  _state = {
+    clases: [],
+    activeClaseId: null,
+    rutaId: null,
+    blocks: [],
     loading: false,
     expandedBlocks: new Set(),
     expandedLevels: new Set(),
     selectedIndicator: null,
-    onTopicSelected
+    onTopicSelected,
   }
 
-  container.innerHTML = '<div class="pm-ruta-gamificada"><div class="pm-loading"><div class="pm-spinner"></div></div></div>'
+  container.innerHTML =
+    '<div class="pm-ruta-gamificada"><div class="pm-loading"><div class="pm-spinner"></div></div></div>'
 
   const maestro = getMaestroLocal()
   if (!maestro) {
-    container.innerHTML = '<div class="pm-ruta-gamificada"><p class="pm-empty">No hay sesión activa.</p></div>'
+    container.innerHTML =
+      '<div class="pm-ruta-gamificada"><p class="pm-empty">No hay sesión activa.</p></div>'
     return
   }
 
@@ -55,7 +69,8 @@ export async function renderRutaGameificadaView(container, { onTopicSelected } =
     _state.clases = await getMisClases(true)
 
     if (!_state.clases?.length) {
-      container.innerHTML = '<div class="pm-ruta-gamificada"><p class="pm-empty">No tienes clases asignadas.</p></div>'
+      container.innerHTML =
+        '<div class="pm-ruta-gamificada"><p class="pm-empty">No tienes clases asignadas.</p></div>'
       return
     }
 
@@ -89,7 +104,7 @@ function _renderFull(container) {
           <div class="d-flex align-items-center justify-content-between">
             <h2 style="margin: 0; font-size: 1.25rem; font-weight: 800; color: #1e293b;">Mi Ruta</h2>
             <select id="ruta-clase-select" style="padding: 6px 12px; border-radius: 20px; border: 1px solid #cbd5e1; font-size: 0.85rem; font-weight: 600; cursor: pointer;">
-              ${_state.clases.map(c => `<option value="${c.id}" ${c.id === _state.activeClaseId ? 'selected' : ''}>${c.nombre}</option>`).join('')}
+              ${_state.clases.map((c) => `<option value="${c.id}" ${c.id === _state.activeClaseId ? 'selected' : ''}>${c.nombre}</option>`).join('')}
             </select>
           </div>
         </div>
@@ -102,16 +117,18 @@ function _renderFull(container) {
 
   const treeArea = container.querySelector('#ruta-tree-area')
   if (!_state.rutaId) {
-    treeArea.innerHTML = '<div style="padding:60px; text-align:center; color:#94a3b8;"><i class="bi bi-map fs-1 d-block mb-3"></i>No se encontró ruta publicada para esta clase.</div>'
+    treeArea.innerHTML =
+      '<div style="padding:60px; text-align:center; color:#94a3b8;"><i class="bi bi-map fs-1 d-block mb-3"></i>No se encontró ruta publicada para esta clase.</div>'
     return
   }
 
   if (_state.blocks.length === 0) {
-    treeArea.innerHTML = '<div style="padding:60px; text-align:center; color:#94a3b8;">La ruta no tiene bloques configurados.</div>'
+    treeArea.innerHTML =
+      '<div style="padding:60px; text-align:center; color:#94a3b8;">La ruta no tiene bloques configurados.</div>'
     return
   }
 
-  _state.blocks.forEach(block => {
+  _state.blocks.forEach((block) => {
     const blockContainer = document.createElement('div')
     treeArea.appendChild(blockContainer)
 
@@ -124,12 +141,12 @@ function _renderFull(container) {
         if (_state.expandedBlocks.has(id)) _state.expandedBlocks.delete(id)
         else _state.expandedBlocks.add(id)
         _renderFull(container)
-      }
+      },
     })
 
     if (_state.expandedBlocks.has(block.id)) {
       const content = blockContainer.querySelector('.block-section-content')
-      block.levels.forEach(level => {
+      block.levels.forEach((level) => {
         content.appendChild(_renderLevel(level, container))
       })
     }
@@ -148,7 +165,7 @@ function _renderLevel(level, mainContainer) {
   `
 
   const isExpanded = _state.expandedLevels.has(level.id)
-  
+
   div.innerHTML = `
     <div class="level-header" style="padding: 12px 16px; display: flex; align-items: center; gap: 12px; cursor: ${level.locked ? 'not-allowed' : 'pointer'};">
       <div class="level-icon" style="width: 32px; height: 32px; border-radius: 8px; background: ${_getSemaphoreColor(level.semaphore)}; display: flex; align-items: center; justify-content: center; color: white;">
@@ -167,28 +184,36 @@ function _renderLevel(level, mainContainer) {
       ${!level.locked ? `<i class="bi bi-chevron-right" style="transition: transform 0.2s; ${isExpanded ? 'transform: rotate(90deg);' : ''}"></i>` : ''}
     </div>
     <div class="level-content" style="${isExpanded ? 'display: block;' : 'display: none;'} padding: 0 16px 16px 56px;">
-      ${(level.nodes || []).map(node => `
+      ${(level.nodes || [])
+        .map(
+          (node) => `
         <div class="node-item" style="margin-bottom: 12px;">
           <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
             <span style="width: 8px; height: 8px; border-radius: 50%; background: ${_getSemaphoreColor(node.semaphore)};"></span>
             <span style="font-weight: 600; font-size: 0.85rem; color: #475569;">${node.nombre}</span>
           </div>
           <div class="indicators-list" style="display: flex; flex-direction: column; gap: 4px;">
-            ${(node.indicators || []).map(ind => `
+            ${(node.indicators || [])
+              .map(
+                (ind) => `
               <div class="indicator-row" 
                 data-id="${ind.id}" 
                 data-nombre="${ind.nombre}"
                 data-node="${node.nombre}"
                 data-level="${level.nombre}"
-                data-block="${_state.blocks.find(b => b.id === level.block_id)?.nombre || ''}"
+                data-block="${_state.blocks.find((b) => b.id === level.block_id)?.nombre || ''}"
                 style="padding: 6px 10px; border-radius: 6px; font-size: 0.8rem; cursor: pointer; border: 1px solid ${_state.selectedIndicator?.id === ind.id ? '#3b82f6' : 'transparent'}; background: ${_state.selectedIndicator?.id === ind.id ? '#eff6ff' : 'white'}; transition: all 0.2s;"
               >
                 ${ind.nombre}
               </div>
-            `).join('')}
+            `,
+              )
+              .join('')}
           </div>
         </div>
-      `).join('')}
+      `,
+        )
+        .join('')}
     </div>
   `
 
@@ -200,7 +225,7 @@ function _renderLevel(level, mainContainer) {
     })
   }
 
-  div.querySelectorAll('.indicator-row').forEach(row => {
+  div.querySelectorAll('.indicator-row').forEach((row) => {
     row.addEventListener('click', (e) => {
       e.stopPropagation()
       _state.selectedIndicator = {
@@ -208,7 +233,7 @@ function _renderLevel(level, mainContainer) {
         nombre: row.dataset.nombre,
         nodeNombre: row.dataset.node,
         levelNombre: row.dataset.level,
-        blockNombre: row.dataset.block
+        blockNombre: row.dataset.block,
       }
       _renderFull(mainContainer)
     })
@@ -254,7 +279,7 @@ function _renderActionPanel(container) {
     setRutaTema({
       ..._state.selectedIndicator,
       indicatorId: _state.selectedIndicator.id,
-      claseId: _state.activeClaseId
+      claseId: _state.activeClaseId,
     })
     if (_state.onTopicSelected) {
       _state.onTopicSelected(_state.activeClaseId)
@@ -264,10 +289,14 @@ function _renderActionPanel(container) {
 
 function _getSemaphoreColor(status) {
   switch (status) {
-    case 'green': return '#22c55e'
-    case 'yellow': return '#eab308'
-    case 'gray': return '#94a3b8'
-    default: return '#94a3b8'
+    case 'green':
+      return '#22c55e'
+    case 'yellow':
+      return '#eab308'
+    case 'gray':
+      return '#94a3b8'
+    default:
+      return '#94a3b8'
   }
 }
 
@@ -277,7 +306,8 @@ function _getSemaphoreColor(status) {
 function _attachDropdownListener(container) {
   container.querySelector('#ruta-clase-select')?.addEventListener('change', async (e) => {
     _state.activeClaseId = e.target.value
-    container.innerHTML = '<div class="pm-ruta-gamificada"><div class="pm-loading"><div class="pm-spinner"></div></div></div>'
+    container.innerHTML =
+      '<div class="pm-ruta-gamificada"><div class="pm-loading"><div class="pm-spinner"></div></div></div>'
     await _loadTreeForActiveClass()
     _renderFull(container)
     _attachDropdownListener(container)

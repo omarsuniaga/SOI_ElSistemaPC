@@ -32,27 +32,29 @@ export function createHomeworkPanel({ classEventId, studentId, teacherId, nodes 
       return '<div class="pm-empty">No hay tareas asignadas aun.</div>'
     }
 
-    return items.map(item => {
-      const node = nodes.find(n => n.id === item.node_id)
-      const nodeBadge = node
-        ? `<span class="pm-badge pm-homework-panel-node">${escHTML(node.name)}</span>`
-        : ''
-      const dueDateStr = item.due_date
-        ? `<span class="pm-homework-panel-due"><i class="bi bi-calendar"></i> ${escHTML(item.due_date)}</span>`
-        : ''
+    return items
+      .map((item) => {
+        const node = nodes.find((n) => n.id === item.node_id)
+        const nodeBadge = node
+          ? `<span class="pm-badge pm-homework-panel-node">${escHTML(node.name)}</span>`
+          : ''
+        const dueDateStr = item.due_date
+          ? `<span class="pm-homework-panel-due"><i class="bi bi-calendar"></i> ${escHTML(item.due_date)}</span>`
+          : ''
 
-      return `
+        return `
         <div class="pm-homework-panel-item">
           <p class="pm-homework-panel-desc">${escHTML(item.description)}</p>
           <div class="pm-homework-panel-meta">${nodeBadge}${dueDateStr}</div>
         </div>`
-    }).join('')
+      })
+      .join('')
   }
 
   function render(items) {
-    const nodeOptions = nodes.map(n =>
-      `<option value="${escHTML(n.id)}">${escHTML(n.name)}</option>`
-    ).join('')
+    const nodeOptions = nodes
+      .map((n) => `<option value="${escHTML(n.id)}">${escHTML(n.name)}</option>`)
+      .join('')
 
     el.innerHTML = `
       <div class="pm-homework-panel-header">

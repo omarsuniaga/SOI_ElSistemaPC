@@ -5,41 +5,53 @@
 
 const CAMPOS = [
   // ── Datos personales básicos ──────────────────────────────────────────────
-  { key: 'nombre_completo',      label: 'Nombre completo',        peso: 10, grupo: 'Personal' },
-  { key: 'fecha_nacimiento',     label: 'Fecha de nacimiento',    peso: 8,  grupo: 'Personal' },
-  { key: 'genero',               label: 'Género',                 peso: 3,  grupo: 'Personal' },
-  { key: 'nacionalidad',         label: 'Nacionalidad',           peso: 3,  grupo: 'Personal' },
-  { key: 'municipio_residencia', label: 'Municipio',              peso: 4,  grupo: 'Personal' },
-  { key: 'direccion',            label: 'Dirección',              peso: 4,  grupo: 'Personal' },
+  { key: 'nombre_completo', label: 'Nombre completo', peso: 10, grupo: 'Personal' },
+  { key: 'fecha_nacimiento', label: 'Fecha de nacimiento', peso: 8, grupo: 'Personal' },
+  { key: 'genero', label: 'Género', peso: 3, grupo: 'Personal' },
+  { key: 'nacionalidad', label: 'Nacionalidad', peso: 3, grupo: 'Personal' },
+  { key: 'municipio_residencia', label: 'Municipio', peso: 4, grupo: 'Personal' },
+  { key: 'direccion', label: 'Dirección', peso: 4, grupo: 'Personal' },
 
   // ── Contacto (al menos uno es obligatorio) ────────────────────────────────
-  { key: 'madre_tlf_whatsapp',   label: 'WhatsApp de la madre',   peso: 8,  grupo: 'Contacto' },
-  { key: 'padre_tlf_whatsapp',   label: 'WhatsApp del padre',     peso: 5,  grupo: 'Contacto' },
-  { key: 'representante_tlf',    label: 'Teléfono representante', peso: 5,  grupo: 'Contacto' },
+  { key: 'madre_tlf_whatsapp', label: 'WhatsApp de la madre', peso: 8, grupo: 'Contacto' },
+  { key: 'padre_tlf_whatsapp', label: 'WhatsApp del padre', peso: 5, grupo: 'Contacto' },
+  { key: 'representante_tlf', label: 'Teléfono representante', peso: 5, grupo: 'Contacto' },
 
   // ── Familia ───────────────────────────────────────────────────────────────
-  { key: 'madre_nombre',               label: 'Nombre de la madre',      peso: 6, grupo: 'Familia' },
-  { key: 'padre_nombre',               label: 'Nombre del padre',        peso: 5, grupo: 'Familia' },
-  { key: 'representante_nombre',       label: 'Nombre del representante',peso: 6, grupo: 'Familia' },
-  { key: 'representante_parentesco',   label: 'Parentesco representante',peso: 3, grupo: 'Familia' },
-  { key: 'contacto_emergencia_nombre', label: 'Contacto de emergencia',  peso: 4, grupo: 'Familia' },
+  { key: 'madre_nombre', label: 'Nombre de la madre', peso: 6, grupo: 'Familia' },
+  { key: 'padre_nombre', label: 'Nombre del padre', peso: 5, grupo: 'Familia' },
+  { key: 'representante_nombre', label: 'Nombre del representante', peso: 6, grupo: 'Familia' },
+  { key: 'representante_parentesco', label: 'Parentesco representante', peso: 3, grupo: 'Familia' },
+  { key: 'contacto_emergencia_nombre', label: 'Contacto de emergencia', peso: 4, grupo: 'Familia' },
 
   // ── Musical ───────────────────────────────────────────────────────────────
   { key: 'instrumento_principal', label: 'Instrumento principal', peso: 8, grupo: 'Musical' },
-  { key: 'instrumento_interes',   label: 'Instrumento de interés',peso: 4, grupo: 'Musical' },
-  { key: 'nivel_actual',          label: 'Nivel actual',          peso: 4, grupo: 'Musical' },
+  { key: 'instrumento_interes', label: 'Instrumento de interés', peso: 4, grupo: 'Musical' },
+  { key: 'nivel_actual', label: 'Nivel actual', peso: 4, grupo: 'Musical' },
 
   // ── Escolar ───────────────────────────────────────────────────────────────
   { key: 'centro_estudios', label: 'Centro de estudios', peso: 4, grupo: 'Escolar' },
-  { key: 'grado_nivel',     label: 'Grado / Nivel',      peso: 3, grupo: 'Escolar' },
+  { key: 'grado_nivel', label: 'Grado / Nivel', peso: 3, grupo: 'Escolar' },
 
   // ── Salud ─────────────────────────────────────────────────────────────────
-  { key: 'alergias_descripcion',   label: 'Alergias (declaradas)',   peso: 3, grupo: 'Salud', opcional: true },
-  { key: 'problemas_conducta',     label: 'Conducta (declarada)',    peso: 3, grupo: 'Salud', opcional: true },
+  {
+    key: 'alergias_descripcion',
+    label: 'Alergias (declaradas)',
+    peso: 3,
+    grupo: 'Salud',
+    opcional: true,
+  },
+  {
+    key: 'problemas_conducta',
+    label: 'Conducta (declarada)',
+    peso: 3,
+    grupo: 'Salud',
+    opcional: true,
+  },
 
   // ── Compromisos ───────────────────────────────────────────────────────────
-  { key: 'acepta_pago_600',      label: 'Acepta pago RD$600',       peso: 5, grupo: 'Compromisos' },
-  { key: 'autoriza_fotos_redes', label: 'Autoriza fotos en redes',  peso: 3, grupo: 'Compromisos' },
+  { key: 'acepta_pago_600', label: 'Acepta pago RD$600', peso: 5, grupo: 'Compromisos' },
+  { key: 'autoriza_fotos_redes', label: 'Autoriza fotos en redes', peso: 3, grupo: 'Compromisos' },
 ]
 
 const PESO_TOTAL = CAMPOS.reduce((s, c) => s + c.peso, 0)
@@ -83,10 +95,13 @@ export function calcularCompletitud(alumno) {
   const porcentaje = Math.round((pesoCompleto / PESO_TOTAL) * 100)
 
   const nivel =
-    porcentaje >= 90 ? 'completo' :
-    porcentaje >= 65 ? 'bueno'    :
-    porcentaje >= 35 ? 'parcial'  :
-                       'critico'
+    porcentaje >= 90
+      ? 'completo'
+      : porcentaje >= 65
+        ? 'bueno'
+        : porcentaje >= 35
+          ? 'parcial'
+          : 'critico'
 
   // Agrupar por sección
   const porGrupo = {}
@@ -109,15 +124,15 @@ export function calcularCompletitud(alumno) {
 }
 
 export const NIVEL_COLOR = {
-  critico:  'danger',
-  parcial:  'warning',
-  bueno:    'info',
+  critico: 'danger',
+  parcial: 'warning',
+  bueno: 'info',
   completo: 'success',
 }
 
 export const NIVEL_LABEL = {
-  critico:  'Crítico',
-  parcial:  'Parcial',
-  bueno:    'Bueno',
+  critico: 'Crítico',
+  parcial: 'Parcial',
+  bueno: 'Bueno',
   completo: 'Completo',
 }

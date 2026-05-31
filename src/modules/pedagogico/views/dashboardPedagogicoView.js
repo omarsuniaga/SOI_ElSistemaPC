@@ -8,10 +8,7 @@ export async function renderDashboardPedagogicoView(container) {
   container.innerHTML = _renderSkeleton()
 
   try {
-    const [kpis, riesgo] = await Promise.all([
-      _fetchKPIs(),
-      _fetchAlumnosEnRiesgo(),
-    ])
+    const [kpis, riesgo] = await Promise.all([_fetchKPIs(), _fetchAlumnosEnRiesgo()])
     container.innerHTML = _renderContent(kpis, riesgo)
     _attachEvents(container)
   } catch (err) {
@@ -26,21 +23,27 @@ export async function renderDashboardPedagogicoView(container) {
 async function _fetchKPIs() {
   const [alumnos, planes, clases, asistencias] = await Promise.all([
     supabase.from('alumnos').select('id', { count: 'exact' }).eq('activo', true),
-    supabase.from('planificaciones').select('id, estado').gte(
-      'fecha_inicio', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
-    ),
+    supabase
+      .from('planificaciones')
+      .select('id, estado')
+      .gte(
+        'fecha_inicio',
+        new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      ),
     supabase.from('clases').select('id', { count: 'exact' }).eq('estado', 'activa'),
-    supabase.from('asistencias').select('estado').gte(
-      'fecha', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
-    ),
+    supabase
+      .from('asistencias')
+      .select('estado')
+      .gte('fecha', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]),
   ])
 
   const totalAsistencias = asistencias.data?.length || 0
-  const presentes = asistencias.data?.filter(a => a.estado === 'P').length || 0
-  const tasaAsistencia = totalAsistencias > 0 ? Math.round((presentes / totalAsistencias) * 100) : null
+  const presentes = asistencias.data?.filter((a) => a.estado === 'P').length || 0
+  const tasaAsistencia =
+    totalAsistencias > 0 ? Math.round((presentes / totalAsistencias) * 100) : null
 
-  const planesEjecutados = planes.data?.filter(p => p.estado === 'ejecutado').length || 0
-  const planesPlanificados = planes.data?.filter(p => p.estado === 'planificado').length || 0
+  const planesEjecutados = planes.data?.filter((p) => p.estado === 'ejecutado').length || 0
+  const planesPlanificados = planes.data?.filter((p) => p.estado === 'planificado').length || 0
 
   return {
     alumnosActivos: alumnos.count || 0,
@@ -62,14 +65,14 @@ async function _fetchAlumnosEnRiesgo() {
   if (!asistencias?.length) return []
 
   const porAlumno = {}
-  asistencias.forEach(a => {
+  asistencias.forEach((a) => {
     if (!porAlumno[a.alumno_id]) porAlumno[a.alumno_id] = { total: 0, presentes: 0 }
     porAlumno[a.alumno_id].total++
     if (a.estado === 'P') porAlumno[a.alumno_id].presentes++
   })
 
   const enRiesgo = Object.entries(porAlumno)
-    .filter(([, v]) => v.total >= 4 && (v.presentes / v.total) < THRESHOLDS.attendance_min_rate)
+    .filter(([, v]) => v.total >= 4 && v.presentes / v.total < THRESHOLDS.attendance_min_rate)
     .map(([id]) => id)
 
   if (!enRiesgo.length) return []
@@ -98,22 +101,31 @@ function _renderSkeleton() {
         </button>
       </div>
       <div class="row g-3">
-        ${[1,2,3,4].map(() => `
+        ${[1, 2, 3, 4]
+          .map(
+            () => `
           <div class="col-6 col-md-3">
             <div class="card border-0 shadow-sm" style="height:100px;">
               <div class="card-body d-flex align-items-center justify-content-center">
                 <div class="spinner-border spinner-border-sm text-primary"></div>
               </div>
             </div>
-          </div>`).join('')}
+          </div>`,
+          )
+          .join('')}
       </div>
     </div>`
 }
 
 function _renderContent(kpis, alumnosRiesgo) {
-  const asistenciaColor = kpis.tasaAsistencia === null ? 'secondary'
-    : kpis.tasaAsistencia >= 80 ? 'success'
-    : kpis.tasaAsistencia >= 60 ? 'warning' : 'danger'
+  const asistenciaColor =
+    kpis.tasaAsistencia === null
+      ? 'secondary'
+      : kpis.tasaAsistencia >= 80
+        ? 'success'
+        : kpis.tasaAsistencia >= 60
+          ? 'warning'
+          : 'danger'
 
   return `
     <div class="page-container">
@@ -133,14 +145,25 @@ function _renderContent(kpis, alumnosRiesgo) {
       <div class="row g-3 mb-4">
         ${_kpiCard('bi-people-fill', 'Alumnos activos', kpis.alumnosActivos, 'primary', null)}
         ${_kpiCard('bi-easel2', 'Clases activas', kpis.clasesActivas, 'indigo', null)}
-        ${_kpiCard('bi-journal-text', 'Planes esta semana', kpis.planesEstaSemana,
-          'success', `${kpis.planesEjecutados} ejecutados · ${kpis.planesPlanificados} pendientes`)}
-        ${_kpiCard('bi-calendar-check', 'Asistencia (7 días)',
+        ${_kpiCard(
+          'bi-journal-text',
+          'Planes esta semana',
+          kpis.planesEstaSemana,
+          'success',
+          `${kpis.planesEjecutados} ejecutados · ${kpis.planesPlanificados} pendientes`,
+        )}
+        ${_kpiCard(
+          'bi-calendar-check',
+          'Asistencia (7 días)',
           kpis.tasaAsistencia !== null ? kpis.tasaAsistencia + '%' : '—',
-          asistenciaColor, null)}
+          asistenciaColor,
+          null,
+        )}
       </div>
 
-      ${alumnosRiesgo.length ? `
+      ${
+        alumnosRiesgo.length
+          ? `
       <div class="card border-0 shadow-sm mb-4">
         <div class="card-header bg-danger-subtle border-0 d-flex align-items-center justify-content-between">
           <span class="fw-semibold text-danger" style="font-size:0.9rem;">
@@ -151,7 +174,9 @@ function _renderContent(kpis, alumnosRiesgo) {
         </div>
         <div class="card-body p-0">
           <ul class="list-group list-group-flush">
-            ${alumnosRiesgo.map(a => `
+            ${alumnosRiesgo
+              .map(
+                (a) => `
               <li class="list-group-item d-flex align-items-center gap-3 py-2">
                 <div class="rounded-circle bg-danger bg-opacity-10 text-danger d-flex align-items-center justify-content-center flex-shrink-0"
                      style="width:32px;height:32px;font-size:0.75rem;font-weight:700;">
@@ -159,10 +184,14 @@ function _renderContent(kpis, alumnosRiesgo) {
                 </div>
                 <span style="font-size:0.875rem;">${a.nombre_completo}</span>
                 <span class="badge bg-danger-subtle text-danger ms-auto rounded-pill" style="font-size:0.65rem;">Riesgo</span>
-              </li>`).join('')}
+              </li>`,
+              )
+              .join('')}
           </ul>
         </div>
-      </div>` : ''}
+      </div>`
+          : ''
+      }
 
       <div class="row g-3">
         ${_quickCard('bi-journal-text', 'Planificación', 'Planes de clase, plantillas y revisión', 'planificacion', 'primary')}
@@ -210,7 +239,7 @@ function _quickCard(icon, title, desc, route, color) {
 }
 
 function _attachEvents(container) {
-  container.querySelectorAll('[data-nav]').forEach(el => {
+  container.querySelectorAll('[data-nav]').forEach((el) => {
     el.addEventListener('click', () => router.navigate(el.dataset.nav))
     if (el.classList.contains('quick-nav-card')) {
       el.addEventListener('mouseenter', () => {
@@ -227,14 +256,50 @@ function _attachEvents(container) {
   container.querySelector('#btn-help-dashboard')?.addEventListener('click', () => {
     HelpPanel.open({
       title: 'Dashboard Pedagógico',
-      intro: 'Resumen general del estado académico de la institución. Te permite ver de un vistazo cómo están los alumnos, clases y planificaciones.',
+      intro:
+        'Resumen general del estado académico de la institución. Te permite ver de un vistazo cómo están los alumnos, clases y planificaciones.',
       sections: [
-        { icon: 'bi-people-fill',            title: 'Alumnos activos',             description: 'Cantidad total de alumnos con estado activo en el sistema.',                                                                                            color: '#3b82f6' },
-        { icon: 'bi-easel2',                 title: 'Clases activas',              description: 'Número de clases con estado "activa". Las clases inactivas o suspendidas no se cuentan.',                                                              color: '#6366f1' },
-        { icon: 'bi-journal-text',           title: 'Planes esta semana',          description: 'Planificaciones con fecha de inicio en los últimos 7 días. Muestra cuántas fueron ejecutadas y cuántas siguen pendientes.',                            color: '#10b981' },
-        { icon: 'bi-calendar-check',         title: 'Asistencia (7 días)',         description: 'Porcentaje de asistencia del total de la institución en los últimos 7 días. Verde ≥ 80%, amarillo ≥ 60%, rojo < 60%.',                                 color: '#f59e0b' },
-        { icon: 'bi-exclamation-triangle-fill', title: 'Alumnos con asistencia baja', description: 'Alumnos que en las últimas 4 semanas tuvieron menos del 70% de asistencia (mínimo 4 clases). Requieren atención prioritaria.',                     color: '#ef4444' },
-        { icon: 'bi-grid-1x2',              title: 'Acceso rápido',               description: 'Los 4 cards al pie llevan directamente a Planificación, Seguimiento de alumnos, Evaluaciones y Reportes. Hacé clic para navegar.',                    color: '#3b82f6' },
+        {
+          icon: 'bi-people-fill',
+          title: 'Alumnos activos',
+          description: 'Cantidad total de alumnos con estado activo en el sistema.',
+          color: '#3b82f6',
+        },
+        {
+          icon: 'bi-easel2',
+          title: 'Clases activas',
+          description:
+            'Número de clases con estado "activa". Las clases inactivas o suspendidas no se cuentan.',
+          color: '#6366f1',
+        },
+        {
+          icon: 'bi-journal-text',
+          title: 'Planes esta semana',
+          description:
+            'Planificaciones con fecha de inicio en los últimos 7 días. Muestra cuántas fueron ejecutadas y cuántas siguen pendientes.',
+          color: '#10b981',
+        },
+        {
+          icon: 'bi-calendar-check',
+          title: 'Asistencia (7 días)',
+          description:
+            'Porcentaje de asistencia del total de la institución en los últimos 7 días. Verde ≥ 80%, amarillo ≥ 60%, rojo < 60%.',
+          color: '#f59e0b',
+        },
+        {
+          icon: 'bi-exclamation-triangle-fill',
+          title: 'Alumnos con asistencia baja',
+          description:
+            'Alumnos que en las últimas 4 semanas tuvieron menos del 70% de asistencia (mínimo 4 clases). Requieren atención prioritaria.',
+          color: '#ef4444',
+        },
+        {
+          icon: 'bi-grid-1x2',
+          title: 'Acceso rápido',
+          description:
+            'Los 4 cards al pie llevan directamente a Planificación, Seguimiento de alumnos, Evaluaciones y Reportes. Hacé clic para navegar.',
+          color: '#3b82f6',
+        },
       ],
     })
   })

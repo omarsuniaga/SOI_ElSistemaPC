@@ -1,10 +1,7 @@
-import {
-  obtenerPendientesDirector,
-  revisarAusencia,
-} from '../api/ausenciaAprobacionApi.js';
+import { obtenerPendientesDirector, revisarAusencia } from '../api/ausenciaAprobacionApi.js'
 
 function showToast(message, type = 'success') {
-  window.dispatchEvent(new CustomEvent('showToast', { detail: { message, type } }));
+  window.dispatchEvent(new CustomEvent('showToast', { detail: { message, type } }))
 }
 
 function renderShell(container) {
@@ -19,7 +16,7 @@ function renderShell(container) {
         <span>Cargando solicitudes...</span>
       </div>
     </div>
-  `;
+  `
 }
 
 function renderEmpty(contentEl) {
@@ -31,18 +28,19 @@ function renderEmpty(contentEl) {
       <h3>No hay ausencias pendientes de revisión</h3>
       <p style="opacity:.65;">Las nuevas solicitudes aparecerán acá automáticamente.</p>
     </div>
-  `;
+  `
 }
 
 function createAusenciaRow(ausencia, onSolicitarInfo, onEnviarAprobacion) {
-  const row = document.createElement('div');
-  row.setAttribute('data-ausencia-row', ausencia.id);
-  row.style.cssText = 'border:1px solid #dee2e6; border-radius:8px; padding:1rem; margin-bottom:1rem;';
+  const row = document.createElement('div')
+  row.setAttribute('data-ausencia-row', ausencia.id)
+  row.style.cssText =
+    'border:1px solid #dee2e6; border-radius:8px; padding:1rem; margin-bottom:1rem;'
 
-  const nombre = ausencia.maestros?.nombre_completo ?? 'Sin nombre';
+  const nombre = ausencia.maestros?.nombre_completo ?? 'Sin nombre'
   const clasesCount = Array.isArray(ausencia.clases_afectadas)
     ? ausencia.clases_afectadas.length
-    : 0;
+    : 0
 
   row.innerHTML = `
     <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:.5rem;">
@@ -79,75 +77,75 @@ function createAusenciaRow(ausencia, onSolicitarInfo, onEnviarAprobacion) {
         </button>
       </div>
     </div>
-  `;
+  `
 
   row.querySelector('[data-action="solicitar-info"]').addEventListener('click', () => {
-    const notes = row.querySelector('[data-review-notes]').value;
-    onSolicitarInfo(ausencia.id, notes);
-  });
+    const notes = row.querySelector('[data-review-notes]').value
+    onSolicitarInfo(ausencia.id, notes)
+  })
 
   row.querySelector('[data-action="enviar-aprobacion"]').addEventListener('click', () => {
-    const notes = row.querySelector('[data-review-notes]').value;
-    onEnviarAprobacion(ausencia.id, notes);
-  });
+    const notes = row.querySelector('[data-review-notes]').value
+    onEnviarAprobacion(ausencia.id, notes)
+  })
 
-  return row;
+  return row
 }
 
 async function renderList(container) {
-  let contentEl = container.querySelector('#ausencias-director-content');
+  let contentEl = container.querySelector('#ausencias-director-content')
   if (!contentEl) {
-    contentEl = document.createElement('div');
-    contentEl.id = 'ausencias-director-content';
-    container.appendChild(contentEl);
+    contentEl = document.createElement('div')
+    contentEl.id = 'ausencias-director-content'
+    container.appendChild(contentEl)
   }
 
-  const ausencias = await obtenerPendientesDirector();
+  const ausencias = await obtenerPendientesDirector()
 
   if (!ausencias.length) {
-    renderEmpty(contentEl);
-    return;
+    renderEmpty(contentEl)
+    return
   }
 
-  contentEl.innerHTML = '<div class="ausencias-director-list"></div>';
-  const listEl = contentEl.querySelector('.ausencias-director-list');
+  contentEl.innerHTML = '<div class="ausencias-director-list"></div>'
+  const listEl = contentEl.querySelector('.ausencias-director-list')
 
   for (const ausencia of ausencias) {
     listEl.appendChild(
       createAusenciaRow(
         ausencia,
         async (id, notes) => {
-          await revisarAusencia(id, 'info_solicitada', notes);
-          showToast('Información solicitada al maestro', 'info');
-          await renderList(container);
+          await revisarAusencia(id, 'info_solicitada', notes)
+          showToast('Información solicitada al maestro', 'info')
+          await renderList(container)
         },
         async (id, notes) => {
-          await revisarAusencia(id, 'pendiente_aprobacion', notes);
-          showToast('Ausencia enviada a aprobación', 'success');
-          await renderList(container);
+          await revisarAusencia(id, 'pendiente_aprobacion', notes)
+          showToast('Ausencia enviada a aprobación', 'success')
+          await renderList(container)
         },
       ),
-    );
+    )
   }
 }
 
 export async function renderAusenciasDirectorView(container) {
-  renderShell(container);
+  renderShell(container)
 
   try {
-    await renderList(container);
+    await renderList(container)
   } catch (error) {
-    let contentEl = container.querySelector('#ausencias-director-content');
+    let contentEl = container.querySelector('#ausencias-director-content')
     if (!contentEl) {
-      contentEl = document.createElement('div');
-      contentEl.id = 'ausencias-director-content';
-      container.appendChild(contentEl);
+      contentEl = document.createElement('div')
+      contentEl.id = 'ausencias-director-content'
+      container.appendChild(contentEl)
     }
     contentEl.innerHTML = `
       <div class="pm-error" style="text-align:center; padding:2rem;">
         <p><i class="bi bi-exclamation-triangle"></i> Error al cargar ausencias: ${error.message}</p>
       </div>
-    `;
-    showToast(`Error al cargar ausencias: ${error.message}`, 'error');
+    `
+    showToast(`Error al cargar ausencias: ${error.message}`, 'error')
   }
 }

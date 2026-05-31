@@ -6,7 +6,7 @@ describe('trendAnalysisService', () => {
     const metrics = [
       { fecha: '2026-05-20', orden_asistencia_primero: 1, uso_ai_fill_percent: 0 },
       { fecha: '2026-05-20', orden_asistencia_primero: 0, uso_ai_fill_percent: 100 },
-      { fecha: '2026-05-21', orden_asistencia_primero: 1, uso_ai_fill_percent: 50 }
+      { fecha: '2026-05-21', orden_asistencia_primero: 1, uso_ai_fill_percent: 50 },
     ]
 
     const trend = trendService.aggregateMetricsByDate(metrics)
@@ -18,9 +18,27 @@ describe('trendAnalysisService', () => {
 
   it('should aggregate fill metrics by maestro', () => {
     const metrics = [
-      { maestro_id: '1', maestro_nombre: 'García', orden_asistencia_primero: 1, uso_ai_fill_percent: 50, promedio_duracion_observaciones: 120 },
-      { maestro_id: '1', maestro_nombre: 'García', orden_asistencia_primero: 1, uso_ai_fill_percent: 100, promedio_duracion_observaciones: 180 },
-      { maestro_id: '2', maestro_nombre: 'Martínez', orden_asistencia_primero: 0, uso_ai_fill_percent: 0, promedio_duracion_observaciones: 100 }
+      {
+        maestro_id: '1',
+        maestro_nombre: 'García',
+        orden_asistencia_primero: 1,
+        uso_ai_fill_percent: 50,
+        promedio_duracion_observaciones: 120,
+      },
+      {
+        maestro_id: '1',
+        maestro_nombre: 'García',
+        orden_asistencia_primero: 1,
+        uso_ai_fill_percent: 100,
+        promedio_duracion_observaciones: 180,
+      },
+      {
+        maestro_id: '2',
+        maestro_nombre: 'Martínez',
+        orden_asistencia_primero: 0,
+        uso_ai_fill_percent: 0,
+        promedio_duracion_observaciones: 100,
+      },
     ]
 
     const result = trendService.aggregateMetricsByMaestro(metrics)

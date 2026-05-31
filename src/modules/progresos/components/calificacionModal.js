@@ -7,23 +7,45 @@ export async function openCalificacionModal(mode, container, data = null, option
   const isEdit = mode === 'edit' && data
 
   const tiposOptions = Progreso.getTiposEvaluacion()
-    .map(t => `<option value="${t.value}" ${isEdit && data.tipo_evaluacion === t.value ? 'selected' : ''}>${t.label}</option>`)
+    .map(
+      (t) =>
+        `<option value="${t.value}" ${isEdit && data.tipo_evaluacion === t.value ? 'selected' : ''}>${t.label}</option>`,
+    )
     .join('')
 
   const estadosOptions = Progreso.getEstados()
-    .map(e => `<option value="${e.value}" ${isEdit && data.estado === e.value ? 'selected' : ''}>${e.label}</option>`)
+    .map(
+      (e) =>
+        `<option value="${e.value}" ${isEdit && data.estado === e.value ? 'selected' : ''}>${e.label}</option>`,
+    )
     .join('')
 
   const alumnoOptions = alumnos.length
-    ? alumnos.map(a => `<option value="${a.id}" ${isEdit && data.alumno_id === a.id ? 'selected' : ''}>${escapeHTML(a.name || a.nombre || 'Sin nombre')}</option>`).join('')
+    ? alumnos
+        .map(
+          (a) =>
+            `<option value="${a.id}" ${isEdit && data.alumno_id === a.id ? 'selected' : ''}>${escapeHTML(a.name || a.nombre || 'Sin nombre')}</option>`,
+        )
+        .join('')
     : '<option value="">No hay alumnos disponibles</option>'
 
   const claseOptions = clases.length
-    ? clases.map(c => `<option value="${c.id}" ${isEdit && data.clase_id === c.id ? 'selected' : ''}>${escapeHTML(c.nombre || 'Sin nombre')}</option>`).join('')
+    ? clases
+        .map(
+          (c) =>
+            `<option value="${c.id}" ${isEdit && data.clase_id === c.id ? 'selected' : ''}>${escapeHTML(c.nombre || 'Sin nombre')}</option>`,
+        )
+        .join('')
     : '<option value="">No hay clases disponibles</option>'
 
   const maestroOptions = maestros.length
-    ? `<option value="">Sin asignar</option>` + maestros.map(m => `<option value="${m.id}" ${isEdit && data.maestro_id === m.id ? 'selected' : ''}>${escapeHTML(m.nombre || m.name || 'Sin nombre')}</option>`).join('')
+    ? `<option value="">Sin asignar</option>` +
+      maestros
+        .map(
+          (m) =>
+            `<option value="${m.id}" ${isEdit && data.maestro_id === m.id ? 'selected' : ''}>${escapeHTML(m.nombre || m.name || 'Sin nombre')}</option>`,
+        )
+        .join('')
     : '<option value="">Sin asignar</option>'
 
   const body = `

@@ -1,21 +1,21 @@
-import { RouteConfigAdapter } from '../../services/routeConfigAdapter.js';
-import { escHTML } from '../../utils/portalUtils.js';
-import { AppModal } from '../../../shared/components/AppModal.js';
-import { getMaestroLocal } from '../../auth/maestroAuth.js';
+import { RouteConfigAdapter } from '../../services/routeConfigAdapter.js'
+import { escHTML } from '../../utils/portalUtils.js'
+import { AppModal } from '../../../shared/components/AppModal.js'
+import { getMaestroLocal } from '../../auth/maestroAuth.js'
 
-let containerRef = null;
+let containerRef = null
 let state = {
   activeClassId: null,
   activeLevelId: null,
   activeNodeId: null,
-  activeObjectiveId: null
-};
+  activeObjectiveId: null,
+}
 
 export async function renderRouteConfigurator(container, initialClassId = null) {
-  containerRef = container;
-  
+  containerRef = container
+
   if (initialClassId) {
-    state.activeClassId = initialClassId;
+    state.activeClassId = initialClassId
   }
 
   container.innerHTML = `
@@ -57,9 +57,9 @@ export async function renderRouteConfigurator(container, initialClassId = null) 
       .pm-rc-ind-card { padding: 0.8rem; border-radius: 10px; border: 1px solid var(--pm-border); font-size: 0.8rem; background: var(--pm-surface-3); display: flex; gap: 0.6rem; color: var(--pm-text); }
       .pm-rc-ind-card i { color: var(--pm-primary); font-size: 1rem; }
     </style>
-  `;
+  `
 
-  await loadClasses();
+  await loadClasses()
 }
 
 async function openEditItemModal(type, id, currentValue, onComplete) {
@@ -75,49 +75,69 @@ async function openEditItemModal(type, id, currentValue, onComplete) {
       </div>
     `,
     onSave: async (modalBody) => {
-      const newValue = modalBody.querySelector('#edit-item-content').value.trim();
-      if (!newValue) return false;
+      const newValue = modalBody.querySelector('#edit-item-content').value.trim()
+      if (!newValue) return false
 
       try {
-        switch(type) {
-          case 'Clase': await RouteConfigAdapter.updateClass(id, newValue); break;
-          case 'Nivel': await RouteConfigAdapter.updateLevel(id, { nombre: newValue }); break;
-          case 'Tema': await RouteConfigAdapter.updateNode(id, { nombre: newValue }); break;
-          case 'Objetivo': await RouteConfigAdapter.updateObjective(id, newValue); break;
-          case 'Indicador': await RouteConfigAdapter.updateIndicator(id, { descripcion: newValue }); break;
+        switch (type) {
+          case 'Clase':
+            await RouteConfigAdapter.updateClass(id, newValue)
+            break
+          case 'Nivel':
+            await RouteConfigAdapter.updateLevel(id, { nombre: newValue })
+            break
+          case 'Tema':
+            await RouteConfigAdapter.updateNode(id, { nombre: newValue })
+            break
+          case 'Objetivo':
+            await RouteConfigAdapter.updateObjective(id, newValue)
+            break
+          case 'Indicador':
+            await RouteConfigAdapter.updateIndicator(id, { descripcion: newValue })
+            break
         }
-        onComplete();
-        return true;
+        onComplete()
+        return true
       } catch (err) {
-        console.error('Error saving change:', err);
-        alert('Error al guardar: ' + (err.message || 'Error desconocido'));
-        return false;
+        console.error('Error saving change:', err)
+        alert('Error al guardar: ' + (err.message || 'Error desconocido'))
+        return false
       }
     },
     onDelete: async () => {
       try {
-        switch(type) {
-          case 'Clase': await RouteConfigAdapter.deleteClass(id); break;
-          case 'Nivel': await RouteConfigAdapter.deleteLevel(id); break;
-          case 'Tema': await RouteConfigAdapter.deleteNode(id); break;
-          case 'Objetivo': await RouteConfigAdapter.deleteObjective(id); break;
-          case 'Indicador': await RouteConfigAdapter.deleteIndicator(id); break;
+        switch (type) {
+          case 'Clase':
+            await RouteConfigAdapter.deleteClass(id)
+            break
+          case 'Nivel':
+            await RouteConfigAdapter.deleteLevel(id)
+            break
+          case 'Tema':
+            await RouteConfigAdapter.deleteNode(id)
+            break
+          case 'Objetivo':
+            await RouteConfigAdapter.deleteObjective(id)
+            break
+          case 'Indicador':
+            await RouteConfigAdapter.deleteIndicator(id)
+            break
         }
-        onComplete();
-        return true;
+        onComplete()
+        return true
       } catch (err) {
-        console.error('Error deleting item:', err);
-        alert('No se pudo eliminar: ' + (err.message || 'Error de base de datos'));
-        return false;
+        console.error('Error deleting item:', err)
+        alert('No se pudo eliminar: ' + (err.message || 'Error de base de datos'))
+        return false
       }
-    }
-  });
+    },
+  })
 }
 
 async function openAddItemModal(type, parentId, onComplete) {
   if (!parentId && type !== 'Clase') {
-    alert(`Primero seleccioná el elemento superior para agregar un ${type}`);
-    return;
+    alert(`Primero seleccioná el elemento superior para agregar un ${type}`)
+    return
   }
 
   AppModal.open({
@@ -129,41 +149,57 @@ async function openAddItemModal(type, parentId, onComplete) {
       </div>
     `,
     onSave: async (modalBody) => {
-      const value = modalBody.querySelector('#new-item-content').value.trim();
-      if (!value) return false;
+      const value = modalBody.querySelector('#new-item-content').value.trim()
+      if (!value) return false
 
       try {
-        switch(type) {
-          case 'Clase': 
-            const activeMaestro = getMaestroLocal();
-            await RouteConfigAdapter.addClass(value, activeMaestro ? activeMaestro.id : null); 
-            break;
-          case 'Nivel': await RouteConfigAdapter.addLevel({ clase_id: parentId, nombre: value, numero_nivel: 1 }); break;
-          case 'Tema': await RouteConfigAdapter.addNode({ nivel_id: parentId, nombre: value, tipo: 'TECNICA' }); break;
-          case 'Objetivo': await RouteConfigAdapter.addObjective({ tema_id: parentId, nombre: value }); break;
-          case 'Indicador': await RouteConfigAdapter.addIndicator({ objetivo_id: parentId, descripcion: value, es_requerido: true }); break;
+        switch (type) {
+          case 'Clase':
+            const activeMaestro = getMaestroLocal()
+            await RouteConfigAdapter.addClass(value, activeMaestro ? activeMaestro.id : null)
+            break
+          case 'Nivel':
+            await RouteConfigAdapter.addLevel({
+              clase_id: parentId,
+              nombre: value,
+              numero_nivel: 1,
+            })
+            break
+          case 'Tema':
+            await RouteConfigAdapter.addNode({ nivel_id: parentId, nombre: value, tipo: 'TECNICA' })
+            break
+          case 'Objetivo':
+            await RouteConfigAdapter.addObjective({ tema_id: parentId, nombre: value })
+            break
+          case 'Indicador':
+            await RouteConfigAdapter.addIndicator({
+              objetivo_id: parentId,
+              descripcion: value,
+              es_requerido: true,
+            })
+            break
         }
-        onComplete();
-        return true;
+        onComplete()
+        return true
       } catch (err) {
-        console.error('Error adding item:', err);
-        alert('No se pudo crear: ' + (err.message || 'Error de base de datos'));
-        return false;
+        console.error('Error adding item:', err)
+        alert('No se pudo crear: ' + (err.message || 'Error de base de datos'))
+        return false
       }
-    }
-  });
+    },
+  })
 }
 
 async function loadClasses() {
-  const wrapper = document.getElementById('pm-rc-classes-wrapper');
-  const activeMaestro = getMaestroLocal();
-  const classes = await RouteConfigAdapter.getClasses(activeMaestro ? activeMaestro.id : null);
-  
-  const currentExists = classes.some(c => c.id === state.activeClassId);
+  const wrapper = document.getElementById('pm-rc-classes-wrapper')
+  const activeMaestro = getMaestroLocal()
+  const classes = await RouteConfigAdapter.getClasses(activeMaestro ? activeMaestro.id : null)
+
+  const currentExists = classes.some((c) => c.id === state.activeClassId)
   if (!currentExists && classes.length > 0) {
-    state.activeClassId = classes[0].id;
+    state.activeClassId = classes[0].id
   } else if (classes.length === 0) {
-    state.activeClassId = null;
+    state.activeClassId = null
   }
 
   wrapper.innerHTML = `
@@ -172,59 +208,69 @@ async function loadClasses() {
       <button class="pm-rc-btn-add" id="btn-add-class" title="Agregar Clase"><i class="bi bi-plus"></i></button>
     </div>
     <div class="pm-rc-list">
-      ${classes.map(c => `
+      ${classes
+        .map(
+          (c) => `
         <div class="pm-rc-item ${state.activeClassId === c.id ? 'active' : ''}" data-id="${c.id}">
           <span class="pm-rc-item-text">${escHTML(c.nombre)}</span>
           <div class="pm-rc-actions">
             <button class="pm-rc-btn-action btn-edit" title="Editar"><i class="bi bi-pencil"></i></button>
           </div>
         </div>
-      `).join('')}
+      `,
+        )
+        .join('')}
     </div>
-  `;
+  `
 
-  wrapper.querySelector('#btn-add-class').onclick = () => openAddItemModal('Clase', null, () => loadClasses());
+  wrapper.querySelector('#btn-add-class').onclick = () =>
+    openAddItemModal('Clase', null, () => loadClasses())
 
-  if (state.activeClassId) loadLevels(state.activeClassId);
-  else renderEmpty('#pm-rc-levels-wrapper', 'Elegí Clase');
+  if (state.activeClassId) loadLevels(state.activeClassId)
+  else renderEmpty('#pm-rc-levels-wrapper', 'Elegí Clase')
 
-  wrapper.querySelectorAll('.pm-rc-item').forEach(el => {
-    const id = el.dataset.id;
-    
+  wrapper.querySelectorAll('.pm-rc-item').forEach((el) => {
+    const id = el.dataset.id
+
     el.querySelector('.btn-edit').onclick = (e) => {
-      e.stopPropagation();
-      openEditItemModal('Clase', id, el.querySelector('.pm-rc-item-text').innerText, () => loadClasses());
-    };
+      e.stopPropagation()
+      openEditItemModal('Clase', id, el.querySelector('.pm-rc-item-text').innerText, () =>
+        loadClasses(),
+      )
+    }
 
     el.onclick = () => {
-      state.activeClassId = id;
-      state.activeLevelId = state.activeNodeId = state.activeObjectiveId = null;
-      loadClasses(); loadLevels(id);
-      renderEmpty('#pm-rc-nodes-wrapper', 'Elegí Nivel');
-      renderEmpty('#pm-rc-objs-wrapper', 'Elegí Tema');
-      renderEmpty('#pm-rc-inds-wrapper', 'Elegí Objetivo');
-    };
-  });
+      state.activeClassId = id
+      state.activeLevelId = state.activeNodeId = state.activeObjectiveId = null
+      loadClasses()
+      loadLevels(id)
+      renderEmpty('#pm-rc-nodes-wrapper', 'Elegí Nivel')
+      renderEmpty('#pm-rc-objs-wrapper', 'Elegí Tema')
+      renderEmpty('#pm-rc-inds-wrapper', 'Elegí Objetivo')
+    }
+  })
 }
 
 async function loadLevels(classId) {
-  const wrapper = document.getElementById('pm-rc-levels-wrapper');
-  const levels = await RouteConfigAdapter.getLevelsByClass(classId);
+  const wrapper = document.getElementById('pm-rc-levels-wrapper')
+  const levels = await RouteConfigAdapter.getLevelsByClass(classId)
 
-  const currentExists = levels.some(l => l.id === state.activeLevelId);
+  const currentExists = levels.some((l) => l.id === state.activeLevelId)
   if (!currentExists && levels.length > 0) {
-    state.activeLevelId = levels[0].id;
+    state.activeLevelId = levels[0].id
   } else if (levels.length === 0) {
-    state.activeLevelId = null;
+    state.activeLevelId = null
   }
-  
+
   wrapper.innerHTML = `
     <div class="pm-rc-header">
       <h4>2. Nivel</h4> 
       <button class="pm-rc-btn-add" id="btn-add-level" title="Agregar Nivel"><i class="bi bi-plus"></i></button>
     </div>
     <div class="pm-rc-list">
-      ${levels.map(l => `
+      ${levels
+        .map(
+          (l) => `
         <div class="pm-rc-item ${state.activeLevelId === l.id ? 'active' : ''}" data-id="${l.id}">
           <span class="pm-rc-item-text">${escHTML(l.nombre)}</span>
           <span class="pm-rc-item-sub">Nivel ${l.numero_nivel}</span>
@@ -232,51 +278,59 @@ async function loadLevels(classId) {
             <button class="pm-rc-btn-action btn-edit" title="Editar"><i class="bi bi-pencil"></i></button>
           </div>
         </div>
-      `).join('')}
+      `,
+        )
+        .join('')}
     </div>
-  `;
+  `
 
-  wrapper.querySelector('#btn-add-level').onclick = () => openAddItemModal('Nivel', classId, () => loadLevels(classId));
+  wrapper.querySelector('#btn-add-level').onclick = () =>
+    openAddItemModal('Nivel', classId, () => loadLevels(classId))
 
-  if (state.activeLevelId) loadNodes(state.activeLevelId);
-  else renderEmpty('#pm-rc-nodes-wrapper', 'Elegí Nivel');
+  if (state.activeLevelId) loadNodes(state.activeLevelId)
+  else renderEmpty('#pm-rc-nodes-wrapper', 'Elegí Nivel')
 
-  wrapper.querySelectorAll('.pm-rc-item').forEach(el => {
-    const id = el.dataset.id;
+  wrapper.querySelectorAll('.pm-rc-item').forEach((el) => {
+    const id = el.dataset.id
 
     el.querySelector('.btn-edit').onclick = (e) => {
-      e.stopPropagation();
-      openEditItemModal('Nivel', id, el.querySelector('.pm-rc-item-text').innerText, () => loadLevels(classId));
-    };
+      e.stopPropagation()
+      openEditItemModal('Nivel', id, el.querySelector('.pm-rc-item-text').innerText, () =>
+        loadLevels(classId),
+      )
+    }
 
     el.onclick = () => {
-      state.activeLevelId = id;
-      state.activeNodeId = state.activeObjectiveId = null;
-      loadLevels(classId); loadNodes(id);
-      renderEmpty('#pm-rc-objs-wrapper', 'Elegí Tema');
-      renderEmpty('#pm-rc-inds-wrapper', 'Elegí Objetivo');
-    };
-  });
+      state.activeLevelId = id
+      state.activeNodeId = state.activeObjectiveId = null
+      loadLevels(classId)
+      loadNodes(id)
+      renderEmpty('#pm-rc-objs-wrapper', 'Elegí Tema')
+      renderEmpty('#pm-rc-inds-wrapper', 'Elegí Objetivo')
+    }
+  })
 }
 
 async function loadNodes(levelId) {
-  const wrapper = document.getElementById('pm-rc-nodes-wrapper');
-  const nodes = await RouteConfigAdapter.getNodesByLevel(levelId);
+  const wrapper = document.getElementById('pm-rc-nodes-wrapper')
+  const nodes = await RouteConfigAdapter.getNodesByLevel(levelId)
 
-  const currentExists = nodes.some(n => n.id === state.activeNodeId);
+  const currentExists = nodes.some((n) => n.id === state.activeNodeId)
   if (!currentExists && nodes.length > 0) {
-    state.activeNodeId = nodes[0].id;
+    state.activeNodeId = nodes[0].id
   } else if (nodes.length === 0) {
-    state.activeNodeId = null;
+    state.activeNodeId = null
   }
-  
+
   wrapper.innerHTML = `
     <div class="pm-rc-header">
       <h4>3. Tema</h4> 
       <button class="pm-rc-btn-add" id="btn-add-node" title="Agregar Tema"><i class="bi bi-plus"></i></button>
     </div>
     <div class="pm-rc-list">
-      ${nodes.map(n => `
+      ${nodes
+        .map(
+          (n) => `
         <div class="pm-rc-item ${state.activeNodeId === n.id ? 'active' : ''}" data-id="${n.id}">
           <span class="pm-rc-item-text">${escHTML(n.nombre)}</span>
           <span class="pm-rc-item-badge" style="font-size:0.5rem;background:var(--pm-surface-3);padding:1px 4px;border-radius:3px;margin-top:2px;align-self:flex-start;">${n.tipo}</span>
@@ -284,91 +338,107 @@ async function loadNodes(levelId) {
             <button class="pm-rc-btn-action btn-edit" title="Editar"><i class="bi bi-pencil"></i></button>
           </div>
         </div>
-      `).join('')}
+      `,
+        )
+        .join('')}
     </div>
-  `;
+  `
 
-  wrapper.querySelector('#btn-add-node').onclick = () => openAddItemModal('Tema', levelId, () => loadNodes(levelId));
+  wrapper.querySelector('#btn-add-node').onclick = () =>
+    openAddItemModal('Tema', levelId, () => loadNodes(levelId))
 
-  if (state.activeNodeId) loadObjectives(state.activeNodeId);
-  else renderEmpty('#pm-rc-objs-wrapper', 'Elegí Tema');
+  if (state.activeNodeId) loadObjectives(state.activeNodeId)
+  else renderEmpty('#pm-rc-objs-wrapper', 'Elegí Tema')
 
-  wrapper.querySelectorAll('.pm-rc-item').forEach(el => {
-    const id = el.dataset.id;
+  wrapper.querySelectorAll('.pm-rc-item').forEach((el) => {
+    const id = el.dataset.id
 
     el.querySelector('.btn-edit').onclick = (e) => {
-      e.stopPropagation();
-      openEditItemModal('Tema', id, el.querySelector('.pm-rc-item-text').innerText, () => loadNodes(levelId));
-    };
+      e.stopPropagation()
+      openEditItemModal('Tema', id, el.querySelector('.pm-rc-item-text').innerText, () =>
+        loadNodes(levelId),
+      )
+    }
 
     el.onclick = () => {
-      state.activeNodeId = id;
-      state.activeObjectiveId = null;
-      loadNodes(levelId); loadObjectives(id);
-      renderEmpty('#pm-rc-inds-wrapper', 'Elegí Objetivo');
-    };
-  });
+      state.activeNodeId = id
+      state.activeObjectiveId = null
+      loadNodes(levelId)
+      loadObjectives(id)
+      renderEmpty('#pm-rc-inds-wrapper', 'Elegí Objetivo')
+    }
+  })
 }
 
 async function loadObjectives(nodeId) {
-  const wrapper = document.getElementById('pm-rc-objs-wrapper');
-  const objs = await RouteConfigAdapter.getObjectivesByNode(nodeId);
+  const wrapper = document.getElementById('pm-rc-objs-wrapper')
+  const objs = await RouteConfigAdapter.getObjectivesByNode(nodeId)
 
-  const currentExists = objs.some(o => o.id === state.activeObjectiveId);
+  const currentExists = objs.some((o) => o.id === state.activeObjectiveId)
   if (!currentExists && objs.length > 0) {
-    state.activeObjectiveId = objs[0].id;
+    state.activeObjectiveId = objs[0].id
   } else if (objs.length === 0) {
-    state.activeObjectiveId = null;
+    state.activeObjectiveId = null
   }
-  
+
   wrapper.innerHTML = `
     <div class="pm-rc-header">
       <h4>4. Objetivo</h4> 
       <button class="pm-rc-btn-add" id="btn-add-obj" title="Agregar Objetivo"><i class="bi bi-plus"></i></button>
     </div>
     <div class="pm-rc-list">
-      ${objs.map(o => `
+      ${objs
+        .map(
+          (o) => `
         <div class="pm-rc-item ${state.activeObjectiveId === o.id ? 'active' : ''}" data-id="${o.id}">
           <span class="pm-rc-item-text">${escHTML(o.nombre)}</span>
           <div class="pm-rc-actions">
             <button class="pm-rc-btn-action btn-edit" title="Editar"><i class="bi bi-pencil"></i></button>
           </div>
         </div>
-      `).join('')}
+      `,
+        )
+        .join('')}
     </div>
-  `;
+  `
 
-  wrapper.querySelector('#btn-add-obj').onclick = () => openAddItemModal('Objetivo', nodeId, () => loadObjectives(nodeId));
+  wrapper.querySelector('#btn-add-obj').onclick = () =>
+    openAddItemModal('Objetivo', nodeId, () => loadObjectives(nodeId))
 
-  if (state.activeObjectiveId) loadIndicators(state.activeObjectiveId);
-  else renderEmpty('#pm-rc-inds-wrapper', 'Elegí Objetivo');
+  if (state.activeObjectiveId) loadIndicators(state.activeObjectiveId)
+  else renderEmpty('#pm-rc-inds-wrapper', 'Elegí Objetivo')
 
-  wrapper.querySelectorAll('.pm-rc-item').forEach(el => {
-    const id = el.dataset.id;
+  wrapper.querySelectorAll('.pm-rc-item').forEach((el) => {
+    const id = el.dataset.id
 
     el.querySelector('.btn-edit').onclick = (e) => {
-      e.stopPropagation();
-      openEditItemModal('Objetivo', id, el.querySelector('.pm-rc-item-text').innerText, () => loadObjectives(nodeId));
-    };
+      e.stopPropagation()
+      openEditItemModal('Objetivo', id, el.querySelector('.pm-rc-item-text').innerText, () =>
+        loadObjectives(nodeId),
+      )
+    }
 
     el.onclick = () => {
-      state.activeObjectiveId = id;
-      loadObjectives(nodeId); loadIndicators(id);
-    };
-  });
+      state.activeObjectiveId = id
+      loadObjectives(nodeId)
+      loadIndicators(id)
+    }
+  })
 }
 
 async function loadIndicators(objectiveId) {
-  const wrapper = document.getElementById('pm-rc-inds-wrapper');
-  const inds = await RouteConfigAdapter.getIndicatorsByObjective(objectiveId);
-  
+  const wrapper = document.getElementById('pm-rc-inds-wrapper')
+  const inds = await RouteConfigAdapter.getIndicatorsByObjective(objectiveId)
+
   wrapper.innerHTML = `
     <div class="pm-rc-header">
       <h4>5. Indicador</h4> 
       <button class="pm-rc-btn-add" id="btn-add-ind" title="Agregar Indicador"><i class="bi bi-plus"></i></button>
     </div>
     <div class="pm-rc-list">
-      ${inds.map(i => `
+      ${inds
+        .map(
+          (i) => `
         <div class="pm-rc-ind-card" style="position:relative;">
           <i class="bi ${i.es_requerido ? 'bi-check-circle-fill' : 'bi-circle'}"></i>
           <span class="ind-text">${escHTML(i.descripcion)}</span>
@@ -376,22 +446,25 @@ async function loadIndicators(objectiveId) {
              <button class="pm-rc-btn-action btn-edit-ind" data-id="${i.id}"><i class="bi bi-pencil"></i></button>
           </div>
         </div>
-      `).join('')}
+      `,
+        )
+        .join('')}
     </div>
-  `;
+  `
 
-  wrapper.querySelector('#btn-add-ind').onclick = () => openAddItemModal('Indicador', objectiveId, () => loadIndicators(objectiveId));
+  wrapper.querySelector('#btn-add-ind').onclick = () =>
+    openAddItemModal('Indicador', objectiveId, () => loadIndicators(objectiveId))
 
-  wrapper.querySelectorAll('.btn-edit-ind').forEach(btn => {
+  wrapper.querySelectorAll('.btn-edit-ind').forEach((btn) => {
     btn.onclick = () => {
-      const id = btn.dataset.id;
-      const current = btn.closest('.pm-rc-ind-card').querySelector('.ind-text').innerText;
-      openEditItemModal('Indicador', id, current, () => loadIndicators(objectiveId));
-    };
-  });
+      const id = btn.dataset.id
+      const current = btn.closest('.pm-rc-ind-card').querySelector('.ind-text').innerText
+      openEditItemModal('Indicador', id, current, () => loadIndicators(objectiveId))
+    }
+  })
 }
 
 function renderEmpty(selector, msg) {
-  const el = document.querySelector(selector);
-  if (el) el.innerHTML = `<div class="pm-rc-empty">${msg}</div>`;
+  const el = document.querySelector(selector)
+  if (el) el.innerHTML = `<div class="pm-rc-empty">${msg}</div>`
 }

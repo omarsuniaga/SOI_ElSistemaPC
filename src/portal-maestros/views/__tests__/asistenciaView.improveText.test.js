@@ -21,7 +21,9 @@ describe('asistenciaView - Improve Text Integration', () => {
     const filePath = path.resolve('./src/portal-maestros/views/asistenciaView.js')
     const content = fs.readFileSync(filePath, 'utf-8')
 
-    expect(content).toContain("import { createImproveTextModal } from '../components/improveTextModal.js'")
+    expect(content).toContain(
+      "import { createImproveTextModal } from '../components/improveTextModal.js'",
+    )
   })
 
   it('should have onImproveClick callback passed to toolbar', async () => {

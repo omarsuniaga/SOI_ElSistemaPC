@@ -46,7 +46,7 @@
 }
 
 /* Dark mode */
-[data-bs-theme="dark"] .pm-form-label,
-[data-portal-theme="dark"] .pm-form-label {
+[data-bs-theme='dark'] .pm-form-label,
+[data-portal-theme='dark'] .pm-form-label {
   color: var(--pm-text);
 }

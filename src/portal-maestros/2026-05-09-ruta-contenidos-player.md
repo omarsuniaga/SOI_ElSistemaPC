@@ -17,6 +17,7 @@ This is a Vite PWA. No test runner — verification is done by opening the brows
 ### DB — Supabase project `zmhmdvmyeyswunurcyow`
 
 Route hierarchy (all use `route_version_id` to scope):
+
 ```
 blocks        → id, nombre, order_index, route_version_id
   levels      → id, block_id, nombre, order_index, route_version_id
@@ -25,25 +26,29 @@ blocks        → id, nombre, order_index, route_version_id
 ```
 
 Evaluation data:
+
 ```
 indicator_attempts → id, student_id, indicator_id, session_id, node_id, nota (smallint), result (text), observations (text)
 alumnos_clases     → alumno_id, clase_id, activo
 ```
 
 ### Published route version
+
 `bd25b7b2-987f-4dd7-be73-cde4e9f78606` — "Ruta Integral de Violín por Nodos" — 10 levels, 160 nodes, 643 indicators.
 
 ### Semaphore logic (from `evaluationService.calculateSemaphore`)
+
 - **green**: `attempts.length >= totalAlumnos` AND every attempt has `nota >= 4`
 - **yellow**: at least one attempt exists but not fully green
 - **gray**: zero attempts for the node
 
 ### Route resolution for a class
+
 ```js
 // From asistenciaView.js lines 94-115 — use this same pattern:
-const claseRow = misClases.find(c => c.id === claseId)
-const instrumento = claseRow?.instrumento              // e.g. "Violín, Viola"
-const primerInstrumento = instrumento.split(',')[0].trim().toLowerCase()  // "violín"
+const claseRow = misClases.find((c) => c.id === claseId)
+const instrumento = claseRow?.instrumento // e.g. "Violín, Viola"
+const primerInstrumento = instrumento.split(',')[0].trim().toLowerCase() // "violín"
 const { data } = await supabase
   .from('routes')
   .select('id, route_versions!inner(id)')
@@ -55,6 +60,7 @@ const rutaId = data?.route_versions?.[0]?.id || data?.route_versions?.id || null
 ```
 
 ### Key existing files (DO NOT restructure them)
+
 ```
 src/portal-maestros/services/evaluationService.js   — exports getSemaphoreForNode, calculateSemaphore
 src/portal-maestros/services/maestroDataService.js  — exports getMisClases() (cached)
@@ -66,6 +72,7 @@ src/portal-maestros/utils/portalUtils.js            — exports escHTML()
 ```
 
 ### Navigation in this app
+
 ```js
 // Navigate programmatically — this is the correct pattern (from main-maestros.js):
 window.location.hash = '#/hoy'
@@ -75,20 +82,21 @@ window.location.hash = '#/hoy'
 
 ## File Map
 
-| Action | Path | Responsibility |
-|--------|------|----------------|
-| **Create** | `src/portal-maestros/services/rutaService.js` | Load full route tree with semaphore per node for a given (routeVersionId, claseId) |
-| **Create** | `src/portal-maestros/services/rutaTopicStore.js` | sessionStorage wrapper — set/get/clear pre-selected topic |
-| **Create** | `src/portal-maestros/views/rutaPlayerView.js` | Full-page tree UI: class selector → tree → indicator detail panel |
-| **Modify** | `src/portal-maestros/views/asistenciaView.js` | On mount: check rutaTopicStore, auto-insert topic into editor |
-| **Modify** | `src/main-maestros.js` | Swap `renderRutaView` import for `renderRutaPlayerView` |
-| **Delete** | `src/portal-maestros/views/rutaView.js` | Old prototype — replaced entirely |
+| Action     | Path                                             | Responsibility                                                                     |
+| ---------- | ------------------------------------------------ | ---------------------------------------------------------------------------------- |
+| **Create** | `src/portal-maestros/services/rutaService.js`    | Load full route tree with semaphore per node for a given (routeVersionId, claseId) |
+| **Create** | `src/portal-maestros/services/rutaTopicStore.js` | sessionStorage wrapper — set/get/clear pre-selected topic                          |
+| **Create** | `src/portal-maestros/views/rutaPlayerView.js`    | Full-page tree UI: class selector → tree → indicator detail panel                  |
+| **Modify** | `src/portal-maestros/views/asistenciaView.js`    | On mount: check rutaTopicStore, auto-insert topic into editor                      |
+| **Modify** | `src/main-maestros.js`                           | Swap `renderRutaView` import for `renderRutaPlayerView`                            |
+| **Delete** | `src/portal-maestros/views/rutaView.js`          | Old prototype — replaced entirely                                                  |
 
 ---
 
 ## Task 1: `rutaService.js` — Route tree data loader
 
 **Files:**
+
 - Create: `src/portal-maestros/services/rutaService.js`
 
 This service loads the full route tree (blocks → levels → nodes → indicators) with semaphore colors calculated per node using the existing `getSemaphoreForNode` from `evaluationService.js`. It also resolves the `routeVersionId` from a class id.
@@ -112,7 +120,7 @@ import { getMisClases } from './maestroDataService.js'
  */
 export async function resolveRutaIdForClase(claseId) {
   const misClases = await getMisClases()
-  const claseRow  = misClases?.find(c => c.id === claseId)
+  const claseRow = misClases?.find((c) => c.id === claseId)
   const instrumento = claseRow?.instrumento
   if (!instrumento) return null
 
@@ -165,7 +173,7 @@ export async function loadRouteTree(routeVersionId, claseId) {
   if (!blocks || blocks.length === 0) return []
 
   // ── 2. Levels ──────────────────────────────────────────────────────────────
-  const blockIds = blocks.map(b => b.id)
+  const blockIds = blocks.map((b) => b.id)
   const { data: levels, error: lErr } = await supabase
     .from('levels')
     .select('id, block_id, nombre, order_index')
@@ -176,8 +184,8 @@ export async function loadRouteTree(routeVersionId, claseId) {
   if (lErr) throw new Error('[rutaService] levels: ' + lErr.message)
 
   // ── 3. Nodes ───────────────────────────────────────────────────────────────
-  const levelIds = (levels ?? []).map(l => l.id)
-  if (levelIds.length === 0) return blocks.map(b => ({ ...b, levels: [] }))
+  const levelIds = (levels ?? []).map((l) => l.id)
+  if (levelIds.length === 0) return blocks.map((b) => ({ ...b, levels: [] }))
 
   const { data: nodes, error: nErr } = await supabase
     .from('nodes')
@@ -189,27 +197,28 @@ export async function loadRouteTree(routeVersionId, claseId) {
   if (nErr) throw new Error('[rutaService] nodes: ' + nErr.message)
 
   // ── 4. Indicators ──────────────────────────────────────────────────────────
-  const nodeIds = (nodes ?? []).map(n => n.id)
-  const { data: indicators, error: iErr } = nodeIds.length > 0
-    ? await supabase
-        .from('indicators')
-        .select('id, node_id, nombre, description, order_index')
-        .in('node_id', nodeIds)
-        .eq('activo', true)
-        .order('order_index', { ascending: true })
-    : { data: [], error: null }
+  const nodeIds = (nodes ?? []).map((n) => n.id)
+  const { data: indicators, error: iErr } =
+    nodeIds.length > 0
+      ? await supabase
+          .from('indicators')
+          .select('id, node_id, nombre, description, order_index')
+          .in('node_id', nodeIds)
+          .eq('activo', true)
+          .order('order_index', { ascending: true })
+      : { data: [], error: null }
 
   if (iErr) throw new Error('[rutaService] indicators: ' + iErr.message)
 
   // ── 5. Semaphore per node (parallel) ───────────────────────────────────────
   const semaphoreResults = await Promise.all(
-    (nodes ?? []).map(n =>
+    (nodes ?? []).map((n) =>
       getSemaphoreForNode(n.id, claseId)
-        .then(r => ({ nodeId: n.id, semaphore: r.semaphore }))
-        .catch(() => ({ nodeId: n.id, semaphore: 'gray' }))
-    )
+        .then((r) => ({ nodeId: n.id, semaphore: r.semaphore }))
+        .catch(() => ({ nodeId: n.id, semaphore: 'gray' })),
+    ),
   )
-  const semMap = new Map(semaphoreResults.map(s => [s.nodeId, s.semaphore]))
+  const semMap = new Map(semaphoreResults.map((s) => [s.nodeId, s.semaphore]))
 
   // ── 6. Group indicators by node ────────────────────────────────────────────
   const indByNode = new Map()
@@ -231,7 +240,7 @@ export async function loadRouteTree(routeVersionId, claseId) {
 
   // ── 8. Group levels by block + compute level semaphore + lock state ────────
   const levelsByBlock = new Map()
-  for (const [blockId] of blockIds.map(id => [id])) {
+  for (const [blockId] of blockIds.map((id) => [id])) {
     levelsByBlock.set(blockId, [])
   }
 
@@ -244,20 +253,23 @@ export async function loadRouteTree(routeVersionId, claseId) {
   for (const [blockId, blockLevels] of levelsSortedByBlock) {
     const enriched = blockLevels.map((level, idx, arr) => {
       const levelNodes = nodesByLevel.get(level.id) ?? []
-      const nodeSems   = levelNodes.map(n => n.semaphore)
-      const levelSem   = nodeSems.every(s => s === 'green') && nodeSems.length > 0
-        ? 'green'
-        : nodeSems.every(s => s === 'gray') || nodeSems.length === 0
-        ? 'gray'
-        : 'yellow'
+      const nodeSems = levelNodes.map((n) => n.semaphore)
+      const levelSem =
+        nodeSems.every((s) => s === 'green') && nodeSems.length > 0
+          ? 'green'
+          : nodeSems.every((s) => s === 'gray') || nodeSems.length === 0
+            ? 'gray'
+            : 'yellow'
 
       // Lock: previous level must have ≥80% of its indicators green
       let locked = false
       if (idx > 0) {
         const prev = arr[idx - 1]
         const prevNodes = nodesByLevel.get(prev.id) ?? []
-        const allInds = prevNodes.flatMap(n => indByNode.get(n.id) ?? [])
-        const greenCount = allInds.filter(i => (semMap.get(i.node_id) ?? 'gray') === 'green').length
+        const allInds = prevNodes.flatMap((n) => indByNode.get(n.id) ?? [])
+        const greenCount = allInds.filter(
+          (i) => (semMap.get(i.node_id) ?? 'gray') === 'green',
+        ).length
         locked = allInds.length > 0 && greenCount / allInds.length < 0.8
       }
 
@@ -266,13 +278,14 @@ export async function loadRouteTree(routeVersionId, claseId) {
     levelsByBlock.set(blockId, enriched)
   }
 
-  return blocks.map(b => ({ ...b, levels: levelsByBlock.get(b.id) ?? [] }))
+  return blocks.map((b) => ({ ...b, levels: levelsByBlock.get(b.id) ?? [] }))
 }
 ```
 
 - [ ] **Step 3: Verify the file has no syntax errors**
 
 Open a terminal in the project root and run:
+
 ```bash
 node --input-type=module < /dev/null 2>&1 || true
 npx vite build --mode development 2>&1 | head -30
@@ -293,6 +306,7 @@ git commit -m "feat(ruta): add rutaService — route tree loader with semaphore"
 ## Task 2: `rutaTopicStore.js` — Session-level topic handoff
 
 **Files:**
+
 - Create: `src/portal-maestros/services/rutaTopicStore.js`
 
 This tiny module uses `sessionStorage` to pass a pre-selected indicator from the Ruta player view into `asistenciaView`. It's a one-shot read: once consumed it is cleared.
@@ -366,10 +380,12 @@ git commit -m "feat(ruta): add rutaTopicStore — sessionStorage topic handoff"
 ## Task 3: `rutaPlayerView.js` — Full-page route tree UI
 
 **Files:**
+
 - Create: `src/portal-maestros/views/rutaPlayerView.js`
 - Delete: `src/portal-maestros/views/rutaView.js` (old prototype)
 
 This is the main view rendered at `#/ruta`. It shows:
+
 1. A class selector at the top
 2. The full route tree — blocks → levels → nodes → indicators — always expanded
 3. Semaphore icons: 🟢 green, 🟡 yellow, ⚫ gray
@@ -381,24 +397,24 @@ This is the main view rendered at `#/ruta`. It shows:
 ```js
 // src/portal-maestros/views/rutaPlayerView.js
 
-import { getMaestroLocal }    from '../auth/maestroAuth.js'
-import { getMisClases }       from '../services/maestroDataService.js'
+import { getMaestroLocal } from '../auth/maestroAuth.js'
+import { getMisClases } from '../services/maestroDataService.js'
 import { loadRouteTree, resolveRutaIdForClase } from '../services/rutaService.js'
 import { setRutaTema, peekRutaTema } from '../services/rutaTopicStore.js'
-import { escHTML }            from '../utils/portalUtils.js'
+import { escHTML } from '../utils/portalUtils.js'
 
-const SEM_ICON  = { green: '🟢', yellow: '🟡', gray: '⚫' }
+const SEM_ICON = { green: '🟢', yellow: '🟡', gray: '⚫' }
 const SEM_COLOR = { green: '#22c55e', yellow: '#f59e0b', gray: '#94a3b8' }
-const SEM_BG    = { green: '#f0fdf4', yellow: '#fffbeb', gray: '#f8fafc' }
+const SEM_BG = { green: '#f0fdf4', yellow: '#fffbeb', gray: '#f8fafc' }
 
 // Module-level state (lives as long as the tab is mounted)
 let _state = {
-  clases:         [],    // [{id, nombre, instrumento}]
-  activeClaseId:  null,
-  rutaId:         null,
-  blocks:         [],    // full tree
-  selectedInd:    null,  // { id, nombre, nodeNombre, levelNombre, blockNombre }
-  loading:        false,
+  clases: [], // [{id, nombre, instrumento}]
+  activeClaseId: null,
+  rutaId: null,
+  blocks: [], // full tree
+  selectedInd: null, // { id, nombre, nodeNombre, levelNombre, blockNombre }
+  loading: false,
 }
 ```
 
@@ -412,7 +428,14 @@ Append to the same file:
  * @param {HTMLElement} container
  */
 export async function renderRutaPlayerView(container) {
-  _state = { clases: [], activeClaseId: null, rutaId: null, blocks: [], selectedInd: null, loading: false }
+  _state = {
+    clases: [],
+    activeClaseId: null,
+    rutaId: null,
+    blocks: [],
+    selectedInd: null,
+    loading: false,
+  }
   container.innerHTML = `<div class="pm-loading"><div class="pm-spinner"></div></div>`
 
   const maestro = getMaestroLocal()
@@ -443,7 +466,7 @@ export async function renderRutaPlayerView(container) {
 
 async function _loadTreeForActiveClass() {
   _state.loading = true
-  _state.rutaId  = await resolveRutaIdForClase(_state.activeClaseId)
+  _state.rutaId = await resolveRutaIdForClase(_state.activeClaseId)
   if (_state.rutaId) {
     _state.blocks = await loadRouteTree(_state.rutaId, _state.activeClaseId)
   } else {
@@ -490,11 +513,15 @@ function _renderFull(container) {
           background:var(--pm-surface,#fff);color:var(--pm-text-primary,#1e293b);
           font-size:13px;cursor:pointer;
         ">
-          ${_state.clases.map(c => `
+          ${_state.clases
+            .map(
+              (c) => `
             <option value="${c.id}" ${c.id === _state.activeClaseId ? 'selected' : ''}>
               ${escHTML(c.nombre)}
             </option>
-          `).join('')}
+          `,
+            )
+            .join('')}
         </select>
       </div>
 
@@ -502,12 +529,16 @@ function _renderFull(container) {
 
       <!-- Tree area -->
       <div id="ruta-tree-area">
-        ${_state.rutaId ? _renderBlocks() : `
+        ${
+          _state.rutaId
+            ? _renderBlocks()
+            : `
           <div style="text-align:center;padding:40px;color:var(--pm-text-muted,#64748b);">
             <i class="bi bi-diagram-3" style="font-size:2rem;"></i>
             <p>No se encontró una ruta publicada para esta clase.</p>
           </div>
-        `}
+        `
+        }
       </div>
 
       <!-- Selected indicator action panel -->
@@ -526,12 +557,15 @@ Append to the same file:
 
 ```js
 function _renderBlocks() {
-  if (!_state.blocks.length) return `
+  if (!_state.blocks.length)
+    return `
     <div style="text-align:center;padding:40px;color:#94a3b8;">
       <p>La ruta no tiene contenido cargado aún.</p>
     </div>`
 
-  return _state.blocks.map(block => `
+  return _state.blocks
+    .map(
+      (block) => `
     <div style="margin-bottom:20px;">
       <div style="
         font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;
@@ -539,7 +573,9 @@ function _renderBlocks() {
       ">${escHTML(block.nombre)}</div>
       ${block.levels.map((level, idx) => _renderLevel(level, idx)).join('')}
     </div>
-  `).join('')
+  `,
+    )
+    .join('')
 }
 
 function _renderLevel(level, idx) {
@@ -593,7 +629,7 @@ function _renderLevel(level, idx) {
 
       <!-- Level body — nodes -->
       <div data-level-body="${level.id}" style="padding:10px 14px;display:none;">
-        ${level.nodes.map(node => _renderNode(node, level)).join('')}
+        ${level.nodes.map((node) => _renderNode(node, level)).join('')}
       </div>
     </div>`
 }
@@ -619,16 +655,18 @@ function _renderNode(node, level) {
 
       <!-- Indicators list -->
       <div data-node-body="${node.id}" style="display:none;padding:6px 0 0 24px;">
-        ${node.indicators.map(ind => _renderIndicator(ind, node, level)).join('')}
-        ${node.indicators.length === 0
-          ? `<div style="font-size:12px;color:#94a3b8;padding:4px 0;">Sin indicadores</div>`
-          : ''}
+        ${node.indicators.map((ind) => _renderIndicator(ind, node, level)).join('')}
+        ${
+          node.indicators.length === 0
+            ? `<div style="font-size:12px;color:#94a3b8;padding:4px 0;">Sin indicadores</div>`
+            : ''
+        }
       </div>
     </div>`
 }
 
 function _renderIndicator(ind, node, level) {
-  const sem   = ind.semaphore
+  const sem = ind.semaphore
   const color = SEM_COLOR[sem]
   const isSelected = _state.selectedInd?.id === ind.id
 
@@ -654,9 +692,9 @@ function _renderIndicator(ind, node, level) {
 }
 
 function _levelPct(level) {
-  const allInds = level.nodes.flatMap(n => n.indicators)
+  const allInds = level.nodes.flatMap((n) => n.indicators)
   if (!allInds.length) return 0
-  const green = allInds.filter(i => i.semaphore === 'green').length
+  const green = allInds.filter((i) => i.semaphore === 'green').length
   return Math.round((green / allInds.length) * 100)
 }
 ```
@@ -671,7 +709,10 @@ function _renderActionPanel(container) {
   if (!panel) return
 
   const ind = _state.selectedInd
-  if (!ind) { panel.innerHTML = ''; return }
+  if (!ind) {
+    panel.innerHTML = ''
+    return
+  }
 
   panel.innerHTML = `
     <div style="
@@ -711,8 +752,8 @@ function _attachEvents(container) {
   // ── Class selector ────────────────────────────────────────────────────────
   container.querySelector('#ruta-clase-select')?.addEventListener('change', async (e) => {
     _state.activeClaseId = e.target.value
-    _state.selectedInd   = null
-    container.innerHTML  = `<div class="pm-loading"><div class="pm-spinner"></div></div>`
+    _state.selectedInd = null
+    container.innerHTML = `<div class="pm-loading"><div class="pm-spinner"></div></div>`
     await _loadTreeForActiveClass()
     _renderFull(container)
   })
@@ -723,25 +764,24 @@ function _attachEvents(container) {
     if (!el) return
 
     switch (el.dataset.action) {
-
       // Toggle level
       case 'toggle-level': {
-        const body    = container.querySelector(`[data-level-body="${el.dataset.levelId}"]`)
+        const body = container.querySelector(`[data-level-body="${el.dataset.levelId}"]`)
         const chevron = container.querySelector(`[data-chevron="${el.dataset.levelId}"]`)
         if (!body) return
         const open = body.style.display !== 'none'
-        body.style.display    = open ? 'none' : ''
+        body.style.display = open ? 'none' : ''
         if (chevron) chevron.style.transform = open ? '' : 'rotate(90deg)'
         break
       }
 
       // Toggle node
       case 'toggle-node': {
-        const body    = container.querySelector(`[data-node-body="${el.dataset.nodeId}"]`)
+        const body = container.querySelector(`[data-node-body="${el.dataset.nodeId}"]`)
         const chevron = container.querySelector(`[data-chevron="${el.dataset.nodeId}"]`)
         if (!body) return
         const open = body.style.display !== 'none'
-        body.style.display    = open ? 'none' : ''
+        body.style.display = open ? 'none' : ''
         if (chevron) chevron.style.transform = open ? '' : 'rotate(90deg)'
         break
       }
@@ -749,15 +789,17 @@ function _attachEvents(container) {
       // Select indicator
       case 'select-indicator': {
         _state.selectedInd = {
-          id:          el.dataset.indId,
-          nombre:      el.dataset.indNombre,
-          nodeNombre:  el.dataset.nodeNombre,
+          id: el.dataset.indId,
+          nombre: el.dataset.indNombre,
+          nodeNombre: el.dataset.nodeNombre,
           levelNombre: el.dataset.levelNombre,
           blockNombre: _state.blocks[0]?.nombre ?? '',
         }
         _renderActionPanel(container)
         // Scroll panel into view
-        container.querySelector('#ruta-action-panel')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+        container
+          .querySelector('#ruta-action-panel')
+          ?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
         break
       }
 
@@ -767,11 +809,11 @@ function _attachEvents(container) {
         if (!ind) return
         setRutaTema({
           indicatorId: ind.id,
-          nombre:      ind.nombre,
-          nodeNombre:  ind.nodeNombre,
+          nombre: ind.nombre,
+          nodeNombre: ind.nodeNombre,
           levelNombre: ind.levelNombre,
           blockNombre: ind.blockNombre,
-          claseId:     _state.activeClaseId,
+          claseId: _state.activeClaseId,
         })
         window.location.hash = '#/hoy'
         break
@@ -798,6 +840,7 @@ function _attachEvents(container) {
 - [ ] **Step 6: Verify in browser**
 
 With `npm run dev` running:
+
 1. Open `http://localhost:5173/#/ruta`
 2. Expected: class selector appears, tree loads with blocks → levels → nodes
 3. Click a level header → it expands showing nodes
@@ -806,6 +849,7 @@ With `npm run dev` running:
 6. Click "Usar como tema de hoy" → navigates to `#/hoy`
 
 If tree shows "No se encontró una ruta publicada" — the class `instrumento` field doesn't match any route `instrument`. That is a data issue, not a code issue. Check with:
+
 ```sql
 SELECT id, nombre, instrumento FROM clases LIMIT 5;
 SELECT id, name, instrument FROM routes;
@@ -823,6 +867,7 @@ git commit -m "feat(ruta): add rutaPlayerView — full-page Duolingo-style route
 ## Task 4: Delete old `rutaView.js`
 
 **Files:**
+
 - Delete: `src/portal-maestros/views/rutaView.js`
 
 - [ ] **Step 1: Delete the file**
@@ -843,23 +888,27 @@ git commit -m "chore(ruta): remove old rutaView prototype"
 ## Task 5: Update `main-maestros.js` — swap import
 
 **Files:**
+
 - Modify: `src/main-maestros.js` (lines ~21-22 — the import block)
 
 - [ ] **Step 1: Replace the import line**
 
 In `src/main-maestros.js`, find:
+
 ```js
-import { renderRutaView }        from './portal-maestros/views/rutaView.js'
+import { renderRutaView } from './portal-maestros/views/rutaView.js'
 ```
 
 Replace with:
+
 ```js
-import { renderRutaPlayerView }  from './portal-maestros/views/rutaPlayerView.js'
+import { renderRutaPlayerView } from './portal-maestros/views/rutaPlayerView.js'
 ```
 
 - [ ] **Step 2: Replace the switch-case call**
 
 Find in the `switch(baseRoute)` block (around line 460):
+
 ```js
       case 'ruta':
         renderRutaView(targetContainer)
@@ -867,6 +916,7 @@ Find in the `switch(baseRoute)` block (around line 460):
 ```
 
 Replace with:
+
 ```js
       case 'ruta':
         renderRutaPlayerView(targetContainer)
@@ -893,6 +943,7 @@ git commit -m "feat(ruta): wire rutaPlayerView into main router"
 ## Task 6: `asistenciaView.js` — auto-inject pre-selected topic
 
 **Files:**
+
 - Modify: `src/portal-maestros/views/asistenciaView.js`
 
 When the maestro navigates from Ruta → "Usar como tema de hoy" → taps a class card → asistencia opens, the pre-selected indicator should automatically be inserted into the DSL editor and a banner shown.
@@ -912,30 +963,30 @@ import { consumeRutaTema } from '../services/rutaTopicStore.js'
 In `asistenciaView.js`, find the comment that says `// === Auto-Draft ===` (around line 268). Insert the following block IMMEDIATELY BEFORE that comment:
 
 ```js
-  // === Ruta topic auto-injection ===
-  // If the maestro came from the Ruta view via "Usar como tema de hoy", auto-insert
-  // the selected indicator into the editor and show a banner.
-  const rutaTema = consumeRutaTema()
-  if (rutaTema && rutaTema.claseId === claseId) {
-    // Only inject if the stored tema was for THIS class
-    const temaText = `[${rutaTema.nombre}] `
-    editor.insertText(temaText)
-    toolbar.setContext({ indicadorActivo: rutaTema.nombre })
+// === Ruta topic auto-injection ===
+// If the maestro came from the Ruta view via "Usar como tema de hoy", auto-insert
+// the selected indicator into the editor and show a banner.
+const rutaTema = consumeRutaTema()
+if (rutaTema && rutaTema.claseId === claseId) {
+  // Only inject if the stored tema was for THIS class
+  const temaText = `[${rutaTema.nombre}] `
+  editor.insertText(temaText)
+  toolbar.setContext({ indicadorActivo: rutaTema.nombre })
 
-    // Show the save button
-    const obsBtn = container.querySelector('#btn-guardar-obs')
-    if (obsBtn) obsBtn.style.display = ''
+  // Show the save button
+  const obsBtn = container.querySelector('#btn-guardar-obs')
+  if (obsBtn) obsBtn.style.display = ''
 
-    // Inject a dismissible banner above the editor
-    const editorContainer = container.querySelector('#pm-dsl-editor-container')
-    if (editorContainer) {
-      const banner = document.createElement('div')
-      banner.style.cssText = `
+  // Inject a dismissible banner above the editor
+  const editorContainer = container.querySelector('#pm-dsl-editor-container')
+  if (editorContainer) {
+    const banner = document.createElement('div')
+    banner.style.cssText = `
         background:#eff6ff;border:1px solid #93c5fd;border-radius:8px;
         padding:8px 12px;margin-bottom:8px;font-size:12px;color:#1d4ed8;
         display:flex;align-items:center;gap:8px;
       `
-      banner.innerHTML = `
+    banner.innerHTML = `
         <i class="bi bi-diagram-3"></i>
         Tema cargado desde Ruta: <strong>${rutaTema.nombre.replace(/</g, '&lt;')}</strong>
         <button onclick="this.parentElement.remove()" style="
@@ -943,9 +994,9 @@ In `asistenciaView.js`, find the comment that says `// === Auto-Draft ===` (arou
           font-size:12px;color:#1d4ed8;
         ">✕</button>
       `
-      editorContainer.parentElement.insertBefore(banner, editorContainer)
-    }
+    editorContainer.parentElement.insertBefore(banner, editorContainer)
   }
+}
 ```
 
 - [ ] **Step 3: Verify in browser — full flow**
@@ -968,6 +1019,7 @@ git commit -m "feat(ruta): auto-inject pre-selected topic into asistencia DSL ed
 ## Self-Review Checklist
 
 **Spec coverage:**
+
 - ✅ Tree view: blocks → levels → nodes → indicators with semaphore colors
 - ✅ Locked levels (previous < 80% green)
 - ✅ Class selector
@@ -978,6 +1030,7 @@ git commit -m "feat(ruta): auto-inject pre-selected topic into asistencia DSL ed
 **Placeholder scan:** None — all steps contain complete code.
 
 **Type consistency:**
+
 - `rutaTopicStore.setRutaTema({ indicatorId, nombre, nodeNombre, levelNombre, blockNombre, claseId })` ← matches `consumeRutaTema()` return shape ← matches usage in asistenciaView and rutaPlayerView.
 - `loadRouteTree(routeVersionId, claseId)` → `Block[]` with `.levels[].nodes[].indicators[].semaphore` ← matches `_renderBlocks()` traversal.
 - `resolveRutaIdForClase(claseId)` → `string|null` ← guarded by `if (_state.rutaId)` in `_loadTreeForActiveClass`.
@@ -989,6 +1042,7 @@ git commit -m "feat(ruta): auto-inject pre-selected topic into asistencia DSL ed
 ## What this does NOT include (Phase 2)
 
 The following are intentionally out of scope for this plan:
+
 - **Route Builder** — create/edit levels, nodes, indicators (separate plan)
 - **Badges / gamification** — achievements per student (separate plan)
 - **AI content improvement** — "Mejorar con IA" per indicator (separate plan)

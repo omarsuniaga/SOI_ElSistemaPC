@@ -53,15 +53,17 @@ export async function renderPeriodosView(container) {
 
   function renderTable(periodos) {
     if (periodos.length === 0) {
-      tableBody.innerHTML = '<tr><td colspan="5" class="text-center py-5 text-muted">No hay períodos registrados.</td></tr>'
+      tableBody.innerHTML =
+        '<tr><td colspan="5" class="text-center py-5 text-muted">No hay períodos registrados.</td></tr>'
       return
     }
 
-    tableBody.innerHTML = periodos.map(p => {
-      const start = new Date(p.fecha_inicio).toLocaleDateString()
-      const end = new Date(p.fecha_fin).toLocaleDateString()
-      
-      return `
+    tableBody.innerHTML = periodos
+      .map((p) => {
+        const start = new Date(p.fecha_inicio).toLocaleDateString()
+        const end = new Date(p.fecha_fin).toLocaleDateString()
+
+        return `
       <tr>
         <td class="ps-4">
           <span class="fw-bold text-body d-block">${p.nombre}</span>
@@ -76,11 +78,15 @@ export async function renderPeriodosView(container) {
         </td>
         <td class="text-end pe-4">
           <div class="btn-group shadow-sm">
-            ${!p.activo ? `
+            ${
+              !p.activo
+                ? `
               <button class="btn btn-sm btn-outline-success px-3" data-action="activar" data-id="${p.id}">
                 Activar
               </button>
-            ` : ''}
+            `
+                : ''
+            }
             <button class="btn btn-sm btn-outline-secondary px-2" data-action="edit" data-id="${p.id}" title="Editar">
               <i class="bi bi-pencil"></i>
             </button>
@@ -90,7 +96,9 @@ export async function renderPeriodosView(container) {
           </div>
         </td>
       </tr>
-    `}).join('')
+    `
+      })
+      .join('')
   }
 
   function showToast(message, type = 'success') {
@@ -116,10 +124,10 @@ export async function renderPeriodosView(container) {
   tableBody.addEventListener('click', async (e) => {
     const btn = e.target.closest('[data-action]')
     if (!btn) return
-    
+
     const id = btn.dataset.id
     const action = btn.dataset.action
-    
+
     if (action === 'activar') {
       await activarPeriodo(id)
     } else if (action === 'edit') {
@@ -172,13 +180,13 @@ export async function renderPeriodosView(container) {
         await PeriodosApi.crearPeriodo({ nombre, fecha_inicio, fecha_fin, activo })
         showToast('Período creado con éxito')
         await loadPeriodos()
-      }
+      },
     })
   }
 
   async function openEditModal(id) {
     const periodos = await PeriodosApi.getPeriodos()
-    const periodo = periodos.find(p => p.id === id)
+    const periodo = periodos.find((p) => p.id === id)
     if (!periodo) {
       showToast('Período no encontrado', 'danger')
       return
@@ -226,13 +234,13 @@ export async function renderPeriodosView(container) {
         await PeriodosApi.actualizarPeriodo(id, { nombre, fecha_inicio, fecha_fin, activo })
         showToast('Período actualizado con éxito')
         await loadPeriodos()
-      }
+      },
     })
   }
 
   async function openDeleteModal(id) {
     const periodos = await PeriodosApi.getPeriodos()
-    const periodo = periodos.find(p => p.id === id)
+    const periodo = periodos.find((p) => p.id === id)
     if (!periodo) {
       showToast('Período no encontrado', 'danger')
       return
@@ -248,7 +256,7 @@ export async function renderPeriodosView(container) {
         await PeriodosApi.eliminarPeriodo(id)
         showToast('Período eliminado con éxito')
         await loadPeriodos()
-      }
+      },
     })
   }
 

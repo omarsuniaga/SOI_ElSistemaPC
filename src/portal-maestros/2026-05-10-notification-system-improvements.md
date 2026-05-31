@@ -1,11 +1,13 @@
 # Notification System Improvements — Spec
 
 ## Goal
+
 Improve the notification system reactivity and implement proper Web Push support with three key enhancements: faster polling, Web Push subscription UI, and deduplication logic.
 
 ## Executive Summary
 
 Currently the notification system is partially reactive:
+
 - **Local alerts (Service Worker)**: Work well for pre/post-class scheduling
 - **In-app polling**: Reactive but SLOW (5-minute intervals)
 - **Web Push infrastructure**: Built but UNUSED (no subscription UI, no backend push sending)
@@ -19,12 +21,14 @@ This spec addresses three critical gaps:
 ## Problem Statement
 
 ### Current State
+
 - Polling interval: 300 seconds (5 minutes) — too slow for classroom scenarios
 - Web Push API: Fully implemented but never called (no UI button)
 - Backend: Sends nothing via push (only polling-based notifications work)
 - User experience: Delayed alerts, missing pre-class windows, no push option
 
 ### Why This Matters
+
 - Teacher gets "class starting in 15 min" alert → but only after 5-minute poll delay
 - 30-50% of the notification window is lost
 - Teachers can't enable push notifications (UI doesn't exist)
@@ -35,18 +39,21 @@ This spec addresses three critical gaps:
 ### Component Changes
 
 **1. Notification Service (faster polling)**
+
 - File: `src/portal-maestros/services/notificationService.js`
 - Change: `setInterval` from 5 min → 30 sec
 - Add: `POLL_INTERVAL_MS = 30000` constant (configurable)
 - Rationale: 30-sec lag is acceptable for classroom context; trades some battery for reactivity
 
 **2. Push Service (subscription + deduplication)**
+
 - File: `src/portal-maestros/services/pushService.js`
 - Add: `getSubscriptionStatus()` method to check if user is subscribed
 - Add: Deduplication key generation for push + polling notifications
 - Modify: `subscribeToPush()` to emit events for UI feedback
 
 **3. Settings Panel (Web Push UI)**
+
 - File: `src/portal-maestros/views/configView.js` (or new `notificationSettingsView.js`)
 - Add: Notification preferences section:
   - Toggle: "Habilitar Web Push Notifications"
@@ -58,11 +65,13 @@ This spec addresses three critical gaps:
   - Button: "Test Notification" (calls `testNotification()`)
 
 **4. Notification Panel (deduplication)**
+
 - File: `src/portal-maestros/components/notificacionesPanel.js`
 - Add: `deduplicationKey` comparison before adding to list
 - Logic: Don't show duplicate if same notification received via push + polling within 60 seconds
 
 **5. Notification Service (backend signal)**
+
 - File: `src/portal-maestros/services/notificationService.js`
 - Add: `onPushReceived()` callback hook for deduplication
 - Allows Web Push to signal received notifications before polling finds them
@@ -96,11 +105,13 @@ This spec addresses three critical gaps:
 ### Deduplication Strategy
 
 **Key**: `${notification.tipo}:${notification.related_id}:${Math.floor(Date.now() / 60000)}`
+
 - Notification type (e.g., "recordatorio_clase", "sesion_sin_registrar")
 - Related ID (clase_id, alumno_id, etc.)
 - 1-minute bucket (prevents duplicates within same minute)
 
-**Logic**: 
+**Logic**:
+
 - Push arrives → calculate key → store in `_recentPushKeys` Set
 - Polling arrives → calculate key → check if in set
 - If found: skip duplicate, remove from set
@@ -110,13 +121,15 @@ This spec addresses three critical gaps:
 ### Configuration
 
 **notificationService.js:**
+
 ```javascript
-const POLL_INTERVAL_MS = 30 * 1000;  // 30 seconds
-const DEDUP_WINDOW_MS = 60 * 1000;   // 1 minute
-const DEDUP_EXPIRY_MS = 120 * 1000;  // 2 minutes
+const POLL_INTERVAL_MS = 30 * 1000 // 30 seconds
+const DEDUP_WINDOW_MS = 60 * 1000 // 1 minute
+const DEDUP_EXPIRY_MS = 120 * 1000 // 2 minutes
 ```
 
 **pushService.js:**
+
 ```javascript
 const DEFAULT_PREFS = {
   alerta_pre_clase: true,
@@ -131,18 +144,21 @@ const DEFAULT_PREFS = {
 ## Testing
 
 **Unit Tests (Vitest):**
+
 - Test deduplication key generation with edge cases
 - Test DEDUP_WINDOW logic with mock timers
 - Test polling + push ordering scenarios
 - Test subscription status transitions
 
 **Integration Tests:**
+
 - Subscribe to push, verify endpoint stored in DB
 - Unsubscribe, verify activo=false flag
 - Test notification arrives within 30 seconds
 - Simulate push + polling at same time, verify no duplicates
 
 **Manual Testing:**
+
 - Enable Web Push in settings
 - Create a class starting in 15 minutes
 - Verify alert shows at ~15-min mark (not 20 min)
@@ -183,12 +199,15 @@ tests/
 ## Risks
 
 **Low**: Polling more frequently uses more battery
+
 - Mitigation: Configurable interval, can reduce to 60sec on mobile
 
 **Low**: If backend never sends push, subscription endpoints unused
+
 - Mitigation: Still works as polling fallback; can implement backend push later
 
 **Low**: Deduplication window might miss edge cases (clock skew between client/server)
+
 - Mitigation: 60-sec window + 2-min expiry is safe for classroom context
 
 ## Out of Scope

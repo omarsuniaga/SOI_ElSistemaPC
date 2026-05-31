@@ -12,7 +12,7 @@ import { escapeHTML } from '../../clases/utils/clasesUtils.js'
 export function renderMetricCard({ label, value, color = 'primary', icon = 'bi-graph-up' }) {
   const bgClass = `bg-${color}`
   const textClass = `text-${color}`
-  
+
   return `
     <div class="card border-0 shadow-sm h-100 pm-metric-card">
       <div class="card-body p-3">

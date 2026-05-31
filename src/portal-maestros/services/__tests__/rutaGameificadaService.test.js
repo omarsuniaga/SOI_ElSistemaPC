@@ -72,7 +72,9 @@ describe('rutaGameificadaService', () => {
       })
 
       // Need a proper chain for update().in().in()
-      const selectAfterIn = vi.fn().mockResolvedValue({ data: [{ id: 'a' }, { id: 'b' }], error: null })
+      const selectAfterIn = vi
+        .fn()
+        .mockResolvedValue({ data: [{ id: 'a' }, { id: 'b' }], error: null })
       const inMock = vi.fn()
       const updateChain = {
         update: vi.fn().mockReturnThis(),
@@ -124,7 +126,9 @@ describe('rutaGameificadaService', () => {
         eq: vi.fn().mockResolvedValue({ data: [{ id: 'ind-1' }], error: null }),
       })
 
-      const selectAfterIn = vi.fn().mockResolvedValue({ data: null, error: { message: 'DB error' } })
+      const selectAfterIn = vi
+        .fn()
+        .mockResolvedValue({ data: null, error: { message: 'DB error' } })
       const inMock = vi.fn()
       const updateChain = { update: vi.fn().mockReturnThis(), in: inMock }
       inMock.mockReturnValueOnce(updateChain)

@@ -3,8 +3,8 @@ import * as analyticsService from '../analyticsFillingBehaviorService.js'
 
 vi.mock('../../../lib/supabaseClient.js', () => ({
   supabase: {
-    from: vi.fn()
-  }
+    from: vi.fn(),
+  },
 }))
 
 describe('analyticsFillingBehaviorService', () => {
@@ -20,8 +20,8 @@ describe('analyticsFillingBehaviorService', () => {
         total_clases: 10,
         orden_asistencia_primero: 6,
         promedio_duracion_observaciones: 120,
-        uso_ai_fill_percent: 40
-      }
+        uso_ai_fill_percent: 40,
+      },
     ]
 
     // Test that the function exists and returns expected structure

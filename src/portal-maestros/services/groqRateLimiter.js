@@ -25,13 +25,15 @@ function _getUsage() {
 function _saveUsage(usage) {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(usage))
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
 }
 
 function _cleanupOldRequests(usage) {
   const now = Date.now()
   const oneHourAgo = now - 3600000
-  usage.requests = usage.requests.filter(ts => ts > oneHourAgo)
+  usage.requests = usage.requests.filter((ts) => ts > oneHourAgo)
   return usage
 }
 
@@ -53,16 +55,19 @@ export function canMakeRequest() {
   const usage = _cleanupOldRequests(_getUsage())
   const now = Date.now()
   const oneMinuteAgo = now - 60000
-  
-  const requestsLastMinute = usage.requests.filter(ts => ts > oneMinuteAgo).length
+
+  const requestsLastMinute = usage.requests.filter((ts) => ts > oneMinuteAgo).length
   const requestsLastHour = usage.requests.length
-  
+
   return {
-    allowed: requestsLastMinute < config.requestsPerMinute && 
-             requestsLastHour < config.requestsPerHour,
+    allowed:
+      requestsLastMinute < config.requestsPerMinute && requestsLastHour < config.requestsPerHour,
     remainingMinute: config.requestsPerMinute - requestsLastMinute,
     remainingHour: config.requestsPerHour - requestsLastHour,
-    resetIn: Math.max(60000 - (now - Math.max(...usage.requests.filter(ts => ts > oneMinuteAgo), 0)), 0)
+    resetIn: Math.max(
+      60000 - (now - Math.max(...usage.requests.filter((ts) => ts > oneMinuteAgo), 0)),
+      0,
+    ),
   }
 }
 
@@ -94,38 +99,38 @@ export function getUsageStats() {
   const usage = _cleanupOldRequests(_getUsage())
   const now = Date.now()
   const oneMinuteAgo = now - 60000
-  
+
   return {
-    requestsThisMinute: usage.requests.filter(ts => ts > oneMinuteAgo).length,
+    requestsThisMinute: usage.requests.filter((ts) => ts > oneMinuteAgo).length,
     requestsThisHour: usage.requests.length,
     cacheSize: Object.keys(usage.cache).length,
     limitMinute: config.requestsPerMinute,
-    limitHour: config.requestsPerHour
+    limitHour: config.requestsPerHour,
   }
 }
 
 export async function withRateLimit(fn, cacheKey = null) {
   const status = canMakeRequest()
-  
+
   if (!status.allowed) {
     const waitTime = Math.ceil(status.resetIn / 1000)
     throw new Error(`Límite alcanzado. Espera ${waitTime}s antes de intentar de nuevo.`)
   }
-  
+
   if (cacheKey) {
     const cached = getCachedResponse(cacheKey)
     if (cached) {
       return { fromCache: true, data: cached }
     }
   }
-  
+
   const result = await fn()
-  
+
   recordRequest()
-  
+
   if (cacheKey) {
     setCachedResponse(cacheKey, result)
   }
-  
+
   return { fromCache: false, data: result }
 }

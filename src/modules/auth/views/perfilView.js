@@ -1,14 +1,14 @@
-import { useAuth } from '../hooks/useAuth.js';
-import { supabase } from '../../../lib/supabaseClient.js';
+import { useAuth } from '../hooks/useAuth.js'
+import { supabase } from '../../../lib/supabaseClient.js'
 
 const state = {
   loading: false,
-  error: null
-};
+  error: null,
+}
 
 export function renderPerfilView(container) {
-  const user = useAuth.getUser();
-  
+  const user = useAuth.getUser()
+
   if (!user) {
     container.innerHTML = `
       <div class="container py-4">
@@ -17,8 +17,8 @@ export function renderPerfilView(container) {
           Debes iniciar sesión para ver tu perfil.
         </div>
       </div>
-    `;
-    return;
+    `
+    return
   }
 
   container.innerHTML = `
@@ -34,9 +34,10 @@ export function renderPerfilView(container) {
         <div class="col-lg-4 mb-4">
           <div class="card-apple p-4 text-center">
             <div class="perfil-avatar mx-auto mb-3">
-              ${user.user_metadata?.avatar_url 
-                ? `<img src="${user.user_metadata.avatar_url}" alt="Avatar" class="rounded-circle" style="width: 100px; height: 100px; object-fit: cover;">`
-                : `<i class="bi bi-person-fill" style="font-size: 3rem;"></i>`
+              ${
+                user.user_metadata?.avatar_url
+                  ? `<img src="${user.user_metadata.avatar_url}" alt="Avatar" class="rounded-circle" style="width: 100px; height: 100px; object-fit: cover;">`
+                  : `<i class="bi bi-person-fill" style="font-size: 3rem;"></i>`
               }
             </div>
             <h5 class="fw-bold">${user.user_metadata?.full_name || user.email?.split('@')[0]}</h5>
@@ -132,125 +133,128 @@ export function renderPerfilView(container) {
         </div>
       </div>
     </div>
-  `;
+  `
 
-  cargarComponentesPerfil(container);
+  cargarComponentesPerfil(container)
 }
 
 async function cargarComponentesPerfil(container) {
-  const { renderAusenciaForm } = await import('../components/ausenciaForm.js');
-  const { renderAusenciaHistorial } = await import('../components/ausenciaHistorial.js');
+  const { renderAusenciaForm } = await import('../components/ausenciaForm.js')
+  const { renderAusenciaHistorial } = await import('../components/ausenciaHistorial.js')
 
-  document.getElementById('ausenciaModalBody').innerHTML = renderAusenciaForm();
+  document.getElementById('ausenciaModalBody').innerHTML = renderAusenciaForm()
 
-  const modalBody = container.querySelector('.card-apple:last-child');
+  const modalBody = container.querySelector('.card-apple:last-child')
   if (modalBody) {
-    const historialContainer = document.createElement('div');
-    historialContainer.className = 'mt-4';
+    const historialContainer = document.createElement('div')
+    historialContainer.className = 'mt-4'
     historialContainer.innerHTML = `
       <h6 class="fw-bold mb-3">
         <i class="bi bi-clock-history me-2"></i>Historial de Ausencias
       </h6>
       <div id="ausenciaHistorialContainer"></div>
-    `;
-    modalBody.appendChild(historialContainer);
-    document.getElementById('ausenciaHistorialContainer').innerHTML = renderAusenciaHistorial();
+    `
+    modalBody.appendChild(historialContainer)
+    document.getElementById('ausenciaHistorialContainer').innerHTML = renderAusenciaHistorial()
   }
 
-  container.querySelector('#btnGuardarDatos')?.addEventListener('click', guardarDatosPersonales);
-  container.querySelector('#perfilPasswordForm')?.addEventListener('submit', cambiarPassword);
+  container.querySelector('#btnGuardarDatos')?.addEventListener('click', guardarDatosPersonales)
+  container.querySelector('#perfilPasswordForm')?.addEventListener('submit', cambiarPassword)
 }
 
 async function guardarDatosPersonales() {
-  const nombre = document.getElementById('perfilNombre').value.trim();
+  const nombre = document.getElementById('perfilNombre').value.trim()
   if (!nombre) {
-    mostrarError('El nombre no puede estar vacío');
-    return;
+    mostrarError('El nombre no puede estar vacío')
+    return
   }
 
-  state.loading = true;
-  const btn = document.getElementById('btnGuardarDatos');
-  btn.disabled = true;
-  btn.innerHTML = `<span class="spinner-border spinner-border-sm me-1"></span>Guardando...`;
+  state.loading = true
+  const btn = document.getElementById('btnGuardarDatos')
+  btn.disabled = true
+  btn.innerHTML = `<span class="spinner-border spinner-border-sm me-1"></span>Guardando...`
 
   try {
-    const { error } = await supabase.auth.updateUser({ data: { full_name: nombre } });
-    
-    if (error) throw error;
+    const { error } = await supabase.auth.updateUser({ data: { full_name: nombre } })
 
-    mostrarExito('Datos guardados correctamente');
+    if (error) throw error
+
+    mostrarExito('Datos guardados correctamente')
   } catch (error) {
-    mostrarError(error.message);
+    mostrarError(error.message)
   } finally {
-    state.loading = false;
-    btn.disabled = false;
-    btn.innerHTML = `<i class="bi bi-check-lg me-1"></i>Guardar cambios`;
+    state.loading = false
+    btn.disabled = false
+    btn.innerHTML = `<i class="bi bi-check-lg me-1"></i>Guardar cambios`
   }
 }
 
 async function cambiarPassword(e) {
-  e.preventDefault();
-  
-  const actual = document.getElementById('passwordActual').value;
-  const nueva = document.getElementById('passwordNueva').value;
-  const confirmar = document.getElementById('passwordConfirmar').value;
+  e.preventDefault()
 
-  const errorDiv = document.getElementById('passwordError');
-  
+  const actual = document.getElementById('passwordActual').value
+  const nueva = document.getElementById('passwordNueva').value
+  const confirmar = document.getElementById('passwordConfirmar').value
+
+  const errorDiv = document.getElementById('passwordError')
+
   if (nueva.length < 8) {
-    mostrarErrorPassword('La contraseña debe tener al menos 8 caracteres');
-    return;
+    mostrarErrorPassword('La contraseña debe tener al menos 8 caracteres')
+    return
   }
 
   if (nueva !== confirmar) {
-    mostrarErrorPassword('Las contraseñas no coinciden');
-    return;
+    mostrarErrorPassword('Las contraseñas no coinciden')
+    return
   }
 
-  state.loading = true;
-  const btn = document.getElementById('btnCambiarPassword');
-  btn.disabled = true;
-  btn.innerHTML = `<span class="spinner-border spinner-border-sm me-1"></span>Cambiando...`;
+  state.loading = true
+  const btn = document.getElementById('btnCambiarPassword')
+  btn.disabled = true
+  btn.innerHTML = `<span class="spinner-border spinner-border-sm me-1"></span>Cambiando...`
 
   try {
     const { error } = await supabase.auth.updateUser({
-      password: nueva
-    });
+      password: nueva,
+    })
 
-    if (error) throw error;
+    if (error) throw error
 
-    document.getElementById('perfilPasswordForm').reset();
-    mostrarExito('Contraseña cambiada correctamente');
+    document.getElementById('perfilPasswordForm').reset()
+    mostrarExito('Contraseña cambiada correctamente')
   } catch (error) {
     if (error.message.includes('same')) {
-      mostrarErrorPassword('La nueva contraseña debe ser diferente a la actual');
+      mostrarErrorPassword('La nueva contraseña debe ser diferente a la actual')
     } else {
-      mostrarErrorPassword(error.message);
+      mostrarErrorPassword(error.message)
     }
   } finally {
-    state.loading = false;
-    btn.disabled = false;
-    btn.innerHTML = `<i class="bi bi-key-fill me-1"></i>Cambiar contraseña`;
+    state.loading = false
+    btn.disabled = false
+    btn.innerHTML = `<i class="bi bi-key-fill me-1"></i>Cambiar contraseña`
   }
 }
 
 function mostrarError(mensaje) {
-  window.dispatchEvent(new CustomEvent('showToast', { 
-    detail: { message: mensaje, type: 'danger' } 
-  }));
+  window.dispatchEvent(
+    new CustomEvent('showToast', {
+      detail: { message: mensaje, type: 'danger' },
+    }),
+  )
 }
 
 function mostrarExito(mensaje) {
-  window.dispatchEvent(new CustomEvent('showToast', { 
-    detail: { message: mensaje, type: 'success' } 
-  }));
+  window.dispatchEvent(
+    new CustomEvent('showToast', {
+      detail: { message: mensaje, type: 'success' },
+    }),
+  )
 }
 
 function mostrarErrorPassword(mensaje) {
-  const errorDiv = document.getElementById('passwordError');
+  const errorDiv = document.getElementById('passwordError')
   if (errorDiv) {
-    errorDiv.textContent = mensaje;
-    errorDiv.classList.remove('d-none');
+    errorDiv.textContent = mensaje
+    errorDiv.classList.remove('d-none')
   }
 }
-

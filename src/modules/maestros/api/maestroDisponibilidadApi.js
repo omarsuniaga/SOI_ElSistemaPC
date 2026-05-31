@@ -1,5 +1,5 @@
-import { supabase } from '../../../lib/supabaseClient.js';
-import { timeToMinutes } from '../../../portal-maestros/api/disponibilidadApi.js';
+import { supabase } from '../../../lib/supabaseClient.js'
+import { timeToMinutes } from '../../../portal-maestros/api/disponibilidadApi.js'
 
 // ─── HELPERS ────────────────────────────────────────────────────
 
@@ -11,14 +11,14 @@ import { timeToMinutes } from '../../../portal-maestros/api/disponibilidadApi.js
  * @returns {boolean}
  */
 function franjaCoversFully(franjas, horaInicio, horaFin) {
-  const reqStart = timeToMinutes(horaInicio);
-  const reqEnd = timeToMinutes(horaFin);
+  const reqStart = timeToMinutes(horaInicio)
+  const reqEnd = timeToMinutes(horaFin)
 
-  return franjas.some(f => {
-    const slotStart = timeToMinutes(f.inicio);
-    const slotEnd = timeToMinutes(f.fin);
-    return slotStart <= reqStart && slotEnd >= reqEnd;
-  });
+  return franjas.some((f) => {
+    const slotStart = timeToMinutes(f.inicio)
+    const slotEnd = timeToMinutes(f.fin)
+    return slotStart <= reqStart && slotEnd >= reqEnd
+  })
 }
 
 // ─── API FUNCTIONS ──────────────────────────────────────────────
@@ -36,21 +36,21 @@ export async function getAllDisponibilidades() {
     .from('maestros')
     .select('id, nombre_completo, especialidad, habilidades, disponibilidad, activo')
     .eq('activo', true)
-    .order('nombre_completo', { ascending: true });
+    .order('nombre_completo', { ascending: true })
 
   if (error) {
-    console.error('[MaestroDisponibilidadApi] Error:', error.message);
-    throw new Error('No se pudieron cargar las disponibilidades de maestros');
+    console.error('[MaestroDisponibilidadApi] Error:', error.message)
+    throw new Error('No se pudieron cargar las disponibilidades de maestros')
   }
 
-  return data.map(m => ({
+  return data.map((m) => ({
     id: m.id,
     nombre: m.nombre_completo || '',
     especialidad: m.especialidad || '',
     habilidades: Array.isArray(m.habilidades) ? m.habilidades : [],
     disponibilidad: m.disponibilidad || {},
     activo: m.activo,
-  }));
+  }))
 }
 
 /**
@@ -61,15 +61,20 @@ export async function getAllDisponibilidades() {
  * @returns {Promise<Array<{ id: string, nombre: string, especialidad: string, habilidades: string[] }>>}
  */
 export async function getMaestrosDisponiblesEnFranja(dia, horaInicio, horaFin) {
-  const todos = await getAllDisponibilidades();
+  const todos = await getAllDisponibilidades()
 
-  return todos.filter(m => {
-    const franjas = m.disponibilidad[dia];
-    if (!franjas || !Array.isArray(franjas) || franjas.length === 0) return false;
-    return franjaCoversFully(franjas, horaInicio, horaFin);
-  }).map(({ id, nombre, especialidad, habilidades }) => ({
-    id, nombre, especialidad, habilidades,
-  }));
+  return todos
+    .filter((m) => {
+      const franjas = m.disponibilidad[dia]
+      if (!franjas || !Array.isArray(franjas) || franjas.length === 0) return false
+      return franjaCoversFully(franjas, horaInicio, horaFin)
+    })
+    .map(({ id, nombre, especialidad, habilidades }) => ({
+      id,
+      nombre,
+      especialidad,
+      habilidades,
+    }))
 }
 
 /**
@@ -82,14 +87,14 @@ export async function getMaestrosDisponiblesEnFranja(dia, horaInicio, horaFin) {
  * @returns {Promise<Array<{ id: string, nombre: string, especialidad: string, habilidades: string[] }>>}
  */
 export async function getMaestrosDisponiblesParaClase(instrumento, dia, horaInicio, horaFin) {
-  const disponibles = await getMaestrosDisponiblesEnFranja(dia, horaInicio, horaFin);
-  const instrLower = instrumento.toLowerCase();
+  const disponibles = await getMaestrosDisponiblesEnFranja(dia, horaInicio, horaFin)
+  const instrLower = instrumento.toLowerCase()
 
-  return disponibles.filter(m => {
+  return disponibles.filter((m) => {
     // Check main specialty
-    if (m.especialidad?.toLowerCase().includes(instrLower)) return true;
+    if (m.especialidad?.toLowerCase().includes(instrLower)) return true
     // Check skills array
-    if (m.habilidades.some(h => h.toLowerCase().includes(instrLower))) return true;
-    return false;
-  });
+    if (m.habilidades.some((h) => h.toLowerCase().includes(instrLower))) return true
+    return false
+  })
 }

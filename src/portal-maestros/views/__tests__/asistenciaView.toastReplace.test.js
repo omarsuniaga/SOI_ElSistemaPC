@@ -42,7 +42,9 @@ describe('asistenciaView - Toast Replacement', () => {
     const filePath = path.resolve('./src/portal-maestros/views/asistenciaView.js')
     const content = fs.readFileSync(filePath, 'utf-8')
 
-    expect(content).toContain("AppToast.error('Error al guardar la planificación: ' + (err.message || err))")
+    expect(content).toContain(
+      "AppToast.error('Error al guardar la planificación: ' + (err.message || err))",
+    )
     expect(content).not.toContain("alert('Error al guardar la planificación:")
   })
 })

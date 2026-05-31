@@ -9,18 +9,18 @@ Enterprise-grade teacher portal for El Sistema Punta Cana. Streamlined lesson pl
 
 ## ✨ Features
 
-| Feature | Status | Tier |
-|---------|--------|------|
-| Lesson Planning | ✅ | Core |
-| Observation Recording | ✅ | Core |
-| Evaluation Engine | ✅ | Core |
-| Student Progress Tracking | ✅ | Core |
-| Real-time Notifications | ✅ | Core |
-| Web Push Support | ✅ | Enhanced |
-| Error Tracking | ✅ | Enterprise |
-| Audit Logging | ✅ | Enterprise |
-| GDPR Compliance | ✅ | Enterprise |
-| Performance Monitoring | ✅ | Enterprise |
+| Feature                   | Status | Tier       |
+| ------------------------- | ------ | ---------- |
+| Lesson Planning           | ✅     | Core       |
+| Observation Recording     | ✅     | Core       |
+| Evaluation Engine         | ✅     | Core       |
+| Student Progress Tracking | ✅     | Core       |
+| Real-time Notifications   | ✅     | Core       |
+| Web Push Support          | ✅     | Enhanced   |
+| Error Tracking            | ✅     | Enterprise |
+| Audit Logging             | ✅     | Enterprise |
+| GDPR Compliance           | ✅     | Enterprise |
+| Performance Monitoring    | ✅     | Enterprise |
 
 ## 🚀 Quick Start
 
@@ -40,6 +40,7 @@ cp .env.example .env.local
 ```
 
 Configure:
+
 ```
 VITE_SUPABASE_URL=your_supabase_url
 VITE_SUPABASE_KEY=your_anon_key
@@ -121,19 +122,19 @@ config/
 
 ### Key Files
 
-| File | Purpose |
-|------|---------|
-| `src/main-maestros.js` | App entry point |
-| `src/portal-maestros/auth/maestroAuth.js` | Login logic |
+| File                                                  | Purpose         |
+| ----------------------------------------------------- | --------------- |
+| `src/main-maestros.js`                                | App entry point |
+| `src/portal-maestros/auth/maestroAuth.js`             | Login logic     |
 | `src/portal-maestros/services/notificationService.js` | Polling + dedup |
-| `src/portal-maestros/services/pushService.js` | Web Push |
-| `src/portal-maestros/views/` | All page routes |
+| `src/portal-maestros/services/pushService.js`         | Web Push        |
+| `src/portal-maestros/views/`                          | All page routes |
 
 ## ⚗️ Testing
 
-- **Unit Tests**: Vitest (src/**/*.test.js)
+- **Unit Tests**: Vitest (src/\*_/_.test.js)
 - **Integration Tests**: Vitest with Supabase mock
-- **E2E Tests**: Playwright (tests/e2e/*.spec.js)
+- **E2E Tests**: Playwright (tests/e2e/\*.spec.js)
 - **Coverage Target**: > 90%
 
 Run tests:

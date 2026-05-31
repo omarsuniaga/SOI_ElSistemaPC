@@ -1,4 +1,11 @@
-import { escapeHTML, getInitials, formatDate, getStatusLabel, getStatusColor, formatInstrumento } from '../utils/maestrosUtils.js'
+import {
+  escapeHTML,
+  getInitials,
+  formatDate,
+  getStatusLabel,
+  getStatusColor,
+  formatInstrumento,
+} from '../utils/maestrosUtils.js'
 
 export function createMaestroCard(maestro, showActions = true, onEdit = null, onDelete = null) {
   const card = document.createElement('div')
@@ -34,12 +41,16 @@ export function createMaestroCard(maestro, showActions = true, onEdit = null, on
         <small class="text-muted">
           <i class="bi bi-clock"></i> ${formatDate(maestro.created_at)}
         </small>
-        ${showActions ? `
+        ${
+          showActions
+            ? `
           <div class="btn-group btn-group-sm">
             ${onEdit ? `<button class="btn btn-outline-primary edit-btn" data-id="${maestro.id}" title="Editar"><i class="bi bi-pencil"></i></button>` : ''}
             ${onDelete ? `<button class="btn btn-outline-danger delete-btn" data-id="${maestro.id}" title="Eliminar"><i class="bi bi-trash"></i></button>` : ''}
           </div>
-        ` : ''}
+        `
+            : ''
+        }
       </div>
     </div>
   `

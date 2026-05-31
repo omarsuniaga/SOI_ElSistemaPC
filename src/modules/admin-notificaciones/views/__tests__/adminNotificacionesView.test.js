@@ -7,13 +7,13 @@ import { supabase } from '../../../../lib/supabaseClient.js'
 // Mock de la API del feed
 vi.mock('../../api/adminNotifApi.js', () => ({
   fetchAdminFeed: vi.fn(),
-  fetchAdminPendingCount: vi.fn(() => Promise.resolve(1))
+  fetchAdminPendingCount: vi.fn(() => Promise.resolve(1)),
 }))
 
 // Mock de la API de aprobación
 vi.mock('../../../admin-aprobacion/api/ausenciaAprobacionApi.js', () => ({
   aprobarAusencia: vi.fn(() => Promise.resolve({})),
-  rechazarAusencia: vi.fn(() => Promise.resolve({}))
+  rechazarAusencia: vi.fn(() => Promise.resolve({})),
 }))
 
 // Mock del cliente Supabase
@@ -24,9 +24,9 @@ vi.mock('../../../../lib/supabaseClient.js', () => ({
       subscribe: vi.fn((cb) => {
         if (cb) cb('SUBSCRIBED')
         return {}
-      })
-    }))
-  }
+      }),
+    })),
+  },
 }))
 
 describe('adminNotificacionesView Interface & Interactions', () => {
@@ -50,9 +50,7 @@ describe('adminNotificacionesView Interface & Interactions', () => {
       actionRoute: 'admin-ausencias',
       actionLabel: 'Revisar',
       maestroInstrumento: 'Saxofón',
-      suplentesSugeridos: [
-        { id: 'm2', nombre_completo: 'John Coltrane', email: 'john@jazz.com' }
-      ]
+      suplentesSugeridos: [{ id: 'm2', nombre_completo: 'John Coltrane', email: 'john@jazz.com' }],
     },
     {
       id: 'compliance:m2',
@@ -70,7 +68,7 @@ describe('adminNotificacionesView Interface & Interactions', () => {
       timestamp: '2026-05-22T12:00:00Z',
       timeAgo: 'hace 2d',
       actionRoute: null,
-      actionLabel: null
+      actionLabel: null,
     },
     {
       id: 'riesgo-alumno-ausencias:s1',
@@ -88,8 +86,8 @@ describe('adminNotificacionesView Interface & Interactions', () => {
       timestamp: '2026-05-24T12:00:00Z',
       timeAgo: 'ahora mismo',
       actionRoute: 'admin-alumnos',
-      actionLabel: 'Ver Ficha'
-    }
+      actionLabel: 'Ver Ficha',
+    },
   ]
 
   beforeEach(() => {
@@ -164,7 +162,7 @@ describe('adminNotificacionesView Interface & Interactions', () => {
 
     // Transiciona in-place a estado aprobada
     expect(container.querySelector('.anv-estado-chip').textContent).toContain('Aprobada')
-    
+
     // Las acciones inline de aprobación/rechazo desaparecen
     expect(container.querySelector('.anv-btn-approve')).toBeNull()
     expect(container.querySelector('.anv-btn-reject')).toBeNull()

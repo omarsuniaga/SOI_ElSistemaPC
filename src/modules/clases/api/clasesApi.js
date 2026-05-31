@@ -20,7 +20,14 @@ export { NIVELES as NIVELES_CONST } // Exportación adicional por si acaso hay c
  * @param {Object} params Parámetros de verificación
  * @returns {Promise<Object|null>} El conflicto encontrado o null
  */
-async function verificarSolapamiento({ salonId, maestroId, dia, horaInicio, horaFin, excludeClaseId = null }) {
+async function verificarSolapamiento({
+  salonId,
+  maestroId,
+  dia,
+  horaInicio,
+  horaFin,
+  excludeClaseId = null,
+}) {
   if (!dia || !horaInicio || !horaFin) return null
 
   const startMin = timeToMinutes(horaInicio)
@@ -44,7 +51,7 @@ async function verificarSolapamiento({ salonId, maestroId, dia, horaInicio, hora
             tipo: 'salón',
             clase_nombre: h.clases?.nombre || 'Otra clase',
             detalle: `El salón ya está ocupado por "${h.clases?.nombre}"`,
-            horario: `${h.dia} de ${formatHora(h.hora_inicio)} a ${formatHora(h.hora_fin)}`
+            horario: `${h.dia} de ${formatHora(h.hora_inicio)} a ${formatHora(h.hora_fin)}`,
           }
         }
       }
@@ -69,7 +76,7 @@ async function verificarSolapamiento({ salonId, maestroId, dia, horaInicio, hora
             tipo: 'maestro',
             clase_nombre: h.clases?.nombre || 'Otra clase',
             detalle: `El maestro ya tiene otra clase asignada ("${h.clases?.nombre}")`,
-            horario: `${h.dia} de ${formatHora(h.hora_inicio)} a ${formatHora(h.hora_fin)}`
+            horario: `${h.dia} de ${formatHora(h.hora_inicio)} a ${formatHora(h.hora_fin)}`,
           }
         }
       }
@@ -107,29 +114,22 @@ export async function obtenerClases() {
     .select('*')
     .order('dia', { ascending: true })
 
-  return (clases || []).map(c => {
+  return (clases || []).map((c) => {
     const claseObj = normalizeClase(c)
-    claseObj.horarios = horarios?.filter(h => h.clase_id === c.id) || []
+    claseObj.horarios = horarios?.filter((h) => h.clase_id === c.id) || []
     return claseObj
   })
 }
 
 export async function obtenerClase(id) {
-  const { data, error } = await supabase
-    .from('clases')
-    .select('*')
-    .eq('id', id)
-    .single()
+  const { data, error } = await supabase.from('clases').select('*').eq('id', id).single()
 
   if (error) {
     console.error('Error cargando clase:', error.message)
     throw new Error('Clase no encontrada')
   }
 
-  const { data: horarios } = await supabase
-    .from('clase_horarios')
-    .select('*')
-    .eq('clase_id', id)
+  const { data: horarios } = await supabase.from('clase_horarios').select('*').eq('clase_id', id)
 
   const claseObj = normalizeClase(data)
   claseObj.horarios = horarios || []
@@ -152,11 +152,13 @@ export async function crearClase(claseData, force = false) {
         maestroId: clase.maestro_principal_id,
         dia: h.dia,
         horaInicio: h.hora_inicio,
-        horaFin: h.hora_fin
+        horaFin: h.hora_fin,
       })
 
       if (solapamiento) {
-        const err = new Error(`Conflicto de ${solapamiento.tipo}: ${solapamiento.detalle} el ${solapamiento.horario}`)
+        const err = new Error(
+          `Conflicto de ${solapamiento.tipo}: ${solapamiento.detalle} el ${solapamiento.horario}`,
+        )
         err.isConflict = true
         err.conflictData = solapamiento
         throw err
@@ -168,10 +170,7 @@ export async function crearClase(claseData, force = false) {
   const claseJSON = clase.toJSON()
   delete claseJSON.id
 
-  const { data, error } = await supabase
-    .from('clases')
-    .insert([claseJSON])
-    .select()
+  const { data, error } = await supabase.from('clases').insert([claseJSON]).select()
 
   if (error) {
     console.error('Error creando clase:', error.message)
@@ -181,13 +180,13 @@ export async function crearClase(claseData, force = false) {
   const claseCreada = data[0]
 
   if (clase.horarios.length > 0) {
-    const horariosData = clase.horarios.map(h => ({
+    const horariosData = clase.horarios.map((h) => ({
       clase_id: claseCreada.id,
       dia: h.dia,
       hora_inicio: h.hora_inicio,
       hora_fin: h.hora_fin,
       salon_id: h.salon_id || null,
-      maestro_id: claseCreada.maestro_principal_id // Sincronizar maestro_id en clase_horarios
+      maestro_id: claseCreada.maestro_principal_id, // Sincronizar maestro_id en clase_horarios
     }))
 
     const { error: errorHorarios } = await supabase.from('clase_horarios').insert(horariosData)
@@ -197,7 +196,7 @@ export async function crearClase(claseData, force = false) {
       await supabase.from('clases').delete().eq('id', claseCreada.id)
       throw new Error('No se pudieron crear los horarios de la clase')
     }
-    
+
     return normalizeClase({ ...claseCreada, horarios: horariosData })
   }
 
@@ -207,7 +206,7 @@ export async function crearClase(claseData, force = false) {
 export async function actualizarClase(id, actualizaciones, force = false) {
   const original = await obtenerClase(id)
   const fusionada = new Clase({ ...original, ...actualizaciones })
-  
+
   // Asegurar que conservamos horarios si no se enviaron nuevos
   if (actualizaciones.horarios === undefined) {
     fusionada.horarios = original.horarios
@@ -228,11 +227,13 @@ export async function actualizarClase(id, actualizaciones, force = false) {
         dia: h.dia,
         horaInicio: h.hora_inicio,
         horaFin: h.hora_fin,
-        excludeClaseId: id
+        excludeClaseId: id,
       })
 
       if (solapamiento) {
-        const err = new Error(`Conflicto de ${solapamiento.tipo}: ${solapamiento.detalle} el ${solapamiento.horario}`)
+        const err = new Error(
+          `Conflicto de ${solapamiento.tipo}: ${solapamiento.detalle} el ${solapamiento.horario}`,
+        )
         err.isConflict = true
         err.conflictData = solapamiento
         throw err
@@ -252,10 +253,7 @@ export async function actualizarClase(id, actualizaciones, force = false) {
   }
 
   if (actualizaciones.horarios) {
-    const { error: errorDelete } = await supabase
-      .from('clase_horarios')
-      .delete()
-      .eq('clase_id', id)
+    const { error: errorDelete } = await supabase.from('clase_horarios').delete().eq('clase_id', id)
 
     if (errorDelete) {
       console.error('Error eliminando horarios anteriores:', errorDelete.message)
@@ -263,26 +261,25 @@ export async function actualizarClase(id, actualizaciones, force = false) {
     }
 
     if (actualizaciones.horarios.length > 0) {
-      const horariosData = actualizaciones.horarios.map(h => ({
+      const horariosData = actualizaciones.horarios.map((h) => ({
         clase_id: id,
         dia: h.dia,
         hora_inicio: h.hora_inicio,
         hora_fin: h.hora_fin,
         salon_id: h.salon_id || null,
-        maestro_id: fusionada.maestro_principal_id // Sincronizar maestro_id si la tabla lo tiene
+        maestro_id: fusionada.maestro_principal_id, // Sincronizar maestro_id si la tabla lo tiene
       }))
 
-      const { error: errorInsert } = await supabase
-        .from('clase_horarios')
-        .insert(horariosData)
+      const { error: errorInsert } = await supabase.from('clase_horarios').insert(horariosData)
 
       if (errorInsert) {
         console.error('Error insertando nuevos horarios:', errorInsert.message)
-        throw new Error('No se pudieron guardar los nuevos horarios de la clase: ' + errorInsert.message)
+        throw new Error(
+          'No se pudieron guardar los nuevos horarios de la clase: ' + errorInsert.message,
+        )
       }
     }
   }
-
 
   return obtenerClase(id)
 }
@@ -298,17 +295,19 @@ export async function eliminarClase(id) {
 export async function obtenerClasesPorMaestro(maestroId) {
   const { data, error } = await supabase
     .from('clases')
-    .select(`
+    .select(
+      `
       *,
       clase_horarios ( dia, hora_inicio, hora_fin, salon_id ),
       alumnos_clases ( id )
-    `)
+    `,
+    )
     .or(`maestro_principal_id.eq.${maestroId},maestro_suplente_id.eq.${maestroId}`)
     .order('nombre', { ascending: true })
 
   if (error) throw error
 
-  return (data || []).map(c => {
+  return (data || []).map((c) => {
     const clase = normalizeClase(c)
     clase.horarios = c.clase_horarios || []
     clase.total_alumnos = (c.alumnos_clases || []).length
@@ -320,14 +319,16 @@ export async function obtenerClasesPorMaestro(maestroId) {
 export async function inscribirAlumno(claseId, alumnoId, horaInicio = null, horaFin = null) {
   const { data, error } = await supabase
     .from('alumnos_clases')
-    .insert([{ 
-      clase_id: claseId, 
-      alumno_id: alumnoId, 
-      activo: true, 
-      fecha_inscripcion: new Date().toISOString().split('T')[0],
-      hora_inicio: horaInicio,
-      hora_fin: horaFin
-    }])
+    .insert([
+      {
+        clase_id: claseId,
+        alumno_id: alumnoId,
+        activo: true,
+        fecha_inscripcion: new Date().toISOString().split('T')[0],
+        hora_inicio: horaInicio,
+        hora_fin: horaFin,
+      },
+    ])
     .select()
 
   if (error) {
@@ -372,12 +373,12 @@ export async function obtenerAlumnosInscritos(claseId) {
 }
 
 export async function validarHorario(horarios, maestroId, excludeClaseId = null) {
-  const inputs = (horarios || []).filter(h => h?.dia && h?.hora_inicio && h?.hora_fin)
+  const inputs = (horarios || []).filter((h) => h?.dia && h?.hora_inicio && h?.hora_fin)
   if (inputs.length === 0) return []
 
   const conflictos = []
-  const dias = [...new Set(inputs.map(h => h.dia))]
-  
+  const dias = [...new Set(inputs.map((h) => h.dia))]
+
   const { data: todosLosHorarios, error } = await supabase
     .from('clase_horarios')
     .select('*, clases!inner(id, nombre, maestro_principal_id)')
@@ -389,7 +390,7 @@ export async function validarHorario(horarios, maestroId, excludeClaseId = null)
     const inputStartMin = timeToMinutes(input.hora_inicio)
     const inputEndMin = timeToMinutes(input.hora_fin)
 
-    for (const h of (todosLosHorarios || [])) {
+    for (const h of todosLosHorarios || []) {
       if (excludeClaseId && h.clase_id === excludeClaseId) continue
 
       const hStartMin = timeToMinutes(h.hora_inicio)
@@ -401,7 +402,7 @@ export async function validarHorario(horarios, maestroId, excludeClaseId = null)
             tipo: 'salón',
             detalle: `El salón ya está ocupado por "${h.clases?.nombre}"`,
             clase_id: h.clase_id,
-            horario: `${h.dia} de ${formatHora(h.hora_inicio)} a ${formatHora(h.hora_fin)}`
+            horario: `${h.dia} de ${formatHora(h.hora_inicio)} a ${formatHora(h.hora_fin)}`,
           })
         }
         if (maestroId && h.clases?.maestro_principal_id === maestroId) {
@@ -409,7 +410,7 @@ export async function validarHorario(horarios, maestroId, excludeClaseId = null)
             tipo: 'maestro',
             detalle: `El maestro ya tiene otra clase asignada ("${h.clases?.nombre}")`,
             clase_id: h.clase_id,
-            horario: `${h.dia} de ${formatHora(h.hora_inicio)} a ${formatHora(h.hora_fin)}`
+            horario: `${h.dia} de ${formatHora(h.hora_inicio)} a ${formatHora(h.hora_fin)}`,
           })
         }
       }
@@ -421,8 +422,8 @@ export async function validarHorario(horarios, maestroId, excludeClaseId = null)
 
 export function getConflictoLabel(tipo) {
   const labels = {
-    'salón': 'Conflicto de salón',
-    'maestro': 'Conflicto de maestro',
+    salón: 'Conflicto de salón',
+    maestro: 'Conflicto de maestro',
   }
   return labels[tipo] || tipo
 }

@@ -1,6 +1,6 @@
 export function openObjetivoModal(objetivo) {
-  const modalBody = document.getElementById('objetivoModalBody');
-  if (!modalBody) return;
+  const modalBody = document.getElementById('objetivoModalBody')
+  if (!modalBody) return
 
   modalBody.innerHTML = `
     <form id="objetivoForm" class="row g-3">
@@ -41,18 +41,20 @@ export function openObjetivoModal(objetivo) {
         </div>
       </div>
     </form>
-  `;
+  `
 
-  configurarEventosObjetivo(objetivo);
-  bootstrap.Modal.getOrCreateInstance(document.getElementById('objetivoModal')).show();
+  configurarEventosObjetivo(objetivo)
+  bootstrap.Modal.getOrCreateInstance(document.getElementById('objetivoModal')).show()
 }
 
 function renderIndicadores(indicadores) {
   if (!indicadores.length) {
-    return '<p class="text-muted">Sin indicadores definidos</p>';
+    return '<p class="text-muted">Sin indicadores definidos</p>'
   }
 
-  return indicadores.map((ind, i) => `
+  return indicadores
+    .map(
+      (ind, i) => `
     <div class="card mb-2 p-2" data-ind-id="${ind.id || 'new-' + i}">
       <div class="d-flex justify-content-between align-items-start">
         <div class="flex-grow-1">
@@ -64,42 +66,46 @@ function renderIndicadores(indicadores) {
         </button>
       </div>
     </div>
-  `).join('');
+  `,
+    )
+    .join('')
 }
 
 function configurarEventosObjetivo(objetivo) {
   document.getElementById('btnAddIndicador')?.addEventListener('click', () => {
-    openIndicadorModal(null, objetivo);
-  });
+    openIndicadorModal(null, objetivo)
+  })
 
   document.getElementById('indicadoresList')?.addEventListener('click', (e) => {
-    const btn = e.target.closest('.btn-delete-indicador');
+    const btn = e.target.closest('.btn-delete-indicador')
     if (btn) {
-      btn.closest('[data-ind-id]')?.remove();
+      btn.closest('[data-ind-id]')?.remove()
     }
-  });
+  })
 
   document.getElementById('objetivoForm')?.addEventListener('submit', (e) => {
-    e.preventDefault();
-    guardarObjetivo(objetivo);
-  });
+    e.preventDefault()
+    guardarObjetivo(objetivo)
+  })
 }
 
 function guardarObjetivo(objetivo) {
-  const codigo = document.getElementById('objCodigo').value;
-  const descripcion = document.getElementById('objDescripcion').value;
-  const tipo = document.getElementById('objTipo').value;
+  const codigo = document.getElementById('objCodigo').value
+  const descripcion = document.getElementById('objDescripcion').value
+  const tipo = document.getElementById('objTipo').value
 
-  window.dispatchEvent(new CustomEvent('showToast', {
-    detail: { message: 'Objetivo guardado correctamente', type: 'success' }
-  }));
+  window.dispatchEvent(
+    new CustomEvent('showToast', {
+      detail: { message: 'Objetivo guardado correctamente', type: 'success' },
+    }),
+  )
 
-  bootstrap.Modal.getOrCreateInstance(document.getElementById('objetivoModal')).hide();
+  bootstrap.Modal.getOrCreateInstance(document.getElementById('objetivoModal')).hide()
 }
 
 export function openIndicadorModal(indicador, objetivo) {
-  const modalBody = document.getElementById('indicadorModalBody');
-  if (!modalBody) return;
+  const modalBody = document.getElementById('indicadorModalBody')
+  if (!modalBody) return
 
   modalBody.innerHTML = `
     <form id="indicadorForm" class="row g-3">
@@ -135,33 +141,35 @@ export function openIndicadorModal(indicador, objetivo) {
         </div>
       </div>
     </form>
-  `;
+  `
 
-  configurarEventosIndicador(indicador, objetivo);
-  bootstrap.Modal.getOrCreateInstance(document.getElementById('indicadorModal')).show();
+  configurarEventosIndicador(indicador, objetivo)
+  bootstrap.Modal.getOrCreateInstance(document.getElementById('indicadorModal')).show()
 }
 
 function configurarEventosIndicador(indicador, objetivo) {
   document.getElementById('indicadorForm')?.addEventListener('submit', (e) => {
-    e.preventDefault();
-    
+    e.preventDefault()
+
     const nuevoIndicador = {
       id: indicador?.id || 'ind-' + Date.now(),
       codigo: document.getElementById('indCodigo').value,
       descripcion: document.getElementById('indDescripcion').value,
       tipo: document.getElementById('indTipo').value,
-      ponderacion: parseInt(document.getElementById('indPonderacion').value) || 0
-    };
+      ponderacion: parseInt(document.getElementById('indPonderacion').value) || 0,
+    }
 
-    const indicadoresEl = document.getElementById('indicadoresList');
-    const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = renderIndicadores([nuevoIndicador]);
-    indicadoresEl?.appendChild(tempDiv.firstElementChild);
+    const indicadoresEl = document.getElementById('indicadoresList')
+    const tempDiv = document.createElement('div')
+    tempDiv.innerHTML = renderIndicadores([nuevoIndicador])
+    indicadoresEl?.appendChild(tempDiv.firstElementChild)
 
-    window.dispatchEvent(new CustomEvent('showToast', {
-      detail: { message: 'Indicador agregado', type: 'success' }
-    }));
+    window.dispatchEvent(
+      new CustomEvent('showToast', {
+        detail: { message: 'Indicador agregado', type: 'success' },
+      }),
+    )
 
-    bootstrap.Modal.getOrCreateInstance(document.getElementById('indicadorModal')).hide();
-  });
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('indicadorModal')).hide()
+  })
 }

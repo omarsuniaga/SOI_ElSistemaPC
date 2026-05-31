@@ -3,10 +3,10 @@ import { escHTML } from '../utils/portalUtils.js'
 
 const TIPO_CFG = {
   diagnostico: { label: 'Diagnóstico', icon: '🔍', color: '#6366f1', bg: '#6366f115' },
-  logro:       { label: 'Logro',       icon: '✅', color: '#16a34a', bg: '#16a34a15' },
+  logro: { label: 'Logro', icon: '✅', color: '#16a34a', bg: '#16a34a15' },
   en_progreso: { label: 'En progreso', icon: '📈', color: '#2563eb', bg: '#2563eb15' },
-  dificultad:  { label: 'Dificultad',  icon: '⚠️', color: '#dc2626', bg: '#dc262615' },
-  objetivo:    { label: 'Objetivo',    icon: '🎯', color: '#d97706', bg: '#d9770615' },
+  dificultad: { label: 'Dificultad', icon: '⚠️', color: '#dc2626', bg: '#dc262615' },
+  objetivo: { label: 'Objetivo', icon: '🎯', color: '#d97706', bg: '#d9770615' },
 }
 
 const TIPOS_ORDEN = ['diagnostico', 'logro', 'en_progreso', 'dificultad', 'objetivo']
@@ -15,10 +15,10 @@ export class PlanEstudiosPanel {
   /** @param {{ container: HTMLElement, alumnoId: string, maestroId: string }} opts */
   constructor({ container, alumnoId, maestroId }) {
     this._container = container
-    this._alumnoId  = alumnoId
+    this._alumnoId = alumnoId
     this._maestroId = maestroId
-    this._entries   = []
-    this._formOpen  = false
+    this._entries = []
+    this._formOpen = false
   }
 
   async init() {
@@ -38,7 +38,7 @@ export class PlanEstudiosPanel {
 
   _buildHTML() {
     const hasEntries = this._entries.length > 0
-    const hasDiag    = this._entries.some(e => e.tipo === 'diagnostico')
+    const hasDiag = this._entries.some((e) => e.tipo === 'diagnostico')
 
     return `
       <div class="pe-panel">
@@ -77,14 +77,18 @@ export class PlanEstudiosPanel {
   _buildTimeline() {
     return `
       <div class="pe-timeline">
-        ${this._entries.map(e => this._buildEntry(e)).join('')}
+        ${this._entries.map((e) => this._buildEntry(e)).join('')}
       </div>
     `
   }
 
   _buildEntry(e) {
-    const cfg  = TIPO_CFG[e.tipo] || TIPO_CFG.logro
-    const date = new Date(e.created_at).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' })
+    const cfg = TIPO_CFG[e.tipo] || TIPO_CFG.logro
+    const date = new Date(e.created_at).toLocaleDateString('es-ES', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    })
     return `
       <div class="pe-entry" data-testid="pe-entry" data-id="${e.id}">
         <div class="pe-entry__dot" style="background:${cfg.color}"></div>
@@ -118,9 +122,11 @@ export class PlanEstudiosPanel {
 
           <label class="pe-label">Tipo</label>
           <select class="pe-select" id="pe-tipo">
-            ${TIPOS_ORDEN.map(t => `
+            ${TIPOS_ORDEN.map(
+              (t) => `
               <option value="${t}" ${t === defaultTipo ? 'selected' : ''}>${TIPO_CFG[t].icon} ${TIPO_CFG[t].label}</option>
-            `).join('')}
+            `,
+            ).join('')}
           </select>
 
           <label class="pe-label">Título <span style="color:var(--pm-danger)">*</span></label>
@@ -209,14 +215,14 @@ export class PlanEstudiosPanel {
   }
 
   _attachEvents() {
-    this._container.querySelectorAll('[data-action]').forEach(el => {
-      el.addEventListener('click', e => {
+    this._container.querySelectorAll('[data-action]').forEach((el) => {
+      el.addEventListener('click', (e) => {
         e.stopPropagation()
         const action = el.dataset.action
-        if (action === 'open-form')  this._openForm()
+        if (action === 'open-form') this._openForm()
         if (action === 'close-form') this._closeForm()
         if (action === 'save-entry') this._handleSave()
-        if (action === 'delete')     this.deleteEntry(el.dataset.id)
+        if (action === 'delete') this.deleteEntry(el.dataset.id)
       })
     })
   }
@@ -233,10 +239,10 @@ export class PlanEstudiosPanel {
   }
 
   async _handleSave() {
-    const tipo        = this._container.querySelector('#pe-tipo')?.value
-    const titulo      = this._container.querySelector('#pe-titulo')?.value?.trim()
+    const tipo = this._container.querySelector('#pe-tipo')?.value
+    const titulo = this._container.querySelector('#pe-titulo')?.value?.trim()
     const descripcion = this._container.querySelector('#pe-descripcion')?.value?.trim()
-    const nivel       = this._container.querySelector('#pe-nivel')?.value
+    const nivel = this._container.querySelector('#pe-nivel')?.value
 
     if (!titulo) {
       this._container.querySelector('#pe-titulo')?.focus()
@@ -244,14 +250,25 @@ export class PlanEstudiosPanel {
     }
 
     const saveBtn = this._container.querySelector('#pe-save-btn')
-    if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = 'Guardando...' }
+    if (saveBtn) {
+      saveBtn.disabled = true
+      saveBtn.textContent = 'Guardando...'
+    }
 
     try {
-      await this.addEntry({ tipo, titulo, descripcion: descripcion || null, nivel_referencia: nivel || null })
+      await this.addEntry({
+        tipo,
+        titulo,
+        descripcion: descripcion || null,
+        nivel_referencia: nivel || null,
+      })
       this._formOpen = false
     } catch (err) {
       console.error('[PlanEstudiosPanel] save error:', err)
-      if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = 'Guardar' }
+      if (saveBtn) {
+        saveBtn.disabled = false
+        saveBtn.textContent = 'Guardar'
+      }
     }
   }
 
@@ -261,11 +278,11 @@ export class PlanEstudiosPanel {
    */
   async addEntry(entry) {
     const saved = await insertPlanEntrada({
-      alumno_id:        this._alumnoId,
-      maestro_id:       this._maestroId,
-      tipo:             entry.tipo,
-      titulo:           entry.titulo,
-      descripcion:      entry.descripcion || null,
+      alumno_id: this._alumnoId,
+      maestro_id: this._maestroId,
+      tipo: entry.tipo,
+      titulo: entry.titulo,
+      descripcion: entry.descripcion || null,
       nivel_referencia: entry.nivel_referencia || null,
     })
     this._entries = [saved, ...this._entries]
@@ -277,7 +294,7 @@ export class PlanEstudiosPanel {
    * @param {string} id
    */
   async deleteEntry(id) {
-    this._entries = this._entries.filter(e => e.id !== id)
+    this._entries = this._entries.filter((e) => e.id !== id)
     this._render()
     await deletePlanEntrada(id)
   }

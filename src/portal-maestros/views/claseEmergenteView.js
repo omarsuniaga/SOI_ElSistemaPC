@@ -1,17 +1,17 @@
-import { supabase } from '../../lib/supabaseClient.js';
-import { enqueue } from '../services/offlineQueue.js';
-import { createAlumnoPickerModal } from '../components/AlumnoPickerModal.js';
+import { supabase } from '../../lib/supabaseClient.js'
+import { enqueue } from '../services/offlineQueue.js'
+import { createAlumnoPickerModal } from '../components/AlumnoPickerModal.js'
 
 /**
  * Vista: ClaseEmergente
  * Permite crear una sesión de clase no planificada (emergente).
- * 
- * @param {HTMLElement} container 
+ *
+ * @param {HTMLElement} container
  * @param {{ maestroId: string }} options
  */
 export async function renderClaseEmergenteView(container, { maestroId }) {
-  const urlParams = new URLSearchParams(window.location.hash.split('?')[1] || '');
-  const fechaDefault = urlParams.get('fecha') || new Date().toISOString().split('T')[0];
+  const urlParams = new URLSearchParams(window.location.hash.split('?')[1] || '')
+  const fechaDefault = urlParams.get('fecha') || new Date().toISOString().split('T')[0]
 
   container.innerHTML = `
     <div style="padding-bottom: 2rem;">
@@ -56,32 +56,34 @@ export async function renderClaseEmergenteView(container, { maestroId }) {
         <button class="pm-btn pm-btn-primary" id="btn-eme-guardar">Guardar y Continuar a Asistencia</button>
       </div>
     </div>
-  `;
+  `
 
-  let selectedAlumnos = [];
-  const chipsContainer = container.querySelector('#eme-alumnos-chips');
+  let selectedAlumnos = []
+  const chipsContainer = container.querySelector('#eme-alumnos-chips')
 
   // 1. Obtener todos los alumnos del maestro para el picker
-  let todosMisAlumnos = [];
+  let todosMisAlumnos = []
   try {
     const { data } = await supabase
       .from('alumnos_clases')
       .select('alumno:alumnos(id, nombre_completo)')
-      .eq('activo', true); // En real filtraríamos por maestro si hay tabla de relación
-    
-    todosMisAlumnos = (data || []).map(d => d.alumno).filter(Boolean);
-  } catch (err) { console.error(err); }
+      .eq('activo', true) // En real filtraríamos por maestro si hay tabla de relación
+
+    todosMisAlumnos = (data || []).map((d) => d.alumno).filter(Boolean)
+  } catch (err) {
+    console.error(err)
+  }
 
   const picker = createAlumnoPickerModal(container, {
     alumnos: todosMisAlumnos,
     onSelect: (menciones) => {
       // Extraer IDs de los alumnos seleccionados (simplificado para el demo)
       // En un picker real usaríamos el evento de cambio
-      alert('Alumnos seleccionados correctamente');
-    }
-  });
+      alert('Alumnos seleccionados correctamente')
+    },
+  })
 
-  container.querySelector('#btn-eme-pick-alumnos').onclick = () => picker.open();
+  container.querySelector('#btn-eme-pick-alumnos').onclick = () => picker.open()
 
   container.querySelector('#btn-eme-guardar').onclick = async () => {
     const payload = {
@@ -90,21 +92,21 @@ export async function renderClaseEmergenteView(container, { maestroId }) {
       motivo: container.querySelector('#eme-motivo').value,
       nombre_clase: container.querySelector('#eme-nombre').value,
       contenido: container.querySelector('#eme-contenido').value,
-      created_at: new Date().toISOString()
-    };
+      created_at: new Date().toISOString(),
+    }
 
     if (!payload.nombre_clase) {
-      alert('Por favor ingresa un nombre para la clase.');
-      return;
+      alert('Por favor ingresa un nombre para la clase.')
+      return
     }
 
     await enqueue({
       tabla: 'clases_emergentes',
       operacion: 'insert',
-      payload
-    });
+      payload,
+    })
 
-    alert('Clase emergente registrada. Redirigiendo...');
-    window.location.hash = '#/hoy';
-  };
+    alert('Clase emergente registrada. Redirigiendo...')
+    window.location.hash = '#/hoy'
+  }
 }

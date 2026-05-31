@@ -29,7 +29,11 @@ export function mountPreloadSearch(container) {
     // Si el draft ya tiene _postulante_id (viene desde la vista de postulados),
     // auto-saltar la búsqueda — los datos ya están cargados en el draft.
     const existingDraft = (() => {
-      try { return JSON.parse(localStorage.getItem('wizard-inscripcion-draft') || 'null') } catch { return null }
+      try {
+        return JSON.parse(localStorage.getItem('wizard-inscripcion-draft') || 'null')
+      } catch {
+        return null
+      }
     })()
     if (existingDraft?._postulante_id) {
       resolve(null) // null = usar el draft ya guardado, no sobreescribir

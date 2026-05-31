@@ -99,14 +99,14 @@ function escapeHTML(text) {
 function getEls() {
   return {
     backdrop: document.getElementById(BACKDROP_ID),
-    modal:    document.getElementById(MODAL_ID),
-    dialog:   document.querySelector(`#${MODAL_ID} .app-modal-dialog`),
-    title:    document.querySelector(`#${MODAL_ID} .app-modal-title`),
-    body:     document.querySelector(`#${MODAL_ID} .app-modal-body`),
-    closeX:   document.querySelector(`#${MODAL_ID} .app-modal-close-x`),
-    btnCancel:document.querySelector(`#${MODAL_ID} .app-modal-btn-cancel`),
-    btnSave:  document.querySelector(`#${MODAL_ID} .app-modal-btn-save`),
-    btnDelete:document.querySelector(`#${MODAL_ID} .app-modal-btn-delete`),
+    modal: document.getElementById(MODAL_ID),
+    dialog: document.querySelector(`#${MODAL_ID} .app-modal-dialog`),
+    title: document.querySelector(`#${MODAL_ID} .app-modal-title`),
+    body: document.querySelector(`#${MODAL_ID} .app-modal-body`),
+    closeX: document.querySelector(`#${MODAL_ID} .app-modal-close-x`),
+    btnCancel: document.querySelector(`#${MODAL_ID} .app-modal-btn-cancel`),
+    btnSave: document.querySelector(`#${MODAL_ID} .app-modal-btn-save`),
+    btnDelete: document.querySelector(`#${MODAL_ID} .app-modal-btn-delete`),
     saveText: document.querySelector(`#${MODAL_ID} .app-modal-save-text`),
   }
 }
@@ -119,7 +119,20 @@ export const AppModal = {
   _cancelHandler: null,
   _keydownHandler: null,
 
-  open({ title = '', body = '', saveText = 'Guardar', cancelText = 'Cancelar', deleteText = 'Eliminar', onSave = null, onCancel = null, onDelete = null, onShow = null, onOpen = null, size = 'md', hideSave = false } = {}) {
+  open({
+    title = '',
+    body = '',
+    saveText = 'Guardar',
+    cancelText = 'Cancelar',
+    deleteText = 'Eliminar',
+    onSave = null,
+    onCancel = null,
+    onDelete = null,
+    onShow = null,
+    onOpen = null,
+    size = 'md',
+    hideSave = false,
+  } = {}) {
     ensureDOM()
     const els = getEls()
 
@@ -149,7 +162,7 @@ export const AppModal = {
     this.resetSaveBtn(saveText)
     els.btnCancel.textContent = cancelText
     els.btnSave.style.display = hideSave ? 'none' : ''
-    
+
     // Delete btn logic
     if (onDelete) {
       els.btnDelete.textContent = deleteText
@@ -180,18 +193,18 @@ export const AppModal = {
         const original = btn.innerHTML
         btn.disabled = true
         btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status"></span>'
-      try {
-        const result = await onSave(els.body)
-        if (result !== false) {
-          this.close()
-        } else {
+        try {
+          const result = await onSave(els.body)
+          if (result !== false) {
+            this.close()
+          } else {
+            btn.disabled = false
+            btn.innerHTML = original
+          }
+        } catch (err) {
           btn.disabled = false
           btn.innerHTML = original
         }
-      } catch (err) {
-        btn.disabled = false
-        btn.innerHTML = original
-      }
       } else {
         this.close()
       }
@@ -204,12 +217,18 @@ export const AppModal = {
 
     this._deleteHandler = async () => {
       if (!onDelete) return
-      if (!confirm('¿Estás seguro de que querés eliminar este elemento? Esta acción no se puede deshacer.')) return
-      
+      if (
+        !confirm(
+          '¿Estás seguro de que querés eliminar este elemento? Esta acción no se puede deshacer.',
+        )
+      )
+        return
+
       const original = els.btnDelete.innerHTML
       els.btnDelete.disabled = true
-      els.btnDelete.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span>'
-      
+      els.btnDelete.innerHTML =
+        '<span class="spinner-border spinner-border-sm" role="status"></span>'
+
       try {
         const result = await onDelete()
         if (result !== false) this.close()
@@ -229,8 +248,14 @@ export const AppModal = {
     els.btnDelete.addEventListener('click', this._deleteHandler)
 
     // Close-X hover style
-    els.closeX.onmouseenter = () => { els.closeX.style.background = 'var(--bs-secondary-bg)'; els.closeX.style.color = 'var(--bs-body-color)' }
-    els.closeX.onmouseleave = () => { els.closeX.style.background = 'none'; els.closeX.style.color = 'var(--bs-secondary-color)' }
+    els.closeX.onmouseenter = () => {
+      els.closeX.style.background = 'var(--bs-secondary-bg)'
+      els.closeX.style.color = 'var(--bs-body-color)'
+    }
+    els.closeX.onmouseleave = () => {
+      els.closeX.style.background = 'none'
+      els.closeX.style.color = 'var(--bs-secondary-color)'
+    }
 
     // Show
     els.backdrop.style.display = 'block'
@@ -285,7 +310,10 @@ export const AppModal = {
   // Reset save button after error (call from onSave catch if you handle errors yourself)
   resetSaveBtn(text = 'Guardar') {
     const btn = document.querySelector(`#${MODAL_ID} .app-modal-btn-save`)
-    if (btn) { btn.disabled = false; btn.innerHTML = `<span class="app-modal-save-text">${text}</span>` }
+    if (btn) {
+      btn.disabled = false
+      btn.innerHTML = `<span class="app-modal-save-text">${text}</span>`
+    }
   },
 
   setSaveHandler(newOnSave, newText = null) {
@@ -343,5 +371,5 @@ export const AppModal = {
     if (!els.btnSave) return
     els.btnSave.style.display = ''
     els.btnCancel.style.display = ''
-  }
+  },
 }

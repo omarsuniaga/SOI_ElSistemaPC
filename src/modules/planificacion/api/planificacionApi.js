@@ -7,7 +7,7 @@ import { Planificacion } from '../models/planificacion.model.js'
 
 export async function obtenerPlanificaciones(maestroId = null) {
   let query = supabase.from('planificaciones').select('*')
-  
+
   if (maestroId) {
     query = query.eq('maestro_id', maestroId)
   }
@@ -15,15 +15,11 @@ export async function obtenerPlanificaciones(maestroId = null) {
   const { data, error } = await query.order('created_at', { ascending: false })
 
   if (error) throw error
-  return (data || []).map(p => new Planificacion(p))
+  return (data || []).map((p) => new Planificacion(p))
 }
 
 export async function obtenerPlanificacion(id) {
-  const { data, error } = await supabase
-    .from('planificaciones')
-    .select('*')
-    .eq('id', id)
-    .single()
+  const { data, error } = await supabase.from('planificaciones').select('*').eq('id', id).single()
 
   if (error) throw error
   return new Planificacion(data)
@@ -38,7 +34,7 @@ export async function obtenerPlanificacionesConDetalles(maestroId = null) {
     clase:clases (nombre),
     maestro:maestros (nombre_completo)
   `)
-  
+
   if (maestroId) {
     query = query.eq('maestro_id', maestroId)
   }
@@ -50,11 +46,14 @@ export async function obtenerPlanificacionesConDetalles(maestroId = null) {
     throw new Error('No se pudieron cargar las planificaciones')
   }
 
-  return data.map(p => new Planificacion({
-    ...p,
-    clase_nombre: p.clase?.nombre || 'Sin asignar',
-    maestro_nombre: p.maestro?.nombre_completo || 'Sin asignar'
-  }))
+  return data.map(
+    (p) =>
+      new Planificacion({
+        ...p,
+        clase_nombre: p.clase?.nombre || 'Sin asignar',
+        maestro_nombre: p.maestro?.nombre_completo || 'Sin asignar',
+      }),
+  )
 }
 
 export async function crearPlanificacion(planData) {
@@ -62,10 +61,7 @@ export async function crearPlanificacion(planData) {
   const errores = model.validate()
   if (errores.length > 0) throw new Error(errores.join('. '))
 
-  const { data, error } = await supabase
-    .from('planificaciones')
-    .insert([model.toJSON()])
-    .select()
+  const { data, error } = await supabase.from('planificaciones').insert([model.toJSON()]).select()
 
   if (error) throw error
   return new Planificacion(data[0])
@@ -73,9 +69,13 @@ export async function crearPlanificacion(planData) {
 
 export async function actualizarPlanificacion(id, actualizaciones) {
   // Para actualización parcial, primero obtenemos el original
-  const { data: original } = await supabase.from('planificaciones').select('*').eq('id', id).single()
+  const { data: original } = await supabase
+    .from('planificaciones')
+    .select('*')
+    .eq('id', id)
+    .single()
   const model = new Planificacion({ ...original, ...actualizaciones })
-  
+
   const errores = model.validate()
   if (errores.length > 0) throw new Error(errores.join('. '))
 
@@ -90,10 +90,7 @@ export async function actualizarPlanificacion(id, actualizaciones) {
 }
 
 export async function eliminarPlanificacion(id) {
-  const { error } = await supabase
-    .from('planificaciones')
-    .delete()
-    .eq('id', id)
+  const { error } = await supabase.from('planificaciones').delete().eq('id', id)
 
   if (error) throw error
 }
@@ -108,7 +105,7 @@ export async function marcarRevisadasMasivo(ids) {
     .select()
 
   if (error) throw error
-  return (data || []).map(p => new Planificacion(p))
+  return (data || []).map((p) => new Planificacion(p))
 }
 
 export async function marcarRevisada(id) {

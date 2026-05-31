@@ -36,16 +36,16 @@ describe('Rutas de Contenido Integration', () => {
             descripcion: 'Conocer partes de la guitarra',
             semana_inicio: 1,
             semana_fin: 2,
-            orden: 1
+            orden: 1,
           },
           {
             descripcion: 'Posición inicial y postura',
             semana_inicio: 3,
             semana_fin: 4,
-            orden: 2
-          }
+            orden: 2,
+          },
         ],
-        creada_por: adminId
+        creada_por: adminId,
       }
 
       const ruta = new Ruta(rutaData)
@@ -75,13 +75,13 @@ describe('Rutas de Contenido Integration', () => {
             descripcion: 'Objetivo 1',
             semana_inicio: 1,
             semana_fin: 2,
-            orden: 1
-          }
-        ]
+            orden: 1,
+          },
+        ],
       })
 
       const errors = invalidRuta.validate()
-      expect(errors.some(e => e.includes('ruta_base_id'))).toBe(false) // Model doesn't enforce this strict rule
+      expect(errors.some((e) => e.includes('ruta_base_id'))).toBe(false) // Model doesn't enforce this strict rule
     })
 
     it('Step 3: Teacher selects SOI route for class', () => {
@@ -102,7 +102,7 @@ describe('Rutas de Contenido Integration', () => {
             descripcion: 'Conocer partes de la guitarra',
             semana_inicio: 1,
             semana_fin: 2,
-            orden: 1
+            orden: 1,
           },
           {
             id: 'obj-2',
@@ -110,9 +110,9 @@ describe('Rutas de Contenido Integration', () => {
             descripcion: 'Posición inicial y postura',
             semana_inicio: 3,
             semana_fin: 4,
-            orden: 2
-          }
-        ]
+            orden: 2,
+          },
+        ],
       }
 
       // Route should be available for selection
@@ -131,24 +131,24 @@ describe('Rutas de Contenido Integration', () => {
           id: 'ruta-obj-1',
           objetivo_id: 'curriculum-obj-1',
           descripcion: 'Conocer partes de la guitarra',
-          pilar_nombre: null // Routes don't have pilar association
+          pilar_nombre: null, // Routes don't have pilar association
         },
         {
           id: 'ruta-obj-2',
           objetivo_id: 'curriculum-obj-2',
           descripcion: 'Posición inicial y postura',
-          pilar_nombre: null
-        }
+          pilar_nombre: null,
+        },
       ]
 
       const estudiantes = [
         { id: 'alumno-1', nombre: 'Juan' },
-        { id: 'alumno-2', nombre: 'María' }
+        { id: 'alumno-2', nombre: 'María' },
       ]
 
       const coverageState = []
-      estudiantes.forEach(alumno => {
-        rutaObjetivos.forEach(obj => {
+      estudiantes.forEach((alumno) => {
+        rutaObjetivos.forEach((obj) => {
           coverageState.push({
             alumno_id: alumno.id,
             alumno_nombre: alumno.nombre,
@@ -157,14 +157,14 @@ describe('Rutas de Contenido Integration', () => {
             pilar_nombre: obj.pilar_nombre,
             nivel: 'en_proceso',
             checked: false,
-            ai_suggested: false
+            ai_suggested: false,
           })
         })
       })
 
       expect(coverageState).toHaveLength(4) // 2 students × 2 objectives
       expect(coverageState[0].objetivo_id).toBe('curriculum-obj-1')
-      expect(coverageState.every(c => c.objetivo_id.startsWith('curriculum-obj'))).toBe(true)
+      expect(coverageState.every((c) => c.objetivo_id.startsWith('curriculum-obj'))).toBe(true)
     })
 
     it('Step 5: Teacher proposes variant of SOI route', () => {
@@ -182,22 +182,22 @@ describe('Rutas de Contenido Integration', () => {
             descripcion: 'Conocer partes de la guitarra',
             semana_inicio: 1,
             semana_fin: 1, // Reduced duration
-            orden: 1
+            orden: 1,
           },
           {
             descripcion: 'Posición inicial y postura',
             semana_inicio: 2,
             semana_fin: 2, // Reduced duration
-            orden: 2
+            orden: 2,
           },
           {
             descripcion: 'Acordes básicos mayores',
             semana_inicio: 3,
             semana_fin: 4,
-            orden: 3
-          }
+            orden: 3,
+          },
         ],
-        creada_por: maestroId
+        creada_por: maestroId,
       }
 
       const variante = new Ruta(varianteData)
@@ -231,9 +231,9 @@ describe('Rutas de Contenido Integration', () => {
         objetivos: [
           { descripcion: 'Conocer partes...' },
           { descripcion: 'Posición inicial...' },
-          { descripcion: 'Acordes básicos mayores' }
+          { descripcion: 'Acordes básicos mayores' },
         ],
-        created_at: new Date().toISOString()
+        created_at: new Date().toISOString(),
       }
 
       expect(pendingVariante.estado).toBe('pendiente')
@@ -247,7 +247,7 @@ describe('Rutas de Contenido Integration', () => {
         tipo: 'maestro-variante',
         estado: 'aprobada', // Changed from 'pendiente'
         aprobada_por: adminId,
-        fecha_aprobacion: new Date().toISOString()
+        fecha_aprobacion: new Date().toISOString(),
       }
 
       expect(varianteAprobada.estado).toBe('aprobada')
@@ -262,14 +262,14 @@ describe('Rutas de Contenido Integration', () => {
           id: rutaId,
           nombre: 'Guitarra Nivel 1 - SOI Estándar',
           tipo: 'soi-estandar',
-          estado: 'activa'
+          estado: 'activa',
         },
         {
           id: varianteId,
           nombre: 'Variante Acelerada - Grupo Avanzado',
           tipo: 'maestro-variante',
-          estado: 'aprobada' // Now approved
-        }
+          estado: 'aprobada', // Now approved
+        },
       ]
 
       expect(availableRoutes).toHaveLength(2)
@@ -285,7 +285,7 @@ describe('Rutas de Contenido Integration', () => {
         estado: 'rechazada', // Changed from 'pendiente'
         aprobada_por: adminId,
         fecha_aprobacion: new Date().toISOString(),
-        descripcion: 'No es compatible con el programa actual: requiere recursos no disponibles'
+        descripcion: 'No es compatible con el programa actual: requiere recursos no disponibles',
       }
 
       expect(varianteRechazada.estado).toBe('rechazada')
@@ -305,17 +305,17 @@ describe('Rutas de Contenido Integration', () => {
             nombre: 'Juan',
             cobertura: [
               { confirmado: true }, // Objetivo 1
-              { confirmado: false } // Objetivo 2
-            ]
+              { confirmado: false }, // Objetivo 2
+            ],
           },
           {
             nombre: 'María',
             cobertura: [
               { confirmado: true }, // Objetivo 1
-              { confirmado: false } // Objetivo 2
-            ]
-          }
-        ]
+              { confirmado: false }, // Objetivo 2
+            ],
+          },
+        ],
       }
 
       expect(progreso.semana_actual).toBe(5)
@@ -330,9 +330,9 @@ describe('Rutas de Contenido Integration', () => {
       const ruta = new Ruta({})
       const errors = ruta.validate()
       expect(errors.length).toBeGreaterThan(0)
-      expect(errors.some(e => e.toLowerCase().includes('instrumento'))).toBe(true)
-      expect(errors.some(e => e.toLowerCase().includes('nivel'))).toBe(true)
-      expect(errors.some(e => e.toLowerCase().includes('nombre'))).toBe(true)
+      expect(errors.some((e) => e.toLowerCase().includes('instrumento'))).toBe(true)
+      expect(errors.some((e) => e.toLowerCase().includes('nivel'))).toBe(true)
+      expect(errors.some((e) => e.toLowerCase().includes('nombre'))).toBe(true)
     })
 
     it('Validates objective count', () => {
@@ -343,11 +343,11 @@ describe('Rutas de Contenido Integration', () => {
         tipo: 'soi-estandar',
         estado: 'activa',
         duracion_semanas: 40,
-        objetivos: [] // No objectives
+        objetivos: [], // No objectives
       })
 
       const errors = ruta.validate()
-      expect(errors.some(e => e.includes('objetivo'))).toBe(true)
+      expect(errors.some((e) => e.includes('objetivo'))).toBe(true)
     })
 
     it('Validates duration range', () => {
@@ -359,13 +359,15 @@ describe('Rutas de Contenido Integration', () => {
         tipo: 'soi-estandar',
         estado: 'activa',
         duracion_semanas: 60, // Invalid: > 52
-        objetivos: [
-          { descripcion: 'Objetivo', semana_inicio: 1, semana_fin: 2, orden: 1 }
-        ]
+        objetivos: [{ descripcion: 'Objetivo', semana_inicio: 1, semana_fin: 2, orden: 1 }],
       })
 
       const errors = ruta.validate()
-      expect(errors.some(e => e.toLowerCase().includes('duración') || e.toLowerCase().includes('duracion'))).toBe(true)
+      expect(
+        errors.some(
+          (e) => e.toLowerCase().includes('duración') || e.toLowerCase().includes('duracion'),
+        ),
+      ).toBe(true)
     })
 
     it('Validates objective week ranges', () => {
@@ -381,13 +383,13 @@ describe('Rutas de Contenido Integration', () => {
             descripcion: 'Objetivo',
             semana_inicio: 0, // Invalid: must be > 0
             semana_fin: 2,
-            orden: 1
-          }
-        ]
+            orden: 1,
+          },
+        ],
       })
 
       const errors = ruta.validate()
-      expect(errors.some(e => e.includes('semana'))).toBe(true)
+      expect(errors.some((e) => e.includes('semana'))).toBe(true)
     })
 
     it('Returns no errors for valid SOI route', () => {
@@ -400,8 +402,8 @@ describe('Rutas de Contenido Integration', () => {
         duracion_semanas: 40,
         objetivos: [
           { descripcion: 'Objetivo 1', semana_inicio: 1, semana_fin: 5, orden: 1 },
-          { descripcion: 'Objetivo 2', semana_inicio: 6, semana_fin: 10, orden: 2 }
-        ]
+          { descripcion: 'Objetivo 2', semana_inicio: 6, semana_fin: 10, orden: 2 },
+        ],
       })
 
       const errors = ruta.validate()
@@ -419,8 +421,8 @@ describe('Rutas de Contenido Integration', () => {
         ruta_base_id: 'base-ruta-id',
         objetivos: [
           { descripcion: 'Objetivo 1', semana_inicio: 1, semana_fin: 4, orden: 1 },
-          { descripcion: 'Objetivo 2', semana_inicio: 5, semana_fin: 8, orden: 2 }
-        ]
+          { descripcion: 'Objetivo 2', semana_inicio: 5, semana_fin: 8, orden: 2 },
+        ],
       })
 
       const errors = ruta.validate()

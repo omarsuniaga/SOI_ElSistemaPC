@@ -54,7 +54,11 @@ export function validateLessonPlan(data) {
   } else if (data.activities.length > 2000) {
     errors.push('activities must be less than 2000 characters')
   }
-  if (typeof data.duration_minutes !== 'number' || data.duration_minutes < 1 || data.duration_minutes > 240) {
+  if (
+    typeof data.duration_minutes !== 'number' ||
+    data.duration_minutes < 1 ||
+    data.duration_minutes > 240
+  ) {
     errors.push('duration_minutes must be between 1 and 240')
   }
   return { valid: errors.length === 0, errors }
@@ -81,9 +85,9 @@ export function validateStudent(data) {
 export function validateEvaluation(data) {
   const errors = []
   if (!data.student_id || !isValidUUID(data.student_id)) errors.push('student_id is required')
-  if (!data.route_id   || !isValidUUID(data.route_id))   errors.push('route_id is required')
-  if (!data.period     || typeof data.period !== 'string') errors.push('period is required')
-  if (!data.criteria   || typeof data.criteria !== 'object') errors.push('criteria is required')
+  if (!data.route_id || !isValidUUID(data.route_id)) errors.push('route_id is required')
+  if (!data.period || typeof data.period !== 'string') errors.push('period is required')
+  if (!data.criteria || typeof data.criteria !== 'object') errors.push('criteria is required')
   return { valid: errors.length === 0, errors }
 }
 
@@ -92,8 +96,11 @@ export function validateEvaluation(data) {
  */
 export function sanitizeInput(input, _options = {}) {
   if (!input) return ''
-  return String(input)
-    .replace(/[&<>"'/]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;', '/': '&#x2F;' }[ch]))
+  return String(input).replace(
+    /[&<>"'/]/g,
+    (ch) =>
+      ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;', '/': '&#x2F;' })[ch],
+  )
 }
 
 export function validate(validator, data) {
@@ -107,4 +114,11 @@ export function validate(validator, data) {
   return true
 }
 
-export default { validateObservation, validateLessonPlan, validateStudent, validateEvaluation, sanitizeInput, validate }
+export default {
+  validateObservation,
+  validateLessonPlan,
+  validateStudent,
+  validateEvaluation,
+  sanitizeInput,
+  validate,
+}

@@ -18,7 +18,9 @@ export function analyticsFillingBehaviorWidget(containerId) {
             </tr>
           </thead>
           <tbody>
-            ${metrics.map(m => `
+            ${metrics
+              .map(
+                (m) => `
               <tr>
                 <td><strong>${m.maestro_nombre}</strong></td>
                 <td><span class="badge bg-secondary bg-opacity-10 text-secondary px-2 py-1">${m.total_clases || 0}</span></td>
@@ -30,7 +32,9 @@ export function analyticsFillingBehaviorWidget(containerId) {
                   </span>
                 </td>
               </tr>
-            `).join('')}
+            `,
+              )
+              .join('')}
           </tbody>
         </table>
       </div>
@@ -39,20 +43,21 @@ export function analyticsFillingBehaviorWidget(containerId) {
 
   function calculateStats(data) {
     const total = data.length
-    const asistenciaPrimero = data.filter(m => m.orden_asistencia_primero === 1).length
-    const observacionesPrimero = data.filter(m => m.orden_observaciones_primero === 1).length
-    const simultaneo = data.filter(m => m.orden_simultaneo === 1).length
+    const asistenciaPrimero = data.filter((m) => m.orden_asistencia_primero === 1).length
+    const observacionesPrimero = data.filter((m) => m.orden_observaciones_primero === 1).length
+    const simultaneo = data.filter((m) => m.orden_simultaneo === 1).length
 
-    const avgAiUsage = data.length > 0
-      ? (data.reduce((sum, m) => sum + (m.uso_ai_fill_percent || 0), 0) / data.length).toFixed(1)
-      : 0
+    const avgAiUsage =
+      data.length > 0
+        ? (data.reduce((sum, m) => sum + (m.uso_ai_fill_percent || 0), 0) / data.length).toFixed(1)
+        : 0
 
     return {
       asistenciaPrimero: total > 0 ? ((asistenciaPrimero / total) * 100).toFixed(1) : 0,
       observacionesPrimero: total > 0 ? ((observacionesPrimero / total) * 100).toFixed(1) : 0,
       simultaneo: total > 0 ? ((simultaneo / total) * 100).toFixed(1) : 0,
       avgAiUsage,
-      total
+      total,
     }
   }
 
@@ -131,6 +136,6 @@ export function analyticsFillingBehaviorWidget(containerId) {
       `
 
       container.innerHTML = html
-    }
+    },
   }
 }

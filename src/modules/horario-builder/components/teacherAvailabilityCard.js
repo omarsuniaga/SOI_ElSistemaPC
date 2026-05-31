@@ -6,50 +6,52 @@
 export function createTeacherAvailabilityCardList({
   teachers = [],
   selectedTeacherId = 'all',
-  onSelectTeacher = null
+  onSelectTeacher = null,
 }) {
-  const teacherCardsHtml = teachers.map(teacher => {
-    // Calculate total availability hours
-    let totalMins = 0;
-    if (teacher.disponibilidad) {
-      Object.keys(teacher.disponibilidad).forEach(day => {
-        const slots = teacher.disponibilidad[day] || [];
-        slots.forEach(s => {
-          const [sh, sm] = s.inicio.split(':').map(Number);
-          const [eh, em] = s.fin.split(':').map(Number);
-          totalMins += (eh * 60 + em) - (sh * 60 + sm);
-        });
-      });
-    }
-
-    const totalHours = Math.round((totalMins / 60) * 10) / 10;
-    let statusClass = 'nula';
-    let statusText = 'Sin Registro';
-    let statusBadgeColor = 'bg-danger text-white';
-
-    if (totalHours > 0) {
-      if (totalHours < 10) {
-        statusClass = 'low';
-        statusText = `${totalHours} hrs (Baja)`;
-        statusBadgeColor = 'bg-warning text-dark';
-      } else if (totalHours < 25) {
-        statusClass = 'medium';
-        statusText = `${totalHours} hrs (Media)`;
-        statusBadgeColor = 'bg-info text-dark';
-      } else {
-        statusClass = 'high';
-        statusText = `${totalHours} hrs (Alta)`;
-        statusBadgeColor = 'bg-success text-white';
+  const teacherCardsHtml = teachers
+    .map((teacher) => {
+      // Calculate total availability hours
+      let totalMins = 0
+      if (teacher.disponibilidad) {
+        Object.keys(teacher.disponibilidad).forEach((day) => {
+          const slots = teacher.disponibilidad[day] || []
+          slots.forEach((s) => {
+            const [sh, sm] = s.inicio.split(':').map(Number)
+            const [eh, em] = s.fin.split(':').map(Number)
+            totalMins += eh * 60 + em - (sh * 60 + sm)
+          })
+        })
       }
-    }
 
-    const isSelected = selectedTeacherId === teacher.id;
-    const initial = teacher.nombre ? teacher.nombre.charAt(0) : '?';
-    const skillsList = teacher.habilidades && teacher.habilidades.length > 0 
-      ? teacher.habilidades.slice(0, 3).join(', ')
-      : teacher.especialidad || 'Música';
+      const totalHours = Math.round((totalMins / 60) * 10) / 10
+      let statusClass = 'nula'
+      let statusText = 'Sin Registro'
+      let statusBadgeColor = 'bg-danger text-white'
 
-    return `
+      if (totalHours > 0) {
+        if (totalHours < 10) {
+          statusClass = 'low'
+          statusText = `${totalHours} hrs (Baja)`
+          statusBadgeColor = 'bg-warning text-dark'
+        } else if (totalHours < 25) {
+          statusClass = 'medium'
+          statusText = `${totalHours} hrs (Media)`
+          statusBadgeColor = 'bg-info text-dark'
+        } else {
+          statusClass = 'high'
+          statusText = `${totalHours} hrs (Alta)`
+          statusBadgeColor = 'bg-success text-white'
+        }
+      }
+
+      const isSelected = selectedTeacherId === teacher.id
+      const initial = teacher.nombre ? teacher.nombre.charAt(0) : '?'
+      const skillsList =
+        teacher.habilidades && teacher.habilidades.length > 0
+          ? teacher.habilidades.slice(0, 3).join(', ')
+          : teacher.especialidad || 'Música'
+
+      return `
       <div class="hb-teacher-badge card-action ${isSelected ? 'border-primary bg-primary-subtle' : ''}" 
            data-id="${teacher.id}" 
            style="cursor: pointer; display: flex; align-items: center; gap: 12px; padding: 10px 14px; border: 1px solid var(--hb-border); border-radius: 12px; margin-bottom: 8px; background: ${isSelected ? 'var(--hb-primary-light)' : 'var(--hb-card-bg)'}; transition: all 0.2s;"
@@ -69,8 +71,9 @@ export function createTeacherAvailabilityCardList({
           ${statusText}
         </span>
       </div>
-    `;
-  }).join('');
+    `
+    })
+    .join('')
 
   return `
     <div class="hb-card" style="padding: 1.25rem;">
@@ -99,5 +102,5 @@ export function createTeacherAvailabilityCardList({
         ${teacherCardsHtml}
       </div>
     </div>
-  `;
+  `
 }

@@ -11,16 +11,16 @@
  */
 
 const TIPO_COLORS = {
-  tecnica:        { color: '#0d6efd', bg: '#0d6efd15' },
-  repertorio:     { color: '#198754', bg: '#19875415' },
-  teoria:         { color: '#fd7e14', bg: '#fd7e1415' },
+  tecnica: { color: '#0d6efd', bg: '#0d6efd15' },
+  repertorio: { color: '#198754', bg: '#19875415' },
+  teoria: { color: '#fd7e14', bg: '#fd7e1415' },
   interpretacion: { color: '#6f42c1', bg: '#6f42c115' },
-  otro:           { color: '#6c757d', bg: '#6c757d15' },
+  otro: { color: '#6c757d', bg: '#6c757d15' },
 }
 
 const PRIORIDAD_LABELS = {
-  alta:          { label: 'Foco',       color: '#dc3545' },
-  media:         { label: 'Secundario', color: '#fd7e14' },
+  alta: { label: 'Foco', color: '#dc3545' },
+  media: { label: 'Secundario', color: '#fd7e14' },
   consolidacion: { label: 'Consolidar', color: '#198754' },
 }
 
@@ -95,7 +95,7 @@ export function createCurriculumProposalPanel(container, { onAdopt, onCancel }) 
   function _canAdopt() {
     if (!_getInstrumento()) return false
     if (_pilares.length === 0) return false
-    return _pilares.every(p => (p.objetivos || []).length > 0)
+    return _pilares.every((p) => (p.objetivos || []).length > 0)
   }
 
   function _render(instrumento, nivel) {
@@ -112,9 +112,10 @@ export function createCurriculumProposalPanel(container, { onAdopt, onCancel }) 
         </div>
       </div>
       <div class="cpp-pilares">
-        ${hasPilares
-          ? _pilares.map((p, i) => _renderPilar(p, i)).join('')
-          : '<div class="cpp-empty">La IA no detectó suficientes datos para generar una propuesta.</div>'
+        ${
+          hasPilares
+            ? _pilares.map((p, i) => _renderPilar(p, i)).join('')
+            : '<div class="cpp-empty">La IA no detectó suficientes datos para generar una propuesta.</div>'
         }
       </div>
       <div class="cpp-footer">
@@ -136,7 +137,7 @@ export function createCurriculumProposalPanel(container, { onAdopt, onCancel }) 
     `
 
     // Wire pilar title click → inline edit
-    _panelEl.querySelectorAll('.cpp-pilar-title').forEach(span => {
+    _panelEl.querySelectorAll('.cpp-pilar-title').forEach((span) => {
       span.onclick = () => {
         const pi = parseInt(span.dataset.pilar)
         const input = document.createElement('input')
@@ -150,12 +151,17 @@ export function createCurriculumProposalPanel(container, { onAdopt, onCancel }) 
           _render(_getInstrumento(), _getNivel())
         }
         input.onblur = save
-        input.onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); save() } }
+        input.onkeydown = (e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault()
+            save()
+          }
+        }
       }
     })
 
     // Wire objetivo text click → inline edit
-    _panelEl.querySelectorAll('.cpp-objetivo-text').forEach(span => {
+    _panelEl.querySelectorAll('.cpp-objetivo-text').forEach((span) => {
       span.onclick = () => {
         const pi = parseInt(span.dataset.pilar)
         const oi = parseInt(span.dataset.obj)
@@ -166,16 +172,22 @@ export function createCurriculumProposalPanel(container, { onAdopt, onCancel }) 
         span.replaceWith(input)
         input.focus()
         const save = () => {
-          _pilares[pi].objetivos[oi].descripcion = input.value.trim() || _pilares[pi].objetivos[oi].descripcion
+          _pilares[pi].objetivos[oi].descripcion =
+            input.value.trim() || _pilares[pi].objetivos[oi].descripcion
           _render(_getInstrumento(), _getNivel())
         }
         input.onblur = save
-        input.onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); save() } }
+        input.onkeydown = (e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault()
+            save()
+          }
+        }
       }
     })
 
     // Wire remove objetivo buttons
-    _panelEl.querySelectorAll('.cpp-remove-obj').forEach(btn => {
+    _panelEl.querySelectorAll('.cpp-remove-obj').forEach((btn) => {
       btn.onclick = () => {
         const pi = parseInt(btn.dataset.pilar)
         const oi = parseInt(btn.dataset.obj)
@@ -185,7 +197,7 @@ export function createCurriculumProposalPanel(container, { onAdopt, onCancel }) 
     })
 
     // Wire remove pilar buttons
-    _panelEl.querySelectorAll('.cpp-remove-pilar').forEach(btn => {
+    _panelEl.querySelectorAll('.cpp-remove-pilar').forEach((btn) => {
       btn.onclick = () => {
         const pi = parseInt(btn.dataset.pilar)
         _pilares.splice(pi, 1)
@@ -233,9 +245,9 @@ export function createCurriculumProposalPanel(container, { onAdopt, onCancel }) 
 
   function open({ pilares = [], resumen = '', instrumento = '', nivel = '' }) {
     // Deep-copy pilares so edits don't mutate the original
-    _pilares = pilares.map(p => ({
+    _pilares = pilares.map((p) => ({
       ...p,
-      objetivos: (p.objetivos || []).map(o => ({ ...o })),
+      objetivos: (p.objetivos || []).map((o) => ({ ...o })),
     }))
     _resumen = resumen
 

@@ -4,8 +4,8 @@ import { supabase } from '../../../lib/supabaseClient.js'
 
 vi.mock('../../../lib/supabaseClient.js', () => ({
   supabase: {
-    from: vi.fn()
-  }
+    from: vi.fn(),
+  },
 }))
 
 describe('metricsApi Standardization', () => {
@@ -18,11 +18,11 @@ describe('metricsApi Standardization', () => {
       const mockAlerts = [
         { color: 'rojo', tipo_alerta: 'ausencia' },
         { color: 'rojo', tipo_alerta: 'nota_baja' },
-        { color: 'naranja', tipo_alerta: 'ausencia' }
+        { color: 'naranja', tipo_alerta: 'ausencia' },
       ]
 
       supabase.from.mockReturnValue({
-        select: vi.fn().mockResolvedValue({ data: mockAlerts, error: null })
+        select: vi.fn().mockResolvedValue({ data: mockAlerts, error: null }),
       })
 
       const resumen = await metricsApi.getResumenAlertas()
@@ -34,10 +34,12 @@ describe('metricsApi Standardization', () => {
 
     it('should handle API errors gracefully', async () => {
       supabase.from.mockReturnValue({
-        select: vi.fn().mockResolvedValue({ data: null, error: { message: 'DB Error' } })
+        select: vi.fn().mockResolvedValue({ data: null, error: { message: 'DB Error' } }),
       })
 
-      await expect(metricsApi.getResumenAlertas()).rejects.toThrow('No se pudo obtener el resumen de alertas')
+      await expect(metricsApi.getResumenAlertas()).rejects.toThrow(
+        'No se pudo obtener el resumen de alertas',
+      )
     })
   })
 })

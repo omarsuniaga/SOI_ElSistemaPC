@@ -59,7 +59,7 @@ describe('rutaService - Batch Semaphore Operations', () => {
           ['node-1', 'green'],
           ['node-2', 'yellow'],
           ['node-3', 'gray'],
-        ])
+        ]),
       )
     })
 

@@ -1,6 +1,6 @@
 // src/modules/horario-builder/engine/DragDropManager.js
 
-import { detectConflicts } from './conflictDetector.js';
+import { detectConflicts } from './conflictDetector.js'
 
 /**
  * Shows a modal warning when a drop would create a conflict.
@@ -12,15 +12,15 @@ import { detectConflicts } from './conflictDetector.js';
  */
 export function showConflictMoveModal({ conflictDescription }) {
   return new Promise((resolve) => {
-    const backdrop = document.createElement('div');
-    backdrop.className = 'modal-backdrop fade show';
-    backdrop.style.zIndex = '1040';
+    const backdrop = document.createElement('div')
+    backdrop.className = 'modal-backdrop fade show'
+    backdrop.style.zIndex = '1040'
 
-    const modal = document.createElement('div');
-    modal.className = 'modal fade show d-block';
-    modal.style.zIndex = '1050';
-    modal.setAttribute('role', 'dialog');
-    modal.setAttribute('aria-modal', 'true');
+    const modal = document.createElement('div')
+    modal.className = 'modal fade show d-block'
+    modal.style.zIndex = '1050'
+    modal.setAttribute('role', 'dialog')
+    modal.setAttribute('aria-modal', 'true')
     modal.innerHTML = `
       <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
@@ -40,23 +40,23 @@ export function showConflictMoveModal({ conflictDescription }) {
           </div>
         </div>
       </div>
-    `;
+    `
 
-    const bodyP = modal.querySelector('.modal-body p');
-    if (bodyP) bodyP.textContent = conflictDescription;
+    const bodyP = modal.querySelector('.modal-body p')
+    if (bodyP) bodyP.textContent = conflictDescription
 
     function cleanup(result) {
-      document.body.removeChild(modal);
-      document.body.removeChild(backdrop);
-      resolve(result);
+      document.body.removeChild(modal)
+      document.body.removeChild(backdrop)
+      resolve(result)
     }
 
-    modal.querySelector('[data-action="confirm"]').addEventListener('click', () => cleanup(true));
-    modal.querySelector('[data-action="cancel"]').addEventListener('click', () => cleanup(false));
+    modal.querySelector('[data-action="confirm"]').addEventListener('click', () => cleanup(true))
+    modal.querySelector('[data-action="cancel"]').addEventListener('click', () => cleanup(false))
 
-    document.body.appendChild(backdrop);
-    document.body.appendChild(modal);
-  });
+    document.body.appendChild(backdrop)
+    document.body.appendChild(modal)
+  })
 }
 
 /**
@@ -72,94 +72,114 @@ export function showConflictMoveModal({ conflictDescription }) {
  * @returns {{ destroy: Function }} - Call destroy() to remove all listeners
  */
 export function initDragDrop(gridContainer, { assignments, onMove, onConflict }) {
-  const controller = new AbortController();
-  const { signal } = controller;
+  const controller = new AbortController()
+  const { signal } = controller
 
-  let draggingClaseId = null;
+  let draggingClaseId = null
 
   // Drag source events — delegated on gridContainer
-  gridContainer.addEventListener('dragstart', (e) => {
-    const block = e.target.closest('[draggable="true"][data-clase-id]');
-    if (!block) return;
-    draggingClaseId = block.dataset.claseId;
-    block.classList.add('hb-dragging');
-    if (e.dataTransfer) {
-      e.dataTransfer.effectAllowed = 'move';
-      e.dataTransfer.setData('text/plain', draggingClaseId);
-    }
-  }, { signal });
+  gridContainer.addEventListener(
+    'dragstart',
+    (e) => {
+      const block = e.target.closest('[draggable="true"][data-clase-id]')
+      if (!block) return
+      draggingClaseId = block.dataset.claseId
+      block.classList.add('hb-dragging')
+      if (e.dataTransfer) {
+        e.dataTransfer.effectAllowed = 'move'
+        e.dataTransfer.setData('text/plain', draggingClaseId)
+      }
+    },
+    { signal },
+  )
 
-  gridContainer.addEventListener('dragend', (e) => {
-    const block = e.target.closest('[draggable="true"][data-clase-id]');
-    if (block) block.classList.remove('hb-dragging');
-    draggingClaseId = null;
-  }, { signal });
+  gridContainer.addEventListener(
+    'dragend',
+    (e) => {
+      const block = e.target.closest('[draggable="true"][data-clase-id]')
+      if (block) block.classList.remove('hb-dragging')
+      draggingClaseId = null
+    },
+    { signal },
+  )
 
   // Drop target events — delegated on gridContainer
-  gridContainer.addEventListener('dragover', (e) => {
-    const cell = e.target.closest('[data-day][data-hour]');
-    if (!cell) return;
-    e.preventDefault();
-    if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
-    if (!cell.classList.contains('hb-drop-target')) {
-      cell.classList.add('hb-drop-target');
-    }
-  }, { signal });
+  gridContainer.addEventListener(
+    'dragover',
+    (e) => {
+      const cell = e.target.closest('[data-day][data-hour]')
+      if (!cell) return
+      e.preventDefault()
+      if (e.dataTransfer) e.dataTransfer.dropEffect = 'move'
+      if (!cell.classList.contains('hb-drop-target')) {
+        cell.classList.add('hb-drop-target')
+      }
+    },
+    { signal },
+  )
 
-  gridContainer.addEventListener('dragleave', (e) => {
-    const cell = e.target.closest('[data-day][data-hour]');
-    if (!cell) return;
-    if (cell.contains(e.relatedTarget)) return; // still inside cell
-    cell.classList.remove('hb-drop-target');
-  }, { signal });
+  gridContainer.addEventListener(
+    'dragleave',
+    (e) => {
+      const cell = e.target.closest('[data-day][data-hour]')
+      if (!cell) return
+      if (cell.contains(e.relatedTarget)) return // still inside cell
+      cell.classList.remove('hb-drop-target')
+    },
+    { signal },
+  )
 
-  gridContainer.addEventListener('drop', (e) => {
-    const cell = e.target.closest('[data-day][data-hour]');
-    if (!cell) return;
-    e.preventDefault();
-    cell.classList.remove('hb-drop-target');
+  gridContainer.addEventListener(
+    'drop',
+    (e) => {
+      const cell = e.target.closest('[data-day][data-hour]')
+      if (!cell) return
+      e.preventDefault()
+      cell.classList.remove('hb-drop-target')
 
-    const claseId = draggingClaseId
-      ?? (e.dataTransfer ? e.dataTransfer.getData('text/plain') : null);
+      const claseId =
+        draggingClaseId ?? (e.dataTransfer ? e.dataTransfer.getData('text/plain') : null)
 
-    if (!claseId) return;
+      if (!claseId) return
 
-    const targetDay  = cell.dataset.day;
-    const targetHour = cell.dataset.hour;
+      const targetDay = cell.dataset.day
+      const targetHour = cell.dataset.hour
 
-    const assignment = assignments.find(a => String(a.clase_id) === String(claseId));
-    if (!assignment) return;
+      const assignment = assignments.find((a) => String(a.clase_id) === String(claseId))
+      if (!assignment) return
 
-    const fromDay  = assignment.dia;
-    const fromHour = assignment.hora_inicio;
+      const fromDay = assignment.dia
+      const fromHour = assignment.hora_inicio
 
-    // Build proposed list: replace the dragged assignment with the proposed position
-    const proposed = assignments.map(a => {
-      if (String(a.clase_id) !== String(claseId)) return a;
-      // Calculate new hora_fin based on original duration
-      const [sh, sm] = a.hora_inicio.split(':').map(Number);
-      const [eh, em] = a.hora_fin.split(':').map(Number);
-      const durationMin = (eh * 60 + em) - (sh * 60 + sm);
+      // Build proposed list: replace the dragged assignment with the proposed position
+      const proposed = assignments.map((a) => {
+        if (String(a.clase_id) !== String(claseId)) return a
+        // Calculate new hora_fin based on original duration
+        const [sh, sm] = a.hora_inicio.split(':').map(Number)
+        const [eh, em] = a.hora_fin.split(':').map(Number)
+        const durationMin = eh * 60 + em - (sh * 60 + sm)
 
-      const [th, tm] = targetHour.split(':').map(Number);
-      const newEndMin = th * 60 + tm + durationMin;
-      const newHoraFin = `${String(Math.floor(newEndMin / 60)).padStart(2, '0')}:${String(newEndMin % 60).padStart(2, '0')}`;
+        const [th, tm] = targetHour.split(':').map(Number)
+        const newEndMin = th * 60 + tm + durationMin
+        const newHoraFin = `${String(Math.floor(newEndMin / 60)).padStart(2, '0')}:${String(newEndMin % 60).padStart(2, '0')}`
 
-      return { ...a, dia: targetDay, hora_inicio: targetHour, hora_fin: newHoraFin };
-    });
+        return { ...a, dia: targetDay, hora_inicio: targetHour, hora_fin: newHoraFin }
+      })
 
-    const conflicts = detectConflicts(proposed, { gapMinutes: 0 });
+      const conflicts = detectConflicts(proposed, { gapMinutes: 0 })
 
-    if (conflicts.length === 0) {
-      onMove({ claseId, fromDay, fromHour, toDay: targetDay, toHour: targetHour });
-    } else {
-      onConflict({ assignment, targetDay, targetHour, conflicts });
-    }
-  }, { signal });
+      if (conflicts.length === 0) {
+        onMove({ claseId, fromDay, fromHour, toDay: targetDay, toHour: targetHour })
+      } else {
+        onConflict({ assignment, targetDay, targetHour, conflicts })
+      }
+    },
+    { signal },
+  )
 
   return {
     destroy() {
-      controller.abort();
-    }
-  };
+      controller.abort()
+    },
+  }
 }

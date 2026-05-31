@@ -1,6 +1,6 @@
 // src/modules/horario-builder/components/ScheduleBlock.js
-import { getInstrumentColor, getTeacherColor } from '../utils/colorMap.js';
-import { escapeHtml } from '../utils/escapeHtml.js';
+import { getInstrumentColor, getTeacherColor } from '../utils/colorMap.js'
+import { escapeHtml } from '../utils/escapeHtml.js'
 
 /**
  * Returns the HTML string for one schedule block in the grid.
@@ -14,37 +14,49 @@ import { escapeHtml } from '../utils/escapeHtml.js';
  */
 export function createScheduleBlock(assignment, { draggable = false } = {}) {
   const {
-    clase_id, clase_nombre, instrumento = 'General',
-    maestro_id, maestro_nombre = '',
-    salon_nombre = '', hora_inicio, hora_fin,
-    locked = false, hasConflict = false
-  } = assignment;
+    clase_id,
+    clase_nombre,
+    instrumento = 'General',
+    maestro_id,
+    maestro_nombre = '',
+    salon_nombre = '',
+    hora_inicio,
+    hora_fin,
+    locked = false,
+    hasConflict = false,
+  } = assignment
 
-  const instrColor  = getInstrumentColor(instrumento);
-  const teachColor  = getTeacherColor(maestro_id || '');
-  const isActuallyDraggable = draggable && !locked;
+  const instrColor = getInstrumentColor(instrumento)
+  const teachColor = getTeacherColor(maestro_id || '')
+  const isActuallyDraggable = draggable && !locked
 
   // Initials for teacher dot
   const initials = escapeHtml(
     maestro_nombre
       .split(' ')
       .slice(0, 2)
-      .map(w => w[0] ?? '')
+      .map((w) => w[0] ?? '')
       .join('')
-      .toUpperCase()
-  );
+      .toUpperCase(),
+  )
 
-  const conflictStyle  = hasConflict  ? 'border: 2px solid #ef4444;' : 'border: 2px solid transparent;';
-  const conflictBadge  = hasConflict  ? '<span class="sb-conflict-icon" title="Conflicto detectado">⚠</span>' : '';
-  const safeClaseId = escapeHtml(clase_id);
+  const conflictStyle = hasConflict
+    ? 'border: 2px solid #ef4444;'
+    : 'border: 2px solid transparent;'
+  const conflictBadge = hasConflict
+    ? '<span class="sb-conflict-icon" title="Conflicto detectado">⚠</span>'
+    : ''
+  const safeClaseId = escapeHtml(clase_id)
   const lockBtn = isActuallyDraggable
     ? `<button class="sb-lock-btn" data-clase-id="${safeClaseId}" data-locked="${locked}"
                style="background:none;border:none;cursor:pointer;padding:0;font-size:0.65rem;line-height:1;"
                title="${locked ? 'Desbloquear' : 'Bloquear'}">
          ${locked ? '🔒' : '🔓'}
        </button>`
-    : (locked ? '<span class="sb-lock-icon">🔒</span>' : '');
-  const draggableAttr   = isActuallyDraggable ? 'draggable="true"' : '';
+    : locked
+      ? '<span class="sb-lock-icon">🔒</span>'
+      : ''
+  const draggableAttr = isActuallyDraggable ? 'draggable="true"' : ''
 
   return `
     <div class="schedule-block"
@@ -64,5 +76,5 @@ export function createScheduleBlock(assignment, { draggable = false } = {}) {
       </div>
       ${salon_nombre ? `<div style="background:#f1f5f9;padding:2px 6px;font-size:0.55rem;color:#64748b;border-top:1px solid #e2e8f0;">${escapeHtml(salon_nombre)} · ${hora_inicio}–${hora_fin}</div>` : ''}
     </div>
-  `;
+  `
 }

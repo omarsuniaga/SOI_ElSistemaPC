@@ -26,7 +26,11 @@ vi.mock('../../services/maestroDataService.js', () => ({
 
 import { getPermisos } from '../../services/permisoService.js'
 import { getMaestroLocal } from '../../auth/maestroAuth.js'
-import { crearAlumno, validarEmail, validarCedula } from '../../../modules/alumnos/api/alumnosApi.js'
+import {
+  crearAlumno,
+  validarEmail,
+  validarCedula,
+} from '../../../modules/alumnos/api/alumnosApi.js'
 import { getMisClases } from '../../services/maestroDataService.js'
 import { renderRegistroAlumnoView } from '../registroAlumnoView.js'
 
@@ -185,7 +189,7 @@ describe('registroAlumnoView', () => {
         detail: expect.objectContaining({
           message: expect.stringContaining('correo'),
         }),
-      })
+      }),
     )
   })
 
@@ -213,7 +217,7 @@ describe('registroAlumnoView', () => {
         detail: expect.objectContaining({
           message: expect.stringContaining('cédula'),
         }),
-      })
+      }),
     )
   })
 

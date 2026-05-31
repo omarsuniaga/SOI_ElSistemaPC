@@ -1,12 +1,12 @@
-import { setSession, clearSession } from './sessionStorage.js';
-import { supabase } from '../../lib/supabaseClient.js';
+import { setSession, clearSession } from './sessionStorage.js'
+import { supabase } from '../../lib/supabaseClient.js'
 
-const API_URL = '/api/auth';
+const API_URL = '/api/auth'
 
 class AuthManager {
   constructor() {
-    this.currentUser = null;
-    this.currentSession = null;
+    this.currentUser = null
+    this.currentSession = null
   }
 
   async login(email, password) {
@@ -15,22 +15,22 @@ class AuthManager {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
-      });
+      })
 
-      const data = await response.json();
+      const data = await response.json()
 
       if (!response.ok) {
-        throw new Error(data.message || 'Login failed');
+        throw new Error(data.message || 'Login failed')
       }
 
-      this.currentUser = data.user;
-      this.currentSession = data.session;
-      setSession(this.currentSession);
+      this.currentUser = data.user
+      this.currentSession = data.session
+      setSession(this.currentSession)
 
-      return { user: this.currentUser, session: this.currentSession };
+      return { user: this.currentUser, session: this.currentSession }
     } catch (error) {
-      console.error('Login error:', error);
-      throw error;
+      console.error('Login error:', error)
+      throw error
     }
   }
 
@@ -40,30 +40,30 @@ class AuthManager {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password, ...userData }),
-      });
+      })
 
-      const data = await response.json();
+      const data = await response.json()
 
       if (!response.ok) {
-        throw new Error(data.message || 'Registration failed');
+        throw new Error(data.message || 'Registration failed')
       }
 
-      this.currentUser = data.user;
-      this.currentSession = data.session;
-      setSession(this.currentSession);
+      this.currentUser = data.user
+      this.currentSession = data.session
+      setSession(this.currentSession)
 
-      return { user: this.currentUser, session: this.currentSession };
+      return { user: this.currentUser, session: this.currentSession }
     } catch (error) {
-      console.error('Register error:', error);
-      throw error;
+      console.error('Register error:', error)
+      throw error
     }
   }
 
   async logout() {
-    this.currentUser = null;
-    this.currentSession = null;
-    clearSession();
-    await supabase.auth.signOut();
+    this.currentUser = null
+    this.currentSession = null
+    clearSession()
+    await supabase.auth.signOut()
   }
 
   async validateSession(session) {
@@ -72,27 +72,27 @@ class AuthManager {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ session }),
-      });
+      })
 
       if (!response.ok) {
-        return null;
+        return null
       }
 
-      const data = await response.json();
-      return data.valid ? data.user : null;
+      const data = await response.json()
+      return data.valid ? data.user : null
     } catch (error) {
-      console.error('Session validation error:', error);
-      return null;
+      console.error('Session validation error:', error)
+      return null
     }
   }
 
   setUser(user) {
-    this.currentUser = user;
+    this.currentUser = user
   }
 
   setSession(session) {
-    this.currentSession = session;
+    this.currentSession = session
   }
 }
 
-export const authManager = new AuthManager();
+export const authManager = new AuthManager()

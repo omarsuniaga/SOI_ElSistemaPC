@@ -1,25 +1,22 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('../../api/ausenciaAprobacionApi.js', () => ({
   obtenerPendientesDirector: vi.fn(),
   revisarAusencia: vi.fn(),
-}));
+}))
 
-import {
-  obtenerPendientesDirector,
-  revisarAusencia,
-} from '../../api/ausenciaAprobacionApi.js';
-import { renderAusenciasDirectorView } from '../ausenciasDirectorView.js';
+import { obtenerPendientesDirector, revisarAusencia } from '../../api/ausenciaAprobacionApi.js'
+import { renderAusenciasDirectorView } from '../ausenciasDirectorView.js'
 
 describe('ausenciasDirectorView', () => {
-  let container;
+  let container
 
   beforeEach(() => {
-    container = document.createElement('div');
-    document.body.appendChild(container);
-    vi.clearAllMocks();
-    vi.spyOn(window, 'dispatchEvent');
-  });
+    container = document.createElement('div')
+    document.body.appendChild(container)
+    vi.clearAllMocks()
+    vi.spyOn(window, 'dispatchEvent')
+  })
 
   it('renders the director review panel with pending absences', async () => {
     obtenerPendientesDirector.mockResolvedValue([
@@ -33,14 +30,14 @@ describe('ausenciasDirectorView', () => {
         maestros: { nombre_completo: 'Ada Lovelace' },
         clases_afectadas: ['c1'],
       },
-    ]);
+    ])
 
-    await renderAusenciasDirectorView(container);
+    await renderAusenciasDirectorView(container)
 
-    expect(container.textContent).toContain('Revisión Director');
-    expect(container.textContent).toContain('Ada Lovelace');
-    expect(container.querySelectorAll('[data-ausencia-row]').length).toBe(1);
-  });
+    expect(container.textContent).toContain('Revisión Director')
+    expect(container.textContent).toContain('Ada Lovelace')
+    expect(container.querySelectorAll('[data-ausencia-row]').length).toBe(1)
+  })
 
   it('lists pending absences in a table', async () => {
     obtenerPendientesDirector.mockResolvedValue([
@@ -64,14 +61,14 @@ describe('ausenciasDirectorView', () => {
         maestros: { nombre_completo: 'Alan Turing' },
         clases_afectadas: [],
       },
-    ]);
+    ])
 
-    await renderAusenciasDirectorView(container);
+    await renderAusenciasDirectorView(container)
 
-    expect(container.querySelectorAll('[data-ausencia-row]').length).toBe(2);
-    expect(container.textContent).toContain('Ada Lovelace');
-    expect(container.textContent).toContain('Alan Turing');
-  });
+    expect(container.querySelectorAll('[data-ausencia-row]').length).toBe(2)
+    expect(container.textContent).toContain('Ada Lovelace')
+    expect(container.textContent).toContain('Alan Turing')
+  })
 
   it('renders review action buttons for each absence', async () => {
     obtenerPendientesDirector.mockResolvedValue([
@@ -85,13 +82,13 @@ describe('ausenciasDirectorView', () => {
         maestros: { nombre_completo: 'Ada Lovelace' },
         clases_afectadas: [],
       },
-    ]);
+    ])
 
-    await renderAusenciasDirectorView(container);
+    await renderAusenciasDirectorView(container)
 
-    expect(container.querySelector('[data-action="solicitar-info"]')).not.toBeNull();
-    expect(container.querySelector('[data-action="enviar-aprobacion"]')).not.toBeNull();
-  });
+    expect(container.querySelector('[data-action="solicitar-info"]')).not.toBeNull()
+    expect(container.querySelector('[data-action="enviar-aprobacion"]')).not.toBeNull()
+  })
 
   it('opens detail modal and triggers solicitar-info action', async () => {
     obtenerPendientesDirector.mockResolvedValue([
@@ -105,8 +102,8 @@ describe('ausenciasDirectorView', () => {
         maestros: { nombre_completo: 'Ada Lovelace' },
         clases_afectadas: ['c1'],
       },
-    ]);
-    revisarAusencia.mockResolvedValue({ id: 'a1', estado: 'info_solicitada' });
+    ])
+    revisarAusencia.mockResolvedValue({ id: 'a1', estado: 'info_solicitada' })
     obtenerPendientesDirector.mockResolvedValueOnce([
       {
         id: 'a1',
@@ -118,17 +115,17 @@ describe('ausenciasDirectorView', () => {
         maestros: { nombre_completo: 'Ada Lovelace' },
         clases_afectadas: ['c1'],
       },
-    ]);
+    ])
 
-    await renderAusenciasDirectorView(container);
+    await renderAusenciasDirectorView(container)
 
-    container.querySelector('[data-review-notes]').value = 'Necesito más datos.';
-    container.querySelector('[data-action="solicitar-info"]').click();
+    container.querySelector('[data-review-notes]').value = 'Necesito más datos.'
+    container.querySelector('[data-action="solicitar-info"]').click()
 
     await vi.waitFor(() => {
-      expect(revisarAusencia).toHaveBeenCalledWith('a1', 'info_solicitada', 'Necesito más datos.');
-    });
-  });
+      expect(revisarAusencia).toHaveBeenCalledWith('a1', 'info_solicitada', 'Necesito más datos.')
+    })
+  })
 
   it('sends absence to approval via enviar-aprobacion action', async () => {
     obtenerPendientesDirector
@@ -144,19 +141,19 @@ describe('ausenciasDirectorView', () => {
           clases_afectadas: [],
         },
       ])
-      .mockResolvedValueOnce([]);
-    revisarAusencia.mockResolvedValue({ id: 'a1', estado: 'pendiente_aprobacion' });
+      .mockResolvedValueOnce([])
+    revisarAusencia.mockResolvedValue({ id: 'a1', estado: 'pendiente_aprobacion' })
 
-    await renderAusenciasDirectorView(container);
+    await renderAusenciasDirectorView(container)
 
-    container.querySelector('[data-review-notes]').value = 'Todo en orden.';
-    container.querySelector('[data-action="enviar-aprobacion"]').click();
+    container.querySelector('[data-review-notes]').value = 'Todo en orden.'
+    container.querySelector('[data-action="enviar-aprobacion"]').click()
 
     await vi.waitFor(() => {
-      expect(revisarAusencia).toHaveBeenCalledWith('a1', 'pendiente_aprobacion', 'Todo en orden.');
-    });
+      expect(revisarAusencia).toHaveBeenCalledWith('a1', 'pendiente_aprobacion', 'Todo en orden.')
+    })
     await vi.waitFor(() => {
-      expect(container.textContent).toContain('No hay ausencias pendientes de revisión');
-    });
-  });
-});
+      expect(container.textContent).toContain('No hay ausencias pendientes de revisión')
+    })
+  })
+})

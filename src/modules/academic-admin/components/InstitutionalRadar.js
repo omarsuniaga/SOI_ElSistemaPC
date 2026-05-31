@@ -4,16 +4,16 @@
  */
 
 export function InstitutionalRadar(data = []) {
-    if (!data || data.length === 0) {
-        return `
+  if (!data || data.length === 0) {
+    return `
             <div class="pm-empty">
                 <i class="bi bi-person-badge"></i>
                 <p>No hay datos disponibles en el radar institucional.</p>
             </div>
-        `;
-    }
+        `
+  }
 
-    return `
+  return `
         <div class="aa-table-container pm-animate-fade-in">
             <table class="aa-table">
                 <thead>
@@ -26,22 +26,23 @@ export function InstitutionalRadar(data = []) {
                     </tr>
                 </thead>
                 <tbody>
-                    ${data.map(student => renderStudentRow(student)).join('')}
+                    ${data.map((student) => renderStudentRow(student)).join('')}
                 </tbody>
             </table>
         </div>
-    `;
+    `
 }
 
 function renderStudentRow(student) {
-    const progress = student.progress_percentage || 0;
-    const progressClass = progress < 40 ? 'progress-low' : (progress < 80 ? 'progress-mid' : 'progress-high');
-    const healthBadge = student.health_status || 'not_started';
-    const lastActivity = student.last_activity_at 
-        ? new Date(student.last_activity_at).toLocaleDateString() 
-        : 'Sin actividad';
+  const progress = student.progress_percentage || 0
+  const progressClass =
+    progress < 40 ? 'progress-low' : progress < 80 ? 'progress-mid' : 'progress-high'
+  const healthBadge = student.health_status || 'not_started'
+  const lastActivity = student.last_activity_at
+    ? new Date(student.last_activity_at).toLocaleDateString()
+    : 'Sin actividad'
 
-    return `
+  return `
         <tr>
             <td>
                 <div class="d-flex align-items-center gap-2">
@@ -74,5 +75,5 @@ function renderStudentRow(student) {
                 </span>
             </td>
         </tr>
-    `;
+    `
 }

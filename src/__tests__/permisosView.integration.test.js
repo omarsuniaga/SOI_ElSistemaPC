@@ -80,9 +80,7 @@ describe('Permisos View — Admin toggle integration', () => {
   it('should render toggle for puede_registrar_alumnos checked', async () => {
     await renderPermisosView(container)
 
-    const toggleRegistrar = container.querySelector(
-      'input[data-field="puede_registrar_alumnos"]'
-    )
+    const toggleRegistrar = container.querySelector('input[data-field="puede_registrar_alumnos"]')
     expect(toggleRegistrar).toBeTruthy()
     expect(toggleRegistrar.checked).toBe(true)
   })
@@ -90,9 +88,7 @@ describe('Permisos View — Admin toggle integration', () => {
   it('should render toggle for puede_inscribir_clases unchecked', async () => {
     await renderPermisosView(container)
 
-    const toggleInscribir = container.querySelector(
-      'input[data-field="puede_inscribir_clases"]'
-    )
+    const toggleInscribir = container.querySelector('input[data-field="puede_inscribir_clases"]')
     expect(toggleInscribir).toBeTruthy()
     expect(toggleInscribir.checked).toBe(false)
   })
@@ -139,7 +135,7 @@ describe('Permisos View — Admin toggle integration', () => {
       permisos: ['clases:enroll'],
       solicitudes: [],
       concedido_por: 'admin',
-      concedido_por_nombre: 'Admin Test'
+      concedido_por_nombre: 'Admin Test',
     })
   })
 

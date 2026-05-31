@@ -4,12 +4,7 @@
  */
 
 const CACHE_VERSION = 'v1'
-const STATIC_ASSETS = [
-  '/',
-  '/index.html',
-  '/manifest.json',
-  '/sw.js',
-]
+const STATIC_ASSETS = ['/', '/index.html', '/manifest.json', '/sw.js']
 
 const CACHE_STRATEGIES = {
   STATIC: 'cache-first',
@@ -17,11 +12,7 @@ const CACHE_STRATEGIES = {
   DYNAMIC: 'stale-while-revalidate',
 }
 
-const NO_CACHE_PATHS = [
-  '/auth/',
-  '/login',
-  '/logout',
-]
+const NO_CACHE_PATHS = ['/auth/', '/login', '/logout']
 
 /**
  * Get caching strategy for a request
@@ -29,17 +20,22 @@ const NO_CACHE_PATHS = [
  * @returns {string} Strategy name
  */
 export function getCacheStrategy(url) {
-  if (url.includes('/static/') || url.includes('.js') || url.includes('.css') || url.includes('.woff')) {
+  if (
+    url.includes('/static/') ||
+    url.includes('.js') ||
+    url.includes('.css') ||
+    url.includes('.woff')
+  ) {
     return CACHE_STRATEGIES.STATIC
   }
-  
+
   if (url.includes('/api/')) {
     if (url.includes('/notifications') || url.includes('/messages')) {
       return CACHE_STRATEGIES.DYNAMIC
     }
     return CACHE_STRATEGIES.API
   }
-  
+
   return CACHE_STRATEGIES.STATIC
 }
 
@@ -54,15 +50,15 @@ export function shouldCache(url) {
       return false
     }
   }
-  
+
   if (url.includes('/api/')) {
     return true
   }
-  
+
   if (url.includes('/static/') || url.includes('.js') || url.includes('.css')) {
     return true
   }
-  
+
   return false
 }
 
@@ -90,12 +86,12 @@ export async function clearAppCache() {
   if (typeof caches === 'undefined') {
     return { success: false, error: 'Caches API not available' }
   }
-  
+
   try {
     const cacheNames = await caches.keys()
-    const deletePromises = cacheNames.map(name => caches.delete(name))
+    const deletePromises = cacheNames.map((name) => caches.delete(name))
     await Promise.all(deletePromises)
-    
+
     console.log('[SW] All caches cleared')
     return { success: true, deleted: cacheNames.length }
   } catch (error) {
@@ -112,7 +108,7 @@ export async function clearAppCache() {
  */
 export async function cacheResponse(cacheName, request, response) {
   if (typeof caches === 'undefined') return
-  
+
   try {
     const cache = await caches.open(cacheName)
     await cache.put(request, response.clone())
@@ -128,7 +124,7 @@ export async function cacheResponse(cacheName, request, response) {
  */
 export async function getCachedResponse(url) {
   if (typeof caches === 'undefined') return null
-  
+
   try {
     const cache = await caches.open(CACHE_VERSION)
     return await cache.match(url)
@@ -146,12 +142,12 @@ export async function registerServiceWorker() {
     console.warn('[SW] Service Worker not supported')
     return null
   }
-  
+
   try {
     const registration = await navigator.serviceWorker.register('/sw.js', {
       scope: '/',
     })
-    
+
     console.log('[SW] Registered:', registration.scope)
     return registration
   } catch (error) {

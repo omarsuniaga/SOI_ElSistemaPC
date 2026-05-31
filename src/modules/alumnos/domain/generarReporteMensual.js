@@ -6,12 +6,23 @@ import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 
 const BRAND_PRIMARY = [0, 86, 179]
-const BRAND_ACCENT  = [255, 193, 7]
-const BRAND_DARK    = [30, 30, 30]
+const BRAND_ACCENT = [255, 193, 7]
+const BRAND_DARK = [30, 30, 30]
 
 const MESES = [
-  '', 'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-  'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
+  '',
+  'Enero',
+  'Febrero',
+  'Marzo',
+  'Abril',
+  'Mayo',
+  'Junio',
+  'Julio',
+  'Agosto',
+  'Septiembre',
+  'Octubre',
+  'Noviembre',
+  'Diciembre',
 ]
 
 function pad(val, fallback = '—') {
@@ -27,7 +38,9 @@ function edad(fechaStr) {
     let age = hoy.getFullYear() - y
     if (hoy.getMonth() + 1 < m || (hoy.getMonth() + 1 === m && hoy.getDate() < d)) age--
     return String(age)
-  } catch { return '—' }
+  } catch {
+    return '—'
+  }
 }
 
 function interesLabel(val) {
@@ -59,7 +72,11 @@ function drawFooter(doc, page, total) {
   doc.rect(0, H - 8, W, 8, 'F')
   doc.setTextColor(255, 255, 255)
   doc.setFontSize(6.5)
-  const fecha = new Date().toLocaleDateString('es-DO', { day: '2-digit', month: 'long', year: 'numeric' })
+  const fecha = new Date().toLocaleDateString('es-DO', {
+    day: '2-digit',
+    month: 'long',
+    year: 'numeric',
+  })
   doc.text(`El Sistema Punta Cana — Generado: ${fecha}`, 10, H - 3)
   doc.text(`Página ${page} de ${total}`, W - 10, H - 3, { align: 'right' })
 }
@@ -76,35 +93,61 @@ export function generarReporteMensual(alumnos, year, month) {
   const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'letter' })
   const W = doc.internal.pageSize.getWidth()
   const mesLabel = `${MESES[month]} ${year}`
-  const generadoEn = new Date().toLocaleDateString('es-DO', { day: '2-digit', month: 'long', year: 'numeric' })
+  const generadoEn = new Date().toLocaleDateString('es-DO', {
+    day: '2-digit',
+    month: 'long',
+    year: 'numeric',
+  })
 
   // ── Portada / resumen ──────────────────────────────────────────────────
-  drawHeader(doc,
+  drawHeader(
+    doc,
     `REPORTE DE INSCRIPCIONES — ${mesLabel.toUpperCase()}`,
-    `Generado: ${generadoEn} · Total inscritos: ${alumnos.length}`
+    `Generado: ${generadoEn} · Total inscritos: ${alumnos.length}`,
   )
 
   // Cuadro de estadísticas rápidas
-  const totalConConocimientos  = alumnos.filter(a => a.tiene_conocimientos_musicales === true).length
-  const totalSinConocimientos  = alumnos.filter(a => a.tiene_conocimientos_musicales === false || a.requiere_iniciacion_musical).length
-  const totalSubsidio          = alumnos.filter(a => a.beneficiario_subsidio_estado === true).length
-  const totalMonoparental      = alumnos.filter(a => a.familia_monoparental === true).length
-  const totalAutorizaFotos     = alumnos.filter(a => a.autoriza_fotos_redes === true).length
+  const totalConConocimientos = alumnos.filter(
+    (a) => a.tiene_conocimientos_musicales === true,
+  ).length
+  const totalSinConocimientos = alumnos.filter(
+    (a) => a.tiene_conocimientos_musicales === false || a.requiere_iniciacion_musical,
+  ).length
+  const totalSubsidio = alumnos.filter((a) => a.beneficiario_subsidio_estado === true).length
+  const totalMonoparental = alumnos.filter((a) => a.familia_monoparental === true).length
+  const totalAutorizaFotos = alumnos.filter((a) => a.autoriza_fotos_redes === true).length
 
   autoTable(doc, {
     startY: 36,
     margin: { left: 10, right: 10 },
     theme: 'grid',
-    head: [['Total inscritos', 'Con conocimientos', 'Requieren iniciación', 'Beneficiarios subsidio', 'Fam. monoparental', 'Autorizan fotos']],
-    body: [[
-      alumnos.length,
-      totalConConocimientos,
-      totalSinConocimientos,
-      totalSubsidio,
-      totalMonoparental,
-      totalAutorizaFotos,
-    ]],
-    headStyles: { fillColor: BRAND_PRIMARY, textColor: 255, fontStyle: 'bold', fontSize: 8, halign: 'center' },
+    head: [
+      [
+        'Total inscritos',
+        'Con conocimientos',
+        'Requieren iniciación',
+        'Beneficiarios subsidio',
+        'Fam. monoparental',
+        'Autorizan fotos',
+      ],
+    ],
+    body: [
+      [
+        alumnos.length,
+        totalConConocimientos,
+        totalSinConocimientos,
+        totalSubsidio,
+        totalMonoparental,
+        totalAutorizaFotos,
+      ],
+    ],
+    headStyles: {
+      fillColor: BRAND_PRIMARY,
+      textColor: 255,
+      fontStyle: 'bold',
+      fontSize: 8,
+      halign: 'center',
+    },
     bodyStyles: { halign: 'center', fontSize: 11, fontStyle: 'bold' },
   })
 
@@ -128,22 +171,35 @@ export function generarReporteMensual(alumnos, year, month) {
     startY: tableStartY,
     margin: { left: 10, right: 10 },
     theme: 'striped',
-    head: [['#', 'Nombre completo', 'Edad', 'Nac.', 'Municipio', 'Representante / Tlf', 'Interés', 'Instrumento', 'Iniciación', 'Pagó 600']],
+    head: [
+      [
+        '#',
+        'Nombre completo',
+        'Edad',
+        'Nac.',
+        'Municipio',
+        'Representante / Tlf',
+        'Interés',
+        'Instrumento',
+        'Iniciación',
+        'Pagó 600',
+      ],
+    ],
     body: rows,
     headStyles: { fillColor: BRAND_PRIMARY, textColor: 255, fontStyle: 'bold', fontSize: 7.5 },
     bodyStyles: { fontSize: 7, cellPadding: 1.5 },
     alternateRowStyles: { fillColor: [240, 245, 255] },
     columnStyles: {
-      0:  { cellWidth: 7,  halign: 'center' },
-      1:  { cellWidth: 42 },
-      2:  { cellWidth: 10, halign: 'center' },
-      3:  { cellWidth: 14 },
-      4:  { cellWidth: 20 },
-      5:  { cellWidth: 42 },
-      6:  { cellWidth: 16 },
-      7:  { cellWidth: 22 },
-      8:  { cellWidth: 15, halign: 'center' },
-      9:  { cellWidth: 14, halign: 'center' },
+      0: { cellWidth: 7, halign: 'center' },
+      1: { cellWidth: 42 },
+      2: { cellWidth: 10, halign: 'center' },
+      3: { cellWidth: 14 },
+      4: { cellWidth: 20 },
+      5: { cellWidth: 42 },
+      6: { cellWidth: 16 },
+      7: { cellWidth: 22 },
+      8: { cellWidth: 15, halign: 'center' },
+      9: { cellWidth: 14, halign: 'center' },
     },
     didDrawPage: (data) => {
       const totalPages = doc.internal.getNumberOfPages()
@@ -154,9 +210,10 @@ export function generarReporteMensual(alumnos, year, month) {
   // ── Segunda tabla: datos socioculturales (nueva página) ───────────────
   if (alumnos.length > 0) {
     doc.addPage()
-    drawHeader(doc,
+    drawHeader(
+      doc,
       `PERFIL SOCIOCULTURAL — ${mesLabel.toUpperCase()}`,
-      `Información motivacional y social de los alumnos inscritos`
+      `Información motivacional y social de los alumnos inscritos`,
     )
 
     const rowsSocial = alumnos.map((a, i) => [
@@ -164,7 +221,15 @@ export function generarReporteMensual(alumnos, year, month) {
       pad(a.nombre_completo),
       pad(a.centro_estudios),
       pad(a.grado_nivel),
-      a.padres_en_vida === 'ambos' ? 'Ambos' : a.padres_en_vida === 'solo_madre' ? 'Solo madre' : a.padres_en_vida === 'solo_padre' ? 'Solo padre' : a.padres_en_vida === 'ninguno' ? 'Ninguno' : '—',
+      a.padres_en_vida === 'ambos'
+        ? 'Ambos'
+        : a.padres_en_vida === 'solo_madre'
+          ? 'Solo madre'
+          : a.padres_en_vida === 'solo_padre'
+            ? 'Solo padre'
+            : a.padres_en_vida === 'ninguno'
+              ? 'Ninguno'
+              : '—',
       a.familia_monoparental ? 'Sí' : 'No',
       a.beneficiario_subsidio_estado ? 'Sí' : 'No',
       pad(a.por_que_unirse).slice(0, 80) + (pad(a.por_que_unirse).length > 80 ? '…' : ''),
@@ -175,7 +240,19 @@ export function generarReporteMensual(alumnos, year, month) {
       startY: 36,
       margin: { left: 10, right: 10 },
       theme: 'striped',
-      head: [['#', 'Nombre', 'Colegio', 'Grado', 'Padres en vida', 'Monopar.', 'Subsidio', '¿Por qué se unió?', 'Músico favorito']],
+      head: [
+        [
+          '#',
+          'Nombre',
+          'Colegio',
+          'Grado',
+          'Padres en vida',
+          'Monopar.',
+          'Subsidio',
+          '¿Por qué se unió?',
+          'Músico favorito',
+        ],
+      ],
       body: rowsSocial,
       headStyles: { fillColor: BRAND_PRIMARY, textColor: 255, fontStyle: 'bold', fontSize: 7.5 },
       bodyStyles: { fontSize: 7, cellPadding: 1.5 },
@@ -212,8 +289,21 @@ export function generarReporteMensual(alumnos, year, month) {
  * Descarga el reporte mensual como PDF.
  */
 export function descargarReporteMensual(alumnos, year, month) {
-  const MESES_SHORT = ['', 'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
-    'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre']
+  const MESES_SHORT = [
+    '',
+    'enero',
+    'febrero',
+    'marzo',
+    'abril',
+    'mayo',
+    'junio',
+    'julio',
+    'agosto',
+    'septiembre',
+    'octubre',
+    'noviembre',
+    'diciembre',
+  ]
   const doc = generarReporteMensual(alumnos, year, month)
   doc.save(`reporte-inscripciones-${MESES_SHORT[month]}-${year}.pdf`)
 }

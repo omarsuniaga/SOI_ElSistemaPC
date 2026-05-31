@@ -1,10 +1,14 @@
 // src/modules/horario-builder/components/ConflictPanel.js
-import { escapeHtml } from '../utils/escapeHtml.js';
+import { escapeHtml } from '../utils/escapeHtml.js'
 
 const DAY_LABELS = {
-  lunes: 'Lun', martes: 'Mar', 'miércoles': 'Mié',
-  jueves: 'Jue', viernes: 'Vie', 'sábado': 'Sáb'
-};
+  lunes: 'Lun',
+  martes: 'Mar',
+  miércoles: 'Mié',
+  jueves: 'Jue',
+  viernes: 'Vie',
+  sábado: 'Sáb',
+}
 
 /**
  * Returns HTML for the collapsible conflict panel.
@@ -15,13 +19,14 @@ const DAY_LABELS = {
  * @returns {string} HTML string
  */
 export function createConflictPanel(conflicts = [], expanded = false) {
-  if (conflicts.length === 0) return '';
+  if (conflicts.length === 0) return ''
 
-  const count = conflicts.length;
-  const rows = conflicts.map((c, i) => {
-    const typeLabel = c.type === 'teacher' ? '👤 Maestro' : '🏫 Salón';
-    const day = escapeHtml(DAY_LABELS[c.day] ?? c.day);
-    return `
+  const count = conflicts.length
+  const rows = conflicts
+    .map((c, i) => {
+      const typeLabel = c.type === 'teacher' ? '👤 Maestro' : '🏫 Salón'
+      const day = escapeHtml(DAY_LABELS[c.day] ?? c.day)
+      return `
       <div class="cp-row"
            data-conflict-ids="${c.ids.join(',')}"
            data-conflict-index="${i}"
@@ -35,8 +40,9 @@ export function createConflictPanel(conflicts = [], expanded = false) {
         <span style="background:#fecaca;color:#991b1b;border-radius:4px;padding:1px 5px;font-size:0.6rem;font-weight:700;flex-shrink:0;margin-top:1px;">${escapeHtml(c.type)}</span>
         <span style="font-size:0.72rem;color:#7f1d1d;line-height:1.4;">${day} ${c.hora_inicio} — ${escapeHtml(c.description)}</span>
       </div>
-    `;
-  }).join('');
+    `
+    })
+    .join('')
 
   return `
     <div class="conflict-panel" style="border:1.5px solid #fca5a5;border-radius:0.75rem;overflow:hidden;margin-top:1rem;">
@@ -59,7 +65,7 @@ export function createConflictPanel(conflicts = [], expanded = false) {
         ${rows}
       </div>
     </div>
-  `;
+  `
 }
 
 /**
@@ -70,30 +76,30 @@ export function createConflictPanel(conflicts = [], expanded = false) {
  * @param {Function} onRowClick - Called with the full conflict object when a row is clicked
  */
 export function attachConflictPanelListeners(container, conflicts, onRowClick) {
-  const header = container.querySelector('.cp-header');
-  const body   = container.querySelector('.cp-body');
-  const chev   = container.querySelector('.cp-chevron');
+  const header = container.querySelector('.cp-header')
+  const body = container.querySelector('.cp-body')
+  const chev = container.querySelector('.cp-chevron')
 
   header?.addEventListener('click', () => {
-    const isOpen = body.style.display !== 'none';
-    body.style.display = isOpen ? 'none' : 'block';
-    chev.className = `bi ${isOpen ? 'bi-chevron-down' : 'bi-chevron-up'}`;
-  });
+    const isOpen = body.style.display !== 'none'
+    body.style.display = isOpen ? 'none' : 'block'
+    chev.className = `bi ${isOpen ? 'bi-chevron-down' : 'bi-chevron-up'}`
+  })
 
-  container.querySelectorAll('.cp-row').forEach(row => {
+  container.querySelectorAll('.cp-row').forEach((row) => {
     // Highlight on hover
     row.addEventListener('mouseenter', () => {
-      row.style.background = '#fff1f2';
-    });
+      row.style.background = '#fff1f2'
+    })
     row.addEventListener('mouseleave', () => {
-      row.style.background = 'transparent';
-    });
+      row.style.background = 'transparent'
+    })
 
     // Handle row click
     row.addEventListener('click', () => {
-      const i = parseInt(row.dataset.conflictIndex, 10);
-      if (isNaN(i) || !conflicts[i]) return;
-      onRowClick?.(conflicts[i]);
-    });
-  });
+      const i = parseInt(row.dataset.conflictIndex, 10)
+      if (isNaN(i) || !conflicts[i]) return
+      onRowClick?.(conflicts[i])
+    })
+  })
 }

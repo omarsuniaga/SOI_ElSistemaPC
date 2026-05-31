@@ -1,18 +1,18 @@
-import { createAiService } from '../services/aiService.js';
-import { getMaestroLocal } from '../auth/maestroAuth.js';
-import { escHTML } from '../utils/portalUtils.js';
+import { createAiService } from '../services/aiService.js'
+import { getMaestroLocal } from '../auth/maestroAuth.js'
+import { escHTML } from '../utils/portalUtils.js'
 
 /**
  * Componente: AsistenteIa Optimizada
  * Sin alerts/prompts, integrado con el sistema de diseño Apple.
  */
 export async function createAsistenteIa(container) {
-  let ai = null;
+  let ai = null
   try {
-    ai = await createAiService();
+    ai = await createAiService()
   } catch (e) {
-    container.innerHTML = `<div class="pm-empty">Error IA: ${e.message}</div>`;
-    return;
+    container.innerHTML = `<div class="pm-empty">Error IA: ${e.message}</div>`
+    return
   }
 
   const render = () => {
@@ -57,24 +57,24 @@ export async function createAsistenteIa(container) {
         .pm-btn-apple-action.panic i { color: var(--apple-danger); }
         .pm-btn-apple-action span { font-size: 0.85rem; font-weight: 600; text-align: center; }
       </style>
-    `;
+    `
 
-    container.querySelectorAll('.pm-btn-apple-action').forEach(btn => {
-      btn.onclick = () => _handleAction(btn.dataset.action);
-    });
-  };
+    container.querySelectorAll('.pm-btn-apple-action').forEach((btn) => {
+      btn.onclick = () => _handleAction(btn.dataset.action)
+    })
+  }
 
   async function _handleAction(action) {
     if (action === 'analizar-quick' || action === 'analizar-full') {
-      const isFull = action === 'analizar-full';
-      _showSearchModal(isFull);
+      const isFull = action === 'analizar-full'
+      _showSearchModal(isFull)
     } else {
-      _showSimpleModal('Próximamente', 'Esta función se habilitará en la Fase 9.');
+      _showSimpleModal('Próximamente', 'Esta función se habilitará en la Fase 9.')
     }
   }
 
   function _showSearchModal(isFull) {
-    const modalContainer = container.querySelector('#pm-ai-modal-container');
+    const modalContainer = container.querySelector('#pm-ai-modal-container')
     modalContainer.innerHTML = `
       <div class="pm-modal-overlay open">
         <div class="pm-modal-content pm-animate-slide-up">
@@ -89,21 +89,21 @@ export async function createAsistenteIa(container) {
           </div>
         </div>
       </div>
-    `;
+    `
 
-    const close = () => modalContainer.innerHTML = '';
-    modalContainer.querySelector('#pm-search-close').onclick = close;
+    const close = () => (modalContainer.innerHTML = '')
+    modalContainer.querySelector('#pm-search-close').onclick = close
     modalContainer.querySelector('#pm-search-go').onclick = () => {
-      const val = modalContainer.querySelector('#pm-search-input').value.trim();
+      const val = modalContainer.querySelector('#pm-search-input').value.trim()
       if (val) {
-        close();
-        _runAnalysis(val, isFull);
+        close()
+        _runAnalysis(val, isFull)
       }
-    };
+    }
   }
 
   function _showSimpleModal(title, body) {
-    const modalContainer = container.querySelector('#pm-ai-modal-container');
+    const modalContainer = container.querySelector('#pm-ai-modal-container')
     modalContainer.innerHTML = `
       <div class="pm-modal-overlay open">
         <div class="pm-modal-content pm-animate-slide-up">
@@ -117,10 +117,10 @@ export async function createAsistenteIa(container) {
           </div>
         </div>
       </div>
-    `;
-    const close = () => modalContainer.innerHTML = '';
-    modalContainer.querySelector('#pm-modal-close').onclick = close;
-    modalContainer.querySelector('#pm-modal-ok').onclick = close;
+    `
+    const close = () => (modalContainer.innerHTML = '')
+    modalContainer.querySelector('#pm-modal-close').onclick = close
+    modalContainer.querySelector('#pm-modal-ok').onclick = close
   }
 
   async function _runAnalysis(nombre, fullContext = false) {
@@ -130,7 +130,7 @@ export async function createAsistenteIa(container) {
         <p style="margin-top:1.5rem; font-weight:600;">${fullContext ? 'Analizando historial completo...' : 'Analizando sesiones recientes...'}</p>
         <p class="apple-caption">Buscando datos de ${nombre} en la nube...</p>
       </div>
-    `;
+    `
 
     try {
       const result = await ai.analizarProgreso({
@@ -138,8 +138,8 @@ export async function createAsistenteIa(container) {
         instrumento: 'General',
         comentarios: [],
         sesiones: [],
-        fullContext
-      });
+        fullContext,
+      })
 
       container.innerHTML = `
         <div class="pm-ai-result pm-animate-fade-in">
@@ -149,9 +149,9 @@ export async function createAsistenteIa(container) {
             <button class="btn-apple-secondary" id="pm-ai-back" style="margin-top:2rem; width:100%;">Nueva Consulta</button>
           </div>
         </div>
-      `;
+      `
 
-      document.getElementById('pm-ai-back').onclick = render;
+      document.getElementById('pm-ai-back').onclick = render
     } catch (err) {
       container.innerHTML = `
         <div class="pm-placeholder">
@@ -159,10 +159,10 @@ export async function createAsistenteIa(container) {
           <p>Error en el análisis: ${err.message}</p>
           <button class="btn-apple-primary" id="pm-ai-retry">Reintentar</button>
         </div>
-      `;
-      document.getElementById('pm-ai-retry').onclick = render;
+      `
+      document.getElementById('pm-ai-retry').onclick = render
     }
   }
 
-  render();
+  render()
 }

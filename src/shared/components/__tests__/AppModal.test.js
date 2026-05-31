@@ -16,7 +16,7 @@ describe('AppModal - ESC key close functionality', () => {
   it('should open the modal successfully', () => {
     AppModal.open({
       title: 'Test Modal',
-      body: '<p>Content</p>'
+      body: '<p>Content</p>',
     })
 
     const titleEl = document.querySelector('.app-modal-title')
@@ -27,7 +27,7 @@ describe('AppModal - ESC key close functionality', () => {
   it('should close the modal when pressing ESC key', async () => {
     AppModal.open({
       title: 'Test Modal',
-      body: '<p>Content</p>'
+      body: '<p>Content</p>',
     })
 
     // Confirm modal element is visible
@@ -51,7 +51,7 @@ describe('AppModal - ESC key close functionality', () => {
     AppModal.open({
       title: 'Test Modal',
       body: '<p>Content</p>',
-      onCancel: onCancelMock
+      onCancel: onCancelMock,
     })
 
     // Simulate keydown Escape

@@ -7,13 +7,15 @@ import { supabase } from '../../../lib/supabaseClient.js'
 export async function obtenerCurriculo(instrumento, nivel) {
   let query = supabase
     .from('curriculos')
-    .select(`
+    .select(
+      `
       id, instrumento, nivel, descripcion, activo,
       curriculo_pilares (
         id, nombre, orden,
         curriculo_objetivos ( id, descripcion, orden )
       )
-    `)
+    `,
+    )
     .eq('activo', true)
 
   if (instrumento) query = query.eq('instrumento', instrumento)
@@ -30,17 +32,18 @@ export async function obtenerCurriculo(instrumento, nivel) {
 export async function listarCurriculos() {
   const { data, error } = await supabase
     .from('curriculos')
-    .select(`
+    .select(
+      `
       id, instrumento, nivel, descripcion, activo, created_at,
       curriculo_pilares ( curriculo_objetivos ( id ) )
-    `)
+    `,
+    )
     .order('instrumento')
   if (error) throw error
-  return (data || []).map(c => ({
+  return (data || []).map((c) => ({
     ...c,
-    total_objetivos: c.curriculo_pilares?.reduce(
-      (sum, p) => sum + (p.curriculo_objetivos?.length || 0), 0
-    ) ?? 0
+    total_objetivos:
+      c.curriculo_pilares?.reduce((sum, p) => sum + (p.curriculo_objetivos?.length || 0), 0) ?? 0,
   }))
 }
 
@@ -163,11 +166,14 @@ export async function adoptarPropuesta({ instrumento, nivel, descripcion, pilare
 
     const objetivos = pilarData.objetivos || []
     for (let j = 0; j < objetivos.length; j++) {
-      const objetivo = await crearObjetivo(pilar.id, objetivos[j].descripcion || `Objetivo ${j + 1}`, j)
+      const objetivo = await crearObjetivo(
+        pilar.id,
+        objetivos[j].descripcion || `Objetivo ${j + 1}`,
+        j,
+      )
       allObjetivos.push({ id: objetivo.id, descripcion: objetivo.descripcion })
     }
   }
 
   return { curriculo, allObjetivos }
 }
-

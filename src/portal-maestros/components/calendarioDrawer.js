@@ -53,9 +53,10 @@ function _renderDrawer(maestroId, sesiones, clases) {
 
         <div class="pm-sesiones-list">
           <h6 class="text-muted mb-2">Sesiones Programadas</h6>
-          ${sesiones.length > 0 
-            ? sesiones.map(s => _renderSesionItem(s, clases)).join('')
-            : '<p class="text-muted text-center py-3">No hay sesiones</p>'
+          ${
+            sesiones.length > 0
+              ? sesiones.map((s) => _renderSesionItem(s, clases)).join('')
+              : '<p class="text-muted text-center py-3">No hay sesiones</p>'
           }
         </div>
       </div>
@@ -64,10 +65,10 @@ function _renderDrawer(maestroId, sesiones, clases) {
 }
 
 function _renderSesionItem(sesion, clases) {
-  const clase = clases.find(c => c.id === sesion.clase_id)
+  const clase = clases.find((c) => c.id === sesion.clase_id)
   const claseNombre = clase?.nombre || 'Clase'
   const esEmergente = sesion.tipo === 'emergente'
-  const tieneAsistencia = sesion.asistencia && (sesion.asistencia.presentes > 0)
+  const tieneAsistencia = sesion.asistencia && sesion.asistencia.presentes > 0
 
   return `
     <div class="pm-sesion-item" data-sesion-id="${sesion.id}">
@@ -85,11 +86,15 @@ function _renderSesionItem(sesion, clases) {
         <button class="btn btn-sm btn-outline-primary" data-action="ver" title="Ver">
           <i class="bi bi-eye"></i>
         </button>
-        ${!tieneAsistencia ? `
+        ${
+          !tieneAsistencia
+            ? `
         <button class="btn btn-sm btn-outline-success" data-action="asistencia" title="Pasar asistencia">
           <i class="bi bi-check2-square"></i>
         </button>
-        ` : ''}
+        `
+            : ''
+        }
       </div>
     </div>
   `
@@ -97,7 +102,7 @@ function _renderSesionItem(sesion, clases) {
 
 function _attachDrawerEvents(drawer, maestroId, sesiones, clases, onVerSesion, onNuevaSesion) {
   drawer.querySelector('#pm-drawer-close')?.addEventListener('click', () => _closeDrawer(drawer))
-  
+
   drawer.querySelector('.pm-drawer-overlay')?.addEventListener('click', (e) => {
     if (e.target.classList.contains('pm-drawer-overlay')) {
       _closeDrawer(drawer)
@@ -109,9 +114,9 @@ function _attachDrawerEvents(drawer, maestroId, sesiones, clases, onVerSesion, o
     if (onNuevaSesion) onNuevaSesion()
   })
 
-  drawer.querySelectorAll('.pm-sesion-item').forEach(item => {
+  drawer.querySelectorAll('.pm-sesion-item').forEach((item) => {
     const sesionId = item.dataset.sesionId
-    const sesion = sesiones.find(s => s.id === sesionId)
+    const sesion = sesiones.find((s) => s.id === sesionId)
     if (!sesion) return
 
     item.querySelector('[data-action="ver"]')?.addEventListener('click', (e) => {
@@ -174,7 +179,20 @@ export function renderCalendarioMensual(container, opciones = {}) {
 }
 
 function _renderMonth(year, month, sesiones, clases, onFechaClick) {
-  const MESES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
+  const MESES = [
+    'Enero',
+    'Febrero',
+    'Marzo',
+    'Abril',
+    'Mayo',
+    'Junio',
+    'Julio',
+    'Agosto',
+    'Septiembre',
+    'Octubre',
+    'Noviembre',
+    'Diciembre',
+  ]
   const DIAS = ['Do', 'Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sa']
 
   const primerDia = new Date(year, month, 1)
@@ -188,14 +206,14 @@ function _renderMonth(year, month, sesiones, clases, onFechaClick) {
   // Determine active date for roving tabindex: today if visible, else first day of month
   const firstDate = `${year}-${String(month + 1).padStart(2, '0')}-01`
   const lastDate = `${year}-${String(month + 1).padStart(2, '0')}-${String(diasEnMes).padStart(2, '0')}`
-  const activeDate = (todayStr >= firstDate && todayStr <= lastDate) ? todayStr : null
+  const activeDate = todayStr >= firstDate && todayStr <= lastDate ? todayStr : null
 
   // Determine weekday number for each date (0=Do, 6=Sa) to group by week
   function getDayOfWeek(year, month, day) {
     return new Date(year, month, day).getDay()
   }
 
-  let diasHTML = DIAS.map(d => `<div class="pm-cal-day-header">${d}</div>`).join('')
+  let diasHTML = DIAS.map((d) => `<div class="pm-cal-day-header">${d}</div>`).join('')
 
   for (let i = 0; i < primerDiaSemana; i++) {
     diasHTML += `<div class="pm-cal-day empty"></div>`
@@ -203,21 +221,22 @@ function _renderMonth(year, month, sesiones, clases, onFechaClick) {
 
   for (let d = 1; d <= diasEnMes; d++) {
     const fecha = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`
-    const sesionesEnFecha = sesiones.filter(s => s.fecha === fecha)
+    const sesionesEnFecha = sesiones.filter((s) => s.fecha === fecha)
     const sesionCount = sesionesEnFecha.length
     const esHoy = fecha === todayStr
-    const tieneEmergente = sesionesEnFecha.some(s => s.tipo === 'emergente')
+    const tieneEmergente = sesionesEnFecha.some((s) => s.tipo === 'emergente')
     const isActive = fecha === activeDate
 
     let dayClass = 'pm-cal-day'
     if (esHoy) dayClass += ' today'
     if (sesionCount > 0) dayClass += ' has-sessions'
 
-    const dots = sesionCount > 0
-      ? `<div class="pm-day-dots">
-          ${sesionesEnFecha.map(s => `<span class="pm-dot ${s.tipo === 'emergente' ? 'emergente' : 'regular'}"></span>`).join('')}
+    const dots =
+      sesionCount > 0
+        ? `<div class="pm-day-dots">
+          ${sesionesEnFecha.map((s) => `<span class="pm-dot ${s.tipo === 'emergente' ? 'emergente' : 'regular'}"></span>`).join('')}
         </div>`
-      : ''
+        : ''
 
     const ariaLabel = `${d} de ${MESES[month]} ${year}`
     const ariaCurrent = esHoy ? ' aria-current="date"' : ''
@@ -255,10 +274,12 @@ function _attachMonthEvents(container, year, month, onNext, onPrev, onFechaClick
   container.querySelector('#pm-cal-prev')?.addEventListener('click', onPrev)
   container.querySelector('#pm-cal-next')?.addEventListener('click', onNext)
 
-  container.querySelectorAll('.pm-cal-day:not(.empty)').forEach(day => {
+  container.querySelectorAll('.pm-cal-day:not(.empty)').forEach((day) => {
     day.addEventListener('click', () => {
       // Update aria-selected on click
-      container.querySelectorAll('.pm-cal-day[data-fecha]').forEach(c => c.setAttribute('aria-selected', 'false'))
+      container
+        .querySelectorAll('.pm-cal-day[data-fecha]')
+        .forEach((c) => c.setAttribute('aria-selected', 'false'))
       day.setAttribute('aria-selected', 'true')
       if (onFechaClick) {
         onFechaClick(day.dataset.fecha)
@@ -280,7 +301,7 @@ function _attachMonthEvents(container, year, month, onNext, onPrev, onFechaClick
     const clampedIndex = (idx) => Math.max(0, Math.min(days.length - 1, idx))
     const moveFocus = (idx) => {
       if (idx < 0 || idx >= days.length) return
-      days.forEach(d => d.setAttribute('tabindex', '-1'))
+      days.forEach((d) => d.setAttribute('tabindex', '-1'))
       days[idx].setAttribute('tabindex', '0')
       days[idx].focus()
     }
@@ -319,7 +340,9 @@ function _attachMonthEvents(container, year, month, onNext, onPrev, onFechaClick
             if (newGrid) {
               const firstDay = newGrid.querySelector('.pm-cal-day[data-fecha]')
               if (firstDay) {
-                newGrid.querySelectorAll('.pm-cal-day[data-fecha]').forEach(d => d.setAttribute('tabindex', '-1'))
+                newGrid
+                  .querySelectorAll('.pm-cal-day[data-fecha]')
+                  .forEach((d) => d.setAttribute('tabindex', '-1'))
                 firstDay.setAttribute('tabindex', '0')
                 firstDay.focus()
               }
@@ -336,7 +359,9 @@ function _attachMonthEvents(container, year, month, onNext, onPrev, onFechaClick
             if (newGrid) {
               const firstDay = newGrid.querySelector('.pm-cal-day[data-fecha]')
               if (firstDay) {
-                newGrid.querySelectorAll('.pm-cal-day[data-fecha]').forEach(d => d.setAttribute('tabindex', '-1'))
+                newGrid
+                  .querySelectorAll('.pm-cal-day[data-fecha]')
+                  .forEach((d) => d.setAttribute('tabindex', '-1'))
                 firstDay.setAttribute('tabindex', '0')
                 firstDay.focus()
               }
@@ -356,5 +381,8 @@ function _attachMonthEvents(container, year, month, onNext, onPrev, onFechaClick
 }
 
 function _escHTML(str) {
-  return String(str ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+  return String(str ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
 }

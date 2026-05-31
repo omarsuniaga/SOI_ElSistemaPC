@@ -31,7 +31,11 @@ describe('fileUploadService.uploadAbsenceDoc', () => {
   })
 
   it('throws InvalidMimeError for unsupported file type (.docx)', async () => {
-    const docx = makeFile('doc.docx', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 100)
+    const docx = makeFile(
+      'doc.docx',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      100,
+    )
     await expect(uploadAbsenceDoc(docx, 'maestro-1')).rejects.toMatchObject({
       name: 'InvalidMimeError',
     })

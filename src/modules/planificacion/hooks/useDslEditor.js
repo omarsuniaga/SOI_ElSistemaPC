@@ -1,4 +1,9 @@
-import { saveDslContent, loadDslContent, extractTokensFromDsl, summarizeDsl } from '../api/dslApi.js'
+import {
+  saveDslContent,
+  loadDslContent,
+  extractTokensFromDsl,
+  summarizeDsl,
+} from '../api/dslApi.js'
 import { getAlumnos } from '../../alumnos/api/alumnosApi.js'
 
 export class DslEditorHook {
@@ -15,7 +20,7 @@ export class DslEditorHook {
   subscribe(callback) {
     this.listeners.push(callback)
     return () => {
-      this.listeners = this.listeners.filter(l => l !== callback)
+      this.listeners = this.listeners.filter((l) => l !== callback)
     }
   }
 
@@ -27,7 +32,7 @@ export class DslEditorHook {
       error: this.error,
       isSaved: this.isSaved,
     }
-    this.listeners.forEach(listener => listener(state))
+    this.listeners.forEach((listener) => listener(state))
   }
 
   setSesionId(sesionId) {
@@ -100,8 +105,8 @@ export class DslEditorHook {
 
   async getAlumnosMention(alumnoIds) {
     const allAlumnos = await getAlumnos()
-    const selected = allAlumnos.filter(a => alumnoIds.includes(a.id))
-    return selected.map(a => `#${a.nombre_completo}`).join(', ')
+    const selected = allAlumnos.filter((a) => alumnoIds.includes(a.id))
+    return selected.map((a) => `#${a.nombre_completo}`).join(', ')
   }
 
   hasUnsavedChanges() {

@@ -341,13 +341,14 @@ function _nuevoReporte(container) {
       state.reportes.unshift({
         id: 'rpt_' + Date.now(),
         nombre,
-        descripcion: document.getElementById('newReporteDesc').value,
+        descripcion: document.getElementById('newReporteDesc').value.trim(),
         tipo: document.getElementById('newReporteTipo').value,
         frecuencia: document.getElementById('newReporteFreq').value,
         icon: 'bi-file-earmark-text',
       })
 
       _render(container)
+      _bindEvents(container)
       AppModal.close()
     },
   })
@@ -632,17 +633,30 @@ function _editarReporte(id, container) {
       </div>
     `,
     onSave: () => {
+      const nombre = document.getElementById('editReporteNombre').value.trim()
+      const descripcion = document.getElementById('editReporteDesc').value.trim()
+
+      if (!nombre) {
+        alert('El nombre es obligatorio')
+        return false
+      }
+      if (!descripcion) {
+        alert('La descripción es obligatoria')
+        return false
+      }
+
       const idx = state.reportes.findIndex((r) => r.id === id)
       if (idx !== -1) {
         state.reportes[idx] = {
           ...state.reportes[idx],
-          nombre: document.getElementById('editReporteNombre').value,
-          descripcion: document.getElementById('editReporteDesc').value,
+          nombre,
+          descripcion,
           tipo: document.getElementById('editReporteTipo').value,
           frecuencia: document.getElementById('editReporteFreq').value,
         }
       }
       _render(container)
+      _bindEvents(container)
       AppModal.close()
     },
   })

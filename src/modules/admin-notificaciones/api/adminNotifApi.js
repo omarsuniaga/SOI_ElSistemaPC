@@ -29,22 +29,22 @@ function isoToDisplay(dateStr) {
 function timeAgo(isoStr) {
   if (!isoStr) return ''
   const diff = Date.now() - new Date(isoStr).getTime()
-  const mins  = Math.floor(diff / 60000)
+  const mins = Math.floor(diff / 60000)
   const hours = Math.floor(diff / 3600000)
-  const days  = Math.floor(diff / 86400000)
-  if (mins  < 2)  return 'ahora mismo'
-  if (mins  < 60) return `hace ${mins} min`
+  const days = Math.floor(diff / 86400000)
+  if (mins < 2) return 'ahora mismo'
+  if (mins < 60) return `hace ${mins} min`
   if (hours < 24) return `hace ${hours}h`
-  if (days  < 7)  return `hace ${days}d`
+  if (days < 7) return `hace ${days}d`
   return isoToDisplay(isoStr)
 }
 
 const TIPO_AUSENCIA = {
-  enfermedad:   'Médica',
-  personal:     'Personal',
+  enfermedad: 'Médica',
+  personal: 'Personal',
   capacitacion: 'Capacitación',
-  vacaciones:   'Vacaciones',
-  otro:         'Otro',
+  vacaciones: 'Vacaciones',
+  otro: 'Otro',
 }
 
 // ── Source 1: Ausencias ───────────────────────────────────────────────────────
@@ -53,11 +53,13 @@ async function _fetchAusencias() {
   const since = daysAgo(30)
   const { data: ausencias, error } = await supabase
     .from('ausencias_maestros')
-    .select(`
+    .select(
+      `
       id, maestro_id, tipo_ausencia, urgencia, fecha_inicio, fecha_fin,
       estado, motivo, created_at, decidido_en,
       maestros:maestro_id(nombre_completo, correo, instrumento)
-    `)
+    `,
+    )
     .in('estado', ['pendiente', 'aprobada', 'rechazada'])
     .gte('created_at', `${since}T00:00:00`)
     .order('created_at', { ascending: false })
@@ -66,7 +68,7 @@ async function _fetchAusencias() {
   if (error) throw error
   if (!ausencias || ausencias.length === 0) return []
 
-  const maestroIds = [...new Set(ausencias.map(a => a.maestro_id).filter(Boolean))]
+  const maestroIds = [...new Set(ausencias.map((a) => a.maestro_id).filter(Boolean))]
   if (maestroIds.length > 0) {
     const { data: perfiles, error: perfError } = await supabase
       .from('profiles')
@@ -74,86 +76,109 @@ async function _fetchAusencias() {
       .in('id', maestroIds)
 
     if (!perfError && perfiles) {
-      const correos = perfiles.map(p => p.email).filter(Boolean)
+      const correos = perfiles.map((p) => p.email).filter(Boolean)
       let maestrosMap = new Map()
-      
+
       if (correos.length > 0) {
         const { data: maestrosData } = await supabase
           .from('maestros')
           .select('correo, especialidad')
           .in('correo', correos)
-        
+
         if (maestrosData) {
-          maestrosMap = new Map(maestrosData.map(m => [m.correo.toLowerCase(), m.especialidad]))
+          maestrosMap = new Map(maestrosData.map((m) => [m.correo.toLowerCase(), m.especialidad]))
         }
       }
 
-      const perfMap = new Map(perfiles.map(p => {
-        const especialidad = maestrosMap.get(p.email?.toLowerCase()) || null
-        return [p.id, {
-          nombre_completo: p.nombre_completo,
-          correo: p.email,
-          instrumento: especialidad
-        }]
-      }))
+      const perfMap = new Map(
+        perfiles.map((p) => {
+          const especialidad = maestrosMap.get(p.email?.toLowerCase()) || null
+          return [
+            p.id,
+            {
+              nombre_completo: p.nombre_completo,
+              correo: p.email,
+              instrumento: especialidad,
+            },
+          ]
+        }),
+      )
 
-      return ausencias.map(a => {
+      return ausencias.map((a) => {
         const m = perfMap.get(a.maestro_id)
         return {
           ...a,
-          maestros: m || a.maestros || null
+          maestros: m || a.maestros || null,
         }
       })
     }
   }
 
-  return ausencias.map(a => ({ ...a, maestros: a.maestros || null }))
+  return ausencias.map((a) => ({ ...a, maestros: a.maestros || null }))
 }
 
 function _ausenciaToEvent(a, activeMaestros = []) {
-  const nombre   = a.maestros?.nombre_completo || 'Maestro'
-  const tipo     = TIPO_AUSENCIA[a.tipo_ausencia] || a.tipo_ausencia || 'Ausencia'
+  const nombre = a.maestros?.nombre_completo || 'Maestro'
+  const tipo = TIPO_AUSENCIA[a.tipo_ausencia] || a.tipo_ausencia || 'Ausencia'
   const isPending = a.estado === 'pendiente'
   const isApproved = a.estado === 'aprobada'
-  const dateStr  = a.fecha_inicio === a.fecha_fin
-    ? isoToDisplay(a.fecha_inicio)
-    : `${isoToDisplay(a.fecha_inicio)} → ${isoToDisplay(a.fecha_fin)}`
+  const dateStr =
+    a.fecha_inicio === a.fecha_fin
+      ? isoToDisplay(a.fecha_inicio)
+      : `${isoToDisplay(a.fecha_inicio)} → ${isoToDisplay(a.fecha_fin)}`
 
   // Buscar sustitutos proactivos (del mismo instrumento y diferentes al ausente)
   const maestroInstrumento = a.maestros?.instrumento
-  const suplentesSugeridos = isPending && maestroInstrumento
-    ? activeMaestros.filter(m => m.instrumento === maestroInstrumento && m.id !== a.maestro_id).slice(0, 3)
-    : []
+  const suplentesSugeridos =
+    isPending && maestroInstrumento
+      ? activeMaestros
+          .filter((m) => m.instrumento === maestroInstrumento && m.id !== a.maestro_id)
+          .slice(0, 3)
+      : []
 
   return {
-    id:        `ausencia:${a.id}`,
-    source:    'ausencia',
-    sourceId:  a.id,
-    priority:  isPending ? (a.urgencia === 'alta' ? 'alta' : a.urgencia === 'media' ? 'media' : 'baja') : 'info',
+    id: `ausencia:${a.id}`,
+    source: 'ausencia',
+    sourceId: a.id,
+    priority: isPending
+      ? a.urgencia === 'alta'
+        ? 'alta'
+        : a.urgencia === 'media'
+          ? 'media'
+          : 'baja'
+      : 'info',
     actionable: isPending,
-    estado:    a.estado,
-    urgencia:  a.urgencia,
+    estado: a.estado,
+    urgencia: a.urgencia,
     tipo_ausencia: a.tipo_ausencia,
-    icon:      isPending ? 'bi-calendar-x-fill'
-             : isApproved ? 'bi-calendar-check-fill'
-             : 'bi-calendar-minus-fill',
-    iconColor: isPending ? (a.urgencia === 'alta' ? '#ef4444' : a.urgencia === 'media' ? '#f59e0b' : '#6b7280')
-             : isApproved ? '#22c55e'
-             : '#ef4444',
-    category:  'ausencia',
-    titulo:    isPending
+    icon: isPending
+      ? 'bi-calendar-x-fill'
+      : isApproved
+        ? 'bi-calendar-check-fill'
+        : 'bi-calendar-minus-fill',
+    iconColor: isPending
+      ? a.urgencia === 'alta'
+        ? '#ef4444'
+        : a.urgencia === 'media'
+          ? '#f59e0b'
+          : '#6b7280'
+      : isApproved
+        ? '#22c55e'
+        : '#ef4444',
+    category: 'ausencia',
+    titulo: isPending
       ? `${nombre} solicitó ausencia ${tipo.toLowerCase()}`
       : isApproved
         ? `Ausencia de ${nombre} aprobada`
         : `Ausencia de ${nombre} rechazada`,
     subtitulo: dateStr,
-    motivo:    a.motivo || '',
+    motivo: a.motivo || '',
     timestamp: a.created_at,
-    timeAgo:   timeAgo(a.created_at),
+    timeAgo: timeAgo(a.created_at),
     actionRoute: isPending ? 'admin-ausencias' : null,
     actionLabel: isPending ? 'Revisar' : null,
     suplentesSugeridos,
-    maestroInstrumento
+    maestroInstrumento,
   }
 }
 
@@ -161,18 +186,20 @@ function _ausenciaToEvent(a, activeMaestros = []) {
 
 async function _fetchSesionesSinAsistencia() {
   const since = daysAgo(7)
-  const hoy   = new Date().toISOString().split('T')[0]
+  const hoy = new Date().toISOString().split('T')[0]
 
   const { data, error } = await supabase
     .from('sesiones_clase')
-    .select(`
+    .select(
+      `
       id, fecha, asistencia, borrador, contenido, clase_id,
       clases:clase_id(nombre, maestro_id,
         maestros:maestro_id(nombre_completo)
       )
-    `)
+    `,
+    )
     .gte('fecha', since)
-    .lt('fecha', hoy)         // excluir hoy (puede estar en progreso)
+    .lt('fecha', hoy) // excluir hoy (puede estar en progreso)
     .order('fecha', { ascending: false })
     .limit(200)
 
@@ -182,37 +209,37 @@ async function _fetchSesionesSinAsistencia() {
 
 function _sesionesToEvents(sesiones) {
   // Filtrar las que no tienen asistencia registrada
-  const sinAsistencia = sesiones.filter(s => {
+  const sinAsistencia = sesiones.filter((s) => {
     const tieneAsistencia = Array.isArray(s.asistencia) && s.asistencia.length > 0
-    const tieneContenido  = typeof s.contenido === 'string' && s.contenido.trim().length > 0
+    const tieneContenido = typeof s.contenido === 'string' && s.contenido.trim().length > 0
     return !tieneAsistencia && !(s.borrador === false && tieneContenido)
   })
 
   // Agrupar por maestro para no spamear un evento por sesión
   const porMaestro = {}
   for (const s of sinAsistencia) {
-    const mid    = s.clases?.maestro_id || 'unknown'
+    const mid = s.clases?.maestro_id || 'unknown'
     const nombre = s.clases?.maestros?.nombre_completo || 'Maestro desconocido'
     if (!porMaestro[mid]) porMaestro[mid] = { nombre, count: 0, ultima: s.fecha, mid }
     porMaestro[mid].count++
     if (s.fecha > porMaestro[mid].ultima) porMaestro[mid].ultima = s.fecha
   }
 
-  return Object.values(porMaestro).map(m => ({
-    id:        `compliance:${m.mid}`,
-    source:    'sesion',
-    sourceId:  m.mid,
-    priority:  m.count >= 3 ? 'alta' : m.count >= 2 ? 'media' : 'baja',
+  return Object.values(porMaestro).map((m) => ({
+    id: `compliance:${m.mid}`,
+    source: 'sesion',
+    sourceId: m.mid,
+    priority: m.count >= 3 ? 'alta' : m.count >= 2 ? 'media' : 'baja',
     actionable: false,
-    estado:    'info',
-    icon:      'bi-clipboard-x-fill',
+    estado: 'info',
+    icon: 'bi-clipboard-x-fill',
     iconColor: m.count >= 3 ? '#ef4444' : m.count >= 2 ? '#f59e0b' : '#6b7280',
-    category:  'compliance',
-    titulo:    `${m.nombre} tiene ${m.count} clase${m.count > 1 ? 's' : ''} sin asistencia`,
+    category: 'compliance',
+    titulo: `${m.nombre} tiene ${m.count} clase${m.count > 1 ? 's' : ''} sin asistencia`,
     subtitulo: `Última: ${isoToDisplay(m.ultima)} · últimos 7 días`,
-    motivo:    '',
+    motivo: '',
     timestamp: new Date(`${m.ultima}T12:00:00`).toISOString(),
-    timeAgo:   isoToDisplay(m.ultima),
+    timeAgo: isoToDisplay(m.ultima),
     actionRoute: null,
     actionLabel: null,
   }))
@@ -237,21 +264,21 @@ async function _fetchAlumnosRecientes() {
 }
 
 function _alumnosToEvents(alumnos) {
-  return alumnos.map(a => ({
-    id:        `alumno:${a.id}`,
-    source:    'alumno',
-    sourceId:  a.id,
-    priority:  'info',
+  return alumnos.map((a) => ({
+    id: `alumno:${a.id}`,
+    source: 'alumno',
+    sourceId: a.id,
+    priority: 'info',
     actionable: false,
-    estado:    'info',
-    icon:      'bi-person-plus-fill',
+    estado: 'info',
+    icon: 'bi-person-plus-fill',
     iconColor: '#3b82f6',
-    category:  'alumno',
-    titulo:    `Nuevo alumno registrado: ${a.nombre_completo || 'Alumno'}`,
+    category: 'alumno',
+    titulo: `Nuevo alumno registrado: ${a.nombre_completo || 'Alumno'}`,
     subtitulo: `Estado: activo`,
-    motivo:    '',
+    motivo: '',
     timestamp: a.created_at,
-    timeAgo:   timeAgo(a.created_at),
+    timeAgo: timeAgo(a.created_at),
     actionRoute: null,
     actionLabel: null,
   }))
@@ -277,20 +304,20 @@ async function _fetchMaestrosPendientes() {
 
 function _maestroToEvent(p) {
   return {
-    id:        `maestro-pendiente:${p.id}`,
-    source:    'maestro',
-    sourceId:  p.id,
-    priority:  'alta',
+    id: `maestro-pendiente:${p.id}`,
+    source: 'maestro',
+    sourceId: p.id,
+    priority: 'alta',
     actionable: true,
-    estado:    'pendiente',
-    icon:      'bi-person-badge-fill',
+    estado: 'pendiente',
+    icon: 'bi-person-badge-fill',
     iconColor: '#ef4444',
-    category:  'maestro',
-    titulo:    `Nuevo maestro registrado esperando aprobación: ${p.nombre_completo || 'Maestro'}`,
+    category: 'maestro',
+    titulo: `Nuevo maestro registrado esperando aprobación: ${p.nombre_completo || 'Maestro'}`,
     subtitulo: `Email: ${p.email}`,
-    motivo:    '',
+    motivo: '',
     timestamp: p.created_at,
-    timeAgo:   timeAgo(p.created_at),
+    timeAgo: timeAgo(p.created_at),
     actionRoute: 'admin-aprobacion',
     actionLabel: 'Ver Aprobaciones',
   }
@@ -308,11 +335,11 @@ async function _fetchActiveMaestros() {
     console.warn('[adminNotifApi] active maestros fetch warn:', error.message)
     return []
   }
-  return (data || []).map(m => ({
+  return (data || []).map((m) => ({
     id: m.id,
     nombre_completo: m.nombre_completo,
     email: m.correo,
-    instrumento: m.especialidad
+    instrumento: m.especialidad,
   }))
 }
 
@@ -320,10 +347,12 @@ async function _fetchEarlyWarningRisks() {
   const since = daysAgo(30)
   const { data, error } = await supabase
     .from('asistencias')
-    .select(`
+    .select(
+      `
       alumno_id, estado, fecha,
       alumnos:alumno_id(nombre_completo)
-    `)
+    `,
+    )
     .gte('fecha', since)
     .order('fecha', { ascending: false })
 
@@ -333,13 +362,13 @@ async function _fetchEarlyWarningRisks() {
   }
 
   const studentHistory = {}
-  for (const a of (data || [])) {
+  for (const a of data || []) {
     const aid = a.alumno_id
     if (!aid) continue
     if (!studentHistory[aid]) {
       studentHistory[aid] = {
         nombre: a.alumnos?.nombre_completo || 'Estudiante',
-        asistencias: []
+        asistencias: [],
       }
     }
     studentHistory[aid].asistencias.push(a.estado)
@@ -377,15 +406,15 @@ async function _fetchEarlyWarningRisks() {
         timestamp: new Date().toISOString(),
         timeAgo: 'ahora mismo',
         actionRoute: `alumno?id=${studentId}`,
-        actionLabel: 'Ver Ficha'
+        actionLabel: 'Ver Ficha',
       })
       continue
     }
 
     // 2. Caída de asistencia por debajo del 70%
-    const presentes = info.asistencias.filter(e => e === 'P' || e === 'presente').length
+    const presentes = info.asistencias.filter((e) => e === 'P' || e === 'presente').length
     const rate = presentes / total
-    if (rate < 0.70) {
+    if (rate < 0.7) {
       riskEvents.push({
         id: `riesgo-alumno-rate:${studentId}`,
         source: 'riesgo',
@@ -402,7 +431,7 @@ async function _fetchEarlyWarningRisks() {
         timestamp: new Date().toISOString(),
         timeAgo: 'ahora mismo',
         actionRoute: `alumno?id=${studentId}`,
-        actionLabel: 'Ver Ficha'
+        actionLabel: 'Ver Ficha',
       })
     }
   }
@@ -417,14 +446,15 @@ async function _fetchEarlyWarningRisks() {
  * Retorna un array ordenado: accionables primero, luego por timestamp desc.
  */
 export async function fetchAdminFeed() {
-  const [ausencias, sesiones, alumnos, maestros, activeMaestrosRes, riesgos] = await Promise.allSettled([
-    _fetchAusencias(),
-    _fetchSesionesSinAsistencia(),
-    _fetchAlumnosRecientes(),
-    _fetchMaestrosPendientes(),
-    _fetchActiveMaestros(), // we will fetch active maestros below
-    _fetchEarlyWarningRisks(),
-  ])
+  const [ausencias, sesiones, alumnos, maestros, activeMaestrosRes, riesgos] =
+    await Promise.allSettled([
+      _fetchAusencias(),
+      _fetchSesionesSinAsistencia(),
+      _fetchAlumnosRecientes(),
+      _fetchMaestrosPendientes(),
+      _fetchActiveMaestros(), // we will fetch active maestros below
+      _fetchEarlyWarningRisks(),
+    ])
 
   // fallback to separate calls if needed
   let activeMaestros = []
@@ -434,25 +464,18 @@ export async function fetchAdminFeed() {
     console.warn('[adminNotifApi] fallback active maestros failed:', e)
   }
 
-  const ausenciaItems = ausencias.status === 'fulfilled'
-    ? ausencias.value.map(a => _ausenciaToEvent(a, activeMaestros))
-    : []
+  const ausenciaItems =
+    ausencias.status === 'fulfilled'
+      ? ausencias.value.map((a) => _ausenciaToEvent(a, activeMaestros))
+      : []
 
-  const sesionItems = sesiones.status === 'fulfilled'
-    ? _sesionesToEvents(sesiones.value)
-    : []
+  const sesionItems = sesiones.status === 'fulfilled' ? _sesionesToEvents(sesiones.value) : []
 
-  const alumnoItems = alumnos.status === 'fulfilled'
-    ? _alumnosToEvents(alumnos.value)
-    : []
+  const alumnoItems = alumnos.status === 'fulfilled' ? _alumnosToEvents(alumnos.value) : []
 
-  const maestroItems = maestros.status === 'fulfilled'
-    ? maestros.value.map(_maestroToEvent)
-    : []
+  const maestroItems = maestros.status === 'fulfilled' ? maestros.value.map(_maestroToEvent) : []
 
-  const riesgoItems = riesgos.status === 'fulfilled'
-    ? riesgos.value
-    : []
+  const riesgoItems = riesgos.status === 'fulfilled' ? riesgos.value : []
 
   const all = [...ausenciaItems, ...sesionItems, ...alumnoItems, ...maestroItems, ...riesgoItems]
 
@@ -482,16 +505,18 @@ export async function fetchAdminPendingCount() {
       .from('profiles')
       .select('id', { count: 'exact', head: true })
       .eq('rol', 'maestro')
-      .eq('estado', 'pendiente')
+      .eq('estado', 'pendiente'),
   ])
 
-  const ausenciasCount = ausenciasRes.status === 'fulfilled' && !ausenciasRes.value.error
-    ? (ausenciasRes.value.count || 0)
-    : 0
+  const ausenciasCount =
+    ausenciasRes.status === 'fulfilled' && !ausenciasRes.value.error
+      ? ausenciasRes.value.count || 0
+      : 0
 
-  const maestrosCount = maestrosRes.status === 'fulfilled' && !maestrosRes.value.error
-    ? (maestrosRes.value.count || 0)
-    : 0
+  const maestrosCount =
+    maestrosRes.status === 'fulfilled' && !maestrosRes.value.error
+      ? maestrosRes.value.count || 0
+      : 0
 
   return ausenciasCount + maestrosCount
 }
@@ -511,7 +536,7 @@ export async function fetchMaestrosParaNotificar() {
     .order('nombre_completo', { ascending: true })
 
   if (error) throw error
-  return (data || []).map(p => ({
+  return (data || []).map((p) => ({
     profile_id: p.id,
     nombre: p.nombre_completo || p.email || 'Maestro',
     email: p.email,
@@ -526,11 +551,14 @@ export async function fetchMaestrosParaNotificar() {
  * @param {{ titulo: string, mensaje: string, deep_link?: string }} payload
  * @returns {Promise<{ sent: number, pushed: number }>}
  */
-export async function sendNotificacionToMaestros(profileIds, { titulo, mensaje, deep_link = '/notificaciones' }) {
+export async function sendNotificacionToMaestros(
+  profileIds,
+  { titulo, mensaje, deep_link = '/notificaciones' },
+) {
   if (!profileIds?.length) throw new Error('Se requiere al menos un destinatario')
 
   // 1. In-app notification (notificaciones table)
-  const rows = profileIds.map(profile_id => ({
+  const rows = profileIds.map((profile_id) => ({
     profile_id,
     tipo: 'aviso_admin',
     titulo,
@@ -546,16 +574,16 @@ export async function sendNotificacionToMaestros(profileIds, { titulo, mensaje, 
   let pushed = 0
   try {
     const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
-    const anonKey    = import.meta.env.VITE_SUPABASE_ANON_KEY
+    const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
     // Fire one request per recipient (Edge Function handles single profile_id)
     const pushResults = await Promise.allSettled(
-      profileIds.map(profile_id =>
+      profileIds.map((profile_id) =>
         fetch(`${supabaseUrl}/functions/v1/send-push`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${anonKey}`,
-            'apikey': anonKey,
+            Authorization: `Bearer ${anonKey}`,
+            apikey: anonKey,
           },
           body: JSON.stringify({
             profile_id,
@@ -563,12 +591,15 @@ export async function sendNotificacionToMaestros(profileIds, { titulo, mensaje, 
             body: mensaje,
             data: { tipo: 'aviso_admin', deepLink: deep_link },
           }),
-        }).then(r => r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`)))
-      )
+        }).then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`)))),
+      ),
     )
-    pushed = pushResults.filter(r => r.status === 'fulfilled' && r.value?.sent > 0).length
+    pushed = pushResults.filter((r) => r.status === 'fulfilled' && r.value?.sent > 0).length
   } catch (pushErr) {
-    console.warn('[adminNotifApi] Web push dispatch failed (in-app notif still sent):', pushErr.message)
+    console.warn(
+      '[adminNotifApi] Web push dispatch failed (in-app notif still sent):',
+      pushErr.message,
+    )
   }
 
   return { sent: rows.length, pushed }
@@ -610,6 +641,5 @@ export async function fetchNotificacionesEnviadas({ limit = 50 } = {}) {
 
   return [...groups.values()]
     .slice(0, limit)
-    .map(g => ({ ...g, recipientCount: g.recipients.length }))
+    .map((g) => ({ ...g, recipientCount: g.recipients.length }))
 }
-

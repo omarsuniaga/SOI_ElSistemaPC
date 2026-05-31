@@ -4,7 +4,7 @@ let aiService = null
 
 /**
  * renderChatWidget - Sistema de asistencia por chat inteligente.
- * @param {HTMLElement} container 
+ * @param {HTMLElement} container
  */
 export async function renderChatWidget(container) {
   try {
@@ -73,13 +73,16 @@ export async function renderChatWidget(container) {
     input.value = ''
 
     if (!aiService) {
-      addMessage('⚠️ El servicio de IA no está configurado. Ve a Sistema → Configuración para agregar tu API key.')
+      addMessage(
+        '⚠️ El servicio de IA no está configurado. Ve a Sistema → Configuración para agregar tu API key.',
+      )
       return
     }
 
     const loadingDiv = document.createElement('div')
     loadingDiv.className = 'pm-message pm-message-ai mb-2'
-    loadingDiv.innerHTML = '<div class="pm-message-content pm-loading"><div class="spinner-border spinner-border-sm me-2" role="status"></div> Escribiendo...</div>'
+    loadingDiv.innerHTML =
+      '<div class="pm-message-content pm-loading"><div class="spinner-border spinner-border-sm me-2" role="status"></div> Escribiendo...</div>'
     messagesDiv.appendChild(loadingDiv)
     messagesDiv.scrollTop = messagesDiv.scrollHeight
 

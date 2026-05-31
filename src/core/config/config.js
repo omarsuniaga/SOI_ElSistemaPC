@@ -2,7 +2,8 @@ export const config = {
   version: '1.0.0',
   environment: import.meta.env.MODE || 'development',
   // Modo Demo: Se activa si la variable de entorno está presente o si hay un flag en localStorage
-  isDemoMode: import.meta.env.VITE_DEMO_MODE === 'true' || localStorage.getItem('demo_mode') === 'true',
+  isDemoMode:
+    import.meta.env.VITE_DEMO_MODE === 'true' || localStorage.getItem('demo_mode') === 'true',
   // GROQ (IA) Configuration
   groq: {
     // ChatGroq API - https://console.groq.com

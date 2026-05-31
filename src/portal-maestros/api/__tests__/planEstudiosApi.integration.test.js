@@ -13,8 +13,8 @@ function buildChain(result) {
     insert: vi.fn().mockReturnThis(),
     delete: vi.fn().mockReturnThis(),
     update: vi.fn().mockReturnThis(),
-    eq:     vi.fn().mockReturnThis(),
-    order:  vi.fn().mockReturnThis(),
+    eq: vi.fn().mockReturnThis(),
+    order: vi.fn().mockReturnThis(),
     single: vi.fn().mockResolvedValue(result),
   }
   c.then = (res) => Promise.resolve(result).then(res)
@@ -26,14 +26,22 @@ describe('planEstudiosApi — integration smoke tests', () => {
 
   it('full create → fetch → delete cycle completes without throwing', async () => {
     const entry = {
-      id: 'e1', alumno_id: 'a1', maestro_id: 'm1',
-      tipo: 'diagnostico', titulo: 'Nivel base',
+      id: 'e1',
+      alumno_id: 'a1',
+      maestro_id: 'm1',
+      tipo: 'diagnostico',
+      titulo: 'Nivel base',
       created_at: new Date().toISOString(),
     }
 
     // insertPlanEntrada
     supabase.from.mockReturnValueOnce(buildChain({ data: entry, error: null }))
-    const saved = await insertPlanEntrada({ alumno_id: 'a1', maestro_id: 'm1', tipo: 'diagnostico', titulo: 'Nivel base' })
+    const saved = await insertPlanEntrada({
+      alumno_id: 'a1',
+      maestro_id: 'm1',
+      tipo: 'diagnostico',
+      titulo: 'Nivel base',
+    })
     expect(saved.id).toBe('e1')
     expect(saved.titulo).toBe('Nivel base')
 
@@ -49,18 +57,30 @@ describe('planEstudiosApi — integration smoke tests', () => {
   })
 
   it('propagates DB constraint violation as Error', async () => {
-    supabase.from.mockReturnValueOnce(buildChain({ data: null, error: { message: 'violates check constraint' } }))
+    supabase.from.mockReturnValueOnce(
+      buildChain({ data: null, error: { message: 'violates check constraint' } }),
+    )
     await expect(
-      insertPlanEntrada({ alumno_id: 'a1', maestro_id: 'm1', tipo: 'tipo_invalido', titulo: 'X' })
+      insertPlanEntrada({ alumno_id: 'a1', maestro_id: 'm1', tipo: 'tipo_invalido', titulo: 'X' }),
     ).rejects.toThrow('violates check constraint')
   })
 
   it('all 5 valid tipos can be passed without client-side rejection', async () => {
     const tipos = ['diagnostico', 'logro', 'en_progreso', 'dificultad', 'objetivo']
     for (const tipo of tipos) {
-      const entry = { id: `e-${tipo}`, tipo, titulo: `Test ${tipo}`, created_at: new Date().toISOString() }
+      const entry = {
+        id: `e-${tipo}`,
+        tipo,
+        titulo: `Test ${tipo}`,
+        created_at: new Date().toISOString(),
+      }
       supabase.from.mockReturnValueOnce(buildChain({ data: entry, error: null }))
-      const result = await insertPlanEntrada({ alumno_id: 'a1', maestro_id: 'm1', tipo, titulo: `Test ${tipo}` })
+      const result = await insertPlanEntrada({
+        alumno_id: 'a1',
+        maestro_id: 'm1',
+        tipo,
+        titulo: `Test ${tipo}`,
+      })
       expect(result.tipo).toBe(tipo)
     }
   })

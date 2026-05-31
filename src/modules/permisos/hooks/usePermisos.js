@@ -21,7 +21,7 @@ export class PermisosHook {
   subscribe(callback) {
     this.listeners.push(callback)
     return () => {
-      this.listeners = this.listeners.filter(l => l !== callback)
+      this.listeners = this.listeners.filter((l) => l !== callback)
     }
   }
 
@@ -29,7 +29,7 @@ export class PermisosHook {
    * Notificar a todos los suscriptores
    */
   notifyListeners() {
-    this.listeners.forEach(listener => {
+    this.listeners.forEach((listener) => {
       listener({
         permisos: this.permisos,
         permisoActual: this.permisoActual,
@@ -95,7 +95,7 @@ export class PermisosHook {
     try {
       const actualizado = await actualizarPermiso(maestroId, changes)
       // Refrescar lista local
-      const idx = this.permisos.findIndex(p => p.maestro_id === maestroId)
+      const idx = this.permisos.findIndex((p) => p.maestro_id === maestroId)
       if (idx !== -1) {
         this.permisos[idx] = actualizado
       } else {

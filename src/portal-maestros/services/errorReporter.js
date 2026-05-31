@@ -87,7 +87,7 @@ export function addBreadcrumb(message, data = {}) {
     window.Sentry.addBreadcrumb({
       message,
       data,
-      level: 'info'
+      level: 'info',
     })
   }
   console.log(`[Breadcrumb] ${message}`, data)

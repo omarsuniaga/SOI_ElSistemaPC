@@ -44,10 +44,11 @@ describe('rutaGameificadaView', () => {
 
   it('displays class selector when classes exist', async () => {
     global.getMaestroLocal = () => ({ id: 'm1', nombre: 'Test' })
-    global.getMisClases = () => Promise.resolve([
-      { id: 'c1', nombre: 'Grupo A' },
-      { id: 'c2', nombre: 'Grupo B' }
-    ])
+    global.getMisClases = () =>
+      Promise.resolve([
+        { id: 'c1', nombre: 'Grupo A' },
+        { id: 'c2', nombre: 'Grupo B' },
+      ])
     global.loadRouteTree = () => Promise.resolve([])
 
     await renderRutaGameificadaView(container)

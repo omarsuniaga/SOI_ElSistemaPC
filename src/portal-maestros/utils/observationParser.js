@@ -30,39 +30,83 @@ const STATE_RULES = [
     estado: 'DIFICULTAD',
     peso: 4,
     keywords: [
-      'no logro', 'no logra', 'no pudo', 'no puede', 'dificultad',
-      'le cuesta', 'les cuesta', 'se le dificulta', 'se les dificulta',
-      'confunde', 'confunden', 'sigue mostrando dificultad',
-      'siguen mostrando dificultad', 'necesita reforzar', 'necesitan reforzar',
-      'falta practica', 'falta mejorar', 'todavia no'
-    ]
+      'no logro',
+      'no logra',
+      'no pudo',
+      'no puede',
+      'dificultad',
+      'le cuesta',
+      'les cuesta',
+      'se le dificulta',
+      'se les dificulta',
+      'confunde',
+      'confunden',
+      'sigue mostrando dificultad',
+      'siguen mostrando dificultad',
+      'necesita reforzar',
+      'necesitan reforzar',
+      'falta practica',
+      'falta mejorar',
+      'todavia no',
+    ],
   },
   {
     estado: 'LOGRADO',
     peso: 3,
     keywords: [
-      'logro', 'logra correctamente', 'domina', 'domino', 'dominan',
-      'excelente', 'muy bien', 'supero', 'superaron', 'perfecto',
-      'completo correctamente', 'completaron correctamente', 'ya sabe', 'ya saben'
-    ]
+      'logro',
+      'logra correctamente',
+      'domina',
+      'domino',
+      'dominan',
+      'excelente',
+      'muy bien',
+      'supero',
+      'superaron',
+      'perfecto',
+      'completo correctamente',
+      'completaron correctamente',
+      'ya sabe',
+      'ya saben',
+    ],
   },
   {
     estado: 'INICIADO',
     peso: 2,
     keywords: [
-      'inicio', 'comenzo', 'comenzaron', 'primera vez', 'se introdujo',
-      'se introdujeron', 'nuevo contenido', 'empez', 'conocier', 'presentamos'
-    ]
+      'inicio',
+      'comenzo',
+      'comenzaron',
+      'primera vez',
+      'se introdujo',
+      'se introdujeron',
+      'nuevo contenido',
+      'empez',
+      'conocier',
+      'presentamos',
+    ],
   },
   {
     estado: 'EN_PROGRESO',
     peso: 1,
     keywords: [
-      'trabajo', 'trabajaron', 'practico', 'practicaron', 'repaso', 'repasaron',
-      'continua', 'continuan', 'sigue', 'siguen', 'mejorando', 'avanzando',
-      'progresando', 'van bien', 'casi'
-    ]
-  }
+      'trabajo',
+      'trabajaron',
+      'practico',
+      'practicaron',
+      'repaso',
+      'repasaron',
+      'continua',
+      'continuan',
+      'sigue',
+      'siguen',
+      'mejorando',
+      'avanzando',
+      'progresando',
+      'van bien',
+      'casi',
+    ],
+  },
 ]
 
 /**
@@ -82,7 +126,7 @@ export function detectState(text) {
         matches.push({
           estado: rule.estado,
           peso: rule.peso,
-          evidence: kw
+          evidence: kw,
         })
       }
     }
@@ -92,7 +136,7 @@ export function detectState(text) {
     return {
       value: 'EN_PROGRESO',
       confidence: 0.4,
-      evidence: []
+      evidence: [],
     }
   }
 
@@ -102,7 +146,7 @@ export function detectState(text) {
   return {
     value: matches[0].estado,
     confidence: Math.min(0.95, 0.55 + matches.length * 0.15),
-    evidence: matches.map(m => m.evidence)
+    evidence: matches.map((m) => m.evidence),
   }
 }
 
@@ -131,7 +175,9 @@ export function detectNote(text) {
 export function detectTask(text) {
   const dsl = text.match(/\{([^}]+)\}/)
   if (dsl) return dsl[1].trim()
-  const natural = text.match(/(?:tarea[:\s]+|para la pr[oó]xima[,:\s]+|practicar en casa[,:\s]+)([^.!?\n]{5,80})/i)
+  const natural = text.match(
+    /(?:tarea[:\s]+|para la pr[oó]xima[,:\s]+|practicar en casa[,:\s]+)([^.!?\n]{5,80})/i,
+  )
   if (natural) return natural[1].trim()
   return null
 }
@@ -140,21 +186,54 @@ export function detectTask(text) {
 
 export const ALERT_TYPES = {
   CONDUCTA: [
-    'mal comportamiento', 'mala conducta', 'conducta disruptiva', 'comportamiento negativo',
-    'falta de respeto', 'irrespetuoso', 'irrespetuosa', 'agresivo', 'agresiva',
-    'pelea', 'peleo', 'golpeo', 'insulto', 'insulto', 'indisciplina', 'indisciplinado',
-    'indisciplinada', 'actitud negativa', 'actitud problema', 'mala actitud',
-    'no quiso', 'se nego', 'berrinche'
+    'mal comportamiento',
+    'mala conducta',
+    'conducta disruptiva',
+    'comportamiento negativo',
+    'falta de respeto',
+    'irrespetuoso',
+    'irrespetuosa',
+    'agresivo',
+    'agresiva',
+    'pelea',
+    'peleo',
+    'golpeo',
+    'insulto',
+    'insulto',
+    'indisciplina',
+    'indisciplinado',
+    'indisciplinada',
+    'actitud negativa',
+    'actitud problema',
+    'mala actitud',
+    'no quiso',
+    'se nego',
+    'berrinche',
   ],
   ATENCION: [
-    'dificultad en la atencion', 'atencion y concentracion', 'concentracion',
-    'se distrae', 'no logra concentrarse', 'no atiende', 'no presta atencion',
-    'distrae', 'falta de atencion', 'falta de concentracion'
+    'dificultad en la atencion',
+    'atencion y concentracion',
+    'concentracion',
+    'se distrae',
+    'no logra concentrarse',
+    'no atiende',
+    'no presta atencion',
+    'distrae',
+    'falta de atencion',
+    'falta de concentracion',
   ],
   RIESGO_PEDAGOGICO: [
-    'frustracion', 'atraso', 'acumulando fallas', 'riesgo', 'cuesta mas', 'le cuesta',
-    'les cuesta', 'se le dificulta', 'se les dificulta', 'dificultad tecnica'
-  ]
+    'frustracion',
+    'atraso',
+    'acumulando fallas',
+    'riesgo',
+    'cuesta mas',
+    'le cuesta',
+    'les cuesta',
+    'se le dificulta',
+    'se les dificulta',
+    'dificultad tecnica',
+  ],
 }
 
 /**
@@ -166,22 +245,27 @@ export const ALERT_TYPES = {
  */
 export function detectPedagogicalAlert(text, tipo) {
   const normalized = normalizeText(text)
-  
+
   if (tipo === 'comportamiento' || tipo === 'conducta') {
     return { active: true, type: 'CONDUCTA', mensaje: 'Alerta de comportamiento detectada.' }
   }
-  
+
   for (const [alertType, keywords] of Object.entries(ALERT_TYPES)) {
-    if (keywords.some(kw => normalized.includes(normalizeText(kw)))) {
-      const label = alertType === 'RIESGO_PEDAGOGICO' ? 'Riesgo Pedagógico' : alertType === 'ATENCION' ? 'Atención y Concentración' : 'Conducta'
+    if (keywords.some((kw) => normalized.includes(normalizeText(kw)))) {
+      const label =
+        alertType === 'RIESGO_PEDAGOGICO'
+          ? 'Riesgo Pedagógico'
+          : alertType === 'ATENCION'
+            ? 'Atención y Concentración'
+            : 'Conducta'
       return {
         active: true,
         type: alertType,
-        mensaje: `Alerta de ${label.toLowerCase()} detectada.`
+        mensaje: `Alerta de ${label.toLowerCase()} detectada.`,
       }
     }
   }
-  
+
   return { active: false, type: null, mensaje: null }
 }
 
@@ -193,16 +277,71 @@ export function detectAlert(text, tipo) {
 // ─── Tipo inference ──────────────────────────────────────────────────────────
 
 const TIPO_KEYWORDS = {
-  tecnica:        ['escala', 'posición', 'posicion', 'arco', 'digitación', 'digitacion',
-                   'embocadura', 'afinación', 'afinacion', 'técnica', 'tecnica', 'vibrato',
-                   'pizzicato', 'staccato', 'legato', 'golpe de arco', 'detaché'],
-  repertorio:     ['obra', 'pieza', 'danzón', 'danzon', 'minueto', 'sonata', 'concierto',
-                   'sinfonía', 'sinfonia', 'compases', 'c\\.\\d', 'repertorio', 'canción',
-                   'cancion', 'melodía', 'melodia'],
-  teoria:         ['ritmo', 'compás', 'compas', 'armonía', 'armonia', 'lectura', 'solfeo',
-                   'teoría', 'teoria', 'nota', 'clave', 'intervalo', 'acorde'],
-  interpretacion: ['expresión', 'expresion', 'fraseo', 'dinámica', 'dinamica', 'tempo',
-                   'articulación', 'articulacion', 'musicalidad', 'carácter', 'caracter'],
+  tecnica: [
+    'escala',
+    'posición',
+    'posicion',
+    'arco',
+    'digitación',
+    'digitacion',
+    'embocadura',
+    'afinación',
+    'afinacion',
+    'técnica',
+    'tecnica',
+    'vibrato',
+    'pizzicato',
+    'staccato',
+    'legato',
+    'golpe de arco',
+    'detaché',
+  ],
+  repertorio: [
+    'obra',
+    'pieza',
+    'danzón',
+    'danzon',
+    'minueto',
+    'sonata',
+    'concierto',
+    'sinfonía',
+    'sinfonia',
+    'compases',
+    'c\\.\\d',
+    'repertorio',
+    'canción',
+    'cancion',
+    'melodía',
+    'melodia',
+  ],
+  teoria: [
+    'ritmo',
+    'compás',
+    'compas',
+    'armonía',
+    'armonia',
+    'lectura',
+    'solfeo',
+    'teoría',
+    'teoria',
+    'nota',
+    'clave',
+    'intervalo',
+    'acorde',
+  ],
+  interpretacion: [
+    'expresión',
+    'expresion',
+    'fraseo',
+    'dinámica',
+    'dinamica',
+    'tempo',
+    'articulación',
+    'articulacion',
+    'musicalidad',
+    'carácter',
+    'caracter',
+  ],
 }
 
 /**
@@ -215,7 +354,7 @@ export function inferTipo(text, tipoClase = 'instrumento') {
   if (tipoClase === 'teoria') return 'teoria'
   const lower = text.toLowerCase()
   for (const [tipo, keywords] of Object.entries(TIPO_KEYWORDS)) {
-    if (keywords.some(kw => new RegExp(kw).test(lower))) return tipo
+    if (keywords.some((kw) => new RegExp(kw).test(lower))) return tipo
   }
   return tipoClase === 'ensayo_general' ? 'repertorio' : 'tecnica'
 }
@@ -235,7 +374,7 @@ export function buildRosterLookup(roster) {
     if (!key) return
     const normalized = normalizeText(key)
     const list = map.get(normalized) || []
-    if (!list.some(a => a.id === alumno.id)) {
+    if (!list.some((a) => a.id === alumno.id)) {
       list.push(alumno)
     }
     map.set(normalized, list)
@@ -243,13 +382,17 @@ export function buildRosterLookup(roster) {
 
   for (const a of roster) {
     const full = (a.nombre || a.nombre_completo || '').toLowerCase().trim()
-    const short = (a.nombreCorto || a.nombre_corto || a.nombre || a.nombre_completo || '').toLowerCase().trim()
+    const short = (a.nombreCorto || a.nombre_corto || a.nombre || a.nombre_completo || '')
+      .toLowerCase()
+      .trim()
     if (full) addToIndex(full, a)
     if (short && short !== full) addToIndex(short, a)
   }
 
   // Index first name
-  const firstNames = roster.map(a => (a.nombre || a.nombre_completo || '').toLowerCase().trim().split(' ')[0])
+  const firstNames = roster.map(
+    (a) => (a.nombre || a.nombre_completo || '').toLowerCase().trim().split(' ')[0],
+  )
   for (const a of roster) {
     const first = (a.nombre || a.nombre_completo || '').toLowerCase().trim().split(' ')[0]
     if (!first) continue
@@ -271,11 +414,15 @@ export function findMentionedStudents(text, lookup, presentes, alumnos) {
   const lower = text.toLowerCase()
   const roster = presentes?.length ? presentes : alumnos
 
-  if (/\btodos(?!\s+los\s+(?:compases|dedos|ejercicios|dias|metodos|aspectos|materiales|detalles|objetivos|retos|elementos|puntos|errores|fallas))\b|\btodo el grupo\b|\btoda la clase\b|\bel grupo\b/.test(lower)) {
+  if (
+    /\btodos(?!\s+los\s+(?:compases|dedos|ejercicios|dias|metodos|aspectos|materiales|detalles|objetivos|retos|elementos|puntos|errores|fallas))\b|\btodo el grupo\b|\btoda la clase\b|\bel grupo\b/.test(
+      lower,
+    )
+  ) {
     return {
       students: roster,
       ambiguous: false,
-      requires_confirmation: false
+      requires_confirmation: false,
     }
   }
 
@@ -288,7 +435,7 @@ export function findMentionedStudents(text, lookup, presentes, alumnos) {
       if (candidates.length > 1) {
         ambiguous = true
       }
-      candidates.forEach(alumno => {
+      candidates.forEach((alumno) => {
         foundMap.set(alumno.id || alumno.nombre || alumno.nombre_completo, alumno)
       })
     }
@@ -299,7 +446,7 @@ export function findMentionedStudents(text, lookup, presentes, alumnos) {
   return {
     students: found,
     ambiguous,
-    requires_confirmation: ambiguous
+    requires_confirmation: ambiguous,
   }
 }
 
@@ -320,12 +467,13 @@ export function segmentSentences(text) {
   return protectedText
     .replace(/([.!?;])\s+/g, '$1\n')
     .split('\n')
-    .map(s => s
-      .replace(/Lec§/gi, 'Lec.')
-      .replace(/c§/gi, 'c.')
-      .replace(/n§º/gi, 'n.º')
-      .replace(/(\d)§(\d)/g, '$1.$2')
-      .trim()
+    .map((s) =>
+      s
+        .replace(/Lec§/gi, 'Lec.')
+        .replace(/c§/gi, 'c.')
+        .replace(/n§º/gi, 'n.º')
+        .replace(/(\d)§(\d)/g, '$1.$2')
+        .trim(),
     )
     .filter(Boolean)
 }
@@ -358,20 +506,26 @@ export function segmentObservation(text, context = {}) {
 
   // ── Step 1: split into paragraphs ────────────────────────────────────────
   const rawParagraphs = text
-    .split(/\n{2,}/)                     // explicit blank lines
-    .map(p => p.replace(/\n/g, ' ').trim())
-    .filter(p => p.length > 10)
+    .split(/\n{2,}/) // explicit blank lines
+    .map((p) => p.replace(/\n/g, ' ').trim())
+    .filter((p) => p.length > 10)
 
-  const paragraphs = rawParagraphs.flatMap(paragraph => {
-    const sentences = segmentSentences(paragraph).filter(s => !_isMetaCommentary(s))
+  const paragraphs = rawParagraphs.flatMap((paragraph) => {
+    const sentences = segmentSentences(paragraph).filter((s) => !_isMetaCommentary(s))
     if (sentences.length === 0) return []
     if (sentences.length === 1) return [sentences[0]]
 
-    const scopedSentences = sentences.filter(sentence => {
+    const scopedSentences = sentences.filter((sentence) => {
       const lower = sentence.toLowerCase()
-      const hasStudents = findMentionedStudents(sentence, lookup, presentes, alumnos).students.length > 0
-      const hasGroupScope = /\btodos(?!\s+los\s+(?:compases|dedos|ejercicios|dias|metodos|aspectos|materiales|detalles|objetivos|retos|elementos|puntos|errores|fallas))\b|\btodo el grupo\b|\btoda la clase\b|\balgunos\b/i.test(lower)
-      const hasExclusionScope = /(?:los dem[a\u00e1]s|el resto del grupo|los otros alumnos)/i.test(sentence)
+      const hasStudents =
+        findMentionedStudents(sentence, lookup, presentes, alumnos).students.length > 0
+      const hasGroupScope =
+        /\btodos(?!\s+los\s+(?:compases|dedos|ejercicios|dias|metodos|aspectos|materiales|detalles|objetivos|retos|elementos|puntos|errores|fallas))\b|\btodo el grupo\b|\btoda la clase\b|\balgunos\b/i.test(
+          lower,
+        )
+      const hasExclusionScope = /(?:los dem[a\u00e1]s|el resto del grupo|los otros alumnos)/i.test(
+        sentence,
+      )
       const hasImplicitSubject = IMPLICIT_RE.test(sentence)
       return hasStudents || hasGroupScope || hasExclusionScope || hasImplicitSubject
     })
@@ -389,22 +543,33 @@ export function segmentObservation(text, context = {}) {
   for (const paragraph of paragraphs) {
     const lower = paragraph.toLowerCase()
 
-    const hasExclusionCue = /(?:los dem[a\u00e1]s|el resto del grupo|los otros alumnos)/i.test(paragraph)
-    const isIndeterminado = /\balgunos\b/i.test(lower) &&
-                            !findMentionedStudents(paragraph, lookup, presentes, alumnos).students.length
+    const hasExclusionCue = /(?:los dem[a\u00e1]s|el resto del grupo|los otros alumnos)/i.test(
+      paragraph,
+    )
+    const isIndeterminado =
+      /\balgunos\b/i.test(lower) &&
+      !findMentionedStudents(paragraph, lookup, presentes, alumnos).students.length
 
-    const { students: mentioned, ambiguous, requires_confirmation } = findMentionedStudents(paragraph, lookup, presentes, alumnos)
-    const startsWithExclusionCue = /^\s*(?:los dem[a\u00e1]s|el resto del grupo|los otros alumnos)\b/i.test(paragraph)
+    const {
+      students: mentioned,
+      ambiguous,
+      requires_confirmation,
+    } = findMentionedStudents(paragraph, lookup, presentes, alumnos)
+    const startsWithExclusionCue =
+      /^\s*(?:los dem[a\u00e1]s|el resto del grupo|los otros alumnos)\b/i.test(paragraph)
     const isExclusion = hasExclusionCue && (!mentioned.length || startsWithExclusionCue)
     // If no specific student mentioned and not a targeted exclusion/subgroup,
     // treat the paragraph as a collective observation for the whole group.
     const isImplicitColectivo = !mentioned.length && !isExclusion && !isIndeterminado
-    const isColectivo = mentioned.length > 1 ||
-                        /\btodos(?!\s+los\s+(?:compases|dedos|ejercicios|dias|metodos|aspectos|materiales|detalles|objetivos|retos|elementos|puntos|errores|fallas))\b|\btodo el grupo\b|\btoda la clase\b/.test(lower) ||
-                        isExclusion ||
-                        isImplicitColectivo
+    const isColectivo =
+      mentioned.length > 1 ||
+      /\btodos(?!\s+los\s+(?:compases|dedos|ejercicios|dias|metodos|aspectos|materiales|detalles|objetivos|retos|elementos|puntos|errores|fallas))\b|\btodo el grupo\b|\btoda la clase\b/.test(
+        lower,
+      ) ||
+      isExclusion ||
+      isImplicitColectivo
 
-    const tipo     = inferTipo(paragraph, tipoClase)
+    const tipo = inferTipo(paragraph, tipoClase)
     const stateObj = detectState(paragraph)
     const alertObj = detectPedagogicalAlert(paragraph, tipo)
     const effectiveAlertObj = alertObj.active
@@ -414,27 +579,33 @@ export function segmentObservation(text, context = {}) {
         : alertObj
 
     // Track individual students flagged with difficulty for exclusion later
-    if (!isColectivo && !isExclusion && mentioned.length === 1 &&
-        (stateObj.value === 'DIFICULTAD' || effectiveAlertObj.active)) {
-      individualDifficulties.add(mentioned[0].id || mentioned[0].nombre || mentioned[0].nombre_completo)
+    if (
+      !isColectivo &&
+      !isExclusion &&
+      mentioned.length === 1 &&
+      (stateObj.value === 'DIFICULTAD' || effectiveAlertObj.active)
+    ) {
+      individualDifficulties.add(
+        mentioned[0].id || mentioned[0].nombre || mentioned[0].nombre_completo,
+      )
     }
 
     initialGroups.push({
-      alumnos:              mentioned,
-      alumnoTags:           [],
-      fragment:             paragraph,
-      estado:               stateObj,
-      nota:                 detectNote(paragraph),
-      tarea:                detectTask(paragraph),
-      esColectivo:          isColectivo,
+      alumnos: mentioned,
+      alumnoTags: [],
+      fragment: paragraph,
+      estado: stateObj,
+      nota: detectNote(paragraph),
+      tarea: detectTask(paragraph),
+      esColectivo: isColectivo,
       isExclusion,
       isIndeterminado,
-      alerta:               effectiveAlertObj.active || stateObj.value === 'DIFICULTAD',
-      alertDetails:         effectiveAlertObj,
+      alerta: effectiveAlertObj.active || stateObj.value === 'DIFICULTAD',
+      alertDetails: effectiveAlertObj,
       tipoClase,
       ambiguous,
       requires_confirmation,
-      scope:                'individual',
+      scope: 'individual',
     })
   }
 
@@ -445,30 +616,32 @@ export function segmentObservation(text, context = {}) {
   for (const group of initialGroups) {
     if (group.isExclusion) {
       const excludedIds = Array.from(individualDifficulties)
-      group.alumnos = presentes.filter(a => {
+      group.alumnos = presentes.filter((a) => {
         const id = a.id || a.nombre || a.nombre_completo
         return !excludedIds.includes(id)
       })
-      group.esColectivo         = true
-      group.scope               = 'grupo_excluyendo'
-      group.excludeIds          = excludedIds
-      group.alumnoTags          = ['Todos (excluyendo)']
+      group.esColectivo = true
+      group.scope = 'grupo_excluyendo'
+      group.excludeIds = excludedIds
+      group.alumnoTags = ['Todos (excluyendo)']
     } else if (group.isIndeterminado) {
-      group.alumnos             = []
-      group.esColectivo         = false
-      group.scope               = 'subgrupo_indeterminado'
+      group.alumnos = []
+      group.esColectivo = false
+      group.scope = 'subgrupo_indeterminado'
       group.requires_confirmation = true
-      group.alumnoTags          = ['Algunos']
+      group.alumnoTags = ['Algunos']
     } else {
       group.scope = group.esColectivo ? 'grupo' : 'individual'
       if (group.esColectivo && !group.alumnos.length) {
         // Implicit collective — fill with all present students
-        group.alumnos    = presentes
+        group.alumnos = presentes
         group.alumnoTags = ['Todos']
       } else {
         group.alumnoTags = group.esColectivo
           ? ['Todos']
-          : group.alumnos.map(a => a.nombreCorto || a.nombre_corto || a.nombre || a.nombre_completo)
+          : group.alumnos.map(
+              (a) => a.nombreCorto || a.nombre_corto || a.nombre || a.nombre_completo,
+            )
       }
     }
   }
@@ -491,13 +664,13 @@ export function segmentObservation(text, context = {}) {
 function _isMetaCommentary(text) {
   const n = normalizeText(text)
   return (
-    /^es fundamental\b/.test(n)      ||
+    /^es fundamental\b/.test(n) ||
     /^es importante (que|senalar|notar|destacar)\b/.test(n) ||
-    /\bdebemos continuar\b/.test(n)  ||
-    /\bpara asegurarnos\b/.test(n)   ||
+    /\bdebemos continuar\b/.test(n) ||
+    /\bpara asegurarnos\b/.test(n) ||
     /\bde manera equilibrada\b/.test(n) ||
     /\bcontinuemos trabajando\b/.test(n) ||
-    /\bseguir trabajando\b/.test(n)  ||
+    /\bseguir trabajando\b/.test(n) ||
     /\bcontinuar practicando\b/.test(n)
   )
 }
@@ -522,7 +695,7 @@ function _attachImplicitSubject(groups) {
 
     if (hasExplicit) {
       if (!group.esColectivo && !group.isExclusion && !group.isIndeterminado) {
-        lastStudents    = group.alumnos
+        lastStudents = group.alumnos
         lastIsIndividual = true
       } else {
         // Reset on collective/group paragraphs so we don't over-inherit
@@ -533,8 +706,8 @@ function _attachImplicitSubject(groups) {
 
     // No explicit students — check if text uses a back-reference pronoun
     if (lastIsIndividual && lastStudents.length && IMPLICIT_RE.test(group.fragment)) {
-      group.alumnos           = [...lastStudents]
-      group.esColectivo       = lastStudents.length > 1
+      group.alumnos = [...lastStudents]
+      group.esColectivo = lastStudents.length > 1
       group.inherited_subject = true
     }
   }
@@ -553,35 +726,43 @@ function _splitDualAlerts(groups, presentes, lookup) {
     }
 
     const sentences = segmentSentences(g.fragment)
-    const hasTechRisk = sentences.some(s => {
+    const hasTechRisk = sentences.some((s) => {
       const n = normalizeText(s)
-      return ALERT_TYPES.RIESGO_PEDAGOGICO.some(kw => n.includes(normalizeText(kw)))
+      return ALERT_TYPES.RIESGO_PEDAGOGICO.some((kw) => n.includes(normalizeText(kw)))
     })
-    const hasAttention = sentences.some(s => {
+    const hasAttention = sentences.some((s) => {
       const n = normalizeText(s)
-      return ALERT_TYPES.ATENCION.some(kw => n.includes(normalizeText(kw)))
+      return ALERT_TYPES.ATENCION.some((kw) => n.includes(normalizeText(kw)))
     })
 
     if (hasTechRisk && hasAttention) {
       // Sentence 1..N-1 = technical risk, last attention sentence = attention card
-      const attentionSentences = sentences.filter(s => {
+      const attentionSentences = sentences.filter((s) => {
         const n = normalizeText(s)
-        return ALERT_TYPES.ATENCION.some(kw => n.includes(normalizeText(kw)))
+        return ALERT_TYPES.ATENCION.some((kw) => n.includes(normalizeText(kw)))
       })
-      const techSentences = sentences.filter(s => !attentionSentences.includes(s))
+      const techSentences = sentences.filter((s) => !attentionSentences.includes(s))
 
       if (techSentences.length) {
         result.push({
           ...g,
-          fragment:     techSentences.join(' '),
-          alertDetails: { active: true, type: 'RIESGO_PEDAGOGICO', mensaje: 'Riesgo pedagógico detectado.' },
+          fragment: techSentences.join(' '),
+          alertDetails: {
+            active: true,
+            type: 'RIESGO_PEDAGOGICO',
+            mensaje: 'Riesgo pedagógico detectado.',
+          },
         })
       }
       if (attentionSentences.length) {
         result.push({
           ...g,
-          fragment:     attentionSentences.join(' '),
-          alertDetails: { active: true, type: 'ATENCION', mensaje: 'Alerta de atención y concentración detectada.' },
+          fragment: attentionSentences.join(' '),
+          alertDetails: {
+            active: true,
+            type: 'ATENCION',
+            mensaje: 'Alerta de atención y concentración detectada.',
+          },
         })
       }
     } else {
@@ -598,15 +779,16 @@ function _mergeAdjacentGroups(groups) {
     const prev = merged[merged.length - 1]
     const curr = groups[i]
     const sameStudents = _sameSet(
-      prev.alumnos.map(a => a.id || a.nombre || a.nombre_completo),
-      curr.alumnos.map(a => a.id || a.nombre || a.nombre_completo)
+      prev.alumnos.map((a) => a.id || a.nombre || a.nombre_completo),
+      curr.alumnos.map((a) => a.id || a.nombre || a.nombre_completo),
     )
     const sameStateValue = prev.estado.value === curr.estado.value
-    const isBothDificultad = prev.estado.value === 'DIFICULTAD' && curr.estado.value === 'DIFICULTAD'
+    const isBothDificultad =
+      prev.estado.value === 'DIFICULTAD' && curr.estado.value === 'DIFICULTAD'
 
     if (sameStudents && (sameStateValue || isBothDificultad)) {
       prev.fragment += ' ' + curr.fragment
-      prev.nota  = prev.nota  ?? curr.nota
+      prev.nota = prev.nota ?? curr.nota
       prev.tarea = prev.tarea ?? curr.tarea
       if (curr.alerta) {
         prev.alerta = true
@@ -627,7 +809,7 @@ function _mergeAdjacentGroups(groups) {
 function _sameSet(a, b) {
   if (a.length !== b.length) return false
   const setA = new Set(a)
-  return b.every(x => setA.has(x))
+  return b.every((x) => setA.has(x))
 }
 
 // ─── Contradiction detection ──────────────────────────────────────────────────
@@ -650,9 +832,10 @@ export function detectContradictions(progreso) {
 
       const notaConflict = a.nota != null && b.nota != null && Math.abs(a.nota - b.nota) > 1.5
 
-      const stateConflict = a.estado !== b.estado &&
+      const stateConflict =
+        a.estado !== b.estado &&
         ((a.estado === 'LOGRADO' && b.estado === 'INICIADO') ||
-         (a.estado === 'INICIADO' && b.estado === 'LOGRADO'))
+          (a.estado === 'INICIADO' && b.estado === 'LOGRADO'))
 
       if (notaConflict || stateConflict) {
         const reason = notaConflict
@@ -669,13 +852,17 @@ export function detectContradictions(progreso) {
 function _sameAlumnoSet(a, b) {
   if (!a?.length || !b?.length) return false
   if (a.length !== b.length) return false
-  const setA = new Set(a.map(n => n.toLowerCase()))
-  return b.every(n => setA.has(n.toLowerCase()))
+  const setA = new Set(a.map((n) => n.toLowerCase()))
+  return b.every((n) => setA.has(n.toLowerCase()))
 }
 
 function _similarContent(a, b) {
   if (!a || !b) return false
-  const normalize = s => s.toLowerCase().replace(/[^a-záéíóúñ0-9]/g, ' ').trim()
+  const normalize = (s) =>
+    s
+      .toLowerCase()
+      .replace(/[^a-záéíóúñ0-9]/g, ' ')
+      .trim()
   const na = normalize(a)
   const nb = normalize(b)
   if (na === nb) return true

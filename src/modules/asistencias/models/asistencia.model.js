@@ -3,15 +3,15 @@
  */
 export class Asistencia {
   static MAP_LEGACY = {
-    'P': 'presente',
-    'A': 'ausente',
-    'J': 'justificado'
+    P: 'presente',
+    A: 'ausente',
+    J: 'justificado',
   }
 
   static MAP_SHORT = {
-    'presente': 'P',
-    'ausente': 'A',
-    'justificado': 'J'
+    presente: 'P',
+    ausente: 'A',
+    justificado: 'J',
   }
 
   constructor(data = {}) {
@@ -91,7 +91,7 @@ export class Asistencia {
       fecha: this.fecha,
       estado: this.estado,
       justificacion_texto: this.justificacion_texto ? this.justificacion_texto.trim() : null,
-      observaciones: this.observaciones ? this.observaciones.trim() : null
+      observaciones: this.observaciones ? this.observaciones.trim() : null,
     }
   }
 

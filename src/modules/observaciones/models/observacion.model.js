@@ -48,17 +48,17 @@ export class Observacion {
       errores.push('La descripción no puede exceder 1000 caracteres')
     }
 
-    const tiposValidos = Observacion.getTipos().map(t => t.value)
+    const tiposValidos = Observacion.getTipos().map((t) => t.value)
     if (!tiposValidos.includes(this.tipo)) {
       errores.push('El tipo de observación no es válido')
     }
 
-    const prioridadesValidas = Observacion.getPrioridades().map(p => p.value)
+    const prioridadesValidas = Observacion.getPrioridades().map((p) => p.value)
     if (!prioridadesValidas.includes(this.prioridad)) {
       errores.push('La prioridad no es válida')
     }
 
-    const estadosValidos = Observacion.getEstados().map(e => e.value)
+    const estadosValidos = Observacion.getEstados().map((e) => e.value)
     if (!estadosValidos.includes(this.estado)) {
       errores.push('El estado no es válido')
     }
@@ -110,7 +110,7 @@ export class Observacion {
       fecha_observacion: this.fecha_observacion,
       requiere_seguimiento: this.requiere_seguimiento,
       seguimiento_fecha: this.seguimiento_fecha,
-      seguimiento_observacion: this.seguimiento_observacion.trim() || null
+      seguimiento_observacion: this.seguimiento_observacion.trim() || null,
     }
 
     if (this.id) json.id = this.id

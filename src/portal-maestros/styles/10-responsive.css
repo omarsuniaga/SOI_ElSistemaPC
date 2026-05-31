@@ -8,7 +8,6 @@
    ═══════════════════════════════════════════════════════════ */
 
 @media (max-width: 767px) {
-
   /* Hide sidebar on mobile */
   .pm-sidebar {
     display: none !important;
@@ -261,7 +260,6 @@
    ═══════════════════════════════════════════════════════════ */
 
 @media (min-width: 768px) and (max-width: 1023px) and (orientation: portrait) {
-
   /* Sin sidebar — footer nav es la navegación principal */
   .pm-sidebar {
     display: none !important;
@@ -390,7 +388,6 @@
    ═══════════════════════════════════════════════════════════ */
 
 @media (min-width: 768px) and (max-width: 1023px) and (orientation: landscape) {
-
   /* Layout horizontal: sidebar + contenido, igual que desktop */
   #portal-app {
     flex-direction: row;
@@ -547,13 +544,12 @@
     ═══════════════════════════════════════════════════════════ */
 
 @media (min-width: 1024px) {
-
   /* ── Login: split layout for desktop ─────────────────────────── */
   .pm-login {
     display: flex;
     flex-direction: row;
     min-height: 100vh;
-    background: linear-gradient(135deg, #5856D6 0%, #007AFF 100%);
+    background: linear-gradient(135deg, #5856d6 0%, #007aff 100%);
     padding: 0;
     position: relative;
     overflow: hidden;
@@ -574,7 +570,7 @@
     justify-content: center;
     align-items: flex-start;
     padding: 4rem;
-    background: linear-gradient(135deg, rgba(88,86,214,0.95) 0%, rgba(0,122,255,0.9) 100%);
+    background: linear-gradient(135deg, rgba(88, 86, 214, 0.95) 0%, rgba(0, 122, 255, 0.9) 100%);
     position: relative;
     overflow: hidden;
   }
@@ -586,13 +582,17 @@
     left: -50%;
     width: 200%;
     height: 200%;
-    background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 50%);
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 50%);
     animation: rotateGradient 30s linear infinite;
   }
 
   @keyframes rotateGradient {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
   }
 
   .pm-login-branding > * {
@@ -606,10 +606,10 @@
     height: 100px;
     border-radius: 28px;
     margin-bottom: 2rem;
-    background: rgba(255,255,255,0.15);
-    border: 1px solid rgba(255,255,255,0.2);
+    background: rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.2);
     backdrop-filter: blur(10px);
-    box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
   }
 
   .pm-login-branding .pm-login-logo i {
@@ -630,7 +630,7 @@
   .pm-login-branding .pm-login-subtitle {
     display: block !important;
     font-size: 1.125rem;
-    color: rgba(255,255,255,0.8);
+    color: rgba(255, 255, 255, 0.8);
     max-width: 400px;
   }
 
@@ -940,8 +940,20 @@
     gap: 0.35rem;
     padding: 0.4rem;
     scroll-snap-type: x mandatory;
-    -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 18px, #000 calc(100% - 18px), transparent 100%);
-    mask-image: linear-gradient(90deg, transparent 0, #000 18px, #000 calc(100% - 18px), transparent 100%);
+    -webkit-mask-image: linear-gradient(
+      90deg,
+      transparent 0,
+      #000 18px,
+      #000 calc(100% - 18px),
+      transparent 100%
+    );
+    mask-image: linear-gradient(
+      90deg,
+      transparent 0,
+      #000 18px,
+      #000 calc(100% - 18px),
+      transparent 100%
+    );
   }
 
   .pm-footer-nav--admin .pm-nav-tab {
@@ -1109,7 +1121,6 @@
    ═══════════════════════════════════════════════════════════ */
 
 @media (prefers-reduced-motion: reduce) {
-
   *,
   *::before,
   *::after {
@@ -1134,7 +1145,6 @@
    ═══════════════════════════════════════════════════════════ */
 
 @media print {
-
   .pm-header,
   .pm-bottom-nav,
   .pm-sidebar,

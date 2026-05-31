@@ -31,10 +31,10 @@
 }
 
 /* ── Input Fields ────────────────────────────────────────── */
-input[type="date"],
-input[type="time"],
-input[type="tel"],
-input[type="file"],
+input[type='date'],
+input[type='time'],
+input[type='tel'],
+input[type='file'],
 select,
 textarea {
   padding: 10px 12px;
@@ -48,17 +48,17 @@ textarea {
   transition: all var(--pm-transition-base);
 }
 
-input[type="date"]::placeholder,
-input[type="time"]::placeholder,
-input[type="tel"]::placeholder,
+input[type='date']::placeholder,
+input[type='time']::placeholder,
+input[type='tel']::placeholder,
 textarea::placeholder {
   color: var(--pm-text-muted);
 }
 
-input[type="date"]:focus,
-input[type="time"]:focus,
-input[type="tel"]:focus,
-input[type="file"]:focus,
+input[type='date']:focus,
+input[type='time']:focus,
+input[type='tel']:focus,
+input[type='file']:focus,
 select:focus,
 textarea:focus {
   outline: none;
@@ -74,8 +74,8 @@ textarea {
 }
 
 /* ── Radio Buttons & Checkboxes ──────────────────────────── */
-input[type="radio"],
-input[type="checkbox"] {
+input[type='radio'],
+input[type='checkbox'] {
   accent-color: var(--pm-primary);
   width: 18px;
   height: 18px;
@@ -83,8 +83,8 @@ input[type="checkbox"] {
 }
 
 /* ── Button Base ─────────────────────────────────────────── */
-button[type="button"],
-button[type="submit"] {
+button[type='button'],
+button[type='submit'] {
   padding: 12px 16px;
   font-weight: 600;
   font-size: 14px;
@@ -99,18 +99,18 @@ button[type="submit"] {
   min-height: 44px;
 }
 
-button[type="button"]:hover:not(:disabled),
-button[type="submit"]:hover:not(:disabled) {
+button[type='button']:hover:not(:disabled),
+button[type='submit']:hover:not(:disabled) {
   transform: translateY(-1px);
   box-shadow: var(--pm-shadow-md);
 }
 
-button[type="button"]:active,
-button[type="submit"]:active {
+button[type='button']:active,
+button[type='submit']:active {
   transform: translateY(0);
 }
 
-button[type="button"]:disabled {
+button[type='button']:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
@@ -357,12 +357,12 @@ button[type="button"]:disabled {
 
 /* ── WhatsApp Specific ───────────────────────────────────── */
 .btn-whatsapp {
-  background-color: #25D366;
+  background-color: #25d366;
   color: #ffffff;
 }
 
 .btn-whatsapp:hover:not(:disabled) {
-  background-color: #1FA552;
+  background-color: #1fa552;
 }
 
 /* ── Accessibility ───────────────────────────────────────── */
@@ -382,55 +382,55 @@ button:focus-visible {
 }
 
 /* ── Dark Mode Adjustments ──────────────────────────────── */
-[data-bs-theme="dark"],
-[data-portal-theme="dark"] {
+[data-bs-theme='dark'],
+[data-portal-theme='dark'] {
   --pm-spinner-border: rgba(255, 255, 255, 0.15);
 }
 
-[data-bs-theme="dark"] input[type="date"],
-[data-bs-theme="dark"] input[type="time"],
-[data-bs-theme="dark"] input[type="tel"],
-[data-bs-theme="dark"] input[type="file"],
-[data-bs-theme="dark"] select,
-[data-bs-theme="dark"] textarea,
-[data-portal-theme="dark"] input[type="date"],
-[data-portal-theme="dark"] input[type="time"],
-[data-portal-theme="dark"] input[type="tel"],
-[data-portal-theme="dark"] input[type="file"],
-[data-portal-theme="dark"] select,
-[data-portal-theme="dark"] textarea {
+[data-bs-theme='dark'] input[type='date'],
+[data-bs-theme='dark'] input[type='time'],
+[data-bs-theme='dark'] input[type='tel'],
+[data-bs-theme='dark'] input[type='file'],
+[data-bs-theme='dark'] select,
+[data-bs-theme='dark'] textarea,
+[data-portal-theme='dark'] input[type='date'],
+[data-portal-theme='dark'] input[type='time'],
+[data-portal-theme='dark'] input[type='tel'],
+[data-portal-theme='dark'] input[type='file'],
+[data-portal-theme='dark'] select,
+[data-portal-theme='dark'] textarea {
   background-color: var(--pm-surface);
   color: var(--pm-text);
   border-color: var(--pm-border);
 }
 
-[data-bs-theme="dark"] .pm-step-card,
-[data-portal-theme="dark"] .pm-step-card {
+[data-bs-theme='dark'] .pm-step-card,
+[data-portal-theme='dark'] .pm-step-card {
   background-color: var(--pm-surface-2);
   border-color: var(--pm-border);
 }
 
-[data-bs-theme="dark"] .pm-preview-box,
-[data-portal-theme="dark"] .pm-preview-box {
+[data-bs-theme='dark'] .pm-preview-box,
+[data-portal-theme='dark'] .pm-preview-box {
   background-color: var(--pm-surface-2);
   border-color: var(--pm-border);
   color: var(--pm-text);
 }
 
-[data-bs-theme="dark"] .pm-info-box,
-[data-portal-theme="dark"] .pm-info-box {
+[data-bs-theme='dark'] .pm-info-box,
+[data-portal-theme='dark'] .pm-info-box {
   background-color: var(--pm-primary-bg);
   border-color: var(--pm-primary);
 }
 
-[data-bs-theme="dark"] .pm-panel-recuperar,
-[data-portal-theme="dark"] .pm-panel-recuperar {
+[data-bs-theme='dark'] .pm-panel-recuperar,
+[data-portal-theme='dark'] .pm-panel-recuperar {
   background-color: var(--pm-primary-bg);
   border-color: var(--pm-primary);
 }
 
-[data-bs-theme="dark"] .pm-panel-tareas,
-[data-portal-theme="dark"] .pm-panel-tareas {
+[data-bs-theme='dark'] .pm-panel-tareas,
+[data-portal-theme='dark'] .pm-panel-tareas {
   background-color: rgba(52, 199, 89, 0.15);
   border-color: var(--pm-success);
 }

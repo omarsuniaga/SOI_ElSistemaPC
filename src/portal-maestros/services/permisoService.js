@@ -3,7 +3,11 @@
  * Implementa DataAdapter pattern: usa solicitudes_permisos table + permisosSupabase.js
  */
 
-import { obtenerPermisoPorMaestro, crearSolicitud, obtenerSolicitudPorMaestro } from '../../modules/permisos/api/permisosSupabase.js'
+import {
+  obtenerPermisoPorMaestro,
+  crearSolicitud,
+  obtenerSolicitudPorMaestro,
+} from '../../modules/permisos/api/permisosSupabase.js'
 
 /**
  * Obtiene los permisos de un maestro
@@ -18,7 +22,7 @@ export async function getPermisos(maestroId) {
     puede_planificar: false,
     puede_asistir: false,
     solicitudes: [],
-    solicitud_actual: null
+    solicitud_actual: null,
   }
 
   if (!maestroId) {
@@ -70,7 +74,7 @@ export async function getPermisos(maestroId) {
       puede_planificar: permisosArray.includes('planificacion:write') || false,
       puede_asistir: permisosArray.includes('asistencias:write') || false,
       solicitudes: solicitudes,
-      solicitud_actual: solicitud_actual
+      solicitud_actual: solicitud_actual,
     }
   } catch (err) {
     console.warn('[PermisoService] Error obteniendo permisos, fail-closed:', err.message)

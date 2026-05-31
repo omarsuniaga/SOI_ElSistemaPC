@@ -1,4 +1,9 @@
-import { getEstadisticasPeriodoActivo, getTasaAsistenciaPeriodo, getAlertasActivas, getResumenAlertas } from '../api/metricasApi.js'
+import {
+  getEstadisticasPeriodoActivo,
+  getTasaAsistenciaPeriodo,
+  getAlertasActivas,
+  getResumenAlertas,
+} from '../api/metricasApi.js'
 
 export class MetricasService {
   constructor() {

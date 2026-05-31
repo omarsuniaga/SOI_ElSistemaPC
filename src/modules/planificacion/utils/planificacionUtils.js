@@ -6,7 +6,7 @@ export function formatDate(dateStr) {
 
 export function escapeHTML(str) {
   if (!str) return ''
-  return str.replace(/[&<>]/g, function(m) {
+  return str.replace(/[&<>]/g, function (m) {
     if (m === '&') return '&amp;'
     if (m === '<') return '&lt;'
     if (m === '>') return '&gt;'
@@ -16,19 +16,23 @@ export function escapeHTML(str) {
 
 export function formatEstado(estado) {
   const mapa = {
-    'planificado': 'Planificado',
-    'ejecutado': 'Ejecutado',
-    'revisado': 'Revisado',
+    planificado: 'Planificado',
+    ejecutado: 'Ejecutado',
+    revisado: 'Revisado',
   }
   return mapa[estado] || estado || 'Sin estado'
 }
 
 export function getEstadoClass(estado) {
   switch (estado) {
-    case 'planificado': return 'primary'
-    case 'ejecutado': return 'success'
-    case 'revisado': return 'info'
-    default: return 'secondary'
+    case 'planificado':
+      return 'primary'
+    case 'ejecutado':
+      return 'success'
+    case 'revisado':
+      return 'info'
+    default:
+      return 'secondary'
   }
 }
 
@@ -38,10 +42,14 @@ export function getEstadoLabel(estado) {
 
 export function getEstadoIcon(estado) {
   switch (estado) {
-    case 'planificado': return 'bi-calendar-check'
-    case 'ejecutado': return 'bi-check-circle'
-    case 'revisado': return 'bi-eye'
-    default: return 'bi-question-circle'
+    case 'planificado':
+      return 'bi-calendar-check'
+    case 'ejecutado':
+      return 'bi-check-circle'
+    case 'revisado':
+      return 'bi-eye'
+    default:
+      return 'bi-question-circle'
   }
 }
 
@@ -53,7 +61,7 @@ export function getInitials(nombre) {
   if (!nombre) return '?'
   return nombre
     .split(' ')
-    .map(n => n[0])
+    .map((n) => n[0])
     .join('')
     .toUpperCase()
     .slice(0, 2)
@@ -77,12 +85,15 @@ export function calcularDuracion(fechaInicio, now) {
 
 export function parseRecursos(recursosArray) {
   if (!recursosArray || !Array.isArray(recursosArray)) return []
-  return recursosArray.filter(r => r && r.trim()).map(r => r.trim())
+  return recursosArray.filter((r) => r && r.trim()).map((r) => r.trim())
 }
 
 export function formatRecursosString(recursosArray) {
   if (!recursosArray || !Array.isArray(recursosArray)) return ''
-  return recursosArray.filter(r => r && r.trim()).map(r => r.trim()).join(', ')
+  return recursosArray
+    .filter((r) => r && r.trim())
+    .map((r) => r.trim())
+    .join(', ')
 }
 
 export function getConsistentColor(id) {

@@ -1,5 +1,9 @@
 import { describe, it, expect } from 'vitest'
-import { aggregateStudentProgress, aggregateBatch, InvalidWindowError } from '../progresoAggregationService.js'
+import {
+  aggregateStudentProgress,
+  aggregateBatch,
+  InvalidWindowError,
+} from '../progresoAggregationService.js'
 
 describe('progresoAggregationService', () => {
   const mockClock = { now: () => new Date('2026-05-18T12:00:00Z').getTime() }
@@ -55,9 +59,24 @@ describe('progresoAggregationService', () => {
         sources: {
           asistencias: [],
           progresos: [
-            { alumno_id: 'alum-001', calificacion: 8.0, fecha_evaluacion: '2026-05-05', evaluacion_id: 'eval-1' },
-            { alumno_id: 'alum-001', calificacion: null, fecha_evaluacion: '2026-05-10', evaluacion_id: 'eval-2' },
-            { alumno_id: 'alum-001', calificacion: 6.0, fecha_evaluacion: '2026-05-15', evaluacion_id: 'eval-3' },
+            {
+              alumno_id: 'alum-001',
+              calificacion: 8.0,
+              fecha_evaluacion: '2026-05-05',
+              evaluacion_id: 'eval-1',
+            },
+            {
+              alumno_id: 'alum-001',
+              calificacion: null,
+              fecha_evaluacion: '2026-05-10',
+              evaluacion_id: 'eval-2',
+            },
+            {
+              alumno_id: 'alum-001',
+              calificacion: 6.0,
+              fecha_evaluacion: '2026-05-15',
+              evaluacion_id: 'eval-3',
+            },
           ],
           indicatorAttempts: [],
           observaciones: [],
@@ -107,8 +126,21 @@ describe('progresoAggregationService', () => {
           progresos: [],
           indicatorAttempts: [],
           observaciones: [
-            { id: 'obs-1', alumno_id: 'alum-001', texto: 'Good work', fecha: '2026-05-05', tipo: 'sesion', sesion_id: 'ses-1' },
-            { id: 'obs-2', alumno_id: 'alum-001', texto: 'Needs improvement', fecha: '2026-05-10', tipo: 'alumno' },
+            {
+              id: 'obs-1',
+              alumno_id: 'alum-001',
+              texto: 'Good work',
+              fecha: '2026-05-05',
+              tipo: 'sesion',
+              sesion_id: 'ses-1',
+            },
+            {
+              id: 'obs-2',
+              alumno_id: 'alum-001',
+              texto: 'Needs improvement',
+              fecha: '2026-05-10',
+              tipo: 'alumno',
+            },
           ],
         },
         clock: mockClock,
@@ -162,9 +194,24 @@ describe('progresoAggregationService', () => {
         sources: {
           asistencias: [],
           progresos: [
-            { alumno_id: 'alum-001', calificacion: 5.0, fecha_evaluacion: '2026-05-05', evaluacion_id: 'eval-1' },
-            { alumno_id: 'alum-001', calificacion: 5.5, fecha_evaluacion: '2026-05-10', evaluacion_id: 'eval-2' },
-            { alumno_id: 'alum-001', calificacion: 5.8, fecha_evaluacion: '2026-05-15', evaluacion_id: 'eval-3' },
+            {
+              alumno_id: 'alum-001',
+              calificacion: 5.0,
+              fecha_evaluacion: '2026-05-05',
+              evaluacion_id: 'eval-1',
+            },
+            {
+              alumno_id: 'alum-001',
+              calificacion: 5.5,
+              fecha_evaluacion: '2026-05-10',
+              evaluacion_id: 'eval-2',
+            },
+            {
+              alumno_id: 'alum-001',
+              calificacion: 5.8,
+              fecha_evaluacion: '2026-05-15',
+              evaluacion_id: 'eval-3',
+            },
           ],
           indicatorAttempts: [],
           observaciones: [],

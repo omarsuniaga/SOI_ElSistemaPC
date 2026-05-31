@@ -16,7 +16,7 @@ export const NIVELES = [
 ]
 
 export function getNivelLabel(nivel) {
-  const found = NIVELES.find(n => n.value === nivel)
+  const found = NIVELES.find((n) => n.value === nivel)
   return found ? found.label : nivel || '-'
 }
 
@@ -31,18 +31,14 @@ export async function obtenerProgramas() {
     throw error
   }
 
-  return (data || []).map(p => new Programa(p))
+  return (data || []).map((p) => new Programa(p))
 }
 
 /**
  * Obtiene un programa por ID
  */
 export async function obtenerPrograma(id) {
-  const { data, error } = await supabase
-    .from('programas')
-    .select('*')
-    .eq('id', id)
-    .single()
+  const { data, error } = await supabase.from('programas').select('*').eq('id', id).single()
 
   if (error) {
     console.error('Error cargando programa:', error.message)
@@ -57,17 +53,14 @@ export async function obtenerPrograma(id) {
  */
 export async function crearPrograma(programaData) {
   const programa = new Programa(programaData)
-  const validLevels = NIVELES.map(n => n.value).filter(Boolean)
+  const validLevels = NIVELES.map((n) => n.value).filter(Boolean)
   const errores = programa.validate(validLevels)
-  
+
   if (errores.length > 0) {
     throw new Error(errores.join('. '))
   }
 
-  const { data, error } = await supabase
-    .from('programas')
-    .insert([programa.toJSON()])
-    .select()
+  const { data, error } = await supabase.from('programas').insert([programa.toJSON()]).select()
 
   if (error) {
     console.error('Error creando programa:', error.message)
@@ -82,11 +75,11 @@ export async function crearPrograma(programaData) {
  */
 export async function actualizarPrograma(id, actualizaciones) {
   const programa = new Programa(actualizaciones)
-  // Nota: Al actualizar permitimos validación parcial si el modelo lo soporta, 
+  // Nota: Al actualizar permitimos validación parcial si el modelo lo soporta,
   // pero por ahora validamos el objeto completo como buena práctica.
-  const validLevels = NIVELES.map(n => n.value).filter(Boolean)
+  const validLevels = NIVELES.map((n) => n.value).filter(Boolean)
   const errores = programa.validate(validLevels)
-  
+
   if (errores.length > 0) {
     throw new Error(errores.join('. '))
   }
@@ -109,10 +102,7 @@ export async function actualizarPrograma(id, actualizaciones) {
  * Elimina un programa
  */
 export async function eliminarPrograma(id) {
-  const { error } = await supabase
-    .from('programas')
-    .delete()
-    .eq('id', id)
+  const { error } = await supabase.from('programas').delete().eq('id', id)
 
   if (error) {
     console.error('Error eliminando programa:', error.message)
@@ -134,12 +124,12 @@ export async function exportarProgramasPDF(programas) {
   doc.setFontSize(10)
   doc.text(`Fecha: ${new Date().toLocaleDateString('es-ES')}`, 14, 30)
 
-  const tableData = programas.map(p => [
+  const tableData = programas.map((p) => [
     p.nombre,
     getNivelLabel(p.nivel),
     p.descripcion ? p.descripcion.substring(0, 50) + (p.descripcion.length > 50 ? '...' : '') : '-',
     p.activo ? 'Activo' : 'Inactivo',
-    p.created_at ? new Date(p.created_at).toLocaleDateString('es-ES') : '-'
+    p.created_at ? new Date(p.created_at).toLocaleDateString('es-ES') : '-',
   ])
 
   autoTable(doc, {

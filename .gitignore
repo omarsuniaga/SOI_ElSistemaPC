@@ -50,3 +50,6 @@ supabase/.temp/
 
 # Claude AI worktrees and metadata
 .claude/
+
+# Generated PDF exports
+postulados-*.pdf

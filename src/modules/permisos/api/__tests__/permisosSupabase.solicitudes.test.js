@@ -76,14 +76,12 @@ describe('permisosSupabase - Solicitudes', () => {
       supabase.from.mockReturnValue(mockChain)
 
       await expect(crearSolicitud(mockMaestroId, true, false)).rejects.toThrow(
-        'Ya existe una solicitud pendiente para este maestro'
+        'Ya existe una solicitud pendiente para este maestro',
       )
     })
 
     it('should throw error if maestroId is missing', async () => {
-      await expect(crearSolicitud(null, true, false)).rejects.toThrow(
-        'maestroId es requerido'
-      )
+      await expect(crearSolicitud(null, true, false)).rejects.toThrow('maestroId es requerido')
     })
   })
 
@@ -239,10 +237,10 @@ describe('permisosSupabase - Solicitudes', () => {
       }
 
       supabase.from
-        .mockReturnValueOnce(approveChain)      // solicitudes_permisos update
-        .mockReturnValueOnce(getPermisoChain)   // obtenerPermisoPorMaestro
-        .mockReturnValueOnce(readCurrentChain)  // actualizarPermiso read
-        .mockReturnValueOnce(updateChain)       // actualizarPermiso upsert
+        .mockReturnValueOnce(approveChain) // solicitudes_permisos update
+        .mockReturnValueOnce(getPermisoChain) // obtenerPermisoPorMaestro
+        .mockReturnValueOnce(readCurrentChain) // actualizarPermiso read
+        .mockReturnValueOnce(updateChain) // actualizarPermiso upsert
 
       const result = await aprobarSolicitud(mockSolicitudId, mockAdminId)
 
@@ -252,11 +250,11 @@ describe('permisosSupabase - Solicitudes', () => {
 
     it('should throw error if solicitudId or adminId missing', async () => {
       await expect(aprobarSolicitud(null, mockAdminId)).rejects.toThrow(
-        'solicitudId y adminId son requeridos'
+        'solicitudId y adminId son requeridos',
       )
 
       await expect(aprobarSolicitud(mockSolicitudId, null)).rejects.toThrow(
-        'solicitudId y adminId son requeridos'
+        'solicitudId y adminId son requeridos',
       )
     })
   })

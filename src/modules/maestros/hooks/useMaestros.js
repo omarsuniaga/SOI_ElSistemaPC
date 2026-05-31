@@ -12,12 +12,12 @@ export class MaestrosHook {
   subscribe(callback) {
     this.listeners.push(callback)
     return () => {
-      this.listeners = this.listeners.filter(l => l !== callback)
+      this.listeners = this.listeners.filter((l) => l !== callback)
     }
   }
 
   notifyListeners() {
-    this.listeners.forEach(listener => {
+    this.listeners.forEach((listener) => {
       listener({
         maestros: this.maestros,
         maestroActual: this.maestroActual,
@@ -75,32 +75,33 @@ export class MaestrosHook {
     if (!searchTerm) return this.maestros
 
     const term = searchTerm.toLowerCase()
-    return this.maestros.filter(m =>
-      (m.nombre || '').toLowerCase().includes(term) ||
-      (m.email || '').toLowerCase().includes(term) ||
-      (m.instrumento || '').toLowerCase().includes(term) ||
-      (m.especialidad || '').toLowerCase().includes(term)
+    return this.maestros.filter(
+      (m) =>
+        (m.nombre || '').toLowerCase().includes(term) ||
+        (m.email || '').toLowerCase().includes(term) ||
+        (m.instrumento || '').toLowerCase().includes(term) ||
+        (m.especialidad || '').toLowerCase().includes(term),
     )
   }
 
   filterByEstado(isActive) {
-    return this.maestros.filter(m => m.is_active === isActive)
+    return this.maestros.filter((m) => m.is_active === isActive)
   }
 
   filterByInstrumento(instrumento) {
-    return this.maestros.filter(m => m.instrumento === instrumento)
+    return this.maestros.filter((m) => m.instrumento === instrumento)
   }
 
   getById(id) {
-    return this.maestros.find(m => m.id === id) || null
+    return this.maestros.find((m) => m.id === id) || null
   }
 
   getActivos() {
-    return this.maestros.filter(m => m.is_active)
+    return this.maestros.filter((m) => m.is_active)
   }
 
   getInactivos() {
-    return this.maestros.filter(m => !m.is_active)
+    return this.maestros.filter((m) => !m.is_active)
   }
 
   count() {

@@ -9,19 +9,19 @@ import { callGroq } from './groqService.js'
 
 // ─── Paleta institucional ────────────────────────────────────────────────────
 const C = {
-  headerBg:    [15,  40,  80],   // azul institucional oscuro
-  headerText:  [255, 255, 255],
-  accent:      [30,  90,  180],  // azul medio (subtítulos, bordes)
-  rowAlt:      [245, 248, 255],  // fila par
-  rowNormal:   [255, 255, 255],
-  presente:    [22,  163,  74],  // verde
-  ausente:     [220,  38,  38],  // rojo
-  justificado: [161, 107,   0],  // ámbar oscuro
-  summary:     [240, 245, 255],  // fondo bloque resumen
-  obs:         [250, 252, 255],  // fondo bloque observaciones
-  border:      [180, 200, 230],
-  muted:       [120, 130, 150],
-  text:        [20,  30,  50],
+  headerBg: [15, 40, 80], // azul institucional oscuro
+  headerText: [255, 255, 255],
+  accent: [30, 90, 180], // azul medio (subtítulos, bordes)
+  rowAlt: [245, 248, 255], // fila par
+  rowNormal: [255, 255, 255],
+  presente: [22, 163, 74], // verde
+  ausente: [220, 38, 38], // rojo
+  justificado: [161, 107, 0], // ámbar oscuro
+  summary: [240, 245, 255], // fondo bloque resumen
+  obs: [250, 252, 255], // fondo bloque observaciones
+  border: [180, 200, 230],
+  muted: [120, 130, 150],
+  text: [20, 30, 50],
 }
 
 // Carta: 215.9 × 279.4 mm
@@ -36,9 +36,14 @@ function fmtFecha(dateStr) {
   if (!dateStr) return '—'
   try {
     return new Date(dateStr + 'T12:00:00').toLocaleDateString('es-ES', {
-      weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
     })
-  } catch { return dateStr }
+  } catch {
+    return dateStr
+  }
 }
 
 function fmtHora(t) {
@@ -52,12 +57,12 @@ function fmtHora(t) {
 function dslToPlain(dsl) {
   if (!dsl) return ''
   return dsl
-    .replace(/#(\w[\w\s]*)/g, '$1')        // #Nombre → Nombre
-    .replace(/\[([^\]]+)\]/g, '[$1]')       // [contenido] → [contenido] (conservar)
-    .replace(/\(([^)]+)\)/g, '→ $1')        // (sugerencia) → → sugerencia
-    .replace(/\{([^}]+)\}/g, 'Tarea: $1')   // {tarea} → Tarea: tarea
-    .replace(/\$(\S+)/g, '$1')              // $medida → medida
-    .replace(/>/g, '')                       // > objetivos
+    .replace(/#(\w[\w\s]*)/g, '$1') // #Nombre → Nombre
+    .replace(/\[([^\]]+)\]/g, '[$1]') // [contenido] → [contenido] (conservar)
+    .replace(/\(([^)]+)\)/g, '→ $1') // (sugerencia) → → sugerencia
+    .replace(/\{([^}]+)\}/g, 'Tarea: $1') // {tarea} → Tarea: tarea
+    .replace(/\$(\S+)/g, '$1') // $medida → medida
+    .replace(/>/g, '') // > objetivos
     .replace(/\n{3,}/g, '\n\n')
     .trim()
 }
@@ -65,17 +70,19 @@ function dslToPlain(dsl) {
 /** Genera un resumen IA comparando asistencia actual vs snapshot anterior */
 async function generarResumenIA(alumnos, estadoHoy, snapshots) {
   try {
-    const resumenHoy = alumnos.map(a => {
-      const e = estadoHoy[a.id]
-      return `${a.nombre_completo}: ${e === 'P' ? 'Presente' : e === 'A' ? 'Ausente' : e === 'J' ? 'Justificado' : 'Sin registrar'}`
-    }).join('\n')
+    const resumenHoy = alumnos
+      .map((a) => {
+        const e = estadoHoy[a.id]
+        return `${a.nombre_completo}: ${e === 'P' ? 'Presente' : e === 'A' ? 'Ausente' : e === 'J' ? 'Justificado' : 'Sin registrar'}`
+      })
+      .join('\n')
 
     const snapAnterior = snapshots?.[0]
     let contextoAnterior = 'No hay registro de clase anterior disponible.'
     if (snapAnterior) {
       const asistPrev = snapAnterior.asistencia || []
-      const prevMap = Object.fromEntries(asistPrev.map(a => [a.alumno_id, a.estado]))
-      const lineas = alumnos.map(a => {
+      const prevMap = Object.fromEntries(asistPrev.map((a) => [a.alumno_id, a.estado]))
+      const lineas = alumnos.map((a) => {
         const prev = prevMap[a.id]
         const hoy = estadoHoy[a.id]
         const cambio = prev && prev !== hoy ? ` (antes: ${prev})` : ''
@@ -162,7 +169,10 @@ function drawClaseInfo(doc, y, { clase, maestro, horario, fecha, salonNombre }) 
     ],
     [
       ['Maestro:', maestro?.nombre_completo || maestro?.email || '—'],
-      ['Horario:', horario ? `${fmtHora(horario.hora_inicio)} – ${fmtHora(horario.hora_fin)}` : '—'],
+      [
+        'Horario:',
+        horario ? `${fmtHora(horario.hora_inicio)} – ${fmtHora(horario.hora_fin)}` : '—',
+      ],
     ],
     [
       ['Instrumento:', clase?.instrumento || clase?.nivel || '—'],
@@ -227,8 +237,8 @@ function drawTabla(doc, y, alumnos, estado, justificaciones) {
     didParseCell(data) {
       if (data.column.index === 2 && data.section === 'body') {
         const v = data.cell.raw
-        if (v === 'PRESENTE')    data.cell.styles.textColor = C.presente
-        if (v === 'AUSENTE')     data.cell.styles.textColor = C.ausente
+        if (v === 'PRESENTE') data.cell.styles.textColor = C.presente
+        if (v === 'AUSENTE') data.cell.styles.textColor = C.ausente
         if (v === 'JUSTIFICADO') data.cell.styles.textColor = C.justificado
       }
     },
@@ -241,16 +251,14 @@ function drawTabla(doc, y, alumnos, estado, justificaciones) {
 // ─── Sección: Resumen + barra visual ─────────────────────────────────────────
 
 function drawResumen(doc, y, alumnos, estado, resumenIA) {
-  const total      = alumnos.length
-  const presentes  = Object.values(estado).filter(v => v === 'P').length
-  const ausentes   = Object.values(estado).filter(v => v === 'A').length
-  const justifs    = Object.values(estado).filter(v => v === 'J').length
-  const pct        = total > 0 ? Math.round((presentes / total) * 100) : 0
+  const total = alumnos.length
+  const presentes = Object.values(estado).filter((v) => v === 'P').length
+  const ausentes = Object.values(estado).filter((v) => v === 'A').length
+  const justifs = Object.values(estado).filter((v) => v === 'J').length
+  const pct = total > 0 ? Math.round((presentes / total) * 100) : 0
 
   // Calcular altura del bloque según si hay resumenIA
-  const iaLines = resumenIA
-    ? doc.splitTextToSize(resumenIA, CONTENT_W - 8)
-    : []
+  const iaLines = resumenIA ? doc.splitTextToSize(resumenIA, CONTENT_W - 8) : []
   const boxH = 20 + (iaLines.length > 0 ? 6 + iaLines.length * 4.5 : 0)
 
   doc.setFillColor(...C.summary)
@@ -266,10 +274,10 @@ function drawResumen(doc, y, alumnos, estado, resumenIA) {
   // Contadores
   const statsY = y + 13
   const items = [
-    { label: 'Presentes',    val: presentes, color: C.presente },
-    { label: 'Ausentes',     val: ausentes,  color: C.ausente },
-    { label: 'Justificados', val: justifs,   color: C.justificado },
-    { label: 'Total',        val: total,     color: C.accent },
+    { label: 'Presentes', val: presentes, color: C.presente },
+    { label: 'Ausentes', val: ausentes, color: C.ausente },
+    { label: 'Justificados', val: justifs, color: C.justificado },
+    { label: 'Total', val: total, color: C.accent },
   ]
   const colW = CONTENT_W / items.length
 
@@ -407,8 +415,11 @@ function drawFooter(doc, totalPages) {
     doc.setTextColor(...C.muted)
 
     const ts = new Date().toLocaleString('es-ES', {
-      day: '2-digit', month: '2-digit', year: 'numeric',
-      hour: '2-digit', minute: '2-digit',
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
     })
     doc.text(`Generado por SOI · ${ts}`, MARGIN, PAGE_H - 7)
     doc.text(`Página ${i} de ${pages}`, PAGE_W - MARGIN, PAGE_H - 7, { align: 'right' })
@@ -434,8 +445,17 @@ function drawFooter(doc, totalPages) {
  * @param {string}   [opts.institucion] - nombre de la institución
  */
 export async function generarPdfHoy({
-  clase, maestro, horario, alumnos, estado, justificaciones,
-  fecha, dslContent, salonNombre, snapshots, institucion,
+  clase,
+  maestro,
+  horario,
+  alumnos,
+  estado,
+  justificaciones,
+  fecha,
+  dslContent,
+  salonNombre,
+  snapshots,
+  institucion,
 }) {
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'letter' })
 

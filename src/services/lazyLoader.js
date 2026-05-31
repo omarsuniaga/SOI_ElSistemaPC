@@ -23,17 +23,17 @@ export function lazyLoadRoute(path, loader) {
 
       console.log(`[LazyLoader] Loading: ${path}`)
       const startTime = performance.now()
-      
+
       try {
         const component = await loader()
         const duration = performance.now() - startTime
-        
+
         routeCache.set(path, component)
-        
+
         if (duration > 1000) {
           console.warn(`[LazyLoader] Slow load: ${path} (${duration.toFixed(0)}ms)`)
         }
-        
+
         return component
       } catch (error) {
         console.error(`[LazyLoader] Failed to load ${path}:`, error)

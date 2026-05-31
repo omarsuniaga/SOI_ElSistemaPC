@@ -3,7 +3,7 @@ import { analyticsFillingBehaviorWidget } from '../analyticsFillingBehaviorWidge
 import * as analyticsService from '../../api/analyticsFillingBehaviorService.js'
 
 vi.mock('../../api/analyticsFillingBehaviorService.js', () => ({
-  getTeacherFillingMetrics: vi.fn()
+  getTeacherFillingMetrics: vi.fn(),
 }))
 
 describe('analyticsFillingBehaviorWidget', () => {
@@ -38,8 +38,8 @@ describe('analyticsFillingBehaviorWidget', () => {
         orden_observaciones_primero: 3,
         orden_simultaneo: 1,
         promedio_duracion_observaciones: 120,
-        uso_ai_fill_percent: 40
-      }
+        uso_ai_fill_percent: 40,
+      },
     ]
 
     analyticsService.getTeacherFillingMetrics.mockResolvedValueOnce(mockMetrics)
@@ -56,7 +56,7 @@ describe('analyticsFillingBehaviorWidget', () => {
       { orden_asistencia_primero: 1, orden_observaciones_primero: 0, orden_simultaneo: 0 }, // asistencia first
       { orden_asistencia_primero: 1, orden_observaciones_primero: 0, orden_simultaneo: 0 },
       { orden_asistencia_primero: 0, orden_observaciones_primero: 1, orden_simultaneo: 0 }, // observaciones first
-      { orden_asistencia_primero: 0, orden_observaciones_primero: 0, orden_simultaneo: 1 }  // simultaneous
+      { orden_asistencia_primero: 0, orden_observaciones_primero: 0, orden_simultaneo: 1 }, // simultaneous
     ]
 
     analyticsService.getTeacherFillingMetrics.mockResolvedValueOnce(mockMetrics)
@@ -74,7 +74,7 @@ describe('analyticsFillingBehaviorWidget', () => {
       { uso_ai_fill_percent: 0 },
       { uso_ai_fill_percent: 50 },
       { uso_ai_fill_percent: 100 },
-      { uso_ai_fill_percent: 100 }
+      { uso_ai_fill_percent: 100 },
     ]
 
     analyticsService.getTeacherFillingMetrics.mockResolvedValueOnce(mockMetrics)
@@ -93,7 +93,7 @@ describe('analyticsFillingBehaviorWidget', () => {
         total_clases: 10,
         orden_asistencia_primero: 6,
         promedio_duracion_observaciones: 120,
-        uso_ai_fill_percent: 40
+        uso_ai_fill_percent: 40,
       },
       {
         maestro_id: '2',
@@ -101,8 +101,8 @@ describe('analyticsFillingBehaviorWidget', () => {
         total_clases: 8,
         orden_asistencia_primero: 5,
         promedio_duracion_observaciones: 180,
-        uso_ai_fill_percent: 60
-      }
+        uso_ai_fill_percent: 60,
+      },
     ]
 
     analyticsService.getTeacherFillingMetrics.mockResolvedValueOnce(mockMetrics)
@@ -117,9 +117,7 @@ describe('analyticsFillingBehaviorWidget', () => {
   })
 
   it('should display error message when data fetch fails', async () => {
-    analyticsService.getTeacherFillingMetrics.mockRejectedValueOnce(
-      new Error('Database error')
-    )
+    analyticsService.getTeacherFillingMetrics.mockRejectedValueOnce(new Error('Database error'))
 
     const widget = analyticsFillingBehaviorWidget('analytics-container')
     await widget.init()

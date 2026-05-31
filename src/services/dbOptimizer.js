@@ -88,7 +88,7 @@ export function optimizeQuery(query) {
 
   const { table, where = {} } = query
   const whereKeys = Object.keys(where)
-  const tableIndexes = DATABASE_INDEXES.filter(idx => idx.table === table)
+  const tableIndexes = DATABASE_INDEXES.filter((idx) => idx.table === table)
 
   const result = {
     table,
@@ -100,7 +100,7 @@ export function optimizeQuery(query) {
 
   for (const index of tableIndexes) {
     const indexCols = index.columns
-    const matchingCols = whereKeys.filter(key => indexCols.includes(key))
+    const matchingCols = whereKeys.filter((key) => indexCols.includes(key))
 
     if (matchingCols.length > 0) {
       result.usesIndex = true
@@ -113,7 +113,7 @@ export function optimizeQuery(query) {
 
   queryStats.indexMisses++
 
-  const missingCols = whereKeys.filter(key => !QUERY_COLUMNS[table]?.includes(key))
+  const missingCols = whereKeys.filter((key) => !QUERY_COLUMNS[table]?.includes(key))
   if (missingCols.length > 0) {
     result.suggestIndex = {
       table,
@@ -137,8 +137,10 @@ export function explainQuery(query) {
     type: optimization.usesIndex ? 'index_scan' : 'seq_scan',
     usedIndex: optimization.usedIndex || null,
     estimatedRows: optimization.usesIndex ? 10 : 1000,
-    recommendations: optimization.suggestIndex 
-      ? [`Create index on ${optimization.suggestIndex.table}(${optimization.suggestIndex.columns.join(', ')})`]
+    recommendations: optimization.suggestIndex
+      ? [
+          `Create index on ${optimization.suggestIndex.table}(${optimization.suggestIndex.columns.join(', ')})`,
+        ]
       : [],
   }
 }
@@ -166,8 +168,8 @@ export function resetStats() {
  * Generate SQL for creating indexes
  */
 export function generateIndexSQL() {
-  return DATABASE_INDEXES.map(idx => 
-    `CREATE INDEX IF NOT EXISTS ${idx.name} ON ${idx.table} (${idx.columns.join(', ')});`
+  return DATABASE_INDEXES.map(
+    (idx) => `CREATE INDEX IF NOT EXISTS ${idx.name} ON ${idx.table} (${idx.columns.join(', ')});`,
   ).join('\n')
 }
 

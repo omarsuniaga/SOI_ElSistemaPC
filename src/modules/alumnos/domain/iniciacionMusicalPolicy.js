@@ -25,9 +25,9 @@
 function addMonthsToDateStr(dateStr, months) {
   // Parse as UTC components to avoid timezone shift
   const [year, month, day] = dateStr.split('-').map(Number)
-  const targetMonth = month - 1 + months  // 0-based
+  const targetMonth = month - 1 + months // 0-based
   const targetYear = year + Math.floor(targetMonth / 12)
-  const normalizedMonth = ((targetMonth % 12) + 12) % 12  // 0-based
+  const normalizedMonth = ((targetMonth % 12) + 12) % 12 // 0-based
 
   // Last day of target month: day 0 of next month = last day of this month
   const lastDay = new Date(Date.UTC(targetYear, normalizedMonth + 1, 0)).getUTCDate()

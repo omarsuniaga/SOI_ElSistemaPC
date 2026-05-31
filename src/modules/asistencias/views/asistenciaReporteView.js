@@ -5,10 +5,10 @@ import '../styles/asistencias.css'
 const state = {
   periodoActivo: null,
   periodos: [],
-  datos: { 
-    programas: {}, 
-    niveles: {}, 
-    totales: { sesiones: 0, presentes: 0, ausentes: 0, justificados: 0 } 
+  datos: {
+    programas: {},
+    niveles: {},
+    totales: { sesiones: 0, presentes: 0, ausentes: 0, justificados: 0 },
   },
   cargando: false,
 }
@@ -82,15 +82,21 @@ function _procesarDatos(sesiones) {
   return {
     programas: porPrograma,
     niveles: porNivel,
-    totales: { sesiones: totalSesiones, presentes: totalPresentes, ausentes: totalAusentes, justificados: totalJustificados }
+    totales: {
+      sesiones: totalSesiones,
+      presentes: totalPresentes,
+      ausentes: totalAusentes,
+      justificados: totalJustificados,
+    },
   }
 }
 
 function _render(container) {
   const { programas, niveles, totales } = state.datos
-  const tasa = totales.presentes + totales.ausentes + totales.justificados
-    ? Math.round((totales.presentes / tasa) * 100)
-    : 0
+  const tasa =
+    totales.presentes + totales.ausentes + totales.justificados
+      ? Math.round((totales.presentes / tasa) * 100)
+      : 0
 
   container.innerHTML = `
     <div class="page-container py-3">
@@ -165,10 +171,11 @@ function _render(container) {
                     </tr>
                   </thead>
                   <tbody>
-                    ${Object.entries(programas).map(([prog, data]) => {
-                      const total = data.presentes + data.ausentes + data.justificados
-                      const tasa = total ? Math.round((data.presentes / total) * 100) : 0
-                      return `
+                    ${Object.entries(programas)
+                      .map(([prog, data]) => {
+                        const total = data.presentes + data.ausentes + data.justificados
+                        const tasa = total ? Math.round((data.presentes / total) * 100) : 0
+                        return `
                         <tr>
                           <td class="fw-semibold">${prog}</td>
                           <td class="text-center">${total}</td>
@@ -180,7 +187,8 @@ function _render(container) {
                           </td>
                         </tr>
                       `
-                    }).join('')}
+                      })
+                      .join('')}
                   </tbody>
                 </table>
               </div>
@@ -197,16 +205,20 @@ function _renderBarChart(data, key) {
     return '<p class="text-muted text-center py-3">Sin datos disponibles</p>'
   }
 
-  const entries = Object.entries(data).sort((a, b) => (b[1].presentes + b[1].ausentes) - (a[1].presentes + a[1].ausentes))
+  const entries = Object.entries(data).sort(
+    (a, b) => b[1].presentes + b[1].ausentes - (a[1].presentes + a[1].ausentes),
+  )
   const maxTotal = Math.max(...entries.map(([, d]) => d.presentes + d.ausentes + d.justificados))
 
-  return entries.slice(0, 8).map(([label, d]) => {
-    const total = d.presentes + d.ausentes + d.justificados
-    const pctPresentes = total ? (d.presentes / total) * 100 : 0
-    const pctAusentes = total ? (d.ausentes / total) * 100 : 0
-    const pctJustificados = total ? (d.justificados / total) * 100 : 0
+  return entries
+    .slice(0, 8)
+    .map(([label, d]) => {
+      const total = d.presentes + d.ausentes + d.justificados
+      const pctPresentes = total ? (d.presentes / total) * 100 : 0
+      const pctAusentes = total ? (d.ausentes / total) * 100 : 0
+      const pctJustificados = total ? (d.justificados / total) * 100 : 0
 
-    return `
+      return `
       <div class="mb-3">
         <div class="d-flex justify-content-between mb-1">
           <span class="small fw-semibold">${label}</span>
@@ -219,5 +231,6 @@ function _renderBarChart(data, key) {
         </div>
       </div>
     `
-  }).join('')
+    })
+    .join('')
 }

@@ -31,7 +31,7 @@ export class ObservacionesHook {
   subscribe(callback) {
     this.listeners.push(callback)
     return () => {
-      this.listeners = this.listeners.filter(l => l !== callback)
+      this.listeners = this.listeners.filter((l) => l !== callback)
     }
   }
 
@@ -39,7 +39,7 @@ export class ObservacionesHook {
    * Notificar a todos los suscriptores
    */
   notifyListeners() {
-    this.listeners.forEach(listener => {
+    this.listeners.forEach((listener) => {
       listener({
         observaciones: this.observaciones,
         observacionActual: this.observacionActual,
@@ -118,11 +118,12 @@ export class ObservacionesHook {
     if (!searchTerm) return this.observaciones
 
     const term = searchTerm.toLowerCase()
-    return this.observaciones.filter(o =>
-      (o.titulo || '').toLowerCase().includes(term) ||
-      (o.descripcion || '').toLowerCase().includes(term) ||
-      (o.tipo || '').toLowerCase().includes(term) ||
-      (o.nombre_alumno || '').toLowerCase().includes(term)
+    return this.observaciones.filter(
+      (o) =>
+        (o.titulo || '').toLowerCase().includes(term) ||
+        (o.descripcion || '').toLowerCase().includes(term) ||
+        (o.tipo || '').toLowerCase().includes(term) ||
+        (o.nombre_alumno || '').toLowerCase().includes(term),
     )
   }
 
@@ -133,7 +134,7 @@ export class ObservacionesHook {
    */
   filterByAlumno(alumnoId) {
     if (!alumnoId) return this.observaciones
-    return this.observaciones.filter(o => o.alumno_id === alumnoId)
+    return this.observaciones.filter((o) => o.alumno_id === alumnoId)
   }
 
   /**
@@ -143,7 +144,7 @@ export class ObservacionesHook {
    */
   filterByTipo(tipo) {
     if (!tipo) return this.observaciones
-    return this.observaciones.filter(o => o.tipo === tipo)
+    return this.observaciones.filter((o) => o.tipo === tipo)
   }
 
   /**
@@ -153,7 +154,7 @@ export class ObservacionesHook {
    */
   filterByEstado(estado) {
     if (!estado) return this.observaciones
-    return this.observaciones.filter(o => o.estado === estado)
+    return this.observaciones.filter((o) => o.estado === estado)
   }
 
   /**
@@ -163,7 +164,7 @@ export class ObservacionesHook {
    */
   filterByPrioridad(prioridad) {
     if (!prioridad) return this.observaciones
-    return this.observaciones.filter(o => o.prioridad === prioridad)
+    return this.observaciones.filter((o) => o.prioridad === prioridad)
   }
 
   /**
@@ -172,7 +173,7 @@ export class ObservacionesHook {
    * @returns {Object|null}
    */
   getById(id) {
-    return this.observaciones.find(o => o.id === id) || null
+    return this.observaciones.find((o) => o.id === id) || null
   }
 
   /**
@@ -180,7 +181,7 @@ export class ObservacionesHook {
    * @returns {Array}
    */
   getAbiertas() {
-    return this.observaciones.filter(o => o.estado === 'abierta')
+    return this.observaciones.filter((o) => o.estado === 'abierta')
   }
 
   /**
@@ -189,7 +190,7 @@ export class ObservacionesHook {
    * @returns {Array}
    */
   getPorAlumno(alumnoId) {
-    return this.observaciones.filter(o => o.alumno_id === alumnoId)
+    return this.observaciones.filter((o) => o.alumno_id === alumnoId)
   }
 
   /**

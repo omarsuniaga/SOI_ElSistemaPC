@@ -79,7 +79,7 @@ export class Ruta {
       fecha_aprobacion: this.fecha_aprobacion,
       objetivos: this.objetivos,
       created_at: this.created_at,
-      updated_at: this.updated_at
+      updated_at: this.updated_at,
     }
   }
 
@@ -88,7 +88,7 @@ export class Ruta {
       { value: 'activa', label: 'Activa', color: 'bg-success' },
       { value: 'pendiente', label: 'Pendiente de aprobación', color: 'bg-warning' },
       { value: 'aprobada', label: 'Aprobada', color: 'bg-info' },
-      { value: 'rechazada', label: 'Rechazada', color: 'bg-danger' }
+      { value: 'rechazada', label: 'Rechazada', color: 'bg-danger' },
     ]
   }
 }

@@ -112,7 +112,9 @@ export class MaestroModalManager {
     this.formElement.querySelector('#bio').value = maestro.bio || ''
     this.formElement.querySelector('#isActive').checked = maestro.is_active
 
-    const bioCounter = this.formElement.querySelector('#bio').parentElement.querySelector('.char-count')
+    const bioCounter = this.formElement
+      .querySelector('#bio')
+      .parentElement.querySelector('.char-count')
     if (bioCounter) {
       bioCounter.textContent = `${maestro.bio ? maestro.bio.length : 0}/${VALIDATION.bioMax}`
     }
@@ -121,7 +123,9 @@ export class MaestroModalManager {
   resetForm() {
     if (!this.formElement) return
     this.formElement.reset()
-    this.formElement.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'))
+    this.formElement
+      .querySelectorAll('.is-invalid')
+      .forEach((el) => el.classList.remove('is-invalid'))
     const bioCounter = this.formElement.querySelector('.char-count')
     if (bioCounter) bioCounter.textContent = `0/${VALIDATION.bioMax}`
   }

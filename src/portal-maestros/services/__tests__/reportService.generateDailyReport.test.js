@@ -55,7 +55,9 @@ function makeChain(data, error = null) {
 /** Mock que resuelve la cadena directamente (para queries sin .single()) */
 function makeResolvingChain(data, error = null) {
   let resolveChain
-  const promise = new Promise((res) => { resolveChain = res })
+  const promise = new Promise((res) => {
+    resolveChain = res
+  })
   const chain = {
     select: vi.fn().mockReturnThis(),
     eq: vi.fn().mockReturnThis(),
@@ -91,7 +93,7 @@ const SESION_REGULAR = {
 const SESION_EMERGENTE = {
   id: 'sesion-emergente-1',
   fecha: '2026-05-29',
-  clase_id: null,          // ← emergente: sin clase asignada
+  clase_id: null, // ← emergente: sin clase asignada
   asistencia: [
     { alumno_id: 'a1', estado: 'P' },
     { alumno_id: 'a4', estado: 'P' },
@@ -102,7 +104,12 @@ const SESION_EMERGENTE = {
   motivo: 'Concierto',
 }
 
-const CLASE_DATA = { id: 'clase-1', nombre: 'Guitarra I', instrumento: 'Guitarra', maestro_id: 'maestro-1' }
+const CLASE_DATA = {
+  id: 'clase-1',
+  nombre: 'Guitarra I',
+  instrumento: 'Guitarra',
+  maestro_id: 'maestro-1',
+}
 const ALUMNOS_CLASE = [
   { alumnos: { id: 'a1', nombre_completo: 'Ana Torres' } },
   { alumnos: { id: 'a2', nombre_completo: 'Bruno Vera' } },
@@ -147,7 +154,9 @@ describe('generateDailyReport', () => {
         return {
           select: vi.fn().mockReturnThis(),
           eq: vi.fn().mockReturnThis(),
-          single: vi.fn().mockResolvedValue({ data: { nombre_completo: 'Omar Suniaga' }, error: null }),
+          single: vi
+            .fn()
+            .mockResolvedValue({ data: { nombre_completo: 'Omar Suniaga' }, error: null }),
         }
       }
       if (table === 'alumnos_clases') {
@@ -187,12 +196,31 @@ describe('generateDailyReport', () => {
         }
       }
       if (table === 'clases')
-        return { select: vi.fn().mockReturnThis(), eq: vi.fn().mockReturnThis(), single: vi.fn().mockResolvedValue({ data: CLASE_DATA, error: null }) }
+        return {
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          single: vi.fn().mockResolvedValue({ data: CLASE_DATA, error: null }),
+        }
       if (table === 'maestros')
-        return { select: vi.fn().mockReturnThis(), eq: vi.fn().mockReturnThis(), single: vi.fn().mockResolvedValue({ data: null, error: null }) }
+        return {
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          single: vi.fn().mockResolvedValue({ data: null, error: null }),
+        }
       if (table === 'alumnos_clases')
-        return { select: vi.fn().mockReturnThis(), eq: vi.fn().mockReturnThis(), order: vi.fn().mockResolvedValue({ data: ALUMNOS_CLASE, error: null }) }
-      return { select: vi.fn().mockReturnThis(), eq: vi.fn().mockReturnThis(), lte: vi.fn().mockReturnThis(), single: vi.fn().mockResolvedValue({ data: null, error: null }), then: (fn) => Promise.resolve({ count: 1 }).then(fn), catch: (fn) => Promise.resolve({ count: 1 }).catch(fn) }
+        return {
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          order: vi.fn().mockResolvedValue({ data: ALUMNOS_CLASE, error: null }),
+        }
+      return {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        lte: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({ data: null, error: null }),
+        then: (fn) => Promise.resolve({ count: 1 }).then(fn),
+        catch: (fn) => Promise.resolve({ count: 1 }).catch(fn),
+      }
     })
 
     await generateDailyReport('sesion-1')
@@ -209,12 +237,29 @@ describe('generateDailyReport', () => {
   it('sesión emergente (clase_id=null): NO muestra error y llama openReport', async () => {
     supabase.from.mockImplementation((table) => {
       if (table === 'sesiones_clase')
-        return { select: vi.fn().mockReturnThis(), eq: vi.fn().mockReturnThis(), single: vi.fn().mockResolvedValue({ data: SESION_EMERGENTE, error: null }) }
+        return {
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          single: vi.fn().mockResolvedValue({ data: SESION_EMERGENTE, error: null }),
+        }
       if (table === 'maestros')
-        return { select: vi.fn().mockReturnThis(), eq: vi.fn().mockReturnThis(), single: vi.fn().mockResolvedValue({ data: { nombre_completo: 'Omar Suniaga' }, error: null }) }
+        return {
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          single: vi
+            .fn()
+            .mockResolvedValue({ data: { nombre_completo: 'Omar Suniaga' }, error: null }),
+        }
       if (table === 'alumnos')
-        return { select: vi.fn().mockReturnThis(), in: vi.fn().mockResolvedValue({ data: ALUMNOS_DIRECTO, error: null }) }
-      return { select: vi.fn().mockReturnThis(), eq: vi.fn().mockReturnThis(), single: vi.fn().mockResolvedValue({ data: null, error: null }) }
+        return {
+          select: vi.fn().mockReturnThis(),
+          in: vi.fn().mockResolvedValue({ data: ALUMNOS_DIRECTO, error: null }),
+        }
+      return {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({ data: null, error: null }),
+      }
     })
 
     await generateDailyReport('sesion-emergente-1')
@@ -226,12 +271,27 @@ describe('generateDailyReport', () => {
   it('sesión emergente: el HTML incluye los alumnos del JSONB de la sesión', async () => {
     supabase.from.mockImplementation((table) => {
       if (table === 'sesiones_clase')
-        return { select: vi.fn().mockReturnThis(), eq: vi.fn().mockReturnThis(), single: vi.fn().mockResolvedValue({ data: SESION_EMERGENTE, error: null }) }
+        return {
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          single: vi.fn().mockResolvedValue({ data: SESION_EMERGENTE, error: null }),
+        }
       if (table === 'maestros')
-        return { select: vi.fn().mockReturnThis(), eq: vi.fn().mockReturnThis(), single: vi.fn().mockResolvedValue({ data: null, error: null }) }
+        return {
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          single: vi.fn().mockResolvedValue({ data: null, error: null }),
+        }
       if (table === 'alumnos')
-        return { select: vi.fn().mockReturnThis(), in: vi.fn().mockResolvedValue({ data: ALUMNOS_DIRECTO, error: null }) }
-      return { select: vi.fn().mockReturnThis(), eq: vi.fn().mockReturnThis(), single: vi.fn().mockResolvedValue({ data: null, error: null }) }
+        return {
+          select: vi.fn().mockReturnThis(),
+          in: vi.fn().mockResolvedValue({ data: ALUMNOS_DIRECTO, error: null }),
+        }
+      return {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({ data: null, error: null }),
+      }
     })
 
     await generateDailyReport('sesion-emergente-1')
@@ -251,14 +311,29 @@ describe('generateDailyReport', () => {
 
     supabase.from.mockImplementation((table) => {
       if (table === 'sesiones_clase')
-        return { select: vi.fn().mockReturnThis(), eq: vi.fn().mockReturnThis(), single: vi.fn().mockResolvedValue({ data: SESION_EMERGENTE, error: null }) }
+        return {
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          single: vi.fn().mockResolvedValue({ data: SESION_EMERGENTE, error: null }),
+        }
       if (table === 'maestros')
-        return { select: vi.fn().mockReturnThis(), eq: vi.fn().mockReturnThis(), single: vi.fn().mockResolvedValue({ data: null, error: null }) }
+        return {
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          single: vi.fn().mockResolvedValue({ data: null, error: null }),
+        }
       if (table === 'alumnos_clases')
-        return { select: alumnosClasesMock.mockReturnThis(), eq: vi.fn().mockReturnThis(), order: vi.fn().mockResolvedValue({ data: [], error: null }) }
-      if (table === 'alumnos')
-        return { select: vi.fn().mockReturnThis(), in: alumnosMock }
-      return { select: vi.fn().mockReturnThis(), eq: vi.fn().mockReturnThis(), single: vi.fn().mockResolvedValue({ data: null, error: null }) }
+        return {
+          select: alumnosClasesMock.mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          order: vi.fn().mockResolvedValue({ data: [], error: null }),
+        }
+      if (table === 'alumnos') return { select: vi.fn().mockReturnThis(), in: alumnosMock }
+      return {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({ data: null, error: null }),
+      }
     })
 
     await generateDailyReport('sesion-emergente-1')
@@ -287,14 +362,40 @@ describe('generateDailyReport', () => {
   it('muestra AppToast.error si no hay alumnos en la clase', async () => {
     supabase.from.mockImplementation((table) => {
       if (table === 'sesiones_clase')
-        return { select: vi.fn().mockReturnThis(), eq: vi.fn().mockReturnThis(), single: vi.fn().mockResolvedValue({ data: SESION_REGULAR, error: null }), then: (fn) => Promise.resolve({ count: 1 }).then(fn), catch: (fn) => Promise.resolve({ count: 1 }).catch(fn), lte: vi.fn().mockReturnThis() }
+        return {
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          single: vi.fn().mockResolvedValue({ data: SESION_REGULAR, error: null }),
+          then: (fn) => Promise.resolve({ count: 1 }).then(fn),
+          catch: (fn) => Promise.resolve({ count: 1 }).catch(fn),
+          lte: vi.fn().mockReturnThis(),
+        }
       if (table === 'clases')
-        return { select: vi.fn().mockReturnThis(), eq: vi.fn().mockReturnThis(), single: vi.fn().mockResolvedValue({ data: CLASE_DATA, error: null }) }
+        return {
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          single: vi.fn().mockResolvedValue({ data: CLASE_DATA, error: null }),
+        }
       if (table === 'maestros')
-        return { select: vi.fn().mockReturnThis(), eq: vi.fn().mockReturnThis(), single: vi.fn().mockResolvedValue({ data: null, error: null }) }
+        return {
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          single: vi.fn().mockResolvedValue({ data: null, error: null }),
+        }
       if (table === 'alumnos_clases')
-        return { select: vi.fn().mockReturnThis(), eq: vi.fn().mockReturnThis(), order: vi.fn().mockResolvedValue({ data: [], error: null }) }
-      return { select: vi.fn().mockReturnThis(), eq: vi.fn().mockReturnThis(), lte: vi.fn().mockReturnThis(), single: vi.fn().mockResolvedValue({ data: null, error: null }), then: (fn) => Promise.resolve({ count: 0 }).then(fn), catch: (fn) => Promise.resolve({ count: 0 }).catch(fn) }
+        return {
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          order: vi.fn().mockResolvedValue({ data: [], error: null }),
+        }
+      return {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        lte: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({ data: null, error: null }),
+        then: (fn) => Promise.resolve({ count: 0 }).then(fn),
+        catch: (fn) => Promise.resolve({ count: 0 }).catch(fn),
+      }
     })
 
     await generateDailyReport('sesion-1')

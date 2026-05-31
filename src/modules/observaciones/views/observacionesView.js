@@ -11,9 +11,7 @@ import {
   getEstadisticas,
 } from '../api/observacionesApi.js'
 import { obtenerAlumnos } from '../../alumnos/api/alumnosApi.js'
-import {
-  escapeHTML,
-} from '../utils/observacionesUtils.js'
+import { escapeHTML } from '../utils/observacionesUtils.js'
 import { Observacion } from '../models/observacion.model.js'
 
 const state = {
@@ -24,7 +22,7 @@ const state = {
   cargando: false,
   filtroTipo: '',
   filtroEstado: 'todos',
-  container: null
+  container: null,
 }
 
 /**
@@ -40,7 +38,7 @@ export async function renderObservacionesView(container) {
     const [observaciones, alumnos, stats] = await Promise.all([
       obtenerObservaciones(),
       obtenerAlumnos().catch(() => []),
-      getEstadisticas().catch(() => null)
+      getEstadisticas().catch(() => null),
     ])
 
     state.observaciones = observaciones
@@ -76,7 +74,9 @@ function renderError(container, msg) {
         </div>
       </div>
     </div>`
-  container.querySelector('#retry-btn')?.addEventListener('click', () => renderObservacionesView(container))
+  container
+    .querySelector('#retry-btn')
+    ?.addEventListener('click', () => renderObservacionesView(container))
 }
 
 function renderContent(container) {
@@ -130,7 +130,9 @@ function renderContent(container) {
           <i class="bi bi-funnel select-icon-muted"></i>
           <select class="form-select premium-filter-select" id="select-tipo">
             <option value="">Todos los tipos</option>
-            ${Observacion.getTipos().map(t => `<option value="${t.value}">${t.label}</option>`).join('')}
+            ${Observacion.getTipos()
+              .map((t) => `<option value="${t.value}">${t.label}</option>`)
+              .join('')}
           </select>
         </div>
       </div>
@@ -158,18 +160,20 @@ function renderContent(container) {
 }
 
 function renderTableRows(progs) {
-  return progs.map(o => {
-    const tipo = Observacion.getTipos().find(t => t.value === o.tipo)
-    const prio = Observacion.getPrioridades().find(p => p.value === o.prioridad)
-    const estado = Observacion.getEstados().find(e => e.value === o.estado)
+  return progs
+    .map((o) => {
+      const tipo = Observacion.getTipos().find((t) => t.value === o.tipo)
+      const prio = Observacion.getPrioridades().find((p) => p.value === o.prioridad)
+      const estado = Observacion.getEstados().find((e) => e.value === o.estado)
 
-    const accentClass = o.prioridad === 'alta' 
-      ? 'border-accent-danger' 
-      : o.prioridad === 'media' 
-        ? 'border-accent-warning' 
-        : 'border-accent-secondary'
-    
-    return `
+      const accentClass =
+        o.prioridad === 'alta'
+          ? 'border-accent-danger'
+          : o.prioridad === 'media'
+            ? 'border-accent-warning'
+            : 'border-accent-secondary'
+
+      return `
       <tr data-id="${o.id}" class="border-start-accent ${accentClass}">
         <td>
           <div class="fw-bold text-truncate" style="max-width: 250px;">${escapeHTML(o.titulo)}</div>
@@ -199,7 +203,8 @@ function renderTableRows(progs) {
         </td>
       </tr>
     `
-  }).join('')
+    })
+    .join('')
 }
 
 function renderEmpty() {
@@ -226,8 +231,9 @@ function _applyFilters() {
   const term = state.container.querySelector('#buscar-obs').value.toLowerCase()
   const tipo = state.container.querySelector('#select-tipo').value
 
-  state.observaciones = state.observacionesOriginales.filter(o => {
-    const matchSearch = o.titulo.toLowerCase().includes(term) || o.alumno_nombre.toLowerCase().includes(term)
+  state.observaciones = state.observacionesOriginales.filter((o) => {
+    const matchSearch =
+      o.titulo.toLowerCase().includes(term) || o.alumno_nombre.toLowerCase().includes(term)
     const matchTipo = !tipo || o.tipo === tipo
     return matchSearch && matchTipo
   })
@@ -236,8 +242,8 @@ function _applyFilters() {
 }
 
 async function openEditModal(id) {
-  const obs = id ? state.observacionesOriginales.find(o => o.id === id) : new Observacion()
-  
+  const obs = id ? state.observacionesOriginales.find((o) => o.id === id) : new Observacion()
+
   AppModal.open({
     title: id ? 'Editar Observación' : 'Nueva Observación',
     saveText: 'Guardar',
@@ -247,7 +253,7 @@ async function openEditModal(id) {
           <label class="form-label-compact">Alumno *</label>
           <select class="form-select input-dense" id="obs-alumno_id" required>
             <option value="">Seleccionar alumno...</option>
-            ${state.alumnos.map(a => `<option value="${a.id}" ${a.id === obs.alumno_id ? 'selected' : ''}>${escapeHTML(a.nombre_completo)}</option>`).join('')}
+            ${state.alumnos.map((a) => `<option value="${a.id}" ${a.id === obs.alumno_id ? 'selected' : ''}>${escapeHTML(a.nombre_completo)}</option>`).join('')}
           </select>
         </div>
         <div class="col-md-8">
@@ -257,13 +263,23 @@ async function openEditModal(id) {
         <div class="col-md-4">
           <label class="form-label-compact">Prioridad</label>
           <select class="form-select input-dense" id="obs-prioridad">
-            ${Observacion.getPrioridades().map(p => `<option value="${p.value}" ${p.value === obs.prioridad ? 'selected' : ''}>${p.label}</option>`).join('')}
+            ${Observacion.getPrioridades()
+              .map(
+                (p) =>
+                  `<option value="${p.value}" ${p.value === obs.prioridad ? 'selected' : ''}>${p.label}</option>`,
+              )
+              .join('')}
           </select>
         </div>
         <div class="col-md-6">
           <label class="form-label-compact">Tipo</label>
           <select class="form-select input-dense" id="obs-tipo">
-            ${Observacion.getTipos().map(t => `<option value="${t.value}" ${t.value === obs.tipo ? 'selected' : ''}>${t.label}</option>`).join('')}
+            ${Observacion.getTipos()
+              .map(
+                (t) =>
+                  `<option value="${t.value}" ${t.value === obs.tipo ? 'selected' : ''}>${t.label}</option>`,
+              )
+              .join('')}
           </select>
         </div>
         <div class="col-md-6">
@@ -283,7 +299,7 @@ async function openEditModal(id) {
         prioridad: modalBody.querySelector('#obs-prioridad').value,
         tipo: modalBody.querySelector('#obs-tipo').value,
         fecha_observacion: modalBody.querySelector('#obs-fecha').value,
-        descripcion: modalBody.querySelector('#obs-descripcion').value.trim()
+        descripcion: modalBody.querySelector('#obs-descripcion').value.trim(),
       }
 
       const model = new Observacion(data)
@@ -307,12 +323,12 @@ async function openEditModal(id) {
         AppToast.error(err.message)
         return false
       }
-    }
+    },
   })
 }
 
 function openFollowUpModal(id) {
-  const obs = state.observacionesOriginales.find(o => o.id === id)
+  const obs = state.observacionesOriginales.find((o) => o.id === id)
   AppModal.open({
     title: 'Añadir Seguimiento',
     saveText: 'Guardar Seguimiento',
@@ -338,12 +354,12 @@ function openFollowUpModal(id) {
         AppToast.error(err.message)
         return false
       }
-    }
+    },
   })
 }
 
 function openDeleteModal(id) {
-  const obs = state.observacionesOriginales.find(o => o.id === id)
+  const obs = state.observacionesOriginales.find((o) => o.id === id)
   AppModal.open({
     title: '⚠️ Eliminar Observación',
     saveText: 'Eliminar',
@@ -352,6 +368,6 @@ function openDeleteModal(id) {
       await eliminarObservacion(id)
       renderObservacionesView(state.container)
       return true
-    }
+    },
   })
 }

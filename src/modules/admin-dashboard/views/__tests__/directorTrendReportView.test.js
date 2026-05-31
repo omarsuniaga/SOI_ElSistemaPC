@@ -3,7 +3,7 @@ import { directorTrendReportView } from '../directorTrendReportView.js'
 import * as adminReportingApi from '../../api/adminReportingApi.js'
 
 vi.mock('../../api/adminReportingApi.js', () => ({
-  getInstitutionTrendReportWithFilling: vi.fn()
+  getInstitutionTrendReportWithFilling: vi.fn(),
 }))
 
 describe('directorTrendReportView', () => {
@@ -24,15 +24,19 @@ describe('directorTrendReportView', () => {
       institution_summary: {
         avg_ai_usage_institution: 45.5,
         asistencia_first_percent: 60.0,
-        observaciones_first_percent: 30.0
+        observaciones_first_percent: 30.0,
       },
       date_trends: {
-        '2026-05-20': { total_classes: 10, asistencia_first_percent: '60.0', avg_ai_usage_percent: '45.5' }
+        '2026-05-20': {
+          total_classes: 10,
+          asistencia_first_percent: '60.0',
+          avg_ai_usage_percent: '45.5',
+        },
       },
       maestro_trends: {
-        '1': { maestro_nombre: 'García', asistencia_first_percent: '70.0' }
+        1: { maestro_nombre: 'García', asistencia_first_percent: '70.0' },
       },
-      generatedAt: new Date().toISOString()
+      generatedAt: new Date().toISOString(),
     }
 
     adminReportingApi.getInstitutionTrendReportWithFilling.mockResolvedValueOnce(mockTrendData)

@@ -26,5 +26,5 @@ export function validateCSRFToken(receivedToken) {
 export default {
   generateCSRFToken,
   getCSRFToken,
-  validateCSRFToken
+  validateCSRFToken,
 }

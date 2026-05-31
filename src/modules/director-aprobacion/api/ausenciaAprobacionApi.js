@@ -1,9 +1,10 @@
-import { supabase } from '../../../lib/supabaseClient.js';
+import { supabase } from '../../../lib/supabaseClient.js'
 
 export async function obtenerPendientesDirector() {
   const { data, error } = await supabase
     .from('ausencias_maestros')
-    .select(`
+    .select(
+      `
       id,
       maestro_id,
       tipo_ausencia,
@@ -18,12 +19,13 @@ export async function obtenerPendientesDirector() {
       archivo_url,
       created_at,
       maestros:maestro_id(nombre_completo, correo)
-    `)
+    `,
+    )
     .eq('estado', 'pendiente')
-    .order('created_at', { ascending: true });
+    .order('created_at', { ascending: true })
 
-  if (error) throw error;
-  return data || [];
+  if (error) throw error
+  return data || []
 }
 
 export async function revisarAusencia(id, estado, notas = '') {
@@ -36,8 +38,8 @@ export async function revisarAusencia(id, estado, notas = '') {
     })
     .eq('id', id)
     .select()
-    .single();
+    .single()
 
-  if (error) throw error;
-  return data;
+  if (error) throw error
+  return data
 }

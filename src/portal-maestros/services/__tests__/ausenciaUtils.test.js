@@ -1,9 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import {
-  filterBusinessDays,
-  truncateWhatsAppText,
-  prepareWhatsAppLink,
-} from '../ausenciaUtils.js'
+import { filterBusinessDays, truncateWhatsAppText, prepareWhatsAppLink } from '../ausenciaUtils.js'
 
 // ---------------------------------------------------------------------------
 // filterBusinessDays

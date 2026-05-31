@@ -2,7 +2,13 @@
  * Componente: Tabla de Asistencias
  */
 
-import { escapeHTML, getInitials, getEstadoClass, getEstadoLabel, getEstadoIcon } from '../utils/asistenciasUtils.js'
+import {
+  escapeHTML,
+  getInitials,
+  getEstadoClass,
+  getEstadoLabel,
+  getEstadoIcon,
+} from '../utils/asistenciasUtils.js'
 
 /**
  * Renderiza las filas de la tabla de asistencias
@@ -17,7 +23,7 @@ export function renderAsistenciaTable(asistencias, onEdit, onDelete, onJustify) 
     return '<tr><td colspan="7" class="text-center text-muted py-4">No hay asistencias registradas</td></tr>'
   }
 
-  return asistencias.map(a => renderAsistenciaRow(a, onEdit, onDelete, onJustify)).join('')
+  return asistencias.map((a) => renderAsistenciaRow(a, onEdit, onDelete, onJustify)).join('')
 }
 
 /**
@@ -68,11 +74,15 @@ export function renderAsistenciaRow(asistencia, onEdit, onDelete, onJustify) {
           <button class="btn btn-outline-primary" data-action="edit" data-id="${asistencia.id}" title="Editar">
             <i class="bi bi-pencil-square"></i>
           </button>
-          ${asistencia.estado === 'A' ? `
+          ${
+            asistencia.estado === 'A'
+              ? `
             <button class="btn btn-outline-warning" data-action="justify" data-id="${asistencia.id}" title="Justificar ausencia">
               <i class="bi bi-file-earmark-text"></i>
             </button>
-          ` : ''}
+          `
+              : ''
+          }
           <button class="btn btn-outline-danger" data-action="delete" data-id="${asistencia.id}" title="Eliminar">
             <i class="bi bi-trash3"></i>
           </button>

@@ -47,7 +47,7 @@ export function hasRole(user, role) {
  */
 export function checkPermission(user, resource, action = 'read') {
   if (!user) return false
-  
+
   const isAdmin = hasRole(user, ROLES.ADMIN)
   const isTeacher = hasRole(user, ROLES.TEACHER)
   const isObserver = hasRole(user, ROLES.OBSERVER)
@@ -80,11 +80,11 @@ export function checkPermission(user, resource, action = 'read') {
  */
 export function permissionMiddleware(user, resourceType, resource, action) {
   const allowed = checkPermission(user, resource, action)
-  
+
   if (!allowed) {
     console.warn(`[Permission] Denied: ${user?.role} attempted ${action} on ${resourceType}`)
   }
-  
+
   return allowed
 }
 
@@ -94,19 +94,19 @@ export function permissionMiddleware(user, resourceType, resource, action) {
  */
 export function getUserScopes(user) {
   if (!user) return []
-  
+
   if (hasRole(user, ROLES.ADMIN)) {
     return ['all']
   }
-  
+
   if (hasRole(user, ROLES.TEACHER)) {
     return ['own']
   }
-  
+
   if (hasRole(user, ROLES.OBSERVER)) {
     return ['read']
   }
-  
+
   return []
 }
 

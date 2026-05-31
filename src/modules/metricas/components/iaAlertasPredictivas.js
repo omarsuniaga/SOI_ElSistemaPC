@@ -2,10 +2,46 @@ import { AppModal } from '../../../shared/components/AppModal.js'
 import { metricasService } from '../services/metricasService.js'
 
 const mockAlertas = [
-  { id: 'alert_001', estudiante: 'Mateo García', clase: 'Violín Beginners', riesgo: 'alto', probabilidad: 85, factores: ['4 ausencias consecutivas', 'notas por debajo de promedio'], tendencia: 'declinando',建议: 'Contacto inmediato con familia' },
-  { id: 'alert_002', estudiante: 'Sofía López', clase: 'Guitarra Intermediate', riesgo: 'medio', probabilidad: 60, factores: ['2 ausencias recientes', 'participación decreciente'], tendencia: 'estable',建议: 'Seguimiento en próxima clase' },
-  { id: 'alert_003', estudiante: 'Lucas Martínez', clase: 'Piano Advanced', riesgo: 'alto', probabilidad: 78, factores: ['bajo rendimiento en evaluaciones', 'falta de progreso en objetivos'], tendencia: 'declinando',建议: 'Revisión de plan de estudios' },
-  { id: 'alert_004', estudiante: 'Valentina Rodríguez', clase: 'Canto Beginners', riesgo: 'bajo', probabilidad: 25, factores: ['asistencia irregular'], tendencia: 'mejorando',建议: 'Monitoreo mensual' },
+  {
+    id: 'alert_001',
+    estudiante: 'Mateo García',
+    clase: 'Violín Beginners',
+    riesgo: 'alto',
+    probabilidad: 85,
+    factores: ['4 ausencias consecutivas', 'notas por debajo de promedio'],
+    tendencia: 'declinando',
+    recomendacion: 'Contacto inmediato con familia',
+  },
+  {
+    id: 'alert_002',
+    estudiante: 'Sofía López',
+    clase: 'Guitarra Intermediate',
+    riesgo: 'medio',
+    probabilidad: 60,
+    factores: ['2 ausencias recientes', 'participación decreciente'],
+    tendencia: 'estable',
+    recomendacion: 'Seguimiento en próxima clase',
+  },
+  {
+    id: 'alert_003',
+    estudiante: 'Lucas Martínez',
+    clase: 'Piano Advanced',
+    riesgo: 'alto',
+    probabilidad: 78,
+    factores: ['bajo rendimiento en evaluaciones', 'falta de progreso en objetivos'],
+    tendencia: 'declinando',
+    recomendacion: 'Revisión de plan de estudios',
+  },
+  {
+    id: 'alert_004',
+    estudiante: 'Valentina Rodríguez',
+    clase: 'Canto Beginners',
+    riesgo: 'bajo',
+    probabilidad: 25,
+    factores: ['asistencia irregular'],
+    tendencia: 'mejorando',
+    recomendacion: 'Monitoreo mensual',
+  },
 ]
 
 export async function renderIaAlertasPredictivas(container, options = {}) {
@@ -38,7 +74,16 @@ function _procesarAlertas(data, limit) {
   const riesgo = data?.alumnos_en_riesgo || 0
   if (riesgo > 0) {
     return [
-      { id: 'alert_pred_1', estudiante: 'Estudiante en Riesgo', clase: 'Varios', riesgo: 'alto', probabilidad: 75, factores: ['Análisis predictivo'], tendencia: 'declinando',建议: 'Revisión needed' },
+      {
+        id: 'alert_pred_1',
+        estudiante: 'Estudiante en Riesgo',
+        clase: 'Varios',
+        riesgo: 'alto',
+        probabilidad: 75,
+        factores: ['Análisis predictivo'],
+        tendencia: 'declinando',
+        recomendacion: 'Revisión needed',
+      },
     ]
   }
   return mockAlertas.slice(0, limit)
@@ -57,16 +102,21 @@ function _renderAlertas(container, alertas) {
     return
   }
 
-  list.innerHTML = alertas.map(a => _renderAlerta(a)).join('')
+  list.innerHTML = alertas.map((a) => _renderAlerta(a)).join('')
 
-  list.querySelectorAll('.alerta-item').forEach(item => {
+  list.querySelectorAll('.alerta-item').forEach((item) => {
     item.addEventListener('click', () => _verDetalleAlerta(item.dataset.id))
   })
 }
 
 function _renderAlerta(a) {
   const riesgoColor = { alto: 'danger', medio: 'warning', bajo: 'success' }[a.riesgo] || 'secondary'
-  const tendenciaIcon = { declinando: 'bi-arrow-down-circle text-danger', estable: 'bi-dash-circle text-warning', mejorando: 'bi-arrow-up-circle text-success' }[a.tendencia] || 'bi-dash-circle'
+  const tendenciaIcon =
+    {
+      declinando: 'bi-arrow-down-circle text-danger',
+      estable: 'bi-dash-circle text-warning',
+      mejorando: 'bi-arrow-up-circle text-success',
+    }[a.tendencia] || 'bi-dash-circle'
 
   return `
     <div class="alerta-item card border-0 shadow-sm cursor-pointer" data-id="${a.id}" style="cursor: pointer;">
@@ -74,7 +124,10 @@ function _renderAlerta(a) {
         <div class="d-flex align-items-center justify-content-between gap-2">
           <div class="d-flex align-items-center gap-2">
             <div class="avatar-sm bg-${riesgoColor}-subtle text-${riesgoColor} rounded-circle d-flex align-items-center justify-content-center" style="width: 32px; height: 32px; font-size: 0.75rem;">
-              ${a.estudiante.split(' ').map(n => n[0]).join('')}
+              ${a.estudiante
+                .split(' ')
+                .map((n) => n[0])
+                .join('')}
             </div>
             <div>
               <div class="fw-semibold small">${a.estudiante}</div>
@@ -92,7 +145,15 @@ function _renderAlerta(a) {
 }
 
 function _verDetalleAlerta(id) {
-  const alerta = mockAlertas.find(a => a.id === id) || { estudiante: 'Estudiante', clase: 'Clase', riesgo: 'medio', probabilidad: 50, factores: ['Factor 1'], tendencia: 'estable',建议: 'Seguir observando' }
+  const alerta = mockAlertas.find((a) => a.id === id) || {
+    estudiante: 'Estudiante',
+    clase: 'Clase',
+    riesgo: 'medio',
+    probabilidad: 50,
+    factores: ['Factor 1'],
+    tendencia: 'estable',
+    recomendacion: 'Seguir observando',
+  }
 
   AppModal.open({
     title: `Alerta: ${alerta.estudiante}`,
@@ -117,7 +178,7 @@ function _verDetalleAlerta(id) {
       <div class="mb-3">
         <div class="text-muted small mb-1">Factores detectados:</div>
         <ul class="mb-0">
-          ${alerta.factores.map(f => `<li class="small">${f}</li>`).join('')}
+          ${alerta.factores.map((f) => `<li class="small">${f}</li>`).join('')}
         </ul>
       </div>
       <div class="mb-3">
@@ -126,7 +187,7 @@ function _verDetalleAlerta(id) {
       </div>
       <div class="mb-3">
         <div class="text-muted small mb-1">Recomendación:</div>
-        <div class="p-2 bg-info bg-opacity-10 rounded">${alerta.建议}</div>
+        <div class="p-2 bg-info bg-opacity-10 rounded">${alerta.recomendacion}</div>
       </div>
       <div class="d-flex gap-2">
         <button class="btn btn-primary btn-sm flex-grow-1" id="btnContactar">Contactar Familia</button>
@@ -163,7 +224,9 @@ function _verTodas(container) {
     cancelText: 'Cerrar',
     body: `
       <div class="d-flex flex-column gap-2">
-        ${mockAlertas.map(a => `
+        ${mockAlertas
+          .map(
+            (a) => `
           <div class="card border-0 shadow-sm">
             <div class="card-body py-2 px-3">
               <div class="d-flex align-items-center justify-content-between">
@@ -175,7 +238,9 @@ function _verTodas(container) {
               </div>
             </div>
           </div>
-        `).join('')}
+        `,
+          )
+          .join('')}
       </div>
     `,
   })

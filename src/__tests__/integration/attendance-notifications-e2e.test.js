@@ -3,7 +3,7 @@ import { parseDeepLink } from '../../portal-maestros/services/notificationServic
 import { renderAsistenciaView } from '../../portal-maestros/views/asistenciaView.js'
 
 vi.mock('../../portal-maestros/api/asistenciaApi.js', () => ({
-  obtenerAsistenciaClase: vi.fn()
+  obtenerAsistenciaClase: vi.fn(),
 }))
 
 // TODO: asistenciaView.js does not use a dedicated asistenciaApi module —
@@ -35,8 +35,8 @@ describe.skip('Attendance Notification E2E Deep Link Flow', () => {
       clase_nombre: 'Violin 101',
       estudiantes: [
         { id: '1', nombre: 'Estudiante A', asistio: true },
-        { id: '2', nombre: 'Estudiante B', asistio: false }
-      ]
+        { id: '2', nombre: 'Estudiante B', asistio: false },
+      ],
     })
 
     const deepLink = '/asistencia/550e8400-e29b-41d4-a716-446655440000/2026-05-21'
@@ -48,7 +48,7 @@ describe.skip('Attendance Notification E2E Deep Link Flow', () => {
     await global.appNavigate({
       view: 'asistencia',
       claseId: parsed.claseId,
-      fecha: parsed.fecha
+      fecha: parsed.fecha,
     })
 
     // Verify render assertions — DOM should contain rendered attendance data
@@ -65,7 +65,7 @@ describe.skip('Attendance Notification E2E Deep Link Flow', () => {
   it('should handle multiple notifications with different classes', () => {
     const deepLinks = [
       '/asistencia/550e8400-e29b-41d4-a716-446655440000/2026-05-21',
-      '/asistencia/660e8400-e29b-41d4-a716-446655440001/2026-05-21'
+      '/asistencia/660e8400-e29b-41d4-a716-446655440001/2026-05-21',
     ]
 
     const parsed1 = parseDeepLink(deepLinks[0])

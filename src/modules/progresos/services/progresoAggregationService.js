@@ -53,7 +53,7 @@ function reduceIndicators(attempts) {
   }
 
   const total = attempts.length
-  const passed = attempts.filter(a => a.passed === true).length
+  const passed = attempts.filter((a) => a.passed === true).length
 
   return {
     total,
@@ -74,7 +74,7 @@ function reduceGrades(progresos) {
   }
 
   // Exclude nulls from computation
-  const nonNull = progresos.filter(p => p.calificacion !== null && p.calificacion !== undefined)
+  const nonNull = progresos.filter((p) => p.calificacion !== null && p.calificacion !== undefined)
   if (nonNull.length === 0) {
     return { count: 0, promedio: null, calificaciones: [] }
   }
@@ -84,7 +84,7 @@ function reduceGrades(progresos) {
 
   const calificaciones = nonNull
     .sort((a, b) => new Date(a.fecha_evaluacion) - new Date(b.fecha_evaluacion))
-    .map(p => ({
+    .map((p) => ({
       evaluacion_id: p.evaluacion_id,
       calificacion: p.calificacion,
       fecha: p.fecha_evaluacion,
@@ -116,10 +116,10 @@ function reduceAttendance(asistencias) {
   }
 
   const total = asistencias.length
-  const presente = asistencias.filter(a => a.estado === 'presente').length
-  const ausente = asistencias.filter(a => a.estado === 'ausente').length
-  const tarde = asistencias.filter(a => a.estado === 'tarde').length
-  const justificado = asistencias.filter(a => a.estado === 'justificado').length
+  const presente = asistencias.filter((a) => a.estado === 'presente').length
+  const ausente = asistencias.filter((a) => a.estado === 'ausente').length
+  const tarde = asistencias.filter((a) => a.estado === 'tarde').length
+  const justificado = asistencias.filter((a) => a.estado === 'justificado').length
 
   const counted = presente + tarde + justificado
   const rate = total > 0 ? counted / total : null
@@ -148,7 +148,7 @@ function mergeObservaciones(obs) {
   // (tipo field in DB will be mapped to source)
   return obs
     .sort((a, b) => new Date(a.fecha) - new Date(b.fecha))
-    .map(o => ({
+    .map((o) => ({
       id: o.id,
       texto: o.texto,
       fecha: o.fecha,

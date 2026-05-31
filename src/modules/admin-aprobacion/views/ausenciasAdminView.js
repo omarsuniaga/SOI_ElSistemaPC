@@ -230,8 +230,8 @@ function _renderShell(container) {
 
 function _renderStats(statsRow, ausencias) {
   const total = ausencias.length
-  const altas  = ausencias.filter(a => a.urgencia === 'alta').length
-  const medias = ausencias.filter(a => a.urgencia === 'media').length
+  const altas = ausencias.filter((a) => a.urgencia === 'alta').length
+  const medias = ausencias.filter((a) => a.urgencia === 'media').length
 
   statsRow.innerHTML = `
     <div class="aav-stat">
@@ -269,8 +269,8 @@ function _renderEmpty(contentEl) {
 }
 
 async function _loadAndRender(container) {
-  const contentEl  = container.querySelector('#aav-content')
-  const statsRow   = container.querySelector('#aav-stats-row')
+  const contentEl = container.querySelector('#aav-content')
+  const statsRow = container.querySelector('#aav-stats-row')
   const countLabel = container.querySelector('#aav-count-label')
   const refreshBtn = container.querySelector('#aav-refresh-btn')
 
@@ -291,9 +291,10 @@ async function _loadAndRender(container) {
 
     // Count label
     if (countLabel) {
-      countLabel.textContent = ausencias.length === 0
-        ? 'Sin solicitudes pendientes'
-        : `${ausencias.length} solicitud${ausencias.length > 1 ? 'es' : ''} pendiente${ausencias.length > 1 ? 's' : ''}`
+      countLabel.textContent =
+        ausencias.length === 0
+          ? 'Sin solicitudes pendientes'
+          : `${ausencias.length} solicitud${ausencias.length > 1 ? 'es' : ''} pendiente${ausencias.length > 1 ? 's' : ''}`
     }
 
     // Update nav badge via insights component
@@ -321,20 +322,21 @@ async function _loadAndRender(container) {
     })
 
     for (const ausencia of sorted) {
-      list.appendChild(createAusenciaAprobacionCard(ausencia, {
-        onApprove: async (id, notes) => {
-          await aprobarAusencia(id, notes)
-          showToast('Ausencia aprobada', 'success')
-          await _loadAndRender(container)
-        },
-        onReject: async (id, notes) => {
-          await rechazarAusencia(id, notes)
-          showToast('Ausencia rechazada', 'success')
-          await _loadAndRender(container)
-        },
-      }))
+      list.appendChild(
+        createAusenciaAprobacionCard(ausencia, {
+          onApprove: async (id, notes) => {
+            await aprobarAusencia(id, notes)
+            showToast('Ausencia aprobada', 'success')
+            await _loadAndRender(container)
+          },
+          onReject: async (id, notes) => {
+            await rechazarAusencia(id, notes)
+            showToast('Ausencia rechazada', 'success')
+            await _loadAndRender(container)
+          },
+        }),
+      )
     }
-
   } catch (error) {
     if (contentEl) {
       contentEl.innerHTML = `

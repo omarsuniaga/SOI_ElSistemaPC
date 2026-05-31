@@ -1,5 +1,10 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
-import { setRutaTema, consumeRutaTema, peekRutaTema, getRutaTemaForAsistencia } from '../rutaTopicStore.js'
+import {
+  setRutaTema,
+  consumeRutaTema,
+  peekRutaTema,
+  getRutaTemaForAsistencia,
+} from '../rutaTopicStore.js'
 
 describe('rutaTopicStore', () => {
   const mockTema = {
@@ -8,7 +13,7 @@ describe('rutaTopicStore', () => {
     nodeNombre: 'Fundamentos',
     levelNombre: 'Nivel 1',
     blockNombre: 'Bloque A',
-    claseId: 'clase-456'
+    claseId: 'clase-456',
   }
 
   beforeEach(() => {
@@ -29,7 +34,7 @@ describe('rutaTopicStore', () => {
     setRutaTema(mockTema)
     const consumed = consumeRutaTema()
     expect(consumed).toEqual(mockTema)
-    
+
     const secondTry = consumeRutaTema()
     expect(secondTry).toBeNull()
   })
@@ -45,7 +50,7 @@ describe('rutaTopicStore', () => {
     expect(formatted).toEqual({
       indicatorId: 'ind-123',
       nombre: 'Identificar Notas',
-      claseId: 'clase-456'
+      claseId: 'clase-456',
     })
   })
 

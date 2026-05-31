@@ -21,8 +21,20 @@ describe('calcAttendanceStats', () => {
 describe('buildAlumnoAttMap', () => {
   it('builds a map of alumnoId → estado per sesion', () => {
     const sesiones = [
-      { id: 's1', asistencia: [{ alumno_id: 'a1', estado: 'P' }, { alumno_id: 'a2', estado: 'A' }] },
-      { id: 's2', asistencia: [{ alumno_id: 'a1', estado: 'J' }, { alumno_id: 'a2', estado: 'P' }] },
+      {
+        id: 's1',
+        asistencia: [
+          { alumno_id: 'a1', estado: 'P' },
+          { alumno_id: 'a2', estado: 'A' },
+        ],
+      },
+      {
+        id: 's2',
+        asistencia: [
+          { alumno_id: 'a1', estado: 'J' },
+          { alumno_id: 'a2', estado: 'P' },
+        ],
+      },
     ]
     const result = buildAlumnoAttMap(sesiones)
     expect(result['a1']['s1']).toBe('P')

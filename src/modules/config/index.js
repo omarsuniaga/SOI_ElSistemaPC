@@ -1,9 +1,12 @@
 import { router } from '../../core/router/router.js'
 
-export { 
-  getGroqApiKey, setGroqApiKey,
-  getOpenRouterApiKey, setOpenRouterApiKey,
-  getPreferredModel, setPreferredModel
+export {
+  getGroqApiKey,
+  setGroqApiKey,
+  getOpenRouterApiKey,
+  setOpenRouterApiKey,
+  getPreferredModel,
+  setPreferredModel,
 } from './api/configApi.js'
 
 export function registerRoutesConfig() {
@@ -11,7 +14,7 @@ export function registerRoutesConfig() {
     const { renderConfigView } = await import('./views/configView.js')
     await renderConfigView(container)
   })
-  
+
   router.register('importar-datos', async (container) => {
     const { renderImportView } = await import('./views/importView.js')
     await renderImportView(container)

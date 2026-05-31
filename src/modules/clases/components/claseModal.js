@@ -8,13 +8,9 @@ import {
   inscribirAlumno,
   desinscribirAlumno,
   actualizarTurnoInscripcion,
-  NIVELES
+  NIVELES,
 } from '../api/clasesApi.js'
-import {
-  escapeHTML,
-  getConsistentColor,
-  formatHora
-} from '../utils/clasesUtils.js'
+import { escapeHTML, getConsistentColor, formatHora } from '../utils/clasesUtils.js'
 import { Clase } from '../models/clase.model.js'
 import { openRutaSelectorModal } from '../../planificacion/components/rutaSelectorModal.js'
 
@@ -28,7 +24,7 @@ let _options = {
   salones: [],
   programas: [],
   alumnos: [],
-  onSuccess: null
+  onSuccess: null,
 }
 
 const VALIDATION = {
@@ -44,12 +40,12 @@ export async function openClaseModal(clase = null, options = {}) {
   const isEdicion = !!clase
   let inscritosIds = []
 
-  let inscritosSlots = []   // full records with hora_inicio/hora_fin per alumno
+  let inscritosSlots = [] // full records with hora_inicio/hora_fin per alumno
 
   if (isEdicion) {
     AppToast.info('Cargando datos de la clase...')
     const inscritos = await obtenerAlumnosInscritos(clase.id)
-    inscritosIds   = (inscritos || []).map(i => i.alumno_id)
+    inscritosIds = (inscritos || []).map((i) => i.alumno_id)
     inscritosSlots = inscritos || []
   }
 
@@ -66,7 +62,7 @@ export async function openClaseModal(clase = null, options = {}) {
     },
     onSave: async (modalBody) => {
       return await _handleSave(modalBody, clase)
-    }
+    },
   })
 }
 
@@ -180,15 +176,19 @@ function _getSlotBuilderHTML(inscritosSlots = []) {
   const alumnos = _options.alumnos || []
 
   const slotRow = (alumnoId = '', horaInicio = '', horaFin = '') => {
-    const alumno = alumnos.find(a => a.id === alumnoId)
+    const alumno = alumnos.find((a) => a.id === alumnoId)
     return `
       <div class="slot-row d-flex align-items-center gap-2 mb-2 p-2 rounded border bg-body-tertiary">
         <select class="form-select form-select-sm slot-alumno-select flex-grow-1" style="min-width:0;" required>
           <option value="">Seleccionar alumno…</option>
-          ${alumnos.map(a => `
+          ${alumnos
+            .map(
+              (a) => `
             <option value="${a.id}" ${a.id === alumnoId ? 'selected' : ''}>
               ${escapeHTML(a.nombre_completo)}${a.instrumento_principal ? ` — ${escapeHTML(a.instrumento_principal)}` : ''}
-            </option>`).join('')}
+            </option>`,
+            )
+            .join('')}
         </select>
         <div class="d-flex align-items-center gap-1 flex-shrink-0">
           <input type="time" class="form-control form-control-sm slot-hora-inicio" value="${horaInicio}" style="width:110px;" required title="Hora inicio">
@@ -202,12 +202,12 @@ function _getSlotBuilderHTML(inscritosSlots = []) {
   }
 
   const existingRows = inscritosSlots.length
-    ? inscritosSlots.map(s => slotRow(
-        s.alumno_id,
-        (s.hora_inicio || '').slice(0, 5),
-        (s.hora_fin   || '').slice(0, 5)
-      )).join('')
-    : slotRow()   // Una fila vacía por defecto
+    ? inscritosSlots
+        .map((s) =>
+          slotRow(s.alumno_id, (s.hora_inicio || '').slice(0, 5), (s.hora_fin || '').slice(0, 5)),
+        )
+        .join('')
+    : slotRow() // Una fila vacía por defecto
 
   return `
     <div id="slots-container" class="mb-2">
@@ -279,20 +279,21 @@ function _attachModalEvents(modalBody, clase) {
   })
 
   // ── Toggle grupal ↔ rotativa ─────────────────────────────────────────────
-  const seccionGrupal   = modalBody.querySelector('#seccion-alumnos-grupal')
+  const seccionGrupal = modalBody.querySelector('#seccion-alumnos-grupal')
   const seccionRotativa = modalBody.querySelector('#seccion-alumnos-rotativa')
 
-  modalBody.querySelectorAll('input[name="modal-tipo_clase"]').forEach(radio => {
+  modalBody.querySelectorAll('input[name="modal-tipo_clase"]').forEach((radio) => {
     radio.addEventListener('change', () => {
-      const esRotativa = modalBody.querySelector('input[name="modal-tipo_clase"]:checked')?.value === 'rotativa'
-      seccionGrupal.style.display   = esRotativa ? 'none'  : 'block'
+      const esRotativa =
+        modalBody.querySelector('input[name="modal-tipo_clase"]:checked')?.value === 'rotativa'
+      seccionGrupal.style.display = esRotativa ? 'none' : 'block'
       seccionRotativa.style.display = esRotativa ? 'block' : 'none'
     })
   })
 
   // ── Slot builder events ───────────────────────────────────────────────────
   const slotsContainer = modalBody.querySelector('#slots-container')
-  const slotsCount     = modalBody.querySelector('#slots-count')
+  const slotsCount = modalBody.querySelector('#slots-count')
 
   const _updateSlotsCount = () => {
     const n = slotsContainer.querySelectorAll('.slot-row').length
@@ -303,15 +304,15 @@ function _attachModalEvents(modalBody, clase) {
   modalBody.querySelector('#btn-add-slot')?.addEventListener('click', () => {
     const alumnos = _options.alumnos || []
     const temp = document.createElement('div')
-    temp.innerHTML = _getSlotBuilderHTML([]).split('id="slots-container"')[1]
-      ? '' : ''
+    temp.innerHTML = _getSlotBuilderHTML([]).split('id="slots-container"')[1] ? '' : ''
     // Build a single empty row and append
     const emptyRow = document.createElement('div')
-    emptyRow.className = 'slot-row d-flex align-items-center gap-2 mb-2 p-2 rounded border bg-body-tertiary'
+    emptyRow.className =
+      'slot-row d-flex align-items-center gap-2 mb-2 p-2 rounded border bg-body-tertiary'
     emptyRow.innerHTML = `
       <select class="form-select form-select-sm slot-alumno-select flex-grow-1" style="min-width:0;" required>
         <option value="">Seleccionar alumno…</option>
-        ${alumnos.map(a => `<option value="${a.id}">${escapeHTML(a.nombre_completo)}${a.instrumento_principal ? ` — ${escapeHTML(a.instrumento_principal)}` : ''}</option>`).join('')}
+        ${alumnos.map((a) => `<option value="${a.id}">${escapeHTML(a.nombre_completo)}${a.instrumento_principal ? ` — ${escapeHTML(a.instrumento_principal)}` : ''}</option>`).join('')}
       </select>
       <div class="d-flex align-items-center gap-1 flex-shrink-0">
         <input type="time" class="form-control form-control-sm slot-hora-inicio" style="width:110px;" required title="Hora inicio">
@@ -326,7 +327,7 @@ function _attachModalEvents(modalBody, clase) {
   })
 
   // Quitar turno (delegado)
-  slotsContainer?.addEventListener('click', e => {
+  slotsContainer?.addEventListener('click', (e) => {
     if (e.target.closest('.btn-remove-slot')) {
       const rows = slotsContainer.querySelectorAll('.slot-row')
       if (rows.length <= 1) {
@@ -340,10 +341,10 @@ function _attachModalEvents(modalBody, clase) {
 
   // ── Alumnos grupal: filtro + contador ────────────────────────────────────
   const searchInput = modalBody.querySelector('#search-modal-alumnos')
-  const listItems   = modalBody.querySelectorAll('.alumno-check-item')
+  const listItems = modalBody.querySelectorAll('.alumno-check-item')
   searchInput?.addEventListener('input', (e) => {
     const term = e.target.value.toLowerCase().trim()
-    listItems.forEach(item => {
+    listItems.forEach((item) => {
       const match = item.dataset.nombre.includes(term) || item.dataset.instrumento.includes(term)
       item.style.display = match ? 'block' : 'none'
     })
@@ -352,10 +353,10 @@ function _attachModalEvents(modalBody, clase) {
   const checks = modalBody.querySelectorAll('.alumnos-list input[type="checkbox"]')
   const countDisplay = modalBody.querySelector('#alumnos-selection-count')
   const updateCount = () => {
-    const selected = Array.from(checks).filter(c => c.checked).length
+    const selected = Array.from(checks).filter((c) => c.checked).length
     if (countDisplay) countDisplay.textContent = `${selected} alumnos seleccionados`
   }
-  checks.forEach(c => c.addEventListener('change', updateCount))
+  checks.forEach((c) => c.addEventListener('change', updateCount))
   updateCount()
 }
 
@@ -375,15 +376,16 @@ async function _handleSave(modalBody, originalClase) {
       instrumento: modalBody.querySelector('#modal-instrumento').value.trim(),
       capacidad_maxima: parseInt(modalBody.querySelector('#modal-max_alumnos').value) || 20,
       estado: modalBody.querySelector('#modal-estado').value,
-      tipo_clase: modalBody.querySelector('input[name="modal-tipo_clase"]:checked')?.value || 'grupal',
+      tipo_clase:
+        modalBody.querySelector('input[name="modal-tipo_clase"]:checked')?.value || 'grupal',
       descripcion: modalBody.querySelector('#modal-notas_pedagogicas').value.trim(),
       ruta_id: modalBody.querySelector('#modal-ruta_id')?.value || null,
-      horarios: Array.from(modalBody.querySelectorAll('.horario-row')).map(row => ({
+      horarios: Array.from(modalBody.querySelectorAll('.horario-row')).map((row) => ({
         dia: row.querySelector('[name="horario-dia"]').value,
         hora_inicio: row.querySelector('[name="horario-hora_inicio"]').value,
         hora_fin: row.querySelector('[name="horario-hora_fin"]').value,
         salon_id: row.querySelector('[name="horario-salon_id"]').value || null,
-      }))
+      })),
     }
     return data
   }
@@ -399,46 +401,58 @@ async function _handleSave(modalBody, originalClase) {
 
   // ── Helpers para leer slots del panel rotativa ───────────────────────────
   const _readSlots = () =>
-    Array.from(modalBody.querySelectorAll('#slots-container .slot-row')).map(row => ({
-      alumno_id:   row.querySelector('.slot-alumno-select').value,
-      hora_inicio: row.querySelector('.slot-hora-inicio').value,
-      hora_fin:    row.querySelector('.slot-hora-fin').value,
-    })).filter(s => s.alumno_id)
+    Array.from(modalBody.querySelectorAll('#slots-container .slot-row'))
+      .map((row) => ({
+        alumno_id: row.querySelector('.slot-alumno-select').value,
+        hora_inicio: row.querySelector('.slot-hora-inicio').value,
+        hora_fin: row.querySelector('.slot-hora-fin').value,
+      }))
+      .filter((s) => s.alumno_id)
 
   const _syncGrupal = async (claseId) => {
-    const newIds = Array.from(modalBody.querySelectorAll('.alumnos-list input[type="checkbox"]:checked')).map(cb => cb.value)
+    const newIds = Array.from(
+      modalBody.querySelectorAll('.alumnos-list input[type="checkbox"]:checked'),
+    ).map((cb) => cb.value)
     const currentEnrolled = await obtenerAlumnosInscritos(claseId)
-    const currentIds = currentEnrolled.map(i => i.alumno_id)
-    const toAdd    = newIds.filter(id => !currentIds.includes(id))
-    const toRemove = currentIds.filter(id => !newIds.includes(id))
+    const currentIds = currentEnrolled.map((i) => i.alumno_id)
+    const toAdd = newIds.filter((id) => !currentIds.includes(id))
+    const toRemove = currentIds.filter((id) => !newIds.includes(id))
     await Promise.all([
-      ...toAdd.map(aid    => inscribirAlumno(claseId, aid)),
-      ...toRemove.map(aid => desinscribirAlumno(claseId, aid)),
+      ...toAdd.map((aid) => inscribirAlumno(claseId, aid)),
+      ...toRemove.map((aid) => desinscribirAlumno(claseId, aid)),
     ])
   }
 
   const _syncRotativa = async (claseId) => {
     const slots = _readSlots()
-    if (slots.length === 0) { AppToast.warning('Agregá al menos un turno'); return false }
+    if (slots.length === 0) {
+      AppToast.warning('Agregá al menos un turno')
+      return false
+    }
 
     // Validate all slots have times
-    const incomplete = slots.find(s => !s.hora_inicio || !s.hora_fin)
-    if (incomplete) { AppToast.error('Todos los turnos deben tener hora de inicio y fin'); return false }
+    const incomplete = slots.find((s) => !s.hora_inicio || !s.hora_fin)
+    if (incomplete) {
+      AppToast.error('Todos los turnos deben tener hora de inicio y fin')
+      return false
+    }
 
     const currentEnrolled = await obtenerAlumnosInscritos(claseId)
-    const currentIds = currentEnrolled.map(i => i.alumno_id)
-    const newIds     = slots.map(s => s.alumno_id)
+    const currentIds = currentEnrolled.map((i) => i.alumno_id)
+    const newIds = slots.map((s) => s.alumno_id)
 
     // Remove alumnos no longer in the list
-    const toRemove = currentIds.filter(id => !newIds.includes(id))
-    await Promise.all(toRemove.map(aid => desinscribirAlumno(claseId, aid)))
+    const toRemove = currentIds.filter((id) => !newIds.includes(id))
+    await Promise.all(toRemove.map((aid) => desinscribirAlumno(claseId, aid)))
 
     // Upsert each slot: update time if already enrolled, insert if new
-    await Promise.all(slots.map(s =>
-      currentIds.includes(s.alumno_id)
-        ? actualizarTurnoInscripcion(claseId, s.alumno_id, s.hora_inicio, s.hora_fin)
-        : inscribirAlumno(claseId, s.alumno_id, s.hora_inicio, s.hora_fin)
-    ))
+    await Promise.all(
+      slots.map((s) =>
+        currentIds.includes(s.alumno_id)
+          ? actualizarTurnoInscripcion(claseId, s.alumno_id, s.hora_inicio, s.hora_fin)
+          : inscribirAlumno(claseId, s.alumno_id, s.hora_inicio, s.hora_fin),
+      ),
+    )
     return true
   }
 
@@ -458,9 +472,11 @@ async function _handleSave(modalBody, originalClase) {
         const ok = await _syncRotativa(resultClase.id)
         if (!ok) return false
       } else {
-        const selectedIds = Array.from(modalBody.querySelectorAll('.alumnos-list input[type="checkbox"]:checked')).map(cb => cb.value)
+        const selectedIds = Array.from(
+          modalBody.querySelectorAll('.alumnos-list input[type="checkbox"]:checked'),
+        ).map((cb) => cb.value)
         if (selectedIds.length > 0) {
-          await Promise.all(selectedIds.map(aid => inscribirAlumno(resultClase.id, aid)))
+          await Promise.all(selectedIds.map((aid) => inscribirAlumno(resultClase.id, aid)))
         }
       }
     }
@@ -482,29 +498,53 @@ async function _handleSave(modalBody, originalClase) {
 // -- Helpers de Renderizado --
 
 function _getMaestrosOptions(selectedId = '') {
-  return `<option value="">Seleccionar maestro...</option>` +
-    _options.maestros.map(m => `<option value="${m.id}" ${m.id === selectedId ? 'selected' : ''}>${escapeHTML(m.nombre_completo || m.nombre)}</option>`).join('')
+  return (
+    `<option value="">Seleccionar maestro...</option>` +
+    _options.maestros
+      .map(
+        (m) =>
+          `<option value="${m.id}" ${m.id === selectedId ? 'selected' : ''}>${escapeHTML(m.nombre_completo || m.nombre)}</option>`,
+      )
+      .join('')
+  )
 }
 
 function _getSalonesOptions(selectedId = '') {
-  return `<option value="">Sin salón (Online/Otro)</option>` +
-    _options.salones.map(s => `<option value="${s.id}" ${s.id === selectedId ? 'selected' : ''}>${escapeHTML(s.nombre)}</option>`).join('')
+  return (
+    `<option value="">Sin salón (Online/Otro)</option>` +
+    _options.salones
+      .map(
+        (s) =>
+          `<option value="${s.id}" ${s.id === selectedId ? 'selected' : ''}>${escapeHTML(s.nombre)}</option>`,
+      )
+      .join('')
+  )
 }
 
 function _getProgramasOptions(selectedId = '') {
-  return `<option value="">Seleccionar programa...</option>` +
-    _options.programas.map(p => `<option value="${p.id}" ${p.id === selectedId ? 'selected' : ''}>${escapeHTML(p.nombre)}</option>`).join('')
+  return (
+    `<option value="">Seleccionar programa...</option>` +
+    _options.programas
+      .map(
+        (p) =>
+          `<option value="${p.id}" ${p.id === selectedId ? 'selected' : ''}>${escapeHTML(p.nombre)}</option>`,
+      )
+      .join('')
+  )
 }
 
 function _getEstadosOptions(selectedValue = 'activa') {
-  return Clase.getEstados().map(e =>
-    `<option value="${e}" ${e === selectedValue ? 'selected' : ''}>${Clase.getEstadoLabel(e)}</option>`
-  ).join('')
+  return Clase.getEstados()
+    .map(
+      (e) =>
+        `<option value="${e}" ${e === selectedValue ? 'selected' : ''}>${Clase.getEstadoLabel(e)}</option>`,
+    )
+    .join('')
 }
 
 function _getInstrumentosDatalist() {
   const inst = ['Violín', 'Viola', 'Cello', 'Piano', 'Flauta', 'Teoría', 'Coro']
-  return `<datalist id="instrumentos-list">${inst.map(i => `<option value="${i}">`).join('')}</datalist>`
+  return `<datalist id="instrumentos-list">${inst.map((i) => `<option value="${i}">`).join('')}</datalist>`
 }
 
 function _renderHorarioRow(horario, index) {
@@ -514,7 +554,7 @@ function _renderHorarioRow(horario, index) {
         <div class="col-md-4">
           <select class="form-select form-select-sm" name="horario-dia" required>
             <option value="">Día...</option>
-            ${['lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'].map(d => `<option value="${d}" ${horario?.dia === d ? 'selected' : ''}>${d.charAt(0).toUpperCase() + d.slice(1)}</option>`).join('')}
+            ${['lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'].map((d) => `<option value="${d}" ${horario?.dia === d ? 'selected' : ''}>${d.charAt(0).toUpperCase() + d.slice(1)}</option>`).join('')}
           </select>
         </div>
         <div class="col-md-3">
@@ -550,14 +590,18 @@ function _getAlumnosSelectorHTML(selectedIds = []) {
         <input type="text" class="form-control" id="search-modal-alumnos" placeholder="Filtrar por nombre o instrumento...">
       </div>
       <div class="alumnos-list border rounded bg-body-tertiary" style="max-height: 200px; overflow-y: auto; padding: 8px;">
-        ${alumnos.map(a => `
+        ${alumnos
+          .map(
+            (a) => `
           <div class="form-check alumno-check-item" data-nombre="${a.nombre_completo.toLowerCase()}" data-instrumento="${(a.instrumento_principal || '').toLowerCase()}">
             <input class="form-check-input" type="checkbox" value="${a.id}" id="chk-a-${a.id}" ${selectedIds.includes(a.id) ? 'checked' : ''}>
             <label class="form-check-label small w-100 cursor-pointer" for="chk-a-${a.id}">
               ${escapeHTML(a.nombre_completo)} <span class="text-muted">(${escapeHTML(a.instrumento_principal || 'N/A')})</span>
             </label>
           </div>
-        `).join('')}
+        `,
+          )
+          .join('')}
       </div>
       <div class="text-end mt-1"><small class="text-muted" id="alumnos-selection-count">0 seleccionados</small></div>
     </div>

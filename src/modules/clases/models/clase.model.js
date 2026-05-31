@@ -28,17 +28,33 @@ export class Clase {
   }
 
   // Getters/Setters para compatibilidad hacia atrás con el código legacy y tests
-  get maestro_id() { return this.maestro_principal_id }
-  set maestro_id(val) { this.maestro_principal_id = val }
+  get maestro_id() {
+    return this.maestro_principal_id
+  }
+  set maestro_id(val) {
+    this.maestro_principal_id = val
+  }
 
-  get maestro_auxiliar_id() { return this.maestro_suplente_id }
-  set maestro_auxiliar_id(val) { this.maestro_suplente_id = val }
+  get maestro_auxiliar_id() {
+    return this.maestro_suplente_id
+  }
+  set maestro_auxiliar_id(val) {
+    this.maestro_suplente_id = val
+  }
 
-  get max_alumnos() { return this.capacidad_maxima }
-  set max_alumnos(val) { this.capacidad_maxima = val }
+  get max_alumnos() {
+    return this.capacidad_maxima
+  }
+  set max_alumnos(val) {
+    this.capacidad_maxima = val
+  }
 
-  get notas_pedagogicas() { return this.descripcion }
-  set notas_pedagogicas(val) { this.descripcion = val }
+  get notas_pedagogicas() {
+    return this.descripcion
+  }
+  set notas_pedagogicas(val) {
+    this.descripcion = val
+  }
 
   /**
    * Valida los datos de la clase
@@ -90,7 +106,7 @@ export class Clase {
 
     // Validación de solapamientos internos (misma clase)
     const schedulesByDay = {}
-    this.horarios.forEach(h => {
+    this.horarios.forEach((h) => {
       if (!h.dia || !h.hora_inicio || !h.hora_fin) return
       const dia = h.dia.toLowerCase().trim()
       if (!schedulesByDay[dia]) schedulesByDay[dia] = []
@@ -98,7 +114,9 @@ export class Clase {
     })
 
     for (const dia in schedulesByDay) {
-      const slots = schedulesByDay[dia].sort((a, b) => timeToMinutes(a.hora_inicio) - timeToMinutes(b.hora_inicio))
+      const slots = schedulesByDay[dia].sort(
+        (a, b) => timeToMinutes(a.hora_inicio) - timeToMinutes(b.hora_inicio),
+      )
       for (let i = 0; i < slots.length - 1; i++) {
         const current = slots[i]
         const next = slots[i + 1]
@@ -111,7 +129,6 @@ export class Clase {
         }
       }
     }
-
 
     if (this.capacidad_maxima !== undefined && this.capacidad_maxima !== null) {
       if (this.capacidad_maxima < 1) {
@@ -133,7 +150,13 @@ export class Clase {
    * @returns {boolean}
    */
   isCompleto() {
-    return !!(this.nombre && this.maestro_principal_id && this.programa_id && this.instrumento && this.horarios?.length > 0)
+    return !!(
+      this.nombre &&
+      this.maestro_principal_id &&
+      this.programa_id &&
+      this.instrumento &&
+      this.horarios?.length > 0
+    )
   }
 
   /**

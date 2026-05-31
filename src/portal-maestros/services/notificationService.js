@@ -1,7 +1,7 @@
-import { supabase } from '../../lib/supabaseClient.js';
-import { getMaestroLocal } from '../auth/maestroAuth.js';
-import { getMisClases, getHorariosClases, getSesiones } from './maestroDataService.js';
-import { onPushReceived } from './pushService.js';
+import { supabase } from '../../lib/supabaseClient.js'
+import { getMaestroLocal } from '../auth/maestroAuth.js'
+import { getMisClases, getHorariosClases, getSesiones } from './maestroDataService.js'
+import { onPushReceived } from './pushService.js'
 
 // -- Deep Link Parsing and Navigation -----------------------------------------
 
@@ -24,7 +24,7 @@ export function parseDeepLink(deepLink) {
   return {
     claseId: match[1],
     fecha: match[2],
-    isValid: true
+    isValid: true,
   }
 }
 
@@ -42,75 +42,75 @@ export function navigateToDeepLink(deepLink) {
   window.appNavigate?.({
     view: 'asistencia',
     claseId,
-    fecha
+    fecha,
   })
 }
 
 // -- Register Push Notification Handler --
 onPushReceived((event) => {
   if (event.event === 'subscriptionChanged') {
-    console.log('[Notif] Push subscription changed:', event.subscribed);
+    console.log('[Notif] Push subscription changed:', event.subscribed)
   } else if (event.event === 'notificationReceived') {
-    console.log('[Notif] Real-time push received:', event.notification);
+    console.log('[Notif] Real-time push received:', event.notification)
 
     // RECORD: Mark as received to prevent polling duplicate
-    _recordNotificationReceived(event.notification);
+    _recordNotificationReceived(event.notification)
 
     // If notification carries a deep_link, navigate to it
-    const notif = event.notification;
+    const notif = event.notification
     if (notif?.data?.deep_link) {
-      navigateToDeepLink(notif.data.deep_link);
+      navigateToDeepLink(notif.data.deep_link)
     } else if (notif?.data?.deep_link_url) {
-      navigateToDeepLink(notif.data.deep_link_url);
+      navigateToDeepLink(notif.data.deep_link_url)
     }
 
     // ADD to cache if not already there
-    const exists = notificacionesCache.some(n => n.id === event.notification.id);
+    const exists = notificacionesCache.some((n) => n.id === event.notification.id)
     if (!exists) {
       notificacionesCache.unshift({
         ...event.notification,
-        created_at: event.notification.created_at || new Date().toISOString()
-      });
-      notifyListeners();
+        created_at: event.notification.created_at || new Date().toISOString(),
+      })
+      notifyListeners()
     }
   }
-});
+})
 
 // -- Deduplication Configuration --
 // Realtime es la fuente primaria. Polling cada 5 min es el fallback.
-export const POLL_INTERVAL_MS = 30 * 1000;  // 30 segundos (NOTIF-04)
-export const DEDUP_WINDOW_MS  = 60 * 1000;        // 1 minuto
-export const DEDUP_EXPIRY_MS  = 120 * 1000;        // 2 minutos
+export const POLL_INTERVAL_MS = 30 * 1000 // 30 segundos (NOTIF-04)
+export const DEDUP_WINDOW_MS = 60 * 1000 // 1 minuto
+export const DEDUP_EXPIRY_MS = 120 * 1000 // 2 minutos
 
 // -- Deduplication State --
-const _recentNotificationKeys = new Map(); // Map<key, expiryTime>
+const _recentNotificationKeys = new Map() // Map<key, expiryTime>
 
 export function _generateDeduplicationKey(notification) {
-  const tipo = notification.tipo || 'unknown';
-  const relatedId = notification.clase_id || notification.alumno_id || notification.id || 'generic';
-  const minuteBucket = Math.floor(Date.now() / DEDUP_WINDOW_MS);
-  return `${tipo}:${relatedId}:${minuteBucket}`;
+  const tipo = notification.tipo || 'unknown'
+  const relatedId = notification.clase_id || notification.alumno_id || notification.id || 'generic'
+  const minuteBucket = Math.floor(Date.now() / DEDUP_WINDOW_MS)
+  return `${tipo}:${relatedId}:${minuteBucket}`
 }
 
 function _cleanExpiredDeduplicationKeys() {
-  const now = Date.now();
+  const now = Date.now()
   for (const [key, expiryTime] of _recentNotificationKeys.entries()) {
     if (now > expiryTime) {
-      _recentNotificationKeys.delete(key);
+      _recentNotificationKeys.delete(key)
     }
   }
 }
 
 export function _isDuplicateNotification(notification) {
-  _cleanExpiredDeduplicationKeys();
-  const key = _generateDeduplicationKey(notification);
-  return _recentNotificationKeys.has(key);
+  _cleanExpiredDeduplicationKeys()
+  const key = _generateDeduplicationKey(notification)
+  return _recentNotificationKeys.has(key)
 }
 
 export function _recordNotificationReceived(notification) {
-  const key = _generateDeduplicationKey(notification);
-  const expiryTime = Date.now() + DEDUP_EXPIRY_MS;
-  _recentNotificationKeys.set(key, expiryTime);
+  const key = _generateDeduplicationKey(notification)
+  const expiryTime = Date.now() + DEDUP_EXPIRY_MS
+  _recentNotificationKeys.set(key, expiryTime)
 }
 
 /**
@@ -119,63 +119,67 @@ export function _recordNotificationReceived(notification) {
  * @returns {number}
  */
 export function getDedupCount() {
-  _cleanExpiredDeduplicationKeys();
-  return _recentNotificationKeys.size;
+  _cleanExpiredDeduplicationKeys()
+  return _recentNotificationKeys.size
 }
 
 // -- Persistencia del inbox en localStorage ----------------------------------
 // El inbox sobrevive F5 sin necesidad de un fetch extra al arrancar.
 
 function _cacheKey(maestroId) {
-  return `notif_cache_${maestroId}`;
+  return `notif_cache_${maestroId}`
 }
 
 function _persistCache(maestroId) {
   try {
     // Solo persistir las últimas 30 y no las locales efimeras
     const toSave = notificacionesCache
-      .filter(n => !String(n.id).startsWith('local_'))
-      .slice(0, 30);
-    localStorage.setItem(_cacheKey(maestroId), JSON.stringify(toSave));
-  } catch { /* storage lleno: silenciar */ }
+      .filter((n) => !String(n.id).startsWith('local_'))
+      .slice(0, 30)
+    localStorage.setItem(_cacheKey(maestroId), JSON.stringify(toSave))
+  } catch {
+    /* storage lleno: silenciar */
+  }
 }
 
 function _loadCachedNotifs(maestroId) {
   try {
-    const raw = localStorage.getItem(_cacheKey(maestroId));
-    return raw ? JSON.parse(raw) : [];
-  } catch { return []; }
+    const raw = localStorage.getItem(_cacheKey(maestroId))
+    return raw ? JSON.parse(raw) : []
+  } catch {
+    return []
+  }
 }
 
-let notificacionesCache = [];
-let listeners = [];
+let notificacionesCache = []
+let listeners = []
 
 /**
  * Suscribe un callback a los cambios en las notificaciones
  */
 export function onNotificacionesChange(callback) {
-  listeners.push(callback);
-  callback(notificacionesCache);
+  listeners.push(callback)
+  callback(notificacionesCache)
   return () => {
-    listeners = listeners.filter(cb => cb !== callback);
-  };
+    listeners = listeners.filter((cb) => cb !== callback)
+  }
 }
 
 function notifyListeners() {
-  listeners.forEach(cb => cb([...notificacionesCache]));
+  listeners.forEach((cb) => cb([...notificacionesCache]))
 }
 
 /**
  * Carga las notificaciones desde Supabase + genera alertas locales del cache.
  */
 export async function fetchNotificaciones() {
-  const maestro = getMaestroLocal();
-  if (!maestro) return [];
+  const maestro = getMaestroLocal()
+  if (!maestro) return []
 
   // Pre-cargar desde localStorage para respuesta instantánea
   if (notificacionesCache.length === 0) {
-    notificacionesCache = _loadCachedNotifs(maestro.id);
-    if (notificacionesCache.length > 0) notifyListeners();
+    notificacionesCache = _loadCachedNotifs(maestro.id)
+    if (notificacionesCache.length > 0) notifyListeners()
   }
 
   try {
@@ -184,31 +188,30 @@ export async function fetchNotificaciones() {
       .select('*')
       .eq('profile_id', maestro.id)
       .order('created_at', { ascending: false })
-      .limit(30);
+      .limit(30)
 
     if (error) {
-      console.warn('[NotifService] Error fetch:', error);
-      return notificacionesCache;
+      console.warn('[NotifService] Error fetch:', error)
+      return notificacionesCache
     }
 
-    const newNotifications = (data || []).map(n => ({
+    const newNotifications = (data || []).map((n) => ({
       ...n,
       created_at: n.created_at || new Date().toISOString(),
-    }));
+    }))
 
     // Merge: las notificaciones del servidor son la fuente de verdad,
     // pero conservamos las alertas locales generadas en el cliente.
-    const localAlerts = notificacionesCache.filter(n => String(n.id).startsWith('local_'));
-    notificacionesCache = [...newNotifications, ...localAlerts];
+    const localAlerts = notificacionesCache.filter((n) => String(n.id).startsWith('local_'))
+    notificacionesCache = [...newNotifications, ...localAlerts]
 
-    await _checkLocalAlerts(maestro.id);
-    _persistCache(maestro.id);
-    notifyListeners();
-    return notificacionesCache;
-
+    await _checkLocalAlerts(maestro.id)
+    _persistCache(maestro.id)
+    notifyListeners()
+    return notificacionesCache
   } catch (err) {
-    console.error('[NotifService]', err);
-    return notificacionesCache;
+    console.error('[NotifService]', err)
+    return notificacionesCache
   }
 }
 
@@ -227,18 +230,20 @@ async function _checkLocalAlerts(maestroId) {
       getMisClases(),
       getSesiones(maestroId, fechaHoy, fechaHoy),
     ])
-    const claseIds = clases.map(c => c.id)
-    const clasesMap = Object.fromEntries(clases.map(c => [c.id, c]))
+    const claseIds = clases.map((c) => c.id)
+    const clasesMap = Object.fromEntries(clases.map((c) => [c.id, c]))
 
     const horarios = await getHorariosClases(claseIds)
-    const horariosHoy = horarios.filter(h => h.dia?.toLowerCase() === diaHoy)
+    const horariosHoy = horarios.filter((h) => h.dia?.toLowerCase() === diaHoy)
 
     // Sesiones pendientes/borrador de hoy
-    const sesionesPendientes = sesiones.filter(s =>
-      s.estado === 'pendiente' || s.estado === 'borrador' || s.borrador === true
+    const sesionesPendientes = sesiones.filter(
+      (s) => s.estado === 'pendiente' || s.estado === 'borrador' || s.borrador === true,
     )
     const sesionesRegistradas = new Set(
-      sesiones.filter(s => s.borrador === false || s.estado === 'registrada').map(s => s.clase_id)
+      sesiones
+        .filter((s) => s.borrador === false || s.estado === 'registrada')
+        .map((s) => s.clase_id),
     )
 
     const ahora = new Date()
@@ -256,27 +261,30 @@ async function _checkLocalAlerts(maestroId) {
 
       const clase = clasesMap[h.clase_id]
       const refId = `${h.clase_id}_${fechaHoy}`
-      const exists = notificacionesCache.some(n => n.referencia_id === refId && n.tipo === 'sesion_sin_registrar')
+      const exists = notificacionesCache.some(
+        (n) => n.referencia_id === refId && n.tipo === 'sesion_sin_registrar',
+      )
       if (exists) continue
 
-      const horaFin   = h.hora_fin   ? h.hora_fin.slice(0, 5)   : ''
+      const horaFin = h.hora_fin ? h.hora_fin.slice(0, 5) : ''
       const horaInicio = h.hora_inicio ? h.hora_inicio.slice(0, 5) : ''
-      const horario   = horaInicio && horaFin ? ` (${horaInicio}–${horaFin})` : ''
-      const minutos   = Math.round(minutosDesdeElFin)
-      const tiempoMsg = minutos >= 60
-        ? `hace ${Math.floor(minutos / 60)}h ${minutos % 60}min`
-        : `hace ${minutos} min`
+      const horario = horaInicio && horaFin ? ` (${horaInicio}–${horaFin})` : ''
+      const minutos = Math.round(minutosDesdeElFin)
+      const tiempoMsg =
+        minutos >= 60
+          ? `hace ${Math.floor(minutos / 60)}h ${minutos % 60}min`
+          : `hace ${minutos} min`
 
       notificacionesCache.unshift({
-        id:           'local_' + refId,
-        tipo:         'sesion_sin_registrar',
-        titulo:       'Clase sin registrar',
-        mensaje:      `${clase?.nombre || 'Tu clase'}${horario} terminó ${tiempoMsg}. Registrá la asistencia para que quede guardada.`,
-        estado:       'pendiente',
-        created_at:   new Date().toISOString(),
+        id: 'local_' + refId,
+        tipo: 'sesion_sin_registrar',
+        titulo: 'Clase sin registrar',
+        mensaje: `${clase?.nombre || 'Tu clase'}${horario} terminó ${tiempoMsg}. Registrá la asistencia para que quede guardada.`,
+        estado: 'pendiente',
+        created_at: new Date().toISOString(),
         referencia_id: refId,
-        clase_id:     h.clase_id,
-        fecha:        fechaHoy,
+        clase_id: h.clase_id,
+        fecha: fechaHoy,
       })
     }
 
@@ -292,45 +300,45 @@ async function _checkLocalAlerts(maestroId) {
 
       const clase = clasesMap[h.clase_id]
       const refId = `prox_${h.clase_id}_${fechaHoy}`
-      const exists = notificacionesCache.some(n => n.referencia_id === refId)
+      const exists = notificacionesCache.some((n) => n.referencia_id === refId)
       if (exists) continue
 
       const horaInicioStr = h.hora_inicio ? h.hora_inicio.slice(0, 5) : ''
       const minsRestantes = Math.round(minutosParaInicio)
 
       notificacionesCache.unshift({
-        id:           'local_' + refId,
-        tipo:         'recordatorio_clase',
-        titulo:       'Clase por empezar',
-        mensaje:      `${clase?.nombre || 'Tu clase'}${horaInicioStr ? ` a las ${horaInicioStr}` : ''} empieza en ${minsRestantes} ${minsRestantes === 1 ? 'minuto' : 'minutos'}. Prepará la planificación.`,
-        estado:       'pendiente',
-        created_at:   new Date().toISOString(),
+        id: 'local_' + refId,
+        tipo: 'recordatorio_clase',
+        titulo: 'Clase por empezar',
+        mensaje: `${clase?.nombre || 'Tu clase'}${horaInicioStr ? ` a las ${horaInicioStr}` : ''} empieza en ${minsRestantes} ${minsRestantes === 1 ? 'minuto' : 'minutos'}. Prepará la planificación.`,
+        estado: 'pendiente',
+        created_at: new Date().toISOString(),
         referencia_id: refId,
-        clase_id:     h.clase_id,
-        fecha:        fechaHoy,
+        clase_id: h.clase_id,
+        fecha: fechaHoy,
       })
     }
-
   } catch (e) {
-    console.warn('[NotifService] Error local alerts:', e);
+    console.warn('[NotifService] Error local alerts:', e)
   }
 }
 
 export async function marcarLeida(id) {
-  const maestro = getMaestroLocal();
-  const notif = notificacionesCache.find(n => n.id === id);
-  if (notif) notif.estado = 'leida';
-  notifyListeners();
-  if (maestro) _persistCache(maestro.id);
+  const maestro = getMaestroLocal()
+  const notif = notificacionesCache.find((n) => n.id === id)
+  if (notif) notif.estado = 'leida'
+  notifyListeners()
+  if (maestro) _persistCache(maestro.id)
 
-  if (String(id).startsWith('local_')) return;
+  if (String(id).startsWith('local_')) return
 
   try {
-    await supabase.from('notificaciones')
+    await supabase
+      .from('notificaciones')
       .update({ estado: 'leida', leida_en: new Date().toISOString() })
-      .eq('id', id);
+      .eq('id', id)
   } catch (e) {
-    console.warn('[NotifService] Error al marcar leída', e);
+    console.warn('[NotifService] Error al marcar leída', e)
   }
 }
 
@@ -341,78 +349,77 @@ export async function marcarLeida(id) {
  * @returns {Promise<{success: boolean, error?: any}>}
  */
 export async function eliminarNotificacion(id) {
-  const maestro = getMaestroLocal();
+  const maestro = getMaestroLocal()
 
   // 1. Eliminar del caché en memoria local inmediatamente para respuesta instantánea en la UI
-  notificacionesCache = notificacionesCache.filter(n => n.id !== id);
-  notifyListeners();
+  notificacionesCache = notificacionesCache.filter((n) => n.id !== id)
+  notifyListeners()
 
   // Persistir el caché en localStorage
-  if (maestro) _persistCache(maestro.id);
+  if (maestro) _persistCache(maestro.id)
 
   // 2. Si es una notificación virtual/local, no interactuamos con Supabase
   if (String(id).startsWith('local_')) {
-    return { success: true };
+    return { success: true }
   }
 
   // 3. Si es una notificación persistida en base de datos, ejecutar DELETE real
   try {
-    const { error } = await supabase
-      .from('notificaciones')
-      .delete()
-      .eq('id', id);
+    const { error } = await supabase.from('notificaciones').delete().eq('id', id)
 
     if (error) {
-      console.error('[NotifService] Error al eliminar en base de datos:', error.message);
-      return { success: false, error };
+      console.error('[NotifService] Error al eliminar en base de datos:', error.message)
+      return { success: false, error }
     }
-    return { success: true };
+    return { success: true }
   } catch (e) {
-    console.error('[NotifService] Excepción al eliminar:', e);
-    return { success: false, error: e };
+    console.error('[NotifService] Excepción al eliminar:', e)
+    return { success: false, error: e }
   }
 }
 
-
 export async function marcarTodasLeidas() {
-  const maestro = getMaestroLocal();
-  notificacionesCache.forEach(n => { if (n.estado !== 'leida') n.estado = 'leida'; });
-  notifyListeners();
-  if (maestro) _persistCache(maestro.id);
+  const maestro = getMaestroLocal()
+  notificacionesCache.forEach((n) => {
+    if (n.estado !== 'leida') n.estado = 'leida'
+  })
+  notifyListeners()
+  if (maestro) _persistCache(maestro.id)
 
-  if (!maestro) return;
+  if (!maestro) return
 
   try {
     await supabase
       .from('notificaciones')
       .update({ estado: 'leida', leida_en: new Date().toISOString() })
       .eq('profile_id', maestro.id)
-      .neq('estado', 'leida');
+      .neq('estado', 'leida')
   } catch (e) {
-    console.warn('[NotifService] Error al marcar todas', e);
+    console.warn('[NotifService] Error al marcar todas', e)
   }
 }
 
 export function getUnreadCount() {
-  return notificacionesCache.filter(n => n.estado === 'pendiente' || n.estado === 'enviada').length;
+  return notificacionesCache.filter((n) => n.estado === 'pendiente' || n.estado === 'enviada')
+    .length
 }
 
 // ── Supabase Realtime ───────────────────────────────────────────────────────────────
 // Canal de escucha en tiempo real de cambios en la tabla `notificaciones`.
 // Esto reemplaza al polling como fuente primaria; el polling queda como fallback.
 
-let _realtimeChannel = null;
+let _realtimeChannel = null
 
 /**
  * Inicia el canal Supabase Realtime para notificaciones del maestro actual.
  * Llamar una vez después del login, desde main-maestros.js.
  */
 export function startRealtime() {
-  const maestro = getMaestroLocal();
-  if (!maestro) return;
+  const maestro = getMaestroLocal()
+  if (!maestro) return
 
   // No abrir dos canales para el mismo maestro
-  if (_realtimeChannel) return;
+  if (_realtimeChannel) return
 
   _realtimeChannel = supabase
     .channel(`notificaciones:${maestro.id}`)
@@ -428,22 +435,22 @@ export function startRealtime() {
         const notif = {
           ...payload.new,
           created_at: payload.new.created_at || new Date().toISOString(),
-        };
+        }
 
         // Evitar duplicado si el polling ya trajo esta notif
-        const exists = notificacionesCache.some(n => n.id === notif.id);
-        if (exists) return;
+        const exists = notificacionesCache.some((n) => n.id === notif.id)
+        if (exists) return
 
         // Insertar al inicio del inbox
-        notificacionesCache.unshift(notif);
-        _persistCache(maestro.id);
-        notifyListeners();
+        notificacionesCache.unshift(notif)
+        _persistCache(maestro.id)
+        notifyListeners()
 
         // Toast in-app: avisa sin necesidad de abrir el panel
-        _showInAppToast(notif);
+        _showInAppToast(notif)
 
-        console.log('[Realtime] Nueva notificación recibida:', notif.titulo);
-      }
+        console.log('[Realtime] Nueva notificación recibida:', notif.titulo)
+      },
     )
     .on(
       'postgres_changes',
@@ -455,22 +462,22 @@ export function startRealtime() {
       },
       (payload) => {
         // Actualizar en cache (ej: estado = 'leida' hecho desde otro dispositivo)
-        const idx = notificacionesCache.findIndex(n => n.id === payload.new.id);
+        const idx = notificacionesCache.findIndex((n) => n.id === payload.new.id)
         if (idx !== -1) {
-          notificacionesCache[idx] = { ...notificacionesCache[idx], ...payload.new };
-          _persistCache(maestro.id);
-          notifyListeners();
+          notificacionesCache[idx] = { ...notificacionesCache[idx], ...payload.new }
+          _persistCache(maestro.id)
+          notifyListeners()
         }
-      }
+      },
     )
     .subscribe((status) => {
-      console.log(`[Realtime] Canal notificaciones: ${status}`);
+      console.log(`[Realtime] Canal notificaciones: ${status}`)
       if (status === 'CHANNEL_ERROR') {
         // Si el canal falla, el polling de 5 min lo cubre
-        console.warn('[Realtime] Canal cerrado, el polling de fallback sigue activo.');
-        _realtimeChannel = null;
+        console.warn('[Realtime] Canal cerrado, el polling de fallback sigue activo.')
+        _realtimeChannel = null
       }
-    });
+    })
 }
 
 /**
@@ -478,8 +485,8 @@ export function startRealtime() {
  */
 export function stopRealtime() {
   if (_realtimeChannel) {
-    supabase.removeChannel(_realtimeChannel);
-    _realtimeChannel = null;
+    supabase.removeChannel(_realtimeChannel)
+    _realtimeChannel = null
   }
 }
 
@@ -489,16 +496,17 @@ export function stopRealtime() {
 
 function _showInAppToast(notif) {
   // Si el panel está abierto, no hace falta el toast
-  if (document.getElementById('pm-notificaciones-drawer-overlay')?.classList.contains('open')) return;
+  if (document.getElementById('pm-notificaciones-drawer-overlay')?.classList.contains('open'))
+    return
 
-  const existing = document.getElementById('pm-notif-inapp-toast');
-  if (existing) existing.remove();
+  const existing = document.getElementById('pm-notif-inapp-toast')
+  if (existing) existing.remove()
 
-  const icon = _toastIcon(notif.tipo);
-  const toast = document.createElement('div');
-  toast.id = 'pm-notif-inapp-toast';
-  toast.setAttribute('role', 'alert');
-  toast.setAttribute('aria-live', 'polite');
+  const icon = _toastIcon(notif.tipo)
+  const toast = document.createElement('div')
+  toast.id = 'pm-notif-inapp-toast'
+  toast.setAttribute('role', 'alert')
+  toast.setAttribute('aria-live', 'polite')
   toast.innerHTML = `
     <div class="pm-iat-content">
       <div class="pm-iat-icon">${icon}</div>
@@ -508,48 +516,48 @@ function _showInAppToast(notif) {
       </div>
       <button class="pm-iat-close" aria-label="Cerrar">×</button>
     </div>
-  `;
-  document.body.appendChild(toast);
-  _injectToastStyles();
+  `
+  document.body.appendChild(toast)
+  _injectToastStyles()
 
   requestAnimationFrame(() => {
-    requestAnimationFrame(() => toast.classList.add('pm-iat-visible'));
-  });
+    requestAnimationFrame(() => toast.classList.add('pm-iat-visible'))
+  })
 
   const dismiss = () => {
-    toast.classList.remove('pm-iat-visible');
-    setTimeout(() => toast.remove(), 350);
-  };
+    toast.classList.remove('pm-iat-visible')
+    setTimeout(() => toast.remove(), 350)
+  }
 
-  toast.querySelector('.pm-iat-close').addEventListener('click', dismiss);
+  toast.querySelector('.pm-iat-close').addEventListener('click', dismiss)
   toast.addEventListener('click', (e) => {
     if (!e.target.classList.contains('pm-iat-close')) {
       // Abrir panel de notificaciones al hacer clic en el toast
-      document.getElementById('pm-bell-btn')?.click();
-      dismiss();
+      document.getElementById('pm-bell-btn')?.click()
+      dismiss()
     }
-  });
+  })
 
   // Auto-dismiss en 6 segundos
-  setTimeout(dismiss, 6000);
+  setTimeout(dismiss, 6000)
 }
 
 function _toastIcon(tipo) {
   const map = {
     sesion_sin_registrar: '⚠️',
-    recordatorio_clase:   '⏰',
-    mensaje_admin:        '📣',
-    tarea_vencida:        '📕',
-    in_app:               '🔔',
-  };
-  return map[tipo] || '🔔';
+    recordatorio_clase: '⏰',
+    mensaje_admin: '📣',
+    tarea_vencida: '📕',
+    in_app: '🔔',
+  }
+  return map[tipo] || '🔔'
 }
 
-let _toastStylesInjected = false;
+let _toastStylesInjected = false
 function _injectToastStyles() {
-  if (_toastStylesInjected) return;
-  _toastStylesInjected = true;
-  const s = document.createElement('style');
+  if (_toastStylesInjected) return
+  _toastStylesInjected = true
+  const s = document.createElement('style')
   s.textContent = `
     #pm-notif-inapp-toast {
       position: fixed;
@@ -613,47 +621,47 @@ function _injectToastStyles() {
     @media (max-width: 400px) {
       #pm-notif-inapp-toast { right: 8px; max-width: calc(100vw - 16px); }
     }
-  `;
-  document.head.appendChild(s);
+  `
+  document.head.appendChild(s)
 }
 
 // ── Polling controlado ──────────────────────────────────────────────────────
-let _pollIntervalId = null;
+let _pollIntervalId = null
 
 function _startPolling() {
-  if (_pollIntervalId !== null) return;
+  if (_pollIntervalId !== null) return
   _pollIntervalId = setInterval(() => {
-    if (document.visibilityState === 'hidden') return;
-    fetchNotificaciones();
-  }, POLL_INTERVAL_MS);
+    if (document.visibilityState === 'hidden') return
+    fetchNotificaciones()
+  }, POLL_INTERVAL_MS)
 }
 
 function _stopPolling() {
   if (_pollIntervalId !== null) {
-    clearInterval(_pollIntervalId);
-    _pollIntervalId = null;
+    clearInterval(_pollIntervalId)
+    _pollIntervalId = null
   }
 }
 
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible') {
-    fetchNotificaciones();
-    _startPolling();
+    fetchNotificaciones()
+    _startPolling()
   } else {
-    _stopPolling();
+    _stopPolling()
   }
-});
+})
 
 function _cleanStaleLocalAlerts() {
-  const todayPrefix = new Date().toISOString().split('T')[0];
-  notificacionesCache = notificacionesCache.filter(n => {
-    if (!String(n.id).startsWith('local_')) return true;
-    return n.referencia_id?.includes(todayPrefix);
-  });
+  const todayPrefix = new Date().toISOString().split('T')[0]
+  notificacionesCache = notificacionesCache.filter((n) => {
+    if (!String(n.id).startsWith('local_')) return true
+    return n.referencia_id?.includes(todayPrefix)
+  })
 }
 
-_cleanStaleLocalAlerts();
+_cleanStaleLocalAlerts()
 
 if (document.visibilityState !== 'hidden') {
-  _startPolling();
+  _startPolling()
 }

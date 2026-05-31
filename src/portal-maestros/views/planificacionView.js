@@ -22,12 +22,15 @@ export async function renderPlanificacionView(container) {
     const { data: clases } = await supabase
       .from('clases')
       .select('id, nombre, instrumento')
-      .or(`maestro_principal_id.eq.${maestro.id},maestro_suplente_id.eq.${maestro.id},maestro_id.eq.${maestro.id}`)
+      .or(
+        `maestro_principal_id.eq.${maestro.id},maestro_suplente_id.eq.${maestro.id},maestro_id.eq.${maestro.id}`,
+      )
       .order('nombre')
 
     // 3. Función para renderizar la jerarquía HTML
     const getHierarchyHtml = async (classId = null) => {
-      if (!classId) return '<p class="pm-empty">Seleccioná una clase para ver su ruta académica.</p>'
+      if (!classId)
+        return '<p class="pm-empty">Seleccioná una clase para ver su ruta académica.</p>'
 
       const levels = await RouteConfigAdapter.getRouteHierarchy(classId, maestro.id)
 
@@ -37,18 +40,25 @@ export async function renderPlanificacionView(container) {
 
       const getNodeIcon = (type) => {
         const icons = {
-          'ESCALA': '🎼', 'ARPEGIO': '🎹', 'MANO_IZQ': '✋',
-          'ARCO': '🎻', 'SONIDO': '🔊', 'AFINACION': '🎵',
-          'TECNICA': '⚙️', 'REPERTORIO': '📖'
+          ESCALA: '🎼',
+          ARPEGIO: '🎹',
+          MANO_IZQ: '✋',
+          ARCO: '🎻',
+          SONIDO: '🔊',
+          AFINACION: '🎵',
+          TECNICA: '⚙️',
+          REPERTORIO: '📖',
         }
         return icons[type] || '•'
       }
 
-      const getNodeColor = (isCritical) => isCritical ? 'var(--pm-danger)' : 'var(--pm-primary)'
+      const getNodeColor = (isCritical) => (isCritical ? 'var(--pm-danger)' : 'var(--pm-primary)')
 
       return `
         <div class="pm-route-niveles">
-          ${levels.map(level => `
+          ${levels
+            .map(
+              (level) => `
             <div class="pm-route-nivel expanded">
               <div class="pm-nivel-toggle" data-level="${level.id}">
                 <div class="pm-nivel-num">${level.numero_nivel}</div>
@@ -59,7 +69,9 @@ export async function renderPlanificacionView(container) {
                 <i class="bi bi-chevron-down pm-nivel-arrow"></i>
               </div>
               <div class="pm-nivel-nodos">
-                ${(level.plan_temas || []).map(tema => `
+                ${(level.plan_temas || [])
+                  .map(
+                    (tema) => `
                   <div class="pm-nodo-card ${tema.es_critico ? 'critical' : ''}">
                     <div class="pm-nodo-icon" style="color: ${getNodeColor(tema.es_critico)}">${getNodeIcon(tema.tipo)}</div>
                     <div class="pm-nodo-info">
@@ -72,11 +84,15 @@ export async function renderPlanificacionView(container) {
                       </div>
                     </div>
                   </div>
-                `).join('')}
+                `,
+                  )
+                  .join('')}
                 ${(level.plan_temas || []).length === 0 ? '<p style="font-size:0.7rem; color:var(--pm-text-muted); padding:10px;">Sin temas configurados.</p>' : ''}
               </div>
             </div>
-          `).join('')}
+          `,
+            )
+            .join('')}
         </div>
       `
     }
@@ -105,7 +121,7 @@ export async function renderPlanificacionView(container) {
             <label class="pm-planif-label">Ruta de:</label>
             <select id="pm-planif-clase-select" class="pm-input">
               <option value="">Seleccionar planificación...</option>
-              ${planningClasses?.map(c => `<option value="${c.id}">${escHTML(c.nombre || c.name || 'Sin nombre')}</option>`).join('') || ''}
+              ${planningClasses?.map((c) => `<option value="${c.id}">${escHTML(c.nombre || c.name || 'Sin nombre')}</option>`).join('') || ''}
             </select>
           </div>
 
@@ -188,7 +204,7 @@ export async function renderPlanificacionView(container) {
         routeContainer.innerHTML = html
 
         // Re-vincular toggles
-        routeContainer.querySelectorAll('.pm-nivel-toggle').forEach(toggle => {
+        routeContainer.querySelectorAll('.pm-nivel-toggle').forEach((toggle) => {
           toggle.onclick = () => {
             const nivel = toggle.closest('.pm-route-nivel')
             nivel.classList.toggle('expanded')
@@ -201,14 +217,20 @@ export async function renderPlanificacionView(container) {
     const tabBtns = container.querySelectorAll('.pm-tab-btn')
     const tabPanes = container.querySelectorAll('.pm-tab-pane')
 
-    tabBtns.forEach(btn => {
+    tabBtns.forEach((btn) => {
       btn.onclick = () => {
-        tabBtns.forEach(b => b.classList.remove('active'))
-        tabPanes.forEach(p => { p.classList.remove('active'); p.style.display = 'none'; })
+        tabBtns.forEach((b) => b.classList.remove('active'))
+        tabPanes.forEach((p) => {
+          p.classList.remove('active')
+          p.style.display = 'none'
+        })
         btn.classList.add('active')
         const targetId = btn.getAttribute('data-tab')
         const targetPane = container.querySelector(`#${targetId}`)
-        if (targetPane) { targetPane.classList.add('active'); targetPane.style.display = 'block'; }
+        if (targetPane) {
+          targetPane.classList.add('active')
+          targetPane.style.display = 'block'
+        }
       }
     })
 
@@ -217,11 +239,12 @@ export async function renderPlanificacionView(container) {
     let initialClassId = null
 
     if (activeClaseId) {
-      const activeClase = clases?.find(c => c.id === activeClaseId)
+      const activeClase = clases?.find((c) => c.id === activeClaseId)
       if (activeClase) {
-        const match = planningClasses.find(c =>
-          activeClase.nombre.toLowerCase().includes(c.nombre.toLowerCase()) ||
-          c.nombre.toLowerCase().includes(activeClase.nombre.toLowerCase())
+        const match = planningClasses.find(
+          (c) =>
+            activeClase.nombre.toLowerCase().includes(c.nombre.toLowerCase()) ||
+            c.nombre.toLowerCase().includes(activeClase.nombre.toLowerCase()),
         )
         if (match) initialClassId = match.id
       }
@@ -234,9 +257,9 @@ export async function renderPlanificacionView(container) {
     if (initialClassId && routeSelect && routeContainer) {
       routeSelect.value = initialClassId
       routeContainer.innerHTML = '<div class="pm-loading"><div class="pm-spinner"></div></div>'
-      getHierarchyHtml(initialClassId).then(html => {
+      getHierarchyHtml(initialClassId).then((html) => {
         routeContainer.innerHTML = html
-        routeContainer.querySelectorAll('.pm-nivel-toggle').forEach(toggle => {
+        routeContainer.querySelectorAll('.pm-nivel-toggle').forEach((toggle) => {
           toggle.onclick = () => {
             const nivel = toggle.closest('.pm-route-nivel')
             nivel.classList.toggle('expanded')
@@ -293,7 +316,10 @@ export async function renderPlanificacionView(container) {
 
                 if (selectedClassId === 'NEW') {
                   const className = modalBody.querySelector('#preview-class-name').value.trim()
-                  if (!className) { alert('Asigná un nombre.'); return false; }
+                  if (!className) {
+                    alert('Asigná un nombre.')
+                    return false
+                  }
                   importStatusText.textContent = 'Creando clase...'
                   const newClass = await RouteConfigAdapter.addClass(className, maestro.id)
                   finalClassId = newClass.id
@@ -301,46 +327,55 @@ export async function renderPlanificacionView(container) {
 
                 // Recolectar ediciones
                 const nivelInputs = modalBody.querySelectorAll('.preview-nivel-input')
-                nivelInputs.forEach(input => { structure.niveles[input.dataset.nIdx].nombre = input.value })
+                nivelInputs.forEach((input) => {
+                  structure.niveles[input.dataset.nIdx].nombre = input.value
+                })
                 const temaInputs = modalBody.querySelectorAll('.preview-tema-input')
-                temaInputs.forEach(input => { structure.niveles[input.dataset.nIdx].temas[input.dataset.tIdx].nombre = input.value })
+                temaInputs.forEach((input) => {
+                  structure.niveles[input.dataset.nIdx].temas[input.dataset.tIdx].nombre =
+                    input.value
+                })
                 const objInputs = modalBody.querySelectorAll('.preview-obj-input')
-                objInputs.forEach(input => { structure.niveles[input.dataset.nIdx].temas[input.dataset.tIdx].objetivos[input.dataset.oIdx].nombre = input.value })
+                objInputs.forEach((input) => {
+                  structure.niveles[input.dataset.nIdx].temas[input.dataset.tIdx].objetivos[
+                    input.dataset.oIdx
+                  ].nombre = input.value
+                })
 
                 importStatusText.textContent = 'Importando...'
                 await RouteConfigAdapter.importStructure(finalClassId, structure)
-                
+
                 AppModal.open({
                   title: '¡Éxito!',
                   body: '<p>La planificación ha sido importada correctamente.</p>',
                   confirmText: 'Genial',
-                  hideCancel: true
-                });
+                  hideCancel: true,
+                })
 
                 renderPlanificacionView(container)
-                return true 
+                return true
               } catch (err) {
                 AppModal.open({
                   title: 'Error de Importación',
                   body: `<p>No se pudo importar la planificación: ${err.message}</p>`,
                   confirmText: 'Cerrar',
-                  hideCancel: true
-                });
+                  hideCancel: true,
+                })
                 return false
               }
             },
             onCancel: () => {
               importStatus.style.display = 'none'
               importBtn.disabled = false
-            }
+            },
           })
         } catch (err) {
           AppModal.open({
             title: 'Error inesperado',
             body: `<p>${err.message}</p>`,
             confirmText: 'Cerrar',
-            hideCancel: true
-          });
+            hideCancel: true,
+          })
         } finally {
           importBtn.disabled = false
           importStatus.style.display = 'none'
@@ -348,22 +383,22 @@ export async function renderPlanificacionView(container) {
         }
       }
     }
-
   } catch (err) {
     container.innerHTML = `<p class="pm-empty">Error: ${err.message}</p>`
   }
 
   return () => {
-    console.log('[PlanificacionView] Cleanup ejecutado');
+    console.log('[PlanificacionView] Cleanup ejecutado')
   }
 }
 
 function generateImportPreview(structure, clasesExistentes = []) {
   const niveles = structure.niveles || []
-  let totalTemas = 0, totalObjs = 0
-  niveles.forEach(n => {
+  let totalTemas = 0,
+    totalObjs = 0
+  niveles.forEach((n) => {
     totalTemas += (n.temas || []).length
-    n.temas?.forEach(t => totalObjs += (t.objetivos || []).length)
+    n.temas?.forEach((t) => (totalObjs += (t.objetivos || []).length))
   })
 
   return `
@@ -372,7 +407,7 @@ function generateImportPreview(structure, clasesExistentes = []) {
         <label style="display:block; font-size:0.75rem; font-weight:700; margin-bottom:10px;">¿DÓNDE IMPORTAR?</label>
         <select id="preview-class-selector" class="pm-input" onchange="document.getElementById('new-class-name-wrapper').style.display = (this.value === 'NEW' ? 'block' : 'none')">
           <option value="NEW">-- [ + ] CREAR NUEVA CLASE --</option>
-          ${clasesExistentes.map(c => `<option value="${c.id}">Añadir a: ${escHTML(c.nombre || c.name)}</option>`).join('')}
+          ${clasesExistentes.map((c) => `<option value="${c.id}">Añadir a: ${escHTML(c.nombre || c.name)}</option>`).join('')}
         </select>
         <div id="new-class-name-wrapper" style="display:block; padding-top:0.5rem;">
           <input type="text" id="preview-class-name" class="pm-input" placeholder="Nombre de la nueva clase..." />
@@ -386,23 +421,35 @@ function generateImportPreview(structure, clasesExistentes = []) {
       </div>
 
       <div style="max-height:400px; overflow-y:auto;">
-        ${niveles.map((n, nIdx) => `
+        ${niveles
+          .map(
+            (n, nIdx) => `
           <div style="margin-bottom:1rem; border:1px solid var(--pm-border); border-radius:8px;">
             <div style="background:var(--pm-surface-2); padding:0.5rem; display:flex; gap:0.5rem;">
               <input type="text" class="preview-nivel-input pm-input" value="${escHTML(n.nombre)}" data-n-idx="${nIdx}" />
             </div>
             <div style="padding:0.5rem;">
-              ${(n.temas || []).map((t, tIdx) => `
+              ${(n.temas || [])
+                .map(
+                  (t, tIdx) => `
                 <div style="margin-bottom:0.5rem; padding-left:0.5rem; border-left:2px solid var(--pm-primary);">
                   <input type="text" class="preview-tema-input pm-input" value="${escHTML(t.nombre)}" data-n-idx="${nIdx}" data-t-idx="${tIdx}" style="font-size:0.8rem;" />
-                  ${(t.objetivos || []).map((o, oIdx) => `
+                  ${(t.objetivos || [])
+                    .map(
+                      (o, oIdx) => `
                     <input type="text" class="preview-obj-input pm-input" value="${escHTML(o.nombre)}" data-n-idx="${nIdx}" data-t-idx="${tIdx}" data-o-idx="${oIdx}" style="font-size:0.75rem; margin-top:2px;" />
-                  `).join('')}
+                  `,
+                    )
+                    .join('')}
                 </div>
-              `).join('')}
+              `,
+                )
+                .join('')}
             </div>
           </div>
-        `).join('')}
+        `,
+          )
+          .join('')}
       </div>
     </div>
   `

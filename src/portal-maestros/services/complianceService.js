@@ -60,7 +60,7 @@ export async function requestDataErasure(userId) {
 
     // Log the request to an anonymized audit log
     console.log(`[GDPR] Erasure completed for user ${userId}`)
-    
+
     return { success: true }
   } catch (err) {
     console.error('[Compliance] Erasure failed:', err)

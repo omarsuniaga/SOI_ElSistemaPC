@@ -1,9 +1,11 @@
-import { salonesUtils } from '../utils/salonesUtils.js';
+import { salonesUtils } from '../utils/salonesUtils.js'
 
 export function createSalonListItem(salon, onEdit, onDelete) {
-  const tr = document.createElement('tr');
-  const eqHtml = (salon.equipamiento || []).map(eq => `<span class="badge bg-info text-dark me-1">${eq}</span>`).join('');
-  
+  const tr = document.createElement('tr')
+  const eqHtml = (salon.equipamiento || [])
+    .map((eq) => `<span class="badge bg-info text-dark me-1">${eq}</span>`)
+    .join('')
+
   tr.innerHTML = `
     <td><strong>${salonesUtils.escapeHTML(salon.codigo_salon || '-')}</strong></td>
     <td>${salonesUtils.escapeHTML(salon.nombre)}</td>
@@ -21,10 +23,10 @@ export function createSalonListItem(salon, onEdit, onDelete) {
         <button class="btn btn-outline-danger btn-delete" title="Inactivar"><i class="bi bi-trash"></i></button>
       </div>
     </td>
-  `;
+  `
 
-  tr.querySelector('.btn-edit').addEventListener('click', () => onEdit(salon));
-  tr.querySelector('.btn-delete').addEventListener('click', () => onDelete(salon));
+  tr.querySelector('.btn-edit').addEventListener('click', () => onEdit(salon))
+  tr.querySelector('.btn-delete').addEventListener('click', () => onDelete(salon))
 
-  return tr;
+  return tr
 }

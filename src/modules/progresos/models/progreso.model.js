@@ -9,9 +9,10 @@ export class Progreso {
     this.maestro_id = data.maestro_id || null
     this.fecha_evaluacion = data.fecha_evaluacion || ''
     this.tipo_evaluacion = data.tipo_evaluacion || data.evaluacion_tipo || ''
-    this.calificacion = data.calificacion !== undefined && data.calificacion !== null
-      ? parseFloat(data.calificacion)
-      : null
+    this.calificacion =
+      data.calificacion !== undefined && data.calificacion !== null
+        ? parseFloat(data.calificacion)
+        : null
     this.observaciones = data.observaciones || ''
     this.estado = data.estado || 'en_progreso'
     this.created_at = data.created_at || null
@@ -36,7 +37,7 @@ export class Progreso {
     if (!this.tipo_evaluacion || !this.tipo_evaluacion.trim()) {
       errores.push('El tipo de evaluación es obligatorio')
     } else {
-      const tiposValidos = Progreso.getTiposEvaluacion().map(t => t.value)
+      const tiposValidos = Progreso.getTiposEvaluacion().map((t) => t.value)
       if (!tiposValidos.includes(this.tipo_evaluacion)) {
         errores.push('Tipo de evaluación no válido')
       }
@@ -52,7 +53,7 @@ export class Progreso {
       errores.push('Las observaciones no pueden exceder 500 caracteres')
     }
 
-    const estadosValidos = Progreso.getEstados().map(e => e.value)
+    const estadosValidos = Progreso.getEstados().map((e) => e.value)
     if (this.estado && !estadosValidos.includes(this.estado)) {
       errores.push('Estado no válido')
     }
@@ -80,7 +81,13 @@ export class Progreso {
   }
 
   static getEstadoConfig(estado) {
-    return this.getEstados().find(e => e.value === estado) || { value: estado, label: estado, color: 'bg-secondary' }
+    return (
+      this.getEstados().find((e) => e.value === estado) || {
+        value: estado,
+        label: estado,
+        color: 'bg-secondary',
+      }
+    )
   }
 
   /**
@@ -96,7 +103,7 @@ export class Progreso {
       tipo_evaluacion: this.tipo_evaluacion.trim(),
       calificacion: this.calificacion,
       observaciones: this.observaciones ? this.observaciones.trim() : null,
-      estado: this.estado
+      estado: this.estado,
     }
   }
 }

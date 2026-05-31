@@ -11,17 +11,15 @@ export async function auditLog(action, entity, entityId, context = {}) {
   const { user_id, changes = {}, ...metadata } = context
 
   try {
-    const { error } = await supabase
-      .from('audit_logs')
-      .insert({
-        action,
-        entity,
-        entity_id: entityId,
-        user_id: user_id || null,
-        changes,
-        metadata,
-        timestamp: new Date().toISOString(),
-      })
+    const { error } = await supabase.from('audit_logs').insert({
+      action,
+      entity,
+      entity_id: entityId,
+      user_id: user_id || null,
+      changes,
+      metadata,
+      timestamp: new Date().toISOString(),
+    })
 
     if (error) {
       console.warn('[Audit] Error logging mutation:', error.message)

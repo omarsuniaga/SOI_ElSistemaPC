@@ -1,11 +1,7 @@
 import '../styles/clases.css'
 import { AppModal } from '../../../shared/components/AppModal.js'
 import { AppToast } from '../../../shared/components/AppToast.js'
-import {
-  obtenerClases,
-  eliminarClase,
-  obtenerAlumnosInscritos,
-} from '../api/clasesApi.js'
+import { obtenerClases, eliminarClase, obtenerAlumnosInscritos } from '../api/clasesApi.js'
 import { supabase } from '../../../lib/supabaseClient.js'
 import {
   formatDate,
@@ -51,7 +47,11 @@ export async function renderClasesView(container) {
       supabase.from('maestros').select('*').order('nombre_completo', { ascending: true }),
       supabase.from('salones').select('*').order('nombre', { ascending: true }),
       supabase.from('programas').select('*').order('nombre', { ascending: true }),
-      supabase.from('alumnos').select('*').eq('activo', true).order('nombre_completo', { ascending: true }),
+      supabase
+        .from('alumnos')
+        .select('*')
+        .eq('activo', true)
+        .order('nombre_completo', { ascending: true }),
     ])
 
     state.clases = clases
@@ -158,7 +158,7 @@ function renderTableView() {
   return `
     <div class="page-glass rounded w-100">
       <div class="list-group list-group-flush w-100" id="clasesListBody">
-        ${state.clases.map(c => renderClaseCard(c)).join('')}
+        ${state.clases.map((c) => renderClaseCard(c)).join('')}
       </div>
     </div>
   `
@@ -166,16 +166,22 @@ function renderTableView() {
 
 function renderClaseCard(clase) {
   const nombre = clase.nombre || 'Sin nombre'
-  const maestro = state.maestros.find(m => m.id === clase.maestro_principal_id)
-  const maestroNombre = maestro ? (maestro.nombre_completo || maestro.nombre) : 'Sin maestro'
+  const maestro = state.maestros.find((m) => m.id === clase.maestro_principal_id)
+  const maestroNombre = maestro ? maestro.nombre_completo || maestro.nombre : 'Sin maestro'
   const initials = getInitials(nombre)
   const estado = clase.estado || 'activa'
   const accentClass = `border-accent-${estado === 'activa' ? 'success' : estado === 'suspendida' ? 'warning' : 'secondary'}`
   const statusDotClass = `bg-${estado === 'activa' ? 'success' : estado === 'suspendida' ? 'warning' : 'secondary'}`
   const horarios = (clase.horarios || []).slice(0, 3) // Mostrar máximo 3 horarios
-  const horariosTexto = horarios.length > 0
-    ? horarios.map(h => `${(h.dia || '').slice(0, 2).toUpperCase()} ${(h.hora_inicio || '').slice(0, 5)}`).join(' • ')
-    : 'Sin horarios'
+  const horariosTexto =
+    horarios.length > 0
+      ? horarios
+          .map(
+            (h) =>
+              `${(h.dia || '').slice(0, 2).toUpperCase()} ${(h.hora_inicio || '').slice(0, 5)}`,
+          )
+          .join(' • ')
+      : 'Sin horarios'
 
   return `
     <div class="list-group-item list-group-item-action d-flex align-items-center justify-content-between p-3 w-100 border-start-accent ${accentClass}" data-id="${clase.id}" style="cursor: pointer;">
@@ -222,7 +228,7 @@ function renderCalendarView() {
     miércoles: 'Miércoles',
     jueves: 'Jueves',
     viernes: 'Viernes',
-    sábado: 'Sábado'
+    sábado: 'Sábado',
   }
 
   // 1. Group class schedules by day
@@ -232,23 +238,23 @@ function renderCalendarView() {
     miércoles: [],
     jueves: [],
     viernes: [],
-    sábado: []
+    sábado: [],
   }
 
-  state.clases.forEach(clase => {
-    (clase.horarios || []).forEach(horario => {
+  state.clases.forEach((clase) => {
+    ;(clase.horarios || []).forEach((horario) => {
       const diaClean = (horario.dia || '').toLowerCase().trim()
       if (agenda[diaClean]) {
         agenda[diaClean].push({
           ...horario,
-          clase: clase
+          clase: clase,
         })
       }
     })
   })
 
   // 2. Sort classes chronologically inside each day
-  Object.keys(agenda).forEach(dia => {
+  Object.keys(agenda).forEach((dia) => {
     agenda[dia].sort((a, b) => {
       const minA = timeToMinutes(a.hora_inicio)
       const minB = timeToMinutes(b.hora_inicio)
@@ -268,28 +274,32 @@ function renderCalendarView() {
         </div>
       </div>
       <div class="weekly-schedule-grid ${hideEmptyClass}">
-        ${diasSemana.map(dia => {
-          const clasesDia = agenda[dia]
-          const label = diasLabels[dia]
-          const isEmptyClass = clasesDia.length === 0 ? 'is-empty' : ''
-          
-          return `
+        ${diasSemana
+          .map((dia) => {
+            const clasesDia = agenda[dia]
+            const label = diasLabels[dia]
+            const isEmptyClass = clasesDia.length === 0 ? 'is-empty' : ''
+
+            return `
             <div class="schedule-day-column ${isEmptyClass}" data-day="${dia}">
               <div class="schedule-day-header">
                 <span class="day-label">${label}</span>
                 <span class="day-count-badge bg-primary bg-opacity-10 text-primary">${clasesDia.length}</span>
               </div>
               <div class="schedule-blocks-container">
-                ${clasesDia.length > 0 ? clasesDia.map(item => {
-                  const c = item.clase
-                  const estado = c.estado || 'activa'
-                  const start = formatHora(item.hora_inicio)
-                  const end = formatHora(item.hora_fin)
-                  const salon = state.salones.find(s => s.id === item.salon_id)
-                  const salonNombre = salon ? salon.nombre : 'Online/Otro'
-                  const borderClass = `border-accent-${estado === 'activa' ? 'success' : estado === 'suspendida' ? 'warning' : 'secondary'}`
-                  
-                  return `
+                ${
+                  clasesDia.length > 0
+                    ? clasesDia
+                        .map((item) => {
+                          const c = item.clase
+                          const estado = c.estado || 'activa'
+                          const start = formatHora(item.hora_inicio)
+                          const end = formatHora(item.hora_fin)
+                          const salon = state.salones.find((s) => s.id === item.salon_id)
+                          const salonNombre = salon ? salon.nombre : 'Online/Otro'
+                          const borderClass = `border-accent-${estado === 'activa' ? 'success' : estado === 'suspendida' ? 'warning' : 'secondary'}`
+
+                          return `
                     <div class="time-block-card p-2 rounded mb-2 border-start-accent ${borderClass}" data-id="${c.id}" style="cursor: pointer;">
                       <div class="d-flex align-items-center justify-content-between mb-1">
                         <span class="time-range small fw-bold text-primary"><i class="bi bi-clock me-1"></i>${start} - ${end}</span>
@@ -297,21 +307,25 @@ function renderCalendarView() {
                       </div>
                       <div class="fw-semibold text-truncate small class-name" style="font-size: 0.9rem;">${escapeHTML(c.nombre)}</div>
                       <div class="d-flex justify-content-between align-items-center mt-1 extra-small text-muted">
-                        <span class="text-truncate" style="max-width: 60%;"><i class="bi bi-person me-0.5"></i>${escapeHTML(state.maestros.find(m => m.id === c.maestro_principal_id)?.nombre_completo || 'Sin maestro')}</span>
+                        <span class="text-truncate" style="max-width: 60%;"><i class="bi bi-person me-0.5"></i>${escapeHTML(state.maestros.find((m) => m.id === c.maestro_principal_id)?.nombre_completo || 'Sin maestro')}</span>
                         <span class="badge bg-body-secondary text-body-secondary-custom px-1.5 py-0.5 rounded" style="font-size: 0.7rem;"><i class="bi bi-geo-alt me-0.5"></i>${escapeHTML(salonNombre)}</span>
                       </div>
                     </div>
                   `
-                }).join('') : `
+                        })
+                        .join('')
+                    : `
                   <div class="empty-day-block text-muted text-center py-4 small">
                     <i class="bi bi-calendar-minus d-block mb-1 opacity-50"></i>
                     Sin clases
                   </div>
-                `}
+                `
+                }
               </div>
             </div>
           `
-        }).join('')}
+          })
+          .join('')}
       </div>
     </div>
   `
@@ -329,37 +343,42 @@ async function openClasePerfilModal(clase) {
         <div class="spinner-border text-primary mb-3" role="status"></div>
         <p class="text-muted">Cargando perfil de la clase...</p>
       </div>
-    `
+    `,
   })
 
   try {
     // 1. Fetch enrolled students
     const inscritos = await obtenerAlumnosInscritos(clase.id)
     const alumnosInscritosCount = inscritos.length
-    
+
     // 2. Fetch associated info
-    const maestro = state.maestros.find(m => m.id === clase.maestro_principal_id)
-    const maestroNombre = maestro ? (maestro.nombre_completo || maestro.nombre) : 'Sin maestro'
-    const suplente = clase.tiene_suplente || clase.maestro_suplente_id ? state.maestros.find(m => m.id === clase.maestro_suplente_id) : null
-    const suplenteNombre = suplente ? (suplente.nombre_completo || suplente.nombre) : null
-    const programa = state.programas.find(p => p.id === clase.programa_id)
+    const maestro = state.maestros.find((m) => m.id === clase.maestro_principal_id)
+    const maestroNombre = maestro ? maestro.nombre_completo || maestro.nombre : 'Sin maestro'
+    const suplente =
+      clase.tiene_suplente || clase.maestro_suplente_id
+        ? state.maestros.find((m) => m.id === clase.maestro_suplente_id)
+        : null
+    const suplenteNombre = suplente ? suplente.nombre_completo || suplente.nombre : null
+    const programa = state.programas.find((p) => p.id === clase.programa_id)
     const programaNombre = programa ? programa.nombre : 'Sin programa'
-    
+
     // 3. Render Schedules
     let horariosListHTML = ''
     if (clase.horarios && clase.horarios.length > 0) {
-      horariosListHTML = clase.horarios.map(h => {
-        const diaLabel = h.dia.charAt(0).toUpperCase() + h.dia.slice(1)
-        const salon = state.salones.find(s => s.id === h.salon_id)
-        const salonNombre = salon ? salon.nombre : 'Online/Otro'
-        return `
+      horariosListHTML = clase.horarios
+        .map((h) => {
+          const diaLabel = h.dia.charAt(0).toUpperCase() + h.dia.slice(1)
+          const salon = state.salones.find((s) => s.id === h.salon_id)
+          const salonNombre = salon ? salon.nombre : 'Online/Otro'
+          return `
           <div class="d-flex align-items-center gap-2 mb-1">
             <span class="badge bg-secondary-subtle text-secondary-custom py-1" style="font-size: 0.75rem; min-width: 60px;">${diaLabel}</span>
             <span class="small fw-semibold">${formatHora(h.hora_inicio)} - ${formatHora(h.hora_fin)}</span>
             <span class="small text-muted">• <i class="bi bi-geo-alt me-0.5"></i>${escapeHTML(salonNombre)}</span>
           </div>
         `
-      }).join('')
+        })
+        .join('')
     } else {
       horariosListHTML = '<div class="text-muted small">Sin horarios asignados</div>'
     }
@@ -369,12 +388,13 @@ async function openClasePerfilModal(clase) {
     if (inscritos && inscritos.length > 0) {
       alumnosInscritosListHTML = `
         <div class="list-group list-group-flush border-top">
-          ${inscritos.map(ins => {
-            const a = ins.alumno
-            if (!a) return ''
-            const aInitials = getInitials(a.nombre_completo || a.nombre || '?')
-            const color = getConsistentColor(a.id)
-            return `
+          ${inscritos
+            .map((ins) => {
+              const a = ins.alumno
+              if (!a) return ''
+              const aInitials = getInitials(a.nombre_completo || a.nombre || '?')
+              const color = getConsistentColor(a.id)
+              return `
               <div class="list-group-item d-flex align-items-center gap-3 py-2 px-3 border-bottom-0 bg-transparent">
                 <div class="avatar-compact text-white d-flex align-items-center justify-content-center rounded-circle" style="width: 32px; height: 32px; font-size: 0.85rem; background-color: ${color}; font-weight:600;">
                   ${aInitials}
@@ -385,7 +405,8 @@ async function openClasePerfilModal(clase) {
                 </div>
               </div>
             `
-          }).join('')}
+            })
+            .join('')}
         </div>
       `
     } else {
@@ -515,7 +536,7 @@ async function openClasePerfilModal(clase) {
               salones: state.salones,
               programas: state.programas,
               alumnos: state.alumnos,
-              onSuccess: () => renderClasesView(state.container)
+              onSuccess: () => renderClasesView(state.container),
             })
           }, 250)
         })
@@ -532,7 +553,7 @@ async function openClasePerfilModal(clase) {
         modalBody.querySelector('.btn-profile-close')?.addEventListener('click', () => {
           AppModal.close()
         })
-      }
+      },
     })
   } catch (error) {
     console.error(error)
@@ -545,13 +566,44 @@ function attachGlobalEvents(container) {
   container.querySelector('#btn-help-clases')?.addEventListener('click', () => {
     HelpPanel.open({
       title: 'Clases',
-      intro: 'Gestión completa de clases: creación, horarios, asignación de maestros, inscripción de alumnos y control de capacidad.',
+      intro:
+        'Gestión completa de clases: creación, horarios, asignación de maestros, inscripción de alumnos y control de capacidad.',
       sections: [
-        { icon: 'bi-easel2',           title: 'Lista de clases',          description: 'Todas las clases del sistema. Filtrá por instrumento, nivel y estado. Las activas aparecen primero.',                                                          color: '#3b82f6' },
-        { icon: 'bi-clock',            title: 'Horarios',                 description: 'Cada clase puede tener múltiples horarios semanales. El sistema detecta conflictos de salón y de maestro automáticamente.',                                    color: '#6366f1' },
-        { icon: 'bi-people',           title: 'Inscripción de alumnos',   description: '"Grupal": todos comparten el horario. "Rotativa (Turnos)": cada alumno tiene su propio horario individual dentro de la clase.',                               color: '#10b981' },
-        { icon: 'bi-bar-chart',        title: 'Capacidad',                description: 'Barra de ocupación: inscriptos vs capacidad máxima. Rojo cuando supera el 90%.',                                                                               color: '#f59e0b' },
-        { icon: 'bi-person-workspace', title: 'Maestro titular y suplente', description: 'Cada clase tiene un maestro principal (obligatorio) y puede tener suplente (opcional). Ambos aparecen en el perfil del maestro.',                            color: '#6b7280' },
+        {
+          icon: 'bi-easel2',
+          title: 'Lista de clases',
+          description:
+            'Todas las clases del sistema. Filtrá por instrumento, nivel y estado. Las activas aparecen primero.',
+          color: '#3b82f6',
+        },
+        {
+          icon: 'bi-clock',
+          title: 'Horarios',
+          description:
+            'Cada clase puede tener múltiples horarios semanales. El sistema detecta conflictos de salón y de maestro automáticamente.',
+          color: '#6366f1',
+        },
+        {
+          icon: 'bi-people',
+          title: 'Inscripción de alumnos',
+          description:
+            '"Grupal": todos comparten el horario. "Rotativa (Turnos)": cada alumno tiene su propio horario individual dentro de la clase.',
+          color: '#10b981',
+        },
+        {
+          icon: 'bi-bar-chart',
+          title: 'Capacidad',
+          description:
+            'Barra de ocupación: inscriptos vs capacidad máxima. Rojo cuando supera el 90%.',
+          color: '#f59e0b',
+        },
+        {
+          icon: 'bi-person-workspace',
+          title: 'Maestro titular y suplente',
+          description:
+            'Cada clase tiene un maestro principal (obligatorio) y puede tener suplente (opcional). Ambos aparecen en el perfil del maestro.',
+          color: '#6b7280',
+        },
       ],
     })
   })
@@ -562,7 +614,7 @@ function attachGlobalEvents(container) {
       salones: state.salones,
       programas: state.programas,
       alumnos: state.alumnos,
-      onSuccess: () => renderClasesView(container)
+      onSuccess: () => renderClasesView(container),
     })
   })
 
@@ -602,7 +654,7 @@ function attachGlobalEvents(container) {
     const card = e.target.closest('.list-group-item[data-id], .time-block-card[data-id]')
     if (card) {
       const id = card.dataset.id
-      const clase = state.clasesOriginales.find(c => c.id === id)
+      const clase = state.clasesOriginales.find((c) => c.id === id)
       if (clase) {
         openClasePerfilModal(clase)
       }
@@ -614,8 +666,11 @@ function applyFilters() {
   const searchTerm = state.container.querySelector('#buscar')?.value.trim().toLowerCase() || ''
   const filtroEstado = state.container.querySelector('#filtroEstado')?.value || 'todos'
 
-  state.clases = state.clasesOriginales.filter(c => {
-    const matchSearch = !searchTerm || c.nombre.toLowerCase().includes(searchTerm) || c.instrumento.toLowerCase().includes(searchTerm)
+  state.clases = state.clasesOriginales.filter((c) => {
+    const matchSearch =
+      !searchTerm ||
+      c.nombre.toLowerCase().includes(searchTerm) ||
+      c.instrumento.toLowerCase().includes(searchTerm)
     const matchEstado = filtroEstado === 'todos' || c.estado === filtroEstado
     return matchSearch && matchEstado
   })
@@ -627,7 +682,7 @@ function applyFilters() {
 }
 
 function openDeleteModal(id) {
-  const clase = state.clasesOriginales.find(c => c.id === id)
+  const clase = state.clasesOriginales.find((c) => c.id === id)
   if (!clase) return
 
   AppModal.open({
@@ -644,6 +699,6 @@ function openDeleteModal(id) {
         AppToast.error(err.message)
         return false
       }
-    }
+    },
   })
 }

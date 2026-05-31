@@ -1,4 +1,10 @@
-import { obtenerProgresos, obtenerProgreso, obtenerBoletinAlumno, getPromedioAlumno, getPromedioClase } from '../api/progresosApi.js'
+import {
+  obtenerProgresos,
+  obtenerProgreso,
+  obtenerBoletinAlumno,
+  getPromedioAlumno,
+  getPromedioClase,
+} from '../api/progresosApi.js'
 import { calcularPromedio } from '../utils/progresosUtils.js'
 
 export class ProgresosHook {
@@ -18,12 +24,12 @@ export class ProgresosHook {
   subscribe(callback) {
     this.listeners.push(callback)
     return () => {
-      this.listeners = this.listeners.filter(l => l !== callback)
+      this.listeners = this.listeners.filter((l) => l !== callback)
     }
   }
 
   notifyListeners() {
-    this.listeners.forEach(listener => {
+    this.listeners.forEach((listener) => {
       listener({
         progresos: this.getFilteredProgresos(),
         progresoActual: this.progresoActual,
@@ -113,7 +119,7 @@ export class ProgresosHook {
   }
 
   getById(id) {
-    return this.progresos.find(p => p.id === id) || null
+    return this.progresos.find((p) => p.id === id) || null
   }
 
   async getBoletin(alumnoId) {
@@ -124,28 +130,29 @@ export class ProgresosHook {
     let result = [...this.progresos]
 
     if (this.filtroAlumno) {
-      result = result.filter(p => p.alumno_id === this.filtroAlumno)
+      result = result.filter((p) => p.alumno_id === this.filtroAlumno)
     }
 
     if (this.filtroClase) {
-      result = result.filter(p => p.clase_id === this.filtroClase)
+      result = result.filter((p) => p.clase_id === this.filtroClase)
     }
 
     if (this.filtroTipo) {
-      result = result.filter(p => p.tipo_evaluacion === this.filtroTipo)
+      result = result.filter((p) => p.tipo_evaluacion === this.filtroTipo)
     }
 
     if (this.filtroEstado) {
-      result = result.filter(p => p.estado === this.filtroEstado)
+      result = result.filter((p) => p.estado === this.filtroEstado)
     }
 
     if (this.searchTerm) {
       const term = this.searchTerm.toLowerCase()
-      result = result.filter(p =>
-        (p.alumno_id || '').toLowerCase().includes(term) ||
-        (p.clase_id || '').toLowerCase().includes(term) ||
-        (p.observaciones || '').toLowerCase().includes(term) ||
-        (p.tipo_evaluacion || '').toLowerCase().includes(term)
+      result = result.filter(
+        (p) =>
+          (p.alumno_id || '').toLowerCase().includes(term) ||
+          (p.clase_id || '').toLowerCase().includes(term) ||
+          (p.observaciones || '').toLowerCase().includes(term) ||
+          (p.tipo_evaluacion || '').toLowerCase().includes(term),
       )
     }
 

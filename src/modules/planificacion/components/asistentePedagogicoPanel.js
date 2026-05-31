@@ -13,8 +13,11 @@ import { obtenerCoberturaPorAlumno } from '../api/coberturaApi.js'
 import { sugerirPlan, analizarEnfoque } from '../api/groqService.js'
 import { AppToast } from '../../../shared/components/AppToast.js'
 
-const escapeHTML = s => String(s).replace(/[&<>"']/g, c =>
-  ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]))
+const escapeHTML = (s) =>
+  String(s).replace(
+    /[&<>"']/g,
+    (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c],
+  )
 
 export async function renderAsistentePedagogicoPanel(container) {
   container.innerHTML = `
@@ -90,7 +93,9 @@ export async function renderAsistentePedagogicoPanel(container) {
   }
 
   // Get maestro context
-  const { data: { user } } = await supabase.auth.getUser()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
   const { data: maestro } = await supabase
     .from('maestros')
     .select('id, instrumento')
@@ -106,32 +111,36 @@ export async function renderAsistentePedagogicoPanel(container) {
     .eq('clases.maestro_principal_id', state.maestroId)
 
   const alumnosMap = {}
-  ;(inscripciones || []).forEach(i => {
+  ;(inscripciones || []).forEach((i) => {
     if (i.alumnos && i.clases) {
       alumnosMap[i.alumnos.id] = {
         ...i.alumnos,
         instrumento: i.clases.instrumento,
-        nivel: i.clases.plan_estudio
+        nivel: i.clases.plan_estudio,
       }
     }
   })
   state.alumnos = Object.values(alumnosMap)
 
   const sel = container.querySelector('#ap-alumno-sel')
-  sel.innerHTML = `<option value="">Seleccionar alumno...</option>` +
-    state.alumnos.map(a => `<option value="${a.id}">${escapeHTML(a.nombre_completo)}</option>`).join('')
+  sel.innerHTML =
+    `<option value="">Seleccionar alumno...</option>` +
+    state.alumnos
+      .map((a) => `<option value="${a.id}">${escapeHTML(a.nombre_completo)}</option>`)
+      .join('')
 
   sel.addEventListener('change', async () => {
     const id = sel.value
     if (!id) {
-      container.querySelector('#ap-brechas-content').innerHTML = '<p class="text-muted small">Seleccioná un alumno.</p>'
+      container.querySelector('#ap-brechas-content').innerHTML =
+        '<p class="text-muted small">Seleccioná un alumno.</p>'
       container.querySelector('#ap-btn-draft').disabled = true
       state.selectedAlumnoId = null
       state.selectedAlumno = null
       return
     }
     state.selectedAlumnoId = id
-    state.selectedAlumno = state.alumnos.find(a => a.id === id)
+    state.selectedAlumno = state.alumnos.find((a) => a.id === id)
     container.querySelector('#ap-btn-draft').disabled = false
     await _renderBrechas()
   })
@@ -142,9 +151,10 @@ export async function renderAsistentePedagogicoPanel(container) {
 
     try {
       const alumno = state.selectedAlumno
-      state.curriculo = (alumno.instrumento && alumno.nivel)
-        ? await obtenerCurriculo(alumno.instrumento, alumno.nivel)
-        : null
+      state.curriculo =
+        alumno.instrumento && alumno.nivel
+          ? await obtenerCurriculo(alumno.instrumento, alumno.nivel)
+          : null
 
       if (!state.curriculo) {
         content.innerHTML = `<div class="alert alert-secondary py-2 small">Sin guía curricular definida para <strong>${escapeHTML(alumno.instrumento || 'este instrumento')}</strong> — <strong>${escapeHTML(alumno.nivel || 'este nivel')}</strong>.</div>`
@@ -153,16 +163,18 @@ export async function renderAsistentePedagogicoPanel(container) {
 
       state.cobertura = await obtenerCoberturaPorAlumno(state.selectedAlumnoId)
       const cobMap = {}
-      state.cobertura.forEach(c => {
+      state.cobertura.forEach((c) => {
         const objId = c.curriculo_objetivos?.id || c.objetivo_id
         if (objId) cobMap[objId] = c
       })
 
-      const todosObjs = state.curriculo.curriculo_pilares.flatMap(p =>
-        p.curriculo_objetivos.map(o => ({ ...o, pilar_nombre: p.nombre }))
+      const todosObjs = state.curriculo.curriculo_pilares.flatMap((p) =>
+        p.curriculo_objetivos.map((o) => ({ ...o, pilar_nombre: p.nombre })),
       )
-      const logrados  = todosObjs.filter(o => cobMap[o.id]?.nivel === 'logrado').length
-      const enProceso = todosObjs.filter(o => cobMap[o.id] && cobMap[o.id].nivel !== 'logrado').length
+      const logrados = todosObjs.filter((o) => cobMap[o.id]?.nivel === 'logrado').length
+      const enProceso = todosObjs.filter(
+        (o) => cobMap[o.id] && cobMap[o.id].nivel !== 'logrado',
+      ).length
       const noIniciados = todosObjs.length - logrados - enProceso
 
       content.innerHTML = `
@@ -178,28 +190,31 @@ export async function renderAsistentePedagogicoPanel(container) {
               <tr><th>Pilar</th><th>Objetivo</th><th>Estado</th><th>Fuente</th></tr>
             </thead>
             <tbody>
-              ${todosObjs.map(o => {
-                const cob = cobMap[o.id]
-                const nivel = cob?.nivel || 'no_iniciado'
-                const badge = nivel === 'logrado'
-                  ? '<span class="badge bg-success">✓ Logrado</span>'
-                  : nivel === 'en_proceso'
-                    ? '<span class="badge bg-warning text-dark">⟳ En proceso</span>'
-                    : nivel === 'iniciando'
-                      ? '<span class="badge bg-info text-dark">Iniciando</span>'
-                      : '<span class="badge bg-secondary">○ No iniciado</span>'
-                const fuenteBadge = cob
-                  ? (cob.confirmado
-                    ? '<i class="bi bi-check-circle text-success" title="Confirmado por maestro"></i>'
-                    : '<i class="bi bi-stars text-warning" title="Sugerido por IA"></i>')
-                  : '—'
-                return `<tr>
+              ${todosObjs
+                .map((o) => {
+                  const cob = cobMap[o.id]
+                  const nivel = cob?.nivel || 'no_iniciado'
+                  const badge =
+                    nivel === 'logrado'
+                      ? '<span class="badge bg-success">✓ Logrado</span>'
+                      : nivel === 'en_proceso'
+                        ? '<span class="badge bg-warning text-dark">⟳ En proceso</span>'
+                        : nivel === 'iniciando'
+                          ? '<span class="badge bg-info text-dark">Iniciando</span>'
+                          : '<span class="badge bg-secondary">○ No iniciado</span>'
+                  const fuenteBadge = cob
+                    ? cob.confirmado
+                      ? '<i class="bi bi-check-circle text-success" title="Confirmado por maestro"></i>'
+                      : '<i class="bi bi-stars text-warning" title="Sugerido por IA"></i>'
+                    : '—'
+                  return `<tr>
                   <td class="text-muted">${escapeHTML(o.pilar_nombre)}</td>
                   <td>${escapeHTML(o.descripcion)}</td>
                   <td>${badge}</td>
                   <td class="text-center">${fuenteBadge}</td>
                 </tr>`
-              }).join('')}
+                })
+                .join('')}
             </tbody>
           </table>
         </div>`
@@ -220,15 +235,15 @@ export async function renderAsistentePedagogicoPanel(container) {
 
     try {
       const alumno = state.selectedAlumno
-      const todosObjs = state.curriculo?.curriculo_pilares?.flatMap(p =>
-        p.curriculo_objetivos.map(o => o)
-      ) || []
+      const todosObjs =
+        state.curriculo?.curriculo_pilares?.flatMap((p) => p.curriculo_objetivos.map((o) => o)) ||
+        []
       const cobMap = {}
-      state.cobertura.forEach(c => {
+      state.cobertura.forEach((c) => {
         const objId = c.curriculo_objetivos?.id || c.objetivo_id
         if (objId) cobMap[objId] = c
       })
-      const pendientes = todosObjs.filter(o => !cobMap[o.id] || cobMap[o.id].nivel !== 'logrado')
+      const pendientes = todosObjs.filter((o) => !cobMap[o.id] || cobMap[o.id].nivel !== 'logrado')
 
       const { data: planesRecientes } = await supabase
         .from('planificaciones')
@@ -237,16 +252,16 @@ export async function renderAsistentePedagogicoPanel(container) {
         .eq('estado', 'ejecutado')
         .order('created_at', { ascending: false })
         .limit(3)
-      const ultimosTemas = (planesRecientes || []).map(p => p.tema)
+      const ultimosTemas = (planesRecientes || []).map((p) => p.tema)
 
       const result = await sugerirPlan(
         {
           nombre: alumno.nombre_completo,
           instrumento: alumno.instrumento || '(sin instrumento)',
-          nivel: alumno.nivel || '(sin nivel)'
+          nivel: alumno.nivel || '(sin nivel)',
         },
         pendientes,
-        ultimosTemas
+        ultimosTemas,
       )
 
       if (!result.success || !result.plan) throw new Error(result.error || 'Sin respuesta de la IA')
@@ -264,14 +279,16 @@ export async function renderAsistentePedagogicoPanel(container) {
             <div class="mb-2"><span class="fw-semibold">Tema:</span> ${escapeHTML(plan.tema || '')}</div>
             <div class="mb-2"><span class="fw-semibold">Objetivos:</span> ${escapeHTML(plan.objetivos || '')}</div>
             <div class="mb-2"><span class="fw-semibold">Contenido:</span> ${escapeHTML(plan.contenido || '')}</div>
-            ${plan.recursos?.length ? `<div><span class="fw-semibold">Recursos:</span> ${plan.recursos.map(r => `<span class="badge bg-light text-dark border me-1">${escapeHTML(r)}</span>`).join('')}</div>` : ''}
+            ${plan.recursos?.length ? `<div><span class="fw-semibold">Recursos:</span> ${plan.recursos.map((r) => `<span class="badge bg-light text-dark border me-1">${escapeHTML(r)}</span>`).join('')}</div>` : ''}
           </div>
         </div>`
 
       container.querySelector('#ap-btn-save-draft')?.addEventListener('click', () => {
-        document.dispatchEvent(new CustomEvent('planificacion:nuevoPlan', {
-          detail: { tema: plan.tema, objetivos: plan.objetivos, contenido: plan.contenido }
-        }))
+        document.dispatchEvent(
+          new CustomEvent('planificacion:nuevoPlan', {
+            detail: { tema: plan.tema, objetivos: plan.objetivos, contenido: plan.contenido },
+          }),
+        )
         AppToast.success('Borrador listo — abrí "Nuevo plan" para completar los detalles')
       })
     } catch (err) {
@@ -306,11 +323,14 @@ export async function renderAsistentePedagogicoPanel(container) {
       let curriculo = null
       try {
         curriculo = instrumento ? await obtenerCurriculo(instrumento, null) : null
-      } catch (_) { /* no curriculum is ok */ }
+      } catch (_) {
+        /* no curriculum is ok */
+      }
 
-      const cobResumen = state.selectedAlumnoId && state.selectedAlumno
-        ? `Alumno seleccionado: ${state.selectedAlumno.nombre_completo}. ${state.cobertura.length} objetivos trabajados.`
-        : 'No hay alumno seleccionado.'
+      const cobResumen =
+        state.selectedAlumnoId && state.selectedAlumno
+          ? `Alumno seleccionado: ${state.selectedAlumno.nombre_completo}. ${state.cobertura.length} objetivos trabajados.`
+          : 'No hay alumno seleccionado.'
 
       const result = await analizarEnfoque(instrumento, planes || [], curriculo, cobResumen)
       if (!result.success) throw new Error(result.error || 'Sin respuesta de la IA')

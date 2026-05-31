@@ -108,7 +108,7 @@ export function createPortalRouter() {
     _currentRoute = fullRoute
 
     const routePart = fullRoute.split('?')[0]
-    
+
     let handler = handlers.get(routePart)
     let params = {}
 
@@ -151,15 +151,15 @@ export function createPortalRouter() {
         _activeTransition.skipTransition()
         _activeTransition = null
       }
-      
+
       const view = document.querySelector('.pm-view-content.active')
       if (view) {
         view.classList.remove('pm-animate-fade-in', 'pm-view-enter', 'pm-view-enter-active')
         void view.offsetWidth // force reflow
       }
-      
+
       callFn()
-      
+
       const newView = document.querySelector('.pm-view-content.active')
       if (newView) {
         newView.classList.add('pm-animate-fade-in')

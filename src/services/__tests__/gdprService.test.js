@@ -26,14 +26,14 @@ describe('gdprService', () => {
   it('deletes lesson plans', async () => {
     await deleteUserData('user-123', mockDatabase)
     const calls = mockDatabase.delete.mock.calls
-    const tables = calls.map(c => c[0])
+    const tables = calls.map((c) => c[0])
     expect(tables).toContain('lesson_plans')
   })
 
   it('deletes evaluations', async () => {
     await deleteUserData('user-123', mockDatabase)
     const calls = mockDatabase.delete.mock.calls
-    const tables = calls.map(c => c[0])
+    const tables = calls.map((c) => c[0])
     expect(tables).toContain('evaluations')
   })
 

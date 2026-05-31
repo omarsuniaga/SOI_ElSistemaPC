@@ -19,7 +19,7 @@ vi.mock('../../../../lib/supabaseClient.js', () => ({
               email: 'admin@example.com',
             },
           },
-        })
+        }),
       ),
     },
   },
@@ -44,7 +44,7 @@ describe('solicitudesPermisosView', () => {
 
     await renderSolicitudesPermisosView(container)
 
-    await new Promise(resolve => setTimeout(resolve, 100))
+    await new Promise((resolve) => setTimeout(resolve, 100))
 
     expect(container.textContent).toContain('No hay solicitudes pendientes')
   })
@@ -67,7 +67,7 @@ describe('solicitudesPermisosView', () => {
 
     await renderSolicitudesPermisosView(container)
 
-    await new Promise(resolve => setTimeout(resolve, 100))
+    await new Promise((resolve) => setTimeout(resolve, 100))
 
     expect(container.textContent).toContain('Prof. García')
     expect(container.textContent).toContain('garcia@example.com')
@@ -91,7 +91,7 @@ describe('solicitudesPermisosView', () => {
 
     await renderSolicitudesPermisosView(container)
 
-    await new Promise(resolve => setTimeout(resolve, 100))
+    await new Promise((resolve) => setTimeout(resolve, 100))
 
     expect(container.textContent).toContain('Registrar Alumnos')
     expect(container.textContent).toContain('Gestionar Clases')
@@ -99,12 +99,12 @@ describe('solicitudesPermisosView', () => {
 
   it('should show error when failing to load solicitudes', async () => {
     permisosApi.obtenerSolicitudesPendientes.mockRejectedValueOnce(
-      new Error('Database connection failed')
+      new Error('Database connection failed'),
     )
 
     await renderSolicitudesPermisosView(container)
 
-    await new Promise(resolve => setTimeout(resolve, 100))
+    await new Promise((resolve) => setTimeout(resolve, 100))
 
     expect(container.textContent).toContain('Error al cargar solicitudes')
   })
@@ -137,7 +137,7 @@ describe('solicitudesPermisosView', () => {
 
     await renderSolicitudesPermisosView(container)
 
-    await new Promise(resolve => setTimeout(resolve, 100))
+    await new Promise((resolve) => setTimeout(resolve, 100))
 
     expect(container.textContent).toContain('Prof. García')
     expect(container.textContent).toContain('Prof. López')

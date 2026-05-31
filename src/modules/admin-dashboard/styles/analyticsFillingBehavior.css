@@ -11,13 +11,13 @@
   transition: all 0.2s ease;
 }
 
-[data-bs-theme="light"] .analytics-widget {
+[data-bs-theme='light'] .analytics-widget {
   background: rgba(255, 255, 255, 0.7);
   border: 1px solid rgba(0, 0, 0, 0.08);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
-[data-bs-theme="dark"] .analytics-widget {
+[data-bs-theme='dark'] .analytics-widget {
   background: rgba(255, 255, 255, 0.02);
   border: 1px solid rgba(255, 255, 255, 0.08);
   box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.03);
@@ -48,10 +48,12 @@
   text-align: center;
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
-[data-bs-theme="light"] .stat-card {
+[data-bs-theme='light'] .stat-card {
   background: rgba(255, 255, 255, 0.7);
   border-color: rgba(0, 0, 0, 0.1);
   border-top: 1px solid rgba(0, 0, 0, 0.08);
@@ -60,12 +62,12 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
-[data-bs-theme="light"] .stat-card:hover {
+[data-bs-theme='light'] .stat-card:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
 }
 
-[data-bs-theme="dark"] .stat-card {
+[data-bs-theme='dark'] .stat-card {
   background: rgba(255, 255, 255, 0.03);
   border-color: rgba(255, 255, 255, 0.1);
   border-top: 1px solid rgba(255, 255, 255, 0.08);
@@ -74,15 +76,15 @@
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.01);
 }
 
-[data-bs-theme="dark"] .stat-card:hover {
+[data-bs-theme='dark'] .stat-card:hover {
   transform: translateY(-2px);
 }
 
-[data-bs-theme="light"] .stat-card {
+[data-bs-theme='light'] .stat-card {
   border-left-color: #2563eb;
 }
 
-[data-bs-theme="dark"] .stat-card {
+[data-bs-theme='dark'] .stat-card {
   border-left-color: #3b82f6;
 }
 
@@ -94,11 +96,11 @@
   margin-bottom: 0.5rem;
 }
 
-[data-bs-theme="light"] .stat-card .stat-label {
+[data-bs-theme='light'] .stat-card .stat-label {
   color: #6b7280;
 }
 
-[data-bs-theme="dark"] .stat-card .stat-label {
+[data-bs-theme='dark'] .stat-card .stat-label {
   color: #8b949e;
 }
 
@@ -117,12 +119,12 @@
   transition: all 0.2s ease;
 }
 
-[data-bs-theme="light"] .maestro-metrics-section {
+[data-bs-theme='light'] .maestro-metrics-section {
   background: rgba(255, 255, 255, 0.7);
   border: 1px solid rgba(0, 0, 0, 0.08);
 }
 
-[data-bs-theme="dark"] .maestro-metrics-section {
+[data-bs-theme='dark'] .maestro-metrics-section {
   background: rgba(255, 255, 255, 0.01);
   border: 1px solid rgba(255, 255, 255, 0.06);
 }
@@ -146,12 +148,12 @@
   border-bottom: 2px solid;
 }
 
-[data-bs-theme="light"] .metrics-table thead {
+[data-bs-theme='light'] .metrics-table thead {
   background: rgba(0, 0, 0, 0.03);
   border-bottom-color: rgba(0, 0, 0, 0.08);
 }
 
-[data-bs-theme="dark"] .metrics-table thead {
+[data-bs-theme='dark'] .metrics-table thead {
   background: rgba(255, 255, 255, 0.03);
   border-bottom-color: rgba(255, 255, 255, 0.08);
 }
@@ -165,11 +167,11 @@
   letter-spacing: 0.05em;
 }
 
-[data-bs-theme="light"] .metrics-table th {
+[data-bs-theme='light'] .metrics-table th {
   color: #6b7280;
 }
 
-[data-bs-theme="dark"] .metrics-table th {
+[data-bs-theme='dark'] .metrics-table th {
   color: #8b949e;
 }
 
@@ -179,11 +181,11 @@
   vertical-align: middle;
 }
 
-[data-bs-theme="light"] .metrics-table td {
+[data-bs-theme='light'] .metrics-table td {
   border-bottom-color: rgba(0, 0, 0, 0.05);
 }
 
-[data-bs-theme="dark"] .metrics-table td {
+[data-bs-theme='dark'] .metrics-table td {
   border-bottom-color: rgba(255, 255, 255, 0.05);
 }
 
@@ -198,13 +200,13 @@
   transition: all 0.2s ease;
 }
 
-[data-bs-theme="light"] .error {
+[data-bs-theme='light'] .error {
   background: rgba(220, 38, 38, 0.04);
   border: 1px solid rgba(220, 38, 38, 0.15);
   color: #dc2626;
 }
 
-[data-bs-theme="dark"] .error {
+[data-bs-theme='dark'] .error {
   background: rgba(239, 68, 68, 0.03);
   border: 1px solid rgba(239, 68, 68, 0.15);
   color: #ef4444;
@@ -216,11 +218,11 @@
   font-size: 0.9rem;
 }
 
-[data-bs-theme="light"] .no-data {
+[data-bs-theme='light'] .no-data {
   color: #9ca3af;
 }
 
-[data-bs-theme="dark"] .no-data {
+[data-bs-theme='dark'] .no-data {
   color: #8b949e;
 }
 
@@ -234,11 +236,11 @@
   gap: 0.75rem;
 }
 
-[data-bs-theme="light"] .loading {
+[data-bs-theme='light'] .loading {
   color: #9ca3af;
 }
 
-[data-bs-theme="dark"] .loading {
+[data-bs-theme='dark'] .loading {
   color: #8b949e;
 }
 

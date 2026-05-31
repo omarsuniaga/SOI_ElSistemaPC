@@ -11,8 +11,8 @@ function normalizeSalon(s) {
     is_active: s.is_active ?? s.isActive ?? s.activo ?? true,
     capacidad: parseInt(s.capacidad) || 20,
     piso: s.piso !== undefined && s.piso !== null ? parseInt(s.piso) : null,
-    equipamiento: Array.isArray(s.equipamiento) ? s.equipamiento.join(', ') : (s.equipamiento || ''),
-    descripcion: s.descripcion || ''
+    equipamiento: Array.isArray(s.equipamiento) ? s.equipamiento.join(', ') : s.equipamiento || '',
+    descripcion: s.descripcion || '',
   }
 }
 
@@ -31,11 +31,7 @@ export async function obtenerSalones() {
 }
 
 export async function obtenerSalon(id) {
-  const { data, error } = await supabase
-    .from('salones')
-    .select('*')
-    .eq('id', id)
-    .single()
+  const { data, error } = await supabase.from('salones').select('*').eq('id', id).single()
 
   if (error) {
     console.error('Error cargando salon:', error.message)
@@ -75,18 +71,21 @@ export async function crearSalon(salon) {
     ubicacion: (salon.ubicacion || '').trim(),
     piso: salon.piso !== undefined ? parseInt(salon.piso) : null,
     condicion_fisica: salon.condicion_fisica || 'buena',
-    equipamiento: typeof salon.equipamiento === 'string' 
-      ? salon.equipamiento.split(',').map(item => item.trim()).filter(Boolean)
-      : (Array.isArray(salon.equipamiento) ? salon.equipamiento : []),
+    equipamiento:
+      typeof salon.equipamiento === 'string'
+        ? salon.equipamiento
+            .split(',')
+            .map((item) => item.trim())
+            .filter(Boolean)
+        : Array.isArray(salon.equipamiento)
+          ? salon.equipamiento
+          : [],
     descripcion: (salon.descripcion || '').trim(),
     is_active: salon.is_active !== undefined ? salon.is_active : true,
-    responsable_id: salon.responsable_id || null
+    responsable_id: salon.responsable_id || null,
   }
 
-  const { data, error } = await supabase
-    .from('salones')
-    .insert([datosLimpios])
-    .select()
+  const { data, error } = await supabase.from('salones').insert([datosLimpios]).select()
 
   if (error) {
     if (error.code === '23505') {
@@ -109,14 +108,16 @@ export async function actualizarSalon(id, actualizaciones) {
       .from('salones')
       .select('id, nombre, codigo_salon')
       .neq('id', id)
-    
+
     if (existentes) {
       if (nombre) {
-        const mismoNombre = existentes.find(s => s.nombre.toLowerCase() === nombre.toLowerCase())
+        const mismoNombre = existentes.find((s) => s.nombre.toLowerCase() === nombre.toLowerCase())
         if (mismoNombre) throw new Error('Ya existe otro salón con ese nombre')
       }
       if (codigo) {
-        const mismoCodigo = existentes.find(s => s.codigo_salon?.toLowerCase() === codigo.toLowerCase())
+        const mismoCodigo = existentes.find(
+          (s) => s.codigo_salon?.toLowerCase() === codigo.toLowerCase(),
+        )
         if (mismoCodigo) throw new Error('Ya existe otro salón con ese código')
       }
     }
@@ -125,14 +126,22 @@ export async function actualizarSalon(id, actualizaciones) {
   const datosActualizacion = { ...actualizaciones }
   if (nombre) datosActualizacion.nombre = nombre
   if (codigo) datosActualizacion.codigo_salon = codigo
-  
-  if (datosActualizacion.capacidad) datosActualizacion.capacidad = parseInt(datosActualizacion.capacidad)
-  if (datosActualizacion.piso !== undefined) datosActualizacion.piso = parseInt(datosActualizacion.piso)
+
+  if (datosActualizacion.capacidad)
+    datosActualizacion.capacidad = parseInt(datosActualizacion.capacidad)
+  if (datosActualizacion.piso !== undefined)
+    datosActualizacion.piso = parseInt(datosActualizacion.piso)
 
   if (datosActualizacion.equipamiento !== undefined) {
-    datosActualizacion.equipamiento = typeof datosActualizacion.equipamiento === 'string'
-      ? datosActualizacion.equipamiento.split(',').map(item => item.trim()).filter(Boolean)
-      : (Array.isArray(datosActualizacion.equipamiento) ? datosActualizacion.equipamiento : [])
+    datosActualizacion.equipamiento =
+      typeof datosActualizacion.equipamiento === 'string'
+        ? datosActualizacion.equipamiento
+            .split(',')
+            .map((item) => item.trim())
+            .filter(Boolean)
+        : Array.isArray(datosActualizacion.equipamiento)
+          ? datosActualizacion.equipamiento
+          : []
   }
 
   datosActualizacion.updated_at = new Date().toISOString()

@@ -9,9 +9,9 @@
 import { detectContradictions } from '../utils/observationParser.js'
 
 const ESTADO_LABELS = {
-  LOGRADO:     { label: 'Logrado',     color: 'var(--pm-success, #198754)', bg: '#19875418' },
+  LOGRADO: { label: 'Logrado', color: 'var(--pm-success, #198754)', bg: '#19875418' },
   EN_PROGRESO: { label: 'En Progreso', color: 'var(--pm-primary, #0d6efd)', bg: '#0d6efd18' },
-  INICIADO:    { label: 'Iniciado',    color: 'var(--pm-muted,   #6c757d)', bg: '#6c757d18' },
+  INICIADO: { label: 'Iniciado', color: 'var(--pm-muted,   #6c757d)', bg: '#6c757d18' },
 }
 
 const ESTADOS_CYCLE = ['LOGRADO', 'EN_PROGRESO', 'INICIADO']
@@ -27,9 +27,9 @@ function esc(str) {
 }
 
 const ALERT_TYPE_LABELS = {
-  CONDUCTA:          { label: 'conducta',           icon: '🚨' },
-  ATENCION:          { label: 'atención',            icon: '🔔' },
-  RIESGO_PEDAGOGICO: { label: 'riesgo pedagógico',  icon: '📉' },
+  CONDUCTA: { label: 'conducta', icon: '🚨' },
+  ATENCION: { label: 'atención', icon: '🔔' },
+  RIESGO_PEDAGOGICO: { label: 'riesgo pedagógico', icon: '📉' },
 }
 
 /**
@@ -63,7 +63,7 @@ export function createProgressPreviewPanel(container, { onConfirm, onCancel }) {
 
   /** Returns the scope chip HTML based on the record's scope field. */
   function _scopeChip(rec) {
-    const scope   = rec.scope || (rec.es_colectivo ? 'grupo' : 'individual')
+    const scope = rec.scope || (rec.es_colectivo ? 'grupo' : 'individual')
     const alumnos = rec.alumnos || []
 
     if (rec.requires_confirmation) {
@@ -90,14 +90,17 @@ export function createProgressPreviewPanel(container, { onConfirm, onCancel }) {
 
   function _renderRecord(rec, idx) {
     const estadoInfo = ESTADO_LABELS[rec.estado] ?? ESTADO_LABELS.EN_PROGRESO
-    const notaStr    = rec.nota ? ` · ${esc(rec.nota)}/5` : ''
-    const tareaStr   = rec.tarea ? `<div class="ppp-tarea">📝 ${esc(rec.tarea)}</div>` : ''
-    const isAlerta   = !!rec.alerta
-    const scopeChip  = _scopeChip(rec)
+    const notaStr = rec.nota ? ` · ${esc(rec.nota)}/5` : ''
+    const tareaStr = rec.tarea ? `<div class="ppp-tarea">📝 ${esc(rec.tarea)}</div>` : ''
+    const isAlerta = !!rec.alerta
+    const scopeChip = _scopeChip(rec)
 
     if (isAlerta) {
       // ── Alert card ──────────────────────────────────────────────────────────
-      const alertLabel = ALERT_TYPE_LABELS[rec.alertaTipo] ?? { label: 'Alerta pedagógica', icon: '⚠️' }
+      const alertLabel = ALERT_TYPE_LABELS[rec.alertaTipo] ?? {
+        label: 'Alerta pedagógica',
+        icon: '⚠️',
+      }
       return `
         <div class="ppp-card ppp-card--alerta" data-idx="${idx}">
           <div class="ppp-card-header">
@@ -139,23 +142,27 @@ export function createProgressPreviewPanel(container, { onConfirm, onCancel }) {
 
   function _render(resumen) {
     if (!_panelEl) return
-    const hasRecords  = _records.length > 0
-    const alertRecords = _records.filter(r => r.alerta)
-    const alertCount   = alertRecords.length
-    const alertBanner  = alertCount > 0
-      ? `<div class="ppp-alert-banner">⚠️ ${_buildAlertBannerText(alertRecords)}</div>`
-      : ''
+    const hasRecords = _records.length > 0
+    const alertRecords = _records.filter((r) => r.alerta)
+    const alertCount = alertRecords.length
+    const alertBanner =
+      alertCount > 0
+        ? `<div class="ppp-alert-banner">⚠️ ${_buildAlertBannerText(alertRecords)}</div>`
+        : ''
 
     const contradictions = detectContradictions(_records)
-    const contradictionBanner = contradictions.length > 0 ? `
+    const contradictionBanner =
+      contradictions.length > 0
+        ? `
       <div class="ppp-clarification-banner">
         <div class="ppp-clarification-title">✏️ El texto puede ser más específico</div>
         <div class="ppp-clarification-body">
-          ${contradictions.map(c => `<div class="ppp-clarification-item">• ${esc(c.reason)}</div>`).join('')}
+          ${contradictions.map((c) => `<div class="ppp-clarification-item">• ${esc(c.reason)}</div>`).join('')}
         </div>
         <div class="ppp-clarification-hint">Podés guardar igual o editar el texto arriba para separar mejor las ideas.</div>
       </div>
-    ` : ''
+    `
+        : ''
 
     _panelEl.innerHTML = `
       <div class="ppp-header">
@@ -168,9 +175,10 @@ export function createProgressPreviewPanel(container, { onConfirm, onCancel }) {
       ${alertBanner}
       ${contradictionBanner}
       <div class="ppp-cards">
-        ${hasRecords
-          ? _records.map((r, i) => _renderRecord(r, i)).join('')
-          : '<div class="ppp-empty">No se detectaron registros de progreso en este texto.</div>'
+        ${
+          hasRecords
+            ? _records.map((r, i) => _renderRecord(r, i)).join('')
+            : '<div class="ppp-empty">No se detectaron registros de progreso en este texto.</div>'
         }
       </div>
       <div class="ppp-footer">
@@ -184,7 +192,7 @@ export function createProgressPreviewPanel(container, { onConfirm, onCancel }) {
     _injectStyles()
 
     // Wire remove buttons
-    _panelEl.querySelectorAll('.ppp-remove').forEach(btn => {
+    _panelEl.querySelectorAll('.ppp-remove').forEach((btn) => {
       btn.onclick = () => {
         _records.splice(parseInt(btn.dataset.idx), 1)
         _render(resumen)
@@ -192,9 +200,9 @@ export function createProgressPreviewPanel(container, { onConfirm, onCancel }) {
     })
 
     // Wire estado cycle buttons (only on normal cards)
-    _panelEl.querySelectorAll('.ppp-estado-btn').forEach(btn => {
+    _panelEl.querySelectorAll('.ppp-estado-btn').forEach((btn) => {
       btn.onclick = () => {
-        const idx     = parseInt(btn.dataset.idx)
+        const idx = parseInt(btn.dataset.idx)
         const current = _records[idx].estado
         const nextIdx = (ESTADOS_CYCLE.indexOf(current) + 1) % ESTADOS_CYCLE.length
         _records[idx].estado = ESTADOS_CYCLE[nextIdx]
@@ -202,12 +210,18 @@ export function createProgressPreviewPanel(container, { onConfirm, onCancel }) {
       }
     })
 
-    _panelEl.querySelector('#ppp-confirm').onclick = () => { onConfirm([..._records]); close() }
-    _panelEl.querySelector('#ppp-cancel').onclick  = () => { if (onCancel) onCancel(); close() }
+    _panelEl.querySelector('#ppp-confirm').onclick = () => {
+      onConfirm([..._records])
+      close()
+    }
+    _panelEl.querySelector('#ppp-cancel').onclick = () => {
+      if (onCancel) onCancel()
+      close()
+    }
   }
 
   function open({ progreso = [], resumen = '' }) {
-    _records = progreso.map(r => ({ ...r }))
+    _records = progreso.map((r) => ({ ...r }))
 
     if (!_panelEl) {
       _panelEl = document.createElement('div')

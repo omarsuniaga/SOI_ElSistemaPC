@@ -18,10 +18,17 @@ export function render(draft, errors = {}) {
         name: 'tiene_conocimientos_musicales',
         label: '¿Has aprendido a tocar algún instrumento musical antes?',
         type: 'radio',
-        value: tieneConocimientos ? 'true' : draft.tiene_conocimientos_musicales === false ? 'false' : '',
+        value: tieneConocimientos
+          ? 'true'
+          : draft.tiene_conocimientos_musicales === false
+            ? 'false'
+            : '',
         error: errors.tiene_conocimientos_musicales ?? '',
         required: true,
-        options: [{ value: 'true', label: 'Sí' }, { value: 'false', label: 'No' }],
+        options: [
+          { value: 'true', label: 'Sí' },
+          { value: 'false', label: 'No' },
+        ],
       })}
 
       <div id="conocimientos-block" style="${tieneConocimientos ? '' : 'display:none'}">
@@ -114,7 +121,10 @@ export function render(draft, errors = {}) {
 
 export function validate(draft) {
   const errors = {}
-  if (draft.tiene_conocimientos_musicales === undefined || draft.tiene_conocimientos_musicales === null) {
+  if (
+    draft.tiene_conocimientos_musicales === undefined ||
+    draft.tiene_conocimientos_musicales === null
+  ) {
     errors.tiene_conocimientos_musicales = 'Indica si tiene conocimientos musicales'
   }
   if (!draft.interes_musical) errors.interes_musical = 'Indica el interés musical'
@@ -137,11 +147,15 @@ export function getState(container) {
     nivel_lectura_musical: form.querySelector('[name="nivel_lectura_musical"]')?.value || null,
     interes_musical: form.querySelector('[name="interes_musical"]:checked')?.value ?? '',
     instrumento_interes: form.querySelector('[name="instrumento_interes"]')?.value?.trim() ?? '',
-    sentimiento_musica_clasica: form.querySelector('[name="sentimiento_musica_clasica"]')?.value?.trim() ?? '',
-    sentimiento_aprender_instrumento: form.querySelector('[name="sentimiento_aprender_instrumento"]')?.value?.trim() ?? '',
-    aspiracion_instrumento: form.querySelector('[name="aspiracion_instrumento"]')?.value?.trim() ?? '',
+    sentimiento_musica_clasica:
+      form.querySelector('[name="sentimiento_musica_clasica"]')?.value?.trim() ?? '',
+    sentimiento_aprender_instrumento:
+      form.querySelector('[name="sentimiento_aprender_instrumento"]')?.value?.trim() ?? '',
+    aspiracion_instrumento:
+      form.querySelector('[name="aspiracion_instrumento"]')?.value?.trim() ?? '',
     musico_favorito: form.querySelector('[name="musico_favorito"]')?.value?.trim() ?? '',
-    preferencia_aprendizaje_musical: form.querySelector('[name="preferencia_aprendizaje_musical"]')?.value ?? '',
+    preferencia_aprendizaje_musical:
+      form.querySelector('[name="preferencia_aprendizaje_musical"]')?.value ?? '',
     por_que_unirse: form.querySelector('[name="por_que_unirse"]')?.value?.trim() ?? '',
   }
 }

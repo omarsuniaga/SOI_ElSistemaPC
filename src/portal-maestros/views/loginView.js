@@ -92,13 +92,13 @@ export function renderLoginView(container, { onSuccess }) {
     </style>
   `
 
-  const emailInput       = container.querySelector('#pm-email')
-  const passwordInput    = container.querySelector('#pm-password')
-  const loginBtn         = container.querySelector('#pm-login-btn')
-  const errorMsg         = container.querySelector('#pm-login-error')
-  const togglePwdBtn     = container.querySelector('#pm-toggle-password')
+  const emailInput = container.querySelector('#pm-email')
+  const passwordInput = container.querySelector('#pm-password')
+  const loginBtn = container.querySelector('#pm-login-btn')
+  const errorMsg = container.querySelector('#pm-login-error')
+  const togglePwdBtn = container.querySelector('#pm-toggle-password')
   const rememberEmailChk = container.querySelector('#pm-remember-email')
-  const keepSessionChk   = container.querySelector('#pm-keep-session')
+  const keepSessionChk = container.querySelector('#pm-keep-session')
 
   // --- Show/Hide Password ---
   let passwordVisible = false
@@ -108,7 +108,10 @@ export function renderLoginView(container, { onSuccess }) {
     passwordInput.type = passwordVisible ? 'text' : 'password'
     togglePwdBtn.querySelector('i').className = passwordVisible ? 'bi bi-eye-slash' : 'bi bi-eye'
     togglePwdBtn.title = passwordVisible ? 'Ocultar contraseña' : 'Mostrar contraseña'
-    togglePwdBtn.setAttribute('aria-label', passwordVisible ? 'Ocultar contraseña' : 'Mostrar contraseña')
+    togglePwdBtn.setAttribute(
+      'aria-label',
+      passwordVisible ? 'Ocultar contraseña' : 'Mostrar contraseña',
+    )
     togglePwdBtn.setAttribute('aria-pressed', passwordVisible ? 'true' : 'false')
   })
 
@@ -136,7 +139,7 @@ export function renderLoginView(container, { onSuccess }) {
   })
 
   async function handleLogin() {
-    const email    = emailInput.value.trim()
+    const email = emailInput.value.trim()
     const password = passwordInput.value
 
     errorMsg.textContent = ''
@@ -161,7 +164,10 @@ export function renderLoginView(container, { onSuccess }) {
 
     const sessionDuration = keepSessionChk.checked ? 30 * 24 * 60 * 60 * 1000 : undefined
     if (sessionDuration) {
-      localStorage.setItem('pm-session-expires', new Date(Date.now() + sessionDuration).toISOString())
+      localStorage.setItem(
+        'pm-session-expires',
+        new Date(Date.now() + sessionDuration).toISOString(),
+      )
     }
 
     const result = await loginMaestro(email, password)
@@ -215,7 +221,7 @@ export function renderLoginView(container, { onSuccess }) {
   }
 
   loginBtn.addEventListener('click', handleLogin)
-  passwordInput.addEventListener('keydown', e => {
+  passwordInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') handleLogin()
   })
 
@@ -239,21 +245,22 @@ export function renderLoginView(container, { onSuccess }) {
         mediation: 'required',
         publicKey: {
           challenge: new TextEncoder().encode('login-challenge'),
-        }
+        },
       })
-      
-        if (credential) {
-          const cachedMaestro = localStorage.getItem('portal-maestros:maestro')
-          if (cachedMaestro) {
-            const maestro = JSON.parse(cachedMaestro)
-            usePortalAuth.setMaestro(maestro)
-            const intended = localStorage.getItem('intended-route')
-            localStorage.removeItem('intended-route')
-            if (onSuccess) {
-              onSuccess(intended)
-            }
-          } else {
-          errorMsg.textContent = 'No hay sesión biométrica guardada. Iniciá sesión con contraseña primero.'
+
+      if (credential) {
+        const cachedMaestro = localStorage.getItem('portal-maestros:maestro')
+        if (cachedMaestro) {
+          const maestro = JSON.parse(cachedMaestro)
+          usePortalAuth.setMaestro(maestro)
+          const intended = localStorage.getItem('intended-route')
+          localStorage.removeItem('intended-route')
+          if (onSuccess) {
+            onSuccess(intended)
+          }
+        } else {
+          errorMsg.textContent =
+            'No hay sesión biométrica guardada. Iniciá sesión con contraseña primero.'
         }
       }
     } catch (err) {
@@ -262,7 +269,7 @@ export function renderLoginView(container, { onSuccess }) {
   }
 
   // Mostrar botón biométrico si está disponible
-  checkWebAuthnSupport().then(supported => {
+  checkWebAuthnSupport().then((supported) => {
     if (supported) {
       biometricBtn.style.display = 'flex'
       biometricBtn.onclick = tryBiometricLogin

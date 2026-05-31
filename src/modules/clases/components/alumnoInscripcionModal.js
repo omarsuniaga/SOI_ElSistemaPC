@@ -1,6 +1,12 @@
 import { AppModal } from '../../../shared/components/AppModal.js'
 import { supabase } from '../../../lib/supabaseClient.js'
-import { inscribirAlumno, desinscribirAlumno, obtenerAlumnosInscritos, obtenerClase, actualizarTurnoInscripcion } from '../api/clasesApi.js'
+import {
+  inscribirAlumno,
+  desinscribirAlumno,
+  obtenerAlumnosInscritos,
+  obtenerClase,
+  actualizarTurnoInscripcion,
+} from '../api/clasesApi.js'
 import { crearAlumno } from '../../alumnos/api/alumnosApi.js'
 import { escapeHTML, getInitials } from '../utils/clasesUtils.js'
 
@@ -16,13 +22,17 @@ export async function openAlumnoInscripcionModal(claseId) {
   try {
     const [inscritosRaw, todosRes, clase] = await Promise.all([
       obtenerAlumnosInscritos(claseId),
-      supabase.from('alumnos').select('*').eq('activo', true).order('nombre_completo', { ascending: true }),
-      obtenerClase(claseId)
+      supabase
+        .from('alumnos')
+        .select('*')
+        .eq('activo', true)
+        .order('nombre_completo', { ascending: true }),
+      obtenerClase(claseId),
     ])
 
-    const inscritosIds = new Set(inscritosRaw.map(r => r.alumno_id))
-    const inscritos   = inscritosRaw.map(r => r.alumno).filter(Boolean)
-    const disponibles = (todosRes.data || []).filter(a => !inscritosIds.has(a.id))
+    const inscritosIds = new Set(inscritosRaw.map((r) => r.alumno_id))
+    const inscritos = inscritosRaw.map((r) => r.alumno).filter(Boolean)
+    const disponibles = (todosRes.data || []).filter((a) => !inscritosIds.has(a.id))
 
     AppModal.open({
       title: 'Inscripción de alumnos',
@@ -83,12 +93,21 @@ function _buildBody(inscritos, disponibles, claseId, clase, inscritosRaw) {
         Inscritos (${inscritos.length})
       </h6>
       <div id="lista-inscritos">
-        ${inscritos.length === 0
-          ? '<p class="text-muted small mb-0">Sin alumnos inscritos aún.</p>'
-          : inscritos.map(a => {
-              const inscripcion = inscritosRaw.find(r => r.alumno_id === a.id)
-              return _rowInscrito(a, isRotativa, inscripcion?.hora_inicio, inscripcion?.hora_fin)
-            }).join('')}
+        ${
+          inscritos.length === 0
+            ? '<p class="text-muted small mb-0">Sin alumnos inscritos aún.</p>'
+            : inscritos
+                .map((a) => {
+                  const inscripcion = inscritosRaw.find((r) => r.alumno_id === a.id)
+                  return _rowInscrito(
+                    a,
+                    isRotativa,
+                    inscripcion?.hora_inicio,
+                    inscripcion?.hora_fin,
+                  )
+                })
+                .join('')
+        }
       </div>
     </div>
 
@@ -102,17 +121,23 @@ function _buildBody(inscritos, disponibles, claseId, clase, inscritosRaw) {
 
 
       <div id="lista-disponibles" style="max-height: 280px; overflow-y: auto;">
-        ${disponibles.length === 0
-          ? '<p class="text-muted small mb-0">No quedan alumnos disponibles.</p>'
-          : disponibles.map(a => _rowDisponible(a, isRotativa)).join('')}
+        ${
+          disponibles.length === 0
+            ? '<p class="text-muted small mb-0">No quedan alumnos disponibles.</p>'
+            : disponibles.map((a) => _rowDisponible(a, isRotativa)).join('')
+        }
       </div>
 
-      ${disponibles.length > 0 ? `
+      ${
+        disponibles.length > 0
+          ? `
       <div class="mt-3 d-flex justify-content-end">
         <button type="button" class="btn btn-primary btn-sm" id="insc-btn-inscribir">
           <i class="bi bi-person-check"></i> Inscribir seleccionados
         </button>
-      </div>` : ''}
+      </div>`
+          : ''
+      }
     </div>
   `
 }
@@ -120,16 +145,17 @@ function _buildBody(inscritos, disponibles, claseId, clase, inscritosRaw) {
 function _rowInscrito(a, isRotativa, horaInicio, horaFin) {
   const nombre = escapeHTML(a.nombre_completo || a.nombre || 'Alumno')
   const instrumento = escapeHTML(a.instrumento_principal || '')
-  
+
   let turnoHtml = ''
   if (isRotativa) {
-    const timeDisplay = (horaInicio && horaFin) ? `${horaInicio.slice(0,5)} a ${horaFin.slice(0,5)}` : 'Sin turno'
+    const timeDisplay =
+      horaInicio && horaFin ? `${horaInicio.slice(0, 5)} a ${horaFin.slice(0, 5)}` : 'Sin turno'
     turnoHtml = `
       <div class="d-flex align-items-center gap-2 ms-auto me-3 turno-container">
         <span class="badge bg-secondary turno-display"><i class="bi bi-clock"></i> ${timeDisplay}</span>
         <div class="turno-edit-form d-none d-flex gap-1">
-          <input type="time" class="form-control form-control-sm" style="width: 80px;" value="${horaInicio ? horaInicio.slice(0,5) : ''}">
-          <input type="time" class="form-control form-control-sm" style="width: 80px;" value="${horaFin ? horaFin.slice(0,5) : ''}">
+          <input type="time" class="form-control form-control-sm" style="width: 80px;" value="${horaInicio ? horaInicio.slice(0, 5) : ''}">
+          <input type="time" class="form-control form-control-sm" style="width: 80px;" value="${horaFin ? horaFin.slice(0, 5) : ''}">
           <button class="btn btn-sm btn-success btn-guardar-turno" data-alumno-id="${a.id}"><i class="bi bi-check2"></i></button>
           <button class="btn btn-sm btn-light btn-cancelar-turno"><i class="bi bi-x"></i></button>
         </div>
@@ -162,7 +188,7 @@ function _rowInscrito(a, isRotativa, horaInicio, horaFin) {
 function _rowDisponible(a, isRotativa) {
   const nombre = escapeHTML(a.nombre_completo || a.nombre || 'Alumno')
   const instrumento = escapeHTML(a.instrumento_principal || '')
-  
+
   let turnoHtml = ''
   if (isRotativa) {
     turnoHtml = `
@@ -195,18 +221,20 @@ function _rowDisponible(a, isRotativa) {
 function _wireEvents(claseId, clase) {
   const isRotativa = clase?.tipo_clase === 'rotativa'
   // Búsqueda en inscritos y disponibles
-  document.getElementById('insc-buscar')?.addEventListener('input', e => {
+  document.getElementById('insc-buscar')?.addEventListener('input', (e) => {
     const term = e.target.value.toLowerCase()
-    
+
     // Filtrar disponibles
-    document.querySelectorAll('.disponible-item').forEach(item => {
-      const match = (item.dataset.name || '').includes(term) || (item.dataset.instrumento || '').includes(term)
+    document.querySelectorAll('.disponible-item').forEach((item) => {
+      const match =
+        (item.dataset.name || '').includes(term) || (item.dataset.instrumento || '').includes(term)
       item.style.display = match ? '' : 'none'
     })
 
     // Filtrar inscritos
-    document.querySelectorAll('.inscrito-item').forEach(item => {
-      const match = (item.dataset.name || '').includes(term) || (item.dataset.instrumento || '').includes(term)
+    document.querySelectorAll('.inscrito-item').forEach((item) => {
+      const match =
+        (item.dataset.name || '').includes(term) || (item.dataset.instrumento || '').includes(term)
       item.style.display = match ? '' : 'none'
     })
   })
@@ -218,10 +246,10 @@ function _wireEvents(claseId, clase) {
   })
   document.getElementById('insc-btn-cancelar-nuevo')?.addEventListener('click', _resetNuevoForm)
 
-    document.getElementById('insc-btn-guardar-nuevo')?.addEventListener('click', async () => {
-    const nombre      = document.getElementById('insc-nuevo-nombre').value.trim()
+  document.getElementById('insc-btn-guardar-nuevo')?.addEventListener('click', async () => {
+    const nombre = document.getElementById('insc-nuevo-nombre').value.trim()
     const instrumento = document.getElementById('insc-nuevo-instrumento').value.trim()
-    const telefono    = document.getElementById('insc-nuevo-telefono').value.trim()
+    const telefono = document.getElementById('insc-nuevo-telefono').value.trim()
 
     if (!nombre || !instrumento || !telefono) {
       alert('Nombre, instrumento y teléfono son obligatorios')
@@ -234,10 +262,10 @@ function _wireEvents(claseId, clase) {
 
     try {
       const nuevoAlumno = await crearAlumno({
-        nombre_completo:        nombre,
-        instrumento_principal:  instrumento,
-        familiar_telefono:      telefono,
-        activo:                 true,
+        nombre_completo: nombre,
+        instrumento_principal: instrumento,
+        familiar_telefono: telefono,
+        activo: true,
       })
       await inscribirAlumno(claseId, nuevoAlumno.id)
       openAlumnoInscripcionModal(claseId)
@@ -249,8 +277,8 @@ function _wireEvents(claseId, clase) {
   })
 
   // Desinscribir
-  document.querySelectorAll('.desinscribir-btn').forEach(btn => {
-    btn.addEventListener('click', async e => {
+  document.querySelectorAll('.desinscribir-btn').forEach((btn) => {
+    btn.addEventListener('click', async (e) => {
       const alumnoId = e.currentTarget.dataset.alumnoId
       try {
         await desinscribirAlumno(claseId, alumnoId)
@@ -262,8 +290,8 @@ function _wireEvents(claseId, clase) {
   })
 
   // Editar turnos (si rotativa)
-  document.querySelectorAll('.btn-editar-turno').forEach(btn => {
-    btn.addEventListener('click', e => {
+  document.querySelectorAll('.btn-editar-turno').forEach((btn) => {
+    btn.addEventListener('click', (e) => {
       const container = e.currentTarget.closest('.turno-container')
       container.querySelector('.turno-display').classList.add('d-none')
       container.querySelector('.turno-edit-form').classList.remove('d-none')
@@ -271,8 +299,8 @@ function _wireEvents(claseId, clase) {
     })
   })
 
-  document.querySelectorAll('.btn-cancelar-turno').forEach(btn => {
-    btn.addEventListener('click', e => {
+  document.querySelectorAll('.btn-cancelar-turno').forEach((btn) => {
+    btn.addEventListener('click', (e) => {
       const container = e.currentTarget.closest('.turno-container')
       container.querySelector('.turno-display').classList.remove('d-none')
       container.querySelector('.turno-edit-form').classList.add('d-none')
@@ -280,8 +308,8 @@ function _wireEvents(claseId, clase) {
     })
   })
 
-  document.querySelectorAll('.btn-guardar-turno').forEach(btn => {
-    btn.addEventListener('click', async e => {
+  document.querySelectorAll('.btn-guardar-turno').forEach((btn) => {
+    btn.addEventListener('click', async (e) => {
       const alumnoId = e.currentTarget.dataset.alumnoId
       const container = e.currentTarget.closest('.turno-container')
       const inputs = container.querySelectorAll('input[type="time"]')
@@ -301,8 +329,13 @@ function _wireEvents(claseId, clase) {
 
   // Inscribir seleccionados
   document.getElementById('insc-btn-inscribir')?.addEventListener('click', async () => {
-    const checks = [...document.querySelectorAll('#lista-disponibles input[type="checkbox"]:checked')]
-    if (!checks.length) { alert('Seleccioná al menos un alumno'); return }
+    const checks = [
+      ...document.querySelectorAll('#lista-disponibles input[type="checkbox"]:checked'),
+    ]
+    if (!checks.length) {
+      alert('Seleccioná al menos un alumno')
+      return
+    }
 
     const btn = document.getElementById('insc-btn-inscribir')
     btn.disabled = true
@@ -310,7 +343,8 @@ function _wireEvents(claseId, clase) {
 
     try {
       for (const cb of checks) {
-        let horaInicio = null, horaFin = null
+        let horaInicio = null,
+          horaFin = null
         if (isRotativa) {
           const row = cb.closest('.disponible-item')
           horaInicio = row.querySelector('.new-hora-inicio')?.value || null

@@ -71,7 +71,7 @@
   transition: all 0.2s ease;
 }
 
-[data-bs-theme="dark"] .view-segmented-control {
+[data-bs-theme='dark'] .view-segmented-control {
   background: rgba(255, 255, 255, 0.04);
   border-color: rgba(255, 255, 255, 0.02);
 }
@@ -101,7 +101,7 @@
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
 }
 
-[data-bs-theme="dark"] .view-segment-btn.active {
+[data-bs-theme='dark'] .view-segment-btn.active {
   background: rgba(255, 255, 255, 0.15);
   color: #ffffff !important;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
@@ -141,7 +141,7 @@
   transition: all 0.2s ease !important;
 }
 
-[data-bs-theme="dark"] .premium-search-input {
+[data-bs-theme='dark'] .premium-search-input {
   background: rgba(255, 255, 255, 0.03) !important;
   border-color: rgba(255, 255, 255, 0.06) !important;
 }
@@ -157,7 +157,7 @@
   box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.1) !important;
 }
 
-[data-bs-theme="dark"] .premium-search-input:focus {
+[data-bs-theme='dark'] .premium-search-input:focus {
   background: rgba(255, 255, 255, 0.06) !important;
   border-color: rgba(255, 255, 255, 0.25) !important;
   box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.05) !important;
@@ -184,7 +184,6 @@
 tr.border-start-accent:hover {
   transform: scale(1.002);
 }
-
 
 /* ============================================================================
    RESPONSIVE ADJUSTMENTS FOR PLANIFICACION
@@ -245,7 +244,7 @@ tr.border-start-accent:hover {
   backdrop-filter: blur(10px);
 }
 
-[data-bs-theme="dark"] .stats-panel {
+[data-bs-theme='dark'] .stats-panel {
   background: rgba(255, 255, 255, 0.02);
   border-color: rgba(255, 255, 255, 0.05);
 }
@@ -264,7 +263,7 @@ tr.border-start-accent:hover {
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-[data-bs-theme="dark"] .stat-card {
+[data-bs-theme='dark'] .stat-card {
   background: rgba(255, 255, 255, 0.02);
   border-color: rgba(255, 255, 255, 0.05);
 }
@@ -323,7 +322,7 @@ tr.border-start-accent:hover {
   cursor: pointer;
 }
 
-[data-bs-theme="dark"] .premium-filter-select {
+[data-bs-theme='dark'] .premium-filter-select {
   background-color: rgba(255, 255, 255, 0.03) !important;
   border-color: rgba(255, 255, 255, 0.06) !important;
 }
@@ -335,8 +334,12 @@ tr.border-start-accent:hover {
 }
 
 /* Accent borders */
-.border-accent-danger  { border-left-color: #dc3545 !important; }
-.border-accent-success { border-left-color: #198754 !important; }
+.border-accent-danger {
+  border-left-color: #dc3545 !important;
+}
+.border-accent-success {
+  border-left-color: #198754 !important;
+}
 
 @media (max-width: 768px) {
   .premium-select-container {

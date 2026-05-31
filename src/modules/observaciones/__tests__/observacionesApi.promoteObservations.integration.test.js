@@ -5,8 +5,8 @@ import { supabase } from '../../../lib/supabaseClient.js'
 // Mock the Supabase client
 vi.mock('../../../lib/supabaseClient.js', () => ({
   supabase: {
-    from: vi.fn()
-  }
+    from: vi.fn(),
+  },
 }))
 
 describe('observacionesApi.promoteObservations Integration', () => {
@@ -22,10 +22,10 @@ describe('observacionesApi.promoteObservations Integration', () => {
       return {
         select: vi.fn().mockResolvedValue(data),
         insert: vi.fn().mockResolvedValue(data),
-        eq: vi.fn(function() {
+        eq: vi.fn(function () {
           return this
         }),
-        single: vi.fn().mockResolvedValue(data)
+        single: vi.fn().mockResolvedValue(data),
       }
     })
   }
@@ -43,12 +43,12 @@ describe('observacionesApi.promoteObservations Integration', () => {
               sesion_id: sessionId,
               alumno_id: 'alumno-001',
               contenido_parsed: { nota: 'Bien' },
-              es_borrador: true
-            }
+              es_borrador: true,
+            },
           ],
-          error: null
+          error: null,
         },
-        observaciones_alumnos: { data: [], error: null }
+        observaciones_alumnos: { data: [], error: null },
       }
 
       setupMocks(mockData)
@@ -67,22 +67,72 @@ describe('observacionesApi.promoteObservations Integration', () => {
       const alumnoIds = ['a1', 'a2', 'a3', 'a4', 'a5']
 
       const sessionObsData = [
-        { sesion_id: sessionId, alumno_id: 'a1', contenido_parsed: { nota: 'Bien' }, es_borrador: true },
-        { sesion_id: sessionId, alumno_id: 'a1', contenido_parsed: { nota: 'Muy bien' }, es_borrador: true },
-        { sesion_id: sessionId, alumno_id: 'a2', contenido_parsed: { nota: 'Bien' }, es_borrador: true },
-        { sesion_id: sessionId, alumno_id: 'a2', contenido_parsed: { nota: 'Excelente' }, es_borrador: true },
-        { sesion_id: sessionId, alumno_id: 'a3', contenido_parsed: { nota: 'Bien' }, es_borrador: true },
-        { sesion_id: sessionId, alumno_id: 'a3', contenido_parsed: { nota: 'Bien' }, es_borrador: true },
-        { sesion_id: sessionId, alumno_id: 'a4', contenido_parsed: { nota: 'Bien' }, es_borrador: true },
-        { sesion_id: sessionId, alumno_id: 'a4', contenido_parsed: { nota: 'Regular' }, es_borrador: true },
-        { sesion_id: sessionId, alumno_id: 'a5', contenido_parsed: { nota: 'Bien' }, es_borrador: true },
-        { sesion_id: sessionId, alumno_id: 'a5', contenido_parsed: { nota: 'Necesita mejorar' }, es_borrador: true }
+        {
+          sesion_id: sessionId,
+          alumno_id: 'a1',
+          contenido_parsed: { nota: 'Bien' },
+          es_borrador: true,
+        },
+        {
+          sesion_id: sessionId,
+          alumno_id: 'a1',
+          contenido_parsed: { nota: 'Muy bien' },
+          es_borrador: true,
+        },
+        {
+          sesion_id: sessionId,
+          alumno_id: 'a2',
+          contenido_parsed: { nota: 'Bien' },
+          es_borrador: true,
+        },
+        {
+          sesion_id: sessionId,
+          alumno_id: 'a2',
+          contenido_parsed: { nota: 'Excelente' },
+          es_borrador: true,
+        },
+        {
+          sesion_id: sessionId,
+          alumno_id: 'a3',
+          contenido_parsed: { nota: 'Bien' },
+          es_borrador: true,
+        },
+        {
+          sesion_id: sessionId,
+          alumno_id: 'a3',
+          contenido_parsed: { nota: 'Bien' },
+          es_borrador: true,
+        },
+        {
+          sesion_id: sessionId,
+          alumno_id: 'a4',
+          contenido_parsed: { nota: 'Bien' },
+          es_borrador: true,
+        },
+        {
+          sesion_id: sessionId,
+          alumno_id: 'a4',
+          contenido_parsed: { nota: 'Regular' },
+          es_borrador: true,
+        },
+        {
+          sesion_id: sessionId,
+          alumno_id: 'a5',
+          contenido_parsed: { nota: 'Bien' },
+          es_borrador: true,
+        },
+        {
+          sesion_id: sessionId,
+          alumno_id: 'a5',
+          contenido_parsed: { nota: 'Necesita mejorar' },
+          es_borrador: true,
+        },
       ]
 
       const mockData = {
         sesiones: { data: [{ id: sessionId, clase_id: 'clase-001' }], error: null },
         observaciones_sesion: { data: sessionObsData, error: null },
-        observaciones_alumnos: { data: [], error: null }
+        observaciones_alumnos: { data: [], error: null },
       }
 
       setupMocks(mockData)
@@ -102,8 +152,11 @@ describe('observacionesApi.promoteObservations Integration', () => {
 
       const mockData = {
         sesiones: { data: [{ id: sessionId, clase_id: 'clase-001' }], error: null },
-        observaciones_sesion: { data: null, error: { code: 'PGRST401', message: 'Permission denied' } },
-        observaciones_alumnos: { data: [], error: null }
+        observaciones_sesion: {
+          data: null,
+          error: { code: 'PGRST401', message: 'Permission denied' },
+        },
+        observaciones_alumnos: { data: [], error: null },
       }
 
       setupMocks(mockData)
@@ -124,8 +177,11 @@ describe('observacionesApi.promoteObservations Integration', () => {
 
       const mockData = {
         sesiones: { data: [{ id: sessionId, clase_id: 'clase-001' }], error: null },
-        observaciones_sesion: { data: null, error: { code: 'PGRST401', message: 'Permission denied' } },
-        observaciones_alumnos: { data: [], error: null }
+        observaciones_sesion: {
+          data: null,
+          error: { code: 'PGRST401', message: 'Permission denied' },
+        },
+        observaciones_alumnos: { data: [], error: null },
       }
 
       setupMocks(mockData)
@@ -157,7 +213,7 @@ describe('observacionesApi.promoteObservations Integration', () => {
       const mockData = {
         sesiones: { data: [], error: null },
         observaciones_sesion: { data: [], error: null },
-        observaciones_alumnos: { data: [], error: null }
+        observaciones_alumnos: { data: [], error: null },
       }
 
       setupMocks(mockData)
@@ -204,10 +260,10 @@ describe('observacionesApi.promoteObservations Integration', () => {
               sesion_id: sessionId,
               alumno_id: 'alumno-001',
               contenido_parsed: { nota: 'Bien' },
-              es_borrador: true
-            }
+              es_borrador: true,
+            },
           ],
-          error: null
+          error: null,
         },
         observaciones_alumnos: {
           data: [
@@ -215,11 +271,11 @@ describe('observacionesApi.promoteObservations Integration', () => {
               sesion_id: sessionId,
               alumno_id: 'alumno-001',
               contenido_parsed: { nota: 'Bien' },
-              origen: 'sesion'
-            }
+              origen: 'sesion',
+            },
           ],
-          error: null
-        }
+          error: null,
+        },
       }
 
       setupMocks(mockData)

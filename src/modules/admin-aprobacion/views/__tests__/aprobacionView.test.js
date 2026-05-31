@@ -153,4 +153,3 @@ describe('aprobacionView', () => {
     expect(updateMock).toHaveBeenCalledWith({ estado: 'rechazado' })
   })
 })
-

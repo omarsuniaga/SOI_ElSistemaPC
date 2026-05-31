@@ -18,12 +18,16 @@ export async function openAsistenciaExportModal(params = {}, onExport) {
         <div class="mb-4">
           <label class="form-label fw-semibold">Seleccionar formato:</label>
           <div class="d-flex flex-column gap-2" id="formatOptions">
-            ${formatos.map(f => `
+            ${formatos
+              .map(
+                (f) => `
               <button class="btn btn-outline-${f.color} d-flex align-items-center gap-3 p-3" data-fmt="${f.id}">
                 <i class="bi ${f.icon} fs-4"></i>
                 <span>${f.label}</span>
               </button>
-            `).join('')}
+            `,
+              )
+              .join('')}
           </div>
         </div>
         <div class="alert alert-info mb-0">
@@ -34,7 +38,7 @@ export async function openAsistenciaExportModal(params = {}, onExport) {
     `,
   })
 
-  document.querySelectorAll('#formatOptions button').forEach(btn => {
+  document.querySelectorAll('#formatOptions button').forEach((btn) => {
     btn.addEventListener('click', async () => {
       const fmt = btn.dataset.fmt
       AppModal.close()
@@ -65,11 +69,24 @@ export async function openAsistenciaExportModal(params = {}, onExport) {
 }
 
 async function _exportXLSX(grupos, resumen, params) {
-  const rows = [['Fecha', 'Clase', 'Maestro', 'Tema', 'Presentes', 'Ausentes', 'Justificados', 'Total', '% Asistencia']]
+  const rows = [
+    [
+      'Fecha',
+      'Clase',
+      'Maestro',
+      'Tema',
+      'Presentes',
+      'Ausentes',
+      'Justificados',
+      'Total',
+      '% Asistencia',
+    ],
+  ]
 
   for (const grupo of grupos) {
     for (const sesion of grupo.sesiones) {
-      const total = (sesion.totalPresentes || 0) + (sesion.totalAusentes || 0) + (sesion.totalJustificados || 0)
+      const total =
+        (sesion.totalPresentes || 0) + (sesion.totalAusentes || 0) + (sesion.totalJustificados || 0)
       const pct = total ? Math.round(((sesion.totalPresentes || 0) / total) * 100) : 0
 
       rows.push([
@@ -86,8 +103,12 @@ async function _exportXLSX(grupos, resumen, params) {
     }
   }
 
-  const csvContent = rows.map(r => r.join('\t')).join('\n')
-  _downloadFile(csvContent, `reporte-asistencia-${_dateNow()}.xlsx`, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+  const csvContent = rows.map((r) => r.join('\t')).join('\n')
+  _downloadFile(
+    csvContent,
+    `reporte-asistencia-${_dateNow()}.xlsx`,
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  )
 }
 
 async function _exportPDF(grupos, resumen, params) {
@@ -111,7 +132,8 @@ async function _exportMD(grupos, resumen, params) {
   for (const grupo of grupos) {
     md += `### ${grupo.fecha}\n\n`
     for (const sesion of grupo.sesiones) {
-      const total = (sesion.totalPresentes || 0) + (sesion.totalAusentes || 0) + (sesion.totalJustificados || 0)
+      const total =
+        (sesion.totalPresentes || 0) + (sesion.totalAusentes || 0) + (sesion.totalJustificados || 0)
       const pct = total ? Math.round(((sesion.totalPresentes || 0) / total) * 100) : 0
 
       md += `- **${sesion.claseNombre}** (${sesion.maestroNombre})\n`
@@ -150,11 +172,18 @@ function _generatePDFHTML(grupos, resumen) {
           <tr><th>Fecha</th><th>Clase</th><th>Maestro</th><th>Presentes</th><th>Ausentes</th><th>%</th></tr>
         </thead>
         <tbody>
-          ${grupos.map(g => g.sesiones.map(s => {
-            const total = (s.totalPresentes || 0) + (s.totalAusentes || 0) + (s.totalJustificados || 0)
-            const pct = total ? Math.round(((s.totalPresentes || 0) / total) * 100) : 0
-            return `<tr><td>${g.fecha}</td><td>${s.claseNombre || ''}</td><td>${s.maestroNombre || ''}</td><td>${s.totalPresentes || 0}</td><td>${s.totalAusentes || 0}</td><td>${pct}%</td></tr>`
-          }).join('')).join('')}
+          ${grupos
+            .map((g) =>
+              g.sesiones
+                .map((s) => {
+                  const total =
+                    (s.totalPresentes || 0) + (s.totalAusentes || 0) + (s.totalJustificados || 0)
+                  const pct = total ? Math.round(((s.totalPresentes || 0) / total) * 100) : 0
+                  return `<tr><td>${g.fecha}</td><td>${s.claseNombre || ''}</td><td>${s.maestroNombre || ''}</td><td>${s.totalPresentes || 0}</td><td>${s.totalAusentes || 0}</td><td>${pct}%</td></tr>`
+                })
+                .join(''),
+            )
+            .join('')}
         </tbody>
       </table>
     </body>

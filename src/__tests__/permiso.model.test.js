@@ -132,7 +132,7 @@ describe('Permiso Model', () => {
         actualizado_en: null,
       })
       // Ensure no undefined values
-      Object.values(json).forEach(val => {
+      Object.values(json).forEach((val) => {
         expect(val).not.toBeUndefined()
       })
     })

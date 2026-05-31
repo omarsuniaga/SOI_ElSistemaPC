@@ -31,7 +31,7 @@ export function formatDateISO(dateStr) {
  */
 export function escapeHTML(str) {
   if (!str) return ''
-  return str.replace(/[&<>]/g, function(m) {
+  return str.replace(/[&<>]/g, function (m) {
     if (m === '&') return '&amp;'
     if (m === '<') return '&lt;'
     if (m === '>') return '&gt;'
@@ -46,9 +46,9 @@ export function escapeHTML(str) {
  */
 export function getEstadoClass(estado) {
   const clases = {
-    'P': 'bg-success',
-    'A': 'bg-danger',
-    'J': 'bg-warning text-dark',
+    P: 'bg-success',
+    A: 'bg-danger',
+    J: 'bg-warning text-dark',
   }
   return clases[estado] || 'bg-secondary'
 }
@@ -60,9 +60,9 @@ export function getEstadoClass(estado) {
  */
 export function getEstadoLabel(estado) {
   const labels = {
-    'P': 'Presente',
-    'A': 'Ausente',
-    'J': 'Justificado',
+    P: 'Presente',
+    A: 'Ausente',
+    J: 'Justificado',
   }
   return labels[estado] || estado
 }
@@ -74,9 +74,9 @@ export function getEstadoLabel(estado) {
  */
 export function getEstadoIcon(estado) {
   const iconos = {
-    'P': 'bi-check-circle',
-    'A': 'bi-x-circle',
-    'J': 'bi-file-earmark-text',
+    P: 'bi-check-circle',
+    A: 'bi-x-circle',
+    J: 'bi-file-earmark-text',
   }
   return iconos[estado] || 'bi-question-circle'
 }
@@ -88,9 +88,9 @@ export function getEstadoIcon(estado) {
  */
 export function getEstadoColor(estado) {
   const colores = {
-    'P': 'success',
-    'A': 'danger',
-    'J': 'warning',
+    P: 'success',
+    A: 'danger',
+    J: 'warning',
   }
   return colores[estado] || 'secondary'
 }
@@ -104,7 +104,7 @@ export function getInitials(nombre) {
   if (!nombre) return '?'
   return nombre
     .split(' ')
-    .map(n => n[0])
+    .map((n) => n[0])
     .join('')
     .toUpperCase()
     .slice(0, 2)

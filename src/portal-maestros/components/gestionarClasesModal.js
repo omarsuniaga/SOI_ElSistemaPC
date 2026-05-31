@@ -144,7 +144,7 @@ export function gestionarClasesModal() {
   const createErrorMsg = modal.querySelector('#crear-clase-error-message')
 
   // Handle tab switching
-  tabButtons.forEach(btn => {
+  tabButtons.forEach((btn) => {
     btn.addEventListener('click', () => {
       const tabContent = btn.getAttribute('aria-controls')
       if (tabContent === 'clases-create') {
@@ -200,7 +200,9 @@ export function gestionarClasesModal() {
   function renderClasesList(clases) {
     return `
       <div class="list-group">
-        ${clases.map(clase => `
+        ${clases
+          .map(
+            (clase) => `
           <div class="list-group-item" data-clase-id="${clase.id}">
             <div class="d-flex justify-content-between align-items-start">
               <div>
@@ -222,13 +224,15 @@ export function gestionarClasesModal() {
               </div>
             </div>
           </div>
-        `).join('')}
+        `,
+          )
+          .join('')}
       </div>
     `
   }
 
   function attachClasesListeners(container) {
-    container.querySelectorAll('.btn-eliminar').forEach(btn => {
+    container.querySelectorAll('.btn-eliminar').forEach((btn) => {
       btn.addEventListener('click', async (e) => {
         const claseId = btn.getAttribute('data-clase-id')
         if (confirm('¿Estás seguro de que quieres eliminar esta clase?')) {
@@ -237,7 +241,7 @@ export function gestionarClasesModal() {
       })
     })
 
-    container.querySelectorAll('.btn-editar').forEach(btn => {
+    container.querySelectorAll('.btn-editar').forEach((btn) => {
       btn.addEventListener('click', (e) => {
         const claseId = btn.getAttribute('data-clase-id')
         // TODO: Implement edit functionality
@@ -256,16 +260,20 @@ export function gestionarClasesModal() {
 
       if (error) throw error
 
-      window.dispatchEvent(new CustomEvent('showToast', {
-        detail: { message: 'Clase eliminada exitosamente', type: 'success' }
-      }))
+      window.dispatchEvent(
+        new CustomEvent('showToast', {
+          detail: { message: 'Clase eliminada exitosamente', type: 'success' },
+        }),
+      )
 
       await loadClases()
     } catch (err) {
       console.error('[gestionarClasesModal] Error deleting clase:', err)
-      window.dispatchEvent(new CustomEvent('showToast', {
-        detail: { message: 'Error al eliminar la clase', type: 'danger' }
-      }))
+      window.dispatchEvent(
+        new CustomEvent('showToast', {
+          detail: { message: 'Error al eliminar la clase', type: 'danger' },
+        }),
+      )
     }
   }
 
@@ -279,7 +287,8 @@ export function gestionarClasesModal() {
 
       createButton.disabled = true
       originalText = createButton.innerHTML
-      createButton.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Creando...'
+      createButton.innerHTML =
+        '<span class="spinner-border spinner-border-sm me-2"></span>Creando...'
 
       const formData = {
         maestro_id: maestroId,
@@ -288,14 +297,10 @@ export function gestionarClasesModal() {
         descripcion: modal.querySelector('#clase-descripcion').value.trim() || null,
         horario: modal.querySelector('#clase-horario').value.trim() || null,
         ubicacion: modal.querySelector('#clase-ubicacion').value.trim() || null,
-        creado_en: new Date().toISOString()
+        creado_en: new Date().toISOString(),
       }
 
-      const { data, error } = await supabase
-        .from('clases')
-        .insert([formData])
-        .select()
-        .single()
+      const { data, error } = await supabase.from('clases').insert([formData]).select().single()
 
       if (error) throw error
 
@@ -304,16 +309,20 @@ export function gestionarClasesModal() {
       createError.classList.add('d-none')
 
       // Dispatch event
-      window.dispatchEvent(new CustomEvent('clase-creada', {
-        detail: { clase: data }
-      }))
+      window.dispatchEvent(
+        new CustomEvent('clase-creada', {
+          detail: { clase: data },
+        }),
+      )
 
-      window.dispatchEvent(new CustomEvent('showToast', {
-        detail: {
-          message: `Clase "${formData.nombre}" creada exitosamente`,
-          type: 'success'
-        }
-      }))
+      window.dispatchEvent(
+        new CustomEvent('showToast', {
+          detail: {
+            message: `Clase "${formData.nombre}" creada exitosamente`,
+            type: 'success',
+          },
+        }),
+      )
 
       // Switch to list tab
       const listTab = modal.querySelector('#clases-list-tab')
@@ -321,7 +330,6 @@ export function gestionarClasesModal() {
       tab.show()
 
       await loadClases()
-
     } catch (err) {
       console.error('[gestionarClasesModal] Error:', err)
       createErrorMsg.textContent = err.message || 'Error al crear la clase'
@@ -355,6 +363,6 @@ export function gestionarClasesModal() {
 
     isOpen() {
       return isOpen
-    }
+    },
   }
 }

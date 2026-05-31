@@ -59,17 +59,18 @@ export function formatPhone(phone) {
   const digits = phone.replace(/\D/g, '')
 
   // Extract the 10-digit local number (strip leading country code 1 if present)
-  const local = digits.length === 11 && digits.startsWith('1')
-    ? digits.slice(1)
-    : digits.length === 10
-      ? digits
-      : null
+  const local =
+    digits.length === 11 && digits.startsWith('1')
+      ? digits.slice(1)
+      : digits.length === 10
+        ? digits
+        : null
 
   if (!local) return phone // can't parse — return raw
 
   const area = local.slice(0, 3)
-  const mid  = local.slice(3, 6)
-  const end  = local.slice(6)
+  const mid = local.slice(3, 6)
+  const end = local.slice(6)
 
   return `(${area}) ${mid}-${end}`
 }

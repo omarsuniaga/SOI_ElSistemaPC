@@ -11,11 +11,13 @@ export class ThemeToggle {
   init() {
     // Cargar tema guardado o detectar preferencia del sistema
     const savedTheme = localStorage.getItem(this.storageKey)
-    const systemPrefers = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
-    
+    const systemPrefers = window.matchMedia('(prefers-color-scheme: dark)').matches
+      ? 'dark'
+      : 'light'
+
     this.currentTheme = savedTheme || systemPrefers
     this.applyTheme(this.currentTheme)
-    
+
     // Escuchar cambios en preferencias del sistema
     window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
       if (!localStorage.getItem(this.storageKey)) {
@@ -28,14 +30,14 @@ export class ThemeToggle {
   applyTheme(theme) {
     document.documentElement.setAttribute('data-bs-theme', theme)
     document.documentElement.setAttribute('data-portal-theme', theme)
-    
+
     // Actualizar variables CSS personalizadas si es necesario
     this.updateCustomProperties(theme)
   }
 
   updateCustomProperties(theme) {
     const root = document.documentElement
-    
+
     if (theme === 'dark') {
       root.style.setProperty('--pm-glass-bg', 'rgba(30, 41, 59, 0.8)')
       root.style.setProperty('--pm-glass-border', 'rgba(255, 255, 255, 0.1)')
@@ -51,11 +53,13 @@ export class ThemeToggle {
     this.currentTheme = this.currentTheme === 'dark' ? 'light' : 'dark'
     this.applyTheme(this.currentTheme)
     localStorage.setItem(this.storageKey, this.currentTheme)
-    
+
     // Disparar evento para que otros componentes sepan del cambio
-    window.dispatchEvent(new CustomEvent('themeChanged', { 
-      detail: { theme: this.currentTheme } 
-    }))
+    window.dispatchEvent(
+      new CustomEvent('themeChanged', {
+        detail: { theme: this.currentTheme },
+      }),
+    )
   }
 
   getCurrentTheme() {

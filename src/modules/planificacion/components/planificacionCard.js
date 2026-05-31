@@ -1,6 +1,22 @@
-import { escapeHTML, getInitials, formatDate, formatEstado, getEstadoBadgeClass, getEstadoIcon, parseRecursos, formatRecursosString } from '../utils/planificacionUtils.js'
+import {
+  escapeHTML,
+  getInitials,
+  formatDate,
+  formatEstado,
+  getEstadoBadgeClass,
+  getEstadoIcon,
+  parseRecursos,
+  formatRecursosString,
+} from '../utils/planificacionUtils.js'
 
-export function createPlanificacionCard(plan, showActions = true, onEdit = null, onDelete = null, onEjecutar = null, onRevisar = null) {
+export function createPlanificacionCard(
+  plan,
+  showActions = true,
+  onEdit = null,
+  onDelete = null,
+  onEjecutar = null,
+  onRevisar = null,
+) {
   const card = document.createElement('div')
   card.className = 'card h-100 shadow-sm'
   card.innerHTML = `
@@ -28,11 +44,15 @@ export function createPlanificacionCard(plan, showActions = true, onEdit = null,
 
       ${plan.maestro_id ? `<div class="mb-2"><small class="text-muted"><i class="bi bi-person"></i> Maestro: ${escapeHTML(plan.maestro_id)}</small></div>` : ''}
 
-      ${plan.recursos && plan.recursos.length > 0 ? `
+      ${
+        plan.recursos && plan.recursos.length > 0
+          ? `
         <div class="mb-2">
           <small class="text-muted"><i class="bi bi-folder2"></i> ${escapeHTML(formatRecursosString(plan.recursos).substring(0, 60))}${formatRecursosString(plan.recursos).length > 60 ? '...' : ''}</small>
         </div>
-      ` : ''}
+      `
+          : ''
+      }
 
       <hr class="my-2">
 
@@ -40,14 +60,18 @@ export function createPlanificacionCard(plan, showActions = true, onEdit = null,
         <small class="text-muted">
           <i class="bi bi-clock"></i> ${formatDate(plan.created_at)}
         </small>
-        ${showActions ? `
+        ${
+          showActions
+            ? `
           <div class="btn-group btn-group-sm">
             ${onEjecutar && plan.estado === 'planificado' ? `<button class="btn btn-outline-success ejecutar-btn" data-id="${plan.id}" title="Marcar ejecutada"><i class="bi bi-check-lg"></i></button>` : ''}
             ${onRevisar && plan.estado === 'ejecutado' ? `<button class="btn btn-outline-info revisar-btn" data-id="${plan.id}" title="Marcar revisada"><i class="bi bi-eye"></i></button>` : ''}
             ${onEdit ? `<button class="btn btn-outline-primary edit-btn" data-id="${plan.id}" title="Editar"><i class="bi bi-pencil"></i></button>` : ''}
             ${onDelete ? `<button class="btn btn-outline-danger delete-btn" data-id="${plan.id}" title="Eliminar"><i class="bi bi-trash"></i></button>` : ''}
           </div>
-        ` : ''}
+        `
+            : ''
+        }
       </div>
     </div>
   `

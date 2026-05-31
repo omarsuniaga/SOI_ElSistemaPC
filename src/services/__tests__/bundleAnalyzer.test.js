@@ -1,5 +1,10 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { analyzeBundle, getChunkSize, shouldSplitChunk, BUNDLE_THRESHOLDS } from '../bundleAnalyzer.js'
+import {
+  analyzeBundle,
+  getChunkSize,
+  shouldSplitChunk,
+  BUNDLE_THRESHOLDS,
+} from '../bundleAnalyzer.js'
 
 describe('bundleAnalyzer', () => {
   beforeEach(() => {

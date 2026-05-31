@@ -1,6 +1,6 @@
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest'
 
-import { createAusenciaAprobacionCard } from '../ausenciaAprobacionCard.js';
+import { createAusenciaAprobacionCard } from '../ausenciaAprobacionCard.js'
 
 describe('ausenciaAprobacionCard', () => {
   const ausencia = {
@@ -14,35 +14,35 @@ describe('ausenciaAprobacionCard', () => {
     clases_afectadas: ['c1', 'c2'],
     actividades_por_clase: { c1: 'Lectura guiada' },
     clase_emergente: { fecha: '2026-05-22', hora: '10:00', salon_id: 's1' },
-  };
+  }
 
   it('renders absence details and affected class count', () => {
-    const card = createAusenciaAprobacionCard(ausencia);
+    const card = createAusenciaAprobacionCard(ausencia)
 
-    expect(card.textContent).toContain('Ada Lovelace');
-    expect(card.textContent).toContain('Personal');
-    expect(card.textContent).toContain('Alta');
-    expect(card.textContent).toContain('2 clases afectadas');
-    expect(card.textContent).toContain('Motivo familiar');
-  });
+    expect(card.textContent).toContain('Ada Lovelace')
+    expect(card.textContent).toContain('Personal')
+    expect(card.textContent).toContain('Alta')
+    expect(card.textContent).toContain('2 clases afectadas')
+    expect(card.textContent).toContain('Motivo familiar')
+  })
 
   it('calls onApprove with decision notes', () => {
-    const onApprove = vi.fn();
-    const card = createAusenciaAprobacionCard(ausencia, { onApprove });
-    card.querySelector('[data-decision-notes]').value = 'Aprobado con suplente.';
+    const onApprove = vi.fn()
+    const card = createAusenciaAprobacionCard(ausencia, { onApprove })
+    card.querySelector('[data-decision-notes]').value = 'Aprobado con suplente.'
 
-    card.querySelector('[data-action="approve"]').click();
+    card.querySelector('[data-action="approve"]').click()
 
-    expect(onApprove).toHaveBeenCalledWith('a1', 'Aprobado con suplente.');
-  });
+    expect(onApprove).toHaveBeenCalledWith('a1', 'Aprobado con suplente.')
+  })
 
   it('calls onReject with decision notes', () => {
-    const onReject = vi.fn();
-    const card = createAusenciaAprobacionCard(ausencia, { onReject });
-    card.querySelector('[data-decision-notes]').value = 'Falta documento.';
+    const onReject = vi.fn()
+    const card = createAusenciaAprobacionCard(ausencia, { onReject })
+    card.querySelector('[data-decision-notes]').value = 'Falta documento.'
 
-    card.querySelector('[data-action="reject"]').click();
+    card.querySelector('[data-action="reject"]').click()
 
-    expect(onReject).toHaveBeenCalledWith('a1', 'Falta documento.');
-  });
-});
+    expect(onReject).toHaveBeenCalledWith('a1', 'Falta documento.')
+  })
+})

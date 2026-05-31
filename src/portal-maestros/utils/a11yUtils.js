@@ -105,5 +105,5 @@ export function clearFieldError(inputEl) {
  */
 export function clearAllFieldErrors(container) {
   const scope = container || document
-  scope.querySelectorAll('[aria-invalid="true"]').forEach(el => clearFieldError(el))
+  scope.querySelectorAll('[aria-invalid="true"]').forEach((el) => clearFieldError(el))
 }

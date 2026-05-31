@@ -4,7 +4,7 @@
  * Diseño Apple-style con categorías y ejemplos visuales.
  */
 
-import { enableTrap } from '../utils/focusTrap.js';
+import { enableTrap } from '../utils/focusTrap.js'
 
 export function createToolbarHelpModal(parentContainer, options = {}) {
   let modalEl = document.getElementById('pm-toolbar-help-modal')
@@ -20,7 +20,7 @@ export function createToolbarHelpModal(parentContainer, options = {}) {
           title: 'Alumno',
           description: 'Etiqueta a un alumno individual',
           example: '#María, #Pedro',
-          color: '#3b82f6'
+          color: '#3b82f6',
         },
         {
           icon: '📚',
@@ -28,7 +28,7 @@ export function createToolbarHelpModal(parentContainer, options = {}) {
           title: 'Contenido',
           description: 'Marca el tema abordado en la clase',
           example: '[Escala Do Mayor]',
-          color: '#10b981'
+          color: '#10b981',
         },
         {
           icon: '💡',
@@ -36,7 +36,7 @@ export function createToolbarHelpModal(parentContainer, options = {}) {
           title: 'Sugerencia',
           description: 'Anotación de mejora pedagógica',
           example: '(Mejorar postura)',
-          color: '#f59e0b'
+          color: '#f59e0b',
         },
         {
           icon: '📝',
@@ -44,9 +44,9 @@ export function createToolbarHelpModal(parentContainer, options = {}) {
           title: 'Tarea',
           description: 'Asignación para completar',
           example: '{Practicar 30 min}',
-          color: '#8b5cf6'
-        }
-      ]
+          color: '#8b5cf6',
+        },
+      ],
     },
     {
       category: 'Técnico',
@@ -57,7 +57,7 @@ export function createToolbarHelpModal(parentContainer, options = {}) {
           title: 'Medida',
           description: 'Término técnico musical',
           example: '$vibrato, $legato',
-          color: '#06b6d4'
+          color: '#06b6d4',
         },
         {
           icon: '🎓',
@@ -65,9 +65,9 @@ export function createToolbarHelpModal(parentContainer, options = {}) {
           title: 'Objetivo',
           description: 'Meta curricular o achievement',
           example: '>NIVEL-3',
-          color: '#6366f1'
-        }
-      ]
+          color: '#6366f1',
+        },
+      ],
     },
     {
       category: 'Inteligencia Artificial',
@@ -78,7 +78,7 @@ export function createToolbarHelpModal(parentContainer, options = {}) {
           title: 'Mejorar Texto',
           description: 'Mejora gramática y claridad con IA',
           example: '"María no entiende" → texto mejorado',
-          color: '#ec4899'
+          color: '#ec4899',
         },
         {
           icon: '🚀',
@@ -86,10 +86,10 @@ export function createToolbarHelpModal(parentContainer, options = {}) {
           title: 'Estructurar con DSL',
           description: 'Convierte texto libre a formato DSL',
           example: '"María tocando escalas" → #María [Escalas]',
-          color: '#f97316'
-        }
-      ]
-    }
+          color: '#f97316',
+        },
+      ],
+    },
   ]
 
   if (!modalEl) {
@@ -121,11 +121,14 @@ export function createToolbarHelpModal(parentContainer, options = {}) {
         </div>
         
         <div class="pm-help-modal-body">
-          ${TOOLBAR_HELP.map(section => `
+          ${TOOLBAR_HELP.map(
+            (section) => `
             <div class="pm-help-section">
               <h3 class="pm-help-section-title">${section.category}</h3>
               <div class="pm-help-grid">
-                ${section.items.map(tool => `
+                ${section.items
+                  .map(
+                    (tool) => `
                   <div class="pm-help-card" style="--card-accent: ${tool.color}">
                     <div class="pm-help-card-header">
                       <div class="pm-help-card-icon">${tool.icon}</div>
@@ -138,10 +141,13 @@ export function createToolbarHelpModal(parentContainer, options = {}) {
                       <code class="pm-help-example-code">${tool.example}</code>
                     </div>
                   </div>
-                `).join('')}
+                `,
+                  )
+                  .join('')}
               </div>
             </div>
-          `).join('')}
+          `,
+          ).join('')}
           
           <div class="pm-help-tips">
             <div class="pm-help-tip-icon">💡</div>
@@ -503,19 +509,22 @@ export function createToolbarHelpModal(parentContainer, options = {}) {
   }
 
   function close() {
-    if (_focusTrap) { _focusTrap.dispose(); _focusTrap = null }
+    if (_focusTrap) {
+      _focusTrap.dispose()
+      _focusTrap = null
+    }
     modalEl.classList.remove('open')
   }
 
   // Event listeners
   modalEl.querySelector('#pm-help-close').onclick = close
   modalEl.querySelector('#pm-help-close-btn').onclick = close
-  
+
   // Close on backdrop click
   modalEl.onclick = (e) => {
     if (e.target === modalEl) close()
   }
-  
+
   // Close on Escape key
   document.addEventListener('keydown', function escHandler(e) {
     if (e.key === 'Escape' && modalEl.classList.contains('open')) {

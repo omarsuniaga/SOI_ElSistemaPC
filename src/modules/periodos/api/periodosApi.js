@@ -17,11 +17,7 @@ export async function getPeriodos() {
  * Obtiene el período académico marcado como activo.
  */
 export async function getPeriodoActivo() {
-  const { data, error } = await supabase
-    .from('periodos')
-    .select('*')
-    .eq('activo', true)
-    .single()
+  const { data, error } = await supabase.from('periodos').select('*').eq('activo', true).single()
 
   if (error) return null
   return data
@@ -37,12 +33,14 @@ export async function crearPeriodo(periodo) {
 
   const { data, error } = await supabase
     .from('periodos')
-    .insert([{
-      nombre:       periodo.nombre.trim(),
-      fecha_inicio: periodo.fecha_inicio,
-      fecha_fin:    periodo.fecha_fin,
-      activo:       periodo.activo ?? false,
-    }])
+    .insert([
+      {
+        nombre: periodo.nombre.trim(),
+        fecha_inicio: periodo.fecha_inicio,
+        fecha_fin: periodo.fecha_fin,
+        activo: periodo.activo ?? false,
+      },
+    ])
     .select()
 
   if (error) throw new Error('No se pudo crear el período')
@@ -53,11 +51,7 @@ export async function crearPeriodo(periodo) {
  * Actualiza los datos de un período existente.
  */
 export async function actualizarPeriodo(id, datos) {
-  const { data, error } = await supabase
-    .from('periodos')
-    .update(datos)
-    .eq('id', id)
-    .select()
+  const { data, error } = await supabase.from('periodos').update(datos).eq('id', id).select()
 
   if (error) throw new Error('No se pudo actualizar el período')
   return data[0]
@@ -85,14 +79,13 @@ export async function activarPeriodo(periodoId) {
  * Elimina un período académico.
  */
 export async function eliminarPeriodo(id) {
-  const { error } = await supabase
-    .from('periodos')
-    .delete()
-    .eq('id', id)
+  const { error } = await supabase.from('periodos').delete().eq('id', id)
 
   if (error) {
     if (error.code === '23503') {
-      throw new Error('No se puede eliminar el período porque tiene datos asociados (asistencias, notas, etc.)')
+      throw new Error(
+        'No se puede eliminar el período porque tiene datos asociados (asistencias, notas, etc.)',
+      )
     }
     throw new Error('No se pudo eliminar el período')
   }

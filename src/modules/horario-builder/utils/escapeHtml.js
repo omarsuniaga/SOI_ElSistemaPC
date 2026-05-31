@@ -8,11 +8,11 @@
  * @returns {string}
  */
 export function escapeHtml(str) {
-  if (str == null) return '';
+  if (str == null) return ''
   return String(str)
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
+    .replace(/'/g, '&#39;')
 }

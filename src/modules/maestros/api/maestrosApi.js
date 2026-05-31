@@ -30,11 +30,7 @@ export async function obtenerMaestros() {
 }
 
 export async function obtenerMaestro(id) {
-  const { data, error } = await supabase
-    .from('maestros')
-    .select('*')
-    .eq('id', id)
-    .single()
+  const { data, error } = await supabase.from('maestros').select('*').eq('id', id).single()
 
   if (error) {
     console.error('Error cargando maestro:', error.message)
@@ -54,21 +50,22 @@ export async function crearMaestro(maestro) {
     tlf: (maestro.telefono || maestro.tlf || '').trim() || null,
     especialidad: (maestro.instrumento || maestro.especialidad || '').trim() || null,
     resena: (maestro.bio || maestro.resena || '').trim() || null,
-    activo: maestro.is_active !== undefined ? maestro.is_active : (maestro.activo !== undefined ? maestro.activo : true),
+    activo:
+      maestro.is_active !== undefined
+        ? maestro.is_active
+        : maestro.activo !== undefined
+          ? maestro.activo
+          : true,
     especialidades: Array.isArray(maestro.especialidades) ? maestro.especialidades : [],
     user_id: maestro.user_id || null,
   }
 
-  const { data, error } = await supabase
-    .from('maestros')
-    .insert([datosLimpios])
-    .select()
+  const { data, error } = await supabase.from('maestros').insert([datosLimpios]).select()
 
   if (error) {
     console.error('Error creando maestro:', error.message)
     throw new Error('No se pudo crear el maestro')
   }
-
 
   return normalizeMaestro(data[0])
 }
@@ -95,7 +92,9 @@ export async function actualizarMaestro(id, actualizaciones) {
   if (actualizaciones.activo !== undefined) datosActualizacion.activo = actualizaciones.activo
 
   if (actualizaciones.especialidades !== undefined) {
-    datosActualizacion.especialidades = Array.isArray(actualizaciones.especialidades) ? actualizaciones.especialidades : []
+    datosActualizacion.especialidades = Array.isArray(actualizaciones.especialidades)
+      ? actualizaciones.especialidades
+      : []
   }
 
   const { data, error } = await supabase
@@ -117,10 +116,7 @@ export async function actualizarMaestro(id, actualizaciones) {
  * El maestro seguirá existiendo en la BD pero marcado como inactivo
  */
 export async function inactivarMaestro(id) {
-  const { error } = await supabase
-    .from('maestros')
-    .update({ activo: false })
-    .eq('id', id)
+  const { error } = await supabase.from('maestros').update({ activo: false }).eq('id', id)
 
   if (error) {
     console.error('Error inactivando maestro:', error.message)
@@ -132,10 +128,7 @@ export async function inactivarMaestro(id) {
  * Reactiva un maestro previamente inactivado
  */
 export async function activarMaestro(id) {
-  const { error } = await supabase
-    .from('maestros')
-    .update({ activo: true })
-    .eq('id', id)
+  const { error } = await supabase.from('maestros').update({ activo: true }).eq('id', id)
 
   if (error) {
     console.error('Error activando maestro:', error.message)
@@ -154,7 +147,9 @@ export async function eliminarMaestro(id) {
 
     // Errores específicos de integridad referencial
     if (error.code === '23503' || error.message.includes('foreign key')) {
-      throw new Error('No se puede eliminar este maestro porque tiene clases asignadas. Desasigna las clases primero.')
+      throw new Error(
+        'No se puede eliminar este maestro porque tiene clases asignadas. Desasigna las clases primero.',
+      )
     }
 
     throw new Error('No se pudo eliminar el maestro')
@@ -168,7 +163,9 @@ export async function buscarMaestros(query) {
   const { data, error } = await supabase
     .from('maestros')
     .select('*')
-    .or(`nombre_completo.ilike.%${searchTerm}%,correo.ilike.%${searchTerm}%,especialidad.ilike.%${searchTerm}%`)
+    .or(
+      `nombre_completo.ilike.%${searchTerm}%,correo.ilike.%${searchTerm}%,especialidad.ilike.%${searchTerm}%`,
+    )
     .order('nombre_completo', { ascending: true })
 
   if (error) {

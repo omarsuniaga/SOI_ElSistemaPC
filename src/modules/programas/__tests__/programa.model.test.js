@@ -17,7 +17,7 @@ describe('Programa Model', () => {
         id: 'prog-123',
         nombre: 'Cuerdas Sinfónicas',
         nivel: 'avanzado',
-        activo: false
+        activo: false,
       }
       const p = new Programa(data)
       expect(p.id).toBe('prog-123')
@@ -53,30 +53,30 @@ describe('Programa Model', () => {
     })
 
     it('should return error if description is too long', () => {
-      const p = new Programa({ 
-        nombre: 'Test', 
-        nivel: 'inicial', 
-        descripcion: 'D'.repeat(501) 
+      const p = new Programa({
+        nombre: 'Test',
+        nivel: 'inicial',
+        descripcion: 'D'.repeat(501),
       })
       const errors = p.validate(validLevels)
       expect(errors).toContain('La descripción no puede exceder los 500 caracteres')
     })
 
     it('should return error if duration is negative', () => {
-      const p = new Programa({ 
-        nombre: 'Test', 
-        nivel: 'inicial', 
-        duracion_anios: -1 
+      const p = new Programa({
+        nombre: 'Test',
+        nivel: 'inicial',
+        duracion_anios: -1,
       })
       const errors = p.validate(validLevels)
       expect(errors).toContain('La duración debe ser un número positivo')
     })
 
     it('should return no errors for valid data', () => {
-      const p = new Programa({ 
-        nombre: 'Teoría Musical', 
+      const p = new Programa({
+        nombre: 'Teoría Musical',
         nivel: '1',
-        duracion_anios: 2
+        duracion_anios: 2,
       })
       const errors = p.validate(validLevels)
       expect(errors.length).toBe(0)
@@ -88,7 +88,7 @@ describe('Programa Model', () => {
       const p = new Programa({
         nombre: '  Piano Complementario  ',
         nivel: 'intermedio',
-        duracion_anios: 3
+        duracion_anios: 3,
       })
       const json = p.toJSON()
       expect(json.nombre).toBe('Piano Complementario')

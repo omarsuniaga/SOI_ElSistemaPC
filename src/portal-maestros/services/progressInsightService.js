@@ -31,13 +31,15 @@ export async function fetchInsights(claseId, semanas = 12) {
 
   const { data, error } = await supabase
     .from('progresos')
-    .select(`
+    .select(
+      `
       contenido_dsl,
       tipo,
       estado_cualitativo,
       fecha_evaluacion,
       alumnos ( nombre_completo )
-    `)
+    `,
+    )
     .eq('clase_id', claseId)
     .eq('evaluacion_tipo', 'observacion')
     .gte('fecha_evaluacion', fechaDesdeStr)
@@ -51,7 +53,7 @@ export async function fetchInsights(claseId, semanas = 12) {
   }
 
   // Count unique session dates for totalSesiones
-  const sesionesUnicas = new Set(data.map(r => r.fecha_evaluacion))
+  const sesionesUnicas = new Set(data.map((r) => r.fecha_evaluacion))
 
   // Group rows by contenido_dsl (normalized: trim + lowercase)
   const groups = new Map()
@@ -59,24 +61,24 @@ export async function fetchInsights(claseId, semanas = 12) {
     const key = (row.contenido_dsl || '').trim().toLowerCase()
     if (!key) continue
 
-  if (!groups.has(key)) {
-    groups.set(key, {
-      contenido_dsl: row.contenido_dsl.trim(),
-      tipo: row.tipo || 'otro',
-      estados: [],
-      fechas: new Set(),
-      alumnos: new Set(),
-    })
+    if (!groups.has(key)) {
+      groups.set(key, {
+        contenido_dsl: row.contenido_dsl.trim(),
+        tipo: row.tipo || 'otro',
+        estados: [],
+        fechas: new Set(),
+        alumnos: new Set(),
+      })
+    }
+    const group = groups.get(key)
+    group.estados.push(row.estado_cualitativo || 'EN_PROGRESO')
+    group.fechas.add(row.fecha_evaluacion)
+    const nombreAlumno = row.alumnos?.nombre_completo
+    if (nombreAlumno) group.alumnos.add(nombreAlumno)
   }
-  const group = groups.get(key)
-  group.estados.push(row.estado_cualitativo || 'EN_PROGRESO')
-  group.fechas.add(row.fecha_evaluacion)
-  const nombreAlumno = row.alumnos?.nombre_completo
-  if (nombreAlumno) group.alumnos.add(nombreAlumno)
-}
 
   // Build registros: most recent estado wins, frecuencia = unique session count
-  const registros = Array.from(groups.values()).map(g => ({
+  const registros = Array.from(groups.values()).map((g) => ({
     contenido_dsl: g.contenido_dsl,
     tipo: g.tipo,
     estado: g.estados[0] || 'EN_PROGRESO', // first = most recent (sorted desc)

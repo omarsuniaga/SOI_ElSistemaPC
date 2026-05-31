@@ -38,7 +38,7 @@ export const rutaEvents = {
   emit(eventName, data) {
     if (!listeners.has(eventName)) return
     const callbacks = listeners.get(eventName)
-    callbacks.forEach(cb => {
+    callbacks.forEach((cb) => {
       try {
         cb(data)
       } catch (err) {

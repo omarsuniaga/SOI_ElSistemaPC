@@ -1,4 +1,4 @@
-import { supabase } from '../../../lib/supabaseClient';
+import { supabase } from '../../../lib/supabaseClient'
 
 /**
  * Servicio para la gestión de Rutas Académicas y Progreso.
@@ -12,10 +12,10 @@ export const academicService = {
       .from('students')
       .select('name, last_name, instrument_principal')
       .eq('id', studentId)
-      .single();
+      .single()
 
-    if (error) throw error;
-    return data;
+    if (error) throw error
+    return data
   },
 
   /**
@@ -24,7 +24,8 @@ export const academicService = {
   async fetchRoutes() {
     const { data, error } = await supabase
       .from('routes')
-      .select(`
+      .select(
+        `
         id,
         name,
         description,
@@ -36,12 +37,13 @@ export const academicService = {
           version_number,
           is_current
         )
-      `)
+      `,
+      )
       .eq('is_active', true)
-      .eq('route_versions.is_current', true);
+      .eq('route_versions.is_current', true)
 
-    if (error) throw error;
-    return data;
+    if (error) throw error
+    return data
   },
 
   /**
@@ -55,18 +57,19 @@ export const academicService = {
       .select('id')
       .eq('route_id', routeId)
       .eq('is_current', true)
-      .single();
+      .single()
 
-    if (vError) throw vError;
-    const versionId = versionData.id;
+    if (vError) throw vError
+    const versionId = versionData.id
 
     // 2. Obtener la jerarquía completa
-    // Nota: Dependiendo de la profundidad permitida por Supabase, 
+    // Nota: Dependiendo de la profundidad permitida por Supabase,
     // podríamos necesitar múltiples llamadas o una función RPC.
     // Por ahora, asumimos una consulta anidada estándar.
     const { data, error } = await supabase
       .from('blocks')
-      .select(`
+      .select(
+        `
         id,
         name,
         order_index,
@@ -87,12 +90,13 @@ export const academicService = {
             )
           )
         )
-      `)
+      `,
+      )
       .eq('route_version_id', versionId)
-      .order('order_index', { ascending: true });
+      .order('order_index', { ascending: true })
 
-    if (error) throw error;
-    return data;
+    if (error) throw error
+    return data
   },
 
   /**
@@ -103,18 +107,20 @@ export const academicService = {
   async getStudentProgress(studentId, routeId) {
     const { data, error } = await supabase
       .from('student_node_progress')
-      .select(`
+      .select(
+        `
         node_id,
         status,
         last_attempt_at,
         teacher_id
-      `)
-      .eq('student_id', studentId);
-      // Nota: El filtro por routeId se hace implícitamente al cruzar con la estructura de la ruta
-      // o podríamos filtrar por los nodes que pertenecen a esa route_version.
+      `,
+      )
+      .eq('student_id', studentId)
+    // Nota: El filtro por routeId se hace implícitamente al cruzar con la estructura de la ruta
+    // o podríamos filtrar por los nodes que pertenecen a esa route_version.
 
-    if (error) throw error;
-    return data;
+    if (error) throw error
+    return data
   },
 
   /**
@@ -127,28 +133,28 @@ export const academicService = {
         color: 'var(--apple-success)',
         icon: 'bi-check-circle-fill',
         label: 'Aprobado',
-        bg: 'rgba(52, 199, 89, 0.1)'
+        bg: 'rgba(52, 199, 89, 0.1)',
       },
       in_process: {
         color: 'var(--apple-warning)',
         icon: 'bi-clock-history',
         label: 'En Proceso',
-        bg: 'rgba(255, 149, 0, 0.1)'
+        bg: 'rgba(255, 149, 0, 0.1)',
       },
       failed: {
         color: 'var(--apple-danger)',
         icon: 'bi-exclamation-triangle-fill',
         label: 'No Logrado',
-        bg: 'rgba(255, 59, 48, 0.1)'
+        bg: 'rgba(255, 59, 48, 0.1)',
       },
       pending: {
         color: 'var(--apple-text-muted)',
         icon: 'bi-circle',
         label: 'Pendiente',
-        bg: 'rgba(142, 142, 147, 0.1)'
-      }
-    };
-    return tokens[status] || tokens.pending;
+        bg: 'rgba(142, 142, 147, 0.1)',
+      },
+    }
+    return tokens[status] || tokens.pending
   },
 
   /**
@@ -162,14 +168,14 @@ export const academicService = {
           student_id: studentId,
           route_version_id: routeVersionId,
           status: 'in_process',
-          started_at: new Date().toISOString()
-        }
+          started_at: new Date().toISOString(),
+        },
       ])
       .select()
-      .single();
+      .single()
 
-    if (error) throw error;
-    return data;
+    if (error) throw error
+    return data
   },
 
   /**
@@ -185,13 +191,13 @@ export const academicService = {
         end_date: data.end_date,
         focus: data.focus,
         planned_nodes: data.planned_nodes || [],
-        planned_indicators: data.planned_indicators || []
+        planned_indicators: data.planned_indicators || [],
       })
       .select()
-      .single();
+      .single()
 
-    if (error) throw error;
-    return result;
+    if (error) throw error
+    return result
   },
 
   /**
@@ -208,43 +214,45 @@ export const academicService = {
       .eq('clase_id', claseId)
       .eq('fecha', fecha)
       .eq('maestro_id', maestroId)
-      .maybeSingle();
+      .maybeSingle()
 
-    if (sError) throw sError;
+    if (sError) throw sError
 
     // Si no existe, la creamos (comportamiento por defecto de hoyView)
     if (!session) {
       const { data: newSession, error: nError } = await supabase
         .from('sesiones_clase')
-        .insert([{
-          clase_id: claseId,
-          fecha: fecha,
-          maestro_id: maestroId,
-          borrador: true
-        }])
+        .insert([
+          {
+            clase_id: claseId,
+            fecha: fecha,
+            maestro_id: maestroId,
+            borrador: true,
+          },
+        ])
         .select()
-        .single();
-      
-      if (nError) throw nError;
-      session = newSession;
+        .single()
+
+      if (nError) throw nError
+      session = newSession
     }
 
-    const sessionId = session.id;
+    const sessionId = session.id
 
     // 2. Obtener alumnos inscritos en la clase
     const { data: enrolledStudents, error: eError } = await supabase
       .from('alumnos_clases')
       .select('alumno_id')
-      .eq('clase_id', claseId);
+      .eq('clase_id', claseId)
 
-    if (eError) throw eError;
-    if (!enrolledStudents || enrolledStudents.length === 0) return { sessionId, snapshots: 0 };
+    if (eError) throw eError
+    if (!enrolledStudents || enrolledStudents.length === 0) return { sessionId, snapshots: 0 }
 
-    let totalSnapshots = 0;
+    let totalSnapshots = 0
 
     // 3. Para cada alumno, buscar su plan y planificación para esta fecha
     for (const enrollment of enrolledStudents) {
-      const studentId = enrollment.alumno_id;
+      const studentId = enrollment.alumno_id
 
       // Buscar plan activo
       const { data: plan, error: pError } = await supabase
@@ -252,9 +260,9 @@ export const academicService = {
         .select('id')
         .eq('student_id', studentId)
         .eq('status', 'in_process')
-        .maybeSingle();
+        .maybeSingle()
 
-      if (pError || !plan) continue;
+      if (pError || !plan) continue
 
       // Buscar planificación semanal para la fecha
       const { data: weeklyPlan, error: wpError } = await supabase
@@ -263,12 +271,12 @@ export const academicService = {
         .eq('academic_plan_id', plan.id)
         .lte('start_date', fecha)
         .gte('end_date', fecha)
-        .maybeSingle();
+        .maybeSingle()
 
-      if (wpError || !weeklyPlan) continue;
+      if (wpError || !weeklyPlan) continue
 
       // 4. Si hay planificación, generar snapshots inmutables
-      const snapshots = [];
+      const snapshots = []
 
       // Mapear indicadores planificados
       if (weeklyPlan.planned_indicators && weeklyPlan.planned_indicators.length > 0) {
@@ -280,10 +288,10 @@ export const academicService = {
             indicator_id: indicator.indicator_id,
             node_name: indicator.node_name,
             indicator_description: indicator.description,
-            is_critical: indicator.is_critical || false
-          });
+            is_critical: indicator.is_critical || false,
+          })
         }
-      } 
+      }
       // Si solo hay nodos planificados pero no indicadores específicos (fallback)
       else if (weeklyPlan.planned_nodes && weeklyPlan.planned_nodes.length > 0) {
         for (const node of weeklyPlan.planned_nodes) {
@@ -292,21 +300,21 @@ export const academicService = {
             student_id: studentId,
             node_id: node.node_id,
             node_name: node.title,
-            is_critical: node.is_critical || false
-          });
+            is_critical: node.is_critical || false,
+          })
         }
       }
 
       if (snapshots.length > 0) {
         const { error: insError } = await supabase
           .from('class_session_content_snapshots')
-          .insert(snapshots);
-        
-        if (!insError) totalSnapshots += snapshots.length;
+          .insert(snapshots)
+
+        if (!insError) totalSnapshots += snapshots.length
       }
     }
 
-    return { sessionId, totalSnapshots };
+    return { sessionId, totalSnapshots }
   },
 
   /**
@@ -315,8 +323,8 @@ export const academicService = {
    * @param {object} payload - Datos del intento.
    */
   async saveIndicatorAttempt(payload) {
-    const { enqueue } = await import('../../../portal-maestros/services/offlineQueue.js');
-    
+    const { enqueue } = await import('../../../portal-maestros/services/offlineQueue.js')
+
     await enqueue({
       tabla: 'indicator_attempts',
       operacion: 'insert',
@@ -328,11 +336,11 @@ export const academicService = {
         status: payload.status,
         feedback: payload.feedback || '',
         attempt_number: payload.attempt_number || 1,
-        created_at: new Date().toISOString()
-      }
-    });
+        created_at: new Date().toISOString(),
+      },
+    })
 
-    return { success: true, local: true };
+    return { success: true, local: true }
   },
 
   /**
@@ -345,29 +353,30 @@ export const academicService = {
       .select('indicator_id')
       .eq('student_id', studentId)
       .eq('status', 'approved')
-      .in('indicator_id', indicatorIds);
+      .in('indicator_id', indicatorIds)
 
-    if (error) throw error;
+    if (error) throw error
 
     // 2. Intentos pendientes en la cola local
-    const { getQueue } = await import('../../../portal-maestros/services/offlineQueue.js');
-    const queue = await getQueue();
+    const { getQueue } = await import('../../../portal-maestros/services/offlineQueue.js')
+    const queue = await getQueue()
     const localApproved = queue
-      .filter(item => 
-        item.tabla === 'indicator_attempts' && 
-        item.payload.student_id === studentId && 
-        item.payload.status === 'approved' &&
-        indicatorIds.includes(item.payload.indicator_id)
+      .filter(
+        (item) =>
+          item.tabla === 'indicator_attempts' &&
+          item.payload.student_id === studentId &&
+          item.payload.status === 'approved' &&
+          indicatorIds.includes(item.payload.indicator_id),
       )
-      .map(item => ({ indicator_id: item.payload.indicator_id }));
+      .map((item) => ({ indicator_id: item.payload.indicator_id }))
 
     // Combinar (Set para unicidad)
     const allIds = new Set([
-      ...remoteAttempts.map(a => a.indicator_id),
-      ...localApproved.map(a => a.indicator_id)
-    ]);
+      ...remoteAttempts.map((a) => a.indicator_id),
+      ...localApproved.map((a) => a.indicator_id),
+    ])
 
-    return Array.from(allIds).map(id => ({ indicator_id: id }));
+    return Array.from(allIds).map((id) => ({ indicator_id: id }))
   },
 
   /**
@@ -377,21 +386,21 @@ export const academicService = {
     const { data: indicators, error: iError } = await supabase
       .from('indicators')
       .select('id')
-      .eq('node_id', nodeId);
+      .eq('node_id', nodeId)
 
-    if (iError) throw iError;
-    if (!indicators || indicators.length === 0) return { status: 'no_indicators' };
+    if (iError) throw iError
+    if (!indicators || indicators.length === 0) return { status: 'no_indicators' }
 
-    const indicatorIds = indicators.map(i => i.id);
-    
+    const indicatorIds = indicators.map((i) => i.id)
+
     // USAR MOTOR HÍBRIDO
-    const attempts = await this.getEffectiveApprovedAttempts(studentId, indicatorIds);
+    const attempts = await this.getEffectiveApprovedAttempts(studentId, indicatorIds)
 
-    const approvedCount = attempts.length;
-    const isApproved = approvedCount === indicators.length;
+    const approvedCount = attempts.length
+    const isApproved = approvedCount === indicators.length
 
     if (isApproved) {
-      const { enqueue } = await import('../../../portal-maestros/services/offlineQueue.js');
+      const { enqueue } = await import('../../../portal-maestros/services/offlineQueue.js')
       await enqueue({
         tabla: 'student_node_progress',
         operacion: 'upsert',
@@ -399,13 +408,13 @@ export const academicService = {
           student_id: studentId,
           node_id: nodeId,
           status: 'approved',
-          last_attempt_at: new Date().toISOString()
-        }
-      });
-      return { status: 'approved', changed: true };
+          last_attempt_at: new Date().toISOString(),
+        },
+      })
+      return { status: 'approved', changed: true }
     }
 
-    return { status: 'in_process', changed: false };
+    return { status: 'in_process', changed: false }
   },
 
   /**
@@ -415,43 +424,44 @@ export const academicService = {
     const { data: nodes, error: nError } = await supabase
       .from('nodes')
       .select('id, title, is_critical')
-      .eq('level_id', levelId);
+      .eq('level_id', levelId)
 
-    if (nError) throw nError;
+    if (nError) throw nError
 
     // Obtener progreso híbrido local
-    const { getQueue } = await import('../../../portal-maestros/services/offlineQueue.js');
-    const queue = await getQueue();
+    const { getQueue } = await import('../../../portal-maestros/services/offlineQueue.js')
+    const queue = await getQueue()
     const localNodeProgress = queue
-      .filter(item => 
-        item.tabla === 'student_node_progress' && 
-        item.payload.student_id === studentId && 
-        item.payload.status === 'approved'
+      .filter(
+        (item) =>
+          item.tabla === 'student_node_progress' &&
+          item.payload.student_id === studentId &&
+          item.payload.status === 'approved',
       )
-      .map(item => item.payload.node_id);
+      .map((item) => item.payload.node_id)
 
-    const nodeIds = nodes.map(n => n.id);
+    const nodeIds = nodes.map((n) => n.id)
     const { data: remoteProgress, error: pError } = await supabase
       .from('student_node_progress')
       .select('node_id, status')
       .eq('student_id', studentId)
-      .in('node_id', nodeIds);
+      .in('node_id', nodeIds)
 
-    if (pError) throw pError;
+    if (pError) throw pError
 
     const approvedNodes = new Set([
-      ...remoteProgress.filter(p => p.status === 'approved').map(p => p.node_id),
-      ...localNodeProgress
-    ]);
+      ...remoteProgress.filter((p) => p.status === 'approved').map((p) => p.node_id),
+      ...localNodeProgress,
+    ])
 
-    const allNodesApproved = nodes.every(n => approvedNodes.has(n.id));
-    
+    const allNodesApproved = nodes.every((n) => approvedNodes.has(n.id))
+
     // REGLA CRÍTICA: Usar bandera is_critical
-    const criticalNodes = nodes.filter(n => n.is_critical);
-    const allCriticalApproved = criticalNodes.every(n => approvedNodes.has(n.id));
+    const criticalNodes = nodes.filter((n) => n.is_critical)
+    const allCriticalApproved = criticalNodes.every((n) => approvedNodes.has(n.id))
 
     if (allNodesApproved && allCriticalApproved) {
-      const { enqueue } = await import('../../../portal-maestros/services/offlineQueue.js');
+      const { enqueue } = await import('../../../portal-maestros/services/offlineQueue.js')
       await enqueue({
         tabla: 'student_level_progress',
         operacion: 'upsert',
@@ -459,13 +469,13 @@ export const academicService = {
           student_id: studentId,
           level_id: levelId,
           status: 'approved',
-          completed_at: new Date().toISOString()
-        }
-      });
-      return { status: 'approved', changed: true, levelId };
+          completed_at: new Date().toISOString(),
+        },
+      })
+      return { status: 'approved', changed: true, levelId }
     }
 
-    return { status: 'in_process', changed: false };
+    return { status: 'in_process', changed: false }
   },
 
   /**
@@ -477,9 +487,9 @@ export const academicService = {
       .select('id')
       .eq('student_id', studentId)
       .eq('status', 'in_process')
-      .maybeSingle();
+      .maybeSingle()
 
-    if (!plan) return null;
+    if (!plan) return null
 
     const { data: weeklyPlan } = await supabase
       .from('weekly_plan_entries')
@@ -487,13 +497,13 @@ export const academicService = {
       .eq('academic_plan_id', plan.id)
       .lte('start_date', fecha)
       .gte('end_date', fecha)
-      .maybeSingle();
+      .maybeSingle()
 
-    if (!weeklyPlan) return null;
+    if (!weeklyPlan) return null
 
-    const snapshots = [];
+    const snapshots = []
     if (weeklyPlan.planned_indicators?.length > 0) {
-      weeklyPlan.planned_indicators.forEach(indicator => {
+      weeklyPlan.planned_indicators.forEach((indicator) => {
         snapshots.push({
           session_id: sessionId,
           student_id: studentId,
@@ -501,18 +511,17 @@ export const academicService = {
           indicator_id: indicator.indicator_id,
           node_name: indicator.node_name,
           indicator_description: indicator.description,
-          is_critical: indicator.is_critical || false
-        });
-      });
+          is_critical: indicator.is_critical || false,
+        })
+      })
     }
 
     if (snapshots.length > 0) {
-      await supabase.from('class_session_content_snapshots').insert(snapshots);
-      return snapshots;
+      await supabase.from('class_session_content_snapshots').insert(snapshots)
+      return snapshots
     }
-    return null;
+    return null
   },
-
 
   /**
    * Orquestador de cierre de sesión: recorre los alumnos evaluados y dispara recálculos.
@@ -522,57 +531,69 @@ export const academicService = {
     const { data: evaluations, error: eError } = await supabase
       .from('indicator_attempts')
       .select('student_id, indicator_id')
-      .eq('session_id', sessionId);
+      .eq('session_id', sessionId)
 
     if (eError) {
-      console.warn('Error obtener indicator_attempts:', eError.message);
-      return [];
+      console.warn('Error obtener indicator_attempts:', eError.message)
+      return []
     }
-    if (!evaluations || evaluations.length === 0) return [];
+    if (!evaluations || evaluations.length === 0) return []
 
     // 1b. Obtener node_id desde indicators (la tabla indicator_attempts no tiene node_id)
-    const indicatorIds = [...new Set(evaluations.map(e => e.indicator_id).filter(Boolean))];
-    let nodeMap = new Map();
+    const indicatorIds = [...new Set(evaluations.map((e) => e.indicator_id).filter(Boolean))]
+    let nodeMap = new Map()
     if (indicatorIds.length > 0) {
       const { data: indicators } = await supabase
-        .from('indicators').select('id, node_id').in('id', indicatorIds);
-      nodeMap = new Map((indicators || []).map(i => [i.id, i.node_id]));
+        .from('indicators')
+        .select('id, node_id')
+        .in('id', indicatorIds)
+      nodeMap = new Map((indicators || []).map((i) => [i.id, i.node_id]))
     }
 
     // Mapear node_id a cada evaluación
-    evaluations.forEach(ev => { ev.node_id = nodeMap.get(ev.indicator_id) ?? ev.node_id; });
+    evaluations.forEach((ev) => {
+      ev.node_id = nodeMap.get(ev.indicator_id) ?? ev.node_id
+    })
 
     // 2. Agrupar por estudiante para evitar redundancia
-    const studentMap = new Map();
-    evaluations.forEach(ev => {
-      if (!ev.node_id) return; // skip if no node_id found
-      if (!studentMap.has(ev.student_id)) studentMap.set(ev.student_id, new Set());
-      studentMap.get(ev.student_id).add(ev.node_id);
-    });
+    const studentMap = new Map()
+    evaluations.forEach((ev) => {
+      if (!ev.node_id) return // skip if no node_id found
+      if (!studentMap.has(ev.student_id)) studentMap.set(ev.student_id, new Set())
+      studentMap.get(ev.student_id).add(ev.node_id)
+    })
 
-    const results = [];
+    const results = []
 
     for (const [studentId, nodesEvaluated] of studentMap) {
       const studentAchievements = {
         studentId,
         approvedNodes: [],
-        levelPromoted: null
-      };
+        levelPromoted: null,
+      }
 
       // Recalcular cada nodo evaluado
       for (const nodeId of nodesEvaluated) {
-        const nodeRes = await this.recalculateNodeProgress(studentId, nodeId);
+        const nodeRes = await this.recalculateNodeProgress(studentId, nodeId)
         if (nodeRes.status === 'approved') {
           // Obtener nombre del nodo para el feedback
-          const { data: nodeData } = await supabase.from('nodes').select('title, level_id').eq('id', nodeId).single();
-          studentAchievements.approvedNodes.push(nodeData.title);
+          const { data: nodeData } = await supabase
+            .from('nodes')
+            .select('title, level_id')
+            .eq('id', nodeId)
+            .single()
+          studentAchievements.approvedNodes.push(nodeData.title)
 
           // Si el nodo se aprobó, verificar si el nivel también
           if (nodeData.level_id) {
-            const levelRes = await this.checkLevelCompletion(studentId, nodeData.level_id);
+            const levelRes = await this.checkLevelCompletion(studentId, nodeData.level_id)
             if (levelRes.status === 'approved') {
-              const { data: levelData } = await supabase.from('levels').select('name').eq('id', nodeData.level_id).single();
-              studentAchievements.levelPromoted = levelData.name;
+              const { data: levelData } = await supabase
+                .from('levels')
+                .select('name')
+                .eq('id', nodeData.level_id)
+                .single()
+              studentAchievements.levelPromoted = levelData.name
             }
           }
         }
@@ -580,14 +601,18 @@ export const academicService = {
 
       if (studentAchievements.approvedNodes.length > 0 || studentAchievements.levelPromoted) {
         // Obtener nombre del alumno
-        const { data: stu } = await supabase.from('alumnos').select('nombre_completo').eq('id', studentId).single();
+        const { data: stu } = await supabase
+          .from('alumnos')
+          .select('nombre_completo')
+          .eq('id', studentId)
+          .single()
         results.push({
           ...studentAchievements,
-          studentName: stu.nombre_completo
-        });
+          studentName: stu.nombre_completo,
+        })
       }
     }
 
-    return results;
-  }
-};
+    return results
+  },
+}

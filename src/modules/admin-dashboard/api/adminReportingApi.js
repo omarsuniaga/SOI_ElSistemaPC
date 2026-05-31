@@ -4,7 +4,10 @@
  */
 
 import { supabase } from '../../../lib/supabaseClient.js'
-import { getTeacherFillingMetrics, getFillingMetricsByMaestro } from './analyticsFillingBehaviorService.js'
+import {
+  getTeacherFillingMetrics,
+  getFillingMetricsByMaestro,
+} from './analyticsFillingBehaviorService.js'
 import * as trendService from './trendAnalysisService.js'
 
 /**
@@ -37,7 +40,7 @@ export async function getMaestroPerformanceReport(maestroId) {
         notification_state,
         notif_count,
         clases(nombre)
-        `
+        `,
       )
       .eq('maestro_id', maestroId)
       .order('created_at', { ascending: false })
@@ -56,7 +59,7 @@ export async function getMaestroPerformanceReport(maestroId) {
         escalation_level,
         tipo,
         registro_pendiente_id
-        `
+        `,
       )
       .eq('maestro_id', maestroId)
       .like('tipo', '%escalation%')
@@ -76,7 +79,7 @@ export async function getMaestroPerformanceReport(maestroId) {
       registros: registros || [],
       notifications: notifications || [],
       metrics,
-      generatedAt: new Date().toISOString()
+      generatedAt: new Date().toISOString(),
     }
   } catch (err) {
     console.error('[getMaestroPerformanceReport] Error:', err)
@@ -109,7 +112,7 @@ function calculatePerformanceMetrics(registros) {
     avgNotificationsPerSession:
       total > 0
         ? (registros.reduce((sum, r) => sum + (r.notif_count || 0), 0) / total).toFixed(1)
-        : 0
+        : 0,
   }
 }
 
@@ -133,7 +136,7 @@ export async function getInstitutionComplianceSummary() {
         sesiones_naranja,
         sesiones_rojo,
         updated_at
-        `
+        `,
       )
       .order('updated_at', { ascending: false })
 
@@ -142,22 +145,16 @@ export async function getInstitutionComplianceSummary() {
     }
 
     // Group by category
-    const byCategory = (allDesempeño || []).reduce(
-      (acc, d) => {
-        acc[d.categoria] = (acc[d.categoria] || 0) + 1
-        return acc
-      },
-      {}
-    )
+    const byCategory = (allDesempeño || []).reduce((acc, d) => {
+      acc[d.categoria] = (acc[d.categoria] || 0) + 1
+      return acc
+    }, {})
 
     // Trend summary
-    const byTrend = (allDesempeño || []).reduce(
-      (acc, d) => {
-        acc[d.tendencia] = (acc[d.tendencia] || 0) + 1
-        return acc
-      },
-      {}
-    )
+    const byTrend = (allDesempeño || []).reduce((acc, d) => {
+      acc[d.tendencia] = (acc[d.tendencia] || 0) + 1
+      return acc
+    }, {})
 
     // Overall compliance rate
     const totalSessions = (allDesempeño || []).reduce((sum, d) => sum + d.total_sesiones, 0)
@@ -173,7 +170,7 @@ export async function getInstitutionComplianceSummary() {
       totalSessions,
       completedSessions,
       data: allDesempeño || [],
-      generatedAt: new Date().toISOString()
+      generatedAt: new Date().toISOString(),
     }
   } catch (err) {
     console.error('[getInstitutionComplianceSummary] Error:', err)
@@ -197,7 +194,7 @@ export async function getCriticalMaestrosReport() {
         created_at,
         notif_count,
         maestros(nombre_completo)
-        `
+        `,
       )
       .in('notification_state', ['NARANJA', 'ROJO'])
       .eq('estado', 'pendiente')
@@ -208,35 +205,30 @@ export async function getCriticalMaestrosReport() {
     }
 
     // Group by maestro and state
-    const byMaestro = (criticalRegistros || []).reduce(
-      (acc, reg) => {
-        if (!acc[reg.maestro_id]) {
-          acc[reg.maestro_id] = {
-            maestroId: reg.maestro_id,
-            nombre: reg.maestros?.nombre_completo,
-            email: reg.maestros?.email,
-            naranja: [],
-            rojo: []
-          }
+    const byMaestro = (criticalRegistros || []).reduce((acc, reg) => {
+      if (!acc[reg.maestro_id]) {
+        acc[reg.maestro_id] = {
+          maestroId: reg.maestro_id,
+          nombre: reg.maestros?.nombre_completo,
+          email: reg.maestros?.email,
+          naranja: [],
+          rojo: [],
         }
+      }
 
-        if (reg.notification_state === 'NARANJA') {
-          acc[reg.maestro_id].naranja.push(reg)
-        } else {
-          acc[reg.maestro_id].rojo.push(reg)
-        }
+      if (reg.notification_state === 'NARANJA') {
+        acc[reg.maestro_id].naranja.push(reg)
+      } else {
+        acc[reg.maestro_id].rojo.push(reg)
+      }
 
-        return acc
-      },
-      {}
-    )
+      return acc
+    }, {})
 
     // Build report
     const criticalMaestros = Object.values(byMaestro).map((m) => {
       const allRegistros = [...m.naranja, ...m.rojo]
-      const oldestCreated = Math.max(
-        ...allRegistros.map((r) => new Date(r.created_at).getTime())
-      )
+      const oldestCreated = Math.max(...allRegistros.map((r) => new Date(r.created_at).getTime()))
       const diasAtraso = Math.ceil((Date.now() - oldestCreated) / (1000 * 60 * 60 * 24))
 
       return {
@@ -245,7 +237,7 @@ export async function getCriticalMaestrosReport() {
         naranjaCount: m.naranja.length,
         rojoCount: m.rojo.length,
         totalCount: allRegistros.length,
-        urgency: m.rojo.length > 0 ? 'CRITICA' : 'ALTA'
+        urgency: m.rojo.length > 0 ? 'CRITICA' : 'ALTA',
       }
     })
 
@@ -253,10 +245,10 @@ export async function getCriticalMaestrosReport() {
       totalCritical: criticalMaestros.length,
       byUrgency: {
         critica: criticalMaestros.filter((m) => m.urgency === 'CRITICA').length,
-        alta: criticalMaestros.filter((m) => m.urgency === 'ALTA').length
+        alta: criticalMaestros.filter((m) => m.urgency === 'ALTA').length,
       },
       maestros: criticalMaestros.sort((a, b) => b.diasAtraso - a.diasAtraso),
-      generatedAt: new Date().toISOString()
+      generatedAt: new Date().toISOString(),
     }
   } catch (err) {
     console.error('[getCriticalMaestrosReport] Error:', err)
@@ -279,7 +271,7 @@ export async function getMaestroTrendAnalysis(maestroId, daysBack = 30) {
         created_at,
         notification_state,
         notif_count
-        `
+        `,
       )
       .eq('maestro_id', maestroId)
       .gte('created_at', since)
@@ -290,23 +282,20 @@ export async function getMaestroTrendAnalysis(maestroId, daysBack = 30) {
     }
 
     // Group by day and state
-    const byDay = (registros || []).reduce(
-      (acc, reg) => {
-        const day = new Date(reg.created_at).toISOString().split('T')[0]
-        if (!acc[day]) {
-          acc[day] = { verde: 0, amarillo: 0, naranja: 0, rojo: 0, total: 0 }
-        }
-        acc[day][reg.notification_state.toLowerCase()]++
-        acc[day].total++
-        return acc
-      },
-      {}
-    )
+    const byDay = (registros || []).reduce((acc, reg) => {
+      const day = new Date(reg.created_at).toISOString().split('T')[0]
+      if (!acc[day]) {
+        acc[day] = { verde: 0, amarillo: 0, naranja: 0, rojo: 0, total: 0 }
+      }
+      acc[day][reg.notification_state.toLowerCase()]++
+      acc[day].total++
+      return acc
+    }, {})
 
     // Convert to array
     const trend = Object.entries(byDay).map(([day, counts]) => ({
       day,
-      ...counts
+      ...counts,
     }))
 
     return {
@@ -317,9 +306,9 @@ export async function getMaestroTrendAnalysis(maestroId, daysBack = 30) {
         verde: (registros || []).filter((r) => r.notification_state === 'VERDE').length,
         amarillo: (registros || []).filter((r) => r.notification_state === 'AMARILLO').length,
         naranja: (registros || []).filter((r) => r.notification_state === 'NARANJA').length,
-        rojo: (registros || []).filter((r) => r.notification_state === 'ROJO').length
+        rojo: (registros || []).filter((r) => r.notification_state === 'ROJO').length,
       },
-      generatedAt: new Date().toISOString()
+      generatedAt: new Date().toISOString(),
     }
   } catch (err) {
     console.error('[getMaestroTrendAnalysis] Error:', err)
@@ -377,7 +366,7 @@ export async function getMaestroTrendReportWithFilling(maestroId, daysBack = 30)
 
     // Get filling metrics
     const fillingMetrics = await getFillingMetricsByMaestro(maestroId)
-    const recentFilling = fillingMetrics.filter(m => m.fecha >= since)
+    const recentFilling = fillingMetrics.filter((m) => m.fecha >= since)
 
     // Analyze filling trends
     const fillingTrends = trendService.aggregateMetricsByDate(recentFilling)
@@ -391,14 +380,23 @@ export async function getMaestroTrendReportWithFilling(maestroId, daysBack = 30)
       anomalies,
       summary: {
         total_classes_analyzed: recentFilling.length,
-        avg_ai_usage: recentFilling.length > 0
-          ? (recentFilling.reduce((sum, m) => sum + (m.uso_ai_fill_percent || 0), 0) / recentFilling.length).toFixed(1)
-          : 0,
-        asistencia_first_percent: recentFilling.length > 0
-          ? (recentFilling.filter(m => m.orden_asistencia_primero === 1).length / recentFilling.length * 100).toFixed(1)
-          : 0
+        avg_ai_usage:
+          recentFilling.length > 0
+            ? (
+                recentFilling.reduce((sum, m) => sum + (m.uso_ai_fill_percent || 0), 0) /
+                recentFilling.length
+              ).toFixed(1)
+            : 0,
+        asistencia_first_percent:
+          recentFilling.length > 0
+            ? (
+                (recentFilling.filter((m) => m.orden_asistencia_primero === 1).length /
+                  recentFilling.length) *
+                100
+              ).toFixed(1)
+            : 0,
       },
-      generatedAt: new Date().toISOString()
+      generatedAt: new Date().toISOString(),
     }
   } catch (err) {
     console.error('[getMaestroTrendReportWithFilling] Error:', err)
@@ -415,7 +413,7 @@ export async function getInstitutionTrendReportWithFilling(daysBack = 30) {
 
     // Get all filling metrics
     const allMetrics = await getTeacherFillingMetrics()
-    const recentMetrics = allMetrics.filter(m => m.fecha >= since)
+    const recentMetrics = allMetrics.filter((m) => m.fecha >= since)
 
     // Aggregate by date and by maestro
     const dateAggregation = trendService.aggregateMetricsByDate(recentMetrics)
@@ -428,17 +426,31 @@ export async function getInstitutionTrendReportWithFilling(daysBack = 30) {
       date_trends: dateAggregation,
       maestro_trends: maestroAggregation,
       institution_summary: {
-        avg_ai_usage_institution: recentMetrics.length > 0
-          ? (recentMetrics.reduce((sum, m) => sum + (m.uso_ai_fill_percent || 0), 0) / recentMetrics.length).toFixed(1)
-          : 0,
-        asistencia_first_percent: recentMetrics.length > 0
-          ? (recentMetrics.filter(m => m.orden_asistencia_primero === 1).length / recentMetrics.length * 100).toFixed(1)
-          : 0,
-        observaciones_first_percent: recentMetrics.length > 0
-          ? (recentMetrics.filter(m => m.orden_observaciones_primero === 1).length / recentMetrics.length * 100).toFixed(1)
-          : 0
+        avg_ai_usage_institution:
+          recentMetrics.length > 0
+            ? (
+                recentMetrics.reduce((sum, m) => sum + (m.uso_ai_fill_percent || 0), 0) /
+                recentMetrics.length
+              ).toFixed(1)
+            : 0,
+        asistencia_first_percent:
+          recentMetrics.length > 0
+            ? (
+                (recentMetrics.filter((m) => m.orden_asistencia_primero === 1).length /
+                  recentMetrics.length) *
+                100
+              ).toFixed(1)
+            : 0,
+        observaciones_first_percent:
+          recentMetrics.length > 0
+            ? (
+                (recentMetrics.filter((m) => m.orden_observaciones_primero === 1).length /
+                  recentMetrics.length) *
+                100
+              ).toFixed(1)
+            : 0,
       },
-      generatedAt: new Date().toISOString()
+      generatedAt: new Date().toISOString(),
     }
   } catch (err) {
     console.error('[getInstitutionTrendReportWithFilling] Error:', err)

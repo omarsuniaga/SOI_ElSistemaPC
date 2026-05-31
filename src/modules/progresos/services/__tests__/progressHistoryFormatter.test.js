@@ -55,7 +55,7 @@ describe('progressHistoryFormatter', () => {
       const history = result.get('alum-001')
       // All buckets should have null calificacion and asistencia_rate if no data
       const emptyBuckets = history.buckets.filter(
-        b => b.calificacion === null && b.asistencia_rate === null
+        (b) => b.calificacion === null && b.asistencia_rate === null,
       )
       expect(emptyBuckets.length).toBeGreaterThan(0)
     })
@@ -68,9 +68,24 @@ describe('progressHistoryFormatter', () => {
         granularity: 'month',
         asis: [],
         prog: [
-          { alumno_id: 'alum-001', calificacion: 8.0, fecha_evaluacion: '2026-05-15', evaluacion_id: 'eval-1' },
-          { alumno_id: 'alum-001', calificacion: 7.0, fecha_evaluacion: '2026-06-15', evaluacion_id: 'eval-2' },
-          { alumno_id: 'alum-001', calificacion: 9.0, fecha_evaluacion: '2026-07-15', evaluacion_id: 'eval-3' },
+          {
+            alumno_id: 'alum-001',
+            calificacion: 8.0,
+            fecha_evaluacion: '2026-05-15',
+            evaluacion_id: 'eval-1',
+          },
+          {
+            alumno_id: 'alum-001',
+            calificacion: 7.0,
+            fecha_evaluacion: '2026-06-15',
+            evaluacion_id: 'eval-2',
+          },
+          {
+            alumno_id: 'alum-001',
+            calificacion: 9.0,
+            fecha_evaluacion: '2026-07-15',
+            evaluacion_id: 'eval-3',
+          },
         ],
         attempts: [],
         obs: [],
@@ -91,8 +106,20 @@ describe('progressHistoryFormatter', () => {
         granularity: 'evaluacion',
         asis: [],
         prog: [
-          { alumno_id: 'alum-001', calificacion: 8.0, fecha_evaluacion: '2026-05-05', evaluacion_id: 'eval-mid', tipo_evaluacion: 'parcial' },
-          { alumno_id: 'alum-001', calificacion: 7.5, fecha_evaluacion: '2026-05-15', evaluacion_id: 'eval-final', tipo_evaluacion: 'final' },
+          {
+            alumno_id: 'alum-001',
+            calificacion: 8.0,
+            fecha_evaluacion: '2026-05-05',
+            evaluacion_id: 'eval-mid',
+            tipo_evaluacion: 'parcial',
+          },
+          {
+            alumno_id: 'alum-001',
+            calificacion: 7.5,
+            fecha_evaluacion: '2026-05-15',
+            evaluacion_id: 'eval-final',
+            tipo_evaluacion: 'final',
+          },
         ],
         attempts: [],
         obs: [],
@@ -117,12 +144,18 @@ describe('progressHistoryFormatter', () => {
         prog: [],
         attempts: [],
         obs: [
-          { alumno_id: 'alum-001', id: 'obs-1', texto: 'Good', fecha: '2026-05-03', tipo: 'alumno' },
+          {
+            alumno_id: 'alum-001',
+            id: 'obs-1',
+            texto: 'Good',
+            fecha: '2026-05-03',
+            tipo: 'alumno',
+          },
         ],
       })
 
       const history = result.get('alum-001')
-      const bucketWithObs = history.buckets.find(b => b.observaciones.length > 0)
+      const bucketWithObs = history.buckets.find((b) => b.observaciones.length > 0)
       expect(bucketWithObs).toBeDefined()
       expect(bucketWithObs.observaciones[0].texto).toBe('Good')
     })
@@ -137,14 +170,32 @@ describe('progressHistoryFormatter', () => {
         prog: [],
         attempts: [],
         obs: [
-          { alumno_id: 'alum-001', id: 'obs-1', texto: 'Same text', fecha: '2026-05-03', tipo: 'alumno' },
-          { alumno_id: 'alum-001', id: 'obs-2', texto: 'Same text', fecha: '2026-05-03', tipo: 'sesion' },
-          { alumno_id: 'alum-001', id: 'obs-3', texto: 'Different', fecha: '2026-05-03', tipo: 'alumno' },
+          {
+            alumno_id: 'alum-001',
+            id: 'obs-1',
+            texto: 'Same text',
+            fecha: '2026-05-03',
+            tipo: 'alumno',
+          },
+          {
+            alumno_id: 'alum-001',
+            id: 'obs-2',
+            texto: 'Same text',
+            fecha: '2026-05-03',
+            tipo: 'sesion',
+          },
+          {
+            alumno_id: 'alum-001',
+            id: 'obs-3',
+            texto: 'Different',
+            fecha: '2026-05-03',
+            tipo: 'alumno',
+          },
         ],
       })
 
       const history = result.get('alum-001')
-      const bucketWithObs = history.buckets.find(b => b.observaciones.length > 0)
+      const bucketWithObs = history.buckets.find((b) => b.observaciones.length > 0)
       // Should have 2 unique (same text+fecha is deduped, different text is kept)
       expect(bucketWithObs.observaciones.length).toBe(2)
     })
@@ -159,14 +210,32 @@ describe('progressHistoryFormatter', () => {
         prog: [],
         attempts: [],
         obs: [
-          { alumno_id: 'alum-001', id: 'obs-3', texto: 'Third', fecha: '2026-05-05', tipo: 'alumno' },
-          { alumno_id: 'alum-001', id: 'obs-1', texto: 'First', fecha: '2026-05-01', tipo: 'alumno' },
-          { alumno_id: 'alum-001', id: 'obs-2', texto: 'Second', fecha: '2026-05-03', tipo: 'alumno' },
+          {
+            alumno_id: 'alum-001',
+            id: 'obs-3',
+            texto: 'Third',
+            fecha: '2026-05-05',
+            tipo: 'alumno',
+          },
+          {
+            alumno_id: 'alum-001',
+            id: 'obs-1',
+            texto: 'First',
+            fecha: '2026-05-01',
+            tipo: 'alumno',
+          },
+          {
+            alumno_id: 'alum-001',
+            id: 'obs-2',
+            texto: 'Second',
+            fecha: '2026-05-03',
+            tipo: 'alumno',
+          },
         ],
       })
 
       const history = result.get('alum-001')
-      const bucketWithObs = history.buckets.find(b => b.observaciones.length > 0)
+      const bucketWithObs = history.buckets.find((b) => b.observaciones.length > 0)
       expect(bucketWithObs.observaciones[0].texto).toBe('First')
       expect(bucketWithObs.observaciones[1].texto).toBe('Second')
       expect(bucketWithObs.observaciones[2].texto).toBe('Third')
@@ -189,7 +258,7 @@ describe('progressHistoryFormatter', () => {
       })
 
       const history = result.get('alum-001')
-      const bucketWithData = history.buckets.find(b => b.indicadores.total > 0)
+      const bucketWithData = history.buckets.find((b) => b.indicadores.total > 0)
       expect(bucketWithData.indicadores.total).toBe(3)
       expect(bucketWithData.indicadores.passed).toBe(2)
     })
@@ -222,7 +291,12 @@ describe('progressHistoryFormatter', () => {
         granularity: 'month',
         asis: [],
         prog: [
-          { alumno_id: 'alum-001', calificacion: 8.0, fecha_evaluacion: '2026-05-15', evaluacion_id: 'eval-1' },
+          {
+            alumno_id: 'alum-001',
+            calificacion: 8.0,
+            fecha_evaluacion: '2026-05-15',
+            evaluacion_id: 'eval-1',
+          },
         ],
         attempts: [],
         obs: [],

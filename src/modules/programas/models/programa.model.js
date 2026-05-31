@@ -54,7 +54,7 @@ export class Programa {
       descripcion: this.descripcion ? this.descripcion.trim() : '',
       nivel: this.nivel,
       duracion_anios: this.duracion_anios,
-      activo: this.activo
+      activo: this.activo,
     }
   }
 }

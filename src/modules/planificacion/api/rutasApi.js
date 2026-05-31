@@ -22,7 +22,7 @@ export async function crearRuta(data) {
       descripcion: data.descripcion,
       ruta_base_id: data.ruta_base_id,
       duracion_semanas: data.duracion_semanas,
-      creada_por: data.creada_por
+      creada_por: data.creada_por,
     })
     .select()
     .single()
@@ -36,7 +36,7 @@ export async function crearRuta(data) {
     semana_inicio: obj.semana_inicio,
     semana_fin: obj.semana_fin,
     orden: obj.orden || i + 1,
-    objetivo_id: obj.objetivo_id || null
+    objetivo_id: obj.objetivo_id || null,
   }))
 
   const { data: objetivosRecords, error: objError } = await supabase
@@ -48,7 +48,7 @@ export async function crearRuta(data) {
 
   return {
     ...rutaRecord,
-    objetivos: objetivosRecords
+    objetivos: objetivosRecords,
   }
 }
 
@@ -74,7 +74,7 @@ export async function obtenerRuta(rutaId) {
 
   return {
     ...ruta,
-    objetivos
+    objetivos,
   }
 }
 
@@ -103,7 +103,7 @@ export async function actualizarRuta(rutaId, updates) {
     .from('rutas_contenido')
     .update({
       ...updates,
-      updated_at: new Date().toISOString()
+      updated_at: new Date().toISOString(),
     })
     .eq('id', rutaId)
     .select()
@@ -159,23 +159,24 @@ export async function obtenerProgresoRuta(claseId) {
     .eq('clase_id', claseId)
 
   const coberturaMap = new Map()
-  cobertura?.forEach(c => {
+  cobertura?.forEach((c) => {
     const key = `${c.alumno_id}:${c.objetivo_id}`
     coberturaMap.set(key, c.confirmado)
   })
 
   // Build response
-  const alumnosConCobertura = alumnos?.map(alumno => ({
-    alumno_id: alumno.id,
-    nombre: alumno.nombre,
-    cobertura: objetivos.map(obj => ({
-      objetivo_id: obj.id,
-      descripcion: obj.descripcion,
-      semana_inicio: obj.semana_inicio,
-      semana_fin: obj.semana_fin,
-      confirmado: coberturaMap.get(`${alumno.id}:${obj.objetivo_id}`) || false
-    }))
-  })) || []
+  const alumnosConCobertura =
+    alumnos?.map((alumno) => ({
+      alumno_id: alumno.id,
+      nombre: alumno.nombre,
+      cobertura: objetivos.map((obj) => ({
+        objetivo_id: obj.id,
+        descripcion: obj.descripcion,
+        semana_inicio: obj.semana_inicio,
+        semana_fin: obj.semana_fin,
+        confirmado: coberturaMap.get(`${alumno.id}:${obj.objetivo_id}`) || false,
+      })),
+    })) || []
 
   const totalObjetivos = objetivos.length
   const objetivosCubiertos = Array.from(coberturaMap.values()).filter(Boolean).length
@@ -186,7 +187,7 @@ export async function obtenerProgresoRuta(claseId) {
     duracion_semanas: duracionSemanas,
     objetivos_cubiertos: objetivosCubiertos,
     total_objetivos: totalObjetivos,
-    alumnos: alumnosConCobertura
+    alumnos: alumnosConCobertura,
   }
 }
 
@@ -218,7 +219,7 @@ export async function aprobarVariante(rutaId, aprobada, razonRechazo = null) {
       aprobada_por: userData?.user?.id,
       fecha_aprobacion: new Date().toISOString(),
       descripcion: !aprobada ? razonRechazo : undefined,
-      updated_at: new Date().toISOString()
+      updated_at: new Date().toISOString(),
     })
     .eq('id', rutaId)
     .select()
@@ -246,7 +247,7 @@ export async function proponerVariante(rutaBaseId, nombreVariante, descripcion, 
     ruta_base_id: rutaBaseId,
     duracion_semanas: rutaBase.duracion_semanas,
     creada_por: userData?.user?.id,
-    objetivos: objetivos
+    objetivos: objetivos,
   })
 
   return variante

@@ -1,65 +1,72 @@
-import { getMaestroLocal, clearMaestroLocal, logoutPortal, STORAGE_KEY } from '../auth/maestroAuth.js';
-import { supabase } from '../../lib/supabaseClient.js';
-import { updateDisponibilidad } from '../api/disponibilidadApi.js';
 import {
-  subscribeToPush, unsubscribeFromPush,
-  isPushSupported, isPushSubscribed,
-  testNotification
-} from '../services/pushService.js';
-import { AppModal } from '../../shared/components/AppModal.js';
-import { ausenciaModal } from '../components/ausenciaModal.js';
-import { notifConfigModal } from '../components/notifConfigModal.js';
-import { escHTML, getInitials } from '../utils/portalUtils.js';
-import { normalizePhone } from '../../shared/utils/phoneUtils.js';
-import { pushDiagnostic } from '../components/pushDiagnostic.js';
+  getMaestroLocal,
+  clearMaestroLocal,
+  logoutPortal,
+  STORAGE_KEY,
+} from '../auth/maestroAuth.js'
+import { supabase } from '../../lib/supabaseClient.js'
+import { updateDisponibilidad } from '../api/disponibilidadApi.js'
+import {
+  subscribeToPush,
+  unsubscribeFromPush,
+  isPushSupported,
+  isPushSubscribed,
+  testNotification,
+} from '../services/pushService.js'
+import { AppModal } from '../../shared/components/AppModal.js'
+import { ausenciaModal } from '../components/ausenciaModal.js'
+import { notifConfigModal } from '../components/notifConfigModal.js'
+import { escHTML, getInitials } from '../utils/portalUtils.js'
+import { normalizePhone } from '../../shared/utils/phoneUtils.js'
+import { pushDiagnostic } from '../components/pushDiagnostic.js'
 
 // Estado local de la vista
 const viewState = {
   dirty: false,
   saving: false,
   theme: localStorage.getItem('portal-maestros-theme') || 'system',
-  pushEnabled: false
-};
+  pushEnabled: false,
+}
 
 // ─── DIAS SEMANA (para disponibilidad) ─────────────────────────
 const DIAS_SEMANA = [
-  { key: 'lunes',     label: 'Lunes' },
-  { key: 'martes',    label: 'Martes' },
+  { key: 'lunes', label: 'Lunes' },
+  { key: 'martes', label: 'Martes' },
   { key: 'miércoles', label: 'Miércoles' },
-  { key: 'jueves',    label: 'Jueves' },
-  { key: 'viernes',   label: 'Viernes' },
-  { key: 'sábado',    label: 'Sábado' },
-  { key: 'domingo',   label: 'Domingo' },
-];
+  { key: 'jueves', label: 'Jueves' },
+  { key: 'viernes', label: 'Viernes' },
+  { key: 'sábado', label: 'Sábado' },
+  { key: 'domingo', label: 'Domingo' },
+]
 
 // ─── RENDER PRINCIPAL ──────────────────────────────────────────
 export function renderPerfilView(container) {
-  const maestro = getMaestroLocal();
+  const maestro = getMaestroLocal()
   if (!maestro) {
     container.innerHTML = `
       <div class="pm-settings-empty">
         <i class="bi bi-shield-lock"></i>
         <p>No hay sesión activa.</p>
-      </div>`;
-    return;
+      </div>`
+    return
   }
 
   // Inicializar estado con datos reales
-  viewState.dirty = false;
-  viewState.saving = false;
-  
+  viewState.dirty = false
+  viewState.saving = false
+
   // Cargar preferencias para sincronizar el switch push_activo
   import('../services/pushService.js').then(async (push) => {
-    const prefs = await push.getNotificationPreferences();
-    viewState.pushEnabled = prefs.push_activo;
-    
+    const prefs = await push.getNotificationPreferences()
+    viewState.pushEnabled = prefs.push_activo
+
     // Si la vista ya se renderizó, sincronizar el switch
-    const toggle = document.querySelector('#btn-toggle-push-main input');
-    if (toggle) toggle.checked = viewState.pushEnabled;
-    
-    const badge = document.getElementById('pm-notif-sub-badge');
-    if (badge) badge.textContent = viewState.pushEnabled ? '✅ Suscripción activa' : '⏸ Pausada';
-  });
+    const toggle = document.querySelector('#btn-toggle-push-main input')
+    if (toggle) toggle.checked = viewState.pushEnabled
+
+    const badge = document.getElementById('pm-notif-sub-badge')
+    if (badge) badge.textContent = viewState.pushEnabled ? '✅ Suscripción activa' : '⏸ Pausada'
+  })
 
   container.innerHTML = `
     <div class="pm-settings pm-fade-in" role="main" aria-label="Configuración del perfil">
@@ -76,53 +83,54 @@ export function renderPerfilView(container) {
         <p>SOI Sistema Operativo Institucional</p>
         <p class="pm-settings-footer__version">v2.5.0 &copy; 2026</p>
       </footer>
-    </div>`;
+    </div>`
 
-  const colIzq = document.getElementById('col-izquierda');
-  const colDer = document.getElementById('col-derecha');
+  const colIzq = document.getElementById('col-izquierda')
+  const colDer = document.getElementById('col-derecha')
 
-  renderHero(colIzq, maestro);
-  renderPersonalData(colIzq, maestro);
-  renderAvailability(colIzq, maestro);
-  renderAppearance(colDer);
-  renderNotifications(colDer, maestro);
-  renderAbsences(colDer);
-  
+  renderHero(colIzq, maestro)
+  renderPersonalData(colIzq, maestro)
+  renderAvailability(colIzq, maestro)
+  renderAppearance(colDer)
+  renderNotifications(colDer, maestro)
+  renderAbsences(colDer)
+
   // Contenedor dinámico de colaboración
-  colDer.insertAdjacentHTML('beforeend', `<div id="pm-collaboration-container"></div>`);
+  colDer.insertAdjacentHTML('beforeend', `<div id="pm-collaboration-container"></div>`)
 
-
-  renderInstallApp(colDer);
-  renderSession(colDer);
-  checkPerfilIncompleto(maestro);
-  initListeners(maestro);
-  animateSections();
+  renderInstallApp(colDer)
+  renderSession(colDer)
+  checkPerfilIncompleto(maestro)
+  initListeners(maestro)
+  animateSections()
 
   // Carga asíncrona de permisos de colaboración
   import('../services/permisoService.js').then(async ({ getPermisos, solicitarPermiso }) => {
     try {
-      const perm = await getPermisos(maestro.id);
-      const collabContainer = document.getElementById('pm-collaboration-container');
+      const perm = await getPermisos(maestro.id)
+      const collabContainer = document.getElementById('pm-collaboration-container')
       if (collabContainer) {
-        renderCollaborationPermissions(collabContainer, perm, maestro.id, solicitarPermiso);
+        renderCollaborationPermissions(collabContainer, perm, maestro.id, solicitarPermiso)
       }
-
     } catch (err) {
-      console.warn('[PerfilView] Error cargando permisos de colaboración:', err.message);
+      console.warn('[PerfilView] Error cargando permisos de colaboración:', err.message)
     }
-  });
+  })
 }
 
 // ─── SECCIÓN HERO ──────────────────────────────────────────────
 function renderHero(container, maestro) {
-  const initials = getInitials(maestro.nombre_completo);
-  container.insertAdjacentHTML('beforeend', `
+  const initials = getInitials(maestro.nombre_completo)
+  container.insertAdjacentHTML(
+    'beforeend',
+    `
     <section class="card-apple pm-profile-hero" aria-label="Información del perfil">
       <div class="pm-profile-hero__content">
         <div class="pm-settings-avatar">
-          ${maestro.avatar_url 
-            ? `<img src="${escHTML(maestro.avatar_url)}" alt="Avatar" class="pm-settings-avatar__img">`
-            : `<div class="pm-settings-avatar__placeholder" aria-hidden="true">${escHTML(initials)}</div>`
+          ${
+            maestro.avatar_url
+              ? `<img src="${escHTML(maestro.avatar_url)}" alt="Avatar" class="pm-settings-avatar__img">`
+              : `<div class="pm-settings-avatar__placeholder" aria-hidden="true">${escHTML(initials)}</div>`
           }
           <button class="pm-settings-avatar__edit" id="btnCambiarAvatar" title="Cambiar foto" aria-label="Cambiar foto de perfil">
             <i class="bi bi-camera" aria-hidden="true"></i>
@@ -131,18 +139,25 @@ function renderHero(container, maestro) {
         <div class="pm-profile-hero__info">
           <h2 class="pm-profile-hero__name">${escHTML(maestro.nombre_completo)}</h2>
           <p class="pm-profile-hero__email">${escHTML(maestro.email)}</p>
-          ${maestro.especialidad ? `
+          ${
+            maestro.especialidad
+              ? `
             <span class="chip-apple active" aria-label="Especialidad: ${escHTML(maestro.especialidad)}">
               <i class="bi bi-mortarboard" aria-hidden="true"></i> ${escHTML(maestro.especialidad)}
-            </span>` : ''}
+            </span>`
+              : ''
+          }
         </div>
       </div>
-    </section>`);
+    </section>`,
+  )
 }
 
 // ─── SECCIÓN DATOS PERSONALES ────────────────────────────────
 function renderPersonalData(container, maestro) {
-  container.insertAdjacentHTML('beforeend', `
+  container.insertAdjacentHTML(
+    'beforeend',
+    `
     <section class="card-apple pm-settings-section" aria-labelledby="datos-title">
       <div class="pm-settings-section__header">
         <i class="bi bi-person-circle pm-icon-blue" aria-hidden="true"></i>
@@ -171,12 +186,15 @@ function renderPersonalData(container, maestro) {
           <span>Guardar Cambios</span>
         </button>
       </div>
-    </section>`);
+    </section>`,
+  )
 }
 
 // ─── SECCIÓN APARIENCIA (TEMA) ────────────────────────────────
 function renderAppearance(container) {
-  container.insertAdjacentHTML('beforeend', `
+  container.insertAdjacentHTML(
+    'beforeend',
+    `
     <section class="card-apple pm-settings-section" aria-labelledby="apariencia-title">
       <div class="pm-settings-section__header">
         <i class="bi bi-palette pm-icon-amber" aria-hidden="true"></i>
@@ -196,16 +214,19 @@ function renderAppearance(container) {
           <div class="pm-theme-preview system"></div><span>Auto</span>
         </button>
       </div>
-    </section>`);
+    </section>`,
+  )
 }
 
 // ─── SECCIÓN NOTIFICACIONES ──────────────────────────────────
 function renderNotifications(container, maestro) {
-  const supported = isPushSupported();
+  const supported = isPushSupported()
   const subBadge = supported
     ? `<span class="pm-badge-sub" id="pm-notif-sub-badge" aria-live="polite" aria-atomic="true">${viewState.pushEnabled ? '✅ Suscripción activa' : '⏸ Pausada'}</span>`
-    : '';
-  container.insertAdjacentHTML('beforeend', `
+    : ''
+  container.insertAdjacentHTML(
+    'beforeend',
+    `
     <section class="card-apple pm-settings-section" aria-labelledby="notif-title">
       <div class="pm-settings-section__header">
         <i class="bi bi-bell pm-icon-red" aria-hidden="true"></i>
@@ -233,12 +254,15 @@ function renderNotifications(container, maestro) {
         </button>
       </div>
       ${!supported ? `<p class="apple-caption mt-2" style="color:var(--pm-danger)">Push no soportado en este navegador.</p>` : ''}
-    </section>`);
+    </section>`,
+  )
 }
 
 // ─── SECCIÓN AUSENCIAS ───────────────────────────────────────
 function renderAbsences(container) {
-  container.insertAdjacentHTML('beforeend', `
+  container.insertAdjacentHTML(
+    'beforeend',
+    `
     <section class="card-apple pm-settings-section" aria-labelledby="ausencias-title">
       <div class="pm-settings-section__header">
         <i class="bi bi-calendar-event pm-icon-teal" aria-hidden="true"></i>
@@ -251,12 +275,15 @@ function renderAbsences(container) {
         <button class="btn-apple-utility" id="pm-btn-ver-ausencias"><i class="bi bi-clock-history" aria-hidden="true"></i> Historial</button>
         <button class="btn-apple-utility" id="pm-btn-solicitar-ausencia"><i class="bi bi-plus-lg" aria-hidden="true"></i> Solicitar</button>
       </div>
-    </section>`);
+    </section>`,
+  )
 }
 
 // ─── SECCIÓN INSTALAR APP ────────────────────────────────────
 function renderInstallApp(container) {
-  container.insertAdjacentHTML('beforeend', `
+  container.insertAdjacentHTML(
+    'beforeend',
+    `
     <section class="card-apple pm-settings-section" aria-labelledby="install-title" id="pm-install-section">
       <div class="pm-settings-section__header">
         <i class="bi bi-phone-fill pm-icon-blue" aria-hidden="true"></i>
@@ -276,45 +303,53 @@ function renderInstallApp(container) {
         </div>
         <p id="pm-install-note" class="pm-install-note" style="display:none;"></p>
       </div>
-    </section>`);
+    </section>`,
+  )
 
   // Lógica del botón
-  const btn = document.getElementById('pm-btn-install-profile');
-  const note = document.getElementById('pm-install-note');
+  const btn = document.getElementById('pm-btn-install-profile')
+  const note = document.getElementById('pm-install-note')
 
-  const isInstalled = window.matchMedia('(display-mode: standalone)').matches
-    || window.navigator.standalone === true
-    || localStorage.getItem('pwa-installed') === 'true';
+  const isInstalled =
+    window.matchMedia('(display-mode: standalone)').matches ||
+    window.navigator.standalone === true ||
+    localStorage.getItem('pwa-installed') === 'true'
 
   if (isInstalled) {
-    btn.innerHTML = '<i class="bi bi-check-circle-fill"></i> App ya instalada';
-    btn.disabled = true;
-    btn.style.opacity = '0.6';
-    return;
+    btn.innerHTML = '<i class="bi bi-check-circle-fill"></i> App ya instalada'
+    btn.disabled = true
+    btn.style.opacity = '0.6'
+    return
   }
 
   btn?.addEventListener('click', () => {
     if (window.pwaInstaller) {
-      window.pwaInstaller.promptInstall();
+      window.pwaInstaller.promptInstall()
     } else {
-      note.style.display = 'block';
+      note.style.display = 'block'
       note.innerHTML = `
         <strong>Instalación manual:</strong><br>
         • <b>Chrome/Edge (Android/PC):</b> Menú ⋮ → "Instalar app"<br>
         • <b>Safari (iPhone/iPad):</b> Compartir <i class="bi bi-box-arrow-up"></i> → "Añadir a pantalla inicio"<br>
-        • <b>Firefox:</b> no admite PWA nativa.`;
+        • <b>Firefox:</b> no admite PWA nativa.`
     }
-  });
+  })
 
   // Si el prompt nativo no está disponible, mostrar fallback desde el inicio
-  window.addEventListener('beforeinstallprompt', () => {
-    if (btn) btn.disabled = false;
-  }, { once: true });
+  window.addEventListener(
+    'beforeinstallprompt',
+    () => {
+      if (btn) btn.disabled = false
+    },
+    { once: true },
+  )
 }
 
 // ─── SECCIÓN SESIÓN ──────────────────────────────────────────
 function renderSession(container) {
-  container.insertAdjacentHTML('beforeend', `
+  container.insertAdjacentHTML(
+    'beforeend',
+    `
     <section class="card-apple pm-settings-section pm-section-danger" aria-labelledby="sesion-title">
       <div class="pm-settings-section__header">
         <i class="bi bi-shield-lock pm-icon-red" aria-hidden="true"></i>
@@ -324,16 +359,17 @@ function renderSession(container) {
         </div>
         <button class="btn-apple-secondary" id="btnCerrarSesion" style="border-color:var(--pm-danger);color:var(--pm-danger)">Salir</button>
       </div>
-    </section>`);
+    </section>`,
+  )
 }
 
 // ─── COLABORACIÓN DE PERMISOS ─────────────────────────────────
 function renderCollaborationPermissions(container, perm, maestroId, solicitarPermisoFn) {
   // Usar solicitud_actual si existe (new system), fallback a array checking
-  const solicitud_actual = perm?.solicitud_actual;
-  const es_solicitud_alumnos = solicitud_actual?.solicita_alumnos || false;
-  const es_solicitud_clases = solicitud_actual?.solicita_clases || false;
-  const estado_solicitud = solicitud_actual?.estado || null; // 'pendiente', 'aprobado', 'rechazado'
+  const solicitud_actual = perm?.solicitud_actual
+  const es_solicitud_alumnos = solicitud_actual?.solicita_alumnos || false
+  const es_solicitud_clases = solicitud_actual?.solicita_clases || false
+  const estado_solicitud = solicitud_actual?.estado || null // 'pendiente', 'aprobado', 'rechazado'
 
   const items = [
     {
@@ -344,7 +380,7 @@ function renderCollaborationPermissions(container, perm, maestroId, solicitarPer
       iconClass: 'pm-icon-blue',
       active: perm.puede_registrar_alumnos,
       pending: es_solicitud_alumnos && estado_solicitud === 'pendiente',
-      pending_alumnos: true
+      pending_alumnos: true,
     },
     {
       key: 'clases:enroll',
@@ -354,9 +390,9 @@ function renderCollaborationPermissions(container, perm, maestroId, solicitarPer
       iconClass: 'pm-icon-teal',
       active: perm.puede_inscribir_clases,
       pending: es_solicitud_clases && estado_solicitud === 'pendiente',
-      pending_clases: true
-    }
-  ];
+      pending_clases: true,
+    },
+  ]
 
   container.innerHTML = `
     <section class="card-apple pm-settings-section" aria-labelledby="collab-title">
@@ -368,40 +404,41 @@ function renderCollaborationPermissions(container, perm, maestroId, solicitarPer
         </div>
       </div>
       <div class="pm-collab-cards">
-        ${items.map(item => {
-          let badgeHtml = '';
-          let actionHtml = '';
+        ${items
+          .map((item) => {
+            let badgeHtml = ''
+            let actionHtml = ''
 
-          if (item.active) {
-            badgeHtml = `<span class="pm-collab-badge active"><i class="bi bi-patch-check-fill"></i> Concedido</span>`;
-            // Show action button based on permission type
-            if (item.key === 'alumnos:create') {
-              actionHtml = `
+            if (item.active) {
+              badgeHtml = `<span class="pm-collab-badge active"><i class="bi bi-patch-check-fill"></i> Concedido</span>`
+              // Show action button based on permission type
+              if (item.key === 'alumnos:create') {
+                actionHtml = `
                 <button class="btn-apple-primary btn-apple-sm w-100 pm-collab-action-btn" data-route="registrar-alumno"
                   style="padding: 0.45rem 0.9rem; font-size: 0.8rem; display:flex; align-items:center; justify-content:center; gap:0.4rem;">
                   <i class="bi bi-person-plus-fill"></i> Registrar Alumno
-                </button>`;
-            } else if (item.key === 'clases:enroll') {
-              actionHtml = `
+                </button>`
+              } else if (item.key === 'clases:enroll') {
+                actionHtml = `
                 <button class="btn-apple-primary btn-apple-sm w-100 pm-collab-action-btn" data-route="gestionar-clases"
                   style="padding: 0.45rem 0.9rem; font-size: 0.8rem; display:flex; align-items:center; justify-content:center; gap:0.4rem; background: linear-gradient(135deg, #0d9488, #0891b2);">
                   <i class="bi bi-mortarboard-fill"></i> Gestionar Clases
-                </button>`;
+                </button>`
+              } else {
+                actionHtml = `<p class="pm-collab-help-text">Permiso activo.</p>`
+              }
+            } else if (item.pending) {
+              badgeHtml = `<span class="pm-collab-badge pending"><i class="bi bi-clock-history"></i> Pendiente</span>`
+              actionHtml = `<p class="pm-collab-help-text">Tu solicitud está siendo revisada por la administración.</p>`
             } else {
-              actionHtml = `<p class="pm-collab-help-text">Permiso activo.</p>`;
-            }
-          } else if (item.pending) {
-            badgeHtml = `<span class="pm-collab-badge pending"><i class="bi bi-clock-history"></i> Pendiente</span>`;
-            actionHtml = `<p class="pm-collab-help-text">Tu solicitud está siendo revisada por la administración.</p>`;
-          } else {
-            badgeHtml = `<span class="pm-collab-badge inactive"><i class="bi bi-slash-circle"></i> Inactivo</span>`;
-            actionHtml = `
+              badgeHtml = `<span class="pm-collab-badge inactive"><i class="bi bi-slash-circle"></i> Inactivo</span>`
+              actionHtml = `
               <button class="btn-apple-primary btn-apple-sm w-100 pm-collab-request-btn" data-key="${item.key}" style="padding: 0.4rem 0.75rem; font-size: 0.75rem;">
                 <i class="bi bi-send"></i> Solicitar Acceso
-              </button>`;
-          }
+              </button>`
+            }
 
-          return `
+            return `
             <div class="pm-collab-card ${item.active ? 'active' : item.pending ? 'pending' : ''}">
               <div class="pm-collab-card__header">
                 <div class="pm-collab-card__icon ${item.iconClass}">
@@ -419,60 +456,73 @@ function renderCollaborationPermissions(container, perm, maestroId, solicitarPer
                 </div>
               </div>
             </div>
-          `;
-        }).join('')}
+          `
+          })
+          .join('')}
       </div>
     </section>
-  `;
+  `
 
   // Asignar listeners
-  container.querySelectorAll('.pm-collab-request-btn').forEach(btn => {
+  container.querySelectorAll('.pm-collab-request-btn').forEach((btn) => {
     btn.addEventListener('click', async () => {
-      const key = btn.dataset.key;
-      btn.disabled = true;
-      const originalHtml = btn.innerHTML;
-      btn.innerHTML = `<span class="pm-settings-spinner"></span> Enviando...`;
+      const key = btn.dataset.key
+      btn.disabled = true
+      const originalHtml = btn.innerHTML
+      btn.innerHTML = `<span class="pm-settings-spinner"></span> Enviando...`
 
       try {
-        await solicitarPermisoFn(maestroId, key);
-        window.dispatchEvent(new CustomEvent('showToast', {
-          detail: { message: 'Solicitud enviada correctamente. Esperando aprobación admin.', type: 'success' }
-        }));
-        
-        // Refrescar los permisos locales del servicio
-        const { getPermisos } = await import('../services/permisoService.js');
-        const updatedPerm = await getPermisos(maestroId);
+        await solicitarPermisoFn(maestroId, key)
+        window.dispatchEvent(
+          new CustomEvent('showToast', {
+            detail: {
+              message: 'Solicitud enviada correctamente. Esperando aprobación admin.',
+              type: 'success',
+            },
+          }),
+        )
 
-        renderCollaborationPermissions(container, updatedPerm, maestroId, solicitarPermisoFn);
+        // Refrescar los permisos locales del servicio
+        const { getPermisos } = await import('../services/permisoService.js')
+        const updatedPerm = await getPermisos(maestroId)
+
+        renderCollaborationPermissions(container, updatedPerm, maestroId, solicitarPermisoFn)
       } catch (err) {
-        window.dispatchEvent(new CustomEvent('showToast', {
-          detail: { message: 'Error al enviar solicitud: ' + err.message, type: 'danger' }
-        }));
-        btn.disabled = false;
-        btn.innerHTML = originalHtml;
+        window.dispatchEvent(
+          new CustomEvent('showToast', {
+            detail: { message: 'Error al enviar solicitud: ' + err.message, type: 'danger' },
+          }),
+        )
+        btn.disabled = false
+        btn.innerHTML = originalHtml
       }
-    });
-  });
+    })
+  })
 
   // Action buttons (shown when permission is approved)
-  container.querySelectorAll('.pm-collab-action-btn').forEach(btn => {
+  container.querySelectorAll('.pm-collab-action-btn').forEach((btn) => {
     btn.addEventListener('click', async () => {
-      const route = btn.dataset.route;
+      const route = btn.dataset.route
 
       if (route === 'registrar-alumno') {
-        if (window.router) window.router.navigate('registrar-alumno');
+        if (window.router) window.router.navigate('registrar-alumno')
       } else if (route === 'gestionar-clases') {
-        if (window.router) window.router.navigate('gestionar-clases');
+        if (window.router) window.router.navigate('gestionar-clases')
       }
-    });
-  });
+    })
+  })
 }
 
 // ─── DISPONIBILIDAD HORARIA (ACCORDION MEJORADO) ──────────────
 function renderAvailability(container, maestro) {
-  const disp = maestro.disponibilidad || {};
-  const needsCompletion = !maestro.especialidad || !maestro.disponibilidad || Object.keys(maestro.disponibilidad).length === 0;
-  container.insertAdjacentHTML('beforeend', `
+  const disp = maestro.disponibilidad || {}
+  const needsCompletion =
+    !maestro.especialidad ||
+    !maestro.disponibilidad ||
+    Object.keys(maestro.disponibilidad).length === 0
+  container.insertAdjacentHTML(
+    'beforeend',
+    `
     <section class="card-apple pm-settings-section ${needsCompletion ? 'pm-section-warning' : ''}" aria-labelledby="disp-title">
       <div class="pm-settings-section__header">
         <i class="bi bi-calendar-week pm-icon-teal" aria-hidden="true"></i>
@@ -483,13 +533,14 @@ function renderAvailability(container, maestro) {
         ${needsCompletion ? '<span class="pm-badge-warning">Requerido</span>' : ''}
       </div>
       <div id="pm-avail-days" class="pm-avail-days" role="list">
-        ${DIAS_SEMANA.map(d => renderDayCard(d.key, disp[d.key] || [], d.label)).join('')}
+        ${DIAS_SEMANA.map((d) => renderDayCard(d.key, disp[d.key] || [], d.label)).join('')}
       </div>
-    </section>`);
+    </section>`,
+  )
 }
 
 function renderDayCard(diaKey, franjas, label) {
-  const hasFranjas = franjas.length > 0;
+  const hasFranjas = franjas.length > 0
   return `
     <div class="pm-avail-dia ${hasFranjas ? 'open' : ''}" data-dia="${diaKey}" role="listitem">
       <button class="pm-avail-dia__header" aria-expanded="${hasFranjas ? 'true' : 'false'}" aria-controls="pm-avail-body-${diaKey}" data-dia="${diaKey}">
@@ -505,7 +556,7 @@ function renderDayCard(diaKey, franjas, label) {
           <i class="bi bi-plus-lg" aria-hidden="true"></i> Agregar franja
         </button>
       </div>
-    </div>`;
+    </div>`
 }
 
 function renderSlot(diaKey, index, franja) {
@@ -515,176 +566,217 @@ function renderSlot(diaKey, index, franja) {
       <span>a</span>
       <input type="time" class="pm-apple-time" value="${franja.fin || '12:00'}" data-field="fin" aria-label="Hora fin">
       <button class="pm-avail-franja__del" aria-label="Eliminar franja"><i class="bi bi-trash" aria-hidden="true"></i></button>
-    </div>`;
+    </div>`
 }
 
 // ─── FUNCIONES DE INTERACCIÓN ─────────────────────────────────
 function initListeners(maestro) {
   // Detectar cambios para habilitar botón de guardar
-  const formInputs = document.querySelectorAll('#perfilNombre, #perfilTelefono, #perfilEspecialidad, .pm-apple-time');
-  formInputs.forEach(input => {
+  const formInputs = document.querySelectorAll(
+    '#perfilNombre, #perfilTelefono, #perfilEspecialidad, .pm-apple-time',
+  )
+  formInputs.forEach((input) => {
     input.addEventListener('input', () => {
-      viewState.dirty = true;
-      const btn = document.getElementById('btnGuardarPerfil');
-      if (btn) btn.disabled = false;
-    });
-  });
+      viewState.dirty = true
+      const btn = document.getElementById('btnGuardarPerfil')
+      if (btn) btn.disabled = false
+    })
+  })
 
   // Guardar perfil
-  document.getElementById('btnGuardarPerfil')?.addEventListener('click', () => guardarPerfil(maestro));
+  document
+    .getElementById('btnGuardarPerfil')
+    ?.addEventListener('click', () => guardarPerfil(maestro))
 
   // Cerrar sesión
-  document.getElementById('btnCerrarSesion')?.addEventListener('click', confirmarCerrarSesion);
+  document.getElementById('btnCerrarSesion')?.addEventListener('click', confirmarCerrarSesion)
 
   // Avatar (placeholder)
   document.getElementById('btnCambiarAvatar')?.addEventListener('click', () => {
-    window.dispatchEvent(new CustomEvent('showToast', { detail: { message: 'Cambio de avatar disponible próximamente', type: 'info' } }));
-  });
+    window.dispatchEvent(
+      new CustomEvent('showToast', {
+        detail: { message: 'Cambio de avatar disponible próximamente', type: 'info' },
+      }),
+    )
+  })
 
   // Notificaciones push
-  const toggleInput = document.querySelector('#btn-toggle-push-main input');
+  const toggleInput = document.querySelector('#btn-toggle-push-main input')
   toggleInput?.addEventListener('change', async (e) => {
-    toggleInput.disabled = true;
+    toggleInput.disabled = true
     if (toggleInput.checked) {
-      const res = await subscribeToPush();
+      const res = await subscribeToPush()
       if (res.success) {
-        viewState.pushEnabled = true;
-        window.dispatchEvent(new CustomEvent('showToast', { detail: { message: 'Notificaciones activadas', type: 'success' } }));
+        viewState.pushEnabled = true
+        window.dispatchEvent(
+          new CustomEvent('showToast', {
+            detail: { message: 'Notificaciones activadas', type: 'success' },
+          }),
+        )
       } else {
-        toggleInput.checked = false;
-        viewState.pushEnabled = false;
-        window.dispatchEvent(new CustomEvent('showToast', { detail: { message: res.error || 'Error al activar', type: 'danger' } }));
+        toggleInput.checked = false
+        viewState.pushEnabled = false
+        window.dispatchEvent(
+          new CustomEvent('showToast', {
+            detail: { message: res.error || 'Error al activar', type: 'danger' },
+          }),
+        )
       }
     } else {
-      const res = await unsubscribeFromPush();
-      viewState.pushEnabled = false;
-      window.dispatchEvent(new CustomEvent('showToast', { detail: { message: 'Notificaciones desactivadas', type: 'info' } }));
+      const res = await unsubscribeFromPush()
+      viewState.pushEnabled = false
+      window.dispatchEvent(
+        new CustomEvent('showToast', {
+          detail: { message: 'Notificaciones desactivadas', type: 'info' },
+        }),
+      )
     }
-    toggleInput.disabled = false;
+    toggleInput.disabled = false
     // Update subscription badge
-    const badge = document.getElementById('pm-notif-sub-badge');
-    if (badge) badge.textContent = viewState.pushEnabled ? '✅ Suscripción activa' : '⏸ Pausada';
-  });
+    const badge = document.getElementById('pm-notif-sub-badge')
+    if (badge) badge.textContent = viewState.pushEnabled ? '✅ Suscripción activa' : '⏸ Pausada'
+  })
 
   // Configuración detallada notificaciones
-  document.getElementById('btn-abrir-config-notif')?.addEventListener('click', () => notifConfigModal.open());
+  document
+    .getElementById('btn-abrir-config-notif')
+    ?.addEventListener('click', () => notifConfigModal.open())
 
   // Diagnóstico de push
-  document.getElementById('btn-push-diagnostic')?.addEventListener('click', () => pushDiagnostic.open());
+  document
+    .getElementById('btn-push-diagnostic')
+    ?.addEventListener('click', () => pushDiagnostic.open())
 
   // Botón probar notificación
   document.getElementById('btn-probar-notificacion')?.addEventListener('click', async () => {
-    const btn = document.getElementById('btn-probar-notificacion');
-    btn.disabled = true;
-    btn.innerHTML = '<span class="pm-settings-spinner"></span> Enviando...';
-    const result = await testNotification();
+    const btn = document.getElementById('btn-probar-notificacion')
+    btn.disabled = true
+    btn.innerHTML = '<span class="pm-settings-spinner"></span> Enviando...'
+    const result = await testNotification()
     if (result.success) {
-      btn.innerHTML = '<i class="bi bi-check2"></i> Notificación enviada';
+      btn.innerHTML = '<i class="bi bi-check2"></i> Notificación enviada'
       setTimeout(() => {
-        btn.innerHTML = '<i class="bi bi-send"></i> Probar notificación';
-        btn.disabled = false;
-      }, 2000);
+        btn.innerHTML = '<i class="bi bi-send"></i> Probar notificación'
+        btn.disabled = false
+      }, 2000)
     } else {
-      btn.innerHTML = '<i class="bi bi-exclamation-triangle"></i> Error';
-      window.dispatchEvent(new CustomEvent('showToast', {
-        detail: { message: result.error || 'No se pudo enviar notificación de prueba. Verifica los permisos.', type: 'danger' }
-      }));
+      btn.innerHTML = '<i class="bi bi-exclamation-triangle"></i> Error'
+      window.dispatchEvent(
+        new CustomEvent('showToast', {
+          detail: {
+            message:
+              result.error || 'No se pudo enviar notificación de prueba. Verifica los permisos.',
+            type: 'danger',
+          },
+        }),
+      )
       setTimeout(() => {
-        btn.innerHTML = '<i class="bi bi-send"></i> Probar notificación';
-        btn.disabled = false;
-      }, 2000);
+        btn.innerHTML = '<i class="bi bi-send"></i> Probar notificación'
+        btn.disabled = false
+      }, 2000)
     }
-  });
+  })
 
   // Temas
-  document.getElementById('pm-theme-light')?.addEventListener('click', () => applyTheme('light'));
-  document.getElementById('pm-theme-dark')?.addEventListener('click', () => applyTheme('dark'));
-  document.getElementById('pm-theme-system')?.addEventListener('click', () => applyTheme('system'));
+  document.getElementById('pm-theme-light')?.addEventListener('click', () => applyTheme('light'))
+  document.getElementById('pm-theme-dark')?.addEventListener('click', () => applyTheme('dark'))
+  document.getElementById('pm-theme-system')?.addEventListener('click', () => applyTheme('system'))
 
   // Ausencias
   document.getElementById('pm-btn-ver-ausencias')?.addEventListener('click', async () => {
-    const { ausenciasPanel } = await import('../components/ausenciasPanel.js');
-    ausenciasPanel.open();
-  });
-  document.getElementById('pm-btn-solicitar-ausencia')?.addEventListener('click', () => ausenciaModal.open());
+    const { ausenciasPanel } = await import('../components/ausenciasPanel.js')
+    ausenciasPanel.open()
+  })
+  document
+    .getElementById('pm-btn-solicitar-ausencia')
+    ?.addEventListener('click', () => ausenciaModal.open())
 
   // Acordeón de disponibilidad
-  document.querySelectorAll('.pm-avail-dia__header').forEach(btn => {
+  document.querySelectorAll('.pm-avail-dia__header').forEach((btn) => {
     btn.addEventListener('click', () => {
-      const diaKey = btn.dataset.dia;
-      const parent = btn.closest('.pm-avail-dia');
-      const expanded = btn.getAttribute('aria-expanded') === 'true';
-      
-      btn.setAttribute('aria-expanded', !expanded);
-      parent.classList.toggle('open', !expanded);
-    });
-  });
+      const diaKey = btn.dataset.dia
+      const parent = btn.closest('.pm-avail-dia')
+      const expanded = btn.getAttribute('aria-expanded') === 'true'
+
+      btn.setAttribute('aria-expanded', !expanded)
+      parent.classList.toggle('open', !expanded)
+    })
+  })
 
   // Agregar franja
-  document.querySelectorAll('.pm-avail-add-btn').forEach(btn => {
+  document.querySelectorAll('.pm-avail-add-btn').forEach((btn) => {
     btn.addEventListener('click', () => {
-      const diaKey = btn.dataset.dia;
-      const parent = btn.closest('.pm-avail-dia');
-      const franjasEl = document.getElementById(`pm-avail-franjas-${diaKey}`);
-      const index = franjasEl.querySelectorAll('.pm-avail-franja').length;
-      
-      franjasEl.insertAdjacentHTML('beforeend', renderSlot(diaKey, index, { inicio: '08:00', fin: '12:00' }));
-      parent.classList.add('open');
-      const header = parent.querySelector('.pm-avail-dia__header');
-      header.setAttribute('aria-expanded', 'true');
-      viewState.dirty = true;
-      document.getElementById('btnGuardarPerfil').disabled = false;
-    });
-  });
+      const diaKey = btn.dataset.dia
+      const parent = btn.closest('.pm-avail-dia')
+      const franjasEl = document.getElementById(`pm-avail-franjas-${diaKey}`)
+      const index = franjasEl.querySelectorAll('.pm-avail-franja').length
+
+      franjasEl.insertAdjacentHTML(
+        'beforeend',
+        renderSlot(diaKey, index, { inicio: '08:00', fin: '12:00' }),
+      )
+      parent.classList.add('open')
+      const header = parent.querySelector('.pm-avail-dia__header')
+      header.setAttribute('aria-expanded', 'true')
+      viewState.dirty = true
+      document.getElementById('btnGuardarPerfil').disabled = false
+    })
+  })
 
   // Eliminar franja
-  document.addEventListener('click', e => {
-    const delBtn = e.target.closest('.pm-avail-franja__del');
+  document.addEventListener('click', (e) => {
+    const delBtn = e.target.closest('.pm-avail-franja__del')
     if (delBtn) {
-      delBtn.closest('.pm-avail-franja').remove();
-      viewState.dirty = true;
-      document.getElementById('btnGuardarPerfil').disabled = false;
+      delBtn.closest('.pm-avail-franja').remove()
+      viewState.dirty = true
+      document.getElementById('btnGuardarPerfil').disabled = false
     }
-  });
+  })
 }
 
 // ─── GUARDAR PERFIL ──────────────────────────────────────────
 async function guardarPerfil(maestroOriginal) {
-  const nombre = document.getElementById('perfilNombre').value.trim();
-  const telefono = normalizePhone(document.getElementById('perfilTelefono').value.trim()) || document.getElementById('perfilTelefono').value.trim();
-  const especialidad = document.getElementById('perfilEspecialidad').value.trim();
-  const disponibilidad = collectDisponibilidad();
+  const nombre = document.getElementById('perfilNombre').value.trim()
+  const telefono =
+    normalizePhone(document.getElementById('perfilTelefono').value.trim()) ||
+    document.getElementById('perfilTelefono').value.trim()
+  const especialidad = document.getElementById('perfilEspecialidad').value.trim()
+  const disponibilidad = collectDisponibilidad()
 
   if (!nombre) {
-    window.dispatchEvent(new CustomEvent('showToast', { detail: { message: 'El nombre es obligatorio', type: 'danger' } }));
-    return;
+    window.dispatchEvent(
+      new CustomEvent('showToast', {
+        detail: { message: 'El nombre es obligatorio', type: 'danger' },
+      }),
+    )
+    return
   }
 
-  viewState.saving = true;
-  const btn = document.getElementById('btnGuardarPerfil');
-  const originalHtml = btn.innerHTML;
-  btn.disabled = true;
-  btn.innerHTML = `<span class="pm-settings-spinner"></span><span>Guardando...</span>`;
+  viewState.saving = true
+  const btn = document.getElementById('btnGuardarPerfil')
+  const originalHtml = btn.innerHTML
+  btn.disabled = true
+  btn.innerHTML = `<span class="pm-settings-spinner"></span><span>Guardando...</span>`
 
   try {
     // 1. Validar y actualizar disponibilidad usando disponibilidadApi
-    const resDisp = await updateDisponibilidad(maestroOriginal.id, disponibilidad);
+    const resDisp = await updateDisponibilidad(maestroOriginal.id, disponibilidad)
     if (!resDisp.success) {
-      const errorMsg = resDisp.errors.join('\n');
-      throw new Error(errorMsg);
+      const errorMsg = resDisp.errors.join('\n')
+      throw new Error(errorMsg)
     }
 
     // 2. Actualizar los otros campos del perfil
     const { error } = await supabase
       .from('maestros')
-      .update({ 
-        nombre_completo: nombre, 
-        tlf: telefono, 
-        especialidad 
+      .update({
+        nombre_completo: nombre,
+        tlf: telefono,
+        especialidad,
       })
-      .eq('id', maestroOriginal.id);
+      .eq('id', maestroOriginal.id)
 
-    if (error) throw error;
+    if (error) throw error
 
     // Fusión segura del objeto maestro en localStorage
     const actualizado = {
@@ -694,38 +786,44 @@ async function guardarPerfil(maestroOriginal) {
       telefono: telefono,
       tlf: telefono,
       especialidad,
-      disponibilidad
-    };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(actualizado));
+      disponibilidad,
+    }
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(actualizado))
 
-    viewState.dirty = false;
-    window.dispatchEvent(new CustomEvent('showToast', { detail: { message: 'Perfil actualizado', type: 'success' } }));
+    viewState.dirty = false
+    window.dispatchEvent(
+      new CustomEvent('showToast', { detail: { message: 'Perfil actualizado', type: 'success' } }),
+    )
 
     // Sincronizar y re-evaluar SOI Smart Insights de inmediato
     if (window.pwaInstaller) {
-      window.pwaInstaller.evaluateInsights();
+      window.pwaInstaller.evaluateInsights()
     }
   } catch (error) {
-    window.dispatchEvent(new CustomEvent('showToast', { detail: { message: 'Error al guardar: ' + error.message, type: 'danger' } }));
+    window.dispatchEvent(
+      new CustomEvent('showToast', {
+        detail: { message: 'Error al guardar: ' + error.message, type: 'danger' },
+      }),
+    )
   } finally {
-    viewState.saving = false;
-    btn.disabled = false;
-    btn.innerHTML = originalHtml;
+    viewState.saving = false
+    btn.disabled = false
+    btn.innerHTML = originalHtml
   }
 }
 
 function collectDisponibilidad() {
-  const disp = {};
+  const disp = {}
   DIAS_SEMANA.forEach(({ key }) => {
-    const franjas = [];
-    document.querySelectorAll(`[data-dia="${key}"].pm-avail-franja`).forEach(row => {
-      const inicio = row.querySelector('[data-field="inicio"]')?.value;
-      const fin = row.querySelector('[data-field="fin"]')?.value;
-      if (inicio && fin) franjas.push({ inicio, fin });
-    });
-    disp[key] = franjas;
-  });
-  return disp;
+    const franjas = []
+    document.querySelectorAll(`[data-dia="${key}"].pm-avail-franja`).forEach((row) => {
+      const inicio = row.querySelector('[data-field="inicio"]')?.value
+      const fin = row.querySelector('[data-field="fin"]')?.value
+      if (inicio && fin) franjas.push({ inicio, fin })
+    })
+    disp[key] = franjas
+  })
+  return disp
 }
 
 // ─── CERRAR SESIÓN ──────────────────────────────────────────
@@ -741,58 +839,64 @@ function confirmarCerrarSesion() {
     saveText: 'Salir',
     cancelText: 'Cancelar',
     onSave: async () => {
-      await logoutPortal();
-      window.location.reload();
-      return true;
-    }
-  });
+      await logoutPortal()
+      window.location.reload()
+      return true
+    },
+  })
 }
 
 // ─── TEMA ────────────────────────────────────────────────────
 function applyTheme(theme) {
-  const resolved = theme === 'system'
-    ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
-    : theme;
-  document.documentElement.setAttribute('data-bs-theme', resolved);
-  document.documentElement.setAttribute('data-portal-theme', resolved);
-  document.documentElement.classList.toggle('pm-dark', resolved === 'dark');
-  document.querySelectorAll('.pm-theme-opt').forEach(opt => {
-    opt.setAttribute('aria-checked', opt.dataset.theme === theme ? 'true' : 'false');
-    opt.classList.toggle('active', opt.dataset.theme === theme);
-  });
-  localStorage.setItem('portal-maestros-theme', theme);
-  viewState.theme = theme;
+  const resolved =
+    theme === 'system'
+      ? window.matchMedia('(prefers-color-scheme: dark)').matches
+        ? 'dark'
+        : 'light'
+      : theme
+  document.documentElement.setAttribute('data-bs-theme', resolved)
+  document.documentElement.setAttribute('data-portal-theme', resolved)
+  document.documentElement.classList.toggle('pm-dark', resolved === 'dark')
+  document.querySelectorAll('.pm-theme-opt').forEach((opt) => {
+    opt.setAttribute('aria-checked', opt.dataset.theme === theme ? 'true' : 'false')
+    opt.classList.toggle('active', opt.dataset.theme === theme)
+  })
+  localStorage.setItem('portal-maestros-theme', theme)
+  viewState.theme = theme
 }
 
 // ─── PERFIL INCOMPLETO ──────────────────────────────────────
 function checkPerfilIncompleto(maestro) {
-  const needsCompletion = !maestro.especialidad || !maestro.disponibilidad || Object.keys(maestro.disponibilidad || {}).length === 0;
-  const banner = document.getElementById('pm-banner-perfil-incompleto');
-  if (!banner) return;
+  const needsCompletion =
+    !maestro.especialidad ||
+    !maestro.disponibilidad ||
+    Object.keys(maestro.disponibilidad || {}).length === 0
+  const banner = document.getElementById('pm-banner-perfil-incompleto')
+  if (!banner) return
   if (needsCompletion) {
-    banner.style.display = 'block';
+    banner.style.display = 'block'
     banner.innerHTML = `
       <div class="pm-profile-alert__inner">
         <i class="bi bi-exclamation-triangle" aria-hidden="true"></i>
         <div><strong>Completa tu perfil</strong><p>Agrega tu especialidad y disponibilidad horaria.</p></div>
-      </div>`;
+      </div>`
   } else {
-    banner.style.display = 'none';
+    banner.style.display = 'none'
   }
 }
 
 // ─── ANIMACIONES ────────────────────────────────────────────
 function animateSections() {
-  const sections = document.querySelectorAll('.card-apple');
+  const sections = document.querySelectorAll('.card-apple')
   sections.forEach((sec, i) => {
-    sec.style.opacity = '0';
-    sec.style.transform = 'translateY(12px)';
+    sec.style.opacity = '0'
+    sec.style.transform = 'translateY(12px)'
     setTimeout(() => {
-      sec.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
-      sec.style.opacity = '1';
-      sec.style.transform = 'translateY(0)';
-    }, 50 * i);
-  });
+      sec.style.transition = 'opacity 0.4s ease, transform 0.4s ease'
+      sec.style.opacity = '1'
+      sec.style.transform = 'translateY(0)'
+    }, 50 * i)
+  })
 }
 
 // ─── ESTILOS ──
@@ -1095,11 +1199,11 @@ const styles = `
     margin-top: 0.65rem;
     line-height: 1.6;
   }
-`;
+`
 
 if (!document.getElementById('pm-avail-styles')) {
-  const s = document.createElement('style');
-  s.id = 'pm-avail-styles';
-  s.textContent = styles;
-  document.head.appendChild(s);
+  const s = document.createElement('style')
+  s.id = 'pm-avail-styles'
+  s.textContent = styles
+  document.head.appendChild(s)
 }

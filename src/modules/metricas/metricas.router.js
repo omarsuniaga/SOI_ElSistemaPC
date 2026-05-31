@@ -1,15 +1,26 @@
 import { router } from '../../core/router/router.js'
-import { renderDashboardMetricasView } from './views/dashboardMetricasView.js'
+import {
+  renderDashboardMetricasView,
+  destroyDashboardMetricasView,
+} from './views/dashboardMetricasView.js'
 import { renderIaReporteGeneradorView } from './views/iaReporteGeneradorView.js'
 
 export function registerRoutesMetricas() {
-  // Ahora todas las rutas analíticas convergen en el Hub Centralizado
+  // Escuchar cuando el usuario navegue fuera de las vistas del módulo de métricas para destruir la vista y sus listeners
+  window.addEventListener('routeChanged', (e) => {
+    const targetRoute = e.detail
+    if (targetRoute !== 'metricas' && targetRoute !== 'metricas-ia-reportes') {
+      try {
+        destroyDashboardMetricasView()
+      } catch (err) {
+        console.error('Error destruyendo DashboardMetricasView:', err)
+      }
+    }
+  })
+
+  // Ruta única centralizada de métricas e integridad de observabilidad
   router.register('metricas', renderDashboardMetricasView)
-  router.register('metricas-alertas', renderDashboardMetricasView)
-  router.register('metricas-riesgo', renderDashboardMetricasView)
-  router.register('metricas-maestros', renderDashboardMetricasView)
-  router.register('metricas-destacados', renderDashboardMetricasView)
-  
+
   // El generador de reportes IA se mantiene como una herramienta especializada
   router.register('metricas-ia-reportes', renderIaReporteGeneradorView)
 }

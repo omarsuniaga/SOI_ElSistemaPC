@@ -36,7 +36,7 @@ export function checkRateLimit(userId) {
   const windowStart = now - config.windowMs
 
   let userData = userRequests.get(userId)
-  
+
   if (!userData || userData.windowStart < windowStart) {
     userData = {
       windowStart: now,
@@ -45,7 +45,7 @@ export function checkRateLimit(userId) {
     userRequests.set(userId, userData)
   }
 
-  const recentRequests = userData.requests.filter(ts => ts > windowStart)
+  const recentRequests = userData.requests.filter((ts) => ts > windowStart)
   userData.requests = recentRequests
 
   const remaining = config.max - recentRequests.length
@@ -73,7 +73,7 @@ export function getRateLimitStatus(userId) {
   const windowStart = now - config.windowMs
 
   const userData = userRequests.get(userId)
-  
+
   if (!userData) {
     return {
       total: config.max,
@@ -82,7 +82,7 @@ export function getRateLimitStatus(userId) {
     }
   }
 
-  const recentRequests = userData.requests.filter(ts => ts > windowStart)
+  const recentRequests = userData.requests.filter((ts) => ts > windowStart)
 
   return {
     total: config.max,
@@ -114,7 +114,7 @@ function scheduleCleanup(userId) {
  */
 export function cleanup() {
   userRequests.clear()
-  cleanupTimers.forEach(timer => clearTimeout(timer))
+  cleanupTimers.forEach((timer) => clearTimeout(timer))
   cleanupTimers.clear()
 }
 

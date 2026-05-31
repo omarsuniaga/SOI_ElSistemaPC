@@ -22,12 +22,14 @@ export async function upsertCobertura(registros) {
 export async function obtenerCoberturaPorAlumno(alumno_id) {
   const { data, error } = await supabase
     .from('cobertura_alumno_objetivo')
-    .select(`
+    .select(
+      `
       id, nivel, confirmado, fecha, plan_id, objetivo_id,
       curriculo_objetivos ( id, descripcion, pilar_id,
         curriculo_pilares ( id, nombre )
       )
-    `)
+    `,
+    )
     .eq('alumno_id', alumno_id)
   if (error) throw error
   return data || []

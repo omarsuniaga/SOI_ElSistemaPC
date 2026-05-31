@@ -20,7 +20,7 @@ export function formatDate(dateStr) {
  */
 export function escapeHTML(str) {
   if (!str) return ''
-  return str.replace(/[&<>]/g, function(m) {
+  return str.replace(/[&<>]/g, function (m) {
     if (m === '&') return '&amp;'
     if (m === '<') return '&lt;'
     if (m === '>') return '&gt;'
@@ -59,7 +59,7 @@ export function formatDias(dias) {
     sábado: 'Sáb',
   }
 
-  return dias.map(d => abreviaturas[d] || d).join(', ')
+  return dias.map((d) => abreviaturas[d] || d).join(', ')
 }
 
 /**
@@ -149,7 +149,7 @@ export function getInitials(nombre) {
   if (!nombre) return '?'
   return nombre
     .split(' ')
-    .map(n => n[0])
+    .map((n) => n[0])
     .join('')
     .toUpperCase()
     .slice(0, 2)
@@ -227,4 +227,3 @@ export function timeToMinutes(timeStr) {
 
   return hours * 60 + minutes
 }
-

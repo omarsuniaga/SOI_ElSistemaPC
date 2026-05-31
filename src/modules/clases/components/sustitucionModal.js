@@ -62,13 +62,15 @@ export class SustitucionModal {
     try {
       const { data, error } = await supabase
         .from('sustituciones')
-        .insert([{
-          maestro_titular_id: this.maestroTitular?.id,
-          maestro_sustituto_id: this.getCurrentMaestroId(),
-          clase_id: this.claseId,
-          iniciado_en: new Date().toISOString(),
-          expira_en: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
-        }])
+        .insert([
+          {
+            maestro_titular_id: this.maestroTitular?.id,
+            maestro_sustituto_id: this.getCurrentMaestroId(),
+            clase_id: this.claseId,
+            iniciado_en: new Date().toISOString(),
+            expira_en: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+          },
+        ])
         .select()
         .single()
 

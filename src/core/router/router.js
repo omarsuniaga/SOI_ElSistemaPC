@@ -18,13 +18,13 @@ export const router = {
 
   _cleanupModals() {
     // Dispose all Bootstrap modal instances to remove backdrop and body classes
-    document.querySelectorAll('.modal.show, .modal.fade').forEach(el => {
+    document.querySelectorAll('.modal.show, .modal.fade').forEach((el) => {
       try {
         const instance = Modal.getInstance(el)
         if (instance) instance.dispose()
       } catch {}
     })
-    document.querySelectorAll('.modal-backdrop').forEach(el => el.remove())
+    document.querySelectorAll('.modal-backdrop').forEach((el) => el.remove())
     document.body.classList.remove('modal-open')
     document.body.style.removeProperty('overflow')
     document.body.style.removeProperty('padding-right')
@@ -87,5 +87,5 @@ export const router = {
       const id = e.detail?.alumnoId || e.detail?.id
       if (id) this.navigate('metricas-riesgo', { highlightId: id })
     })
-  }
+  },
 }

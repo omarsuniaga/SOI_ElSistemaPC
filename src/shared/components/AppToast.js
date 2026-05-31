@@ -4,16 +4,16 @@
  * Soporta apilamiento, auto-dismiss, y animación de entrada/salida.
  */
 
-const CONTAINER_ID = 'app-toast-container';
+const CONTAINER_ID = 'app-toast-container'
 
 // -- Estilos ----------------------------------------------------------------
-let _stylesInjected = false;
+let _stylesInjected = false
 function _injectStyles() {
-  if (_stylesInjected) return;
-  _stylesInjected = true;
+  if (_stylesInjected) return
+  _stylesInjected = true
 
-  const s = document.createElement('style');
-  s.id = 'app-toast-styles';
+  const s = document.createElement('style')
+  s.id = 'app-toast-styles'
   s.textContent = `
     #app-toast-container {
       position: fixed;
@@ -114,52 +114,52 @@ function _injectStyles() {
       #app-toast-container { right: 0.75rem; left: 0.75rem; }
       .app-toast { min-width: unset; max-width: 100%; }
     }
-  `;
-  document.head.appendChild(s);
+  `
+  document.head.appendChild(s)
 }
 
 // -- Container --------------------------------------------------------------
 function _ensureContainer() {
-  let el = document.getElementById(CONTAINER_ID);
+  let el = document.getElementById(CONTAINER_ID)
   if (!el) {
-    el = document.createElement('div');
-    el.id = CONTAINER_ID;
-    document.body.appendChild(el);
+    el = document.createElement('div')
+    el.id = CONTAINER_ID
+    document.body.appendChild(el)
   }
-  return el;
+  return el
 }
 
 // -- Config por tipo --------------------------------------------------------
 const TYPE_CONFIG = {
   success: { icon: 'bi bi-check-circle-fill', title: 'Éxito' },
-  error:   { icon: 'bi bi-exclamation-octagon-fill', title: 'Error' },
-  danger:  { icon: 'bi bi-exclamation-octagon-fill', title: 'Error' },
+  error: { icon: 'bi bi-exclamation-octagon-fill', title: 'Error' },
+  danger: { icon: 'bi bi-exclamation-octagon-fill', title: 'Error' },
   warning: { icon: 'bi bi-exclamation-triangle-fill', title: 'Atención' },
-  info:    { icon: 'bi bi-info-circle-fill', title: 'Info' },
-};
+  info: { icon: 'bi bi-info-circle-fill', title: 'Info' },
+}
 
 // -- Lógica de dismiss ------------------------------------------------------
 function _dismiss(toastEl) {
-  if (toastEl._dismissing) return;
-  toastEl._dismissing = true;
-  toastEl.classList.remove('app-toast--visible');
-  toastEl.classList.add('app-toast--hiding');
-  setTimeout(() => toastEl.remove(), 350);
+  if (toastEl._dismissing) return
+  toastEl._dismissing = true
+  toastEl.classList.remove('app-toast--visible')
+  toastEl.classList.add('app-toast--hiding')
+  setTimeout(() => toastEl.remove(), 350)
 }
 
 // -- API pública ------------------------------------------------------------
 export const AppToast = {
   show(message, type = 'info') {
-    _injectStyles();
-    const container = _ensureContainer();
+    _injectStyles()
+    const container = _ensureContainer()
 
-    const cfg = TYPE_CONFIG[type] || TYPE_CONFIG.info;
-    const canonicalType = type === 'danger' ? 'error' : type;
+    const cfg = TYPE_CONFIG[type] || TYPE_CONFIG.info
+    const canonicalType = type === 'danger' ? 'error' : type
 
-    const toastEl = document.createElement('div');
-    toastEl.className = `app-toast app-toast--${canonicalType}`;
-    toastEl.setAttribute('role', 'alert');
-    toastEl.setAttribute('aria-live', 'polite');
+    const toastEl = document.createElement('div')
+    toastEl.className = `app-toast app-toast--${canonicalType}`
+    toastEl.setAttribute('role', 'alert')
+    toastEl.setAttribute('aria-live', 'polite')
     toastEl.innerHTML = `
       <i class="${cfg.icon} app-toast__icon" aria-hidden="true"></i>
       <div class="app-toast__body">
@@ -167,31 +167,41 @@ export const AppToast = {
         <div class="app-toast__msg">${message}</div>
       </div>
       <button class="app-toast__close" aria-label="Cerrar">&#x2715;</button>
-    `;
+    `
 
-    container.appendChild(toastEl);
+    container.appendChild(toastEl)
 
     // Botón de cierre
-    toastEl.querySelector('.app-toast__close').addEventListener('click', () => _dismiss(toastEl));
+    toastEl.querySelector('.app-toast__close').addEventListener('click', () => _dismiss(toastEl))
 
     // Animar entrada (necesita un frame para que la transición funcione)
     requestAnimationFrame(() => {
-      requestAnimationFrame(() => toastEl.classList.add('app-toast--visible'));
-    });
+      requestAnimationFrame(() => toastEl.classList.add('app-toast--visible'))
+    })
 
     // Auto-dismiss a los 4 segundos
-    const timer = setTimeout(() => _dismiss(toastEl), 4000);
+    const timer = setTimeout(() => _dismiss(toastEl), 4000)
 
     // Pausar auto-dismiss al hacer hover
-    toastEl.addEventListener('mouseenter', () => clearTimeout(timer));
+    toastEl.addEventListener('mouseenter', () => clearTimeout(timer))
     toastEl.addEventListener('mouseleave', () => {
-      setTimeout(() => _dismiss(toastEl), 1500);
-    });
+      setTimeout(() => _dismiss(toastEl), 1500)
+    })
   },
 
-  success(msg) { this.show(msg, 'success'); },
-  error(msg)   { this.show(msg, 'error');   },
-  danger(msg)  { this.show(msg, 'danger');  },
-  info(msg)    { this.show(msg, 'info');    },
-  warning(msg) { this.show(msg, 'warning'); },
-};
+  success(msg) {
+    this.show(msg, 'success')
+  },
+  error(msg) {
+    this.show(msg, 'error')
+  },
+  danger(msg) {
+    this.show(msg, 'danger')
+  },
+  info(msg) {
+    this.show(msg, 'info')
+  },
+  warning(msg) {
+    this.show(msg, 'warning')
+  },
+}

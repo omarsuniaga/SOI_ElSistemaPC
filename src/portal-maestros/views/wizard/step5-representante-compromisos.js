@@ -63,7 +63,8 @@ export function getState(container) {
 
   return {
     representante_nombre: form.querySelector('[name="representante_nombre"]')?.value?.trim() ?? '',
-    representante_parentesco: form.querySelector('[name="representante_parentesco"]')?.value?.trim() ?? '',
+    representante_parentesco:
+      form.querySelector('[name="representante_parentesco"]')?.value?.trim() ?? '',
     representante_tlf: form.querySelector('[name="representante_tlf"]')?.value?.trim() ?? '',
     representante_cedula: form.querySelector('[name="representante_cedula"]')?.value?.trim() ?? '',
     acepta_beca_4500: form.querySelector('[name="acepta_beca_4500"]')?.checked ?? false,

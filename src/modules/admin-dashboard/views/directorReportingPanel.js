@@ -7,7 +7,7 @@ import {
   getInstitutionComplianceSummary,
   getCriticalMaestrosReport,
   getMaestroTrendAnalysis,
-  exportComplianceReport
+  exportComplianceReport,
 } from '../api/adminReportingApi.js'
 import '../styles/admin-dashboard.css'
 
@@ -121,14 +121,18 @@ export class DirectorReportingPanel {
         </section>
 
         <!-- Critical Maestros Alert -->
-        ${this.critical.totalCritical > 0 ? `
+        ${
+          this.critical.totalCritical > 0
+            ? `
           <section class="critical-section">
             <h2><i class="bi bi-exclamation-octagon"></i> Maestros en Estado Crítico (${this.critical.totalCritical})</h2>
             <div class="premium-table-container">
               ${this.renderCriticalTable()}
             </div>
           </section>
-        ` : ''}
+        `
+            : ''
+        }
 
         <!-- Actions Toolbar -->
         <div class="admin-toolbar-dense">
@@ -229,7 +233,7 @@ export class DirectorReportingPanel {
                 </span>
               </td>
             </tr>
-          `
+          `,
             )
             .join('')}
         </tbody>

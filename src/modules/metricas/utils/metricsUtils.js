@@ -4,7 +4,7 @@
 
 /**
  * Formatea un score de riesgo (0-100).
- * @param {number} score 
+ * @param {number} score
  * @returns {{text: string, colorClass: string}}
  */
 export function formatScore(score) {
@@ -14,13 +14,13 @@ export function formatScore(score) {
 
   return {
     text: `${score}/100`,
-    colorClass
+    colorClass,
   }
 }
 
 /**
  * Formatea una tasa (asistencia, rendimiento, etc).
- * @param {number} tasa 
+ * @param {number} tasa
  * @returns {{text: string, colorClass: string}}
  */
 export function formatTasa(tasa) {
@@ -30,13 +30,13 @@ export function formatTasa(tasa) {
 
   return {
     text: `${tasa.toFixed(1)}%`,
-    colorClass
+    colorClass,
   }
 }
 
 /**
  * Formatea un cambio/delta entre períodos.
- * @param {number} delta 
+ * @param {number} delta
  * @returns {{text: string, colorClass: string}}
  */
 export function formatDelta(delta) {
@@ -47,52 +47,52 @@ export function formatDelta(delta) {
 
   return {
     text: `${sign}${delta.toFixed(1)} ${icon}`,
-    colorClass
+    colorClass,
   }
 }
 
 /**
  * Mapea niveles técnicos a etiquetas legibles.
- * @param {string} nivel 
+ * @param {string} nivel
  * @returns {string}
  */
 export function getNivelLabel(nivel) {
   if (!nivel) return 'N/A'
   const niveles = {
-    'inicial': 'Inicial',
-    'basico': 'Básico',
-    'intermedio': 'Intermedio',
-    'avanzado': 'Avanzado'
+    inicial: 'Inicial',
+    basico: 'Básico',
+    intermedio: 'Intermedio',
+    avanzado: 'Avanzado',
   }
   return niveles[nivel.toLowerCase()] || nivel
 }
 
 /**
  * Retorna clase Bootstrap según el color de alerta.
- * @param {string} color 
+ * @param {string} color
  * @returns {string}
  */
 export function getColorAlerta(color) {
   if (!color) return 'secondary'
   const colors = {
-    'rojo': 'danger',
-    'naranja': 'warning',
-    'amarillo': 'info'
+    rojo: 'danger',
+    naranja: 'warning',
+    amarillo: 'info',
   }
   return colors[color.toLowerCase()] || 'secondary'
 }
 
 /**
  * Calcula la tendencia de una serie de valores.
- * @param {number[]} valores 
+ * @param {number[]} valores
  * @returns {'subiendo'|'bajando'|'estable'}
  */
 export function calcularTendencia(valores) {
   if (!valores || valores.length < 2) return 'estable'
-  
+
   const ultimo = valores[valores.length - 1]
   const penultimo = valores[valores.length - 2]
-  
+
   if (ultimo > penultimo) return 'subiendo'
   if (ultimo < penultimo) return 'bajando'
   return 'estable'

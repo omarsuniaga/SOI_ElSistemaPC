@@ -3,7 +3,14 @@
  * Reutilizable para mostrar información resumida de un alumno
  */
 
-import { escapeHTML, getInitials, formatDate, calcularEdad, getEstadoClass, getEstadoLabel } from '../utils/alumnosUtils.js'
+import {
+  escapeHTML,
+  getInitials,
+  formatDate,
+  calcularEdad,
+  getEstadoClass,
+  getEstadoLabel,
+} from '../utils/alumnosUtils.js'
 
 export function createAlumnoCard(alumno, showActions = true, onEdit = null, onDelete = null) {
   const edad = calcularEdad(alumno.fecha_nacimiento)
@@ -42,12 +49,16 @@ export function createAlumnoCard(alumno, showActions = true, onEdit = null, onDe
         <small class="text-muted">
           <i class="bi bi-clock"></i> ${formatDate(alumno.created_at)}
         </small>
-        ${showActions ? `
+        ${
+          showActions
+            ? `
           <div class="btn-group btn-group-sm">
             ${onEdit ? `<button class="btn btn-outline-primary edit-btn" data-id="${alumno.id}" title="Editar"><i class="bi bi-pencil"></i></button>` : ''}
             ${onDelete ? `<button class="btn btn-outline-danger delete-btn" data-id="${alumno.id}" title="Eliminar"><i class="bi bi-trash"></i></button>` : ''}
           </div>
-        ` : ''}
+        `
+            : ''
+        }
       </div>
     </div>
   `

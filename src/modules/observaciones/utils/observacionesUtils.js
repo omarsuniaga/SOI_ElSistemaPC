@@ -6,7 +6,7 @@ export function formatDate(dateStr) {
 
 export function escapeHTML(str) {
   if (!str) return ''
-  return str.replace(/[&<>]/g, function(m) {
+  return str.replace(/[&<>]/g, function (m) {
     if (m === '&') return '&amp;'
     if (m === '<') return '&lt;'
     if (m === '>') return '&gt;'
@@ -16,75 +16,75 @@ export function escapeHTML(str) {
 
 export function getTipoLabel(tipo) {
   const mapa = {
-    'comportamiento': 'Comportamiento',
-    'academico': 'Académico',
-    'social': 'Social',
-    'disciplina': 'Disciplina',
+    comportamiento: 'Comportamiento',
+    academico: 'Académico',
+    social: 'Social',
+    disciplina: 'Disciplina',
   }
   return mapa[tipo?.toLowerCase()] || tipo || 'Sin tipo'
 }
 
 export function getTipoIcon(tipo) {
   const mapa = {
-    'comportamiento': 'bi-emoji-frown',
-    'academico': 'bi-book',
-    'social': 'bi-people',
-    'disciplina': 'bi-shield-exclamation',
+    comportamiento: 'bi-emoji-frown',
+    academico: 'bi-book',
+    social: 'bi-people',
+    disciplina: 'bi-shield-exclamation',
   }
   return mapa[tipo?.toLowerCase()] || 'bi-question-circle'
 }
 
 export function getTipoBadgeClass(tipo) {
   const mapa = {
-    'comportamiento': 'bg-warning',
-    'academico': 'bg-info',
-    'social': 'bg-success',
-    'disciplina': 'bg-danger',
+    comportamiento: 'bg-warning',
+    academico: 'bg-info',
+    social: 'bg-success',
+    disciplina: 'bg-danger',
   }
   return mapa[tipo?.toLowerCase()] || 'bg-secondary'
 }
 
 export function getPrioridadLabel(prioridad) {
   const mapa = {
-    'baja': 'Baja',
-    'media': 'Media',
-    'alta': 'Alta',
+    baja: 'Baja',
+    media: 'Media',
+    alta: 'Alta',
   }
   return mapa[prioridad?.toLowerCase()] || prioridad || 'Sin prioridad'
 }
 
 export function getPrioridadColor(prioridad) {
   const mapa = {
-    'baja': 'success',
-    'media': 'warning',
-    'alta': 'danger',
+    baja: 'success',
+    media: 'warning',
+    alta: 'danger',
   }
   return mapa[prioridad?.toLowerCase()] || 'secondary'
 }
 
 export function getPrioridadIcon(prioridad) {
   const mapa = {
-    'baja': 'bi-arrow-down',
-    'media': 'bi-dash',
-    'alta': 'bi-arrow-up',
+    baja: 'bi-arrow-down',
+    media: 'bi-dash',
+    alta: 'bi-arrow-up',
   }
   return mapa[prioridad?.toLowerCase()] || 'bi-question-circle'
 }
 
 export function getEstadoClass(estado) {
   const mapa = {
-    'abierta': 'bg-primary',
-    'resuelta': 'bg-success',
-    'seguimiento': 'bg-warning',
+    abierta: 'bg-primary',
+    resuelta: 'bg-success',
+    seguimiento: 'bg-warning',
   }
   return mapa[estado?.toLowerCase()] || 'bg-secondary'
 }
 
 export function getEstadoLabel(estado) {
   const mapa = {
-    'abierta': 'Abierta',
-    'resuelta': 'Resuelta',
-    'seguimiento': 'Seguimiento',
+    abierta: 'Abierta',
+    resuelta: 'Resuelta',
+    seguimiento: 'Seguimiento',
   }
   return mapa[estado?.toLowerCase()] || estado || 'Sin estado'
 }
@@ -93,7 +93,7 @@ export function getInitials(nombre) {
   if (!nombre) return '?'
   return nombre
     .split(' ')
-    .map(n => n[0])
+    .map((n) => n[0])
     .join('')
     .toUpperCase()
     .slice(0, 2)

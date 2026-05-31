@@ -12,17 +12,17 @@ import { getDocumentosInstitucionales } from '../../config/api/configApi.js'
 // ─── Paleta institucional ────────────────────────────────────────────────────
 
 const C = {
-  azul:       [20,  60, 130],   // azul institucional
-  azulMedio:  [40,  90, 170],
-  azulClaro:  [220, 232, 250],
-  dorado:     [198, 160,  20],
-  doradoClaro:[255, 245, 200],
-  blanco:     [255, 255, 255],
-  grisOscuro: [40,   40,  40],
-  grisMedio:  [100, 100, 100],
-  grisClaro:  [245, 245, 248],
-  rojo:       [180,  20,  20],
-  verde:      [20,  120,  60],
+  azul: [20, 60, 130], // azul institucional
+  azulMedio: [40, 90, 170],
+  azulClaro: [220, 232, 250],
+  dorado: [198, 160, 20],
+  doradoClaro: [255, 245, 200],
+  blanco: [255, 255, 255],
+  grisOscuro: [40, 40, 40],
+  grisMedio: [100, 100, 100],
+  grisClaro: [245, 245, 248],
+  rojo: [180, 20, 20],
+  verde: [20, 120, 60],
 }
 
 // ─── Datos de demo ───────────────────────────────────────────────────────────
@@ -107,7 +107,12 @@ function p(val, fallback = '—') {
 }
 function fecha(f) {
   if (!f) return '—'
-  try { const [y, m, d] = f.split('-'); return `${d}/${m}/${y}` } catch { return f }
+  try {
+    const [y, m, d] = f.split('-')
+    return `${d}/${m}/${y}`
+  } catch {
+    return f
+  }
 }
 function edad(f) {
   if (!f) return '—'
@@ -117,16 +122,25 @@ function edad(f) {
     let e = hoy.getFullYear() - y
     if (hoy.getMonth() + 1 < m || (hoy.getMonth() + 1 === m && hoy.getDate() < d)) e--
     return `${e} años`
-  } catch { return '—' }
+  } catch {
+    return '—'
+  }
 }
 function sn(val) {
-  if (val === true  || val === 'true'  || val === 't') return 'Sí'
+  if (val === true || val === 'true' || val === 't') return 'Sí'
   if (val === false || val === 'false' || val === 'f') return 'No'
   return '—'
 }
 function municipio(val) {
-  const m = { punta_cana: 'Punta Cana', bavaro: 'Bávaro', veron: 'Verón',
-    friusa: 'Friusa', el_cortecito: 'El Cortecito', los_corales: 'Los Corales', otro: 'Otro' }
+  const m = {
+    punta_cana: 'Punta Cana',
+    bavaro: 'Bávaro',
+    veron: 'Verón',
+    friusa: 'Friusa',
+    el_cortecito: 'El Cortecito',
+    los_corales: 'Los Corales',
+    otro: 'Otro',
+  }
   return m[val] ?? p(val)
 }
 function interes(val) {
@@ -134,16 +148,28 @@ function interes(val) {
   return i[val] ?? p(val)
 }
 function padresEnVida(val) {
-  const v = { ambos: 'Ambos', solo_madre: 'Solo madre', solo_padre: 'Solo padre', ninguno: 'Ninguno' }
+  const v = {
+    ambos: 'Ambos',
+    solo_madre: 'Solo madre',
+    solo_padre: 'Solo padre',
+    ninguno: 'Ninguno',
+  }
   return v[val] ?? p(val)
 }
 function conducta(val) {
-  const c = { no: 'Sin problemas', pocas_veces: 'Pocas veces', si: 'Sí presenta', violento: 'Conducta violenta' }
+  const c = {
+    no: 'Sin problemas',
+    pocas_veces: 'Pocas veces',
+    si: 'Sí presenta',
+    violento: 'Conducta violenta',
+  }
   return c[val] ?? p(val)
 }
 function serial(alumno) {
   const y = new Date().getFullYear()
-  const b = alumno.id ? alumno.id.replace(/-/g, '').slice(-8).toUpperCase() : Date.now().toString(36).toUpperCase().slice(-8)
+  const b = alumno.id
+    ? alumno.id.replace(/-/g, '').slice(-8).toUpperCase()
+    : Date.now().toString(36).toUpperCase().slice(-8)
   return `SOI-PC-${y}-${b}`
 }
 function nowLong() {
@@ -154,7 +180,7 @@ function nowLong() {
 
 const W_LETTER = 215.9
 const H_LETTER = 279.4
-const MARGIN   = 14
+const MARGIN = 14
 
 function header(doc, titulo, subtitulo = '') {
   // Banda azul principal
@@ -238,8 +264,18 @@ function tabla(doc, body, y, opts = {}) {
     },
     alternateRowStyles: { fillColor: C.grisClaro },
     columnStyles: {
-      0: { fontStyle: 'bold', cellWidth: opts.labelW ?? 42, fillColor: C.azulClaro, textColor: C.azul },
-      2: { fontStyle: 'bold', cellWidth: opts.labelW ?? 42, fillColor: C.azulClaro, textColor: C.azul },
+      0: {
+        fontStyle: 'bold',
+        cellWidth: opts.labelW ?? 42,
+        fillColor: C.azulClaro,
+        textColor: C.azul,
+      },
+      2: {
+        fontStyle: 'bold',
+        cellWidth: opts.labelW ?? 42,
+        fillColor: C.azulClaro,
+        textColor: C.azul,
+      },
     },
     body,
     ...opts.extra,
@@ -260,7 +296,12 @@ function tablaSimple(doc, body, y, opts = {}) {
       textColor: C.grisOscuro,
     },
     columnStyles: {
-      0: { fontStyle: 'bold', cellWidth: opts.labelW ?? 52, fillColor: C.azulClaro, textColor: C.azul },
+      0: {
+        fontStyle: 'bold',
+        cellWidth: opts.labelW ?? 52,
+        fillColor: C.azulClaro,
+        textColor: C.azul,
+      },
     },
     body,
     ...opts.extra,
@@ -287,10 +328,10 @@ function checkSpace(doc, y, needed, titulo, nombre, pageRef) {
 // ════════════════════════════════════════════════════════════════════════════
 
 export function generarFichaAlumno(alumno) {
-  const doc  = new jsPDF({ unit: 'mm', format: 'letter' })
+  const doc = new jsPDF({ unit: 'mm', format: 'letter' })
   const page = { n: 1 }
   const DOC_TITLE = 'FICHA TÉCNICA DEL ALUMNO'
-  const now  = nowLong()
+  const now = nowLong()
 
   let y = header(doc, DOC_TITLE, `Generado: ${now}`)
 
@@ -323,89 +364,228 @@ export function generarFichaAlumno(alumno) {
 
   // ── 1. Datos personales ──────────────────────────────────────────────────
   y = sectionBar(doc, '1 · DATOS PERSONALES', y)
-  y = tabla(doc, [
-    ['Nombre completo',   p(alumno.nombre_completo),      'Fecha de nacimiento', fecha(alumno.fecha_nacimiento)],
-    ['Edad',             edad(alumno.fecha_nacimiento),   'Nacionalidad',        p(alumno.nacionalidad)],
-    ['Género',           p(alumno.genero),                'Tiene pasaporte',     sn(alumno.tiene_pasaporte)],
-    ['Sabe leer',        sn(alumno.sabe_leer),            'Sabe escribir',       sn(alumno.sabe_escribir)],
-    ['Cómo se enteró',   p(alumno.como_se_entero),        'Municipio',           municipio(alumno.municipio_residencia)],
-    ['Sector / Calle',   p(alumno.sector_calle_numero),   'Teléfono',            p(alumno.tlf_alumno)],
-  ], y)
-  y = tablaSimple(doc, [
-    ['Dirección completa', p(alumno.direccion)],
-    ['Enlace Google Maps', p(alumno.ubicacion_maps_url)],
-  ], y)
+  y = tabla(
+    doc,
+    [
+      [
+        'Nombre completo',
+        p(alumno.nombre_completo),
+        'Fecha de nacimiento',
+        fecha(alumno.fecha_nacimiento),
+      ],
+      ['Edad', edad(alumno.fecha_nacimiento), 'Nacionalidad', p(alumno.nacionalidad)],
+      ['Género', p(alumno.genero), 'Tiene pasaporte', sn(alumno.tiene_pasaporte)],
+      ['Sabe leer', sn(alumno.sabe_leer), 'Sabe escribir', sn(alumno.sabe_escribir)],
+      [
+        'Cómo se enteró',
+        p(alumno.como_se_entero),
+        'Municipio',
+        municipio(alumno.municipio_residencia),
+      ],
+      ['Sector / Calle', p(alumno.sector_calle_numero), 'Teléfono', p(alumno.tlf_alumno)],
+    ],
+    y,
+  )
+  y = tablaSimple(
+    doc,
+    [
+      ['Dirección completa', p(alumno.direccion)],
+      ['Enlace Google Maps', p(alumno.ubicacion_maps_url)],
+    ],
+    y,
+  )
 
   // ── 2. Madre / 3. Padre (tabla fusionada) ────────────────────────────────
   y = checkSpace(doc, y, 40, DOC_TITLE, alumno.nombre_completo, page)
   y = sectionBar(doc, '2 · DATOS DE LA MADRE / 3 · DATOS DEL PADRE', y)
-  y = tabla(doc, [
-    ['Nombre (Madre)', p(alumno.madre_nombre),         'Nombre (Padre)', p(alumno.padre_nombre)],
-    ['Cédula Madre',   p(alumno.madre_cedula),          'Cédula Padre',  p(alumno.padre_cedula)],
-    ['WhatsApp Madre', p(alumno.madre_tlf_whatsapp),    'WhatsApp Padre', p(alumno.padre_tlf_whatsapp)],
-  ], y)
+  y = tabla(
+    doc,
+    [
+      ['Nombre (Madre)', p(alumno.madre_nombre), 'Nombre (Padre)', p(alumno.padre_nombre)],
+      ['Cédula Madre', p(alumno.madre_cedula), 'Cédula Padre', p(alumno.padre_cedula)],
+      [
+        'WhatsApp Madre',
+        p(alumno.madre_tlf_whatsapp),
+        'WhatsApp Padre',
+        p(alumno.padre_tlf_whatsapp),
+      ],
+    ],
+    y,
+  )
 
   // ── 4. Representante ─────────────────────────────────────────────────────
   y = checkSpace(doc, y, 60, DOC_TITLE, alumno.nombre_completo, page)
   y = sectionBar(doc, '4 · REPRESENTANTE Y CONTACTOS', y)
-  y = tabla(doc, [
-    ['Representante',    p(alumno.representante_nombre),      'Parentesco',    p(alumno.representante_parentesco)],
-    ['Cédula',           p(alumno.representante_cedula),      'Teléfono',      p(alumno.representante_tlf)],
-    ['Correo',           p(alumno.correo_representante),      'Fam. monoparen.', sn(alumno.familia_monoparental)],
-    ['Otro responsable', p(alumno.otro_responsable_nombre),   'Cédula',        p(alumno.otro_responsable_cedula)],
-    ['Tlf otro resp.',   p(alumno.otro_responsable_tlf),      '', ''],
-    ['Emergencia 1',     p(alumno.contacto_emergencia_nombre), 'Tlf',          p(alumno.contacto_emergencia_telefono)],
-    ['Emergencia 2',     p(alumno.contacto_emergencia_2_nombre), 'Tlf',        p(alumno.contacto_emergencia_2_telefono)],
-  ], y)
+  y = tabla(
+    doc,
+    [
+      [
+        'Representante',
+        p(alumno.representante_nombre),
+        'Parentesco',
+        p(alumno.representante_parentesco),
+      ],
+      ['Cédula', p(alumno.representante_cedula), 'Teléfono', p(alumno.representante_tlf)],
+      [
+        'Correo',
+        p(alumno.correo_representante),
+        'Fam. monoparen.',
+        sn(alumno.familia_monoparental),
+      ],
+      [
+        'Otro responsable',
+        p(alumno.otro_responsable_nombre),
+        'Cédula',
+        p(alumno.otro_responsable_cedula),
+      ],
+      ['Tlf otro resp.', p(alumno.otro_responsable_tlf), '', ''],
+      [
+        'Emergencia 1',
+        p(alumno.contacto_emergencia_nombre),
+        'Tlf',
+        p(alumno.contacto_emergencia_telefono),
+      ],
+      [
+        'Emergencia 2',
+        p(alumno.contacto_emergencia_2_nombre),
+        'Tlf',
+        p(alumno.contacto_emergencia_2_telefono),
+      ],
+    ],
+    y,
+  )
 
   // ── 5. Situación social ───────────────────────────────────────────────────
   y = sectionBar(doc, '5 · SITUACIÓN SOCIAL', y)
-  y = tabla(doc, [
-    ['Beneficiario subsidio', sn(alumno.beneficiario_subsidio_estado), 'Descripción', p(alumno.subsidio_descripcion)],
-    ['Apoyo actividades', { content: p(alumno.apoyo_actividades), colSpan: 3 }],
-  ], y, { extra: { columnStyles: { 0: { fontStyle: 'bold', cellWidth: 42, fillColor: C.azulClaro, textColor: C.azul }, 2: { fontStyle: 'bold', cellWidth: 42, fillColor: C.azulClaro, textColor: C.azul } } } })
+  y = tabla(
+    doc,
+    [
+      [
+        'Beneficiario subsidio',
+        sn(alumno.beneficiario_subsidio_estado),
+        'Descripción',
+        p(alumno.subsidio_descripcion),
+      ],
+      ['Apoyo actividades', { content: p(alumno.apoyo_actividades), colSpan: 3 }],
+    ],
+    y,
+    {
+      extra: {
+        columnStyles: {
+          0: { fontStyle: 'bold', cellWidth: 42, fillColor: C.azulClaro, textColor: C.azul },
+          2: { fontStyle: 'bold', cellWidth: 42, fillColor: C.azulClaro, textColor: C.azul },
+        },
+      },
+    },
+  )
 
   // ── 6. Perfil musical ─────────────────────────────────────────────────────
   y = checkSpace(doc, y, 70, DOC_TITLE, alumno.nombre_completo, page)
   y = sectionBar(doc, '6 · PERFIL MUSICAL', y, C.dorado)
   doc.setFillColor(...C.doradoClaro)
-  y = tabla(doc, [
-    ['Conocimientos musicales', sn(alumno.tiene_conocimientos_musicales), 'Instrumento previo',  p(alumno.instrumento_previo)],
-    ['Nivel lectura musical',   p(alumno.nivel_lectura_musical),          'Interés',             interes(alumno.interes_musical)],
-    ['Instrumento de interés',  p(alumno.instrumento_interes),            'Requiere iniciación', sn(alumno.requiere_iniciacion_musical)],
-    ['Músico favorito',         p(alumno.musico_favorito),                'Pref. aprendizaje',   p(alumno.preferencia_aprendizaje_musical)],
-  ], y)
-  y = tablaSimple(doc, [
-    ['Por qué quiere unirse',        p(alumno.por_que_unirse)],
-    ['Sentimiento música clásica',   p(alumno.sentimiento_musica_clasica)],
-    ['Sentimiento al aprender',      p(alumno.sentimiento_aprender_instrumento)],
-    ['Aspiración con instrumento',   p(alumno.aspiracion_instrumento)],
-  ], y, { labelW: 55 })
+  y = tabla(
+    doc,
+    [
+      [
+        'Conocimientos musicales',
+        sn(alumno.tiene_conocimientos_musicales),
+        'Instrumento previo',
+        p(alumno.instrumento_previo),
+      ],
+      [
+        'Nivel lectura musical',
+        p(alumno.nivel_lectura_musical),
+        'Interés',
+        interes(alumno.interes_musical),
+      ],
+      [
+        'Instrumento de interés',
+        p(alumno.instrumento_interes),
+        'Requiere iniciación',
+        sn(alumno.requiere_iniciacion_musical),
+      ],
+      [
+        'Músico favorito',
+        p(alumno.musico_favorito),
+        'Pref. aprendizaje',
+        p(alumno.preferencia_aprendizaje_musical),
+      ],
+    ],
+    y,
+  )
+  y = tablaSimple(
+    doc,
+    [
+      ['Por qué quiere unirse', p(alumno.por_que_unirse)],
+      ['Sentimiento música clásica', p(alumno.sentimiento_musica_clasica)],
+      ['Sentimiento al aprender', p(alumno.sentimiento_aprender_instrumento)],
+      ['Aspiración con instrumento', p(alumno.aspiracion_instrumento)],
+    ],
+    y,
+    { labelW: 55 },
+  )
 
   // ── 7. Salud y conducta ───────────────────────────────────────────────────
   y = checkSpace(doc, y, 50, DOC_TITLE, alumno.nombre_completo, page)
   y = sectionBar(doc, '7 · SALUD Y CONDUCTA', y, C.rojo)
-  y = tabla(doc, [
-    ['Tiene alergias',       sn(alumno.tiene_alergias),             'Cuáles',   p(alumno.alergias_descripcion)],
-    ['Cond. transmisible',   sn(alumno.tiene_condicion_transmisible),'Cuál',    p(alumno.condicion_transmisible_desc)],
-    ['Alergia medicamento',  sn(alumno.tiene_alergia_medicamento),  'Cuál',     p(alumno.alergia_medicamento_desc)],
-    ['Impedimento social',   sn(alumno.impedimento_social),         'Conducta', conducta(alumno.problemas_conducta)],
-  ], y)
+  y = tabla(
+    doc,
+    [
+      ['Tiene alergias', sn(alumno.tiene_alergias), 'Cuáles', p(alumno.alergias_descripcion)],
+      [
+        'Cond. transmisible',
+        sn(alumno.tiene_condicion_transmisible),
+        'Cuál',
+        p(alumno.condicion_transmisible_desc),
+      ],
+      [
+        'Alergia medicamento',
+        sn(alumno.tiene_alergia_medicamento),
+        'Cuál',
+        p(alumno.alergia_medicamento_desc),
+      ],
+      [
+        'Impedimento social',
+        sn(alumno.impedimento_social),
+        'Conducta',
+        conducta(alumno.problemas_conducta),
+      ],
+    ],
+    y,
+  )
 
   // ── 8. Datos escolares ────────────────────────────────────────────────────
   y = sectionBar(doc, '8 · DATOS ESCOLARES', y)
-  y = tabla(doc, [
-    ['Centro de estudios', p(alumno.centro_estudios), 'Grado / Nivel', p(alumno.grado_nivel)],
-    ['Padres en vida',     padresEnVida(alumno.padres_en_vida), '', ''],
-  ], y)
+  y = tabla(
+    doc,
+    [
+      ['Centro de estudios', p(alumno.centro_estudios), 'Grado / Nivel', p(alumno.grado_nivel)],
+      ['Padres en vida', padresEnVida(alumno.padres_en_vida), '', ''],
+    ],
+    y,
+  )
 
   // ── 9. Compromisos ────────────────────────────────────────────────────────
   y = checkSpace(doc, y, 55, DOC_TITLE, alumno.nombre_completo, page)
   y = sectionBar(doc, '9 · COMPROMISOS Y AUTORIZACIONES', y, C.verde)
-  y = tabla(doc, [
-    ['Acepta beca RD$4,500',  sn(alumno.acepta_beca_4500),  'Acepta pago RD$600/mes', sn(alumno.acepta_pago_600)],
-    ['Autoriza fotos/redes',  sn(alumno.autoriza_fotos_redes), 'Fecha compromisos',  fecha(alumno.fecha_aceptacion_compromisos?.slice(0,10))],
-  ], y)
+  y = tabla(
+    doc,
+    [
+      [
+        'Acepta beca RD$4,500',
+        sn(alumno.acepta_beca_4500),
+        'Acepta pago RD$600/mes',
+        sn(alumno.acepta_pago_600),
+      ],
+      [
+        'Autoriza fotos/redes',
+        sn(alumno.autoriza_fotos_redes),
+        'Fecha compromisos',
+        fecha(alumno.fecha_aceptacion_compromisos?.slice(0, 10)),
+      ],
+    ],
+    y,
+  )
 
   // ── Firmas ────────────────────────────────────────────────────────────────
   y = checkSpace(doc, y, 45, DOC_TITLE, alumno.nombre_completo, page)
@@ -448,9 +628,9 @@ export function generarFichaAlumno(alumno) {
 // ════════════════════════════════════════════════════════════════════════════
 
 export function generarConstanciaInscripcion(alumno, docs = {}) {
-  const doc  = new jsPDF({ unit: 'mm', format: 'letter' })
-  const ser  = serial(alumno)
-  const now  = nowLong()
+  const doc = new jsPDF({ unit: 'mm', format: 'letter' })
+  const ser = serial(alumno)
+  const now = nowLong()
 
   let y = header(doc, 'CONSTANCIA DE INSCRIPCIÓN', `Serie: ${ser}`)
 
@@ -485,16 +665,16 @@ export function generarConstanciaInscripcion(alumno, docs = {}) {
   doc.setTextColor(...C.grisOscuro)
 
   const nombreAlumno = p(alumno.nombre_completo).toUpperCase()
-  const rep          = p(alumno.representante_nombre)
-  const repPar       = p(alumno.representante_parentesco)
+  const rep = p(alumno.representante_nombre)
+  const repPar = p(alumno.representante_parentesco)
 
   const parrafos = [
     `Por medio de la presente, El Sistema Punta Cana hace constar que:`,
     '',
     `El/La estudiante ${nombreAlumno}, de ${edad(alumno.fecha_nacimiento)},` +
-    ` nacido/a el ${fecha(alumno.fecha_nacimiento)}, de nacionalidad ${p(alumno.nacionalidad)},` +
-    ` ha sido debidamente inscrito/a en el Programa de Formación Musical de` +
-    ` El Sistema Punta Cana, a partir del día ${now}.`,
+      ` nacido/a el ${fecha(alumno.fecha_nacimiento)}, de nacionalidad ${p(alumno.nacionalidad)},` +
+      ` ha sido debidamente inscrito/a en el Programa de Formación Musical de` +
+      ` El Sistema Punta Cana, a partir del día ${now}.`,
     '',
     alumno.requiere_iniciacion_musical
       ? `El/La estudiante participará en el programa de iniciación musical, con interés en ` +
@@ -503,13 +683,16 @@ export function generarConstanciaInscripcion(alumno, docs = {}) {
         `${interes(alumno.interes_musical).toLowerCase()} — instrumento: ${p(alumno.instrumento_interes)}.`,
     '',
     `El representante, ${rep} (${repPar}), ha aceptado los términos del programa,` +
-    ` incluyendo el aporte mensual de RD$600, con pleno conocimiento de que el/la estudiante` +
-    ` recibe una beca valorada en RD$4,500 mensuales, la cual se mantendrá mientras` +
-    ` demuestre rendimiento, interés y asistencia notable.`,
+      ` incluyendo el aporte mensual de RD$600, con pleno conocimiento de que el/la estudiante` +
+      ` recibe una beca valorada en RD$4,500 mensuales, la cual se mantendrá mientras` +
+      ` demuestre rendimiento, interés y asistencia notable.`,
   ]
 
-  parrafos.forEach(linea => {
-    if (!linea) { y += 4; return }
+  parrafos.forEach((linea) => {
+    if (!linea) {
+      y += 4
+      return
+    }
     const lines = doc.splitTextToSize(linea, W_LETTER - MARGIN * 2)
     doc.text(lines, MARGIN, y)
     y += lines.length * 5.8
@@ -519,12 +702,12 @@ export function generarConstanciaInscripcion(alumno, docs = {}) {
 
   // ── Caja: Al presentar esta constancia ───────────────────────────────────
   const items = [
-    ['bi-credit-card',  '✓  Tarjeta de pagos mensuales'],
-    ['bi-calendar',     '✓  Horario de clases asignado'],
-    ['bi-pencil',       '✓  Lista de útiles: lápiz HB, cuaderno pentagramado, borrador'],
-    ['bi-shirt',        '✓  T-Shirt oficial de El Sistema Punta Cana'],
+    ['bi-credit-card', '✓  Tarjeta de pagos mensuales'],
+    ['bi-calendar', '✓  Horario de clases asignado'],
+    ['bi-pencil', '✓  Lista de útiles: lápiz HB, cuaderno pentagramado, borrador'],
+    ['bi-shirt', '✓  T-Shirt oficial de El Sistema Punta Cana'],
   ]
-  const boxH = 9 + (items.length * 7) + 12   // título + ítems + franja rojo
+  const boxH = 9 + items.length * 7 + 12 // título + ítems + franja rojo
   doc.setFillColor(...C.azulClaro)
   doc.setDrawColor(...C.azulMedio)
   doc.setLineWidth(0.5)
@@ -555,14 +738,27 @@ export function generarConstanciaInscripcion(alumno, docs = {}) {
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(8.5)
   doc.setTextColor(...C.blanco)
-  doc.text('PAGO OBLIGATORIO: RD$600 en caja al retirar los materiales', MARGIN + (W_LETTER - MARGIN * 2) / 2, y + 5.2, { align: 'center' })
+  doc.text(
+    'PAGO OBLIGATORIO: RD$600 en caja al retirar los materiales',
+    MARGIN + (W_LETTER - MARGIN * 2) / 2,
+    y + 5.2,
+    { align: 'center' },
+  )
   y += 16
 
   // ── Recursos institucionales ──────────────────────────────────────────────
   const links = [
-    docs.horario    && { icon: '📅', label: 'Consultar horario de clases:',    url: docs.horario },
-    docs.reglamento && { icon: '📋', label: 'Reglamento / Manual de convivencia:', url: docs.reglamento },
-    docs.bienvenida && { icon: '⭐', label: 'Manual de bienvenida al programa:', url: docs.bienvenida },
+    docs.horario && { icon: '📅', label: 'Consultar horario de clases:', url: docs.horario },
+    docs.reglamento && {
+      icon: '📋',
+      label: 'Reglamento / Manual de convivencia:',
+      url: docs.reglamento,
+    },
+    docs.bienvenida && {
+      icon: '⭐',
+      label: 'Manual de bienvenida al programa:',
+      url: docs.bienvenida,
+    },
   ].filter(Boolean)
 
   if (links.length > 0) {
@@ -644,15 +840,19 @@ export function generarConstanciaInscripcion(alumno, docs = {}) {
 // ─── Descargas ───────────────────────────────────────────────────────────────
 
 export function descargarFichaAlumno(alumno) {
-  const doc    = generarFichaAlumno(alumno)
+  const doc = generarFichaAlumno(alumno)
   const nombre = (alumno.nombre_completo ?? 'alumno').toLowerCase().replace(/\s+/g, '-')
   doc.save(`ficha-${nombre}.pdf`)
 }
 
 export async function descargarConstancia(alumno) {
   let docs = {}
-  try { docs = await getDocumentosInstitucionales() } catch { /* genera sin links */ }
-  const doc    = generarConstanciaInscripcion(alumno, docs)
+  try {
+    docs = await getDocumentosInstitucionales()
+  } catch {
+    /* genera sin links */
+  }
+  const doc = generarConstanciaInscripcion(alumno, docs)
   const nombre = (alumno.nombre_completo ?? 'alumno').toLowerCase().replace(/\s+/g, '-')
   doc.save(`constancia-${nombre}.pdf`)
 }

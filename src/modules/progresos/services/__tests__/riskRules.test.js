@@ -4,7 +4,7 @@ import { THRESHOLDS, evaluate } from '../riskRules.js'
 describe('riskRules', () => {
   describe('THRESHOLDS', () => {
     it('should export attendance_min_rate as 0.70', () => {
-      expect(THRESHOLDS.attendance_min_rate).toBe(0.70)
+      expect(THRESHOLDS.attendance_min_rate).toBe(0.7)
     })
 
     it('should export grade_min_avg as 6.0', () => {
@@ -12,7 +12,7 @@ describe('riskRules', () => {
     })
 
     it('should export indicator_min_pass_rate as 0.50', () => {
-      expect(THRESHOLDS.indicator_min_pass_rate).toBe(0.50)
+      expect(THRESHOLDS.indicator_min_pass_rate).toBe(0.5)
     })
   })
 
@@ -45,7 +45,7 @@ describe('riskRules', () => {
       const progress = {
         indicators: { total: 0, passed: 0, pass_rate: null },
         grades: { count: 0, promedio: null },
-        attendance: { total: 10, rate: 0.70 },
+        attendance: { total: 10, rate: 0.7 },
       }
       const result = evaluate(progress, mockClock)
       expect(result.en_riesgo).toBe(false)
@@ -76,7 +76,7 @@ describe('riskRules', () => {
 
     it('should trigger indicator_pass_rate_below_threshold when pass_rate < 50%', () => {
       const progress = {
-        indicators: { total: 10, passed: 4, pass_rate: 0.40 },
+        indicators: { total: 10, passed: 4, pass_rate: 0.4 },
         grades: { count: 0, promedio: null },
         attendance: { total: 0, rate: null },
       }
@@ -98,9 +98,9 @@ describe('riskRules', () => {
 
     it('should include all three risk_reasons when multiple thresholds triggered', () => {
       const progress = {
-        indicators: { total: 10, passed: 4, pass_rate: 0.40 },
+        indicators: { total: 10, passed: 4, pass_rate: 0.4 },
         grades: { count: 3, promedio: 5.5 },
-        attendance: { total: 10, rate: 0.60 },
+        attendance: { total: 10, rate: 0.6 },
       }
       const result = evaluate(progress, mockClock)
       expect(result.en_riesgo).toBe(true)

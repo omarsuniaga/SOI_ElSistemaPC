@@ -1,12 +1,12 @@
-import { enrichToDSL, transcribeAndStructure, structureTextToDSL } from '../services/groqService.js';
-import { SNIPPETS, searchSnippets, expandSnippet } from '../services/snippetBank.js';
-import { createStructureModal } from './structureModal.js';
-import { createToolbarHelpModal } from './toolbarHelpModal.js';
+import { enrichToDSL, transcribeAndStructure, structureTextToDSL } from '../services/groqService.js'
+import { SNIPPETS, searchSnippets, expandSnippet } from '../services/snippetBank.js'
+import { createStructureModal } from './structureModal.js'
+import { createToolbarHelpModal } from './toolbarHelpModal.js'
 
 /**
  * Componente: DslToolbar
  * Barra de herramientas inteligente para insertar tokens DSL en el editor.
- * 
+ *
  * Tokens:
  *   #  → Etiquetar alumno individual
  *   [] → Contenido de clase
@@ -14,32 +14,93 @@ import { createToolbarHelpModal } from './toolbarHelpModal.js';
  *   {} → Tarea/Asignación
  *   $  → Medida técnica
  *   >  → Objetivo curricular
- * 
+ *
  * @param {HTMLElement} container
  * @param {{ onInsert: Function, onLoading: Function, onIaProposal: Function, getEditorContent: Function, aiService?: object, onImproveClick?: Function, onStructureClick?: Function }} options
  */
-export function createDslToolbar(container, { onInsert, onLoading, onIaProposal, getEditorContent, aiService, onImproveClick, onStructureClick, onAnalyzeClick }) {
-
+export function createDslToolbar(
+  container,
+  {
+    onInsert,
+    onLoading,
+    onIaProposal,
+    getEditorContent,
+    aiService,
+    onImproveClick,
+    onStructureClick,
+    onAnalyzeClick,
+  },
+) {
   // Contexto mutable: se actualiza desde fuera vía setContext()
   let _ctx = { presentes: [], indicadorActivo: null, indicadoresDisponibles: [] }
 
   // Definición centralizada de herramientas DSL
   const DSL_TOOLS = [
-    { token: 'alumno',    label: '#',    title: 'Etiquetar alumno',     text: '#',   offset: 1, icon: '👤', triggerAC: '#' },
-    { token: 'contenido', label: '[ ]',  title: 'Contenido de clase',   text: '[]',  offset: 1, icon: '📚', triggerAC: '[' },
-    { token: 'sugerencia',label: '( )',  title: 'Sugerencia pedagógica',text: '()',  offset: 1, icon: '💡', triggerAC: '(' },
-    { token: 'tarea',     label: '{ }',  title: 'Tarea / Asignación',   text: '{}',  offset: 1, icon: '📝', triggerAC: '{' },
-    { token: 'medida',    label: '$',    title: 'Medida técnica',       text: '$',   offset: 1, icon: '🎯', triggerAC: '$' },
-    { token: 'objetivo',  label: '>',    title: 'Objetivo curricular',  text: '>',   offset: 1, icon: '🎓', triggerAC: '>' },
-  ];
+    {
+      token: 'alumno',
+      label: '#',
+      title: 'Etiquetar alumno',
+      text: '#',
+      offset: 1,
+      icon: '👤',
+      triggerAC: '#',
+    },
+    {
+      token: 'contenido',
+      label: '[ ]',
+      title: 'Contenido de clase',
+      text: '[]',
+      offset: 1,
+      icon: '📚',
+      triggerAC: '[',
+    },
+    {
+      token: 'sugerencia',
+      label: '( )',
+      title: 'Sugerencia pedagógica',
+      text: '()',
+      offset: 1,
+      icon: '💡',
+      triggerAC: '(',
+    },
+    {
+      token: 'tarea',
+      label: '{ }',
+      title: 'Tarea / Asignación',
+      text: '{}',
+      offset: 1,
+      icon: '📝',
+      triggerAC: '{',
+    },
+    {
+      token: 'medida',
+      label: '$',
+      title: 'Medida técnica',
+      text: '$',
+      offset: 1,
+      icon: '🎯',
+      triggerAC: '$',
+    },
+    {
+      token: 'objetivo',
+      label: '>',
+      title: 'Objetivo curricular',
+      text: '>',
+      offset: 1,
+      icon: '🎓',
+      triggerAC: '>',
+    },
+  ]
 
   container.innerHTML = `
     <div class="pm-dsl-toolbar">
-      ${DSL_TOOLS.map(t => `
+      ${DSL_TOOLS.map(
+        (t) => `
         <button class="pm-dsl-tool-btn" data-token="${t.token}" title="${t.title}">
           <span class="pm-dsl-tool-symbol">${t.label}</span>
         </button>
-      `).join('')}
+      `,
+      ).join('')}
       <div class="pm-dsl-divider"></div>
       <button class="pm-dsl-tool-btn snippet-btn" id="btn-snippets" title="Snippets / Banco">
         <span class="snippet-icon">/</span>
@@ -53,12 +114,12 @@ export function createDslToolbar(container, { onInsert, onLoading, onIaProposal,
 
     </div>
     <div id="pm-snippet-popup" class="pm-snippet-popup" style="display:none;"></div>
-  `;
+  `
 
   // Estilos de la toolbar
   if (!document.getElementById('pm-dsl-toolbar-styles')) {
-    const style = document.createElement('style');
-    style.id = 'pm-dsl-toolbar-styles';
+    const style = document.createElement('style')
+    style.id = 'pm-dsl-toolbar-styles'
     style.textContent = `
       .pm-dsl-toolbar {
         display: flex;
@@ -145,32 +206,32 @@ export function createDslToolbar(container, { onInsert, onLoading, onIaProposal,
       }
 
 
-    `;
-    document.head.appendChild(style);
+    `
+    document.head.appendChild(style)
   }
 
   // --- Lógica de inserción inteligente ---
   // El mapa de herramientas nos permite buscar por token rápidamente
-  const toolMap = new Map(DSL_TOOLS.map(t => [t.token, t]));
+  const toolMap = new Map(DSL_TOOLS.map((t) => [t.token, t]))
 
-  container.querySelectorAll('.pm-dsl-tool-btn[data-token]').forEach(btn => {
+  container.querySelectorAll('.pm-dsl-tool-btn[data-token]').forEach((btn) => {
     btn.onclick = () => {
-      const tool = toolMap.get(btn.dataset.token);
-      if (!tool) return;
+      const tool = toolMap.get(btn.dataset.token)
+      if (!tool) return
 
       // Micro-animación de feedback al presionar
-      btn.style.transform = 'scale(0.9)';
-      setTimeout(() => { btn.style.transform = ''; }, 100);
+      btn.style.transform = 'scale(0.9)'
+      setTimeout(() => {
+        btn.style.transform = ''
+      }, 100)
 
       // Insertar el texto con cursorOffset para que el cursor quede DENTRO
       // de los brackets/paréntesis. El triggerAC indica qué autocomplete disparar.
-      onInsert(tool.text, tool.offset, tool.triggerAC);
-    };
-  });
+      onInsert(tool.text, tool.offset, tool.triggerAC)
+    }
+  })
 
-
-
-// --- Lógica de Generar Informe ---
+  // --- Lógica de Generar Informe ---
   async function handleGenerateReport() {
     const rawText = getEditorContent ? getEditorContent() : ''
     if (!rawText.trim()) return
@@ -196,8 +257,8 @@ export function createDslToolbar(container, { onInsert, onLoading, onIaProposal,
     }
   }
 
-  container.querySelector('#btn-generar-informe').onclick = handleGenerateReport;
-  container.querySelector('#btn-ia-magic').onclick = handleStructure;
+  container.querySelector('#btn-generar-informe').onclick = handleGenerateReport
+  container.querySelector('#btn-ia-magic').onclick = handleStructure
 
   const analyzeBtn = container.querySelector('#btn-analizar-progreso')
   if (analyzeBtn) {
@@ -219,7 +280,6 @@ export function createDslToolbar(container, { onInsert, onLoading, onIaProposal,
     }
   }
 
-
   // === Snippets Popup ===
   const snippetPopup = container.querySelector('#pm-snippet-popup')
   let snippetSearch = ''
@@ -230,24 +290,28 @@ export function createDslToolbar(container, { onInsert, onLoading, onIaProposal,
       snippetPopup.style.display = 'none'
       return
     }
-    
-    snippetPopup.innerHTML = results.map(s => `
+
+    snippetPopup.innerHTML = results
+      .map(
+        (s) => `
       <div class="pm-snippet-item" data-trigger="${s.trigger}">
         <span class="pm-snippet-icon">${s.icon}</span>
         <span class="pm-snippet-label">/${s.trigger}</span>
         <span class="pm-snippet-preview">${s.label}</span>
       </div>
-    `).join('')
-    
+    `,
+      )
+      .join('')
+
     // Auto-posicionamiento inteligente
     const rect = container.getBoundingClientRect()
     const spaceAbove = rect.top
     const threshold = 220
-    
+
     snippetPopup.style.position = 'fixed'
     snippetPopup.style.left = `${rect.left}px`
     snippetPopup.style.width = `${rect.width}px`
-    
+
     if (spaceAbove > threshold) {
       snippetPopup.style.top = 'auto'
       snippetPopup.style.bottom = `${window.innerHeight - rect.top + 8}px`
@@ -257,10 +321,10 @@ export function createDslToolbar(container, { onInsert, onLoading, onIaProposal,
       snippetPopup.style.top = `${rect.bottom + 8}px`
       snippetPopup.style.transformOrigin = 'top left'
     }
-    
+
     snippetPopup.style.display = 'block'
-    
-    snippetPopup.querySelectorAll('.pm-snippet-item').forEach(item => {
+
+    snippetPopup.querySelectorAll('.pm-snippet-item').forEach((item) => {
       item.onclick = () => {
         const expanded = expandSnippet(item.dataset.trigger)
         onInsert(expanded + ' ')
@@ -346,9 +410,10 @@ export function createDslToolbar(container, { onInsert, onLoading, onIaProposal,
    */
   return {
     setContext(ctx = {}) {
-      if (ctx.presentes !== undefined)           _ctx.presentes = ctx.presentes
-      if (ctx.indicadorActivo !== undefined)     _ctx.indicadorActivo = ctx.indicadorActivo
-      if (ctx.indicadoresDisponibles !== undefined) _ctx.indicadoresDisponibles = ctx.indicadoresDisponibles
-    }
+      if (ctx.presentes !== undefined) _ctx.presentes = ctx.presentes
+      if (ctx.indicadorActivo !== undefined) _ctx.indicadorActivo = ctx.indicadorActivo
+      if (ctx.indicadoresDisponibles !== undefined)
+        _ctx.indicadoresDisponibles = ctx.indicadoresDisponibles
+    },
   }
 }

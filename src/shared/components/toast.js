@@ -60,16 +60,24 @@ export class ToastManager {
   /**
    * Atajos por tipo
    */
-  static success(message, delay) { this.show(message, 'success', delay) }
-  static error(message, delay) { this.show(message, 'error', delay) }
-  static info(message, delay) { this.show(message, 'info', delay) }
-  static warning(message, delay) { this.show(message, 'warning', delay) }
+  static success(message, delay) {
+    this.show(message, 'success', delay)
+  }
+  static error(message, delay) {
+    this.show(message, 'error', delay)
+  }
+  static info(message, delay) {
+    this.show(message, 'info', delay)
+  }
+  static warning(message, delay) {
+    this.show(message, 'warning', delay)
+  }
 
   static getConfig(type) {
     const configs = {
       success: { bg: 'bg-success', icon: 'bi-check-circle', title: 'Éxito' },
-      error:   { bg: 'bg-danger',  icon: 'bi-exclamation-circle', title: 'Error' },
-      info:    { bg: 'bg-info',    icon: 'bi-info-circle', title: 'Información' },
+      error: { bg: 'bg-danger', icon: 'bi-exclamation-circle', title: 'Error' },
+      info: { bg: 'bg-info', icon: 'bi-info-circle', title: 'Información' },
       warning: { bg: 'bg-warning', icon: 'bi-exclamation-triangle', title: 'Advertencia' },
     }
     return configs[type] || configs.info
@@ -77,6 +85,6 @@ export class ToastManager {
 
   static escape(str) {
     if (!str) return ''
-    return str.replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m]))
+    return str.replace(/[&<>]/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[m])
   }
 }

@@ -9,13 +9,17 @@ export class TreeView {
     this.onSelect = options.onSelect || (() => {})
     this.expandedNodes = new Set()
     this.selectedNodeId = null
-    
+
     this.icons = {
-      block: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>',
-      level: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 17h20M2 12h20M2 7h20"></path></svg>',
+      block:
+        '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>',
+      level:
+        '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 17h20M2 12h20M2 7h20"></path></svg>',
       node: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="3"></circle></svg>',
-      indicator: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>',
-      expander: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>'
+      indicator:
+        '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>',
+      expander:
+        '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>',
     }
 
     this._injectStyles()
@@ -38,12 +42,12 @@ export class TreeView {
 
   _generateTreeHTML(nodes, level = 0) {
     if (!nodes || nodes.length === 0) return ''
-    
+
     const isVisible = level === 0 // Root nodes are always visible
-    
+
     return `
       <ul class="tree-list ${level > 0 ? 'tree-sublist' : ''}" style="--level: ${level}">
-        ${nodes.map(node => this._generateNodeHTML(node, level)).join('')}
+        ${nodes.map((node) => this._generateNodeHTML(node, level)).join('')}
       </ul>
     `
   }
@@ -54,7 +58,7 @@ export class TreeView {
     const hasChildren = node.children && node.children.length > 0
     const criticalClass = node.is_critical ? 'is-critical' : ''
     const selectedClass = isSelected ? 'is-selected' : ''
-    
+
     // El label depende del tipo
     let label = node.name || node.description || 'Sin nombre'
     if (node.type === 'level') label = `Nivel: ${label}`
@@ -84,14 +88,14 @@ export class TreeView {
     this.container.addEventListener('click', (e) => {
       const expander = e.target.closest('.tree-expander')
       const content = e.target.closest('.tree-node-content')
-      
+
       if (expander && !expander.classList.contains('is-hidden')) {
         const nodeEl = expander.closest('.tree-node')
         this._toggleExpand(nodeEl)
         e.stopPropagation()
         return
       }
-      
+
       if (content) {
         const nodeEl = content.closest('.tree-node')
         this._selectNode(nodeEl)
@@ -103,7 +107,7 @@ export class TreeView {
     const id = nodeEl.dataset.id
     const expander = nodeEl.querySelector('.tree-expander')
     const childrenContainer = nodeEl.querySelector('.tree-children-container')
-    
+
     if (this.expandedNodes.has(id)) {
       this.expandedNodes.delete(id)
       expander.classList.remove('is-expanded')
@@ -118,15 +122,15 @@ export class TreeView {
   _selectNode(nodeEl) {
     const id = nodeEl.dataset.id
     const type = nodeEl.dataset.type
-    
+
     // Quitar selección previa
     const prevSelected = this.container.querySelector('.tree-node.is-selected')
     if (prevSelected) prevSelected.classList.remove('is-selected')
-    
+
     // Nueva selección
     nodeEl.classList.add('is-selected')
     this.selectedNodeId = id
-    
+
     // Callback
     const nodeData = this._findNodeById(this.data, id)
     this.onSelect(nodeData)

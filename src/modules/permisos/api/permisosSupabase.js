@@ -68,7 +68,9 @@ export async function actualizarPermiso(maestroId, changes) {
         ? (changes.puede_inscribir_clases ?? false)
         : (current?.puede_inscribir_clases ?? false),
     permisos: Array.isArray(changes.permisos) ? changes.permisos : (current?.permisos ?? []),
-    solicitudes: Array.isArray(changes.solicitudes) ? changes.solicitudes : (current?.solicitudes ?? []),
+    solicitudes: Array.isArray(changes.solicitudes)
+      ? changes.solicitudes
+      : (current?.solicitudes ?? []),
     concedido_por: changes.concedido_por || null,
   }
 
@@ -131,13 +133,15 @@ export async function crearSolicitud(maestroId, solicita_alumnos, solicita_clase
 
   const { data, error } = await supabase
     .from('solicitudes_permisos')
-    .insert([{
-      maestro_id: maestroId,
-      solicita_alumnos: solicita_alumnos ?? false,
-      solicita_clases: solicita_clases ?? false,
-      tipos: tipos,
-      estado: 'pendiente',
-    }])
+    .insert([
+      {
+        maestro_id: maestroId,
+        solicita_alumnos: solicita_alumnos ?? false,
+        solicita_clases: solicita_clases ?? false,
+        tipos: tipos,
+        estado: 'pendiente',
+      },
+    ])
     .select('*, maestros!maestro_id(nombre_completo, correo)')
     .single()
 
@@ -213,8 +217,10 @@ export async function aprobarSolicitud(solicitudId, adminId) {
     const permisosActuales = Array.isArray(permisoActual?.permisos) ? permisoActual.permisos : []
 
     await actualizarPermiso(data.maestro_id, {
-      puede_registrar_alumnos: solicitud.solicita_alumnos || (permisoActual?.puede_registrar_alumnos ?? false),
-      puede_inscribir_clases: solicitud.solicita_clases || (permisoActual?.puede_inscribir_clases ?? false),
+      puede_registrar_alumnos:
+        solicitud.solicita_alumnos || (permisoActual?.puede_registrar_alumnos ?? false),
+      puede_inscribir_clases:
+        solicitud.solicita_clases || (permisoActual?.puede_inscribir_clases ?? false),
       permisos: [...new Set([...permisosActuales, ...permisosArray])],
       concedido_por: adminId,
     })

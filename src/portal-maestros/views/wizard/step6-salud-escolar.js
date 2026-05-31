@@ -16,17 +16,48 @@ export function render(draft, errors = {}) {
 
       <h6 class="fw-semibold text-primary mb-3"><i class="bi bi-heart-pulse me-1"></i>Información de salud</h6>
 
-      ${renderFormField({ name: 'tiene_alergias', label: '¿El alumno es alérgico a algo?', type: 'radio', value: tieneAlergias ? 'true' : draft.tiene_alergias === false ? 'false' : '', options: [{ value: 'true', label: 'Sí' }, { value: 'false', label: 'No' }] })}
+      ${renderFormField({
+        name: 'tiene_alergias',
+        label: '¿El alumno es alérgico a algo?',
+        type: 'radio',
+        value: tieneAlergias ? 'true' : draft.tiene_alergias === false ? 'false' : '',
+        options: [
+          { value: 'true', label: 'Sí' },
+          { value: 'false', label: 'No' },
+        ],
+      })}
       <div id="alergias-block" style="${tieneAlergias ? '' : 'display:none'}">
         ${renderFormField({ name: 'alergias_descripcion', label: '¿A qué es alérgico?', type: 'textarea', value: draft.alergias_descripcion ?? '' })}
       </div>
 
-      ${renderFormField({ name: 'tiene_condicion_transmisible', label: '¿El alumno padece alguna condición médica transmisible?', type: 'radio', value: tieneCondicion ? 'true' : draft.tiene_condicion_transmisible === false ? 'false' : '', options: [{ value: 'true', label: 'Sí' }, { value: 'false', label: 'No' }] })}
+      ${renderFormField({
+        name: 'tiene_condicion_transmisible',
+        label: '¿El alumno padece alguna condición médica transmisible?',
+        type: 'radio',
+        value: tieneCondicion
+          ? 'true'
+          : draft.tiene_condicion_transmisible === false
+            ? 'false'
+            : '',
+        options: [
+          { value: 'true', label: 'Sí' },
+          { value: 'false', label: 'No' },
+        ],
+      })}
       <div id="condicion-block" style="${tieneCondicion ? '' : 'display:none'}">
         ${renderFormField({ name: 'condicion_transmisible_desc', label: '¿Cuál condición?', type: 'textarea', value: draft.condicion_transmisible_desc ?? '' })}
       </div>
 
-      ${renderFormField({ name: 'tiene_alergia_medicamento', label: '¿El alumno es alérgico a algún medicamento?', type: 'radio', value: tieneAlergiaMed ? 'true' : draft.tiene_alergia_medicamento === false ? 'false' : '', options: [{ value: 'true', label: 'Sí' }, { value: 'false', label: 'No' }] })}
+      ${renderFormField({
+        name: 'tiene_alergia_medicamento',
+        label: '¿El alumno es alérgico a algún medicamento?',
+        type: 'radio',
+        value: tieneAlergiaMed ? 'true' : draft.tiene_alergia_medicamento === false ? 'false' : '',
+        options: [
+          { value: 'true', label: 'Sí' },
+          { value: 'false', label: 'No' },
+        ],
+      })}
       <div id="med-block" style="${tieneAlergiaMed ? '' : 'display:none'}">
         ${renderFormField({ name: 'alergia_medicamento_desc', label: '¿A qué medicamento?', type: 'textarea', value: draft.alergia_medicamento_desc ?? '' })}
       </div>
@@ -34,7 +65,21 @@ export function render(draft, errors = {}) {
       <hr class="my-3">
       <h6 class="fw-semibold text-secondary mb-3"><i class="bi bi-people me-1"></i>Socialización y conducta</h6>
 
-      ${renderFormField({ name: 'impedimento_social', label: '¿El alumno tiene alguna condición especial que le impida socializar?', type: 'radio', value: draft.impedimento_social === true ? 'true' : draft.impedimento_social === false ? 'false' : '', options: [{ value: 'true', label: 'Sí' }, { value: 'false', label: 'No' }] })}
+      ${renderFormField({
+        name: 'impedimento_social',
+        label: '¿El alumno tiene alguna condición especial que le impida socializar?',
+        type: 'radio',
+        value:
+          draft.impedimento_social === true
+            ? 'true'
+            : draft.impedimento_social === false
+              ? 'false'
+              : '',
+        options: [
+          { value: 'true', label: 'Sí' },
+          { value: 'false', label: 'No' },
+        ],
+      })}
 
       ${renderFormField({
         name: 'problemas_conducta',
@@ -111,9 +156,11 @@ export function getState(container) {
     tiene_alergias: boolRadio('tiene_alergias'),
     alergias_descripcion: form.querySelector('[name="alergias_descripcion"]')?.value?.trim() ?? '',
     tiene_condicion_transmisible: boolRadio('tiene_condicion_transmisible'),
-    condicion_transmisible_desc: form.querySelector('[name="condicion_transmisible_desc"]')?.value?.trim() ?? '',
+    condicion_transmisible_desc:
+      form.querySelector('[name="condicion_transmisible_desc"]')?.value?.trim() ?? '',
     tiene_alergia_medicamento: boolRadio('tiene_alergia_medicamento'),
-    alergia_medicamento_desc: form.querySelector('[name="alergia_medicamento_desc"]')?.value?.trim() ?? '',
+    alergia_medicamento_desc:
+      form.querySelector('[name="alergia_medicamento_desc"]')?.value?.trim() ?? '',
     impedimento_social: boolRadio('impedimento_social'),
     problemas_conducta: form.querySelector('[name="problemas_conducta"]')?.value ?? '',
     centro_estudios: form.querySelector('[name="centro_estudios"]')?.value?.trim() ?? '',

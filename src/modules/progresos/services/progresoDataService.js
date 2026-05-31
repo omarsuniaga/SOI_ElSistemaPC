@@ -1,8 +1,8 @@
-import { 
-  obtenerProgresosPorAlumno, 
-  obtenerProgresosPorClase, 
-  actualizarProgreso, 
-  crearProgreso 
+import {
+  obtenerProgresosPorAlumno,
+  obtenerProgresosPorClase,
+  actualizarProgreso,
+  crearProgreso,
 } from '../api/progresosApi.js'
 import { Progreso } from '../models/progreso.model.js'
 
@@ -22,8 +22,8 @@ export function calcularRendimiento(progresos) {
   }
 
   const notas = progresos
-    .map(p => p.calificacion)
-    .filter(n => n !== null && n !== undefined && !isNaN(n))
+    .map((p) => p.calificacion)
+    .filter((n) => n !== null && n !== undefined && !isNaN(n))
 
   if (notas.length === 0) {
     return { promedio: null, total: progresos.length, enRiesgo: false }
@@ -35,7 +35,7 @@ export function calcularRendimiento(progresos) {
   return {
     promedio,
     total: progresos.length,
-    enRiesgo: promedio < 3.0
+    enRiesgo: promedio < 3.0,
   }
 }
 
@@ -44,10 +44,10 @@ export function calcularRendimiento(progresos) {
  */
 export async function getResumenProgresosClase(claseId) {
   const progresos = await obtenerProgresosPorClase(claseId)
-  
+
   // Agrupar por alumno para calcular promedios individuales
   const porAlumno = {}
-  progresos.forEach(p => {
+  progresos.forEach((p) => {
     if (!porAlumno[p.alumno_id]) porAlumno[p.alumno_id] = []
     porAlumno[p.alumno_id].push(p)
   })
@@ -55,11 +55,11 @@ export async function getResumenProgresosClase(claseId) {
   return Object.entries(porAlumno).map(([alumnoId, lista]) => ({
     alumnoId,
     progresos: lista,
-    rendimiento: calcularRendimiento(lista)
+    rendimiento: calcularRendimiento(lista),
   }))
 }
 
 export const PROGRESO_SERVICE = {
   calcularRendimiento,
-  getResumenProgresosClase
+  getResumenProgresosClase,
 }

@@ -5,12 +5,7 @@
 
 const deleteStatus = new Map()
 
-const TABLES_TO_DELETE = [
-  'observations',
-  'lesson_plans',
-  'evaluations',
-  'notifications',
-]
+const TABLES_TO_DELETE = ['observations', 'lesson_plans', 'evaluations', 'notifications']
 
 /**
  * Delete all user data (Right to be forgotten)

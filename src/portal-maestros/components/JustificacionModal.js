@@ -2,20 +2,20 @@
  * Componente: JustificacionModal
  * Modal para capturar/el motivo de una inasistencia justificada con evidencia opcional.
  * Soporta crear nueva justificación y editar una existente.
- * 
- * @param {HTMLElement} parentContainer 
- * @param {{ onSave: Function }} options 
+ *
+ * @param {HTMLElement} parentContainer
+ * @param {{ onSave: Function }} options
  * @returns {Object} API del componente
  */
-import { enableTrap } from '../utils/focusTrap.js';
+import { enableTrap } from '../utils/focusTrap.js'
 
 export function createJustificacionModal(parentContainer, { onSave, onCancel, onDelete }) {
-  let modalEl = document.getElementById('pm-justif-modal');
+  let modalEl = document.getElementById('pm-justif-modal')
 
   if (!modalEl) {
-    modalEl = document.createElement('div');
-    modalEl.id = 'pm-justif-modal';
-    modalEl.className = 'pm-justif-modal-overlay';
+    modalEl = document.createElement('div')
+    modalEl.id = 'pm-justif-modal'
+    modalEl.className = 'pm-justif-modal-overlay'
     modalEl.innerHTML = `
       <div class="pm-justif-backdrop"></div>
       <div class="pm-justif-modal">
@@ -90,13 +90,13 @@ export function createJustificacionModal(parentContainer, { onSave, onCancel, on
           </button>
         </div>
       </div>
-    `;
-    document.body.appendChild(modalEl);
+    `
+    document.body.appendChild(modalEl)
 
     // Estilos del modal
     if (!document.getElementById('pm-justif-styles')) {
-      const style = document.createElement('style');
-      style.id = 'pm-justif-styles';
+      const style = document.createElement('style')
+      style.id = 'pm-justif-styles'
       style.textContent = `
         .pm-justif-modal-overlay {
           position: fixed;
@@ -365,32 +365,32 @@ export function createJustificacionModal(parentContainer, { onSave, onCancel, on
             max-width: 100%;
           }
         }
-      `;
-      document.head.appendChild(style);
+      `
+      document.head.appendChild(style)
     }
   }
 
   // Estado interno
-  let _currentAlumno = null;
-  let _currentJustificacion = null;
-  let _currentFile = null;         // File object para Storage
-  let _previewUrl = null;          // URL temporal para preview
-  let _isEditing = false;
-  let _prevEstado = null;          // Estado anterior para rollback en cancel
-  let _focusTrap = null;           // Focus trap instance
+  let _currentAlumno = null
+  let _currentJustificacion = null
+  let _currentFile = null // File object para Storage
+  let _previewUrl = null // URL temporal para preview
+  let _isEditing = false
+  let _prevEstado = null // Estado anterior para rollback en cancel
+  let _focusTrap = null // Focus trap instance
 
   // Referencias DOM
-  const titleEl = modalEl.querySelector('#pm-justif-title');
-  const subtitleEl = modalEl.querySelector('#pm-justif-subtitle');
-  const btnTextEl = modalEl.querySelector('#pm-justif-btn-text');
-  const nombreLabel = modalEl.querySelector('#pm-justif-alumno-nombre');
-  const motivoInput = modalEl.querySelector('#pm-justif-motivo');
-  const fileInput = modalEl.querySelector('#pm-justif-file');
-  const filePlaceholder = modalEl.querySelector('.pm-justif-file-placeholder');
-  const filePreview = modalEl.querySelector('.pm-justif-file-preview');
-  const previewImg = modalEl.querySelector('#pm-justif-preview-img');
-  const removeBtn = modalEl.querySelector('#pm-justif-remove-file');
-  const deleteBtn = modalEl.querySelector('#pm-justif-delete');
+  const titleEl = modalEl.querySelector('#pm-justif-title')
+  const subtitleEl = modalEl.querySelector('#pm-justif-subtitle')
+  const btnTextEl = modalEl.querySelector('#pm-justif-btn-text')
+  const nombreLabel = modalEl.querySelector('#pm-justif-alumno-nombre')
+  const motivoInput = modalEl.querySelector('#pm-justif-motivo')
+  const fileInput = modalEl.querySelector('#pm-justif-file')
+  const filePlaceholder = modalEl.querySelector('.pm-justif-file-placeholder')
+  const filePreview = modalEl.querySelector('.pm-justif-file-preview')
+  const previewImg = modalEl.querySelector('#pm-justif-preview-img')
+  const removeBtn = modalEl.querySelector('#pm-justif-remove-file')
+  const deleteBtn = modalEl.querySelector('#pm-justif-delete')
 
   /**
    * Abre el modal para crear o editar una justificación
@@ -398,141 +398,155 @@ export function createJustificacionModal(parentContainer, { onSave, onCancel, on
    * @param {Object|null} justificacionExistente - Datos existentes (null = crear nuevo)
    */
   function open(alumno, justificacionExistente = null, prevEstado = null) {
-    _currentAlumno = alumno;
-    _currentJustificacion = justificacionExistente;
-    _currentFile = null;
-    _previewUrl = null;
-    _isEditing = !!justificacionExistente;
-    _prevEstado = prevEstado;  // null = crear, 'J' = editar
+    _currentAlumno = alumno
+    _currentJustificacion = justificacionExistente
+    _currentFile = null
+    _previewUrl = null
+    _isEditing = !!justificacionExistente
+    _prevEstado = prevEstado // null = crear, 'J' = editar
 
     // Actualizar título y botón eliminar según modo
     if (_isEditing) {
-      titleEl.textContent = 'Editar Justificación';
-      subtitleEl.textContent = 'Modifica el motivo de la inasistencia';
-      btnTextEl.textContent = 'Actualizar';
-      deleteBtn.style.display = 'flex';
+      titleEl.textContent = 'Editar Justificación'
+      subtitleEl.textContent = 'Modifica el motivo de la inasistencia'
+      btnTextEl.textContent = 'Actualizar'
+      deleteBtn.style.display = 'flex'
     } else {
-      titleEl.textContent = 'Justificar Inasistencia';
-      subtitleEl.textContent = 'Registra el motivo de la ausencia';
-      btnTextEl.textContent = 'Guardar Justificación';
-      deleteBtn.style.display = 'none';
+      titleEl.textContent = 'Justificar Inasistencia'
+      subtitleEl.textContent = 'Registra el motivo de la ausencia'
+      btnTextEl.textContent = 'Guardar Justificación'
+      deleteBtn.style.display = 'none'
     }
 
     // Pre-llenar datos
-    nombreLabel.textContent = alumno.nombre_completo;
-    motivoInput.value = justificacionExistente?.motivo || '';
-    
+    nombreLabel.textContent = alumno.nombre_completo
+    motivoInput.value = justificacionExistente?.motivo || ''
+
     // Manejar evidencia existente (Storage URL o base64 legacy)
-    const existingUrl = justificacionExistente?.evidencia_url || justificacionExistente?.evidencia_base64;
+    const existingUrl =
+      justificacionExistente?.evidencia_url || justificacionExistente?.evidencia_base64
     if (existingUrl) {
-      _previewUrl = existingUrl;
-      previewImg.src = existingUrl;
-      filePlaceholder.style.display = 'none';
-      filePreview.style.display = 'block';
+      _previewUrl = existingUrl
+      previewImg.src = existingUrl
+      filePlaceholder.style.display = 'none'
+      filePreview.style.display = 'block'
     } else {
-      _previewUrl = null;
-      filePlaceholder.style.display = 'flex';
-      filePreview.style.display = 'none';
+      _previewUrl = null
+      filePlaceholder.style.display = 'flex'
+      filePreview.style.display = 'none'
     }
-    
-    fileInput.value = '';
-    
-    modalEl.classList.add('open');
-    motivoInput.focus();
+
+    fileInput.value = ''
+
+    modalEl.classList.add('open')
+    motivoInput.focus()
 
     // Focus trap
-    const modalContainer = modalEl.querySelector('.pm-justif-modal');
+    const modalContainer = modalEl.querySelector('.pm-justif-modal')
     if (modalContainer) {
-      if (_focusTrap) _focusTrap.dispose();
-      _focusTrap = enableTrap(modalContainer, { onClose: () => close(true) });
+      if (_focusTrap) _focusTrap.dispose()
+      _focusTrap = enableTrap(modalContainer, { onClose: () => close(true) })
     }
   }
 
   function close(cancelled = false) {
     if (cancelled && onCancel && _currentAlumno && _prevEstado !== null) {
-      onCancel(_currentAlumno.id, _prevEstado);
+      onCancel(_currentAlumno.id, _prevEstado)
     }
-    modalEl.classList.remove('open');
-    _currentAlumno = null;
-    _currentJustificacion = null;
-    _currentFile = null;
-    _previewUrl = null;
-    _prevEstado = null;
-    if (_focusTrap) { _focusTrap.dispose(); _focusTrap = null; }
+    modalEl.classList.remove('open')
+    _currentAlumno = null
+    _currentJustificacion = null
+    _currentFile = null
+    _previewUrl = null
+    _prevEstado = null
+    if (_focusTrap) {
+      _focusTrap.dispose()
+      _focusTrap = null
+    }
   }
 
   // Eventos
-  modalEl.querySelector('#pm-justif-close').onclick = () => close(true);
-  modalEl.querySelector('#pm-justif-cancel').onclick = () => close(true);
+  modalEl.querySelector('#pm-justif-close').onclick = () => close(true)
+  modalEl.querySelector('#pm-justif-cancel').onclick = () => close(true)
 
   deleteBtn.onclick = () => {
-    if (!_currentAlumno) return;
-    if (!confirm(`¿Eliminar la justificación de ${_currentAlumno.nombre_completo}?`)) return;
-    if (onDelete) onDelete({ alumnoId: _currentAlumno.id, justificacionId: _currentJustificacion?.id, existingUrl: _currentJustificacion?.evidencia_url || _currentJustificacion?.evidencia_base64 });
-    close(false); // no rollback: la vista maneja el estado
-  };
-  
+    if (!_currentAlumno) return
+    if (!confirm(`¿Eliminar la justificación de ${_currentAlumno.nombre_completo}?`)) return
+    if (onDelete)
+      onDelete({
+        alumnoId: _currentAlumno.id,
+        justificacionId: _currentJustificacion?.id,
+        existingUrl:
+          _currentJustificacion?.evidencia_url || _currentJustificacion?.evidencia_base64,
+      })
+    close(false) // no rollback: la vista maneja el estado
+  }
+
   // Click en backdrop cierra (se considera cancelar)
-  modalEl.querySelector('.pm-justif-backdrop').onclick = () => close(true);
+  modalEl.querySelector('.pm-justif-backdrop').onclick = () => close(true)
 
   // Preview de imagen (File para Storage + URL temporal para preview)
   fileInput.onchange = (e) => {
-    const file = e.target.files[0];
+    const file = e.target.files[0]
     if (file) {
-      _currentFile = file;
-      _previewUrl = URL.createObjectURL(file);
-      previewImg.src = _previewUrl;
-      filePlaceholder.style.display = 'none';
-      filePreview.style.display = 'block';
+      _currentFile = file
+      _previewUrl = URL.createObjectURL(file)
+      previewImg.src = _previewUrl
+      filePlaceholder.style.display = 'none'
+      filePreview.style.display = 'block'
     }
-  };
+  }
 
   // Eliminar archivo
   removeBtn.onclick = () => {
-    if (_previewUrl && !(_currentJustificacion?.evidencia_url || _currentJustificacion?.evidencia_base64)) {
-      URL.revokeObjectURL(_previewUrl);
+    if (
+      _previewUrl &&
+      !(_currentJustificacion?.evidencia_url || _currentJustificacion?.evidencia_base64)
+    ) {
+      URL.revokeObjectURL(_previewUrl)
     }
-    _currentFile = null;
-    _previewUrl = null;
-    fileInput.value = '';
-    filePlaceholder.style.display = 'flex';
-    filePreview.style.display = 'none';
-  };
+    _currentFile = null
+    _previewUrl = null
+    fileInput.value = ''
+    filePlaceholder.style.display = 'flex'
+    filePreview.style.display = 'none'
+  }
 
   // Guardar — pasa el File object en vez de base64
   modalEl.querySelector('#pm-justif-save').onclick = () => {
-    const motivo = motivoInput.value.trim();
-    
+    const motivo = motivoInput.value.trim()
+
     if (!motivo) {
-      motivoInput.focus();
-      motivoInput.style.borderColor = 'var(--pm-danger)';
+      motivoInput.focus()
+      motivoInput.style.borderColor = 'var(--pm-danger)'
       setTimeout(() => {
-        motivoInput.style.borderColor = '';
-      }, 2000);
-      return;
+        motivoInput.style.borderColor = ''
+      }, 2000)
+      return
     }
 
     if (onSave && _currentAlumno) {
       onSave({
         alumnoId: _currentAlumno.id,
         motivo,
-        evidenciaFile: _currentFile,          // File object para Storage
-        evidenciaPreview: _previewUrl,        // URL temporal para mostrar
+        evidenciaFile: _currentFile, // File object para Storage
+        evidenciaPreview: _previewUrl, // URL temporal para mostrar
         justificacionId: _currentJustificacion?.id || null,
-        existingUrl: _currentJustificacion?.evidencia_url || _currentJustificacion?.evidencia_base64 || null,
+        existingUrl:
+          _currentJustificacion?.evidencia_url || _currentJustificacion?.evidencia_base64 || null,
         isEdit: _isEditing,
-      });
+      })
     }
-  };
+  }
 
   // Escape key
   const escHandler = (e) => {
     if (e.key === 'Escape') {
-      close();
-      document.removeEventListener('keydown', escHandler);
+      close()
+      document.removeEventListener('keydown', escHandler)
     }
-  };
-  document.addEventListener('keydown', escHandler);
+  }
+  document.addEventListener('keydown', escHandler)
 
-  return { open, close };
+  return { open, close }
 }

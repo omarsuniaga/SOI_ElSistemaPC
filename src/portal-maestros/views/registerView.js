@@ -142,16 +142,24 @@ export function renderRegisterView(container, { onSuccess }) {
     passwordInput.type = passwordVisible ? 'text' : 'password'
     togglePwdBtn.querySelector('i').className = passwordVisible ? 'bi bi-eye-slash' : 'bi bi-eye'
     togglePwdBtn.title = passwordVisible ? 'Ocultar contraseña' : 'Mostrar contraseña'
-    togglePwdBtn.setAttribute('aria-label', passwordVisible ? 'Ocultar contraseña' : 'Mostrar contraseña')
+    togglePwdBtn.setAttribute(
+      'aria-label',
+      passwordVisible ? 'Ocultar contraseña' : 'Mostrar contraseña',
+    )
   })
 
   let confirmPasswordVisible = false
   toggleConfirmPwdBtn.addEventListener('click', () => {
     confirmPasswordVisible = !confirmPasswordVisible
     confirmPasswordInput.type = confirmPasswordVisible ? 'text' : 'password'
-    toggleConfirmPwdBtn.querySelector('i').className = confirmPasswordVisible ? 'bi bi-eye-slash' : 'bi bi-eye'
+    toggleConfirmPwdBtn.querySelector('i').className = confirmPasswordVisible
+      ? 'bi bi-eye-slash'
+      : 'bi bi-eye'
     toggleConfirmPwdBtn.title = confirmPasswordVisible ? 'Ocultar contraseña' : 'Mostrar contraseña'
-    toggleConfirmPwdBtn.setAttribute('aria-label', confirmPasswordVisible ? 'Ocultar contraseña' : 'Mostrar contraseña')
+    toggleConfirmPwdBtn.setAttribute(
+      'aria-label',
+      confirmPasswordVisible ? 'Ocultar contraseña' : 'Mostrar contraseña',
+    )
   })
 
   async function handleRegister() {
@@ -213,23 +221,27 @@ export function renderRegisterView(container, { onSuccess }) {
     })
 
     if (error) {
-      errorMsg.textContent = error.message === 'User already registered'
-        ? 'Este correo ya está registrado. Si ya sos maestro, intentá iniciar sesión.'
-        : error.message || 'Error al registrarse. Intentá de nuevo.'
+      errorMsg.textContent =
+        error.message === 'User already registered'
+          ? 'Este correo ya está registrado. Si ya sos maestro, intentá iniciar sesión.'
+          : error.message || 'Error al registrarse. Intentá de nuevo.'
       setLoading(false)
       return
     }
 
     // Garantizar el row en profiles aunque el trigger DB falle
     if (data?.user) {
-      await supabase.from('profiles').upsert({
-        id: data.user.id,
-        email,
-        nombre_completo: nombre,
-        resena: `Instrumento: ${instrumento}${resenaInput.value.trim() ? ' | ' + resenaInput.value.trim() : ''}`,
-        rol: 'maestro',
-        estado: 'pendiente',
-      }, { onConflict: 'id', ignoreDuplicates: false })
+      await supabase.from('profiles').upsert(
+        {
+          id: data.user.id,
+          email,
+          nombre_completo: nombre,
+          resena: `Instrumento: ${instrumento}${resenaInput.value.trim() ? ' | ' + resenaInput.value.trim() : ''}`,
+          rol: 'maestro',
+          estado: 'pendiente',
+        },
+        { onConflict: 'id', ignoreDuplicates: false },
+      )
     }
 
     setLoading(false)
@@ -271,7 +283,7 @@ export function renderRegisterView(container, { onSuccess }) {
   }
 
   registerBtn.addEventListener('click', handleRegister)
-  confirmPasswordInput.addEventListener('keydown', e => {
+  confirmPasswordInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') handleRegister()
   })
 

@@ -13,7 +13,7 @@ let _router = null
 
 export function initViewRegistry(router) {
   _router = router
-  
+
   window.addEventListener('popstate', (e) => {
     if (e.state?.route) {
       _navigateTo(e.state.route, false)
@@ -25,9 +25,9 @@ function _navigateTo(route, pushState = true) {
   if (pushState && _router) {
     history.pushState({ route }, '', `#/${route}`)
   }
-  
+
   if (_currentRoute === route) return
-  
+
   _showView(route)
   _currentRoute = route
 }
@@ -40,7 +40,7 @@ function _showView(route) {
     if (viewName === route) {
       viewData.container.style.display = 'block'
       viewData.container.classList.add('pm-view-active')
-      
+
       if (viewData.onShow) {
         viewData.onShow(viewData.container)
       }
@@ -55,19 +55,19 @@ function _showView(route) {
 
 function _updateActiveTab(route) {
   const baseRoute = route.split('?')[0]
-  
+
   // Footer nav tabs
-  document.querySelectorAll('.pm-nav-tab').forEach(tab => {
+  document.querySelectorAll('.pm-nav-tab').forEach((tab) => {
     tab.classList.toggle('active', tab.dataset.route === baseRoute)
   })
-  
+
   // Header tabs (tablet+)
-  document.querySelectorAll('.pm-header-tab').forEach(tab => {
+  document.querySelectorAll('.pm-header-tab').forEach((tab) => {
     tab.classList.toggle('active', tab.dataset.route === baseRoute)
   })
-  
+
   // Legacy bottom tabs (for compatibility)
-  document.querySelectorAll('.pm-bottom-tab').forEach(tab => {
+  document.querySelectorAll('.pm-bottom-tab').forEach((tab) => {
     tab.classList.toggle('active', tab.dataset.route === baseRoute)
   })
 }
@@ -89,7 +89,7 @@ export function registerView(name, renderFn, onShow = null) {
     container: viewContainer,
     render: renderFn,
     onShow: onShow,
-    rendered: false
+    rendered: false,
   })
 
   return viewContainer
@@ -138,5 +138,5 @@ export default {
   getView,
   invalidateView,
   invalidateAllViews,
-  navigate
+  navigate,
 }

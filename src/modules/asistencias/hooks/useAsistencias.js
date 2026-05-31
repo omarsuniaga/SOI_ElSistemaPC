@@ -24,7 +24,7 @@ export class AsistenciasHook {
   subscribe(callback) {
     this.listeners.push(callback)
     return () => {
-      this.listeners = this.listeners.filter(l => l !== callback)
+      this.listeners = this.listeners.filter((l) => l !== callback)
     }
   }
 
@@ -32,7 +32,7 @@ export class AsistenciasHook {
    * Notificar a todos los suscriptores
    */
   notifyListeners() {
-    this.listeners.forEach(listener => {
+    this.listeners.forEach((listener) => {
       listener({
         asistencias: this.asistencias,
         asistenciaActual: this.asistenciaActual,
@@ -105,11 +105,12 @@ export class AsistenciasHook {
     if (!searchTerm) return this.asistencias
 
     const term = searchTerm.toLowerCase()
-    return this.asistencias.filter(a =>
-      (a.estado || '').toLowerCase().includes(term) ||
-      (a.fecha || '').toLowerCase().includes(term) ||
-      (a.students?.name || '').toLowerCase().includes(term) ||
-      (a.clases?.nombre || '').toLowerCase().includes(term)
+    return this.asistencias.filter(
+      (a) =>
+        (a.estado || '').toLowerCase().includes(term) ||
+        (a.fecha || '').toLowerCase().includes(term) ||
+        (a.students?.name || '').toLowerCase().includes(term) ||
+        (a.clases?.nombre || '').toLowerCase().includes(term),
     )
   }
 
@@ -119,7 +120,7 @@ export class AsistenciasHook {
    * @returns {Array}
    */
   filterByClase(claseId) {
-    return this.asistencias.filter(a => a.clase_id === claseId)
+    return this.asistencias.filter((a) => a.clase_id === claseId)
   }
 
   /**
@@ -128,7 +129,7 @@ export class AsistenciasHook {
    * @returns {Array}
    */
   filterByFecha(fecha) {
-    return this.asistencias.filter(a => a.fecha === fecha)
+    return this.asistencias.filter((a) => a.fecha === fecha)
   }
 
   /**
@@ -137,7 +138,7 @@ export class AsistenciasHook {
    * @returns {Array}
    */
   filterByEstado(estado) {
-    return this.asistencias.filter(a => a.estado === estado)
+    return this.asistencias.filter((a) => a.estado === estado)
   }
 
   /**
@@ -146,7 +147,7 @@ export class AsistenciasHook {
    * @returns {Object|null}
    */
   getById(id) {
-    return this.asistencias.find(a => a.id === id) || null
+    return this.asistencias.find((a) => a.id === id) || null
   }
 
   /**
@@ -155,7 +156,7 @@ export class AsistenciasHook {
    * @returns {Array}
    */
   getForClase(claseId) {
-    return this.asistencias.filter(a => a.clase_id === claseId)
+    return this.asistencias.filter((a) => a.clase_id === claseId)
   }
 
   /**
@@ -164,7 +165,7 @@ export class AsistenciasHook {
    * @returns {Array}
    */
   getForAlumno(studentId) {
-    return this.asistencias.filter(a => a.student_id === studentId)
+    return this.asistencias.filter((a) => a.student_id === studentId)
   }
 
   /**

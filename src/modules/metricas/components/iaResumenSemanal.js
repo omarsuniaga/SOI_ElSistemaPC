@@ -10,9 +10,21 @@ const mockResumen = {
     nuevasPlanificaciones: 12,
   },
   destacados: [
-    { tipo: 'mejora', texto: 'Los estudiantes de Guitarra Intermediate mejoraron su asistencia un 15%', icono: 'bi-arrow-up-circle text-success' },
-    { tipo: 'nota', texto: '3 estudiantes alcanzaron promedio superior a 8.0', icono: 'bi-star text-warning' },
-    { tipo: 'alerta', texto: '2 casos de riesgo identificados requieren atención', icono: 'bi-exclamation-triangle text-danger' },
+    {
+      tipo: 'mejora',
+      texto: 'Los estudiantes de Guitarra Intermediate mejoraron su asistencia un 15%',
+      icono: 'bi-arrow-up-circle text-success',
+    },
+    {
+      tipo: 'nota',
+      texto: '3 estudiantes alcanzaron promedio superior a 8.0',
+      icono: 'bi-star text-warning',
+    },
+    {
+      tipo: 'alerta',
+      texto: '2 casos de riesgo identificados requieren atención',
+      icono: 'bi-exclamation-triangle text-danger',
+    },
   ],
   proximaSemana: [
     'Examen de Violin Beginners - Lunes 9:00',
@@ -74,12 +86,17 @@ export async function renderIaResumenSemanal(container, options = {}) {
 
           <div class="mb-2">
             <div class="small text-muted fw-semibold mb-1">Highlights</div>
-            ${mockResumen.destacados.slice(0, 2).map(d => `
+            ${mockResumen.destacados
+              .slice(0, 2)
+              .map(
+                (d) => `
               <div class="d-flex align-items-start gap-2 mb-1">
                 <i class="bi ${d.icono} mt-1"></i>
                 <span class="small">${d.texto}</span>
               </div>
-            `).join('')}
+            `,
+              )
+              .join('')}
           </div>
 
           <div class="text-end">
@@ -148,21 +165,29 @@ function _verResumenCompleto() {
         <div class="mb-4">
           <h6 class="fw-semibold mb-2"><i class="bi bi-lightbulb me-2"></i>Highlights de la Semana</h6>
           <div class="d-flex flex-column gap-2">
-            ${mockResumen.destacados.map(d => `
+            ${mockResumen.destacados
+              .map(
+                (d) => `
               <div class="d-flex align-items-start gap-2 p-2 bg-light rounded">
                 <i class="bi ${d.icono} mt-1"></i>
                 <span>${d.texto}</span>
               </div>
-            `).join('')}
+            `,
+              )
+              .join('')}
           </div>
         </div>
 
         <div class="mb-4">
           <h6 class="fw-semibold mb-2"><i class="bi bi-calendar-event me-2"></i>Próxima Semana</h6>
           <ul class="list-group">
-            ${mockResumen.proximaSemana.map(e => `
+            ${mockResumen.proximaSemana
+              .map(
+                (e) => `
               <li class="list-group-item py-2"><i class="bi bi-chevron-right me-2 text-muted"></i>${e}</li>
-            `).join('')}
+            `,
+              )
+              .join('')}
           </ul>
         </div>
 
@@ -178,8 +203,12 @@ function _verResumenCompleto() {
     `,
   })
 
-  document.getElementById('exportResumenPDF')?.addEventListener('click', () => _exportarResumen('pdf'))
-  document.getElementById('exportResumenXlsx')?.addEventListener('click', () => _exportarResumen('xlsx'))
+  document
+    .getElementById('exportResumenPDF')
+    ?.addEventListener('click', () => _exportarResumen('pdf'))
+  document
+    .getElementById('exportResumenXlsx')
+    ?.addEventListener('click', () => _exportarResumen('xlsx'))
 }
 
 function _regenerar(container) {
@@ -201,11 +230,12 @@ function _regenerar(container) {
 }
 
 function _exportarResumen(fmt) {
-  const content = `Resumen Semanal - ${mockResumen.periodo}\n\n` +
+  const content =
+    `Resumen Semanal - ${mockResumen.periodo}\n\n` +
     `Asistencia: ${mockResumen.metricas.asistenciaPromedio}%\n` +
     `Clases: ${mockResumen.metricas.clasesDictadas}\n` +
     `Estudiantes: ${mockResumen.metricas.totalEstudiantes}\n\n` +
-    `Highlights:\n${mockResumen.destacados.map(d => `- ${d.texto}`).join('\n')}`
+    `Highlights:\n${mockResumen.destacados.map((d) => `- ${d.texto}`).join('\n')}`
 
   const blob = new Blob([content], { type: 'text/plain' })
   const url = URL.createObjectURL(blob)

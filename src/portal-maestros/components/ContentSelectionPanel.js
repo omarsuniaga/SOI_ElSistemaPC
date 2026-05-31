@@ -41,14 +41,17 @@ export function createContentSelectionPanel({ sessionId, studentId, teacherId, o
   }
 
   function isSuggested(nodeId) {
-    return (_data?.suggestedNodes || []).some(n => n.id === nodeId)
+    return (_data?.suggestedNodes || []).some((n) => n.id === nodeId)
   }
 
   function renderIndicators(node) {
     const indicators = node.indicators
     if (!indicators || indicators.length === 0) return ''
     const items = indicators
-      .map(ind => `<li class="pm-content-panel-indicator">${escHTML(ind.description || ind.indicatorId || '')}</li>`)
+      .map(
+        (ind) =>
+          `<li class="pm-content-panel-indicator">${escHTML(ind.description || ind.indicatorId || '')}</li>`,
+      )
       .join('')
     return `
       <details class="pm-content-panel-details">
@@ -64,25 +67,28 @@ export function createContentSelectionPanel({ sessionId, studentId, teacherId, o
 
     let homeworkHTML = ''
     if (lastHomework) {
-      const hwStatus = lastHomework.status === 'completed'
-        ? `<span class="pm-badge">Completada</span>`
-        : `<span class="pm-badge pm-badge-warning">${escHTML(lastHomework.status || 'pendiente')}</span>`
+      const hwStatus =
+        lastHomework.status === 'completed'
+          ? `<span class="pm-badge">Completada</span>`
+          : `<span class="pm-badge pm-badge-warning">${escHTML(lastHomework.status || 'pendiente')}</span>`
       homeworkHTML = `
         <div class="pm-content-panel-homework">
           Tarea anterior: ${escHTML(lastHomework.description || '')} ${hwStatus}
         </div>`
     }
 
-    const nodesHTML = (activeNodes || []).map(node => {
-      const checked = isSuggested(node.id) ? 'checked' : ''
-      return `
+    const nodesHTML = (activeNodes || [])
+      .map((node) => {
+        const checked = isSuggested(node.id) ? 'checked' : ''
+        return `
         <label class="pm-content-panel-node">
           <input type="checkbox" data-node-id="${escHTML(node.id)}" ${checked} />
           <span class="pm-content-panel-node-name">${escHTML(node.name || node.key)}</span>
           ${statusBadge(node.progress)}
           ${renderIndicators(node)}
         </label>`
-    }).join('')
+      })
+      .join('')
 
     el.innerHTML = `
       <div class="pm-content-panel-header">
@@ -116,8 +122,8 @@ export function createContentSelectionPanel({ sessionId, studentId, teacherId, o
 
   function getSelectedNodes() {
     const checks = el.querySelectorAll('input[type="checkbox"][data-node-id]:checked')
-    const ids = new Set(Array.from(checks).map(c => c.dataset.nodeId))
-    return (_data?.activeNodes || []).filter(n => ids.has(n.id))
+    const ids = new Set(Array.from(checks).map((c) => c.dataset.nodeId))
+    return (_data?.activeNodes || []).filter((n) => ids.has(n.id))
   }
 
   function refresh() {

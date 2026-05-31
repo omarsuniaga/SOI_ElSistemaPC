@@ -99,7 +99,7 @@ describe('Route guard — unprotected routes pass through regardless of permisos
     (route) => {
       expect(applyRouteGuard(route, noPermisos)).toBe(route)
       expect(applyRouteGuard(route, null)).toBe(route)
-    }
+    },
   )
 })
 
@@ -139,7 +139,11 @@ describe('Realtime — permission revocation redirects current route', () => {
 
   it('stays on safe route when no permission changed', () => {
     const permisos = { puede_registrar_alumnos: true, puede_inscribir_clases: true }
-    const { safeRoute, ganados, perdidos } = applyRealtimePermissionChange('metricas', permisos, permisos)
+    const { safeRoute, ganados, perdidos } = applyRealtimePermissionChange(
+      'metricas',
+      permisos,
+      permisos,
+    )
 
     expect(safeRoute).toBe('metricas')
     expect(ganados).toHaveLength(0)

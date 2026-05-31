@@ -2345,7 +2345,7 @@ function _renderVista(container, ctx) {
             </button>
           </div>
           <div class="pm-saved-nav">
-            <button class="pm-saved-nav-btn" id="btn-volver-hoy" title="Volver a Hoy">
+            <button class="pm-saved-nav-btn" id="btn-volver-hoy" title="Atrás (Editar Asistencia)">
               <i class="bi bi-arrow-left-circle"></i>
             </button>
             <button class="pm-saved-nav-btn" id="btn-ir-calendario" title="Ir al Calendario">

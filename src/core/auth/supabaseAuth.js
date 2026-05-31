@@ -72,7 +72,10 @@ export async function signOut() {
  * @returns {Promise<{data:Object,error:Object}>} User object or error
  */
 export async function getCurrentUser() {
-  const { data: { user }, error } = await supabase.auth.getUser()
+  const {
+    data: { user },
+    error,
+  } = await supabase.auth.getUser()
   return { data: { user }, error }
 }
 
@@ -83,7 +86,10 @@ export async function getCurrentUser() {
  * @returns {Promise<{data:Object,error:Object}>} Session object or error
  */
 export async function getSession() {
-  const { data: { session }, error } = await supabase.auth.getSession()
+  const {
+    data: { session },
+    error,
+  } = await supabase.auth.getSession()
   return { data: { session }, error }
 }
 

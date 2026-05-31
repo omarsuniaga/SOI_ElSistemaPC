@@ -4,13 +4,13 @@
  */
 
 const CACHE_TTL = {
-  misClases: 600000,       // 10 minutos — cambian rara vez
-  horarios: 600000,        // 10 minutos — cambian rara vez
-  sesiones: 120000,        // 2 minutos — se invalida manualmente al guardar
-  inscripciones: 600000,   // 10 minutos — cambian rara vez
-  salones: 3600000,        // 1 hora
-  ausencias: 120000,       // 2 minutos
-  metricasSesiones: 120000 // 2 minutos
+  misClases: 600000, // 10 minutos — cambian rara vez
+  horarios: 600000, // 10 minutos — cambian rara vez
+  sesiones: 120000, // 2 minutos — se invalida manualmente al guardar
+  inscripciones: 600000, // 10 minutos — cambian rara vez
+  salones: 3600000, // 1 hora
+  ausencias: 120000, // 2 minutos
+  metricasSesiones: 120000, // 2 minutos
 }
 
 let cache = new Map()

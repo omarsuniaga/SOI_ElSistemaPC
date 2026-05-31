@@ -136,47 +136,62 @@ export function registrarAlumnoModal() {
     try {
       submitBtn.disabled = true
       originalText = submitBtn.innerHTML
-      submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Registrando...'
+      submitBtn.innerHTML =
+        '<span class="spinner-border spinner-border-sm me-2"></span>Registrando...'
 
       const raw = {
-        nombre:     modal.querySelector('#alumno-nombre').value.trim(),
-        apellido:   modal.querySelector('#alumno-apellido').value.trim(),
-        correo:     modal.querySelector('#alumno-email').value.trim() || null,
-        dni:        modal.querySelector('#alumno-dni').value.trim() || null,
+        nombre: modal.querySelector('#alumno-nombre').value.trim(),
+        apellido: modal.querySelector('#alumno-apellido').value.trim(),
+        correo: modal.querySelector('#alumno-email').value.trim() || null,
+        dni: modal.querySelector('#alumno-dni').value.trim() || null,
         tlf_alumno: modal.querySelector('#alumno-tlf').value.trim() || null,
-        estado:     modal.querySelector('#alumno-estado').value,
+        estado: modal.querySelector('#alumno-estado').value,
         creado_por: maestroId,
-        creado_en:  new Date().toISOString(),
+        creado_en: new Date().toISOString(),
       }
 
       // Sanitize all free-text fields before validation and DB insert
       const formData = sanitizeFormData(raw, {
-        nombre:     { maxLength: 100 },
-        apellido:   { maxLength: 100 },
-        correo:     { maxLength: 254 },
-        dni:        { maxLength: 20 },
+        nombre: { maxLength: 100 },
+        apellido: { maxLength: 100 },
+        correo: { maxLength: 254 },
+        dni: { maxLength: 20 },
         tlf_alumno: { maxLength: 30 },
       })
 
       // Validate required fields and formats
       const errors = Validators.run([
-        { test: () => Validators.required(formData.nombre),             message: 'El nombre es requerido.' },
-        { test: () => Validators.length(formData.nombre, 2, 100),       message: 'El nombre debe tener entre 2 y 100 caracteres.' },
-        { test: () => Validators.required(formData.apellido),           message: 'El apellido es requerido.' },
-        { test: () => Validators.length(formData.apellido, 2, 100),     message: 'El apellido debe tener entre 2 y 100 caracteres.' },
-        { test: () => Validators.required(formData.tlf_alumno),         message: 'El teléfono es requerido.' },
-        { test: () => Validators.email(formData.correo),                message: 'El correo no tiene un formato válido.' },
-        { test: () => !formData.dni || Validators.cedula(formData.dni), message: 'El DNI/Cédula solo puede contener dígitos (5-20).' },
-        { test: () => Validators.required(formData.estado),             message: 'El estado es requerido.' },
+        { test: () => Validators.required(formData.nombre), message: 'El nombre es requerido.' },
+        {
+          test: () => Validators.length(formData.nombre, 2, 100),
+          message: 'El nombre debe tener entre 2 y 100 caracteres.',
+        },
+        {
+          test: () => Validators.required(formData.apellido),
+          message: 'El apellido es requerido.',
+        },
+        {
+          test: () => Validators.length(formData.apellido, 2, 100),
+          message: 'El apellido debe tener entre 2 y 100 caracteres.',
+        },
+        {
+          test: () => Validators.required(formData.tlf_alumno),
+          message: 'El teléfono es requerido.',
+        },
+        {
+          test: () => Validators.email(formData.correo),
+          message: 'El correo no tiene un formato válido.',
+        },
+        {
+          test: () => !formData.dni || Validators.cedula(formData.dni),
+          message: 'El DNI/Cédula solo puede contener dígitos (5-20).',
+        },
+        { test: () => Validators.required(formData.estado), message: 'El estado es requerido.' },
       ])
       if (errors.length > 0) throw new Error(errors[0])
 
       // Insertar alumno
-      const { data, error } = await supabase
-        .from('alumnos')
-        .insert([formData])
-        .select()
-        .single()
+      const { data, error } = await supabase.from('alumnos').insert([formData]).select().single()
 
       if (error) throw error
 
@@ -185,22 +200,25 @@ export function registrarAlumnoModal() {
       errorDiv.classList.add('d-none')
 
       // Trigger event para actualizar lista de alumnos
-      window.dispatchEvent(new CustomEvent('alumno-registrado', {
-        detail: { alumno: data }
-      }))
+      window.dispatchEvent(
+        new CustomEvent('alumno-registrado', {
+          detail: { alumno: data },
+        }),
+      )
 
       // Mostrar toast
-      window.dispatchEvent(new CustomEvent('showToast', {
-        detail: {
-          message: `Alumno "${formData.nombre} ${formData.apellido}" registrado exitosamente`,
-          type: 'success'
-        }
-      }))
+      window.dispatchEvent(
+        new CustomEvent('showToast', {
+          detail: {
+            message: `Alumno "${formData.nombre} ${formData.apellido}" registrado exitosamente`,
+            type: 'success',
+          },
+        }),
+      )
 
       // Cerrar modal
       const bsModal = bootstrap.Modal.getInstance(modal)
       bsModal?.hide()
-
     } catch (err) {
       console.error('[registrarAlumnoModal] Error:', err)
       errorMsg.textContent = err.message || 'Error al registrar el alumno'
@@ -237,6 +255,6 @@ export function registrarAlumnoModal() {
 
     isOpen() {
       return isOpen
-    }
+    },
   }
 }

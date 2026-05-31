@@ -26,7 +26,9 @@ export function renderErrorBoundary(container, { onError = null, children = '' }
 
 export const ErrorBoundary = {
   renderErrorBoundary,
-  setErrorCallback: (cb) => { errorCallback = cb },
+  setErrorCallback: (cb) => {
+    errorCallback = cb
+  },
 }
 
 function handleError(event) {
@@ -39,9 +41,7 @@ function handleError(event) {
 }
 
 function handleRejection(event) {
-  const error = event.reason instanceof Error
-    ? event.reason
-    : new Error(String(event.reason))
+  const error = event.reason instanceof Error ? event.reason : new Error(String(event.reason))
 
   displayError(error)
 

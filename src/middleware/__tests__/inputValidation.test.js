@@ -1,5 +1,10 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { validateObservation, validateLessonPlan, validateStudent, sanitizeInput } from '../inputValidation.js'
+import {
+  validateObservation,
+  validateLessonPlan,
+  validateStudent,
+  sanitizeInput,
+} from '../inputValidation.js'
 
 describe('inputValidation', () => {
   beforeEach(() => {

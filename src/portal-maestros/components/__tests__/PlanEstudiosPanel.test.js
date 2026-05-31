@@ -10,7 +10,11 @@ vi.mock('../../api/planEstudiosApi.js', () => ({
 
 // escHTML used internally — provide simple implementation
 vi.mock('../../utils/portalUtils.js', () => ({
-  escHTML: (s) => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'),
+  escHTML: (s) =>
+    String(s ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;'),
 }))
 
 import * as api from '../../api/planEstudiosApi.js'
@@ -19,7 +23,7 @@ import { PlanEstudiosPanel } from '../PlanEstudiosPanel.js'
 function setupDOM() {
   const dom = new JSDOM('<!DOCTYPE html><html><body><div id="root"></div></body></html>')
   global.document = dom.window.document
-  global.window   = dom.window
+  global.window = dom.window
   return dom.window.document.getElementById('root')
 }
 
@@ -43,8 +47,20 @@ describe('PlanEstudiosPanel', () => {
 
   it('renders entries when data exists', async () => {
     api.fetchPlanEntradas.mockResolvedValue([
-      { id: 'e1', tipo: 'diagnostico', titulo: 'Nivel inicial', descripcion: 'Conoce posición 1', created_at: '2026-05-01T00:00:00Z' },
-      { id: 'e2', tipo: 'logro',       titulo: 'Do mayor',      descripcion: null,                  created_at: '2026-05-10T00:00:00Z' },
+      {
+        id: 'e1',
+        tipo: 'diagnostico',
+        titulo: 'Nivel inicial',
+        descripcion: 'Conoce posición 1',
+        created_at: '2026-05-01T00:00:00Z',
+      },
+      {
+        id: 'e2',
+        tipo: 'logro',
+        titulo: 'Do mayor',
+        descripcion: null,
+        created_at: '2026-05-10T00:00:00Z',
+      },
     ])
 
     const panel = new PlanEstudiosPanel({ container, alumnoId: 'a1', maestroId: 'm1' })
@@ -52,12 +68,20 @@ describe('PlanEstudiosPanel', () => {
 
     const cards = container.querySelectorAll('[data-testid="pe-entry"]')
     expect(cards).toHaveLength(2)
-    expect(cards[0].querySelector('[data-testid="pe-entry-titulo"]').textContent).toBe('Nivel inicial')
+    expect(cards[0].querySelector('[data-testid="pe-entry-titulo"]').textContent).toBe(
+      'Nivel inicial',
+    )
   })
 
   it('shows tipo badge for each entry', async () => {
     api.fetchPlanEntradas.mockResolvedValue([
-      { id: 'e1', tipo: 'diagnostico', titulo: 'Diagnóstico', descripcion: null, created_at: '2026-05-01T00:00:00Z' },
+      {
+        id: 'e1',
+        tipo: 'diagnostico',
+        titulo: 'Diagnóstico',
+        descripcion: null,
+        created_at: '2026-05-01T00:00:00Z',
+      },
     ])
 
     const panel = new PlanEstudiosPanel({ container, alumnoId: 'a1', maestroId: 'm1' })
@@ -70,7 +94,13 @@ describe('PlanEstudiosPanel', () => {
 
   it('addEntry() calls insertPlanEntrada and updates list', async () => {
     api.fetchPlanEntradas.mockResolvedValue([])
-    const newEntry = { id: 'e3', tipo: 'logro', titulo: 'Arco', descripcion: null, created_at: '2026-05-20T00:00:00Z' }
+    const newEntry = {
+      id: 'e3',
+      tipo: 'logro',
+      titulo: 'Arco',
+      descripcion: null,
+      created_at: '2026-05-20T00:00:00Z',
+    }
     api.insertPlanEntrada.mockResolvedValue(newEntry)
 
     const panel = new PlanEstudiosPanel({ container, alumnoId: 'a1', maestroId: 'm1' })
@@ -79,7 +109,7 @@ describe('PlanEstudiosPanel', () => {
     await panel.addEntry({ tipo: 'logro', titulo: 'Arco', descripcion: null })
 
     expect(api.insertPlanEntrada).toHaveBeenCalledWith(
-      expect.objectContaining({ tipo: 'logro', titulo: 'Arco', alumno_id: 'a1', maestro_id: 'm1' })
+      expect.objectContaining({ tipo: 'logro', titulo: 'Arco', alumno_id: 'a1', maestro_id: 'm1' }),
     )
     const cards = container.querySelectorAll('[data-testid="pe-entry"]')
     expect(cards).toHaveLength(1)
@@ -87,7 +117,15 @@ describe('PlanEstudiosPanel', () => {
   })
 
   it('deleteEntry() calls deletePlanEntrada and removes entry from list', async () => {
-    const entries = [{ id: 'e1', tipo: 'logro', titulo: 'Do mayor', descripcion: null, created_at: '2026-05-10T00:00:00Z' }]
+    const entries = [
+      {
+        id: 'e1',
+        tipo: 'logro',
+        titulo: 'Do mayor',
+        descripcion: null,
+        created_at: '2026-05-10T00:00:00Z',
+      },
+    ]
     api.fetchPlanEntradas.mockResolvedValue(entries)
     api.deletePlanEntrada.mockResolvedValue(undefined)
 
@@ -109,17 +147,27 @@ describe('PlanEstudiosPanel', () => {
     const panel = new PlanEstudiosPanel({ container, alumnoId: 'a1', maestroId: 'm1' })
     await panel.init()
 
-    expect(container.querySelector('[data-testid="pe-btn-add"]').textContent).toContain('Registrar diagnóstico')
+    expect(container.querySelector('[data-testid="pe-btn-add"]').textContent).toContain(
+      'Registrar diagnóstico',
+    )
   })
 
   it('toolbar shows "Nueva entrada" when diagnostico already exists', async () => {
     api.fetchPlanEntradas.mockResolvedValue([
-      { id: 'e1', tipo: 'diagnostico', titulo: 'Nivel base', descripcion: null, created_at: '2026-05-01T00:00:00Z' },
+      {
+        id: 'e1',
+        tipo: 'diagnostico',
+        titulo: 'Nivel base',
+        descripcion: null,
+        created_at: '2026-05-01T00:00:00Z',
+      },
     ])
 
     const panel = new PlanEstudiosPanel({ container, alumnoId: 'a1', maestroId: 'm1' })
     await panel.init()
 
-    expect(container.querySelector('[data-testid="pe-btn-add"]').textContent).toContain('Nueva entrada')
+    expect(container.querySelector('[data-testid="pe-btn-add"]').textContent).toContain(
+      'Nueva entrada',
+    )
   })
 })

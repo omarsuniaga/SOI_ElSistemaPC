@@ -248,6 +248,14 @@ function _attachEvents(container) {
     _openGuiaAnaliticaModal()
   })
 
+  // Remover listeners globales de red anteriores antes de registrar nuevos para prevenir fugas de memoria
+  if (state._onlineListener) {
+    window.removeEventListener('online', state._onlineListener)
+  }
+  if (state._offlineListener) {
+    window.removeEventListener('offline', state._offlineListener)
+  }
+
   // Listeners de Red para reactividad del Badge del Hub
   // Store references for cleanup in destroy()
   state._onlineListener = _updateOfflineBadge

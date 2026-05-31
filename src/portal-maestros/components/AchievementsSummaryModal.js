@@ -1,47 +1,59 @@
-import { escHTML } from '../utils/portalUtils.js';
+import { escHTML } from '../utils/portalUtils.js'
 
 /**
  * AchievementsSummaryModal: Muestra un resumen de los logros alcanzados tras la sesión.
  * Diseño inspirado en Apple (Glassmorphism, feedback positivo).
  */
 export function createAchievementsSummaryModal(container, results) {
-  if (!results || results.length === 0) return;
+  if (!results || results.length === 0) return
 
-  const modalOverlay = document.createElement('div');
-  modalOverlay.className = 'pm-modal-overlay pm-animate-fade-in';
-  modalOverlay.style.zIndex = '9999';
-  
-  const modalContent = document.createElement('div');
-  modalContent.className = 'pm-modal-content pm-achievements-modal pm-animate-scale-up';
-  
+  const modalOverlay = document.createElement('div')
+  modalOverlay.className = 'pm-modal-overlay pm-animate-fade-in'
+  modalOverlay.style.zIndex = '9999'
+
+  const modalContent = document.createElement('div')
+  modalContent.className = 'pm-modal-content pm-achievements-modal pm-animate-scale-up'
+
   // Icono principal de Logro
   const headerIcon = `
     <div class="pm-achievement-header-icon">
       <i class="bi bi-trophy-fill"></i>
     </div>
-  `;
+  `
 
-  const achievementsHtml = results.map(res => `
+  const achievementsHtml = results
+    .map(
+      (res) => `
     <div class="pm-achievement-item">
       <div class="pm-achievement-student">
         <span class="pm-student-name">${escHTML(res.studentName)}</span>
       </div>
       <div class="pm-achievement-details">
-        ${res.approvedNodes.map(node => `
+        ${res.approvedNodes
+          .map(
+            (node) => `
           <div class="pm-badge-node">
             <i class="bi bi-check-circle-fill"></i>
             <span>${escHTML(node)}</span>
           </div>
-        `).join('')}
-        ${res.levelPromoted ? `
+        `,
+          )
+          .join('')}
+        ${
+          res.levelPromoted
+            ? `
           <div class="pm-badge-level">
             <i class="bi bi-arrow-up-circle-fill"></i>
             <span>Promovido a: ${escHTML(res.levelPromoted)}</span>
           </div>
-        ` : ''}
+        `
+            : ''
+        }
       </div>
     </div>
-  `).join('');
+  `,
+    )
+    .join('')
 
   modalContent.innerHTML = `
     <style>
@@ -152,20 +164,20 @@ export function createAchievementsSummaryModal(container, results) {
     </div>
     
     <button class="pm-btn-finish" id="pm-achievements-close">Continuar</button>
-  `;
+  `
 
-  modalOverlay.appendChild(modalContent);
-  container.appendChild(modalOverlay);
+  modalOverlay.appendChild(modalContent)
+  container.appendChild(modalOverlay)
 
   return new Promise((resolve) => {
     modalContent.querySelector('#pm-achievements-close').onclick = () => {
-      modalOverlay.classList.remove('pm-animate-fade-in');
-      modalOverlay.classList.add('pm-animate-fade-out');
-      modalContent.classList.add('pm-animate-scale-down');
+      modalOverlay.classList.remove('pm-animate-fade-in')
+      modalOverlay.classList.add('pm-animate-fade-out')
+      modalContent.classList.add('pm-animate-scale-down')
       setTimeout(() => {
-        modalOverlay.remove();
-        resolve();
-      }, 300);
-    };
-  });
+        modalOverlay.remove()
+        resolve()
+      }, 300)
+    }
+  })
 }

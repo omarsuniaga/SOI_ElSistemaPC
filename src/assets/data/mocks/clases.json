@@ -40,9 +40,7 @@
       "programa_id": "prog_001",
       "estado": "activa",
       "max_alumnos": 10,
-      "horarios": [
-        { "dia": "jueves", "hora_inicio": "18:00", "hora_fin": "19:30" }
-      ]
+      "horarios": [{ "dia": "jueves", "hora_inicio": "18:00", "hora_fin": "19:30" }]
     },
     {
       "id": "clase_004",

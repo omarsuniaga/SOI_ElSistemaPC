@@ -13,28 +13,28 @@ import { AppToast } from '../../../shared/components/AppToast.js'
 
 const STYLE = `
 <style id="rutas-management-style">
-.rutas-panel { background: white; border-radius: 8px; padding: 24px; }
+.rutas-panel { background: var(--bs-body-bg); border-radius: 8px; padding: 24px; }
 .rutas-section { margin-bottom: 32px; }
 .rutas-section-title {
   font-size: 1.1rem;
   font-weight: 600;
   margin-bottom: 16px;
-  color: #333;
+  color: var(--bs-body-color);
   padding-bottom: 12px;
-  border-bottom: 2px solid #f0f0f0;
+  border-bottom: 2px solid var(--bs-border-color-translucent);
 }
 .rutas-actions { display: flex; gap: 12px; flex-wrap: wrap; }
 .rutas-actions button { white-space: nowrap; }
 .rutas-empty {
   text-align: center;
   padding: 40px 20px;
-  color: #999;
+  color: var(--bs-secondary-color);
 }
 .rutas-empty i {
   font-size: 2rem;
   display: block;
   margin-bottom: 12px;
-  color: #ddd;
+  color: var(--bs-secondary-bg);
 }
 </style>
 `
@@ -167,7 +167,9 @@ export async function renderRutasManagementPanel(container, viewMode = 'maestro'
           } else {
             rutasListContainer.innerHTML = `
               <div class="list-group">
-                ${rutas.map(r => `
+                ${rutas
+                  .map(
+                    (r) => `
                   <div class="list-group-item">
                     <div class="d-flex justify-content-between align-items-start">
                       <div>
@@ -182,7 +184,9 @@ export async function renderRutasManagementPanel(container, viewMode = 'maestro'
                       </span>
                     </div>
                   </div>
-                `).join('')}
+                `,
+                  )
+                  .join('')}
               </div>
             `
           }
@@ -217,12 +221,16 @@ async function _selectRutaForVariant(rutas) {
             </div>
             <div class="modal-body">
               <div class="list-group" id="ruta-options">
-                ${rutas.map(r => `
+                ${rutas
+                  .map(
+                    (r) => `
                   <button type="button" class="list-group-item list-group-item-action" data-ruta-id="${r.id}">
                     <h6 class="mb-1">${r.nombre}</h6>
                     <small>${r.instrumento} • ${r.nivel}</small>
                   </button>
-                `).join('')}
+                `,
+                  )
+                  .join('')}
               </div>
             </div>
           </div>
@@ -234,9 +242,9 @@ async function _selectRutaForVariant(rutas) {
     const modal = new bootstrap.Modal(el.querySelector('#select-ruta-modal'))
     let selected = null
 
-    el.querySelectorAll('#ruta-options button').forEach(btn => {
+    el.querySelectorAll('#ruta-options button').forEach((btn) => {
       btn.addEventListener('click', () => {
-        selected = rutas.find(r => r.id === btn.dataset.rutaId)
+        selected = rutas.find((r) => r.id === btn.dataset.rutaId)
         modal.hide()
       })
     })

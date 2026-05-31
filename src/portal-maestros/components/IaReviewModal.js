@@ -1,19 +1,19 @@
-import { highlightDSL } from '../utils/dslParser.js';
+import { highlightDSL } from '../utils/dslParser.js'
 
 /**
  * Componente: IaReviewModal
  * Permite al maestro revisar y editar la propuesta de la IA antes de insertarla.
- * 
- * @param {HTMLElement} parentContainer 
+ *
+ * @param {HTMLElement} parentContainer
  * @param {{ onAccept: Function }} options
  */
 export function createIaReviewModal(parentContainer, { onAccept }) {
-  let modalEl = document.getElementById('pm-ia-review-modal');
+  let modalEl = document.getElementById('pm-ia-review-modal')
 
   if (!modalEl) {
-    modalEl = document.createElement('div');
-    modalEl.id = 'pm-ia-review-modal';
-    modalEl.className = 'pm-modal-overlay';
+    modalEl = document.createElement('div')
+    modalEl.id = 'pm-ia-review-modal'
+    modalEl.className = 'pm-modal-overlay'
     modalEl.innerHTML = `
       <div class="pm-modal-content">
         <div class="pm-modal-header" style="background: rgba(99, 102, 241, 0.1);">
@@ -38,30 +38,30 @@ export function createIaReviewModal(parentContainer, { onAccept }) {
           </div>
         </div>
       </div>
-    `;
-    document.body.appendChild(modalEl);
+    `
+    document.body.appendChild(modalEl)
   }
 
-  const resultEl = modalEl.querySelector('#pm-ia-result');
+  const resultEl = modalEl.querySelector('#pm-ia-result')
 
   function open(proposal) {
-    resultEl.innerHTML = highlightDSL(proposal);
-    modalEl.classList.add('open');
+    resultEl.innerHTML = highlightDSL(proposal)
+    modalEl.classList.add('open')
   }
 
   function close() {
-    modalEl.classList.remove('open');
+    modalEl.classList.remove('open')
   }
 
-  modalEl.querySelector('#pm-ia-close').onclick = close;
-  modalEl.querySelector('#pm-ia-reject').onclick = close;
+  modalEl.querySelector('#pm-ia-close').onclick = close
+  modalEl.querySelector('#pm-ia-reject').onclick = close
 
   modalEl.querySelector('#pm-ia-accept').onclick = () => {
     if (onAccept) {
-      onAccept(resultEl.innerText);
+      onAccept(resultEl.innerText)
     }
-    close();
-  };
+    close()
+  }
 
-  return { open, close };
+  return { open, close }
 }

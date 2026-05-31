@@ -56,16 +56,14 @@ export function renderFormField(opts) {
   const requiredAttr = required ? 'required' : ''
   const readOnlyAttr = readOnly ? 'readonly' : ''
   const isInvalid = error ? 'is-invalid' : ''
-  const errorSlot = error
-    ? `<div class="invalid-feedback">${escText(error)}</div>`
-    : ''
+  const errorSlot = error ? `<div class="invalid-feedback">${escText(error)}</div>` : ''
   const hintSlot = hint ? `<div class="form-text">${escText(hint)}</div>` : ''
 
   if (type === 'select') {
     const optionsHtml = options
       .map(
         (o) =>
-          `<option value="${escAttr(o.value)}"${value === o.value ? ' selected' : ''}>${escText(o.label)}</option>`
+          `<option value="${escAttr(o.value)}"${value === o.value ? ' selected' : ''}>${escText(o.label)}</option>`,
       )
       .join('')
     return `
@@ -86,7 +84,7 @@ export function renderFormField(opts) {
         <div class="form-check">
           <input class="form-check-input ${isInvalid}" type="radio" name="${name}" id="${id}-${escAttr(o.value)}" value="${escAttr(o.value)}"${value === o.value ? ' checked' : ''} ${requiredAttr}>
           <label class="form-check-label" for="${id}-${escAttr(o.value)}">${escText(o.label)}</label>
-        </div>`
+        </div>`,
       )
       .join('')
     return `

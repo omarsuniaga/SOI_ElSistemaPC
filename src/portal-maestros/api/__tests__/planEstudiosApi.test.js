@@ -16,13 +16,13 @@ import {
 
 function mockChain(returnValue) {
   const chain = {
-    select:  vi.fn().mockReturnThis(),
-    insert:  vi.fn().mockReturnThis(),
-    update:  vi.fn().mockReturnThis(),
-    delete:  vi.fn().mockReturnThis(),
-    eq:      vi.fn().mockReturnThis(),
-    order:   vi.fn().mockReturnThis(),
-    single:  vi.fn().mockResolvedValue(returnValue),
+    select: vi.fn().mockReturnThis(),
+    insert: vi.fn().mockReturnThis(),
+    update: vi.fn().mockReturnThis(),
+    delete: vi.fn().mockReturnThis(),
+    eq: vi.fn().mockReturnThis(),
+    order: vi.fn().mockReturnThis(),
+    single: vi.fn().mockResolvedValue(returnValue),
   }
   chain.then = (resolve) => Promise.resolve(returnValue).then(resolve)
   return chain
@@ -35,8 +35,20 @@ describe('planEstudiosApi', () => {
   describe('fetchPlanEntradas(alumnoId)', () => {
     it('returns ordered entries for the alumno', async () => {
       const mockData = [
-        { id: 'e1', alumno_id: 'a1', tipo: 'diagnostico', titulo: 'Nivel inicial', created_at: '2026-05-01T00:00:00Z' },
-        { id: 'e2', alumno_id: 'a1', tipo: 'logro',        titulo: 'Do mayor',      created_at: '2026-05-10T00:00:00Z' },
+        {
+          id: 'e1',
+          alumno_id: 'a1',
+          tipo: 'diagnostico',
+          titulo: 'Nivel inicial',
+          created_at: '2026-05-01T00:00:00Z',
+        },
+        {
+          id: 'e2',
+          alumno_id: 'a1',
+          tipo: 'logro',
+          titulo: 'Do mayor',
+          created_at: '2026-05-10T00:00:00Z',
+        },
       ]
       supabase.from.mockReturnValue(mockChain({ data: mockData, error: null }))
 
@@ -61,22 +73,35 @@ describe('planEstudiosApi', () => {
   // ── insertPlanEntrada ─────────────────────────────────────────────────────
   describe('insertPlanEntrada(entrada)', () => {
     it('inserts and returns the new entry', async () => {
-      const newEntry = { id: 'e3', alumno_id: 'a1', maestro_id: 'm1', tipo: 'logro', titulo: 'Escala Re mayor' }
+      const newEntry = {
+        id: 'e3',
+        alumno_id: 'a1',
+        maestro_id: 'm1',
+        tipo: 'logro',
+        titulo: 'Escala Re mayor',
+      }
       supabase.from.mockReturnValue(mockChain({ data: newEntry, error: null }))
 
-      const result = await insertPlanEntrada({ alumno_id: 'a1', maestro_id: 'm1', tipo: 'logro', titulo: 'Escala Re mayor' })
+      const result = await insertPlanEntrada({
+        alumno_id: 'a1',
+        maestro_id: 'm1',
+        tipo: 'logro',
+        titulo: 'Escala Re mayor',
+      })
       expect(result.titulo).toBe('Escala Re mayor')
       expect(result.id).toBe('e3')
     })
 
     it('throws when titulo is empty', async () => {
-      await expect(insertPlanEntrada({ alumno_id: 'a1', maestro_id: 'm1', tipo: 'logro', titulo: '' }))
-        .rejects.toThrow('titulo requerido')
+      await expect(
+        insertPlanEntrada({ alumno_id: 'a1', maestro_id: 'm1', tipo: 'logro', titulo: '' }),
+      ).rejects.toThrow('titulo requerido')
     })
 
     it('throws when titulo is whitespace only', async () => {
-      await expect(insertPlanEntrada({ alumno_id: 'a1', maestro_id: 'm1', tipo: 'logro', titulo: '   ' }))
-        .rejects.toThrow('titulo requerido')
+      await expect(
+        insertPlanEntrada({ alumno_id: 'a1', maestro_id: 'm1', tipo: 'logro', titulo: '   ' }),
+      ).rejects.toThrow('titulo requerido')
     })
   })
 

@@ -70,13 +70,15 @@ export async function buscarClasesAfectadas(maestroId, fechaInicio, fechaFin) {
 export async function registrarAuditoria({ ausencia_id, accion, usuario_id, detalle = null }) {
   const { data, error } = await supabase
     .from('ausencias_auditoria')
-    .insert([{
-      ausencia_id,
-      accion,
-      usuario_id,
-      detalle,
-      timestamp: new Date().toISOString(),
-    }])
+    .insert([
+      {
+        ausencia_id,
+        accion,
+        usuario_id,
+        detalle,
+        timestamp: new Date().toISOString(),
+      },
+    ])
     .select()
     .single()
 

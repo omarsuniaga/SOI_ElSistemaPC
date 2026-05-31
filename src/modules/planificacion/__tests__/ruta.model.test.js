@@ -8,7 +8,7 @@ describe('Ruta Model', () => {
       nombre: 'SOI Estándar',
       tipo: 'soi-estandar',
       estado: 'activa',
-      objetivos: [{ descripcion: 'Obj1', semana_inicio: 1, semana_fin: 2 }]
+      objetivos: [{ descripcion: 'Obj1', semana_inicio: 1, semana_fin: 2 }],
     })
     expect(ruta.duracion_semanas).toBe(40)
     expect(ruta.isActiva()).toBe(true)
@@ -30,8 +30,8 @@ describe('Ruta Model', () => {
       estado: 'activa',
       duracion_semanas: 10,
       objetivos: [
-        { descripcion: 'Obj1', semana_inicio: 5, semana_fin: 3 } // fin < inicio
-      ]
+        { descripcion: 'Obj1', semana_inicio: 5, semana_fin: 3 }, // fin < inicio
+      ],
     })
     const errors = ruta.validate()
     expect(errors).toContain('Objetivo 1: semana_fin >= semana_inicio')
@@ -44,7 +44,7 @@ describe('Ruta Model', () => {
       nombre: 'Variante',
       tipo: 'maestro-variante',
       estado: 'pendiente',
-      objetivos: [{ descripcion: 'Obj1', semana_inicio: 1, semana_fin: 2 }]
+      objetivos: [{ descripcion: 'Obj1', semana_inicio: 1, semana_fin: 2 }],
       // Missing ruta_base_id
     })
     const errors = ruta.validate()

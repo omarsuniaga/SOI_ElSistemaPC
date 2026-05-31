@@ -97,4 +97,3 @@ export async function backfillDesdePostulantes(dryRun = false) {
 }
 
 export * from './postuladosSupabase.js'
-

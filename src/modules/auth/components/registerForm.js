@@ -121,7 +121,7 @@ export function createRegisterForm(onSubmit) {
   form.addEventListener('submit', async (e) => {
     e.preventDefault()
     const data = getRegisterFormData(form)
-    if (!await validateRegisterForm(form, data)) return
+    if (!(await validateRegisterForm(form, data))) return
     try {
       await onSubmit(data)
     } catch (error) {

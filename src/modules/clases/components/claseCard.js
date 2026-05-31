@@ -3,17 +3,35 @@
  * Reutilizable para mostrar información resumida de una clase
  */
 
-import { escapeHTML, getInitials, formatDate, formatHora, getEstadoBadgeClass, getEstadoLabel, getInstrumentoIcon, calcularDuracion, getConsistentColor } from '../utils/clasesUtils.js'
+import {
+  escapeHTML,
+  getInitials,
+  formatDate,
+  formatHora,
+  getEstadoBadgeClass,
+  getEstadoLabel,
+  getInstrumentoIcon,
+  calcularDuracion,
+  getConsistentColor,
+} from '../utils/clasesUtils.js'
 
 function formatHorarios(horarios) {
   if (!horarios || horarios.length === 0) return '-'
-  return horarios.map(h => {
-    const diaCorto = h.dia.charAt(0).toUpperCase() + h.dia.slice(1, 3)
-    return `${diaCorto} ${formatHora(h.hora_inicio)}-${formatHora(h.hora_fin)}`
-  }).join(', ')
+  return horarios
+    .map((h) => {
+      const diaCorto = h.dia.charAt(0).toUpperCase() + h.dia.slice(1, 3)
+      return `${diaCorto} ${formatHora(h.hora_inicio)}-${formatHora(h.hora_fin)}`
+    })
+    .join(', ')
 }
 
-export function createClaseCard(clase, showActions = true, onEdit = null, onDelete = null, onView = null) {
+export function createClaseCard(
+  clase,
+  showActions = true,
+  onEdit = null,
+  onDelete = null,
+  onView = null,
+) {
   const horarios = clase.horarios || []
   const horariosDisplay = formatHorarios(horarios)
 
@@ -50,13 +68,17 @@ export function createClaseCard(clase, showActions = true, onEdit = null, onDele
         <small class="text-muted">
           <i class="bi bi-clock"></i> ${formatDate(clase.created_at)}
         </small>
-        ${showActions ? `
+        ${
+          showActions
+            ? `
           <div class="btn-group btn-group-sm">
             ${onView ? `<button class="btn btn-outline-info view-btn" data-id="${clase.id}" title="Ver detalles"><i class="bi bi-eye"></i></button>` : ''}
             ${onEdit ? `<button class="btn btn-outline-primary edit-btn" data-id="${clase.id}" title="Editar"><i class="bi bi-pencil"></i></button>` : ''}
             ${onDelete ? `<button class="btn btn-outline-danger delete-btn" data-id="${clase.id}" title="Eliminar"><i class="bi bi-trash"></i></button>` : ''}
           </div>
-        ` : ''}
+        `
+            : ''
+        }
       </div>
     </div>
   `

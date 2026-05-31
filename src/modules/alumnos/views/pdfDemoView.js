@@ -1,4 +1,8 @@
-import { descargarFichaDemo, descargarConstanciaDemo, ALUMNO_DEMO } from '../domain/generarPdfInscripcion.js'
+import {
+  descargarFichaDemo,
+  descargarConstanciaDemo,
+  ALUMNO_DEMO,
+} from '../domain/generarPdfInscripcion.js'
 
 export async function renderPdfDemoView(container) {
   container.innerHTML = `

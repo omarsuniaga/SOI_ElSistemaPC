@@ -37,7 +37,7 @@ export function calcularEdad(fechaNacimiento) {
  */
 export function escapeHTML(str) {
   if (str == null) return ''
-  return String(str).replace(/[&<>]/g, function(m) {
+  return String(str).replace(/[&<>]/g, function (m) {
     if (m === '&') return '&amp;'
     if (m === '<') return '&lt;'
     if (m === '>') return '&gt;'
@@ -62,10 +62,10 @@ export function isValidEmail(email) {
  */
 export function formatGenero(genero) {
   const mapa = {
-    'M': 'Masculino',
-    'F': 'Femenino',
-    'O': 'Otro',
-    'N': 'No binario',
+    M: 'Masculino',
+    F: 'Femenino',
+    O: 'Otro',
+    N: 'No binario',
   }
   return mapa[genero?.toUpperCase()] || 'No especificado'
 }
@@ -77,10 +77,10 @@ export function formatGenero(genero) {
  */
 export function getGeneroIcon(genero) {
   const iconos = {
-    'M': 'bi-gender-male',
-    'F': 'bi-gender-female',
-    'O': 'bi-question-circle',
-    'N': 'bi-question-circle',
+    M: 'bi-gender-male',
+    F: 'bi-gender-female',
+    O: 'bi-question-circle',
+    N: 'bi-question-circle',
   }
   return iconos[genero?.toUpperCase()] || 'bi-person'
 }
@@ -111,13 +111,10 @@ export function getEstadoLabel(esActivo) {
  */
 export function equalsIgnoreAccents(a, b) {
   if (!a || !b) return false
-  return a
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
-    .toLowerCase() === b
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
-    .toLowerCase()
+  return (
+    a.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase() ===
+    b.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
+  )
 }
 
 /**
@@ -129,7 +126,7 @@ export function getInitials(nombre) {
   if (!nombre) return '?'
   return nombre
     .split(' ')
-    .map(n => n[0])
+    .map((n) => n[0])
     .join('')
     .toUpperCase()
     .slice(0, 2)

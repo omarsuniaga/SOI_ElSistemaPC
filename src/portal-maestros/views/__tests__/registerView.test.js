@@ -6,7 +6,7 @@ vi.mock('../../../lib/supabaseClient.js', () => ({
     auth: {
       signUp: vi.fn(),
     },
-  }
+  },
 }))
 
 // Real a11yUtils — needed for setFieldError/clearAllFieldErrors to work in tests
@@ -104,7 +104,7 @@ describe('registerView', () => {
   it('calls supabase.auth.signUp on valid submit', async () => {
     supabase.auth.signUp.mockResolvedValue({
       data: { user: { id: 'new-user-123' } },
-      error: null
+      error: null,
     })
 
     const onSuccess = vi.fn()
@@ -132,7 +132,7 @@ describe('registerView', () => {
   it('calls onSuccess callback after successful registration', async () => {
     supabase.auth.signUp.mockResolvedValue({
       data: { user: { id: 'new-user-123' } },
-      error: null
+      error: null,
     })
 
     const onSuccess = vi.fn()
@@ -153,7 +153,7 @@ describe('registerView', () => {
   it('shows error message when email is already registered', async () => {
     supabase.auth.signUp.mockResolvedValue({
       data: { user: null },
-      error: { message: 'User already registered' }
+      error: { message: 'User already registered' },
     })
 
     renderRegisterView(container, { onSuccess: vi.fn() })
@@ -166,10 +166,13 @@ describe('registerView', () => {
     const btn = container.querySelector('#pm-register-btn')
     btn.click()
 
-    await vi.waitUntil(() => {
-      const errorEl = container.querySelector('#pm-reg-error')
-      return errorEl && errorEl.textContent.length > 0
-    }, { timeout: 1000 })
+    await vi.waitUntil(
+      () => {
+        const errorEl = container.querySelector('#pm-reg-error')
+        return errorEl && errorEl.textContent.length > 0
+      },
+      { timeout: 1000 },
+    )
 
     const errorEl = container.querySelector('#pm-reg-error')
     expect(errorEl.textContent).toContain('registrado')

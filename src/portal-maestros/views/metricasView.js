@@ -12,14 +12,17 @@ function barChartContent(data, maxVal, width = 160, height = 36) {
   const barW = Math.max(10, Math.min(24, (width - (data.length - 1) * 4) / data.length))
   const gap = (width - barW * data.length) / (data.length + 1)
   const max = Math.max(...data, 1)
-  return data.map((v, i) => {
-    const barH = Math.max(4, (v / max) * (height - 10))
-    const x = gap + i * (barW + gap)
-    const y = height - barH - 6
-    const color = v >= 70 ? 'var(--pm-success)' : v >= 50 ? 'var(--pm-warning)' : 'var(--pm-danger)'
-    return `<rect x="${x}" y="${y}" width="${barW}" height="${barH}" rx="3" fill="${color}" aria-label="${v}%"/>
+  return data
+    .map((v, i) => {
+      const barH = Math.max(4, (v / max) * (height - 10))
+      const x = gap + i * (barW + gap)
+      const y = height - barH - 6
+      const color =
+        v >= 70 ? 'var(--pm-success)' : v >= 50 ? 'var(--pm-warning)' : 'var(--pm-danger)'
+      return `<rect x="${x}" y="${y}" width="${barW}" height="${barH}" rx="3" fill="${color}" aria-label="${v}%"/>
       <text x="${x + barW / 2}" y="${y - 3}" text-anchor="middle" font-size="7" fill="var(--pm-text-muted)">${v}%</text>`
-  }).join('')
+    })
+    .join('')
 }
 
 // ── Estado de la vista (para persistencia entre eventos) ───────
@@ -29,7 +32,7 @@ let estadoActual = {
   clasesData: [],
   todasSesiones: [],
   inscripcionesPorClase: {},
-  alertasRiesgo: []
+  alertasRiesgo: [],
 }
 
 // ── Carga datos según período ───────────────────────────────────
@@ -45,7 +48,7 @@ async function cargarDatos(semanas, maestroId) {
   const sesiones = await getSesiones(maestroId, fechaStr, hoyStr)
   const sesionesValidas = sesiones || []
 
-  const claseIds = clases.map(c => c.id)
+  const claseIds = clases.map((c) => c.id)
   if (claseIds.length === 0) {
     return { clases, sesiones: sesionesValidas, inscripcionesPorClase: {} }
   }
@@ -70,57 +73,63 @@ async function cargarDatos(semanas, maestroId) {
 
 // ── Procesa datos y construye modelo para la vista ──────────────
 function procesarDatos({ clases, sesiones, inscripcionesPorClase }) {
-  const sesionesCompletadas = sesiones.filter(s => s.estado === 'registrada').length
-  const sesionesPendientes = sesiones.filter(s => s.estado === 'pendiente').length
-  const sesionesBorrador = sesiones.filter(s => s.borrador === true).length
+  const sesionesCompletadas = sesiones.filter((s) => s.estado === 'registrada').length
+  const sesionesPendientes = sesiones.filter((s) => s.estado === 'pendiente').length
+  const sesionesBorrador = sesiones.filter((s) => s.borrador === true).length
 
-  let totalPresentes = 0, totalAusentes = 0, totalJustificados = 0, totalRegistros = 0
-  sesiones.forEach(s => {
-    (s.asistencia || []).forEach(a => {
+  let totalPresentes = 0,
+    totalAusentes = 0,
+    totalJustificados = 0,
+    totalRegistros = 0
+  sesiones.forEach((s) => {
+    ;(s.asistencia || []).forEach((a) => {
       totalRegistros++
       if (a.estado === 'P') totalPresentes++
       else if (a.estado === 'A') totalAusentes++
       else if (a.estado === 'J') totalJustificados++
     })
   })
-  const asistenciaPromedio = totalRegistros > 0 ? Math.round((totalPresentes / totalRegistros) * 100) : 0
+  const asistenciaPromedio =
+    totalRegistros > 0 ? Math.round((totalPresentes / totalRegistros) * 100) : 0
 
-  const clasesDataMap = clases.map(clase => {
-    const sesionesClase = sesiones.filter(s => s.clase_id === clase.id)
-    const completadas = sesionesClase.filter(s => s.estado === 'registrada').length
-    const pending = sesionesClase.filter(s => s.estado === 'pendiente').length
+  const clasesDataMap = clases.map((clase) => {
+    const sesionesClase = sesiones.filter((s) => s.clase_id === clase.id)
+    const completadas = sesionesClase.filter((s) => s.estado === 'registrada').length
+    const pending = sesionesClase.filter((s) => s.estado === 'pendiente').length
     const alumnos = inscripcionesPorClase[clase.id] || []
     const totalAlumnos = alumnos.length
 
     const sessionAttendance = sesionesClase
-      .filter(s => s.estado === 'registrada')
+      .filter((s) => s.estado === 'registrada')
       .slice(-8)
-      .map(s => {
-        const pres = (s.asistencia || []).filter(a => a.estado === 'P').length
+      .map((s) => {
+        const pres = (s.asistencia || []).filter((a) => a.estado === 'P').length
         const tot = (s.asistencia || []).length
         return tot > 0 ? Math.round((pres / tot) * 100) : 0
       })
 
-    let presTotal = 0, totAsist = 0
-    sesionesClase.forEach(s => {
-      (s.asistencia || []).forEach(a => {
+    let presTotal = 0,
+      totAsist = 0
+    sesionesClase.forEach((s) => {
+      ;(s.asistencia || []).forEach((a) => {
         totAsist++
         if (a.estado === 'P') presTotal++
       })
     })
     const avgAttendance = totAsist > 0 ? Math.round((presTotal / totAsist) * 100) : 0
 
-    const conContenido = sesionesClase.filter(s => s.contenido_dsl?.trim()).length
-    const progress = sesionesClase.length > 0
-      ? Math.min(100, Math.round((conContenido / Math.max(completadas, 1)) * 100))
-      : 0
+    const conContenido = sesionesClase.filter((s) => s.contenido_dsl?.trim()).length
+    const progress =
+      sesionesClase.length > 0
+        ? Math.min(100, Math.round((conContenido / Math.max(completadas, 1)) * 100))
+        : 0
 
     const riskStudents = []
     for (const alum of alumnos) {
       const alumSes = sesionesClase
-        .filter(s => s.asistencia?.some(a => a.alumno_id === alum.id))
-        .map(s => s.asistencia.find(a => a.alumno_id === alum.id))
-      const alumPres = alumSes.filter(a => a?.estado === 'P').length
+        .filter((s) => s.asistencia?.some((a) => a.alumno_id === alum.id))
+        .map((s) => s.asistencia.find((a) => a.alumno_id === alum.id))
+      const alumPres = alumSes.filter((a) => a?.estado === 'P').length
       const pct = alumSes.length > 0 ? Math.round((alumPres / alumSes.length) * 100) : 0
       if (pct > 0 && pct < 70) {
         riskStudents.push({ id: alum.id, nombre: alum.nombre_completo, pct })
@@ -136,7 +145,7 @@ function procesarDatos({ clases, sesiones, inscripcionesPorClase }) {
       avgAttendance,
       progress,
       riskStudents,
-      alumnos
+      alumnos,
     }
   })
 
@@ -149,7 +158,7 @@ function procesarDatos({ clases, sesiones, inscripcionesPorClase }) {
         nombre: alum.nombre,
         clase: clase.nombre,
         valor: alum.pct,
-        mensaje: `${alum.pct}%`
+        mensaje: `${alum.pct}%`,
       })
     }
   }
@@ -165,21 +174,29 @@ function procesarDatos({ clases, sesiones, inscripcionesPorClase }) {
     asistenciaPromedio,
     clasesData: clasesDataMap,
     alertasRiesgo: alertas,
-    inscripcionesPorClase
+    inscripcionesPorClase,
   }
 }
 
 // ── Genera el HTML del dashboard ────────────────────────────────
 function generarHTML(datos) {
   const {
-    totalClases, sesionesCompletadas, sesionesPendientes,
-    totalPresentes, totalAusentes, totalJustificados, totalRegistros,
-    asistenciaPromedio, clasesData, alertasRiesgo
+    totalClases,
+    sesionesCompletadas,
+    sesionesPendientes,
+    totalPresentes,
+    totalAusentes,
+    totalJustificados,
+    totalRegistros,
+    asistenciaPromedio,
+    clasesData,
+    alertasRiesgo,
   } = datos
 
   const pctPresentes = totalRegistros > 0 ? Math.round((totalPresentes / totalRegistros) * 100) : 0
   const pctAusentes = totalRegistros > 0 ? Math.round((totalAusentes / totalRegistros) * 100) : 0
-  const pctJustificados = totalRegistros > 0 ? Math.round((totalJustificados / totalRegistros) * 100) : 0
+  const pctJustificados =
+    totalRegistros > 0 ? Math.round((totalJustificados / totalRegistros) * 100) : 0
 
   // Build announcement text for screen readers
   const announceText = `Dashboard: ${asistenciaPromedio}% asistencia general, ${totalClases} clases, ${sesionesCompletadas} sesiones registradas, ${sesionesPendientes} pendientes.`
@@ -245,11 +262,16 @@ function generarHTML(datos) {
         </div>
       </section>
 
-      ${alertasRiesgo.length > 0 ? `
+      ${
+        alertasRiesgo.length > 0
+          ? `
       <section class="pm-dashboard-section" aria-label="Alumnos en riesgo">
         <h2 class="pm-section-title">Alumnos en Riesgo <span class="pm-section-badge">${alertasRiesgo.length}</span></h2>
         <div class="pm-risk-list" role="list">
-          ${alertasRiesgo.slice(0, 5).map(a => `
+          ${alertasRiesgo
+            .slice(0, 5)
+            .map(
+              (a) => `
             <div class="pm-risk-item" role="listitem" tabindex="0" data-alumno="${a.alumnoId}" aria-label="Ver perfil de ${escHTML(a.nombre)}">
               <div class="pm-risk-avatar" aria-hidden="true">${(a.nombre || 'A')[0].toUpperCase()}</div>
               <div class="pm-risk-info">
@@ -258,31 +280,40 @@ function generarHTML(datos) {
               </div>
               <span class="pm-risk-pct">${a.mensaje}</span>
             </div>
-          `).join('')}
+          `,
+            )
+            .join('')}
         </div>
-      </section>` : ''}
+      </section>`
+          : ''
+      }
 
       <section class="pm-dashboard-section" aria-label="Resumen por clase">
         <h2 class="pm-section-title">Clases</h2>
         <div class="pm-classes-list" id="pm-clases-grid">
-          ${clasesData.map(clase => {
-            const att = clase.avgAttendance
-            const attColor = att < 70 ? 'danger' : att < 85 ? 'warning' : 'success'
-            const attGradient = att < 70
-              ? 'linear-gradient(135deg,#ff3b30,#ff6b6b)'
-              : att < 85
-                ? 'linear-gradient(135deg,#ff9500,#ffcc00)'
-                : 'linear-gradient(135deg,#30d158,#34c759)'
-            const sparkHTML = clase.sessionAttendance.length > 0
-              ? clase.sessionAttendance.map((v, i, arr) => {
-                  const pct = Math.max(8, v)
-                  const col = v < 70 ? '#ff3b30' : v < 85 ? '#ff9500' : '#30d158'
-                  const isLast = i === arr.length - 1
-                  return `<div class="pm-spark-bar ${isLast ? 'pm-spark-last' : ''}" style="height:${pct}%;background:${col};" title="${v}%"></div>`
-                }).join('')
-              : '<span class="pm-spark-empty">—</span>'
+          ${clasesData
+            .map((clase) => {
+              const att = clase.avgAttendance
+              const attColor = att < 70 ? 'danger' : att < 85 ? 'warning' : 'success'
+              const attGradient =
+                att < 70
+                  ? 'linear-gradient(135deg,#ff3b30,#ff6b6b)'
+                  : att < 85
+                    ? 'linear-gradient(135deg,#ff9500,#ffcc00)'
+                    : 'linear-gradient(135deg,#30d158,#34c759)'
+              const sparkHTML =
+                clase.sessionAttendance.length > 0
+                  ? clase.sessionAttendance
+                      .map((v, i, arr) => {
+                        const pct = Math.max(8, v)
+                        const col = v < 70 ? '#ff3b30' : v < 85 ? '#ff9500' : '#30d158'
+                        const isLast = i === arr.length - 1
+                        return `<div class="pm-spark-bar ${isLast ? 'pm-spark-last' : ''}" style="height:${pct}%;background:${col};" title="${v}%"></div>`
+                      })
+                      .join('')
+                  : '<span class="pm-spark-empty">—</span>'
 
-            return `
+              return `
             <div class="pm-class-card2" data-clase-id="${clase.id}" role="article" aria-label="Clase ${escHTML(clase.nombre)}">
               <div class="pm-class-card2__accent" style="background:${attGradient}"></div>
               <div class="pm-class-card2__body">
@@ -326,14 +357,19 @@ function generarHTML(datos) {
                   </div>
                 </div>
 
-                ${clase.riskStudents.length > 0 ? `
+                ${
+                  clase.riskStudents.length > 0
+                    ? `
                 <div class="pm-class-card2__risk">
                   <i class="bi bi-exclamation-triangle-fill"></i>
                   ${clase.riskStudents.length} alumno${clase.riskStudents.length > 1 ? 's' : ''} con asistencia &lt;70%
-                </div>` : ''}
+                </div>`
+                    : ''
+                }
               </div>
             </div>`
-          }).join('')}
+            })
+            .join('')}
         </div>
       </section>
 
@@ -621,42 +657,51 @@ function bindEvents(container) {
 
       container.innerHTML = generarHTML(procesados)
       bindEvents(container)
-      announce(`Período actualizado a ${nuevoPeriodo} semanas. ${procesados.asistenciaPromedio}% de asistencia general.`)
+      announce(
+        `Período actualizado a ${nuevoPeriodo} semanas. ${procesados.asistenciaPromedio}% de asistencia general.`,
+      )
     } catch (err) {
       container.innerHTML = `<p class="pm-empty">Error al cargar datos: ${escHTML(err.message)}</p>`
     }
   })
 
   // Alumnos en riesgo
-  container.querySelectorAll('.pm-risk-item').forEach(item => {
+  container.querySelectorAll('.pm-risk-item').forEach((item) => {
     const id = item.dataset.alumno
-    const handler = () => { window.location.hash = `#/alumno?id=${id}` }
+    const handler = () => {
+      window.location.hash = `#/alumno?id=${id}`
+    }
     item.addEventListener('click', handler)
-    item.addEventListener('keypress', (e) => { if (e.key === 'Enter') handler() })
+    item.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') handler()
+    })
   })
 
   // Botón expandir alumnos por clase (soporta ambos selectores: legacy y v2)
-  container.querySelectorAll('.pm-class-btn, .pm-class-btn2').forEach(btn => {
+  container.querySelectorAll('.pm-class-btn, .pm-class-btn2').forEach((btn) => {
     btn.addEventListener('click', async (e) => {
       e.stopPropagation()
       const card = btn.closest('.pm-class-card2, .pm-class-card')
       const existente = card.querySelector('.pm-clase-students-panel')
-      if (existente) { existente.remove(); return }
+      if (existente) {
+        existente.remove()
+        return
+      }
 
       const claseId = btn.dataset.claseId
-      const clase = estadoActual.clasesData.find(c => c.id === claseId)
+      const clase = estadoActual.clasesData.find((c) => c.id === claseId)
       const alumnos = clase?.alumnos || []
-      const sesionesClase = estadoActual.todasSesiones.filter(s => s.clase_id === claseId)
+      const sesionesClase = estadoActual.todasSesiones.filter((s) => s.clase_id === claseId)
 
-      const alumnosConDatos = alumnos.map(alum => {
+      const alumnosConDatos = alumnos.map((alum) => {
         const alumSes = sesionesClase
-          .filter(s => s.asistencia?.some(a => a.alumno_id === alum.id))
-          .map(s => s.asistencia.find(a => a.alumno_id === alum.id))
-        const pres = alumSes.filter(a => a?.estado === 'P').length
+          .filter((s) => s.asistencia?.some((a) => a.alumno_id === alum.id))
+          .map((s) => s.asistencia.find((a) => a.alumno_id === alum.id))
+        const pres = alumSes.filter((a) => a?.estado === 'P').length
         const tot = alumSes.length
         const pct = tot > 0 ? Math.round((pres / tot) * 100) : 0
         const last = sesionesClase
-          .filter(s => s.asistencia?.some(a => a.alumno_id === alum.id))
+          .filter((s) => s.asistencia?.some((a) => a.alumno_id === alum.id))
           .sort((a, b) => b.fecha.localeCompare(a.fecha))[0]
         return { ...alum, pct, total: tot, lastFecha: last?.fecha }
       })
@@ -670,7 +715,9 @@ function bindEvents(container) {
           <button class="pm-clase-students-close" aria-label="Cerrar panel">×</button>
         </div>
         <div class="pm-clase-students-list" role="list">
-          ${alumnosConDatos.map(alum => `
+          ${alumnosConDatos
+            .map(
+              (alum) => `
             <div class="pm-clase-student-row" role="listitem" tabindex="0" data-alumno="${alum.id}">
               <div class="pm-student-info">
                 <span class="pm-student-nombre">${escHTML(alum.nombre_completo)}</span>
@@ -681,11 +728,15 @@ function bindEvents(container) {
                 <div class="pm-student-att-bar"><div class="pm-student-att-fill" style="width:${alum.pct}%"></div></div>
               </div>
             </div>
-          `).join('')}
+          `,
+            )
+            .join('')}
         </div>`
       card.appendChild(panel)
 
-      panel.querySelector('.pm-clase-students-close').addEventListener('click', () => panel.remove())
+      panel
+        .querySelector('.pm-clase-students-close')
+        .addEventListener('click', () => panel.remove())
 
       const clickOutside = (ev) => {
         if (!panel.contains(ev.target) && ev.target !== btn) {
@@ -695,14 +746,15 @@ function bindEvents(container) {
       }
       setTimeout(() => document.addEventListener('click', clickOutside), 10)
 
-      panel.querySelectorAll('.pm-clase-student-row').forEach(row => {
-        const handler = () => window.location.hash = `#/alumno?id=${row.dataset.alumno}`
+      panel.querySelectorAll('.pm-clase-student-row').forEach((row) => {
+        const handler = () => (window.location.hash = `#/alumno?id=${row.dataset.alumno}`)
         row.addEventListener('click', handler)
-        row.addEventListener('keypress', (e) => { if (e.key === 'Enter') handler() })
+        row.addEventListener('keypress', (e) => {
+          if (e.key === 'Enter') handler()
+        })
       })
     })
   })
-
 }
 
 // ── Render principal ───────────────────────────────────────────
@@ -712,10 +764,11 @@ function bindEvents(container) {
  * Returns null when metricas data hasn't been loaded yet.
  */
 export function getAlumnoIndexFromMetricas() {
-  if (!estadoActual.clasesData.length && !Object.keys(estadoActual.inscripcionesPorClase).length) return null
+  if (!estadoActual.clasesData.length && !Object.keys(estadoActual.inscripcionesPorClase).length)
+    return null
   const map = new Map()
   for (const [claseId, alumnos] of Object.entries(estadoActual.inscripcionesPorClase)) {
-    const clase = estadoActual.clasesData.find(c => c.id === claseId)
+    const clase = estadoActual.clasesData.find((c) => c.id === claseId)
     for (const alum of alumnos) {
       if (!map.has(alum.id)) map.set(alum.id, { ...alum, clases: [] })
       if (clase) map.get(alum.id).clases.push(clase.nombre)

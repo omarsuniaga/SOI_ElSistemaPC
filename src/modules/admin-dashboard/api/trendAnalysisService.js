@@ -1,13 +1,13 @@
 export function aggregateMetricsByDate(metrics) {
   const byDate = {}
 
-  metrics.forEach(m => {
+  metrics.forEach((m) => {
     if (!byDate[m.fecha]) {
       byDate[m.fecha] = {
         total_classes: 0,
         asistencia_first: 0,
         ai_usage_sum: 0,
-        observaciones_first: 0
+        observaciones_first: 0,
       }
     }
 
@@ -21,9 +21,12 @@ export function aggregateMetricsByDate(metrics) {
   Object.entries(byDate).forEach(([date, counts]) => {
     result[date] = {
       total_classes: counts.total_classes,
-      asistencia_first_percent: (counts.asistencia_first / counts.total_classes * 100).toFixed(1),
+      asistencia_first_percent: ((counts.asistencia_first / counts.total_classes) * 100).toFixed(1),
       avg_ai_usage_percent: (counts.ai_usage_sum / counts.total_classes).toFixed(1),
-      observaciones_first_percent: (counts.observaciones_first / counts.total_classes * 100).toFixed(1)
+      observaciones_first_percent: (
+        (counts.observaciones_first / counts.total_classes) *
+        100
+      ).toFixed(1),
     }
   })
 
@@ -33,7 +36,7 @@ export function aggregateMetricsByDate(metrics) {
 export function aggregateMetricsByMaestro(metrics) {
   const byMaestro = {}
 
-  metrics.forEach(m => {
+  metrics.forEach((m) => {
     if (!byMaestro[m.maestro_id]) {
       byMaestro[m.maestro_id] = {
         maestro_nombre: m.maestro_nombre,
@@ -41,7 +44,7 @@ export function aggregateMetricsByMaestro(metrics) {
         asistencia_first: 0,
         ai_usage_sum: 0,
         avg_duration: 0,
-        duration_count: 0
+        duration_count: 0,
       }
     }
 
@@ -59,11 +62,10 @@ export function aggregateMetricsByMaestro(metrics) {
     result[maestroId] = {
       maestro_nombre: counts.maestro_nombre,
       total_classes: counts.total_classes,
-      asistencia_first_percent: (counts.asistencia_first / counts.total_classes * 100).toFixed(1),
+      asistencia_first_percent: ((counts.asistencia_first / counts.total_classes) * 100).toFixed(1),
       avg_ai_usage_percent: (counts.ai_usage_sum / counts.total_classes).toFixed(1),
-      avg_observation_duration: counts.duration_count > 0
-        ? (counts.avg_duration / counts.duration_count).toFixed(1)
-        : 0
+      avg_observation_duration:
+        counts.duration_count > 0 ? (counts.avg_duration / counts.duration_count).toFixed(1) : 0,
     }
   })
 
@@ -72,7 +74,9 @@ export function aggregateMetricsByMaestro(metrics) {
 
 export function detectAnomalies(trend) {
   const anomalies = []
-  const avgAiUsage = Object.values(trend).reduce((sum, t) => sum + parseFloat(t.avg_ai_usage_percent), 0) / Object.keys(trend).length
+  const avgAiUsage =
+    Object.values(trend).reduce((sum, t) => sum + parseFloat(t.avg_ai_usage_percent), 0) /
+    Object.keys(trend).length
 
   Object.entries(trend).forEach(([date, metrics]) => {
     const aiUsage = parseFloat(metrics.avg_ai_usage_percent)
@@ -82,7 +86,7 @@ export function detectAnomalies(trend) {
         date,
         type: 'HIGH_AI_USAGE',
         value: aiUsage,
-        threshold: (avgAiUsage * 1.5).toFixed(1)
+        threshold: (avgAiUsage * 1.5).toFixed(1),
       })
     }
   })

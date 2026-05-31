@@ -1,5 +1,12 @@
 import { AppModal } from '../../../shared/components/AppModal.js'
-import { formatDate, escapeHTML, getTipoLabel, getTipoIcon, getPrioridadColor, getPrioridadIcon } from '../utils/observacionesUtils.js'
+import {
+  formatDate,
+  escapeHTML,
+  getTipoLabel,
+  getTipoIcon,
+  getPrioridadColor,
+  getPrioridadIcon,
+} from '../utils/observacionesUtils.js'
 
 export function openSeguimientoModal(observacion, _container, onSubmit) {
   const hoy = new Date().toISOString().split('T')[0]
@@ -40,15 +47,18 @@ export function openSeguimientoModal(observacion, _container, onSubmit) {
   `
 
   AppModal.open({
-    title:    'Agregar Seguimiento',
+    title: 'Agregar Seguimiento',
     body,
-    size:     'lg',
+    size: 'lg',
     saveText: 'Agregar Seguimiento',
-    onSave:   async (bodyEl) => {
-      const fecha      = bodyEl.querySelector('#seg-fecha')?.value
-      const observacion= bodyEl.querySelector('#seg-observacion')?.value.trim()
+    onSave: async (bodyEl) => {
+      const fecha = bodyEl.querySelector('#seg-fecha')?.value
+      const observacion = bodyEl.querySelector('#seg-observacion')?.value.trim()
 
-      if (!observacion) { alert('La observación de seguimiento es obligatoria'); return false }
+      if (!observacion) {
+        alert('La observación de seguimiento es obligatoria')
+        return false
+      }
 
       if (onSubmit) await onSubmit(fecha, observacion)
     },

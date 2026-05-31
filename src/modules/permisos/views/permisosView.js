@@ -1,8 +1,5 @@
 import { AppToast } from '../../../shared/components/AppToast.js'
-import {
-  obtenerPermisos,
-  actualizarPermiso,
-} from '../api/permisosApi.js'
+import { obtenerPermisos, actualizarPermiso } from '../api/permisosApi.js'
 import { config } from '../../../core/config/config.js'
 import { useAuth } from '../../auth/hooks/useAuth.js'
 
@@ -74,7 +71,9 @@ function renderError(container, mensaje) {
       </div>
     </div>
   `
-  document.getElementById('retryBtn')?.addEventListener('click', () => renderPermisosView(container))
+  document
+    .getElementById('retryBtn')
+    ?.addEventListener('click', () => renderPermisosView(container))
 }
 
 function renderContent(container) {
@@ -91,7 +90,10 @@ function renderContent(container) {
         </div>
       </div>
 
-      ${!state.permisos.length ? renderEmpty() : `
+      ${
+        !state.permisos.length
+          ? renderEmpty()
+          : `
       <!-- Table -->
       <div class="table-scroll-container">
         <table class="table table-compact table-hover mb-0" id="permisosTable">
@@ -110,7 +112,8 @@ function renderContent(container) {
           </tbody>
         </table>
       </div>
-      `}
+      `
+      }
 
       <div class="mt-3 text-muted small">
         <i class="bi bi-info-circle"></i>
@@ -122,18 +125,19 @@ function renderContent(container) {
 }
 
 function renderTableRows() {
-  return state.permisos.map(p => {
-    const isToggling = state.togglingId === p.maestro_id
-    const concedidoPor = p.concedido_por_nombre || p.concedido_por || '-'
-    const actualizado = p.actualizado_en
-      ? new Date(p.actualizado_en).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })
-      : '-'
+  return state.permisos
+    .map((p) => {
+      const isToggling = state.togglingId === p.maestro_id
+      const concedidoPor = p.concedido_por_nombre || p.concedido_por || '-'
+      const actualizado = p.actualizado_en
+        ? new Date(p.actualizado_en).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })
+        : '-'
 
-    const solicitudes = p.solicitudes || []
-    const reqAlumnos = !p.puede_registrar_alumnos && solicitudes.includes('alumnos:create')
-    const reqClases = !p.puede_inscribir_clases && solicitudes.includes('clases:enroll')
+      const solicitudes = p.solicitudes || []
+      const reqAlumnos = !p.puede_registrar_alumnos && solicitudes.includes('alumnos:create')
+      const reqClases = !p.puede_inscribir_clases && solicitudes.includes('clases:enroll')
 
-    return `
+      return `
       <tr data-maestro-id="${escapeHTML(p.maestro_id)}">
         <td>
           <div class="d-flex align-items-center gap-2">
@@ -153,7 +157,9 @@ function renderTableRows() {
               ${p.puede_registrar_alumnos ? 'Sí' : 'No'}
             </span>
           </div>
-          ${reqAlumnos ? `
+          ${
+            reqAlumnos
+              ? `
             <div class="mt-1 d-flex align-items-center gap-1">
               <span class="badge bg-warning text-dark" style="font-size: 0.65rem; padding: 2px 4px;"><i class="bi bi-exclamation-triangle"></i> Solicitado</span>
               <button class="btn btn-sm btn-outline-primary aprobar-btn px-1 py-0" 
@@ -162,7 +168,9 @@ function renderTableRows() {
                 data-field="puede_registrar_alumnos" 
                 style="font-size: 0.65rem; line-height: 1;">Aprobar</button>
             </div>
-          ` : ''}
+          `
+              : ''
+          }
         </td>
         <td>
           <div class="form-check form-switch mb-0 d-flex align-items-center gap-2">
@@ -175,7 +183,9 @@ function renderTableRows() {
               ${p.puede_inscribir_clases ? 'Sí' : 'No'}
             </span>
           </div>
-          ${reqClases ? `
+          ${
+            reqClases
+              ? `
             <div class="mt-1 d-flex align-items-center gap-1">
               <span class="badge bg-warning text-dark" style="font-size: 0.65rem; padding: 2px 4px;"><i class="bi bi-exclamation-triangle"></i> Solicitado</span>
               <button class="btn btn-sm btn-outline-primary aprobar-btn px-1 py-0" 
@@ -184,13 +194,16 @@ function renderTableRows() {
                 data-field="puede_inscribir_clases" 
                 style="font-size: 0.65rem; line-height: 1;">Aprobar</button>
             </div>
-          ` : ''}
+          `
+              : ''
+          }
         </td>
         <td class="small text-muted">${escapeHTML(concedidoPor)}</td>
         <td class="small text-muted">${actualizado}</td>
       </tr>
     `
-  }).join('')
+    })
+    .join('')
 }
 
 function renderEmpty() {
@@ -209,7 +222,7 @@ function getInitials(nombre) {
   if (!nombre) return '?'
   return nombre
     .split(' ')
-    .map(n => n[0])
+    .map((n) => n[0])
     .join('')
     .toUpperCase()
     .slice(0, 2)
@@ -241,7 +254,7 @@ function attachEvents(container) {
     }
 
     try {
-      const match = state.permisos.find(p => p.maestro_id === maestroId)
+      const match = state.permisos.find((p) => p.maestro_id === maestroId)
       let changes = { [field]: newValue }
 
       if (match) {
@@ -251,7 +264,7 @@ function attachEvents(container) {
           if (!arrayPermisos.includes(key)) {
             arrayPermisos.push(key)
           }
-          const solicitudes = (match.solicitudes || []).filter(s => s !== key)
+          const solicitudes = (match.solicitudes || []).filter((s) => s !== key)
           const adminUser = useAuth.getUser ? useAuth.getUser() : null
           const adminName = adminUser?.nombre_completo || adminUser?.email || 'Administrador'
 
@@ -260,7 +273,7 @@ function attachEvents(container) {
             permisos: arrayPermisos,
             solicitudes: solicitudes,
             concedido_por: adminUser?.id || 'admin',
-            concedido_por_nombre: adminName
+            concedido_por_nombre: adminName,
           }
 
           match.permisos = arrayPermisos
@@ -269,11 +282,11 @@ function attachEvents(container) {
           match.concedido_por_nombre = adminName
         } else {
           const key = field === 'puede_registrar_alumnos' ? 'alumnos:create' : 'clases:enroll'
-          const arrayPermisos = (match.permisos || []).filter(pk => pk !== key)
-          
+          const arrayPermisos = (match.permisos || []).filter((pk) => pk !== key)
+
           changes = {
             ...changes,
-            permisos: arrayPermisos
+            permisos: arrayPermisos,
           }
           match.permisos = arrayPermisos
         }
@@ -281,12 +294,14 @@ function attachEvents(container) {
       }
 
       await actualizarPermiso(maestroId, changes)
-      
+
       if (match) {
         match[field] = newValue
       }
 
-      AppToast.success(`Permiso actualizado: ${field === 'puede_registrar_alumnos' ? 'Registrar Alumnos' : 'Inscribir Clases'}`)
+      AppToast.success(
+        `Permiso actualizado: ${field === 'puede_registrar_alumnos' ? 'Registrar Alumnos' : 'Inscribir Clases'}`,
+      )
 
       // Volver a renderizar para limpiar badges de solicitudes si existían
       const tbody = container.querySelector('#permisosTBody')
@@ -322,14 +337,14 @@ function attachEvents(container) {
     btn.innerHTML = `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>`
 
     try {
-      const match = state.permisos.find(p => p.maestro_id === maestroId)
+      const match = state.permisos.find((p) => p.maestro_id === maestroId)
       if (!match) throw new Error('No se encontró el registro de permisos del maestro')
 
       const arrayPermisos = match.permisos || []
       if (!arrayPermisos.includes(permiso)) {
         arrayPermisos.push(permiso)
       }
-      const solicitudes = (match.solicitudes || []).filter(s => s !== permiso)
+      const solicitudes = (match.solicitudes || []).filter((s) => s !== permiso)
 
       const adminUser = useAuth.getUser ? useAuth.getUser() : null
       const adminName = adminUser?.nombre_completo || adminUser?.email || 'Administrador'
@@ -339,7 +354,7 @@ function attachEvents(container) {
         solicitudes: solicitudes,
         concedido_por: adminUser?.id || 'admin',
         concedido_por_nombre: adminName,
-        [field]: true
+        [field]: true,
       }
 
       await actualizarPermiso(maestroId, changes)
@@ -351,7 +366,9 @@ function attachEvents(container) {
       match[field] = true
       match.actualizado_en = new Date().toISOString()
 
-      AppToast.success(`Solicitud aprobada: ${field === 'puede_registrar_alumnos' ? 'Registrar Alumnos' : 'Inscribir Clases'}`)
+      AppToast.success(
+        `Solicitud aprobada: ${field === 'puede_registrar_alumnos' ? 'Registrar Alumnos' : 'Inscribir Clases'}`,
+      )
 
       const tbody = container.querySelector('#permisosTBody')
       if (tbody) {

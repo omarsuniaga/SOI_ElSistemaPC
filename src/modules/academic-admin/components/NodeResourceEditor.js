@@ -1,8 +1,8 @@
-import { 
-  getNodeResources, 
-  saveNodeResource, 
+import {
+  getNodeResources,
+  saveNodeResource,
   deleteNodeResource,
-  updateNode 
+  updateNode,
 } from '../api/academicAdminApi.js'
 
 /**
@@ -15,7 +15,7 @@ export class NodeResourceEditor {
     this.node = null
     this.resources = []
     this.onUpdate = options.onUpdate || (() => {})
-    
+
     this._injectStyles()
     this.renderEmpty()
   }
@@ -30,7 +30,7 @@ export class NodeResourceEditor {
 
     this.node = node
     this.renderLoading()
-    
+
     try {
       this.resources = await getNodeResources(node.id)
       this.render()
@@ -67,13 +67,15 @@ export class NodeResourceEditor {
         <button class="apple-btn apple-btn-secondary" id="retry-node-btn">Reintentar</button>
       </div>
     `
-    this.container.querySelector('#retry-node-btn')?.addEventListener('click', () => this.setNode(this.node))
+    this.container
+      .querySelector('#retry-node-btn')
+      ?.addEventListener('click', () => this.setNode(this.node))
   }
 
   render() {
     const isNode = this.node.type === 'node'
     const isIndicator = this.node.type === 'indicator'
-    
+
     this.container.innerHTML = `
       <div class="resource-editor">
         <header class="resource-header">
@@ -93,19 +95,25 @@ export class NodeResourceEditor {
               <label class="apple-label">Nombre / Descripción</label>
               <input type="text" class="apple-input" id="node-name" value="${this.node.name || this.node.description || ''}">
             </div>
-            ${isNode ? `
+            ${
+              isNode
+                ? `
               <div class="form-check form-switch apple-switch">
                 <input class="form-check-input" type="checkbox" id="node-critical" ${this.node.is_critical ? 'checked' : ''}>
                 <label class="form-check-label" for="node-critical">Marcar como Punto Crítico (FUEGO)</label>
               </div>
-            ` : ''}
+            `
+                : ''
+            }
             <div class="mt-3 text-end">
               <button class="apple-btn apple-btn-primary" id="save-node-metadata">Guardar Cambios</button>
             </div>
           </div>
         </section>
 
-        ${isNode || isIndicator ? `
+        ${
+          isNode || isIndicator
+            ? `
           <section class="editor-section">
             <div class="section-header">
               <h2>Recursos Educativos</h2>
@@ -114,12 +122,18 @@ export class NodeResourceEditor {
               </button>
             </div>
             <div class="resources-list" id="resources-list">
-              ${this.resources.length === 0 ? `
+              ${
+                this.resources.length === 0
+                  ? `
                 <div class="empty-list-placeholder">No hay recursos asociados a este nodo.</div>
-              ` : this.resources.map(res => this._renderResourceCard(res)).join('')}
+              `
+                  : this.resources.map((res) => this._renderResourceCard(res)).join('')
+              }
             </div>
           </section>
-        ` : ''}
+        `
+            : ''
+        }
       </div>
     `
 
@@ -131,7 +145,7 @@ export class NodeResourceEditor {
       video: 'bi-play-circle-fill',
       pdf: 'bi-file-earmark-pdf-fill',
       exercise_text: 'bi-pencil-square',
-      link: 'bi-link-45deg'
+      link: 'bi-link-45deg',
     }
 
     return `
@@ -159,7 +173,7 @@ export class NodeResourceEditor {
     this.container.querySelector('#save-node-metadata')?.addEventListener('click', async () => {
       const name = this.container.querySelector('#node-name').value
       const isCritical = this.container.querySelector('#node-critical')?.checked
-      
+
       const btn = this.container.querySelector('#save-node-metadata')
       btn.disabled = true
       btn.textContent = 'Guardando...'
@@ -168,7 +182,7 @@ export class NodeResourceEditor {
         const updates = { name: name }
         if (this.node.type === 'node') updates.is_critical = isCritical
         if (this.node.type === 'indicator') updates.description = name
-        
+
         await updateNode(this.node.id, updates)
         Object.assign(this.node, updates)
         this.onUpdate(this.node)
@@ -187,21 +201,21 @@ export class NodeResourceEditor {
     })
 
     // Acciones de Recursos
-    this.container.querySelectorAll('.edit-res').forEach(btn => {
+    this.container.querySelectorAll('.edit-res').forEach((btn) => {
       btn.addEventListener('click', () => {
         const id = btn.closest('.resource-card').dataset.id
-        const res = this.resources.find(r => r.id === id)
+        const res = this.resources.find((r) => r.id === id)
         this._showResourceModal(res)
       })
     })
 
-    this.container.querySelectorAll('.delete-res').forEach(btn => {
+    this.container.querySelectorAll('.delete-res').forEach((btn) => {
       btn.addEventListener('click', async () => {
         const id = btn.closest('.resource-card').dataset.id
         if (confirm('¿Estás seguro de que deseas eliminar este recurso?')) {
           try {
             await deleteNodeResource(id)
-            this.resources = this.resources.filter(r => r.id !== id)
+            this.resources = this.resources.filter((r) => r.id !== id)
             this.render()
           } catch (err) {
             alert('Error al eliminar: ' + err.message)
@@ -215,14 +229,14 @@ export class NodeResourceEditor {
     const isEdit = !!resource
     const modalId = 'resourceModal'
     let modalEl = document.getElementById(modalId)
-    
+
     if (modalEl) modalEl.remove()
-    
+
     const types = [
       { id: 'video', label: 'Video (YouTube/Vimeo)', icon: 'bi-play-circle' },
       { id: 'pdf', label: 'Documento PDF', icon: 'bi-file-earmark-pdf' },
       { id: 'exercise_text', label: 'Ejercicio (Markdown)', icon: 'bi-pencil-square' },
-      { id: 'link', label: 'Enlace Externo', icon: 'bi-link-45deg' }
+      { id: 'link', label: 'Enlace Externo', icon: 'bi-link-45deg' },
     ]
 
     modalEl = document.createElement('div')
@@ -241,13 +255,17 @@ export class NodeResourceEditor {
               <div class="form-group mb-3">
                 <label class="apple-label">Tipo de Recurso</label>
                 <div class="resource-type-selector">
-                  ${types.map(t => `
-                    <label class="type-option ${resource?.resource_type === t.id ? 'active' : (!resource && t.id === 'video' ? 'active' : '')}">
-                      <input type="radio" name="resource_type" value="${t.id}" ${resource?.resource_type === t.id ? 'checked' : (!resource && t.id === 'video' ? 'checked' : '')}>
+                  ${types
+                    .map(
+                      (t) => `
+                    <label class="type-option ${resource?.resource_type === t.id ? 'active' : !resource && t.id === 'video' ? 'active' : ''}">
+                      <input type="radio" name="resource_type" value="${t.id}" ${resource?.resource_type === t.id ? 'checked' : !resource && t.id === 'video' ? 'checked' : ''}>
                       <i class="bi ${t.icon}"></i>
                       <span>${t.id.split('_')[0]}</span>
                     </label>
-                  `).join('')}
+                  `,
+                    )
+                    .join('')}
                 </div>
               </div>
               <div class="form-group mb-3">
@@ -272,14 +290,14 @@ export class NodeResourceEditor {
       </div>
     `
     document.body.appendChild(modalEl)
-    
+
     const bootstrapModal = new bootstrap.Modal(modalEl)
     bootstrapModal.show()
 
     // Radio button behavior
-    modalEl.querySelectorAll('.type-option').forEach(opt => {
+    modalEl.querySelectorAll('.type-option').forEach((opt) => {
       opt.addEventListener('click', () => {
-        modalEl.querySelectorAll('.type-option').forEach(o => o.classList.remove('active'))
+        modalEl.querySelectorAll('.type-option').forEach((o) => o.classList.remove('active'))
         opt.classList.add('active')
       })
     })
@@ -287,14 +305,14 @@ export class NodeResourceEditor {
     modalEl.querySelector('#save-resource-confirm-btn').addEventListener('click', async () => {
       const form = modalEl.querySelector('#resource-form')
       const formData = new FormData(form)
-      
+
       const resData = {
         node_id: this.node.id,
         resource_type: formData.get('resource_type'),
         title: formData.get('title'),
         url: formData.get('url'),
         content: formData.get('content'),
-        order_index: resource?.order_index || this.resources.length
+        order_index: resource?.order_index || this.resources.length,
       }
 
       if (isEdit) resData.id = resource.id
@@ -307,7 +325,7 @@ export class NodeResourceEditor {
       try {
         const saved = await saveNodeResource(resData)
         if (isEdit) {
-          const idx = this.resources.findIndex(r => r.id === saved.id)
+          const idx = this.resources.findIndex((r) => r.id === saved.id)
           this.resources[idx] = saved
         } else {
           this.resources.push(saved)

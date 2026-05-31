@@ -5,34 +5,31 @@ import MOCK_SESIONES from '../../../assets/data/mocks/sesiones.json'
 const USE_MOCK = !window.location.href.includes('supabase')
 
 async function getMockData(dataKey) {
-  await new Promise(resolve => setTimeout(resolve, 200))
+  await new Promise((resolve) => setTimeout(resolve, 200))
   return USE_MOCK ? MOCK_CLASES[dataKey] || MOCK_SESIONES[dataKey] || [] : []
 }
 
 export async function obtenerSesiones(filtros = {}) {
   if (USE_MOCK) {
     let sesiones = [...MOCK_SESIONES.sesiones]
-    
+
     if (filtros.fecha) {
-      sesiones = sesiones.filter(s => s.fecha === filtros.fecha)
+      sesiones = sesiones.filter((s) => s.fecha === filtros.fecha)
     }
     if (filtros.clase_id) {
-      sesiones = sesiones.filter(s => s.clase_id === filtros.clase_id)
+      sesiones = sesiones.filter((s) => s.clase_id === filtros.clase_id)
     }
     if (filtros.maestro_id) {
-      sesiones = sesiones.filter(s => s.maestro_id === filtros.maestro_id)
+      sesiones = sesiones.filter((s) => s.maestro_id === filtros.maestro_id)
     }
     if (filtros.tipo) {
-      sesiones = sesiones.filter(s => s.tipo === filtros.tipo)
+      sesiones = sesiones.filter((s) => s.tipo === filtros.tipo)
     }
-    
+
     return sesiones
   }
 
-  let query = supabase
-    .from('sesiones_clase')
-    .select('*')
-    .order('fecha', { ascending: false })
+  let query = supabase.from('sesiones_clase').select('*').order('fecha', { ascending: false })
 
   if (filtros.fecha) {
     query = query.eq('fecha', filtros.fecha)
@@ -59,16 +56,12 @@ export async function obtenerSesiones(filtros = {}) {
 
 export async function obtenerSesionPorId(id) {
   if (USE_MOCK) {
-    const sesion = MOCK_SESIONES.sesiones.find(s => s.id === id)
+    const sesion = MOCK_SESIONES.sesiones.find((s) => s.id === id)
     if (!sesion) throw new Error('Sesión no encontrada')
     return sesion
   }
 
-  const { data, error } = await supabase
-    .from('sesiones_clase')
-    .select('*')
-    .eq('id', id)
-    .single()
+  const { data, error } = await supabase.from('sesiones_clase').select('*').eq('id', id).single()
 
   if (error) {
     console.error('Error cargando sesión:', error.message)
@@ -139,10 +132,7 @@ export async function crearSesion(sesion) {
     return nuevaSesion
   }
 
-  const { data, error } = await supabase
-    .from('sesiones_clase')
-    .insert([datosLimpios])
-    .select()
+  const { data, error } = await supabase.from('sesiones_clase').insert([datosLimpios]).select()
 
   if (error) {
     console.error('Error creando sesión:', error.message)
@@ -181,9 +171,9 @@ export async function actualizarSesion(id, actualizaciones) {
   }
 
   if (USE_MOCK) {
-    const idx = MOCK_SESIONES.sesiones.findIndex(s => s.id === id)
+    const idx = MOCK_SESIONES.sesiones.findIndex((s) => s.id === id)
     if (idx === -1) throw new Error('Sesión no encontrada')
-    
+
     MOCK_SESIONES.sesiones[idx] = {
       ...MOCK_SESIONES.sesiones[idx],
       ...datosActualizacion,
@@ -208,16 +198,13 @@ export async function actualizarSesion(id, actualizaciones) {
 
 export async function eliminarSesion(id) {
   if (USE_MOCK) {
-    const idx = MOCK_SESIONES.sesiones.findIndex(s => s.id === id)
+    const idx = MOCK_SESIONES.sesiones.findIndex((s) => s.id === id)
     if (idx === -1) throw new Error('Sesión no encontrada')
     MOCK_SESIONES.sesiones.splice(idx, 1)
     return { success: true }
   }
 
-  const { error } = await supabase
-    .from('sesiones_clase')
-    .delete()
-    .eq('id', id)
+  const { error } = await supabase.from('sesiones_clase').delete().eq('id', id)
 
   if (error) {
     console.error('Error eliminando sesión:', error.message)
@@ -237,7 +224,7 @@ export async function registrarAsistencia(sesionId, asistencia) {
 
 export async function obtenerSesionesCoDocencia(maestroAuxiliarId) {
   if (USE_MOCK) {
-    return MOCK_SESIONES.sesiones.filter(s => s.maestro_auxiliar_id === maestroAuxiliarId)
+    return MOCK_SESIONES.sesiones.filter((s) => s.maestro_auxiliar_id === maestroAuxiliarId)
   }
 
   const { data, error } = await supabase
@@ -256,7 +243,7 @@ export async function obtenerSesionesCoDocencia(maestroAuxiliarId) {
 
 export async function obtenerSesionesPorFechaYClase(fecha, claseId) {
   if (USE_MOCK) {
-    return MOCK_SESIONES.sesiones.filter(s => s.fecha === fecha && s.clase_id === claseId)
+    return MOCK_SESIONES.sesiones.filter((s) => s.fecha === fecha && s.clase_id === claseId)
   }
 
   const { data, error } = await supabase
@@ -275,7 +262,9 @@ export async function obtenerSesionesPorFechaYClase(fecha, claseId) {
 
 export async function obtenerClasesDelMaestro(maestroId) {
   if (USE_MOCK) {
-    return MOCK_CLASES.clases.filter(c => c.maestro_titular_id === maestroId || c.maestro_auxiliar_id === maestroId)
+    return MOCK_CLASES.clases.filter(
+      (c) => c.maestro_titular_id === maestroId || c.maestro_auxiliar_id === maestroId,
+    )
   }
 
   const { data, error } = await supabase

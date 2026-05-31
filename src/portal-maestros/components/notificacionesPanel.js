@@ -1,5 +1,12 @@
-import { fetchNotificaciones, onNotificacionesChange, marcarLeida, marcarTodasLeidas, eliminarNotificacion, getDedupCount } from '../services/notificationService.js';
-import { enableTrap } from '../utils/focusTrap.js';
+import {
+  fetchNotificaciones,
+  onNotificacionesChange,
+  marcarLeida,
+  marcarTodasLeidas,
+  eliminarNotificacion,
+  getDedupCount,
+} from '../services/notificationService.js'
+import { enableTrap } from '../utils/focusTrap.js'
 
 // -- Listener: NAVIGATE_TO desde el SW (toque en notificación OS) ----------------
 // El SW envía este mensaje cuando el usuario toca una notificación del SO
@@ -8,39 +15,39 @@ if ('serviceWorker' in navigator) {
   navigator.serviceWorker.addEventListener('message', (event) => {
     if (event.data?.type === 'NAVIGATE_TO') {
       // SW sends `url` (hash string like '#/asistencia?clase=...&fecha=...')
-      const target = event.data.url || event.data.hash;
-      if (target) window.location.hash = target.startsWith('#') ? target.slice(1) : target;
+      const target = event.data.url || event.data.hash
+      if (target) window.location.hash = target.startsWith('#') ? target.slice(1) : target
     }
-  });
+  })
 }
 
-let isOpen = false;
-let container = null;
-let unsubscribe = null;
+let isOpen = false
+let container = null
+let unsubscribe = null
 
 // Formateador nativo para tiempo relativo (hace X minutos)
 function formatRelativeTime(dateString) {
-  const date = new Date(dateString);
-  const now = new Date();
-  const diffMs = now - date;
-  const diffSecs = Math.floor(diffMs / 1000);
-  const diffMins = Math.floor(diffSecs / 60);
-  const diffHours = Math.floor(diffMins / 60);
-  const diffDays = Math.floor(diffHours / 24);
+  const date = new Date(dateString)
+  const now = new Date()
+  const diffMs = now - date
+  const diffSecs = Math.floor(diffMs / 1000)
+  const diffMins = Math.floor(diffSecs / 60)
+  const diffHours = Math.floor(diffMins / 60)
+  const diffDays = Math.floor(diffHours / 24)
 
-  const rtf = new Intl.RelativeTimeFormat('es', { numeric: 'auto' });
+  const rtf = new Intl.RelativeTimeFormat('es', { numeric: 'auto' })
 
-  if (diffDays > 0) return rtf.format(-diffDays, 'day');
-  if (diffHours > 0) return rtf.format(-diffHours, 'hour');
-  if (diffMins > 0) return rtf.format(-diffMins, 'minute');
-  return 'hace un momento';
+  if (diffDays > 0) return rtf.format(-diffDays, 'day')
+  if (diffHours > 0) return rtf.format(-diffHours, 'hour')
+  if (diffMins > 0) return rtf.format(-diffMins, 'minute')
+  return 'hace un momento'
 }
 
 export const notificacionesPanel = {
   init() {
-    if (document.getElementById('pm-notificaciones-drawer-overlay')) return;
+    if (document.getElementById('pm-notificaciones-drawer-overlay')) return
 
-    container = document.createElement('div');
+    container = document.createElement('div')
     container.innerHTML = `
       <div id="pm-notificaciones-drawer-overlay" class="pm-drawer-overlay" role="dialog" aria-modal="true" aria-labelledby="pm-notif-dialog-title">
         <div class="pm-drawer">
@@ -64,44 +71,44 @@ export const notificacionesPanel = {
           </div>
         </div>
       </div>
-    `;
-    document.body.appendChild(container);
+    `
+    document.body.appendChild(container)
 
     // Eventos UI
-    document.getElementById('pm-notificaciones-close').addEventListener('click', this.close);
+    document.getElementById('pm-notificaciones-close').addEventListener('click', this.close)
     document.getElementById('pm-notificaciones-drawer-overlay').addEventListener('click', (e) => {
-      if (e.target.id === 'pm-notificaciones-drawer-overlay') this.close();
-    });
+      if (e.target.id === 'pm-notificaciones-drawer-overlay') this.close()
+    })
 
     document.getElementById('pm-notif-mark-all').addEventListener('click', () => {
-      marcarTodasLeidas();
-    });
+      marcarTodasLeidas()
+    })
 
     // Suscripción al servicio
     unsubscribe = onNotificacionesChange((notifs) => {
-      this.renderList(notifs);
-    });
+      this.renderList(notifs)
+    })
 
     // Carga inicial
-    fetchNotificaciones();
+    fetchNotificaciones()
   },
 
   _updateDedupBadge() {
-    const dedupBadge = document.getElementById('pm-notif-dedup-badge');
-    if (!dedupBadge) return;
-    const count = getDedupCount();
+    const dedupBadge = document.getElementById('pm-notif-dedup-badge')
+    if (!dedupBadge) return
+    const count = getDedupCount()
     if (count > 0) {
-      dedupBadge.textContent = `🔄 ${count} dedup`;
-      dedupBadge.style.display = 'inline-flex';
+      dedupBadge.textContent = `🔄 ${count} dedup`
+      dedupBadge.style.display = 'inline-flex'
     } else {
-      dedupBadge.style.display = 'none';
+      dedupBadge.style.display = 'none'
     }
   },
 
   renderList(notificaciones) {
-    const listEl = document.getElementById('pm-notificaciones-list');
-    if (!listEl) return;
-    this._updateDedupBadge();
+    const listEl = document.getElementById('pm-notificaciones-list')
+    if (!listEl) return
+    this._updateDedupBadge()
 
     if (notificaciones.length === 0) {
       listEl.innerHTML = `
@@ -109,24 +116,25 @@ export const notificacionesPanel = {
           <i class="bi bi-bell-slash" style="font-size: 2rem; opacity: 0.5;"></i>
           <p class="mt-2">No tienes notificaciones recientes.</p>
         </div>
-      `;
-      return;
+      `
+      return
     }
 
     // ── Agrupar por tipo: más de una del mismo tipo → un ítem colapsado ──
-    const groups = _groupByTipo(notificaciones);
+    const groups = _groupByTipo(notificaciones)
 
-    listEl.innerHTML = groups.map(g => {
-      const isGroup = g.count > 1;
-      const anyUnread = g.items.some(n => n.estado !== 'leida');
-      const route = _routeForTipo(g.tipo, g.items[0]);
+    listEl.innerHTML = groups
+      .map((g) => {
+        const isGroup = g.count > 1
+        const anyUnread = g.items.some((n) => n.estado !== 'leida')
+        const route = _routeForTipo(g.tipo, g.items[0])
 
-      const isSinRegistrar = g.tipo === 'sesion_sin_registrar'
+        const isSinRegistrar = g.tipo === 'sesion_sin_registrar'
 
-      return `
+        return `
         <div
           class="pm-notif-item ${anyUnread ? '' : 'leida'} ${isSinRegistrar ? 'pm-notif-item--urgent' : ''}"
-          data-ids="${g.items.map(n => n.id).join(',')}"
+          data-ids="${g.items.map((n) => n.id).join(',')}"
           data-route="${route}"
           title="${isGroup ? 'Ver todo' : g.items[0].titulo}"
         >
@@ -138,38 +146,37 @@ export const notificacionesPanel = {
               ${isGroup ? `${g.items[0].titulo} <span class="pm-notif-count">${g.count}</span>` : g.items[0].titulo}
             </div>
             <div class="pm-notif-msg">
-              ${isGroup
-                ? `${g.count} clases sin registrar`
-                : g.items[0].mensaje
-              }
+              ${isGroup ? `${g.count} clases sin registrar` : g.items[0].mensaje}
             </div>
             <div class="pm-notif-footer-row">
               <span class="pm-notif-time">${formatRelativeTime(g.items[0].created_at)}</span>
-              ${isSinRegistrar && route !== '#/'
-                ? `<a class="pm-notif-cta" data-route="${route}" href="javascript:void(0)">Registrar ahora →</a>`
-                : ''
+              ${
+                isSinRegistrar && route !== '#/'
+                  ? `<a class="pm-notif-cta" data-route="${route}" href="javascript:void(0)">Registrar ahora →</a>`
+                  : ''
               }
             </div>
           </div>
           <div class="pm-notif-actions">
-            <button class="pm-notif-btn-mark" data-ids="${g.items.map(n => n.id).join(',')}" title="Marcar como leída">
+            <button class="pm-notif-btn-mark" data-ids="${g.items.map((n) => n.id).join(',')}" title="Marcar como leída">
               <i class="bi bi-check-circle"></i>
             </button>
-            <button class="pm-notif-btn-delete" data-ids="${g.items.map(n => n.id).join(',')}" title="Eliminar">
+            <button class="pm-notif-btn-delete" data-ids="${g.items.map((n) => n.id).join(',')}" title="Eliminar">
               <i class="bi bi-trash"></i>
             </button>
           </div>
           ${anyUnread ? '<div class="pm-notif-dot"></div>' : ''}
         </div>
-      `;
-    }).join('');
+      `
+      })
+      .join('')
 
     // Click en CTA "Registrar ahora" — navegar directo sin propagar al item
-    listEl.querySelectorAll('.pm-notif-cta').forEach(cta => {
+    listEl.querySelectorAll('.pm-notif-cta').forEach((cta) => {
       cta.addEventListener('click', (e) => {
         e.stopPropagation()
         const ids = cta.closest('.pm-notif-item').dataset.ids.split(',')
-        ids.forEach(id => marcarLeida(id))
+        ids.forEach((id) => marcarLeida(id))
         const route = cta.dataset.route
         if (route && route !== '#/') {
           window.location.hash = route.replace(/^#/, '')
@@ -179,128 +186,144 @@ export const notificacionesPanel = {
     })
 
     // Click en item: marcar leída(s) y navegar a la ruta relevante
-    listEl.querySelectorAll('.pm-notif-item').forEach(el => {
+    listEl.querySelectorAll('.pm-notif-item').forEach((el) => {
       el.addEventListener('click', (e) => {
         // Evitar si el click fue en un botón de acción o CTA
         if (e.target.closest('.pm-notif-actions')) return
         if (e.target.closest('.pm-notif-cta')) return
 
-        const ids = el.dataset.ids.split(',');
-        ids.forEach(id => marcarLeida(id));
+        const ids = el.dataset.ids.split(',')
+        ids.forEach((id) => marcarLeida(id))
 
-        const route = el.dataset.route;
+        const route = el.dataset.route
         if (route && route !== '#/') {
-          window.location.hash = route.replace(/^#/, '');
+          window.location.hash = route.replace(/^#/, '')
         }
-      });
-    });
+      })
+    })
 
     // Botón "marcar leída"
-    listEl.querySelectorAll('.pm-notif-btn-mark').forEach(btn => {
+    listEl.querySelectorAll('.pm-notif-btn-mark').forEach((btn) => {
       btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const ids = btn.dataset.ids.split(',');
-        ids.forEach(id => marcarLeida(id));
-      });
-    });
+        e.stopPropagation()
+        const ids = btn.dataset.ids.split(',')
+        ids.forEach((id) => marcarLeida(id))
+      })
+    })
 
     // Botón "eliminar"
-    listEl.querySelectorAll('.pm-notif-btn-delete').forEach(btn => {
+    listEl.querySelectorAll('.pm-notif-btn-delete').forEach((btn) => {
       btn.addEventListener('click', async (e) => {
-        e.stopPropagation();
-        const ids = btn.dataset.ids.split(',');
-        
-        // Confirmación nativa elegante
-        const confirmar = confirm('¿Estás seguro de que querés eliminar esta notificación?');
-        if (!confirmar) return;
+        e.stopPropagation()
+        const ids = btn.dataset.ids.split(',')
 
-        let deleteSuccess = true;
+        // Confirmación nativa elegante
+        const confirmar = confirm('¿Estás seguro de que querés eliminar esta notificación?')
+        if (!confirmar) return
+
+        let deleteSuccess = true
         for (const id of ids) {
-          const res = await eliminarNotificacion(id);
+          const res = await eliminarNotificacion(id)
           if (!res.success) {
-            deleteSuccess = false;
+            deleteSuccess = false
           }
         }
 
         if (deleteSuccess) {
-          window.dispatchEvent(new CustomEvent('showToast', { 
-            detail: { message: 'Notificación eliminada correctamente.', type: 'info' } 
-          }));
+          window.dispatchEvent(
+            new CustomEvent('showToast', {
+              detail: { message: 'Notificación eliminada correctamente.', type: 'info' },
+            }),
+          )
         } else {
-          window.dispatchEvent(new CustomEvent('showToast', { 
-            detail: { message: 'Hubo un problema al eliminar la notificación.', type: 'danger' } 
-          }));
+          window.dispatchEvent(
+            new CustomEvent('showToast', {
+              detail: { message: 'Hubo un problema al eliminar la notificación.', type: 'danger' },
+            }),
+          )
         }
 
         // Recargar lista y refrescar badge
-        fetchNotificaciones();
-      });
-    });
+        fetchNotificaciones()
+      })
+    })
   },
 
   open() {
-    this.init();
+    this.init()
     // Store the trigger element so we can restore focus on close
-    this._triggerEl = document.activeElement;
-    const overlay = document.getElementById('pm-notificaciones-drawer-overlay');
-    overlay.style.display = 'block';
+    this._triggerEl = document.activeElement
+    const overlay = document.getElementById('pm-notificaciones-drawer-overlay')
+    overlay.style.display = 'block'
     // Forzar reflow para la transición
-    overlay.offsetHeight;
-    overlay.classList.add('open');
-    isOpen = true;
-    
+    overlay.offsetHeight
+    overlay.classList.add('open')
+    isOpen = true
+
     // Focus trap
-    const drawer = document.querySelector('#pm-notificaciones-drawer-overlay .pm-drawer');
+    const drawer = document.querySelector('#pm-notificaciones-drawer-overlay .pm-drawer')
     if (drawer) {
-      if (this._trap) this._trap.dispose();
-      this._trap = enableTrap(drawer, { onClose: () => this.close() });
+      if (this._trap) this._trap.dispose()
+      this._trap = enableTrap(drawer, { onClose: () => this.close() })
     }
 
     // Move focus to the close button inside the drawer
-    const closeBtn = document.getElementById('pm-notificaciones-close');
-    if (closeBtn) closeBtn.focus();
+    const closeBtn = document.getElementById('pm-notificaciones-close')
+    if (closeBtn) closeBtn.focus()
 
     // Al abrir el panel, traemos la última data
-    this._updateDedupBadge();
-    fetchNotificaciones();
+    this._updateDedupBadge()
+    fetchNotificaciones()
   },
 
   close() {
-    if (this._trap) { this._trap.dispose(); this._trap = null; }
-    const overlay = document.getElementById('pm-notificaciones-drawer-overlay');
-    if (overlay) {
-      overlay.classList.remove('open');
-      setTimeout(() => {
-        overlay.style.display = 'none';
-      }, 300);
+    if (this._trap) {
+      this._trap.dispose()
+      this._trap = null
     }
-    isOpen = false;
+    const overlay = document.getElementById('pm-notificaciones-drawer-overlay')
+    if (overlay) {
+      overlay.classList.remove('open')
+      setTimeout(() => {
+        overlay.style.display = 'none'
+      }, 300)
+    }
+    isOpen = false
 
     // Restore focus to the element that triggered the drawer
     if (this._triggerEl && typeof this._triggerEl.focus === 'function') {
-      this._triggerEl.focus();
+      this._triggerEl.focus()
     }
-    this._triggerEl = null;
-  }
-};
+    this._triggerEl = null
+  },
+}
 
 // Helpers visuales
 function getNotifIcon(tipo) {
   switch (tipo) {
-    case 'sesion_sin_registrar': return 'bi-exclamation-triangle';
-    case 'recordatorio_clase': return 'bi-clock-history';
-    case 'mensaje_admin': return 'bi-megaphone';
-    case 'tarea_vencida': return 'bi-journal-x';
-    default: return 'bi-bell';
+    case 'sesion_sin_registrar':
+      return 'bi-exclamation-triangle'
+    case 'recordatorio_clase':
+      return 'bi-clock-history'
+    case 'mensaje_admin':
+      return 'bi-megaphone'
+    case 'tarea_vencida':
+      return 'bi-journal-x'
+    default:
+      return 'bi-bell'
   }
 }
 
 function getNotifColor(tipo) {
   switch (tipo) {
-    case 'sesion_sin_registrar': return 'bg-danger text-white';
-    case 'recordatorio_clase': return 'bg-warning text-dark';
-    case 'mensaje_admin': return 'bg-primary text-white';
-    default: return 'bg-secondary text-white';
+    case 'sesion_sin_registrar':
+      return 'bg-danger text-white'
+    case 'recordatorio_clase':
+      return 'bg-warning text-dark'
+    case 'mensaje_admin':
+      return 'bg-primary text-white'
+    default:
+      return 'bg-secondary text-white'
   }
 }
 
@@ -312,50 +335,50 @@ function getNotifColor(tipo) {
 function _groupByTipo(notificaciones) {
   // Tipos que se agrupan cuando hay más de uno
   // Removido 'sesion_sin_registrar' para que cada notificación sea accesible individualmente
-  const GROUPABLE = new Set(['recordatorio_clase', 'in_app']);
+  const GROUPABLE = new Set(['recordatorio_clase', 'in_app'])
 
-  const groups = [];
-  const seen = new Map(); // tipo → index en groups[]
+  const groups = []
+  const seen = new Map() // tipo → index en groups[]
 
   for (const notif of notificaciones) {
     if (GROUPABLE.has(notif.tipo) && seen.has(notif.tipo)) {
-      const g = groups[seen.get(notif.tipo)];
-      g.items.push(notif);
-      g.count++;
+      const g = groups[seen.get(notif.tipo)]
+      g.items.push(notif)
+      g.count++
     } else {
-      seen.set(notif.tipo, groups.length);
-      groups.push({ tipo: notif.tipo, items: [notif], count: 1 });
+      seen.set(notif.tipo, groups.length)
+      groups.push({ tipo: notif.tipo, items: [notif], count: 1 })
     }
   }
 
-  return groups;
+  return groups
 }
 
 /**
  * Resuelve la ruta de navegación in-app para el click en el panel.
  */
 function _routeForTipo(tipo, notif) {
-  const claseId = notif.clase_id || notif.data?.clase_id;
-  const alumnoId = notif.alumno_id || notif.data?.alumno_id;
-  const fecha = notif.fecha || new Date().toISOString().split('T')[0];
+  const claseId = notif.clase_id || notif.data?.clase_id
+  const alumnoId = notif.alumno_id || notif.data?.alumno_id
+  const fecha = notif.fecha || new Date().toISOString().split('T')[0]
 
   switch (tipo) {
     case 'sesion_sin_registrar':
     case 'recordatorio_clase':
-      return claseId ? `#/asistencia?clase=${claseId}&fecha=${fecha}` : '#/hoy';
+      return claseId ? `#/asistencia?clase=${claseId}&fecha=${fecha}` : '#/hoy'
     case 'mensaje_admin':
-      return '#/perfil';
+      return '#/perfil'
     case 'tarea_vencida':
-      return alumnoId ? `#/alumno?id=${alumnoId}` : '#/hoy';
+      return alumnoId ? `#/alumno?id=${alumnoId}` : '#/hoy'
     default:
-      return '#/hoy';
+      return '#/hoy'
   }
 }
 
 // Inyectar estilos específicos del panel de notificaciones
 if (!document.getElementById('pm-notif-styles')) {
-  const style = document.createElement('style');
-  style.id = 'pm-notif-styles';
+  const style = document.createElement('style')
+  style.id = 'pm-notif-styles'
   style.textContent = `
     .pm-notif-item {
       display: flex;
@@ -514,6 +537,6 @@ if (!document.getElementById('pm-notif-styles')) {
     [data-portal-theme="dark"] .pm-notif-item:hover {
       background: rgba(255, 255, 255, 0.04);
     }
-  `;
-  document.head.appendChild(style);
+  `
+  document.head.appendChild(style)
 }

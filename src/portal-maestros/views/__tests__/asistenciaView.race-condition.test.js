@@ -32,7 +32,7 @@ describe('asistenciaView - Race Condition Prevention (deadlock fix)', () => {
     const mutex = createAsyncMutex()
     const executionLog = []
     const timeout = new Promise((_, reject) =>
-      setTimeout(() => reject(new Error('DEADLOCK: Operation timed out')), 500)
+      setTimeout(() => reject(new Error('DEADLOCK: Operation timed out')), 500),
     )
 
     // Simulate the button handler that holds the mutex
@@ -48,7 +48,7 @@ describe('asistenciaView - Race Condition Prevention (deadlock fix)', () => {
           // It should NOT try to acquire the mutex again
           const autoSaveFn = async () => {
             executionLog.push('autosave-fn-start')
-            await new Promise(resolve => setTimeout(resolve, 20))
+            await new Promise((resolve) => setTimeout(resolve, 20))
             executionLog.push('autosave-fn-end')
           }
 
@@ -57,7 +57,7 @@ describe('asistenciaView - Race Condition Prevention (deadlock fix)', () => {
 
           executionLog.push('button-save-end')
         }),
-        timeout
+        timeout,
       ])
     }
 
@@ -70,7 +70,7 @@ describe('asistenciaView - Race Condition Prevention (deadlock fix)', () => {
       'button-save-start',
       'autosave-fn-start',
       'autosave-fn-end',
-      'button-save-end'
+      'button-save-end',
     ])
   })
 
@@ -85,7 +85,7 @@ describe('asistenciaView - Race Condition Prevention (deadlock fix)', () => {
     const autoSave = async () => {
       return mutex.run(async () => {
         events.push('autosave-start')
-        await new Promise(resolve => setTimeout(resolve, 100))
+        await new Promise((resolve) => setTimeout(resolve, 100))
         events.push('autosave-end')
       })
     }
@@ -93,7 +93,7 @@ describe('asistenciaView - Race Condition Prevention (deadlock fix)', () => {
     const buttonClick = async () => {
       return mutex.run(async () => {
         events.push('button-start')
-        await new Promise(resolve => setTimeout(resolve, 50))
+        await new Promise((resolve) => setTimeout(resolve, 50))
         events.push('button-end')
       })
     }
@@ -102,11 +102,6 @@ describe('asistenciaView - Race Condition Prevention (deadlock fix)', () => {
     await Promise.all([autoSave(), buttonClick()])
 
     // Verify serialization: one completes, then the other
-    expect(events).toEqual([
-      'autosave-start',
-      'autosave-end',
-      'button-start',
-      'button-end'
-    ])
+    expect(events).toEqual(['autosave-start', 'autosave-end', 'button-start', 'button-end'])
   })
 })

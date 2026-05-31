@@ -26,7 +26,7 @@ export function renderRutaHeader(container, props) {
       <div style="margin-bottom: 12px;">
         <label style="display: block; margin-bottom: 6px; font-size: 0.875rem; color: #64748b;">Grupo</label>
         <select id="ruta-clase-select" style="padding: 8px; border-radius: 6px; border: 1px solid #e2e8f0; width: 100%; font-size: 0.875rem;">
-          ${clases.map(c => `<option value="${c.id}" ${c.id === activeClaseId ? 'selected' : ''}>${c.nombre}</option>`).join('')}
+          ${clases.map((c) => `<option value="${c.id}" ${c.id === activeClaseId ? 'selected' : ''}>${c.nombre}</option>`).join('')}
         </select>
       </div>
 

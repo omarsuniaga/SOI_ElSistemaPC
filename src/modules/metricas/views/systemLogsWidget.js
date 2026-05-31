@@ -148,8 +148,8 @@ export function systemLogsWidget(containerId) {
       })
     })
 
-    // Limpiar logs
-    container.querySelector('#btn-clear-logs')?.addEventListener('click', () => {
+    // Limpiar logs (buscar a nivel global ya que se renderiza en la vista padre)
+    document.querySelector('#btn-clear-logs')?.addEventListener('click', () => {
       localStorage.setItem('soi_system_logs', JSON.stringify([]))
       AppToast.show('Consola de logs de sistema limpiada con éxito', 'success')
       loadLogs()

@@ -9,7 +9,10 @@ import { supabase } from '../../lib/supabaseClient.js'
  */
 export async function getProfileStatus() {
   try {
-    const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+    const {
+      data: { session },
+      error: sessionError,
+    } = await supabase.auth.getSession()
     if (sessionError || !session?.user?.id) {
       return null
     }

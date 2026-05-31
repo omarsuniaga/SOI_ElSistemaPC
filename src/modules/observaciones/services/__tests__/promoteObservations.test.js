@@ -10,7 +10,7 @@ async function sha256(input) {
     const msgUint8 = new TextEncoder().encode(input)
     const hashBuffer = await globalThis.crypto.subtle.digest('SHA-256', msgUint8)
     return Array.from(new Uint8Array(hashBuffer))
-      .map(b => b.toString(16).padStart(2, '0'))
+      .map((b) => b.toString(16).padStart(2, '0'))
       .join('')
   }
 
@@ -32,8 +32,8 @@ describe('promoteSessionObservations Service', () => {
           contenido_parsed: { nota: 'Bien' },
           es_borrador: true,
           created_at: '2026-05-19T10:00:00Z',
-          updated_at: '2026-05-19T10:00:00Z'
-        }
+          updated_at: '2026-05-19T10:00:00Z',
+        },
       ]
       const existingAlumnoRows = []
 
@@ -41,7 +41,7 @@ describe('promoteSessionObservations Service', () => {
         sessionId,
         alumnoIds,
         observacionesSessionRows,
-        existingAlumnoRows
+        existingAlumnoRows,
       )
 
       expect(result.promoted).toBe(1)
@@ -63,22 +63,22 @@ describe('promoteSessionObservations Service', () => {
           sesion_id: sessionId,
           alumno_id: 'alumno-uuid-001',
           contenido_parsed: { nota: 'Bien' },
-          es_borrador: true
+          es_borrador: true,
         },
         {
           id: 'obs-002',
           sesion_id: sessionId,
           alumno_id: 'alumno-uuid-001',
           contenido_parsed: { nota: 'Muy bien' },
-          es_borrador: true
+          es_borrador: true,
         },
         {
           id: 'obs-003',
           sesion_id: sessionId,
           alumno_id: 'alumno-uuid-001',
           contenido_parsed: { nota: 'Excelente' },
-          es_borrador: true
-        }
+          es_borrador: true,
+        },
       ]
       const existingAlumnoRows = []
 
@@ -86,14 +86,14 @@ describe('promoteSessionObservations Service', () => {
         sessionId,
         alumnoIds,
         observacionesSessionRows,
-        existingAlumnoRows
+        existingAlumnoRows,
       )
 
       expect(result.promoted).toBe(3)
       expect(result.skipped).toBe(0)
       expect(result.errors).toHaveLength(0)
       expect(result.promotionPlan).toHaveLength(3)
-      expect(result.promotionPlan.every(p => p.action === 'PROMOTE')).toBe(true)
+      expect(result.promotionPlan.every((p) => p.action === 'PROMOTE')).toBe(true)
     })
   })
 
@@ -104,20 +104,70 @@ describe('promoteSessionObservations Service', () => {
 
       const observacionesSessionRows = [
         // Alumno 1: 2 obs
-        { sesion_id: sessionId, alumno_id: 'a1', contenido_parsed: { nota: 'Bien' }, es_borrador: true },
-        { sesion_id: sessionId, alumno_id: 'a1', contenido_parsed: { nota: 'Muy bien' }, es_borrador: true },
+        {
+          sesion_id: sessionId,
+          alumno_id: 'a1',
+          contenido_parsed: { nota: 'Bien' },
+          es_borrador: true,
+        },
+        {
+          sesion_id: sessionId,
+          alumno_id: 'a1',
+          contenido_parsed: { nota: 'Muy bien' },
+          es_borrador: true,
+        },
         // Alumno 2: 2 obs
-        { sesion_id: sessionId, alumno_id: 'a2', contenido_parsed: { nota: 'Bien' }, es_borrador: true },
-        { sesion_id: sessionId, alumno_id: 'a2', contenido_parsed: { nota: 'Excelente' }, es_borrador: true },
+        {
+          sesion_id: sessionId,
+          alumno_id: 'a2',
+          contenido_parsed: { nota: 'Bien' },
+          es_borrador: true,
+        },
+        {
+          sesion_id: sessionId,
+          alumno_id: 'a2',
+          contenido_parsed: { nota: 'Excelente' },
+          es_borrador: true,
+        },
         // Alumno 3: 2 obs
-        { sesion_id: sessionId, alumno_id: 'a3', contenido_parsed: { nota: 'Bien' }, es_borrador: true },
-        { sesion_id: sessionId, alumno_id: 'a3', contenido_parsed: { nota: 'Bien' }, es_borrador: true },
+        {
+          sesion_id: sessionId,
+          alumno_id: 'a3',
+          contenido_parsed: { nota: 'Bien' },
+          es_borrador: true,
+        },
+        {
+          sesion_id: sessionId,
+          alumno_id: 'a3',
+          contenido_parsed: { nota: 'Bien' },
+          es_borrador: true,
+        },
         // Alumno 4: 2 obs
-        { sesion_id: sessionId, alumno_id: 'a4', contenido_parsed: { nota: 'Bien' }, es_borrador: true },
-        { sesion_id: sessionId, alumno_id: 'a4', contenido_parsed: { nota: 'Regular' }, es_borrador: true },
+        {
+          sesion_id: sessionId,
+          alumno_id: 'a4',
+          contenido_parsed: { nota: 'Bien' },
+          es_borrador: true,
+        },
+        {
+          sesion_id: sessionId,
+          alumno_id: 'a4',
+          contenido_parsed: { nota: 'Regular' },
+          es_borrador: true,
+        },
         // Alumno 5: 2 obs
-        { sesion_id: sessionId, alumno_id: 'a5', contenido_parsed: { nota: 'Bien' }, es_borrador: true },
-        { sesion_id: sessionId, alumno_id: 'a5', contenido_parsed: { nota: 'Necesita mejorar' }, es_borrador: true }
+        {
+          sesion_id: sessionId,
+          alumno_id: 'a5',
+          contenido_parsed: { nota: 'Bien' },
+          es_borrador: true,
+        },
+        {
+          sesion_id: sessionId,
+          alumno_id: 'a5',
+          contenido_parsed: { nota: 'Necesita mejorar' },
+          es_borrador: true,
+        },
       ]
       const existingAlumnoRows = []
 
@@ -125,7 +175,7 @@ describe('promoteSessionObservations Service', () => {
         sessionId,
         alumnoIds,
         observacionesSessionRows,
-        existingAlumnoRows
+        existingAlumnoRows,
       )
 
       expect(result.promoted).toBe(10)
@@ -144,34 +194,42 @@ describe('promoteSessionObservations Service', () => {
         sesion_id: sessionId,
         alumno_id: 'alumno-uuid-001',
         contenido_parsed: { nota: 'Bien' },
-        es_borrador: true
+        es_borrador: true,
       }
       const obs2 = {
         sesion_id: sessionId,
         alumno_id: 'alumno-uuid-001',
         contenido_parsed: { nota: 'Muy bien' },
-        es_borrador: true
+        es_borrador: true,
       }
 
       const observacionesSessionRows = [obs1, obs2]
 
       // Simulate that these were already promoted (same dedup_key)
       const existingAlumnoRows = [
-        { dedup_key: await sha256(`${sessionId}|alumno-uuid-001|${JSON.stringify(obs1.contenido_parsed)}`) },
-        { dedup_key: await sha256(`${sessionId}|alumno-uuid-001|${JSON.stringify(obs2.contenido_parsed)}`) }
+        {
+          dedup_key: await sha256(
+            `${sessionId}|alumno-uuid-001|${JSON.stringify(obs1.contenido_parsed)}`,
+          ),
+        },
+        {
+          dedup_key: await sha256(
+            `${sessionId}|alumno-uuid-001|${JSON.stringify(obs2.contenido_parsed)}`,
+          ),
+        },
       ]
 
       const result = await promoteSessionObservations(
         sessionId,
         alumnoIds,
         observacionesSessionRows,
-        existingAlumnoRows
+        existingAlumnoRows,
       )
 
       expect(result.promoted).toBe(0)
       expect(result.skipped).toBe(2)
       expect(result.errors).toHaveLength(0)
-      expect(result.promotionPlan.every(p => p.action === 'SKIP')).toBe(true)
+      expect(result.promotionPlan.every((p) => p.action === 'SKIP')).toBe(true)
       expect(result.promotionPlan[0].reason).toContain('ALREADY_EXISTS')
     })
   })
@@ -185,14 +243,14 @@ describe('promoteSessionObservations Service', () => {
           sesion_id: sessionId,
           alumno_id: 'alumno-uuid-001',
           contenido_parsed: { nota: 'Bueno' },
-          es_borrador: true
+          es_borrador: true,
         },
         {
           sesion_id: sessionId,
           alumno_id: 'alumno-uuid-001',
           contenido_parsed: null,
-          es_borrador: true
-        }
+          es_borrador: true,
+        },
       ]
       const existingAlumnoRows = []
 
@@ -200,7 +258,7 @@ describe('promoteSessionObservations Service', () => {
         sessionId,
         alumnoIds,
         observacionesSessionRows,
-        existingAlumnoRows
+        existingAlumnoRows,
       )
 
       expect(result.promoted).toBe(1)
@@ -208,7 +266,9 @@ describe('promoteSessionObservations Service', () => {
       expect(result.errors).toHaveLength(0)
       expect(result.promotionPlan).toHaveLength(2)
 
-      const nullPlan = result.promotionPlan.find(p => p.reason && p.reason.includes('NULL_CONTENT'))
+      const nullPlan = result.promotionPlan.find(
+        (p) => p.reason && p.reason.includes('NULL_CONTENT'),
+      )
       expect(nullPlan.action).toBe('SKIP')
       expect(nullPlan.reason).toContain('NULL_CONTENT')
     })
@@ -223,8 +283,8 @@ describe('promoteSessionObservations Service', () => {
           sesion_id: sessionId,
           alumno_id: 'alumno-uuid-001',
           contenido_parsed: { nota: 'Bien' },
-          es_borrador: true
-        }
+          es_borrador: true,
+        },
       ]
       const existingAlumnoRows = []
 
@@ -232,7 +292,7 @@ describe('promoteSessionObservations Service', () => {
         sessionId,
         alumnoIds,
         observacionesSessionRows,
-        existingAlumnoRows
+        existingAlumnoRows,
       )
 
       expect(result.promoted).toBe(0)
@@ -262,30 +322,45 @@ describe('promoteSessionObservations Service', () => {
       const sessionId = '550e8400-e29b-41d4-a716-446655440010'
       const alumnoIds = ['a1', 'a2']
 
-      const obs1 = { sesion_id: sessionId, alumno_id: 'a1', contenido_parsed: { nota: 'Bien' }, es_borrador: true }
-      const obs2 = { sesion_id: sessionId, alumno_id: 'a1', contenido_parsed: null, es_borrador: true }
-      const obs3 = { sesion_id: sessionId, alumno_id: 'a2', contenido_parsed: { nota: 'Excelente' }, es_borrador: true }
+      const obs1 = {
+        sesion_id: sessionId,
+        alumno_id: 'a1',
+        contenido_parsed: { nota: 'Bien' },
+        es_borrador: true,
+      }
+      const obs2 = {
+        sesion_id: sessionId,
+        alumno_id: 'a1',
+        contenido_parsed: null,
+        es_borrador: true,
+      }
+      const obs3 = {
+        sesion_id: sessionId,
+        alumno_id: 'a2',
+        contenido_parsed: { nota: 'Excelente' },
+        es_borrador: true,
+      }
 
       const observacionesSessionRows = [obs1, obs2, obs3]
 
       // obs1 already exists (dedup)
       const existingAlumnoRows = [
-        { dedup_key: await sha256(`${sessionId}|a1|${JSON.stringify(obs1.contenido_parsed)}`) }
+        { dedup_key: await sha256(`${sessionId}|a1|${JSON.stringify(obs1.contenido_parsed)}`) },
       ]
 
       const result = await promoteSessionObservations(
         sessionId,
         alumnoIds,
         observacionesSessionRows,
-        existingAlumnoRows
+        existingAlumnoRows,
       )
 
       expect(result.promoted).toBe(1) // obs3
-      expect(result.skipped).toBe(2)  // obs1 (dedup), obs2 (null)
+      expect(result.skipped).toBe(2) // obs1 (dedup), obs2 (null)
       expect(result.errors).toHaveLength(0)
 
-      const promotes = result.promotionPlan.filter(p => p.action === 'PROMOTE')
-      const skips = result.promotionPlan.filter(p => p.action === 'SKIP')
+      const promotes = result.promotionPlan.filter((p) => p.action === 'PROMOTE')
+      const skips = result.promotionPlan.filter((p) => p.action === 'SKIP')
 
       expect(promotes).toHaveLength(1)
       expect(skips).toHaveLength(2)

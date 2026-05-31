@@ -18,7 +18,7 @@ export function registerObservationPromotionCron(supabase, logger = console) {
 
       // Log summary
       logger.info(
-        `[ObservationPromotion] Batch complete: processed=${result.processed}, promoted=${result.promoted}, errors=${result.errors.length}`
+        `[ObservationPromotion] Batch complete: processed=${result.processed}, promoted=${result.promoted}, errors=${result.errors.length}`,
       )
 
       // Log per-session errors if any

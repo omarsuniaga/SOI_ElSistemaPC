@@ -16,16 +16,16 @@ const PERMISSIONS = {
 
 /**
  * Check if a user role has a specific permission
- * @param {string} role 
- * @param {string} permission 
+ * @param {string} role
+ * @param {string} permission
  * @returns {boolean}
  */
 export function hasPermission(role, permission) {
   if (!role) return false
-  
+
   const userPermissions = PERMISSIONS[role] || []
   if (userPermissions.includes('*')) return true
-  
+
   return userPermissions.includes(permission)
 }
 

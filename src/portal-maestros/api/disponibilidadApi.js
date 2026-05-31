@@ -1,8 +1,8 @@
-import { supabase } from '../../lib/supabaseClient.js';
+import { supabase } from '../../lib/supabaseClient.js'
 
 // ─── CONSTANTS ──────────────────────────────────────────────────
-const DIAS_VALIDOS = ['lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado', 'domingo'];
-const TIME_REGEX = /^([01]\d|2[0-3]):([0-5]\d)$/;
+const DIAS_VALIDOS = ['lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado', 'domingo']
+const TIME_REGEX = /^([01]\d|2[0-3]):([0-5]\d)$/
 
 // ─── VALIDATION ─────────────────────────────────────────────────
 
@@ -12,8 +12,8 @@ const TIME_REGEX = /^([01]\d|2[0-3]):([0-5]\d)$/;
  * @returns {number} Minutes since midnight
  */
 function timeToMinutes(time) {
-  const [h, m] = time.split(':').map(Number);
-  return h * 60 + m;
+  const [h, m] = time.split(':').map(Number)
+  return h * 60 + m
 }
 
 /**
@@ -23,11 +23,11 @@ function timeToMinutes(time) {
  * @returns {boolean}
  */
 function franjasOverlap(a, b) {
-  const aStart = timeToMinutes(a.inicio);
-  const aEnd = timeToMinutes(a.fin);
-  const bStart = timeToMinutes(b.inicio);
-  const bEnd = timeToMinutes(b.fin);
-  return aStart < bEnd && bStart < aEnd;
+  const aStart = timeToMinutes(a.inicio)
+  const aEnd = timeToMinutes(a.fin)
+  const bStart = timeToMinutes(b.inicio)
+  const bEnd = timeToMinutes(b.fin)
+  return aStart < bEnd && bStart < aEnd
 }
 
 /**
@@ -38,32 +38,34 @@ function franjasOverlap(a, b) {
  * @returns {string[]} Error messages
  */
 function validateFranjasForDay(franjas, diaLabel) {
-  const errors = [];
+  const errors = []
 
   for (let i = 0; i < franjas.length; i++) {
-    const f = franjas[i];
+    const f = franjas[i]
 
     // Format check
     if (!TIME_REGEX.test(f.inicio) || !TIME_REGEX.test(f.fin)) {
-      errors.push(`${diaLabel}: franja ${i + 1} tiene formato de hora inválido (use HH:MM)`);
-      continue;
+      errors.push(`${diaLabel}: franja ${i + 1} tiene formato de hora inválido (use HH:MM)`)
+      continue
     }
 
     // inicio must be before fin
     if (timeToMinutes(f.inicio) >= timeToMinutes(f.fin)) {
-      errors.push(`${diaLabel}: franja ${i + 1} — la hora de inicio (${f.inicio}) debe ser anterior a la de fin (${f.fin})`);
-      continue;
+      errors.push(
+        `${diaLabel}: franja ${i + 1} — la hora de inicio (${f.inicio}) debe ser anterior a la de fin (${f.fin})`,
+      )
+      continue
     }
 
     // Overlap check against subsequent franjas
     for (let j = i + 1; j < franjas.length; j++) {
       if (franjasOverlap(f, franjas[j])) {
-        errors.push(`${diaLabel}: las franjas ${i + 1} y ${j + 1} se solapan`);
+        errors.push(`${diaLabel}: las franjas ${i + 1} y ${j + 1} se solapan`)
       }
     }
   }
 
-  return errors;
+  return errors
 }
 
 /**
@@ -73,27 +75,27 @@ function validateFranjasForDay(franjas, diaLabel) {
  */
 export function validateDisponibilidad(disponibilidad) {
   if (!disponibilidad || typeof disponibilidad !== 'object') {
-    return { valid: false, errors: ['Disponibilidad debe ser un objeto'] };
+    return { valid: false, errors: ['Disponibilidad debe ser un objeto'] }
   }
 
-  const errors = [];
+  const errors = []
 
   for (const [dia, franjas] of Object.entries(disponibilidad)) {
     if (!DIAS_VALIDOS.includes(dia)) {
-      errors.push(`Día inválido: "${dia}"`);
-      continue;
+      errors.push(`Día inválido: "${dia}"`)
+      continue
     }
 
     if (!Array.isArray(franjas)) {
-      errors.push(`${dia}: las franjas deben ser un array`);
-      continue;
+      errors.push(`${dia}: las franjas deben ser un array`)
+      continue
     }
 
-    const dayErrors = validateFranjasForDay(franjas, dia);
-    errors.push(...dayErrors);
+    const dayErrors = validateFranjasForDay(franjas, dia)
+    errors.push(...dayErrors)
   }
 
-  return { valid: errors.length === 0, errors };
+  return { valid: errors.length === 0, errors }
 }
 
 // ─── API FUNCTIONS ──────────────────────────────────────────────
@@ -108,14 +110,14 @@ export async function getDisponibilidad(maestroId) {
     .from('maestros')
     .select('disponibilidad')
     .eq('id', maestroId)
-    .single();
+    .single()
 
   if (error) {
-    console.error('[DisponibilidadApi] Error fetching:', error.message);
-    throw new Error('No se pudo obtener la disponibilidad');
+    console.error('[DisponibilidadApi] Error fetching:', error.message)
+    throw new Error('No se pudo obtener la disponibilidad')
   }
 
-  return data?.disponibilidad || {};
+  return data?.disponibilidad || {}
 }
 
 /**
@@ -127,22 +129,19 @@ export async function getDisponibilidad(maestroId) {
  */
 export async function updateDisponibilidad(maestroId, disponibilidad) {
   // Validate before saving
-  const validation = validateDisponibilidad(disponibilidad);
+  const validation = validateDisponibilidad(disponibilidad)
   if (!validation.valid) {
-    return { success: false, errors: validation.errors };
+    return { success: false, errors: validation.errors }
   }
 
-  const { error } = await supabase
-    .from('maestros')
-    .update({ disponibilidad })
-    .eq('id', maestroId);
+  const { error } = await supabase.from('maestros').update({ disponibilidad }).eq('id', maestroId)
 
   if (error) {
-    console.error('[DisponibilidadApi] Error updating:', error.message);
-    return { success: false, errors: [error.message] };
+    console.error('[DisponibilidadApi] Error updating:', error.message)
+    return { success: false, errors: [error.message] }
   }
 
-  return { success: true };
+  return { success: true }
 }
 
 /**
@@ -156,27 +155,27 @@ export async function getDisponibilidadBulk(maestroIds) {
     .from('maestros')
     .select('id, nombre_completo, especialidad, habilidades, disponibilidad')
     .eq('activo', true)
-    .order('nombre_completo', { ascending: true });
+    .order('nombre_completo', { ascending: true })
 
   if (maestroIds?.length) {
-    query = query.in('id', maestroIds);
+    query = query.in('id', maestroIds)
   }
 
-  const { data, error } = await query;
+  const { data, error } = await query
 
   if (error) {
-    console.error('[DisponibilidadApi] Error fetching bulk:', error.message);
-    throw new Error('No se pudieron cargar las disponibilidades');
+    console.error('[DisponibilidadApi] Error fetching bulk:', error.message)
+    throw new Error('No se pudieron cargar las disponibilidades')
   }
 
-  return data.map(m => ({
+  return data.map((m) => ({
     id: m.id,
     nombre: m.nombre_completo || '',
     especialidad: m.especialidad || '',
     habilidades: Array.isArray(m.habilidades) ? m.habilidades : [],
     disponibilidad: m.disponibilidad || {},
-  }));
+  }))
 }
 
 // ─── UTILITY EXPORTS ────────────────────────────────────────────
-export { timeToMinutes, franjasOverlap, DIAS_VALIDOS };
+export { timeToMinutes, franjasOverlap, DIAS_VALIDOS }

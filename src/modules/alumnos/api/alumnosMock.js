@@ -1,7 +1,7 @@
 import alumnosMockData from '../../../assets/data/mocks/alumnos.json'
 
 // Simulación de delay para que se sienta como una API real
-const delay = (ms = 500) => new Promise(resolve => setTimeout(resolve, ms))
+const delay = (ms = 500) => new Promise((resolve) => setTimeout(resolve, ms))
 
 function normalizeAlumno(a) {
   if (!a) return null
@@ -33,7 +33,7 @@ export async function obtenerAlumnos() {
 
 export async function obtenerAlumno(id) {
   await delay()
-  const alumno = alumnos.find(a => a.id === id)
+  const alumno = alumnos.find((a) => a.id === id)
   if (!alumno) throw new Error('Alumno no encontrado (Demo)')
   return normalizeAlumno(alumno)
 }
@@ -44,7 +44,7 @@ export async function crearAlumno(alumno) {
     ...alumno,
     id: Math.random().toString(36).substr(2, 9),
     nombre_completo: alumno.nombre || alumno.nombre_completo,
-    activo: alumno.is_active !== undefined ? alumno.is_active : true
+    activo: alumno.is_active !== undefined ? alumno.is_active : true,
   }
   alumnos.push(nuevo)
   return normalizeAlumno(nuevo)
@@ -52,26 +52,26 @@ export async function crearAlumno(alumno) {
 
 export async function actualizarAlumno(id, actualizaciones) {
   await delay()
-  const index = alumnos.findIndex(a => a.id === id)
+  const index = alumnos.findIndex((a) => a.id === id)
   if (index === -1) throw new Error('Alumno no encontrado (Demo)')
-  
+
   alumnos[index] = { ...alumnos[index], ...actualizaciones }
   return normalizeAlumno(alumnos[index])
 }
 
 export async function eliminarAlumno(id) {
   await delay()
-  alumnos = alumnos.filter(a => a.id !== id)
+  alumnos = alumnos.filter((a) => a.id !== id)
 }
 
 export async function validarEmail(email) {
   await delay(100)
-  return alumnos.some(a => a.correo_representante === email.trim().toLowerCase())
+  return alumnos.some((a) => a.correo_representante === email.trim().toLowerCase())
 }
 
 export async function validarCedula(cedula) {
   await delay(100)
-  return alumnos.some(a => a.representante_cedula === cedula.trim())
+  return alumnos.some((a) => a.representante_cedula === cedula.trim())
 }
 
 // Simulated active class enrollments for Demo/Mock Mode
@@ -85,17 +85,17 @@ let inscripciones = [
 export async function obtenerInscripcionesAlumno(alumnoId) {
   await delay(200)
   return inscripciones
-    .filter(i => i.alumno_id === alumnoId)
-    .map(i => ({
+    .filter((i) => i.alumno_id === alumnoId)
+    .map((i) => ({
       clase_id: i.clase_id,
-      clase_nombre: i.clase_nombre
+      clase_nombre: i.clase_nombre,
     }))
 }
 
 export async function obtenerAlumnosPorMes(year, month) {
   await delay(300)
   return alumnos
-    .filter(a => {
+    .filter((a) => {
       const d = new Date(a.created_at ?? a.fecha_ingreso ?? '')
       return d.getFullYear() === year && d.getMonth() + 1 === month
     })

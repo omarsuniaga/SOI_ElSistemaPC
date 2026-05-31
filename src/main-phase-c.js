@@ -10,7 +10,7 @@ const STATE = {
   estudiante: null,
   ruta: null,
   niveles: [],
-  nodos: []
+  nodos: [],
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -100,14 +100,24 @@ async function showStudentSelector() {
     const { data: inscripciones } = await supabase
       .from('alumnos_clases')
       .select('alumno_id, alumnos(id, nombre_completo)')
-      .in('clase_id', clases.map(c => c.id))
+      .in(
+        'clase_id',
+        clases.map((c) => c.id),
+      )
 
     if (!inscripciones?.length) throw new Error('No hay estudiantes inscritos')
 
-    const estudiantes = [...new Map(inscripciones.map(i => [i.alumno_id, {
-      id: i.alumno_id,
-      nombre: i.alumnos?.nombre_completo || 'Estudiante'
-    }])).values()]
+    const estudiantes = [
+      ...new Map(
+        inscripciones.map((i) => [
+          i.alumno_id,
+          {
+            id: i.alumno_id,
+            nombre: i.alumnos?.nombre_completo || 'Estudiante',
+          },
+        ]),
+      ).values(),
+    ]
 
     let html = `
       <div style="max-width: 500px; margin: 40px auto; padding: 20px; background: #fff; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
@@ -115,7 +125,7 @@ async function showStudentSelector() {
         <div style="display: flex; flex-direction: column; gap: 8px;">
     `
 
-    estudiantes.forEach(est => {
+    estudiantes.forEach((est) => {
       html += `
         <button
           onclick="window.selectEstudiante('${est.id}')"
@@ -202,7 +212,10 @@ async function showRouteView() {
     const { data: nodes } = await supabase
       .from('nodes')
       .select('id, name, level_id, type')
-      .in('level_id', levels.map(l => l.id))
+      .in(
+        'level_id',
+        levels.map((l) => l.id),
+      )
 
     STATE.nodos = nodes || []
 
@@ -210,10 +223,13 @@ async function showRouteView() {
     const { data: indicators } = await supabase
       .from('indicators')
       .select('id, node_id, nombre')
-      .in('node_id', STATE.nodos.map(n => n.id))
+      .in(
+        'node_id',
+        STATE.nodos.map((n) => n.id),
+      )
 
     const indicatorsMap = {}
-    indicators?.forEach(ind => {
+    indicators?.forEach((ind) => {
       if (!indicatorsMap[ind.node_id]) indicatorsMap[ind.node_id] = []
       indicatorsMap[ind.node_id].push(ind)
     })
@@ -230,8 +246,8 @@ async function showRouteView() {
     `
 
     // Show levels with nodes
-    levels.forEach(level => {
-      const levelNodes = STATE.nodos.filter(n => n.level_id === level.id)
+    levels.forEach((level) => {
+      const levelNodes = STATE.nodos.filter((n) => n.level_id === level.id)
 
       html += `
         <div style="margin-bottom: 30px; padding: 15px; background: #f9f9f9; border-radius: 8px; border-left: 4px solid #007aff;">
@@ -239,7 +255,7 @@ async function showRouteView() {
           <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 12px;">
       `
 
-      levelNodes.forEach(node => {
+      levelNodes.forEach((node) => {
         const nodeIndicators = indicatorsMap[node.id] || []
         html += `
           <div style="padding: 12px; background: white; border: 1px solid #ddd; border-radius: 6px; cursor: pointer;"
@@ -270,10 +286,7 @@ window.showNodeEvaluation = async (nodeId) => {
   const app = document.getElementById('portal-app')
 
   try {
-    const { data: indicators } = await supabase
-      .from('indicators')
-      .select('*')
-      .eq('node_id', nodeId)
+    const { data: indicators } = await supabase.from('indicators').select('*').eq('node_id', nodeId)
 
     if (!indicators?.length) {
       alert('No hay indicadores para este nodo')
@@ -318,14 +331,14 @@ window.showNodeEvaluation = async (nodeId) => {
       e.preventDefault()
 
       const evals = []
-      indicators.forEach(ind => {
+      indicators.forEach((ind) => {
         const value = document.querySelector(`select[name="ind_${ind.id}"]`).value
         if (value) {
           evals.push({
             indicator_id: ind.id,
             alumno_id: STATE.estudiante.id,
             estado: value,
-            fecha: new Date().toISOString().split('T')[0]
+            fecha: new Date().toISOString().split('T')[0],
           })
         }
       })
@@ -336,9 +349,7 @@ window.showNodeEvaluation = async (nodeId) => {
       }
 
       try {
-        const { error } = await supabase
-          .from('indicator_attempts')
-          .insert(evals)
+        const { error } = await supabase.from('indicator_attempts').insert(evals)
 
         if (error) throw error
         alert('✅ Evaluación guardada correctamente')
@@ -369,7 +380,9 @@ window.logout = async () => {
 
 async function boot() {
   try {
-    const { data: { session } } = await supabase.auth.getSession()
+    const {
+      data: { session },
+    } = await supabase.auth.getSession()
 
     if (session?.user) {
       const { data: maestro } = await supabase

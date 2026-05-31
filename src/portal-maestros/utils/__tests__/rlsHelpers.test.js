@@ -7,7 +7,7 @@ vi.mock('../../../lib/supabaseClient.js', () => ({
       getSession: vi.fn(),
     },
     from: vi.fn(),
-  }
+  },
 }))
 
 import { supabase } from '../../../lib/supabaseClient.js'
@@ -22,14 +22,14 @@ describe('rlsHelpers', () => {
     it('returns profile status when user is authenticated', async () => {
       supabase.auth.getSession.mockResolvedValue({
         data: { session: { user: { id: 'user-123' } } },
-        error: null
+        error: null,
       })
 
       const mockProfile = { estado: 'activo', rol: 'maestro' }
       supabase.from.mockReturnValue({
         select: vi.fn().mockReturnThis(),
         eq: vi.fn().mockReturnThis(),
-        single: vi.fn().mockResolvedValue({ data: mockProfile, error: null })
+        single: vi.fn().mockResolvedValue({ data: mockProfile, error: null }),
       })
 
       const result = await getProfileStatus()
@@ -42,7 +42,7 @@ describe('rlsHelpers', () => {
     it('returns null when there is no session', async () => {
       supabase.auth.getSession.mockResolvedValue({
         data: { session: null },
-        error: null
+        error: null,
       })
 
       const result = await getProfileStatus()
@@ -53,13 +53,13 @@ describe('rlsHelpers', () => {
     it('returns null when Supabase query fails', async () => {
       supabase.auth.getSession.mockResolvedValue({
         data: { session: { user: { id: 'user-123' } } },
-        error: null
+        error: null,
       })
 
       supabase.from.mockReturnValue({
         select: vi.fn().mockReturnThis(),
         eq: vi.fn().mockReturnThis(),
-        single: vi.fn().mockResolvedValue({ data: null, error: { message: 'No rows' } })
+        single: vi.fn().mockResolvedValue({ data: null, error: { message: 'No rows' } }),
       })
 
       const result = await getProfileStatus()
@@ -72,13 +72,15 @@ describe('rlsHelpers', () => {
     it('returns true when profile estado is activo', async () => {
       supabase.auth.getSession.mockResolvedValue({
         data: { session: { user: { id: 'user-123' } } },
-        error: null
+        error: null,
       })
 
       supabase.from.mockReturnValue({
         select: vi.fn().mockReturnThis(),
         eq: vi.fn().mockReturnThis(),
-        single: vi.fn().mockResolvedValue({ data: { estado: 'activo', rol: 'maestro' }, error: null })
+        single: vi
+          .fn()
+          .mockResolvedValue({ data: { estado: 'activo', rol: 'maestro' }, error: null }),
       })
 
       const result = await isProfileActive()
@@ -88,13 +90,15 @@ describe('rlsHelpers', () => {
     it('returns false when profile estado is pendiente', async () => {
       supabase.auth.getSession.mockResolvedValue({
         data: { session: { user: { id: 'user-123' } } },
-        error: null
+        error: null,
       })
 
       supabase.from.mockReturnValue({
         select: vi.fn().mockReturnThis(),
         eq: vi.fn().mockReturnThis(),
-        single: vi.fn().mockResolvedValue({ data: { estado: 'pendiente', rol: 'maestro' }, error: null })
+        single: vi
+          .fn()
+          .mockResolvedValue({ data: { estado: 'pendiente', rol: 'maestro' }, error: null }),
       })
 
       const result = await isProfileActive()
@@ -104,13 +108,15 @@ describe('rlsHelpers', () => {
     it('returns false when profile estado is rechazado', async () => {
       supabase.auth.getSession.mockResolvedValue({
         data: { session: { user: { id: 'user-123' } } },
-        error: null
+        error: null,
       })
 
       supabase.from.mockReturnValue({
         select: vi.fn().mockReturnThis(),
         eq: vi.fn().mockReturnThis(),
-        single: vi.fn().mockResolvedValue({ data: { estado: 'rechazado', rol: 'maestro' }, error: null })
+        single: vi
+          .fn()
+          .mockResolvedValue({ data: { estado: 'rechazado', rol: 'maestro' }, error: null }),
       })
 
       const result = await isProfileActive()
@@ -120,7 +126,7 @@ describe('rlsHelpers', () => {
     it('returns false when no session exists', async () => {
       supabase.auth.getSession.mockResolvedValue({
         data: { session: null },
-        error: null
+        error: null,
       })
 
       const result = await isProfileActive()

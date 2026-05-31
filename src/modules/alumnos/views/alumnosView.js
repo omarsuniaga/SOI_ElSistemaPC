@@ -47,8 +47,6 @@ const VALIDATION = {
   sectionMax: 100,
 }
 
-
-
 export async function renderAlumnosView(container) {
   try {
     state.cargando = true
@@ -223,17 +221,18 @@ function renderContent(container) {
 function renderTableRows(alumnos) {
   if (!alumnos.length) return ''
 
-  return alumnos.map(a => {
-    const nombre = a.nombre || '-'
-    const isActive = a.is_active ?? true
-    const accentClass = `border-accent-${isActive ? 'success' : 'secondary'}`
-    const statusDotClass = `bg-${isActive ? 'success' : 'secondary'}`
-    
-    const { porcentaje, nivel } = calcularCompletitud(a)
-    const tieneBadge = nivel !== 'completo'
-    const badgeColor = tieneBadge ? NIVEL_COLOR[nivel] : ''
+  return alumnos
+    .map((a) => {
+      const nombre = a.nombre || '-'
+      const isActive = a.is_active ?? true
+      const accentClass = `border-accent-${isActive ? 'success' : 'secondary'}`
+      const statusDotClass = `bg-${isActive ? 'success' : 'secondary'}`
 
-    return `
+      const { porcentaje, nivel } = calcularCompletitud(a)
+      const tieneBadge = nivel !== 'completo'
+      const badgeColor = tieneBadge ? NIVEL_COLOR[nivel] : ''
+
+      return `
       <div class="list-group-item list-group-item-action d-flex align-items-center justify-content-between p-3 w-100 border-start-accent ${accentClass}" data-id="${a.id}" style="cursor: pointer;">
         <div class="d-flex align-items-center gap-3 flex-grow-1 overflow-hidden">
           <div class="position-relative flex-shrink-0">
@@ -256,11 +255,15 @@ function renderTableRows(alumnos) {
         <div class="d-flex align-items-center gap-3 flex-shrink-0">
           <!-- Columna Badge Completitud (52px de ancho fijo) -->
           <div class="d-flex justify-content-center align-items-center flex-shrink-0" style="width: 52px;">
-            ${tieneBadge ? `
+            ${
+              tieneBadge
+                ? `
               <span class="badge badge-completitud badge-completitud-${badgeColor}" title="Perfil ${porcentaje}% completo — ${NIVEL_LABEL[nivel]}">
                 ${porcentaje}%
               </span>
-            ` : ''}
+            `
+                : ''
+            }
           </div>
           
           <!-- Columna Botón Editar (36px de ancho fijo) -->
@@ -272,11 +275,15 @@ function renderTableRows(alumnos) {
           
           <!-- Columna Botón WhatsApp (36px de ancho fijo) -->
           <div class="d-flex justify-content-center align-items-center flex-shrink-0" style="width: 36px;">
-            ${a.telefono ? `
+            ${
+              a.telefono
+                ? `
               <button class="btn btn-sm btn-success bg-gradient text-white rounded-circle d-flex align-items-center justify-content-center shadow-sm" data-action="whatsapp" data-id="${a.id}" title="Enviar WhatsApp" style="height: 32px; width: 32px; min-height: 32px; padding: 0;">
                 <i class="bi bi-whatsapp"></i>
               </button>
-            ` : ''}
+            `
+                : ''
+            }
           </div>
           
           <!-- Flecha de Navegación -->
@@ -284,7 +291,8 @@ function renderTableRows(alumnos) {
         </div>
       </div>
     `
-  }).join('')
+    })
+    .join('')
 }
 
 function renderEmpty() {
@@ -304,9 +312,15 @@ function attachGlobalEvents(container) {
 
   container.querySelector('#btnAgregarAlumno')?.addEventListener('click', () => openCreateModal())
 
-  container.querySelector('#btnInscribir')?.addEventListener('click', () => window.router?.navigate('alumnos-inscribir'))
-  container.querySelector('#btnReporteMes')?.addEventListener('click', () => window.router?.navigate('alumnos-reporte-mes'))
-  container.querySelector('#btnPdfDemo')?.addEventListener('click', () => window.router?.navigate('alumnos-pdf-demo'))
+  container
+    .querySelector('#btnInscribir')
+    ?.addEventListener('click', () => window.router?.navigate('alumnos-inscribir'))
+  container
+    .querySelector('#btnReporteMes')
+    ?.addEventListener('click', () => window.router?.navigate('alumnos-reporte-mes'))
+  container
+    .querySelector('#btnPdfDemo')
+    ?.addEventListener('click', () => window.router?.navigate('alumnos-pdf-demo'))
 
   container.querySelector('#btnExportarCSV')?.addEventListener('click', () => exportarAlumnosCSV())
 
@@ -350,7 +364,7 @@ function attachGlobalEvents(container) {
 }
 
 function openWhatsAppModal(id) {
-  const alumno = state.alumnosOriginales.find(a => a.id === id)
+  const alumno = state.alumnosOriginales.find((a) => a.id === id)
   if (!alumno || !alumno.telefono) return
 
   AppModal.open({
@@ -376,7 +390,7 @@ function openWhatsAppModal(id) {
       const msg = modalBody.querySelector('#modal-whatsapp-msg').value.trim()
       const url = whatsappLink(alumno.telefono, msg)
       if (url) window.open(url, '_blank')
-    }
+    },
   })
 }
 
@@ -386,9 +400,10 @@ function applyFilters() {
   const filtroCompletitud = currentContainer.querySelector('#filtroCompletitud')?.value || 'todos'
   const filtroInstrumento = currentContainer.querySelector('#filtroInstrumento')?.value || 'todos'
 
-  state.alumnos = state.alumnosOriginales.filter(a => {
+  state.alumnos = state.alumnosOriginales.filter((a) => {
     // 1. Filtro de búsqueda por texto
-    const matchSearch = !searchTerm ||
+    const matchSearch =
+      !searchTerm ||
       (a.nombre || '').toLowerCase().includes(searchTerm) ||
       (a.instrumento || '').toLowerCase().includes(searchTerm) ||
       (a.telefono || '').toLowerCase().includes(searchTerm) ||
@@ -396,18 +411,22 @@ function applyFilters() {
 
     // 2. Filtro por WhatsApp (Tiene número de teléfono cargado)
     const tieneWhatsapp = !!a.telefono && a.telefono.trim() !== ''
-    const matchWhatsapp = filtroWhatsapp === 'todos' ||
+    const matchWhatsapp =
+      filtroWhatsapp === 'todos' ||
       (filtroWhatsapp === 'con_whatsapp' && tieneWhatsapp) ||
       (filtroWhatsapp === 'sin_whatsapp' && !tieneWhatsapp)
 
     // 3. Filtro por Completitud (Rango de Badge)
     const { nivel } = calcularCompletitud(a)
-    const matchCompletitud = filtroCompletitud === 'todos' ||
-      (filtroCompletitud === nivel)
+    const matchCompletitud = filtroCompletitud === 'todos' || filtroCompletitud === nivel
 
     // 4. Filtro por Instrumento
-    const tieneInstrumento = !!a.instrumento && a.instrumento.trim() !== '' && a.instrumento.toLowerCase() !== 'sin instrumento especificado'
-    const matchInstrumento = filtroInstrumento === 'todos' ||
+    const tieneInstrumento =
+      !!a.instrumento &&
+      a.instrumento.trim() !== '' &&
+      a.instrumento.toLowerCase() !== 'sin instrumento especificado'
+    const matchInstrumento =
+      filtroInstrumento === 'todos' ||
       (filtroInstrumento === 'con_instrumento' && tieneInstrumento) ||
       (filtroInstrumento === 'sin_instrumento' && !tieneInstrumento)
 
@@ -439,8 +458,9 @@ function applyFilters() {
 }
 
 function getParentescoOptions(selectedValue = '') {
-  return PARENTESCOS.map(p =>
-    `<option value="${p.value}" ${p.value === selectedValue ? 'selected' : ''}>${p.label}</option>`
+  return PARENTESCOS.map(
+    (p) =>
+      `<option value="${p.value}" ${p.value === selectedValue ? 'selected' : ''}>${p.label}</option>`,
   ).join('')
 }
 
@@ -568,13 +588,23 @@ async function collectAndValidateAlumno(modalBody, existingAlumno = null) {
   const genero = modalBody.querySelector('#modal-genero').value
   const instrumento = modalBody.querySelector('#modal-instrumento').value.trim()
   const familiarNombre = modalBody.querySelector('#modal-familiar-nombre').value.trim()
-  const familiarTelefono = modalBody.querySelector('#modal-familiar-telefono-input').value.trim() || telefono
+  const familiarTelefono =
+    modalBody.querySelector('#modal-familiar-telefono-input').value.trim() || telefono
   const familiarParentesco = modalBody.querySelector('#modal-familiar-parentesco-input').value
   const esActivo = modalBody.querySelector('#modal-esActivo').checked
 
-  if (!nombre) { AppToast.error('El nombre es obligatorio'); return null }
-  if (!instrumento) { AppToast.error('El instrumento es obligatorio'); return null }
-  if (!telefono) { AppToast.error('El teléfono es obligatorio para WhatsApp'); return null }
+  if (!nombre) {
+    AppToast.error('El nombre es obligatorio')
+    return null
+  }
+  if (!instrumento) {
+    AppToast.error('El instrumento es obligatorio')
+    return null
+  }
+  if (!telefono) {
+    AppToast.error('El teléfono es obligatorio para WhatsApp')
+    return null
+  }
 
   return {
     nombre: nombre,
@@ -588,9 +618,14 @@ async function collectAndValidateAlumno(modalBody, existingAlumno = null) {
     familiar_nombre: familiarNombre || null,
     familiar_telefono: normalizePhone(familiarTelefono) || familiarTelefono || null,
     familiar_parentesco: familiarParentesco || null,
-    contacto_emergencia_nombre: modalBody.querySelector('#modal-contacto-emergencia-nombre').value.trim() || null,
-    contacto_emergencia_telefono: normalizePhone(modalBody.querySelector('#modal-contacto-emergencia-telefono').value.trim()) || modalBody.querySelector('#modal-contacto-emergencia-telefono').value.trim() || null,
-    contacto_emergencia_parentesco: modalBody.querySelector('#modal-contacto-emergencia-parentesco').value || null,
+    contacto_emergencia_nombre:
+      modalBody.querySelector('#modal-contacto-emergencia-nombre').value.trim() || null,
+    contacto_emergencia_telefono:
+      normalizePhone(modalBody.querySelector('#modal-contacto-emergencia-telefono').value.trim()) ||
+      modalBody.querySelector('#modal-contacto-emergencia-telefono').value.trim() ||
+      null,
+    contacto_emergencia_parentesco:
+      modalBody.querySelector('#modal-contacto-emergencia-parentesco').value || null,
     condiciones_medicas: modalBody.querySelector('#modal-condiciones-medicas').value.trim() || null,
     alergias: modalBody.querySelector('#modal-alergias').value.trim() || null,
     medicamentos: modalBody.querySelector('#modal-medicamentos').value.trim() || null,
@@ -612,12 +647,12 @@ function openCreateModal() {
       state.alumnosOriginales.push(nuevo)
       applyFilters()
       AppToast.success('Alumno creado exitosamente')
-    }
+    },
   })
 }
 
 function openEditModal(id) {
-  const alumno = state.alumnosOriginales.find(a => a.id === id)
+  const alumno = state.alumnosOriginales.find((a) => a.id === id)
   if (!alumno) {
     AppToast.error('Alumno no encontrado')
     return
@@ -635,7 +670,7 @@ function openEditModal(id) {
         if (!datos) return false
 
         await actualizarAlumno(state.editando, datos)
-        const idx = state.alumnosOriginales.findIndex(a => a.id === state.editando)
+        const idx = state.alumnosOriginales.findIndex((a) => a.id === state.editando)
         if (idx !== -1) {
           state.alumnosOriginales[idx] = { ...state.alumnosOriginales[idx], ...datos }
         }
@@ -646,12 +681,12 @@ function openEditModal(id) {
         AppToast.error(err.message || 'Error al guardar los cambios')
         return false
       }
-    }
+    },
   })
 }
 
 function openViewModal(id) {
-  const alumno = state.alumnosOriginales.find(a => a.id === id)
+  const alumno = state.alumnosOriginales.find((a) => a.id === id)
   if (!alumno) {
     AppToast.error('Alumno no encontrado')
     return
@@ -709,30 +744,44 @@ function openViewModal(id) {
             <label class="form-label fw-bold">Familiar/Representante</label>
             <p class="form-control-plaintext">${escapeHTML(alumno.familiar_nombre || '-')}</p>
           </div>
-          ${alumno.telefono ? `
+          ${
+            alumno.telefono
+              ? `
             <div class="mb-2">
               <label class="form-label fw-bold">Teléfono (WhatsApp)</label>
               <p class="form-control-plaintext"><a href="${whatsappLink(alumno.telefono)}" target="_blank" class="text-success text-decoration-none"><i class="bi bi-whatsapp"></i> ${formatPhone(alumno.telefono)}</a></p>
             </div>
-          ` : ''}
+          `
+              : ''
+          }
         </div>
         <div class="col-md-6">
-          ${alumno.email ? `
+          ${
+            alumno.email
+              ? `
             <div class="mb-2">
               <label class="form-label fw-bold">Email</label>
               <p class="form-control-plaintext"><a href="mailto:${escapeHTML(alumno.email)}">${escapeHTML(alumno.email)}</a></p>
             </div>
-          ` : ''}
-          ${alumno.direccion ? `
+          `
+              : ''
+          }
+          ${
+            alumno.direccion
+              ? `
             <div class="mb-2">
               <label class="form-label fw-bold">Dirección</label>
               <p class="form-control-plaintext">${escapeHTML(alumno.direccion)}</p>
             </div>
-          ` : ''}
+          `
+              : ''
+          }
         </div>
       </div>
       
-      ${(alumno.contacto_emergencia_nombre || alumno.contacto_emergencia_telefono) ? `
+      ${
+        alumno.contacto_emergencia_nombre || alumno.contacto_emergencia_telefono
+          ? `
       <hr>
       <div class="row">
         <div class="col-12">
@@ -757,9 +806,13 @@ function openViewModal(id) {
           </div>
         </div>
       </div>
-      ` : ''}
+      `
+          : ''
+      }
 
-      ${(alumno.familiar_nombre || alumno.familiar_telefono) ? `
+      ${
+        alumno.familiar_nombre || alumno.familiar_telefono
+          ? `
       <div class="row">
         <div class="col-12">
           <h6 class="text-primary"><i class="bi bi-people me-1"></i>Datos del Familiar</h6>
@@ -783,9 +836,13 @@ function openViewModal(id) {
           </div>
         </div>
       </div>
-      ` : ''}
+      `
+          : ''
+      }
 
-      ${(alumno.condiciones_medicas || alumno.alergias || alumno.medicamentos) ? `
+      ${
+        alumno.condiciones_medicas || alumno.alergias || alumno.medicamentos
+          ? `
       <div class="row">
         <div class="col-12">
           <h6 class="text-warning"><i class="bi bi-heart-pulse me-1"></i>Información Médica</h6>
@@ -809,7 +866,9 @@ function openViewModal(id) {
           </div>
         </div>
       </div>
-      ` : ''}
+      `
+          : ''
+      }
 
       <div class="row mt-2 pt-2 border-top">
         <div class="col-6">
@@ -823,7 +882,9 @@ function openViewModal(id) {
       </div>
       
       <!-- ── Wizard fields: Perfil Musical ───────────────────────────────── -->
-      ${(alumno.tiene_conocimientos_musicales !== undefined || alumno.interes_musical) ? `
+      ${
+        alumno.tiene_conocimientos_musicales !== undefined || alumno.interes_musical
+          ? `
       <div class="row mt-3 pt-2 border-top">
         <div class="col-12">
           <h6 class="text-info"><i class="bi bi-music-note-beamed me-1"></i>Perfil Musical</h6>
@@ -834,7 +895,9 @@ function openViewModal(id) {
             <p class="form-control-plaintext">${alumno.tiene_conocimientos_musicales ? 'Sí' : 'No'}</p>
           </div>
         </div>
-        ${alumno.tiene_conocimientos_musicales ? `
+        ${
+          alumno.tiene_conocimientos_musicales
+            ? `
         <div class="col-md-4">
           <div class="mb-2">
             <label class="form-label fw-bold">Instrumento previo</label>
@@ -847,7 +910,9 @@ function openViewModal(id) {
             <p class="form-control-plaintext">${escapeHTML(alumno.nivel_lectura_musical || '-')}</p>
           </div>
         </div>
-        ` : ''}
+        `
+            : ''
+        }
         <div class="col-md-4">
           <div class="mb-2">
             <label class="form-label fw-bold">Interés musical</label>
@@ -866,7 +931,9 @@ function openViewModal(id) {
             <p class="form-control-plaintext">${alumno.iniciacion_musical_requerida ? 'Sí' : 'No'}</p>
           </div>
         </div>
-        ${alumno.iniciacion_musical_requerida ? `
+        ${
+          alumno.iniciacion_musical_requerida
+            ? `
         <div class="col-md-6">
           <div class="mb-2">
             <label class="form-label fw-bold">Apto para audición desde</label>
@@ -879,40 +946,60 @@ function openViewModal(id) {
             <p class="form-control-plaintext">${escapeHTML(alumno.fecha_fin_iniciacion || '-')}</p>
           </div>
         </div>
-        ` : ''}
+        `
+            : ''
+        }
       </div>
-      ` : ''}
+      `
+          : ''
+      }
 
       <!-- ── Wizard fields: Salud ──────────────────────────────────────────── -->
-      ${(alumno.problemas_conducta !== undefined || alumno.alergias_descripcion || alumno.tiene_condicion_transmisible) ? `
+      ${
+        alumno.problemas_conducta !== undefined ||
+        alumno.alergias_descripcion ||
+        alumno.tiene_condicion_transmisible
+          ? `
       <div class="row mt-3 pt-2 border-top">
         <div class="col-12">
           <h6 class="text-warning"><i class="bi bi-bandaid me-1"></i>Salud y Conducta (Wizard)</h6>
         </div>
-        ${alumno.alergias_descripcion ? `
+        ${
+          alumno.alergias_descripcion
+            ? `
         <div class="col-md-6">
           <div class="mb-2">
             <label class="form-label fw-bold">Descripción alergias</label>
             <p class="form-control-plaintext">${escapeHTML(alumno.alergias_descripcion)}</p>
           </div>
         </div>
-        ` : ''}
-        ${alumno.tiene_condicion_transmisible && alumno.condicion_transmisible_descripcion ? `
+        `
+            : ''
+        }
+        ${
+          alumno.tiene_condicion_transmisible && alumno.condicion_transmisible_descripcion
+            ? `
         <div class="col-md-6">
           <div class="mb-2">
             <label class="form-label fw-bold">Condición transmisible</label>
             <p class="form-control-plaintext">${escapeHTML(alumno.condicion_transmisible_descripcion)}</p>
           </div>
         </div>
-        ` : ''}
-        ${alumno.alergia_medicamento && alumno.alergia_medicamento_descripcion ? `
+        `
+            : ''
+        }
+        ${
+          alumno.alergia_medicamento && alumno.alergia_medicamento_descripcion
+            ? `
         <div class="col-md-6">
           <div class="mb-2">
             <label class="form-label fw-bold">Alergia medicamento</label>
             <p class="form-control-plaintext">${escapeHTML(alumno.alergia_medicamento_descripcion)}</p>
           </div>
         </div>
-        ` : ''}
+        `
+            : ''
+        }
         <div class="col-md-6">
           <div class="mb-2">
             <label class="form-label fw-bold">Impedimento social</label>
@@ -926,10 +1013,14 @@ function openViewModal(id) {
           </div>
         </div>
       </div>
-      ` : ''}
+      `
+          : ''
+      }
 
       <!-- ── Wizard fields: Datos Escolares ───────────────────────────────── -->
-      ${(alumno.centro_estudios || alumno.grado_nivel || alumno.padres_en_vida) ? `
+      ${
+        alumno.centro_estudios || alumno.grado_nivel || alumno.padres_en_vida
+          ? `
       <div class="row mt-3 pt-2 border-top">
         <div class="col-12">
           <h6 class="text-secondary"><i class="bi bi-mortarboard me-1"></i>Datos Escolares</h6>
@@ -953,10 +1044,14 @@ function openViewModal(id) {
           </div>
         </div>
       </div>
-      ` : ''}
+      `
+          : ''
+      }
 
       <!-- ── Wizard fields: Compromisos ───────────────────────────────────── -->
-      ${(alumno.acepta_beca_4500 !== undefined || alumno.acepta_pago_600 !== undefined) ? `
+      ${
+        alumno.acepta_beca_4500 !== undefined || alumno.acepta_pago_600 !== undefined
+          ? `
       <div class="row mt-3 pt-2 border-top">
         <div class="col-12">
           <h6 class="text-success"><i class="bi bi-check-circle me-1"></i>Compromisos</h6>
@@ -973,16 +1068,22 @@ function openViewModal(id) {
             <p class="form-control-plaintext">${alumno.acepta_pago_600 ? '<span class="badge bg-success">Sí</span>' : '<span class="badge bg-secondary">No</span>'}</p>
           </div>
         </div>
-        ${alumno.fecha_aceptacion_compromisos ? `
+        ${
+          alumno.fecha_aceptacion_compromisos
+            ? `
         <div class="col-md-4">
           <div class="mb-2">
             <label class="form-label fw-bold">Fecha aceptación</label>
             <p class="form-control-plaintext small">${formatDate(alumno.fecha_aceptacion_compromisos)}</p>
           </div>
         </div>
-        ` : ''}
+        `
+            : ''
+        }
       </div>
-      ` : ''}
+      `
+          : ''
+      }
 
       <div class="d-flex justify-content-end gap-2 pt-3 border-top mt-4">
         <button class="btn btn-outline-danger" id="modal-view-btn-delete">
@@ -1002,12 +1103,12 @@ function openViewModal(id) {
         AppModal.close()
         setTimeout(() => openDeleteModal(alumno.id), 300)
       })
-    }
+    },
   })
 }
 
 function openDeleteModal(id) {
-  const alumno = state.alumnosOriginales.find(a => a.id === id)
+  const alumno = state.alumnosOriginales.find((a) => a.id === id)
   if (!alumno) {
     AppToast.error('Alumno no encontrado')
     return
@@ -1028,11 +1129,11 @@ function openDeleteModal(id) {
            </div>`,
     onSave: async () => {
       await eliminarAlumno(id)
-      state.alumnosOriginales = state.alumnosOriginales.filter(a => a.id !== id)
+      state.alumnosOriginales = state.alumnosOriginales.filter((a) => a.id !== id)
       applyFilters()
       AppModal.close()
       AppToast.success('Alumno eliminado correctamente')
-    }
+    },
   })
 
   // Ocultamos temporalmente el botón de guardar hasta tener la respuesta
@@ -1067,12 +1168,16 @@ function openDeleteModal(id) {
         `
       } else {
         // Alumno con clases activas - Alerta Crítica
-        const clasesHtml = inscripciones.map(i => `
+        const clasesHtml = inscripciones
+          .map(
+            (i) => `
           <li class="d-flex align-items-center gap-2 py-2 border-bottom border-light">
             <i class="bi bi-journal-bookmark-fill text-danger fs-5"></i>
             <span class="fw-semibold text-dark" style="font-size: 0.9rem;">${escapeHTML(i.clase_nombre)}</span>
           </li>
-        `).join('')
+        `,
+          )
+          .join('')
 
         bodyEl.innerHTML = `
           <div class="alert alert-danger d-flex align-items-start gap-3 border-0 rounded-4 p-3 mb-4" style="background: rgba(220, 53, 69, 0.08); color: #721c24;">
@@ -1140,17 +1245,17 @@ function exportarAlumnosCSV() {
   }
 
   const headers = ['Nombre', 'Email', 'Teléfono', 'Estado', 'Fecha Nac.', 'Sección']
-  const rows = state.alumnosOriginales.map(a => [
+  const rows = state.alumnosOriginales.map((a) => [
     a.nombre || '',
     a.email || '',
     a.telefono || '',
     a.estado || 'activo',
     a.fecha_nacimiento || '',
-    a.section || ''
+    a.section || '',
   ])
 
   const csvContent = [headers, ...rows]
-    .map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+    .map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(','))
     .join('\n')
 
   const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
@@ -1161,5 +1266,3 @@ function exportarAlumnosCSV() {
 
   AppToast.success('CSV exportado exitosamente')
 }
-
-

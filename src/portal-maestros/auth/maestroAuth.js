@@ -14,11 +14,15 @@ export async function loginMaestro(email, password) {
 
   if (error || !data.user) {
     const msg = error?.message || ''
-    if (msg.toLowerCase().includes('email not confirmed') || msg.toLowerCase().includes('email confirmation')) {
+    if (
+      msg.toLowerCase().includes('email not confirmed') ||
+      msg.toLowerCase().includes('email confirmation')
+    ) {
       return {
         success: false,
         pendingApproval: true,
-        error: 'Tu cuenta fue registrada pero aún no fue confirmada. Pedile al administrador que complete la aprobación.',
+        error:
+          'Tu cuenta fue registrada pero aún no fue confirmada. Pedile al administrador que complete la aprobación.',
       }
     }
     return { success: false, error: msg || 'Error de autenticación' }
@@ -69,13 +73,16 @@ export async function loginMaestro(email, password) {
   if (userRole === 'admin') {
     // Garantizar que el row del admin en profiles tenga rol='admin' y estado='activo'
     // Esto permite que el RPC approve_maestro_profile lo reconozca como admin
-    await supabase.from('profiles').upsert({
-      id: data.user.id,
-      email: data.user.email,
-      nombre_completo: data.user.user_metadata?.full_name || 'Administrador',
-      rol: 'admin',
-      estado: 'activo',
-    }, { onConflict: 'id', ignoreDuplicates: false })
+    await supabase.from('profiles').upsert(
+      {
+        id: data.user.id,
+        email: data.user.email,
+        nombre_completo: data.user.user_metadata?.full_name || 'Administrador',
+        rol: 'admin',
+        estado: 'activo',
+      },
+      { onConflict: 'id', ignoreDuplicates: false },
+    )
 
     // Si el admin también tiene perfil de maestro, usar sus datos reales
     // para que getMisClases() y las queries de sesiones usen el ID correcto
@@ -129,10 +136,7 @@ export async function loginMaestro(email, password) {
 
     if (byEmail) {
       // Linkar el user_id para futuros logins sin necesidad de fallback
-      await supabase
-        .from('maestros')
-        .update({ user_id: data.user.id })
-        .eq('id', byEmail.id)
+      await supabase.from('maestros').update({ user_id: data.user.id }).eq('id', byEmail.id)
       maestro = { ...byEmail, user_id: data.user.id }
     }
   }
@@ -149,7 +153,8 @@ export async function loginMaestro(email, password) {
       .from('maestros')
       .insert({
         user_id: data.user.id,
-        nombre_completo: profileData?.nombre_completo || data.user.user_metadata?.full_name || data.user.email,
+        nombre_completo:
+          profileData?.nombre_completo || data.user.user_metadata?.full_name || data.user.email,
         correo: data.user.email,
         instrumento: data.user.user_metadata?.instrumento || '',
         activo: true,

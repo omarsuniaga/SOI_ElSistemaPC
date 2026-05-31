@@ -22,7 +22,7 @@ export async function login(email, password, remember = false) {
   const { data, error } = await supabaseAuth.signIn(email, password)
 
   console.log('🔑 login result:', { data, error })
-  
+
   if (error) {
     console.error('🔑 login error:', error)
     return { user: null, session: null, error }

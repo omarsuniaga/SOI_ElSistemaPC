@@ -1,9 +1,9 @@
-import { supabase } from '../../../lib/supabaseClient.js';
+import { supabase } from '../../../lib/supabaseClient.js'
 
 let state = {
   ausencias: [],
-  loading: true
-};
+  loading: true,
+}
 
 export function renderAusenciaHistorial() {
   return `
@@ -32,20 +32,22 @@ export function renderAusenciaHistorial() {
         </table>
       </div>
     </div>
-  `;
+  `
 }
 
 function renderRows() {
-  if (!state.ausencias.length) return '';
-  
-  return state.ausencias.map(a => {
-    const badgeClass = {
-      pendiente: 'bg-warning text-dark',
-      aprobada: 'bg-success',
-      rechazad: 'bg-danger'
-    }[a.estado] || 'bg-secondary';
+  if (!state.ausencias.length) return ''
 
-    return `
+  return state.ausencias
+    .map((a) => {
+      const badgeClass =
+        {
+          pendiente: 'bg-warning text-dark',
+          aprobada: 'bg-success',
+          rechazad: 'bg-danger',
+        }[a.estado] || 'bg-secondary'
+
+      return `
       <tr>
         <td>${formatDate(a.fecha_inicio)}</td>
         <td>${formatDate(a.fecha_fin)}</td>
@@ -53,53 +55,55 @@ function renderRows() {
         <td>${a.sustituto_nombre || '-'}</td>
         <td><span class="badge ${badgeClass}">${a.estado}</span></td>
       </tr>
-    `;
-  }).join('');
+    `
+    })
+    .join('')
 }
 
 function formatDate(fecha) {
-  if (!fecha) return '-';
+  if (!fecha) return '-'
   return new Date(fecha).toLocaleDateString('es-DO', {
     year: 'numeric',
     month: 'short',
-    day: 'numeric'
-  });
+    day: 'numeric',
+  })
 }
 
 export async function cargarAusencias() {
-  state.loading = true;
-  actualizarVista();
+  state.loading = true
+  actualizarVista()
 
   try {
-    const user = (await supabase.auth.getUser()).data.user;
-    if (!user) throw new Error('No hay sesión activa');
+    const user = (await supabase.auth.getUser()).data.user
+    if (!user) throw new Error('No hay sesión activa')
 
     const { data, error } = await supabase
       .from('ausencias')
       .select('*, sustituto:maestros!sustituto_id(nombre)')
       .eq('maestro_id', user.id)
-      .order('fecha_inicio', { ascending: false });
+      .order('fecha_inicio', { ascending: false })
 
-    if (error) throw error;
+    if (error) throw error
 
-    state.ausencias = data?.map(a => ({
-      ...a,
-      sustituto_nombre: a.sustituto?.nombre
-    })) || [];
+    state.ausencias =
+      data?.map((a) => ({
+        ...a,
+        sustituto_nombre: a.sustituto?.nombre,
+      })) || []
   } catch (error) {
-    console.error('Error cargando ausencias:', error);
+    console.error('Error cargando ausencias:', error)
   } finally {
-    state.loading = false;
-    actualizarVista();
+    state.loading = false
+    actualizarVista()
   }
 }
 
 function actualizarVista() {
-  const container = document.getElementById('ausenciaHistorialContainer');
-  if (!container) return;
+  const container = document.getElementById('ausenciaHistorialContainer')
+  if (!container) return
 
-  container.innerHTML = renderAusenciaHistorial();
+  container.innerHTML = renderAusenciaHistorial()
 }
 
-window.addEventListener('ausenciaSolicitada', cargarAusencias);
-window.addEventListener('ausenciaActualizada', cargarAusencias);
+window.addEventListener('ausenciaSolicitada', cargarAusencias)
+window.addEventListener('ausenciaActualizada', cargarAusencias)

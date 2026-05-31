@@ -34,17 +34,17 @@ function getTeacherEmail(ausencia) {
 }
 
 const TIPO_CONFIG = {
-  enfermedad:   { label: 'Médica',        icon: 'bi-heart-pulse-fill',  color: '#ef4444' },
-  personal:     { label: 'Personal',      icon: 'bi-person-fill',       color: '#3b82f6' },
-  capacitacion: { label: 'Capacitación',  icon: 'bi-mortarboard-fill',  color: '#8b5cf6' },
-  vacaciones:   { label: 'Vacaciones',    icon: 'bi-sun-fill',          color: '#f59e0b' },
-  otro:         { label: 'Otro',          icon: 'bi-three-dots',        color: '#6b7280' },
+  enfermedad: { label: 'Médica', icon: 'bi-heart-pulse-fill', color: '#ef4444' },
+  personal: { label: 'Personal', icon: 'bi-person-fill', color: '#3b82f6' },
+  capacitacion: { label: 'Capacitación', icon: 'bi-mortarboard-fill', color: '#8b5cf6' },
+  vacaciones: { label: 'Vacaciones', icon: 'bi-sun-fill', color: '#f59e0b' },
+  otro: { label: 'Otro', icon: 'bi-three-dots', color: '#6b7280' },
 }
 
 const URG_CONFIG = {
-  baja:  { label: 'Baja',  color: '#22c55e', bg: 'rgba(34,197,94,0.12)' },
+  baja: { label: 'Baja', color: '#22c55e', bg: 'rgba(34,197,94,0.12)' },
   media: { label: 'Media', color: '#f59e0b', bg: 'rgba(245,158,11,0.12)' },
-  alta:  { label: 'Alta',  color: '#ef4444', bg: 'rgba(239,68,68,0.12)' },
+  alta: { label: 'Alta', color: '#ef4444', bg: 'rgba(239,68,68,0.12)' },
 }
 
 function getCoverageSummary(ausencia) {
@@ -275,14 +275,28 @@ function injectCardStyles() {
   document.head.appendChild(style)
 }
 
-export function createAusenciaAprobacionCard(ausencia, { onApprove = () => {}, onReject = () => {} } = {}) {
+export function createAusenciaAprobacionCard(
+  ausencia,
+  { onApprove = () => {}, onReject = () => {} } = {},
+) {
   injectCardStyles()
 
   const tipo = TIPO_CONFIG[ausencia.tipo_ausencia] || TIPO_CONFIG.otro
-  const urg  = URG_CONFIG[ausencia.urgencia]   || { label: ausencia.urgencia || 'Normal', color: '#6b7280', bg: 'rgba(107,114,128,0.12)' }
-  const affectedCount = Array.isArray(ausencia.clases_afectadas) ? ausencia.clases_afectadas.length : 0
+  const urg = URG_CONFIG[ausencia.urgencia] || {
+    label: ausencia.urgencia || 'Normal',
+    color: '#6b7280',
+    bg: 'rgba(107,114,128,0.12)',
+  }
+  const affectedCount = Array.isArray(ausencia.clases_afectadas)
+    ? ausencia.clases_afectadas.length
+    : 0
   const teacherName = getTeacherName(ausencia)
-  const initials = teacherName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()
+  const initials = teacherName
+    .split(' ')
+    .map((n) => n[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase()
 
   const card = document.createElement('article')
   card.className = 'ausencia-approval-card'
@@ -290,7 +304,11 @@ export function createAusenciaAprobacionCard(ausencia, { onApprove = () => {}, o
   card.style.setProperty('--aac-tipo-color', tipo.color)
 
   const submittedAt = ausencia.created_at
-    ? new Date(ausencia.created_at).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' })
+    ? new Date(ausencia.created_at).toLocaleDateString('es-ES', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+      })
     : ''
 
   card.innerHTML = `
@@ -349,18 +367,18 @@ export function createAusenciaAprobacionCard(ausencia, { onApprove = () => {}, o
   const getNotes = () => card.querySelector('[data-decision-notes]')?.value?.trim() || ''
 
   const approveBtn = card.querySelector('[data-action="approve"]')
-  const rejectBtn  = card.querySelector('[data-action="reject"]')
+  const rejectBtn = card.querySelector('[data-action="reject"]')
 
   approveBtn.addEventListener('click', async () => {
     approveBtn.disabled = true
-    rejectBtn.disabled  = true
+    rejectBtn.disabled = true
     approveBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Aprobando...'
     await onApprove(ausencia.id, getNotes())
   })
 
   rejectBtn.addEventListener('click', async () => {
     approveBtn.disabled = true
-    rejectBtn.disabled  = true
+    rejectBtn.disabled = true
     rejectBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Rechazando...'
     await onReject(ausencia.id, getNotes())
   })

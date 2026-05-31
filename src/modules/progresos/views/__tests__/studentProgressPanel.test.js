@@ -31,9 +31,10 @@ describe('studentProgressPanel (Phase B update)', () => {
     }
 
     // Panel should render null rate as "—", not "0%"
-    const rateDisplay = mockProgress.attendance.rate !== null
-      ? Math.round(mockProgress.attendance.rate * 100) + '%'
-      : '—'
+    const rateDisplay =
+      mockProgress.attendance.rate !== null
+        ? Math.round(mockProgress.attendance.rate * 100) + '%'
+        : '—'
 
     expect(rateDisplay).toBe('—')
   })

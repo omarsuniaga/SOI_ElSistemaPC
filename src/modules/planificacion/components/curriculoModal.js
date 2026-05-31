@@ -76,7 +76,9 @@ export function openCurriculoListModal(onClose) {
             </tr>
           </thead>
           <tbody>
-            ${lista.map(c => `
+            ${lista
+              .map(
+                (c) => `
               <tr>
                 <td class="fw-semibold">${c.instrumento}</td>
                 <td>${c.nivel}</td>
@@ -91,17 +93,19 @@ export function openCurriculoListModal(onClose) {
                     <i class="bi bi-pencil"></i>
                   </button>
                 </td>
-              </tr>`).join('')}
+              </tr>`,
+              )
+              .join('')}
           </tbody>
         </table>`
 
-      body.querySelectorAll('.cl-toggle').forEach(tog => {
+      body.querySelectorAll('.cl-toggle').forEach((tog) => {
         tog.addEventListener('change', async () => {
           await toggleActivoCurriculo(tog.dataset.id, tog.checked)
           AppToast.success(tog.checked ? 'Currículo activado' : 'Currículo desactivado')
         })
       })
-      body.querySelectorAll('.cl-btn-edit').forEach(btn => {
+      body.querySelectorAll('.cl-btn-edit').forEach((btn) => {
         btn.addEventListener('click', () => openCurriculoEditModal(btn.dataset.id, _render))
       })
     } catch (err) {
@@ -162,9 +166,16 @@ function _openCurriculoCreateModal(onSaved) {
   el.querySelector('#cc-btn-save').addEventListener('click', async () => {
     const instrumento = el.querySelector('#cc-instrumento').value.trim()
     const nivel = el.querySelector('#cc-nivel').value.trim()
-    if (!instrumento || !nivel) { AppToast.error('Instrumento y nivel son obligatorios'); return }
+    if (!instrumento || !nivel) {
+      AppToast.error('Instrumento y nivel son obligatorios')
+      return
+    }
     try {
-      await crearCurriculo({ instrumento, nivel, descripcion: el.querySelector('#cc-desc').value.trim() })
+      await crearCurriculo({
+        instrumento,
+        nivel,
+        descripcion: el.querySelector('#cc-desc').value.trim(),
+      })
       AppToast.success('Currículo creado')
       modal.hide()
       onSaved?.()
@@ -181,11 +192,16 @@ function _openCurriculoCreateModal(onSaved) {
 export async function openCurriculoEditModal(curriculoId, onSaved) {
   const { data: cur, error } = await supabase
     .from('curriculos')
-    .select(`id, instrumento, nivel, descripcion, curriculo_pilares(id, nombre, orden, curriculo_objetivos(id, descripcion, orden))`)
+    .select(
+      `id, instrumento, nivel, descripcion, curriculo_pilares(id, nombre, orden, curriculo_objetivos(id, descripcion, orden))`,
+    )
     .eq('id', curriculoId)
     .single()
 
-  if (error) { AppToast.error(error.message); return }
+  if (error) {
+    AppToast.error(error.message)
+    return
+  }
 
   const el = document.createElement('div')
   el.innerHTML = `
@@ -214,75 +230,83 @@ export async function openCurriculoEditModal(curriculoId, onSaved) {
       <div class="mb-3">
         <label class="form-label fw-semibold">Pilares</label>
         <div id="ce-pilares">
-          ${pilares.map(p => `
+          ${pilares
+            .map(
+              (p) => `
             <div class="cm-pilar" data-pilar-id="${p.id}">
               <div class="cm-pilar-header">
                 <input class="form-control form-control-sm flex-grow-1 pilar-nombre" value="${p.nombre}">
                 <button class="btn btn-sm btn-outline-danger btn-icon-compact pilar-del" title="Eliminar pilar"><i class="bi bi-trash"></i></button>
               </div>
               <div class="cm-pilar-body">
-                ${(p.curriculo_objetivos || []).map(o => `
+                ${(p.curriculo_objetivos || [])
+                  .map(
+                    (o) => `
                   <div class="cm-obj-row" data-obj-id="${o.id}">
                     <input class="form-control form-control-sm cm-obj-input obj-desc" value="${o.descripcion}">
                     <button class="btn btn-sm btn-outline-danger btn-icon-compact obj-del" title="Eliminar"><i class="bi bi-x"></i></button>
-                  </div>`).join('')}
+                  </div>`,
+                  )
+                  .join('')}
                 <div class="mt-2 d-flex gap-2">
                   <input class="form-control form-control-sm new-obj-input" placeholder="Nuevo objetivo...">
                   <button class="btn btn-sm btn-outline-primary btn-icon-compact new-obj-btn" title="Agregar"><i class="bi bi-plus"></i></button>
                 </div>
               </div>
-            </div>`).join('')}
+            </div>`,
+            )
+            .join('')}
         </div>
         <button class="btn btn-outline-secondary btn-sm mt-2" id="ce-add-pilar">
           <i class="bi bi-plus me-1"></i>Agregar pilar
         </button>
       </div>`
 
-    body.querySelectorAll('.pilar-nombre').forEach(inp => {
+    body.querySelectorAll('.pilar-nombre').forEach((inp) => {
       inp.addEventListener('blur', async () => {
         const pilarEl = inp.closest('[data-pilar-id]')
         await actualizarPilar(pilarEl.dataset.pilarId, { nombre: inp.value.trim() })
       })
     })
 
-    body.querySelectorAll('.pilar-del').forEach(btn => {
+    body.querySelectorAll('.pilar-del').forEach((btn) => {
       btn.addEventListener('click', async () => {
         const pilarEl = btn.closest('[data-pilar-id]')
         const id = pilarEl.dataset.pilarId
         if (!confirm('¿Eliminar este pilar y todos sus objetivos?')) return
         await eliminarPilar(id)
-        cur.curriculo_pilares = cur.curriculo_pilares.filter(p => p.id !== id)
+        cur.curriculo_pilares = cur.curriculo_pilares.filter((p) => p.id !== id)
         _renderBody()
       })
     })
 
-    body.querySelectorAll('.obj-desc').forEach(inp => {
+    body.querySelectorAll('.obj-desc').forEach((inp) => {
       inp.addEventListener('blur', async () => {
         const objEl = inp.closest('[data-obj-id]')
         await actualizarObjetivo(objEl.dataset.objId, { descripcion: inp.value.trim() })
       })
     })
 
-    body.querySelectorAll('.obj-del').forEach(btn => {
+    body.querySelectorAll('.obj-del').forEach((btn) => {
       btn.addEventListener('click', async () => {
         const objEl = btn.closest('[data-obj-id]')
         const id = objEl.dataset.objId
         await eliminarObjetivo(id)
         const pilarId = objEl.closest('[data-pilar-id]').dataset.pilarId
-        const pilar = cur.curriculo_pilares.find(p => p.id === pilarId)
-        if (pilar) pilar.curriculo_objetivos = pilar.curriculo_objetivos.filter(o => o.id !== id)
+        const pilar = cur.curriculo_pilares.find((p) => p.id === pilarId)
+        if (pilar) pilar.curriculo_objetivos = pilar.curriculo_objetivos.filter((o) => o.id !== id)
         _renderBody()
       })
     })
 
-    body.querySelectorAll('.new-obj-btn').forEach(btn => {
+    body.querySelectorAll('.new-obj-btn').forEach((btn) => {
       btn.addEventListener('click', async () => {
         const pilarEl = btn.closest('[data-pilar-id]')
         const pilarId = pilarEl.dataset.pilarId
         const inp = pilarEl.querySelector('.new-obj-input')
         const desc = inp.value.trim()
         if (!desc) return
-        const pilar = cur.curriculo_pilares.find(p => p.id === pilarId)
+        const pilar = cur.curriculo_pilares.find((p) => p.id === pilarId)
         const orden = (pilar?.curriculo_objetivos || []).length
         const obj = await crearObjetivo(pilarId, desc, orden)
         if (pilar) pilar.curriculo_objetivos = [...(pilar.curriculo_objetivos || []), obj]

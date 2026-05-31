@@ -14,7 +14,8 @@ describe('Admin Alerts + Dashboard Integration', () => {
   })
 
   it('should verify analytics widget component exists', async () => {
-    const analyticsWidget = await import('../../modules/admin-dashboard/views/analyticsFillingBehaviorWidget.js')
+    const analyticsWidget =
+      await import('../../modules/admin-dashboard/views/analyticsFillingBehaviorWidget.js')
 
     expect(typeof analyticsWidget.analyticsFillingBehaviorWidget).toBe('function')
   })

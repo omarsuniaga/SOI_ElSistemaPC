@@ -91,7 +91,10 @@ export function validarPaso2(data) {
     if (!data.instrumento_previo || !data.instrumento_previo.trim()) {
       errors.instrumento_previo = 'El instrumento previo es requerido'
     }
-    if (!data.nivel_lectura_musical || !NIVEL_LECTURA_MUSICAL_VALUES.includes(data.nivel_lectura_musical)) {
+    if (
+      !data.nivel_lectura_musical ||
+      !NIVEL_LECTURA_MUSICAL_VALUES.includes(data.nivel_lectura_musical)
+    ) {
       errors.nivel_lectura_musical = 'Selecciona un nivel de lectura musical válido'
     }
   }
@@ -109,14 +112,19 @@ export function validarPaso3(data) {
   const errors = {}
 
   if (data.tiene_condicion_transmisible === true) {
-    if (!data.condicion_transmisible_descripcion || !data.condicion_transmisible_descripcion.trim()) {
-      errors.condicion_transmisible_descripcion = 'La descripción de la condición transmisible es requerida'
+    if (
+      !data.condicion_transmisible_descripcion ||
+      !data.condicion_transmisible_descripcion.trim()
+    ) {
+      errors.condicion_transmisible_descripcion =
+        'La descripción de la condición transmisible es requerida'
     }
   }
 
   if (data.tiene_alergia_medicamento === true) {
     if (!data.alergia_medicamento_descripcion || !data.alergia_medicamento_descripcion.trim()) {
-      errors.alergia_medicamento_descripcion = 'La descripción de la alergia a medicamentos es requerida'
+      errors.alergia_medicamento_descripcion =
+        'La descripción de la alergia a medicamentos es requerida'
     }
   }
 

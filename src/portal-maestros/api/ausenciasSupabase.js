@@ -1,13 +1,13 @@
-import { supabase } from '../../lib/supabaseClient.js';
+import { supabase } from '../../lib/supabaseClient.js'
 
 export async function obtenerClasesMaestro(maestroId) {
   const { data, error } = await supabase
     .from('clases')
     .select('id, nombre, instrumento, maestro_principal_id, maestro_suplente_id')
-    .or(`maestro_principal_id.eq.${maestroId},maestro_suplente_id.eq.${maestroId}`);
-  
-  if (error) throw error;
-  return data || [];
+    .or(`maestro_principal_id.eq.${maestroId},maestro_suplente_id.eq.${maestroId}`)
+
+  if (error) throw error
+  return data || []
 }
 
 export async function obtenerSesionesRango(claseIds, start, end) {
@@ -16,30 +16,30 @@ export async function obtenerSesionesRango(claseIds, start, end) {
     .select('clase_id, fecha, hora_inicio, hora_fin, salon_id')
     .in('clase_id', claseIds)
     .gte('fecha', start)
-    .lte('fecha', end);
-  
-  if (error) throw error;
-  return data || [];
+    .lte('fecha', end)
+
+  if (error) throw error
+  return data || []
 }
 
 export async function obtenerHorariosClases(claseIds) {
   const { data, error } = await supabase
     .from('clase_horarios')
     .select('clase_id, dia, hora_inicio, hora_fin, salon_id')
-    .in('clase_id', claseIds);
-  
-  if (error) throw error;
-  return data || [];
+    .in('clase_id', claseIds)
+
+  if (error) throw error
+  return data || []
 }
 
 export async function obtenerSalonesActivos() {
   const { data, error } = await supabase
     .from('salones')
     .select('id, nombre, capacidad')
-    .eq('activo', true);
-  
-  if (error) throw error;
-  return data || [];
+    .eq('activo', true)
+
+  if (error) throw error
+  return data || []
 }
 
 export async function obtenerSesionesOcupadas(fecha, hora) {
@@ -48,10 +48,10 @@ export async function obtenerSesionesOcupadas(fecha, hora) {
     .select('salon_id')
     .eq('fecha', fecha)
     .filter('hora_inicio', 'lte', hora)
-    .filter('hora_fin', 'gt', hora);
-  
-  if (error) throw error;
-  return data || [];
+    .filter('hora_fin', 'gt', hora)
+
+  if (error) throw error
+  return data || []
 }
 
 export async function obtenerMaestrosSuplentes(claseId) {
@@ -59,19 +59,19 @@ export async function obtenerMaestrosSuplentes(claseId) {
     .from('clases')
     .select('maestro_suplente_id')
     .eq('id', claseId)
-    .maybeSingle();
+    .maybeSingle()
 
-  if (claseError) throw claseError;
-  if (!clase?.maestro_suplente_id) return [];
+  if (claseError) throw claseError
+  if (!clase?.maestro_suplente_id) return []
 
   const { data, error } = await supabase
     .from('maestros')
     .select('id, nombre_completo, nombre, apellido, tipo_maestro, puede_ser_suplente')
     .eq('id', clase.maestro_suplente_id)
-    .eq('activo', true);
+    .eq('activo', true)
 
-  if (error) throw error;
-  return data || [];
+  if (error) throw error
+  return data || []
 }
 
 export async function registrarAusencia(payload) {
@@ -79,14 +79,19 @@ export async function registrarAusencia(payload) {
     .from('ausencias_maestros')
     .insert([payload])
     .select()
-    .single();
-  
-  if (error) throw error;
-  return data;
+    .single()
+
+  if (error) throw error
+  return data
 }
 
-export async function crearNotificacionAusencia({ ausencia, maestro, directorProfileId, approvalUrl }) {
-  if (!directorProfileId) return null;
+export async function crearNotificacionAusencia({
+  ausencia,
+  maestro,
+  directorProfileId,
+  approvalUrl,
+}) {
+  if (!directorProfileId) return null
 
   const { data, error } = await supabase
     .from('notificaciones')
@@ -99,19 +104,15 @@ export async function crearNotificacionAusencia({ ausencia, maestro, directorPro
       estado: 'pendiente',
     })
     .select()
-    .single();
+    .single()
 
-  if (error) throw error;
-  return data;
+  if (error) throw error
+  return data
 }
 
 export async function obtenerSalonPorId(id) {
-  const { data, error } = await supabase
-    .from('salones')
-    .select('nombre')
-    .eq('id', id)
-    .single();
-  
-  if (error) throw error;
-  return data;
+  const { data, error } = await supabase.from('salones').select('nombre').eq('id', id).single()
+
+  if (error) throw error
+  return data
 }

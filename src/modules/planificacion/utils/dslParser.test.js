@@ -187,17 +187,41 @@ describe('dslParser', () => {
 
   describe('getTokenSummary', () => {
     it('should return "Sin tokens" for empty input', () => {
-      const result = getTokenSummary({ alumnos: [], contenido: [], sugerencias: [], tareas: [], medidas: [], calificacion: null, objetivos: [] })
+      const result = getTokenSummary({
+        alumnos: [],
+        contenido: [],
+        sugerencias: [],
+        tareas: [],
+        medidas: [],
+        calificacion: null,
+        objetivos: [],
+      })
       expect(result).toBe('Sin tokens')
     })
 
     it('should count alumnos', () => {
-      const result = getTokenSummary({ alumnos: ['Pedro'], contenido: [], sugerencias: [], tareas: [], medidas: [], calificacion: null, objetivos: [] })
+      const result = getTokenSummary({
+        alumnos: ['Pedro'],
+        contenido: [],
+        sugerencias: [],
+        tareas: [],
+        medidas: [],
+        calificacion: null,
+        objetivos: [],
+      })
       expect(result).toContain('1 alumno(s)')
     })
 
     it('should include calificacion', () => {
-      const result = getTokenSummary({ alumnos: [], contenido: [], sugerencias: [], tareas: [], medidas: [], calificacion: { valor: 4, sobre: 5 }, objetivos: [] })
+      const result = getTokenSummary({
+        alumnos: [],
+        contenido: [],
+        sugerencias: [],
+        tareas: [],
+        medidas: [],
+        calificacion: { valor: 4, sobre: 5 },
+        objetivos: [],
+      })
       expect(result).toContain('calificación: 4/5')
     })
   })

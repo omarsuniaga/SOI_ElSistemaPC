@@ -1,4 +1,15 @@
-import { escapeHTML, getInitials, formatDate, formatCalificacion, getCalificacionColor, getCalificacionLabel, getTipoLabel, getTipoBadgeClass, getEstadoClass, getEstadoLabel } from '../utils/progresosUtils.js'
+import {
+  escapeHTML,
+  getInitials,
+  formatDate,
+  formatCalificacion,
+  getCalificacionColor,
+  getCalificacionLabel,
+  getTipoLabel,
+  getTipoBadgeClass,
+  getEstadoClass,
+  getEstadoLabel,
+} from '../utils/progresosUtils.js'
 
 export function renderProgresosTable(progresos, alumnos = [], clases = []) {
   if (!progresos.length) {
@@ -24,7 +35,7 @@ export function renderProgresosTable(progresos, alumnos = [], clases = []) {
     `
   }
 
-  const rows = progresos.map(p => renderProgresoRow(p, alumnos, clases)).join('')
+  const rows = progresos.map((p) => renderProgresoRow(p, alumnos, clases)).join('')
 
   return `
     <table class="table table-hover" id="progresosTable">
@@ -47,10 +58,10 @@ export function renderProgresosTable(progresos, alumnos = [], clases = []) {
 }
 
 export function renderProgresoRow(progreso, alumnos = [], clases = []) {
-  const alumno = alumnos.find(a => a.id === progreso.alumno_id)
-  const clase = clases.find(c => c.id === progreso.clase_id)
-  const alumnoName = alumno ? (alumno.name || alumno.nombre || 'Sin nombre') : 'Sin alumno'
-  const claseName = clase ? (clase.nombre || 'Sin nombre') : 'Sin clase'
+  const alumno = alumnos.find((a) => a.id === progreso.alumno_id)
+  const clase = clases.find((c) => c.id === progreso.clase_id)
+  const alumnoName = alumno ? alumno.name || alumno.nombre || 'Sin nombre' : 'Sin alumno'
+  const claseName = clase ? clase.nombre || 'Sin nombre' : 'Sin clase'
 
   return `
     <tr data-id="${progreso.id}">

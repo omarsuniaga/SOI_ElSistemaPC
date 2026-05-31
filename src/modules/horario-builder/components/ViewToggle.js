@@ -1,13 +1,13 @@
 // src/modules/horario-builder/components/ViewToggle.js
 
-export const VIEWS = ['grid', 'teacher', 'room', 'student'];
+export const VIEWS = ['grid', 'teacher', 'room', 'student']
 
 const VIEW_LABELS = {
-  grid:    { label: 'Grilla',      icon: 'bi-grid-3x3' },
+  grid: { label: 'Grilla', icon: 'bi-grid-3x3' },
   teacher: { label: 'Por Maestro', icon: 'bi-person-lines-fill' },
-  room:    { label: 'Por Salón',   icon: 'bi-door-open' },
-  student: { label: 'Por Alumno',  icon: 'bi-mortarboard' }
-};
+  room: { label: 'Por Salón', icon: 'bi-door-open' },
+  student: { label: 'Por Alumno', icon: 'bi-mortarboard' },
+}
 
 /**
  * Returns HTML for the pill-style view toggle bar.
@@ -15,11 +15,11 @@ const VIEW_LABELS = {
  * @returns {string} HTML string
  */
 export function createViewToggle(activeView = 'grid') {
-  if (!VIEW_LABELS[activeView]) activeView = 'grid';
+  if (!VIEW_LABELS[activeView]) activeView = 'grid'
 
-  const pills = VIEWS.map(v => {
-    const { label, icon } = VIEW_LABELS[v];
-    const isActive = v === activeView;
+  const pills = VIEWS.map((v) => {
+    const { label, icon } = VIEW_LABELS[v]
+    const isActive = v === activeView
     return `
       <button role="tab" aria-selected="${isActive}" class="vt-pill ${isActive ? 'vt-pill--active' : ''}"
               data-view="${v}"
@@ -34,12 +34,12 @@ export function createViewToggle(activeView = 'grid') {
               ">
         <i class="bi ${icon}"></i>${label}
       </button>
-    `;
-  }).join('');
+    `
+  }).join('')
 
   return `
     <div class="view-toggle" style="display:flex;gap:0.4rem;flex-wrap:wrap;" role="tablist" aria-label="Modo de visualización">
       ${pills}
     </div>
-  `;
+  `
 }

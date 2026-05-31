@@ -9,7 +9,7 @@ export function registerRoutesAcademicAdmin() {
   router.register('gestion-curricular', (container) => {
     renderAcademicAdminView(container)
   })
-  
+
   // Alias sugerido por la tarea
   router.register('planificacion-curricular', (container) => {
     renderAcademicAdminView(container)

@@ -11,7 +11,7 @@ async function sha256(input) {
   const msgUint8 = new TextEncoder().encode(input)
   const hashBuffer = await globalThis.crypto.subtle.digest('SHA-256', msgUint8)
   return Array.from(new Uint8Array(hashBuffer))
-    .map(b => b.toString(16).padStart(2, '0'))
+    .map((b) => b.toString(16).padStart(2, '0'))
     .join('')
 }
 
@@ -29,13 +29,13 @@ export async function promoteSessionObservations(
   sessionId,
   alumnoIds,
   observacionesSessionRows,
-  existingAlumnoRows
+  existingAlumnoRows,
 ) {
   const result = {
     promoted: 0,
     skipped: 0,
     errors: [],
-    promotionPlan: []
+    promotionPlan: [],
   }
 
   // Early exit if empty alumnoIds
@@ -48,15 +48,17 @@ export async function promoteSessionObservations(
   // Build set of existing dedup keys for O(1) lookup
   // We compute missing hashes in parallel if needed
   const existingDedupArray = await Promise.all(
-    existingAlumnoRows.map(async row => row.dedup_key || await sha256(
-      `${row.sesion_id}|${row.alumno_id}|${JSON.stringify(row.contenido_parsed)}`
-    ))
+    existingAlumnoRows.map(
+      async (row) =>
+        row.dedup_key ||
+        (await sha256(`${row.sesion_id}|${row.alumno_id}|${JSON.stringify(row.contenido_parsed)}`)),
+    ),
   )
   const existingDedup = new Set(existingDedupArray)
 
   // Filter by alumno_ids and es_borrador
-  const filteredRows = observacionesSessionRows.filter(row =>
-    row.es_borrador === true && alumnoIdSet.has(row.alumno_id)
+  const filteredRows = observacionesSessionRows.filter(
+    (row) => row.es_borrador === true && alumnoIdSet.has(row.alumno_id),
   )
 
   // Process each row
@@ -70,7 +72,7 @@ export async function promoteSessionObservations(
         alumno_id,
         sesion_id,
         action: 'SKIP',
-        reason: 'NULL_CONTENT'
+        reason: 'NULL_CONTENT',
       })
       continue
     }
@@ -87,7 +89,7 @@ export async function promoteSessionObservations(
         sesion_id,
         action: 'SKIP',
         reason: 'ALREADY_EXISTS',
-        dedup_key: dedupKey
+        dedup_key: dedupKey,
       })
       continue
     }
@@ -99,7 +101,7 @@ export async function promoteSessionObservations(
       sesion_id,
       action: 'PROMOTE',
       dedup_key: dedupKey,
-      contenido_parsed
+      contenido_parsed,
     })
   }
 

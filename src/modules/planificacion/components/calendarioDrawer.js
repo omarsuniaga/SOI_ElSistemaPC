@@ -1,4 +1,8 @@
-import { openClaseEmergenteModal, openEditarSesionModal, openVerSesionModal } from './claseEmergenteModal.js'
+import {
+  openClaseEmergenteModal,
+  openEditarSesionModal,
+  openVerSesionModal,
+} from './claseEmergenteModal.js'
 import { AppToast } from '../../../shared/components/AppToast.js'
 
 const DRAWER_ID = 'calendario-drawer'
@@ -15,20 +19,30 @@ export function initCalendarioDrawer(callbacks = {}) {
 }
 
 export function openCalendarioDrawer(fecha, sesiones = [], opciones = {}) {
-  const {
-    clases = [],
-    maestros = [],
-    maestroActualId = null,
-    puedeEditar = true,
-  } = opciones
+  const { clases = [], maestros = [], maestroActualId = null, puedeEditar = true } = opciones
 
-  const sesionesEnFecha = sesiones.filter(s => s.fecha === fecha)
-  
-  const drawer = _crearDrawer(fecha, sesionesEnFecha, clases, maestros, maestroActualId, puedeEditar)
+  const sesionesEnFecha = sesiones.filter((s) => s.fecha === fecha)
+
+  const drawer = _crearDrawer(
+    fecha,
+    sesionesEnFecha,
+    clases,
+    maestros,
+    maestroActualId,
+    puedeEditar,
+  )
   document.body.appendChild(drawer)
-  
-  _attachDrawerEvents(drawer, fecha, sesionesEnFecha, clases, maestros, maestroActualId, puedeEditar)
-  
+
+  _attachDrawerEvents(
+    drawer,
+    fecha,
+    sesionesEnFecha,
+    clases,
+    maestros,
+    maestroActualId,
+    puedeEditar,
+  )
+
   setTimeout(() => {
     drawer.classList.add('open')
   }, 10)
@@ -38,13 +52,14 @@ function _crearDrawer(fecha, sesiones, clases, maestros, maestroId, puedeEditar)
   const drawer = document.createElement('div')
   drawer.id = DRAWER_ID
   drawer.className = 'calendario-drawer-overlay'
-  
+
   const fechaFormateada = _formatFecha(fecha)
   const sesionCount = sesiones.length
-  
-  const sesionesHTML = sesiones.length > 0 
-    ? sesiones.map(s => _renderSesionCard(s, clases, puedeEditar)).join('')
-    : '<p class="text-muted text-center py-3">No hay sesiones programadas</p>'
+
+  const sesionesHTML =
+    sesiones.length > 0
+      ? sesiones.map((s) => _renderSesionCard(s, clases, puedeEditar)).join('')
+      : '<p class="text-muted text-center py-3">No hay sesiones programadas</p>'
 
   drawer.innerHTML = `
     <div class="calendario-drawer">
@@ -79,20 +94,21 @@ function _crearDrawer(fecha, sesiones, clases, maestros, maestroId, puedeEditar)
       </div>
     </div>
   `
-  
+
   return drawer
 }
 
 function _renderSesionCard(sesion, clases, puedeEditar) {
-  const clase = clases.find(c => c.id === sesion.clase_id)
+  const clase = clases.find((c) => c.id === sesion.clase_id)
   const claseNombre = clase?.nombre || sesion.clase_id || 'Clase'
   const esEmergente = sesion.tipo === 'emergente'
-  
+
   const badgeClass = esEmergente ? 'bg-warning text-dark' : 'bg-success'
   const badgeLabel = esEmergente ? '⚡' : '📅'
-  
-  const tieneAsistencia = sesion.asistencia && (sesion.asistencia.presentes > 0 || sesion.asistencia.ausentes > 0)
-  const asistenciaLabel = tieneAsistencia 
+
+  const tieneAsistencia =
+    sesion.asistencia && (sesion.asistencia.presentes > 0 || sesion.asistencia.ausentes > 0)
+  const asistenciaLabel = tieneAsistencia
     ? `P:${sesion.asistencia.presentes} A:${sesion.asistencia.ausentes}`
     : 'Sin asistencia'
 
@@ -113,16 +129,24 @@ function _renderSesionCard(sesion, clases, puedeEditar) {
         <button class="btn btn-sm btn-outline-primary" data-action="ver" title="Ver detalles">
           <i class="bi bi-eye"></i>
         </button>
-        ${puedeEditar ? `
+        ${
+          puedeEditar
+            ? `
         <button class="btn btn-sm btn-outline-secondary" data-action="editar" title="Editar">
           <i class="bi bi-pencil"></i>
         </button>
-        ` : ''}
-        ${puedeEditar && !sesion.asistencia ? `
+        `
+            : ''
+        }
+        ${
+          puedeEditar && !sesion.asistencia
+            ? `
         <button class="btn btn-sm btn-outline-success" data-action="asistencia" title="Pasar asistencia">
           <i class="bi bi-check2-square"></i>
         </button>
-        ` : ''}
+        `
+            : ''
+        }
       </div>
     </div>
   `
@@ -130,7 +154,7 @@ function _renderSesionCard(sesion, clases, puedeEditar) {
 
 function _attachDrawerEvents(drawer, fecha, sesiones, clases, maestros, maestroId, puedeEditar) {
   drawer.querySelector('.btn-close-drawer')?.addEventListener('click', () => _cerrarDrawer(drawer))
-  
+
   drawer.querySelector('.calendario-drawer-overlay')?.addEventListener('click', (e) => {
     if (e.target.classList.contains('calendario-drawer-overlay')) {
       _cerrarDrawer(drawer)
@@ -148,29 +172,33 @@ function _attachDrawerEvents(drawer, fecha, sesiones, clases, maestros, maestroI
           await drawerCallbacks.onCrearEmergente(datos)
         }
         AppToast.success('Clase emergente creada')
-      }
+      },
     })
   })
 
-  drawer.querySelectorAll('.sesion-card').forEach(card => {
+  drawer.querySelectorAll('.sesion-card').forEach((card) => {
     const sesionId = card.dataset.sesionId
-    const sesion = sesiones.find(s => s.id === sesionId)
+    const sesion = sesiones.find((s) => s.id === sesionId)
     if (!sesion) return
 
     card.querySelector('[data-action="ver"]')?.addEventListener('click', (e) => {
       e.stopPropagation()
       openVerSesionModal(sesion, {
         clases,
-        onEditar: puedeEditar ? () => {
-          if (drawerCallbacks.onEditarSesion) {
-            drawerCallbacks.onEditarSesion(sesion)
-          }
-        } : null,
-        onPasarAsistencia: !sesion.asistencia ? () => {
-          if (drawerCallbacks.onPasarAsistencia) {
-            drawerCallbacks.onPasarAsistencia(sesion)
-          }
-        } : null
+        onEditar: puedeEditar
+          ? () => {
+              if (drawerCallbacks.onEditarSesion) {
+                drawerCallbacks.onEditarSesion(sesion)
+              }
+            }
+          : null,
+        onPasarAsistencia: !sesion.asistencia
+          ? () => {
+              if (drawerCallbacks.onPasarAsistencia) {
+                drawerCallbacks.onPasarAsistencia(sesion)
+              }
+            }
+          : null,
       })
     })
 
@@ -184,7 +212,7 @@ function _attachDrawerEvents(drawer, fecha, sesiones, clases, maestros, maestroI
             await drawerCallbacks.onEditarSesion(id, datos)
           }
           AppToast.success('Sesión actualizada')
-        }
+        },
       })
     })
 
@@ -227,43 +255,74 @@ export function renderCalendarioCompleto(container, opciones = {}) {
   let currentYear = today.getFullYear()
   let currentMonth = today.getMonth()
 
-  _renderCalendarioMes(container, currentYear, currentMonth, sesiones, clases, onFechaClick, () => {
-    if (currentMonth === 11) {
-      currentMonth = 0
-      currentYear++
-    } else {
-      currentMonth++
-    }
-    _renderCalendarioMes(container, currentYear, currentMonth, sesiones, clases, onFechaClick)
-  }, () => {
-    if (currentMonth === 0) {
-      currentMonth = 11
-      currentYear--
-    } else {
-      currentMonth--
-    }
-    _renderCalendarioMes(container, currentYear, currentMonth, sesiones, clases, onFechaClick)
-  })
+  _renderCalendarioMes(
+    container,
+    currentYear,
+    currentMonth,
+    sesiones,
+    clases,
+    onFechaClick,
+    () => {
+      if (currentMonth === 11) {
+        currentMonth = 0
+        currentYear++
+      } else {
+        currentMonth++
+      }
+      _renderCalendarioMes(container, currentYear, currentMonth, sesiones, clases, onFechaClick)
+    },
+    () => {
+      if (currentMonth === 0) {
+        currentMonth = 11
+        currentYear--
+      } else {
+        currentMonth--
+      }
+      _renderCalendarioMes(container, currentYear, currentMonth, sesiones, clases, onFechaClick)
+    },
+  )
 }
 
-function _renderCalendarioMes(container, year, month, sesiones, clases, onFechaClick, onNext, onPrev) {
-  const MESES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
+function _renderCalendarioMes(
+  container,
+  year,
+  month,
+  sesiones,
+  clases,
+  onFechaClick,
+  onNext,
+  onPrev,
+) {
+  const MESES = [
+    'Enero',
+    'Febrero',
+    'Marzo',
+    'Abril',
+    'Mayo',
+    'Junio',
+    'Julio',
+    'Agosto',
+    'Septiembre',
+    'Octubre',
+    'Noviembre',
+    'Diciembre',
+  ]
   const DIAS = ['Do', 'Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sa']
-  
+
   const primerDia = new Date(year, month, 1)
   const ultimoDia = new Date(year, month + 1, 0)
   const diasEnMes = ultimoDia.getDate()
   const primerDiaSemana = primerDia.getDay()
-  
+
   const today = new Date()
   const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
 
   // Determine active date for roving tabindex: today if visible, else first day of month
   const firstDate = `${year}-${String(month + 1).padStart(2, '0')}-01`
-  const lastDate  = `${year}-${String(month + 1).padStart(2, '0')}-${String(diasEnMes).padStart(2, '0')}`
-  const activeDate = (todayStr >= firstDate && todayStr <= lastDate) ? todayStr : firstDate
+  const lastDate = `${year}-${String(month + 1).padStart(2, '0')}-${String(diasEnMes).padStart(2, '0')}`
+  const activeDate = todayStr >= firstDate && todayStr <= lastDate ? todayStr : firstDate
 
-  let diasHTML = DIAS.map(d => `<div class="cal-day-header">${d}</div>`).join('')
+  let diasHTML = DIAS.map((d) => `<div class="cal-day-header">${d}</div>`).join('')
 
   for (let i = 0; i < primerDiaSemana; i++) {
     diasHTML += `<div class="cal-day empty"></div>`
@@ -271,22 +330,23 @@ function _renderCalendarioMes(container, year, month, sesiones, clases, onFechaC
 
   for (let d = 1; d <= diasEnMes; d++) {
     const fecha = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`
-    const sesionsEnFecha = sesiones.filter(s => s.fecha === fecha)
+    const sesionsEnFecha = sesiones.filter((s) => s.fecha === fecha)
     const sesionCount = sesionsEnFecha.length
     const esHoy = fecha === todayStr
-    const tieneEmergente = sesionsEnFecha.some(s => s.tipo === 'emergente')
+    const tieneEmergente = sesionsEnFecha.some((s) => s.tipo === 'emergente')
     const isActive = fecha === activeDate
-    
+
     let dayClass = 'cal-day'
     if (esHoy) dayClass += ' today'
     if (sesionCount > 0) dayClass += ' has-sessions'
     if (tieneEmergente) dayClass += ' has-emergente'
-    
-    const dotIndicators = sesionCount > 0 
-      ? `<div class="day-dots">
-          ${sesionsEnFecha.map(s => `<span class="dot ${s.tipo === 'emergente' ? 'emergente' : 'regular'}"></span>`).join('')}
-        </div>` 
-      : ''
+
+    const dotIndicators =
+      sesionCount > 0
+        ? `<div class="day-dots">
+          ${sesionsEnFecha.map((s) => `<span class="dot ${s.tipo === 'emergente' ? 'emergente' : 'regular'}"></span>`).join('')}
+        </div>`
+        : ''
 
     const ariaLabel = `${d} de ${MESES[month]} ${year}`
     const ariaCurrent = esHoy ? ' aria-current="date"' : ''
@@ -322,10 +382,12 @@ function _renderCalendarioMes(container, year, month, sesiones, clases, onFechaC
   container.querySelector('#cal-prev')?.addEventListener('click', onPrev)
   container.querySelector('#cal-next')?.addEventListener('click', onNext)
 
-  container.querySelectorAll('.cal-day:not(.empty)').forEach(day => {
+  container.querySelectorAll('.cal-day:not(.empty)').forEach((day) => {
     day.addEventListener('click', () => {
       // Update aria-selected on click
-      container.querySelectorAll('.cal-day[data-fecha]').forEach(c => c.setAttribute('aria-selected', 'false'))
+      container
+        .querySelectorAll('.cal-day[data-fecha]')
+        .forEach((c) => c.setAttribute('aria-selected', 'false'))
       day.setAttribute('aria-selected', 'true')
       if (onFechaClick) {
         onFechaClick(day.dataset.fecha)
@@ -346,7 +408,7 @@ function _renderCalendarioMes(container, year, month, sesiones, clases, onFechaC
 
     const moveFocus = (idx) => {
       if (idx < 0 || idx >= days.length) return
-      days.forEach(d => d.setAttribute('tabindex', '-1'))
+      days.forEach((d) => d.setAttribute('tabindex', '-1'))
       days[idx].setAttribute('tabindex', '0')
       days[idx].focus()
     }
@@ -385,7 +447,9 @@ function _renderCalendarioMes(container, year, month, sesiones, clases, onFechaC
             if (newGrid) {
               const firstDay = newGrid.querySelector('.cal-day[data-fecha]')
               if (firstDay) {
-                newGrid.querySelectorAll('.cal-day[data-fecha]').forEach(d => d.setAttribute('tabindex', '-1'))
+                newGrid
+                  .querySelectorAll('.cal-day[data-fecha]')
+                  .forEach((d) => d.setAttribute('tabindex', '-1'))
                 firstDay.setAttribute('tabindex', '0')
                 firstDay.focus()
               }
@@ -402,7 +466,9 @@ function _renderCalendarioMes(container, year, month, sesiones, clases, onFechaC
             if (newGrid) {
               const firstDay = newGrid.querySelector('.cal-day[data-fecha]')
               if (firstDay) {
-                newGrid.querySelectorAll('.cal-day[data-fecha]').forEach(d => d.setAttribute('tabindex', '-1'))
+                newGrid
+                  .querySelectorAll('.cal-day[data-fecha]')
+                  .forEach((d) => d.setAttribute('tabindex', '-1'))
                 firstDay.setAttribute('tabindex', '0')
                 firstDay.focus()
               }

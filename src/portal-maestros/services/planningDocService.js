@@ -12,9 +12,7 @@ export async function uploadPlanningDoc({ maestroId, claseId, title, file, descr
 
   if (uploadError) throw uploadError
 
-  const { data: urlData } = supabase.storage
-    .from('documentos')
-    .getPublicUrl(path)
+  const { data: urlData } = supabase.storage.from('documentos').getPublicUrl(path)
 
   const { data, error } = await supabase
     .from('planning_documents')
@@ -53,10 +51,7 @@ export async function deleteDocument(docId, filePath) {
   if (filePath) {
     await supabase.storage.from('documentos').remove([filePath])
   }
-  const { error } = await supabase
-    .from('planning_documents')
-    .delete()
-    .eq('id', docId)
+  const { error } = await supabase.from('planning_documents').delete().eq('id', docId)
   if (error) throw error
 }
 

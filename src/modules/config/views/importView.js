@@ -1,16 +1,16 @@
-import { 
-  getImportEntities, 
-  parseCSV, 
+import {
+  getImportEntities,
+  parseCSV,
   parseJSON,
   previewImport,
-  importData 
+  importData,
 } from '../components/importData.js'
 
 let selectedEntity = null
 
 export async function renderImportView(container) {
   const entities = getImportEntities()
-  
+
   container.innerHTML = `
     <div class="container-fluid py-4">
       <div class="row">
@@ -33,9 +33,13 @@ export async function renderImportView(container) {
             <div class="card-body">
               <select class="form-select form-select-lg" id="import-entity-select">
                 <option value="">-- Selecciona qué vas a importar --</option>
-                ${Object.entries(entities).map(([key, entity]) => `
+                ${Object.entries(entities)
+                  .map(
+                    ([key, entity]) => `
                   <option value="${key}">${entity.label}</option>
-                `).join('')}
+                `,
+                  )
+                  .join('')}
               </select>
               <div id="entity-description" class="mt-2 text-muted"></div>
             </div>
@@ -142,133 +146,133 @@ export async function renderImportView(container) {
     const EXAMPLES = {
       students: [
         {
-          "nombre_completo": "Juan Pérez González",
-          "tlf_alumno": "+1 809 555 1234",
-          "direccion": "Av. principal 123, Santo Domingo",
-          "fecha_nacimiento": "2010-05-15",
-          "instrumento_principal": "Guitarra",
-          "nivel": "básico",
-          "fecha_ingreso": "2024-01-15",
-          "padre_nombre": "María Pérez",
-          "madre_nombre": "Carlos Pérez",
-          "representante_nombre": "María Pérez",
-          "representante_cedula": "12345678",
-          "representante_tlf": "+1 809 555 5678",
-          "correo_representante": "maria.perez@email.com",
-          "contacto_emergencia_nombre": "Pedro Pérez",
-          "contacto_emergencia_telefono": "+1 809 555 9999",
-          "observaciones_generales": "Alumno responsable",
-          "activo": true
+          nombre_completo: 'Juan Pérez González',
+          tlf_alumno: '+1 809 555 1234',
+          direccion: 'Av. principal 123, Santo Domingo',
+          fecha_nacimiento: '2010-05-15',
+          instrumento_principal: 'Guitarra',
+          nivel: 'básico',
+          fecha_ingreso: '2024-01-15',
+          padre_nombre: 'María Pérez',
+          madre_nombre: 'Carlos Pérez',
+          representante_nombre: 'María Pérez',
+          representante_cedula: '12345678',
+          representante_tlf: '+1 809 555 5678',
+          correo_representante: 'maria.perez@email.com',
+          contacto_emergencia_nombre: 'Pedro Pérez',
+          contacto_emergencia_telefono: '+1 809 555 9999',
+          observaciones_generales: 'Alumno responsable',
+          activo: true,
         },
         {
-          "nombre_completo": "Ana García López",
-          "tlf_alumno": "+1 809 555 8888",
-          "direccion": "Calle 45, Sto. Dgo.",
-          "fecha_nacimiento": "2012-03-20",
-          "instrumento_principal": "Piano",
-          "nivel": "intermedio",
-          "representante_nombre": "Carlos García",
-          "representante_cedula": "87654321",
-          "representante_tlf": "+1 809 555 7777",
-          "correo_representante": "carlos.g@email.com",
-          "activo": true
-        }
+          nombre_completo: 'Ana García López',
+          tlf_alumno: '+1 809 555 8888',
+          direccion: 'Calle 45, Sto. Dgo.',
+          fecha_nacimiento: '2012-03-20',
+          instrumento_principal: 'Piano',
+          nivel: 'intermedio',
+          representante_nombre: 'Carlos García',
+          representante_cedula: '87654321',
+          representante_tlf: '+1 809 555 7777',
+          correo_representante: 'carlos.g@email.com',
+          activo: true,
+        },
       ],
       programas: [
         {
-          "nombre": "Guitarra Clásica",
-          "descripcion": "Programa de guitarra clásica para principiantes",
-          "nivel": "básico",
-          "duracion_anios": 3,
-          "activo": true
+          nombre: 'Guitarra Clásica',
+          descripcion: 'Programa de guitarra clásica para principiantes',
+          nivel: 'básico',
+          duracion_anios: 3,
+          activo: true,
         },
         {
-          "nombre": "Piano Iniciación",
-          "descripcion": "Aprende piano desde cero",
-          "nivel": "inicial",
-          "duracion_anios": 2,
-          "activo": true
-        }
+          nombre: 'Piano Iniciación',
+          descripcion: 'Aprende piano desde cero',
+          nivel: 'inicial',
+          duracion_anios: 2,
+          activo: true,
+        },
       ],
       salones: [
         {
-          "nombre": "Salón A1",
-          "codigo_salon": "A-101",
-          "ubicacion": "Edificio Principal, Piso 1",
-          "piso": 1,
-          "capacidad": 10,
-          "is_active": true
+          nombre: 'Salón A1',
+          codigo_salon: 'A-101',
+          ubicacion: 'Edificio Principal, Piso 1',
+          piso: 1,
+          capacidad: 10,
+          is_active: true,
         },
         {
-          "nombre": "Sala de Piano",
-          "codigo_salon": "PIANO-01",
-          "ubicacion": "Edificio Principal, Piso 2",
-          "piso": 2,
-          "capacidad": 5,
-          "is_active": true
-        }
+          nombre: 'Sala de Piano',
+          codigo_salon: 'PIANO-01',
+          ubicacion: 'Edificio Principal, Piso 2',
+          piso: 2,
+          capacidad: 5,
+          is_active: true,
+        },
       ],
       maestros: [
         {
-          "nombre_completo": "Carlos Rodríguez",
-          "correo": "carlos.rodriguez@soi.edu",
-          "tlf": "+1 809 555 1111",
-          "especialidad": "Guitarra Clásica",
-          "resena": "Maestro con 15 años de experiencia en guitarra clásica",
-          "activo": true
+          nombre_completo: 'Carlos Rodríguez',
+          correo: 'carlos.rodriguez@soi.edu',
+          tlf: '+1 809 555 1111',
+          especialidad: 'Guitarra Clásica',
+          resena: 'Maestro con 15 años de experiencia en guitarra clásica',
+          activo: true,
         },
         {
-          "nombre_completo": "María Fernández",
-          "correo": "maria.fernandez@soi.edu",
-          "tlf": "+1 809 555 2222",
-          "especialidad": "Piano",
-          "resena": "Licenciada en Música, especialista en piano clásico",
-          "activo": true
-        }
+          nombre_completo: 'María Fernández',
+          correo: 'maria.fernandez@soi.edu',
+          tlf: '+1 809 555 2222',
+          especialidad: 'Piano',
+          resena: 'Licenciada en Música, especialista en piano clásico',
+          activo: true,
+        },
       ],
       clases: [
         {
-          "nombre": "Guitarra Básico A",
-          "instrumento": "Guitarra",
-          "tipo_clase": "grupal",
-          "capacidad_maxima": 8,
-          "activo": true
+          nombre: 'Guitarra Básico A',
+          instrumento: 'Guitarra',
+          tipo_clase: 'grupal',
+          capacidad_maxima: 8,
+          activo: true,
         },
         {
-          "nombre": "Piano Intermedio",
-          "instrumento": "Piano",
-          "tipo_clase": "individual",
-          "capacidad_maxima": 5,
-          "activo": true
-        }
+          nombre: 'Piano Intermedio',
+          instrumento: 'Piano',
+          tipo_clase: 'individual',
+          capacidad_maxima: 5,
+          activo: true,
+        },
       ],
       inscripciones: [
         {
-          "alumno_id": "uuid-del-alumno-1",
-          "clase_id": "uuid-de-la-clase-1",
-          "fecha_inscripcion": "2024-01-15",
-          "estado": "activo"
-        }
+          alumno_id: 'uuid-del-alumno-1',
+          clase_id: 'uuid-de-la-clase-1',
+          fecha_inscripcion: '2024-01-15',
+          estado: 'activo',
+        },
       ],
       asistencias: [
         {
-          "alumno_id": "uuid-del-alumno",
-          "sesion_id": "uuid-de-la-sesion",
-          "estado": "P",
-          "fecha": "2024-06-10"
-        }
+          alumno_id: 'uuid-del-alumno',
+          sesion_id: 'uuid-de-la-sesion',
+          estado: 'P',
+          fecha: '2024-06-10',
+        },
       ],
       progresos: [
         {
-          "alumno_id": "uuid-del-alumno",
-          "clase_id": "uuid-de-la-clase",
-          "tipo_evaluacion": "parcial",
-          "calificacion": 4.5,
-          "fecha_evaluacion": "2024-06-15",
-          "observaciones": "Buen progreso en técnica",
-          "estado": "completado"
-        }
-      ]
+          alumno_id: 'uuid-del-alumno',
+          clase_id: 'uuid-de-la-clase',
+          tipo_evaluacion: 'parcial',
+          calificacion: 4.5,
+          fecha_evaluacion: '2024-06-15',
+          observaciones: 'Buen progreso en técnica',
+          estado: 'completado',
+        },
+      ],
     }
     return EXAMPLES[entity] || [{}]
   }
@@ -277,31 +281,32 @@ export async function renderImportView(container) {
   entitySelect.addEventListener('change', (e) => {
     selectedEntity = e.target.value
     const entity = entities[selectedEntity]
-    
+
     if (entity) {
       entityDesc.textContent = entity.description
       structureCard.style.display = 'block'
       editorCard.style.display = 'none'
       previewCard.style.display = 'none'
       resultsCard.style.display = 'none'
-      
+
       // Mostrar campos requeridos
-      const required = entity.fields.filter(f => f.required)
-      const optional = entity.fields.filter(f => !f.required)
-      
+      const required = entity.fields.filter((f) => f.required)
+      const optional = entity.fields.filter((f) => !f.required)
+
       let html = '<div class="row"><div class="col-md-6">'
       html += '<strong class="text-danger">Campos obligatorios:</strong><br>'
-      html += '<code>' + required.map(f => f.name).join('</code>, <code>') + '</code>'
+      html += '<code>' + required.map((f) => f.name).join('</code>, <code>') + '</code>'
       html += '</div><div class="col-md-6">'
       html += '<strong class="text-muted">Campos opcionales:</strong><br>'
-      html += '<small>' + optional.map(f => f.name).join(', ') + '</small>'
+      html += '<small>' + optional.map((f) => f.name).join(', ') + '</small>'
       html += '</div></div>'
-      
+
       // Ejemplo completo
-      html += '<hr><strong>Ejemplo completo (copiá y pegá para probar):</strong><pre class="mt-2 p-2 bg-dark text-light rounded" style="font-size:11px">'
+      html +=
+        '<hr><strong>Ejemplo completo (copiá y pegá para probar):</strong><pre class="mt-2 p-2 bg-dark text-light rounded" style="font-size:11px">'
       const example = generateExample(selectedEntity)
       html += JSON.stringify(example, null, 2) + '</pre>'
-      
+
       structureInfo.innerHTML = html
     } else {
       entityDesc.textContent = ''
@@ -326,12 +331,12 @@ export async function renderImportView(container) {
     const content = dataTextarea.value.trim()
     parseStatus.innerHTML = ''
     executeImportBtn.disabled = true
-    
+
     if (!content) return
-    
+
     // Detectar si es JSON o CSV
     const isJSON = (content.startsWith('[') || content.startsWith('{')) && content.includes(':')
-    
+
     if (isJSON) {
       try {
         parsedData = parseJSON(content)
@@ -359,7 +364,7 @@ export async function renderImportView(container) {
       parseStatus.innerHTML = '<span class="text-danger">❌ No hay datos válidos</span>'
       return
     }
-    
+
     previewData = await previewImport(selectedEntity, parsedData.data)
     renderPreview()
     previewCard.style.display = 'block'
@@ -369,17 +374,18 @@ export async function renderImportView(container) {
   // Importar
   executeImportBtn.addEventListener('click', async () => {
     if (!parsedData || !parsedData.data) return
-    
+
     executeImportBtn.disabled = true
-    executeImportBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Importando...'
-    
+    executeImportBtn.innerHTML =
+      '<span class="spinner-border spinner-border-sm me-2"></span> Importando...'
+
     try {
       const results = await importData(selectedEntity, parsedData.data)
-      
+
       resultsCard.style.display = 'block'
       const header = document.getElementById('results-header')
       const content = document.getElementById('results-content')
-      
+
       if (results.errors.length === 0) {
         header.className = 'card-header bg-success bg-opacity-10'
         content.innerHTML = `
@@ -395,18 +401,20 @@ export async function renderImportView(container) {
             <h5>⚠️ Importación con errores</h5>
             <p><strong>${results.success} exitosos</strong> - <strong>${results.errors.length} errores</strong></p>
             <hr>
-            <small><strong>Errores:</strong><br>${results.errors.slice(0, 5).map(e => `• Fila ${e.row}: ${e.error}`).join('<br>')}</small>
+            <small><strong>Errores:</strong><br>${results.errors
+              .slice(0, 5)
+              .map((e) => `• Fila ${e.row}: ${e.error}`)
+              .join('<br>')}</small>
           </div>
         `
       }
-      
+
       // Reset
       dataTextarea.value = ''
       parseStatus.innerHTML = ''
       previewCard.style.display = 'none'
       executeImportBtn.disabled = true
       executeImportBtn.innerHTML = '<i class="bi bi-cloud-upload me-1"></i> Importar'
-      
     } catch (err) {
       parseStatus.innerHTML = `<span class="text-danger">❌ Error: ${err.message}</span>`
       executeImportBtn.disabled = false
@@ -416,19 +424,19 @@ export async function renderImportView(container) {
 
   function renderPreview() {
     if (!previewData || previewData.length === 0) return
-    
+
     const thead = document.getElementById('preview-thead')
     const tbody = document.getElementById('preview-tbody')
     const issuesDiv = document.getElementById('preview-issues')
-    
+
     const headers = Object.keys(previewData[0].data)
-    thead.innerHTML = '<tr>' + headers.map(h => `<th>${h}</th>`).join('') + '</tr>'
-    
-    tbody.innerHTML = previewData.map(row => 
-      '<tr>' + headers.map(h => `<td>${row.data[h] ?? ''}</td>`).join('') + '</tr>'
-    ).join('')
-    
-    const allIssues = previewData.flatMap(r => r.issues)
+    thead.innerHTML = '<tr>' + headers.map((h) => `<th>${h}</th>`).join('') + '</tr>'
+
+    tbody.innerHTML = previewData
+      .map((row) => '<tr>' + headers.map((h) => `<td>${row.data[h] ?? ''}</td>`).join('') + '</tr>')
+      .join('')
+
+    const allIssues = previewData.flatMap((r) => r.issues)
     if (allIssues.length > 0) {
       issuesDiv.innerHTML = `<span class="text-warning">⚠️ ${allIssues.length} advertencias</span>`
     } else {

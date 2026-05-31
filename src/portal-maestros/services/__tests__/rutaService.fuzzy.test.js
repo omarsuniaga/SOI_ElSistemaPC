@@ -28,9 +28,7 @@ describe('rutaService - Fuzzy Matching for Routes', () => {
 
   describe('resolveRutaIdForClaseWithFuzzy', () => {
     it('should find exact instrument match', async () => {
-      getMisClasesMock.mockResolvedValue([
-        { id: 'clase-1', instrumento: 'violin' },
-      ])
+      getMisClasesMock.mockResolvedValue([{ id: 'clase-1', instrumento: 'violin' }])
 
       const maybeSingleMock = vi.fn().mockResolvedValue({
         data: { id: 'route-1', route_versions: [{ id: 'rv-1' }] },
@@ -97,9 +95,7 @@ describe('rutaService - Fuzzy Matching for Routes', () => {
     })
 
     it('should handle error gracefully', async () => {
-      getMisClasesMock.mockResolvedValue([
-        { id: 'clase-1', instrumento: 'violin' },
-      ])
+      getMisClasesMock.mockResolvedValue([{ id: 'clase-1', instrumento: 'violin' }])
 
       let callCount = 0
       const fromMock = vi.fn().mockImplementation((table) => {
@@ -134,9 +130,7 @@ describe('rutaService - Fuzzy Matching for Routes', () => {
     })
 
     it('should handle multiple instruments separated by comma', async () => {
-      getMisClasesMock.mockResolvedValue([
-        { id: 'clase-1', instrumento: 'violin, viola, cello' },
-      ])
+      getMisClasesMock.mockResolvedValue([{ id: 'clase-1', instrumento: 'violin, viola, cello' }])
 
       const maybeSingleMock = vi.fn().mockResolvedValue({
         data: { id: 'route-1', route_versions: [{ id: 'rv-1' }] },

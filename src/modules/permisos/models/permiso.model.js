@@ -7,8 +7,10 @@ export class Permiso {
     this.maestro_id = data.maestro_id || ''
     this.maestro_nombre = data.maestro_nombre || ''
     this.maestro_email = data.maestro_email || ''
-    this.puede_registrar_alumnos = data.puede_registrar_alumnos !== undefined ? data.puede_registrar_alumnos : false
-    this.puede_inscribir_clases = data.puede_inscribir_clases !== undefined ? data.puede_inscribir_clases : false
+    this.puede_registrar_alumnos =
+      data.puede_registrar_alumnos !== undefined ? data.puede_registrar_alumnos : false
+    this.puede_inscribir_clases =
+      data.puede_inscribir_clases !== undefined ? data.puede_inscribir_clases : false
     this.permisos = Array.isArray(data.permisos) ? data.permisos : []
     this.solicitudes = Array.isArray(data.solicitudes) ? data.solicitudes : []
     this.concedido_por = data.concedido_por || null

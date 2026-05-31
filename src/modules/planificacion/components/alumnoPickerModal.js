@@ -1,10 +1,7 @@
 import { getAlumnos } from '../../alumnos/api/alumnosApi.js'
 
 export function createAlumnoPickerModal(options = {}) {
-  const {
-    onSelect = null,
-    onClose = null,
-  } = options
+  const { onSelect = null, onClose = null } = options
 
   let selectedAlumnos = new Set()
   let searchTerm = ''
@@ -45,9 +42,7 @@ export function createAlumnoPickerModal(options = {}) {
   async function loadAlumnos() {
     const allAlumnos = await getAlumnos()
     const filtered = searchTerm
-      ? allAlumnos.filter(a => 
-          a.nombre_completo.toLowerCase().includes(searchTerm.toLowerCase())
-        )
+      ? allAlumnos.filter((a) => a.nombre_completo.toLowerCase().includes(searchTerm.toLowerCase()))
       : allAlumnos
 
     renderAlumnos(filtered)
@@ -64,7 +59,7 @@ export function createAlumnoPickerModal(options = {}) {
       return
     }
 
-    alumnos.forEach(alumno => {
+    alumnos.forEach((alumno) => {
       const item = document.createElement('label')
       item.className = 'list-group-item d-flex align-items-center gap-2 cursor-pointer'
       item.style.cursor = 'pointer'
@@ -93,7 +88,7 @@ export function createAlumnoPickerModal(options = {}) {
         }
       })
 
-      item.addEventListener('click', e => {
+      item.addEventListener('click', (e) => {
         if (e.target !== checkbox) {
           checkbox.checked = !checkbox.checked
           checkbox.dispatchEvent(new Event('change'))
@@ -104,7 +99,7 @@ export function createAlumnoPickerModal(options = {}) {
     })
   }
 
-  searchInput.addEventListener('input', e => {
+  searchInput.addEventListener('input', (e) => {
     searchTerm = e.target.value
     loadAlumnos()
   })
@@ -161,9 +156,9 @@ function escapeHtml(text) {
 export function insertAlumnosMention(alumnoIds, getAlumnosFn) {
   return new Promise(async (resolve) => {
     const allAlumnos = await getAlumnosFn()
-    const selected = allAlumnos.filter(a => alumnoIds.includes(a.id))
+    const selected = allAlumnos.filter((a) => alumnoIds.includes(a.id))
 
-    const mentions = selected.map(a => `#${a.nombre_completo}`).join(', ')
+    const mentions = selected.map((a) => `#${a.nombre_completo}`).join(', ')
     resolve(mentions)
   })
 }

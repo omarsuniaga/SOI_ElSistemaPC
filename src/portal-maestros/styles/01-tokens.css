@@ -37,7 +37,7 @@
   --pm-radius-sm: 10px;
   --pm-radius-md: 14px;
   --pm-radius-xs: 8px;
-  --pm-shadow: 0 1px 3px rgba(0, 0, 0, .08), 0 4px 12px rgba(0, 0, 0, .05);
+  --pm-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 4px 12px rgba(0, 0, 0, 0.05);
 
   /* ── SPACING SCALE (4px base) ─────────────────────────────── */
   --pm-space-1: 4px;
@@ -65,10 +65,10 @@
   --pm-view-max-w: 720px;
 
   /* ── SHADOW SCALE ─────────────────────────────────────────── */
-  --pm-shadow-sm: 0 1px 3px rgba(0, 0, 0, .08), 0 1px 2px rgba(0, 0, 0, .06);
-  --pm-shadow-md: 0 4px 12px rgba(0, 0, 0, .08), 0 2px 4px rgba(0, 0, 0, .06);
-  --pm-shadow-lg: 0 8px 24px rgba(0, 0, 0, .1), 0 4px 8px rgba(0, 0, 0, .06);
-  --pm-shadow-xl: 0 16px 40px rgba(0, 0, 0, .12);
+  --pm-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.06);
+  --pm-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.06);
+  --pm-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.1), 0 4px 8px rgba(0, 0, 0, 0.06);
+  --pm-shadow-xl: 0 16px 40px rgba(0, 0, 0, 0.12);
 
   /* ── TRANSITIONS ─────────────────────────────────────────── */
   --pm-transition-fast: 150ms ease;
@@ -118,8 +118,8 @@
 }
 
 /* ── Dark Mode ─────────────────────────────────────────────── */
-[data-bs-theme="dark"],
-[data-portal-theme="dark"] {
+[data-bs-theme='dark'],
+[data-portal-theme='dark'] {
   --pm-surface: #1c1c1e;
   --pm-surface-2: #0f172a;
   --pm-text: #f1f5f9;

@@ -27,7 +27,7 @@ export async function getMaestrosComplianceStatus() {
         tendencia,
         fecha_ultima_evaluacion,
         updated_at
-        `
+        `,
       )
       .order('updated_at', { ascending: false })
 
@@ -59,7 +59,7 @@ export async function getMaestroPendingRegistros(maestroId) {
         last_notified_at,
         clases(nombre),
         sesiones_clase(fecha, hora_inicio)
-        `
+        `,
       )
       .eq('maestro_id', maestroId)
       .eq('estado', 'pendiente')
@@ -94,7 +94,7 @@ export async function getMaestroNotificationHistory(maestroId, limit = 20) {
         created_at,
         registro_pendiente_id,
         registros_pendientes(notification_state, clases(nombre))
-        `
+        `,
       )
       .eq('maestro_id', maestroId)
       .like('tipo', '%escalation%')
@@ -132,7 +132,7 @@ export async function getMaestrosByCategory(categoria) {
         sesiones_naranja,
         sesiones_rojo,
         updated_at
-        `
+        `,
       )
       .eq('categoria', categoria)
       .order('updated_at', { ascending: false })
@@ -162,7 +162,7 @@ export async function getCriticalMaestros() {
         notification_state,
         created_at,
         maestros(nombre_completo, email)
-        `
+        `,
       )
       .eq('notification_state', 'NARANJA')
       .eq('estado', 'pendiente')
@@ -176,7 +176,7 @@ export async function getCriticalMaestros() {
         notification_state,
         created_at,
         maestros(nombre_completo, email)
-        `
+        `,
       )
       .eq('notification_state', 'ROJO')
       .eq('estado', 'pendiente')
@@ -188,7 +188,7 @@ export async function getCriticalMaestros() {
 
     return {
       naranja: naranja || [],
-      rojo: rojo || []
+      rojo: rojo || [],
     }
   } catch (err) {
     console.error('[getCriticalMaestros] Exception:', err)
@@ -205,7 +205,7 @@ export async function updateMaestroCategory(maestroId, newCategory) {
       .from('maestro_desempeño')
       .update({
         categoria: newCategory,
-        fecha_ultima_evaluacion: new Date().toISOString()
+        fecha_ultima_evaluacion: new Date().toISOString(),
       })
       .eq('maestro_id', maestroId)
       .select()

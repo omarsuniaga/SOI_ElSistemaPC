@@ -33,7 +33,9 @@ export async function generateClassEvent({ studentId, teacherId, sessionId }) {
   // 2. Find current level from student_level_progress (pending/in_process, ordered by level order_index)
   const { data: levelProgress, error: levelErr } = await supabase
     .from('student_level_progress')
-    .select('id, level_id, status, levels!inner(id, route_version_id, level_number, name, order_index)')
+    .select(
+      'id, level_id, status, levels!inner(id, route_version_id, level_number, name, order_index)',
+    )
     .eq('student_id', studentId)
     .in('status', ['pending', 'in_process'])
     .order('levels(order_index)', { ascending: true })
@@ -58,7 +60,7 @@ export async function generateClassEvent({ studentId, teacherId, sessionId }) {
   }
 
   // Get student's node progress for these nodes
-  const nodeIds = (nodes || []).map(n => n.id)
+  const nodeIds = (nodes || []).map((n) => n.id)
   let nodeProgressMap = {}
 
   if (nodeIds.length > 0) {
@@ -69,18 +71,18 @@ export async function generateClassEvent({ studentId, teacherId, sessionId }) {
       .in('node_id', nodeIds)
 
     if (nodeProgress) {
-      nodeProgressMap = Object.fromEntries(nodeProgress.map(np => [np.node_id, np]))
+      nodeProgressMap = Object.fromEntries(nodeProgress.map((np) => [np.node_id, np]))
     }
   }
 
-  const activeNodes = (nodes || []).map(node => ({
+  const activeNodes = (nodes || []).map((node) => ({
     ...node,
     progress: nodeProgressMap[node.id] || null,
   }))
 
   // Suggested nodes: pending or in_process, following hierarchical order
   const suggestedNodes = activeNodes
-    .filter(n => {
+    .filter((n) => {
       const status = n.progress?.status
       return !status || status === 'pending' || status === 'in_process'
     })
@@ -152,11 +154,13 @@ export async function getClassEvent(sessionId, studentId) {
 
   const { data, error } = await supabase
     .from('class_events')
-    .select(`
+    .select(
+      `
       *,
       class_event_methodology(*),
       homework_assignments(*)
-    `)
+    `,
+    )
     .eq('session_id', sessionId)
     .eq('student_id', studentId)
     .maybeSingle()
@@ -182,10 +186,7 @@ export async function saveMethodology(classEventId, data) {
 
   const { data: result, error } = await supabase
     .from('class_event_methodology')
-    .upsert(
-      { class_event_id: classEventId, ...data },
-      { onConflict: 'class_event_id' }
-    )
+    .upsert({ class_event_id: classEventId, ...data }, { onConflict: 'class_event_id' })
     .select()
     .single()
 
@@ -228,7 +229,14 @@ export async function updateClassEventStatus(classEventId, status) {
  * @param {{ classEventId: string, studentId: string, teacherId: string, description: string, dueDate?: string, nodeId?: string }} params
  * @returns {Promise<object>}
  */
-export async function assignHomework({ classEventId, studentId, teacherId, description, dueDate, nodeId }) {
+export async function assignHomework({
+  classEventId,
+  studentId,
+  teacherId,
+  description,
+  dueDate,
+  nodeId,
+}) {
   if (!classEventId || !studentId || !teacherId) {
     throw new Error('classEventId, studentId, and teacherId are required')
   }
@@ -246,11 +254,7 @@ export async function assignHomework({ classEventId, studentId, teacherId, descr
   if (dueDate) row.due_date = dueDate
   if (nodeId) row.node_id = nodeId
 
-  const { data, error } = await supabase
-    .from('homework_assignments')
-    .insert(row)
-    .select()
-    .single()
+  const { data, error } = await supabase.from('homework_assignments').insert(row).select().single()
 
   if (error) {
     throw new Error(`Error assigning homework: ${error.message}`)

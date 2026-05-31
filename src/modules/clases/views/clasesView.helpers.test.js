@@ -10,8 +10,15 @@ function getDiasOptions(selectedValue = '') {
     { value: 'viernes', label: 'Viernes' },
     { value: 'sábado', label: 'Sábado' },
   ]
-  return `<option value="">Seleccionar día</option>` +
-    dias.map(d => `<option value="${d.value}" ${d.value === selectedValue ? 'selected' : ''}>${d.label}</option>`).join('')
+  return (
+    `<option value="">Seleccionar día</option>` +
+    dias
+      .map(
+        (d) =>
+          `<option value="${d.value}" ${d.value === selectedValue ? 'selected' : ''}>${d.label}</option>`,
+      )
+      .join('')
+  )
 }
 
 function getSalonesOptions(selectedId = '') {
@@ -19,8 +26,15 @@ function getSalonesOptions(selectedId = '') {
     { id: 'salon-1', nombre: 'Salón A' },
     { id: 'salon-2', nombre: 'Salón B' },
   ]
-  return `<option value="">Sin salón</option>` +
-    salones.map(s => `<option value="${s.id}" ${s.id === selectedId ? 'selected' : ''}>${s.nombre}</option>`).join('')
+  return (
+    `<option value="">Sin salón</option>` +
+    salones
+      .map(
+        (s) =>
+          `<option value="${s.id}" ${s.id === selectedId ? 'selected' : ''}>${s.nombre}</option>`,
+      )
+      .join('')
+  )
 }
 
 function getMaestrosOptions(selectedId = '') {
@@ -28,32 +42,82 @@ function getMaestrosOptions(selectedId = '') {
     { id: 'maestro-1', nombre: 'Juan Pérez' },
     { id: 'maestro-2', nombre: 'María García' },
   ]
-  return `<option value="">Seleccionar...</option>` +
-    maestros.map(m => `<option value="${m.id}" ${m.id === selectedId ? 'selected' : ''}>${m.nombre}</option>`).join('')
+  return (
+    `<option value="">Seleccionar...</option>` +
+    maestros
+      .map(
+        (m) =>
+          `<option value="${m.id}" ${m.id === selectedId ? 'selected' : ''}>${m.nombre}</option>`,
+      )
+      .join('')
+  )
 }
 
 function getInstrumentosOptions(selectedValue = '') {
   const instrumentos = [
-    'violin', 'viola', 'cello', 'bajo', 'flauta', 'oboe',
-    'clarinete', 'fagot', 'trompa', 'trompeta', 'trombon',
-    'tuba', 'piano', 'guitarra', 'arpa', 'percusion',
-    'voz', 'direccion', 'solfeo', 'teoría',
+    'violin',
+    'viola',
+    'cello',
+    'bajo',
+    'flauta',
+    'oboe',
+    'clarinete',
+    'fagot',
+    'trompa',
+    'trompeta',
+    'trombon',
+    'tuba',
+    'piano',
+    'guitarra',
+    'arpa',
+    'percusion',
+    'voz',
+    'direccion',
+    'solfeo',
+    'teoría',
   ]
   const etiquetas = {
-    violin: 'Violín', viola: 'Viola', cello: 'Cello', bajo: 'Bajo',
-    flauta: 'Flauta', oboe: 'Oboe', clarinete: 'Clarinete', fagot: 'Fagot',
-    trompa: 'Trompa', trompeta: 'Trompeta', trombon: 'Trombón', tuba: 'Tuba',
-    piano: 'Piano', guitarra: 'Guitarra', arpa: 'Arpa', percusion: 'Percusión',
-    voz: 'Voz', direccion: 'Dirección', solfeo: 'Solfeo', teoría: 'Teoría',
+    violin: 'Violín',
+    viola: 'Viola',
+    cello: 'Cello',
+    bajo: 'Bajo',
+    flauta: 'Flauta',
+    oboe: 'Oboe',
+    clarinete: 'Clarinete',
+    fagot: 'Fagot',
+    trompa: 'Trompa',
+    trompeta: 'Trompeta',
+    trombon: 'Trombón',
+    tuba: 'Tuba',
+    piano: 'Piano',
+    guitarra: 'Guitarra',
+    arpa: 'Arpa',
+    percusion: 'Percusión',
+    voz: 'Voz',
+    direccion: 'Dirección',
+    solfeo: 'Solfeo',
+    teoría: 'Teoría',
   }
-  return `<option value="">Seleccionar...</option>` +
-    instrumentos.map(i => `<option value="${i}" ${i === selectedValue ? 'selected' : ''}>${etiquetas[i] || i}</option>`).join('')
+  return (
+    `<option value="">Seleccionar...</option>` +
+    instrumentos
+      .map(
+        (i) =>
+          `<option value="${i}" ${i === selectedValue ? 'selected' : ''}>${etiquetas[i] || i}</option>`,
+      )
+      .join('')
+  )
 }
 
 function getEstadosOptions(selectedValue = 'activa') {
   const estados = ['activa', 'suspendida', 'finalizada']
   const etiquetas = { activa: 'Activa', suspendida: 'Suspendida', finalizada: 'Finalizada' }
-  return estados.map(e => `<option value="${e}" ${e === selectedValue ? 'selected' : ''}>${etiquetas[e]}</option>`).join('')
+  return estados
+    .map(
+      (e) =>
+        `<option value="${e}" ${e === selectedValue ? 'selected' : ''}>${etiquetas[e]}</option>`,
+    )
+    .join('')
 }
 
 function renderHorarioRow(horario, index) {
@@ -73,13 +137,22 @@ function renderHorarioRow(horario, index) {
 
 function formatHorariosDisplay(horarios) {
   if (!horarios || horarios.length === 0) return '-'
-  const diasMap = { lunes: 'Lu', martes: 'Ma', miercoles: 'Mi', jueves: 'Ju', viernes: 'Vi', sabado: 'Sa' }
-  return horarios.map(h => {
-    const diaCorto = diasMap[h.dia] || h.dia.slice(0, 2)
-    const inicio = h.hora_inicio || ''
-    const fin = h.hora_fin || ''
-    return `${diaCorto} ${inicio}-${fin}`
-  }).join(', ')
+  const diasMap = {
+    lunes: 'Lu',
+    martes: 'Ma',
+    miercoles: 'Mi',
+    jueves: 'Ju',
+    viernes: 'Vi',
+    sabado: 'Sa',
+  }
+  return horarios
+    .map((h) => {
+      const diaCorto = diasMap[h.dia] || h.dia.slice(0, 2)
+      const inicio = h.hora_inicio || ''
+      const fin = h.hora_fin || ''
+      return `${diaCorto} ${inicio}-${fin}`
+    })
+    .join(', ')
 }
 
 function escapeHTML(str) {
@@ -171,7 +244,7 @@ describe('clasesView Helpers', () => {
         dia: 'lunes',
         hora_inicio: '08:00',
         hora_fin: '09:00',
-        salon_id: 'salon-1'
+        salon_id: 'salon-1',
       }
       const result = renderHorarioRow(horario, 1)
       expect(result).toContain('value="lunes" selected')
@@ -191,14 +264,16 @@ describe('clasesView Helpers', () => {
     })
 
     it('should format single horario', () => {
-      const result = formatHorariosDisplay([{ dia: 'lunes', hora_inicio: '08:00', hora_fin: '09:00' }])
+      const result = formatHorariosDisplay([
+        { dia: 'lunes', hora_inicio: '08:00', hora_fin: '09:00' },
+      ])
       expect(result).toBe('Lu 08:00-09:00')
     })
 
     it('should format multiple horarios', () => {
       const result = formatHorariosDisplay([
         { dia: 'lunes', hora_inicio: '08:00', hora_fin: '09:00' },
-        { dia: 'miercoles', hora_inicio: '10:00', hora_fin: '11:30' }
+        { dia: 'miercoles', hora_inicio: '10:00', hora_fin: '11:30' },
       ])
       expect(result).toContain('Lu 08:00-09:00')
       expect(result).toContain('Mi 10:00-11:30')

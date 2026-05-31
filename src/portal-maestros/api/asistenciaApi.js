@@ -25,10 +25,10 @@ export async function obtenerAsistenciaClase(claseId, fecha) {
 
   // Map estado to boolean: 'presente' = true, anything else = false/null
   const asistenciaMap = new Map(
-    (asistencias || []).map(a => [a.alumno_id, a.estado === 'presente'])
+    (asistencias || []).map((a) => [a.alumno_id, a.estado === 'presente']),
   )
 
-  const estudiantes = (data || []).map(insc => ({
+  const estudiantes = (data || []).map((insc) => ({
     id: insc.alumno_id,
     nombre: insc.alumnos?.nombre_completo ?? insc.alumno_id,
     asistio: asistenciaMap.has(insc.alumno_id) ? asistenciaMap.get(insc.alumno_id) : null,

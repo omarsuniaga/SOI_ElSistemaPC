@@ -20,9 +20,7 @@ function makeChain({ data = null, error = null, resolveOnEqCall = 1 } = {}) {
     or: vi.fn().mockResolvedValue({ data, error }),
     eq: vi.fn().mockImplementation(() => {
       eqCalls++
-      return eqCalls >= resolveOnEqCall
-        ? Promise.resolve({ data, error })
-        : chain
+      return eqCalls >= resolveOnEqCall ? Promise.resolve({ data, error }) : chain
     }),
   }
   return chain
@@ -49,8 +47,7 @@ describe('autoJustificarClasesProgramadas', () => {
 
   it('retorna { justificadas:0, errores:[] } si no hay horarios para ese día de la semana', async () => {
     supabase.from.mockImplementation((table) => {
-      if (table === 'clases')
-        return makeChain({ data: [{ id: 'clase-1', nombre: 'Guitarra' }] })
+      if (table === 'clases') return makeChain({ data: [{ id: 'clase-1', nombre: 'Guitarra' }] })
       // clase_horarios devuelve vacío → no hay horario ese día
       return makeChain({ data: [] })
     })
@@ -65,7 +62,12 @@ describe('autoJustificarClasesProgramadas', () => {
 
     supabase.from.mockImplementation((table) => {
       if (table === 'clases')
-        return makeChain({ data: [{ id: 'clase-1', nombre: 'Guitarra' }, { id: 'clase-2', nombre: 'Piano' }] })
+        return makeChain({
+          data: [
+            { id: 'clase-1', nombre: 'Guitarra' },
+            { id: 'clase-2', nombre: 'Piano' },
+          ],
+        })
       if (table === 'clase_horarios')
         return makeChain({
           data: [
@@ -76,8 +78,7 @@ describe('autoJustificarClasesProgramadas', () => {
       if (table === 'alumnos_clases')
         // Cadena con 2 .eq() antes de resolver
         return makeChain({ data: [{ alumno_id: 'alumno-1' }], resolveOnEqCall: 2 })
-      if (table === 'sesiones_clase')
-        return { upsert: upsertMock }
+      if (table === 'sesiones_clase') return { upsert: upsertMock }
     })
 
     const result = await autoJustificarClasesProgramadas(EMERGENTE, MAESTRO_ID)
@@ -91,14 +92,14 @@ describe('autoJustificarClasesProgramadas', () => {
     const upsertMock = vi.fn().mockResolvedValue({ error: null })
 
     supabase.from.mockImplementation((table) => {
-      if (table === 'clases')
-        return makeChain({ data: [{ id: 'clase-1', nombre: 'Guitarra' }] })
+      if (table === 'clases') return makeChain({ data: [{ id: 'clase-1', nombre: 'Guitarra' }] })
       if (table === 'clase_horarios')
-        return makeChain({ data: [{ clase_id: 'clase-1', hora_inicio: '16:00', hora_fin: '17:00' }] })
+        return makeChain({
+          data: [{ clase_id: 'clase-1', hora_inicio: '16:00', hora_fin: '17:00' }],
+        })
       if (table === 'alumnos_clases')
         return makeChain({ data: [{ alumno_id: 'alumno-1' }], resolveOnEqCall: 2 })
-      if (table === 'sesiones_clase')
-        return { upsert: upsertMock }
+      if (table === 'sesiones_clase') return { upsert: upsertMock }
     })
 
     await autoJustificarClasesProgramadas(EMERGENTE, MAESTRO_ID)
@@ -118,12 +119,19 @@ describe('autoJustificarClasesProgramadas', () => {
     const upsertMock = vi.fn().mockImplementation(() => {
       upsertCalls++
       // Primera clase → error, segunda → OK
-      return Promise.resolve(upsertCalls === 1 ? { error: { message: 'DB error' } } : { error: null })
+      return Promise.resolve(
+        upsertCalls === 1 ? { error: { message: 'DB error' } } : { error: null },
+      )
     })
 
     supabase.from.mockImplementation((table) => {
       if (table === 'clases')
-        return makeChain({ data: [{ id: 'clase-1', nombre: 'Guitarra I' }, { id: 'clase-2', nombre: 'Piano' }] })
+        return makeChain({
+          data: [
+            { id: 'clase-1', nombre: 'Guitarra I' },
+            { id: 'clase-2', nombre: 'Piano' },
+          ],
+        })
       if (table === 'clase_horarios')
         return makeChain({
           data: [
@@ -131,10 +139,8 @@ describe('autoJustificarClasesProgramadas', () => {
             { clase_id: 'clase-2', hora_inicio: '17:00', hora_fin: '18:00' },
           ],
         })
-      if (table === 'alumnos_clases')
-        return makeChain({ data: [], resolveOnEqCall: 2 })
-      if (table === 'sesiones_clase')
-        return { upsert: upsertMock }
+      if (table === 'alumnos_clases') return makeChain({ data: [], resolveOnEqCall: 2 })
+      if (table === 'sesiones_clase') return { upsert: upsertMock }
     })
 
     const result = await autoJustificarClasesProgramadas(EMERGENTE, MAESTRO_ID)
@@ -148,14 +154,13 @@ describe('autoJustificarClasesProgramadas', () => {
     const upsertMock = vi.fn().mockResolvedValue({ error: null })
 
     supabase.from.mockImplementation((table) => {
-      if (table === 'clases')
-        return makeChain({ data: [{ id: 'clase-1', nombre: 'Guitarra' }] })
+      if (table === 'clases') return makeChain({ data: [{ id: 'clase-1', nombre: 'Guitarra' }] })
       if (table === 'clase_horarios')
-        return makeChain({ data: [{ clase_id: 'clase-1', hora_inicio: '16:00', hora_fin: '17:00' }] })
-      if (table === 'alumnos_clases')
-        return makeChain({ data: [], resolveOnEqCall: 2 })
-      if (table === 'sesiones_clase')
-        return { upsert: upsertMock }
+        return makeChain({
+          data: [{ clase_id: 'clase-1', hora_inicio: '16:00', hora_fin: '17:00' }],
+        })
+      if (table === 'alumnos_clases') return makeChain({ data: [], resolveOnEqCall: 2 })
+      if (table === 'sesiones_clase') return { upsert: upsertMock }
     })
 
     await autoJustificarClasesProgramadas(EMERGENTE, MAESTRO_ID)

@@ -19,7 +19,7 @@ const CHUNK_SPLIT_THRESHOLD = 300 * 1024
 export function analyzeBundle(chunks = {}) {
   const entries = Object.entries(chunks)
   const totalSize = entries.reduce((sum, [, size]) => sum + size, 0)
-  
+
   const analysis = {
     totalSize,
     totalFormatted: formatBytes(totalSize),
@@ -87,12 +87,12 @@ function formatBytes(bytes) {
 export function logAnalysis(chunks) {
   const analysis = analyzeBundle(chunks)
   console.log(`[Bundle] Total: ${analysis.totalFormatted} - Status: ${analysis.status}`)
-  
+
   if (analysis.recommendations.length > 0) {
     console.log('[Bundle] Recommendations:')
-    analysis.recommendations.forEach(r => console.log(`  - ${r}`))
+    analysis.recommendations.forEach((r) => console.log(`  - ${r}`))
   }
-  
+
   return analysis
 }
 

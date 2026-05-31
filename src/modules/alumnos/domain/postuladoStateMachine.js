@@ -3,45 +3,45 @@
  * estado_actual → [estados_permitidos]
  */
 export const TRANSICIONES = {
-  postulado:      ['contactado', 'descartado'],
-  contactado:     ['cita_agendada', 'descartado'],
-  cita_agendada:  ['documentos_ok', 'no_show', 'descartado'],
-  no_show:        ['reprogramado', 'descartado'],
-  reprogramado:   ['cita_agendada', 'descartado'],
-  documentos_ok:  ['inscrito', 'en_espera'],
-  en_espera:      ['cita_agendada', 'descartado'],
-  inscrito:       [],
-  descartado:     [],
+  postulado: ['contactado', 'descartado'],
+  contactado: ['cita_agendada', 'descartado'],
+  cita_agendada: ['documentos_ok', 'no_show', 'descartado'],
+  no_show: ['reprogramado', 'descartado'],
+  reprogramado: ['cita_agendada', 'descartado'],
+  documentos_ok: ['inscrito', 'en_espera'],
+  en_espera: ['cita_agendada', 'descartado'],
+  inscrito: [],
+  descartado: [],
 }
 
 /**
  * Etiquetas legibles por estado.
  */
 export const ESTADO_LABELS = {
-  postulado:     'Postulado',
-  contactado:    'Contactado',
+  postulado: 'Postulado',
+  contactado: 'Contactado',
   cita_agendada: 'Cita agendada',
   documentos_ok: 'Documentos OK',
-  inscrito:      'Inscrito',
-  no_show:       'No show',
-  reprogramado:  'Reprogramado',
-  en_espera:     'En espera',
-  descartado:    'Descartado',
+  inscrito: 'Inscrito',
+  no_show: 'No show',
+  reprogramado: 'Reprogramado',
+  en_espera: 'En espera',
+  descartado: 'Descartado',
 }
 
 /**
  * Colores Bootstrap por estado.
  */
 export const ESTADO_COLOR = {
-  postulado:     'secondary',
-  contactado:    'info',
+  postulado: 'secondary',
+  contactado: 'info',
   cita_agendada: 'primary',
   documentos_ok: 'warning',
-  inscrito:      'success',
-  no_show:       'danger',
-  reprogramado:  'warning',
-  en_espera:     'secondary',
-  descartado:    'dark',
+  inscrito: 'success',
+  no_show: 'danger',
+  reprogramado: 'warning',
+  en_espera: 'secondary',
+  descartado: 'dark',
 }
 
 /**
@@ -83,7 +83,7 @@ export function aplicarTransicion(postulante, nuevoEstado, meta = {}) {
 
   if (!puedeTransicionar(estadoActual, nuevoEstado)) {
     throw new Error(
-      `Transición inválida: no se puede pasar del estado "${estadoActual}" al estado "${nuevoEstado}"`
+      `Transición inválida: no se puede pasar del estado "${estadoActual}" al estado "${nuevoEstado}"`,
     )
   }
 
@@ -101,7 +101,8 @@ export function aplicarTransicion(postulante, nuevoEstado, meta = {}) {
   if (meta.notas_seguimiento !== undefined) {
     // Si ya existían notas, las concatenamos con un salto de línea, sino las creamos
     if (nuevoPostulante.notas_seguimiento) {
-      nuevoPostulante.notas_seguimiento = `${nuevoPostulante.notas_seguimiento}\n${meta.notas_seguimiento}`.trim()
+      nuevoPostulante.notas_seguimiento =
+        `${nuevoPostulante.notas_seguimiento}\n${meta.notas_seguimiento}`.trim()
     } else {
       nuevoPostulante.notas_seguimiento = meta.notas_seguimiento
     }

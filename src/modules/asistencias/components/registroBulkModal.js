@@ -19,12 +19,19 @@ export async function openAsistenciaModal(mode, container, data, onSave) {
     console.warn('No se pudieron cargar alumnos:', e.message)
   }
 
-  const titulo = isJustify ? 'Justificar Ausencia' : isEdit ? 'Editar Asistencia' : 'Nueva Asistencia'
+  const titulo = isJustify
+    ? 'Justificar Ausencia'
+    : isEdit
+      ? 'Editar Asistencia'
+      : 'Nueva Asistencia'
   const submitLabel = isJustify ? 'Justificar' : isEdit ? 'Guardar cambios' : 'Guardar'
 
-  const alumnosOptions = alumnos.map(a =>
-    `<option value="${a.id}" ${data?.student_id === a.id ? 'selected' : ''}>${escapeHTML(a.name)}</option>`
-  ).join('')
+  const alumnosOptions = alumnos
+    .map(
+      (a) =>
+        `<option value="${a.id}" ${data?.student_id === a.id ? 'selected' : ''}>${escapeHTML(a.name)}</option>`,
+    )
+    .join('')
 
   const body = `
     <form id="formAsistencia">
@@ -34,7 +41,9 @@ export async function openAsistenciaModal(mode, container, data, onSave) {
           value="${data?.fecha || formatDateISO(new Date())}" required>
       </div>
 
-      ${!isJustify ? `
+      ${
+        !isJustify
+          ? `
         <div class="row">
           <div class="col-md-6 mb-3">
             <label for="asistClase" class="form-label">Clase *</label>
@@ -51,15 +60,19 @@ export async function openAsistenciaModal(mode, container, data, onSave) {
             </select>
           </div>
         </div>
-      ` : ''}
+      `
+          : ''
+      }
 
-      ${!isJustify ? `
+      ${
+        !isJustify
+          ? `
         <div class="mb-3">
           <label class="form-label">Estado *</label>
           <div class="d-flex gap-3">
             <div class="form-check">
               <input class="form-check-input" type="radio" name="estado" id="estadoP" value="P"
-                ${(!data || data.estado === 'P') ? 'checked' : ''}>
+                ${!data || data.estado === 'P' ? 'checked' : ''}>
               <label class="form-check-label" for="estadoP">
                 <i class="bi bi-check-circle text-success"></i> Presente
               </label>
@@ -80,7 +93,9 @@ export async function openAsistenciaModal(mode, container, data, onSave) {
             </div>
           </div>
         </div>
-      ` : ''}
+      `
+          : ''
+      }
 
       <div class="mb-3">
         <label for="asistJustificacion" class="form-label">Justificación</label>
@@ -185,7 +200,9 @@ export async function openRegistroBulkModal(claseId, container, onSave) {
             </tr>
           </thead>
           <tbody>
-            ${alumnos.map(a => `
+            ${alumnos
+              .map(
+                (a) => `
               <tr data-student-id="${a.id}">
                 <td>
                   <small class="fw-bold">${escapeHTML(a.name)}</small>
@@ -207,7 +224,9 @@ export async function openRegistroBulkModal(claseId, container, onSave) {
                     placeholder="Opcional..." maxlength="100">
                 </td>
               </tr>
-            `).join('')}
+            `,
+              )
+              .join('')}
           </tbody>
         </table>
       </div>
@@ -239,9 +258,11 @@ export async function openRegistroBulkModal(claseId, container, onSave) {
     if (fecha && claseId) {
       try {
         asistenciasExistentes = await obtenerAsistenciasPorClase(claseId)
-        const asistenciasDelDia = asistenciasExistentes.filter(a => a.fecha === fecha)
-        asistenciasDelDia.forEach(a => {
-          const radio = modal.element.querySelector(`input[name="estado_${a.student_id}"][value="${a.estado}"]`)
+        const asistenciasDelDia = asistenciasExistentes.filter((a) => a.fecha === fecha)
+        asistenciasDelDia.forEach((a) => {
+          const radio = modal.element.querySelector(
+            `input[name="estado_${a.student_id}"][value="${a.estado}"]`,
+          )
           if (radio) radio.checked = true
           const notaInput = modal.element.querySelector(`input[name="nota_${a.student_id}"]`)
           if (notaInput && a.justificacion_texto) notaInput.value = a.justificacion_texto
@@ -263,7 +284,7 @@ export async function openRegistroBulkModal(claseId, container, onSave) {
     btn.disabled = true
     btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Registrando...'
 
-    const asistencias = alumnos.map(a => ({
+    const asistencias = alumnos.map((a) => ({
       clase_id: claseId,
       student_id: a.id,
       fecha,
@@ -273,7 +294,10 @@ export async function openRegistroBulkModal(claseId, container, onSave) {
 
     try {
       await onSave(asistencias)
-      ModalManager.showToast(`${asistencias.length} asistencias registradas correctamente`, 'success')
+      ModalManager.showToast(
+        `${asistencias.length} asistencias registradas correctamente`,
+        'success',
+      )
       modal.instance.hide()
     } catch (error) {
       ModalManager.showToast(error.message || 'Error al registrar', 'error')

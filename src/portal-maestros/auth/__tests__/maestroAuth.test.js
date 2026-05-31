@@ -34,7 +34,10 @@ describe('maestroAuth', () => {
 
   it('blocks pending profiles before loading maestro access', async () => {
     supabase.auth.signInWithPassword.mockResolvedValue({
-      data: { user: { id: 'u1', email: 'teacher@test.com', user_metadata: { rol: 'maestro' } }, session: {} },
+      data: {
+        user: { id: 'u1', email: 'teacher@test.com', user_metadata: { rol: 'maestro' } },
+        session: {},
+      },
       error: null,
     })
     mockTable({
@@ -54,7 +57,10 @@ describe('maestroAuth', () => {
 
   it('blocks rejected profiles', async () => {
     supabase.auth.signInWithPassword.mockResolvedValue({
-      data: { user: { id: 'u1', email: 'teacher@test.com', user_metadata: { rol: 'maestro' } }, session: {} },
+      data: {
+        user: { id: 'u1', email: 'teacher@test.com', user_metadata: { rol: 'maestro' } },
+        session: {},
+      },
       error: null,
     })
     mockTable({
@@ -71,7 +77,10 @@ describe('maestroAuth', () => {
   it('allows active maestro profiles', async () => {
     const maestro = { id: 'm1', user_id: 'u1', nombre_completo: 'Ada Lovelace' }
     supabase.auth.signInWithPassword.mockResolvedValue({
-      data: { user: { id: 'u1', email: 'teacher@test.com', user_metadata: { rol: 'maestro' } }, session: { access_token: 't' } },
+      data: {
+        user: { id: 'u1', email: 'teacher@test.com', user_metadata: { rol: 'maestro' } },
+        session: { access_token: 't' },
+      },
       error: null,
     })
     mockTable({

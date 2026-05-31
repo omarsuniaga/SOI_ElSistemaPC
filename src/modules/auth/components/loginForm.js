@@ -153,7 +153,7 @@ export function setFormLoading(form, loading) {
   const btn = form.querySelector('#login-submit-btn')
   const btnText = btn?.querySelector('.btn-text')
   const btnLoading = btn?.querySelector('.btn-loading')
-  
+
   if (btn) {
     btn.disabled = loading
     if (btnText) btnText.style.display = loading ? 'none' : 'inline'
@@ -161,5 +161,5 @@ export function setFormLoading(form, loading) {
   }
 
   const inputs = form.querySelectorAll('input')
-  inputs.forEach(input => input.disabled = loading)
+  inputs.forEach((input) => (input.disabled = loading))
 }

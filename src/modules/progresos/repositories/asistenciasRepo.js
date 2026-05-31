@@ -12,9 +12,7 @@ import { supabase } from '../../../lib/supabaseClient.js'
  * @throws {Error} on Supabase error
  */
 export async function fetchBulk({ alumnoIds = [], claseId, periodoId, from, to }) {
-  let query = supabase
-    .from('asistencias')
-    .select('*')
+  let query = supabase.from('asistencias').select('*')
 
   // N+1 guard: use .in() operator for bulk filter
   if (alumnoIds && alumnoIds.length > 0) {

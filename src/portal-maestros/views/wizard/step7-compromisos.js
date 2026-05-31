@@ -38,7 +38,8 @@ export function render(draft, errors = {}) {
       <div class="mb-3 p-3 bg-light rounded">
         ${renderFormField({
           name: 'acepta_beca_4500',
-          label: 'Estoy consciente de que el alumno recibe una beca de RD$4,500 y que solo pagaré RD$600 mensuales, siempre que el rendimiento, interés y asistencia sean notables.',
+          label:
+            'Estoy consciente de que el alumno recibe una beca de RD$4,500 y que solo pagaré RD$600 mensuales, siempre que el rendimiento, interés y asistencia sean notables.',
           type: 'checkbox',
           value: draft.acepta_beca_4500 ?? false,
           error: errors.acepta_beca_4500 ?? '',
@@ -48,7 +49,8 @@ export function render(draft, errors = {}) {
       <div class="mb-3 p-3 bg-light rounded">
         ${renderFormField({
           name: 'acepta_pago_600',
-          label: 'Me comprometo a realizar el aporte mensual de RD$600 de manera responsable y puntual.',
+          label:
+            'Me comprometo a realizar el aporte mensual de RD$600 de manera responsable y puntual.',
           type: 'checkbox',
           value: draft.acepta_pago_600 ?? false,
           error: errors.acepta_pago_600 ?? '',
@@ -60,7 +62,8 @@ export function render(draft, errors = {}) {
       <div class="mb-3 p-3 bg-light rounded">
         ${renderFormField({
           name: 'autoriza_fotos_redes',
-          label: 'Autorizo a "El Sistema Punta Cana" a compartir por redes sociales y/o medios de comunicación fotos y videos donde pueda aparecer el rostro del alumno.',
+          label:
+            'Autorizo a "El Sistema Punta Cana" a compartir por redes sociales y/o medios de comunicación fotos y videos donde pueda aparecer el rostro del alumno.',
           type: 'checkbox',
           value: draft.autoriza_fotos_redes ?? false,
           error: errors.autoriza_fotos_redes ?? '',
@@ -72,8 +75,10 @@ export function render(draft, errors = {}) {
 
 export function validate(draft) {
   const errors = {}
-  if (!draft.acepta_beca_4500) errors.acepta_beca_4500 = 'Debe aceptar los términos de la beca para continuar'
-  if (!draft.acepta_pago_600) errors.acepta_pago_600 = 'Debe comprometerse con el aporte mensual para continuar'
+  if (!draft.acepta_beca_4500)
+    errors.acepta_beca_4500 = 'Debe aceptar los términos de la beca para continuar'
+  if (!draft.acepta_pago_600)
+    errors.acepta_pago_600 = 'Debe comprometerse con el aporte mensual para continuar'
   return { valid: Object.keys(errors).length === 0, errors }
 }
 

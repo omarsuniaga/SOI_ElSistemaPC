@@ -12,7 +12,7 @@ vi.mock('../api/programasApi.js', async (importOriginal) => {
     crearPrograma: vi.fn(),
     actualizarPrograma: vi.fn(),
     eliminarPrograma: vi.fn(),
-    exportarProgramasPDF: vi.fn()
+    exportarProgramasPDF: vi.fn(),
   }
 })
 
@@ -20,15 +20,15 @@ vi.mock('../api/programasApi.js', async (importOriginal) => {
 vi.mock('../../../shared/components/AppModal.js', () => ({
   AppModal: {
     open: vi.fn(),
-    close: vi.fn()
-  }
+    close: vi.fn(),
+  },
 }))
 
 vi.mock('../../../shared/components/AppToast.js', () => ({
   AppToast: {
     success: vi.fn(),
-    error: vi.fn()
-  }
+    error: vi.fn(),
+  },
 }))
 
 describe('Programas Integration', () => {
@@ -41,8 +41,20 @@ describe('Programas Integration', () => {
 
   it('should render the programs list correctly', async () => {
     const mockProgramas = [
-      { id: '1', nombre: 'Programa A', nivel: 'inicial', activo: true, created_at: new Date().toISOString() },
-      { id: '2', nombre: 'Programa B', nivel: 'avanzado', activo: false, created_at: new Date().toISOString() }
+      {
+        id: '1',
+        nombre: 'Programa A',
+        nivel: 'inicial',
+        activo: true,
+        created_at: new Date().toISOString(),
+      },
+      {
+        id: '2',
+        nombre: 'Programa B',
+        nivel: 'avanzado',
+        activo: false,
+        created_at: new Date().toISOString(),
+      },
     ]
     programasApi.obtenerProgramas.mockResolvedValue(mockProgramas)
 
@@ -57,7 +69,7 @@ describe('Programas Integration', () => {
   it('should filter programs by search term', async () => {
     const mockProgramas = [
       { id: '1', nombre: 'Cuerdas', nivel: '1', activo: true },
-      { id: '2', nombre: 'Vientos', nivel: '2', activo: true }
+      { id: '2', nombre: 'Vientos', nivel: '2', activo: true },
     ]
     programasApi.obtenerProgramas.mockResolvedValue(mockProgramas)
 
@@ -79,14 +91,12 @@ describe('Programas Integration', () => {
     const btnNuevo = container.querySelector('#btnAgregarPrograma')
     btnNuevo.click()
 
-    expect(AppModal.open).toHaveBeenCalledWith(
-      expect.objectContaining({ title: 'Nuevo Programa' })
-    )
+    expect(AppModal.open).toHaveBeenCalledWith(expect.objectContaining({ title: 'Nuevo Programa' }))
   })
 
   it('should handle API errors gracefully', async () => {
     programasApi.obtenerProgramas.mockRejectedValue(new Error('API Failure'))
-    
+
     await renderProgramasView(container)
 
     expect(container.querySelector('.alert-danger')).toBeTruthy()

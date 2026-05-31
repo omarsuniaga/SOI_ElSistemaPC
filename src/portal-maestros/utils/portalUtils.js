@@ -3,7 +3,20 @@
  */
 
 export const DIAS_ES = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado']
-export const MESES_ES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
+export const MESES_ES = [
+  'Enero',
+  'Febrero',
+  'Marzo',
+  'Abril',
+  'Mayo',
+  'Junio',
+  'Julio',
+  'Agosto',
+  'Septiembre',
+  'Octubre',
+  'Noviembre',
+  'Diciembre',
+]
 
 /**
  * Asigna evento click de forma segura (con null check)
@@ -16,7 +29,7 @@ export function onClick(el, handler) {
       try {
         const result = handler(e)
         if (result && typeof result.then === 'function') {
-          result.catch(err => console.warn('Click handler error:', err))
+          result.catch((err) => console.warn('Click handler error:', err))
         }
       } catch (err) {
         console.warn('Click handler error:', err)
@@ -79,7 +92,7 @@ export function getInitials(nombre) {
   if (!nombre) return '?'
   return nombre
     .split(' ')
-    .map(n => n[0])
+    .map((n) => n[0])
     .join('')
     .toUpperCase()
     .slice(0, 2)

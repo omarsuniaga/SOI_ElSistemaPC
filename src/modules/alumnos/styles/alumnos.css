@@ -13,24 +13,24 @@
 }
 
 /* Light theme */
-[data-bs-theme="light"] .list-group-item {
+[data-bs-theme='light'] .list-group-item {
   background: rgba(255, 255, 255, 0.7);
   border: 1px solid rgba(0, 0, 0, 0.08);
 }
 
-[data-bs-theme="light"] .list-group-item:hover {
+[data-bs-theme='light'] .list-group-item:hover {
   background: rgba(255, 255, 255, 0.95);
   border-color: rgba(0, 0, 0, 0.12);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
 /* Dark theme */
-[data-bs-theme="dark"] .list-group-item {
+[data-bs-theme='dark'] .list-group-item {
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-[data-bs-theme="dark"] .list-group-item:hover {
+[data-bs-theme='dark'] .list-group-item:hover {
   background: rgba(255, 255, 255, 0.08);
   border-color: rgba(255, 255, 255, 0.15);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
@@ -48,20 +48,20 @@
 }
 
 /* Text Styles - Theme Aware */
-[data-bs-theme="light"] .list-group-item .fw-bold {
+[data-bs-theme='light'] .list-group-item .fw-bold {
   color: #1a1a1a;
 }
 
-[data-bs-theme="dark"] .list-group-item .fw-bold {
+[data-bs-theme='dark'] .list-group-item .fw-bold {
   color: #f0f0f0;
 }
 
 /* Small text styles */
-[data-bs-theme="light"] .list-group-item .text-muted {
+[data-bs-theme='light'] .list-group-item .text-muted {
   color: #6c757d !important;
 }
 
-[data-bs-theme="dark"] .list-group-item .text-muted {
+[data-bs-theme='dark'] .list-group-item .text-muted {
   color: #adb5bd !important;
 }
 
@@ -71,13 +71,13 @@
   overflow: hidden;
 }
 
-[data-bs-theme="light"] .page-glass {
+[data-bs-theme='light'] .page-glass {
   background: rgba(255, 255, 255, 0.5);
   backdrop-filter: blur(8px);
   border: 1px solid rgba(0, 0, 0, 0.06);
 }
 
-[data-bs-theme="dark"] .page-glass {
+[data-bs-theme='dark'] .page-glass {
   background: rgba(255, 255, 255, 0.03);
   backdrop-filter: blur(8px);
   border: 1px solid rgba(255, 255, 255, 0.08);
@@ -99,7 +99,7 @@
   color: var(--bs-primary) !important;
 }
 
-[data-bs-theme="dark"] .reporte-theme-badge {
+[data-bs-theme='dark'] .reporte-theme-badge {
   background-color: #0b2a5b !important;
   border-color: rgba(147, 197, 253, 0.35) !important;
   color: #dbeafe !important;
@@ -259,7 +259,7 @@
   transition: all 0.2s ease !important;
 }
 
-[data-bs-theme="dark"] .premium-search-input {
+[data-bs-theme='dark'] .premium-search-input {
   background: rgba(255, 255, 255, 0.03) !important;
   border-color: rgba(255, 255, 255, 0.06) !important;
 }
@@ -275,7 +275,7 @@
   box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.1) !important;
 }
 
-[data-bs-theme="dark"] .premium-search-input:focus {
+[data-bs-theme='dark'] .premium-search-input:focus {
   background: rgba(255, 255, 255, 0.06) !important;
   border-color: rgba(255, 255, 255, 0.25) !important;
   box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.05) !important;
@@ -309,13 +309,13 @@
   cursor: pointer;
 }
 
-[data-bs-theme="light"] .premium-filter-select {
+[data-bs-theme='light'] .premium-filter-select {
   background-color: #ffffff !important;
   border-color: rgba(0, 0, 0, 0.15) !important;
   color: #212529 !important;
 }
 
-[data-bs-theme="dark"] .premium-filter-select {
+[data-bs-theme='dark'] .premium-filter-select {
   background-color: #212529 !important;
   border-color: rgba(255, 255, 255, 0.18) !important;
   color: #f8f9fa !important;
@@ -327,12 +327,12 @@
   color: var(--bs-body-color) !important;
 }
 
-[data-bs-theme="light"] .premium-filter-select option {
+[data-bs-theme='light'] .premium-filter-select option {
   background-color: #ffffff !important;
   color: #212529 !important;
 }
 
-[data-bs-theme="dark"] .premium-filter-select option {
+[data-bs-theme='dark'] .premium-filter-select option {
   background-color: #212529 !important;
   color: #f8f9fa !important;
 }
@@ -342,7 +342,7 @@
   box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.15) !important;
 }
 
-[data-bs-theme="dark"] .premium-filter-select:focus {
+[data-bs-theme='dark'] .premium-filter-select:focus {
   border-color: var(--bs-primary) !important;
   box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.25) !important;
 }
@@ -361,38 +361,38 @@
 }
 
 /* Colores robustos en light theme */
-[data-bs-theme="light"] .badge-completitud-danger {
+[data-bs-theme='light'] .badge-completitud-danger {
   background-color: rgba(220, 53, 69, 0.12) !important;
   color: #b02a37 !important;
   border: 1px solid rgba(220, 53, 69, 0.25) !important;
 }
 
-[data-bs-theme="light"] .badge-completitud-warning {
+[data-bs-theme='light'] .badge-completitud-warning {
   background-color: rgba(255, 193, 7, 0.15) !important;
   color: #8f6b00 !important; /* Más oscuro para excelente contraste */
   border: 1px solid rgba(255, 193, 7, 0.3) !important;
 }
 
-[data-bs-theme="light"] .badge-completitud-info {
+[data-bs-theme='light'] .badge-completitud-info {
   background-color: rgba(13, 202, 240, 0.12) !important;
   color: #087990 !important;
   border: 1px solid rgba(13, 202, 240, 0.25) !important;
 }
 
 /* Colores robustos en dark theme */
-[data-bs-theme="dark"] .badge-completitud-danger {
+[data-bs-theme='dark'] .badge-completitud-danger {
   background-color: rgba(220, 53, 69, 0.2) !important;
   color: #ea868f !important;
   border: 1px solid rgba(220, 53, 69, 0.4) !important;
 }
 
-[data-bs-theme="dark"] .badge-completitud-warning {
+[data-bs-theme='dark'] .badge-completitud-warning {
   background-color: rgba(255, 193, 7, 0.2) !important;
   color: #ffda6a !important;
   border: 1px solid rgba(255, 193, 7, 0.4) !important;
 }
 
-[data-bs-theme="dark"] .badge-completitud-info {
+[data-bs-theme='dark'] .badge-completitud-info {
   background-color: rgba(13, 202, 240, 0.2) !important;
   color: #6edff6 !important;
   border: 1px solid rgba(13, 202, 240, 0.4) !important;
@@ -403,104 +403,177 @@
    ============================================================================ */
 
 /* Light Theme Button Enhancements */
-[data-bs-theme="light"] .btn-outline-primary {
+[data-bs-theme='light'] .btn-outline-primary {
   color: #0d6efd !important;
   border-color: rgba(13, 110, 253, 0.4) !important;
 }
-[data-bs-theme="light"] .btn-outline-primary:hover {
+[data-bs-theme='light'] .btn-outline-primary:hover {
   background-color: #0d6efd !important;
   color: #ffffff !important;
 }
 
-[data-bs-theme="light"] .btn-outline-success {
+[data-bs-theme='light'] .btn-outline-success {
   color: #198754 !important;
   border-color: rgba(25, 135, 84, 0.4) !important;
 }
-[data-bs-theme="light"] .btn-outline-success:hover {
+[data-bs-theme='light'] .btn-outline-success:hover {
   background-color: #198754 !important;
   color: #ffffff !important;
 }
 
-[data-bs-theme="light"] .btn-outline-secondary {
+[data-bs-theme='light'] .btn-outline-secondary {
   color: #495057 !important;
   border-color: rgba(108, 117, 125, 0.4) !important;
 }
-[data-bs-theme="light"] .btn-outline-secondary:hover {
+[data-bs-theme='light'] .btn-outline-secondary:hover {
   background-color: #6c757d !important;
   color: #ffffff !important;
 }
 
-[data-bs-theme="light"] .btn-outline-danger {
+[data-bs-theme='light'] .btn-outline-danger {
   color: #dc3545 !important;
   border-color: rgba(220, 53, 69, 0.4) !important;
 }
-[data-bs-theme="light"] .btn-outline-danger:hover {
+[data-bs-theme='light'] .btn-outline-danger:hover {
   background-color: #dc3545 !important;
   color: #ffffff !important;
 }
 
 /* Dark Theme Button Enhancements (Glassmorphism & Glowing Accents) */
-[data-bs-theme="dark"] .btn-outline-primary {
+[data-bs-theme='dark'] .btn-outline-primary {
   color: #6edff6 !important;
   border-color: rgba(110, 223, 246, 0.3) !important;
   background-color: rgba(13, 202, 240, 0.05) !important;
 }
-[data-bs-theme="dark"] .btn-outline-primary:hover {
+[data-bs-theme='dark'] .btn-outline-primary:hover {
   background-color: rgba(110, 223, 246, 0.2) !important;
   border-color: #6edff6 !important;
   color: #ffffff !important;
 }
 
-[data-bs-theme="dark"] .btn-outline-success {
+[data-bs-theme='dark'] .btn-outline-success {
   color: #75b798 !important;
   border-color: rgba(117, 183, 152, 0.3) !important;
   background-color: rgba(117, 183, 152, 0.05) !important;
 }
-[data-bs-theme="dark"] .btn-outline-success:hover {
+[data-bs-theme='dark'] .btn-outline-success:hover {
   background-color: rgba(117, 183, 152, 0.2) !important;
   border-color: #75b798 !important;
   color: #ffffff !important;
 }
 
-[data-bs-theme="dark"] .btn-outline-secondary {
+[data-bs-theme='dark'] .btn-outline-secondary {
   color: #c5c7c9 !important;
   border-color: rgba(197, 199, 201, 0.3) !important;
   background-color: rgba(197, 199, 201, 0.05) !important;
 }
-[data-bs-theme="dark"] .btn-outline-secondary:hover {
+[data-bs-theme='dark'] .btn-outline-secondary:hover {
   background-color: rgba(197, 199, 201, 0.2) !important;
   border-color: #c5c7c9 !important;
   color: #ffffff !important;
 }
 
-[data-bs-theme="dark"] .btn-outline-danger {
+[data-bs-theme='dark'] .btn-outline-danger {
   color: #ea868f !important;
   border-color: rgba(234, 134, 143, 0.3) !important;
   background-color: rgba(234, 134, 143, 0.05) !important;
 }
-[data-bs-theme="dark"] .btn-outline-danger:hover {
+[data-bs-theme='dark'] .btn-outline-danger:hover {
   background-color: rgba(234, 134, 143, 0.2) !important;
   border-color: #ea868f !important;
   color: #ffffff !important;
 }
 
 /* Solid Buttons Theme Integration */
-[data-bs-theme="dark"] .btn-success {
+[data-bs-theme='dark'] .btn-success {
   background-color: #198754 !important;
   border-color: #198754 !important;
   color: #ffffff !important;
 }
-[data-bs-theme="dark"] .btn-success:hover {
+[data-bs-theme='dark'] .btn-success:hover {
   background-color: #157347 !important;
   border-color: #146c43 !important;
 }
 
-[data-bs-theme="dark"] .btn-premium-action {
+[data-bs-theme='dark'] .btn-premium-action {
   background-color: #0d6efd !important;
   box-shadow: 0 4px 12px rgba(13, 110, 253, 0.3) !important;
 }
-[data-bs-theme="dark"] .btn-premium-action:hover {
+[data-bs-theme='dark'] .btn-premium-action:hover {
   background-color: #0b5ed7 !important;
 }
 
+/* ============================================================================
+   CALENDARIO DE CITAS — Theme-Aware Styles
+   ============================================================================ */
 
+.calendar-day-cell {
+  background-color: var(--bs-body-bg);
+  transition: background-color 0.15s ease;
+}
+
+.calendar-day-cell--today {
+  background-color: rgba(var(--bs-primary-rgb), 0.04);
+}
+
+[data-bs-theme='dark'] .calendar-day-cell {
+  background-color: rgba(255, 255, 255, 0.02);
+}
+
+[data-bs-theme='dark'] .calendar-day-cell--today {
+  background-color: rgba(var(--bs-primary-rgb), 0.1);
+}
+
+.calendar-empty-cell {
+  background-color: var(--bs-tertiary-bg);
+}
+
+[data-bs-theme='dark'] .calendar-empty-cell {
+  background-color: rgba(255, 255, 255, 0.015);
+}
+
+.calendar-event-badge {
+  background-color: rgba(var(--bs-primary-rgb), 0.08);
+  color: var(--bs-primary);
+  border: 1px solid rgba(var(--bs-primary-rgb), 0.15);
+}
+
+.calendar-event-badge:hover {
+  background-color: rgba(var(--bs-primary-rgb), 0.15);
+}
+
+[data-bs-theme='dark'] .calendar-event-badge {
+  background-color: rgba(var(--bs-primary-rgb), 0.15);
+  border-color: rgba(var(--bs-primary-rgb), 0.25);
+}
+
+[data-bs-theme='dark'] .calendar-event-badge:hover {
+  background-color: rgba(var(--bs-primary-rgb), 0.25);
+}
+
+.calendar-event-time {
+  color: var(--bs-secondary-color);
+}
+
+.calendar-event-count-badge {
+  background-color: rgba(var(--bs-primary-rgb), 0.1);
+  color: var(--bs-primary);
+  border-color: rgba(var(--bs-primary-rgb), 0.2);
+}
+
+[data-bs-theme='dark'] .calendar-event-count-badge {
+  background-color: rgba(var(--bs-primary-rgb), 0.2);
+  border-color: rgba(var(--bs-primary-rgb), 0.3);
+}
+
+/* Utils */
+.scrollbar-hidden::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-hidden {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.tracking-wide {
+  letter-spacing: 0.05em;
+}

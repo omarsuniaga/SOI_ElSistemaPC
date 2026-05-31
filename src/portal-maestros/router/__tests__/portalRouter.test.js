@@ -44,24 +44,25 @@ describe('View Transitions', () => {
     expect(viewEl.classList.contains('pm-view-enter')).toBe(true)
   })
 
-  it('should add pm-view-enter-active after requestAnimationFrame', () => new Promise(done => {
-    router.on('test-route', () => {
-      const view = document.createElement('div')
-      view.className = 'pm-view-content active'
-      view.textContent = 'Test View'
-      document.querySelector('.pm-view-container').appendChild(view)
-    })
+  it('should add pm-view-enter-active after requestAnimationFrame', () =>
+    new Promise((done) => {
+      router.on('test-route', () => {
+        const view = document.createElement('div')
+        view.className = 'pm-view-content active'
+        view.textContent = 'Test View'
+        document.querySelector('.pm-view-container').appendChild(view)
+      })
 
-    router._dispatch('test-route')
+      router._dispatch('test-route')
 
-    const viewEl = document.querySelector('.pm-view-content.active')
+      const viewEl = document.querySelector('.pm-view-content.active')
 
-    // rAF fires asynchronously; use rAF to check after the callback
-    requestAnimationFrame(() => {
-      expect(viewEl.classList.contains('pm-view-enter-active')).toBe(true)
-      done()
-    })
-  }))
+      // rAF fires asynchronously; use rAF to check after the callback
+      requestAnimationFrame(() => {
+        expect(viewEl.classList.contains('pm-view-enter-active')).toBe(true)
+        done()
+      })
+    }))
 
   it('should not apply transition if _dispatch is called with same route', () => {
     router.on('same-route', () => {

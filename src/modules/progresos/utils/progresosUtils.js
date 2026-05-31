@@ -6,7 +6,7 @@ export function formatDate(dateStr) {
 
 export function escapeHTML(str) {
   if (!str) return ''
-  return str.replace(/[&<>]/g, function(m) {
+  return str.replace(/[&<>]/g, function (m) {
     if (m === '&') return '&amp;'
     if (m === '<') return '&lt;'
     if (m === '>') return '&gt;'
@@ -43,36 +43,36 @@ export function getCalificacionLabel(calif) {
 
 export function getTipoLabel(tipo) {
   const mapa = {
-    'parcial': 'Parcial',
-    'final': 'Final',
-    'continua': 'Continua',
+    parcial: 'Parcial',
+    final: 'Final',
+    continua: 'Continua',
   }
   return mapa[tipo] || tipo || 'No especificado'
 }
 
 export function getTipoBadgeClass(tipo) {
   const mapa = {
-    'parcial': 'bg-primary',
-    'final': 'bg-dark',
-    'continua': 'bg-info',
+    parcial: 'bg-primary',
+    final: 'bg-dark',
+    continua: 'bg-info',
   }
   return mapa[tipo] || 'bg-secondary'
 }
 
 export function getEstadoClass(estado) {
   const mapa = {
-    'en_progreso': 'text-primary',
-    'completado': 'text-success',
-    'pendiente': 'text-warning',
+    en_progreso: 'text-primary',
+    completado: 'text-success',
+    pendiente: 'text-warning',
   }
   return mapa[estado] || 'text-secondary'
 }
 
 export function getEstadoLabel(estado) {
   const mapa = {
-    'en_progreso': 'En Progreso',
-    'completado': 'Completado',
-    'pendiente': 'Pendiente',
+    en_progreso: 'En Progreso',
+    completado: 'Completado',
+    pendiente: 'Pendiente',
   }
   return mapa[estado] || estado || 'No especificado'
 }
@@ -81,7 +81,7 @@ export function getInitials(nombre) {
   if (!nombre) return '?'
   return nombre
     .split(' ')
-    .map(n => n[0])
+    .map((n) => n[0])
     .join('')
     .toUpperCase()
     .slice(0, 2)
@@ -89,9 +89,7 @@ export function getInitials(nombre) {
 
 export function calcularPromedio(arr) {
   if (!arr || arr.length === 0) return null
-  const validos = arr
-    .map(a => parseFloat(a.calificacion))
-    .filter(n => !isNaN(n))
+  const validos = arr.map((a) => parseFloat(a.calificacion)).filter((n) => !isNaN(n))
   if (validos.length === 0) return null
   const suma = validos.reduce((acc, n) => acc + n, 0)
   return parseFloat((suma / validos.length).toFixed(2))

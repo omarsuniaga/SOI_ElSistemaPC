@@ -67,7 +67,7 @@ export async function renderCrearClaseView(container) {
             <label class="pm-label">Instrumento *</label>
             <select id="nueva-clase-instrumento" class="pm-input">
               <option value="">Seleccionar instrumento...</option>
-              ${(instrumentos || []).map(i => `<option value="${i.id}">${escHTML(i.nombre)}</option>`).join('')}
+              ${(instrumentos || []).map((i) => `<option value="${i.id}">${escHTML(i.nombre)}</option>`).join('')}
             </select>
           </div>
 
@@ -90,7 +90,7 @@ export async function renderCrearClaseView(container) {
           <div id="nueva-clase-horarios">
             <div class="pm-horario-row" data-index="0">
               <select class="pm-input pm-horario-dia">
-                ${DIAS_SEMANA.map(d => `<option value="${d}">${d.charAt(0).toUpperCase() + d.slice(1)}</option>`).join('')}
+                ${DIAS_SEMANA.map((d) => `<option value="${d}">${d.charAt(0).toUpperCase() + d.slice(1)}</option>`).join('')}
               </select>
               <input type="time" class="pm-input pm-horario-inicio" value="15:30">
               <span>a</span>
@@ -117,7 +117,7 @@ export async function renderCrearClaseView(container) {
             <label class="pm-label">Maestro auxiliar (opcional)</label>
             <select id="nueva-clase-maestro-aux" class="pm-input">
               <option value="">Sin maestro auxiliar</option>
-              ${(maestros || []).map(m => `<option value="${m.id}">${escHTML(m.nombre || m.email)}</option>`).join('')}
+              ${(maestros || []).map((m) => `<option value="${m.id}">${escHTML(m.nombre || m.email)}</option>`).join('')}
             </select>
           </div>
         </div>
@@ -138,7 +138,7 @@ export async function renderCrearClaseView(container) {
       row.dataset.index = index
       row.innerHTML = `
         <select class="pm-input pm-horario-dia">
-          ${DIAS_SEMANA.map(d => `<option value="${d}">${d.charAt(0).toUpperCase() + d.slice(1)}</option>`).join('')}
+          ${DIAS_SEMANA.map((d) => `<option value="${d}">${d.charAt(0).toUpperCase() + d.slice(1)}</option>`).join('')}
         </select>
         <input type="time" class="pm-input pm-horario-inicio" value="15:30">
         <span>a</span>
@@ -181,7 +181,7 @@ export async function renderCrearClaseView(container) {
             salon,
             maestro_principal_id: maestro.id,
             maestro_suplente_id: maestroAuxId || null,
-            activo: true
+            activo: true,
           })
           .select()
           .single()
@@ -200,22 +200,19 @@ export async function renderCrearClaseView(container) {
               clase_id: clase.id,
               dia,
               hora_inicio: horaInicio,
-              hora_fin: horaFin
+              hora_fin: horaFin,
             })
           }
         }
 
         if (horarios.length > 0) {
-          const { error: errHorarios } = await supabase
-            .from('clase_horarios')
-            .insert(horarios)
-          
+          const { error: errHorarios } = await supabase.from('clase_horarios').insert(horarios)
+
           if (errHorarios) throw errHorarios
         }
 
         alert('¡Clase creada exitosamente!')
         window.location.hash = '#/calendario'
-
       } catch (err) {
         console.error(err)
         alert('Error al crear la clase: ' + err.message)
@@ -228,7 +225,6 @@ export async function renderCrearClaseView(container) {
     document.getElementById('btn-cancelar-clase').onclick = () => {
       window.history.back()
     }
-
   } catch (err) {
     container.innerHTML = `
       <div class="pm-empty" style="color:var(--pm-danger)">

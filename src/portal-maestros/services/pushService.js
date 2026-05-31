@@ -21,38 +21,42 @@ const DEFAULT_PREFS = {
 
 // ── Push Received Callbacks ───────────────────────────────────────
 // Array de callbacks: múltiples módulos pueden suscribirse sin pisarse.
-const _pushCallbacks = [];
+const _pushCallbacks = []
 
 function _notifyPushCallbacks(event) {
-  _pushCallbacks.forEach(cb => {
-    try { cb(event); } catch (e) { console.warn('[Push] callback error:', e); }
-  });
+  _pushCallbacks.forEach((cb) => {
+    try {
+      cb(event)
+    } catch (e) {
+      console.warn('[Push] callback error:', e)
+    }
+  })
 }
 
 /**
  * Registra un callback para eventos push. Devuelve una función de desuscripción.
  */
 export function onPushReceived(callback) {
-  _pushCallbacks.push(callback);
+  _pushCallbacks.push(callback)
   return () => {
-    const idx = _pushCallbacks.indexOf(callback);
-    if (idx !== -1) _pushCallbacks.splice(idx, 1);
-  };
+    const idx = _pushCallbacks.indexOf(callback)
+    if (idx !== -1) _pushCallbacks.splice(idx, 1)
+  }
 }
 
 // ── Listen for SW messages ───────────────────────────────────
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.addEventListener('message', (event) => {
     if (event.data && event.data.type === 'PUSH_RECEIVED') {
-      console.log('[Push] Notification received from SW:', event.data.notification);
+      console.log('[Push] Notification received from SW:', event.data.notification)
       if (_pushCallbacks.length) {
-        _notifyPushCallbacks({ 
-          event: 'notificationReceived', 
-          notification: event.data.notification 
-        });
+        _notifyPushCallbacks({
+          event: 'notificationReceived',
+          notification: event.data.notification,
+        })
       }
     }
-  });
+  })
 }
 
 let _prefsCache = null
@@ -135,56 +139,59 @@ export async function requestNotificationPermission() {
 export async function subscribeToPush() {
   if (!isPushSupported()) return { success: false, error: 'Push no soportado' }
 
-    const maestro = getMaestroLocal()
-    if (!maestro) return { success: false, error: 'No hay sesión' }
+  const maestro = getMaestroLocal()
+  if (!maestro) return { success: false, error: 'No hay sesión' }
 
-    const profileId = maestro.user_id || maestro.id
-    if (!profileId) return { success: false, error: 'No hay user_id asociado' }
+  const profileId = maestro.user_id || maestro.id
+  if (!profileId) return { success: false, error: 'No hay user_id asociado' }
+
+  try {
+    const { granted } = await requestNotificationPermission()
+    if (!granted) return { success: false, error: 'Permiso de notificaciones no otorgado' }
+
+    const vapidKey = await _getVapidPublicKey()
+    if (!vapidKey) return { success: false, error: 'VAPID key no configurada en el servidor' }
+
+    const registration = await navigator.serviceWorker.ready
+    let subscription
 
     try {
-      const { granted } = await requestNotificationPermission()
-      if (!granted) return { success: false, error: 'Permiso de notificaciones no otorgado' }
+      subscription = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: _urlBase64ToUint8Array(vapidKey),
+      })
+    } catch (subErr) {
+      // Si el navegador tiene una suscripción con una llave vieja, la eliminamos y reintentamos
+      if (subErr.name === 'InvalidStateError') {
+        console.warn(
+          '[Push] Llave VAPID diferente detectada. Eliminando suscripción antigua y reintentando...',
+        )
+        const oldSub = await registration.pushManager.getSubscription()
+        if (oldSub) await oldSub.unsubscribe()
 
-      const vapidKey = await _getVapidPublicKey()
-      if (!vapidKey) return { success: false, error: 'VAPID key no configurada en el servidor' }
-
-      const registration = await navigator.serviceWorker.ready
-      let subscription;
-      
-      try {
         subscription = await registration.pushManager.subscribe({
           userVisibleOnly: true,
           applicationServerKey: _urlBase64ToUint8Array(vapidKey),
         })
-      } catch (subErr) {
-        // Si el navegador tiene una suscripción con una llave vieja, la eliminamos y reintentamos
-        if (subErr.name === 'InvalidStateError') {
-          console.warn('[Push] Llave VAPID diferente detectada. Eliminando suscripción antigua y reintentando...');
-          const oldSub = await registration.pushManager.getSubscription();
-          if (oldSub) await oldSub.unsubscribe();
-          
-          subscription = await registration.pushManager.subscribe({
-            userVisibleOnly: true,
-            applicationServerKey: _urlBase64ToUint8Array(vapidKey),
-          });
-        } else {
-          throw subErr;
-        }
+      } else {
+        throw subErr
       }
+    }
 
-      // Guardar endpoint+keys en Supabase
-      const subJSON = subscription.toJSON()
-      const { error } = await supabase
-        .from('push_subscriptions')
-        .upsert({
-          profile_id: profileId,
-          endpoint: subJSON.endpoint,
-          p256dh: subJSON.keys.p256dh,
-          auth: subJSON.keys.auth,
-          user_agent: navigator.userAgent,
-          activo: true,
-          updated_at: new Date().toISOString(),
-        }, { onConflict: 'endpoint' })
+    // Guardar endpoint+keys en Supabase
+    const subJSON = subscription.toJSON()
+    const { error } = await supabase.from('push_subscriptions').upsert(
+      {
+        profile_id: profileId,
+        endpoint: subJSON.endpoint,
+        p256dh: subJSON.keys.p256dh,
+        auth: subJSON.keys.auth,
+        user_agent: navigator.userAgent,
+        activo: true,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: 'endpoint' },
+    )
 
     if (error) {
       console.error('[Push] Error guardando suscripción:', error)
@@ -195,7 +202,7 @@ export async function subscribeToPush() {
     await saveNotificationPreferences({ push_activo: true })
 
     // Notificar a servicios de la suscripción exitosa
-    _notifyPushCallbacks({ event: 'subscriptionChanged', subscribed: true });
+    _notifyPushCallbacks({ event: 'subscriptionChanged', subscribed: true })
 
     return { success: true, subscription }
   } catch (err) {
@@ -221,7 +228,7 @@ export async function unsubscribeFromPush() {
     }
     await saveNotificationPreferences({ push_activo: false })
 
-    _notifyPushCallbacks({ event: 'subscriptionChanged', subscribed: false });
+    _notifyPushCallbacks({ event: 'subscriptionChanged', subscribed: false })
 
     return { success: true }
   } catch (err) {
@@ -304,7 +311,7 @@ export async function testNotification() {
   try {
     if ('serviceWorker' in navigator) {
       const registration = await navigator.serviceWorker.ready
-      
+
       // Notificación via SW (aparece en sistema operativo)
       await registration.showNotification('🔔 Sistema Académico SOI', {
         body: 'Las notificaciones push están configuradas correctamente.',
@@ -316,10 +323,10 @@ export async function testNotification() {
         data: { url: '/maestros', timestamp: Date.now() },
         actions: [
           { action: 'open', title: 'Abrir App' },
-          { action: 'dismiss', title: 'Cerrar' }
-        ]
+          { action: 'dismiss', title: 'Cerrar' },
+        ],
       })
-      
+
       console.log('[Push] Test notification sent via SW')
       return { success: true, method: 'serviceWorker' }
     }
@@ -343,17 +350,17 @@ export async function testNotification() {
 async function _getVapidPublicKey() {
   // Práctica profesional: La llave pública se inyecta en tiempo de compilación/desarrollo
   const publicKey = import.meta.env.VITE_VAPID_PUBLIC_KEY
-  
+
   if (!publicKey || publicKey.includes('TU_LLAVE_PUBLICA')) {
     console.error('❌ VITE_VAPID_PUBLIC_KEY no está configurada en tu archivo .env')
     return null
   }
-  
+
   return publicKey
 }
 
 function _urlBase64ToUint8Array(base64String) {
-  const padding = '='.repeat((4 - base64String.length % 4) % 4)
+  const padding = '='.repeat((4 - (base64String.length % 4)) % 4)
   const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/')
   const rawData = window.atob(base64)
   const outputArray = new Uint8Array(rawData.length)

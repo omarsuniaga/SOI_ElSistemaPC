@@ -19,7 +19,9 @@ function proxyBase() {
 }
 
 async function authHeaders() {
-  const { data: { session } } = await supabase.auth.getSession()
+  const {
+    data: { session },
+  } = await supabase.auth.getSession()
   const token = session?.access_token ?? ''
   return {
     Authorization: `Bearer ${token}`,
@@ -33,8 +35,8 @@ async function proxyChat(messages, { maxTokens, temperature, responseFormat } = 
   const body = {
     model: config.groq.model,
     messages,
-    ...(maxTokens     && { max_tokens: maxTokens }),
-    ...(temperature   !== undefined && { temperature }),
+    ...(maxTokens && { max_tokens: maxTokens }),
+    ...(temperature !== undefined && { temperature }),
     ...(responseFormat && { response_format: responseFormat }),
   }
   const res = await fetch(`${proxyBase()}/chat`, {
@@ -43,12 +45,15 @@ async function proxyChat(messages, { maxTokens, temperature, responseFormat } = 
     body: JSON.stringify(body),
   })
   const data = await res.json()
-  if (!res.ok || data.error) throw new Error(data.error?.message ?? `Groq proxy error ${res.status}`)
+  if (!res.ok || data.error)
+    throw new Error(data.error?.message ?? `Groq proxy error ${res.status}`)
   return data.choices[0].message.content.trim()
 }
 
 async function proxyTranscribe(audioBlob, fileName = 'audio.webm') {
-  const { data: { session } } = await supabase.auth.getSession()
+  const {
+    data: { session },
+  } = await supabase.auth.getSession()
   const token = session?.access_token ?? ''
 
   const formData = new FormData()
@@ -64,7 +69,8 @@ async function proxyTranscribe(audioBlob, fileName = 'audio.webm') {
     body: formData,
   })
   const data = await res.json()
-  if (!res.ok || data.error) throw new Error(data.error?.message ?? `Groq proxy error ${res.status}`)
+  if (!res.ok || data.error)
+    throw new Error(data.error?.message ?? `Groq proxy error ${res.status}`)
   return data.text ?? ''
 }
 
@@ -73,8 +79,9 @@ async function proxyTranscribe(audioBlob, fileName = 'audio.webm') {
 // ---------------------------------------------------------------------------
 
 const MOCK_RESPONSES = {
-  'escala do': '#Pedro [Escala Do Mayor] $1Octava (Practicar digitación) {Estudiar escala Do Mayor 10min/día} 4/5\n#Lucía [Escala Do# Mayor] $1Octava (Mayor velocidad) {Practicar cambio de posición} 3/5',
-  'default': '#Alumno [Contenido dado] $medida (sugerencia) {tarea} N/5',
+  'escala do':
+    '#Pedro [Escala Do Mayor] $1Octava (Practicar digitación) {Estudiar escala Do Mayor 10min/día} 4/5\n#Lucía [Escala Do# Mayor] $1Octava (Mayor velocidad) {Practicar cambio de posición} 3/5',
+  default: '#Alumno [Contenido dado] $medida (sugerencia) {tarea} N/5',
 }
 
 function getMockEnrichResponse(input) {
@@ -109,18 +116,31 @@ export async function enrichText(texto) {
   }
 
   if (config.isDemoMode) {
-    return { success: true, message: 'Demo mode', dsl: getMockEnrichResponse(texto), debug: { isMock: true } }
+    return {
+      success: true,
+      message: 'Demo mode',
+      dsl: getMockEnrichResponse(texto),
+      debug: { isMock: true },
+    }
   }
 
   try {
-    const dsl = await proxyChat([
-      { role: 'system', content: BASE_PROMPT },
-      { role: 'user', content: `Texto del maestro: "${texto}"` },
-    ], { maxTokens: config.groq.maxTokens, temperature: config.groq.temperature })
+    const dsl = await proxyChat(
+      [
+        { role: 'system', content: BASE_PROMPT },
+        { role: 'user', content: `Texto del maestro: "${texto}"` },
+      ],
+      { maxTokens: config.groq.maxTokens, temperature: config.groq.temperature },
+    )
     return { success: true, message: 'Enriquecido correctamente', dsl, debug: { isMock: false } }
   } catch (error) {
     console.error('GROQ enrichText error:', error)
-    return { success: false, message: `Error: ${error.message}`, dsl: getMockEnrichResponse(texto), debug: { isMock: true, fallback: true, error: error.message } }
+    return {
+      success: false,
+      message: `Error: ${error.message}`,
+      dsl: getMockEnrichResponse(texto),
+      debug: { isMock: true, fallback: true, error: error.message },
+    }
   }
 }
 
@@ -130,7 +150,12 @@ export async function transcribeAudio(audioBlob) {
   }
 
   if (config.isDemoMode) {
-    return { success: true, message: 'Demo mode', transcript: 'hoy dimos escala do con pedro se porto mal', debug: { isMock: true } }
+    return {
+      success: true,
+      message: 'Demo mode',
+      transcript: 'hoy dimos escala do con pedro se porto mal',
+      debug: { isMock: true },
+    }
   }
 
   try {
@@ -138,7 +163,12 @@ export async function transcribeAudio(audioBlob) {
     return { success: true, message: 'Transcripción exitosa', transcript, debug: { isMock: false } }
   } catch (error) {
     console.error('GROQ transcribeAudio error:', error)
-    return { success: false, message: `Error: ${error.message}`, transcript: '', debug: { isMock: true, fallback: true, error: error.message } }
+    return {
+      success: false,
+      message: `Error: ${error.message}`,
+      transcript: '',
+      debug: { isMock: true, fallback: true, error: error.message },
+    }
   }
 }
 
@@ -173,7 +203,7 @@ Plan de clase:
 Alumnos mencionados: ${alumnos.join(', ') || '(ninguno)'}
 
 Objetivos curriculares a evaluar:
-${objetivos_curriculo.map(o => `- id:${o.id} → ${o.descripcion}`).join('\n')}
+${objetivos_curriculo.map((o) => `- id:${o.id} → ${o.descripcion}`).join('\n')}
 
 Responde SOLO en JSON válido con este formato exacto:
 {
@@ -184,19 +214,23 @@ Responde SOLO en JSON válido con este formato exacto:
 Solo incluye objetivos que tengan evidencia real en el plan. No inventes coberturas.`
 
   if (config.isDemoMode) {
-    const mockCoberturas = alumnos.slice(0, 2).flatMap(alumno =>
-      objetivos_curriculo.slice(0, 2).map(o => ({
-        alumno, objetivo_id: o.id, nivel: 'en_proceso', razon: 'Demo: objetivo relacionado con el tema'
-      }))
+    const mockCoberturas = alumnos.slice(0, 2).flatMap((alumno) =>
+      objetivos_curriculo.slice(0, 2).map((o) => ({
+        alumno,
+        objetivo_id: o.id,
+        nivel: 'en_proceso',
+        razon: 'Demo: objetivo relacionado con el tema',
+      })),
     )
     return { success: true, coberturas: mockCoberturas, isMock: true }
   }
 
   try {
-    const content = await proxyChat(
-      [{ role: 'user', content: prompt }],
-      { maxTokens: 1500, temperature: 0.3, responseFormat: { type: 'json_object' } }
-    )
+    const content = await proxyChat([{ role: 'user', content: prompt }], {
+      maxTokens: 1500,
+      temperature: 0.3,
+      responseFormat: { type: 'json_object' },
+    })
     const parsed = JSON.parse(content || '{"coberturas":[]}')
     return { success: true, coberturas: parsed.coberturas || [], isMock: false }
   } catch (error) {
@@ -211,7 +245,7 @@ export async function sugerirPlan(alumno, objetivos_pendientes, ultimos_temas) {
 Alumno: ${alumno.nombre}, instrumento: ${alumno.instrumento}, nivel: ${alumno.nivel}
 
 Objetivos pendientes del currículo (priorizar estos):
-${objetivos_pendientes.map(o => `- ${o.descripcion}`).join('\n') || '(sin objetivos pendientes registrados)'}
+${objetivos_pendientes.map((o) => `- ${o.descripcion}`).join('\n') || '(sin objetivos pendientes registrados)'}
 
 Últimas clases trabajadas (no repetir):
 ${ultimos_temas.join(', ') || '(ninguna)'}
@@ -239,10 +273,11 @@ Sé específico y pedagógicamente relevante para el instrumento y nivel.`
   }
 
   try {
-    const content = await proxyChat(
-      [{ role: 'user', content: prompt }],
-      { maxTokens: 800, temperature: 0.7, responseFormat: { type: 'json_object' } }
-    )
+    const content = await proxyChat([{ role: 'user', content: prompt }], {
+      maxTokens: 800,
+      temperature: 0.7,
+      responseFormat: { type: 'json_object' },
+    })
     const parsed = JSON.parse(content || '{}')
     return { success: true, plan: parsed, isMock: false }
   } catch (error) {
@@ -251,14 +286,23 @@ Sé específico y pedagógicamente relevante para el instrumento y nivel.`
   }
 }
 
-export async function analizarEnfoque(instrumento, planes_ejecutados, curriculo, resumen_cobertura) {
-  const pilares_texto = curriculo?.curriculo_pilares?.map(p =>
-    `Pilar "${p.nombre}": ${p.curriculo_objetivos?.map(o => o.descripcion).join('; ')}`
-  ).join('\n') || '(sin currículo definido)'
+export async function analizarEnfoque(
+  instrumento,
+  planes_ejecutados,
+  curriculo,
+  resumen_cobertura,
+) {
+  const pilares_texto =
+    curriculo?.curriculo_pilares
+      ?.map(
+        (p) =>
+          `Pilar "${p.nombre}": ${p.curriculo_objetivos?.map((o) => o.descripcion).join('; ')}`,
+      )
+      .join('\n') || '(sin currículo definido)'
 
-  const planes_texto = planes_ejecutados.map((p, i) =>
-    `Clase ${i + 1}: ${p.tema} — ${p.contenido || p.objetivos || ''}`
-  ).join('\n')
+  const planes_texto = planes_ejecutados
+    .map((p, i) => `Clase ${i + 1}: ${p.tema} — ${p.contenido || p.objetivos || ''}`)
+    .join('\n')
 
   const prompt = `Eres un mentor pedagógico musical. Analiza el trabajo de un maestro y da retroalimentación constructiva.
 
@@ -289,10 +333,10 @@ Tono: colega experto, respetuoso, propositivo. Sin tecnicismos innecesarios. Res
   }
 
   try {
-    const feedback = await proxyChat(
-      [{ role: 'user', content: prompt }],
-      { maxTokens: 600, temperature: 0.8 }
-    )
+    const feedback = await proxyChat([{ role: 'user', content: prompt }], {
+      maxTokens: 600,
+      temperature: 0.8,
+    })
     return { success: true, feedback, isMock: false }
   } catch (error) {
     console.error('analizarEnfoque error:', error)

@@ -12,7 +12,7 @@ describe('rutaEventEmitter', () => {
     rutaEvents.on('node-covered', listener)
     rutaEvents.emit('node-covered', { nodeId: 'n1', claseId: 'c1' })
 
-    await new Promise(resolve => setTimeout(resolve, 10))
+    await new Promise((resolve) => setTimeout(resolve, 10))
     expect(listener).toHaveBeenCalledWith({ nodeId: 'n1', claseId: 'c1' })
   })
 
@@ -22,7 +22,7 @@ describe('rutaEventEmitter', () => {
     rutaEvents.off('node-covered', listener)
     rutaEvents.emit('node-covered', { nodeId: 'n1' })
 
-    await new Promise(resolve => setTimeout(resolve, 10))
+    await new Promise((resolve) => setTimeout(resolve, 10))
     expect(listener).not.toHaveBeenCalled()
   })
 
@@ -34,7 +34,7 @@ describe('rutaEventEmitter', () => {
     rutaEvents.on('node-covered', listener2)
     rutaEvents.emit('node-covered', { nodeId: 'n1' })
 
-    await new Promise(resolve => setTimeout(resolve, 10))
+    await new Promise((resolve) => setTimeout(resolve, 10))
     expect(listener1).toHaveBeenCalled()
     expect(listener2).toHaveBeenCalled()
   })

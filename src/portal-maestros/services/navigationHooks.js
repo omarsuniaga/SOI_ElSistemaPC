@@ -26,5 +26,5 @@ export function invalidateAllViews() {
 export default {
   setNavigationCallbacks,
   invalidateView,
-  invalidateAllViews
+  invalidateAllViews,
 }

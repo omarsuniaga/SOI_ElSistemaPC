@@ -18,12 +18,12 @@ export function saveSession(session, persistent = true) {
     refresh_token: session.refresh_token,
     user: session.user,
     expires_at: session.expires_at,
-    persistent
+    persistent,
   }
-  
+
   const storage = persistent ? localStorage : sessionStorage
   storage.setItem(SESSION_KEY, JSON.stringify(sessionData))
-  
+
   // Si guardamos en uno, limpiamos el otro para evitar conflictos
   if (persistent) {
     sessionStorage.removeItem(SESSION_KEY)
@@ -41,7 +41,7 @@ export function getSession() {
   // Intentar en ambos
   const storedLocal = localStorage.getItem(SESSION_KEY)
   const storedSession = sessionStorage.getItem(SESSION_KEY)
-  
+
   const stored = storedLocal || storedSession
   if (!stored) return null
 
@@ -73,7 +73,7 @@ export function isSessionValid() {
 
   // Supabase expires_at está en segundos, Date.now() en milisegundos
   // Agregamos un margen de 10 segundos por las dudas
-  return (Date.now() / 1000) < (session.expires_at - 10)
+  return Date.now() / 1000 < session.expires_at - 10
 }
 
 /**

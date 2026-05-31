@@ -1,16 +1,19 @@
-import { escHTML } from '../utils/portalUtils.js';
-import { academicService } from '../../modules/academic-routes/services/academicService.js';
+import { escHTML } from '../utils/portalUtils.js'
+import { academicService } from '../../modules/academic-routes/services/academicService.js'
 
 /**
  * Componente para evaluar un indicador individual dentro de un nodo.
  */
-export function createNodeEvaluationCard(container, { indicator, sessionId, studentId, teacherId, onSave }) {
-  const status = indicator.status || 'pending'; // 'approved', 'failed', 'in_process', 'pending'
-  const token = academicService.getStatusToken(status);
-  
-  const card = document.createElement('div');
-  card.className = `pm-node-eval-card pm-animate-fade-in status-${status}`;
-  card.dataset.indicatorId = indicator.indicator_id;
+export function createNodeEvaluationCard(
+  container,
+  { indicator, sessionId, studentId, teacherId, onSave },
+) {
+  const status = indicator.status || 'pending' // 'approved', 'failed', 'in_process', 'pending'
+  const token = academicService.getStatusToken(status)
+
+  const card = document.createElement('div')
+  card.className = `pm-node-eval-card pm-animate-fade-in status-${status}`
+  card.dataset.indicatorId = indicator.indicator_id
 
   card.innerHTML = `
     <div class="pm-eval-card-header">
@@ -40,19 +43,19 @@ export function createNodeEvaluationCard(container, { indicator, sessionId, stud
     <div class="pm-eval-card-footer">
       <span class="pm-eval-save-status"></span>
     </div>
-  `;
+  `
 
   // Eventos
-  const buttons = card.querySelectorAll('.pm-eval-btn');
-  const feedbackInput = card.querySelector('.pm-eval-feedback-input');
-  const statusMsg = card.querySelector('.pm-eval-save-status');
+  const buttons = card.querySelectorAll('.pm-eval-btn')
+  const feedbackInput = card.querySelector('.pm-eval-feedback-input')
+  const statusMsg = card.querySelector('.pm-eval-save-status')
 
-  let saveTimeout = null;
+  let saveTimeout = null
 
   const handleSave = async (newStatus = null) => {
-    const currentStatus = newStatus || card.dataset.status || status;
-    statusMsg.innerHTML = '<i class="pm-spinner-sm"></i> Guardando...';
-    
+    const currentStatus = newStatus || card.dataset.status || status
+    statusMsg.innerHTML = '<i class="pm-spinner-sm"></i> Guardando...'
+
     try {
       const payload = {
         student_id: studentId,
@@ -61,35 +64,35 @@ export function createNodeEvaluationCard(container, { indicator, sessionId, stud
         created_by: teacherId,
         status: currentStatus,
         feedback: feedbackInput.value,
-        attempt_number: (indicator.attempt_number || 0) + 1
-      };
+        attempt_number: (indicator.attempt_number || 0) + 1,
+      }
 
-      await academicService.saveIndicatorAttempt(payload);
-      
-      statusMsg.innerHTML = '<i class="bi bi-check-all"></i> Guardado localmente';
-      card.className = `pm-node-eval-card status-${currentStatus}`;
-      
-      if (onSave) onSave(payload);
+      await academicService.saveIndicatorAttempt(payload)
+
+      statusMsg.innerHTML = '<i class="bi bi-check-all"></i> Guardado localmente'
+      card.className = `pm-node-eval-card status-${currentStatus}`
+
+      if (onSave) onSave(payload)
     } catch (err) {
-      console.error('Error saving evaluation:', err);
-      statusMsg.innerHTML = '<i class="bi bi-exclamation-circle"></i> Error al guardar';
+      console.error('Error saving evaluation:', err)
+      statusMsg.innerHTML = '<i class="bi bi-exclamation-circle"></i> Error al guardar'
     }
-  };
+  }
 
-  buttons.forEach(btn => {
+  buttons.forEach((btn) => {
     btn.onclick = () => {
-      const newStatus = btn.dataset.status;
-      buttons.forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      card.dataset.status = newStatus;
-      handleSave(newStatus);
-    };
-  });
+      const newStatus = btn.dataset.status
+      buttons.forEach((b) => b.classList.remove('active'))
+      btn.classList.add('active')
+      card.dataset.status = newStatus
+      handleSave(newStatus)
+    }
+  })
 
   feedbackInput.oninput = () => {
-    if (saveTimeout) clearTimeout(saveTimeout);
-    saveTimeout = setTimeout(() => handleSave(), 1500);
-  };
+    if (saveTimeout) clearTimeout(saveTimeout)
+    saveTimeout = setTimeout(() => handleSave(), 1500)
+  }
 
-  container.appendChild(card);
+  container.appendChild(card)
 }

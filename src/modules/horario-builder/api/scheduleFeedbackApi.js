@@ -1,4 +1,4 @@
-import { supabase } from '../../../lib/supabaseClient.js';
+import { supabase } from '../../../lib/supabaseClient.js'
 
 /**
  * Fetch all feedback entries for a given schedule run.
@@ -11,10 +11,10 @@ export async function getRunFeedback(runId) {
     .from('schedule_run_feedback')
     .select('*')
     .eq('run_id', runId)
-    .order('created_at', { ascending: true });
+    .order('created_at', { ascending: true })
 
-  if (error) throw error;
-  return data;
+  if (error) throw error
+  return data
 }
 
 /**
@@ -31,10 +31,10 @@ export async function addFeedback({ runId, comentario, tipo = 'observacion' }) {
     .from('schedule_run_feedback')
     .insert([{ run_id: runId, comentario, tipo }])
     .select()
-    .single();
+    .single()
 
-  if (error) throw error;
-  return data;
+  if (error) throw error
+  return data
 }
 
 /**
@@ -42,15 +42,17 @@ export async function addFeedback({ runId, comentario, tipo = 'observacion' }) {
  * @returns {Promise<boolean>}
  */
 export async function getCurrentUserIsAdmin() {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return false;
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return false
   const { data, error } = await supabase
     .from('maestros')
     .select('es_admin')
     .eq('user_id', user.id)
-    .single();
-  if (error || !data) return false;
-  return data.es_admin === true;
+    .single()
+  if (error || !data) return false
+  return data.es_admin === true
 }
 
 /**
@@ -66,8 +68,8 @@ export async function updateScheduleRunEstado(runId, estado) {
     .update({ estado })
     .eq('id', runId)
     .select()
-    .single();
+    .single()
 
-  if (error) throw error;
-  return data;
+  if (error) throw error
+  return data
 }

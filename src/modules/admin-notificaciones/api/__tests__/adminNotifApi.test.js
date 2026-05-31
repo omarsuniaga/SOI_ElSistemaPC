@@ -4,8 +4,8 @@ import { supabase } from '../../../../lib/supabaseClient.js'
 
 vi.mock('../../../../lib/supabaseClient.js', () => ({
   supabase: {
-    from: vi.fn()
-  }
+    from: vi.fn(),
+  },
 }))
 
 function createMockChain(resolvedValue) {
@@ -18,7 +18,7 @@ function createMockChain(resolvedValue) {
     lt: vi.fn().mockReturnThis(),
     order: vi.fn().mockReturnThis(),
     limit: vi.fn().mockReturnThis(),
-    then: vi.fn((onFulfilled) => Promise.resolve(resolvedValue).then(onFulfilled))
+    then: vi.fn((onFulfilled) => Promise.resolve(resolvedValue).then(onFulfilled)),
   }
   return chain
 }
@@ -31,14 +31,24 @@ describe('adminNotifApi Proactive Engines', () => {
   describe('fetchAdminFeed - Auto-Substitution Suggester', () => {
     it('should query and associate suggested active substitutes with the same instrument', async () => {
       // Mock para profiles
-      const mockProfiles = [
-        { id: 'm2', nombre_completo: 'John Coltrane', email: 'john@jazz.com' }
-      ]
+      const mockProfiles = [{ id: 'm2', nombre_completo: 'John Coltrane', email: 'john@jazz.com' }]
 
       // Mock para maestros activos (especialidad/instrumento)
       const mockMaestros = [
-        { id: 'm2', nombre_completo: 'John Coltrane', correo: 'john@jazz.com', especialidad: 'Saxofón', activo: true },
-        { id: 'm3', nombre_completo: 'Miles Davis', correo: 'miles@jazz.com', especialidad: 'Trompeta', activo: true }
+        {
+          id: 'm2',
+          nombre_completo: 'John Coltrane',
+          correo: 'john@jazz.com',
+          especialidad: 'Saxofón',
+          activo: true,
+        },
+        {
+          id: 'm3',
+          nombre_completo: 'Miles Davis',
+          correo: 'miles@jazz.com',
+          especialidad: 'Trompeta',
+          activo: true,
+        },
       ]
 
       // Mock para ausencias
@@ -53,8 +63,12 @@ describe('adminNotifApi Proactive Engines', () => {
           estado: 'pendiente',
           motivo: 'Fiebre alta',
           created_at: '2026-05-24T10:00:00Z',
-          maestros: { nombre_completo: 'Charlie Parker', correo: 'charlie@jazz.com', instrumento: 'Saxofón' }
-        }
+          maestros: {
+            nombre_completo: 'Charlie Parker',
+            correo: 'charlie@jazz.com',
+            instrumento: 'Saxofón',
+          },
+        },
       ]
 
       // Configurar el mock de Supabase para responder a las diferentes tablas
@@ -74,10 +88,10 @@ describe('adminNotifApi Proactive Engines', () => {
       const feed = await fetchAdminFeed()
 
       // Encontrar el evento de ausencia
-      const ausenciaEvent = feed.find(e => e.source === 'ausencia')
+      const ausenciaEvent = feed.find((e) => e.source === 'ausencia')
       expect(ausenciaEvent).toBeDefined()
       expect(ausenciaEvent.maestroInstrumento).toBe('Saxofón')
-      
+
       // Debe sugerir a John Coltrane (Saxofón) pero no a Miles Davis (Trompeta)
       expect(ausenciaEvent.suplentesSugeridos.length).toBe(1)
       expect(ausenciaEvent.suplentesSugeridos[0].nombre_completo).toBe('John Coltrane')
@@ -88,9 +102,24 @@ describe('adminNotifApi Proactive Engines', () => {
     it('should flag student with 3+ consecutive absences as "Riesgo de Deserción" (Alta)', async () => {
       // Mock de asistencias consecutivas ausentes
       const mockAsistencias = [
-        { alumno_id: 's1', estado: 'A', fecha: '2026-05-24', alumnos: { nombre_completo: 'Jimi Hendrix' } },
-        { alumno_id: 's1', estado: 'A', fecha: '2026-05-23', alumnos: { nombre_completo: 'Jimi Hendrix' } },
-        { alumno_id: 's1', estado: 'A', fecha: '2026-05-22', alumnos: { nombre_completo: 'Jimi Hendrix' } }
+        {
+          alumno_id: 's1',
+          estado: 'A',
+          fecha: '2026-05-24',
+          alumnos: { nombre_completo: 'Jimi Hendrix' },
+        },
+        {
+          alumno_id: 's1',
+          estado: 'A',
+          fecha: '2026-05-23',
+          alumnos: { nombre_completo: 'Jimi Hendrix' },
+        },
+        {
+          alumno_id: 's1',
+          estado: 'A',
+          fecha: '2026-05-22',
+          alumnos: { nombre_completo: 'Jimi Hendrix' },
+        },
       ]
 
       supabase.from.mockImplementation((table) => {
@@ -103,7 +132,7 @@ describe('adminNotifApi Proactive Engines', () => {
       const feed = await fetchAdminFeed()
 
       // Debe levantar una alerta de tipo riesgo con prioridad alta
-      const riesgoEvent = feed.find(e => e.id.startsWith('riesgo-alumno-ausencias'))
+      const riesgoEvent = feed.find((e) => e.id.startsWith('riesgo-alumno-ausencias'))
       expect(riesgoEvent).toBeDefined()
       expect(riesgoEvent.priority).toBe('alta')
       expect(riesgoEvent.titulo).toContain('Riesgo de Deserción')
@@ -113,10 +142,30 @@ describe('adminNotifApi Proactive Engines', () => {
     it('should flag student with <70% attendance rate as "Bajo Compliance Académico" (Media)', async () => {
       // 1 presente, 3 ausentes = 25% asistencia
       const mockAsistencias = [
-        { alumno_id: 's2', estado: 'P', fecha: '2026-05-24', alumnos: { nombre_completo: 'Eric Clapton' } },
-        { alumno_id: 's2', estado: 'A', fecha: '2026-05-23', alumnos: { nombre_completo: 'Eric Clapton' } },
-        { alumno_id: 's2', estado: 'A', fecha: '2026-05-22', alumnos: { nombre_completo: 'Eric Clapton' } },
-        { alumno_id: 's2', estado: 'A', fecha: '2026-05-21', alumnos: { nombre_completo: 'Eric Clapton' } }
+        {
+          alumno_id: 's2',
+          estado: 'P',
+          fecha: '2026-05-24',
+          alumnos: { nombre_completo: 'Eric Clapton' },
+        },
+        {
+          alumno_id: 's2',
+          estado: 'A',
+          fecha: '2026-05-23',
+          alumnos: { nombre_completo: 'Eric Clapton' },
+        },
+        {
+          alumno_id: 's2',
+          estado: 'A',
+          fecha: '2026-05-22',
+          alumnos: { nombre_completo: 'Eric Clapton' },
+        },
+        {
+          alumno_id: 's2',
+          estado: 'A',
+          fecha: '2026-05-21',
+          alumnos: { nombre_completo: 'Eric Clapton' },
+        },
       ]
 
       supabase.from.mockImplementation((table) => {
@@ -129,7 +178,7 @@ describe('adminNotifApi Proactive Engines', () => {
       const feed = await fetchAdminFeed()
 
       // Debe levantar una alerta de baja asistencia con prioridad media
-      const riesgoEvent = feed.find(e => e.id.startsWith('riesgo-alumno-rate'))
+      const riesgoEvent = feed.find((e) => e.id.startsWith('riesgo-alumno-rate'))
       expect(riesgoEvent).toBeDefined()
       expect(riesgoEvent.priority).toBe('media')
       expect(riesgoEvent.titulo).toContain('Bajo Compliance Académico')
@@ -148,4 +197,3 @@ describe('adminNotifApi Proactive Engines', () => {
     })
   })
 })
-

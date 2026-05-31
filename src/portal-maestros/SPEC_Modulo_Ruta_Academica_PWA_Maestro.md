@@ -1,4 +1,5 @@
 # SPEC TÉCNICA Y FUNCIONAL
+
 # Módulo de Ruta Académica por Nodos para la PWA del Maestro
 
 **Proyecto:** PWA del Maestro — Registro de Asistencias, Observaciones y Planificación Académica  
@@ -6,7 +7,7 @@
 **Instrumento inicial:** Violín  
 **Versión:** 1.0.0  
 **Estado:** Especificación inicial para desarrollo  
-**Fecha:** 2026-05-05  
+**Fecha:** 2026-05-05
 
 ---
 
@@ -1079,13 +1080,9 @@ La IA debe responder con:
 {
   "coherenceScore": 0.86,
   "summary": "La planificación es coherente con el nivel objetivo.",
-  "risks": [
-    "El nodo de Arco tiene poca carga para preparar Vivaldi."
-  ],
+  "risks": ["El nodo de Arco tiene poca carga para preparar Vivaldi."],
   "missingNodes": [],
-  "suggestedAdjustments": [
-    "Agregar trabajo de detaché en semicorcheas durante dos semanas."
-  ],
+  "suggestedAdjustments": ["Agregar trabajo de detaché en semicorcheas durante dos semanas."],
   "suggestedWeeklyPlan": []
 }
 ```
@@ -1162,13 +1159,9 @@ export function canCompleteLevel(nodes) {
   const requiredNodes = nodes.filter((node) => node.is_required)
   const criticalNodes = nodes.filter((node) => node.is_critical)
 
-  const requiredApproved = requiredNodes.every(
-    (node) => node.status === 'approved'
-  )
+  const requiredApproved = requiredNodes.every((node) => node.status === 'approved')
 
-  const criticalApproved = criticalNodes.every(
-    (node) => node.status === 'approved'
-  )
+  const criticalApproved = criticalNodes.every((node) => node.status === 'approved')
 
   return requiredApproved && criticalApproved
 }

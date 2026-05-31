@@ -1,18 +1,18 @@
-import { PERIODOS } from '../models/scheduleConstraints.model.js';
+import { PERIODOS } from '../models/scheduleConstraints.model.js'
 
 /**
  * Constraint Panel component.
  * Allows configuring the engine variables (period, default class duration, gap)
  * and lists the pending (unscheduled) classes.
  */
-export function createConstraintPanel({
-  classes = [],
-  config = {}
-}) {
-  const pendingClasses = classes.filter(c => !c.horarios || c.horarios.length === 0);
+export function createConstraintPanel({ classes = [], config = {} }) {
+  const pendingClasses = classes.filter((c) => !c.horarios || c.horarios.length === 0)
 
-  const pendingListHtml = pendingClasses.length > 0
-    ? pendingClasses.map(cl => `
+  const pendingListHtml =
+    pendingClasses.length > 0
+      ? pendingClasses
+          .map(
+            (cl) => `
         <div style="display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; border: 1px dashed var(--hb-border); border-radius: 8px; margin-bottom: 6px; background: var(--hb-gray-100); font-size: 0.8rem;">
           <div style="min-width: 0; flex: 1; padding-right: 8px;">
             <div style="font-weight: 650; text-overflow: ellipsis; overflow: hidden; white-space: nowrap; color: var(--hb-text);">${cl.nombre}</div>
@@ -22,13 +22,15 @@ export function createConstraintPanel({
             👤 ${cl.total_alumnos} alum.
           </span>
         </div>
-      `).join('')
-    : `
+      `,
+          )
+          .join('')
+      : `
       <div style="text-align: center; padding: 1.5rem; border: 1px dashed var(--hb-border); border-radius: 12px; background: var(--hb-success-light); color: var(--hb-success); font-size: 0.85rem; font-weight: 650;">
         <i class="bi bi-check-circle-fill" style="font-size: 1.2rem; display: block; margin-bottom: 4px;"></i>
         ¡Todas las clases ya tienen horarios!
       </div>
-    `;
+    `
 
   return `
     <div class="hb-card" style="padding: 1.25rem;">
@@ -40,7 +42,7 @@ export function createConstraintPanel({
       <div class="hb-form-group">
         <label for="hb-input-periodo">Período Académico</label>
         <select id="hb-input-periodo" class="hb-form-control">
-          ${PERIODOS.map(p => `<option value="${p.id}" ${config.periodo === p.id ? 'selected' : ''}>${p.nombre}</option>`).join('')}
+          ${PERIODOS.map((p) => `<option value="${p.id}" ${config.periodo === p.id ? 'selected' : ''}>${p.nombre}</option>`).join('')}
         </select>
       </div>
 
@@ -75,5 +77,5 @@ export function createConstraintPanel({
         <span>Optimizar Horario</span>
       </button>
     </div>
-  `;
+  `
 }

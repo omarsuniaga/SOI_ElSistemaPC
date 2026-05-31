@@ -78,7 +78,9 @@ export function openRutaVarianteModal(rutaBaseId, onProposed) {
 
       function _renderObjetivosVar() {
         const list = document.getElementById('objetivos-variante')
-        list.innerHTML = objetivos.map((obj, i) => `
+        list.innerHTML = objetivos
+          .map(
+            (obj, i) => `
           <div class="mb-2" data-idx="${i}">
             <div style="display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: start;">
               <div style="border: 1px solid #ddd; padding: 10px; border-radius: 4px; background: #f9f9f9;">
@@ -88,10 +90,12 @@ export function openRutaVarianteModal(rutaBaseId, onProposed) {
               <button type="button" class="btn btn-sm btn-link text-danger" data-remove-idx="${i}">Quitar</button>
             </div>
           </div>
-        `).join('')
+        `,
+          )
+          .join('')
 
         // Attach remove listeners
-        document.querySelectorAll('[data-remove-idx]').forEach(btn => {
+        document.querySelectorAll('[data-remove-idx]').forEach((btn) => {
           btn.addEventListener('click', (e) => {
             const idx = parseInt(e.target.dataset.removeIdx)
             objetivos.splice(idx, 1)
@@ -101,12 +105,12 @@ export function openRutaVarianteModal(rutaBaseId, onProposed) {
       }
 
       document.getElementById('btn-agregar-obj-var').addEventListener('click', () => {
-        const maxSemana = Math.max(...objetivos.map(o => o.semana_fin))
+        const maxSemana = Math.max(...objetivos.map((o) => o.semana_fin))
         objetivos.push({
           descripcion: '',
           semana_inicio: maxSemana + 1,
           semana_fin: maxSemana + 2,
-          orden: objetivos.length + 1
+          orden: objetivos.length + 1,
         })
         _renderObjetivosVar()
       })

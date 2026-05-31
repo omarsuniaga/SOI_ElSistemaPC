@@ -46,7 +46,12 @@ export function render(draft, errors = {}) {
         name: 'tiene_conocimientos_musicales',
         label: '¿Tiene conocimientos musicales previos?',
         type: 'radio',
-        value: draft.tiene_conocimientos_musicales === true ? 'true' : draft.tiene_conocimientos_musicales === false ? 'false' : '',
+        value:
+          draft.tiene_conocimientos_musicales === true
+            ? 'true'
+            : draft.tiene_conocimientos_musicales === false
+              ? 'false'
+              : '',
         error: errors.tiene_conocimientos_musicales ?? '',
         required: true,
         options: [

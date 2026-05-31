@@ -58,9 +58,9 @@ export async function loadSemaphoresInBatch(nodeIds, claseId, cache = null) {
   // Fetch uncached nodes in parallel
   if (nodesToFetch.length > 0) {
     const fetchResults = await Promise.all(
-      nodesToFetch.map(nodeId =>
+      nodesToFetch.map((nodeId) =>
         getSemaphoreForNode(nodeId, claseId)
-          .then(r => {
+          .then((r) => {
             const semaphore = r.semaphore
             const cacheKey = getSemaphoreCacheKey(nodeId, claseId)
             actualCache.set(cacheKey, semaphore)
@@ -71,8 +71,8 @@ export async function loadSemaphoresInBatch(nodeIds, claseId, cache = null) {
             const cacheKey = getSemaphoreCacheKey(nodeId, claseId)
             actualCache.set(cacheKey, semaphore)
             return { nodeId, semaphore }
-          })
-      )
+          }),
+      ),
     )
 
     for (const { nodeId, semaphore } of fetchResults) {
@@ -102,7 +102,7 @@ export function invalidateSemaphoresForClase(claseId) {
  */
 export async function resolveRutaIdForClaseWithFuzzy(claseId) {
   const misClases = await getMisClases()
-  const claseRow  = misClases?.find(c => c.id === claseId)
+  const claseRow = misClases?.find((c) => c.id === claseId)
   const instrumento = claseRow?.instrumento
   if (!instrumento) return null
 
@@ -135,15 +135,19 @@ export async function resolveRutaIdForClaseWithFuzzy(claseId) {
   if (!allRoutes || allRoutes.length === 0) return null
 
   // Extract route instruments and find best fuzzy match
-  const routeInstruments = allRoutes.map(r => ({
+  const routeInstruments = allRoutes.map((r) => ({
     instrument: r.instrument?.toLowerCase() || '',
     routeVersionId: r.route_versions?.[0]?.id || r.route_versions?.id,
   }))
 
-  const bestMatch = fuzzyMatchBest(primerInstrumento, routeInstruments.map(r => r.instrument), 0.6)
+  const bestMatch = fuzzyMatchBest(
+    primerInstrumento,
+    routeInstruments.map((r) => r.instrument),
+    0.6,
+  )
 
   if (bestMatch) {
-    const matched = routeInstruments.find(r => r.instrument === bestMatch.candidate)
+    const matched = routeInstruments.find((r) => r.instrument === bestMatch.candidate)
     return matched?.routeVersionId || null
   }
 
@@ -205,7 +209,7 @@ export async function loadIndicatorsForNode(nodeId) {
  */
 export async function resolveRutaIdForClase(claseId) {
   const misClases = await getMisClases()
-  const claseRow  = misClases?.find(c => c.id === claseId)
+  const claseRow = misClases?.find((c) => c.id === claseId)
   const instrumento = claseRow?.instrumento
   if (!instrumento) return null
 
@@ -252,7 +256,7 @@ export async function loadRouteTree(routeVersionId, claseId) {
   if (!blocks || blocks.length === 0) return []
 
   // ── 2. Levels ──────────────────────────────────────────────────────────────
-  const blockIds = blocks.map(b => b.id)
+  const blockIds = blocks.map((b) => b.id)
   const { data: levels, error: lErr } = await supabase
     .from('levels')
     .select('id, block_id, nombre:name, order_index')
@@ -263,8 +267,8 @@ export async function loadRouteTree(routeVersionId, claseId) {
   if (lErr) throw new Error('[rutaService] levels: ' + lErr.message)
 
   // ── 3. Nodes ───────────────────────────────────────────────────────────────
-  const levelIds = (levels ?? []).map(l => l.id)
-  if (levelIds.length === 0) return blocks.map(b => ({ ...b, levels: [] }))
+  const levelIds = (levels ?? []).map((l) => l.id)
+  if (levelIds.length === 0) return blocks.map((b) => ({ ...b, levels: [] }))
 
   const { data: nodes, error: nErr } = await supabase
     .from('nodes')
@@ -276,27 +280,28 @@ export async function loadRouteTree(routeVersionId, claseId) {
   if (nErr) throw new Error('[rutaService] nodes: ' + nErr.message)
 
   // ── 4. Indicators ──────────────────────────────────────────────────────────
-  const nodeIds = (nodes ?? []).map(n => n.id)
-  const { data: indicators, error: iErr } = nodeIds.length > 0
-    ? await supabase
-        .from('indicators')
-        .select('id, node_id, nombre:description, order_index')
-        .in('node_id', nodeIds)
-        .eq('activo', true)
-        .order('order_index', { ascending: true })
-    : { data: [], error: null }
+  const nodeIds = (nodes ?? []).map((n) => n.id)
+  const { data: indicators, error: iErr } =
+    nodeIds.length > 0
+      ? await supabase
+          .from('indicators')
+          .select('id, node_id, nombre:description, order_index')
+          .in('node_id', nodeIds)
+          .eq('activo', true)
+          .order('order_index', { ascending: true })
+      : { data: [], error: null }
 
   if (iErr) throw new Error('[rutaService] indicators: ' + iErr.message)
 
   // ── 5. Semaphore per node (parallel) ───────────────────────────────────────
   const semaphoreResults = await Promise.all(
-    (nodes ?? []).map(n =>
+    (nodes ?? []).map((n) =>
       getSemaphoreForNode(n.id, claseId)
-        .then(r => ({ nodeId: n.id, semaphore: r.semaphore }))
-        .catch(() => ({ nodeId: n.id, semaphore: 'gray' }))
-    )
+        .then((r) => ({ nodeId: n.id, semaphore: r.semaphore }))
+        .catch(() => ({ nodeId: n.id, semaphore: 'gray' })),
+    ),
   )
-  const semMap = new Map(semaphoreResults.map(s => [s.nodeId, s.semaphore]))
+  const semMap = new Map(semaphoreResults.map((s) => [s.nodeId, s.semaphore]))
 
   // ── 6. Group indicators by node ────────────────────────────────────────────
   const indByNode = new Map()
@@ -318,7 +323,7 @@ export async function loadRouteTree(routeVersionId, claseId) {
 
   // ── 8. Group levels by block + compute level semaphore + lock state ────────
   const levelsByBlock = new Map()
-  for (const [blockId] of blockIds.map(id => [id])) {
+  for (const [blockId] of blockIds.map((id) => [id])) {
     levelsByBlock.set(blockId, [])
   }
 
@@ -331,24 +336,30 @@ export async function loadRouteTree(routeVersionId, claseId) {
   for (const [blockId, blockLevels] of levelsSortedByBlock) {
     const enriched = blockLevels.map((level, idx, arr) => {
       const levelNodes = nodesByLevel.get(level.id) ?? []
-      const allLevelInds = levelNodes.flatMap(n => indByNode.get(n.id) ?? [])
-      const greenIndCount = allLevelInds.filter(i => (semMap.get(i.node_id) ?? 'gray') === 'green').length
-      const percentage = allLevelInds.length > 0 ? Math.round((greenIndCount / allLevelInds.length) * 100) : 0
+      const allLevelInds = levelNodes.flatMap((n) => indByNode.get(n.id) ?? [])
+      const greenIndCount = allLevelInds.filter(
+        (i) => (semMap.get(i.node_id) ?? 'gray') === 'green',
+      ).length
+      const percentage =
+        allLevelInds.length > 0 ? Math.round((greenIndCount / allLevelInds.length) * 100) : 0
 
-      const nodeSems   = levelNodes.map(n => n.semaphore)
-      const levelSem   = nodeSems.every(s => s === 'green') && nodeSems.length > 0
-        ? 'green'
-        : nodeSems.every(s => s === 'gray') || nodeSems.length === 0
-        ? 'gray'
-        : 'yellow'
+      const nodeSems = levelNodes.map((n) => n.semaphore)
+      const levelSem =
+        nodeSems.every((s) => s === 'green') && nodeSems.length > 0
+          ? 'green'
+          : nodeSems.every((s) => s === 'gray') || nodeSems.length === 0
+            ? 'gray'
+            : 'yellow'
 
       // Lock: previous level must have ≥80% of its indicators green
       let locked = false
       if (idx > 0) {
         const prev = arr[idx - 1]
         const prevNodes = nodesByLevel.get(prev.id) ?? []
-        const allInds = prevNodes.flatMap(n => indByNode.get(n.id) ?? [])
-        const greenCount = allInds.filter(i => (semMap.get(i.node_id) ?? 'gray') === 'green').length
+        const allInds = prevNodes.flatMap((n) => indByNode.get(n.id) ?? [])
+        const greenCount = allInds.filter(
+          (i) => (semMap.get(i.node_id) ?? 'gray') === 'green',
+        ).length
         locked = allInds.length > 0 && greenCount / allInds.length < 0.8
       }
 
@@ -357,5 +368,5 @@ export async function loadRouteTree(routeVersionId, claseId) {
     levelsByBlock.set(blockId, enriched)
   }
 
-  return blocks.map(b => ({ ...b, levels: levelsByBlock.get(b.id) ?? [] }))
+  return blocks.map((b) => ({ ...b, levels: levelsByBlock.get(b.id) ?? [] }))
 }

@@ -1,10 +1,10 @@
-import { academicService } from '../../modules/academic-routes/services/academicService';
+import { academicService } from '../../modules/academic-routes/services/academicService'
 
 export const RouteLibraryView = {
   async render() {
-    const container = document.createElement('div');
-    container.className = 'pm-view pm-animate-fade-in';
-    
+    const container = document.createElement('div')
+    container.className = 'pm-view pm-animate-fade-in'
+
     container.innerHTML = `
       <div class="pm-asist-header">
         <h2 class="apple-display-md" style="font-size: 1.75rem;">Librería de Rutas</h2>
@@ -23,28 +23,30 @@ export const RouteLibraryView = {
           <div class="pm-spinner"></div>
         </div>
       </div>
-    `;
+    `
 
-    this.loadRoutes(container);
-    return container;
+    this.loadRoutes(container)
+    return container
   },
 
   async loadRoutes(container) {
-    const grid = container.querySelector('#routes-grid');
+    const grid = container.querySelector('#routes-grid')
     try {
-      const routes = await academicService.fetchRoutes();
-      
+      const routes = await academicService.fetchRoutes()
+
       if (!routes || routes.length === 0) {
         grid.innerHTML = `
           <div class="pm-placeholder" style="grid-column: 1 / -1;">
             <i class="bi bi-journal-x"></i>
             <p>No se encontraron rutas académicas activas.</p>
           </div>
-        `;
-        return;
+        `
+        return
       }
 
-      grid.innerHTML = routes.map(route => `
+      grid.innerHTML = routes
+        .map(
+          (route) => `
         <div class="card-apple route-card pm-animate-slide-up" data-id="${route.id}" style="cursor: pointer; display: flex; flex-direction: column; justify-content: space-between;">
           <div>
             <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.75rem;">
@@ -67,33 +69,34 @@ export const RouteLibraryView = {
              <button class="btn-apple-utility" style="padding: 4px 12px; font-size: 0.8rem;">Ver Detalle</button>
           </div>
         </div>
-      `).join('');
+      `,
+        )
+        .join('')
 
-      grid.querySelectorAll('.route-card').forEach(card => {
+      grid.querySelectorAll('.route-card').forEach((card) => {
         card.onclick = () => {
-          const id = card.getAttribute('data-id');
-          window.location.hash = `#/ruta-detalle/${id}`;
-        };
-      });
+          const id = card.getAttribute('data-id')
+          window.location.hash = `#/ruta-detalle/${id}`
+        }
+      })
 
       // Lógica de búsqueda básica
-      const searchInput = container.querySelector('#route-search');
+      const searchInput = container.querySelector('#route-search')
       searchInput.oninput = (e) => {
-        const term = e.target.value.toLowerCase();
-        grid.querySelectorAll('.route-card').forEach(card => {
-          const text = card.textContent.toLowerCase();
-          card.style.display = text.includes(term) ? 'flex' : 'none';
-        });
-      };
-
+        const term = e.target.value.toLowerCase()
+        grid.querySelectorAll('.route-card').forEach((card) => {
+          const text = card.textContent.toLowerCase()
+          card.style.display = text.includes(term) ? 'flex' : 'none'
+        })
+      }
     } catch (error) {
-      console.error('Error al cargar rutas:', error);
+      console.error('Error al cargar rutas:', error)
       grid.innerHTML = `
         <div class="pm-placeholder" style="grid-column: 1 / -1;">
           <i class="bi bi-exclamation-triangle" style="color: var(--apple-danger);"></i>
           <p>Error al cargar las rutas académicas.</p>
         </div>
-      `;
+      `
     }
-  }
-};
+  },
+}

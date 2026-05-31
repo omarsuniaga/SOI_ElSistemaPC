@@ -41,10 +41,12 @@ function _showBrowserNotification(title, body) {
       body,
       icon: '/icons/icon-192x192.png',
       badge: '/icons/icon-72x72.png',
-      tag: 'admin-notif',          // collapses duplicates
+      tag: 'admin-notif', // collapses duplicates
       renotify: true,
     })
-  } catch { /* ignore — some browsers block programmatic Notification() */ }
+  } catch {
+    /* ignore — some browsers block programmatic Notification() */
+  }
 }
 
 /**
@@ -52,7 +54,7 @@ function _showBrowserNotification(title, body) {
  * @param {function(number): void} badgeCallback  Called with the new pending count.
  */
 export function startAdminRealtimeNotifications(badgeCallback) {
-  if (_channel) return   // already running
+  if (_channel) return // already running
   _badgeCallback = badgeCallback
 
   // Request browser notification permission (non-blocking, user can decline)
@@ -79,16 +81,19 @@ export function startAdminRealtimeNotifications(badgeCallback) {
     // Absence status changed (e.g. re-submitted after rejection)
     .on(
       'postgres_changes',
-      { event: 'UPDATE', schema: 'public', table: 'ausencias_maestros',
-        filter: 'estado=eq.pendiente' },
+      {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'ausencias_maestros',
+        filter: 'estado=eq.pendiente',
+      },
       () => _scheduleFetch(),
     )
 
     // New teacher registration pending approval
     .on(
       'postgres_changes',
-      { event: 'INSERT', schema: 'public', table: 'profiles',
-        filter: 'rol=eq.maestro' },
+      { event: 'INSERT', schema: 'public', table: 'profiles', filter: 'rol=eq.maestro' },
       (payload) => {
         const nombre = payload.new?.nombre_completo || 'Un maestro'
         _showBrowserNotification(
@@ -102,8 +107,7 @@ export function startAdminRealtimeNotifications(badgeCallback) {
     // Teacher profile updated (e.g. estado changed back to 'pendiente')
     .on(
       'postgres_changes',
-      { event: 'UPDATE', schema: 'public', table: 'profiles',
-        filter: 'estado=eq.pendiente' },
+      { event: 'UPDATE', schema: 'public', table: 'profiles', filter: 'estado=eq.pendiente' },
       () => _scheduleFetch(),
     )
 

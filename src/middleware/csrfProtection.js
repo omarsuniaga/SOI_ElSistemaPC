@@ -41,12 +41,12 @@ export function initCSRF(options = {}) {
 export function generateToken() {
   currentToken = generateRandomToken()
   tokenHistory.add(currentToken)
-  
+
   if (tokenHistory.size > 10) {
     const oldest = tokenHistory.values().next().value
     tokenHistory.delete(oldest)
   }
-  
+
   return currentToken
 }
 
@@ -59,15 +59,15 @@ export function validateToken(token) {
   if (!token || typeof token !== 'string') {
     return false
   }
-  
+
   if (token === currentToken) {
     return true
   }
-  
+
   if (tokenHistory.has(token)) {
     return true
   }
-  
+
   return false
 }
 
@@ -94,12 +94,12 @@ export function createTokenInput() {
  */
 export function csrfMiddleware(options = {}) {
   const csrfToken = getToken()
-  
+
   if (!csrfToken) {
     console.warn('[CSRF] No token available')
     return options
   }
-  
+
   return {
     ...options,
     headers: {

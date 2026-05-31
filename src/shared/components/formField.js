@@ -9,7 +9,17 @@ export class FormField {
    * @param {Object} options
    * @returns {string} HTML del campo
    */
-  static input({ id, label, type = 'text', value = '', placeholder = '', required = false, maxlength, helpText = '', errorText = '' }) {
+  static input({
+    id,
+    label,
+    type = 'text',
+    value = '',
+    placeholder = '',
+    required = false,
+    maxlength,
+    helpText = '',
+    errorText = '',
+  }) {
     return `
       <div class="mb-3">
         <label for="${id}" class="form-label">${label}${required ? ' <span class="text-danger">*</span>' : ''}</label>
@@ -27,11 +37,13 @@ export class FormField {
    * Crea un campo select
    */
   static select({ id, label, options = [], value = '', required = false, helpText = '' }) {
-    const opts = options.map(opt => {
-      const val = typeof opt === 'string' ? opt : opt.value
-      const txt = typeof opt === 'string' ? opt : opt.label
-      return `<option value="${this.escape(val)}"${val === value ? ' selected' : ''}>${this.escape(txt)}</option>`
-    }).join('')
+    const opts = options
+      .map((opt) => {
+        const val = typeof opt === 'string' ? opt : opt.value
+        const txt = typeof opt === 'string' ? opt : opt.label
+        return `<option value="${this.escape(val)}"${val === value ? ' selected' : ''}>${this.escape(txt)}</option>`
+      })
+      .join('')
 
     return `
       <div class="mb-3">
@@ -48,7 +60,16 @@ export class FormField {
   /**
    * Crea un textarea
    */
-  static textarea({ id, label, value = '', placeholder = '', required = false, rows = 3, maxlength, helpText = '' }) {
+  static textarea({
+    id,
+    label,
+    value = '',
+    placeholder = '',
+    required = false,
+    rows = 3,
+    maxlength,
+    helpText = '',
+  }) {
     return `
       <div class="mb-3">
         <label for="${id}" class="form-label">${label}${required ? ' <span class="text-danger">*</span>' : ''}</label>
@@ -103,6 +124,9 @@ export class FormField {
 
   static escape(str) {
     if (!str) return ''
-    return str.replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]))
+    return str.replace(
+      /[&<>"']/g,
+      (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[m],
+    )
   }
 }

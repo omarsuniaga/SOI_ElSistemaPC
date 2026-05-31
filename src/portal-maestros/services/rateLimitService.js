@@ -14,14 +14,14 @@ const requestLog = new Map()
 export function isAllowed(key, limit = 60, windowMs = 60000) {
   const now = Date.now()
   let timestamps = requestLog.get(key) || []
-  
+
   // Cleanup old timestamps
-  timestamps = timestamps.filter(ts => now - ts < windowMs)
-  
+  timestamps = timestamps.filter((ts) => now - ts < windowMs)
+
   if (timestamps.length >= limit) {
     return false
   }
-  
+
   timestamps.push(now)
   requestLog.set(key, timestamps)
   return true

@@ -20,7 +20,12 @@ describe('progresosApi.history', () => {
     it('should return Map with ProgressHistory for each alumnoId', async () => {
       asistenciasRepo.fetchBulk.mockResolvedValue([])
       progresosRepo.fetchBulk.mockResolvedValue([
-        { alumno_id: 'alum-001', calificacion: 8.0, fecha_evaluacion: '2026-05-05', evaluacion_id: 'eval-1' },
+        {
+          alumno_id: 'alum-001',
+          calificacion: 8.0,
+          fecha_evaluacion: '2026-05-05',
+          evaluacion_id: 'eval-1',
+        },
       ])
       indicatorAttemptsRepo.fetchBulk.mockResolvedValue([])
       observacionesRepo.fetchBulk.mockResolvedValue([])
@@ -106,16 +111,16 @@ describe('progresosApi.history', () => {
 
       // Each repo should receive the same date range
       expect(asistenciasRepo.fetchBulk).toHaveBeenCalledWith(
-        expect.objectContaining({ from: '2026-05-01', to: '2026-05-18' })
+        expect.objectContaining({ from: '2026-05-01', to: '2026-05-18' }),
       )
       expect(progresosRepo.fetchBulk).toHaveBeenCalledWith(
-        expect.objectContaining({ from: '2026-05-01', to: '2026-05-18' })
+        expect.objectContaining({ from: '2026-05-01', to: '2026-05-18' }),
       )
       expect(indicatorAttemptsRepo.fetchBulk).toHaveBeenCalledWith(
-        expect.objectContaining({ from: '2026-05-01', to: '2026-05-18' })
+        expect.objectContaining({ from: '2026-05-01', to: '2026-05-18' }),
       )
       expect(observacionesRepo.fetchBulk).toHaveBeenCalledWith(
-        expect.objectContaining({ from: '2026-05-01', to: '2026-05-18' })
+        expect.objectContaining({ from: '2026-05-01', to: '2026-05-18' }),
       )
     })
   })

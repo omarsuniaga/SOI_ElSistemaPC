@@ -41,23 +41,26 @@ export function openRutaSelectorModal(instrumento, nivel, onSelect) {
       const rutas = await listarRutas({
         instrumento,
         nivel,
-        estado: 'activa'
+        estado: 'activa',
       })
 
       if (rutas.length === 0) {
-        body.innerHTML = '<p class="text-muted text-center">No hay rutas disponibles para este instrumento/nivel.</p>'
+        body.innerHTML =
+          '<p class="text-muted text-center">No hay rutas disponibles para este instrumento/nivel.</p>'
         return
       }
 
       let selectedId = null
-      const soiRuta = rutas.find(r => r.tipo === 'soi-estandar')
+      const soiRuta = rutas.find((r) => r.tipo === 'soi-estandar')
       if (soiRuta) selectedId = soiRuta.id
 
       body.innerHTML = `
         <div class="alert alert-info small mb-3">
           <i class="bi bi-lightbulb me-2"></i>La ruta define los objetivos que cubrirás en este período.
         </div>
-        <div id="ruta-list">${rutas.map(r => `
+        <div id="ruta-list">${rutas
+          .map(
+            (r) => `
           <div class="ruta-option ${selectedId === r.id ? 'selected' : ''}" data-ruta-id="${r.id}">
             <strong>${r.tipo === 'soi-estandar' ? '📌' : '⚡'} ${r.nombre}</strong>
             <div class="ruta-info">
@@ -65,13 +68,15 @@ export function openRutaSelectorModal(instrumento, nivel, onSelect) {
               ${r.tipo === 'maestro-variante' ? `| Variante aprobada` : `| Estándar SOI`}
             </div>
           </div>
-        `).join('')}</div>
+        `,
+          )
+          .join('')}</div>
       `
 
       // Event listeners
-      document.querySelectorAll('.ruta-option').forEach(el => {
+      document.querySelectorAll('.ruta-option').forEach((el) => {
         el.addEventListener('click', () => {
-          document.querySelectorAll('.ruta-option').forEach(e => e.classList.remove('selected'))
+          document.querySelectorAll('.ruta-option').forEach((e) => e.classList.remove('selected'))
           el.classList.add('selected')
           selectedId = el.dataset.rutaId
         })
@@ -83,7 +88,6 @@ export function openRutaSelectorModal(instrumento, nivel, onSelect) {
         modal.hide()
         if (selectedId) onSelect(selectedId)
       }
-
     } catch (err) {
       body.innerHTML = `<div class="alert alert-danger">${err.message}</div>`
       AppToast.error('Error cargando rutas')

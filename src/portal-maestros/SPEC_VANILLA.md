@@ -1,4 +1,5 @@
 # SPEC — Portal Maestros PWA
+
 ## Vanilla JS Implementation
 
 **Proyecto:** PWA del Maestro  
@@ -96,25 +97,31 @@ src/portal-maestros/
 ```js
 export function createComponentName(container, options) {
   // Render
-  container.innerHTML = `...`;
+  container.innerHTML = `...`
 
   // State
-  let _state = null;
+  let _state = null
 
   // Event delegation
   container.addEventListener('click', (e) => {
-    const target = e.target.closest('[data-action]');
-    if (!target) return;
-    const action = target.dataset.action;
+    const target = e.target.closest('[data-action]')
+    if (!target) return
+    const action = target.dataset.action
     // ...
-  });
+  })
 
   // Public API
-  async function open() { /* ... */ }
-  function close() { /* ... */ }
-  function destroy() { /* ... */ }
+  async function open() {
+    /* ... */
+  }
+  function close() {
+    /* ... */
+  }
+  function destroy() {
+    /* ... */
+  }
 
-  return { open, close, destroy };
+  return { open, close, destroy }
 }
 ```
 
@@ -123,12 +130,12 @@ export function createComponentName(container, options) {
 ```js
 // Centralizan queries a Supabase con caché
 export async function getMisClases(forceRefresh = false) {
-  const cached = viewCache.getCached(cacheKey);
-  if (!forceRefresh && cached) return cached;
+  const cached = viewCache.getCached(cacheKey)
+  if (!forceRefresh && cached) return cached
 
-  const { data } = await supabase.from('clases').select('...');
-  viewCache.set(cacheKey, data);
-  return data;
+  const { data } = await supabase.from('clases').select('...')
+  viewCache.set(cacheKey, data)
+  return data
 }
 ```
 
@@ -141,6 +148,7 @@ Lenguaje estructurado para registrar contenido de clase:
 ```
 
 Tokens:
+
 - `#alumno` — Nombre del alumno
 - `[contenido]` — Contenido trabajado
 - `(sugerencia)` — Sugerencia para casa
@@ -156,22 +164,26 @@ Tokens:
 ## 4. Estados del Sistema
 
 ### Asistencia
+
 ```
 present | absent | late | excused
 ```
 
 ### Progress (Nodos/Indicadores)
+
 ```
 pending → in_process → approved
                   ↘ failed
 ```
 
 ### Planning Status
+
 ```
 draft → ai_reviewed → pending_academic_review → approved → active → paused → completed
 ```
 
 ### Route Status
+
 ```
 draft → published → archived
 ```
@@ -180,19 +192,19 @@ draft → published → archived
 
 ## 5. Rutas del Router
 
-| Ruta | View |
-|------|------|
-| `login` | LoginView |
-| `hoy` | HoyView (dashboard diario) |
-| `asistencia` | AsistenciaView |
-| `calendario` | CalendarioView |
-| `metricas` | MetricasView |
-| `planificacion` | PlanificacionView |
-| `perfil` | PerfilView |
-| `ruta-player` | RutaPlayerView |
-| `route-library` | RouteLibraryView |
-| `route-detail/:id` | RouteDetailView |
-| `alumno/:id` | AlumnoPerfilView |
+| Ruta               | View                       |
+| ------------------ | -------------------------- |
+| `login`            | LoginView                  |
+| `hoy`              | HoyView (dashboard diario) |
+| `asistencia`       | AsistenciaView             |
+| `calendario`       | CalendarioView             |
+| `metricas`         | MetricasView               |
+| `planificacion`    | PlanificacionView          |
+| `perfil`           | PerfilView                 |
+| `ruta-player`      | RutaPlayerView             |
+| `route-library`    | RouteLibraryView           |
+| `route-detail/:id` | RouteDetailView            |
+| `alumno/:id`       | AlumnoPerfilView           |
 
 ---
 

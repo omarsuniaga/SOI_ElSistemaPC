@@ -150,7 +150,7 @@ function _initials(nombre) {
     .split(' ')
     .filter(Boolean)
     .slice(0, 2)
-    .map(w => w[0].toUpperCase())
+    .map((w) => w[0].toUpperCase())
     .join('')
 }
 
@@ -175,7 +175,9 @@ async function _loadProgress(alumnoId, rutaId) {
   // 1. All indicators for this route (to know total count)
   const { data: indicators, error: indErr } = await supabase
     .from('indicators')
-    .select('id, nombre, description, order_index, node_id, nodes(id, name, order_index, level_id, levels(id, name, level_number))')
+    .select(
+      'id, nombre, description, order_index, node_id, nodes(id, name, order_index, level_id, levels(id, name, level_number))',
+    )
     .eq('nodes.route_version_id', rutaId)
     .eq('activo', true)
     .order('order_index')
@@ -183,7 +185,7 @@ async function _loadProgress(alumnoId, rutaId) {
   if (indErr) throw indErr
 
   // Filter out indicators whose node didn't match (Supabase returns nulls when join fails)
-  const validIndicators = (indicators ?? []).filter(i => i.nodes !== null)
+  const validIndicators = (indicators ?? []).filter((i) => i.nodes !== null)
 
   // 2. All attempts for this student
   const { data: attempts, error: attErr } = await supabase
@@ -204,7 +206,7 @@ async function _loadProgress(alumnoId, rutaId) {
   }
 
   // Build indicator summaries
-  const allSummaries = validIndicators.map(ind => {
+  const allSummaries = validIndicators.map((ind) => {
     const history = attemptsByIndicator[ind.id] ?? []
     const latest = history[0] ?? null
     const sem = _semaphore(latest?.nota ?? null)
@@ -217,22 +219,22 @@ async function _loadProgress(alumnoId, rutaId) {
       latestTarea: latest?.tarea ?? null,
       semColor: sem.color,
       semIcon: sem.icon,
-      history
+      history,
     }
   })
 
   // 1. Calculate overall progress BEFORE filtering for display
-  const dominados = allSummaries.filter(i => i.latestNota >= 4).length
+  const dominados = allSummaries.filter((i) => i.latestNota >= 4).length
   const total = allSummaries.length
   const avance = total > 0 ? Math.round((dominados / total) * 100) : 0
 
   // 2. Filter indicators to show only those worked on or with a non-zero grade
   // Also deduplicate by ID just in case the route definition has overlaps
   const seenIds = new Set()
-  const indicatorSummaries = allSummaries.filter(i => {
+  const indicatorSummaries = allSummaries.filter((i) => {
     if (seenIds.has(i.id)) return false
     seenIds.add(i.id)
-    
+
     const hasHistory = i.history.length > 0
     const hasValidNote = i.latestNota !== null && i.latestNota !== 0
     return hasHistory || hasValidNote
@@ -240,8 +242,8 @@ async function _loadProgress(alumnoId, rutaId) {
 
   // 3. Pending tasks: latest evaluation per indicator that has a tarea
   const pendingTasks = allSummaries
-    .filter(i => i.latestTarea)
-    .map(i => ({ indicadorNombre: i.nombre, tarea: i.latestTarea }))
+    .filter((i) => i.latestTarea)
+    .map((i) => ({ indicadorNombre: i.nombre, tarea: i.latestTarea }))
 
   return { indicatorSummaries, dominados, total, avance, pendingTasks }
 }
@@ -268,7 +270,9 @@ function _renderHeader(alumno, avance) {
 }
 
 function _renderTimeline(history, indicatorIdx) {
-  const items = history.map((h, hIdx) => `
+  const items = history
+    .map(
+      (h, hIdx) => `
     <li class="pm-eval-timeline__item">
       <div class="pm-eval-timeline__header">
         <span class="pm-eval-timeline__date">${_escHTML(_formatDate(h.created_at))}</span>
@@ -280,7 +284,9 @@ function _renderTimeline(history, indicatorIdx) {
       ${h.observations ? `<span class="pm-eval-timeline__detail">${_escHTML(h.observations)}</span>` : ''}
       ${h.tarea ? `<span class="pm-eval-timeline__detail"><strong>Tarea:</strong> ${_escHTML(h.tarea)}</span>` : ''}
     </li>
-  `).join('')
+  `,
+    )
+    .join('')
 
   return `
     <div class="pm-timeline-actions">
@@ -295,9 +301,12 @@ function _renderTimeline(history, indicatorIdx) {
 }
 
 function _renderIndicators(indicatorSummaries) {
-  if (!indicatorSummaries.length) return '<p style="padding:8px">No hay indicadores en esta ruta.</p>'
+  if (!indicatorSummaries.length)
+    return '<p style="padding:8px">No hay indicadores en esta ruta.</p>'
 
-  return indicatorSummaries.map((ind, idx) => `
+  return indicatorSummaries
+    .map(
+      (ind, idx) => `
     <div class="pm-route-indicador pm-route-indicador--${_escHTML(ind.semColor)}"
          data-action="toggle-history"
          data-idx="${idx}"
@@ -316,7 +325,9 @@ function _renderIndicators(indicatorSummaries) {
     <div class="pm-route-indicador__timeline" data-timeline="${idx}" hidden>
       ${_renderTimeline(ind.history, idx)}
     </div>
-  `).join('')
+  `,
+    )
+    .join('')
 }
 
 function _renderPendingTasks(pendingTasks) {
@@ -325,11 +336,15 @@ function _renderPendingTasks(pendingTasks) {
     <section class="pm-student-panel__section">
       <h3 class="pm-student-panel__section-title">Tareas pendientes</h3>
       <ul class="pm-pending-tasks">
-        ${pendingTasks.map(t => `
+        ${pendingTasks
+          .map(
+            (t) => `
           <li class="pm-pending-tasks__item">
             <strong>${_escHTML(t.indicadorNombre)}:</strong> ${_escHTML(t.tarea)}
           </li>
-        `).join('')}
+        `,
+          )
+          .join('')}
       </ul>
     </section>
   `
@@ -380,7 +395,14 @@ function _renderError(msg) {
 // Factory
 // ─────────────────────────────────────────────────────────────────────────────
 
-export function createStudentProgressPanel({ alumno, rutaId, sessionId, claseId, fecha, horaInicio }) {
+export function createStudentProgressPanel({
+  alumno,
+  rutaId,
+  sessionId,
+  claseId,
+  fecha,
+  horaInicio,
+}) {
   _injectStyles()
 
   // Create DOM element
@@ -464,9 +486,13 @@ export function createStudentProgressPanel({ alumno, rutaId, sessionId, claseId,
           <div class="pm-student-panel__modal-field">
             <label>Nota del indicador</label>
             <div class="pm-student-panel__nota-picker">
-              ${[0, 1, 2, 3, 4, 5].map(n => `
+              ${[0, 1, 2, 3, 4, 5]
+                .map(
+                  (n) => `
                 <button class="pm-student-panel__nota-btn ${selectedNota === n ? 'active' : ''}" data-nota="${n}">${n}</button>
-              `).join('')}
+              `,
+                )
+                .join('')}
             </div>
           </div>
           
@@ -490,7 +516,7 @@ export function createStudentProgressPanel({ alumno, rutaId, sessionId, claseId,
     overlay.addEventListener('click', async (e) => {
       const btn = e.target.closest('[data-nota]')
       if (btn) {
-        overlay.querySelectorAll('[data-nota]').forEach(b => b.classList.remove('active'))
+        overlay.querySelectorAll('[data-nota]').forEach((b) => b.classList.remove('active'))
         btn.classList.add('active')
         selectedNota = parseInt(btn.dataset.nota)
         return
@@ -505,36 +531,46 @@ export function createStudentProgressPanel({ alumno, rutaId, sessionId, claseId,
         overlay.remove()
       }
     })
-    
+
     // Backdrop click close
-    overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove() })
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) overlay.remove()
+    })
   }
 
   async function _saveEvaluation(indicatorId, nota, observations, attemptId = null) {
     try {
-      const maestro = getMaestroLocal();
-      if (!maestro) throw new Error('No hay sesión de maestro activa.');
+      const maestro = getMaestroLocal()
+      if (!maestro) throw new Error('No hay sesión de maestro activa.')
 
-      console.log('[studentProgressPanel] Saving via RPC...', { 
-        claseId, fecha, horaInicio, indicatorId, studentId: alumno.id, nota 
+      console.log('[studentProgressPanel] Saving via RPC...', {
+        claseId,
+        fecha,
+        horaInicio,
+        indicatorId,
+        studentId: alumno.id,
+        nota,
       })
 
       // Llamamos al RPC atómico que asegura la sesión y guarda la evaluación en un solo paso
-      const { data: newSessionId, error } = await supabase.rpc('ensure_session_and_save_evaluation', {
-        p_clase_id: claseId,
-        p_maestro_id: maestro.id,
-        p_fecha: fecha,
-        p_hora_inicio: horaInicio,
-        p_indicator_id: indicatorId,
-        p_student_id: alumno.id,
-        p_nota: nota,
-        p_observations: (observations || '').trim()
-      });
+      const { data: newSessionId, error } = await supabase.rpc(
+        'ensure_session_and_save_evaluation',
+        {
+          p_clase_id: claseId,
+          p_maestro_id: maestro.id,
+          p_fecha: fecha,
+          p_hora_inicio: horaInicio,
+          p_indicator_id: indicatorId,
+          p_student_id: alumno.id,
+          p_nota: nota,
+          p_observations: (observations || '').trim(),
+        },
+      )
 
-      if (error) throw error;
+      if (error) throw error
 
       console.log('[studentProgressPanel] Save successful. Session ID:', newSessionId)
-      await open() 
+      await open()
     } catch (err) {
       console.error('[studentProgressPanel] Error during RPC save flow:', err)
       alert('Error al guardar la evaluación: ' + (err.message || 'Error de base de datos'))
@@ -544,7 +580,7 @@ export function createStudentProgressPanel({ alumno, rutaId, sessionId, claseId,
   el.addEventListener('click', _onClick)
 
   // Keyboard accessibility for toggle-history buttons
-  el.addEventListener('keydown', e => {
+  el.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' || e.key === ' ') {
       const target = e.target.closest('[data-action="toggle-history"]')
       if (target) {
@@ -575,7 +611,10 @@ export function createStudentProgressPanel({ alumno, rutaId, sessionId, claseId,
 
   function close() {
     el.classList.remove('pm-student-panel--open')
-    if (_focusTrap) { _focusTrap.dispose(); _focusTrap = null }
+    if (_focusTrap) {
+      _focusTrap.dispose()
+      _focusTrap = null
+    }
     // Clear content after CSS transition (300ms)
     setTimeout(() => {
       if (!el.classList.contains('pm-student-panel--open')) {
@@ -586,7 +625,10 @@ export function createStudentProgressPanel({ alumno, rutaId, sessionId, claseId,
   }
 
   function destroy() {
-    if (_focusTrap) { _focusTrap.dispose(); _focusTrap = null }
+    if (_focusTrap) {
+      _focusTrap.dispose()
+      _focusTrap = null
+    }
     unbindBP()
     el.removeEventListener('click', _onClick)
     el.remove()

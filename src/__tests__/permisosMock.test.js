@@ -93,7 +93,7 @@ describe('permisosMock CRUD', () => {
         maestro_email: 'nuevo@ejemplo.com',
         puede_registrar_alumnos: true,
         puede_inscribir_clases: false,
-        permisos: ['planificacion:write']
+        permisos: ['planificacion:write'],
       })
       expect(result.maestro_id).toBe('maestro_new_003')
       expect(result.maestro_nombre).toBe('Nuevo Maestro')
@@ -134,7 +134,7 @@ describe('permisosMock CRUD', () => {
         puede_inscribir_clases: false,
       })
       const all = await mockImpl.obtenerPermisos()
-      const found = all.find(p => p.maestro_id === 'maestro_new')
+      const found = all.find((p) => p.maestro_id === 'maestro_new')
       expect(found).toBeTruthy()
       expect(found.maestro_nombre).toBe('New')
     })

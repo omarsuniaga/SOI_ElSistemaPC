@@ -7,9 +7,9 @@ vi.mock('../../api/asistenciaApi.js', () => ({
     fecha: '2026-05-21',
     estudiantes: [
       { id: '1', nombre: 'Estudiante 1', asistio: null },
-      { id: '2', nombre: 'Estudiante 2', asistio: true }
-    ]
-  })
+      { id: '2', nombre: 'Estudiante 2', asistio: true },
+    ],
+  }),
 }))
 
 // TODO: asistenciaView.js does not use asistenciaApi.js — it calls supabase
@@ -31,7 +31,7 @@ describe.skip('Asistencia View Direct Navigation', () => {
   it('should load and render specific class asistencia when claseId and fecha are provided', async () => {
     const params = {
       claseId: '550e8400-e29b-41d4-a716-446655440000',
-      fecha: '2026-05-21'
+      fecha: '2026-05-21',
     }
 
     await renderAsistenciaView('asistencia-container', params)
@@ -44,7 +44,7 @@ describe.skip('Asistencia View Direct Navigation', () => {
   it('should have title showing class date', async () => {
     const params = {
       claseId: '550e8400-e29b-41d4-a716-446655440000',
-      fecha: '2026-05-21'
+      fecha: '2026-05-21',
     }
 
     await renderAsistenciaView('asistencia-container', params)

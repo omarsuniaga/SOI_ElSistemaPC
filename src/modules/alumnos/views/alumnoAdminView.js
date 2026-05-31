@@ -29,12 +29,14 @@ function renderCompletitudBanner(alumno) {
 
   const gruposIncompletos = Object.entries(porGrupo)
     .filter(([, g]) => g.faltantes.length > 0)
-    .map(([nombre, g]) => `
+    .map(
+      ([nombre, g]) => `
       <div class="mb-1">
         <span class="fw-semibold small text-body">${nombre}</span>
         <span class="text-muted small ms-1">(${g.completos}/${g.total})</span>
         <div class="small text-muted">${g.faltantes.join(', ')}</div>
-      </div>`)
+      </div>`,
+    )
     .join('')
 
   return `
@@ -69,9 +71,7 @@ function splitPhones(raw) {
   // Extraer todas las secuencias de dígitos de al menos 7 caracteres
   const matches = String(raw).match(/\d[\d\s\-\.]{6,}\d/g)
   if (!matches) return [raw.trim()]
-  return matches
-    .map(m => m.replace(/[\s\-\.]/g, ''))
-    .filter(m => m.length >= 7)
+  return matches.map((m) => m.replace(/[\s\-\.]/g, '')).filter((m) => m.length >= 7)
 }
 
 // ─── Field helpers ────────────────────────────────────────────────────────────
@@ -101,14 +101,16 @@ function phoneDisplay(raw) {
     return `<span>${escapeHTML(formatted)}</span>${wa}`
   }
   // Múltiples números: mostrar cada uno con su botón WhatsApp
-  return phones.map((p, i) => {
-    const formatted = formatPhone(p) || p
-    const link = whatsappLink(p)
-    const wa = link
-      ? `<a href="${escapeHTML(link)}" target="_blank" rel="noopener" class="btn btn-sm btn-outline-success py-0 ms-1" title="WhatsApp ${i + 1}"><i class="bi bi-whatsapp"></i></a>`
-      : ''
-    return `<span class="me-2">${escapeHTML(formatted)}${wa}</span>`
-  }).join('<span class="text-muted mx-1">·</span>')
+  return phones
+    .map((p, i) => {
+      const formatted = formatPhone(p) || p
+      const link = whatsappLink(p)
+      const wa = link
+        ? `<a href="${escapeHTML(link)}" target="_blank" rel="noopener" class="btn btn-sm btn-outline-success py-0 ms-1" title="WhatsApp ${i + 1}"><i class="bi bi-whatsapp"></i></a>`
+        : ''
+      return `<span class="me-2">${escapeHTML(formatted)}${wa}</span>`
+    })
+    .join('<span class="text-muted mx-1">·</span>')
 }
 
 // ─── Sections definition ─────────────────────────────────────────────────────
@@ -117,7 +119,17 @@ const SECTIONS = {
   personal: [
     { key: 'nombre_completo', label: 'Nombre completo' },
     { key: 'fecha_nacimiento', label: 'Fecha de nacimiento', type: 'date' },
-    { key: 'genero', label: 'Género', type: 'select', options: [{ v: '', l: '—' }, { v: 'M', l: 'Masculino' }, { v: 'F', l: 'Femenino' }, { v: 'O', l: 'Otro' }] },
+    {
+      key: 'genero',
+      label: 'Género',
+      type: 'select',
+      options: [
+        { v: '', l: '—' },
+        { v: 'M', l: 'Masculino' },
+        { v: 'F', l: 'Femenino' },
+        { v: 'O', l: 'Otro' },
+      ],
+    },
     { key: 'nacionalidad', label: 'Nacionalidad' },
     { key: 'tiene_pasaporte', label: 'Tiene pasaporte', type: 'checkbox' },
     { key: 'sabe_leer', label: 'Sabe leer', type: 'checkbox' },
@@ -157,7 +169,11 @@ const SECTIONS = {
   salud: [
     { key: 'tiene_alergias', label: 'Tiene alergias', type: 'checkbox' },
     { key: 'alergias_descripcion', label: 'Descripción alergias', type: 'textarea' },
-    { key: 'tiene_condicion_transmisible', label: 'Tiene condición transmisible', type: 'checkbox' },
+    {
+      key: 'tiene_condicion_transmisible',
+      label: 'Tiene condición transmisible',
+      type: 'checkbox',
+    },
     { key: 'condicion_transmisible_desc', label: 'Descripción condición', type: 'textarea' },
     { key: 'tiene_alergia_medicamento', label: 'Tiene alergia a medicamento', type: 'checkbox' },
     { key: 'alergia_medicamento_desc', label: 'Descripción alergia medicamento', type: 'textarea' },
@@ -170,16 +186,32 @@ const SECTIONS = {
   musical: [
     { key: 'instrumento_principal', label: 'Instrumento principal' },
     { key: 'nivel_actual', label: 'Nivel actual' },
-    { key: 'tiene_conocimientos_musicales', label: 'Tiene conocimientos musicales', type: 'checkbox' },
+    {
+      key: 'tiene_conocimientos_musicales',
+      label: 'Tiene conocimientos musicales',
+      type: 'checkbox',
+    },
     { key: 'instrumento_previo', label: 'Instrumento previo' },
     { key: 'nivel_lectura_musical', label: 'Nivel de lectura musical' },
     { key: 'interes_musical', label: 'Interés musical' },
     { key: 'instrumento_interes', label: 'Instrumento de interés' },
-    { key: 'sentimiento_musica_clasica', label: 'Sentimiento hacia música clásica', type: 'textarea' },
-    { key: 'sentimiento_aprender_instrumento', label: 'Sentimiento al aprender instrumento', type: 'textarea' },
+    {
+      key: 'sentimiento_musica_clasica',
+      label: 'Sentimiento hacia música clásica',
+      type: 'textarea',
+    },
+    {
+      key: 'sentimiento_aprender_instrumento',
+      label: 'Sentimiento al aprender instrumento',
+      type: 'textarea',
+    },
     { key: 'aspiracion_instrumento', label: 'Aspiración con el instrumento', type: 'textarea' },
     { key: 'musico_favorito', label: 'Músico favorito' },
-    { key: 'preferencia_aprendizaje_musical', label: 'Preferencia de aprendizaje', type: 'textarea' },
+    {
+      key: 'preferencia_aprendizaje_musical',
+      label: 'Preferencia de aprendizaje',
+      type: 'textarea',
+    },
     { key: 'por_que_unirse', label: 'Por qué unirse', type: 'textarea' },
     { key: 'autoriza_fotos_redes', label: 'Autoriza fotos en redes', type: 'checkbox' },
   ],
@@ -208,12 +240,16 @@ function renderFieldValue(field, alumno) {
 }
 
 function renderFieldList(fields, alumno) {
-  return fields.map(f => `
+  return fields
+    .map(
+      (f) => `
     <div class="row mb-2 align-items-start">
       <div class="col-5 col-md-4 text-muted small fw-semibold">${escapeHTML(f.label)}</div>
       <div class="col-7 col-md-8">${renderFieldValue(f, alumno)}</div>
     </div>
-  `).join('')
+  `,
+    )
+    .join('')
 }
 
 function renderFormField(field, alumno) {
@@ -221,7 +257,7 @@ function renderFormField(field, alumno) {
   const id = `modal-field-${field.key}`
 
   if (field.type === 'checkbox') {
-    const checked = (v === true || v === 'true' || v === 1 || v === '1') ? 'checked' : ''
+    const checked = v === true || v === 'true' || v === 1 || v === '1' ? 'checked' : ''
     return `
       <div class="mb-3 form-check">
         <input type="checkbox" class="form-check-input" id="${id}" name="${escapeHTML(field.key)}" ${checked}>
@@ -240,9 +276,12 @@ function renderFormField(field, alumno) {
   }
 
   if (field.type === 'select') {
-    const opts = (field.options || []).map(o =>
-      `<option value="${escapeHTML(o.v)}" ${v === o.v ? 'selected' : ''}>${escapeHTML(o.l)}</option>`
-    ).join('')
+    const opts = (field.options || [])
+      .map(
+        (o) =>
+          `<option value="${escapeHTML(o.v)}" ${v === o.v ? 'selected' : ''}>${escapeHTML(o.l)}</option>`,
+      )
+      .join('')
     return `
       <div class="mb-3">
         <label class="form-label fw-semibold" for="${id}">${escapeHTML(field.label)}</label>
@@ -316,7 +355,7 @@ export async function renderAlumnoAdminView(container, params = {}) {
     .eq('alumno_id', alumnoId)
     .eq('activo', true)
 
-  const clases = (clasesData || []).map(r => r.clases).filter(Boolean)
+  const clases = (clasesData || []).map((r) => r.clases).filter(Boolean)
 
   // Lazy-load state
   let progresoLoaded = false
@@ -334,7 +373,9 @@ export async function renderAlumnoAdminView(container, params = {}) {
     const sectionTabs = ['personal', 'madre', 'padre', 'representante', 'salud', 'musical']
     const allTabKeys = [...sectionTabs, 'clases', 'progreso', 'asistencias']
 
-    const navItems = allTabKeys.map((key, i) => `
+    const navItems = allTabKeys
+      .map(
+        (key, i) => `
       <li class="nav-item" role="presentation">
         <button
           class="nav-link${i === 0 ? ' active' : ''}"
@@ -347,7 +388,9 @@ export async function renderAlumnoAdminView(container, params = {}) {
           aria-selected="${i === 0}"
         >${escapeHTML(TAB_LABELS[key])}</button>
       </li>
-    `).join('')
+    `,
+      )
+      .join('')
 
     function renderSectionPanel(sectionKey) {
       const fields = SECTIONS[sectionKey]
@@ -365,7 +408,9 @@ export async function renderAlumnoAdminView(container, params = {}) {
     }
 
     const tabPanels = `
-      ${sectionTabs.map((key, i) => `
+      ${sectionTabs
+        .map(
+          (key, i) => `
         <div
           class="tab-pane fade${i === 0 ? ' show active' : ''}"
           id="panel-${key}"
@@ -376,20 +421,27 @@ export async function renderAlumnoAdminView(container, params = {}) {
             ${renderSectionPanel(key)}
           </div>
         </div>
-      `).join('')}
+      `,
+        )
+        .join('')}
 
       <div class="tab-pane fade" id="panel-clases" role="tabpanel" aria-labelledby="tab-clases">
         <div class="p-3">
           <h6 class="fw-bold text-uppercase text-muted small mb-3">Clases inscritas</h6>
-          ${clases.length === 0
-            ? '<p class="text-muted fst-italic">Sin clases activas.</p>'
-            : `<div class="list-group">
-                ${clases.map(c => `
+          ${
+            clases.length === 0
+              ? '<p class="text-muted fst-italic">Sin clases activas.</p>'
+              : `<div class="list-group">
+                ${clases
+                  .map(
+                    (c) => `
                   <div class="list-group-item d-flex justify-content-between align-items-center">
                     <span class="fw-semibold">${val(c.nombre)}</span>
                     <span class="text-muted small">${val(c.dia)} ${val(c.hora_inicio)}</span>
                   </div>
-                `).join('')}
+                `,
+                  )
+                  .join('')}
               </div>`
           }
         </div>
@@ -539,24 +591,34 @@ export async function renderAlumnoAdminView(container, params = {}) {
 
     el.innerHTML = `
       <h6 class="fw-bold text-uppercase text-muted small mb-3">Progreso</h6>
-      ${Object.entries(grouped).map(([grupo, items]) => `
+      ${Object.entries(grouped)
+        .map(
+          ([grupo, items]) => `
         <div class="mb-4">
           <div class="fw-semibold mb-2 border-bottom pb-1">${val(grupo)}</div>
           <div class="list-group list-group-flush">
-            ${items.map(p => `
+            ${items
+              .map(
+                (p) => `
               <div class="list-group-item px-0 py-2 d-flex justify-content-between align-items-start">
                 <div>
                   ${val(p.observaciones)}
                   ${p.fecha ? `<div class="text-muted small mt-1">${val(formatDate(p.fecha))}</div>` : ''}
                 </div>
-                ${p.estado_cualitativo
-                  ? `<span class="badge ${estadoBadgeClass(p.estado_cualitativo)} ms-2 flex-shrink-0">${val(p.estado_cualitativo)}</span>`
-                  : ''}
+                ${
+                  p.estado_cualitativo
+                    ? `<span class="badge ${estadoBadgeClass(p.estado_cualitativo)} ms-2 flex-shrink-0">${val(p.estado_cualitativo)}</span>`
+                    : ''
+                }
               </div>
-            `).join('')}
+            `,
+              )
+              .join('')}
           </div>
         </div>
-      `).join('')}
+      `,
+        )
+        .join('')}
     `
   }
 
@@ -583,7 +645,9 @@ export async function renderAlumnoAdminView(container, params = {}) {
       return
     }
 
-    let presente = 0, ausente = 0, justificado = 0
+    let presente = 0,
+      ausente = 0,
+      justificado = 0
     for (const a of data) {
       const e = (a.estado || a.asistio || '').toString().toLowerCase()
       if (e === 'true' || e === 'presente' || e === '1') presente++
@@ -595,8 +659,10 @@ export async function renderAlumnoAdminView(container, params = {}) {
 
     function estadoLabel(a) {
       const e = (a.estado || a.asistio || '').toString().toLowerCase()
-      if (e === 'true' || e === 'presente' || e === '1') return '<span class="badge bg-success">Presente</span>'
-      if (e === 'justificado' || e === 'justified') return '<span class="badge bg-warning text-dark">Justificado</span>'
+      if (e === 'true' || e === 'presente' || e === '1')
+        return '<span class="badge bg-success">Presente</span>'
+      if (e === 'justificado' || e === 'justified')
+        return '<span class="badge bg-warning text-dark">Justificado</span>'
       return '<span class="badge bg-danger">Ausente</span>'
     }
 
@@ -646,13 +712,17 @@ export async function renderAlumnoAdminView(container, params = {}) {
             </tr>
           </thead>
           <tbody>
-            ${data.map(a => `
+            ${data
+              .map(
+                (a) => `
               <tr>
                 <td class="text-nowrap">${val(a.fecha ? formatDate(a.fecha) : null)}</td>
                 <td>${estadoLabel(a)}</td>
                 <td>${val(a.observaciones)}</td>
               </tr>
-            `).join('')}
+            `,
+              )
+              .join('')}
           </tbody>
         </table>
       </div>
@@ -735,7 +805,7 @@ export async function renderAlumnoAdminView(container, params = {}) {
     }
 
     // Edit section buttons
-    document.querySelectorAll('[data-edit-section]').forEach(btn => {
+    document.querySelectorAll('[data-edit-section]').forEach((btn) => {
       btn.addEventListener('click', () => {
         const sectionKey = btn.getAttribute('data-edit-section')
         openEditModal(sectionKey)
@@ -757,7 +827,7 @@ export async function renderAlumnoAdminView(container, params = {}) {
 
     if (title) title.textContent = `Editar — ${TAB_LABELS[sectionKey]}`
     if (body) {
-      body.innerHTML = `<form id="edit-form">${fields.map(f => renderFormField(f, alumno)).join('')}</form>`
+      body.innerHTML = `<form id="edit-form">${fields.map((f) => renderFormField(f, alumno)).join('')}</form>`
     }
 
     const modalEl = document.getElementById('editModal')
@@ -791,10 +861,7 @@ export async function renderAlumnoAdminView(container, params = {}) {
       }
     }
 
-    const { error } = await supabase
-      .from('alumnos')
-      .update(patch)
-      .eq('id', alumnoId)
+    const { error } = await supabase.from('alumnos').update(patch).eq('id', alumnoId)
 
     if (spinner) spinner.classList.add('d-none')
     if (btnSave) btnSave.disabled = false
@@ -844,7 +911,9 @@ async function _buscarYmostrarPostulante(alumno, container) {
           <span class="small">No se encontraron postulantes con el nombre <strong>${escapeHTML(alumno.nombre_completo)}</strong>.</span>
           <button class="btn btn-sm btn-outline-secondary ms-auto" id="btn-close-panel"><i class="bi bi-x"></i></button>
         </div>`
-      panel.querySelector('#btn-close-panel')?.addEventListener('click', () => panel.innerHTML = '')
+      panel
+        .querySelector('#btn-close-panel')
+        ?.addEventListener('click', () => (panel.innerHTML = ''))
       return
     }
 
@@ -852,21 +921,35 @@ async function _buscarYmostrarPostulante(alumno, container) {
 
     // Detectar campos que están vacíos en alumno pero tienen valor en postulante
     const CAMPOS_PRECARGABLES = [
-      'madre_nombre', 'madre_cedula', 'madre_tlf_whatsapp',
-      'padre_nombre', 'padre_cedula', 'padre_tlf_whatsapp',
-      'representante_nombre', 'representante_parentesco', 'representante_tlf', 'representante_cedula',
-      'correo_representante', 'municipio_residencia', 'sector_calle_numero', 'direccion',
-      'nacionalidad', 'centro_estudios', 'grado_nivel', 'instrumento_interes',
-      'como_se_entero', 'ubicacion_maps_url',
+      'madre_nombre',
+      'madre_cedula',
+      'madre_tlf_whatsapp',
+      'padre_nombre',
+      'padre_cedula',
+      'padre_tlf_whatsapp',
+      'representante_nombre',
+      'representante_parentesco',
+      'representante_tlf',
+      'representante_cedula',
+      'correo_representante',
+      'municipio_residencia',
+      'sector_calle_numero',
+      'direccion',
+      'nacionalidad',
+      'centro_estudios',
+      'grado_nivel',
+      'instrumento_interes',
+      'como_se_entero',
+      'ubicacion_maps_url',
     ]
 
-    const camposDisponibles = CAMPOS_PRECARGABLES.filter(k => {
+    const camposDisponibles = CAMPOS_PRECARGABLES.filter((k) => {
       const enAlumno = alumno[k]
       const enPostulante = postulante[k]
       return (!enAlumno || enAlumno === '') && enPostulante && enPostulante !== ''
     })
 
-    const filas = CAMPOS_PRECARGABLES.map(k => {
+    const filas = CAMPOS_PRECARGABLES.map((k) => {
       const vAlumno = alumno[k]
       const vPost = postulante[k]
       const tieneDato = vPost && vPost !== ''
@@ -878,7 +961,9 @@ async function _buscarYmostrarPostulante(alumno, container) {
         <td class="small text-muted">${yaLleno ? escapeHTML(String(vAlumno)) : '<em>vacío</em>'}</td>
         <td class="text-center">${yaLleno ? '' : '<i class="bi bi-arrow-left-circle text-warning"></i>'}</td>
       </tr>`
-    }).filter(Boolean).join('')
+    })
+      .filter(Boolean)
+      .join('')
 
     panel.innerHTML = `
       <div class="card border-warning shadow-sm mb-4">
@@ -905,16 +990,20 @@ async function _buscarYmostrarPostulante(alumno, container) {
             </table>
           </div>
         </div>
-        ${camposDisponibles.length > 0 ? `
+        ${
+          camposDisponibles.length > 0
+            ? `
         <div class="card-footer d-flex justify-content-between align-items-center">
           <span class="small text-muted"><i class="bi bi-arrow-left-circle text-warning me-1"></i>${camposDisponibles.length} campo(s) nuevo(s) disponibles</span>
           <button class="btn btn-sm btn-warning" id="btn-precargar">
             <i class="bi bi-cloud-download me-1"></i>Precargar datos faltantes
           </button>
-        </div>` : ''}
+        </div>`
+            : ''
+        }
       </div>`
 
-    panel.querySelector('#btn-close-panel')?.addEventListener('click', () => panel.innerHTML = '')
+    panel.querySelector('#btn-close-panel')?.addEventListener('click', () => (panel.innerHTML = ''))
 
     panel.querySelector('#btn-precargar')?.addEventListener('click', async () => {
       const btn = panel.querySelector('#btn-precargar')
@@ -923,7 +1012,7 @@ async function _buscarYmostrarPostulante(alumno, container) {
 
       try {
         const patch = {}
-        camposDisponibles.forEach(k => {
+        camposDisponibles.forEach((k) => {
           if (postulante[k]) patch[k] = postulante[k]
         })
 
@@ -938,15 +1027,19 @@ async function _buscarYmostrarPostulante(alumno, container) {
             <span class="small">${camposDisponibles.length} campo(s) precargados correctamente desde postulante. Recargá los tabs para ver los cambios.</span>
             <button class="btn btn-sm btn-outline-secondary ms-auto" id="btn-close-panel2"><i class="bi bi-x"></i></button>
           </div>`
-        panel.querySelector('#btn-close-panel2')?.addEventListener('click', () => panel.innerHTML = '')
+        panel
+          .querySelector('#btn-close-panel2')
+          ?.addEventListener('click', () => (panel.innerHTML = ''))
       } catch (err) {
         btn.disabled = false
         btn.innerHTML = '<i class="bi bi-cloud-download me-1"></i>Precargar datos faltantes'
-        panel.insertAdjacentHTML('beforeend', `
-          <div class="alert alert-danger small mt-2">Error al guardar: ${escapeHTML(err.message)}</div>`)
+        panel.insertAdjacentHTML(
+          'beforeend',
+          `
+          <div class="alert alert-danger small mt-2">Error al guardar: ${escapeHTML(err.message)}</div>`,
+        )
       }
     })
-
   } catch (err) {
     panel.innerHTML = `
       <div class="alert alert-danger d-flex align-items-center gap-2 mb-4">
@@ -954,6 +1047,6 @@ async function _buscarYmostrarPostulante(alumno, container) {
         <span class="small">Error al buscar postulante: ${escapeHTML(err.message)}</span>
         <button class="btn btn-sm btn-outline-secondary ms-auto" id="btn-close-panel"><i class="bi bi-x"></i></button>
       </div>`
-    panel.querySelector('#btn-close-panel')?.addEventListener('click', () => panel.innerHTML = '')
+    panel.querySelector('#btn-close-panel')?.addEventListener('click', () => (panel.innerHTML = ''))
   }
 }

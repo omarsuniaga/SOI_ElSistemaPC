@@ -13,7 +13,7 @@ export class AlumnoTimeline {
   async load(alumnoId) {
     this.alumnoId = alumnoId
     const data = await loadJsonMock(MOCK_DATA_PATH)
-    const alumno = data.alumnos?.find(a => a.id === alumnoId)
+    const alumno = data.alumnos?.find((a) => a.id === alumnoId)
     if (!alumno) {
       this.renderEmpty()
       return
@@ -35,7 +35,7 @@ export class AlumnoTimeline {
           fecha: fechaStr,
           tipo: this.getTipoAleatorio(),
           descripcion: this.getDescripcionAleatoria(),
-          icon: this.getIconoAleatorio()
+          icon: this.getIconoAleatorio(),
         })
       }
     }
@@ -53,7 +53,7 @@ export class AlumnoTimeline {
       'Completó练习',
       'Recibió observación positiva',
       'Advancó en su progreso',
-      'Completó objetivo de gamificación'
+      'Completó objetivo de gamificación',
     ]
     return descs[Math.floor(Math.random() * descs.length)]
   }
@@ -70,9 +70,12 @@ export class AlumnoTimeline {
           <h6 class="fw-bold text-muted">Últimos ${this.diasAMostrar} días</h6>
         </div>
         <div class="timeline-list">
-          ${this.eventos.length === 0
-            ? '<p class="text-muted small">Sin eventos registrados</p>'
-            : this.eventos.map(e => `
+          ${
+            this.eventos.length === 0
+              ? '<p class="text-muted small">Sin eventos registrados</p>'
+              : this.eventos
+                  .map(
+                    (e) => `
               <div class="timeline-item d-flex align-items-start mb-3">
                 <div class="timeline-icon me-3">
                   <i class="bi ${e.icon}"></i>
@@ -82,7 +85,9 @@ export class AlumnoTimeline {
                   <small class="text-muted">${this.formatFecha(e.fecha)}</small>
                 </div>
               </div>
-            `).join('')
+            `,
+                  )
+                  .join('')
           }
         </div>
         ${this.eventos.length > 0 ? '<button class="btn btn-link btn-sm" id="timeline-load-more">Cargar más...</button>' : ''}

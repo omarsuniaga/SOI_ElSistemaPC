@@ -3,13 +3,13 @@
  * Muestra el estado de todos los componentes necesarios para push
  */
 
-import { 
-  isPushSupported, 
-  requestNotificationPermission, 
+import {
+  isPushSupported,
+  requestNotificationPermission,
   subscribeToPush,
   isPushSubscribed,
   getSubscriptionStatus,
-  testNotification
+  testNotification,
 } from '../services/pushService.js'
 import { enableTrap } from '../utils/focusTrap.js'
 import { escapeHTML } from '../../shared/utils/sanitize.js'
@@ -90,8 +90,8 @@ export const pushDiagnostic = {
   },
 
   injectStyles() {
-    if (document.getElementById('push-diagnostic-styles')) return;
-    
+    if (document.getElementById('push-diagnostic-styles')) return
+
     const style = document.createElement('style')
     style.id = 'push-diagnostic-styles'
     style.textContent = `
@@ -276,7 +276,7 @@ export const pushDiagnostic = {
     document.getElementById('push-diagnostic-overlay').addEventListener('click', (e) => {
       if (e.target.id === 'push-diagnostic-overlay') this.close()
     })
-    
+
     document.getElementById('btn-enable-push').addEventListener('click', () => this.enablePush())
     document.getElementById('btn-test-push').addEventListener('click', () => this.testPush())
   },
@@ -284,43 +284,45 @@ export const pushDiagnostic = {
   async checkStatus() {
     const logs = []
     const details = document.getElementById('diagnostic-details')
-    
+
     // Detectar dispositivo
-    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+      navigator.userAgent,
+    )
     const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent)
     const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent)
-    
-    logs.push({ 
-      text: `📱 Dispositivo: ${isMobile ? (isIOS ? 'iOS' : 'Android') : 'Desktop'}`, 
-      type: 'info' 
+
+    logs.push({
+      text: `📱 Dispositivo: ${isMobile ? (isIOS ? 'iOS' : 'Android') : 'Desktop'}`,
+      type: 'info',
     })
     if (isMobile && isSafari) {
-      logs.push({ 
-        text: `⚠️ iOS Safari: Requiere iOS 16.4+ y agregar a pantalla de inicio`, 
-        type: 'warn' 
+      logs.push({
+        text: `⚠️ iOS Safari: Requiere iOS 16.4+ y agregar a pantalla de inicio`,
+        type: 'warn',
       })
     }
-    
+
     // 1. Navegador
     const browserSupported = isPushSupported()
-    logs.push({ 
-      text: `Navegador: ${browserSupported ? '✅ Compatible' : '❌ No compatible'}`, 
-      type: browserSupported ? 'ok' : 'error' 
+    logs.push({
+      text: `Navegador: ${browserSupported ? '✅ Compatible' : '❌ No compatible'}`,
+      type: browserSupported ? 'ok' : 'error',
     })
     this.updateStatusItem('status-browser', browserSupported)
-    
+
     // 2. Permisos
     let permStatus = 'default'
     if ('Notification' in window) {
       permStatus = Notification.permission
     }
     const permOk = permStatus === 'granted'
-    logs.push({ 
-      text: `Permiso: ${permStatus === 'granted' ? '✅ Otorgado' : permStatus === 'denied' ? '❌ Denegado - ve a Configuración del navegador' : '⚠️ No solicitado - click en Activar abajo'}`, 
-      type: permOk ? 'ok' : 'warn' 
+    logs.push({
+      text: `Permiso: ${permStatus === 'granted' ? '✅ Otorgado' : permStatus === 'denied' ? '❌ Denegado - ve a Configuración del navegador' : '⚠️ No solicitado - click en Activar abajo'}`,
+      type: permOk ? 'ok' : 'warn',
     })
     this.updateStatusItem('status-permission', permOk, permStatus)
-    
+
     // 3. Service Worker
     let swStatus = 'no-registrado'
     let swActive = false
@@ -343,7 +345,7 @@ export const pushDiagnostic = {
       logs.push({ text: `Service Worker: ❌ No soportado`, type: 'error' })
       this.updateStatusItem('status-serviceworker', false)
     }
-    
+
     // 4. Suscripción Push
     let subStatus = 'no-suscrito'
     if (swActive) {
@@ -362,10 +364,10 @@ export const pushDiagnostic = {
     }
 
     // Mostrar logs
-    details.innerHTML = logs.map(l => 
-      `<div class="log-item log-${l.type}">${l.text}</div>`
-    ).join('')
-    
+    details.innerHTML = logs
+      .map((l) => `<div class="log-item log-${l.type}">${l.text}</div>`)
+      .join('')
+
     return { browserSupported, permOk, swActive }
   },
 
@@ -388,7 +390,7 @@ export const pushDiagnostic = {
       resultDiv.className = 'push-diagnostic-result info'
       const isMobile = /Android|webOS|iPhone|iPad|iPod/i.test(navigator.userAgent)
       const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent)
-      
+
       if (isMobile && isIOS) {
         resultDiv.innerHTML = '📱 iOS detectado: Se abrirá una solicitud de permiso...'
       } else if (isMobile) {
@@ -396,18 +398,18 @@ export const pushDiagnostic = {
       } else {
         resultDiv.innerHTML = 'Solicitando permiso de notificaciones...'
       }
-      
+
       const { granted, error: permError } = await requestNotificationPermission()
       if (!granted) {
-        const helpMsg = isMobile 
-          ? '<br><br><strong>En móvil:</strong> Ve a Configuración → Safari → Notificaciones → Permitir' 
+        const helpMsg = isMobile
+          ? '<br><br><strong>En móvil:</strong> Ve a Configuración → Safari → Notificaciones → Permitir'
           : ''
         throw new Error((permError || 'Permiso denegado') + helpMsg)
       }
 
       // Paso 2: Suscribirse a Push
       resultDiv.innerHTML = 'Registrando en el sistema de notificaciones...'
-      
+
       const result = await subscribeToPush()
       if (!result.success) {
         throw new Error(result.error || 'Error al suscribirse a push')
@@ -417,17 +419,17 @@ export const pushDiagnostic = {
       resultDiv.className = 'push-diagnostic-result success'
       const isMobileFinal = /Android|webOS|iPhone|iPad|iPod/i.test(navigator.userAgent)
       let successMsg = '✅ ¡Notificaciones push activadas!'
-      
+
       if (isMobileFinal) {
-        successMsg += '<br><small>💡 En móvil, agrega la app a pantalla de inicio para notificaciones completas (botón Compartir → Agregar a pantalla de inicio)</small>'
+        successMsg +=
+          '<br><small>💡 En móvil, agrega la app a pantalla de inicio para notificaciones completas (botón Compartir → Agregar a pantalla de inicio)</small>'
       }
       resultDiv.innerHTML = successMsg
-      
+
       await this.checkStatus()
-      
+
       // Auto-probar después de 2 segundos
       setTimeout(() => this.testPush(), 2000)
-      
     } catch (err) {
       resultDiv.className = 'push-diagnostic-result error'
       resultDiv.innerHTML = `❌ ${err.message}`
@@ -439,14 +441,16 @@ export const pushDiagnostic = {
 
   async testPush() {
     const resultDiv = document.getElementById('diagnostic-result')
-    
+
     try {
       const result = await testNotification()
       if (result.success) {
         resultDiv.className = 'push-diagnostic-result success'
-        resultDiv.innerHTML = `✅ ${result.method === 'serviceWorker' 
-          ? '¡Notificación del sistema enviada! Deberías verla en tu escritorio.' 
-          : 'Notificación enviada (modo local).'}`
+        resultDiv.innerHTML = `✅ ${
+          result.method === 'serviceWorker'
+            ? '¡Notificación del sistema enviada! Deberías verla en tu escritorio.'
+            : 'Notificación enviada (modo local).'
+        }`
       } else {
         resultDiv.className = 'push-diagnostic-result error'
         resultDiv.innerHTML = `❌ ${escapeHTML(result.error)}`
@@ -471,16 +475,21 @@ export const pushDiagnostic = {
   },
 
   close() {
-    if (this._trap) { this._trap.dispose(); this._trap = null }
+    if (this._trap) {
+      this._trap.dispose()
+      this._trap = null
+    }
     const overlay = document.getElementById('push-diagnostic-overlay')
     if (overlay) overlay.style.display = 'none'
-  }
+  },
 }
 
 // Auto-inicializar en portal de maestros
 export function initPushDiagnostic() {
   // Esperar a que el usuario haga click en el icono de notificaciones
-  const notifBtn = document.querySelector('[data-bs-toggle="notificaciones"], .pm-notificaciones-btn')
+  const notifBtn = document.querySelector(
+    '[data-bs-toggle="notificaciones"], .pm-notificaciones-btn',
+  )
   if (notifBtn) {
     notifBtn.addEventListener('click', () => {
       // No abrir automáticamente, solo está disponible

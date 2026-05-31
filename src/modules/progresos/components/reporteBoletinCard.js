@@ -1,4 +1,14 @@
-import { escapeHTML, getInitials, formatCalificacion, getCalificacionColor, getCalificacionLabel, getTipoLabel, getTipoBadgeClass, calcularPromedio, getRiesgo } from '../utils/progresosUtils.js'
+import {
+  escapeHTML,
+  getInitials,
+  formatCalificacion,
+  getCalificacionColor,
+  getCalificacionLabel,
+  getTipoLabel,
+  getTipoBadgeClass,
+  calcularPromedio,
+  getRiesgo,
+} from '../utils/progresosUtils.js'
 
 export function renderBoletinCard(alumno, progresos) {
   const promedio = calcularPromedio(progresos)
@@ -7,7 +17,9 @@ export function renderBoletinCard(alumno, progresos) {
   const seccion = alumno.section || 'Sin seccion'
 
   const evaluationsHTML = progresos.length
-    ? progresos.map(p => `
+    ? progresos
+        .map(
+          (p) => `
         <div class="d-flex justify-content-between align-items-center py-2 ${p !== progresos[progresos.length - 1] ? 'border-bottom' : ''}">
           <div>
             <span class="badge ${getTipoBadgeClass(p.tipo_evaluacion)} me-2">${getTipoLabel(p.tipo_evaluacion)}</span>
@@ -18,7 +30,9 @@ export function renderBoletinCard(alumno, progresos) {
             <div class="small text-muted">${getCalificacionLabel(p.calificacion)}</div>
           </div>
         </div>
-      `).join('')
+      `,
+        )
+        .join('')
     : '<p class="text-muted text-center py-3 mb-0">Sin evaluaciones registradas</p>'
 
   return `
@@ -32,9 +46,10 @@ export function renderBoletinCard(alumno, progresos) {
             <h5 class="mb-0">${escapeHTML(nombre)}</h5>
             <small>${escapeHTML(seccion)}</small>
           </div>
-          ${enRiesgo
-            ? '<span class="badge bg-white text-danger"><i class="bi bi-exclamation-triangle"></i> En Riesgo</span>'
-            : '<span class="badge bg-white text-success"><i class="bi bi-check-circle"></i> OK</span>'
+          ${
+            enRiesgo
+              ? '<span class="badge bg-white text-danger"><i class="bi bi-exclamation-triangle"></i> En Riesgo</span>'
+              : '<span class="badge bg-white text-success"><i class="bi bi-check-circle"></i> OK</span>'
           }
         </div>
       </div>

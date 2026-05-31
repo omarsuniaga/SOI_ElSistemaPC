@@ -35,7 +35,9 @@ describe('calendarioView - Bug 1: Today should not appear green without attendan
 
     const dateStr = today.toISOString().split('T')[0]
     const [year, month, day] = dateStr.split('-')
-    const dayName = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'][today.getDay()]
+    const dayName = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'][
+      today.getDay()
+    ]
 
     // Session with content but NO attendance (draft with content only)
     const mockSession = {
@@ -45,20 +47,20 @@ describe('calendarioView - Bug 1: Today should not appear green without attendan
       contenido: 'Notas de clase importantes', // Has content
       asistencia: [], // NO attendance recorded
       borrador: false,
-      estado: 'pendiente'
+      estado: 'pendiente',
     }
 
     const mockClass = {
       id: 'clase-1',
       nombre: 'Violín A',
-      maestro_id: 'maestro-1'
+      maestro_id: 'maestro-1',
     }
 
     const mockHorario = {
       clase_id: 'clase-1',
       dia: dayName,
       hora_inicio: '09:00',
-      hora_fin: '10:00'
+      hora_fin: '10:00',
     }
 
     maestroDataService.getMisClases.mockResolvedValue([mockClass])
@@ -80,7 +82,9 @@ describe('calendarioView - Bug 1: Today should not appear green without attendan
 
     const dateStr = today.toISOString().split('T')[0]
     const [year, month, day] = dateStr.split('-')
-    const dayName = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'][today.getDay()]
+    const dayName = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'][
+      today.getDay()
+    ]
 
     // Session with attendance recorded
     const mockSession = {
@@ -90,20 +94,20 @@ describe('calendarioView - Bug 1: Today should not appear green without attendan
       contenido: 'Notas de clase',
       asistencia: [{ alumno_id: 'a1', presente: true }], // HAS attendance
       borrador: false,
-      estado: 'registrada'
+      estado: 'registrada',
     }
 
     const mockClass = {
       id: 'clase-1',
       nombre: 'Violín A',
-      maestro_id: 'maestro-1'
+      maestro_id: 'maestro-1',
     }
 
     const mockHorario = {
       clase_id: 'clase-1',
       dia: dayName,
       hora_inicio: '09:00',
-      hora_fin: '10:00'
+      hora_fin: '10:00',
     }
 
     maestroDataService.getMisClases.mockResolvedValue([mockClass])

@@ -24,7 +24,7 @@
   --hb-grid-bg: #f9fafb;
 }
 
-[data-bs-theme="dark"] {
+[data-bs-theme='dark'] {
   --hb-primary: #818cf8;
   --hb-primary-hover: #6366f1;
   --hb-primary-light: rgba(129, 140, 248, 0.15);
@@ -56,8 +56,14 @@
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* Glassmorphism Header */
@@ -112,7 +118,9 @@
   padding: 1.5rem;
   box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05);
   margin-bottom: 1.5rem;
-  transition: transform 0.2s, box-shadow 0.2s;
+  transition:
+    transform 0.2s,
+    box-shadow 0.2s;
 }
 
 .hb-card:hover {
@@ -153,7 +161,9 @@
   background: var(--hb-gray-100);
   color: var(--hb-text);
   font-size: 0.9rem;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
 }
 
 .hb-form-control:focus {
@@ -249,7 +259,9 @@
   box-shadow: 0 4px 12px rgba(99, 102, 241, 0.12);
   z-index: 5;
   cursor: pointer;
-  transition: transform 0.2s, box-shadow 0.2s;
+  transition:
+    transform 0.2s,
+    box-shadow 0.2s;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -378,7 +390,9 @@
   font-size: 0.9rem;
   border: none;
   cursor: pointer;
-  transition: background-color 0.2s, transform 0.15s;
+  transition:
+    background-color 0.2s,
+    transform 0.15s;
 }
 
 .hb-btn-primary {
@@ -417,6 +431,134 @@
 }
 
 @keyframes slideIn {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ── GRIDS & TABLES (visual weekly schedule enhancements) ────────────────── */
+
+.schedule-grid-wrapper {
+  background: var(--hb-card-bg);
+  border: 1px solid var(--hb-border);
+  border-radius: 16px;
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+  margin-top: 1rem;
+  animation: fadeIn 0.4s ease-out;
+}
+
+.schedule-grid {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.schedule-grid th,
+.schedule-grid td {
+  border: 1px solid var(--hb-border) !important;
+}
+
+.sg-col-header {
+  background: var(--hb-primary-light) !important;
+  color: var(--hb-primary) !important;
+  font-weight: 700;
+  font-size: 0.78rem !important;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 10px 8px !important;
+}
+
+.sg-hour-label {
+  background: var(--hb-gray-100) !important;
+  font-weight: 600;
+  text-align: center;
+  border-right: 2px solid var(--hb-border) !important;
+  font-size: 0.72rem !important;
+  color: var(--hb-text-muted) !important;
+}
+
+.sg-cell {
+  background: var(--hb-grid-bg) !important;
+  transition: background-color 0.2s ease;
+  min-height: 60px;
+}
+
+.sg-cell:hover {
+  background: rgba(99, 102, 241, 0.03) !important;
+}
+
+/* ── SCHEDULE BLOCK PREMIUM STYLING ─────────────────────────────────── */
+
+.schedule-block {
+  background: var(--hb-card-bg) !important;
+  border: 1px solid var(--hb-border) !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.schedule-block:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 6px 18px rgba(99, 102, 241, 0.15) !important;
+  z-index: 10;
+}
+
+/* Active Highlight & Drag-and-Drop States */
+
+.hb-highlight {
+  animation: pulse-highlight 1.5s infinite;
+  border: 2px solid var(--hb-danger) !important;
+  box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.3) !important;
+}
+
+@keyframes pulse-highlight {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.04);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.sb--highlighted {
+  outline: 3px solid var(--hb-warning) !important;
+  outline-offset: 1px;
+}
+
+.hb-drop-target {
+  background: rgba(99, 102, 241, 0.08) !important;
+  outline: 2px dashed var(--hb-primary) !important;
+  outline-offset: -2px;
+}
+
+.vt-pill {
+  transition: all 0.2s ease !important;
+}
+
+.vt-pill:hover:not(.vt-pill--active) {
+  background: var(--hb-primary-light) !important;
+  border-color: var(--hb-primary) !important;
+  color: var(--hb-primary) !important;
+}
+
+/* Swimlanes views header alignment */
+.schedule-grouped-view .sg-group {
+  background: var(--hb-card-bg);
+  border: 1px solid var(--hb-border);
+  border-radius: 12px;
+  padding: 1.25rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02);
+}
+
+.sg-group-title {
+  color: var(--hb-primary) !important;
+  border-left: 3.5px solid var(--hb-primary);
+  padding-left: 8px;
 }

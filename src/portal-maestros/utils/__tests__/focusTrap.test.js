@@ -45,23 +45,33 @@ describe('enableTrap', () => {
 
     // Tab to input-1
     document.getElementById('btn-1').focus()
-    document.getElementById('btn-1').dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }))
+    document
+      .getElementById('btn-1')
+      .dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }))
     expect(document.activeElement).toBe(document.getElementById('input-1'))
 
     // Tab to select-1
-    document.getElementById('input-1').dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }))
+    document
+      .getElementById('input-1')
+      .dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }))
     expect(document.activeElement).toBe(document.getElementById('select-1'))
 
     // Tab to textarea-1
-    document.getElementById('select-1').dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }))
+    document
+      .getElementById('select-1')
+      .dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }))
     expect(document.activeElement).toBe(document.getElementById('textarea-1'))
 
     // Tab to btn-2
-    document.getElementById('textarea-1').dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }))
+    document
+      .getElementById('textarea-1')
+      .dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }))
     expect(document.activeElement).toBe(document.getElementById('btn-2'))
 
     // Tab to div-focusable
-    document.getElementById('btn-2').dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }))
+    document
+      .getElementById('btn-2')
+      .dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }))
     expect(document.activeElement).toBe(document.getElementById('div-focusable'))
   })
 

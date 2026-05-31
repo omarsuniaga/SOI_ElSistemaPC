@@ -1,5 +1,9 @@
 import { supabase } from '../../../lib/supabaseClient.js'
-import { aggregateStudentProgress, aggregateBatch, InvalidWindowError } from '../services/progresoAggregationService.js'
+import {
+  aggregateStudentProgress,
+  aggregateBatch,
+  InvalidWindowError,
+} from '../services/progresoAggregationService.js'
 import { format as formatProgressHistory } from '../services/progressHistoryFormatter.js'
 import * as asistenciasRepo from '../repositories/asistenciasRepo.js'
 import * as progresosRepo from '../repositories/progresosRepo.js'
@@ -18,7 +22,7 @@ export const NIVELES = [
 ]
 
 export function getNivelLabel(nivel) {
-  const found = NIVELES.find(n => n.value === nivel)
+  const found = NIVELES.find((n) => n.value === nivel)
   return found ? found.label : nivel || '-'
 }
 
@@ -79,11 +83,7 @@ export async function obtenerProgresos() {
 }
 
 export async function obtenerProgreso(id) {
-  const { data, error } = await supabase
-    .from('progresos')
-    .select('*')
-    .eq('id', id)
-    .single()
+  const { data, error } = await supabase.from('progresos').select('*').eq('id', id).single()
 
   if (error) {
     console.error('Error cargando progreso:', error.message)
@@ -112,9 +112,10 @@ export async function crearProgreso(progreso) {
     maestro_id: progreso.maestro_id || null,
     fecha_evaluacion: progreso.fecha_evaluacion || null,
     evaluacion_tipo: progreso.evaluacion_tipo.trim(),
-    calificacion: progreso.calificacion !== undefined && progreso.calificacion !== null
-      ? parseFloat(progreso.calificacion)
-      : null,
+    calificacion:
+      progreso.calificacion !== undefined && progreso.calificacion !== null
+        ? parseFloat(progreso.calificacion)
+        : null,
     estado_cualitativo: (progreso.estado_cualitativo || 'en_progreso').trim(),
     observaciones: (progreso.observaciones || '').trim(),
     indicadores: progreso.indicadores || null,
@@ -130,10 +131,7 @@ export async function crearProgreso(progreso) {
     }
   }
 
-  const { data, error } = await supabase
-    .from('progresos')
-    .insert([datosLimpios])
-    .select()
+  const { data, error } = await supabase.from('progresos').insert([datosLimpios]).select()
 
   if (error) {
     if (error.message.includes('duplicate key') || error.code === '23505') {
@@ -207,10 +205,7 @@ export async function actualizarProgreso(id, actualizaciones) {
 }
 
 export async function eliminarProgreso(id) {
-  const { error } = await supabase
-    .from('progresos')
-    .delete()
-    .eq('id', id)
+  const { error } = await supabase.from('progresos').delete().eq('id', id)
 
   if (error) {
     console.error('Error eliminando progreso:', error.message)
@@ -334,7 +329,7 @@ export async function exportarBoletinPDF(alumno, progresos) {
 
   const estadoTexto = enRiesgo ? 'EN RIESGO' : 'SATISFACTORIO'
   const estadoColor = enRiesgo ? [185, 27, 27] : [39, 174, 96]
-  
+
   doc.setFillColor(...estadoColor)
   doc.rect(14, 50, 60, 10, 'F')
   doc.setTextColor(255, 255, 255)
@@ -347,12 +342,14 @@ export async function exportarBoletinPDF(alumno, progresos) {
   doc.text(`Evaluaciones: ${progresos.length}`, 80, 62)
 
   if (progresos.length > 0) {
-    const tableData = progresos.map(p => [
+    const tableData = progresos.map((p) => [
       p.fecha_evaluacion ? formatDateLocal(p.fecha_evaluacion) : '-',
       getTipoLabelLocal(p.tipo_evaluacion),
       p.calificacion !== null ? p.calificacion.toFixed(2) : '-',
       getCalificacionLabelLocal(p.calificacion),
-      p.observaciones ? p.observaciones.substring(0, 40) + (p.observaciones.length > 40 ? '...' : '') : '-'
+      p.observaciones
+        ? p.observaciones.substring(0, 40) + (p.observaciones.length > 40 ? '...' : '')
+        : '-',
     ])
 
     autoTable(doc, {
@@ -369,7 +366,9 @@ export async function exportarBoletinPDF(alumno, progresos) {
 
 function calcularPromedioLocal(arr) {
   if (!arr || arr.length === 0) return null
-  const nums = arr.filter(p => p.calificacion !== null && p.calificacion !== undefined).map(p => parseFloat(p.calificacion))
+  const nums = arr
+    .filter((p) => p.calificacion !== null && p.calificacion !== undefined)
+    .map((p) => parseFloat(p.calificacion))
   if (nums.length === 0) return null
   return nums.reduce((a, b) => a + b, 0) / nums.length
 }
@@ -386,7 +385,13 @@ function formatDateLocal(dateStr) {
 }
 
 function getTipoLabelLocal(tipo) {
-  const labels = { oral: 'Oral', escrita: 'Escrita', practica: 'Práctica', evaluacion_parcial: 'Parcial', evaluacion_final: 'Final' }
+  const labels = {
+    oral: 'Oral',
+    escrita: 'Escrita',
+    practica: 'Práctica',
+    evaluacion_parcial: 'Parcial',
+    evaluacion_final: 'Final',
+  }
   return labels[tipo] || tipo || '-'
 }
 

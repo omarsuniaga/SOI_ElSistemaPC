@@ -4,26 +4,26 @@
  */
 
 export function NodeHotspots(hotspots = []) {
-    if (!hotspots || hotspots.length === 0) {
-        return `
+  if (!hotspots || hotspots.length === 0) {
+    return `
             <div class="pm-empty">
                 <i class="bi bi-fire"></i>
                 <p>No se han detectado puntos críticos pedagógicos.</p>
             </div>
-        `;
-    }
+        `
+  }
 
-    return `
+  return `
         <div class="aa-hotspots-grid pm-animate-fade-in">
-            ${hotspots.map(node => renderHotspotCard(node)).join('')}
+            ${hotspots.map((node) => renderHotspotCard(node)).join('')}
         </div>
-    `;
+    `
 }
 
 function renderHotspotCard(node) {
-    const failureRate = node.failure_percentage || 0;
-    
-    return `
+  const failureRate = node.failure_percentage || 0
+
+  return `
         <div class="aa-hotspot-card">
             <div class="aa-hotspot-header">
                 <div>
@@ -40,5 +40,5 @@ function renderHotspotCard(node) {
                 <div class="aa-progress-fill progress-low" style="width: ${failureRate}%"></div>
             </div>
         </div>
-    `;
+    `
 }

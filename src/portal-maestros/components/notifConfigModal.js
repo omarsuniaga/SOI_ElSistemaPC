@@ -1,20 +1,20 @@
-import { AppModal } from '../../shared/components/AppModal.js';
-import { 
-  getNotificationPreferences, 
-  saveNotificationPreferences, 
-  isPushSubscribed, 
-  subscribeToPush, 
+import { AppModal } from '../../shared/components/AppModal.js'
+import {
+  getNotificationPreferences,
+  saveNotificationPreferences,
+  isPushSubscribed,
+  subscribeToPush,
   unsubscribeFromPush,
-  testNotification
-} from '../services/pushService.js';
+  testNotification,
+} from '../services/pushService.js'
 
 /**
  * Modal de Configuración de Notificaciones (Apple Design)
  */
 export const notifConfigModal = {
   async open() {
-    const prefs = await getNotificationPreferences();
-    const subscribed = await isPushSubscribed();
+    const prefs = await getNotificationPreferences()
+    const subscribed = await isPushSubscribed()
 
     AppModal.open({
       title: 'Notificaciones',
@@ -23,10 +23,10 @@ export const notifConfigModal = {
       saveText: 'Hecho',
       onShow: (container) => this._initLogic(container),
       onSave: async (container) => {
-        await this._handleSave(container);
-        return true;
-      }
-    });
+        await this._handleSave(container)
+        return true
+      },
+    })
   },
 
   _renderBody(prefs, subscribed) {
@@ -194,37 +194,39 @@ export const notifConfigModal = {
           input:checked + .pm-apple-switch-slider:before { transform: translateX(20px); }
         </style>
       </div>
-    `;
+    `
   },
 
   _initLogic(container) {
     // Test Notif
     container.querySelector('#modal-notif-test').addEventListener('click', async () => {
-      const ok = await testNotification();
+      const ok = await testNotification()
       if (!ok) {
-        window.dispatchEvent(new CustomEvent('showToast', { 
-          detail: { message: 'Primero activa las notificaciones', type: 'warning' } 
-        }));
+        window.dispatchEvent(
+          new CustomEvent('showToast', {
+            detail: { message: 'Primero activa las notificaciones', type: 'warning' },
+          }),
+        )
       }
-    });
+    })
 
     // Push Toggle
-    const pushToggle = container.querySelector('#modal-notif-push');
+    const pushToggle = container.querySelector('#modal-notif-push')
     pushToggle.addEventListener('change', async () => {
-      const original = !pushToggle.checked;
+      const original = !pushToggle.checked
       if (pushToggle.checked) {
-        const res = await subscribeToPush();
+        const res = await subscribeToPush()
         if (!res.success) {
-          pushToggle.checked = false;
-          this._toast(res.error || 'Error al suscribir', 'danger');
+          pushToggle.checked = false
+          this._toast(res.error || 'Error al suscribir', 'danger')
         } else {
-          this._toast('Notificaciones activadas', 'success');
+          this._toast('Notificaciones activadas', 'success')
         }
       } else {
-        const res = await unsubscribeFromPush();
-        if (res.success) this._toast('Notificaciones desactivadas', 'info');
+        const res = await unsubscribeFromPush()
+        if (res.success) this._toast('Notificaciones desactivadas', 'info')
       }
-    });
+    })
   },
 
   async _handleSave(container) {
@@ -232,16 +234,19 @@ export const notifConfigModal = {
       alerta_pre_clase: container.querySelector('#modal-notif-pre').checked,
       min_antes_clase: parseInt(container.querySelector('#modal-notif-min-antes').value, 10),
       alerta_post_clase: container.querySelector('#modal-notif-post').checked,
-      min_post_clase_sin_registro: parseInt(container.querySelector('#modal-notif-min-post').value, 10),
+      min_post_clase_sin_registro: parseInt(
+        container.querySelector('#modal-notif-min-post').value,
+        10,
+      ),
       alerta_24h: container.querySelector('#modal-notif-24h').checked,
-      alerta_48h: true
-    };
-    
-    await saveNotificationPreferences(prefs);
-    this._toast('Preferencias guardadas', 'success');
+      alerta_48h: true,
+    }
+
+    await saveNotificationPreferences(prefs)
+    this._toast('Preferencias guardadas', 'success')
   },
 
   _toast(message, type) {
-    window.dispatchEvent(new CustomEvent('showToast', { detail: { message, type } }));
-  }
-};
+    window.dispatchEvent(new CustomEvent('showToast', { detail: { message, type } }))
+  },
+}

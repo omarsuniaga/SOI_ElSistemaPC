@@ -15,7 +15,7 @@
 export async function batchPromoteSessionObservations(
   supabase,
   promoteObservationsFn = null,
-  options = {}
+  options = {},
 ) {
   const { batchSize = 100, dryRun = false } = options
 
@@ -29,7 +29,7 @@ export async function batchPromoteSessionObservations(
   const result = {
     processed: 0,
     promoted: 0,
-    errors: []
+    errors: [],
   }
 
   try {
@@ -43,7 +43,7 @@ export async function batchPromoteSessionObservations(
     if (queryError) {
       result.errors.push({
         sessionId: null,
-        message: `Database query failed: ${queryError.message}`
+        message: `Database query failed: ${queryError.message}`,
       })
       return result
     }
@@ -71,12 +71,12 @@ export async function batchPromoteSessionObservations(
         if (alumnoError) {
           result.errors.push({
             sessionId,
-            message: `Failed to fetch alumnos: ${alumnoError.message}`
+            message: `Failed to fetch alumnos: ${alumnoError.message}`,
           })
           continue
         }
 
-        const alumnoIds = (alumnoRecords || []).map(r => r.alumno_id)
+        const alumnoIds = (alumnoRecords || []).map((r) => r.alumno_id)
 
         // Call Phase C API to promote observations
         const promoteResult = await promoteObservations(sessionId, alumnoIds)
@@ -85,7 +85,7 @@ export async function batchPromoteSessionObservations(
           // API returned errors; don't mark as promoted
           result.errors.push({
             sessionId,
-            message: promoteResult.errors[0]?.message || 'Promotion API failed'
+            message: promoteResult.errors[0]?.message || 'Promotion API failed',
           })
           continue
         }
@@ -100,7 +100,7 @@ export async function batchPromoteSessionObservations(
           if (updateError) {
             result.errors.push({
               sessionId,
-              message: `Failed to mark promoted: ${updateError.message}`
+              message: `Failed to mark promoted: ${updateError.message}`,
             })
             continue
           }
@@ -112,7 +112,7 @@ export async function batchPromoteSessionObservations(
         // Catch unexpected errors; continue batch
         result.errors.push({
           sessionId,
-          message: error.message || 'Unexpected error during promotion'
+          message: error.message || 'Unexpected error during promotion',
         })
       }
     }
@@ -120,7 +120,7 @@ export async function batchPromoteSessionObservations(
     // Catch unexpected errors at batch level
     result.errors.push({
       sessionId: null,
-      message: `Batch processing failed: ${error.message}`
+      message: `Batch processing failed: ${error.message}`,
     })
   }
 

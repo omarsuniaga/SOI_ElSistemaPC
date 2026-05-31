@@ -15,8 +15,16 @@
  *  - Transiciones atómicas in-place con desvanecimiento (cero lag de recarga).
  */
 
-import { fetchAdminFeed, fetchMaestrosParaNotificar, sendNotificacionToMaestros, fetchNotificacionesEnviadas } from '../api/adminNotifApi.js'
-import { aprobarAusencia, rechazarAusencia } from '../../admin-aprobacion/api/ausenciaAprobacionApi.js'
+import {
+  fetchAdminFeed,
+  fetchMaestrosParaNotificar,
+  sendNotificacionToMaestros,
+  fetchNotificacionesEnviadas,
+} from '../api/adminNotifApi.js'
+import {
+  aprobarAusencia,
+  rechazarAusencia,
+} from '../../admin-aprobacion/api/ausenciaAprobacionApi.js'
 import { supabase } from '../../../lib/supabaseClient.js'
 import { AppModal } from '../../../shared/components/AppModal.js'
 import { router } from '../../../core/router/router.js'
@@ -592,30 +600,45 @@ function _injectStyles() {
 // ── Category config ───────────────────────────────────────────────────────────
 
 const CATEGORIES = [
-  { key: 'all',        label: 'Todo',        icon: 'bi-grid-fill' },
-  { key: 'ausencia',   label: 'Ausencias',   icon: 'bi-calendar-x-fill' },
-  { key: 'compliance', label: 'Alertas',     icon: 'bi-exclamation-triangle-fill' },
-  { key: 'alumno',     label: 'Novedades',   icon: 'bi-person-plus-fill' },
+  { key: 'all', label: 'Todo', icon: 'bi-grid-fill' },
+  { key: 'ausencia', label: 'Ausencias', icon: 'bi-calendar-x-fill' },
+  { key: 'compliance', label: 'Alertas', icon: 'bi-exclamation-triangle-fill' },
+  { key: 'alumno', label: 'Novedades', icon: 'bi-person-plus-fill' },
 ]
 
 const CAT_COLORS = {
-  ausencia:   { bg: 'rgba(239,68,68,0.1)',   color: '#ef4444' },
-  compliance: { bg: 'rgba(245,158,11,0.1)',  color: '#f59e0b' },
-  alumno:     { bg: 'rgba(59,130,246,0.1)',  color: '#3b82f6' },
-  maestro:    { bg: 'rgba(239,68,68,0.1)',   color: '#ef4444' },
+  ausencia: { bg: 'rgba(239,68,68,0.1)', color: '#ef4444' },
+  compliance: { bg: 'rgba(245,158,11,0.1)', color: '#f59e0b' },
+  alumno: { bg: 'rgba(59,130,246,0.1)', color: '#3b82f6' },
+  maestro: { bg: 'rgba(239,68,68,0.1)', color: '#ef4444' },
 }
 
 const CAT_LABELS = {
-  ausencia:   'Ausencia',
+  ausencia: 'Ausencia',
   compliance: 'Alerta',
-  alumno:     'Novedad',
-  maestro:    'Seguridad',
+  alumno: 'Novedad',
+  maestro: 'Seguridad',
 }
 
 const ESTADO_CONFIG = {
-  aprobada:  { label: 'Aprobada',  bg: 'rgba(34,197,94,0.12)',   color: '#16a34a', icon: 'bi-check-circle-fill' },
-  rechazada: { label: 'Rechazada', bg: 'rgba(239,68,68,0.12)',   color: '#dc2626', icon: 'bi-x-circle-fill' },
-  pendiente: { label: 'Pendiente', bg: 'rgba(245,158,11,0.12)',  color: '#d97706', icon: 'bi-hourglass-split' },
+  aprobada: {
+    label: 'Aprobada',
+    bg: 'rgba(34,197,94,0.12)',
+    color: '#16a34a',
+    icon: 'bi-check-circle-fill',
+  },
+  rechazada: {
+    label: 'Rechazada',
+    bg: 'rgba(239,68,68,0.12)',
+    color: '#dc2626',
+    icon: 'bi-x-circle-fill',
+  },
+  pendiente: {
+    label: 'Pendiente',
+    bg: 'rgba(245,158,11,0.12)',
+    color: '#d97706',
+    icon: 'bi-hourglass-split',
+  },
 }
 
 // ── Main render ───────────────────────────────────────────────────────────────
@@ -628,7 +651,7 @@ export async function renderAdminNotificacionesView(container) {
     Notification.requestPermission()
   }
 
-  let _allEvents  = []
+  let _allEvents = []
   let _activeFilter = 'all'
   let _searchText = ''
   let _realtimeChannel = null
@@ -712,9 +735,9 @@ export async function renderAdminNotificacionesView(container) {
     })
 
     // Wire KPI click events
-    container.querySelectorAll('[data-kpi]').forEach(card => {
+    container.querySelectorAll('[data-kpi]').forEach((card) => {
       card.addEventListener('click', () => {
-        container.querySelectorAll('[data-kpi]').forEach(c => c.classList.remove('active'))
+        container.querySelectorAll('[data-kpi]').forEach((c) => c.classList.remove('active'))
         card.classList.add('active')
         _activeFilter = card.dataset.kpi
         _renderFilters()
@@ -739,17 +762,17 @@ export async function renderAdminNotificacionesView(container) {
       counts[e.category] = (counts[e.category] || 0) + 1
     }
 
-    CATEGORIES.forEach(cat => {
-      const count = cat.key === 'all' ? _allEvents.length : (counts[cat.key] || 0)
+    CATEGORIES.forEach((cat) => {
+      const count = cat.key === 'all' ? _allEvents.length : counts[cat.key] || 0
       const isActive = _activeFilter === cat.key
       const btn = document.createElement('button')
       btn.className = 'anv-filter-btn' + (isActive ? ' active' : '')
       btn.dataset.filter = cat.key
       btn.innerHTML = `<i class="bi ${cat.icon}"></i> ${cat.label} <span class="anv-filter-count">${count}</span>`
-      
+
       btn.addEventListener('click', () => {
         // Actualizar active kpi class
-        container.querySelectorAll('[data-kpi]').forEach(c => c.classList.remove('active'))
+        container.querySelectorAll('[data-kpi]').forEach((c) => c.classList.remove('active'))
         const matchingKpi = container.querySelector(`[data-kpi="${cat.key}"]`)
         if (matchingKpi) matchingKpi.classList.add('active')
 
@@ -763,9 +786,11 @@ export async function renderAdminNotificacionesView(container) {
 
   function _renderKPIs() {
     const todo = _allEvents.length
-    const criticas = _allEvents.filter(e => e.actionable || e.priority === 'alta').length
-    const compliance = _allEvents.filter(e => e.category === 'compliance').length
-    const novedades = _allEvents.filter(e => e.category === 'alumno' || e.category === 'maestro').length
+    const criticas = _allEvents.filter((e) => e.actionable || e.priority === 'alta').length
+    const compliance = _allEvents.filter((e) => e.category === 'compliance').length
+    const novedades = _allEvents.filter(
+      (e) => e.category === 'alumno' || e.category === 'maestro',
+    ).length
 
     const elTodo = container.querySelector('#kpi-todo')
     const elCriticas = container.querySelector('#kpi-criticas')
@@ -786,7 +811,7 @@ export async function renderAdminNotificacionesView(container) {
           body,
           icon: '/img/icons/icon-192x192.png',
           vibrate: [200, 100, 200],
-          tag: 'soi-admin-notif'
+          tag: 'soi-admin-notif',
         })
       } catch (err) {
         console.warn('[Web Push] Fallback via SW required:', err)
@@ -798,38 +823,62 @@ export async function renderAdminNotificacionesView(container) {
     if (_realtimeChannel) return
 
     // Remover canal previo con el mismo nombre si existe (sobrevive navegación SPA)
-    const stale = supabase.getChannels().find(ch => ch.topic === 'realtime:admin-feed-channel')
+    const stale = supabase.getChannels().find((ch) => ch.topic === 'realtime:admin-feed-channel')
     if (stale) supabase.removeChannel(stale)
 
     _realtimeChannel = supabase
       .channel('admin-feed-channel')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'ausencias_maestros' }, async (payload) => {
-        console.log('[Realtime WebSocket] Nueva ausencia detectada:', payload)
-        _showPushNotification('Nueva Ausencia Solicitada', 'Un maestro ha enviado una solicitud de ausencia urgente.')
-        await _load(true) // recarga silenciosa en segundo plano
-      })
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'ausencias_maestros' }, async () => {
-        await _load(true)
-      })
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'profiles' }, async (payload) => {
-        if (payload.new && payload.new.rol === 'maestro') {
-          console.log('[Realtime WebSocket] Nuevo maestro registrado:', payload)
-          _showPushNotification('Nuevo Registro de Seguridad', `${payload.new.nombre_completo} se ha registrado esperando aprobación.`)
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'ausencias_maestros' },
+        async (payload) => {
+          console.log('[Realtime WebSocket] Nueva ausencia detectada:', payload)
+          _showPushNotification(
+            'Nueva Ausencia Solicitada',
+            'Un maestro ha enviado una solicitud de ausencia urgente.',
+          )
+          await _load(true) // recarga silenciosa en segundo plano
+        },
+      )
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'ausencias_maestros' },
+        async () => {
           await _load(true)
-        }
-      })
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'asistencias' }, async () => {
-        await _load(true)
-      })
+        },
+      )
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'profiles' },
+        async (payload) => {
+          if (payload.new && payload.new.rol === 'maestro') {
+            console.log('[Realtime WebSocket] Nuevo maestro registrado:', payload)
+            _showPushNotification(
+              'Nuevo Registro de Seguridad',
+              `${payload.new.nombre_completo} se ha registrado esperando aprobación.`,
+            )
+            await _load(true)
+          }
+        },
+      )
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'asistencias' },
+        async () => {
+          await _load(true)
+        },
+      )
       .subscribe((status) => {
         const refreshBtn = container.querySelector('#anv-refresh-btn')
         if (!refreshBtn) return
         if (status === 'SUBSCRIBED') {
-          refreshBtn.innerHTML = '<i class="bi bi-broadcast text-success animate-pulse"></i> Feed en Vivo'
+          refreshBtn.innerHTML =
+            '<i class="bi bi-broadcast text-success animate-pulse"></i> Feed en Vivo'
           refreshBtn.style.borderColor = 'rgba(34,197,94,0.3)'
           refreshBtn.title = 'Conectado mediante WebSockets en tiempo real.'
         } else {
-          refreshBtn.innerHTML = '<i class="bi bi-exclamation-triangle-fill text-warning"></i> Re-conectar'
+          refreshBtn.innerHTML =
+            '<i class="bi bi-exclamation-triangle-fill text-warning"></i> Re-conectar'
           refreshBtn.style.borderColor = 'rgba(245,158,11,0.3)'
           refreshBtn.title = 'WebSockets inactivos. Haz clic para actualizar manualmente.'
         }
@@ -848,12 +897,17 @@ export async function renderAdminNotificacionesView(container) {
     // Post-decision state chip for resolved events (ausencias and maestros)
     let estadoChipHTML = ''
     if ((event.source === 'ausencia' || event.source === 'maestro') && !event.actionable) {
-      const estadoKey = event.estado === 'activo' ? 'aprobada' : (event.estado === 'rechazado' ? 'rechazada' : event.estado)
+      const estadoKey =
+        event.estado === 'activo'
+          ? 'aprobada'
+          : event.estado === 'rechazado'
+            ? 'rechazada'
+            : event.estado
       const ec = ESTADO_CONFIG[estadoKey]
       if (ec) {
         estadoChipHTML = `
           <span class="anv-estado-chip" style="background:${ec.bg};color:${ec.color}">
-            <i class="bi ${ec.icon}"></i> ${ec.label === 'Aprobada' && event.source === 'maestro' ? 'Aprobado' : (ec.label === 'Rechazada' && event.source === 'maestro' ? 'Rechazado' : ec.label)}
+            <i class="bi ${ec.icon}"></i> ${ec.label === 'Aprobada' && event.source === 'maestro' ? 'Aprobado' : ec.label === 'Rechazada' && event.source === 'maestro' ? 'Rechazado' : ec.label}
           </span>
         `
       }
@@ -868,7 +922,9 @@ export async function renderAdminNotificacionesView(container) {
             <i class="bi bi-magic"></i> Suplentes Recomendados (${event.maestroInstrumento || 'Instrumento'})
           </div>
           <div class="anv-suplentes-list">
-            ${event.suplentesSugeridos.map(s => `
+            ${event.suplentesSugeridos
+              .map(
+                (s) => `
               <div class="anv-suplente-item">
                 <div class="anv-suplente-info">
                   <span class="anv-suplente-name">${s.nombre_completo}</span>
@@ -878,7 +934,9 @@ export async function renderAdminNotificacionesView(container) {
                   <i class="bi bi-send-fill"></i> Proponer
                 </button>
               </div>
-            `).join('')}
+            `,
+              )
+              .join('')}
           </div>
         </div>
       `
@@ -948,7 +1006,7 @@ export async function renderAdminNotificacionesView(container) {
     `
 
     // Wire actions
-    el.querySelectorAll('[data-action]').forEach(btn => {
+    el.querySelectorAll('[data-action]').forEach((btn) => {
       btn.addEventListener('click', async (e) => {
         e.stopPropagation()
         const action = btn.dataset.action
@@ -960,7 +1018,9 @@ export async function renderAdminNotificacionesView(container) {
             const [routePath, queryStr] = rawRoute.split('?')
             let params = btn.dataset.params ? JSON.parse(btn.dataset.params) : {}
             if (queryStr) {
-              new URLSearchParams(queryStr).forEach((v, k) => { params[k] = v })
+              new URLSearchParams(queryStr).forEach((v, k) => {
+                params[k] = v
+              })
             }
             r.navigate(routePath, params)
           }
@@ -972,21 +1032,30 @@ export async function renderAdminNotificacionesView(container) {
           btn.disabled = true
           btn.innerHTML = '<i class="bi bi-check-lg"></i> Propuesto'
           btn.className = 'anv-suplente-btn notified'
-          window.dispatchEvent(new CustomEvent('showToast', {
-            detail: { message: `Propuesta de suplencia enviada a ${subName}`, type: 'success' }
-          }))
+          window.dispatchEvent(
+            new CustomEvent('showToast', {
+              detail: { message: `Propuesta de suplencia enviada a ${subName}`, type: 'success' },
+            }),
+          )
           return
         }
 
         // Approve / Reject inline con transición atómica in-place
-        el.querySelectorAll('[data-action="approve"],[data-action="reject"],[data-action="approve-maestro"],[data-action="reject-maestro"]').forEach(b => b.disabled = true)
-        
+        el.querySelectorAll(
+          '[data-action="approve"],[data-action="reject"],[data-action="approve-maestro"],[data-action="reject-maestro"]',
+        ).forEach((b) => (b.disabled = true))
+
         if (action === 'approve') {
-          btn.innerHTML = '<span class="anv-spinner" style="width:0.8rem;height:0.8rem;border-width:2px;margin:0"></span>'
+          btn.innerHTML =
+            '<span class="anv-spinner" style="width:0.8rem;height:0.8rem;border-width:2px;margin:0"></span>'
           try {
             await aprobarAusencia(event.sourceId, '')
-            window.dispatchEvent(new CustomEvent('showToast', { detail: { message: 'Ausencia aprobada con éxito', type: 'success' } }))
-            
+            window.dispatchEvent(
+              new CustomEvent('showToast', {
+                detail: { message: 'Ausencia aprobada con éxito', type: 'success' },
+              }),
+            )
+
             // Reemplazo atómico in-place
             event.actionable = false
             event.estado = 'aprobada'
@@ -999,19 +1068,30 @@ export async function renderAdminNotificacionesView(container) {
             el.replaceWith(freshEl)
 
             _renderKPIs()
-            
+
             if (window.adminAusenciasInsights) window.adminAusenciasInsights.evaluate()
           } catch (err) {
-            window.dispatchEvent(new CustomEvent('showToast', { detail: { message: 'Error: ' + err.message, type: 'error' } }))
-            el.querySelectorAll('[data-action="approve"],[data-action="reject"]').forEach(b => b.disabled = false)
+            window.dispatchEvent(
+              new CustomEvent('showToast', {
+                detail: { message: 'Error: ' + err.message, type: 'error' },
+              }),
+            )
+            el.querySelectorAll('[data-action="approve"],[data-action="reject"]').forEach(
+              (b) => (b.disabled = false),
+            )
             btn.innerHTML = '<i class="bi bi-check-circle"></i> Aprobar'
           }
         } else if (action === 'reject') {
-          btn.innerHTML = '<span class="anv-spinner" style="width:0.8rem;height:0.8rem;border-width:2px;margin:0"></span>'
+          btn.innerHTML =
+            '<span class="anv-spinner" style="width:0.8rem;height:0.8rem;border-width:2px;margin:0"></span>'
           try {
             await rechazarAusencia(event.sourceId, '')
-            window.dispatchEvent(new CustomEvent('showToast', { detail: { message: 'Ausencia rechazada con éxito', type: 'success' } }))
-            
+            window.dispatchEvent(
+              new CustomEvent('showToast', {
+                detail: { message: 'Ausencia rechazada con éxito', type: 'success' },
+              }),
+            )
+
             // Reemplazo atómico in-place
             event.actionable = false
             event.estado = 'rechazada'
@@ -1027,22 +1107,33 @@ export async function renderAdminNotificacionesView(container) {
 
             if (window.adminAusenciasInsights) window.adminAusenciasInsights.evaluate()
           } catch (err) {
-            window.dispatchEvent(new CustomEvent('showToast', { detail: { message: 'Error: ' + err.message, type: 'error' } }))
-            el.querySelectorAll('[data-action="approve"],[data-action="reject"]').forEach(b => b.disabled = false)
+            window.dispatchEvent(
+              new CustomEvent('showToast', {
+                detail: { message: 'Error: ' + err.message, type: 'error' },
+              }),
+            )
+            el.querySelectorAll('[data-action="approve"],[data-action="reject"]').forEach(
+              (b) => (b.disabled = false),
+            )
             btn.innerHTML = '<i class="bi bi-x-circle"></i> Rechazar'
           }
         } else if (action === 'approve-maestro') {
-          btn.innerHTML = '<span class="anv-spinner" style="width:0.8rem;height:0.8rem;border-width:2px;margin:0"></span>'
+          btn.innerHTML =
+            '<span class="anv-spinner" style="width:0.8rem;height:0.8rem;border-width:2px;margin:0"></span>'
           try {
             const { error } = await supabase
               .from('profiles')
               .update({ estado: 'activo' })
               .eq('id', event.sourceId)
-            
+
             if (error) throw error
 
-            window.dispatchEvent(new CustomEvent('showToast', { detail: { message: 'Maestro aprobado con éxito', type: 'success' } }))
-            
+            window.dispatchEvent(
+              new CustomEvent('showToast', {
+                detail: { message: 'Maestro aprobado con éxito', type: 'success' },
+              }),
+            )
+
             // Reemplazo atómico in-place
             event.actionable = false
             event.estado = 'activo'
@@ -1057,22 +1148,33 @@ export async function renderAdminNotificacionesView(container) {
 
             _renderKPIs()
           } catch (err) {
-            window.dispatchEvent(new CustomEvent('showToast', { detail: { message: 'Error: ' + err.message, type: 'error' } }))
-            el.querySelectorAll('[data-action="approve-maestro"],[data-action="reject-maestro"]').forEach(b => b.disabled = false)
+            window.dispatchEvent(
+              new CustomEvent('showToast', {
+                detail: { message: 'Error: ' + err.message, type: 'error' },
+              }),
+            )
+            el.querySelectorAll(
+              '[data-action="approve-maestro"],[data-action="reject-maestro"]',
+            ).forEach((b) => (b.disabled = false))
             btn.innerHTML = '<i class="bi bi-check-circle"></i> Aprobar'
           }
         } else if (action === 'reject-maestro') {
-          btn.innerHTML = '<span class="anv-spinner" style="width:0.8rem;height:0.8rem;border-width:2px;margin:0"></span>'
+          btn.innerHTML =
+            '<span class="anv-spinner" style="width:0.8rem;height:0.8rem;border-width:2px;margin:0"></span>'
           try {
             const { error } = await supabase
               .from('profiles')
               .update({ estado: 'rechazado' })
               .eq('id', event.sourceId)
-            
+
             if (error) throw error
 
-            window.dispatchEvent(new CustomEvent('showToast', { detail: { message: 'Maestro rechazado con éxito', type: 'success' } }))
-            
+            window.dispatchEvent(
+              new CustomEvent('showToast', {
+                detail: { message: 'Maestro rechazado con éxito', type: 'success' },
+              }),
+            )
+
             // Reemplazo atómico in-place
             event.actionable = false
             event.estado = 'rechazado'
@@ -1087,8 +1189,14 @@ export async function renderAdminNotificacionesView(container) {
 
             _renderKPIs()
           } catch (err) {
-            window.dispatchEvent(new CustomEvent('showToast', { detail: { message: 'Error: ' + err.message, type: 'error' } }))
-            el.querySelectorAll('[data-action="approve-maestro"],[data-action="reject-maestro"]').forEach(b => b.disabled = false)
+            window.dispatchEvent(
+              new CustomEvent('showToast', {
+                detail: { message: 'Error: ' + err.message, type: 'error' },
+              }),
+            )
+            el.querySelectorAll(
+              '[data-action="approve-maestro"],[data-action="reject-maestro"]',
+            ).forEach((b) => (b.disabled = false))
             btn.innerHTML = '<i class="bi bi-x-circle"></i> Rechazar'
           }
         }
@@ -1099,7 +1207,7 @@ export async function renderAdminNotificacionesView(container) {
   }
 
   function _renderTimeline() {
-    const body      = container.querySelector('#anv-body')
+    const body = container.querySelector('#anv-body')
     const showingEl = container.querySelector('#anv-showing')
     if (!body) return
 
@@ -1107,26 +1215,28 @@ export async function renderAdminNotificacionesView(container) {
 
     // 1. Filtrado por chip o KPI activo
     if (_activeFilter === 'critica') {
-      filtered = _allEvents.filter(e => e.actionable || e.priority === 'alta')
+      filtered = _allEvents.filter((e) => e.actionable || e.priority === 'alta')
     } else if (_activeFilter !== 'all') {
-      filtered = _allEvents.filter(e => e.category === _activeFilter)
+      filtered = _allEvents.filter((e) => e.category === _activeFilter)
     }
 
     // 2. Filtrado dinámico por texto (Buscador en Caliente)
     if (_searchText.trim().length > 0) {
       const term = _searchText.toLowerCase().trim()
-      filtered = filtered.filter(e => 
-        (e.titulo || '').toLowerCase().includes(term) ||
-        (e.subtitulo || '').toLowerCase().includes(term) ||
-        (e.motivo || '').toLowerCase().includes(term) ||
-        (e.maestroInstrumento || '').toLowerCase().includes(term)
+      filtered = filtered.filter(
+        (e) =>
+          (e.titulo || '').toLowerCase().includes(term) ||
+          (e.subtitulo || '').toLowerCase().includes(term) ||
+          (e.motivo || '').toLowerCase().includes(term) ||
+          (e.maestroInstrumento || '').toLowerCase().includes(term),
       )
     }
 
     if (showingEl) {
-      showingEl.textContent = filtered.length === 0
-        ? 'Sin eventos encontrados'
-        : `${filtered.length} evento${filtered.length > 1 ? 's' : ''}`
+      showingEl.textContent =
+        filtered.length === 0
+          ? 'Sin eventos encontrados'
+          : `${filtered.length} evento${filtered.length > 1 ? 's' : ''}`
     }
 
     if (filtered.length === 0) {
@@ -1143,7 +1253,7 @@ export async function renderAdminNotificacionesView(container) {
     body.innerHTML = ''
     const timeline = document.createElement('div')
     timeline.className = 'anv-timeline'
-    filtered.forEach(event => {
+    filtered.forEach((event) => {
       timeline.appendChild(_buildEventEl(event, () => _load(true)))
     })
     body.appendChild(timeline)
@@ -1151,7 +1261,7 @@ export async function renderAdminNotificacionesView(container) {
 
   async function _load(silent = false) {
     const refreshBtn = container.querySelector('#anv-refresh-btn')
-    const body       = container.querySelector('#anv-body')
+    const body = container.querySelector('#anv-body')
 
     if (refreshBtn && !silent) refreshBtn.classList.add('spinning')
     if (body && _allEvents.length === 0) {
@@ -1169,7 +1279,7 @@ export async function renderAdminNotificacionesView(container) {
       _renderKPIs()
       _renderFilters()
       _renderTimeline()
-      
+
       _setupRealtimeSubscription()
     } catch (err) {
       console.error('[adminNotificacionesView] load error:', err)
@@ -1269,25 +1379,29 @@ export async function renderAdminNotificacionesView(container) {
           </p>
         </div>
       </div>
-    `;
+    `
 
     AppModal.open({
       title: 'Guía del Usuario — Centro de Actividad',
       body: helpContent,
       size: 'lg',
       hideSave: true,
-      cancelText: 'Entendido'
-    });
+      cancelText: 'Entendido',
+    })
   }
 
   // ── Modal: enviar notificación a maestros ──────────────────────────────
   async function _openSendModal() {
     let maestros = []
-    try { maestros = await fetchMaestrosParaNotificar() } catch { /* continúa con lista vacía */ }
+    try {
+      maestros = await fetchMaestrosParaNotificar()
+    } catch {
+      /* continúa con lista vacía */
+    }
 
-    const opcionesMaestros = maestros.map(m =>
-      `<option value="${m.profile_id}">${m.nombre}</option>`
-    ).join('')
+    const opcionesMaestros = maestros
+      .map((m) => `<option value="${m.profile_id}">${m.nombre}</option>`)
+      .join('')
 
     AppModal.open({
       title: '<i class="bi bi-send-fill me-2 text-warning"></i>Enviar notificación a maestros',
@@ -1340,12 +1454,20 @@ export async function renderAdminNotificacionesView(container) {
 
         const titulo = tituloEl?.value.trim()
         const mensaje = mensajeEl?.value.trim()
-        const selected = Array.from(destEl?.selectedOptions || []).map(o => o.value)
+        const selected = Array.from(destEl?.selectedOptions || []).map((o) => o.value)
 
-        if (!titulo) { tituloEl?.classList.add('is-invalid'); return }
-        if (!mensaje) { mensajeEl?.classList.add('is-invalid'); return }
+        if (!titulo) {
+          tituloEl?.classList.add('is-invalid')
+          return
+        }
+        if (!mensaje) {
+          mensajeEl?.classList.add('is-invalid')
+          return
+        }
         if (!selected.length) {
-          if (statusEl) statusEl.innerHTML = '<div class="alert alert-warning py-2 mb-0">Seleccioná al menos un destinatario.</div>'
+          if (statusEl)
+            statusEl.innerHTML =
+              '<div class="alert alert-warning py-2 mb-0">Seleccioná al menos un destinatario.</div>'
           return
         }
 
@@ -1355,11 +1477,12 @@ export async function renderAdminNotificacionesView(container) {
         try {
           let profileIds = selected
           if (selected.includes('__all__')) {
-            profileIds = maestros.map(m => m.profile_id)
+            profileIds = maestros.map((m) => m.profile_id)
           }
 
           const { sent } = await sendNotificacionToMaestros(profileIds, { titulo, mensaje })
-          if (statusEl) statusEl.innerHTML = `
+          if (statusEl)
+            statusEl.innerHTML = `
             <div class="alert alert-success py-2 mb-0">
               <i class="bi bi-check-circle me-1"></i>
               Notificación enviada a <strong>${sent}</strong> maestro${sent !== 1 ? 's' : ''}.
@@ -1367,7 +1490,8 @@ export async function renderAdminNotificacionesView(container) {
           sendBtn.innerHTML = '<i class="bi bi-check2 me-1"></i>Enviado'
           setTimeout(() => AppModal.open({ body: '' }), 1800) // close by reopening blank
         } catch (err) {
-          if (statusEl) statusEl.innerHTML = `<div class="alert alert-danger py-2 mb-0">Error: ${err.message}</div>`
+          if (statusEl)
+            statusEl.innerHTML = `<div class="alert alert-danger py-2 mb-0">Error: ${err.message}</div>`
           sendBtn.disabled = false
           sendBtn.innerHTML = '<i class="bi bi-send me-1"></i>Enviar'
         }
@@ -1414,13 +1538,21 @@ export async function renderAdminNotificacionesView(container) {
       return
     }
 
-    const fmtDate = iso => {
+    const fmtDate = (iso) => {
       if (!iso) return ''
       const d = new Date(iso)
-      return d.toLocaleString('es-DO', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+      return d.toLocaleString('es-DO', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      })
     }
 
-    const rows = entries.map(e => `
+    const rows = entries
+      .map(
+        (e) => `
       <div class="border rounded p-3 mb-2" style="font-size:0.875rem;">
         <div class="d-flex justify-content-between align-items-start gap-2 mb-1">
           <strong class="text-truncate" style="max-width:70%;">${e.titulo || '(sin título)'}</strong>
@@ -1428,7 +1560,9 @@ export async function renderAdminNotificacionesView(container) {
         </div>
         <p class="text-muted mb-1" style="white-space:pre-wrap;word-break:break-word;">${e.mensaje || ''}</p>
         <small class="text-muted"><i class="bi bi-clock me-1"></i>${fmtDate(e.created_at)}</small>
-      </div>`).join('')
+      </div>`,
+      )
+      .join('')
 
     AppModal.open({
       title: `<i class="bi bi-clock-history me-2"></i>Historial <span class="badge bg-secondary ms-1">${entries.length}</span>`,
@@ -1452,7 +1586,9 @@ export async function renderAdminNotificacionesView(container) {
   container.querySelector('#anv-btn-send-notif')?.addEventListener('click', () => _openSendModal())
 
   // Botón historial
-  container.querySelector('#anv-btn-historial')?.addEventListener('click', () => _openHistorialModal())
+  container
+    .querySelector('#anv-btn-historial')
+    ?.addEventListener('click', () => _openHistorialModal())
 
   // Retornar cleanup para que el router remueva el canal cuando navegue a otra vista
   return function cleanup() {

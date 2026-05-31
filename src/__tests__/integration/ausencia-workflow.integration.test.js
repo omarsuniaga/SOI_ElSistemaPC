@@ -153,9 +153,8 @@ describe('Full Absence Workflow — Maestro → Director → Admin', () => {
       const chain = buildQueryChain({ data: pendingList, error: null })
       supabase.from.mockReturnValue(chain)
 
-      const { obtenerPendientesDirector } = await import(
-        '../../modules/admin-aprobacion/api/ausenciaAprobacionApi.js'
-      )
+      const { obtenerPendientesDirector } =
+        await import('../../modules/admin-aprobacion/api/ausenciaAprobacionApi.js')
       const result = await obtenerPendientesDirector()
 
       expect(Array.isArray(result)).toBe(true)
@@ -167,9 +166,8 @@ describe('Full Absence Workflow — Maestro → Director → Admin', () => {
       const chain = buildQueryChain({ data: [], error: null })
       supabase.from.mockReturnValue(chain)
 
-      const { obtenerPendientesDirector } = await import(
-        '../../modules/admin-aprobacion/api/ausenciaAprobacionApi.js'
-      )
+      const { obtenerPendientesDirector } =
+        await import('../../modules/admin-aprobacion/api/ausenciaAprobacionApi.js')
       const result = await obtenerPendientesDirector()
 
       expect(result).toEqual([])
@@ -196,9 +194,8 @@ describe('Full Absence Workflow — Maestro → Director → Admin', () => {
         return buildQueryChain({ data: null, error: null })
       })
 
-      const { revisarAusencia } = await import(
-        '../../modules/admin-aprobacion/api/ausenciaAprobacionApi.js'
-      )
+      const { revisarAusencia } =
+        await import('../../modules/admin-aprobacion/api/ausenciaAprobacionApi.js')
       const result = await revisarAusencia('ausencia-001', 'aprobar', 'Aprobado por director')
 
       expect(result).toBeDefined()
@@ -222,9 +219,8 @@ describe('Full Absence Workflow — Maestro → Director → Admin', () => {
         return buildQueryChain({ data: null, error: null })
       })
 
-      const { revisarAusencia } = await import(
-        '../../modules/admin-aprobacion/api/ausenciaAprobacionApi.js'
-      )
+      const { revisarAusencia } =
+        await import('../../modules/admin-aprobacion/api/ausenciaAprobacionApi.js')
       const result = await revisarAusencia('ausencia-001', 'rechazar', 'Documentación insuficiente')
 
       expect(result.estado).toBe('rechazada')
@@ -233,12 +229,11 @@ describe('Full Absence Workflow — Maestro → Director → Admin', () => {
     it('revisarAusencia throws on invalid action', async () => {
       supabase.from.mockReturnValue(buildQueryChain({ data: null, error: null }))
 
-      const { revisarAusencia } = await import(
-        '../../modules/admin-aprobacion/api/ausenciaAprobacionApi.js'
-      )
+      const { revisarAusencia } =
+        await import('../../modules/admin-aprobacion/api/ausenciaAprobacionApi.js')
 
       await expect(revisarAusencia('ausencia-001', 'accion_invalida')).rejects.toThrow(
-        'Acción no válida: accion_invalida'
+        'Acción no válida: accion_invalida',
       )
     })
 
@@ -261,16 +256,15 @@ describe('Full Absence Workflow — Maestro → Director → Admin', () => {
         return buildQueryChain({ data: null, error: null })
       })
 
-      const { revisarAusencia } = await import(
-        '../../modules/admin-aprobacion/api/ausenciaAprobacionApi.js'
-      )
+      const { revisarAusencia } =
+        await import('../../modules/admin-aprobacion/api/ausenciaAprobacionApi.js')
       await revisarAusencia('ausencia-001', 'aprobar', 'Director aprueba')
 
       expect(auditInsertMock).toHaveBeenCalledWith(
         expect.objectContaining({
           ausencia_id: 'ausencia-001',
           accion: 'aprobar',
-        })
+        }),
       )
     })
   })
@@ -286,9 +280,8 @@ describe('Full Absence Workflow — Maestro → Director → Admin', () => {
       const chain = buildQueryChain({ data: pendingForAdmin, error: null })
       supabase.from.mockReturnValue(chain)
 
-      const { obtenerPendientesAprobacion } = await import(
-        '../../modules/admin-aprobacion/api/ausenciaAprobacionApi.js'
-      )
+      const { obtenerPendientesAprobacion } =
+        await import('../../modules/admin-aprobacion/api/ausenciaAprobacionApi.js')
       const result = await obtenerPendientesAprobacion()
 
       expect(Array.isArray(result)).toBe(true)
@@ -311,9 +304,8 @@ describe('Full Absence Workflow — Maestro → Director → Admin', () => {
       const chain = buildQueryChain({ data: finalRecord, error: null })
       supabase.from.mockReturnValue(chain)
 
-      const { aprobarAusencia } = await import(
-        '../../modules/admin-aprobacion/api/ausenciaAprobacionApi.js'
-      )
+      const { aprobarAusencia } =
+        await import('../../modules/admin-aprobacion/api/ausenciaAprobacionApi.js')
       const result = await aprobarAusencia('ausencia-001', 'Aprobado por administración')
 
       expect(result.estado).toBe('aprobada')
@@ -329,9 +321,8 @@ describe('Full Absence Workflow — Maestro → Director → Admin', () => {
       const chain = buildQueryChain({ data: rejectedRecord, error: null })
       supabase.from.mockReturnValue(chain)
 
-      const { rechazarAusencia } = await import(
-        '../../modules/admin-aprobacion/api/ausenciaAprobacionApi.js'
-      )
+      const { rechazarAusencia } =
+        await import('../../modules/admin-aprobacion/api/ausenciaAprobacionApi.js')
       const result = await rechazarAusencia('ausencia-001', 'No cumple requisitos')
 
       expect(result.estado).toBe('rechazada')
@@ -438,9 +429,8 @@ describe('Full Absence Workflow — Maestro → Director → Admin', () => {
         return buildQueryChain({ data: null, error: null })
       })
 
-      const { obtenerAusenciaConAuditoria } = await import(
-        '../../portal-maestros/api/ausenciaService.js'
-      )
+      const { obtenerAusenciaConAuditoria } =
+        await import('../../portal-maestros/api/ausenciaService.js')
       const result = await obtenerAusenciaConAuditoria('ausencia-001')
 
       expect(result.ausencia).toBeDefined()

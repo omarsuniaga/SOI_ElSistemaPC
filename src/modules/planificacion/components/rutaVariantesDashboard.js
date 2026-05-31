@@ -65,7 +65,7 @@ export async function renderRutaVariantesDashboard(container) {
     container.innerHTML = html
 
     // Attach event listeners
-    document.querySelectorAll('[data-approve-id]').forEach(btn => {
+    document.querySelectorAll('[data-approve-id]').forEach((btn) => {
       btn.addEventListener('click', async (e) => {
         const rutaId = e.target.closest('button').dataset.approveId
         try {
@@ -78,7 +78,7 @@ export async function renderRutaVariantesDashboard(container) {
       })
     })
 
-    document.querySelectorAll('[data-reject-id]').forEach(btn => {
+    document.querySelectorAll('[data-reject-id]').forEach((btn) => {
       btn.addEventListener('click', async (e) => {
         const rutaId = e.target.closest('button').dataset.rejectId
         const razon = prompt('Razón del rechazo:')
@@ -93,7 +93,6 @@ export async function renderRutaVariantesDashboard(container) {
         }
       })
     })
-
   } catch (err) {
     container.innerHTML = `<div class="alert alert-danger">${err.message}</div>`
   }

@@ -9,7 +9,7 @@ import { getRoutes, getRouteVersions, getAcademicTree } from '../api/academicAdm
 export async function renderAcademicAdminView(container) {
   // Inyectar Estilos de Layout
   _injectLayoutStyles()
-  
+
   container.innerHTML = `
     <div class="admin-view-container">
       <div class="admin-sidebar">
@@ -47,19 +47,19 @@ export async function renderAcademicAdminView(container) {
     onUpdate: (updatedNode) => {
       // Opcional: Refrescar nombre en el árbol si es necesario
       console.log('Node updated:', updatedNode)
-    }
+    },
   })
 
   const treeView = new TreeView(treeContainer, {
     onSelect: (node) => {
       resourceEditor.setNode(node)
-    }
+    },
   })
 
   // Cargar Rutas
   try {
     const routes = await getRoutes()
-    routes.forEach(r => {
+    routes.forEach((r) => {
       const opt = document.createElement('option')
       opt.value = r.id
       opt.textContent = r.name
@@ -77,13 +77,14 @@ export async function renderAcademicAdminView(container) {
     treeContainer.innerHTML = '<div class="tree-placeholder"><p>Cargando versiones...</p></div>'
 
     if (!routeId) {
-      treeContainer.innerHTML = '<div class="tree-placeholder"><p>Selecciona una ruta para comenzar.</p></div>'
+      treeContainer.innerHTML =
+        '<div class="tree-placeholder"><p>Selecciona una ruta para comenzar.</p></div>'
       return
     }
 
     try {
       const versions = await getRouteVersions(routeId)
-      versions.forEach(v => {
+      versions.forEach((v) => {
         const opt = document.createElement('option')
         opt.value = v.id
         opt.textContent = `V${v.version_number} - ${new Date(v.created_at).toLocaleDateString()}`
@@ -92,7 +93,8 @@ export async function renderAcademicAdminView(container) {
       versionSelector.disabled = false
       treeContainer.innerHTML = '<div class="tree-placeholder"><p>Selecciona una versión.</p></div>'
     } catch (err) {
-      treeContainer.innerHTML = '<div class="tree-placeholder text-danger"><p>Error al cargar versiones.</p></div>'
+      treeContainer.innerHTML =
+        '<div class="tree-placeholder text-danger"><p>Error al cargar versiones.</p></div>'
     }
   })
 
@@ -112,7 +114,8 @@ export async function renderAcademicAdminView(container) {
       const treeData = await getAcademicTree(versionId)
       treeView.setData(treeData)
     } catch (err) {
-      treeContainer.innerHTML = '<div class="tree-placeholder text-danger"><p>Error al cargar el árbol curricular.</p></div>'
+      treeContainer.innerHTML =
+        '<div class="tree-placeholder text-danger"><p>Error al cargar el árbol curricular.</p></div>'
     }
   })
 }

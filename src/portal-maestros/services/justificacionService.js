@@ -24,9 +24,7 @@ async function uploadEvidencia(file, folder = 'justificaciones') {
 
   if (error) throw error
 
-  const { data: urlData } = supabase.storage
-    .from(BUCKET_DOCUMENTOS)
-    .getPublicUrl(path)
+  const { data: urlData } = supabase.storage.from(BUCKET_DOCUMENTOS).getPublicUrl(path)
 
   return urlData.publicUrl
 }
@@ -52,9 +50,12 @@ async function deleteEvidencia(publicUrl) {
  * @param {File|null} evidenciaFile - Archivo de evidencia (opcional)
  * @returns {Promise<Object>}
  */
-export async function guardarJustificacion({ sesionId, alumnoId, claseId, fecha, motivo, evidenciaBase64, creadoPor }, evidenciaFile = null) {
+export async function guardarJustificacion(
+  { sesionId, alumnoId, claseId, fecha, motivo, evidenciaBase64, creadoPor },
+  evidenciaFile = null,
+) {
   if (!sesionId || !alumnoId || !claseId || !fecha || !motivo) {
-    return { error: { message: 'Faltan campos requeridos' } };
+    return { error: { message: 'Faltan campos requeridos' } }
   }
 
   let evidenciaUrl = null
@@ -79,7 +80,7 @@ export async function guardarJustificacion({ sesionId, alumnoId, claseId, fecha,
     evidencia_base64: null, // Ya no se usa, se migra a Storage
     creado_por: creadoPor,
     estado: 'pendiente',
-  };
+  }
 
   // Upsert: inserta o actualiza si ya existe
   const { data, error } = await supabase
@@ -89,9 +90,9 @@ export async function guardarJustificacion({ sesionId, alumnoId, claseId, fecha,
       ignoreDuplicates: false,
     })
     .select()
-    .single();
+    .single()
 
-  return { data, error };
+  return { data, error }
 }
 
 /**
@@ -101,21 +102,21 @@ export async function guardarJustificacion({ sesionId, alumnoId, claseId, fecha,
  * @returns {Promise<Object|null>}
  */
 export async function obtenerJustificacion(sesionId, alumnoId) {
-  if (!sesionId || !alumnoId) return null;
+  if (!sesionId || !alumnoId) return null
 
   const { data, error } = await supabase
     .from('justificaciones')
     .select('*')
     .eq('sesion_id', sesionId)
     .eq('alumno_id', alumnoId)
-    .single();
+    .single()
 
   if (error && error.code !== 'PGRST116') {
-    console.warn('[JustificacionService] Error obteniendo justificación:', error);
-    return null;
+    console.warn('[JustificacionService] Error obteniendo justificación:', error)
+    return null
   }
 
-  return data || null;
+  return data || null
 }
 
 /**
@@ -124,20 +125,20 @@ export async function obtenerJustificacion(sesionId, alumnoId) {
  * @returns {Promise<Array>}
  */
 export async function obtenerJustificacionesSesion(sesionId) {
-  if (!sesionId) return [];
+  if (!sesionId) return []
 
   const { data, error } = await supabase
     .from('justificaciones')
     .select('*')
     .eq('sesion_id', sesionId)
-    .order('created_at', { ascending: false });
+    .order('created_at', { ascending: false })
 
   if (error) {
-    console.warn('[JustificacionService] Error obteniendo justificaciones:', error);
-    return [];
+    console.warn('[JustificacionService] Error obteniendo justificaciones:', error)
+    return []
   }
 
-  return data || [];
+  return data || []
 }
 
 /**
@@ -146,12 +147,9 @@ export async function obtenerJustificacionesSesion(sesionId) {
  * @returns {Promise<Object>}
  */
 export async function eliminarJustificacion(justificacionId) {
-  if (!justificacionId) return { error: { message: 'ID requerido' } };
+  if (!justificacionId) return { error: { message: 'ID requerido' } }
 
-  const { error } = await supabase
-    .from('justificaciones')
-    .delete()
-    .eq('id', justificacionId);
+  const { error } = await supabase.from('justificaciones').delete().eq('id', justificacionId)
 
-  return { error };
+  return { error }
 }

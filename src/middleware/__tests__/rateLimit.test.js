@@ -44,9 +44,9 @@ describe('rateLimit', () => {
     checkRateLimit('user-1')
     const blocked = checkRateLimit('user-1')
     expect(blocked.allowed).toBe(false)
-    
-    await new Promise(resolve => setTimeout(resolve, 150))
-    
+
+    await new Promise((resolve) => setTimeout(resolve, 150))
+
     const allowed = checkRateLimit('user-1')
     expect(allowed.allowed).toBe(true)
   })

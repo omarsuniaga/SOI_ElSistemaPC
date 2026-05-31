@@ -10,7 +10,9 @@ const TABLE = 'alumno_plan_entradas'
 export async function fetchPlanEntradas(alumnoId) {
   const { data, error } = await supabase
     .from(TABLE)
-    .select('id, tipo, titulo, descripcion, nivel_referencia, objetivo_id, sesion_id, created_at, maestro_id')
+    .select(
+      'id, tipo, titulo, descripcion, nivel_referencia, objetivo_id, sesion_id, created_at, maestro_id',
+    )
     .eq('alumno_id', alumnoId)
     .order('created_at', { ascending: false })
 
@@ -29,14 +31,14 @@ export async function insertPlanEntrada(entrada) {
   const { data, error } = await supabase
     .from(TABLE)
     .insert({
-      alumno_id:        entrada.alumno_id,
-      maestro_id:       entrada.maestro_id,
-      tipo:             entrada.tipo,
-      titulo:           entrada.titulo.trim(),
-      descripcion:      entrada.descripcion?.trim() || null,
+      alumno_id: entrada.alumno_id,
+      maestro_id: entrada.maestro_id,
+      tipo: entrada.tipo,
+      titulo: entrada.titulo.trim(),
+      descripcion: entrada.descripcion?.trim() || null,
       nivel_referencia: entrada.nivel_referencia || null,
-      objetivo_id:      entrada.objetivo_id || null,
-      sesion_id:        entrada.sesion_id || null,
+      objetivo_id: entrada.objetivo_id || null,
+      sesion_id: entrada.sesion_id || null,
     })
     .select()
     .single()
@@ -52,12 +54,7 @@ export async function insertPlanEntrada(entrada) {
  * @returns {Promise<Object>}
  */
 export async function updatePlanEntrada(id, changes) {
-  const { data, error } = await supabase
-    .from(TABLE)
-    .update(changes)
-    .eq('id', id)
-    .select()
-    .single()
+  const { data, error } = await supabase.from(TABLE).update(changes).eq('id', id).select().single()
 
   if (error) throw new Error(error.message)
   return data
@@ -69,10 +66,7 @@ export async function updatePlanEntrada(id, changes) {
  * @returns {Promise<void>}
  */
 export async function deletePlanEntrada(id) {
-  const { error } = await supabase
-    .from(TABLE)
-    .delete()
-    .eq('id', id)
+  const { error } = await supabase.from(TABLE).delete().eq('id', id)
 
   if (error) throw new Error(error.message)
 }

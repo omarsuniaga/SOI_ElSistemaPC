@@ -23,7 +23,12 @@ describe('progresosApi.batch', () => {
         { alumno_id: 'alum-001', estado: 'presente', fecha: '2026-05-01' },
       ])
       progresosRepo.fetchBulk.mockResolvedValue([
-        { alumno_id: 'alum-001', calificacion: 7.5, fecha_evaluacion: '2026-05-05', evaluacion_id: 'eval-1' },
+        {
+          alumno_id: 'alum-001',
+          calificacion: 7.5,
+          fecha_evaluacion: '2026-05-05',
+          evaluacion_id: 'eval-1',
+        },
       ])
       indicatorAttemptsRepo.fetchBulk.mockResolvedValue([
         { alumno_id: 'alum-001', passed: true, fecha: '2026-05-10' },
@@ -50,7 +55,7 @@ describe('progresosApi.batch', () => {
           periodoId: 'periodo-001',
           from: '2026-05-18',
           to: '2026-05-01',
-        })
+        }),
       ).rejects.toThrow(Error)
     })
 
@@ -81,7 +86,12 @@ describe('progresosApi.batch', () => {
         { alumno_id: 'alum-002', estado: 'ausente', fecha: '2026-05-01' },
       ])
       progresosRepo.fetchBulk.mockResolvedValue([
-        { alumno_id: 'alum-001', calificacion: 7.5, fecha_evaluacion: '2026-05-05', evaluacion_id: 'eval-1' },
+        {
+          alumno_id: 'alum-001',
+          calificacion: 7.5,
+          fecha_evaluacion: '2026-05-05',
+          evaluacion_id: 'eval-1',
+        },
       ])
       indicatorAttemptsRepo.fetchBulk.mockResolvedValue([])
       observacionesRepo.fetchBulk.mockResolvedValue([])
@@ -106,7 +116,7 @@ describe('progresosApi.batch', () => {
           periodoId: 'periodo-001',
           from: '2026-05-18',
           to: '2026-05-01',
-        })
+        }),
       ).rejects.toThrow(Error)
     })
 
@@ -116,12 +126,15 @@ describe('progresosApi.batch', () => {
       indicatorAttemptsRepo.fetchBulk.mockResolvedValue([])
       observacionesRepo.fetchBulk.mockResolvedValue([])
 
-      await api.getStudentProgressBatch(['alum-001', 'alum-002', 'alum-003', 'alum-004', 'alum-005'], {
-        claseId: 'clase-001',
-        periodoId: 'periodo-001',
-        from: '2026-05-01',
-        to: '2026-05-18',
-      })
+      await api.getStudentProgressBatch(
+        ['alum-001', 'alum-002', 'alum-003', 'alum-004', 'alum-005'],
+        {
+          claseId: 'clase-001',
+          periodoId: 'periodo-001',
+          from: '2026-05-01',
+          to: '2026-05-18',
+        },
+      )
 
       expect(asistenciasRepo.fetchBulk).toHaveBeenCalledTimes(1)
       expect(progresosRepo.fetchBulk).toHaveBeenCalledTimes(1)

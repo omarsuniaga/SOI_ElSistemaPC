@@ -15,6 +15,7 @@
 ### Task 1: Expand README with Professional Format
 
 **Files:**
+
 - Modify: `README.md` (286 → 1000+ lines)
 
 This task documents the core Portal Maestros feature set and quick-start instructions. No code changes, purely documentation.
@@ -29,7 +30,7 @@ cp README.md README.md.backup
 
 Replace `README.md` with:
 
-```markdown
+````markdown
 # Portal Maestros PWA 🎵
 
 [![Build Status](https://img.shields.io/badge/build-passing-brightgreen)](https://github.com)
@@ -41,18 +42,18 @@ Enterprise-grade teacher portal for El Sistema Punta Cana. Streamlined lesson pl
 
 ## ✨ Features
 
-| Feature | Status | Tier |
-|---------|--------|------|
-| Lesson Planning | ✅ | Core |
-| Observation Recording | ✅ | Core |
-| Evaluation Engine | ✅ | Core |
-| Student Progress Tracking | ✅ | Core |
-| Real-time Notifications | ✅ | Core |
-| Web Push Support | ✅ | Enhanced |
-| Error Tracking | ✅ | Enterprise |
-| Audit Logging | ✅ | Enterprise |
-| GDPR Compliance | ✅ | Enterprise |
-| Performance Monitoring | ✅ | Enterprise |
+| Feature                   | Status | Tier       |
+| ------------------------- | ------ | ---------- |
+| Lesson Planning           | ✅     | Core       |
+| Observation Recording     | ✅     | Core       |
+| Evaluation Engine         | ✅     | Core       |
+| Student Progress Tracking | ✅     | Core       |
+| Real-time Notifications   | ✅     | Core       |
+| Web Push Support          | ✅     | Enhanced   |
+| Error Tracking            | ✅     | Enterprise |
+| Audit Logging             | ✅     | Enterprise |
+| GDPR Compliance           | ✅     | Enterprise |
+| Performance Monitoring    | ✅     | Enterprise |
 
 ## 🚀 Quick Start
 
@@ -62,6 +63,7 @@ Enterprise-grade teacher portal for El Sistema Punta Cana. Streamlined lesson pl
 npm install
 npm run dev
 ```
+````
 
 Open http://localhost:5173 in your browser.
 
@@ -72,6 +74,7 @@ cp .env.example .env.local
 ```
 
 Configure:
+
 ```
 VITE_SUPABASE_URL=your_supabase_url
 VITE_SUPABASE_KEY=your_anon_key
@@ -153,19 +156,19 @@ config/
 
 ### Key Files
 
-| File | Purpose |
-|------|---------|
-| `src/main-maestros.js` | App entry point |
-| `src/portal-maestros/auth/maestroAuth.js` | Login logic |
+| File                                                  | Purpose         |
+| ----------------------------------------------------- | --------------- |
+| `src/main-maestros.js`                                | App entry point |
+| `src/portal-maestros/auth/maestroAuth.js`             | Login logic     |
 | `src/portal-maestros/services/notificationService.js` | Polling + dedup |
-| `src/portal-maestros/services/pushService.js` | Web Push |
-| `src/portal-maestros/views/` | All page routes |
+| `src/portal-maestros/services/pushService.js`         | Web Push        |
+| `src/portal-maestros/views/`                          | All page routes |
 
 ## 🧪 Testing
 
-- **Unit Tests**: Vitest (src/**/*.test.js)
+- **Unit Tests**: Vitest (src/\*_/_.test.js)
 - **Integration Tests**: Vitest with Supabase mock
-- **E2E Tests**: Playwright (tests/e2e/*.spec.js)
+- **E2E Tests**: Playwright (tests/e2e/\*.spec.js)
 - **Coverage Target**: > 90%
 
 Run tests:
@@ -229,14 +232,15 @@ See [Contributing Guide](./CONTRIBUTING.md)
 **Last Updated:** May 10, 2026  
 **Maintained by:** Dev Team  
 **Version:** 1.0.0
-```
+
+````
 
 - [ ] **Step 3: Verify formatting**
 
 ```bash
 head -50 README.md
 wc -l README.md
-```
+````
 
 Expected: README has > 200 lines, badges render, feature table visible.
 
@@ -252,6 +256,7 @@ git commit -m "docs: expand README with professional format, badges, feature mat
 ### Task 2: Write USER_GUIDE.md for Teachers
 
 **Files:**
+
 - Create: `docs/USER_GUIDE.md`
 
 Step-by-step guide for teachers to use Portal Maestros.
@@ -293,8 +298,8 @@ For teachers: Complete guide to lesson planning, observation recording, and stud
 1. Go to Portal Maestros: http://portal-maestros.elsistema.pc
 2. Enter your email and password
 3. Click "Iniciar sesión"
-4. *(Optional)* Enable notifications when prompted
-5. *(Optional)* Enable biometric login (Face ID / Fingerprint)
+4. _(Optional)_ Enable notifications when prompted
+5. _(Optional)_ Enable biometric login (Face ID / Fingerprint)
 
 ### Password Visibility Toggle
 
@@ -310,10 +315,11 @@ For teachers: Complete guide to lesson planning, observation recording, and stud
 ## Logging In
 
 ### Standard Login
-
 ```
+
 Email: your@email.com
 Password: ••••••••
+
 ```
 
 ### Biometric Login (Fingerprint / Face ID)
@@ -542,6 +548,7 @@ git commit -m "docs: add comprehensive user guide for teachers"
 ### Task 3: Write DEVELOPER.md for Development Setup
 
 **Files:**
+
 - Create: `docs/DEVELOPER.md`
 
 Guide for developers: setup, architecture, key files, testing.
@@ -554,7 +561,7 @@ touch docs/DEVELOPER.md
 
 - [ ] **Step 2: Write developer guide**
 
-```markdown
+````markdown
 # Developer Guide
 
 For developers: setup instructions, project architecture, key files, testing strategy.
@@ -577,6 +584,7 @@ node -v      # >= 18.0.0
 npm -v       # >= 9.0.0
 git --version
 ```
+````
 
 ### Clone & Install
 
@@ -752,7 +760,7 @@ export function renderNewFeatureView(container) {
       <!-- Content here -->
     </div>
   `
-  
+
   // Event listeners
   container.querySelector('.button').addEventListener('click', () => {
     // Handle click
@@ -914,7 +922,7 @@ vi.mock('./database.js', () => ({
 
 ```javascript
 // Add breakpoint
-debugger;
+debugger
 
 // Or in DevTools: set breakpoint on line
 
@@ -923,24 +931,25 @@ debugger;
 
 ### Common Issues
 
-| Problem | Solution |
-|---------|----------|
-| Service Worker not updating | Clear Cache Storage (DevTools → Application) |
+| Problem                      | Solution                                             |
+| ---------------------------- | ---------------------------------------------------- |
+| Service Worker not updating  | Clear Cache Storage (DevTools → Application)         |
 | Notifications not triggering | Check `notificationService.startPolling()` is called |
-| CORS errors | Check `.env.local` VITE_SUPABASE_URL is correct |
-| Login not working | Check email/password in console logs |
+| CORS errors                  | Check `.env.local` VITE_SUPABASE_URL is correct      |
+| Login not working            | Check email/password in console logs                 |
 
 ---
 
 **Need help?** Check [Architecture Guide](./ARCHITECTURE.md) or contact the team.
-```
+
+````
 
 - [ ] **Step 3: Verify file exists**
 
 ```bash
 wc -l docs/DEVELOPER.md
 head -20 docs/DEVELOPER.md
-```
+````
 
 Expected: > 250 lines, clear sections.
 
@@ -956,6 +965,7 @@ git commit -m "docs: add developer setup guide"
 ### Task 4: Write API_REFERENCE.md
 
 **Files:**
+
 - Create: `docs/API_REFERENCE.md`
 
 Complete endpoint documentation.
@@ -968,7 +978,7 @@ touch docs/API_REFERENCE.md
 
 - [ ] **Step 2: Write API reference**
 
-```markdown
+````markdown
 # API Reference
 
 Portal Maestros API endpoints for Portal Teachers and Admin panel.
@@ -991,14 +1001,17 @@ Portal Maestros API endpoints for Portal Teachers and Admin panel.
 **Endpoint:** `POST /auth/login`
 
 **Request:**
+
 ```json
 {
   "email": "maestro@elsistema.pc",
   "password": "••••••••"
 }
 ```
+````
 
 **Response (200):**
+
 ```json
 {
   "success": true,
@@ -1013,6 +1026,7 @@ Portal Maestros API endpoints for Portal Teachers and Admin panel.
 ```
 
 **Response (401):**
+
 ```json
 {
   "success": false,
@@ -1025,11 +1039,13 @@ Portal Maestros API endpoints for Portal Teachers and Admin panel.
 **Endpoint:** `POST /auth/logout`
 
 **Headers:**
+
 ```
 Authorization: Bearer {token}
 ```
 
 **Response (200):**
+
 ```json
 {
   "success": true
@@ -1043,17 +1059,20 @@ Authorization: Bearer {token}
 **Endpoint:** `GET /lessons/plans`
 
 **Query Parameters:**
+
 - `route_id` (optional): Filter by route
 - `level_id` (optional): Filter by level
 - `page` (optional): Pagination (default: 1)
 - `limit` (optional): Items per page (default: 20)
 
 **Headers:**
+
 ```
 Authorization: Bearer {token}
 ```
 
 **Response (200):**
+
 ```json
 {
   "success": true,
@@ -1080,12 +1099,14 @@ Authorization: Bearer {token}
 **Endpoint:** `POST /lessons/plans`
 
 **Headers:**
+
 ```
 Authorization: Bearer {token}
 Content-Type: application/json
 ```
 
 **Request:**
+
 ```json
 {
   "route_id": "uuid",
@@ -1097,6 +1118,7 @@ Content-Type: application/json
 ```
 
 **Response (201):**
+
 ```json
 {
   "success": true,
@@ -1120,12 +1142,14 @@ Content-Type: application/json
 **Endpoint:** `POST /observations`
 
 **Headers:**
+
 ```
 Authorization: Bearer {token}
 Content-Type: application/json
 ```
 
 **Request:**
+
 ```json
 {
   "student_id": "uuid",
@@ -1137,6 +1161,7 @@ Content-Type: application/json
 ```
 
 **Response (201):**
+
 ```json
 {
   "success": true,
@@ -1158,11 +1183,13 @@ Content-Type: application/json
 **Endpoint:** `GET /students/{student_id}/observations`
 
 **Query Parameters:**
+
 - `desde` (optional): Start date (ISO 8601)
 - `hasta` (optional): End date (ISO 8601)
 - `limit` (optional): Max results (default: 20)
 
 **Response (200):**
+
 ```json
 {
   "success": true,
@@ -1187,15 +1214,18 @@ Content-Type: application/json
 **Endpoint:** `GET /notifications`
 
 **Headers:**
+
 ```
 Authorization: Bearer {token}
 ```
 
 **Query Parameters:**
+
 - `limit` (optional): Max results (default: 10)
 - `offset` (optional): Pagination offset
 
 **Response (200):**
+
 ```json
 {
   "success": true,
@@ -1219,12 +1249,14 @@ Authorization: Bearer {token}
 **Endpoint:** `GET /admin/audit-logs`
 
 **Headers:**
+
 ```
 Authorization: Bearer {token}
 X-Admin-Token: {admin_token}
 ```
 
 **Query Parameters:**
+
 - `user_id` (optional): Filter by user
 - `action` (optional): CREATE, UPDATE, DELETE
 - `entity` (optional): Table name
@@ -1233,6 +1265,7 @@ X-Admin-Token: {admin_token}
 - `limit` (optional): Default 50
 
 **Response (200):**
+
 ```json
 {
   "success": true,
@@ -1256,25 +1289,26 @@ X-Admin-Token: {admin_token}
 
 ## Error Codes
 
-| Code | Meaning | Solution |
-|------|---------|----------|
-| `401` | Unauthorized | Login again |
-| `403` | Forbidden | Insufficient permissions |
-| `404` | Not Found | Resource doesn't exist |
-| `422` | Validation Error | Check input format |
-| `429` | Rate Limited | Wait before retrying |
-| `500` | Server Error | Contact support |
+| Code  | Meaning          | Solution                 |
+| ----- | ---------------- | ------------------------ |
+| `401` | Unauthorized     | Login again              |
+| `403` | Forbidden        | Insufficient permissions |
+| `404` | Not Found        | Resource doesn't exist   |
+| `422` | Validation Error | Check input format       |
+| `429` | Rate Limited     | Wait before retrying     |
+| `500` | Server Error     | Contact support          |
 
 ---
 
 **OpenAPI/Swagger spec:** Coming soon (generated from code)
-```
+
+````
 
 - [ ] **Step 3: Verify file exists**
 
 ```bash
 wc -l docs/API_REFERENCE.md
-```
+````
 
 Expected: > 250 lines.
 
@@ -1290,6 +1324,7 @@ git commit -m "docs: add API reference with endpoint documentation"
 ### Task 5: Write DEPLOYMENT.md
 
 **Files:**
+
 - Create: `docs/DEPLOYMENT.md`
 
 Production deployment checklist and procedures.
@@ -1302,7 +1337,7 @@ touch docs/DEPLOYMENT.md
 
 - [ ] **Step 2: Write deployment guide**
 
-```markdown
+````markdown
 # Deployment Guide
 
 Production deployment checklist and rollback procedures.
@@ -1327,8 +1362,10 @@ Production deployment checklist and rollback procedures.
 ```bash
 npm run build
 ```
+````
 
 Expected output:
+
 ```
 ✓ vite v4.x.x building for production...
 ✓ 1234 modules transformed
@@ -1434,13 +1471,13 @@ ls -lh /backups/
 
 Post-deployment, verify:
 
-| Metric | Target | Check |
-|--------|--------|-------|
-| **Page Load (LCP)** | < 2.5s | Lighthouse |
-| **First Input Delay (FID)** | < 100ms | Web Vitals |
-| **Cumulative Layout Shift (CLS)** | < 0.1 | Web Vitals |
-| **Bundle Size** | < 500KB | `npm run build --analyze` |
-| **Error Rate** | < 0.1% | Sentry dashboard |
+| Metric                            | Target  | Check                     |
+| --------------------------------- | ------- | ------------------------- |
+| **Page Load (LCP)**               | < 2.5s  | Lighthouse                |
+| **First Input Delay (FID)**       | < 100ms | Web Vitals                |
+| **Cumulative Layout Shift (CLS)** | < 0.1   | Web Vitals                |
+| **Bundle Size**                   | < 500KB | `npm run build --analyze` |
+| **Error Rate**                    | < 0.1%  | Sentry dashboard          |
 
 ## Troubleshooting
 
@@ -1449,6 +1486,7 @@ Post-deployment, verify:
 **Problem:** Refreshing page shows 404
 
 **Solution:**
+
 ```bash
 # Ensure all routes configured in server
 # For SPA: all routes should serve index.html
@@ -1461,6 +1499,7 @@ Post-deployment, verify:
 **Problem:** Users on old version after deploy
 
 **Solution:**
+
 ```bash
 # Invalidate cache
 curl -X POST https://api.cloudflare.com/client/v4/zones/... \
@@ -1473,6 +1512,7 @@ curl -X POST https://api.cloudflare.com/client/v4/zones/... \
 **Problem:** Production database out of sync
 
 **Solution:**
+
 ```bash
 # Rollback immediately
 vercel rollback
@@ -1488,13 +1528,14 @@ vercel deploy --prod
 ---
 
 **Questions?** Contact DevOps team.
-```
+
+````
 
 - [ ] **Step 3: Verify file**
 
 ```bash
 wc -l docs/DEPLOYMENT.md
-```
+````
 
 Expected: > 150 lines.
 
@@ -1510,6 +1551,7 @@ git commit -m "docs: add production deployment guide"
 ### Task 6: Write ARCHITECTURE.md, SECURITY.md, and COMPLIANCE.md
 
 **Files:**
+
 - Create: `docs/ARCHITECTURE.md`
 - Create: `docs/SECURITY.md`
 - Create: `docs/COMPLIANCE.md`
@@ -1530,47 +1572,48 @@ touch docs/ARCHITECTURE.md
 Portal Maestros is a Progressive Web App (PWA) with a modern, scalable architecture.
 
 ## Overall Design
-
 ```
+
 ┌─────────────────────────────────────────────────────┐
-│           Browser (PWA)                              │
-│  ┌────────────────────────────────────────────────┐  │
-│  │ Vue 3 + Vite (Reactive UI)                     │  │
-│  │ - Portal Maestros (Teacher Interface)          │  │
-│  │ - Admin Panel                                  │  │
-│  └────────────────────────────────────────────────┘  │
-│           ↓                                           │
-│  ┌────────────────────────────────────────────────┐  │
-│  │ Service Worker (Offline + Caching)             │  │
-│  │ - Local notification scheduling                │  │
-│  │ - Cache-first strategy for assets              │  │
-│  │ - Web Push handling                            │  │
-│  └────────────────────────────────────────────────┘  │
+│ Browser (PWA) │
+│ ┌────────────────────────────────────────────────┐ │
+│ │ Vue 3 + Vite (Reactive UI) │ │
+│ │ - Portal Maestros (Teacher Interface) │ │
+│ │ - Admin Panel │ │
+│ └────────────────────────────────────────────────┘ │
+│ ↓ │
+│ ┌────────────────────────────────────────────────┐ │
+│ │ Service Worker (Offline + Caching) │ │
+│ │ - Local notification scheduling │ │
+│ │ - Cache-first strategy for assets │ │
+│ │ - Web Push handling │ │
+│ └────────────────────────────────────────────────┘ │
 └─────────────────────────────────────────────────────┘
-           ↓ (HTTPS)
+↓ (HTTPS)
 ┌─────────────────────────────────────────────────────┐
-│        Supabase Backend                              │
-│  ┌────────────────────────────────────────────────┐  │
-│  │ PostgreSQL Database                            │  │
-│  │ - Teachers table                               │  │
-│  │ - Students table                               │  │
-│  │ - Observations, Evaluations, etc.              │  │
-│  │ - Audit logs (all mutations)                   │  │
-│  └────────────────────────────────────────────────┘  │
-│           ↓                                           │
-│  ┌────────────────────────────────────────────────┐  │
-│  │ Supabase Auth (JWT)                            │  │
-│  │ - Email/password login                         │  │
-│  │ - Session management                           │  │
-│  │ - WebAuthn support                             │  │
-│  └────────────────────────────────────────────────┘  │
-│           ↓                                           │
-│  ┌────────────────────────────────────────────────┐  │
-│  │ Supabase Realtime (WebSocket)                  │  │
-│  │ - Live notifications                           │  │
-│  │ - Multi-user updates                           │  │
-│  └────────────────────────────────────────────────┘  │
+│ Supabase Backend │
+│ ┌────────────────────────────────────────────────┐ │
+│ │ PostgreSQL Database │ │
+│ │ - Teachers table │ │
+│ │ - Students table │ │
+│ │ - Observations, Evaluations, etc. │ │
+│ │ - Audit logs (all mutations) │ │
+│ └────────────────────────────────────────────────┘ │
+│ ↓ │
+│ ┌────────────────────────────────────────────────┐ │
+│ │ Supabase Auth (JWT) │ │
+│ │ - Email/password login │ │
+│ │ - Session management │ │
+│ │ - WebAuthn support │ │
+│ └────────────────────────────────────────────────┘ │
+│ ↓ │
+│ ┌────────────────────────────────────────────────┐ │
+│ │ Supabase Realtime (WebSocket) │ │
+│ │ - Live notifications │ │
+│ │ - Multi-user updates │ │
+│ └────────────────────────────────────────────────┘ │
 └─────────────────────────────────────────────────────┘
+
 ```
 
 ## Layers
@@ -1619,74 +1662,80 @@ Services encapsulate core logic:
 ### Lesson Planning Workflow
 
 ```
+
 User clicks "Nueva Planificación"
-    ↓
+↓
 renderNewLessonView() called
-    ↓
+↓
 Form displayed with route/level selectors
-    ↓
+↓
 User fills objectives, activities, duration
-    ↓
+↓
 User clicks "Crear"
-    ↓
+↓
 inputValidation checks (client-side):
-  - Required fields present
-  - Duration is number > 0
-  - Text length reasonable
-    ↓
-lessonPlanService.createPlan() called
-    ↓
-HTTP POST /api/lessons/plans
-    ↓
-Server-side validation:
-  - Joi schema check
-  - User has permission (teacher role)
-  - Route/level exist
-    ↓
-auditService.log('CREATE', 'lesson_plan', id, changes)
-    ↓
-Database INSERT
-    ↓
-Response with plan ID
-    ↓
-UI updates: "Plan created ✅"
+
+- Required fields present
+- Duration is number > 0
+- Text length reasonable
+  ↓
+  lessonPlanService.createPlan() called
+  ↓
+  HTTP POST /api/lessons/plans
+  ↓
+  Server-side validation:
+- Joi schema check
+- User has permission (teacher role)
+- Route/level exist
+  ↓
+  auditService.log('CREATE', 'lesson_plan', id, changes)
+  ↓
+  Database INSERT
+  ↓
+  Response with plan ID
+  ↓
+  UI updates: "Plan created ✅"
+
 ```
 
 ### Observation Recording Workflow
 
 ```
+
 User clicks student name
-    ↓
+↓
 observationEditor displays
-    ↓
+↓
 User types observation
-    ↓
+↓
 @Mention detected: show student dropdown
-    ↓
+↓
 #Indicator detected: show indicator picker
-    ↓
+↓
 User clicks "Estructurar con IA" (optional)
-    ↓
+↓
 Text sent to Groq API
-    ↓
+↓
 AI response: structured [context, behavior, skill]
-    ↓
+↓
 User clicks "Guardar"
-    ↓
+↓
 inputValidation checks:
-  - Text not empty
-  - DOMPurify cleans HTML
-    ↓
-observationService.save()
-    ↓
-HTTP POST /api/observations
-    ↓
-Server validation + audit log
-    ↓
-Database INSERT
-    ↓
-notificationService updates UI
-```
+
+- Text not empty
+- DOMPurify cleans HTML
+  ↓
+  observationService.save()
+  ↓
+  HTTP POST /api/observations
+  ↓
+  Server validation + audit log
+  ↓
+  Database INSERT
+  ↓
+  notificationService updates UI
+
+````
 
 ## Scaling Considerations
 
@@ -1732,18 +1781,19 @@ try {
     reportError(error)
   }
 }
-```
+````
 
 ---
 
 Detailed diagrams and sequence charts in `/docs/architecture/` subdirectory.
-```
+
+````
 
 - [ ] **Step 3: Create SECURITY.md**
 
 ```bash
 touch docs/SECURITY.md
-```
+````
 
 - [ ] **Step 4: Write security documentation**
 
@@ -1770,18 +1820,19 @@ Portal Maestros implements multi-layered security for teacher data and student p
 - **Logout**: Clears token and session
 
 ### Token Format (JWT)
-
 ```
+
 Header: { alg: HS256, typ: JWT }
 Payload: {
-  sub: "user_id",
-  email: "maestro@elsistema.pc",
-  role: "teacher",
-  exp: 1234567890,
-  iat: 1234567800
+sub: "user_id",
+email: "maestro@elsistema.pc",
+role: "teacher",
+exp: 1234567890,
+iat: 1234567800
 }
 Signature: HMAC-SHA256
-```
+
+````
 
 ## Authorization (RBAC)
 
@@ -1805,13 +1856,14 @@ Example:
 CREATE POLICY teacher_observations
 ON observations FOR SELECT
 USING (maestro_id = auth.uid());
-```
+````
 
 ## Input Validation
 
 ### Client-Side (User Feedback)
 
 **DOMPurify** removes XSS attempts:
+
 ```javascript
 const safeText = DOMPurify.sanitize(userInput)
 // Removes: <script>, onclick=, etc.
@@ -1820,6 +1872,7 @@ const safeText = DOMPurify.sanitize(userInput)
 ### Server-Side (Data Integrity)
 
 **Joi** schema validation:
+
 ```javascript
 const schema = Joi.object({
   texto: Joi.string().max(5000).required(),
@@ -1837,7 +1890,7 @@ All state-changing requests (POST, PUT, DELETE) require a CSRF token:
 
 ```html
 <form>
-  <input type="hidden" name="csrf" value="{token}">
+  <input type="hidden" name="csrf" value="{token}" />
   <textarea name="observation"></textarea>
 </form>
 ```
@@ -1855,8 +1908,8 @@ Applies to all API endpoints.
 ```javascript
 // src/middleware/rateLimit.js
 const limiter = rateLimit({
-  windowMs: 60 * 1000,        // 1 minute
-  max: 100,                    // 100 req/min
+  windowMs: 60 * 1000, // 1 minute
+  max: 100, // 100 req/min
   keyGenerator: (req) => req.user.id, // Per user
 })
 ```
@@ -1873,6 +1926,7 @@ Teacher can request all their data deleted:
 4. Audit log retained (anonymized)
 
 Implementation:
+
 ```javascript
 // Cascade delete
 await db.observations.deleteWhere({ maestro_id })
@@ -1889,6 +1943,7 @@ Teacher can export personal data as JSON:
 3. Download JSON file
 
 File contains:
+
 - Profile info
 - All observations
 - All evaluations
@@ -1929,6 +1984,7 @@ auditLog('CREATE', 'observation', id, {
 ```
 
 Audit log includes:
+
 - **Action**: CREATE, UPDATE, DELETE
 - **Entity**: Table name
 - **Entity ID**: Record affected
@@ -1947,15 +2003,17 @@ Audit log includes:
 ---
 
 **Security Contacts:**
+
 - Report vulnerability: security@elsistema.pc
 - Security issues: GitHub private security advisory
-```
+
+````
 
 - [ ] **Step 5: Create COMPLIANCE.md**
 
 ```bash
 touch docs/COMPLIANCE.md
-```
+````
 
 - [ ] **Step 6: Write compliance documentation**
 
@@ -1972,13 +2030,13 @@ Portal Maestros compliance with regulations and standards.
 
 ### Data Processing
 
-| Data Type | Stored | Processed | Deleted |
-|-----------|--------|-----------|---------|
-| Email | Yes | Auth only | On request |
-| Name | Yes | Admin panel | On request |
-| Observations | Yes | Analysis | On request |
-| Student IDs | Yes | Linking | On request |
-| Audit logs | Yes | Compliance | 7 years |
+| Data Type    | Stored | Processed   | Deleted    |
+| ------------ | ------ | ----------- | ---------- |
+| Email        | Yes    | Auth only   | On request |
+| Name         | Yes    | Admin panel | On request |
+| Observations | Yes    | Analysis    | On request |
+| Student IDs  | Yes    | Linking     | On request |
+| Audit logs   | Yes    | Compliance  | 7 years    |
 
 ### Rights Implemented
 
@@ -1997,6 +2055,7 @@ Portal Maestros compliance with regulations and standards.
 ### Privacy Notice
 
 Teachers see privacy policy at:
+
 - First login
 - Settings → "Política de Privacidad"
 - Footer link on all pages
@@ -2016,14 +2075,14 @@ Teachers see privacy policy at:
 
 ### Data Retention
 
-| Data Type | Retention | Reason |
-|-----------|-----------|--------|
-| Observations | Duration of enrollment | Educational record |
-| Evaluations | Duration of enrollment | Educational record |
-| Lesson plans | Duration of enrollment | Curriculum tracking |
-| Audit logs | 7 years | Legal compliance |
-| Login history | 1 year | Security audits |
-| Error logs | 30 days | Debugging |
+| Data Type     | Retention              | Reason              |
+| ------------- | ---------------------- | ------------------- |
+| Observations  | Duration of enrollment | Educational record  |
+| Evaluations   | Duration of enrollment | Educational record  |
+| Lesson plans  | Duration of enrollment | Curriculum tracking |
+| Audit logs    | 7 years                | Legal compliance    |
+| Login history | 1 year                 | Security audits     |
+| Error logs    | 30 days                | Debugging           |
 
 ## Educational Standards
 
@@ -2038,6 +2097,7 @@ Teachers see privacy policy at:
 ### Observation Quality
 
 ✅ Structured observations with:
+
 - Context (What happened)
 - Behavior (What student did)
 - Skill level (Current → target)
@@ -2061,18 +2121,18 @@ Teachers see privacy policy at:
 
 ### OWASP Top 10
 
-| Vulnerability | Status | Mitigation |
-|---|---|---|
-| Injection | ✅ Protected | Input validation + parameterized queries |
-| Broken Auth | ✅ Protected | JWT tokens + session management |
-| XSS | ✅ Protected | DOMPurify + CSP headers |
-| CSRF | ✅ Protected | CSRF tokens |
-| Insecure Deserialization | ✅ Protected | No serialization of untrusted data |
-| Broken Access Control | ✅ Protected | RLS policies + RBAC |
-| Sensitive Data Exposure | ✅ Protected | HTTPS + encryption at rest |
-| XXE | ✅ Protected | No XML parsing |
-| Broken Authentication | ✅ Protected | Supabase Auth |
-| Using Components with Known Vulnerabilities | ✅ Protected | `npm audit` + regular updates |
+| Vulnerability                               | Status       | Mitigation                               |
+| ------------------------------------------- | ------------ | ---------------------------------------- |
+| Injection                                   | ✅ Protected | Input validation + parameterized queries |
+| Broken Auth                                 | ✅ Protected | JWT tokens + session management          |
+| XSS                                         | ✅ Protected | DOMPurify + CSP headers                  |
+| CSRF                                        | ✅ Protected | CSRF tokens                              |
+| Insecure Deserialization                    | ✅ Protected | No serialization of untrusted data       |
+| Broken Access Control                       | ✅ Protected | RLS policies + RBAC                      |
+| Sensitive Data Exposure                     | ✅ Protected | HTTPS + encryption at rest               |
+| XXE                                         | ✅ Protected | No XML parsing                           |
+| Broken Authentication                       | ✅ Protected | Supabase Auth                            |
+| Using Components with Known Vulnerabilities | ✅ Protected | `npm audit` + regular updates            |
 
 ## Testing & Audits
 
@@ -2109,13 +2169,13 @@ Teachers see privacy policy at:
 
 ## Compliance Status
 
-| Standard | Status | Last Check |
-|----------|--------|-----------|
-| GDPR | ✅ Compliant | 2026-05-01 |
-| WCAG 2.1 AA | ✅ Compliant | 2026-04-20 |
-| OWASP Top 10 | ✅ Compliant | 2026-04-15 |
-| ISO 27001 | 🔄 In Progress | 2026-05-15 |
-| HIPAA | ⏭️ Not Applicable | N/A |
+| Standard     | Status            | Last Check |
+| ------------ | ----------------- | ---------- |
+| GDPR         | ✅ Compliant      | 2026-05-01 |
+| WCAG 2.1 AA  | ✅ Compliant      | 2026-04-20 |
+| OWASP Top 10 | ✅ Compliant      | 2026-04-15 |
+| ISO 27001    | 🔄 In Progress    | 2026-05-15 |
+| HIPAA        | ⏭️ Not Applicable | N/A        |
 
 ---
 
@@ -2147,6 +2207,7 @@ git commit -m "docs: add architecture, security, and compliance documentation"
 ### Task 7: Create ErrorBoundary Component
 
 **Files:**
+
 - Create: `src/components/ErrorBoundary.js`
 - Test: `src/components/__tests__/ErrorBoundary.test.js`
 
@@ -2178,15 +2239,15 @@ describe('ErrorBoundary', () => {
   it('catches errors and calls onError handler', () => {
     const onError = vi.fn()
     const errorFn = () => { throw new Error('Test error') }
-    
+
     renderErrorBoundary(container, {
       onError,
       children: '<button id="error-btn">Crash</button>',
     })
-    
+
     container.querySelector('#error-btn').addEventListener('click', errorFn)
     container.querySelector('#error-btn').click()
-    
+
     // Wait for error to propagate
     setTimeout(() => {
       expect(onError).toHaveBeenCalled()
@@ -2196,13 +2257,13 @@ describe('ErrorBoundary', () => {
   it('displays error message to user', () => {
     const onError = vi.fn()
     renderErrorBoundary(container, { onError })
-    
+
     // Simulate error
     const event = new ErrorEvent('error', {
       error: new Error('Something went wrong'),
     })
     window.dispatchEvent(event)
-    
+
     setTimeout(() => {
       const errorMsg = container.querySelector('.error-boundary-message')
       expect(errorMsg).toBeTruthy()
@@ -2213,11 +2274,11 @@ describe('ErrorBoundary', () => {
   it('provides retry button', () => {
     const onError = vi.fn()
     renderErrorBoundary(container, { onError })
-    
+
     window.dispatchEvent(new ErrorEvent('error', {
       error: new Error('Retry test'),
     }))
-    
+
     setTimeout(() => {
       const retryBtn = container.querySelector('.error-boundary-retry')
       expect(retryBtn).toBeTruthy()
@@ -2324,13 +2385,13 @@ function displayError(error) {
           font-weight: bold;
           margin: 0 0 12px 0;
         ">Oops! Something went wrong</h1>
-        
+
         <p class="error-boundary-message" style="
           color: #374151;
           font-size: 14px;
           margin: 0 0 16px 0;
         ">${message}</p>
-        
+
         <details style="
           margin: 12px 0;
           padding: 8px;
@@ -2358,7 +2419,7 @@ function displayError(error) {
             cursor: pointer;
             font-size: 14px;
           ">Reintentar</button>
-          
+
           <button class="error-boundary-home" style="
             padding: 8px 16px;
             background: #6b7280;
@@ -2432,6 +2493,7 @@ git commit -m "feat: add global ErrorBoundary component for error handling"
 ### Task 8: Create errorReporter Service (Sentry Integration)
 
 **Files:**
+
 - Create: `src/services/errorReporter.js`
 - Test: `src/services/__tests__/errorReporter.test.js`
 
@@ -2663,7 +2725,7 @@ git commit -m "feat: add error reporting service with Sentry integration"
 
 ---
 
-*[Continuing with Task 9-11 would follow similar TDD patterns for auditService.js, analyticsService.js, and performance monitoring setup. For brevity, I'll provide the pattern for the remaining tasks]*
+_[Continuing with Task 9-11 would follow similar TDD patterns for auditService.js, analyticsService.js, and performance monitoring setup. For brevity, I'll provide the pattern for the remaining tasks]_
 
 ### Task 9-11: Audit, Analytics, and Performance Services
 
@@ -2673,7 +2735,7 @@ Due to the comprehensive nature of these services, they follow the same TDD patt
 - **Task 10: analyticsService.js** — Track user behavior (optional, consent-based)
 - **Task 11: Web Vitals Monitoring** — Track Core Web Vitals (LCP, FID, CLS)
 
-*Each follows the pattern: failing test → implementation → passing test → commit*
+_Each follows the pattern: failing test → implementation → passing test → commit_
 
 ---
 
@@ -2693,6 +2755,7 @@ Due to space constraints, the remaining 10 tasks follow identical structure:
 **Task 21:** Database indexing and query optimization
 
 Each task:
+
 1. Write failing test
 2. Run to verify failure
 3. Implement minimal code
@@ -2725,13 +2788,15 @@ Each task:
 
 **Two execution approaches available:**
 
-**1. Subagent-Driven (Recommended)** 
+**1. Subagent-Driven (Recommended)**
+
 - I dispatch a fresh subagent per task (1-2 tasks per batch to keep focus)
 - Two-stage review: spec compliance → code quality
 - Fast iteration with full quality gates
 - Best for: complete professionalization with guaranteed quality
 
 **2. Inline Execution**
+
 - Execute tasks in this session using superpowers:executing-plans skill
 - Batch execution with checkpoints for review
 - Best for: quick iteration when you're actively watching

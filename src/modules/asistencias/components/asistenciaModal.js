@@ -134,12 +134,19 @@ export async function openAsistenciaModal(mode, container, data, onSave) {
     console.warn('No se pudieron cargar alumnos:', e.message)
   }
 
-  const titulo = isJustify ? 'Justificar Ausencia' : isEdit ? 'Editar Asistencia' : 'Nueva Asistencia'
+  const titulo = isJustify
+    ? 'Justificar Ausencia'
+    : isEdit
+      ? 'Editar Asistencia'
+      : 'Nueva Asistencia'
   const submitLabel = isJustify ? 'Justificar' : isEdit ? 'Guardar cambios' : 'Guardar'
 
-  const alumnosOptions = alumnos.map(a =>
-    `<option value="${a.id}" ${data?.student_id === a.id ? 'selected' : ''}>${escapeHTML(a.name)}</option>`
-  ).join('')
+  const alumnosOptions = alumnos
+    .map(
+      (a) =>
+        `<option value="${a.id}" ${data?.student_id === a.id ? 'selected' : ''}>${escapeHTML(a.name)}</option>`,
+    )
+    .join('')
 
   const body = `
     <form id="formAsistencia">
@@ -149,7 +156,9 @@ export async function openAsistenciaModal(mode, container, data, onSave) {
           value="${data?.fecha || formatDateISO(new Date())}" required>
       </div>
 
-      ${!isJustify ? `
+      ${
+        !isJustify
+          ? `
         <div class="row">
           <div class="col-md-6 mb-3">
             <label for="asistClase" class="form-label">Clase *</label>
@@ -166,15 +175,19 @@ export async function openAsistenciaModal(mode, container, data, onSave) {
             </select>
           </div>
         </div>
-      ` : ''}
+      `
+          : ''
+      }
 
-      ${!isJustify ? `
+      ${
+        !isJustify
+          ? `
         <div class="mb-3">
           <label class="form-label">Estado *</label>
           <div class="d-flex gap-3">
             <div class="form-check">
               <input class="form-check-input" type="radio" name="estado" id="estadoP" value="P"
-                ${(!data || data.estado === 'P') ? 'checked' : ''}>
+                ${!data || data.estado === 'P' ? 'checked' : ''}>
               <label class="form-check-label" for="estadoP">
                 <i class="bi bi-check-circle text-success"></i> Presente
               </label>
@@ -195,7 +208,9 @@ export async function openAsistenciaModal(mode, container, data, onSave) {
             </div>
           </div>
         </div>
-      ` : ''}
+      `
+          : ''
+      }
 
       <div class="mb-3">
         <label for="asistJustificacion" class="form-label">Justificación</label>

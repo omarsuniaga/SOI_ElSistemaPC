@@ -82,22 +82,26 @@ export function openRutaCrearModal(onCreated) {
 
   function _renderObjetivos() {
     const list = document.getElementById('objetivos-list')
-    list.innerHTML = objetivos.map((obj, i) => `
+    list.innerHTML = objetivos
+      .map(
+        (obj, i) => `
       <div class="objetivo-row" data-idx="${i}">
         <input type="text" class="form-control form-control-sm" placeholder="Semanas" value="${obj.semana_inicio}-${obj.semana_fin}" style="width: 80px;">
         <textarea class="form-control form-control-sm" rows="2" placeholder="Descripción del objetivo">${obj.descripcion}</textarea>
         <button type="button" class="btn btn-sm btn-link text-danger" onclick="this.closest('.objetivo-row').remove()">Eliminar</button>
       </div>
-    `).join('')
+    `,
+      )
+      .join('')
   }
 
   document.getElementById('btn-agregar-objetivo').addEventListener('click', () => {
-    const maxSemana = Math.max(...objetivos.map(o => o.semana_fin))
+    const maxSemana = Math.max(...objetivos.map((o) => o.semana_fin))
     objetivos.push({
       descripcion: '',
       semana_inicio: maxSemana + 1,
       semana_fin: maxSemana + 2,
-      orden: objetivos.length + 1
+      orden: objetivos.length + 1,
     })
     _renderObjetivos()
   })
@@ -121,7 +125,7 @@ export function openRutaCrearModal(onCreated) {
         semana_inicio: parseInt(input[0]),
         semana_fin: parseInt(input[1]),
         descripcion,
-        orden: i + 1
+        orden: i + 1,
       }
     })
 
@@ -135,7 +139,7 @@ export function openRutaCrearModal(onCreated) {
         estado: 'activa',
         duracion_semanas: duracion,
         objetivos: objetivosData,
-        creada_por: userData?.user?.id
+        creada_por: userData?.user?.id,
       })
 
       AppToast.success(`Ruta "${nombre}" creada`)

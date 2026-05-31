@@ -26,7 +26,7 @@ export function initErrorReporter(options = {}) {
     if (window.Sentry.Replay) {
       integrations.push(new window.Sentry.Replay({ maskAllText: true, blockAllMedia: true }))
     }
-    
+
     window.Sentry.init({
       dsn,
       environment,

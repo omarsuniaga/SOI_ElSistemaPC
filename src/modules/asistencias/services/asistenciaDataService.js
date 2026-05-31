@@ -1,8 +1,8 @@
-import { 
-  getSesionesPorRango, 
-  getDetalleSesion, 
-  ESTADOS, 
-  registrarAsistenciaBulk 
+import {
+  getSesionesPorRango,
+  getDetalleSesion,
+  ESTADOS,
+  registrarAsistenciaBulk,
 } from '../api/asistenciasApi.js'
 import { Asistencia } from '../models/asistencia.model.js'
 
@@ -17,15 +17,15 @@ import { Asistencia } from '../models/asistencia.model.js'
  */
 export async function getTimelineProcesado(params = {}) {
   const grupos = await getSesionesPorRango(params)
-  
-  return grupos.map(grupo => ({
+
+  return grupos.map((grupo) => ({
     fecha: grupo.fecha,
-    sesiones: grupo.sesiones.map(s => ({
+    sesiones: grupo.sesiones.map((s) => ({
       ...s,
-      // Los conteos ya vienen de la API en este caso para eficiencia SQL, 
+      // Los conteos ya vienen de la API en este caso para eficiencia SQL,
       // pero el servicio asegura que la estructura sea consistente.
-      estadoLabel: s.estado.charAt(0).toUpperCase() + s.estado.slice(1)
-    }))
+      estadoLabel: s.estado.charAt(0).toUpperCase() + s.estado.slice(1),
+    })),
   }))
 }
 
@@ -35,7 +35,7 @@ export async function getTimelineProcesado(params = {}) {
  */
 export async function guardarAsistenciaMasiva(claseId, sesionId, fecha, registrosAlumnos) {
   // 1. Crear instancias de modelo y validar
-  const asistencias = registrosAlumnos.map(r => {
+  const asistencias = registrosAlumnos.map((r) => {
     const a = new Asistencia({
       clase_id: claseId,
       sesion_clase_id: sesionId,
@@ -43,7 +43,7 @@ export async function guardarAsistenciaMasiva(claseId, sesionId, fecha, registro
       fecha: fecha,
       estado: r.estado,
       justificacion_texto: r.justificacion || '',
-      observaciones: r.observacion || ''
+      observaciones: r.observacion || '',
     })
 
     const errores = a.validate()
@@ -54,11 +54,11 @@ export async function guardarAsistenciaMasiva(claseId, sesionId, fecha, registro
   })
 
   // 2. Persistir vía API Bulk
-  return await registrarAsistenciaBulk(asistencias.map(a => a.toJSON()))
+  return await registrarAsistenciaBulk(asistencias.map((a) => a.toJSON()))
 }
 
 export const ASISTENCIA_SERVICE = {
   getTimelineProcesado,
   guardarAsistenciaMasiva,
-  ESTADOS
+  ESTADOS,
 }

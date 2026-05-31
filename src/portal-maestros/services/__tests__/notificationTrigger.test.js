@@ -66,7 +66,7 @@ describe('notificationTrigger - Dedup Check Logic (Mock)', () => {
     // Mock: existing notification created 1 hour ago
     const existingNotif = {
       dedup_key: 'maestro-123:vencidas_pendientes:2026-05-20',
-      created_at: new Date(Date.now() - 60 * 60 * 1000) // 1 hour ago
+      created_at: new Date(Date.now() - 60 * 60 * 1000), // 1 hour ago
     }
 
     const newDedupKey = 'maestro-123:vencidas_pendientes:2026-05-20'
@@ -81,7 +81,7 @@ describe('notificationTrigger - Dedup Check Logic (Mock)', () => {
     // Mock: notification created 25 hours ago
     const existingNotif = {
       dedup_key: 'maestro-123:vencidas_pendientes:2026-05-19',
-      created_at: new Date(Date.now() - 25 * 60 * 60 * 1000)
+      created_at: new Date(Date.now() - 25 * 60 * 60 * 1000),
     }
 
     const newDedupKey = 'maestro-123:vencidas_pendientes:2026-05-20'
@@ -95,7 +95,7 @@ describe('notificationTrigger - Dedup Check Logic (Mock)', () => {
   it('should NOT identify as duplicate if different date', () => {
     const existingNotif = {
       dedup_key: 'maestro-123:vencidas_pendientes:2026-05-19',
-      created_at: new Date(Date.now() - 1 * 60 * 60 * 1000)
+      created_at: new Date(Date.now() - 1 * 60 * 60 * 1000),
     }
 
     const newDedupKey = 'maestro-123:vencidas_pendientes:2026-05-20'
@@ -107,7 +107,7 @@ describe('notificationTrigger - Dedup Check Logic (Mock)', () => {
   it('should NOT identify as duplicate if different maestro', () => {
     const existingNotif = {
       dedup_key: 'maestro-111:vencidas_pendientes:2026-05-20',
-      created_at: new Date(Date.now() - 1 * 60 * 60 * 1000)
+      created_at: new Date(Date.now() - 1 * 60 * 60 * 1000),
     }
 
     const newDedupKey = 'maestro-123:vencidas_pendientes:2026-05-20'

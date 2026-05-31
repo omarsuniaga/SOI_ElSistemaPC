@@ -4,8 +4,8 @@ import * as supabase from '../../../lib/supabaseClient.js'
 
 vi.mock('../../../lib/supabaseClient.js', () => ({
   supabase: {
-    from: vi.fn()
-  }
+    from: vi.fn(),
+  },
 }))
 
 // Mock Bootstrap Modal
@@ -17,10 +17,10 @@ global.bootstrap = {
     static getInstance() {
       return {
         show: vi.fn(),
-        hide: vi.fn()
+        hide: vi.fn(),
       }
     }
-  }
+  },
 }
 
 describe('registrarAlumnoModal', () => {
@@ -28,7 +28,7 @@ describe('registrarAlumnoModal', () => {
 
   beforeEach(() => {
     // Clear any existing modals from DOM
-    document.querySelectorAll('#registrar-alumno-modal').forEach(el => el.remove())
+    document.querySelectorAll('#registrar-alumno-modal').forEach((el) => el.remove())
     modal = registrarAlumnoModal()
     vi.clearAllMocks()
   })
@@ -68,7 +68,7 @@ describe('registrarAlumnoModal', () => {
     const firstInput = document.querySelector('#alumno-nombre')
     modal.show('maestro-123')
 
-    await new Promise(resolve => setTimeout(resolve, 300))
+    await new Promise((resolve) => setTimeout(resolve, 300))
 
     expect(document.activeElement).toBe(firstInput)
   })
@@ -79,7 +79,7 @@ describe('registrarAlumnoModal', () => {
     const submitBtn = document.querySelector('#btn-registrar-alumno')
     submitBtn.click()
 
-    await new Promise(resolve => setTimeout(resolve, 100))
+    await new Promise((resolve) => setTimeout(resolve, 100))
 
     // Form should still be open if validation failed
     expect(modal.isOpen()).toBe(true)
@@ -93,14 +93,14 @@ describe('registrarAlumnoModal', () => {
           id: 'alumno-123',
           nombre: 'Juan',
           apellido: 'Pérez',
-          estado: 'activo'
+          estado: 'activo',
         },
-        error: null
-      })
+        error: null,
+      }),
     }
 
     supabase.supabase.from.mockReturnValue({
-      insert: vi.fn().mockReturnValue(mockInsert)
+      insert: vi.fn().mockReturnValue(mockInsert),
     })
 
     modal.show('maestro-123')
@@ -114,7 +114,7 @@ describe('registrarAlumnoModal', () => {
     const submitBtn = document.querySelector('#btn-registrar-alumno')
     submitBtn.click()
 
-    await new Promise(resolve => setTimeout(resolve, 100))
+    await new Promise((resolve) => setTimeout(resolve, 100))
 
     expect(supabase.supabase.from).toHaveBeenCalledWith('alumnos')
     expect(mockInsert.select).toHaveBeenCalled()
@@ -127,12 +127,12 @@ describe('registrarAlumnoModal', () => {
       select: vi.fn().mockReturnThis(),
       single: vi.fn().mockResolvedValue({
         data: null,
-        error: mockError
-      })
+        error: mockError,
+      }),
     }
 
     supabase.supabase.from.mockReturnValue({
-      insert: vi.fn().mockReturnValue(mockInsert)
+      insert: vi.fn().mockReturnValue(mockInsert),
     })
 
     modal.show('maestro-123')
@@ -146,11 +146,13 @@ describe('registrarAlumnoModal', () => {
     const submitBtn = document.querySelector('#btn-registrar-alumno')
     submitBtn.click()
 
-    await new Promise(resolve => setTimeout(resolve, 150))
+    await new Promise((resolve) => setTimeout(resolve, 150))
 
     const errorDiv = document.querySelector('#registrar-alumno-error')
     expect(errorDiv.classList.contains('d-none')).toBe(false)
-    expect(document.querySelector('#registrar-alumno-error-message').textContent).toContain('Database error')
+    expect(document.querySelector('#registrar-alumno-error-message').textContent).toContain(
+      'Database error',
+    )
   })
 
   it('should clear form after successful submission', async () => {
@@ -158,12 +160,12 @@ describe('registrarAlumnoModal', () => {
       select: vi.fn().mockReturnThis(),
       single: vi.fn().mockResolvedValue({
         data: { id: 'alumno-123' },
-        error: null
-      })
+        error: null,
+      }),
     }
 
     supabase.supabase.from.mockReturnValue({
-      insert: vi.fn().mockReturnValue(mockInsert)
+      insert: vi.fn().mockReturnValue(mockInsert),
     })
 
     modal.show('maestro-123')
@@ -177,7 +179,7 @@ describe('registrarAlumnoModal', () => {
     const submitBtn = document.querySelector('#btn-registrar-alumno')
     submitBtn.click()
 
-    await new Promise(resolve => setTimeout(resolve, 100))
+    await new Promise((resolve) => setTimeout(resolve, 100))
 
     expect(nombreInput.value).toBe('')
   })
@@ -190,12 +192,12 @@ describe('registrarAlumnoModal', () => {
       select: vi.fn().mockReturnThis(),
       single: vi.fn().mockResolvedValue({
         data: { id: 'alumno-123' },
-        error: null
-      })
+        error: null,
+      }),
     }
 
     supabase.supabase.from.mockReturnValue({
-      insert: vi.fn().mockReturnValue(mockInsert)
+      insert: vi.fn().mockReturnValue(mockInsert),
     })
 
     modal.show('maestro-123')
@@ -208,7 +210,7 @@ describe('registrarAlumnoModal', () => {
     const submitBtn = document.querySelector('#btn-registrar-alumno')
     submitBtn.click()
 
-    await new Promise(resolve => setTimeout(resolve, 100))
+    await new Promise((resolve) => setTimeout(resolve, 100))
 
     expect(toastListener).toHaveBeenCalled()
     const event = toastListener.mock.calls[0][0]
@@ -225,19 +227,19 @@ describe('registrarAlumnoModal', () => {
       id: 'alumno-123',
       nombre: 'Juan',
       apellido: 'Pérez',
-      estado: 'activo'
+      estado: 'activo',
     }
 
     const mockInsert = {
       select: vi.fn().mockReturnThis(),
       single: vi.fn().mockResolvedValue({
         data: mockData,
-        error: null
-      })
+        error: null,
+      }),
     }
 
     supabase.supabase.from.mockReturnValue({
-      insert: vi.fn().mockReturnValue(mockInsert)
+      insert: vi.fn().mockReturnValue(mockInsert),
     })
 
     modal.show('maestro-123')
@@ -250,7 +252,7 @@ describe('registrarAlumnoModal', () => {
     const submitBtn = document.querySelector('#btn-registrar-alumno')
     submitBtn.click()
 
-    await new Promise(resolve => setTimeout(resolve, 100))
+    await new Promise((resolve) => setTimeout(resolve, 100))
 
     expect(alumnoListener).toHaveBeenCalled()
     const event = alumnoListener.mock.calls[0][0]
@@ -263,13 +265,16 @@ describe('registrarAlumnoModal', () => {
     let resolveSubmit
     const mockInsert = {
       select: vi.fn().mockReturnThis(),
-      single: vi.fn(() => new Promise(resolve => {
-        resolveSubmit = resolve
-      }))
+      single: vi.fn(
+        () =>
+          new Promise((resolve) => {
+            resolveSubmit = resolve
+          }),
+      ),
     }
 
     supabase.supabase.from.mockReturnValue({
-      insert: vi.fn().mockReturnValue(mockInsert)
+      insert: vi.fn().mockReturnValue(mockInsert),
     })
 
     modal.show('maestro-123')
@@ -282,17 +287,17 @@ describe('registrarAlumnoModal', () => {
     const submitBtn = document.querySelector('#btn-registrar-alumno')
     submitBtn.click()
 
-    await new Promise(resolve => setTimeout(resolve, 50))
+    await new Promise((resolve) => setTimeout(resolve, 50))
 
     expect(submitBtn.disabled).toBe(true)
 
     // Resolve the submission
     resolveSubmit({
       data: { id: 'alumno-123' },
-      error: null
+      error: null,
     })
 
-    await new Promise(resolve => setTimeout(resolve, 100))
+    await new Promise((resolve) => setTimeout(resolve, 100))
 
     expect(submitBtn.disabled).toBe(false)
   })

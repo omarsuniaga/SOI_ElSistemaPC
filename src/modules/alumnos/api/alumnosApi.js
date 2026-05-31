@@ -4,7 +4,7 @@ import * as mockImpl from './alumnosMock.js'
 import { iniciacionMusicalPolicy } from '../domain/iniciacionMusicalPolicy.js'
 
 // El dispatcher elige qué implementación usar basándose en la configuración global
-const getApi = () => config.isDemoMode ? mockImpl : supabaseImpl
+const getApi = () => (config.isDemoMode ? mockImpl : supabaseImpl)
 
 export const obtenerAlumnos = (...args) => getApi().obtenerAlumnos(...args)
 export const getAlumnos = (...args) => getApi().obtenerAlumnos(...args) // Alias para compatibilidad
@@ -48,6 +48,6 @@ export const PARENTESCOS = [
 ]
 
 export const getParentescoLabel = (value) => {
-  const p = PARENTESCOS.find(x => x.value === value)
+  const p = PARENTESCOS.find((x) => x.value === value)
   return p ? p.label : value
 }

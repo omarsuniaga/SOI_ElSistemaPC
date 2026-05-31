@@ -42,7 +42,7 @@ export async function renderRutaProgresoPanel(container, claseId) {
               <div class="resumen-label">Semanas Restantes</div>
             </div>
             <div class="resumen-item">
-              <div class="resumen-numero" style="color: #dc3545;">${progreso.alumnos.filter(a => a.cobertura.some(c => !c.confirmado)).length}</div>
+              <div class="resumen-numero" style="color: #dc3545;">${progreso.alumnos.filter((a) => a.cobertura.some((c) => !c.confirmado)).length}</div>
               <div class="resumen-label">Rezagados</div>
             </div>
           </div>
@@ -54,26 +54,40 @@ export async function renderRutaProgresoPanel(container, claseId) {
             <thead style="background: #f8f9fa; border-top: 2px solid #dee2e6;">
               <tr>
                 <th style="min-width: 120px; text-align: left;">Alumno</th>
-                ${progreso.alumnos[0]?.cobertura.slice(0, 8).map((obj, i) => `
+                ${progreso.alumnos[0]?.cobertura
+                  .slice(0, 8)
+                  .map(
+                    (obj, i) => `
                   <th style="max-width: 60px;">
                     <small style="font-weight: 400;">Obj ${i + 1}</small>
                   </th>
-                `).join('')}
+                `,
+                  )
+                  .join('')}
                 ${progreso.alumnos[0]?.cobertura.length > 8 ? '<th>...</th>' : ''}
               </tr>
             </thead>
             <tbody>
-              ${progreso.alumnos.map((alumno, idx) => `
+              ${progreso.alumnos
+                .map(
+                  (alumno, idx) => `
                 <tr style="${idx % 2 === 0 ? 'background: #fafafa;' : ''}">
                   <td style="text-align: left; font-weight: 500;">${alumno.nombre}</td>
-                  ${alumno.cobertura.slice(0, 8).map(cob => `
+                  ${alumno.cobertura
+                    .slice(0, 8)
+                    .map(
+                      (cob) => `
                     <td class="cobertura-cell-${cob.confirmado ? 'ok' : 'empty'}">
                       ${cob.confirmado ? '✅' : '—'}
                     </td>
-                  `).join('')}
+                  `,
+                    )
+                    .join('')}
                   ${alumno.cobertura.length > 8 ? '<td style="text-align: center; color: #999;">…</td>' : ''}
                 </tr>
-              `).join('')}
+              `,
+                )
+                .join('')}
             </tbody>
           </table>
         </div>

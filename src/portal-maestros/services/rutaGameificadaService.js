@@ -17,7 +17,7 @@ export async function getStudentsPerNode(nodeId) {
     return []
   }
 
-  return (data || []).map(row => ({
+  return (data || []).map((row) => ({
     studentId: row.student_id,
     nombre: row.nombre_completo,
     lastAttemptDate: row.last_attempt_date?.split('T')[0], // YYYY-MM-DD
@@ -56,7 +56,7 @@ export async function markNodeAsCovered(nodeId, claseId, studentIds = []) {
     return { success: false, error: 'No indicators found for node' }
   }
 
-  const indicatorIds = indicators.map(i => i.id)
+  const indicatorIds = indicators.map((i) => i.id)
   const coveredDate = new Date().toISOString().split('T')[0]
 
   const { error: updateError, data } = await supabase
@@ -94,7 +94,7 @@ export async function getPlannedContentForToday(claseId) {
     return []
   }
 
-  return (data || []).map(row => ({
+  return (data || []).map((row) => ({
     id: row.id,
     nodeId: row.node_id,
     plannedDate: row.planned_date,

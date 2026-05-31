@@ -229,7 +229,9 @@ export function createGenerarInformeModal(parentContainer, { onAceptar }) {
       const btn = modalEl.querySelector('#btn-informe-copy')
       const orig = btn.textContent
       btn.textContent = '✓ Copiado'
-      setTimeout(() => { btn.textContent = orig }, 2000)
+      setTimeout(() => {
+        btn.textContent = orig
+      }, 2000)
     } catch {
       alert('No se pudo copiar al portapapeles.')
     }

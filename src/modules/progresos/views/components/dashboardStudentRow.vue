@@ -1,5 +1,8 @@
 <template>
-  <tr @click="$emit('row-click', row.alumnoId)" class="dashboard-row cursor-pointer hover:bg-gray-50">
+  <tr
+    @click="$emit('row-click', row.alumnoId)"
+    class="dashboard-row cursor-pointer hover:bg-gray-50"
+  >
     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
       {{ row.nombre }}
     </td>
@@ -15,10 +18,7 @@
     <td class="px-6 py-4 whitespace-nowrap">
       <span
         role="status"
-        :class="[
-          'inline-flex px-3 py-1 text-xs font-semibold rounded-full',
-          estadoClasses
-        ]"
+        :class="['inline-flex px-3 py-1 text-xs font-semibold rounded-full', estadoClasses]"
       >
         {{ row.estado_riesgo }}
       </span>

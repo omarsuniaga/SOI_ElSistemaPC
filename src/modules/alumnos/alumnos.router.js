@@ -18,4 +18,3 @@ export function registerRoutesAlumnos() {
   router.register('postulado', renderPostuladoPerfilView)
   router.register('postulados-calendario', renderPostuladoCalendarioView)
 }
-

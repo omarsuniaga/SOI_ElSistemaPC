@@ -124,13 +124,13 @@ export function createDslToolbar(options = {}) {
     },
   ]
 
-  buttons.forEach(btn => {
+  buttons.forEach((btn) => {
     const button = document.createElement('button')
     button.className = btn.className
     button.type = 'button'
     button.title = btn.title
     button.innerHTML = `<span class="dsl-toolbar-btn">${btn.icon}</span>`
-    button.addEventListener('click', e => {
+    button.addEventListener('click', (e) => {
       e.preventDefault()
       btn.action()
     })

@@ -139,9 +139,7 @@ describe('rutaService - Lazy Loading', () => {
     })
 
     it('should filter for active indicators only', async () => {
-      const mockIndicators = [
-        { id: 'ind-1', nombre: 'Indicator 1', activo: true, order_index: 1 },
-      ]
+      const mockIndicators = [{ id: 'ind-1', nombre: 'Indicator 1', activo: true, order_index: 1 }]
 
       const orderMock = vi.fn().mockResolvedValue({
         data: mockIndicators,
@@ -156,7 +154,7 @@ describe('rutaService - Lazy Loading', () => {
 
       const result = await loadIndicatorsForNode('node-1')
 
-      expect(result.every(ind => ind.activo !== false)).toBe(true)
+      expect(result.every((ind) => ind.activo !== false)).toBe(true)
     })
 
     it('should handle errors', async () => {

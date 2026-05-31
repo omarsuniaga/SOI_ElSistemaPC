@@ -4,7 +4,7 @@
 **Módulo:** `src/portal-maestros`  
 **Stack:** Vanilla JS + CSS Modular  
 **Fecha:** 2026-05-10  
-**Estado:** propuesta  
+**Estado:** propuesta
 
 ---
 
@@ -13,6 +13,7 @@
 El portal fue diseñado mobile-first pero la experiencia en tablet (768-1024px) y desktop (>1024px) está sub-optimizada:
 
 **Síntomas:**
+
 - Todo centrado con max-width de 1200px —浪费 espacio en pantallas grandes
 - Bottom nav ocupa área de contenido en tablet sin aprovechar el borde lateral
 - Cards de información compacta que en desktop podrían mostrar más datos
@@ -26,11 +27,11 @@ El portal fue diseñado mobile-first pero la experiencia en tablet (768-1024px) 
 
 ### 2.1 Layout Adaptativo por Breakpoint
 
-| Breakpoint | Ancho | Layout |
-|------------|-------|--------|
-| **Mobile** | < 768px | Stack vertical, bottom nav, cards full-width |
-| **Tablet** | 768–1024px | Grid 2 cols, sidebar colapsable, top nav + tabs |
-| **Desktop** | > 1024px | Sidebar + contenido split, información densa, shortcuts keyboard |
+| Breakpoint  | Ancho      | Layout                                                           |
+| ----------- | ---------- | ---------------------------------------------------------------- |
+| **Mobile**  | < 768px    | Stack vertical, bottom nav, cards full-width                     |
+| **Tablet**  | 768–1024px | Grid 2 cols, sidebar colapsable, top nav + tabs                  |
+| **Desktop** | > 1024px   | Sidebar + contenido split, información densa, shortcuts keyboard |
 
 ### 2.2 Arquitectura de Navegación
 
@@ -59,44 +60,44 @@ MOBILE                          TABLET                        DESKTOP
 
 ### 2.3 Componentes a Rediseñar
 
-| Componente | Cambio |
-|------------|--------|
-| `pm-header` | Desktop: incluir breadcrumb de ruta actual, search icon expandible |
-| `pm-bottom-nav` | Mobile-only. Tablet+: tabs horizontales en header |
-| `pm-view` | Desktop: max-width 100% con sidebar. Tablet: centrado con padding generoso |
-| `pm-metricas-kpis` | Desktop: grid 3-6 columnas. Mobile: 3 columnas |
-| `pm-clase-card` | Desktop: más info inline (instrumento, alumnos count, última asistencia) |
-| `studentProgressPanel` | Desktop: panel lateral fijo. Mobile: drawer desde el borde |
-| `pm-alertas-riesgo` | Desktop: expandida con más contexto. Mobile: collapsed con count |
-| `pm-calendar-grid` | Desktop: mes completo visible. Mobile: semana |
-| Modales/drawers | Desktop: centered modal. Mobile: full-screen drawer |
-| Accesos rápidos | Desktop: grid horizontal. Mobile: list |
+| Componente             | Cambio                                                                     |
+| ---------------------- | -------------------------------------------------------------------------- |
+| `pm-header`            | Desktop: incluir breadcrumb de ruta actual, search icon expandible         |
+| `pm-bottom-nav`        | Mobile-only. Tablet+: tabs horizontales en header                          |
+| `pm-view`              | Desktop: max-width 100% con sidebar. Tablet: centrado con padding generoso |
+| `pm-metricas-kpis`     | Desktop: grid 3-6 columnas. Mobile: 3 columnas                             |
+| `pm-clase-card`        | Desktop: más info inline (instrumento, alumnos count, última asistencia)   |
+| `studentProgressPanel` | Desktop: panel lateral fijo. Mobile: drawer desde el borde                 |
+| `pm-alertas-riesgo`    | Desktop: expandida con más contexto. Mobile: collapsed con count           |
+| `pm-calendar-grid`     | Desktop: mes completo visible. Mobile: semana                              |
+| Modales/drawers        | Desktop: centered modal. Mobile: full-screen drawer                        |
+| Accesos rápidos        | Desktop: grid horizontal. Mobile: list                                     |
 
 ### 2.4 Tokens Nuevos
 
 ```css
 /* Spacing system (4px base) */
---pm-space-1:  4px;
---pm-space-2:  8px;
---pm-space-3:  12px;
---pm-space-4:  16px;
---pm-space-5:  20px;
---pm-space-6:  24px;
---pm-space-8:  32px;
+--pm-space-1: 4px;
+--pm-space-2: 8px;
+--pm-space-3: 12px;
+--pm-space-4: 16px;
+--pm-space-5: 20px;
+--pm-space-6: 24px;
+--pm-space-8: 32px;
 --pm-space-10: 40px;
 --pm-space-12: 48px;
 --pm-space-16: 64px;
 
 /* Breakpoints */
---pm-bp-sm:   576px;
---pm-bp-md:   768px;
---pm-bp-lg:   1024px;
---pm-bp-xl:   1280px;
---pm-bp-2xl:  1440px;
+--pm-bp-sm: 576px;
+--pm-bp-md: 768px;
+--pm-bp-lg: 1024px;
+--pm-bp-xl: 1280px;
+--pm-bp-2xl: 1440px;
 
 /* Layout */
---pm-sidebar-w: 280px;  /* Desktop sidebar */
---pm-content-max-w: 900px;  /* Contenido sin sidebar */
+--pm-sidebar-w: 280px; /* Desktop sidebar */
+--pm-content-max-w: 900px; /* Contenido sin sidebar */
 ```
 
 ### 2.5 Animaciones y Transiciones
@@ -107,17 +108,25 @@ MOBILE                          TABLET                        DESKTOP
 }
 
 @keyframes pm-view-in {
-  from { opacity: 0; transform: translateY(8px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* Card hover: lift effect */
 .pm-card-hover {
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
 }
 .pm-card-hover:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(0,0,0,.1);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
 }
 ```
 
@@ -155,7 +164,7 @@ MOBILE                          TABLET                        DESKTOP
 ```js
 export function getBreakpoint() {
   const w = window.innerWidth
-  if (w < 768)  return 'mobile'
+  if (w < 768) return 'mobile'
   if (w < 1024) return 'tablet'
   return 'desktop'
 }
@@ -210,12 +219,12 @@ export function onBreakpointChange(callback) {
 
 ## 5. Impacto y Riesgos
 
-| Aspecto | Detalle |
-|---------|---------|
-| **Líneas estimadas** | ~800 CSS nuevos, ~150 JS |
-| **Riesgo** | Bajo — solo CSS y shell. Las vistas no cambian su lógica |
-| **Compatibilidad** | Mantiene `--pm-radius`, `--pm-primary`, etc. existentes |
-| **Backwards** | Todos los selectores existentes siguen funcionando |
+| Aspecto              | Detalle                                                  |
+| -------------------- | -------------------------------------------------------- |
+| **Líneas estimadas** | ~800 CSS nuevos, ~150 JS                                 |
+| **Riesgo**           | Bajo — solo CSS y shell. Las vistas no cambian su lógica |
+| **Compatibilidad**   | Mantiene `--pm-radius`, `--pm-primary`, etc. existentes  |
+| **Backwards**        | Todos los selectores existentes siguen funcionando       |
 
 ---
 

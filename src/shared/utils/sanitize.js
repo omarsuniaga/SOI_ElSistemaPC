@@ -36,7 +36,7 @@ const HTML_ESCAPE_MAP = {
  */
 export function escapeHTML(value) {
   if (value === null || value === undefined) return ''
-  return String(value).replace(/[&<>"'/]/g, ch => HTML_ESCAPE_MAP[ch])
+  return String(value).replace(/[&<>"'/]/g, (ch) => HTML_ESCAPE_MAP[ch])
 }
 
 // ---------------------------------------------------------------------------

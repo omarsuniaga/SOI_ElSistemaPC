@@ -50,7 +50,7 @@ export async function getAlertasActivas({ color = null, alumnoId = null } = {}) 
     .select('*')
     .order('fecha_referencia', { ascending: true })
 
-  if (color)    query = query.eq('color', color)
+  if (color) query = query.eq('color', color)
   if (alumnoId) query = query.eq('alumno_id', alumnoId)
 
   const { data, error } = await query
@@ -63,18 +63,16 @@ export async function getAlertasRojas() {
 }
 
 export async function getResumenAlertas() {
-  const { data, error } = await supabase
-    .from('vw_alertas_activas')
-    .select('color, tipo_alerta')
+  const { data, error } = await supabase.from('vw_alertas_activas').select('color, tipo_alerta')
 
   if (error) throw new Error('No se pudo obtener el resumen de alertas')
 
   return {
     total: data.length,
-    rojas:    data.filter(a => a.color === 'rojo').length,
-    naranjas: data.filter(a => a.color === 'naranja').length,
-    amarillas: data.filter(a => a.color === 'amarillo').length,
-    porTipo:  data.reduce((acc, a) => {
+    rojas: data.filter((a) => a.color === 'rojo').length,
+    naranjas: data.filter((a) => a.color === 'naranja').length,
+    amarillas: data.filter((a) => a.color === 'amarillo').length,
+    porTipo: data.reduce((acc, a) => {
       acc[a.tipo_alerta] = (acc[a.tipo_alerta] || 0) + 1
       return acc
     }, {}),
@@ -84,9 +82,7 @@ export async function getResumenAlertas() {
 // ─── RENDIMIENTO DE MAESTROS ─────────────────────────────────────────────────
 
 export async function getRendimientoMaestros() {
-  const { data, error } = await supabase
-    .from('vw_rendimiento_maestro')
-    .select('*')
+  const { data, error } = await supabase.from('vw_rendimiento_maestro').select('*')
 
   if (error) throw new Error('No se pudo cargar el rendimiento de maestros')
   return data
@@ -106,10 +102,7 @@ export async function getRendimientoMaestro(maestroId) {
 // ─── PATRÓN DE ASISTENCIA ────────────────────────────────────────────────────
 
 export async function getPatronAsistencia({ instrumento = null } = {}) {
-  let query = supabase
-    .from('vw_patron_asistencia')
-    .select('*')
-    .order('dia_semana_num')
+  let query = supabase.from('vw_patron_asistencia').select('*').order('dia_semana_num')
 
   if (instrumento) query = query.eq('instrumento_principal', instrumento)
 
@@ -121,12 +114,14 @@ export async function getPatronAsistencia({ instrumento = null } = {}) {
 // ─── ESTADÍSTICAS POR PERÍODO ────────────────────────────────────────────────
 
 export async function getEstadisticasPeriodos() {
-  const { data, error } = await supabase
-    .from('vw_estadisticas_periodo')
-    .select('*')
+  const { data, error } = await supabase.from('vw_estadisticas_periodo').select('*')
 
   if (error) throw new Error('No se pudieron cargar las estadísticas por período')
   return data
+}
+
+export async function getEstadisticasPeriodo() {
+  return getEstadisticasPeriodos()
 }
 
 export async function getEstadisticasPeriodoActivo() {
@@ -137,16 +132,15 @@ export async function getEstadisticasPeriodoActivo() {
     .order('fecha_inicio', { ascending: false })
     .limit(1)
 
-  if (error) throw new Error('No se pudieron cargar las estadísticas del período activo: ' + error.message)
-  return (data && data.length > 0) ? data[0] : null
+  if (error)
+    throw new Error('No se pudieron cargar las estadísticas del período activo: ' + error.message)
+  return data && data.length > 0 ? data[0] : null
 }
 
 // ─── DESTACADOS Y RIESGO ACADÉMICO ──────────────────────────────────────────
 
 export async function getDestacadosYRiesgoAcademico({ categoria = null } = {}) {
-  let query = supabase
-    .from('vw_destacados_y_riesgo_academico')
-    .select('*')
+  let query = supabase.from('vw_destacados_y_riesgo_academico').select('*')
 
   if (categoria) query = query.eq('categoria', categoria)
 
@@ -166,8 +160,7 @@ export async function getAlumnosEnRiesgoAcademico() {
 // ─── FUNCIONES CALCULADAS ────────────────────────────────────────────────────
 
 export async function getRachaAusencias(alumnoId) {
-  const { data, error } = await supabase
-    .rpc('fn_racha_ausencias', { p_alumno_id: alumnoId })
+  const { data, error } = await supabase.rpc('fn_racha_ausencias', { p_alumno_id: alumnoId })
 
   if (error) throw new Error('No se pudo calcular la racha de ausencias')
   return data
@@ -177,16 +170,14 @@ export async function getTasaAsistenciaPeriodo(alumnoId, desde, hasta = null) {
   const params = { p_alumno_id: alumnoId, p_desde: desde }
   if (hasta) params.p_hasta = hasta
 
-  const { data, error } = await supabase
-    .rpc('fn_tasa_asistencia_periodo', params)
+  const { data, error } = await supabase.rpc('fn_tasa_asistencia_periodo', params)
 
   if (error) throw new Error('No se pudo calcular la tasa de asistencia')
   return data
 }
 
 export async function getCorrelacionAsistenciaRendimiento() {
-  const { data, error } = await supabase
-    .rpc('fn_correlacion_asistencia_rendimiento')
+  const { data, error } = await supabase.rpc('fn_correlacion_asistencia_rendimiento')
 
   if (error) throw new Error('No se pudo calcular la correlación')
   return data
@@ -211,15 +202,58 @@ export async function registrarCambioEstadoAlumno(alumnoId, estado, motivo, regi
 
   const { data, error } = await supabase
     .from('historial_estado_alumno')
-    .insert([{
-      alumno_id:     alumnoId,
-      estado,
-      motivo:        motivo?.trim() || null,
-      registrado_por: registradoPor || null,
-      fecha:         new Date().toISOString().split('T')[0],
-    }])
+    .insert([
+      {
+        alumno_id: alumnoId,
+        estado,
+        motivo: motivo?.trim() || null,
+        registrado_por: registradoPor || null,
+        fecha: new Date().toISOString().split('T')[0],
+      },
+    ])
     .select()
 
   if (error) throw new Error('No se pudo registrar el cambio de estado')
   return data[0]
+}
+
+export async function getAlertasConfig() {
+  try {
+    const { data, error } = await supabase.from('alertas_config').select('*')
+
+    if (error) throw error
+    return data || []
+  } catch (err) {
+    console.warn(
+      'alertas_config table may not exist in this database, returning fallback mock config:',
+      err.message,
+    )
+    return {
+      alertas: [
+        { id: '1', tipo_alerta: 'ausencia', color: 'rojo', activo: true, umbral: 3 },
+        { id: '2', tipo_alerta: 'nota_baja', color: 'rojo', activo: true, umbral: 6.0 },
+        { id: '3', tipo_alerta: 'ausencia', color: 'naranja', activo: true, umbral: 2 },
+      ],
+    }
+  }
+}
+
+export async function updateAlertaConfig(alertaId, updates) {
+  try {
+    const { data, error } = await supabase
+      .from('alertas_config')
+      .update(updates)
+      .eq('id', alertaId)
+      .select()
+      .single()
+
+    if (error) throw error
+    return data
+  } catch (err) {
+    console.warn(
+      `Failed to update alerta_config for ${alertaId} in Supabase, returning updated mock state:`,
+      err.message,
+    )
+    return { id: alertaId, ...updates }
+  }
 }

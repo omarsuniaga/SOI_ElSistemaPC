@@ -21,7 +21,7 @@ export class AlumnosHook {
   subscribe(callback) {
     this.listeners.push(callback)
     return () => {
-      this.listeners = this.listeners.filter(l => l !== callback)
+      this.listeners = this.listeners.filter((l) => l !== callback)
     }
   }
 
@@ -29,7 +29,7 @@ export class AlumnosHook {
    * Notificar a todos los suscriptores
    */
   notifyListeners() {
-    this.listeners.forEach(listener => {
+    this.listeners.forEach((listener) => {
       listener({
         alumnos: this.alumnos,
         alumnoActual: this.alumnoActual,
@@ -102,11 +102,12 @@ export class AlumnosHook {
     if (!searchTerm) return this.alumnos
 
     const term = searchTerm.toLowerCase()
-    return this.alumnos.filter(a =>
-      (a.name || '').toLowerCase().includes(term) ||
-      (a.email || '').toLowerCase().includes(term) ||
-      (a.cedula || '').toLowerCase().includes(term) ||
-      (a.acudiente || '').toLowerCase().includes(term)
+    return this.alumnos.filter(
+      (a) =>
+        (a.name || '').toLowerCase().includes(term) ||
+        (a.email || '').toLowerCase().includes(term) ||
+        (a.cedula || '').toLowerCase().includes(term) ||
+        (a.acudiente || '').toLowerCase().includes(term),
     )
   }
 
@@ -116,7 +117,7 @@ export class AlumnosHook {
    * @returns {Array}
    */
   filterByEstado(esActivo) {
-    return this.alumnos.filter(a => a.es_activo === esActivo)
+    return this.alumnos.filter((a) => a.es_activo === esActivo)
   }
 
   /**
@@ -125,7 +126,7 @@ export class AlumnosHook {
    * @returns {Object|null}
    */
   getById(id) {
-    return this.alumnos.find(a => a.id === id) || null
+    return this.alumnos.find((a) => a.id === id) || null
   }
 
   /**
@@ -133,7 +134,7 @@ export class AlumnosHook {
    * @returns {Array}
    */
   getActivos() {
-    return this.alumnos.filter(a => a.es_activo)
+    return this.alumnos.filter((a) => a.es_activo)
   }
 
   /**
@@ -141,7 +142,7 @@ export class AlumnosHook {
    * @returns {Array}
    */
   getInactivos() {
-    return this.alumnos.filter(a => !a.es_activo)
+    return this.alumnos.filter((a) => !a.es_activo)
   }
 
   /**

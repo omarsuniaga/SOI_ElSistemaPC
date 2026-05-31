@@ -6,7 +6,11 @@ import { supabase } from '../../lib/supabaseClient.js'
 import { getMaestroLocal } from '../auth/maestroAuth.js'
 import { AppToast } from '../../shared/components/AppToast.js'
 import { ausenciaModal } from './ausenciaModal.js'
-import { renderAusenciaHistorial, refreshAusenciaHistorial, destroyAusenciaHistorial } from './ausenciaHistorial.js'
+import {
+  renderAusenciaHistorial,
+  refreshAusenciaHistorial,
+  destroyAusenciaHistorial,
+} from './ausenciaHistorial.js'
 
 export class AusenciasPanel {
   constructor() {
@@ -16,9 +20,9 @@ export class AusenciasPanel {
   }
 
   initDOM() {
-    if (document.getElementById('pm-ausencias-drawer-overlay')) return;
+    if (document.getElementById('pm-ausencias-drawer-overlay')) return
 
-    this.container = document.createElement('div');
+    this.container = document.createElement('div')
     this.container.innerHTML = `
       <div id="pm-ausencias-drawer-overlay" class="pm-drawer-overlay">
         <div class="pm-drawer pm-drawer-wide">
@@ -40,19 +44,19 @@ export class AusenciasPanel {
           </div>
         </div>
       </div>
-    `;
-    document.body.appendChild(this.container);
+    `
+    document.body.appendChild(this.container)
 
     // Eventos UI
-    document.getElementById('pm-ausencias-close').addEventListener('click', () => this.close());
+    document.getElementById('pm-ausencias-close').addEventListener('click', () => this.close())
     document.getElementById('pm-ausencias-drawer-overlay').addEventListener('click', (e) => {
-      if (e.target.id === 'pm-ausencias-drawer-overlay') this.close();
-    });
+      if (e.target.id === 'pm-ausencias-drawer-overlay') this.close()
+    })
 
     document.getElementById('pm-ausencias-btn-nueva').addEventListener('click', () => {
-      this.close();
-      ausenciaModal.open();
-    });
+      this.close()
+      ausenciaModal.open()
+    })
   }
 
   async open() {
@@ -61,27 +65,27 @@ export class AusenciasPanel {
       return
     }
 
-    this.initDOM();
-    const overlay = document.getElementById('pm-ausencias-drawer-overlay');
-    overlay.style.display = 'block';
-    overlay.offsetHeight; // Forzar reflow
-    overlay.classList.add('open');
-    this.isOpen = true;
+    this.initDOM()
+    const overlay = document.getElementById('pm-ausencias-drawer-overlay')
+    overlay.style.display = 'block'
+    overlay.offsetHeight // Forzar reflow
+    overlay.classList.add('open')
+    this.isOpen = true
 
     // Usar el componente especializado para el historial
-    await renderAusenciaHistorial('#pm-ausencias-body');
+    await renderAusenciaHistorial('#pm-ausencias-body')
   }
 
   close() {
-    const overlay = document.getElementById('pm-ausencias-drawer-overlay');
+    const overlay = document.getElementById('pm-ausencias-drawer-overlay')
     if (overlay) {
-      overlay.classList.remove('open');
+      overlay.classList.remove('open')
       setTimeout(() => {
-        overlay.style.display = 'none';
-        destroyAusenciaHistorial();
-      }, 300);
+        overlay.style.display = 'none'
+        destroyAusenciaHistorial()
+      }, 300)
     }
-    this.isOpen = false;
+    this.isOpen = false
   }
 }
 

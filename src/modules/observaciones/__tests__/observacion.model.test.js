@@ -31,10 +31,10 @@ describe('Observacion Model', () => {
     })
 
     it('should pass with valid data', () => {
-      const o = new Observacion({ 
-        titulo: 'Buen desempeño', 
-        alumno_id: 'a1', 
-        descripcion: 'El alumno ha mostrado una mejora significativa en clase.' 
+      const o = new Observacion({
+        titulo: 'Buen desempeño',
+        alumno_id: 'a1',
+        descripcion: 'El alumno ha mostrado una mejora significativa en clase.',
       })
       const err = o.validate()
       expect(err.length).toBe(0)
@@ -46,7 +46,7 @@ describe('Observacion Model', () => {
       const o = new Observacion({
         titulo: 'Test',
         descripcion: 'D'.repeat(25),
-        prioridad: 'alta'
+        prioridad: 'alta',
       })
       const json = o.toJSON()
       expect(json.prioridad).toBe('alta')

@@ -16,22 +16,22 @@ describe('Progreso Model', () => {
 
   describe('validate()', () => {
     it('should return error when calificacion is > 5', () => {
-      const p = new Progreso({ 
-        alumno_id: 'a1', 
-        clase_id: 'c1', 
-        tipo_evaluacion: 'final', 
-        calificacion: 5.1 
+      const p = new Progreso({
+        alumno_id: 'a1',
+        clase_id: 'c1',
+        tipo_evaluacion: 'final',
+        calificacion: 5.1,
       })
       const errores = p.validate()
       expect(errores).toContain('La calificación debe estar entre 0.0 y 5.0')
     })
 
     it('should return error when calificacion is < 0', () => {
-      const p = new Progreso({ 
-        alumno_id: 'a1', 
-        clase_id: 'c1', 
-        tipo_evaluacion: 'final', 
-        calificacion: -0.1 
+      const p = new Progreso({
+        alumno_id: 'a1',
+        clase_id: 'c1',
+        tipo_evaluacion: 'final',
+        calificacion: -0.1,
       })
       const errores = p.validate()
       expect(errores).toContain('La calificación debe estar entre 0.0 y 5.0')
@@ -53,7 +53,7 @@ describe('Progreso Model', () => {
         clase_id: 'c1',
         tipo_evaluacion: 'continua',
         calificacion: 4,
-        observaciones: '  Muy bien  '
+        observaciones: '  Muy bien  ',
       })
       const json = p.toJSON()
       expect(json.tipo_evaluacion).toBe('continua')

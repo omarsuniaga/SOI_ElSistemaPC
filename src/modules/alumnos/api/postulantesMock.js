@@ -69,10 +69,10 @@ export async function backfillDesdePostulantes(dryRun = false) {
     matches.forEach((m) => {
       const idx = data.findIndex((p) => p.id === m.postulante_id)
       if (idx !== -1) {
-        data[idx] = { 
-          ...data[idx], 
-          estado: 'inscrito', 
-          alumno_id: m.alumno_id 
+        data[idx] = {
+          ...data[idx],
+          estado: 'inscrito',
+          alumno_id: m.alumno_id,
         }
       }
     })
@@ -86,5 +86,3 @@ export async function backfillDesdePostulantes(dryRun = false) {
 }
 
 export * from './postuladosMock.js'
-
-

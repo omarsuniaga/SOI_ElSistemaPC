@@ -36,10 +36,10 @@ export function createAsyncMutex() {
       // Advance the lock chain, swallowing errors so the chain never breaks
       lockPromise = result.then(
         () => {},
-        () => {}
+        () => {},
       )
 
       return result
-    }
+    },
   }
 }

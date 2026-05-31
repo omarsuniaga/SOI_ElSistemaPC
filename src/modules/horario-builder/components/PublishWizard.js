@@ -4,13 +4,13 @@
  * Stages: borrador → revision → publicado
  */
 
-const STAGES = ['borrador', 'revision', 'publicado'];
+const STAGES = ['borrador', 'revision', 'publicado']
 
 const STAGE_LABELS = {
   borrador: 'Borrador',
   revision: 'Revisión',
   publicado: 'Publicado',
-};
+}
 
 /**
  * Builds a feedback item DOM element safely using textContent.
@@ -20,19 +20,19 @@ const STAGE_LABELS = {
  * @returns {HTMLLIElement}
  */
 function buildFeedbackItem(item) {
-  const li = document.createElement('li');
-  li.className = 'pw-feedback-item d-flex align-items-start gap-2 mb-1';
+  const li = document.createElement('li')
+  li.className = 'pw-feedback-item d-flex align-items-start gap-2 mb-1'
 
-  const badge = document.createElement('span');
-  badge.className = 'badge bg-secondary';
-  badge.textContent = item.tipo;  // safe — textContent, not innerHTML
+  const badge = document.createElement('span')
+  badge.className = 'badge bg-secondary'
+  badge.textContent = item.tipo // safe — textContent, not innerHTML
 
-  const text = document.createElement('span');
-  text.textContent = item.comentario;  // safe
+  const text = document.createElement('span')
+  text.textContent = item.comentario // safe
 
-  li.appendChild(badge);
-  li.appendChild(text);
-  return li;
+  li.appendChild(badge)
+  li.appendChild(text)
+  return li
 }
 
 /**
@@ -47,25 +47,19 @@ function buildFeedbackItem(item) {
  * @param {Function} options.onEstadoChange - Called when estado changes: onEstadoChange(newEstado)
  * @param {Function} options.onFeedbackAdd  - Called when user adds feedback: onFeedbackAdd({ comentario, tipo })
  */
-export function renderPublishWizard(container, {
-  runId,
-  estadoActual,
-  isAdmin,
-  feedback = [],
-  onEstadoChange,
-  onFeedbackAdd,
-}) {
-  const currentIndex = STAGES.indexOf(estadoActual);
+export function renderPublishWizard(
+  container,
+  { runId, estadoActual, isAdmin, feedback = [], onEstadoChange, onFeedbackAdd },
+) {
+  const currentIndex = STAGES.indexOf(estadoActual)
 
   // Build stage indicators
   const stagesHTML = STAGES.map((stage, i) => {
-    let cls = 'pw-stage';
-    if (i === currentIndex) cls += ' pw-stage--active';
-    else if (i < currentIndex) cls += ' pw-stage--done';
+    let cls = 'pw-stage'
+    if (i === currentIndex) cls += ' pw-stage--active'
+    else if (i < currentIndex) cls += ' pw-stage--done'
 
-    const connector = i < STAGES.length - 1
-      ? '<div class="pw-stage-connector"></div>'
-      : '';
+    const connector = i < STAGES.length - 1 ? '<div class="pw-stage-connector"></div>' : ''
 
     return `
       <div class="${cls}" data-stage="${stage}">
@@ -73,19 +67,19 @@ export function renderPublishWizard(container, {
         <span class="pw-stage-label">${STAGE_LABELS[stage]}</span>
       </div>
       ${connector}
-    `;
-  }).join('');
+    `
+  }).join('')
 
   // Placeholder for feedback list (will be populated safely via DOM API)
   // This prevents XSS by avoiding innerHTML interpolation of user data
-  const feedbackPlaceholder = '';
+  const feedbackPlaceholder = ''
 
   // Build approve button (admin only)
   const approveHTML = isAdmin
     ? `<button class="btn btn-success btn-sm mt-2 pw-approve-btn">
         <i class="bi bi-check-circle"></i> Aprobar y publicar
        </button>`
-    : '';
+    : ''
 
   container.innerHTML = `
     <div class="pw-wizard">
@@ -128,43 +122,43 @@ export function renderPublishWizard(container, {
         </div>
       </div>
     </div>
-  `;
+  `
 
   // Wire up events
-  const sendBtn = container.querySelector('.pw-send-revision-btn');
+  const sendBtn = container.querySelector('.pw-send-revision-btn')
   if (sendBtn) {
-    sendBtn.addEventListener('click', () => onEstadoChange?.('revision'));
+    sendBtn.addEventListener('click', () => onEstadoChange?.('revision'))
   }
 
-  const approveBtn = container.querySelector('.pw-approve-btn');
+  const approveBtn = container.querySelector('.pw-approve-btn')
   if (approveBtn) {
-    approveBtn.addEventListener('click', () => onEstadoChange?.('publicado'));
+    approveBtn.addEventListener('click', () => onEstadoChange?.('publicado'))
   }
 
-  const addFeedbackBtn = container.querySelector('.pw-add-feedback-btn');
-  const feedbackInput = container.querySelector('.pw-feedback-input');
+  const addFeedbackBtn = container.querySelector('.pw-add-feedback-btn')
+  const feedbackInput = container.querySelector('.pw-feedback-input')
 
   function submitFeedback() {
-    const comentario = feedbackInput?.value?.trim();
-    if (!comentario) return;
-    onFeedbackAdd?.({ comentario, tipo: 'observacion' });
-    if (feedbackInput) feedbackInput.value = '';
+    const comentario = feedbackInput?.value?.trim()
+    if (!comentario) return
+    onFeedbackAdd?.({ comentario, tipo: 'observacion' })
+    if (feedbackInput) feedbackInput.value = ''
   }
 
   if (addFeedbackBtn) {
-    addFeedbackBtn.addEventListener('click', submitFeedback);
+    addFeedbackBtn.addEventListener('click', submitFeedback)
   }
 
   if (feedbackInput) {
     feedbackInput.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') submitFeedback();
-    });
+      if (e.key === 'Enter') submitFeedback()
+    })
   }
 
   // Populate feedback list safely using DOM API (prevents XSS)
-  const feedbackList = container.querySelector('.pw-feedback-list');
+  const feedbackList = container.querySelector('.pw-feedback-list')
   if (feedbackList) {
-    feedbackList.innerHTML = '';  // clear any placeholder
-    (feedback || []).forEach(item => feedbackList.appendChild(buildFeedbackItem(item)));
+    feedbackList.innerHTML = '' // clear any placeholder
+    ;(feedback || []).forEach((item) => feedbackList.appendChild(buildFeedbackItem(item)))
   }
 }

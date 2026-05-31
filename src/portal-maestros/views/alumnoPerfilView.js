@@ -18,20 +18,38 @@ function formatPhoneForWA(phone) {
 }
 
 // ─── Gestión de plantillas WhatsApp ────────────────────────────────────────
-const WA_TEMPLATES_KEY = id => `soi_wa_templates_${id}`
+const WA_TEMPLATES_KEY = (id) => `soi_wa_templates_${id}`
 
 const DEFAULT_TEMPLATES = [
-  { id: 'tpl-1', label: '📋 Asistencia',   text: 'Hola Saludos, le escribo de "El Sistema Punta Cana" para informarle sobre las asistencias de clases de {alumno}. Por favor comuníquese con nosotros para más detalles.' },
-  { id: 'tpl-2', label: '📝 Evaluación',   text: 'Hola Saludos, le informamos que {alumno} tiene evaluaciones recientes disponibles para revisión. Puede consultar su progreso con nosotros.' },
-  { id: 'tpl-3', label: '📅 Recordatorio', text: 'Hola Saludos, le recordamos que {alumno} tiene clase próximamente. Cualquier ausencia debe ser justificada con anticipación.' },
-  { id: 'tpl-4', label: '🤝 Reunión',      text: 'Hola Saludos, me gustaría coordinar una reunión para conversar sobre el progreso de {alumno}. ¿Cuándo le viene bien?' },
+  {
+    id: 'tpl-1',
+    label: '📋 Asistencia',
+    text: 'Hola Saludos, le escribo de "El Sistema Punta Cana" para informarle sobre las asistencias de clases de {alumno}. Por favor comuníquese con nosotros para más detalles.',
+  },
+  {
+    id: 'tpl-2',
+    label: '📝 Evaluación',
+    text: 'Hola Saludos, le informamos que {alumno} tiene evaluaciones recientes disponibles para revisión. Puede consultar su progreso con nosotros.',
+  },
+  {
+    id: 'tpl-3',
+    label: '📅 Recordatorio',
+    text: 'Hola Saludos, le recordamos que {alumno} tiene clase próximamente. Cualquier ausencia debe ser justificada con anticipación.',
+  },
+  {
+    id: 'tpl-4',
+    label: '🤝 Reunión',
+    text: 'Hola Saludos, me gustaría coordinar una reunión para conversar sobre el progreso de {alumno}. ¿Cuándo le viene bien?',
+  },
 ]
 
 function waLoadTemplates(maestroId) {
   try {
     const raw = localStorage.getItem(WA_TEMPLATES_KEY(maestroId))
-    return raw ? JSON.parse(raw) : DEFAULT_TEMPLATES.map(t => ({ ...t }))
-  } catch { return DEFAULT_TEMPLATES.map(t => ({ ...t })) }
+    return raw ? JSON.parse(raw) : DEFAULT_TEMPLATES.map((t) => ({ ...t }))
+  } catch {
+    return DEFAULT_TEMPLATES.map((t) => ({ ...t }))
+  }
 }
 
 function waSaveTemplates(maestroId, templates) {
@@ -49,28 +67,30 @@ function waApplyVars(text, { alumno, contacto }) {
  */
 function parseDslToText(dsl) {
   if (!dsl) return ''
-  return dsl
-    // Remove bracket-wrapped labels like [Objetivo:], [Actividad:], etc. and keep the value
-    .replace(/\[([^\]]+)\]/g, (_, inner) => {
-      // If it contains a colon, treat as label:value → "Label: value"
-      const colonIdx = inner.indexOf(':')
-      if (colonIdx > 0) {
-        const label = inner.slice(0, colonIdx).trim()
-        const value = inner.slice(colonIdx + 1).trim()
-        return value ? `${label}: ${value}` : label
-      }
-      return inner.trim()
-    })
-    .replace(/\n{3,}/g, '\n\n')
-    .trim()
+  return (
+    dsl
+      // Remove bracket-wrapped labels like [Objetivo:], [Actividad:], etc. and keep the value
+      .replace(/\[([^\]]+)\]/g, (_, inner) => {
+        // If it contains a colon, treat as label:value → "Label: value"
+        const colonIdx = inner.indexOf(':')
+        if (colonIdx > 0) {
+          const label = inner.slice(0, colonIdx).trim()
+          const value = inner.slice(colonIdx + 1).trim()
+          return value ? `${label}: ${value}` : label
+        }
+        return inner.trim()
+      })
+      .replace(/\n{3,}/g, '\n\n')
+      .trim()
+  )
 }
 
 // ─── Estado config ────────────────────────────────────────────────────────────
 const ESTADO_CFG = {
-  LOGRADO:     { label: 'Logrado',     color: '#198754', bg: '#19875418', icon: '✅' },
+  LOGRADO: { label: 'Logrado', color: '#198754', bg: '#19875418', icon: '✅' },
   EN_PROGRESO: { label: 'En progreso', color: '#0d6efd', bg: '#0d6efd18', icon: '📈' },
-  INICIADO:    { label: 'Iniciado',    color: '#6c757d', bg: '#6c757d18', icon: '🔰' },
-  DIFICULTAD:  { label: 'Dificultad',  color: '#dc3545', bg: '#dc354518', icon: '⚠️' },
+  INICIADO: { label: 'Iniciado', color: '#6c757d', bg: '#6c757d18', icon: '🔰' },
+  DIFICULTAD: { label: 'Dificultad', color: '#dc3545', bg: '#dc354518', icon: '⚠️' },
 }
 
 /**
@@ -89,7 +109,9 @@ async function _renderProgresos(container, alumnoId, offset = 0) {
   try {
     const { data: rows, error } = await supabase
       .from('progresos')
-      .select('id, contenido_dsl, estado_cualitativo, calificacion, observaciones, fecha_evaluacion, clase_id, indicadores')
+      .select(
+        'id, contenido_dsl, estado_cualitativo, calificacion, observaciones, fecha_evaluacion, clase_id, indicadores',
+      )
       .eq('alumno_id', alumnoId)
       .not('contenido_dsl', 'is', null)
       .neq('contenido_dsl', '')
@@ -106,11 +128,11 @@ async function _renderProgresos(container, alumnoId, offset = 0) {
     }
 
     // Fetch class names in one query
-    const claseIds = [...new Set(rows.map(r => r.clase_id).filter(Boolean))]
+    const claseIds = [...new Set(rows.map((r) => r.clase_id).filter(Boolean))]
     const { data: clasesData } = claseIds.length
       ? await supabase.from('clases').select('id, nombre').in('id', claseIds)
       : { data: [] }
-    const claseMap = new Map((clasesData || []).map(c => [c.id, c.nombre]))
+    const claseMap = new Map((clasesData || []).map((c) => [c.id, c.nombre]))
 
     // Group by contenido_dsl — one card per unique content, timeline inside
     const byContent = new Map()
@@ -124,11 +146,16 @@ async function _renderProgresos(container, alumnoId, offset = 0) {
 
     const contents = Array.from(byContent.values())
 
-    const cardsHTML = contents.map(({ contenido, entries }) => {
-      const latest     = entries[0]
-      const cfg        = ESTADO_CFG[latest.estado_cualitativo] ?? ESTADO_CFG.EN_PROGRESO
-      const lastFecha  = new Date(latest.fecha_evaluacion).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: '2-digit' })
-      return `
+    const cardsHTML = contents
+      .map(({ contenido, entries }) => {
+        const latest = entries[0]
+        const cfg = ESTADO_CFG[latest.estado_cualitativo] ?? ESTADO_CFG.EN_PROGRESO
+        const lastFecha = new Date(latest.fecha_evaluacion).toLocaleDateString('es-ES', {
+          day: '2-digit',
+          month: 'short',
+          year: '2-digit',
+        })
+        return `
         <details class="pm-prog-card">
           <summary class="pm-prog-card__summary">
             <span class="pm-prog-card__icon" style="color:${cfg.color}">${cfg.icon}</span>
@@ -140,13 +167,18 @@ async function _renderProgresos(container, alumnoId, offset = 0) {
             <i class="bi bi-chevron-down pm-prog-card__chevron"></i>
           </summary>
           <div class="pm-prog-card__timeline">
-            ${entries.map(e => {
-              const eCfg    = ESTADO_CFG[e.estado_cualitativo] ?? ESTADO_CFG.EN_PROGRESO
-              const fecha   = new Date(e.fecha_evaluacion).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' })
-              const clase   = claseMap.get(e.clase_id) || 'Clase'
-              const tarea   = e.indicadores?.tarea
-              const nota    = e.calificacion != null ? `${e.calificacion}/5` : null
-              return `
+            ${entries
+              .map((e) => {
+                const eCfg = ESTADO_CFG[e.estado_cualitativo] ?? ESTADO_CFG.EN_PROGRESO
+                const fecha = new Date(e.fecha_evaluacion).toLocaleDateString('es-ES', {
+                  day: '2-digit',
+                  month: 'short',
+                  year: 'numeric',
+                })
+                const clase = claseMap.get(e.clase_id) || 'Clase'
+                const tarea = e.indicadores?.tarea
+                const nota = e.calificacion != null ? `${e.calificacion}/5` : null
+                return `
                 <div class="pm-prog-entry">
                   <div class="pm-prog-entry__dot" style="background:${eCfg.color}"></div>
                   <div class="pm-prog-entry__body">
@@ -161,11 +193,13 @@ async function _renderProgresos(container, alumnoId, offset = 0) {
                   </div>
                 </div>
               `
-            }).join('')}
+              })
+              .join('')}
           </div>
         </details>
       `
-    }).join('')
+      })
+      .join('')
 
     if (isFirstPage) {
       root.innerHTML = `
@@ -307,7 +341,6 @@ async function _renderProgresos(container, alumnoId, offset = 0) {
       }
       root.appendChild(loadMoreBtn)
     }
-
   } catch (err) {
     if (isFirstPage) {
       root.innerHTML = `<p style="color:var(--pm-danger);font-size:0.82rem;">Error al cargar historial: ${escHTML(err.message)}</p>`
@@ -340,28 +373,26 @@ async function _renderEvaluaciones(container, alumnoId) {
     }
 
     // Obtener info de indicadores una sola vez (sin join multiplicador)
-    const indicatorIds = [...new Set(evaluaciones.map(e => e.indicator_id))]
+    const indicatorIds = [...new Set(evaluaciones.map((e) => e.indicator_id))]
     const { data: indicatorsMeta } = await supabase
       .from('indicators')
       .select('id, nombre, node_id')
       .in('id', indicatorIds)
 
     // Obtener nombres de nodos
-    const nodeIds = [...new Set((indicatorsMeta || []).map(i => i.node_id).filter(Boolean))]
-    const { data: nodesMeta } = await supabase
-      .from('nodes')
-      .select('id, name')
-      .in('id', nodeIds)
-    const nodeMap = new Map((nodesMeta || []).map(n => [n.id, n.name]))
+    const nodeIds = [...new Set((indicatorsMeta || []).map((i) => i.node_id).filter(Boolean))]
+    const { data: nodesMeta } = await supabase.from('nodes').select('id, name').in('id', nodeIds)
+    const nodeMap = new Map((nodesMeta || []).map((n) => [n.id, n.name]))
 
     // Obtener nombres de clases correspondientes
-    const claseIds = [...new Set(evaluaciones.map(e => e.covered_by_clase_id).filter(Boolean))]
-    const { data: clasesMeta } = claseIds.length > 0
-      ? await supabase.from('clases').select('id, nombre').in('id', claseIds)
-      : { data: [] }
-    const claseMapName = new Map((clasesMeta || []).map(c => [c.id, c.nombre]))
+    const claseIds = [...new Set(evaluaciones.map((e) => e.covered_by_clase_id).filter(Boolean))]
+    const { data: clasesMeta } =
+      claseIds.length > 0
+        ? await supabase.from('clases').select('id, nombre').in('id', claseIds)
+        : { data: [] }
+    const claseMapName = new Map((clasesMeta || []).map((c) => [c.id, c.nombre]))
 
-    const indicatorMap = new Map((indicatorsMeta || []).map(i => [i.id, i]))
+    const indicatorMap = new Map((indicatorsMeta || []).map((i) => [i.id, i]))
 
     // Agrupar por indicador ID (un solo registro por indicador, el más reciente)
     const byIndicator = new Map()
@@ -374,7 +405,7 @@ async function _renderEvaluaciones(container, alumnoId) {
         nodeName: nodeMap.get(meta?.node_id) || '',
         claseNombre: claseMapName.get(ev.covered_by_clase_id) || '',
         latest: ev,
-        history: []
+        history: [],
       })
     }
 
@@ -390,8 +421,12 @@ async function _renderEvaluaciones(container, alumnoId) {
 
     const indicators = Array.from(byIndicator.values())
       // Solo mostrar indicadores que tengan nota o una observación
-      .filter(i => (i.latest.nota != null && i.latest.nota !== 0) || (i.latest.observations && i.latest.observations.trim() !== ''))
-    const aprobados = indicators.filter(i => i.latest.nota >= 4).length
+      .filter(
+        (i) =>
+          (i.latest.nota != null && i.latest.nota !== 0) ||
+          (i.latest.observations && i.latest.observations.trim() !== ''),
+      )
+    const aprobados = indicators.filter((i) => i.latest.nota >= 4).length
     const totalInd = indicators.length
     const avance = totalInd > 0 ? Math.round((aprobados / totalInd) * 100) : 0
 
@@ -521,11 +556,18 @@ async function _renderEvaluaciones(container, alumnoId) {
       <p class="pm-eval-progress-sub">${aprobados} de ${indicators.length} indicadores aprobados</p>
 
       <div class="pm-eval-indicadores">
-        ${indicators.length === 0
-          ? `<p style="font-size:0.82rem;color:var(--pm-text-muted);text-align:center;padding:1rem 0;">Sin indicadores evaluados aún</p>`
-          : indicators.map(ind => {
-            const notaColor = ind.latest.nota >= 4 ? 'var(--pm-success)' : ind.latest.nota >= 2 ? 'var(--pm-warning)' : 'var(--pm-danger)'
-            return `
+        ${
+          indicators.length === 0
+            ? `<p style="font-size:0.82rem;color:var(--pm-text-muted);text-align:center;padding:1rem 0;">Sin indicadores evaluados aún</p>`
+            : indicators
+                .map((ind) => {
+                  const notaColor =
+                    ind.latest.nota >= 4
+                      ? 'var(--pm-success)'
+                      : ind.latest.nota >= 2
+                        ? 'var(--pm-warning)'
+                        : 'var(--pm-danger)'
+                  return `
               <div class="pm-eval-indicador ${semaforoClass(ind.latest.nota)}" data-ind-id="${ind.id}">
                 <div class="pm-eval-indicador-header">
                   <span class="pm-eval-semaforo">${semaforo(ind.latest.nota)}</span>
@@ -540,7 +582,9 @@ async function _renderEvaluaciones(container, alumnoId) {
                   <i class="bi bi-chevron-down pm-eval-toggle"></i>
                 </div>
                 <div class="pm-eval-timeline" style="display:none;">
-                  ${ind.history.map(ev => `
+                  ${ind.history
+                    .map(
+                      (ev) => `
                     <div class="pm-eval-entry">
                       <div class="pm-eval-entry-meta">
                         <span>${new Date(ev.created_at).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
@@ -549,17 +593,20 @@ async function _renderEvaluaciones(container, alumnoId) {
                       ${ev.observations ? `<p class="pm-eval-entry-obs">${escHTML(ev.observations)}</p>` : ''}
                       ${ev.tarea ? `<p class="pm-eval-entry-tarea">📋 ${escHTML(ev.tarea)}</p>` : ''}
                     </div>
-                  `).join('')}
+                  `,
+                    )
+                    .join('')}
                 </div>
               </div>
             `
-          }).join('')
+                })
+                .join('')
         }
       </div>
     `
 
     // Toggle de timeline por indicador
-    root.querySelectorAll('.pm-eval-indicador').forEach(el => {
+    root.querySelectorAll('.pm-eval-indicador').forEach((el) => {
       el.addEventListener('click', () => {
         const timeline = el.querySelector('.pm-eval-timeline')
         const icon = el.querySelector('.pm-eval-toggle')
@@ -571,7 +618,8 @@ async function _renderEvaluaciones(container, alumnoId) {
     })
   } catch (err) {
     const root2 = container.querySelector('#pm-alumno-progreso-root')
-    if (root2) root2.innerHTML = `<p class="pm-empty" style="color:var(--pm-danger);">Error al cargar evaluaciones: ${escHTML(err.message)}</p>`
+    if (root2)
+      root2.innerHTML = `<p class="pm-empty" style="color:var(--pm-danger);">Error al cargar evaluaciones: ${escHTML(err.message)}</p>`
   }
 }
 
@@ -593,7 +641,9 @@ export async function renderAlumnoPerfilView(container, { alumnoId }) {
     // Obtener datos del alumno
     const { data: alumno, error: alumnoError } = await supabase
       .from('alumnos')
-      .select('id, nombre_completo, instrumento_principal, tlf_alumno, fecha_nacimiento, created_at, nivel_actual, representante_nombre, representante_tlf, correo_representante, direccion')
+      .select(
+        'id, nombre_completo, instrumento_principal, tlf_alumno, fecha_nacimiento, created_at, nivel_actual, representante_nombre, representante_tlf, correo_representante, direccion',
+      )
       .eq('id', alumnoId)
       .single()
 
@@ -615,7 +665,7 @@ export async function renderAlumnoPerfilView(container, { alumnoId }) {
       .select('clase_id')
       .eq('alumno_id', alumnoId)
       .eq('activo', true)
-    const inscritaIds = (inscripcionesRaw || []).map(r => r.clase_id).filter(Boolean)
+    const inscritaIds = (inscripcionesRaw || []).map((r) => r.clase_id).filter(Boolean)
 
     // Los datos de asistencia viven en el JSONB asistencia[] de sesiones_clase
     // estados: 'P' | 'A' | 'J' | 'T'
@@ -627,20 +677,24 @@ export async function renderAlumnoPerfilView(container, { alumnoId }) {
       .limit(60)
 
     // Aplanar a filas simples y extraer el registro del alumno de cada sesión
-    const asistenciaRows = (sesiones || []).map(s => {
-      const reg = s.asistencia?.find(a => a.alumno_id === alumnoId)
-      return reg ? {
-        fecha:         s.fecha,
-        estado:        reg.estado,          // 'P' | 'A' | 'J' | 'T'
-        clase_id:      s.clase_id,
-        sesion_id:     s.id,
-        contenido_dsl: s.contenido_dsl,
-        observaciones: reg.observaciones || null
-      } : null
-    }).filter(Boolean)
+    const asistenciaRows = (sesiones || [])
+      .map((s) => {
+        const reg = s.asistencia?.find((a) => a.alumno_id === alumnoId)
+        return reg
+          ? {
+              fecha: s.fecha,
+              estado: reg.estado, // 'P' | 'A' | 'J' | 'T'
+              clase_id: s.clase_id,
+              sesion_id: s.id,
+              contenido_dsl: s.contenido_dsl,
+              observaciones: reg.observaciones || null,
+            }
+          : null
+      })
+      .filter(Boolean)
 
     // Mapa de contenido DSL por sesión (ya está en asistenciaRows)
-    const sesionDslMap = new Map(asistenciaRows.map(r => [r.sesion_id, r.contenido_dsl]))
+    const sesionDslMap = new Map(asistenciaRows.map((r) => [r.sesion_id, r.contenido_dsl]))
 
     // Obtener todas las evaluaciones del alumno
     const { data: evaluaciones } = await supabase
@@ -664,46 +718,51 @@ export async function renderAlumnoPerfilView(container, { alumnoId }) {
       .select('sesion_id, motivo, evidencia_url, estado, fecha')
       .eq('alumno_id', alumnoId)
       .order('fecha', { ascending: false })
-    const justifMap = new Map((justificaciones || []).map(j => [j.sesion_id, j]))
+    const justifMap = new Map((justificaciones || []).map((j) => [j.sesion_id, j]))
 
     // Estados directos del JSONB: 'P' | 'A' | 'J' | 'T'
     const totalSesiones = asistenciaRows.length
-    const presentes  = asistenciaRows.filter(r => r.estado === 'P').length
-    const ausentes   = asistenciaRows.filter(r => r.estado === 'A').length
-    const justifica  = asistenciaRows.filter(r => r.estado === 'J').length
-    const tardanzas  = asistenciaRows.filter(r => r.estado === 'T').length
+    const presentes = asistenciaRows.filter((r) => r.estado === 'P').length
+    const ausentes = asistenciaRows.filter((r) => r.estado === 'A').length
+    const justifica = asistenciaRows.filter((r) => r.estado === 'J').length
+    const tardanzas = asistenciaRows.filter((r) => r.estado === 'T').length
     const pctAsistencia = totalSesiones > 0 ? Math.round((presentes / totalSesiones) * 100) : 0
 
     // Calcular estadísticas de rendimiento (notas)
-    const notasValidas = evaluaciones?.filter(e => e.nota != null && e.nota !== 0) || []
-    
+    const notasValidas = evaluaciones?.filter((e) => e.nota != null && e.nota !== 0) || []
+
     // Agrupar notas por clase
     const notasPorClase = {}
-    notasValidas.forEach(e => {
+    notasValidas.forEach((e) => {
       const claseId = e.covered_by_clase_id || 'sin_clase'
       if (!notasPorClase[claseId]) notasPorClase[claseId] = []
       notasPorClase[claseId].push(e.nota)
     })
 
     // Calcular el promedio de cada clase
-    const promediosClases = Object.values(notasPorClase).map(notas => {
+    const promediosClases = Object.values(notasPorClase).map((notas) => {
       const sum = notas.reduce((acc, n) => acc + n, 0)
       return sum / notas.length
     })
 
     // El promedio general es el promedio de los promedios de las clases (weighted class average)
-    const promedioNotas = promediosClases.length > 0
-      ? Math.round((promediosClases.reduce((acc, p) => acc + p, 0) / promediosClases.length) * 10) / 10
-      : 0
+    const promedioNotas =
+      promediosClases.length > 0
+        ? Math.round(
+            (promediosClases.reduce((acc, p) => acc + p, 0) / promediosClases.length) * 10,
+          ) / 10
+        : 0
 
-    const indicadoresAprobados = notasValidas.filter(e => e.nota >= 4).length
-    const indicadoresTotales   = notasValidas.length
-    const pctAprobacion = indicadoresTotales > 0 ? Math.round((indicadoresAprobados / indicadoresTotales) * 100) : 0
+    const indicadoresAprobados = notasValidas.filter((e) => e.nota >= 4).length
+    const indicadoresTotales = notasValidas.length
+    const pctAprobacion =
+      indicadoresTotales > 0 ? Math.round((indicadoresAprobados / indicadoresTotales) * 100) : 0
 
     // Agrupar por clase
     const sesionesPorClase = {}
-    asistenciaRows.forEach(r => {
-      if (!sesionesPorClase[r.clase_id]) sesionesPorClase[r.clase_id] = { P: 0, A: 0, J: 0, T: 0, total: 0 }
+    asistenciaRows.forEach((r) => {
+      if (!sesionesPorClase[r.clase_id])
+        sesionesPorClase[r.clase_id] = { P: 0, A: 0, J: 0, T: 0, total: 0 }
       if (r.estado) {
         sesionesPorClase[r.clase_id][r.estado] = (sesionesPorClase[r.clase_id][r.estado] || 0) + 1
         sesionesPorClase[r.clase_id].total++
@@ -711,22 +770,23 @@ export async function renderAlumnoPerfilView(container, { alumnoId }) {
     })
 
     // Construir mapa de clases (unión de inscritas + con registro de asistencia)
-    const claseIdSet = new Set([
-      ...inscritaIds,
-      ...Object.keys(sesionesPorClase)
-    ])
-    const { data: clasesInfo } = claseIdSet.size > 0
-      ? await supabase.from('clases').select('id, nombre, instrumento, nivel').in('id', [...claseIdSet])
-      : { data: [] }
-    const claseMap = new Map((clasesInfo || []).map(c => [c.id, c]))
+    const claseIdSet = new Set([...inscritaIds, ...Object.keys(sesionesPorClase)])
+    const { data: clasesInfo } =
+      claseIdSet.size > 0
+        ? await supabase
+            .from('clases')
+            .select('id, nombre, instrumento, nivel')
+            .in('id', [...claseIdSet])
+        : { data: [] }
+    const claseMap = new Map((clasesInfo || []).map((c) => [c.id, c]))
 
     // Sesiones donde estuvo presente y hay contenido DSL
-    const sesionesPresentes = asistenciaRows.filter(r =>
-      r.estado === 'P' && r.contenido_dsl?.trim()
+    const sesionesPresentes = asistenciaRows.filter(
+      (r) => r.estado === 'P' && r.contenido_dsl?.trim(),
     )
 
     // Evaluaciones que tienen observaciones del maestro
-    const conObservaciones = evaluaciones?.filter(e => e.observations?.trim()) || []
+    const conObservaciones = evaluaciones?.filter((e) => e.observations?.trim()) || []
 
     // Calcular edad
     let edad = '—'
@@ -734,13 +794,16 @@ export async function renderAlumnoPerfilView(container, { alumnoId }) {
       const birth = new Date(alumno.fecha_nacimiento)
       const now = new Date()
       edad = now.getFullYear() - birth.getFullYear()
-      if (now.getMonth() < birth.getMonth() || (now.getMonth() === birth.getMonth() && now.getDate() < birth.getDate())) {
+      if (
+        now.getMonth() < birth.getMonth() ||
+        (now.getMonth() === birth.getMonth() && now.getDate() < birth.getDate())
+      ) {
         edad--
       }
     }
 
     // Formatear fecha ingreso
-    const fechaIngreso = alumno.created_at 
+    const fechaIngreso = alumno.created_at
       ? new Date(alumno.created_at).toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })
       : 'Reciente'
 
@@ -782,24 +845,30 @@ export async function renderAlumnoPerfilView(container, { alumnoId }) {
             <div class="pm-zen-card pm-zen-card--large pm-glass" style="grid-column: span 2;">
               <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5rem;">
                 <span class="pm-zen-card__label" style="font-size:0.78rem;font-weight:500;">📈 Rendimiento Académico</span>
-                ${indicadoresTotales > 0
-                  ? `<span style="font-size:1.4rem;font-weight:700;line-height:1;color:${promedioNotas >= 4 ? 'var(--pm-success)' : promedioNotas >= 2 ? 'var(--pm-warning)' : 'var(--pm-danger)'}">${promedioNotas.toFixed(1)}</span>`
-                  : `<span style="font-size:0.8rem;color:var(--pm-text-muted);">Sin datos</span>`
+                ${
+                  indicadoresTotales > 0
+                    ? `<span style="font-size:1.4rem;font-weight:700;line-height:1;color:${promedioNotas >= 4 ? 'var(--pm-success)' : promedioNotas >= 2 ? 'var(--pm-warning)' : 'var(--pm-danger)'}">${promedioNotas.toFixed(1)}</span>`
+                    : `<span style="font-size:0.8rem;color:var(--pm-text-muted);">Sin datos</span>`
                 }
               </div>
-              ${indicadoresTotales > 0 ? `
+              ${
+                indicadoresTotales > 0
+                  ? `
               <div class="pm-student-panel__progress-bar" style="height:6px;border-radius:3px;background:var(--pm-border);">
                 <div style="width:${pctAprobacion}%;background:${promedioNotas >= 4 ? 'var(--pm-success)' : promedioNotas >= 2 ? 'var(--pm-warning)' : 'var(--pm-danger)'};height:100%;border-radius:3px;"></div>
               </div>
               <p style="font-size:0.72rem;color:var(--pm-text-muted);margin-top:0.4rem;">
                 ${indicadoresAprobados} de ${indicadoresTotales} indicadores aprobados · ${pctAprobacion}%
-              </p>` : `<p style="font-size:0.72rem;color:var(--pm-text-muted);margin-top:0.25rem;">Aún no hay evaluaciones registradas</p>`}
+              </p>`
+                  : `<p style="font-size:0.72rem;color:var(--pm-text-muted);margin-top:0.25rem;">Aún no hay evaluaciones registradas</p>`
+              }
             </div>
 
             <div class="pm-zen-card pm-glass">
               <span class="pm-zen-card__label">✅ Asistencia</span>
-              ${totalSesiones > 0
-                ? `<div style="display:flex;align-items:baseline;gap:0.25rem;">
+              ${
+                totalSesiones > 0
+                  ? `<div style="display:flex;align-items:baseline;gap:0.25rem;">
                      <span class="pm-zen-card__value" style="font-size:1.8rem;color:${pctAsistencia >= 75 ? 'var(--pm-success)' : pctAsistencia >= 50 ? 'var(--pm-warning)' : 'var(--pm-danger)'};line-height:1;">${presentes}</span>
                      <span style="font-size:1rem;color:var(--pm-text-muted);font-weight:500;">/ ${totalSesiones}</span>
                    </div>
@@ -809,40 +878,54 @@ export async function renderAlumnoPerfilView(container, { alumnoId }) {
                      ${justifica > 0 ? `· <span style="color:var(--pm-warning)">${justifica} justif.</span>` : ''}
                      ${tardanzas > 0 ? `· <span style="color:#FF9500">${tardanzas} tarde${tardanzas > 1 ? 's' : ''}</span>` : ''}
                    </p>`
-                : `<span class="pm-zen-card__value" style="font-size:1.1rem;color:var(--pm-text-muted);">Sin clases</span>
+                  : `<span class="pm-zen-card__value" style="font-size:1.1rem;color:var(--pm-text-muted);">Sin clases</span>
                    <p class="pm-zen-card__sub" style="font-size:0.7rem;">No hay sesiones registradas</p>`
               }
             </div>
 
             <div class="pm-zen-card pm-glass">
               <span class="pm-zen-card__label">📅 Clases Activas</span>
-              ${inscritaIds.length > 0
-                ? `<span class="pm-zen-card__value" style="font-size:1.8rem;">${inscritaIds.length}</span>
+              ${
+                inscritaIds.length > 0
+                  ? `<span class="pm-zen-card__value" style="font-size:1.8rem;">${inscritaIds.length}</span>
                    <p class="pm-zen-card__sub" style="font-size:0.7rem;">Materias inscritas</p>`
-                : `<span class="pm-zen-card__value" style="font-size:1.1rem;color:var(--pm-text-muted);">Sin inscripción</span>
+                  : `<span class="pm-zen-card__value" style="font-size:1.1rem;color:var(--pm-text-muted);">Sin inscripción</span>
                    <p class="pm-zen-card__sub" style="font-size:0.7rem;">No está en ninguna clase activa</p>`
               }
             </div>
           </div>
 
           <!-- 🎵 Clases Inscritas -->
-          ${inscritaIds.length > 0 ? `
+          ${
+            inscritaIds.length > 0
+              ? `
           <div class="pm-zen-section">
             <h3 class="pm-zen-section-title">🎵 Clases Inscritas</h3>
             <div class="pm-zen-clases-grid">
-              ${inscritaIds.map(claseId => {
-                const clase = claseMap.get(claseId)
-                if (!clase) return ''
-                const stats = sesionesPorClase[claseId] || { P: 0, A: 0, J: 0, T: 0, total: 0 }
-                const pctClase = stats.total > 0 ? Math.round((stats.P / stats.total) * 100) : null
-                
-                // Calcular promedio específico para esta clase
-                const claseEvaluaciones = evaluaciones?.filter(ev => ev.covered_by_clase_id === claseId && ev.nota != null && ev.nota !== 0) || []
-                const classPromedio = claseEvaluaciones.length > 0
-                  ? Math.round(claseEvaluaciones.reduce((sum, ev) => sum + ev.nota, 0) / claseEvaluaciones.length * 10) / 10
-                  : null
+              ${inscritaIds
+                .map((claseId) => {
+                  const clase = claseMap.get(claseId)
+                  if (!clase) return ''
+                  const stats = sesionesPorClase[claseId] || { P: 0, A: 0, J: 0, T: 0, total: 0 }
+                  const pctClase =
+                    stats.total > 0 ? Math.round((stats.P / stats.total) * 100) : null
 
-                return `
+                  // Calcular promedio específico para esta clase
+                  const claseEvaluaciones =
+                    evaluaciones?.filter(
+                      (ev) =>
+                        ev.covered_by_clase_id === claseId && ev.nota != null && ev.nota !== 0,
+                    ) || []
+                  const classPromedio =
+                    claseEvaluaciones.length > 0
+                      ? Math.round(
+                          (claseEvaluaciones.reduce((sum, ev) => sum + ev.nota, 0) /
+                            claseEvaluaciones.length) *
+                            10,
+                        ) / 10
+                      : null
+
+                  return `
                   <div class="pm-zen-clase-card pm-glass">
                     <div class="pm-zen-clase-header">
                       <strong>${escHTML(clase.nombre)}</strong>
@@ -850,13 +933,17 @@ export async function renderAlumnoPerfilView(container, { alumnoId }) {
                     </div>
                     <div class="d-flex justify-content-between align-items-center mb-2">
                       <p class="pm-zen-clase-inst" style="margin:0;">${escHTML(clase.instrumento || '')}</p>
-                      ${classPromedio !== null ? `
+                      ${
+                        classPromedio !== null
+                          ? `
                         <span class="badge-apple" style="background:${classPromedio >= 4.0 ? 'rgba(52, 199, 89, 0.12)' : classPromedio >= 3.0 ? 'rgba(255, 149, 0, 0.12)' : 'rgba(255, 59, 48, 0.12)'}; color:${classPromedio >= 4.0 ? 'rgb(36, 172, 69)' : classPromedio >= 3.0 ? 'rgb(229, 134, 0)' : 'rgb(221, 35, 29)'}; font-size:0.7rem; font-weight:700; padding:2px 6px; border-radius:10px; display:inline-flex; align-items:center; gap:2px;">
                           ⭐ ${classPromedio.toFixed(1)}
                         </span>
-                      ` : `
+                      `
+                          : `
                         <span class="badge-apple" style="background:var(--pm-surface-3); color:var(--pm-text-muted); font-size:0.65rem; padding:2px 6px; border-radius:10px;">Sin notas</span>
-                      `}
+                      `
+                      }
                     </div>
                     <div class="pm-zen-clase-stats">
                       <div class="pm-zen-clase-stat" style="flex:1.2;">
@@ -866,39 +953,61 @@ export async function renderAlumnoPerfilView(container, { alumnoId }) {
                         </div>
                         <span class="pm-zen-stat-label">${pctClase !== null ? pctClase + '%' : 'Sin datos'}</span>
                       </div>
-                      ${stats.A > 0 ? `<div class="pm-zen-clase-stat">
+                      ${
+                        stats.A > 0
+                          ? `<div class="pm-zen-clase-stat">
                         <span class="pm-zen-stat-value" style="color:var(--pm-danger);">${stats.A}</span>
                         <span class="pm-zen-stat-label">Ausente${stats.A > 1 ? 's' : ''}</span>
-                      </div>` : ''}
-                      ${stats.J > 0 ? `<div class="pm-zen-clase-stat">
+                      </div>`
+                          : ''
+                      }
+                      ${
+                        stats.J > 0
+                          ? `<div class="pm-zen-clase-stat">
                         <span class="pm-zen-stat-value" style="color:var(--pm-warning);">${stats.J}</span>
                         <span class="pm-zen-stat-label">Justif.</span>
-                      </div>` : ''}
-                      ${stats.T > 0 ? `<div class="pm-zen-clase-stat">
+                      </div>`
+                          : ''
+                      }
+                      ${
+                        stats.T > 0
+                          ? `<div class="pm-zen-clase-stat">
                         <span class="pm-zen-stat-value" style="color:#FF9500;">${stats.T}</span>
                         <span class="pm-zen-stat-label">Tarde${stats.T > 1 ? 's' : ''}</span>
-                      </div>` : ''}
-                      ${stats.total === 0 ? `<div class="pm-zen-clase-stat">
+                      </div>`
+                          : ''
+                      }
+                      ${
+                        stats.total === 0
+                          ? `<div class="pm-zen-clase-stat">
                         <span class="pm-zen-stat-value" style="color:var(--pm-text-muted);">—</span>
                         <span class="pm-zen-stat-label">Sin registros</span>
-                      </div>` : ''}
+                      </div>`
+                          : ''
+                      }
                     </div>
                   </div>
                 `
-              }).join('')}
+                })
+                .join('')}
             </div>
           </div>
-          ` : ''}
+          `
+              : ''
+          }
 
           <!-- 📖 Bitácora de Clases -->
-          ${sesionesPresentes.length > 0 ? `
+          ${
+            sesionesPresentes.length > 0
+              ? `
           <div class="pm-zen-section">
             <h3 class="pm-zen-section-title">📖 Bitácora de Clases</h3>
             <div class="pm-zen-bitacora">
-              ${sesionesPresentes.map(r => {
-                const clase = claseMap.get(r.clase_id)
-                const contenido = parseDslToText(r.contenido_dsl)
-                return `
+              ${sesionesPresentes
+                .map((r) => {
+                  const clase = claseMap.get(r.clase_id)
+                  const contenido = parseDslToText(r.contenido_dsl)
+                  return `
                   <div class="pm-zen-bitacora-item pm-glass">
                     <div class="pm-zen-bitacora-header">
                       <span class="pm-zen-bitacora-clase">${escHTML(clase?.nombre || 'Clase')}</span>
@@ -907,13 +1016,18 @@ export async function renderAlumnoPerfilView(container, { alumnoId }) {
                     <p class="pm-zen-bitacora-contenido">${escHTML(contenido)}</p>
                   </div>
                 `
-              }).join('')}
+                })
+                .join('')}
             </div>
           </div>
-          ` : ''}
+          `
+              : ''
+          }
 
           <!-- 📝 Últimas Evaluaciones -->
-          ${notasValidas.length > 0 ? `
+          ${
+            notasValidas.length > 0
+              ? `
           <details class="pm-zen-section pm-zen-accordion">
             <summary class="pm-zen-accordion-header">
               <span class="pm-zen-section-title" style="margin:0;">📝 Últimas Evaluaciones</span>
@@ -921,11 +1035,18 @@ export async function renderAlumnoPerfilView(container, { alumnoId }) {
               <i class="bi bi-chevron-down pm-accordion-chevron"></i>
             </summary>
             <div class="pm-zen-evaluaciones" style="margin-top:0.75rem;">
-              ${notasValidas.slice(0, 8).map(ev => {
-                const fecha = new Date(ev.created_at)
-                const color = ev.nota >= 4 ? 'var(--pm-success)' : ev.nota >= 2 ? 'var(--pm-warning)' : 'var(--pm-danger)'
-                const icono = ev.nota >= 4 ? '✅' : ev.nota >= 2 ? '⚠️' : '❌'
-                return `
+              ${notasValidas
+                .slice(0, 8)
+                .map((ev) => {
+                  const fecha = new Date(ev.created_at)
+                  const color =
+                    ev.nota >= 4
+                      ? 'var(--pm-success)'
+                      : ev.nota >= 2
+                        ? 'var(--pm-warning)'
+                        : 'var(--pm-danger)'
+                  const icono = ev.nota >= 4 ? '✅' : ev.nota >= 2 ? '⚠️' : '❌'
+                  return `
                   <div class="pm-zen-eval-item">
                     <div class="pm-zen-eval-icon" style="background:${color}20;color:${color}">${icono}</div>
                     <div class="pm-zen-eval-content">
@@ -938,13 +1059,18 @@ export async function renderAlumnoPerfilView(container, { alumnoId }) {
                     </div>
                   </div>
                 `
-              }).join('')}
+                })
+                .join('')}
             </div>
           </details>
-          ` : ''}
+          `
+              : ''
+          }
 
           <!-- 💬 Desenvolvimiento del Alumno -->
-          ${conObservaciones.length > 0 ? `
+          ${
+            conObservaciones.length > 0
+              ? `
           <details class="pm-zen-section pm-zen-accordion">
             <summary class="pm-zen-accordion-header">
               <span class="pm-zen-section-title" style="margin:0;">💬 Desenvolvimiento</span>
@@ -952,9 +1078,15 @@ export async function renderAlumnoPerfilView(container, { alumnoId }) {
               <i class="bi bi-chevron-down pm-accordion-chevron"></i>
             </summary>
             <div class="pm-zen-desenvolvimiento" style="margin-top:0.75rem;">
-              ${conObservaciones.map(ev => {
-                const notaColor = ev.nota >= 4 ? 'var(--pm-success)' : ev.nota >= 2 ? 'var(--pm-warning)' : 'var(--pm-danger)'
-                return `
+              ${conObservaciones
+                .map((ev) => {
+                  const notaColor =
+                    ev.nota >= 4
+                      ? 'var(--pm-success)'
+                      : ev.nota >= 2
+                        ? 'var(--pm-warning)'
+                        : 'var(--pm-danger)'
+                  return `
                   <div class="pm-zen-desenv-item">
                     <div class="pm-zen-desenv-dot" style="background:${ev.nota != null ? notaColor : 'var(--pm-primary)'}"></div>
                     <div class="pm-zen-desenv-content">
@@ -967,10 +1099,13 @@ export async function renderAlumnoPerfilView(container, { alumnoId }) {
                     </div>
                   </div>
                 `
-              }).join('')}
+                })
+                .join('')}
             </div>
           </details>
-          ` : ''}
+          `
+              : ''
+          }
 
           <!-- 📅 Historial de Asistencia -->
           <details class="pm-zen-section pm-zen-accordion" ${asistenciaRows.length > 0 ? 'open' : ''}>
@@ -980,15 +1115,32 @@ export async function renderAlumnoPerfilView(container, { alumnoId }) {
               <i class="bi bi-chevron-down pm-accordion-chevron"></i>
             </summary>
             <div class="pm-zen-asistencia-timeline" style="margin-top:0.75rem;">
-              ${asistenciaRows.length === 0
-                ? `<p class="pm-zen-empty">Sin registros de asistencia</p>`
-                : asistenciaRows.slice(0, 30).map(r => {
-                    const labels = { P: 'Presente', A: 'Ausente', J: 'Justificado', T: 'Tardanza' }
-                    const colors = { P: 'var(--pm-success)', A: 'var(--pm-danger)', J: 'var(--pm-warning)', T: '#FF9500' }
-                    const clase = claseMap.get(r.clase_id)
-                    const justif = r.estado === 'J' ? justifMap.get(r.sesion_id) : null
-                    const justifEstadoColor = { pendiente: 'var(--pm-warning)', aprobado: 'var(--pm-success)', rechazado: 'var(--pm-danger)' }
-                    return `
+              ${
+                asistenciaRows.length === 0
+                  ? `<p class="pm-zen-empty">Sin registros de asistencia</p>`
+                  : asistenciaRows
+                      .slice(0, 30)
+                      .map((r) => {
+                        const labels = {
+                          P: 'Presente',
+                          A: 'Ausente',
+                          J: 'Justificado',
+                          T: 'Tardanza',
+                        }
+                        const colors = {
+                          P: 'var(--pm-success)',
+                          A: 'var(--pm-danger)',
+                          J: 'var(--pm-warning)',
+                          T: '#FF9500',
+                        }
+                        const clase = claseMap.get(r.clase_id)
+                        const justif = r.estado === 'J' ? justifMap.get(r.sesion_id) : null
+                        const justifEstadoColor = {
+                          pendiente: 'var(--pm-warning)',
+                          aprobado: 'var(--pm-success)',
+                          rechazado: 'var(--pm-danger)',
+                        }
+                        return `
                       <div class="pm-zen-asistencia-item">
                         <div class="pm-zen-asistencia-dot" style="background:${colors[r.estado] || 'var(--pm-border)'}"></div>
                         <div class="pm-zen-asistencia-content">
@@ -997,7 +1149,9 @@ export async function renderAlumnoPerfilView(container, { alumnoId }) {
                             <span>${new Date(r.fecha).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: '2-digit' })}</span>
                           </div>
                           <span class="pm-zen-asistencia-clase">${escHTML(clase?.nombre || 'Clase')}</span>
-                          ${justif ? `
+                          ${
+                            justif
+                              ? `
                             <div class="pm-zen-justif-box">
                               <div class="pm-zen-justif-header">
                                 <i class="bi bi-file-earmark-text" style="font-size:0.75rem;"></i>
@@ -1007,26 +1161,46 @@ export async function renderAlumnoPerfilView(container, { alumnoId }) {
                               <p class="pm-zen-justif-motivo">${escHTML(justif.motivo)}</p>
                               ${justif.evidencia_url ? `<a class="pm-zen-justif-evidencia" href="${justif.evidencia_url}" target="_blank" rel="noopener"><i class="bi bi-paperclip"></i> Ver evidencia</a>` : ''}
                             </div>
-                          ` : r.estado === 'J' ? `<span class="pm-zen-asistencia-obs" style="color:var(--pm-warning);">Justificado — sin detalle registrado</span>` : ''}
+                          `
+                              : r.estado === 'J'
+                                ? `<span class="pm-zen-asistencia-obs" style="color:var(--pm-warning);">Justificado — sin detalle registrado</span>`
+                                : ''
+                          }
                           ${r.observaciones ? `<span class="pm-zen-asistencia-obs">${escHTML(r.observaciones)}</span>` : ''}
                         </div>
                       </div>
                     `
-                  }).join('')
+                      })
+                      .join('')
               }
             </div>
           </details>
 
           <!-- 🚨 Ausencias Recientes -->
-          ${ausencias && ausencias.length > 0 ? `
+          ${
+            ausencias && ausencias.length > 0
+              ? `
           <div class="pm-zen-section">
             <h3 class="pm-zen-section-title">🚨 Ausencias Registradas</h3>
             <div class="pm-zen-ausencias">
-              ${ausencias.map(aus => {
-                const fechaIni = new Date(aus.fecha_inicio).toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })
-                const fechaFin = aus.fecha_fin ? new Date(aus.fecha_fin).toLocaleDateString('es-ES', { day: '2-digit', month: 'short' }) : fechaIni
-                const estadoColors = { 'pendiente': 'var(--pm-warning)', 'aprobada': 'var(--pm-success)', 'rechazada': 'var(--pm-danger)' }
-                return `
+              ${ausencias
+                .map((aus) => {
+                  const fechaIni = new Date(aus.fecha_inicio).toLocaleDateString('es-ES', {
+                    day: '2-digit',
+                    month: 'short',
+                  })
+                  const fechaFin = aus.fecha_fin
+                    ? new Date(aus.fecha_fin).toLocaleDateString('es-ES', {
+                        day: '2-digit',
+                        month: 'short',
+                      })
+                    : fechaIni
+                  const estadoColors = {
+                    pendiente: 'var(--pm-warning)',
+                    aprobada: 'var(--pm-success)',
+                    rechazada: 'var(--pm-danger)',
+                  }
+                  return `
                   <div class="pm-zen-ausencia-item">
                     <div class="pm-zen-ausencia-icon" style="background:${estadoColors[aus.estado] || 'var(--pm-border)'}20">
                       <i class="bi bi-calendar-x" style="color:${estadoColors[aus.estado] || 'var(--pm-text-muted)'}"></i>
@@ -1040,10 +1214,13 @@ export async function renderAlumnoPerfilView(container, { alumnoId }) {
                     </div>
                   </div>
                 `
-              }).join('')}
+                })
+                .join('')}
             </div>
           </div>
-          ` : ''}
+          `
+              : ''
+          }
 
           <!-- 📞 Información de Contacto -->
           <div class="pm-zen-section">
@@ -1055,7 +1232,9 @@ export async function renderAlumnoPerfilView(container, { alumnoId }) {
                   <span>${alumno.tlf_alumno ? 'Teléfono alumno' : alumno.representante_tlf ? 'Teléfono representante' : 'Teléfono'}</span>
                   <strong>${formatPhone(alumno.tlf_alumno || alumno.representante_tlf) || '—'}</strong>
                 </div>
-                ${(alumno.tlf_alumno || alumno.representante_tlf) ? `
+                ${
+                  alumno.tlf_alumno || alumno.representante_tlf
+                    ? `
                 <button
                   id="btn-whatsapp-alumno"
                   class="pm-btn-whatsapp"
@@ -1064,32 +1243,46 @@ export async function renderAlumnoPerfilView(container, { alumnoId }) {
                 >
                   <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
                   WhatsApp
-                </button>` : ''}
+                </button>`
+                    : ''
+                }
               </div>
-              ${alumno.representante_nombre ? `
+              ${
+                alumno.representante_nombre
+                  ? `
               <div class="pm-zen-detail">
                 <i class="bi bi-person-vcard"></i>
                 <div>
                   <span>Representante</span>
                   <strong>${escHTML(alumno.representante_nombre)}</strong>
                 </div>
-              </div>` : ''}
-              ${alumno.correo_representante ? `
+              </div>`
+                  : ''
+              }
+              ${
+                alumno.correo_representante
+                  ? `
               <div class="pm-zen-detail">
                 <i class="bi bi-envelope"></i>
                 <div>
                   <span>Correo representante</span>
                   <strong>${escHTML(alumno.correo_representante)}</strong>
                 </div>
-              </div>` : ''}
-              ${alumno.direccion ? `
+              </div>`
+                  : ''
+              }
+              ${
+                alumno.direccion
+                  ? `
               <div class="pm-zen-detail">
                 <i class="bi bi-geo-alt"></i>
                 <div>
                   <span>Dirección</span>
                   <strong>${escHTML(alumno.direccion)}</strong>
                 </div>
-              </div>` : ''}
+              </div>`
+                  : ''
+              }
               <div class="pm-zen-detail">
                 <i class="bi bi-calendar-check"></i>
                 <div>
@@ -1657,7 +1850,7 @@ export async function renderAlumnoPerfilView(container, { alumnoId }) {
     // ── Modal WhatsApp con gestión de plantillas ──────────────────────────
     const waPhone = formatPhoneForWA(alumno.tlf_alumno || alumno.representante_tlf)
     if (waPhone) {
-      const nombreAlumno  = alumno.nombre_completo || 'el alumno'
+      const nombreAlumno = alumno.nombre_completo || 'el alumno'
       const nombreContacto = alumno.representante_nombre || nombreAlumno
       const vars = { alumno: nombreAlumno, contacto: nombreContacto }
 
@@ -1709,16 +1902,20 @@ export async function renderAlumnoPerfilView(container, { alumnoId }) {
       container.appendChild(waModal)
 
       // Referencias
-      const viewSend    = waModal.querySelector('#pm-wa-view-send')
-      const viewMgr     = waModal.querySelector('#pm-wa-view-mgr')
-      const tplList     = waModal.querySelector('#pm-wa-tpl-list')
-      const tplMgrList  = waModal.querySelector('#pm-wa-tpl-mgr-list')
-      const textarea    = waModal.querySelector('#pm-wa-text')
-      const sendLink    = waModal.querySelector('#pm-wa-send')
+      const viewSend = waModal.querySelector('#pm-wa-view-send')
+      const viewMgr = waModal.querySelector('#pm-wa-view-mgr')
+      const tplList = waModal.querySelector('#pm-wa-tpl-list')
+      const tplMgrList = waModal.querySelector('#pm-wa-tpl-mgr-list')
+      const textarea = waModal.querySelector('#pm-wa-text')
+      const sendLink = waModal.querySelector('#pm-wa-send')
 
       // ── Helpers ──────────────────────────────────────────────────────────
-      function getTemplates() { return waLoadTemplates(maestro.id) }
-      function saveTemplates(tpls) { waSaveTemplates(maestro.id, tpls) }
+      function getTemplates() {
+        return waLoadTemplates(maestro.id)
+      }
+      function saveTemplates(tpls) {
+        waSaveTemplates(maestro.id, tpls)
+      }
 
       function updateSendLink() {
         const msg = textarea.value.trim()
@@ -1728,7 +1925,7 @@ export async function renderAlumnoPerfilView(container, { alumnoId }) {
       }
 
       function selectTemplate(tpl) {
-        tplList.querySelectorAll('.pm-wa-tpl').forEach(b => b.classList.remove('active'))
+        tplList.querySelectorAll('.pm-wa-tpl').forEach((b) => b.classList.remove('active'))
         tplList.querySelector(`[data-id="${tpl.id}"]`)?.classList.add('active')
         textarea.value = waApplyVars(tpl.text, vars)
         updateSendLink()
@@ -1738,11 +1935,15 @@ export async function renderAlumnoPerfilView(container, { alumnoId }) {
       function renderTplChips() {
         const tpls = getTemplates()
         tplList.innerHTML = tpls.length
-          ? tpls.map(t => `<button class="pm-wa-tpl" data-id="${t.id}">${escHTML(t.label)}</button>`).join('')
+          ? tpls
+              .map(
+                (t) => `<button class="pm-wa-tpl" data-id="${t.id}">${escHTML(t.label)}</button>`,
+              )
+              .join('')
           : `<span style="font-size:0.78rem;color:var(--pm-text-muted);">Sin plantillas — creá una en Gestionar.</span>`
-        tplList.querySelectorAll('.pm-wa-tpl').forEach(btn => {
+        tplList.querySelectorAll('.pm-wa-tpl').forEach((btn) => {
           btn.addEventListener('click', () => {
-            const tpl = getTemplates().find(t => t.id === btn.dataset.id)
+            const tpl = getTemplates().find((t) => t.id === btn.dataset.id)
             if (tpl) selectTemplate(tpl)
           })
         })
@@ -1754,9 +1955,12 @@ export async function renderAlumnoPerfilView(container, { alumnoId }) {
       // ── Render lista de gestión ───────────────────────────────────────
       function renderMgrList() {
         const tpls = getTemplates()
-        tplMgrList.innerHTML = tpls.length === 0
-          ? `<p style="font-size:0.82rem;color:var(--pm-text-muted);text-align:center;padding:1rem 0;">Sin plantillas todavía.</p>`
-          : tpls.map(t => `
+        tplMgrList.innerHTML =
+          tpls.length === 0
+            ? `<p style="font-size:0.82rem;color:var(--pm-text-muted);text-align:center;padding:1rem 0;">Sin plantillas todavía.</p>`
+            : tpls
+                .map(
+                  (t) => `
             <div class="pm-wa-mgr-item" data-id="${t.id}">
               <div class="pm-wa-mgr-item-header">
                 <input class="pm-wa-mgr-label" value="${escHTML(t.label)}" placeholder="Nombre de la plantilla" />
@@ -1765,28 +1969,32 @@ export async function renderAlumnoPerfilView(container, { alumnoId }) {
               <textarea class="pm-wa-mgr-text" rows="3">${escHTML(t.text)}</textarea>
               <button class="pm-wa-mgr-save" data-id="${t.id}">Guardar</button>
             </div>
-          `).join('')
+          `,
+                )
+                .join('')
 
         // Guardar cambios de una plantilla
-        tplMgrList.querySelectorAll('.pm-wa-mgr-save').forEach(btn => {
+        tplMgrList.querySelectorAll('.pm-wa-mgr-save').forEach((btn) => {
           btn.addEventListener('click', () => {
             const item = btn.closest('.pm-wa-mgr-item')
-            const id   = btn.dataset.id
+            const id = btn.dataset.id
             const tpls = getTemplates()
-            const idx  = tpls.findIndex(t => t.id === id)
+            const idx = tpls.findIndex((t) => t.id === id)
             if (idx === -1) return
             tpls[idx].label = item.querySelector('.pm-wa-mgr-label').value.trim() || tpls[idx].label
-            tpls[idx].text  = item.querySelector('.pm-wa-mgr-text').value.trim()
+            tpls[idx].text = item.querySelector('.pm-wa-mgr-text').value.trim()
             saveTemplates(tpls)
             btn.textContent = '✓ Guardado'
-            setTimeout(() => { btn.textContent = 'Guardar' }, 1500)
+            setTimeout(() => {
+              btn.textContent = 'Guardar'
+            }, 1500)
           })
         })
 
         // Eliminar plantilla
-        tplMgrList.querySelectorAll('.pm-wa-mgr-del').forEach(btn => {
+        tplMgrList.querySelectorAll('.pm-wa-mgr-del').forEach((btn) => {
           btn.addEventListener('click', () => {
-            const tpls = getTemplates().filter(t => t.id !== btn.dataset.id)
+            const tpls = getTemplates().filter((t) => t.id !== btn.dataset.id)
             saveTemplates(tpls)
             renderMgrList()
           })
@@ -1796,7 +2004,11 @@ export async function renderAlumnoPerfilView(container, { alumnoId }) {
       // ── Nueva plantilla ───────────────────────────────────────────────
       waModal.querySelector('#pm-wa-add-tpl').addEventListener('click', () => {
         const tpls = getTemplates()
-        tpls.push({ id: `tpl-${Date.now()}`, label: '✏️ Nueva plantilla', text: 'Hola {contacto}, le escribo sobre {alumno}.' })
+        tpls.push({
+          id: `tpl-${Date.now()}`,
+          label: '✏️ Nueva plantilla',
+          text: 'Hola {contacto}, le escribo sobre {alumno}.',
+        })
         saveTemplates(tpls)
         renderMgrList()
       })
@@ -1804,20 +2016,23 @@ export async function renderAlumnoPerfilView(container, { alumnoId }) {
       // ── Navegación entre vistas ───────────────────────────────────────
       waModal.querySelector('#pm-wa-manage').addEventListener('click', () => {
         viewSend.style.display = 'none'
-        viewMgr.style.display  = 'block'
+        viewMgr.style.display = 'block'
         renderMgrList()
       })
       waModal.querySelector('#pm-wa-back').addEventListener('click', () => {
-        viewMgr.style.display  = 'none'
+        viewMgr.style.display = 'none'
         viewSend.style.display = 'block'
         renderTplChips()
       })
 
       // ── Abrir / cerrar modal ──────────────────────────────────────────
-      const openModal  = () => { waModal.classList.add('open'); renderTplChips() }
+      const openModal = () => {
+        waModal.classList.add('open')
+        renderTplChips()
+      }
       const closeModal = () => {
         waModal.classList.remove('open')
-        viewMgr.style.display  = 'none'
+        viewMgr.style.display = 'none'
         viewSend.style.display = 'block'
       }
 
@@ -1839,14 +2054,13 @@ export async function renderAlumnoPerfilView(container, { alumnoId }) {
         alumnoId,
         maestroId: maestro.id,
       })
-      panel.init().catch(err => {
+      panel.init().catch((err) => {
         console.error('[AlumnoPerfil] PlanEstudiosPanel error:', err)
         planRoot.innerHTML = `<p style="color:var(--pm-danger);font-size:0.82rem;">Error al cargar plan de estudios: ${escHTML(err.message)}</p>`
       })
     }
 
     _renderProgresos(container, alumnoId)
-
   } catch (err) {
     console.error('[AlumnoPerfil] Error crítico:', err)
     container.innerHTML = `

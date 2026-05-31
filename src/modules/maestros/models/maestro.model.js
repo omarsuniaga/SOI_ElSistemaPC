@@ -75,7 +75,7 @@ export class Maestro {
 
   static validarInstrumento(instrumento) {
     const instrumentos = this.getInstrumentos()
-    return instrumentos.some(i => i.value === instrumento)
+    return instrumentos.some((i) => i.value === instrumento)
   }
 
   static getInstrumentos() {

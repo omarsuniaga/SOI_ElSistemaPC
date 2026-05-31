@@ -9,10 +9,22 @@
  * @param {'subiendo'|'bajando'|'estable'} [props.tendencia]
  * @returns {string} HTML String
  */
-export function createKpiCard({ titulo, valor, subtitulo, colorClass = 'primary', icono, tendencia }) {
+export function createKpiCard({
+  titulo,
+  valor,
+  subtitulo,
+  colorClass = 'primary',
+  icono,
+  tendencia,
+}) {
   const showTrend = tendencia && ['subiendo', 'bajando', 'estable'].includes(tendencia)
   const trendIcon = tendencia === 'subiendo' ? '↑' : tendencia === 'bajando' ? '↓' : '→'
-  const trendClass = tendencia === 'subiendo' ? 'text-success' : tendencia === 'bajando' ? 'text-danger' : 'text-muted'
+  const trendClass =
+    tendencia === 'subiendo'
+      ? 'text-success'
+      : tendencia === 'bajando'
+        ? 'text-danger'
+        : 'text-muted'
 
   return `
     <div class="card kpi-card h-100 border-0 border-start border-4 border-${colorClass} shadow-sm">

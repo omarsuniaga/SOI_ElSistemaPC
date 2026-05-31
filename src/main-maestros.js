@@ -520,13 +520,17 @@ function _renderShell(app, maestro, permisos) {
           </button>
 
           <!-- Switcher de modo (solo visible para usuarios con ambos roles) -->
-          ${maestro?.es_admin && maestro?.es_maestro ? `
+          ${
+            maestro?.es_admin && maestro?.es_maestro
+              ? `
             <button id="pm-modo-switcher" title="${IS_ADMIN ? 'Cambiar a vista de maestro' : 'Cambiar a panel admin'}"
               style="display:flex;align-items:center;gap:0.35rem;padding:0.3rem 0.65rem;border-radius:20px;border:1.5px solid var(--pm-primary);background:transparent;color:var(--pm-primary);font-size:0.72rem;font-weight:600;cursor:pointer;white-space:nowrap;">
               <i class="bi ${IS_ADMIN ? 'bi-mortarboard' : 'bi-grid-1x2-fill'}"></i>
               ${IS_ADMIN ? 'Mis clases' : 'Admin'}
             </button>
-          ` : ''}
+          `
+              : ''
+          }
 
           <!-- Toggle de tema -->
           <div id="pm-theme-toggle-container"></div>

@@ -14,7 +14,7 @@ describe('dbOptimizer', () => {
 
   it('has observations indexes', () => {
     const indexes = getIndexes()
-    const obsIndex = indexes.find(i => i.table === 'observations')
+    const obsIndex = indexes.find((i) => i.table === 'observations')
     expect(obsIndex).toBeDefined()
     expect(obsIndex.columns).toContain('student_id')
   })

@@ -8,7 +8,7 @@
  *   HelpPanel.close()
  */
 
-const PANEL_ID   = 'app-help-panel'
+const PANEL_ID = 'app-help-panel'
 const OVERLAY_ID = 'app-help-overlay'
 
 let _stylesInjected = false
@@ -203,7 +203,9 @@ function _ensureDOM() {
 
   overlay.addEventListener('click', () => HelpPanel.close())
   panel.querySelector('#ahp-close').addEventListener('click', () => HelpPanel.close())
-  document.addEventListener('keydown', e => { if (e.key === 'Escape') HelpPanel.close() })
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') HelpPanel.close()
+  })
 }
 
 export const HelpPanel = {
@@ -213,17 +215,18 @@ export const HelpPanel = {
   open({ title, intro, sections = [] }) {
     _ensureDOM()
 
-    const panel   = document.getElementById(PANEL_ID)
+    const panel = document.getElementById(PANEL_ID)
     const overlay = document.getElementById(OVERLAY_ID)
 
     document.getElementById('ahp-title').textContent = title || 'Ayuda'
     document.getElementById('ahp-body').innerHTML = `
       ${intro ? `<p class="ahp-intro">${intro}</p>` : ''}
       ${sections.length ? `<div class="ahp-label">En esta pantalla</div>` : ''}
-      ${sections.map(s => {
-        const accent      = s.color || '#6b7280'
-        const accentLight = s.color ? s.color + '60' : '#d1d5db'
-        return `
+      ${sections
+        .map((s) => {
+          const accent = s.color || '#6b7280'
+          const accentLight = s.color ? s.color + '60' : '#d1d5db'
+          return `
           <div class="ahp-item" style="--ahp-accent:${accent};--ahp-accent-hover:${accentLight};">
             <i class="bi ${s.icon || 'bi-dot'} ahp-item-icon" style="color:${accent};"></i>
             <div class="ahp-item-body">
@@ -231,7 +234,8 @@ export const HelpPanel = {
               <p class="ahp-item-desc">${s.description}</p>
             </div>
           </div>`
-      }).join('')}
+        })
+        .join('')}
     `
 
     overlay.style.display = 'block'
@@ -242,11 +246,13 @@ export const HelpPanel = {
   },
 
   close() {
-    const panel   = document.getElementById(PANEL_ID)
+    const panel = document.getElementById(PANEL_ID)
     const overlay = document.getElementById(OVERLAY_ID)
     if (!panel || !panel.classList.contains('hp-visible')) return
     panel.classList.remove('hp-visible')
     overlay.classList.remove('hp-visible')
-    setTimeout(() => { if (overlay) overlay.style.display = 'none' }, 280)
-  }
+    setTimeout(() => {
+      if (overlay) overlay.style.display = 'none'
+    }, 280)
+  },
 }

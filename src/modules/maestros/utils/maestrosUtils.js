@@ -6,7 +6,7 @@ export function formatDate(dateStr) {
 
 export function escapeHTML(str) {
   if (!str) return ''
-  return str.replace(/[&<>]/g, function(m) {
+  return str.replace(/[&<>]/g, function (m) {
     if (m === '&') return '&amp;'
     if (m === '<') return '&lt;'
     if (m === '>') return '&gt;'
@@ -30,26 +30,26 @@ export function formatPhone(phone) {
 
 export function formatInstrumento(instrumento) {
   const mapa = {
-    'violin': 'Violín',
-    'viola': 'Viola',
-    'cello': 'Cello',
-    'bajo': 'Bajo',
-    'flauta': 'Flauta',
-    'oboe': 'Oboe',
-    'clarinete': 'Clarinete',
-    'fagot': 'Fagot',
-    'trompa': 'Trompa',
-    'trompeta': 'Trompeta',
-    'trombon': 'Trombón',
-    'tuba': 'Tuba',
-    'piano': 'Piano',
-    'guitarra': 'Guitarra',
-    'arpa': 'Arpa',
-    'percusion': 'Percusión',
-    'voz': 'Voz',
-    'direccion': 'Dirección',
-    'solfeo': 'Solfeo',
-    'teoría': 'Teoría',
+    violin: 'Violín',
+    viola: 'Viola',
+    cello: 'Cello',
+    bajo: 'Bajo',
+    flauta: 'Flauta',
+    oboe: 'Oboe',
+    clarinete: 'Clarinete',
+    fagot: 'Fagot',
+    trompa: 'Trompa',
+    trompeta: 'Trompeta',
+    trombon: 'Trombón',
+    tuba: 'Tuba',
+    piano: 'Piano',
+    guitarra: 'Guitarra',
+    arpa: 'Arpa',
+    percusion: 'Percusión',
+    voz: 'Voz',
+    direccion: 'Dirección',
+    solfeo: 'Solfeo',
+    teoría: 'Teoría',
   }
   return mapa[instrumento?.toLowerCase()] || instrumento || 'No especificado'
 }
@@ -66,7 +66,7 @@ export function getInitials(nombre) {
   if (!nombre) return '?'
   return nombre
     .split(' ')
-    .map(n => n[0])
+    .map((n) => n[0])
     .join('')
     .toUpperCase()
     .slice(0, 2)

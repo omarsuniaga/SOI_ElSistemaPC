@@ -1,38 +1,56 @@
-import { AppModal } from '../../shared/components/AppModal.js';
-import { AppToast } from '../../shared/components/AppToast.js';
-import { getMaestroLocal } from '../auth/maestroAuth.js';
-import { enableTrap } from '../utils/focusTrap.js';
-import { escHTML } from '../utils/portalUtils.js';
+import { AppModal } from '../../shared/components/AppModal.js'
+import { AppToast } from '../../shared/components/AppToast.js'
+import { getMaestroLocal } from '../auth/maestroAuth.js'
+import { enableTrap } from '../utils/focusTrap.js'
+import { escHTML } from '../utils/portalUtils.js'
 import {
   createAbsenceRequest,
   findAffectedClasses,
   findAvailableSalons,
-} from '../services/ausenciaService.js';
+} from '../services/ausenciaService.js'
 
 const TIPO_AUSENCIA = [
-  { value: 'enfermedad',   label: 'Médica',       icon: 'bi-heart-pulse-fill',    color: '#ef4444' },
-  { value: 'personal',     label: 'Personal',     icon: 'bi-person-fill',         color: '#3b82f6' },
-  { value: 'capacitacion', label: 'Capacitación', icon: 'bi-mortarboard-fill',    color: '#8b5cf6' },
-  { value: 'vacaciones',   label: 'Vacaciones',   icon: 'bi-sun-fill',            color: '#f59e0b' },
-  { value: 'otro',         label: 'Otro',         icon: 'bi-three-dots',          color: '#6b7280' },
-];
+  { value: 'enfermedad', label: 'Médica', icon: 'bi-heart-pulse-fill', color: '#ef4444' },
+  { value: 'personal', label: 'Personal', icon: 'bi-person-fill', color: '#3b82f6' },
+  { value: 'capacitacion', label: 'Capacitación', icon: 'bi-mortarboard-fill', color: '#8b5cf6' },
+  { value: 'vacaciones', label: 'Vacaciones', icon: 'bi-sun-fill', color: '#f59e0b' },
+  { value: 'otro', label: 'Otro', icon: 'bi-three-dots', color: '#6b7280' },
+]
 
 const URGENCIA_OPTS = [
-  { value: 'baja',  label: 'Baja',  icon: 'bi-circle-fill',   color: '#22c55e', bg: 'rgba(34,197,94,0.12)'  },
-  { value: 'media', label: 'Media', icon: 'bi-circle-fill',   color: '#f59e0b', bg: 'rgba(245,158,11,0.12)' },
-  { value: 'alta',  label: 'Alta',  icon: 'bi-circle-fill',   color: '#ef4444', bg: 'rgba(239,68,68,0.12)'  },
-];
+  {
+    value: 'baja',
+    label: 'Baja',
+    icon: 'bi-circle-fill',
+    color: '#22c55e',
+    bg: 'rgba(34,197,94,0.12)',
+  },
+  {
+    value: 'media',
+    label: 'Media',
+    icon: 'bi-circle-fill',
+    color: '#f59e0b',
+    bg: 'rgba(245,158,11,0.12)',
+  },
+  {
+    value: 'alta',
+    label: 'Alta',
+    icon: 'bi-circle-fill',
+    color: '#ef4444',
+    bg: 'rgba(239,68,68,0.12)',
+  },
+]
 
 class AusenciaModal {
   constructor() {
-    this.maestro = null;
-    this._focusTrap = null;
-    this.state = this._defaultState();
+    this.maestro = null
+    this._focusTrap = null
+    this.state = this._defaultState()
   }
 
   _defaultState() {
     return {
-      duracion: 'dia',        // 'dia' | 'rango'
+      duracion: 'dia', // 'dia' | 'rango'
       fechaInicio: '',
       fechaFin: '',
       tipoAusencia: 'personal',
@@ -46,12 +64,12 @@ class AusenciaModal {
       availableSalons: [],
       submitted: false,
       whatsappText: '',
-    };
+    }
   }
 
   _renderForm() {
-    const today = new Date().toISOString().split('T')[0];
-    const isDia = this.state.duracion === 'dia';
+    const today = new Date().toISOString().split('T')[0]
+    const isDia = this.state.duracion === 'dia'
 
     return `
       <form class="pm-ausencia-form" id="ausencia-form" novalidate>
@@ -60,12 +78,14 @@ class AusenciaModal {
         <section class="am-section">
           <p class="am-section-label"><i class="bi bi-tag-fill"></i> Tipo de ausencia</p>
           <div class="am-tipo-grid">
-            ${TIPO_AUSENCIA.map(t => `
+            ${TIPO_AUSENCIA.map(
+              (t) => `
               <button type="button" class="am-tipo-btn ${t.value === this.state.tipoAusencia ? 'selected' : ''}"
                 data-tipo="${t.value}" style="--tipo-color:${t.color}">
                 <i class="bi ${t.icon}" style="color:${t.color};font-size:1.4rem;"></i>
                 <span>${t.label}</span>
-              </button>`).join('')}
+              </button>`,
+            ).join('')}
           </div>
           <input type="hidden" id="tipo-ausencia" value="${this.state.tipoAusencia}">
         </section>
@@ -109,12 +129,14 @@ class AusenciaModal {
         <section class="am-section">
           <p class="am-section-label"><i class="bi bi-lightning-fill"></i> Urgencia</p>
           <div class="am-urgencia-row">
-            ${URGENCIA_OPTS.map(u => `
+            ${URGENCIA_OPTS.map(
+              (u) => `
               <button type="button" class="am-urg-btn ${u.value === this.state.urgencia ? 'selected' : ''}"
                 data-urg="${u.value}" style="--urg-color:${u.color};--urg-bg:${u.bg}">
                 <i class="bi ${u.icon}" style="color:${u.color};font-size:0.55rem;"></i>
                 ${u.label}
-              </button>`).join('')}
+              </button>`,
+            ).join('')}
           </div>
           <input type="hidden" id="urgencia" value="${this.state.urgencia}">
         </section>
@@ -341,7 +363,7 @@ class AusenciaModal {
         }
         .am-errors:not(:empty) { display: block; }
       </style>
-    `;
+    `
   }
 
   _renderSuccess(whatsappText) {
@@ -360,20 +382,20 @@ class AusenciaModal {
           </button>
         </div>
       </div>
-    `;
+    `
   }
 
   open() {
-    this._focusTrap?.dispose?.();
-    this._focusTrap = null;
-    this.maestro = getMaestroLocal();
+    this._focusTrap?.dispose?.()
+    this._focusTrap = null
+    this.maestro = getMaestroLocal()
 
     if (!this.maestro) {
-      AppToast.error('Iniciá sesión para solicitar ausencias');
-      return;
+      AppToast.error('Iniciá sesión para solicitar ausencias')
+      return
     }
 
-    this.state = this._defaultState();
+    this.state = this._defaultState()
 
     AppModal.open({
       title: 'Nueva Solicitud de Ausencia',
@@ -382,149 +404,159 @@ class AusenciaModal {
       saveText: 'Enviar solicitud',
       onSave: () => this._handleSubmit(),
       onShow: () => this._attachEvents(),
-    });
+    })
   }
 
   _attachEvents() {
-    const dialog = document.querySelector('.app-modal-dialog');
-    if (dialog) this._focusTrap = enableTrap(dialog, { onClose: () => AppModal.close() });
+    const dialog = document.querySelector('.app-modal-dialog')
+    if (dialog) this._focusTrap = enableTrap(dialog, { onClose: () => AppModal.close() })
 
     // ── Tipo de ausencia pills ──
-    document.querySelectorAll('.am-tipo-btn').forEach(btn => {
+    document.querySelectorAll('.am-tipo-btn').forEach((btn) => {
       btn.addEventListener('click', () => {
-        document.querySelectorAll('.am-tipo-btn').forEach(b => b.classList.remove('selected'));
-        btn.classList.add('selected');
-        this.state.tipoAusencia = btn.dataset.tipo;
-        document.getElementById('tipo-ausencia').value = btn.dataset.tipo;
-      });
-    });
+        document.querySelectorAll('.am-tipo-btn').forEach((b) => b.classList.remove('selected'))
+        btn.classList.add('selected')
+        this.state.tipoAusencia = btn.dataset.tipo
+        document.getElementById('tipo-ausencia').value = btn.dataset.tipo
+      })
+    })
 
     // ── Urgencia chips ──
-    document.querySelectorAll('.am-urg-btn').forEach(btn => {
+    document.querySelectorAll('.am-urg-btn').forEach((btn) => {
       btn.addEventListener('click', () => {
-        document.querySelectorAll('.am-urg-btn').forEach(b => b.classList.remove('selected'));
-        btn.classList.add('selected');
-        this.state.urgencia = btn.dataset.urg;
-        document.getElementById('urgencia').value = btn.dataset.urg;
-      });
-    });
+        document.querySelectorAll('.am-urg-btn').forEach((b) => b.classList.remove('selected'))
+        btn.classList.add('selected')
+        this.state.urgencia = btn.dataset.urg
+        document.getElementById('urgencia').value = btn.dataset.urg
+      })
+    })
 
     // ── Toggle duración ──
     const _syncFechas = () => {
-      if (this.state.fechaInicio && this.state.fechaFin) this._loadAffectedClasses();
-    };
+      if (this.state.fechaInicio && this.state.fechaFin) this._loadAffectedClasses()
+    }
 
-    document.querySelectorAll('.am-dur-btn').forEach(btn => {
+    document.querySelectorAll('.am-dur-btn').forEach((btn) => {
       btn.addEventListener('click', () => {
-        document.querySelectorAll('.am-dur-btn').forEach(b => b.classList.remove('selected'));
-        btn.classList.add('selected');
-        this.state.duracion = btn.dataset.dur;
-        const isDia = this.state.duracion === 'dia';
-        document.getElementById('fecha-dia-panel').style.display  = isDia ? '' : 'none';
-        document.getElementById('fecha-rango-panel').style.display = isDia ? 'none' : '';
+        document.querySelectorAll('.am-dur-btn').forEach((b) => b.classList.remove('selected'))
+        btn.classList.add('selected')
+        this.state.duracion = btn.dataset.dur
+        const isDia = this.state.duracion === 'dia'
+        document.getElementById('fecha-dia-panel').style.display = isDia ? '' : 'none'
+        document.getElementById('fecha-rango-panel').style.display = isDia ? 'none' : ''
         // Reset fechas al cambiar modo
-        this.state.fechaInicio = '';
-        this.state.fechaFin = '';
+        this.state.fechaInicio = ''
+        this.state.fechaFin = ''
         document.getElementById('clases-afectadas-container').innerHTML = `
           <i class="bi bi-calendar-x" style="font-size:1.5rem;opacity:0.4;"></i>
-          <span>Seleccioná la fecha para ver las clases afectadas</span>`;
-        document.getElementById('clases-afectadas-container').className = 'am-clases-placeholder';
-      });
-    });
+          <span>Seleccioná la fecha para ver las clases afectadas</span>`
+        document.getElementById('clases-afectadas-container').className = 'am-clases-placeholder'
+      })
+    })
 
     // ── Fecha única (1 día) ──
     document.getElementById('fecha-unica')?.addEventListener('change', (e) => {
-      this.state.fechaInicio = e.target.value;
-      this.state.fechaFin    = e.target.value;
-      _syncFechas();
-    });
+      this.state.fechaInicio = e.target.value
+      this.state.fechaFin = e.target.value
+      _syncFechas()
+    })
 
     // ── Rango de fechas ──
     document.getElementById('fecha-inicio')?.addEventListener('change', (e) => {
-      this.state.fechaInicio = e.target.value;
-      _syncFechas();
-    });
+      this.state.fechaInicio = e.target.value
+      _syncFechas()
+    })
     document.getElementById('fecha-fin')?.addEventListener('change', (e) => {
-      this.state.fechaFin = e.target.value;
-      _syncFechas();
-    });
+      this.state.fechaFin = e.target.value
+      _syncFechas()
+    })
 
     // ── Coverage type ──
-    document.querySelectorAll('input[name="coverage-type"]').forEach(radio => {
+    document.querySelectorAll('input[name="coverage-type"]').forEach((radio) => {
       radio.addEventListener('change', (e) => {
-        this.state.coverageType = e.target.value;
-        document.querySelectorAll('.am-coverage-opt').forEach(opt => {
-          const inp = opt.querySelector('input[name="coverage-type"]');
-          opt.classList.toggle('selected', inp?.value === e.target.value);
-        });
-        const panel = document.getElementById('reschedule-panel');
-        if (panel) panel.style.display = e.target.value === 'reschedule' ? '' : 'none';
-      });
-    });
+        this.state.coverageType = e.target.value
+        document.querySelectorAll('.am-coverage-opt').forEach((opt) => {
+          const inp = opt.querySelector('input[name="coverage-type"]')
+          opt.classList.toggle('selected', inp?.value === e.target.value)
+        })
+        const panel = document.getElementById('reschedule-panel')
+        if (panel) panel.style.display = e.target.value === 'reschedule' ? '' : 'none'
+      })
+    })
     // Click en la label también activa el radio
-    document.querySelectorAll('.am-coverage-opt').forEach(label => {
+    document.querySelectorAll('.am-coverage-opt').forEach((label) => {
       label.addEventListener('click', () => {
-        const radio = label.querySelector('input[type="radio"]');
-        if (radio) { radio.checked = true; radio.dispatchEvent(new Event('change', { bubbles: true })); }
-      });
-    });
+        const radio = label.querySelector('input[type="radio"]')
+        if (radio) {
+          radio.checked = true
+          radio.dispatchEvent(new Event('change', { bubbles: true }))
+        }
+      })
+    })
 
     // ── Reschedule salones ──
     const onRescheduleChange = () => {
-      const fecha = document.getElementById('emergente-fecha')?.value;
-      const hora  = document.getElementById('emergente-hora')?.value;
-      if (fecha) this.state.claseEmergente.fecha = fecha;
-      if (hora)  this.state.claseEmergente.hora  = hora;
-      if (this.state.claseEmergente.fecha && this.state.claseEmergente.hora) this._loadAvailableSalons();
-    };
-    document.getElementById('emergente-fecha')?.addEventListener('change', onRescheduleChange);
-    document.getElementById('emergente-hora')?.addEventListener('change', onRescheduleChange);
+      const fecha = document.getElementById('emergente-fecha')?.value
+      const hora = document.getElementById('emergente-hora')?.value
+      if (fecha) this.state.claseEmergente.fecha = fecha
+      if (hora) this.state.claseEmergente.hora = hora
+      if (this.state.claseEmergente.fecha && this.state.claseEmergente.hora)
+        this._loadAvailableSalons()
+    }
+    document.getElementById('emergente-fecha')?.addEventListener('change', onRescheduleChange)
+    document.getElementById('emergente-hora')?.addEventListener('change', onRescheduleChange)
 
     // ── Motivo ──
     document.getElementById('motivo')?.addEventListener('input', (e) => {
-      this.state.motivo = e.target.value;
-      const count = document.getElementById('motivo-count');
-      if (count) count.textContent = String(e.target.value.length);
-    });
+      this.state.motivo = e.target.value
+      const count = document.getElementById('motivo-count')
+      if (count) count.textContent = String(e.target.value.length)
+    })
 
     // ── Notify director ──
     document.getElementById('notify-director')?.addEventListener('change', (e) => {
-      this.state.notifyDirector = e.target.checked;
-    });
+      this.state.notifyDirector = e.target.checked
+    })
 
     // ── File upload ──
     document.getElementById('am-file-drop')?.addEventListener('click', () => {
-      document.getElementById('archivo-soporte')?.click();
-    });
+      document.getElementById('archivo-soporte')?.click()
+    })
     document.getElementById('archivo-soporte')?.addEventListener('change', (e) => {
-      const file = e.target.files?.[0] || null;
-      this.state.archivo.file = file;
-      const nameEl = document.getElementById('am-file-name');
-      if (nameEl) nameEl.textContent = file ? file.name : 'PDF, JPG o PNG · máx. 5 MB';
-    });
+      const file = e.target.files?.[0] || null
+      this.state.archivo.file = file
+      const nameEl = document.getElementById('am-file-name')
+      if (nameEl) nameEl.textContent = file ? file.name : 'PDF, JPG o PNG · máx. 5 MB'
+    })
   }
 
   async _loadAffectedClasses() {
-    const container = document.getElementById('clases-afectadas-container');
-    if (!container) return;
+    const container = document.getElementById('clases-afectadas-container')
+    if (!container) return
 
-    container.innerHTML = '<p style="color:var(--pm-text-muted);">Cargando clases...</p>';
+    container.innerHTML = '<p style="color:var(--pm-text-muted);">Cargando clases...</p>'
 
     try {
       const classes = await findAffectedClasses(
         this.maestro.id,
         this.state.fechaInicio,
         this.state.fechaFin,
-      );
+      )
 
-      this.state.clasesAfectadas = classes.map(c => ({ ...c, actividadReemplazo: c.actividadReemplazo || '' }));
+      this.state.clasesAfectadas = classes.map((c) => ({
+        ...c,
+        actividadReemplazo: c.actividadReemplazo || '',
+      }))
 
       if (classes.length === 0) {
-        container.innerHTML = '<p style="color:var(--pm-text-muted);">No hay clases en el período seleccionado.</p>';
-        return;
+        container.innerHTML =
+          '<p style="color:var(--pm-text-muted);">No hay clases en el período seleccionado.</p>'
+        return
       }
 
-      container.innerHTML = classes.map((clase) => `
+      container.innerHTML = classes
+        .map(
+          (clase) => `
         <div class="pm-step-card" style="margin-bottom:0.75rem;padding:0.75rem;border:1px solid var(--pm-border);border-radius:8px;">
           <h4 style="margin:0 0 0.25rem;">${escHTML(clase.className || clase.nombre || 'Clase')}</h4>
           <p style="margin:0;color:var(--pm-text-muted);font-size:0.85rem;">${escHTML(clase.sessionDate || clase.fecha || '')} ${escHTML(clase.sessionTime || clase.hora || '')}</p>
@@ -533,105 +565,119 @@ class AusenciaModal {
             style="margin-top:0.5rem;width:100%;min-height:50px;padding:0.4rem;border:1px solid var(--pm-border);border-radius:6px;font-family:inherit;"
           >${escHTML(clase.actividadReemplazo || '')}</textarea>
         </div>
-      `).join('');
+      `,
+        )
+        .join('')
 
       // Bind activity inputs
-      container.querySelectorAll('[data-activity-class-id]').forEach(textarea => {
+      container.querySelectorAll('[data-activity-class-id]').forEach((textarea) => {
         textarea.addEventListener('input', (e) => {
-          const claseId = e.target.dataset.activityClassId;
-          const idx = this.state.clasesAfectadas.findIndex(c => (c.claseId || c.id) === claseId);
-          if (idx !== -1) this.state.clasesAfectadas[idx].actividadReemplazo = e.target.value;
-        });
-      });
+          const claseId = e.target.dataset.activityClassId
+          const idx = this.state.clasesAfectadas.findIndex((c) => (c.claseId || c.id) === claseId)
+          if (idx !== -1) this.state.clasesAfectadas[idx].actividadReemplazo = e.target.value
+        })
+      })
     } catch (error) {
-      console.warn('[AusenciaModal] Error loading affected classes:', error);
-      container.innerHTML = '<p style="color:var(--pm-danger);">Error al cargar las clases.</p>';
+      console.warn('[AusenciaModal] Error loading affected classes:', error)
+      container.innerHTML = '<p style="color:var(--pm-danger);">Error al cargar las clases.</p>'
     }
   }
 
   async _loadAvailableSalons() {
-    const container = document.getElementById('salones-container');
-    if (!container) return;
+    const container = document.getElementById('salones-container')
+    if (!container) return
 
-    container.innerHTML = '<p style="color:var(--pm-text-muted);">Cargando salones...</p>';
+    container.innerHTML = '<p style="color:var(--pm-text-muted);">Cargando salones...</p>'
 
     try {
       const salons = await findAvailableSalons(
         this.state.claseEmergente.fecha,
         this.state.claseEmergente.hora,
-      );
+      )
 
-      this.state.availableSalons = salons;
+      this.state.availableSalons = salons
 
       if (salons.length === 0) {
-        container.innerHTML = '<p style="color:var(--pm-text-muted);">No hay salones disponibles.</p>';
-        return;
+        container.innerHTML =
+          '<p style="color:var(--pm-text-muted);">No hay salones disponibles.</p>'
+        return
       }
 
       container.innerHTML = `
         <div style="margin-top:0.75rem;">
           <h4 style="margin:0 0 0.5rem;font-size:0.9rem;">Salón disponible:</h4>
           <div style="display:flex;flex-direction:column;gap:0.5rem;">
-            ${salons.map(salon => `
+            ${salons
+              .map(
+                (salon) => `
               <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;">
                 <input type="radio" name="salon-emergente" value="${escHTML(salon.id)}"
                   ${this.state.claseEmergente.salonIdNuevo === salon.id ? 'checked' : ''}>
                 <span>${escHTML(salon.nombre)} (cap. ${escHTML(String(salon.capacidad))})</span>
               </label>
-            `).join('')}
+            `,
+              )
+              .join('')}
           </div>
         </div>
-      `;
+      `
 
       // Bind salon selection
-      container.querySelectorAll('[name="salon-emergente"]').forEach(radio => {
+      container.querySelectorAll('[name="salon-emergente"]').forEach((radio) => {
         radio.addEventListener('change', (e) => {
-          this.state.claseEmergente.salonIdNuevo = e.target.value;
-        });
+          this.state.claseEmergente.salonIdNuevo = e.target.value
+        })
         radio.addEventListener('click', (e) => {
-          this.state.claseEmergente.salonIdNuevo = e.target.value;
-        });
-      });
+          this.state.claseEmergente.salonIdNuevo = e.target.value
+        })
+      })
     } catch (error) {
-      console.warn('[AusenciaModal] Error loading salons:', error);
-      container.innerHTML = '<p style="color:var(--pm-danger);">Error al cargar los salones.</p>';
+      console.warn('[AusenciaModal] Error loading salons:', error)
+      container.innerHTML = '<p style="color:var(--pm-danger);">Error al cargar los salones.</p>'
     }
   }
 
   _validate() {
-    const errors = [];
-    if (!this.state.fechaInicio) errors.push('Seleccioná la fecha de inicio');
-    if (!this.state.fechaFin) errors.push('Seleccioná la fecha de fin');
-    if (this.state.fechaInicio && this.state.fechaFin && this.state.fechaInicio > this.state.fechaFin) {
-      errors.push('La fecha final debe ser después de la fecha inicial');
+    const errors = []
+    if (!this.state.fechaInicio) errors.push('Seleccioná la fecha de inicio')
+    if (!this.state.fechaFin) errors.push('Seleccioná la fecha de fin')
+    if (
+      this.state.fechaInicio &&
+      this.state.fechaFin &&
+      this.state.fechaInicio > this.state.fechaFin
+    ) {
+      errors.push('La fecha final debe ser después de la fecha inicial')
     }
     if (!this.state.motivo || this.state.motivo.trim().length === 0) {
-      errors.push('Explicá el motivo de la ausencia');
+      errors.push('Explicá el motivo de la ausencia')
     }
-    return errors;
+    return errors
   }
 
   async _handleSubmit() {
     // Sync DOM values into state
-    const motivoEl = document.getElementById('motivo');
-    if (motivoEl) this.state.motivo = motivoEl.value;
+    const motivoEl = document.getElementById('motivo')
+    if (motivoEl) this.state.motivo = motivoEl.value
 
     if (this.state.duracion === 'dia') {
-      const unica = document.getElementById('fecha-unica')?.value;
-      if (unica) { this.state.fechaInicio = unica; this.state.fechaFin = unica; }
+      const unica = document.getElementById('fecha-unica')?.value
+      if (unica) {
+        this.state.fechaInicio = unica
+        this.state.fechaFin = unica
+      }
     } else {
-      const fi = document.getElementById('fecha-inicio')?.value;
-      const ff = document.getElementById('fecha-fin')?.value;
-      if (fi) this.state.fechaInicio = fi;
-      if (ff) this.state.fechaFin = ff;
+      const fi = document.getElementById('fecha-inicio')?.value
+      const ff = document.getElementById('fecha-fin')?.value
+      if (fi) this.state.fechaInicio = fi
+      if (ff) this.state.fechaFin = ff
     }
 
-    const errors = this._validate();
+    const errors = this._validate()
 
     if (errors.length > 0) {
-      const errDiv = document.getElementById('ausencia-errors');
-      if (errDiv) errDiv.textContent = errors.join('; ');
-      return false;
+      const errDiv = document.getElementById('ausencia-errors')
+      if (errDiv) errDiv.textContent = errors.join('; ')
+      return false
     }
 
     try {
@@ -646,43 +692,43 @@ class AusenciaModal {
         clasesAfectadas: this.state.clasesAfectadas,
         coverageType: this.state.coverageType,
         claseEmergente: this.state.claseEmergente,
-      });
+      })
 
-      const whatsappText = result?.whatsappText || '';
-      this.state.whatsappText = whatsappText;
-      this.state.submitted = true;
+      const whatsappText = result?.whatsappText || ''
+      this.state.whatsappText = whatsappText
+      this.state.submitted = true
 
       // Replace modal body with success view (no AppModal.updateBody — inject directly)
-      const body = document.querySelector('.app-modal-body');
+      const body = document.querySelector('.app-modal-body')
       if (body) {
-        body.innerHTML = this._renderSuccess(whatsappText);
-        this._attachSuccessEvents(body, whatsappText);
+        body.innerHTML = this._renderSuccess(whatsappText)
+        this._attachSuccessEvents(body, whatsappText)
       }
 
-      AppModal.resetSaveBtn('Cerrar');
+      AppModal.resetSaveBtn('Cerrar')
     } catch (error) {
-      console.error('[AusenciaModal] Error submitting form:', error);
-      AppToast.error('Error al enviar la solicitud');
+      console.error('[AusenciaModal] Error submitting form:', error)
+      AppToast.error('Error al enviar la solicitud')
     }
 
-    return false;
+    return false
   }
 
   _attachSuccessEvents(container, whatsappText) {
     container.querySelector('#copy-whatsapp')?.addEventListener('click', async () => {
       try {
-        await navigator.clipboard.writeText(whatsappText);
-        AppToast.success('Mensaje copiado');
+        await navigator.clipboard.writeText(whatsappText)
+        AppToast.success('Mensaje copiado')
       } catch {
-        AppToast.error('No se pudo copiar el mensaje');
+        AppToast.error('No se pudo copiar el mensaje')
       }
-    });
+    })
 
     container.querySelector('#open-whatsapp-btn')?.addEventListener('click', () => {
-      const encoded = encodeURIComponent(whatsappText);
-      window.open(`https://wa.me/?text=${encoded}`, '_blank', 'noopener,noreferrer');
-    });
+      const encoded = encodeURIComponent(whatsappText)
+      window.open(`https://wa.me/?text=${encoded}`, '_blank', 'noopener,noreferrer')
+    })
   }
 }
 
-export const ausenciaModal = new AusenciaModal();
+export const ausenciaModal = new AusenciaModal()

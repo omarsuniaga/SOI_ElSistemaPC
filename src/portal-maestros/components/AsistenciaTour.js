@@ -25,38 +25,38 @@ const DEFAULT_STEPS = [
   {
     target: '.pm-asist-header',
     title: '📍 Cabecera de Clase',
-    body: 'Aquí puede ver los datos de la clase, el salón y la fecha. Es su panel de control principal.'
+    body: 'Aquí puede ver los datos de la clase, el salón y la fecha. Es su panel de control principal.',
   },
   {
     target: '.pm-asist-bulk-circles',
     title: '👥 Asistencia Rápida',
-    body: '¿Asistieron todos? Presione "P" para marcar a todos los alumnos como presentes en un solo clic.'
+    body: '¿Asistieron todos? Presione "P" para marcar a todos los alumnos como presentes en un solo clic.',
   },
   {
     target: '#pm-alumnos-list',
     title: '🙋‍♂️ Lista de Alumnos',
-    body: 'Presione el círculo de cada alumno para cambiar entre Presente, Ausente o Retraso.'
+    body: 'Presione el círculo de cada alumno para cambiar entre Presente, Ausente o Retraso.',
   },
   {
     target: '#pm-planificacion-card',
     title: '🗺️ Planificación Académica',
-    body: 'Seleccione una Ruta o busque en la Biblioteca. Los temas que ya impartió aparecerán con un check ✅ verde.'
+    body: 'Seleccione una Ruta o busque en la Biblioteca. Los temas que ya impartió aparecerán con un check ✅ verde.',
   },
   {
     target: '#pm-dsl-toolbar-container',
     title: '🛠️ Caja de Herramientas',
-    body: 'Use el micrófono 🎤 para dictar la clase, o el botón de IA ✨ para mejorar y profesionalizar su redacción automáticamente.'
+    body: 'Use el micrófono 🎤 para dictar la clase, o el botón de IA ✨ para mejorar y profesionalizar su redacción automáticamente.',
   },
   {
     target: '#pm-dsl-editor-container',
     title: '✍️ Escritura Inteligente (DSL)',
-    body: 'Use [Corchetes] para vincular temas de la planificación y asteriscos * para puntos clave. La IA le ayudará a darle formato profesional.'
+    body: 'Use [Corchetes] para vincular temas de la planificación y asteriscos * para puntos clave. La IA le ayudará a darle formato profesional.',
   },
   {
     target: '#btn-guardar',
     title: '💾 Guardar Sesión',
-    body: 'Al finalizar, no olvide guardar su sesión para que el progreso de los alumnos se registre en el sistema.'
-  }
+    body: 'Al finalizar, no olvide guardar su sesión para que el progreso de los alumnos se registre en el sistema.',
+  },
 ]
 
 const CSS = `
@@ -112,15 +112,15 @@ export class AsistenciaTour {
    * @param {Array}       steps      — pasos del tour (opcional, usa DEFAULT_STEPS)
    */
   constructor(container, steps = DEFAULT_STEPS) {
-    this._container  = container
-    this._steps      = steps
-    this._step       = 0
-    this._autoTimer  = null
-    this._overlay    = null
-    this._spotlight  = null
-    this._tooltip    = null
-    this._mounted    = false
-    this._styleEl    = null
+    this._container = container
+    this._steps = steps
+    this._step = 0
+    this._autoTimer = null
+    this._overlay = null
+    this._spotlight = null
+    this._tooltip = null
+    this._mounted = false
+    this._styleEl = null
   }
 
   // ── Public API ────────────────────────────────────────────────────────────
@@ -144,9 +144,9 @@ export class AsistenciaTour {
     this._step = 0
 
     // Mostrar todos los elementos del tour
-    this._tooltip.style.display   = 'block'
+    this._tooltip.style.display = 'block'
     this._spotlight.style.display = 'block'
-    this._overlay.style.display   = 'block'
+    this._overlay.style.display = 'block'
 
     // Forzar reflow antes de transición
     // eslint-disable-next-line no-unused-expressions
@@ -174,18 +174,27 @@ export class AsistenciaTour {
     // 2. Ocultar overlay inmediatamente (sin animación) para no bloquear la app
     if (this._overlay) {
       this._overlay.style.transition = 'none'
-      this._overlay.style.opacity    = '0'
-      this._overlay.style.display    = 'none'
+      this._overlay.style.opacity = '0'
+      this._overlay.style.display = 'none'
       this._overlay.remove()
       this._overlay = null
     }
 
     // 3. Spotlight y tooltip son hijos del body — removerlos también
-    if (this._spotlight) { this._spotlight.remove(); this._spotlight = null }
-    if (this._tooltip)   { this._tooltip.remove();   this._tooltip   = null }
+    if (this._spotlight) {
+      this._spotlight.remove()
+      this._spotlight = null
+    }
+    if (this._tooltip) {
+      this._tooltip.remove()
+      this._tooltip = null
+    }
 
     // 4. Remover estilos inyectados
-    if (this._styleEl) { this._styleEl.remove(); this._styleEl = null }
+    if (this._styleEl) {
+      this._styleEl.remove()
+      this._styleEl = null
+    }
 
     this._mounted = false
   }
@@ -210,7 +219,7 @@ export class AsistenciaTour {
     document.getElementById('pm-tour-tooltip')?.remove()
 
     const overlay = document.createElement('div')
-    overlay.id        = 'pm-tour-overlay'
+    overlay.id = 'pm-tour-overlay'
     overlay.className = 'pm-tour-overlay'
     overlay.setAttribute('role', 'dialog')
     overlay.setAttribute('aria-modal', 'true')
@@ -219,16 +228,16 @@ export class AsistenciaTour {
     this._overlay = overlay
 
     const spotlight = document.createElement('div')
-    spotlight.id        = 'pm-tour-spotlight'
+    spotlight.id = 'pm-tour-spotlight'
     spotlight.className = 'pm-tour-spotlight'
-    spotlight.style.display = 'none'   // oculto hasta que el tour arranque
+    spotlight.style.display = 'none' // oculto hasta que el tour arranque
     document.body.appendChild(spotlight)
     this._spotlight = spotlight
 
     const tooltip = document.createElement('div')
-    tooltip.id        = 'pm-tour-tooltip'
+    tooltip.id = 'pm-tour-tooltip'
     tooltip.className = 'pm-tour-tooltip'
-    tooltip.style.display = 'none'     // oculto hasta que el tour arranque
+    tooltip.style.display = 'none' // oculto hasta que el tour arranque
     tooltip.innerHTML = `
       <h4 id="pm-tour-title"></h4>
       <p  id="pm-tour-body"></p>
@@ -249,20 +258,27 @@ export class AsistenciaTour {
     this._tooltip.querySelector('#pm-tour-skip').addEventListener('click', () => this._close())
 
     // Cerrar con Escape
-    this._onKeydown = (e) => { if (e.key === 'Escape') this._close() }
+    this._onKeydown = (e) => {
+      if (e.key === 'Escape') this._close()
+    }
     document.addEventListener('keydown', this._onKeydown)
 
     // Re-posicionar en resize
-    this._onResize = () => { if (this._overlay?.style.display !== 'none') this._showStep(this._step) }
+    this._onResize = () => {
+      if (this._overlay?.style.display !== 'none') this._showStep(this._step)
+    }
     window.addEventListener('resize', this._onResize, { passive: true })
   }
 
   _showStep(index) {
-    const step     = this._steps[index]
+    const step = this._steps[index]
     const targetEl = this._container.querySelector(step.target)
 
     // Si el elemento no existe en este paso, saltar al siguiente
-    if (!targetEl) { this._nextStep(); return }
+    if (!targetEl) {
+      this._nextStep()
+      return
+    }
 
     // Scroll suave al elemento
     targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' })
@@ -276,34 +292,35 @@ export class AsistenciaTour {
     // El overlay, spotlight y tooltip son position:fixed → viven en el mismo
     // sistema de coordenadas. NO sumar scrollY.
     const rect = targetEl.getBoundingClientRect()
-    const PAD  = 10
+    const PAD = 10
 
     // Spotlight
-    this._spotlight.style.width  = `${rect.width  + PAD * 2}px`
+    this._spotlight.style.width = `${rect.width + PAD * 2}px`
     this._spotlight.style.height = `${rect.height + PAD * 2}px`
-    this._spotlight.style.top    = `${rect.top    - PAD}px`
-    this._spotlight.style.left   = `${rect.left   - PAD}px`
+    this._spotlight.style.top = `${rect.top - PAD}px`
+    this._spotlight.style.left = `${rect.left - PAD}px`
 
     // Tooltip: intentar abajo del elemento; si no cabe, arriba
-    const TIP_H  = 200
-    const TIP_W  = 280
+    const TIP_H = 200
+    const TIP_W = 280
     const margin = 16
 
-    let tipTop  = rect.bottom + margin
+    let tipTop = rect.bottom + margin
     if (tipTop + TIP_H > window.innerHeight) {
       tipTop = rect.top - TIP_H - margin
     }
     // Clamp horizontal para que no salga de pantalla
     const tipLeft = Math.max(margin, Math.min(window.innerWidth - TIP_W - margin, rect.left))
 
-    this._tooltip.style.top  = `${tipTop}px`
+    this._tooltip.style.top = `${tipTop}px`
     this._tooltip.style.left = `${tipLeft}px`
 
     // Contenido
-    this._tooltip.querySelector('#pm-tour-title').innerHTML    = `<span>${step.title}</span>`
-    this._tooltip.querySelector('#pm-tour-body').textContent   = step.body
-    this._tooltip.querySelector('#pm-tour-progress').textContent = `${index + 1} / ${this._steps.length}`
-    this._tooltip.querySelector('#pm-tour-next').textContent   =
+    this._tooltip.querySelector('#pm-tour-title').innerHTML = `<span>${step.title}</span>`
+    this._tooltip.querySelector('#pm-tour-body').textContent = step.body
+    this._tooltip.querySelector('#pm-tour-progress').textContent =
+      `${index + 1} / ${this._steps.length}`
+    this._tooltip.querySelector('#pm-tour-next').textContent =
       index === this._steps.length - 1 ? 'Finalizar ✓' : 'Siguiente →'
   }
 
@@ -324,12 +341,16 @@ export class AsistenciaTour {
 
     // Remover listeners
     if (this._onKeydown) document.removeEventListener('keydown', this._onKeydown)
-    if (this._onResize)  window.removeEventListener('resize',   this._onResize)
+    if (this._onResize) window.removeEventListener('resize', this._onResize)
 
     // Ocultar tooltip y spotlight inmediatamente — son position:fixed en body
     // y tienen pointer-events:auto, así que deben desaparecer al instante
-    if (this._tooltip)   { this._tooltip.style.display   = 'none' }
-    if (this._spotlight) { this._spotlight.style.display = 'none' }
+    if (this._tooltip) {
+      this._tooltip.style.display = 'none'
+    }
+    if (this._spotlight) {
+      this._spotlight.style.display = 'none'
+    }
 
     // Fade-out del overlay y luego ocultarlo
     this._overlay.style.opacity = '0'

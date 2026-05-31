@@ -79,15 +79,19 @@ function renderSinPermiso(container, permisos, maestroId) {
           Para poder registrar nuevos alumnos en el sistema y asignarlos a tus clases, necesitás tener activo el permiso de inscripción.
         </p>
         <div id="pm-register-action-container">
-          ${pending ? `
+          ${
+            pending
+              ? `
             <div style="background: rgba(234, 179, 8, 0.1); border: 1px solid rgba(234, 179, 8, 0.3); padding: 0.85rem; border-radius: 10px; display: inline-flex; align-items: center; gap: 8px; color: #eab308; font-weight: 600; font-size: 0.85rem;">
               <i class="bi bi-clock-history"></i> Solicitud Pendiente de Aprobación
             </div>
-          ` : `
+          `
+              : `
             <button class="btn-apple-primary" id="btn-solicitar-acceso-registro" style="padding: 0.6rem 1.5rem; font-size: 0.9rem;">
               <i class="bi bi-send-fill" style="margin-right: 6px;"></i> Solicitar Permiso de Registro
             </button>
-          `}
+          `
+          }
         </div>
       </div>
     </div>`
@@ -102,10 +106,12 @@ function renderSinPermiso(container, permisos, maestroId) {
       try {
         const { solicitarPermiso } = await import('../services/permisoService.js')
         await solicitarPermiso(maestroId, 'alumnos:create')
-        
-        window.dispatchEvent(new CustomEvent('showToast', {
-          detail: { message: 'Solicitud de permiso enviada correctamente.', type: 'success' }
-        }))
+
+        window.dispatchEvent(
+          new CustomEvent('showToast', {
+            detail: { message: 'Solicitud de permiso enviada correctamente.', type: 'success' },
+          }),
+        )
 
         // Update view state dynamically
         const actionContainer = document.getElementById('pm-register-action-container')
@@ -116,16 +122,17 @@ function renderSinPermiso(container, permisos, maestroId) {
             </div>`
         }
       } catch (err) {
-        window.dispatchEvent(new CustomEvent('showToast', {
-          detail: { message: 'Error al solicitar: ' + err.message, type: 'danger' }
-        }))
+        window.dispatchEvent(
+          new CustomEvent('showToast', {
+            detail: { message: 'Error al solicitar: ' + err.message, type: 'danger' },
+          }),
+        )
         btn.disabled = false
         btn.innerHTML = originalHtml
       }
     })
   }
 }
-
 
 // ─── FORMULARIO (APPLE CARD DESIGN) ─────────────────────────
 function renderForm(container) {
@@ -209,9 +216,12 @@ function renderForm(container) {
               <label for="reg-clase" class="apple-caption">Clase</label>
               <select class="input-apple" id="reg-clase">
                 <option value="">Sin clase (solo registro)</option>
-                ${viewState.clases.map(c =>
-                  `<option value="${escHTML(c.id)}">${escHTML(c.nombre || 'Clase sin nombre')}</option>`
-                ).join('')}
+                ${viewState.clases
+                  .map(
+                    (c) =>
+                      `<option value="${escHTML(c.id)}">${escHTML(c.nombre || 'Clase sin nombre')}</option>`,
+                  )
+                  .join('')}
               </select>
               ${viewState.clases.length === 0 ? '<p class="apple-caption" style="color:var(--pm-warning); margin-top:0.25rem;"><i class="bi bi-exclamation-triangle"></i> No tienes clases asignadas</p>' : ''}
             </div>
@@ -275,44 +285,92 @@ function getFormData() {
   const direccion = document.getElementById('reg-direccion')?.value.trim()
   const claseId = document.getElementById('reg-clase')?.value
 
-  return { nombre, fechaNac, instrumento, repNombre, repTlf, repCedula, repEmail, direccion, claseId }
+  return {
+    nombre,
+    fechaNac,
+    instrumento,
+    repNombre,
+    repTlf,
+    repCedula,
+    repEmail,
+    direccion,
+    claseId,
+  }
 }
 
 function validateForm(data) {
   const errors = [] // { fieldId: string, message: string }
 
-  if (!data.nombre) errors.push({ fieldId: 'reg-nombre', message: 'El nombre del alumno es obligatorio' })
-  else if (data.nombre.length < 3) errors.push({ fieldId: 'reg-nombre', message: 'El nombre debe tener al menos 3 caracteres' })
-  else if (data.nombre.length > 100) errors.push({ fieldId: 'reg-nombre', message: 'El nombre no puede exceder 100 caracteres' })
+  if (!data.nombre)
+    errors.push({ fieldId: 'reg-nombre', message: 'El nombre del alumno es obligatorio' })
+  else if (data.nombre.length < 3)
+    errors.push({ fieldId: 'reg-nombre', message: 'El nombre debe tener al menos 3 caracteres' })
+  else if (data.nombre.length > 100)
+    errors.push({ fieldId: 'reg-nombre', message: 'El nombre no puede exceder 100 caracteres' })
 
-  if (!data.fechaNac) errors.push({ fieldId: 'reg-fecha-nac', message: 'La fecha de nacimiento es obligatoria' })
+  if (!data.fechaNac)
+    errors.push({ fieldId: 'reg-fecha-nac', message: 'La fecha de nacimiento es obligatoria' })
   else {
     const fecha = new Date(data.fechaNac)
     const hoy = new Date()
-    if (fecha > hoy) errors.push({ fieldId: 'reg-fecha-nac', message: 'La fecha de nacimiento no puede ser futura' })
+    if (fecha > hoy)
+      errors.push({
+        fieldId: 'reg-fecha-nac',
+        message: 'La fecha de nacimiento no puede ser futura',
+      })
     const edad = hoy.getFullYear() - fecha.getFullYear()
-    if (edad < 3) errors.push({ fieldId: 'reg-fecha-nac', message: 'El alumno debe tener mínimo 3 años' })
-    if (edad > 100) errors.push({ fieldId: 'reg-fecha-nac', message: 'Verifica la fecha de nacimiento' })
+    if (edad < 3)
+      errors.push({ fieldId: 'reg-fecha-nac', message: 'El alumno debe tener mínimo 3 años' })
+    if (edad > 100)
+      errors.push({ fieldId: 'reg-fecha-nac', message: 'Verifica la fecha de nacimiento' })
   }
 
-  if (!data.instrumento) errors.push({ fieldId: 'reg-instrumento', message: 'El instrumento principal es obligatorio' })
-  else if (data.instrumento.length > 100) errors.push({ fieldId: 'reg-instrumento', message: 'El instrumento no puede exceder 100 caracteres' })
+  if (!data.instrumento)
+    errors.push({ fieldId: 'reg-instrumento', message: 'El instrumento principal es obligatorio' })
+  else if (data.instrumento.length > 100)
+    errors.push({
+      fieldId: 'reg-instrumento',
+      message: 'El instrumento no puede exceder 100 caracteres',
+    })
 
-  if (!data.repNombre) errors.push({ fieldId: 'reg-rep-nombre', message: 'El nombre del representante es obligatorio' })
-  else if (data.repNombre.length > 100) errors.push({ fieldId: 'reg-rep-nombre', message: 'El nombre del representante no puede exceder 100 caracteres' })
+  if (!data.repNombre)
+    errors.push({
+      fieldId: 'reg-rep-nombre',
+      message: 'El nombre del representante es obligatorio',
+    })
+  else if (data.repNombre.length > 100)
+    errors.push({
+      fieldId: 'reg-rep-nombre',
+      message: 'El nombre del representante no puede exceder 100 caracteres',
+    })
 
-  if (!data.repTlf) errors.push({ fieldId: 'reg-rep-tlf', message: 'El teléfono del representante es obligatorio' })
-  else if (data.repTlf.length > 20) errors.push({ fieldId: 'reg-rep-tlf', message: 'El teléfono no puede exceder 20 caracteres' })
+  if (!data.repTlf)
+    errors.push({ fieldId: 'reg-rep-tlf', message: 'El teléfono del representante es obligatorio' })
+  else if (data.repTlf.length > 20)
+    errors.push({ fieldId: 'reg-rep-tlf', message: 'El teléfono no puede exceder 20 caracteres' })
 
-  if (data.repCedula && data.repCedula.length > 20) errors.push({ fieldId: 'reg-rep-cedula', message: 'La cédula no puede exceder 20 caracteres' })
+  if (data.repCedula && data.repCedula.length > 20)
+    errors.push({ fieldId: 'reg-rep-cedula', message: 'La cédula no puede exceder 20 caracteres' })
 
   if (data.repEmail) {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    if (!emailRegex.test(data.repEmail)) errors.push({ fieldId: 'reg-rep-email', message: 'El formato del correo electrónico no es válido' })
-    else if (data.repEmail.length > 100) errors.push({ fieldId: 'reg-rep-email', message: 'El correo no puede exceder 100 caracteres' })
+    if (!emailRegex.test(data.repEmail))
+      errors.push({
+        fieldId: 'reg-rep-email',
+        message: 'El formato del correo electrónico no es válido',
+      })
+    else if (data.repEmail.length > 100)
+      errors.push({
+        fieldId: 'reg-rep-email',
+        message: 'El correo no puede exceder 100 caracteres',
+      })
   }
 
-  if (data.direccion && data.direccion.length > 255) errors.push({ fieldId: 'reg-direccion', message: 'La dirección no puede exceder 255 caracteres' })
+  if (data.direccion && data.direccion.length > 255)
+    errors.push({
+      fieldId: 'reg-direccion',
+      message: 'La dirección no puede exceder 255 caracteres',
+    })
 
   return errors
 }
@@ -321,9 +379,11 @@ function validateForm(data) {
 function initListeners() {
   document.getElementById('btn-registrar-alumno')?.addEventListener('click', handleSubmit)
   document.getElementById('btn-cancelar-registro')?.addEventListener('click', () => {
-    window.dispatchEvent(new CustomEvent('showToast', {
-      detail: { message: 'Registro cancelado', type: 'info' }
-    }))
+    window.dispatchEvent(
+      new CustomEvent('showToast', {
+        detail: { message: 'Registro cancelado', type: 'info' },
+      }),
+    )
     window.location.hash = '#/hoy'
   })
 }
@@ -337,7 +397,7 @@ async function handleSubmit() {
   if (errors.length > 0) {
     // Clear previous inline errors and set new field-specific errors
     clearAllFieldErrors(document.getElementById('reg-nombre')?.closest('.pm-settings') || document)
-    errors.forEach(err => {
+    errors.forEach((err) => {
       const inputEl = document.getElementById(err.fieldId)
       if (inputEl) setFieldError(inputEl, err.message)
     })
@@ -348,9 +408,14 @@ async function handleSubmit() {
   if (data.repEmail) {
     const emailExiste = await validarEmail(data.repEmail)
     if (emailExiste) {
-      window.dispatchEvent(new CustomEvent('showToast', {
-        detail: { message: 'El correo del representante ya está registrado en el sistema', type: 'danger' }
-      }))
+      window.dispatchEvent(
+        new CustomEvent('showToast', {
+          detail: {
+            message: 'El correo del representante ya está registrado en el sistema',
+            type: 'danger',
+          },
+        }),
+      )
       viewState.submitting = false
       return
     }
@@ -359,9 +424,14 @@ async function handleSubmit() {
   if (data.repCedula) {
     const cedulaExiste = await validarCedula(data.repCedula)
     if (cedulaExiste) {
-      window.dispatchEvent(new CustomEvent('showToast', {
-        detail: { message: 'La cédula del representante ya está registrada en el sistema', type: 'danger' }
-      }))
+      window.dispatchEvent(
+        new CustomEvent('showToast', {
+          detail: {
+            message: 'La cédula del representante ya está registrada en el sistema',
+            type: 'danger',
+          },
+        }),
+      )
       viewState.submitting = false
       return
     }
@@ -408,9 +478,11 @@ async function handleSubmit() {
       }
     }
 
-    window.dispatchEvent(new CustomEvent('showToast', {
-      detail: { message: `Alumno ${data.nombre} registrado exitosamente`, type: 'success' }
-    }))
+    window.dispatchEvent(
+      new CustomEvent('showToast', {
+        detail: { message: `Alumno ${data.nombre} registrado exitosamente`, type: 'success' },
+      }),
+    )
 
     // Reset form
     document.getElementById('reg-nombre').value = ''
@@ -422,11 +494,12 @@ async function handleSubmit() {
     document.getElementById('reg-rep-email').value = ''
     document.getElementById('reg-direccion').value = ''
     document.getElementById('reg-clase').value = ''
-
   } catch (err) {
-    window.dispatchEvent(new CustomEvent('showToast', {
-      detail: { message: 'Error al registrar: ' + err.message, type: 'danger' }
-    }))
+    window.dispatchEvent(
+      new CustomEvent('showToast', {
+        detail: { message: 'Error al registrar: ' + err.message, type: 'danger' },
+      }),
+    )
   } finally {
     viewState.submitting = false
     btn.disabled = false

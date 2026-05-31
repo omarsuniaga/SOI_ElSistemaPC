@@ -3,26 +3,26 @@
  * Aparece debajo del cursor cuando el usuario escribe un trigger (#, [, (, {, $, >)
  */
 
-let popupEl = null;
-let currentOptions = [];
-let currentCallback = null;
-let selectedIndex = -1;
-let isVisible = false;
-let triggerType = null;
-let isDragging = false;
-let dragOffsetX = 0;
-let dragOffsetY = 0;
-let initialPos = { x: 0, y: 0 };
+let popupEl = null
+let currentOptions = []
+let currentCallback = null
+let selectedIndex = -1
+let isVisible = false
+let triggerType = null
+let isDragging = false
+let dragOffsetX = 0
+let dragOffsetY = 0
+let initialPos = { x: 0, y: 0 }
 
 /**
  * Crea e inicializa el popup de autocompletado
  */
 function initPopup() {
-  if (popupEl) return;
-  
-  popupEl = document.createElement('div');
-  popupEl.id = 'pm-autocomplete-popup';
-  popupEl.className = 'pm-autocomplete-popup';
+  if (popupEl) return
+
+  popupEl = document.createElement('div')
+  popupEl.id = 'pm-autocomplete-popup'
+  popupEl.className = 'pm-autocomplete-popup'
   popupEl.style.cssText = `
     position: fixed;
     display: none;
@@ -38,12 +38,12 @@ function initPopup() {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     animation: pm-ac-fadein 0.15s ease-out;
     user-select: none;
-  `;
-  
+  `
+
   // Agregar animación si no existe
   if (!document.getElementById('pm-ac-styles')) {
-    const style = document.createElement('style');
-    style.id = 'pm-ac-styles';
+    const style = document.createElement('style')
+    style.id = 'pm-ac-styles'
     style.textContent = `
       @keyframes pm-ac-fadein {
         from { opacity: 0; transform: translateY(-8px); }
@@ -138,11 +138,11 @@ function initPopup() {
         color: var(--pm-text-muted, #888);
         font-size: 13px;
       }
-    `;
-    document.head.appendChild(style);
+    `
+    document.head.appendChild(style)
   }
-  
-  document.body.appendChild(popupEl);
+
+  document.body.appendChild(popupEl)
 }
 
 /**
@@ -152,71 +152,71 @@ function initPopup() {
  * @param {Object} config - Configuración adicional { trigger, position }
  */
 export function show(options, callback, config = {}) {
-  initPopup();
-  
-  currentOptions = options || [];
-  currentCallback = callback;
-  triggerType = config.trigger || null;
-  selectedIndex = -1;
-  isVisible = true;
-  
-  render(options);
-  
+  initPopup()
+
+  currentOptions = options || []
+  currentCallback = callback
+  triggerType = config.trigger || null
+  selectedIndex = -1
+  isVisible = true
+
+  render(options)
+
   // Posicionar con smart placement (evitar solapamiento con menús)
   if (config.position) {
-    const pos = config.position;
-    const viewportW = window.innerWidth;
-    const viewportH = window.innerHeight;
-    const popupW = 320;
-    const popupH = 280;
-    
-    let left = pos.x;
-    let top = pos.y + 20;
-    
+    const pos = config.position
+    const viewportW = window.innerWidth
+    const viewportH = window.innerHeight
+    const popupW = 320
+    const popupH = 280
+
+    let left = pos.x
+    let top = pos.y + 20
+
     // Si se sale por la derecha, mostrar a la izquierda del cursor
     if (left + popupW > viewportW - 20) {
-      left = Math.max(10, pos.x - popupW - 10);
+      left = Math.max(10, pos.x - popupW - 10)
     }
-    
+
     // Si se sale por abajo, mostrar arriba del cursor
     if (top + popupH > viewportH - 20) {
-      top = Math.max(10, pos.y - popupH - 10);
+      top = Math.max(10, pos.y - popupH - 10)
     }
-    
-    popupEl.style.left = `${left}px`;
-    popupEl.style.top = `${top}px`;
-    initialPos = { x: left, y: top };
+
+    popupEl.style.left = `${left}px`
+    popupEl.style.top = `${top}px`
+    initialPos = { x: left, y: top }
   }
-  
+
   // Agregar listeners de drag
-  popupEl.onmousedown = _startDrag;
-  document.addEventListener('mousemove', _onDrag);
-  document.addEventListener('mouseup', _endDrag);
-  
-  popupEl.style.display = 'block';
+  popupEl.onmousedown = _startDrag
+  document.addEventListener('mousemove', _onDrag)
+  document.addEventListener('mouseup', _endDrag)
+
+  popupEl.style.display = 'block'
 }
 
 function _startDrag(e) {
-  if (e.target.closest('.pm-ac-option')) return;
-  isDragging = true;
-  dragOffsetX = e.clientX - popupEl.offsetLeft;
-  dragOffsetY = e.clientY - popupEl.offsetTop;
-  popupEl.style.cursor = 'grabbing';
-  popupEl.style.transition = 'none';
+  if (e.target.closest('.pm-ac-option')) return
+  isDragging = true
+  dragOffsetX = e.clientX - popupEl.offsetLeft
+  dragOffsetY = e.clientY - popupEl.offsetTop
+  popupEl.style.cursor = 'grabbing'
+  popupEl.style.transition = 'none'
 }
 
 function _onDrag(e) {
-  if (!isDragging) return;
-  const x = e.clientX - dragOffsetX;
-  const y = e.clientY - dragOffsetY;
-  popupEl.style.left = `${Math.max(0, x)}px`;
-  popupEl.style.top = `${Math.max(0, y)}px`;
+  if (!isDragging) return
+  const x = e.clientX - dragOffsetX
+  const y = e.clientY - dragOffsetY
+  popupEl.style.left = `${Math.max(0, x)}px`
+  popupEl.style.top = `${Math.max(0, y)}px`
 }
 
 function _endDrag() {
-  if (!isDragging) return;
-  isDragging = false;
-  popupEl.style.cursor = '';
+  if (!isDragging) return
+  isDragging = false
+  popupEl.style.cursor = ''
 }
 
 /**
@@ -224,55 +224,55 @@ function _endDrag() {
  */
 export function hide() {
   if (popupEl) {
-    popupEl.style.display = 'none';
-    isDragging = false;
-    document.removeEventListener('mousemove', _onDrag);
-    document.removeEventListener('mouseup', _endDrag);
+    popupEl.style.display = 'none'
+    isDragging = false
+    document.removeEventListener('mousemove', _onDrag)
+    document.removeEventListener('mouseup', _endDrag)
   }
-  currentOptions = [];
-  currentCallback = null;
-  selectedIndex = -1;
-  isVisible = false;
-  triggerType = null;
+  currentOptions = []
+  currentCallback = null
+  selectedIndex = -1
+  isVisible = false
+  triggerType = null
 }
 
 /**
  * Actualiza las opciones sin cerrar el popup
- * @param {Array} options 
+ * @param {Array} options
  */
 export function updateOptions(options) {
-  currentOptions = options || [];
-  selectedIndex = -1;
-  render(options);
+  currentOptions = options || []
+  selectedIndex = -1
+  render(options)
 }
 
 /**
  * Renderiza las opciones en el popup
  */
 function render(options) {
-  if (!popupEl) return;
-  
+  if (!popupEl) return
+
   if (!options || options.length === 0) {
     popupEl.innerHTML = `
       <div class="pm-ac-empty">
         <span>No hay opciones disponibles</span>
       </div>
-    `;
-    return;
+    `
+    return
   }
-  
+
   // Determinar el tipo de trigger para mostrar iconos apropiados
-  const headerText = getHeaderText(triggerType);
-  
-  let html = `<div class="pm-ac-header">${headerText}</div>`;
-  
+  const headerText = getHeaderText(triggerType)
+
+  let html = `<div class="pm-ac-header">${headerText}</div>`
+
   options.forEach((opt, idx) => {
-    const label = opt.nombre || opt.name || opt.label || opt.description || '';
-    const sublabel = opt.instrumento || opt.descripcion || opt.codigo || opt.type || '';
-    const isSelected = idx === selectedIndex;
-    const icon = getIcon(triggerType, opt);
-    const badge = opt.is_historial ? '<span class="pm-ac-badge">Reciente</span>' : '';
-    
+    const label = opt.nombre || opt.name || opt.label || opt.description || ''
+    const sublabel = opt.instrumento || opt.descripcion || opt.codigo || opt.type || ''
+    const isSelected = idx === selectedIndex
+    const icon = getIcon(triggerType, opt)
+    const badge = opt.is_historial ? '<span class="pm-ac-badge">Reciente</span>' : ''
+
     html += `
       <div class="pm-ac-option ${isSelected ? 'selected' : ''}" data-index="${idx}">
         <div class="pm-ac-icon">${icon}</div>
@@ -282,18 +282,18 @@ function render(options) {
         </div>
         ${badge}
       </div>
-    `;
-  });
-  
-  popupEl.innerHTML = html;
-  
+    `
+  })
+
+  popupEl.innerHTML = html
+
   // Agregar event listeners
-  popupEl.querySelectorAll('.pm-ac-option').forEach(el => {
+  popupEl.querySelectorAll('.pm-ac-option').forEach((el) => {
     el.addEventListener('click', () => {
-      const idx = parseInt(el.dataset.index, 10);
-      selectOption(idx);
-    });
-  });
+      const idx = parseInt(el.dataset.index, 10)
+      selectOption(idx)
+    })
+  })
 }
 
 /**
@@ -301,13 +301,13 @@ function render(options) {
  */
 function selectOption(index) {
   if (index >= 0 && index < currentOptions.length) {
-    const selected = currentOptions[index];
-    
+    const selected = currentOptions[index]
+
     if (currentCallback) {
-      currentCallback(selected);
+      currentCallback(selected)
     }
-    
-    hide();
+
+    hide()
   }
 }
 
@@ -316,45 +316,45 @@ function selectOption(index) {
  * @param {KeyboardEvent} e
  */
 export function handleKeyDown(e) {
-  if (!isVisible || currentOptions.length === 0) return;
-  
+  if (!isVisible || currentOptions.length === 0) return
+
   switch (e.key) {
     case 'ArrowDown':
-      e.preventDefault();
-      selectedIndex = Math.min(selectedIndex + 1, currentOptions.length - 1);
-      render(currentOptions);
-      scrollToSelected();
-      break;
-      
+      e.preventDefault()
+      selectedIndex = Math.min(selectedIndex + 1, currentOptions.length - 1)
+      render(currentOptions)
+      scrollToSelected()
+      break
+
     case 'ArrowUp':
-      e.preventDefault();
-      selectedIndex = Math.max(selectedIndex - 1, 0);
-      render(currentOptions);
-      scrollToSelected();
-      break;
-      
+      e.preventDefault()
+      selectedIndex = Math.max(selectedIndex - 1, 0)
+      render(currentOptions)
+      scrollToSelected()
+      break
+
     case 'Enter':
-      e.preventDefault();
+      e.preventDefault()
       if (selectedIndex >= 0) {
-        selectOption(selectedIndex);
+        selectOption(selectedIndex)
       } else if (currentOptions.length > 0) {
         // Seleccionar primera si no hay selección
-        selectOption(0);
+        selectOption(0)
       }
-      break;
-      
+      break
+
     case 'Escape':
-      e.preventDefault();
-      hide();
-      break;
-      
+      e.preventDefault()
+      hide()
+      break
+
     case 'Tab':
       // Completar con primera opción
       if (currentOptions.length > 0 && selectedIndex === -1) {
-        e.preventDefault();
-        selectOption(0);
+        e.preventDefault()
+        selectOption(0)
       }
-      break;
+      break
   }
 }
 
@@ -362,11 +362,11 @@ export function handleKeyDown(e) {
  * Scroll hacia la opción seleccionada
  */
 function scrollToSelected() {
-  if (!popupEl || selectedIndex < 0) return;
-  
-  const selectedEl = popupEl.querySelector(`.pm-ac-option[data-index="${selectedIndex}"]`);
+  if (!popupEl || selectedIndex < 0) return
+
+  const selectedEl = popupEl.querySelector(`.pm-ac-option[data-index="${selectedIndex}"]`)
   if (selectedEl) {
-    selectedEl.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    selectedEl.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
   }
 }
 
@@ -375,13 +375,20 @@ function scrollToSelected() {
  */
 function getHeaderText(trigger) {
   switch (trigger) {
-    case '#': return '👤 Alumnos';
-    case '[': return '📚 Contenidos';
-    case '(': return '💡 Sugerencias';
-    case '{': return '📝 Tareas';
-    case '$': return '🎯 Medidas';
-    case '>': return '🎓 Objetivos';
-    default: return 'Opciones';
+    case '#':
+      return '👤 Alumnos'
+    case '[':
+      return '📚 Contenidos'
+    case '(':
+      return '💡 Sugerencias'
+    case '{':
+      return '📝 Tareas'
+    case '$':
+      return '🎯 Medidas'
+    case '>':
+      return '🎓 Objetivos'
+    default:
+      return 'Opciones'
   }
 }
 
@@ -391,28 +398,28 @@ function getHeaderText(trigger) {
 function getIcon(trigger, opt) {
   // Para alumnos: "todos" usa emoji de grupo, el resto muestra inicial
   if (trigger === '#') {
-    const nombre = opt.nombre || opt.name || '';
-    if (opt.value === 'todos' || nombre.toLowerCase() === 'todos') return '👥';
-    return nombre.charAt(0).toUpperCase();
+    const nombre = opt.nombre || opt.name || ''
+    if (opt.value === 'todos' || nombre.toLowerCase() === 'todos') return '👥'
+    return nombre.charAt(0).toUpperCase()
   }
-  
+
   // Para medidas técnicas
   if (trigger === '$') {
-    return '🎯';
+    return '🎯'
   }
-  
+
   // Para niveles
   if (trigger === '>' && opt.level_number) {
-    return opt.level_number;
+    return opt.level_number
   }
-  
+
   // Para nodos
   if (trigger === '>' && opt.type) {
-    return getNodeEmoji(opt.type);
+    return getNodeEmoji(opt.type)
   }
-  
+
   // Default
-  return '•';
+  return '•'
 }
 
 /**
@@ -420,55 +427,55 @@ function getIcon(trigger, opt) {
  */
 function getNodeEmoji(type) {
   const map = {
-    'ESCALA': '🎼',
-    'ARPEGIO': '🎹',
-    'MANO_IZQ': '✋',
-    'ARCO': '🎻',
-    'SONIDO': '🔊',
-    'AFINACION': '🎵',
-    'TECNICA': '⚙️',
-    'REPERTORIO': '📖'
-  };
-  return map[type] || '•';
+    ESCALA: '🎼',
+    ARPEGIO: '🎹',
+    MANO_IZQ: '✋',
+    ARCO: '🎻',
+    SONIDO: '🔊',
+    AFINACION: '🎵',
+    TECNICA: '⚙️',
+    REPERTORIO: '📖',
+  }
+  return map[type] || '•'
 }
 
 /**
  * Escapa HTML para evitar XSS
  */
 function escapeHtml(text) {
-  const div = document.createElement('div');
-  div.textContent = text;
-  return div.innerHTML;
+  const div = document.createElement('div')
+  div.textContent = text
+  return div.innerHTML
 }
 
 /**
  * Obtiene la posición del cursor en el documento
  */
 export function getCursorPosition() {
-  const sel = window.getSelection();
-  if (!sel || sel.rangeCount === 0) return null;
-  
-  const range = sel.getRangeAt(0);
-  const rect = range.getBoundingClientRect();
-  
+  const sel = window.getSelection()
+  if (!sel || sel.rangeCount === 0) return null
+
+  const range = sel.getRangeAt(0)
+  const rect = range.getBoundingClientRect()
+
   return {
     x: rect.left,
-    y: rect.top
-  };
+    y: rect.top,
+  }
 }
 
 /**
  * Verifica si el popup está visible
  */
 export function isOpen() {
-  return isVisible;
+  return isVisible
 }
 
 /**
  * Obtiene el índice seleccionado
  */
 export function getSelectedIndex() {
-  return selectedIndex;
+  return selectedIndex
 }
 
 export default {
@@ -478,5 +485,5 @@ export default {
   handleKeyDown,
   getCursorPosition,
   isOpen,
-  getSelectedIndex
-};
+  getSelectedIndex,
+}

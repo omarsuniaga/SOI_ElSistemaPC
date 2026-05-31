@@ -10,7 +10,10 @@ function _escHTML(str) {
   return div.innerHTML
 }
 
-export function createRouteTreeBar(container, { claseId, rutaId, completedTopics = [], onIndicadorSelect }) {
+export function createRouteTreeBar(
+  container,
+  { claseId, rutaId, completedTopics = [], onIndicadorSelect },
+) {
   let _hierarchy = []
   let _loading = false
   let _activeNode = null
@@ -61,21 +64,27 @@ export function createRouteTreeBar(container, { claseId, rutaId, completedTopics
 
   function _render() {
     if (_loading) {
-      wrapper.innerHTML = '<div style="padding:1rem; text-align:center; font-size:0.8rem; color:var(--pm-text-muted);">Cargando ruta...</div>'
+      wrapper.innerHTML =
+        '<div style="padding:1rem; text-align:center; font-size:0.8rem; color:var(--pm-text-muted);">Cargando ruta...</div>'
       return
     }
 
     if (!_hierarchy || _hierarchy.length === 0) {
-      wrapper.innerHTML = '<div style="padding:1rem; text-align:center; font-size:0.8rem; color:var(--pm-text-muted);">No hay objetivos configurados para esta clase.</div>'
+      wrapper.innerHTML =
+        '<div style="padding:1rem; text-align:center; font-size:0.8rem; color:var(--pm-text-muted);">No hay objetivos configurados para esta clase.</div>'
       return
     }
 
-    wrapper.innerHTML = _hierarchy.map(nivel => `
+    wrapper.innerHTML = _hierarchy
+      .map(
+        (nivel) => `
       <div class="pm-tree-level">
         <div style="background:var(--pm-surface-2); padding: 0.4rem 1rem; font-size:0.7rem; font-weight:800; color:var(--pm-primary); text-transform:uppercase; letter-spacing:0.5px;">
           ${_escHTML(nivel.nombre)}
         </div>
-        ${(nivel.plan_temas || []).map(tema => `
+        ${(nivel.plan_temas || [])
+          .map(
+            (tema) => `
           <div class="pm-tree-node" data-type="node">
             <div class="pm-tree-header">
               <span class="pm-tree-title">${_escHTML(tema.nombre)}</span>
@@ -83,19 +92,25 @@ export function createRouteTreeBar(container, { claseId, rutaId, completedTopics
             </div>
           </div>
           <div class="pm-tree-children">
-            ${(tema.plan_objetivos || []).map(obj => {
-              const isCompleted = (completedTopics || []).includes(obj.nombre);
-              return `
+            ${(tema.plan_objetivos || [])
+              .map((obj) => {
+                const isCompleted = (completedTopics || []).includes(obj.nombre)
+                return `
                 <div class="pm-tree-obj" data-type="obj" data-id="${obj.id}" data-nombre="${_escHTML(obj.nombre)}">
-                  <i class="bi ${isCompleted ? 'bi-check-circle-fill text-success' : (_activeNode?.id === obj.id ? 'bi-circle-fill text-primary' : 'bi-circle')}"></i>
+                  <i class="bi ${isCompleted ? 'bi-check-circle-fill text-success' : _activeNode?.id === obj.id ? 'bi-circle-fill text-primary' : 'bi-circle'}"></i>
                   <span style="${isCompleted ? 'text-decoration: line-through; opacity: 0.6;' : ''}">${_escHTML(obj.nombre)}</span>
                 </div>
-              `;
-            }).join('')}
+              `
+              })
+              .join('')}
           </div>
-        `).join('')}
+        `,
+          )
+          .join('')}
       </div>
-    `).join('')
+    `,
+      )
+      .join('')
   }
 
   async function refresh() {

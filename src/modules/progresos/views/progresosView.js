@@ -1,15 +1,15 @@
 import '../styles/progresos.css'
 import { AppModal } from '../../../shared/components/AppModal.js'
 import { AppToast } from '../../../shared/components/AppToast.js'
-import { 
-  obtenerProgresos, 
-  obtenerAlumnos, 
-  obtenerClases, 
-  actualizarProgreso, 
-  crearProgreso, 
+import {
+  obtenerProgresos,
+  obtenerAlumnos,
+  obtenerClases,
+  actualizarProgreso,
+  crearProgreso,
   eliminarProgreso,
   exportarBoletinPDF,
-  getNivelLabel
+  getNivelLabel,
 } from '../api/progresosApi.js'
 import { PROGRESO_SERVICE } from '../services/progresoDataService.js'
 import { Progreso } from '../models/progreso.model.js'
@@ -22,7 +22,7 @@ const state = {
   clases: [],
   cargando: false,
   filtroClase: 'todas',
-  container: null
+  container: null,
 }
 
 /**
@@ -38,10 +38,10 @@ export async function renderProgresosView(container) {
     const [progresos, alumnos, clases] = await Promise.all([
       obtenerProgresos(),
       obtenerAlumnos(),
-      obtenerClases()
+      obtenerClases(),
     ])
 
-    state.progresos = (progresos || []).map(p => new Progreso(p))
+    state.progresos = (progresos || []).map((p) => new Progreso(p))
     state.progresosOriginales = [...state.progresos]
     state.alumnos = alumnos || []
     state.clases = clases || []
@@ -76,25 +76,28 @@ function renderError(container, msg) {
 function renderContent(container) {
   // ── Stats ────────────────────────────────────────────────────────────────────
   const totalEvals = state.progresosOriginales.length
-  const promedios  = state.progresosOriginales.filter(p => p.calificacion != null).map(p => parseFloat(p.calificacion))
-  const promGeneral = promedios.length > 0
-    ? (promedios.reduce((a, b) => a + b, 0) / promedios.length).toFixed(2)
-    : null
+  const promedios = state.progresosOriginales
+    .filter((p) => p.calificacion != null)
+    .map((p) => parseFloat(p.calificacion))
+  const promGeneral =
+    promedios.length > 0
+      ? (promedios.reduce((a, b) => a + b, 0) / promedios.length).toFixed(2)
+      : null
 
   // group by alumno to count at-risk
   const porAlumno = {}
-  state.progresosOriginales.forEach(p => {
+  state.progresosOriginales.forEach((p) => {
     if (!porAlumno[p.alumno_id]) porAlumno[p.alumno_id] = []
     if (p.calificacion != null) porAlumno[p.alumno_id].push(parseFloat(p.calificacion))
   })
   let enRiesgo = 0
-  Object.values(porAlumno).forEach(califs => {
+  Object.values(porAlumno).forEach((califs) => {
     if (califs.length === 0) return
     const avg = califs.reduce((a, b) => a + b, 0) / califs.length
     if (avg < 3) enRiesgo++
   })
-  const totalAlumnos  = Object.keys(porAlumno).length
-  const clases = new Set(state.progresosOriginales.map(p => p.clase_id)).size
+  const totalAlumnos = Object.keys(porAlumno).length
+  const clases = new Set(state.progresosOriginales.map((p) => p.clase_id)).size
 
   container.innerHTML = `
     <div class="page-container">
@@ -146,7 +149,7 @@ function renderContent(container) {
           <i class="bi bi-funnel select-icon-muted"></i>
           <select class="form-select premium-filter-select" id="select-clase">
             <option value="todas">Todas las clases</option>
-            ${state.clases.map(c => `<option value="${c.id}" ${c.id === state.filtroClase ? 'selected' : ''}>${escapeHTML(c.nombre)}</option>`).join('')}
+            ${state.clases.map((c) => `<option value="${c.id}" ${c.id === state.filtroClase ? 'selected' : ''}>${escapeHTML(c.nombre)}</option>`).join('')}
           </select>
         </div>
       </div>
@@ -179,28 +182,35 @@ function renderGroupedByAlumno() {
 
   // Agrupar por alumno para la vista principal
   const porAlumno = {}
-  state.progresosOriginales.forEach(p => {
-    const alumno = state.alumnos.find(a => a.id === p.alumno_id)
-    const clase = state.clases.find(c => c.id === p.clase_id)
-    
+  state.progresosOriginales.forEach((p) => {
+    const alumno = state.alumnos.find((a) => a.id === p.alumno_id)
+    const clase = state.clases.find((c) => c.id === p.clase_id)
+
     if (claseId !== 'todas' && p.clase_id !== claseId) return
-    if (term && !alumno?.nombre_completo.toLowerCase().includes(term) && !clase?.nombre.toLowerCase().includes(term)) return
+    if (
+      term &&
+      !alumno?.nombre_completo.toLowerCase().includes(term) &&
+      !clase?.nombre.toLowerCase().includes(term)
+    )
+      return
 
     if (!porAlumno[p.alumno_id]) porAlumno[p.alumno_id] = { alumno, lista: [] }
     porAlumno[p.alumno_id].lista.push(p)
   })
 
   const entries = Object.values(porAlumno)
-  if (entries.length === 0) return `<tr><td colspan="5" class="text-center py-5 text-muted">No hay resultados.</td></tr>`
+  if (entries.length === 0)
+    return `<tr><td colspan="5" class="text-center py-5 text-muted">No hay resultados.</td></tr>`
 
-  return entries.map(({ alumno, lista }) => {
-    const rend = PROGRESO_SERVICE.calcularRendimiento(lista)
-    const accentClass = rend.enRiesgo ? 'border-accent-danger' : 'border-accent-success'
-    return `
+  return entries
+    .map(({ alumno, lista }) => {
+      const rend = PROGRESO_SERVICE.calcularRendimiento(lista)
+      const accentClass = rend.enRiesgo ? 'border-accent-danger' : 'border-accent-success'
+      return `
       <tr class="border-start-accent ${accentClass}">
         <td>
           <div class="fw-bold">${escapeHTML(alumno?.nombre_completo || 'Desconocido')}</div>
-          <div class="small text-muted">${lista.length > 0 ? escapeHTML(state.clases.find(c => c.id === lista[0].clase_id)?.nombre) : ''}</div>
+          <div class="small text-muted">${lista.length > 0 ? escapeHTML(state.clases.find((c) => c.id === lista[0].clase_id)?.nombre) : ''}</div>
         </td>
         <td class="text-center align-middle">
           <div class="fw-bold ${rend.enRiesgo ? 'text-danger' : 'text-success'}" style="font-size: 1.1rem;">
@@ -211,9 +221,11 @@ function renderGroupedByAlumno() {
           <span class="badge bg-light text-dark border">${rend.total}</span>
         </td>
         <td class="align-middle">
-          ${rend.enRiesgo 
-            ? '<span class="badge bg-danger bg-opacity-10 text-danger border border-danger-subtle"><i class="bi bi-exclamation-circle me-1"></i>En Riesgo</span>' 
-            : '<span class="badge bg-success bg-opacity-10 text-success border border-success-subtle">Satisfactorio</span>'}
+          ${
+            rend.enRiesgo
+              ? '<span class="badge bg-danger bg-opacity-10 text-danger border border-danger-subtle"><i class="bi bi-exclamation-circle me-1"></i>En Riesgo</span>'
+              : '<span class="badge bg-success bg-opacity-10 text-success border border-success-subtle">Satisfactorio</span>'
+          }
         </td>
         <td class="text-end align-middle">
           <div class="quick-actions justify-content-end">
@@ -227,7 +239,8 @@ function renderGroupedByAlumno() {
         </td>
       </tr>
     `
-  }).join('')
+    })
+    .join('')
 }
 
 function _attachEvents(container) {
@@ -252,9 +265,9 @@ function _attachEvents(container) {
 }
 
 async function _generatePDF(alumnoId) {
-  const alumno = state.alumnos.find(a => a.id === alumnoId)
-  const progresos = state.progresosOriginales.filter(p => p.alumno_id === alumnoId)
-  
+  const alumno = state.alumnos.find((a) => a.id === alumnoId)
+  const progresos = state.progresosOriginales.filter((p) => p.alumno_id === alumnoId)
+
   AppToast.info('Generando boletín institucional...')
   try {
     await exportarBoletinPDF(alumno, progresos)
@@ -265,8 +278,8 @@ async function _generatePDF(alumnoId) {
 }
 
 function _showDetail(alumnoId) {
-  const alumno = state.alumnos.find(a => a.id === alumnoId)
-  const lista = state.progresosOriginales.filter(p => p.alumno_id === alumnoId)
+  const alumno = state.alumnos.find((a) => a.id === alumnoId)
+  const lista = state.progresosOriginales.filter((p) => p.alumno_id === alumnoId)
   const rend = PROGRESO_SERVICE.calcularRendimiento(lista)
 
   AppModal.open({
@@ -306,18 +319,22 @@ function _showDetail(alumnoId) {
             </tr>
           </thead>
           <tbody>
-            ${lista.map(p => `
+            ${lista
+              .map(
+                (p) => `
               <tr>
                 <td class="small">${p.fecha_evaluacion || '-'}</td>
                 <td><span class="badge bg-light text-dark border small">${p.tipo_evaluacion}</span></td>
                 <td class="text-center fw-bold ${p.calificacion < 3 ? 'text-danger' : ''}">${p.calificacion?.toFixed(1) || '-'}</td>
                 <td class="small text-muted">${escapeHTML(p.observaciones || '-')}</td>
               </tr>
-            `).join('')}
+            `,
+              )
+              .join('')}
           </tbody>
         </table>
       </div>
-    `
+    `,
   })
 }
 
@@ -331,20 +348,22 @@ function openCreateModal() {
           <label class="form-label-compact">Alumno *</label>
           <select class="form-select input-dense" id="nota-alumno_id" required>
             <option value="">Seleccionar alumno...</option>
-            ${state.alumnos.map(a => `<option value="${a.id}">${a.nombre_completo}</option>`).join('')}
+            ${state.alumnos.map((a) => `<option value="${a.id}">${a.nombre_completo}</option>`).join('')}
           </select>
         </div>
         <div class="col-md-6">
           <label class="form-label-compact">Clase *</label>
           <select class="form-select input-dense" id="nota-clase_id" required>
             <option value="">Seleccionar...</option>
-            ${state.clases.map(c => `<option value="${c.id}">${c.nombre}</option>`).join('')}
+            ${state.clases.map((c) => `<option value="${c.id}">${c.nombre}</option>`).join('')}
           </select>
         </div>
         <div class="col-md-6">
           <label class="form-label-compact">Tipo de Evaluación *</label>
           <select class="form-select input-dense" id="nota-tipo" required>
-            ${Progreso.getTiposEvaluacion().map(t => `<option value="${t.value}">${t.label}</option>`).join('')}
+            ${Progreso.getTiposEvaluacion()
+              .map((t) => `<option value="${t.value}">${t.label}</option>`)
+              .join('')}
           </select>
         </div>
         <div class="col-md-4">
@@ -368,7 +387,7 @@ function openCreateModal() {
         tipo_evaluacion: modalBody.querySelector('#nota-tipo').value,
         calificacion: parseFloat(modalBody.querySelector('#nota-valor').value),
         fecha_evaluacion: modalBody.querySelector('#nota-fecha').value,
-        observaciones: modalBody.querySelector('#nota-obs').value.trim()
+        observaciones: modalBody.querySelector('#nota-obs').value.trim(),
       }
 
       const p = new Progreso(data)
@@ -387,6 +406,6 @@ function openCreateModal() {
         AppToast.error(err.message)
         return false
       }
-    }
+    },
   })
 }

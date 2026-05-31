@@ -1,7 +1,7 @@
 import permisosMockData from '../../../assets/data/mocks/permisos.json'
 
 // Simulación de delay
-const delay = (ms = 300) => new Promise(resolve => setTimeout(resolve, ms))
+const delay = (ms = 300) => new Promise((resolve) => setTimeout(resolve, ms))
 
 // Persistencia en memoria local
 let permisos = [...permisosMockData]
@@ -31,7 +31,7 @@ export async function obtenerPermisos() {
 
 export async function obtenerPermisoPorMaestro(maestroId) {
   await delay()
-  const permiso = permisos.find(p => p.maestro_id === maestroId)
+  const permiso = permisos.find((p) => p.maestro_id === maestroId)
   if (!permiso) {
     // Devolver permisos por defecto (fail-closed)
     return {
@@ -54,7 +54,7 @@ export async function obtenerPermisoPorMaestro(maestroId) {
 
 export async function actualizarPermiso(maestroId, changes) {
   await delay()
-  const index = permisos.findIndex(p => p.maestro_id === maestroId)
+  const index = permisos.findIndex((p) => p.maestro_id === maestroId)
   const now = new Date().toISOString()
 
   if (index === -1) {
@@ -80,10 +80,14 @@ export async function actualizarPermiso(maestroId, changes) {
   // Upsert: actualizar existente
   permisos[index] = {
     ...permisos[index],
-    puede_registrar_alumnos: changes.puede_registrar_alumnos ?? permisos[index].puede_registrar_alumnos,
-    puede_inscribir_clases: changes.puede_inscribir_clases ?? permisos[index].puede_inscribir_clases,
+    puede_registrar_alumnos:
+      changes.puede_registrar_alumnos ?? permisos[index].puede_registrar_alumnos,
+    puede_inscribir_clases:
+      changes.puede_inscribir_clases ?? permisos[index].puede_inscribir_clases,
     permisos: Array.isArray(changes.permisos) ? changes.permisos : permisos[index].permisos,
-    solicitudes: Array.isArray(changes.solicitudes) ? changes.solicitudes : permisos[index].solicitudes,
+    solicitudes: Array.isArray(changes.solicitudes)
+      ? changes.solicitudes
+      : permisos[index].solicitudes,
     concedido_por: changes.concedido_por ?? permisos[index].concedido_por,
     concedido_por_nombre: changes.concedido_por_nombre ?? permisos[index].concedido_por_nombre,
     actualizado_en: now,

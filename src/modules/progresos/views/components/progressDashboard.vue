@@ -1,9 +1,6 @@
 <template>
   <div class="progress-dashboard">
-    <DashboardFilterBar
-      :periodos="periodos"
-      @filter-change="applyFilters"
-    />
+    <DashboardFilterBar :periodos="periodos" @filter-change="applyFilters" />
 
     <div class="px-6 py-6">
       <div v-if="filteredRows.length === 0" class="text-center py-12">
@@ -48,7 +45,7 @@ const filteredRows = computed(() => {
   if (filterRiesgo.value === 'all') {
     return store.dashboardRows
   }
-  return store.dashboardRows.filter(r => r.estado_riesgo === filterRiesgo.value)
+  return store.dashboardRows.filter((r) => r.estado_riesgo === filterRiesgo.value)
 })
 
 const applyFilters = ({ periodo, riesgo }) => {

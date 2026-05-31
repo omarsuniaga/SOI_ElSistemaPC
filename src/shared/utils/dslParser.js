@@ -80,7 +80,7 @@ export function parseDSL(text) {
 }
 
 // Alias for legacy support
-export const parseDsl = parseDSL;
+export const parseDsl = parseDSL
 
 export function highlightDSL(text) {
   if (!text) return ''
@@ -123,7 +123,7 @@ export function highlightDSL(text) {
 }
 
 // Alias for legacy support
-export const highlightDsl = highlightDSL;
+export const highlightDsl = highlightDSL
 
 function escapeHtml(text) {
   return text
@@ -142,7 +142,8 @@ export function getTokenSummary(parsed) {
   if (parsed.sugerencias.length > 0) summary.push(`${parsed.sugerencias.length} sugerencia(s)`)
   if (parsed.tareas.length > 0) summary.push(`${parsed.tareas.length} tarea(s)`)
   if (parsed.medidas.length > 0) summary.push(`${parsed.medidas.length} medida(s)`)
-  if (parsed.calificacion) summary.push(`calificación: ${parsed.calificacion.valor}/${parsed.calificacion.sobre}`)
+  if (parsed.calificacion)
+    summary.push(`calificación: ${parsed.calificacion.valor}/${parsed.calificacion.sobre}`)
   if (parsed.objetivos.length > 0) summary.push(`${parsed.objetivos.length} objetivo(s)`)
 
   return summary.length > 0 ? summary.join(', ') : 'Sin tokens'

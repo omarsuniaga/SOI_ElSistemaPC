@@ -22,14 +22,14 @@ const SUPPRESSED_PATTERNS = [
  */
 function isSuppressed(message = '') {
   const msg = String(message).toLowerCase()
-  return SUPPRESSED_PATTERNS.some(pattern => msg.includes(pattern.toLowerCase()))
+  return SUPPRESSED_PATTERNS.some((pattern) => msg.includes(pattern.toLowerCase()))
 }
 
 // ============================================
 // Suppress console.error calls
 // ============================================
 const originalError = console.error
-console.error = function(...args) {
+console.error = function (...args) {
   if (args.length > 0 && !isSuppressed(args[0])) {
     originalError.apply(console, args)
   }
@@ -39,7 +39,7 @@ console.error = function(...args) {
 // Suppress console.warn calls
 // ============================================
 const originalWarn = console.warn
-console.warn = function(...args) {
+console.warn = function (...args) {
   if (args.length > 0 && !isSuppressed(args[0])) {
     originalWarn.apply(console, args)
   }
@@ -48,30 +48,38 @@ console.warn = function(...args) {
 // ============================================
 // Suppress unhandledrejection events
 // ============================================
-window.addEventListener('unhandledrejection', (event) => {
-  const reason = String(event.reason || '')
-  if (isSuppressed(reason)) {
-    event.preventDefault()
-    event.stopImmediatePropagation()
-  }
-}, true) // Capture phase to intercept early
+window.addEventListener(
+  'unhandledrejection',
+  (event) => {
+    const reason = String(event.reason || '')
+    if (isSuppressed(reason)) {
+      event.preventDefault()
+      event.stopImmediatePropagation()
+    }
+  },
+  true,
+) // Capture phase to intercept early
 
 // ============================================
 // Suppress global error handler
 // ============================================
-window.addEventListener('error', (event) => {
-  const message = event.message || ''
-  if (isSuppressed(message)) {
-    event.preventDefault()
-    event.stopImmediatePropagation()
-  }
-}, true) // Capture phase to intercept early
+window.addEventListener(
+  'error',
+  (event) => {
+    const message = event.message || ''
+    if (isSuppressed(message)) {
+      event.preventDefault()
+      event.stopImmediatePropagation()
+    }
+  },
+  true,
+) // Capture phase to intercept early
 
 // ============================================
 // Suppress WebSocket errors more aggressively
 // ============================================
 const originalFetch = window.fetch
-window.fetch = async function(...args) {
+window.fetch = async function (...args) {
   try {
     return await originalFetch.apply(window, args)
   } catch (err) {

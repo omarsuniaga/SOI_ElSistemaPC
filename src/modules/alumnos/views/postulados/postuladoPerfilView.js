@@ -17,22 +17,23 @@ import { guardarBorrador } from '../../../../portal-maestros/components/wizard/d
 // Constants
 // ---------------------------------------------------------------------------
 
-const PALABRAS_NO_NOMBRE = /\b(alumno|alumna|puede|asistir|depende|transporte|p[uú]blico|propio|padres|amigos|familiares|punta\s*cana|veron|ver[oó]n|bávaro|bavaro|friusa|cortecito|ciudad|pueblo|municipio|sector|calle|avenida|disponibilidad|actividades|limitada|posible|haré|hare|cristiano|evang[eé]lico|cat[oó]lico)\b/i
+const PALABRAS_NO_NOMBRE =
+  /\b(alumno|alumna|puede|asistir|depende|transporte|p[uú]blico|propio|padres|amigos|familiares|punta\s*cana|veron|ver[oó]n|bávaro|bavaro|friusa|cortecito|ciudad|pueblo|municipio|sector|calle|avenida|disponibilidad|actividades|limitada|posible|haré|hare|cristiano|evang[eé]lico|cat[oó]lico)\b/i
 
 const DOCS_REQUERIDOS = [
-  { id: 'cedula_rep',   label: 'Cédula del representante' },
-  { id: 'partida',      label: 'Partida de nacimiento' },
-  { id: 'constancia',   label: 'Constancia escolar' },
-  { id: 'foto',         label: 'Foto del alumno' },
+  { id: 'cedula_rep', label: 'Cédula del representante' },
+  { id: 'partida', label: 'Partida de nacimiento' },
+  { id: 'constancia', label: 'Constancia escolar' },
+  { id: 'foto', label: 'Foto del alumno' },
   { id: 'docs_medicos', label: 'Documentos médicos (si aplica)' },
 ]
 
 const PIPELINE_MAIN = [
-  { id: 'postulado',     label: 'Postulado',      num: 1 },
-  { id: 'contactado',    label: 'Contactado',     num: 2 },
-  { id: 'cita_agendada', label: 'Cita agendada',  num: 3 },
-  { id: 'documentos_ok', label: 'Documentos OK',  num: 4 },
-  { id: 'inscrito',      label: 'Inscrito',       num: 5 },
+  { id: 'postulado', label: 'Postulado', num: 1 },
+  { id: 'contactado', label: 'Contactado', num: 2 },
+  { id: 'cita_agendada', label: 'Cita agendada', num: 3 },
+  { id: 'documentos_ok', label: 'Documentos OK', num: 4 },
+  { id: 'inscrito', label: 'Inscrito', num: 5 },
 ]
 
 // ---------------------------------------------------------------------------
@@ -51,56 +52,61 @@ let state = {
 function esNombrePersona(texto) {
   if (!texto) return false
   const t = texto.trim()
-  return t.length >= 4
-    && t.length <= 70
-    && !t.includes(',')
-    && t.split(/\s+/).length <= 5
-    && !PALABRAS_NO_NOMBRE.test(t)
-    && /[A-ZÁÉÍÓÚÑ]/.test(t)
+  return (
+    t.length >= 4 &&
+    t.length <= 70 &&
+    !t.includes(',') &&
+    t.split(/\s+/).length <= 5 &&
+    !PALABRAS_NO_NOMBRE.test(t) &&
+    /[A-ZÁÉÍÓÚÑ]/.test(t)
+  )
 }
 
 function resolverNombre(p) {
-  return [p.nombre_completo, p.madre_nombre, p.padre_nombre, p.representante_nombre]
-    .map(v => (v ?? '').trim())
-    .find(esNombrePersona) ?? 'Sin nombre registrado'
+  return (
+    [p.nombre_completo, p.madre_nombre, p.padre_nombre, p.representante_nombre]
+      .map((v) => (v ?? '').trim())
+      .find(esNombrePersona) ?? 'Sin nombre registrado'
+  )
 }
 
 function buildInscripcionDraft(p) {
   return {
     _postulante_id: p.id,
-    nombre_completo:       resolverNombre(p),
-    fecha_nacimiento:      p.fecha_nacimiento      || '',
-    nacionalidad:          p.nacionalidad          || '',
-    tiene_pasaporte:       p.tiene_pasaporte       ?? false,
-    sabe_leer:             p.sabe_leer             ?? null,
-    sabe_escribir:         p.sabe_escribir         ?? null,
-    genero:                p.genero                || '',
-    como_se_entero:        p.como_se_entero        || '',
-    municipio_residencia:  p.municipio_residencia  || '',
-    sector_calle_numero:   p.sector_calle_numero   || '',
-    direccion:             p.direccion             || '',
-    ubicacion_maps_url:    p.ubicacion_maps_url    || '',
-    madre_nombre:          p.madre_nombre          || '',
-    madre_cedula:          p.madre_cedula          || '',
-    madre_tlf_whatsapp:    p.madre_tlf_whatsapp    || '',
-    padre_nombre:          p.padre_nombre          || '',
-    padre_cedula:          p.padre_cedula          || '',
-    padre_tlf_whatsapp:    p.padre_tlf_whatsapp    || '',
-    representante_nombre:         p.representante_nombre     || p.madre_nombre || '',
-    representante_parentesco:     p.representante_parentesco || '',
-    representante_cedula:         p.representante_cedula     || '',
-    representante_tlf:            p.representante_tlf || p.telefono_representante || p.madre_tlf_whatsapp || '',
-    correo_representante:         p.correo                   || '',
+    nombre_completo: resolverNombre(p),
+    fecha_nacimiento: p.fecha_nacimiento || '',
+    nacionalidad: p.nacionalidad || '',
+    tiene_pasaporte: p.tiene_pasaporte ?? false,
+    sabe_leer: p.sabe_leer ?? null,
+    sabe_escribir: p.sabe_escribir ?? null,
+    genero: p.genero || '',
+    como_se_entero: p.como_se_entero || '',
+    municipio_residencia: p.municipio_residencia || '',
+    sector_calle_numero: p.sector_calle_numero || '',
+    direccion: p.direccion || '',
+    ubicacion_maps_url: p.ubicacion_maps_url || '',
+    madre_nombre: p.madre_nombre || '',
+    madre_cedula: p.madre_cedula || '',
+    madre_tlf_whatsapp: p.madre_tlf_whatsapp || '',
+    padre_nombre: p.padre_nombre || '',
+    padre_cedula: p.padre_cedula || '',
+    padre_tlf_whatsapp: p.padre_tlf_whatsapp || '',
+    representante_nombre: p.representante_nombre || p.madre_nombre || '',
+    representante_parentesco: p.representante_parentesco || '',
+    representante_cedula: p.representante_cedula || '',
+    representante_tlf:
+      p.representante_tlf || p.telefono_representante || p.madre_tlf_whatsapp || '',
+    correo_representante: p.correo || '',
     beneficiario_subsidio_estado: p.beneficiario_subsidio_estado ?? false,
-    acepta_pago_600:              p.acepta_pago_600          ?? false,
-    instrumento_interes:           p.instrumento_interes          || '',
+    acepta_pago_600: p.acepta_pago_600 ?? false,
+    instrumento_interes: p.instrumento_interes || '',
     tiene_conocimientos_musicales: p.tiene_conocimientos_musicales ?? false,
-    instrumento_previo:            p.instrumento_previo           || '',
-    nivel_lectura_musical:         p.nivel_lectura_musical        || '',
-    interes_musical:               p.interes_musical              || '',
-    por_que_unirse:                p.por_que_unirse               || '',
-    sentimiento_musica_clasica:    p.sentimiento_musica_clasica   || '',
-    musico_favorito:               p.musico_favorito              || '',
+    instrumento_previo: p.instrumento_previo || '',
+    nivel_lectura_musical: p.nivel_lectura_musical || '',
+    interes_musical: p.interes_musical || '',
+    por_que_unirse: p.por_que_unirse || '',
+    sentimiento_musica_clasica: p.sentimiento_musica_clasica || '',
+    musico_favorito: p.musico_favorito || '',
     autoriza_fotos_redes: p.autoriza_fotos_redes ?? false,
   }
 }
@@ -119,15 +125,20 @@ function calcularEdad(fechaNacStr) {
 function formatDateTime(isoString) {
   if (!isoString) return ''
   return new Date(isoString).toLocaleString('es-ES', {
-    day: '2-digit', month: 'long', year: 'numeric',
-    hour: '2-digit', minute: '2-digit',
+    day: '2-digit',
+    month: 'long',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
   })
 }
 
 function formatDate(isoString) {
   if (!isoString) return '-'
   return new Date(isoString).toLocaleDateString('es-ES', {
-    day: '2-digit', month: 'long', year: 'numeric',
+    day: '2-digit',
+    month: 'long',
+    year: 'numeric',
   })
 }
 
@@ -135,8 +146,8 @@ function buildWaUrl(phone, repNombre, nombreAlumno) {
   const clean = (phone || '').replace(/[^0-9]/g, '')
   const msg = encodeURIComponent(
     `Hola ${repNombre}, le contactamos de *El Sistema Punta Cana*. ` +
-    `Hemos recibido la postulación de *${nombreAlumno}* y queremos coordinar el proceso de inscripción. ` +
-    `¿Cuándo podría venir a nuestra sede para la entrevista? 🎵`
+      `Hemos recibido la postulación de *${nombreAlumno}* y queremos coordinar el proceso de inscripción. ` +
+      `¿Cuándo podría venir a nuestra sede para la entrevista? 🎵`,
   )
   return `https://wa.me/${clean}?text=${msg}`
 }
@@ -198,7 +209,9 @@ async function cargarPostulante(container, id) {
             <i class="bi bi-arrow-left me-1"></i> Volver al listado
           </button>
         </div>`
-      document.getElementById('btn-error-back')?.addEventListener('click', () => router.navigate('postulados'))
+      document
+        .getElementById('btn-error-back')
+        ?.addEventListener('click', () => router.navigate('postulados'))
       return
     }
 
@@ -216,7 +229,9 @@ async function cargarPostulante(container, id) {
           </button>
         </div>
       </div>`
-    document.getElementById('btn-error-retry')?.addEventListener('click', () => cargarPostulante(container, id))
+    document
+      .getElementById('btn-error-retry')
+      ?.addEventListener('click', () => cargarPostulante(container, id))
   }
 }
 
@@ -241,18 +256,26 @@ function renderContent(container) {
           <i class="bi bi-arrow-left me-1"></i> Volver a Postulados
         </button>
         <div class="d-flex gap-2 flex-wrap">
-          ${p.madre_tlf_whatsapp ? `
+          ${
+            p.madre_tlf_whatsapp
+              ? `
             <a href="${buildWaUrl(p.madre_tlf_whatsapp, repNombre, nombreAlumno)}"
                target="_blank" rel="noopener"
                class="btn btn-outline-success btn-sm rounded-pill">
               <i class="bi bi-whatsapp me-1"></i> WhatsApp Madre
-            </a>` : ''}
-          ${p.padre_tlf_whatsapp ? `
+            </a>`
+              : ''
+          }
+          ${
+            p.padre_tlf_whatsapp
+              ? `
             <a href="${buildWaUrl(p.padre_tlf_whatsapp, repNombre, nombreAlumno)}"
                target="_blank" rel="noopener"
                class="btn btn-outline-success btn-sm rounded-pill">
               <i class="bi bi-whatsapp me-1"></i> WhatsApp Padre
-            </a>` : ''}
+            </a>`
+              : ''
+          }
         </div>
       </div>
 
@@ -347,41 +370,42 @@ function renderPipeline(estadoActual) {
 
   // Map side states to their nearest main step index for highlighting
   const sideToMainIdx = {
-    no_show:     2,
+    no_show: 2,
     reprogramado: 2,
-    en_espera:   3,
-    descartado:  -1,
+    en_espera: 3,
+    descartado: -1,
   }
 
-  let currentMainIdx = PIPELINE_MAIN.findIndex(s => s.id === estadoActual)
+  let currentMainIdx = PIPELINE_MAIN.findIndex((s) => s.id === estadoActual)
   if (isSide) currentMainIdx = sideToMainIdx[estadoActual] ?? -1
 
   return `
     <div class="d-flex align-items-center gap-1 overflow-auto py-1">
       ${PIPELINE_MAIN.map((step, idx) => {
         const isCompleted = idx < currentMainIdx
-        const isActive    = idx === currentMainIdx && !isSide
-        const isSideHere  = idx === currentMainIdx && isSide
+        const isActive = idx === currentMainIdx && !isSide
+        const isSideHere = idx === currentMainIdx && isSide
 
         let circleClass = 'bg-light border border-secondary text-secondary'
-        let labelClass  = 'text-secondary'
+        let labelClass = 'text-secondary'
 
         if (isCompleted) {
           circleClass = 'bg-success text-white border border-success'
-          labelClass  = 'text-success fw-semibold'
+          labelClass = 'text-success fw-semibold'
         } else if (isActive) {
           const c = ESTADO_COLOR[step.id] || 'primary'
           circleClass = `bg-${c} text-white border border-${c}`
-          labelClass  = `text-${c} fw-bold`
+          labelClass = `text-${c} fw-bold`
         } else if (isSideHere) {
           const c = ESTADO_COLOR[estadoActual] || 'secondary'
           circleClass = `bg-${c} bg-opacity-25 text-${c} border border-${c}`
-          labelClass  = `text-${c} fw-semibold`
+          labelClass = `text-${c} fw-semibold`
         }
 
-        const connector = idx < PIPELINE_MAIN.length - 1
-          ? `<div class="flex-grow-1 border-top border-secondary-subtle" style="min-width:20px;margin-top:-8px"></div>`
-          : ''
+        const connector =
+          idx < PIPELINE_MAIN.length - 1
+            ? `<div class="flex-grow-1 border-top border-secondary-subtle" style="min-width:20px;margin-top:-8px"></div>`
+            : ''
 
         return `
           <div class="d-flex flex-column align-items-center" style="min-width:64px">
@@ -408,7 +432,6 @@ function renderProximoPaso(p, estado, repNombre, nombreAlumno) {
   const color = ESTADO_COLOR[estado] || 'secondary'
 
   switch (estado) {
-
     case 'postulado':
       return `
         <div class="card-header bg-${color} bg-opacity-10 border-0 pt-3 pb-0 px-4">
@@ -417,18 +440,26 @@ function renderProximoPaso(p, estado, repNombre, nombreAlumno) {
         <div class="card-body px-4 pb-4">
           <p class="text-muted small mb-3">El representante aún no ha sido contactado. Iniciá la comunicación por WhatsApp.</p>
           <div class="d-flex flex-wrap gap-2 mb-3">
-            ${p.madre_tlf_whatsapp ? `
+            ${
+              p.madre_tlf_whatsapp
+                ? `
               <a href="${buildWaUrl(p.madre_tlf_whatsapp, repNombre, nombreAlumno)}"
                  target="_blank" rel="noopener"
                  class="btn btn-success btn-sm rounded-pill">
                 <i class="bi bi-whatsapp me-1"></i> WhatsApp Madre
-              </a>` : ''}
-            ${p.padre_tlf_whatsapp ? `
+              </a>`
+                : ''
+            }
+            ${
+              p.padre_tlf_whatsapp
+                ? `
               <a href="${buildWaUrl(p.padre_tlf_whatsapp, repNombre, nombreAlumno)}"
                  target="_blank" rel="noopener"
                  class="btn btn-success btn-sm rounded-pill">
                 <i class="bi bi-whatsapp me-1"></i> WhatsApp Padre
-              </a>` : ''}
+              </a>`
+                : ''
+            }
           </div>
           <button class="btn btn-outline-${color} btn-sm rounded-pill fw-semibold" id="btn-accion-contactado">
             <i class="bi bi-check-lg me-1"></i> Marcar como Contactado
@@ -532,14 +563,20 @@ function renderProximoPaso(p, estado, repNombre, nombreAlumno) {
         </div>
         <div class="card-body px-4 pb-4">
           <p class="text-muted small mb-3">El proceso fue completado exitosamente.</p>
-          ${p.alumno_id ? `
+          ${
+            p.alumno_id
+              ? `
             <button class="btn btn-outline-success btn-sm rounded-pill" id="btn-ver-alumno">
               Ver perfil del alumno <i class="bi bi-arrow-right ms-1"></i>
-            </button>` : '<p class="text-muted small">Sin perfil de alumno vinculado.</p>'}
+            </button>`
+              : '<p class="text-muted small">Sin perfil de alumno vinculado.</p>'
+          }
         </div>`
 
     case 'descartado': {
-      const motivo = (p.notas_seguimiento || '').split('\n').find(l => l.toLowerCase().includes('descart')) || ''
+      const motivo =
+        (p.notas_seguimiento || '').split('\n').find((l) => l.toLowerCase().includes('descart')) ||
+        ''
       return `
         <div class="card-header bg-dark bg-opacity-10 border-0 pt-3 pb-0 px-4">
           <h6 class="fw-bold text-secondary"><i class="bi bi-person-dash me-2"></i>Postulación descartada</h6>
@@ -563,9 +600,10 @@ function renderProximoPaso(p, estado, repNombre, nombreAlumno) {
 
 function renderDatosCard(p) {
   const row = (label, val) => {
-    const display = val != null && val !== ''
-      ? `<span class="fw-medium">${val}</span>`
-      : `<span class="text-muted fst-italic">Sin definir</span>`
+    const display =
+      val != null && val !== ''
+        ? `<span class="fw-medium">${val}</span>`
+        : `<span class="text-muted fst-italic">Sin definir</span>`
     return `
       <div class="d-flex justify-content-between py-1 border-bottom border-light">
         <span class="text-muted small">${label}</span>
@@ -595,14 +633,16 @@ function renderDatosCard(p) {
 
 function renderDocsChecklist(postulanteId) {
   const checked = loadDocs(postulanteId)
-  return DOCS_REQUERIDOS.map(doc => `
+  return DOCS_REQUERIDOS.map(
+    (doc) => `
     <div class="form-check mb-2">
       <input class="form-check-input doc-check" type="checkbox"
              id="doc-${doc.id}" data-doc-id="${doc.id}"
              ${checked[doc.id] ? 'checked' : ''}>
       <label class="form-check-label small" for="doc-${doc.id}">${doc.label}</label>
     </div>
-  `).join('')
+  `,
+  ).join('')
 }
 
 // ---------------------------------------------------------------------------
@@ -611,7 +651,7 @@ function renderDocsChecklist(postulanteId) {
 
 function renderNotesTimeline(p) {
   const notasText = p.notas_seguimiento || p.notes || ''
-  const lines = notasText.split('\n').filter(l => l.trim())
+  const lines = notasText.split('\n').filter((l) => l.trim())
 
   if (lines.length === 0) {
     return `<p class="text-muted small fst-italic">Sin notas registradas.</p>`
@@ -619,11 +659,15 @@ function renderNotesTimeline(p) {
 
   return `
     <h6 class="fw-bold small text-secondary text-uppercase mb-2">Historial</h6>
-    ${lines.map(nota => `
+    ${lines
+      .map(
+        (nota) => `
       <div class="d-flex gap-2 mb-2 pb-2 border-bottom border-light">
         <div class="mt-1 rounded-circle bg-primary flex-shrink-0" style="width:8px;height:8px"></div>
         <p class="small mb-0">${nota}</p>
-      </div>`).join('')}
+      </div>`,
+      )
+      .join('')}
   `
 }
 
@@ -643,11 +687,12 @@ function attachEvents(container) {
 
   // Ver perfil alumno
   container.querySelector('#btn-ver-alumno')?.addEventListener('click', () => {
-    window.router?.navigate('alumno', { id: p.alumno_id }) ?? router.navigate('alumno', { id: p.alumno_id })
+    window.router?.navigate('alumno', { id: p.alumno_id }) ??
+      router.navigate('alumno', { id: p.alumno_id })
   })
 
   // Docs checkboxes
-  container.querySelectorAll('.doc-check').forEach(cb => {
+  container.querySelectorAll('.doc-check').forEach((cb) => {
     cb.addEventListener('change', () => {
       const checked = loadDocs(id)
       const docId = cb.getAttribute('data-doc-id')
@@ -723,7 +768,8 @@ function attachEvents(container) {
       const conflicto = await hayConflictoCita(isoDate, id)
       if (conflicto) {
         errorEl?.classList.remove('d-none')
-        if (errorEl) errorEl.textContent = 'Conflicto: ya existe otra cita en un rango de ±30 minutos.'
+        if (errorEl)
+          errorEl.textContent = 'Conflicto: ya existe otra cita en un rango de ±30 minutos.'
         return
       }
 

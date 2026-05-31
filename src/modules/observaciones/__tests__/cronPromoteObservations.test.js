@@ -6,8 +6,8 @@ vi.mock('../api/observacionesApi.js', () => ({
   promoteObservations: vi.fn(async (sessionId, alumnoIds) => ({
     promoted: alumnoIds.length,
     skipped: 0,
-    errors: []
-  }))
+    errors: [],
+  })),
 }))
 
 /**
@@ -22,29 +22,29 @@ describe('batchPromoteSessionObservations Service', () => {
     return {
       from: vi.fn((table) => {
         const builder = {
-          select: vi.fn(function() {
+          select: vi.fn(function () {
             return this
           }),
-          neq: vi.fn(function(col, val) {
+          neq: vi.fn(function (col, val) {
             // Query pending sessions
             if (table === 'sesiones_clase' && col === 'fecha_fin' && val === null) {
               return {
-                eq: vi.fn(function(col2, val2) {
+                eq: vi.fn(function (col2, val2) {
                   if (col2 === 'es_promocionado' && val2 === false) {
                     return Promise.resolve({ data: pendingSessions, error: null })
                   }
                   return Promise.resolve({ data: [], error: null })
-                })
+                }),
               }
             }
             return this
           }),
-          eq: vi.fn(function(col, val) {
+          eq: vi.fn(function (col, val) {
             // Query alumnos for a session
             if (table === 'alumnos_clases' && col === 'clase_id') {
               return Promise.resolve({
                 data: alumnosBySessionId[val] || [],
-                error: null
+                error: null,
               })
             }
             // Update session
@@ -53,16 +53,16 @@ describe('batchPromoteSessionObservations Service', () => {
             }
             return this
           }),
-          update: vi.fn(function(updates) {
+          update: vi.fn(function (updates) {
             return {
-              eq: vi.fn(function(col, val) {
+              eq: vi.fn(function (col, val) {
                 return Promise.resolve({ data: null, error: null })
-              })
+              }),
             }
-          })
+          }),
         }
         return builder
-      })
+      }),
     }
   }
 
@@ -73,7 +73,7 @@ describe('batchPromoteSessionObservations Service', () => {
       // Setup: one pending session with 3 alumnos
       const mockSupabase = buildMockSupabase(
         [{ id: 's1', fecha_fin: '2026-05-17T14:30:00Z', es_promocionado: false }],
-        { s1: [{ alumno_id: 'a1' }, { alumno_id: 'a2' }, { alumno_id: 'a3' }] }
+        { s1: [{ alumno_id: 'a1' }, { alumno_id: 'a2' }, { alumno_id: 'a3' }] },
       )
 
       // Act
@@ -98,15 +98,15 @@ describe('batchPromoteSessionObservations Service', () => {
           { id: 's2', fecha_fin: '2026-05-17T14:30:00Z', es_promocionado: false },
           { id: 's3', fecha_fin: '2026-05-17T14:30:00Z', es_promocionado: false },
           { id: 's4', fecha_fin: '2026-05-17T14:30:00Z', es_promocionado: false },
-          { id: 's5', fecha_fin: '2026-05-17T14:30:00Z', es_promocionado: false }
+          { id: 's5', fecha_fin: '2026-05-17T14:30:00Z', es_promocionado: false },
         ],
         {
           s1: [{ alumno_id: 'a1' }, { alumno_id: 'a2' }],
           s2: [{ alumno_id: 'a1' }],
           s3: [{ alumno_id: 'a2' }],
           s4: [{ alumno_id: 'a3' }],
-          s5: [{ alumno_id: 'a1' }, { alumno_id: 'a3' }]
-        }
+          s5: [{ alumno_id: 'a1' }, { alumno_id: 'a3' }],
+        },
       )
 
       // Act
@@ -129,7 +129,7 @@ describe('batchPromoteSessionObservations Service', () => {
           return {
             promoted: 0,
             skipped: 0,
-            errors: [{ message: 'RLS policy rejected: maestro role mismatch' }]
+            errors: [{ message: 'RLS policy rejected: maestro role mismatch' }],
           }
         }
         return { promoted: alumnoIds.length, skipped: 0, errors: [] }
@@ -141,15 +141,15 @@ describe('batchPromoteSessionObservations Service', () => {
           { id: 's2', fecha_fin: '2026-05-17T14:30:00Z', es_promocionado: false },
           { id: 's3', fecha_fin: '2026-05-17T14:30:00Z', es_promocionado: false },
           { id: 's4', fecha_fin: '2026-05-17T14:30:00Z', es_promocionado: false },
-          { id: 's5', fecha_fin: '2026-05-17T14:30:00Z', es_promocionado: false }
+          { id: 's5', fecha_fin: '2026-05-17T14:30:00Z', es_promocionado: false },
         ],
         {
           s1: [{ alumno_id: 'a1' }],
           s2: [{ alumno_id: 'a1' }],
           s3: [{ alumno_id: 'a1' }],
           s4: [{ alumno_id: 'a1' }],
-          s5: [{ alumno_id: 'a1' }]
-        }
+          s5: [{ alumno_id: 'a1' }],
+        },
       )
 
       // Act
@@ -183,19 +183,21 @@ describe('batchPromoteSessionObservations Service', () => {
       const { promoteObservations } = await import('../api/observacionesApi.js')
       const mockSupabase = buildMockSupabase(
         [{ id: 's1', fecha_fin: '2026-05-17T14:30:00Z', es_promocionado: false }],
-        { s1: [{ alumno_id: 'a1' }] }
+        { s1: [{ alumno_id: 'a1' }] },
       )
 
       // Spy on update calls
-      const updateSpy = vi.fn(function() {
+      const updateSpy = vi.fn(function () {
         return {
-          eq: vi.fn(async () => ({ data: null, error: null }))
+          eq: vi.fn(async () => ({ data: null, error: null })),
         }
       })
       mockSupabase.from('sesiones_clase').update = updateSpy
 
       // Act with dryRun=true
-      const result = await batchPromoteSessionObservations(mockSupabase, promoteObservations, { dryRun: true })
+      const result = await batchPromoteSessionObservations(mockSupabase, promoteObservations, {
+        dryRun: true,
+      })
 
       // Assert: promoted=1 but update was NOT called
       expect(result.promoted).toBe(1)
@@ -210,21 +212,21 @@ describe('batchPromoteSessionObservations Service', () => {
         from: vi.fn((table) => {
           if (table === 'sesiones_clase') {
             return {
-              select: vi.fn(function() {
+              select: vi.fn(function () {
                 return this
               }),
-              neq: vi.fn(function(col, val) {
+              neq: vi.fn(function (col, val) {
                 return {
                   eq: vi.fn(async () => ({
                     data: null,
-                    error: { message: 'Database connection failed' }
-                  }))
+                    error: { message: 'Database connection failed' },
+                  })),
                 }
-              })
+              }),
             }
           }
           return { select: vi.fn(() => Promise.resolve({ data: [], error: null })) }
-        })
+        }),
       }
 
       // Act

@@ -4,12 +4,14 @@ import { getCacheStrategy, shouldCache, getCacheVersion, clearAppCache } from '.
 describe('swCaching', () => {
   beforeEach(() => {
     vi.stubGlobal('caches', {
-      open: vi.fn(() => Promise.resolve({
-        put: vi.fn(),
-        match: vi.fn(),
-        keys: vi.fn(),
-        delete: vi.fn(),
-      })),
+      open: vi.fn(() =>
+        Promise.resolve({
+          put: vi.fn(),
+          match: vi.fn(),
+          keys: vi.fn(),
+          delete: vi.fn(),
+        }),
+      ),
       keys: vi.fn(() => Promise.resolve([])),
     })
   })

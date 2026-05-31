@@ -1,40 +1,73 @@
 import {
-  getGroqApiKey, setGroqApiKey,
-  getOpenRouterApiKey, setOpenRouterApiKey,
-  getPreferredModel, setPreferredModel,
-  getDocumentosInstitucionales, setDocumentosInstitucionales,
+  getGroqApiKey,
+  setGroqApiKey,
+  getOpenRouterApiKey,
+  setOpenRouterApiKey,
+  getPreferredModel,
+  setPreferredModel,
+  getDocumentosInstitucionales,
+  setDocumentosInstitucionales,
 } from '../api/configApi.js'
 import {
-  getNotificationPreferences, saveNotificationPreferences,
-  getSubscriptionStatus, isPushSupported, subscribeToPush,
-  unsubscribeFromPush, testNotification, isPushSubscribed
+  getNotificationPreferences,
+  saveNotificationPreferences,
+  getSubscriptionStatus,
+  isPushSupported,
+  subscribeToPush,
+  unsubscribeFromPush,
+  testNotification,
+  isPushSubscribed,
 } from '../../../portal-maestros/services/pushService.js'
 
 const FREE_MODELS = [
-  { id: 'google/gemini-2.0-flash-exp', name: '🔥 Gemini 2.0 Flash (Gratis)', provider: 'openrouter' },
-  { id: 'google/gemini-flash-1.5-exp', name: 'Google Gemini Flash 1.5 (Gratis)', provider: 'openrouter' },
+  {
+    id: 'google/gemini-2.0-flash-exp',
+    name: '🔥 Gemini 2.0 Flash (Gratis)',
+    provider: 'openrouter',
+  },
+  {
+    id: 'google/gemini-flash-1.5-exp',
+    name: 'Google Gemini Flash 1.5 (Gratis)',
+    provider: 'openrouter',
+  },
   { id: 'google/gemma-4-31b', name: 'Google Gemma 4 31B (Gratis)', provider: 'openrouter' },
   { id: 'google/gemma-4-26b-a4b', name: 'Google Gemma 4 26B (Gratis)', provider: 'openrouter' },
-  { id: 'nvidia/nemotron-3-super-8b', name: 'NVIDIA Nemotron 3 Super (Gratis)', provider: 'openrouter' },
-  { id: 'nvidia/nemotron-nano-9b-v2', name: 'NVIDIA Nemotron Nano 9B (Gratis)', provider: 'openrouter' },
+  {
+    id: 'nvidia/nemotron-3-super-8b',
+    name: 'NVIDIA Nemotron 3 Super (Gratis)',
+    provider: 'openrouter',
+  },
+  {
+    id: 'nvidia/nemotron-nano-9b-v2',
+    name: 'NVIDIA Nemotron Nano 9B (Gratis)',
+    provider: 'openrouter',
+  },
   { id: 'poolside/laguna-xs.2', name: 'Poolside Laguna XS (Gratis)', provider: 'openrouter' },
   { id: 'mistralai/mistral-7b-instruct', name: 'Mistral 7B (Gratis)', provider: 'openrouter' },
   { id: 'anthropic/claude-3-haiku', name: 'Claude 3 Haiku (Gratis)', provider: 'openrouter' },
-  { id: 'openrouter/auto', name: '🤖 Auto-Selector (Gratis - El mejor gratuito)', provider: 'openrouter' },
+  {
+    id: 'openrouter/auto',
+    name: '🤖 Auto-Selector (Gratis - El mejor gratuito)',
+    provider: 'openrouter',
+  },
   { id: 'groq-llama-3.3-70b', name: 'LLaMA 3.3 70B (GROQ - Rápido)', provider: 'groq' },
-  { id: 'groq-llama-3.1-70b', name: 'LLaMA 3.1 70B (GROQ)', provider: 'groq' }
+  { id: 'groq-llama-3.1-70b', name: 'LLaMA 3.1 70B (GROQ)', provider: 'groq' },
 ]
 
 function getLocalStorageKey(key) {
   try {
     return localStorage.getItem(`portal-maestros:${key}`)
-  } catch { return null }
+  } catch {
+    return null
+  }
 }
 
 function saveLocalStorageKey(key, value) {
   try {
     localStorage.setItem(`portal-maestros:${key}`, value)
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
 }
 
 function getUsageStats() {
@@ -42,7 +75,9 @@ function getUsageStats() {
     const stored = localStorage.getItem('portal-maestros:groq-usage')
     if (!stored) return null
     return JSON.parse(stored)
-  } catch { return null }
+  } catch {
+    return null
+  }
 }
 
 export async function renderConfigView(container) {
@@ -53,7 +88,7 @@ export async function renderConfigView(container) {
     getDocumentosInstitucionales(),
   ])
 
-  const currentModel = FREE_MODELS.find(m => m.id === preferredModel) || FREE_MODELS[0]
+  const currentModel = FREE_MODELS.find((m) => m.id === preferredModel) || FREE_MODELS[0]
 
   container.innerHTML = `
     <div class="container-fluid py-4">
@@ -83,11 +118,13 @@ export async function renderConfigView(container) {
               <div class="mb-4">
                 <label class="form-label fw-semibold">Modelo de IA activo</label>
                 <select class="form-select" id="preferred-model">
-                  ${FREE_MODELS.map(m => `
+                  ${FREE_MODELS.map(
+                    (m) => `
                     <option value="${m.id}" ${m.id === preferredModel ? 'selected' : ''}>
                       ${m.name}
                     </option>
-                  `).join('')}
+                  `,
+                  ).join('')}
                 </select>
                 <div class="form-text">Este modelo se usará por defecto en todas las requests</div>
               </div>
@@ -389,7 +426,7 @@ export async function renderConfigView(container) {
                   </tr>
                   <tr>
                     <td class="text-muted">Fallback</td>
-                    <td>${openrouterKey && groqKey ? '<span class="text-success">Automático</span>' : (openrouterKey ? 'OpenRouter only' : 'GROQ only')}</td>
+                    <td>${openrouterKey && groqKey ? '<span class="text-success">Automático</span>' : openrouterKey ? 'OpenRouter only' : 'GROQ only'}</td>
                   </tr>
                 </tbody>
               </table>
@@ -414,11 +451,15 @@ export async function renderConfigView(container) {
     }
   }
 
-  document.getElementById('toggle-openrouter-key').addEventListener('click', () => 
-    toggleVisibility('openrouter-api-key', 'toggle-openrouter-key'))
-  
-  document.getElementById('toggle-groq-key').addEventListener('click', () => 
-    toggleVisibility('groq-api-key', 'toggle-groq-key'))
+  document
+    .getElementById('toggle-openrouter-key')
+    .addEventListener('click', () =>
+      toggleVisibility('openrouter-api-key', 'toggle-openrouter-key'),
+    )
+
+  document
+    .getElementById('toggle-groq-key')
+    .addEventListener('click', () => toggleVisibility('groq-api-key', 'toggle-groq-key'))
 
   // Guardar
   document.getElementById('save-all-keys').addEventListener('click', async () => {
@@ -426,9 +467,9 @@ export async function renderConfigView(container) {
     const openrouter = document.getElementById('openrouter-api-key').value.trim()
     const model = document.getElementById('preferred-model').value
     const status = document.getElementById('config-status')
-    
+
     status.innerHTML = '<div class="spinner-border spinner-border-sm me-2"></div> Guardando...'
-    
+
     try {
       if (groq) {
         await setGroqApiKey(groq)
@@ -439,11 +480,13 @@ export async function renderConfigView(container) {
         saveLocalStorageKey('openrouter-key', openrouter)
       }
       await setPreferredModel(model)
-      status.innerHTML = '<div class="alert alert-success alert-dismissible fade show mb-0">' +
+      status.innerHTML =
+        '<div class="alert alert-success alert-dismissible fade show mb-0">' +
         '<i class="bi bi-check-circle me-1"></i> Configuración guardada correctamente' +
         '<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>'
     } catch (err) {
-      status.innerHTML = `<div class="alert alert-danger alert-dismissible fade show mb-0">` +
+      status.innerHTML =
+        `<div class="alert alert-danger alert-dismissible fade show mb-0">` +
         `<i class="bi bi-exclamation-triangle me-1"></i> Error: ${err.message}` +
         `<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>`
     }
@@ -453,13 +496,14 @@ export async function renderConfigView(container) {
   document.getElementById('test-connection').addEventListener('click', async () => {
     const status = document.getElementById('config-status')
     const model = document.getElementById('preferred-model').value
-    const modelInfo = FREE_MODELS.find(m => m.id === model)
-    
-    status.innerHTML = '<div class="spinner-border spinner-border-sm me-2"></div> Probando conexión...'
+    const modelInfo = FREE_MODELS.find((m) => m.id === model)
+
+    status.innerHTML =
+      '<div class="spinner-border spinner-border-sm me-2"></div> Probando conexión...'
 
     let key = ''
     let testUrl = ''
-    
+
     if (modelInfo.provider === 'openrouter') {
       key = document.getElementById('openrouter-api-key').value.trim()
       testUrl = 'https://openrouter.ai/api/v1/models'
@@ -469,22 +513,25 @@ export async function renderConfigView(container) {
     }
 
     if (!key) {
-      status.innerHTML = '<div class="alert alert-warning mb-0">Ingresa una API key para el modelo seleccionado</div>'
+      status.innerHTML =
+        '<div class="alert alert-warning mb-0">Ingresa una API key para el modelo seleccionado</div>'
       return
     }
 
     try {
       const res = await fetch(testUrl, {
-        headers: { 'Authorization': `Bearer ${key}` }
+        headers: { Authorization: `Bearer ${key}` },
       })
-      
+
       if (res.ok) {
-        status.innerHTML = '<div class="alert alert-success alert-dismissible fade show mb-0">' +
+        status.innerHTML =
+          '<div class="alert alert-success alert-dismissible fade show mb-0">' +
           `<i class="bi bi-check-circle me-1"></i> Conexión exitosa con ${modelInfo.name}` +
           '<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>'
       } else {
         const err = await res.text()
-        status.innerHTML = `<div class="alert alert-danger alert-dismissible fade show mb-0">` +
+        status.innerHTML =
+          `<div class="alert alert-danger alert-dismissible fade show mb-0">` +
           `<i class="bi bi-exclamation-triangle me-1"></i> Error ${res.status}: ${err.substring(0, 100)}` +
           `<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>`
       }
@@ -498,9 +545,9 @@ export async function renderConfigView(container) {
     const elMinute = document.getElementById('usage-minute')
     const elHour = document.getElementById('usage-hour')
     const elCache = document.getElementById('usage-cache')
-    
+
     if (!elMinute || !elHour || !elCache) return
-    
+
     const usage = getUsageStats()
     if (!usage) {
       elMinute.textContent = '0/10'
@@ -508,15 +555,15 @@ export async function renderConfigView(container) {
       elCache.textContent = '0'
       return
     }
-    
+
     const now = Date.now()
     const oneMinuteAgo = now - 60000
     const oneHourAgo = now - 3600000
-    
-    const requestsLastMinute = usage.requests?.filter(ts => ts > oneMinuteAgo).length || 0
-    const requestsLastHour = usage.requests?.filter(ts => ts > oneHourAgo).length || 0
+
+    const requestsLastMinute = usage.requests?.filter((ts) => ts > oneMinuteAgo).length || 0
+    const requestsLastHour = usage.requests?.filter((ts) => ts > oneHourAgo).length || 0
     const cacheSize = usage.cache ? Object.keys(usage.cache).length : 0
-    
+
     elMinute.textContent = `${requestsLastMinute}/10`
     elHour.textContent = `${requestsLastHour}/100`
     elCache.textContent = cacheSize
@@ -570,7 +617,8 @@ export async function renderConfigView(container) {
     try {
       const { subscribed, error } = await getSubscriptionStatus()
       if (subscribed) {
-        statusDiv.innerHTML = '<div class="alert alert-success alert-sm mb-0">' +
+        statusDiv.innerHTML =
+          '<div class="alert alert-success alert-sm mb-0">' +
           '<i class="bi bi-check-circle me-1"></i> Push habilitado correctamente</div>'
       } else if (error) {
         statusDiv.innerHTML = `<div class="alert alert-info alert-sm mb-0">${error}</div>`
@@ -588,16 +636,19 @@ export async function renderConfigView(container) {
     const checkbox = e.target
 
     if (checkbox.checked) {
-      statusDiv.innerHTML = '<div class="spinner-border spinner-border-sm me-2"></div> Habilitando push...'
+      statusDiv.innerHTML =
+        '<div class="spinner-border spinner-border-sm me-2"></div> Habilitando push...'
       try {
         const result = await subscribeToPush()
         if (result.success) {
-          statusDiv.innerHTML = '<div class="alert alert-success alert-dismissible fade show mb-0">' +
+          statusDiv.innerHTML =
+            '<div class="alert alert-success alert-dismissible fade show mb-0">' +
             '<i class="bi bi-check-circle me-1"></i> Web Push habilitado' +
             '<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>'
           await updatePushStatus()
         } else {
-          statusDiv.innerHTML = `<div class="alert alert-danger alert-dismissible fade show mb-0">` +
+          statusDiv.innerHTML =
+            `<div class="alert alert-danger alert-dismissible fade show mb-0">` +
             `<i class="bi bi-exclamation-triangle me-1"></i> ${result.error || 'Error al habilitar push'}` +
             `<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>`
           checkbox.checked = false
@@ -607,10 +658,12 @@ export async function renderConfigView(container) {
         checkbox.checked = false
       }
     } else {
-      statusDiv.innerHTML = '<div class="spinner-border spinner-border-sm me-2"></div> Deshabilitando push...'
+      statusDiv.innerHTML =
+        '<div class="spinner-border spinner-border-sm me-2"></div> Deshabilitando push...'
       try {
         await unsubscribeFromPush()
-        statusDiv.innerHTML = '<div class="alert alert-info alert-dismissible fade show mb-0">' +
+        statusDiv.innerHTML =
+          '<div class="alert alert-info alert-dismissible fade show mb-0">' +
           '<i class="bi bi-info-circle me-1"></i> Web Push deshabilitado' +
           '<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>'
         await updatePushStatus()
@@ -637,11 +690,13 @@ export async function renderConfigView(container) {
       const { error } = await saveNotificationPreferences(prefs)
 
       if (error) {
-        statusDiv.innerHTML = `<div class="alert alert-danger alert-dismissible fade show mb-0">` +
+        statusDiv.innerHTML =
+          `<div class="alert alert-danger alert-dismissible fade show mb-0">` +
           `<i class="bi bi-exclamation-triangle me-1"></i> Error: ${error}` +
           `<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>`
       } else {
-        statusDiv.innerHTML = '<div class="alert alert-success alert-dismissible fade show mb-0">' +
+        statusDiv.innerHTML =
+          '<div class="alert alert-success alert-dismissible fade show mb-0">' +
           '<i class="bi bi-check-circle me-1"></i> Preferencias guardadas correctamente' +
           '<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>'
       }
@@ -654,19 +709,23 @@ export async function renderConfigView(container) {
   // Probar notificación
   document.getElementById('test-notification').addEventListener('click', async () => {
     const statusDiv = document.getElementById('notification-status')
-    statusDiv.innerHTML = '<div class="spinner-border spinner-border-sm me-2"></div> Enviando notificación de prueba...'
+    statusDiv.innerHTML =
+      '<div class="spinner-border spinner-border-sm me-2"></div> Enviando notificación de prueba...'
 
     try {
       const result = await testNotification()
       if (result.success) {
-        const method = result.method === 'serviceWorker' 
-          ? 'Notificación push del sistema operativo' 
-          : 'Notificación local del navegador'
-        statusDiv.innerHTML = '<div class="alert alert-success alert-dismissible fade show mb-0">' +
+        const method =
+          result.method === 'serviceWorker'
+            ? 'Notificación push del sistema operativo'
+            : 'Notificación local del navegador'
+        statusDiv.innerHTML =
+          '<div class="alert alert-success alert-dismissible fade show mb-0">' +
           `<i class="bi bi-check-circle me-1"></i> ${method} enviada` +
           '<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>'
       } else {
-        statusDiv.innerHTML = '<div class="alert alert-warning alert-dismissible fade show mb-0">' +
+        statusDiv.innerHTML =
+          '<div class="alert alert-warning alert-dismissible fade show mb-0">' +
           `<i class="bi bi-exclamation-triangle me-1"></i> ${result.error || 'Debes habilitar los permisos de notificación'}` +
           '<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>'
       }
@@ -683,11 +742,14 @@ export async function renderConfigView(container) {
     try {
       await setDocumentosInstitucionales({
         reglamento: document.getElementById('url-reglamento').value.trim() || null,
-        horario:    document.getElementById('url-horario').value.trim() || null,
+        horario: document.getElementById('url-horario').value.trim() || null,
         bienvenida: document.getElementById('url-bienvenida').value.trim() || null,
       })
-      statusDiv.innerHTML = '<span class="text-success"><i class="bi bi-check-circle me-1"></i>Guardado</span>'
-      setTimeout(() => { statusDiv.innerHTML = '' }, 2500)
+      statusDiv.innerHTML =
+        '<span class="text-success"><i class="bi bi-check-circle me-1"></i>Guardado</span>'
+      setTimeout(() => {
+        statusDiv.innerHTML = ''
+      }, 2500)
     } catch (err) {
       statusDiv.innerHTML = `<span class="text-danger"><i class="bi bi-x-circle me-1"></i>${err.message}</span>`
     }

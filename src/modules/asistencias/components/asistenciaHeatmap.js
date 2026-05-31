@@ -29,9 +29,25 @@ export async function renderAsistenciaHeatmap(container, options = {}) {
 
 function _procesarHeatmap(sesiones) {
   const diasSemana = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom']
-  const horas = ['08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00']
+  const horas = [
+    '08:00',
+    '09:00',
+    '10:00',
+    '11:00',
+    '12:00',
+    '13:00',
+    '14:00',
+    '15:00',
+    '16:00',
+    '17:00',
+    '18:00',
+    '19:00',
+    '20:00',
+  ]
 
-  const matrix = Array(7).fill(null).map(() => Array(13).fill(0))
+  const matrix = Array(7)
+    .fill(null)
+    .map(() => Array(13).fill(0))
   const maxAusencias = { value: 0, cells: [] }
 
   for (const grupo of sesiones) {
@@ -66,14 +82,20 @@ function _renderHeatmap(container, data, titulo) {
       <h6 class="fw-bold mb-3"><i class="bi bi-calendar-week me-2"></i>${titulo}</h6>
       <div class="heatmap-grid" style="display: grid; grid-template-columns: 50px repeat(13, 1fr); gap: 2px;">
         <div></div>
-        ${horas.map(h => `<div class="text-center small text-muted" style="font-size: 0.65rem;">${h}</div>`).join('')}
-        ${matrix.map((row, diaIdx) => `
+        ${horas.map((h) => `<div class="text-center small text-muted" style="font-size: 0.65rem;">${h}</div>`).join('')}
+        ${matrix
+          .map(
+            (row, diaIdx) => `
           <div class="small fw-semibold text-muted align-self-center" style="font-size: 0.7rem;">${diasSemana[diaIdx]}</div>
-          ${row.map((value, horaIdx) => {
-            const color = colorScale ? colorScale(value) : 'var(--bs-secondary-bg)'
-            return `<div class="heatmap-cell" style="background: ${color}; border-radius: 2px; aspect-ratio: 1; min-height: 20px;" title="${diasSemana[diaIdx]} ${horas[horaIdx]}: ${value} ausencias"></div>`
-          }).join('')}
-        `).join('')}
+          ${row
+            .map((value, horaIdx) => {
+              const color = colorScale ? colorScale(value) : 'var(--bs-secondary-bg)'
+              return `<div class="heatmap-cell" style="background: ${color}; border-radius: 2px; aspect-ratio: 1; min-height: 20px;" title="${diasSemana[diaIdx]} ${horas[horaIdx]}: ${value} ausencias"></div>`
+            })
+            .join('')}
+        `,
+          )
+          .join('')}
       </div>
       <div class="d-flex justify-content-between align-items-center mt-3">
         <div class="d-flex align-items-center gap-2">
@@ -92,7 +114,7 @@ function _renderHeatmap(container, data, titulo) {
 }
 
 function _getColorScale(max) {
-  return function(value) {
+  return function (value) {
     if (value === 0) return 'var(--bs-secondary-bg)'
     const ratio = value / max
     if (ratio < 0.25) return '#d4edda'

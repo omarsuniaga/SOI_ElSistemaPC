@@ -19,7 +19,13 @@ export const CommonUtils = {
   formatDateTime(dateStr) {
     if (!dateStr) return 'Fecha desconocida'
     const date = new Date(dateStr)
-    return date.toLocaleDateString('es-ES', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+    return date.toLocaleDateString('es-ES', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    })
   },
 
   /**
@@ -27,7 +33,10 @@ export const CommonUtils = {
    */
   escapeHTML(str) {
     if (!str) return ''
-    return str.replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]))
+    return str.replace(
+      /[&<>"']/g,
+      (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[m],
+    )
   },
 
   /**
@@ -37,7 +46,7 @@ export const CommonUtils = {
     if (!nombre) return '?'
     return nombre
       .split(' ')
-      .map(n => n[0])
+      .map((n) => n[0])
       .join('')
       .toUpperCase()
       .slice(0, 2)

@@ -38,7 +38,7 @@ export async function fetchBulk({ alumnoIds = [], claseId, periodoId, from, to }
   }
 
   // Map observaciones_alumnos with tipo='alumno'
-  const mappedAlumnos = (alumnosObs || []).map(row => ({
+  const mappedAlumnos = (alumnosObs || []).map((row) => ({
     ...row,
     tipo: 'alumno',
   }))
@@ -67,7 +67,7 @@ export async function fetchBulk({ alumnoIds = [], claseId, periodoId, from, to }
   }
 
   // Map observaciones_sesion with tipo='sesion'
-  const mappedSesion = (sesionObs || []).map(row => ({
+  const mappedSesion = (sesionObs || []).map((row) => ({
     ...row,
     tipo: 'sesion',
   }))

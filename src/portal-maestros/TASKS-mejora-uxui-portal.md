@@ -1,7 +1,7 @@
 # Tasks — Mejora UX/UI Portal Maestros
 
 **Change:** `mejora-uxui-portal`  
-**Fecha:** 2026-05-10  
+**Fecha:** 2026-05-10
 
 ---
 
@@ -11,6 +11,7 @@
 
 **Archivo:** `src/portal-maestros/styles/01-tokens.css`  
 **Cambios:**
+
 - Agregar spacing scale (4, 8, 12, 16, 20, 24, 32, 40, 48, 64px)
 - Agregar breakpoints como CSS custom properties
 - Agregar layout tokens (sidebar-w, content-max-w, max-width)
@@ -26,6 +27,7 @@
 
 **Archivo:** `src/portal-maestros/styles/02-base.css`  
 **Cambios:**
+
 - Agregar `@keyframes pm-view-in` (fade + translateY)
 - Agregar skeleton loader (`.pm-skeleton`, `.pm-skeleton-text`, pulse animation)
 - Agregar `.pm-card-hover` con lift effect
@@ -43,6 +45,7 @@
 **Cambios:**
 
 #### Header tablet+ (≥ 768px):
+
 ```css
 @media (min-width: 768px) {
   .pm-header {
@@ -51,10 +54,14 @@
     gap: 1rem;
     padding: 0 1.25rem;
   }
-  
-  .pm-header-left { min-width: 0; }
-  .pm-header-title { font-size: 1.25rem; }
-  
+
+  .pm-header-left {
+    min-width: 0;
+  }
+  .pm-header-title {
+    font-size: 1.25rem;
+  }
+
   /* Tabs horizontales (reemplazan bottom nav) */
   .pm-header-tabs {
     display: flex;
@@ -62,7 +69,7 @@
     gap: 0.25rem;
     overflow-x: auto;
   }
-  
+
   .pm-header-tab {
     padding: 0.5rem 1rem;
     border-radius: var(--pm-radius-sm);
@@ -73,35 +80,46 @@
     transition: background var(--pm-transition-fast);
     background: none;
     border: none;
-    color: rgba(255,255,255,0.7);
+    color: rgba(255, 255, 255, 0.7);
   }
-  
-  .pm-header-tab:hover { background: rgba(255,255,255,0.15); }
-  .pm-header-tab.active { background: rgba(255,255,255,0.25); color: #fff; }
+
+  .pm-header-tab:hover {
+    background: rgba(255, 255, 255, 0.15);
+  }
+  .pm-header-tab.active {
+    background: rgba(255, 255, 255, 0.25);
+    color: #fff;
+  }
 }
 ```
 
 #### Header desktop (≥ 1024px):
+
 ```css
 @media (min-width: 1024px) {
   .pm-header {
     grid-template-columns: auto 1fr auto auto;
   }
-  
-  .pm-header-greeting { display: block; font-size: 0.7rem; }
-  .pm-header-title { font-size: 1.25rem; }
-  
+
+  .pm-header-greeting {
+    display: block;
+    font-size: 0.7rem;
+  }
+  .pm-header-title {
+    font-size: 1.25rem;
+  }
+
   /* Search en header */
   .pm-header-search {
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    background: rgba(255,255,255,0.15);
+    background: rgba(255, 255, 255, 0.15);
     border-radius: var(--pm-radius-sm);
     padding: 0.4rem 0.75rem;
     max-width: 240px;
   }
-  
+
   .pm-header-search input {
     background: none;
     border: none;
@@ -110,19 +128,25 @@
     outline: none;
     width: 100%;
   }
-  
-  .pm-header-search input::placeholder { color: rgba(255,255,255,0.6); }
+
+  .pm-header-search input::placeholder {
+    color: rgba(255, 255, 255, 0.6);
+  }
 }
 ```
 
 #### Bottom nav hidden en tablet+:
+
 ```css
 @media (min-width: 768px) {
-  .pm-bottom-nav { display: none; }
+  .pm-bottom-nav {
+    display: none;
+  }
 }
 ```
 
 #### View container:
+
 ```css
 @media (min-width: 768px) {
   .pm-view {
@@ -194,6 +218,7 @@
 
 **Archivo:** `src/portal-maestros/styles/08-apple.css`  
 **Cambios:**
+
 - Agregar breakpoint tablet (768-1023px) para botones primarios/secundarios
 - Agregar breakpoint desktop (≥1024px) con targets más grandes
 - Agregar touch device overrides para deshabilitar active scale en botones
@@ -207,6 +232,7 @@
 
 **Archivo:** `src/portal-maestros/styles/09-routes.css`  
 **Cambios:**
+
 - Desktop gamificacion: nodo cards en 2 columnas, logros en 2 cols
 - Route tree: auto-fill grid con minmax(200px)
 - Route bar: breadcrumb más legible
@@ -219,6 +245,7 @@
 
 **Archivo:** `src/portal-maestros/styles/11-forms.css`  
 **Cambios:**
+
 - Tablet: settings 640px, content-panel 2 cols, form-grid 2 cols, timeline spacing
 - Desktop: settings 840px, form-grid 3 cols, timeline espacioso, content-panel wide
 
@@ -259,15 +286,15 @@
 
 ### Test Matrix
 
-| View | Mobile (375px) | Tablet (768px) | Desktop (1440px) |
-|------|---------------|----------------|------------------|
-| Login | ✅ centrado | ✅ centrado | ✅ centrado |
-| Hoy | ✅ cards stacked | ✅ 2 cols | ✅ dense |
-| Asistencia | ✅ usable | ✅ drawer side | ✅ centered |
-| Calendario | ✅ semana | ✅ mes | ✅ mes |
-| Métricas | ✅ KPIs 3 col | ✅ 3 col | ✅ 6 col |
-| Perfil | ✅ stacked | ✅ 2 cols | ✅ layout completo |
-| Gamificación | ✅ scrollable | ✅ grid 2 | ✅ sidebar |
+| View         | Mobile (375px)   | Tablet (768px) | Desktop (1440px)   |
+| ------------ | ---------------- | -------------- | ------------------ |
+| Login        | ✅ centrado      | ✅ centrado    | ✅ centrado        |
+| Hoy          | ✅ cards stacked | ✅ 2 cols      | ✅ dense           |
+| Asistencia   | ✅ usable        | ✅ drawer side | ✅ centered        |
+| Calendario   | ✅ semana        | ✅ mes         | ✅ mes             |
+| Métricas     | ✅ KPIs 3 col    | ✅ 3 col       | ✅ 6 col           |
+| Perfil       | ✅ stacked       | ✅ 2 cols      | ✅ layout completo |
+| Gamificación | ✅ scrollable    | ✅ grid 2      | ✅ sidebar         |
 
 ### Checkpoints finales
 

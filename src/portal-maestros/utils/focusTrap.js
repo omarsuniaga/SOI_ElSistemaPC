@@ -66,7 +66,8 @@ export function enableTrap(containerEl, { onClose } = {}) {
       focusable[nextIndex].focus()
     } else {
       // Tab: move forward, wrap to first if at last or not found
-      const nextIndex = currentIndex === -1 || currentIndex === focusable.length - 1 ? 0 : currentIndex + 1
+      const nextIndex =
+        currentIndex === -1 || currentIndex === focusable.length - 1 ? 0 : currentIndex + 1
       focusable[nextIndex].focus()
     }
   }

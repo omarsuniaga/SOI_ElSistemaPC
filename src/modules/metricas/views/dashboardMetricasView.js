@@ -30,7 +30,13 @@ export async function renderDashboardMetricasView(container) {
 
   // Admin auth gate: only admin role can access the observability hub
   const user = getUser()
-  if (!user || user.role !== 'admin') {
+  const userRole =
+    user?.role ||
+    user?.user_metadata?.role ||
+    user?.user_metadata?.rol ||
+    user?.app_metadata?.role ||
+    ''
+  if (!user || userRole !== 'admin') {
     container.innerHTML = `
       <div class="obs-forbidden">
         <div class="text-center">

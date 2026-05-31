@@ -16,6 +16,8 @@ import { renderAsistentePedagogicoPanel } from '../components/asistentePedagogic
 import { openCurriculoListModal } from '../components/curriculoModal.js'
 import { renderRutasManagementPanel } from '../components/rutasManagementPanel.js'
 import { usePlanificacion } from '../hooks/usePlanificacion.js'
+import { createDslEditorWithToolbar } from '../components/dslToolbar.js'
+import { getAlumnos } from '../../alumnos/api/alumnosApi.js'
 
 // ── DSL Template Library ─────────────────────────────────────────────────────
 const DSL_TEMPLATES = [
@@ -650,12 +652,8 @@ async function openEditModal(id, prefill = {}) {
         </div>
         <div class="col-12">
           <label class="form-label-compact">Contenido Pedagógico (DSL)</label>
-          <div class="border rounded p-2 bg-body-tertiary mb-1 d-flex gap-2 flex-wrap">
-            <button type="button" class="btn btn-xs btn-outline-secondary" onclick="document.getElementById('plan-contenido').value += '[Indicador] '">+ Indicador</button>
-            <button type="button" class="btn btn-xs btn-outline-secondary" onclick="document.getElementById('plan-contenido').value += '{Actividad} '">+ Actividad</button>
-            <button type="button" class="btn btn-xs btn-outline-secondary" onclick="document.getElementById('plan-contenido').value += '# Nota: '">+ Nota</button>
-          </div>
-          <textarea class="form-control input-dense font-monospace" id="plan-contenido" rows="6" placeholder="#Pedro [Escala de Do mayor] $tempo60 (Mantener dedos curvos) {Practicar 10 min diarios} 4/5 >ObjetivoTecnica&#10;#Lucía [Lectura rítmica] (Contar en voz alta antes de tocar) {Repetir compases 1-4} 3/5&#10;&#10;Guía: #Alumno | [contenido] | (sugerencia) | {tarea} | $medida técnica | N/5 | >objetivo">${escapeHTML(plan.contenido)}</textarea>
+          <div id="plan-dsl-container" style="margin-bottom: 1rem;"></div>
+          <div class="small text-muted" id="plan-dsl-summary" style="margin-top: 0.5rem;"></div>
         </div>
         <div class="col-md-4">
           <label class="form-label-compact">Fecha de inicio</label>
@@ -676,13 +674,36 @@ async function openEditModal(id, prefill = {}) {
       const sel = modalBody.querySelector('#plan-clase_id')
       sel.innerHTML = '<option value="">Seleccionar clase...</option>' +
         (data || []).map(c => `<option value="${c.id}" ${c.id === plan.clase_id ? 'selected' : ''}>${escapeHTML(c.nombre)}</option>`).join('')
+
+      // Create DSL editor with toolbar
+      const dslContainer = modalBody.querySelector('#plan-dsl-container')
+      const dslEditor = createDslEditorWithToolbar({
+        initialContent: plan.notas_dsl || '',
+        onChange: (content, parsed) => {
+          const summaryEl = modalBody.querySelector('#plan-dsl-summary')
+          if (summaryEl && parsed.items && parsed.items.length > 0) {
+            summaryEl.innerHTML = `<strong>Elementos:</strong> ${parsed.items.length} indicadores/actividades parseadas`
+          }
+        },
+        onAlumnoClick: async () => {
+          const allAlumnos = await getAlumnos()
+          const selected = allAlumnos.slice(0, 3).map(a => `#${a.nombre_completo}`).join(', ')
+          if (dslEditor.component) {
+            dslEditor.component.insertText(selected + ' ')
+          }
+        },
+      })
+      dslContainer.appendChild(dslEditor)
+      modalBody._dslEditor = dslEditor
     },
     onSave: async (modalBody) => {
+      const dslEditor = modalBody._dslEditor
       const data = {
         tema:              modalBody.querySelector('#plan-tema').value.trim(),
         clase_id:          modalBody.querySelector('#plan-clase_id').value,
         objetivos:         modalBody.querySelector('#plan-objetivos').value.trim(),
-        contenido:         modalBody.querySelector('#plan-contenido').value.trim(),
+        contenido:         modalBody.querySelector('#plan-contenido')?.value.trim() || '',
+        notas_dsl:         dslEditor ? dslEditor.getContent() : '',
         fecha_inicio:      modalBody.querySelector('#plan-fecha').value || null,
         instrumento:       modalBody.querySelector('#plan-instrumento').value.trim() || null,
         evaluacion_metodo: modalBody.querySelector('#plan-eval').value.trim() || null

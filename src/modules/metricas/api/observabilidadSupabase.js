@@ -146,3 +146,23 @@ export async function getOperaciones() {
     return []
   }
 }
+
+/**
+ * Compila el Payload DSL en producción: consulta las vistas de base de datos
+ * @returns {Promise<{radarData: Array, nodeDifficulty: Array, complianceData: Array}>}
+ */
+export async function callDslRpc() {
+  const [radarRes, nodeRes, complianceRes] = await Promise.all([
+    supabase.from('view_institutional_radar').select('*'),
+    supabase
+      .from('view_node_difficulty')
+      .select('*')
+      .order('failure_percentage', { ascending: false }),
+    supabase.from('vw_rendimiento_maestro').select('*'),
+  ])
+  return {
+    radarData: radarRes.data || [],
+    nodeDifficulty: nodeRes.data || [],
+    complianceData: complianceRes.data || [],
+  }
+}

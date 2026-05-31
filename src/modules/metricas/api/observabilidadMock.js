@@ -637,3 +637,31 @@ export async function getOperaciones() {
   await new Promise((resolve) => setTimeout(resolve, 200))
   return [...mockOperaciones]
 }
+
+/**
+ * Compila el Payload DSL en modo Demo: retorna datos de prueba simulados
+ * @param {string} _tipo - Tipo de reporte (no usado en demo, todos retornan datos simulados)
+ * @returns {Promise<{radarData: Array, nodeDifficulty: Array, complianceData: Array}>}
+ */
+export async function callDslRpc(_tipo) {
+  await new Promise((resolve) => setTimeout(resolve, 200))
+  return {
+    radarData: [
+      { id: '1', health_status: 'active', days_inactive: 2 },
+      { id: '2', health_status: 'stagnant', days_inactive: 15 },
+      { id: '3', health_status: 'stagnant', days_inactive: 20 },
+      { id: '4', health_status: 'active', days_inactive: 0 },
+      { id: '5', health_status: 'not_started', days_inactive: 30 },
+    ],
+    nodeDifficulty: [
+      { node_name: 'Posición de Mano Izquierda (Violín)', failure_percentage: 75 },
+      { node_name: 'Postura de Arco (Violín)', failure_percentage: 60 },
+      { node_name: 'Afinación Básica', failure_percentage: 45 },
+    ],
+    complianceData: [
+      { nombre: 'Carlos Gómez', categoria: 'negligente', sesiones_rojo: 8 },
+      { nombre: 'María Luz', categoria: 'regular', sesiones_rojo: 3 },
+      { nombre: 'Pedro Almonte', categoria: 'responsable', sesiones_rojo: 0 },
+    ],
+  }
+}

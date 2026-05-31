@@ -28,3 +28,11 @@ export const recordSystemLog = (...args) => getApi().recordSystemLog(...args)
  * @returns {Promise<Array<{id: string, tipo: string, descripcion: string, estado: string, timestamp: string}>>}
  */
 export const getOperaciones = (...args) => getApi().getOperaciones(...args)
+
+/**
+ * Compila el Payload DSL para el generador de reportes de IA.
+ * En producción consulta las vistas de base de datos; en demo retorna datos mock.
+ * @param {string} tipo - Tipo de reporte (asistencia, progreso, riesgo, etc.)
+ * @returns {Promise<{radarData: Array, nodeDifficulty: Array, complianceData: Array}>}
+ */
+export const callDslRpc = (...args) => getApi().callDslRpc(...args)

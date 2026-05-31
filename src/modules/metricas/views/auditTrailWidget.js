@@ -41,11 +41,11 @@ export function auditTrailWidget(containerId) {
         <table class="table table-hover table-striped align-middle mb-0" id="table-audit-trail">
           <thead class="table-light">
             <tr>
-              <th class="py-3 px-3" style="font-size: 0.85rem; font-weight: 600;">Fecha y Hora</th>
-              <th class="py-3" style="font-size: 0.85rem; font-weight: 600;">Acción</th>
-              <th class="py-3" style="font-size: 0.85rem; font-weight: 600;">Usuario Actor</th>
-              <th class="py-3" style="font-size: 0.85rem; font-weight: 600;">Notas de Transacción</th>
-              <th class="py-3 px-3 text-center" style="font-size: 0.85rem; font-weight: 600;">Detalles</th>
+              <th class="py-3 px-3 obs-audit-header">Fecha y Hora</th>
+              <th class="py-3 obs-audit-header">Acción</th>
+              <th class="py-3 obs-audit-header">Usuario Actor</th>
+              <th class="py-3 obs-audit-header">Notas de Transacción</th>
+              <th class="py-3 px-3 text-center obs-audit-header">Detalles</th>
             </tr>
           </thead>
           <tbody class="small" id="audit-trail-tbody">
@@ -115,12 +115,12 @@ export function auditTrailWidget(containerId) {
         return `
         <tr>
           <td class="text-nowrap px-3 text-secondary">${dateStr}</td>
-          <td><span class="badge ${actionBadge} px-2.5 py-1.5 rounded-pill fw-semibold" style="font-size: 0.725rem;">${item.accion}</span></td>
-          <td class="fw-semibold text-break" style="max-width: 200px;" title="${actorStr}">${actorStr}</td>
+          <td><span class="badge ${actionBadge} px-2.5 py-1.5 rounded-pill fw-semibold obs-audit-action-label">${item.accion}</span></td>
+          <td class="fw-semibold text-break obs-audit-actor-cell" title="${actorStr}">${actorStr}</td>
           <td class="text-secondary">${escapeHTML(item.notas || 'Sin comentarios adicionales')}</td>
           <td class="text-center px-3">
-            <button class="btn btn-sm btn-outline-secondary btn-audit-detail rounded-circle shadow-sm" data-audit-id="${item.id}" style="width: 32px; height: 32px; padding: 0;">
-              <i class="bi bi-info-circle-fill" style="font-size: 0.85rem;"></i>
+            <button class="btn btn-sm btn-outline-secondary btn-audit-detail rounded-circle shadow-sm obs-audit-detail-btn" data-audit-id="${item.id}">
+              <i class="bi bi-info-circle-fill obs-audit-detail-icon"></i>
             </button>
           </td>
         </tr>
@@ -171,7 +171,7 @@ export function auditTrailWidget(containerId) {
           </div>
           <div class="col-6">
             <strong class="extra-small text-secondary d-block text-uppercase">Acción Transaccional:</strong>
-            <span class="badge bg-primary bg-opacity-10 text-primary border border-primary-subtle px-2.5 py-1 rounded-pill mt-0.5 fw-bold" style="font-size:0.75rem;">${record.accion}</span>
+            <span class="badge bg-primary bg-opacity-10 text-primary border border-primary-subtle px-2.5 py-1 rounded-pill mt-0.5 fw-bold obs-audit-badge">${record.accion}</span>
           </div>
         </div>
         <div class="mb-3">

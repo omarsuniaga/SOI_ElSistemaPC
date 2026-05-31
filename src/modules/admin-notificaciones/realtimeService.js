@@ -12,6 +12,9 @@
 
 import { supabase } from '../../lib/supabaseClient.js'
 import { fetchAdminPendingCount } from './api/adminNotifApi.js'
+import { LifecycleManager } from '../../shared/services/lifecycleManager.js'
+
+const lifecycle = new LifecycleManager('admin-notifications')
 
 let _channel = null
 let _badgeCallback = null
@@ -111,20 +114,24 @@ export function startAdminRealtimeNotifications(badgeCallback) {
       if (status === 'SUBSCRIBED') {
         // Fetch initial count once connected
         _scheduleFetch()
+      } else if (status === 'CHANNEL_ERROR' || status === 'SUBSCRIPTION_ERROR') {
+        console.warn('[realtimeService] Channel error, will retry on reconnect')
       }
     })
+
+  // Registrar canal para cleanup
+  lifecycle.registerChannel(_channel)
 }
 
 /**
  * Tear down the Realtime channel (call on logout).
  */
 export function stopAdminRealtimeNotifications() {
-  if (_channel) {
-    supabase.removeChannel(_channel)
-    _channel = null
-  }
+  lifecycle.destroy()
+  _channel = null
   _badgeCallback = null
   clearTimeout(_debounceTimer)
+  _debounceTimer = null
 }
 
 /**

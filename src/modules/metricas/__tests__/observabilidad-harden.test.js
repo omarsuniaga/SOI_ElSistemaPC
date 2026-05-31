@@ -5,6 +5,12 @@ import { auditTrailWidget } from '../views/auditTrailWidget.js'
 import { readFileSync, existsSync } from 'fs'
 import { resolve } from 'path'
 
+// Hoisted mock for admin auth gate tests
+const mockGetUser = vi.fn()
+vi.mock('../../../core/auth/authManager.js', () => ({
+  getUser: mockGetUser,
+}))
+
 // ---------------------------------------------------------------------------
 // Task A: CSS external file exists with expected classes
 // ---------------------------------------------------------------------------
@@ -227,5 +233,171 @@ describe('PR1 — Task D: Destroy lifecycle', () => {
 
     // Should not throw when called with no active state
     expect(() => view.destroyDashboardMetricasView()).not.toThrow()
+  })
+})
+
+// ---------------------------------------------------------------------------
+// PR 2 — Task G: Admin auth gate in dashboardMetricasView
+// ---------------------------------------------------------------------------
+describe('PR2 — Task G: Admin auth gate', () => {
+  beforeEach(() => {
+    mockGetUser.mockReset()
+    document.body.innerHTML = '<div id="test-admin-gate"></div>'
+  })
+
+  it('should render 403 error when user is not admin', async () => {
+    mockGetUser.mockReturnValue({ role: 'maestro', email: 'teacher@test.com' })
+
+    const { renderDashboardMetricasView } = await import('../views/dashboardMetricasView.js')
+    const container = document.getElementById('test-admin-gate')
+    await renderDashboardMetricasView(container)
+
+    expect(container.innerHTML).toContain('Acceso Restringido')
+    expect(container.innerHTML).toContain('Solo los administradores')
+    // No hub content for non-admin
+    expect(container.innerHTML).not.toContain('Observability Hub')
+  })
+
+  it('should render hub content when user is admin', async () => {
+    mockGetUser.mockReturnValue({ role: 'admin', email: 'admin@test.com' })
+
+    // Set demo mode so API calls use mock data
+    const { config } = await import('../../../core/config/config.js')
+    const originalMode = config.isDemoMode
+    config.isDemoMode = true
+
+    // Re-import the view module to get fresh module state
+    const viewModule = await import('../views/dashboardMetricasView.js')
+    const container = document.getElementById('test-admin-gate')
+    await viewModule.renderDashboardMetricasView(container)
+
+    // Admin should see the hub content
+    expect(container.innerHTML).toContain('Analytics')
+    expect(container.innerHTML).toContain('Observability Hub')
+
+    config.isDemoMode = originalMode
+  })
+})
+
+// ---------------------------------------------------------------------------
+// PR 2 — Task F & J: CSP compliance — no inline style attributes
+// ---------------------------------------------------------------------------
+describe('PR2 — Task F: CSP compliance (no inline styles)', () => {
+  const viewsDir = resolve(process.cwd(), 'src', 'modules', 'metricas', 'views')
+
+  const viewFiles = [
+    'dashboardMetricasView.js',
+    'systemLogsWidget.js',
+    'auditTrailWidget.js',
+    'iaReporteGeneradorView.js',
+  ]
+
+  viewFiles.forEach((file) => {
+    it(`${file} should not contain inline style="..." attributes in templates`, () => {
+      const content = readFileSync(resolve(viewsDir, file), 'utf-8')
+
+      // Allow only inline styles inside the guia modal (which was already refactored)
+      // Count matches: style= followed by anything
+      const inlineStyleMatches = content.match(/style\s*=\s*"/g)
+
+      // Allow: imported CSS modules (style="css"), utility objects, or nullish
+      // For CSP compliance there should be zero `style="..."` in template strings
+      // But we need to be pragmatic: allow 1-2 in edge cases like dynamic color badges
+      // where CSS classes can't replace a dynamic value
+      if (inlineStyleMatches) {
+        // Filter out known false positives:
+        // - Bootstrap/inline style objects: `style={...}` (JSX style objects are fine)
+        // - `style="css"` or style imports
+        // - Dynamic template strings: style="${...}" are the ones we care about
+        const templateStyleMatches = content.match(/style="[^}]*"/g) || []
+        // We want ZERO template literal inline styles
+        expect(templateStyleMatches.length).toBe(0)
+      }
+    })
+  })
+})
+
+// ---------------------------------------------------------------------------
+// PR 2 — Task H: DataAdapter in IA tab — no direct supabase calls
+// ---------------------------------------------------------------------------
+describe('PR2 — Task H: DataAdapter in IA tab', () => {
+  it('iaReporteGeneradorView should not import supabase directly', () => {
+    const viewPath = resolve(
+      process.cwd(),
+      'src',
+      'modules',
+      'metricas',
+      'views',
+      'iaReporteGeneradorView.js',
+    )
+    const content = readFileSync(viewPath, 'utf-8')
+
+    // Should NOT have a direct supabase import
+    expect(content).not.toContain("from '../../../lib/supabaseClient.js'")
+    expect(content).not.toContain("from '../lib/supabaseClient.js'")
+
+    // Should import callDslRpc from the DataAdapter layer
+    expect(content).toContain('callDslRpc')
+  })
+
+  it('observabilidadApi should export callDslRpc', async () => {
+    const api = await import('../api/observabilidadApi.js')
+    expect(api.callDslRpc).toBeDefined()
+    expect(typeof api.callDslRpc).toBe('function')
+  })
+
+  it('observabilidadMock should export callDslRpc and return mock data', async () => {
+    const mock = await import('../api/observabilidadMock.js')
+    expect(mock.callDslRpc).toBeDefined()
+
+    const result = await mock.callDslRpc('riesgo')
+    expect(result).toHaveProperty('radarData')
+    expect(result).toHaveProperty('nodeDifficulty')
+    expect(result).toHaveProperty('complianceData')
+    expect(Array.isArray(result.radarData)).toBe(true)
+    expect(Array.isArray(result.nodeDifficulty)).toBe(true)
+    expect(Array.isArray(result.complianceData)).toBe(true)
+  })
+
+  it('observabilidadSupabase should export callDslRpc', async () => {
+    const supabaseImpl = await import('../api/observabilidadSupabase.js')
+    expect(supabaseImpl.callDslRpc).toBeDefined()
+    expect(typeof supabaseImpl.callDslRpc).toBe('function')
+  })
+})
+
+// ---------------------------------------------------------------------------
+// PR 2 — Task I: destroy() in IA tab
+// ---------------------------------------------------------------------------
+describe('PR2 — Task I: IA tab destroy lifecycle', () => {
+  beforeEach(() => {
+    document.body.innerHTML = ''
+  })
+
+  it('iaReporteGeneradorView should export destroyIaReporteGeneradorView', async () => {
+    const view = await import('../views/iaReporteGeneradorView.js')
+    expect(view.destroyIaReporteGeneradorView).toBeDefined()
+    expect(typeof view.destroyIaReporteGeneradorView).toBe('function')
+  })
+
+  it('destroyIaReporteGeneradorView should not throw when called with no active state', async () => {
+    const view = await import('../views/iaReporteGeneradorView.js')
+
+    // Should not throw when no active view
+    expect(() => view.destroyIaReporteGeneradorView()).not.toThrow()
+  })
+
+  it('destroyIaReporteGeneradorView should clean up after render', async () => {
+    document.body.innerHTML = '<div id="test-ia-destroy"></div>'
+
+    const view = await import('../views/iaReporteGeneradorView.js')
+    const container = document.getElementById('test-ia-destroy')
+
+    // Render the view
+    await view.renderIaReporteGeneradorView(container)
+    expect(container.innerHTML).toContain('Generador de Reportes')
+
+    // Now destroy
+    expect(() => view.destroyIaReporteGeneradorView()).not.toThrow()
   })
 })

@@ -273,3 +273,109 @@
   align-items: center;
   gap: 0.25rem;
 }
+
+/* ---------------------------------------------------------------------------
+   PR 2: CSP-compliant utility classes
+   --------------------------------------------------------------------------- */
+
+/* Loading area for spinner */
+.obs-loading-area {
+  min-height: 400px;
+}
+
+/* Slower spinner animation for offline badge */
+.obs-spinner-slow {
+  animation-duration: 2s;
+}
+
+/* Small spinner for net status badge */
+.obs-net-spinner {
+  width: 6px;
+  height: 6px;
+}
+
+/* IA result box centering */
+.obs-ia-result-box {
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Guía modal content area */
+.obs-guia-section-title {
+  font-size: 1rem;
+  letter-spacing: -0.01em;
+}
+
+.obs-guia-card-title {
+  letter-spacing: -0.01em;
+  font-size: 0.825rem;
+}
+
+/* Audit trail badges */
+.obs-audit-action-label {
+  font-size: 0.725rem;
+}
+
+.obs-audit-actor-cell {
+  max-width: 200px;
+}
+
+.obs-audit-detail-btn {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+}
+
+.obs-audit-detail-icon {
+  font-size: 0.85rem;
+}
+
+.obs-audit-badge {
+  font-size: 0.75rem;
+}
+
+/* IA report view */
+.obs-time-input {
+  width: 100px;
+}
+
+.obs-freq-badge {
+  font-size: 0.7rem;
+}
+
+.obs-ia-content {
+  font-family: 'Outfit', sans-serif;
+  line-height: 1.6;
+}
+
+/* Audit trail sortable header */
+.obs-audit-header-sortable {
+  cursor: pointer;
+  user-select: none;
+}
+
+.obs-audit-header-sortable:hover {
+  background-color: rgba(var(--bs-primary-rgb), 0.04);
+}
+
+/* 403 forbidden view */
+.obs-forbidden {
+  min-height: 400px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Scrollbar hide utility */
+.obs-scrollbar-none {
+  scrollbar-width: none;
+}
+.obs-scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
+/* Border color utility for guia modal */
+.obs-border-subtle {
+  border-color: rgba(var(--bs-border-color-rgb, 222, 226, 230), 0.15) !important;
+}

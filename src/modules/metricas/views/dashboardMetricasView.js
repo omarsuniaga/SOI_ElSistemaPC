@@ -9,6 +9,8 @@ import { renderMetricCard } from '../components/MetricCard.js'
 import { escapeHTML } from '../../clases/utils/clasesUtils.js'
 import { systemLogsWidget } from './systemLogsWidget.js'
 import { auditTrailWidget } from './auditTrailWidget.js'
+import { getUser } from '../../../core/auth/authManager.js'
+import '../styles/metricas-observabilidad.css'
 
 const state = {
   activeTab: localStorage.getItem('pm_metrics_tab') || 'resumen',
@@ -25,6 +27,23 @@ const state = {
  */
 export async function renderDashboardMetricasView(container) {
   if (!container) return
+
+  // Admin auth gate: only admin role can access the observability hub
+  const user = getUser()
+  if (!user || user.role !== 'admin') {
+    container.innerHTML = `
+      <div class="obs-forbidden">
+        <div class="text-center">
+          <i class="bi bi-shield-lock fs-1 text-danger d-block mb-3"></i>
+          <h4 class="fw-bold text-danger">Acceso Restringido</h4>
+          <p class="text-muted">Solo los administradores del sistema pueden acceder al panel de Observabilidad.</p>
+          <a href="#/login" class="btn btn-outline-primary mt-2">Ir a Inicio de Sesión</a>
+        </div>
+      </div>
+    `
+    return
+  }
+
   try {
     // Destruir instancia anterior si existe para evitar fugas de memoria
     if (state.activeWidgetInstance && typeof state.activeWidgetInstance.destroy === 'function') {
@@ -50,7 +69,7 @@ export async function renderDashboardMetricasView(container) {
 }
 
 function renderLoading(container) {
-  container.innerHTML = `<div class="d-flex justify-content-center align-items-center" style="min-height: 400px;"><div class="spinner-border text-primary" role="status"></div></div>`
+  container.innerHTML = `<div class="d-flex justify-content-center align-items-center obs-loading-area"><div class="spinner-border text-primary" role="status"></div></div>`
 }
 
 function renderError(container, msg) {
@@ -97,7 +116,7 @@ function _updateOfflineBadge() {
   if (!badgeContainer) return
   const isOnline = navigator.onLine
   badgeContainer.innerHTML = isOnline
-    ? `<span class="badge bg-success rounded-pill px-3 py-2 d-inline-flex align-items-center gap-1 shadow-sm"><span class="spinner-grow spinner-grow-sm text-white" style="animation-duration: 2s;" role="status"></span><i class="bi bi-cloud-check me-1"></i> Online</span>`
+    ? `<span class="badge bg-success rounded-pill px-3 py-2 d-inline-flex align-items-center gap-1 shadow-sm"><span class="spinner-grow spinner-grow-sm text-white obs-spinner-slow" role="status"></span><i class="bi bi-cloud-check me-1"></i> Online</span>`
     : `<span class="badge bg-warning text-dark rounded-pill px-3 py-2 d-inline-flex align-items-center gap-1 shadow-sm"><span class="spinner-grow spinner-grow-sm text-dark animate-pulse" role="status"></span><i class="bi bi-cloud-slash me-1"></i> Offline - Logs encolados</span>`
 }
 
@@ -219,7 +238,7 @@ function renderIATab() {
           <i class="bi bi-file-earmark-richtext me-1"></i> Generador de Reportes Completo
         </a>
       </div>
-      <div id="ia-result-area" class="mt-4 text-start" style="max-width: 600px; margin: 0 auto;"></div>
+      <div id="ia-result-area" class="mt-4 text-start obs-ia-result-box"></div>
     </div>
   `
 }
@@ -358,115 +377,28 @@ function _attachGlobalEventsIA() {
 
 function _openGuiaAnaliticaModal() {
   const content = `
-    <style>
-      .guia-modal-body {
-        font-family: 'Outfit', 'Inter', -apple-system, sans-serif;
-      }
-      .guia-tab-btn {
-        background: none;
-        border: none;
-        border-radius: 10px;
-        color: var(--pm-text-muted, #6c757d);
-        padding: 0.75rem 1rem;
-        text-align: left;
-        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-        font-weight: 500;
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-        width: 100%;
-        font-size: 0.875rem;
-        position: relative;
-        overflow: hidden;
-      }
-      .guia-tab-btn:hover {
-        background: rgba(var(--bs-primary-rgb, 13, 110, 253), 0.04);
-        color: var(--bs-primary, #0d6efd);
-        padding-left: 1.15rem;
-      }
-      .guia-tab-btn.active {
-        background: rgba(var(--bs-primary-rgb, 13, 110, 253), 0.08) !important;
-        color: var(--bs-primary, #0d6efd) !important;
-        font-weight: 600;
-        padding-left: 1.15rem;
-      }
-      .guia-tab-btn.active::before {
-        content: '';
-        position: absolute;
-        left: 0;
-        top: 20%;
-        height: 60%;
-        width: 3px;
-        background: var(--bs-primary, #0d6efd);
-        border-radius: 0 4px 4px 0;
-      }
-      
-      .guia-panel-card {
-        background: rgba(var(--bs-body-bg-rgb, 255, 255, 255), 0.5);
-        backdrop-filter: blur(8px);
-        -webkit-backdrop-filter: blur(8px);
-        border: 1px solid rgba(var(--bs-border-color-rgb, 222, 226, 230), 0.15);
-        border-radius: 14px;
-        padding: 1.25rem;
-        transition: all 0.25s ease;
-      }
-      .guia-panel-card:hover {
-        transform: translateY(-1px);
-        border-color: rgba(var(--bs-primary-rgb, 13, 110, 253), 0.25);
-      }
-      .guia-icon-box {
-        width: 38px;
-        height: 38px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: 10px;
-        font-size: 1.1rem;
-        flex-shrink: 0;
-      }
-      
-      .guia-data-badge {
-        background: rgba(var(--bs-body-color-rgb, 33, 37, 41), 0.03);
-        border: 1px solid rgba(var(--bs-border-color-rgb, 222, 226, 230), 0.2);
-        border-radius: 8px;
-        padding: 0.4rem 0.65rem;
-        font-size: 0.725rem;
-        font-family: var(--bs-font-monospace, monospace);
-        color: var(--pm-text-muted, #6c757d);
-        display: inline-flex;
-        align-items: center;
-      }
-
-      .guia-formula-box {
-        background: linear-gradient(135deg, rgba(var(--bs-body-bg-rgb, 255, 255, 255), 0.8) 0%, rgba(var(--bs-tertiary-bg-rgb, 248, 249, 250), 0.8) 100%);
-        border: 1px dashed rgba(var(--bs-border-color-rgb, 222, 226, 230), 0.7);
-        border-radius: 12px;
-        padding: 1.15rem;
-      }
-    </style>
-
-    <div class="guia-modal-body container-fluid p-0">
+    <div class="obs-guia-modal-body container-fluid p-0">
       <div class="row g-0 flex-column flex-md-row">
         <!-- Barra de navegación lateral -->
-        <div class="col-12 col-md-4 border-end pb-3 pb-md-0 pe-md-3 mb-3 mb-md-0" style="border-color: rgba(var(--bs-border-color-rgb, 222, 226, 230), 0.15) !important;">
-          <div class="d-flex flex-row flex-md-column gap-1 overflow-x-auto overflow-y-hidden" id="guia-modal-tabs" style="scrollbar-width: none;">
-            <button class="guia-tab-btn active text-nowrap" data-guia="resumen" type="button">
+        <div class="col-12 col-md-4 border-end pb-3 pb-md-0 pe-md-3 mb-3 mb-md-0 obs-border-subtle">
+          <div class="d-flex flex-row flex-md-column gap-1 overflow-x-auto overflow-y-hidden obs-scrollbar-none" id="guia-modal-tabs">
+            <button class="obs-guia-tab-btn active text-nowrap" data-guia="resumen" type="button">
               <i class="bi bi-speedometer2"></i>
               <span>Resumen & KPIs</span>
             </button>
-            <button class="guia-tab-btn text-nowrap" data-guia="operaciones" type="button">
+            <button class="obs-guia-tab-btn text-nowrap" data-guia="operaciones" type="button">
               <i class="bi bi-gear-fill"></i>
               <span>Operaciones & Docencia</span>
             </button>
-            <button class="guia-tab-btn text-nowrap" data-guia="logs" type="button">
+            <button class="obs-guia-tab-btn text-nowrap" data-guia="logs" type="button">
               <i class="bi bi-terminal"></i>
               <span>Logs de Sistema</span>
             </button>
-            <button class="guia-tab-btn text-nowrap" data-guia="auditoria" type="button">
+            <button class="obs-guia-tab-btn text-nowrap" data-guia="auditoria" type="button">
               <i class="bi bi-shield-check"></i>
               <span>Auditoría Trail</span>
             </button>
-            <button class="guia-tab-btn text-nowrap" data-guia="ia" type="button">
+            <button class="obs-guia-tab-btn text-nowrap" data-guia="ia" type="button">
               <i class="bi bi-robot"></i>
               <span>SOI Intelligence</span>
             </button>
@@ -480,38 +412,38 @@ function _openGuiaAnaliticaModal() {
             <!-- PANEL RESUMEN -->
             <div class="guia-panel active" id="pane-resumen">
               <div class="d-flex align-items-center gap-3 mb-3">
-                <div class="guia-icon-box bg-primary bg-opacity-10 text-primary">
+                <div class="obs-guia-icon-box bg-primary bg-opacity-10 text-primary">
                   <i class="bi bi-speedometer2"></i>
                 </div>
                 <div>
-                  <h6 class="fw-bold mb-0" style="font-size:1rem; letter-spacing:-0.01em;">Métricas Macro y KPIs de Control</h6>
+                  <h6 class="fw-bold mb-0 obs-guia-section-title">Métricas Macro y KPIs de Control</h6>
                   <p class="extra-small text-muted mb-0">El pulso integral del período académico en tiempo real.</p>
                 </div>
               </div>
               <hr class="my-3 opacity-25">
               <div class="vstack gap-3">
-                <div class="guia-panel-card">
+                <div class="obs-guia-panel-card">
                   <div class="d-flex align-items-center justify-content-between mb-2">
-                    <span class="fw-bold small text-primary" style="letter-spacing: -0.01em; font-size:0.825rem;">Resumen General</span>
+                    <span class="fw-bold small text-primary obs-guia-card-title">Resumen General</span>
                     <span class="badge bg-primary bg-opacity-10 text-primary border border-primary-subtle extra-small">KPIs</span>
                   </div>
                   <p class="extra-small text-secondary mb-3 lh-base">
                     Consolida a nivel institucional la cantidad de estudiantes inscritos, el promedio general y el porcentaje de asistencia de la fecha actual.
                   </p>
-                  <div class="guia-data-badge">
+                  <div class="obs-guia-data-badge">
                     <i class="bi bi-database me-1 text-primary"></i> vw_estadisticas_periodo
                   </div>
                 </div>
                 
-                <div class="guia-panel-card">
+                <div class="obs-guia-panel-card">
                   <div class="d-flex align-items-center justify-content-between mb-2">
-                    <span class="fw-bold small text-warning" style="letter-spacing: -0.01em; font-size:0.825rem;">Alumnos Destacados</span>
+                    <span class="fw-bold small text-warning obs-guia-card-title">Alumnos Destacados</span>
                     <span class="badge bg-warning bg-opacity-10 text-warning border border-warning-subtle extra-small">Rendimiento</span>
                   </div>
                   <p class="extra-small text-secondary mb-3 lh-base">
                     Identifica automáticamente a los alumnos sobresalientes con un promedio ponderado mayor o igual a <strong>9.50</strong> para visibilizar e incentivar el mérito académico.
                   </p>
-                  <div class="guia-data-badge">
+                  <div class="obs-guia-data-badge">
                     <i class="bi bi-database me-1 text-warning"></i> vw_destacados_y_riesgo_academico
                   </div>
                 </div>
@@ -521,17 +453,17 @@ function _openGuiaAnaliticaModal() {
             <!-- PANEL OPERACIONES -->
             <div class="guia-panel d-none" id="pane-operaciones">
               <div class="d-flex align-items-center gap-3 mb-3">
-                <div class="guia-icon-box bg-primary bg-opacity-10 text-primary">
+                <div class="obs-guia-icon-box bg-primary bg-opacity-10 text-primary">
                   <i class="bi bi-gear-fill"></i>
                 </div>
                 <div>
-                  <h6 class="fw-bold mb-0" style="font-size:1rem; letter-spacing:-0.01em;">Cumplimiento Operativo y Docencia</h6>
+                  <h6 class="fw-bold mb-0 obs-guia-section-title">Cumplimiento Operativo y Docencia</h6>
                   <p class="extra-small text-muted mb-0">Cruce dinámico del llenado de clases y estadísticas operativas.</p>
                 </div>
               </div>
               <hr class="my-3 opacity-25">
               <div class="vstack gap-3">
-                <div class="guia-panel-card">
+                <div class="obs-guia-panel-card">
                   <span class="fw-bold small text-primary d-block mb-2">Detección de Puntos Ciegos</span>
                   <p class="extra-small text-secondary mb-0 lh-base">
                     Estudia si el ausentismo estudiantil coincide con retrasos u omisión de registros de asistencia por parte de maestros en categoría irregular o negligente.
@@ -543,17 +475,17 @@ function _openGuiaAnaliticaModal() {
             <!-- PANEL LOGS -->
             <div class="guia-panel d-none" id="pane-logs">
               <div class="d-flex align-items-center gap-3 mb-3">
-                <div class="guia-icon-box bg-danger bg-opacity-10 text-danger">
+                <div class="obs-guia-icon-box bg-danger bg-opacity-10 text-danger">
                   <i class="bi bi-terminal"></i>
                 </div>
                 <div>
-                  <h6 class="fw-bold mb-0" style="font-size:1rem; letter-spacing:-0.01em;">Consola de Depuración del Cliente (PWA)</h6>
+                  <h6 class="fw-bold mb-0 obs-guia-section-title">Consola de Depuración del Cliente (PWA)</h6>
                   <p class="extra-small text-muted mb-0">Monitoreo de excepciones técnicas, red y tolerancia offline.</p>
                 </div>
               </div>
               <hr class="my-3 opacity-25">
               <div class="vstack gap-3">
-                <div class="guia-panel-card">
+                <div class="obs-guia-panel-card">
                   <span class="fw-bold small text-danger d-block mb-2">Excepciones de Red y RLS</span>
                   <p class="extra-small text-secondary mb-0 lh-base">
                     Muestra fallas al ejecutar políticas de seguridad en la base de datos o caídas en la conexión de Internet del cliente, con logs persistidos.
@@ -565,17 +497,17 @@ function _openGuiaAnaliticaModal() {
             <!-- PANEL AUDITORIA -->
             <div class="guia-panel d-none" id="pane-auditoria">
               <div class="d-flex align-items-center gap-3 mb-3">
-                <div class="guia-icon-box bg-success bg-opacity-10 text-success">
+                <div class="obs-guia-icon-box bg-success bg-opacity-10 text-success">
                   <i class="bi bi-shield-check"></i>
                 </div>
                 <div>
-                  <h6 class="fw-bold mb-0" style="font-size:1rem; letter-spacing:-0.01em;">Audit Trail - Control de Cambios</h6>
+                  <h6 class="fw-bold mb-0 obs-guia-section-title">Audit Trail - Control de Cambios</h6>
                   <p class="extra-small text-muted mb-0">Trazabilidad histórica de todas las solicitudes y aprobaciones de ausencias.</p>
                 </div>
               </div>
               <hr class="my-3 opacity-25">
               <div class="vstack gap-3">
-                <div class="guia-panel-card">
+                <div class="obs-guia-panel-card">
                   <span class="fw-bold small text-success d-block mb-2">Inmutabilidad Histórica</span>
                   <p class="extra-small text-secondary mb-0 lh-base">
                     Cada vez que un maestro o administrador crea, aprueba o rechaza una ausencia, se graba un log transaccional no-modificable para prevenir el fraude.
@@ -587,17 +519,17 @@ function _openGuiaAnaliticaModal() {
             <!-- PANEL IA -->
             <div class="guia-panel d-none" id="pane-ia">
               <div class="d-flex align-items-center gap-3 mb-3">
-                <div class="guia-icon-box bg-info bg-opacity-10 text-info">
+                <div class="obs-guia-icon-box bg-info bg-opacity-10 text-info">
                   <i class="bi bi-robot"></i>
                 </div>
                 <div>
-                  <h6 class="fw-bold mb-0" style="font-size:1rem; letter-spacing:-0.01em;">SOI Intelligence - IA de Confianza</h6>
+                  <h6 class="fw-bold mb-0 obs-guia-section-title">SOI Intelligence - IA de Confianza</h6>
                   <p class="extra-small text-muted mb-0">Modelos generativos (Groq) con inyección de contexto rigurosa.</p>
                 </div>
               </div>
               <hr class="my-3 opacity-25">
               <div class="vstack gap-3">
-                <div class="guia-panel-card border-start border-3 border-info">
+                <div class="obs-guia-panel-card border-start border-3 border-info">
                   <span class="badge bg-info bg-opacity-10 text-info border border-info-subtle extra-small mb-2">Protocolo Antialucinaciones</span>
                   <p class="extra-small text-secondary mb-0 lh-base">
                     Para asegurar análisis veraces, la IA no tiene acceso general a la base de datos transaccional. En su lugar, el sistema compila paquetes de datos agregados en JSON provenientes de las vistas consolidadas según el tipo de reporte solicitado.

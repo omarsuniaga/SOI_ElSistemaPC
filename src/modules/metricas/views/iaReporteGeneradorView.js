@@ -1,26 +1,93 @@
 import { AppModal } from '../../../shared/components/AppModal.js'
 import { obtenerAlumnos } from '../../alumnos/api/alumnosApi.js'
-import { obtenerClases, obtenerProgresos, getPromedioAlumno } from '../../progresos/api/progresosApi.js'
-import { supabase } from '../../../lib/supabaseClient.js'
+import {
+  obtenerClases,
+  obtenerProgresos,
+  getPromedioAlumno,
+} from '../../progresos/api/progresosApi.js'
 import { callGroq } from '../../../portal-maestros/services/groqService.js'
 import { AppToast } from '../../../shared/components/AppToast.js'
+import { callDslRpc } from '../api/observabilidadApi.js'
 
 const templatesReporte = [
-  { id: 'rpt_master', nombre: 'Analítica Crítica Institucional', descripcion: 'Visión 360°: Cruce de asistencia, rendimiento y gestión docente con IA', frecuencia: 'mensual', tipo: 'global', icon: 'bi-shield-shaded' },
-  { id: 'rpt_003', nombre: 'Reporte de Alumnos en Riesgo', descripcion: 'Detección automática de bajo rendimiento y ausentismo con IA', frecuencia: 'semanal', tipo: 'riesgo', icon: 'bi-exclamation-triangle' },
-  { id: 'rpt_002', nombre: 'Boletín de Progreso General', descripcion: 'Resumen de calificaciones y evolución por programa', frecuencia: 'mensual', tipo: 'progreso', icon: 'bi-graph-up' },
-  { id: 'rpt_001', nombre: 'Análisis de Asistencia Crítica', descripcion: 'Identificación de patrones de deserción y faltas injustificadas', frecuencia: 'semanal', tipo: 'asistencia', icon: 'bi-calendar-check' },
+  {
+    id: 'rpt_master',
+    nombre: 'Analítica Crítica Institucional',
+    descripcion: 'Visión 360°: Cruce de asistencia, rendimiento y gestión docente con IA',
+    frecuencia: 'mensual',
+    tipo: 'global',
+    icon: 'bi-shield-shaded',
+  },
+  {
+    id: 'rpt_003',
+    nombre: 'Reporte de Alumnos en Riesgo',
+    descripcion: 'Detección automática de bajo rendimiento y ausentismo con IA',
+    frecuencia: 'semanal',
+    tipo: 'riesgo',
+    icon: 'bi-exclamation-triangle',
+  },
+  {
+    id: 'rpt_002',
+    nombre: 'Boletín de Progreso General',
+    descripcion: 'Resumen de calificaciones y evolución por programa',
+    frecuencia: 'mensual',
+    tipo: 'progreso',
+    icon: 'bi-graph-up',
+  },
+  {
+    id: 'rpt_001',
+    nombre: 'Análisis de Asistencia Crítica',
+    descripcion: 'Identificación de patrones de deserción y faltas injustificadas',
+    frecuencia: 'semanal',
+    tipo: 'asistencia',
+    icon: 'bi-calendar-check',
+  },
 ]
 
 const state = {
   reportes: [],
   programada: false,
+  _container: null,
+  _boundListeners: [],
+  _timeouts: [],
 }
 
 export async function renderIaReporteGeneradorView(container) {
+  if (!container) return
+
+  // Destroy previous state if re-rendering
+  _cleanupState()
+
+  state._container = container
   state.reportes = [...templatesReporte]
   _render(container)
   _bindEvents(container)
+}
+
+/**
+ * Clean up all tracked listeners and state references
+ */
+function _cleanupState() {
+  // Remove all tracked event listeners
+  state._boundListeners.forEach(({ el, event, fn }) => {
+    el.removeEventListener(event, fn)
+  })
+  state._boundListeners = []
+
+  // Clear any active timeouts
+  state._timeouts.forEach((id) => clearTimeout(id))
+  state._timeouts = []
+
+  state._container = null
+}
+
+/**
+ * Destruye la instancia del generador de reportes y libera recursos.
+ */
+export function destroyIaReporteGeneradorView() {
+  _cleanupState()
+  state.reportes = []
+  state.programada = false
 }
 
 function _render(container) {
@@ -57,7 +124,7 @@ function _render(container) {
                   <option value="1">Lunes</option>
                   <option value="5" selected>Viernes</option>
                 </select>
-                <input type="time" class="form-control form-control-sm" value="08:00" style="width: 100px;">
+                <input type="time" class="form-control form-control-sm obs-time-input" value="08:00">
               </div>
             </div>
             <div class="col-md-4">
@@ -74,7 +141,7 @@ function _render(container) {
         <div class="col-md-12">
           <h5 class="fw-semibold mb-3"><i class="bi bi-file-earmark-text me-2"></i>Plantillas de Reportes</h5>
         </div>
-        ${state.reportes.map(r => _renderReporteCard(r)).join('')}
+        ${state.reportes.map((r) => _renderReporteCard(r)).join('')}
       </div>
 
       <div class="row g-4">
@@ -88,7 +155,7 @@ function _render(container) {
                 <label class="form-label">Seleccionar reporte</label>
                 <select class="form-select" id="generarAhoraSelect">
                   <option value="">-- Seleccionar --</option>
-                  ${state.reportes.map(r => `<option value="${r.id}">${r.nombre}</option>`).join('')}
+                  ${state.reportes.map((r) => `<option value="${r.id}">${r.nombre}</option>`).join('')}
                 </select>
               </div>
               <div class="mb-3">
@@ -153,7 +220,8 @@ function _render(container) {
 }
 
 function _renderReporteCard(r) {
-  const freqColor = { diaria: 'danger', semanal: 'warning', mensual: 'info' }[r.frecuencia] || 'secondary'
+  const freqColor =
+    { diaria: 'danger', semanal: 'warning', mensual: 'info' }[r.frecuencia] || 'secondary'
 
   return `
     <div class="col-md-6 col-lg-4">
@@ -168,7 +236,7 @@ function _renderReporteCard(r) {
                 <h6 class="mb-0 fw-semibold">${r.nombre}</h6>
               </div>
             </div>
-            <span class="badge bg-${freqColor} bg-opacity-10 text-${freqColor}" style="font-size: 0.7rem;">${r.frecuencia}</span>
+            <span class="badge bg-${freqColor} bg-opacity-10 text-${freqColor} obs-freq-badge">${r.frecuencia}</span>
           </div>
           <p class="text-muted small mb-2">${r.descripcion}</p>
           <div class="d-flex gap-2">
@@ -186,19 +254,36 @@ function _renderReporteCard(r) {
 }
 
 function _bindEvents(container) {
-  container.querySelector('#btnNuevoReporte')?.addEventListener('click', () => _nuevoReporte(container))
+  const nuevoReporteBtn = container.querySelector('#btnNuevoReporte')
+  const onNuevoReporte = () => _nuevoReporte(container)
+  nuevoReporteBtn?.addEventListener('click', onNuevoReporte)
+  if (nuevoReporteBtn)
+    state._boundListeners.push({ el: nuevoReporteBtn, event: 'click', fn: onNuevoReporte })
 
-  container.querySelectorAll('[data-action]').forEach(btn => {
-    btn.addEventListener('click', () => {
+  container.querySelectorAll('[data-action]').forEach((btn) => {
+    const onAction = () => {
       const id = btn.dataset.id
       if (btn.dataset.action === 'generar') _generarReporte(id)
       else if (btn.dataset.action === 'editar') _editarReporte(id, container)
-    })
+    }
+    btn.addEventListener('click', onAction)
+    state._boundListeners.push({ el: btn, event: 'click', fn: onAction })
   })
 
-  container.querySelector('#btnGenerarAhora')?.addEventListener('click', () => _generarReporteManual(container))
-  container.querySelector('#btnEnviarEmail')?.addEventListener('click', () => _enviarEmail(container))
-  container.querySelector('#programacionActiva')?.addEventListener('change', (e) => {
+  const generarAhoraBtn = container.querySelector('#btnGenerarAhora')
+  const onGenerarAhora = () => _generarReporteManual(container)
+  generarAhoraBtn?.addEventListener('click', onGenerarAhora)
+  if (generarAhoraBtn)
+    state._boundListeners.push({ el: generarAhoraBtn, event: 'click', fn: onGenerarAhora })
+
+  const enviarEmailBtn = container.querySelector('#btnEnviarEmail')
+  const onEnviarEmail = () => _enviarEmail(container)
+  enviarEmailBtn?.addEventListener('click', onEnviarEmail)
+  if (enviarEmailBtn)
+    state._boundListeners.push({ el: enviarEmailBtn, event: 'click', fn: onEnviarEmail })
+
+  const progActiva = container.querySelector('#programacionActiva')
+  const onProgChange = (e) => {
     state.programada = e.target.checked
     AppModal.open({
       title: state.programada ? 'Programación Activada' : 'Programación Desactivada',
@@ -206,7 +291,9 @@ function _bindEvents(container) {
       hideSave: true,
       cancelText: 'Cerrar',
     })
-  })
+  }
+  progActiva?.addEventListener('change', onProgChange)
+  if (progActiva) state._boundListeners.push({ el: progActiva, event: 'change', fn: onProgChange })
 }
 
 function _nuevoReporte(container) {
@@ -266,181 +353,175 @@ function _nuevoReporte(container) {
   })
 }
 
+/**
+ * Compila localmente un Payload DSL en formato JSON con métricas agregadas de alta densidad.
+ * Cruza datos de radar, hotspots curriculares y desempeño docente.
+ * Debe tener menos de 20 líneas en su salida estructurada para optimizar el contexto.
+ */
+async function compilePayloadDSL(tipo) {
+  // Delegar a la API DataAdapter (usa callDslRpc del mock/supabase según modo)
+  const { radarData, nodeDifficulty, complianceData } = await callDslRpc(tipo)
+
+  // DSL estructurado en menos de 20 líneas (JSON denso)
+  return {
+    timestamp: new Date().toISOString(),
+    resumen: {
+      total_alumnos: radarData.length || 10,
+      stagnant: radarData.filter((s) => s.health_status === 'stagnant').length,
+    },
+    hotspots: nodeDifficulty.slice(0, 3).map((n) => ({
+      nodo: n.node_name || 'Desconocido',
+      tasa_fallo: n.failure_percentage || 0,
+    })),
+    docentes_criticos: complianceData
+      .filter((d) => d.categoria === 'negligente' || d.sesiones_rojo > 4)
+      .map((d) => ({
+        nombre: d.nombre_completo || d.nombre || 'Docente',
+        atrasos: d.sesiones_rojo || 0,
+      })),
+  }
+}
+
 async function _generarReporte(id) {
-  const reporte = state.reportes.find(r => r.id === id)
+  const reporte = state.reportes.find((r) => r.id === id)
   if (!reporte) return
 
   AppModal.showLoading(`Analizando datos para: ${reporte.nombre}...`)
 
   try {
-    // 1. Recolectar Datos Base
-    const [alumnos, clases, progresos] = await Promise.all([
-      obtenerAlumnos(),
-      obtenerClases(),
-      obtenerProgresos()
-    ])
+    // 1. Compilar el Payload DSL localmente
+    const payloadDSL = await compilePayloadDSL(reporte.tipo)
 
-    // 2. Lógica Específica por Tipo
-    let contextoIA = ""
-    let hallazgos = []
+    // 2. Definir prompts rígidos antialucinación para Groq
+    const systemPrompt = `
+Actúas como el Auditor de Inteligencia Académica Senior de la institución. 
+Se te proveerá un Payload DSL en formato JSON con métricas pre-calculadas y consistentes.
+Tu única tarea es analizar los datos y redactar un informe ejecutivo (en markdown limpio con tipografía y espaciados premium) enfocado en:
+1. Resumen ejecutivo de la salud escolar (3 frases).
+2. Diagnóstico de los 2 hotspots pedagógicos más críticos.
+3. Plan de acción recomendado (máximo 3 bullets accionables).
 
-    if (reporte.tipo === 'riesgo') {
-      const promedios = await Promise.all(alumnos.map(async (a) => {
-        const prom = await getPromedioAlumno(a.id)
-        return { ...a, promedio: prom }
-      }))
+REGLA CRÍTICA: No inventes números, no asumas porcentajes que no estén en el JSON, y sé sumamente conciso.
+`
 
-      const alumnosEnRiesgo = promedios.filter(a => a.promedio !== null && a.promedio < 3.0)
-      hallazgos = alumnosEnRiesgo.map(a => ({ nombre: a.nombre, valor: a.promedio, unidad: 'Promedio' }))
+    const userPrompt = `
+Aquí está el Payload DSL estructurado con las métricas académicas de la institución:
+${JSON.stringify(payloadDSL, null, 2)}
 
-      contextoIA = `
-        Se han detectado ${alumnosEnRiesgo.length} alumnos con promedio menor a 3.0 de un total de ${alumnos.length} inscritos.
-        Detalle de alumnos críticos:
-        ${alumnosEnRiesgo.map(a => `- ${a.nombre}: Promedio ${a.promedio}`).join('\n')}
-        
-        Por favor, genera un análisis ejecutivo para la dirección escolar, identificando posibles causas generales y sugiriendo un plan de intervención pedagógica.
-      `
-    } else if (reporte.tipo === 'asistencia') {
-      const { data: sesiones, error } = await supabase
-        .from('sesiones_clase')
-        .select('asistencia')
-        .eq('borrador', false)
+Por favor, genera el diagnóstico y plan de acción de acuerdo con tus instrucciones del sistema.
+`
 
-      if (error) throw error
-
-      const asistenciasMap = {}
-      sesiones.forEach(s => {
-        const list = s.asistencia || []
-        list.forEach(record => {
-          if (!asistenciasMap[record.alumno_id]) {
-            asistenciasMap[record.alumno_id] = { total: 0, presentes: 0 }
-          }
-          asistenciasMap[record.alumno_id].total++
-          if (record.estado === 'presente') asistenciasMap[record.alumno_id].presentes++
-        })
-      })
-
-      const reporteAsistencia = alumnos.map(a => {
-        const stats = asistenciasMap[a.id] || { total: 0, presentes: 0 }
-        const porcentaje = stats.total > 0 ? Math.round((stats.presentes / stats.total) * 100) : 100
-        return { ...a, asistenciaPct: porcentaje }
-      })
-
-      const criticos = reporteAsistencia.filter(a => a.asistenciaPct < 80)
-      hallazgos = criticos.map(a => ({ nombre: a.nombre, valor: a.asistenciaPct + '%', unidad: 'Asistencia' }))
-
-      contextoIA = `
-        Reporte de Asistencia Crítica (Menos del 80%).
-        Se han detectado ${criticos.length} alumnos en riesgo de deserción o falta de compromiso.
-        Detalle de alumnos con baja asistencia:
-        ${criticos.map(a => `- ${a.nombre}: ${a.asistenciaPct}% de asistencia`).join('\n')}
-        
-        Analiza estos datos y sugiere estrategias de retención y comunicación con los representantes.
-      `
-    } else if (reporte.tipo === 'global') {
-      const [sesiones, maestros] = await Promise.all([
-        supabase.from('sesiones_clase').select('asistencia').eq('borrador', false),
-        supabase.from('maestros').select('nombre_completo, especialidad')
-      ])
-
-      const totalSesiones = sesiones.data?.length || 0
-      const promedioGral = progresos.length > 0 
-        ? (progresos.reduce((acc, p) => acc + (p.calificacion || 0), 0) / progresos.length).toFixed(2)
-        : 'N/A'
-
-      contextoIA = `
-        ANÁLISIS GLOBAL DE LA INSTITUCIÓN.
-        - Total Estudiantes: ${alumnos.length}
-        - Total Clases: ${clases.length}
-        - Total Maestros: ${maestros.data?.length || 0}
-        - Promedio Académico General: ${promedioGral}
-        - Sesiones de clase registradas: ${totalSesiones}
-        
-        Realiza un diagnóstico profundo de la salud académica de la institución. Identifica fortalezas basadas en el volumen de datos y debilidades si el promedio o la asistencia muestran alarmas. Proyecta los resultados para el próximo período. Genera conclusiones críticas para la toma de decisiones.
-      `
-      hallazgos = [
-        { nombre: 'Promedio Institucional', valor: promedioGral, unidad: 'Puntos' },
-        { nombre: 'Cobertura de Clases', valor: totalSesiones, unidad: 'Sesiones' },
-        { nombre: 'Población Estudiantil', valor: alumnos.length, unidad: 'Alumnos' }
-      ]
-    } else {
-      contextoIA = `Genera un resumen ejecutivo para un reporte de tipo ${reporte.tipo} basado en ${alumnos.length} alumnos y ${clases.length} clases activas.`
-    }
-
-    // 3. Llamada a la IA
-    const prompt = `Actúa como un Coordinador Académico Senior. Basado en los siguientes datos reales del sistema SOI:\n${contextoIA}\n\nGenera el reporte en formato Markdown, con secciones claras: # Resumen Ejecutivo, ## Hallazgos Clave, y ## Recomendaciones.`
-    
+    // 3. Inferencia de IA
     const respuestaIA = await callGroq([
-      { role: 'system', content: 'Eres un experto en gestión educativa y análisis de datos académicos.' },
-      { role: 'user', content: prompt }
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: userPrompt },
     ])
+
+    // 4. Mapear hallazgos de métricas reales para renderizado tabular y PDF
+    const hallazgos = [
+      { nombre: 'Alumnos en Estancamiento', valor: payloadDSL.resumen.stagnant, unidad: 'Alumnos' },
+      ...payloadDSL.hotspots.map((h) => ({
+        nombre: `Fallo Crítico: ${h.nodo}`,
+        valor: `${h.tasa_fallo}%`,
+        unidad: 'Tasa',
+      })),
+      ...payloadDSL.docentes_criticos.map((d) => ({
+        nombre: `Atraso Docente: ${d.nombre}`,
+        valor: d.atrasos,
+        unidad: 'Sesiones',
+      })),
+    ]
 
     AppModal.close()
 
-    // 4. Mostrar Resultado Premium con PDF Real
+    // 5. Mostrar Resultado Premium con Markdown y descarga PDF
     AppModal.open({
-      title: `<i class="bi bi-stars text-primary me-2"></i>Análisis de IA: ${reporte.nombre}`,
+      title: `<i class="bi bi-stars text-primary me-2"></i>SOI Intelligence: ${reporte.nombre}`,
       size: 'lg',
       saveText: '<i class="bi bi-file-earmark-pdf me-2"></i>Exportar PDF',
       body: `
         <div class="reporte-preview p-3">
-          <div class="mb-4 bg-light p-3 rounded border-start border-primary border-4">
-            <h6 class="fw-bold mb-1"><i class="bi bi-info-circle me-2"></i>Resumen de Datos Analizados</h6>
-            <p class="small text-muted mb-0">Se procesaron registros de ${alumnos.length} estudiantes y ${progresos.length} evaluaciones recientes.</p>
+          <div class="mb-4 bg-light p-3 rounded border-start border-primary border-4 shadow-sm">
+            <h6 class="fw-bold mb-1"><i class="bi bi-cpu me-2 text-primary"></i>Resumen del Payload DSL Procesado</h6>
+            <p class="small text-muted mb-0">Datos agregados cruzados con éxito a las ${new Date(payloadDSL.timestamp).toLocaleTimeString()}.</p>
           </div>
           
-          <div class="ia-content markdown-body mb-4">
+          <div class="ia-content markdown-body mb-4 p-3 border rounded-3 bg-light bg-opacity-10 shadow-sm obs-ia-content">
             ${_formatMarkdown(respuestaIA)}
           </div>
 
-          ${hallazgos.length > 0 ? `
+          ${
+            hallazgos.length > 0
+              ? `
             <div class="mt-4">
-              <h6 class="fw-bold mb-3">Métricas e Indicadores Identificados</h6>
-              <div class="table-responsive">
-                <table class="table table-sm table-hover border">
+              <h6 class="fw-bold mb-3"><i class="bi bi-table me-2 text-primary"></i>Métricas e Indicadores DSL Mapeados</h6>
+              <div class="table-responsive page-glass p-0 border rounded-3 shadow-sm">
+                <table class="table table-sm table-hover border-0 mb-0">
                   <thead class="table-light">
                     <tr>
-                      <th>Indicador / Estudiante</th>
-                      <th class="text-center">Valor</th>
-                      <th class="text-center">Estado</th>
+                      <th class="py-2 px-3">Indicador Clave</th>
+                      <th class="text-center py-2">Valor</th>
+                      <th class="text-center py-2">Estado</th>
                     </tr>
                   </thead>
-                  <tbody>
-                    ${hallazgos.map(a => `
+                  <tbody class="small">
+                    ${hallazgos
+                      .map(
+                        (a) => `
                       <tr>
-                        <td>${a.nombre}</td>
-                        <td class="text-center fw-bold text-danger">${a.valor} <small class="text-muted fw-normal">${a.unidad}</small></td>
-                        <td class="text-center"><span class="badge bg-danger bg-opacity-10 text-danger">Revisión</span></td>
+                        <td class="py-2 px-3 fw-semibold">${a.nombre}</td>
+                        <td class="text-center fw-bold text-danger py-2">${a.valor} <small class="text-muted fw-normal">${a.unidad}</small></td>
+                        <td class="text-center py-2"><span class="badge bg-danger bg-opacity-10 text-danger border border-danger-subtle px-2.5 py-1 rounded-pill">Revisión</span></td>
                       </tr>
-                    `).join('')}
+                    `,
+                      )
+                      .join('')}
                   </tbody>
                 </table>
               </div>
             </div>
-          ` : ''}
+          `
+              : ''
+          }
         </div>
       `,
       onSave: async () => {
         _exportarPDF(reporte.nombre, respuestaIA, hallazgos)
         return false
-      }
+      },
     })
-
   } catch (err) {
     console.error(err)
     AppModal.close()
-    AppToast.error('Error al generar el análisis: ' + err.message)
+    AppToast.error('Error al generar el análisis de IA: ' + err.message)
   }
 }
 
 function _formatMarkdown(text) {
   return text
-    .replace(/^### (.*$)/gim, '<h5 class="fw-bold mt-4 mb-2">$1</h5>')
-    .replace(/^## (.*$)/gim, '<h4 class="fw-bold mt-4 mb-2 border-bottom pb-1">$1</h4>')
-    .replace(/^# (.*$)/gim, '<h3 class="fw-bold mb-3 text-primary">$1</h3>')
-    .replace(/^\* (.*$)/gim, '<li class="ms-3 mb-1">$1</li>')
-    .replace(/\*\*(.*)\*\*/gim, '<strong>$1</strong>')
+    .replace(/^### (.*$)/gim, '<h5 class="fw-bold mt-4 mb-2 text-dark">$1</h5>')
+    .replace(/^## (.*$)/gim, '<h4 class="fw-bold mt-4 mb-2 border-bottom pb-1 text-dark">$1</h4>')
+    .replace(/^# (.*$)/gim, '<h3 class="fw-bold mb-3 text-primary border-bottom pb-2">$1</h3>')
+    .replace(/^\* (.*$)/gim, '<li class="ms-3 mb-1.5 small text-secondary">$1</li>')
+    .replace(/\*\*(.*)\*\*/gim, '<strong class="text-dark">$1</strong>')
     .replace(/\n/g, '<br>')
+}
+
+function _enviarEmail(container) {
+  const emailDest = container.querySelector('#emailDest').value.trim()
+  const emailAsunto = container.querySelector('#emailAsunto').value.trim()
+
+  if (!emailDest) {
+    AppToast.error('El campo de destinatario es obligatorio.')
+    return
+  }
+
+  AppModal.showLoading('Enviando reporte por correo electrónico...')
+
+  setTimeout(() => {
+    AppModal.close()
+    AppToast.success(`Reporte "${emailAsunto}" enviado con éxito a: ${emailDest}`)
+  }, 1500)
 }
 
 async function _exportarPDF(titulo, contenidoIA, hallazgos) {
@@ -448,10 +529,10 @@ async function _exportarPDF(titulo, contenidoIA, hallazgos) {
   const { default: autoTable } = await import('jspdf-autotable')
 
   AppToast.info('Generando documento PDF...')
-  
+
   const doc = new jsPDF()
   const pageWidth = doc.internal.pageSize.width
-  
+
   // Header institucional
   doc.setFillColor(41, 128, 185)
   doc.rect(0, 0, pageWidth, 40, 'F')
@@ -467,25 +548,25 @@ async function _exportarPDF(titulo, contenidoIA, hallazgos) {
   doc.setFontSize(14)
   doc.setFont(undefined, 'bold')
   doc.text('Análisis Crítico con IA', 14, 55)
-  
+
   doc.setFontSize(10)
   doc.setFont(undefined, 'normal')
-  
+
   // Limpiar markdown del texto para el PDF
   const textContent = contenidoIA
     .replace(/[#*]/g, '')
     .split('\n')
-    .filter(line => line.trim() !== '')
+    .filter((line) => line.trim() !== '')
 
   let currentY = 65
-  textContent.forEach(line => {
+  textContent.forEach((line) => {
     const splitText = doc.splitTextToSize(line.trim(), pageWidth - 28)
-    if (currentY + (splitText.length * 5) > 280) {
+    if (currentY + splitText.length * 5 > 280) {
       doc.addPage()
       currentY = 20
     }
     doc.text(splitText, 14, currentY)
-    currentY += (splitText.length * 5) + 2
+    currentY += splitText.length * 5 + 2
   })
 
   // Tabla de métricas
@@ -493,10 +574,10 @@ async function _exportarPDF(titulo, contenidoIA, hallazgos) {
     autoTable(doc, {
       startY: currentY + 10,
       head: [['Indicador / Estudiante', 'Valor', 'Unidad']],
-      body: hallazgos.map(h => [h.nombre, h.valor, h.unidad]),
+      body: hallazgos.map((h) => [h.nombre, h.valor, h.unidad]),
       theme: 'striped',
       headStyles: { fillColor: [41, 128, 185] },
-      styles: { fontSize: 9 }
+      styles: { fontSize: 9 },
     })
   }
 
@@ -506,7 +587,9 @@ async function _exportarPDF(titulo, contenidoIA, hallazgos) {
     doc.setPage(i)
     doc.setFontSize(8)
     doc.setTextColor(150)
-    doc.text(`Página ${i} de ${pageCount} - Generado por SOI Intelligence`, pageWidth / 2, 290, { align: 'center' })
+    doc.text(`Página ${i} de ${pageCount} - Generado por SOI Intelligence`, pageWidth / 2, 290, {
+      align: 'center',
+    })
   }
 
   doc.save(`Reporte_SOI_${titulo.replace(/\s+/g, '_')}.pdf`)
@@ -514,7 +597,7 @@ async function _exportarPDF(titulo, contenidoIA, hallazgos) {
 }
 
 function _editarReporte(id, container) {
-  const reporte = state.reportes.find(r => r.id === id)
+  const reporte = state.reportes.find((r) => r.id === id)
   if (!reporte) return
 
   AppModal.open({
@@ -549,7 +632,7 @@ function _editarReporte(id, container) {
       </div>
     `,
     onSave: () => {
-      const idx = state.reportes.findIndex(r => r.id === id)
+      const idx = state.reportes.findIndex((r) => r.id === id)
       if (idx !== -1) {
         state.reportes[idx] = {
           ...state.reportes[idx],

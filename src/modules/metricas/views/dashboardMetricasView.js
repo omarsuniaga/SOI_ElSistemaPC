@@ -1,38 +1,44 @@
 import { AppModal } from '../../../shared/components/AppModal.js'
 import { AppToast } from '../../../shared/components/AppToast.js'
-import { 
-  getEstadisticasPeriodoActivo, 
-  getResumenAlertas, 
-  getRiesgoAbandono,
+import {
+  getEstadisticasPeriodoActivo,
+  getResumenAlertas,
   getAlumnosDestacados,
-  getAlertasActivas
 } from '../api/metricasApi.js'
 import { renderMetricCard } from '../components/MetricCard.js'
 import { escapeHTML } from '../../clases/utils/clasesUtils.js'
+import { systemLogsWidget } from './systemLogsWidget.js'
+import { auditTrailWidget } from './auditTrailWidget.js'
 
 const state = {
   activeTab: localStorage.getItem('pm_metrics_tab') || 'resumen',
   stats: null,
-  alertas: [],
-  riesgo: [],
   cargando: false,
-  container: null
+  container: null,
+  activeWidgetInstance: null,
+  _onlineListener: null,
+  _offlineListener: null,
 }
 
 /**
- * Institutional Analytics Hub - Orquestador de Métricas
+ * Institutional Analytics & Observability Hub - Orquestador de Módulo (Decoupled con Widgets del Slice 2)
  */
 export async function renderDashboardMetricasView(container) {
   if (!container) return
   try {
+    // Destruir instancia anterior si existe para evitar fugas de memoria
+    if (state.activeWidgetInstance && typeof state.activeWidgetInstance.destroy === 'function') {
+      state.activeWidgetInstance.destroy()
+      state.activeWidgetInstance = null
+    }
+
     state.container = container
     state.cargando = true
     renderLoading(container)
 
-    // Cargar datos iniciales (KPIs)
+    // Cargar datos del resumen principal
     state.stats = await getEstadisticasPeriodoActivo()
-    const resumenAlertas = await getResumenAlertas()
-    state.resumenAlertas = resumenAlertas
+    state.resumenAlertas = await getResumenAlertas()
 
     state.cargando = false
     renderContent(container)
@@ -56,20 +62,25 @@ function renderContent(container) {
     <div class="page-container">
       <div class="page-header d-flex justify-content-between align-items-center flex-wrap gap-2">
         <div class="d-flex align-items-center gap-2">
-          <span class="page-title"><i class="bi bi-cpu me-2 text-primary"></i>Analytics Hub</span>
+          <span class="page-title"><i class="bi bi-cpu me-2 text-primary"></i>Analytics & Observability Hub</span>
         </div>
-        <button id="btn-guia-analisis" class="btn btn-outline-primary rounded-pill px-3 py-1.5 d-flex align-items-center gap-2 small fw-semibold transition-all">
-          <i class="bi bi-info-circle-fill"></i>
-          <span>Guía de Análisis</span>
-        </button>
+        <div class="d-flex align-items-center gap-2">
+          <!-- Monitor de Sincronización Offline Reactivo -->
+          <div id="offline-network-badge-container"></div>
+          <button id="btn-guia-analisis" class="btn btn-outline-primary rounded-pill px-3 py-1.5 d-flex align-items-center gap-2 small fw-semibold transition-all">
+            <i class="bi bi-info-circle-fill"></i>
+            <span>Guía de Análisis</span>
+          </button>
+        </div>
       </div>
 
       <div class="pm-tabs-container mb-4">
-        <div class="btn-group w-100 shadow-sm" role="group">
+        <div class="btn-group w-100 shadow-sm flex-wrap" role="group">
           <button class="btn btn-outline-primary ${state.activeTab === 'resumen' ? 'active' : ''}" data-tab="resumen"><i class="bi bi-speedometer2 me-1"></i> Resumen</button>
-          <button class="btn btn-outline-primary ${state.activeTab === 'alertas' ? 'active' : ''}" data-tab="alertas"><i class="bi bi-bell me-1"></i> Alertas</button>
-          <button class="btn btn-outline-primary ${state.activeTab === 'riesgo' ? 'active' : ''}" data-tab="riesgo"><i class="bi bi-shield-exclamation me-1"></i> Riesgo</button>
-          <button class="btn btn-outline-primary ${state.activeTab === 'ia' ? 'active' : ''}" data-tab="ia"><i class="bi bi-robot me-1"></i> IA Analysis</button>
+          <button class="btn btn-outline-primary ${state.activeTab === 'operaciones' ? 'active' : ''}" data-tab="operaciones"><i class="bi bi-gear-fill me-1"></i> Operaciones</button>
+          <button class="btn btn-outline-primary ${state.activeTab === 'logs' ? 'active' : ''}" data-tab="logs"><i class="bi bi-terminal me-1"></i> Logs PWA</button>
+          <button class="btn btn-outline-primary ${state.activeTab === 'auditoria' ? 'active' : ''}" data-tab="auditoria"><i class="bi bi-shield-check me-1"></i> Auditoría</button>
+          <button class="btn btn-outline-primary ${state.activeTab === 'ia' ? 'active' : ''}" data-tab="ia"><i class="bi bi-robot me-1"></i> IA Intelligence</button>
         </div>
       </div>
 
@@ -78,22 +89,39 @@ function renderContent(container) {
       </div>
     </div>
   `
+  _updateOfflineBadge()
+}
+
+function _updateOfflineBadge() {
+  const badgeContainer = state.container.querySelector('#offline-network-badge-container')
+  if (!badgeContainer) return
+  const isOnline = navigator.onLine
+  badgeContainer.innerHTML = isOnline
+    ? `<span class="badge bg-success rounded-pill px-3 py-2 d-inline-flex align-items-center gap-1 shadow-sm"><span class="spinner-grow spinner-grow-sm text-white" style="animation-duration: 2s;" role="status"></span><i class="bi bi-cloud-check me-1"></i> Online</span>`
+    : `<span class="badge bg-warning text-dark rounded-pill px-3 py-2 d-inline-flex align-items-center gap-1 shadow-sm"><span class="spinner-grow spinner-grow-sm text-dark animate-pulse" role="status"></span><i class="bi bi-cloud-slash me-1"></i> Offline - Logs encolados</span>`
 }
 
 function renderTabContent() {
   switch (state.activeTab) {
-    case 'resumen': return renderResumenTab()
-    case 'alertas': return renderAlertasTab()
-    case 'riesgo': return renderRiesgoTab()
-    case 'ia': return renderIATab()
-    default: return renderResumenTab()
+    case 'resumen':
+      return renderResumenTab()
+    case 'operaciones':
+      return renderOperacionesTab()
+    case 'logs':
+      return renderLogsTab()
+    case 'auditoria':
+      return renderAuditoriaTab()
+    case 'ia':
+      return renderIATab()
+    default:
+      return renderResumenTab()
   }
 }
 
 function renderResumenTab() {
   const s = state.stats || {}
   const ra = state.resumenAlertas || { total: 0, rojas: 0 }
-  
+
   return `
     <div class="row g-3">
       <div class="col-md-6 col-lg-3">
@@ -119,34 +147,58 @@ function renderResumenTab() {
   `
 }
 
-function renderAlertasTab() {
+function renderOperacionesTab() {
+  return `
+    <div class="page-glass p-4">
+      <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+        <h5 class="fw-bold m-0"><i class="bi bi-gear-wide-connected text-primary me-2"></i>Monitoreo de Operaciones y Cumplimiento Docente</h5>
+        <span class="badge bg-primary bg-opacity-10 text-primary border border-primary-subtle px-3 py-1.5 rounded-pill">Cruces de Rendimiento</span>
+      </div>
+      <div class="alert alert-info small mb-4">
+        <i class="bi bi-info-circle me-1"></i> <strong>Punto Ciego Analítico:</strong> Este panel cruza la tasa de asistencia de los estudiantes con las demoras y cumplimiento de llenado de registros por parte del personal docente.
+      </div>
+      <div class="row g-4">
+        <div class="col-12 col-xl-7">
+          <div class="p-3 border rounded-3 bg-light bg-opacity-25 shadow-sm">
+            <h6 class="fw-bold mb-3"><i class="bi bi-person-badge text-primary me-1"></i>Estado de Cumplimiento Docente</h6>
+            <div id="cumplimiento-maestros-container">
+              <div class="text-center py-5"><div class="spinner-border spinner-border-sm text-primary"></div></div>
+            </div>
+          </div>
+        </div>
+        <div class="col-12 col-xl-5">
+          <div class="p-3 border rounded-3 bg-light bg-opacity-25 shadow-sm">
+            <h6 class="fw-bold mb-3"><i class="bi bi-graph-up-arrow text-primary me-1"></i>Velocidad de Llenado de Registros</h6>
+            <div id="comportamiento-llenado-container">
+              <div class="text-center py-5"><div class="spinner-border spinner-border-sm text-primary"></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `
+}
+
+function renderLogsTab() {
   return `
     <div class="page-glass p-4">
       <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
-        <h5 class="fw-bold m-0"><i class="bi bi-exclamation-triangle-fill text-danger me-2"></i>Alertas de Seguimiento Académico</h5>
-        <div class="d-flex gap-2 flex-wrap">
-          <button id="btn-goto-notifications" class="btn btn-sm btn-primary rounded-pill px-3 py-1.5 fw-semibold d-flex align-items-center gap-2 shadow-sm transition-all" style="font-size: 0.8rem; background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); border: none;">
-            <i class="bi bi-bell-fill animate-bell"></i>
-            <span>Ir al Centro de Actividad</span>
-          </button>
-          <span class="badge bg-danger d-flex align-items-center justify-content-center px-3 rounded-pill" style="font-size: 0.85rem;">${state.resumenAlertas?.rojas || 0} Críticas</span>
-        </div>
+        <h5 class="fw-bold m-0"><i class="bi bi-terminal-fill text-danger me-2"></i>Consola Técnica y Monitor de Red</h5>
+        <button class="btn btn-sm btn-outline-secondary" id="btn-clear-logs"><i class="bi bi-trash me-1"></i>Limpiar Consola</button>
       </div>
-      <div id="alertas-list-container">
+      <!-- Widget Modular de Logs Técnicos -->
+      <div id="system-logs-container">
         <div class="text-center py-5"><div class="spinner-border spinner-border-sm text-primary"></div></div>
       </div>
     </div>
   `
 }
 
-function renderRiesgoTab() {
+function renderAuditoriaTab() {
   return `
     <div class="page-glass p-4">
-      <h5 class="fw-bold mb-4">Análisis Proactivo de Riesgo de Abandono</h5>
-      <div class="alert alert-info small mb-4">
-        <i class="bi bi-info-circle me-1"></i> El puntaje de riesgo se calcula combinando racha de ausencias, promedio académico y participación.
-      </div>
-      <div id="riesgo-list-container">
+      <!-- Widget Modular de Auditoría -->
+      <div id="audit-trail-container">
         <div class="text-center py-5"><div class="spinner-border spinner-border-sm text-primary"></div></div>
       </div>
     </div>
@@ -156,7 +208,7 @@ function renderRiesgoTab() {
 function renderIATab() {
   return `
     <div class="text-center py-5">
-      <i class="bi bi-robot fs-1 text-primary d-block mb-3"></i>
+      <i class="bi bi-robot fs-1 text-primary d-block mb-3 animate-bell"></i>
       <h5>SOI Intelligence</h5>
       <p class="text-muted">Genera un análisis narrativo del estado actual de tu grupo.</p>
       <div class="d-flex justify-content-center gap-2 flex-wrap">
@@ -173,8 +225,14 @@ function renderIATab() {
 }
 
 function _attachEvents(container) {
-  container.querySelectorAll('[data-tab]').forEach(btn => {
+  container.querySelectorAll('[data-tab]').forEach((btn) => {
     btn.addEventListener('click', () => {
+      // Limpiar widgets anteriores si existen
+      if (state.activeWidgetInstance && typeof state.activeWidgetInstance.destroy === 'function') {
+        state.activeWidgetInstance.destroy()
+        state.activeWidgetInstance = null
+      }
+
       state.activeTab = btn.dataset.tab
       localStorage.setItem('pm_metrics_tab', state.activeTab)
       renderContent(container)
@@ -187,6 +245,13 @@ function _attachEvents(container) {
   container.querySelector('#btn-guia-analisis')?.addEventListener('click', () => {
     _openGuiaAnaliticaModal()
   })
+
+  // Listeners de Red para reactividad del Badge del Hub
+  // Store references for cleanup in destroy()
+  state._onlineListener = _updateOfflineBadge
+  state._offlineListener = _updateOfflineBadge
+  window.addEventListener('online', state._onlineListener)
+  window.addEventListener('offline', state._offlineListener)
 
   // Ejecutar carga de datos específica de la pestaña
   _onTabChange()
@@ -201,64 +266,64 @@ async function _onTabChange() {
       area.innerHTML = `
         <table class="table table-compact table-hover mb-0">
           <tbody class="small">
-            ${destacados.slice(0, 5).map(d => `
+            ${destacados
+              .slice(0, 5)
+              .map(
+                (d) => `
               <tr>
                 <td><i class="bi bi-award text-warning me-2"></i><strong>${escapeHTML(d.nombre_completo)}</strong></td>
                 <td><span class="badge bg-success bg-opacity-10 text-success border border-success-subtle">${d.promedio}</span></td>
                 <td class="text-muted">${escapeHTML(d.programa)}</td>
               </tr>
-            `).join('')}
+            `,
+              )
+              .join('')}
           </tbody>
         </table>
       `
     }
   }
 
-  if (state.activeTab === 'alertas') {
-    // Vincular botón de Centro de Actividad
-    state.container.querySelector('#btn-goto-notifications')?.addEventListener('click', () => {
-      import('../../../core/router/router.js').then(({ router }) => {
-        router.navigate('admin-notificaciones')
-      })
-    })
+  if (state.activeTab === 'operaciones') {
+    // 1. CumplimientoMaestrosWidget
+    try {
+      const { CumplimientoMaestrosWidget } =
+        await import('../../admin-dashboard/views/cumplimientoMaestrosWidget.js')
+      const widget = new CumplimientoMaestrosWidget('cumplimiento-maestros-container')
+      await widget.init()
+    } catch (err) {
+      console.error('Error al cargar el widget de CumplimientoMaestrosWidget:', err)
+      const el = state.container.querySelector('#cumplimiento-maestros-container')
+      if (el)
+        el.innerHTML = `<div class="alert alert-warning small"><i class="bi bi-exclamation-circle me-1"></i> No se pudo instanciar el Cumplimiento de Maestros.</div>`
+    }
 
-    const alertas = await getAlertasActivas()
-    const area = state.container.querySelector('#alertas-list-container')
-    if (area) {
-      area.innerHTML = alertas.length === 0 
-        ? '<p class="text-center text-muted">No hay alertas activas.</p>'
-        : alertas.map(a => `
-          <div class="alert-item d-flex align-items-center gap-3 p-3 border-bottom">
-            <div class="bg-${a.color} rounded-circle" style="width:12px;height:12px;"></div>
-            <div class="flex-grow-1">
-              <div class="fw-bold small">${escapeHTML(a.nombre_alumno)}</div>
-              <div class="extra-small text-muted">${escapeHTML(a.descripcion_alerta)}</div>
-            </div>
-            <div class="text-end small text-muted">${a.fecha_referencia}</div>
-          </div>
-        `).join('')
+    // 2. analyticsFillingBehaviorWidget
+    try {
+      const { analyticsFillingBehaviorWidget } =
+        await import('../../admin-dashboard/views/analyticsFillingBehaviorWidget.js')
+      const widget = analyticsFillingBehaviorWidget('comportamiento-llenado-container')
+      await widget.init()
+    } catch (err) {
+      console.error('Error al cargar el widget de Comportamiento de Llenado:', err)
+      const el = state.container.querySelector('#comportamiento-llenado-container')
+      if (el)
+        el.innerHTML = `<div class="alert alert-warning small"><i class="bi bi-exclamation-circle me-1"></i> No se pudo instanciar la Analítica de Llenado.</div>`
     }
   }
 
-  if (state.activeTab === 'riesgo') {
-    const riesgo = await getRiesgoAbandono()
-    const area = state.container.querySelector('#riesgo-list-container')
-    if (area) {
-      area.innerHTML = `
-        <table class="table table-compact table-hover">
-          <thead><tr><th>Alumno</th><th class="text-center">Score</th><th>Nivel</th></tr></thead>
-          <tbody class="small">
-            ${riesgo.map(r => `
-              <tr>
-                <td>${escapeHTML(r.nombre_completo)}</td>
-                <td class="text-center fw-bold">${r.score_riesgo}</td>
-                <td><span class="badge bg-${r.nivel_riesgo === 'alto' ? 'danger' : 'warning'}">${r.nivel_riesgo.toUpperCase()}</span></td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
-      `
-    }
+  if (state.activeTab === 'logs') {
+    // Instanciar widget modular del Slice 2
+    const logger = systemLogsWidget('system-logs-container')
+    state.activeWidgetInstance = logger
+    await logger.init()
+  }
+
+  if (state.activeTab === 'auditoria') {
+    // Instanciar widget modular del Slice 2
+    const audit = auditTrailWidget('audit-trail-container')
+    state.activeWidgetInstance = audit
+    await audit.init()
   }
 
   if (state.activeTab === 'ia') {
@@ -270,7 +335,8 @@ function _attachGlobalEventsIA() {
   state.container.querySelector('#btn-run-ia')?.addEventListener('click', async () => {
     const area = state.container.querySelector('#ia-result-area')
     if (!area) return
-    area.innerHTML = '<div class="text-center"><div class="spinner-border spinner-border-sm text-primary"></div><p class="small mt-2">Analizando datos...</p></div>'
+    area.innerHTML =
+      '<div class="text-center"><div class="spinner-border spinner-border-sm text-primary"></div><p class="small mt-2">Analizando datos...</p></div>'
     // Simulación de respuesta de IA (será reemplazado por groqService real)
     setTimeout(() => {
       area.innerHTML = `
@@ -280,7 +346,7 @@ function _attachGlobalEventsIA() {
           <button class="btn btn-xs btn-outline-primary mt-2" id="btn-copy-report">Copiar Reporte</button>
         </div>
       `
-      
+
       // Adjuntar evento de copiado
       state.container.querySelector('#btn-copy-report')?.addEventListener('click', () => {
         navigator.clipboard.writeText(area.querySelector('p.text-secondary').innerText)
@@ -348,7 +414,6 @@ function _openGuiaAnaliticaModal() {
         transform: translateY(-1px);
         border-color: rgba(var(--bs-primary-rgb, 13, 110, 253), 0.25);
       }
-
       .guia-icon-box {
         width: 38px;
         height: 38px;
@@ -389,13 +454,17 @@ function _openGuiaAnaliticaModal() {
               <i class="bi bi-speedometer2"></i>
               <span>Resumen & KPIs</span>
             </button>
-            <button class="guia-tab-btn text-nowrap" data-guia="alertas" type="button">
-              <i class="bi bi-bell"></i>
-              <span>Alertas Activas</span>
+            <button class="guia-tab-btn text-nowrap" data-guia="operaciones" type="button">
+              <i class="bi bi-gear-fill"></i>
+              <span>Operaciones & Docencia</span>
             </button>
-            <button class="guia-tab-btn text-nowrap" data-guia="riesgo" type="button">
-              <i class="bi bi-shield-exclamation"></i>
-              <span>Riesgo de Abandono</span>
+            <button class="guia-tab-btn text-nowrap" data-guia="logs" type="button">
+              <i class="bi bi-terminal"></i>
+              <span>Logs de Sistema</span>
+            </button>
+            <button class="guia-tab-btn text-nowrap" data-guia="auditoria" type="button">
+              <i class="bi bi-shield-check"></i>
+              <span>Auditoría Trail</span>
             </button>
             <button class="guia-tab-btn text-nowrap" data-guia="ia" type="button">
               <i class="bi bi-robot"></i>
@@ -449,94 +518,68 @@ function _openGuiaAnaliticaModal() {
               </div>
             </div>
 
-            <!-- PANEL ALERTAS -->
-            <div class="guia-panel d-none" id="pane-alertas">
+            <!-- PANEL OPERACIONES -->
+            <div class="guia-panel d-none" id="pane-operaciones">
               <div class="d-flex align-items-center gap-3 mb-3">
-                <div class="guia-icon-box bg-danger bg-opacity-10 text-danger">
-                  <i class="bi bi-bell"></i>
+                <div class="guia-icon-box bg-primary bg-opacity-10 text-primary">
+                  <i class="bi bi-gear-fill"></i>
                 </div>
                 <div>
-                  <h6 class="fw-bold mb-0" style="font-size:1rem; letter-spacing:-0.01em;">Seguimiento Reactivo e Incidencias</h6>
-                  <p class="extra-small text-muted mb-0">Detección y respuesta ante eventualidades escolares.</p>
+                  <h6 class="fw-bold mb-0" style="font-size:1rem; letter-spacing:-0.01em;">Cumplimiento Operativo y Docencia</h6>
+                  <p class="extra-small text-muted mb-0">Cruce dinámico del llenado de clases y estadísticas operativas.</p>
                 </div>
               </div>
               <hr class="my-3 opacity-25">
               <div class="vstack gap-3">
                 <div class="guia-panel-card">
-                  <div class="d-flex align-items-center gap-2 mb-2">
-                    <div class="bg-danger rounded-circle" style="width: 7px; height: 7px;"></div>
-                    <span class="fw-bold small text-danger" style="font-size:0.825rem;">Alertas Críticas (Rojas)</span>
-                  </div>
+                  <span class="fw-bold small text-primary d-block mb-2">Detección de Puntos Ciegos</span>
                   <p class="extra-small text-secondary mb-0 lh-base">
-                    Disparadas ante ausencias reiteradas e injustificadas o por comentarios de prioridad alta registrados por los maestros (ej. incidentes graves, bajo rendimiento crónico).
+                    Estudia si el ausentismo estudiantil coincide con retrasos u omisión de registros de asistencia por parte de maestros en categoría irregular o negligente.
                   </p>
-                </div>
-
-                <div class="guia-panel-card">
-                  <div class="d-flex align-items-center gap-2 mb-2">
-                    <div class="bg-warning rounded-circle" style="width: 7px; height: 7px;"></div>
-                    <span class="fw-bold small text-warning" style="font-size:0.825rem;">Alertas Amarillas (Preventivas)</span>
-                  </div>
-                  <p class="extra-small text-secondary mb-0 lh-base">
-                    Avisos tempranos que indican una primera falta injustificada o baja participación, permitiendo al equipo de tutores intervenir preventivamente.
-                  </p>
-                </div>
-
-                <div class="guia-panel-card bg-light bg-opacity-25 border-dashed">
-                  <p class="extra-small text-secondary mb-2 lh-base">
-                    Las alertas cruzan de forma reactiva la asistencia diaria y las observaciones docentes con los perfiles curriculares de los estudiantes.
-                  </p>
-                  <div class="guia-data-badge">
-                    <i class="bi bi-database me-1 text-danger"></i> vw_alertas_activas
-                  </div>
                 </div>
               </div>
             </div>
 
-            <!-- PANEL RIESGO -->
-            <div class="guia-panel d-none" id="pane-riesgo">
+            <!-- PANEL LOGS -->
+            <div class="guia-panel d-none" id="pane-logs">
               <div class="d-flex align-items-center gap-3 mb-3">
-                <div class="guia-icon-box bg-warning bg-opacity-10 text-warning">
-                  <i class="bi bi-shield-exclamation"></i>
+                <div class="guia-icon-box bg-danger bg-opacity-10 text-danger">
+                  <i class="bi bi-terminal"></i>
                 </div>
                 <div>
-                  <h6 class="fw-bold mb-0" style="font-size:1rem; letter-spacing:-0.01em;">Modelo de Riesgo de Deserción</h6>
-                  <p class="extra-small text-muted mb-0">Algoritmo predictivo para interceptar la deserción escolar.</p>
+                  <h6 class="fw-bold mb-0" style="font-size:1rem; letter-spacing:-0.01em;">Consola de Depuración del Cliente (PWA)</h6>
+                  <p class="extra-small text-muted mb-0">Monitoreo de excepciones técnicas, red y tolerancia offline.</p>
                 </div>
               </div>
               <hr class="my-3 opacity-25">
               <div class="vstack gap-3">
-                <div class="guia-formula-box">
-                  <div class="small fw-bold text-primary mb-2 d-flex align-items-center gap-2">
-                    <i class="bi bi-calculator"></i> Ponderación Algorítmica
-                  </div>
-                  <p class="extra-small text-secondary mb-3 lh-base">
-                    El score predictivo combina la <strong>racha de inasistencias en los últimos 15 días</strong> y la <strong>caída del promedio general</strong> del estudiante en el período activo.
-                  </p>
-                  
-                  <div class="row g-2 text-center">
-                    <div class="col-6">
-                      <div class="p-2 border border-danger-subtle bg-danger bg-opacity-10 text-danger rounded-3 extra-small">
-                        <div class="fw-bold" style="font-size: 0.725rem;">Riesgo Alto</div>
-                        <div class="extra-small opacity-75 font-monospace mt-1" style="font-size:0.625rem;">Racha > 3 O Promedio < 5.0</div>
-                      </div>
-                    </div>
-                    <div class="col-6">
-                      <div class="p-2 border border-warning-subtle bg-warning bg-opacity-10 text-warning rounded-3 extra-small">
-                        <div class="fw-bold" style="font-size: 0.725rem;">Riesgo Medio</div>
-                        <div class="extra-small opacity-75 font-monospace mt-1" style="font-size:0.625rem;">Racha = 2 O Promedio < 7.0</div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
                 <div class="guia-panel-card">
-                  <p class="extra-small text-secondary mb-3 lh-base">
-                    El score predictivo se recalcula automáticamente en base de datos cada vez que un docente asienta una asistencia o califica una evaluación.
+                  <span class="fw-bold small text-danger d-block mb-2">Excepciones de Red y RLS</span>
+                  <p class="extra-small text-secondary mb-0 lh-base">
+                    Muestra fallas al ejecutar políticas de seguridad en la base de datos o caídas en la conexión de Internet del cliente, con logs persistidos.
                   </p>
-                  <div class="guia-data-badge">
-                    <i class="bi bi-database me-1 text-warning"></i> vw_riesgo_abandono
-                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- PANEL AUDITORIA -->
+            <div class="guia-panel d-none" id="pane-auditoria">
+              <div class="d-flex align-items-center gap-3 mb-3">
+                <div class="guia-icon-box bg-success bg-opacity-10 text-success">
+                  <i class="bi bi-shield-check"></i>
+                </div>
+                <div>
+                  <h6 class="fw-bold mb-0" style="font-size:1rem; letter-spacing:-0.01em;">Audit Trail - Control de Cambios</h6>
+                  <p class="extra-small text-muted mb-0">Trazabilidad histórica de todas las solicitudes y aprobaciones de ausencias.</p>
+                </div>
+              </div>
+              <hr class="my-3 opacity-25">
+              <div class="vstack gap-3">
+                <div class="guia-panel-card">
+                  <span class="fw-bold small text-success d-block mb-2">Inmutabilidad Histórica</span>
+                  <p class="extra-small text-secondary mb-0 lh-base">
+                    Cada vez que un maestro o administrador crea, aprueba o rechaza una ausencia, se graba un log transaccional no-modificable para prevenir el fraude.
+                  </p>
                 </div>
               </div>
             </div>
@@ -560,24 +603,6 @@ function _openGuiaAnaliticaModal() {
                     Para asegurar análisis veraces, la IA no tiene acceso general a la base de datos transaccional. En su lugar, el sistema compila paquetes de datos agregados en JSON provenientes de las vistas consolidadas según el tipo de reporte solicitado.
                   </p>
                 </div>
-
-                <div class="guia-panel-card">
-                  <div class="fw-bold small text-secondary mb-2" style="font-size: 0.775rem;">Estructura de Datos inyectados:</div>
-                  <div class="vstack gap-2 extra-small">
-                    <div class="d-flex align-items-start gap-2 py-1">
-                      <i class="bi bi-circle-fill text-info mt-1.5" style="font-size:0.35rem;"></i>
-                      <div><strong>Analítica Institucional</strong>: Combina <code>vw_estadisticas_periodo</code> y estadísticas de rendimiento docente para correlacionar factores organizacionales.</div>
-                    </div>
-                    <div class="d-flex align-items-start gap-2 py-1">
-                      <i class="bi bi-circle-fill text-info mt-1.5" style="font-size:0.35rem;"></i>
-                      <div><strong>Foco de Deserción</strong>: Filtra exclusivamente los alumnos en <code>vw_riesgo_abandono</code> para estructurar planes de intervención y tutoría.</div>
-                    </div>
-                    <div class="d-flex align-items-start gap-2 py-1">
-                      <i class="bi bi-circle-fill text-info mt-1.5" style="font-size:0.35rem;"></i>
-                      <div><strong>Progreso Escolar</strong>: Agrupa los promedios de <code>vw_destacados_y_riesgo_academico</code> por cátedra instrumental para redactar boletines periódicos.</div>
-                    </div>
-                  </div>
-                </div>
               </div>
             </div>
 
@@ -588,7 +613,7 @@ function _openGuiaAnaliticaModal() {
   `
 
   AppModal.open({
-    title: 'Guía de Análisis Académico',
+    title: 'Guía de Análisis Académico y Observabilidad',
     body: content,
     size: 'lg',
     hideSave: true,
@@ -598,15 +623,15 @@ function _openGuiaAnaliticaModal() {
       const tabs = bodyEl.querySelectorAll('#guia-modal-tabs button')
       const panels = bodyEl.querySelectorAll('.guia-panel')
 
-      tabs.forEach(tab => {
+      tabs.forEach((tab) => {
         tab.addEventListener('click', () => {
           // Remover clase activa de todos los tabs
-          tabs.forEach(t => t.classList.remove('active'))
+          tabs.forEach((t) => t.classList.remove('active'))
           // Añadir a este tab
           tab.classList.add('active')
 
           // Ocultar todos los paneles
-          panels.forEach(p => p.classList.add('d-none'))
+          panels.forEach((p) => p.classList.add('d-none'))
           // Mostrar el panel correspondiente
           const targetPane = bodyEl.querySelector(`#pane-${tab.dataset.guia}`)
           if (targetPane) {
@@ -614,8 +639,33 @@ function _openGuiaAnaliticaModal() {
           }
         })
       })
-    }
+    },
   })
 }
 
+/**
+ * Destruye la instancia del dashboard de métricas y libera recursos.
+ * Elimina event listeners globales y destruye widgets hijos activos.
+ */
+export function destroyDashboardMetricasView() {
+  // Destruir widget activo si existe
+  if (state.activeWidgetInstance && typeof state.activeWidgetInstance.destroy === 'function') {
+    state.activeWidgetInstance.destroy()
+    state.activeWidgetInstance = null
+  }
 
+  // Remover listeners globales de red
+  if (state._onlineListener) {
+    window.removeEventListener('online', state._onlineListener)
+    state._onlineListener = null
+  }
+  if (state._offlineListener) {
+    window.removeEventListener('offline', state._offlineListener)
+    state._offlineListener = null
+  }
+
+  // Limpiar estado
+  state.container = null
+  state.stats = null
+  state.cargando = false
+}

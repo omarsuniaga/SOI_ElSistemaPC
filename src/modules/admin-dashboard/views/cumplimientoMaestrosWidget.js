@@ -304,11 +304,11 @@ export class CumplimientoMaestrosWidget {
     const filterDiasAtraso = document.getElementById('filterDiasAtraso')
     const btnRefresh = document.getElementById('btnRefresh')
 
-    filterCategoria?.addEventListener('change', (e) => {
+    // Store references for cleanup
+    this._filterCategoriaHandler = (e) => {
       this.applyFilter({ categoria: e.target.value || null })
-    })
-
-    filterDiasAtraso?.addEventListener('change', (e) => {
+    }
+    this._filterDiasAtrasoHandler = (e) => {
       if (!e.target.value) {
         this.applyFilter({ diasAtrasoMin: 0, diasAtrasoMax: 999 })
       } else {
@@ -318,35 +318,87 @@ export class CumplimientoMaestrosWidget {
           diasAtrasoMax: range[1] ? parseInt(range[1]) : 999
         })
       }
-    })
-
-    btnRefresh?.addEventListener('click', () => {
+    }
+    this._btnRefreshHandler = () => {
       this.init()
-    })
+    }
+
+    filterCategoria?.addEventListener('change', this._filterCategoriaHandler)
+    filterDiasAtraso?.addEventListener('change', this._filterDiasAtrasoHandler)
+    btnRefresh?.addEventListener('click', this._btnRefreshHandler)
 
     const btnGotoNotificaciones = document.getElementById('btnGotoNotificaciones')
-    btnGotoNotificaciones?.addEventListener('click', () => {
+    this._btnGotoNotificacionesHandler = () => {
       import('../../../core/router/router.js').then(({ router }) => {
         router.navigate('admin-notificaciones')
       })
-    })
+    }
+    btnGotoNotificaciones?.addEventListener('click', this._btnGotoNotificacionesHandler)
 
-    // Action buttons
+    // Store button handlers for cleanup
+    this._contactarHandlers = []
+    this._detalleHandlers = []
+
     this.container.querySelectorAll('.btn-contactar').forEach((btn) => {
-      btn.addEventListener('click', (e) => {
+      const handler = (e) => {
         const button = e.target.closest('.btn-contactar')
         const maestroId = button.dataset.maestroId
         this.onContactarMaestro(maestroId)
-      })
+      }
+      this._contactarHandlers.push({ btn, handler })
+      btn.addEventListener('click', handler)
     })
 
     this.container.querySelectorAll('.btn-detalle').forEach((btn) => {
-      btn.addEventListener('click', (e) => {
+      const handler = (e) => {
         const button = e.target.closest('.btn-detalle')
         const maestroId = button.dataset.maestroId
         this.onDetalleMaestro(maestroId)
-      })
+      }
+      this._detalleHandlers.push({ btn, handler })
+      btn.addEventListener('click', handler)
     })
+  }
+
+  /**
+   * Destroy widget and clean up event listeners
+   */
+  destroy() {
+    const filterCategoria = document.getElementById('filterCategoria')
+    const filterDiasAtraso = document.getElementById('filterDiasAtraso')
+    const btnRefresh = document.getElementById('btnRefresh')
+    const btnGotoNotificaciones = document.getElementById('btnGotoNotificaciones')
+
+    if (filterCategoria && this._filterCategoriaHandler) {
+      filterCategoria.removeEventListener('change', this._filterCategoriaHandler)
+    }
+    if (filterDiasAtraso && this._filterDiasAtrasoHandler) {
+      filterDiasAtraso.removeEventListener('change', this._filterDiasAtrasoHandler)
+    }
+    if (btnRefresh && this._btnRefreshHandler) {
+      btnRefresh.removeEventListener('click', this._btnRefreshHandler)
+    }
+    if (btnGotoNotificaciones && this._btnGotoNotificacionesHandler) {
+      btnGotoNotificaciones.removeEventListener('click', this._btnGotoNotificacionesHandler)
+    }
+
+    if (this._contactarHandlers) {
+      this._contactarHandlers.forEach(({ btn, handler }) => {
+        btn.removeEventListener('click', handler)
+      })
+      this._contactarHandlers = []
+    }
+
+    if (this._detalleHandlers) {
+      this._detalleHandlers.forEach(({ btn, handler }) => {
+        btn.removeEventListener('click', handler)
+      })
+      this._detalleHandlers = []
+    }
+
+    this.maestros = []
+    this.filteredMaestros = []
+    this.container = null
   }
 
   /**

@@ -56,7 +56,7 @@ export function analyticsFillingBehaviorWidget(containerId) {
     }
   }
 
-  return {
+  const widget = {
     async init() {
       container.innerHTML = `
         <div class="premium-loading">
@@ -99,7 +99,7 @@ export function analyticsFillingBehaviorWidget(containerId) {
       const html = `
         <div class="analytics-widget">
           <h2><i class="bi bi-bar-chart-steps text-primary"></i> Analítica de Llenado de Asistencias</h2>
-          
+
           <div class="stats-grid">
             <div class="stat-card primary">
               <div class="stat-label">Asistencia Primero</div>
@@ -131,6 +131,14 @@ export function analyticsFillingBehaviorWidget(containerId) {
       `
 
       container.innerHTML = html
+    },
+
+    destroy() {
+      if (container) {
+        container.innerHTML = ''
+      }
     }
   }
+
+  return widget
 }

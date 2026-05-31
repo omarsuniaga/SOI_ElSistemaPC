@@ -93,7 +93,7 @@ import {
   getHorariosClases,
   getSesiones,
 } from './portal-maestros/services/maestroDataService.js'
-import { scheduleLocalAlerts } from './portal-maestros/services/pushService.js'
+import { scheduleLocalAlerts, cleanupPushService } from './portal-maestros/services/pushService.js'
 
 // Bootstrap CSS completo — requerido por vistas admin (alumnosView, maestrosView, programasView)
 // que usan .container, .row, .col-*, var(--bs-*), etc.
@@ -880,7 +880,7 @@ function _setupGlobalAppEvents() {
       window.addEventListener(
         'beforeunload',
         () => {
-          supabase.removeChannel(permisosChannel)
+          supabase.removeChannel(_permisosChannel)
         },
         { once: true },
       )
@@ -1113,6 +1113,7 @@ async function _renderView(route, params = {}, { silent = false } = {}) {
         break
       case 'logout':
         _showLoginScreen()
+        cleanupPushService()
         stopRealtime()
         logoutMaestro().then(() => window.location.reload())
         break

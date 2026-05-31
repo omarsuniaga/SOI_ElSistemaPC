@@ -15,6 +15,7 @@ import { HelpPanel } from '../../../shared/components/HelpPanel.js'
 import { openCoberturaModal } from '../components/coberturaModal.js'
 import { renderAsistentePedagogicoPanel } from '../components/asistentePedagogicoPanel.js'
 import { openCurriculoListModal } from '../components/curriculoModal.js'
+import { renderRutasManagementPanel } from '../components/rutasManagementPanel.js'
 
 // ── DSL Template Library ─────────────────────────────────────────────────────
 const DSL_TEMPLATES = [
@@ -72,6 +73,7 @@ const state = {
   viewMode: 'maestro', // 'maestro' | 'admin' | 'plantillas'
   activeTab: 'planes',
   asistenteRendered: false,
+  rutasRendered: false,
   seleccionados: new Set(),
   container: null
 }
@@ -83,6 +85,7 @@ export async function renderPlanificacionView(container, { viewMode = 'maestro' 
   state.viewMode = viewMode
   state.seleccionados = new Set()
   state.asistenteRendered = false
+  state.rutasRendered = false
 
   if (viewMode === 'plantillas') {
     renderTemplatesContent(container)
@@ -224,6 +227,11 @@ function renderContent(container) {
           </button>
         </li>
         <li class="nav-item">
+          <button class="nav-link" data-tab="rutas">
+            <i class="bi bi-diagram-3 me-1"></i>Rutas
+          </button>
+        </li>
+        <li class="nav-item">
           <button class="nav-link" data-tab="asistente">
             <i class="bi bi-robot me-1"></i>Asistente IA
           </button>
@@ -262,6 +270,7 @@ function renderContent(container) {
           Las plantillas de planificación estarán disponibles próximamente.
         </div>
       </div>
+      <div id="tab-content-rutas" style="display:none"></div>
       <div id="tab-content-asistente" style="display:none"></div>
       ` : ''}
     </div>
@@ -531,7 +540,7 @@ function _attachEvents(container) {
     btn.addEventListener('click', () => {
       state.activeTab = btn.dataset.tab
 
-      const allContent = ['planes', 'plantillas', 'asistente']
+      const allContent = ['planes', 'plantillas', 'rutas', 'asistente']
       allContent.forEach(tab => {
         const div = container.querySelector(`#tab-content-${tab}`)
         if (div) div.style.display = state.activeTab === tab ? 'block' : 'none'
@@ -539,6 +548,14 @@ function _attachEvents(container) {
 
       container.querySelectorAll('#planificacion-tabs .nav-link').forEach(b => b.classList.remove('active'))
       btn.classList.add('active')
+
+      if (state.activeTab === 'rutas' && !state.rutasRendered) {
+        const rutasDiv = container.querySelector('#tab-content-rutas')
+        if (rutasDiv) {
+          renderRutasManagementPanel(rutasDiv, state.viewMode)
+          state.rutasRendered = true
+        }
+      }
 
       if (state.activeTab === 'asistente' && !state.asistenteRendered) {
         const asistenteDiv = container.querySelector('#tab-content-asistente')

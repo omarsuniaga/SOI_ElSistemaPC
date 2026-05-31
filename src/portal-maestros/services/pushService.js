@@ -41,18 +41,21 @@ export function onPushReceived(callback) {
 }
 
 // ── Listen for SW messages ───────────────────────────────────
+let _swMessageListener = null;
+
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.addEventListener('message', (event) => {
+  _swMessageListener = (event) => {
     if (event.data && event.data.type === 'PUSH_RECEIVED') {
       console.log('[Push] Notification received from SW:', event.data.notification);
       if (_pushCallbacks.length) {
-        _notifyPushCallbacks({ 
-          event: 'notificationReceived', 
-          notification: event.data.notification 
+        _notifyPushCallbacks({
+          event: 'notificationReceived',
+          notification: event.data.notification
         });
       }
     }
-  });
+  };
+  navigator.serviceWorker.addEventListener('message', _swMessageListener);
 }
 
 let _prefsCache = null
@@ -361,4 +364,18 @@ function _urlBase64ToUint8Array(base64String) {
     outputArray[i] = rawData.charCodeAt(i)
   }
   return outputArray
+}
+
+/**
+ * Cleanup push service: removes SW message listener and clears callbacks.
+ * Call on logout.
+ */
+export function cleanupPushService() {
+  if (_swMessageListener && 'serviceWorker' in navigator) {
+    navigator.serviceWorker.removeEventListener('message', _swMessageListener)
+    _swMessageListener = null
+  }
+  _pushCallbacks.length = 0
+  _prefsCache = null
+  console.log('[Push] Cleanup completed')
 }

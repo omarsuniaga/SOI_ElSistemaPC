@@ -2,6 +2,7 @@ import { supabase } from '../../lib/supabaseClient.js';
 import { getMaestroLocal } from '../auth/maestroAuth.js';
 import { getMisClases, getHorariosClases, getSesiones } from './maestroDataService.js';
 import { onPushReceived } from './pushService.js';
+import { LifecycleManager } from '../../shared/services/lifecycleManager.js';
 
 // -- Deep Link Parsing and Navigation -----------------------------------------
 
@@ -75,6 +76,9 @@ onPushReceived((event) => {
     }
   }
 });
+
+// -- Lifecycle Management --
+const lifecycle = new LifecycleManager('maestro-notifications');
 
 // -- Deduplication Configuration --
 // Realtime es la fuente primaria. Polling cada 5 min es el fallback.
@@ -465,22 +469,36 @@ export function startRealtime() {
     )
     .subscribe((status) => {
       console.log(`[Realtime] Canal notificaciones: ${status}`);
-      if (status === 'CHANNEL_ERROR') {
-        // Si el canal falla, el polling de 5 min lo cubre
-        console.warn('[Realtime] Canal cerrado, el polling de fallback sigue activo.');
+      if (status === 'CHANNEL_ERROR' || status === 'SUBSCRIPTION_ERROR') {
+        // Si el canal falla, el polling de fallback sigue activo
+        console.warn('[Realtime] Canal cerrado, activando polling como fallback');
         _realtimeChannel = null;
+        _startPolling();
       }
     });
+
+  // Registrar el canal para cleanup
+  lifecycle.registerChannel(_realtimeChannel);
 }
 
 /**
- * Cierra el canal Realtime. Llamar al hacer logout.
+ * Cierra el canal Realtime y detiene el polling. Llamar al hacer logout.
  */
 export function stopRealtime() {
+  _stopPolling();
   if (_realtimeChannel) {
     supabase.removeChannel(_realtimeChannel);
     _realtimeChannel = null;
   }
+}
+
+/**
+ * Cleanup completo del servicio de notificaciones.
+ * Destruye canales, intervalos y listeners.
+ */
+export function cleanupNotificationService() {
+  stopRealtime();
+  lifecycle.destroy();
 }
 
 // -- Toast in-app ------------------------------------------------------------------
@@ -626,6 +644,9 @@ function _startPolling() {
     if (document.visibilityState === 'hidden') return;
     fetchNotificaciones();
   }, POLL_INTERVAL_MS);
+
+  // Registrar interval para cleanup
+  lifecycle.registerInterval(_pollIntervalId);
 }
 
 function _stopPolling() {

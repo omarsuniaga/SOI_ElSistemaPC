@@ -267,6 +267,13 @@ export const notificacionesPanel = {
 
   close() {
     if (this._trap) { this._trap.dispose(); this._trap = null; }
+
+    // Unsubscribe from notifications listener
+    if (unsubscribe && typeof unsubscribe === 'function') {
+      unsubscribe();
+      unsubscribe = null;
+    }
+
     const overlay = document.getElementById('pm-notificaciones-drawer-overlay');
     if (overlay) {
       overlay.classList.remove('open');

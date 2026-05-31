@@ -9,7 +9,6 @@ import { renderMetricCard } from '../components/MetricCard.js'
 import { escapeHTML } from '../../clases/utils/clasesUtils.js'
 import { systemLogsWidget } from './systemLogsWidget.js'
 import { auditTrailWidget } from './auditTrailWidget.js'
-import { getUser } from '../../../core/auth/authManager.js'
 import '../styles/metricas-observabilidad.css'
 
 const state = {
@@ -27,28 +26,6 @@ const state = {
  */
 export async function renderDashboardMetricasView(container) {
   if (!container) return
-
-  // Admin auth gate: only admin role can access the observability hub
-  const user = getUser()
-  const userRole =
-    user?.role ||
-    user?.user_metadata?.role ||
-    user?.user_metadata?.rol ||
-    user?.app_metadata?.role ||
-    ''
-  if (!user || userRole !== 'admin') {
-    container.innerHTML = `
-      <div class="obs-forbidden">
-        <div class="text-center">
-          <i class="bi bi-shield-lock fs-1 text-danger d-block mb-3"></i>
-          <h4 class="fw-bold text-danger">Acceso Restringido</h4>
-          <p class="text-muted">Solo los administradores del sistema pueden acceder al panel de Observabilidad.</p>
-          <a href="#/login" class="btn btn-outline-primary mt-2">Ir a Inicio de Sesión</a>
-        </div>
-      </div>
-    `
-    return
-  }
 
   try {
     // Destruir instancia anterior si existe para evitar fugas de memoria

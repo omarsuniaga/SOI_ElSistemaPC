@@ -5,12 +5,6 @@ import { auditTrailWidget } from '../views/auditTrailWidget.js'
 import { readFileSync, existsSync } from 'fs'
 import { resolve } from 'path'
 
-// Hoisted mock for admin auth gate tests
-const mockGetUser = vi.fn()
-vi.mock('../../../core/auth/authManager.js', () => ({
-  getUser: mockGetUser,
-}))
-
 // ---------------------------------------------------------------------------
 // Task A: CSS external file exists with expected classes
 // ---------------------------------------------------------------------------
@@ -237,48 +231,6 @@ describe('PR1 — Task D: Destroy lifecycle', () => {
 })
 
 // ---------------------------------------------------------------------------
-// PR 2 — Task G: Admin auth gate in dashboardMetricasView
-// ---------------------------------------------------------------------------
-describe('PR2 — Task G: Admin auth gate', () => {
-  beforeEach(() => {
-    mockGetUser.mockReset()
-    document.body.innerHTML = '<div id="test-admin-gate"></div>'
-  })
-
-  it('should render 403 error when user is not admin', async () => {
-    mockGetUser.mockReturnValue({ role: 'maestro', email: 'teacher@test.com' })
-
-    const { renderDashboardMetricasView } = await import('../views/dashboardMetricasView.js')
-    const container = document.getElementById('test-admin-gate')
-    await renderDashboardMetricasView(container)
-
-    expect(container.innerHTML).toContain('Acceso Restringido')
-    expect(container.innerHTML).toContain('Solo los administradores')
-    // No hub content for non-admin
-    expect(container.innerHTML).not.toContain('Observability Hub')
-  })
-
-  it('should render hub content when user is admin', async () => {
-    mockGetUser.mockReturnValue({ role: 'admin', email: 'admin@test.com' })
-
-    // Set demo mode so API calls use mock data
-    const { config } = await import('../../../core/config/config.js')
-    const originalMode = config.isDemoMode
-    config.isDemoMode = true
-
-    // Re-import the view module to get fresh module state
-    const viewModule = await import('../views/dashboardMetricasView.js')
-    const container = document.getElementById('test-admin-gate')
-    await viewModule.renderDashboardMetricasView(container)
-
-    // Admin should see the hub content
-    expect(container.innerHTML).toContain('Analytics')
-    expect(container.innerHTML).toContain('Observability Hub')
-
-    config.isDemoMode = originalMode
-  })
-})
-
 // ---------------------------------------------------------------------------
 // PR 2 — Task F & J: CSP compliance — no inline style attributes
 // ---------------------------------------------------------------------------

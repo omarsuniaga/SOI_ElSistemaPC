@@ -1,13 +1,29 @@
 import {
   listarPostulantesPorMes,
+  listarPostulantesPorRango,
   sincronizarPostulantes,
   eliminarPostulante,
 } from '../../api/postulantesApi.js'
-import {
-  ESTADO_LABELS,
-  ESTADO_COLOR,
-} from '../../domain/postuladoStateMachine.js'
+import { ESTADO_LABELS, ESTADO_COLOR } from '../../domain/postuladoStateMachine.js'
+import { descargarPdfPostulados } from '../../domain/generarPdfPostulados.js'
 import { router } from '../../../../core/router/router.js'
+
+/**
+ * Helper: primer día del mes como string YYYY-MM-DD
+ */
+function primerDiaMes() {
+  const now = new Date()
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`
+}
+
+/**
+ * Helper: último día del mes como string YYYY-MM-DD
+ */
+function ultimoDiaMes() {
+  const now = new Date()
+  const ultimo = new Date(now.getFullYear(), now.getMonth() + 1, 0)
+  return `${ultimo.getFullYear()}-${String(ultimo.getMonth() + 1).padStart(2, '0')}-${String(ultimo.getDate()).padStart(2, '0')}`
+}
 
 // Estado interno de la vista con paginación
 const state = {
@@ -18,11 +34,23 @@ const state = {
   cargando: false,
   page: 1,
   limit: 50,
+  pdfDesde: primerDiaMes(),
+  pdfHasta: ultimoDiaMes(),
 }
 
 const MESES = [
-  'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-  'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+  'Enero',
+  'Febrero',
+  'Marzo',
+  'Abril',
+  'Mayo',
+  'Junio',
+  'Julio',
+  'Agosto',
+  'Septiembre',
+  'Octubre',
+  'Noviembre',
+  'Diciembre',
 ]
 
 /**
@@ -32,7 +60,8 @@ const MESES = [
  * y cae al mejor fallback disponible.
  */
 // Palabras que indican que el campo contiene algo que NO es un nombre de persona
-const PALABRAS_NO_NOMBRE = /\b(alumno|alumna|puede|asistir|depende|transporte|p[uú]blico|propio|padres|amigos|familiares|punta\s*cana|veron|ver[oó]n|bávaro|bavaro|friusa|cortecito|ciudad|pueblo|municipio|sector|calle|avenida|disponibilidad|extracu|actividades|limitada|posible|haré|hare|cristiano|evang[eé]lico|cat[oó]lico)\b/i
+const PALABRAS_NO_NOMBRE =
+  /\b(alumno|alumna|puede|asistir|depende|transporte|p[uú]blico|propio|padres|amigos|familiares|punta\s*cana|veron|ver[oó]n|bávaro|bavaro|friusa|cortecito|ciudad|pueblo|municipio|sector|calle|avenida|disponibilidad|extracu|actividades|limitada|posible|haré|hare|cristiano|evang[eé]lico|cat[oó]lico)\b/i
 
 function esNombrePersona(texto) {
   if (!texto || texto.length === 0) return false
@@ -54,27 +83,21 @@ function esNombrePersona(texto) {
 
 function resolverNombre(p) {
   // Candidatos en orden de confianza
-  const candidatos = [
-    p.nombre_completo,
-    p.madre_nombre,
-    p.padre_nombre,
-    p.representante_nombre,
-  ]
-  const valido = candidatos
-    .map(v => (v ?? '').trim())
-    .find(v => esNombrePersona(v))
+  const candidatos = [p.nombre_completo, p.madre_nombre, p.padre_nombre, p.representante_nombre]
+  const valido = candidatos.map((v) => (v ?? '').trim()).find((v) => esNombrePersona(v))
 
   return valido ?? 'Sin nombre registrado'
 }
 
 function resolverIniciales(nombre) {
-  return nombre
-    .split(' ')
-    .filter(w => w.length > 0)
-    .slice(0, 2)
-    .map(w => w[0].toUpperCase())
-    .join('')
-    || '?'
+  return (
+    nombre
+      .split(' ')
+      .filter((w) => w.length > 0)
+      .slice(0, 2)
+      .map((w) => w[0].toUpperCase())
+      .join('') || '?'
+  )
 }
 
 /**
@@ -84,10 +107,14 @@ function resolverIniciales(nombre) {
  */
 function resolverTelefonos(p) {
   return [
-    { persona: p.madre_nombre,         numero: p.madre_tlf_whatsapp,                          rol: 'Madre' },
-    { persona: p.padre_nombre,         numero: p.padre_tlf_whatsapp,                          rol: 'Padre' },
-    { persona: p.representante_nombre, numero: p.representante_tlf || p.telefono_representante, rol: 'Representante' },
-    { persona: null,                   numero: p.telefono_alumno,                              rol: 'Alumno' },
+    { persona: p.madre_nombre, numero: p.madre_tlf_whatsapp, rol: 'Madre' },
+    { persona: p.padre_nombre, numero: p.padre_tlf_whatsapp, rol: 'Padre' },
+    {
+      persona: p.representante_nombre,
+      numero: p.representante_tlf || p.telefono_representante,
+      rol: 'Representante',
+    },
+    { persona: null, numero: p.telefono_alumno, rol: 'Alumno' },
   ]
     .filter(({ numero }) => {
       const n = (numero ?? '').trim()
@@ -109,7 +136,7 @@ function resolverTelefonoPrincipal(p) {
 
 function formatearNumero(n) {
   const d = n.replace(/\D/g, '')
-  if (d.length === 10) return `${d.slice(0,3)}-${d.slice(3,6)}-${d.slice(6)}`
+  if (d.length === 10) return `${d.slice(0, 3)}-${d.slice(3, 6)}-${d.slice(6)}`
   return n
 }
 
@@ -126,7 +153,7 @@ async function cargarDatos(container) {
 
     const todos = await listarPostulantesPorMes(state.year, state.month)
     // Solo postulantes con al menos un número de WhatsApp contactable
-    state.postulantes = todos.filter(p => resolverTelefonoPrincipal(p) !== null)
+    state.postulantes = todos.filter((p) => resolverTelefonoPrincipal(p) !== null)
     state.cargando = false
 
     renderContent(container)
@@ -170,26 +197,52 @@ function renderError(container, message) {
       </div>
     </div>
   `
-  
-  document.getElementById('btn-error-retry')?.addEventListener('click', () => renderPostuladosView(container))
+
+  document
+    .getElementById('btn-error-retry')
+    ?.addEventListener('click', () => renderPostuladosView(container))
+}
+
+function renderPipelineGraphic(counts, total) {
+  if (total === 0) return ''
+
+  const steps = [
+    { key: 'postulado', label: 'Postulados' },
+    { key: 'contactado', label: 'Contactados' },
+    { key: 'cita_agendada', label: 'Con Cita' },
+    { key: 'documentos_ok', label: 'Docs OK' },
+    { key: 'inscrito', label: 'Inscritos' },
+  ]
+
+  const textSummary = steps
+    .map((step) => {
+      const val = counts[step.key] || 0
+      return val > 0
+        ? `<span class="text-body-secondary fw-medium">${val}</span> <span class="text-muted">${step.label}</span>`
+        : null
+    })
+    .filter(Boolean)
+    .join('<span class="text-muted mx-2">/</span>')
+
+  return `
+    <div class="mb-4 mt-2 px-1 small tracking-wide">
+      ${textSummary}
+    </div>
+  `
 }
 
 function renderContent(container) {
-  // 1. Filtrar los postulantes
   let list = getFilteredPostulantes()
 
-  // 2. ORDENAR por fecha_postulacion o created_at Descendiente
   list.sort((a, b) => {
     const dateA = new Date(a.fecha_postulacion || a.created_at)
     const dateB = new Date(b.fecha_postulacion || b.created_at)
     return dateB - dateA
   })
 
-  // 3. PAGINAR (50 registros)
   const totalRecords = list.length
   const totalPages = Math.ceil(totalRecords / state.limit) || 1
-  
-  // Ajustar página actual si excede el rango
+
   if (state.page > totalPages) state.page = totalPages
   if (state.page < 1) state.page = 1
 
@@ -200,79 +253,97 @@ function renderContent(container) {
   const counts = getCountsByStatus()
 
   container.innerHTML = `
-    <div class="container-fluid py-4 px-3 px-md-4">
+    <div class="container-fluid py-4 px-3 px-md-4 max-w-7xl mx-auto">
       
-      <!-- HEADER -->
-      <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+      <!-- MINIMALIST HEADER -->
+      <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-end mb-1 gap-3">
         <div>
-          <h1 class="h3 fw-bold mb-1">Módulo de Postulados</h1>
-          <p class="text-body-secondary mb-0">Gestión de admisiones y pipeline de postulaciones</p>
+          <h1 class="h2 fw-bold text-body tracking-tight mb-0">Postulados</h1>
         </div>
         
-        <!-- MES SELECTOR & SYNC -->
-        <div class="d-flex align-items-center gap-2">
-          <div class="input-group input-group-sm shadow-sm" style="max-width: 250px;">
-            <button class="btn btn-outline-secondary" id="btn-month-prev" type="button">
+        <div class="d-flex align-items-center gap-4">
+          <div class="d-flex align-items-center">
+            <button class="btn btn-link text-body-secondary p-1 text-decoration-none" id="btn-month-prev">
               <i class="bi bi-chevron-left"></i>
             </button>
-            <span class="form-control text-center fw-semibold bg-body-secondary d-flex align-items-center justify-content-center" style="min-width: 140px; color: var(--bs-body-color);">
+            <span class="fw-semibold text-body mx-3 fs-6">
               ${MESES[state.month - 1]} ${state.year}
             </span>
-            <button class="btn btn-outline-secondary" id="btn-month-next" type="button">
+            <button class="btn btn-link text-body-secondary p-1 text-decoration-none" id="btn-month-next">
               <i class="bi bi-chevron-right"></i>
             </button>
           </div>
           
-          <button class="btn btn-sm btn-primary shadow-sm" id="btn-sync" type="button">
-            <span class="spinner-border spinner-border-sm d-none me-1" id="sync-spinner" role="status" aria-hidden="true"></span>
+          <button class="btn btn-link text-decoration-none text-primary fw-medium p-0" id="btn-sync">
+            <span class="spinner-border spinner-border-sm d-none me-1" id="sync-spinner"></span>
             <i class="bi bi-arrow-repeat me-1" id="sync-icon"></i> Sincronizar
           </button>
         </div>
       </div>
 
-      <!-- FILTER PILLS -->
-      <div class="d-flex gap-2 overflow-x-auto pb-2 mb-4 scrollbar-hidden" style="white-space: nowrap;">
-        <button class="btn btn-sm rounded-pill px-3 ${state.filtroEstado === 'todos' ? 'btn-primary' : 'btn-outline-secondary'}" data-filter="todos">
-          Todos <span class="badge ${state.filtroEstado === 'todos' ? 'bg-white text-primary' : 'bg-secondary text-white'} ms-1">${state.postulantes.length}</span>
+      <!-- DATE RANGE + PDF DOWNLOAD -->
+      <div class="d-flex flex-wrap align-items-center gap-3 mb-2">
+        <div class="d-flex align-items-center gap-2">
+          <label for="pdf-desde" class="form-label small text-body-secondary mb-0">Desde</label>
+          <input type="date" class="form-control form-control-sm" id="pdf-desde" value="${state.pdfDesde}">
+        </div>
+        <div class="d-flex align-items-center gap-2">
+          <label for="pdf-hasta" class="form-label small text-body-secondary mb-0">Hasta</label>
+          <input type="date" class="form-control form-control-sm" id="pdf-hasta" value="${state.pdfHasta}">
+        </div>
+        <button class="btn btn-outline-primary btn-sm" id="btn-descargar-pdf">
+          <span class="spinner-border spinner-border-sm d-none me-1" id="pdf-spinner"></span>
+          <i class="bi bi-file-earmark-pdf me-1" id="pdf-icon"></i> Descargar PDF
         </button>
-        ${Object.entries(ESTADO_LABELS).map(([key, label]) => {
-          const count = counts[key] || 0
-          const activeClass = state.filtroEstado === key ? 'btn-primary' : 'btn-outline-secondary'
-          const badgeClass = state.filtroEstado === key ? 'bg-white text-primary' : 'bg-secondary text-white'
-          return `
-            <button class="btn btn-sm rounded-pill px-3 ${activeClass}" data-filter="${key}">
-              ${label} <span class="badge ${badgeClass} ms-1">${count}</span>
-            </button>
-          `
-        }).join('')}
       </div>
 
-      <!-- TABLE CARD (Compatible con Light/Dark Theme) -->
-      <div class="card border border-secondary-subtle shadow-sm rounded-3 overflow-hidden">
-        <div class="card-body p-0">
-          ${paginatedList.length === 0 ? renderEmptyState() : renderTable(paginatedList)}
-        </div>
+      <!-- PIPELINE SUMMARY -->
+      ${renderPipelineGraphic(counts, state.postulantes.length)}
+
+      <!-- MINIMALIST TABS -->
+      <div class="d-flex gap-4 overflow-x-auto border-bottom border-secondary-subtle mb-4 scrollbar-hidden" style="white-space: nowrap;">
+        <button class="btn btn-link px-1 pb-2 text-decoration-none rounded-0 border-0 ${state.filtroEstado === 'todos' ? 'text-body fw-bold border-bottom border-primary border-2' : 'text-body-secondary'}" data-filter="todos">
+          Todos <span class="ms-1 small text-body-secondary">${state.postulantes.length}</span>
+        </button>
+        ${Object.entries(ESTADO_LABELS)
+          .map(([key, label]) => {
+            const count = counts[key] || 0
+            if (count === 0 && state.filtroEstado !== key) return '' // Ocultar estados vacíos para no saturar
+            const active = state.filtroEstado === key
+            return `
+            <button class="btn btn-link px-1 pb-2 text-decoration-none rounded-0 border-0 ${active ? 'text-body fw-bold border-bottom border-primary border-2' : 'text-body-secondary'}" data-filter="${key}">
+              ${label} <span class="ms-1 small text-body-secondary">${count}</span>
+            </button>
+          `
+          })
+          .join('')}
+      </div>
+
+      <!-- MAIN CONTENT AREA -->
+      <div class="bg-transparent">
+        ${paginatedList.length === 0 ? renderEmptyState() : renderTable(paginatedList)}
         
-        <!-- CONTROLES DE PAGINACIÓN -->
-        ${totalRecords > 0 ? `
-          <div class="card-footer bg-body-tertiary border-top border-secondary-subtle px-4 py-3 d-flex flex-column flex-sm-row justify-content-between align-items-center gap-3">
+        <!-- MINIMALIST PAGINATION -->
+        ${
+          totalRecords > 0
+            ? `
+          <div class="d-flex justify-content-between align-items-center mt-5 pt-4 border-top border-secondary-subtle">
             <span class="text-body-secondary small">
-              Mostrando <strong class="text-body">${startIndex + 1}-${endIndex}</strong> de <strong class="text-body">${totalRecords}</strong> postulantes
+              ${startIndex + 1}-${endIndex} de ${totalRecords}
             </span>
-            
-            <div class="d-flex align-items-center gap-2">
-              <button class="btn btn-sm btn-outline-secondary rounded-pill px-3" id="btn-page-prev" ${state.page === 1 ? 'disabled' : ''}>
-                <i class="bi bi-arrow-left me-1"></i> Más recientes
+            <div class="d-flex gap-3">
+              <button class="btn btn-link text-decoration-none text-body p-0 ${state.page === 1 ? 'opacity-25' : ''}" id="btn-page-prev" ${state.page === 1 ? 'disabled' : ''}>
+                <i class="bi bi-arrow-left"></i> Anterior
               </button>
-              <span class="text-body-secondary small px-2">Pág. ${state.page} de ${totalPages}</span>
-              <button class="btn btn-sm btn-outline-secondary rounded-pill px-3" id="btn-page-next" ${state.page === totalPages ? 'disabled' : ''}>
-                Más antiguos <i class="bi bi-arrow-right ms-1"></i>
+              <button class="btn btn-link text-decoration-none text-body p-0 ${state.page === totalPages ? 'opacity-25' : ''}" id="btn-page-next" ${state.page === totalPages ? 'disabled' : ''}>
+                Siguiente <i class="bi bi-arrow-right"></i>
               </button>
             </div>
           </div>
-        ` : ''}
+        `
+            : ''
+        }
       </div>
-    </div>
   `
 
   attachEvents(container)
@@ -287,7 +358,7 @@ function getFilteredPostulantes() {
 
 function getCountsByStatus() {
   const counts = {}
-  Object.keys(ESTADO_LABELS).forEach(k => counts[k] = 0)
+  Object.keys(ESTADO_LABELS).forEach((k) => (counts[k] = 0))
   state.postulantes.forEach((p) => {
     const est = p.estado || 'postulado'
     if (counts[est] !== undefined) {
@@ -299,89 +370,142 @@ function getCountsByStatus() {
 
 function renderEmptyState() {
   return `
-    <div class="text-center py-5">
-      <i class="bi bi-people text-body-secondary display-4"></i>
-      <h5 class="mt-3 fw-bold text-body">No hay postulantes</h5>
-      <p class="text-body-secondary px-4 mb-0">No se encontraron postulantes registrados para el mes seleccionado o bajo este filtro de estado.</p>
+    <div class="text-center py-5 my-5">
+      <h5 class="text-body-secondary fw-normal">No hay postulantes</h5>
     </div>
   `
 }
 
 function renderTable(list) {
-  return `
-    <div class="table-responsive">
-      <table class="table table-hover align-middle mb-0">
-        <thead class="table-light">
-          <tr>
-            <th class="border-bottom border-secondary-subtle ps-4">Nombre Completo</th>
-            <th class="border-bottom border-secondary-subtle">Contacto</th>
-            <th class="border-bottom border-secondary-subtle">Fecha Postulación</th>
-            <th class="border-bottom border-secondary-subtle text-end pe-4">Acción</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${list.map((p) => {
-            const telefonos = resolverTelefonos(p)
-            const phonesHTML = telefonos.map(({ rol, nombre, numero }) => {
-              const digits = numero.replace(/\D/g, '')
-              const waUrl = `https://wa.me/${digits}?text=${encodeURIComponent('Hola, le contactamos de El Sistema Punta Cana.')}`
-              const etiqueta = nombre ? `${nombre} (${rol})` : rol
-              return `<a href="${waUrl}" target="_blank" rel="noopener"
-                class="d-flex align-items-center gap-1 text-decoration-none text-success mb-1 btn-wa-link"
-                title="Abrir WhatsApp con ${etiqueta}">
-                <i class="bi bi-whatsapp fs-6"></i>
-                <span class="small">${formatearNumero(numero)}</span>
-                <span class="text-muted small">· ${etiqueta}</span>
-              </a>`
-            }).join('')
+  // Generador de filas HTML para Escritorio
+  const desktopRows = list
+    .map((p) => {
+      const telefonos = resolverTelefonos(p)
+      const phonesHTML = telefonos
+        .map(({ rol, nombre, numero }) => {
+          const digits = numero.replace(/\D/g, '')
+          const waUrl = `https://wa.me/${digits}?text=${encodeURIComponent('Hola, le contactamos de El Sistema Punta Cana.')}`
+          const etiqueta = nombre ? `${nombre} (${rol})` : rol
+          return `<a href="${waUrl}" target="_blank" rel="noopener" class="d-flex align-items-center gap-2 text-decoration-none text-body mb-1" title="${etiqueta}">
+        <i class="bi bi-whatsapp text-success small"></i>
+        <span class="small">${formatearNumero(numero)}</span>
+        <span class="text-body-secondary small fw-light">· ${etiqueta}</span>
+      </a>`
+        })
+        .join('')
 
-            // formatear fecha de postulación
-            const rawDate = p.fecha_postulacion || p.created_at
-            const dateStr = rawDate 
-              ? new Date(rawDate).toLocaleDateString('es-ES', { 
-                  day: '2-digit', 
-                  month: 'long', 
-                  year: 'numeric' 
-                }) 
-              : '-'
-            
-            return `
-              <tr class="cursor-pointer hover-table-row" data-id="${p.id}">
-                <!-- Columna 1: Nombre completo -->
-                <td class="ps-4 py-3">
-                  <div class="d-flex align-items-center">
-                    <div class="avatar-circle me-3 bg-primary bg-opacity-10 text-primary fw-bold d-none d-sm-flex">
-                      ${resolverIniciales(resolverNombre(p))}
-                    </div>
-                    <div>
-                      <span class="fw-semibold text-body block-link">${resolverNombre(p)}</span>
-                      <div class="d-flex flex-wrap d-sm-none mt-1">${phonesHTML}</div>
-                    </div>
-                  </div>
-                </td>
+      const rawDate = p.fecha_postulacion || p.created_at
+      const dateStr = rawDate
+        ? new Date(rawDate).toLocaleDateString('es-ES', {
+            day: '2-digit',
+            month: 'short',
+            year: 'numeric',
+          })
+        : '-'
+      const estadoColor = ESTADO_COLOR[p.estado || 'postulado']
+      const estadoLabel = ESTADO_LABELS[p.estado || 'postulado']
 
-                <!-- Columna 2: Teléfonos con botones WhatsApp por contacto -->
-                <td class="d-none d-sm-table-cell py-2">
-                  <div class="d-flex flex-wrap gap-1">${phonesHTML}</div>
-                </td>
-                
-                <!-- Columna 3: Fecha de postulación -->
-                <td class="text-body-secondary">${dateStr}</td>
-                
-                <!-- Columna 4: Botón eliminar -->
-                <td class="text-end pe-4">
-                  <button class="btn btn-sm btn-link text-danger p-1 rounded-circle hover-bg-danger-subtle btn-delete-postulante" 
-                          data-id="${p.id}" 
-                          data-name="${resolverNombre(p)}" 
-                          title="Eliminar postulación">
-                    <i class="bi bi-trash-fill fs-6"></i>
-                  </button>
-                </td>
-              </tr>
+      return `
+      <tr class="cursor-pointer" data-id="${p.id}">
+        <td class="py-3">
+          <div class="fw-medium text-body">${resolverNombre(p)}</div>
+          ${
+            estadoLabel
+              ? `
+          <div class="d-flex align-items-center gap-1 mt-1">
+            <i class="bi bi-circle-fill text-${estadoColor}" style="font-size: 8px;"></i>
+            <span class="text-body-secondary small">${estadoLabel}</span>
+          </div>
+          `
+              : ''
+          }
+        </td>
+        <td class="py-3 align-middle">
+          <div class="d-flex flex-column justify-content-center">${phonesHTML}</div>
+        </td>
+        <td class="text-body-secondary small py-3 align-middle">${dateStr}</td>
+        <td class="text-end pe-2 py-3 align-middle">
+          <button class="btn btn-link text-body-secondary p-0 hover-danger btn-delete-postulante" data-id="${p.id}" data-name="${resolverNombre(p)}" title="Eliminar">
+            <i class="bi bi-x-lg"></i>
+          </button>
+        </td>
+      </tr>
+    `
+    })
+    .join('')
+
+  // Generador de lista limpia para Móvil (en vez de tarjetas pesadas)
+  const mobileList = list
+    .map((p) => {
+      const telefonos = resolverTelefonos(p)
+      const phonesHTML = telefonos
+        .map(({ rol, nombre, numero }) => {
+          const digits = numero.replace(/\D/g, '')
+          const waUrl = `https://wa.me/${digits}?text=${encodeURIComponent('Hola, le contactamos de El Sistema Punta Cana.')}`
+          return `<a href="${waUrl}" target="_blank" rel="noopener" class="text-decoration-none text-body me-3 mb-2 d-inline-flex align-items-center gap-1">
+        <i class="bi bi-whatsapp text-success"></i> <span class="small fw-medium">${formatearNumero(numero)}</span>
+      </a>`
+        })
+        .join('')
+
+      const rawDate = p.fecha_postulacion || p.created_at
+      const dateStr = rawDate
+        ? new Date(rawDate).toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })
+        : '-'
+      const estadoColor = ESTADO_COLOR[p.estado || 'postulado']
+      const estadoLabel = ESTADO_LABELS[p.estado || 'postulado']
+
+      return `
+      <div class="border-bottom border-secondary-subtle py-3 cursor-pointer" data-id="${p.id}">
+        <div class="d-flex justify-content-between align-items-start mb-2">
+          <div>
+            <div class="fw-semibold text-body fs-6">${resolverNombre(p)}</div>
+            ${
+              estadoLabel
+                ? `
+            <div class="d-flex align-items-center gap-1 mt-1">
+              <i class="bi bi-circle-fill text-${estadoColor}" style="font-size: 8px;"></i>
+              <span class="text-body-secondary small">${estadoLabel}</span>
+            </div>
             `
-          }).join('')}
-        </tbody>
-      </table>
+                : ''
+            }
+          </div>
+          <div class="text-end">
+            <span class="text-body-secondary small d-block mb-1">${dateStr}</span>
+          </div>
+        </div>
+        <div class="mt-2">
+          ${phonesHTML}
+        </div>
+      </div>
+    `
+    })
+    .join('')
+
+  return `
+    <div class="w-100">
+      <!-- VISTA ESCRITORIO -->
+      <div class="d-none d-md-block table-responsive">
+        <table class="table align-middle mb-0 border-transparent">
+          <thead>
+            <tr>
+              <th class="border-bottom border-secondary-subtle text-body-secondary fw-normal small pb-3">Postulante</th>
+              <th class="border-bottom border-secondary-subtle text-body-secondary fw-normal small pb-3">Contacto</th>
+              <th class="border-bottom border-secondary-subtle text-body-secondary fw-normal small pb-3">Fecha</th>
+              <th class="border-bottom border-secondary-subtle text-end pe-2 fw-normal small pb-3">Acción</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${desktopRows}
+          </tbody>
+        </table>
+      </div>
+
+      <!-- VISTA MÓVIL (Lista limpia) -->
+      <div class="d-block d-md-none">
+        ${mobileList}
+      </div>
     </div>
   `
 }
@@ -421,15 +545,17 @@ function attachEvents(container) {
     const btn = document.getElementById('btn-sync')
     const spinner = document.getElementById('sync-spinner')
     const icon = document.getElementById('sync-icon')
-    
+
     try {
       btn.disabled = true
       spinner.classList.remove('d-none')
       icon.classList.add('d-none')
 
       const result = await sincronizarPostulantes()
-      
-      alert(`Sincronización exitosa. Registros procesados: ${result.total_rows || result.upserted || 0}`)
+
+      alert(
+        `Sincronización exitosa. Registros procesados: ${result.total_rows || result.upserted || 0}`,
+      )
       state.page = 1
       cargarDatos(container)
     } catch (error) {
@@ -462,12 +588,16 @@ function attachEvents(container) {
   container.querySelectorAll('.btn-delete-postulante').forEach((btn) => {
     btn.addEventListener('click', async (e) => {
       e.stopPropagation() // Previene que se navegue al perfil al hacer clic en eliminar
-      
+
       const button = e.currentTarget
       const id = button.getAttribute('data-id')
       const name = button.getAttribute('data-name')
-      
-      if (confirm(`¿Estás seguro de que deseas eliminar permanentemente la postulación de "${name}"?\n\nEsta acción eliminará el registro de la base de datos de forma irreversible.`)) {
+
+      if (
+        confirm(
+          `¿Estás seguro de que deseas eliminar permanentemente la postulación de "${name}"?\n\nEsta acción eliminará el registro de la base de datos de forma irreversible.`,
+        )
+      ) {
         try {
           button.disabled = true
           await eliminarPostulante(id)
@@ -479,6 +609,46 @@ function attachEvents(container) {
         }
       }
     })
+  })
+
+  // Botón Descargar PDF por rango de fechas
+  document.getElementById('btn-descargar-pdf')?.addEventListener('click', async () => {
+    const desde = document.getElementById('pdf-desde')?.value
+    const hasta = document.getElementById('pdf-hasta')?.value
+    const btn = document.getElementById('btn-descargar-pdf')
+    const spinner = document.getElementById('pdf-spinner')
+    const icon = document.getElementById('pdf-icon')
+
+    if (!desde || !hasta) {
+      alert('Debe seleccionar una fecha de inicio y una fecha de fin.')
+      return
+    }
+
+    if (desde > hasta) {
+      alert('La fecha "Desde" no puede ser posterior a la fecha "Hasta".')
+      return
+    }
+
+    try {
+      btn.disabled = true
+      spinner.classList.remove('d-none')
+      icon.classList.add('d-none')
+
+      const postulantes = await listarPostulantesPorRango(desde, hasta)
+
+      if (!postulantes || postulantes.length === 0) {
+        alert('No hay postulados registrados en el rango de fechas seleccionado.')
+        return
+      }
+
+      descargarPdfPostulados(postulantes, desde, hasta)
+    } catch (error) {
+      alert(`Error al generar el PDF: ${error.message}`)
+    } finally {
+      btn.disabled = false
+      spinner.classList.add('d-none')
+      icon.classList.remove('d-none')
+    }
   })
 
   // Paginación: Anteriores (Más recientes)

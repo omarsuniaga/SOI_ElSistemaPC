@@ -44,7 +44,7 @@ import{n as e}from"./rolldown-runtime-tcWNtVWY.js";import{i as t}from"./supabase
         `}},render(e){if(e.length===0)return;let n=i(e);t.innerHTML=`
         <div class="analytics-widget">
           <h2><i class="bi bi-bar-chart-steps text-primary"></i> Analítica de Llenado de Asistencias</h2>
-          
+
           <div class="stats-grid">
             <div class="stat-card primary">
               <div class="stat-label">Asistencia Primero</div>
@@ -73,4 +73,4 @@ import{n as e}from"./rolldown-runtime-tcWNtVWY.js";import{i as t}from"./supabase
             ${r(e)}
           </section>
         </div>
-      `}}}export{r as n,n as r,i as t};
+      `},destroy(){t&&(t.innerHTML=``)}}}export{r as n,n as r,i as t};

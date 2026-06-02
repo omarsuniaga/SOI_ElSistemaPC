@@ -1,4 +1,4 @@
-import{i as e}from"./portalUtils-CisZ9vg-.js";function t(t,n){if(!n||n.length===0)return;let r=document.createElement(`div`);r.className=`pm-modal-overlay pm-animate-fade-in`,r.style.zIndex=`9999`;let i=document.createElement(`div`);return i.className=`pm-modal-content pm-achievements-modal pm-animate-scale-up`,i.innerHTML=`
+import{i as e}from"./portalUtils-BqwkK1cV.js";function t(t,n){if(!n||n.length===0)return;let r=document.createElement(`div`);r.className=`pm-modal-overlay pm-animate-fade-in`,r.style.zIndex=`9999`;let i=document.createElement(`div`);return i.className=`pm-modal-content pm-achievements-modal pm-animate-scale-up`,i.innerHTML=`
     <style>
       .pm-achievements-modal {
         max-width: 400px;

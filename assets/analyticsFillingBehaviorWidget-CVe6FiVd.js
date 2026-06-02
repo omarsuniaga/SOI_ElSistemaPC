@@ -1,4 +1,4 @@
-import{n as e}from"./rolldown-runtime-tcWNtVWY.js";import{i as t}from"./supabase-DJmkTfk1.js";async function n(){try{let{data:e,error:n}=await t.from(`teacher_class_fill_metrics_aggregated`).select(`*`).order(`maestro_nombre`,{ascending:!0});if(n)throw n;return e||[]}catch(e){throw console.error(`[getTeacherFillingMetrics] Error:`,e),e}}var r=e({analyticsFillingBehaviorWidget:()=>i});function i(e){let t=document.getElementById(e);function r(e){return`
+import{n as e}from"./rolldown-runtime-tcWNtVWY.js";import{i as t}from"./supabase-BryBf0UA.js";async function n(){try{let{data:e,error:n}=await t.from(`teacher_class_fill_metrics_aggregated`).select(`*`).order(`maestro_nombre`,{ascending:!0});if(n)throw n;return e||[]}catch(e){throw console.error(`[getTeacherFillingMetrics] Error:`,e),e}}var r=e({analyticsFillingBehaviorWidget:()=>i});function i(e){let t=document.getElementById(e);function r(e){return`
       <div class="premium-table-container">
         <table class="premium-table">
           <thead>

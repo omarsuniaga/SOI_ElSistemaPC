@@ -20,9 +20,9 @@ describe('crearWizard', () => {
     expect(state.draft).toEqual({})
   })
 
-  it('maxReachedStep starts at 1', () => {
+  it('maxReachedStep starts at totalSteps', () => {
     const state = crearWizard(5)
-    expect(state.maxReachedStep).toBe(1)
+    expect(state.maxReachedStep).toBe(5)
   })
 })
 
@@ -58,10 +58,10 @@ describe('avanzar', () => {
     expect(next.currentStep).toBe(5)
   })
 
-  it('updates maxReachedStep when advancing', () => {
+  it('maxReachedStep stays at totalSteps when advancing (already at max)', () => {
     const state = crearWizard(5)
     const next = avanzar(state, {}, noopValidator)
-    expect(next.maxReachedStep).toBe(2)
+    expect(next.maxReachedStep).toBe(5)
   })
 })
 

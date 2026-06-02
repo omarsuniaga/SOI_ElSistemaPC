@@ -31,7 +31,6 @@ export async function renderAprobacionView(container) {
     if (error) {
       throw error
     }
-console.log('Estamos aqui:', pendientes)
     const contentEl = container.querySelector('#aprobacion-content')
 
     if (!pendientes || pendientes.length === 0) {
@@ -106,7 +105,8 @@ console.log('Estamos aqui:', pendientes)
         </button>
       </div>
     `
-    contentEl.querySelector('#btn-retry-aprobacion')
+    contentEl
+      .querySelector('#btn-retry-aprobacion')
       ?.addEventListener('click', () => renderAprobacionView(container))
     console.error('[AprobacionView] Error:', err.message)
   }
@@ -162,7 +162,10 @@ async function handleAction(profileId, nuevoEstado, rol, contentEl) {
 
       // Fallback directo si el RPC falla
       if (!rpcOk) {
-        console.warn('[AprobacionView] RPC falló, usando operaciones directas:', rpcError?.message || rpcData?.error)
+        console.warn(
+          '[AprobacionView] RPC falló, usando operaciones directas:',
+          rpcError?.message || rpcData?.error,
+        )
 
         const { error: upErr, count } = await supabase
           .from('profiles')
@@ -182,7 +185,7 @@ async function handleAction(profileId, nuevoEstado, rol, contentEl) {
         if (check?.estado !== 'activo') {
           // RLS está bloqueando — necesitamos re-loguear como admin para que el RPC funcione
           throw new Error(
-            'No se pudo activar el perfil. Por favor cerrá sesión e iniciá sesión nuevamente como admin, luego intentá aprobar de nuevo.'
+            'No se pudo activar el perfil. Por favor cerrá sesión e iniciá sesión nuevamente como admin, luego intentá aprobar de nuevo.',
           )
         }
       }
@@ -211,10 +214,7 @@ async function handleAction(profileId, nuevoEstado, rol, contentEl) {
               activo: true,
             })
           } else if (!existing.user_id) {
-            await supabase
-              .from('maestros')
-              .update({ user_id: profile.id })
-              .eq('id', existing.id)
+            await supabase.from('maestros').update({ user_id: profile.id }).eq('id', existing.id)
           }
         }
       }

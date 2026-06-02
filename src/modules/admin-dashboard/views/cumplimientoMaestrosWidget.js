@@ -7,7 +7,7 @@ import {
   getMaestrosComplianceStatus,
   getMaestrosByCategory,
   getCriticalMaestros,
-  getMaestroPendingRegistros
+  getMaestroPendingRegistros,
 } from '../api/adminMaestroApi.js'
 import '../styles/admin-dashboard.css'
 
@@ -21,7 +21,7 @@ export class CumplimientoMaestrosWidget {
       categoria: null,
       estado: null,
       diasAtrasoMin: 0,
-      diasAtrasoMax: 999
+      diasAtrasoMax: 999,
     }
   }
 
@@ -70,9 +70,9 @@ export class CumplimientoMaestrosWidget {
           pendingCount,
           oldestDiasAtraso,
           statusColor: this.getStatusColor(m.categoria),
-          categoryLabel: this.getCategoryLabel(m.categoria)
+          categoryLabel: this.getCategoryLabel(m.categoria),
         }
-      })
+      }),
     )
 
     this.filteredMaestros = [...this.maestros]
@@ -117,7 +117,7 @@ export class CumplimientoMaestrosWidget {
       responsable: '#10b981', // Green
       regular: '#f59e0b', // Amber
       incumplidor: '#f97316', // Orange
-      negligente: '#dc2626' // Red
+      negligente: '#dc2626', // Red
     }
     return colors[categoria] || '#9ca3af'
   }
@@ -130,7 +130,7 @@ export class CumplimientoMaestrosWidget {
       responsable: 'Responsable ✓',
       regular: 'Regular',
       incumplidor: 'Incumplidor',
-      negligente: 'Negligente ⚠️'
+      negligente: 'Negligente ⚠️',
     }
     return labels[categoria] || categoria
   }
@@ -247,9 +247,10 @@ export class CumplimientoMaestrosWidget {
               </tr>
             </thead>
             <tbody>
-              ${this.filteredMaestros.length === 0 
-                ? '<tr><td colspan="7" class="premium-no-data"><i class="bi bi-inbox fs-4 d-block mb-2 text-secondary"></i>No hay maestros que coincidan con los filtros</td></tr>' 
-                : this.filteredMaestros.map((m) => this.renderMaestroRow(m)).join('')
+              ${
+                this.filteredMaestros.length === 0
+                  ? '<tr><td colspan="7" class="premium-no-data"><i class="bi bi-inbox fs-4 d-block mb-2 text-secondary"></i>No hay maestros que coincidan con los filtros</td></tr>'
+                  : this.filteredMaestros.map((m) => this.renderMaestroRow(m)).join('')
               }
             </tbody>
           </table>
@@ -264,7 +265,9 @@ export class CumplimientoMaestrosWidget {
    * Render single maestro row
    */
   renderMaestroRow(maestro) {
-    const lastNotified = maestro.updated_at ? new Date(maestro.updated_at).toLocaleString() : 'Nunca'
+    const lastNotified = maestro.updated_at
+      ? new Date(maestro.updated_at).toLocaleString()
+      : 'Nunca'
     const color = this.getStatusColor(maestro.categoria)
 
     return `
@@ -315,7 +318,7 @@ export class CumplimientoMaestrosWidget {
         const range = e.target.value.split('-')
         this.applyFilter({
           diasAtrasoMin: range[0] ? parseInt(range[0]) : 0,
-          diasAtrasoMax: range[1] ? parseInt(range[1]) : 999
+          diasAtrasoMax: range[1] ? parseInt(range[1]) : 999,
         })
       }
     }
@@ -424,7 +427,6 @@ export class CumplimientoMaestrosWidget {
     if (!maestro) return
 
     // Could open a modal or navigate to detail page
-    console.log('View detail for maestro:', maestroId, maestro)
     // Example: navigate to /admin/maestros/{maestroId}/detail
     window.location.href = `/admin/maestros/${maestroId}/detail`
   }

@@ -74,14 +74,14 @@ const mockClases = [
 const mockHorarios = [
   {
     clase_id: 'clase-1',
-    dia: 'sábado',
+    dia: 'lunes',
     hora_inicio: '08:00:00',
     hora_fin: '09:00:00',
     salon_id: null,
   },
   {
     clase_id: 'clase-2',
-    dia: 'sábado',
+    dia: 'lunes',
     hora_inicio: '10:00:00',
     hora_fin: '11:00:00',
     salon_id: null,

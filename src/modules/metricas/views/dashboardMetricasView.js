@@ -52,7 +52,6 @@ export async function renderDashboardMetricasView(container) {
     state.cargando = true
     renderLoading(container)
 
-    // Cargar datos del resumen principal
     state.stats = await getEstadisticasPeriodoActivo()
     state.resumenAlertas = await getResumenAlertas()
 
@@ -392,12 +391,14 @@ function _formatAnalysisFromDSL(dslData) {
   const parts = []
 
   if (dslData.radarData && dslData.radarData.length > 0) {
-    const avg = (dslData.radarData.reduce((sum, d) => sum + (d.value || 0), 0) / dslData.radarData.length).toFixed(1)
+    const avg = (
+      dslData.radarData.reduce((sum, d) => sum + (d.value || 0), 0) / dslData.radarData.length
+    ).toFixed(1)
     parts.push(`Indicadores promedio: ${avg}%.`)
   }
 
   if (dslData.nodeDifficulty && dslData.nodeDifficulty.length > 0) {
-    const highRisk = dslData.nodeDifficulty.filter(n => n.difficulty > 0.7).length
+    const highRisk = dslData.nodeDifficulty.filter((n) => n.difficulty > 0.7).length
     if (highRisk > 0) {
       parts.push(`Se detectaron ${highRisk} nodos de alto riesgo que requieren intervención.`)
     }

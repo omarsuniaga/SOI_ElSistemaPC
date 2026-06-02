@@ -601,31 +601,12 @@ export async function getReporteConsolidado({ periodoId, fecha, claseId } = {}) 
     // 🔥 FILTRO CRÍTICO: Excluir sesiones borradores (incompletas/abandonadas)
     // Solo mostrar sesiones guardadas (borrador = false)
     sesiones = sesiones.filter((s) => s.borrador === false)
-    console.log(`📊 Filtro de borradores: ${sesiones.length} sesiones reales`)
-
-    // DEBUG
-    console.log('📊 getReporteConsolidado DEBUG:', {
-      periodoId,
-      sesionesCount: sesiones.length,
-      dataSource: 'vw_asistencias_consolidada',
-      firstSesion: sesiones[0]
-        ? {
-            fecha: sesiones[0].fecha,
-            nombre_clase: sesiones[0].nombre_clase,
-            presentes: sesiones[0].presentes,
-            ausentes: sesiones[0].ausentes,
-            justificados: sesiones[0].justificados,
-          }
-        : 'NO SESIONES',
-    })
-
     // PASO 2: Transformar datos de la vista en formato timeline (fecha → clases)
     // Los datos ya vienen consolidados, solo necesitamos agrupar por fecha
     const timelineByDate = {}
 
     if (sesiones && sesiones.length > 0) {
       sesiones.forEach((row) => {
-        // Crear objeto de clase con los datos ya consolidados de la vista
         const clase = {
           clase_id: row.clase_id,
           clase_nombre: row.nombre_clase,

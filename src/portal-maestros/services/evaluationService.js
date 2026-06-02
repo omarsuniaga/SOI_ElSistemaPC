@@ -8,6 +8,7 @@
 import { parseDSL } from '../utils/dslParser.js'
 import { supabase } from '../../lib/supabaseClient.js'
 import { structureTextToDSL } from './groqService.js'
+import { enqueue } from './offlineQueue.js'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Pure helpers
@@ -195,12 +196,29 @@ export async function saveEvaluaciones(
     tarea: e.tarea,
   }))
 
-  const { data, error } = await supabase.from('indicator_attempts').upsert(rows, {
-    onConflict: 'session_id,indicator_id,student_id',
-    ignoreDuplicates: false,
-  })
+  try {
+    const { data, error } = await supabase.from('indicator_attempts').upsert(rows, {
+      onConflict: 'session_id,indicator_id,student_id',
+      ignoreDuplicates: false,
+    })
 
-  return { data, error }
+    if (error) throw error
+    return { data, error: null }
+  } catch (err) {
+    // Fallback offline: encolar evaluaciones individualmente
+    if (!navigator.onLine || err.message?.includes('Failed to fetch')) {
+      console.warn('[evaluationService] Offline, encolando saveEvaluaciones...')
+      for (const row of rows) {
+        await enqueue({
+          tabla: 'indicator_attempts',
+          operacion: 'upsert',
+          payload: row,
+        })
+      }
+      return { data: null, error: null, _offline: true }
+    }
+    return { data: null, error: err }
+  }
 }
 
 /**

@@ -6,6 +6,7 @@
 
 import { supabase } from '../../lib/supabaseClient.js'
 import { Observacion } from '../../modules/observaciones/models/observacion.model.js'
+import { enqueue } from './offlineQueue.js'
 
 /**
  * Guarda la observación general de la sesión (contenido crudo y DSL).
@@ -92,14 +93,29 @@ export async function promocionarObservacionesAlumnos(
     return obs.toJSON()
   })
 
-  const { data, error } = await supabase
-    .from('observaciones_alumnos')
-    .upsert(rows, { onConflict: 'sesion_clase_id,alumno_id' })
+  try {
+    const { data, error } = await supabase
+      .from('observaciones_alumnos')
+      .upsert(rows, { onConflict: 'sesion_clase_id,alumno_id' })
 
-  if (error) {
-    console.error('[Promotion] Error promoviendo observaciones:', error)
-    return { success: false, error: error.message }
+    if (error) throw error
+
+    return { success: true, data }
+  } catch (err) {
+    // Fallback offline: encolar cada observación individualmente
+    if (!navigator.onLine || err.message?.includes('Failed to fetch')) {
+      console.warn('[Promotion] Offline, encolando promoción de observaciones...')
+      for (const row of rows) {
+        await enqueue({
+          tabla: 'observaciones_alumnos',
+          operacion: 'upsert',
+          payload: row,
+        })
+      }
+      return { success: true, _offline: true, count: rows.length }
+    }
+
+    console.error('[Promotion] Error promoviendo observaciones:', err)
+    return { success: false, error: err.message }
   }
-
-  return { success: true, data }
 }

@@ -1,6 +1,6 @@
 import { openDB } from 'idb'
 
-const DB_NAME    = 'portal-maestros'
+const DB_NAME = 'portal-maestros'
 const DB_VERSION = 1
 const STORE_NAME = 'sync_queue'
 
@@ -13,7 +13,7 @@ async function getDB() {
     upgrade(db) {
       if (!db.objectStoreNames.contains(STORE_NAME)) {
         const store = db.createObjectStore(STORE_NAME, {
-          keyPath:       'id',
+          keyPath: 'id',
           autoIncrement: true,
         })
         store.createIndex('by_created_at', 'created_at')
@@ -48,6 +48,15 @@ export async function getQueue() {
 }
 
 /**
+ * Cuenta cuántos items hay pendientes en la cola.
+ * @returns {Promise<number>}
+ */
+export async function getQueueCount() {
+  const db = await getDB()
+  return db.count(STORE_NAME)
+}
+
+/**
  * Elimina un item de la cola por su id (tras sincronización exitosa).
  * @param {number} id
  */
@@ -61,7 +70,7 @@ export async function dequeue(id) {
  */
 export async function clearQueue() {
   const db = await getDB()
-  const tx    = db.transaction(STORE_NAME, 'readwrite')
+  const tx = db.transaction(STORE_NAME, 'readwrite')
   await tx.store.clear()
   await tx.done
 }

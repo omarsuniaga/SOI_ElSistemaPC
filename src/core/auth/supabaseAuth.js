@@ -15,7 +15,6 @@ import { supabase } from '../../lib/supabaseClient.js'
  * @returns {Promise<{data:Object,error:Object}>} Auth response with user session or error
  */
 export async function signUp(email, password, userData = {}) {
-  console.log('📝 signUp attempt:', email)
   try {
     const result = await supabase.auth.signUp({
       email,
@@ -24,7 +23,6 @@ export async function signUp(email, password, userData = {}) {
         data: userData,
       },
     })
-    console.log('📝 signUp result:', result)
     return result
   } catch (err) {
     console.error('📝 signUp error:', err)
@@ -41,13 +39,11 @@ export async function signUp(email, password, userData = {}) {
  * @returns {Promise<{data:Object,error:Object}>} Auth response with session or error
  */
 export async function signIn(email, password) {
-  console.log('🔐 signIn attempt:', email)
   try {
     const result = await supabase.auth.signInWithPassword({
       email,
       password,
     })
-    console.log('🔐 signIn result:', result)
     return result
   } catch (err) {
     console.error('🔐 signIn error:', err)
@@ -72,7 +68,10 @@ export async function signOut() {
  * @returns {Promise<{data:Object,error:Object}>} User object or error
  */
 export async function getCurrentUser() {
-  const { data: { user }, error } = await supabase.auth.getUser()
+  const {
+    data: { user },
+    error,
+  } = await supabase.auth.getUser()
   return { data: { user }, error }
 }
 
@@ -83,7 +82,10 @@ export async function getCurrentUser() {
  * @returns {Promise<{data:Object,error:Object}>} Session object or error
  */
 export async function getSession() {
-  const { data: { session }, error } = await supabase.auth.getSession()
+  const {
+    data: { session },
+    error,
+  } = await supabase.auth.getSession()
   return { data: { session }, error }
 }
 

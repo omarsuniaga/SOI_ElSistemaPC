@@ -231,11 +231,8 @@ export async function renderAsistenciaView(containerOrId, { claseId, fecha, sesi
         .order('updated_at', { ascending: false }) // Entre borradores, la más reciente
         .limit(1),
     ])
-    console.log('[DEBUG] Finished Batch 1')
-
     const clase = misClases.find((c) => c.id === claseId)
     if (!clase) {
-      console.log('[DEBUG] Clase not found in misClases')
       container.innerHTML = `<p class="pm-empty" style="color:var(--pm-danger)">Clase no encontrada.</p>`
       return
     }
@@ -289,8 +286,6 @@ export async function renderAsistenciaView(containerOrId, { claseId, fecha, sesi
         : Promise.resolve([]),
       salonIds.length > 0 ? getSalones(salonIds) : Promise.resolve([]), // cache: 1hr
     ])
-    console.log('[DEBUG] Finished Batch 2')
-
     const salonNombre = salonesData.length > 0 ? salonesData[0].nombre : null
 
     // Detectar conflicto
@@ -1366,7 +1361,6 @@ function _renderVista(container, ctx) {
   }
 
   // === Ruta topic auto-injection ===
-  console.log('[DEBUG] Reached handoff section')
   const rutaTema = consumeRutaTema()
   if (rutaTema && rutaTema.claseId === claseId) {
     const temaText = `[${rutaTema.nombre}] `

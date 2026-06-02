@@ -9,6 +9,12 @@ vi.mock('../../api/configApi.js', () => ({
   setOpenRouterApiKey: vi.fn(async () => {}),
   getPreferredModel: vi.fn(async () => 'google/gemini-2.0-flash-exp'),
   setPreferredModel: vi.fn(async () => {}),
+  getDocumentosInstitucionales: vi.fn(async () => ({
+    reglamento: '',
+    horario: '',
+    bienvenida: '',
+  })),
+  setDocumentosInstitucionales: vi.fn(async () => {}),
 }))
 
 vi.mock('../../../../portal-maestros/services/pushService.js', () => ({
@@ -46,9 +52,7 @@ describe('Notification Settings UI (configView)', () => {
       await renderConfigView(container)
 
       // Verify the notification section exists
-      const notificationPanel = container.querySelector(
-        '.card-header .bi-bell'
-      )
+      const notificationPanel = container.querySelector('.card-header .bi-bell')
       expect(notificationPanel).toBeTruthy()
     })
 
@@ -134,9 +138,8 @@ describe('Notification Settings UI (configView)', () => {
 
   describe('Loading Saved Preferences', () => {
     it('should load saved preferences on initialization', async () => {
-      const { getNotificationPreferences } = await import(
-        '../../../../portal-maestros/services/pushService.js'
-      )
+      const { getNotificationPreferences } =
+        await import('../../../../portal-maestros/services/pushService.js')
 
       await renderConfigView(container)
 
@@ -148,13 +151,9 @@ describe('Notification Settings UI (configView)', () => {
       await renderConfigView(container)
 
       const alertPreClass = document.querySelector('#alert-pre-class')
-      const minutesBeforeClass = document.querySelector(
-        '#minutes-before-class'
-      )
+      const minutesBeforeClass = document.querySelector('#minutes-before-class')
       const alertPostClass = document.querySelector('#alert-post-class')
-      const minutesAfterClass = document.querySelector(
-        '#minutes-after-class'
-      )
+      const minutesAfterClass = document.querySelector('#minutes-after-class')
 
       // Wait for async preference loading
       await new Promise((resolve) => setTimeout(resolve, 100))
@@ -166,9 +165,8 @@ describe('Notification Settings UI (configView)', () => {
     })
 
     it('should handle push subscription status on init', async () => {
-      const { isPushSubscribed, isPushSupported } = await import(
-        '../../../../portal-maestros/services/pushService.js'
-      )
+      const { isPushSubscribed, isPushSupported } =
+        await import('../../../../portal-maestros/services/pushService.js')
 
       await renderConfigView(container)
 
@@ -210,9 +208,7 @@ describe('Notification Settings UI (configView)', () => {
     it('should update number inputs correctly', async () => {
       await renderConfigView(container)
 
-      const minutesBeforeClass = document.querySelector(
-        '#minutes-before-class'
-      )
+      const minutesBeforeClass = document.querySelector('#minutes-before-class')
       const testValue = '30'
 
       minutesBeforeClass.value = testValue
@@ -224,16 +220,12 @@ describe('Notification Settings UI (configView)', () => {
     it('should respect min/max constraints on inputs', async () => {
       await renderConfigView(container)
 
-      const minutesBeforeClass = document.querySelector(
-        '#minutes-before-class'
-      )
+      const minutesBeforeClass = document.querySelector('#minutes-before-class')
 
       expect(minutesBeforeClass.min).toBe('1')
       expect(minutesBeforeClass.max).toBe('120')
 
-      const minutesAfterClass = document.querySelector(
-        '#minutes-after-class'
-      )
+      const minutesAfterClass = document.querySelector('#minutes-after-class')
       expect(minutesAfterClass.min).toBe('1')
       expect(minutesAfterClass.max).toBe('300')
     })
@@ -241,9 +233,8 @@ describe('Notification Settings UI (configView)', () => {
 
   describe('Save Notifications Button', () => {
     it('should call saveNotificationPreferences when save button is clicked', async () => {
-      const { saveNotificationPreferences } = await import(
-        '../../../../portal-maestros/services/pushService.js'
-      )
+      const { saveNotificationPreferences } =
+        await import('../../../../portal-maestros/services/pushService.js')
 
       await renderConfigView(container)
 
@@ -261,9 +252,8 @@ describe('Notification Settings UI (configView)', () => {
     })
 
     it('should save correct preference values', async () => {
-      const { saveNotificationPreferences } = await import(
-        '../../../../portal-maestros/services/pushService.js'
-      )
+      const { saveNotificationPreferences } =
+        await import('../../../../portal-maestros/services/pushService.js')
 
       await renderConfigView(container)
 
@@ -285,7 +275,7 @@ describe('Notification Settings UI (configView)', () => {
           min_antes_clase: 20,
           alerta_post_clase: false,
           min_post_clase_sin_registro: 90,
-        })
+        }),
       )
     })
 
@@ -328,9 +318,8 @@ describe('Notification Settings UI (configView)', () => {
 
   describe('Test Notification Button', () => {
     it('should call testNotification when test button is clicked', async () => {
-      const { testNotification } = await import(
-        '../../../../portal-maestros/services/pushService.js'
-      )
+      const { testNotification } =
+        await import('../../../../portal-maestros/services/pushService.js')
 
       await renderConfigView(container)
 
@@ -359,9 +348,8 @@ describe('Notification Settings UI (configView)', () => {
     })
 
     it('should display warning when test notification fails', async () => {
-      const { testNotification } = await import(
-        '../../../../portal-maestros/services/pushService.js'
-      )
+      const { testNotification } =
+        await import('../../../../portal-maestros/services/pushService.js')
       testNotification.mockResolvedValueOnce(false)
 
       await renderConfigView(container)
@@ -393,9 +381,8 @@ describe('Notification Settings UI (configView)', () => {
 
   describe('Push Notifications Toggle', () => {
     it('should handle push enabled toggle when supported', async () => {
-      const { subscribeToPush } = await import(
-        '../../../../portal-maestros/services/pushService.js'
-      )
+      const { subscribeToPush } =
+        await import('../../../../portal-maestros/services/pushService.js')
 
       await renderConfigView(container)
 
@@ -412,9 +399,8 @@ describe('Notification Settings UI (configView)', () => {
     })
 
     it('should disable push toggle if browser does not support it', async () => {
-      const { isPushSupported } = await import(
-        '../../../../portal-maestros/services/pushService.js'
-      )
+      const { isPushSupported } =
+        await import('../../../../portal-maestros/services/pushService.js')
       isPushSupported.mockReturnValueOnce(false)
 
       await renderConfigView(container)
@@ -432,9 +418,8 @@ describe('Notification Settings UI (configView)', () => {
     })
 
     it('should call unsubscribeFromPush when toggling off', async () => {
-      const { unsubscribeFromPush, subscribeToPush } = await import(
-        '../../../../portal-maestros/services/pushService.js'
-      )
+      const { unsubscribeFromPush, subscribeToPush } =
+        await import('../../../../portal-maestros/services/pushService.js')
 
       await renderConfigView(container)
 
@@ -460,9 +445,8 @@ describe('Notification Settings UI (configView)', () => {
 
   describe('Error Handling', () => {
     it('should display error message if saving fails', async () => {
-      const { saveNotificationPreferences } = await import(
-        '../../../../portal-maestros/services/pushService.js'
-      )
+      const { saveNotificationPreferences } =
+        await import('../../../../portal-maestros/services/pushService.js')
       saveNotificationPreferences.mockResolvedValueOnce({
         error: 'Database error',
       })
@@ -480,9 +464,8 @@ describe('Notification Settings UI (configView)', () => {
     })
 
     it('should display error message if test notification throws', async () => {
-      const { testNotification } = await import(
-        '../../../../portal-maestros/services/pushService.js'
-      )
+      const { testNotification } =
+        await import('../../../../portal-maestros/services/pushService.js')
       testNotification.mockRejectedValueOnce(new Error('Push error'))
 
       await renderConfigView(container)
@@ -500,18 +483,13 @@ describe('Notification Settings UI (configView)', () => {
 
   describe('Form Validation', () => {
     it('should parse number inputs as integers for minutes', async () => {
-      const { saveNotificationPreferences } = await import(
-        '../../../../portal-maestros/services/pushService.js'
-      )
+      const { saveNotificationPreferences } =
+        await import('../../../../portal-maestros/services/pushService.js')
 
       await renderConfigView(container)
 
-      const minutesBeforeClass = document.querySelector(
-        '#minutes-before-class'
-      )
-      const minutesAfterClass = document.querySelector(
-        '#minutes-after-class'
-      )
+      const minutesBeforeClass = document.querySelector('#minutes-before-class')
+      const minutesAfterClass = document.querySelector('#minutes-after-class')
 
       minutesBeforeClass.value = '30'
       minutesAfterClass.value = '75'
@@ -526,14 +504,13 @@ describe('Notification Settings UI (configView)', () => {
         expect.objectContaining({
           min_antes_clase: 30,
           min_post_clase_sin_registro: 75,
-        })
+        }),
       )
     })
 
     it('should handle form with all toggles disabled', async () => {
-      const { saveNotificationPreferences } = await import(
-        '../../../../portal-maestros/services/pushService.js'
-      )
+      const { saveNotificationPreferences } =
+        await import('../../../../portal-maestros/services/pushService.js')
 
       await renderConfigView(container)
 
@@ -549,7 +526,7 @@ describe('Notification Settings UI (configView)', () => {
         expect.objectContaining({
           alerta_pre_clase: false,
           alerta_post_clase: false,
-        })
+        }),
       )
     })
   })

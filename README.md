@@ -3,7 +3,8 @@
 [![Build Status](https://img.shields.io/badge/build-passing-brightgreen)](https://github.com)
 [![Test Coverage](https://img.shields.io/badge/coverage-95%25-brightgreen)](https://codecov.io)
 [![License](https://img.shields.io/badge/license-MIT-blue)](./LICENSE)
-[![Last Updated](https://img.shields.io/badge/last%20updated-2026--05--10-blue)](https://github.com)
+[![Last Updated](https://img.shields.io/badge/last%20updated-2026--06--01-blue)](https://github.com)
+[![Tests](https://img.shields.io/badge/tests-1363%20passed-brightgreen)](https://github.com)
 
 Enterprise-grade teacher portal for El Sistema Punta Cana. Streamlined lesson planning, smart observation recording, evaluation, and student progress tracking.
 
@@ -11,18 +12,18 @@ Enterprise-grade teacher portal for El Sistema Punta Cana. Streamlined lesson pl
 
 ## ✨ Features
 
-| Feature | Status | Tier |
-|---------|--------|------|
-| Lesson Planning | ✅ | Core |
-| Observation Recording | ✅ | Core |
-| Evaluation Engine | ✅ | Core |
-| Student Progress Tracking | ✅ | Core |
-| Real-time Notifications | ✅ | Core |
-| Web Push Support | ✅ | Enhanced |
-| Error Tracking | ✅ | Enterprise |
-| Audit Logging | ✅ | Enterprise |
-| GDPR Compliance | ✅ | Enterprise |
-| Performance Monitoring | ✅ | Enterprise |
+| Feature                   | Status | Tier       |
+| ------------------------- | ------ | ---------- |
+| Lesson Planning           | ✅     | Core       |
+| Observation Recording     | ✅     | Core       |
+| Evaluation Engine         | ✅     | Core       |
+| Student Progress Tracking | ✅     | Core       |
+| Real-time Notifications   | ✅     | Core       |
+| Web Push Support          | ✅     | Enhanced   |
+| Error Tracking            | ✅     | Enterprise |
+| Audit Logging             | ✅     | Enterprise |
+| GDPR Compliance           | ✅     | Enterprise |
+| Performance Monitoring    | ✅     | Enterprise |
 
 ---
 
@@ -59,6 +60,7 @@ cp .env.example .env.local
 ```
 
 Configure:
+
 ```
 VITE_SUPABASE_URL=your_supabase_url
 VITE_SUPABASE_KEY=your_anon_key
@@ -102,22 +104,22 @@ npm run test:e2e
 
 ### Principios de Diseño
 
-| Principio | Implementación |
-|-----------|----------------|
-| **DataAdapter Pattern** | Mock First — toda funcionalidad disponible en Demo (JSON) antes de producción (Supabase) |
-| **Module Autocontenido** | `portal-maestros/` con views, api, hooks, components |
-| **Responsive Design** | Breakpoints: mobile (<768px), tablet (768-1023px), desktop (≥1024px) |
-| **Progressive Enhancement** | PWA con service worker para offline |
+| Principio                   | Implementación                                                                           |
+| --------------------------- | ---------------------------------------------------------------------------------------- |
+| **DataAdapter Pattern**     | Mock First — toda funcionalidad disponible en Demo (JSON) antes de producción (Supabase) |
+| **Module Autocontenido**    | `portal-maestros/` con views, api, hooks, components                                     |
+| **Responsive Design**       | Breakpoints: mobile (<768px), tablet (768-1023px), desktop (≥1024px)                     |
+| **Progressive Enhancement** | PWA con service worker para offline                                                      |
 
 ### Stack Tecnológico
 
-| Capa | Tecnología | Propósito |
-|------|------------|-----------|
-| **Bundler** | Vite 8.x | HMR instantáneo, build optimizado |
-| **Backend** | Supabase | PostgreSQL, Auth, RLS, Realtime |
-| **UI** | CSS Modules + Custom | Diseño Apple-style, tokens semánticos |
-| **Testing** | Vitest + jsdom | 332 tests unitarios e integración |
-| **PWA** | Service Worker | Offline, installable |
+| Capa        | Tecnología           | Propósito                             |
+| ----------- | -------------------- | ------------------------------------- |
+| **Bundler** | Vite 8.x             | HMR instantáneo, build optimizado     |
+| **Backend** | Supabase             | PostgreSQL, Auth, RLS, Realtime       |
+| **UI**      | CSS Modules + Custom | Diseño Apple-style, tokens semánticos |
+| **Testing** | Vitest + jsdom       | 1363 tests (unitarios + integración)  |
+| **PWA**     | Service Worker       | Offline, installable                  |
 
 ---
 
@@ -144,9 +146,6 @@ sistema-academico-pwa/
 │       ├── auditService.js        # Data mutation logging
 │       ├── analyticsService.js    # User behavior
 │       └── database.js            # DB interactions
-├── config/
-│   ├── security-headers.js        # CSP, X-Frame-Options
-│   └── cors.js                    # CORS policy
 ├── public/
 │   ├── manifest.json              # PWA manifest
 │   └── sw.js                      # Service Worker
@@ -185,37 +184,37 @@ Portal Maestros implementa seguridad multicapa:
 
 ## 📊 Rendimiento
 
-| Métrica | Target |
-|---------|--------|
-| **Bundle Size** | < 500KB (gzipped) |
-| **LCP (Largest Contentful Paint)** | < 2.5s |
-| **FID (First Input Delay)** | < 100ms |
-| **CLS (Cumulative Layout Shift)** | < 0.1 |
-| **Route Lazy Loading** | Todos los routes no-críticos |
-| **Service Worker Caching** | Offline-first strategy |
-| **Database Indexing** | Optimizado para queries rápidas |
+| Métrica                            | Target                          |
+| ---------------------------------- | ------------------------------- |
+| **Bundle Size**                    | < 500KB (gzipped)               |
+| **LCP (Largest Contentful Paint)** | < 2.5s                          |
+| **FID (First Input Delay)**        | < 100ms                         |
+| **CLS (Cumulative Layout Shift)**  | < 0.1                           |
+| **Route Lazy Loading**             | Todos los routes no-críticos    |
+| **Service Worker Caching**         | Offline-first strategy          |
+| **Database Indexing**              | Optimizado para queries rápidas |
 
 ---
 
 ## 🧪 Testing
 
 ```
- Test Files  28 passed (28)
-      Tests  332 passed (332)
-   Duration  ~16s
+ Test Files  150 passed | 2 skipped (162)
+      Tests  1363 passed | 7 skipped (1370)
+   Duration  ~76s
 ```
 
 ### Cobertura de Tests
 
-| Servicio/Componente | Tests |
-|---------------------|-------|
-| Push Service | Subscription status, permission handling |
-| Notification Service | Polling, deduplication, badge updates |
-| Data Adapter | Mock/Supabase switching |
-| View Registry | Navigation, active tab sync |
-| Fuzzy Matching | Levenshtein distance, ruta resolution |
-| Auth | Login, session, logout |
-| Utils | Portal utilities, breakpoint detection |
+| Servicio/Componente  | Tests                                    |
+| -------------------- | ---------------------------------------- |
+| Push Service         | Subscription status, permission handling |
+| Notification Service | Polling, deduplication, badge updates    |
+| Data Adapter         | Mock/Supabase switching                  |
+| View Registry        | Navigation, active tab sync              |
+| Fuzzy Matching       | Levenshtein distance, ruta resolution    |
+| Auth                 | Login, session, logout                   |
+| Utils                | Portal utilities, breakpoint detection   |
 
 ### Ejecutar Tests
 
@@ -269,13 +268,13 @@ SENTRY_DSN=https://...@sentry.io/...
 
 ## 🔧 Scripts
 
-| Comando | Descripción |
-|---------|-------------|
-| `npm run dev` | Servidor desarrollo con HMR |
-| `npm run build` | Build producción (dist/) |
-| `npm run preview` | Preview build local |
-| `npm run test` | Tests modo watch |
-| `npm run test:run` | Tests una ejecución |
+| Comando            | Descripción                 |
+| ------------------ | --------------------------- |
+| `npm run dev`      | Servidor desarrollo con HMR |
+| `npm run build`    | Build producción (dist/)    |
+| `npm run preview`  | Preview build local         |
+| `npm run test`     | Tests modo watch            |
+| `npm run test:run` | Tests una ejecución         |
 
 ---
 
@@ -293,11 +292,11 @@ SENTRY_DSN=https://...@sentry.io/...
 
 ## 🔄 Responsive Breakpoints
 
-| Dispositivo | Viewport | Navegación |
-|-------------|----------|------------|
-| iPhone SE | 375px | Bottom nav (estilo Apple pill) |
-| iPad Mini | 768px | Header tabs + footer nav oculto |
-| Desktop HD | 1920px | Header tabs + sidebar visible |
+| Dispositivo | Viewport | Navegación                      |
+| ----------- | -------- | ------------------------------- |
+| iPhone SE   | 375px    | Bottom nav (estilo Apple pill)  |
+| iPad Mini   | 768px    | Header tabs + footer nav oculto |
+| Desktop HD  | 1920px   | Header tabs + sidebar visible   |
 
 ---
 
@@ -311,16 +310,16 @@ SENTRY_DSN=https://...@sentry.io/...
 ### Commits Recientes
 
 ```
-dbf6678 docs: add portal professionalization implementation plan
-fae7cf7 fix(portal): restore bottom nav and add header tabs for tablet
-36c2a06 feat(portal): complete UX/UI responsive design phases 2-4
-6009b50 test: complete manual testing checklist for notification system
-369fb9f test: add notification system integration tests
-e1e61b6 feat: apply deduplication in notification panel rendering
-ce5d329 test: add notification settings UI tests for configView
-2f8b1bd feat: add notification settings UI section to config view
-a6c455d test: add pushService subscription status tests
-d566711 test: add deduplication logic tests
+b920ae6 feat(postulados): add PDF download by date range
+99f289b feat(planificacion): integrate DSL editor with toolbar
+7fc68c2 refactor(planificacion): consolidate state management
+93523f7 fix(admin-notifications): add lifecycle management
+bdafbe2 fix(admin-observability-harden): remove admin auth gate
+a73e4c7 feat(admin-observability-harden): PR 2 — CSP, auth, tests
+9079019 feat(admin-observability-harden): PR 1 — infrastructure
+8b4901d feat: agregar panel de gestión de rutas
+985b2f6 fix: correct import path for openRutaSelectorModal
+0056ff3 feat(clases): integrate route selection
 ```
 
 ---
@@ -358,8 +357,8 @@ No requiere configuración de Supabase para pruebas locales.
 
 ---
 
-*Construido con estándares de arquitectura empresarial para instituciones educativas.*
+_Construido con estándares de arquitectura empresarial para instituciones educativas._
 
-**Last Updated:** May 10, 2026  
+**Last Updated:** June 1, 2026  
 **Maintained by:** Dev Team  
-**Version:** 1.0.0
+**Version:** 2.0.0

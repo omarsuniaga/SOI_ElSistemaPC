@@ -38,12 +38,18 @@ Thumbs.db
 *.njsproj
 *.sln
 *.sw?
-# Local AI runtime state
+# AI Tools & runtime state
 .atl/
 .pi/
+.claire/
+.superpowers/
+.windsurf/
 
 # Linting & formatting
 .eslintcache
+
+# Coverage reports (generated artifacts)
+coverage/
 
 # Supabase CLI temp files
 supabase/.temp/

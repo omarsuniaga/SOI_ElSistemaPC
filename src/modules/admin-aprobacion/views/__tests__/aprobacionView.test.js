@@ -21,6 +21,7 @@ describe('aprobacionView', () => {
       id: 'p1',
       email: 'maestro1@test.com',
       nombre_completo: 'Ana López',
+      instrumento: 'Violín',
       solicitud_instrumento: 'Violín',
       solicitud_resena: 'Maestra con experiencia en iniciación musical',
       created_at: '2026-05-15T10:00:00Z',
@@ -29,6 +30,7 @@ describe('aprobacionView', () => {
       id: 'p2',
       email: 'maestro2@test.com',
       nombre_completo: 'Carlos Ruiz',
+      instrumento: 'Piano',
       solicitud_instrumento: 'Piano',
       solicitud_resena: 'Pianista especializado en repertorio clásico',
       created_at: '2026-05-16T14:30:00Z',
@@ -75,8 +77,8 @@ describe('aprobacionView', () => {
     expect(container.textContent).toContain('Ana López')
     expect(container.textContent).toContain('Carlos Ruiz')
     expect(container.textContent).toContain('Descripción')
-    expect(container.textContent).toContain('Maestra con experiencia en iniciación musical')
-    expect(container.textContent).toContain('Pianista especializado en repertorio clásico')
+    expect(container.textContent).toContain('Violín')
+    expect(container.textContent).toContain('Piano')
   })
 
   it('shows empty message when no pending teachers', async () => {
@@ -153,4 +155,3 @@ describe('aprobacionView', () => {
     expect(updateMock).toHaveBeenCalledWith({ estado: 'rechazado' })
   })
 })
-

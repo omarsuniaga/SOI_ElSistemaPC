@@ -9,7 +9,7 @@ import {
   getReporteCompleto,
   getReporteConsolidado,
   ESTADOS,
-  ESTADO_LABEL
+  ESTADO_LABEL,
 } from '../api/asistenciasApi.js'
 import { supabase } from '../../../lib/supabaseClient.js'
 import { escapeHTML } from '../../clases/utils/clasesUtils.js'
@@ -23,7 +23,7 @@ const state = {
   cargando: false,
   filtroPeriodo: null,
   filtroClase: 'todas',
-  container: null
+  container: null,
 }
 
 /**
@@ -39,7 +39,7 @@ export async function renderAsistenciasView(container) {
     const [periodos, periodoActivo, clases] = await Promise.all([
       getPeriodos(),
       getPeriodoActivo(),
-      getClases()
+      getClases(),
     ])
 
     state.periodos = periodos
@@ -56,12 +56,6 @@ export async function renderAsistenciasView(container) {
 
     state.clases = clases
 
-    console.log('🔍 renderAsistenciasView init:', {
-      periodosCount: periodos?.length || 0,
-      periodoActivo: periodoActivo?.nombre,
-      filtroPeriodo: state.filtroPeriodo
-    })
-
     await _loadData()
     renderContent(container)
     _attachEvents(container)
@@ -74,7 +68,7 @@ export async function renderAsistenciasView(container) {
 async function _loadData() {
   // OPCIÓN 3: Reporte Consolidado agrupado por fecha → clase
   const { timelineByDate, resumenGlobal } = await getReporteConsolidado({
-    periodoId: state.filtroPeriodo
+    periodoId: state.filtroPeriodo,
   })
 
   state.timeline = timelineByDate || []
@@ -104,7 +98,9 @@ function renderError(container, msg) {
       <button class="btn btn-primary btn-sm" id="retry-btn">Reintentar</button>
     </div>
   `
-  container.querySelector('#retry-btn')?.addEventListener('click', () => renderAsistenciasView(container))
+  container
+    .querySelector('#retry-btn')
+    ?.addEventListener('click', () => renderAsistenciasView(container))
 }
 
 function renderContent(container) {
@@ -157,7 +153,7 @@ function renderContent(container) {
         <div class="premium-select-container" style="max-width: 250px;">
           <i class="bi bi-calendar3 select-icon-muted"></i>
           <select class="form-select premium-filter-select" id="select-periodo">
-            ${state.periodos.map(p => `<option value="${p.id}" ${p.id === state.filtroPeriodo ? 'selected' : ''}>${escapeHTML(p.nombre)}</option>`).join('')}
+            ${state.periodos.map((p) => `<option value="${p.id}" ${p.id === state.filtroPeriodo ? 'selected' : ''}>${escapeHTML(p.nombre)}</option>`).join('')}
           </select>
         </div>
       </div>
@@ -177,17 +173,19 @@ function renderAccordions() {
   }
 
   // state.timeline contiene [{ fecha, clases: [...] }, ...]
-  return state.timeline.map((diaData, dayIdx) => {
-    const fechaFormato = formatTimelineDate(diaData.fecha)
-    const accordionIdFecha = `accordion-fecha-${dayIdx}`
+  return state.timeline
+    .map((diaData, dayIdx) => {
+      const fechaFormato = formatTimelineDate(diaData.fecha)
+      const accordionIdFecha = `accordion-fecha-${dayIdx}`
 
-    const clasesHTML = diaData.clases.map((clase, claseIdx) => {
-      const accordionIdClase = `accordion-clase-${dayIdx}-${claseIdx}`
-      const horario = clase.hora_inicio
-        ? `${clase.hora_inicio.slice(0, 5)} - ${clase.hora_fin?.slice(0, 5) || '??:??'}`
-        : 'Sin horario'
+      const clasesHTML = diaData.clases
+        .map((clase, claseIdx) => {
+          const accordionIdClase = `accordion-clase-${dayIdx}-${claseIdx}`
+          const horario = clase.hora_inicio
+            ? `${clase.hora_inicio.slice(0, 5)} - ${clase.hora_fin?.slice(0, 5) || '??:??'}`
+            : 'Sin horario'
 
-      return `
+          return `
         <div class="accordion-item accordion-clase">
           <h2 class="accordion-header" id="heading-clase-${dayIdx}-${claseIdx}">
             <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#${accordionIdClase}" aria-expanded="false" aria-controls="${accordionIdClase}">
@@ -222,9 +220,10 @@ function renderAccordions() {
           </div>
         </div>
       `
-    }).join('')
+        })
+        .join('')
 
-    return `
+      return `
       <div class="accordion-item accordion-fecha">
         <h2 class="accordion-header" id="heading-fecha-${dayIdx}">
           <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#${accordionIdFecha}" aria-expanded="true" aria-controls="${accordionIdFecha}">
@@ -241,15 +240,16 @@ function renderAccordions() {
         </div>
       </div>
     `
-  }).join('')
+    })
+    .join('')
 }
 
 function renderClaseDetalles(clase) {
   // Separar alumnos por estado
   const asistencias = clase.asistencias || []
-  const presentes = asistencias.filter(a => a.estado === 'presente')
-  const ausentes = asistencias.filter(a => a.estado === 'ausente')
-  const justificados = asistencias.filter(a => a.estado === 'justificado')
+  const presentes = asistencias.filter((a) => a.estado === 'presente')
+  const ausentes = asistencias.filter((a) => a.estado === 'ausente')
+  const justificados = asistencias.filter((a) => a.estado === 'justificado')
 
   // Función helper para renderizar listado con estructura de árbol
   const renderListadoEstado = (titulo, alumnos, colorBadge) => {
@@ -262,14 +262,18 @@ function renderClaseDetalles(clase) {
           ${titulo}
         </h6>
         <div class="listado-alumnos ps-3" style="border-left: 2px solid #dee2e6; padding-left: 1rem;">
-          ${alumnos.map((a, idx) => `
+          ${alumnos
+            .map(
+              (a, idx) => `
             <div class="alumno-item mb-2">
               <span style="color: #6c757d; margin-right: 0.5rem;">
                 ${idx === alumnos.length - 1 ? '└─' : '├─'}
               </span>
               <span>${escapeHTML(a.alumno_nombre || 'Sin nombre')}</span>
             </div>
-          `).join('')}
+          `,
+            )
+            .join('')}
         </div>
       </div>
     `
@@ -285,7 +289,9 @@ function renderClaseDetalles(clase) {
       </div>
 
       <!-- Observaciones del Maestro -->
-      ${clase.observacion_sesion || clase.observacion_clase || clase.tema_principal ? `
+      ${
+        clase.observacion_sesion || clase.observacion_clase || clase.tema_principal
+          ? `
         <div class="observaciones-section border-top pt-3">
           <h6 class="fw-bold mb-2"><i class="bi bi-chat-left-text me-2"></i>Observaciones de la Clase</h6>
           <div class="alert alert-light border">
@@ -294,17 +300,24 @@ function renderClaseDetalles(clase) {
             </p>
           </div>
         </div>
-      ` : `
+      `
+          : `
         <div class="text-muted small text-center py-3">
           <i class="bi bi-info-circle me-2"></i>No hay observaciones registradas para esta clase.
         </div>
-      `}
+      `
+      }
     </div>
   `
 }
 
 function renderAlumnoAsistencia(a) {
-  const estadoClass = a.estado === 'presente' ? 'estado-presente' : (a.estado === 'ausente' ? 'estado-ausente' : 'estado-justificado')
+  const estadoClass =
+    a.estado === 'presente'
+      ? 'estado-presente'
+      : a.estado === 'ausente'
+        ? 'estado-ausente'
+        : 'estado-justificado'
   const estadoLabel = ESTADO_LABEL[a.estado]?.label || a.estado
 
   return `
@@ -334,7 +347,9 @@ function _attachEvents(container) {
     if (row) openDetailModal(row.dataset.id)
   })
 
-  container.querySelector('#btn-nueva-sesion')?.addEventListener('click', () => openNewSessionModal())
+  container
+    .querySelector('#btn-nueva-sesion')
+    ?.addEventListener('click', () => openNewSessionModal())
 }
 
 async function _reloadView() {
@@ -408,7 +423,7 @@ async function openDetailModal(sesionId) {
           </div>
           <div class="col-md-4 bg-body-tertiary p-3 rounded">
             <div class="d-flex justify-content-between mb-2"><span>Fecha:</span> <strong>${detail.sesion.fecha}</strong></div>
-            <div class="d-flex justify-content-between mb-2"><span>Horario:</span> <strong>${(detail.sesion.horaInicio || '--:--').slice(0,5)} - ${(detail.sesion.horaFin || '--:--').slice(0,5)}</strong></div>
+            <div class="d-flex justify-content-between mb-2"><span>Horario:</span> <strong>${(detail.sesion.horaInicio || '--:--').slice(0, 5)} - ${(detail.sesion.horaFin || '--:--').slice(0, 5)}</strong></div>
             <div class="d-flex justify-content-between"><span>Maestro:</span> <strong>${escapeHTML(detail.sesion.maestroNombre)}</strong></div>
           </div>
           <div class="col-12">
@@ -423,7 +438,9 @@ async function openDetailModal(sesionId) {
                   </tr>
                 </thead>
                 <tbody>
-                  ${detail.asistencias.map(a => `
+                  ${detail.asistencias
+                    .map(
+                      (a) => `
                     <tr>
                       <td>${escapeHTML(a.alumnoNombre)}</td>
                       <td class="text-center">
@@ -431,13 +448,15 @@ async function openDetailModal(sesionId) {
                       </td>
                       <td class="small text-muted">${escapeHTML(a.observacion || a.justificacionTexto || '-')}</td>
                     </tr>
-                  `).join('')}
+                  `,
+                    )
+                    .join('')}
                 </tbody>
               </table>
             </div>
           </div>
         </div>
-      `
+      `,
     })
   } catch (err) {
     AppToast.error('Error al cargar detalle: ' + err.message)
@@ -446,7 +465,9 @@ async function openDetailModal(sesionId) {
 
 async function openNewSessionModal() {
   // Aquí se implementaría el flujo de toma de asistencia proactiva
-  // Por brevedad, mostraremos un mensaje informativo ya que el handoff 
+  // Por brevedad, mostraremos un mensaje informativo ya que el handoff
   // ya fue verificado en el SDD anterior.
-  AppToast.info('Funcionalidad de toma manual en desarrollo. Use el flujo desde la Ruta Gamificada.')
+  AppToast.info(
+    'Funcionalidad de toma manual en desarrollo. Use el flujo desde la Ruta Gamificada.',
+  )
 }

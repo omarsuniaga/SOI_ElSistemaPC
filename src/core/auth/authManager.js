@@ -18,11 +18,8 @@ let authChangeCallbacks = []
  * @returns {Promise<{user:Object,session:Object,error:Object}>}
  */
 export async function login(email, password, remember = false) {
-  console.log('🔑 authManager.login:', email, 'remember:', remember)
   const { data, error } = await supabaseAuth.signIn(email, password)
 
-  console.log('🔑 login result:', { data, error })
-  
   if (error) {
     console.error('🔑 login error:', error)
     return { user: null, session: null, error }

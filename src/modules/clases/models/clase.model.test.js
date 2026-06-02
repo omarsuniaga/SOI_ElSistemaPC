@@ -5,7 +5,7 @@ describe('Clase Model', () => {
   describe('constructor', () => {
     it('should create instance with default values', () => {
       const clase = new Clase()
-      
+
       expect(clase.id).toBeNull()
       expect(clase.nombre).toBe('')
       expect(clase.maestro_id).toBeNull()
@@ -26,15 +26,13 @@ describe('Clase Model', () => {
         programa_id: 'prog-1',
         maestro_auxiliar_id: 'maestro-2',
         instrumento: 'violin',
-        horarios: [
-          { dia: 'lunes', hora_inicio: '08:00', hora_fin: '09:00', salon_id: 'salon-1' }
-        ],
+        horarios: [{ dia: 'lunes', hora_inicio: '08:00', hora_fin: '09:00', salon_id: 'salon-1' }],
         max_alumnos: 15,
         estado: 'activa',
       }
-      
+
       const clase = new Clase(data)
-      
+
       expect(clase.id).toBe('123')
       expect(clase.nombre).toBe('Violín Básico')
       expect(clase.maestro_id).toBe('maestro-1')
@@ -48,30 +46,45 @@ describe('Clase Model', () => {
 
   describe('validate()', () => {
     it('should return error when nombre is empty', () => {
-      const clase = new Clase({ nombre: '', maestro_id: '1', programa_id: '1', instrumento: 'violin' })
+      const clase = new Clase({
+        nombre: '',
+        maestro_id: '1',
+        programa_id: '1',
+        instrumento: 'violin',
+      })
       const errores = clase.validate()
       expect(errores).toContain('El nombre es obligatorio')
     })
 
     it('should return error when maestro_id is missing', () => {
-      const clase = new Clase({ nombre: 'Test', maestro_id: null, programa_id: '1', instrumento: 'violin' })
+      const clase = new Clase({
+        nombre: 'Test',
+        maestro_id: null,
+        programa_id: '1',
+        instrumento: 'violin',
+      })
       const errores = clase.validate()
       expect(errores).toContain('El maestro titular es obligatorio')
     })
 
     it('should return error when programa_id is missing', () => {
-      const clase = new Clase({ nombre: 'Test', maestro_id: '1', programa_id: null, instrumento: 'violin' })
+      const clase = new Clase({
+        nombre: 'Test',
+        maestro_id: '1',
+        programa_id: null,
+        instrumento: 'violin',
+      })
       const errores = clase.validate()
       expect(errores).toContain('El programa es obligatorio')
     })
 
     it('should return error when no schedules (horarios)', () => {
-      const clase = new Clase({ 
-        nombre: 'Test', 
-        maestro_id: '1', 
+      const clase = new Clase({
+        nombre: 'Test',
+        maestro_id: '1',
         programa_id: '1',
         instrumento: 'violin',
-        horarios: []
+        horarios: [],
       })
       const errores = clase.validate()
       expect(errores).toContain('Debe agregar al menos un horario')
@@ -86,8 +99,8 @@ describe('Clase Model', () => {
           instrumento: 'piano',
           horarios: [
             { dia: 'lunes', hora_inicio: '08:00', hora_fin: '10:00', salon_id: 's1' },
-            { dia: 'lunes', hora_inicio: '09:00', hora_fin: '11:00', salon_id: 's1' }
-          ]
+            { dia: 'lunes', hora_inicio: '09:00', hora_fin: '11:00', salon_id: 's1' },
+          ],
         })
         const errores = clase.validate()
         expect(errores).toContain('Existen horarios solapados en la misma clase (Lunes)')
@@ -101,11 +114,11 @@ describe('Clase Model', () => {
           instrumento: 'piano',
           horarios: [
             { dia: 'lunes', hora_inicio: '08:00', hora_fin: '09:00', salon_id: 's1' },
-            { dia: 'lunes', hora_inicio: '10:00', hora_fin: '11:00', salon_id: 's1' }
-          ]
+            { dia: 'lunes', hora_inicio: '10:00', hora_fin: '11:00', salon_id: 's1' },
+          ],
         })
         const errores = clase.validate()
-        const overlapError = errores.find(e => e.includes('solapados'))
+        const overlapError = errores.find((e) => e.includes('solapados'))
         expect(overlapError).toBeUndefined()
       })
 
@@ -117,23 +130,22 @@ describe('Clase Model', () => {
           instrumento: 'piano',
           horarios: [
             { dia: 'lunes', hora_inicio: '08:00', hora_fin: '09:00', salon_id: 's1' },
-            { dia: 'lunes', hora_inicio: '09:00', hora_fin: '10:00', salon_id: 's1' }
-          ]
+            { dia: 'lunes', hora_inicio: '09:00', hora_fin: '10:00', salon_id: 's1' },
+          ],
         })
         const errores = clase.validate()
-        const overlapError = errores.find(e => e.includes('solapados'))
+        const overlapError = errores.find((e) => e.includes('solapados'))
         expect(overlapError).toBeUndefined()
       })
-
     })
 
     it('should return error when hora_inicio >= hora_fin', () => {
-      const clase = new Clase({ 
-        nombre: 'Test', 
-        maestro_id: '1', 
+      const clase = new Clase({
+        nombre: 'Test',
+        maestro_id: '1',
         programa_id: '1',
         instrumento: 'violin',
-        horarios: [{ dia: 'lunes', hora_inicio: '10:00', hora_fin: '09:00' }]
+        horarios: [{ dia: 'lunes', hora_inicio: '10:00', hora_fin: '09:00' }],
       })
       const errores = clase.validate()
       expect(errores).toContain('La hora de inicio debe ser menor que la hora de fin')
@@ -152,11 +164,11 @@ describe('Clase Model', () => {
         max_alumnos: 15,
         estado: 'activa',
         notas_pedagogicas: '  Some notes  ',
-        horarios: []
+        horarios: [],
       })
-      
+
       const json = clase.toJSON()
-      
+
       expect(json).toEqual({
         id: '123',
         nombre: 'Test Clase',
@@ -168,6 +180,7 @@ describe('Clase Model', () => {
         estado: 'activa',
         descripcion: 'Some notes',
         tipo_clase: 'grupal',
+        ruta_id: null,
       })
     })
   })

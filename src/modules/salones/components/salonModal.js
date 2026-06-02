@@ -1,30 +1,32 @@
-import { EQUIPAMIENTO_DISPONIBLE, Salon } from '../models/salon.model.js';
-import { salonesUtils } from '../utils/salonesUtils.js';
+import { EQUIPAMIENTO_DISPONIBLE, Salon } from '../models/salon.model.js'
+import { salonesUtils } from '../utils/salonesUtils.js'
 
 export const salonModal = {
   modalInstance: null,
-  
+
   init() {
-    let modalEl = document.getElementById('salonModal');
+    let modalEl = document.getElementById('salonModal')
     if (!modalEl) {
-      modalEl = document.createElement('div');
-      modalEl.id = 'salonModal';
-      modalEl.className = 'modal fade';
-      modalEl.tabIndex = '-1';
-      document.body.appendChild(modalEl);
+      modalEl = document.createElement('div')
+      modalEl.id = 'salonModal'
+      modalEl.className = 'modal fade'
+      modalEl.tabIndex = '-1'
+      document.body.appendChild(modalEl)
     }
   },
 
   renderForm(salonData = {}) {
-    const isEdit = !!salonData.id;
-    const s = new Salon(salonData);
-    
-    const eqHtml = EQUIPAMIENTO_DISPONIBLE.map(eq => `
+    const isEdit = !!salonData.id
+    const s = new Salon(salonData)
+
+    const eqHtml = EQUIPAMIENTO_DISPONIBLE.map(
+      (eq) => `
       <div class="form-check form-check-inline">
         <input class="form-check-input equipamiento-checkbox" type="checkbox" value="${eq}" id="eq_${eq.replace(' ', '_')}" ${s.equipamiento.includes(eq) ? 'checked' : ''}>
         <label class="form-check-label" for="eq_${eq.replace(' ', '_')}">${eq}</label>
       </div>
-    `).join('');
+    `,
+    ).join('')
 
     return `
       <div class="modal-dialog modal-lg">
@@ -90,28 +92,28 @@ export const salonModal = {
           </form>
         </div>
       </div>
-    `;
+    `
   },
 
   open(salon, onSave) {
-    this.init();
-    const modalEl = document.getElementById('salonModal');
-    modalEl.innerHTML = this.renderForm(salon);
-    
+    this.init()
+    const modalEl = document.getElementById('salonModal')
+    modalEl.innerHTML = this.renderForm(salon)
+
     // Asumiendo que Bootstrap global está disponible
     // eslint-disable-next-line no-undef
-    this.modalInstance = new bootstrap.Modal(modalEl);
-    this.modalInstance.show();
+    this.modalInstance = new bootstrap.Modal(modalEl)
+    this.modalInstance.show()
 
-    const form = modalEl.querySelector('#salonForm');
+    const form = modalEl.querySelector('#salonForm')
     form.addEventListener('submit', (e) => {
-      e.preventDefault();
-      
-      // Obtener equipamiento chequeado
-      const equipamiento = Array.from(modalEl.querySelectorAll('.equipamiento-checkbox:checked')).map(cb => cb.value);
-      const formData = new FormData(form);
-      
-      // Armar objeto a guardar
+      e.preventDefault()
+
+      const equipamiento = Array.from(
+        modalEl.querySelectorAll('.equipamiento-checkbox:checked'),
+      ).map((cb) => cb.value)
+      const formData = new FormData(form)
+
       const data = {
         nombre: formData.get('nombre').trim(),
         codigo_salon: formData.get('codigo_salon').trim() || null,
@@ -120,17 +122,17 @@ export const salonModal = {
         piso: formData.get('piso') !== '' ? parseInt(formData.get('piso')) : null,
         condicion_fisica: formData.get('condicion_fisica'),
         is_active: formData.get('is_active') === 'on',
-        equipamiento
-      };
-      
-      const objSalon = new Salon(data);
-      const errores = objSalon.validar();
-      if (errores.length > 0) {
-        alert("Corrija los siguientes errores:\n" + errores.join("\n"));
-        return;
+        equipamiento,
       }
 
-      onSave(data, this.modalInstance);
-    });
-  }
-};
+      const objSalon = new Salon(data)
+      const errores = objSalon.validar()
+      if (errores.length > 0) {
+        alert('Corrija los siguientes errores:\n' + errores.join('\n'))
+        return
+      }
+
+      onSave(data, this.modalInstance)
+    })
+  },
+}

@@ -38,9 +38,7 @@ function handleError(event) {
 }
 
 function handleRejection(event) {
-  const error = event.reason instanceof Error
-    ? event.reason
-    : new Error(String(event.reason))
+  const error = event.reason instanceof Error ? event.reason : new Error(String(event.reason))
 
   displayError(error)
 
@@ -106,6 +104,16 @@ function displayError(error) {
         </details>
 
         <div style="display: flex; gap: 12px; margin-top: 20px;">
+          <button class="error-boundary-back" style="
+            padding: 8px 16px;
+            background: #9ca3af;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+          ">Volver Atrás</button>
+
           <button class="error-boundary-retry" style="
             padding: 8px 16px;
             background: #2563eb;
@@ -129,6 +137,10 @@ function displayError(error) {
       </div>
     </div>
   `
+
+  errorBoundaryElement.querySelector('.error-boundary-back')?.addEventListener('click', () => {
+    window.history.back()
+  })
 
   errorBoundaryElement.querySelector('.error-boundary-retry')?.addEventListener('click', () => {
     window.location.reload()

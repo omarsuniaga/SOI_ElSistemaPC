@@ -3,6 +3,7 @@
  */
 
 import { supabase } from '../../lib/supabaseClient.js'
+import { enqueue } from './offlineQueue.js'
 
 /**
  * Factory that creates an auto-draft controller with debounced saving.
@@ -135,30 +136,52 @@ export async function saveObservation(
   contenidoIaDsl = null,
   contenidoIaMejorado = null,
 ) {
-  // Delete any active draft first
-  const { error: deleteError } = await supabase
-    .from('observaciones_sesion')
-    .delete()
-    .eq('sesion_id', sesionId)
-    .eq('maestro_id', maestroId)
-    .eq('es_borrador', true)
+  try {
+    // Delete any active draft first
+    const { error: deleteError } = await supabase
+      .from('observaciones_sesion')
+      .delete()
+      .eq('sesion_id', sesionId)
+      .eq('maestro_id', maestroId)
+      .eq('es_borrador', true)
 
-  if (deleteError) throw deleteError
+    if (deleteError) throw deleteError
 
-  const { data, error } = await supabase
-    .from('observaciones_sesion')
-    .insert({
-      sesion_id: sesionId,
-      maestro_id: maestroId,
-      contenido_raw: contenidoRaw,
-      contenido_parsed: contenidoParsed,
-      contenido_ia_dsl: contenidoIaDsl,
-      contenido_ia_mejorado: contenidoIaMejorado,
-      es_borrador: false,
-    })
-    .select()
-    .single()
+    const { data, error } = await supabase
+      .from('observaciones_sesion')
+      .insert({
+        sesion_id: sesionId,
+        maestro_id: maestroId,
+        contenido_raw: contenidoRaw,
+        contenido_parsed: contenidoParsed,
+        contenido_ia_dsl: contenidoIaDsl,
+        contenido_ia_mejorado: contenidoIaMejorado,
+        es_borrador: false,
+      })
+      .select()
+      .single()
 
-  if (error) throw error
-  return data
+    if (error) throw error
+    return data
+  } catch (err) {
+    // Fallback: encolar para sync offline
+    if (!navigator.onLine || err.message?.includes('Failed to fetch')) {
+      console.warn('[autoDraftService] Offline, encolando saveObservation...')
+      await enqueue({
+        tabla: 'observaciones_sesion',
+        operacion: 'upsert',
+        payload: {
+          sesion_id: sesionId,
+          maestro_id: maestroId,
+          contenido_raw: contenidoRaw,
+          contenido_parsed: contenidoParsed,
+          contenido_ia_dsl: contenidoIaDsl,
+          contenido_ia_mejorado: contenidoIaMejorado,
+          es_borrador: false,
+        },
+      })
+      return { _offline: true, sesion_id: sesionId }
+    }
+    throw err
+  }
 }

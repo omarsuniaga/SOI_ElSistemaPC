@@ -2,7 +2,8 @@ import { supabase } from '../../lib/supabaseClient.js'
 import { getMaestroLocal } from '../auth/maestroAuth.js'
 import { escHTML, formatHora, formatFechaPortal } from '../utils/portalUtils.js'
 import { announce } from '../utils/a11yUtils.js'
-import { enqueue } from '../services/offlineQueue.js'
+import { enqueue, getQueueCount } from '../services/offlineQueue.js'
+import { createSyncQueueBadge } from '../components/SyncQueueBadge.js'
 import { parseDSL } from '../utils/dslParser.js'
 import {
   enrichToDSL,
@@ -728,6 +729,7 @@ function _renderVista(container, ctx) {
           </p>
         </div>
         <div style="display:flex;align-items:center;gap:0.75rem;">
+          <div id="pm-sync-badge-container"></div>
           <button id="pm-btn-help" class="pm-help-btn" title="Guía rápida"><i class="bi bi-question-lg"></i></button>
           <div class="pm-asist-bulk-circles">
             <button id="btn-bulk-p" class="pm-bulk-circle p" title="Todos presentes">P</button>
@@ -811,6 +813,13 @@ function _renderVista(container, ctx) {
 
     <!-- Modales... -->
   `
+
+  // ── Sync queue badge ──
+  const badgeContainer = container.querySelector('#pm-sync-badge-container')
+  if (badgeContainer) {
+    const badge = createSyncQueueBadge()
+    badgeContainer.appendChild(badge.el)
+  }
 
   // === Editor DSL ===
   const toolbarContainer = container.querySelector('#pm-dsl-toolbar-container')

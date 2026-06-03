@@ -10,16 +10,27 @@ import { config } from '../../../core/config/config.js'
 import * as supabase from './planificacionSupabase.js'
 import * as mock from './planificacionMock.js'
 
-const api = () => (config.isDemoMode ? mock : supabase)
+const impl = config.isDemoMode ? mock : supabase
 
-export const obtenerPlanificaciones = (maestroId) => api().obtenerPlanificaciones(maestroId)
-export const obtenerPlanificacion = (id) => api().obtenerPlanificacion(id)
+export const obtenerPlanificaciones = (maestroId) => impl.obtenerPlanificaciones(maestroId)
+export const obtenerPlanificacion = (id) => impl.obtenerPlanificacion(id)
 export const obtenerPlanificacionesConDetalles = (maestroId) =>
-  api().obtenerPlanificacionesConDetalles(maestroId)
-export const crearPlanificacion = (planData) => api().crearPlanificacion(planData)
+  impl.obtenerPlanificacionesConDetalles(maestroId)
+export const crearPlanificacion = (planData) => impl.crearPlanificacion(planData)
 export const actualizarPlanificacion = (id, actualizaciones) =>
-  api().actualizarPlanificacion(id, actualizaciones)
-export const eliminarPlanificacion = (id) => api().eliminarPlanificacion(id)
-export const marcarRevisadasMasivo = (ids) => api().marcarRevisadasMasivo(ids)
-export const marcarRevisada = (id) => api().marcarRevisada(id)
-export const marcarEjecutada = (id) => api().marcarEjecutada(id)
+  impl.actualizarPlanificacion(id, actualizaciones)
+export const eliminarPlanificacion = (id) => impl.eliminarPlanificacion(id)
+export const marcarRevisadasMasivo = (ids) => impl.marcarRevisadasMasivo(ids)
+export const marcarRevisada = (id) => impl.marcarRevisada(id)
+export const marcarEjecutada = (id) => impl.marcarEjecutada(id)
+export const obtenerClases = () => impl.obtenerClases()
+export const obtenerMaestro = (id) => impl.obtenerMaestro(id)
+export const obtenerSesiones = (maestroId, fechaInicio, fechaFin) =>
+  impl.obtenerSesiones(maestroId, fechaInicio, fechaFin)
+
+/**
+ * Cobertura curricular: todas las clases con o sin plan asociado.
+ * Usar esta función (no planificacionApi directo) para respetar el DataAdapter.
+ * @param {string|null} maestroId - null para vista admin (todas las clases)
+ */
+export const obtenerCoberturaCurricular = (maestroId) => impl.obtenerCoberturaCurricular(maestroId)

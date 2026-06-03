@@ -306,25 +306,30 @@ function _initSearch(container) {
 
   input.addEventListener('input', () => {
     const q = input.value.trim().toLowerCase()
-    if (q.length < 2) { resultados.style.display = 'none'; return }
+    if (q.length < 1) { resultados.style.display = 'none'; return }
 
     const matches = _alumnosCache.filter(a => {
-      const nombre = _p(a.nombre_completo).toLowerCase()
-      const instr  = _p(a.instrumento_principal).toLowerCase()
-      const cedula = _p(a.representante_cedula).toLowerCase()
+      // cover both raw DB fields and normalized aliases
+      const nombre = (_p(a.nombre_completo) + ' ' + _p(a.nombre)).toLowerCase()
+      const instr  = (_p(a.instrumento_principal) + ' ' + _p(a.instrumento)).toLowerCase()
+      const cedula = (_p(a.representante_cedula) + ' ' + _p(a.cedula)).toLowerCase()
       return nombre.includes(q) || instr.includes(q) || cedula.includes(q)
     }).slice(0, 12)
 
     if (matches.length === 0) {
       resultados.innerHTML = '<div class="list-group-item text-muted small">Sin resultados</div>'
     } else {
-      resultados.innerHTML = matches.map(a => `
+      resultados.innerHTML = matches.map(a => {
+        const nombre = _p(a.nombre_completo) !== '—' ? _p(a.nombre_completo) : _p(a.nombre)
+        const instr  = _p(a.instrumento_principal) !== '—' ? _p(a.instrumento_principal) : _p(a.instrumento)
+        return `
         <button type="button" class="list-group-item list-group-item-action py-2 px-3"
           data-id="${a.id}">
-          <span class="fw-semibold">${_p(a.nombre_completo)}</span>
-          <span class="text-muted small ms-2">${_p(a.instrumento_principal)} · ${_p(a.nivel_actual)}</span>
+          <span class="fw-semibold">${nombre}</span>
+          <span class="text-muted small ms-2">${instr}</span>
         </button>
-      `).join('')
+        `
+      }).join('')
 
       resultados.querySelectorAll('button').forEach(btn => {
         btn.addEventListener('click', () => {
@@ -357,7 +362,8 @@ function _seleccionarAlumno(alumno, input, resultados, chip, chipNombre, opcione
   _alumnoSeleccionado = alumno
   input.value = ''
   resultados.style.display = 'none'
-  chipNombre.textContent = _p(alumno.nombre_completo)
+  const nombre = _p(alumno.nombre_completo) !== '—' ? _p(alumno.nombre_completo) : _p(alumno.nombre)
+  chipNombre.textContent = nombre
   chip.style.display = 'block'
   opciones.style.display = 'block'
 }

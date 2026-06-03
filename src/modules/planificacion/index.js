@@ -1,4 +1,4 @@
-export * from './api/planificacionApi.js'
+export * from './api/planificacionAdapter.js'
 export { Planificacion } from './models/planificacion.model.js'
 export { usePlanificacion } from './hooks/usePlanificacion.js'
 export { registerRoutesPlanificacion } from './planificacion.router.js'

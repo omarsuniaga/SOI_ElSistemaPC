@@ -1,0 +1,38 @@
+[
+  {
+    "id": "maestro_001",
+    "nombre_completo": "Carlos Méndez",
+    "email": "carlos.mendez@instituto.edu",
+    "especialidad": "Violín",
+    "instrumentos": ["Violín", "Viola"],
+    "estado": "activo",
+    "created_at": "2025-01-15T08:00:00Z"
+  },
+  {
+    "id": "maestro_002",
+    "nombre_completo": "María Torres",
+    "email": "maria.torres@instituto.edu",
+    "especialidad": "Piano",
+    "instrumentos": ["Piano", "Teclado"],
+    "estado": "activo",
+    "created_at": "2025-02-01T08:00:00Z"
+  },
+  {
+    "id": "maestro_003",
+    "nombre_completo": "José Ramírez",
+    "email": "jose.ramirez@instituto.edu",
+    "especialidad": "Flauta",
+    "instrumentos": ["Flauta traversera", "Flautín"],
+    "estado": "activo",
+    "created_at": "2025-01-20T08:00:00Z"
+  },
+  {
+    "id": "maestro_004",
+    "nombre_completo": "Luisa Fernanda Díaz",
+    "email": "luisa.diaz@instituto.edu",
+    "especialidad": "Voz",
+    "instrumentos": ["Voz", "Coro"],
+    "estado": "activo",
+    "created_at": "2025-03-10T08:00:00Z"
+  }
+]

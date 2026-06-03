@@ -18,7 +18,7 @@ export class Planificacion {
     this.instrumento = data.instrumento || null
     this.created_at = data.created_at || null
     this.updated_at = data.updated_at || null
-    
+
     // UI Helpers
     this.clase_nombre = data.clase_nombre || null
     this.maestro_nombre = data.maestro_nombre || null
@@ -63,7 +63,7 @@ export class Planificacion {
       errores.push('El instrumento no puede exceder 100 caracteres')
     }
 
-    const estadosValidos = Planificacion.getEstados().map(e => e.value)
+    const estadosValidos = Planificacion.getEstados().map((e) => e.value)
     if (!estadosValidos.includes(this.estado)) {
       errores.push('El estado no es válido')
     }
@@ -104,7 +104,13 @@ export class Planificacion {
   }
 
   static getEstadoConfig(estado) {
-    return this.getEstados().find(e => e.value === estado) || { value: estado, label: estado, color: 'bg-secondary' }
+    return (
+      this.getEstados().find((e) => e.value === estado) || {
+        value: estado,
+        label: estado,
+        color: 'bg-secondary',
+      }
+    )
   }
 
   /**
@@ -122,8 +128,9 @@ export class Planificacion {
       recursos: this.recursos,
       evaluacion_metodo: this.evaluacion_metodo.trim() || null,
       observaciones: this.observaciones.trim() || null,
+      notas_dsl: this.notas_dsl || null,
       estado: this.estado,
-      instrumento: this.instrumento?.trim() || null
+      instrumento: this.instrumento?.trim() || null,
     }
   }
 }

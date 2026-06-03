@@ -1,7 +1,48 @@
 import { supabase } from '../../lib/supabaseClient.js'
 
 export const STORAGE_KEY = 'portal-maestros:maestro'
-export const PM_AUTH_KEY = 'portal-maestros:auth'
+export const PM_AUTH_KEY  = 'portal-maestros:auth'
+
+/**
+ * Sentinel que detectarRolMaestro() retorna cuando el usuario tiene
+ * una sesión válida de Supabase pero su cuenta está pendiente de aprobación.
+ * Permite que initPortal() lo diferencie de "sin sesión" y navegue a
+ * pending-approval en lugar de login.
+ */
+export const PENDING_APPROVAL_SENTINEL = Object.freeze({ __pendingApproval: true })
+
+/** Duración por defecto de sesión persistente: 30 días en ms. */
+const SESSION_DURATION_MS = 30 * 24 * 60 * 60 * 1000
+
+/**
+ * Devuelve true si la app está corriendo como PWA instalada (standalone).
+ * En ese caso la sesión SIEMPRE debe ser persistente — no existe "cerrar pestaña".
+ */
+function _isPWA() {
+  try {
+    return (
+      window.matchMedia('(display-mode: standalone)').matches ||
+      window.navigator.standalone === true ||           // iOS Safari
+      document.referrer.startsWith('android-app://')   // TWA Android
+    )
+  } catch {
+    return false
+  }
+}
+
+/**
+ * Fija la expiración de sesión a 30 días desde ahora.
+ * Se llama automáticamente en cada login exitoso.
+ */
+function _setPersistentSession() {
+  localStorage.setItem(
+    'pm-session-expires',
+    new Date(Date.now() + SESSION_DURATION_MS).toISOString(),
+  )
+  if (typeof sessionStorage !== 'undefined') {
+    sessionStorage.setItem('pm-session-active', 'true')
+  }
+}
 
 /**
  * Login con email + password. Verifica que el user_id exista en tabla maestros.
@@ -98,9 +139,7 @@ export async function loginMaestro(email, password) {
         }
 
     localStorage.setItem(STORAGE_KEY, JSON.stringify(adminMaestro))
-    if (typeof sessionStorage !== 'undefined') {
-      sessionStorage.setItem('pm-session-active', 'true')
-    }
+    _setPersistentSession()
     return { success: true, maestro: adminMaestro, session: data.session }
   }
 
@@ -164,11 +203,9 @@ export async function loginMaestro(email, password) {
     maestro = nuevoMaestro
   }
 
-  // Guardar en localStorage para acceso rápido
+  // Guardar en localStorage + marcar sesión persistente (30 días por defecto)
   localStorage.setItem(STORAGE_KEY, JSON.stringify(maestro))
-  if (typeof sessionStorage !== 'undefined') {
-    sessionStorage.setItem('pm-session-active', 'true')
-  }
+  _setPersistentSession()
 
   return { success: true, maestro, session: data.session }
 }
@@ -205,21 +242,36 @@ export async function detectarRolMaestro() {
       userRole = session.user.user_metadata?.rol || session.user.user_metadata?.role
     }
 
+    if (userStatus === 'pendiente') {
+      // Cuenta registrada pero no aprobada aún.
+      // NO hacemos signOut para poder detectar el estado en cada apertura de app.
+      // Retornamos el sentinel para que initPortal() navegue a pending-approval.
+      clearMaestroLocal()
+      return PENDING_APPROVAL_SENTINEL
+    }
+
     if (userStatus && userStatus !== 'activo') {
+      // Cuenta rechazada u otro estado no activo → sign out completo
       clearMaestroLocal()
       await supabase.auth.signOut()
       return null
     }
 
-    // Intentar desde caché local solo después de validar estado activo
+    // Intentar desde caché local solo después de validar estado activo.
+    // En PWA: renovar expiración de sesión en cada apertura para que no caduque.
     const cached = localStorage.getItem(STORAGE_KEY)
     if (cached) {
       try {
-        return JSON.parse(cached)
+        const parsed = JSON.parse(cached)
+        if (_isPWA()) _setPersistentSession()
+        return parsed
       } catch {
-        /* corrupted, continuar */
+        /* corrupted — continuar y reconstruir desde Supabase */
       }
     }
+    // Sin caché local pero con sesión Supabase válida → reconstruir perfil.
+    // Esto ocurre cuando el maestro abre la PWA en un dispositivo nuevo o
+    // después de limpiar datos del navegador.
 
     if (userRole === 'admin') {
       // Si el admin también tiene perfil de maestro, usar sus datos reales
@@ -243,9 +295,7 @@ export async function detectarRolMaestro() {
           }
 
       localStorage.setItem(STORAGE_KEY, JSON.stringify(adminMaestro))
-      if (typeof sessionStorage !== 'undefined') {
-        sessionStorage.setItem('pm-session-active', 'true')
-      }
+      _setPersistentSession()
       return adminMaestro
     }
 
@@ -262,9 +312,7 @@ export async function detectarRolMaestro() {
     }
 
     localStorage.setItem(STORAGE_KEY, JSON.stringify(maestro))
-    if (typeof sessionStorage !== 'undefined') {
-      sessionStorage.setItem('pm-session-active', 'true')
-    }
+    _setPersistentSession()
     return maestro
   } catch (err) {
     console.error('[Auth] Error in detectarRolMaestro:', err.message)
@@ -296,7 +344,24 @@ export function getMaestroLocal() {
         return null
       }
 
-      // 1. Evaluar expiración lógica de la sesión de 30 días
+      const isTestEnv =
+        typeof process !== 'undefined' && (process.env.NODE_ENV === 'test' || process.env.VITEST)
+      const isPWA = !isTestEnv && _isPWA()
+
+      // 1. Si está corriendo como PWA instalada → siempre persistente.
+      //    Renovar automáticamente la expiración en cada apertura.
+      if (isPWA) {
+        const expires = localStorage.getItem('pm-session-expires')
+        const expireDate = expires ? new Date(expires) : null
+        if (!expireDate || Date.now() > expireDate.getTime()) {
+          // Sesión expirada o sin fecha → renovar (el token de Supabase sigue válido)
+          _setPersistentSession()
+        }
+        // En PWA nunca bloqueamos por sessionStorage — la app no tiene "pestañas"
+        return parsed
+      }
+
+      // 2. Evaluar expiración lógica de la sesión de 30 días (modo navegador web)
       const expires = localStorage.getItem('pm-session-expires')
       if (expires) {
         const expireDate = new Date(expires)
@@ -306,19 +371,14 @@ export function getMaestroLocal() {
           return null
         }
       } else {
-        // 2. Si no hay expires en localStorage, la sesión es temporal (session-only).
-        // Si el usuario recarga fresh en una pestaña nueva o cerró el navegador, sessionStorage estará vacío.
-        // En ese caso, la sesión temporal finalizó por diseño de seguridad.
-        const isTestEnv =
-          typeof process !== 'undefined' && (process.env.NODE_ENV === 'test' || process.env.VITEST)
+        // 3. Sin fecha de expiración → sesión temporal (session-only).
+        //    Si sessionStorage está vacío, el navegador fue cerrado → pedir login de nuevo.
         if (
           !isTestEnv &&
           typeof sessionStorage !== 'undefined' &&
           !sessionStorage.getItem('pm-session-active')
         ) {
-          console.log(
-            '[Auth] Sesión temporal finalizada (navegador/pestaña cerrada). Exigiendo login...',
-          )
+          console.log('[Auth] Sesión temporal finalizada (navegador cerrado). Exigiendo login...')
           clearMaestroLocal()
           return null
         }

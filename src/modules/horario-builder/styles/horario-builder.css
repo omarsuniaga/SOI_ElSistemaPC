@@ -420,3 +420,152 @@
   from { opacity: 0; transform: translateY(20px); }
   to { opacity: 1; transform: translateY(0); }
 }
+
+/* ── Schedule Block ──────────────────────────────────────────── */
+.schedule-block {
+  border-radius: 0.4rem;
+  overflow: hidden;
+  border: 2px solid transparent;
+  user-select: none;
+  margin-bottom: 2px;
+  cursor: default;
+}
+
+.schedule-block[draggable="true"] {
+  cursor: grab;
+}
+
+.schedule-block--conflict {
+  border-color: #ef4444;
+}
+
+.schedule-block__header {
+  padding: 3px 6px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+}
+
+.schedule-block__title {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: #1e293b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+}
+
+.schedule-block__actions {
+  display: flex;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.schedule-block__body {
+  background: #f8fafc;
+  padding: 3px 6px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.schedule-block__teacher-dot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  font-size: 0.45rem;
+  font-weight: 700;
+  color: #1e293b;
+  flex-shrink: 0;
+}
+
+.schedule-block__teacher-name {
+  font-size: 0.58rem;
+  color: #475569;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.schedule-block__footer {
+  background: #f1f5f9;
+  padding: 2px 6px;
+  font-size: 0.55rem;
+  color: #64748b;
+  border-top: 1px solid #e2e8f0;
+}
+
+.sb-lock-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  font-size: 0.65rem;
+  line-height: 1;
+}
+
+.hb-highlight {
+  outline: 2px solid var(--hb-primary);
+  outline-offset: 2px;
+  transition: outline 0.3s;
+}
+
+.hb-drop-target {
+  background: var(--hb-primary-light) !important;
+}
+
+/* ── Schedule Grid ───────────────────────────────────────────── */
+.schedule-grid-wrapper {
+  overflow-x: auto;
+}
+
+.schedule-grid {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.sg-col-header {
+  text-align: center;
+  padding: 4px 6px;
+  font-size: 0.75rem;
+}
+
+.sg-hour-label {
+  font-size: 0.7rem;
+  color: #64748b;
+  padding: 4px 8px;
+  white-space: nowrap;
+  vertical-align: top;
+}
+
+.sg-cell {
+  vertical-align: top;
+  padding: 3px;
+  min-width: 100px;
+}
+
+.sg-hour-col {
+  min-width: 56px;
+}
+
+.sg-group {
+  margin-bottom: 1rem;
+}
+
+.sg-group-title {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 0.5rem;
+}
+
+.sg-group-blocks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}

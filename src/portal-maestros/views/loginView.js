@@ -60,8 +60,8 @@ export function renderLoginView(container, { onSuccess }) {
             Recordar correo electrónico
           </label>
           <label class="pm-checkbox-label">
-            <input type="checkbox" id="pm-keep-session" />
-            Mantener sesión abierta por 30 días
+            <input type="checkbox" id="pm-keep-session" checked />
+            Mantener sesión activa (30 días)
           </label>
         </div>
 
@@ -159,30 +159,22 @@ export function renderLoginView(container, { onSuccess }) {
 
     setLoading(true)
 
-    const sessionDuration = keepSessionChk.checked ? 30 * 24 * 60 * 60 * 1000 : undefined
-    if (sessionDuration) {
-      localStorage.setItem('pm-session-expires', new Date(Date.now() + sessionDuration).toISOString())
-    }
-
+    // La sesión persistente siempre se activa por defecto (30 días).
+    // loginMaestro() llama a _setPersistentSession() internamente.
     const result = await loginMaestro(email, password)
 
     if (result.success) {
       usePortalAuth.setMaestro(result.maestro)
       const intended = localStorage.getItem('intended-route')
       localStorage.removeItem('intended-route')
-      if (onSuccess) {
-        onSuccess(intended)
-      }
+      if (onSuccess) onSuccess(intended)
     } else {
       if (result.pendingApproval) {
-        if (window.router) {
-          window.router.navigate('pending-approval')
-          return
-        }
+        window.router?.navigate('pending-approval')
+        return
       }
       errorMsg.textContent = result.error
       setLoading(false)
-      localStorage.removeItem('pm-session-expires')
       passwordInput.value = ''
       passwordInput.focus()
     }

@@ -61,7 +61,14 @@ export function setActiveTab(route) {
   })
 }
 
-export function renderShell(app, maestro, tabs, isAdmin, onNavigate, onModoSwitch, updateSyncIndicator) {
+export function renderShell(app, maestro, tabs, onNavigate, updateSyncIndicator) {
+  // Admin que también es maestro: mostrar botón de acceso al panel admin
+  const adminLink = maestro?.es_admin
+    ? `<a href="/admin" class="pm-admin-link" title="Ir al Panel Admin">
+         <i class="bi bi-grid-1x2-fill"></i><span>Panel Admin</span>
+       </a>`
+    : ''
+
   app.innerHTML = `
     <!-- Sidebar (desktop only) -->
     <aside class="pm-sidebar" id="pm-sidebar">
@@ -72,18 +79,15 @@ export function renderShell(app, maestro, tabs, isAdmin, onNavigate, onModoSwitc
         </div>
       </div>
       <nav class="pm-sidebar-nav">
-        ${tabs
-          .map(
-            (tab) => `
+        ${tabs.map((tab) => `
           <a class="pm-sidebar-link" data-route="${tab.id}" title="${tab.label}">
             <i class="bi ${tab.icon}"></i>
             <span>${tab.label}</span>
           </a>
-        `,
-          )
-          .join('')}
+        `).join('')}
       </nav>
       <div class="pm-sidebar-footer">
+        ${adminLink}
         <button id="pm-btn-perfil-sidebar" class="pm-sidebar-link" data-route="perfil">
           <i class="bi bi-person-circle"></i>
           <span>Perfil</span>
@@ -92,22 +96,18 @@ export function renderShell(app, maestro, tabs, isAdmin, onNavigate, onModoSwitc
     </aside>
 
     <!-- Main content area -->
-    <div class="pm-main-area ${isAdmin ? 'pm-main-area--admin' : ''}">
+    <div class="pm-main-area">
       <!-- Header -->
       <header class="pm-header" id="pm-header">
         <div class="pm-header-left" id="pm-header-left">
-          <span class="pm-header-greeting">${isAdmin ? 'Panel Admin' : 'Portal Maestros'}</span>
+          <span class="pm-header-greeting">Portal Maestros</span>
           <span class="pm-header-title" style="font-size:clamp(1rem,3.5vw,1.5rem);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:52vw;">
-            ${
-              isAdmin
-                ? (maestro?.nombre_completo ?? 'Administrador')
-                : 'Prof. ' + (maestro?.nombre_completo ?? '')
-            }
+            Prof. ${maestro?.nombre_completo ?? ''}
             <span class="pm-online-dot" id="pm-sync-indicator" title="Sincronizado"></span>
           </span>
         </div>
 
-        <!-- Dynamic WhatsApp-Style Search Container -->
+        <!-- Search -->
         <div class="pm-header-search-container" id="pm-header-search-container">
           <button id="pm-search-back-btn" class="pm-icon-btn pm-search-back-btn" title="Cerrar búsqueda">
             <i class="bi bi-arrow-left"></i>
@@ -124,18 +124,6 @@ export function renderShell(app, maestro, tabs, isAdmin, onNavigate, onModoSwitc
             <i class="bi bi-search"></i>
           </button>
 
-          ${
-            maestro?.es_admin && maestro?.es_maestro
-              ? `
-            <button id="pm-modo-switcher" title="${isAdmin ? 'Cambiar a vista de maestro' : 'Cambiar a panel admin'}"
-              style="display:flex;align-items:center;gap:0.35rem;padding:0.3rem 0.65rem;border-radius:20px;border:1.5px solid var(--pm-primary);background:transparent;color:var(--pm-primary);font-size:0.72rem;font-weight:600;cursor:pointer;white-space:nowrap;">
-              <i class="bi ${isAdmin ? 'bi-mortarboard' : 'bi-grid-1x2-fill'}"></i>
-              ${isAdmin ? 'Mis clases' : 'Admin'}
-            </button>
-          `
-              : ''
-          }
-
           <div id="pm-theme-toggle-container"></div>
 
           <button id="pm-bell-btn" class="pm-icon-btn" title="Notificaciones" style="position: relative;">
@@ -144,11 +132,9 @@ export function renderShell(app, maestro, tabs, isAdmin, onNavigate, onModoSwitc
           </button>
 
           <button id="pm-btn-perfil" class="pm-avatar-btn" title="Perfil">
-            ${
-              maestro?.avatar_url
-                ? `<img src="${maestro.avatar_url}" alt="Avatar">`
-                : `<i class="bi bi-person-circle"></i>`
-            }
+            ${maestro?.avatar_url
+              ? `<img src="${maestro.avatar_url}" alt="Avatar">`
+              : `<i class="bi bi-person-circle"></i>`}
           </button>
         </div>
       </header>
@@ -157,18 +143,14 @@ export function renderShell(app, maestro, tabs, isAdmin, onNavigate, onModoSwitc
       <main class="pm-view" id="pm-view-container"></main>
 
       <!-- Footer Nav (mobile/tablet only) -->
-      <nav class="pm-footer-nav ${isAdmin ? 'pm-footer-nav--admin' : ''}" id="pm-footer-nav">
+      <nav class="pm-footer-nav" id="pm-footer-nav">
         <div class="pm-footer-nav__inner">
-          ${tabs
-            .map(
-              (tab) => `
+          ${tabs.map((tab) => `
             <button class="pm-nav-tab" data-route="${tab.id}" title="${tab.label}" aria-label="${tab.label}">
               <i class="bi ${tab.icon}"></i>
               <span>${tab.label}</span>
             </button>
-          `,
-            )
-            .join('')}
+          `).join('')}
         </div>
       </nav>
     </div>
@@ -178,38 +160,24 @@ export function renderShell(app, maestro, tabs, isAdmin, onNavigate, onModoSwitc
 
   // Theme toggle
   const themeContainer = document.getElementById('pm-theme-toggle-container')
-  if (themeContainer) {
-    themeContainer.appendChild(themeToggle.createToggleButton())
-  }
+  if (themeContainer) themeContainer.appendChild(themeToggle.createToggleButton())
 
-  // Footer nav events
+  // Footer nav
   document.getElementById('pm-footer-nav')?.querySelectorAll('.pm-nav-tab').forEach((tab) => {
-    tab.addEventListener('click', (e) => {
-      e.preventDefault()
-      onNavigate(tab.dataset.route)
-    })
+    tab.addEventListener('click', (e) => { e.preventDefault(); onNavigate(tab.dataset.route) })
   })
 
-  // Sidebar nav events
-  document.getElementById('pm-sidebar')?.querySelectorAll('.pm-sidebar-link').forEach((link) => {
-    link.addEventListener('click', (e) => {
-      e.preventDefault()
-      onNavigate(link.dataset.route)
-    })
+  // Sidebar nav
+  document.getElementById('pm-sidebar')?.querySelectorAll('.pm-sidebar-link[data-route]').forEach((link) => {
+    link.addEventListener('click', (e) => { e.preventDefault(); onNavigate(link.dataset.route) })
   })
 
-  // Modo switcher
-  document.getElementById('pm-modo-switcher')?.addEventListener('click', onModoSwitch)
-
-  document.getElementById('pm-btn-perfil').addEventListener('click', (e) => {
-    e.preventDefault()
-    onNavigate('perfil')
+  document.getElementById('pm-btn-perfil')?.addEventListener('click', (e) => {
+    e.preventDefault(); onNavigate('perfil')
   })
 
-  // Bell / notifications
-  document.getElementById('pm-bell-btn')?.addEventListener('click', () => {
-    notificacionesPanel.open()
-  })
+  // Bell
+  document.getElementById('pm-bell-btn')?.addEventListener('click', () => notificacionesPanel.open())
 
   _initHeaderSearch(onNavigate)
 }

@@ -2,19 +2,9 @@
 import { DIAS_SEMANA } from '../models/scheduleConstraints.model.js';
 import { createScheduleBlock } from './ScheduleBlock.js';
 import { escapeHtml } from '../utils/escapeHtml.js';
+import { roundToHour } from '../utils/timeUtils.js';
 
 const EMPTY_STATE = '<p class="text-muted text-center py-4">No hay asignaciones para mostrar.</p>';
-
-/**
- * Rounds a time string like '10:30' down to the hour: '10:00'.
- * @param {string} timeStr
- * @returns {string}
- */
-function roundToHour(timeStr) {
-  if (!timeStr || !timeStr.includes(':')) return '00:00';
-  const [h] = timeStr.split(':');
-  return `${h.padStart(2, '0')}:00`;
-}
 
 /**
  * Renders a weekly grid (table-like) view grouped by hour × day.
@@ -37,7 +27,7 @@ function renderGridView(assignments, draggable, periodoId) {
   const hours = [...hourDayMap.keys()].sort();
 
   const headerCells = DIAS_SEMANA.map(
-    d => `<th class="sg-col-header" data-day="${d.key}" style="text-align:center;padding:4px 6px;font-size:0.75rem;">${d.label}</th>`
+    d => `<th class="sg-col-header" data-day="${d.key}">${d.label}</th>`
   ).join('');
 
   const rows = hours.map(hour => {
@@ -46,21 +36,21 @@ function renderGridView(assignments, draggable, periodoId) {
       const blocks = (dayMap.get(d.key) || [])
         .map(a => createScheduleBlock(a, { draggable }))
         .join('');
-      return `<td class="sg-cell" data-day="${d.key}" data-hour="${hour}" style="vertical-align:top;padding:3px;min-width:100px;">${blocks}</td>`;
+      return `<td class="sg-cell" data-day="${d.key}" data-hour="${hour}">${blocks}</td>`;
     }).join('');
     return `<tr>
-      <td class="sg-hour-label" style="font-size:0.7rem;color:#64748b;padding:4px 8px;white-space:nowrap;vertical-align:top;">${hour}</td>
+      <td class="sg-hour-label">${hour}</td>
       ${cells}
     </tr>`;
   }).join('');
 
   return `
-    <div class="schedule-grid-wrapper" style="overflow-x:auto;">
-      <table class="schedule-grid" style="width:100%;border-collapse:collapse;">
-        ${periodoId ? `<caption class="text-muted" style="caption-side:top;font-size:0.75rem;padding-bottom:4px;">${periodoId}</caption>` : ''}
+    <div class="schedule-grid-wrapper">
+      <table class="schedule-grid">
+        ${periodoId ? `<caption class="text-muted">${periodoId}</caption>` : ''}
         <thead>
           <tr>
-            <th class="sg-hour-col" aria-label="Hora" style="min-width:56px;"></th>
+            <th class="sg-hour-col" aria-label="Hora"></th>
             ${headerCells}
           </tr>
         </thead>
@@ -90,9 +80,9 @@ function renderGroupedView(assignments, groupKey, draggable) {
   const sections = [...groups.entries()].map(([groupName, items]) => {
     const blocks = items.map(a => createScheduleBlock(a, { draggable })).join('');
     return `
-      <div class="sg-group" style="margin-bottom:1rem;">
-        <h4 class="sg-group-title" style="font-size:0.85rem;font-weight:700;color:#1e293b;margin-bottom:0.5rem;">${escapeHtml(groupName)}</h4>
-        <div class="sg-group-blocks" style="display:flex;flex-wrap:wrap;gap:6px;">${blocks}</div>
+      <div class="sg-group">
+        <h4 class="sg-group-title">${escapeHtml(groupName)}</h4>
+        <div class="sg-group-blocks">${blocks}</div>
       </div>
     `;
   }).join('');

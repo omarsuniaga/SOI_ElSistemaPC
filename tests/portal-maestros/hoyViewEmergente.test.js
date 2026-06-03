@@ -71,17 +71,20 @@ const mockClases = [
   { id: 'clase-2', nombre: 'Piano II', instrumento: 'Piano' },
 ]
 
+// Día actual dinámico para que los tests pasen cualquier día de la semana
+const diaActual = new Date().toLocaleDateString('es-ES', { weekday: 'long' }).toLowerCase()
+
 const mockHorarios = [
   {
     clase_id: 'clase-1',
-    dia: 'lunes',
+    dia: diaActual,
     hora_inicio: '08:00:00',
     hora_fin: '09:00:00',
     salon_id: null,
   },
   {
     clase_id: 'clase-2',
-    dia: 'lunes',
+    dia: diaActual,
     hora_inicio: '10:00:00',
     hora_fin: '11:00:00',
     salon_id: null,

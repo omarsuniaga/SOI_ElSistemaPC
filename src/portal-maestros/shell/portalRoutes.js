@@ -1,10 +1,12 @@
 /**
  * portalRoutes.js
- * Responsabilidad: Registrar todas las rutas del router SPA y
+ * Responsabilidad: Registrar las rutas del portal de maestros y
  * gestionar los contenedores de vistas persistentes.
+ *
+ * Este portal es exclusivo para maestros.
+ * El panel admin vive en /admin (admin.html).
  */
 
-// ── Vistas de maestro ──────────────────────────────────────────
 import { renderLoginView } from '../views/loginView.js'
 import { renderRegisterView } from '../views/registerView.js'
 import { renderPendingApprovalView } from '../views/pendingApprovalView.js'
@@ -25,17 +27,6 @@ import { RouteLibraryView } from '../views/routeLibraryView.js'
 import { RouteDetailView } from '../views/routeDetailView.js'
 import { renderGestionarClasesView } from '../views/gestionarClasesView.js'
 
-// ── Vistas de admin ────────────────────────────────────────────
-import { renderAlumnosView } from '../../modules/alumnos/views/alumnosView.js'
-import { renderProgramasView } from '../../modules/programas/views/programasView.js'
-import { renderMaestrosView } from '../../modules/maestros/views/maestrosView.js'
-import { renderDashboardMetricasView as renderAdminMetricasView } from '../../modules/metricas/views/dashboardMetricasView.js'
-import { renderAcademicAdminView } from '../../modules/academic-admin/views/academicAdminView.js'
-import { renderClasesView } from '../../modules/clases/views/clasesView.js'
-import { renderAprobacionView } from '../../modules/admin-aprobacion/views/aprobacionView.js'
-import { renderAusenciasAdminView } from '../../modules/admin-aprobacion/views/ausenciasAdminView.js'
-import { renderAdminNotificacionesView } from '../../modules/admin-notificaciones/views/adminNotificacionesView.js'
-
 const MAESTRO_VIEWS = [
   'login', 'logout', 'register', 'pending-approval',
   'calendario', 'clases', 'hoy', 'asistencia', 'metricas',
@@ -44,18 +35,12 @@ const MAESTRO_VIEWS = [
   'ruta-semanal', 'ruta-libreria', 'ruta-detalle', 'gestionar-clases',
 ]
 
-const ADMIN_VIEWS = [
-  'admin-alumnos', 'admin-programas', 'admin-maestros', 'admin-metricas',
-  'admin-config', 'admin-clases', 'admin-sesiones', 'admin-aprobacion',
-  'admin-ausencias', 'admin-notificaciones',
-]
-
 export const CACHEABLE_VIEWS = new Set([
   'hoy', 'calendario', 'metricas', 'perfil', 'ruta',
   'gamificacion', 'crear-clase', 'planificacion', 'ruta-libreria',
 ])
 
-export function setupRouterRoutes(router, isAdmin, renderView) {
+export function setupRouterRoutes(router, _isAdmin, renderView) {
   const route = (name) => router.on(name, (r, params) => renderView(name, params))
 
   ;[
@@ -67,28 +52,17 @@ export function setupRouterRoutes(router, isAdmin, renderView) {
   ].forEach(route)
 
   router.on('ruta-detalle/:id', (r, params) => renderView('ruta-detalle', params))
-
-  if (isAdmin) {
-    ;[
-      'admin-alumnos', 'admin-programas', 'admin-maestros', 'admin-metricas',
-      'admin-config', 'admin-clases', 'admin-sesiones', 'admin-aprobacion',
-      'admin-ausencias', 'admin-notificaciones',
-    ].forEach(route)
-    router.onNotFound(() => renderView('admin-alumnos'))
-  } else {
-    router.onNotFound(() => renderView('hoy'))
-  }
+  router.onNotFound(() => renderView('hoy'))
 }
 
-export function initViewContainers(isAdmin) {
+export function initViewContainers() {
   const container = document.getElementById('pm-view-container')
   if (!container) return {}
 
   container.innerHTML = ''
   const viewContainers = {}
-  const allViews = isAdmin ? [...MAESTRO_VIEWS, ...ADMIN_VIEWS] : MAESTRO_VIEWS
 
-  allViews.forEach((viewName) => {
+  MAESTRO_VIEWS.forEach((viewName) => {
     const el = document.createElement('div')
     el.id = `pm-view-${viewName}`
     el.className = 'pm-view-content'
@@ -168,27 +142,6 @@ export async function renderViewContent(route, container, params, urlParams, con
     case 'gestionar-clases':
       if (!permisos?.puede_inscribir_clases) { router.navigate('hoy'); return }
       return await renderGestionarClasesView(container)
-    // ── Admin ──────────────────────────────────────────────────
-    case 'admin-alumnos':
-      renderAlumnosView(container); break
-    case 'admin-programas':
-      renderProgramasView(container); break
-    case 'admin-maestros':
-      renderMaestrosView(container); break
-    case 'admin-metricas':
-      renderAdminMetricasView(container); break
-    case 'admin-config':
-      renderAcademicAdminView(container); break
-    case 'admin-clases':
-      renderClasesView?.(container); break
-    case 'admin-sesiones':
-      break
-    case 'admin-aprobacion':
-      await renderAprobacionView(container); break
-    case 'admin-ausencias':
-      await renderAusenciasAdminView(container); break
-    case 'admin-notificaciones':
-      return await renderAdminNotificacionesView(container)
     default:
       break
   }

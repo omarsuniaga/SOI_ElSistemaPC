@@ -1,4 +1,16 @@
-import { escapeHTML, getInitials, formatDate, getTipoLabel, getTipoIcon, getTipoBadgeClass, getPrioridadColor, getPrioridadIcon, getEstadoClass, getEstadoLabel } from '../utils/observacionesUtils.js'
+import {
+  escapeHTML,
+  getInitials,
+  formatDate,
+  getTipoLabel,
+  getTipoIcon,
+  getTipoBadgeClass,
+  getPrioridadColor,
+  getPrioridadIcon,
+  getPrioridadLabel,
+  getEstadoClass,
+  getEstadoLabel,
+} from '../utils/observacionesUtils.js'
 
 export function createObservacionCard(obs, showActions = true, onEdit = null, onDelete = null) {
   const card = document.createElement('div')
@@ -34,12 +46,16 @@ export function createObservacionCard(obs, showActions = true, onEdit = null, on
         <small class="text-muted">
           <i class="bi bi-clock"></i> ${formatDate(obs.fecha_observacion || obs.created_at)}
         </small>
-        ${showActions ? `
+        ${
+          showActions
+            ? `
           <div class="btn-group btn-group-sm">
             ${onEdit ? `<button class="btn btn-outline-primary edit-btn" data-id="${obs.id}" title="Editar"><i class="bi bi-pencil"></i></button>` : ''}
             ${onDelete ? `<button class="btn btn-outline-danger delete-btn" data-id="${obs.id}" title="Eliminar"><i class="bi bi-trash"></i></button>` : ''}
           </div>
-        ` : ''}
+        `
+            : ''
+        }
       </div>
     </div>
   `

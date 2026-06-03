@@ -1,4 +1,5 @@
 import { supabase } from '../../lib/supabaseClient.js'
+import { AppToast } from '../../shared/components/AppToast.js'
 import { academicService } from '../../modules/academic-routes/services/academicService.js'
 import { getMaestroLocal } from '../auth/maestroAuth.js'
 import { escHTML, formatHora, capitalize, formatFechaPortal } from '../utils/portalUtils.js'
@@ -10,6 +11,83 @@ import {
   getSalones,
   getEmergentesHoy,
 } from '../services/maestroDataService.js'
+
+// ─── Detección de clase en curso ───────────────────────────────
+
+/**
+ * Convierte "HH:MM" o "HH:MM:SS" a minutos desde medianoche.
+ * @param {string} t
+ * @returns {number}
+ */
+function _toMin(t) {
+  const [h, m] = (t || '00:00').split(':').map(Number)
+  return h * 60 + m
+}
+
+/**
+ * Determina el estado temporal de una clase respecto a la hora actual.
+ * @param {string} horaInicio  - "HH:MM"
+ * @param {string} horaFin     - "HH:MM"
+ * @param {number} ahoraMin    - minutos actuales desde medianoche
+ * @returns {'en-curso' | 'proxima' | 'pasada' | 'futura'}
+ */
+function _estadoTemporal(horaInicio, horaFin, ahoraMin) {
+  const inicio = _toMin(horaInicio)
+  const fin    = _toMin(horaFin)
+  if (ahoraMin >= inicio && ahoraMin < fin)   return 'en-curso'
+  if (ahoraMin >= fin)                         return 'pasada'
+  if (inicio - ahoraMin <= 15)                 return 'proxima'  // próximos 15 min
+  return 'futura'
+}
+
+/**
+ * Muestra un countdown de 3 s y luego navega a la clase en curso.
+ * El maestro puede cancelarlo tocando el banner.
+ * @param {string} claseId
+ * @param {string} fechaHoy
+ * @param {Function} onClaseClick
+ */
+function _autoNavigateClaseEnCurso(claseId, fechaHoy, onClaseClick) {
+  // Crear banner de countdown
+  const banner = document.createElement('div')
+  banner.id = 'pm-hoy-autonav-banner'
+  banner.innerHTML = `
+    <div class="pm-autonav-content">
+      <i class="bi bi-play-circle-fill pm-autonav-icon"></i>
+      <span class="pm-autonav-msg">Abriendo clase en curso…</span>
+      <span class="pm-autonav-count" id="pm-autonav-count">3</span>
+      <button class="pm-autonav-cancel" id="pm-autonav-cancel">Cancelar</button>
+    </div>
+  `
+  document.body.appendChild(banner)
+
+  let segundos = 3
+  let cancelado = false
+
+  const countEl = document.getElementById('pm-autonav-count')
+
+  const tick = setInterval(() => {
+    if (cancelado) return
+    segundos--
+    if (countEl) countEl.textContent = segundos
+    if (segundos <= 0) {
+      clearInterval(tick)
+      banner.remove()
+      if (!cancelado) {
+        // Generar snapshot y navegar (mismo flujo que el click manual)
+        if (window.router) window.router.navigate(`asistencia?clase=${claseId}&fecha=${fechaHoy}`)
+        else onClaseClick?.(claseId)
+      }
+    }
+  }, 1000)
+
+  document.getElementById('pm-autonav-cancel')?.addEventListener('click', () => {
+    cancelado = true
+    clearInterval(tick)
+    banner.remove()
+    AppToast.show('Auto-navegación cancelada', 'info')
+  })
+}
 
 /**
  * Renderiza la vista Hoy: lista de clases del día actual ordenadas por hora.
@@ -110,22 +188,52 @@ export async function renderHoyView(container, { onClaseClick } = {}) {
     const salonesData = salonIds.length > 0 ? await getSalones(salonIds) : []
     const salonMap = Object.fromEntries(salonesData.map((s) => [s.id, s.nombre]))
 
+    // 6. Calcular hora actual en minutos para detectar clases en curso
+    const ahoraMin = hoy.getHours() * 60 + hoy.getMinutes()
+    let claseEnCursoId = null   // primera clase en curso no registrada → auto-nav
+    let claseEnCursoRegistradaId = null  // en curso pero ya registrada → solo badge
+
     // 6. Renderizar
     const listHTML = horarios
       .map((h) => {
         const clase = clasesMap[h.clase_id]
         const registrada = registradasHoy.has(clase.id)
         const totalAlumnos = alumnosPorClase[clase.id] || 0
-        const estadoClass = registrada ? 'registrada' : 'sin-registrar'
-        const badgeHTML = registrada
+        const temporal = _estadoTemporal(h.hora_inicio, h.hora_fin, ahoraMin)
+
+        // Rastrear clase en curso
+        if (temporal === 'en-curso') {
+          if (!registrada && !claseEnCursoId)          claseEnCursoId = clase.id
+          if (registrada && !claseEnCursoRegistradaId) claseEnCursoRegistradaId = clase.id
+        }
+
+        // Badge de registro
+        const registradaBadge = registrada
           ? `<span class="pm-badge pm-badge-success"><i class="bi bi-check-circle-fill me-1"></i>Registrada</span>`
           : `<span class="pm-badge pm-badge-danger">Sin registrar</span>`
+
+        // Badge de estado temporal
+        const temporalBadge = temporal === 'en-curso'
+          ? `<span class="pm-badge pm-badge-en-curso"><i class="bi bi-circle-fill pm-pulse-dot me-1"></i>En curso</span>`
+          : temporal === 'proxima'
+            ? `<span class="pm-badge pm-badge-proxima"><i class="bi bi-clock me-1"></i>Próximamente</span>`
+            : ''
+
+        const estadoClass = [
+          registrada ? 'registrada' : 'sin-registrar',
+          temporal === 'en-curso' ? 'pm-clase-en-curso' : '',
+          temporal === 'proxima'  ? 'pm-clase-proxima'  : '',
+          temporal === 'pasada'   ? 'pm-clase-pasada'   : '',
+        ].filter(Boolean).join(' ')
 
         return `
         <div class="pm-clase-card ${estadoClass}" data-clase-id="${clase.id}">
           <div class="d-flex justify-content-between align-items-start mb-2">
             <div class="pm-clase-nombre">${escHTML(clase.nombre)}</div>
-            ${badgeHTML}
+            <div class="d-flex flex-wrap gap-1 justify-content-end">
+              ${temporalBadge}
+              ${registradaBadge}
+            </div>
           </div>
           <div class="pm-clase-meta">
             <div class="meta-item"><i class="bi bi-clock"></i> ${formatHora(h.hora_inicio)} – ${formatHora(h.hora_fin)}</div>
@@ -217,6 +325,24 @@ export async function renderHoyView(container, { onClaseClick } = {}) {
         onClaseClick?.(claseId)
       })
     })
+    // 7. Scroll a clase en curso + auto-navegación si no está registrada
+    const enCursoId = claseEnCursoId || claseEnCursoRegistradaId
+    if (enCursoId) {
+      // Scroll suave a la tarjeta activa
+      requestAnimationFrame(() => {
+        const card = container.querySelector(`[data-clase-id="${enCursoId}"]`)
+        card?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      })
+
+      // Auto-navegar solo si la clase está en curso Y no registrada
+      if (claseEnCursoId) {
+        // Pequeño delay para que el maestro vea la vista antes del countdown
+        setTimeout(() => {
+          _autoNavigateClaseEnCurso(claseEnCursoId, fechaHoy, onClaseClick)
+        }, 800)
+      }
+    }
+
   } catch (err) {
     container.innerHTML = `<p class="pm-empty" style="color:var(--pm-danger)">Error al cargar clases: ${escHTML(err.message)}</p>`
   }
@@ -408,6 +534,100 @@ if (!document.getElementById('pm-hoy-pendientes-styles')) {
     .pm-eme-motivo-eventual      { background: rgba(139,92,246,0.1); color: #7c3aed; }
     .pm-eme-motivo-reforzamiento { background: rgba(16,185,129,0.1); color: #059669; }
     .pm-eme-motivo-otro          { background: rgba(245,158,11,0.1); color: #d97706; }
+
+    /* ── Estado temporal de clases ──────────────────── */
+    .pm-clase-en-curso {
+      border: 2px solid var(--pm-primary, #3b82f6) !important;
+      box-shadow: 0 0 0 3px rgba(59,130,246,0.15);
+      position: relative;
+    }
+    .pm-clase-proxima {
+      border-left: 3px solid var(--pm-warning, #f59e0b) !important;
+    }
+    .pm-clase-pasada {
+      opacity: 0.55;
+    }
+
+    /* Badge en curso */
+    .pm-badge-en-curso {
+      background: rgba(59,130,246,0.15);
+      color: var(--pm-primary, #3b82f6);
+      border: 1px solid rgba(59,130,246,0.35);
+    }
+    .pm-badge-proxima {
+      background: rgba(245,158,11,0.12);
+      color: #d97706;
+      border: 1px solid rgba(245,158,11,0.3);
+    }
+
+    /* Punto pulsante dentro del badge "En curso" */
+    .pm-pulse-dot {
+      font-size: 0.5rem;
+      animation: pm-pulse 1.2s ease-in-out infinite;
+    }
+    @keyframes pm-pulse {
+      0%, 100% { opacity: 1; transform: scale(1);   }
+      50%       { opacity: 0.4; transform: scale(0.75); }
+    }
+
+    /* ── Banner de auto-navegación ──────────────────── */
+    #pm-hoy-autonav-banner {
+      position: fixed;
+      bottom: 80px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--pm-surface, #fff);
+      border: 1.5px solid var(--pm-primary, #3b82f6);
+      border-radius: 16px;
+      padding: 0.75rem 1.25rem;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+      z-index: 9000;
+      animation: pm-slide-up 0.3s ease;
+      min-width: 280px;
+      max-width: 90vw;
+    }
+    @keyframes pm-slide-up {
+      from { opacity: 0; transform: translateX(-50%) translateY(16px); }
+      to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+    }
+    .pm-autonav-content {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+    .pm-autonav-icon {
+      font-size: 1.2rem;
+      color: var(--pm-primary, #3b82f6);
+      flex-shrink: 0;
+    }
+    .pm-autonav-msg {
+      flex: 1;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--pm-text);
+    }
+    .pm-autonav-count {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--pm-primary, #3b82f6);
+      min-width: 1.2rem;
+      text-align: center;
+    }
+    .pm-autonav-cancel {
+      background: none;
+      border: 1px solid var(--pm-border);
+      border-radius: 8px;
+      padding: 0.25rem 0.6rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--pm-text-muted);
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+    .pm-autonav-cancel:hover {
+      background: var(--pm-surface-2);
+      color: var(--pm-text);
+    }
   `
   document.head.appendChild(s)
 }

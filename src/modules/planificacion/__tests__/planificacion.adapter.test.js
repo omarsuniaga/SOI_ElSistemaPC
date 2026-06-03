@@ -372,6 +372,23 @@ describe('planificacionMock localStorage persistence', () => {
     const result = await mockB.obtenerPlanificaciones()
     expect(result.length).toBe(6) // 5 seed + 1 new
   })
+
+  it('re-seeds from JSON when localStorage has corrupt data', async () => {
+    // Write corrupt JSON to localStorage
+    localStorage.setItem(STORAGE_KEY, '{invalid json!!!}')
+    vi.resetModules()
+
+    const mock = await import('../api/planificacionMock.js')
+    await flushPromises()
+
+    const result = await mock.obtenerPlanificaciones()
+    expect(result.length).toBe(5) // re-seeded from planificaciones.json
+
+    // Verify the corrupt data was replaced with valid schema
+    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY))
+    expect(stored.schemaVersion).toBe(1)
+    expect(stored.planificaciones.length).toBe(5)
+  })
 })
 
 // ── New functions: obtenerClases ─────────────────────────────────

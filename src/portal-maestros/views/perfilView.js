@@ -1,4 +1,5 @@
 import { getMaestroLocal, clearMaestroLocal, logoutPortal, STORAGE_KEY } from '../auth/maestroAuth.js';
+import { APP_VERSION, APP_BUILD_DATE, getLatestVersion, getVersionTypeMeta } from '../../core/version/CHANGELOG.js';
 import { supabase } from '../../lib/supabaseClient.js';
 import { updateDisponibilidad } from '../api/disponibilidadApi.js';
 import {
@@ -74,7 +75,14 @@ export function renderPerfilView(container) {
       </div>
       <footer class="pm-settings-footer">
         <p>SOI Sistema Operativo Institucional</p>
-        <p class="pm-settings-footer__version">v2.5.0 &copy; 2026</p>
+        <p class="pm-settings-footer__version">
+          v${APP_VERSION} &copy; 2026
+          ${maestro?.es_admin ? `<button id="pm-ver-sistema-btn" style="
+            margin-left:0.5rem;background:none;border:none;cursor:pointer;
+            color:var(--pm-primary,#3b82f6);font-size:0.72rem;font-weight:600;
+            padding:0.1rem 0.4rem;border-radius:6px;text-decoration:underline;
+          ">Ver historial del sistema</button>` : ''}
+        </p>
       </footer>
     </div>`;
 
@@ -535,6 +543,22 @@ function initListeners(maestro) {
 
   // Cerrar sesión
   document.getElementById('btnCerrarSesion')?.addEventListener('click', confirmarCerrarSesion);
+
+  // Sistema — historial de versiones (solo admin)
+  document.getElementById('pm-ver-sistema-btn')?.addEventListener('click', () => {
+    import('../../modules/sistema/views/sistemaView.js').then(({ renderSistemaView }) => {
+      AppModal.open({
+        title: `<i class="bi bi-cpu-fill me-2"></i>Sistema SOI — v${APP_VERSION}`,
+        size: 'xl',
+        saveText: null,
+        cancelText: 'Cerrar',
+        body: `<div id="pm-sistema-modal-body"></div>`,
+        onOpen: (body) => {
+          renderSistemaView(body.querySelector('#pm-sistema-modal-body'))
+        },
+      })
+    })
+  });
 
   // Avatar (placeholder)
   document.getElementById('btnCambiarAvatar')?.addEventListener('click', () => {

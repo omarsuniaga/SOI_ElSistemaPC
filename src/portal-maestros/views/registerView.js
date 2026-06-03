@@ -1,5 +1,5 @@
 import { supabase } from '../../lib/supabaseClient.js'
-import { setFieldError, clearFieldError, clearAllFieldErrors } from '../utils/a11yUtils.js'
+import { setFieldError, clearAllFieldErrors } from '../utils/a11yUtils.js'
 
 /**
  * Renderiza la vista de registro para maestros.
@@ -220,7 +220,8 @@ export function renderRegisterView(container, { onSuccess }) {
       return
     }
 
-    // Garantizar el row en profiles aunque el trigger DB falle
+    // Garantizar el row en profiles aunque el trigger DB falle.
+    // estado: 'pendiente' — el usuario NO puede acceder hasta que un admin apruebe.
     if (data?.user) {
       await supabase.from('profiles').upsert({
         id: data.user.id,
@@ -230,6 +231,11 @@ export function renderRegisterView(container, { onSuccess }) {
         rol: 'maestro',
         estado: 'pendiente',
       }, { onConflict: 'id', ignoreDuplicates: false })
+
+      // CRÍTICO: cerrar la sesión de Supabase inmediatamente para evitar
+      // que el usuario entre al sistema antes de ser aprobado.
+      // (Supabase puede auto-confirmar el email según la config del proyecto)
+      await supabase.auth.signOut()
     }
 
     setLoading(false)

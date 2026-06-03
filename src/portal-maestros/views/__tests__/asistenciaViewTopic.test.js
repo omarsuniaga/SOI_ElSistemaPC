@@ -3,11 +3,11 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 // Mock dependencies
 vi.mock('../../services/rutaTopicStore.js', () => ({
   consumeRutaTema: vi.fn(),
-  setRutaTema: vi.fn()
+  setRutaTema: vi.fn(),
 }))
 
 vi.mock('../../auth/maestroAuth.js', () => ({
-  getMaestroLocal: () => ({ id: 'm1', nombre: 'Test' })
+  getMaestroLocal: () => ({ id: 'm1', nombre: 'Test' }),
 }))
 
 vi.mock('../../services/maestroDataService.js', () => ({
@@ -16,7 +16,7 @@ vi.mock('../../services/maestroDataService.js', () => ({
   getInscripcionesClases: vi.fn(() => Promise.resolve([])),
   getSalones: vi.fn(() => Promise.resolve([])),
   getRutasMaestro: vi.fn(() => Promise.resolve([])),
-  invalidateClasesCache: vi.fn()
+  invalidateClasesCache: vi.fn(),
 }))
 
 vi.mock('../../services/rutaService.js', () => ({
@@ -24,7 +24,7 @@ vi.mock('../../services/rutaService.js', () => ({
   resolveRutaIdForClase: vi.fn(async () => 'ruta1'),
   loadNodesForLevel: vi.fn(async () => []),
   loadIndicatorsForNode: vi.fn(async () => []),
-  invalidateSemaphoresForClase: vi.fn()
+  invalidateSemaphoresForClase: vi.fn(),
 }))
 
 vi.mock('../../services/autoDraftService.js', () => ({
@@ -32,64 +32,69 @@ vi.mock('../../services/autoDraftService.js', () => ({
   saveDraft: vi.fn(),
   loadDraft: vi.fn(),
   discardDraft: vi.fn(),
-  saveObservation: vi.fn()
+  saveObservation: vi.fn(),
 }))
 
 vi.mock('../../services/evaluationService.js', () => ({
   resolveDSL: vi.fn(),
   saveEvaluaciones: vi.fn(),
-  processarEvaluacion: vi.fn()
+  processarEvaluacion: vi.fn(),
 }))
 
 vi.mock('../../services/navigationHooks.js', () => ({
-  invalidateView: vi.fn()
+  invalidateView: vi.fn(),
 }))
 
 vi.mock('../../utils/a11yUtils.js', () => ({
-  announce: vi.fn()
+  announce: vi.fn(),
 }))
 
 vi.mock('../../services/offlineQueue.js', () => ({
-  enqueue: vi.fn()
+  enqueue: vi.fn(),
+  getQueueCount: vi.fn().mockResolvedValue(0),
+  getQueue: vi.fn().mockResolvedValue([]),
+  dequeue: vi.fn(),
+  processQueue: vi.fn(),
+  clearQueue: vi.fn(),
 }))
 
 vi.mock('../../services/classEventService.js', () => ({
   getClassEvent: vi.fn(() => Promise.resolve({ data: {} })),
-  updateClassEventStatus: vi.fn()
+  updateClassEventStatus: vi.fn(),
 }))
 
 vi.mock('../../components/ContentSelectionPanel.js', () => ({
-  createContentSelectionPanel: vi.fn(() => ({ destroy: vi.fn() }))
+  createContentSelectionPanel: vi.fn(() => ({ destroy: vi.fn() })),
 }))
 
 vi.mock('../../components/MethodologyForm.js', () => ({
-  createMethodologyForm: vi.fn(() => ({ destroy: vi.fn() }))
+  createMethodologyForm: vi.fn(() => ({ destroy: vi.fn() })),
 }))
 
 vi.mock('../../components/HomeworkPanel.js', () => ({
-  createHomeworkPanel: vi.fn(() => ({ destroy: vi.fn() }))
+  createHomeworkPanel: vi.fn(() => ({ destroy: vi.fn() })),
 }))
 
 vi.mock('../../components/LevelCompletionModal.js', () => ({
-  createLevelCompletionModal: vi.fn()
+  createLevelCompletionModal: vi.fn(),
 }))
 
 vi.mock('../../components/studentProgressPanel.js', () => ({
-  createStudentProgressPanel: vi.fn(() => ({ destroy: vi.fn() }))
+  createStudentProgressPanel: vi.fn(() => ({ destroy: vi.fn() })),
 }))
 
 vi.mock('../../components/routeTreeBar.js', () => ({
-  createRouteTreeBar: vi.fn(() => ({ destroy: vi.fn() }))
+  createRouteTreeBar: vi.fn(() => ({ destroy: vi.fn() })),
 }))
 
 vi.mock('../../services/justificacionService.js', () => ({
   guardarJustificacion: vi.fn(),
   obtenerJustificacion: vi.fn(),
-  eliminarJustificacion: vi.fn()
+  eliminarJustificacion: vi.fn(),
 }))
 
 vi.mock('../../components/JustificacionModal.js', () => ({
-  createJustificacionModal: vi.fn()
+  createJustificacionModal: vi.fn(),
 }))
 
 const mockQuery = {
@@ -103,13 +108,13 @@ const mockQuery = {
   limit: vi.fn().mockReturnThis(),
   maybeSingle: vi.fn().mockResolvedValue({ data: null }),
   single: vi.fn().mockResolvedValue({ data: null }),
-  then: (onFullfilled) => Promise.resolve({ data: [], error: null }).then(onFullfilled)
+  then: (onFullfilled) => Promise.resolve({ data: [], error: null }).then(onFullfilled),
 }
 
 vi.mock('../../../lib/supabaseClient.js', () => ({
   supabase: {
-    from: vi.fn(() => mockQuery)
-  }
+    from: vi.fn(() => mockQuery),
+  },
 }))
 
 // Mock DSL Editor to track calls
@@ -118,16 +123,16 @@ const mockEditor = {
   getValue: vi.fn(() => ''),
   setValue: vi.fn(),
   setContext: vi.fn(),
-  on: vi.fn()
+  on: vi.fn(),
 }
 vi.mock('../../components/dslEditor.js', () => ({
-  createDslEditor: vi.fn(() => mockEditor)
+  createDslEditor: vi.fn(() => mockEditor),
 }))
 
 vi.mock('../../components/dslToolbar.js', () => ({
   createDslToolbar: vi.fn(() => ({
-    setContext: vi.fn()
-  }))
+    setContext: vi.fn(),
+  })),
 }))
 
 import { renderAsistenciaView } from '../asistenciaView.js'
@@ -144,7 +149,7 @@ describe('asistenciaView Topic Handoff', () => {
   it('should auto-inject topic if consumed from rutaTopicStore', async () => {
     consumeRutaTema.mockReturnValueOnce({
       nombre: 'Indicador de Prueba',
-      claseId: 'clase1'
+      claseId: 'clase1',
     })
 
     try {
@@ -155,7 +160,7 @@ describe('asistenciaView Topic Handoff', () => {
 
     expect(consumeRutaTema).toHaveBeenCalled()
     expect(mockEditor.insertText).toHaveBeenCalledWith('[Indicador de Prueba] ')
-    
+
     expect(container.textContent).toContain('Tema cargado desde Ruta')
     expect(container.textContent).toContain('Indicador de Prueba')
   })
@@ -163,7 +168,7 @@ describe('asistenciaView Topic Handoff', () => {
   it('should not inject topic if claseId mismatch', async () => {
     consumeRutaTema.mockReturnValueOnce({
       nombre: 'Indicador de Prueba',
-      claseId: 'otra-clase'
+      claseId: 'otra-clase',
     })
 
     await renderAsistenciaView(container, { claseId: 'clase1' })

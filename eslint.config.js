@@ -12,6 +12,8 @@ export default [
       globals: {
         ...globals.browser,
         ...globals.es2022,
+        bootstrap: 'writable',
+        process: 'readonly',
       },
     },
     rules: {
@@ -27,7 +29,7 @@ export default [
     files: ['src/**/__tests__/**', 'src/**/*.test.js'],
     languageOptions: {
       globals: {
-        ...globals.node,
+        ...globals.vitest,
       },
     },
   },

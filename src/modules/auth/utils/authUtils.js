@@ -6,7 +6,8 @@
 import { supabase } from '../../lib/supabaseClient.js'
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{8,}$/
+const PASSWORD_REGEX =
+  /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]).{8,}$/
 
 /**
  * Valida formato de email
@@ -25,13 +26,19 @@ export function validarEmail(email) {
  */
 export function validarPassword(password) {
   if (!password || typeof password !== 'string') {
-    return { valid: false, hasMinLength: false, hasUppercase: false, hasNumber: false, hasSymbol: false }
+    return {
+      valid: false,
+      hasMinLength: false,
+      hasUppercase: false,
+      hasNumber: false,
+      hasSymbol: false,
+    }
   }
 
   const hasMinLength = password.length >= 8
   const hasUppercase = /[A-Z]/.test(password)
   const hasNumber = /\d/.test(password)
-  const hasSymbol = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)
+  const hasSymbol = /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(password)
 
   return {
     valid: hasMinLength && hasUppercase && hasNumber && hasSymbol,
@@ -72,18 +79,27 @@ export function formatUserDisplay(user) {
  */
 export function getAvatarColor(email) {
   if (!email) return '#6c757d'
-  
+
   const colors = [
-    '#e83e8c', '#6610f2', '#007bff', '#28a745', 
-    '#ffc107', '#dc3545', '#17a2b8', '#6f42c1',
-    '#fd7e14', '#20c997', '#3498db', '#9b59b6'
+    '#e83e8c',
+    '#6610f2',
+    '#007bff',
+    '#28a745',
+    '#ffc107',
+    '#dc3545',
+    '#17a2b8',
+    '#6f42c1',
+    '#fd7e14',
+    '#20c997',
+    '#3498db',
+    '#9b59b6',
   ]
-  
+
   let hash = 0
   for (let i = 0; i < email.length; i++) {
     hash = email.charCodeAt(i) + ((hash << 5) - hash)
   }
-  
+
   return colors[Math.abs(hash) % colors.length]
 }
 
@@ -94,10 +110,10 @@ export function getAvatarColor(email) {
  */
 export function getInitials(fullName) {
   if (!fullName || typeof fullName !== 'string') return ''
-  
+
   const parts = fullName.trim().split(/\s+/)
   if (parts.length === 0) return ''
-  
+
   let initials = ''
   if (parts.length === 1) {
     initials = parts[0].charAt(0).toUpperCase()
@@ -108,7 +124,7 @@ export function getInitials(fullName) {
     initials = parts[0].charAt(0).toUpperCase()
     initials += parts[parts.length - 1].charAt(0).toUpperCase()
   }
-  
+
   return initials
 }
 
@@ -146,16 +162,16 @@ export async function isEmailAlreadyUsed(email) {
  */
 export function maskEmail(email) {
   if (!email || typeof email !== 'string') return ''
-  
+
   const trimmed = email.trim()
   if (!validarEmail(trimmed)) return trimmed
 
   const [local, domain] = trimmed.split('@')
-  
+
   if (local.length <= 2) {
     return `${'*'.repeat(local.length)}@${domain}`
   }
-  
+
   const masked = local.charAt(0) + '*'.repeat(local.length - 2) + local.charAt(local.length - 1)
   return `${masked}@${domain}`
 }

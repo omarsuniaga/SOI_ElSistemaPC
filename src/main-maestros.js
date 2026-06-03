@@ -61,21 +61,22 @@ import { createPortalRouter } from './portal-maestros/router/portalRouter.js'
 import { processQueue, getQueue } from './portal-maestros/services/offlineQueue.js'
 import { supabase } from './lib/supabaseClient.js'
 import {
-  prefetchMonthData, getMisClases, getHorariosClases, getSesiones,
+  prefetchMonthData,
+  getMisClases,
+  getHorariosClases,
+  getSesiones,
 } from './portal-maestros/services/maestroDataService.js'
 import { scheduleLocalAlerts, cleanupPushService } from './portal-maestros/services/pushService.js'
 import { getPermisos } from './portal-maestros/services/permisoService.js'
-import { getModoActual, setModo as _setModo } from './portal-maestros/utils/modoUtils.js'
 import { setNavigationCallbacks } from './portal-maestros/services/navigationHooks.js'
-import { adminAusenciasInsights } from './modules/admin-aprobacion/components/adminAusenciasInsights.js'
 import { AppToast } from './shared/components/AppToast.js'
 
 // Shell, rutas y eventos — módulos extraídos
+import { renderShell, setActiveTab, hideShell } from './portal-maestros/shell/portalShell.js'
 import {
-  getBreakpoint, renderShell, setActiveTab, hideShell,
-} from './portal-maestros/shell/portalShell.js'
-import {
-  setupRouterRoutes, initViewContainers, renderViewContent,
+  setupRouterRoutes,
+  initViewContainers,
+  renderViewContent,
   CACHEABLE_VIEWS,
 } from './portal-maestros/shell/portalRoutes.js'
 import { setupGlobalAppEvents } from './portal-maestros/shell/portalEvents.js'
@@ -92,9 +93,9 @@ window.addEventListener('showToast', (e) => {
 // ============================================
 // ESTADO GLOBAL DEL PORTAL
 // ============================================
-let IS_ADMIN = false
 let _maestro = null
 let _permisos = null
+const _isAdmin = false
 
 const router = createPortalRouter()
 window.router = router
@@ -103,13 +104,10 @@ const _viewContainers = {}
 let _activeViewCleanup = null
 const _viewRendered = new Set()
 
-// Re-exports para callers externos y tests
-export { getModoActual as _getModoActual }
-
 // ============================================
-// TAB DEFINITIONS
+// TAB DEFINITIONS — solo vistas de maestro
 // ============================================
-function buildMaestroTabs(permisos, isAdmin = false) {
+function buildTabs(permisos) {
   const tabs = [
     { id: 'calendario', label: 'Calendario', icon: 'bi-calendar3' },
     { id: 'hoy', label: 'Hoy', icon: 'bi-house-door' },
@@ -121,21 +119,6 @@ function buildMaestroTabs(permisos, isAdmin = false) {
   }
   return tabs
 }
-
-const ADMIN_TABS = [
-  { id: 'admin-alumnos', label: 'Alumnos', icon: 'bi-people-fill' },
-  { id: 'admin-programas', label: 'Programas', icon: 'bi-grid-1x2' },
-  { id: 'admin-clases', label: 'Clases', icon: 'bi-mortarboard-fill' },
-  { id: 'admin-maestros', label: 'Maestros', icon: 'bi-person-badge' },
-  { id: 'admin-notificaciones', label: 'Actividad', icon: 'bi-bell-fill' },
-  { id: 'admin-ausencias', label: 'Ausencias', icon: 'bi-calendar-x' },
-  { id: 'admin-metricas', label: 'Métricas', icon: 'bi-bar-chart-line' },
-]
-
-const ALL_TABS = (permisos) =>
-  IS_ADMIN
-    ? [...ADMIN_TABS, ...buildMaestroTabs(permisos, true)]
-    : buildMaestroTabs(permisos, false)
 
 // ============================================
 // SYNC
@@ -221,8 +204,12 @@ window.addEventListener('offline', _updateSyncIndicator)
 // ============================================
 // VISTAS — render + cache
 // ============================================
-export function invalidateAllViews() { _viewRendered.clear() }
-export function invalidateView(name) { _viewRendered.delete(name) }
+export function invalidateAllViews() {
+  _viewRendered.clear()
+}
+export function invalidateView(name) {
+  _viewRendered.delete(name)
+}
 
 async function _renderView(route, params = {}, { silent = false } = {}) {
   const queryStr = window.location.hash.includes('?') ? window.location.hash.split('?')[1] : ''
@@ -239,7 +226,6 @@ async function _renderView(route, params = {}, { silent = false } = {}) {
     }
     setActiveTab(baseRoute)
     window.pwaInstaller?.evaluateInsights()
-    window.adminAusenciasInsights?.evaluate()
   }
 
   const targetContainer = _viewContainers[baseRoute]
@@ -308,10 +294,8 @@ function _buildShell(app, maestro, permisos) {
   renderShell(
     app,
     maestro,
-    ALL_TABS(_permisos),
-    IS_ADMIN,
+    buildTabs(_permisos),
     (route, params) => router.navigate(route, params),
-    () => _setModo(IS_ADMIN ? 'maestro' : 'admin'),
     _updateSyncIndicator,
   )
 
@@ -335,7 +319,7 @@ function _showLoginScreen() {
     if (!document.getElementById('pm-view-container')) {
       app.innerHTML = '<main class="pm-view" id="pm-view-container"></main>'
     }
-    Object.assign(_viewContainers, initViewContainers(IS_ADMIN))
+    Object.assign(_viewContainers, initViewContainers())
     _setupRouter()
     router.setAuthGuard(() => usePortalAuth.isAuthenticated(), publicRoutes)
     router.start()
@@ -361,7 +345,7 @@ function _showLoginScreen() {
   }
 
   app.innerHTML = '<main class="pm-view" id="pm-view-container"></main>'
-  Object.assign(_viewContainers, initViewContainers(IS_ADMIN))
+  Object.assign(_viewContainers, initViewContainers())
   _setupRouter()
   router.setAuthGuard(() => usePortalAuth.isAuthenticated(), publicRoutes)
   history.replaceState({ route: 'login' }, '', '#/login')
@@ -369,7 +353,7 @@ function _showLoginScreen() {
 }
 
 function _setupRouter() {
-  setupRouterRoutes(router, IS_ADMIN, _renderView)
+  setupRouterRoutes(router, _isAdmin, _renderView)
 }
 
 // ============================================
@@ -416,9 +400,19 @@ async function initPortal() {
   const maestro = await usePortalAuth.init()
   console.log('[Init] Auth:', maestro ? 'con maestro' : 'sin maestro')
 
-  const _modoActual = getModoActual(maestro)
-  IS_ADMIN = Boolean(maestro?.es_admin === true) && _modoActual === 'admin'
-  console.log('[Init] IS_ADMIN:', IS_ADMIN, '| modo:', _modoActual)
+  // Cuenta registrada pero pendiente de aprobación por un administrador.
+  // Mostrar pantalla de espera sin importar qué ruta intentó abrir el usuario.
+  if (usePortalAuth.isPendingApproval()) {
+    console.log('[Init] Cuenta pendiente de aprobación — mostrando pantalla de espera')
+    if (!document.getElementById('pm-view-container')) {
+      app.innerHTML = '<main class="pm-view" id="pm-view-container"></main>'
+    }
+    Object.assign(_viewContainers, initViewContainers(false))
+    _setupRouter()
+    history.replaceState({ route: 'pending-approval' }, '', '#/pending-approval')
+    _renderView('pending-approval')
+    return
+  }
 
   const publicRoutes = ['login', 'register', 'pending-approval']
   const currentPath = (window.router || router).currentRoute().split('?')[0]
@@ -433,41 +427,51 @@ async function initPortal() {
     if (!document.getElementById('pm-view-container')) {
       app.innerHTML = '<main class="pm-view" id="pm-view-container"></main>'
     }
-    Object.assign(_viewContainers, initViewContainers(IS_ADMIN))
+    Object.assign(_viewContainers, initViewContainers())
     _setupRouter()
     router.setAuthGuard(() => usePortalAuth.isAuthenticated(), publicRoutes)
     router.start()
     return
   }
 
-  // 2. Permisos
+  // Admin puro (sin rol de maestro) → redirigir al panel admin
+  if (maestro.es_admin && !maestro.es_maestro) {
+    console.log('[Init] Admin puro detectado → redirigiendo a /admin')
+    window.location.href = '/admin'
+    return
+  }
+
+  // 2. Permisos del maestro
   let permisos = null
-  if (!IS_ADMIN) {
-    try { permisos = await getPermisos(maestro.id) }
-    catch (err) { console.warn('[Init] Error fetching permissions:', err.message) }
+  try {
+    permisos = await getPermisos(maestro.id)
+  } catch (err) {
+    console.warn('[Init] Error fetching permissions:', err.message)
   }
 
   // 3. Shell
   _buildShell(app, maestro, permisos)
-  if (IS_ADMIN) adminAusenciasInsights.init()
 
   // 4. Contenedores de vista
-  Object.assign(_viewContainers, initViewContainers(IS_ADMIN))
+  Object.assign(_viewContainers, initViewContainers())
 
   // 5. Eventos globales (una sola vez)
   setupGlobalAppEvents({
-    isAdmin: IS_ADMIN,
+    isAdmin: false,
     getMaestro: () => _maestro,
     getPermisosCached: () => _permisos,
     onPermisosUpdate: async (nuevosPermisos, { ganados, perdidos }) => {
       const currentRoute = (router.currentRoute?.() || 'perfil').split('?')[0]
-      const routeNowForbidden = currentRoute === 'gestionar-clases' && !nuevosPermisos.puede_inscribir_clases
-      const safeRoute = routeNowForbidden ? 'hoy'
-        : (currentRoute === 'pending-approval' && ganados.length > 0) ? 'hoy'
-        : currentRoute
+      const routeNowForbidden =
+        currentRoute === 'gestionar-clases' && !nuevosPermisos.puede_inscribir_clases
+      const safeRoute = routeNowForbidden
+        ? 'hoy'
+        : currentRoute === 'pending-approval' && ganados.length > 0
+          ? 'hoy'
+          : currentRoute
 
       _buildShell(app, _maestro, nuevosPermisos)
-      Object.assign(_viewContainers, initViewContainers(IS_ADMIN))
+      Object.assign(_viewContainers, initViewContainers())
       _setupRouter()
       router.setAuthGuard(() => usePortalAuth.isAuthenticated(), publicRoutes)
       _viewRendered.clear()
@@ -477,7 +481,7 @@ async function initPortal() {
     onNavigate: (route) => router.navigate(route),
     onResize: () => {
       _buildShell(app, _maestro, _permisos)
-      Object.assign(_viewContainers, initViewContainers(IS_ADMIN))
+      Object.assign(_viewContainers, initViewContainers())
       const route = (router.currentRoute?.() || 'hoy').split('?')[0]
       setActiveTab(route)
     },
@@ -490,6 +494,13 @@ async function initPortal() {
   _setupRouter()
   router.setAuthGuard(() => usePortalAuth.isAuthenticated(), publicRoutes)
   router.start()
+
+  // Después del login siempre aterrizar en 'hoy'.
+  // Si el hash sigue en #/login (o está vacío), navegar a 'hoy'.
+  const startRoute = (router.currentRoute?.() || '').split('?')[0]
+  if (!startRoute || startRoute === 'login' || startRoute === 'logout') {
+    router.navigate('hoy')
+  }
 
   // 8. Prefetch + precargar vistas
   prefetchMonthData()
@@ -507,7 +518,6 @@ async function initPortal() {
 
       _scheduleSwAlerts()
       window.pwaInstaller?.evaluateInsights()
-      window.adminAusenciasInsights?.evaluate()
     })
     .catch((err) => console.warn('[Prefetch] Error:', err.message))
 
@@ -535,26 +545,37 @@ window.addEventListener('error', (e) => {
     console.warn('[Ignored Error]', e.message)
     return
   }
-  reportError(new Error(e.message), { context: 'window.error', filename: e.filename, lineno: e.lineno })
+  reportError(new Error(e.message), {
+    context: 'window.error',
+    filename: e.filename,
+    lineno: e.lineno,
+  })
   const app = document.getElementById('portal-app')
-  if (app) app.innerHTML = _errorTemplate(
-    'bi-x-circle-fill', 'Ups! Algo salió mal',
-    'Se ha producido un error inesperado en la aplicación.',
-    `<div style="color:#ef4444;font-weight:bold;margin-bottom:8px;">${e.message}</div><div style="color:rgba(255,255,255,0.4);">${e.filename?.split('/').pop()}:${e.lineno}</div>`,
-  )
+  if (app)
+    app.innerHTML = _errorTemplate(
+      'bi-x-circle-fill',
+      'Ups! Algo salió mal',
+      'Se ha producido un error inesperado en la aplicación.',
+      `<div style="color:#ef4444;font-weight:bold;margin-bottom:8px;">${e.message}</div><div style="color:rgba(255,255,255,0.4);">${e.filename?.split('/').pop()}:${e.lineno}</div>`,
+    )
 })
 
 window.addEventListener('unhandledrejection', (e) => {
-  reportError(e.reason instanceof Error ? e.reason : new Error(String(e.reason)), { context: 'unhandledRejection' })
+  reportError(e.reason instanceof Error ? e.reason : new Error(String(e.reason)), {
+    context: 'unhandledRejection',
+  })
   const app = document.getElementById('portal-app')
-  if (app) app.innerHTML = _errorTemplate(
-    'bi-exclamation-triangle-fill', 'Error de Sincronización',
-    'Hubo un problema al procesar una solicitud de red.',
-    `<div style="color:#ef4444;font-weight:bold;margin-bottom:8px;">Promise Rejection</div><div style="color:rgba(255,255,255,0.4);">${String(e.reason)}</div>`,
-  )
+  if (app)
+    app.innerHTML = _errorTemplate(
+      'bi-exclamation-triangle-fill',
+      'Error de Sincronización',
+      'Hubo un problema al procesar una solicitud de red.',
+      `<div style="color:#ef4444;font-weight:bold;margin-bottom:8px;">Promise Rejection</div><div style="color:rgba(255,255,255,0.4);">${String(e.reason)}</div>`,
+    )
 })
 
 initPortal().catch((err) => {
   const app = document.getElementById('portal-app')
-  if (app) app.innerHTML = `<div style="padding:20px;color:red;font-family:monospace;background:#fff;z-index:9999;position:fixed;top:0;left:0;right:0;bottom:0;overflow:auto;"><h2>❌ initPortal() falló</h2><pre>${err?.message || err}\n${err?.stack || ''}</pre></div>`
+  if (app)
+    app.innerHTML = `<div style="padding:20px;color:red;font-family:monospace;background:#fff;z-index:9999;position:fixed;top:0;left:0;right:0;bottom:0;overflow:auto;"><h2>❌ initPortal() falló</h2><pre>${err?.message || err}\n${err?.stack || ''}</pre></div>`
 })

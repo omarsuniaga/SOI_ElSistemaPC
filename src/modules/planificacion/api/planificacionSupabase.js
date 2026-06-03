@@ -125,6 +125,16 @@ export async function obtenerClases() {
   return data || []
 }
 
+export async function obtenerMaestros() {
+  const { data, error } = await supabase
+    .from('maestros')
+    .select('id, nombre_completo')
+    .eq('estado', 'activo')
+    .order('nombre_completo')
+  if (error) throw error
+  return (data || []).map((m) => ({ id: m.id, nombre: m.nombre_completo }))
+}
+
 export async function obtenerMaestro(id) {
   const { data, error } = await supabase.from('maestros').select('*').eq('id', id).single()
   if (error) throw error
@@ -161,31 +171,40 @@ export async function obtenerSesiones(maestroId, fechaInicio, fechaFin) {
  * }>>}
  */
 export async function obtenerCoberturaCurricular(maestroId = null) {
+  // Two-step query: first fetch clases, then fetch maestros for the names.
+  // Avoids Supabase schema cache issues with ambiguous FK relationships.
   let query = supabase
     .from('clases')
     .select(
-      `
-      id,
-      nombre,
-      instrumento,
-      maestro_id,
-      maestro:maestros ( nombre_completo ),
-      planificaciones ( id, estado, tema, updated_at )
-    `,
+      'id, nombre, instrumento, maestro_titular_id, planificaciones ( id, estado, tema, updated_at )',
     )
     .eq('activo', true)
     .order('nombre', { ascending: true })
 
   if (maestroId) {
-    query = query.eq('maestro_id', maestroId)
+    query = query.eq('maestro_titular_id', maestroId)
   }
 
-  const { data, error } = await query
+  const { data: clases, error } = await query
 
   if (error) throw new Error(`Error cargando cobertura curricular: ${error.message}`)
 
-  return (data || []).map((clase) => {
-    // Supabase retorna array — tomamos la planificación más reciente si hay varias
+  // Collect unique maestro IDs and fetch their names
+  const maestroIds = [...new Set((clases || []).map((c) => c.maestro_titular_id).filter(Boolean))]
+  const maestrosMap = {}
+
+  if (maestroIds.length > 0) {
+    const { data: maestros } = await supabase
+      .from('maestros')
+      .select('id, nombre_completo')
+      .in('id', maestroIds)
+
+    for (const m of maestros || []) {
+      maestrosMap[m.id] = m.nombre_completo
+    }
+  }
+
+  return (clases || []).map((clase) => {
     const planes = Array.isArray(clase.planificaciones) ? clase.planificaciones : []
     const plan = planes.length > 0 ? planes[0] : null
 
@@ -193,8 +212,8 @@ export async function obtenerCoberturaCurricular(maestroId = null) {
       clase_id: clase.id,
       clase_nombre: clase.nombre || 'Sin nombre',
       instrumento: clase.instrumento || 'General',
-      maestro_id: clase.maestro_id,
-      maestro_nombre: clase.maestro?.nombre_completo || 'Sin asignar',
+      maestro_id: clase.maestro_titular_id,
+      maestro_nombre: maestrosMap[clase.maestro_titular_id] || 'Sin asignar',
       tiene_plan: !!plan,
       plan_id: plan?.id ?? null,
       plan_estado: plan?.estado ?? null,

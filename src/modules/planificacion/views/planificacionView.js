@@ -9,9 +9,11 @@ import {
   marcarRevisadasMasivo,
   obtenerClases,
   obtenerCoberturaCurricular,
+  obtenerMaestros,
 } from '../api/planificacionAdapter.js'
 import { escapeHTML } from '../../clases/utils/clasesUtils.js'
 import { HelpPanel } from '../../../shared/components/HelpPanel.js'
+import { openPlanificacionModal } from '../components/planificacionModal.js'
 import { openCoberturaModal } from '../components/coberturaModal.js'
 import { renderAsistentePedagogicoPanel } from '../components/asistentePedagogicoPanel.js'
 import { openCurriculoListModal } from '../components/curriculoModal.js'
@@ -1071,17 +1073,35 @@ export async function renderCoberturaView(container) {
     container.querySelectorAll('.btn-crear-plan-cobertura').forEach((btn) => {
       btn.addEventListener('click', async () => {
         const claseId = btn.dataset.claseId
-        const claseNombre = btn.dataset.claseNombre
-        await hook.fetchPlanificacionesConDetalles()
-        openEditModal(null, { clase_id: claseId })
+        const [clases, maestros] = await Promise.all([obtenerClases(), obtenerMaestros()])
+        openPlanificacionModal(
+          'create',
+          null,
+          clases,
+          maestros,
+          { clase_id: claseId },
+          async (datos) => {
+            await crearPlanificacion(datos)
+            AppToast.success('Plan creado correctamente')
+            renderCoberturaView(container)
+          },
+        )
       })
     })
 
     container.querySelectorAll('.btn-ver-plan-cobertura').forEach((btn) => {
       btn.addEventListener('click', async () => {
         const planId = btn.dataset.planId
-        await hook.fetchPlanificacion(planId)
-        openEditModal(planId)
+        const [plan, clases, maestros] = await Promise.all([
+          import('../api/planificacionAdapter.js').then((m) => m.obtenerPlanificacion(planId)),
+          obtenerClases(),
+          obtenerMaestros(),
+        ])
+        openPlanificacionModal('edit', plan, clases, maestros, {}, async (datos) => {
+          await actualizarPlanificacion(planId, datos)
+          AppToast.success('Plan actualizado')
+          renderCoberturaView(container)
+        })
       })
     })
   } catch (error) {

@@ -281,6 +281,7 @@ const NAV_GROUPS = [
       { id: 'planificacion', label: 'Planificación', icon: 'bi-journal-text' },
       { id: 'planificacion-maestros', label: 'Todas las Planes', icon: 'bi-journal-check' },
       { id: 'planificacion-cobertura', label: 'Cobertura Curricular', icon: 'bi-grid-3x3-gap' },
+      { id: 'planificacion-ruta', label: 'Ruta Académica', icon: 'bi-diagram-3' },
       { id: 'pedagogico-seguimiento', label: 'Seguimiento', icon: 'bi-person-lines-fill' },
       { id: 'pedagogico-reportes', label: 'Reportes', icon: 'bi-file-earmark-bar-graph' },
     ],

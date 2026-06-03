@@ -202,3 +202,57 @@ export async function marcarRevisada(id) {
 export async function marcarEjecutada(id) {
   return actualizarPlanificacion(id, { estado: 'ejecutado' })
 }
+
+// ── New functions ────────────────────────────────────────────────
+
+export async function obtenerClases() {
+  await _simulateDelay()
+  const clases = MOCK_CLASES?.clases || []
+  return [...clases].sort((a, b) => (a.nombre || '').localeCompare(b.nombre || ''))
+}
+
+export async function obtenerMaestro(id) {
+  await _simulateDelay()
+  const maestros = MOCK_MAESTROS || []
+  const found = maestros.find((m) => m.id === id)
+  if (!found) throw new Error('Maestro no encontrado')
+  return { ...found }
+}
+
+export async function obtenerSesiones(_maestroId, _fechaInicio, _fechaFin) {
+  await _simulateDelay()
+  // Return empty array for mock — sesiones are managed by sesionesApi.js
+  return []
+}
+
+/**
+ * Mock de cobertura curricular.
+ * Cruza MOCK_CLASES con planificaciones en memoria para simular el LEFT JOIN.
+ */
+export async function obtenerCoberturaCurricular(maestroId = null) {
+  await _simulateDelay()
+  _ensureStore()
+
+  const clases = MOCK_CLASES?.clases || []
+  const maestros = MOCK_MAESTROS || []
+
+  const clasesFiltradas = maestroId ? clases.filter((c) => c.maestro_id === maestroId) : clases
+
+  return clasesFiltradas.map((clase) => {
+    const plan = _data.find((p) => p.clase_id === clase.id) ?? null
+    const maestro = maestros.find((m) => m.id === clase.maestro_id)
+
+    return {
+      clase_id: clase.id,
+      clase_nombre: clase.nombre || 'Sin nombre',
+      instrumento: clase.instrumento || 'General',
+      maestro_id: clase.maestro_id,
+      maestro_nombre: maestro?.nombre_completo || 'Sin asignar',
+      tiene_plan: !!plan,
+      plan_id: plan?.id ?? null,
+      plan_estado: plan?.estado ?? null,
+      plan_tema: plan?.tema ?? null,
+      plan_updated_at: plan?.updated_at ?? null,
+    }
+  })
+}

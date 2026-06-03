@@ -373,3 +373,160 @@ describe('planificacionMock localStorage persistence', () => {
     expect(result.length).toBe(6) // 5 seed + 1 new
   })
 })
+
+// ── New functions: obtenerClases ─────────────────────────────────
+
+describe('planificacionMock obtenerClases', () => {
+  beforeEach(async () => {
+    clearStorage()
+    vi.resetModules()
+  })
+
+  it('should return all clases from mock data', async () => {
+    const mock = await import('../api/planificacionMock.js')
+    await flushPromises()
+    const result = await mock.obtenerClases()
+    expect(Array.isArray(result)).toBe(true)
+    expect(result.length).toBe(5) // 5 seed clases
+  })
+
+  it('should return clases sorted by nombre', async () => {
+    const mock = await import('../api/planificacionMock.js')
+    await flushPromises()
+    const result = await mock.obtenerClases()
+    const names = result.map((c) => c.nombre)
+    const sorted = [...names].sort()
+    expect(names).toEqual(sorted)
+  })
+
+  it('should return full clase objects with expected fields', async () => {
+    const mock = await import('../api/planificacionMock.js')
+    await flushPromises()
+    const result = await mock.obtenerClases()
+    const primera = result[0]
+    expect(primera).toHaveProperty('id')
+    expect(primera).toHaveProperty('nombre')
+    expect(primera).toHaveProperty('instrumento')
+    expect(primera).toHaveProperty('estado')
+  })
+})
+
+// ── New functions: obtenerMaestro ────────────────────────────────
+
+describe('planificacionMock obtenerMaestro', () => {
+  beforeEach(async () => {
+    clearStorage()
+    vi.resetModules()
+  })
+
+  it('should return a maestro by id', async () => {
+    const mock = await import('../api/planificacionMock.js')
+    await flushPromises()
+    const result = await mock.obtenerMaestro('maestro_001')
+    expect(result).toBeDefined()
+    expect(result.id).toBe('maestro_001')
+    expect(result.nombre_completo).toBe('Carlos Méndez')
+  })
+
+  it('should throw for non-existent id', async () => {
+    const mock = await import('../api/planificacionMock.js')
+    await flushPromises()
+    await expect(mock.obtenerMaestro('nonexistent')).rejects.toThrow('Maestro no encontrado')
+  })
+
+  it('should return correct data for each maestro', async () => {
+    const mock = await import('../api/planificacionMock.js')
+    await flushPromises()
+    const result = await mock.obtenerMaestro('maestro_002')
+    expect(result.nombre_completo).toBe('María Torres')
+    expect(result.email).toBe('maria.torres@instituto.edu')
+  })
+})
+
+// ── New functions: obtenerSesiones ───────────────────────────────
+
+describe('planificacionMock obtenerSesiones', () => {
+  beforeEach(async () => {
+    clearStorage()
+    vi.resetModules()
+  })
+
+  it('should return an array (may be empty for mock)', async () => {
+    const mock = await import('../api/planificacionMock.js')
+    await flushPromises()
+    const result = await mock.obtenerSesiones('maestro_001')
+    expect(Array.isArray(result)).toBe(true)
+  })
+
+  it('should accept optional date filters', async () => {
+    const mock = await import('../api/planificacionMock.js')
+    await flushPromises()
+    const result = await mock.obtenerSesiones('maestro_001', '2026-01-01', '2026-12-31')
+    expect(Array.isArray(result)).toBe(true)
+  })
+})
+
+// ── Adapter routing for new functions ────────────────────────────
+
+describe('planificacionAdapter routing for new functions', () => {
+  beforeEach(() => {
+    clearStorage()
+    vi.resetModules()
+  })
+
+  it('should route obtenerClases via mock when isDemoMode is true', async () => {
+    vi.doMock('../../../core/config/config.js', () => ({
+      config: { isDemoMode: true },
+    }))
+    const adapter = await import('../api/planificacionAdapter.js')
+    await flushPromises()
+
+    const result = await adapter.obtenerClases()
+    expect(Array.isArray(result)).toBe(true)
+    expect(result.length).toBeGreaterThanOrEqual(3)
+    result.forEach((c) => {
+      expect(c).toHaveProperty('id')
+      expect(c).toHaveProperty('nombre')
+    })
+  })
+
+  it('should route obtenerMaestro via mock when isDemoMode is true', async () => {
+    vi.doMock('../../../core/config/config.js', () => ({
+      config: { isDemoMode: true },
+    }))
+    const adapter = await import('../api/planificacionAdapter.js')
+    await flushPromises()
+
+    const result = await adapter.obtenerMaestro('maestro_001')
+    expect(result.id).toBe('maestro_001')
+    expect(result.nombre_completo).toBe('Carlos Méndez')
+  })
+
+  it('should route obtenerSesiones via mock when isDemoMode is true', async () => {
+    vi.doMock('../../../core/config/config.js', () => ({
+      config: { isDemoMode: true },
+    }))
+    const adapter = await import('../api/planificacionAdapter.js')
+    await flushPromises()
+
+    const result = await adapter.obtenerSesiones('maestro_001')
+    expect(Array.isArray(result)).toBe(true)
+  })
+
+  it('should fail on obtenerClases when isDemoMode is false (no supabase)', async () => {
+    vi.doMock('../../../core/config/config.js', () => ({
+      config: { isDemoMode: false },
+    }))
+    vi.doMock('../../../lib/supabaseClient.js', () => ({
+      supabase: {
+        from: vi.fn(() => {
+          throw new Error('No supabase configured in test environment')
+        }),
+      },
+    }))
+    const adapter = await import('../api/planificacionAdapter.js')
+    await flushPromises()
+
+    await expect(adapter.obtenerClases()).rejects.toThrow()
+  })
+})

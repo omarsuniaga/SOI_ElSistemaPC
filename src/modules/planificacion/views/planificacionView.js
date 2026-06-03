@@ -1069,14 +1069,19 @@ export async function renderCoberturaView(container) {
     })
 
     container.querySelectorAll('.btn-crear-plan-cobertura').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        AppToast.info('Función próxima: crear plan para ' + btn.dataset.claseNombre)
+      btn.addEventListener('click', async () => {
+        const claseId = btn.dataset.claseId
+        const claseNombre = btn.dataset.claseNombre
+        await hook.fetchPlanificacionesConDetalles()
+        openEditModal(null, { clase_id: claseId })
       })
     })
 
     container.querySelectorAll('.btn-ver-plan-cobertura').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        AppToast.info('Función próxima: abrir plan existente')
+      btn.addEventListener('click', async () => {
+        const planId = btn.dataset.planId
+        await hook.fetchPlanificacion(planId)
+        openEditModal(planId)
       })
     })
   } catch (error) {

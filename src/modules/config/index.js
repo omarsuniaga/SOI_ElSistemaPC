@@ -16,4 +16,9 @@ export function registerRoutesConfig() {
     const { renderImportView } = await import('./views/importView.js')
     await renderImportView(container)
   })
+
+  router.register('exportar-datos', async (container) => {
+    const { renderExportView } = await import('./views/exportView.js')
+    await renderExportView(container)
+  })
 }

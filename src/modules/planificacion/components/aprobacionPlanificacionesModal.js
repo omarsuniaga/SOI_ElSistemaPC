@@ -1,8 +1,10 @@
 import { AppModal } from '../../../shared/components/AppModal.js'
-import { marcarRevisada, marcarEjecutada } from '../api/planificacionApi.js'
+import { marcarRevisada, marcarEjecutada } from '../api/planificacionAdapter.js'
 
 export function openAprobacionPlanificacionesModal(planificaciones, onAprobar) {
-  const pendientes = planificaciones.filter(p => p.estado === 'planificado' || p.estado === 'ejecutado')
+  const pendientes = planificaciones.filter(
+    (p) => p.estado === 'planificado' || p.estado === 'ejecutado',
+  )
 
   if (!pendientes.length) {
     AppModal.open({
@@ -37,7 +39,9 @@ export function openAprobacionPlanificacionesModal(planificaciones, onAprobar) {
             </tr>
           </thead>
           <tbody id="plansToApprove">
-            ${pendientes.map(p => `
+            ${pendientes
+              .map(
+                (p) => `
               <tr data-id="${p.id}">
                 <td><input type="checkbox" class="plan-check" checked></td>
                 <td class="text-truncate" style="max-width: 200px;">${_esc(p.tema)}</td>
@@ -45,7 +49,9 @@ export function openAprobacionPlanificacionesModal(planificaciones, onAprobar) {
                 <td><span class="badge ${_getBadgeClass(p.estado)}">${p.estado}</span></td>
                 <td>${p.fecha_inicio || '-'}</td>
               </tr>
-            `).join('')}
+            `,
+              )
+              .join('')}
           </tbody>
         </table>
       </div>
@@ -67,7 +73,7 @@ export function openAprobacionPlanificacionesModal(planificaciones, onAprobar) {
     `,
     onSave: async () => {
       const selectedIds = []
-      document.querySelectorAll('#plansToApprove tr').forEach(row => {
+      document.querySelectorAll('#plansToApprove tr').forEach((row) => {
         const checkbox = row.querySelector('.plan-check')
         if (checkbox?.checked) {
           selectedIds.push(row.dataset.id)
@@ -105,14 +111,14 @@ export function openAprobacionPlanificacionesModal(planificaciones, onAprobar) {
   })
 
   document.getElementById('selectAllPlans')?.addEventListener('change', (e) => {
-    document.querySelectorAll('.plan-check').forEach(cb => {
+    document.querySelectorAll('.plan-check').forEach((cb) => {
       cb.checked = e.target.checked
     })
     document.getElementById('checkAll').checked = e.target.checked
   })
 
   document.getElementById('checkAll')?.addEventListener('change', (e) => {
-    document.querySelectorAll('.plan-check').forEach(cb => {
+    document.querySelectorAll('.plan-check').forEach((cb) => {
       cb.checked = e.target.checked
     })
     document.getElementById('selectAllPlans').checked = e.target.checked

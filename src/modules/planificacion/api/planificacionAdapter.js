@@ -24,6 +24,7 @@ export const marcarRevisadasMasivo = (ids) => impl.marcarRevisadasMasivo(ids)
 export const marcarRevisada = (id) => impl.marcarRevisada(id)
 export const marcarEjecutada = (id) => impl.marcarEjecutada(id)
 export const obtenerClases = () => impl.obtenerClases()
+export const obtenerMaestros = () => impl.obtenerMaestros()
 export const obtenerMaestro = (id) => impl.obtenerMaestro(id)
 export const obtenerSesiones = (maestroId, fechaInicio, fechaFin) =>
   impl.obtenerSesiones(maestroId, fechaInicio, fechaFin)

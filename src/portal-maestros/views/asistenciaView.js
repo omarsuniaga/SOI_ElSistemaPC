@@ -1420,7 +1420,11 @@ function _renderVista(container, ctx) {
       delete justificaciones[alumnoId]
       renderLista(alumnoId)
       _updateProgress()
-      await _autoSave(true)
+      try {
+        await _autoSave(true)
+      } catch (_e) {
+        console.warn('[asistencia] autoSave error on delete justif:', _e)
+      }
       announce(`Justificación eliminada.`)
     },
     onSave: async ({ alumnoId, motivo, evidenciaFile, justificacionId, existingUrl, isEdit }) => {
@@ -1950,7 +1954,11 @@ function _renderVista(container, ctx) {
         estado[id] = 'J'
         renderLista(id)
         _updateProgress()
-        await _autoSave(true)
+        try {
+          await _autoSave(true)
+        } catch (_e) {
+          console.warn('[asistencia] autoSave error on mark J:', _e)
+        }
 
         // Modo creación: modal vacío (sin datos previos)
         _justifModal.open(alumno, null, null)
@@ -1972,7 +1980,11 @@ function _renderVista(container, ctx) {
     )
 
     // Guardado inmediato para evitar race conditions al navegar
-    await _autoSave(true)
+    try {
+      await _autoSave(true)
+    } catch (_e) {
+      console.warn('[asistencia] autoSave error on mark:', _e)
+    }
   }
 
   // === Sync & Helpers ===
@@ -2603,7 +2615,11 @@ function _renderVista(container, ctx) {
     })
     renderLista()
     _updateProgress()
-    await _autoSave(true)
+    try {
+      await _autoSave(true)
+    } catch (_e) {
+      console.warn('[asistencia] autoSave error on bulk P:', _e)
+    }
     announce(`Todos los ${alumnos.length} alumnos marcados como presentes.`)
   }
 
@@ -2613,7 +2629,11 @@ function _renderVista(container, ctx) {
     })
     renderLista()
     _updateProgress()
-    await _autoSave(true)
+    try {
+      await _autoSave(true)
+    } catch (_e) {
+      console.warn('[asistencia] autoSave error on bulk A:', _e)
+    }
     announce(`Todos los ${alumnos.length} alumnos marcados como ausentes.`)
   }
 

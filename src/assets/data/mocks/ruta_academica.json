@@ -1,0 +1,280 @@
+{
+  "plan_clases": [
+    {
+      "id": "pclase_001",
+      "nombre": "Violín Principiantes",
+      "maestro_id": "maestro_001",
+      "clase_id": "clase_001",
+      "activo": true
+    },
+    {
+      "id": "pclase_002",
+      "nombre": "Piano Intermedio",
+      "maestro_id": "maestro_002",
+      "clase_id": "clase_002",
+      "activo": true
+    }
+  ],
+  "plan_niveles": [
+    {
+      "id": "pnivel_001",
+      "clase_id": "pclase_001",
+      "nombre": "Nivel 1 — Introducción",
+      "numero_nivel": 1,
+      "objetivo_general": "Familiarizar al estudiante con el instrumento y la postura básica"
+    },
+    {
+      "id": "pnivel_002",
+      "clase_id": "pclase_001",
+      "nombre": "Nivel 2 — Escalas y Arpegios",
+      "numero_nivel": 2,
+      "objetivo_general": "Desarrollar la técnica de escalas mayores"
+    },
+    {
+      "id": "pnivel_003",
+      "clase_id": "pclase_002",
+      "nombre": "Nivel 1 — Fundamentos",
+      "numero_nivel": 1,
+      "objetivo_general": "Afianzar la lectura de partituras y coordinación"
+    },
+    {
+      "id": "pnivel_004",
+      "clase_id": "pclase_002",
+      "nombre": "Nivel 2 — Técnica Avanzada",
+      "numero_nivel": 2,
+      "objetivo_general": "Desarrollar velocidad y dinámica"
+    }
+  ],
+  "plan_temas": [
+    {
+      "id": "ptema_001",
+      "nivel_id": "pnivel_001",
+      "nombre": "Postura y sujeción del arco",
+      "tipo": "TECNICA",
+      "orden_index": 1
+    },
+    {
+      "id": "ptema_002",
+      "nivel_id": "pnivel_001",
+      "nombre": "Cuerdas al aire",
+      "tipo": "TECNICA",
+      "orden_index": 2
+    },
+    {
+      "id": "ptema_003",
+      "nivel_id": "pnivel_002",
+      "nombre": "Escala de Do Mayor",
+      "tipo": "ESCALA",
+      "orden_index": 1
+    },
+    {
+      "id": "ptema_004",
+      "nivel_id": "pnivel_002",
+      "nombre": "Arpegio de Do Mayor",
+      "tipo": "ARPEGIO",
+      "orden_index": 2
+    },
+    {
+      "id": "ptema_005",
+      "nivel_id": "pnivel_003",
+      "nombre": "Lectura de claves",
+      "tipo": "TEORIA",
+      "orden_index": 1
+    },
+    {
+      "id": "ptema_006",
+      "nivel_id": "pnivel_003",
+      "nombre": "Coordinación manos",
+      "tipo": "TECNICA",
+      "orden_index": 2
+    },
+    {
+      "id": "ptema_007",
+      "nivel_id": "pnivel_004",
+      "nombre": "Escalas cromáticas",
+      "tipo": "ESCALA",
+      "orden_index": 1
+    },
+    {
+      "id": "ptema_008",
+      "nivel_id": "pnivel_004",
+      "nombre": "Estudio de velocidad",
+      "tipo": "TECNICA",
+      "orden_index": 2
+    }
+  ],
+  "plan_objetivos": [
+    {
+      "id": "pobj_001",
+      "tema_id": "ptema_001",
+      "nombre": "Mantener postura erguida sin tensión",
+      "orden_index": 1
+    },
+    {
+      "id": "pobj_002",
+      "tema_id": "ptema_001",
+      "nombre": "Sujetar el arco con ángulo correcto",
+      "orden_index": 2
+    },
+    {
+      "id": "pobj_003",
+      "tema_id": "ptema_002",
+      "nombre": "Ejecutar cuerdas al aire con sonido parejo",
+      "orden_index": 1
+    },
+    {
+      "id": "pobj_004",
+      "tema_id": "ptema_003",
+      "nombre": "Ejecutar escala ascendente y descendente",
+      "orden_index": 1
+    },
+    {
+      "id": "pobj_005",
+      "tema_id": "ptema_003",
+      "nombre": "Mantener tempo constante a 60 bpm",
+      "orden_index": 2
+    },
+    {
+      "id": "pobj_006",
+      "tema_id": "ptema_004",
+      "nombre": "Ejecutar arpegio con cambio de cuerda fluido",
+      "orden_index": 1
+    },
+    {
+      "id": "pobj_007",
+      "tema_id": "ptema_005",
+      "nombre": "Identificar notas en clave de Sol y Fa",
+      "orden_index": 1
+    },
+    {
+      "id": "pobj_008",
+      "tema_id": "ptema_005",
+      "nombre": "Leer ritmos básicos (negra, corchea)",
+      "orden_index": 2
+    },
+    {
+      "id": "pobj_009",
+      "tema_id": "ptema_006",
+      "nombre": "Tocar melodía simple con manos juntas",
+      "orden_index": 1
+    },
+    {
+      "id": "pobj_010",
+      "tema_id": "ptema_007",
+      "nombre": "Ejecutar escala cromática completa",
+      "orden_index": 1
+    },
+    {
+      "id": "pobj_011",
+      "tema_id": "ptema_008",
+      "nombre": "Ejecutar pasaje a 120 bpm con precisión",
+      "orden_index": 1
+    }
+  ],
+  "plan_indicadores": [
+    {
+      "id": "pind_001",
+      "objetivo_id": "pobj_001",
+      "descripcion": "Hombros relajados y pies apoyados",
+      "es_requerido": true,
+      "calificacion": 0,
+      "orden_index": 1
+    },
+    {
+      "id": "pind_002",
+      "objetivo_id": "pobj_001",
+      "descripcion": "Columna alineada sin inclinación",
+      "es_requerido": true,
+      "calificacion": 0,
+      "orden_index": 2
+    },
+    {
+      "id": "pind_003",
+      "objetivo_id": "pobj_002",
+      "descripcion": "Dedo pulgar relajado en la vara",
+      "es_requerido": true,
+      "calificacion": 0,
+      "orden_index": 1
+    },
+    {
+      "id": "pind_004",
+      "objetivo_id": "pobj_003",
+      "descripcion": "Sonido uniforme en toda la longitud del arco",
+      "es_requerido": true,
+      "calificacion": 0,
+      "orden_index": 1
+    },
+    {
+      "id": "pind_005",
+      "objetivo_id": "pobj_004",
+      "descripcion": "Digita correctamente las 8 notas",
+      "es_requerido": true,
+      "calificacion": 0,
+      "orden_index": 1
+    },
+    {
+      "id": "pind_006",
+      "objetivo_id": "pobj_004",
+      "descripcion": "Mantiene la misma velocidad en ambos sentidos",
+      "es_requerido": false,
+      "calificacion": 0,
+      "orden_index": 2
+    },
+    {
+      "id": "pind_007",
+      "objetivo_id": "pobj_005",
+      "descripcion": "Coincide con el clic del metrónomo",
+      "es_requerido": true,
+      "calificacion": 0,
+      "orden_index": 1
+    },
+    {
+      "id": "pind_008",
+      "objetivo_id": "pobj_006",
+      "descripcion": "Cambio de cuerda sin interrupción",
+      "es_requerido": true,
+      "calificacion": 0,
+      "orden_index": 1
+    },
+    {
+      "id": "pind_009",
+      "objetivo_id": "pobj_007",
+      "descripcion": "Nombra las notas del pentagrama en menos de 3s",
+      "es_requerido": true,
+      "calificacion": 0,
+      "orden_index": 1
+    },
+    {
+      "id": "pind_010",
+      "objetivo_id": "pobj_008",
+      "descripcion": "Ejecuta correctamente patrones rítmicos simples",
+      "es_requerido": true,
+      "calificacion": 0,
+      "orden_index": 1
+    },
+    {
+      "id": "pind_011",
+      "objetivo_id": "pobj_009",
+      "descripcion": "Mantiene coordinación entre ambas manos",
+      "es_requerido": true,
+      "calificacion": 0,
+      "orden_index": 1
+    },
+    {
+      "id": "pind_012",
+      "objetivo_id": "pobj_010",
+      "descripcion": "Ejecuta las 12 notas sin errores de digitación",
+      "es_requerido": true,
+      "calificacion": 0,
+      "orden_index": 1
+    },
+    {
+      "id": "pind_013",
+      "objetivo_id": "pobj_011",
+      "descripcion": "Mantiene precisión rítmica a velocidad",
+      "es_requerido": true,
+      "calificacion": 0,
+      "orden_index": 1
+    }
+  ]
+}

@@ -68,7 +68,7 @@ export const pwaInstaller = {
             id: 'draft-sessions',
             priority: 'high',
             icon: 'bi-exclamation-triangle-fill',
-            text: `Tenés el registro de ${className}${dateStr} en borrador.`,
+            text: `Tienes el registro de ${className}${dateStr} en borrador.`,
             actionLabel: 'Revisar',
             action: () => {
               if (window.router) window.router.navigate(`asistencia?clase=${s.clase_id}&fecha=${s.fecha}`);
@@ -81,7 +81,7 @@ export const pwaInstaller = {
             id: 'draft-sessions',
             priority: 'high',
             icon: 'bi-exclamation-triangle-fill',
-            text: `Tenés ${borradores.length} registros de clase en borrador.`,
+            text: `Tienes ${borradores.length} registros de clase en borrador.`,
             actionLabel: 'Revisar',
             action: () => {
               if (window.router) window.router.navigate(`asistencia?clase=${s.clase_id}&fecha=${s.fecha}`);
@@ -112,7 +112,7 @@ export const pwaInstaller = {
           icon: 'bi-clipboard-x-fill',
           text: sinRegistrar.length === 1
             ? `${nombreClase} del ${fechaCorta} quedó sin registrar asistencia.`
-            : `Tenés ${sinRegistrar.length} clases sin asistencia registrada esta semana.`,
+            : `Tienes ${sinRegistrar.length} clases sin asistencia registrada esta semana.`,
           actionLabel: 'Registrar',
           action: () => {
             if (window.router) window.router.navigate(`asistencia?clase=${primera.clase_id}&fecha=${primera.fecha}`);
@@ -127,7 +127,7 @@ export const pwaInstaller = {
           id: 'profile-incomplete',
           priority: 'medium',
           icon: 'bi-person-exclamation',
-          text: 'Completá tu número de teléfono en tu perfil de usuario.',
+          text: 'Completa tu número de teléfono en tu perfil de usuario.',
           actionLabel: 'Completar',
           action: () => {
             if (window.router) window.router.navigate('perfil');
@@ -323,15 +323,15 @@ export const pwaInstaller = {
           <ol class="pgm-steps">
             <li>
               <span class="pgm-step-num">1</span>
-              <span>Tocá el botón <strong>Compartir</strong> <i class="bi bi-box-arrow-up"></i> en la barra inferior de Safari</span>
+              <span>Toca el botón <strong>Compartir</strong> <i class="bi bi-box-arrow-up"></i> en la barra inferior de Safari</span>
             </li>
             <li>
               <span class="pgm-step-num">2</span>
-              <span>Deslizá hacia abajo y tocá <strong>"Añadir a pantalla de inicio"</strong></span>
+              <span>Desliza hacia abajo y toca <strong>"Añadir a pantalla de inicio"</strong></span>
             </li>
             <li>
               <span class="pgm-step-num">3</span>
-              <span>Presioná <strong>Añadir</strong> — la app aparecerá como un ícono nativo</span>
+              <span>Presiona <strong>Añadir</strong> — la app aparecerá como un ícono nativo</span>
             </li>
           </ol>
           <button class="pgm-btn" id="pgm-close">Entendido</button>
@@ -362,11 +362,11 @@ export const pwaInstaller = {
             <i class="bi bi-display"></i>
           </div>
           <h3 id="pgm-title">Instalar como App de Escritorio</h3>
-          <p class="pgm-subtitle">Accedé sin el navegador, como una app nativa</p>
+          <p class="pgm-subtitle">Accede sin el navegador, como una app nativa</p>
           <ol class="pgm-steps">
             <li>
               <span class="pgm-step-num">1</span>
-              <span>En la barra de Chrome buscá el ícono <strong>"Instalar aplicación"</strong> (ícono de pantalla con flecha)</span>
+              <span>En la barra de Chrome busca el ícono <strong>"Instalar aplicación"</strong> (ícono de pantalla con flecha)</span>
             </li>
             <li>
               <span class="pgm-step-num">2</span>
@@ -374,7 +374,7 @@ export const pwaInstaller = {
             </li>
             <li>
               <span class="pgm-step-num">3</span>
-              <span>Confirmá la instalación — SOI Maestros quedará en tu escritorio y barra de tareas</span>
+              <span>Confirma la instalación — SOI Maestros quedará en tu escritorio y barra de tareas</span>
             </li>
           </ol>
           <button class="pgm-btn" id="pgm-close">Entendido</button>

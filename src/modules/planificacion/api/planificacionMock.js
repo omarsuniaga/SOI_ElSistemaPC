@@ -211,6 +211,16 @@ export async function obtenerClases() {
   return [...clases].sort((a, b) => (a.nombre || '').localeCompare(b.nombre || ''))
 }
 
+export async function obtenerMaestros() {
+  await _simulateDelay()
+  return (MOCK_MAESTROS || [])
+    .filter((m) => m.estado !== 'inactivo')
+    .map((m) => ({
+      id: m.id,
+      nombre: m.nombre_completo,
+    }))
+}
+
 export async function obtenerMaestro(id) {
   await _simulateDelay()
   const maestros = MOCK_MAESTROS || []

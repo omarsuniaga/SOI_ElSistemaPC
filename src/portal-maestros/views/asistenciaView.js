@@ -111,7 +111,7 @@ import {
  * Carga la sesión por ID, construye un objeto clase sintético desde
  * el campo `actividad`, y extrae los alumnos del campo `asistencia` (jsonb).
  */
-async function _renderEmergenteSesion(container, { sesionId, fecha, maestro }) {
+async function _renderEmergenteSesion(container, { sesionId, fecha, maestro, router }) {
   try {
     const { data: sesion, error } = await supabase
       .from('sesiones_clase')
@@ -175,6 +175,7 @@ async function _renderEmergenteSesion(container, { sesionId, fecha, maestro }) {
       salonNombre: null,
       rutaId: null,
       sesionExistenteData: sesion,
+      router,
     })
   } catch (err) {
     console.error('[asistenciaView] Error en sesión emergente:', err.message, err.stack)
@@ -182,7 +183,7 @@ async function _renderEmergenteSesion(container, { sesionId, fecha, maestro }) {
   }
 }
 
-export async function renderAsistenciaView(containerOrId, { claseId, fecha, sesionId } = {}) {
+export async function renderAsistenciaView(containerOrId, { claseId, fecha, sesionId, router } = {}) {
   // Resolve container: accept both DOM element and string ID
   const container =
     typeof containerOrId === 'string' ? document.getElementById(containerOrId) : containerOrId
@@ -202,7 +203,7 @@ export async function renderAsistenciaView(containerOrId, { claseId, fecha, sesi
 
   if (!claseId) {
     if (sesionId) {
-      return _renderEmergenteSesion(container, { sesionId, fecha, maestro, containerOrId })
+      return _renderEmergenteSesion(container, { sesionId, fecha, maestro, containerOrId, router })
     }
     container.innerHTML = `<p class="pm-empty">No se indicó la clase.</p>`
     return
@@ -404,6 +405,7 @@ export async function renderAsistenciaView(containerOrId, { claseId, fecha, sesi
       salonNombre,
       rutaId,
       sesionExistenteData,
+      router,
     })
   } catch (err) {
     console.error('[asistenciaView] Error fatal:', err.message, err.stack)
@@ -427,8 +429,17 @@ function _renderVista(container, ctx) {
     salonNombre,
     rutaId,
     sesionExistenteData,
+    router,
   } = ctx
   let sesionId = ctx.sesionId
+
+  const navigateTo = (route) => {
+    if (router?.navigate) {
+      router.navigate(route)
+      return
+    }
+    window.location.hash = `#/${route}`
+  }
 
   // Cleanup registry — all destroyable sub-components register here
   const _cleanups = []
@@ -2429,12 +2440,14 @@ function _renderVista(container, ctx) {
 
         if (volverHoyBtn)
           volverHoyBtn.onclick = () => {
-            window.location.hash = '#/hoy'
+            overlay.remove()
+            navigateTo('hoy')
           }
 
         if (calBtn)
           calBtn.onclick = () => {
-            window.location.hash = '#/calendario'
+            overlay.remove()
+            navigateTo('calendario')
           }
 
         const reporteDiaBtn = overlay.querySelector('#btn-reporte-dia-overlay')
@@ -2605,7 +2618,7 @@ function _renderVista(container, ctx) {
         fn()
       } catch (_) {}
     })
-    window.location.hash = '#/hoy'
+    navigateTo('hoy')
   }
 
   // === Bulk Actions Logic ===

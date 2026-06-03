@@ -56,6 +56,13 @@ export async function renderRouteConfigurator(container, initialClassId = null) 
       .pm-rc-empty { flex: 1; display: flex; align-items: center; justify-content: center; padding: 2rem; color: var(--pm-text-muted); text-align: center; font-size: 0.8rem; font-style: italic; opacity: 0.6; }
       .pm-rc-ind-card { padding: 0.8rem; border-radius: 10px; border: 1px solid var(--pm-border); font-size: 0.8rem; background: var(--pm-surface-3); display: flex; gap: 0.6rem; color: var(--pm-text); }
       .pm-rc-ind-card i { color: var(--pm-primary); font-size: 1rem; }
+
+      @media (max-width: 768px) {
+        .pm-rc-container { flex-direction: column; height: auto; overflow-x: hidden; border-radius: 8px; }
+        .pm-rc-col { min-width: 0; border-right: none; border-bottom: 1px solid var(--pm-border); max-height: 300px; }
+        .pm-rc-col:last-child { border-bottom: none; }
+        .pm-rc-list { max-height: 220px; }
+      }
     </style>
   `
 

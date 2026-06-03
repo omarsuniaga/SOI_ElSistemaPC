@@ -95,9 +95,13 @@ export function createDslEditor(container, { initialContent = '', onChange, onAl
       // dismissal on mobile when a background autosave triggers a re-render.
       if (document.activeElement !== editor) return
 
+      // On mobile, skip innerHTML replacement when the editor has focus.
+      // Replacing innerHTML on a focused contenteditable in iOS WebKit/Safari
+      // can corrupt the editing state and clear the element's content entirely,
+      // causing the "blank screen" bug. The highlight runs on blur instead.
+      if (_isMobile) return
+
       // Save scroll position before innerHTML replacement.
-      // On mobile, replacing innerHTML on a focused contenteditable causes the
-      // browser to scroll the page to the top, making the screen appear blank.
       const savedScrollY = window.scrollY
 
       _value = editor.innerText
@@ -399,7 +403,9 @@ export function createDslEditor(container, { initialContent = '', onChange, onAl
   editor.addEventListener('compositionend', () => {
     _isComposing = false
     clearTimeout(_debounceTimer)
-    _debounceTimer = setTimeout(_applyHighlight, 300)
+    if (!_isMobile) {
+      _debounceTimer = setTimeout(_applyHighlight, 300)
+    }
   })
 
   // On mobile, only highlight on blur to prevent innerHTML replacement from

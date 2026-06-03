@@ -105,6 +105,7 @@ export async function renderViewContent(route, container, params, urlParams, con
         claseId: urlParams.get('clase'),
         fecha: urlParams.get('fecha'),
         sesionId: urlParams.get('sesion'),
+        router,
       })
     case 'metricas':
       return renderMetricasView(container)

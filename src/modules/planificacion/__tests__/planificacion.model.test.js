@@ -47,4 +47,26 @@ describe('Planificacion Model', () => {
       expect(p2.canEdit()).toBe(false)
     })
   })
+
+  describe('toJSON()', () => {
+    it('should include notas_dsl in serialized output', () => {
+      const p = new Planificacion({
+        tema: 'Clase de prueba',
+        clase_id: 'clase_001',
+        notas_dsl: '# DSL content\nalumno:"Juan Pérez" asiste',
+      })
+      const json = p.toJSON()
+      expect(json.notas_dsl).toBe('# DSL content\nalumno:"Juan Pérez" asiste')
+    })
+
+    it('should default notas_dsl to null when empty', () => {
+      const p = new Planificacion({
+        tema: 'Clase de prueba',
+        clase_id: 'clase_001',
+        notas_dsl: '',
+      })
+      const json = p.toJSON()
+      expect(json.notas_dsl).toBeNull()
+    })
+  })
 })

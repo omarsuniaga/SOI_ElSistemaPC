@@ -99,9 +99,9 @@ export async function renderExportView(container) {
                   </div>
                   <div class="col-6 col-md-4">
                     <div class="form-check">
-                      <input class="form-check-input" type="checkbox" id="sec-indicadores">
-                      <label class="form-check-label small fw-semibold" for="sec-indicadores">
-                        <i class="bi bi-award text-info me-1"></i>Indicadores dominados
+                      <input class="form-check-input" type="checkbox" id="sec-dominio" checked>
+                      <label class="form-check-label small fw-semibold" for="sec-dominio">
+                        <i class="bi bi-award text-info me-1"></i>Escalas, obras y técnicas
                       </label>
                     </div>
                   </div>
@@ -373,7 +373,7 @@ function _seleccionarAlumno(alumno, input, resultados, chip, chipNombre, opcione
 async function _fetchAsistencias(alumnoId) {
   const { data, error } = await supabase
     .from('asistencias')
-    .select('*')
+    .select('*, sesion:sesiones_clase(fecha, contenido_dsl, contenido, tema_principal)')
     .eq('alumno_id', alumnoId)
     .order('fecha', { ascending: false })
   if (error) throw new Error(`Asistencias: ${error.message}`)
@@ -391,13 +391,13 @@ async function _fetchObservaciones(alumnoId) {
 }
 
 async function _fetchIndicadores(alumnoId) {
+  // indicator_attempts may use student_id or alumno_id depending on env
   const { data, error } = await supabase
     .from('indicator_attempts')
-    .select('*')
-    .eq('alumno_id', alumnoId)
-    .eq('passed', true)
-    .order('fecha', { ascending: false })
-  if (error) return []  // table may not exist in all envs
+    .select('*, indicador:indicators(description, nodo:nodes(name, is_critical))')
+    .or(`alumno_id.eq.${alumnoId},student_id.eq.${alumnoId}`)
+    .order('created_at', { ascending: false })
+  if (error) return []
   return data ?? []
 }
 
@@ -418,7 +418,7 @@ function _attachEvents(container) {
       asistencias:   document.getElementById('sec-asistencias').checked,
       progresos:     document.getElementById('sec-progresos').checked,
       observaciones: document.getElementById('sec-observaciones').checked,
-      indicadores:   document.getElementById('sec-indicadores').checked,
+      dominio:       document.getElementById('sec-dominio').checked,
     }
 
     if (!Object.values(secciones).some(Boolean)) {
@@ -437,7 +437,7 @@ function _attachEvents(container) {
       if (secciones.asistencias)   fetches.push(_fetchAsistencias(alumnoId).then(d => { datos.asistencias = d }))
       if (secciones.progresos)     fetches.push(obtenerProgresosPorAlumno(alumnoId).then(d => { datos.progresos = d }))
       if (secciones.observaciones) fetches.push(_fetchObservaciones(alumnoId).then(d => { datos.observaciones = d }))
-      if (secciones.indicadores)   fetches.push(_fetchIndicadores(alumnoId).then(d => { datos.indicadores = d }))
+      if (secciones.dominio)       fetches.push(_fetchIndicadores(alumnoId).then(d => { datos.indicadores = d }))
       await Promise.all(fetches)
 
       descargarExpedienteAlumno(_alumnoSeleccionado, secciones, datos)

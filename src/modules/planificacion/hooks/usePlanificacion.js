@@ -1,4 +1,8 @@
-import { obtenerPlanificaciones, obtenerPlanificacion, obtenerPlanificacionesConDetalles } from '../api/planificacionApi.js'
+import {
+  obtenerPlanificaciones,
+  obtenerPlanificacion,
+  obtenerPlanificacionesConDetalles,
+} from '../api/planificacionAdapter.js'
 import {
   obtenerSesiones,
   crearSesion,
@@ -25,7 +29,7 @@ export class PlanificacionHook {
   subscribe(callback) {
     this.listeners.push(callback)
     return () => {
-      this.listeners = this.listeners.filter(l => l !== callback)
+      this.listeners = this.listeners.filter((l) => l !== callback)
     }
   }
 
@@ -36,7 +40,7 @@ export class PlanificacionHook {
   }
 
   notifyListeners() {
-    this.listeners.forEach(listener => {
+    this.listeners.forEach((listener) => {
       listener({
         planificaciones: this.planificaciones,
         planificacionActual: this.planificacionActual,
@@ -116,32 +120,33 @@ export class PlanificacionHook {
     if (!searchTerm) return this.planificaciones
 
     const term = searchTerm.toLowerCase()
-    return this.planificaciones.filter(p =>
-      (p.tema || '').toLowerCase().includes(term) ||
-      (p.contenido || '').toLowerCase().includes(term) ||
-      (p.objetivos || '').toLowerCase().includes(term) ||
-      (p.observaciones || '').toLowerCase().includes(term)
+    return this.planificaciones.filter(
+      (p) =>
+        (p.tema || '').toLowerCase().includes(term) ||
+        (p.contenido || '').toLowerCase().includes(term) ||
+        (p.objetivos || '').toLowerCase().includes(term) ||
+        (p.observaciones || '').toLowerCase().includes(term),
     )
   }
 
   filterByClase(claseId) {
-    return this.planificaciones.filter(p => p.clase_id === claseId)
+    return this.planificaciones.filter((p) => p.clase_id === claseId)
   }
 
   filterByMaestro(maestroId) {
-    return this.planificaciones.filter(p => p.maestro_id === maestroId)
+    return this.planificaciones.filter((p) => p.maestro_id === maestroId)
   }
 
   filterByEstado(estado) {
-    return this.planificaciones.filter(p => p.estado === estado)
+    return this.planificaciones.filter((p) => p.estado === estado)
   }
 
   getById(id) {
-    return this.planificaciones.find(p => p.id === id) || null
+    return this.planificaciones.find((p) => p.id === id) || null
   }
 
   getActivas() {
-    return this.planificaciones.filter(p => p.estado === 'planificado')
+    return this.planificaciones.filter((p) => p.estado === 'planificado')
   }
 
   count() {
@@ -244,7 +249,7 @@ export class PlanificacionHook {
 
     try {
       const actualizada = await actualizarSesion(sesionId, datos)
-      const idx = this.sesiones.findIndex(s => s.id === sesionId)
+      const idx = this.sesiones.findIndex((s) => s.id === sesionId)
       if (idx !== -1) {
         this.sesiones[idx] = { ...this.sesiones[idx], ...actualizada }
       }
@@ -265,7 +270,7 @@ export class PlanificacionHook {
 
     try {
       await eliminarSesion(sesionId)
-      this.sesiones = this.sesiones.filter(s => s.id !== sesionId)
+      this.sesiones = this.sesiones.filter((s) => s.id !== sesionId)
       this.cargando = false
       this.notifyListeners()
       return { success: true }
@@ -283,7 +288,7 @@ export class PlanificacionHook {
 
     try {
       const actualizada = await registrarAsistencia(sesionId, asistenciaData)
-      const idx = this.sesiones.findIndex(s => s.id === sesionId)
+      const idx = this.sesiones.findIndex((s) => s.id === sesionId)
       if (idx !== -1) {
         this.sesiones[idx] = { ...this.sesiones[idx], ...actualizada }
       }
@@ -299,15 +304,15 @@ export class PlanificacionHook {
   }
 
   getSesionesPorFecha(fecha) {
-    return this.sesiones.filter(s => s.fecha === fecha)
+    return this.sesiones.filter((s) => s.fecha === fecha)
   }
 
   getSesionesEmergentes() {
-    return this.sesiones.filter(s => s.tipo === 'emergente')
+    return this.sesiones.filter((s) => s.tipo === 'emergente')
   }
 
   getSesionesRegulares() {
-    return this.sesiones.filter(s => s.tipo === 'regular')
+    return this.sesiones.filter((s) => s.tipo === 'regular')
   }
 
   puedeEditarSesion(sesion) {

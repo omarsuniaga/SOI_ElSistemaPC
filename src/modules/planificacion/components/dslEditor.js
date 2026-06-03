@@ -28,7 +28,8 @@ export function createDslEditor(initialContent = '', onChange = null) {
   editor.innerHTML = initialContent ? highlightDsl(initialContent) : ''
 
   const highlightLayer = document.createElement('div')
-  highlightLayer.className = 'dsl-highlight-layer position-absolute top-0 start-0 w-100 h-100 overflow-hidden pointer-events-none'
+  highlightLayer.className =
+    'dsl-highlight-layer position-absolute top-0 start-0 w-100 h-100 overflow-hidden pe-none'
   highlightLayer.setAttribute('aria-hidden', 'true')
 
   editorWrapper.appendChild(highlightLayer)

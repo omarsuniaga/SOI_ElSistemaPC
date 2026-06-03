@@ -26,6 +26,7 @@ const DSL_PLACEHOLDER_HTML = `
 export function createDslEditor(container, { initialContent = '', onChange, onAlumnosNeeded }) {
   let _value = initialContent;
   let _isUpdating = false;
+  let _isComposing = false; // blocks highlight during IME composition (mobile keyboards)
   let _context = {}; // Para pasar contexto (claseId, nivelId, etc.)
 
   container.innerHTML = `
@@ -74,6 +75,9 @@ export function createDslEditor(container, { initialContent = '', onChange, onAl
 
   function _applyHighlight() {
     if (_isUpdating) return;
+    // Skip highlight during IME composition (mobile keyboards) — prevents
+    // innerHTML replacement from dismissing the virtual keyboard and blanking the screen.
+    if (_isComposing) return;
     _isUpdating = true;
 
     try {
@@ -86,10 +90,20 @@ export function createDslEditor(container, { initialContent = '', onChange, onAl
       const range = selection.getRangeAt(0);
       const offset = _getCaretOffset(editor, range);
 
+      // Save scroll position before innerHTML replacement.
+      // On mobile, replacing innerHTML on a focused contenteditable causes the
+      // browser to scroll the page to the top, making the screen appear blank.
+      const savedScrollY = window.scrollY;
+
       _value = editor.innerText;
       editor.innerHTML = highlightDSL(_value);
 
       _setCaretOffset(editor, offset);
+
+      // Restore scroll position after the DOM replacement.
+      if (window.scrollY !== savedScrollY) {
+        window.scrollTo({ top: savedScrollY, behavior: 'instant' });
+      }
     } catch (err) {
       console.warn('[DSL] Error en highlight:', err);
       _value = editor.innerText;
@@ -365,19 +379,29 @@ export function createDslEditor(container, { initialContent = '', onChange, onAl
     sel.addRange(range);
   }
 
+  // IME composition guards — prevent innerHTML replacement while the mobile
+  // keyboard is mid-composition (e.g. predictive text, accent pickers).
+  editor.addEventListener('compositionstart', () => { _isComposing = true });
+  editor.addEventListener('compositionend', () => {
+    _isComposing = false;
+    // Run highlight once after composition finishes
+    clearTimeout(_debounceTimer);
+    _debounceTimer = setTimeout(_applyHighlight, 150);
+  });
+
   let _debounceTimer = null;
   editor.oninput = () => {
     _updateValue();
-    
-    // Highlight con debounce
+
+    // Highlight con debounce (skipped during IME composition)
     clearTimeout(_debounceTimer);
     _debounceTimer = setTimeout(_applyHighlight, 150);
-    
+
     // Autocompletado con debounce
     clearTimeout(_autocompleteDebounce);
     _autocompleteDebounce = setTimeout(() => _showAutocomplete(), 300);
   };
-  
+
   // Keyboard navigation para el popup de autocompletado
   editor.addEventListener('keydown', (e) => {
     if (isOpen()) {

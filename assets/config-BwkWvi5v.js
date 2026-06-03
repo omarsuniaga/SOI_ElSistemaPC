@@ -1,0 +1,1 @@
+var e={version:`1.0.0`,environment:`production`,isDemoMode:localStorage.getItem(`demo_mode`)===`true`,groq:{apiKey:``,model:`llama-3.1-8b-instant`,whisperModel:`whisper-large-v3`,endpoint:`https://api.groq.com/openai/v1`,maxTokens:1024,temperature:.3},tareas:{localStorageKey:`maestro_tarea`,diasVencimientoDefault:7}};export{e as t};

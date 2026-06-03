@@ -280,7 +280,7 @@ const NAV_GROUPS = [
       { id: 'pedagogico-dashboard', label: 'Dashboard', icon: 'bi-grid-1x2' },
       { id: 'planificacion', label: 'Planificación', icon: 'bi-journal-text' },
       { id: 'planificacion-maestros', label: 'Todas las Planes', icon: 'bi-journal-check' },
-      { id: 'planificacion-cobertura', label: 'Cobertura', icon: 'bi-grid-3x3-gap' },
+      { id: 'planificacion-cobertura', label: 'Cobertura Curricular', icon: 'bi-grid-3x3-gap' },
       { id: 'pedagogico-seguimiento', label: 'Seguimiento', icon: 'bi-person-lines-fill' },
       { id: 'pedagogico-reportes', label: 'Reportes', icon: 'bi-file-earmark-bar-graph' },
     ],

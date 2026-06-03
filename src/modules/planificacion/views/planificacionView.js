@@ -6,9 +6,9 @@ import {
   actualizarPlanificacion,
   crearPlanificacion,
   eliminarPlanificacion,
-  marcarRevisadasMasivo
-} from '../api/planificacionApi.js'
-import { supabase } from '../../../lib/supabaseClient.js'
+  marcarRevisadasMasivo,
+  obtenerClases,
+} from '../api/planificacionAdapter.js'
 import { escapeHTML } from '../../clases/utils/clasesUtils.js'
 import { HelpPanel } from '../../../shared/components/HelpPanel.js'
 import { openCoberturaModal } from '../components/coberturaModal.js'
@@ -30,7 +30,7 @@ const DSL_TEMPLATES = [
 [Indicador] Mantiene tempo estable con metrónomo a 60 bpm
 {Actividad} Calentamiento de dedos: ejercicios de Hanon 5 min
 {Actividad} Escala lenta con atención al peso del brazo
-{Actividad} Escala en tempo progresivo hasta 80 bpm`
+{Actividad} Escala en tempo progresivo hasta 80 bpm`,
   },
   {
     id: 'lectura',
@@ -41,7 +41,7 @@ const DSL_TEMPLATES = [
 [Indicador] Identifica la clave y armadura antes de comenzar
 {Actividad} Análisis visual de 2 min antes de tocar
 {Actividad} Ejecución a tempo lento sin parar
-{Actividad} Revisión de errores y segunda lectura`
+{Actividad} Revisión de errores y segunda lectura`,
   },
   {
     id: 'repertorio',
@@ -52,7 +52,7 @@ const DSL_TEMPLATES = [
 [Indicador] Ejecuta las secciones complejas de manera fluida
 {Actividad} División por secciones: aprender A, luego B
 {Actividad} Trabajo de manos separadas en pasajes difíciles
-{Actividad} Ensamble y trabajo de empalmes entre secciones`
+{Actividad} Ensamble y trabajo de empalmes entre secciones`,
   },
   {
     id: 'teoria',
@@ -63,8 +63,8 @@ const DSL_TEMPLATES = [
 [Indicador] Construye y ejecuta acordes mayores y menores
 {Actividad} Dictado rítmico (4 compases)
 {Actividad} Identificación auditiva de intervalos
-{Actividad} Construcción de acordes en el instrumento`
-  }
+{Actividad} Construcción de acordes en el instrumento`,
+  },
 ]
 
 // ── State ─────────────────────────────────────────────────────────────────────
@@ -76,7 +76,7 @@ const state = {
   asistenteRendered: false,
   rutasRendered: false,
   seleccionados: new Set(),
-  container: null
+  container: null,
 }
 
 const hook = usePlanificacion()
@@ -142,8 +142,8 @@ function renderContent(container) {
   const isAdmin = state.viewMode === 'admin'
 
   const headerTitle = isAdmin ? 'Todas las Planificaciones' : 'Mis Planes de Clase'
-  const headerIcon  = isAdmin ? 'bi-shield-check' : 'bi-journal-check'
-  const headerDesc  = isAdmin
+  const headerIcon = isAdmin ? 'bi-shield-check' : 'bi-journal-check'
+  const headerDesc = isAdmin
     ? `${hook.planificaciones.length} planes pendientes de revisión`
     : `${hook.planificaciones.length} planes registrados`
 
@@ -167,18 +167,22 @@ function renderContent(container) {
           <button class="btn-help-trigger" id="btn-help-planificacion" title="¿Cómo funciona esta pantalla?" aria-label="Ayuda">
             <i class="bi bi-question"></i>
           </button>
-          ${isAdmin ? `
+          ${
+            isAdmin
+              ? `
             <button class="btn btn-outline-secondary btn-sm" id="btn-curriculo-admin">
               <i class="bi bi-journal-bookmark me-1"></i>Currículo
             </button>
             <button class="btn btn-outline-success btn-sm" id="btn-aprobar-bulk" style="display:none">
               <i class="bi bi-check-all me-1"></i>Aprobar Seleccionados
             </button>
-          ` : `
+          `
+              : `
             <button class="btn btn-premium-action" id="btn-nuevo-plan">
               <i class="bi bi-plus-lg me-1"></i>Nuevo Plan
             </button>
-          `}
+          `
+          }
         </div>
       </div>
 
@@ -190,32 +194,58 @@ function renderContent(container) {
           <i class="bi bi-search search-icon-muted"></i>
           <input type="text" class="form-control premium-search-input" placeholder="Buscar por tema..." id="buscar-plan">
         </div>
-        ${isAdmin ? `
+        ${
+          isAdmin
+            ? `
         <div class="premium-select-container">
           <i class="bi bi-person select-icon-muted"></i>
           <select class="form-select premium-filter-select" id="select-maestro">
             <option value="">Todos los maestros</option>
-            ${Array.from(new Set(hook.planificaciones.map(p => p.maestro_nombre).filter(n => n && n !== 'Sin asignar'))).sort().map(m => `<option value="${escapeHTML(m)}">${escapeHTML(m)}</option>`).join('')}
+            ${Array.from(
+              new Set(
+                hook.planificaciones
+                  .map((p) => p.maestro_nombre)
+                  .filter((n) => n && n !== 'Sin asignar'),
+              ),
+            )
+              .sort()
+              .map((m) => `<option value="${escapeHTML(m)}">${escapeHTML(m)}</option>`)
+              .join('')}
           </select>
         </div>
-        ` : ''}
+        `
+            : ''
+        }
         <div class="premium-select-container">
           <i class="bi bi-book select-icon-muted"></i>
           <select class="form-select premium-filter-select" id="select-clase">
             <option value="">Todas las clases</option>
-            ${Array.from(new Set(hook.planificaciones.map(p => p.clase_nombre).filter(n => n && n !== 'Sin asignar'))).sort().map(c => `<option value="${escapeHTML(c)}">${escapeHTML(c)}</option>`).join('')}
+            ${Array.from(
+              new Set(
+                hook.planificaciones
+                  .map((p) => p.clase_nombre)
+                  .filter((n) => n && n !== 'Sin asignar'),
+              ),
+            )
+              .sort()
+              .map((c) => `<option value="${escapeHTML(c)}">${escapeHTML(c)}</option>`)
+              .join('')}
           </select>
         </div>
         <div class="premium-select-container">
           <i class="bi bi-funnel select-icon-muted"></i>
           <select class="form-select premium-filter-select" id="select-estado">
             <option value="">Todos los estados</option>
-            ${Planificacion.getEstados().map(e => `<option value="${e.value}">${e.label}</option>`).join('')}
+            ${Planificacion.getEstados()
+              .map((e) => `<option value="${e.value}">${e.label}</option>`)
+              .join('')}
           </select>
         </div>
       </div>
 
-      ${!isAdmin ? `
+      ${
+        !isAdmin
+          ? `
       <ul class="nav nav-tabs mb-3" id="planificacion-tabs">
         <li class="nav-item">
           <button class="nav-link active" data-tab="planes">
@@ -239,7 +269,9 @@ function renderContent(container) {
           </button>
         </li>
       </ul>
-      ` : ''}
+      `
+          : ''
+      }
 
       <div id="tab-content-planes">
       <!-- Table -->
@@ -265,7 +297,9 @@ function renderContent(container) {
       </div>
       </div>
 
-      ${!isAdmin ? `
+      ${
+        !isAdmin
+          ? `
       <div id="tab-content-plantillas" style="display:none">
         <div class="alert alert-info border-0 py-3" style="font-size:0.875rem;">
           <i class="bi bi-file-earmark-template me-2"></i>
@@ -274,16 +308,18 @@ function renderContent(container) {
       </div>
       <div id="tab-content-rutas" style="display:none"></div>
       <div id="tab-content-asistente" style="display:none"></div>
-      ` : ''}
+      `
+          : ''
+      }
     </div>
   `
 }
 
 function _renderAdminStats() {
   const planes = hook.planificaciones
-  const pendientes = planes.filter(p => p.estado === 'ejecutado').length
-  const revisados  = planes.filter(p => p.estado === 'revisado').length
-  const total      = planes.length
+  const pendientes = planes.filter((p) => p.estado === 'ejecutado').length
+  const revisados = planes.filter((p) => p.estado === 'revisado').length
+  const total = planes.length
 
   return `
     <div class="stats-panel mb-4">
@@ -313,15 +349,17 @@ function _renderTableRows(planes) {
   if (!planes || planes.length === 0) return ''
   const isAdmin = state.viewMode === 'admin'
 
-  return planes.map(p => {
-    const config = Planificacion.getEstadoConfig(p.estado)
-    const accentClass = p.estado === 'revisado'
-      ? 'border-accent-success'
-      : p.estado === 'ejecutado'
-        ? 'border-accent-warning'
-        : 'border-accent-secondary'
+  return planes
+    .map((p) => {
+      const config = Planificacion.getEstadoConfig(p.estado)
+      const accentClass =
+        p.estado === 'revisado'
+          ? 'border-accent-success'
+          : p.estado === 'ejecutado'
+            ? 'border-accent-warning'
+            : 'border-accent-secondary'
 
-    return `
+      return `
       <tr data-id="${p.id}" class="border-start-accent ${accentClass}">
         ${isAdmin ? `<td><input type="checkbox" class="plan-check" value="${p.id}" ${state.seleccionados.has(p.id) ? 'checked' : ''}></td>` : ''}
         <td>
@@ -335,34 +373,51 @@ function _renderTableRows(planes) {
         <td class="d-none d-lg-table-cell text-muted small align-middle">${p.fecha_inicio || '-'}</td>
         <td class="text-end align-middle">
           <div class="quick-actions justify-content-end">
-            ${!isAdmin ? `
+            ${
+              !isAdmin
+                ? `
               <button class="btn btn-sm btn-outline-primary btn-icon-compact" data-action="edit" data-id="${p.id}" title="Editar">
                 <i class="bi bi-pencil"></i>
               </button>
-            ` : ''}
-            ${isAdmin && p.canApprove() ? `
+            `
+                : ''
+            }
+            ${
+              isAdmin && p.canApprove()
+                ? `
               <button class="btn btn-sm btn-outline-success btn-icon-compact" data-action="approve" data-id="${p.id}" title="Aprobar">
                 <i class="bi bi-check-circle"></i>
               </button>
-            ` : ''}
-            ${!isAdmin && p.estado === 'planificado' ? `
+            `
+                : ''
+            }
+            ${
+              !isAdmin && p.estado === 'planificado'
+                ? `
               <button class="btn btn-sm btn-outline-success btn-icon-compact" data-action="ejecutar" data-id="${p.id}" title="Marcar como ejecutado">
                 <i class="bi bi-play-fill"></i>
               </button>
-            ` : ''}
+            `
+                : ''
+            }
             <button class="btn btn-sm btn-outline-secondary btn-icon-compact" data-action="view" data-id="${p.id}" title="Ver detalle">
               <i class="bi bi-eye"></i>
             </button>
-            ${!p.isLocked() ? `
+            ${
+              !p.isLocked()
+                ? `
               <button class="btn btn-sm btn-outline-danger btn-icon-compact" data-action="delete" data-id="${p.id}" title="Eliminar">
                 <i class="bi bi-trash"></i>
               </button>
-            ` : ''}
+            `
+                : ''
+            }
           </div>
         </td>
       </tr>
     `
-  }).join('')
+    })
+    .join('')
 }
 
 function _renderEmpty() {
@@ -374,9 +429,11 @@ function _renderEmpty() {
         ${isAdmin ? 'No hay planificaciones registradas aún' : 'Todavía no tienes planes de clase'}
       </h5>
       <p class="text-muted small mb-0">
-        ${isAdmin
-          ? 'Una vez que los maestros creen sus planes, aparecerán aquí para revisión.'
-          : 'Crea tu primer plan de clase usando el botón de arriba o usa una plantilla.'}
+        ${
+          isAdmin
+            ? 'Una vez que los maestros creen sus planes, aparecerán aquí para revisión.'
+            : 'Crea tu primer plan de clase usando el botón de arriba o usa una plantilla.'
+        }
       </p>
     </div>
   `
@@ -399,7 +456,8 @@ function renderTemplatesContent(container) {
       </div>
 
       <div class="row g-3">
-        ${DSL_TEMPLATES.map(t => `
+        ${DSL_TEMPLATES.map(
+          (t) => `
           <div class="col-md-6">
             <div class="page-glass rounded p-4 h-100 d-flex flex-column">
               <div class="d-flex align-items-start gap-3 mb-3">
@@ -421,15 +479,16 @@ function renderTemplatesContent(container) {
               </button>
             </div>
           </div>
-        `).join('')}
+        `,
+        ).join('')}
       </div>
     </div>
   `
 
   // Attach template actions
-  container.querySelectorAll('button[data-template-id]').forEach(btn => {
+  container.querySelectorAll('button[data-template-id]').forEach((btn) => {
     btn.addEventListener('click', () => {
-      const tpl = DSL_TEMPLATES.find(t => t.id === btn.dataset.templateId)
+      const tpl = DSL_TEMPLATES.find((t) => t.id === btn.dataset.templateId)
       if (tpl) _openTemplateModal(tpl)
     })
   })
@@ -463,17 +522,18 @@ function _openTemplateModal(tpl) {
       </form>
     `,
     onOpen: async (modalBody) => {
-      const { data } = await supabase.from('clases').select('id, nombre').order('nombre')
+      const clases = await obtenerClases()
       const sel = modalBody.querySelector('#tpl-clase_id')
-      sel.innerHTML = '<option value="">Seleccionar clase...</option>' +
-        (data || []).map(c => `<option value="${c.id}">${escapeHTML(c.nombre)}</option>`).join('')
+      sel.innerHTML =
+        '<option value="">Seleccionar clase...</option>' +
+        clases.map((c) => `<option value="${c.id}">${escapeHTML(c.nombre)}</option>`).join('')
     },
     onSave: async (modalBody) => {
       const planData = {
         tema: modalBody.querySelector('#tpl-tema').value.trim(),
         clase_id: modalBody.querySelector('#tpl-clase_id').value,
         objetivos: modalBody.querySelector('#tpl-objetivos').value.trim(),
-        contenido: modalBody.querySelector('#tpl-contenido').value.trim()
+        contenido: modalBody.querySelector('#tpl-contenido').value.trim(),
       }
       try {
         await crearPlanificacion(planData)
@@ -483,7 +543,7 @@ function _openTemplateModal(tpl) {
         AppToast.error(err.message)
         return false
       }
-    }
+    },
   })
 }
 
@@ -501,12 +561,37 @@ function _attachEvents(container) {
   container.querySelector('#btn-help-planificacion')?.addEventListener('click', () => {
     HelpPanel.open({
       title: 'Planificación',
-      intro: 'Módulo para gestionar los planes de clase. Cada plan documenta qué se trabajará en una clase, en qué fecha, y si fue ejecutado o no.',
+      intro:
+        'Módulo para gestionar los planes de clase. Cada plan documenta qué se trabajará en una clase, en qué fecha, y si fue ejecutado o no.',
       sections: [
-        { icon: 'bi-journal-text',           title: 'Tab Mis planes',          description: 'Lista tus planes personales. Filtrá por estado (planificado, ejecutado, cancelado) y creá nuevos desde "Nuevo plan".',                                    color: '#3b82f6' },
-        { icon: 'bi-file-earmark-template',  title: 'Tab Plantillas',          description: 'Plantillas reutilizables en formato DSL. Sirven como base para crear nuevos planes rápidamente.',                                                          color: '#6366f1' },
-        { icon: 'bi-journal-check',          title: 'Todas las planes (admin)', description: 'Solo visible para administradores. Muestra los planes de todos los maestros para supervisión.',                                                            color: '#10b981' },
-        { icon: 'bi-circle-fill',            title: 'Estados del plan',         description: '"Planificado" = no dictado aún. "Ejecutado" = clase dada. "Cancelado" = no se realizó. Mantenerlos actualizados mejora los reportes.',                    color: '#f59e0b' },
+        {
+          icon: 'bi-journal-text',
+          title: 'Tab Mis planes',
+          description:
+            'Lista tus planes personales. Filtrá por estado (planificado, ejecutado, cancelado) y creá nuevos desde "Nuevo plan".',
+          color: '#3b82f6',
+        },
+        {
+          icon: 'bi-file-earmark-template',
+          title: 'Tab Plantillas',
+          description:
+            'Plantillas reutilizables en formato DSL. Sirven como base para crear nuevos planes rápidamente.',
+          color: '#6366f1',
+        },
+        {
+          icon: 'bi-journal-check',
+          title: 'Todas las planes (admin)',
+          description:
+            'Solo visible para administradores. Muestra los planes de todos los maestros para supervisión.',
+          color: '#10b981',
+        },
+        {
+          icon: 'bi-circle-fill',
+          title: 'Estados del plan',
+          description:
+            '"Planificado" = no dictado aún. "Ejecutado" = clase dada. "Cancelado" = no se realizó. Mantenerlos actualizados mejora los reportes.',
+          color: '#f59e0b',
+        },
       ],
     })
   })
@@ -519,8 +604,10 @@ function _attachEvents(container) {
   if (isAdmin) {
     container.querySelector('#check-all')?.addEventListener('change', (e) => {
       const checked = e.target.checked
-      state.seleccionados = checked ? new Set(state.planes.map(p => p.id)) : new Set()
-      container.querySelectorAll('.plan-check').forEach(cb => { cb.checked = checked })
+      state.seleccionados = checked ? new Set(state.planes.map((p) => p.id)) : new Set()
+      container.querySelectorAll('.plan-check').forEach((cb) => {
+        cb.checked = checked
+      })
       _toggleBulkBtn()
     })
 
@@ -538,17 +625,19 @@ function _attachEvents(container) {
   }
 
   // Tab switching
-  container.querySelectorAll('#planificacion-tabs .nav-link').forEach(btn => {
+  container.querySelectorAll('#planificacion-tabs .nav-link').forEach((btn) => {
     btn.addEventListener('click', () => {
       state.activeTab = btn.dataset.tab
 
       const allContent = ['planes', 'plantillas', 'rutas', 'asistente']
-      allContent.forEach(tab => {
+      allContent.forEach((tab) => {
         const div = container.querySelector(`#tab-content-${tab}`)
         if (div) div.style.display = state.activeTab === tab ? 'block' : 'none'
       })
 
-      container.querySelectorAll('#planificacion-tabs .nav-link').forEach(b => b.classList.remove('active'))
+      container
+        .querySelectorAll('#planificacion-tabs .nav-link')
+        .forEach((b) => b.classList.remove('active'))
       btn.classList.add('active')
 
       if (state.activeTab === 'rutas' && !state.rutasRendered) {
@@ -569,9 +658,13 @@ function _attachEvents(container) {
     })
   })
 
-  document.addEventListener('planificacion:nuevoPlan', (e) => {
-    openEditModal(null)
-  }, { once: true })
+  document.addEventListener(
+    'planificacion:nuevoPlan',
+    (e) => {
+      openEditModal(null)
+    },
+    { once: true },
+  )
 
   if (isAdmin) {
     container.querySelector('#btn-curriculo-admin')?.addEventListener('click', () => {
@@ -592,32 +685,34 @@ function _attachEvents(container) {
     const btn = e.target.closest('button[data-action]')
     if (!btn) return
     const { action, id } = btn.dataset
-    if (action === 'edit')    openEditModal(id)
-    if (action === 'delete')  openDeleteModal(id)
+    if (action === 'edit') openEditModal(id)
+    if (action === 'delete') openDeleteModal(id)
     if (action === 'approve') _approveOne(id)
-    if (action === 'view')    _viewDetail(id)
+    if (action === 'view') _viewDetail(id)
     if (action === 'ejecutar') _ejecutarPlan(id)
   })
 }
 
 function _applyFilters() {
-  const term    = state.container.querySelector('#buscar-plan')?.value.toLowerCase() || ''
-  const estado  = state.container.querySelector('#select-estado')?.value || ''
-  const clase   = state.container.querySelector('#select-clase')?.value || ''
+  const term = state.container.querySelector('#buscar-plan')?.value.toLowerCase() || ''
+  const estado = state.container.querySelector('#select-estado')?.value || ''
+  const clase = state.container.querySelector('#select-clase')?.value || ''
   const maestro = state.container.querySelector('#select-maestro')?.value || ''
 
-  state.planes = hook.planificaciones.filter(p => {
-    const matchSearch  = (p.tema || '').toLowerCase().includes(term) || (p.clase_nombre || '').toLowerCase().includes(term)
-    const matchEstado  = !estado  || p.estado === estado
-    const matchClase   = !clase   || p.clase_nombre === clase
+  state.planes = hook.planificaciones.filter((p) => {
+    const matchSearch =
+      (p.tema || '').toLowerCase().includes(term) ||
+      (p.clase_nombre || '').toLowerCase().includes(term)
+    const matchEstado = !estado || p.estado === estado
+    const matchClase = !clase || p.clase_nombre === clase
     const matchMaestro = !maestro || p.maestro_nombre === maestro
     return matchSearch && matchEstado && matchClase && matchMaestro
   })
 
-  const tbody  = state.container.querySelector('#planes-tbody')
-  const empty  = state.container.querySelector('#empty-container')
+  const tbody = state.container.querySelector('#planes-tbody')
+  const empty = state.container.querySelector('#empty-container')
   if (tbody) tbody.innerHTML = _renderTableRows(state.planes)
-  if (empty)  empty.innerHTML = state.planes.length === 0 ? _renderEmpty() : ''
+  if (empty) empty.innerHTML = state.planes.length === 0 ? _renderEmpty() : ''
 }
 
 function _toggleBulkBtn() {
@@ -670,10 +765,16 @@ async function openEditModal(id, prefill = {}) {
       </form>
     `,
     onOpen: async (modalBody) => {
-      const { data } = await supabase.from('clases').select('id, nombre').order('nombre')
+      const clases = await obtenerClases()
       const sel = modalBody.querySelector('#plan-clase_id')
-      sel.innerHTML = '<option value="">Seleccionar clase...</option>' +
-        (data || []).map(c => `<option value="${c.id}" ${c.id === plan.clase_id ? 'selected' : ''}>${escapeHTML(c.nombre)}</option>`).join('')
+      sel.innerHTML =
+        '<option value="">Seleccionar clase...</option>' +
+        clases
+          .map(
+            (c) =>
+              `<option value="${c.id}" ${c.id === plan.clase_id ? 'selected' : ''}>${escapeHTML(c.nombre)}</option>`,
+          )
+          .join('')
 
       // Create DSL editor with toolbar
       const dslContainer = modalBody.querySelector('#plan-dsl-container')
@@ -687,7 +788,10 @@ async function openEditModal(id, prefill = {}) {
         },
         onAlumnoClick: async () => {
           const allAlumnos = await getAlumnos()
-          const selected = allAlumnos.slice(0, 3).map(a => `#${a.nombre_completo}`).join(', ')
+          const selected = allAlumnos
+            .slice(0, 3)
+            .map((a) => `#${a.nombre_completo}`)
+            .join(', ')
           if (dslEditor.component) {
             dslEditor.component.insertText(selected + ' ')
           }
@@ -699,19 +803,22 @@ async function openEditModal(id, prefill = {}) {
     onSave: async (modalBody) => {
       const dslEditor = modalBody._dslEditor
       const data = {
-        tema:              modalBody.querySelector('#plan-tema').value.trim(),
-        clase_id:          modalBody.querySelector('#plan-clase_id').value,
-        objetivos:         modalBody.querySelector('#plan-objetivos').value.trim(),
-        contenido:         modalBody.querySelector('#plan-contenido')?.value.trim() || '',
-        notas_dsl:         dslEditor ? dslEditor.getContent() : '',
-        fecha_inicio:      modalBody.querySelector('#plan-fecha').value || null,
-        instrumento:       modalBody.querySelector('#plan-instrumento').value.trim() || null,
-        evaluacion_metodo: modalBody.querySelector('#plan-eval').value.trim() || null
+        tema: modalBody.querySelector('#plan-tema').value.trim(),
+        clase_id: modalBody.querySelector('#plan-clase_id').value,
+        objetivos: modalBody.querySelector('#plan-objetivos').value.trim(),
+        contenido: modalBody.querySelector('#plan-contenido')?.value.trim() || '',
+        notas_dsl: dslEditor ? dslEditor.getContent() : '',
+        fecha_inicio: modalBody.querySelector('#plan-fecha').value || null,
+        instrumento: modalBody.querySelector('#plan-instrumento').value.trim() || null,
+        evaluacion_metodo: modalBody.querySelector('#plan-eval').value.trim() || null,
       }
 
       const model = new Planificacion(data)
       const errores = model.validate()
-      if (errores.length > 0) { AppToast.error(errores[0]); return false }
+      if (errores.length > 0) {
+        AppToast.error(errores[0])
+        return false
+      }
 
       try {
         if (id) {
@@ -727,7 +834,7 @@ async function openEditModal(id, prefill = {}) {
         AppToast.error(err.message)
         return false
       }
-    }
+    },
   })
 }
 
@@ -750,30 +857,42 @@ function _viewDetail(id) {
           <span class="badge ${config.color} fs-6">${config.label}</span>
         </div>
       </div>
-      ${plan.maestro_nombre ? `
+      ${
+        plan.maestro_nombre
+          ? `
         <div class="mb-3">
           <div class="small text-muted text-uppercase fw-bold mb-1">Maestro</div>
           <div>${escapeHTML(plan.maestro_nombre)}</div>
         </div>
-      ` : ''}
-      ${plan.objetivos ? `
+      `
+          : ''
+      }
+      ${
+        plan.objetivos
+          ? `
         <div class="mb-3">
           <div class="small text-muted text-uppercase fw-bold mb-1">Objetivos</div>
           <div class="text-muted">${escapeHTML(plan.objetivos)}</div>
         </div>
-      ` : ''}
-      ${plan.contenido ? `
+      `
+          : ''
+      }
+      ${
+        plan.contenido
+          ? `
         <div class="mb-3">
           <div class="small text-muted text-uppercase fw-bold mb-1">Contenido DSL</div>
           <pre class="p-3 rounded border bg-body-tertiary small" style="white-space:pre-wrap">${escapeHTML(plan.contenido)}</pre>
         </div>
-      ` : ''}
+      `
+          : ''
+      }
       <div class="row g-2">
         ${plan.fecha_inicio ? `<div class="col-auto"><span class="badge bg-light text-dark border"><i class="bi bi-calendar me-1"></i>${plan.fecha_inicio}</span></div>` : ''}
         ${plan.instrumento ? `<div class="col-auto"><span class="badge bg-light text-dark border"><i class="bi bi-music-note me-1"></i>${escapeHTML(plan.instrumento)}</span></div>` : ''}
         ${plan.evaluacion_metodo ? `<div class="col-auto"><span class="badge bg-light text-dark border"><i class="bi bi-clipboard-check me-1"></i>${escapeHTML(plan.evaluacion_metodo)}</span></div>` : ''}
       </div>
-    `
+    `,
   })
 }
 
@@ -796,24 +915,15 @@ async function _ejecutarPlan(id) {
   const claseId = plan.clase_id
 
   if (claseId) {
-    const { data: clase } = await supabase
-      .from('clases')
-      .select('instrumento, plan_estudio')
-      .eq('id', claseId)
-      .single()
+    const todasClases = await obtenerClases()
+    const clase = todasClases.find((c) => c.id === claseId)
     if (clase) {
       instrumento = instrumento || clase.instrumento
       nivel = clase.plan_estudio
     }
   }
 
-  const { data: { user } } = await supabase.auth.getUser()
-  const { data: maestro } = await supabase
-    .from('maestros')
-    .select('id')
-    .eq('user_id', user.id)
-    .single()
-  const maestroId = maestro?.id
+  const maestroId = hook.maestroActualId || plan.maestro_id
 
   openCoberturaModal({
     plan,
@@ -838,7 +948,7 @@ async function _ejecutarPlan(id) {
       } catch (err) {
         AppToast.error(err.message)
       }
-    }
+    },
   })
 }
 
@@ -859,6 +969,6 @@ async function openDeleteModal(id) {
         AppToast.error(err.message)
         return false
       }
-    }
+    },
   })
 }

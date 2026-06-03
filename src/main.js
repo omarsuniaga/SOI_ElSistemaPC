@@ -303,6 +303,7 @@ const NAV_GROUPS = [
       { id: 'configuracion', label: 'Configuración', icon: 'bi-sliders' },
       { id: 'permisos', label: 'Permisos', icon: 'bi-shield-lock' },
       { id: 'importar-datos', label: 'Importar Datos', icon: 'bi-cloud-upload' },
+      { id: 'exportar-datos', label: 'Exportar Datos', icon: 'bi-file-earmark-arrow-down' },
     ],
   },
 ];

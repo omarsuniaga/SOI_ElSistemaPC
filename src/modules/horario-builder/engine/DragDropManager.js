@@ -1,6 +1,7 @@
 // src/modules/horario-builder/engine/DragDropManager.js
 
 import { detectConflicts } from './conflictDetector.js';
+import { minutesBetween, addMinutes } from '../utils/timeUtils.js';
 
 /**
  * Shows a modal warning when a drop would create a conflict.
@@ -136,16 +137,8 @@ export function initDragDrop(gridContainer, { assignments, onMove, onConflict })
     // Build proposed list: replace the dragged assignment with the proposed position
     const proposed = assignments.map(a => {
       if (String(a.clase_id) !== String(claseId)) return a;
-      // Calculate new hora_fin based on original duration
-      const [sh, sm] = a.hora_inicio.split(':').map(Number);
-      const [eh, em] = a.hora_fin.split(':').map(Number);
-      const durationMin = (eh * 60 + em) - (sh * 60 + sm);
-
-      const [th, tm] = targetHour.split(':').map(Number);
-      const newEndMin = th * 60 + tm + durationMin;
-      const newHoraFin = `${String(Math.floor(newEndMin / 60)).padStart(2, '0')}:${String(newEndMin % 60).padStart(2, '0')}`;
-
-      return { ...a, dia: targetDay, hora_inicio: targetHour, hora_fin: newHoraFin };
+      const duration = minutesBetween(a.hora_inicio, a.hora_fin);
+      return { ...a, dia: targetDay, hora_inicio: targetHour, hora_fin: addMinutes(targetHour, duration) };
     });
 
     const conflicts = detectConflicts(proposed, { gapMinutes: 0 });

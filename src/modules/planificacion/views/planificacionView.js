@@ -8,6 +8,7 @@ import {
   eliminarPlanificacion,
   marcarRevisadasMasivo,
   obtenerClases,
+  obtenerCoberturaCurricular,
 } from '../api/planificacionAdapter.js'
 import { escapeHTML } from '../../clases/utils/clasesUtils.js'
 import { HelpPanel } from '../../../shared/components/HelpPanel.js'
@@ -971,4 +972,165 @@ async function openDeleteModal(id) {
       }
     },
   })
+}
+
+// ── Cobertura Curricular ────────────────────────────────────────────────────
+/**
+ * Vista administrativa que muestra TODAS las clases con su estado de planificación.
+ * Clase sin plan → botón "Crear plan".
+ * Clase con plan → muestra estado.
+ */
+export async function renderCoberturaView(container) {
+  if (!container) return
+
+  try {
+    container.innerHTML = `
+      <div class="d-flex justify-content-center align-items-center" style="min-height: 400px;">
+        <div class="spinner-border text-primary" role="status">
+          <span class="visually-hidden">Cargando cobertura...</span>
+        </div>
+      </div>`
+
+    const cobertura = await obtenerCoberturaCurricular()
+
+    const total = cobertura.length
+    const conPlan = cobertura.filter((c) => c.tiene_plan).length
+    const sinPlan = total - conPlan
+    const pctCobertura = total > 0 ? Math.round((conPlan / total) * 100) : 0
+
+    container.innerHTML = `
+    <div class="page-container">
+      <div class="planificacion-header-premium mb-4">
+        <div class="d-flex align-items-center gap-3">
+          <div class="brand-badge bg-success bg-opacity-10 text-success rounded-3 d-flex align-items-center justify-content-center" style="width: 42px; height: 42px;">
+            <i class="bi bi-grid-3x3-gap fs-4"></i>
+          </div>
+          <div>
+            <h1 class="planificacion-title-premium page-title mb-0">Cobertura Curricular</h1>
+            <p class="text-muted small mb-0">Todas las clases con su estado de planificación</p>
+          </div>
+        </div>
+        <div class="planificacion-header-actions">
+          <button class="btn btn-premium-action" id="btn-refresh-cobertura">
+            <i class="bi bi-arrow-clockwise me-1"></i>Actualizar
+          </button>
+        </div>
+      </div>
+
+      <div class="row g-3 mb-4">
+        <div class="col-md-3 col-6">
+          <div class="card border-0 shadow-sm bg-light rounded-3 p-3 text-center">
+            <div class="fs-3 fw-bold text-primary">${total}</div>
+            <div class="small text-muted">Total clases</div>
+          </div>
+        </div>
+        <div class="col-md-3 col-6">
+          <div class="card border-0 shadow-sm bg-light rounded-3 p-3 text-center">
+            <div class="fs-3 fw-bold text-success">${conPlan}</div>
+            <div class="small text-muted">Con plan</div>
+          </div>
+        </div>
+        <div class="col-md-3 col-6">
+          <div class="card border-0 shadow-sm bg-light rounded-3 p-3 text-center">
+            <div class="fs-3 fw-bold text-danger">${sinPlan}</div>
+            <div class="small text-muted">Sin plan</div>
+          </div>
+        </div>
+        <div class="col-md-3 col-6">
+          <div class="card border-0 shadow-sm bg-light rounded-3 p-3 text-center">
+            <div class="fs-3 fw-bold ${pctCobertura >= 80 ? 'text-success' : pctCobertura >= 50 ? 'text-warning' : 'text-danger'}">${pctCobertura}%</div>
+            <div class="small text-muted">Cobertura</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="page-glass rounded">
+        <div class="table-responsive">
+          <table class="table table-compact table-hover mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>Clase</th>
+                <th>Instrumento</th>
+                <th>Maestro</th>
+                <th>Plan</th>
+                <th class="text-end">Acción</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${cobertura.map(_renderCoberturaRow).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>`
+
+    container.querySelector('#btn-refresh-cobertura').addEventListener('click', () => {
+      renderCoberturaView(container)
+    })
+
+    container.querySelectorAll('.btn-crear-plan-cobertura').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        AppToast.info('Función próxima: crear plan para ' + btn.dataset.claseNombre)
+      })
+    })
+
+    container.querySelectorAll('.btn-ver-plan-cobertura').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        AppToast.info('Función próxima: abrir plan existente')
+      })
+    })
+  } catch (error) {
+    console.error('[coberturaView]', error)
+    container.innerHTML = `
+      <div class="page-container">
+        <div class="alert alert-warning d-flex align-items-start gap-3 m-0" role="alert">
+          <i class="bi bi-database-exclamation fs-3 text-warning mt-1"></i>
+          <div>
+            <h5 class="alert-heading mb-1">Error al cargar cobertura</h5>
+            <p class="mb-0 small">${escapeHTML(error.message)}</p>
+          </div>
+        </div>
+      </div>`
+  }
+}
+
+function _renderCoberturaRow(item) {
+  const estadoBadge = item.tiene_plan
+    ? _estadoBadgeCobertura(item.plan_estado)
+    : '<span class="badge bg-secondary">Sin plan</span>'
+
+  const accion = item.tiene_plan
+    ? `<button class="btn btn-outline-primary btn-sm btn-ver-plan-cobertura" data-plan-id="${escapeHTML(item.plan_id)}">
+        <i class="bi bi-eye me-1"></i>Ver plan
+      </button>`
+    : `<button class="btn btn-success btn-sm btn-crear-plan-cobertura" data-clase-id="${escapeHTML(item.clase_id)}" data-clase-nombre="${escapeHTML(item.clase_nombre)}">
+        <i class="bi bi-plus-lg me-1"></i>Crear plan
+      </button>`
+
+  return `
+    <tr>
+      <td class="fw-medium">${escapeHTML(item.clase_nombre)}</td>
+      <td>${escapeHTML(item.instrumento)}</td>
+      <td>${escapeHTML(item.maestro_nombre)}</td>
+      <td>${estadoBadge}</td>
+      <td class="text-end">${accion}</td>
+    </tr>`
+}
+
+function _estadoBadgeCobertura(estado) {
+  const map = {
+    planificado: { cls: 'bg-primary', icon: 'bi-file-text' },
+    ejecutado: { cls: 'bg-warning text-dark', icon: 'bi-play-circle' },
+    revisado: { cls: 'bg-success', icon: 'bi-check-circle' },
+  }
+  const cfg = map[estado] || { cls: 'bg-secondary', icon: 'bi-question' }
+  return (
+    '<span class="badge ' +
+    cfg.cls +
+    '"><i class="bi ' +
+    cfg.icon +
+    ' me-1"></i>' +
+    estado +
+    '</span>'
+  )
 }

@@ -3,12 +3,18 @@
  * Shows pending requests with approve/reject workflow
  */
 
-import { obtenerSolicitudesPendientes, aprobarSolicitud, rechazarSolicitud } from '../../permisos/api/permisosSupabase.js'
+import {
+  obtenerSolicitudesPendientes,
+  aprobarSolicitud,
+  rechazarSolicitud,
+} from '../../permisos/api/permisosSupabase.js'
 import { supabase } from '../../../lib/supabaseClient.js'
 
 export async function renderSolicitudesPermisosView(container) {
   // Get current authenticated user from supabase
-  const { data: { user } } = await supabase.auth.getUser()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
 
   if (!user) {
     container.innerHTML = `
@@ -54,7 +60,7 @@ async function loadAndRenderSolicitudes(container, adminId) {
 
     contentArea.innerHTML = `
       <div class="admin-solicitudes-grid">
-        ${solicitudes.map(sol => renderSolicitudCard(sol, adminId)).join('')}
+        ${solicitudes.map((sol) => renderSolicitudCard(sol, adminId)).join('')}
       </div>`
 
     // Asignar listeners a los botones
@@ -84,7 +90,7 @@ function renderSolicitudCard(solicitud, adminId) {
     month: 'short',
     day: 'numeric',
     hour: '2-digit',
-    minute: '2-digit'
+    minute: '2-digit',
   })
 
   return `
@@ -109,18 +115,26 @@ function renderSolicitudCard(solicitud, adminId) {
       <div class="admin-solicitud-permisos">
         <h4>Solicita los siguientes permisos:</h4>
         <div class="admin-permisos-list">
-          ${solicitud.solicita_alumnos ? `
+          ${
+            solicitud.solicita_alumnos
+              ? `
             <div class="admin-permiso-item">
               <i class="bi bi-person-plus-fill"></i>
               <span>Registrar Alumnos</span>
             </div>
-          ` : ''}
-          ${solicitud.solicita_clases ? `
+          `
+              : ''
+          }
+          ${
+            solicitud.solicita_clases
+              ? `
             <div class="admin-permiso-item">
               <i class="bi bi-mortarboard-fill"></i>
               <span>Gestionar Clases</span>
             </div>
-          ` : ''}
+          `
+              : ''
+          }
         </div>
       </div>
 
@@ -143,14 +157,14 @@ function escHTML(text) {
     '<': '&lt;',
     '>': '&gt;',
     '"': '&quot;',
-    "'": '&#039;'
+    "'": '&#039;',
   }
-  return String(text).replace(/[&<>"']/g, char => map[char])
+  return String(text).replace(/[&<>"']/g, (char) => map[char])
 }
 
 function attachSolicitudListeners(container, adminId) {
   // Botón aprobar
-  container.querySelectorAll('[data-action="aprobar"]').forEach(btn => {
+  container.querySelectorAll('[data-action="aprobar"]').forEach((btn) => {
     btn.addEventListener('click', async () => {
       const solicitudId = btn.dataset.solicitudId
       await handleAprobacion(solicitudId, adminId, btn)
@@ -158,7 +172,7 @@ function attachSolicitudListeners(container, adminId) {
   })
 
   // Botón rechazar
-  container.querySelectorAll('[data-action="rechazar"]').forEach(btn => {
+  container.querySelectorAll('[data-action="rechazar"]').forEach((btn) => {
     btn.addEventListener('click', async () => {
       const solicitudId = btn.dataset.solicitudId
       await handleRechazo(solicitudId, adminId, btn)
@@ -172,21 +186,24 @@ async function handleAprobacion(solicitudId, adminId, btnElement) {
 
   // Confirmación
   const confirmar = confirm(
-    `¿Aprobás la solicitud de ${nombreMaestro}?\n\nEl maestro tendrá acceso a los permisos solicitados.`
+    `¿Aprobás la solicitud de ${nombreMaestro}?\n\nEl maestro tendrá acceso a los permisos solicitados.`,
   )
 
   if (!confirmar) return
 
+  let originalHtml
   try {
     btnElement.disabled = true
-    const originalHtml = btnElement.innerHTML
+    originalHtml = btnElement.innerHTML
     btnElement.innerHTML = `<span class="spinner-apple-sm"></span> Aprobando...`
 
     await aprobarSolicitud(solicitudId, adminId)
 
-    window.dispatchEvent(new CustomEvent('showToast', {
-      detail: { message: `Solicitud de ${nombreMaestro} aprobada.`, type: 'success' }
-    }))
+    window.dispatchEvent(
+      new CustomEvent('showToast', {
+        detail: { message: `Solicitud de ${nombreMaestro} aprobada.`, type: 'success' },
+      }),
+    )
 
     // Remover la tarjeta con animación
     if (card) {
@@ -201,9 +218,11 @@ async function handleAprobacion(solicitudId, adminId, btnElement) {
       }, 300)
     }
   } catch (err) {
-    window.dispatchEvent(new CustomEvent('showToast', {
-      detail: { message: 'Error aprobando solicitud: ' + err.message, type: 'danger' }
-    }))
+    window.dispatchEvent(
+      new CustomEvent('showToast', {
+        detail: { message: 'Error aprobando solicitud: ' + err.message, type: 'danger' },
+      }),
+    )
     btnElement.disabled = false
     btnElement.innerHTML = originalHtml
   }
@@ -215,21 +234,24 @@ async function handleRechazo(solicitudId, adminId, btnElement) {
 
   const motivo = prompt(
     `¿Por qué rechazás la solicitud de ${nombreMaestro}?\n\nEste mensaje se le mostrará al maestro.`,
-    ''
+    '',
   )
 
   if (motivo === null) return // Cancelado
 
+  let originalHtml
   try {
     btnElement.disabled = true
-    const originalHtml = btnElement.innerHTML
+    originalHtml = btnElement.innerHTML
     btnElement.innerHTML = `<span class="spinner-apple-sm"></span> Rechazando...`
 
     await rechazarSolicitud(solicitudId, adminId, motivo)
 
-    window.dispatchEvent(new CustomEvent('showToast', {
-      detail: { message: `Solicitud de ${nombreMaestro} rechazada.`, type: 'success' }
-    }))
+    window.dispatchEvent(
+      new CustomEvent('showToast', {
+        detail: { message: `Solicitud de ${nombreMaestro} rechazada.`, type: 'success' },
+      }),
+    )
 
     // Remover la tarjeta con animación
     if (card) {
@@ -244,9 +266,11 @@ async function handleRechazo(solicitudId, adminId, btnElement) {
       }, 300)
     }
   } catch (err) {
-    window.dispatchEvent(new CustomEvent('showToast', {
-      detail: { message: 'Error rechazando solicitud: ' + err.message, type: 'danger' }
-    }))
+    window.dispatchEvent(
+      new CustomEvent('showToast', {
+        detail: { message: 'Error rechazando solicitud: ' + err.message, type: 'danger' },
+      }),
+    )
     btnElement.disabled = false
     btnElement.innerHTML = originalHtml
   }

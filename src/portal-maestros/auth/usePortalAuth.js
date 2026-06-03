@@ -1,9 +1,10 @@
-import { detectarRolMaestro, getMaestroLocal, logoutPortal } from './maestroAuth.js'
+import { detectarRolMaestro, getMaestroLocal, logoutPortal, PENDING_APPROVAL_SENTINEL } from './maestroAuth.js'
 import { supabase } from '../../lib/supabaseClient.js'
 
 const state = {
   maestro: null,
   loading: true,
+  pendingApproval: false,   // true cuando la cuenta existe pero está en espera de aprobación
   listeners: [],
 }
 
@@ -104,15 +105,24 @@ export const usePortalAuth = {
         const timeoutPromise = new Promise((_, reject) =>
           setTimeout(() => reject(new Error('Auth timeout after 8s')), 8000),
         )
-        const maestro = await Promise.race([detectarRolMaestro(), timeoutPromise])
+        const result = await Promise.race([detectarRolMaestro(), timeoutPromise])
         console.log(
           '[usePortalAuth.init] detectarRolMaestro completado:',
-          maestro ? 'con datos' : 'sin datos',
+          result ? (result.__pendingApproval ? 'pendiente de aprobación' : 'con datos') : 'sin datos',
         )
-        state.maestro = maestro
+
+        // Detectar sentinel de cuenta pendiente
+        if (result === PENDING_APPROVAL_SENTINEL || result?.__pendingApproval) {
+          state.maestro = null
+          state.pendingApproval = true
+        } else {
+          state.maestro = result
+          state.pendingApproval = false
+        }
       } catch (err) {
         console.warn('[usePortalAuth.init] Error:', err.message)
         state.maestro = null
+        state.pendingApproval = false
       }
 
       state.loading = false
@@ -141,6 +151,7 @@ export const usePortalAuth = {
   getMaestro: () => state.maestro,
   isAuthenticated: () => !!state.maestro,
   isLoading: () => state.loading,
+  isPendingApproval: () => state.pendingApproval,
 }
 
 export const logoutMaestro = usePortalAuth.logout

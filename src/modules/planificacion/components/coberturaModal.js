@@ -16,8 +16,11 @@ import { parseDsl } from '../utils/dslParser.js'
 import { AppToast } from '../../../shared/components/AppToast.js'
 import { supabase } from '../../../lib/supabaseClient.js'
 
-const escapeHTML = s => String(s).replace(/[&<>"']/g, c =>
-  ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]))
+const escapeHTML = (s) =>
+  String(s).replace(
+    /[&<>"']/g,
+    (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c],
+  )
 
 const STYLE = `
 <style id="cobertura-modal-style">
@@ -28,7 +31,15 @@ const STYLE = `
 .cob-ai-badge { font-size:.7rem; color: var(--bs-warning-text-emphasis); }
 </style>`
 
-export async function openCoberturaModal({ plan, claseId, instrumento, nivel, maestroId, onConfirm, onSkip }) {
+export async function openCoberturaModal({
+  plan,
+  claseId,
+  instrumento,
+  nivel,
+  maestroId,
+  onConfirm,
+  onSkip,
+}) {
   const el = document.createElement('div')
   el.innerHTML = `${STYLE}
     <div class="modal fade" id="cob-modal" tabindex="-1" data-bs-backdrop="static">
@@ -65,15 +76,15 @@ export async function openCoberturaModal({ plan, claseId, instrumento, nivel, ma
 
   el.querySelector('#cob-btn-confirm').addEventListener('click', async () => {
     const toSave = coverageState
-      .filter(r => r.checked)
-      .map(r => ({
+      .filter((r) => r.checked)
+      .map((r) => ({
         alumno_id: r.alumno_id,
         objetivo_id: r.objetivo_id,
         plan_id: plan.id,
         maestro_id: maestroId,
         nivel: r.nivel,
         confirmado: true,
-        fecha: plan.fecha_inicio || new Date().toISOString().slice(0, 10)
+        fecha: plan.fecha_inicio || new Date().toISOString().slice(0, 10),
       }))
 
     try {
@@ -104,20 +115,21 @@ export async function openCoberturaModal({ plan, claseId, instrumento, nivel, ma
       if (claseData?.ruta_id) {
         ruta = await obtenerRuta(claseData.ruta_id)
         // Map ruta objectives to match curriculum structure
-        todosObjetivos = ruta.objetivos.map(o => ({
+        todosObjetivos = ruta.objetivos.map((o) => ({
           id: o.objetivo_id,
           descripcion: o.descripcion,
-          pilar_nombre: null
+          pilar_nombre: null,
         }))
       }
     }
 
     // Fallback to generic curriculum if no ruta
+    let curriculo = null
     if (todosObjetivos.length === 0 && instrumento && nivel) {
-      const curriculo = await obtenerCurriculo(instrumento, nivel)
+      curriculo = await obtenerCurriculo(instrumento, nivel)
       if (curriculo) {
-        todosObjetivos = curriculo.curriculo_pilares.flatMap(p =>
-          p.curriculo_objetivos.map(o => ({ ...o, pilar_nombre: p.nombre }))
+        todosObjetivos = curriculo.curriculo_pilares.flatMap((p) =>
+          p.curriculo_objetivos.map((o) => ({ ...o, pilar_nombre: p.nombre })),
         )
       }
     }
@@ -130,8 +142,8 @@ export async function openCoberturaModal({ plan, claseId, instrumento, nivel, ma
     if (alumnosEnDsl.length > 0 || claseId) {
       const { data: todos } = await supabase.from('alumnos').select('id, nombre_completo')
       if (alumnosEnDsl.length > 0) {
-        alumnosConId = (todos || []).filter(a =>
-          alumnosEnDsl.some(n => a.nombre_completo.toLowerCase().includes(n.toLowerCase()))
+        alumnosConId = (todos || []).filter((a) =>
+          alumnosEnDsl.some((n) => a.nombre_completo.toLowerCase().includes(n.toLowerCase())),
         )
       }
     }
@@ -141,25 +153,31 @@ export async function openCoberturaModal({ plan, claseId, instrumento, nivel, ma
         .from('alumnos_clases')
         .select('alumnos(id, nombre_completo)')
         .eq('clase_id', claseId)
-      alumnosConId = (data || []).map(r => r.alumnos).filter(Boolean)
+      alumnosConId = (data || []).map((r) => r.alumnos).filter(Boolean)
     }
 
     let aiCoberturas = []
     if (curriculo && todosObjetivos.length > 0) {
       const result = await extraerCobertura(
-        { tema: plan.tema, objetivos: plan.objetivos, contenido: plan.contenido, notas_dsl: plan.notas_dsl },
+        {
+          tema: plan.tema,
+          objetivos: plan.objetivos,
+          contenido: plan.contenido,
+          notas_dsl: plan.notas_dsl,
+        },
         alumnosEnDsl,
-        todosObjetivos.map(o => ({ id: o.id, descripcion: o.descripcion }))
+        todosObjetivos.map((o) => ({ id: o.id, descripcion: o.descripcion })),
       )
       aiCoberturas = result.coberturas || []
     }
 
     coverageState = []
-    alumnosConId.forEach(alumno => {
-      todosObjetivos.forEach(obj => {
+    alumnosConId.forEach((alumno) => {
+      todosObjetivos.forEach((obj) => {
         const aiMatch = aiCoberturas.find(
-          c => c.objetivo_id === obj.id &&
-               alumno.nombre_completo.toLowerCase().includes((c.alumno || '').toLowerCase())
+          (c) =>
+            c.objetivo_id === obj.id &&
+            alumno.nombre_completo.toLowerCase().includes((c.alumno || '').toLowerCase()),
         )
         coverageState.push({
           alumno_id: alumno.id,
@@ -170,14 +188,13 @@ export async function openCoberturaModal({ plan, claseId, instrumento, nivel, ma
           nivel: aiMatch?.nivel || 'en_proceso',
           checked: !!aiMatch,
           ai_suggested: !!aiMatch,
-          razon: aiMatch?.razon || ''
+          razon: aiMatch?.razon || '',
         })
       })
     })
 
     _renderBody()
     el.querySelector('#cob-btn-confirm').disabled = false
-
   } catch (err) {
     document.getElementById('cob-body').innerHTML = `
       <div class="alert alert-warning">
@@ -202,7 +219,7 @@ export async function openCoberturaModal({ plan, claseId, instrumento, nivel, ma
     }
 
     const byAlumno = {}
-    coverageState.forEach(r => {
+    coverageState.forEach((r) => {
       if (!byAlumno[r.alumno_id]) byAlumno[r.alumno_id] = { nombre: r.alumno_nombre, rows: [] }
       byAlumno[r.alumno_id].rows.push(r)
     })
@@ -212,12 +229,15 @@ export async function openCoberturaModal({ plan, claseId, instrumento, nivel, ma
         <i class="bi bi-robot me-1"></i>
         La IA pre-marcó los objetivos que probablemente se cubrieron. Revisá y ajustá según corresponda.
       </p>
-      ${Object.entries(byAlumno).map(([alumnoId, { nombre, rows }]) => `
+      ${Object.entries(byAlumno)
+        .map(
+          ([alumnoId, { nombre, rows }]) => `
         <div class="cob-alumno-block">
           <div class="cob-alumno-name"><i class="bi bi-person me-1"></i>${escapeHTML(nombre)}</div>
-          ${rows.map(r => {
-            const idx = coverageState.indexOf(r)
-            return `
+          ${rows
+            .map((r) => {
+              const idx = coverageState.indexOf(r)
+              return `
             <div class="cob-obj-row">
               <input type="checkbox" class="form-check-input cob-check" data-idx="${idx}" ${r.checked ? 'checked' : ''}>
               <span style="flex:1">
@@ -230,10 +250,13 @@ export async function openCoberturaModal({ plan, claseId, instrumento, nivel, ma
                 <option value="logrado" ${r.nivel === 'logrado' ? 'selected' : ''}>Logrado</option>
               </select>
             </div>`
-          }).join('')}
-        </div>`).join('')}`
+            })
+            .join('')}
+        </div>`,
+        )
+        .join('')}`
 
-    body.querySelectorAll('.cob-check').forEach(chk => {
+    body.querySelectorAll('.cob-check').forEach((chk) => {
       chk.addEventListener('change', () => {
         const idx = +chk.dataset.idx
         coverageState[idx].checked = chk.checked
@@ -242,7 +265,7 @@ export async function openCoberturaModal({ plan, claseId, instrumento, nivel, ma
       })
     })
 
-    body.querySelectorAll('.cob-nivel-sel').forEach(sel => {
+    body.querySelectorAll('.cob-nivel-sel').forEach((sel) => {
       sel.addEventListener('change', () => {
         coverageState[+sel.dataset.idx].nivel = sel.value
       })

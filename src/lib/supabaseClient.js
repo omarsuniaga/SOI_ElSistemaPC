@@ -9,4 +9,11 @@ if (!supabaseUrl || !supabaseAnonKey) {
   )
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    persistSession: true,       // Token sobrevive cierres de app/navegador
+    autoRefreshToken: true,     // Refresca el token automáticamente antes de que expire
+    detectSessionInUrl: true,   // Captura tokens OAuth en la URL (magic link, etc.)
+    storageKey: 'sb-soi-auth',  // Clave fija en localStorage (independiente del proyecto)
+  },
+})

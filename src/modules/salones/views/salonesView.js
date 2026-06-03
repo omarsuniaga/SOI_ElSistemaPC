@@ -119,14 +119,15 @@ export function renderSalonesView(container) {
 
     salonesCount.textContent = salones.length
 
-    tbody.innerHTML = salones.map(salon => {
-      const initials = getInitials(salon.nombre || 'S')
-      const active = salon.is_active !== false
-      const condicionBadge = getCondicionBadge(salon.condicion)
-      const accentClass = `border-accent-${active ? 'success' : 'secondary'}`
-      const statusDotClass = `bg-${active ? 'success' : 'secondary'}`
+    tbody.innerHTML = salones
+      .map((salon) => {
+        const initials = getInitials(salon.nombre || 'S')
+        const active = salon.is_active !== false
+        const condicionBadge = getCondicionBadge(salon.condicion)
+        const accentClass = `border-accent-${active ? 'success' : 'secondary'}`
+        const statusDotClass = `bg-${active ? 'success' : 'secondary'}`
 
-      return `
+        return `
         <div class="list-group-item list-group-item-action d-flex align-items-center justify-content-between p-3 w-100 border-start-accent ${accentClass}" data-id="${salon.id}" style="cursor: pointer;">
           <div class="d-flex align-items-center gap-3 flex-grow-1 overflow-hidden">
             <div class="position-relative flex-shrink-0">
@@ -137,7 +138,7 @@ export function renderSalonesView(container) {
             </div>
             <div class="d-flex flex-column flex-grow-1 overflow-hidden pe-3">
               <span class="fw-bold text-truncate" style="font-size: 1.05rem;">${escapeHTML(salon.nombre || '-')}</span>
-              <small class="text-muted text-truncate">Capacidad: ${salon.capacidad || '-'} personas • Piso: ${(salon.piso === 0 || salon.piso === '0') ? 'Planta Baja' : `Piso ${salon.piso}`}</small>
+              <small class="text-muted text-truncate">Capacidad: ${salon.capacidad || '-'} personas • Piso: ${salon.piso === 0 || salon.piso === '0' ? 'Planta Baja' : `Piso ${salon.piso}`}</small>
             </div>
           </div>
           <div class="d-flex align-items-center gap-2 flex-shrink-0">
@@ -146,7 +147,8 @@ export function renderSalonesView(container) {
           </div>
         </div>
       `
-    }).join('')
+      })
+      .join('')
   }
 
   const getCondicionBadge = (condicion) => {
@@ -154,13 +156,13 @@ export function renderSalonesView(container) {
       excelente: 'bg-success',
       buena: 'bg-primary',
       regular: 'bg-warning',
-      mala: 'bg-danger'
+      mala: 'bg-danger',
     }
     const labels = {
       excelente: 'Excelente',
       buena: 'Buena',
       regular: 'Regular',
-      mala: 'Mala'
+      mala: 'Mala',
     }
     const color = colors[condicion] || 'bg-secondary'
     const label = labels[condicion] || '-'
@@ -262,17 +264,22 @@ function openCreateModal() {
       }
 
       await salonesApi.crearSalon({
-        nombre, capacidad, piso, condicion_fisica: condicion,
-        is_active: esActivo, equipamiento, descripcion
+        nombre,
+        capacidad,
+        piso,
+        condicion_fisica: condicion,
+        is_active: esActivo,
+        equipamiento,
+        descripcion,
       })
       useSalones.fetchSalones()
       AppToast.success('Salón creado correctamente')
-    }
+    },
   })
 }
 
 function openEditModal(id) {
-  const salon = useSalones.salones.find(s => s.id === id)
+  const salon = useSalones.salones.find((s) => s.id === id)
   if (!salon) {
     AppToast.error('Salón no encontrado')
     return
@@ -343,13 +350,13 @@ function openEditModal(id) {
         }
 
         await salonesApi.actualizarSalon(id, {
-          nombre, 
-          capacidad, 
-          piso, 
+          nombre,
+          capacidad,
+          piso,
           condicion_fisica: condicion,
-          is_active: esActivo, 
-          equipamiento, 
-          descripcion
+          is_active: esActivo,
+          equipamiento,
+          descripcion,
         })
 
         await useSalones.fetchSalones()
@@ -360,19 +367,22 @@ function openEditModal(id) {
         AppToast.error(error.message || 'Error al actualizar el salón')
         return false // Evita que el modal se cierre y detiene el spinner de carga
       }
-    }
+    },
   })
 }
 
 function openViewModal(id) {
-  const salon = useSalones.salones.find(s => s.id === id)
+  const salon = useSalones.salones.find((s) => s.id === id)
   if (!salon) {
-    showToast('Salón no encontrado', 'error')
+    AppToast.error('Salón no encontrado')
     return
   }
 
-  const ubicacionPiso = (salon.piso === 0 || salon.piso === '0') ? 'Planta Baja' : `Piso ${salon.piso}`
-  const condicionLabel = { excelente: 'Excelente', buena: 'Buena', regular: 'Regular', mala: 'Mala' }[salon.condicion] || '-'
+  const ubicacionPiso =
+    salon.piso === 0 || salon.piso === '0' ? 'Planta Baja' : `Piso ${salon.piso}`
+  const condicionLabel =
+    { excelente: 'Excelente', buena: 'Buena', regular: 'Regular', mala: 'Mala' }[salon.condicion] ||
+    '-'
   const estadoLabel = salon.is_active !== false ? 'Activo' : 'Inactivo'
   const estadoClass = salon.is_active !== false ? 'bg-success' : 'bg-secondary'
 
@@ -429,7 +439,9 @@ function openViewModal(id) {
           </div>
         </div>
       </div>
-      ${salon.descripcion ? `
+      ${
+        salon.descripcion
+          ? `
       <hr>
       <div class="row">
         <div class="col-12">
@@ -439,7 +451,9 @@ function openViewModal(id) {
           </div>
         </div>
       </div>
-      ` : ''}
+      `
+          : ''
+      }
       
       <div class="d-flex justify-content-end gap-2 pt-3 border-top mt-4">
         <button class="btn btn-outline-danger" id="modal-view-btn-delete">
@@ -449,12 +463,12 @@ function openViewModal(id) {
           <i class="bi bi-pencil me-1"></i> Editar
         </button>
       </div>
-    `
+    `,
   })
 }
 
 function openDeleteModal(id) {
-  const salon = useSalones.salones.find(s => s.id === id)
+  const salon = useSalones.salones.find((s) => s.id === id)
   if (!salon) {
     AppToast.error('Salón no encontrado')
     return
@@ -470,6 +484,6 @@ function openDeleteModal(id) {
       await salonesApi.eliminarSalon(id)
       useSalones.fetchSalones()
       AppToast.success('Salón inactivado correctamente')
-    }
+    },
   })
 }

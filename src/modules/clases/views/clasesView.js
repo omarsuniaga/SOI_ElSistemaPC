@@ -41,6 +41,7 @@ const state = {
  */
 export async function renderClasesView(container) {
   if (!container) return
+
   try {
     state.container = container
     state.cargando = true

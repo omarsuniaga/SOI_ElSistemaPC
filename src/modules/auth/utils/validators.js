@@ -19,13 +19,13 @@ export const passwordSchema = {
   name: 'password',
   validate(value) {
     if (!value) return { valid: false, error: 'La contraseña es requerida' }
-    
+
     const errors = []
     if (value.length < 8) errors.push('Mínimo 8 caracteres')
     if (!/[A-Z]/.test(value)) errors.push('Una letra mayúscula')
     if (!/\d/.test(value)) errors.push('Un número')
-    if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(value)) errors.push('Un símbolo')
-    
+    if (!/[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(value)) errors.push('Un símbolo')
+
     if (errors.length > 0) {
       return { valid: false, error: errors.join(', ') }
     }

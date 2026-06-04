@@ -297,22 +297,6 @@ export async function renderAsistenciaView(
     const serverUpdatedAt = sesionExistenteData?.updated_at || null
     const serverDSL = sesionExistenteData?.contenido || ''
 
-    // ── DIAGNOSTIC ──────────────────────────────────────────────────────────
-    console.group('[asistencia] Session restore diagnostic')
-    console.log('claseId:', claseId, '| fecha:', fechaHoy)
-    console.log(
-      'sesionId:',
-      sesionId,
-      '| borrador:',
-      sesionExistenteData?.borrador,
-      '| estado_db:',
-      sesionExistenteData?.estado,
-    )
-    console.log('sesionExistenteData.asistencia:', sesionExistenteData?.asistencia)
-    console.log('alumnos count:', alumnos.length)
-    console.groupEnd()
-    // ── END DIAGNOSTIC ──────────────────────────────────────────────────────
-
     // ── Batch 2: snapshots + salón (en paralelo) ──
     const salonIds = clase.salon ? [clase.salon] : []
     const [snapshots, salonesData] = await Promise.all([
@@ -371,12 +355,6 @@ export async function renderAsistenciaView(
     // Source 1: JSONB consolidado de TODAS las sesiones del día.
     // La sesión registrada puede tener asistencia=[] mientras el borrador tiene los datos reales.
     let serverAsistencia = asistenciaMerged
-    console.log(
-      '[asistencia] Source 1 (JSONB merged from', todasSesionesHoy.length, 'sessions):',
-      serverAsistencia.length,
-      'registros',
-      serverAsistencia.slice(0, 2),
-    )
 
     const _DB_TO_UI = { presente: 'P', ausente: 'A', justificado: 'J', tarde: 'T' }
 
@@ -407,35 +385,17 @@ export async function renderAsistenciaView(
           asistenciasDB = data
         }
 
-        console.log('[asistencia] Source 2 (table):', asistenciasDB?.length ?? 'no data', 'sesionIds searched:', allSesionIds)
         if (asistenciasDB?.length > 0) {
           serverAsistencia = asistenciasDB.map((a) => ({
             alumno_id: a.alumno_id,
             estado: _DB_TO_UI[a.estado] ?? a.estado,
           }))
-          console.log('[asistencia] Restaurado desde table:', serverAsistencia.length)
         }
       } catch (_e) {
         console.warn('[asistencia] No se pudo restaurar desde tabla asistencias:', _e)
       }
     }
 
-    // Log final state before applying
-    console.log(
-      '[asistencia] serverAsistencia final:',
-      serverAsistencia.length,
-      '| alumnos en estado:',
-      Object.keys(estado).length,
-    )
-    if (serverAsistencia.length > 0 && Object.keys(estado).length > 0) {
-      const sample = serverAsistencia[0]
-      console.log(
-        '[asistencia] sample alumno_id from serverAsistencia:',
-        sample?.alumno_id,
-        '| exists in estado:',
-        Object.prototype.hasOwnProperty.call(estado, sample?.alumno_id),
-      )
-    }
 
     // Normalize any full DB values back to UI abbreviations
     const ESTADO_DB_TO_UI = { presente: 'P', ausente: 'A', justificado: 'J', tarde: 'T' }

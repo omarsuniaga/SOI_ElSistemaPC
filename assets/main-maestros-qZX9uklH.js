@@ -3956,12 +3956,6 @@ import{$ as e,A as t,F as n,J as r,K as i,M as a,Q as o,S as s,X as c,Y as l,Z a
         z-index: 10;
         width: 100%;
       }
-      [data-portal-theme="dark"] .pm-asist-header,
-      [data-bs-theme="dark"] .pm-asist-header {
-        background: var(--pm-surface-2);
-        border-bottom: 1px solid var(--pm-border);
-        box-shadow: none;
-      }
       .pm-asist-title { margin: 0; font-size: 1.2rem; font-weight: 800; letter-spacing: -0.02em; color: #fff; }
       .pm-asist-subtitle { margin: 4px 0 0; font-size: 0.75rem; opacity: 0.85; font-weight: 500; color: rgba(255, 255, 255, 0.9); }
       .pm-asist-bulk-circles { display: flex; gap: 0.75rem; align-items: center; }

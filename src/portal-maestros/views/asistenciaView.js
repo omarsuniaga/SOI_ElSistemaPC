@@ -331,28 +331,41 @@ export async function renderAsistenciaView(containerOrId, { claseId, fecha, sesi
     })
 
     // Si hay sesión guardada, restaurar estados de asistencia
-    // Source 1: JSON field in sesiones_clase (fast, legacy)
+    // Source 1: JSON field in sesiones_clase (fast, covers UI-code saves)
     let serverAsistencia = sesionExistenteData?.asistencia || []
 
-    // Source 2: asistencias table (authoritative, fallback if JSON is empty)
-    if (serverAsistencia.length === 0 && sesionId) {
+    const _DB_TO_UI = { presente: 'P', ausente: 'A', justificado: 'J', tarde: 'T' }
+
+    // Source 2: asistencias table — query by sesion_clase_id first, then clase_id+fecha fallback.
+    // This covers: records saved before sesion_clause_id was added, offline saves, and any
+    // case where the JSONB field is empty despite having DB records.
+    if (serverAsistencia.length === 0) {
       try {
-        const { data: asistenciasDB } = await supabase
-          .from('asistencias')
-          .select('alumno_id, estado')
-          .eq('sesion_clase_id', sesionId)
+        // 2a: by sesion_clase_id (most specific)
+        let asistenciasDB = null
+        if (sesionId) {
+          const { data } = await supabase
+            .from('asistencias')
+            .select('alumno_id, estado')
+            .eq('sesion_clase_id', sesionId)
+          asistenciasDB = data
+        }
+
+        // 2b: fallback by clase_id + fecha (catches records without sesion_clase_id)
+        if ((!asistenciasDB || asistenciasDB.length === 0) && claseId && fechaHoy) {
+          const { data } = await supabase
+            .from('asistencias')
+            .select('alumno_id, estado')
+            .eq('clase_id', claseId)
+            .eq('fecha', fechaHoy)
+          asistenciasDB = data
+        }
+
         if (asistenciasDB?.length > 0) {
           console.log('[asistencia] Restaurando desde tabla asistencias:', asistenciasDB.length)
-          // Map DB values back to UI codes
-          const ESTADO_DB_TO_UI = {
-            presente: 'P',
-            ausente: 'A',
-            justificado: 'J',
-            tarde: 'T',
-          }
           serverAsistencia = asistenciasDB.map((a) => ({
             alumno_id: a.alumno_id,
-            estado: ESTADO_DB_TO_UI[a.estado] ?? a.estado,
+            estado: _DB_TO_UI[a.estado] ?? a.estado,
           }))
         }
       } catch (_e) {

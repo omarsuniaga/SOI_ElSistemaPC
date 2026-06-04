@@ -225,16 +225,17 @@ export async function renderAsistenciaView(
       getMisClases(), // cache: 1min
       getHorariosClases([claseId]), // cache: 5min
       getInscripcionesClases([claseId]), // cache: 2min
-      // 🔥 REUTILIZAR BORRADORES: Buscar sesión guardada OR borrador más reciente
+      // Traer TODAS las sesiones del día para consolidar asistencia.
+      // Es posible que existan dos registros: uno registrado (borrador=false, asistencia vacía)
+      // y uno borrador (borrador=true, con la asistencia real). Consolidamos ambos.
       supabase
         .from('sesiones_clase')
         .select('*')
         .eq('clase_id', claseId)
         .eq('maestro_id', maestro.id)
         .eq('fecha', fechaHoy)
-        .order('borrador', { ascending: true }) // Priorizar guardadas (false) sobre borradores (true)
-        .order('updated_at', { ascending: false }) // Entre borradores, la más reciente
-        .limit(1),
+        .order('borrador', { ascending: true })   // registradas primero
+        .order('updated_at', { ascending: false }), // más reciente primero dentro de cada grupo
     ])
     const clase = misClases.find((c) => c.id === claseId)
     if (!clase) {
@@ -253,7 +254,24 @@ export async function renderAsistenciaView(
         return (a.nombre_completo || '').localeCompare(b.nombre_completo || '')
       })
 
-    const sesionExistenteData = sesionRes.data?.[0]
+    // Primary session: prefer registered (borrador=false), fallback to most-recent draft
+    const todasSesionesHoy = sesionRes.data || []
+    const sesionExistenteData = todasSesionesHoy[0] || null
+
+    // Merge asistencia from ALL sessions of the day — the registered session may have
+    // empty asistencia[] while a borrador session holds the actual attendance data.
+    const asistenciaMerged = (() => {
+      const merged = new Map()
+      // Iterate all sessions (drafts after registered, so registered wins on conflict)
+      for (const s of [...todasSesionesHoy].reverse()) {
+        if (Array.isArray(s.asistencia)) {
+          s.asistencia.forEach((item) => {
+            if (item?.alumno_id) merged.set(item.alumno_id, item.estado)
+          })
+        }
+      }
+      return [...merged.entries()].map(([alumno_id, estado]) => ({ alumno_id, estado }))
+    })()
     const selectedEmergentStudentIds = Array.isArray(sesionExistenteData?.asistencia)
       ? sesionExistenteData.asistencia.map((item) => item?.alumno_id).filter(Boolean)
       : []
@@ -350,10 +368,11 @@ export async function renderAsistenciaView(
     })
 
     // Si hay sesión guardada, restaurar estados de asistencia
-    // Source 1: JSON field in sesiones_clase (fast, covers UI-code saves)
-    let serverAsistencia = sesionExistenteData?.asistencia || []
+    // Source 1: JSONB consolidado de TODAS las sesiones del día.
+    // La sesión registrada puede tener asistencia=[] mientras el borrador tiene los datos reales.
+    let serverAsistencia = asistenciaMerged
     console.log(
-      '[asistencia] Source 1 (JSONB):',
+      '[asistencia] Source 1 (JSONB merged from', todasSesionesHoy.length, 'sessions):',
       serverAsistencia.length,
       'registros',
       serverAsistencia.slice(0, 2),
@@ -366,13 +385,15 @@ export async function renderAsistenciaView(
     // case where the JSONB field is empty despite having DB records.
     if (serverAsistencia.length === 0) {
       try {
-        // 2a: by sesion_clase_id (most specific)
+        // 2a: by ALL sesion_ids from today (covers split-session scenario where
+        // the registered session has asistencia=[] but a borrador session holds the data)
         let asistenciasDB = null
-        if (sesionId) {
+        const allSesionIds = todasSesionesHoy.map((s) => s.id).filter(Boolean)
+        if (allSesionIds.length > 0) {
           const { data } = await supabase
             .from('asistencias')
             .select('alumno_id, estado')
-            .eq('sesion_clase_id', sesionId)
+            .in('sesion_clase_id', allSesionIds)
           asistenciasDB = data
         }
 
@@ -386,13 +407,13 @@ export async function renderAsistenciaView(
           asistenciasDB = data
         }
 
-        console.log('[asistencia] Source 2a (sesion_clase_id):', asistenciasDB?.length ?? 'no data')
+        console.log('[asistencia] Source 2 (table):', asistenciasDB?.length ?? 'no data', 'sesionIds searched:', allSesionIds)
         if (asistenciasDB?.length > 0) {
           serverAsistencia = asistenciasDB.map((a) => ({
             alumno_id: a.alumno_id,
             estado: _DB_TO_UI[a.estado] ?? a.estado,
           }))
-          console.log('[asistencia] Restaurado desde source 2a:', serverAsistencia.length)
+          console.log('[asistencia] Restaurado desde table:', serverAsistencia.length)
         }
       } catch (_e) {
         console.warn('[asistencia] No se pudo restaurar desde tabla asistencias:', _e)

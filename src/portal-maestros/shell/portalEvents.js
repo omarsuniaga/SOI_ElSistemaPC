@@ -68,13 +68,23 @@ export function setupGlobalAppEvents({
     if (_keys.length > 3) _keys.splice(0, _keys.length - 2)
   })
 
-  // ── Resize → re-render shell en cambio de breakpoint ──────
+  // ── Resize → re-render shell ONLY on breakpoint change ──────
+  // On mobile, the virtual keyboard triggers resize events constantly (when
+  // it appears/disappears). We must NOT rebuild the shell on every resize —
+  // only when the layout breakpoint actually changes (mobile ↔ tablet ↔ desktop).
   let _resizeTimer = null
+  let _lastBreakpoint = getBreakpoint()
   window.addEventListener(
     'resize',
     () => {
       clearTimeout(_resizeTimer)
-      _resizeTimer = setTimeout(() => onResize(), 250)
+      _resizeTimer = setTimeout(() => {
+        const next = getBreakpoint()
+        if (next !== _lastBreakpoint) {
+          _lastBreakpoint = next
+          onResize()
+        }
+      }, 250)
     },
     { passive: true },
   )

@@ -46,11 +46,11 @@
 }
 
 .pm-header-greeting {
-  font-size: .75rem;
-  opacity: .6;
+  font-size: 0.75rem;
+  opacity: 0.6;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: .02em;
+  letter-spacing: 0.02em;
   color: var(--pm-text-muted);
 }
 
@@ -58,7 +58,7 @@
   font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
   font-size: 1.75rem;
   font-weight: 700;
-  letter-spacing: -.03em;
+  letter-spacing: -0.03em;
   color: var(--pm-text);
 }
 
@@ -78,18 +78,18 @@
   font-size: 1.4rem;
   cursor: pointer;
   padding: 6px;
-  transition: transform .15s;
+  transition: transform 0.15s;
 }
 
 .pm-avatar-btn:active {
-  transform: scale(.9);
+  transform: scale(0.9);
 }
 
 .pm-avatar-btn img {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  border: 1.5px solid rgba(255, 255, 255, .3);
+  border: 1.5px solid rgba(255, 255, 255, 0.3);
   border-radius: 50%;
 }
 
@@ -118,7 +118,7 @@
 .pm-header-right {
   display: flex;
   align-items: center;
-  gap: .5rem;
+  gap: 0.5rem;
 }
 
 /* ── Online dot (sync indicator) ───────────────────────────── */
@@ -130,22 +130,22 @@
   margin-left: 6px;
   vertical-align: middle;
   flex-shrink: 0;
-  transition: background .3s;
+  transition: background 0.3s;
 }
 
 .pm-online-dot.synced {
   background: #4ade80;
-  box-shadow: 0 0 0 2px rgba(74, 222, 128, .25);
+  box-shadow: 0 0 0 2px rgba(74, 222, 128, 0.25);
 }
 
 .pm-online-dot.pending {
   background: #fbbf24;
-  box-shadow: 0 0 0 2px rgba(251, 191, 36, .25);
+  box-shadow: 0 0 0 2px rgba(251, 191, 36, 0.25);
 }
 
 .pm-online-dot.error {
   background: #f87171;
-  box-shadow: 0 0 0 2px rgba(248, 113, 113, .25);
+  box-shadow: 0 0 0 2px rgba(248, 113, 113, 0.25);
 }
 
 /* ── View Container ────────────────────────────────────────── */
@@ -156,7 +156,7 @@
   /* padding-bottom se aplica solo cuando el footer nav está visible
      (mobile + tablet portrait). Desktop y tablet landscape lo
      sobreescriben a 0 en sus media queries. */
-  padding-bottom: calc(var(--pm-bottom-nav-h) + .5rem);
+  padding-bottom: calc(var(--pm-bottom-nav-h) + 0.5rem);
   -webkit-overflow-scrolling: touch;
   overscroll-behavior-y: contain;
 }
@@ -178,7 +178,8 @@
 
 .pm-footer-nav {
   flex-shrink: 0;
-  padding: 0 max(0.5rem, env(safe-area-inset-right)) max(0.5rem, env(safe-area-inset-bottom, 0)) max(0.5rem, env(safe-area-inset-left));
+  padding: 0 max(0.5rem, env(safe-area-inset-right)) max(0.5rem, env(safe-area-inset-bottom, 0))
+    max(0.5rem, env(safe-area-inset-left));
   background: transparent;
   display: block;
   position: fixed;
@@ -198,21 +199,25 @@
   left: 0;
   right: 0;
   height: 120px;
-  background: linear-gradient(to bottom,
-      transparent 0%,
-      rgba(255, 255, 255, 0.3) 40%,
-      rgba(255, 255, 255, 0.95) 100%);
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    rgba(255, 255, 255, 0.3) 40%,
+    rgba(255, 255, 255, 0.95) 100%
+  );
   pointer-events: none;
   z-index: -1;
 }
 
 /* Dark mode - gradiente oscuro */
-[data-portal-theme="dark"] .pm-footer-nav::before,
-[data-bs-theme="dark"] .pm-footer-nav::before {
-  background: linear-gradient(to bottom,
-      transparent 50%,
-      rgba(15, 23, 42, 0.6) 60%,
-      rgba(15, 23, 42, 0.9) 100%);
+[data-portal-theme='dark'] .pm-footer-nav::before,
+[data-bs-theme='dark'] .pm-footer-nav::before {
+  background: linear-gradient(
+    to bottom,
+    transparent 50%,
+    rgba(15, 23, 42, 0.6) 60%,
+    rgba(15, 23, 42, 0.9) 100%
+  );
 }
 
 .pm-footer-nav__inner {
@@ -255,15 +260,15 @@
 }
 
 /* Dark mode header */
-[data-portal-theme="dark"] .pm-header,
-[data-bs-theme="dark"] .pm-header {
+[data-portal-theme='dark'] .pm-header,
+[data-bs-theme='dark'] .pm-header {
   --pm-header-glass: rgba(15, 23, 42, 0.95);
   --pm-header-text: #ffffff;
 }
 
 /* Dark mode frosted glass */
-[data-portal-theme="dark"] .pm-footer-nav__inner,
-[data-bs-theme="dark"] .pm-footer-nav__inner {
+[data-portal-theme='dark'] .pm-footer-nav__inner,
+[data-bs-theme='dark'] .pm-footer-nav__inner {
   /* ── Glass Effect Tokens ── */
   --pm-glass-bg: rgba(255, 255, 255, 0.75);
   --pm-glass-border: rgba(0, 0, 0, 0.08);
@@ -293,7 +298,8 @@
   font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
   padding: 6px 4px 8px;
   position: relative;
-  transition: color 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+  transition:
+    color 0.2s cubic-bezier(0.4, 0, 0.2, 1),
     transform 0.15s cubic-bezier(0.4, 0, 0.2, 1);
   -webkit-tap-highlight-color: transparent;
   user-select: none;
@@ -334,8 +340,8 @@
   box-shadow: 0 8px 18px rgba(37, 99, 235, 0.28);
 }
 
-[data-portal-theme="dark"] .pm-footer-nav--admin .pm-nav-tab.active,
-[data-bs-theme="dark"] .pm-footer-nav--admin .pm-nav-tab.active {
+[data-portal-theme='dark'] .pm-footer-nav--admin .pm-nav-tab.active,
+[data-bs-theme='dark'] .pm-footer-nav--admin .pm-nav-tab.active {
   box-shadow: 0 10px 22px rgba(59, 130, 246, 0.32);
 }
 
@@ -373,7 +379,7 @@
   transform: translateX(14px);
   background: var(--apple-danger);
   color: #fff;
-  font-size: .55rem;
+  font-size: 0.55rem;
   font-weight: 600;
   min-width: 16px;
   height: 16px;
@@ -468,20 +474,20 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
-[data-bs-theme="dark"] .pm-theme-toggle-track {
+[data-bs-theme='dark'] .pm-theme-toggle-track {
   background: var(--pm-surface-2);
 }
 
-[data-bs-theme="dark"] .pm-theme-toggle-thumb {
+[data-bs-theme='dark'] .pm-theme-toggle-thumb {
   background: var(--pm-surface);
   transform: translateX(28px);
 }
 
-[data-portal-theme="dark"] .pm-theme-toggle-track {
+[data-portal-theme='dark'] .pm-theme-toggle-track {
   background: var(--pm-surface-2);
 }
 
-[data-portal-theme="dark"] .pm-theme-toggle-thumb {
+[data-portal-theme='dark'] .pm-theme-toggle-thumb {
   background: var(--pm-surface);
   transform: translateX(28px);
 }
@@ -519,12 +525,15 @@
   border-radius: 20px;
   padding: 0.4rem 0.85rem;
   width: 200px;
-  transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1), background 0.2s ease, border-color 0.2s ease;
+  transition:
+    width 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+    background 0.2s ease,
+    border-color 0.2s ease;
 }
 
 .pm-header-search:focus-within {
   background: var(--pm-bg-search-focus);
-  border-color: var(--pm-primary, #5856D6);
+  border-color: var(--pm-primary, #5856d6);
   width: 280px;
 }
 
@@ -536,7 +545,7 @@
 }
 
 .pm-header-search:focus-within i {
-  color: var(--pm-primary, #5856D6);
+  color: var(--pm-primary, #5856d6);
 }
 
 .pm-header-search input {
@@ -562,8 +571,8 @@
 }
 
 /* Ajustes de tema oscuro para el buscador */
-[data-portal-theme="dark"] .pm-header-search,
-[data-bs-theme="dark"] .pm-header-search {
+[data-portal-theme='dark'] .pm-header-search,
+[data-bs-theme='dark'] .pm-header-search {
   --pm-bg-search: rgba(255, 255, 255, 0.08);
   --pm-bg-search-focus: rgba(255, 255, 255, 0.12);
   --pm-border-search: rgba(255, 255, 255, 0.05);
@@ -615,7 +624,6 @@
    MOBILE (< 768px) — Layout compacto
    ══════════════════════════════════════════════════════════════ */
 @media (max-width: 767px) {
-
   /* Header: compactar título */
   .pm-header {
     padding: 0 0.75rem;
@@ -636,9 +644,27 @@
     max-width: 40vw !important;
   }
 
-  /* Header right: ocultar theme toggle en mobile (se accede desde perfil) */
+  /* Theme toggle visible en mobile con tamaño reducido */
   #pm-theme-toggle-container {
-    display: none;
+    display: flex;
+    align-items: center;
+  }
+  #pm-theme-toggle-container .pm-theme-toggle {
+    width: 48px;
+    height: 28px;
+  }
+  #pm-theme-toggle-container .pm-theme-toggle-thumb {
+    width: 22px;
+    height: 22px;
+    top: 3px;
+    left: 3px;
+  }
+  #pm-theme-toggle-container .pm-theme-icon {
+    font-size: 12px;
+  }
+  [data-bs-theme='dark'] #pm-theme-toggle-container .pm-theme-toggle-thumb,
+  [data-portal-theme='dark'] #pm-theme-toggle-container .pm-theme-toggle-thumb {
+    transform: translateX(20px);
   }
 
   /* Barra de búsqueda: oculta por defecto en mobile */
@@ -678,8 +704,8 @@
     border: 1px solid var(--pm-border);
   }
 
-  [data-portal-theme="dark"] .pm-footer-nav__inner,
-  [data-bs-theme="dark"] .pm-footer-nav__inner {
+  [data-portal-theme='dark'] .pm-footer-nav__inner,
+  [data-bs-theme='dark'] .pm-footer-nav__inner {
     background: rgba(15, 23, 42, 0.95);
     border-color: rgba(255, 255, 255, 0.1);
     box-shadow: 0 -2px 20px rgba(0, 0, 0, 0.4);

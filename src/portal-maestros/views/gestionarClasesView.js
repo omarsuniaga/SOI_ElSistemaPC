@@ -7,7 +7,12 @@
  * Depends on: clasesApi (DataAdapter pattern), alumnosApi, crearAlumno
  */
 
-import { obtenerClasesPorMaestro, obtenerAlumnosInscritos, inscribirAlumno, desinscribirAlumno } from '../../modules/clases/api/clasesApi.js'
+import {
+  obtenerClasesPorMaestro,
+  obtenerAlumnosInscritos,
+  inscribirAlumno,
+  desinscribirAlumno,
+} from '../../modules/clases/api/clasesApi.js'
 import { obtenerAlumnos, crearAlumno } from '../../modules/alumnos/api/alumnosApi.js'
 import { getMaestroLocal } from '../auth/maestroAuth.js'
 import { getPermisos, solicitarPermiso } from '../services/permisoService.js'
@@ -16,7 +21,11 @@ import { AppToast } from '../../shared/components/AppToast.js'
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
 function escHTML(str) {
-  return String(str ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+  return String(str ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
 }
 
 function getInitials(name) {
@@ -24,35 +33,38 @@ function getInitials(name) {
     .trim()
     .split(/\s+/)
     .slice(0, 2)
-    .map(w => w[0]?.toUpperCase() ?? '')
+    .map((w) => w[0]?.toUpperCase() ?? '')
     .join('')
 }
 
 function formatHorarios(horarios) {
-  if (!horarios || horarios.length === 0) return '<span style="color:var(--pm-text-muted);font-size:.8rem;">Sin horario asignado</span>'
-  const dayMap = { 
-    lunes: 'Lun', 
-    martes: 'Mar', 
-    miercoles: 'Mié', 
-    miércoles: 'Mié', 
-    jueves: 'Jue', 
-    viernes: 'Vie', 
-    sabado: 'Sáb', 
-    sábado: 'Sáb', 
-    domingo: 'Dom' 
+  if (!horarios || horarios.length === 0)
+    return '<span style="color:var(--pm-text-muted);font-size:.8rem;">Sin horario asignado</span>'
+  const dayMap = {
+    lunes: 'Lun',
+    martes: 'Mar',
+    miercoles: 'Mié',
+    miércoles: 'Mié',
+    jueves: 'Jue',
+    viernes: 'Vie',
+    sabado: 'Sáb',
+    sábado: 'Sáb',
+    domingo: 'Dom',
   }
-  return horarios.map(h => {
-    const dia = dayMap[h.dia] || h.dia || ''
-    const inicio = (h.hora_inicio || '').slice(0, 5)
-    const fin = (h.hora_fin || '').slice(0, 5)
-    return `<span class="gcv-horario-chip">${dia} ${inicio}–${fin}</span>`
-  }).join(' ')
+  return horarios
+    .map((h) => {
+      const dia = dayMap[h.dia] || h.dia || ''
+      const inicio = (h.hora_inicio || '').slice(0, 5)
+      const fin = (h.hora_fin || '').slice(0, 5)
+      return `<span class="gcv-horario-chip">${dia} ${inicio}–${fin}</span>`
+    })
+    .join(' ')
 }
 
 // ── Module state ──────────────────────────────────────────────────────────────
 
 let _selectedClaseId = null
-let _allStudents = []     // Cache of all active students for search
+let _allStudents = [] // Cache of all active students for search
 let _enrolledIds = new Set()
 
 // ── Main render ───────────────────────────────────────────────────────────────
@@ -62,7 +74,11 @@ export async function renderGestionarClasesView(container) {
 
   const maestro = getMaestroLocal()
   if (!maestro) {
-    container.innerHTML = _emptyState('bi-lock', 'Sin sesión activa', 'Por favor ingresá nuevamente.')
+    container.innerHTML = _emptyState(
+      'bi-lock',
+      'Sin sesión activa',
+      'Por favor ingresá nuevamente.',
+    )
     return
   }
 
@@ -79,7 +95,7 @@ export async function renderGestionarClasesView(container) {
       obtenerAlumnos().catch(() => []),
     ])
 
-    _allStudents = todosAlumnos.filter(a => a.activo !== false && a.is_active !== false)
+    _allStudents = todosAlumnos.filter((a) => a.activo !== false && a.is_active !== false)
 
     container.innerHTML = _buildShell(clases)
     _attachShellEvents(clases)
@@ -89,7 +105,11 @@ export async function renderGestionarClasesView(container) {
     }
   } catch (err) {
     console.error('[GestionarClases]', err)
-    container.innerHTML = _emptyState('bi-exclamation-triangle', 'Error al cargar', escHTML(err.message))
+    container.innerHTML = _emptyState(
+      'bi-exclamation-triangle',
+      'Error al cargar',
+      escHTML(err.message),
+    )
   }
 }
 
@@ -118,17 +138,21 @@ function _noPermissionState(permisos) {
           Para gestionar clases e inscribir alumnos, necesitás que Admin active tu permiso de clases.
         </p>
         <div id="gcv-permission-action">
-          ${pending ? `
+          ${
+            pending
+              ? `
             <div class="gcv-pending-badge">
               <i class="bi bi-clock-history"></i>
               Solicitud Pendiente de Aprobación
             </div>
-          ` : `
+          `
+              : `
             <button class="gcv-btn gcv-btn-primary" id="gcv-btn-request-classes" type="button">
               <i class="bi bi-send-fill"></i>
               Solicitar Permiso de Clases
             </button>
-          `}
+          `
+          }
         </div>
       </div>
     </div>
@@ -178,11 +202,16 @@ function _buildShell(clases) {
         </div>
       </div>
 
-      ${clases.length === 0
-        ? _emptyState('bi-calendar-x', 'Sin clases asignadas', 'El administrador debe asignarte clases primero.')
-        : `<div class="gcv-layout">
+      ${
+        clases.length === 0
+          ? _emptyState(
+              'bi-calendar-x',
+              'Sin clases asignadas',
+              'El administrador debe asignarte clases primero.',
+            )
+          : `<div class="gcv-layout">
             <div class="gcv-clase-list" id="gcv-clase-list">
-              ${clases.map(c => _classCard(c)).join('')}
+              ${clases.map((c) => _classCard(c)).join('')}
             </div>
             <div class="gcv-panel" id="gcv-panel">
               <div class="gcv-panel-placeholder">
@@ -227,27 +256,31 @@ async function _selectClase(claseId, clases) {
   _selectedClaseId = claseId
 
   // Highlight selected card
-  document.querySelectorAll('.gcv-clase-card').forEach(c => c.classList.remove('active'))
+  document.querySelectorAll('.gcv-clase-card').forEach((c) => c.classList.remove('active'))
   document.getElementById(`gcv-card-${claseId}`)?.classList.add('active')
 
   const panel = document.getElementById('gcv-panel')
   if (!panel) return
 
-  const clase = clases.find(c => c.id === claseId)
+  const clase = clases.find((c) => c.id === claseId)
   if (!clase) return
 
   panel.innerHTML = `<div class="gcv-loading"><div class="gcv-spinner"></div></div>`
 
   try {
     const inscritosRaw = await obtenerAlumnosInscritos(claseId)
-    const inscritos = inscritosRaw.map(r => r.alumno).filter(Boolean)
-    _enrolledIds = new Set(inscritosRaw.map(r => r.alumno_id))
-    const disponibles = _allStudents.filter(a => !_enrolledIds.has(a.id))
+    const inscritos = inscritosRaw.map((r) => r.alumno).filter(Boolean)
+    _enrolledIds = new Set(inscritosRaw.map((r) => r.alumno_id))
+    const disponibles = _allStudents.filter((a) => !_enrolledIds.has(a.id))
 
     panel.innerHTML = _buildPanel(clase, inscritos, disponibles)
     _attachPanelEvents(claseId, clases)
   } catch (err) {
-    panel.innerHTML = _emptyState('bi-exclamation-circle', 'Error al cargar alumnos', escHTML(err.message))
+    panel.innerHTML = _emptyState(
+      'bi-exclamation-circle',
+      'Error al cargar alumnos',
+      escHTML(err.message),
+    )
   }
 }
 
@@ -299,9 +332,10 @@ function _buildPanel(clase, inscritos, disponibles) {
           <span class="gcv-section-count" id="gcv-count-inscritos">${inscritos.length}</span>
         </div>
         <div id="gcv-lista-inscritos" class="gcv-student-list">
-          ${inscritos.length === 0
-            ? '<p class="gcv-empty-list">Sin alumnos inscritos aún.</p>'
-            : inscritos.map(a => _rowInscrito(a)).join('')
+          ${
+            inscritos.length === 0
+              ? '<p class="gcv-empty-list">Sin alumnos inscritos aún.</p>'
+              : inscritos.map((a) => _rowInscrito(a)).join('')
           }
         </div>
       </div>
@@ -315,18 +349,23 @@ function _buildPanel(clase, inscritos, disponibles) {
           <span class="gcv-section-count" id="gcv-count-disponibles">${disponibles.length} disponibles</span>
         </div>
         <div id="gcv-lista-disponibles" class="gcv-student-list gcv-available-list">
-          ${disponibles.length === 0
-            ? '<p class="gcv-empty-list">Todos los alumnos activos ya están inscritos.</p>'
-            : disponibles.map(a => _rowDisponible(a)).join('')
+          ${
+            disponibles.length === 0
+              ? '<p class="gcv-empty-list">Todos los alumnos activos ya están inscritos.</p>'
+              : disponibles.map((a) => _rowDisponible(a)).join('')
           }
         </div>
-        ${disponibles.length > 0 ? `
+        ${
+          disponibles.length > 0
+            ? `
           <div class="gcv-add-actions">
             <button type="button" class="gcv-btn gcv-btn-primary" id="gcv-btn-inscribir">
               <i class="bi bi-person-check"></i> Inscribir seleccionados
             </button>
           </div>
-        ` : ''}
+        `
+            : ''
+        }
       </div>
     </div>
   `
@@ -373,7 +412,7 @@ function _rowDisponible(a) {
 // ── Event wiring ──────────────────────────────────────────────────────────────
 
 function _attachShellEvents(clases) {
-  document.getElementById('gcv-clase-list')?.addEventListener('click', async e => {
+  document.getElementById('gcv-clase-list')?.addEventListener('click', async (e) => {
     const card = e.target.closest('.gcv-clase-card')
     if (!card) return
     const claseId = card.dataset.claseId
@@ -385,14 +424,20 @@ function _attachShellEvents(clases) {
 
 function _attachPanelEvents(claseId, clases) {
   // Live search
-  document.getElementById('gcv-search')?.addEventListener('input', e => {
+  document.getElementById('gcv-search')?.addEventListener('input', (e) => {
     const term = e.target.value.toLowerCase().trim()
-    document.querySelectorAll('.inscrito-item').forEach(row => {
-      const match = !term || (row.dataset.name || '').includes(term) || (row.dataset.instrumento || '').includes(term)
+    document.querySelectorAll('.inscrito-item').forEach((row) => {
+      const match =
+        !term ||
+        (row.dataset.name || '').includes(term) ||
+        (row.dataset.instrumento || '').includes(term)
       row.style.display = match ? '' : 'none'
     })
-    document.querySelectorAll('.disponible-item').forEach(row => {
-      const match = !term || (row.dataset.name || '').includes(term) || (row.dataset.instrumento || '').includes(term)
+    document.querySelectorAll('.disponible-item').forEach((row) => {
+      const match =
+        !term ||
+        (row.dataset.name || '').includes(term) ||
+        (row.dataset.instrumento || '').includes(term)
       row.style.display = match ? '' : 'none'
     })
   })
@@ -432,7 +477,7 @@ function _attachPanelEvents(claseId, clases) {
       AppToast.success(`${nombre} registrado e inscrito exitosamente`)
       // Refresh panel
       const todosActualizados = await obtenerAlumnos().catch(() => _allStudents)
-      _allStudents = todosActualizados.filter(a => a.activo !== false && a.is_active !== false)
+      _allStudents = todosActualizados.filter((a) => a.activo !== false && a.is_active !== false)
       await _selectClase(claseId, clases)
     } catch (err) {
       AppToast.error('Error: ' + err.message)
@@ -442,7 +487,7 @@ function _attachPanelEvents(claseId, clases) {
   })
 
   // Desinscribir
-  document.getElementById('gcv-lista-inscritos')?.addEventListener('click', async e => {
+  document.getElementById('gcv-lista-inscritos')?.addEventListener('click', async (e) => {
     const btn = e.target.closest('.desinscribir-btn')
     if (!btn) return
     const alumnoId = btn.dataset.alumnoId
@@ -481,7 +526,9 @@ function _attachPanelEvents(claseId, clases) {
       for (const cb of checks) {
         await inscribirAlumno(claseId, cb.value)
       }
-      AppToast.success(`${checks.length} alumno${checks.length > 1 ? 's' : ''} inscrito${checks.length > 1 ? 's' : ''} correctamente`)
+      AppToast.success(
+        `${checks.length} alumno${checks.length > 1 ? 's' : ''} inscrito${checks.length > 1 ? 's' : ''} correctamente`,
+      )
       await _selectClase(claseId, clases)
     } catch (err) {
       AppToast.error('Error: ' + err.message)
@@ -495,7 +542,10 @@ function _resetNewForm() {
   const form = document.getElementById('gcv-new-form')
   if (form) form.classList.add('d-none')
   const inputs = ['gcv-nuevo-nombre', 'gcv-nuevo-instrumento', 'gcv-nuevo-telefono']
-  inputs.forEach(id => { const el = document.getElementById(id); if (el) el.value = '' })
+  inputs.forEach((id) => {
+    const el = document.getElementById(id)
+    if (el) el.value = ''
+  })
 }
 
 // ── Utilities ─────────────────────────────────────────────────────────────────
@@ -508,7 +558,7 @@ function _skeletonHTML() {
       </div>
       <div class="gcv-layout">
         <div class="gcv-clase-list">
-          ${[1,2,3].map(() => '<div class="gcv-skeleton gcv-skel-card"></div>').join('')}
+          ${[1, 2, 3].map(() => '<div class="gcv-skeleton gcv-skel-card"></div>').join('')}
         </div>
         <div class="gcv-panel">
           <div class="gcv-loading"><div class="gcv-spinner"></div></div>
@@ -532,7 +582,8 @@ function _emptyState(icon, title, msg) {
 
 // Styles are in 12-views-gestion.css — _injectStyles() removed.
 // eslint-disable-next-line no-unused-vars
-function _injectStyles_legacy() { /* noop — kept to avoid parse errors with backtick below */
+function _injectStyles_legacy() {
+  /* noop — kept to avoid parse errors with backtick below */
   const style = document.createElement('style')
   style.textContent = `
     .gcv-root {
@@ -1054,45 +1105,6 @@ function _injectStyles_legacy() { /* noop — kept to avoid parse errors with ba
     @keyframes gcv-shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
 
     /* ── Utility ── */
-
-    [data-bs-theme="dark"] .gcv-clase-card,
-    [data-bs-theme="dark"] .gcv-panel,
-    [data-portal-theme="dark"] .gcv-clase-card,
-    [data-portal-theme="dark"] .gcv-panel {
-      background: rgba(28, 28, 30, .92);
-      border-color: rgba(148, 163, 184, .28);
-      box-shadow: 0 18px 45px rgba(0, 0, 0, .18);
-    }
-    [data-bs-theme="dark"] .gcv-clase-card.active,
-    [data-portal-theme="dark"] .gcv-clase-card.active {
-      background: linear-gradient(135deg, rgba(37, 99, 235, .22), rgba(124, 58, 237, .14));
-      border-color: var(--pm-primary, #3b82f6);
-    }
-    [data-bs-theme="dark"] .gcv-search-bar,
-    [data-bs-theme="dark"] .gcv-new-form,
-    [data-bs-theme="dark"] .gcv-input,
-    [data-bs-theme="dark"] .gcv-btn-ghost,
-    [data-bs-theme="dark"] .gcv-horario-chip,
-    [data-portal-theme="dark"] .gcv-search-bar,
-    [data-portal-theme="dark"] .gcv-new-form,
-    [data-portal-theme="dark"] .gcv-input,
-    [data-portal-theme="dark"] .gcv-btn-ghost,
-    [data-portal-theme="dark"] .gcv-horario-chip {
-      background: rgba(15, 23, 42, .72);
-      border-color: rgba(148, 163, 184, .28);
-      color: var(--pm-text, #f8fafc);
-    }
-    [data-bs-theme="dark"] .gcv-student-row:hover,
-    [data-portal-theme="dark"] .gcv-student-row:hover {
-      background: rgba(15, 23, 42, .55);
-      border-color: rgba(148, 163, 184, .24);
-    }
-    [data-bs-theme="dark"] .gcv-permission-card,
-    [data-portal-theme="dark"] .gcv-permission-card {
-      background: rgba(28, 28, 30, .92);
-      border-color: rgba(148, 163, 184, .28);
-      box-shadow: 0 18px 45px rgba(0, 0, 0, .24);
-    }
 
     .d-none { display: none !important; }
   `

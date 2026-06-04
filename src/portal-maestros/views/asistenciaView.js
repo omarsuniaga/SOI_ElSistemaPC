@@ -183,7 +183,10 @@ async function _renderEmergenteSesion(container, { sesionId, fecha, maestro, rou
   }
 }
 
-export async function renderAsistenciaView(containerOrId, { claseId, fecha, sesionId, router } = {}) {
+export async function renderAsistenciaView(
+  containerOrId,
+  { claseId, fecha, sesionId, router } = {},
+) {
   // Resolve container: accept both DOM element and string ID
   const container =
     typeof containerOrId === 'string' ? document.getElementById(containerOrId) : containerOrId
@@ -279,7 +282,14 @@ export async function renderAsistenciaView(containerOrId, { claseId, fecha, sesi
     // ── DIAGNOSTIC ──────────────────────────────────────────────────────────
     console.group('[asistencia] Session restore diagnostic')
     console.log('claseId:', claseId, '| fecha:', fechaHoy)
-    console.log('sesionId:', sesionId, '| borrador:', sesionExistenteData?.borrador, '| estado_db:', sesionExistenteData?.estado)
+    console.log(
+      'sesionId:',
+      sesionId,
+      '| borrador:',
+      sesionExistenteData?.borrador,
+      '| estado_db:',
+      sesionExistenteData?.estado,
+    )
     console.log('sesionExistenteData.asistencia:', sesionExistenteData?.asistencia)
     console.log('alumnos count:', alumnos.length)
     console.groupEnd()
@@ -342,7 +352,12 @@ export async function renderAsistenciaView(containerOrId, { claseId, fecha, sesi
     // Si hay sesión guardada, restaurar estados de asistencia
     // Source 1: JSON field in sesiones_clase (fast, covers UI-code saves)
     let serverAsistencia = sesionExistenteData?.asistencia || []
-    console.log('[asistencia] Source 1 (JSONB):', serverAsistencia.length, 'registros', serverAsistencia.slice(0, 2))
+    console.log(
+      '[asistencia] Source 1 (JSONB):',
+      serverAsistencia.length,
+      'registros',
+      serverAsistencia.slice(0, 2),
+    )
 
     const _DB_TO_UI = { presente: 'P', ausente: 'A', justificado: 'J', tarde: 'T' }
 
@@ -385,10 +400,20 @@ export async function renderAsistenciaView(containerOrId, { claseId, fecha, sesi
     }
 
     // Log final state before applying
-    console.log('[asistencia] serverAsistencia final:', serverAsistencia.length, '| alumnos en estado:', Object.keys(estado).length)
+    console.log(
+      '[asistencia] serverAsistencia final:',
+      serverAsistencia.length,
+      '| alumnos en estado:',
+      Object.keys(estado).length,
+    )
     if (serverAsistencia.length > 0 && Object.keys(estado).length > 0) {
       const sample = serverAsistencia[0]
-      console.log('[asistencia] sample alumno_id from serverAsistencia:', sample?.alumno_id, '| exists in estado:', Object.prototype.hasOwnProperty.call(estado, sample?.alumno_id))
+      console.log(
+        '[asistencia] sample alumno_id from serverAsistencia:',
+        sample?.alumno_id,
+        '| exists in estado:',
+        Object.prototype.hasOwnProperty.call(estado, sample?.alumno_id),
+      )
     }
 
     // Normalize any full DB values back to UI abbreviations
@@ -513,12 +538,6 @@ function _renderVista(container, ctx) {
         position: relative;
         z-index: 10;
         width: 100%;
-      }
-      [data-portal-theme="dark"] .pm-asist-header,
-      [data-bs-theme="dark"] .pm-asist-header {
-        background: var(--pm-surface-2);
-        border-bottom: 1px solid var(--pm-border);
-        box-shadow: none;
       }
       .pm-asist-title { margin: 0; font-size: 1.2rem; font-weight: 800; letter-spacing: -0.02em; color: #fff; }
       .pm-asist-subtitle { margin: 4px 0 0; font-size: 0.75rem; opacity: 0.85; font-weight: 500; color: rgba(255, 255, 255, 0.9); }

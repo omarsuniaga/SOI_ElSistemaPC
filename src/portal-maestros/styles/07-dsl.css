@@ -260,27 +260,50 @@
    ADAPTIVE DSL EDITOR
    ═══════════════════════════════════════════════════════════════ */
 
-/* Mobile: toolbar buttons must meet WCAG 44px touch target */
+/* Mobile: compact toolbar with larger touch targets */
 @media (max-width: 767px) {
   .dsl-toolbar {
     flex-wrap: wrap;
-    gap: 0.35rem;
-    padding: 0.4rem;
+    gap: 0.3rem;
+    padding: 0.5rem;
+    background: var(--pm-surface);
+    border-radius: 8px;
   }
+
   .dsl-toolbar-toggle {
     width: 36px;
     height: 36px;
-    font-size: 1rem;
+    font-size: 1.1rem;
     flex-shrink: 0;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
+
   .dsl-token-btn {
-    padding: 0.5rem 0.6rem;
+    padding: 0.45rem 0.55rem;
     min-width: 36px;
     min-height: 36px;
     font-size: 0.75rem;
+    border-radius: 6px;
   }
+
   .dsl-toolbar-buttons {
     gap: 0.2rem;
+    flex-wrap: wrap;
+  }
+
+  /* AI button: make it prominent */
+  .pm-dsl-tool-btn.ai {
+    min-width: auto;
+    flex: 1 0 auto;
+    font-size: 0.7rem;
+  }
+
+  /* Hide text labels on small buttons, show only icons */
+  .dsl-token-btn span:not([class]) {
+    display: none;
   }
 }
 

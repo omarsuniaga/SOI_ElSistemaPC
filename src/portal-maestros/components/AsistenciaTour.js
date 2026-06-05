@@ -128,13 +128,19 @@ export class AsistenciaTour {
   /** Inyecta el DOM y el CSS; arranca automáticamente si es la primera vez. */
   mount() {
     if (this._mounted) return
-    this._injectStyles()
-    this._injectDOM()
-    this._bindEvents()
-    this._mounted = true
+    try {
+      this._injectStyles()
+      this._injectDOM()
+      this._bindEvents()
+      this._mounted = true
 
-    if (!localStorage.getItem(STORAGE_KEY)) {
-      this._autoTimer = setTimeout(() => this.start(), AUTO_START_DELAY)
+      if (!localStorage.getItem(STORAGE_KEY)) {
+        this._autoTimer = setTimeout(() => this.start(), AUTO_START_DELAY)
+      }
+    } catch (err) {
+      console.error('[AsistenciaTour] Error al montar el tour:', err)
+      // Abortar silenciosamente — el tour no aparecerá pero la app seguirá funcionando
+      this._mounted = false
     }
   }
 
@@ -245,6 +251,12 @@ export class AsistenciaTour {
   }
 
   _bindEvents() {
+    // SAFETY GUARD: Si el DOM no fue inyectado correctamente, abortar silenciosamente
+    if (!this._tooltip || !this._overlay) {
+      console.warn('[AsistenciaTour] DOM no inyectado correctamente, saltando event binding')
+      return
+    }
+
     this._tooltip.querySelector('#pm-tour-next').addEventListener('click', () => this._nextStep())
     this._tooltip.querySelector('#pm-tour-skip').addEventListener('click', () => this._close())
 
@@ -272,6 +284,12 @@ export class AsistenciaTour {
   }
 
   _positionOnElement(targetEl, step, index) {
+    // SAFETY GUARD: Si el tour no fue montado correctamente, abortar silenciosamente
+    if (!this._spotlight || !this._tooltip) {
+      console.warn('[AsistenciaTour] Tour no montado correctamente, abortando posicionamiento')
+      return
+    }
+
     // BUG FIX #3: usar solo getBoundingClientRect() — ya son coords del viewport.
     // El overlay, spotlight y tooltip son position:fixed → viven en el mismo
     // sistema de coordenadas. NO sumar scrollY.

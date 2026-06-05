@@ -742,6 +742,144 @@ function _renderVista(container, ctx) {
         transition: all 0.2s;
       }
       .pm-asist-btn-obs:active, .pm-asist-btn-save:active { transform: scale(0.96); }
+
+      /* ═════════════════════════════════════════════════════════════
+         MOBILE OPTIMIZATION — max-width: 767px
+         ═════════════════════════════════════════════════════════════ */
+      @media (max-width: 767px) {
+        /* ── Reduce overall padding/margins for compact layout ── */
+        .pm-asist-header {
+          padding: 1rem 1rem 1.5rem 1rem;
+          margin-bottom: 1rem;
+        }
+
+        .pm-asist-alumnos-container {
+          padding: 0 0.75rem 1.5rem 0.75rem;
+        }
+
+        .pm-route-selector-wrap {
+          margin: 0 0.75rem 0.75rem 0.75rem;
+          padding: 0.5rem 0.75rem;
+        }
+
+        /* ── DSL Editor: larger for more writing space ── */
+        .pm-dsl-editor-container {
+          min-height: 220px;
+        }
+
+        .pm-dsl-editable {
+          min-height: 220px;
+          padding: 0.85rem;
+          font-size: 0.9rem;
+        }
+
+        .pm-dsl-placeholder {
+          font-size: 0.75rem;
+          line-height: 1.3;
+          opacity: 0.7;
+        }
+
+        .pm-dsl-placeholder-title {
+          font-size: 0.8rem;
+          margin-bottom: 0.3rem;
+        }
+
+        .pm-dsl-placeholder-example {
+          margin-bottom: 0.3rem;
+          gap: 0.25rem;
+        }
+
+        .pm-dsl-placeholder-guide {
+          font-size: 0.7rem;
+        }
+
+        /* ── Toolbar: compact buttons ── */
+        .dsl-toolbar {
+          flex-wrap: wrap;
+          gap: 0.4rem;
+          padding: 0.5rem;
+        }
+
+        .pm-dsl-tool-btn {
+          padding: 0.45rem 0.5rem;
+          font-size: 0.75rem;
+          flex: 0 1 auto;
+          min-width: fit-content;
+        }
+
+        .pm-dsl-tool-btn.ai {
+          font-size: 0.7rem;
+          padding: 0.4rem 0.6rem;
+        }
+
+        /* ── Actions bar: adjust for mobile nav ── */
+        .pm-asist-actions-fixed {
+          bottom: 65px;
+          padding: 0.6rem 0.75rem;
+          gap: 0.5rem;
+          flex-wrap: wrap;
+        }
+
+        .pm-asist-btn-obs,
+        .pm-asist-btn-save {
+          padding: 0.6rem 0.5rem;
+          font-size: 0.8rem;
+          border-radius: 8px;
+          min-height: 40px;
+        }
+
+        .pm-asist-btn-obs i,
+        .pm-asist-btn-save i {
+          font-size: 1rem;
+        }
+
+        /* ── Planificación card: collapse some info ── */
+        .pm-planificacion-card {
+          margin: 0.75rem;
+        }
+
+        .pm-planificacion-header {
+          padding: 1rem 1.25rem;
+        }
+
+        .pm-planificacion-info {
+          min-width: 0;
+        }
+
+        .pm-planificacion-nombre {
+          font-size: 1rem;
+        }
+
+        /* ── Hide non-essential sections to save space ── */
+        .pm-route-tree-dropdown-box {
+          max-height: 200px;
+        }
+
+        /* ── Reduce section margins ── */
+        .pm-asist-dsl-section {
+          margin-top: 1.25rem !important;
+          padding: 0 0.75rem;
+        }
+
+        .pm-asist-section-title {
+          font-size: 1rem;
+          margin-bottom: 0.75rem;
+        }
+
+        /* ── Optimize list items spacing ── */
+        .pm-asist-item {
+          margin-bottom: 0.45rem;
+          padding: 0.65rem;
+        }
+
+        .pm-asist-nombre {
+          font-size: 0.95rem;
+        }
+
+        .pm-asist-instrumento {
+          font-size: 0.75rem;
+        }
+      }
     </style>
 
     <!-- Tour inyectado por AsistenciaTour.js -->

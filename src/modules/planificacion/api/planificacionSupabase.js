@@ -153,8 +153,8 @@ export async function obtenerSesiones(maestroId, fechaInicio, fechaFin) {
 /**
  * Obtiene la cobertura curricular: todas las clases con o sin plan asociado.
  *
- * Hace un LEFT JOIN implícito via Supabase: clases → planificaciones.
- * Si una clase no tiene plan, planificaciones devuelve [] (array vacío).
+ * Two-step query: first fetch clases, then fetch planificaciones separately.
+ * Avoids Supabase schema cache issues with nested selects on ambiguous FK relationships.
  *
  * @param {string|null} maestroId  - Si se provee, filtra por maestro. null = todas las clases (admin).
  * @returns {Promise<Array<{
@@ -171,13 +171,10 @@ export async function obtenerSesiones(maestroId, fechaInicio, fechaFin) {
  * }>>}
  */
 export async function obtenerCoberturaCurricular(maestroId = null) {
-  // Two-step query: first fetch clases, then fetch maestros for the names.
-  // Avoids Supabase schema cache issues with ambiguous FK relationships.
+  // ── Step 1: Fetch clases (no nested select, avoids schema cache issues) ──
   let query = supabase
     .from('clases')
-    .select(
-      'id, nombre, instrumento, maestro_titular_id, planificaciones ( id, estado, tema, updated_at )',
-    )
+    .select('id, nombre, instrumento, maestro_titular_id')
     .eq('activo', true)
     .order('nombre', { ascending: true })
 
@@ -185,12 +182,33 @@ export async function obtenerCoberturaCurricular(maestroId = null) {
     query = query.eq('maestro_titular_id', maestroId)
   }
 
-  const { data: clases, error } = await query
+  const { data: clases, error: clasesError } = await query
+  if (clasesError) throw new Error(`Error cargando cobertura curricular: ${clasesError.message}`)
 
-  if (error) throw new Error(`Error cargando cobertura curricular: ${error.message}`)
+  const clasesList = clases || []
 
-  // Collect unique maestro IDs and fetch their names
-  const maestroIds = [...new Set((clases || []).map((c) => c.maestro_titular_id).filter(Boolean))]
+  // ── Step 2: Fetch planificaciones for those clases ──
+  const claseIds = clasesList.map((c) => c.id).filter(Boolean)
+  let planMap = {}
+
+  if (claseIds.length > 0) {
+    const { data: planificaciones, error: planError } = await supabase
+      .from('planificaciones')
+      .select('id, clase_id, estado, tema, updated_at')
+      .in('clase_id', claseIds)
+
+    if (planError) throw new Error(`Error cargando planificaciones: ${planError.message}`)
+
+    for (const p of planificaciones || []) {
+      // If multiple planificaciones per clase, keep the first one (matching original behaviour)
+      if (!planMap[p.clase_id]) {
+        planMap[p.clase_id] = p
+      }
+    }
+  }
+
+  // ── Step 3: Fetch maestro names ──
+  const maestroIds = [...new Set(clasesList.map((c) => c.maestro_titular_id).filter(Boolean))]
   const maestrosMap = {}
 
   if (maestroIds.length > 0) {
@@ -204,9 +222,9 @@ export async function obtenerCoberturaCurricular(maestroId = null) {
     }
   }
 
-  return (clases || []).map((clase) => {
-    const planes = Array.isArray(clase.planificaciones) ? clase.planificaciones : []
-    const plan = planes.length > 0 ? planes[0] : null
+  // ── Step 4: Merge in JS with the exact same return shape ──
+  return clasesList.map((clase) => {
+    const plan = planMap[clase.id] ?? null
 
     return {
       clase_id: clase.id,

@@ -13,6 +13,8 @@ import {
 } from '../../modules/planning/services/planningService.js'
 import { announce } from '../utils/a11yUtils.js'
 import { AppToast } from '../../shared/components/AppToast.js'
+import { createPlanningRegistroModal } from '../components/PlanningRegistroModal.js'
+import { createPlanningDetailsModal } from '../components/PlanningDetailsModal.js'
 
 export async function renderPlanningView(container, { maestroId }) {
   let _currentRoute = null
@@ -394,12 +396,30 @@ export async function renderPlanningView(container, { maestroId }) {
   }
 
   async function _showIndicatorDetails(indicator) {
-    // TODO: Abrir modal de detalles
-    console.log('Show details for:', indicator)
+    createPlanningDetailsModal(container, {
+      indicator,
+      claseId: _currentClase,
+      maestroId,
+      routeVersionId: _currentRoute,
+    })
   }
 
   async function _showRegistroModal(indicator) {
-    // TODO: Abrir modal para registrar observación
-    console.log('Show registro modal for:', indicator)
+    createPlanningRegistroModal(container, {
+      indicator,
+      claseId: _currentClase,
+      maestroId,
+      routeVersionId: _currentRoute,
+      onSave: async () => {
+        // Recargar indicadores después de guardar
+        try {
+          _indicators = await getIndicatorsWithStatus(_currentRoute, maestroId, _currentClase)
+          _renderIndicators()
+          AppToast.success('✓ Indicadores actualizados')
+        } catch (err) {
+          console.error('[planning] Error reloading:', err)
+        }
+      },
+    })
   }
 }

@@ -169,20 +169,23 @@ export function show(options, callback, config = {}) {
     const viewportH = window.innerHeight;
     const popupW = 320;
     const popupH = 280;
-    
+
+    // CAMBIO: usar pos.y directamente (getCursorPosition() ahora devuelve bottom)
+    // + 6px para un pequeño gap entre cursor y popup (no solapamiento)
     let left = pos.x;
-    let top = pos.y + 20;
-    
+    let top = pos.y + 6;
+
     // Si se sale por la derecha, mostrar a la izquierda del cursor
     if (left + popupW > viewportW - 20) {
       left = Math.max(10, pos.x - popupW - 10);
     }
-    
-    // Si se sale por abajo, mostrar arriba del cursor
+
+    // Si se sale por abajo, mostrar arriba del cursor (con offset mayor para clarity)
     if (top + popupH > viewportH - 20) {
+      // Mostrar arriba: posición del cursor MENOS altura del popup MENOS gap
       top = Math.max(10, pos.y - popupH - 10);
     }
-    
+
     popupEl.style.left = `${left}px`;
     popupEl.style.top = `${top}px`;
     initialPos = { x: left, y: top };
@@ -447,13 +450,17 @@ function escapeHtml(text) {
 export function getCursorPosition() {
   const sel = window.getSelection();
   if (!sel || sel.rangeCount === 0) return null;
-  
+
   const range = sel.getRangeAt(0);
   const rect = range.getBoundingClientRect();
-  
+
+  // IMPORTANTE: usar rect.bottom (debajo del cursor) en lugar de rect.top
+  // Esto hace que el popup aparezca debajo de la línea de texto donde escribes
+  // rect.left: posición horizontal del cursor
+  // rect.bottom: base de la línea de texto (más legible que rect.top)
   return {
     x: rect.left,
-    y: rect.top
+    y: rect.bottom  // ← Cambio crucial: debajo del cursor, no arriba
   };
 }
 

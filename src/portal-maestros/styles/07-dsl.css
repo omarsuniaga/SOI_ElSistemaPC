@@ -295,6 +295,59 @@
   }
 }
 
+/* ── Help toggle button (mobile collapsible) ────────────────── */
+.pm-dsl-help-toggle {
+  position: absolute;
+  bottom: 0.5rem;
+  right: 0.5rem;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: none;
+  background: var(--apple-primary);
+  color: white;
+  font-weight: bold;
+  font-size: 1.1rem;
+  cursor: pointer;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  box-shadow: 0 2px 8px rgba(0, 122, 255, 0.3);
+}
+
+.pm-dsl-help-toggle:hover {
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(0, 122, 255, 0.4);
+}
+
+.pm-dsl-help-toggle.active {
+  background: var(--pm-success);
+}
+
+/* ── Mobile: hide help by default, show toggle button ────────── */
+@media (max-width: 767px) {
+  .pm-dsl-placeholder {
+    display: none !important;
+  }
+
+  .pm-dsl-help-toggle {
+    display: flex;
+  }
+}
+
+/* ── Tablet/Desktop: show help always, hide toggle button ────── */
+@media (min-width: 768px) {
+  .pm-dsl-help-toggle {
+    display: none;
+  }
+
+  .pm-dsl-placeholder {
+    display: block !important;
+  }
+}
+
 /* Desktop: editor más alto, toolbar inline */
 @media (min-width: 1024px) {
   .pm-dsl-editor-container {

@@ -35,18 +35,35 @@ export function createDslEditor(container, { initialContent = '', onChange, onAl
 
   container.innerHTML = `
     <div class="pm-dsl-editor-container">
-      <div 
-        id="pm-dsl-editable" 
-        class="pm-dsl-editable" 
-        contenteditable="true" 
+      <div
+        id="pm-dsl-editable"
+        class="pm-dsl-editable"
+        contenteditable="true"
         spellcheck="false"
       ></div>
       <div class="pm-dsl-placeholder" id="pm-dsl-placeholder">${DSL_PLACEHOLDER_HTML}</div>
+      <button class="pm-dsl-help-toggle" id="pm-dsl-help-toggle" title="Mostrar/Ocultar ayuda" aria-label="Mostrar/Ocultar ayuda">?</button>
     </div>
   `
 
   const editor = container.querySelector('#pm-dsl-editable')
   const placeholder = container.querySelector('#pm-dsl-placeholder')
+  const helpToggle = container.querySelector('#pm-dsl-help-toggle')
+
+  // Help toggle (mobile: hide placeholder by default, show with button click)
+  let _helpVisible = window.innerWidth >= 768 // visible on desktop by default
+  function _updateHelpVisibility() {
+    placeholder.style.display = _helpVisible ? 'block' : 'none'
+  }
+  _updateHelpVisibility()
+  if (helpToggle) {
+    helpToggle.addEventListener('click', (e) => {
+      e.stopPropagation()
+      _helpVisible = !_helpVisible
+      _updateHelpVisibility()
+      helpToggle.classList.toggle('active', _helpVisible)
+    })
+  }
 
   // Tooltip element
   const tooltip = document.createElement('div')

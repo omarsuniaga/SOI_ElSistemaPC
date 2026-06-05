@@ -8,62 +8,61 @@
  * - Preserva las guías de instalación manuales y nativas para el botón del header.
  */
 
-import { getMaestroLocal } from '../auth/maestroAuth.js';
-import { getSesiones, getMisClases } from '../services/maestroDataService.js';
+import { getMaestroLocal } from '../auth/maestroAuth.js'
+import { getSesiones, getMisClases } from '../services/maestroDataService.js'
 
-let deferredPrompt = null;
-let smartBannerEl = null;
-let guideModalEl = null;
+let deferredPrompt = null
+let smartBannerEl = null
+let guideModalEl = null
 
 export const pwaInstaller = {
-
   init() {
-    window.pwaInstaller = this;
-    this._injectStyles();
+    window.pwaInstaller = this
+    this._injectStyles()
 
     // Capturar el prompt de instalación nativo para el botón del header
     window.addEventListener('beforeinstallprompt', (e) => {
-      e.preventDefault();
-      deferredPrompt = e;
-    });
+      e.preventDefault()
+      deferredPrompt = e
+    })
 
     window.addEventListener('appinstalled', () => {
-      localStorage.setItem('pwa-installed', 'true');
-      deferredPrompt = null;
-    });
+      localStorage.setItem('pwa-installed', 'true')
+      deferredPrompt = null
+    })
   },
 
   // ── Motor de Evaluación de Insights / Alertas ──────────────────────────────
 
   async evaluateInsights() {
-    const maestro = getMaestroLocal();
-    if (!maestro?.id) return;
+    const maestro = getMaestroLocal()
+    if (!maestro?.id) return
 
     try {
       // 1. Obtener datos clave en paralelo (aprovechando la cache en memoria)
-      const misClases = await getMisClases();
-      
-      const hoy = new Date();
-      const sieteDiasAgo = new Date(hoy.getTime() - 7 * 24 * 60 * 60 * 1000);
-      const hasta = hoy.toISOString().split('T')[0];
-      const desde = sieteDiasAgo.toISOString().split('T')[0];
-      
-      const sesiones = await getSesiones(maestro.id, desde, hasta);
+      const misClases = await getMisClases()
+
+      const hoy = new Date()
+      const sieteDiasAgo = new Date(hoy.getTime() - 7 * 24 * 60 * 60 * 1000)
+      const hasta = hoy.toISOString().split('T')[0]
+      const desde = sieteDiasAgo.toISOString().split('T')[0]
+
+      const sesiones = await getSesiones(maestro.id, desde, hasta)
 
       // 2. Definir y evaluar alertas en orden de prioridad (Alta -> Media -> Baja)
-      const activeAlerts = [];
+      const activeAlerts = []
 
       // A. ALTA: Clases en borrador (pendientes de guardar)
-      const borradores = (sesiones || []).filter(s => s.borrador === true);
+      const borradores = (sesiones || []).filter((s) => s.borrador === true)
       if (borradores.length > 0) {
-        const classMap = Object.fromEntries((misClases || []).map(c => [c.id, c.nombre]));
-        
+        const classMap = Object.fromEntries((misClases || []).map((c) => [c.id, c.nombre]))
+
         if (borradores.length === 1) {
-          const s = borradores[0];
-          const className = classMap[s.clase_id] || 'Clase';
-          const formattedDate = s.fecha ? s.fecha.split('-').reverse().slice(0, 2).join('/') : '';
-          const dateStr = formattedDate ? ` del ${formattedDate}` : '';
-          
+          const s = borradores[0]
+          const className = classMap[s.clase_id] || 'Clase'
+          const formattedDate = s.fecha ? s.fecha.split('-').reverse().slice(0, 2).join('/') : ''
+          const dateStr = formattedDate ? ` del ${formattedDate}` : ''
+
           activeAlerts.push({
             id: 'draft-sessions',
             priority: 'high',
@@ -71,12 +70,13 @@ export const pwaInstaller = {
             text: `Tienes el registro de ${className}${dateStr} en borrador.`,
             actionLabel: 'Revisar',
             action: () => {
-              if (window.router) window.router.navigate(`asistencia?clase=${s.clase_id}&fecha=${s.fecha}`);
-            }
-          });
+              if (window.router)
+                window.router.navigate(`asistencia?clase=${s.clase_id}&fecha=${s.fecha}`)
+            },
+          })
         } else {
           // Si hay múltiples borradores, mostrar el contador general pero llevar al primero
-          const s = borradores[0];
+          const s = borradores[0]
           activeAlerts.push({
             id: 'draft-sessions',
             priority: 'high',
@@ -84,44 +84,49 @@ export const pwaInstaller = {
             text: `Tienes ${borradores.length} registros de clase en borrador.`,
             actionLabel: 'Revisar',
             action: () => {
-              if (window.router) window.router.navigate(`asistencia?clase=${s.clase_id}&fecha=${s.fecha}`);
-            }
-          });
+              if (window.router)
+                window.router.navigate(`asistencia?clase=${s.clase_id}&fecha=${s.fecha}`)
+            },
+          })
         }
       }
 
       // B. ALTA: Sesiones pasadas sin asistencia registrada (últimos 7 días, excluye hoy)
-      const claseIds = new Set((misClases || []).map(c => c.id));
-      const sinRegistrar = (sesiones || []).filter(s => {
-        if (s.fecha >= hasta) return false; // excluir hoy y futuro
-        if (!claseIds.has(s.clase_id)) return false;
-        const tieneAsistencia = Array.isArray(s.asistencia) && s.asistencia.length > 0;
-        const tieneContenido  = typeof s.contenido === 'string' && s.contenido.trim().length > 0;
-        return !tieneAsistencia && !(s.borrador === false && tieneContenido);
-      });
+      const claseIds = new Set((misClases || []).map((c) => c.id))
+      const sinRegistrar = (sesiones || []).filter((s) => {
+        if (s.fecha >= hasta) return false // excluir hoy y futuro
+        if (!claseIds.has(s.clase_id)) return false
+        const tieneAsistencia = Array.isArray(s.asistencia) && s.asistencia.length > 0
+        const tieneContenido = typeof s.contenido === 'string' && s.contenido.trim().length > 0
+        return !tieneAsistencia && !(s.borrador === false && tieneContenido)
+      })
 
       if (sinRegistrar.length > 0) {
-        const classMap = Object.fromEntries((misClases || []).map(c => [c.id, c.nombre]));
-        const primera = sinRegistrar[0];
-        const nombreClase = classMap[primera.clase_id] || 'Clase';
-        const fechaCorta  = primera.fecha ? primera.fecha.split('-').reverse().slice(0, 2).join('/') : '';
+        const classMap = Object.fromEntries((misClases || []).map((c) => [c.id, c.nombre]))
+        const primera = sinRegistrar[0]
+        const nombreClase = classMap[primera.clase_id] || 'Clase'
+        const fechaCorta = primera.fecha
+          ? primera.fecha.split('-').reverse().slice(0, 2).join('/')
+          : ''
 
         activeAlerts.push({
           id: 'sessions-without-attendance',
           priority: 'high',
           icon: 'bi-clipboard-x-fill',
-          text: sinRegistrar.length === 1
-            ? `${nombreClase} del ${fechaCorta} quedó sin registrar asistencia.`
-            : `Tienes ${sinRegistrar.length} clases sin asistencia registrada esta semana.`,
+          text:
+            sinRegistrar.length === 1
+              ? `${nombreClase} del ${fechaCorta} quedó sin registrar asistencia.`
+              : `Tienes ${sinRegistrar.length} clases sin asistencia registrada esta semana.`,
           actionLabel: 'Registrar',
           action: () => {
-            if (window.router) window.router.navigate(`asistencia?clase=${primera.clase_id}&fecha=${primera.fecha}`);
-          }
-        });
+            if (window.router)
+              window.router.navigate(`asistencia?clase=${primera.clase_id}&fecha=${primera.fecha}`)
+          },
+        })
       }
 
       // D. MEDIA: Perfil incompleto (falta teléfono)
-      const tieneTelefono = maestro.telefono || maestro.tlf;
+      const tieneTelefono = maestro.telefono || maestro.tlf
       if (!tieneTelefono) {
         activeAlerts.push({
           id: 'profile-incomplete',
@@ -130,12 +135,26 @@ export const pwaInstaller = {
           text: 'Completa tu número de teléfono en tu perfil de usuario.',
           actionLabel: 'Completar',
           action: () => {
-            if (window.router) window.router.navigate('perfil');
-          }
-        });
+            if (window.router) window.router.navigate('perfil')
+          },
+        })
       }
 
-      // E. BAJA: Sin clases asignadas
+      // E. MEDIA: PWA instalable no instalada
+      if (deferredPrompt !== null && !this._isStandalone()) {
+        activeAlerts.push({
+          id: 'pwa-install-prompt',
+          priority: 'medium',
+          icon: 'bi-download',
+          text: 'Instala SOI Maestros en tu pantalla de inicio para acceso rápido sin conexión.',
+          actionLabel: 'Instalar',
+          action: () => {
+            this.promptInstall()
+          },
+        })
+      }
+
+      // F. BAJA: Sin clases asignadas
       if (!misClases || misClases.length === 0) {
         activeAlerts.push({
           id: 'no-classes-assigned',
@@ -144,35 +163,34 @@ export const pwaInstaller = {
           text: 'No tienes clases asignadas en el sistema actualmente.',
           actionLabel: 'Soporte',
           action: () => {
-            if (window.router) window.router.navigate('perfil');
-          }
-        });
+            if (window.router) window.router.navigate('perfil')
+          },
+        })
       }
 
       // 3. Filtrar alertas desestimadas en localStorage (duración: 7 días)
-      const validAlerts = activeAlerts.filter(alert => {
-        const dismissedTime = localStorage.getItem(`soi-dismissed-${alert.id}`);
-        if (!dismissedTime) return true;
+      const validAlerts = activeAlerts.filter((alert) => {
+        const dismissedTime = localStorage.getItem(`soi-dismissed-${alert.id}`)
+        if (!dismissedTime) return true
 
-        const diff = Date.now() - parseInt(dismissedTime, 10);
-        const sieteDiasMs = 7 * 24 * 60 * 60 * 1000;
-        return diff > sieteDiasMs; // Retornar true solo si ya pasaron los 7 días
-      });
+        const diff = Date.now() - parseInt(dismissedTime, 10)
+        const sieteDiasMs = 7 * 24 * 60 * 60 * 1000
+        return diff > sieteDiasMs // Retornar true solo si ya pasaron los 7 días
+      })
 
       // 4. Renderizar la alerta de mayor prioridad
       if (validAlerts.length > 0) {
-        const nextAlert = validAlerts[0];
+        const nextAlert = validAlerts[0]
         if (this.currentAlertId === nextAlert.id && this.currentAlertText === nextAlert.text) {
           // Si es la misma alerta y el mismo texto, mantenerla sin cambios ni parpadeos
-          return;
+          return
         }
-        this._showInsightBanner(nextAlert);
+        this._showInsightBanner(nextAlert)
       } else {
-        this.dismissBanner();
+        this.dismissBanner()
       }
-
     } catch (err) {
-      console.warn('[SmartInsights] Error al evaluar alertas:', err);
+      console.warn('[SmartInsights] Error al evaluar alertas:', err)
     }
   },
 
@@ -180,55 +198,55 @@ export const pwaInstaller = {
 
   _showInsightBanner(alert) {
     // Si ya existe el banner y es otra alerta, hacer transición en lugar de destruir y recrear
-    const existingBanner = document.getElementById('pwa-smart-banner') || smartBannerEl;
+    const existingBanner = document.getElementById('pwa-smart-banner') || smartBannerEl
     if (existingBanner) {
-      const capsuleEl = existingBanner.querySelector('.psb-capsule');
+      const capsuleEl = existingBanner.querySelector('.psb-capsule')
       if (capsuleEl) {
-        capsuleEl.style.transition = 'opacity 0.2s ease';
-        capsuleEl.style.opacity = '0';
-        
+        capsuleEl.style.transition = 'opacity 0.2s ease'
+        capsuleEl.style.opacity = '0'
+
         setTimeout(() => {
-          const dotEl = capsuleEl.querySelector('.psb-severity-dot');
+          const dotEl = capsuleEl.querySelector('.psb-severity-dot')
           if (dotEl) {
-            dotEl.className = `psb-severity-dot ${alert.priority}`;
-            dotEl.innerHTML = `<i class="bi ${alert.icon}"></i>`;
+            dotEl.className = `psb-severity-dot ${alert.priority}`
+            dotEl.innerHTML = `<i class="bi ${alert.icon}"></i>`
           }
-          const titleEl = capsuleEl.querySelector('.psb-title');
+          const titleEl = capsuleEl.querySelector('.psb-title')
           if (titleEl) {
-            titleEl.textContent = alert.text;
+            titleEl.textContent = alert.text
           }
-          const actionBtn = capsuleEl.querySelector('#pwa-banner-action');
+          const actionBtn = capsuleEl.querySelector('#pwa-banner-action')
           if (actionBtn) {
-            actionBtn.innerHTML = `<span>${alert.actionLabel}</span>`;
-            const newActionBtn = actionBtn.cloneNode(true);
-            actionBtn.parentNode.replaceChild(newActionBtn, actionBtn);
+            actionBtn.innerHTML = `<span>${alert.actionLabel}</span>`
+            const newActionBtn = actionBtn.cloneNode(true)
+            actionBtn.parentNode.replaceChild(newActionBtn, actionBtn)
             newActionBtn.addEventListener('click', () => {
-              alert.action();
-            });
+              alert.action()
+            })
           }
-          
-          const closeBtn = capsuleEl.querySelector('#pwa-banner-close');
+
+          const closeBtn = capsuleEl.querySelector('#pwa-banner-close')
           if (closeBtn) {
-            const newCloseBtn = closeBtn.cloneNode(true);
-            closeBtn.parentNode.replaceChild(newCloseBtn, closeBtn);
+            const newCloseBtn = closeBtn.cloneNode(true)
+            closeBtn.parentNode.replaceChild(newCloseBtn, closeBtn)
             newCloseBtn.addEventListener('click', () => {
-              localStorage.setItem(`soi-dismissed-${alert.id}`, Date.now().toString());
-              this.dismissBanner();
-            });
+              localStorage.setItem(`soi-dismissed-${alert.id}`, Date.now().toString())
+              this.dismissBanner()
+            })
           }
-          
-          this.currentAlertId = alert.id;
-          this.currentAlertText = alert.text;
-          capsuleEl.style.opacity = '1';
-        }, 200);
-        return;
+
+          this.currentAlertId = alert.id
+          this.currentAlertText = alert.text
+          capsuleEl.style.opacity = '1'
+        }, 200)
+        return
       }
     }
 
-    smartBannerEl = document.createElement('div');
-    smartBannerEl.id = 'pwa-smart-banner';
-    smartBannerEl.setAttribute('role', 'status');
-    smartBannerEl.setAttribute('aria-live', 'polite');
+    smartBannerEl = document.createElement('div')
+    smartBannerEl.id = 'pwa-smart-banner'
+    smartBannerEl.setAttribute('role', 'status')
+    smartBannerEl.setAttribute('aria-live', 'polite')
     smartBannerEl.innerHTML = `
       <div class="psb-capsule" style="opacity: 1;">
         <div class="psb-severity-dot ${alert.priority}">
@@ -244,74 +262,74 @@ export const pwaInstaller = {
           <i class="bi bi-x"></i>
         </button>
       </div>
-    `;
+    `
 
-    document.body.prepend(smartBannerEl);
-    this.currentAlertId = alert.id;
-    this.currentAlertText = alert.text;
+    document.body.prepend(smartBannerEl)
+    this.currentAlertId = alert.id
+    this.currentAlertText = alert.text
 
     // Animación de entrada fluida amortiguada
     requestAnimationFrame(() => {
-      requestAnimationFrame(() => smartBannerEl?.classList.add('psb-visible'));
-    });
+      requestAnimationFrame(() => smartBannerEl?.classList.add('psb-visible'))
+    })
 
     document.getElementById('pwa-banner-action').addEventListener('click', () => {
-      alert.action();
-    });
+      alert.action()
+    })
 
     document.getElementById('pwa-banner-close').addEventListener('click', () => {
       // Guardar descarte en localStorage
-      localStorage.setItem(`soi-dismissed-${alert.id}`, Date.now().toString());
-      this.dismissBanner();
-    });
+      localStorage.setItem(`soi-dismissed-${alert.id}`, Date.now().toString())
+      this.dismissBanner()
+    })
   },
 
   dismissBanner() {
-    this.currentAlertId = null;
-    this.currentAlertText = null;
-    if (!smartBannerEl) return;
-    smartBannerEl.classList.remove('psb-visible');
-    const el = smartBannerEl;
-    smartBannerEl = null;
+    this.currentAlertId = null
+    this.currentAlertText = null
+    if (!smartBannerEl) return
+    smartBannerEl.classList.remove('psb-visible')
+    const el = smartBannerEl
+    smartBannerEl = null
     setTimeout(() => {
-      el.remove();
-    }, 400);
+      el.remove()
+    }, 400)
   },
 
   // ── Public API (Guías e Instalación del Header) ──────────────────────────────
 
   promptInstall() {
     if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
-      this._showIOSGuide();
+      this._showIOSGuide()
     } else if (deferredPrompt) {
-      this._triggerNativeInstall();
+      this._triggerNativeInstall()
     } else {
-      this._showDesktopGuide();
+      this._showDesktopGuide()
     }
   },
 
   async _triggerNativeInstall() {
     if (!deferredPrompt) {
-      this._showDesktopGuide();
-      return;
+      this._showDesktopGuide()
+      return
     }
     try {
-      await deferredPrompt.prompt();
-      const { outcome } = await deferredPrompt.userChoice;
+      await deferredPrompt.prompt()
+      const { outcome } = await deferredPrompt.userChoice
       if (outcome === 'accepted') {
-        localStorage.setItem('pwa-installed', 'true');
+        localStorage.setItem('pwa-installed', 'true')
       }
     } catch (err) {
-      console.warn('[PWA] Error al mostrar prompt:', err);
+      console.warn('[PWA] Error al mostrar prompt:', err)
     } finally {
-      deferredPrompt = null;
+      deferredPrompt = null
     }
   },
 
   _showIOSGuide() {
-    if (guideModalEl) return;
-    guideModalEl = document.createElement('div');
-    guideModalEl.id = 'pwa-guide-modal';
+    if (guideModalEl) return
+    guideModalEl = document.createElement('div')
+    guideModalEl.id = 'pwa-guide-modal'
     guideModalEl.innerHTML = `
       <div class="pgm-overlay" id="pgm-overlay">
         <div class="pgm-card" role="dialog" aria-modal="true" aria-labelledby="pgm-title">
@@ -337,24 +355,27 @@ export const pwaInstaller = {
           <button class="pgm-btn" id="pgm-close">Entendido</button>
         </div>
       </div>
-    `;
-    document.body.appendChild(guideModalEl);
+    `
+    document.body.appendChild(guideModalEl)
 
     const close = () => {
-      guideModalEl?.classList.add('pgm-hiding');
-      setTimeout(() => { guideModalEl?.remove(); guideModalEl = null; }, 300);
-    };
+      guideModalEl?.classList.add('pgm-hiding')
+      setTimeout(() => {
+        guideModalEl?.remove()
+        guideModalEl = null
+      }, 300)
+    }
 
-    document.getElementById('pgm-close').addEventListener('click', close);
+    document.getElementById('pgm-close').addEventListener('click', close)
     document.getElementById('pgm-overlay').addEventListener('click', (e) => {
-      if (e.target.id === 'pgm-overlay') close();
-    });
+      if (e.target.id === 'pgm-overlay') close()
+    })
   },
 
   _showDesktopGuide() {
-    if (guideModalEl) return;
-    guideModalEl = document.createElement('div');
-    guideModalEl.id = 'pwa-guide-modal';
+    if (guideModalEl) return
+    guideModalEl = document.createElement('div')
+    guideModalEl.id = 'pwa-guide-modal'
     guideModalEl.innerHTML = `
       <div class="pgm-overlay" id="pgm-overlay">
         <div class="pgm-card" role="dialog" aria-modal="true" aria-labelledby="pgm-title">
@@ -380,18 +401,21 @@ export const pwaInstaller = {
           <button class="pgm-btn" id="pgm-close">Entendido</button>
         </div>
       </div>
-    `;
-    document.body.appendChild(guideModalEl);
+    `
+    document.body.appendChild(guideModalEl)
 
     const close = () => {
-      guideModalEl?.classList.add('pgm-hiding');
-      setTimeout(() => { guideModalEl?.remove(); guideModalEl = null; }, 300);
-    };
+      guideModalEl?.classList.add('pgm-hiding')
+      setTimeout(() => {
+        guideModalEl?.remove()
+        guideModalEl = null
+      }, 300)
+    }
 
-    document.getElementById('pgm-close').addEventListener('click', close);
+    document.getElementById('pgm-close').addEventListener('click', close)
     document.getElementById('pgm-overlay').addEventListener('click', (e) => {
-      if (e.target.id === 'pgm-overlay') close();
-    });
+      if (e.target.id === 'pgm-overlay') close()
+    })
   },
 
   _isStandalone() {
@@ -399,15 +423,15 @@ export const pwaInstaller = {
       window.matchMedia('(display-mode: standalone)').matches ||
       window.navigator.standalone === true ||
       localStorage.getItem('pwa-installed') === 'true'
-    );
+    )
   },
 
   // ── Estilos ─────────────────────────────────────────────────────────────────
 
   _injectStyles() {
-    if (document.getElementById('pwa-installer-styles')) return;
-    const style = document.createElement('style');
-    style.id = 'pwa-installer-styles';
+    if (document.getElementById('pwa-installer-styles')) return
+    const style = document.createElement('style')
+    style.id = 'pwa-installer-styles'
     style.textContent = `
       /* ── SOI Smart Insights Banner (Inline above Header) ── */
       #pwa-smart-banner {
@@ -700,10 +724,10 @@ export const pwaInstaller = {
           box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
         }
       }
-    `;
-    document.head.appendChild(style);
+    `
+    document.head.appendChild(style)
   },
-};
+}
 
 // Auto-inicializar al cargar el módulo para capturar antes de la carga completa
-pwaInstaller.init();
+pwaInstaller.init()

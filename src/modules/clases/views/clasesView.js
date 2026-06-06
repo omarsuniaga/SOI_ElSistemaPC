@@ -1,4 +1,5 @@
 import '../styles/clases.css'
+import { normalizeText } from '../../../core/utils/normalizeText.js'
 import { AppModal } from '../../../shared/components/AppModal.js'
 import { AppToast } from '../../../shared/components/AppToast.js'
 import {
@@ -31,6 +32,11 @@ const state = {
   cargando: false,
   filtroEstado: 'todos',
   filtroInstrumento: '',
+  filtroNivel: '',
+  filtroTipo: '',
+  filtroSalon: '',
+  filtroDia: '',
+  filtroBuscar: '',
   vista: 'tabla',
   container: null,
   mostrarDiasVacios: true,
@@ -95,6 +101,24 @@ function renderError(container, mensaje) {
   container.querySelector('#retryBtn')?.addEventListener('click', () => renderClasesView(container))
 }
 
+function getInstrumentoOptions() {
+  const instruments = [...new Set(
+    state.clasesOriginales.map(c => c.instrumento).filter(Boolean).sort()
+  )]
+  return instruments.map(i =>
+    `<option value="${escapeHTML(i)}" ${state.filtroInstrumento === i ? 'selected' : ''}>${escapeHTML(i)}</option>`
+  ).join('')
+}
+
+function getSalonOptions() {
+  const fromSalones = state.salones.map(s => s.nombre || s.name || s).filter(Boolean)
+  const fromClases  = state.clasesOriginales.map(c => c.salon).filter(Boolean)
+  const all = [...new Set([...fromSalones, ...fromClases])].sort()
+  return all.map(s =>
+    `<option value="${escapeHTML(s)}" ${state.filtroSalon === s ? 'selected' : ''}>${escapeHTML(s)}</option>`
+  ).join('')
+}
+
 function renderContent(container) {
   container.innerHTML = `
     <div class="page-container">
@@ -127,21 +151,84 @@ function renderContent(container) {
         </div>
       </div>
 
-      <div class="clases-filter-toolbar mb-4">
-        <div class="premium-search-container flex-grow-1">
+      <div class="clases-filter-toolbar mb-4 flex-wrap gap-2">
+        <div class="premium-search-container flex-grow-1" style="min-width:200px;">
           <i class="bi bi-search search-icon-muted"></i>
-          <input type="text" class="form-control premium-search-input" placeholder="Buscar clase o instrumento..." id="buscar">
+          <input type="text" class="form-control premium-search-input" placeholder="Buscar por nombre, maestro, instrumento..." id="buscar" value="${escapeHTML(state.filtroBuscar)}">
         </div>
-        
+
         <div class="premium-select-container">
           <i class="bi bi-funnel select-icon-muted"></i>
           <select class="form-select premium-filter-select" id="filtroEstado">
-            <option value="todos">Todos los estados</option>
-            <option value="activa">Activas</option>
-            <option value="suspendida">Suspendidas</option>
-            <option value="finalizada">Finalizadas</option>
+            <option value="todos"      ${state.filtroEstado === 'todos'      ? 'selected' : ''}>Todos los estados</option>
+            <option value="activa"     ${state.filtroEstado === 'activa'     ? 'selected' : ''}>Activa</option>
+            <option value="suspendida" ${state.filtroEstado === 'suspendida' ? 'selected' : ''}>Pausada</option>
+            <option value="finalizada" ${state.filtroEstado === 'finalizada' ? 'selected' : ''}>Finalizada</option>
+            <option value="emergente"  ${state.filtroEstado === 'emergente'  ? 'selected' : ''}>Emergente</option>
+            <option value="cancelada"  ${state.filtroEstado === 'cancelada'  ? 'selected' : ''}>Cancelada</option>
           </select>
         </div>
+
+        <div class="premium-select-container">
+          <i class="bi bi-music-note select-icon-muted"></i>
+          <select class="form-select premium-filter-select" id="filtroInstrumento">
+            <option value="">Instrumento</option>
+            ${getInstrumentoOptions()}
+          </select>
+        </div>
+
+        <div class="premium-select-container">
+          <i class="bi bi-bar-chart-steps select-icon-muted"></i>
+          <select class="form-select premium-filter-select" id="filtroNivel">
+            <option value=""           ${state.filtroNivel === ''           ? 'selected' : ''}>Nivel</option>
+            <option value="iniciacion" ${state.filtroNivel === 'iniciacion' ? 'selected' : ''}>Iniciación</option>
+            <option value="basico"     ${state.filtroNivel === 'basico'     ? 'selected' : ''}>Básico</option>
+            <option value="intermedio" ${state.filtroNivel === 'intermedio' ? 'selected' : ''}>Intermedio</option>
+            <option value="avanzado"   ${state.filtroNivel === 'avanzado'   ? 'selected' : ''}>Avanzado</option>
+            <option value="preparatoria" ${state.filtroNivel === 'preparatoria' ? 'selected' : ''}>Preparatoria</option>
+          </select>
+        </div>
+
+        <div class="premium-select-container">
+          <i class="bi bi-tag select-icon-muted"></i>
+          <select class="form-select premium-filter-select" id="filtroTipo">
+            <option value=""            ${state.filtroTipo === ''            ? 'selected' : ''}>Tipo</option>
+            <option value="regular"     ${state.filtroTipo === 'regular'     ? 'selected' : ''}>Regular</option>
+            <option value="taller"      ${state.filtroTipo === 'taller'      ? 'selected' : ''}>Taller</option>
+            <option value="seccional"   ${state.filtroTipo === 'seccional'   ? 'selected' : ''}>Seccional</option>
+            <option value="orquesta"    ${state.filtroTipo === 'orquesta'    ? 'selected' : ''}>Orquesta</option>
+            <option value="coro"        ${state.filtroTipo === 'coro'        ? 'selected' : ''}>Coro</option>
+            <option value="preparatoria" ${state.filtroTipo === 'preparatoria' ? 'selected' : ''}>Preparatoria</option>
+            <option value="iniciacion"  ${state.filtroTipo === 'iniciacion'  ? 'selected' : ''}>Iniciación</option>
+            <option value="emergente"   ${state.filtroTipo === 'emergente'   ? 'selected' : ''}>Emergente</option>
+            <option value="refuerzo"    ${state.filtroTipo === 'refuerzo'    ? 'selected' : ''}>Refuerzo</option>
+          </select>
+        </div>
+
+        <div class="premium-select-container">
+          <i class="bi bi-door-open select-icon-muted"></i>
+          <select class="form-select premium-filter-select" id="filtroSalon">
+            <option value="">Salón</option>
+            ${getSalonOptions()}
+          </select>
+        </div>
+
+        <div class="premium-select-container">
+          <i class="bi bi-calendar-week select-icon-muted"></i>
+          <select class="form-select premium-filter-select" id="filtroDia">
+            <option value=""         ${state.filtroDia === ''         ? 'selected' : ''}>Día</option>
+            <option value="lunes"    ${state.filtroDia === 'lunes'    ? 'selected' : ''}>Lunes</option>
+            <option value="martes"   ${state.filtroDia === 'martes'   ? 'selected' : ''}>Martes</option>
+            <option value="miercoles" ${state.filtroDia === 'miercoles' ? 'selected' : ''}>Miércoles</option>
+            <option value="jueves"   ${state.filtroDia === 'jueves'   ? 'selected' : ''}>Jueves</option>
+            <option value="viernes"  ${state.filtroDia === 'viernes'  ? 'selected' : ''}>Viernes</option>
+            <option value="sabado"   ${state.filtroDia === 'sabado'   ? 'selected' : ''}>Sábado</option>
+          </select>
+        </div>
+
+        <button class="btn btn-outline-secondary btn-sm align-self-center" id="btnLimpiarFiltros" type="button" title="Limpiar filtros">
+          <i class="bi bi-x-circle me-1"></i>Limpiar
+        </button>
       </div>
 
       <div id="view-content">
@@ -208,8 +295,9 @@ function renderClaseCard(clase) {
 function renderEmpty() {
   return `
     <div class="text-center py-5 text-muted">
-      <i class="bi bi-inbox fs-1 d-block mb-2"></i>
-      <p>No se encontraron clases.</p>
+      <i class="bi bi-funnel fs-1 d-block mb-2 opacity-50"></i>
+      <p class="mb-1">No se encontraron clases con los filtros seleccionados.</p>
+      <small>Probá ajustar o limpiar los filtros.</small>
     </div>
   `
 }
@@ -572,18 +660,43 @@ function attachGlobalEvents(container) {
 
   container.querySelector('#btn-vista-tabla')?.addEventListener('click', () => {
     state.vista = 'tabla'
+    saveFilterState()
     renderContent(container)
     attachGlobalEvents(container)
   })
 
   container.querySelector('#btn-vista-calendario')?.addEventListener('click', () => {
     state.vista = 'calendario'
+    saveFilterState()
     renderContent(container)
     attachGlobalEvents(container)
   })
 
   container.querySelector('#buscar')?.addEventListener('input', applyFilters)
   container.querySelector('#filtroEstado')?.addEventListener('change', applyFilters)
+  container.querySelector('#filtroInstrumento')?.addEventListener('change', applyFilters)
+  container.querySelector('#filtroNivel')?.addEventListener('change', applyFilters)
+  container.querySelector('#filtroTipo')?.addEventListener('change', applyFilters)
+  container.querySelector('#filtroSalon')?.addEventListener('change', applyFilters)
+  container.querySelector('#filtroDia')?.addEventListener('change', applyFilters)
+
+  container.querySelector('#btnLimpiarFiltros')?.addEventListener('click', () => {
+    const ids = ['buscar', 'filtroEstado', 'filtroInstrumento', 'filtroNivel', 'filtroTipo', 'filtroSalon', 'filtroDia']
+    ids.forEach(id => {
+      const el = container.querySelector(`#${id}`)
+      if (!el) return
+      if (el.tagName === 'SELECT') el.value = el.options[0]?.value || ''
+      else el.value = ''
+    })
+    state.filtroBuscar = ''
+    state.filtroEstado = 'todos'
+    state.filtroInstrumento = ''
+    state.filtroNivel = ''
+    state.filtroTipo = ''
+    state.filtroSalon = ''
+    state.filtroDia = ''
+    applyFilters()
+  })
 
   const viewContent = container.querySelector('#view-content')
 
@@ -614,17 +727,73 @@ function attachGlobalEvents(container) {
   })
 }
 
-function applyFilters() {
-  const searchTerm = state.container.querySelector('#buscar')?.value.trim().toLowerCase() || ''
-  const filtroEstado = state.container.querySelector('#filtroEstado')?.value || 'todos'
+function saveFilterState() {
+  const c = state.container
+  if (!c) return
+  state.filtroBuscar      = c.querySelector('#buscar')?.value              || ''
+  state.filtroEstado      = c.querySelector('#filtroEstado')?.value        || 'todos'
+  state.filtroInstrumento = c.querySelector('#filtroInstrumento')?.value   || ''
+  state.filtroNivel       = c.querySelector('#filtroNivel')?.value         || ''
+  state.filtroTipo        = c.querySelector('#filtroTipo')?.value          || ''
+  state.filtroSalon       = c.querySelector('#filtroSalon')?.value         || ''
+  state.filtroDia         = c.querySelector('#filtroDia')?.value           || ''
+}
 
-  state.clases = state.clasesOriginales.filter(c => {
-    const matchSearch = !searchTerm || c.nombre.toLowerCase().includes(searchTerm) || c.instrumento.toLowerCase().includes(searchTerm)
-    const matchEstado = filtroEstado === 'todos' || c.estado === filtroEstado
-    return matchSearch && matchEstado
+function applyFilters() {
+  const c = state.container
+  const rawSearch    = c.querySelector('#buscar')?.value           || ''
+  const filtroEstado = c.querySelector('#filtroEstado')?.value     || 'todos'
+  const filtroInstr  = c.querySelector('#filtroInstrumento')?.value || ''
+  const filtroNivel  = c.querySelector('#filtroNivel')?.value      || ''
+  const filtroTipo   = c.querySelector('#filtroTipo')?.value       || ''
+  const filtroSalon  = c.querySelector('#filtroSalon')?.value      || ''
+  const filtroDia    = c.querySelector('#filtroDia')?.value        || ''
+  const term         = normalizeText(rawSearch)
+
+  state.clases = state.clasesOriginales.filter(clase => {
+    // ── Search text ─────────────────────────────────────────────────────────
+    if (term) {
+      const maestroPrincipal = state.maestros.find(m => m.id === clase.maestro_principal_id)
+      const maestroSuplente  = state.maestros.find(m => m.id === clase.maestro_suplente_id)
+      const searchable = normalizeText([
+        clase.nombre,
+        clase.instrumento,
+        clase.descripcion,
+        clase.nivel,
+        clase.tipo,
+        clase.salon,
+        maestroPrincipal?.nombre_completo || maestroPrincipal?.nombre,
+        maestroSuplente?.nombre_completo  || maestroSuplente?.nombre,
+      ].filter(Boolean).join(' '))
+      if (!searchable.includes(term)) return false
+    }
+
+    // ── Estado ───────────────────────────────────────────────────────────────
+    if (filtroEstado !== 'todos' && clase.estado !== filtroEstado) return false
+
+    // ── Instrumento ──────────────────────────────────────────────────────────
+    if (filtroInstr && clase.instrumento !== filtroInstr) return false
+
+    // ── Nivel ────────────────────────────────────────────────────────────────
+    if (filtroNivel && normalizeText(clase.nivel) !== filtroNivel) return false
+
+    // ── Tipo ─────────────────────────────────────────────────────────────────
+    if (filtroTipo && normalizeText(clase.tipo) !== filtroTipo) return false
+
+    // ── Salón ────────────────────────────────────────────────────────────────
+    if (filtroSalon && clase.salon !== filtroSalon) return false
+
+    // ── Día ──────────────────────────────────────────────────────────────────
+    if (filtroDia) {
+      const horarios = clase.horarios || []
+      const matchDia = horarios.some(h => normalizeText(h.dia) === filtroDia)
+      if (!matchDia) return false
+    }
+
+    return true
   })
 
-  const viewContent = state.container.querySelector('#view-content')
+  const viewContent = c.querySelector('#view-content')
   if (viewContent) {
     viewContent.innerHTML = state.vista === 'tabla' ? renderTableView() : renderCalendarView()
   }

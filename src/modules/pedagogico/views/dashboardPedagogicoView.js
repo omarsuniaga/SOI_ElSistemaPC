@@ -14,6 +14,7 @@ export async function renderDashboardPedagogicoView(container) {
     ])
     container.innerHTML = _renderContent(kpis, riesgo)
     _attachEvents(container)
+    _loadEmergentes(container)
   } catch (err) {
     console.error('[DashboardPedagogico]', err)
     container.innerHTML = `
@@ -164,13 +165,100 @@ function _renderContent(kpis, alumnosRiesgo) {
         </div>
       </div>` : ''}
 
-      <div class="row g-3">
+      <div class="row g-3 mb-4">
         ${_quickCard('bi-journal-text', 'Planificación', 'Planes de clase, plantillas y revisión', 'planificacion', 'primary')}
         ${_quickCard('bi-person-lines-fill', 'Seguimiento', 'Progreso y asistencia por alumno', 'pedagogico-seguimiento', 'success')}
         ${_quickCard('bi-graph-up', 'Evaluaciones', 'Calificaciones y boletines', 'progresos', 'warning')}
         ${_quickCard('bi-file-earmark-bar-graph', 'Reportes', 'Rendimiento por clase y riesgo', 'pedagogico-reportes', 'info')}
       </div>
+
+      <!-- Clases emergentes -->
+      <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header border-0 d-flex align-items-center gap-2">
+          <i class="bi bi-lightning-charge-fill text-warning"></i>
+          <span class="fw-semibold" style="font-size:0.9rem;">Clases emergentes registradas</span>
+        </div>
+        <div class="card-body p-0" id="emergentes-section">
+          <div class="text-center text-muted py-3">
+            <span class="spinner-border spinner-border-sm me-2"></span>Cargando...
+          </div>
+        </div>
+      </div>
     </div>`
+}
+
+async function _loadEmergentes(container) {
+  const section = container.querySelector('#emergentes-section')
+  if (!section) return
+
+  try {
+    // Fetch emergentes and maestros in parallel
+    const { data: emergentes, error } = await supabase
+      .from('clases_emergentes')
+      .select('*')
+      .order('fecha', { ascending: false })
+      .limit(20)
+
+    if (error) throw error
+
+    if (!emergentes || emergentes.length === 0) {
+      section.innerHTML = `
+        <div class="text-center text-muted py-4 px-3">
+          <i class="bi bi-lightning-charge fs-3 d-block mb-2 opacity-40"></i>
+          <p class="mb-1" style="font-size:0.9rem;">No hay clases emergentes registradas.</p>
+          <small>Las clases emergentes aparecerán aquí cuando sean registradas por coordinación o por un maestro autorizado.</small>
+        </div>`
+      return
+    }
+
+    // Resolve maestro names
+    const maestroIds = [...new Set(emergentes.map(e => e.maestro_id).filter(Boolean))]
+    let maestrosMap = {}
+    if (maestroIds.length > 0) {
+      const { data: maestros } = await supabase
+        .from('maestros')
+        .select('id, nombre_completo, nombre')
+        .in('id', maestroIds)
+      ;(maestros || []).forEach(m => { maestrosMap[m.id] = m })
+    }
+
+    const rows = emergentes.map(e => {
+      const maestroNombre = maestrosMap[e.maestro_id]?.nombre_completo
+        || maestrosMap[e.maestro_id]?.nombre
+        || 'No asignado'
+      const fecha = e.fecha
+        ? new Date(e.fecha + 'T00:00:00').toLocaleDateString('es-DO', { day: '2-digit', month: '2-digit', year: 'numeric' })
+        : 'Sin fecha'
+      const hora    = e.hora_inicio ? e.hora_inicio.slice(0, 5) : '—'
+      const horaFin = e.hora_fin    ? e.hora_fin.slice(0, 5)   : ''
+      const horario = horaFin ? `${hora} – ${horaFin}` : hora
+      const motivo  = e.motivo || e.observaciones || null
+
+      return `
+        <div class="d-flex align-items-start gap-3 px-3 py-3 border-bottom">
+          <div class="flex-shrink-0 text-warning mt-1">
+            <i class="bi bi-lightning-charge-fill"></i>
+          </div>
+          <div class="flex-grow-1 overflow-hidden">
+            <div class="fw-semibold text-truncate" style="font-size:0.875rem;">${e.nombre_clase || 'Clase emergente'}</div>
+            <div class="small text-muted mt-1">
+              <span class="me-3"><i class="bi bi-calendar3 me-1"></i>${fecha}</span>
+              <span class="me-3"><i class="bi bi-clock me-1"></i>${horario}</span>
+              <span><i class="bi bi-person-badge me-1"></i>${maestroNombre}</span>
+            </div>
+            ${motivo ? `<div class="small text-muted fst-italic mt-1 text-truncate">${motivo}</div>` : ''}
+          </div>
+          <button class="btn btn-sm btn-outline-secondary flex-shrink-0" disabled title="Detalle disponible próximamente">
+            <i class="bi bi-eye"></i>
+          </button>
+        </div>`
+    }).join('')
+
+    section.innerHTML = rows
+  } catch (err) {
+    console.error('[DashboardPedagogico] _loadEmergentes error:', err)
+    if (section) section.innerHTML = '<p class="text-danger small px-3 py-2 mb-0">Error al cargar las clases emergentes.</p>'
+  }
 }
 
 function _kpiCard(icon, label, value, color, sub) {

@@ -4,6 +4,13 @@ import { getMisClases, getHorariosClases, getSesiones } from './maestroDataServi
 import { onPushReceived } from './pushService.js';
 import { LifecycleManager } from '../../shared/services/lifecycleManager.js';
 
+function getLocalYYYYMMDD(d = new Date()) {
+  const year = d.getFullYear()
+  const month = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
 // -- Deep Link Parsing and Navigation -----------------------------------------
 
 /**
@@ -223,7 +230,7 @@ export async function fetchNotificaciones() {
 async function _checkLocalAlerts(maestroId) {
   try {
     const hoy = new Date()
-    const fechaHoy = hoy.toISOString().split('T')[0]
+    const fechaHoy = getLocalYYYYMMDD(hoy)
     const diaHoy = hoy.toLocaleDateString('es-ES', { weekday: 'long' }).toLowerCase()
 
     // Datos del cache (instantáneo si prefetchMonthData ya corrió)
@@ -562,6 +569,7 @@ function _showInAppToast(notif) {
   setTimeout(dismiss, 6000);
 }
 
+
 function _toastIcon(tipo) {
   const map = {
     sesion_sin_registrar: '⚠️',
@@ -676,7 +684,7 @@ document.addEventListener('visibilitychange', () => {
 });
 
 function _cleanStaleLocalAlerts() {
-  const todayPrefix = new Date().toISOString().split('T')[0];
+  const todayPrefix = getLocalYYYYMMDD();
   notificacionesCache = notificacionesCache.filter(n => {
     if (!String(n.id).startsWith('local_')) return true;
     return n.referencia_id?.includes(todayPrefix);

@@ -345,7 +345,9 @@ function _groupByTipo(notificaciones) {
 function _routeForTipo(tipo, notif) {
   const claseId = notif.clase_id || notif.data?.clase_id;
   const alumnoId = notif.alumno_id || notif.data?.alumno_id;
-  const fecha = notif.fecha || new Date().toISOString().split('T')[0];
+  const hoy = new Date();
+  const localToday = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}-${String(hoy.getDate()).padStart(2, '0')}`;
+  const fecha = notif.fecha || localToday;
 
   switch (tipo) {
     case 'sesion_sin_registrar':

@@ -49,7 +49,7 @@ export async function getHistorial(maestroId, opts = {}) {
   if (indicadoresResult.error) throw indicadoresResult.error
 
   const merged = [
-    ...mapObservaciones(observacionesResult.data ?? []),
+    ...mapObservaciones(observacionesResult.data ?? [], { claseId, desde, hasta }),
     ...mapIndicadores(indicadoresResult.data ?? []),
   ]
 
@@ -66,8 +66,11 @@ export async function getHistorial(maestroId, opts = {}) {
 // Internal helpers
 // ---------------------------------------------------------------------------
 
-function fetchObservaciones(maestroId, { claseId, desde, hasta }) {
-  let query = supabase
+function fetchObservaciones(maestroId, { claseId }) {
+  // Note: claseId and date filters on observaciones cannot be applied server-side
+  // because the relevant columns live on the joined sesiones_clase, not here.
+  // Client-side filtering is applied in mapObservaciones.
+  return supabase
     .from('observaciones_sesion')
     .select(`
       id, contenido_raw, contenido_ia_dsl, created_at,
@@ -78,16 +81,6 @@ function fetchObservaciones(maestroId, { claseId, desde, hasta }) {
     `)
     .eq('maestro_id', maestroId)
     .eq('es_borrador', false)
-
-  if (claseId) {
-    // We cannot filter on the joined table directly via PostgREST; filter
-    // after mapping. But we apply it client-side (see mapObservaciones).
-    // Supabase does not support filtering on embedded relation columns in
-    // the same query for many-to-one joins this deep. We accept a slight
-    // over-fetch and filter in JS.
-  }
-
-  return query
 }
 
 function fetchIndicadores(maestroId, { claseId, desde, hasta }) {
@@ -112,7 +105,7 @@ function fetchIndicadores(maestroId, { claseId, desde, hasta }) {
  * @param {object}   filters
  * @returns {HistorialItem[]}
  */
-function mapObservaciones(rows, filters = {}) {
+function mapObservaciones(rows, { claseId = null, desde = null, hasta = null } = {}) {
   return rows
     .map((row) => {
       // Supabase may return array for foreign-key joins
@@ -121,6 +114,9 @@ function mapObservaciones(rows, filters = {}) {
         : row.sesiones_clase
 
       if (!sesion) return null
+      if (claseId && sesion.clase_id !== claseId) return null
+      if (desde && sesion.fecha < desde) return null
+      if (hasta && sesion.fecha > hasta) return null
 
       const clase = Array.isArray(sesion.clases) ? sesion.clases[0] : sesion.clases
 

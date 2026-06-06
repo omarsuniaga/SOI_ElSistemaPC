@@ -21,4 +21,9 @@ export function registerRoutesConfig() {
     const { renderExportView } = await import('./views/exportView.js')
     await renderExportView(container)
   })
+
+  router.register('documentos-historial', async (container) => {
+    const { renderGeneratedDocumentsView } = await import('./views/generatedDocumentsView.js')
+    await renderGeneratedDocumentsView(container)
+  })
 }

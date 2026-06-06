@@ -169,6 +169,8 @@ function renderClaseCard(clase) {
   const nombre = clase.nombre || 'Sin nombre'
   const maestro = state.maestros.find(m => m.id === clase.maestro_principal_id)
   const maestroNombre = maestro ? (maestro.nombre_completo || maestro.nombre) : 'Sin maestro'
+  const maestroSuplente = state.maestros.find(m => m.id === clase.maestro_suplente_id)
+  const maestroSuplenteNombre = maestroSuplente ? (maestroSuplente.nombre_completo || maestroSuplente.nombre) : null
   const initials = getInitials(nombre)
   const estado = clase.estado || 'activa'
   const accentClass = `border-accent-${estado === 'activa' ? 'success' : estado === 'suspendida' ? 'warning' : 'secondary'}`
@@ -191,7 +193,8 @@ function renderClaseCard(clase) {
         </div>
         <div class="d-flex flex-column flex-grow-1 overflow-hidden pe-3">
           <span class="fw-bold text-truncate" style="font-size: 1.05rem;">${escapeHTML(nombre)}</span>
-          <small class="text-muted text-truncate">${escapeHTML(maestroNombre)} • ${escapeHTML(clase.instrumento || '-')}</small>
+          <small class="text-muted text-truncate"><i class="bi bi-person-badge me-1"></i>${escapeHTML(maestroNombre)} • ${escapeHTML(clase.instrumento || '-')}</small>
+          ${maestroSuplenteNombre ? `<small class="text-muted text-truncate" style="font-size: 0.82rem;"><i class="bi bi-person-dash me-1"></i>Suplente: ${escapeHTML(maestroSuplenteNombre)}</small>` : ''}
           <small class="text-muted extra-small mt-1" style="font-size: 0.85rem;"><i class="bi bi-clock me-1"></i>${escapeHTML(horariosTexto)}</small>
         </div>
       </div>

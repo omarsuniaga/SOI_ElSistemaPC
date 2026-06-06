@@ -39,7 +39,8 @@ export function createClaseCard(clase, showActions = true, onEdit = null, onDele
       <hr class="my-2">
 
       <div class="small text-muted">
-        ${clase.maestro_id ? `<div class="mb-1"><i class="bi bi-person-badge"></i> Maestro ID: ${clase.maestro_id.slice(0, 8)}...</div>` : ''}
+        ${clase.maestro_principal_id ? `<div class="mb-1"><i class="bi bi-person-badge"></i> Principal: ${clase.maestro_principal_id.slice(0, 8)}...</div>` : ''}
+        ${clase.maestro_suplente_id ? `<div class="mb-1"><i class="bi bi-person-dash"></i> Suplente: ${clase.maestro_suplente_id.slice(0, 8)}...</div>` : ''}
         <div class="mb-1"><i class="bi bi-calendar-week"></i> ${horariosDisplay}</div>
         <div class="mb-1"><i class="bi bi-people"></i> Max: ${clase.max_alumnos || 20} alumnos</div>
       </div>

@@ -322,6 +322,33 @@ export class PlanificacionHook {
     return sesion.maestro_id === this.maestroActualId
   }
 
+  /**
+   * Returns sessions enriched with planning status.
+   * A session is "planificada" if its clase_id matches any planificacion's clase_id.
+   * @param {Array} sesiones
+   * @param {Array} planificaciones
+   * @returns {Array} sessions with tiene_plan and plan_asociado fields
+   */
+  getSesionesConEstadoPlanificacion(sesiones, planificaciones) {
+    const plansPorClase = new Map()
+    for (const p of planificaciones) {
+      if (!plansPorClase.has(p.clase_id)) {
+        plansPorClase.set(p.clase_id, [])
+      }
+      plansPorClase.get(p.clase_id).push(p)
+    }
+
+    return sesiones.map((s) => {
+      const planesClase = plansPorClase.get(s.clase_id) || []
+      const planAsociado = planesClase.length > 0 ? planesClase[0] : null
+      return {
+        ...s,
+        tiene_plan: planesClase.length > 0,
+        plan_asociado: planAsociado,
+      }
+    })
+  }
+
   resetSesiones() {
     this.sesiones = []
     this.clases = []

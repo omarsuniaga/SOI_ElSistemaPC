@@ -21,6 +21,7 @@ import { renderRutasManagementPanel } from '../components/rutasManagementPanel.j
 import { usePlanificacion } from '../hooks/usePlanificacion.js'
 import { createDslEditorWithToolbar } from '../components/dslToolbar.js'
 import { getAlumnos } from '../../alumnos/api/alumnosApi.js'
+import { renderHistorialContenidosPanel } from '../components/historialContenidosPanel.js'
 
 // ── DSL Template Library ─────────────────────────────────────────────────────
 const DSL_TEMPLATES = [
@@ -78,6 +79,7 @@ const state = {
   activeTab: 'planes',
   asistenteRendered: false,
   rutasRendered: false,
+  historialRendered: false,
   seleccionados: new Set(),
   container: null,
 }
@@ -92,6 +94,7 @@ export async function renderPlanificacionView(container, { viewMode = 'maestro' 
   state.seleccionados = new Set()
   state.asistenteRendered = false
   state.rutasRendered = false
+  state.historialRendered = false
 
   if (viewMode === 'plantillas') {
     renderTemplatesContent(container)
@@ -262,6 +265,11 @@ function renderContent(container) {
           </button>
         </li>
         <li class="nav-item">
+          <button class="nav-link" data-tab="historial">
+            <i class="bi bi-clock-history me-1"></i>Historial
+          </button>
+        </li>
+        <li class="nav-item">
           <button class="nav-link" data-tab="rutas">
             <i class="bi bi-diagram-3 me-1"></i>Rutas
           </button>
@@ -309,6 +317,7 @@ function renderContent(container) {
           Las plantillas de planificación estarán disponibles próximamente.
         </div>
       </div>
+      <div id="tab-content-historial" style="display:none"></div>
       <div id="tab-content-rutas" style="display:none"></div>
       <div id="tab-content-asistente" style="display:none"></div>
       `
@@ -632,7 +641,7 @@ function _attachEvents(container) {
     btn.addEventListener('click', () => {
       state.activeTab = btn.dataset.tab
 
-      const allContent = ['planes', 'plantillas', 'rutas', 'asistente']
+      const allContent = ['planes', 'plantillas', 'historial', 'rutas', 'asistente']
       allContent.forEach((tab) => {
         const div = container.querySelector(`#tab-content-${tab}`)
         if (div) div.style.display = state.activeTab === tab ? 'block' : 'none'
@@ -642,6 +651,18 @@ function _attachEvents(container) {
         .querySelectorAll('#planificacion-tabs .nav-link')
         .forEach((b) => b.classList.remove('active'))
       btn.classList.add('active')
+
+      if (state.activeTab === 'historial' && !state.historialRendered) {
+        const historialDiv = container.querySelector('#tab-content-historial')
+        if (historialDiv) {
+          renderHistorialContenidosPanel(historialDiv, {
+            maestroId: hook.maestroActualId,
+            planificaciones: hook.planificaciones,
+            onCrearPlan: (prefill) => openEditModal(null, prefill),
+          })
+          state.historialRendered = true
+        }
+      }
 
       if (state.activeTab === 'rutas' && !state.rutasRendered) {
         const rutasDiv = container.querySelector('#tab-content-rutas')
@@ -659,6 +680,26 @@ function _attachEvents(container) {
         }
       }
     })
+  })
+
+  document.addEventListener('planificacion:focusPlan', (e) => {
+    const { planId } = e.detail || {}
+    if (!planId) return
+
+    // Switch to "planes" tab
+    const tabBtn = container.querySelector('#planificacion-tabs .nav-link[data-tab="planes"]')
+    if (tabBtn) tabBtn.click()
+
+    // Highlight the row
+    const row = container.querySelector(`#planes-tbody tr[data-id="${planId}"]`)
+    if (row) {
+      row.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      row.style.transition = 'background-color 0.6s ease'
+      row.style.backgroundColor = 'rgba(var(--bs-primary-rgb), 0.12)'
+      setTimeout(() => {
+        row.style.backgroundColor = ''
+      }, 2500)
+    }
   })
 
   document.addEventListener(

@@ -174,12 +174,12 @@ export async function obtenerCoberturaCurricular(maestroId = null) {
   // ── Step 1: Fetch clases (no nested select, avoids schema cache issues) ──
   let query = supabase
     .from('clases')
-    .select('id, nombre, instrumento, maestro_titular_id')
+    .select('id, nombre, instrumento, maestro_principal_id')
     .eq('activo', true)
     .order('nombre', { ascending: true })
 
   if (maestroId) {
-    query = query.eq('maestro_titular_id', maestroId)
+    query = query.eq('maestro_principal_id', maestroId)
   }
 
   const { data: clases, error: clasesError } = await query
@@ -208,7 +208,7 @@ export async function obtenerCoberturaCurricular(maestroId = null) {
   }
 
   // ── Step 3: Fetch maestro names ──
-  const maestroIds = [...new Set(clasesList.map((c) => c.maestro_titular_id).filter(Boolean))]
+  const maestroIds = [...new Set(clasesList.map((c) => c.maestro_principal_id).filter(Boolean))]
   const maestrosMap = {}
 
   if (maestroIds.length > 0) {
@@ -230,8 +230,8 @@ export async function obtenerCoberturaCurricular(maestroId = null) {
       clase_id: clase.id,
       clase_nombre: clase.nombre || 'Sin nombre',
       instrumento: clase.instrumento || 'General',
-      maestro_id: clase.maestro_titular_id,
-      maestro_nombre: maestrosMap[clase.maestro_titular_id] || 'Sin asignar',
+      maestro_id: clase.maestro_principal_id,
+      maestro_nombre: maestrosMap[clase.maestro_principal_id] || 'Sin asignar',
       tiene_plan: !!plan,
       plan_id: plan?.id ?? null,
       plan_estado: plan?.estado ?? null,

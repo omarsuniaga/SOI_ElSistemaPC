@@ -315,6 +315,9 @@ export async function renderPlanificacionView(container, { maestroId }) {
         <button class="pm-planning-tab" data-tab="gestionar" role="tab" aria-selected="false">
           ⚙️ Gestionar
         </button>
+        <button class="pm-planning-tab" data-tab="historial" role="tab" aria-selected="false">
+          📋 Historial
+        </button>
       </div>
 
       <div class="pm-planning-pane" data-pane="semaforo" role="tabpanel">
@@ -337,6 +340,14 @@ export async function renderPlanificacionView(container, { maestroId }) {
         <div id="pm-planning-manager">
           <div class="pm-planning-empty">
             <p>Selecciona una ruta para gestionar su contenido</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="pm-planning-pane" data-pane="historial" role="tabpanel" hidden>
+        <div id="pm-planning-historial">
+          <div class="pm-planning-empty">
+            <p>Selecciona una clase para ver el historial</p>
           </div>
         </div>
       </div>
@@ -420,15 +431,19 @@ export async function renderPlanificacionView(container, { maestroId }) {
   // ── Dispatcher de tabs: renderiza el contenido del tab activo según la ruta ──
   const routeTreeDiv = container.querySelector('#pm-planning-route-tree')
   const managerDiv = container.querySelector('#pm-planning-manager')
+  const historialDiv = container.querySelector('#pm-planning-historial')
   let _routeTreeLoadedFor = null
   let _managerLoadedFor = null
+  let _historialLoadedFor = null
   let _routeTreeInFlight = false
   let _managerInFlight = false
+  let _historialInFlight = false
 
   function _onTabActivated(tabName) {
     if (tabName === 'semaforo') return _loadSemaforo()
     if (tabName === 'ruta') return _loadRouteTree()
     if (tabName === 'gestionar') return _loadManager()
+    if (tabName === 'historial') return _loadHistorial()
   }
 
   async function _loadSemaforo() {
@@ -502,6 +517,40 @@ export async function renderPlanificacionView(container, { maestroId }) {
         '<div class="pm-planning-empty"><p>Error al cargar el gestor. Intenta de nuevo.</p></div>'
     } finally {
       _managerInFlight = false
+    }
+  }
+
+  async function _loadHistorial() {
+    if (!_currentClase) {
+      historialDiv.innerHTML =
+        '<div class="pm-planning-empty"><p>Selecciona una clase para ver el historial</p></div>'
+      return
+    }
+    const cacheKey = `${_currentClase}:${_currentRoute}`
+    if (_historialLoadedFor === cacheKey || _historialInFlight) return
+    _historialInFlight = true
+    historialDiv.innerHTML =
+      '<div class="pm-planning-empty"><p>Cargando historial...</p></div>'
+    try {
+      const { renderPlanningHistorialPane } = await import(
+        '../components/PlanningHistorialPane.js'
+      )
+      await renderPlanningHistorialPane(historialDiv, {
+        maestroId,
+        claseId: _currentClase,
+        publishedRouteVersionId: _currentRoute,
+        onPromoted: () => {
+          // Invalidar semáforo para que recargue los contadores
+          if (_currentRoute) _loadSemaforo()
+        },
+      })
+      _historialLoadedFor = cacheKey
+    } catch (err) {
+      console.error('[planning] Error cargando historial:', err)
+      historialDiv.innerHTML =
+        '<div class="pm-planning-empty"><p>Error al cargar el historial. Intenta de nuevo.</p></div>'
+    } finally {
+      _historialInFlight = false
     }
   }
 

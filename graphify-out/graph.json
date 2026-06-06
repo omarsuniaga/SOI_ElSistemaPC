@@ -1,0 +1,198 @@
+{
+  "directed": false,
+  "multigraph": false,
+  "graph": {},
+  "nodes": [
+    {
+      "label": "PlanningHistorialPane.js",
+      "file_type": "code",
+      "source_file": "src/portal-maestros/components/PlanningHistorialPane.js",
+      "source_location": "L1",
+      "id": "components_planninghistorialpane",
+      "community": 1,
+      "norm_label": "planninghistorialpane.js"
+    },
+    {
+      "label": "renderPlanningHistorialPane()",
+      "file_type": "code",
+      "source_file": "src/portal-maestros/components/PlanningHistorialPane.js",
+      "source_location": "L256",
+      "id": "components_planninghistorialpane_renderplanninghistorialpane",
+      "community": 1,
+      "norm_label": "renderplanninghistorialpane()"
+    },
+    {
+      "label": "historialService.js",
+      "file_type": "code",
+      "source_file": "src/modules/planning/services/historialService.js",
+      "source_location": "L1",
+      "community": 0,
+      "norm_label": "historialservice.js",
+      "id": "services_historialservice"
+    },
+    {
+      "label": "getHistorial()",
+      "file_type": "code",
+      "source_file": "src/modules/planning/services/historialService.js",
+      "source_location": "L40",
+      "community": 0,
+      "norm_label": "gethistorial()",
+      "id": "services_historialservice_gethistorial"
+    },
+    {
+      "label": "fetchObservaciones()",
+      "file_type": "code",
+      "source_file": "src/modules/planning/services/historialService.js",
+      "source_location": "L69",
+      "community": 0,
+      "norm_label": "fetchobservaciones()",
+      "id": "services_historialservice_fetchobservaciones"
+    },
+    {
+      "label": "fetchIndicadores()",
+      "file_type": "code",
+      "source_file": "src/modules/planning/services/historialService.js",
+      "source_location": "L86",
+      "community": 0,
+      "norm_label": "fetchindicadores()",
+      "id": "services_historialservice_fetchindicadores"
+    },
+    {
+      "label": "mapObservaciones()",
+      "file_type": "code",
+      "source_file": "src/modules/planning/services/historialService.js",
+      "source_location": "L108",
+      "community": 0,
+      "norm_label": "mapobservaciones()",
+      "id": "services_historialservice_mapobservaciones"
+    },
+    {
+      "label": "mapIndicadores()",
+      "file_type": "code",
+      "source_file": "src/modules/planning/services/historialService.js",
+      "source_location": "L148",
+      "community": 0,
+      "norm_label": "mapindicadores()",
+      "id": "services_historialservice_mapindicadores"
+    }
+  ],
+  "links": [
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/portal-maestros/components/PlanningHistorialPane.js",
+      "source_location": "L256",
+      "weight": 1.0,
+      "source": "components_planninghistorialpane",
+      "target": "components_planninghistorialpane_renderplanninghistorialpane",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/portal-maestros/components/PlanningHistorialPane.js",
+      "source_location": "L8",
+      "weight": 1.0,
+      "source": "components_planninghistorialpane",
+      "target": "services_historialservice_gethistorial",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/modules/planning/services/historialService.js",
+      "source_location": "L86",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "services_historialservice",
+      "target": "services_historialservice_fetchindicadores"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/modules/planning/services/historialService.js",
+      "source_location": "L69",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "services_historialservice",
+      "target": "services_historialservice_fetchobservaciones"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/modules/planning/services/historialService.js",
+      "source_location": "L40",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "services_historialservice",
+      "target": "services_historialservice_gethistorial"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/modules/planning/services/historialService.js",
+      "source_location": "L148",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "services_historialservice",
+      "target": "services_historialservice_mapindicadores"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/modules/planning/services/historialService.js",
+      "source_location": "L108",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "services_historialservice",
+      "target": "services_historialservice_mapobservaciones"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/modules/planning/services/historialService.js",
+      "source_location": "L45",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "services_historialservice_gethistorial",
+      "target": "services_historialservice_fetchindicadores"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/modules/planning/services/historialService.js",
+      "source_location": "L44",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "services_historialservice_gethistorial",
+      "target": "services_historialservice_fetchobservaciones"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/modules/planning/services/historialService.js",
+      "source_location": "L53",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "services_historialservice_gethistorial",
+      "target": "services_historialservice_mapindicadores"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/modules/planning/services/historialService.js",
+      "source_location": "L52",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "services_historialservice_gethistorial",
+      "target": "services_historialservice_mapobservaciones"
+    }
+  ],
+  "hyperedges": [],
+  "built_at_commit": "80aea25eb41c6a552574ccf03199b4445e620729"
+}

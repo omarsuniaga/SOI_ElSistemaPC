@@ -284,10 +284,10 @@ export async function renderPlanificacionView(container, { maestroId }) {
 
     // Cargar rutas para esta clase
     try {
-      const rutas = await getRutasMaestro(maestroId)
+      const rutas = await getRutasMaestro(_currentClase)
       rutaSelect.innerHTML =
         '<option value="">Selecciona una ruta...</option>' +
-        rutas.map((r) => `<option value="${r.id}">${r.nombre} (v${r.version})</option>`).join('')
+        rutas.map((r) => `<option value="${r.route_version_id}">${r.name}${r.instrumento ? ` (${r.instrumento})` : ''}</option>`).join('')
     } catch (err) {
       console.error('[planning] Error cargando rutas:', err)
       AppToast.error('Error cargando rutas')

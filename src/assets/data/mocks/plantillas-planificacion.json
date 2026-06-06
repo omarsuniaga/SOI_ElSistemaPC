@@ -1,0 +1,50 @@
+[
+  {
+    "id": "tecnica",
+    "nombre": "Técnica",
+    "objetivos": "Desarrollar la técnica instrumental del alumno.\n- Postura correcta\n- Digitación\n- Control del tempo\n- Calidad del sonido",
+    "contenido": "Ejercicios de técnica:\n1. Escalas mayores y menores\n2. Arpegios\n3. Ejercicios de digitación\n4. Estudios técnicos",
+    "recursos": "Método del nivel, estudios técnicos, metrónomo",
+    "evaluacion_metodo": "Observación directa, ejecución de escalas sin errores"
+  },
+  {
+    "id": "teoria",
+    "nombre": "Teoría Musical",
+    "objetivos": "Comprender los fundamentos teóricos de la música.\n- Lectura rítmica\n- Reconocimiento de intervalos\n- Armonía básica\n- Análisis de obras",
+    "contenido": "Contenidos:\n1. Teoría musical básica\n2. Lectura a primera vista\n3. Dictado melódico\n4. Análisis armónico",
+    "recursos": "Libro de teoría, cuaderno de ejercicios, pizarra",
+    "evaluacion_metodo": "Prueba escrita, lectura a primera vista, dictados"
+  },
+  {
+    "id": "repertorio",
+    "nombre": "Repertorio",
+    "objetivos": "Desarrollar el repertorio musical del alumno.\n- Interpretación de obras\n- Expresión musical\n- Memorización\n- Presentación en público",
+    "contenido": "Obras del programa:\n1. Pieza de repertorio\n2. Ejercicios de interpretación\n3. Trabajo de dinámica y fraseo\n4. Práctica con acompañamiento",
+    "recursos": "Partituras, grabaciones de referencia, piano acompañante",
+    "evaluacion_metodo": "Audición interna, evaluación de interpretación"
+  },
+  {
+    "id": "improvisacion",
+    "nombre": "Improvisación",
+    "objetivos": "Fomentar la creatividad musical y la improvisación.\n- Exploración sonora\n- Improvisación libre\n- Improvisación estructurada\n- Composición guiada",
+    "contenido": "Actividades:\n1. Ejercicios de exploración sonora\n2. Improvisación libre\n3. Improvisación sobre cambios armónicos\n4. Composición guiada",
+    "recursos": "Instrumento, pistas de acompañamiento, grabadora",
+    "evaluacion_metodo": "Observación de creatividad, coherencia musical"
+  },
+  {
+    "id": "audicion",
+    "nombre": "Audición",
+    "objetivos": "Desarrollar la capacidad de escuchar y analizar música.\n- Escucha activa\n- Identificación de elementos\n- Análisis formal\n- Reseñas musicales",
+    "contenido": "Actividades:\n1. Audición de obras del repertorio\n2. Identificación de instrumentos\n3. Análisis de forma y estructura\n4. Discusión y reseña",
+    "recursos": "Audio, videos, partituras de referencia",
+    "evaluacion_metodo": "Participación en discusión, trabajo escrito"
+  },
+  {
+    "id": "blanco",
+    "nombre": "En blanco",
+    "objetivos": "",
+    "contenido": "",
+    "recursos": "",
+    "evaluacion_metodo": ""
+  }
+]

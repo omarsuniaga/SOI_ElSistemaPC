@@ -10,6 +10,10 @@ import {
   descargarAlumnosInscritos,
   descargarListaMaestros,
 } from '../domain/generarPdfReportes.js'
+import { getStudentDocumentData, buildStudentDocumentContext } from '../services/studentDocumentDataService.js'
+import { listTemplates } from '../services/documentTemplateService.js'
+import { buildResolvedDocument } from '../services/documentGeneratorService.js'
+import { openDocumentPreview } from '../components/DocumentPreviewModal.js'
 
 // ─── Module state ─────────────────────────────────────────────────────────────
 let _alumnosCache = []
@@ -307,6 +311,98 @@ export async function renderExportView(container) {
                 </div>
                 <!-- Lista -->
                 <div id="diag-lista"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ══════════════════════════════════════════════════════════
+               SECCIÓN 7 — DOCUMENTOS INSTITUCIONALES
+          ══════════════════════════════════════════════════════════ -->
+          <div class="card shadow-sm mb-4">
+            <div class="card-header bg-primary bg-opacity-10">
+              <h5 class="mb-0">
+                <i class="bi bi-file-text me-2 text-primary"></i>
+                Documentos institucionales
+              </h5>
+            </div>
+            <div class="card-body">
+              <p class="text-muted small mb-4">
+                Generá permisos de ausencia, autorizaciones de viaje y cartas institucionales con datos reales de los alumnos.
+              </p>
+              <div class="row g-3 mb-4">
+                <div class="col-6 col-md-3">
+                  <div class="card h-100 border-0 shadow-sm text-center p-3" data-doc-nav="documentos-historial" style="cursor:pointer;">
+                    <i class="bi bi-clock-history fs-2 text-info mb-2"></i>
+                    <div class="small fw-semibold">Historial</div>
+                    <div class="text-muted" style="font-size:0.72rem;">Documentos generados</div>
+                  </div>
+                </div>
+              </div>
+              <h6 class="fw-bold mb-3">Generar documento individual</h6>
+              <div class="row g-3">
+                <div class="col-12 col-md-6">
+                  <label class="form-label small fw-semibold">1. Buscar alumno</label>
+                  <input type="text" class="form-control form-control-sm" id="doc-buscar-alumno"
+                         placeholder="Nombre del alumno...">
+                  <div id="doc-alumno-resultados" class="list-group mt-1" style="max-height:180px;overflow-y:auto;display:none;"></div>
+                  <div id="doc-alumno-chip" class="mt-2" style="display:none;">
+                    <span class="badge bg-primary" id="doc-alumno-nombre"></span>
+                    <button class="btn btn-link btn-sm text-danger p-0 ms-2" id="doc-limpiar-alumno">
+                      <i class="bi bi-x-circle"></i> Cambiar
+                    </button>
+                  </div>
+                </div>
+                <div class="col-12 col-md-6">
+                  <label class="form-label small fw-semibold">2. Seleccionar plantilla</label>
+                  <select class="form-select form-select-sm" id="doc-template-select" disabled>
+                    <option value="">— Primero seleccioná un alumno —</option>
+                  </select>
+                </div>
+                <div class="col-12" id="doc-actividad-form" style="display:none;">
+                  <hr class="my-2">
+                  <h6 class="small fw-semibold mb-2">3. Datos de la actividad</h6>
+                  <div class="row g-2">
+                    <div class="col-12 col-md-6">
+                      <label class="form-label small">Nombre de la actividad *</label>
+                      <input type="text" class="form-control form-control-sm" id="doc-act-nombre" placeholder="Ej: Concierto Institucional">
+                    </div>
+                    <div class="col-6 col-md-3">
+                      <label class="form-label small">Fecha de la actividad</label>
+                      <input type="date" class="form-control form-control-sm" id="doc-act-fecha">
+                    </div>
+                    <div class="col-6 col-md-3">
+                      <label class="form-label small">Lugar</label>
+                      <input type="text" class="form-control form-control-sm" id="doc-act-lugar" placeholder="Ej: Centro León">
+                    </div>
+                    <div class="col-6 col-md-3">
+                      <label class="form-label small">Hora de salida</label>
+                      <input type="time" class="form-control form-control-sm" id="doc-act-hora-salida">
+                    </div>
+                    <div class="col-6 col-md-3">
+                      <label class="form-label small">Hora de regreso</label>
+                      <input type="time" class="form-control form-control-sm" id="doc-act-hora-regreso">
+                    </div>
+                    <div class="col-12">
+                      <label class="form-label small">Responsable institucional</label>
+                      <input type="text" class="form-control form-control-sm" id="doc-act-responsable" value="Coordinación Pedagógica">
+                    </div>
+                    <div class="col-12">
+                      <label class="form-label small">Motivo / descripción del permiso</label>
+                      <textarea class="form-control form-control-sm" id="doc-act-motivo" rows="2"
+                                placeholder="Explicá brevemente el motivo del permiso..."></textarea>
+                    </div>
+                    <div class="col-12">
+                      <label class="form-label small">Observaciones internas</label>
+                      <textarea class="form-control form-control-sm" id="doc-act-observaciones" rows="2"></textarea>
+                    </div>
+                    <div class="col-12">
+                      <button class="btn btn-primary btn-sm" id="btn-doc-preview">
+                        <i class="bi bi-eye me-1"></i>Vista previa y generar PDF
+                      </button>
+                      <span id="doc-gen-status" class="small text-muted ms-2"></span>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -621,6 +717,107 @@ function _attachEvents(container) {
   container.querySelector('#diag-lista')?.addEventListener('click', (e) => {
     const btn = e.target.closest('[data-edit-alumno]')
     if (btn) window.router?.navigate('alumno', { id: btn.dataset.editAlumno })
+  })
+
+  // ── Documentos institucionales ─────────────────────────────────────────────
+  let _docAlumnoId   = null
+  let _docAlumnoData = null
+  let _templates     = []
+
+  listTemplates({ estado: 'activa' }).then(t => { _templates = t }).catch(() => {})
+
+  container.querySelectorAll('[data-doc-nav]').forEach(card => {
+    card.addEventListener('click', () => window.router?.navigate(card.dataset.docNav))
+  })
+
+  container.querySelector('#doc-buscar-alumno')?.addEventListener('input', (e) => {
+    const term = e.target.value.trim().toLowerCase()
+    const resultados = container.querySelector('#doc-alumno-resultados')
+    if (!resultados) return
+    if (!term) { resultados.style.display = 'none'; return }
+    const matches = _alumnosCache.filter(a =>
+      (a.nombre_completo || '').toLowerCase().includes(term)
+    ).slice(0, 8)
+    if (matches.length === 0) { resultados.style.display = 'none'; return }
+    resultados.innerHTML = matches.map(a =>
+      `<button class="list-group-item list-group-item-action small py-1" data-alumno-id="${a.id}" data-alumno-nombre="${a.nombre_completo}">${a.nombre_completo}</button>`
+    ).join('')
+    resultados.style.display = 'block'
+  })
+
+  container.querySelector('#doc-alumno-resultados')?.addEventListener('click', async (e) => {
+    const btn = e.target.closest('[data-alumno-id]')
+    if (!btn) return
+    _docAlumnoId = btn.dataset.alumnoId
+    container.querySelector('#doc-buscar-alumno').value = ''
+    container.querySelector('#doc-alumno-resultados').style.display = 'none'
+    container.querySelector('#doc-alumno-chip').style.display = 'block'
+    container.querySelector('#doc-alumno-nombre').textContent = btn.dataset.alumnoNombre
+    try {
+      _docAlumnoData = await getStudentDocumentData(_docAlumnoId)
+      const sel = container.querySelector('#doc-template-select')
+      sel.disabled = false
+      sel.innerHTML = '<option value="">— Seleccioná una plantilla —</option>' +
+        _templates.map(t => `<option value="${t.id}" data-tipo="${t.tipo}">${t.nombre}</option>`).join('')
+    } catch (err) { console.error('[doc] error loading alumno:', err) }
+  })
+
+  container.querySelector('#doc-limpiar-alumno')?.addEventListener('click', () => {
+    _docAlumnoId = null; _docAlumnoData = null
+    container.querySelector('#doc-alumno-chip').style.display = 'none'
+    container.querySelector('#doc-buscar-alumno').value = ''
+    const sel = container.querySelector('#doc-template-select')
+    sel.disabled = true
+    sel.innerHTML = '<option value="">— Primero seleccioná un alumno —</option>'
+    container.querySelector('#doc-actividad-form').style.display = 'none'
+  })
+
+  container.querySelector('#doc-template-select')?.addEventListener('change', (e) => {
+    container.querySelector('#doc-actividad-form').style.display = e.target.value ? 'block' : 'none'
+  })
+
+  container.querySelector('#btn-doc-preview')?.addEventListener('click', async () => {
+    if (!_docAlumnoData) return
+    const templateId = container.querySelector('#doc-template-select')?.value
+    if (!templateId) return
+    const template = _templates.find(t => t.id === templateId)
+    if (!template) return
+
+    const actividad = {
+      nombre:        container.querySelector('#doc-act-nombre')?.value?.trim()        || '',
+      fecha:         container.querySelector('#doc-act-fecha')?.value                  || '',
+      lugar:         container.querySelector('#doc-act-lugar')?.value?.trim()          || '',
+      hora_salida:   container.querySelector('#doc-act-hora-salida')?.value            || '',
+      hora_regreso:  container.querySelector('#doc-act-hora-regreso')?.value           || '',
+      motivo:        container.querySelector('#doc-act-motivo')?.value?.trim()         || '',
+      observaciones: container.querySelector('#doc-act-observaciones')?.value?.trim()  || '',
+    }
+    const responsable = container.querySelector('#doc-act-responsable')?.value?.trim() || 'Coordinación Pedagógica'
+
+    if (!actividad.nombre) {
+      container.querySelector('#doc-gen-status').textContent = 'Ingresá el nombre de la actividad.'
+      return
+    }
+
+    const context = buildStudentDocumentContext({
+      alumno:      _docAlumnoData.alumno,
+      escolaridad: _docAlumnoData.escolaridad,
+      actividad,
+      extra:       { responsable },
+    })
+    const { contenidoFinal, variablesUsadas, variablesFaltantes, advertencias } = buildResolvedDocument({ template, context })
+
+    openDocumentPreview({
+      title:              template.nombre,
+      tipo:               template.tipo,
+      alumnoNombre:       _docAlumnoData.alumno?.nombre_completo || '',
+      alumnoId:           _docAlumnoId,
+      templateId,
+      contenidoFinal,
+      variablesUsadas,
+      variablesFaltantes,
+      advertencias,
+    })
   })
 }
 

@@ -2,6 +2,7 @@ import { supabase } from '../../../lib/supabaseClient.js'
 import { router } from '../../../core/router/router.js'
 import { THRESHOLDS } from '../../progresos/services/riskRules.js'
 import { HelpPanel } from '../../../shared/components/HelpPanel.js'
+import { AppModal } from '../../../shared/components/AppModal.js'
 
 export async function renderDashboardPedagogicoView(container) {
   if (!container) return
@@ -170,6 +171,7 @@ function _renderContent(kpis, alumnosRiesgo) {
         ${_quickCard('bi-person-lines-fill', 'Seguimiento', 'Progreso y asistencia por alumno', 'pedagogico-seguimiento', 'success')}
         ${_quickCard('bi-graph-up', 'Evaluaciones', 'Calificaciones y boletines', 'progresos', 'warning')}
         ${_quickCard('bi-file-earmark-bar-graph', 'Reportes', 'Rendimiento por clase y riesgo', 'pedagogico-reportes', 'info')}
+        ${_quickCard('bi-envelope-paper', 'Solicitudes', 'Necesidades enviadas por maestros', 'pedagogico-solicitudes', 'secondary')}
       </div>
 
       <!-- Clases emergentes -->
@@ -235,7 +237,8 @@ async function _loadEmergentes(container) {
       const motivo  = e.motivo || e.observaciones || null
 
       return `
-        <div class="d-flex align-items-start gap-3 px-3 py-3 border-bottom">
+        <div class="d-flex align-items-start gap-3 px-3 py-3 border-bottom emergente-row"
+             data-id="${e.id}" style="cursor:pointer;">
           <div class="flex-shrink-0 text-warning mt-1">
             <i class="bi bi-lightning-charge-fill"></i>
           </div>
@@ -248,7 +251,7 @@ async function _loadEmergentes(container) {
             </div>
             ${motivo ? `<div class="small text-muted fst-italic mt-1 text-truncate">${motivo}</div>` : ''}
           </div>
-          <button class="btn btn-sm btn-outline-secondary flex-shrink-0" disabled title="Detalle disponible próximamente">
+          <button class="btn btn-sm btn-outline-secondary flex-shrink-0" data-id="${e.id}" title="Ver detalle">
             <i class="bi bi-eye"></i>
           </button>
         </div>`
@@ -258,6 +261,149 @@ async function _loadEmergentes(container) {
   } catch (err) {
     console.error('[DashboardPedagogico] _loadEmergentes error:', err)
     if (section) section.innerHTML = '<p class="text-danger small px-3 py-2 mb-0">Error al cargar las clases emergentes.</p>'
+  }
+}
+
+function _openEmergenteModal(id) {
+  AppModal.open({
+    title: 'Detalle de clase emergente',
+    hideSave: true,
+    cancelText: 'Cerrar',
+    size: 'lg',
+    body: `<div id="emergente-modal-body" class="text-center py-4">
+      <span class="spinner-border spinner-border-sm me-2"></span>Cargando detalle...
+    </div>`,
+    onOpen: async (modalBody) => {
+      try {
+        const { data: e, error } = await supabase
+          .from('clases_emergentes')
+          .select('*, maestros(id, nombre_completo, nombre)')
+          .eq('id', id)
+          .single()
+
+        if (error) throw error
+
+        const maestroNombre = e.maestros?.nombre_completo || e.maestros?.nombre || 'No asignado'
+        const fecha = e.fecha
+          ? new Date(e.fecha + 'T00:00:00').toLocaleDateString('es-DO', { day: '2-digit', month: '2-digit', year: 'numeric' })
+          : 'Sin fecha'
+        const hora    = e.hora_inicio ? e.hora_inicio.slice(0, 5) : '—'
+        const horaFin = e.hora_fin    ? e.hora_fin.slice(0, 5)   : '—'
+        const horario = `${hora} – ${horaFin}`
+
+        const estadoMap = { pendiente: 'bg-warning-subtle text-warning-emphasis', realizada: 'bg-success-subtle text-success-emphasis', cancelada: 'bg-danger-subtle text-danger-emphasis', reprogramada: 'bg-info-subtle text-info-emphasis' }
+        const estadoBadge = estadoMap[e.estado] || 'bg-secondary-subtle text-secondary-emphasis'
+
+        modalBody.querySelector('#emergente-modal-body').innerHTML = `
+          <div class="d-flex align-items-start gap-3 mb-4 pb-3 border-bottom">
+            <div class="rounded-3 bg-warning bg-opacity-10 text-warning d-flex align-items-center justify-content-center flex-shrink-0" style="width:44px;height:44px;">
+              <i class="bi bi-lightning-charge-fill" style="font-size:1.2rem;"></i>
+            </div>
+            <div class="flex-grow-1">
+              <h5 class="mb-1 fw-bold">${e.nombre_clase || 'Clase emergente'}</h5>
+              <span class="badge ${estadoBadge}">${e.estado || 'pendiente'}</span>
+              ${e.tipo ? `<span class="badge bg-secondary-subtle text-secondary-emphasis ms-1">${e.tipo}</span>` : ''}
+            </div>
+          </div>
+
+          <div class="row g-2 mb-4 small">
+            <div class="col-6 col-md-4"><div class="text-muted fw-bold" style="font-size:0.7rem;text-transform:uppercase;">Fecha</div><div>${fecha}</div></div>
+            <div class="col-6 col-md-4"><div class="text-muted fw-bold" style="font-size:0.7rem;text-transform:uppercase;">Horario</div><div>${horario}</div></div>
+            <div class="col-6 col-md-4"><div class="text-muted fw-bold" style="font-size:0.7rem;text-transform:uppercase;">Salón</div><div>${e.salon || '<em class="text-muted">No registrado</em>'}</div></div>
+            <div class="col-6 col-md-4"><div class="text-muted fw-bold" style="font-size:0.7rem;text-transform:uppercase;">Maestro</div><div>${maestroNombre}</div></div>
+            <div class="col-6 col-md-4"><div class="text-muted fw-bold" style="font-size:0.7rem;text-transform:uppercase;">Grupo</div><div>${e.grupo || '<em class="text-muted">No registrado</em>'}</div></div>
+            <div class="col-6 col-md-4"><div class="text-muted fw-bold" style="font-size:0.7rem;text-transform:uppercase;">Instrumento</div><div>${e.instrumento || '<em class="text-muted">No registrado</em>'}</div></div>
+          </div>
+
+          <div class="mb-4">
+            <h6 class="fw-bold border-bottom pb-2 mb-2" style="font-size:0.82rem;text-transform:uppercase;letter-spacing:0.05em;">
+              <i class="bi bi-chat-left-text me-2 text-primary"></i>Justificación
+            </h6>
+            <p class="small mb-0" style="line-height:1.6;">${e.motivo || '<em class="text-muted">Sin justificación registrada.</em>'}</p>
+          </div>
+
+          <div class="mb-4">
+            <h6 class="fw-bold border-bottom pb-2 mb-2" style="font-size:0.82rem;text-transform:uppercase;letter-spacing:0.05em;">
+              <i class="bi bi-journal-text me-2 text-primary"></i>Contenido trabajado
+            </h6>
+            <p class="small mb-0" style="line-height:1.6;white-space:pre-line;">${e.contenido || '<em class="text-muted">Sin contenido registrado.</em>'}</p>
+            ${e.observaciones
+              ? `<div class="border-start border-2 border-secondary ps-3 mt-2">
+                   <div class="text-muted small fw-semibold mb-1">Observaciones del maestro:</div>
+                   <p class="small mb-0" style="white-space:pre-line;">${e.observaciones}</p>
+                 </div>`
+              : `<div class="text-muted small fst-italic mt-2">Sin observaciones registradas.</div>`}
+          </div>
+
+          <div>
+            <h6 class="fw-bold border-bottom pb-2 mb-2" style="font-size:0.82rem;text-transform:uppercase;letter-spacing:0.05em;">
+              <i class="bi bi-people me-2 text-primary"></i>Asistencia
+            </h6>
+            <div id="emergente-asistencia-section">
+              <span class="spinner-border spinner-border-sm me-2"></span>Cargando asistencia...
+            </div>
+          </div>
+        `
+
+        await _loadEmergenteAsistencia(id, modalBody)
+      } catch (err) {
+        console.error('[emergente modal]', err)
+        const body = modalBody.querySelector('#emergente-modal-body')
+        if (body) body.innerHTML = '<p class="text-danger small">Error al cargar el detalle.</p>'
+      }
+    }
+  })
+}
+
+async function _loadEmergenteAsistencia(claseId, modalBody) {
+  const section = modalBody.querySelector('#emergente-asistencia-section')
+  if (!section) return
+
+  try {
+    const { data: asistencias, error } = await supabase
+      .from('asistencias_emergentes')
+      .select('*')
+      .eq('clase_emergente_id', claseId)
+      .order('alumno_nombre')
+
+    if (error) throw error
+
+    if (!asistencias || asistencias.length === 0) {
+      section.innerHTML = '<p class="text-muted small fst-italic mb-0">No hay alumnos asignados a esta clase emergente.</p>'
+      return
+    }
+
+    const presentes    = asistencias.filter(a => a.estado === 'presente').length
+    const ausentes     = asistencias.filter(a => a.estado === 'ausente').length
+    const justificados = asistencias.filter(a => a.estado === 'justificado').length
+    const tardanzas    = asistencias.filter(a => a.estado === 'tarde').length
+    const total        = asistencias.length
+    const pct          = total > 0 ? Math.round(((presentes + tardanzas) / total) * 100) : 0
+
+    const badgeMap = { presente: 'bg-success-subtle text-success-emphasis', ausente: 'bg-danger-subtle text-danger-emphasis', justificado: 'bg-info-subtle text-info-emphasis', tarde: 'bg-warning-subtle text-warning-emphasis' }
+
+    section.innerHTML = `
+      <div class="row g-2 mb-3 small text-center">
+        <div class="col"><div class="fw-bold">${total}</div><div class="text-muted" style="font-size:0.72rem;">Esperados</div></div>
+        <div class="col"><div class="fw-bold text-success">${presentes}</div><div class="text-muted" style="font-size:0.72rem;">Presentes</div></div>
+        <div class="col"><div class="fw-bold text-danger">${ausentes}</div><div class="text-muted" style="font-size:0.72rem;">Ausentes</div></div>
+        <div class="col"><div class="fw-bold text-info">${justificados}</div><div class="text-muted" style="font-size:0.72rem;">Justificados</div></div>
+        <div class="col"><div class="fw-bold text-warning">${tardanzas}</div><div class="text-muted" style="font-size:0.72rem;">Tardanzas</div></div>
+        <div class="col"><div class="fw-bold">${pct}%</div><div class="text-muted" style="font-size:0.72rem;">Asistencia</div></div>
+      </div>
+      ${asistencias.map(a => `
+        <div class="d-flex align-items-start gap-2 py-2 border-bottom">
+          <span class="badge flex-shrink-0 ${badgeMap[a.estado] || 'bg-secondary-subtle text-secondary-emphasis'}">${a.estado}</span>
+          <div class="flex-grow-1 small">
+            <div class="fw-semibold">${a.alumno_nombre}</div>
+            ${a.justificacion ? `<div class="text-muted">Justificación: ${a.justificacion}</div>` : ''}
+            ${a.observacion   ? `<div class="text-muted">Observación: ${a.observacion}</div>`   : ''}
+          </div>
+        </div>`).join('')}
+    `
+  } catch (err) {
+    console.error('[asistencia emergente]', err)
+    section.innerHTML = '<p class="text-danger small mb-0">Error al cargar la asistencia.</p>'
   }
 }
 
@@ -310,6 +456,12 @@ function _attachEvents(container) {
         el.style.boxShadow = ''
       })
     }
+  })
+
+  // Delegación de clicks en filas de clases emergentes
+  container.addEventListener('click', (e) => {
+    const row = e.target.closest('.emergente-row[data-id]')
+    if (row) _openEmergenteModal(row.dataset.id)
   })
 
   container.querySelector('#btn-help-dashboard')?.addEventListener('click', () => {

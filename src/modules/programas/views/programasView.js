@@ -1,4 +1,5 @@
 import '../styles/programas.css'
+import { supabase } from '../../../lib/supabaseClient.js'
 import { AppModal } from '../../../shared/components/AppModal.js'
 import { AppToast } from '../../../shared/components/AppToast.js'
 import { Programa } from '../models/programa.model.js'
@@ -340,6 +341,102 @@ function _renderFormModal({ title, saveText, programa = null }) {
   })
 }
 
+async function loadClasesForPrograma(programaId, modalBody) {
+  const section = modalBody.querySelector('#programa-clases-section')
+  if (!section) return
+
+  try {
+    const [clasesRes, maestrosRes] = await Promise.all([
+      supabase.from('clases').select('*').eq('programa_id', programaId),
+      supabase.from('maestros').select('id, nombre_completo, nombre'),
+    ])
+
+    const clases   = clasesRes.data   || []
+    const maestros = maestrosRes.data || []
+
+    if (clases.length === 0) {
+      section.innerHTML = `<p class="text-muted small fst-italic mb-0">Este programa no tiene clases registradas.</p>`
+      return
+    }
+
+    // Summary stats
+    const totalAlumnos  = clases.reduce((sum, c) => sum + (c.alumnos_inscritos || 0), 0)
+    const instruments   = [...new Set(clases.map(c => c.instrumento).filter(Boolean))]
+    const maestrosIds   = [...new Set([
+      ...clases.map(c => c.maestro_principal_id),
+      ...clases.map(c => c.maestro_suplente_id),
+    ].filter(Boolean))]
+
+    const summaryHtml = `
+      <div class="row g-2 mb-3">
+        <div class="col-6 col-md-3">
+          <div class="card card-body py-2 text-center border-0 bg-body-secondary">
+            <div class="fs-5 fw-bold">${clases.length}</div>
+            <small class="text-muted">Clases</small>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="card card-body py-2 text-center border-0 bg-body-secondary">
+            <div class="fs-5 fw-bold">${totalAlumnos}</div>
+            <small class="text-muted">Alumnos</small>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="card card-body py-2 text-center border-0 bg-body-secondary">
+            <div class="fs-5 fw-bold">${instruments.length}</div>
+            <small class="text-muted">Instrumentos</small>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="card card-body py-2 text-center border-0 bg-body-secondary">
+            <div class="fs-5 fw-bold">${maestrosIds.length}</div>
+            <small class="text-muted">Maestros</small>
+          </div>
+        </div>
+      </div>
+    `
+
+    const clasesHtml = clases.map(clase => {
+      const principal = maestros.find(m => m.id === clase.maestro_principal_id)
+      const suplente  = maestros.find(m => m.id === clase.maestro_suplente_id)
+      const nombreP   = principal ? (principal.nombre_completo || principal.nombre) : 'No asignado'
+      const nombreS   = suplente  ? (suplente.nombre_completo  || suplente.nombre)  : null
+      const horarios  = (clase.horarios || []).slice(0, 2)
+      const horarioStr = horarios.length > 0
+        ? horarios.map(h => `${(h.dia || '').slice(0, 2).toUpperCase()} ${(h.hora_inicio || '').slice(0, 5)}`).join(' · ')
+        : 'Sin horario'
+      const alumnos   = clase.alumnos_inscritos ?? 0
+
+      return `
+        <div class="card mb-2 border-0 shadow-sm">
+          <div class="card-body py-2 px-3">
+            <div class="d-flex justify-content-between align-items-start">
+              <div class="flex-grow-1 overflow-hidden">
+                <div class="fw-semibold text-truncate">${escapeHTML(clase.nombre || 'Sin nombre')}</div>
+                <small class="text-muted">${clase.descripcion ? escapeHTML(clase.descripcion) : '<em>Sin descripción registrada</em>'}</small>
+              </div>
+              <span class="badge ms-2 flex-shrink-0 ${clase.estado === 'activa' ? 'bg-success-subtle text-success-emphasis' : 'bg-secondary-subtle text-secondary-emphasis'}">${escapeHTML(clase.estado || 'activa')}</span>
+            </div>
+            <div class="row g-1 mt-1 small text-muted">
+              <div class="col-6"><i class="bi bi-person-badge me-1"></i>${escapeHTML(nombreP)}</div>
+              <div class="col-6"><i class="bi bi-person-dash me-1"></i>${nombreS ? escapeHTML(nombreS) : 'Sin maestro suplente'}</div>
+              <div class="col-6"><i class="bi bi-music-note me-1"></i>${escapeHTML(clase.instrumento || '-')} · ${escapeHTML(clase.nivel || '-')}</div>
+              <div class="col-6"><i class="bi bi-people me-1"></i>${alumnos} alumno${alumnos !== 1 ? 's' : ''} inscritos</div>
+              <div class="col-6"><i class="bi bi-clock me-1"></i>${escapeHTML(horarioStr)}</div>
+              <div class="col-6"><i class="bi bi-door-open me-1"></i>${escapeHTML(clase.salon || 'Sin salón')}</div>
+            </div>
+          </div>
+        </div>
+      `
+    }).join('')
+
+    section.innerHTML = summaryHtml + clasesHtml
+  } catch (err) {
+    console.error('[programasView] loadClasesForPrograma error:', err)
+    section.innerHTML = '<p class="text-danger small mb-0">Error al cargar las clases del programa.</p>'
+  }
+}
+
 function openViewModal(id) {
   const p = state.programasOriginales.find(x => x.id === id)
   if (!p) return
@@ -434,6 +531,18 @@ function openViewModal(id) {
               <i class="bi bi-pencil me-1"></i> Editar
             </button>
           </div>
+
+          <!-- Clases del programa -->
+          <div class="col-12 mt-2">
+            <h6 class="fw-bold border-bottom pb-2 mb-3" style="font-size:0.85rem; text-transform:uppercase; letter-spacing:0.05em;">
+              <i class="bi bi-collection me-2 text-primary"></i>Clases del programa
+            </h6>
+            <div id="programa-clases-section">
+              <div class="text-center text-muted py-3">
+                <span class="spinner-border spinner-border-sm me-2"></span>Cargando clases...
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     `,
@@ -450,6 +559,9 @@ function openViewModal(id) {
         navigator.clipboard.writeText(p.id)
         AppToast.success('ID copiado al portapapeles')
       })
+
+      // Load classes for this programa asynchronously
+      loadClasesForPrograma(id, modalBody)
     }
   })
 }

@@ -171,6 +171,43 @@ export function generateIndexSQL() {
   ).join('\n')
 }
 
+/**
+ * Apply/execute a suggested SQL index in-memory
+ * @param {string} sql - SQL statement like "CREATE INDEX IF NOT EXISTS idx_name ON table (col1, col2);"
+ * @returns {Object} Result with success status and message
+ */
+export function applyIndex(sql) {
+  if (!sql) return { success: false, error: 'No SQL provided' }
+  try {
+    // Matches: CREATE INDEX [IF NOT EXISTS] (\w+) ON (\w+)\s*\(([^)]+)\)
+    const regex = /CREATE\s+INDEX\s+(?:IF\s+NOT\s+EXISTS\s+)?(\w+)\s+ON\s+(\w+)\s*\(([^)]+)\)/i
+    const match = sql.match(regex)
+    if (!match) {
+      return { success: false, error: 'Could not parse SQL statement format' }
+    }
+    const [, name, table, columnsStr] = match
+    const columns = columnsStr.split(',').map(c => c.trim().replace(/['"`]/g, ''))
+    
+    // Check if index already exists
+    const exists = DATABASE_INDEXES.some(idx => idx.name.toLowerCase() === name.toLowerCase())
+    if (exists) {
+      return { success: true, message: `Index '${name}' already exists.`, added: false }
+    }
+
+    DATABASE_INDEXES.push({
+      table: table.toLowerCase(),
+      columns,
+      name,
+      type: 'btree',
+      reason: 'AI/User optimized'
+    })
+
+    return { success: true, message: `Index '${name}' applied successfully.`, added: true }
+  } catch (error) {
+    return { success: false, error: error.message }
+  }
+}
+
 export default {
   getIndexes,
   optimizeQuery,
@@ -178,4 +215,5 @@ export default {
   getQueryStats,
   resetStats,
   generateIndexSQL,
+  applyIndex,
 }

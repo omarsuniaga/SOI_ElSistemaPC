@@ -20,7 +20,7 @@ export async function getIndicatorsWithStatus(routeVersionId, maestroId, claseId
     // 1. Obtener todos los nodos de la ruta
     const { data: nodes, error: nodesErr } = await supabase
       .from('nodes')
-      .select('id, name, tipo, descripcion')
+      .select('id, name, type, descripcion')
       .eq('route_version_id', routeVersionId)
       .order('path', { ascending: true })
 
@@ -60,10 +60,7 @@ export async function getIndicatorsWithStatus(routeVersionId, maestroId, claseId
         const { data: studentLinks } = await supabase
           .from('indicator_session_students')
           .select('alumno_id', { count: 'exact' })
-          .in(
-            'indicator_session_id',
-            sessions?.map((s) => s.id) || []
-          )
+          .in('indicator_session_id', sessions?.map((s) => s.id) || [])
           .eq('alumno_id', supabase.from('alumnos').select('id'))
 
         const estudiantesVieron = new Set(studentLinks?.map((s) => s.alumno_id) || []).size
@@ -71,7 +68,7 @@ export async function getIndicatorsWithStatus(routeVersionId, maestroId, claseId
         return {
           node_id: node.id,
           nombre: node.name,
-          tipo: node.tipo,
+          tipo: node.type,
           descripcion: node.descripcion,
           estado: _getEstado(estudiantesVieron, totalAlumnos),
           estudiantes_vieron: estudiantesVieron,
@@ -80,7 +77,7 @@ export async function getIndicatorsWithStatus(routeVersionId, maestroId, claseId
             totalAlumnos > 0 ? Math.round((estudiantesVieron / totalAlumnos) * 100) : 0,
           observaciones_count: sessions?.length || 0,
         }
-      })
+      }),
     )
 
     return indicatorsWithStatus.filter(Boolean)
@@ -138,7 +135,9 @@ export async function createIndicatorObservation(payload) {
       observaciones_individuales: notasIndividuales[alumnoId]?.observacion || null,
     }))
 
-    const { error: studErr } = await supabase.from('indicator_session_students').insert(studentRecords)
+    const { error: studErr } = await supabase
+      .from('indicator_session_students')
+      .insert(studentRecords)
 
     if (studErr) throw studErr
 
@@ -162,7 +161,7 @@ export async function getIndicatorHistory(nodeId, routeVersionId, maestroId, cla
     // 1. Obtener info del nodo
     const { data: node, error: nodeErr } = await supabase
       .from('nodes')
-      .select('id, name, descripcion, tipo')
+      .select('id, name, descripcion, type')
       .eq('id', nodeId)
       .single()
 
@@ -178,7 +177,7 @@ export async function getIndicatorHistory(nodeId, routeVersionId, maestroId, cla
         descripcion,
         calificacion,
         created_at
-      `
+      `,
       )
       .eq('node_id', nodeId)
       .eq('maestro_id', maestroId)
@@ -215,7 +214,7 @@ export async function getIndicatorHistory(nodeId, routeVersionId, maestroId, cla
             observacion: link.observaciones_individuales,
           })),
         }
-      })
+      }),
     )
 
     // 4. Calcular total de alumnos y estado
@@ -263,12 +262,13 @@ export async function getIndicatorHistory(nodeId, routeVersionId, maestroId, cla
     return {
       node_id: nodeId,
       nombre: node.name,
-      tipo: node.tipo,
+      tipo: node.type,
       descripcion: node.descripcion,
       estado: estadoGeneralActual,
       estudiantes_vieron: alumnosQueVieron.size,
       estudiantes_totales: totalAlumnos,
-      progreso_porcentaje: totalAlumnos > 0 ? Math.round((alumnosQueVieron.size / totalAlumnos) * 100) : 0,
+      progreso_porcentaje:
+        totalAlumnos > 0 ? Math.round((alumnosQueVieron.size / totalAlumnos) * 100) : 0,
       observaciones,
       resumen_estudiantes: resumenEstudiantes,
     }

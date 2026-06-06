@@ -95,7 +95,8 @@ export function renderPerfilView(container) {
   renderAppearance(colDer);
   renderNotifications(colDer, maestro);
   renderAbsences(colDer);
-  
+  renderSolicitudesNecesidades(colDer, maestro);
+
   // Contenedor dinámico de colaboración
   colDer.insertAdjacentHTML('beforeend', `<div id="pm-collaboration-container"></div>`);
 
@@ -260,6 +261,203 @@ function renderAbsences(container) {
         <button class="btn-apple-utility" id="pm-btn-solicitar-ausencia"><i class="bi bi-plus-lg" aria-hidden="true"></i> Solicitar</button>
       </div>
     </section>`);
+}
+
+// ─── SECCIÓN SOLICITUDES DE NECESIDADES ─────────────────────
+function renderSolicitudesNecesidades(container, maestro) {
+  container.insertAdjacentHTML('beforeend', `
+    <section class="card-apple pm-settings-section" aria-labelledby="solicitudes-title" id="pm-solicitudes-section">
+      <div class="pm-settings-section__header">
+        <i class="bi bi-envelope-paper pm-icon-blue" aria-hidden="true"></i>
+        <div>
+          <h3 id="solicitudes-title" class="pm-settings-section__title">Solicitudes de necesidades</h3>
+          <p class="pm-settings-section__desc">Comunicá necesidades pedagógicas o materiales a coordinación</p>
+        </div>
+      </div>
+
+      <form id="form-sol-necesidad" novalidate>
+        <div class="row g-2">
+          <div class="col-12 col-sm-6">
+            <label class="form-label small fw-semibold">Tipo *</label>
+            <select class="form-select form-select-sm" id="sol-tipo" required>
+              <option value="">Seleccioná el tipo</option>
+              <option value="material">Material</option>
+              <option value="pedagogico">Pedagógico</option>
+              <option value="tecnico">Técnico</option>
+              <option value="institucional">Institucional</option>
+            </select>
+          </div>
+          <div class="col-12 col-sm-6">
+            <label class="form-label small fw-semibold">Categoría</label>
+            <select class="form-select form-select-sm" id="sol-categoria">
+              <option value="">— sin categoría —</option>
+              <option value="cuerdas">Cuerdas</option>
+              <option value="cañas">Cañas</option>
+              <option value="resinas">Resinas</option>
+              <option value="atriles">Atriles</option>
+              <option value="metodos">Métodos</option>
+              <option value="partituras">Partituras</option>
+              <option value="reparacion">Reparación de instrumentos</option>
+              <option value="taller">Taller específico</option>
+              <option value="capacitacion">Capacitación</option>
+              <option value="apoyo_pedagogico">Apoyo pedagógico</option>
+              <option value="material_aula">Material de aula</option>
+              <option value="salon">Necesidades de salón</option>
+              <option value="otro">Otro</option>
+            </select>
+          </div>
+          <div class="col-12">
+            <label class="form-label small fw-semibold">Título *</label>
+            <input type="text" class="form-control form-control-sm" id="sol-titulo"
+                   placeholder="Ej: Cuerdas para violines de iniciación" required maxlength="120">
+          </div>
+          <div class="col-12 col-sm-6">
+            <label class="form-label small fw-semibold">Área / Instrumento</label>
+            <input type="text" class="form-control form-control-sm" id="sol-area" placeholder="Ej: Violín">
+          </div>
+          <div class="col-6 col-sm-3">
+            <label class="form-label small fw-semibold">Cantidad</label>
+            <input type="number" class="form-control form-control-sm" id="sol-cantidad" min="1" placeholder="10">
+          </div>
+          <div class="col-6 col-sm-3">
+            <label class="form-label small fw-semibold">Prioridad *</label>
+            <select class="form-select form-select-sm" id="sol-prioridad" required>
+              <option value="baja">Baja</option>
+              <option value="media" selected>Media</option>
+              <option value="alta">Alta</option>
+              <option value="urgente">Urgente</option>
+            </select>
+          </div>
+          <div class="col-12">
+            <label class="form-label small fw-semibold">Descripción *</label>
+            <textarea class="form-control form-control-sm" id="sol-descripcion" rows="3"
+                      placeholder="Describí la necesidad con detalle..." required maxlength="800"></textarea>
+          </div>
+          <div class="col-12">
+            <label class="form-label small fw-semibold">Observaciones adicionales</label>
+            <textarea class="form-control form-control-sm" id="sol-observaciones" rows="2"
+                      placeholder="Preferencias, especificaciones, etc." maxlength="400"></textarea>
+          </div>
+          <div class="col-12 d-flex align-items-center gap-2">
+            <button type="submit" class="btn-apple-primary" id="btn-sol-submit">
+              <i class="bi bi-send me-1" aria-hidden="true"></i>Enviar solicitud
+            </button>
+            <span id="sol-status" class="small text-muted" style="display:none;"></span>
+          </div>
+        </div>
+      </form>
+
+      <hr class="my-3">
+
+      <h4 class="pm-settings-section__title" style="font-size:0.85rem;">Mis solicitudes anteriores</h4>
+      <div id="sol-historial" class="mt-2">
+        <div class="text-center text-muted py-2" style="font-size:0.85rem;">
+          <span class="spinner-border spinner-border-sm me-1"></span>Cargando...
+        </div>
+      </div>
+    </section>`);
+
+  // Cargar historial y eventos de forma asíncrona
+  _initSolicitudesSection(maestro);
+}
+
+async function _initSolicitudesSection(maestro) {
+  await _loadSolicitudesHistorial(maestro.id);
+
+  document.getElementById('form-sol-necesidad')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const tipo        = document.getElementById('sol-tipo')?.value?.trim();
+    const titulo      = document.getElementById('sol-titulo')?.value?.trim();
+    const descripcion = document.getElementById('sol-descripcion')?.value?.trim();
+    const prioridad   = document.getElementById('sol-prioridad')?.value || 'media';
+
+    // Validación inline
+    if (!tipo || !titulo || !descripcion) {
+      [{ id: 'sol-tipo', v: tipo }, { id: 'sol-titulo', v: titulo }, { id: 'sol-descripcion', v: descripcion }]
+        .forEach(({ id, v }) => document.getElementById(id)?.classList.toggle('is-invalid', !v));
+      return;
+    }
+
+    const btn    = document.getElementById('btn-sol-submit');
+    const status = document.getElementById('sol-status');
+    if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Enviando...'; }
+    if (status) { status.style.display = 'none'; }
+
+    try {
+      const { error } = await supabase.from('solicitudes_necesidades').insert({
+        maestro_id:     maestro.id,
+        maestro_nombre: maestro.nombre_completo || maestro.nombre || '',
+        tipo_necesidad: tipo,
+        categoria:      document.getElementById('sol-categoria')?.value || null,
+        titulo,
+        descripcion,
+        prioridad,
+        cantidad:       parseInt(document.getElementById('sol-cantidad')?.value) || null,
+        area:           document.getElementById('sol-area')?.value?.trim()           || null,
+        observaciones:  document.getElementById('sol-observaciones')?.value?.trim()  || null,
+        estado:         'pendiente',
+        fecha_solicitud: new Date().toISOString().split('T')[0],
+      });
+      if (error) throw error;
+
+      document.getElementById('form-sol-necesidad')?.reset();
+      document.querySelectorAll('#pm-solicitudes-section .is-invalid').forEach(el => el.classList.remove('is-invalid'));
+      if (status) { status.textContent = '✓ Solicitud enviada correctamente'; status.className = 'small text-success'; status.style.display = 'inline'; }
+      await _loadSolicitudesHistorial(maestro.id);
+    } catch (err) {
+      console.error('[solicitudes]', err);
+      if (status) { status.textContent = 'Error al enviar. Intentá de nuevo.'; status.className = 'small text-danger'; status.style.display = 'inline'; }
+    } finally {
+      if (btn) { btn.disabled = false; btn.innerHTML = '<i class="bi bi-send me-1"></i>Enviar solicitud'; }
+    }
+  });
+}
+
+async function _loadSolicitudesHistorial(maestroId) {
+  const historial = document.getElementById('sol-historial');
+  if (!historial) return;
+
+  try {
+    const { data, error } = await supabase
+      .from('solicitudes_necesidades')
+      .select('*')
+      .eq('maestro_id', maestroId)
+      .order('created_at', { ascending: false })
+      .limit(20);
+    if (error) throw error;
+
+    if (!data || data.length === 0) {
+      historial.innerHTML = '<p class="text-muted small fst-italic mb-0">No tenés solicitudes anteriores.</p>';
+      return;
+    }
+
+    const estadoClass = { pendiente: 'bg-warning-subtle text-warning-emphasis', en_revision: 'bg-info-subtle text-info-emphasis', aprobada: 'bg-success-subtle text-success-emphasis', rechazada: 'bg-danger-subtle text-danger-emphasis', resuelta: 'bg-secondary-subtle text-secondary-emphasis' };
+    const prioClass   = { urgente: 'text-danger', alta: 'text-warning', media: 'text-primary', baja: 'text-secondary' };
+
+    historial.innerHTML = data.map(s => `
+      <div class="card border-0 shadow-sm mb-2">
+        <div class="card-body py-2 px-3">
+          <div class="d-flex justify-content-between align-items-start gap-2">
+            <div class="flex-grow-1 overflow-hidden">
+              <div class="fw-semibold small text-truncate">${escHTML(s.titulo)}</div>
+              <div class="text-muted" style="font-size:0.72rem;">
+                ${escHTML(s.tipo_necesidad)} · ${escHTML(s.fecha_solicitud || '—')} ·
+                <span class="${prioClass[s.prioridad] || 'text-secondary'}">${escHTML(s.prioridad)}</span>
+              </div>
+            </div>
+            <span class="badge flex-shrink-0 ${estadoClass[s.estado] || 'bg-secondary-subtle text-secondary-emphasis'}">${escHTML((s.estado || '').replace('_', ' '))}</span>
+          </div>
+          ${s.respuesta_admin ? `
+            <div class="border-start border-2 border-primary ps-2 mt-2">
+              <div class="text-muted" style="font-size:0.72rem;font-weight:600;">Respuesta admin:</div>
+              <div class="small">${escHTML(s.respuesta_admin)}</div>
+            </div>` : ''}
+        </div>
+      </div>`).join('');
+  } catch (err) {
+    console.error('[historial sol]', err);
+    if (historial) historial.innerHTML = '<p class="text-danger small mb-0">Error al cargar el historial.</p>';
+  }
 }
 
 // ─── SECCIÓN INSTALAR APP ────────────────────────────────────

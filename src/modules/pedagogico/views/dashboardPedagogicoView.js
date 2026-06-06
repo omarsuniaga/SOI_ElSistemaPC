@@ -194,10 +194,11 @@ async function _loadEmergentes(container) {
   if (!section) return
 
   try {
-    // Fetch emergentes and maestros in parallel
+    // Las clases emergentes se guardan en sesiones_clase con clase_id = NULL
     const { data: emergentes, error } = await supabase
-      .from('clases_emergentes')
-      .select('*')
+      .from('sesiones_clase')
+      .select('id, fecha, hora_inicio, hora_fin, tema_principal, actividad, motivo, observaciones_generales, estado, maestro_id, salon_id, asistencia, contenidos_trabajados')
+      .is('clase_id', null)
       .order('fecha', { ascending: false })
       .limit(20)
 
@@ -213,7 +214,7 @@ async function _loadEmergentes(container) {
       return
     }
 
-    // Resolve maestro names
+    // Resolver nombres de maestros
     const maestroIds = [...new Set(emergentes.map(e => e.maestro_id).filter(Boolean))]
     let maestrosMap = {}
     if (maestroIds.length > 0) {
@@ -234,7 +235,9 @@ async function _loadEmergentes(container) {
       const hora    = e.hora_inicio ? e.hora_inicio.slice(0, 5) : '—'
       const horaFin = e.hora_fin    ? e.hora_fin.slice(0, 5)   : ''
       const horario = horaFin ? `${hora} – ${horaFin}` : hora
-      const motivo  = e.motivo || e.observaciones || null
+      // tema_principal es el título, actividad es el tipo, motivo es la justificación
+      const titulo  = e.tema_principal || e.actividad || 'Clase emergente'
+      const motivo  = e.motivo || null
 
       return `
         <div class="d-flex align-items-start gap-3 px-3 py-3 border-bottom emergente-row"
@@ -243,11 +246,12 @@ async function _loadEmergentes(container) {
             <i class="bi bi-lightning-charge-fill"></i>
           </div>
           <div class="flex-grow-1 overflow-hidden">
-            <div class="fw-semibold text-truncate" style="font-size:0.875rem;">${e.nombre_clase || 'Clase emergente'}</div>
+            <div class="fw-semibold text-truncate" style="font-size:0.875rem;">${titulo}</div>
             <div class="small text-muted mt-1">
               <span class="me-3"><i class="bi bi-calendar3 me-1"></i>${fecha}</span>
               <span class="me-3"><i class="bi bi-clock me-1"></i>${horario}</span>
               <span><i class="bi bi-person-badge me-1"></i>${maestroNombre}</span>
+              ${e.actividad ? `<span class="ms-2 badge bg-secondary-subtle text-secondary-emphasis">${e.actividad}</span>` : ''}
             </div>
             ${motivo ? `<div class="small text-muted fst-italic mt-1 text-truncate">${motivo}</div>` : ''}
           </div>
@@ -275,15 +279,17 @@ function _openEmergenteModal(id) {
     </div>`,
     onOpen: async (modalBody) => {
       try {
+        // Las emergentes viven en sesiones_clase con clase_id = NULL
         const { data: e, error } = await supabase
-          .from('clases_emergentes')
-          .select('*, maestros(id, nombre_completo, nombre)')
+          .from('sesiones_clase')
+          .select('*, maestros(id, nombre_completo, nombre), salones(id, nombre)')
           .eq('id', id)
           .single()
 
         if (error) throw error
 
         const maestroNombre = e.maestros?.nombre_completo || e.maestros?.nombre || 'No asignado'
+        const salonNombre   = e.salones?.nombre || null
         const fecha = e.fecha
           ? new Date(e.fecha + 'T00:00:00').toLocaleDateString('es-DO', { day: '2-digit', month: '2-digit', year: 'numeric' })
           : 'Sin fecha'
@@ -291,8 +297,16 @@ function _openEmergenteModal(id) {
         const horaFin = e.hora_fin    ? e.hora_fin.slice(0, 5)   : '—'
         const horario = `${hora} – ${horaFin}`
 
-        const estadoMap = { pendiente: 'bg-warning-subtle text-warning-emphasis', realizada: 'bg-success-subtle text-success-emphasis', cancelada: 'bg-danger-subtle text-danger-emphasis', reprogramada: 'bg-info-subtle text-info-emphasis' }
+        // Mapeo de campos: tema_principal = título, actividad = tipo, motivo = justificación
+        const titulo  = e.tema_principal || e.actividad || 'Clase emergente'
+        const tipo    = e.actividad || null
+        const estadoMap = { pendiente: 'bg-warning-subtle text-warning-emphasis', registrada: 'bg-success-subtle text-success-emphasis', cancelada: 'bg-danger-subtle text-danger-emphasis' }
         const estadoBadge = estadoMap[e.estado] || 'bg-secondary-subtle text-secondary-emphasis'
+
+        // Contenidos trabajados (JSONB array)
+        const contenidos = Array.isArray(e.contenidos_trabajados) && e.contenidos_trabajados.length > 0
+          ? e.contenidos_trabajados.map(c => `<li class="small">${typeof c === 'string' ? c : JSON.stringify(c)}</li>`).join('')
+          : null
 
         modalBody.querySelector('#emergente-modal-body').innerHTML = `
           <div class="d-flex align-items-start gap-3 mb-4 pb-3 border-bottom">
@@ -300,19 +314,17 @@ function _openEmergenteModal(id) {
               <i class="bi bi-lightning-charge-fill" style="font-size:1.2rem;"></i>
             </div>
             <div class="flex-grow-1">
-              <h5 class="mb-1 fw-bold">${e.nombre_clase || 'Clase emergente'}</h5>
+              <h5 class="mb-1 fw-bold">${titulo}</h5>
               <span class="badge ${estadoBadge}">${e.estado || 'pendiente'}</span>
-              ${e.tipo ? `<span class="badge bg-secondary-subtle text-secondary-emphasis ms-1">${e.tipo}</span>` : ''}
+              ${tipo ? `<span class="badge bg-secondary-subtle text-secondary-emphasis ms-1">${tipo}</span>` : ''}
             </div>
           </div>
 
           <div class="row g-2 mb-4 small">
             <div class="col-6 col-md-4"><div class="text-muted fw-bold" style="font-size:0.7rem;text-transform:uppercase;">Fecha</div><div>${fecha}</div></div>
             <div class="col-6 col-md-4"><div class="text-muted fw-bold" style="font-size:0.7rem;text-transform:uppercase;">Horario</div><div>${horario}</div></div>
-            <div class="col-6 col-md-4"><div class="text-muted fw-bold" style="font-size:0.7rem;text-transform:uppercase;">Salón</div><div>${e.salon || '<em class="text-muted">No registrado</em>'}</div></div>
+            <div class="col-6 col-md-4"><div class="text-muted fw-bold" style="font-size:0.7rem;text-transform:uppercase;">Salón</div><div>${salonNombre || '<em class="text-muted">No registrado</em>'}</div></div>
             <div class="col-6 col-md-4"><div class="text-muted fw-bold" style="font-size:0.7rem;text-transform:uppercase;">Maestro</div><div>${maestroNombre}</div></div>
-            <div class="col-6 col-md-4"><div class="text-muted fw-bold" style="font-size:0.7rem;text-transform:uppercase;">Grupo</div><div>${e.grupo || '<em class="text-muted">No registrado</em>'}</div></div>
-            <div class="col-6 col-md-4"><div class="text-muted fw-bold" style="font-size:0.7rem;text-transform:uppercase;">Instrumento</div><div>${e.instrumento || '<em class="text-muted">No registrado</em>'}</div></div>
           </div>
 
           <div class="mb-4">
@@ -326,13 +338,17 @@ function _openEmergenteModal(id) {
             <h6 class="fw-bold border-bottom pb-2 mb-2" style="font-size:0.82rem;text-transform:uppercase;letter-spacing:0.05em;">
               <i class="bi bi-journal-text me-2 text-primary"></i>Contenido trabajado
             </h6>
-            <p class="small mb-0" style="line-height:1.6;white-space:pre-line;">${e.contenido || '<em class="text-muted">Sin contenido registrado.</em>'}</p>
-            ${e.observaciones
+            ${contenidos
+              ? `<ul class="mb-0 ps-3">${contenidos}</ul>`
+              : e.contenido
+                ? `<p class="small mb-0" style="white-space:pre-line;">${e.contenido}</p>`
+                : '<em class="text-muted small">Sin contenido registrado.</em>'}
+            ${e.observaciones_generales
               ? `<div class="border-start border-2 border-secondary ps-3 mt-2">
                    <div class="text-muted small fw-semibold mb-1">Observaciones del maestro:</div>
-                   <p class="small mb-0" style="white-space:pre-line;">${e.observaciones}</p>
+                   <p class="small mb-0" style="white-space:pre-line;">${e.observaciones_generales}</p>
                  </div>`
-              : `<div class="text-muted small fst-italic mt-2">Sin observaciones registradas.</div>`}
+              : ''}
           </div>
 
           <div>
@@ -345,7 +361,8 @@ function _openEmergenteModal(id) {
           </div>
         `
 
-        await _loadEmergenteAsistencia(id, modalBody)
+        // La asistencia está embebida como JSONB en la misma sesión
+        await _loadEmergenteAsistencia(e.asistencia || [], modalBody)
       } catch (err) {
         console.error('[emergente modal]', err)
         const body = modalBody.querySelector('#emergente-modal-body')
@@ -355,51 +372,58 @@ function _openEmergenteModal(id) {
   })
 }
 
-async function _loadEmergenteAsistencia(claseId, modalBody) {
+async function _loadEmergenteAsistencia(asistenciaJson, modalBody) {
   const section = modalBody.querySelector('#emergente-asistencia-section')
   if (!section) return
 
+  if (!asistenciaJson || asistenciaJson.length === 0) {
+    section.innerHTML = '<p class="text-muted small fst-italic mb-0">No hay alumnos asignados a esta clase emergente.</p>'
+    return
+  }
+
   try {
-    const { data: asistencias, error } = await supabase
-      .from('asistencias_emergentes')
-      .select('*')
-      .eq('clase_emergente_id', claseId)
-      .order('alumno_nombre')
-
-    if (error) throw error
-
-    if (!asistencias || asistencias.length === 0) {
-      section.innerHTML = '<p class="text-muted small fst-italic mb-0">No hay alumnos asignados a esta clase emergente.</p>'
-      return
+    // Resolver nombres de alumnos desde los IDs del JSONB
+    const alumnoIds = [...new Set(asistenciaJson.map(a => a.alumno_id).filter(Boolean))]
+    let alumnosMap = {}
+    if (alumnoIds.length > 0) {
+      const { data: alumnos } = await supabase
+        .from('alumnos')
+        .select('id, nombre_completo, name')
+        .in('id', alumnoIds)
+      ;(alumnos || []).forEach(a => { alumnosMap[a.id] = a })
     }
 
-    const presentes    = asistencias.filter(a => a.estado === 'presente').length
-    const ausentes     = asistencias.filter(a => a.estado === 'ausente').length
-    const justificados = asistencias.filter(a => a.estado === 'justificado').length
-    const tardanzas    = asistencias.filter(a => a.estado === 'tarde').length
-    const total        = asistencias.length
-    const pct          = total > 0 ? Math.round(((presentes + tardanzas) / total) * 100) : 0
+    // Mapeo de estados: "P" = presente, "A" = ausente, null = pendiente
+    const estadoLabel = { P: 'presente', A: 'ausente', J: 'justificado', T: 'tarde' }
+    const badgeMap    = { P: 'bg-success-subtle text-success-emphasis', A: 'bg-danger-subtle text-danger-emphasis', J: 'bg-info-subtle text-info-emphasis', T: 'bg-warning-subtle text-warning-emphasis' }
 
-    const badgeMap = { presente: 'bg-success-subtle text-success-emphasis', ausente: 'bg-danger-subtle text-danger-emphasis', justificado: 'bg-info-subtle text-info-emphasis', tarde: 'bg-warning-subtle text-warning-emphasis' }
+    const presentes = asistenciaJson.filter(a => a.estado === 'P').length
+    const ausentes  = asistenciaJson.filter(a => a.estado === 'A').length
+    const otros     = asistenciaJson.filter(a => a.estado && a.estado !== 'P' && a.estado !== 'A').length
+    const sinEstado = asistenciaJson.filter(a => !a.estado).length
+    const total     = asistenciaJson.length
+    const pct       = total > 0 ? Math.round((presentes / total) * 100) : 0
 
     section.innerHTML = `
       <div class="row g-2 mb-3 small text-center">
-        <div class="col"><div class="fw-bold">${total}</div><div class="text-muted" style="font-size:0.72rem;">Esperados</div></div>
+        <div class="col"><div class="fw-bold">${total}</div><div class="text-muted" style="font-size:0.72rem;">Total</div></div>
         <div class="col"><div class="fw-bold text-success">${presentes}</div><div class="text-muted" style="font-size:0.72rem;">Presentes</div></div>
         <div class="col"><div class="fw-bold text-danger">${ausentes}</div><div class="text-muted" style="font-size:0.72rem;">Ausentes</div></div>
-        <div class="col"><div class="fw-bold text-info">${justificados}</div><div class="text-muted" style="font-size:0.72rem;">Justificados</div></div>
-        <div class="col"><div class="fw-bold text-warning">${tardanzas}</div><div class="text-muted" style="font-size:0.72rem;">Tardanzas</div></div>
+        <div class="col"><div class="fw-bold text-secondary">${sinEstado}</div><div class="text-muted" style="font-size:0.72rem;">Sin registrar</div></div>
         <div class="col"><div class="fw-bold">${pct}%</div><div class="text-muted" style="font-size:0.72rem;">Asistencia</div></div>
       </div>
-      ${asistencias.map(a => `
-        <div class="d-flex align-items-start gap-2 py-2 border-bottom">
-          <span class="badge flex-shrink-0 ${badgeMap[a.estado] || 'bg-secondary-subtle text-secondary-emphasis'}">${a.estado}</span>
-          <div class="flex-grow-1 small">
-            <div class="fw-semibold">${a.alumno_nombre}</div>
-            ${a.justificacion ? `<div class="text-muted">Justificación: ${a.justificacion}</div>` : ''}
-            ${a.observacion   ? `<div class="text-muted">Observación: ${a.observacion}</div>`   : ''}
-          </div>
-        </div>`).join('')}
+      ${asistenciaJson.map(a => {
+        const alumno = alumnosMap[a.alumno_id]
+        const nombre = alumno?.nombre_completo || alumno?.name || a.alumno_id?.slice(0, 8) || '—'
+        const est    = a.estado || null
+        const badge  = est ? (badgeMap[est] || 'bg-secondary-subtle text-secondary-emphasis') : 'bg-secondary-subtle text-secondary-emphasis'
+        const label  = est ? (estadoLabel[est] || est) : 'pendiente'
+        return `
+          <div class="d-flex align-items-center gap-2 py-2 border-bottom">
+            <span class="badge flex-shrink-0 ${badge}">${label}</span>
+            <div class="small fw-semibold">${nombre}</div>
+          </div>`
+      }).join('')}
     `
   } catch (err) {
     console.error('[asistencia emergente]', err)

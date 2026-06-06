@@ -246,17 +246,20 @@ export async function obtenerCoberturaCurricular(maestroId = null) {
   const clases = MOCK_CLASES?.clases || []
   const maestros = MOCK_MAESTROS || []
 
-  const clasesFiltradas = maestroId ? clases.filter((c) => c.maestro_id === maestroId) : clases
+  const clasesFiltradas = maestroId
+    ? clases.filter((c) => (c.maestro_id || c.maestro_titular_id) === maestroId)
+    : clases
 
   return clasesFiltradas.map((clase) => {
     const plan = _data.find((p) => p.clase_id === clase.id) ?? null
-    const maestro = maestros.find((m) => m.id === clase.maestro_id)
+    const maestroId = clase.maestro_id || clase.maestro_titular_id
+    const maestro = maestros.find((m) => m.id === maestroId)
 
     return {
       clase_id: clase.id,
       clase_nombre: clase.nombre || 'Sin nombre',
       instrumento: clase.instrumento || 'General',
-      maestro_id: clase.maestro_id,
+      maestro_id: maestroId,
       maestro_nombre: maestro?.nombre_completo || 'Sin asignar',
       tiene_plan: !!plan,
       plan_id: plan?.id ?? null,

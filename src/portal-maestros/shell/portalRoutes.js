@@ -114,7 +114,7 @@ export async function renderViewContent(route, container, params, urlParams, con
     case 'clase-emergente':
       return renderClaseEmergenteView(container, { maestroId })
     case 'planificacion':
-      return await renderPlanificacionView(container)
+      return await renderPlanificacionView(container, { maestroId })
     case 'alumno':
       return renderAlumnoPerfilView(container, { alumnoId: urlParams.get('id') || params.id })
     case 'gamificacion':

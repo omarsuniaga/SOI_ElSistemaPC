@@ -1,10 +1,10 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 
-// Mock supabaseClient
 vi.mock('../../../lib/supabaseClient.js', () => ({
   supabase: {
     auth: {
       signUp: vi.fn(),
+      signOut: vi.fn().mockResolvedValue({ error: null }),
     },
     from: vi.fn(() => ({
       upsert: vi.fn().mockResolvedValue({ data: null, error: null }),

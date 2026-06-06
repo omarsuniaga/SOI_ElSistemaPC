@@ -19,7 +19,9 @@ export const academicService = {
   },
 
   /**
-   * Obtiene todas las rutas activas con su versión actual.
+   * Obtiene todas las rutas con su versión publicada (status = 'published').
+   * Cada ruta incluye `current_version` con la versión publicada más reciente
+   * (o null si la ruta aún no tiene una versión publicada).
    */
   async fetchRoutes() {
     const { data, error } = await supabase
@@ -28,42 +30,67 @@ export const academicService = {
         id,
         name,
         description,
-        instrument_id,
-        is_active,
+        instrument,
+        status,
         created_at,
         route_versions (
           id,
-          version_number,
-          is_current
+          version,
+          status,
+          published_at
         )
-      `)
-      .eq('is_active', true)
-      .eq('route_versions.is_current', true);
+      `);
 
     if (error) throw error;
-    return data;
+
+    return (data || []).map((route) => {
+      const published = (route.route_versions || [])
+        .filter((v) => v.status === 'published')
+        .sort((a, b) => new Date(b.published_at || 0) - new Date(a.published_at || 0));
+
+      const { route_versions, ...rest } = route;
+      return { ...rest, current_version: published[0] || null };
+    });
+  },
+
+  /**
+   * Resuelve la versión publicada más reciente de una ruta.
+   * @param {string} routeId - ID de la ruta.
+   * @returns {Promise<string|null>} ID de la route_version publicada, o null.
+   */
+  async getPublishedVersionId(routeId) {
+    const { data, error } = await supabase
+      .from('route_versions')
+      .select('id, published_at')
+      .eq('route_id', routeId)
+      .eq('status', 'published')
+      .order('published_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (error) throw error;
+    return data?.id || null;
   },
 
   /**
    * Obtiene el detalle completo de una ruta (Bloques -> Niveles -> Nodos -> Indicadores).
    * @param {string} routeId - ID de la ruta.
+   * @param {string} [routeVersionId] - ID de la versión concreta a usar. Si se
+   *   omite, se resuelve la versión publicada (status = 'published') más reciente.
    */
-  async getRouteDetail(routeId) {
-    // 1. Obtener la versión actual de la ruta
-    const { data: versionData, error: vError } = await supabase
-      .from('route_versions')
-      .select('id')
-      .eq('route_id', routeId)
-      .eq('is_current', true)
-      .single();
+  async getRouteDetail(routeId, routeVersionId = null) {
+    // 1. Resolver la versión a consultar (publicada por defecto)
+    let versionId = routeVersionId;
+    if (!versionId) {
+      versionId = await this.getPublishedVersionId(routeId);
+      if (!versionId) {
+        throw new Error('La ruta no tiene una versión publicada.');
+      }
+    }
 
-    if (vError) throw vError;
-    const versionId = versionData.id;
-
-    // 2. Obtener la jerarquía completa
-    // Nota: Dependiendo de la profundidad permitida por Supabase, 
-    // podríamos necesitar múltiples llamadas o una función RPC.
-    // Por ahora, asumimos una consulta anidada estándar.
+    // 2. Obtener la jerarquía completa.
+    // Se mapean las columnas reales del esquema a los nombres que esperan las
+    // vistas: nodes.name -> title, nodes.objective -> description.
     const { data, error } = await supabase
       .from('blocks')
       .select(`
@@ -76,8 +103,8 @@ export const academicService = {
           order_index,
           nodes (
             id,
-            title,
-            description,
+            title:name,
+            description:objective,
             type,
             order_index,
             indicators (

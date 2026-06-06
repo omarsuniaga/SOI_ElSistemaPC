@@ -242,8 +242,18 @@ async function _checkLocalAlerts(maestroId) {
       s.estado === 'pendiente' || s.estado === 'borrador' || s.borrador === true
     )
     const sesionesRegistradas = new Set(
-      sesiones.filter(s => s.borrador === false || s.estado === 'registrada').map(s => s.clase_id)
+      sesiones
+        .filter(s => s.borrador === false || s.estado === 'registrada' || s.estado === 'cerrada')
+        .map(s => s.clase_id)
     )
+
+    // Limpiar alertas locales de clases que ya fueron registradas hoy
+    notificacionesCache = notificacionesCache.filter(n => {
+      if (String(n.id).startsWith('local_')) {
+        return !sesionesRegistradas.has(n.clase_id)
+      }
+      return true
+    })
 
     const ahora = new Date()
 

@@ -156,7 +156,7 @@
   /* padding-bottom se aplica solo cuando el footer nav está visible
      (mobile + tablet portrait). Desktop y tablet landscape lo
      sobreescriben a 0 en sus media queries. */
-  padding-bottom: calc(var(--pm-bottom-nav-h) + 0.5rem);
+  padding-bottom: calc(var(--pm-bottom-nav-h) + 2rem);
   -webkit-overflow-scrolling: touch;
   overscroll-behavior-y: contain;
 }

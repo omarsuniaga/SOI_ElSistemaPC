@@ -29,7 +29,7 @@ export async function renderAcademicPlanBuilderView(container, { alumnoId }) {
           <label class="apple-label" style="display: block; margin-bottom: 0.5rem;">Seleccionar Ruta</label>
           <select id="route-selector" class="input-apple">
             <option value="" disabled selected>Elegí una ruta...</option>
-            ${routes.map(r => `<option value="${r.id}">${escHTML(r.name)} (${r.instrument_id || 'General'})</option>`).join('')}
+            ${routes.map(r => `<option value="${r.id}">${escHTML(r.name)} (${escHTML(r.instrument || 'General')})</option>`).join('')}
           </select>
         </div>
 
@@ -74,16 +74,9 @@ export async function renderAcademicPlanBuilderView(container, { alumnoId }) {
       btnCreatePlan.disabled = true;
 
       try {
-        // Obtener versión actual y estructura
-        const { data: vData } = await supabase
-          .from('route_versions')
-          .select('id')
-          .eq('route_id', selectedRouteId)
-          .eq('is_current', true)
-          .single();
-        
-        selectedVersionId = vData.id;
-        routeStructure = await academicService.getRouteDetail(selectedRouteId);
+        // Obtener la versión publicada y la estructura
+        selectedVersionId = await academicService.getPublishedVersionId(selectedRouteId);
+        routeStructure = await academicService.getRouteDetail(selectedRouteId, selectedVersionId);
 
         // Poblar niveles
         const levels = [];

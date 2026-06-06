@@ -77,7 +77,7 @@ export function renderPerfilView(container) {
         <p>SOI Sistema Operativo Institucional</p>
         <p class="pm-settings-footer__version">
           v${APP_VERSION} &copy; 2026
-          ${maestro?.es_admin ? `<button id="pm-ver-sistema-btn" style="
+          ${(maestro?.es_admin || import.meta.env.DEV) ? `<button id="pm-ver-sistema-btn" style="
             margin-left:0.5rem;background:none;border:none;cursor:pointer;
             color:var(--pm-primary,#3b82f6);font-size:0.72rem;font-weight:600;
             padding:0.1rem 0.4rem;border-radius:6px;text-decoration:underline;

@@ -5,6 +5,8 @@
 
 let sentryInitialized = false
 let userId = null
+const recentErrors = []
+const MAX_RECENT_ERRORS = 10
 
 /**
  * Initialize Sentry error reporting
@@ -49,6 +51,21 @@ export function initErrorReporter(options = {}) {
  * @param {string} [context.level] - Severity level
  */
 export function reportError(error, context = {}) {
+  // Record in-memory for AI diagnostics
+  const timestamp = new Date().toISOString()
+  const errorMsg = error instanceof Error ? error.message : String(error)
+  const errorStack = error instanceof Error ? error.stack : null
+  recentErrors.push({
+    message: errorMsg,
+    stack: errorStack,
+    context: context.context || 'unknown',
+    level: context.level || 'error',
+    timestamp,
+  })
+  if (recentErrors.length > MAX_RECENT_ERRORS) {
+    recentErrors.shift()
+  }
+
   if (!sentryInitialized && !window.Sentry) return
 
   const { userId: uid, context: ctx, level = 'error', ...extra } = context
@@ -120,10 +137,15 @@ export function startTransaction(operation) {
   }
 }
 
+export function getRecentErrors() {
+  return [...recentErrors]
+}
+
 export default {
   initErrorReporter,
   reportError,
   setErrorUser,
   addBreadcrumb,
   startTransaction,
+  getRecentErrors,
 }

@@ -364,7 +364,7 @@ export async function structureTextToDSL(text, context = {}) {
  * - Escapes unescaped double quotes inside string values (char-by-char)
  * Falls back gracefully at each stage.
  */
-function parseGroqJSON(raw) {
+export function parseGroqJSON(raw) {
   // 1. Strip code fences and trim
   let s = raw
     .replace(/^\s*```(?:json)?\s*/i, '')

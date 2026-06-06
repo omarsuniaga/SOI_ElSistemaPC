@@ -1,4 +1,5 @@
 import { supabase } from '../../../lib/supabaseClient.js'
+import { normalizeText } from '../../../core/utils/normalizeText.js'
 import { obtenerAlumnos } from '../../alumnos/api/alumnosApi.js'
 import { obtenerMaestros } from '../../maestros/api/maestrosApi.js'
 import { obtenerProgresosPorAlumno } from '../../progresos/api/progresosApi.js'
@@ -13,6 +14,23 @@ import {
 // ─── Module state ─────────────────────────────────────────────────────────────
 let _alumnosCache = []
 let _alumnoSeleccionado = null
+let _diagData    = []   // alumnos con status calculado
+let _diagFiltro  = 'todos'
+
+// ─── Diagnóstico — campos requeridos ──────────────────────────────────────────
+const _DIAG_FIELDS = [
+  { key: 'nombre_completo',       label: 'Nombre completo',            critical: true  },
+  { key: 'escuela',               label: 'Escuela',                    critical: true  },
+  { key: 'grado',                 label: 'Grado',                      critical: false },
+  { key: 'section',               label: 'Sección',                    critical: false },
+  { key: 'anio_escolar',          label: 'Año escolar',                critical: false },
+  { key: 'director_institucion',  label: 'Director de institución',    critical: false },
+  { key: 'acudiente',             label: 'Nombre del representante',   critical: true  },
+  { key: 'parent_phone',          label: 'Teléfono del representante', critical: true  },
+  { key: 'parent_email',          label: 'Correo del representante',   critical: false },
+  { key: 'instrumento_principal', label: 'Instrumento',                critical: false },
+  { key: 'ensemble_id',           label: 'Grupo académico',            critical: false },
+]
 
 // ─── View ─────────────────────────────────────────────────────────────────────
 
@@ -253,6 +271,46 @@ export async function renderExportView(container) {
                   <i class="bi bi-download me-2"></i>Descargar Directorio
                 </button>
                 <span id="maestros-status" class="text-muted small"></span>
+              </div>
+            </div>
+          </div>
+
+          <!-- ══════════════════════════════════════════════════════════
+               SECCIÓN 6 — DIAGNÓSTICO DE DATOS PARA DOCUMENTOS
+          ══════════════════════════════════════════════════════════ -->
+          <div class="card shadow-sm mb-4">
+            <div class="card-header bg-secondary bg-opacity-10">
+              <h5 class="mb-0">
+                <i class="bi bi-clipboard-check me-2 text-secondary"></i>
+                Diagnóstico de datos para documentos
+              </h5>
+            </div>
+            <div class="card-body">
+              <p class="text-muted small mb-3">
+                Verificá qué alumnos tienen datos completos para generar permisos de ausencia, autorizaciones de viaje o cartas institucionales.
+              </p>
+              <div class="d-flex align-items-center gap-3 mb-3">
+                <button class="btn btn-secondary" id="btn-ejecutar-diagnostico">
+                  <i class="bi bi-search me-2"></i>Ejecutar diagnóstico
+                </button>
+                <span id="diag-status" class="text-muted small"></span>
+              </div>
+              <div id="diagnostico-resultado" style="display:none;">
+                <!-- Resumen -->
+                <div class="row g-2 mb-4" id="diag-resumen"></div>
+                <!-- Filtros -->
+                <div class="d-flex flex-wrap gap-2 mb-3">
+                  <input type="text" class="form-control form-control-sm" id="diag-buscar"
+                         placeholder="Buscar alumno por nombre..." style="max-width:260px;">
+                  <div class="btn-group btn-group-sm" id="diag-filtros">
+                    <button class="btn btn-secondary active" data-diag="todos">Todos</button>
+                    <button class="btn btn-outline-success"  data-diag="completo">Completos</button>
+                    <button class="btn btn-outline-warning"  data-diag="incompleto">Incompletos</button>
+                    <button class="btn btn-outline-danger"   data-diag="critico">Críticos</button>
+                  </div>
+                </div>
+                <!-- Lista -->
+                <div id="diag-lista"></div>
               </div>
             </div>
           </div>
@@ -537,4 +595,127 @@ function _attachEvents(container) {
       _setBtnLoading('btn-maestros', false)
     }
   })
+
+  // ── Diagnóstico de datos ───────────────────────────────────────────────────
+  container.querySelector('#btn-ejecutar-diagnostico')?.addEventListener('click', async () => {
+    _setBtnLoading('btn-ejecutar-diagnostico', true)
+    _setStatus('diag-status', 'Cargando alumnos...')
+    await _ejecutarDiagnostico(container)
+    _setBtnLoading('btn-ejecutar-diagnostico', false)
+    _setStatus('diag-status', '')
+  })
+
+  container.querySelector('#diag-buscar')?.addEventListener('input', () => _renderDiagLista(container))
+
+  container.querySelector('#diag-filtros')?.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-diag]')
+    if (!btn) return
+    container.querySelectorAll('#diag-filtros [data-diag]').forEach(b => {
+      b.className = b.dataset.diag === 'todos'      ? 'btn btn-secondary'
+                  : b.dataset.diag === 'completo'   ? 'btn btn-outline-success'
+                  : b.dataset.diag === 'incompleto' ? 'btn btn-outline-warning'
+                  : 'btn btn-outline-danger'
+    })
+    btn.classList.remove('btn-outline-success', 'btn-outline-warning', 'btn-outline-danger', 'btn-secondary', 'btn-outline-secondary')
+    btn.classList.add(btn.dataset.diag === 'todos' ? 'btn-secondary' : btn.dataset.diag === 'completo' ? 'btn-success' : btn.dataset.diag === 'incompleto' ? 'btn-warning' : 'btn-danger')
+    _diagFiltro = btn.dataset.diag
+    _renderDiagLista(container)
+  })
+
+  container.querySelector('#diag-lista')?.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-edit-alumno]')
+    if (btn) window.router?.navigate('alumno', { id: btn.dataset.editAlumno })
+  })
 }
+
+// ─── Diagnóstico de datos ─────────────────────────────────────────────────────
+
+async function _ejecutarDiagnostico(container) {
+  try {
+    const { data: alumnos, error } = await supabase
+      .from('alumnos')
+      .select('id, nombre_completo, escuela, grado, section, anio_escolar, director_institucion, acudiente, parent_phone, parent_email, instrumento_principal, ensemble_id')
+      .eq('es_activo', true)
+
+    if (error) throw error
+
+    _diagData = (alumnos || []).map(a => {
+      const missing = _DIAG_FIELDS.filter(f => { const v = a[f.key]; return v === undefined || v === null || v === '' })
+      const status  = missing.length === 0 ? 'completo' : missing.some(f => f.critical) ? 'critico' : 'incompleto'
+      return { ...a, missing, status }
+    })
+    _diagFiltro = 'todos'
+
+    // Resumen
+    const completos   = _diagData.filter(a => a.status === 'completo').length
+    const incompletos = _diagData.filter(a => a.status === 'incompleto').length
+    const criticos    = _diagData.filter(a => a.status === 'critico').length
+
+    const resumen = container.querySelector('#diag-resumen')
+    if (resumen) resumen.innerHTML = `
+      <div class="col-6 col-md-3"><div class="card border-0 bg-body-secondary text-center py-2"><div class="fs-4 fw-bold">${_diagData.length}</div><small class="text-muted">Total alumnos</small></div></div>
+      <div class="col-6 col-md-3"><div class="card border-0 bg-success-subtle text-center py-2"><div class="fs-4 fw-bold text-success">${completos}</div><small class="text-muted">Completos</small></div></div>
+      <div class="col-6 col-md-3"><div class="card border-0 bg-warning-subtle text-center py-2"><div class="fs-4 fw-bold text-warning">${incompletos}</div><small class="text-muted">Incompletos</small></div></div>
+      <div class="col-6 col-md-3"><div class="card border-0 bg-danger-subtle text-center py-2"><div class="fs-4 fw-bold text-danger">${criticos}</div><small class="text-muted">Críticos</small></div></div>
+    `
+
+    const resultado = container.querySelector('#diagnostico-resultado')
+    if (resultado) resultado.style.display = ''
+
+    // Reset filtro buttons
+    container.querySelectorAll('#diag-filtros [data-diag]').forEach(b => {
+      b.className = b.dataset.diag === 'todos' ? 'btn btn-secondary active' : b.dataset.diag === 'completo' ? 'btn btn-outline-success' : b.dataset.diag === 'incompleto' ? 'btn btn-outline-warning' : 'btn btn-outline-danger'
+    })
+
+    _renderDiagLista(container)
+  } catch (err) {
+    console.error('[diagnosis]', err)
+    _setStatus('diag-status', `Error: ${err.message}`, true)
+  }
+}
+
+function _renderDiagLista(container) {
+  const lista = container.querySelector('#diag-lista')
+  if (!lista) return
+
+  const term   = normalizeText(container.querySelector('#diag-buscar')?.value || '')
+  const filtered = _diagData.filter(a => {
+    if (_diagFiltro !== 'todos' && a.status !== _diagFiltro) return false
+    if (term && !normalizeText(a.nombre_completo || '').includes(term)) return false
+    return true
+  })
+
+  if (filtered.length === 0) {
+    lista.innerHTML = '<p class="text-muted small fst-italic">No hay alumnos en esta categoría.</p>'
+    return
+  }
+
+  const statusBadge = { completo: 'bg-success-subtle text-success-emphasis', incompleto: 'bg-warning-subtle text-warning-emphasis', critico: 'bg-danger-subtle text-danger-emphasis' }
+  const statusLabel = { completo: 'Completo', incompleto: 'Incompleto', critico: 'Crítico' }
+
+  lista.innerHTML = filtered.map(a => `
+    <div class="card border-0 shadow-sm mb-2">
+      <div class="card-body py-2 px-3">
+        <div class="d-flex justify-content-between align-items-start gap-2">
+          <div class="flex-grow-1">
+            <div class="fw-semibold small">${_p(a.nombre_completo, 'Sin nombre')}</div>
+            ${a.missing.length === 0
+              ? '<div class="text-success small"><i class="bi bi-check-circle me-1"></i>Datos completos</div>'
+              : `<div class="small text-muted mt-1">
+                   <span class="fw-semibold">Faltan:</span>
+                   ${a.missing.map(f => `<span class="badge ${f.critical ? 'bg-danger-subtle text-danger-emphasis' : 'bg-warning-subtle text-warning-emphasis'} me-1">${f.label}</span>`).join('')}
+                 </div>`}
+          </div>
+          <div class="d-flex flex-column align-items-end gap-1">
+            <span class="badge ${statusBadge[a.status]}">${statusLabel[a.status]}</span>
+            <button class="btn btn-link btn-sm p-0 text-decoration-none text-primary"
+                    data-edit-alumno="${a.id}" style="font-size:0.75rem;">
+              <i class="bi bi-pencil me-1"></i>Editar
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `).join('')
+}
+

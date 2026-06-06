@@ -20,7 +20,7 @@ const TOKEN_PATTERNS = {
  */
 export function detectInputMode(text) {
   if (!text || typeof text !== 'string' || !text.trim()) return 'dsl'
-  const hasTokens = /[#\[\(\{\$>!]/.test(text)
+  const hasTokens = /[#[({$>!]/.test(text)
   return hasTokens ? 'dsl' : 'natural'
 }
 
@@ -54,7 +54,7 @@ function extractTokens(text, pattern) {
       // Limpieza proactiva: si es un nombre (#alumno), cortamos en el primer caracter especial o token
       let cleaned = match[1].trim();
       if (pattern.source.includes('#')) {
-        const parts = cleaned.split(/(?=\s[#\[\(\{\$>])/);
+        const parts = cleaned.split(/(?=\s[#([{$>])/);
         cleaned = parts[0].trim();
       }
       results.push(cleaned)

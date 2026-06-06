@@ -259,7 +259,7 @@ export function createGenerarInformeModal(parentContainer, { onAceptar }) {
       <body>
         <h2>📋 Informe de Clase</h2>
         <p>${text}</p>
-        <script>window.print();<\/script>
+        <script>window.print();</script>
       </body></html>
     `)
     win.document.close()

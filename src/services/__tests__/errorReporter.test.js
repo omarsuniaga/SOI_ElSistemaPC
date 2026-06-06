@@ -15,7 +15,7 @@ describe('errorReporter', () => {
       addBreadcrumb: vi.fn(),
       Replay: vi.fn(),
     }
-    global.Sentry = sentryMock
+    globalThis.Sentry = sentryMock
   })
 
   it('initializes with DSN', () => {

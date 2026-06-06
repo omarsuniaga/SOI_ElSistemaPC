@@ -8,7 +8,7 @@ vi.mock('../../../lib/supabaseClient.js', () => ({
   }
 }))
 
-global.bootstrap = {
+globalThis.bootstrap = {
   Modal: class {
     constructor() {}
     show() {}
@@ -282,7 +282,7 @@ describe('gestionarClasesModal', () => {
     })
 
     // Mock confirm to return true
-    global.confirm = vi.fn(() => true)
+    globalThis.confirm = vi.fn(() => true)
 
     modal.show('maestro-123')
 
@@ -320,7 +320,7 @@ describe('gestionarClasesModal', () => {
       return callCount === 1 ? mockSelect : mockDelete
     })
 
-    global.confirm = vi.fn(() => true)
+    globalThis.confirm = vi.fn(() => true)
 
     const toastListener = vi.fn()
     window.addEventListener('showToast', toastListener)

@@ -55,9 +55,9 @@ describe('Permisos View — Admin toggle integration', () => {
     const dom = new JSDOM('<!DOCTYPE html><html><body><div id="app"></div></body></html>', {
       url: 'http://localhost',
     })
-    global.document = dom.window.document
-    global.window = dom.window
-    global.navigator = dom.window.navigator
+    globalThis.document = dom.window.document
+    globalThis.window = dom.window
+    globalThis.navigator = dom.window.navigator
 
     container = dom.window.document.getElementById('app')
     obtenerPermisos.mockResolvedValue(mockPermisos)

@@ -48,7 +48,7 @@ export const Validators = {
    */
   phone(value) {
     if (!value) return true
-    return /^[\d\s\+\-\(\)]{7,20}$/.test(value)
+    return /^[\d\s+()-]{7,20}$/.test(value)
   },
 
   /**

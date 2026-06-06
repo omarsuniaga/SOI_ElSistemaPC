@@ -917,9 +917,10 @@ ${JSON.stringify(insights.registros, null, 2)}
 `
 
   const systemPrompt = PROPOSE_CURRICULUM_PROMPT + '\n\n' + contextBlock
+  let raw
 
   try {
-    const raw = await proxyChat(
+    raw = await proxyChat(
       [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: 'Genera la propuesta curricular basada en estos registros.' },

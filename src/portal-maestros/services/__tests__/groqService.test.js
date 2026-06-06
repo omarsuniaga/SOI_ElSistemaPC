@@ -20,7 +20,7 @@ vi.mock('../../../lib/supabaseClient.js', () => ({
 
 // Mock fetch globalmente
 const fetchMock = vi.fn()
-global.fetch = fetchMock
+globalThis.fetch = fetchMock
 
 // Mock observationParser para aislar el test de analyzeObservation
 vi.mock('../../utils/observationParser.js', () => ({

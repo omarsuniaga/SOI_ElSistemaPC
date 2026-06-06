@@ -67,10 +67,10 @@ function renderCompletitudBanner(alumno) {
 function splitPhones(raw) {
   if (!raw) return []
   // Extraer todas las secuencias de dígitos de al menos 7 caracteres
-  const matches = String(raw).match(/\d[\d\s\-\.]{6,}\d/g)
+  const matches = String(raw).match(/\d[\d\s.-]{6,}\d/g)
   if (!matches) return [raw.trim()]
   return matches
-    .map(m => m.replace(/[\s\-\.]/g, ''))
+    .map(m => m.replace(/[\s.-]/g, ''))
     .filter(m => m.length >= 7)
 }
 

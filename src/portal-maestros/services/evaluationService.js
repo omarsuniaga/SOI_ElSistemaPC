@@ -24,7 +24,7 @@ import { enqueue } from './offlineQueue.js'
  */
 export function detectInputMode(text) {
   if (!text || typeof text !== 'string' || !text.trim()) return 'dsl'
-  const hasTokens = /[#\[\(\{\$>]/.test(text)
+  const hasTokens = /[#[({$>]/.test(text)
   return hasTokens ? 'dsl' : 'natural'
 }
 

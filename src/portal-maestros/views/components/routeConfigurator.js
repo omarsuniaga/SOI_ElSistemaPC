@@ -161,10 +161,11 @@ async function openAddItemModal(type, parentId, onComplete) {
 
       try {
         switch (type) {
-          case 'Clase':
+          case 'Clase': {
             const activeMaestro = getMaestroLocal()
             await RouteConfigAdapter.addClass(value, activeMaestro ? activeMaestro.id : null)
             break
+          }
           case 'Nivel':
             await RouteConfigAdapter.addLevel({
               clase_id: parentId,

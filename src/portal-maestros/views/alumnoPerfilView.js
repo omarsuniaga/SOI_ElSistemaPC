@@ -3,6 +3,8 @@ import { getMaestroLocal } from '../auth/maestroAuth.js'
 import { escHTML } from '../utils/portalUtils.js'
 import { formatPhone } from '../../shared/utils/phoneUtils.js'
 import { PlanEstudiosPanel } from '../components/PlanEstudiosPanel.js'
+import { AppToast } from '../../shared/components/AppToast.js'
+
 
 /**
  * Formatea un número de teléfono para usar en wa.me (formato internacional sin +)

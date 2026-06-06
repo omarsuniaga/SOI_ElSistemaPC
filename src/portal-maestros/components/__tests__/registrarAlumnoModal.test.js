@@ -9,7 +9,7 @@ vi.mock('../../../lib/supabaseClient.js', () => ({
 }))
 
 // Mock Bootstrap Modal
-global.bootstrap = {
+globalThis.bootstrap = {
   Modal: class {
     constructor() {}
     show() {}

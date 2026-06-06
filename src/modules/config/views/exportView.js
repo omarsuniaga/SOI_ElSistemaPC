@@ -19,17 +19,13 @@ let _diagFiltro  = 'todos'
 
 // ─── Diagnóstico — campos requeridos ──────────────────────────────────────────
 const _DIAG_FIELDS = [
-  { key: 'nombre_completo',       label: 'Nombre completo',            critical: true  },
-  { key: 'escuela',               label: 'Escuela',                    critical: true  },
-  { key: 'grado',                 label: 'Grado',                      critical: false },
-  { key: 'section',               label: 'Sección',                    critical: false },
-  { key: 'anio_escolar',          label: 'Año escolar',                critical: false },
-  { key: 'director_institucion',  label: 'Director de institución',    critical: false },
-  { key: 'acudiente',             label: 'Nombre del representante',   critical: true  },
-  { key: 'parent_phone',          label: 'Teléfono del representante', critical: true  },
-  { key: 'parent_email',          label: 'Correo del representante',   critical: false },
-  { key: 'instrumento_principal', label: 'Instrumento',                critical: false },
-  { key: 'ensemble_id',           label: 'Grupo académico',            critical: false },
+  { key: 'nombre_completo',      label: 'Nombre completo',            critical: true  },
+  { key: 'centro_estudios',      label: 'Centro educativo',           critical: true  },
+  { key: 'grado_nivel',          label: 'Grado o nivel escolar',      critical: false },
+  { key: 'representante_nombre', label: 'Nombre del representante',   critical: true  },
+  { key: 'representante_tlf',    label: 'Teléfono del representante', critical: true  },
+  { key: 'correo_representante', label: 'Correo del representante',   critical: false },
+  { key: 'instrumento_principal',label: 'Instrumento principal',      critical: false },
 ]
 
 // ─── View ─────────────────────────────────────────────────────────────────────
@@ -634,7 +630,7 @@ async function _ejecutarDiagnostico(container) {
   try {
     const { data: alumnos, error } = await supabase
       .from('alumnos')
-      .select('id, nombre_completo, escuela, grado, section, anio_escolar, director_institucion, acudiente, parent_phone, parent_email, instrumento_principal, ensemble_id')
+      .select('id, nombre_completo, centro_estudios, grado_nivel, representante_nombre, representante_tlf, correo_representante, instrumento_principal')
       .eq('es_activo', true)
 
     if (error) throw error

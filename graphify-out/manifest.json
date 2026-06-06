@@ -1,0 +1,5177 @@
+{
+  "docs/database_schema.sql": {
+    "mtime": 1780704377.8880432,
+    "ast_hash": "905218f3c1b2c7a3d518eeb98b974a47",
+    "semantic_hash": ""
+  },
+  "docs/scratch/check_clases.js": {
+    "mtime": 1780704377.9058113,
+    "ast_hash": "ad76ff971ef07ffcce7ad1dd15a59f4b",
+    "semantic_hash": ""
+  },
+  "docs/scratch/check_salones_schema.js": {
+    "mtime": 1780704377.9058113,
+    "ast_hash": "71bb8dd724638bf3d3df4829bbd2781c",
+    "semantic_hash": ""
+  },
+  "docs/scratch/query_horarios.js": {
+    "mtime": 1780704377.9097865,
+    "ast_hash": "a0277961febd87640a0e631e6f93531b",
+    "semantic_hash": ""
+  },
+  "docs/scratch/saneamiento_periodos.sql": {
+    "mtime": 1780704377.9097865,
+    "ast_hash": "253414b08416bcc0e58aa842917391d1",
+    "semantic_hash": ""
+  },
+  "docs/scratch/simulate_validation.js": {
+    "mtime": 1780704377.9097865,
+    "ast_hash": "b8706b5326e7ec02f0541a3a0f776442",
+    "semantic_hash": ""
+  },
+  "docs/scratch/update_rls_permisos.sql": {
+    "mtime": 1780704377.9097865,
+    "ast_hash": "ed434902a861436f89bf6fdec4c93f56",
+    "semantic_hash": ""
+  },
+  "eslint-report.json": {
+    "mtime": 1780704377.9992905,
+    "ast_hash": "37fe6d1bb487697170a63ee4fa47265e",
+    "semantic_hash": ""
+  },
+  "eslint.config.js": {
+    "mtime": 1780704378.0001528,
+    "ast_hash": "37303805482802af18090917300aaa63",
+    "semantic_hash": ""
+  },
+  "package.json": {
+    "mtime": 1780704378.2224274,
+    "ast_hash": "6aef26ea8157ff6eba25bbb1b72621f4",
+    "semantic_hash": ""
+  },
+  "public/manifest.json": {
+    "mtime": 1780704378.2341924,
+    "ast_hash": "5f5c4ba4eb76a6b069da189cd8ded5db",
+    "semantic_hash": ""
+  },
+  "public/sw.js": {
+    "mtime": 1780704378.2341924,
+    "ast_hash": "e57d355da93b2bee71dca25698d07e65",
+    "semantic_hash": ""
+  },
+  "scripts/check-schedule-runs.js": {
+    "mtime": 1780704378.2341924,
+    "ast_hash": "23b6cbe9734d3ca181c3ae1def2a441b",
+    "semantic_hash": ""
+  },
+  "scripts/clean-ports.sh": {
+    "mtime": 1780704378.2341924,
+    "ast_hash": "14560bb11fc64edad6ed58c2d6f7c69c",
+    "semantic_hash": ""
+  },
+  "scripts/fix_manuel_marcano.js": {
+    "mtime": 1780704378.2341924,
+    "ast_hash": "64cec007f53e1d011de0db2d70f252c1",
+    "semantic_hash": ""
+  },
+  "scripts/recreate_view_institutional_radar.sql": {
+    "mtime": 1780704378.2341924,
+    "ast_hash": "6cf6f1770a05071b0adc5af862d22395",
+    "semantic_hash": ""
+  },
+  "scripts/schema_pedagogia.sql": {
+    "mtime": 1780704378.2471664,
+    "ast_hash": "c102fd5d06cc8841bdaafc530d28a366",
+    "semantic_hash": ""
+  },
+  "scripts/seed_rutas.js": {
+    "mtime": 1780704378.2471664,
+    "ast_hash": "439e59651d17a6a09510acf448ca897d",
+    "semantic_hash": ""
+  },
+  "scripts/send-class-reminders.js": {
+    "mtime": 1780704378.2471664,
+    "ast_hash": "27d65f2c4e11d76ed76bfdff498e3be0",
+    "semantic_hash": ""
+  },
+  "scripts/test_route_crud.js": {
+    "mtime": 1780704378.2502959,
+    "ast_hash": "6de475d6118f3fed6708f56967d2de4c",
+    "semantic_hash": ""
+  },
+  "src/__tests__/integration/admin-alerts-dashboard.integration.test.js": {
+    "mtime": 1780704378.2518182,
+    "ast_hash": "f1117cbd1032e8ca0299f3f4f39d7880",
+    "semantic_hash": ""
+  },
+  "src/__tests__/integration/attendance-notifications-e2e.test.js": {
+    "mtime": 1780704378.2568915,
+    "ast_hash": "099871f150851b6f2736ecd879f9f0f6",
+    "semantic_hash": ""
+  },
+  "src/__tests__/integration/ausencia-workflow.integration.test.js": {
+    "mtime": 1780704378.2598376,
+    "ast_hash": "7bfbd17292710574024c00d429489e5e",
+    "semantic_hash": ""
+  },
+  "src/__tests__/integration/escalation-analytics.integration.test.js": {
+    "mtime": 1780704378.2598376,
+    "ast_hash": "113cb60c065dd454a9c7a3346e2276f2",
+    "semantic_hash": ""
+  },
+  "src/__tests__/notification-system.integration.test.js": {
+    "mtime": 1780704378.2598376,
+    "ast_hash": "c97783b64b974ae11d37ec0e734c6e7a",
+    "semantic_hash": ""
+  },
+  "src/__tests__/permiso.model.test.js": {
+    "mtime": 1780704378.2598376,
+    "ast_hash": "2f52f76b3b31382e1e51077681c02bf3",
+    "semantic_hash": ""
+  },
+  "src/__tests__/permisoService.test.js": {
+    "mtime": 1780704378.2598376,
+    "ast_hash": "f84282700895e532c8b037073656fae1",
+    "semantic_hash": ""
+  },
+  "src/__tests__/permisosMock.test.js": {
+    "mtime": 1780704378.2598376,
+    "ast_hash": "da61780a354b29aaeb3e17200d8a4d1a",
+    "semantic_hash": ""
+  },
+  "src/__tests__/permisosView.integration.test.js": {
+    "mtime": 1780704378.2598376,
+    "ast_hash": "e24bf175bba350a26ed35fdc901563a2",
+    "semantic_hash": ""
+  },
+  "src/__tests__/permissionRouteGuard.test.js": {
+    "mtime": 1780704378.2598376,
+    "ast_hash": "4a3fe2183c0285059ac7614055e629f1",
+    "semantic_hash": ""
+  },
+  "src/assets/data/mocks/alertas_config.json": {
+    "mtime": 1780704378.266934,
+    "ast_hash": "43eb8f40de4b57b035858abe3ed23de8",
+    "semantic_hash": ""
+  },
+  "src/assets/data/mocks/alumnos.json": {
+    "mtime": 1780704378.266934,
+    "ast_hash": "1c0ae66dc068b44b0d1969ce028991b0",
+    "semantic_hash": ""
+  },
+  "src/assets/data/mocks/ausencias.json": {
+    "mtime": 1780704378.266934,
+    "ast_hash": "87ce4212ae6c320ba745e06a297e160b",
+    "semantic_hash": ""
+  },
+  "src/assets/data/mocks/clases.json": {
+    "mtime": 1780704378.266934,
+    "ast_hash": "fafe8c35893bbd9dbd6d153b2486170c",
+    "semantic_hash": ""
+  },
+  "src/assets/data/mocks/maestro_tareas.json": {
+    "mtime": 1780704378.266934,
+    "ast_hash": "f4b49e83ed02a90cbac1464160312205",
+    "semantic_hash": ""
+  },
+  "src/assets/data/mocks/maestros-disponibilidad.json": {
+    "mtime": 1780704378.266934,
+    "ast_hash": "7783fcd95304142c2fe0ee297e8266f5",
+    "semantic_hash": ""
+  },
+  "src/assets/data/mocks/maestros.json": {
+    "mtime": 1780704378.2742841,
+    "ast_hash": "4549a5805e0c29ecde11fe432678b270",
+    "semantic_hash": ""
+  },
+  "src/assets/data/mocks/metricas_periodo.json": {
+    "mtime": 1780704378.2742841,
+    "ast_hash": "e5aec21929eae376d8d29e5db3305816",
+    "semantic_hash": ""
+  },
+  "src/assets/data/mocks/objetivos_gamificacion.json": {
+    "mtime": 1780704378.2742841,
+    "ast_hash": "99318d54ce4777d5d5d451cd48b99097",
+    "semantic_hash": ""
+  },
+  "src/assets/data/mocks/permisos.json": {
+    "mtime": 1780704378.2742841,
+    "ast_hash": "d814778819bc29e17087a99efc7453ae",
+    "semantic_hash": ""
+  },
+  "src/assets/data/mocks/planificacion-curricular.json": {
+    "mtime": 1780704378.2742841,
+    "ast_hash": "cabe18b83a53228727d6c9c6557e9f4f",
+    "semantic_hash": ""
+  },
+  "src/assets/data/mocks/planificaciones.json": {
+    "mtime": 1780704378.278071,
+    "ast_hash": "ece6272bee2c4f39853cd3c57c281d23",
+    "semantic_hash": ""
+  },
+  "src/assets/data/mocks/postulantes.json": {
+    "mtime": 1780704378.278071,
+    "ast_hash": "c59cc7cf70bd1d2cfb541ee2149fc6ce",
+    "semantic_hash": ""
+  },
+  "src/assets/data/mocks/routes_config_mock.json": {
+    "mtime": 1780704378.278071,
+    "ast_hash": "9125e9276a0b993fac8cf56a0e4f1a3a",
+    "semantic_hash": ""
+  },
+  "src/assets/data/mocks/ruta_academica.json": {
+    "mtime": 1780704378.278071,
+    "ast_hash": "c5321db6cf10ee8c9c28e46c9e1fd463",
+    "semantic_hash": ""
+  },
+  "src/assets/data/mocks/sesiones.json": {
+    "mtime": 1780704378.278071,
+    "ast_hash": "3363dad78383bc673763455a088abf77",
+    "semantic_hash": ""
+  },
+  "src/components/ErrorBoundary.js": {
+    "mtime": 1780704378.2819836,
+    "ast_hash": "671fde2f7c3af160d06ba9d95b1e3327",
+    "semantic_hash": ""
+  },
+  "src/components/__tests__/ErrorBoundary.test.js": {
+    "mtime": 1780704378.2819836,
+    "ast_hash": "f4fe676cbd8f3762fb5959f530433aa7",
+    "semantic_hash": ""
+  },
+  "src/core/auth/__tests__/accessControl.test.js": {
+    "mtime": 1780704378.289115,
+    "ast_hash": "19d45e83e699dd9960a6274b4c502617",
+    "semantic_hash": ""
+  },
+  "src/core/auth/accessControl.js": {
+    "mtime": 1780704378.289115,
+    "ast_hash": "2fb2938febbc4ae2264897a1b4c0e79f",
+    "semantic_hash": ""
+  },
+  "src/core/auth/authManager.js": {
+    "mtime": 1780704378.289115,
+    "ast_hash": "28a162dae0e9319c405bfe99143b84ae",
+    "semantic_hash": ""
+  },
+  "src/core/auth/sessionStorage.js": {
+    "mtime": 1780704378.289115,
+    "ast_hash": "f714e4b0cb04bfecbffd885bf706b3ef",
+    "semantic_hash": ""
+  },
+  "src/core/auth/supabaseAuth.js": {
+    "mtime": 1780704378.289115,
+    "ast_hash": "4afa00b3b9132da3879e497697a06665",
+    "semantic_hash": ""
+  },
+  "src/core/config/config.js": {
+    "mtime": 1780704378.289115,
+    "ast_hash": "ed8d3a6c13865857adb2a137a600a504",
+    "semantic_hash": ""
+  },
+  "src/core/router/router.js": {
+    "mtime": 1780704378.2977066,
+    "ast_hash": "05bf3ba8e4c5bed2983e167ccff0afec",
+    "semantic_hash": ""
+  },
+  "src/core/utils/common.js": {
+    "mtime": 1780704378.2977066,
+    "ast_hash": "693ba31c413ca3133ff309c6043b73d5",
+    "semantic_hash": ""
+  },
+  "src/core/utils/loadJsonMock.js": {
+    "mtime": 1780704378.2977066,
+    "ast_hash": "6c32db6dbac9df97c5c85b02d262019d",
+    "semantic_hash": ""
+  },
+  "src/core/version/CHANGELOG.js": {
+    "mtime": 1780704378.2977066,
+    "ast_hash": "a54279f05a5e49f37af26eea42f6820a",
+    "semantic_hash": ""
+  },
+  "src/early-error-suppression.js": {
+    "mtime": 1780704378.3044388,
+    "ast_hash": "b3eddd95111e6478a401eff935848b14",
+    "semantic_hash": ""
+  },
+  "src/lib/__tests__/fuzzyMatch.test.js": {
+    "mtime": 1780704378.3063862,
+    "ast_hash": "dfaa87a2dcfdcc326b4e8671cc5d7ae0",
+    "semantic_hash": ""
+  },
+  "src/lib/__tests__/rutaEventEmitter.test.js": {
+    "mtime": 1780704378.3088677,
+    "ast_hash": "50d2af19a3766596699b470b93edd964",
+    "semantic_hash": ""
+  },
+  "src/lib/__tests__/semaphoreCache.test.js": {
+    "mtime": 1780704378.3098526,
+    "ast_hash": "03e9dc08539766c9976b2e0faf2451cc",
+    "semantic_hash": ""
+  },
+  "src/lib/fuzzyMatch.js": {
+    "mtime": 1780704378.311341,
+    "ast_hash": "4940a14e9b3dcfabc8f6a130ae51a068",
+    "semantic_hash": ""
+  },
+  "src/lib/rutaEventEmitter.js": {
+    "mtime": 1780704378.3122497,
+    "ast_hash": "012cfdc5079a7b3fae08ef00fce864b9",
+    "semantic_hash": ""
+  },
+  "src/lib/semaphoreCache.js": {
+    "mtime": 1780704378.3130507,
+    "ast_hash": "4a9b0fe8a61402fcacc3ce89e5801e95",
+    "semantic_hash": ""
+  },
+  "src/lib/supabaseClient.js": {
+    "mtime": 1780704378.3141007,
+    "ast_hash": "ef6daae18926676bcbdf6b8893ff4187",
+    "semantic_hash": ""
+  },
+  "src/main-maestros.js": {
+    "mtime": 1780704378.3181295,
+    "ast_hash": "5ebc0033d0d1d7830a7194d3f605bd94",
+    "semantic_hash": ""
+  },
+  "src/main-phase-c.js": {
+    "mtime": 1780704378.3191912,
+    "ast_hash": "1c25db0d5522c125fbda67a1f6b23e57",
+    "semantic_hash": ""
+  },
+  "src/main.js": {
+    "mtime": 1780704378.3191912,
+    "ast_hash": "e19e138f5499571b592668e9488c5674",
+    "semantic_hash": ""
+  },
+  "src/middleware/__tests__/csrfProtection.test.js": {
+    "mtime": 1780704378.3227296,
+    "ast_hash": "d68e7c941f5e582c9261a04b09189912",
+    "semantic_hash": ""
+  },
+  "src/middleware/__tests__/inputValidation.test.js": {
+    "mtime": 1780704378.3247418,
+    "ast_hash": "f489bdf3cf46163e38e65b7885f26249",
+    "semantic_hash": ""
+  },
+  "src/middleware/__tests__/permissionCheck.test.js": {
+    "mtime": 1780704378.3247418,
+    "ast_hash": "32c7cfd1bb97ee560da9e5b401158aeb",
+    "semantic_hash": ""
+  },
+  "src/middleware/__tests__/rateLimit.test.js": {
+    "mtime": 1780704378.3279784,
+    "ast_hash": "ec257933fbf54d7c422bba7af4183004",
+    "semantic_hash": ""
+  },
+  "src/middleware/csrfProtection.js": {
+    "mtime": 1780704378.3296235,
+    "ast_hash": "1678d469b489327fbd86e79d0c593390",
+    "semantic_hash": ""
+  },
+  "src/middleware/inputValidation.js": {
+    "mtime": 1780704378.3308408,
+    "ast_hash": "3690562e9ce9cf28813f9341a8643406",
+    "semantic_hash": ""
+  },
+  "src/middleware/permissionCheck.js": {
+    "mtime": 1780704378.332271,
+    "ast_hash": "83d5245b4cc3c64200d9fe86a51def90",
+    "semantic_hash": ""
+  },
+  "src/middleware/rateLimit.js": {
+    "mtime": 1780704378.3333037,
+    "ast_hash": "f8902b8bc8d785b722a0c16ee48f9e3c",
+    "semantic_hash": ""
+  },
+  "src/modules/__tests__/lint-fixes-verification.test.js": {
+    "mtime": 1780704378.3359976,
+    "ast_hash": "0aaeba45e2e9cb59c9a2bf0187507aa4",
+    "semantic_hash": ""
+  },
+  "src/modules/academic-admin/academic-admin.router.js": {
+    "mtime": 1780704378.3372378,
+    "ast_hash": "1a5fda4e96566e8cd19b0d77177fc511",
+    "semantic_hash": ""
+  },
+  "src/modules/academic-admin/api/academicAdminApi.js": {
+    "mtime": 1780704378.3372378,
+    "ast_hash": "ddcb82ca1366879b1106995f4001ad7b",
+    "semantic_hash": ""
+  },
+  "src/modules/academic-admin/components/InstitutionalRadar.js": {
+    "mtime": 1780704378.3408675,
+    "ast_hash": "751bd9e688f0a0adee24a6e2f12c11cb",
+    "semantic_hash": ""
+  },
+  "src/modules/academic-admin/components/NodeHotspots.js": {
+    "mtime": 1780704378.3408675,
+    "ast_hash": "2dc3df6095aee6ab24658e54e3f55db0",
+    "semantic_hash": ""
+  },
+  "src/modules/academic-admin/components/NodeResourceEditor.js": {
+    "mtime": 1780704378.3433907,
+    "ast_hash": "554adfe8cb7c961111c7fe5834ad0c4e",
+    "semantic_hash": ""
+  },
+  "src/modules/academic-admin/components/TreeView.js": {
+    "mtime": 1780704378.3449118,
+    "ast_hash": "f9d909efbbdd9c52c259e28709495e8c",
+    "semantic_hash": ""
+  },
+  "src/modules/academic-admin/views/AcademicDashboardView.js": {
+    "mtime": 1780704378.3455338,
+    "ast_hash": "203cdac1c677a4f84b58450e96f44e6d",
+    "semantic_hash": ""
+  },
+  "src/modules/academic-admin/views/academicAdminView.js": {
+    "mtime": 1780704378.3506494,
+    "ast_hash": "876ded42c218716d882e7e1ae142b3ca",
+    "semantic_hash": ""
+  },
+  "src/modules/academic-routes/services/academicService.js": {
+    "mtime": 1780704378.3528502,
+    "ast_hash": "17aea05fe3ea7793a57733e462cf8d25",
+    "semantic_hash": ""
+  },
+  "src/modules/admin-aprobacion/admin-aprobacion.router.js": {
+    "mtime": 1780704378.3574252,
+    "ast_hash": "59d117ff69d6690faa0a2d87bffa9b39",
+    "semantic_hash": ""
+  },
+  "src/modules/admin-aprobacion/api/ausenciaAprobacionApi.js": {
+    "mtime": 1780704378.3574252,
+    "ast_hash": "3034880e4f9275854566f745fb0163fc",
+    "semantic_hash": ""
+  },
+  "src/modules/admin-aprobacion/components/__tests__/ausenciaAprobacionCard.test.js": {
+    "mtime": 1780704378.3610227,
+    "ast_hash": "bd01ac761831391fa36082a8d78776b5",
+    "semantic_hash": ""
+  },
+  "src/modules/admin-aprobacion/components/adminAusenciasInsights.js": {
+    "mtime": 1780704378.3610227,
+    "ast_hash": "86cebc672ec6ee8fa1e2adc5b669df64",
+    "semantic_hash": ""
+  },
+  "src/modules/admin-aprobacion/components/ausenciaAprobacionCard.js": {
+    "mtime": 1780704378.3610227,
+    "ast_hash": "c85a85973669032534783539a92ae5b3",
+    "semantic_hash": ""
+  },
+  "src/modules/admin-aprobacion/index.js": {
+    "mtime": 1780704378.3610227,
+    "ast_hash": "372aa04f2d09fd9e56d9a5df832d338e",
+    "semantic_hash": ""
+  },
+  "src/modules/admin-aprobacion/views/__tests__/aprobacionView.test.js": {
+    "mtime": 1780704378.3610227,
+    "ast_hash": "8473a775cc6674ab12b65c825390c4b2",
+    "semantic_hash": ""
+  },
+  "src/modules/admin-aprobacion/views/__tests__/ausenciasAdminView.test.js": {
+    "mtime": 1780704378.3610227,
+    "ast_hash": "65bc87d9dfc51d26dd8faf3bece6d5ec",
+    "semantic_hash": ""
+  },
+  "src/modules/admin-aprobacion/views/aprobacionView.js": {
+    "mtime": 1780704378.3610227,
+    "ast_hash": "a4eb5b3c7125b7b05e253596ce28e2ab",
+    "semantic_hash": ""
+  },
+  "src/modules/admin-aprobacion/views/ausenciasAdminView.js": {
+    "mtime": 1780704378.3610227,
+    "ast_hash": "9d12138a346dc12267463a9d038587ed",
+    "semantic_hash": ""
+  },
+  "src/modules/admin-dashboard/admin-dashboard.router.js": {
+    "mtime": 1780704378.3610227,
+    "ast_hash": "911af350a2659e23505bffba7e535a46",
+    "semantic_hash": ""
+  },
+  "src/modules/admin-dashboard/api/__tests__/adminReportingApi.test.js": {
+    "mtime": 1780704378.3610227,
+    "ast_hash": "d5d4ff7fea7cbac53fdfed5221b12f98",
+    "semantic_hash": ""
+  },
+  "src/modules/admin-dashboard/api/__tests__/analyticsFillingBehaviorService.test.js": {
+    "mtime": 1780704378.3610227,
+    "ast_hash": "1db79bf1904a3dfd789df001f8b8ed1f",
+    "semantic_hash": ""
+  },
+  "src/modules/admin-dashboard/api/__tests__/trendAnalysisService.test.js": {
+    "mtime": 1780704378.3610227,
+    "ast_hash": "4fdf209ebba9c89ca7355334ab844c70",
+    "semantic_hash": ""
+  },
+  "src/modules/admin-dashboard/api/adminMaestroApi.js": {
+    "mtime": 1780704378.3768592,
+    "ast_hash": "48591b2a16674c52728b95bdcb95483f",
+    "semantic_hash": ""
+  },
+  "src/modules/admin-dashboard/api/adminReportingApi.js": {
+    "mtime": 1780704378.3768592,
+    "ast_hash": "22cc51f14246ad9a4e4717a8a049bed0",
+    "semantic_hash": ""
+  },
+  "src/modules/admin-dashboard/api/analyticsFillingBehaviorService.js": {
+    "mtime": 1780704378.3768592,
+    "ast_hash": "055f9bb2c70c1fe6d3ccc4e9567b00af",
+    "semantic_hash": ""
+  },
+  "src/modules/admin-dashboard/api/trendAnalysisService.js": {
+    "mtime": 1780704378.3768592,
+    "ast_hash": "1968925e663267d4e13e742d23e5cfd4",
+    "semantic_hash": ""
+  },
+  "src/modules/admin-dashboard/views/__tests__/analyticsFillingBehaviorWidget.test.js": {
+    "mtime": 1780704378.3830185,
+    "ast_hash": "9e07749d50281bebd72cd788322e3486",
+    "semantic_hash": ""
+  },
+  "src/modules/admin-dashboard/views/__tests__/directorTrendReportView.test.js": {
+    "mtime": 1780704378.3830185,
+    "ast_hash": "9672bc870458c41c56c54c02487d16d7",
+    "semantic_hash": ""
+  },
+  "src/modules/admin-dashboard/views/__tests__/solicitudesPermisosView.test.js": {
+    "mtime": 1780704378.3830185,
+    "ast_hash": "45e14b7396a870f202577c79aa1020b6",
+    "semantic_hash": ""
+  },
+  "src/modules/admin-dashboard/views/analyticsFillingBehaviorWidget.js": {
+    "mtime": 1780704378.3830185,
+    "ast_hash": "6c6633eb03c969ec944aee6e9111d920",
+    "semantic_hash": ""
+  },
+  "src/modules/admin-dashboard/views/cumplimientoMaestrosWidget.js": {
+    "mtime": 1780704378.3830185,
+    "ast_hash": "41928189dee420303c07dc6529a1b8eb",
+    "semantic_hash": ""
+  },
+  "src/modules/admin-dashboard/views/directorReportingPanel.js": {
+    "mtime": 1780704378.3830185,
+    "ast_hash": "5df91a4c4eafffd20be7ff31d7568cad",
+    "semantic_hash": ""
+  },
+  "src/modules/admin-dashboard/views/directorTrendReportView.js": {
+    "mtime": 1780704378.3830185,
+    "ast_hash": "1d74c00cbe2718994d8cb8d90ca44696",
+    "semantic_hash": ""
+  },
+  "src/modules/admin-dashboard/views/solicitudesPermisosView.js": {
+    "mtime": 1780704378.3925655,
+    "ast_hash": "3ec8a83159c3122bf9367085cfcee7a4",
+    "semantic_hash": ""
+  },
+  "src/modules/admin-notificaciones/admin-notificaciones.router.js": {
+    "mtime": 1780704378.3925655,
+    "ast_hash": "bd7993118cf702d96788df4f764aeea6",
+    "semantic_hash": ""
+  },
+  "src/modules/admin-notificaciones/api/__tests__/adminNotifApi.test.js": {
+    "mtime": 1780704378.3962,
+    "ast_hash": "7faa5834dc971d2ff7efbdbd3db98acb",
+    "semantic_hash": ""
+  },
+  "src/modules/admin-notificaciones/api/adminNotifApi.js": {
+    "mtime": 1780704378.3962,
+    "ast_hash": "f427209ab3d0addb7d9f4e6e8e39216c",
+    "semantic_hash": ""
+  },
+  "src/modules/admin-notificaciones/index.js": {
+    "mtime": 1780704378.3962,
+    "ast_hash": "54dfad662850cbae50bcc9811f44e707",
+    "semantic_hash": ""
+  },
+  "src/modules/admin-notificaciones/realtimeService.js": {
+    "mtime": 1780704378.3962,
+    "ast_hash": "f9b8bdbd3dcdf333d5a74948b2f6aec3",
+    "semantic_hash": ""
+  },
+  "src/modules/admin-notificaciones/views/__tests__/adminNotificacionesView.test.js": {
+    "mtime": 1780704378.3962,
+    "ast_hash": "1e343f7df9165154b516fb69c82c1662",
+    "semantic_hash": ""
+  },
+  "src/modules/admin-notificaciones/views/adminNotificacionesView.js": {
+    "mtime": 1780704378.3962,
+    "ast_hash": "b2f04cf3356243492841230d85392a74",
+    "semantic_hash": ""
+  },
+  "src/modules/alumnos/alumnos.router.js": {
+    "mtime": 1780704378.3962,
+    "ast_hash": "7807a6addf47772b03ced06fb01ac276",
+    "semantic_hash": ""
+  },
+  "src/modules/alumnos/api/alumnosApi.js": {
+    "mtime": 1780704378.3962,
+    "ast_hash": "d173d7259370834727ee81261e4369b2",
+    "semantic_hash": ""
+  },
+  "src/modules/alumnos/api/alumnosMock.js": {
+    "mtime": 1780704378.3962,
+    "ast_hash": "fe9c8dde3ce477951bea827902bc9046",
+    "semantic_hash": ""
+  },
+  "src/modules/alumnos/api/alumnosSupabase.js": {
+    "mtime": 1780704378.3962,
+    "ast_hash": "650ad79f7f61471e338ca08ba44f20d8",
+    "semantic_hash": ""
+  },
+  "src/modules/alumnos/api/googleFormApi.js": {
+    "mtime": 1780704378.4084456,
+    "ast_hash": "69bb44c6363178c24dd36b8c7f852335",
+    "semantic_hash": ""
+  },
+  "src/modules/alumnos/api/postuladosMock.js": {
+    "mtime": 1780704378.4084456,
+    "ast_hash": "dc1451a2d282797b2d8a977300291cb4",
+    "semantic_hash": ""
+  },
+  "src/modules/alumnos/api/postuladosSupabase.js": {
+    "mtime": 1780704378.4084456,
+    "ast_hash": "25b1dbe76a19db3e2669fb10d8d6c88e",
+    "semantic_hash": ""
+  },
+  "src/modules/alumnos/api/postulantesApi.js": {
+    "mtime": 1780704378.4084456,
+    "ast_hash": "4d1cf4f5ae1a28d28b8c907133d16274",
+    "semantic_hash": ""
+  },
+  "src/modules/alumnos/api/postulantesMock.js": {
+    "mtime": 1780704378.4084456,
+    "ast_hash": "0e52d8730be5e0d6ac8e164ddc329757",
+    "semantic_hash": ""
+  },
+  "src/modules/alumnos/api/postulantesSupabase.js": {
+    "mtime": 1780704378.4084456,
+    "ast_hash": "94bf17b7eb637ae15858a93a6dc2506b",
+    "semantic_hash": ""
+  },
+  "src/modules/alumnos/components/alumnoCard.js": {
+    "mtime": 1780704378.4084456,
+    "ast_hash": "24e85b3e6339933a8b78e012720b4fd6",
+    "semantic_hash": ""
+  },
+  "src/modules/alumnos/components/alumnoTimeline.js": {
+    "mtime": 1780704378.4084456,
+    "ast_hash": "12e6e187316cbc2a40897150d551b1aa",
+    "semantic_hash": ""
+  },
+  "src/modules/alumnos/domain/calcularEdad.js": {
+    "mtime": 1780704378.4084456,
+    "ast_hash": "d669ad619424e5d4bf99e58e184107b1",
+    "semantic_hash": ""
+  },
+  "src/modules/alumnos/domain/completitudAlumno.js": {
+    "mtime": 1780704378.4084456,
+    "ast_hash": "3fbc30eead810cbb7686f734bfef7e2a",
+    "semantic_hash": ""
+  },
+  "src/modules/alumnos/domain/editarAlumnoModal.js": {
+    "mtime": 1780704378.4084456,
+    "ast_hash": "19d7091a86006cbb950c8ce3adebf78a",
+    "semantic_hash": ""
+  },
+  "src/modules/alumnos/domain/generarPdfInscripcion.js": {
+    "mtime": 1780704378.4084456,
+    "ast_hash": "ce2aa4ac8beaaecf715e1e47dfdeaa64",
+    "semantic_hash": ""
+  },
+  "src/modules/alumnos/domain/generarPdfPostulados.js": {
+    "mtime": 1780704378.422931,
+    "ast_hash": "3160f5c43f11fb07fae8fd77d9e653b1",
+    "semantic_hash": ""
+  },
+  "src/modules/alumnos/domain/generarReporteMensual.js": {
+    "mtime": 1780704378.4241092,
+    "ast_hash": "88746acc6992191d5819257da330386e",
+    "semantic_hash": ""
+  },
+  "src/modules/alumnos/domain/iniciacionMusicalPolicy.js": {
+    "mtime": 1780704378.4241092,
+    "ast_hash": "2f978b0f4badb83200b0dbf3b424b117",
+    "semantic_hash": ""
+  },
+  "src/modules/alumnos/domain/inscripcionDraftSchema.js": {
+    "mtime": 1780704378.4241092,
+    "ast_hash": "662919d3b5d289e1fb27c467bb5b3d53",
+    "semantic_hash": ""
+  },
+  "src/modules/alumnos/domain/inscripcionValidators.js": {
+    "mtime": 1780704378.4241092,
+    "ast_hash": "ef3a9d0d5874fc8ad087f720f77d5b3d",
+    "semantic_hash": ""
+  },
+  "src/modules/alumnos/domain/postuladoStateMachine.js": {
+    "mtime": 1780704378.4241092,
+    "ast_hash": "9f158875cd63cbeef7aba4d642237c02",
+    "semantic_hash": ""
+  },
+  "src/modules/alumnos/hooks/useAlumnos.js": {
+    "mtime": 1780704378.4241092,
+    "ast_hash": "a2e47bc6ed2ae97ead251511fb6aca73",
+    "semantic_hash": ""
+  },
+  "src/modules/alumnos/index.js": {
+    "mtime": 1780704378.4241092,
+    "ast_hash": "7fb13034129f17cd9f5d390d80350197",
+    "semantic_hash": ""
+  },
+  "src/modules/alumnos/models/alumno.model.js": {
+    "mtime": 1780704378.4314654,
+    "ast_hash": "df1060d807c3dfb7399ec4ce093220dd",
+    "semantic_hash": ""
+  },
+  "src/modules/alumnos/utils/alumnosUtils.js": {
+    "mtime": 1780704378.4314654,
+    "ast_hash": "ca9293ec36f35a821e1489d8a62cc435",
+    "semantic_hash": ""
+  },
+  "src/modules/alumnos/views/alumnoAdminView.js": {
+    "mtime": 1780704378.4314654,
+    "ast_hash": "6546bb7909121517c18a33339ab13197",
+    "semantic_hash": ""
+  },
+  "src/modules/alumnos/views/alumnosView.js": {
+    "mtime": 1780704378.4314654,
+    "ast_hash": "f6f7fbe4c901049fd32032854526b64b",
+    "semantic_hash": ""
+  },
+  "src/modules/alumnos/views/pdfDemoView.js": {
+    "mtime": 1780704378.4399464,
+    "ast_hash": "98a8a1a307cf1ddf0063cabc267e1c5a",
+    "semantic_hash": ""
+  },
+  "src/modules/alumnos/views/postulados/postuladoCalendarioView.js": {
+    "mtime": 1780704378.441142,
+    "ast_hash": "2112d112cfc1b617c45681f0c8ef7b94",
+    "semantic_hash": ""
+  },
+  "src/modules/alumnos/views/postulados/postuladoPerfilView.js": {
+    "mtime": 1780704378.441142,
+    "ast_hash": "ce66977d9ad3fd81f9091c1451b0711e",
+    "semantic_hash": ""
+  },
+  "src/modules/alumnos/views/postulados/postuladosView.js": {
+    "mtime": 1780704378.441142,
+    "ast_hash": "6afc0b08843664642573df90c23d34c4",
+    "semantic_hash": ""
+  },
+  "src/modules/alumnos/views/reporteInscripcionesMes.js": {
+    "mtime": 1780704378.441142,
+    "ast_hash": "28051e0446a2dff86104a2fde2f3cd4b",
+    "semantic_hash": ""
+  },
+  "src/modules/asistencias/__tests__/asistencia.model.test.js": {
+    "mtime": 1780704378.441142,
+    "ast_hash": "e2edc6e8a9ed43c1357434a55a69056e",
+    "semantic_hash": ""
+  },
+  "src/modules/asistencias/api/__tests__/asistenciasApi.test.js": {
+    "mtime": 1780704378.441142,
+    "ast_hash": "b5fd340fffa7f5ac42d02f5da8c3f0fd",
+    "semantic_hash": ""
+  },
+  "src/modules/asistencias/api/asistenciasApi.js": {
+    "mtime": 1780704378.441142,
+    "ast_hash": "1804ebb890f96947d4b8dd00a596cde1",
+    "semantic_hash": ""
+  },
+  "src/modules/asistencias/asistencias.router.js": {
+    "mtime": 1780704378.441142,
+    "ast_hash": "79bc8c6e375c89281232d3a6bfb2f403",
+    "semantic_hash": ""
+  },
+  "src/modules/asistencias/components/asistenciaExport.js": {
+    "mtime": 1780704378.441142,
+    "ast_hash": "1b26dceb0f06f52fb9b81287a3cdb0f4",
+    "semantic_hash": ""
+  },
+  "src/modules/asistencias/components/asistenciaHeatmap.js": {
+    "mtime": 1780704378.441142,
+    "ast_hash": "7bcf4c73e4ce444321dbceed320657b4",
+    "semantic_hash": ""
+  },
+  "src/modules/asistencias/components/asistenciaModal.js": {
+    "mtime": 1780704378.455997,
+    "ast_hash": "ddaae2457f4e22102ce3e324aab0b564",
+    "semantic_hash": ""
+  },
+  "src/modules/asistencias/components/asistenciaTable.js": {
+    "mtime": 1780704378.455997,
+    "ast_hash": "5117bf540af8a53d3e043684c74acd29",
+    "semantic_hash": ""
+  },
+  "src/modules/asistencias/components/justificacionesPanel.js": {
+    "mtime": 1780704378.455997,
+    "ast_hash": "c40a09ba5f9c43f89cc261d77f7e28c4",
+    "semantic_hash": ""
+  },
+  "src/modules/asistencias/components/registroBulkModal.js": {
+    "mtime": 1780704378.455997,
+    "ast_hash": "0e4b87e4f168fba130dc0b44862514b1",
+    "semantic_hash": ""
+  },
+  "src/modules/asistencias/hooks/useAsistencias.js": {
+    "mtime": 1780704378.455997,
+    "ast_hash": "b0c389705f446f56758b0a27c110375b",
+    "semantic_hash": ""
+  },
+  "src/modules/asistencias/index.js": {
+    "mtime": 1780704378.455997,
+    "ast_hash": "0f95fb2705eeaec99d9540ec66c41958",
+    "semantic_hash": ""
+  },
+  "src/modules/asistencias/models/asistencia.model.js": {
+    "mtime": 1780704378.455997,
+    "ast_hash": "0e5b5eb77a3fe52fdcca09673ebc8e45",
+    "semantic_hash": ""
+  },
+  "src/modules/asistencias/services/asistenciaDataService.js": {
+    "mtime": 1780704378.455997,
+    "ast_hash": "23d0194c006b4f757104cc81fd3f55b8",
+    "semantic_hash": ""
+  },
+  "src/modules/asistencias/utils/asistenciasUtils.js": {
+    "mtime": 1780704378.4627426,
+    "ast_hash": "4db02fa80f73aab23f7e53a03b7d73e3",
+    "semantic_hash": ""
+  },
+  "src/modules/asistencias/utils/reportGenerator.js": {
+    "mtime": 1780704378.4627426,
+    "ast_hash": "a40da2e142d1f34bd16b2047aec92b2c",
+    "semantic_hash": ""
+  },
+  "src/modules/asistencias/views/asistenciaReporteView.js": {
+    "mtime": 1780704378.4627426,
+    "ast_hash": "89244f9d8431be8432b28b3bbdb5abe0",
+    "semantic_hash": ""
+  },
+  "src/modules/asistencias/views/asistenciasView.js": {
+    "mtime": 1780704378.4627426,
+    "ast_hash": "4e815581f78528d8545f525d5494fccb",
+    "semantic_hash": ""
+  },
+  "src/modules/auth/authManager.js": {
+    "mtime": 1780704378.4627426,
+    "ast_hash": "074ddec8220d08cae38af71caa8c22c6",
+    "semantic_hash": ""
+  },
+  "src/modules/auth/components/ausenciaForm.js": {
+    "mtime": 1780704378.4627426,
+    "ast_hash": "3954a92f004167065e8a14b023e97cc9",
+    "semantic_hash": ""
+  },
+  "src/modules/auth/components/ausenciaHistorial.js": {
+    "mtime": 1780704378.4720173,
+    "ast_hash": "522eeb19345f4d1892f40f56796c937c",
+    "semantic_hash": ""
+  },
+  "src/modules/auth/components/biometricoLogin.js": {
+    "mtime": 1780704378.4720173,
+    "ast_hash": "51d83c04ac306d4217cac7a3fdecd91b",
+    "semantic_hash": ""
+  },
+  "src/modules/auth/components/loginForm.js": {
+    "mtime": 1780704378.4720173,
+    "ast_hash": "4185e163dd46bebea841542774225cec",
+    "semantic_hash": ""
+  },
+  "src/modules/auth/components/registerForm.js": {
+    "mtime": 1780704378.4720173,
+    "ast_hash": "0d063b8e152a6b4990336fe9d2673afb",
+    "semantic_hash": ""
+  },
+  "src/modules/auth/hooks/useAuth.js": {
+    "mtime": 1780704378.4720173,
+    "ast_hash": "439b8d6de8dcd6bdc14f09fade079115",
+    "semantic_hash": ""
+  },
+  "src/modules/auth/hooks/usePushNotifications.js": {
+    "mtime": 1780704378.4720173,
+    "ast_hash": "64647c3b9bb5be64b56b88845dda505c",
+    "semantic_hash": ""
+  },
+  "src/modules/auth/index.js": {
+    "mtime": 1780704378.4720173,
+    "ast_hash": "804df7263ed512bdc217f8ef22a48b4c",
+    "semantic_hash": ""
+  },
+  "src/modules/auth/sessionStorage.js": {
+    "mtime": 1780704378.4720173,
+    "ast_hash": "0ff80f010ad4bb075a235dc19cad4552",
+    "semantic_hash": ""
+  },
+  "src/modules/auth/utils/authUtils.js": {
+    "mtime": 1780704378.478895,
+    "ast_hash": "c4d67bd3ea86faf0087e0b1d2866dbb2",
+    "semantic_hash": ""
+  },
+  "src/modules/auth/utils/validators.js": {
+    "mtime": 1780704378.478895,
+    "ast_hash": "06f322bcc45f08349b2ea116543c65ce",
+    "semantic_hash": ""
+  },
+  "src/modules/auth/views/loginView.js": {
+    "mtime": 1780704378.4809074,
+    "ast_hash": "9f97be23f5270e09d407b264b0d43897",
+    "semantic_hash": ""
+  },
+  "src/modules/auth/views/perfilView.js": {
+    "mtime": 1780704378.4809074,
+    "ast_hash": "7bf37b3f978c6626300c0b151f91445a",
+    "semantic_hash": ""
+  },
+  "src/modules/auth/views/registerView.js": {
+    "mtime": 1780704378.4829204,
+    "ast_hash": "99169a21fef6609b3130055296ff3cb8",
+    "semantic_hash": ""
+  },
+  "src/modules/clases/__tests__/clasesApi.test.js": {
+    "mtime": 1780704378.4849315,
+    "ast_hash": "94e5ad28b3af50a9106cbcd0619a85e6",
+    "semantic_hash": ""
+  },
+  "src/modules/clases/api/clasesApi.js": {
+    "mtime": 1780704378.4849315,
+    "ast_hash": "dec2500648f32631bbca40d9a09c62bc",
+    "semantic_hash": ""
+  },
+  "src/modules/clases/clases.router.js": {
+    "mtime": 1780704378.4849315,
+    "ast_hash": "89c478206b3d2b7911e2c61273119091",
+    "semantic_hash": ""
+  },
+  "src/modules/clases/components/alumnoInscripcionModal.js": {
+    "mtime": 1780704378.4876816,
+    "ast_hash": "bfb80237885b1826075aad9ca91b1455",
+    "semantic_hash": ""
+  },
+  "src/modules/clases/components/claseCard.js": {
+    "mtime": 1780704378.4876816,
+    "ast_hash": "20072a1092b797880d827ec6a9f11fb3",
+    "semantic_hash": ""
+  },
+  "src/modules/clases/components/claseModal.js": {
+    "mtime": 1780704378.4876816,
+    "ast_hash": "26b586b345154eeeb70395540fa07056",
+    "semantic_hash": ""
+  },
+  "src/modules/clases/components/sustitucionModal.js": {
+    "mtime": 1780704378.4876816,
+    "ast_hash": "b7de3d77c99e69c16b1a688ffb9acf07",
+    "semantic_hash": ""
+  },
+  "src/modules/clases/hooks/useClases.js": {
+    "mtime": 1780704378.4876816,
+    "ast_hash": "55b5125b30ed478db4b4958d414e27bb",
+    "semantic_hash": ""
+  },
+  "src/modules/clases/index.js": {
+    "mtime": 1780704378.4876816,
+    "ast_hash": "5fcfa106120916ec669778302db04e3a",
+    "semantic_hash": ""
+  },
+  "src/modules/clases/models/clase.model.js": {
+    "mtime": 1780704378.4876816,
+    "ast_hash": "d2ec0606751d00bcc0fcf2c40985f5ff",
+    "semantic_hash": ""
+  },
+  "src/modules/clases/models/clase.model.test.js": {
+    "mtime": 1780704378.4876816,
+    "ast_hash": "9a1f96b4c9839b7a86ee799d6d4bc3b2",
+    "semantic_hash": ""
+  },
+  "src/modules/clases/utils/clasesUtils.js": {
+    "mtime": 1780704378.4876816,
+    "ast_hash": "f4547568fbcf385ae0ed589284bdb18d",
+    "semantic_hash": ""
+  },
+  "src/modules/clases/views/clasesView.helpers.test.js": {
+    "mtime": 1780704378.4876816,
+    "ast_hash": "59519f20f6d525a8ee0badd17f199083",
+    "semantic_hash": ""
+  },
+  "src/modules/clases/views/clasesView.js": {
+    "mtime": 1780704378.4876816,
+    "ast_hash": "98e97f9696b17cffa6140e9f7e88627b",
+    "semantic_hash": ""
+  },
+  "src/modules/config/api/configApi.js": {
+    "mtime": 1780704378.4876816,
+    "ast_hash": "850b1a5ad07638c4ba31284d0d67c832",
+    "semantic_hash": ""
+  },
+  "src/modules/config/components/importData.js": {
+    "mtime": 1780704378.5037038,
+    "ast_hash": "efd90babb810f7ca0d6b25254bc02f49",
+    "semantic_hash": ""
+  },
+  "src/modules/config/domain/generarPdfExpediente.js": {
+    "mtime": 1780704378.5037038,
+    "ast_hash": "e26d1619b03c34f2e50df8f960940319",
+    "semantic_hash": ""
+  },
+  "src/modules/config/domain/generarPdfLotes.js": {
+    "mtime": 1780704378.5082703,
+    "ast_hash": "c308d696f654eca283d70310599e1ce6",
+    "semantic_hash": ""
+  },
+  "src/modules/config/domain/generarPdfReportes.js": {
+    "mtime": 1780704378.5082703,
+    "ast_hash": "630ee9ae65645998e011601f4955041e",
+    "semantic_hash": ""
+  },
+  "src/modules/config/index.js": {
+    "mtime": 1780704378.5082703,
+    "ast_hash": "9e96f413d0573a2ee6bd57b28cf5dbc6",
+    "semantic_hash": ""
+  },
+  "src/modules/config/views/__tests__/configView.test.js": {
+    "mtime": 1780704378.5082703,
+    "ast_hash": "df84229dc0c8860519f366f4ba7501c2",
+    "semantic_hash": ""
+  },
+  "src/modules/config/views/configView.js": {
+    "mtime": 1780704378.5082703,
+    "ast_hash": "567bcaa79f21aabbaaf7c8307e26f809",
+    "semantic_hash": ""
+  },
+  "src/modules/config/views/exportView.js": {
+    "mtime": 1780704378.5082703,
+    "ast_hash": "0f377916e03db3cf402af573ffc77425",
+    "semantic_hash": ""
+  },
+  "src/modules/config/views/importView.js": {
+    "mtime": 1780704378.5082703,
+    "ast_hash": "08b73f6b54f30196b68ffd99359e486b",
+    "semantic_hash": ""
+  },
+  "src/modules/director-aprobacion/api/ausenciaAprobacionApi.js": {
+    "mtime": 1780704378.5082703,
+    "ast_hash": "6d387f8e5d6024d2e4633b9aac490261",
+    "semantic_hash": ""
+  },
+  "src/modules/director-aprobacion/views/__tests__/ausenciasDirectorView.test.js": {
+    "mtime": 1780704378.5198374,
+    "ast_hash": "de16a6d71eda65318a6f3c8039a1d7ee",
+    "semantic_hash": ""
+  },
+  "src/modules/director-aprobacion/views/ausenciasDirectorView.js": {
+    "mtime": 1780704378.5198374,
+    "ast_hash": "c207be093ecfa0799324488b37413180",
+    "semantic_hash": ""
+  },
+  "src/modules/horario-builder/__tests__/DragDropManager.test.js": {
+    "mtime": 1780704378.5198374,
+    "ast_hash": "7b2a99cfc354424b1f2645765c40ab78",
+    "semantic_hash": ""
+  },
+  "src/modules/horario-builder/__tests__/PublishWizard.test.js": {
+    "mtime": 1780704378.5198374,
+    "ast_hash": "9ab2abb3b9ce7c67ffa322cc3f6fa0e7",
+    "semantic_hash": ""
+  },
+  "src/modules/horario-builder/__tests__/ScheduleGrid.test.js": {
+    "mtime": 1780704378.5198374,
+    "ast_hash": "51916845ca29c00a44500a08e1c71e05",
+    "semantic_hash": ""
+  },
+  "src/modules/horario-builder/__tests__/colorMap.test.js": {
+    "mtime": 1780704378.5198374,
+    "ast_hash": "5f21b07a50e71e68cceec1525439d9ab",
+    "semantic_hash": ""
+  },
+  "src/modules/horario-builder/__tests__/conflictDetector.test.js": {
+    "mtime": 1780704378.5198374,
+    "ast_hash": "70f14c63e4d411b3743e9d3509764a57",
+    "semantic_hash": ""
+  },
+  "src/modules/horario-builder/__tests__/scheduleFeedbackApi.test.js": {
+    "mtime": 1780704378.5282307,
+    "ast_hash": "e0e89b7ef39cdd1765e17f4b49597a8e",
+    "semantic_hash": ""
+  },
+  "src/modules/horario-builder/__tests__/schedulingEngine.test.js": {
+    "mtime": 1780704378.5282307,
+    "ast_hash": "0a307aa74820c93d308221b5f9e66516",
+    "semantic_hash": ""
+  },
+  "src/modules/horario-builder/api/horarioBuilderApi.js": {
+    "mtime": 1780704378.5282307,
+    "ast_hash": "f7f49b5aa8912cf462d9a79ae0096d95",
+    "semantic_hash": ""
+  },
+  "src/modules/horario-builder/api/scheduleFeedbackApi.js": {
+    "mtime": 1780704378.5282307,
+    "ast_hash": "31f99470f8ddadfc17930486e0e5d5e5",
+    "semantic_hash": ""
+  },
+  "src/modules/horario-builder/components/ConflictPanel.js": {
+    "mtime": 1780704378.5282307,
+    "ast_hash": "fdea07ef1350db0411c09ca238c5b515",
+    "semantic_hash": ""
+  },
+  "src/modules/horario-builder/components/PublishWizard.js": {
+    "mtime": 1780704378.5282307,
+    "ast_hash": "864e7ab6fda7397ee31a90335bc61ab5",
+    "semantic_hash": ""
+  },
+  "src/modules/horario-builder/components/ScheduleBlock.js": {
+    "mtime": 1780704378.5282307,
+    "ast_hash": "1348fa8acf452bc7cdb66f2ff1a476c1",
+    "semantic_hash": ""
+  },
+  "src/modules/horario-builder/components/ScheduleGrid.js": {
+    "mtime": 1780704378.535585,
+    "ast_hash": "bad9b14b29bcb58dcac04ef0eed25add",
+    "semantic_hash": ""
+  },
+  "src/modules/horario-builder/components/ViewToggle.js": {
+    "mtime": 1780704378.535585,
+    "ast_hash": "dcaab0888d30d398bf1ebdde48508cf5",
+    "semantic_hash": ""
+  },
+  "src/modules/horario-builder/components/availabilityGrid.js": {
+    "mtime": 1780704378.535585,
+    "ast_hash": "c21ffbf2a01d00e55d8c510e8a80fa1b",
+    "semantic_hash": ""
+  },
+  "src/modules/horario-builder/components/conflictReport.js": {
+    "mtime": 1780704378.5389493,
+    "ast_hash": "b8f049bd82ec09ebd4e621f54d928aa5",
+    "semantic_hash": ""
+  },
+  "src/modules/horario-builder/components/constraintPanel.js": {
+    "mtime": 1780704378.5389493,
+    "ast_hash": "1241d3a6e4aaccf14b261f0c4122757e",
+    "semantic_hash": ""
+  },
+  "src/modules/horario-builder/components/teacherAvailabilityCard.js": {
+    "mtime": 1780704378.5389493,
+    "ast_hash": "8d236fd4fbdad9c52d28d7344e1fb13f",
+    "semantic_hash": ""
+  },
+  "src/modules/horario-builder/engine/DragDropManager.js": {
+    "mtime": 1780704378.541896,
+    "ast_hash": "6bd75375be8cb821abca68d2bd4788fb",
+    "semantic_hash": ""
+  },
+  "src/modules/horario-builder/engine/conflictDetector.js": {
+    "mtime": 1780704378.541896,
+    "ast_hash": "572e165f16ad7aa58712721622b70439",
+    "semantic_hash": ""
+  },
+  "src/modules/horario-builder/engine/schedulingEngine.js": {
+    "mtime": 1780704378.541896,
+    "ast_hash": "74d40cf252758fd665abe49bbb9e9d68",
+    "semantic_hash": ""
+  },
+  "src/modules/horario-builder/horario-builder.router.js": {
+    "mtime": 1780704378.541896,
+    "ast_hash": "4b2e4ef73ca07aefa10afd627803c494",
+    "semantic_hash": ""
+  },
+  "src/modules/horario-builder/index.js": {
+    "mtime": 1780704378.541896,
+    "ast_hash": "a6826db671f392a32c9a3023176b80e3",
+    "semantic_hash": ""
+  },
+  "src/modules/horario-builder/models/scheduleConstraints.model.js": {
+    "mtime": 1780704378.541896,
+    "ast_hash": "a1d8bc1f46af0f687c8c6c0ab36990ea",
+    "semantic_hash": ""
+  },
+  "src/modules/horario-builder/utils/colorMap.js": {
+    "mtime": 1780704378.551479,
+    "ast_hash": "5cd1aa0f66508f8503239f44a2a3ab33",
+    "semantic_hash": ""
+  },
+  "src/modules/horario-builder/utils/escapeHtml.js": {
+    "mtime": 1780704378.551479,
+    "ast_hash": "9d58cf40217393fcdef54edac8227d96",
+    "semantic_hash": ""
+  },
+  "src/modules/horario-builder/utils/horarioExporter.js": {
+    "mtime": 1780704378.551479,
+    "ast_hash": "45e130ad1153c4c2b539439094c670d4",
+    "semantic_hash": ""
+  },
+  "src/modules/horario-builder/utils/timeUtils.js": {
+    "mtime": 1780704378.551479,
+    "ast_hash": "cd93d10769cd3c76be08c0f8b0c23424",
+    "semantic_hash": ""
+  },
+  "src/modules/horario-builder/views/horarioBuilderView.js": {
+    "mtime": 1780704378.551479,
+    "ast_hash": "12f9bb8565c710058b6a97f56070bed7",
+    "semantic_hash": ""
+  },
+  "src/modules/maestros/api/maestroDisponibilidadApi.js": {
+    "mtime": 1780704378.551479,
+    "ast_hash": "f6724ebdaf0e11c2766fa1a845c137b7",
+    "semantic_hash": ""
+  },
+  "src/modules/maestros/api/maestrosApi.js": {
+    "mtime": 1780704378.551479,
+    "ast_hash": "d3b64396ca0e8580ce40ec1b39a77821",
+    "semantic_hash": ""
+  },
+  "src/modules/maestros/components/maestroCard.js": {
+    "mtime": 1780704378.551479,
+    "ast_hash": "ff2b6210b9e219b4b9cb92e749cd8ea8",
+    "semantic_hash": ""
+  },
+  "src/modules/maestros/components/maestroModal.js": {
+    "mtime": 1780704378.551479,
+    "ast_hash": "7a456a2116c9f31f1da2d3c09269224f",
+    "semantic_hash": ""
+  },
+  "src/modules/maestros/hooks/useMaestros.js": {
+    "mtime": 1780704378.551479,
+    "ast_hash": "a9835d32f8901cf43345a8bcfc46945d",
+    "semantic_hash": ""
+  },
+  "src/modules/maestros/index.js": {
+    "mtime": 1780704378.551479,
+    "ast_hash": "f745529d811ae9b6229a8ccd5a6ab11f",
+    "semantic_hash": ""
+  },
+  "src/modules/maestros/maestros.router.js": {
+    "mtime": 1780704378.551479,
+    "ast_hash": "13e622ea1cd9a230e0be409b82662484",
+    "semantic_hash": ""
+  },
+  "src/modules/maestros/models/maestro.model.js": {
+    "mtime": 1780704378.551479,
+    "ast_hash": "e47c0393915edb7bbb2ee50ebea5889d",
+    "semantic_hash": ""
+  },
+  "src/modules/maestros/utils/maestrosUtils.js": {
+    "mtime": 1780704378.5695646,
+    "ast_hash": "704287f24ae910aab0a2ad6e49f6c5fc",
+    "semantic_hash": ""
+  },
+  "src/modules/maestros/views/maestrosView.js": {
+    "mtime": 1780704378.5715735,
+    "ast_hash": "b2c7c523d26170f4ad46d00203010c17",
+    "semantic_hash": ""
+  },
+  "src/modules/metricas/__tests__/metricsApi.test.js": {
+    "mtime": 1780704378.5715735,
+    "ast_hash": "528f9145def9f6a803ef7e2e2f94c526",
+    "semantic_hash": ""
+  },
+  "src/modules/metricas/__tests__/observabilidad-harden.test.js": {
+    "mtime": 1780704378.5715735,
+    "ast_hash": "f89571429219ba430e7546ea5968d9c2",
+    "semantic_hash": ""
+  },
+  "src/modules/metricas/api/metricasApi.js": {
+    "mtime": 1780704378.5715735,
+    "ast_hash": "80637d68fc8ea2ecd8a65e1e5c9d2e73",
+    "semantic_hash": ""
+  },
+  "src/modules/metricas/api/metricasMock.js": {
+    "mtime": 1780704378.5715735,
+    "ast_hash": "bfda8e0324c0df6da03d01cb0af19d43",
+    "semantic_hash": ""
+  },
+  "src/modules/metricas/api/metricsApi.js": {
+    "mtime": 1780704378.5801282,
+    "ast_hash": "0f3b892cc0f366cff33a3fe283fd6585",
+    "semantic_hash": ""
+  },
+  "src/modules/metricas/api/observabilidadApi.js": {
+    "mtime": 1780704378.5801282,
+    "ast_hash": "774d0148c05639261d8bab5cf523b080",
+    "semantic_hash": ""
+  },
+  "src/modules/metricas/api/observabilidadMock.js": {
+    "mtime": 1780704378.5834968,
+    "ast_hash": "737449aa57880f110e3f12584e27175f",
+    "semantic_hash": ""
+  },
+  "src/modules/metricas/api/observabilidadSupabase.js": {
+    "mtime": 1780704378.5834968,
+    "ast_hash": "7fbd6b186f67110b16ba653c67b6bbd4",
+    "semantic_hash": ""
+  },
+  "src/modules/metricas/components/MetricCard.js": {
+    "mtime": 1780704378.5875983,
+    "ast_hash": "8b417d022e23f918fcf037451a18a147",
+    "semantic_hash": ""
+  },
+  "src/modules/metricas/components/alertaBadge.js": {
+    "mtime": 1780704378.5875983,
+    "ast_hash": "e5303d8a1b38f686b192d78580e4ec2e",
+    "semantic_hash": ""
+  },
+  "src/modules/metricas/components/gamificacionNodos.js": {
+    "mtime": 1780704378.5875983,
+    "ast_hash": "fa35a3292cd25cbd9062cc242cfca7bf",
+    "semantic_hash": ""
+  },
+  "src/modules/metricas/components/iaAlertasPredictivas.js": {
+    "mtime": 1780704378.5875983,
+    "ast_hash": "12914e9875e773fd9de5611c338956f6",
+    "semantic_hash": ""
+  },
+  "src/modules/metricas/components/iaResumenSemanal.js": {
+    "mtime": 1780704378.5875983,
+    "ast_hash": "5e0c4dad9400d458b4e7af1054f78b59",
+    "semantic_hash": ""
+  },
+  "src/modules/metricas/components/kpiCard.js": {
+    "mtime": 1780704378.5875983,
+    "ast_hash": "e561e305137338b4cb433670fb771bce",
+    "semantic_hash": ""
+  },
+  "src/modules/metricas/components/metricasSubNav.js": {
+    "mtime": 1780704378.5929668,
+    "ast_hash": "3677cbfd693a6d1f47c7ca0417d7c082",
+    "semantic_hash": ""
+  },
+  "src/modules/metricas/components/riesgoIndicador.js": {
+    "mtime": 1780704378.5929668,
+    "ast_hash": "64d3fd966a6a4f1d4e80b027dcfc637c",
+    "semantic_hash": ""
+  },
+  "src/modules/metricas/index.js": {
+    "mtime": 1780704378.5929668,
+    "ast_hash": "25866458d937c6476367225785f9cf5b",
+    "semantic_hash": ""
+  },
+  "src/modules/metricas/metricas.router.js": {
+    "mtime": 1780704378.5929668,
+    "ast_hash": "a9bd56a5c3c969be4ee4d4999025f52c",
+    "semantic_hash": ""
+  },
+  "src/modules/metricas/services/metricasService.js": {
+    "mtime": 1780704378.5929668,
+    "ast_hash": "aeb750694d6f0816d3f9177e0a6b4c5f",
+    "semantic_hash": ""
+  },
+  "src/modules/metricas/utils/metricsUtils.js": {
+    "mtime": 1780704378.59855,
+    "ast_hash": "bfd725a27309219a4c661892be4b7658",
+    "semantic_hash": ""
+  },
+  "src/modules/metricas/views/auditTrailWidget.js": {
+    "mtime": 1780704378.59855,
+    "ast_hash": "9f01b62e34f610d5260c036ee818c99d",
+    "semantic_hash": ""
+  },
+  "src/modules/metricas/views/dashboardMetricasView.js": {
+    "mtime": 1780704378.59855,
+    "ast_hash": "3c4f2c92d544e347f1079358976db30f",
+    "semantic_hash": ""
+  },
+  "src/modules/metricas/views/iaReporteGeneradorView.js": {
+    "mtime": 1780704378.59855,
+    "ast_hash": "b998b3378061c430737050ea7a3c2053",
+    "semantic_hash": ""
+  },
+  "src/modules/metricas/views/systemLogsWidget.js": {
+    "mtime": 1780704378.59855,
+    "ast_hash": "5038be18689b8f1850d760bd8fc4ad84",
+    "semantic_hash": ""
+  },
+  "src/modules/observaciones/__tests__/cronPromoteObservations.test.js": {
+    "mtime": 1780704378.59855,
+    "ast_hash": "da11a881641528c1da0fe015d6bad677",
+    "semantic_hash": ""
+  },
+  "src/modules/observaciones/__tests__/observacion.model.test.js": {
+    "mtime": 1780704378.59855,
+    "ast_hash": "ea3c043555f54efb6dff06762a415507",
+    "semantic_hash": ""
+  },
+  "src/modules/observaciones/__tests__/observacionesApi.promoteObservations.integration.test.js": {
+    "mtime": 1780704378.59855,
+    "ast_hash": "d6244760cf5f3045f4eed3d994343cc5",
+    "semantic_hash": ""
+  },
+  "src/modules/observaciones/api/observacionesApi.js": {
+    "mtime": 1780704378.611166,
+    "ast_hash": "41ba63b1aa14a81a9d65ca725a88be7b",
+    "semantic_hash": ""
+  },
+  "src/modules/observaciones/components/observacionCard.js": {
+    "mtime": 1780704378.6131823,
+    "ast_hash": "41c020222f17d6858dc3600bbca09209",
+    "semantic_hash": ""
+  },
+  "src/modules/observaciones/components/observacionModal.js": {
+    "mtime": 1780704378.6131823,
+    "ast_hash": "d6dd2ce866e0f9acacaa1c418eea7adc",
+    "semantic_hash": ""
+  },
+  "src/modules/observaciones/components/seguimientoModal.js": {
+    "mtime": 1780704378.6141977,
+    "ast_hash": "b9c72d77bd203b78e11f31cc3b5bee93",
+    "semantic_hash": ""
+  },
+  "src/modules/observaciones/hooks/useObservaciones.js": {
+    "mtime": 1780704378.6141977,
+    "ast_hash": "987ddfcc93c6bb8bd4bfb3f65735e889",
+    "semantic_hash": ""
+  },
+  "src/modules/observaciones/index.js": {
+    "mtime": 1780704378.6141977,
+    "ast_hash": "84441080aa6bf021768ddcdb26b80e34",
+    "semantic_hash": ""
+  },
+  "src/modules/observaciones/models/observacion.model.js": {
+    "mtime": 1780704378.6141977,
+    "ast_hash": "110ec531801a5190a09b892a252c8f30",
+    "semantic_hash": ""
+  },
+  "src/modules/observaciones/observaciones.router.js": {
+    "mtime": 1780704378.6141977,
+    "ast_hash": "3cdc43ee305056e027cd9036cfcc4145",
+    "semantic_hash": ""
+  },
+  "src/modules/observaciones/services/__tests__/promoteObservations.test.js": {
+    "mtime": 1780704378.6141977,
+    "ast_hash": "3c8f4a8fe12b56b96f0c446130a1989d",
+    "semantic_hash": ""
+  },
+  "src/modules/observaciones/services/cronPromoteObservations.js": {
+    "mtime": 1780704378.6141977,
+    "ast_hash": "3599e529f094edecb4f7a0307c8f8fcd",
+    "semantic_hash": ""
+  },
+  "src/modules/observaciones/services/promoteObservations.js": {
+    "mtime": 1780704378.6141977,
+    "ast_hash": "0532bfa06e2d6c33fe84b894be81e7e7",
+    "semantic_hash": ""
+  },
+  "src/modules/observaciones/utils/observacionesUtils.js": {
+    "mtime": 1780704378.6141977,
+    "ast_hash": "cd010fd798bdfddf3985e62e56faca47",
+    "semantic_hash": ""
+  },
+  "src/modules/observaciones/views/observacionesView.js": {
+    "mtime": 1780704378.6141977,
+    "ast_hash": "f925710c2c907a323daaa907edbdd549",
+    "semantic_hash": ""
+  },
+  "src/modules/pedagogico/index.js": {
+    "mtime": 1780704378.6299744,
+    "ast_hash": "89a8ae128690eea803be2696cfaea2f7",
+    "semantic_hash": ""
+  },
+  "src/modules/pedagogico/pedagogico.router.js": {
+    "mtime": 1780704378.6299744,
+    "ast_hash": "63913e3d271de2fe0787aec76549be19",
+    "semantic_hash": ""
+  },
+  "src/modules/pedagogico/views/dashboardPedagogicoView.js": {
+    "mtime": 1780704378.6299744,
+    "ast_hash": "3a42d8962a5688b2b6868d556d457907",
+    "semantic_hash": ""
+  },
+  "src/modules/pedagogico/views/reportesPedagogicosView.js": {
+    "mtime": 1780704378.6299744,
+    "ast_hash": "8b532d934dc3bf4bef4eb2bfd3c47fed",
+    "semantic_hash": ""
+  },
+  "src/modules/pedagogico/views/seguimientoAlumnosView.js": {
+    "mtime": 1780704378.6299744,
+    "ast_hash": "c6d752d1127fd467aa30710185408f53",
+    "semantic_hash": ""
+  },
+  "src/modules/periodos/api/periodosApi.js": {
+    "mtime": 1780704378.6299744,
+    "ast_hash": "e75d033956b33be92ca629780f95a527",
+    "semantic_hash": ""
+  },
+  "src/modules/periodos/views/periodosView.js": {
+    "mtime": 1780704378.6299744,
+    "ast_hash": "bd82c1987d623f1cfbe797bb7bb3dfb1",
+    "semantic_hash": ""
+  },
+  "src/modules/permisos/api/__tests__/permisosSupabase.solicitudes.test.js": {
+    "mtime": 1780704378.6299744,
+    "ast_hash": "dc45311e18f6dc0004bd47daeb491728",
+    "semantic_hash": ""
+  },
+  "src/modules/permisos/api/permisosApi.js": {
+    "mtime": 1780704378.6299744,
+    "ast_hash": "5c94f5e4257452e9c55829293171672d",
+    "semantic_hash": ""
+  },
+  "src/modules/permisos/api/permisosMock.js": {
+    "mtime": 1780704378.6299744,
+    "ast_hash": "b0e9a9fd3ad00a5eb026550717075d2f",
+    "semantic_hash": ""
+  },
+  "src/modules/permisos/api/permisosSupabase.js": {
+    "mtime": 1780704378.645731,
+    "ast_hash": "1611835fe3fb7996655628200400fffe",
+    "semantic_hash": ""
+  },
+  "src/modules/permisos/hooks/usePermisos.js": {
+    "mtime": 1780704378.6465166,
+    "ast_hash": "97ad54911696fbcd380e2a13d263686b",
+    "semantic_hash": ""
+  },
+  "src/modules/permisos/index.js": {
+    "mtime": 1780704378.6465166,
+    "ast_hash": "b8572ef296b71185ac9fea2499ea3c82",
+    "semantic_hash": ""
+  },
+  "src/modules/permisos/models/permiso.model.js": {
+    "mtime": 1780704378.6465166,
+    "ast_hash": "323b6796305d0a3fb0feb16da3697356",
+    "semantic_hash": ""
+  },
+  "src/modules/permisos/permisos.router.js": {
+    "mtime": 1780704378.6465166,
+    "ast_hash": "7eb8ed98831cf72c6a2345bff6738f24",
+    "semantic_hash": ""
+  },
+  "src/modules/permisos/views/permisosView.js": {
+    "mtime": 1780704378.6465166,
+    "ast_hash": "ce5834512129ff0269504a571df74890",
+    "semantic_hash": ""
+  },
+  "src/modules/planificacion/__tests__/planificacion.adapter.test.js": {
+    "mtime": 1780704378.6465166,
+    "ast_hash": "768698794369db672d39e2ad7a272df6",
+    "semantic_hash": ""
+  },
+  "src/modules/planificacion/__tests__/planificacion.model.test.js": {
+    "mtime": 1780704378.6465166,
+    "ast_hash": "fbf485c8e58808727ebb6ba74c34505d",
+    "semantic_hash": ""
+  },
+  "src/modules/planificacion/__tests__/ruta.model.test.js": {
+    "mtime": 1780704378.6465166,
+    "ast_hash": "e7b99528c00fd1cee3995bdb9917178f",
+    "semantic_hash": ""
+  },
+  "src/modules/planificacion/__tests__/rutas.api.test.js": {
+    "mtime": 1780704378.6465166,
+    "ast_hash": "48fbdc590a362ab8c263380f1182f25d",
+    "semantic_hash": ""
+  },
+  "src/modules/planificacion/api/coberturaApi.js": {
+    "mtime": 1780704378.6465166,
+    "ast_hash": "c4e718fc2bbec97b4f4321f63896626f",
+    "semantic_hash": ""
+  },
+  "src/modules/planificacion/api/curriculoApi.js": {
+    "mtime": 1780704378.6617754,
+    "ast_hash": "cbca4fbe2b4bdae6613392737702cb0e",
+    "semantic_hash": ""
+  },
+  "src/modules/planificacion/api/dslApi.js": {
+    "mtime": 1780704378.6617754,
+    "ast_hash": "750366d457b72684c4b03b25cba4fd3c",
+    "semantic_hash": ""
+  },
+  "src/modules/planificacion/api/groqService.js": {
+    "mtime": 1780704378.6617754,
+    "ast_hash": "71d3db670494852804c4284f34e00164",
+    "semantic_hash": ""
+  },
+  "src/modules/planificacion/api/planificacionAdapter.js": {
+    "mtime": 1780704378.6658394,
+    "ast_hash": "b7babfc0f1c73f2c6a1fb33397771363",
+    "semantic_hash": ""
+  },
+  "src/modules/planificacion/api/planificacionMock.js": {
+    "mtime": 1780704378.6658394,
+    "ast_hash": "3b6cb1c1de75be7582558e228ecba224",
+    "semantic_hash": ""
+  },
+  "src/modules/planificacion/api/planificacionSupabase.js": {
+    "mtime": 1780704378.667792,
+    "ast_hash": "52f5d6b3e4b2bfa26ca0e60c29f7c896",
+    "semantic_hash": ""
+  },
+  "src/modules/planificacion/api/routeAdapter.js": {
+    "mtime": 1780704378.667792,
+    "ast_hash": "4efe73ac5be1fb909a72a53197da3b2a",
+    "semantic_hash": ""
+  },
+  "src/modules/planificacion/api/routeMock.js": {
+    "mtime": 1780704378.667792,
+    "ast_hash": "7c232e79c643b1207f3ad63bcd96b6d5",
+    "semantic_hash": ""
+  },
+  "src/modules/planificacion/api/routeSupabase.js": {
+    "mtime": 1780704378.667792,
+    "ast_hash": "a949f4dea356e746f482a440098d6cc1",
+    "semantic_hash": ""
+  },
+  "src/modules/planificacion/api/rutas.integration.test.js": {
+    "mtime": 1780704378.672864,
+    "ast_hash": "5bee5a11f574aa0a5c18694cf0eb519c",
+    "semantic_hash": ""
+  },
+  "src/modules/planificacion/api/rutasApi.js": {
+    "mtime": 1780704378.672864,
+    "ast_hash": "b6f38a2070e0a914a34269ece1ee792d",
+    "semantic_hash": ""
+  },
+  "src/modules/planificacion/api/sesionesApi.js": {
+    "mtime": 1780704378.672864,
+    "ast_hash": "7656001f06f9b9a500bbc578b591dfa8",
+    "semantic_hash": ""
+  },
+  "src/modules/planificacion/components/alumnoPickerModal.js": {
+    "mtime": 1780704378.6759012,
+    "ast_hash": "66c96eb1a448b89422f62a2aff2263b9",
+    "semantic_hash": ""
+  },
+  "src/modules/planificacion/components/aprobacionPlanificacionesModal.js": {
+    "mtime": 1780704378.6779268,
+    "ast_hash": "6f1d03bcc3a72d43d830a9928f585f50",
+    "semantic_hash": ""
+  },
+  "src/modules/planificacion/components/asistentePedagogicoPanel.js": {
+    "mtime": 1780704378.6779268,
+    "ast_hash": "922c33666cff198a3de480ece7fadfd9",
+    "semantic_hash": ""
+  },
+  "src/modules/planificacion/components/calendarioDrawer.js": {
+    "mtime": 1780704378.6779268,
+    "ast_hash": "3ef76a8db967f16b692254e29d945c5b",
+    "semantic_hash": ""
+  },
+  "src/modules/planificacion/components/claseEmergenteModal.js": {
+    "mtime": 1780704378.6779268,
+    "ast_hash": "290015dcaf31b18b22aa752c737d0997",
+    "semantic_hash": ""
+  },
+  "src/modules/planificacion/components/coberturaModal.js": {
+    "mtime": 1780704378.6839538,
+    "ast_hash": "1827b00214a07079c2c8b2052c4afc14",
+    "semantic_hash": ""
+  },
+  "src/modules/planificacion/components/curriculoModal.js": {
+    "mtime": 1780704378.6839538,
+    "ast_hash": "748f64e26efea95a0729937095ae8aef",
+    "semantic_hash": ""
+  },
+  "src/modules/planificacion/components/dslEditor.js": {
+    "mtime": 1780704378.6839538,
+    "ast_hash": "0a920c820175895fe7cb423882ecaee0",
+    "semantic_hash": ""
+  },
+  "src/modules/planificacion/components/dslToolbar.js": {
+    "mtime": 1780704378.6839538,
+    "ast_hash": "dca748908cd089bcc64bedcb39294014",
+    "semantic_hash": ""
+  },
+  "src/modules/planificacion/components/objetivoIndicadorModal.js": {
+    "mtime": 1780704378.6873825,
+    "ast_hash": "c60416128d8a956cdf47a125cb93ddab",
+    "semantic_hash": ""
+  },
+  "src/modules/planificacion/components/planificacionCard.js": {
+    "mtime": 1780704378.6873825,
+    "ast_hash": "8a92b3c2dff4b9da24ed37fe6b8a8207",
+    "semantic_hash": ""
+  },
+  "src/modules/planificacion/components/planificacionModal.js": {
+    "mtime": 1780704378.6873825,
+    "ast_hash": "ace7233feea8e74607f6ca1b3e41ba81",
+    "semantic_hash": ""
+  },
+  "src/modules/planificacion/components/revisionModal.js": {
+    "mtime": 1780704378.6873825,
+    "ast_hash": "e66292286dbdc9e47a706e22eb452f12",
+    "semantic_hash": ""
+  },
+  "src/modules/planificacion/components/rutaCrearModal.js": {
+    "mtime": 1780704378.6873825,
+    "ast_hash": "b16e362c51a3eedbe79b18e6e65a9d5a",
+    "semantic_hash": ""
+  },
+  "src/modules/planificacion/components/rutaProgresoPanel.js": {
+    "mtime": 1780704378.692679,
+    "ast_hash": "ecea9555fd69502149ac3d8139be1f62",
+    "semantic_hash": ""
+  },
+  "src/modules/planificacion/components/rutaSelectorModal.js": {
+    "mtime": 1780704378.693694,
+    "ast_hash": "c9114c7d70f61ce9807926792487f0c6",
+    "semantic_hash": ""
+  },
+  "src/modules/planificacion/components/rutaVarianteModal.js": {
+    "mtime": 1780704378.693694,
+    "ast_hash": "611e79699be28906a9244e4ebbcccc19",
+    "semantic_hash": ""
+  },
+  "src/modules/planificacion/components/rutaVariantesDashboard.js": {
+    "mtime": 1780704378.693694,
+    "ast_hash": "abcecf353a20cde3b7f4d31abfeebe84",
+    "semantic_hash": ""
+  },
+  "src/modules/planificacion/components/rutasManagementPanel.js": {
+    "mtime": 1780704378.693694,
+    "ast_hash": "0597e143f4131f67931ccd3d4905554c",
+    "semantic_hash": ""
+  },
+  "src/modules/planificacion/components/tareasPanel.js": {
+    "mtime": 1780704378.693694,
+    "ast_hash": "bb2f90fd48df40383fca2232b8ee3573",
+    "semantic_hash": ""
+  },
+  "src/modules/planificacion/hooks/useDslEditor.js": {
+    "mtime": 1780704378.693694,
+    "ast_hash": "39245e4a7a7778fdfd791ab0231ce8fc",
+    "semantic_hash": ""
+  },
+  "src/modules/planificacion/hooks/usePlanificacion.js": {
+    "mtime": 1780704378.693694,
+    "ast_hash": "62d45c25b205c0693d98ebc17cf8bf6b",
+    "semantic_hash": ""
+  },
+  "src/modules/planificacion/index.js": {
+    "mtime": 1780704378.693694,
+    "ast_hash": "6cd9c22ca6a1843f977e59002f05b199",
+    "semantic_hash": ""
+  },
+  "src/modules/planificacion/models/planificacion.model.js": {
+    "mtime": 1780704378.693694,
+    "ast_hash": "638b9016bc06a25800bb13b19dcab824",
+    "semantic_hash": ""
+  },
+  "src/modules/planificacion/models/ruta.model.js": {
+    "mtime": 1780704378.7104216,
+    "ast_hash": "2ee3767c1629261afcb7f31e99b835d9",
+    "semantic_hash": ""
+  },
+  "src/modules/planificacion/planificacion.router.js": {
+    "mtime": 1780704378.7104216,
+    "ast_hash": "34bdd629af13e401f894e159aebd1f95",
+    "semantic_hash": ""
+  },
+  "src/modules/planificacion/utils/dslParser.js": {
+    "mtime": 1780704378.7104216,
+    "ast_hash": "3cbfb4cb696e632f9a721acd395e20a0",
+    "semantic_hash": ""
+  },
+  "src/modules/planificacion/utils/dslParser.test.js": {
+    "mtime": 1780704378.7104216,
+    "ast_hash": "9c2b0034426e2e7c5637feacd7b82c3d",
+    "semantic_hash": ""
+  },
+  "src/modules/planificacion/utils/planificacionUtils.js": {
+    "mtime": 1780704378.718196,
+    "ast_hash": "3f06a5104a4e85eb19cb9dbed676194b",
+    "semantic_hash": ""
+  },
+  "src/modules/planificacion/views/planificacionView.js": {
+    "mtime": 1780704378.718196,
+    "ast_hash": "e0b2963e82eae6e3a5ef7e32060930ce",
+    "semantic_hash": ""
+  },
+  "src/modules/planificacion/views/rutaAcademicaView.js": {
+    "mtime": 1780704378.718196,
+    "ast_hash": "9925ed1dc84246240b80f08148bf8aa4",
+    "semantic_hash": ""
+  },
+  "src/modules/planning/services/curriculumAdminService.js": {
+    "mtime": 1780706333.3910532,
+    "ast_hash": "911139d62eb232c96ce2e7a15a24e22b",
+    "semantic_hash": ""
+  },
+  "src/modules/planning/services/historialService.js": {
+    "mtime": 1780752576.320275,
+    "ast_hash": "e7bf8dd83ffa2394bc57369444e1e474",
+    "semantic_hash": ""
+  },
+  "src/modules/planning/services/planningService.js": {
+    "mtime": 1780706081.6644585,
+    "ast_hash": "07f610b45e8b209fea39ef55e0961563",
+    "semantic_hash": ""
+  },
+  "src/modules/programas/__tests__/programa.model.test.js": {
+    "mtime": 1780704378.7255747,
+    "ast_hash": "2a0f698c868272c81e4665e049cccae3",
+    "semantic_hash": ""
+  },
+  "src/modules/programas/__tests__/programas.integration.test.js": {
+    "mtime": 1780704378.7255747,
+    "ast_hash": "f1efca5a588bb3fc338da3f9ba808fc9",
+    "semantic_hash": ""
+  },
+  "src/modules/programas/api/programasApi.js": {
+    "mtime": 1780704378.7255747,
+    "ast_hash": "492ed5f133a071a3b33b7ce94e8427e6",
+    "semantic_hash": ""
+  },
+  "src/modules/programas/index.js": {
+    "mtime": 1780704378.7255747,
+    "ast_hash": "5b4fc9f461bf213b0400d6f83689090b",
+    "semantic_hash": ""
+  },
+  "src/modules/programas/models/programa.model.js": {
+    "mtime": 1780704378.7255747,
+    "ast_hash": "b6ae595b645ccc385c3ff53877fc9699",
+    "semantic_hash": ""
+  },
+  "src/modules/programas/programas.router.js": {
+    "mtime": 1780704378.7255747,
+    "ast_hash": "7dc2a728ed978af91a457cdbb3ae10ec",
+    "semantic_hash": ""
+  },
+  "src/modules/programas/views/programasView.js": {
+    "mtime": 1780704378.7255747,
+    "ast_hash": "f1b5113f617a86066f18cb35d10dce61",
+    "semantic_hash": ""
+  },
+  "src/modules/progresos/__tests__/progreso.model.test.js": {
+    "mtime": 1780704378.7255747,
+    "ast_hash": "e5f4c0c7a7fc70b82a5447f23fdcd6ea",
+    "semantic_hash": ""
+  },
+  "src/modules/progresos/api/__tests__/progresosApi.batch.test.js": {
+    "mtime": 1780704378.7255747,
+    "ast_hash": "ffe584eca8a53f1dd3ef75d37836bd61",
+    "semantic_hash": ""
+  },
+  "src/modules/progresos/api/__tests__/progresosApi.history.test.js": {
+    "mtime": 1780704378.7255747,
+    "ast_hash": "fb3c1080adcfbfc466a90bef930f0da9",
+    "semantic_hash": ""
+  },
+  "src/modules/progresos/api/progresosApi.js": {
+    "mtime": 1780704378.7406456,
+    "ast_hash": "494e2f48075cc909e9c5bf4c23aba129",
+    "semantic_hash": ""
+  },
+  "src/modules/progresos/components/calificacionModal.js": {
+    "mtime": 1780704378.7421007,
+    "ast_hash": "4cbec797c6f1de7a6821ccd98dc67830",
+    "semantic_hash": ""
+  },
+  "src/modules/progresos/components/progresosTable.js": {
+    "mtime": 1780704378.7421007,
+    "ast_hash": "54543f551153c49c493dd62039914433",
+    "semantic_hash": ""
+  },
+  "src/modules/progresos/components/reporteBoletinCard.js": {
+    "mtime": 1780704378.7421007,
+    "ast_hash": "4403f2bc7858a87c82583856d72066f2",
+    "semantic_hash": ""
+  },
+  "src/modules/progresos/hooks/useProgresos.js": {
+    "mtime": 1780704378.74642,
+    "ast_hash": "af1931a9c0ae76df642357eee8a9ba7b",
+    "semantic_hash": ""
+  },
+  "src/modules/progresos/index.js": {
+    "mtime": 1780704378.74642,
+    "ast_hash": "9b236aa02126ab226e83344a846a8bf8",
+    "semantic_hash": ""
+  },
+  "src/modules/progresos/models/progreso.model.js": {
+    "mtime": 1780704378.7500346,
+    "ast_hash": "f88ad7c5d5a8b7eb0f2681f738fe725d",
+    "semantic_hash": ""
+  },
+  "src/modules/progresos/progresos.router.js": {
+    "mtime": 1780704378.7500346,
+    "ast_hash": "9ccc87a2caa1c531bed21fdbd194bf38",
+    "semantic_hash": ""
+  },
+  "src/modules/progresos/repositories/asistenciasRepo.js": {
+    "mtime": 1780704378.7500346,
+    "ast_hash": "d4796b191c4a1bc8d5895380c20ea563",
+    "semantic_hash": ""
+  },
+  "src/modules/progresos/repositories/indicatorAttemptsRepo.js": {
+    "mtime": 1780704378.7534814,
+    "ast_hash": "45c6c1f6f409492b9395fa796201b7c9",
+    "semantic_hash": ""
+  },
+  "src/modules/progresos/repositories/observacionesRepo.js": {
+    "mtime": 1780704378.7534814,
+    "ast_hash": "6af44c1c1f5736b881f623e74b23b7fa",
+    "semantic_hash": ""
+  },
+  "src/modules/progresos/repositories/progresosRepo.js": {
+    "mtime": 1780704378.7534814,
+    "ast_hash": "f7e5fb0f6f8b5d6ae7ca423e5b515e6d",
+    "semantic_hash": ""
+  },
+  "src/modules/progresos/services/__tests__/progresoAggregationService.test.js": {
+    "mtime": 1780704378.7534814,
+    "ast_hash": "2c06e30378935eec9bf8d9a9bfd48dad",
+    "semantic_hash": ""
+  },
+  "src/modules/progresos/services/__tests__/progressHistoryFormatter.test.js": {
+    "mtime": 1780704378.7534814,
+    "ast_hash": "7819ec1756dc0cfa67701636fbda625f",
+    "semantic_hash": ""
+  },
+  "src/modules/progresos/services/__tests__/riskRules.test.js": {
+    "mtime": 1780704378.7581227,
+    "ast_hash": "bd0ff1cb904d14acf1cf2b911061c546",
+    "semantic_hash": ""
+  },
+  "src/modules/progresos/services/progresoAggregationService.js": {
+    "mtime": 1780704378.7581227,
+    "ast_hash": "222876e3bbb42f148a5588967134e51b",
+    "semantic_hash": ""
+  },
+  "src/modules/progresos/services/progresoDataService.js": {
+    "mtime": 1780704378.7601006,
+    "ast_hash": "ccbd0fc35fa0b737251da3dcd2710155",
+    "semantic_hash": ""
+  },
+  "src/modules/progresos/services/progressHistoryFormatter.js": {
+    "mtime": 1780704378.7601006,
+    "ast_hash": "8cc70d2ebd54560accb6af01066e516d",
+    "semantic_hash": ""
+  },
+  "src/modules/progresos/services/riskRules.js": {
+    "mtime": 1780704378.7601006,
+    "ast_hash": "a1862483a3e572fd2dbe2551776bc951",
+    "semantic_hash": ""
+  },
+  "src/modules/progresos/stores/useProgresosStore.js": {
+    "mtime": 1780704378.7601006,
+    "ast_hash": "5cc229f9b538f7f534e96f82c3bd7490",
+    "semantic_hash": ""
+  },
+  "src/modules/progresos/utils/progresosUtils.js": {
+    "mtime": 1780704378.7601006,
+    "ast_hash": "4cedd41e297dad427f6f937cf2dbdac4",
+    "semantic_hash": ""
+  },
+  "src/modules/progresos/views/__tests__/studentProgressPanel.test.js": {
+    "mtime": 1780704378.7601006,
+    "ast_hash": "af45435b192fe6a910dca1b0fdc37818",
+    "semantic_hash": ""
+  },
+  "src/modules/progresos/views/components/dashboardFilterBar.vue": {
+    "mtime": 1780704378.7601006,
+    "ast_hash": "a6a7dd8bf7ced68486e2a0b22ef352fe",
+    "semantic_hash": ""
+  },
+  "src/modules/progresos/views/components/dashboardStudentRow.vue": {
+    "mtime": 1780704378.7601006,
+    "ast_hash": "c227a2aa6e478a39aad5c3672463b4c9",
+    "semantic_hash": ""
+  },
+  "src/modules/progresos/views/components/progressDashboard.vue": {
+    "mtime": 1780704378.7601006,
+    "ast_hash": "f6aa08d3baf1590b35cc7bda7cae4c1b",
+    "semantic_hash": ""
+  },
+  "src/modules/progresos/views/progresosView.js": {
+    "mtime": 1780704378.7601006,
+    "ast_hash": "a15e847c792367a8b2905fc0f9f71f50",
+    "semantic_hash": ""
+  },
+  "src/modules/salones/api/salonesApi.js": {
+    "mtime": 1780704378.7725947,
+    "ast_hash": "adb30b3ccd4c5fa250e2c36e0dd97c35",
+    "semantic_hash": ""
+  },
+  "src/modules/salones/components/salonCard.js": {
+    "mtime": 1780704378.7741096,
+    "ast_hash": "ee7d38116a124991841a4c75d330238f",
+    "semantic_hash": ""
+  },
+  "src/modules/salones/components/salonModal.js": {
+    "mtime": 1780704378.7749703,
+    "ast_hash": "29b09b4fb4a4c2f8ca2bfab0a46a1ff4",
+    "semantic_hash": ""
+  },
+  "src/modules/salones/hooks/useSalones.js": {
+    "mtime": 1780704378.7749703,
+    "ast_hash": "e6a7d493669c51ff69673bb9efe42e79",
+    "semantic_hash": ""
+  },
+  "src/modules/salones/index.js": {
+    "mtime": 1780704378.7749703,
+    "ast_hash": "db0479687c6fc561efc1134cf6092b7e",
+    "semantic_hash": ""
+  },
+  "src/modules/salones/models/salon.model.js": {
+    "mtime": 1780704378.7749703,
+    "ast_hash": "c257ee4bcff92966838ede14f5f85d86",
+    "semantic_hash": ""
+  },
+  "src/modules/salones/salones.router.js": {
+    "mtime": 1780704378.7749703,
+    "ast_hash": "a61f562bd715f99931d1fd815938ed86",
+    "semantic_hash": ""
+  },
+  "src/modules/salones/utils/salonesUtils.js": {
+    "mtime": 1780704378.7749703,
+    "ast_hash": "19d73d9b027c1503962e30e719fded78",
+    "semantic_hash": ""
+  },
+  "src/modules/salones/views/salonesView.js": {
+    "mtime": 1780704378.7749703,
+    "ast_hash": "d7b1536d1d1dcff793812e6ca36aec74",
+    "semantic_hash": ""
+  },
+  "src/modules/sistema/views/sistemaView.js": {
+    "mtime": 1780704378.7848017,
+    "ast_hash": "74109568b2410a68e91e8367b4304e33",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/api/__tests__/ausenciaService.test.js": {
+    "mtime": 1780704378.8035421,
+    "ast_hash": "e11363faf6b0c1d089d5a6a52f6f9a12",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/api/__tests__/ausenciaValidator.test.js": {
+    "mtime": 1780704378.805554,
+    "ast_hash": "3c887db01376689a43308eb0e85a98a5",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/api/__tests__/ausenciasApi.test.js": {
+    "mtime": 1780704378.805554,
+    "ast_hash": "6cd4fb4019d2f6fab18a35f93b82382a",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/api/__tests__/planEstudiosApi.integration.test.js": {
+    "mtime": 1780704378.805554,
+    "ast_hash": "6b354bb2aff5abeccc1b1e9f153aba14",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/api/__tests__/planEstudiosApi.test.js": {
+    "mtime": 1780704378.805554,
+    "ast_hash": "c1541aeefe07992dbe80964de64ba54d",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/api/asistenciaApi.js": {
+    "mtime": 1780704378.8097556,
+    "ast_hash": "825f451acca8181cf0ec108351ae98e8",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/api/ausenciaService.js": {
+    "mtime": 1780704378.8097556,
+    "ast_hash": "e986ac8fb48f35e1e4279bd07f32c665",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/api/ausenciaValidator.js": {
+    "mtime": 1780704378.8097556,
+    "ast_hash": "e331f5841528c576c7e4b28ad5c639b9",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/api/ausenciasApi.js": {
+    "mtime": 1780704378.8097556,
+    "ast_hash": "084f0b5648ae39d90f844d78804eb3e6",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/api/ausenciasMock.js": {
+    "mtime": 1780704378.8097556,
+    "ast_hash": "5146afdc18a53ff11c52fc067fdaf4ed",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/api/ausenciasSupabase.js": {
+    "mtime": 1780704378.8097556,
+    "ast_hash": "75c8076cc6116112f45e878855e36239",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/api/disponibilidadApi.js": {
+    "mtime": 1780704378.8097556,
+    "ast_hash": "3320da8ee06ed2768f172aaa332f8d60",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/api/planEstudiosApi.js": {
+    "mtime": 1780704378.8097556,
+    "ast_hash": "89c03fdbe98b43560d8768f45959d813",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/auth/__tests__/detectarRolMaestro.test.js": {
+    "mtime": 1780704378.816632,
+    "ast_hash": "999ecefa415d9748a2dc9d2a90aeee20",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/auth/__tests__/maestroAuth.admin-maestro.test.js": {
+    "mtime": 1780704378.816632,
+    "ast_hash": "d9c8a7da934e933b9e2d1f78c7081509",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/auth/__tests__/maestroAuth.test.js": {
+    "mtime": 1780704378.821604,
+    "ast_hash": "2eab901179f11927aeba99e7002b3ea6",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/auth/__tests__/modoActual.test.js": {
+    "mtime": 1780704378.821604,
+    "ast_hash": "977137036ece4cc0992aefd798f2cf8a",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/auth/__tests__/portalSecurity.test.js": {
+    "mtime": 1780704378.821604,
+    "ast_hash": "05b3a72e263a995ea8f5236a64b138a5",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/auth/maestroAuth.js": {
+    "mtime": 1780704378.821604,
+    "ast_hash": "eaac94f5539252916205b2b27881d00d",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/auth/usePortalAuth.js": {
+    "mtime": 1780704378.821604,
+    "ast_hash": "280863b0a760487b9a60502d72bacd26",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/components/AchievementsSummaryModal.js": {
+    "mtime": 1780704378.821604,
+    "ast_hash": "a5cb5a9fde21b5ccb1725896cb6d5c8e",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/components/AlumnoPickerModal.js": {
+    "mtime": 1780704378.821604,
+    "ast_hash": "85b9d90d8ad100a19dcc425188a2ffda",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/components/AsistenciaLista.js": {
+    "mtime": 1780704378.821604,
+    "ast_hash": "fe09da2a194a9cddd715c8a9f39daed0",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/components/AsistenciaTour.js": {
+    "mtime": 1780704378.821604,
+    "ast_hash": "577d75390919f88eb211c99514a7a45c",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/components/AsistenteIa.js": {
+    "mtime": 1780704378.821604,
+    "ast_hash": "c4ecef315867533df59dd401051948c1",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/components/AutocompletePopup.js": {
+    "mtime": 1780704378.821604,
+    "ast_hash": "fbdeddaf504928969a4894ec13847d79",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/components/BlockSection.js": {
+    "mtime": 1780704378.821604,
+    "ast_hash": "cdeb4143795ef8948029e4ff4b8c758d",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/components/ContentSelectionPanel.js": {
+    "mtime": 1780704378.821604,
+    "ast_hash": "786f72eda6bf2a30277bbb6f72a927a6",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/components/CurriculumProposalPanel.js": {
+    "mtime": 1780704378.821604,
+    "ast_hash": "907b5b1beea49575107e152bd0cd2302",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/components/ErrorBoundary.js": {
+    "mtime": 1780704378.821604,
+    "ast_hash": "4f56cc94fc2e7d2bed77e9ba029064c4",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/components/EvaluationDrawer.js": {
+    "mtime": 1780704378.821604,
+    "ast_hash": "8a2630999ff03bf86561fee19738c7e3",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/components/HomeworkPanel.js": {
+    "mtime": 1780704378.821604,
+    "ast_hash": "ca59ffaf66d1dd4a1abdc85389705f45",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/components/IaReviewModal.js": {
+    "mtime": 1780704378.8374882,
+    "ast_hash": "e291ca04f1df9def4def6e32e4fd4719",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/components/JustificacionModal.js": {
+    "mtime": 1780704378.8382583,
+    "ast_hash": "b8bfccec9a23dc5b4deb325ad18a1d01",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/components/LevelCompletionModal.js": {
+    "mtime": 1780704378.840275,
+    "ast_hash": "7a611d26a095d5e66f263b36bb575ca1",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/components/MethodologyForm.js": {
+    "mtime": 1780704378.840275,
+    "ast_hash": "50453e67a06c12994b8b647986ffcb0f",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/components/NodeEvaluationCard.js": {
+    "mtime": 1780704378.840275,
+    "ast_hash": "467f0022287e9c8e775bb7ec484984c6",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/components/PlanEstudiosPanel.js": {
+    "mtime": 1780704378.8422956,
+    "ast_hash": "b4df0f58085480c6ab40c756ec88159c",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/components/PlanningDetailsModal.js": {
+    "mtime": 1780704378.8422956,
+    "ast_hash": "b9194536b8e8d92ae8447783cae7b13d",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/components/PlanningManagerPanel.js": {
+    "mtime": 1780707685.264289,
+    "ast_hash": "61f0040154cf5c5de671dd1087a64fe7",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/components/PlanningRegistroModal.js": {
+    "mtime": 1780704378.8443108,
+    "ast_hash": "73f526a09f0daaaac61bc71d0f342fa4",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/components/PlanningRouteTree.js": {
+    "mtime": 1780706145.062502,
+    "ast_hash": "2b46fba3202cb2e6bbcba94e7fcb4429",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/components/ProgressPreviewPanel.js": {
+    "mtime": 1780704378.8443108,
+    "ast_hash": "178a91ad17d62278821a7174bedfd094",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/components/RutaHeader.js": {
+    "mtime": 1780704378.8443108,
+    "ast_hash": "30b2e95670491cd8dc9ed619a9a96efe",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/components/SessionSummaryPanel.js": {
+    "mtime": 1780704378.8463235,
+    "ast_hash": "33a4fd9ed0b71a48aba60325a41e7ed5",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/components/SyncQueueBadge.js": {
+    "mtime": 1780704378.8463235,
+    "ast_hash": "a6e4c55ea8d4de8601d5e2a07148e378",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/components/__tests__/BlockSection.test.js": {
+    "mtime": 1780704378.848335,
+    "ast_hash": "4fcd7f9ffa71968607a96c52a05f8bad",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/components/__tests__/ErrorBoundary.test.js": {
+    "mtime": 1780704378.848335,
+    "ast_hash": "5fdb5252892fb2f7f995e035dd5cb848",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/components/__tests__/PlanEstudiosPanel.test.js": {
+    "mtime": 1780704378.848335,
+    "ast_hash": "05a5a2f5b6d4fa9f4a99e9242732958c",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/components/__tests__/RutaHeader.test.js": {
+    "mtime": 1780704378.848335,
+    "ast_hash": "4d9a377490718506c645a9f50087d0d0",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/components/__tests__/SessionSummaryPanel.test.js": {
+    "mtime": 1780704378.8532667,
+    "ast_hash": "31ff40866734415e1bcf6aa8ed56ac86",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/components/__tests__/SyncQueueBadge.test.js": {
+    "mtime": 1780704378.8532667,
+    "ast_hash": "f23a638b88f20100af55d3ef85a76940",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/components/__tests__/ausenciaModal.e2e.test.js": {
+    "mtime": 1780704378.8532667,
+    "ast_hash": "40186ea3ddc9e42df17df8fa080eec8f",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/components/__tests__/ausenciaModal.test.js": {
+    "mtime": 1780704378.8532667,
+    "ast_hash": "6c937d931b147d8d2245ab8ba00f7a50",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/components/__tests__/dslToolbar.test.js": {
+    "mtime": 1780704378.8532667,
+    "ast_hash": "d37a518176ad849d9bea92695e1626c7",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/components/__tests__/gestionarClasesModal.test.js": {
+    "mtime": 1780704378.8532667,
+    "ast_hash": "ccf3b4f147ba9daab9278801788bdc0a",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/components/__tests__/improveTextModal.test.js": {
+    "mtime": 1780704378.858867,
+    "ast_hash": "26e76871ee2b724c940e09e5e35fa7f1",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/components/__tests__/registrarAlumnoModal.test.js": {
+    "mtime": 1780704378.858867,
+    "ast_hash": "bd9c5930b5f41ff4238e7cbef10a2cf8",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/components/ausenciaForm.js": {
+    "mtime": 1780704378.858867,
+    "ast_hash": "10032ff6e903640951dac6f5954796f5",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/components/ausenciaHistorial.js": {
+    "mtime": 1780704378.858867,
+    "ast_hash": "4049ff0adc5c2a189d5e23f27a923fd9",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/components/ausenciaModal.js": {
+    "mtime": 1780704378.858867,
+    "ast_hash": "1a81a305f8c91f77fc1c8abed4969d97",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/components/ausenciasPanel.js": {
+    "mtime": 1780704378.858867,
+    "ast_hash": "ac270e1d946c558993e8d2028f2cbfc9",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/components/calendarioDrawer.js": {
+    "mtime": 1780704378.858867,
+    "ast_hash": "7533abe804574f14f084bbdb7952dc8f",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/components/chatWidget.js": {
+    "mtime": 1780704378.858867,
+    "ast_hash": "bca2defd05085d022698f0a5d47c22c6",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/components/dslEditor.js": {
+    "mtime": 1780704378.858867,
+    "ast_hash": "347a8fe6656aa4a302a229d3c4dd88f2",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/components/dslToolbar.js": {
+    "mtime": 1780704378.8691623,
+    "ast_hash": "9712da4b6d6e4d4430861a423eb1ab63",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/components/gestionarClasesModal.js": {
+    "mtime": 1780704378.8691623,
+    "ast_hash": "423c4fd89e82d41dae32c3113c966f51",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/components/improveTextModal.js": {
+    "mtime": 1780704378.8711803,
+    "ast_hash": "07e96451f31729da7ba93ce089c17676",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/components/notifConfigModal.js": {
+    "mtime": 1780704378.8711803,
+    "ast_hash": "400d412c3134343ce92069a4517e36c7",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/components/notificacionesPanel.js": {
+    "mtime": 1780704378.8731952,
+    "ast_hash": "24eef6e2af5c50218898dd34d0f78fee",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/components/pushDiagnostic.js": {
+    "mtime": 1780704378.8731952,
+    "ast_hash": "08b30cfa6debebea5f6aadf57548a020",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/components/pwaInstaller.js": {
+    "mtime": 1780704378.875207,
+    "ast_hash": "f130d7995444c7f750ce061311994d51",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/components/registrarAlumnoModal.js": {
+    "mtime": 1780704378.875207,
+    "ast_hash": "17ce60467a0ea55a9f784ae8bba90e51",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/components/routeTreeBar.js": {
+    "mtime": 1780704378.875207,
+    "ast_hash": "ca56147bcca63d06c96b156790f6bc3f",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/components/structureModal.js": {
+    "mtime": 1780704378.875207,
+    "ast_hash": "fb88102c95a6c1068d1d453fdb7c8656",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/components/studentProgressPanel.js": {
+    "mtime": 1780704378.875207,
+    "ast_hash": "820709db66515893603b694848215da6",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/components/sustitucionModal.js": {
+    "mtime": 1780704378.875207,
+    "ast_hash": "59d9461ee0e15a274263e5fc62cbbd20",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/components/tareasPanel.js": {
+    "mtime": 1780704378.875207,
+    "ast_hash": "be9fa72445d1e0a8ba6f454b36cd4273",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/components/themeToggle.js": {
+    "mtime": 1780704378.875207,
+    "ast_hash": "08f7a7752e3e1ee3225c2ecad3d51499",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/components/toolbarHelpModal.js": {
+    "mtime": 1780704378.875207,
+    "ast_hash": "b2f491dc12757368286cd2fcf04c067a",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/components/wizard/ConditionalField.js": {
+    "mtime": 1780704378.875207,
+    "ast_hash": "5ad0b94ff136fc872085a7c0907d8cce",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/components/wizard/FormField.js": {
+    "mtime": 1780704378.875207,
+    "ast_hash": "48b771e0f5720fe50cc07ff984c28dd8",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/components/wizard/PreloadSearch.js": {
+    "mtime": 1780704378.8851988,
+    "ast_hash": "3c9c0f88d9f6a47bd111ed6a305d9e95",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/components/wizard/ProgressBar.js": {
+    "mtime": 1780704378.8851988,
+    "ast_hash": "e984fcf7dc797d304fcba4b57af53a5c",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/components/wizard/StepNav.js": {
+    "mtime": 1780704378.8851988,
+    "ast_hash": "c82305a9b15118040989b1e4a284a1ee",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/components/wizard/WizardShell.js": {
+    "mtime": 1780704378.8851988,
+    "ast_hash": "4d0e62d4a02c3c08e9fc20cf5e265332",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/components/wizard/draftStorage.js": {
+    "mtime": 1780704378.8851988,
+    "ast_hash": "d6100e3e189fa02ed18df756af694d61",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/components/wizard/wizardStateMachine.js": {
+    "mtime": 1780704378.8851988,
+    "ast_hash": "1736edb01066c0d565731c73099383e6",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/data/__tests__/seccionesOrquestales.test.js": {
+    "mtime": 1780704378.8935013,
+    "ast_hash": "5ee898408da00ea60ef9785f0799659a",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/data/ausencias.json": {
+    "mtime": 1780704378.8935013,
+    "ast_hash": "95c12bd7449c414f67d312d4577eba80",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/data/clases.json": {
+    "mtime": 1780704378.8935013,
+    "ast_hash": "fafe8c35893bbd9dbd6d153b2486170c",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/data/seccionesOrquestales.js": {
+    "mtime": 1780704378.8935013,
+    "ast_hash": "480d75cfd3d954fcebe92166e31e16fc",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/data/sesiones.json": {
+    "mtime": 1780704378.8935013,
+    "ast_hash": "d17966a5c246acf52a7e2c580ddf252c",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/router/__tests__/portalRouter.test.js": {
+    "mtime": 1780704378.9010928,
+    "ast_hash": "eb84530864be3aefafdd8f613be291eb",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/router/portalRouter.js": {
+    "mtime": 1780704378.9010928,
+    "ast_hash": "fa1f545d526ddea2aa6d58821b3e6d59",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/seed_ruta_violin_40_niveles.json": {
+    "mtime": 1780704378.9010928,
+    "ast_hash": "a6a3c9e83104b4a0bd6e922285bc601d",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/services/__tests__/ausenciaService.test.js": {
+    "mtime": 1780704378.9010928,
+    "ast_hash": "c1430410acf90479692087bedc75a098",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/services/__tests__/ausenciaUtils.test.js": {
+    "mtime": 1780704378.9010928,
+    "ast_hash": "19a5914e0e5e5032482a94eb84cefb5e",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/services/__tests__/ausenciaValidator.test.js": {
+    "mtime": 1780704378.9010928,
+    "ast_hash": "323c128e5e8c05ac6785a0fc8530e52a",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/services/__tests__/autoDraftService.offline.test.js": {
+    "mtime": 1780704378.9010928,
+    "ast_hash": "eedc436f9492b3506ab3d1dc7a96dd79",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/services/__tests__/emergenteJustificacionService.test.js": {
+    "mtime": 1780704378.9010928,
+    "ast_hash": "99a41bda9844e35cf5bc71cc91aebc78",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/services/__tests__/errorReporter.test.js": {
+    "mtime": 1780704378.917009,
+    "ast_hash": "c170485377bb2305b02980d33274bef3",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/services/__tests__/evaluationService.offline.test.js": {
+    "mtime": 1780704378.917009,
+    "ast_hash": "90f1e4f094faa11c7e5025a59ebd7412",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/services/__tests__/fileUploadService.test.js": {
+    "mtime": 1780704378.917009,
+    "ast_hash": "6c4e66954d44d249f46328741e8142da",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/services/__tests__/groqService.test.js": {
+    "mtime": 1780704378.917009,
+    "ast_hash": "163f9f322bff6aaae947535541cc827a",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/services/__tests__/maestroDataService.test.js": {
+    "mtime": 1780704378.917009,
+    "ast_hash": "8a46a0bf8b38fd9949bd5cbcf2352e64",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/services/__tests__/notificationService.deep-link.test.js": {
+    "mtime": 1780704378.917009,
+    "ast_hash": "cf453104a8bf9fc78accd53395e17658",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/services/__tests__/notificationService.test.js": {
+    "mtime": 1780704378.917009,
+    "ast_hash": "742e222db89c4eda60dbefb6d49038c9",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/services/__tests__/notificationTrigger.test.js": {
+    "mtime": 1780704378.917009,
+    "ast_hash": "c38879211abce0997cb2f2a00afc9a8d",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/services/__tests__/observationPromotionService.offline.test.js": {
+    "mtime": 1780704378.917009,
+    "ast_hash": "b033f44f94adfc8e6b7aa51688438d51",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/services/__tests__/offlineQueue.test.js": {
+    "mtime": 1780704378.917009,
+    "ast_hash": "099ded05c17bb11ee2f309494504fe04",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/services/__tests__/progressAggregatorService.test.js": {
+    "mtime": 1780704378.917009,
+    "ast_hash": "328e5878c2615c5b2bac693a1c0d96b3",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/services/__tests__/pushService.test.js": {
+    "mtime": 1780704378.917009,
+    "ast_hash": "836404fe8adc072b8a3b4c859e2d19b6",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/services/__tests__/reportService.generateDailyReport.test.js": {
+    "mtime": 1780704378.917009,
+    "ast_hash": "cef31e75263058d5e6818cf331b42e7a",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/services/__tests__/reportService.test.js": {
+    "mtime": 1780704378.917009,
+    "ast_hash": "ec682f38f7efcea2fe1f482ed7e7d7ff",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/services/__tests__/rutaGameificadaService.test.js": {
+    "mtime": 1780704378.917009,
+    "ast_hash": "cd33767ba5a5cd0e62ac49d586b4a20f",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/services/__tests__/rutaService.fuzzy.test.js": {
+    "mtime": 1780704378.9331355,
+    "ast_hash": "fe52f77456487774651bc8d974bc7641",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/services/__tests__/rutaService.lazyLoad.test.js": {
+    "mtime": 1780704378.9331355,
+    "ast_hash": "6d49e9a512c72fd242bf27b51c996faa",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/services/__tests__/rutaService.test.js": {
+    "mtime": 1780704378.9331355,
+    "ast_hash": "42b883fc0c296c0c01021a01e358cbc6",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/services/__tests__/rutaTopicStore.test.js": {
+    "mtime": 1780704378.9331355,
+    "ast_hash": "7b90f7ac795f0a2cb2e540108e348f8c",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/services/aiService.js": {
+    "mtime": 1780704378.9331355,
+    "ast_hash": "b1a1f72dc6f5d05132115b3292380693",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/services/analyticsService.js": {
+    "mtime": 1780704378.9331355,
+    "ast_hash": "dab40091a39c77e6d5a4cc94c60b6d5c",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/services/attendancePdfService.js": {
+    "mtime": 1780704378.9331355,
+    "ast_hash": "c375b1ac48c7c3c9c114b7f9d53f849d",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/services/auditService.js": {
+    "mtime": 1780704378.9331355,
+    "ast_hash": "554a19e0621a0895be15f30809fb8608",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/services/ausenciaService.js": {
+    "mtime": 1780704378.9331355,
+    "ast_hash": "94b2c97bcfa37d9e71357aae5e9d3d8a",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/services/ausenciaUtils.js": {
+    "mtime": 1780704378.9331355,
+    "ast_hash": "9c0a9f14244be2cf8e3f3df259eb0094",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/services/ausenciaValidator.js": {
+    "mtime": 1780704378.9331355,
+    "ast_hash": "3a54267cf42d9a6e09de332b2f975f71",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/services/autoDraftService.js": {
+    "mtime": 1780704378.9331355,
+    "ast_hash": "93e54789736f5a128d09ecafe6f736e4",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/services/catalogCache.js": {
+    "mtime": 1780704378.9331355,
+    "ast_hash": "ac3cf7fe5f3b1a34d7a31e583c40ba0e",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/services/catalogService.js": {
+    "mtime": 1780704378.9331355,
+    "ast_hash": "0531a5947c6129d484dc3aa93b10d86a",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/services/classEventService.js": {
+    "mtime": 1780704378.9331355,
+    "ast_hash": "6486f98bfa7d1b30b93febdff96cb5d1",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/services/complianceService.js": {
+    "mtime": 1780704378.9331355,
+    "ast_hash": "bf4c64523009f757f70466b2a86909fa",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/services/csrfService.js": {
+    "mtime": 1780704378.9331355,
+    "ast_hash": "5c2cefed3e4cd8d71e768e776bb33bec",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/services/emergenteJustificacionService.js": {
+    "mtime": 1780704378.9331355,
+    "ast_hash": "d11745143c1bf531126af595d6d318eb",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/services/errorReporter.js": {
+    "mtime": 1780704378.9331355,
+    "ast_hash": "cee4e78c630661d220ff1d7de291c1cf",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/services/evaluationService.js": {
+    "mtime": 1780704378.9331355,
+    "ast_hash": "a4b5b3064030c0d0e586eb5c447419d6",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/services/fileUploadService.js": {
+    "mtime": 1780704378.9331355,
+    "ast_hash": "a8ed178bc2811c55b7b0e9df2941c589",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/services/groqRateLimiter.js": {
+    "mtime": 1780704378.9489212,
+    "ast_hash": "1a0ed2f67a2bb14b60a0a221258bbd90",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/services/groqService.js": {
+    "mtime": 1780704378.9489212,
+    "ast_hash": "8e74f701ce06c9b6be2778465deef9cf",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/services/justificacionService.js": {
+    "mtime": 1780704378.9489212,
+    "ast_hash": "56d6e4d4475e35eeaff6a45a0308d71d",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/services/maestroDataService.js": {
+    "mtime": 1780704378.9534774,
+    "ast_hash": "2a2c82edcdbd258d2ab71688869cba78",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/services/navigationHooks.js": {
+    "mtime": 1780704378.9534774,
+    "ast_hash": "74bc260fd6b0962021b2d699884ccb8a",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/services/notificationService.js": {
+    "mtime": 1780704378.9534774,
+    "ast_hash": "c6a93e3bedb80a5861f771516e06f9e1",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/services/observationPromotionService.js": {
+    "mtime": 1780704378.9568665,
+    "ast_hash": "84fc441d4c6218c6076efdfd9370a86a",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/services/offlineQueue.js": {
+    "mtime": 1780704378.9568665,
+    "ast_hash": "9fdd1094b33e67f354f137a3868200bd",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/services/performanceService.js": {
+    "mtime": 1780704378.9568665,
+    "ast_hash": "a17d3046374b03e1422299968c882c02",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/services/permisoService.js": {
+    "mtime": 1780704378.9568665,
+    "ast_hash": "c9ad61e8c7cc90888df882573cc5a7e0",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/services/permissionCheck.js": {
+    "mtime": 1780704378.9568665,
+    "ast_hash": "91222551247acc09a9dd4bee246489c7",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/services/planningDocService.js": {
+    "mtime": 1780704378.9568665,
+    "ast_hash": "01c24a540a8a3c29141d34821cfe40b9",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/services/planningParserService.js": {
+    "mtime": 1780704378.9568665,
+    "ast_hash": "12e41d71df31251fdea48af7214b1ecb",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/services/progressAggregatorService.js": {
+    "mtime": 1780704378.9568665,
+    "ast_hash": "f2e83ef6d50d413c1c1f637db054c103",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/services/progressInsightService.js": {
+    "mtime": 1780704378.9568665,
+    "ast_hash": "4a1ce6da9281430f7fb79ed98be8340b",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/services/pushService.js": {
+    "mtime": 1780704378.9656258,
+    "ast_hash": "0755a8bb19f63e168bcea1197a156355",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/services/rateLimitService.js": {
+    "mtime": 1780704378.9656258,
+    "ast_hash": "c1f786d1f16897c1c39e5418c80e935d",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/services/reportAssets.js": {
+    "mtime": 1780704378.9656258,
+    "ast_hash": "f0d03b22247b677be66687ffce02abf3",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/services/reportService.js": {
+    "mtime": 1780704378.9656258,
+    "ast_hash": "78396d8c05eff375eb7897a60e2c589d",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/services/reportTemplates.js": {
+    "mtime": 1780704378.972494,
+    "ast_hash": "8774a19b1b3bf4a9d46aa235ed22d84e",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/services/routeConfigAdapter.js": {
+    "mtime": 1780704378.9730766,
+    "ast_hash": "a69c5ab70868f792d01fc0c23dd375dc",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/services/rutaGameificadaService.js": {
+    "mtime": 1780704378.9730766,
+    "ast_hash": "ddff226a9ceb47670f03fee772106e61",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/services/rutaService.js": {
+    "mtime": 1780704378.9730766,
+    "ast_hash": "0dcb285857a083dc53c4feecb34058d7",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/services/rutaTopicStore.js": {
+    "mtime": 1780704378.9730766,
+    "ast_hash": "2d5764e3f1bab41b1d842b15b6a146ec",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/services/snippetBank.js": {
+    "mtime": 1780704378.978419,
+    "ast_hash": "ae183b3eb1fb7c2559e1340a7c069dd4",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/services/syncManager.js": {
+    "mtime": 1780704378.978419,
+    "ast_hash": "ca553e45c3cbaf13eab51fd07220b081",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/services/viewCache.js": {
+    "mtime": 1780704378.9807842,
+    "ast_hash": "c0334161373741c2de4075f78ebd9f2c",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/services/viewRegistry.js": {
+    "mtime": 1780704378.9831831,
+    "ast_hash": "7429f1ac89ad4c19a87a4893d6a06782",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/shell/__tests__/portalRoutes.security.test.js": {
+    "mtime": 1780704378.9854228,
+    "ast_hash": "f9e695c24eb387291a57193792e1cdb8",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/shell/portalEvents.js": {
+    "mtime": 1780704378.9881513,
+    "ast_hash": "e93d822cde3d5d5612022ffacf3c6cfe",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/shell/portalRoutes.js": {
+    "mtime": 1780704378.990162,
+    "ast_hash": "249d807d353651d68be45b43b2d0a0ab",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/shell/portalShell.js": {
+    "mtime": 1780704378.993029,
+    "ast_hash": "76ccd6bc466b6631c3e216e111a68731",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/utils/__tests__/focusTrap.test.js": {
+    "mtime": 1780704379.0194073,
+    "ast_hash": "21bd7f53e8225f4b31c12aea8ae7c0ec",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/utils/__tests__/observationParser.test.js": {
+    "mtime": 1780704379.0211077,
+    "ast_hash": "821a2a00e5c326f12341d5e965c3422e",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/utils/__tests__/rlsHelpers.test.js": {
+    "mtime": 1780704379.0221446,
+    "ast_hash": "fa46853e33136fa2ae37e618c302bd02",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/utils/a11yUtils.js": {
+    "mtime": 1780704379.0232089,
+    "ast_hash": "68b03f0b20145fe02fe50fcdca2f61b2",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/utils/dslParser.js": {
+    "mtime": 1780704379.0239096,
+    "ast_hash": "fe4242c7da786e75aad69f18e6193ac8",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/utils/focusTrap.js": {
+    "mtime": 1780704379.0268302,
+    "ast_hash": "dcdbd3eb2a2092efbb3c0376eee1741c",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/utils/modoUtils.js": {
+    "mtime": 1780704379.0294714,
+    "ast_hash": "3cf47188a7dcea179e509a88d0db42ae",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/utils/observationParser.js": {
+    "mtime": 1780704379.0306814,
+    "ast_hash": "c36782db293e6a4de524ab6ae315bc4e",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/utils/portalUtils.js": {
+    "mtime": 1780704379.0306814,
+    "ast_hash": "1106398f599fcb9f7985ef90f597b9be",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/utils/rlsHelpers.js": {
+    "mtime": 1780704379.0326943,
+    "ast_hash": "f26d30ebe84db2f97ac60f1f0a095de4",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/utils/validationUtils.js": {
+    "mtime": 1780704379.0334685,
+    "ast_hash": "7b698e18132765c25634bf4c280bbfe7",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/views/__tests__/asistenciaView.deep-link.test.js": {
+    "mtime": 1780704379.0365174,
+    "ast_hash": "95516363ab1ca0f05467513c7d84e21e",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/views/__tests__/asistenciaView.improveText.test.js": {
+    "mtime": 1780704379.0385275,
+    "ast_hash": "33731898f54904bcb836dd64d61890ef",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/views/__tests__/asistenciaView.race-condition.test.js": {
+    "mtime": 1780704379.0385275,
+    "ast_hash": "80135c899abd2c9f86f49b2444cf26bb",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/views/__tests__/asistenciaView.toastReplace.test.js": {
+    "mtime": 1780704379.0400026,
+    "ast_hash": "b202f0c997c8e68b00957bc6f60542e6",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/views/__tests__/asistenciaViewTopic.test.js": {
+    "mtime": 1780704379.0420122,
+    "ast_hash": "7387f838c33db55f8bd6c48031e31036",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/views/__tests__/calendarioView-bug-today.test.js": {
+    "mtime": 1780704379.043766,
+    "ast_hash": "303d170c215d71884d6adae7e6850a4e",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/views/__tests__/loginView.test.js": {
+    "mtime": 1780704379.043766,
+    "ast_hash": "f1972b2a21ae12937977a6542c698e2d",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/views/__tests__/pendingApprovalView.test.js": {
+    "mtime": 1780704379.0457788,
+    "ast_hash": "c3a75591ca5ccf59fe844e7b41ee01c6",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/views/__tests__/registerView.pendingApproval.test.js": {
+    "mtime": 1780704379.0477884,
+    "ast_hash": "06f5493c7c3c86b924ad3438097bbae8",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/views/__tests__/registerView.test.js": {
+    "mtime": 1780704379.0509727,
+    "ast_hash": "3df12ea584a9a2003546789a2acff223",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/views/__tests__/registroAlumnoView.test.js": {
+    "mtime": 1780704379.0509727,
+    "ast_hash": "c020aeed93b02bd7a4e3233db0e9ff1a",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/views/__tests__/rutaGameificadaView.test.js": {
+    "mtime": 1780704379.0530536,
+    "ast_hash": "ff800054732fe96d2b5ffee063824525",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/views/academicPlanBuilderView.js": {
+    "mtime": 1780704379.0540159,
+    "ast_hash": "25a5034435d08709cbbf561996611ef1",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/views/alumnoPerfilView.js": {
+    "mtime": 1780704379.0580401,
+    "ast_hash": "dc59b43bf52c5ea164ff0d5a30c2d781",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/views/asistenciaView.js": {
+    "mtime": 1780704379.06128,
+    "ast_hash": "0b23d3b4ff6134e90a4af8fd5460a3b5",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/views/calendarioView.js": {
+    "mtime": 1780704379.06128,
+    "ast_hash": "9c98c0dcafb5aa98d8830ef6de051ed1",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/views/claseEmergenteView.js": {
+    "mtime": 1780704379.064839,
+    "ast_hash": "d34671f23d9a04869441a741eabba2a4",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/views/components/routeConfigurator.js": {
+    "mtime": 1780704379.0667129,
+    "ast_hash": "442637220b0c9753385cdd67ae3d20e9",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/views/crearClaseView.js": {
+    "mtime": 1780704379.068723,
+    "ast_hash": "4087d11b37dce725c9342aa59f5b6917",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/views/gamificacionView.js": {
+    "mtime": 1780704379.068723,
+    "ast_hash": "1d18803ddf0a0b22550aec9564383dee",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/views/gestionAlumnosClasesView.js": {
+    "mtime": 1780704379.068723,
+    "ast_hash": "7430bd0a8d8737ec85d87f778bda7d60",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/views/gestionarClasesView.js": {
+    "mtime": 1780704379.0730267,
+    "ast_hash": "a2020c0ed2137609e9f00deb4016014f",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/views/hoyView.js": {
+    "mtime": 1780704379.0758362,
+    "ast_hash": "3e772a082bcc6d0342b27d9a5836abb8",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/views/loginView.js": {
+    "mtime": 1780704379.0758362,
+    "ast_hash": "94ce4c87f6bb568420be4c9f1d0f0e8a",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/views/metricasView.js": {
+    "mtime": 1780704379.0758362,
+    "ast_hash": "9f83feef7c6a48e4598342e3b30fd236",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/views/pendingApprovalView.js": {
+    "mtime": 1780704379.0758362,
+    "ast_hash": "a29e8b8df492c77a69880d71240c3d65",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/views/perfilView.js": {
+    "mtime": 1780704379.0758362,
+    "ast_hash": "28d48f93b2d0f243308d56bc5d3f8658",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/views/planificacionView.js": {
+    "mtime": 1780707396.6897485,
+    "ast_hash": "e6df543456b488a8279a959514ac8dfc",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/views/registerView.js": {
+    "mtime": 1780704379.0865295,
+    "ast_hash": "63351bcf7bfc6ba9a0b439eab9bac860",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/views/registroAlumnoView.js": {
+    "mtime": 1780704379.0865295,
+    "ast_hash": "8a7c102d541a255048f12b78dcf05150",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/views/routeDetailView.js": {
+    "mtime": 1780704379.0865295,
+    "ast_hash": "b0b380399ab0708dcb9242e046e9afa5",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/views/routeLibraryView.js": {
+    "mtime": 1780704379.0865295,
+    "ast_hash": "f8c868f4ee1619c1159372bcfc09811f",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/views/rutaGameificadaView.js": {
+    "mtime": 1780704379.094033,
+    "ast_hash": "a3373e0aac709188e3c6f5b13ea919b1",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/views/weeklyPlanView.js": {
+    "mtime": 1780704379.094033,
+    "ast_hash": "51e9f11ae83001d0270f2c06b57d49f6",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/views/wizardInscripcionAlumnoView.js": {
+    "mtime": 1780704379.1093068,
+    "ast_hash": "3208ddbb12992ad458e4d85695e7d40e",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/views/wizard/step1-datos-personales.js": {
+    "mtime": 1780704379.096041,
+    "ast_hash": "8a214be39a3cb9486d108daec0406aa1",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/views/wizard/step2-madre.js": {
+    "mtime": 1780704379.096041,
+    "ast_hash": "e20ed2c71b15baf69858c57714933239",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/views/wizard/step2-perfil-musical.js": {
+    "mtime": 1780704379.1001801,
+    "ast_hash": "b0e067e54d2b1ce7aeb7d695c758e866",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/views/wizard/step3-padre.js": {
+    "mtime": 1780704379.1001801,
+    "ast_hash": "f0b5b59de39b9e84a9cdfe714efd1366",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/views/wizard/step3-salud-conducta.js": {
+    "mtime": 1780704379.1014688,
+    "ast_hash": "98caa0b438e53a28888db98783d8da3a",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/views/wizard/step4-datos-escolares.js": {
+    "mtime": 1780704379.103062,
+    "ast_hash": "9dd5fbe5cc6063c5a35834e0c2f7ea22",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/views/wizard/step4-familia-social.js": {
+    "mtime": 1780704379.1035714,
+    "ast_hash": "3b79e632d981bcc0f9ee6b06c4183068",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/views/wizard/step5-perfil-musical.js": {
+    "mtime": 1780704379.1048,
+    "ast_hash": "bc23276aa5204d9ed7b6cff1c68c0c54",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/views/wizard/step5-representante-compromisos.js": {
+    "mtime": 1780704379.1053307,
+    "ast_hash": "f5bc105fae2362466865a5b3731c9d0f",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/views/wizard/step6-salud-escolar.js": {
+    "mtime": 1780704379.1053307,
+    "ast_hash": "0deb6fe12f49d840e886ea2ca16d3fa7",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/views/wizard/step7-compromisos.js": {
+    "mtime": 1780704379.1073835,
+    "ast_hash": "77e4a5847311ee4dadd9b16e75bdd8c8",
+    "semantic_hash": ""
+  },
+  "src/services/__tests__/analyticsService.test.js": {
+    "mtime": 1780704379.112034,
+    "ast_hash": "59e88890bf5ad3521feec9a37d099663",
+    "semantic_hash": ""
+  },
+  "src/services/__tests__/auditService.test.js": {
+    "mtime": 1780704379.1136565,
+    "ast_hash": "bc5fa46aa2d254e6940c62c6ae20f52d",
+    "semantic_hash": ""
+  },
+  "src/services/__tests__/bundleAnalyzer.test.js": {
+    "mtime": 1780704379.1141856,
+    "ast_hash": "4e2dd6acc156d357fad99d39b744df98",
+    "semantic_hash": ""
+  },
+  "src/services/__tests__/dbOptimizer.test.js": {
+    "mtime": 1780704379.1157143,
+    "ast_hash": "1f582362cf1b905053a8fbc6ae7f9371",
+    "semantic_hash": ""
+  },
+  "src/services/__tests__/errorReporter.test.js": {
+    "mtime": 1780704379.116469,
+    "ast_hash": "ece84571cfd65ae838a42fc49efff294",
+    "semantic_hash": ""
+  },
+  "src/services/__tests__/gdprService.test.js": {
+    "mtime": 1780704379.116469,
+    "ast_hash": "689fc1d5f44baa41a694f08873c24e4a",
+    "semantic_hash": ""
+  },
+  "src/services/__tests__/lazyLoader.test.js": {
+    "mtime": 1780704379.116469,
+    "ast_hash": "84fc9952afb840387fdab7f50f21906c",
+    "semantic_hash": ""
+  },
+  "src/services/__tests__/swCaching.test.js": {
+    "mtime": 1780704379.116469,
+    "ast_hash": "cf89fdbd8bf289d21c6c7b2dc5512349",
+    "semantic_hash": ""
+  },
+  "src/services/__tests__/webVitals.test.js": {
+    "mtime": 1780704379.116469,
+    "ast_hash": "20fdfd53f19a6ef39d159cfc2e913b74",
+    "semantic_hash": ""
+  },
+  "src/services/analyticsService.js": {
+    "mtime": 1780704379.119645,
+    "ast_hash": "8b28c4d51e3c31cb42cfe33902681590",
+    "semantic_hash": ""
+  },
+  "src/services/auditService.js": {
+    "mtime": 1780704379.119645,
+    "ast_hash": "0ac046449307f599a4000c9430e0bb44",
+    "semantic_hash": ""
+  },
+  "src/services/bundleAnalyzer.js": {
+    "mtime": 1780704379.1215315,
+    "ast_hash": "3eb36988509b690d109879b4356ead24",
+    "semantic_hash": ""
+  },
+  "src/services/dbOptimizer.js": {
+    "mtime": 1780704379.1223886,
+    "ast_hash": "18998964e8698e2b4f5df8d38f6ced5a",
+    "semantic_hash": ""
+  },
+  "src/services/errorReporter.js": {
+    "mtime": 1780704379.1223886,
+    "ast_hash": "a86a96f103875380b04b51ebdde4d735",
+    "semantic_hash": ""
+  },
+  "src/services/gdprService.js": {
+    "mtime": 1780704379.1223886,
+    "ast_hash": "b773db7c6ea396fa71ea4fb497bd0b1e",
+    "semantic_hash": ""
+  },
+  "src/services/lazyLoader.js": {
+    "mtime": 1780704379.1243596,
+    "ast_hash": "2968c99d5fa023af5661911f909fd759",
+    "semantic_hash": ""
+  },
+  "src/services/swCaching.js": {
+    "mtime": 1780704379.1243596,
+    "ast_hash": "0a808cd587bd80bd156e1b57d052e937",
+    "semantic_hash": ""
+  },
+  "src/services/webVitals.js": {
+    "mtime": 1780704379.1266646,
+    "ast_hash": "8009775c32e6a7d4a51b268e00034584",
+    "semantic_hash": ""
+  },
+  "src/services/workers/observationPromotionCron.js": {
+    "mtime": 1780704379.129056,
+    "ast_hash": "3b7c7d7b2c13758ba592f0a2a41c5513",
+    "semantic_hash": ""
+  },
+  "src/shared/components/AppModal.js": {
+    "mtime": 1780704379.1302142,
+    "ast_hash": "5d46e88600fc1ba33da9d871b02b4406",
+    "semantic_hash": ""
+  },
+  "src/shared/components/AppToast.js": {
+    "mtime": 1780704379.1335084,
+    "ast_hash": "cd2b94a1e4e225291190f30a4d52e708",
+    "semantic_hash": ""
+  },
+  "src/shared/components/HelpPanel.js": {
+    "mtime": 1780704379.1335084,
+    "ast_hash": "4b9068d738e9e88ae7dc3092483ba460",
+    "semantic_hash": ""
+  },
+  "src/shared/components/__tests__/AppModal.test.js": {
+    "mtime": 1780704379.1370554,
+    "ast_hash": "1bfd9dc73041b833e34781c73848a260",
+    "semantic_hash": ""
+  },
+  "src/shared/components/formField.js": {
+    "mtime": 1780704379.1378946,
+    "ast_hash": "2d4e250364e038faa93691452013dec0",
+    "semantic_hash": ""
+  },
+  "src/shared/components/modal.js": {
+    "mtime": 1780704379.1378946,
+    "ast_hash": "0a095b6387236f3cdf9ca7fc35ba4d29",
+    "semantic_hash": ""
+  },
+  "src/shared/components/navbar.js": {
+    "mtime": 1780704379.1407087,
+    "ast_hash": "638298a6922493a66d79dc0507189050",
+    "semantic_hash": ""
+  },
+  "src/shared/components/toast.js": {
+    "mtime": 1780704379.1407087,
+    "ast_hash": "b9808b8deebbe14e02550044e7baff5a",
+    "semantic_hash": ""
+  },
+  "src/shared/services/lifecycleManager.js": {
+    "mtime": 1780704379.1461275,
+    "ast_hash": "24c6c2058d067671a4f614ea830a30d9",
+    "semantic_hash": ""
+  },
+  "src/shared/utils/__tests__/asyncMutex.test.js": {
+    "mtime": 1780704379.153496,
+    "ast_hash": "4eaf4a3832ec9b83c6d61706d10c4254",
+    "semantic_hash": ""
+  },
+  "src/shared/utils/asyncMutex.js": {
+    "mtime": 1780704379.1552064,
+    "ast_hash": "7be69d48cfae0c863c8d09142a5c9b35",
+    "semantic_hash": ""
+  },
+  "src/shared/utils/compactUI.js": {
+    "mtime": 1780704379.15727,
+    "ast_hash": "75ec232b69027a8e67225f19c51ec8e8",
+    "semantic_hash": ""
+  },
+  "src/shared/utils/dslParser.js": {
+    "mtime": 1780704379.1598046,
+    "ast_hash": "05e7125a6fc76e0fd71c7078dfebd86c",
+    "semantic_hash": ""
+  },
+  "src/shared/utils/phoneUtils.js": {
+    "mtime": 1780704379.163019,
+    "ast_hash": "4bb17aaafde5bea6af3ef3affac93b98",
+    "semantic_hash": ""
+  },
+  "src/shared/utils/pullToRefreshBlocker.js": {
+    "mtime": 1780704379.163019,
+    "ast_hash": "cd29cc733dc8a2eceb279a8e59905a0c",
+    "semantic_hash": ""
+  },
+  "src/shared/utils/sanitize.js": {
+    "mtime": 1780704379.1669412,
+    "ast_hash": "b6cb94604c7ad548d80981a2a5da185a",
+    "semantic_hash": ""
+  },
+  "src/shared/utils/validators.js": {
+    "mtime": 1780704379.1686606,
+    "ast_hash": "fd2b6f0283fcf4e7f5ed4af82b8cea47",
+    "semantic_hash": ""
+  },
+  "supabase/check-nodes.js": {
+    "mtime": 1780704379.1831543,
+    "ast_hash": "83d47e014a3ce3139655a3e923f035a9",
+    "semantic_hash": ""
+  },
+  "supabase/check-schema.js": {
+    "mtime": 1780704379.1875951,
+    "ast_hash": "c75416daec358c6adcbd3604b08e717a",
+    "semantic_hash": ""
+  },
+  "supabase/check-table-schema.js": {
+    "mtime": 1780704379.190862,
+    "ast_hash": "6e27be09f4c1e167af1c4733937b3f01",
+    "semantic_hash": ""
+  },
+  "supabase/cron-jobs.sql": {
+    "mtime": 1780704379.190862,
+    "ast_hash": "0fb7473fc7e8ab0da8b12a1f9fbc40dc",
+    "semantic_hash": ""
+  },
+  "supabase/dump_schema.sql": {
+    "mtime": 1780704379.1980588,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": ""
+  },
+  "supabase/functions/admin-escalation-alerts/deno.json": {
+    "mtime": 1780704379.2062936,
+    "ast_hash": "fb8532dbde7e7948838d310f02273da5",
+    "semantic_hash": ""
+  },
+  "supabase/functions/admin-escalation-alerts/index.ts": {
+    "mtime": 1780704379.2106326,
+    "ast_hash": "d0daef0ee658188b600c72a5301acb4b",
+    "semantic_hash": ""
+  },
+  "supabase/functions/escalate-asistencias-notifications/deno.json": {
+    "mtime": 1780704379.218665,
+    "ast_hash": "fb8532dbde7e7948838d310f02273da5",
+    "semantic_hash": ""
+  },
+  "supabase/functions/escalate-asistencias-notifications/index.ts": {
+    "mtime": 1780704379.2244105,
+    "ast_hash": "a9b058ba63ae17ed9e88edca9ceed4e9",
+    "semantic_hash": ""
+  },
+  "supabase/functions/generate_pending_class_notifications.sql": {
+    "mtime": 1780704379.2295544,
+    "ast_hash": "075a931d86d6aaed4a1d12c8cf1754da",
+    "semantic_hash": ""
+  },
+  "supabase/functions/groq-proxy/index.ts": {
+    "mtime": 1780704379.238279,
+    "ast_hash": "b66ce3cd12d9d679b5ab99520f8c5185",
+    "semantic_hash": ""
+  },
+  "supabase/functions/send-push/index.ts": {
+    "mtime": 1780704379.245406,
+    "ast_hash": "b9808a3c8a99a0c07ddaf3f9f870ed15",
+    "semantic_hash": ""
+  },
+  "supabase/functions/sync-postulantes/deno.json": {
+    "mtime": 1780704379.25225,
+    "ast_hash": "fb8532dbde7e7948838d310f02273da5",
+    "semantic_hash": ""
+  },
+  "supabase/functions/sync-postulantes/index.ts": {
+    "mtime": 1780704379.2557714,
+    "ast_hash": "dc3586b4c835ab04c60e52c878906066",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/001_create_tables.sql": {
+    "mtime": 1780704379.2649531,
+    "ast_hash": "74069c61e09512f4bd947be0f89f5619",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/002_create_missing_tables.sql": {
+    "mtime": 1780704379.2697945,
+    "ast_hash": "14682cc6f5b241e6755686bd7692b3fd",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/003_auth_profiles.sql": {
+    "mtime": 1780704379.275659,
+    "ast_hash": "54382f9f0592be7abee13a47b3106d0c",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/004_rls_policies.sql": {
+    "mtime": 1780704379.2785707,
+    "ast_hash": "495f615f4bd79027bdf814a1dfefdb3f",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/005_system_config.sql": {
+    "mtime": 1780704379.2864623,
+    "ast_hash": "23d74a2f264bde98717e098ccea84450",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/006_academic_route_schema.sql": {
+    "mtime": 1780704379.2864623,
+    "ast_hash": "f74dabcef5f7d288c2e04d2b5541c6f2",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/007_academic_route_rls.sql": {
+    "mtime": 1780704379.2946687,
+    "ast_hash": "04f0240872c6bcedba5219287e3ff6b7",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/008_seed_violin_route.sql": {
+    "mtime": 1780704379.2996006,
+    "ast_hash": "b60be62127c2b8f2169ddde67f0e2300",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/009_weekly_plan_schema.sql": {
+    "mtime": 1780704379.3057957,
+    "ast_hash": "e643e3832073fd8129df708c55ca5201",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/010_fix_sesiones_clase_schema.sql": {
+    "mtime": 1780704379.3107398,
+    "ast_hash": "c5bc1d1623a71106a7bed68f54d574dd",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/010_node_resources_schema.sql": {
+    "mtime": 1780704379.3148248,
+    "ast_hash": "a4d500fc99cc399e8b8f37c596993835",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/011_academic_analytics_views.sql": {
+    "mtime": 1780704379.318074,
+    "ast_hash": "3e18547c2b3761a0f3c98e86df82ce1e",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/012_planning_documents.sql": {
+    "mtime": 1780704379.321262,
+    "ast_hash": "33d8009a232ab74eac75e3c0d1abcfad",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260507_alter_indicator_attempts_add_nota_tarea.sql": {
+    "mtime": 1780704379.3219295,
+    "ast_hash": "69707716e9f4d141d7eb6ca512afbf0a",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260507_alter_indicators_add_nombre_activo.sql": {
+    "mtime": 1780704379.3295822,
+    "ast_hash": "46742a43b97e6833ed7654e5e5892c73",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260507_class_events_schema.sql": {
+    "mtime": 1780704379.3360505,
+    "ast_hash": "58115e48e7c345ed07b0c7152e105401",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260507_create_observaciones_sesion.sql": {
+    "mtime": 1780704379.3399577,
+    "ast_hash": "87fe3e663b81d4e023cd55df755e243e",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260507_planning_documents.sql": {
+    "mtime": 1780704379.3440561,
+    "ast_hash": "85347f80dd9c33645b95a0df4a5f54ae",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260510_add_coverage_fields.sql": {
+    "mtime": 1780704379.3472853,
+    "ast_hash": "52432f9405ec232abb3a955aa50e1a01",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260510_create_planned_content.sql": {
+    "mtime": 1780704379.3505116,
+    "ast_hash": "87a3bb97e0fa8ff8296b9e82049e7a6a",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260511_add_contenido_ia_dsl_to_observaciones_sesion.sql": {
+    "mtime": 1780704379.355743,
+    "ast_hash": "f8b5fb23204e15f319ecf1ccc02288a1",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260511_add_instrumento_to_planificaciones.sql": {
+    "mtime": 1780704379.355743,
+    "ast_hash": "ffe471e7a987fefc95202d0667aa4ab0",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260512_add_created_by_to_indicator_attempts.sql": {
+    "mtime": 1780704379.355743,
+    "ast_hash": "56d75d0a11d0a32bae495d10b92e5d7c",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260512_create_justificaciones_table.sql": {
+    "mtime": 1780704379.355743,
+    "ast_hash": "cbfa8237e25f58a73793c470b83513b9",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260512_fix_indicator_attempts_schema.sql": {
+    "mtime": 1780704379.3627162,
+    "ast_hash": "d25a3c27e73dfbafb1bacf65ed478394",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260512_update_indicator_attempts_rls.sql": {
+    "mtime": 1780704379.3627162,
+    "ast_hash": "20cb08437d83e220233e1fefee555b5a",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260513_auto_create_profile_for_maestro.sql": {
+    "mtime": 1780704379.3627162,
+    "ast_hash": "9d7e830520021278b737afe44a31d3ac",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260516_permisos_maestros.sql": {
+    "mtime": 1780704379.370283,
+    "ast_hash": "806e7a95fb7f16445bc6608f1de92e74",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260517_auth_rls_fix.sql": {
+    "mtime": 1780704379.3743634,
+    "ast_hash": "86b0521eba2ca0095d0adad691d1b0dd",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260518_rls_maestros_self_access.sql": {
+    "mtime": 1780704379.3789816,
+    "ast_hash": "d4299c1eb441480062e00eff2ba60821",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260518_rls_pedagogical_hierarchy_fix.sql": {
+    "mtime": 1780704379.3846154,
+    "ast_hash": "dd94bcad883b00ed5e6f5480d205b2ea",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260518_rls_permisos_maestros.sql": {
+    "mtime": 1780704379.3851643,
+    "ast_hash": "67ec3d3e8c7eaf78e9dc0b151abd7f89",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260518_rls_security_audit_fix.sql": {
+    "mtime": 1780704379.3872128,
+    "ast_hash": "9f66ea33f201689efcc465a766b14f5c",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260518_rls_strict_membership.sql": {
+    "mtime": 1780704379.390979,
+    "ast_hash": "48b13fc95f3364523acb7a0770850b38",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260519_085000_add_admin_rls_policies_phase1.sql": {
+    "mtime": 1780704379.390979,
+    "ast_hash": "231ceb4d7274a41a2650a24dfb11ccba",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260519_090000_add_admin_rls_policies_phase2.sql": {
+    "mtime": 1780704379.3947532,
+    "ast_hash": "a9c2312ebe797f8096b43a32693b5a30",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260519_add_ausencia_workflow_fields.sql": {
+    "mtime": 1780704379.3957658,
+    "ast_hash": "6455683b1c8f42c135fea41fe4f6feeb",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260519_add_es_promocionado_to_sesiones_clase.sql": {
+    "mtime": 1780704379.3957658,
+    "ast_hash": "388ae2e5bf7838329cca841727705fe3",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260519_fix_ausencias_maestros_schema.sql": {
+    "mtime": 1780704379.398324,
+    "ast_hash": "02a7c2c08d8b5645a00340fb27c9e1d1",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260519_observaciones_sesion_add_alumno_id.sql": {
+    "mtime": 1780704379.4029706,
+    "ast_hash": "5557e9656f9a54877008d0e414ebf2c8",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260520_add_borrador_to_vw_asistencias_consolidada.sql": {
+    "mtime": 1780704379.4052541,
+    "ast_hash": "a32be7528cbe948a1dfa5a89127e55d9",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260520_add_dedup_key_to_notificaciones.sql": {
+    "mtime": 1780704379.4052541,
+    "ast_hash": "eee38eacaa245193f0cb2f673543d976",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260520_add_escalation_tracking_to_registros_pendientes.sql": {
+    "mtime": 1780704379.4052541,
+    "ast_hash": "5b946b8461d33224e91ddf227f13b025",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260520_add_unique_asistencias_constraint.sql": {
+    "mtime": 1780704379.4052541,
+    "ast_hash": "734cf633bf9ee6c0ba05b694d8231680",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260520_create_ausencias_auditoria.sql": {
+    "mtime": 1780704379.4052541,
+    "ast_hash": "ea5e3d569523e836f100d46a070fe57d",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260520_create_maestro_desempe\u00f1o_table.sql": {
+    "mtime": 1780704379.4112897,
+    "ast_hash": "e3c09baba6154f91b84055c3f2caff99",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260520_create_notification_trigger.sql": {
+    "mtime": 1780704379.415169,
+    "ast_hash": "a99f41c2521dd865f0f77e64d2af6753",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260520_extend_ausencias_maestros.sql": {
+    "mtime": 1780704379.418383,
+    "ast_hash": "b5d1394a1a87fe204d0dd89363e378c2",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260520_extend_notificaciones_for_escalation.sql": {
+    "mtime": 1780704379.418383,
+    "ast_hash": "5710aa7b9387d317d98db1bb6eea80de",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260521_add_notification_deep_links.sql": {
+    "mtime": 1780704379.418383,
+    "ast_hash": "c33ca059e368708d3f34a0525655d21c",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260521_add_solicitudes_permisos.sql": {
+    "mtime": 1780704379.4235227,
+    "ast_hash": "e5b2cdd82d327aa8fd8df88902c87c4a",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260521_create_fn_check_and_notify_pending_asistencias.sql": {
+    "mtime": 1780704379.4259202,
+    "ast_hash": "83baccb9b3ffb1306563d1eb5adcef6e",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260521_setup_cron_schedules.sql": {
+    "mtime": 1780704379.4270067,
+    "ast_hash": "9207efda59c79b7d7962ae83165575dd",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260523_create_push_notification_trigger.sql": {
+    "mtime": 1780704379.4270067,
+    "ast_hash": "4dcaaef47a35a1eb144834c7c8ec2995",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260523_curriculos.sql": {
+    "mtime": 1780704379.4270067,
+    "ast_hash": "3aade99aa9a2732352971ac904e3f291",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260524_schedule_runs.sql": {
+    "mtime": 1780704379.432411,
+    "ast_hash": "fad0c6d38c69e86e8b25606df28ab81f",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260525_fix_progresos_objetivo_fk.sql": {
+    "mtime": 1780704379.4332952,
+    "ast_hash": "1d42c2fb49d55e733bbd882c6cacdb7c",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260525_horario_schedule_run_feedback.sql": {
+    "mtime": 1780704379.4332952,
+    "ast_hash": "e1340a44fe14b32ad86895a5bd901b67",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260525_progresos_dsl_columns.sql": {
+    "mtime": 1780704379.4332952,
+    "ast_hash": "bdb81ef9f0e0dce284b237ae0de51182",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260525_progresos_unique_constraint.sql": {
+    "mtime": 1780704379.439295,
+    "ast_hash": "3b085b8ba0a55b2f5ef7ca980a80d4a1",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260525_update_notifications_on_attendance.sql": {
+    "mtime": 1780704379.4430633,
+    "ast_hash": "82a6d48f333e9c8ab89a3b2917c4250f",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260526_fix_handle_new_user.sql": {
+    "mtime": 1780704379.4464445,
+    "ast_hash": "65c9fd4d801c53e1853373dc7a91578f",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260527_create_alumno_plan_entradas.sql": {
+    "mtime": 1780704379.446932,
+    "ast_hash": "50ac3df49cb9e1c6d14fa8e8091077bc",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260527_fix_class_notifications.sql": {
+    "mtime": 1780704379.446932,
+    "ast_hash": "1afebd327217f2557a3b5afa78f864b6",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260528_alumnos_wizard_fields.sql": {
+    "mtime": 1780704379.4551091,
+    "ast_hash": "305ab4fb12bd038e91c5b1ecd6306429",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260529_backfill_alumnos_from_postulantes.sql": {
+    "mtime": 1780704379.4551091,
+    "ast_hash": "4dad69e6bda88704ddbbd32b17eecf87",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260529_create_postulantes.sql": {
+    "mtime": 1780704379.46067,
+    "ast_hash": "5c4db8619ea0df19fe1249acc24ec2d3",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260529_emergente_actividad_text.sql": {
+    "mtime": 1780704379.4632797,
+    "ast_hash": "e3c1c84373fff87cd50f1c289e64757b",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260530_add_contenido_ia_mejorado_to_observaciones_sesion.sql": {
+    "mtime": 1780704379.4632797,
+    "ast_hash": "e09a16fab276bf7e9b3fc1f082e24ff5",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260530_consolidated_fix_maestro_registration.sql": {
+    "mtime": 1780704379.4672492,
+    "ast_hash": "35f2093db3dbac223799ad3bb1b92baf",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260530_create_rutas_contenido.sql": {
+    "mtime": 1780704379.4677062,
+    "ast_hash": "3bd6939e7fd3743291b31f6da737bad5",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260530_emergente_id_sesiones.sql": {
+    "mtime": 1780704379.4742234,
+    "ast_hash": "c992e7830c33f1d60c181385df8a72ac",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260530_fix_approve_maestro_authorization.sql": {
+    "mtime": 1780704379.4742234,
+    "ast_hash": "4cf1ad9d34a7c4dd4deea063a6e3dde0",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260530_fix_approve_maestro_rpc.sql": {
+    "mtime": 1780704379.4820323,
+    "ast_hash": "d6b39bdb5ff04e58024569c179e4213c",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260530_fix_auth_first_approval_flow.sql": {
+    "mtime": 1780704379.483065,
+    "ast_hash": "03c250391fae9f052ca8449608bc16cb",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260530_fix_maestro_preexistente_link.sql": {
+    "mtime": 1780704379.4860158,
+    "ast_hash": "32ae4f406694d4fd9a4d7fd2fc4a1fc5",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260530_fix_maestro_registration_instrument.sql": {
+    "mtime": 1780704379.4885974,
+    "ast_hash": "b33866f9c5294c9731d08d41aa140cea",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260530_fix_pending_maestro_auth_confirmation.sql": {
+    "mtime": 1780704379.4885974,
+    "ast_hash": "fe786033d43ce9a943f3e97d210fe9d4",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260530_fix_postulantes_rls.sql": {
+    "mtime": 1780704379.4965498,
+    "ast_hash": "1cc0cd3cc59ab9016101e616a8ffb1e5",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260530_sync_maestro_registration_resena.sql": {
+    "mtime": 1780704379.4975326,
+    "ast_hash": "c79e8605b5693794f1a3af962ac54fc2",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260604000001_indicator_sessions.sql": {
+    "mtime": 1780704379.4975326,
+    "ast_hash": "fd4656b5c6097f7afd139c3879d6a52e",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260604000002_indicator_session_students.sql": {
+    "mtime": 1780704379.503996,
+    "ast_hash": "22877a83e7ed1ebedb6053942b4109c8",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260605000001_planning_draft_versions.sql": {
+    "mtime": 1780706260.7239528,
+    "ast_hash": "2a31bc113a54ff62bb5a05f4bd4ea724",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260605000002_planning_draft_concurrency_fix.sql": {
+    "mtime": 1780707322.5115204,
+    "ast_hash": "d5c80596cda6ac7beff1aa4f3be5c6b2",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/ausencias-maestros.sql": {
+    "mtime": 1780704379.50463,
+    "ast_hash": "07246f2ca61e168c2076a6b0237be2b2",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/catalogos-base.sql": {
+    "mtime": 1780704379.5068123,
+    "ast_hash": "ee7e49189001733bfcfe1e5e67122814",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/portal-maestros-tables.sql": {
+    "mtime": 1780704379.509285,
+    "ast_hash": "9cbd7c91b97e5fc22aebe98227aad2e6",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/ruta-academica-tables.sql": {
+    "mtime": 1780704379.510775,
+    "ast_hash": "b47e0b4192eccc1451c857682ec4a451",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/schema_reference.sql": {
+    "mtime": 1780704379.511116,
+    "ast_hash": "a0765179fb51809aca6157d8cb2cd412",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/seed-complete-route.sql": {
+    "mtime": 1780704379.511116,
+    "ast_hash": "a09d189532a8da489f86f6e3fa3090cd",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/seed-route-simple.sql": {
+    "mtime": 1780704379.511116,
+    "ast_hash": "eba80a31e62d857c743d8785f87bbdd8",
+    "semantic_hash": ""
+  },
+  "supabase/run-seed-complete.js": {
+    "mtime": 1780704379.5169659,
+    "ast_hash": "f4b08b4fe8da0b3698b5418f4aa5af1d",
+    "semantic_hash": ""
+  },
+  "supabase/seed-complete-route.js": {
+    "mtime": 1780704379.5169659,
+    "ast_hash": "c05728e1d2e8023973b9c72e4cb46668",
+    "semantic_hash": ""
+  },
+  "supabase/seed-indicators.js": {
+    "mtime": 1780704379.5185692,
+    "ast_hash": "d32fbb0514f15b2327ec09645112a2a8",
+    "semantic_hash": ""
+  },
+  "supabase/seed-runner.js": {
+    "mtime": 1780704379.5185692,
+    "ast_hash": "f90a45b596eb0b331fbf8e0141fe84c8",
+    "semantic_hash": ""
+  },
+  "tests/integration/wizardInscripcion.flow.test.js": {
+    "mtime": 1780704379.5256538,
+    "ast_hash": "9b955244b29fa045328147a143889631",
+    "semantic_hash": ""
+  },
+  "tests/modules/academic-admin/academicAdminApi.test.js": {
+    "mtime": 1780704379.5310857,
+    "ast_hash": "f8fa067481e93d9cb88c9e00e3b6c579",
+    "semantic_hash": ""
+  },
+  "tests/modules/alumnos/googleFormApi.test.js": {
+    "mtime": 1780704379.5314116,
+    "ast_hash": "993005f7efff31bd8e1c3516ffdd4382",
+    "semantic_hash": ""
+  },
+  "tests/modules/horario-builder/schedulingEngine.test.js": {
+    "mtime": 1780704379.543558,
+    "ast_hash": "026fdabfed26f16785a0316fe182ba13",
+    "semantic_hash": ""
+  },
+  "tests/modules/maestros/maestrosApi.test.js": {
+    "mtime": 1780704379.543558,
+    "ast_hash": "302d132593936f96b7df54c095123ee4",
+    "semantic_hash": ""
+  },
+  "tests/modules/planificacion/claseEmergenteModal.test.js": {
+    "mtime": 1780704379.5510821,
+    "ast_hash": "2f7cca727748894f5b00b10509a8b488",
+    "semantic_hash": ""
+  },
+  "tests/portal-maestros/academicService.test.js": {
+    "mtime": 1780704379.552393,
+    "ast_hash": "07444851b78e7b5a9c2985bd3fd27d25",
+    "semantic_hash": ""
+  },
+  "tests/portal-maestros/asistenciaView.test.js": {
+    "mtime": 1780704379.5600412,
+    "ast_hash": "e7ac0660222bb886a49512ae68668cb3",
+    "semantic_hash": ""
+  },
+  "tests/portal-maestros/authCoexistencia.test.js": {
+    "mtime": 1780704379.5658634,
+    "ast_hash": "1b7a9bf11841dd5be212d25e555a3fcd",
+    "semantic_hash": ""
+  },
+  "tests/portal-maestros/autoDraftService.test.js": {
+    "mtime": 1780704379.5669968,
+    "ast_hash": "f9106340a04910e83736b1640c16ce53",
+    "semantic_hash": ""
+  },
+  "tests/portal-maestros/classEventService.test.js": {
+    "mtime": 1780704379.5669968,
+    "ast_hash": "4c1d221ca615c4f0e4fa793b35b8e62b",
+    "semantic_hash": ""
+  },
+  "tests/portal-maestros/components.test.js": {
+    "mtime": 1780704379.5669968,
+    "ast_hash": "551fbfb793fa9ad4e7feff5c98b18466",
+    "semantic_hash": ""
+  },
+  "tests/portal-maestros/dslParserAcademic.test.js": {
+    "mtime": 1780704379.5669968,
+    "ast_hash": "4364bdc065fbf242628b2aaad155c0d0",
+    "semantic_hash": ""
+  },
+  "tests/portal-maestros/dslParserAdvanced.test.js": {
+    "mtime": 1780704379.5669968,
+    "ast_hash": "73f1415a1596634f92dc863a9e3f70ae",
+    "semantic_hash": ""
+  },
+  "tests/portal-maestros/evaluationService.test.js": {
+    "mtime": 1780704379.5787294,
+    "ast_hash": "5465f155f864b9bfe13d102cfd8aa503",
+    "semantic_hash": ""
+  },
+  "tests/portal-maestros/hoyViewEmergente.test.js": {
+    "mtime": 1780704379.5833795,
+    "ast_hash": "6249ca2e65950aa174531b292e461387",
+    "semantic_hash": ""
+  },
+  "tests/portal-maestros/maestroAuth.test.js": {
+    "mtime": 1780704379.5833795,
+    "ast_hash": "365b72ea7f0b70ea92128321e40f8209",
+    "semantic_hash": ""
+  },
+  "tests/portal-maestros/mocks/supabaseMock.js": {
+    "mtime": 1780704379.5833795,
+    "ast_hash": "b97af892fa80cc475bb4aef235e465f1",
+    "semantic_hash": ""
+  },
+  "tests/portal-maestros/offlineQueue.test.js": {
+    "mtime": 1780704379.5865054,
+    "ast_hash": "b2feffc03ec2eb6b7512810e8723b5d9",
+    "semantic_hash": ""
+  },
+  "tests/portal-maestros/permisosColaboracion.test.js": {
+    "mtime": 1780704379.5865054,
+    "ast_hash": "1240ab7a6847342a09ae1b57a8cd425c",
+    "semantic_hash": ""
+  },
+  "tests/portal-maestros/portalRouter.test.js": {
+    "mtime": 1780704379.5897286,
+    "ast_hash": "ff66fabafa7d600d33dd88cf0f1a42a8",
+    "semantic_hash": ""
+  },
+  "tests/portal-maestros/setup.js": {
+    "mtime": 1780704379.5927958,
+    "ast_hash": "9ee749185efc0458a623a8ab690879b5",
+    "semantic_hash": ""
+  },
+  "tests/portal-maestros/utils/testDataFactory.js": {
+    "mtime": 1780704379.5927958,
+    "ast_hash": "01bd4e762f0b2001ecda133970b312fc",
+    "semantic_hash": ""
+  },
+  "tests/unit/alumnos/api/alumnosMock.wizard.test.js": {
+    "mtime": 1780704379.5963786,
+    "ast_hash": "84815dbb1978e8f76fd2aae27652f64e",
+    "semantic_hash": ""
+  },
+  "tests/unit/alumnos/api/alumnosSupabase.wizard.contract.test.js": {
+    "mtime": 1780704379.5963786,
+    "ast_hash": "a0f1741cff4d81d4f24414ade4d9c1ac",
+    "semantic_hash": ""
+  },
+  "tests/unit/alumnos/api/postuladosMock.test.js": {
+    "mtime": 1780704379.598972,
+    "ast_hash": "ba028b7996ece0b9abe034e7cbbd5dd2",
+    "semantic_hash": ""
+  },
+  "tests/unit/alumnos/api/postulantesMock.test.js": {
+    "mtime": 1780704379.598972,
+    "ast_hash": "89c719c6a414e79e096706e3e0324bb5",
+    "semantic_hash": ""
+  },
+  "tests/unit/alumnos/domain/calcularEdad.test.js": {
+    "mtime": 1780704379.598972,
+    "ast_hash": "4a2e1b228a2ff0dac474f2a866b786f1",
+    "semantic_hash": ""
+  },
+  "tests/unit/alumnos/domain/generarPdfPostulados.test.js": {
+    "mtime": 1780704379.598972,
+    "ast_hash": "fa7bb07db0e8f57d668e21c4983a2230",
+    "semantic_hash": ""
+  },
+  "tests/unit/alumnos/domain/iniciacionMusicalPolicy.test.js": {
+    "mtime": 1780704379.598972,
+    "ast_hash": "8bd45c3e00d011df8593d097f767b9e9",
+    "semantic_hash": ""
+  },
+  "tests/unit/alumnos/domain/inscripcionDraftSchema.test.js": {
+    "mtime": 1780704379.598972,
+    "ast_hash": "1ff7b6aa2e622ce1cd92d9e11a1f2fb5",
+    "semantic_hash": ""
+  },
+  "tests/unit/alumnos/domain/inscripcionValidators.test.js": {
+    "mtime": 1780704379.6103406,
+    "ast_hash": "e576a504494ff4eafeb3fd226ba68506",
+    "semantic_hash": ""
+  },
+  "tests/unit/alumnos/domain/postuladoStateMachine.test.js": {
+    "mtime": 1780704379.6133847,
+    "ast_hash": "0cd35ff6933a4ed0417e0a566cf92195",
+    "semantic_hash": ""
+  },
+  "tests/unit/alumnos/wizard/draftStorage.test.js": {
+    "mtime": 1780704379.6181617,
+    "ast_hash": "be4ab3954120a2442d9b28e3a9878127",
+    "semantic_hash": ""
+  },
+  "tests/unit/alumnos/wizard/wizardStateMachine.test.js": {
+    "mtime": 1780704379.6181617,
+    "ast_hash": "3b2cdc64fde57e0a4a5e98ffc7d2ae52",
+    "semantic_hash": ""
+  },
+  "vite.config.js": {
+    "mtime": 1780704379.6239643,
+    "ast_hash": "0490023bb2be9a39d34f0eb525e7a846",
+    "semantic_hash": ""
+  },
+  "vitest.config.js": {
+    "mtime": 1780704379.626788,
+    "ast_hash": "6f0df7f255bc257e892d8826d4fb8914",
+    "semantic_hash": ""
+  },
+  ".github/workflows/ci.yml": {
+    "mtime": 1780704377.8596933,
+    "ast_hash": "1240af7cb7ebfa456fbed95907a891a7",
+    "semantic_hash": ""
+  },
+  ".github/workflows/deploy.yml": {
+    "mtime": 1780704377.8596933,
+    "ast_hash": "aa10b9d6b8fc8a88b7d092431284ef6f",
+    "semantic_hash": ""
+  },
+  ".github/workflows/docker.yml": {
+    "mtime": 1780704377.8619359,
+    "ast_hash": "d44e4ba3aadc54178e6351a87f910aa7",
+    "semantic_hash": ""
+  },
+  "AGENTS.md": {
+    "mtime": 1780704377.865475,
+    "ast_hash": "a957d565863a512fbcebd87bfc596897",
+    "semantic_hash": ""
+  },
+  "CONTRIBUTING.md": {
+    "mtime": 1780704377.865475,
+    "ast_hash": "d6d8cfe6f47ea3b0556ca7da3764cfbd",
+    "semantic_hash": ""
+  },
+  "PLAN_PLANIFICACION_ACADEMICA.md": {
+    "mtime": 1780704377.865475,
+    "ast_hash": "a5935bdf11758a3bff7f05a542b3f713",
+    "semantic_hash": ""
+  },
+  "README.md": {
+    "mtime": 1780704377.8720744,
+    "ast_hash": "9f490ffbaddc2a9f1b35dbd928e37abe",
+    "semantic_hash": ""
+  },
+  "admin.html": {
+    "mtime": 1780704377.8720744,
+    "ast_hash": "217153013141b9d45eae64af8c7703f1",
+    "semantic_hash": ""
+  },
+  "app.html": {
+    "mtime": 1780704377.8720744,
+    "ast_hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "semantic_hash": ""
+  },
+  "docker-compose.yml": {
+    "mtime": 1780704377.8747013,
+    "ast_hash": "5539ec3a445048b647b2f829d3361522",
+    "semantic_hash": ""
+  },
+  "docs/ABSENCE_SYSTEM_TESTING.md": {
+    "mtime": 1780704377.8767176,
+    "ast_hash": "7a51866fd7eebf59f55b2f239f061830",
+    "semantic_hash": ""
+  },
+  "docs/API_REFERENCE.md": {
+    "mtime": 1780704377.8767176,
+    "ast_hash": "decd89a15c637daf903cb4304f5cfb4f",
+    "semantic_hash": ""
+  },
+  "docs/ARCHITECTURE.md": {
+    "mtime": 1780704377.8787303,
+    "ast_hash": "8213dca0455cbb55832aa84e5672d972",
+    "semantic_hash": ""
+  },
+  "docs/COMPLIANCE.md": {
+    "mtime": 1780704377.880127,
+    "ast_hash": "0bf932e6a013585af30ac77df4dcefc6",
+    "semantic_hash": ""
+  },
+  "docs/DEPLOYMENT.md": {
+    "mtime": 1780704377.880127,
+    "ast_hash": "481c71753927f9fe44f05c2665c5919f",
+    "semantic_hash": ""
+  },
+  "docs/DEVELOPER.md": {
+    "mtime": 1780704377.8821437,
+    "ast_hash": "86ea1d2668c10b6e2e485da0b1278b80",
+    "semantic_hash": ""
+  },
+  "docs/NOTIFICATION_TRIGGER_VERIFICATION.md": {
+    "mtime": 1780704377.8821437,
+    "ast_hash": "bf10dcc485d5e65c7d1ffa7603e83f37",
+    "semantic_hash": ""
+  },
+  "docs/SECURITY.md": {
+    "mtime": 1780704377.8839047,
+    "ast_hash": "41911de55f0ab71c9c7092599c01c16a",
+    "semantic_hash": ""
+  },
+  "docs/USER_GUIDE.md": {
+    "mtime": 1780704377.8839047,
+    "ast_hash": "89bb711d21c978195ee84ea0557c5253",
+    "semantic_hash": ""
+  },
+  "docs/planning/AGENTES-ESPECIALIZADOS.md": {
+    "mtime": 1780704377.8880432,
+    "ast_hash": "2253e233ddfc3506b8e1f5ef1e2b3a5c",
+    "semantic_hash": ""
+  },
+  "docs/planning/CLAUDE.md": {
+    "mtime": 1780704377.8880432,
+    "ast_hash": "00f41a82beb4165e3913487a9e3f5842",
+    "semantic_hash": ""
+  },
+  "docs/planning/DESIGN.md": {
+    "mtime": 1780704377.8880432,
+    "ast_hash": "9022068e696b65b01833d8c8fb2900ad",
+    "semantic_hash": ""
+  },
+  "docs/planning/DIAGNOSTICO_RLS_STRATEGY.md": {
+    "mtime": 1780704377.8944201,
+    "ast_hash": "7e8ad5018b70485ed26dac099b694960",
+    "semantic_hash": ""
+  },
+  "docs/planning/DIAGNOSTICO_RUTA_GAMIFICADA.md": {
+    "mtime": 1780704377.8944201,
+    "ast_hash": "c6eda3cdf710e74a08cb15fcd1a879dd",
+    "semantic_hash": ""
+  },
+  "docs/planning/GEMINI.md": {
+    "mtime": 1780704377.8944201,
+    "ast_hash": "92c14bbd1c8ec0ce2fb64adfc09d284d",
+    "semantic_hash": ""
+  },
+  "docs/planning/IMPLEMENTATION_PLAN.md": {
+    "mtime": 1780704377.8975062,
+    "ast_hash": "1e174465192113f234eb1c3088d539ad",
+    "semantic_hash": ""
+  },
+  "docs/planning/IMPLEMENTATION_SUMMARY.md": {
+    "mtime": 1780704377.8975062,
+    "ast_hash": "c36d24ba080d006578b804d4addc5bce",
+    "semantic_hash": ""
+  },
+  "docs/planning/MODULES_SPECIFICATION.md": {
+    "mtime": 1780704377.8975062,
+    "ast_hash": "0575098de2e65d95a338f25e1695f97c",
+    "semantic_hash": ""
+  },
+  "docs/planning/NEW_SKILL_SOI_DIGITAL.md": {
+    "mtime": 1780704377.8975062,
+    "ast_hash": "448f6cbc107dea2926a16012c9b994c0",
+    "semantic_hash": ""
+  },
+  "docs/planning/ORQUESTRADOR.md": {
+    "mtime": 1780704377.8975062,
+    "ast_hash": "69293f943024063dda911fe69126272d",
+    "semantic_hash": ""
+  },
+  "docs/planning/PHASE_COMPLETION_CHECKLIST.md": {
+    "mtime": 1780704377.8975062,
+    "ast_hash": "136e69ae6afd1e10d1640bdfcb8dbda9",
+    "semantic_hash": ""
+  },
+  "docs/planning/QUICK_START.md": {
+    "mtime": 1780704377.8975062,
+    "ast_hash": "9002546cf084a8827f4b608c0af45f0e",
+    "semantic_hash": ""
+  },
+  "docs/planning/RESOLUCION_ERRORES_CONSOLE.md": {
+    "mtime": 1780704377.9042375,
+    "ast_hash": "4cb21e556089a607067aff3388d8210c",
+    "semantic_hash": ""
+  },
+  "docs/planning/SETUP_README.md": {
+    "mtime": 1780704377.9042375,
+    "ast_hash": "f5930aee5b8988762a80436e3ea211b7",
+    "semantic_hash": ""
+  },
+  "docs/skills/doc-coauthoring.md": {
+    "mtime": 1780704377.9097865,
+    "ast_hash": "448f6cbc107dea2926a16012c9b994c0",
+    "semantic_hash": ""
+  },
+  "docs/specs/postulados-feature.md": {
+    "mtime": 1780704377.9097865,
+    "ast_hash": "3880e3f1dc16d07fc8eedcc8b42fb0f0",
+    "semantic_hash": ""
+  },
+  "docs/superpowers/HANDOFF.md": {
+    "mtime": 1780704377.9177918,
+    "ast_hash": "46ac54411105e0080b37a31d7e7f7206",
+    "semantic_hash": ""
+  },
+  "docs/superpowers/plans/2026-05-05-portal-maestros-f1.md": {
+    "mtime": 1780704377.9195445,
+    "ast_hash": "109bc11d5962f6cbb041cbefabaf6f06",
+    "semantic_hash": ""
+  },
+  "docs/superpowers/plans/2026-05-05-portal-maestros-f2.md": {
+    "mtime": 1780704377.9195445,
+    "ast_hash": "f0eb160f842a303d06e624bdb5877526",
+    "semantic_hash": ""
+  },
+  "docs/superpowers/plans/2026-05-05-portal-maestros-f3.md": {
+    "mtime": 1780704377.9195445,
+    "ast_hash": "962f9be2f75cc3fd33d7b4605799bf6f",
+    "semantic_hash": ""
+  },
+  "docs/superpowers/plans/2026-05-05-portal-maestros-f4.md": {
+    "mtime": 1780704377.9195445,
+    "ast_hash": "2713a5139e6c053c1160245b869aaea6",
+    "semantic_hash": ""
+  },
+  "docs/superpowers/plans/2026-05-05-portal-maestros-f5.md": {
+    "mtime": 1780704377.9195445,
+    "ast_hash": "c0fd777a19ac646de4040285519565cb",
+    "semantic_hash": ""
+  },
+  "docs/superpowers/plans/2026-05-07-academic-module-plan.md": {
+    "mtime": 1780704377.9195445,
+    "ast_hash": "5972d24f213b084e520f3264b5d33d8d",
+    "semantic_hash": ""
+  },
+  "docs/superpowers/plans/2026-05-07-violin-path-class-content-plan.md": {
+    "mtime": 1780704377.9195445,
+    "ast_hash": "153ad70817f6f693f0dc3a10ba51fc7f",
+    "semantic_hash": ""
+  },
+  "docs/superpowers/plans/2026-05-09-ruta-contenidos-player.md": {
+    "mtime": 1780704377.9195445,
+    "ast_hash": "4aa45207e6cf4986f7825e0de8e7da4f",
+    "semantic_hash": ""
+  },
+  "docs/superpowers/plans/2026-05-10-portal-professionalization-plan.md": {
+    "mtime": 1780704377.9195445,
+    "ast_hash": "689d5d2f56ec440e6820ce1d618f91bf",
+    "semantic_hash": ""
+  },
+  "docs/superpowers/plans/2026-05-10-ruta-gamificada-plan.md": {
+    "mtime": 1780704377.9195445,
+    "ast_hash": "aa20bd87cd3df320686f25ed2a4ddfdb",
+    "semantic_hash": ""
+  },
+  "docs/superpowers/plans/2026-05-20-critical-attendance-bugs-fix.md": {
+    "mtime": 1780704377.9195445,
+    "ast_hash": "9c3e428dd000f17062f19ab5e056e919",
+    "semantic_hash": ""
+  },
+  "docs/superpowers/plans/2026-05-20-notification-trigger-plan.md": {
+    "mtime": 1780704377.9195445,
+    "ast_hash": "2e78a6835646bbd7eb9a4e9f2f6fd362",
+    "semantic_hash": ""
+  },
+  "docs/superpowers/plans/2026-05-20-solicitud-ausencias-plan.md": {
+    "mtime": 1780704377.9195445,
+    "ast_hash": "778170ea0edbc5b0cbdbf3a5bb194e0d",
+    "semantic_hash": ""
+  },
+  "docs/superpowers/plans/2026-05-21-intelligent-attendance-notifications.md": {
+    "mtime": 1780704377.9352076,
+    "ast_hash": "3a45d5e3a10d712e4f61df4e9e2835c4",
+    "semantic_hash": ""
+  },
+  "docs/superpowers/plans/2026-05-23-help-panel.md": {
+    "mtime": 1780704377.9359884,
+    "ast_hash": "f888049495bde014dc78af8d6f50794e",
+    "semantic_hash": ""
+  },
+  "docs/superpowers/plans/2026-05-23-modulo-pedagogico.md": {
+    "mtime": 1780704377.9359884,
+    "ast_hash": "34f8812b07a894f975fe1e1893c95076",
+    "semantic_hash": ""
+  },
+  "docs/superpowers/plans/2026-05-23-planificacion-curricular-ia.md": {
+    "mtime": 1780704377.9359884,
+    "ast_hash": "c0fb6bc1ce2f75f30564be57455e0f3a",
+    "semantic_hash": ""
+  },
+  "docs/superpowers/plans/2026-05-25-curriculum-proposal.md": {
+    "mtime": 1780704377.9359884,
+    "ast_hash": "836ffe72e5f894bc47f1762b24642e48",
+    "semantic_hash": ""
+  },
+  "docs/superpowers/plans/2026-05-25-dsl-progress-foundation.md": {
+    "mtime": 1780704377.9359884,
+    "ast_hash": "f4a48f1b8524c124246e2c3d1abb757e",
+    "semantic_hash": ""
+  },
+  "docs/superpowers/plans/2026-05-25-horario-builder-redesign.md": {
+    "mtime": 1780704377.9433784,
+    "ast_hash": "0009266962de4ee039f8a1c32d4b9b40",
+    "semantic_hash": ""
+  },
+  "docs/superpowers/plans/2026-05-25-institutional-reports.md": {
+    "mtime": 1780704377.945395,
+    "ast_hash": "c4957775099b72ba02e00a1624fec346",
+    "semantic_hash": ""
+  },
+  "docs/superpowers/plans/2026-05-25-reliability-sprint.md": {
+    "mtime": 1780704377.945395,
+    "ast_hash": "ba79b8a18f3d46dc278d6898d2445d40",
+    "semantic_hash": ""
+  },
+  "docs/superpowers/plans/2026-05-25-retroactive-objetivo-linking.md": {
+    "mtime": 1780704377.945395,
+    "ast_hash": "322aa88007e8d6625901a94e784fbd30",
+    "semantic_hash": ""
+  },
+  "docs/superpowers/plans/2026-05-25-session-summary-panel.md": {
+    "mtime": 1780704377.945395,
+    "ast_hash": "141c83356519f12477bf0fe253af4398",
+    "semantic_hash": ""
+  },
+  "docs/superpowers/plans/2026-05-27-plan-estudios-alumno.md": {
+    "mtime": 1780704377.945395,
+    "ast_hash": "d7e09dbf442a2c18cc6e9071a29c515d",
+    "semantic_hash": ""
+  },
+  "docs/superpowers/plans/2026-05-30-emergente-auto-justificacion.md": {
+    "mtime": 1780704377.9508464,
+    "ast_hash": "86ed4c0a5f028b0b4c92f701192efa22",
+    "semantic_hash": ""
+  },
+  "docs/superpowers/plans/2026-05-30-rutas-contenido-pedagogia.md": {
+    "mtime": 1780704377.9508464,
+    "ast_hash": "1fbb46135fae01ccb4104a22f59a01ff",
+    "semantic_hash": ""
+  },
+  "docs/superpowers/specs/2026-05-04-portal-maestros-design.md": {
+    "mtime": 1780704377.9508464,
+    "ast_hash": "bbbebf608515e2ab295e19819ba1ccaa",
+    "semantic_hash": ""
+  },
+  "docs/superpowers/specs/2026-05-07-academic-module-design.md": {
+    "mtime": 1780704377.9559627,
+    "ast_hash": "313a8fb0de02c6165a5b62bee820dddf",
+    "semantic_hash": ""
+  },
+  "docs/superpowers/specs/2026-05-10-notification-system-improvements.md": {
+    "mtime": 1780704377.9559627,
+    "ast_hash": "4252e878d5229437953191fb780a5f4c",
+    "semantic_hash": ""
+  },
+  "docs/superpowers/specs/2026-05-10-portal-professionalization.md": {
+    "mtime": 1780704377.9559627,
+    "ast_hash": "2f933d4d9d607a9782753df769c199f0",
+    "semantic_hash": ""
+  },
+  "docs/superpowers/specs/2026-05-10-ruta-gamificada-spec.md": {
+    "mtime": 1780704377.9559627,
+    "ast_hash": "c68109c97a06b9fcd063ba076b9557b8",
+    "semantic_hash": ""
+  },
+  "docs/superpowers/specs/2026-05-20-notification-trigger-design.md": {
+    "mtime": 1780704377.9559627,
+    "ast_hash": "f29810664606cdd7dfbee0ff7efe0b61",
+    "semantic_hash": ""
+  },
+  "docs/superpowers/specs/2026-05-20-solicitud-ausencias-dise\u00f1o.md": {
+    "mtime": 1780704377.9613729,
+    "ast_hash": "227ad6e68ba42e4ee3d70cbb52a0c7ff",
+    "semantic_hash": ""
+  },
+  "docs/superpowers/specs/2026-05-23-planificacion-curricular-ia.md": {
+    "mtime": 1780704377.9613729,
+    "ast_hash": "da358acba2387b46ccad8338e9a1e2d8",
+    "semantic_hash": ""
+  },
+  "docs/superpowers/specs/2026-05-25-curriculum-proposal-design.md": {
+    "mtime": 1780704377.9613729,
+    "ast_hash": "80a713214c17caef174e905ed4264c11",
+    "semantic_hash": ""
+  },
+  "docs/superpowers/specs/2026-05-25-dsl-progress-foundation.md": {
+    "mtime": 1780704377.9613729,
+    "ast_hash": "1e8705c4f8c4d3c410ba062701cc9f6c",
+    "semantic_hash": ""
+  },
+  "docs/superpowers/specs/2026-05-25-horario-builder-redesign.md": {
+    "mtime": 1780704377.9668405,
+    "ast_hash": "63ea07721de515fd25b473b78d8542bc",
+    "semantic_hash": ""
+  },
+  "docs/superpowers/specs/2026-05-25-institutional-reports-design.md": {
+    "mtime": 1780704377.9668405,
+    "ast_hash": "e99e70410f42bb23002d5f184b03333c",
+    "semantic_hash": ""
+  },
+  "docs/superpowers/specs/2026-05-25-reliability-sprint-design.md": {
+    "mtime": 1780704377.9668405,
+    "ast_hash": "cce19580cd57c8bf24a2ba976268af24",
+    "semantic_hash": ""
+  },
+  "docs/superpowers/specs/2026-05-25-retroactive-objetivo-linking-design.md": {
+    "mtime": 1780704377.9668405,
+    "ast_hash": "4d6f2615ead39c410853954b673ec6e0",
+    "semantic_hash": ""
+  },
+  "docs/superpowers/specs/2026-05-25-session-summary-panel-design.md": {
+    "mtime": 1780704377.9668405,
+    "ast_hash": "ceab6a6664b5171edd71a8749130bb53",
+    "semantic_hash": ""
+  },
+  "docs/superpowers/specs/2026-05-30-emergente-auto-justificacion-design.md": {
+    "mtime": 1780704377.9668405,
+    "ast_hash": "4acfffe444b2cb7f01feb6d87e91229c",
+    "semantic_hash": ""
+  },
+  "docs/superpowers/specs/2026-05-30-rutas-contenido-pedagogia-design.md": {
+    "mtime": 1780704377.9668405,
+    "ast_hash": "d0a807c69806c261fb61060cfe82c1ae",
+    "semantic_hash": ""
+  },
+  "index.html": {
+    "mtime": 1780704378.002162,
+    "ast_hash": "cd7da497359764ebd2dc0d558a0fed5a",
+    "semantic_hash": ""
+  },
+  "maestros.html": {
+    "mtime": 1780704378.0035317,
+    "ast_hash": "5cca53c99fa66eeac983aad6580df5a1",
+    "semantic_hash": ""
+  },
+  "openspec/changes/archive/2026-05-16-actualizacion-portales/archive-report.md": {
+    "mtime": 1780704378.006597,
+    "ast_hash": "cf5bb20b4df5802f14bf1dbb6e7e8533",
+    "semantic_hash": ""
+  },
+  "openspec/changes/archive/2026-05-16-actualizacion-portales/design.md": {
+    "mtime": 1780704378.006597,
+    "ast_hash": "667f4433835cff5a78ea4faae5edbe51",
+    "semantic_hash": ""
+  },
+  "openspec/changes/archive/2026-05-16-actualizacion-portales/proposal.md": {
+    "mtime": 1780704378.006597,
+    "ast_hash": "84c52b56bd11f762edbf36cd39ffd496",
+    "semantic_hash": ""
+  },
+  "openspec/changes/archive/2026-05-16-actualizacion-portales/spec-notifications.md": {
+    "mtime": 1780704378.013426,
+    "ast_hash": "da7bed6a23fea67f7ce409f7f3348e2c",
+    "semantic_hash": ""
+  },
+  "openspec/changes/archive/2026-05-16-actualizacion-portales/spec-professionalization.md": {
+    "mtime": 1780704378.013426,
+    "ast_hash": "fd8494117f3b5796c909eaa365b9dc07",
+    "semantic_hash": ""
+  },
+  "openspec/changes/archive/2026-05-16-actualizacion-portales/spec-ruta-player.md": {
+    "mtime": 1780704378.0144348,
+    "ast_hash": "20135e6cc31074b8ce7956d1e47e89f2",
+    "semantic_hash": ""
+  },
+  "openspec/changes/archive/2026-05-16-actualizacion-portales/tasks.md": {
+    "mtime": 1780704378.0158193,
+    "ast_hash": "4ba084d3b9d57d59c2b6c78dd2ea961f",
+    "semantic_hash": ""
+  },
+  "openspec/changes/archive/2026-05-16-uxui-polish/archive-report.md": {
+    "mtime": 1780704378.0183434,
+    "ast_hash": "2b5df56887d82f3f0e9526c4d8ecb540",
+    "semantic_hash": ""
+  },
+  "openspec/changes/archive/2026-05-16-uxui-polish/proposal.md": {
+    "mtime": 1780704378.0183434,
+    "ast_hash": "e7ed0235d2f3b59ad3b07a8d7620da8d",
+    "semantic_hash": ""
+  },
+  "openspec/changes/archive/2026-05-16-uxui-polish/tasks.md": {
+    "mtime": 1780704378.0183434,
+    "ast_hash": "51696f2d61ff77a9db39da665e626fc0",
+    "semantic_hash": ""
+  },
+  "openspec/changes/archive/2026-05-17-auth-rls-rearchitecture/archive-report.md": {
+    "mtime": 1780704378.0226183,
+    "ast_hash": "e276043c1a8bf95b0cb7f0fa94a30206",
+    "semantic_hash": ""
+  },
+  "openspec/changes/archive/2026-05-17-auth-rls-rearchitecture/design.md": {
+    "mtime": 1780704378.0239236,
+    "ast_hash": "61ab9fc596bd997af28b346888a95362",
+    "semantic_hash": ""
+  },
+  "openspec/changes/archive/2026-05-17-auth-rls-rearchitecture/proposal.md": {
+    "mtime": 1780704378.0247693,
+    "ast_hash": "fb442213b96fe9703f024227574efcf2",
+    "semantic_hash": ""
+  },
+  "openspec/changes/archive/2026-05-17-auth-rls-rearchitecture/spec.md": {
+    "mtime": 1780704378.0247693,
+    "ast_hash": "d48c869b5a30b51701b127fe82121d5d",
+    "semantic_hash": ""
+  },
+  "openspec/changes/archive/2026-05-17-auth-rls-rearchitecture/tasks.md": {
+    "mtime": 1780704378.0247693,
+    "ast_hash": "ee828eee0ac6d486114e5b82cf15b5e5",
+    "semantic_hash": ""
+  },
+  "openspec/changes/archive/2026-05-17-auth-rls-rearchitecture/verify-report.md": {
+    "mtime": 1780704378.0293436,
+    "ast_hash": "66b5598b19affb1457180823addca14b",
+    "semantic_hash": ""
+  },
+  "openspec/changes/archive/2026-05-17-registro-alumnos/archive-report.md": {
+    "mtime": 1780704378.030951,
+    "ast_hash": "9de0a2a7cbbc047ac0f345e2838720b1",
+    "semantic_hash": ""
+  },
+  "openspec/changes/archive/2026-05-17-registro-alumnos/design.md": {
+    "mtime": 1780704378.032032,
+    "ast_hash": "6f7c9fb9d1b2f5efbf13bb281c6402cd",
+    "semantic_hash": ""
+  },
+  "openspec/changes/archive/2026-05-17-registro-alumnos/proposal.md": {
+    "mtime": 1780704378.03257,
+    "ast_hash": "8b38110886da1a6db838691fdfd2d471",
+    "semantic_hash": ""
+  },
+  "openspec/changes/archive/2026-05-17-registro-alumnos/specs/student-registration/spec.md": {
+    "mtime": 1780704378.0348408,
+    "ast_hash": "a175e2fdb93ed00631f4b72fa8a4843b",
+    "semantic_hash": ""
+  },
+  "openspec/changes/archive/2026-05-17-registro-alumnos/specs/teacher-permissions/spec.md": {
+    "mtime": 1780704378.0368547,
+    "ast_hash": "c1c5d546e3c1d9d1de5f609e50bfa6b4",
+    "semantic_hash": ""
+  },
+  "openspec/changes/archive/2026-05-17-registro-alumnos/tasks.md": {
+    "mtime": 1780704378.038927,
+    "ast_hash": "19b2bfa53e14e62f954f2d085e26363c",
+    "semantic_hash": ""
+  },
+  "openspec/changes/archive/2026-05-17-rls-permisos-maestros/archive-report.md": {
+    "mtime": 1780704378.0408008,
+    "ast_hash": "2ebe3cc0e58ddb4db06d0e1c84f9621b",
+    "semantic_hash": ""
+  },
+  "openspec/changes/archive/2026-05-17-rls-permisos-maestros/design.md": {
+    "mtime": 1780704378.0408008,
+    "ast_hash": "30ef163412479e6309cf16287eeb025b",
+    "semantic_hash": ""
+  },
+  "openspec/changes/archive/2026-05-17-rls-permisos-maestros/proposal.md": {
+    "mtime": 1780704378.0428145,
+    "ast_hash": "b05c0c4e78dc0cabec69e209399d2bdf",
+    "semantic_hash": ""
+  },
+  "openspec/changes/archive/2026-05-17-rls-permisos-maestros/spec.md": {
+    "mtime": 1780704378.0428145,
+    "ast_hash": "4d6fccd3d7f32a4ed55d4a49166c68b3",
+    "semantic_hash": ""
+  },
+  "openspec/changes/archive/2026-05-17-rls-permisos-maestros/tasks.md": {
+    "mtime": 1780704378.0448284,
+    "ast_hash": "5c421adc4b235978cf39f9a6784d69ce",
+    "semantic_hash": ""
+  },
+  "openspec/changes/archive/2026-05-17-rls-permisos-maestros/verify-report.md": {
+    "mtime": 1780704378.0463374,
+    "ast_hash": "f909e5a974eee80c20a98d0ec4a8625c",
+    "semantic_hash": ""
+  },
+  "openspec/changes/archive/2026-05-17-ruta-gamificada-integration/archive-report.md": {
+    "mtime": 1780704378.1091995,
+    "ast_hash": "8157cfc0f5394780f63354a954bec0ad",
+    "semantic_hash": ""
+  },
+  "openspec/changes/archive/2026-05-17-ruta-gamificada-integration/design.md": {
+    "mtime": 1780704378.1091995,
+    "ast_hash": "e08342949013d454fd048b1b5313c0d8",
+    "semantic_hash": ""
+  },
+  "openspec/changes/archive/2026-05-17-ruta-gamificada-integration/proposal.md": {
+    "mtime": 1780704378.1091995,
+    "ast_hash": "66394691387777e96a79e4e233f27e77",
+    "semantic_hash": ""
+  },
+  "openspec/changes/archive/2026-05-17-ruta-gamificada-integration/specs/ruta-player-view/spec.md": {
+    "mtime": 1780704378.121069,
+    "ast_hash": "1a16f5f5d5d36d180d1c3bac49e2c6d9",
+    "semantic_hash": ""
+  },
+  "openspec/changes/archive/2026-05-17-ruta-gamificada-integration/tasks.md": {
+    "mtime": 1780704378.121069,
+    "ast_hash": "b757367af0c54e7c0a8df935d927e1f2",
+    "semantic_hash": ""
+  },
+  "openspec/changes/archive/2026-05-17-ruta-gamificada-integration/verify-report.md": {
+    "mtime": 1780704378.121069,
+    "ast_hash": "ad8c8d5903eff5b1e1f6aea11e4e6667",
+    "semantic_hash": ""
+  },
+  "openspec/changes/archive/2026-05-17-wcag-aa-accessibility-audit/archive-report.md": {
+    "mtime": 1780704378.1252544,
+    "ast_hash": "eaa6a0eaa76d3728769587c8b614a4b9",
+    "semantic_hash": ""
+  },
+  "openspec/changes/archive/2026-05-17-wcag-aa-accessibility-audit/design.md": {
+    "mtime": 1780704378.1252544,
+    "ast_hash": "c7aa28f590ed4ec04efcc3b0ab02222f",
+    "semantic_hash": ""
+  },
+  "openspec/changes/archive/2026-05-17-wcag-aa-accessibility-audit/proposal.md": {
+    "mtime": 1780704378.1252544,
+    "ast_hash": "e998dd3716b122e7e01bc12e75cf7d24",
+    "semantic_hash": ""
+  },
+  "openspec/changes/archive/2026-05-17-wcag-aa-accessibility-audit/spec.md": {
+    "mtime": 1780704378.1252544,
+    "ast_hash": "7609a137f935456c8f9da8e23c5266d2",
+    "semantic_hash": ""
+  },
+  "openspec/changes/archive/2026-05-17-wcag-aa-accessibility-audit/tasks.md": {
+    "mtime": 1780704378.1252544,
+    "ast_hash": "c42fdd128bd2f0c9e671ae4f9ad30fcb",
+    "semantic_hash": ""
+  },
+  "openspec/changes/archive/2026-05-17-wcag-aa-accessibility-audit/verify-report.md": {
+    "mtime": 1780704378.1252544,
+    "ast_hash": "a3634deeda94095922ad82a86ac2f549",
+    "semantic_hash": ""
+  },
+  "openspec/changes/archive/2026-05-18-modulo-asistencias-standardization/archive-report.md": {
+    "mtime": 1780704378.1252544,
+    "ast_hash": "c1625f58a6573996820922a022e0787b",
+    "semantic_hash": ""
+  },
+  "openspec/changes/archive/2026-05-18-modulo-asistencias-standardization/design.md": {
+    "mtime": 1780704378.1252544,
+    "ast_hash": "adb84d9e4fc59a0673aeb790eb0a1b24",
+    "semantic_hash": ""
+  },
+  "openspec/changes/archive/2026-05-18-modulo-asistencias-standardization/proposal.md": {
+    "mtime": 1780704378.1252544,
+    "ast_hash": "f468d410a99c9fa82e20872a289cfeb4",
+    "semantic_hash": ""
+  },
+  "openspec/changes/archive/2026-05-18-modulo-asistencias-standardization/tasks.md": {
+    "mtime": 1780704378.1252544,
+    "ast_hash": "818e9fff28a3a5918dbdadc62deaaebf",
+    "semantic_hash": ""
+  },
+  "openspec/changes/archive/2026-05-18-modulo-asistencias-standardization/verify-report.md": {
+    "mtime": 1780704378.1252544,
+    "ast_hash": "6a6de9b2ed5c2144563eed10017220fa",
+    "semantic_hash": ""
+  },
+  "openspec/changes/archive/2026-05-18-modulo-clases-completion/archive-report.md": {
+    "mtime": 1780704378.1252544,
+    "ast_hash": "87b5e0c1175ad01ee5a64778eda55b66",
+    "semantic_hash": ""
+  },
+  "openspec/changes/archive/2026-05-18-modulo-clases-completion/design.md": {
+    "mtime": 1780704378.139818,
+    "ast_hash": "c0aed895f75b5c2a5642b0b0d2ddb35c",
+    "semantic_hash": ""
+  },
+  "openspec/changes/archive/2026-05-18-modulo-clases-completion/proposal.md": {
+    "mtime": 1780704378.1411226,
+    "ast_hash": "305c2a1060ba419c371e80e56424e045",
+    "semantic_hash": ""
+  },
+  "openspec/changes/archive/2026-05-18-modulo-clases-completion/tasks.md": {
+    "mtime": 1780704378.1411226,
+    "ast_hash": "24ec2419b5433f1460816959a96b7604",
+    "semantic_hash": ""
+  },
+  "openspec/changes/archive/2026-05-18-modulo-clases-completion/verify-report.md": {
+    "mtime": 1780704378.1436317,
+    "ast_hash": "0d6dd1caa262deec40348a36e1b7dad9",
+    "semantic_hash": ""
+  },
+  "openspec/changes/archive/2026-05-18-modulo-metricas-standardization/archive-report.md": {
+    "mtime": 1780704378.1436317,
+    "ast_hash": "7d41ddb5395b9d61800dbefa32089481",
+    "semantic_hash": ""
+  },
+  "openspec/changes/archive/2026-05-18-modulo-metricas-standardization/design.md": {
+    "mtime": 1780704378.1436317,
+    "ast_hash": "9b0b06a7eab1770962943f7a139a74b5",
+    "semantic_hash": ""
+  },
+  "openspec/changes/archive/2026-05-18-modulo-metricas-standardization/proposal.md": {
+    "mtime": 1780704378.1436317,
+    "ast_hash": "80666ee23c022648f03412a98a3c7cda",
+    "semantic_hash": ""
+  },
+  "openspec/changes/archive/2026-05-18-modulo-metricas-standardization/tasks.md": {
+    "mtime": 1780704378.1436317,
+    "ast_hash": "c01cdbde2ab5480dd68779afd7a73b9e",
+    "semantic_hash": ""
+  },
+  "openspec/changes/archive/2026-05-18-modulo-metricas-standardization/verify-report.md": {
+    "mtime": 1780704378.1436317,
+    "ast_hash": "776a0eb632b1014a786b269484434d0e",
+    "semantic_hash": ""
+  },
+  "openspec/changes/archive/2026-05-18-modulo-observaciones-completion/archive-report.md": {
+    "mtime": 1780704378.1436317,
+    "ast_hash": "4c0d07e8e8369deee78c137ea533f69e",
+    "semantic_hash": ""
+  },
+  "openspec/changes/archive/2026-05-18-modulo-observaciones-completion/design.md": {
+    "mtime": 1780704378.1525276,
+    "ast_hash": "dd7f76716c3a69fb31e6a36c72e87ecf",
+    "semantic_hash": ""
+  },
+  "openspec/changes/archive/2026-05-18-modulo-observaciones-completion/proposal.md": {
+    "mtime": 1780704378.1525276,
+    "ast_hash": "9118000dcb67f6906c5182eca35f3b39",
+    "semantic_hash": ""
+  },
+  "openspec/changes/archive/2026-05-18-modulo-observaciones-completion/tasks.md": {
+    "mtime": 1780704378.1525276,
+    "ast_hash": "ef8c318e93e0561815a6dfa42afcbb26",
+    "semantic_hash": ""
+  },
+  "openspec/changes/archive/2026-05-18-modulo-observaciones-completion/verify-report.md": {
+    "mtime": 1780704378.1558115,
+    "ast_hash": "47ef2431c4392b90fd8d863f3aea048a",
+    "semantic_hash": ""
+  },
+  "openspec/changes/archive/2026-05-18-modulo-planificacion-standardization/archive-report.md": {
+    "mtime": 1780704378.1574361,
+    "ast_hash": "de1eb3dc3f721898a2b8b15a62a09e07",
+    "semantic_hash": ""
+  },
+  "openspec/changes/archive/2026-05-18-modulo-programas-completion/archive-report.md": {
+    "mtime": 1780704378.1574361,
+    "ast_hash": "e123b4e234d94129697df1e5736954ce",
+    "semantic_hash": ""
+  },
+  "openspec/changes/archive/2026-05-18-modulo-programas-completion/design.md": {
+    "mtime": 1780704378.1574361,
+    "ast_hash": "f5742d713e5cc4063979f66dfe6152cf",
+    "semantic_hash": ""
+  },
+  "openspec/changes/archive/2026-05-18-modulo-programas-completion/proposal.md": {
+    "mtime": 1780704378.1574361,
+    "ast_hash": "db85b211bc3cad855c138d86d41a8700",
+    "semantic_hash": ""
+  },
+  "openspec/changes/archive/2026-05-18-modulo-programas-completion/tasks.md": {
+    "mtime": 1780704378.162068,
+    "ast_hash": "d4b8da56834072b7cf843ca7fb8c1aaa",
+    "semantic_hash": ""
+  },
+  "openspec/changes/archive/2026-05-18-modulo-programas-completion/verify-report.md": {
+    "mtime": 1780704378.162068,
+    "ast_hash": "aca80131847ad3fa239a981198018f37",
+    "semantic_hash": ""
+  },
+  "openspec/changes/archive/2026-05-18-modulo-progresos-standardization/archive-report.md": {
+    "mtime": 1780704378.162068,
+    "ast_hash": "7c8d61f878585222f3b038e0428dc9b3",
+    "semantic_hash": ""
+  },
+  "openspec/changes/archive/2026-05-18-modulo-progresos-standardization/design.md": {
+    "mtime": 1780704378.162068,
+    "ast_hash": "594127114ea292a59ab57ded4ae78e4c",
+    "semantic_hash": ""
+  },
+  "openspec/changes/archive/2026-05-18-modulo-progresos-standardization/proposal.md": {
+    "mtime": 1780704378.162068,
+    "ast_hash": "fb161573622776026e233ecf0cc37488",
+    "semantic_hash": ""
+  },
+  "openspec/changes/archive/2026-05-18-modulo-progresos-standardization/tasks.md": {
+    "mtime": 1780704378.162068,
+    "ast_hash": "19a69486bd8716a5cdb7a41c7729c27e",
+    "semantic_hash": ""
+  },
+  "openspec/changes/archive/2026-05-18-modulo-progresos-standardization/verify-report.md": {
+    "mtime": 1780704378.162068,
+    "ast_hash": "de9eda3636844e1d141ab71a65e39b62",
+    "semantic_hash": ""
+  },
+  "openspec/changes/archive/2026-05-30-session-summary-grouped/design.md": {
+    "mtime": 1780704378.16815,
+    "ast_hash": "1193feefa85226652be2c9abcbe582ce",
+    "semantic_hash": ""
+  },
+  "openspec/changes/archive/2026-05-30-session-summary-grouped/proposal.md": {
+    "mtime": 1780704378.16815,
+    "ast_hash": "9fb8364afcc9b0348b448fe161b084ea",
+    "semantic_hash": ""
+  },
+  "openspec/changes/archive/2026-05-30-session-summary-grouped/specs/orchestral-section-registry/spec.md": {
+    "mtime": 1780704378.1726828,
+    "ast_hash": "5ff18cb09dfe6aa1d90e605b32d82c59",
+    "semantic_hash": ""
+  },
+  "openspec/changes/archive/2026-05-30-session-summary-grouped/specs/student-observation-tracking/spec.md": {
+    "mtime": 1780704378.1726828,
+    "ast_hash": "2ee9b0332af75c8143674bf74ea392f9",
+    "semantic_hash": ""
+  },
+  "openspec/changes/archive/2026-05-30-session-summary-grouped/tasks.md": {
+    "mtime": 1780704378.1726828,
+    "ast_hash": "50ca7ee48f6d4e5575423246d7258b9d",
+    "semantic_hash": ""
+  },
+  "openspec/changes/modulo-planificacion-standardization/design.md": {
+    "mtime": 1780704378.1726828,
+    "ast_hash": "95b4f19245accd7ca6db2bb2ced26741",
+    "semantic_hash": ""
+  },
+  "openspec/changes/modulo-planificacion-standardization/proposal.md": {
+    "mtime": 1780704378.1726828,
+    "ast_hash": "183d2ef39f3097d85744785b9f7799af",
+    "semantic_hash": ""
+  },
+  "openspec/changes/modulo-planificacion-standardization/tasks.md": {
+    "mtime": 1780704378.1726828,
+    "ast_hash": "e492c07b24dee3d9acae64b2e69a25b4",
+    "semantic_hash": ""
+  },
+  "openspec/changes/planificacion-dataadapter/design.md": {
+    "mtime": 1780704378.1726828,
+    "ast_hash": "fa6600dba859cba808173a1c9b865797",
+    "semantic_hash": ""
+  },
+  "openspec/changes/planificacion-dataadapter/proposal.md": {
+    "mtime": 1780704378.1726828,
+    "ast_hash": "42dbacc69ddd33f17e190cba6d7636ea",
+    "semantic_hash": ""
+  },
+  "openspec/changes/planificacion-dataadapter/specs/academic-curriculum-planning/spec.md": {
+    "mtime": 1780704378.1726828,
+    "ast_hash": "6691a261113279338d1c0c4d42b2dff7",
+    "semantic_hash": ""
+  },
+  "openspec/changes/planificacion-dataadapter/specs/planificacion-data-persistence/spec.md": {
+    "mtime": 1780704378.1891823,
+    "ast_hash": "d3b232a2848f9a225d13e23e0c881ad5",
+    "semantic_hash": ""
+  },
+  "openspec/changes/planificacion-dataadapter/tasks.md": {
+    "mtime": 1780704378.1898408,
+    "ast_hash": "15fa35301e789b39a5384b3b3a0834c4",
+    "semantic_hash": ""
+  },
+  "openspec/config.yaml": {
+    "mtime": 1780704378.1925635,
+    "ast_hash": "22985f69aa0e3aafcb4a3a5627526575",
+    "semantic_hash": ""
+  },
+  "openspec/specs/academic-class-management/spec.md": {
+    "mtime": 1780704378.1948936,
+    "ast_hash": "390d5d95a7c58453c6d5547c775bc961",
+    "semantic_hash": ""
+  },
+  "openspec/specs/academic-curriculum-planning/spec.md": {
+    "mtime": 1780704378.1948936,
+    "ast_hash": "cdbe4a8cb6f1e39e6418c817f6991b11",
+    "semantic_hash": ""
+  },
+  "openspec/specs/academic-grading-management/spec.md": {
+    "mtime": 1780704378.1948936,
+    "ast_hash": "f8e97d1bc0d9ee375b6495d2b1cff809",
+    "semantic_hash": ""
+  },
+  "openspec/specs/academic-program-management/spec.md": {
+    "mtime": 1780704378.1948936,
+    "ast_hash": "2506d3ff33d279a6760842502f768e8d",
+    "semantic_hash": ""
+  },
+  "openspec/specs/accessibility-audit/spec.md": {
+    "mtime": 1780704378.2022834,
+    "ast_hash": "7609a137f935456c8f9da8e23c5266d2",
+    "semantic_hash": ""
+  },
+  "openspec/specs/attendance-tracking-refinement/spec.md": {
+    "mtime": 1780704378.2041821,
+    "ast_hash": "d793c95f83d8c89196d8931f0dd38ba7",
+    "semantic_hash": ""
+  },
+  "openspec/specs/enterprise-docs/spec.md": {
+    "mtime": 1780704378.2052245,
+    "ast_hash": "fd8494117f3b5796c909eaa365b9dc07",
+    "semantic_hash": ""
+  },
+  "openspec/specs/institutional-analytics-hub/spec.md": {
+    "mtime": 1780704378.2070098,
+    "ast_hash": "a5b2833144d1b7aca7fe04ba16d8d99e",
+    "semantic_hash": ""
+  },
+  "openspec/specs/notification-polling/spec.md": {
+    "mtime": 1780704378.209551,
+    "ast_hash": "d5c30a30c345f7042c1c97f3c4b1dfc8",
+    "semantic_hash": ""
+  },
+  "openspec/specs/orchestral-section-registry/spec.md": {
+    "mtime": 1780704378.209551,
+    "ast_hash": "4e6a265bac14bbf03bc681835e8810c6",
+    "semantic_hash": ""
+  },
+  "openspec/specs/ruta-player-view/spec.md": {
+    "mtime": 1780704378.2133567,
+    "ast_hash": "ce4c908edf2d1beaeeabc01cbf55168e",
+    "semantic_hash": ""
+  },
+  "openspec/specs/student-observation-tracking/spec.md": {
+    "mtime": 1780704378.2133567,
+    "ast_hash": "c33699b689523cc28a9c2362875ca58b",
+    "semantic_hash": ""
+  },
+  "openspec/specs/student-registration/spec.md": {
+    "mtime": 1780704378.2133567,
+    "ast_hash": "8be854361215ab74616ecb453c02ba2e",
+    "semantic_hash": ""
+  },
+  "openspec/specs/teacher-permissions/spec.md": {
+    "mtime": 1780704378.2175,
+    "ast_hash": "32db00441f6275a627798228c171eb75",
+    "semantic_hash": ""
+  },
+  "openspec/specs/teacher-self-registration/spec.md": {
+    "mtime": 1780704378.2175,
+    "ast_hash": "fff80add35d18cdae003e019ef834aad",
+    "semantic_hash": ""
+  },
+  "src/modules/metricas/ORCHESTRATOR_RUBRIC.md": {
+    "mtime": 1780704378.5715735,
+    "ast_hash": "7b7deac3ef5e1879f52620b038a2b7d5",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/2026-05-09-ruta-contenidos-player.md": {
+    "mtime": 1780704378.7888336,
+    "ast_hash": "4aa45207e6cf4986f7825e0de8e7da4f",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/2026-05-10-notification-improvements-plan.md": {
+    "mtime": 1780704378.7898567,
+    "ast_hash": "aa9236c75d2a81030c9cd85d5176b913",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/2026-05-10-notification-system-improvements.md": {
+    "mtime": 1780704378.7898567,
+    "ast_hash": "4252e878d5229437953191fb780a5f4c",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/2026-05-10-portal-professionalization-plan.md": {
+    "mtime": 1780704378.7898567,
+    "ast_hash": "689d5d2f56ec440e6820ce1d618f91bf",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/PLAN_RUTA_VIOLIN_40_NIVELES_NODOS_INDICADORES.md": {
+    "mtime": 1780704378.797499,
+    "ast_hash": "be47c40b3f49c146e6194e8d29181dad",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/README.md": {
+    "mtime": 1780704378.797499,
+    "ast_hash": "4e2b33f72530cae189591a8e71e06b9e",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/SDD-mejora-uxui-portal.md": {
+    "mtime": 1780704378.7995167,
+    "ast_hash": "872ff287e6556f5154027dd19e7feac6",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/SPEC-mejora-uxui-portal.md": {
+    "mtime": 1780704378.7995167,
+    "ast_hash": "d819144859391a0b435b4597eb3ae26c",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/SPEC_Modulo_Ruta_Academica_PWA_Maestro.md": {
+    "mtime": 1780704378.8015308,
+    "ast_hash": "45392b39d3639f81691dcc91d4e3943a",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/SPEC_VANILLA.md": {
+    "mtime": 1780704378.8015308,
+    "ast_hash": "ec08440a32bf8fe9353f76e3740e55cc",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/TASKS-mejora-uxui-portal.md": {
+    "mtime": 1780704378.8015308,
+    "ast_hash": "e8899001123897c59eb5f16083f928c3",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/docs/API_REFERENCE.md": {
+    "mtime": 1780704378.8935013,
+    "ast_hash": "89fe581bc2dc95b469b8fbb25f5cb699",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/docs/ARCHITECTURE.md": {
+    "mtime": 1780704378.8935013,
+    "ast_hash": "39c653cbcf4d533d231533eacf17f63d",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/docs/COMPLIANCE.md": {
+    "mtime": 1780704378.8935013,
+    "ast_hash": "e72cdf7812ea218e912a49d75ecd3e99",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/docs/DEPLOYMENT.md": {
+    "mtime": 1780704378.8935013,
+    "ast_hash": "7c5d75c208887b0d9b4ac267a06d9ee0",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/docs/DEVELOPER.md": {
+    "mtime": 1780704378.9010928,
+    "ast_hash": "67a5aefb34f9703fb374a65df8b62f81",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/docs/SECURITY.md": {
+    "mtime": 1780704378.9010928,
+    "ast_hash": "97e339ba9939f213371233ed79430b07",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/docs/USER_GUIDE.md": {
+    "mtime": 1780704378.9010928,
+    "ast_hash": "891d97a6cb1aa6fd03a86b247be63426",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/utils/dslParser_README.md": {
+    "mtime": 1780704379.025798,
+    "ast_hash": "fb1ee9ad4828573b2569bcd232eb502c",
+    "semantic_hash": ""
+  },
+  "supabase/SEED_README.md": {
+    "mtime": 1780704379.1758907,
+    "ast_hash": "b964f15a1b252cb3311006c273255598",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/README.md": {
+    "mtime": 1780704379.50463,
+    "ast_hash": "17c067c6230284bbb2102f160f413b2a",
+    "semantic_hash": ""
+  },
+  "docs/informe_portales_soi.pdf": {
+    "mtime": 1780704377.8880432,
+    "ast_hash": "e4529f03a24306e422ee944c194fa9bb",
+    "semantic_hash": ""
+  },
+  "postulados-2026-05-01-2026-05-31.pdf": {
+    "mtime": 1780704378.2224274,
+    "ast_hash": "2ab1ada4a0663b726fdd2e2abab7bb1a",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/Informe Ruta Violinistica Por Nodos.pdf": {
+    "mtime": 1780704378.7954843,
+    "ast_hash": "5f673b7195441257b8ab70ca1c0c11bb",
+    "semantic_hash": ""
+  },
+  "public/favicon.svg": {
+    "mtime": 1780704378.2264066,
+    "ast_hash": "d013eacca6b099ff612a6781523f2e81",
+    "semantic_hash": ""
+  },
+  "public/icons.svg": {
+    "mtime": 1780704378.2264066,
+    "ast_hash": "21c7473c592c67dc87223d49892c8f0a",
+    "semantic_hash": ""
+  },
+  "public/icons/icon-128.png": {
+    "mtime": 1780704378.2284172,
+    "ast_hash": "a409da5b7182ed698a4b114c423d78da",
+    "semantic_hash": ""
+  },
+  "public/icons/icon-192.png": {
+    "mtime": 1780704378.2284172,
+    "ast_hash": "74b7f689d6b59519bce3b1b544c698e7",
+    "semantic_hash": ""
+  },
+  "public/icons/icon-384.png": {
+    "mtime": 1780704378.2284172,
+    "ast_hash": "53465e2b6c115c5d66480646669864dc",
+    "semantic_hash": ""
+  },
+  "public/icons/icon-512.png": {
+    "mtime": 1780704378.2284172,
+    "ast_hash": "da121259d373d22fad3ca25e3b98d198",
+    "semantic_hash": ""
+  },
+  "public/icons/icon-72.png": {
+    "mtime": 1780704378.2284172,
+    "ast_hash": "e0b4bf102c54d83bb52f66eb20d7896e",
+    "semantic_hash": ""
+  },
+  "public/icons/icon-96.png": {
+    "mtime": 1780704378.2341924,
+    "ast_hash": "37ae899c715377f04af71443f93fe477",
+    "semantic_hash": ""
+  },
+  "public/icons/maskable-icon.png": {
+    "mtime": 1780704378.2341924,
+    "ast_hash": "74b7f689d6b59519bce3b1b544c698e7",
+    "semantic_hash": ""
+  },
+  "public/icons/notification-icon.png": {
+    "mtime": 1780704378.2341924,
+    "ast_hash": "37ae899c715377f04af71443f93fe477",
+    "semantic_hash": ""
+  },
+  "src/assets/hero.png": {
+    "mtime": 1780704378.2819836,
+    "ast_hash": "aead493361b27e7510691c5d7072dfc1",
+    "semantic_hash": ""
+  },
+  "src/assets/javascript.svg": {
+    "mtime": 1780704378.2819836,
+    "ast_hash": "4532a85fc0e928b781c74fbfd15d0b75",
+    "semantic_hash": ""
+  },
+  "src/assets/vite.svg": {
+    "mtime": 1780704378.2819836,
+    "ast_hash": "6d5180a782d64c8cf51ba01c2a2184d8",
+    "semantic_hash": ""
+  },
+  "src/portal-maestros/components/PlanningHistorialPane.js": {
+    "mtime": 1780752777.5237875,
+    "ast_hash": "e13d386f62c0da24239204dec528065e",
+    "semantic_hash": ""
+  }
+}

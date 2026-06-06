@@ -282,14 +282,23 @@ function _openEmergenteModal(id) {
         // Las emergentes viven en sesiones_clase con clase_id = NULL
         const { data: e, error } = await supabase
           .from('sesiones_clase')
-          .select('*, maestros(id, nombre_completo, nombre), salones(id, nombre)')
+          .select('*')
           .eq('id', id)
           .single()
 
         if (error) throw error
 
-        const maestroNombre = e.maestros?.nombre_completo || e.maestros?.nombre || 'No asignado'
-        const salonNombre   = e.salones?.nombre || null
+        // Fetch maestro y salón por separado para evitar ambigüedad de FK múltiple
+        let maestroNombre = 'No asignado'
+        let salonNombre   = null
+        if (e.maestro_id) {
+          const { data: m } = await supabase.from('maestros').select('nombre_completo, nombre').eq('id', e.maestro_id).single()
+          maestroNombre = m?.nombre_completo || m?.nombre || 'No asignado'
+        }
+        if (e.salon_id) {
+          const { data: s } = await supabase.from('salones').select('nombre').eq('id', e.salon_id).single()
+          salonNombre = s?.nombre || null
+        }
         const fecha = e.fecha
           ? new Date(e.fecha + 'T00:00:00').toLocaleDateString('es-DO', { day: '2-digit', month: '2-digit', year: 'numeric' })
           : 'Sin fecha'

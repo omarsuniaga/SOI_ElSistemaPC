@@ -10,6 +10,7 @@ import {
   obtenerClases,
   obtenerCoberturaCurricular,
   obtenerMaestros,
+  obtenerPlantillas,
 } from '../api/planificacionAdapter.js'
 import { escapeHTML } from '../../clases/utils/clasesUtils.js'
 import { HelpPanel } from '../../../shared/components/HelpPanel.js'
@@ -22,54 +23,6 @@ import { usePlanificacion } from '../hooks/usePlanificacion.js'
 import { createDslEditorWithToolbar } from '../components/dslToolbar.js'
 import { getAlumnos } from '../../alumnos/api/alumnosApi.js'
 import { renderHistorialContenidosPanel } from '../components/historialContenidosPanel.js'
-
-// ── DSL Template Library ─────────────────────────────────────────────────────
-const DSL_TEMPLATES = [
-  {
-    id: 'escala',
-    nombre: 'Escala Mayor',
-    instrumento: 'Piano / Guitarra',
-    descripcion: 'Trabajo de escalas diatónicas mayores en posición cerrada.',
-    contenido: `[Indicador] Ejecuta la escala de Do mayor en dos octavas con digitación correcta
-[Indicador] Mantiene tempo estable con metrónomo a 60 bpm
-{Actividad} Calentamiento de dedos: ejercicios de Hanon 5 min
-{Actividad} Escala lenta con atención al peso del brazo
-{Actividad} Escala en tempo progresivo hasta 80 bpm`,
-  },
-  {
-    id: 'lectura',
-    nombre: 'Lectura a Primera Vista',
-    instrumento: 'General',
-    descripcion: 'Desarrollar la capacidad de leer y ejecutar partituras sin preparación previa.',
-    contenido: `[Indicador] Lee correctamente las figuras rítmicas (negra, corchea, blanca)
-[Indicador] Identifica la clave y armadura antes de comenzar
-{Actividad} Análisis visual de 2 min antes de tocar
-{Actividad} Ejecución a tempo lento sin parar
-{Actividad} Revisión de errores y segunda lectura`,
-  },
-  {
-    id: 'repertorio',
-    nombre: 'Montaje de Repertorio',
-    instrumento: 'General',
-    descripcion: 'Proceso sistemático de aprendizaje de una obra musical.',
-    contenido: `[Indicador] Memoriza la estructura formal de la obra (A-B-A)
-[Indicador] Ejecuta las secciones complejas de manera fluida
-{Actividad} División por secciones: aprender A, luego B
-{Actividad} Trabajo de manos separadas en pasajes difíciles
-{Actividad} Ensamble y trabajo de empalmes entre secciones`,
-  },
-  {
-    id: 'teoria',
-    nombre: 'Teoría Musical Aplicada',
-    instrumento: 'Teoría',
-    descripcion: 'Integración de conceptos teóricos con la práctica instrumental.',
-    contenido: `[Indicador] Identifica intervalos en el instrumento (2da, 3ra, 4ta, 5ta)
-[Indicador] Construye y ejecuta acordes mayores y menores
-{Actividad} Dictado rítmico (4 compases)
-{Actividad} Identificación auditiva de intervalos
-{Actividad} Construcción de acordes en el instrumento`,
-  },
-]
 
 // ── State ─────────────────────────────────────────────────────────────────────
 const state = {
@@ -452,58 +405,112 @@ function _renderEmpty() {
 }
 
 // Mode: plantillas ───────────────────────────────────────────────────────────
-function renderTemplatesContent(container) {
+async function renderTemplatesContent(container) {
   container.innerHTML = `
-    <div class="page-container">
-      <div class="planificacion-header-premium mb-4">
-        <div class="d-flex align-items-center gap-3">
-          <div class="brand-badge bg-info bg-opacity-10 text-info rounded-3 d-flex align-items-center justify-content-center" style="width: 42px; height: 42px;">
-            <i class="bi bi-file-earmark-text fs-4"></i>
-          </div>
-          <div>
-            <h1 class="planificacion-title-premium page-title mb-0">Plantillas de Planificación</h1>
-            <p class="text-muted small mb-0">Plantillas listas para usar — seleccioná una y personalizala</p>
-          </div>
-        </div>
+    <div class="d-flex justify-content-center align-items-center" style="min-height: 300px;">
+      <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Cargando plantillas...</span>
       </div>
+    </div>`
 
-      <div class="row g-3">
-        ${DSL_TEMPLATES.map(
-          (t) => `
-          <div class="col-md-6">
-            <div class="page-glass rounded p-4 h-100 d-flex flex-column">
-              <div class="d-flex align-items-start gap-3 mb-3">
-                <div class="rounded-3 bg-primary bg-opacity-10 text-primary d-flex align-items-center justify-content-center flex-shrink-0" style="width:40px;height:40px">
-                  <i class="bi bi-journal-text fs-5"></i>
-                </div>
-                <div>
-                  <h5 class="fw-bold mb-0">${escapeHTML(t.nombre)}</h5>
-                  <span class="badge bg-secondary bg-opacity-10 text-secondary border small">${escapeHTML(t.instrumento)}</span>
-                </div>
+  try {
+    const plantillas = await obtenerPlantillas()
+
+    if (!plantillas || plantillas.length === 0) {
+      container.innerHTML = `
+        <div class="page-container">
+          <div class="planificacion-header-premium mb-4">
+            <div class="d-flex align-items-center gap-3">
+              <div class="brand-badge bg-info bg-opacity-10 text-info rounded-3 d-flex align-items-center justify-content-center" style="width: 42px; height: 42px;">
+                <i class="bi bi-file-earmark-text fs-4"></i>
               </div>
-              <p class="text-muted small flex-grow-1">${escapeHTML(t.descripcion)}</p>
-              <details class="mb-3">
-                <summary class="small text-primary" style="cursor:pointer">Ver contenido DSL</summary>
-                <pre class="mt-2 p-2 bg-body-tertiary rounded small border" style="font-size:.75rem;white-space:pre-wrap">${escapeHTML(t.contenido)}</pre>
-              </details>
-              <button class="btn btn-outline-primary btn-sm" data-template-id="${t.id}">
-                <i class="bi bi-plus-circle me-1"></i>Usar esta plantilla
-              </button>
+              <div>
+                <h1 class="planificacion-title-premium page-title mb-0">Plantillas de Planificación</h1>
+                <p class="text-muted small mb-0">No hay plantillas disponibles aún.</p>
+              </div>
             </div>
           </div>
-        `,
-        ).join('')}
-      </div>
-    </div>
-  `
+        </div>`
+      return
+    }
 
-  // Attach template actions
-  container.querySelectorAll('button[data-template-id]').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      const tpl = DSL_TEMPLATES.find((t) => t.id === btn.dataset.templateId)
-      if (tpl) _openTemplateModal(tpl)
+    container.innerHTML = `
+      <div class="page-container">
+        <div class="planificacion-header-premium mb-4">
+          <div class="d-flex align-items-center gap-3">
+            <div class="brand-badge bg-info bg-opacity-10 text-info rounded-3 d-flex align-items-center justify-content-center" style="width: 42px; height: 42px;">
+              <i class="bi bi-file-earmark-text fs-4"></i>
+            </div>
+            <div>
+              <h1 class="planificacion-title-premium page-title mb-0">Plantillas de Planificación</h1>
+              <p class="text-muted small mb-0">${plantillas.length} plantilla${plantillas.length !== 1 ? 's' : ''} disponible${plantillas.length !== 1 ? 's' : ''} — seleccioná una y personalizala</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="row g-3">
+          ${plantillas
+            .map(
+              (t) => `
+            <div class="col-md-6">
+              <div class="page-glass rounded p-4 h-100 d-flex flex-column">
+                <div class="d-flex align-items-start gap-3 mb-3">
+                  <div class="rounded-3 bg-primary bg-opacity-10 text-primary d-flex align-items-center justify-content-center flex-shrink-0" style="width:40px;height:40px">
+                    <i class="bi bi-journal-text fs-5"></i>
+                  </div>
+                  <div>
+                    <h5 class="fw-bold mb-0">${escapeHTML(t.nombre)}</h5>
+                    <span class="badge bg-secondary bg-opacity-10 text-secondary border small">${escapeHTML(t.instrumento)}</span>
+                  </div>
+                </div>
+                <p class="text-muted small flex-grow-1">${escapeHTML(t.descripcion)}</p>
+                <details class="mb-3">
+                  <summary class="small text-primary" style="cursor:pointer">Ver contenido DSL</summary>
+                  <pre class="mt-2 p-2 bg-body-tertiary rounded small border" style="font-size:.75rem;white-space:pre-wrap">${escapeHTML(t.contenido)}</pre>
+                </details>
+                <button class="btn btn-outline-primary btn-sm" data-template-id="${t.id}">
+                  <i class="bi bi-plus-circle me-1"></i>Usar esta plantilla
+                </button>
+              </div>
+            </div>
+          `,
+            )
+            .join('')}
+        </div>
+      </div>
+    `
+
+    // Attach template actions
+    container.querySelectorAll('button[data-template-id]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const tpl = plantillas.find((t) => t.id === btn.dataset.templateId)
+        if (tpl) _openTemplateModal(tpl)
+      })
     })
-  })
+  } catch (error) {
+    console.error('[plantillas]', error)
+    container.innerHTML = `
+      <div class="page-container">
+        <div class="planificacion-header-premium mb-4">
+          <div class="d-flex align-items-center gap-3">
+            <div class="brand-badge bg-info bg-opacity-10 text-info rounded-3 d-flex align-items-center justify-content-center" style="width: 42px; height: 42px;">
+              <i class="bi bi-file-earmark-text fs-4"></i>
+            </div>
+            <div>
+              <h1 class="planificacion-title-premium page-title mb-0">Plantillas de Planificación</h1>
+              <p class="text-muted small mb-0">Error al cargar plantillas</p>
+            </div>
+          </div>
+        </div>
+        <div class="alert alert-warning d-flex align-items-start gap-3" role="alert">
+          <i class="bi bi-exclamation-triangle fs-4 text-warning mt-1"></i>
+          <div>
+            <h5 class="alert-heading mb-1">Error al cargar plantillas</h5>
+            <p class="mb-0 small">${escapeHTML(error.message)}</p>
+          </div>
+        </div>
+      </div>`
+  }
 }
 
 function _openTemplateModal(tpl) {

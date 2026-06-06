@@ -155,7 +155,7 @@ export function createDslEditor(container, { initialContent = '', onChange, onAl
     const textBeforeCursor = preCaretRange.toString()
 
     // Detectar último trigger (#, [, (, {, $, >)
-    const triggerMatch = textBeforeCursor.match(/([#\[\(\{\$>])\s*([^\[\(\{\$]*)$/)
+    const triggerMatch = textBeforeCursor.match(/([#([{$>])\s*([^([{$]*)$/)
 
     if (triggerMatch) {
       return {

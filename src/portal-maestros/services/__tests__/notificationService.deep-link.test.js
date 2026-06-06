@@ -5,8 +5,8 @@ import { parseDeepLink, navigateToDeepLink } from '../notificationService.js'
 describe('Deep Link Handling', () => {
   beforeEach(() => {
     // Mock window.appNavigate so navigateToDeepLink can call it
-    global.window.appNavigate = vi.fn()
-    global.mockNavigate = global.window.appNavigate
+    globalThis.window.appNavigate = vi.fn()
+    globalThis.mockNavigate = globalThis.window.appNavigate
   })
 
   it('should parse deep_link and extract claseId and fecha', () => {
@@ -31,7 +31,7 @@ describe('Deep Link Handling', () => {
     const deepLink = '/asistencia/550e8400-e29b-41d4-a716-446655440000/2026-05-21'
     navigateToDeepLink(deepLink)
 
-    expect(global.mockNavigate).toHaveBeenCalledWith({
+    expect(globalThis.mockNavigate).toHaveBeenCalledWith({
       view: 'asistencia',
       claseId: '550e8400-e29b-41d4-a716-446655440000',
       fecha: '2026-05-21'

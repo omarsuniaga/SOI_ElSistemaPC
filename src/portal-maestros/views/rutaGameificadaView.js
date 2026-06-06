@@ -6,9 +6,9 @@ import { renderBlockSection } from '../components/BlockSection.js'
 import { setRutaTema } from '../services/rutaTopicStore.js'
 
 // Allow test overrides via globals
-const getMaestroLocal = () => (typeof global !== 'undefined' && global.getMaestroLocal ? global.getMaestroLocal() : _getMaestroLocal())
-const getMisClases = (...args) => (typeof global !== 'undefined' && global.getMisClases ? global.getMisClases(...args) : _getMisClases(...args))
-const loadRouteTree = (...args) => (typeof global !== 'undefined' && global.loadRouteTree ? global.loadRouteTree(...args) : _loadRouteTree(...args))
+const getMaestroLocal = () => (typeof globalThis !== 'undefined' && globalThis.getMaestroLocal ? globalThis.getMaestroLocal() : _getMaestroLocal())
+const getMisClases = (...args) => (typeof globalThis !== 'undefined' && globalThis.getMisClases ? globalThis.getMisClases(...args) : _getMisClases(...args))
+const loadRouteTree = (...args) => (typeof globalThis !== 'undefined' && globalThis.loadRouteTree ? globalThis.loadRouteTree(...args) : _loadRouteTree(...args))
 
 let _state = {
   clases: [],

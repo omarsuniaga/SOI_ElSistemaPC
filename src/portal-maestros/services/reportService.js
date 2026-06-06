@@ -194,7 +194,7 @@ export async function generateDailyReport(sesionId) {
     const dslRaw = sesion.contenido || ''
     const contentItems = dslRaw
       .split(/[\n,]/)
-      .map((s) => s.replace(/^\s*[\-\*\d\.]+\s*/, '').trim())
+      .map((s) => s.replace(/^\s*[-*\d.]+\s*/, '').trim())
       .filter((s) => s.length > 2 && s.length < 60)
       .slice(0, 12)
 
@@ -203,11 +203,11 @@ export async function generateDailyReport(sesionId) {
     const obsParsed = []
     for (const line of obsLines) {
       if (/destacad|excelente|logr/i.test(line))
-        obsParsed.push({ type: 'pos', label: 'Destacado', text: line.replace(/^[\-\*]\s*/, '') })
+        obsParsed.push({ type: 'pos', label: 'Destacado', text: line.replace(/^[-*]\s*/, '') })
       else if (/alerta|ausencia|riesgo|falt/i.test(line))
-        obsParsed.push({ type: 'neg', label: 'Alerta', text: line.replace(/^[\-\*]\s*/, '') })
+        obsParsed.push({ type: 'neg', label: 'Alerta', text: line.replace(/^[-*]\s*/, '') })
       else if (/novedad|nota|aviso/i.test(line))
-        obsParsed.push({ type: 'info', label: 'Novedad', text: line.replace(/^[\-\*]\s*/, '') })
+        obsParsed.push({ type: 'info', label: 'Novedad', text: line.replace(/^[-*]\s*/, '') })
     }
     const obsBlocks = obsParsed
       .slice(0, 4)
@@ -730,7 +730,7 @@ export async function generateMonthlyPedagogical(claseId, year, month) {
       if (!obs) return
       const raw = obs.contenido_ia_dsl || obs.contenido_dsl || ''
       raw.split(/[\n,]/).forEach((item) => {
-        const clean = item.replace(/^\s*[\-\*\d\.]+\s*/, '').trim()
+        const clean = item.replace(/^\s*[-*\d.]+\s*/, '').trim()
         if (clean.length > 2 && clean.length < 60) contentSet.add(clean)
       })
     })
@@ -747,25 +747,25 @@ export async function generateMonthlyPedagogical(claseId, year, month) {
           allObs.push({
             type: 'pos',
             label: 'Destacado Académico',
-            text: line.replace(/^[\-\*]\s*/, ''),
+            text: line.replace(/^[-*]\s*/, ''),
           })
         else if (/alerta|ausencia|riesgo/i.test(line))
           allObs.push({
             type: 'neg',
             label: 'Alerta Asistencia',
-            text: line.replace(/^[\-\*]\s*/, ''),
+            text: line.replace(/^[-*]\s*/, ''),
           })
         else if (/novedad|administrativ/i.test(line))
           allObs.push({
             type: 'info',
             label: 'Novedad Administrativa',
-            text: line.replace(/^[\-\*]\s*/, ''),
+            text: line.replace(/^[-*]\s*/, ''),
           })
         else if (/nota|pedagóg/i.test(line))
           allObs.push({
             type: 'warn',
             label: 'Nota Pedagógica',
-            text: line.replace(/^[\-\*]\s*/, ''),
+            text: line.replace(/^[-*]\s*/, ''),
           })
       })
     })
@@ -781,7 +781,7 @@ export async function generateMonthlyPedagogical(claseId, year, month) {
         const firstContent =
           rawContent
             .split(/[\n,]/)[0]
-            ?.replace(/^[\-\*\d\.]+\s*/, '')
+            ?.replace(/^[-*\d.]+\s*/, '')
             .trim() || 'Sin contenido registrado'
         return `
         <div class="session-card">

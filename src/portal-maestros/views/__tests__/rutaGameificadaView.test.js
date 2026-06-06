@@ -16,9 +16,9 @@ describe('rutaGameificadaView', () => {
 
   it('renders without crashing', async () => {
     // Mock global helpers used in rutaGameificadaView
-    global.getMaestroLocal = () => ({ id: 'm1', nombre: 'Test' })
-    global.getMisClases = () => Promise.resolve([{ id: 'c1', nombre: 'Grupo A' }])
-    global.loadRouteTree = () => Promise.resolve([])
+    globalThis.getMaestroLocal = () => ({ id: 'm1', nombre: 'Test' })
+    globalThis.getMisClases = () => Promise.resolve([{ id: 'c1', nombre: 'Grupo A' }])
+    globalThis.loadRouteTree = () => Promise.resolve([])
 
     await renderRutaGameificadaView(container)
 
@@ -27,7 +27,7 @@ describe('rutaGameificadaView', () => {
   })
 
   it('displays loading state initially', () => {
-    global.getMaestroLocal = () => ({ id: 'm1', nombre: 'Test' })
+    globalThis.getMaestroLocal = () => ({ id: 'm1', nombre: 'Test' })
 
     renderRutaGameificadaView(container)
 
@@ -35,7 +35,7 @@ describe('rutaGameificadaView', () => {
   })
 
   it('handles no session gracefully', async () => {
-    global.getMaestroLocal = () => null
+    globalThis.getMaestroLocal = () => null
 
     await renderRutaGameificadaView(container)
 
@@ -43,12 +43,12 @@ describe('rutaGameificadaView', () => {
   })
 
   it('displays class selector when classes exist', async () => {
-    global.getMaestroLocal = () => ({ id: 'm1', nombre: 'Test' })
-    global.getMisClases = () => Promise.resolve([
+    globalThis.getMaestroLocal = () => ({ id: 'm1', nombre: 'Test' })
+    globalThis.getMisClases = () => Promise.resolve([
       { id: 'c1', nombre: 'Grupo A' },
       { id: 'c2', nombre: 'Grupo B' }
     ])
-    global.loadRouteTree = () => Promise.resolve([])
+    globalThis.loadRouteTree = () => Promise.resolve([])
 
     await renderRutaGameificadaView(container)
 

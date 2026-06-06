@@ -13,8 +13,8 @@ describe('errorReporter', () => {
       setTag: vi.fn(),
       setContext: vi.fn(),
     }
-    global.window = global.window || {}
-    global.window.Sentry = sentryMock
+    globalThis.window = globalThis.window || {}
+    globalThis.window.Sentry = sentryMock
   })
 
   it('initializes with DSN', () => {

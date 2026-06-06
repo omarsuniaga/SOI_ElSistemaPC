@@ -62,6 +62,7 @@ export function sanitizeText(value, { maxLength } = {}) {
   let result = String(value)
     .trim()
     // Remove null bytes and ASCII control chars except \t (9) and \n (10)
+    // eslint-disable-next-line no-control-regex
     .replace(/[\x00-\x08\x0B-\x1F\x7F]/g, '')
     // Strip javascript: URI scheme (case-insensitive, with optional whitespace/encoding)
     .replace(/j\s*a\s*v\s*a\s*s\s*c\s*r\s*i\s*p\s*t\s*:/gi, '')

@@ -228,9 +228,10 @@ function convertValue(value, fieldType, fieldOptions) {
   if (typeof value === 'boolean') return value
   
   switch (fieldType) {
-    case 'number':
+    case 'number': {
       const num = parseFloat(value)
       return isNaN(num) ? null : num
+    }
     case 'boolean':
       if (typeof value === 'string') {
         return value.toLowerCase() === 'true' || value === '1' || value === 'yes'

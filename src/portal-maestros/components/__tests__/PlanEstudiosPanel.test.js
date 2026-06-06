@@ -18,8 +18,8 @@ import { PlanEstudiosPanel } from '../PlanEstudiosPanel.js'
 
 function setupDOM() {
   const dom = new JSDOM('<!DOCTYPE html><html><body><div id="root"></div></body></html>')
-  global.document = dom.window.document
-  global.window   = dom.window
+  globalThis.document = dom.window.document
+  globalThis.window   = dom.window
   return dom.window.document.getElementById('root')
 }
 

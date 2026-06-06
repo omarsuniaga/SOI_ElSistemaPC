@@ -16,7 +16,7 @@ describe.skip('Attendance Notification E2E Deep Link Flow', () => {
     container = document.createElement('div')
     container.id = 'app-container'
     document.body.appendChild(container)
-    global.appNavigate = vi.fn((params) => {
+    globalThis.appNavigate = vi.fn((params) => {
       renderAsistenciaView('app-container', params)
     })
   })
@@ -45,7 +45,7 @@ describe.skip('Attendance Notification E2E Deep Link Flow', () => {
     expect(parsed.isValid).toBe(true)
 
     // Simulate notification click triggering navigation
-    await global.appNavigate({
+    await globalThis.appNavigate({
       view: 'asistencia',
       claseId: parsed.claseId,
       fecha: parsed.fecha

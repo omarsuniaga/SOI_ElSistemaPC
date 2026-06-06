@@ -96,7 +96,7 @@ async function extractTextFromImage(file, onProgress) {
     await loadScript('https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js');
   }
   
-  const worker = await Tesseract.createWorker({
+  const worker = await window.Tesseract.createWorker({
     logger: m => {
       if (m.status === 'recognizing' && onProgress) {
         onProgress(Math.round(m.progress * 100));

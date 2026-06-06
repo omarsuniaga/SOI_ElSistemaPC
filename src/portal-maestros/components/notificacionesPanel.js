@@ -146,7 +146,7 @@ export const notificacionesPanel = {
             <div class="pm-notif-footer-row">
               <span class="pm-notif-time">${formatRelativeTime(g.items[0].created_at)}</span>
               ${isSinRegistrar && route !== '#/'
-                ? `<a class="pm-notif-cta" data-route="${route}" href="javascript:void(0)">Registrar ahora →</a>`
+                ? `<a class="pm-notif-cta" data-route="${route}" href="#">Registrar ahora →</a>`
                 : ''
               }
             </div>
@@ -167,6 +167,7 @@ export const notificacionesPanel = {
     // Click en CTA "Registrar ahora" — navegar directo sin propagar al item
     listEl.querySelectorAll('.pm-notif-cta').forEach(cta => {
       cta.addEventListener('click', (e) => {
+        e.preventDefault()
         e.stopPropagation()
         const ids = cta.closest('.pm-notif-item').dataset.ids.split(',')
         ids.forEach(id => marcarLeida(id))

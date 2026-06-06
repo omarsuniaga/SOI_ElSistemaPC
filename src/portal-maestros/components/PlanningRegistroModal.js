@@ -7,6 +7,7 @@ import { createIndicatorObservation } from '../../modules/planning/services/plan
 import { AppToast } from '../../shared/components/AppToast.js'
 import { announce } from '../utils/a11yUtils.js'
 import { getInscripcionesClases } from '../services/maestroDataService.js'
+import { obtenerAlumnos } from '../../modules/alumnos/api/alumnosApi.js'
 
 export async function createPlanningRegistroModal(container, { indicator, claseId, maestroId, routeVersionId, onSave }) {
   let selectedEstudiantes = new Set()
@@ -323,9 +324,8 @@ export async function createPlanningRegistroModal(container, { indicator, claseI
     }
 
     // Obtener datos de alumnos
-    const { data: alumnos } = await fetch(
-      `/api/alumnos?ids=${alumnoIds.join(',')}`
-    ).then((r) => r.json())
+    const allAlumnos = await obtenerAlumnos()
+    const alumnos = allAlumnos.filter((alumno) => alumnoIds.includes(alumno.id))
 
     const studentsList = document.getElementById('pm-students-list')
     studentsList.innerHTML = alumnos

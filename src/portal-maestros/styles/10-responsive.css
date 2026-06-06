@@ -86,6 +86,7 @@
   /* ── View container: full width ──────────────────────────────── */
   .pm-view {
     padding: 0;
+    padding-bottom: calc(var(--pm-bottom-nav-h) + 2rem);
   }
 
   /* ── Footer nav: pill-shaped, Apple-style ────────────────────── */
@@ -234,6 +235,7 @@
 @media (max-width: 480px) {
   .pm-view {
     padding: 0;
+    padding-bottom: calc(var(--pm-bottom-nav-h) + 2rem);
   }
 
   .pm-metricas-kpis {
@@ -281,7 +283,7 @@
   /* View con padding-bottom para no solaparse con footer nav */
   .pm-view {
     padding: 0;
-    padding-bottom: calc(var(--pm-bottom-nav-h) + 0.5rem);
+    padding-bottom: calc(var(--pm-bottom-nav-h) + 2rem);
     max-width: none;
   }
 

@@ -124,7 +124,9 @@ async function _renderEmergenteSesion(container, { sesionId, fecha, maestro, rou
       return
     }
 
-    const fechaHoy = fecha || sesion.fecha || new Date().toISOString().split('T')[0]
+    const hoy = new Date()
+    const localToday = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}-${String(hoy.getDate()).padStart(2, '0')}`
+    const fechaHoy = fecha || sesion.fecha || localToday
     const clase = {
       id: sesionId,
       nombre: sesion.actividad || 'Clase Emergente',
@@ -215,7 +217,9 @@ export async function renderAsistenciaView(
   // Persistir clase activa para otros módulos (ej: Planificación)
   localStorage.setItem('pm_active_clase_id', claseId)
 
-  const fechaHoy = fecha || new Date().toISOString().split('T')[0]
+  const hoy = new Date()
+  const localToday = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}-${String(hoy.getDate()).padStart(2, '0')}`
+  const fechaHoy = fecha || localToday
 
   try {
     const diaHoy = new Date().toLocaleDateString('es-ES', { weekday: 'long' }).toLowerCase()

@@ -364,7 +364,7 @@ async function _scheduleSwAlerts() {
   try {
     const hoy = new Date()
     const diaHoy = hoy.toLocaleDateString('es-ES', { weekday: 'long' }).toLowerCase()
-    const fechaHoy = hoy.toISOString().split('T')[0]
+    const fechaHoy = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}-${String(hoy.getDate()).padStart(2, '0')}`
 
     const [clases, horarios, sesiones] = await Promise.all([
       getMisClases(),

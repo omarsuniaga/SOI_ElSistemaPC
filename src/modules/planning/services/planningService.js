@@ -20,9 +20,9 @@ export async function getIndicatorsWithStatus(routeVersionId, maestroId, claseId
     // 1. Obtener todos los nodos de la ruta
     const { data: nodes, error: nodesErr } = await supabase
       .from('nodes')
-      .select('id, name, tipo, descripcion')
+      .select('id, name, type, objective')
       .eq('route_version_id', routeVersionId)
-      .order('path', { ascending: true })
+      .order('order_index', { ascending: true })
 
     if (nodesErr) throw nodesErr
 
@@ -57,22 +57,22 @@ export async function getIndicatorsWithStatus(routeVersionId, maestroId, claseId
         }
 
         // Contar estudiantes únicos que vieron este indicador
-        const { data: studentLinks } = await supabase
-          .from('indicator_session_students')
-          .select('alumno_id', { count: 'exact' })
-          .in(
-            'indicator_session_id',
-            sessions?.map((s) => s.id) || []
-          )
-          .eq('alumno_id', supabase.from('alumnos').select('id'))
+        const sessionIds = sessions?.map((s) => s.id) || []
+        let estudiantesVieron = 0
+        if (sessionIds.length > 0) {
+          const { data: studentLinks } = await supabase
+            .from('indicator_session_students')
+            .select('alumno_id')
+            .in('indicator_session_id', sessionIds)
 
-        const estudiantesVieron = new Set(studentLinks?.map((s) => s.alumno_id) || []).size
+          estudiantesVieron = new Set(studentLinks?.map((s) => s.alumno_id) || []).size
+        }
 
         return {
           node_id: node.id,
           nombre: node.name,
-          tipo: node.tipo,
-          descripcion: node.descripcion,
+          tipo: node.type,
+          descripcion: node.objective,
           estado: _getEstado(estudiantesVieron, totalAlumnos),
           estudiantes_vieron: estudiantesVieron,
           estudiantes_totales: totalAlumnos,
@@ -162,7 +162,7 @@ export async function getIndicatorHistory(nodeId, routeVersionId, maestroId, cla
     // 1. Obtener info del nodo
     const { data: node, error: nodeErr } = await supabase
       .from('nodes')
-      .select('id, name, descripcion, tipo')
+      .select('id, name, objective, type')
       .eq('id', nodeId)
       .single()
 
@@ -263,8 +263,8 @@ export async function getIndicatorHistory(nodeId, routeVersionId, maestroId, cla
     return {
       node_id: nodeId,
       nombre: node.name,
-      tipo: node.tipo,
-      descripcion: node.descripcion,
+      tipo: node.type,
+      descripcion: node.objective,
       estado: estadoGeneralActual,
       estudiantes_vieron: alumnosQueVieron.size,
       estudiantes_totales: totalAlumnos,

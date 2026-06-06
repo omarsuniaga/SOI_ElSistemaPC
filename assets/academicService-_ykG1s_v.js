@@ -3,15 +3,16 @@ import{n as e}from"./rolldown-runtime-tcWNtVWY.js";import{i as t}from"./supabase
         id,
         name,
         description,
-        instrument_id,
-        is_active,
+        instrument,
+        status,
         created_at,
         route_versions (
           id,
-          version_number,
-          is_current
+          version,
+          status,
+          published_at
         )
-      `).eq(`is_active`,!0).eq(`route_versions.is_current`,!0);if(n)throw n;return e},async getRouteDetail(e){let{data:n,error:r}=await t.from(`route_versions`).select(`id`).eq(`route_id`,e).eq(`is_current`,!0).single();if(r)throw r;let i=n.id,{data:a,error:o}=await t.from(`blocks`).select(`
+      `);if(n)throw n;return(e||[]).map(e=>{let t=(e.route_versions||[]).filter(e=>e.status===`published`).sort((e,t)=>new Date(t.published_at||0)-new Date(e.published_at||0)),{route_versions:n,...r}=e;return{...r,current_version:t[0]||null}})},async getPublishedVersionId(e){let{data:n,error:r}=await t.from(`route_versions`).select(`id, published_at`).eq(`route_id`,e).eq(`status`,`published`).order(`published_at`,{ascending:!1}).limit(1).maybeSingle();if(r)throw r;return n?.id||null},async getRouteDetail(e,n=null){let r=n;if(!r&&(r=await this.getPublishedVersionId(e),!r))throw Error(`La ruta no tiene una versión publicada.`);let{data:i,error:a}=await t.from(`blocks`).select(`
         id,
         name,
         order_index,
@@ -21,8 +22,8 @@ import{n as e}from"./rolldown-runtime-tcWNtVWY.js";import{i as t}from"./supabase
           order_index,
           nodes (
             id,
-            title,
-            description,
+            title:name,
+            description:objective,
             type,
             order_index,
             indicators (
@@ -32,7 +33,7 @@ import{n as e}from"./rolldown-runtime-tcWNtVWY.js";import{i as t}from"./supabase
             )
           )
         )
-      `).eq(`route_version_id`,i).order(`order_index`,{ascending:!0});if(o)throw o;return a},async getStudentProgress(e,n){let{data:r,error:i}=await t.from(`student_node_progress`).select(`
+      `).eq(`route_version_id`,r).order(`order_index`,{ascending:!0});if(a)throw a;return i},async getStudentProgress(e,n){let{data:r,error:i}=await t.from(`student_node_progress`).select(`
         node_id,
         status,
         last_attempt_at,

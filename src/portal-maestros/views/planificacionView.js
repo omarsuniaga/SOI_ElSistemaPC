@@ -422,6 +422,8 @@ export async function renderPlanificacionView(container, { maestroId }) {
   const managerDiv = container.querySelector('#pm-planning-manager')
   let _routeTreeLoadedFor = null
   let _managerLoadedFor = null
+  let _routeTreeInFlight = false
+  let _managerInFlight = false
 
   function _onTabActivated(tabName) {
     if (tabName === 'semaforo') return _loadSemaforo()
@@ -453,7 +455,8 @@ export async function renderPlanificacionView(container, { maestroId }) {
         '<div class="pm-planning-empty"><p>Selecciona una ruta para ver su estructura</p></div>'
       return
     }
-    if (_routeTreeLoadedFor === _currentRoute) return // ya renderizado para esta ruta
+    if (_routeTreeLoadedFor === _currentRoute || _routeTreeInFlight) return
+    _routeTreeInFlight = true
     routeTreeDiv.innerHTML = '<div class="pm-planning-empty"><p>Cargando estructura...</p></div>'
     try {
       const { renderPlanningRouteTree } = await import(
@@ -465,6 +468,8 @@ export async function renderPlanificacionView(container, { maestroId }) {
       console.error('[planning] Error cargando estructura de ruta:', err)
       routeTreeDiv.innerHTML =
         '<div class="pm-planning-empty"><p>Error al cargar la estructura. Intenta de nuevo.</p></div>'
+    } finally {
+      _routeTreeInFlight = false
     }
   }
 
@@ -474,8 +479,10 @@ export async function renderPlanificacionView(container, { maestroId }) {
         '<div class="pm-planning-empty"><p>Selecciona una ruta para gestionar su contenido</p></div>'
       return
     }
-    if (_managerLoadedFor === _currentRoute) return
-    managerDiv.innerHTML = '<div class="pm-planning-empty"><p>Cargando gestor...</p></div>'
+    if (_managerLoadedFor === _currentRoute || _managerInFlight) return
+    _managerInFlight = true
+    managerDiv.innerHTML =
+      '<div class="pm-planning-empty"><p>Preparando tu borrador editable…</p></div>'
     try {
       const { renderPlanningManager } = await import(
         '../components/PlanningManagerPanel.js'
@@ -493,6 +500,8 @@ export async function renderPlanificacionView(container, { maestroId }) {
       console.error('[planning] Error cargando gestor:', err)
       managerDiv.innerHTML =
         '<div class="pm-planning-empty"><p>Error al cargar el gestor. Intenta de nuevo.</p></div>'
+    } finally {
+      _managerInFlight = false
     }
   }
 

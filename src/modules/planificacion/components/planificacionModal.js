@@ -3,62 +3,12 @@
  * Diseño Apple-style con campos organizados en secciones.
  */
 
-import { Planificacion } from '../models/planificacion.model.js';
-import { createDslEditorWithToolbar } from './dslToolbar.js';
-import { createAlumnoPickerModal } from './alumnoPickerModal.js';
-import { getAlumnos } from '../../alumnos/api/alumnosApi.js';
-import { obtenerCurriculo } from '../api/curriculoApi.js';
-
-export const PLANTILLAS_PLANIFICACION = [
-  {
-    id: 'tecnica',
-    nombre: 'Técnica',
-    objetivos: 'Desarrollar la técnica instrumental del alumno.\n- Postura correcta\n- Digitación\n- Control del tempo\n- Calidad del sonido',
-    contenido: 'Ejercicios de técnica:\n1. Escalas mayores y menores\n2. Arpegios\n3. Ejercicios de digitación\n4. Estudios técnicos',
-    recursos: 'Método del nivel, estudios técnicos, metrónomo',
-    evaluacion_metodo: 'Observación directa, ejecución de escalas sin errores',
-  },
-  {
-    id: 'teoria',
-    nombre: 'Teoría Musical',
-    objetivos: 'Comprender los fundamentos teóricos de la música.\n- Lectura rítmica\n- Reconocimiento de intervalos\n- Armonía básica\n- Análisis de obras',
-    contenido: 'Contenidos:\n1. Teoría musical básica\n2. Lectura a primera vista\n3. Dictado melódico\n4. Análisis armónico',
-    recursos: 'Libro de teoría, cuaderno de ejercicios, pizarra',
-    evaluacion_metodo: 'Prueba escrita, lectura a primera vista, dictados',
-  },
-  {
-    id: 'repertorio',
-    nombre: 'Repertorio',
-    objetivos: 'Desarrollar el repertorio musical del alumno.\n- Interpretación de obras\n- Expresión musical\n- Memorización\n- Presentación en público',
-    contenido: 'Obras del programa:\n1. Pieza de repertorio\n2. Ejercicios de interpretación\n3. Trabajo de dinámica y fraseo\n4. Práctica con acompañamiento',
-    recursos: 'Partituras, grabaciones de referencia, piano acompañante',
-    evaluacion_metodo: 'Audición interna, evaluación de interpretación',
-  },
-  {
-    id: 'improvisacion',
-    nombre: 'Improvisación',
-    objetivos: 'Fomentar la creatividad musical y la improvisación.\n- Exploración sonora\n- Improvisación libre\n- Improvisación estructurada\n- Composición guiada',
-    contenido: 'Actividades:\n1. Ejercicios de exploración sonora\n2. Improvisación libre\n3. Improvisación sobre cambios armónicos\n4. Composición guiada',
-    recursos: 'Instrumento, pistas de acompañamiento, grabadora',
-    evaluacion_metodo: 'Observación de creatividad, coherencia musical',
-  },
-  {
-    id: 'audicion',
-    nombre: 'Audición',
-    objetivos: 'Desarrollar la capacidad de escuchar y analizar música.\n- Escucha activa\n- Identificación de elementos\n- Análisis formal\n- Reseñas musicales',
-    contenido: 'Actividades:\n1. Audición de obras del repertorio\n2. Identificación de instrumentos\n3. Análisis de forma y estructura\n4. Discusión y reseña',
-    recursos: 'Audio, videos, partituras de referencia',
-    evaluacion_metodo: 'Participación en discusión, trabajo escrito',
-  },
-  {
-    id: 'blanco',
-    nombre: 'En blanco',
-    objetivos: '',
-    contenido: '',
-    recursos: '',
-    evaluacion_metodo: '',
-  },
-];
+import { Planificacion } from '../models/planificacion.model.js'
+import { createDslEditorWithToolbar } from './dslToolbar.js'
+import { createAlumnoPickerModal } from './alumnoPickerModal.js'
+import { getAlumnos } from '../../alumnos/api/alumnosApi.js'
+import { obtenerCurriculo } from '../api/curriculoApi.js'
+import { obtenerPlantillasPlanificacion } from '../api/planificacionAdapter.js'
 
 /**
  * Abre el modal de planificación
@@ -69,150 +19,174 @@ export const PLANTILLAS_PLANIFICACION = [
  * @param {object} initialData - Datos iniciales para préllenar (para flujo "Copiar como planificación")
  * @param {function} onSave - Callback cuando se guarda
  */
-export function openPlanificacionModal(mode, data = null, clases = [], maestros = [], initialData = {}, onSave) {
-  const isEdit = mode === 'edit' && !!data;
-  
+export async function openPlanificacionModal(
+  mode,
+  data = null,
+  clases = [],
+  maestros = [],
+  initialData = {},
+  onSave,
+) {
+  const isEdit = mode === 'edit' && !!data
+
+  // Cargar plantillas desde la API (reemplaza PLANTILLAS_PLANIFICACION hardcodeado)
+  let plantillas = []
+  try {
+    plantillas = await obtenerPlantillasPlanificacion()
+  } catch {
+    // Si falla la carga, el selector simplemente no muestra opciones
+  }
+
   // Crear plan con datos iniciales o de edición
-  const planData = isEdit ? data : { ...initialData };
-  
+  const planData = isEdit ? data : { ...initialData }
+
   // Si hay contenido DSL pero no notas_dsl, mapear contenido -> notas_dsl
   if (!isEdit && initialData.contenido && !planData.notas_dsl) {
-    planData.notas_dsl = initialData.contenido;
+    planData.notas_dsl = initialData.contenido
   }
-  
+
   // Si hay nombre del maestro pero no está en la lista de maestros, agregarlo
-  if (!isEdit && initialData.maestro_nombre && !maestros.find(m => m.nombre === initialData.maestro_nombre)) {
-    maestros = [{
-      id: initialData.maestro_id,
-      nombre: initialData.maestro_nombre
-    }, ...maestros];
+  if (
+    !isEdit &&
+    initialData.maestro_nombre &&
+    !maestros.find((m) => m.nombre === initialData.maestro_nombre)
+  ) {
+    maestros = [
+      {
+        id: initialData.maestro_id,
+        nombre: initialData.maestro_nombre,
+      },
+      ...maestros,
+    ]
   }
-  
-  const plan = isEdit ? new Planificacion(planData) : new Planificacion(planData);
+
+  const plan = isEdit ? new Planificacion(planData) : new Planificacion(planData)
 
   // Crear modal standalone con estilos propios
-  let modalEl = document.getElementById('pm-planificacion-modal');
-  if (modalEl) modalEl.remove();
+  let modalEl = document.getElementById('pm-planificacion-modal')
+  if (modalEl) modalEl.remove()
 
-  modalEl = document.createElement('div');
-  modalEl.id = 'pm-planificacion-modal';
-  modalEl.className = 'pm-plan-modal-overlay';
-  modalEl.innerHTML = _buildModalHTML(isEdit, plan, clases, maestros);
-  document.body.appendChild(modalEl);
+  modalEl = document.createElement('div')
+  modalEl.id = 'pm-planificacion-modal'
+  modalEl.className = 'pm-plan-modal-overlay'
+  modalEl.innerHTML = _buildModalHTML(isEdit, plan, clases, maestros, plantillas)
+  document.body.appendChild(modalEl)
 
   // Injectar estilos si no existen
   if (!document.getElementById('pm-plan-modal-styles')) {
-    const style = document.createElement('style');
-    style.id = 'pm-plan-modal-styles';
-    style.textContent = _getModalStyles();
-    document.head.appendChild(style);
+    const style = document.createElement('style')
+    style.id = 'pm-plan-modal-styles'
+    style.textContent = _getModalStyles()
+    document.head.appendChild(style)
   }
 
   const closeModal = () => {
-    modalEl.classList.remove('open');
-    setTimeout(() => modalEl.remove(), 200);
-  };
+    modalEl.classList.remove('open')
+    setTimeout(() => modalEl.remove(), 200)
+  }
 
   // Wire eventos
-  modalEl.querySelector('.pm-plan-close-x').onclick = closeModal;
-  modalEl.querySelector('.pm-plan-cancel-btn').onclick = closeModal;
-  modalEl.querySelector('.pm-plan-backdrop').onclick = closeModal;
+  modalEl.querySelector('.pm-plan-close-x').onclick = closeModal
+  modalEl.querySelector('.pm-plan-cancel-btn').onclick = closeModal
+  modalEl.querySelector('.pm-plan-backdrop').onclick = closeModal
 
   // Escape key
   const escHandler = (e) => {
     if (e.key === 'Escape') {
-      closeModal();
-      document.removeEventListener('keydown', escHandler);
+      closeModal()
+      document.removeEventListener('keydown', escHandler)
     }
-  };
-  document.addEventListener('keydown', escHandler);
+  }
+  document.addEventListener('keydown', escHandler)
 
   // Template selector
-  const templateSelect = modalEl.querySelector('#pl-plantilla');
+  const templateSelect = modalEl.querySelector('#pl-plantilla')
   if (templateSelect) {
     templateSelect.addEventListener('change', (e) => {
-      const template = PLANTILLAS_PLANIFICACION.find(t => t.id === e.target.value);
+      const template = plantillas.find((t) => t.id === e.target.value)
       if (template && template.id !== 'blanco') {
-        modalEl.querySelector('#pl-objetivos').value = template.objetivos;
-        modalEl.querySelector('#pl-contenido').value = template.contenido;
-        modalEl.querySelector('#pl-recursos').value = template.recursos;
-        modalEl.querySelector('#pl-evaluacion').value = template.evaluacion_metodo;
-        _updateAllCounters(modalEl);
+        modalEl.querySelector('#pl-objetivos').value = template.objetivos || ''
+        modalEl.querySelector('#pl-contenido').value = template.contenido || ''
+        modalEl.querySelector('#pl-recursos').value = template.recursos || ''
+        modalEl.querySelector('#pl-evaluacion').value = template.evaluacion_metodo || ''
+        _updateAllCounters(modalEl)
       }
-    });
+    })
   }
 
   // Clase change → actualizar instrumentos
-  const claseSelect = modalEl.querySelector('#pl-clase_id');
+  const claseSelect = modalEl.querySelector('#pl-clase_id')
   if (claseSelect) {
     claseSelect.addEventListener('change', () => {
-      const instrSelect = modalEl.querySelector('#pl-instrumento');
+      const instrSelect = modalEl.querySelector('#pl-instrumento')
       if (instrSelect) {
-        const selected = instrSelect.value;
-        instrSelect.innerHTML = `<option value="">Todos los instrumentos</option>${
-          _buildInstrumentoOptions(clases, claseSelect.value, null)
-        }`;
+        const selected = instrSelect.value
+        instrSelect.innerHTML = `<option value="">Todos los instrumentos</option>${_buildInstrumentoOptions(
+          clases,
+          claseSelect.value,
+          null,
+        )}`
         if (instrSelect.querySelector(`option[value="${selected}"]`)) {
-          instrSelect.value = selected;
+          instrSelect.value = selected
         }
       }
-    });
+    })
   }
 
   // Char counters
-  _initCounters(modalEl);
+  _initCounters(modalEl)
 
   // DSL Editor setup
-  const dslContainer = modalEl.querySelector('#dsl-editor-container');
+  const dslContainer = modalEl.querySelector('#dsl-editor-container')
   if (dslContainer) {
     const pickerModal = createAlumnoPickerModal({
       onSelect: async (alumnoIds) => {
-        const allAlumnos = await getAlumnos();
-        const selected = allAlumnos.filter(a => alumnoIds.includes(a.id));
-        const mentions = selected.map(a => `#${a.nombre_completo}`).join(', ');
+        const allAlumnos = await getAlumnos()
+        const selected = allAlumnos.filter((a) => alumnoIds.includes(a.id))
+        const mentions = selected.map((a) => `#${a.nombre_completo}`).join(', ')
         if (dslEditor.component) {
-          dslEditor.component.insertText(mentions + ' ');
+          dslEditor.component.insertText(mentions + ' ')
         }
       },
-    });
-    document.body.appendChild(pickerModal);
+    })
+    document.body.appendChild(pickerModal)
 
     const dslEditor = createDslEditorWithToolbar({
       initialContent: plan.notas_dsl || '',
       onChange: (content, parsed) => {
-        const summaryEl = modalEl.querySelector('#dsl-summary');
+        const summaryEl = modalEl.querySelector('#dsl-summary')
         if (summaryEl) {
-          summaryEl.textContent = _getDslSummary(parsed);
+          summaryEl.textContent = _getDslSummary(parsed)
         }
       },
       onAlumnoClick: () => pickerModal.openModal(),
-    });
+    })
 
-    dslContainer.appendChild(dslEditor);
-    modalEl._dslEditor = dslEditor;
+    dslContainer.appendChild(dslEditor)
+    modalEl._dslEditor = dslEditor
   }
 
   // Save button
-  const saveBtn = modalEl.querySelector('.pm-plan-save-btn');
+  const saveBtn = modalEl.querySelector('.pm-plan-save-btn')
   saveBtn.onclick = async () => {
-    const tema = modalEl.querySelector('#pl-tema')?.value.trim();
-    const claseId = modalEl.querySelector('#pl-clase_id')?.value;
+    const tema = modalEl.querySelector('#pl-tema')?.value.trim()
+    const claseId = modalEl.querySelector('#pl-clase_id')?.value
 
     if (!tema) {
-      modalEl.querySelector('#pl-tema').focus();
-      return;
+      modalEl.querySelector('#pl-tema').focus()
+      return
     }
     if (!claseId) {
-      modalEl.querySelector('#pl-clase_id').focus();
-      return;
+      modalEl.querySelector('#pl-clase_id').focus()
+      return
     }
 
-    saveBtn.disabled = true;
-    saveBtn.innerHTML = '<span class="pm-plan-spinner"></span> Guardando...';
+    saveBtn.disabled = true
+    saveBtn.innerHTML = '<span class="pm-plan-spinner"></span> Guardando...'
 
     try {
-      const recursosRaw = modalEl.querySelector('#pl-recursos')?.value || '';
-      const dslEditor = modalEl._dslEditor;
+      const recursosRaw = modalEl.querySelector('#pl-recursos')?.value || ''
+      const dslEditor = modalEl._dslEditor
 
       const datos = {
         clase_id: claseId,
@@ -222,23 +196,26 @@ export function openPlanificacionModal(mode, data = null, clases = [], maestros 
         fecha_inicio: modalEl.querySelector('#pl-fecha_inicio')?.value || null,
         objetivos: modalEl.querySelector('#pl-objetivos')?.value.trim(),
         contenido: modalEl.querySelector('#pl-contenido')?.value.trim(),
-        recursos: recursosRaw.split(',').map(r => r.trim()).filter(Boolean),
+        recursos: recursosRaw
+          .split(',')
+          .map((r) => r.trim())
+          .filter(Boolean),
         evaluacion_metodo: modalEl.querySelector('#pl-evaluacion')?.value.trim(),
         observaciones: modalEl.querySelector('#pl-observaciones')?.value.trim(),
         notas_dsl: dslEditor ? dslEditor.getContent() : '',
         estado: isEdit
-          ? (modalEl.querySelector('#pl-estado')?.value || 'planificado')
+          ? modalEl.querySelector('#pl-estado')?.value || 'planificado'
           : 'planificado',
-      };
+      }
 
-      if (onSave) await onSave(datos);
-      closeModal();
+      if (onSave) await onSave(datos)
+      closeModal()
     } catch (err) {
-      console.error('[planificacionModal] Error:', err);
-      saveBtn.disabled = false;
-      saveBtn.textContent = isEdit ? 'Guardar cambios' : 'Guardar';
+      console.error('[planificacionModal] Error:', err)
+      saveBtn.disabled = false
+      saveBtn.textContent = isEdit ? 'Guardar cambios' : 'Guardar'
     }
-  };
+  }
 
   // Curriculo guide side panel (DOM injection)
   const modalBody = modalEl.querySelector('.pm-plan-body')
@@ -272,7 +249,7 @@ export function openPlanificacionModal(mode, data = null, clases = [], maestros 
       const onClaseChange = () => {
         const selectedClaseId = claseSelectForGuide.value
         if (!selectedClaseId) return
-        const selectedClase = clases.find(c => c.id === selectedClaseId)
+        const selectedClase = clases.find((c) => c.id === selectedClaseId)
         if (selectedClase?.instrumento && selectedClase?.plan_estudio) {
           _loadCurriculoGuide(selectedClase.instrumento, selectedClase.plan_estudio, modalEl)
         }
@@ -280,7 +257,7 @@ export function openPlanificacionModal(mode, data = null, clases = [], maestros 
       claseSelectForGuide.addEventListener('change', onClaseChange)
       // Load immediately if editing an existing plan with a clase
       if (plan.clase_id) {
-        const existingClase = clases.find(c => c.id === plan.clase_id)
+        const existingClase = clases.find((c) => c.id === plan.clase_id)
         if (existingClase?.instrumento && existingClase?.plan_estudio) {
           _loadCurriculoGuide(existingClase.instrumento, existingClase.plan_estudio, modalEl)
         }
@@ -290,9 +267,9 @@ export function openPlanificacionModal(mode, data = null, clases = [], maestros 
 
   // Mostrar modal
   requestAnimationFrame(() => {
-    modalEl.classList.add('open');
-    modalEl.querySelector('#pl-tema')?.focus();
-  });
+    modalEl.classList.add('open')
+    modalEl.querySelector('#pl-tema')?.focus()
+  })
 }
 
 async function _loadCurriculoGuide(instrumento, nivel, modalEl) {
@@ -305,34 +282,53 @@ async function _loadCurriculoGuide(instrumento, nivel, modalEl) {
       body.innerHTML = `<p class="text-muted small text-center py-2">Sin guía curricular<br>para ${instrumento} — ${nivel}</p>`
       return
     }
-    body.innerHTML = curriculo.curriculo_pilares.map(p => `
+    body.innerHTML = curriculo.curriculo_pilares
+      .map(
+        (p) => `
       <div class="mb-2">
         <div class="fw-semibold text-uppercase text-muted mb-1" style="font-size:.7rem;letter-spacing:.05em">${p.nombre}</div>
-        ${p.curriculo_objetivos.map(o => `
+        ${p.curriculo_objetivos
+          .map(
+            (o) => `
           <div class="d-flex align-items-start gap-1 mb-1">
             <i class="bi bi-circle text-muted" style="font-size:.65rem;margin-top:3px;flex-shrink:0"></i>
             <span style="font-size:.78rem">${o.descripcion}</span>
-          </div>`).join('')}
-      </div>`).join('')
+          </div>`,
+          )
+          .join('')}
+      </div>`,
+      )
+      .join('')
   } catch (err) {
     body.innerHTML = `<p class="text-danger small">${err.message}</p>`
   }
 }
 
-function _buildModalHTML(isEdit, plan, clases, maestros) {
+function _buildModalHTML(isEdit, plan, clases, maestros, plantillas = []) {
   const clasesOptions = clases.length
-    ? clases.map(c => `<option value="${c.id}" ${plan.clase_id === c.id ? 'selected' : ''}>${esc(c.nombre || c.id)}</option>`).join('')
-    : '<option value="">Sin clases disponibles</option>';
+    ? clases
+        .map(
+          (c) =>
+            `<option value="${c.id}" ${plan.clase_id === c.id ? 'selected' : ''}>${esc(c.nombre || c.id)}</option>`,
+        )
+        .join('')
+    : '<option value="">Sin clases disponibles</option>'
 
   const maestrosOptions = maestros.length
-    ? `<option value="">Sin asignar</option>` + maestros.map(m => `<option value="${m.id}" ${plan.maestro_id === m.id ? 'selected' : ''}>${esc(m.nombre || m.id)}</option>`).join('')
-    : '<option value="">Sin maestros disponibles</option>';
+    ? `<option value="">Sin asignar</option>` +
+      maestros
+        .map(
+          (m) =>
+            `<option value="${m.id}" ${plan.maestro_id === m.id ? 'selected' : ''}>${esc(m.nombre || m.id)}</option>`,
+        )
+        .join('')
+    : '<option value="">Sin maestros disponibles</option>'
 
-  const recursosValue = Array.isArray(plan.recursos) ? plan.recursos.join(', ') : '';
+  const recursosValue = Array.isArray(plan.recursos) ? plan.recursos.join(', ') : ''
 
-  const templateOptions = PLANTILLAS_PLANIFICACION.map(t =>
-    `<option value="${t.id}">${t.nombre}</option>`
-  ).join('');
+  const templateOptions = plantillas
+    .map((t) => `<option value="${t.id}">${t.nombre}</option>`)
+    .join('')
 
   return `
     <div class="pm-plan-backdrop"></div>
@@ -363,7 +359,9 @@ function _buildModalHTML(isEdit, plan, clases, maestros) {
 
       <!-- Body -->
       <div class="pm-plan-body">
-        ${!isEdit ? `
+        ${
+          !isEdit
+            ? `
         <div class="pm-plan-section">
           <div class="pm-plan-field">
             <label class="pm-plan-label" for="pl-plantilla">Plantilla</label>
@@ -373,7 +371,9 @@ function _buildModalHTML(isEdit, plan, clases, maestros) {
             <span class="pm-plan-hint">Selecciona una plantilla para préllenar el formulario</span>
           </div>
         </div>
-        ` : ''}
+        `
+            : ''
+        }
 
         <!-- Datos básicos -->
         <div class="pm-plan-section">
@@ -407,7 +407,9 @@ function _buildModalHTML(isEdit, plan, clases, maestros) {
               <input type="date" class="pm-plan-input" id="pl-fecha_inicio" value="${plan.fecha_inicio || ''}">
             </div>
           </div>
-          ${isEdit ? `
+          ${
+            isEdit
+              ? `
           <div class="pm-plan-field">
             <label class="pm-plan-label" for="pl-estado">Estado</label>
             <select class="pm-plan-select" id="pl-estado">
@@ -416,7 +418,9 @@ function _buildModalHTML(isEdit, plan, clases, maestros) {
               <option value="revisado" ${plan.estado === 'revisado' ? 'selected' : ''}>Revisado</option>
             </select>
           </div>
-          ` : ''}
+          `
+              : ''
+          }
         </div>
 
         <!-- Tema y objetivos -->
@@ -482,7 +486,7 @@ function _buildModalHTML(isEdit, plan, clases, maestros) {
         <button class="pm-plan-save-btn">${isEdit ? 'Guardar cambios' : 'Guardar'}</button>
       </div>
     </div>
-  `;
+  `
 }
 
 function _getModalStyles() {
@@ -812,7 +816,7 @@ function _getModalStyles() {
         padding: 0.875rem 1rem;
       }
     }
-  `;
+  `
 }
 
 function _initCounters(modalEl) {
@@ -822,17 +826,17 @@ function _initCounters(modalEl) {
     { input: 'pl-contenido', count: 'pl-cont-count' },
     { input: 'pl-evaluacion', count: 'pl-eval-count' },
     { input: 'pl-observaciones', count: 'pl-obs-count' },
-  ];
+  ]
 
   counters.forEach(({ input, count }) => {
-    const inputEl = modalEl.querySelector('#' + input);
-    const countEl = modalEl.querySelector('#' + count);
+    const inputEl = modalEl.querySelector('#' + input)
+    const countEl = modalEl.querySelector('#' + count)
     if (inputEl && countEl) {
       inputEl.addEventListener('input', () => {
-        countEl.textContent = inputEl.value.length;
-      });
+        countEl.textContent = inputEl.value.length
+      })
     }
-  });
+  })
 }
 
 function _updateAllCounters(modalEl) {
@@ -841,36 +845,46 @@ function _updateAllCounters(modalEl) {
     { input: 'pl-contenido', count: 'pl-cont-count' },
     { input: 'pl-evaluacion', count: 'pl-eval-count' },
     { input: 'pl-observaciones', count: 'pl-obs-count' },
-  ];
+  ]
 
   counters.forEach(({ input, count }) => {
-    const inputEl = modalEl.querySelector('#' + input);
-    const countEl = modalEl.querySelector('#' + count);
+    const inputEl = modalEl.querySelector('#' + input)
+    const countEl = modalEl.querySelector('#' + count)
     if (inputEl && countEl) {
-      countEl.textContent = inputEl.value.length;
+      countEl.textContent = inputEl.value.length
     }
-  });
+  })
 }
 
 function _buildInstrumentoOptions(clases, claseId, selectedInstrumento) {
-  const clase = clases.find(c => c.id === claseId);
-  if (!clase?.instrumento) return '';
-  const instrumentos = clase.instrumento.split(',').map(i => i.trim()).filter(Boolean);
-  return instrumentos.map(i =>
-    `<option value="${esc(i)}" ${selectedInstrumento === i ? 'selected' : ''}>${esc(i)}</option>`
-  ).join('');
+  const clase = clases.find((c) => c.id === claseId)
+  if (!clase?.instrumento) return ''
+  const instrumentos = clase.instrumento
+    .split(',')
+    .map((i) => i.trim())
+    .filter(Boolean)
+  return instrumentos
+    .map(
+      (i) =>
+        `<option value="${esc(i)}" ${selectedInstrumento === i ? 'selected' : ''}>${esc(i)}</option>`,
+    )
+    .join('')
 }
 
 function esc(str) {
-  if (!str) return '';
-  return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  if (!str) return ''
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
 }
 
 function _getDslSummary(parsed) {
-  const parts = [];
-  if (parsed.alumnos.length) parts.push(`${parsed.alumnos.length} alum.`);
-  if (parsed.contenido.length) parts.push(`${parsed.contenido.length} cont.`);
-  if (parsed.tareas.length) parts.push(`${parsed.tareas.length} tar.`);
-  if (parsed.calificacion) parts.push(`${parsed.calificacion.valor}/${parsed.calificacion.sobre}`);
-  return parts.length ? parts.join(', ') : 'Sin tokens';
+  const parts = []
+  if (parsed.alumnos.length) parts.push(`${parsed.alumnos.length} alum.`)
+  if (parsed.contenido.length) parts.push(`${parsed.contenido.length} cont.`)
+  if (parsed.tareas.length) parts.push(`${parsed.tareas.length} tar.`)
+  if (parsed.calificacion) parts.push(`${parsed.calificacion.valor}/${parsed.calificacion.sobre}`)
+  return parts.length ? parts.join(', ') : 'Sin tokens'
 }

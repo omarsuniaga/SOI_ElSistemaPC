@@ -11,9 +11,14 @@ import * as supabase from './planificacionSupabase.js'
 import * as mock from './planificacionMock.js'
 import * as plantillasSupabase from './plantillasSupabase.js'
 import * as plantillasMock from './plantillasMock.js'
+import * as plantillasPlanificacionSupabase from './plantillasPlanificacionSupabase.js'
+import * as plantillasPlanificacionMock from './plantillasPlanificacionMock.js'
 
 const impl = config.isDemoMode ? mock : supabase
 const plantillasImpl = config.isDemoMode ? plantillasMock : plantillasSupabase
+const plantillasPlanificacionImpl = config.isDemoMode
+  ? plantillasPlanificacionMock
+  : plantillasPlanificacionSupabase
 
 export const obtenerPlanificaciones = (maestroId) => impl.obtenerPlanificaciones(maestroId)
 export const obtenerPlanificacion = (id) => impl.obtenerPlanificacion(id)
@@ -46,3 +51,16 @@ export const obtenerPlantilla = (id) => plantillasImpl.obtenerPlantilla(id)
 export const crearPlantilla = (data) => plantillasImpl.crearPlantilla(data)
 export const actualizarPlantilla = (id, cambios) => plantillasImpl.actualizarPlantilla(id, cambios)
 export const eliminarPlantilla = (id) => plantillasImpl.eliminarPlantilla(id)
+
+// ── Plantillas de Planificación ──────────────────────────────────────────────
+
+export const obtenerPlantillasPlanificacion = () =>
+  plantillasPlanificacionImpl.obtenerPlantillasPlanificacion()
+export const obtenerPlantillaPlanificacion = (id) =>
+  plantillasPlanificacionImpl.obtenerPlantillaPlanificacion(id)
+export const crearPlantillaPlanificacion = (data) =>
+  plantillasPlanificacionImpl.crearPlantillaPlanificacion(data)
+export const actualizarPlantillaPlanificacion = (id, cambios) =>
+  plantillasPlanificacionImpl.actualizarPlantillaPlanificacion(id, cambios)
+export const eliminarPlantillaPlanificacion = (id) =>
+  plantillasPlanificacionImpl.eliminarPlantillaPlanificacion(id)

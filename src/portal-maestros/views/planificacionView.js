@@ -223,6 +223,65 @@ export async function renderPlanificacionView(container, { maestroId }) {
         padding: 3rem;
         color: var(--pm-text-muted);
       }
+
+      /* Tabs */
+      .pm-planning-tabs {
+        display: flex;
+        gap: 0.5rem;
+        margin-bottom: 1.5rem;
+        border-bottom: 1px solid var(--pm-border);
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+      }
+      .pm-planning-tabs::-webkit-scrollbar { display: none; }
+
+      .pm-planning-tab {
+        background: none;
+        border: none;
+        border-bottom: 3px solid transparent;
+        padding: 0.75rem 1rem;
+        cursor: pointer;
+        font-weight: 600;
+        color: var(--pm-text-muted);
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.95rem;
+        white-space: nowrap;
+        flex-shrink: 0;
+      }
+      .pm-planning-tab:hover { color: var(--pm-primary); }
+      .pm-planning-tab.active {
+        color: var(--pm-primary);
+        border-bottom-color: var(--pm-primary);
+      }
+
+      .pm-planning-pane { animation: pmFadeIn 0.2s ease; }
+      .pm-planning-pane[hidden] { display: none; }
+      @keyframes pmFadeIn {
+        from { opacity: 0; transform: translateY(4px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+
+      /* Mobile (<= 640px) */
+      @media (max-width: 640px) {
+        .pm-planning-container { padding: 0.75rem; }
+        .pm-planning-header { padding: 1rem; border-radius: 12px; margin-bottom: 1rem; }
+        .pm-planning-title { font-size: 1.3rem; margin-bottom: 0.5rem; }
+        .pm-planning-header p { font-size: 0.85rem; }
+        .pm-planning-filters { flex-direction: column; gap: 0.75rem; margin-bottom: 1rem; }
+        .pm-planning-filter { width: 100%; }
+        .pm-planning-filter select { width: 100%; min-height: 44px; font-size: 0.95rem; }
+        .pm-planning-grid { gap: 1.25rem; }
+        .pm-planning-indicator-card { flex-wrap: wrap; gap: 0.75rem; padding: 1rem; }
+        .pm-planning-indicator-actions { width: 100%; }
+        .pm-planning-btn { width: 100%; min-height: 44px; }
+        .pm-planning-progress-bar { width: 100%; }
+        .pm-planning-tab { padding: 0.6rem 0.75rem; font-size: 0.85rem; }
+        .pm-planning-empty { padding: 1.5rem; }
+      }
     </style>
 
     <div class="pm-planning-container">
@@ -246,15 +305,72 @@ export async function renderPlanificacionView(container, { maestroId }) {
         </div>
       </div>
 
-      <div id="pm-planning-content">
-        <div class="pm-planning-empty">
-          <p>Selecciona una clase y ruta para comenzar</p>
+      <div class="pm-planning-tabs" role="tablist">
+        <button class="pm-planning-tab active" data-tab="semaforo" role="tab" aria-selected="true">
+          📊 Semáforo
+        </button>
+        <button class="pm-planning-tab" data-tab="ruta" role="tab" aria-selected="false">
+          🗺️ Ruta
+        </button>
+        <button class="pm-planning-tab" data-tab="gestionar" role="tab" aria-selected="false">
+          ⚙️ Gestionar
+        </button>
+      </div>
+
+      <div class="pm-planning-pane" data-pane="semaforo" role="tabpanel">
+        <div id="pm-planning-content">
+          <div class="pm-planning-empty">
+            <p>Selecciona una clase y ruta para comenzar</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="pm-planning-pane" data-pane="ruta" role="tabpanel" hidden>
+        <div id="pm-planning-route-tree">
+          <div class="pm-planning-empty">
+            <p>Selecciona una ruta para ver su estructura</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="pm-planning-pane" data-pane="gestionar" role="tabpanel" hidden>
+        <div id="pm-planning-manager">
+          <div class="pm-planning-empty">
+            <p>Selecciona una ruta para gestionar su contenido</p>
+          </div>
         </div>
       </div>
     </div>
   `
 
   container.innerHTML = html
+
+  // ── Tab switching ──
+  const TAB_KEY = 'pm-planning-active-tab'
+  const tabs = container.querySelectorAll('.pm-planning-tab')
+  const panes = container.querySelectorAll('.pm-planning-pane')
+
+  function _activateTab(tabName) {
+    tabs.forEach((t) => {
+      const active = t.dataset.tab === tabName
+      t.classList.toggle('active', active)
+      t.setAttribute('aria-selected', active ? 'true' : 'false')
+    })
+    panes.forEach((p) => {
+      p.hidden = p.dataset.pane !== tabName
+    })
+    try {
+      sessionStorage.setItem(TAB_KEY, tabName)
+    } catch {
+      /* sessionStorage no disponible */
+    }
+    // Refrescar el contenido del tab recién activado según la ruta seleccionada
+    _onTabActivated(tabName)
+  }
+
+  tabs.forEach((t) => {
+    t.addEventListener('click', () => _activateTab(t.dataset.tab))
+  })
 
   const claseSelect = container.querySelector('#pm-planning-clase-select')
   const rutaSelect = container.querySelector('#pm-planning-ruta-select')
@@ -294,16 +410,32 @@ export async function renderPlanificacionView(container, { maestroId }) {
     }
   })
 
-  // Cuando cambia la ruta
-  rutaSelect.addEventListener('change', async () => {
-    if (!rutaSelect.value || !_currentClase) {
-      contentDiv.innerHTML = '<div class="pm-planning-empty"><p>Selecciona una ruta...</p></div>'
+  // Cuando cambia la ruta → refrescar el tab activo
+  rutaSelect.addEventListener('change', () => {
+    _currentRoute = rutaSelect.value || null
+    const activeTab = container.querySelector('.pm-planning-tab.active')?.dataset.tab || 'semaforo'
+    _onTabActivated(activeTab)
+  })
+
+  // ── Dispatcher de tabs: renderiza el contenido del tab activo según la ruta ──
+  const routeTreeDiv = container.querySelector('#pm-planning-route-tree')
+  const managerDiv = container.querySelector('#pm-planning-manager')
+  let _routeTreeLoadedFor = null
+  let _managerLoadedFor = null
+
+  function _onTabActivated(tabName) {
+    if (tabName === 'semaforo') return _loadSemaforo()
+    if (tabName === 'ruta') return _loadRouteTree()
+    if (tabName === 'gestionar') return _loadManager()
+  }
+
+  async function _loadSemaforo() {
+    if (!_currentRoute || !_currentClase) {
+      contentDiv.innerHTML =
+        '<div class="pm-planning-empty"><p>Selecciona una clase y ruta para comenzar</p></div>'
       return
     }
-
-    _currentRoute = rutaSelect.value
     contentDiv.innerHTML = '<div class="pm-planning-empty"><p>Cargando indicadores...</p></div>'
-
     try {
       _indicators = await getIndicatorsWithStatus(_currentRoute, maestroId, _currentClase)
       _renderIndicators()
@@ -313,7 +445,64 @@ export async function renderPlanificacionView(container, { maestroId }) {
       contentDiv.innerHTML =
         '<div class="pm-planning-empty"><p>Error al cargar indicadores. Intenta de nuevo.</p></div>'
     }
-  })
+  }
+
+  async function _loadRouteTree() {
+    if (!_currentRoute) {
+      routeTreeDiv.innerHTML =
+        '<div class="pm-planning-empty"><p>Selecciona una ruta para ver su estructura</p></div>'
+      return
+    }
+    if (_routeTreeLoadedFor === _currentRoute) return // ya renderizado para esta ruta
+    routeTreeDiv.innerHTML = '<div class="pm-planning-empty"><p>Cargando estructura...</p></div>'
+    try {
+      const { renderPlanningRouteTree } = await import(
+        '../components/PlanningRouteTree.js'
+      )
+      await renderPlanningRouteTree(routeTreeDiv, { routeVersionId: _currentRoute })
+      _routeTreeLoadedFor = _currentRoute
+    } catch (err) {
+      console.error('[planning] Error cargando estructura de ruta:', err)
+      routeTreeDiv.innerHTML =
+        '<div class="pm-planning-empty"><p>Error al cargar la estructura. Intenta de nuevo.</p></div>'
+    }
+  }
+
+  async function _loadManager() {
+    if (!_currentRoute) {
+      managerDiv.innerHTML =
+        '<div class="pm-planning-empty"><p>Selecciona una ruta para gestionar su contenido</p></div>'
+      return
+    }
+    if (_managerLoadedFor === _currentRoute) return
+    managerDiv.innerHTML = '<div class="pm-planning-empty"><p>Cargando gestor...</p></div>'
+    try {
+      const { renderPlanningManager } = await import(
+        '../components/PlanningManagerPanel.js'
+      )
+      await renderPlanningManager(managerDiv, {
+        publishedRouteVersionId: _currentRoute,
+        maestroId,
+        onChanged: () => {
+          // Invalidar caches de visualización para forzar recarga
+          _routeTreeLoadedFor = null
+        },
+      })
+      _managerLoadedFor = _currentRoute
+    } catch (err) {
+      console.error('[planning] Error cargando gestor:', err)
+      managerDiv.innerHTML =
+        '<div class="pm-planning-empty"><p>Error al cargar el gestor. Intenta de nuevo.</p></div>'
+    }
+  }
+
+  // Restaurar tab activo persistido
+  try {
+    const savedTab = sessionStorage.getItem(TAB_KEY)
+    if (savedTab && savedTab !== 'semaforo') _activateTab(savedTab)
+  } catch {
+    /* sessionStorage no disponible */
+  }
 
   function _renderIndicators() {
     if (!_indicators || _indicators.length === 0) {

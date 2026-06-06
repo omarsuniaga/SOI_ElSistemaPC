@@ -1,3 +1,4 @@
+import { normalizeText } from '../../../core/utils/normalizeText.js'
 import { AppModal } from '../../../shared/components/AppModal.js'
 import { AppToast } from '../../../shared/components/AppToast.js'
 import { supabase } from '../../../lib/supabaseClient.js'
@@ -342,10 +343,12 @@ function _attachModalEvents(modalBody, clase) {
   const searchInput = modalBody.querySelector('#search-modal-alumnos')
   const listItems   = modalBody.querySelectorAll('.alumno-check-item')
   searchInput?.addEventListener('input', (e) => {
-    const term = e.target.value.toLowerCase().trim()
+    const term = normalizeText(e.target.value)
     listItems.forEach(item => {
-      const match = item.dataset.nombre.includes(term) || item.dataset.instrumento.includes(term)
-      item.style.display = match ? 'block' : 'none'
+      const nombre      = item.dataset.nombre      || ''
+      const instrumento = item.dataset.instrumento || ''
+      const match = nombre.includes(term) || instrumento.includes(term)
+      item.style.display = match ? '' : 'none'
     })
   })
 
@@ -551,7 +554,7 @@ function _getAlumnosSelectorHTML(selectedIds = []) {
       </div>
       <div class="alumnos-list border rounded bg-body-tertiary" style="max-height: 200px; overflow-y: auto; padding: 8px;">
         ${alumnos.map(a => `
-          <div class="form-check alumno-check-item" data-nombre="${a.nombre_completo.toLowerCase()}" data-instrumento="${(a.instrumento_principal || '').toLowerCase()}">
+          <div class="form-check alumno-check-item" data-nombre="${normalizeText(a.nombre_completo)}" data-instrumento="${normalizeText(a.instrumento_principal)}">
             <input class="form-check-input" type="checkbox" value="${a.id}" id="chk-a-${a.id}" ${selectedIds.includes(a.id) ? 'checked' : ''}>
             <label class="form-check-label small w-100 cursor-pointer" for="chk-a-${a.id}">
               ${escapeHTML(a.nombre_completo)} <span class="text-muted">(${escapeHTML(a.instrumento_principal || 'N/A')})</span>

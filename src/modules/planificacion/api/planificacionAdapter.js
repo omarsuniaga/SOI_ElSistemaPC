@@ -9,8 +9,11 @@
 import { config } from '../../../core/config/config.js'
 import * as supabase from './planificacionSupabase.js'
 import * as mock from './planificacionMock.js'
+import * as plantillasSupabase from './plantillasSupabase.js'
+import * as plantillasMock from './plantillasMock.js'
 
 const impl = config.isDemoMode ? mock : supabase
+const plantillasImpl = config.isDemoMode ? plantillasMock : plantillasSupabase
 
 export const obtenerPlanificaciones = (maestroId) => impl.obtenerPlanificaciones(maestroId)
 export const obtenerPlanificacion = (id) => impl.obtenerPlanificacion(id)
@@ -35,3 +38,11 @@ export const obtenerSesiones = (maestroId, fechaInicio, fechaFin) =>
  * @param {string|null} maestroId - null para vista admin (todas las clases)
  */
 export const obtenerCoberturaCurricular = (maestroId) => impl.obtenerCoberturaCurricular(maestroId)
+
+// ── Plantillas DSL ─────────────────────────────────────────────────
+
+export const obtenerPlantillas = () => plantillasImpl.obtenerPlantillas()
+export const obtenerPlantilla = (id) => plantillasImpl.obtenerPlantilla(id)
+export const crearPlantilla = (data) => plantillasImpl.crearPlantilla(data)
+export const actualizarPlantilla = (id, cambios) => plantillasImpl.actualizarPlantilla(id, cambios)
+export const eliminarPlantilla = (id) => plantillasImpl.eliminarPlantilla(id)

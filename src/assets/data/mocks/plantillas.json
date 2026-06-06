@@ -1,0 +1,40 @@
+{
+  "plantillas": [
+    {
+      "id": "tpl_escala",
+      "nombre": "Escala Mayor",
+      "instrumento": "Piano / Guitarra",
+      "descripcion": "Trabajo de escalas diatónicas mayores en posición cerrada.",
+      "contenido": "[Indicador] Ejecuta la escala de Do mayor en dos octavas con digitación correcta\n[Indicador] Mantiene tempo estable con metrónomo a 60 bpm\n{Actividad} Calentamiento de dedos: ejercicios de Hanon 5 min\n{Actividad} Escala lenta con atención al peso del brazo\n{Actividad} Escala en tempo progresivo hasta 80 bpm",
+      "activo": true,
+      "created_at": "2026-05-01T00:00:00Z"
+    },
+    {
+      "id": "tpl_lectura",
+      "nombre": "Lectura a Primera Vista",
+      "instrumento": "General",
+      "descripcion": "Desarrollar la capacidad de leer y ejecutar partituras sin preparación previa.",
+      "contenido": "[Indicador] Lee correctamente las figuras rítmicas (negra, corchea, blanca)\n[Indicador] Identifica la clave y armadura antes de comenzar\n{Actividad} Análisis visual de 2 min antes de tocar\n{Actividad} Ejecución a tempo lento sin parar\n{Actividad} Revisión de errores y segunda lectura",
+      "activo": true,
+      "created_at": "2026-05-01T00:00:00Z"
+    },
+    {
+      "id": "tpl_repertorio",
+      "nombre": "Montaje de Repertorio",
+      "instrumento": "General",
+      "descripcion": "Proceso sistemático de aprendizaje de una obra musical.",
+      "contenido": "[Indicador] Memoriza la estructura formal de la obra (A-B-A)\n[Indicador] Ejecuta las secciones complejas de manera fluida\n{Actividad} División por secciones: aprender A, luego B\n{Actividad} Trabajo de manos separadas en pasajes difíciles\n{Actividad} Ensamble y trabajo de empalmes entre secciones",
+      "activo": true,
+      "created_at": "2026-05-01T00:00:00Z"
+    },
+    {
+      "id": "tpl_teoria",
+      "nombre": "Teoría Musical Aplicada",
+      "instrumento": "Teoría",
+      "descripcion": "Integración de conceptos teóricos con la práctica instrumental.",
+      "contenido": "[Indicador] Identifica intervalos en el instrumento (2da, 3ra, 4ta, 5ta)\n[Indicador] Construye y ejecuta acordes mayores y menores\n{Actividad} Dictado rítmico (4 compases)\n{Actividad} Identificación auditiva de intervalos\n{Actividad} Construcción de acordes en el instrumento",
+      "activo": true,
+      "created_at": "2026-05-01T00:00:00Z"
+    }
+  ]
+}

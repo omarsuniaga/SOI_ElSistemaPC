@@ -29,17 +29,35 @@ import { AppToast } from '../../shared/components/AppToast.js'
  * @param {{ publishedRouteVersionId: string, maestroId: string, onChanged?: Function }} opts
  */
 export async function renderPlanningManager(container, { publishedRouteVersionId, onChanged }) {
-  container.innerHTML =
-    '<div class="pm-planning-empty"><p>Preparando tu borrador editable…<br><small>La primera vez puede tardar unos segundos.</small></p></div>'
+  let draftVersionId = null
 
-  let draftVersionId
-  try {
-    draftVersionId = await getOrCreateDraftVersion(publishedRouteVersionId)
-  } catch (err) {
-    console.error('[manager] Error creando borrador:', err)
+  // Gate explícito: el clonado del borrador solo ocurre cuando el maestro lo
+  // pide con un click, nunca automáticamente al abrir/restaurar la pestaña.
+  function _renderGate() {
+    container.innerHTML = `
+      <div class="pm-planning-empty" style="max-width:520px;margin:0 auto;">
+        <p style="font-size:1.05rem;font-weight:600;margin-bottom:0.5rem;">✏️ Editar el currículo de esta ruta</p>
+        <p style="margin-bottom:1.25rem;">Se creará (o abrirá) <strong>tu borrador propio</strong>. Podés agregar, editar o quitar niveles, nodos e indicadores sin afectar la ruta publicada que ven los demás maestros.</p>
+        <button id="pm-mg-open-draft" class="pm-planning-btn pm-planning-btn-info" style="min-height:44px;padding:0.7rem 1.4rem;">
+          Abrir mi borrador
+        </button>
+      </div>
+    `
+    container.querySelector('#pm-mg-open-draft')?.addEventListener('click', _openDraft)
+  }
+
+  async function _openDraft() {
     container.innerHTML =
-      '<div class="pm-planning-empty"><p>No se pudo crear tu borrador editable. Intenta de nuevo.</p></div>'
-    return
+      '<div class="pm-planning-empty"><p>Preparando tu borrador editable…<br><small>La primera vez puede tardar unos segundos.</small></p></div>'
+    try {
+      draftVersionId = await getOrCreateDraftVersion(publishedRouteVersionId)
+    } catch (err) {
+      console.error('[manager] Error creando borrador:', err)
+      container.innerHTML =
+        '<div class="pm-planning-empty"><p>No se pudo abrir tu borrador. Intenta de nuevo.</p></div>'
+      return
+    }
+    await _reload()
   }
 
   async function _reload() {
@@ -271,5 +289,5 @@ export async function renderPlanningManager(container, { publishedRouteVersionId
     })
   }
 
-  await _reload()
+  _renderGate()
 }

@@ -407,6 +407,15 @@ export async function renderPlanificacionView(container, { maestroId }) {
     _currentRoute = null
     contentDiv.innerHTML = '<div class="pm-planning-empty"><p>Selecciona una ruta...</p></div>'
 
+    // Invalidar caches dependientes de la clase
+    _historialLoadedFor = null
+    _routeTreeLoadedFor = null
+    _managerLoadedFor = null
+
+    // Si el tab activo es historial, recargarlo (no necesita ruta)
+    const activeTab = container.querySelector('.pm-planning-tab.active')?.dataset.tab
+    if (activeTab === 'historial') _loadHistorial()
+
     if (!_currentClase) return
 
     // Cargar rutas para esta clase

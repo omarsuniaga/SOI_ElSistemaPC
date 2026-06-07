@@ -15,6 +15,8 @@ import {
   escapeHTML,
 } from '../utils/observacionesUtils.js'
 import { Observacion } from '../models/observacion.model.js'
+import { router } from '../../../core/router/router.js'
+import { createStudentCase } from '../../pedagogico/services/studentCasesService.js'
 
 const state = {
   observaciones: [],
@@ -186,6 +188,10 @@ function renderTableRows(progs) {
         </td>
         <td class="text-end align-middle">
           <div class="quick-actions justify-content-end">
+            ${o.requiere_seguimiento ? `
+              <button class="btn btn-sm btn-outline-success btn-icon-compact" data-action="create-case" data-id="${o.id}" title="Crear caso institucional">
+                <i class="bi bi-folder-plus"></i>
+              </button>` : ''}
             <button class="btn btn-sm btn-outline-warning btn-icon-compact" data-action="follow" data-id="${o.id}" title="Seguimiento">
               <i class="bi bi-arrow-repeat"></i>
             </button>
@@ -217,6 +223,7 @@ function _attachEvents(container) {
     if (action === 'edit') openEditModal(id)
     if (action === 'delete') openDeleteModal(id)
     if (action === 'follow') openFollowUpModal(id)
+    if (action === 'create-case') _createCaseFromObservation(id)
   })
 
   container.querySelector('#btn-nueva-obs')?.addEventListener('click', () => openEditModal(null))
@@ -353,5 +360,80 @@ function openDeleteModal(id) {
       renderObservacionesView(state.container)
       return true
     }
+  })
+}
+
+async function _createCaseFromObservation(observacionId) {
+  const obs = state.observacionesOriginales.find(o => o.id === observacionId)
+  if (!obs) return
+
+  AppModal.open({
+    title: 'Crear caso institucional desde observación',
+    size:  'lg',
+    saveText: 'Crear caso',
+    body: `
+      <div class="small">
+        <div class="alert alert-info py-2 mb-3">
+          <i class="bi bi-info-circle me-1"></i>
+          Se creará un caso institucional asociado al alumno <strong>${escapeHTML(obs.alumno_nombre)}</strong> usando esta observación como base.
+        </div>
+        <div class="row g-2">
+          <div class="col-12 col-md-6">
+            <label class="form-label fw-semibold">Tipo de caso</label>
+            <select class="form-select form-select-sm" id="oc-tipo">
+              <option value="seguimiento_pedagogico" selected>Seguimiento pedagógico</option>
+              <option value="conducta">Conducta</option>
+              <option value="situacion_familiar">Situación familiar</option>
+              <option value="compromiso">Compromiso</option>
+              <option value="otro">Otro</option>
+            </select>
+          </div>
+          <div class="col-12 col-md-6">
+            <label class="form-label fw-semibold">Nivel de riesgo inicial</label>
+            <select class="form-select form-select-sm" id="oc-riesgo">
+              <option value="bajo"   ${obs.prioridad !== 'alta' && obs.prioridad !== 'urgente' ? 'selected' : ''}>Bajo</option>
+              <option value="medio"  ${obs.prioridad === 'alta' ? 'selected' : ''}>Medio</option>
+              <option value="alto"   ${obs.prioridad === 'urgente' ? 'selected' : ''}>Alto</option>
+              <option value="critico">Crítico</option>
+            </select>
+          </div>
+          <div class="col-12">
+            <label class="form-label fw-semibold">Título *</label>
+            <input type="text" class="form-control form-control-sm" id="oc-titulo" value="${escapeHTML(obs.titulo || 'Seguimiento de observación')}" required maxlength="160">
+          </div>
+          <div class="col-12">
+            <label class="form-label fw-semibold">Descripción</label>
+            <textarea class="form-control form-control-sm" id="oc-descripcion" rows="3">${escapeHTML(obs.observacion || obs.descripcion || '')}</textarea>
+          </div>
+        </div>
+      </div>
+    `,
+    onSave: async () => {
+      const tipo        = document.querySelector('#oc-tipo')?.value
+      const nivelRiesgo = document.querySelector('#oc-riesgo')?.value
+      const titulo      = document.querySelector('#oc-titulo')?.value?.trim()
+      const descripcion = document.querySelector('#oc-descripcion')?.value?.trim() || null
+
+      if (!titulo) { AppToast.error('Ingresá un título.'); return false }
+
+      try {
+        const caso = await createStudentCase({
+          alumno_id:      obs.alumno_id,
+          alumno_nombre:  obs.alumno_nombre,
+          tipo,
+          titulo,
+          descripcion,
+          nivel_riesgo:   nivelRiesgo,
+          origen:         'observacion_maestro',
+          resumen_actual: `Caso creado desde observación: ${obs.titulo}`,
+        })
+        AppToast.success('Caso creado correctamente.')
+        router.navigate(`pedagogico-caso?id=${caso.id}`)
+        return true
+      } catch (err) {
+        AppToast.error(`Error: ${err.message}`)
+        return false
+      }
+    },
   })
 }

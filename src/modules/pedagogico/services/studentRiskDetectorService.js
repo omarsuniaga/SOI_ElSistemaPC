@@ -27,12 +27,13 @@ export async function detectAttendanceRisk(alumnoId, period = {}) {
   const rule = await getActiveRuleByTipo('asistencia_irregular')
   if (!rule) return null
 
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('asistencias')
     .select('estado, fecha')
     .eq('alumno_id', alumnoId)
     .gte('fecha', from)
     .lte('fecha', to)
+  if (error) console.error('[detectAttendanceRisk]', error)
 
   const ausencias = (data || []).filter(a => a.estado === 'A').length
   const justifs   = (data || []).filter(a => a.estado === 'J').length
@@ -53,12 +54,13 @@ export async function detectTardinessRisk(alumnoId, period = {}) {
   const rule = await getActiveRuleByTipo('tardanzas_recurrentes')
   if (!rule) return null
 
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('asistencias')
     .select('estado, fecha')
     .eq('alumno_id', alumnoId)
     .gte('fecha', from)
     .lte('fecha', to)
+  if (error) console.error('[detectTardinessRisk]', error)
 
   const tardanzas = (data || []).filter(a => a.estado === 'T').length
   const level     = _bucketLevel(tardanzas, rule.config)
@@ -126,11 +128,12 @@ export async function detectJustificationRisk(alumnoId, _period = {}) {
 }
 
 export async function detectDocumentHistoryRisk(alumnoId, _period = {}) {
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('generated_documents')
     .select('id, tipo')
     .eq('alumno_id', alumnoId)
     .in('estado', ['generado', 'archivado'])
+  if (error) console.error('[detectDocumentHistoryRisk]', error)
 
   const cartasPrevias = (data || []).length
   return { tipo: 'historial_documental', count: cartasPrevias, level: null, razon: null }
@@ -192,17 +195,25 @@ export async function analyzeStudentRisk(alumnoId, options = {}) {
   }
 }
 
-/** Analyze all active students. Returns only students with at least one risk signal */
+/** Analyze all active students. Returns only students with at least one risk signal. Batches 10 at a time to avoid hanging the UI. */
 export async function analyzeAllStudentsRisk(options = {}) {
   const { data: alumnos } = await supabase
     .from('alumnos')
     .select('id, nombre_completo')
     .eq('activo', true)
 
+  const list  = alumnos || []
+  const BATCH = 10
   const results = []
-  for (const a of alumnos || []) {
-    const r = await analyzeStudentRisk(a.id, options)
-    if (r.nivelRiesgo) results.push(r)
+  for (let i = 0; i < list.length; i += BATCH) {
+    const slice = list.slice(i, i + BATCH)
+    const chunk = await Promise.all(slice.map(a => analyzeStudentRisk(a.id, options).catch(err => {
+      console.error('[analyzeAllStudentsRisk] error for', a.id, err)
+      return null
+    })))
+    for (const r of chunk) {
+      if (r && r.nivelRiesgo) results.push(r)
+    }
   }
   results.sort((x, y) => y.score - x.score)
   return results

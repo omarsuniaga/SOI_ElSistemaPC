@@ -23,7 +23,8 @@ export async function openCaseLetterModal(caso, _alumno, onSaved) {
 
   const allTemplates   = await listTemplates()
   const suggestedTipos = RISK_TEMPLATE_MAP[caso.nivel_riesgo] || []
-  const activeTemplates = allTemplates.filter(t => t.estado === 'activa' || suggestedTipos.includes(t.tipo))
+  // Only active templates — never expose inactive/archived even if their tipo is in the suggestion map.
+  const activeTemplates = allTemplates.filter(t => t.estado === 'activa')
 
   AppModal.open({
     title:      'Generar carta desde el caso',

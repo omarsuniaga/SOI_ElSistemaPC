@@ -67,9 +67,12 @@ export async function createCaseFromAlert(alertId, payload = {}) {
     ...payload,
   })
 
-  await supabase.from(T_ALERTS).update({
+  const { error: alertErr } = await supabase.from(T_ALERTS).update({
     case_id: caseRow.id, estado: 'convertida_en_caso', revisada_en: new Date().toISOString(),
   }).eq('id', alertId)
+  if (alertErr) {
+    console.error('[createCaseFromAlert] alert update failed — alert may be re-used:', alertErr)
+  }
 
   await _logEvent(caseRow.id, 'alerta_detectada', `Caso creado desde alerta`, {
     metadata: { alert_id: alertId, evidencia: alert.evidencia },
@@ -178,7 +181,7 @@ export async function getCaseKPIs() {
   const [mFrom, mTo] = (() => {
     const n = new Date()
     return [new Date(n.getFullYear(), n.getMonth(), 1).toISOString(),
-            new Date(n.getFullYear(), n.getMonth() + 1, 0).toISOString()]
+            new Date(n.getFullYear(), n.getMonth() + 1, 0, 23, 59, 59, 999).toISOString()]
   })()
   const cartas = await supabase
     .from('student_case_actions')

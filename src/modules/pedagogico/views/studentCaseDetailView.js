@@ -91,7 +91,8 @@ async function _load() {
     _render()
   } catch (err) {
     console.error('[caseDetail]', err)
-    state.container.innerHTML = `<div class="page-container"><div class="alert alert-warning">Error: ${err.message}</div></div>`
+    const safeMsg = String(err?.message || '').replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]))
+    state.container.innerHTML = `<div class="page-container"><div class="alert alert-warning">Error: ${safeMsg}</div></div>`
   }
 }
 
@@ -129,19 +130,33 @@ function _render() {
 
           ${c.descripcion ? `<p class="small mb-3">${c.descripcion}</p>` : ''}
 
+          ${(c.estado === 'resuelto' || c.estado === 'archivado' || c.estado === 'escalado') ? `
+            <div class="alert alert-secondary py-2 small mb-3">
+              <i class="bi bi-info-circle me-1"></i>
+              Este caso está en estado <strong>${(c.estado || '').replace(/_/g, ' ')}</strong>. Las acciones están deshabilitadas.
+              Reabrí el caso con <em>Cambiar estado</em> si necesitás registrar nuevas acciones.
+            </div>` : ''}
+
+          ${(() => {
+            const dis = (c.estado === 'resuelto' || c.estado === 'archivado' || c.estado === 'escalado') ? 'disabled' : ''
+            const noResolve = (c.estado === 'resuelto' || c.estado === 'archivado') ? 'disabled' : ''
+            const noEscalate = (c.estado === 'escalado' || c.estado === 'archivado' || c.estado === 'resuelto') ? 'disabled' : ''
+            const noArchive = (c.estado === 'archivado') ? 'disabled' : ''
+            return `
           <div class="d-flex flex-wrap gap-2">
-            <button class="btn btn-sm btn-primary"           id="btn-act-call"><i class="bi bi-telephone me-1"></i>Registrar llamada</button>
-            <button class="btn btn-sm btn-primary"           id="btn-act-meeting"><i class="bi bi-people me-1"></i>Registrar reunión</button>
-            <button class="btn btn-sm btn-outline-primary"   id="btn-act-agreement"><i class="bi bi-handshake me-1"></i>Registrar acuerdo</button>
-            <button class="btn btn-sm btn-success"           id="btn-act-letter"><i class="bi bi-file-earmark-text me-1"></i>Generar carta</button>
-            <button class="btn btn-sm btn-outline-secondary" id="btn-act-note"><i class="bi bi-sticky me-1"></i>Nota interna</button>
+            <button class="btn btn-sm btn-primary"           id="btn-act-call"      ${dis}><i class="bi bi-telephone me-1"></i>Registrar llamada</button>
+            <button class="btn btn-sm btn-primary"           id="btn-act-meeting"   ${dis}><i class="bi bi-people me-1"></i>Registrar reunión</button>
+            <button class="btn btn-sm btn-outline-primary"   id="btn-act-agreement" ${dis}><i class="bi bi-handshake me-1"></i>Registrar acuerdo</button>
+            <button class="btn btn-sm btn-success"           id="btn-act-letter"    ${dis}><i class="bi bi-file-earmark-text me-1"></i>Generar carta</button>
+            <button class="btn btn-sm btn-outline-secondary" id="btn-act-note"      ${dis}><i class="bi bi-sticky me-1"></i>Nota interna</button>
             <span class="vr"></span>
             <button class="btn btn-sm btn-outline-warning"   id="btn-change-status"><i class="bi bi-arrow-repeat me-1"></i>Cambiar estado</button>
-            <button class="btn btn-sm btn-outline-warning"   id="btn-change-risk"><i class="bi bi-shield me-1"></i>Cambiar riesgo</button>
-            <button class="btn btn-sm btn-success"           id="btn-resolve"><i class="bi bi-check-circle me-1"></i>Resolver</button>
-            <button class="btn btn-sm btn-danger"            id="btn-escalate"><i class="bi bi-arrow-up-circle me-1"></i>Escalar</button>
-            <button class="btn btn-sm btn-secondary"         id="btn-archive"><i class="bi bi-archive me-1"></i>Archivar</button>
-          </div>
+            <button class="btn btn-sm btn-outline-warning"   id="btn-change-risk"   ${dis}><i class="bi bi-shield me-1"></i>Cambiar riesgo</button>
+            <button class="btn btn-sm btn-success"           id="btn-resolve"       ${noResolve}><i class="bi bi-check-circle me-1"></i>Resolver</button>
+            <button class="btn btn-sm btn-danger"            id="btn-escalate"      ${noEscalate}><i class="bi bi-arrow-up-circle me-1"></i>Escalar</button>
+            <button class="btn btn-sm btn-secondary"         id="btn-archive"       ${noArchive}><i class="bi bi-archive me-1"></i>Archivar</button>
+          </div>`
+          })()}
         </div>
       </div>
 

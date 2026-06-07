@@ -3,6 +3,7 @@ import { router } from '../../../core/router/router.js'
 import { THRESHOLDS } from '../../progresos/services/riskRules.js'
 import { HelpPanel } from '../../../shared/components/HelpPanel.js'
 import { AppModal } from '../../../shared/components/AppModal.js'
+import { getCaseKPIs } from '../services/studentCasesService.js'
 
 export async function renderDashboardPedagogicoView(container) {
   if (!container) return
@@ -16,6 +17,7 @@ export async function renderDashboardPedagogicoView(container) {
     container.innerHTML = _renderContent(kpis, riesgo)
     _attachEvents(container)
     _loadEmergentes(container)
+    _loadSeguimiento(container)
   } catch (err) {
     console.error('[DashboardPedagogico]', err)
     container.innerHTML = `
@@ -184,6 +186,18 @@ function _renderContent(kpis, alumnosRiesgo) {
           <div class="text-center text-muted py-3">
             <span class="spinner-border spinner-border-sm me-2"></span>Cargando...
           </div>
+        </div>
+      </div>
+
+      <!-- Seguimiento institucional -->
+      <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header border-0 d-flex align-items-center gap-2">
+          <i class="bi bi-shield-check text-primary"></i>
+          <span class="fw-semibold" style="font-size:0.9rem;">Seguimiento institucional</span>
+          <button class="btn btn-sm btn-link ms-auto" data-nav="pedagogico-seguimiento-institucional" style="font-size:0.78rem;">Ver todo <i class="bi bi-arrow-right"></i></button>
+        </div>
+        <div class="card-body p-3" id="seguimiento-kpis-section">
+          <div class="text-center text-muted py-3"><span class="spinner-border spinner-border-sm me-2"></span>Cargando...</div>
         </div>
       </div>
     </div>`
@@ -437,6 +451,44 @@ async function _loadEmergenteAsistencia(asistenciaJson, modalBody) {
   } catch (err) {
     console.error('[asistencia emergente]', err)
     section.innerHTML = '<p class="text-danger small mb-0">Error al cargar la asistencia.</p>'
+  }
+}
+
+async function _loadSeguimiento(container) {
+  const section = container.querySelector('#seguimiento-kpis-section')
+  if (!section) return
+  try {
+    const k = await getCaseKPIs()
+    section.innerHTML = `
+      <div class="row g-2">
+        <div class="col-6 col-md-2 text-center">
+          <div class="fw-bold text-warning" style="font-size:1.4rem;">${k.alertasPendientes}</div>
+          <div class="text-muted" style="font-size:0.7rem;">Alertas pendientes</div>
+        </div>
+        <div class="col-6 col-md-2 text-center">
+          <div class="fw-bold text-primary" style="font-size:1.4rem;">${k.casosAbiertos}</div>
+          <div class="text-muted" style="font-size:0.7rem;">Casos abiertos</div>
+        </div>
+        <div class="col-6 col-md-2 text-center">
+          <div class="fw-bold text-danger" style="font-size:1.4rem;">${k.casosCriticos}</div>
+          <div class="text-muted" style="font-size:0.7rem;">Casos críticos</div>
+        </div>
+        <div class="col-6 col-md-2 text-center">
+          <div class="fw-bold text-warning" style="font-size:1.4rem;">${k.proximasAccionesVencidas}</div>
+          <div class="text-muted" style="font-size:0.7rem;">Acciones vencidas</div>
+        </div>
+        <div class="col-6 col-md-2 text-center">
+          <div class="fw-bold text-info" style="font-size:1.4rem;">${k.casosEnSeguimiento}</div>
+          <div class="text-muted" style="font-size:0.7rem;">En seguimiento</div>
+        </div>
+        <div class="col-6 col-md-2 text-center">
+          <div class="fw-bold text-success" style="font-size:1.4rem;">${k.cartasEsteMes}</div>
+          <div class="text-muted" style="font-size:0.7rem;">Cartas este mes</div>
+        </div>
+      </div>`
+  } catch (err) {
+    console.error('[dashboard seguimiento]', err)
+    section.innerHTML = '<p class="text-danger small mb-0">Error al cargar KPIs de seguimiento.</p>'
   }
 }
 

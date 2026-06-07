@@ -1,4 +1,4 @@
-import{i as e}from"./portalUtils-BqwkK1cV.js";import{i as t}from"./planningService-s-tkfwT4.js";var n={ESCALA:`🎼`,ARPEGIO:`🎹`,MANO_IZQ:`✋`,ARCO:`🎻`,SONIDO:`🔊`,AFINACION:`🎵`,TECNICA:`⚙️`,REPERTORIO:`📖`};function r(e){return n[e]||`•`}async function i(e,{routeVersionId:n}){let r=await t(n);if(!r||r.length===0){e.innerHTML=`<div class="pm-planning-empty"><p>Esta ruta aún no tiene estructura configurada.</p></div>`;return}e.innerHTML=`
+import{i as e}from"./portalUtils-d8JQ9zxl.js";import{i as t}from"./planningService-s-tkfwT4.js";var n={ESCALA:`🎼`,ARPEGIO:`🎹`,MANO_IZQ:`✋`,ARCO:`🎻`,SONIDO:`🔊`,AFINACION:`🎵`,TECNICA:`⚙️`,REPERTORIO:`📖`};function r(e){return n[e]||`•`}async function i(e,{routeVersionId:n}){let r=await t(n);if(!r||r.length===0){e.innerHTML=`<div class="pm-planning-empty"><p>Esta ruta aún no tiene estructura configurada.</p></div>`;return}e.innerHTML=`
     <style>
       .pm-rt-root { display: flex; flex-direction: column; gap: 0.75rem; }
       .pm-rt-block { border: 1px solid var(--pm-border); border-radius: 12px; overflow: hidden; background: var(--pm-surface); }

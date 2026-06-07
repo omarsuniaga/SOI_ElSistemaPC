@@ -45,7 +45,8 @@ async function _load() {
     _render()
   } catch (err) {
     console.error('[seguimientoInstitucional]', err)
-    state.container.innerHTML = `<div class="page-container"><div class="alert alert-warning">Error: ${err.message}</div></div>`
+    const safeMsg = String(err?.message || '').replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]))
+    state.container.innerHTML = `<div class="page-container"><div class="alert alert-warning">Error: ${safeMsg}</div></div>`
   }
 }
 

@@ -19,7 +19,8 @@ async function _load() {
     state.rules = await listSeguimientoRules({})
     _render()
   } catch (err) {
-    state.container.innerHTML = `<div class="page-container"><div class="alert alert-warning">Error: ${err.message}</div></div>`
+    const safeMsg = String(err?.message || '').replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]))
+    state.container.innerHTML = `<div class="page-container"><div class="alert alert-warning">Error: ${safeMsg}</div></div>`
   }
 }
 

@@ -76,6 +76,31 @@ async function login(email, password, remember = false) {
       return { success: false, error: errorMsg }
     }
 
+    if (hasUser) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('estado')
+        .eq('id', result.user.id)
+        .maybeSingle()
+
+      if (profile?.estado === 'pendiente') {
+        await supabase.auth.signOut()
+        clearSession()
+        state.user = null
+        state.session = null
+        notifyListeners()
+        return { success: true, pendingApproval: true }
+      }
+      if (profile?.estado === 'rechazado') {
+        await supabase.auth.signOut()
+        clearSession()
+        state.user = null
+        state.session = null
+        notifyListeners()
+        return { success: true, rejected: true }
+      }
+    }
+
     return { success: hasUser, user: state.user, session: state.session }
   } catch (error) {
     state.loading = false

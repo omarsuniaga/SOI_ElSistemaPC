@@ -2,6 +2,7 @@ import { Modal, Toast } from 'bootstrap'
 import { useAuth } from '../hooks/useAuth.js'
 import { router } from '../../../core/router/router.js'
 import { CompactUI } from '../../../shared/utils/compactUI.js'
+import { supabase } from '../../../lib/supabaseClient.js'
 
 const state = {
   loading: false,
@@ -109,6 +110,37 @@ function renderContent(container) {
               <div class="invalid-feedback d-none" id="confirmPasswordError">
                 Las contraseñas no coinciden
               </div>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label-compact">Tipo de cuenta</label>
+              <div class="input-group">
+                <span class="input-group-text input-dense">
+                  <i class="bi bi-person-badge"></i>
+                </span>
+                <select class="form-select input-dense" id="registerRol">
+                  <option value="maestro" selected>Maestro</option>
+                  <option value="admin">Administrador</option>
+                </select>
+              </div>
+              <small class="text-muted">Las cuentas quedan pendientes hasta que un administrador las apruebe.</small>
+            </div>
+
+            <div class="mb-3 d-none" id="inviteCodeWrapper">
+              <label class="form-label-compact">Código de invitación de administrador</label>
+              <div class="input-group">
+                <span class="input-group-text input-dense">
+                  <i class="bi bi-key"></i>
+                </span>
+                <input
+                  type="text"
+                  class="form-control input-dense"
+                  id="registerInviteCode"
+                  placeholder="SOI-ADMIN-XXXX"
+                  autocomplete="off"
+                >
+              </div>
+              <small class="text-muted">Pedile el código a un administrador actual.</small>
             </div>
 
             <div class="mb-4">
@@ -264,6 +296,15 @@ function attachEvents(container) {
 
   confirmPasswordInput?.addEventListener('input', validateConfirmPassword)
 
+  const rolSelect = document.getElementById('registerRol')
+  const inviteWrapper = document.getElementById('inviteCodeWrapper')
+  const inviteInput = document.getElementById('registerInviteCode')
+  rolSelect?.addEventListener('change', () => {
+    const isAdmin = rolSelect.value === 'admin'
+    inviteWrapper?.classList.toggle('d-none', !isAdmin)
+    if (inviteInput) inviteInput.required = isAdmin
+  })
+
   form?.addEventListener('submit', async (e) => {
     e.preventDefault()
     await handleRegister(container)
@@ -327,6 +368,8 @@ async function handleRegister(container) {
   const password = document.getElementById('registerPassword').value
   const confirmPassword = document.getElementById('registerConfirmPassword').value
   const acceptTerms = document.getElementById('acceptTerms').checked
+  const rol = document.getElementById('registerRol')?.value || 'maestro'
+  const inviteCode = document.getElementById('registerInviteCode')?.value.trim() || ''
 
   if (!name || !email || !password || !confirmPassword) {
     showToast('Por favor completa todos los campos', 'error', container)
@@ -348,11 +391,29 @@ async function handleRegister(container) {
     return
   }
 
+  if (rol === 'admin') {
+    if (!inviteCode) {
+      showToast('Ingresá el código de invitación de administrador', 'error', container)
+      return
+    }
+    const { data: valid, error: rpcError } = await supabase.rpc('validate_admin_invite_code', {
+      p_code: inviteCode,
+    })
+    if (rpcError) {
+      showToast('No se pudo validar el código. Intentá de nuevo.', 'error', container)
+      return
+    }
+    if (!valid) {
+      showToast('Código de invitación inválido', 'error', container)
+      return
+    }
+  }
+
   state.loading = true
   updateButtonState(true)
 
   try {
-    const result = await useAuth.register(email, password, { full_name: name, rol: 'maestro' })
+    const result = await useAuth.register(email, password, { full_name: name, rol })
 
     if (result.success) {
       if (result.needsConfirmation) {
@@ -361,13 +422,17 @@ async function handleRegister(container) {
           router.navigate('login')
         }, 2000)
       } else {
-        showToast('¡Cuenta creada exitosamente!', 'success', container)
+        showToast('Solicitud enviada. Esperá la aprobación de un administrador.', 'info', container)
         setTimeout(() => {
-          router.navigate('programas')
-        }, 500)
+          router.navigate('pending-approval')
+        }, 800)
       }
     } else {
-      showToast(result.error || 'Error al registrar', 'error', container)
+      const errMsg =
+        typeof result.error === 'string'
+          ? result.error
+          : result.error?.message || 'Error al registrar'
+      showToast(errMsg, 'error', container)
     }
   } catch (error) {
     console.error('Register error:', error)
@@ -445,8 +510,9 @@ function showToast(message, type, container) {
 }
 
 function escapeHTML(str) {
-  if (!str) return ''
-  return str.replace(/[&<>]/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[m])
+  if (str == null) return ''
+  const s = typeof str === 'string' ? str : (str?.message ?? String(str))
+  return s.replace(/[&<>]/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[m])
 }
 
 export default { renderRegisterView }

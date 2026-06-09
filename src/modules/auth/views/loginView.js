@@ -208,6 +208,14 @@ async function handleLogin(email, password, remember, container) {
     const result = await useAuth.login(email, password, remember)
 
     if (result.success) {
+      if (result.pendingApproval) {
+        router.navigate('pending-approval')
+        return
+      }
+      if (result.rejected) {
+        showToast('Tu solicitud fue rechazada. Contactá al administrador.', 'error', container)
+        return
+      }
       showToast('¡Bienvenido!', 'success', container)
       setTimeout(() => {
         const intended = localStorage.getItem('intended-route')

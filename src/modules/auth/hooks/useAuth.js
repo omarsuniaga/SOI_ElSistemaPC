@@ -79,7 +79,7 @@ async function login(email, password, remember = false) {
     if (hasUser) {
       const { data: profile } = await supabase
         .from('profiles')
-        .select('estado')
+        .select('rol, estado')
         .eq('id', result.user.id)
         .maybeSingle()
 
@@ -98,6 +98,20 @@ async function login(email, password, remember = false) {
         state.session = null
         notifyListeners()
         return { success: true, rejected: true }
+      }
+
+      // Guarda de rol: el portal admin es exclusivo de administradores.
+      // Un maestro (u otro rol) debe usar su propio portal.
+      if (profile?.rol !== 'admin') {
+        await supabase.auth.signOut()
+        clearSession()
+        state.user = null
+        state.session = null
+        notifyListeners()
+        return {
+          success: false,
+          error: 'Esta cuenta no tiene acceso al portal de administración. Usá el portal de maestros.',
+        }
       }
     }
 

@@ -9,8 +9,8 @@ import { AppModal } from '../../../shared/components/AppModal.js'
 export async function renderAprobacionView(container) {
   container.innerHTML = `
     <div class="pm-view-header">
-      <h2><i class="bi bi-person-check"></i> Aprobación de Maestros</h2>
-      <p class="pm-view-subtitle">Revisá y aprobá las solicitudes de registro de maestros</p>
+      <h2><i class="bi bi-person-check"></i> Aprobación de Usuarios</h2>
+      <p class="pm-view-subtitle">Revisá y aprobá las solicitudes de registro (maestros y administradores)</p>
     </div>
     <div id="aprobacion-content">
       <div class="pm-loading">
@@ -23,8 +23,8 @@ export async function renderAprobacionView(container) {
   try {
     const { data: pendientes, error } = await supabase
       .from('profiles')
-      .select('id, email, nombre_completo, created_at')
-      .eq('rol', 'maestro')
+      .select('id, email, nombre_completo, rol, created_at')
+      .in('rol', ['maestro', 'admin'])
       .eq('estado', 'pendiente')
       .order('created_at', { ascending: true })
 
@@ -53,7 +53,7 @@ export async function renderAprobacionView(container) {
             <tr>
               <th>Nombre completo</th>
               <th>Email</th>
-              <th>Descripción</th>
+              <th>Rol solicitado</th>
               <th>Fecha de registro</th>
               <th>Acciones</th>
             </tr>
@@ -61,15 +61,18 @@ export async function renderAprobacionView(container) {
           <tbody>
             ${pendientes
               .map((p) => {
-                const descripcion = null
+                const rolBadge =
+                  p.rol === 'admin'
+                    ? '<span class="badge bg-info">Administrador</span>'
+                    : '<span class="badge bg-secondary">Maestro</span>'
                 return `
-              <tr data-profile-id="${p.id}">
+              <tr data-profile-id="${p.id}" data-rol="${escHTML(p.rol || '')}">
                 <td>${escHTML(p.nombre_completo || '—')}</td>
                 <td>${escHTML(p.email)}</td>
-                <td>${escHTML(p.instrumento || '—')}</td>
+                <td>${rolBadge}</td>
                 <td>${formatDate(p.created_at)}</td>
                 <td class="aprobacion-actions">
-                  <button class="btn btn-success btn-sm btn-aprobar" data-id="${p.id}">
+                  <button class="btn btn-success btn-sm btn-aprobar" data-id="${p.id}" data-rol="${escHTML(p.rol || 'maestro')}">
                     <i class="bi bi-check-circle"></i> Aprobar
                   </button>
                   <button class="btn btn-danger btn-sm btn-rechazar" data-id="${p.id}">
@@ -87,7 +90,9 @@ export async function renderAprobacionView(container) {
 
     // Attach event handlers for approve/reject
     contentEl.querySelectorAll('.btn-aprobar').forEach((btn) => {
-      btn.addEventListener('click', () => openApproveModal(btn.dataset.id, contentEl))
+      btn.addEventListener('click', () =>
+        openApproveModal(btn.dataset.id, contentEl, btn.dataset.rol),
+      )
     })
 
     contentEl.querySelectorAll('.btn-rechazar').forEach((btn) => {
@@ -112,18 +117,18 @@ export async function renderAprobacionView(container) {
   }
 }
 
-function openApproveModal(profileId, contentEl) {
+function openApproveModal(profileId, contentEl, rolSolicitado = 'maestro') {
   AppModal.open({
     title: 'Aprobar Usuario',
     size: 'sm',
     saveText: 'Aprobar',
     body: `
-      <p>Seleccioná el rol para este usuario:</p>
+      <p>Confirmá el rol con el que se aprobará al usuario:</p>
       <div class="mb-3">
         <label class="form-label-compact">Rol</label>
         <select class="form-select" id="aprobacion-rol-select">
-          <option value="maestro">Maestro</option>
-          <option value="admin">Admin</option>
+          <option value="maestro" ${rolSolicitado === 'maestro' ? 'selected' : ''}>Maestro</option>
+          <option value="admin" ${rolSolicitado === 'admin' ? 'selected' : ''}>Admin</option>
         </select>
       </div>
     `,

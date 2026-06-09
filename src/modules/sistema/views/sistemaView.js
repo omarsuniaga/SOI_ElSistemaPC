@@ -18,6 +18,7 @@ import { runAIDiagnostic } from '../../../services/aiDiagnosticService.js'
 import { clearAppCache } from '../../../services/swCaching.js'
 import { applyIndex } from '../../../services/dbOptimizer.js'
 import { AppToast } from '../../../shared/components/AppToast.js'
+import { renderCentroActividadesPanel } from '../components/centroActividadesPanel.js'
 
 const TECH_STACK = [
   { icon: 'bi-lightning-charge-fill', name: 'Vite 8',        color: '#646cff', desc: 'Build tool + Dev server' },
@@ -159,6 +160,9 @@ export function renderSistemaView(container) {
         </div>
       </div>
 
+      <!-- ── Centro de Actividades ─────────────────────── -->
+      <div id="centro-actividades-mount"></div>
+
       <!-- ── Grid: timeline + tech stack ───────────────── -->
       <div class="sv-grid">
 
@@ -220,6 +224,9 @@ export function renderSistemaView(container) {
 
   _injectStyles()
   _bindAIDiagnostics(container)
+
+  const centroMount = container.querySelector('#centro-actividades-mount')
+  if (centroMount) renderCentroActividadesPanel(centroMount)
 }
 
 // ── Helpers ──────────────────────────────────────────────────────
@@ -269,6 +276,57 @@ function _injectStyles() {
     max-width: 1100px;
     font-family: 'Outfit', 'Inter', system-ui, sans-serif;
     color: var(--pm-text);
+  }
+
+  /* ── Centro de Actividades ─────────────────── */
+  .sv-ca-section { margin: 1.5rem 0; }
+  .sv-ca-header {
+    display: flex; justify-content: space-between; align-items: flex-end;
+    gap: 1rem; flex-wrap: wrap; margin-bottom: 1rem;
+  }
+  .sv-ca-subtitle { opacity: 0.7; margin: 0.25rem 0 0; font-size: 0.85rem; }
+  .sv-ca-refresh {
+    display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.8rem;
+  }
+  .sv-ca-grid {
+    display: grid; gap: 0.85rem;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  }
+  .sv-ca-card {
+    display: flex; align-items: center; gap: 0.85rem;
+    padding: 1rem 1.1rem; border-radius: 0.85rem;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    color: inherit; text-align: left; cursor: pointer;
+    transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+  }
+  .sv-ca-card:hover {
+    background: rgba(255,255,255,0.07);
+    border-color: var(--ca-color, rgba(255,255,255,0.2));
+    transform: translateY(-2px);
+  }
+  .sv-ca-card__icon {
+    width: 44px; height: 44px; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    background: color-mix(in srgb, var(--ca-color, #888) 18%, transparent);
+    color: var(--ca-color, #fff); font-size: 1.3rem;
+  }
+  .sv-ca-card__body { flex: 1; min-width: 0; }
+  .sv-ca-card__title { font-weight: 600; font-size: 0.95rem; }
+  .sv-ca-card__desc { font-size: 0.78rem; opacity: 0.65; margin-top: 0.15rem; }
+  .sv-ca-card__count { flex-shrink: 0; min-width: 36px; text-align: center; }
+  .sv-ca-count-badge {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 34px; height: 34px; padding: 0 0.6rem; border-radius: 999px;
+    background: rgba(255,255,255,0.1); font-weight: 700; font-size: 0.9rem;
+    color: rgba(255,255,255,0.85);
+  }
+  .sv-ca-count-badge.is-active {
+    background: var(--ca-color, #ef4444);
+    color: #fff; box-shadow: 0 0 0 4px color-mix(in srgb, var(--ca-color, #ef4444) 20%, transparent);
+  }
+  .sv-ca-count-badge.is-error {
+    background: rgba(239,68,68,0.2); color: #fecaca;
   }
 
   /* ── Header ─────────────────────────────────── */

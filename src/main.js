@@ -72,6 +72,7 @@ import { registerRoutesPedagogico } from './modules/pedagogico/index.js'
 import { registerRoutesHorarioBuilder } from './modules/horario-builder/index.js'
 import { registerRoutesAdminNotificaciones } from './modules/admin-notificaciones/index.js'
 import { registerRoutesAdminAprobacion } from './modules/admin-aprobacion/index.js'
+import { registerRoutesAdminUsuarios } from './modules/admin-usuarios/index.js'
 import {
   startAdminRealtimeNotifications,
   stopAdminRealtimeNotifications,
@@ -120,6 +121,14 @@ const MODULES_REGISTRY = [
     description: 'Aprobación de maestros y gestión de ausencias',
     enabled: true,
     register: registerRoutesAdminAprobacion,
+  },
+  {
+    id: 'gestion-usuarios',
+    label: 'Gestión de Usuarios',
+    icon: 'bi-person-gear',
+    description: 'Creación de administradores y maestros',
+    enabled: true,
+    register: registerRoutesAdminUsuarios,
   },
   {
     id: 'maestros',
@@ -305,6 +314,7 @@ const NAV_GROUPS = [
     items: [
       { id: 'admin-notificaciones', label: 'Centro de Actividad', icon: 'bi-bell' },
       { id: 'admin-aprobacion', label: 'Aprobaciones', icon: 'bi-person-check' },
+      { id: 'gestion-usuarios', label: 'Gestión de Usuarios', icon: 'bi-person-gear' },
       { id: 'admin-ausencias', label: 'Gestión Ausencias', icon: 'bi-calendar-x' },
       { id: 'configuracion', label: 'Configuración', icon: 'bi-sliders' },
       { id: 'permisos', label: 'Permisos', icon: 'bi-shield-lock' },

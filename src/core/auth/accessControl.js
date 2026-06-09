@@ -40,6 +40,7 @@ export const ROUTE_PERMISSIONS = {
   'admin-config':         { requiresAdmin: true },
   'admin-sesiones':       { requiresAdmin: true },
   'admin-aprobacion':     { requiresAdmin: true },
+  'gestion-usuarios':     { requiresAdmin: true },
   'admin-ausencias':      { requiresAdmin: true },
   'admin-notificaciones': { requiresAdmin: true },
   'admin-sistema':        { requiresAdmin: true },

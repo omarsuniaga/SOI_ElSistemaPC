@@ -1,4 +1,4 @@
-import{a as e,i as t,n,r,t as i}from"./CHANGELOG-CNg1HUtO.js";import{t as a}from"./AppToast-BfOaB9z8.js";import{a as o,n as s}from"./groqService-BHtbKQwk.js";var c=[{table:`observations`,columns:[`student_id`,`created_at`],name:`obs_student_date`,type:`btree`,reason:`Query by student over time`},{table:`observations`,columns:[`maestro_id`,`created_at`],name:`obs_maestro_date`,type:`btree`,reason:`Teacher view of observations`},{table:`evaluations`,columns:[`student_id`,`route_id`],name:`eval_student_route`,type:`btree`,reason:`Progress tracking queries`},{table:`audit_logs`,columns:[`user_id`,`created_at`],name:`audit_user_date`,type:`btree`,reason:`Audit log queries`},{table:`notifications`,columns:[`user_id`,`leida`,`created_at`],name:`notif_user_read_date`,type:`btree`,reason:`Notification fetching`},{table:`lesson_plans`,columns:[`maestro_id`,`published`,`created_at`],name:`plan_maestro_published`,type:`btree`,reason:`Teacher lesson plans`},{table:`students`,columns:[`maestro_id`,`route_id`],name:`student_maestro_route`,type:`btree`,reason:`Student roster queries`}],l={totalQueries:0,slowQueries:0,indexHits:0,indexMisses:0};function u(){return[...c]}function d(){return{...l}}function f(e){if(!e)return{success:!1,error:`No SQL provided`};try{let t=e.match(/CREATE\s+INDEX\s+(?:IF\s+NOT\s+EXISTS\s+)?(\w+)\s+ON\s+(\w+)\s*\(([^)]+)\)/i);if(!t)return{success:!1,error:`Could not parse SQL statement format`};let[,n,r,i]=t,a=i.split(`,`).map(e=>e.trim().replace(/['"`]/g,``));return c.some(e=>e.name.toLowerCase()===n.toLowerCase())?{success:!0,message:`Index '${n}' already exists.`,added:!1}:(c.push({table:r.toLowerCase(),columns:a,name:n,type:`btree`,reason:`AI/User optimized`}),{success:!0,message:`Index '${n}' applied successfully.`,added:!0})}catch(e){return{success:!1,error:e.message}}}var p=`v1`;function m(){return p}async function h(){if(typeof caches>`u`)return{success:!1,error:`Caches API not available`};try{let e=await caches.keys(),t=e.map(e=>caches.delete(e));return await Promise.all(t),console.log(`[SW] All caches cleared`),{success:!0,deleted:e.length}}catch(e){return console.error(`[SW] Failed to clear cache:`,e),{success:!1,error:e.message}}}var g=`
+import{i as e}from"./supabase-BryBf0UA.js";import{a as t,i as n,n as r,r as i,t as a}from"./CHANGELOG-CNg1HUtO.js";import{t as o}from"./AppToast-BfOaB9z8.js";import{a as s,n as c}from"./groqService-BHtbKQwk.js";import{t as l}from"./router-CU8dWtuR.js";var u=[{table:`observations`,columns:[`student_id`,`created_at`],name:`obs_student_date`,type:`btree`,reason:`Query by student over time`},{table:`observations`,columns:[`maestro_id`,`created_at`],name:`obs_maestro_date`,type:`btree`,reason:`Teacher view of observations`},{table:`evaluations`,columns:[`student_id`,`route_id`],name:`eval_student_route`,type:`btree`,reason:`Progress tracking queries`},{table:`audit_logs`,columns:[`user_id`,`created_at`],name:`audit_user_date`,type:`btree`,reason:`Audit log queries`},{table:`notifications`,columns:[`user_id`,`leida`,`created_at`],name:`notif_user_read_date`,type:`btree`,reason:`Notification fetching`},{table:`lesson_plans`,columns:[`maestro_id`,`published`,`created_at`],name:`plan_maestro_published`,type:`btree`,reason:`Teacher lesson plans`},{table:`students`,columns:[`maestro_id`,`route_id`],name:`student_maestro_route`,type:`btree`,reason:`Student roster queries`}],d={totalQueries:0,slowQueries:0,indexHits:0,indexMisses:0};function f(){return[...u]}function p(){return{...d}}function m(e){if(!e)return{success:!1,error:`No SQL provided`};try{let t=e.match(/CREATE\s+INDEX\s+(?:IF\s+NOT\s+EXISTS\s+)?(\w+)\s+ON\s+(\w+)\s*\(([^)]+)\)/i);if(!t)return{success:!1,error:`Could not parse SQL statement format`};let[,n,r,i]=t,a=i.split(`,`).map(e=>e.trim().replace(/['"`]/g,``));return u.some(e=>e.name.toLowerCase()===n.toLowerCase())?{success:!0,message:`Index '${n}' already exists.`,added:!1}:(u.push({table:r.toLowerCase(),columns:a,name:n,type:`btree`,reason:`AI/User optimized`}),{success:!0,message:`Index '${n}' applied successfully.`,added:!0})}catch(e){return{success:!1,error:e.message}}}var h=`v1`;function g(){return h}async function _(){if(typeof caches>`u`)return{success:!1,error:`Caches API not available`};try{let e=await caches.keys(),t=e.map(e=>caches.delete(e));return await Promise.all(t),console.log(`[SW] All caches cleared`),{success:!0,deleted:e.length}}catch(e){return console.error(`[SW] Failed to clear cache:`,e),{success:!1,error:e.message}}}var v=`
 Eres un agente de diagnóstico inteligente del Sistema SOI (Sistema Operativo Institucional).
 Analizas las métricas de rendimiento, estadísticas de consultas de base de datos, caché del Service Worker y logs de errores recientes para generar un diagnóstico y sugerencias de auto-mantenimiento.
 
@@ -22,7 +22,39 @@ Reglas:
 1. Sé extremadamente honesto con el healthScore: si hay múltiples errores capturados, baja el score. Si las estadísticas de consultas muestran fallos de índice (index Misses), baja el score.
 2. Si las estadísticas muestran index misses elevadas en ciertas columnas, propone el SQL de creación de índice adecuado en "sql".
 3. Responde únicamente con el JSON válido, sin bloques de código markdown, sin prefijos, sin explicaciones externas.
-`;async function _(){let t=d(),n=u(),r=e(),i={queryStats:t,definedIndexes:n,recentErrors:r,cacheVersion:m(),timestamp:new Date().toISOString(),userAgent:typeof navigator<`u`?navigator.userAgent:`NodeJS-Test-Env`},a=[{role:`system`,content:g},{role:`user`,content:JSON.stringify(i)}];try{let e=o(await s(a));return{healthScore:typeof e.healthScore==`number`?Math.min(100,Math.max(0,e.healthScore)):100,findings:Array.isArray(e.findings)?e.findings:[],recommendations:{sql:e.recommendations?.sql||null,cache:e.recommendations?.cache||`keep`,advice:e.recommendations?.advice||`El sistema funciona de forma óptima.`}}}catch(e){console.error(`[aiDiagnosticService] Failed to run AI diagnostics:`,e);let n=r.length>0,i=t.indexMisses>t.indexHits;return{healthScore:n?70:i?85:95,findings:[...n?[{severity:`critical`,msg:`Se detectaron ${r.length} errores recientes en el reportero.`}]:[],...i?[{severity:`warning`,msg:`Elevada tasa de búsquedas secuenciales (misses de índice).`}]:[],{severity:`info`,msg:`Modo de contingencia: diagnóstico local básico (IA offline).`}],recommendations:{sql:i?`CREATE INDEX IF NOT EXISTS obs_student_date ON observations (student_id, created_at);`:null,cache:n?`clear`:`keep`,advice:`Conexión con el servicio de IA no disponible. Se aplicó el diagnóstico heurístico local.`}}}}var v=[{icon:`bi-lightning-charge-fill`,name:`Vite 8`,color:`#646cff`,desc:`Build tool + Dev server`},{icon:`bi-filetype-js`,name:`Vanilla JS`,color:`#f7df1e`,desc:`ES Modules, sin framework`},{icon:`bi-database-fill`,name:`Supabase`,color:`#3ecf8e`,desc:`PostgreSQL + Realtime + Auth`},{icon:`bi-bootstrap-fill`,name:`Bootstrap 5`,color:`#7952b3`,desc:`CSS utility + componentes`},{icon:`bi-phone-fill`,name:`PWA`,color:`#0ea5e9`,desc:`Service Worker + offline`},{icon:`bi-check2-circle`,name:`Vitest`,color:`#10b981`,desc:`Unit tests + coverage`}];function y(e){let a=r[0],o=t(a.type);e.innerHTML=`
+`;async function y(){let e=p(),n=f(),r=t(),i={queryStats:e,definedIndexes:n,recentErrors:r,cacheVersion:g(),timestamp:new Date().toISOString(),userAgent:typeof navigator<`u`?navigator.userAgent:`NodeJS-Test-Env`},a=[{role:`system`,content:v},{role:`user`,content:JSON.stringify(i)}];try{let e=s(await c(a));return{healthScore:typeof e.healthScore==`number`?Math.min(100,Math.max(0,e.healthScore)):100,findings:Array.isArray(e.findings)?e.findings:[],recommendations:{sql:e.recommendations?.sql||null,cache:e.recommendations?.cache||`keep`,advice:e.recommendations?.advice||`El sistema funciona de forma óptima.`}}}catch(t){console.error(`[aiDiagnosticService] Failed to run AI diagnostics:`,t);let n=r.length>0,i=e.indexMisses>e.indexHits;return{healthScore:n?70:i?85:95,findings:[...n?[{severity:`critical`,msg:`Se detectaron ${r.length} errores recientes en el reportero.`}]:[],...i?[{severity:`warning`,msg:`Elevada tasa de búsquedas secuenciales (misses de índice).`}]:[],{severity:`info`,msg:`Modo de contingencia: diagnóstico local básico (IA offline).`}],recommendations:{sql:i?`CREATE INDEX IF NOT EXISTS obs_student_date ON observations (student_id, created_at);`:null,cache:n?`clear`:`keep`,advice:`Conexión con el servicio de IA no disponible. Se aplicó el diagnóstico heurístico local.`}}}}var b=3e4,x=null,S=[{key:`aprobaciones`,title:`Aprobaciones de usuarios`,description:`Maestros y administradores pendientes de aprobación`,icon:`bi-person-check`,route:`admin-aprobacion`,color:`#22c55e`},{key:`ausencias`,title:`Solicitudes de ausencia`,description:`Ausencias pendientes de revisión`,icon:`bi-calendar-x`,route:`admin-ausencias`,color:`#f59e0b`},{key:`permisos`,title:`Solicitudes de permisos`,description:`Permisos solicitados por maestros`,icon:`bi-shield-lock`,route:`admin-dashboard-reportes`,color:`#8b5cf6`}];function C(e){e.innerHTML=`
+    <div class="sv-section sv-ca-section">
+      <div class="sv-ca-header">
+        <div>
+          <h4 class="sv-section__title m-0">
+            <i class="bi bi-inbox-fill"></i> Centro de Actividades
+          </h4>
+          <p class="sv-ca-subtitle">Tareas pendientes que requieren tu atención</p>
+        </div>
+        <button class="btn btn-sm btn-outline-light sv-ca-refresh" type="button" id="ca-refresh-btn">
+          <i class="bi bi-arrow-clockwise"></i>
+          <span>Actualizar</span>
+        </button>
+      </div>
+
+      <div class="sv-ca-grid" id="ca-cards-grid">
+        ${S.map(e=>w(e)).join(``)}
+      </div>
+    </div>
+  `,T(e),E(e),x&&clearInterval(x),x=setInterval(()=>E(e),b)}function w(e){return`
+    <button class="sv-ca-card" data-key="${e.key}" data-route="${e.route}" type="button" style="--ca-color:${e.color}">
+      <div class="sv-ca-card__icon">
+        <i class="bi ${e.icon}"></i>
+      </div>
+      <div class="sv-ca-card__body">
+        <div class="sv-ca-card__title">${e.title}</div>
+        <div class="sv-ca-card__desc">${e.description}</div>
+      </div>
+      <div class="sv-ca-card__count" data-count-for="${e.key}">
+        <span class="spinner-border spinner-border-sm" role="status"></span>
+      </div>
+    </button>
+  `}function T(e){e.querySelectorAll(`.sv-ca-card`).forEach(e=>{e.addEventListener(`click`,()=>{let t=e.dataset.route;t&&l.navigate(t)})}),e.querySelector(`#ca-refresh-btn`)?.addEventListener(`click`,()=>{E(e)})}async function E(e){let t=await Promise.allSettled([O(),k(),A()]),n={aprobaciones:t[0],ausencias:t[1],permisos:t[2]};for(let[t,r]of Object.entries(n))D(e,t,r)}function D(e,t,n){let r=e.querySelector(`[data-count-for="${t}"]`);if(r)if(n.status===`fulfilled`){let e=n.value;r.innerHTML=`<span class="sv-ca-count-badge${e>0?` is-active`:``}">${e}</span>`}else r.innerHTML=`<span class="sv-ca-count-badge is-error" title="${n.reason?.message||`Error`}">!</span>`}async function O(){let{count:t,error:n}=await e.from(`profiles`).select(`id`,{count:`exact`,head:!0}).in(`rol`,[`maestro`,`admin`]).eq(`estado`,`pendiente`);if(n)throw n;return t??0}async function k(){let{count:t,error:n}=await e.from(`ausencias`).select(`id`,{count:`exact`,head:!0}).eq(`estado`,`pendiente`);if(n)throw n;return t??0}async function A(){let{count:t,error:n}=await e.from(`solicitudes_permisos`).select(`id`,{count:`exact`,head:!0}).eq(`estado`,`pendiente`);if(n)throw n;return t??0}var j=[{icon:`bi-lightning-charge-fill`,name:`Vite 8`,color:`#646cff`,desc:`Build tool + Dev server`},{icon:`bi-filetype-js`,name:`Vanilla JS`,color:`#f7df1e`,desc:`ES Modules, sin framework`},{icon:`bi-database-fill`,name:`Supabase`,color:`#3ecf8e`,desc:`PostgreSQL + Realtime + Auth`},{icon:`bi-bootstrap-fill`,name:`Bootstrap 5`,color:`#7952b3`,desc:`CSS utility + componentes`},{icon:`bi-phone-fill`,name:`PWA`,color:`#0ea5e9`,desc:`Service Worker + offline`},{icon:`bi-check2-circle`,name:`Vitest`,color:`#10b981`,desc:`Unit tests + coverage`}];function M(e){let t=i[0],o=n(t.type);e.innerHTML=`
     <div class="sv-root">
 
       <!-- ── Header ─────────────────────────────────────── -->
@@ -37,8 +69,8 @@ Reglas:
           </div>
         </div>
         <div class="sv-version-badge">
-          <span class="sv-version-num">v${n}</span>
-          <span class="sv-version-date">${x(i)}</span>
+          <span class="sv-version-num">v${r}</span>
+          <span class="sv-version-date">${P(a)}</span>
         </div>
       </div>
 
@@ -48,14 +80,14 @@ Reglas:
           <span class="sv-type-badge" style="background:${o.bg};color:${o.color};">
             ${o.label}
           </span>
-          <span class="sv-latest__version">v${a.version}</span>
-          <span class="sv-latest__date">${x(a.date)}</span>
+          <span class="sv-latest__version">v${t.version}</span>
+          <span class="sv-latest__date">${P(t.date)}</span>
         </div>
-        <h3 class="sv-latest__title">${a.title}</h3>
+        <h3 class="sv-latest__title">${t.title}</h3>
         <ul class="sv-changes-list">
-          ${a.changes.map(e=>`<li>${e}</li>`).join(``)}
+          ${t.changes.map(e=>`<li>${e}</li>`).join(``)}
         </ul>
-        ${a.author?`<p class="sv-latest__author"><i class="bi bi-person-fill me-1"></i>${a.author}</p>`:``}
+        ${t.author?`<p class="sv-latest__author"><i class="bi bi-person-fill me-1"></i>${t.author}</p>`:``}
       </div>
 
       <!-- ── Panel de Auditoría y Diagnóstico IA ───────── -->
@@ -149,6 +181,9 @@ Reglas:
         </div>
       </div>
 
+      <!-- ── Centro de Actividades ─────────────────────── -->
+      <div id="centro-actividades-mount"></div>
+
       <!-- ── Grid: timeline + tech stack ───────────────── -->
       <div class="sv-grid">
 
@@ -158,7 +193,7 @@ Reglas:
             <i class="bi bi-clock-history"></i> Historial de versiones
           </h4>
           <div class="sv-timeline">
-            ${r.slice(1).map(e=>b(e)).join(``)}
+            ${i.slice(1).map(e=>N(e)).join(``)}
           </div>
         </div>
 
@@ -171,7 +206,7 @@ Reglas:
               <i class="bi bi-stack"></i> Tech stack
             </h4>
             <div class="sv-stack-list">
-              ${v.map(e=>`
+              ${j.map(e=>`
                 <div class="sv-stack-item">
                   <i class="bi ${e.icon}" style="color:${e.color};font-size:1.1rem;flex-shrink:0;"></i>
                   <div>
@@ -206,16 +241,16 @@ Reglas:
         </div>
       </div>
     </div>
-  `,S(),C(e)}function b(e){let n=t(e.type);return`
+  `,F(),I(e);let s=e.querySelector(`#centro-actividades-mount`);s&&C(s)}function N(e){let t=n(e.type);return`
     <div class="sv-tl-entry">
-      <div class="sv-tl-dot" style="background:${n.color};"></div>
+      <div class="sv-tl-dot" style="background:${t.color};"></div>
       <div class="sv-tl-body">
         <div class="sv-tl-meta">
-          <span class="sv-type-badge" style="background:${n.bg};color:${n.color};font-size:0.65rem;">
-            ${n.label}
+          <span class="sv-type-badge" style="background:${t.bg};color:${t.color};font-size:0.65rem;">
+            ${t.label}
           </span>
           <span class="sv-tl-version">v${e.version}</span>
-          <span class="sv-tl-date">${x(e.date)}</span>
+          <span class="sv-tl-date">${P(e.date)}</span>
         </div>
         <p class="sv-tl-title">${e.title}</p>
         <details class="sv-tl-details">
@@ -226,12 +261,63 @@ Reglas:
         </details>
       </div>
     </div>
-  `}function x(e){try{return new Date(e+`T12:00:00`).toLocaleDateString(`es-ES`,{day:`2-digit`,month:`long`,year:`numeric`})}catch{return e}}function S(){if(document.getElementById(`sv-styles`))return;let e=document.createElement(`style`);e.id=`sv-styles`,e.textContent=`
+  `}function P(e){try{return new Date(e+`T12:00:00`).toLocaleDateString(`es-ES`,{day:`2-digit`,month:`long`,year:`numeric`})}catch{return e}}function F(){if(document.getElementById(`sv-styles`))return;let e=document.createElement(`style`);e.id=`sv-styles`,e.textContent=`
   .sv-root {
     padding: 1.25rem 1rem 2rem;
     max-width: 1100px;
     font-family: 'Outfit', 'Inter', system-ui, sans-serif;
     color: var(--pm-text);
+  }
+
+  /* ── Centro de Actividades ─────────────────── */
+  .sv-ca-section { margin: 1.5rem 0; }
+  .sv-ca-header {
+    display: flex; justify-content: space-between; align-items: flex-end;
+    gap: 1rem; flex-wrap: wrap; margin-bottom: 1rem;
+  }
+  .sv-ca-subtitle { opacity: 0.7; margin: 0.25rem 0 0; font-size: 0.85rem; }
+  .sv-ca-refresh {
+    display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.8rem;
+  }
+  .sv-ca-grid {
+    display: grid; gap: 0.85rem;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  }
+  .sv-ca-card {
+    display: flex; align-items: center; gap: 0.85rem;
+    padding: 1rem 1.1rem; border-radius: 0.85rem;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    color: inherit; text-align: left; cursor: pointer;
+    transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+  }
+  .sv-ca-card:hover {
+    background: rgba(255,255,255,0.07);
+    border-color: var(--ca-color, rgba(255,255,255,0.2));
+    transform: translateY(-2px);
+  }
+  .sv-ca-card__icon {
+    width: 44px; height: 44px; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    background: color-mix(in srgb, var(--ca-color, #888) 18%, transparent);
+    color: var(--ca-color, #fff); font-size: 1.3rem;
+  }
+  .sv-ca-card__body { flex: 1; min-width: 0; }
+  .sv-ca-card__title { font-weight: 600; font-size: 0.95rem; }
+  .sv-ca-card__desc { font-size: 0.78rem; opacity: 0.65; margin-top: 0.15rem; }
+  .sv-ca-card__count { flex-shrink: 0; min-width: 36px; text-align: center; }
+  .sv-ca-count-badge {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 34px; height: 34px; padding: 0 0.6rem; border-radius: 999px;
+    background: rgba(255,255,255,0.1); font-weight: 700; font-size: 0.9rem;
+    color: rgba(255,255,255,0.85);
+  }
+  .sv-ca-count-badge.is-active {
+    background: var(--ca-color, #ef4444);
+    color: #fff; box-shadow: 0 0 0 4px color-mix(in srgb, var(--ca-color, #ef4444) 20%, transparent);
+  }
+  .sv-ca-count-badge.is-error {
+    background: rgba(239,68,68,0.2); color: #fecaca;
   }
 
   /* ── Header ─────────────────────────────────── */
@@ -656,9 +742,9 @@ Reglas:
     font-size: 0.75rem;
     border-left: 2px solid #8b5cf6;
   }
-  `,document.head.appendChild(e)}function C(e){let t=e.querySelector(`#btn-diagnose`),n=e.querySelector(`#diagnose-spinner`),r=e.querySelector(`#diagnose-icon`),i=e.querySelector(`#diagnose-btn-text`),o=e.querySelector(`#ai-output-container`),s=e.querySelector(`#ai-placeholder-container`),c=e.querySelector(`#health-score-val`),l=e.querySelector(`#health-score-status`),u=e.querySelector(`#svg-meter-progress`),d=e.querySelector(`#findings-list`),p=e.querySelector(`#sql-recommendation-box`),m=e.querySelector(`#sql-preview-text`),g=e.querySelector(`#btn-apply-indexes`),v=e.querySelector(`#cache-recommendation-box`),y=e.querySelector(`#cache-desc-text`),b=e.querySelector(`#btn-optimize-cache`),x=e.querySelector(`#ai-advice-text`),S=null;t&&(t.addEventListener(`click`,async()=>{t.disabled=!0,n.classList.remove(`d-none`),r.classList.add(`d-none`),i.textContent=`Analizando sistema...`;try{let e=await _();s.classList.add(`d-none`),o.classList.remove(`d-none`);let t=e.healthScore;c.textContent=t;let n=251.2-251.2*t/100;u.style.strokeDashoffset=n,l.className=`health-status-badge mt-2`,t>=90?(u.style.stroke=`#10b981`,l.textContent=`Saludable`,l.classList.add(`health-status-healthy`)):t>=80?(u.style.stroke=`#f59e0b`,l.textContent=`Advertencia`,l.classList.add(`health-status-warning`)):(u.style.stroke=`#ef4444`,l.textContent=`Crítico`,l.classList.add(`health-status-critical`)),d.innerHTML=e.findings.length>0?e.findings.map(e=>`
+  `,document.head.appendChild(e)}function I(e){let t=e.querySelector(`#btn-diagnose`),n=e.querySelector(`#diagnose-spinner`),r=e.querySelector(`#diagnose-icon`),i=e.querySelector(`#diagnose-btn-text`),a=e.querySelector(`#ai-output-container`),s=e.querySelector(`#ai-placeholder-container`),c=e.querySelector(`#health-score-val`),l=e.querySelector(`#health-score-status`),u=e.querySelector(`#svg-meter-progress`),d=e.querySelector(`#findings-list`),f=e.querySelector(`#sql-recommendation-box`),p=e.querySelector(`#sql-preview-text`),h=e.querySelector(`#btn-apply-indexes`),g=e.querySelector(`#cache-recommendation-box`),v=e.querySelector(`#cache-desc-text`),b=e.querySelector(`#btn-optimize-cache`),x=e.querySelector(`#ai-advice-text`),S=null;t&&(t.addEventListener(`click`,async()=>{t.disabled=!0,n.classList.remove(`d-none`),r.classList.add(`d-none`),i.textContent=`Analizando sistema...`;try{let e=await y();s.classList.add(`d-none`),a.classList.remove(`d-none`);let t=e.healthScore;c.textContent=t;let n=251.2-251.2*t/100;u.style.strokeDashoffset=n,l.className=`health-status-badge mt-2`,t>=90?(u.style.stroke=`#10b981`,l.textContent=`Saludable`,l.classList.add(`health-status-healthy`)):t>=80?(u.style.stroke=`#f59e0b`,l.textContent=`Advertencia`,l.classList.add(`health-status-warning`)):(u.style.stroke=`#ef4444`,l.textContent=`Crítico`,l.classList.add(`health-status-critical`)),d.innerHTML=e.findings.length>0?e.findings.map(e=>`
               <div class="finding-item">
                 <span class="finding-badge ${e.severity===`critical`?`finding-badge-critical`:e.severity===`warning`?`finding-badge-warning`:`finding-badge-info`}">${e.severity}</span>
                 <span class="finding-msg">${e.msg}</span>
               </div>
-            `).join(``):`<div class="text-muted fs-7 p-2">No se detectaron anomalías ni advertencias en el sistema.</div>`,e.recommendations?.sql?(S=e.recommendations.sql,m.textContent=S,p.classList.remove(`d-none`),g.disabled=!1,g.innerHTML=`<i class="bi bi-arrow-repeat me-1"></i> Aplicar Índices`):(p.classList.add(`d-none`),S=null),e.recommendations?.cache===`clear`?(y.textContent=`Se detectaron errores recientes en el reportero. Se recomienda purgar la caché PWA para limpiar posibles inconsistencias de carga.`,v.classList.remove(`d-none`),b.disabled=!1,b.innerHTML=`<i class="bi bi-trash3 me-1"></i> Optimizar Caché`):v.classList.add(`d-none`),x.textContent=e.recommendations?.advice||`El sistema funciona de forma óptima.`,a.success(`Diagnóstico de IA completado con éxito.`)}catch(e){console.error(e),a.error(`Error al ejecutar diagnóstico: `+e.message)}finally{t.disabled=!1,n.classList.add(`d-none`),r.classList.remove(`d-none`),i.textContent=`Diagnosticar Sistema con IA`}}),g?.addEventListener(`click`,async()=>{if(S){g.disabled=!0,g.innerHTML=`<span class="spinner-border spinner-border-sm me-1" role="status"></span> Aplicando...`;try{let e=f(S);e.success?(a.success(e.message||`Índices aplicados con éxito en memoria.`),g.innerHTML=`<i class="bi bi-check-circle-fill me-1"></i> Aplicado`):(a.error(`Error al aplicar índices: `+e.error),g.disabled=!1,g.innerHTML=`<i class="bi bi-arrow-repeat me-1"></i> Reintentar`)}catch(e){a.error(`Fallo inesperado al optimizar base de datos: `+e.message),g.disabled=!1,g.innerHTML=`<i class="bi bi-arrow-repeat me-1"></i> Reintentar`}}}),b?.addEventListener(`click`,async()=>{b.disabled=!0,b.innerHTML=`<span class="spinner-border spinner-border-sm me-1" role="status"></span> Limpiando...`;try{let e=await h();e.success?(a.success(`Caché PWA depurada correctamente.`),b.innerHTML=`<i class="bi bi-check-circle-fill me-1"></i> Caché Limpia`):(a.error(`Error al limpiar caché: `+e.error),b.disabled=!1,b.innerHTML=`<i class="bi bi-trash3 me-1"></i> Optimizar Caché`)}catch(e){a.error(`Fallo inesperado al limpiar caché: `+e.message),b.disabled=!1,b.innerHTML=`<i class="bi bi-trash3 me-1"></i> Optimizar Caché`}}))}export{y as renderSistemaView};
+            `).join(``):`<div class="text-muted fs-7 p-2">No se detectaron anomalías ni advertencias en el sistema.</div>`,e.recommendations?.sql?(S=e.recommendations.sql,p.textContent=S,f.classList.remove(`d-none`),h.disabled=!1,h.innerHTML=`<i class="bi bi-arrow-repeat me-1"></i> Aplicar Índices`):(f.classList.add(`d-none`),S=null),e.recommendations?.cache===`clear`?(v.textContent=`Se detectaron errores recientes en el reportero. Se recomienda purgar la caché PWA para limpiar posibles inconsistencias de carga.`,g.classList.remove(`d-none`),b.disabled=!1,b.innerHTML=`<i class="bi bi-trash3 me-1"></i> Optimizar Caché`):g.classList.add(`d-none`),x.textContent=e.recommendations?.advice||`El sistema funciona de forma óptima.`,o.success(`Diagnóstico de IA completado con éxito.`)}catch(e){console.error(e),o.error(`Error al ejecutar diagnóstico: `+e.message)}finally{t.disabled=!1,n.classList.add(`d-none`),r.classList.remove(`d-none`),i.textContent=`Diagnosticar Sistema con IA`}}),h?.addEventListener(`click`,async()=>{if(S){h.disabled=!0,h.innerHTML=`<span class="spinner-border spinner-border-sm me-1" role="status"></span> Aplicando...`;try{let e=m(S);e.success?(o.success(e.message||`Índices aplicados con éxito en memoria.`),h.innerHTML=`<i class="bi bi-check-circle-fill me-1"></i> Aplicado`):(o.error(`Error al aplicar índices: `+e.error),h.disabled=!1,h.innerHTML=`<i class="bi bi-arrow-repeat me-1"></i> Reintentar`)}catch(e){o.error(`Fallo inesperado al optimizar base de datos: `+e.message),h.disabled=!1,h.innerHTML=`<i class="bi bi-arrow-repeat me-1"></i> Reintentar`}}}),b?.addEventListener(`click`,async()=>{b.disabled=!0,b.innerHTML=`<span class="spinner-border spinner-border-sm me-1" role="status"></span> Limpiando...`;try{let e=await _();e.success?(o.success(`Caché PWA depurada correctamente.`),b.innerHTML=`<i class="bi bi-check-circle-fill me-1"></i> Caché Limpia`):(o.error(`Error al limpiar caché: `+e.error),b.disabled=!1,b.innerHTML=`<i class="bi bi-trash3 me-1"></i> Optimizar Caché`)}catch(e){o.error(`Fallo inesperado al limpiar caché: `+e.message),b.disabled=!1,b.innerHTML=`<i class="bi bi-trash3 me-1"></i> Optimizar Caché`}}))}export{M as renderSistemaView};

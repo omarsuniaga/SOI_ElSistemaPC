@@ -1,4 +1,4 @@
-import { generateClaseAnalysis, getClaseDataForAnalysis } from '../services/claseAnalysisService.js'
+import { generateClaseAnalysis, getClaseDataForAnalysis, getContentTracking } from '../services/claseAnalysisService.js'
 
 export async function openClaseAnalysisModal(claseId, fechaActual = new Date().toISOString().split('T')[0]) {
   // Crear backdrop + modal
@@ -32,10 +32,14 @@ export async function openClaseAnalysisModal(claseId, fechaActual = new Date().t
 
   // Generar análisis
   try {
-    const claseData = await getClaseDataForAnalysis(claseId, fechaActual)
+    const [claseData, contentTracking] = await Promise.all([
+      getClaseDataForAnalysis(claseId, fechaActual),
+      getContentTracking(claseId, fechaActual, 4),
+    ])
+
     if (!claseData) throw new Error('No se pudo obtener datos de la clase')
 
-    const analysis = await generateClaseAnalysis(claseData)
+    const analysis = await generateClaseAnalysis(claseData, contentTracking)
 
     const body = backdrop.querySelector('.clase-analysis-body')
     if (analysis) {
@@ -45,6 +49,22 @@ export async function openClaseAnalysisModal(claseId, fechaActual = new Date().t
             <strong>${claseData.nombre}</strong>
             <small>${claseData.instrumento}</small>
           </div>
+
+          ${contentTracking && contentTracking.sesiones && contentTracking.sesiones.length > 0 ? `
+            <div class="content-tracking-section">
+              <h4>📚 Contenido de las últimas semanas</h4>
+              ${contentTracking.sesiones.slice(0, 5).map((s) => `
+                <div class="content-item">
+                  <div class="content-date">${s.fecha}</div>
+                  <div class="content-title">${s.contenido}</div>
+                  <div class="content-attendance">
+                    <span class="badge badge-success">${s.totalPresentes} presentes</span>
+                    ${s.totalAusentes > 0 ? `<span class="badge badge-danger">${s.totalAusentes} ausentes</span>` : ''}
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          ` : ''}
 
           <div class="analysis-section">
             <h4>Resumen</h4>
@@ -351,6 +371,68 @@ function _injectStyles() {
       font-size: 1.25rem;
       font-weight: 700;
       color: var(--bs-primary);
+    }
+
+    .content-tracking-section {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      padding: 0.75rem;
+      background: var(--bs-secondary-bg);
+      border-radius: 0.5rem;
+      border-left: 3px solid var(--bs-info, #0dcaf0);
+    }
+
+    .content-tracking-section h4 {
+      margin: 0;
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--bs-body-color);
+    }
+
+    .content-item {
+      display: flex;
+      flex-direction: column;
+      gap: 0.3rem;
+      padding: 0.5rem;
+      background: var(--bs-body-bg);
+      border-radius: 0.35rem;
+      border-left: 2px solid var(--bs-info, #0dcaf0);
+    }
+
+    .content-date {
+      font-size: 0.75rem;
+      color: var(--bs-secondary);
+      font-weight: 600;
+    }
+
+    .content-title {
+      font-size: 0.9rem;
+      font-weight: 500;
+      color: var(--bs-body-color);
+      line-height: 1.3;
+    }
+
+    .content-attendance {
+      display: flex;
+      gap: 0.4rem;
+      font-size: 0.75rem;
+    }
+
+    .badge {
+      padding: 0.25rem 0.5rem;
+      border-radius: 0.25rem;
+      font-weight: 500;
+    }
+
+    .badge-success {
+      background: rgba(16, 185, 129, 0.15);
+      color: #10b981;
+    }
+
+    .badge-danger {
+      background: rgba(220, 38, 38, 0.15);
+      color: #dc2626;
     }
 
     .text-success { color: #10b981; }

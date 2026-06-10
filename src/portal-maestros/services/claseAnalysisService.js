@@ -9,11 +9,11 @@ async function getGroqApiKey() {
   try {
     const { data, error } = await supabase
       .from('system_config')
-      .select('valor')
-      .eq('clave', 'groq_api_key')
+      .select('value')
+      .eq('key', 'groq_api_key')
       .single()
     if (error) throw error
-    GROQ_API_KEY = data?.valor
+    GROQ_API_KEY = data?.value
     return GROQ_API_KEY
   } catch (err) {
     console.error('[claseAnalysisService] Error obteniendo API key:', err)

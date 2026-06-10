@@ -9,6 +9,7 @@ import {
   getCriticalMaestros,
   getMaestroPendingRegistros,
 } from '../api/adminMaestroApi.js'
+import { InfoTooltip, attachInfoTooltipEvents, injectInfoTooltipStyles } from '../../../shared/components/InfoTooltip.js'
 import '../styles/admin-dashboard.css'
 
 export class CumplimientoMaestrosWidget {
@@ -30,6 +31,7 @@ export class CumplimientoMaestrosWidget {
    */
   async init() {
     try {
+      injectInfoTooltipStyles()
       this.container.innerHTML = `
         <div class="premium-loading">
           <div class="premium-loading-spinner"></div>
@@ -174,7 +176,7 @@ export class CumplimientoMaestrosWidget {
             <i class="bi bi-people-fill"></i>
           </div>
           <div class="admin-header-title-section">
-            <h3 style="margin: 0; font-size: 1.3rem; font-weight: 800; letter-spacing: -0.02em;">Cumplimiento de Maestros</h3>
+            <h3 style="margin: 0; font-size: 1.3rem; font-weight: 800; letter-spacing: -0.02em;">Cumplimiento de Maestros ${InfoTooltip('cumplimiento_sesiones')}</h3>
             <p class="subtitle" style="margin: 0.25rem 0 0; color: #6b7280; font-size: 0.85rem;">
               Estado de registros de asistencias y observaciones
             </p>
@@ -216,19 +218,19 @@ export class CumplimientoMaestrosWidget {
         <div class="metrics-grid mb-4">
           <div class="stat-card success" style="padding: 1rem 1.25rem;">
             <div class="stat-value" style="font-size: 1.75rem;">${this.maestros.filter((m) => m.categoria === 'responsable').length}</div>
-            <div class="stat-label" style="font-size: 0.7rem; margin-bottom: 0;">Responsables</div>
+            <div class="stat-label" style="font-size: 0.7rem; margin-bottom: 0;">Responsables ${InfoTooltip('cumplimiento')}</div>
           </div>
           <div class="stat-card warning" style="padding: 1rem 1.25rem;">
             <div class="stat-value" style="font-size: 1.75rem;">${this.maestros.filter((m) => m.categoria === 'regular').length}</div>
-            <div class="stat-label" style="font-size: 0.7rem; margin-bottom: 0;">Regulares</div>
+            <div class="stat-label" style="font-size: 0.7rem; margin-bottom: 0;">Regulares ${InfoTooltip('cumplimiento')}</div>
           </div>
           <div class="stat-card alert" style="padding: 1rem 1.25rem; border-left-color: #f97316; background: linear-gradient(135deg, rgba(249, 115, 22, 0.03) 0%, rgba(245, 158, 11, 0.03) 100%);">
             <div class="stat-value" style="font-size: 1.75rem;">${this.maestros.filter((m) => m.categoria === 'incumplidor').length}</div>
-            <div class="stat-label" style="font-size: 0.7rem; margin-bottom: 0;">Incumplidores</div>
+            <div class="stat-label" style="font-size: 0.7rem; margin-bottom: 0;">Incumplidores ${InfoTooltip('cumplimiento')}</div>
           </div>
           <div class="stat-card alert" style="padding: 1rem 1.25rem;">
             <div class="stat-value" style="font-size: 1.75rem;">${this.maestros.filter((m) => m.categoria === 'negligente').length}</div>
-            <div class="stat-label" style="font-size: 0.7rem; margin-bottom: 0;">Negligentes</div>
+            <div class="stat-label" style="font-size: 0.7rem; margin-bottom: 0;">Negligentes ${InfoTooltip('cumplimiento')}</div>
           </div>
         </div>
 
@@ -238,10 +240,10 @@ export class CumplimientoMaestrosWidget {
             <thead>
               <tr>
                 <th>Maestro</th>
-                <th>Estado</th>
-                <th>Días de Atraso</th>
+                <th>Estado ${InfoTooltip('cumplimiento')}</th>
+                <th>Días de Atraso ${InfoTooltip('cumplimiento_sesiones')}</th>
                 <th>Categoría</th>
-                <th>Sesiones Pendientes</th>
+                <th>Sesiones Pendientes ${InfoTooltip('cumplimiento_sesiones')}</th>
                 <th>Última Notificación</th>
                 <th>Acciones</th>
               </tr>
@@ -302,6 +304,9 @@ export class CumplimientoMaestrosWidget {
    * Attach event listeners
    */
   attachEventListeners() {
+    // Info tooltips
+    attachInfoTooltipEvents(this.container)
+
     // Filter change
     const filterCategoria = document.getElementById('filterCategoria')
     const filterDiasAtraso = document.getElementById('filterDiasAtraso')

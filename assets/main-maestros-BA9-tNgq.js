@@ -331,7 +331,7 @@ Proporciona en JSON el siguiente análisis:
   "alerta": "null o texto breve si hay algo crítico (ej: 'Juan lleva 2 semanas de faltas, se perdió escalas')"
 }
 
-Sé directo, pedagógico y actionable. Responde SOLO JSON válido.`,i=await fetch(mn,{method:`POST`,headers:{Authorization:`Bearer ${hn}`,"Content-Type":`application/json`},body:JSON.stringify({model:`mixtral-8x7b-32768`,messages:[{role:`user`,content:r}],temperature:.7,max_tokens:500})});if(!i.ok)return console.error(`[ClaseAnalysis] Groq error:`,i.status),null;let a=(await i.json()).choices?.[0]?.message?.content||``;try{return JSON.parse(a)}catch(e){return console.error(`[ClaseAnalysis] Parse error:`,e),null}}catch(e){return console.error(`[ClaseAnalysis] Error:`,e),null}}async function _n(e,t,n=4){try{let r=new Date(new Date(t).getTime()-n*7*24*60*60*1e3).toISOString().split(`T`)[0],{data:i}=await S.from(`sesiones_clase`).select(`id, fecha, contenido, asistencia`).eq(`clase_id`,e).gte(`fecha`,r).lte(`fecha`,t).order(`fecha`,{ascending:!1});if(!i||i.length===0)return{sesiones:[],tracking:[]};let{data:a}=await S.from(`observaciones_alumnos`).select(`id, alumno_id, contenido, created_at`).eq(`clase_id`,e).gte(`created_at`,r+`T00:00:00`),o={};a&&a.forEach(e=>{o[e.alumno_id]||(o[e.alumno_id]=[]),o[e.alumno_id].push(e.contenido)});let{data:s}=await S.from(`alumnos`).select(`id, nombre_completo`),c=Object.fromEntries((s||[]).map(e=>[e.id,e.nombre_completo]));return{sesiones:i.map(e=>{let t=Array.isArray(e.asistencia)?e.asistencia:[],n=t.filter(e=>e.estado===`P`).map(e=>e.alumno_id||e),r=t.filter(e=>e.estado===`A`).map(e=>e.alumno_id||e);return{fecha:e.fecha,contenido:e.contenido||`(sin descripción)`,totalPresentes:n.length,totalAusentes:r.length,asistentes:n.map(e=>c[e]||`Desconocido`),ausentes:r.map(e=>c[e]||`Desconocido`),detalleAlumnos:t.map(e=>({alumnoId:e.alumno_id||e,alumnoNombre:c[e.alumno_id||e]||`Desconocido`,estado:e.estado,tieneObs:o[e.alumno_id||e]?.length>0,obsPreview:o[e.alumno_id||e]?.[0]||null}))}}),alumnoMap:c,obsPorAlumno:o}}catch(e){return console.error(`[ContentTracking] Error:`,e),{sesiones:[],tracking:[],alumnoMap:{},obsPorAlumno:{}}}}async function vn(e,t){try{let{data:n}=await S.from(`clases`).select(`id, nombre, instrumento_id, instrumento`).eq(`id`,e).maybeSingle();if(!n)return null;let{data:r}=await S.from(`inscripciones`).select(`alumno_id`).eq(`clase_id`,e),i=r?.length||0,a=new Date(new Date(t).getTime()-720*60*60*1e3).toISOString().split(`T`)[0],{data:o}=await S.from(`sesiones_clase`).select(`asistencia, contenido, borrador`).eq(`clase_id`,e).gte(`fecha`,a).order(`fecha`,{ascending:!1}).limit(1),s=o?.[0],c=Array.isArray(s?.asistencia)?s.asistencia.filter(e=>e.estado===`P`).length:0,l=i-c,{data:u}=await S.from(`sesiones_clase`).select(`asistencia, contenido, borrador`).eq(`clase_id`,e).gte(`fecha`,a).order(`fecha`,{ascending:!1}).limit(10),d=(u||[]).filter(e=>{let t=Array.isArray(e.asistencia)&&e.asistencia.length>0,n=typeof e.contenido==`string`&&e.contenido.trim().length>0;return t||e.borrador===!1&&n}).length,f=(u||[]).length-d,p=u&&u.length>0?Math.round(d/u.length*100):0,m=new Date(new Date(t).getTime()-672*60*60*1e3).toISOString().split(`T`)[0],{data:h}=await S.from(`asistencias`).select(`alumno_id, estado`).eq(`clase_id`,e).gte(`fecha`,m),g={};h&&h.forEach(e=>{g[e.alumno_id]||(g[e.alumno_id]={total:0,presentes:0}),g[e.alumno_id].total++,e.estado===`P`&&g[e.alumno_id].presentes++});let _=Object.values(g).filter(e=>e.total>=3&&e.presentes/e.total<.7).length;return{id:e,nombre:n.nombre,instrumento:n.instrumento||`Sin especificar`,cumplimiento:p,totalAlumnos:i,alumnosPresentes:c,alumnosAusentes:l,registrosCompletos:d,registrosPendientes:f,alumnosEnRiesgo:_,alumnosEnRiesgoDetalle:_>0?`${_} alumno(s) con <70% asistencia`:null}}catch(e){return console.error(`[ClaseDataForAnalysis] Error:`,e),null}}async function yn(e,t=new Date().toISOString().split(`T`)[0]){let n=document.createElement(`div`);n.className=`clase-analysis-backdrop`,n.innerHTML=`
+Sé directo, pedagógico y actionable. Responde SOLO JSON válido.`,i=await fetch(mn,{method:`POST`,headers:{Authorization:`Bearer ${hn}`,"Content-Type":`application/json`},body:JSON.stringify({model:`mixtral-8x7b-32768`,messages:[{role:`user`,content:r}],temperature:.7,max_tokens:500})});if(!i.ok)return console.error(`[ClaseAnalysis] Groq error:`,i.status),null;let a=(await i.json()).choices?.[0]?.message?.content||``;try{return JSON.parse(a)}catch(e){return console.error(`[ClaseAnalysis] Parse error:`,e),null}}catch(e){return console.error(`[ClaseAnalysis] Error:`,e),null}}async function _n(e,t,n=4){try{let r=new Date(new Date(t).getTime()-n*7*24*60*60*1e3).toISOString().split(`T`)[0],{data:i}=await S.from(`sesiones_clase`).select(`id, fecha, contenido, asistencia`).eq(`clase_id`,e).gte(`fecha`,r).lte(`fecha`,t).order(`fecha`,{ascending:!1});if(!i||i.length===0)return{sesiones:[],tracking:[]};let{data:a}=await S.from(`observaciones_alumnos`).select(`id, alumno_id, contenido, created_at`).eq(`clase_id`,e).gte(`created_at`,r+`T00:00:00`),o={};a&&a.forEach(e=>{o[e.alumno_id]||(o[e.alumno_id]=[]),o[e.alumno_id].push(e.contenido)});let{data:s}=await S.from(`alumnos`).select(`id, nombre_completo`),c=Object.fromEntries((s||[]).map(e=>[e.id,e.nombre_completo]));return{sesiones:i.map(e=>{let t=Array.isArray(e.asistencia)?e.asistencia:[],n=t.filter(e=>e.estado===`P`).map(e=>e.alumno_id||e),r=t.filter(e=>e.estado===`A`).map(e=>e.alumno_id||e);return{fecha:e.fecha,contenido:e.contenido||`(sin descripción)`,totalPresentes:n.length,totalAusentes:r.length,asistentes:n.map(e=>c[e]||`Desconocido`),ausentes:r.map(e=>c[e]||`Desconocido`),detalleAlumnos:t.map(e=>({alumnoId:e.alumno_id||e,alumnoNombre:c[e.alumno_id||e]||`Desconocido`,estado:e.estado,tieneObs:o[e.alumno_id||e]?.length>0,obsPreview:o[e.alumno_id||e]?.[0]||null}))}}),alumnoMap:c,obsPorAlumno:o}}catch(e){return console.error(`[ContentTracking] Error:`,e),{sesiones:[],tracking:[],alumnoMap:{},obsPorAlumno:{}}}}async function vn(e,t,n=4){try{let{data:r}=await S.from(`clases`).select(`id, nombre, instrumento_id, instrumento`).eq(`id`,e).maybeSingle();if(!r)return null;let{data:i}=await S.from(`inscripciones`).select(`alumno_id`).eq(`clase_id`,e),a=i?.length||0,o=new Date(new Date(t).getTime()-n*7*24*60*60*1e3).toISOString().split(`T`)[0],{data:s}=await S.from(`sesiones_clase`).select(`asistencia, contenido, borrador`).eq(`clase_id`,e).gte(`fecha`,o).order(`fecha`,{ascending:!1}).limit(1),c=s?.[0],l=Array.isArray(c?.asistencia)?c.asistencia.filter(e=>e.estado===`P`).length:0,u=a-l,{data:d}=await S.from(`sesiones_clase`).select(`asistencia, contenido, borrador`).eq(`clase_id`,e).gte(`fecha`,o).order(`fecha`,{ascending:!1}).limit(10),f=(d||[]).filter(e=>{let t=Array.isArray(e.asistencia)&&e.asistencia.length>0,n=typeof e.contenido==`string`&&e.contenido.trim().length>0;return t||e.borrador===!1&&n}).length,p=(d||[]).length-f,m=d&&d.length>0?Math.round(f/d.length*100):0,h=new Date(new Date(t).getTime()-672*60*60*1e3).toISOString().split(`T`)[0],{data:g}=await S.from(`asistencias`).select(`alumno_id, estado`).eq(`clase_id`,e).gte(`fecha`,h),_={};g&&g.forEach(e=>{_[e.alumno_id]||(_[e.alumno_id]={total:0,presentes:0}),_[e.alumno_id].total++,e.estado===`P`&&_[e.alumno_id].presentes++});let v=Object.values(_).filter(e=>e.total>=3&&e.presentes/e.total<.7).length;return{id:e,nombre:r.nombre,instrumento:r.instrumento||`Sin especificar`,cumplimiento:m,totalAlumnos:a,alumnosPresentes:l,alumnosAusentes:u,registrosCompletos:f,registrosPendientes:p,alumnosEnRiesgo:v,alumnosEnRiesgoDetalle:v>0?`${v} alumno(s) con <70% asistencia`:null}}catch(e){return console.error(`[ClaseDataForAnalysis] Error:`,e),null}}async function yn(e,t=new Date().toISOString().split(`T`)[0],n=4){let r=document.createElement(`div`);r.className=`clase-analysis-backdrop`,r.innerHTML=`
     <div class="clase-analysis-modal">
       <div class="clase-analysis-header">
         <h3>Análisis de la Clase</h3>
@@ -346,17 +346,17 @@ Sé directo, pedagógico y actionable. Responde SOLO JSON válido.`,i=await fetc
         </div>
       </div>
     </div>
-  `,document.body.appendChild(n),n.querySelector(`.clase-analysis-close`).addEventListener(`click`,()=>n.remove()),n.addEventListener(`click`,e=>{e.target===n&&n.remove()});try{let[r,i]=await Promise.all([vn(e,t),_n(e,t,4)]);if(!r)throw Error(`No se pudo obtener datos de la clase`);let a=await gn(r,i),o=n.querySelector(`.clase-analysis-body`);a?o.innerHTML=`
+  `,document.body.appendChild(r),r.querySelector(`.clase-analysis-close`).addEventListener(`click`,()=>r.remove()),r.addEventListener(`click`,e=>{e.target===r&&r.remove()});try{let[i,a]=await Promise.all([vn(e,t,n),_n(e,t,n)]);if(!i)throw Error(`No se pudo obtener datos de la clase`);let o=await gn(i,a),s=r.querySelector(`.clase-analysis-body`);o?s.innerHTML=`
         <div class="clase-analysis-content">
           <div class="clase-info">
-            <strong>${r.nombre}</strong>
-            <small>${r.instrumento}</small>
+            <strong>${i.nombre}</strong>
+            <small>${i.instrumento}</small>
           </div>
 
-          ${i&&i.sesiones&&i.sesiones.length>0?`
+          ${a&&a.sesiones&&a.sesiones.length>0?`
             <div class="content-tracking-section">
               <h4>📚 Contenido de las últimas semanas</h4>
-              ${i.sesiones.slice(0,5).map(e=>`
+              ${a.sesiones.slice(0,5).map(e=>`
                 <div class="content-item">
                   <div class="content-date">${e.fecha}</div>
                   <div class="content-title">${e.contenido}</div>
@@ -371,39 +371,39 @@ Sé directo, pedagógico y actionable. Responde SOLO JSON válido.`,i=await fetc
 
           <div class="analysis-section">
             <h4>Resumen</h4>
-            <p>${a.resumen||`Sin resumen disponible`}</p>
+            <p>${o.resumen||`Sin resumen disponible`}</p>
           </div>
 
-          ${a.alerta?`
+          ${o.alerta?`
             <div class="analysis-alert">
               <i class="bi bi-exclamation-triangle-fill"></i>
-              ${a.alerta}
+              ${o.alerta}
             </div>
           `:``}
 
-          ${a.fortalezas&&a.fortalezas.length>0?`
+          ${o.fortalezas&&o.fortalezas.length>0?`
             <div class="analysis-section">
               <h4 class="text-success">✓ Fortalezas</h4>
               <ul class="analysis-list">
-                ${a.fortalezas.map(e=>`<li>${e}</li>`).join(``)}
+                ${o.fortalezas.map(e=>`<li>${e}</li>`).join(``)}
               </ul>
             </div>
           `:``}
 
-          ${a.preocupaciones&&a.preocupaciones.length>0?`
+          ${o.preocupaciones&&o.preocupaciones.length>0?`
             <div class="analysis-section">
               <h4 class="text-warning">⚠ Preocupaciones</h4>
               <ul class="analysis-list">
-                ${a.preocupaciones.map(e=>`<li>${e}</li>`).join(``)}
+                ${o.preocupaciones.map(e=>`<li>${e}</li>`).join(``)}
               </ul>
             </div>
           `:``}
 
-          ${a.recomendaciones&&a.recomendaciones.length>0?`
+          ${o.recomendaciones&&o.recomendaciones.length>0?`
             <div class="analysis-section">
               <h4 class="text-info">💡 Recomendaciones</h4>
               <ul class="analysis-list">
-                ${a.recomendaciones.map(e=>`<li>${e}</li>`).join(``)}
+                ${o.recomendaciones.map(e=>`<li>${e}</li>`).join(``)}
               </ul>
             </div>
           `:``}
@@ -411,49 +411,49 @@ Sé directo, pedagógico y actionable. Responde SOLO JSON válido.`,i=await fetc
           <div class="analysis-metrics">
             <div class="metric">
               <span class="metric-label">Cumplimiento</span>
-              <span class="metric-value">${r.cumplimiento}%</span>
+              <span class="metric-value">${i.cumplimiento}%</span>
             </div>
             <div class="metric">
               <span class="metric-label">Alumnos</span>
-              <span class="metric-value">${r.totalAlumnos}</span>
+              <span class="metric-value">${i.totalAlumnos}</span>
             </div>
             <div class="metric">
               <span class="metric-label">Presentes</span>
-              <span class="metric-value">${r.alumnosPresentes}/${r.totalAlumnos}</span>
+              <span class="metric-value">${i.alumnosPresentes}/${i.totalAlumnos}</span>
             </div>
             <div class="metric">
               <span class="metric-label">En riesgo</span>
-              <span class="metric-value">${r.alumnosEnRiesgo}</span>
+              <span class="metric-value">${i.alumnosEnRiesgo}</span>
             </div>
           </div>
         </div>
-      `:o.innerHTML=`
+      `:s.innerHTML=`
         <div class="clase-analysis-content">
           <div class="clase-info">
-            <strong>${r.nombre}</strong>
-            <small>${r.instrumento}</small>
+            <strong>${i.nombre}</strong>
+            <small>${i.instrumento}</small>
           </div>
           <p class="text-muted">No fue posible generar el análisis. Verifícalo manualmente.</p>
           <div class="analysis-metrics">
             <div class="metric">
               <span class="metric-label">Cumplimiento</span>
-              <span class="metric-value">${r.cumplimiento}%</span>
+              <span class="metric-value">${i.cumplimiento}%</span>
             </div>
             <div class="metric">
               <span class="metric-label">Alumnos</span>
-              <span class="metric-value">${r.totalAlumnos}</span>
+              <span class="metric-value">${i.totalAlumnos}</span>
             </div>
             <div class="metric">
               <span class="metric-label">Presentes</span>
-              <span class="metric-value">${r.alumnosPresentes}/${r.totalAlumnos}</span>
+              <span class="metric-value">${i.alumnosPresentes}/${i.totalAlumnos}</span>
             </div>
             <div class="metric">
               <span class="metric-label">En riesgo</span>
-              <span class="metric-value">${r.alumnosEnRiesgo}</span>
+              <span class="metric-value">${i.alumnosEnRiesgo}</span>
             </div>
           </div>
         </div>
-      `}catch(e){console.error(`[ClaseAnalysisModal] Error:`,e);let t=n.querySelector(`.clase-analysis-body`);t.innerHTML=`
+      `}catch(e){console.error(`[ClaseAnalysisModal] Error:`,e);let t=r.querySelector(`.clase-analysis-body`);t.innerHTML=`
       <div class="clase-analysis-content">
         <p class="text-danger">Error al cargar el análisis: ${e.message}</p>
       </div>
@@ -1144,7 +1144,7 @@ Sé directo, pedagógico y actionable. Responde SOLO JSON válido.`,i=await fetc
         .pm-overview-card.primary { grid-column: span 2; }
       }
     </style>
-  `}function wn(e){console.log(`[MetricasView.bindEvents] Iniciando bind, container:`,e),console.log(`[MetricasView.bindEvents] HTML length:`,e?.innerHTML?.length||0),e.querySelector(`#pm-filter-periodo`)?.addEventListener(`change`,async t=>{let n=parseInt(t.target.value,10);H.periodo=n,e.innerHTML=`<div class="pm-loading" style="padding:2rem;"><div class="pm-spinner"></div></div>`;try{let t=await xn(n,H.maestroId),r=Sn(t);H.clasesData=r.clasesData,H.todasSesiones=t.sesiones,H.inscripcionesPorClase=t.inscripcionesPorClase,H.alertasRiesgo=r.alertasRiesgo,e.innerHTML=Cn(r),wn(e),un(`Período actualizado a ${n} semanas. ${r.asistenciaPromedio}% de asistencia general.`)}catch(t){e.innerHTML=`<p class="pm-empty">Error al cargar datos: ${I(t.message)}</p>`}}),e.querySelectorAll(`.pm-risk-item`).forEach(e=>{let t=e.dataset.alumno,n=()=>{window.location.hash=`#/alumno?id=${t}`};e.addEventListener(`click`,n),e.addEventListener(`keypress`,e=>{e.key===`Enter`&&n()})});let t=new Date,n=`${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,`0`)}-${String(t.getDate()).padStart(2,`0`)}`,r=e.querySelectorAll(`.pm-analisis-btn-metrics`);console.log(`[MetricasView] Encontrados`,r.length,`botones de análisis`),r.forEach((e,t)=>{console.log(`[MetricasView] Adjuntando listener al botón ${t}:`,e),e.addEventListener(`click`,t=>{console.log(`[MetricasView] Click en botón análisis`),t.stopPropagation(),t.preventDefault();let r=e.dataset.claseId;console.log(`[MetricasView] Abriendo análisis para clase:`,r,`fecha:`,n);try{yn(r,n)}catch(e){console.error(`[MetricasView] Error al abrir modal:`,e)}})}),e.querySelectorAll(`.pm-class-btn, .pm-class-btn2`).forEach(e=>{e.addEventListener(`click`,async t=>{t.stopPropagation();let n=e.closest(`.pm-class-card2, .pm-class-card`),r=n.querySelector(`.pm-clase-students-panel`);if(r){r.remove();return}let i=e.dataset.claseId,a=H.clasesData.find(e=>e.id===i)?.alumnos||[],o=H.todasSesiones.filter(e=>e.clase_id===i),s=a.map(e=>{let t=o.filter(t=>t.asistencia?.some(t=>t.alumno_id===e.id)).map(t=>t.asistencia.find(t=>t.alumno_id===e.id)),n=t.filter(e=>e?.estado===`P`).length,r=t.length,i=r>0?Math.round(n/r*100):0,a=o.filter(t=>t.asistencia?.some(t=>t.alumno_id===e.id)).sort((e,t)=>t.fecha.localeCompare(e.fecha))[0];return{...e,pct:i,total:r,lastFecha:a?.fecha}});s.sort((e,t)=>e.pct-t.pct);let c=document.createElement(`div`);c.className=`pm-clase-students-panel`,c.innerHTML=`
+  `}function wn(e){console.log(`[MetricasView.bindEvents] Iniciando bind, container:`,e),console.log(`[MetricasView.bindEvents] HTML length:`,e?.innerHTML?.length||0),e.querySelector(`#pm-filter-periodo`)?.addEventListener(`change`,async t=>{let n=parseInt(t.target.value,10);H.periodo=n,e.innerHTML=`<div class="pm-loading" style="padding:2rem;"><div class="pm-spinner"></div></div>`;try{let t=await xn(n,H.maestroId),r=Sn(t);H.clasesData=r.clasesData,H.todasSesiones=t.sesiones,H.inscripcionesPorClase=t.inscripcionesPorClase,H.alertasRiesgo=r.alertasRiesgo,e.innerHTML=Cn(r),wn(e),un(`Período actualizado a ${n} semanas. ${r.asistenciaPromedio}% de asistencia general.`)}catch(t){e.innerHTML=`<p class="pm-empty">Error al cargar datos: ${I(t.message)}</p>`}}),e.querySelectorAll(`.pm-risk-item`).forEach(e=>{let t=e.dataset.alumno,n=()=>{window.location.hash=`#/alumno?id=${t}`};e.addEventListener(`click`,n),e.addEventListener(`keypress`,e=>{e.key===`Enter`&&n()})});let t=new Date,n=`${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,`0`)}-${String(t.getDate()).padStart(2,`0`)}`,r=H.periodo||4;e.querySelectorAll(`.pm-analisis-btn-metrics`).forEach(e=>{e.addEventListener(`click`,t=>{t.stopPropagation(),t.preventDefault();let i=e.dataset.claseId;yn(i,n,r)})}),e.querySelectorAll(`.pm-class-btn, .pm-class-btn2`).forEach(e=>{e.addEventListener(`click`,async t=>{t.stopPropagation();let n=e.closest(`.pm-class-card2, .pm-class-card`),r=n.querySelector(`.pm-clase-students-panel`);if(r){r.remove();return}let i=e.dataset.claseId,a=H.clasesData.find(e=>e.id===i)?.alumnos||[],o=H.todasSesiones.filter(e=>e.clase_id===i),s=a.map(e=>{let t=o.filter(t=>t.asistencia?.some(t=>t.alumno_id===e.id)).map(t=>t.asistencia.find(t=>t.alumno_id===e.id)),n=t.filter(e=>e?.estado===`P`).length,r=t.length,i=r>0?Math.round(n/r*100):0,a=o.filter(t=>t.asistencia?.some(t=>t.alumno_id===e.id)).sort((e,t)=>t.fecha.localeCompare(e.fecha))[0];return{...e,pct:i,total:r,lastFecha:a?.fecha}});s.sort((e,t)=>e.pct-t.pct);let c=document.createElement(`div`);c.className=`pm-clase-students-panel`,c.innerHTML=`
         <div class="pm-clase-students-header">
           <span>Alumnos (${s.length})</span>
           <button class="pm-clase-students-close" aria-label="Cerrar panel">×</button>

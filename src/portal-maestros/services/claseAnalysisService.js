@@ -1,7 +1,7 @@
 import { supabase } from '../../lib/supabaseClient.js'
 
 const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions'
-const GROQ_API_KEY = process.env.GROQ_API_KEY || localStorage.getItem('groq_api_key')
+const GROQ_API_KEY = localStorage.getItem('groq_api_key')
 
 /**
  * Genera análisis pedagógico de una clase usando Groq

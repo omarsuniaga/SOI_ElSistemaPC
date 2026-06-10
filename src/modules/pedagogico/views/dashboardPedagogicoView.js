@@ -4,9 +4,11 @@ import { THRESHOLDS } from '../../progresos/services/riskRules.js'
 import { HelpPanel } from '../../../shared/components/HelpPanel.js'
 import { AppModal } from '../../../shared/components/AppModal.js'
 import { getCaseKPIs } from '../services/studentCasesService.js'
+import { InfoTooltip, attachInfoTooltipEvents, injectInfoTooltipStyles } from '../../../shared/components/InfoTooltip.js'
 
 export async function renderDashboardPedagogicoView(container) {
   if (!container) return
+  injectInfoTooltipStyles()
   container.innerHTML = _renderSkeleton()
 
   try {
@@ -135,11 +137,11 @@ function _renderContent(kpis, alumnosRiesgo) {
       </div>
 
       <div class="row g-3 mb-4">
-        ${_kpiCard('bi-people-fill', 'Alumnos activos', kpis.alumnosActivos, 'primary', null)}
-        ${_kpiCard('bi-easel2', 'Clases activas', kpis.clasesActivas, 'indigo', null)}
-        ${_kpiCard('bi-journal-text', 'Planes esta semana', kpis.planesEstaSemana,
+        ${_kpiCard('bi-people-fill', 'Alumnos activos ' + InfoTooltip('progreso_alumno'), kpis.alumnosActivos, 'primary', null)}
+        ${_kpiCard('bi-easel2', 'Clases activas ' + InfoTooltip('cumplimiento_sesiones'), kpis.clasesActivas, 'indigo', null)}
+        ${_kpiCard('bi-journal-text', 'Planes esta semana ' + InfoTooltip('cumplimiento'), kpis.planesEstaSemana,
           'success', `${kpis.planesEjecutados} ejecutados · ${kpis.planesPlanificados} pendientes`)}
-        ${_kpiCard('bi-calendar-check', 'Asistencia (7 días)',
+        ${_kpiCard('bi-calendar-check', 'Asistencia (7 días) ' + InfoTooltip('asistencia_riesgo'),
           kpis.tasaAsistencia !== null ? kpis.tasaAsistencia + '%' : '—',
           asistenciaColor, null)}
       </div>
@@ -529,6 +531,8 @@ function _quickCard(icon, title, desc, route, color) {
 }
 
 function _attachEvents(container) {
+  attachInfoTooltipEvents(container)
+
   container.querySelectorAll('[data-nav]').forEach(el => {
     el.addEventListener('click', () => router.navigate(el.dataset.nav))
     if (el.classList.contains('quick-nav-card')) {

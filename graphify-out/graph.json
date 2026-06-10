@@ -70,7 +70,7 @@
       "label": "getAlumnoIndexFromMetricas()",
       "file_type": "code",
       "source_file": "src/portal-maestros/views/metricasView.js",
-      "source_location": "L750",
+      "source_location": "L759",
       "id": "views_metricasview_getalumnoindexfrommetricas",
       "community": 62,
       "norm_label": "getalumnoindexfrommetricas()"
@@ -79,7 +79,7 @@
       "label": "renderMetricasView()",
       "file_type": "code",
       "source_file": "src/portal-maestros/views/metricasView.js",
-      "source_location": "L763",
+      "source_location": "L772",
       "id": "views_metricasview_rendermetricasview",
       "community": 225,
       "norm_label": "rendermetricasview()"
@@ -76888,9 +76888,9 @@
       "source_file": "src/portal-maestros/views/metricasView.js",
       "source_location": "L6",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "views_metricasview",
-      "target": "components_claseanalysismodal_openclaseanalysismodal",
-      "confidence_score": 1.0
+      "target": "components_claseanalysismodal_openclaseanalysismodal"
     },
     {
       "relation": "imports_from",
@@ -210811,5 +210811,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "b8b84cb717b81032392fe4b922231045b45151df"
+  "built_at_commit": "30b94e948d680b78f39681685fc3c89971ca7c9a"
 }

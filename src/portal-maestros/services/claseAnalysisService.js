@@ -105,7 +105,9 @@ Sé directo, pedagógico y actionable. Responde SOLO JSON válido.`
 
     if (!response.ok) {
       const errorBody = await response.json().catch(() => ({}))
-      console.error('[ClaseAnalysis] Groq error:', response.status, errorBody)
+      console.error('[ClaseAnalysis] Groq error status:', response.status)
+      console.error('[ClaseAnalysis] Groq error body:', JSON.stringify(errorBody, null, 2))
+      console.error('[ClaseAnalysis] Full error:', errorBody)
       return null
     }
 

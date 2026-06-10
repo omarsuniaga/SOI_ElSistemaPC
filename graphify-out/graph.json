@@ -34,7 +34,7 @@
       "label": "getContentTracking()",
       "file_type": "code",
       "source_file": "src/portal-maestros/services/claseAnalysisService.js",
-      "source_location": "L123",
+      "source_location": "L130",
       "id": "services_claseanalysisservice_getcontenttracking",
       "community": 225,
       "norm_label": "getcontenttracking()"
@@ -43,7 +43,7 @@
       "label": "getClaseDataForAnalysis()",
       "file_type": "code",
       "source_file": "src/portal-maestros/services/claseAnalysisService.js",
-      "source_location": "L195",
+      "source_location": "L202",
       "id": "services_claseanalysisservice_getclasedataforanalysis",
       "community": 225,
       "norm_label": "getclasedataforanalysis()"
@@ -76904,9 +76904,9 @@
       "source_file": "src/portal-maestros/services/claseAnalysisService.js",
       "source_location": "L7",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "services_claseanalysisservice",
-      "target": "services_claseanalysisservice_getgroqapikey",
-      "confidence_score": 1.0
+      "target": "services_claseanalysisservice_getgroqapikey"
     },
     {
       "relation": "calls",
@@ -76915,9 +76915,9 @@
       "source_file": "src/portal-maestros/services/claseAnalysisService.js",
       "source_location": "L29",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "services_claseanalysisservice_generateclaseanalysis",
-      "target": "services_claseanalysisservice_getgroqapikey",
-      "confidence_score": 1.0
+      "target": "services_claseanalysisservice_getgroqapikey"
     },
     {
       "relation": "imports",
@@ -210863,5 +210863,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "5d32bdf053d01ffb9c0a39c3b82eeec1fa9e2d37"
+  "built_at_commit": "aa888b6c2c211f5a51b5863f9505b04a5ec333ca"
 }

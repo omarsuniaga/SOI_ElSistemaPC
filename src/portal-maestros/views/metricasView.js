@@ -662,12 +662,21 @@ function bindEvents(container) {
   // Botón de análisis de clase
   const hoy = new Date()
   const fechaHoy = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}-${String(hoy.getDate()).padStart(2, '0')}`
-  container.querySelectorAll('.pm-analisis-btn-metrics').forEach(btn => {
+  const botonesAnalisis = container.querySelectorAll('.pm-analisis-btn-metrics')
+  console.log('[MetricasView] Encontrados', botonesAnalisis.length, 'botones de análisis')
+  botonesAnalisis.forEach((btn, idx) => {
+    console.log(`[MetricasView] Adjuntando listener al botón ${idx}:`, btn)
     btn.addEventListener('click', (e) => {
+      console.log('[MetricasView] Click en botón análisis')
       e.stopPropagation()
+      e.preventDefault()
       const claseId = btn.dataset.claseId
-      console.log('[MetricasView] Abriendo análisis para clase:', claseId)
-      openClaseAnalysisModal(claseId, fechaHoy)
+      console.log('[MetricasView] Abriendo análisis para clase:', claseId, 'fecha:', fechaHoy)
+      try {
+        openClaseAnalysisModal(claseId, fechaHoy)
+      } catch (err) {
+        console.error('[MetricasView] Error al abrir modal:', err)
+      }
     })
   })
 

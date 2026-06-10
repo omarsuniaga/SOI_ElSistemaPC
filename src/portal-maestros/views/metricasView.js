@@ -772,9 +772,11 @@ export function getAlumnoIndexFromMetricas() {
 }
 
 export async function renderMetricasView(container) {
+  console.log('[renderMetricasView] INICIANDO', container)
   container.innerHTML = `<div class="pm-loading"><div class="pm-spinner"></div></div>`
 
   const maestro = getMaestroLocal()
+  console.log('[renderMetricasView] Maestro:', maestro?.id)
   if (!maestro) {
     container.innerHTML = `<p class="pm-empty">No hay sesión activa.</p>`
     return

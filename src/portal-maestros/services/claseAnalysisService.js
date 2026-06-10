@@ -194,14 +194,20 @@ export async function getContentTracking(claseId, fechaActual, semanas = 4) {
  */
 export async function getClaseDataForAnalysis(claseId, fechaActual, semanas = 4) {
   try {
+    console.log('[getClaseDataForAnalysis] Iniciando con claseId:', claseId, 'fecha:', fechaActual, 'semanas:', semanas)
+
     // Obtener info de la clase
-    const { data: clase } = await supabase
+    const { data: clase, error: claseError } = await supabase
       .from('clases')
       .select('id, nombre, instrumento_id, instrumento')
       .eq('id', claseId)
       .maybeSingle()
 
-    if (!clase) return null
+    console.log('[getClaseDataForAnalysis] Clase:', clase, 'Error:', claseError)
+    if (!clase) {
+      console.warn('[getClaseDataForAnalysis] No se encontró clase con id:', claseId)
+      return null
+    }
 
     // Obtener alumnos inscritos
     const { data: inscripciones } = await supabase

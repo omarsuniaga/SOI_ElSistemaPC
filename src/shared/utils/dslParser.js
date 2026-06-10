@@ -79,8 +79,74 @@ export function parseDSL(text) {
   }
 }
 
+/**
+ * Generate profile assertions from parsed DSL tokens.
+ * Called by the extraction pipeline (edge function) for deterministic pre-fill.
+ *
+ * @param {Object} parsed — output of parseDSL()
+ * @param {Object} alumnoMap — { alumnoNombre: alumnoId }
+ * @param {Object} indicatorMap — { "VL-N2-12": "indicator-uuid", ... }
+ * @param {string} obsId — observaciones_sesion.id
+ * @returns {Array<{alumno_id, dimension, item, indicator_id?, madurez, confianza, estado, evidencia_texto, creado_por}>}
+ */
+export function generateProfileAssertions(parsed, alumnoMap = {}, indicatorMap = {}, obsId = null) {
+  const assertions = []
+
+  // Track unique combos to avoid duplicates (same alumno + dimension + item)
+  const seen = new Set()
+
+  function add(alumnoId, dimension, item, indicatorId, evidencia) {
+    const key = `${alumnoId}|${dimension}|${item}`
+    if (seen.has(key)) return
+    seen.add(key)
+    assertions.push({
+      alumno_id: alumnoId,
+      dimension,
+      item,
+      indicator_id: indicatorId || null,
+      madurez: 'introducido',
+      confianza: 1.0,
+      estado: 'confirmado',
+      evidencia_texto: evidencia || null,
+      creado_por: 'dsl',
+    })
+  }
+
+  for (const alumnoNombre of parsed.alumnos) {
+    const alumnoId = alumnoMap[alumnoNombre]
+
+    // Skip alumnos not in the session (shouldn't happen, but guard)
+    if (!alumnoId) continue
+
+    // Objectives: >VL-N2-12 → dimension='objetivo'
+    for (const objCode of parsed.objetivos) {
+      const cleanCode = objCode.replace(/^>/, '')
+      const indicatorId = indicatorMap[cleanCode] || null
+      add(alumnoId, 'objetivo', objCode, indicatorId, objCode)
+    }
+
+    // Content items: [texto] → dimension='escala' or 'tecnica' (context-dependent)
+    for (const content of parsed.contenido) {
+      add(alumnoId, 'escala', content, null, `[${content}]`)
+    }
+
+    // Medidas with scores: $medida 4/5 → hint at progress
+    // (these don't create standalone assertions but can enrich existing ones)
+  }
+
+  return assertions
+}
+
+/**
+ * Check if a parsed DSL text contains any profile-relevant tokens.
+ * Used by the extraction pipeline to decide if LLM extraction is needed.
+ */
+export function hasProfileTokens(parsed) {
+  return parsed.objetivos.length > 0 || parsed.contenido.length > 0 || parsed.alumnos.length > 0
+}
+
 // Alias for legacy support
-export const parseDsl = parseDSL;
+export const parseDsl = parseDSL
 
 export function highlightDSL(text) {
   if (!text) return ''
@@ -123,7 +189,7 @@ export function highlightDSL(text) {
 }
 
 // Alias for legacy support
-export const highlightDsl = highlightDSL;
+export const highlightDsl = highlightDSL
 
 function escapeHtml(text) {
   return text
@@ -142,7 +208,8 @@ export function getTokenSummary(parsed) {
   if (parsed.sugerencias.length > 0) summary.push(`${parsed.sugerencias.length} sugerencia(s)`)
   if (parsed.tareas.length > 0) summary.push(`${parsed.tareas.length} tarea(s)`)
   if (parsed.medidas.length > 0) summary.push(`${parsed.medidas.length} medida(s)`)
-  if (parsed.calificacion) summary.push(`calificación: ${parsed.calificacion.valor}/${parsed.calificacion.sobre}`)
+  if (parsed.calificacion)
+    summary.push(`calificación: ${parsed.calificacion.valor}/${parsed.calificacion.sobre}`)
   if (parsed.objetivos.length > 0) summary.push(`${parsed.objetivos.length} objetivo(s)`)
 
   return summary.length > 0 ? summary.join(', ') : 'Sin tokens'

@@ -295,832 +295,7 @@ import{$ as e,A as t,F as n,J as r,K as i,M as a,Q as o,S as s,X as c,Y as l,Z a
     [data-portal-theme="dark"] .pm-notif-item:hover {
       background: rgba(255, 255, 255, 0.04);
     }
-  `,document.head.appendChild(e)}var cn=null,ln=null;function un(e,t=`polite`){cn||(cn=document.createElement(`div`),cn.setAttribute(`aria-live`,t),cn.setAttribute(`aria-atomic`,`true`),cn.classList.add(`pm-visually-hidden`),document.body.appendChild(cn)),t===`assertive`?(cn.setAttribute(`role`,`alert`),cn.setAttribute(`aria-live`,`assertive`)):(cn.removeAttribute(`role`),cn.setAttribute(`aria-live`,`polite`)),clearTimeout(ln),ln=setTimeout(()=>{cn.textContent=``,requestAnimationFrame(()=>{cn.textContent=e})},50)}function dn(e,t){if(!e||!e.id)return;fn(e);let n=`${e.id}-error`,r=document.createElement(`span`);r.id=n,r.className=`pm-field-error`,r.setAttribute(`role`,`alert`),r.textContent=t,e.nextSibling?e.parentNode.insertBefore(r,e.nextSibling):e.parentNode.appendChild(r),e.setAttribute(`aria-invalid`,`true`),e.setAttribute(`aria-describedby`,n)}function fn(e){if(e&&(e.removeAttribute(`aria-invalid`),e.removeAttribute(`aria-describedby`),e.id)){let t=document.getElementById(`${e.id}-error`);t&&t.remove()}}function pn(e){(e||document).querySelectorAll(`[aria-invalid="true"]`).forEach(e=>fn(e))}var H={periodo:4,maestroId:null,clasesData:[],todasSesiones:[],inscripcionesPorClase:{},alertasRiesgo:[]};async function mn(t,n){let r=await c();r.sort((e,t)=>e.nombre.localeCompare(t.nombre));let i=new Date;i.setDate(i.getDate()-t*7);let a=i.toISOString().split(`T`)[0],o=new Date().toISOString().split(`T`)[0],s=await e(n,a,o)||[],l=r.map(e=>e.id);if(l.length===0)return{clases:r,sesiones:s,inscripcionesPorClase:{}};let{data:u}=await S.from(`alumnos_clases`).select(`clase_id, alumno:alumnos(id, nombre_completo)`).in(`clase_id`,l).eq(`activo`,!0),d={};for(let e of u||[])!e.clase_id||!e.alumno||(d[e.clase_id]||(d[e.clase_id]=[]),d[e.clase_id].push(e.alumno));return{clases:r,sesiones:s,inscripcionesPorClase:d}}function hn({clases:e,sesiones:t,inscripcionesPorClase:n}){let r=t.filter(e=>e.estado===`registrada`).length,i=t.filter(e=>e.estado===`pendiente`).length,a=t.filter(e=>e.borrador===!0).length,o=0,s=0,c=0,l=0;t.forEach(e=>{(e.asistencia||[]).forEach(e=>{l++,e.estado===`P`?o++:e.estado===`A`?s++:e.estado===`J`&&c++})});let u=l>0?Math.round(o/l*100):0,d=e.map(e=>{let r=t.filter(t=>t.clase_id===e.id),i=r.filter(e=>e.estado===`registrada`).length,a=r.filter(e=>e.estado===`pendiente`).length,o=n[e.id]||[],s=o.length,c=r.filter(e=>e.estado===`registrada`).slice(-8).map(e=>{let t=(e.asistencia||[]).filter(e=>e.estado===`P`).length,n=(e.asistencia||[]).length;return n>0?Math.round(t/n*100):0}),l=0,u=0;r.forEach(e=>{(e.asistencia||[]).forEach(e=>{u++,e.estado===`P`&&l++})});let d=u>0?Math.round(l/u*100):0,f=r.filter(e=>e.contenido_dsl?.trim()).length,p=r.length>0?Math.min(100,Math.round(f/Math.max(i,1)*100)):0,m=[];for(let e of o){let t=r.filter(t=>t.asistencia?.some(t=>t.alumno_id===e.id)).map(t=>t.asistencia.find(t=>t.alumno_id===e.id)),n=t.filter(e=>e?.estado===`P`).length,i=t.length>0?Math.round(n/t.length*100):0;i>0&&i<70&&m.push({id:e.id,nombre:e.nombre_completo,pct:i})}return{...e,totalAlumnos:s,sesionesCompletadas:i,sesionesPendientes:a,sessionAttendance:c,avgAttendance:d,progress:p,riskStudents:m,alumnos:o}}),f=[];for(let e of d)for(let t of e.riskStudents)f.push({tipo:`baja_asistencia`,alumnoId:t.id,nombre:t.nombre,clase:e.nombre,valor:t.pct,mensaje:`${t.pct}%`});return{totalClases:e.length,sesionesCompletadas:r,sesionesPendientes:i+a,totalPresentes:o,totalAusentes:s,totalJustificados:c,totalRegistros:l,asistenciaPromedio:u,clasesData:d,alertasRiesgo:f,inscripcionesPorClase:n}}function gn(e){let{totalClases:t,sesionesCompletadas:n,sesionesPendientes:r,totalPresentes:i,totalAusentes:a,totalJustificados:o,totalRegistros:s,asistenciaPromedio:c,clasesData:l,alertasRiesgo:u}=e,d=s>0?Math.round(i/s*100):0,f=s>0?Math.round(a/s*100):0,p=s>0?Math.round(o/s*100):0;return`
-    <div class="pm-dashboard" role="main" aria-label="Panel de métricas">
-      <div role="status" aria-live="polite" aria-atomic="true" class="pm-visually-hidden">${I(`Dashboard: ${c}% asistencia general, ${t} clases, ${n} sesiones registradas, ${r} pendientes.`)}</div>
-      <header class="pm-dashboard-header">
-        <div>
-          <h1 class="pm-dashboard-title">Dashboard</h1>
-          <p class="pm-dashboard-subtitle">Resumen académico</p>
-        </div>
-        <select id="pm-filter-periodo" class="pm-dashboard-select" aria-label="Período de análisis">
-          <option value="4" ${H.periodo===4?`selected`:``}>4 semanas</option>
-          <option value="8" ${H.periodo===8?`selected`:``}>8 semanas</option>
-          <option value="12" ${H.periodo===12?`selected`:``}>12 semanas</option>
-        </select>
-      </header>
-
-      <section class="pm-dashboard-overview" aria-label="Indicadores generales">
-        <div class="pm-overview-card primary">
-          <div class="pm-overview-ring" aria-label="Asistencia general ${c}%">
-            <svg viewBox="0 0 36 36" class="pm-circular-chart">
-              <path class="pm-circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-              <path class="pm-circle" stroke-dasharray="${c}, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-              <text x="18" y="20.35" class="pm-percentage">${c}%</text>
-            </svg>
-          </div>
-          <div class="pm-overview-info">
-            <span class="pm-overview-label">Asistencia</span>
-            <span class="pm-overview-detail">${i} de ${s} registros</span>
-          </div>
-        </div>
-        <div class="pm-overview-stat"><span class="pm-overview-number">${t}</span><span class="pm-overview-text">Clases</span></div>
-        <div class="pm-overview-stat"><span class="pm-overview-number">${n}</span><span class="pm-overview-text">Registradas</span></div>
-        <div class="pm-overview-stat warning"><span class="pm-overview-number">${r}</span><span class="pm-overview-text">Pendientes</span></div>
-      </section>
-
-      <section class="pm-dashboard-section" aria-label="Desglose de asistencia">
-        <h2 class="pm-section-title">Asistencia</h2>
-        <div class="pm-attendance-bars">
-          <div class="pm-attendance-bar-item">
-            <div class="pm-attendance-bar-label">
-              <span><i class="bi bi-check-circle-fill" style="color:#30d158"></i> Presentes</span>
-              <span>${i} &nbsp;·&nbsp; ${d}%</span>
-            </div>
-            <div class="pm-attendance-bar-track"><div class="pm-attendance-bar-fill success" style="width:${d}%"></div></div>
-          </div>
-          <div class="pm-attendance-bar-item">
-            <div class="pm-attendance-bar-label">
-              <span><i class="bi bi-x-circle-fill" style="color:#ff3b30"></i> Ausentes</span>
-              <span>${a} &nbsp;·&nbsp; ${f}%</span>
-            </div>
-            <div class="pm-attendance-bar-track"><div class="pm-attendance-bar-fill danger" style="width:${f}%"></div></div>
-          </div>
-          <div class="pm-attendance-bar-item">
-            <div class="pm-attendance-bar-label">
-              <span><i class="bi bi-exclamation-circle-fill" style="color:#ff9500"></i> Justificados</span>
-              <span>${o} &nbsp;·&nbsp; ${p}%</span>
-            </div>
-            <div class="pm-attendance-bar-track"><div class="pm-attendance-bar-fill warning" style="width:${p}%"></div></div>
-          </div>
-        </div>
-      </section>
-
-      ${u.length>0?`
-      <section class="pm-dashboard-section" aria-label="Alumnos en riesgo">
-        <h2 class="pm-section-title">Alumnos en Riesgo <span class="pm-section-badge">${u.length}</span></h2>
-        <div class="pm-risk-list" role="list">
-          ${u.slice(0,5).map(e=>`
-            <div class="pm-risk-item" role="listitem" tabindex="0" data-alumno="${e.alumnoId}" aria-label="Ver perfil de ${I(e.nombre)}">
-              <div class="pm-risk-avatar" aria-hidden="true">${(e.nombre||`A`)[0].toUpperCase()}</div>
-              <div class="pm-risk-info">
-                <span class="pm-risk-name">${I(e.nombre)}</span>
-                <span class="pm-risk-class">${I(e.clase)}</span>
-              </div>
-              <span class="pm-risk-pct">${e.mensaje}</span>
-            </div>
-          `).join(``)}
-        </div>
-      </section>`:``}
-
-      <section class="pm-dashboard-section" aria-label="Resumen por clase">
-        <h2 class="pm-section-title">Clases</h2>
-        <div class="pm-classes-list" id="pm-clases-grid">
-          ${l.map(e=>{let t=e.avgAttendance,n=t<70?`danger`:t<85?`warning`:`success`,r=t<70?`linear-gradient(135deg,#ff3b30,#ff6b6b)`:t<85?`linear-gradient(135deg,#ff9500,#ffcc00)`:`linear-gradient(135deg,#30d158,#34c759)`,i=e.sessionAttendance.length>0?e.sessionAttendance.map((e,t,n)=>{let r=Math.max(8,e),i=e<70?`#ff3b30`:e<85?`#ff9500`:`#30d158`;return`<div class="pm-spark-bar ${t===n.length-1?`pm-spark-last`:``}" style="height:${r}%;background:${i};" title="${e}%"></div>`}).join(``):`<span class="pm-spark-empty">—</span>`;return`
-            <div class="pm-class-card2" data-clase-id="${e.id}" role="article" aria-label="Clase ${I(e.nombre)}">
-              <div class="pm-class-card2__accent" style="background:${r}"></div>
-              <div class="pm-class-card2__body">
-                <div class="pm-class-card2__top">
-                  <div class="pm-class-card2__info">
-                    <span class="pm-class-card2__name">${I(e.nombre)}</span>
-                    ${e.instrumento?`<span class="pm-class-card2__inst"><i class="bi bi-music-note-beamed"></i> ${I(e.instrumento)}</span>`:``}
-                  </div>
-                  <div class="pm-class-card2__badge-wrap">
-                    <span class="pm-class-card2__pct ${n}" aria-label="Asistencia ${t}%">${t}%</span>
-                    <button class="pm-class-btn2" data-clase-id="${e.id}" aria-label="Ver alumnos" title="Ver alumnos">
-                      <i class="bi bi-people-fill"></i>
-                    </button>
-                  </div>
-                </div>
-
-                <div class="pm-class-card2__spark" aria-label="Tendencia de asistencia últimas sesiones">
-                  ${i}
-                </div>
-
-                <div class="pm-class-card2__stats">
-                  <div class="pm-cs2 pm-cs2--success">
-                    <i class="bi bi-check-circle-fill"></i>
-                    <span class="pm-cs2__val">${e.sesionesCompletadas}</span>
-                    <span class="pm-cs2__lbl">REG.</span>
-                  </div>
-                  <div class="pm-cs2 pm-cs2--warning">
-                    <i class="bi bi-clock-fill"></i>
-                    <span class="pm-cs2__val">${e.sesionesPendientes}</span>
-                    <span class="pm-cs2__lbl">PEN.</span>
-                  </div>
-                  <div class="pm-cs2 pm-cs2--blue">
-                    <i class="bi bi-people-fill"></i>
-                    <span class="pm-cs2__val">${e.totalAlumnos}</span>
-                    <span class="pm-cs2__lbl">ALUM.</span>
-                  </div>
-                  <div class="pm-cs2 pm-cs2--purple">
-                    <i class="bi bi-journal-check"></i>
-                    <span class="pm-cs2__val">${e.progress}%</span>
-                    <span class="pm-cs2__lbl">CONT.</span>
-                  </div>
-                </div>
-
-                ${e.riskStudents.length>0?`
-                <div class="pm-class-card2__risk">
-                  <i class="bi bi-exclamation-triangle-fill"></i>
-                  ${e.riskStudents.length} alumno${e.riskStudents.length>1?`s`:``} con asistencia &lt;70%
-                </div>`:``}
-              </div>
-            </div>`}).join(``)}
-        </div>
-      </section>
-
-    </div>
-
-    <style>
-      .pm-dashboard { padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
-      .pm-dashboard-header { background: linear-gradient(135deg, var(--pm-primary) 0%, #5856d6 100%); padding: 1.25rem 1rem; color: white; display: flex; justify-content: space-between; align-items: center; }
-      .pm-dashboard-title { margin: 0; font-size: 1.5rem; font-weight: 700; letter-spacing: -0.02em; }
-      .pm-dashboard-subtitle { margin: 0.125rem 0 0; font-size: 0.8125rem; opacity: 0.75; }
-      .pm-dashboard-select { background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.2); color: white; padding: 0.375rem 0.75rem; border-radius: 6px; font-size: 0.8125rem; cursor: pointer; }
-      .pm-dashboard-select option { color: #000; }
-
-      .pm-dashboard-overview { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 0.5rem; padding: 0.75rem; background: var(--pm-surface); margin: -0.5rem 0.75rem 0.75rem; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
-      .pm-overview-card { display: flex; align-items: center; gap: 0.625rem; padding: 0.75rem; border-radius: 10px; background: var(--pm-surface-2); }
-      .pm-overview-card.primary { background: linear-gradient(135deg, rgba(52,199,89,0.1) 0%, rgba(52,199,89,0.05) 100%); border: 1px solid rgba(52,199,89,0.2); }
-      .pm-overview-ring { width: 48px; height: 48px; flex-shrink: 0; }
-      .pm-circular-chart { display: block; width: 100%; height: 100%; }
-      .pm-circle-bg { fill: none; stroke: var(--pm-border); stroke-width: 3; }
-      .pm-circle { fill: none; stroke: var(--pm-success); stroke-width: 3; stroke-linecap: round; transform: rotate(-90deg); transform-origin: 50% 50%; transition: stroke-dasharray 0.5s ease; }
-      .pm-percentage { fill: var(--pm-text); font-size: 0.5em; text-anchor: middle; font-weight: 600; }
-      .pm-overview-info { display: flex; flex-direction: column; }
-      .pm-overview-label { font-size: 0.75rem; font-weight: 600; color: var(--pm-text); }
-      .pm-overview-detail { font-size: 0.6875rem; color: var(--pm-text-muted); }
-      .pm-overview-stat { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 0.5rem; border-radius: 10px; background: var(--pm-surface-2); }
-      .pm-overview-number { font-size: 1.25rem; font-weight: 700; color: var(--pm-text); line-height: 1; }
-      .pm-overview-text { font-size: 0.625rem; color: var(--pm-text-muted); text-transform: uppercase; letter-spacing: 0.03em; margin-top: 0.125rem; }
-      .pm-overview-stat.warning .pm-overview-number { color: var(--pm-warning); }
-
-      .pm-dashboard-section { padding: 0.75rem 1rem; }
-      .pm-section-title { font-size: 0.9375rem; font-weight: 600; color: var(--pm-text); margin: 0 0 0.75rem; display: flex; align-items: center; gap: 0.5rem; }
-      .pm-section-badge { background: var(--pm-danger); color: white; font-size: 0.6875rem; font-weight: 600; padding: 0.125rem 0.5rem; border-radius: 6px; margin-left: auto; }
-
-      .pm-attendance-bars { display: flex; flex-direction: column; gap: 0.75rem; }
-      .pm-attendance-bar-item { display: flex; flex-direction: column; gap: 0.375rem; }
-      .pm-attendance-bar-label { display: flex; justify-content: space-between; align-items: center; }
-      .pm-attendance-bar-label span:first-child { font-size: 0.8125rem; font-weight: 500; color: var(--pm-text); display: flex; align-items: center; gap: 0.375rem; }
-      .pm-attendance-bar-label span:last-child { font-size: 0.75rem; font-weight: 600; color: var(--pm-text-muted); }
-      .pm-attendance-bar-track { height: 8px; background: var(--pm-border); border-radius: 4px; overflow: hidden; }
-      .pm-attendance-bar-fill { height: 100%; border-radius: 4px; transition: width 0.6s cubic-bezier(.22,.61,.36,1); }
-      .pm-attendance-bar-fill.success { background: linear-gradient(90deg,#30d158,#34c759); }
-      .pm-attendance-bar-fill.danger  { background: linear-gradient(90deg,#ff3b30,#ff6b6b); }
-      .pm-attendance-bar-fill.warning { background: linear-gradient(90deg,#ff9500,#ffcc00); }
-
-      .pm-risk-list { display: flex; flex-direction: column; gap: 0.5rem; }
-      .pm-risk-item { display: flex; align-items: center; gap: 0.75rem; padding: 0.625rem 0.75rem; background: var(--pm-surface); border-radius: 10px; cursor: pointer; transition: transform 0.15s ease; }
-      .pm-risk-item:active { transform: scale(0.99); }
-      .pm-risk-avatar { width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, var(--pm-danger) 0%, #ff6b6b 100%); color: white; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 0.875rem; }
-      .pm-risk-info { flex: 1; min-width: 0; }
-      .pm-risk-name { display: block; font-size: 0.875rem; font-weight: 600; color: var(--pm-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-      .pm-risk-class { font-size: 0.6875rem; color: var(--pm-text-muted); }
-      .pm-risk-pct { font-size: 0.8125rem; font-weight: 700; color: var(--pm-danger); background: var(--pm-danger-bg); padding: 0.25rem 0.5rem; border-radius: 6px; }
-
-      /* ── Class card v2 ─────────────────────────────────────── */
-      .pm-classes-list { display: flex; flex-direction: column; gap: 0.75rem; }
-
-      .pm-class-card2 {
-        display: flex;
-        background: var(--pm-surface);
-        border-radius: 16px;
-        overflow: hidden;
-        box-shadow: 0 1px 4px rgba(0,0,0,0.12), 0 0 0 1px rgba(255,255,255,0.04);
-        transition: transform 0.15s ease, box-shadow 0.15s ease;
-      }
-      .pm-class-card2:active { transform: scale(0.99); }
-
-      .pm-class-card2__accent {
-        width: 4px;
-        flex-shrink: 0;
-        border-radius: 0;
-      }
-      .pm-class-card2__body {
-        flex: 1;
-        padding: 0.875rem 0.875rem 0.875rem 0.75rem;
-        min-width: 0;
-      }
-
-      .pm-class-card2__top {
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        gap: 0.5rem;
-        margin-bottom: 0.625rem;
-      }
-      .pm-class-card2__info { flex: 1; min-width: 0; }
-      .pm-class-card2__name {
-        display: block;
-        font-size: 0.9375rem;
-        font-weight: 700;
-        color: var(--pm-text);
-        line-height: 1.25;
-        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-      }
-      .pm-class-card2__inst {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.25rem;
-        font-size: 0.6875rem;
-        color: var(--pm-text-muted);
-        margin-top: 0.125rem;
-      }
-      .pm-class-card2__badge-wrap {
-        display: flex;
-        align-items: center;
-        gap: 0.375rem;
-        flex-shrink: 0;
-      }
-      .pm-class-card2__pct {
-        font-size: 1rem;
-        font-weight: 800;
-        padding: 0.25rem 0.625rem;
-        border-radius: 10px;
-        line-height: 1;
-      }
-      .pm-class-card2__pct.success {
-        background: rgba(52,199,89,0.15);
-        color: #30d158;
-      }
-      .pm-class-card2__pct.warning {
-        background: rgba(255,149,0,0.15);
-        color: #ff9500;
-      }
-      .pm-class-card2__pct.danger  {
-        background: rgba(255,59,48,0.15);
-        color: #ff3b30;
-      }
-
-      /* Spark chart */
-      .pm-class-card2__spark {
-        display: flex;
-        align-items: flex-end;
-        gap: 3px;
-        height: 32px;
-        margin: 0 0 0.625rem;
-        padding: 4px 0 0;
-      }
-      .pm-spark-bar {
-        flex: 1;
-        border-radius: 3px 3px 0 0;
-        min-height: 4px;
-        opacity: 0.75;
-        transition: opacity 0.2s;
-      }
-      .pm-spark-bar.pm-spark-last { opacity: 1; }
-      .pm-spark-empty {
-        font-size: 0.75rem;
-        color: var(--pm-text-muted);
-        align-self: center;
-      }
-
-      /* Stats row */
-      .pm-class-card2__stats {
-        display: grid;
-        grid-template-columns: repeat(4, 1fr);
-        border-top: 1px solid var(--pm-border);
-        padding-top: 0.5rem;
-        gap: 0;
-      }
-      .pm-cs2 {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        padding: 0.25rem 0.125rem;
-        gap: 0.0625rem;
-      }
-      .pm-cs2 i {
-        font-size: 0.6875rem;
-        margin-bottom: 0.125rem;
-        opacity: 0.7;
-      }
-      .pm-cs2__val {
-        font-size: 1rem;
-        font-weight: 800;
-        color: var(--pm-text);
-        line-height: 1;
-      }
-      .pm-cs2__lbl {
-        font-size: 0.5rem;
-        color: var(--pm-text-muted);
-        text-transform: uppercase;
-        letter-spacing: 0.04em;
-        font-weight: 600;
-      }
-      .pm-cs2--success { color: #30d158; }
-      .pm-cs2--success .pm-cs2__val { color: #30d158; }
-      .pm-cs2--warning { color: #ff9500; }
-      .pm-cs2--warning .pm-cs2__val { color: #ff9500; }
-      .pm-cs2--blue { color: #0a84ff; }
-      .pm-cs2--blue .pm-cs2__val { color: var(--pm-text); }
-      .pm-cs2--purple { color: #bf5af2; }
-      .pm-cs2--purple .pm-cs2__val { color: var(--pm-text); }
-
-      .pm-class-card2__risk {
-        margin-top: 0.5rem;
-        display: flex;
-        align-items: center;
-        gap: 0.375rem;
-        padding: 0.375rem 0.625rem;
-        background: rgba(255,59,48,0.1);
-        border-radius: 8px;
-        font-size: 0.6875rem;
-        color: #ff3b30;
-        font-weight: 500;
-      }
-      .pm-class-btn2 {
-        background: var(--pm-surface-2);
-        border: none;
-        padding: 0.375rem 0.5rem;
-        border-radius: 8px;
-        color: var(--pm-text-muted);
-        cursor: pointer;
-        font-size: 0.75rem;
-        transition: background 0.15s, color 0.15s;
-      }
-      .pm-class-btn2:hover { background: var(--pm-border); color: var(--pm-text); }
-      /* Legacy .pm-class-card kept for compatibility */
-      .pm-class-card { background: var(--pm-surface); border-radius: 12px; padding: 0.875rem; position: relative; }
-      .pm-class-btn { position: absolute; top: 0.625rem; right: 0.625rem; background: none; border: none; padding: 0.25rem; color: var(--pm-text-muted); cursor: pointer; font-size: 1.25rem; }
-
-      .pm-search-wrapper { position: relative; margin-bottom: 0.5rem; }
-      .pm-search-wrapper i { position: absolute; left: 0.875rem; top: 50%; transform: translateY(-50%); color: var(--pm-text-muted); font-size: 0.875rem; }
-      .pm-search-wrapper input { width: 100%; padding: 0.75rem 0.75rem 0.75rem 2.25rem; border: 1px solid var(--pm-border); border-radius: 10px; font-size: 0.875rem; background: var(--pm-surface); color: var(--pm-text); outline: none; transition: border-color 0.2s; }
-      .pm-search-wrapper input:focus { border-color: var(--pm-primary); }
-      .pm-search-wrapper input::placeholder { color: var(--pm-text-muted); }
-      .pm-search-results { display: none; background: var(--pm-surface); border-radius: 10px; overflow: hidden; }
-      .pm-search-results.show { display: block; }
-      
-      /* Panel de estudiantes por clase */
-      .pm-clase-students-panel { margin-top: 0.75rem; border-top: 1px solid var(--pm-border); padding-top: 0.75rem; }
-      .pm-clase-students-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; font-size: 0.8125rem; font-weight: 600; }
-      .pm-clase-students-close { background: none; border: none; font-size: 1.25rem; cursor: pointer; color: var(--pm-text-muted); }
-      .pm-clase-students-list { display: flex; flex-direction: column; gap: 0.375rem; max-height: 200px; overflow-y: auto; }
-      .pm-clase-student-row { display: flex; justify-content: space-between; align-items: center; padding: 0.5rem; background: var(--pm-surface-2); border-radius: 6px; cursor: pointer; }
-      .pm-clase-student-row:hover { background: var(--pm-border); }
-      .pm-student-info { flex: 1; min-width: 0; }
-      .pm-student-nombre { display: block; font-size: 0.8125rem; font-weight: 500; color: var(--pm-text); }
-      .pm-student-meta { font-size: 0.6875rem; color: var(--pm-text-muted); }
-      .pm-student-attendance { text-align: right; }
-      .pm-student-attendance span { font-size: 0.8125rem; font-weight: 600; }
-      .pm-student-attendance.danger span { color: var(--pm-danger); }
-      .pm-student-attendance.warning span { color: var(--pm-warning); }
-      .pm-student-attendance.success span { color: var(--pm-success); }
-      .pm-student-att-bar { width: 50px; height: 4px; background: var(--pm-border); border-radius: 2px; margin-top: 2px; }
-      .pm-student-att-fill { height: 100%; border-radius: 2px; }
-      .pm-student-attendance.danger .pm-student-att-fill { background: var(--pm-danger); }
-      .pm-student-attendance.warning .pm-student-att-fill { background: var(--pm-warning); }
-      .pm-student-attendance.success .pm-student-att-fill { background: var(--pm-success); }
-
-      /* Search results */
-      .pm-search-result-item { display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem; cursor: pointer; border-bottom: 1px solid var(--pm-border); }
-      .pm-search-result-item:last-child { border-bottom: none; }
-      .pm-search-result-item:hover { background: var(--pm-surface-2); }
-      .pm-search-result-avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--pm-primary); color: white; display: flex; align-items: center; justify-content: center; }
-      .pm-search-result-info { flex: 1; }
-      .pm-search-result-name { display: block; font-size: 0.875rem; font-weight: 500; color: var(--pm-text); }
-      .pm-search-result-meta { font-size: 0.6875rem; color: var(--pm-text-muted); }
-      .pm-search-result-arrow { color: var(--pm-text-muted); }
-
-      @media (max-width: 600px) {
-        .pm-dashboard-overview { grid-template-columns: 1fr 1fr; }
-        .pm-overview-card.primary { grid-column: span 2; }
-      }
-    </style>
-  `}function _n(e){e.querySelector(`#pm-filter-periodo`)?.addEventListener(`change`,async t=>{let n=parseInt(t.target.value,10);H.periodo=n,e.innerHTML=`<div class="pm-loading" style="padding:2rem;"><div class="pm-spinner"></div></div>`;try{let t=await mn(n,H.maestroId),r=hn(t);H.clasesData=r.clasesData,H.todasSesiones=t.sesiones,H.inscripcionesPorClase=t.inscripcionesPorClase,H.alertasRiesgo=r.alertasRiesgo,e.innerHTML=gn(r),_n(e),un(`Período actualizado a ${n} semanas. ${r.asistenciaPromedio}% de asistencia general.`)}catch(t){e.innerHTML=`<p class="pm-empty">Error al cargar datos: ${I(t.message)}</p>`}}),e.querySelectorAll(`.pm-risk-item`).forEach(e=>{let t=e.dataset.alumno,n=()=>{window.location.hash=`#/alumno?id=${t}`};e.addEventListener(`click`,n),e.addEventListener(`keypress`,e=>{e.key===`Enter`&&n()})}),e.querySelectorAll(`.pm-class-btn, .pm-class-btn2`).forEach(e=>{e.addEventListener(`click`,async t=>{t.stopPropagation();let n=e.closest(`.pm-class-card2, .pm-class-card`),r=n.querySelector(`.pm-clase-students-panel`);if(r){r.remove();return}let i=e.dataset.claseId,a=H.clasesData.find(e=>e.id===i)?.alumnos||[],o=H.todasSesiones.filter(e=>e.clase_id===i),s=a.map(e=>{let t=o.filter(t=>t.asistencia?.some(t=>t.alumno_id===e.id)).map(t=>t.asistencia.find(t=>t.alumno_id===e.id)),n=t.filter(e=>e?.estado===`P`).length,r=t.length,i=r>0?Math.round(n/r*100):0,a=o.filter(t=>t.asistencia?.some(t=>t.alumno_id===e.id)).sort((e,t)=>t.fecha.localeCompare(e.fecha))[0];return{...e,pct:i,total:r,lastFecha:a?.fecha}});s.sort((e,t)=>e.pct-t.pct);let c=document.createElement(`div`);c.className=`pm-clase-students-panel`,c.innerHTML=`
-        <div class="pm-clase-students-header">
-          <span>Alumnos (${s.length})</span>
-          <button class="pm-clase-students-close" aria-label="Cerrar panel">×</button>
-        </div>
-        <div class="pm-clase-students-list" role="list">
-          ${s.map(e=>`
-            <div class="pm-clase-student-row" role="listitem" tabindex="0" data-alumno="${e.id}">
-              <div class="pm-student-info">
-                <span class="pm-student-nombre">${I(e.nombre_completo)}</span>
-                <span class="pm-student-meta">${e.total} sesiones · Última: ${e.lastFecha?new Date(e.lastFecha).toLocaleDateString(`es-ES`,{day:`2-digit`,month:`short`}):`—`}</span>
-              </div>
-              <div class="pm-student-attendance ${e.pct<70?`danger`:e.pct<85?`warning`:`success`}">
-                <span>${e.pct}%</span>
-                <div class="pm-student-att-bar"><div class="pm-student-att-fill" style="width:${e.pct}%"></div></div>
-              </div>
-            </div>
-          `).join(``)}
-        </div>`,n.appendChild(c),c.querySelector(`.pm-clase-students-close`).addEventListener(`click`,()=>c.remove());let l=t=>{!c.contains(t.target)&&t.target!==e&&(c.remove(),document.removeEventListener(`click`,l))};setTimeout(()=>document.addEventListener(`click`,l),10),c.querySelectorAll(`.pm-clase-student-row`).forEach(e=>{let t=()=>window.location.hash=`#/alumno?id=${e.dataset.alumno}`;e.addEventListener(`click`,t),e.addEventListener(`keypress`,e=>{e.key===`Enter`&&t()})})})})}function vn(){if(!H.clasesData.length&&!Object.keys(H.inscripcionesPorClase).length)return null;let e=new Map;for(let[t,n]of Object.entries(H.inscripcionesPorClase)){let r=H.clasesData.find(e=>e.id===t);for(let t of n)e.has(t.id)||e.set(t.id,{...t,clases:[]}),r&&e.get(t.id).clases.push(r.nombre)}return[...e.values()]}async function yn(e){e.innerHTML=`<div class="pm-loading"><div class="pm-spinner"></div></div>`;let t=w();if(!t){e.innerHTML=`<p class="pm-empty">No hay sesión activa.</p>`;return}H.maestroId=t.id;try{let n=await mn(H.periodo,t.id),r=hn(n);H.clasesData=r.clasesData,H.todasSesiones=n.sesiones,H.inscripcionesPorClase=n.inscripcionesPorClase,H.alertasRiesgo=r.alertasRiesgo,e.innerHTML=gn(r),_n(e),un(`Métricas actualizadas. ${r.asistenciaPromedio}% de asistencia general.`)}catch(t){e.innerHTML=`
-      <div class="pm-empty" style="padding:3rem 1rem;text-align:center;" role="alert">
-        <p style="color:var(--pm-danger);">Error al cargar métricas</p>
-        <p style="font-size:0.85rem;color:var(--pm-text-muted);">${I(t.message)}</p>
-      </div>`}}var bn=xn();function xn(){let e=window.innerWidth;return e<768?`mobile`:e<1024?`tablet`:`desktop`}window.addEventListener(`resize`,()=>{let e=xn();e!==bn&&(bn=e,document.body.dataset.pmLayout=e)},{passive:!0});function Sn(){let e=document.getElementById(`portal-app`);if(!e)return;let t=e.querySelector(`.pm-header`),n=e.querySelector(`.pm-bottom-nav`),r=e.querySelector(`.pm-view`);t&&(t.style.display=`none`),n&&(n.style.display=`none`),r&&(r.style.display=`none`)}function Cn(e){document.querySelectorAll(`.pm-nav-tab`).forEach(t=>{t.classList.toggle(`active`,t.dataset.route===e)}),document.querySelectorAll(`.pm-sidebar-link`).forEach(t=>{t.classList.toggle(`active`,t.dataset.route===e)})}function wn(e,t,n,r,i){let a=t?.es_admin?`<a href="/admin" class="pm-admin-link" title="Ir al Panel Admin">
-         <i class="bi bi-grid-1x2-fill"></i><span>Panel Admin</span>
-       </a>`:``;e.innerHTML=`
-    <!-- Sidebar (desktop only) -->
-    <aside class="pm-sidebar" id="pm-sidebar">
-      <div class="pm-sidebar-header">
-        <div class="pm-sidebar-logo">
-          <i class="bi bi-music-note-beamed"></i>
-          <span>SOI</span>
-        </div>
-      </div>
-      <nav class="pm-sidebar-nav">
-        ${n.map(e=>`
-          <a class="pm-sidebar-link" data-route="${e.id}" title="${e.label}">
-            <i class="bi ${e.icon}"></i>
-            <span>${e.label}</span>
-          </a>
-        `).join(``)}
-      </nav>
-      <div class="pm-sidebar-footer">
-        ${a}
-        <button id="pm-btn-perfil-sidebar" class="pm-sidebar-link" data-route="perfil">
-          <i class="bi bi-person-circle"></i>
-          <span>Perfil</span>
-        </button>
-      </div>
-    </aside>
-
-    <!-- Main content area -->
-    <div class="pm-main-area">
-      <!-- Header -->
-      <header class="pm-header" id="pm-header">
-        <div class="pm-header-left" id="pm-header-left">
-          <span class="pm-header-greeting">Portal Maestros</span>
-          <span class="pm-header-title" style="font-size:clamp(1rem,3.5vw,1.5rem);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:52vw;">
-            Prof. ${t?.nombre_completo??``}
-            <span class="pm-online-dot" id="pm-sync-indicator" title="Sincronizado"></span>
-          </span>
-        </div>
-
-        <!-- Search -->
-        <div class="pm-header-search-container" id="pm-header-search-container">
-          <button id="pm-search-back-btn" class="pm-icon-btn pm-search-back-btn" title="Cerrar búsqueda">
-            <i class="bi bi-arrow-left"></i>
-          </button>
-          <div class="pm-header-search" id="pm-header-search">
-            <i class="bi bi-search"></i>
-            <input type="search" placeholder="Buscar alumno..." id="pm-header-search-input" autocomplete="off" />
-          </div>
-        </div>
-
-        <!-- Header right controls -->
-        <div class="pm-header-right" id="pm-header-right">
-          <button id="pm-search-toggle-btn" class="pm-icon-btn pm-search-toggle-btn" title="Buscar alumno">
-            <i class="bi bi-search"></i>
-          </button>
-
-          <div id="pm-theme-toggle-container"></div>
-
-          <button id="pm-bell-btn" class="pm-icon-btn" title="Notificaciones" style="position: relative;">
-            <i class="bi bi-bell"></i>
-            <span class="pm-ausencias-badge" id="pm-notif-badge" style="display: none; background: var(--pm-danger);">0</span>
-          </button>
-
-          <button id="pm-btn-perfil" class="pm-avatar-btn" title="Perfil">
-            ${t?.avatar_url?`<img src="${t.avatar_url}" alt="Avatar">`:`<i class="bi bi-person-circle"></i>`}
-          </button>
-        </div>
-      </header>
-
-      <!-- Contenido de la vista activa -->
-      <main class="pm-view" id="pm-view-container"></main>
-
-      <!-- Footer Nav (mobile/tablet only) -->
-      <nav class="pm-footer-nav" id="pm-footer-nav">
-        <div class="pm-footer-nav__inner">
-          ${n.map(e=>`
-            <button class="pm-nav-tab" data-route="${e.id}" title="${e.label}" aria-label="${e.label}">
-              <i class="bi ${e.icon}"></i>
-              <span>${e.label}</span>
-            </button>
-          `).join(``)}
-        </div>
-      </nav>
-    </div>
-  `,i();let o=document.getElementById(`pm-theme-toggle-container`);o&&o.appendChild(vt.createToggleButton()),document.getElementById(`pm-footer-nav`)?.querySelectorAll(`.pm-nav-tab`).forEach(e=>{e.addEventListener(`click`,t=>{t.preventDefault(),r(e.dataset.route)})}),document.getElementById(`pm-sidebar`)?.querySelectorAll(`.pm-sidebar-link[data-route]`).forEach(e=>{e.addEventListener(`click`,t=>{t.preventDefault(),r(e.dataset.route)})}),document.getElementById(`pm-btn-perfil`)?.addEventListener(`click`,e=>{e.preventDefault(),r(`perfil`)}),document.getElementById(`pm-bell-btn`)?.addEventListener(`click`,()=>nn.open()),Tn(r)}function Tn(e){let t=document.getElementById(`pm-header`),n=document.getElementById(`pm-header-search-input`),r=document.getElementById(`pm-search-toggle-btn`),i=document.getElementById(`pm-search-back-btn`),a=()=>{t?.classList.add(`search-active`),setTimeout(()=>n?.focus(),50)},o=()=>{t?.classList.remove(`search-active`),n&&(n.value=``),document.getElementById(`pm-header-search-dropdown`)?.remove()};r?.addEventListener(`click`,e=>{e.stopPropagation(),a()}),i?.addEventListener(`click`,e=>{e.stopPropagation(),o()});let s=null,c=null,l=()=>{s?.remove(),s=null},u=t=>{if(l(),!t.length)return;let r=document.createElement(`div`);r.id=`pm-header-search-dropdown`,r.setAttribute(`role`,`listbox`),r.innerHTML=t.map(e=>`
-      <div class="pm-hsd-item" role="option" tabindex="0" data-id="${e.id}">
-        <i class="bi bi-person-fill pm-hsd-icon"></i>
-        <div class="pm-hsd-info">
-          <span class="pm-hsd-name">${e.nombre_completo}</span>
-          ${e.instrumento_principal?`<span class="pm-hsd-meta">${e.instrumento_principal}</span>`:``}
-        </div>
-        <i class="bi bi-chevron-right pm-hsd-arrow"></i>
-      </div>`).join(``),document.body.appendChild(r);let i=n.getBoundingClientRect();r.style.cssText=`position:fixed;top:${i.bottom+4}px;left:${Math.max(8,i.left)}px;width:${Math.min(320,window.innerWidth-16)}px;z-index:9999;background:var(--pm-surface);border:1px solid var(--pm-border);border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,0.18);overflow:hidden;`,s=r,r.querySelectorAll(`.pm-hsd-item`).forEach(t=>{let n=()=>{o(),l(),e(`alumno`,{id:t.dataset.id})};t.addEventListener(`click`,n),t.addEventListener(`keypress`,e=>{e.key===`Enter`&&n()})})};if(n?.addEventListener(`input`,()=>{let e=n.value.trim();if(clearTimeout(c),e.length<1){l();return}let t=vn();if(t){let n=e.toLowerCase();u(t.filter(e=>e.nombre_completo?.toLowerCase().includes(n)).slice(0,8).map(e=>({...e,instrumento_principal:e.clases?.join(`, `)||null})));return}c=setTimeout(async()=>{try{let{data:t}=await S.from(`alumnos`).select(`id, nombre_completo, instrumento_principal`).ilike(`nombre_completo`,`%${e}%`).limit(8);u(t||[])}catch{l()}},200)}),n?.addEventListener(`keydown`,e=>{e.key===`Escape`&&(o(),l())}),!document.getElementById(`pm-hsd-styles`)){let e=document.createElement(`style`);e.id=`pm-hsd-styles`,e.textContent=`.pm-hsd-item{display:flex;align-items:center;gap:0.625rem;padding:0.75rem 1rem;cursor:pointer;border-bottom:1px solid var(--pm-border);transition:background 0.1s}.pm-hsd-item:last-child{border-bottom:none}.pm-hsd-item:hover,.pm-hsd-item:focus{background:var(--pm-surface-2);outline:none}.pm-hsd-icon{font-size:1rem;color:var(--pm-primary);flex-shrink:0}.pm-hsd-info{flex:1;min-width:0}.pm-hsd-name{display:block;font-size:0.875rem;font-weight:500;color:var(--pm-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.pm-hsd-meta{font-size:0.7rem;color:var(--pm-text-muted)}.pm-hsd-arrow{color:var(--pm-text-muted);font-size:0.75rem}`,document.head.appendChild(e)}document.addEventListener(`click`,e=>{!n?.contains(e.target)&&!s?.contains(e.target)&&l()})}function En(e,{onSuccess:t}){e.innerHTML=`
-    <div class="pm-login">
-      <!-- Branding Side (Desktop) -->
-      <div class="pm-login-branding">
-        <div class="pm-login-logo"><i class="bi bi-music-note-beamed"></i></div>
-        <h1 class="pm-login-title">Portal Maestros</h1>
-        <p class="pm-login-subtitle">Sistema Operativo Institucional — SOI</p>
-      </div>
-
-      <!-- Form Side -->
-      <div class="pm-login-form">
-        <div class="pm-login-card">
-          <div class="pm-input-group">
-            <label for="pm-email">Correo electrónico</label>
-            <input
-              type="email"
-              id="pm-email"
-              class="pm-input"
-              placeholder="tu@correo.com"
-              autocomplete="username"
-              inputmode="email"
-            />
-          </div>
-
-          <div class="pm-input-group">
-            <label for="pm-password">Contraseña</label>
-            <div class="pm-password-wrapper">
-              <input
-                type="password"
-                id="pm-password"
-                class="pm-input"
-                placeholder="••••••••"
-                autocomplete="current-password"
-              />
-              <button
-                type="button"
-                id="pm-toggle-password"
-                class="pm-password-toggle"
-                title="Mostrar contraseña"
-                aria-label="Mostrar contraseña"
-              >
-                <i class="bi bi-eye"></i>
-            </button>
-          </div>
-        </div>
-
-        <div class="pm-checkbox-group">
-          <label class="pm-checkbox-label">
-            <input type="checkbox" id="pm-remember-email" />
-            Recordar correo electrónico
-          </label>
-          <label class="pm-checkbox-label">
-            <input type="checkbox" id="pm-keep-session" checked />
-            Mantener sesión activa (30 días)
-          </label>
-        </div>
-
-        <button type="button" class="pm-btn-primary" id="pm-login-btn">
-          <span class="pm-btn-text">Iniciar sesión</span>
-          <span class="pm-btn-loader d-none">
-            <span class="pm-spinner-sm"></span>
-            Validando...
-          </span>
-        </button>
-
-        <button type="button" class="pm-btn-secondary" id="pm-biometric-btn" style="display:none;">
-          <i class="bi bi-fingerprint"></i> Usar huella o Face ID
-        </button>
-
-        <p class="pm-error-msg" id="pm-login-error" aria-live="polite"></p>
-
-        <p class="pm-login-register-link">
-          <a href="#" data-route="register" class="pm-link">¿No tienes cuenta? Regístrate como maestro</a>
-        </p>
-      </div>
-    </div>
-    <style>
-      .pm-input[aria-invalid="true"] {
-        border-color: var(--pm-danger, #ef4444);
-        box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15);
-      }
-    </style>
-  `;let n=e.querySelector(`#pm-email`),r=e.querySelector(`#pm-password`),i=e.querySelector(`#pm-login-btn`),a=e.querySelector(`#pm-login-error`),o=e.querySelector(`#pm-toggle-password`),s=e.querySelector(`#pm-remember-email`),c=e.querySelector(`#pm-keep-session`),l=!1;o.addEventListener(`click`,()=>{l=!l,r.type=l?`text`:`password`,o.querySelector(`i`).className=l?`bi bi-eye-slash`:`bi bi-eye`,o.title=l?`Ocultar contraseña`:`Mostrar contraseña`,o.setAttribute(`aria-label`,l?`Ocultar contraseña`:`Mostrar contraseña`),o.setAttribute(`aria-pressed`,l?`true`:`false`)});let u=localStorage.getItem(`pm-saved-email`);u&&(n.value=u,s.checked=!0),s.addEventListener(`change`,()=>{s.checked?localStorage.setItem(`pm-saved-email`,n.value):localStorage.removeItem(`pm-saved-email`)}),n.addEventListener(`input`,()=>{s.checked&&localStorage.setItem(`pm-saved-email`,n.value)});async function d(){let i=n.value.trim(),o=r.value;a.textContent=``,pn(e),p(!1);let s=!1;if(i||(dn(n,`Ingresa tu correo electrónico`),n.focus(),s=!0),o||(dn(r,`Ingresa tu contraseña`),s||r.focus(),s=!0),s)return;f(!0);let c=await C(i,o);if(c.success){dt.setMaestro(c.maestro);let e=localStorage.getItem(`intended-route`);localStorage.removeItem(`intended-route`),t&&t(e)}else{if(c.pendingApproval){window.router?.navigate(`pending-approval`);return}a.textContent=c.error,f(!1),r.value=``,r.focus()}}function f(e){i.disabled=e,n.disabled=e,r.disabled=e,c.disabled=e,o.disabled=e;let t=i.querySelector(`.pm-btn-text`),a=i.querySelector(`.pm-btn-loader`);e?(t?.classList.add(`d-none`),a?.classList.remove(`d-none`)):(t?.classList.remove(`d-none`),a?.classList.add(`d-none`))}function p(e){n.disabled=e,r.disabled=e,c.disabled=e,o.disabled=e}i.addEventListener(`click`,d),r.addEventListener(`keydown`,e=>{e.key===`Enter`&&d()});let m=e.querySelector(`#pm-biometric-btn`);async function h(){if(!window.PublicKeyCredential)return!1;try{return await navigator.credentials.get({mediation:`optional`}),!0}catch{return!1}}async function g(){try{if(await navigator.credentials.get({mediation:`required`,publicKey:{challenge:new TextEncoder().encode(`login-challenge`)}})){let e=localStorage.getItem(`portal-maestros:maestro`);if(e){let n=JSON.parse(e);dt.setMaestro(n);let r=localStorage.getItem(`intended-route`);localStorage.removeItem(`intended-route`),t&&t(r)}else a.textContent=`No hay sesión biométrica guardada. Iniciá sesión con contraseña primero.`}}catch(e){console.log(`[WebAuthn] No se pudo usar biometría:`,e.message)}}h().then(e=>{e&&(m.style.display=`flex`,m.onclick=g)}),e.querySelector(`[data-route="register"]`)?.addEventListener(`click`,e=>{e.preventDefault(),window.router?window.router.navigate(`register`):console.error(`[LoginView] Router not found in window`)}),requestAnimationFrame(()=>n.focus())}function Dn(e,{onSuccess:t}){e.innerHTML=`
-    <div class="pm-login">
-      <!-- Branding Side (Desktop) -->
-      <div class="pm-login-branding">
-        <div class="pm-login-logo"><i class="bi bi-music-note-beamed"></i></div>
-        <h1 class="pm-login-title">Registro de Maestro</h1>
-        <p class="pm-login-subtitle">Sistema Operativo Institucional — SOI</p>
-      </div>
-
-      <!-- Form Side -->
-      <div class="pm-login-form">
-        <div class="pm-login-card">
-          <div class="pm-input-group">
-            <label for="pm-reg-nombre">Nombre completo</label>
-            <input
-              type="text"
-              id="pm-reg-nombre"
-              class="pm-input"
-              placeholder="Tu nombre completo"
-              autocomplete="name"
-            />
-          </div>
-
-          <div class="pm-input-group">
-            <label for="pm-reg-email">Correo electrónico</label>
-            <input
-              type="email"
-              id="pm-reg-email"
-              class="pm-input"
-              placeholder="tu@correo.com"
-              autocomplete="email"
-              inputmode="email"
-            />
-          </div>
-
-          <div class="pm-input-group">
-            <label for="pm-reg-password">Contraseña</label>
-            <div class="pm-password-wrapper">
-              <input
-                type="password"
-                id="pm-reg-password"
-                class="pm-input"
-                placeholder="Mínimo 6 caracteres"
-                autocomplete="new-password"
-              />
-              <button
-                type="button"
-                id="pm-reg-toggle-password"
-                class="pm-password-toggle"
-                title="Mostrar contraseña"
-                aria-label="Mostrar contraseña"
-              >
-                <i class="bi bi-eye"></i>
-              </button>
-            </div>
-          </div>
-
-          <div class="pm-input-group">
-            <label for="pm-reg-confirm-password">Confirmar contraseña</label>
-            <div class="pm-password-wrapper">
-              <input
-                type="password"
-                id="pm-reg-confirm-password"
-                class="pm-input"
-                placeholder="Repetí tu contraseña"
-                autocomplete="new-password"
-              />
-              <button
-                type="button"
-                id="pm-reg-toggle-confirm-password"
-                class="pm-password-toggle"
-                title="Mostrar contraseña"
-                aria-label="Mostrar contraseña"
-              >
-                <i class="bi bi-eye"></i>
-              </button>
-            </div>
-          </div>
-
-          <div class="pm-input-group">
-            <label for="pm-reg-instrumento">Instrumento principal</label>
-            <input
-              type="text"
-              id="pm-reg-instrumento"
-              class="pm-input"
-              placeholder="Ej: Violín, Piano, Guitarra..."
-            />
-          </div>
-
-          <div class="pm-input-group">
-            <label for="pm-reg-resena">Breve reseña (opcional)</label>
-            <textarea
-              id="pm-reg-resena"
-              class="pm-input"
-              placeholder="Contanos brevemente sobre tu experiencia..."
-              rows="3"
-            ></textarea>
-          </div>
-
-          <button type="button" class="pm-btn-primary" id="pm-register-btn">
-            <span class="pm-btn-text">Crear cuenta</span>
-            <span class="pm-btn-loader d-none">
-              <span class="pm-spinner-sm"></span>
-              Registrando...
-            </span>
-          </button>
-
-          <p class="pm-error-msg" id="pm-reg-error" aria-live="polite"></p>
-
-          <p class="pm-login-register-link">
-            <a href="#" data-route="login" class="pm-link">¿Ya tienes cuenta? Iniciar sesión</a>
-          </p>
-        </div>
-      </div>
-    </div>
-  `;let n=e.querySelector(`#pm-reg-nombre`),r=e.querySelector(`#pm-reg-email`),i=e.querySelector(`#pm-reg-password`),a=e.querySelector(`#pm-reg-confirm-password`),o=e.querySelector(`#pm-reg-instrumento`),s=e.querySelector(`#pm-reg-resena`),c=e.querySelector(`#pm-register-btn`),l=e.querySelector(`#pm-reg-error`),u=e.querySelector(`#pm-reg-toggle-password`),d=e.querySelector(`#pm-reg-toggle-confirm-password`),f=!1;u.addEventListener(`click`,()=>{f=!f,i.type=f?`text`:`password`,u.querySelector(`i`).className=f?`bi bi-eye-slash`:`bi bi-eye`,u.title=f?`Ocultar contraseña`:`Mostrar contraseña`,u.setAttribute(`aria-label`,f?`Ocultar contraseña`:`Mostrar contraseña`)});let p=!1;d.addEventListener(`click`,()=>{p=!p,a.type=p?`text`:`password`,d.querySelector(`i`).className=p?`bi bi-eye-slash`:`bi bi-eye`,d.title=p?`Ocultar contraseña`:`Mostrar contraseña`,d.setAttribute(`aria-label`,p?`Ocultar contraseña`:`Mostrar contraseña`)});async function m(){let c=n.value.trim(),u=r.value.trim(),d=i.value,f=a.value,p=o.value.trim();l.textContent=``,pn(e),g(!1);let m=!1;if(c||(dn(n,`Ingresá tu nombre completo`),m||n.focus(),m=!0),u||(dn(r,`Ingresá tu correo electrónico`),m||r.focus(),m=!0),(!d||d.length<6)&&(dn(i,`La contraseña debe tener al menos 6 caracteres`),m||i.focus(),m=!0),f?d!==f&&(dn(a,`Las contraseñas no coinciden`),m||a.focus(),m=!0):(dn(a,`Confirmá tu contraseña`),m||a.focus(),m=!0),m)return;h(!0);let{data:_,error:v}=await S.auth.signUp({email:u,password:d,options:{data:{full_name:c,rol:`maestro`,instrumento:p,resena:s.value.trim()}}});if(v){l.textContent=v.message===`User already registered`?`Este correo ya está registrado. Si ya sos maestro, intentá iniciar sesión.`:v.message||`Error al registrarse. Intentá de nuevo.`,h(!1);return}_?.user&&(await S.from(`profiles`).upsert({id:_.user.id,email:u,nombre_completo:c,resena:`Instrumento: ${p}${s.value.trim()?` | `+s.value.trim():``}`,rol:`maestro`,estado:`pendiente`},{onConflict:`id`,ignoreDuplicates:!1}),await S.auth.signOut()),h(!1),t&&t()}function h(e){c.disabled=e,n.disabled=e,r.disabled=e,i.disabled=e,a.disabled=e,o.disabled=e,s.disabled=e,u.disabled=e,d.disabled=e;let t=c.querySelector(`.pm-btn-text`),l=c.querySelector(`.pm-btn-loader`);e?(t?.classList.add(`d-none`),l?.classList.remove(`d-none`)):(t?.classList.remove(`d-none`),l?.classList.add(`d-none`))}function g(e){n.disabled=e,r.disabled=e,i.disabled=e,a.disabled=e,o.disabled=e,s.disabled=e,u.disabled=e,d.disabled=e}c.addEventListener(`click`,m),a.addEventListener(`keydown`,e=>{e.key===`Enter`&&m()}),e.querySelector(`[data-route="login"]`)?.addEventListener(`click`,e=>{e.preventDefault(),window.router?window.router.navigate(`login`):console.error(`[RegisterView] Router not found in window`)}),requestAnimationFrame(()=>n.focus())}function On(e,{onBackToLogin:t}={}){e.innerHTML=`
-    <div class="pm-login">
-      <!-- Branding -->
-      <div class="pm-login-branding">
-        <div class="pm-login-logo" style="background:rgba(245,158,11,0.15);">
-          <i class="bi bi-hourglass-split" style="color:#f59e0b;"></i>
-        </div>
-        <h1 class="pm-login-title">Solicitud enviada</h1>
-        <p class="pm-login-subtitle">Sistema Operativo Institucional — SOI</p>
-      </div>
-
-      <!-- Card -->
-      <div class="pm-login-form">
-        <div class="pm-login-card" style="text-align:center;">
-
-          <!-- Ícono principal -->
-          <div style="
-            width:80px;height:80px;border-radius:50%;
-            background:rgba(245,158,11,0.12);
-            display:flex;align-items:center;justify-content:center;
-            margin:0 auto 1.25rem;
-          ">
-            <i class="bi bi-shield-lock" style="font-size:2rem;color:#f59e0b;"></i>
-          </div>
-
-          <h2 style="font-size:1.2rem;font-weight:700;margin-bottom:0.75rem;">
-            Tu cuenta está pendiente de aprobación
-          </h2>
-
-          <p style="
-            font-size:0.875rem;
-            color:var(--pm-text-muted);
-            line-height:1.6;
-            margin-bottom:1.5rem;
-            max-width:320px;
-            margin-left:auto;margin-right:auto;
-          ">
-            Un administrador del sistema debe revisar y aprobar tu solicitud
-            antes de que puedas acceder al portal. Este proceso puede tomar
-            algunas horas.
-          </p>
-
-          <!-- Pasos del proceso -->
-          <div style="
-            background:var(--pm-surface-2,rgba(255,255,255,0.05));
-            border:1px solid var(--pm-border);
-            border-radius:12px;
-            padding:1rem;
-            margin-bottom:1.5rem;
-            text-align:left;
-          ">
-            <div class="pm-approval-step pm-approval-step--done">
-              <span class="pm-step-icon"><i class="bi bi-check-circle-fill"></i></span>
-              <span class="pm-step-text">Registro completado</span>
-            </div>
-            <div class="pm-approval-step pm-approval-step--active" id="pm-step-waiting">
-              <span class="pm-step-icon"><i class="bi bi-hourglass-split"></i></span>
-              <span class="pm-step-text">Esperando aprobación del administrador</span>
-            </div>
-            <div class="pm-approval-step pm-approval-step--pending">
-              <span class="pm-step-icon"><i class="bi bi-circle"></i></span>
-              <span class="pm-step-text">Acceso al portal habilitado</span>
-            </div>
-          </div>
-
-          <!-- Botón verificar estado -->
-          <button type="button" class="pm-btn-primary" id="pm-check-status-btn" style="margin-bottom:0.75rem;">
-            <span class="pm-btn-text">
-              <i class="bi bi-arrow-clockwise me-1"></i> Verificar estado
-            </span>
-            <span class="pm-btn-loader d-none">
-              <span class="pm-spinner-sm"></span>
-              Verificando…
-            </span>
-          </button>
-
-          <p id="pm-status-msg" style="
-            font-size:0.8rem;
-            min-height:1.25rem;
-            margin-bottom:1rem;
-          " aria-live="polite"></p>
-
-          <button type="button" class="pm-btn-secondary" id="pm-back-login-btn">
-            <i class="bi bi-arrow-left me-1"></i> Volver al inicio de sesión
-          </button>
-
-        </div>
-      </div>
-    </div>
-
-    <style id="pm-pending-approval-styles">
-      .pm-approval-step {
-        display: flex;
-        align-items: center;
-        gap: 0.625rem;
-        padding: 0.45rem 0;
-        font-size: 0.825rem;
-      }
-      .pm-approval-step + .pm-approval-step {
-        border-top: 1px solid var(--pm-border);
-      }
-      .pm-step-icon { font-size: 1rem; flex-shrink: 0; }
-      .pm-step-text { font-weight: 500; color: var(--pm-text-muted); }
-
-      .pm-approval-step--done .pm-step-icon  { color: var(--pm-success, #10b981); }
-      .pm-approval-step--done .pm-step-text  { color: var(--pm-text); }
-
-      .pm-approval-step--active .pm-step-icon { color: #f59e0b; animation: pm-spin 1.8s linear infinite; }
-      .pm-approval-step--active .pm-step-text { color: var(--pm-text); font-weight: 600; }
-
-      @keyframes pm-spin {
-        0%   { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
-      }
-
-      .pm-approval-step--pending .pm-step-icon { color: var(--pm-border); }
-      .pm-approval-step--pending .pm-step-text { opacity: 0.45; }
-    </style>
-  `;let n=e.querySelector(`#pm-check-status-btn`),r=e.querySelector(`#pm-back-login-btn`),i=e.querySelector(`#pm-status-msg`),a=e.querySelector(`#pm-step-waiting`);async function o(){s(!0),i.textContent=``,i.style.color=`var(--pm-text-muted)`;try{let{data:{session:e}}=await S.auth.getSession();if(!e){i.textContent=`No hay sesión activa. Intentá iniciar sesión nuevamente.`,i.style.color=`var(--pm-danger, #ef4444)`,s(!1);return}let{data:t,error:n}=await S.from(`profiles`).select(`estado, rol, nombre_completo`).eq(`id`,e.user.id).maybeSingle();if(n||!t){i.textContent=`No se pudo verificar el estado. Intentá de nuevo.`,i.style.color=`var(--pm-danger, #ef4444)`,s(!1);return}if(t.estado===`activo`){i.textContent=`✅ ¡Tu cuenta fue aprobada! Ingresando al portal…`,i.style.color=`var(--pm-success, #10b981)`,a?.classList.replace(`pm-approval-step--active`,`pm-approval-step--done`),a&&(a.querySelector(`.pm-step-icon`).innerHTML=`<i class="bi bi-check-circle-fill"></i>`,a.querySelector(`.pm-step-text`).textContent=`Aprobado por el administrador`),setTimeout(()=>window.location.reload(),1500);return}if(t.estado===`rechazado`){i.textContent=`Tu solicitud fue rechazada. Contactá al administrador para más información.`,i.style.color=`var(--pm-danger, #ef4444)`,s(!1);return}i.textContent=`Tu solicitud aún está en revisión. Por favor esperá la confirmación del administrador.`,i.style.color=`var(--pm-text-muted)`}catch(e){i.textContent=`Error al verificar: `+e.message,i.style.color=`var(--pm-danger, #ef4444)`}finally{s(!1)}}function s(e){n.disabled=e,n.querySelector(`.pm-btn-text`)?.classList.toggle(`d-none`,e),n.querySelector(`.pm-btn-loader`)?.classList.toggle(`d-none`,!e)}n.addEventListener(`click`,o),r.addEventListener(`click`,()=>{t?t():(history.pushState({route:`login`},``,`#/login`),window.dispatchEvent(new PopStateEvent(`popstate`,{state:{route:`login`}})))})}var kn=`https://api.groq.com/openai/v1/chat/completions`,An={}.GROQ_API_KEY||localStorage.getItem(`groq_api_key`);async function jn(e,t=null){try{let n=``;t&&t.sesiones&&t.sesiones.length>0&&(n=`
+  `,document.head.appendChild(e)}var cn=null,ln=null;function un(e,t=`polite`){cn||(cn=document.createElement(`div`),cn.setAttribute(`aria-live`,t),cn.setAttribute(`aria-atomic`,`true`),cn.classList.add(`pm-visually-hidden`),document.body.appendChild(cn)),t===`assertive`?(cn.setAttribute(`role`,`alert`),cn.setAttribute(`aria-live`,`assertive`)):(cn.removeAttribute(`role`),cn.setAttribute(`aria-live`,`polite`)),clearTimeout(ln),ln=setTimeout(()=>{cn.textContent=``,requestAnimationFrame(()=>{cn.textContent=e})},50)}function dn(e,t){if(!e||!e.id)return;fn(e);let n=`${e.id}-error`,r=document.createElement(`span`);r.id=n,r.className=`pm-field-error`,r.setAttribute(`role`,`alert`),r.textContent=t,e.nextSibling?e.parentNode.insertBefore(r,e.nextSibling):e.parentNode.appendChild(r),e.setAttribute(`aria-invalid`,`true`),e.setAttribute(`aria-describedby`,n)}function fn(e){if(e&&(e.removeAttribute(`aria-invalid`),e.removeAttribute(`aria-describedby`),e.id)){let t=document.getElementById(`${e.id}-error`);t&&t.remove()}}function pn(e){(e||document).querySelectorAll(`[aria-invalid="true"]`).forEach(e=>fn(e))}var mn=`https://api.groq.com/openai/v1/chat/completions`,hn={}.GROQ_API_KEY||localStorage.getItem(`groq_api_key`);async function gn(e,t=null){try{let n=``;t&&t.sesiones&&t.sesiones.length>0&&(n=`
 
 CONTENIDO CUBIERTO (últimas 4 semanas):
 ${t.sesiones.slice(0,8).map(e=>`
@@ -1156,7 +331,7 @@ Proporciona en JSON el siguiente análisis:
   "alerta": "null o texto breve si hay algo crítico (ej: 'Juan lleva 2 semanas de faltas, se perdió escalas')"
 }
 
-Sé directo, pedagógico y actionable. Responde SOLO JSON válido.`,i=await fetch(kn,{method:`POST`,headers:{Authorization:`Bearer ${An}`,"Content-Type":`application/json`},body:JSON.stringify({model:`mixtral-8x7b-32768`,messages:[{role:`user`,content:r}],temperature:.7,max_tokens:500})});if(!i.ok)return console.error(`[ClaseAnalysis] Groq error:`,i.status),null;let a=(await i.json()).choices?.[0]?.message?.content||``;try{return JSON.parse(a)}catch(e){return console.error(`[ClaseAnalysis] Parse error:`,e),null}}catch(e){return console.error(`[ClaseAnalysis] Error:`,e),null}}async function Mn(e,t,n=4){try{let r=new Date(new Date(t).getTime()-n*7*24*60*60*1e3).toISOString().split(`T`)[0],{data:i}=await S.from(`sesiones_clase`).select(`id, fecha, contenido, asistencia`).eq(`clase_id`,e).gte(`fecha`,r).lte(`fecha`,t).order(`fecha`,{ascending:!1});if(!i||i.length===0)return{sesiones:[],tracking:[]};let{data:a}=await S.from(`observaciones_alumnos`).select(`id, alumno_id, contenido, created_at`).eq(`clase_id`,e).gte(`created_at`,r+`T00:00:00`),o={};a&&a.forEach(e=>{o[e.alumno_id]||(o[e.alumno_id]=[]),o[e.alumno_id].push(e.contenido)});let{data:s}=await S.from(`alumnos`).select(`id, nombre_completo`),c=Object.fromEntries((s||[]).map(e=>[e.id,e.nombre_completo]));return{sesiones:i.map(e=>{let t=Array.isArray(e.asistencia)?e.asistencia:[],n=t.filter(e=>e.estado===`P`).map(e=>e.alumno_id||e),r=t.filter(e=>e.estado===`A`).map(e=>e.alumno_id||e);return{fecha:e.fecha,contenido:e.contenido||`(sin descripción)`,totalPresentes:n.length,totalAusentes:r.length,asistentes:n.map(e=>c[e]||`Desconocido`),ausentes:r.map(e=>c[e]||`Desconocido`),detalleAlumnos:t.map(e=>({alumnoId:e.alumno_id||e,alumnoNombre:c[e.alumno_id||e]||`Desconocido`,estado:e.estado,tieneObs:o[e.alumno_id||e]?.length>0,obsPreview:o[e.alumno_id||e]?.[0]||null}))}}),alumnoMap:c,obsPorAlumno:o}}catch(e){return console.error(`[ContentTracking] Error:`,e),{sesiones:[],tracking:[],alumnoMap:{},obsPorAlumno:{}}}}async function Nn(e,t){try{let{data:n}=await S.from(`clases`).select(`id, nombre, instrumento_id, instrumento`).eq(`id`,e).maybeSingle();if(!n)return null;let{data:r}=await S.from(`inscripciones`).select(`alumno_id`).eq(`clase_id`,e),i=r?.length||0,a=new Date(new Date(t).getTime()-720*60*60*1e3).toISOString().split(`T`)[0],{data:o}=await S.from(`sesiones_clase`).select(`asistencia, contenido, borrador`).eq(`clase_id`,e).gte(`fecha`,a).order(`fecha`,{ascending:!1}).limit(1),s=o?.[0],c=Array.isArray(s?.asistencia)?s.asistencia.filter(e=>e.estado===`P`).length:0,l=i-c,{data:u}=await S.from(`sesiones_clase`).select(`asistencia, contenido, borrador`).eq(`clase_id`,e).gte(`fecha`,a).order(`fecha`,{ascending:!1}).limit(10),d=(u||[]).filter(e=>{let t=Array.isArray(e.asistencia)&&e.asistencia.length>0,n=typeof e.contenido==`string`&&e.contenido.trim().length>0;return t||e.borrador===!1&&n}).length,f=(u||[]).length-d,p=u&&u.length>0?Math.round(d/u.length*100):0,m=new Date(new Date(t).getTime()-672*60*60*1e3).toISOString().split(`T`)[0],{data:h}=await S.from(`asistencias`).select(`alumno_id, estado`).eq(`clase_id`,e).gte(`fecha`,m),g={};h&&h.forEach(e=>{g[e.alumno_id]||(g[e.alumno_id]={total:0,presentes:0}),g[e.alumno_id].total++,e.estado===`P`&&g[e.alumno_id].presentes++});let _=Object.values(g).filter(e=>e.total>=3&&e.presentes/e.total<.7).length;return{id:e,nombre:n.nombre,instrumento:n.instrumento||`Sin especificar`,cumplimiento:p,totalAlumnos:i,alumnosPresentes:c,alumnosAusentes:l,registrosCompletos:d,registrosPendientes:f,alumnosEnRiesgo:_,alumnosEnRiesgoDetalle:_>0?`${_} alumno(s) con <70% asistencia`:null}}catch(e){return console.error(`[ClaseDataForAnalysis] Error:`,e),null}}async function Pn(e,t=new Date().toISOString().split(`T`)[0]){let n=document.createElement(`div`);n.className=`clase-analysis-backdrop`,n.innerHTML=`
+Sé directo, pedagógico y actionable. Responde SOLO JSON válido.`,i=await fetch(mn,{method:`POST`,headers:{Authorization:`Bearer ${hn}`,"Content-Type":`application/json`},body:JSON.stringify({model:`mixtral-8x7b-32768`,messages:[{role:`user`,content:r}],temperature:.7,max_tokens:500})});if(!i.ok)return console.error(`[ClaseAnalysis] Groq error:`,i.status),null;let a=(await i.json()).choices?.[0]?.message?.content||``;try{return JSON.parse(a)}catch(e){return console.error(`[ClaseAnalysis] Parse error:`,e),null}}catch(e){return console.error(`[ClaseAnalysis] Error:`,e),null}}async function _n(e,t,n=4){try{let r=new Date(new Date(t).getTime()-n*7*24*60*60*1e3).toISOString().split(`T`)[0],{data:i}=await S.from(`sesiones_clase`).select(`id, fecha, contenido, asistencia`).eq(`clase_id`,e).gte(`fecha`,r).lte(`fecha`,t).order(`fecha`,{ascending:!1});if(!i||i.length===0)return{sesiones:[],tracking:[]};let{data:a}=await S.from(`observaciones_alumnos`).select(`id, alumno_id, contenido, created_at`).eq(`clase_id`,e).gte(`created_at`,r+`T00:00:00`),o={};a&&a.forEach(e=>{o[e.alumno_id]||(o[e.alumno_id]=[]),o[e.alumno_id].push(e.contenido)});let{data:s}=await S.from(`alumnos`).select(`id, nombre_completo`),c=Object.fromEntries((s||[]).map(e=>[e.id,e.nombre_completo]));return{sesiones:i.map(e=>{let t=Array.isArray(e.asistencia)?e.asistencia:[],n=t.filter(e=>e.estado===`P`).map(e=>e.alumno_id||e),r=t.filter(e=>e.estado===`A`).map(e=>e.alumno_id||e);return{fecha:e.fecha,contenido:e.contenido||`(sin descripción)`,totalPresentes:n.length,totalAusentes:r.length,asistentes:n.map(e=>c[e]||`Desconocido`),ausentes:r.map(e=>c[e]||`Desconocido`),detalleAlumnos:t.map(e=>({alumnoId:e.alumno_id||e,alumnoNombre:c[e.alumno_id||e]||`Desconocido`,estado:e.estado,tieneObs:o[e.alumno_id||e]?.length>0,obsPreview:o[e.alumno_id||e]?.[0]||null}))}}),alumnoMap:c,obsPorAlumno:o}}catch(e){return console.error(`[ContentTracking] Error:`,e),{sesiones:[],tracking:[],alumnoMap:{},obsPorAlumno:{}}}}async function vn(e,t){try{let{data:n}=await S.from(`clases`).select(`id, nombre, instrumento_id, instrumento`).eq(`id`,e).maybeSingle();if(!n)return null;let{data:r}=await S.from(`inscripciones`).select(`alumno_id`).eq(`clase_id`,e),i=r?.length||0,a=new Date(new Date(t).getTime()-720*60*60*1e3).toISOString().split(`T`)[0],{data:o}=await S.from(`sesiones_clase`).select(`asistencia, contenido, borrador`).eq(`clase_id`,e).gte(`fecha`,a).order(`fecha`,{ascending:!1}).limit(1),s=o?.[0],c=Array.isArray(s?.asistencia)?s.asistencia.filter(e=>e.estado===`P`).length:0,l=i-c,{data:u}=await S.from(`sesiones_clase`).select(`asistencia, contenido, borrador`).eq(`clase_id`,e).gte(`fecha`,a).order(`fecha`,{ascending:!1}).limit(10),d=(u||[]).filter(e=>{let t=Array.isArray(e.asistencia)&&e.asistencia.length>0,n=typeof e.contenido==`string`&&e.contenido.trim().length>0;return t||e.borrador===!1&&n}).length,f=(u||[]).length-d,p=u&&u.length>0?Math.round(d/u.length*100):0,m=new Date(new Date(t).getTime()-672*60*60*1e3).toISOString().split(`T`)[0],{data:h}=await S.from(`asistencias`).select(`alumno_id, estado`).eq(`clase_id`,e).gte(`fecha`,m),g={};h&&h.forEach(e=>{g[e.alumno_id]||(g[e.alumno_id]={total:0,presentes:0}),g[e.alumno_id].total++,e.estado===`P`&&g[e.alumno_id].presentes++});let _=Object.values(g).filter(e=>e.total>=3&&e.presentes/e.total<.7).length;return{id:e,nombre:n.nombre,instrumento:n.instrumento||`Sin especificar`,cumplimiento:p,totalAlumnos:i,alumnosPresentes:c,alumnosAusentes:l,registrosCompletos:d,registrosPendientes:f,alumnosEnRiesgo:_,alumnosEnRiesgoDetalle:_>0?`${_} alumno(s) con <70% asistencia`:null}}catch(e){return console.error(`[ClaseDataForAnalysis] Error:`,e),null}}async function yn(e,t=new Date().toISOString().split(`T`)[0]){let n=document.createElement(`div`);n.className=`clase-analysis-backdrop`,n.innerHTML=`
     <div class="clase-analysis-modal">
       <div class="clase-analysis-header">
         <h3>Análisis de la Clase</h3>
@@ -1171,7 +346,7 @@ Sé directo, pedagógico y actionable. Responde SOLO JSON válido.`,i=await fetc
         </div>
       </div>
     </div>
-  `,document.body.appendChild(n),n.querySelector(`.clase-analysis-close`).addEventListener(`click`,()=>n.remove()),n.addEventListener(`click`,e=>{e.target===n&&n.remove()});try{let[r,i]=await Promise.all([Nn(e,t),Mn(e,t,4)]);if(!r)throw Error(`No se pudo obtener datos de la clase`);let a=await jn(r,i),o=n.querySelector(`.clase-analysis-body`);a?o.innerHTML=`
+  `,document.body.appendChild(n),n.querySelector(`.clase-analysis-close`).addEventListener(`click`,()=>n.remove()),n.addEventListener(`click`,e=>{e.target===n&&n.remove()});try{let[r,i]=await Promise.all([vn(e,t),_n(e,t,4)]);if(!r)throw Error(`No se pudo obtener datos de la clase`);let a=await gn(r,i),o=n.querySelector(`.clase-analysis-body`);a?o.innerHTML=`
         <div class="clase-analysis-content">
           <div class="clase-info">
             <strong>${r.nombre}</strong>
@@ -1282,7 +457,7 @@ Sé directo, pedagógico y actionable. Responde SOLO JSON válido.`,i=await fetc
       <div class="clase-analysis-content">
         <p class="text-danger">Error al cargar el análisis: ${e.message}</p>
       </div>
-    `}}function Fn(){if(document.getElementById(`clase-analysis-styles`))return;let e=document.createElement(`style`);e.id=`clase-analysis-styles`,e.textContent=`
+    `}}function bn(){if(document.getElementById(`clase-analysis-styles`))return;let e=document.createElement(`style`);e.id=`clase-analysis-styles`,e.textContent=`
     .clase-analysis-backdrop {
       position: fixed;
       top: 0;
@@ -1551,7 +726,855 @@ Sé directo, pedagógico y actionable. Responde SOLO JSON válido.`,i=await fetc
     .text-info { color: #0dcaf0; }
     .text-danger { color: #dc2626; }
     .text-muted { color: var(--bs-secondary); }
-  `,document.head.appendChild(e)}Fn();function In(e){let[t,n]=(e||`00:00`).split(`:`).map(Number);return t*60+n}function Ln(e,t,n){let r=In(e),i=In(t);return n>=r&&n<i?`en-curso`:n>=i?`pasada`:r-n<=15?`proxima`:`futura`}function Rn(e,t,n){let r=document.createElement(`div`);r.id=`pm-hoy-autonav-banner`,r.innerHTML=`
+  `,document.head.appendChild(e)}bn();var H={periodo:4,maestroId:null,clasesData:[],todasSesiones:[],inscripcionesPorClase:{},alertasRiesgo:[]};async function xn(t,n){let r=await c();r.sort((e,t)=>e.nombre.localeCompare(t.nombre));let i=new Date;i.setDate(i.getDate()-t*7);let a=i.toISOString().split(`T`)[0],o=new Date().toISOString().split(`T`)[0],s=await e(n,a,o)||[],l=r.map(e=>e.id);if(l.length===0)return{clases:r,sesiones:s,inscripcionesPorClase:{}};let{data:u}=await S.from(`alumnos_clases`).select(`clase_id, alumno:alumnos(id, nombre_completo)`).in(`clase_id`,l).eq(`activo`,!0),d={};for(let e of u||[])!e.clase_id||!e.alumno||(d[e.clase_id]||(d[e.clase_id]=[]),d[e.clase_id].push(e.alumno));return{clases:r,sesiones:s,inscripcionesPorClase:d}}function Sn({clases:e,sesiones:t,inscripcionesPorClase:n}){let r=t.filter(e=>e.estado===`registrada`).length,i=t.filter(e=>e.estado===`pendiente`).length,a=t.filter(e=>e.borrador===!0).length,o=0,s=0,c=0,l=0;t.forEach(e=>{(e.asistencia||[]).forEach(e=>{l++,e.estado===`P`?o++:e.estado===`A`?s++:e.estado===`J`&&c++})});let u=l>0?Math.round(o/l*100):0,d=e.map(e=>{let r=t.filter(t=>t.clase_id===e.id),i=r.filter(e=>e.estado===`registrada`).length,a=r.filter(e=>e.estado===`pendiente`).length,o=n[e.id]||[],s=o.length,c=r.filter(e=>e.estado===`registrada`).slice(-8).map(e=>{let t=(e.asistencia||[]).filter(e=>e.estado===`P`).length,n=(e.asistencia||[]).length;return n>0?Math.round(t/n*100):0}),l=0,u=0;r.forEach(e=>{(e.asistencia||[]).forEach(e=>{u++,e.estado===`P`&&l++})});let d=u>0?Math.round(l/u*100):0,f=r.filter(e=>e.contenido_dsl?.trim()).length,p=r.length>0?Math.min(100,Math.round(f/Math.max(i,1)*100)):0,m=[];for(let e of o){let t=r.filter(t=>t.asistencia?.some(t=>t.alumno_id===e.id)).map(t=>t.asistencia.find(t=>t.alumno_id===e.id)),n=t.filter(e=>e?.estado===`P`).length,i=t.length>0?Math.round(n/t.length*100):0;i>0&&i<70&&m.push({id:e.id,nombre:e.nombre_completo,pct:i})}return{...e,totalAlumnos:s,sesionesCompletadas:i,sesionesPendientes:a,sessionAttendance:c,avgAttendance:d,progress:p,riskStudents:m,alumnos:o}}),f=[];for(let e of d)for(let t of e.riskStudents)f.push({tipo:`baja_asistencia`,alumnoId:t.id,nombre:t.nombre,clase:e.nombre,valor:t.pct,mensaje:`${t.pct}%`});return{totalClases:e.length,sesionesCompletadas:r,sesionesPendientes:i+a,totalPresentes:o,totalAusentes:s,totalJustificados:c,totalRegistros:l,asistenciaPromedio:u,clasesData:d,alertasRiesgo:f,inscripcionesPorClase:n}}function Cn(e){let{totalClases:t,sesionesCompletadas:n,sesionesPendientes:r,totalPresentes:i,totalAusentes:a,totalJustificados:o,totalRegistros:s,asistenciaPromedio:c,clasesData:l,alertasRiesgo:u}=e,d=s>0?Math.round(i/s*100):0,f=s>0?Math.round(a/s*100):0,p=s>0?Math.round(o/s*100):0;return`
+    <div class="pm-dashboard" role="main" aria-label="Panel de métricas">
+      <div role="status" aria-live="polite" aria-atomic="true" class="pm-visually-hidden">${I(`Dashboard: ${c}% asistencia general, ${t} clases, ${n} sesiones registradas, ${r} pendientes.`)}</div>
+      <header class="pm-dashboard-header">
+        <div>
+          <h1 class="pm-dashboard-title">Dashboard</h1>
+          <p class="pm-dashboard-subtitle">Resumen académico</p>
+        </div>
+        <select id="pm-filter-periodo" class="pm-dashboard-select" aria-label="Período de análisis">
+          <option value="4" ${H.periodo===4?`selected`:``}>4 semanas</option>
+          <option value="8" ${H.periodo===8?`selected`:``}>8 semanas</option>
+          <option value="12" ${H.periodo===12?`selected`:``}>12 semanas</option>
+        </select>
+      </header>
+
+      <section class="pm-dashboard-overview" aria-label="Indicadores generales">
+        <div class="pm-overview-card primary">
+          <div class="pm-overview-ring" aria-label="Asistencia general ${c}%">
+            <svg viewBox="0 0 36 36" class="pm-circular-chart">
+              <path class="pm-circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+              <path class="pm-circle" stroke-dasharray="${c}, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+              <text x="18" y="20.35" class="pm-percentage">${c}%</text>
+            </svg>
+          </div>
+          <div class="pm-overview-info">
+            <span class="pm-overview-label">Asistencia</span>
+            <span class="pm-overview-detail">${i} de ${s} registros</span>
+          </div>
+        </div>
+        <div class="pm-overview-stat"><span class="pm-overview-number">${t}</span><span class="pm-overview-text">Clases</span></div>
+        <div class="pm-overview-stat"><span class="pm-overview-number">${n}</span><span class="pm-overview-text">Registradas</span></div>
+        <div class="pm-overview-stat warning"><span class="pm-overview-number">${r}</span><span class="pm-overview-text">Pendientes</span></div>
+      </section>
+
+      <section class="pm-dashboard-section" aria-label="Desglose de asistencia">
+        <h2 class="pm-section-title">Asistencia</h2>
+        <div class="pm-attendance-bars">
+          <div class="pm-attendance-bar-item">
+            <div class="pm-attendance-bar-label">
+              <span><i class="bi bi-check-circle-fill" style="color:#30d158"></i> Presentes</span>
+              <span>${i} &nbsp;·&nbsp; ${d}%</span>
+            </div>
+            <div class="pm-attendance-bar-track"><div class="pm-attendance-bar-fill success" style="width:${d}%"></div></div>
+          </div>
+          <div class="pm-attendance-bar-item">
+            <div class="pm-attendance-bar-label">
+              <span><i class="bi bi-x-circle-fill" style="color:#ff3b30"></i> Ausentes</span>
+              <span>${a} &nbsp;·&nbsp; ${f}%</span>
+            </div>
+            <div class="pm-attendance-bar-track"><div class="pm-attendance-bar-fill danger" style="width:${f}%"></div></div>
+          </div>
+          <div class="pm-attendance-bar-item">
+            <div class="pm-attendance-bar-label">
+              <span><i class="bi bi-exclamation-circle-fill" style="color:#ff9500"></i> Justificados</span>
+              <span>${o} &nbsp;·&nbsp; ${p}%</span>
+            </div>
+            <div class="pm-attendance-bar-track"><div class="pm-attendance-bar-fill warning" style="width:${p}%"></div></div>
+          </div>
+        </div>
+      </section>
+
+      ${u.length>0?`
+      <section class="pm-dashboard-section" aria-label="Alumnos en riesgo">
+        <h2 class="pm-section-title">Alumnos en Riesgo <span class="pm-section-badge">${u.length}</span></h2>
+        <div class="pm-risk-list" role="list">
+          ${u.slice(0,5).map(e=>`
+            <div class="pm-risk-item" role="listitem" tabindex="0" data-alumno="${e.alumnoId}" aria-label="Ver perfil de ${I(e.nombre)}">
+              <div class="pm-risk-avatar" aria-hidden="true">${(e.nombre||`A`)[0].toUpperCase()}</div>
+              <div class="pm-risk-info">
+                <span class="pm-risk-name">${I(e.nombre)}</span>
+                <span class="pm-risk-class">${I(e.clase)}</span>
+              </div>
+              <span class="pm-risk-pct">${e.mensaje}</span>
+            </div>
+          `).join(``)}
+        </div>
+      </section>`:``}
+
+      <section class="pm-dashboard-section" aria-label="Resumen por clase">
+        <h2 class="pm-section-title">Clases</h2>
+        <div class="pm-classes-list" id="pm-clases-grid">
+          ${l.map(e=>{let t=e.avgAttendance,n=t<70?`danger`:t<85?`warning`:`success`,r=t<70?`linear-gradient(135deg,#ff3b30,#ff6b6b)`:t<85?`linear-gradient(135deg,#ff9500,#ffcc00)`:`linear-gradient(135deg,#30d158,#34c759)`,i=e.sessionAttendance.length>0?e.sessionAttendance.map((e,t,n)=>{let r=Math.max(8,e),i=e<70?`#ff3b30`:e<85?`#ff9500`:`#30d158`;return`<div class="pm-spark-bar ${t===n.length-1?`pm-spark-last`:``}" style="height:${r}%;background:${i};" title="${e}%"></div>`}).join(``):`<span class="pm-spark-empty">—</span>`;return`
+            <div class="pm-class-card2" data-clase-id="${e.id}" role="article" aria-label="Clase ${I(e.nombre)}">
+              <div class="pm-class-card2__accent" style="background:${r}"></div>
+              <div class="pm-class-card2__body">
+                <div class="pm-class-card2__top">
+                  <div class="pm-class-card2__info">
+                    <span class="pm-class-card2__name">${I(e.nombre)}</span>
+                    ${e.instrumento?`<span class="pm-class-card2__inst"><i class="bi bi-music-note-beamed"></i> ${I(e.instrumento)}</span>`:``}
+                  </div>
+                  <div class="pm-class-card2__badge-wrap">
+                    <span class="pm-class-card2__pct ${n}" aria-label="Asistencia ${t}%">${t}%</span>
+                    <button class="pm-analisis-btn-metrics" data-clase-id="${e.id}" aria-label="Analizar clase" title="Ver análisis">
+                      <i class="bi bi-graph-up"></i>
+                    </button>
+                    <button class="pm-class-btn2" data-clase-id="${e.id}" aria-label="Ver alumnos" title="Ver alumnos">
+                      <i class="bi bi-people-fill"></i>
+                    </button>
+                  </div>
+                </div>
+
+                <div class="pm-class-card2__spark" aria-label="Tendencia de asistencia últimas sesiones">
+                  ${i}
+                </div>
+
+                <div class="pm-class-card2__stats">
+                  <div class="pm-cs2 pm-cs2--success">
+                    <i class="bi bi-check-circle-fill"></i>
+                    <span class="pm-cs2__val">${e.sesionesCompletadas}</span>
+                    <span class="pm-cs2__lbl">REG.</span>
+                  </div>
+                  <div class="pm-cs2 pm-cs2--warning">
+                    <i class="bi bi-clock-fill"></i>
+                    <span class="pm-cs2__val">${e.sesionesPendientes}</span>
+                    <span class="pm-cs2__lbl">PEN.</span>
+                  </div>
+                  <div class="pm-cs2 pm-cs2--blue">
+                    <i class="bi bi-people-fill"></i>
+                    <span class="pm-cs2__val">${e.totalAlumnos}</span>
+                    <span class="pm-cs2__lbl">ALUM.</span>
+                  </div>
+                  <div class="pm-cs2 pm-cs2--purple">
+                    <i class="bi bi-journal-check"></i>
+                    <span class="pm-cs2__val">${e.progress}%</span>
+                    <span class="pm-cs2__lbl">CONT.</span>
+                  </div>
+                </div>
+
+                ${e.riskStudents.length>0?`
+                <div class="pm-class-card2__risk">
+                  <i class="bi bi-exclamation-triangle-fill"></i>
+                  ${e.riskStudents.length} alumno${e.riskStudents.length>1?`s`:``} con asistencia &lt;70%
+                </div>`:``}
+              </div>
+            </div>`}).join(``)}
+        </div>
+      </section>
+
+    </div>
+
+    <style>
+      .pm-dashboard { padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+      .pm-dashboard-header { background: linear-gradient(135deg, var(--pm-primary) 0%, #5856d6 100%); padding: 1.25rem 1rem; color: white; display: flex; justify-content: space-between; align-items: center; }
+      .pm-dashboard-title { margin: 0; font-size: 1.5rem; font-weight: 700; letter-spacing: -0.02em; }
+      .pm-dashboard-subtitle { margin: 0.125rem 0 0; font-size: 0.8125rem; opacity: 0.75; }
+      .pm-dashboard-select { background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.2); color: white; padding: 0.375rem 0.75rem; border-radius: 6px; font-size: 0.8125rem; cursor: pointer; }
+      .pm-dashboard-select option { color: #000; }
+
+      .pm-dashboard-overview { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 0.5rem; padding: 0.75rem; background: var(--pm-surface); margin: -0.5rem 0.75rem 0.75rem; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+      .pm-overview-card { display: flex; align-items: center; gap: 0.625rem; padding: 0.75rem; border-radius: 10px; background: var(--pm-surface-2); }
+      .pm-overview-card.primary { background: linear-gradient(135deg, rgba(52,199,89,0.1) 0%, rgba(52,199,89,0.05) 100%); border: 1px solid rgba(52,199,89,0.2); }
+      .pm-overview-ring { width: 48px; height: 48px; flex-shrink: 0; }
+      .pm-circular-chart { display: block; width: 100%; height: 100%; }
+      .pm-circle-bg { fill: none; stroke: var(--pm-border); stroke-width: 3; }
+      .pm-circle { fill: none; stroke: var(--pm-success); stroke-width: 3; stroke-linecap: round; transform: rotate(-90deg); transform-origin: 50% 50%; transition: stroke-dasharray 0.5s ease; }
+      .pm-percentage { fill: var(--pm-text); font-size: 0.5em; text-anchor: middle; font-weight: 600; }
+      .pm-overview-info { display: flex; flex-direction: column; }
+      .pm-overview-label { font-size: 0.75rem; font-weight: 600; color: var(--pm-text); }
+      .pm-overview-detail { font-size: 0.6875rem; color: var(--pm-text-muted); }
+      .pm-overview-stat { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 0.5rem; border-radius: 10px; background: var(--pm-surface-2); }
+      .pm-overview-number { font-size: 1.25rem; font-weight: 700; color: var(--pm-text); line-height: 1; }
+      .pm-overview-text { font-size: 0.625rem; color: var(--pm-text-muted); text-transform: uppercase; letter-spacing: 0.03em; margin-top: 0.125rem; }
+      .pm-overview-stat.warning .pm-overview-number { color: var(--pm-warning); }
+
+      .pm-dashboard-section { padding: 0.75rem 1rem; }
+      .pm-section-title { font-size: 0.9375rem; font-weight: 600; color: var(--pm-text); margin: 0 0 0.75rem; display: flex; align-items: center; gap: 0.5rem; }
+      .pm-section-badge { background: var(--pm-danger); color: white; font-size: 0.6875rem; font-weight: 600; padding: 0.125rem 0.5rem; border-radius: 6px; margin-left: auto; }
+
+      .pm-attendance-bars { display: flex; flex-direction: column; gap: 0.75rem; }
+      .pm-attendance-bar-item { display: flex; flex-direction: column; gap: 0.375rem; }
+      .pm-attendance-bar-label { display: flex; justify-content: space-between; align-items: center; }
+      .pm-attendance-bar-label span:first-child { font-size: 0.8125rem; font-weight: 500; color: var(--pm-text); display: flex; align-items: center; gap: 0.375rem; }
+      .pm-attendance-bar-label span:last-child { font-size: 0.75rem; font-weight: 600; color: var(--pm-text-muted); }
+      .pm-attendance-bar-track { height: 8px; background: var(--pm-border); border-radius: 4px; overflow: hidden; }
+      .pm-attendance-bar-fill { height: 100%; border-radius: 4px; transition: width 0.6s cubic-bezier(.22,.61,.36,1); }
+      .pm-attendance-bar-fill.success { background: linear-gradient(90deg,#30d158,#34c759); }
+      .pm-attendance-bar-fill.danger  { background: linear-gradient(90deg,#ff3b30,#ff6b6b); }
+      .pm-attendance-bar-fill.warning { background: linear-gradient(90deg,#ff9500,#ffcc00); }
+
+      .pm-risk-list { display: flex; flex-direction: column; gap: 0.5rem; }
+      .pm-risk-item { display: flex; align-items: center; gap: 0.75rem; padding: 0.625rem 0.75rem; background: var(--pm-surface); border-radius: 10px; cursor: pointer; transition: transform 0.15s ease; }
+      .pm-risk-item:active { transform: scale(0.99); }
+      .pm-risk-avatar { width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, var(--pm-danger) 0%, #ff6b6b 100%); color: white; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 0.875rem; }
+      .pm-risk-info { flex: 1; min-width: 0; }
+      .pm-risk-name { display: block; font-size: 0.875rem; font-weight: 600; color: var(--pm-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .pm-risk-class { font-size: 0.6875rem; color: var(--pm-text-muted); }
+      .pm-risk-pct { font-size: 0.8125rem; font-weight: 700; color: var(--pm-danger); background: var(--pm-danger-bg); padding: 0.25rem 0.5rem; border-radius: 6px; }
+
+      /* ── Class card v2 ─────────────────────────────────────── */
+      .pm-classes-list { display: flex; flex-direction: column; gap: 0.75rem; }
+
+      .pm-class-card2 {
+        display: flex;
+        background: var(--pm-surface);
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.12), 0 0 0 1px rgba(255,255,255,0.04);
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
+      }
+      .pm-class-card2:active { transform: scale(0.99); }
+
+      .pm-class-card2__accent {
+        width: 4px;
+        flex-shrink: 0;
+        border-radius: 0;
+      }
+      .pm-class-card2__body {
+        flex: 1;
+        padding: 0.875rem 0.875rem 0.875rem 0.75rem;
+        min-width: 0;
+      }
+
+      .pm-class-card2__top {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 0.5rem;
+        margin-bottom: 0.625rem;
+      }
+      .pm-class-card2__info { flex: 1; min-width: 0; }
+      .pm-class-card2__name {
+        display: block;
+        font-size: 0.9375rem;
+        font-weight: 700;
+        color: var(--pm-text);
+        line-height: 1.25;
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      }
+      .pm-class-card2__inst {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+        font-size: 0.6875rem;
+        color: var(--pm-text-muted);
+        margin-top: 0.125rem;
+      }
+      .pm-class-card2__badge-wrap {
+        display: flex;
+        align-items: center;
+        gap: 0.375rem;
+        flex-shrink: 0;
+      }
+      .pm-class-card2__pct {
+        font-size: 1rem;
+        font-weight: 800;
+        padding: 0.25rem 0.625rem;
+        border-radius: 10px;
+        line-height: 1;
+      }
+      .pm-class-card2__pct.success {
+        background: rgba(52,199,89,0.15);
+        color: #30d158;
+      }
+      .pm-class-card2__pct.warning {
+        background: rgba(255,149,0,0.15);
+        color: #ff9500;
+      }
+      .pm-class-card2__pct.danger  {
+        background: rgba(255,59,48,0.15);
+        color: #ff3b30;
+      }
+
+      /* Spark chart */
+      .pm-class-card2__spark {
+        display: flex;
+        align-items: flex-end;
+        gap: 3px;
+        height: 32px;
+        margin: 0 0 0.625rem;
+        padding: 4px 0 0;
+      }
+      .pm-spark-bar {
+        flex: 1;
+        border-radius: 3px 3px 0 0;
+        min-height: 4px;
+        opacity: 0.75;
+        transition: opacity 0.2s;
+      }
+      .pm-spark-bar.pm-spark-last { opacity: 1; }
+      .pm-spark-empty {
+        font-size: 0.75rem;
+        color: var(--pm-text-muted);
+        align-self: center;
+      }
+
+      /* Stats row */
+      .pm-class-card2__stats {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        border-top: 1px solid var(--pm-border);
+        padding-top: 0.5rem;
+        gap: 0;
+      }
+      .pm-cs2 {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 0.25rem 0.125rem;
+        gap: 0.0625rem;
+      }
+      .pm-cs2 i {
+        font-size: 0.6875rem;
+        margin-bottom: 0.125rem;
+        opacity: 0.7;
+      }
+      .pm-cs2__val {
+        font-size: 1rem;
+        font-weight: 800;
+        color: var(--pm-text);
+        line-height: 1;
+      }
+      .pm-cs2__lbl {
+        font-size: 0.5rem;
+        color: var(--pm-text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        font-weight: 600;
+      }
+      .pm-cs2--success { color: #30d158; }
+      .pm-cs2--success .pm-cs2__val { color: #30d158; }
+      .pm-cs2--warning { color: #ff9500; }
+      .pm-cs2--warning .pm-cs2__val { color: #ff9500; }
+      .pm-cs2--blue { color: #0a84ff; }
+      .pm-cs2--blue .pm-cs2__val { color: var(--pm-text); }
+      .pm-cs2--purple { color: #bf5af2; }
+      .pm-cs2--purple .pm-cs2__val { color: var(--pm-text); }
+
+      .pm-class-card2__risk {
+        margin-top: 0.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.375rem;
+        padding: 0.375rem 0.625rem;
+        background: rgba(255,59,48,0.1);
+        border-radius: 8px;
+        font-size: 0.6875rem;
+        color: #ff3b30;
+        font-weight: 500;
+      }
+      .pm-analisis-btn-metrics {
+        background: transparent;
+        border: 1px solid var(--pm-border);
+        padding: 0.375rem 0.5rem;
+        border-radius: 8px;
+        color: var(--pm-text-muted);
+        cursor: pointer;
+        font-size: 0.9rem;
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 32px;
+        height: 32px;
+      }
+      .pm-analisis-btn-metrics:hover {
+        background: var(--pm-primary);
+        color: white;
+        border-color: var(--pm-primary);
+      }
+      .pm-class-btn2 {
+        background: var(--pm-surface-2);
+        border: none;
+        padding: 0.375rem 0.5rem;
+        border-radius: 8px;
+        color: var(--pm-text-muted);
+        cursor: pointer;
+        font-size: 0.75rem;
+        transition: background 0.15s, color 0.15s;
+      }
+      .pm-class-btn2:hover { background: var(--pm-border); color: var(--pm-text); }
+      /* Legacy .pm-class-card kept for compatibility */
+      .pm-class-card { background: var(--pm-surface); border-radius: 12px; padding: 0.875rem; position: relative; }
+      .pm-class-btn { position: absolute; top: 0.625rem; right: 0.625rem; background: none; border: none; padding: 0.25rem; color: var(--pm-text-muted); cursor: pointer; font-size: 1.25rem; }
+
+      .pm-search-wrapper { position: relative; margin-bottom: 0.5rem; }
+      .pm-search-wrapper i { position: absolute; left: 0.875rem; top: 50%; transform: translateY(-50%); color: var(--pm-text-muted); font-size: 0.875rem; }
+      .pm-search-wrapper input { width: 100%; padding: 0.75rem 0.75rem 0.75rem 2.25rem; border: 1px solid var(--pm-border); border-radius: 10px; font-size: 0.875rem; background: var(--pm-surface); color: var(--pm-text); outline: none; transition: border-color 0.2s; }
+      .pm-search-wrapper input:focus { border-color: var(--pm-primary); }
+      .pm-search-wrapper input::placeholder { color: var(--pm-text-muted); }
+      .pm-search-results { display: none; background: var(--pm-surface); border-radius: 10px; overflow: hidden; }
+      .pm-search-results.show { display: block; }
+      
+      /* Panel de estudiantes por clase */
+      .pm-clase-students-panel { margin-top: 0.75rem; border-top: 1px solid var(--pm-border); padding-top: 0.75rem; }
+      .pm-clase-students-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; font-size: 0.8125rem; font-weight: 600; }
+      .pm-clase-students-close { background: none; border: none; font-size: 1.25rem; cursor: pointer; color: var(--pm-text-muted); }
+      .pm-clase-students-list { display: flex; flex-direction: column; gap: 0.375rem; max-height: 200px; overflow-y: auto; }
+      .pm-clase-student-row { display: flex; justify-content: space-between; align-items: center; padding: 0.5rem; background: var(--pm-surface-2); border-radius: 6px; cursor: pointer; }
+      .pm-clase-student-row:hover { background: var(--pm-border); }
+      .pm-student-info { flex: 1; min-width: 0; }
+      .pm-student-nombre { display: block; font-size: 0.8125rem; font-weight: 500; color: var(--pm-text); }
+      .pm-student-meta { font-size: 0.6875rem; color: var(--pm-text-muted); }
+      .pm-student-attendance { text-align: right; }
+      .pm-student-attendance span { font-size: 0.8125rem; font-weight: 600; }
+      .pm-student-attendance.danger span { color: var(--pm-danger); }
+      .pm-student-attendance.warning span { color: var(--pm-warning); }
+      .pm-student-attendance.success span { color: var(--pm-success); }
+      .pm-student-att-bar { width: 50px; height: 4px; background: var(--pm-border); border-radius: 2px; margin-top: 2px; }
+      .pm-student-att-fill { height: 100%; border-radius: 2px; }
+      .pm-student-attendance.danger .pm-student-att-fill { background: var(--pm-danger); }
+      .pm-student-attendance.warning .pm-student-att-fill { background: var(--pm-warning); }
+      .pm-student-attendance.success .pm-student-att-fill { background: var(--pm-success); }
+
+      /* Search results */
+      .pm-search-result-item { display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem; cursor: pointer; border-bottom: 1px solid var(--pm-border); }
+      .pm-search-result-item:last-child { border-bottom: none; }
+      .pm-search-result-item:hover { background: var(--pm-surface-2); }
+      .pm-search-result-avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--pm-primary); color: white; display: flex; align-items: center; justify-content: center; }
+      .pm-search-result-info { flex: 1; }
+      .pm-search-result-name { display: block; font-size: 0.875rem; font-weight: 500; color: var(--pm-text); }
+      .pm-search-result-meta { font-size: 0.6875rem; color: var(--pm-text-muted); }
+      .pm-search-result-arrow { color: var(--pm-text-muted); }
+
+      @media (max-width: 600px) {
+        .pm-dashboard-overview { grid-template-columns: 1fr 1fr; }
+        .pm-overview-card.primary { grid-column: span 2; }
+      }
+    </style>
+  `}function wn(e){e.querySelector(`#pm-filter-periodo`)?.addEventListener(`change`,async t=>{let n=parseInt(t.target.value,10);H.periodo=n,e.innerHTML=`<div class="pm-loading" style="padding:2rem;"><div class="pm-spinner"></div></div>`;try{let t=await xn(n,H.maestroId),r=Sn(t);H.clasesData=r.clasesData,H.todasSesiones=t.sesiones,H.inscripcionesPorClase=t.inscripcionesPorClase,H.alertasRiesgo=r.alertasRiesgo,e.innerHTML=Cn(r),wn(e),un(`Período actualizado a ${n} semanas. ${r.asistenciaPromedio}% de asistencia general.`)}catch(t){e.innerHTML=`<p class="pm-empty">Error al cargar datos: ${I(t.message)}</p>`}}),e.querySelectorAll(`.pm-risk-item`).forEach(e=>{let t=e.dataset.alumno,n=()=>{window.location.hash=`#/alumno?id=${t}`};e.addEventListener(`click`,n),e.addEventListener(`keypress`,e=>{e.key===`Enter`&&n()})});let t=new Date,n=`${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,`0`)}-${String(t.getDate()).padStart(2,`0`)}`;e.querySelectorAll(`.pm-analisis-btn-metrics`).forEach(e=>{e.addEventListener(`click`,t=>{t.stopPropagation();let r=e.dataset.claseId;console.log(`[MetricasView] Abriendo análisis para clase:`,r),yn(r,n)})}),e.querySelectorAll(`.pm-class-btn, .pm-class-btn2`).forEach(e=>{e.addEventListener(`click`,async t=>{t.stopPropagation();let n=e.closest(`.pm-class-card2, .pm-class-card`),r=n.querySelector(`.pm-clase-students-panel`);if(r){r.remove();return}let i=e.dataset.claseId,a=H.clasesData.find(e=>e.id===i)?.alumnos||[],o=H.todasSesiones.filter(e=>e.clase_id===i),s=a.map(e=>{let t=o.filter(t=>t.asistencia?.some(t=>t.alumno_id===e.id)).map(t=>t.asistencia.find(t=>t.alumno_id===e.id)),n=t.filter(e=>e?.estado===`P`).length,r=t.length,i=r>0?Math.round(n/r*100):0,a=o.filter(t=>t.asistencia?.some(t=>t.alumno_id===e.id)).sort((e,t)=>t.fecha.localeCompare(e.fecha))[0];return{...e,pct:i,total:r,lastFecha:a?.fecha}});s.sort((e,t)=>e.pct-t.pct);let c=document.createElement(`div`);c.className=`pm-clase-students-panel`,c.innerHTML=`
+        <div class="pm-clase-students-header">
+          <span>Alumnos (${s.length})</span>
+          <button class="pm-clase-students-close" aria-label="Cerrar panel">×</button>
+        </div>
+        <div class="pm-clase-students-list" role="list">
+          ${s.map(e=>`
+            <div class="pm-clase-student-row" role="listitem" tabindex="0" data-alumno="${e.id}">
+              <div class="pm-student-info">
+                <span class="pm-student-nombre">${I(e.nombre_completo)}</span>
+                <span class="pm-student-meta">${e.total} sesiones · Última: ${e.lastFecha?new Date(e.lastFecha).toLocaleDateString(`es-ES`,{day:`2-digit`,month:`short`}):`—`}</span>
+              </div>
+              <div class="pm-student-attendance ${e.pct<70?`danger`:e.pct<85?`warning`:`success`}">
+                <span>${e.pct}%</span>
+                <div class="pm-student-att-bar"><div class="pm-student-att-fill" style="width:${e.pct}%"></div></div>
+              </div>
+            </div>
+          `).join(``)}
+        </div>`,n.appendChild(c),c.querySelector(`.pm-clase-students-close`).addEventListener(`click`,()=>c.remove());let l=t=>{!c.contains(t.target)&&t.target!==e&&(c.remove(),document.removeEventListener(`click`,l))};setTimeout(()=>document.addEventListener(`click`,l),10),c.querySelectorAll(`.pm-clase-student-row`).forEach(e=>{let t=()=>window.location.hash=`#/alumno?id=${e.dataset.alumno}`;e.addEventListener(`click`,t),e.addEventListener(`keypress`,e=>{e.key===`Enter`&&t()})})})})}function Tn(){if(!H.clasesData.length&&!Object.keys(H.inscripcionesPorClase).length)return null;let e=new Map;for(let[t,n]of Object.entries(H.inscripcionesPorClase)){let r=H.clasesData.find(e=>e.id===t);for(let t of n)e.has(t.id)||e.set(t.id,{...t,clases:[]}),r&&e.get(t.id).clases.push(r.nombre)}return[...e.values()]}async function En(e){e.innerHTML=`<div class="pm-loading"><div class="pm-spinner"></div></div>`;let t=w();if(!t){e.innerHTML=`<p class="pm-empty">No hay sesión activa.</p>`;return}H.maestroId=t.id;try{let n=await xn(H.periodo,t.id),r=Sn(n);H.clasesData=r.clasesData,H.todasSesiones=n.sesiones,H.inscripcionesPorClase=n.inscripcionesPorClase,H.alertasRiesgo=r.alertasRiesgo,e.innerHTML=Cn(r),wn(e),un(`Métricas actualizadas. ${r.asistenciaPromedio}% de asistencia general.`)}catch(t){e.innerHTML=`
+      <div class="pm-empty" style="padding:3rem 1rem;text-align:center;" role="alert">
+        <p style="color:var(--pm-danger);">Error al cargar métricas</p>
+        <p style="font-size:0.85rem;color:var(--pm-text-muted);">${I(t.message)}</p>
+      </div>`}}var Dn=On();function On(){let e=window.innerWidth;return e<768?`mobile`:e<1024?`tablet`:`desktop`}window.addEventListener(`resize`,()=>{let e=On();e!==Dn&&(Dn=e,document.body.dataset.pmLayout=e)},{passive:!0});function kn(){let e=document.getElementById(`portal-app`);if(!e)return;let t=e.querySelector(`.pm-header`),n=e.querySelector(`.pm-bottom-nav`),r=e.querySelector(`.pm-view`);t&&(t.style.display=`none`),n&&(n.style.display=`none`),r&&(r.style.display=`none`)}function An(e){document.querySelectorAll(`.pm-nav-tab`).forEach(t=>{t.classList.toggle(`active`,t.dataset.route===e)}),document.querySelectorAll(`.pm-sidebar-link`).forEach(t=>{t.classList.toggle(`active`,t.dataset.route===e)})}function jn(e,t,n,r,i){let a=t?.es_admin?`<a href="/admin" class="pm-admin-link" title="Ir al Panel Admin">
+         <i class="bi bi-grid-1x2-fill"></i><span>Panel Admin</span>
+       </a>`:``;e.innerHTML=`
+    <!-- Sidebar (desktop only) -->
+    <aside class="pm-sidebar" id="pm-sidebar">
+      <div class="pm-sidebar-header">
+        <div class="pm-sidebar-logo">
+          <i class="bi bi-music-note-beamed"></i>
+          <span>SOI</span>
+        </div>
+      </div>
+      <nav class="pm-sidebar-nav">
+        ${n.map(e=>`
+          <a class="pm-sidebar-link" data-route="${e.id}" title="${e.label}">
+            <i class="bi ${e.icon}"></i>
+            <span>${e.label}</span>
+          </a>
+        `).join(``)}
+      </nav>
+      <div class="pm-sidebar-footer">
+        ${a}
+        <button id="pm-btn-perfil-sidebar" class="pm-sidebar-link" data-route="perfil">
+          <i class="bi bi-person-circle"></i>
+          <span>Perfil</span>
+        </button>
+      </div>
+    </aside>
+
+    <!-- Main content area -->
+    <div class="pm-main-area">
+      <!-- Header -->
+      <header class="pm-header" id="pm-header">
+        <div class="pm-header-left" id="pm-header-left">
+          <span class="pm-header-greeting">Portal Maestros</span>
+          <span class="pm-header-title" style="font-size:clamp(1rem,3.5vw,1.5rem);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:52vw;">
+            Prof. ${t?.nombre_completo??``}
+            <span class="pm-online-dot" id="pm-sync-indicator" title="Sincronizado"></span>
+          </span>
+        </div>
+
+        <!-- Search -->
+        <div class="pm-header-search-container" id="pm-header-search-container">
+          <button id="pm-search-back-btn" class="pm-icon-btn pm-search-back-btn" title="Cerrar búsqueda">
+            <i class="bi bi-arrow-left"></i>
+          </button>
+          <div class="pm-header-search" id="pm-header-search">
+            <i class="bi bi-search"></i>
+            <input type="search" placeholder="Buscar alumno..." id="pm-header-search-input" autocomplete="off" />
+          </div>
+        </div>
+
+        <!-- Header right controls -->
+        <div class="pm-header-right" id="pm-header-right">
+          <button id="pm-search-toggle-btn" class="pm-icon-btn pm-search-toggle-btn" title="Buscar alumno">
+            <i class="bi bi-search"></i>
+          </button>
+
+          <div id="pm-theme-toggle-container"></div>
+
+          <button id="pm-bell-btn" class="pm-icon-btn" title="Notificaciones" style="position: relative;">
+            <i class="bi bi-bell"></i>
+            <span class="pm-ausencias-badge" id="pm-notif-badge" style="display: none; background: var(--pm-danger);">0</span>
+          </button>
+
+          <button id="pm-btn-perfil" class="pm-avatar-btn" title="Perfil">
+            ${t?.avatar_url?`<img src="${t.avatar_url}" alt="Avatar">`:`<i class="bi bi-person-circle"></i>`}
+          </button>
+        </div>
+      </header>
+
+      <!-- Contenido de la vista activa -->
+      <main class="pm-view" id="pm-view-container"></main>
+
+      <!-- Footer Nav (mobile/tablet only) -->
+      <nav class="pm-footer-nav" id="pm-footer-nav">
+        <div class="pm-footer-nav__inner">
+          ${n.map(e=>`
+            <button class="pm-nav-tab" data-route="${e.id}" title="${e.label}" aria-label="${e.label}">
+              <i class="bi ${e.icon}"></i>
+              <span>${e.label}</span>
+            </button>
+          `).join(``)}
+        </div>
+      </nav>
+    </div>
+  `,i();let o=document.getElementById(`pm-theme-toggle-container`);o&&o.appendChild(vt.createToggleButton()),document.getElementById(`pm-footer-nav`)?.querySelectorAll(`.pm-nav-tab`).forEach(e=>{e.addEventListener(`click`,t=>{t.preventDefault(),r(e.dataset.route)})}),document.getElementById(`pm-sidebar`)?.querySelectorAll(`.pm-sidebar-link[data-route]`).forEach(e=>{e.addEventListener(`click`,t=>{t.preventDefault(),r(e.dataset.route)})}),document.getElementById(`pm-btn-perfil`)?.addEventListener(`click`,e=>{e.preventDefault(),r(`perfil`)}),document.getElementById(`pm-bell-btn`)?.addEventListener(`click`,()=>nn.open()),Mn(r)}function Mn(e){let t=document.getElementById(`pm-header`),n=document.getElementById(`pm-header-search-input`),r=document.getElementById(`pm-search-toggle-btn`),i=document.getElementById(`pm-search-back-btn`),a=()=>{t?.classList.add(`search-active`),setTimeout(()=>n?.focus(),50)},o=()=>{t?.classList.remove(`search-active`),n&&(n.value=``),document.getElementById(`pm-header-search-dropdown`)?.remove()};r?.addEventListener(`click`,e=>{e.stopPropagation(),a()}),i?.addEventListener(`click`,e=>{e.stopPropagation(),o()});let s=null,c=null,l=()=>{s?.remove(),s=null},u=t=>{if(l(),!t.length)return;let r=document.createElement(`div`);r.id=`pm-header-search-dropdown`,r.setAttribute(`role`,`listbox`),r.innerHTML=t.map(e=>`
+      <div class="pm-hsd-item" role="option" tabindex="0" data-id="${e.id}">
+        <i class="bi bi-person-fill pm-hsd-icon"></i>
+        <div class="pm-hsd-info">
+          <span class="pm-hsd-name">${e.nombre_completo}</span>
+          ${e.instrumento_principal?`<span class="pm-hsd-meta">${e.instrumento_principal}</span>`:``}
+        </div>
+        <i class="bi bi-chevron-right pm-hsd-arrow"></i>
+      </div>`).join(``),document.body.appendChild(r);let i=n.getBoundingClientRect();r.style.cssText=`position:fixed;top:${i.bottom+4}px;left:${Math.max(8,i.left)}px;width:${Math.min(320,window.innerWidth-16)}px;z-index:9999;background:var(--pm-surface);border:1px solid var(--pm-border);border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,0.18);overflow:hidden;`,s=r,r.querySelectorAll(`.pm-hsd-item`).forEach(t=>{let n=()=>{o(),l(),e(`alumno`,{id:t.dataset.id})};t.addEventListener(`click`,n),t.addEventListener(`keypress`,e=>{e.key===`Enter`&&n()})})};if(n?.addEventListener(`input`,()=>{let e=n.value.trim();if(clearTimeout(c),e.length<1){l();return}let t=Tn();if(t){let n=e.toLowerCase();u(t.filter(e=>e.nombre_completo?.toLowerCase().includes(n)).slice(0,8).map(e=>({...e,instrumento_principal:e.clases?.join(`, `)||null})));return}c=setTimeout(async()=>{try{let{data:t}=await S.from(`alumnos`).select(`id, nombre_completo, instrumento_principal`).ilike(`nombre_completo`,`%${e}%`).limit(8);u(t||[])}catch{l()}},200)}),n?.addEventListener(`keydown`,e=>{e.key===`Escape`&&(o(),l())}),!document.getElementById(`pm-hsd-styles`)){let e=document.createElement(`style`);e.id=`pm-hsd-styles`,e.textContent=`.pm-hsd-item{display:flex;align-items:center;gap:0.625rem;padding:0.75rem 1rem;cursor:pointer;border-bottom:1px solid var(--pm-border);transition:background 0.1s}.pm-hsd-item:last-child{border-bottom:none}.pm-hsd-item:hover,.pm-hsd-item:focus{background:var(--pm-surface-2);outline:none}.pm-hsd-icon{font-size:1rem;color:var(--pm-primary);flex-shrink:0}.pm-hsd-info{flex:1;min-width:0}.pm-hsd-name{display:block;font-size:0.875rem;font-weight:500;color:var(--pm-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.pm-hsd-meta{font-size:0.7rem;color:var(--pm-text-muted)}.pm-hsd-arrow{color:var(--pm-text-muted);font-size:0.75rem}`,document.head.appendChild(e)}document.addEventListener(`click`,e=>{!n?.contains(e.target)&&!s?.contains(e.target)&&l()})}function Nn(e,{onSuccess:t}){e.innerHTML=`
+    <div class="pm-login">
+      <!-- Branding Side (Desktop) -->
+      <div class="pm-login-branding">
+        <div class="pm-login-logo"><i class="bi bi-music-note-beamed"></i></div>
+        <h1 class="pm-login-title">Portal Maestros</h1>
+        <p class="pm-login-subtitle">Sistema Operativo Institucional — SOI</p>
+      </div>
+
+      <!-- Form Side -->
+      <div class="pm-login-form">
+        <div class="pm-login-card">
+          <div class="pm-input-group">
+            <label for="pm-email">Correo electrónico</label>
+            <input
+              type="email"
+              id="pm-email"
+              class="pm-input"
+              placeholder="tu@correo.com"
+              autocomplete="username"
+              inputmode="email"
+            />
+          </div>
+
+          <div class="pm-input-group">
+            <label for="pm-password">Contraseña</label>
+            <div class="pm-password-wrapper">
+              <input
+                type="password"
+                id="pm-password"
+                class="pm-input"
+                placeholder="••••••••"
+                autocomplete="current-password"
+              />
+              <button
+                type="button"
+                id="pm-toggle-password"
+                class="pm-password-toggle"
+                title="Mostrar contraseña"
+                aria-label="Mostrar contraseña"
+              >
+                <i class="bi bi-eye"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="pm-checkbox-group">
+          <label class="pm-checkbox-label">
+            <input type="checkbox" id="pm-remember-email" />
+            Recordar correo electrónico
+          </label>
+          <label class="pm-checkbox-label">
+            <input type="checkbox" id="pm-keep-session" checked />
+            Mantener sesión activa (30 días)
+          </label>
+        </div>
+
+        <button type="button" class="pm-btn-primary" id="pm-login-btn">
+          <span class="pm-btn-text">Iniciar sesión</span>
+          <span class="pm-btn-loader d-none">
+            <span class="pm-spinner-sm"></span>
+            Validando...
+          </span>
+        </button>
+
+        <button type="button" class="pm-btn-secondary" id="pm-biometric-btn" style="display:none;">
+          <i class="bi bi-fingerprint"></i> Usar huella o Face ID
+        </button>
+
+        <p class="pm-error-msg" id="pm-login-error" aria-live="polite"></p>
+
+        <p class="pm-login-register-link">
+          <a href="#" data-route="register" class="pm-link">¿No tienes cuenta? Regístrate como maestro</a>
+        </p>
+      </div>
+    </div>
+    <style>
+      .pm-input[aria-invalid="true"] {
+        border-color: var(--pm-danger, #ef4444);
+        box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15);
+      }
+    </style>
+  `;let n=e.querySelector(`#pm-email`),r=e.querySelector(`#pm-password`),i=e.querySelector(`#pm-login-btn`),a=e.querySelector(`#pm-login-error`),o=e.querySelector(`#pm-toggle-password`),s=e.querySelector(`#pm-remember-email`),c=e.querySelector(`#pm-keep-session`),l=!1;o.addEventListener(`click`,()=>{l=!l,r.type=l?`text`:`password`,o.querySelector(`i`).className=l?`bi bi-eye-slash`:`bi bi-eye`,o.title=l?`Ocultar contraseña`:`Mostrar contraseña`,o.setAttribute(`aria-label`,l?`Ocultar contraseña`:`Mostrar contraseña`),o.setAttribute(`aria-pressed`,l?`true`:`false`)});let u=localStorage.getItem(`pm-saved-email`);u&&(n.value=u,s.checked=!0),s.addEventListener(`change`,()=>{s.checked?localStorage.setItem(`pm-saved-email`,n.value):localStorage.removeItem(`pm-saved-email`)}),n.addEventListener(`input`,()=>{s.checked&&localStorage.setItem(`pm-saved-email`,n.value)});async function d(){let i=n.value.trim(),o=r.value;a.textContent=``,pn(e),p(!1);let s=!1;if(i||(dn(n,`Ingresa tu correo electrónico`),n.focus(),s=!0),o||(dn(r,`Ingresa tu contraseña`),s||r.focus(),s=!0),s)return;f(!0);let c=await C(i,o);if(c.success){dt.setMaestro(c.maestro);let e=localStorage.getItem(`intended-route`);localStorage.removeItem(`intended-route`),t&&t(e)}else{if(c.pendingApproval){window.router?.navigate(`pending-approval`);return}a.textContent=c.error,f(!1),r.value=``,r.focus()}}function f(e){i.disabled=e,n.disabled=e,r.disabled=e,c.disabled=e,o.disabled=e;let t=i.querySelector(`.pm-btn-text`),a=i.querySelector(`.pm-btn-loader`);e?(t?.classList.add(`d-none`),a?.classList.remove(`d-none`)):(t?.classList.remove(`d-none`),a?.classList.add(`d-none`))}function p(e){n.disabled=e,r.disabled=e,c.disabled=e,o.disabled=e}i.addEventListener(`click`,d),r.addEventListener(`keydown`,e=>{e.key===`Enter`&&d()});let m=e.querySelector(`#pm-biometric-btn`);async function h(){if(!window.PublicKeyCredential)return!1;try{return await navigator.credentials.get({mediation:`optional`}),!0}catch{return!1}}async function g(){try{if(await navigator.credentials.get({mediation:`required`,publicKey:{challenge:new TextEncoder().encode(`login-challenge`)}})){let e=localStorage.getItem(`portal-maestros:maestro`);if(e){let n=JSON.parse(e);dt.setMaestro(n);let r=localStorage.getItem(`intended-route`);localStorage.removeItem(`intended-route`),t&&t(r)}else a.textContent=`No hay sesión biométrica guardada. Iniciá sesión con contraseña primero.`}}catch(e){console.log(`[WebAuthn] No se pudo usar biometría:`,e.message)}}h().then(e=>{e&&(m.style.display=`flex`,m.onclick=g)}),e.querySelector(`[data-route="register"]`)?.addEventListener(`click`,e=>{e.preventDefault(),window.router?window.router.navigate(`register`):console.error(`[LoginView] Router not found in window`)}),requestAnimationFrame(()=>n.focus())}function Pn(e,{onSuccess:t}){e.innerHTML=`
+    <div class="pm-login">
+      <!-- Branding Side (Desktop) -->
+      <div class="pm-login-branding">
+        <div class="pm-login-logo"><i class="bi bi-music-note-beamed"></i></div>
+        <h1 class="pm-login-title">Registro de Maestro</h1>
+        <p class="pm-login-subtitle">Sistema Operativo Institucional — SOI</p>
+      </div>
+
+      <!-- Form Side -->
+      <div class="pm-login-form">
+        <div class="pm-login-card">
+          <div class="pm-input-group">
+            <label for="pm-reg-nombre">Nombre completo</label>
+            <input
+              type="text"
+              id="pm-reg-nombre"
+              class="pm-input"
+              placeholder="Tu nombre completo"
+              autocomplete="name"
+            />
+          </div>
+
+          <div class="pm-input-group">
+            <label for="pm-reg-email">Correo electrónico</label>
+            <input
+              type="email"
+              id="pm-reg-email"
+              class="pm-input"
+              placeholder="tu@correo.com"
+              autocomplete="email"
+              inputmode="email"
+            />
+          </div>
+
+          <div class="pm-input-group">
+            <label for="pm-reg-password">Contraseña</label>
+            <div class="pm-password-wrapper">
+              <input
+                type="password"
+                id="pm-reg-password"
+                class="pm-input"
+                placeholder="Mínimo 6 caracteres"
+                autocomplete="new-password"
+              />
+              <button
+                type="button"
+                id="pm-reg-toggle-password"
+                class="pm-password-toggle"
+                title="Mostrar contraseña"
+                aria-label="Mostrar contraseña"
+              >
+                <i class="bi bi-eye"></i>
+              </button>
+            </div>
+          </div>
+
+          <div class="pm-input-group">
+            <label for="pm-reg-confirm-password">Confirmar contraseña</label>
+            <div class="pm-password-wrapper">
+              <input
+                type="password"
+                id="pm-reg-confirm-password"
+                class="pm-input"
+                placeholder="Repetí tu contraseña"
+                autocomplete="new-password"
+              />
+              <button
+                type="button"
+                id="pm-reg-toggle-confirm-password"
+                class="pm-password-toggle"
+                title="Mostrar contraseña"
+                aria-label="Mostrar contraseña"
+              >
+                <i class="bi bi-eye"></i>
+              </button>
+            </div>
+          </div>
+
+          <div class="pm-input-group">
+            <label for="pm-reg-instrumento">Instrumento principal</label>
+            <input
+              type="text"
+              id="pm-reg-instrumento"
+              class="pm-input"
+              placeholder="Ej: Violín, Piano, Guitarra..."
+            />
+          </div>
+
+          <div class="pm-input-group">
+            <label for="pm-reg-resena">Breve reseña (opcional)</label>
+            <textarea
+              id="pm-reg-resena"
+              class="pm-input"
+              placeholder="Contanos brevemente sobre tu experiencia..."
+              rows="3"
+            ></textarea>
+          </div>
+
+          <button type="button" class="pm-btn-primary" id="pm-register-btn">
+            <span class="pm-btn-text">Crear cuenta</span>
+            <span class="pm-btn-loader d-none">
+              <span class="pm-spinner-sm"></span>
+              Registrando...
+            </span>
+          </button>
+
+          <p class="pm-error-msg" id="pm-reg-error" aria-live="polite"></p>
+
+          <p class="pm-login-register-link">
+            <a href="#" data-route="login" class="pm-link">¿Ya tienes cuenta? Iniciar sesión</a>
+          </p>
+        </div>
+      </div>
+    </div>
+  `;let n=e.querySelector(`#pm-reg-nombre`),r=e.querySelector(`#pm-reg-email`),i=e.querySelector(`#pm-reg-password`),a=e.querySelector(`#pm-reg-confirm-password`),o=e.querySelector(`#pm-reg-instrumento`),s=e.querySelector(`#pm-reg-resena`),c=e.querySelector(`#pm-register-btn`),l=e.querySelector(`#pm-reg-error`),u=e.querySelector(`#pm-reg-toggle-password`),d=e.querySelector(`#pm-reg-toggle-confirm-password`),f=!1;u.addEventListener(`click`,()=>{f=!f,i.type=f?`text`:`password`,u.querySelector(`i`).className=f?`bi bi-eye-slash`:`bi bi-eye`,u.title=f?`Ocultar contraseña`:`Mostrar contraseña`,u.setAttribute(`aria-label`,f?`Ocultar contraseña`:`Mostrar contraseña`)});let p=!1;d.addEventListener(`click`,()=>{p=!p,a.type=p?`text`:`password`,d.querySelector(`i`).className=p?`bi bi-eye-slash`:`bi bi-eye`,d.title=p?`Ocultar contraseña`:`Mostrar contraseña`,d.setAttribute(`aria-label`,p?`Ocultar contraseña`:`Mostrar contraseña`)});async function m(){let c=n.value.trim(),u=r.value.trim(),d=i.value,f=a.value,p=o.value.trim();l.textContent=``,pn(e),g(!1);let m=!1;if(c||(dn(n,`Ingresá tu nombre completo`),m||n.focus(),m=!0),u||(dn(r,`Ingresá tu correo electrónico`),m||r.focus(),m=!0),(!d||d.length<6)&&(dn(i,`La contraseña debe tener al menos 6 caracteres`),m||i.focus(),m=!0),f?d!==f&&(dn(a,`Las contraseñas no coinciden`),m||a.focus(),m=!0):(dn(a,`Confirmá tu contraseña`),m||a.focus(),m=!0),m)return;h(!0);let{data:_,error:v}=await S.auth.signUp({email:u,password:d,options:{data:{full_name:c,rol:`maestro`,instrumento:p,resena:s.value.trim()}}});if(v){l.textContent=v.message===`User already registered`?`Este correo ya está registrado. Si ya sos maestro, intentá iniciar sesión.`:v.message||`Error al registrarse. Intentá de nuevo.`,h(!1);return}_?.user&&(await S.from(`profiles`).upsert({id:_.user.id,email:u,nombre_completo:c,resena:`Instrumento: ${p}${s.value.trim()?` | `+s.value.trim():``}`,rol:`maestro`,estado:`pendiente`},{onConflict:`id`,ignoreDuplicates:!1}),await S.auth.signOut()),h(!1),t&&t()}function h(e){c.disabled=e,n.disabled=e,r.disabled=e,i.disabled=e,a.disabled=e,o.disabled=e,s.disabled=e,u.disabled=e,d.disabled=e;let t=c.querySelector(`.pm-btn-text`),l=c.querySelector(`.pm-btn-loader`);e?(t?.classList.add(`d-none`),l?.classList.remove(`d-none`)):(t?.classList.remove(`d-none`),l?.classList.add(`d-none`))}function g(e){n.disabled=e,r.disabled=e,i.disabled=e,a.disabled=e,o.disabled=e,s.disabled=e,u.disabled=e,d.disabled=e}c.addEventListener(`click`,m),a.addEventListener(`keydown`,e=>{e.key===`Enter`&&m()}),e.querySelector(`[data-route="login"]`)?.addEventListener(`click`,e=>{e.preventDefault(),window.router?window.router.navigate(`login`):console.error(`[RegisterView] Router not found in window`)}),requestAnimationFrame(()=>n.focus())}function Fn(e,{onBackToLogin:t}={}){e.innerHTML=`
+    <div class="pm-login">
+      <!-- Branding -->
+      <div class="pm-login-branding">
+        <div class="pm-login-logo" style="background:rgba(245,158,11,0.15);">
+          <i class="bi bi-hourglass-split" style="color:#f59e0b;"></i>
+        </div>
+        <h1 class="pm-login-title">Solicitud enviada</h1>
+        <p class="pm-login-subtitle">Sistema Operativo Institucional — SOI</p>
+      </div>
+
+      <!-- Card -->
+      <div class="pm-login-form">
+        <div class="pm-login-card" style="text-align:center;">
+
+          <!-- Ícono principal -->
+          <div style="
+            width:80px;height:80px;border-radius:50%;
+            background:rgba(245,158,11,0.12);
+            display:flex;align-items:center;justify-content:center;
+            margin:0 auto 1.25rem;
+          ">
+            <i class="bi bi-shield-lock" style="font-size:2rem;color:#f59e0b;"></i>
+          </div>
+
+          <h2 style="font-size:1.2rem;font-weight:700;margin-bottom:0.75rem;">
+            Tu cuenta está pendiente de aprobación
+          </h2>
+
+          <p style="
+            font-size:0.875rem;
+            color:var(--pm-text-muted);
+            line-height:1.6;
+            margin-bottom:1.5rem;
+            max-width:320px;
+            margin-left:auto;margin-right:auto;
+          ">
+            Un administrador del sistema debe revisar y aprobar tu solicitud
+            antes de que puedas acceder al portal. Este proceso puede tomar
+            algunas horas.
+          </p>
+
+          <!-- Pasos del proceso -->
+          <div style="
+            background:var(--pm-surface-2,rgba(255,255,255,0.05));
+            border:1px solid var(--pm-border);
+            border-radius:12px;
+            padding:1rem;
+            margin-bottom:1.5rem;
+            text-align:left;
+          ">
+            <div class="pm-approval-step pm-approval-step--done">
+              <span class="pm-step-icon"><i class="bi bi-check-circle-fill"></i></span>
+              <span class="pm-step-text">Registro completado</span>
+            </div>
+            <div class="pm-approval-step pm-approval-step--active" id="pm-step-waiting">
+              <span class="pm-step-icon"><i class="bi bi-hourglass-split"></i></span>
+              <span class="pm-step-text">Esperando aprobación del administrador</span>
+            </div>
+            <div class="pm-approval-step pm-approval-step--pending">
+              <span class="pm-step-icon"><i class="bi bi-circle"></i></span>
+              <span class="pm-step-text">Acceso al portal habilitado</span>
+            </div>
+          </div>
+
+          <!-- Botón verificar estado -->
+          <button type="button" class="pm-btn-primary" id="pm-check-status-btn" style="margin-bottom:0.75rem;">
+            <span class="pm-btn-text">
+              <i class="bi bi-arrow-clockwise me-1"></i> Verificar estado
+            </span>
+            <span class="pm-btn-loader d-none">
+              <span class="pm-spinner-sm"></span>
+              Verificando…
+            </span>
+          </button>
+
+          <p id="pm-status-msg" style="
+            font-size:0.8rem;
+            min-height:1.25rem;
+            margin-bottom:1rem;
+          " aria-live="polite"></p>
+
+          <button type="button" class="pm-btn-secondary" id="pm-back-login-btn">
+            <i class="bi bi-arrow-left me-1"></i> Volver al inicio de sesión
+          </button>
+
+        </div>
+      </div>
+    </div>
+
+    <style id="pm-pending-approval-styles">
+      .pm-approval-step {
+        display: flex;
+        align-items: center;
+        gap: 0.625rem;
+        padding: 0.45rem 0;
+        font-size: 0.825rem;
+      }
+      .pm-approval-step + .pm-approval-step {
+        border-top: 1px solid var(--pm-border);
+      }
+      .pm-step-icon { font-size: 1rem; flex-shrink: 0; }
+      .pm-step-text { font-weight: 500; color: var(--pm-text-muted); }
+
+      .pm-approval-step--done .pm-step-icon  { color: var(--pm-success, #10b981); }
+      .pm-approval-step--done .pm-step-text  { color: var(--pm-text); }
+
+      .pm-approval-step--active .pm-step-icon { color: #f59e0b; animation: pm-spin 1.8s linear infinite; }
+      .pm-approval-step--active .pm-step-text { color: var(--pm-text); font-weight: 600; }
+
+      @keyframes pm-spin {
+        0%   { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+
+      .pm-approval-step--pending .pm-step-icon { color: var(--pm-border); }
+      .pm-approval-step--pending .pm-step-text { opacity: 0.45; }
+    </style>
+  `;let n=e.querySelector(`#pm-check-status-btn`),r=e.querySelector(`#pm-back-login-btn`),i=e.querySelector(`#pm-status-msg`),a=e.querySelector(`#pm-step-waiting`);async function o(){s(!0),i.textContent=``,i.style.color=`var(--pm-text-muted)`;try{let{data:{session:e}}=await S.auth.getSession();if(!e){i.textContent=`No hay sesión activa. Intentá iniciar sesión nuevamente.`,i.style.color=`var(--pm-danger, #ef4444)`,s(!1);return}let{data:t,error:n}=await S.from(`profiles`).select(`estado, rol, nombre_completo`).eq(`id`,e.user.id).maybeSingle();if(n||!t){i.textContent=`No se pudo verificar el estado. Intentá de nuevo.`,i.style.color=`var(--pm-danger, #ef4444)`,s(!1);return}if(t.estado===`activo`){i.textContent=`✅ ¡Tu cuenta fue aprobada! Ingresando al portal…`,i.style.color=`var(--pm-success, #10b981)`,a?.classList.replace(`pm-approval-step--active`,`pm-approval-step--done`),a&&(a.querySelector(`.pm-step-icon`).innerHTML=`<i class="bi bi-check-circle-fill"></i>`,a.querySelector(`.pm-step-text`).textContent=`Aprobado por el administrador`),setTimeout(()=>window.location.reload(),1500);return}if(t.estado===`rechazado`){i.textContent=`Tu solicitud fue rechazada. Contactá al administrador para más información.`,i.style.color=`var(--pm-danger, #ef4444)`,s(!1);return}i.textContent=`Tu solicitud aún está en revisión. Por favor esperá la confirmación del administrador.`,i.style.color=`var(--pm-text-muted)`}catch(e){i.textContent=`Error al verificar: `+e.message,i.style.color=`var(--pm-danger, #ef4444)`}finally{s(!1)}}function s(e){n.disabled=e,n.querySelector(`.pm-btn-text`)?.classList.toggle(`d-none`,e),n.querySelector(`.pm-btn-loader`)?.classList.toggle(`d-none`,!e)}n.addEventListener(`click`,o),r.addEventListener(`click`,()=>{t?t():(history.pushState({route:`login`},``,`#/login`),window.dispatchEvent(new PopStateEvent(`popstate`,{state:{route:`login`}})))})}function In(e){let[t,n]=(e||`00:00`).split(`:`).map(Number);return t*60+n}function Ln(e,t,n){let r=In(e),i=In(t);return n>=r&&n<i?`en-curso`:n>=i?`pasada`:r-n<=15?`proxima`:`futura`}function Rn(e,t,n){let r=document.createElement(`div`);r.id=`pm-hoy-autonav-banner`,r.innerHTML=`
     <div class="pm-autonav-content">
       <i class="bi bi-play-circle-fill pm-autonav-icon"></i>
       <span class="pm-autonav-msg">Abriendo clase en curso…</span>
@@ -1604,7 +1627,7 @@ Sé directo, pedagógico y actionable. Responde SOLO JSON válido.`,i=await fetc
           ${ee}
         </div>
       </div>
-    `,t.querySelectorAll(`.pm-pendiente-item`).forEach(e=>{e.addEventListener(`click`,async()=>{let t=e.dataset.claseId,n=e.dataset.fecha;try{await z.createSnapshotFromPlan(t,n,i.id)}catch{}window.router&&window.router.navigate(`asistencia?clase=${t}&fecha=${n}`)})}),t.querySelectorAll(`.pm-clase-card`).forEach(e=>{let t=e.querySelector(`.pm-analisis-btn`);t?t.addEventListener(`click`,e=>{e.stopPropagation(),e.preventDefault();let n=t.dataset.claseId;console.log(`[HoyView] Abriendo análisis para clase:`,n),Pn(n,u)}):console.warn(`[HoyView] No se encontró botón de análisis en card`),e.addEventListener(`click`,async()=>{if(e.classList.contains(`pm-card-loading`))return;e.classList.add(`pm-card-loading`);let t=e.dataset.claseId;try{await z.createSnapshotFromPlan(t,u,i.id)}catch(e){console.error(`Error generando snapshot:`,e)}e.classList.remove(`pm-card-loading`),n?.(t)})});let N=A||j;N&&(requestAnimationFrame(()=>{t.querySelector(`[data-clase-id="${N}"]`)?.scrollIntoView({behavior:`smooth`,block:`center`})}),A&&setTimeout(()=>{Rn(A,u,n)},800))}catch(e){t.innerHTML=`<p class="pm-empty" style="color:var(--pm-danger)">Error al cargar clases: ${I(e.message)}</p>`}}function Bn(e,t,n){let r=e.map(e=>{let t=`${e.hora_inicio?e.hora_inicio.slice(0,5):`—`} – ${e.hora_fin?e.hora_fin.slice(0,5):`—`}`,n=e.motivo||``,r=e.contenido||e.observaciones||``,i=Vn(e.motivo);return`
+    `,t.querySelectorAll(`.pm-pendiente-item`).forEach(e=>{e.addEventListener(`click`,async()=>{let t=e.dataset.claseId,n=e.dataset.fecha;try{await z.createSnapshotFromPlan(t,n,i.id)}catch{}window.router&&window.router.navigate(`asistencia?clase=${t}&fecha=${n}`)})}),t.querySelectorAll(`.pm-clase-card`).forEach(e=>{let t=e.querySelector(`.pm-analisis-btn`);t?t.addEventListener(`click`,e=>{e.stopPropagation(),e.preventDefault();let n=t.dataset.claseId;console.log(`[HoyView] Abriendo análisis para clase:`,n),yn(n,u)}):console.warn(`[HoyView] No se encontró botón de análisis en card`),e.addEventListener(`click`,async()=>{if(e.classList.contains(`pm-card-loading`))return;e.classList.add(`pm-card-loading`);let t=e.dataset.claseId;try{await z.createSnapshotFromPlan(t,u,i.id)}catch(e){console.error(`Error generando snapshot:`,e)}e.classList.remove(`pm-card-loading`),n?.(t)})});let N=A||j;N&&(requestAnimationFrame(()=>{t.querySelector(`[data-clase-id="${N}"]`)?.scrollIntoView({behavior:`smooth`,block:`center`})}),A&&setTimeout(()=>{Rn(A,u,n)},800))}catch(e){t.innerHTML=`<p class="pm-empty" style="color:var(--pm-danger)">Error al cargar clases: ${I(e.message)}</p>`}}function Bn(e,t,n){let r=e.map(e=>{let t=`${e.hora_inicio?e.hora_inicio.slice(0,5):`—`} – ${e.hora_fin?e.hora_fin.slice(0,5):`—`}`,n=e.motivo||``,r=e.contenido||e.observaciones||``,i=Vn(e.motivo);return`
       <div class="pm-clase-card pm-emergente-card" data-eme-id="${e.id}">
         <div class="d-flex justify-content-between align-items-start mb-2">
           <div class="pm-clase-nombre">${I(e.nombre_clase)}</div>
@@ -8993,7 +9016,7 @@ Sé directo, pedagógico y actionable. Responde SOLO JSON válido.`,i=await fetc
       <p class="gcv-empty-title">${t}</p>
       <p class="gcv-empty-msg">${n}</p>
     </div>
-  `}var Js=[`login`,`logout`,`register`,`pending-approval`,`calendario`,`clases`,`hoy`,`asistencia`,`metricas`,`perfil`,`clase-emergente`,`planificacion`,`alumno`,`gamificacion`,`ruta`,`crear-clase`,`ruta-plan-builder`,`ruta-semanal`,`ruta-libreria`,`ruta-detalle`,`gestionar-clases`],Ys=new Set([`hoy`,`calendario`,`metricas`,`perfil`,`ruta`,`gamificacion`,`crear-clase`,`planificacion`,`ruta-libreria`]);function Xs(e,t,n){[`login`,`logout`,`calendario`,`clases`,`hoy`,`asistencia`,`metricas`,`perfil`,`clase-emergente`,`planificacion`,`alumno`,`gamificacion`,`ruta`,`crear-clase`,`ruta-plan-builder`,`ruta-semanal`,`ruta-libreria`,`gestionar-clases`,`register`,`pending-approval`].forEach(t=>e.on(t,(e,r)=>n(t,r))),e.on(`ruta-detalle/:id`,(e,t)=>n(`ruta-detalle`,t)),e.onNotFound(()=>n(`hoy`))}function Zs(){let e=document.getElementById(`pm-view-container`);if(!e)return{};e.innerHTML=``;let t={};return Js.forEach(n=>{let r=document.createElement(`div`);r.id=`pm-view-${n}`,r.className=`pm-view-content`,r.style.display=`none`,e.appendChild(r),t[n]=r}),t}async function Qs(e,t,n,r,i){let{maestroId:a,permisos:o,router:s,showLoginScreen:c,cleanupPushService:l,stopRealtime:u,logoutMaestro:d}=i;switch(e){case`login`:En(t,{onSuccess:i.onLoginSuccess});break;case`register`:Dn(t,{onSuccess:()=>s.navigate(`pending-approval`)});break;case`pending-approval`:On(t,{onBackToLogin:()=>s.navigate(`login`)});break;case`logout`:c(),l(),u(),d().then(()=>window.location.reload());break;case`calendario`:case`clases`:return await Zn(t);case`hoy`:return await zn(t,{onClaseClick:e=>s.navigate(`asistencia?clase=${e}`)});case`asistencia`:return await Qa(t,{claseId:r.get(`clase`),fecha:r.get(`fecha`),sesionId:r.get(`sesion`),router:s});case`metricas`:return yn(t);case`perfil`:return co(t);case`clase-emergente`:return no(t,{maestroId:a});case`planificacion`:return await Po(t,{maestroId:a});case`alumno`:return Zo(t,{alumnoId:r.get(`id`)||n.id});case`gamificacion`:await ns(t);break;case`ruta`:await ps(t,{onTopicSelected:e=>s.navigate(`asistencia?clase=${e}`)});break;case`crear-clase`:Ss(t);break;case`ruta-plan-builder`:Cs(t,{alumnoId:r.get(`id`)});break;case`ruta-semanal`:ws(t,{alumnoId:r.get(`id`)});break;case`ruta-libreria`:Ts.render().then(e=>{t.innerHTML=``,t.appendChild(e)});break;case`ruta-detalle`:Es.render(n).then(e=>{t.innerHTML=``,t.appendChild(e)});break;case`gestionar-clases`:if(!o?.puede_inscribir_clases){s.navigate(`hoy`);return}return await Ns(t);default:break}return null}var $s=!1,ec=null;function tc({isAdmin:e,getMaestro:t,getPermisosCached:n,onPermisosUpdate:r,onNavigate:i,onResize:a}){if($s)return;$s=!0,Ft(()=>{let e=document.getElementById(`pm-notif-badge`);if(!e)return;let t=Ht();t>0?(e.textContent=t>9?`9+`:t,e.style.display=`flex`):e.style.display=`none`}),Lt(),Wt(),e||nc({getMaestro:t,getPermisosCached:n,onPermisosUpdate:r,onNavigate:i}),document.addEventListener(`keydown`,e=>{if(xn()!==`desktop`||e.target.tagName===`INPUT`||e.target.tagName===`TEXTAREA`)return;window._globalAppKeys||(window._globalAppKeys=[]);let t=window._globalAppKeys;if(t.push(e.key.toLowerCase()),t[t.length-2]===`g`){let n={h:`hoy`,c:`calendario`,r:`ruta`,m:`metricas`,p:`perfil`}[e.key.toLowerCase()];n&&(i(n),t.length=0)}t.length>3&&t.splice(0,t.length-2)});let o=null,s=xn();window.addEventListener(`resize`,()=>{clearTimeout(o),o=setTimeout(()=>{let e=xn();e!==s&&(s=e,a())},250)},{passive:!0})}function nc({getMaestro:e,getPermisosCached:t,onPermisosUpdate:n,onNavigate:r}){let i=e();i?.id&&(ec&&=(S.removeChannel(ec),null),ec=S.channel(`permisos-maestro:${i.id}`).on(`postgres_changes`,{event:`*`,schema:`public`,table:`permisos_maestros`,filter:`maestro_id=eq.${i.id}`},async e=>{console.log(`[Realtime] Permisos actualizados:`,e.new);try{let e=await he(i.id),r=t(),a=[],o=[];e.puede_inscribir_clases&&!r?.puede_inscribir_clases&&a.push(`Gestionar e Inscribir Clases`),r?.puede_inscribir_clases&&!e.puede_inscribir_clases&&o.push(`Gestionar e Inscribir Clases`),await n(e,{ganados:a,perdidos:o}),a.length>0?F.success(`¡Nuevos permisos activados: ${a.join(`, `)}! Ahora podés acceder desde el Perfil o la barra de navegación.`):o.length>0?F.show(`El administrador removió tu acceso a: ${o.join(`, `)}.`,`warning`):F.show(`Tus permisos fueron actualizados por el administrador.`,`info`)}catch(e){console.warn(`[Realtime] Error actualizando permisos:`,e.message)}}).subscribe(e=>console.log(`[Realtime] Canal permisos_maestros:`,e)),window.addEventListener(`beforeunload`,()=>S.removeChannel(ec),{once:!0}))}if(h(),`serviceWorker`in navigator){let e=async()=>{try{let e=await navigator.serviceWorker.register(`/sw.js`);console.log(`[PWA] Service Worker registered:`,e.scope)}catch(e){console.log(`[PWA] Service Worker registration failed:`,e)}};document.readyState===`complete`?e():window.addEventListener(`load`,e)}else `serviceWorker`in navigator;$e(),Ye({windowMs:6e4,max:100}),qe({enabled:!1,consent:!1}),nt({debug:!1}),A({dsn:null,environment:`production`}),window.addEventListener(`showToast`,e=>{let{message:t,type:n=`info`}=e.detail||{};t&&F.show(t,n)});var rc=null,ic=null,ac=!1,$=mt();window.router=$;var oc={},sc=null,cc=new Set;function lc(e){let t=[{id:`calendario`,label:`Calendario`,icon:`bi-calendar3`},{id:`hoy`,label:`Hoy`,icon:`bi-house-door`},{id:`planificacion`,label:`Plan`,icon:`bi-signpost-split`},{id:`metricas`,label:`Métricas`,icon:`bi-bar-chart-line`}];return e?.puede_inscribir_clases&&t.push({id:`gestionar-clases`,label:`Clases`,icon:`bi-mortarboard`}),t}async function uc(e){let{tabla:t,operacion:n,payload:r}=e,i={...r};t===`sesiones_clase`&&(i.contenido_dsl!==void 0&&(i.contenido=i.contenido_dsl,delete i.contenido_dsl),i.asistencias!==void 0&&i.asistencia===void 0&&(i.asistencia=i.asistencias,delete i.asistencias)),console.log(`[SYNC] Intentando ${n} en ${t}:`,i);try{if(n===`insert`){let{error:e}=await S.from(t).insert([i]);if(e)throw e}else if(n===`update`){let{id:e,...n}=i,{error:r}=await S.from(t).update(n).eq(`id`,e);if(r)throw r}else if(n===`delete`){let{error:e}=await S.from(t).delete().eq(`id`,i.id);if(e)throw e}}catch(e){if(e.code===`PGRST204`){let{data:e}=await S.from(t).select().limit(1);e?.length>0?console.warn(`[SYNC] Columnas REALES encontradas:`,Object.keys(e[0])):console.warn(`[SYNC] No se pueden leer las columnas. ¿Ejecutaste el SQL en Supabase?`)}throw console.error(`[SYNC] Error crítico:`,e),e}}var dc=null;async function fc(){let e=document.getElementById(`pm-sync-indicator`);if(e)try{let t=await N();t.length===0?(e.className=`pm-online-dot synced`,e.title=`Sincronizado`):(e.className=`pm-online-dot pending`,e.title=`Pendiente (${t.length})`)}catch{e.className=`pm-online-dot error`,e.title=`Error de sincronización`}}async function pc(){clearTimeout(dc),dc=setTimeout(async()=>{if(navigator.onLine)try{await M(uc)}finally{await fc()}},1e3)}window.addEventListener(`online`,pc),window.addEventListener(`offline`,fc);function mc(){cc.clear()}function hc(e){cc.delete(e)}async function gc(e,t={},{silent:n=!1}={}){let r=window.location.hash.includes(`?`)?window.location.hash.split(`?`)[1]:``,i=new URLSearchParams(r),a=e.split(`?`)[0];if(!n){let e=document.getElementById(`pm-header`);if(e?.classList.contains(`search-active`)){e.classList.remove(`search-active`);let t=document.getElementById(`pm-header-search-input`);t&&(t.value=``)}Cn(a),window.pwaInstaller?.evaluateInsights()}let o=oc[a];if(!o){console.warn(`[Router] Contenedor no encontrado: ${a}`);return}if(n||(typeof sc==`function`&&(sc(),sc=null),Object.values(oc).forEach(e=>{e.style.display=`none`,e.classList.remove(`active`)}),o.style.display=`block`,o.offsetHeight,o.classList.add(`active`)),cc.has(a))return;let s=setTimeout(()=>{o.querySelectorAll(`.pm-loading-overlay`).forEach(e=>e.remove());let e=document.createElement(`div`);e.className=`pm-loading pm-loading-overlay`,e.innerHTML=`<div class="pm-spinner"></div>`,o.prepend(e)},300);try{let e=await Qs(a,o,t,i,{maestroId:rc?.id,permisos:ic,router:$,showLoginScreen:vc,cleanupPushService:fe,stopRealtime:()=>{},logoutMaestro:ft,onLoginSuccess:()=>xc()});e&&(sc=e),clearTimeout(s),o.querySelector(`.pm-loading-overlay`)?.remove(),Ys.has(a)&&cc.add(a)}catch(e){clearTimeout(s),o.innerHTML=`<p class="pm-error">Error cargando vista: ${e.message}</p>`}}function _c(e,t,n){rc=t,ic=n||ic,wn(e,t,lc(ic),(e,t)=>$.navigate(e,t),fc),document.getElementById(`pm-sync-indicator`)?.addEventListener(`click`,async e=>{e.target.classList.contains(`error`)&&await pc()});let r=($.currentRoute?.()||`hoy`).split(`?`)[0];Cn(r)}function vc(){let e=document.getElementById(`portal-app`);if(!e)return;let t=[`login`,`register`,`pending-approval`],n=($.currentRoute?.()||`login`).split(`?`)[0];if(t.includes(n)&&n!==`login`){document.getElementById(`pm-view-container`)||(e.innerHTML=`<main class="pm-view" id="pm-view-container"></main>`),Object.assign(oc,Zs()),yc(),$.setAuthGuard(()=>dt.isAuthenticated(),t),$.start();return}let r=oc.login;if(r){Sn(),r.style.display=`block`,r.innerHTML=``,Qs(`login`,r,{},new URLSearchParams,{router:$,onLoginSuccess:e=>{e&&e!==`login`?$.navigate(e):xc()}});return}e.innerHTML=`<main class="pm-view" id="pm-view-container"></main>`,Object.assign(oc,Zs()),yc(),$.setAuthGuard(()=>dt.isAuthenticated(),t),history.replaceState({route:`login`},``,`#/login`),gc(`login`)}function yc(){Xs($,ac,gc)}async function bc(){if(rc)try{let t=new Date,n=t.toLocaleDateString(`es-ES`,{weekday:`long`}).toLowerCase(),i=`${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,`0`)}-${String(t.getDate()).padStart(2,`0`)}`,[a,o,s]=await Promise.all([c(),c().then(e=>r(e.map(e=>e.id))),c().then(()=>e(rc.id,i,i))]),l=Object.fromEntries(a.map(e=>[e.id,e]));await pe(o.filter(e=>e.dia?.toLowerCase()===n).map(e=>({...e,clase_nombre:l[e.clase_id]?.nombre||`Clase`})),s.filter(e=>e.borrador===!1||e.estado===`registrada`).map(e=>e.clase_id))}catch(e){console.warn(`[Alerts] Error programando alertas:`,e.message)}}async function xc(){let e=document.getElementById(`portal-app`);if(!e)return;console.log(`[Init] Iniciando Portal...`);let t=await dt.init();if(console.log(`[Init] Auth:`,t?`con maestro`:`sin maestro`),dt.isPendingApproval()){console.log(`[Init] Cuenta pendiente de aprobación — mostrando pantalla de espera`),document.getElementById(`pm-view-container`)||(e.innerHTML=`<main class="pm-view" id="pm-view-container"></main>`),Object.assign(oc,Zs(!1)),yc(),history.replaceState({route:`pending-approval`},``,`#/pending-approval`),gc(`pending-approval`);return}let n=[`login`,`register`,`pending-approval`],r=(window.router||$).currentRoute().split(`?`)[0],i=n.includes(r);if(!t&&!i){vc();return}if(!t&&i){document.getElementById(`pm-view-container`)||(e.innerHTML=`<main class="pm-view" id="pm-view-container"></main>`),Object.assign(oc,Zs()),yc(),$.setAuthGuard(()=>dt.isAuthenticated(),n),$.start();return}if(t.es_admin&&!t.es_maestro){console.log(`[Init] Admin puro detectado → redirigiendo a /admin`),window.location.href=`/admin`;return}let a=null;try{a=await he(t.id)}catch(e){console.warn(`[Init] Error fetching permissions:`,e.message)}_c(e,t,a),Object.assign(oc,Zs()),tc({isAdmin:!1,getMaestro:()=>rc,getPermisosCached:()=>ic,onPermisosUpdate:async(t,{ganados:r,perdidos:i})=>{let a=($.currentRoute?.()||`perfil`).split(`?`)[0],o=a===`gestionar-clases`&&!t.puede_inscribir_clases||a===`pending-approval`&&r.length>0?`hoy`:a;_c(e,rc,t),Object.assign(oc,Zs()),yc(),$.setAuthGuard(()=>dt.isAuthenticated(),n),cc.clear(),await gc(o),$.navigate(o)},onNavigate:e=>$.navigate(e),onResize:()=>{_c(e,rc,ic),Object.assign(oc,Zs());let t=($.currentRoute?.()||`hoy`).split(`?`)[0];Cn(t)}}),gt(hc,mc),yc(),$.setAuthGuard(()=>dt.isAuthenticated(),n),$.start();let o=($.currentRoute?.()||``).split(`?`)[0];(!o||o===`login`||o===`logout`)&&$.navigate(`hoy`),y().then(async()=>{let e=[`hoy`,`calendario`,`metricas`],t=($.currentRoute?.()||`hoy`).split(`?`)[0];await e.filter(e=>e!==t&&!cc.has(e)).reduce((e,t)=>e.then(()=>{if(oc[t])return gc(t,{},{silent:!0})}),Promise.resolve()),bc(),window.pwaInstaller?.evaluateInsights()}).catch(e=>console.warn(`[Prefetch] Error:`,e.message)),pc()}var Sc=(e,t,n,r)=>`
+  `}var Js=[`login`,`logout`,`register`,`pending-approval`,`calendario`,`clases`,`hoy`,`asistencia`,`metricas`,`perfil`,`clase-emergente`,`planificacion`,`alumno`,`gamificacion`,`ruta`,`crear-clase`,`ruta-plan-builder`,`ruta-semanal`,`ruta-libreria`,`ruta-detalle`,`gestionar-clases`],Ys=new Set([`hoy`,`calendario`,`metricas`,`perfil`,`ruta`,`gamificacion`,`crear-clase`,`planificacion`,`ruta-libreria`]);function Xs(e,t,n){[`login`,`logout`,`calendario`,`clases`,`hoy`,`asistencia`,`metricas`,`perfil`,`clase-emergente`,`planificacion`,`alumno`,`gamificacion`,`ruta`,`crear-clase`,`ruta-plan-builder`,`ruta-semanal`,`ruta-libreria`,`gestionar-clases`,`register`,`pending-approval`].forEach(t=>e.on(t,(e,r)=>n(t,r))),e.on(`ruta-detalle/:id`,(e,t)=>n(`ruta-detalle`,t)),e.onNotFound(()=>n(`hoy`))}function Zs(){let e=document.getElementById(`pm-view-container`);if(!e)return{};e.innerHTML=``;let t={};return Js.forEach(n=>{let r=document.createElement(`div`);r.id=`pm-view-${n}`,r.className=`pm-view-content`,r.style.display=`none`,e.appendChild(r),t[n]=r}),t}async function Qs(e,t,n,r,i){let{maestroId:a,permisos:o,router:s,showLoginScreen:c,cleanupPushService:l,stopRealtime:u,logoutMaestro:d}=i;switch(e){case`login`:Nn(t,{onSuccess:i.onLoginSuccess});break;case`register`:Pn(t,{onSuccess:()=>s.navigate(`pending-approval`)});break;case`pending-approval`:Fn(t,{onBackToLogin:()=>s.navigate(`login`)});break;case`logout`:c(),l(),u(),d().then(()=>window.location.reload());break;case`calendario`:case`clases`:return await Zn(t);case`hoy`:return await zn(t,{onClaseClick:e=>s.navigate(`asistencia?clase=${e}`)});case`asistencia`:return await Qa(t,{claseId:r.get(`clase`),fecha:r.get(`fecha`),sesionId:r.get(`sesion`),router:s});case`metricas`:return En(t);case`perfil`:return co(t);case`clase-emergente`:return no(t,{maestroId:a});case`planificacion`:return await Po(t,{maestroId:a});case`alumno`:return Zo(t,{alumnoId:r.get(`id`)||n.id});case`gamificacion`:await ns(t);break;case`ruta`:await ps(t,{onTopicSelected:e=>s.navigate(`asistencia?clase=${e}`)});break;case`crear-clase`:Ss(t);break;case`ruta-plan-builder`:Cs(t,{alumnoId:r.get(`id`)});break;case`ruta-semanal`:ws(t,{alumnoId:r.get(`id`)});break;case`ruta-libreria`:Ts.render().then(e=>{t.innerHTML=``,t.appendChild(e)});break;case`ruta-detalle`:Es.render(n).then(e=>{t.innerHTML=``,t.appendChild(e)});break;case`gestionar-clases`:if(!o?.puede_inscribir_clases){s.navigate(`hoy`);return}return await Ns(t);default:break}return null}var $s=!1,ec=null;function tc({isAdmin:e,getMaestro:t,getPermisosCached:n,onPermisosUpdate:r,onNavigate:i,onResize:a}){if($s)return;$s=!0,Ft(()=>{let e=document.getElementById(`pm-notif-badge`);if(!e)return;let t=Ht();t>0?(e.textContent=t>9?`9+`:t,e.style.display=`flex`):e.style.display=`none`}),Lt(),Wt(),e||nc({getMaestro:t,getPermisosCached:n,onPermisosUpdate:r,onNavigate:i}),document.addEventListener(`keydown`,e=>{if(On()!==`desktop`||e.target.tagName===`INPUT`||e.target.tagName===`TEXTAREA`)return;window._globalAppKeys||(window._globalAppKeys=[]);let t=window._globalAppKeys;if(t.push(e.key.toLowerCase()),t[t.length-2]===`g`){let n={h:`hoy`,c:`calendario`,r:`ruta`,m:`metricas`,p:`perfil`}[e.key.toLowerCase()];n&&(i(n),t.length=0)}t.length>3&&t.splice(0,t.length-2)});let o=null,s=On();window.addEventListener(`resize`,()=>{clearTimeout(o),o=setTimeout(()=>{let e=On();e!==s&&(s=e,a())},250)},{passive:!0})}function nc({getMaestro:e,getPermisosCached:t,onPermisosUpdate:n,onNavigate:r}){let i=e();i?.id&&(ec&&=(S.removeChannel(ec),null),ec=S.channel(`permisos-maestro:${i.id}`).on(`postgres_changes`,{event:`*`,schema:`public`,table:`permisos_maestros`,filter:`maestro_id=eq.${i.id}`},async e=>{console.log(`[Realtime] Permisos actualizados:`,e.new);try{let e=await he(i.id),r=t(),a=[],o=[];e.puede_inscribir_clases&&!r?.puede_inscribir_clases&&a.push(`Gestionar e Inscribir Clases`),r?.puede_inscribir_clases&&!e.puede_inscribir_clases&&o.push(`Gestionar e Inscribir Clases`),await n(e,{ganados:a,perdidos:o}),a.length>0?F.success(`¡Nuevos permisos activados: ${a.join(`, `)}! Ahora podés acceder desde el Perfil o la barra de navegación.`):o.length>0?F.show(`El administrador removió tu acceso a: ${o.join(`, `)}.`,`warning`):F.show(`Tus permisos fueron actualizados por el administrador.`,`info`)}catch(e){console.warn(`[Realtime] Error actualizando permisos:`,e.message)}}).subscribe(e=>console.log(`[Realtime] Canal permisos_maestros:`,e)),window.addEventListener(`beforeunload`,()=>S.removeChannel(ec),{once:!0}))}if(h(),`serviceWorker`in navigator){let e=async()=>{try{let e=await navigator.serviceWorker.register(`/sw.js`);console.log(`[PWA] Service Worker registered:`,e.scope)}catch(e){console.log(`[PWA] Service Worker registration failed:`,e)}};document.readyState===`complete`?e():window.addEventListener(`load`,e)}else `serviceWorker`in navigator;$e(),Ye({windowMs:6e4,max:100}),qe({enabled:!1,consent:!1}),nt({debug:!1}),A({dsn:null,environment:`production`}),window.addEventListener(`showToast`,e=>{let{message:t,type:n=`info`}=e.detail||{};t&&F.show(t,n)});var rc=null,ic=null,ac=!1,$=mt();window.router=$;var oc={},sc=null,cc=new Set;function lc(e){let t=[{id:`calendario`,label:`Calendario`,icon:`bi-calendar3`},{id:`hoy`,label:`Hoy`,icon:`bi-house-door`},{id:`planificacion`,label:`Plan`,icon:`bi-signpost-split`},{id:`metricas`,label:`Métricas`,icon:`bi-bar-chart-line`}];return e?.puede_inscribir_clases&&t.push({id:`gestionar-clases`,label:`Clases`,icon:`bi-mortarboard`}),t}async function uc(e){let{tabla:t,operacion:n,payload:r}=e,i={...r};t===`sesiones_clase`&&(i.contenido_dsl!==void 0&&(i.contenido=i.contenido_dsl,delete i.contenido_dsl),i.asistencias!==void 0&&i.asistencia===void 0&&(i.asistencia=i.asistencias,delete i.asistencias)),console.log(`[SYNC] Intentando ${n} en ${t}:`,i);try{if(n===`insert`){let{error:e}=await S.from(t).insert([i]);if(e)throw e}else if(n===`update`){let{id:e,...n}=i,{error:r}=await S.from(t).update(n).eq(`id`,e);if(r)throw r}else if(n===`delete`){let{error:e}=await S.from(t).delete().eq(`id`,i.id);if(e)throw e}}catch(e){if(e.code===`PGRST204`){let{data:e}=await S.from(t).select().limit(1);e?.length>0?console.warn(`[SYNC] Columnas REALES encontradas:`,Object.keys(e[0])):console.warn(`[SYNC] No se pueden leer las columnas. ¿Ejecutaste el SQL en Supabase?`)}throw console.error(`[SYNC] Error crítico:`,e),e}}var dc=null;async function fc(){let e=document.getElementById(`pm-sync-indicator`);if(e)try{let t=await N();t.length===0?(e.className=`pm-online-dot synced`,e.title=`Sincronizado`):(e.className=`pm-online-dot pending`,e.title=`Pendiente (${t.length})`)}catch{e.className=`pm-online-dot error`,e.title=`Error de sincronización`}}async function pc(){clearTimeout(dc),dc=setTimeout(async()=>{if(navigator.onLine)try{await M(uc)}finally{await fc()}},1e3)}window.addEventListener(`online`,pc),window.addEventListener(`offline`,fc);function mc(){cc.clear()}function hc(e){cc.delete(e)}async function gc(e,t={},{silent:n=!1}={}){let r=window.location.hash.includes(`?`)?window.location.hash.split(`?`)[1]:``,i=new URLSearchParams(r),a=e.split(`?`)[0];if(!n){let e=document.getElementById(`pm-header`);if(e?.classList.contains(`search-active`)){e.classList.remove(`search-active`);let t=document.getElementById(`pm-header-search-input`);t&&(t.value=``)}An(a),window.pwaInstaller?.evaluateInsights()}let o=oc[a];if(!o){console.warn(`[Router] Contenedor no encontrado: ${a}`);return}if(n||(typeof sc==`function`&&(sc(),sc=null),Object.values(oc).forEach(e=>{e.style.display=`none`,e.classList.remove(`active`)}),o.style.display=`block`,o.offsetHeight,o.classList.add(`active`)),cc.has(a))return;let s=setTimeout(()=>{o.querySelectorAll(`.pm-loading-overlay`).forEach(e=>e.remove());let e=document.createElement(`div`);e.className=`pm-loading pm-loading-overlay`,e.innerHTML=`<div class="pm-spinner"></div>`,o.prepend(e)},300);try{let e=await Qs(a,o,t,i,{maestroId:rc?.id,permisos:ic,router:$,showLoginScreen:vc,cleanupPushService:fe,stopRealtime:()=>{},logoutMaestro:ft,onLoginSuccess:()=>xc()});e&&(sc=e),clearTimeout(s),o.querySelector(`.pm-loading-overlay`)?.remove(),Ys.has(a)&&cc.add(a)}catch(e){clearTimeout(s),o.innerHTML=`<p class="pm-error">Error cargando vista: ${e.message}</p>`}}function _c(e,t,n){rc=t,ic=n||ic,jn(e,t,lc(ic),(e,t)=>$.navigate(e,t),fc),document.getElementById(`pm-sync-indicator`)?.addEventListener(`click`,async e=>{e.target.classList.contains(`error`)&&await pc()});let r=($.currentRoute?.()||`hoy`).split(`?`)[0];An(r)}function vc(){let e=document.getElementById(`portal-app`);if(!e)return;let t=[`login`,`register`,`pending-approval`],n=($.currentRoute?.()||`login`).split(`?`)[0];if(t.includes(n)&&n!==`login`){document.getElementById(`pm-view-container`)||(e.innerHTML=`<main class="pm-view" id="pm-view-container"></main>`),Object.assign(oc,Zs()),yc(),$.setAuthGuard(()=>dt.isAuthenticated(),t),$.start();return}let r=oc.login;if(r){kn(),r.style.display=`block`,r.innerHTML=``,Qs(`login`,r,{},new URLSearchParams,{router:$,onLoginSuccess:e=>{e&&e!==`login`?$.navigate(e):xc()}});return}e.innerHTML=`<main class="pm-view" id="pm-view-container"></main>`,Object.assign(oc,Zs()),yc(),$.setAuthGuard(()=>dt.isAuthenticated(),t),history.replaceState({route:`login`},``,`#/login`),gc(`login`)}function yc(){Xs($,ac,gc)}async function bc(){if(rc)try{let t=new Date,n=t.toLocaleDateString(`es-ES`,{weekday:`long`}).toLowerCase(),i=`${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,`0`)}-${String(t.getDate()).padStart(2,`0`)}`,[a,o,s]=await Promise.all([c(),c().then(e=>r(e.map(e=>e.id))),c().then(()=>e(rc.id,i,i))]),l=Object.fromEntries(a.map(e=>[e.id,e]));await pe(o.filter(e=>e.dia?.toLowerCase()===n).map(e=>({...e,clase_nombre:l[e.clase_id]?.nombre||`Clase`})),s.filter(e=>e.borrador===!1||e.estado===`registrada`).map(e=>e.clase_id))}catch(e){console.warn(`[Alerts] Error programando alertas:`,e.message)}}async function xc(){let e=document.getElementById(`portal-app`);if(!e)return;console.log(`[Init] Iniciando Portal...`);let t=await dt.init();if(console.log(`[Init] Auth:`,t?`con maestro`:`sin maestro`),dt.isPendingApproval()){console.log(`[Init] Cuenta pendiente de aprobación — mostrando pantalla de espera`),document.getElementById(`pm-view-container`)||(e.innerHTML=`<main class="pm-view" id="pm-view-container"></main>`),Object.assign(oc,Zs(!1)),yc(),history.replaceState({route:`pending-approval`},``,`#/pending-approval`),gc(`pending-approval`);return}let n=[`login`,`register`,`pending-approval`],r=(window.router||$).currentRoute().split(`?`)[0],i=n.includes(r);if(!t&&!i){vc();return}if(!t&&i){document.getElementById(`pm-view-container`)||(e.innerHTML=`<main class="pm-view" id="pm-view-container"></main>`),Object.assign(oc,Zs()),yc(),$.setAuthGuard(()=>dt.isAuthenticated(),n),$.start();return}if(t.es_admin&&!t.es_maestro){console.log(`[Init] Admin puro detectado → redirigiendo a /admin`),window.location.href=`/admin`;return}let a=null;try{a=await he(t.id)}catch(e){console.warn(`[Init] Error fetching permissions:`,e.message)}_c(e,t,a),Object.assign(oc,Zs()),tc({isAdmin:!1,getMaestro:()=>rc,getPermisosCached:()=>ic,onPermisosUpdate:async(t,{ganados:r,perdidos:i})=>{let a=($.currentRoute?.()||`perfil`).split(`?`)[0],o=a===`gestionar-clases`&&!t.puede_inscribir_clases||a===`pending-approval`&&r.length>0?`hoy`:a;_c(e,rc,t),Object.assign(oc,Zs()),yc(),$.setAuthGuard(()=>dt.isAuthenticated(),n),cc.clear(),await gc(o),$.navigate(o)},onNavigate:e=>$.navigate(e),onResize:()=>{_c(e,rc,ic),Object.assign(oc,Zs());let t=($.currentRoute?.()||`hoy`).split(`?`)[0];An(t)}}),gt(hc,mc),yc(),$.setAuthGuard(()=>dt.isAuthenticated(),n),$.start();let o=($.currentRoute?.()||``).split(`?`)[0];(!o||o===`login`||o===`logout`)&&$.navigate(`hoy`),y().then(async()=>{let e=[`hoy`,`calendario`,`metricas`],t=($.currentRoute?.()||`hoy`).split(`?`)[0];await e.filter(e=>e!==t&&!cc.has(e)).reduce((e,t)=>e.then(()=>{if(oc[t])return gc(t,{},{silent:!0})}),Promise.resolve()),bc(),window.pwaInstaller?.evaluateInsights()}).catch(e=>console.warn(`[Prefetch] Error:`,e.message)),pc()}var Sc=(e,t,n,r)=>`
   <div style="padding:40px;color:#fff;font-family:'Outfit',sans-serif;background:radial-gradient(circle at top right,#1e293b,#0f172a);z-index:9999;position:fixed;top:0;left:0;right:0;bottom:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;">
     <div style="background:rgba(255,255,255,0.05);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,0.1);border-radius:24px;padding:40px;max-width:600px;width:90%;box-shadow:0 25px 50px -12px rgba(0,0,0,0.5);">
       <div style="width:80px;height:80px;background:rgba(239,68,68,0.1);color:#ef4444;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:40px;margin:0 auto 24px;"><i class="bi ${e}"></i></div>

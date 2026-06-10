@@ -6,30 +6,55 @@ const GROQ_API_KEY = process.env.GROQ_API_KEY || localStorage.getItem('groq_api_
 /**
  * Genera análisis pedagógico de una clase usando Groq
  */
-export async function generateClaseAnalysis(claseData) {
+export async function generateClaseAnalysis(claseData, contentTracking = null) {
   try {
-    // Construir contexto de la clase
+    // Construir contexto de contenido (últimas 4 semanas)
+    let contentContext = ''
+    if (contentTracking && contentTracking.sesiones && contentTracking.sesiones.length > 0) {
+      contentContext = `
+
+CONTENIDO CUBIERTO (últimas 4 semanas):
+${contentTracking.sesiones
+  .slice(0, 8)
+  .map(
+    (s) => `
+${s.fecha}: "${s.contenido}"
+  ├─ Presentes: ${s.totalPresentes} alumnos
+  └─ Ausentes: ${s.totalAusentes} alumnos
+  Detalle: ${s.detalleAlumnos
+      .map((d) => `${d.alumnoNombre} (${d.estado}${d.tieneObs ? ' ✓obs' : ' ✗obs'})`)
+      .join(', ')}
+`,
+  )
+  .join('')}
+
+ANÁLISIS DE GAPS:
+Identifica alumnos que faltaron a sesiones donde se cubrió contenido clave,
+y si están atrás vs el grupo (no tienen observaciones sobre ese contenido mientras otros sí).
+`
+    }
+
     const prompt = `
 Analiza esta clase y proporciona un resumen útil para el maestro:
 
-Clase: ${claseData.nombre}
+CLASE: ${claseData.nombre}
 Instrumento: ${claseData.instrumento || 'N/A'}
 Cumplimiento: ${claseData.cumplimiento}%
 Total alumnos: ${claseData.totalAlumnos}
 Alumnos presentes (última sesión): ${claseData.alumnosPresentes || 'N/A'}
 Alumnos ausentes: ${claseData.alumnosAusentes || 'N/A'}
 Registros completados: ${claseData.registrosCompletos || 0}
-Registros pendientes: ${claseData.registrosPendientes || 0}
 Alumnos en riesgo: ${claseData.alumnosEnRiesgo || 0}
 ${claseData.alumnosEnRiesgoDetalle ? 'Razón riesgo: ' + claseData.alumnosEnRiesgoDetalle : ''}
+${contentContext}
 
 Proporciona en JSON el siguiente análisis:
 {
   "resumen": "2-3 líneas resumiendo el estado de la clase",
   "fortalezas": ["punto 1", "punto 2"],
-  "preocupaciones": ["punto 1", "punto 2"],
+  "preocupaciones": ["punto 1: detalle con nombres de alumnos si aplica", "punto 2"],
   "recomendaciones": ["acción 1", "acción 2", "acción 3"],
-  "alerta": "null o texto breve si hay algo crítico"
+  "alerta": "null o texto breve si hay algo crítico (ej: 'Juan lleva 2 semanas de faltas, se perdió escalas')"
 }
 
 Sé directo, pedagógico y actionable. Responde SOLO JSON válido.`
@@ -65,6 +90,78 @@ Sé directo, pedagógico y actionable. Responde SOLO JSON válido.`
   } catch (err) {
     console.error('[ClaseAnalysis] Error:', err)
     return null
+  }
+}
+
+/**
+ * Obtiene tracking de contenido: sesiones + asistencias + observaciones (últimas 4-6 semanas)
+ */
+export async function getContentTracking(claseId, fechaActual, semanas = 4) {
+  try {
+    const hace_N_semanas = new Date(new Date(fechaActual).getTime() - semanas * 7 * 24 * 60 * 60 * 1000)
+      .toISOString()
+      .split('T')[0]
+
+    // 1. Obtener todas las sesiones en el rango
+    const { data: sesiones } = await supabase
+      .from('sesiones_clase')
+      .select('id, fecha, contenido, asistencia')
+      .eq('clase_id', claseId)
+      .gte('fecha', hace_N_semanas)
+      .lte('fecha', fechaActual)
+      .order('fecha', { ascending: false })
+
+    if (!sesiones || sesiones.length === 0) return { sesiones: [], tracking: [] }
+
+    // 2. Obtener observaciones por alumno
+    const { data: obs } = await supabase
+      .from('observaciones_alumnos')
+      .select('id, alumno_id, contenido, created_at')
+      .eq('clase_id', claseId)
+      .gte('created_at', hace_N_semanas + 'T00:00:00')
+
+    const obsPorAlumno = {}
+    if (obs) {
+      obs.forEach((o) => {
+        if (!obsPorAlumno[o.alumno_id]) obsPorAlumno[o.alumno_id] = []
+        obsPorAlumno[o.alumno_id].push(o.contenido)
+      })
+    }
+
+    // 3. Obtener nombres de alumnos
+    const { data: alumnos } = await supabase
+      .from('alumnos')
+      .select('id, nombre_completo')
+
+    const alumnoMap = Object.fromEntries((alumnos || []).map((a) => [a.id, a.nombre_completo]))
+
+    // 4. Consolidar: sesión → quién fue → qué contenido cubrió → obs de cada alumno
+    const tracking = sesiones.map((sesion) => {
+      const asistentesRaw = Array.isArray(sesion.asistencia) ? sesion.asistencia : []
+      const asistentes = asistentesRaw.filter((a) => a.estado === 'P').map((a) => a.alumno_id || a)
+      const ausentes = asistentesRaw.filter((a) => a.estado === 'A').map((a) => a.alumno_id || a)
+
+      return {
+        fecha: sesion.fecha,
+        contenido: sesion.contenido || '(sin descripción)',
+        totalPresentes: asistentes.length,
+        totalAusentes: ausentes.length,
+        asistentes: asistentes.map((id) => alumnoMap[id] || 'Desconocido'),
+        ausentes: ausentes.map((id) => alumnoMap[id] || 'Desconocido'),
+        detalleAlumnos: asistentesRaw.map((a) => ({
+          alumnoId: a.alumno_id || a,
+          alumnoNombre: alumnoMap[a.alumno_id || a] || 'Desconocido',
+          estado: a.estado,
+          tieneObs: obsPorAlumno[a.alumno_id || a]?.length > 0,
+          obsPreview: obsPorAlumno[a.alumno_id || a]?.[0] || null,
+        })),
+      }
+    })
+
+    return { sesiones: tracking, alumnoMap, obsPorAlumno }
+  } catch (err) {
+    console.error('[ContentTracking] Error:', err)
+    return { sesiones: [], tracking: [], alumnoMap: {}, obsPorAlumno: {} }
   }
 }
 

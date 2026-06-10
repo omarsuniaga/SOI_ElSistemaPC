@@ -83,22 +83,29 @@ Proporciona en JSON el siguiente análisis:
 
 Sé directo, pedagógico y actionable. Responde SOLO JSON válido.`
 
+    const payload = {
+      model: 'mixtral-8x7b-32768',
+      messages: [{ role: 'user', content: prompt }],
+      temperature: 0.7,
+      max_tokens: 500,
+    }
+
+    console.log('[ClaseAnalysis] Enviando a Groq:', { apiKey: apiKey?.slice(0, 10) + '...', model: payload.model, prompt: prompt.slice(0, 100) + '...' })
+
     const response = await fetch(GROQ_API_URL, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        model: 'mixtral-8x7b-32768',
-        messages: [{ role: 'user', content: prompt }],
-        temperature: 0.7,
-        max_tokens: 500,
-      }),
+      body: JSON.stringify(payload),
     })
 
+    console.log('[ClaseAnalysis] Respuesta status:', response.status)
+
     if (!response.ok) {
-      console.error('[ClaseAnalysis] Groq error:', response.status)
+      const errorBody = await response.json().catch(() => ({}))
+      console.error('[ClaseAnalysis] Groq error:', response.status, errorBody)
       return null
     }
 

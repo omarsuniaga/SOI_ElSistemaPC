@@ -1604,7 +1604,7 @@ Sé directo, pedagógico y actionable. Responde SOLO JSON válido.`,i=await fetc
           ${ee}
         </div>
       </div>
-    `,t.querySelectorAll(`.pm-pendiente-item`).forEach(e=>{e.addEventListener(`click`,async()=>{let t=e.dataset.claseId,n=e.dataset.fecha;try{await z.createSnapshotFromPlan(t,n,i.id)}catch{}window.router&&window.router.navigate(`asistencia?clase=${t}&fecha=${n}`)})}),t.querySelectorAll(`.pm-clase-card`).forEach(e=>{let t=e.querySelector(`.pm-analisis-btn`);t&&t.addEventListener(`click`,e=>{e.stopPropagation();let n=t.dataset.claseId;Pn(n,u)}),e.addEventListener(`click`,async()=>{if(e.classList.contains(`pm-card-loading`))return;e.classList.add(`pm-card-loading`);let t=e.dataset.claseId;try{await z.createSnapshotFromPlan(t,u,i.id)}catch(e){console.error(`Error generando snapshot:`,e)}e.classList.remove(`pm-card-loading`),n?.(t)})});let N=A||j;N&&(requestAnimationFrame(()=>{t.querySelector(`[data-clase-id="${N}"]`)?.scrollIntoView({behavior:`smooth`,block:`center`})}),A&&setTimeout(()=>{Rn(A,u,n)},800))}catch(e){t.innerHTML=`<p class="pm-empty" style="color:var(--pm-danger)">Error al cargar clases: ${I(e.message)}</p>`}}function Bn(e,t,n){let r=e.map(e=>{let t=`${e.hora_inicio?e.hora_inicio.slice(0,5):`—`} – ${e.hora_fin?e.hora_fin.slice(0,5):`—`}`,n=e.motivo||``,r=e.contenido||e.observaciones||``,i=Vn(e.motivo);return`
+    `,t.querySelectorAll(`.pm-pendiente-item`).forEach(e=>{e.addEventListener(`click`,async()=>{let t=e.dataset.claseId,n=e.dataset.fecha;try{await z.createSnapshotFromPlan(t,n,i.id)}catch{}window.router&&window.router.navigate(`asistencia?clase=${t}&fecha=${n}`)})}),t.querySelectorAll(`.pm-clase-card`).forEach(e=>{let t=e.querySelector(`.pm-analisis-btn`);t?t.addEventListener(`click`,e=>{e.stopPropagation(),e.preventDefault();let n=t.dataset.claseId;console.log(`[HoyView] Abriendo análisis para clase:`,n),Pn(n,u)}):console.warn(`[HoyView] No se encontró botón de análisis en card`),e.addEventListener(`click`,async()=>{if(e.classList.contains(`pm-card-loading`))return;e.classList.add(`pm-card-loading`);let t=e.dataset.claseId;try{await z.createSnapshotFromPlan(t,u,i.id)}catch(e){console.error(`Error generando snapshot:`,e)}e.classList.remove(`pm-card-loading`),n?.(t)})});let N=A||j;N&&(requestAnimationFrame(()=>{t.querySelector(`[data-clase-id="${N}"]`)?.scrollIntoView({behavior:`smooth`,block:`center`})}),A&&setTimeout(()=>{Rn(A,u,n)},800))}catch(e){t.innerHTML=`<p class="pm-empty" style="color:var(--pm-danger)">Error al cargar clases: ${I(e.message)}</p>`}}function Bn(e,t,n){let r=e.map(e=>{let t=`${e.hora_inicio?e.hora_inicio.slice(0,5):`—`} – ${e.hora_fin?e.hora_fin.slice(0,5):`—`}`,n=e.motivo||``,r=e.contenido||e.observaciones||``,i=Vn(e.motivo);return`
       <div class="pm-clase-card pm-emergente-card" data-eme-id="${e.id}">
         <div class="d-flex justify-content-between align-items-start mb-2">
           <div class="pm-clase-nombre">${I(e.nombre_clase)}</div>
@@ -1732,25 +1732,37 @@ Sé directo, pedagógico y actionable. Responde SOLO JSON válido.`,i=await fetc
 
     /* ── Botón de análisis ──────────────────────────── */
     .pm-analisis-btn {
-      background: none;
-      border: 1px solid var(--pm-border, #e0e0e0);
-      border-radius: 6px;
-      padding: 0.4rem 0.5rem;
-      font-size: 0.9rem;
+      background: transparent;
+      border: 2px solid var(--pm-border, #d1d5db);
+      border-radius: 8px;
+      padding: 0.5rem 0.7rem;
+      min-width: 32px;
+      height: 32px;
+      font-size: 1rem;
       color: var(--pm-text-muted, #6b7280);
       cursor: pointer;
       transition: all 0.2s ease;
       display: flex;
       align-items: center;
       justify-content: center;
+      position: relative;
+      z-index: 10;
+      flex-shrink: 0;
+      pointer-events: auto !important;
     }
     .pm-analisis-btn:hover {
-      background: var(--pm-surface-2, #f3f4f6);
-      color: var(--pm-primary, #3b82f6);
+      background: var(--pm-primary, #3b82f6);
+      color: white;
       border-color: var(--pm-primary, #3b82f6);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
     }
     .pm-analisis-btn:active {
       transform: scale(0.95);
+    }
+    .pm-analisis-btn:focus {
+      outline: 2px solid var(--pm-primary, #3b82f6);
+      outline-offset: 2px;
     }
 
     /* ── Estado temporal de clases ──────────────────── */

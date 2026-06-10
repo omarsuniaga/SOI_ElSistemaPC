@@ -287,11 +287,17 @@ const NAV_GROUPS = [
     icon: 'bi-journal-check',
     items: [
       { id: 'pedagogico-dashboard', label: 'Dashboard', icon: 'bi-grid-1x2' },
+      { id: 'pedagogico-cockpit', label: 'Cockpit Director', icon: 'bi-speedometer2' },
       { id: 'planificacion', label: 'Planificación', icon: 'bi-journal-text' },
       { id: 'planificacion-maestros', label: 'Todas las Planes', icon: 'bi-journal-check' },
       { id: 'planificacion-cobertura', label: 'Cobertura Curricular', icon: 'bi-grid-3x3-gap' },
       { id: 'planificacion-ruta', label: 'Ruta Académica', icon: 'bi-diagram-3' },
-      { id: 'pedagogico-seguimiento', label: 'Seguimiento', icon: 'bi-person-lines-fill' },
+      { id: 'pedagogico-seguimiento', label: 'Seguimiento Alumnos', icon: 'bi-person-lines-fill' },
+      {
+        id: 'pedagogico-seguimiento-institucional',
+        label: 'Seg. Institucional',
+        icon: 'bi-shield-check',
+      },
       { id: 'pedagogico-reportes', label: 'Reportes', icon: 'bi-file-earmark-bar-graph' },
     ],
   },

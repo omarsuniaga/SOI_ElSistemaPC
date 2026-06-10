@@ -1,5 +1,6 @@
 import '../styles/analyticsFillingBehavior.css'
 import { getTeacherFillingMetrics } from '../api/analyticsFillingBehaviorService.js'
+import { InfoTooltip, attachInfoTooltipEvents, injectInfoTooltipStyles } from '../../../shared/components/InfoTooltip.js'
 
 export function analyticsFillingBehaviorWidget(containerId) {
   const container = document.getElementById(containerId)
@@ -11,10 +12,10 @@ export function analyticsFillingBehaviorWidget(containerId) {
           <thead>
             <tr>
               <th>Maestro</th>
-              <th>Total Clases</th>
-              <th>Asistencia 1°</th>
-              <th>Duración Obs (seg)</th>
-              <th>IA Promedio</th>
+              <th>Total Clases ${InfoTooltip('cumplimiento_sesiones')}</th>
+              <th>Asistencia 1° ${InfoTooltip('analitca_comportamiento')}</th>
+              <th>Duración Obs (seg) ${InfoTooltip('observacion')}</th>
+              <th>IA Promedio ${InfoTooltip('confianza_ia')}</th>
             </tr>
           </thead>
           <tbody>
@@ -58,6 +59,7 @@ export function analyticsFillingBehaviorWidget(containerId) {
 
   const widget = {
     async init() {
+      injectInfoTooltipStyles()
       container.innerHTML = `
         <div class="premium-loading">
           <div class="premium-loading-spinner"></div>
@@ -98,26 +100,26 @@ export function analyticsFillingBehaviorWidget(containerId) {
 
       const html = `
         <div class="analytics-widget">
-          <h2><i class="bi bi-bar-chart-steps text-primary"></i> Analítica de Llenado de Asistencias</h2>
+          <h2><i class="bi bi-bar-chart-steps text-primary"></i> Analítica de Llenado de Asistencias ${InfoTooltip('analitca_comportamiento')}</h2>
 
           <div class="stats-grid">
             <div class="stat-card primary">
-              <div class="stat-label">Asistencia Primero</div>
+              <div class="stat-label">Asistencia Primero ${InfoTooltip('analitca_comportamiento')}</div>
               <div class="stat-value">${stats.asistenciaPrimero}%</div>
               <div class="stat-subtitle">Orden de llenado preferido</div>
             </div>
             <div class="stat-card">
-              <div class="stat-label">Observaciones Primero</div>
+              <div class="stat-label">Observaciones Primero ${InfoTooltip('observacion')}</div>
               <div class="stat-value">${stats.observacionesPrimero}%</div>
               <div class="stat-subtitle">Enfoque en comentarios</div>
             </div>
             <div class="stat-card warning">
-              <div class="stat-label">Simultáneo</div>
+              <div class="stat-label">Simultáneo ${InfoTooltip('analitca_comportamiento')}</div>
               <div class="stat-value">${stats.simultaneo}%</div>
               <div class="stat-subtitle">Registro en tiempo real</div>
             </div>
             <div class="stat-card success">
-              <div class="stat-label">Uso IA Promedio</div>
+              <div class="stat-label">Uso IA Promedio ${InfoTooltip('confianza_ia')}</div>
               <div class="stat-value">${stats.avgAiUsage}%</div>
               <div class="stat-subtitle">Asistente activado</div>
             </div>
@@ -131,6 +133,7 @@ export function analyticsFillingBehaviorWidget(containerId) {
       `
 
       container.innerHTML = html
+      attachInfoTooltipEvents(container)
     },
 
     destroy() {

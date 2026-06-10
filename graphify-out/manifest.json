@@ -540,13 +540,13 @@
     "semantic_hash": ""
   },
   "src/modules/admin-dashboard/views/analyticsFillingBehaviorWidget.js": {
-    "mtime": 1780960649.9602523,
-    "ast_hash": "6c6633eb03c969ec944aee6e9111d920",
+    "mtime": 1781117256.165786,
+    "ast_hash": "26174dd63c84ee6bd2203f4749a4f558",
     "semantic_hash": ""
   },
   "src/modules/admin-dashboard/views/cumplimientoMaestrosWidget.js": {
-    "mtime": 1780960649.9602523,
-    "ast_hash": "41928189dee420303c07dc6529a1b8eb",
+    "mtime": 1781117218.7695594,
+    "ast_hash": "2fe21b0ae1353298040bbba6628057e8",
     "semantic_hash": ""
   },
   "src/modules/admin-dashboard/views/directorReportingPanel.js": {
@@ -1470,8 +1470,8 @@
     "semantic_hash": ""
   },
   "src/modules/pedagogico/views/dashboardPedagogicoView.js": {
-    "mtime": 1780960650.2391398,
-    "ast_hash": "dae5aae73f74c2e9a282faeef1044b70",
+    "mtime": 1781117303.826362,
+    "ast_hash": "800f69ff51ad7fbbf2a54e11d4d65bdf",
     "semantic_hash": ""
   },
   "src/modules/pedagogico/views/reportesPedagogicosView.js": {
@@ -5382,6 +5382,16 @@
   "docs/superpowers/specs/2026-06-08-pedagogico-perfil-conocimiento-design.md": {
     "mtime": 1780970172.5711577,
     "ast_hash": "8b949aced4d49babcc4617d8d5d2bd43",
+    "semantic_hash": ""
+  },
+  "src/shared/components/InfoTooltip.js": {
+    "mtime": 1781117152.7094693,
+    "ast_hash": "f287330a0048f67262ea21178d14fdd7",
+    "semantic_hash": ""
+  },
+  "src/shared/components/metrics-glossary.js": {
+    "mtime": 1781117178.9003284,
+    "ast_hash": "538f77cbbd228b650af3f450b7161428",
     "semantic_hash": ""
   }
 }

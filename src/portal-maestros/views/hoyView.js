@@ -11,6 +11,7 @@ import {
   getSalones,
   getEmergentesHoy,
 } from '../services/maestroDataService.js'
+import { openClaseAnalysisModal } from '../components/claseAnalysisModal.js'
 
 // ─── Detección de clase en curso ───────────────────────────────
 
@@ -230,9 +231,12 @@ export async function renderHoyView(container, { onClaseClick } = {}) {
         <div class="pm-clase-card ${estadoClass}" data-clase-id="${clase.id}">
           <div class="d-flex justify-content-between align-items-start mb-2">
             <div class="pm-clase-nombre">${escHTML(clase.nombre)}</div>
-            <div class="d-flex flex-wrap gap-1 justify-content-end">
+            <div class="d-flex flex-wrap gap-1 justify-content-end align-items-start">
               ${temporalBadge}
               ${registradaBadge}
+              <button class="pm-analisis-btn" data-clase-id="${clase.id}" title="Ver análisis" aria-label="Analizar clase">
+                <i class="bi bi-graph-up"></i>
+              </button>
             </div>
           </div>
           <div class="pm-clase-meta">
@@ -305,6 +309,17 @@ export async function renderHoyView(container, { onClaseClick } = {}) {
 
     // 6. Eventos de click en cada clase
     container.querySelectorAll('.pm-clase-card').forEach((card) => {
+      // Botón de análisis (no navega)
+      const analisisBtn = card.querySelector('.pm-analisis-btn')
+      if (analisisBtn) {
+        analisisBtn.addEventListener('click', (e) => {
+          e.stopPropagation()
+          const claseId = analisisBtn.dataset.claseId
+          openClaseAnalysisModal(claseId, fechaHoy)
+        })
+      }
+
+      // Click normal en la card (navega)
       card.addEventListener('click', async () => {
         // Prevent double-click while loading
         if (card.classList.contains('pm-card-loading')) return
@@ -534,6 +549,29 @@ if (!document.getElementById('pm-hoy-pendientes-styles')) {
     .pm-eme-motivo-eventual      { background: rgba(139,92,246,0.1); color: #7c3aed; }
     .pm-eme-motivo-reforzamiento { background: rgba(16,185,129,0.1); color: #059669; }
     .pm-eme-motivo-otro          { background: rgba(245,158,11,0.1); color: #d97706; }
+
+    /* ── Botón de análisis ──────────────────────────── */
+    .pm-analisis-btn {
+      background: none;
+      border: 1px solid var(--pm-border, #e0e0e0);
+      border-radius: 6px;
+      padding: 0.4rem 0.5rem;
+      font-size: 0.9rem;
+      color: var(--pm-text-muted, #6b7280);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .pm-analisis-btn:hover {
+      background: var(--pm-surface-2, #f3f4f6);
+      color: var(--pm-primary, #3b82f6);
+      border-color: var(--pm-primary, #3b82f6);
+    }
+    .pm-analisis-btn:active {
+      transform: scale(0.95);
+    }
 
     /* ── Estado temporal de clases ──────────────────── */
     .pm-clase-en-curso {

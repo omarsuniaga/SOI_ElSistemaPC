@@ -314,9 +314,13 @@ export async function renderHoyView(container, { onClaseClick } = {}) {
       if (analisisBtn) {
         analisisBtn.addEventListener('click', (e) => {
           e.stopPropagation()
+          e.preventDefault()
           const claseId = analisisBtn.dataset.claseId
+          console.log('[HoyView] Abriendo análisis para clase:', claseId)
           openClaseAnalysisModal(claseId, fechaHoy)
         })
+      } else {
+        console.warn('[HoyView] No se encontró botón de análisis en card')
       }
 
       // Click normal en la card (navega)
@@ -552,25 +556,37 @@ if (!document.getElementById('pm-hoy-pendientes-styles')) {
 
     /* ── Botón de análisis ──────────────────────────── */
     .pm-analisis-btn {
-      background: none;
-      border: 1px solid var(--pm-border, #e0e0e0);
-      border-radius: 6px;
-      padding: 0.4rem 0.5rem;
-      font-size: 0.9rem;
+      background: transparent;
+      border: 2px solid var(--pm-border, #d1d5db);
+      border-radius: 8px;
+      padding: 0.5rem 0.7rem;
+      min-width: 32px;
+      height: 32px;
+      font-size: 1rem;
       color: var(--pm-text-muted, #6b7280);
       cursor: pointer;
       transition: all 0.2s ease;
       display: flex;
       align-items: center;
       justify-content: center;
+      position: relative;
+      z-index: 10;
+      flex-shrink: 0;
+      pointer-events: auto !important;
     }
     .pm-analisis-btn:hover {
-      background: var(--pm-surface-2, #f3f4f6);
-      color: var(--pm-primary, #3b82f6);
+      background: var(--pm-primary, #3b82f6);
+      color: white;
       border-color: var(--pm-primary, #3b82f6);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
     }
     .pm-analisis-btn:active {
       transform: scale(0.95);
+    }
+    .pm-analisis-btn:focus {
+      outline: 2px solid var(--pm-primary, #3b82f6);
+      outline-offset: 2px;
     }
 
     /* ── Estado temporal de clases ──────────────────── */

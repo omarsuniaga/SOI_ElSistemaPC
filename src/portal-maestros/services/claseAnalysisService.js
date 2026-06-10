@@ -1,37 +1,11 @@
 import { supabase } from '../../lib/supabaseClient.js'
-
-const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions'
-let GROQ_API_KEY = null
-
-// Obtener API key de system_config en la BD
-async function getGroqApiKey() {
-  if (GROQ_API_KEY) return GROQ_API_KEY
-  try {
-    const { data, error } = await supabase
-      .from('system_config')
-      .select('value')
-      .eq('key', 'groq_api_key')
-      .single()
-    if (error) throw error
-    GROQ_API_KEY = data?.value
-    return GROQ_API_KEY
-  } catch (err) {
-    console.error('[claseAnalysisService] Error obteniendo API key:', err)
-    return null
-  }
-}
+import { callGroq, parseGroqJSON } from './groqService.js'
 
 /**
  * Genera análisis pedagógico de una clase usando Groq
  */
 export async function generateClaseAnalysis(claseData, contentTracking = null) {
   try {
-    const apiKey = await getGroqApiKey()
-    if (!apiKey) {
-      console.warn('[generateClaseAnalysis] No API key disponible, retornando datos sin análisis')
-      return null
-    }
-
     // Construir contexto de contenido (últimas 4 semanas)
     let contentContext = ''
     if (contentTracking && contentTracking.sesiones && contentTracking.sesiones.length > 0) {
@@ -83,41 +57,12 @@ Proporciona en JSON el siguiente análisis:
 
 Sé directo, pedagógico y actionable. Responde SOLO JSON válido.`
 
-    const payload = {
-      model: 'llama-3.1-70b-versatile',
-      messages: [{ role: 'user', content: prompt }],
-      temperature: 0.7,
-      max_tokens: 500,
-    }
-
-    console.log('[ClaseAnalysis] Enviando a Groq:', { apiKey: apiKey?.slice(0, 10) + '...', model: payload.model, prompt: prompt.slice(0, 100) + '...' })
-
-    const response = await fetch(GROQ_API_URL, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(payload),
-    })
-
-    console.log('[ClaseAnalysis] Respuesta status:', response.status)
-
-    if (!response.ok) {
-      const errorBody = await response.json().catch(() => ({}))
-      console.error('[ClaseAnalysis] Groq error status:', response.status)
-      console.error('[ClaseAnalysis] Groq error body:', JSON.stringify(errorBody, null, 2))
-      console.error('[ClaseAnalysis] Full error:', errorBody)
-      return null
-    }
-
-    const result = await response.json()
-    const content = result.choices?.[0]?.message?.content || ''
+    const raw = await callGroq([{ role: 'user', content: prompt }])
 
     try {
-      return JSON.parse(content)
+      return parseGroqJSON(raw)
     } catch (e) {
-      console.error('[ClaseAnalysis] Parse error:', e)
+      console.error('[ClaseAnalysis] Parse error:', e, '| raw:', raw)
       return null
     }
   } catch (err) {

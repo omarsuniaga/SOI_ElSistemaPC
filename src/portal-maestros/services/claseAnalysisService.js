@@ -1,13 +1,37 @@
 import { supabase } from '../../lib/supabaseClient.js'
 
 const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions'
-const GROQ_API_KEY = localStorage.getItem('groq_api_key')
+let GROQ_API_KEY = null
+
+// Obtener API key de system_config en la BD
+async function getGroqApiKey() {
+  if (GROQ_API_KEY) return GROQ_API_KEY
+  try {
+    const { data, error } = await supabase
+      .from('system_config')
+      .select('valor')
+      .eq('clave', 'groq_api_key')
+      .single()
+    if (error) throw error
+    GROQ_API_KEY = data?.valor
+    return GROQ_API_KEY
+  } catch (err) {
+    console.error('[claseAnalysisService] Error obteniendo API key:', err)
+    return null
+  }
+}
 
 /**
  * Genera análisis pedagógico de una clase usando Groq
  */
 export async function generateClaseAnalysis(claseData, contentTracking = null) {
   try {
+    const apiKey = await getGroqApiKey()
+    if (!apiKey) {
+      console.warn('[generateClaseAnalysis] No API key disponible, retornando datos sin análisis')
+      return null
+    }
+
     // Construir contexto de contenido (últimas 4 semanas)
     let contentContext = ''
     if (contentTracking && contentTracking.sesiones && contentTracking.sesiones.length > 0) {
@@ -62,7 +86,7 @@ Sé directo, pedagógico y actionable. Responde SOLO JSON válido.`
     const response = await fetch(GROQ_API_URL, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${GROQ_API_KEY}`,
+        'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({

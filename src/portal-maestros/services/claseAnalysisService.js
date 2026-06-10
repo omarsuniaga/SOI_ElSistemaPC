@@ -168,7 +168,7 @@ export async function getContentTracking(claseId, fechaActual, semanas = 4) {
 /**
  * Obtiene datos completos de una clase para el análisis
  */
-export async function getClaseDataForAnalysis(claseId, fechaActual) {
+export async function getClaseDataForAnalysis(claseId, fechaActual, semanas = 4) {
   try {
     // Obtener info de la clase
     const { data: clase } = await supabase
@@ -187,8 +187,8 @@ export async function getClaseDataForAnalysis(claseId, fechaActual) {
 
     const totalAlumnos = inscripciones?.length || 0
 
-    // Obtener última sesión de hace max 30 días
-    const hace30Dias = new Date(new Date(fechaActual).getTime() - 30 * 24 * 60 * 60 * 1000)
+    // Obtener última sesión del período especificado
+    const haceSemanas = new Date(new Date(fechaActual).getTime() - semanas * 7 * 24 * 60 * 60 * 1000)
       .toISOString()
       .split('T')[0]
 
@@ -196,7 +196,7 @@ export async function getClaseDataForAnalysis(claseId, fechaActual) {
       .from('sesiones_clase')
       .select('asistencia, contenido, borrador')
       .eq('clase_id', claseId)
-      .gte('fecha', hace30Dias)
+      .gte('fecha', haceSemanas)
       .order('fecha', { ascending: false })
       .limit(1)
 
@@ -211,7 +211,7 @@ export async function getClaseDataForAnalysis(claseId, fechaActual) {
       .from('sesiones_clase')
       .select('asistencia, contenido, borrador')
       .eq('clase_id', claseId)
-      .gte('fecha', hace30Dias)
+      .gte('fecha', haceSemanas)
       .order('fecha', { ascending: false })
       .limit(10)
 

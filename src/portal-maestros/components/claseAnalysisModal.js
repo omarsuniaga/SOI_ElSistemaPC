@@ -1,6 +1,6 @@
 import { generateClaseAnalysis, getClaseDataForAnalysis, getContentTracking } from '../services/claseAnalysisService.js'
 
-export async function openClaseAnalysisModal(claseId, fechaActual = new Date().toISOString().split('T')[0]) {
+export async function openClaseAnalysisModal(claseId, fechaActual = new Date().toISOString().split('T')[0], semanas = 4) {
   // Crear backdrop + modal
   const backdrop = document.createElement('div')
   backdrop.className = 'clase-analysis-backdrop'
@@ -33,8 +33,8 @@ export async function openClaseAnalysisModal(claseId, fechaActual = new Date().t
   // Generar análisis
   try {
     const [claseData, contentTracking] = await Promise.all([
-      getClaseDataForAnalysis(claseId, fechaActual),
-      getContentTracking(claseId, fechaActual, 4),
+      getClaseDataForAnalysis(claseId, fechaActual, semanas),
+      getContentTracking(claseId, fechaActual, semanas),
     ])
 
     if (!claseData) throw new Error('No se pudo obtener datos de la clase')

@@ -626,6 +626,8 @@ function generarHTML(datos) {
 
 // ── Asocia eventos ──────────────────────────────────────────────
 function bindEvents(container) {
+  console.log('[MetricasView.bindEvents] Iniciando bind, container:', container)
+  console.log('[MetricasView.bindEvents] HTML length:', container?.innerHTML?.length || 0)
   // Filtro de período SIN reload
   const selectPeriodo = container.querySelector('#pm-filter-periodo')
   selectPeriodo?.addEventListener('change', async (e) => {

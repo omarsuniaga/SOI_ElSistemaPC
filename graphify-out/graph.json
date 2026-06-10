@@ -34,7 +34,7 @@
       "label": "getContentTracking()",
       "file_type": "code",
       "source_file": "src/portal-maestros/services/claseAnalysisService.js",
-      "source_location": "L130",
+      "source_location": "L132",
       "id": "services_claseanalysisservice_getcontenttracking",
       "community": 225,
       "norm_label": "getcontenttracking()"
@@ -43,7 +43,7 @@
       "label": "getClaseDataForAnalysis()",
       "file_type": "code",
       "source_file": "src/portal-maestros/services/claseAnalysisService.js",
-      "source_location": "L202",
+      "source_location": "L204",
       "id": "services_claseanalysisservice_getclasedataforanalysis",
       "community": 225,
       "norm_label": "getclasedataforanalysis()"
@@ -210863,5 +210863,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "aa888b6c2c211f5a51b5863f9505b04a5ec333ca"
+  "built_at_commit": "d23d2172d3235b9231bb72e163f102f8138c3609"
 }

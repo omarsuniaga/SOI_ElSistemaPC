@@ -2,46 +2,50 @@ import { supabase } from '../../../lib/supabaseClient.js'
 import { router } from '../../../core/router/router.js'
 import { AppModal } from '../../../shared/components/AppModal.js'
 import {
-  getStudentCaseById, listCaseEvents,
-  changeCaseStatus, changeRiskLevel,
-  closeStudentCase, archiveStudentCase, escalateStudentCase,
+  getStudentCaseById,
+  listCaseEvents,
+  changeCaseStatus,
+  changeRiskLevel,
+  closeStudentCase,
+  archiveStudentCase,
+  escalateStudentCase,
 } from '../services/studentCasesService.js'
 import { listCaseActions } from '../services/caseActionsService.js'
 import { analyzeStudentRisk } from '../services/studentRiskDetectorService.js'
 import { openCaseActionModal } from '../components/CaseActionModal.js'
-import { openCaseLetterModal }  from '../components/CaseLetterModal.js'
+import { openCaseLetterModal } from '../components/CaseLetterModal.js'
 
 const state = {
   container: null,
-  caseId:    null,
-  caso:      null,
-  alumno:    null,
-  events:    [],
-  actions:   [],
+  caseId: null,
+  caso: null,
+  alumno: null,
+  events: [],
+  actions: [],
   documents: [],
-  evidence:  null,
+  evidence: null,
 }
 
 const RIESGO_BADGE = {
-  bajo:    'bg-info-subtle text-info-emphasis',
-  medio:   'bg-warning-subtle text-warning-emphasis',
-  alto:    'bg-warning text-dark',
+  bajo: 'bg-info-subtle text-info-emphasis',
+  medio: 'bg-warning-subtle text-warning-emphasis',
+  alto: 'bg-warning text-dark',
   critico: 'bg-danger text-white',
 }
 const ESTADO_BADGE = {
-  abierto:        'bg-primary-subtle text-primary-emphasis',
+  abierto: 'bg-primary-subtle text-primary-emphasis',
   en_seguimiento: 'bg-warning-subtle text-warning-emphasis',
-  resuelto:       'bg-success-subtle text-success-emphasis',
-  escalado:       'bg-danger-subtle text-danger-emphasis',
-  archivado:      'bg-secondary-subtle text-secondary-emphasis',
+  resuelto: 'bg-success-subtle text-success-emphasis',
+  escalado: 'bg-danger-subtle text-danger-emphasis',
+  archivado: 'bg-secondary-subtle text-secondary-emphasis',
 }
 const ACTION_ICON = {
-  llamada_representante:  'bi-telephone',
-  reunion_representante:  'bi-people',
-  reunion_alumno:         'bi-person',
-  acuerdo_compromiso:     'bi-handshake',
-  carta_generada:         'bi-file-earmark-text',
-  nota_interna:           'bi-sticky',
+  llamada_representante: 'bi-telephone',
+  reunion_representante: 'bi-people',
+  reunion_alumno: 'bi-person',
+  acuerdo_compromiso: 'bi-handshake',
+  carta_generada: 'bi-file-earmark-text',
+  nota_interna: 'bi-sticky',
   devolucion_instrumento: 'bi-music-note-list',
 }
 
@@ -53,10 +57,10 @@ function _parseCaseId() {
   return params.get('id')
 }
 
-export async function renderStudentCaseDetailView(container) {
+export async function renderStudentCaseDetailView(container, params = {}) {
   if (!container) return
   state.container = container
-  state.caseId    = _parseCaseId()
+  state.caseId = params.id || _parseCaseId()
 
   if (!state.caseId) {
     container.innerHTML = `<div class="page-container"><div class="alert alert-warning">No se especificó caso (esperaba ?id=UUID).</div></div>`
@@ -74,31 +78,42 @@ async function _load() {
       listCaseEvents(state.caseId),
       listCaseActions(state.caseId),
       state.caso.alumno_id
-        ? supabase.from('alumnos').select('*').eq('id', state.caso.alumno_id).single().then(r => r.data)
+        ? supabase
+            .from('alumnos')
+            .select('*')
+            .eq('id', state.caso.alumno_id)
+            .single()
+            .then((r) => r.data)
         : null,
+      state.caso.alumno_id ? analyzeStudentRisk(state.caso.alumno_id) : null,
       state.caso.alumno_id
-        ? analyzeStudentRisk(state.caso.alumno_id)
-        : null,
-      state.caso.alumno_id
-        ? supabase.from('generated_documents').select('*').eq('alumno_id', state.caso.alumno_id).order('created_at', { ascending: false }).then(r => r.data || [])
+        ? supabase
+            .from('generated_documents')
+            .select('*')
+            .eq('alumno_id', state.caso.alumno_id)
+            .order('created_at', { ascending: false })
+            .then((r) => r.data || [])
         : Promise.resolve([]),
     ])
-    state.events    = events
-    state.actions   = actions
-    state.alumno    = alumno
-    state.evidence  = evidence
+    state.events = events
+    state.actions = actions
+    state.alumno = alumno
+    state.evidence = evidence
     state.documents = documents
     _render()
   } catch (err) {
     console.error('[caseDetail]', err)
-    const safeMsg = String(err?.message || '').replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]))
+    const safeMsg = String(err?.message || '').replace(
+      /[&<>"']/g,
+      (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c],
+    )
     state.container.innerHTML = `<div class="page-container"><div class="alert alert-warning">Error: ${safeMsg}</div></div>`
   }
 }
 
 function _render() {
-  const c  = state.caso
-  const a  = state.alumno
+  const c = state.caso
+  const a = state.alumno
   const ev = state.evidence
 
   state.container.innerHTML = `
@@ -130,18 +145,28 @@ function _render() {
 
           ${c.descripcion ? `<p class="small mb-3">${c.descripcion}</p>` : ''}
 
-          ${(c.estado === 'resuelto' || c.estado === 'archivado' || c.estado === 'escalado') ? `
+          ${
+            c.estado === 'resuelto' || c.estado === 'archivado' || c.estado === 'escalado'
+              ? `
             <div class="alert alert-secondary py-2 small mb-3">
               <i class="bi bi-info-circle me-1"></i>
               Este caso está en estado <strong>${(c.estado || '').replace(/_/g, ' ')}</strong>. Las acciones están deshabilitadas.
               Reabrí el caso con <em>Cambiar estado</em> si necesitás registrar nuevas acciones.
-            </div>` : ''}
+            </div>`
+              : ''
+          }
 
           ${(() => {
-            const dis = (c.estado === 'resuelto' || c.estado === 'archivado' || c.estado === 'escalado') ? 'disabled' : ''
-            const noResolve = (c.estado === 'resuelto' || c.estado === 'archivado') ? 'disabled' : ''
-            const noEscalate = (c.estado === 'escalado' || c.estado === 'archivado' || c.estado === 'resuelto') ? 'disabled' : ''
-            const noArchive = (c.estado === 'archivado') ? 'disabled' : ''
+            const dis =
+              c.estado === 'resuelto' || c.estado === 'archivado' || c.estado === 'escalado'
+                ? 'disabled'
+                : ''
+            const noResolve = c.estado === 'resuelto' || c.estado === 'archivado' ? 'disabled' : ''
+            const noEscalate =
+              c.estado === 'escalado' || c.estado === 'archivado' || c.estado === 'resuelto'
+                ? 'disabled'
+                : ''
+            const noArchive = c.estado === 'archivado' ? 'disabled' : ''
             return `
           <div class="d-flex flex-wrap gap-2">
             <button class="btn btn-sm btn-primary"           id="btn-act-call"      ${dis}><i class="bi bi-telephone me-1"></i>Registrar llamada</button>
@@ -165,7 +190,9 @@ function _render() {
           <div class="card border-0 shadow-sm mb-3">
             <div class="card-header bg-light fw-semibold small"><i class="bi bi-person-vcard me-2"></i>Datos del alumno</div>
             <div class="card-body small">
-              ${a ? `
+              ${
+                a
+                  ? `
                 <div class="mb-1"><strong>Instrumento:</strong> ${a.instrumento_principal || '—'}</div>
                 <div class="mb-1"><strong>Nivel:</strong> ${a.nivel_actual || a.nivel || '—'}</div>
                 <hr class="my-2">
@@ -175,11 +202,15 @@ function _render() {
                 <hr class="my-2">
                 <div class="mb-1"><strong>Centro:</strong> ${a.centro_estudios || '—'}</div>
                 <div><strong>Grado:</strong> ${a.grado_nivel || '—'}</div>
-              ` : '<em class="text-muted">Sin datos del alumno.</em>'}
+              `
+                  : '<em class="text-muted">Sin datos del alumno.</em>'
+              }
             </div>
           </div>
 
-          ${ev ? `
+          ${
+            ev
+              ? `
             <div class="card border-0 shadow-sm mb-3">
               <div class="card-header bg-light fw-semibold small"><i class="bi bi-clipboard-data me-2"></i>Evidencia del mes</div>
               <div class="card-body small">
@@ -190,15 +221,21 @@ function _render() {
                 <div class="d-flex justify-content-between"><span>Cartas previas</span><strong>${ev.evidencia.cartasPrevias}</strong></div>
                 ${ev.accionSugerida ? `<hr class="my-2"><div class="text-primary small fst-italic">Sugerencia: ${ev.accionSugerida}</div>` : ''}
               </div>
-            </div>` : ''}
+            </div>`
+              : ''
+          }
         </div>
 
         <div class="col-12 col-lg-8">
           <div class="card border-0 shadow-sm mb-3">
             <div class="card-header bg-light fw-semibold small"><i class="bi bi-clock-history me-2"></i>Timeline institucional</div>
             <div class="card-body p-0">
-              ${state.events.length === 0 ? '<div class="p-3 text-muted small fst-italic">Sin eventos registrados.</div>' :
-                state.events.map(e => `
+              ${
+                state.events.length === 0
+                  ? '<div class="p-3 text-muted small fst-italic">Sin eventos registrados.</div>'
+                  : state.events
+                      .map(
+                        (e) => `
                   <div class="d-flex gap-3 px-3 py-2 border-bottom">
                     <div class="flex-shrink-0 text-primary"><i class="bi bi-circle-fill" style="font-size:0.6rem;"></i></div>
                     <div class="flex-grow-1">
@@ -208,15 +245,22 @@ function _render() {
                       </div>
                       ${e.descripcion ? `<div class="small mt-1">${e.descripcion}</div>` : ''}
                     </div>
-                  </div>`).join('')}
+                  </div>`,
+                      )
+                      .join('')
+              }
             </div>
           </div>
 
           <div class="card border-0 shadow-sm mb-3">
             <div class="card-header bg-light fw-semibold small"><i class="bi bi-list-check me-2"></i>Acciones registradas (${state.actions.length})</div>
             <div class="card-body p-0">
-              ${state.actions.length === 0 ? '<div class="p-3 text-muted small fst-italic">Sin acciones registradas.</div>' :
-                state.actions.map(act => `
+              ${
+                state.actions.length === 0
+                  ? '<div class="p-3 text-muted small fst-italic">Sin acciones registradas.</div>'
+                  : state.actions
+                      .map(
+                        (act) => `
                   <div class="d-flex gap-3 px-3 py-2 border-bottom">
                     <div class="flex-shrink-0 text-primary"><i class="bi ${ACTION_ICON[act.tipo] || 'bi-dot'}"></i></div>
                     <div class="flex-grow-1">
@@ -226,22 +270,32 @@ function _render() {
                       ${act.resultado ? `<div class="small mt-1 text-muted"><strong>Resultado:</strong> ${act.resultado}</div>` : ''}
                       ${act.proxima_accion ? `<div class="small mt-1 text-primary"><i class="bi bi-arrow-right me-1"></i>${act.proxima_accion}${act.proxima_accion_fecha ? ` (${act.proxima_accion_fecha})` : ''}</div>` : ''}
                     </div>
-                  </div>`).join('')}
+                  </div>`,
+                      )
+                      .join('')
+              }
             </div>
           </div>
 
           <div class="card border-0 shadow-sm">
             <div class="card-header bg-light fw-semibold small"><i class="bi bi-folder me-2"></i>Documentos asociados (${state.documents.length})</div>
             <div class="card-body p-0">
-              ${state.documents.length === 0 ? '<div class="p-3 text-muted small fst-italic">Sin documentos generados.</div>' :
-                state.documents.map(d => `
+              ${
+                state.documents.length === 0
+                  ? '<div class="p-3 text-muted small fst-italic">Sin documentos generados.</div>'
+                  : state.documents
+                      .map(
+                        (d) => `
                   <div class="d-flex justify-content-between align-items-center px-3 py-2 border-bottom">
                     <div class="flex-grow-1 overflow-hidden">
                       <div class="small fw-semibold text-truncate">${d.titulo}</div>
                       <div class="text-muted" style="font-size:0.72rem;">${(d.tipo || '').replace(/_/g, ' ')} · ${new Date(d.created_at).toLocaleDateString('es-DO')}</div>
                     </div>
                     <span class="badge bg-secondary-subtle text-secondary-emphasis ms-2 flex-shrink-0">${d.estado}</span>
-                  </div>`).join('')}
+                  </div>`,
+                      )
+                      .join('')
+              }
             </div>
           </div>
         </div>
@@ -253,13 +307,25 @@ function _render() {
 
 function _attachEvents() {
   const c = state.container
-  c.querySelector('#btn-back-list')?.addEventListener('click', () => router.navigate('pedagogico-seguimiento-institucional'))
+  c.querySelector('#btn-back-list')?.addEventListener('click', () =>
+    router.navigate('pedagogico-seguimiento-institucional'),
+  )
 
-  c.querySelector('#btn-act-call')?.addEventListener('click', () => openCaseActionModal('llamada', state.caso, _load))
-  c.querySelector('#btn-act-meeting')?.addEventListener('click', () => openCaseActionModal('reunion', state.caso, _load))
-  c.querySelector('#btn-act-agreement')?.addEventListener('click', () => openCaseActionModal('acuerdo', state.caso, _load))
-  c.querySelector('#btn-act-note')?.addEventListener('click', () => openCaseActionModal('nota', state.caso, _load))
-  c.querySelector('#btn-act-letter')?.addEventListener('click', () => openCaseLetterModal(state.caso, state.alumno, _load))
+  c.querySelector('#btn-act-call')?.addEventListener('click', () =>
+    openCaseActionModal('llamada', state.caso, _load),
+  )
+  c.querySelector('#btn-act-meeting')?.addEventListener('click', () =>
+    openCaseActionModal('reunion', state.caso, _load),
+  )
+  c.querySelector('#btn-act-agreement')?.addEventListener('click', () =>
+    openCaseActionModal('acuerdo', state.caso, _load),
+  )
+  c.querySelector('#btn-act-note')?.addEventListener('click', () =>
+    openCaseActionModal('nota', state.caso, _load),
+  )
+  c.querySelector('#btn-act-letter')?.addEventListener('click', () =>
+    openCaseLetterModal(state.caso, state.alumno, _load),
+  )
 
   c.querySelector('#btn-change-status')?.addEventListener('click', _openStatusModal)
   c.querySelector('#btn-change-risk')?.addEventListener('click', _openRiskModal)
@@ -271,25 +337,27 @@ function _attachEvents() {
 function _openStatusModal() {
   AppModal.open({
     title: 'Cambiar estado del caso',
-    size:  'sm',
+    size: 'sm',
     saveText: 'Guardar',
     body: `
       <div class="small">
         <label class="form-label fw-semibold">Nuevo estado</label>
         <select class="form-select form-select-sm" id="ms-estado">
-          <option value="abierto"        ${state.caso.estado === 'abierto'        ? 'selected' : ''}>Abierto</option>
+          <option value="abierto"        ${state.caso.estado === 'abierto' ? 'selected' : ''}>Abierto</option>
           <option value="en_seguimiento" ${state.caso.estado === 'en_seguimiento' ? 'selected' : ''}>En seguimiento</option>
-          <option value="resuelto"       ${state.caso.estado === 'resuelto'       ? 'selected' : ''}>Resuelto</option>
-          <option value="escalado"       ${state.caso.estado === 'escalado'       ? 'selected' : ''}>Escalado</option>
-          <option value="archivado"      ${state.caso.estado === 'archivado'      ? 'selected' : ''}>Archivado</option>
+          <option value="resuelto"       ${state.caso.estado === 'resuelto' ? 'selected' : ''}>Resuelto</option>
+          <option value="escalado"       ${state.caso.estado === 'escalado' ? 'selected' : ''}>Escalado</option>
+          <option value="archivado"      ${state.caso.estado === 'archivado' ? 'selected' : ''}>Archivado</option>
         </select>
         <label class="form-label fw-semibold mt-2">Nota</label>
         <textarea class="form-control form-control-sm" id="ms-notes" rows="2"></textarea>
       </div>`,
     onSave: async () => {
       const estado = document.querySelector('#ms-estado')?.value
-      const notes  = document.querySelector('#ms-notes')?.value || ''
-      await changeCaseStatus(state.caso.id, estado, notes); await _load(); return true
+      const notes = document.querySelector('#ms-notes')?.value || ''
+      await changeCaseStatus(state.caso.id, estado, notes)
+      await _load()
+      return true
     },
   })
 }
@@ -297,15 +365,15 @@ function _openStatusModal() {
 function _openRiskModal() {
   AppModal.open({
     title: 'Cambiar nivel de riesgo',
-    size:  'sm',
+    size: 'sm',
     saveText: 'Guardar',
     body: `
       <div class="small">
         <label class="form-label fw-semibold">Nuevo nivel</label>
         <select class="form-select form-select-sm" id="mr-riesgo">
-          <option value="bajo"    ${state.caso.nivel_riesgo === 'bajo'    ? 'selected' : ''}>Bajo</option>
-          <option value="medio"   ${state.caso.nivel_riesgo === 'medio'   ? 'selected' : ''}>Medio</option>
-          <option value="alto"    ${state.caso.nivel_riesgo === 'alto'    ? 'selected' : ''}>Alto</option>
+          <option value="bajo"    ${state.caso.nivel_riesgo === 'bajo' ? 'selected' : ''}>Bajo</option>
+          <option value="medio"   ${state.caso.nivel_riesgo === 'medio' ? 'selected' : ''}>Medio</option>
+          <option value="alto"    ${state.caso.nivel_riesgo === 'alto' ? 'selected' : ''}>Alto</option>
           <option value="critico" ${state.caso.nivel_riesgo === 'critico' ? 'selected' : ''}>Crítico</option>
         </select>
         <label class="form-label fw-semibold mt-2">Justificación</label>
@@ -314,7 +382,9 @@ function _openRiskModal() {
     onSave: async () => {
       const nivel = document.querySelector('#mr-riesgo')?.value
       const notes = document.querySelector('#mr-notes')?.value || ''
-      await changeRiskLevel(state.caso.id, nivel, notes); await _load(); return true
+      await changeRiskLevel(state.caso.id, nivel, notes)
+      await _load()
+      return true
     },
   })
 }
@@ -322,7 +392,7 @@ function _openRiskModal() {
 function _openResolveModal() {
   AppModal.open({
     title: 'Resolver caso',
-    size:  'md',
+    size: 'md',
     saveText: 'Marcar como resuelto',
     body: `
       <div class="small">
@@ -331,7 +401,9 @@ function _openResolveModal() {
       </div>`,
     onSave: async () => {
       const notes = document.querySelector('#mres-notes')?.value?.trim() || ''
-      await closeStudentCase(state.caso.id, notes); await _load(); return true
+      await closeStudentCase(state.caso.id, notes)
+      await _load()
+      return true
     },
   })
 }
@@ -339,7 +411,7 @@ function _openResolveModal() {
 function _openEscalateModal() {
   AppModal.open({
     title: 'Escalar caso a directiva',
-    size:  'md',
+    size: 'md',
     saveText: 'Escalar',
     body: `
       <div class="small">
@@ -348,7 +420,9 @@ function _openEscalateModal() {
       </div>`,
     onSave: async () => {
       const notes = document.querySelector('#mes-notes')?.value?.trim() || ''
-      await escalateStudentCase(state.caso.id, notes); await _load(); return true
+      await escalateStudentCase(state.caso.id, notes)
+      await _load()
+      return true
     },
   })
 }
@@ -356,7 +430,7 @@ function _openEscalateModal() {
 function _openArchiveModal() {
   AppModal.open({
     title: 'Archivar caso',
-    size:  'sm',
+    size: 'sm',
     saveText: 'Archivar',
     body: `
       <div class="small">
@@ -366,7 +440,9 @@ function _openArchiveModal() {
       </div>`,
     onSave: async () => {
       const notes = document.querySelector('#marc-notes')?.value || ''
-      await archiveStudentCase(state.caso.id, notes); await _load(); return true
+      await archiveStudentCase(state.caso.id, notes)
+      await _load()
+      return true
     },
   })
 }

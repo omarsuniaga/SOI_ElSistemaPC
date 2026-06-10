@@ -5,7 +5,18 @@ export { registerRoutesPlanificacion } from './planificacion.router.js'
 export { renderPlanificacionView } from './views/planificacionView.js'
 export { openAprobacionPlanificacionesModal } from './components/aprobacionPlanificacionesModal.js'
 
-export { parseDsl, highlightDsl, getTokenSummary, validateDsl } from './utils/dslParser.js'
+export {
+  parseDsl,
+  parseDSL,
+  highlightDsl,
+  highlightDSL,
+  getTokenSummary,
+  validateDsl,
+  generateProfileAssertions,
+  hasProfileTokens,
+  TOKEN_COLORS,
+  TOKEN_LABELS,
+} from './utils/dslParser.js'
 export { createDslEditor } from './components/dslEditor.js'
 export { createDslToolbar, createDslEditorWithToolbar } from './components/dslToolbar.js'
 export { createAlumnoPickerModal } from './components/alumnoPickerModal.js'

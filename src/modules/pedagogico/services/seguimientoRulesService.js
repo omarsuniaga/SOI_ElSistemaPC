@@ -4,7 +4,7 @@ const TABLE = 'seguimiento_reglas'
 
 export async function listSeguimientoRules({ tipo, activo } = {}) {
   let q = supabase.from(TABLE).select('*').order('prioridad').order('nombre')
-  if (tipo !== undefined)   q = q.eq('tipo', tipo)
+  if (tipo !== undefined) q = q.eq('tipo', tipo)
   if (activo !== undefined) q = q.eq('activo', activo)
   const { data, error } = await q
   if (error) throw error
@@ -21,7 +21,8 @@ export async function createSeguimientoRule(payload) {
   const { data, error } = await supabase
     .from(TABLE)
     .insert({ ...payload, updated_at: new Date().toISOString() })
-    .select().single()
+    .select()
+    .single()
   if (error) throw error
   return data
 }
@@ -31,7 +32,8 @@ export async function updateSeguimientoRule(id, payload) {
     .from(TABLE)
     .update({ ...payload, updated_at: new Date().toISOString() })
     .eq('id', id)
-    .select().single()
+    .select()
+    .single()
   if (error) throw error
   return data
 }
@@ -41,29 +43,71 @@ export async function toggleSeguimientoRule(id, activo) {
 }
 
 const DEFAULT_RULES = [
-  { nombre: 'Asistencia irregular mensual',           tipo: 'asistencia_irregular',
+  {
+    nombre: 'Asistencia irregular mensual',
+    tipo: 'asistencia_irregular',
     descripcion: 'Detecta alumnos con ausencias injustificadas dentro del mes.',
-    config: { periodo: 'mensual', leve: 2, medio: 3, alto: 4, critico: 5, contar_justificadas: false },
-    activo: true, prioridad: 1 },
-  { nombre: 'Tardanzas recurrentes',                  tipo: 'tardanzas_recurrentes',
+    config: {
+      periodo: 'mensual',
+      leve: 2,
+      medio: 3,
+      alto: 4,
+      critico: 5,
+      contar_justificadas: false,
+    },
+    activo: true,
+    prioridad: 1,
+  },
+  {
+    nombre: 'Tardanzas recurrentes',
+    tipo: 'tardanzas_recurrentes',
     descripcion: 'Detecta alumnos con múltiples tardanzas dentro del mes.',
     config: { periodo: 'mensual', leve: 3, medio: 5, alto: 7, critico: 10 },
-    activo: true, prioridad: 2 },
-  { nombre: 'Observaciones marcadas para seguimiento', tipo: 'observacion_requiere_seguimiento',
+    activo: true,
+    prioridad: 2,
+  },
+  {
+    nombre: 'Observaciones marcadas para seguimiento',
+    tipo: 'observacion_requiere_seguimiento',
     descripcion: 'Detecta observaciones de maestros que requieren seguimiento institucional.',
-    config: { prioridades: ['alta','urgente'], solo_pendientes: true },
-    activo: true, prioridad: 3 },
-  { nombre: 'Justificaciones pendientes de revisión', tipo: 'justificaciones_pendientes',
+    config: { prioridades: ['alta', 'urgente'], solo_pendientes: true },
+    activo: true,
+    prioridad: 3,
+  },
+  {
+    nombre: 'Justificaciones pendientes de revisión',
+    tipo: 'justificaciones_pendientes',
     descripcion: 'Detecta justificaciones sin revisar o acumuladas.',
     config: { max_pendientes: 2, nivel: 'medio' },
-    activo: true, prioridad: 4 },
+    activo: true,
+    prioridad: 4,
+  },
+  {
+    nombre: 'Ausencia total a eventos importantes',
+    tipo: 'eventos_importantes_ausencia_total',
+    descripcion:
+      'Detecta alumnos con ausencia mayoritaria a eventos importantes (conciertos, eventos institucionales) en el semestre. Genera alerta CRÍTICA automática cuando supera el threshold configurado.',
+    config: {
+      motivos: ['Concierto', 'Concierto Bluemall'],
+      min_eventos: 1,
+      threshold_pct: 75,
+      periodo: 'semestral',
+      acciones: [
+        'Suspensión temporal del alumno',
+        'Retención del instrumento',
+        'Reunión con representante',
+      ],
+    },
+    activo: true,
+    prioridad: 5,
+  },
 ]
 
 /** Seed default rules — idempotent: only inserts rules whose tipo doesn't exist */
 export async function seedDefaultSeguimientoRules() {
   const existing = await listSeguimientoRules({})
-  const existingTipos = new Set(existing.map(r => r.tipo))
-  const toInsert = DEFAULT_RULES.filter(r => !existingTipos.has(r.tipo))
+  const existingTipos = new Set(existing.map((r) => r.tipo))
+  const toInsert = DEFAULT_RULES.filter((r) => !existingTipos.has(r.tipo))
   if (toInsert.length === 0) return { inserted: 0 }
   const { error } = await supabase.from(TABLE).insert(toInsert)
   if (error) throw error

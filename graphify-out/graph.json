@@ -4,139 +4,139 @@
   "graph": {},
   "nodes": [
     {
-      "label": "claseAnalysisModal.js",
-      "file_type": "code",
-      "source_file": "src/portal-maestros/components/claseAnalysisModal.js",
-      "source_location": "L1",
-      "id": "components_claseanalysismodal",
-      "community": 595,
-      "norm_label": "claseanalysismodal.js"
-    },
-    {
-      "label": "openClaseAnalysisModal()",
-      "file_type": "code",
-      "source_file": "src/portal-maestros/components/claseAnalysisModal.js",
-      "source_location": "L3",
-      "id": "components_claseanalysismodal_openclaseanalysismodal",
-      "community": 595,
-      "norm_label": "openclaseanalysismodal()"
-    },
-    {
-      "label": "_injectStyles()",
-      "file_type": "code",
-      "source_file": "src/portal-maestros/components/claseAnalysisModal.js",
-      "source_location": "L169",
-      "id": "components_claseanalysismodal_injectstyles",
-      "community": 595,
-      "norm_label": "_injectstyles()"
-    },
-    {
-      "label": "claseAnalysisService.js",
-      "file_type": "code",
-      "source_file": "src/portal-maestros/services/claseAnalysisService.js",
-      "source_location": "L1",
-      "id": "services_claseanalysisservice",
-      "community": 595,
-      "norm_label": "claseanalysisservice.js"
-    },
-    {
-      "label": "generateClaseAnalysis()",
-      "file_type": "code",
-      "source_file": "src/portal-maestros/services/claseAnalysisService.js",
-      "source_location": "L9",
-      "id": "services_claseanalysisservice_generateclaseanalysis",
-      "community": 595,
-      "norm_label": "generateclaseanalysis()"
-    },
-    {
-      "label": "getContentTracking()",
-      "file_type": "code",
-      "source_file": "src/portal-maestros/services/claseAnalysisService.js",
-      "source_location": "L99",
-      "id": "services_claseanalysisservice_getcontenttracking",
-      "community": 595,
-      "norm_label": "getcontenttracking()"
-    },
-    {
-      "label": "getClaseDataForAnalysis()",
-      "file_type": "code",
-      "source_file": "src/portal-maestros/services/claseAnalysisService.js",
-      "source_location": "L171",
-      "id": "services_claseanalysisservice_getclasedataforanalysis",
-      "community": 595,
-      "norm_label": "getclasedataforanalysis()"
-    },
-    {
       "label": "hoyView.js",
       "file_type": "code",
       "source_file": "src/portal-maestros/views/hoyView.js",
       "source_location": "L1",
+      "id": "views_hoyview",
       "community": 30,
-      "norm_label": "hoyview.js",
-      "id": "views_hoyview"
+      "norm_label": "hoyview.js"
     },
     {
       "label": "_toMin()",
       "file_type": "code",
       "source_file": "src/portal-maestros/views/hoyView.js",
       "source_location": "L23",
+      "id": "views_hoyview_tomin",
       "community": 30,
-      "norm_label": "_tomin()",
-      "id": "views_hoyview_tomin"
+      "norm_label": "_tomin()"
     },
     {
       "label": "_estadoTemporal()",
       "file_type": "code",
       "source_file": "src/portal-maestros/views/hoyView.js",
       "source_location": "L35",
+      "id": "views_hoyview_estadotemporal",
       "community": 30,
-      "norm_label": "_estadotemporal()",
-      "id": "views_hoyview_estadotemporal"
+      "norm_label": "_estadotemporal()"
     },
     {
       "label": "_autoNavigateClaseEnCurso()",
       "file_type": "code",
       "source_file": "src/portal-maestros/views/hoyView.js",
       "source_location": "L51",
+      "id": "views_hoyview_autonavigateclaseencurso",
       "community": 30,
-      "norm_label": "_autonavigateclaseencurso()",
-      "id": "views_hoyview_autonavigateclaseencurso"
+      "norm_label": "_autonavigateclaseencurso()"
     },
     {
       "label": "renderHoyView()",
       "file_type": "code",
       "source_file": "src/portal-maestros/views/hoyView.js",
       "source_location": "L98",
+      "id": "views_hoyview_renderhoyview",
       "community": 30,
-      "norm_label": "renderhoyview()",
-      "id": "views_hoyview_renderhoyview"
+      "norm_label": "renderhoyview()"
     },
     {
       "label": "_renderEmergentes()",
       "file_type": "code",
       "source_file": "src/portal-maestros/views/hoyView.js",
-      "source_location": "L375",
+      "source_location": "L379",
+      "id": "views_hoyview_renderemergentes",
       "community": 30,
-      "norm_label": "_renderemergentes()",
-      "id": "views_hoyview_renderemergentes"
+      "norm_label": "_renderemergentes()"
     },
     {
       "label": "_motivoClass()",
       "file_type": "code",
       "source_file": "src/portal-maestros/views/hoyView.js",
-      "source_location": "L417",
+      "source_location": "L421",
+      "id": "views_hoyview_motivoclass",
       "community": 30,
-      "norm_label": "_motivoclass()",
-      "id": "views_hoyview_motivoclass"
+      "norm_label": "_motivoclass()"
     },
     {
       "label": "_bindEmergenteClicks()",
       "file_type": "code",
       "source_file": "src/portal-maestros/views/hoyView.js",
-      "source_location": "L427",
+      "source_location": "L431",
+      "id": "views_hoyview_bindemergenteclicks",
       "community": 30,
-      "norm_label": "_bindemergenteclicks()",
-      "id": "views_hoyview_bindemergenteclicks"
+      "norm_label": "_bindemergenteclicks()"
+    },
+    {
+      "label": "claseAnalysisModal.js",
+      "file_type": "code",
+      "source_file": "src/portal-maestros/components/claseAnalysisModal.js",
+      "source_location": "L1",
+      "community": 595,
+      "norm_label": "claseanalysismodal.js",
+      "id": "components_claseanalysismodal"
+    },
+    {
+      "label": "openClaseAnalysisModal()",
+      "file_type": "code",
+      "source_file": "src/portal-maestros/components/claseAnalysisModal.js",
+      "source_location": "L3",
+      "community": 595,
+      "norm_label": "openclaseanalysismodal()",
+      "id": "components_claseanalysismodal_openclaseanalysismodal"
+    },
+    {
+      "label": "_injectStyles()",
+      "file_type": "code",
+      "source_file": "src/portal-maestros/components/claseAnalysisModal.js",
+      "source_location": "L169",
+      "community": 595,
+      "norm_label": "_injectstyles()",
+      "id": "components_claseanalysismodal_injectstyles"
+    },
+    {
+      "label": "claseAnalysisService.js",
+      "file_type": "code",
+      "source_file": "src/portal-maestros/services/claseAnalysisService.js",
+      "source_location": "L1",
+      "community": 595,
+      "norm_label": "claseanalysisservice.js",
+      "id": "services_claseanalysisservice"
+    },
+    {
+      "label": "generateClaseAnalysis()",
+      "file_type": "code",
+      "source_file": "src/portal-maestros/services/claseAnalysisService.js",
+      "source_location": "L9",
+      "community": 595,
+      "norm_label": "generateclaseanalysis()",
+      "id": "services_claseanalysisservice_generateclaseanalysis"
+    },
+    {
+      "label": "getContentTracking()",
+      "file_type": "code",
+      "source_file": "src/portal-maestros/services/claseAnalysisService.js",
+      "source_location": "L99",
+      "community": 595,
+      "norm_label": "getcontenttracking()",
+      "id": "services_claseanalysisservice_getcontenttracking"
+    },
+    {
+      "label": "getClaseDataForAnalysis()",
+      "file_type": "code",
+      "source_file": "src/portal-maestros/services/claseAnalysisService.js",
+      "source_location": "L171",
+      "community": 595,
+      "norm_label": "getclasedataforanalysis()",
+      "id": "services_claseanalysisservice_getclasedataforanalysis"
     },
     {
       "label": "dashboardPedagogicoView.js",
@@ -76838,166 +76838,6 @@
   ],
   "links": [
     {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "src/portal-maestros/components/claseAnalysisModal.js",
-      "source_location": "L149",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "components_claseanalysismodal",
-      "target": "components_claseanalysismodal_injectstyles"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "src/portal-maestros/components/claseAnalysisModal.js",
-      "source_location": "L3",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "components_claseanalysismodal",
-      "target": "components_claseanalysismodal_openclaseanalysismodal"
-    },
-    {
-      "relation": "imports_from",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/portal-maestros/components/claseAnalysisModal.js",
-      "source_location": "L1",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "components_claseanalysismodal",
-      "target": "services_claseanalysisservice"
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/portal-maestros/components/claseAnalysisModal.js",
-      "source_location": "L1",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "components_claseanalysismodal",
-      "target": "services_claseanalysisservice_generateclaseanalysis"
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/portal-maestros/components/claseAnalysisModal.js",
-      "source_location": "L1",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "components_claseanalysismodal",
-      "target": "services_claseanalysisservice_getclasedataforanalysis"
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/portal-maestros/components/claseAnalysisModal.js",
-      "source_location": "L1",
-      "weight": 1.0,
-      "source": "components_claseanalysismodal",
-      "target": "services_claseanalysisservice_getcontenttracking",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "imports_from",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/portal-maestros/views/hoyView.js",
-      "source_location": "L14",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "views_hoyview",
-      "target": "components_claseanalysismodal"
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "src/portal-maestros/components/claseAnalysisModal.js",
-      "source_location": "L38",
-      "weight": 1.0,
-      "source": "components_claseanalysismodal_openclaseanalysismodal",
-      "target": "services_claseanalysisservice_generateclaseanalysis"
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "src/portal-maestros/components/claseAnalysisModal.js",
-      "source_location": "L35",
-      "weight": 1.0,
-      "source": "components_claseanalysismodal_openclaseanalysismodal",
-      "target": "services_claseanalysisservice_getclasedataforanalysis"
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "src/portal-maestros/components/claseAnalysisModal.js",
-      "source_location": "L37",
-      "weight": 1.0,
-      "source": "components_claseanalysismodal_openclaseanalysismodal",
-      "target": "services_claseanalysisservice_getcontenttracking"
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/portal-maestros/views/hoyView.js",
-      "source_location": "L14",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "views_hoyview",
-      "target": "components_claseanalysismodal_openclaseanalysismodal"
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/portal-maestros/services/claseAnalysisService.js",
-      "source_location": "L1",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "services_claseanalysisservice",
-      "target": "lib_supabaseclient_supabase"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "src/portal-maestros/services/claseAnalysisService.js",
-      "source_location": "L9",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "services_claseanalysisservice",
-      "target": "services_claseanalysisservice_generateclaseanalysis"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "src/portal-maestros/services/claseAnalysisService.js",
-      "source_location": "L74",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "services_claseanalysisservice",
-      "target": "services_claseanalysisservice_getclasedataforanalysis"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "src/portal-maestros/services/claseAnalysisService.js",
-      "source_location": "L99",
-      "weight": 1.0,
-      "source": "services_claseanalysisservice",
-      "target": "services_claseanalysisservice_getcontenttracking",
-      "confidence_score": 1.0
-    },
-    {
       "relation": "imports_from",
       "context": "import",
       "confidence": "EXTRACTED",
@@ -77051,6 +76891,28 @@
       "confidence_score": 1.0,
       "source": "views_hoyview",
       "target": "components_apptoast_apptoast"
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/portal-maestros/views/hoyView.js",
+      "source_location": "L14",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "views_hoyview",
+      "target": "components_claseanalysismodal"
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/portal-maestros/views/hoyView.js",
+      "source_location": "L14",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "views_hoyview",
+      "target": "components_claseanalysismodal_openclaseanalysismodal"
     },
     {
       "relation": "imports_from",
@@ -77462,6 +77324,144 @@
       "confidence_score": 1.0,
       "source": "views_hoyview_renderemergentes",
       "target": "utils_portalutils_formatfechaportal"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/portal-maestros/components/claseAnalysisModal.js",
+      "source_location": "L149",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "components_claseanalysismodal",
+      "target": "components_claseanalysismodal_injectstyles"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/portal-maestros/components/claseAnalysisModal.js",
+      "source_location": "L3",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "components_claseanalysismodal",
+      "target": "components_claseanalysismodal_openclaseanalysismodal"
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/portal-maestros/components/claseAnalysisModal.js",
+      "source_location": "L1",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "components_claseanalysismodal",
+      "target": "services_claseanalysisservice"
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/portal-maestros/components/claseAnalysisModal.js",
+      "source_location": "L1",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "components_claseanalysismodal",
+      "target": "services_claseanalysisservice_generateclaseanalysis"
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/portal-maestros/components/claseAnalysisModal.js",
+      "source_location": "L1",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "components_claseanalysismodal",
+      "target": "services_claseanalysisservice_getclasedataforanalysis"
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/portal-maestros/components/claseAnalysisModal.js",
+      "source_location": "L1",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "components_claseanalysismodal",
+      "target": "services_claseanalysisservice_getcontenttracking"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/portal-maestros/components/claseAnalysisModal.js",
+      "source_location": "L38",
+      "weight": 1.0,
+      "source": "components_claseanalysismodal_openclaseanalysismodal",
+      "target": "services_claseanalysisservice_generateclaseanalysis"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/portal-maestros/components/claseAnalysisModal.js",
+      "source_location": "L35",
+      "weight": 1.0,
+      "source": "components_claseanalysismodal_openclaseanalysismodal",
+      "target": "services_claseanalysisservice_getclasedataforanalysis"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/portal-maestros/components/claseAnalysisModal.js",
+      "source_location": "L37",
+      "weight": 1.0,
+      "source": "components_claseanalysismodal_openclaseanalysismodal",
+      "target": "services_claseanalysisservice_getcontenttracking"
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/portal-maestros/services/claseAnalysisService.js",
+      "source_location": "L1",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "services_claseanalysisservice",
+      "target": "lib_supabaseclient_supabase"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/portal-maestros/services/claseAnalysisService.js",
+      "source_location": "L9",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "services_claseanalysisservice",
+      "target": "services_claseanalysisservice_generateclaseanalysis"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/portal-maestros/services/claseAnalysisService.js",
+      "source_location": "L74",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "services_claseanalysisservice",
+      "target": "services_claseanalysisservice_getclasedataforanalysis"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/portal-maestros/services/claseAnalysisService.js",
+      "source_location": "L99",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "services_claseanalysisservice",
+      "target": "services_claseanalysisservice_getcontenttracking"
     },
     {
       "relation": "imports_from",
@@ -210800,5 +210800,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "084a0ea2be266b4055d00e6aeb83173b06fbe853"
+  "built_at_commit": "401c8d62df17fe0298ef08865f24d125deffdf65"
 }

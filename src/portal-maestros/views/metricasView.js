@@ -3,6 +3,7 @@ import { getMaestroLocal } from '../auth/maestroAuth.js'
 import { escHTML } from '../utils/portalUtils.js'
 import { getMisClases, getSesiones } from '../services/maestroDataService.js'
 import { announce } from '../utils/a11yUtils.js'
+import { openClaseAnalysisModal } from '../components/claseAnalysisModal.js'
 
 // ── Mini gráfico de barras (SVG interno con labels) ──────────────
 function barChartContent(data, maxVal, width = 160, height = 36) {
@@ -293,6 +294,9 @@ function generarHTML(datos) {
                   </div>
                   <div class="pm-class-card2__badge-wrap">
                     <span class="pm-class-card2__pct ${attColor}" aria-label="Asistencia ${att}%">${att}%</span>
+                    <button class="pm-analisis-btn-metrics" data-clase-id="${clase.id}" aria-label="Analizar clase" title="Ver análisis">
+                      <i class="bi bi-graph-up"></i>
+                    </button>
                     <button class="pm-class-btn2" data-clase-id="${clase.id}" aria-label="Ver alumnos" title="Ver alumnos">
                       <i class="bi bi-people-fill"></i>
                     </button>
@@ -538,6 +542,26 @@ function generarHTML(datos) {
         color: #ff3b30;
         font-weight: 500;
       }
+      .pm-analisis-btn-metrics {
+        background: transparent;
+        border: 1px solid var(--pm-border);
+        padding: 0.375rem 0.5rem;
+        border-radius: 8px;
+        color: var(--pm-text-muted);
+        cursor: pointer;
+        font-size: 0.9rem;
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 32px;
+        height: 32px;
+      }
+      .pm-analisis-btn-metrics:hover {
+        background: var(--pm-primary);
+        color: white;
+        border-color: var(--pm-primary);
+      }
       .pm-class-btn2 {
         background: var(--pm-surface-2);
         border: none;
@@ -633,6 +657,18 @@ function bindEvents(container) {
     const handler = () => { window.location.hash = `#/alumno?id=${id}` }
     item.addEventListener('click', handler)
     item.addEventListener('keypress', (e) => { if (e.key === 'Enter') handler() })
+  })
+
+  // Botón de análisis de clase
+  const hoy = new Date()
+  const fechaHoy = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}-${String(hoy.getDate()).padStart(2, '0')}`
+  container.querySelectorAll('.pm-analisis-btn-metrics').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation()
+      const claseId = btn.dataset.claseId
+      console.log('[MetricasView] Abriendo análisis para clase:', claseId)
+      openClaseAnalysisModal(claseId, fechaHoy)
+    })
   })
 
   // Botón expandir alumnos por clase (soporta ambos selectores: legacy y v2)

@@ -199,7 +199,7 @@ export async function getClaseDataForAnalysis(claseId, fechaActual, semanas = 4)
     // Obtener info de la clase
     const { data: clase, error: claseError } = await supabase
       .from('clases')
-      .select('id, nombre, instrumento_id, instrumento')
+      .select('id, nombre, instrumento')
       .eq('id', claseId)
       .maybeSingle()
 

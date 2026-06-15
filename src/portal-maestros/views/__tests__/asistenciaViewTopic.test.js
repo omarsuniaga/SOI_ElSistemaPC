@@ -63,18 +63,6 @@ vi.mock('../../services/classEventService.js', () => ({
   updateClassEventStatus: vi.fn(),
 }))
 
-vi.mock('../../components/ContentSelectionPanel.js', () => ({
-  createContentSelectionPanel: vi.fn(() => ({ destroy: vi.fn() })),
-}))
-
-vi.mock('../../components/MethodologyForm.js', () => ({
-  createMethodologyForm: vi.fn(() => ({ destroy: vi.fn() })),
-}))
-
-vi.mock('../../components/HomeworkPanel.js', () => ({
-  createHomeworkPanel: vi.fn(() => ({ destroy: vi.fn() })),
-}))
-
 vi.mock('../../components/LevelCompletionModal.js', () => ({
   createLevelCompletionModal: vi.fn(),
 }))

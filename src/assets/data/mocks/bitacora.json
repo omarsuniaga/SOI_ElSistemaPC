@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 1,
+  "sesiones": [],
+  "objetivos": [
+    {
+      "id": "obj_001",
+      "clase_id": "clase_001",
+      "ruta_nivel_id": "pnivel_001",
+      "descripcion": "Ejecutar escala de Do Mayor en primera posición con tempo estable",
+      "tipo": "destreza",
+      "orden": 1,
+      "activo": true
+    },
+    {
+      "id": "obj_002",
+      "clase_id": "clase_001",
+      "ruta_nivel_id": "pnivel_001",
+      "descripcion": "Identificar y corregir postura corporal al tocar",
+      "tipo": "actitud",
+      "orden": 2,
+      "activo": true
+    },
+    {
+      "id": "obj_003",
+      "clase_id": "clase_002",
+      "ruta_nivel_id": "pnivel_002",
+      "descripcion": "Leer partitura de piano a primera vista, nivel intermedio",
+      "tipo": "destreza",
+      "orden": 1,
+      "activo": true
+    },
+    {
+      "id": "obj_004",
+      "clase_id": "clase_003",
+      "ruta_nivel_id": "pnivel_003",
+      "descripcion": "Ejecutar arpegio de Do Mayor con digitación correcta",
+      "tipo": "destreza",
+      "orden": 1,
+      "activo": true
+    }
+  ],
+  "semaforos": []
+}

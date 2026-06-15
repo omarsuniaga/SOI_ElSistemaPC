@@ -1,0 +1,5 @@
+export { registerRoutesBitacora } from './bitacora.router.js'
+export { renderBitacoraView } from './views/bitacoraView.js'
+export { createBitacoraDashboard } from './components/BitacoraDashboard.js'
+export { openRegistrarContenidoModal } from './components/RegistrarContenidoModal.js'
+export { openHistorialObjetivoModal } from './components/HistorialObjetivoPanel.js'

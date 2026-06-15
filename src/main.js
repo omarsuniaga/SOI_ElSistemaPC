@@ -73,6 +73,7 @@ import { registerRoutesHorarioBuilder } from './modules/horario-builder/index.js
 import { registerRoutesAdminNotificaciones } from './modules/admin-notificaciones/index.js'
 import { registerRoutesAdminAprobacion } from './modules/admin-aprobacion/index.js'
 import { registerRoutesAdminUsuarios } from './modules/admin-usuarios/index.js'
+import { registerRoutesBitacora } from './modules/bitacora/index.js'
 import {
   startAdminRealtimeNotifications,
   stopAdminRealtimeNotifications,
@@ -187,6 +188,14 @@ const MODULES_REGISTRY = [
     register: registerRoutesPlanificacion,
   },
   {
+    id: 'bitacora-clase',
+    label: 'Bitácora',
+    icon: 'bi-journal-check',
+    description: 'Bitácora de contenidos por clase',
+    enabled: true,
+    register: registerRoutesBitacora,
+  },
+  {
     id: 'progresos',
     label: 'Progresos',
     icon: 'bi-graph-up',
@@ -288,6 +297,7 @@ const NAV_GROUPS = [
     items: [
       { id: 'pedagogico-dashboard', label: 'Dashboard', icon: 'bi-grid-1x2' },
       { id: 'planificacion', label: 'Planificación', icon: 'bi-journal-text' },
+      { id: 'bitacora-clase', label: 'Bitácora', icon: 'bi-journal-check' },
       { id: 'planificacion-maestros', label: 'Todas las Planes', icon: 'bi-journal-check' },
       { id: 'planificacion-cobertura', label: 'Cobertura Curricular', icon: 'bi-grid-3x3-gap' },
       { id: 'planificacion-ruta', label: 'Ruta Académica', icon: 'bi-diagram-3' },

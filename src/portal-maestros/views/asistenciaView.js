@@ -6,8 +6,6 @@ import { enqueue, getQueueCount } from '../services/offlineQueue.js'
 import { createSyncQueueBadge } from '../components/SyncQueueBadge.js'
 
 import {
-  enrichToDSL,
-  transcribeAndStructure,
   improveText,
   structureTextToDSL,
 } from '../services/groqService.js'
@@ -28,9 +26,6 @@ import { AppToast } from '../../shared/components/AppToast.js'
 import { invalidateView as navInvalidateView } from '../services/navigationHooks.js'
 import { createStudentProgressPanel } from '../components/studentProgressPanel.js'
 import { createSessionSummaryPanel } from '../components/SessionSummaryPanel.js'
-import { createContentSelectionPanel } from '../components/ContentSelectionPanel.js'
-import { createMethodologyForm } from '../components/MethodologyForm.js'
-import { createHomeworkPanel } from '../components/HomeworkPanel.js'
 import { consumeRutaTema } from '../services/rutaTopicStore.js'
 import {
   guardarJustificacion,
@@ -149,7 +144,7 @@ async function _renderEmergenteSesion(container, { sesionId, fecha, maestro, rou
       }
     })
 
-    _renderVista(container, {
+    const cleanup = _renderVista(container, {
       clase,
       horario: null,
       alumnos,
@@ -167,6 +162,8 @@ async function _renderEmergenteSesion(container, { sesionId, fecha, maestro, rou
       sesionExistenteData: sesion,
       router,
     })
+
+    return typeof cleanup === 'function' ? cleanup : undefined
   } catch (err) {
     console.error('[asistenciaView] Error en sesión emergente:', err.message, err.stack)
     container.innerHTML = `<p class="pm-empty" style="color:var(--pm-danger)">Error: ${escHTML(err.message)}</p>`
@@ -196,7 +193,7 @@ export async function renderAsistenciaView(
 
   if (!claseId) {
     if (sesionId) {
-      return _renderEmergenteSesion(container, { sesionId, fecha, maestro, containerOrId, router })
+      return _renderEmergenteSesion(container, { sesionId, fecha, maestro, router })
     }
     container.innerHTML = `<p class="pm-empty">No se indicó la clase.</p>`
     return
@@ -210,7 +207,7 @@ export async function renderAsistenciaView(
   const fechaHoy = fecha || localToday
 
   try {
-    const diaHoy = new Date().toLocaleDateString('es-ES', { weekday: 'long' }).toLowerCase()
+    const diaHoy = hoy.toLocaleDateString('es-ES', { weekday: 'long' }).toLowerCase()
 
     // ── Batch 1: datos cacheados (instantáneos si hoyView ya cargó) + sesión en paralelo ──
     const [misClases, todosHorarios, todasInscripciones, sesionRes] = await Promise.all([
@@ -389,11 +386,10 @@ export async function renderAsistenciaView(
     }
 
 
-    // Normalize any full DB values back to UI abbreviations
-    const ESTADO_DB_TO_UI = { presente: 'P', ausente: 'A', justificado: 'J', tarde: 'T' }
+    // Normalize any full DB values back to UI abbreviations (reuse _DB_TO_UI map)
     serverAsistencia.forEach((item) => {
       if (Object.prototype.hasOwnProperty.call(estado, item.alumno_id)) {
-        const estadoNorm = ESTADO_DB_TO_UI[item.estado] ?? item.estado
+        const estadoNorm = _DB_TO_UI[item.estado] ?? item.estado
         estado[item.alumno_id] = estadoNorm
       }
     })
@@ -472,11 +468,12 @@ function _renderVista(container, ctx) {
 
   // Cleanup registry — all destroyable sub-components register here
   const _cleanups = []
-  const localKey = `pm_asistencia_${claseId}_${fechaHoy}`
+  const localKey = `pm_asistencia_${claseId || sesionId}_${fechaHoy}`
   let dslContent = serverDSL
   let _saveTimer = null
   const _saveMutex = createAsyncMutex()
   let planificationCard = null
+  let _summaryPanel = null
 
   // Local CSS for badges with high contrast
   if (!document.getElementById('pm-asist-badge-styles')) {
@@ -1155,6 +1152,7 @@ function _renderVista(container, ctx) {
   })
 
   // === Planification Card ===
+  const toolbar = dslSection.getToolbar()
   planificationCard = createPlanificationCard(container, {
     claseId,
     clase,
@@ -1162,10 +1160,9 @@ function _renderVista(container, ctx) {
     fechaHoy,
     rutaId,
     editor,
-    toolbar,
     onIndicadorSelect: (ind) => {
       editor.insertText(`[${ind.nombre}] `)
-      toolbar.setContext({ indicadorActivo: ind.nombre })
+      if (toolbar) toolbar.setContext({ indicadorActivo: ind.nombre })
       const obsBtn = container.querySelector('#btn-guardar-obs')
       if (obsBtn) obsBtn.style.display = ''
     },
@@ -1296,7 +1293,6 @@ function _renderVista(container, ctx) {
     },
   })
 
-  // === Student Progress Panel tracking ===
   // === Student List ===
   const studentList = createStudentList(container, {
     alumnos,
@@ -1733,7 +1729,9 @@ function _renderVista(container, ctx) {
         const volverHoyBtn = overlay.querySelector('#btn-volver-hoy')
         const calBtn = overlay.querySelector('#btn-ir-calendario')
 
-        const summaryPanel = createSessionSummaryPanel()
+        if (_summaryPanel) _summaryPanel.destroy()
+        _summaryPanel = createSessionSummaryPanel()
+        const summaryPanel = _summaryPanel
         if (resumenPedBtn) {
           resumenPedBtn.onclick = () => {
             summaryPanel.open({
@@ -1894,6 +1892,10 @@ function _renderVista(container, ctx) {
     try {
       _justifModal.close()
     } catch (_) {}
+
+    // Remover overlay de "Sesión Guardada" si quedó en el DOM
+    document.querySelectorAll('.pm-saved-overlay').forEach((el) => el.remove())
+
     _cleanups.forEach((fn) => {
       try {
         fn()

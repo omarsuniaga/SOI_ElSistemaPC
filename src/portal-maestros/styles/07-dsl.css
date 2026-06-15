@@ -352,7 +352,7 @@
 /* ── Mobile: hide help by default, show toggle button ────────── */
 @media (max-width: 767px) {
   .pm-dsl-placeholder {
-    display: none !important;
+    display: none;
   }
 
   .pm-dsl-help-toggle {
@@ -367,7 +367,7 @@
   }
 
   .pm-dsl-placeholder {
-    display: block !important;
+    display: block;
   }
 }
 

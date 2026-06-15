@@ -52,15 +52,21 @@ export function createDslEditor(container, { initialContent = '', onChange, onAl
 
   // Help toggle (mobile: hide placeholder by default, show with button click)
   let _helpVisible = window.innerWidth >= 768 // visible on desktop by default
-  function _updateHelpVisibility() {
-    placeholder.style.display = _helpVisible ? 'block' : 'none'
+
+  /**
+   * Unifica ambas condiciones: placeholder visible solo si help está activo Y content está vacío.
+   */
+  function _updatePlaceholderVisibility() {
+    const show = _helpVisible && _value.trim() === ''
+    placeholder.style.display = show ? 'block' : 'none'
   }
-  _updateHelpVisibility()
+
+  _updatePlaceholderVisibility()
   if (helpToggle) {
     helpToggle.addEventListener('click', (e) => {
       e.stopPropagation()
       _helpVisible = !_helpVisible
-      _updateHelpVisibility()
+      _updatePlaceholderVisibility()
       helpToggle.classList.toggle('active', _helpVisible)
     })
   }
@@ -72,7 +78,7 @@ export function createDslEditor(container, { initialContent = '', onChange, onAl
 
   function _updateValue() {
     _value = editor.innerText
-    placeholder.style.display = _value.trim() === '' ? 'block' : 'none'
+    _updatePlaceholderVisibility()
     if (onChange) onChange(_value)
   }
 

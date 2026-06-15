@@ -1,18 +1,16 @@
 import { supabase } from '../../lib/supabaseClient.js'
 import { getMaestroLocal } from '../auth/maestroAuth.js'
-import { escHTML, formatHora, formatFechaPortal } from '../utils/portalUtils.js'
+import { escHTML } from '../utils/portalUtils.js'
 import { announce } from '../utils/a11yUtils.js'
 import { enqueue, getQueueCount } from '../services/offlineQueue.js'
 import { createSyncQueueBadge } from '../components/SyncQueueBadge.js'
-import { parseDSL } from '../utils/dslParser.js'
+
 import {
   enrichToDSL,
   transcribeAndStructure,
   improveText,
   structureTextToDSL,
 } from '../services/groqService.js'
-import { createDslToolbar } from '../components/dslToolbar.js'
-import { createDslEditor } from '../components/dslEditor.js'
 import { createEvaluationDrawer } from '../components/EvaluationDrawer.js'
 import { createImproveTextModal } from '../components/improveTextModal.js'
 import { createGenerarInformeModal } from '../components/improveTextModal.js'
@@ -26,47 +24,23 @@ import {
   invalidateClasesCache,
 } from '../services/maestroDataService.js'
 import { AsistenciaTour } from '../components/AsistenciaTour.js'
-import { openPlanificacionModal } from '../../modules/planificacion/components/planificacionModal.js'
-import { RouteConfigAdapter } from '../services/routeConfigAdapter.js'
-import { renderRouteConfigurator } from './components/routeConfigurator.js'
-import { crearPlanificacion } from '../../modules/planificacion/api/planificacionAdapter.js'
-import { AppModal } from '../../shared/components/AppModal.js'
 import { AppToast } from '../../shared/components/AppToast.js'
 import { invalidateView as navInvalidateView } from '../services/navigationHooks.js'
-import { createRouteTreeBar } from '../components/routeTreeBar.js'
 import { createStudentProgressPanel } from '../components/studentProgressPanel.js'
 import { createSessionSummaryPanel } from '../components/SessionSummaryPanel.js'
-import { resolveDSL, saveEvaluaciones } from '../services/evaluationService.js'
-import { processarEvaluacion } from '../services/evaluationService.js'
-import {
-  createAutoDraft,
-  saveDraft,
-  loadDraft,
-  discardDraft,
-  saveObservation,
-} from '../services/autoDraftService.js'
 import { createContentSelectionPanel } from '../components/ContentSelectionPanel.js'
 import { createMethodologyForm } from '../components/MethodologyForm.js'
 import { createHomeworkPanel } from '../components/HomeworkPanel.js'
-import { createLevelCompletionModal } from '../components/LevelCompletionModal.js'
-import { getClassEvent, updateClassEventStatus } from '../services/classEventService.js'
 import { consumeRutaTema } from '../services/rutaTopicStore.js'
-import { createJustificacionModal } from '../components/JustificacionModal.js'
 import {
   guardarJustificacion,
   obtenerJustificacion,
   eliminarJustificacion,
 } from '../services/justificacionService.js'
-import { promocionarObservacionesAlumnos } from '../services/observationPromotionService.js'
 import { registrarAsistenciaBulk } from '../../modules/asistencias/api/asistenciasApi.js'
 import { createAsyncMutex } from '../../shared/utils/asyncMutex.js'
 import { analyzeObservation } from '../services/groqService.js'
-import {
-  saveProgressFromAI,
-  saveProgressFromDSL,
-  saveProgressFromEvaluaciones,
-  linkProgresosToObjetivos,
-} from '../services/progressAggregatorService.js'
+import { saveProgressFromAI, linkProgresosToObjetivos } from '../services/progressAggregatorService.js'
 
 /**
  * Wraps an async function with consistent error handling.
@@ -94,6 +68,20 @@ import { proposeCurriculum } from '../services/groqService.js'
 import { createCurriculumProposalPanel } from '../components/CurriculumProposalPanel.js'
 import { adoptarPropuesta } from '../../modules/planificacion/api/curriculoApi.js'
 import { fetchNotificaciones } from '../services/notificationService.js'
+import {
+  inferirTipoClase,
+  generarReporteTexto,
+  abrirEnlaceConLimite,
+} from '../utils/asistenciaHelpers.js'
+import { createAttendanceHeader } from '../components/attendance/AttendanceHeader.js'
+import { createRouteTopicAutoInjector } from '../components/attendance/RouteTopicAutoInjector.js'
+import { createPlanificationCard } from '../components/attendance/PlanificationCard.js'
+import { createDslSection } from '../components/attendance/DslSection.js'
+import { createBulkActions } from '../components/attendance/BulkActions.js'
+import { createAutoDraftManager } from '../components/attendance/AutoDraftManager.js'
+import { createJustifModalManager } from '../components/attendance/JustifModalManager.js'
+import { createStudentList } from '../components/attendance/StudentList.js'
+import { createObservationSaveButton } from '../components/attendance/ObservationSaveButton.js'
 import {
   generateDailyReport,
   generateMonthlyAttendance,
@@ -488,7 +476,7 @@ function _renderVista(container, ctx) {
   let dslContent = serverDSL
   let _saveTimer = null
   const _saveMutex = createAsyncMutex()
-  let routeTreeBar = null // Mover al scope superior
+  let planificationCard = null
 
   // Local CSS for badges with high contrast
   if (!document.getElementById('pm-asist-badge-styles')) {
@@ -889,38 +877,7 @@ function _renderVista(container, ctx) {
     <!-- Tour inyectado por AsistenciaTour.js -->
 
     <div class="pm-asist-root pm-animate-fade-in" style="position:relative; min-height:100vh; padding: 0;">
-      ${
-        hasConflict
-          ? `
-        <div class="pm-conflict-banner">
-          <i class="bi bi-exclamation-triangle"></i>
-          <span>Sesión modificada externamente. Guardado como revisión.</span>
-          <button id="pm-conflict-dismiss">&times;</button>
-        </div>
-      `
-          : ''
-      }
-      
-      <div class="pm-asist-header">
-        <button id="pm-asist-back" class="pm-icon-btn"><i class="bi bi-arrow-left"></i></button>
-        <div style="flex:1">
-          <h2 class="pm-asist-title">${escHTML(clase.nombre)}</h2>
-          <p class="pm-asist-subtitle">
-            ${salonNombre ? `📍 ${escHTML(salonNombre)} · ` : ''}
-            ${horario ? `${formatHora(horario.hora_inicio)} – ${formatHora(horario.hora_fin)} · ` : ''}
-            <span style="color:var(--pm-primary); font-weight:700;">${formatFechaPortal(new Date(fechaHoy + 'T12:00:00'))}</span> · 
-            ${alumnos.length} alumnos
-          </p>
-        </div>
-        <div style="display:flex;align-items:center;gap:0.75rem;">
-          <div id="pm-sync-badge-container"></div>
-          <button id="pm-btn-help" class="pm-help-btn" title="Guía rápida"><i class="bi bi-question-lg"></i></button>
-          <div class="pm-asist-bulk-circles">
-            <button id="btn-bulk-p" class="pm-bulk-circle p" title="Todos presentes">P</button>
-            <button id="btn-bulk-a" class="pm-bulk-circle a" title="Todos ausentes">A</button>
-          </div>
-        </div>
-      </div>
+      <div id="pm-attendance-header"></div>
 
       <div class="pm-asist-content" style="padding: 0 1rem 160px;">
         <div class="pm-asist-progress-wrap" id="pm-progress-wrap" style="display:none; margin: 1rem 0;">
@@ -998,6 +955,28 @@ function _renderVista(container, ctx) {
     <!-- Modales... -->
   `
 
+  // ── Attendance Header ──
+  const headerContainer = container.querySelector('#pm-attendance-header')
+  const headerComp = createAttendanceHeader(headerContainer, {
+    clase,
+    horario,
+    salonNombre,
+    fechaHoy,
+    totalAlumnos: alumnos.length,
+    hasConflict,
+    onBack: () => {
+      tour.destroy()
+      try {
+        _justifModal.close()
+      } catch (_) {}
+      _cleanups.forEach((fn) => {
+        try { fn() } catch (_) {}
+      })
+      navigateTo('hoy')
+    },
+  })
+  _cleanups.push(() => headerComp.destroy())
+
   // ── Sync queue badge ──
   const badgeContainer = container.querySelector('#pm-sync-badge-container')
   if (badgeContainer) {
@@ -1005,21 +984,14 @@ function _renderVista(container, ctx) {
     badgeContainer.appendChild(badge.el)
   }
 
-  // === Editor DSL ===
-  const toolbarContainer = container.querySelector('#pm-dsl-toolbar-container')
-  const editorContainer = container.querySelector('#pm-dsl-editor-container')
-
-  // Inicializar timer ANTES de usar onChange
-
-  const editor = createDslEditor(editorContainer, {
+  // === Editor DSL & Toolbar Section ===
+  const dslSection = createDslSection(container, {
     initialContent: serverDSL,
-    onChange: (value) => {
-      dslContent = value /* save deferred only, no autoSave on typing */
-    },
+    claseId,
+    onEditorChange: (value) => { dslContent = value },
   })
-
-  // Pasar contexto para autocompletado (claseId para cargar alumnos)
-  editor.setContext({ claseId: claseId })
+  const editor = dslSection.getEditor()
+  const editorContainer = container.querySelector('#pm-dsl-editor-container')
 
   // === Generar Informe Modal ===
   const informeModal = createGenerarInformeModal(container, {
@@ -1096,19 +1068,10 @@ function _renderVista(container, ctx) {
     },
   )
 
-  const toolbar = createDslToolbar(toolbarContainer, {
-    onInsert: (text, cursorOffset, triggerAC) => editor.insertText(text, cursorOffset, triggerAC),
-    getEditorContent: () => editor.getValue(),
-    onLoading: (loading) => {
-      // Show/hide loading state if needed
-    },
-    onIaProposal: async (proposal) => {
-      // Implementar modal Apple-style aquí si es necesario
-    },
+  dslSection.initToolbar({
     onImproveClick: async (text) => {
-      const informeBtn = toolbarContainer.querySelector('#btn-generar-informe')
+      const informeBtn = container.querySelector('#btn-generar-informe')
       if (informeBtn) informeBtn.disabled = true
-
       try {
         const improved = await improveText(text)
         informeModal.open({ original: text, improved })
@@ -1119,11 +1082,10 @@ function _renderVista(container, ctx) {
       }
     },
     onStructureClick: async (text) => {
-      const structureBtn = toolbarContainer.querySelector('#btn-ia-magic')
+      const structureBtn = container.querySelector('#btn-ia-magic')
       if (structureBtn) structureBtn.disabled = true
-
       try {
-        const indicadorActivo = routeTreeBar?.getActiveIndicador()
+        const indicadorActivo = planificationCard?.getActiveIndicador()
         const alumnosPresentes = alumnos
           .filter((a) => estado[a.id] === 'P')
           .map((p) => p.nombre_completo)
@@ -1141,10 +1103,7 @@ function _renderVista(container, ctx) {
     onAnalyzeClick: async (text) => {
       await safeAsync(
         async () => {
-          // Build class context — present students exclude absent (estado !== 'A')
           const alumnosPresentes = alumnos.filter((a) => estado[a.id] && estado[a.id] !== 'A')
-          // Build nombreCorto that is unique within the roster.
-          // Default: first name. If two students share the same first name → use "Nombre Apellido".
           const _buildNombreCorto = (fullName, allNames) => {
             const parts = fullName.trim().split(/\s+/)
             const first = parts[0]
@@ -1161,22 +1120,19 @@ function _renderVista(container, ctx) {
             const nombre = a.nombre_completo || a.nombre || ''
             return { id: a.id, nombre, nombreCorto: _buildNombreCorto(nombre, allNombresFull) }
           })
-
           const contextoGroq = {
             alumnos: alumnosMapped,
             presentes: presentesMapped,
-            tipoClase: _inferirTipoClase(clase),
+            tipoClase: inferirTipoClase(clase),
             instrumento: clase.instrumento || '',
             sesionesRecientes: (snapshots || [])
               .slice(-2)
               .map((s) => s.contenido || '')
               .filter(Boolean),
-            indicadorActivo: routeTreeBar?.getActiveIndicador()?.nombre || '',
+            indicadorActivo: planificationCard?.getActiveIndicador()?.nombre || '',
           }
-
           container.querySelector('#btn-guardar')?.style.setProperty('display', 'none')
           const result = await analyzeObservation(text, contextoGroq)
-
           if (!result?.progreso?.length) {
             container.querySelector('#btn-guardar')?.style.removeProperty('display')
             if (typeof AppToast !== 'undefined' && AppToast) {
@@ -1184,7 +1140,6 @@ function _renderVista(container, ctx) {
             }
             return
           }
-
           progressPanel.open({ progreso: result.progreso, resumen: result.resumen })
         },
         {
@@ -1199,253 +1154,26 @@ function _renderVista(container, ctx) {
     },
   })
 
-  // === Route Selector + Planificacion Card ===
-  let activeRutaId = rutaId
-  let activePlanificacionId = null
-  let planificacionesCache = []
-
-  const planificacionCard = container.querySelector('#pm-planificacion-card')
-  const planDropdown = container.querySelector('#pm-planificacion-dropdown')
-  const planNombreEl = container.querySelector('#pm-planificacion-nombre')
-  const planDetailEl = container.querySelector('#pm-planificacion-detail')
-  const planListRutas = container.querySelector('#pm-plan-list-rutas')
-  const planListPlanes = container.querySelector('#pm-plan-list-planificaciones')
-
-  // Toggle card open/close
-  const planHeader = container.querySelector('#pm-planificacion-header')
-  if (planHeader) {
-    planHeader.addEventListener('click', () => {
-      const isOpen = planificacionCard.classList.toggle('open')
-      planDropdown.style.display = isOpen ? 'block' : 'none'
-    })
-  }
-
-  // Tab switching (Modernizado con pill)
-  container.querySelectorAll('.pm-plan-tab-pill').forEach((tab) => {
-    tab.addEventListener('click', () => {
-      container.querySelectorAll('.pm-plan-tab-pill').forEach((t) => t.classList.remove('active'))
-      tab.classList.add('active')
-      const tabName = tab.dataset.tab
-      planListRutas.style.display = tabName === 'rutas' ? '' : 'none'
-      planListPlanes.style.display = tabName === 'planificaciones' ? '' : 'none'
-    })
+  // === Planification Card ===
+  planificationCard = createPlanificationCard(container, {
+    claseId,
+    clase,
+    maestro,
+    fechaHoy,
+    rutaId,
+    editor,
+    toolbar,
+    onIndicadorSelect: (ind) => {
+      editor.insertText(`[${ind.nombre}] `)
+      toolbar.setContext({ indicadorActivo: ind.nombre })
+      const obsBtn = container.querySelector('#btn-guardar-obs')
+      if (obsBtn) obsBtn.style.display = ''
+    },
+    getDslContent: () => editor.getValue(),
   })
+  _cleanups.push(() => planificationCard.destroy())
 
-  // Select a route from the dropdown
-  function selectRuta(routeVersionId, routeName, routeInstrumento) {
-    activeRutaId = routeVersionId
-    activePlanificacionId = null
 
-    if (planNombreEl) planNombreEl.textContent = routeName || 'Ruta sin nombre'
-
-    if (planDetailEl) {
-      planDetailEl.style.display = ''
-      planDetailEl.innerHTML = `
-        <div class="pm-planificacion-detail-title">📍 Instrumento</div>
-        <div>${routeInstrumento || 'General'}</div>
-      `
-    }
-
-    // Highlight selected item
-    planListRutas.querySelectorAll('.pm-plan-item').forEach((item) => {
-      item.classList.toggle('active', item.dataset.rutaId === routeVersionId)
-    })
-    planListPlanes
-      .querySelectorAll('.pm-plan-item')
-      .forEach((item) => item.classList.remove('active'))
-
-    // Refresh tree (NO CERRAR DROPDOWN AQUI)
-    if (routeTreeBar) {
-      routeTreeBar.destroy()
-      routeTreeBar = null
-    }
-    const treeContainer = container.querySelector('#pm-route-tree-container')
-    const temaBadge = container.querySelector('#pm-active-tema-badge')
-
-    if (routeVersionId && treeContainer) {
-      treeContainer.innerHTML = ''
-
-      // TRAER TEMAS COMPLETADOS HISTORICAMENTE
-      _getCompletedTopics(claseId).then((completedTopics) => {
-        routeTreeBar = createRouteTreeBar(treeContainer, {
-          claseId,
-          rutaId: routeVersionId,
-          completedTopics,
-          onIndicadorSelect: (ind) => {
-            editor.insertText(`[${ind.nombre}] `)
-            toolbar.setContext({ indicadorActivo: ind.nombre })
-
-            // Actualizar Badge y cerrar
-            if (temaBadge) {
-              temaBadge.textContent = ind.nombre
-              temaBadge.style.display = 'inline-block'
-            }
-            planificacionCard.classList.remove('open')
-            planDropdown.style.display = 'none'
-
-            const obsBtn = container.querySelector('#btn-guardar-obs')
-            if (obsBtn) obsBtn.style.display = ''
-          },
-        })
-        _cleanups.push(() => routeTreeBar.destroy())
-      })
-    }
-  }
-
-  // Select a planification (MODERNIZADO: Minimalista)
-  function selectPlanificacion(plan) {
-    activePlanificacionId = plan.id
-    activeRutaId = null
-
-    // GUARDAR PREFERENCIA POR CLASE
-    localStorage.setItem(`pm_default_plan_${claseId}`, plan.id)
-
-    if (planNombreEl) planNombreEl.textContent = plan.nombre || plan.name || 'Sin nombre'
-
-    planListPlanes.querySelectorAll('.pm-plan-item').forEach((item) => {
-      item.classList.toggle('active', item.dataset.planId === plan.id)
-    })
-
-    // RE-INICIALIZAR EL ÁRBOL DE RUTA DINÁMICAMENTE (NO CERRAR DROPDOWN)
-    if (routeTreeBar) {
-      routeTreeBar.destroy()
-      routeTreeBar = null
-    }
-    const treeContainer = container.querySelector('#pm-route-tree-container')
-    const temaBadge = container.querySelector('#pm-active-tema-badge')
-
-    if (activePlanificacionId && treeContainer) {
-      treeContainer.innerHTML = ''
-
-      // TRAER TEMAS COMPLETADOS HISTORICAMENTE
-      _getCompletedTopics(claseId).then((completedTopics) => {
-        routeTreeBar = createRouteTreeBar(treeContainer, {
-          claseId,
-          rutaId: activePlanificacionId,
-          completedTopics,
-          onIndicadorSelect: (ind) => {
-            editor.insertText(`[${ind.nombre}] `)
-            toolbar.setContext({ indicadorActivo: ind.nombre })
-
-            // Actualizar Badge y cerrar
-            if (temaBadge) {
-              temaBadge.textContent = ind.nombre
-              temaBadge.style.display = 'inline-block'
-            }
-            planificacionCard.classList.remove('open')
-            planDropdown.style.display = 'none'
-          },
-        })
-        _cleanups.push(() => routeTreeBar.destroy())
-      })
-    }
-  }
-
-  // BOTÓN GESTIONAR RUTA (Header)
-  const manageBtn = container.querySelector('#btn-manage-planning')
-  if (manageBtn) {
-    manageBtn.onclick = (e) => {
-      e.stopPropagation()
-      if (!activePlanificacionId) {
-        AppModal.open({
-          title: 'Atención',
-          body: '<p>Seleccioná una planificación primero para poder gestionarla.</p>',
-          confirmText: 'Entendido',
-          hideCancel: true,
-        })
-        return
-      }
-      AppModal.open({
-        title: `Gestionar Estructura: ${planNombreEl.textContent}`,
-        size: 'xl',
-        body: '<div id="modal-route-config-root"></div>',
-        saveText: 'Cerrar y Actualizar',
-        onSave: async () => {
-          if (routeTreeBar) routeTreeBar.refresh()
-          return true
-        },
-      })
-      const modalRoot = document.getElementById('modal-route-config-root')
-      if (modalRoot) {
-        renderRouteConfigurator(modalRoot, activePlanificacionId)
-      }
-    }
-  }
-
-  // Load planificaciones (Biblioteca y Mis Rutas)
-  if (planificacionCard) {
-    ;(async () => {
-      try {
-        const planningClasses = await RouteConfigAdapter.getClasses(maestro ? maestro.id : null)
-
-        // 1. "Mis Rutas" son los planes que coinciden con el instrumento de la clase o guardados
-        const savedPlanId = localStorage.getItem(`pm_default_plan_${claseId}`)
-        const claseInstrumentos = (clase.instrumento || '')
-          .toLowerCase()
-          .split(',')
-          .map((i) => i.trim())
-
-        const misRutas = planningClasses.filter((p) => {
-          if (p.id === savedPlanId) return true
-          const planInst = (p.nombre || '').toLowerCase()
-          return claseInstrumentos.some((ci) => planInst.includes(ci))
-        })
-
-        if (planListRutas) {
-          planListRutas.innerHTML = misRutas.length
-            ? misRutas
-                .map(
-                  (r) => `
-              <div class="pm-plan-item ${r.id === savedPlanId ? 'active' : ''}" data-plan-id="${r.id}">
-                <span class="pm-plan-item-icon">📍</span>
-                <span class="pm-plan-item-name">${escHTML(r.nombre || 'Ruta sin nombre')}</span>
-                ${r.id === savedPlanId ? '<span class="pm-tree-badge">ACTIVA</span>' : ''}
-              </div>`,
-                )
-                .join('')
-            : '<div style="padding:0.5rem;font-size:0.8rem;color:var(--pm-text-muted)">No hay planes sugeridos para este instrumento</div>'
-
-          planListRutas.querySelectorAll('.pm-plan-item').forEach((item) => {
-            item.addEventListener('click', () => {
-              const r = misRutas.find((x) => x.id === item.dataset.planId)
-              if (r) selectPlanificacion(r)
-            })
-          })
-        }
-
-        // 2. "Biblioteca" es todo el catálogo
-        if (planListPlanes) {
-          planListPlanes.innerHTML = planningClasses
-            .map(
-              (p) => `
-            <div class="pm-plan-item" data-plan-id="${p.id}">
-              <span class="pm-plan-item-icon">📚</span>
-              <span class="pm-plan-item-name">${escHTML(p.nombre || p.name)}</span>
-            </div>`,
-            )
-            .join('')
-
-          planListPlanes.querySelectorAll('.pm-plan-item').forEach((item) => {
-            item.addEventListener('click', () => {
-              const p = planningClasses.find((x) => x.id === item.dataset.planId)
-              if (p) selectPlanificacion(p)
-            })
-          })
-        }
-
-        // Mostrar card
-        planificacionCard.style.display = ''
-
-        // AUTO-SELECCIÓN
-        const savedMatch = planningClasses.find((c) => c.id === savedPlanId)
-        const initialMatch =
-          savedMatch || misRutas[0] || (await RouteConfigAdapter.resolveSmartPlan(clase))
-        if (initialMatch) selectPlanificacion(initialMatch)
-      } catch (err) {
-        console.warn('[asistencia] Error cargando planificación unificada:', err)
-      }
-    })()
-  }
 
   // Wire "Proponer plan curricular" button
   const btnProponerCurriculo = container.querySelector('#btn-proponer-curriculo')
@@ -1486,263 +1214,54 @@ function _renderVista(container, ctx) {
     }
   }
 
-  // Botón "Copiar como planificación"
-  const copyPlanBtn = container.querySelector('#btn-copy-as-plan')
-  if (copyPlanBtn) {
-    copyPlanBtn.addEventListener('click', async () => {
-      const dslContent = editor.getValue()
-
-      // Si el editor está vacío, aún permitimos crear una planificación vacía
-      // (el modal mostrará error solo si el usuario intenta guardar sin tema)
-
-      const clases = await getMisClases()
-
-      // Pre-llenar datos iniciales desde la asistencia actual
-      const initialData = {
-        clase_id: claseId,
-        maestro_id: maestro?.id || null,
-        maestro_nombre: maestro?.nombre_completo || null,
-        contenido: dslContent || '',
-        fecha_inicio: fechaHoy,
-      }
-
-      openPlanificacionModal('create', null, clases, [], initialData, async (datos) => {
-        try {
-          await crearPlanificacion({
-            ...datos,
-            estado: 'planificado',
-          })
-
-          // Toast de éxito estilizado
-          const toast = document.createElement('div')
-          toast.className = 'pm-toast-success'
-          toast.innerHTML = `
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-              <polyline points="22 4 12 14.01 9 11.01"/>
-            </svg>
-            Planificación creada exitosamente
-          `
-          document.body.appendChild(toast)
-          setTimeout(() => toast.remove(), 3000)
-        } catch (err) {
-          console.error('[asistencia] Error guardando planificación:', err)
-          AppToast.error('Error al guardar la planificación: ' + (err.message || err))
-        }
-      })
-    })
-  }
-
-  // === Route Tree Bar (Inicialización diferida movida a selectPlanificacion) ===
-  // let routeTreeBar = null (Ya declarado arriba)
-  if (rutaId) {
-    const treeContainer = container.querySelector('#pm-route-tree-container')
-    routeTreeBar = createRouteTreeBar(treeContainer, {
-      claseId,
-      rutaId,
-      onIndicadorSelect: (ind) => {
-        // Insert indicator name into editor
-        editor.insertText(`[${ind.nombre}] `)
-        // Update toolbar context
-        toolbar.setContext({ indicadorActivo: ind.nombre })
-        // Show the save observation button when an indicator is selected
-        const obsBtn = container.querySelector('#btn-guardar-obs')
-        if (obsBtn) obsBtn.style.display = ''
-      },
-    })
-    _cleanups.push(() => routeTreeBar.destroy())
-  }
-
   // === Ruta topic auto-injection ===
+  const rutaTopicInjector = createRouteTopicAutoInjector(container, { editor, toolbar })
   const rutaTema = consumeRutaTema()
-  if (rutaTema && rutaTema.claseId === claseId) {
-    const temaText = `[${rutaTema.nombre}] `
-    editor.insertText(temaText)
-    toolbar.setContext({ indicadorActivo: rutaTema.nombre })
-
-    const obsBtn = container.querySelector('#btn-guardar-obs')
-    if (obsBtn) obsBtn.style.display = ''
-
-    const editorContainer = container.querySelector('#pm-dsl-editor-container')
-    if (editorContainer) {
-      const banner = document.createElement('div')
-      banner.style.cssText = `
-        background:#eff6ff;border:1px solid #93c5fd;border-radius:8px;
-        padding:8px 12px;margin-bottom:8px;font-size:12px;color:#1d4ed8;
-        display:flex;align-items:center;gap:8px;
-      `
-      banner.innerHTML = `
-        <i class="bi bi-diagram-3"></i>
-        Tema cargado desde Ruta: <strong>${rutaTema.nombre.replace(/</g, '&lt;')}</strong>
-        <button onclick="this.parentElement.remove()" style="
-          margin-left:auto;background:none;border:none;cursor:pointer;
-          font-size:12px;color:#1d4ed8;
-        ">✕</button>
-      `
-      editorContainer.parentElement.insertBefore(banner, editorContainer)
-    }
-  }
+  rutaTopicInjector.inject(rutaTema, claseId)
+  _cleanups.push(() => rutaTopicInjector.destroy())
 
   // === Modal de Justificación ===
-  // Creado aquí para capturar el sesionId MUTABLE (let sesionId) que _autoSave actualiza.
-  // Si se creara en renderAsistenciaView, capturaría el const sesionId inicial (posiblemente null).
-  const _justifModal = createJustificacionModal(document.body, {
-    onDelete: async ({ alumnoId, justificacionId, existingUrl }) => {
-      // Eliminar archivo de Storage si existe
-      if (existingUrl) {
-        const match = existingUrl.match(/\/storage\/v1\/object\/public\/[^/]+\/(.+)/)
-        if (match)
-          supabase.storage
-            .from('documentos')
-            .remove([match[1]])
-            .catch(() => {})
-      }
-      // Eliminar registro en DB
-      if (justificacionId) eliminarJustificacion(justificacionId).catch(console.warn)
-      // Limpiar estado local y deseleccionar alumno
+  const _justifModal = createJustifModalManager(container, {
+    sesionId,
+    claseId,
+    fechaHoy,
+    maestroId: maestro.id,
+    supabase,
+    guardarJustificacion,
+    eliminarJustificacion,
+    onJustifDeleted: (alumnoId) => {
       estado[alumnoId] = null
       delete justificaciones[alumnoId]
-      renderLista(alumnoId)
-      _updateProgress()
-      try {
-        await _autoSave(true)
-      } catch (_e) {
-        console.warn('[asistencia] autoSave error on delete justif:', _e)
-      }
-      announce(`Justificación eliminada.`)
     },
-    onSave: async ({ alumnoId, motivo, evidenciaFile, justificacionId, existingUrl, isEdit }) => {
-      const saveBtn = document.getElementById('pm-justif-save')
-      if (saveBtn) {
-        saveBtn.disabled = true
-      }
-      try {
-        let savedRecord = null
-        if (isEdit && justificacionId) {
-          // Update: reemplazar evidencia solo si hay archivo nuevo
-          let urlToSave = existingUrl
-          if (evidenciaFile) {
-            if (existingUrl) {
-              const match = existingUrl.match(/\/storage\/v1\/object\/public\/[^/]+\/(.+)/)
-              if (match)
-                await supabase.storage
-                  .from('documentos')
-                  .remove([match[1]])
-                  .catch(() => {})
-            }
-            const { data: uploadData } = await supabase.storage
-              .from('documentos')
-              .upload(
-                `justificaciones/${Date.now()}_${Math.random().toString(36).slice(2)}.${evidenciaFile.name.split('.').pop()}`,
-                evidenciaFile,
-              )
-              .catch(() => ({ data: null }))
-            if (uploadData) {
-              const { data: urlData } = supabase.storage
-                .from('documentos')
-                .getPublicUrl(uploadData.path)
-              urlToSave = urlData.publicUrl
-            }
-          }
-          const { data, error } = await supabase
-            .from('justificaciones')
-            .update({ motivo, evidencia_url: urlToSave })
-            .eq('id', justificacionId)
-            .select()
-            .single()
-          if (error) throw error
-          savedRecord = data
-        } else {
-          // Asegurar que haya sesión antes de guardar
-          if (!sesionId) await _autoSave(true, false)
-          const result = await guardarJustificacion(
-            { sesionId, alumnoId, claseId, fecha: fechaHoy, motivo, creadoPor: maestro.id },
-            evidenciaFile,
-          )
-          if (result.error) throw result.error
-          savedRecord = result.data
-        }
-        // Actualizar en memoria para que la próxima apertura del modal pre-llene el formulario
-        if (savedRecord) justificaciones[alumnoId] = savedRecord
-        _justifModal.close()
-      } catch (err) {
-        console.error('[justificacion] Error guardando:', err)
-        alert('Error al guardar la justificación: ' + err.message)
-      } finally {
-        if (saveBtn) {
-          saveBtn.disabled = false
-        }
-      }
+    onJustifSaved: (alumnoId, savedRecord) => {
+      justificaciones[alumnoId] = savedRecord
     },
-    onCancel: (alumnoId, prevEstado) => {
-      // Rollback: restaurar estado anterior del alumno
+    onJustifCancelled: (alumnoId, prevEstado) => {
       estado[alumnoId] = prevEstado
-      renderLista(alumnoId)
-      _updateProgress()
     },
+    onRenderLista: (alumnoId) => studentList.render(alumnoId),
+    onUpdateProgress: () => _updateProgress(),
+    onAutoSave: (immediate) => _autoSave(immediate),
+    onAnnounce: (msg) => announce(msg),
   })
   _cleanups.push(() => {
     try {
       _justifModal.close()
-    } catch (_) {}
+    } catch { /* ignore */ }
   })
 
-  // === Auto-Draft ===
-  let autoDraft = null
-  const draftIndicator = container.querySelector('#pm-draft-indicator')
-
-  if (sesionId) {
-    autoDraft = createAutoDraft({
-      saveFn: async (content) => {
-        if (!sesionId) return
-        await saveDraft(sesionId, maestro.id, content)
-      },
-      debounceMs: 30000,
-    })
-
-    autoDraft.onSaved(() => {
-      const now = new Date()
-      const hh = String(now.getHours()).padStart(2, '0')
-      const mm = String(now.getMinutes()).padStart(2, '0')
-      draftIndicator.textContent = `Borrador guardado ${hh}:${mm}`
-      draftIndicator.style.display = ''
-    })
-
-    // Wire editor onChange to autoDraft
-    const originalOnChange = editor.getValue // capture ref
-    const _origEditorOnInput = editorContainer.querySelector('#pm-dsl-editable')
-    if (_origEditorOnInput) {
-      const origHandler = _origEditorOnInput.oninput
-      _origEditorOnInput.oninput = function (e) {
-        if (origHandler) origHandler.call(this, e)
-        if (autoDraft) autoDraft.onInput(editor.getValue())
-      }
-    }
-
-    _cleanups.push(() => autoDraft.destroy())
-
-    // Check for existing draft and offer recovery — ONLY if session is actually a draft
-    if (sesionExistenteData?.borrador === true) {
-      loadDraft(sesionId, maestro.id)
-        .then((draft) => {
-          if (draft && draft.contenido_raw && draft.contenido_raw.trim()) {
-            const ts = draft.updated_at ? new Date(draft.updated_at).toLocaleString('es-AR') : ''
-            const recover = confirm(
-              `Hay un borrador guardado${ts ? ` (${ts})` : ''}.\n\n¿Deseas recuperarlo?`,
-            )
-            if (recover) {
-              editor.setValue(draft.contenido_raw)
-              dslContent = draft.contenido_raw
-            } else {
-              discardDraft(draft.id).catch((err) =>
-                console.warn('[autoDraft] Error discarding:', err),
-              )
-            }
-          }
-        })
-        .catch((err) => console.warn('[autoDraft] Error loading draft:', err))
-    }
-  }
+  // === Auto-Draft Manager ===
+  const _draftMgr = createAutoDraftManager(container, {
+    sesionId,
+    maestroId: maestro.id,
+    editor,
+    sesionExistenteData,
+    onDraftRecovered: (content) => {
+      dslContent = content
+      editor.setValue(content)
+    },
+  })
+  _cleanups.push(() => _draftMgr.destroy())
 
   // === Academic Content Flow ===
   let activeClassEventId = null
@@ -1755,421 +1274,72 @@ function _renderVista(container, ctx) {
   // El flujo ahora es 100% contextual al interactuar con un alumno.
 
   // === Save Observation Button ===
-  const obsSaveBtn = container.querySelector('#btn-guardar-obs')
-  if (obsSaveBtn) {
-    // Show button if there is a route
-    if (rutaId) obsSaveBtn.style.display = ''
-
-    obsSaveBtn.onclick = async () => {
-      const raw = editor.getValue()
-      if (!raw || !raw.trim()) {
-        AppToast.warning('El editor está vacío. Escribe observaciones antes de guardar.')
-        return
-      }
-
-      if (!sesionId) {
-        AppToast.warning(
-          'Primero guarda la sesión (asistencia) para poder registrar observaciones.',
-        )
-        return
-      }
-
-      let indicadorActivo = null
-      const textoIndicador = await _resolveActiveIndicador(raw)
-      const treeIndicador = routeTreeBar?.getActiveIndicador()
-
-      // PRIORIDAD: 1. Lo que escribió explícitamente [ ] > 2. Lo que seleccionó en el árbol
-      indicadorActivo = textoIndicador || treeIndicador
-
-      if (!indicadorActivo) {
-        AppToast.warning(
-          'Seleccione un indicador en la ruta antes de guardar la observación o escríbalo entre corchetes [Ejemplo].',
-        )
-        return
-      }
-
-      // Sincronizar Badge visual si se auto-resolvió
-      const temaBadge = container.querySelector('#pm-active-tema-badge')
-      if (temaBadge && indicadorActivo.nombre) {
-        temaBadge.textContent = indicadorActivo.nombre
-        temaBadge.style.display = 'inline-block'
-      }
-
-      obsSaveBtn.disabled = true
-      obsSaveBtn.textContent = 'Procesando...'
-
-      try {
-        const presentes = alumnos.filter((a) => estado[a.id] === 'P')
-
-        // Bimodal pipeline: detecta natural vs DSL y procesa automáticamente
-        const resultado = await processarEvaluacion(
-          raw,
-          indicadorActivo.id,
-          presentes,
-          indicadorActivo.nombre,
-        )
-
-        if (resultado.error) throw new Error(resultado.error)
-
-        // Si se usó IA, mostrar el DSL generado para confirmación
-        if (resultado.modo === 'natural' && resultado.dslGenerado) {
-          const confirmar = confirm(
-            '📝 Texto convertido a formato estructurado:\n\n' +
-              resultado.dslGenerado +
-              '\n\n' +
-              '¿Guardar la evaluación?',
-          )
-          if (!confirmar) {
-            obsSaveBtn.disabled = false
-            obsSaveBtn.textContent = 'Guardar observación'
-            return
-          }
-        }
-
-        // Warn about missing students
-        if (resultado.missing.length > 0) {
-          const proceed = confirm(
-            `Faltan ${resultado.missing.length} alumno(s) sin evaluar:\n${resultado.missing.join(', ')}\n\n¿Guardar de todas formas?`,
-          )
-          if (!proceed) {
-            obsSaveBtn.disabled = false
-            obsSaveBtn.textContent = 'Guardar observación'
-            return
-          }
-        }
-
-        // Save evaluations to indicator_attempts
-        if (resultado.evaluaciones.length > 0) {
-          const { error } = await saveEvaluaciones(
-            sesionId,
-            indicadorActivo.id,
-            resultado.evaluaciones,
-            maestro.id,
-            presentes,
-          )
-          if (error) throw error
-        }
-
-        // Save observation record — guarda texto original + DSL de IA + texto mejorado para PDF
-        const parsed = { indicador_id: indicadorActivo.id, evaluaciones: resultado.evaluaciones }
-        await saveObservation(
-          sesionId,
-          maestro.id,
-          raw,
-          parsed,
-          resultado.dslGenerado || null,
-          resultado.textoMejorado || null,
-        )
-
-        // Auto-save !STATE tokens from DSL if present — fire-and-forget, does not block the save flow
-        const _parsedForProgress = parseDSL(raw)
-        if (_parsedForProgress.estados && _parsedForProgress.estados.length > 0) {
-          const _alumnosConId = alumnos.map((a) => ({
-            id: a.id,
-            nombre: a.nombre_completo || a.nombre || '',
-            nombreCorto: (a.nombre_completo || a.nombre || '').split(' ')[0],
-          }))
-          saveProgressFromDSL({
-            sesionId,
-            claseId,
-            maestroId: maestro.id,
-            fechaHoy,
-            dslText: raw,
-            alumnos: _alumnosConId,
-          })
-            .then(({ saved, errors }) => {
-              if (errors.length) console.warn('[Progress DSL] Errores:', errors)
-              if (saved.length) _showProgressFeedback(saved, editorContainer)
-            })
-            .catch((err) => console.warn('[Progress DSL] Error:', err.message))
-        }
-
-        // Fase C: Pipeline de Promoción — Promover notas individuales a la ficha histórica del alumno
-        const promo = await promocionarObservacionesAlumnos(
-          sesionId,
-          claseId,
-          maestro.id,
-          resultado.evaluaciones,
-          clase.nombre || 'Clase',
-          presentes,
-        )
-
-        if (!promo.success) {
-          console.warn('[Fase C] Fallo parcial en promoción:', promo.error)
-          // No bloqueamos el flujo principal pero informamos por consola
-        }
-
-        // Refresh route tree semaphore
-        if (routeTreeBar) await routeTreeBar.refresh()
-
-        // Clear editor
-        editor.setValue('')
-        dslContent = ''
-
-        // Toast profesional con feedback extendido
-        const toast = document.createElement('div')
-        toast.innerHTML = `
-          <div style="display:flex; flex-direction:column; align-items:center; gap:4px;">
-            <span>✅ Observación guardada exitosamente (${resultado.evaluaciones.length} eval.)</span>
-            <span style="font-size:0.85em; opacity:0.9;">Tema detectado: <b>${indicadorActivo.nombre}</b></span>
-          </div>
-        `
-        toast.style.cssText =
-          'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:var(--pm-surface, #1e1e1e);color:#fff;padding:12px 24px;border-radius:12px;z-index:10000;font-size:14px;font-weight:600;box-shadow:0 8px 24px rgba(0,0,0,0.3); border: 1px solid var(--apple-success, #22c55e);'
-        document.body.appendChild(toast)
-        setTimeout(() => toast.remove(), 4500)
-
-        // Update class event status and check level completion
-        if (activeClassEventId) {
-          try {
-            await updateClassEventStatus(activeClassEventId, 'completed')
-          } catch (ceErr) {
-            console.warn('[asistencia] Error updating class event status:', ceErr)
-          }
-
-          if (activeLevel) {
-            try {
-              const { academicService } =
-                await import('../../modules/academic-routes/services/academicService.js')
-              const presentes = alumnos.filter((a) => estado[a.id] === 'P')
-              for (const student of presentes) {
-                // status: 'approved' means level is completed
-                const levelResult = await academicService.checkLevelCompletion(
-                  student.id,
-                  activeLevel,
-                )
-                if (levelResult && levelResult.status === 'approved') {
-                  const modal = createLevelCompletionModal({
-                    studentId: student.id,
-                    levelId: activeLevel,
-                    onConfirm: () => {
-                      console.log('[asistencia] Level completion confirmed for', student.id)
-                    },
-                  })
-                  container.querySelector('.pm-asist-root').appendChild(modal.el || modal)
-                }
-              }
-            } catch (lcErr) {
-              console.warn('[asistencia] Error checking level completion:', lcErr)
-            }
-          }
-        }
-
-        // Sincronizar a tabla `progresos` para que el Resumen Pedagógico funcione
-        if (resultado.evaluaciones.length > 0 && claseId && indicadorActivo?.nombre) {
-          const { saved, error } = await saveProgressFromEvaluaciones({
-            sesionId,
-            claseId,
-            maestroId: maestro.id,
-            fechaHoy,
-            contenido: indicadorActivo.nombre,
-            evaluaciones: resultado.evaluaciones,
-          })
-          if (error) {
-            console.warn('[asistencia] Error al sincronizar progresos:', error)
-          }
-        }
-
-        // Motor de Logros: recalcular progreso después de guardar evaluaciones
-        if (sesionId) {
-          const { academicService } =
-            await import('../../modules/academic-routes/services/academicService.js')
-          const { createAchievementsSummaryModal } =
-            await import('../components/AchievementsSummaryModal.js')
-
-          const achievements = await academicService.processSessionClosure(sesionId)
-
-          if (achievements && achievements.length > 0) {
-            await createAchievementsSummaryModal(container, achievements)
-          }
-        }
-
-        obsSaveBtn.textContent = '¡Guardado!'
-        setTimeout(() => {
-          obsSaveBtn.textContent = 'Guardar observación'
-          obsSaveBtn.disabled = false
-        }, 2000)
-      } catch (err) {
-        console.error('[asistencia] Error saving observation:', err)
-        AppToast.error('Error al guardar: ' + (err.message || err))
-        obsSaveBtn.disabled = false
-        obsSaveBtn.textContent = 'Guardar observación'
-      }
-    }
-  }
+  createObservationSaveButton(container, {
+    rutaId,
+    sesionId,
+    claseId,
+    maestro,
+    fechaHoy,
+    alumnos,
+    estado,
+    planificationCard,
+    editorContainer,
+    getEditorValue: () => editor.getValue(),
+    setEditorValue: (v) => editor.setValue(v),
+    onDslContentClear: () => { dslContent = '' },
+    activeClassEventId,
+    activeLevel,
+    claseNombre: clase?.nombre || 'Clase',
+    onAppendModal: (el) => {
+      const root = container.querySelector('.pm-asist-root')
+      if (root) root.appendChild(el)
+    },
+  })
 
   // === Student Progress Panel tracking ===
-  let _activeProgressPanel = null
-
-  // === Render Lista con Animación ===
-  const listEl = container.querySelector('#pm-alumnos-list')
-
-  function renderLista(animateId = null) {
-    const sorted = _sortAlumnos(alumnos, estado)
-
-    // Si hay un ID para animar, capturamos su posición previa
-    let prevRect = null
-    if (animateId) {
-      const el = listEl.querySelector(`[data-id="${animateId}"]`)
-      if (el) prevRect = el.getBoundingClientRect()
-    }
-
-    listEl.innerHTML = sorted.map((a) => _renderAlumnoItem(a, estado[a.id])).join('')
-
-    if (animateId && prevRect) {
-      const newEl = listEl.querySelector(`[data-id="${animateId}"]`)
-      const newRect = newEl.getBoundingClientRect()
-      const deltaY = prevRect.top - newRect.top
-
-      newEl.animate(
-        [
-          { transform: `translateY(${deltaY}px)`, opacity: 0.7 },
-          { transform: 'translateY(0)', opacity: 1 },
-        ],
-        {
-          duration: 300,
-          easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
-        },
-      )
-    }
-  }
-
-  function _renderAlumnoItem(a, est) {
-    const colorClass = est ? `estado-${est.toLowerCase()}` : ''
-    return `
-      <div class="pm-asist-item ${colorClass}" data-id="${a.id}">
-        <div class="pm-asist-avatar">${a.nombre_completo[0]}</div>
-        <div class="pm-asist-info">
-          <span class="pm-asist-nombre">${escHTML(a.nombre_completo)}</span>
-          <span class="pm-asist-instrumento">${escHTML(a.instrumento_principal || '—')}</span>
-        </div>
-        <div class="pm-asist-btns">
-          <button class="pm-asist-btn ${est === 'P' ? 'active-p' : ''}" data-action="P" data-id="${a.id}">P</button>
-          <button class="pm-asist-btn ${est === 'J' ? 'active-j' : ''}" data-action="J" data-id="${a.id}">J</button>
-          <button class="pm-asist-btn ${est === 'A' ? 'active-a' : ''}" data-action="A" data-id="${a.id}">A</button>
-        </div>
-    </div>
-    `
-  }
-
-  listEl.onclick = async (e) => {
-    const btn = e.target.closest('.pm-asist-btn')
-    const nameLabel = e.target.closest('.pm-asist-nombre')
-
-    if (nameLabel) {
-      const studentId = nameLabel.closest('.pm-asist-item').dataset.id
-      const student = alumnos.find((a) => a.id === studentId)
-
-      // If route is available, open progress panel instead of evaluation drawer
-      if (rutaId) {
-        if (_activeProgressPanel) _activeProgressPanel.destroy()
-        _activeProgressPanel = createStudentProgressPanel({
-          alumno: student,
-          rutaId,
-          sessionId: sesionId,
-          claseId: claseId,
-          fecha: fechaHoy,
-          horaInicio: horario?.hora_inicio || null,
-        })
-        _activeProgressPanel.open()
-        _cleanups.push(() => {
-          if (_activeProgressPanel) _activeProgressPanel.destroy()
-        })
-        return
-      }
-
-      // Fallback: evaluation drawer when no route
-      let studentSnapshots = snapshots.filter((s) => s.student_id === studentId)
-
-      // LAZY SNAPSHOT CREATION: Si el alumno no tiene snapshot, intentar crearlo al vuelo
-      if (studentSnapshots.length === 0) {
-        try {
-          const { academicService } =
-            await import('../../modules/academic-routes/services/academicService.js')
-          const newSnaps = await academicService.createSnapshotForStudent(
-            sesionId,
-            studentId,
-            fechaHoy,
-          )
-          if (newSnaps) {
-            studentSnapshots = newSnaps
-            snapshots.push(...newSnaps)
-          } else {
-            console.warn(`No se encontró planificación activa para el alumno ${studentId}`)
-          }
-        } catch (err) {
-          console.error('Error creando snapshot on-demand:', err)
-        }
-      }
-
+  // === Student List ===
+  const studentList = createStudentList(container, {
+    alumnos,
+    estado,
+    rutaId,
+    sesionId,
+    fechaHoy,
+    snapshots,
+    justificaciones,
+    obtenerJustificacion,
+    onEstadoChange: (id, newEstado) => {
+      estado[id] = newEstado
+    },
+    onOpenProgressPanel: (alumno) => {
+      if (_activeStudentPanel) _activeStudentPanel.destroy()
+      _activeStudentPanel = createStudentProgressPanel({
+        alumno,
+        rutaId,
+        sessionId: sesionId,
+        claseId,
+        fecha: fechaHoy,
+        horaInicio: horario?.hora_inicio || null,
+      })
+      _activeStudentPanel.open()
+      _cleanups.push(() => { if (_activeStudentPanel) _activeStudentPanel.destroy() })
+    },
+    onOpenEvaluationDrawer: (student, studentSnapshots) => {
       createEvaluationDrawer(container, {
         student,
         sessionId: sesionId,
         teacherId: maestro.id,
         snapshots: studentSnapshots,
       })
-      return
-    }
-
-    if (!btn) return
-    const { id, action } = btn.dataset
-
-    // Haptic feedback
-    if (window.navigator.vibrate) window.navigator.vibrate(10)
-
-    // === Interceptor para estado "J" (Justificado): abrir modal de justificación ===
-    if (action === 'J') {
-      const alumno = alumnos.find((a) => a.id === id)
-      if (!alumno) return
-
-      // Si ya está J → abrir modal en modo edición (ver/modificar motivo guardado)
-      // Si no está J → marcar J y abrir modal para registrar motivo
-      if (estado[id] === 'J') {
-        // Modo edición: pre-cargar datos guardados
-        let justifExistente = justificaciones[id] || null
-        if (!justifExistente && sesionId) {
-          justifExistente = await obtenerJustificacion(sesionId, id)
-          if (justifExistente) justificaciones[id] = justifExistente
-        }
-        _justifModal.open(alumno, justifExistente, null)
-        announce(`Editando justificación de ${alumno.nombre_completo}.`)
-      } else {
-        // Marcar J ANTES de abrir modal para que el botón quede visible
-        estado[id] = 'J'
-        renderLista(id)
-        _updateProgress()
-        try {
-          await _autoSave(true)
-        } catch (_e) {
-          console.warn('[asistencia] autoSave error on mark J:', _e)
-        }
-
-        // Modo creación: modal vacío (sin datos previos)
-        _justifModal.open(alumno, null, null)
-        announce(`Justificación marcada para ${alumno.nombre_completo}.`)
-      }
-      return
-    }
-
-    estado[id] = estado[id] === action ? null : action
-    renderLista(id)
-    _updateProgress()
-
-    // Announce current attendance count
-    const presentes = Object.values(estado).filter((v) => v === 'P').length
-    const ausentes = Object.values(estado).filter((v) => v === 'A').length
-    const justificados = Object.values(estado).filter((v) => v === 'J').length
-    announce(
-      `Asistencia actualizada. ${presentes} presentes, ${ausentes} ausentes, ${justificados} justificados.`,
-    )
-
-    // Guardado inmediato para evitar race conditions al navegar
-    try {
-      await _autoSave(true)
-    } catch (_e) {
-      console.warn('[asistencia] autoSave error on mark:', _e)
-    }
-  }
+    },
+    onOpenJustifModal: (alumno, justifExistente, prevEstado) => {
+      _justifModal.open(alumno, justifExistente, prevEstado)
+    },
+    onAutoSave: (immediate) => _autoSave(immediate),
+    onAnnounce: (msg) => announce(msg),
+    onUpdateSnapshots: (newSnaps) => { snapshots.push(...newSnaps) },
+  })
+  _cleanups.push(() => studentList.destroy())
+  let _activeStudentPanel = null
 
   // === Sync & Helpers ===
   function _updateProgress() {
@@ -2595,8 +1765,8 @@ function _renderVista(container, ctx) {
             const subject = encodeURIComponent(
               `Reporte de Clase - ${clase?.nombre || ''} - ${fechaHoy}`,
             )
-            const bodyText = _generarReporteTexto(asistenciaData, dslContent, alumnos, clase)
-            _abrirEnlaceConLimite(`mailto:?subject=${subject}&body=`, bodyText, 1800)
+            const bodyText = generarReporteTexto(asistenciaData, dslContent, alumnos, clase, fechaHoy)
+            abrirEnlaceConLimite(`mailto:?subject=${subject}&body=`, bodyText, 1800)
           }
 
         if (whatsBtn)
@@ -2607,8 +1777,8 @@ function _renderVista(container, ctx) {
                 alumno_id: a.id,
                 estado: estado[a.id],
               }))
-            const bodyText = _generarReporteTexto(asistenciaData, dslContent, alumnos, clase)
-            _abrirEnlaceConLimite('https://wa.me/?text=', bodyText, 1600)
+            const bodyText = generarReporteTexto(asistenciaData, dslContent, alumnos, clase, fechaHoy)
+            abrirEnlaceConLimite('https://wa.me/?text=', bodyText, 1600)
           }
 
         if (volverHoyBtn)
@@ -2696,261 +1866,18 @@ function _renderVista(container, ctx) {
     }) // end _saveMutex.run
   }
 
-  function _inferirTipoClase(clase) {
-    const nombre = (clase?.nombre || '').toLowerCase()
-    const instrumento = (clase?.instrumento || '').toLowerCase()
-    if (/orquesta|ensamble|ensemble|coro|ensayo/.test(nombre)) return 'ensayo_general'
-    if (/teor[ií]a|solfeo|lenguaje\s+musical/.test(nombre)) return 'teoria'
-    if (instrumento) return 'instrumento'
-    return 'instrumento'
-  }
-
-  function _showProgressFeedback(saved, editorContainer) {
-    if (!saved || saved.length === 0) return
-
-    // Remove any existing badge
-    editorContainer.parentNode
-      .querySelectorAll('.pm-progress-feedback')
-      .forEach((el) => el.remove())
-
-    const names = [...new Set(saved.slice(0, 3).map((s) => s.contenido || 'progreso'))]
-    const label = names.join(' · ') + (saved.length > 3 ? ` y ${saved.length - 3} más` : '')
-
-    const badge = document.createElement('div')
-    badge.className = 'pm-progress-feedback'
-    badge.innerHTML = `<i class="bi bi-check-circle-fill"></i> <span>${saved.length} registro(s) guardados — ${label}</span>`
-    editorContainer.parentNode.insertBefore(badge, editorContainer.nextSibling)
-
-    setTimeout(() => badge.remove(), 4200)
-  }
-
-  // === Helper functions (definidas aquí para evitar TDZ con let) ===
-  function _resetFooter(container, originalBtn) {
-    const footer = container.querySelector('.pm-asist-footer')
-    footer.innerHTML = `
-      <button class="pm-btn pm-btn-primary" id="btn-guardar" style="width:100%; font-weight:700;">
-        Guardar sesión
-      </button>
-    `
-    footer.querySelector('#btn-guardar').onclick = originalBtn.onclick
-    container.querySelector('#btn-guardar').style.display = ''
-    container.querySelector('#btn-guardar').textContent = 'Guardar sesión'
-    container.querySelector('#btn-guardar').style.background = ''
-  }
-
-  function _generarReporteTexto(asistencia, contenido, alumnos, clase) {
-    if (!clase) return 'No hay datos de clase disponibles.'
-
-    const presentes = (asistencia || []).filter((a) => a.estado === 'P').length
-    const ausentes = (asistencia || []).filter((a) => a.estado === 'A').length
-    const justificados = (asistencia || []).filter((a) => a.estado === 'J').length
-
-    let texto = `Reporte de Clase - ${clase.nombre || 'Sin nombre'}\n`
-    texto += `Fecha: ${fechaHoy || ''}\n`
-    texto += `Instrumento: ${clase.instrumento || 'N/A'}\n\n`
-    texto += `RESUMEN DE ASISTENCIA\n`
-    texto += `Presentes: ${presentes} | Ausentes: ${ausentes} | Justificados: ${justificados}\n\n`
-
-    if (contenido && contenido.trim()) {
-      texto += `CONTENIDO DE LA CLASE:\n${contenido}\n\n`
-    }
-
-    texto += `DETALLE DE ALUMNOS:\n`
-    ;(asistencia || []).forEach((a) => {
-      const alum = (alumnos || []).find((al) => al.id === a.alumno_id)
-      const nombre = alum?.nombre_completo || 'Alumno'
-      const estadoTexto =
-        a.estado === 'P' ? 'Presente' : a.estado === 'A' ? 'Ausente' : 'Justificado'
-      texto += `- ${nombre}: ${estadoTexto}\n`
-    })
-
-    return texto
-  }
-
-  function _abrirEnlaceConLimite(url, textoPlano, maxChars = 1800) {
-    if (textoPlano.length > maxChars) {
-      const descripcion =
-        textoPlano.slice(0, maxChars) +
-        '…\n\n[Texto truncado — el reporte completo excede el límite de caracteres]'
-      AppToast.warn(
-        `El texto se truncó (${textoPlano.length} caracteres, máximo ${maxChars}). Usá la opción PDF para ver el reporte completo.`,
-      )
-      window.open(url + encodeURIComponent(descripcion), '_blank')
-    } else {
-      window.open(url + encodeURIComponent(textoPlano), '_blank')
-    }
-  }
-
-  container.querySelector('#pm-asist-back').onclick = () => {
-    tour.destroy()
-    try {
-      _justifModal.close()
-    } catch (_) {}
-    _cleanups.forEach((fn) => {
-      try {
-        fn()
-      } catch (_) {}
-    })
-    navigateTo('hoy')
-  }
-
   // === Bulk Actions Logic ===
-  container.querySelector('#btn-bulk-p').onclick = async () => {
-    alumnos.forEach((a) => {
-      estado[a.id] = 'P'
-    })
-    renderLista()
-    _updateProgress()
-    try {
-      await _autoSave(true)
-    } catch (_e) {
-      console.warn('[asistencia] autoSave error on bulk P:', _e)
-    }
-    announce(`Todos los ${alumnos.length} alumnos marcados como presentes.`)
-  }
-
-  container.querySelector('#btn-bulk-a').onclick = async () => {
-    alumnos.forEach((a) => {
-      estado[a.id] = 'A'
-    })
-    renderLista()
-    _updateProgress()
-    try {
-      await _autoSave(true)
-    } catch (_e) {
-      console.warn('[asistencia] autoSave error on bulk A:', _e)
-    }
-    announce(`Todos los ${alumnos.length} alumnos marcados como ausentes.`)
-  }
-
-  renderLista()
-
-  /**
-   * Obtiene la lista de nombres de temas ya dados en sesiones anteriores de esta clase.
-   * Escanea el contenido DSL buscando el patrón [Nombre del Tema].
-   */
-  async function _getCompletedTopics(claseId) {
-    try {
-      const { data: sesiones } = await supabase
-        .from('sesiones_clase')
-        .select('contenido')
-        .eq('clase_id', claseId)
-        .not('contenido', 'is', null)
-
-      if (!sesiones) return []
-
-      const topics = new Set()
-      // Regex para encontrar [Texto]
-      const regex = /\[(.*?)\]/g
-
-      sesiones.forEach((s) => {
-        if (!s.contenido) return
-        let match
-        while ((match = regex.exec(s.contenido)) !== null) {
-          if (match[1]) topics.add(match[1].trim())
-        }
-      })
-
-      return Array.from(topics)
-    } catch (err) {
-      console.warn('[AsistenciaView] Error calculando progreso histórico:', err)
-      return []
-    }
-  }
-
-  /**
-   * Intenta resolver el indicador (tema) activo analizando el texto.
-   * Busca el patrón [Texto] y hace un 'fuzzy match' inteligente con la jerarquía.
-   */
-  async function _resolveActiveIndicador(text) {
-    if (!text || !activePlanificacionId) return null
-
-    // Extraer texto entre corchetes
-    const match = text.match(/\[(.*?)\]/)
-    if (!match || !match[1]) return null
-
-    const rawTema = match[1].trim().toLowerCase()
-
-    // Función para limpiar stop words y extraer keywords
-    const getKeywords = (str) => {
-      const stopWords = [
-        'se',
-        'hizo',
-        'la',
-        'el',
-        'los',
-        'las',
-        'un',
-        'una',
-        'de',
-        'del',
-        'en',
-        'con',
-        'por',
-        'para',
-        'y',
-        'o',
-        'tema',
-        'indicador',
-      ]
-      return str
-        .toLowerCase()
-        .replace(/[^\w\sáéíóúñ]/g, '') // Quitar puntuación
-        .split(/\s+/)
-        .filter((w) => w.length > 2 && !stopWords.includes(w))
-    }
-
-    const targetKeywords = getKeywords(rawTema)
-    if (targetKeywords.length === 0) return null
-
-    try {
-      const hierarchy = await RouteConfigAdapter.getRouteHierarchy(activePlanificacionId)
-
-      let bestMatch = null
-      let maxScore = 0
-
-      // Buscar el mejor match en toda la jerarquía
-      for (const nivel of hierarchy) {
-        for (const tema of nivel.plan_temas || []) {
-          for (const obj of tema.plan_objetivos || []) {
-            const objKeywords = getKeywords(obj.nombre)
-
-            // Calcular score: cuántas targetKeywords están en objKeywords
-            let score = 0
-            for (const tk of targetKeywords) {
-              if (objKeywords.some((ok) => ok.includes(tk) || tk.includes(ok))) {
-                score++
-              }
-            }
-
-            // Bonificación por coincidencia exacta de la cadena completa (sin stop words)
-            if (obj.nombre.toLowerCase().includes(rawTema)) {
-              score += 5
-            }
-
-            // Normalizar score por longitud para priorizar matches más específicos
-            const finalScore = score / (objKeywords.length || 1)
-
-            if (score > 0 && finalScore > maxScore) {
-              maxScore = finalScore
-              bestMatch = { id: obj.id, nombre: obj.nombre }
-            }
-          }
-        }
-      }
-
-      if (bestMatch) {
-        console.log(
-          `[asistencia] Indicador auto-resuelto con fuzzy match: '${bestMatch.nombre}' (Score: ${maxScore.toFixed(2)})`,
-        )
-        return bestMatch
-      }
-    } catch (err) {
-      console.warn('[asistencia] Error en auto-resolución de indicador:', err)
-    }
-
-    return null
-  }
+  const _bulkActions = createBulkActions(container, {
+    onMarkAll: async (tipo) => {
+      alumnos.forEach((a) => { estado[a.id] = tipo })
+      studentList.render()
+      _updateProgress()
+      try { await _autoSave(true) } catch (_e) { console.warn(`[asistencia] autoSave error on bulk ${tipo}:`, _e) }
+      announce(`Todos los ${alumnos.length} alumnos marcados como ${tipo === 'P' ? 'presentes' : 'ausentes'}.`)
+    },
+  })
+  _cleanups.push(() => _bulkActions.destroy())
+  studentList.render()
 
   // === TOUR INTERACTIVO (delegado a AsistenciaTour) ===
   const tour = new AsistenciaTour(container)
@@ -2973,14 +1900,4 @@ function _renderVista(container, ctx) {
       } catch (_) {}
     })
   }
-}
-
-function _sortAlumnos(alumnos, estado) {
-  return [...alumnos].sort((a, b) => {
-    const aM = estado[a.id] !== null
-    const bM = estado[b.id] !== null
-    if (!aM && bM) return -1
-    if (aM && !bM) return 1
-    return 0
-  })
 }

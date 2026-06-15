@@ -35,11 +35,11 @@ describe('asistenciaView - Toast Replacement', () => {
     expect(content).not.toContain("alert('Error al estructurar con IA:")
   })
 
-  it('should replace alert for "Error al guardar la planificación" with AppToast.error', async () => {
+  it('should replace alert for "Error al guardar la planificación" with AppToast.error (in PlanificationCard.js)', async () => {
     const fs = await import('fs')
     const path = await import('path')
 
-    const filePath = path.resolve('./src/portal-maestros/views/asistenciaView.js')
+    const filePath = path.resolve('./src/portal-maestros/components/attendance/PlanificationCard.js')
     const content = fs.readFileSync(filePath, 'utf-8')
 
     expect(content).toContain("AppToast.error('Error al guardar la planificación: ' + (err.message || err))")

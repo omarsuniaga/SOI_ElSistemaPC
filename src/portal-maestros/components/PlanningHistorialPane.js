@@ -1,19 +1,14 @@
 /**
  * PlanningHistorialPane.js
  * Renders the "Historial" tab in the Plan view.
- * Shows merged observaciones + indicadores, with a "Promover" action to
- * register sin_planificar items into the published route.
+ * Shows observaciones with a "Promover" action to register items into bitácora (árbol A).
  */
 
 import { getHistorial } from '../../modules/planning/services/historialService.js'
-import {
-  getRouteVersionHierarchy,
-  createIndicatorObservation,
-} from '../../modules/planning/services/planningService.js'
-import { addNode, getOrCreateDraftVersion } from '../../modules/planning/services/curriculumAdminService.js'
 import { escHTML } from '../utils/portalUtils.js'
-import { AppModal } from '../../shared/components/AppModal.js'
 import { AppToast } from '../../shared/components/AppToast.js'
+import { getContenidosDeClase, getAlumnosByClase } from '../../modules/bitacora/index.js'
+import { renderRegistrarContenidoModal } from '../../modules/bitacora/components/RegistrarContenidoModal.js'
 
 const STYLE = `
 <style>
@@ -28,17 +23,9 @@ const STYLE = `
     border: 1px solid var(--pm-border, #e2e8f0);
     border-radius: 10px;
   }
-  .pm-ht-filters select,
   .pm-ht-filters label {
     font-size: 0.88rem;
     color: var(--pm-text, #1e293b);
-  }
-  .pm-ht-filters select {
-    padding: 0.35rem 0.6rem;
-    border: 1px solid var(--pm-border, #e2e8f0);
-    border-radius: 7px;
-    background: var(--pm-surface, #fff);
-    cursor: pointer;
   }
   .pm-ht-filters label {
     display: flex;
@@ -125,105 +112,6 @@ const STYLE = `
     font-size: 0.92rem;
   }
 
-  .pm-ht-modal-excerpt {
-    background: var(--pm-surface-2, #f8f9fa);
-    border-left: 3px solid var(--pm-border, #e2e8f0);
-    border-radius: 0 6px 6px 0;
-    padding: 0.5rem 0.75rem;
-    font-size: 0.88rem;
-    color: var(--pm-text, #1e293b);
-    margin-bottom: 1rem;
-    line-height: 1.5;
-  }
-  .pm-ht-modal-section {
-    margin-bottom: 1rem;
-  }
-  .pm-ht-modal-label {
-    display: block;
-    font-size: 0.82rem;
-    font-weight: 600;
-    margin-bottom: 0.35rem;
-    color: var(--pm-text-muted, #64748b);
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-  }
-  .pm-ht-modal-search {
-    width: 100%;
-    padding: 0.5rem 0.7rem;
-    border: 1px solid var(--pm-border, #e2e8f0);
-    border-radius: 8px;
-    font-size: 0.9rem;
-    margin-bottom: 0.5rem;
-    box-sizing: border-box;
-  }
-  .pm-ht-node-list {
-    max-height: 200px;
-    overflow-y: auto;
-    border: 1px solid var(--pm-border, #e2e8f0);
-    border-radius: 8px;
-    padding: 0.35rem 0;
-  }
-  .pm-ht-node-item {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.4rem 0.75rem;
-    cursor: pointer;
-    font-size: 0.88rem;
-  }
-  .pm-ht-node-item:hover {
-    background: var(--pm-surface-2, #f8f9fa);
-  }
-  .pm-ht-node-item input[type=radio] {
-    cursor: pointer;
-  }
-  .pm-ht-divider {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    margin: 0.9rem 0;
-    color: var(--pm-text-muted, #64748b);
-    font-size: 0.82rem;
-  }
-  .pm-ht-divider::before,
-  .pm-ht-divider::after {
-    content: '';
-    flex: 1;
-    border-top: 1px solid var(--pm-border, #e2e8f0);
-  }
-  .pm-ht-calificacion {
-    display: flex;
-    gap: 0.5rem;
-    flex-wrap: wrap;
-  }
-  .pm-ht-cal-label {
-    display: flex;
-    align-items: center;
-    gap: 0.3rem;
-    padding: 0.3rem 0.65rem;
-    border: 1px solid var(--pm-border, #e2e8f0);
-    border-radius: 20px;
-    cursor: pointer;
-    font-size: 0.85rem;
-  }
-  .pm-ht-cal-label:hover {
-    background: var(--pm-surface-2, #f8f9fa);
-  }
-  .pm-ht-modal-error {
-    color: #dc2626;
-    font-size: 0.83rem;
-    margin-top: 0.5rem;
-    display: none;
-  }
-  .pm-ht-new-node-input {
-    width: 100%;
-    padding: 0.5rem 0.7rem;
-    border: 1px solid var(--pm-border, #e2e8f0);
-    border-radius: 8px;
-    font-size: 0.9rem;
-    box-sizing: border-box;
-  }
-
   @media (max-width: 640px) {
     .pm-ht-filters {
       gap: 0.5rem;
@@ -260,7 +148,6 @@ export async function renderPlanningHistorialPane(
   // State
   /** @type {import('../../modules/planning/services/historialService.js').HistorialItem[]} */
   let allItems = []
-  let filterType = 'todos' // 'todos' | 'observacion' | 'indicador'
   let filterSinPlanificar = false
 
   container.innerHTML = STYLE + '<div class="pm-ht-empty"><p>Cargando historial…</p></div>'
@@ -287,17 +174,10 @@ export async function renderPlanningHistorialPane(
         ? '<div class="pm-ht-empty"><p>No hay registros que coincidan con los filtros.</p></div>'
         : filtered.map((item) => _cardHtml(item)).join('')
 
-    // Keep existing style tag, only replace content below it
-    const existing = container.querySelector('style')
     container.innerHTML =
       STYLE +
       `
       <div class="pm-ht-filters">
-        <select id="pm-ht-tipo">
-          <option value="todos"${filterType === 'todos' ? ' selected' : ''}>Tipo: Todos</option>
-          <option value="observacion"${filterType === 'observacion' ? ' selected' : ''}>Solo observaciones</option>
-          <option value="indicador"${filterType === 'indicador' ? ' selected' : ''}>Solo indicadores</option>
-        </select>
         <label>
           <input type="checkbox" id="pm-ht-sinplan"${filterSinPlanificar ? ' checked' : ''} />
           Solo sin planificar
@@ -311,7 +191,6 @@ export async function renderPlanningHistorialPane(
 
   function _applyFilters(items) {
     return items.filter((item) => {
-      if (filterType !== 'todos' && item.type !== filterType) return false
       if (filterSinPlanificar && item.estado !== 'sin_planificar') return false
       return true
     })
@@ -320,45 +199,22 @@ export async function renderPlanningHistorialPane(
   function _cardHtml(item) {
     const date = _formatDate(item.fecha)
     const estadoClass = item.estado === 'sin_planificar' ? 'sin-planificar' : 'registrado'
-
-    if (item.type === 'observacion') {
-      const raw = item.contenido_raw || item.contenido_ia_dsl || ''
-      const excerpt = raw.slice(0, 120) + (raw.length > 120 ? '…' : '')
-      return `
-        <div class="pm-ht-card ${estadoClass}" data-id="${escHTML(item.id)}">
-          <div class="pm-ht-card-header">📅 ${escHTML(date)} · ${escHTML(item.clase_nombre)}</div>
-          <div class="pm-ht-card-body">${excerpt ? `"${escHTML(excerpt)}"` : '<em>Sin contenido</em>'}</div>
-          <div class="pm-ht-card-footer">
-            <span class="pm-ht-estado ${estadoClass}">
-              ${item.estado === 'sin_planificar' ? '○ Sin planificar' : '✅ Registrado en ruta'}
-            </span>
-            ${
-              item.estado === 'sin_planificar'
-                ? `<button class="pm-ht-btn-promover" data-action="promover" data-id="${escHTML(item.id)}">+ Promover</button>`
-                : ''
-            }
-          </div>
-        </div>
-      `
-    }
-
-    // indicador
-    const calEmoji = { bien: '🟢', regular: '🟡', mal: '🔴' }[item.calificacion ?? ''] ?? ''
-    const calLabel = { bien: 'Bien', regular: 'Regular', mal: 'Mal' }[item.calificacion ?? ''] ?? item.calificacion ?? ''
-    const desc = item.descripcion ? item.descripcion.slice(0, 100) + (item.descripcion.length > 100 ? '…' : '') : ''
+    const raw = item.contenido_raw || item.contenido_ia_dsl || ''
+    const excerpt = raw.slice(0, 120) + (raw.length > 120 ? '…' : '')
 
     return `
       <div class="pm-ht-card ${estadoClass}" data-id="${escHTML(item.id)}">
-        <div class="pm-ht-card-header">
-          📅 ${escHTML(date)} · ${escHTML(item.clase_nombre)}${item.clase_instrumento ? ` · 🎻 ${escHTML(item.clase_instrumento)}` : ''}
-          ${item.node_name ? ` · <strong>${escHTML(item.node_name)}</strong>` : ''}
-        </div>
-        ${item.calificacion ? `<div class="pm-ht-card-body">Calificación: ${calEmoji} ${escHTML(calLabel)}</div>` : ''}
-        ${desc ? `<div class="pm-ht-card-body" style="font-size:0.85rem;color:var(--pm-text-muted);">${escHTML(desc)}</div>` : ''}
+        <div class="pm-ht-card-header">📅 ${escHTML(date)} · ${escHTML(item.clase_nombre)}</div>
+        <div class="pm-ht-card-body">${excerpt ? `"${escHTML(excerpt)}"` : '<em>Sin contenido</em>'}</div>
         <div class="pm-ht-card-footer">
           <span class="pm-ht-estado ${estadoClass}">
-            ${item.estado === 'sin_planificar' ? '○ Sin planificar' : '✅ Registrado en ruta'}
+            ${item.estado === 'sin_planificar' ? '○ Sin planificar' : '✅ Registrado en bitácora'}
           </span>
+          ${
+            item.estado === 'sin_planificar'
+              ? `<button class="pm-ht-btn-promover" data-action="promover" data-id="${escHTML(item.id)}">+ Promover</button>`
+              : ''
+          }
         </div>
       </div>
     `
@@ -369,10 +225,6 @@ export async function renderPlanningHistorialPane(
   // -------------------------------------------------------------------------
 
   function _wireFilters() {
-    container.querySelector('#pm-ht-tipo')?.addEventListener('change', (e) => {
-      filterType = e.target.value
-      _render()
-    })
     container.querySelector('#pm-ht-sinplan')?.addEventListener('change', (e) => {
       filterSinPlanificar = e.target.checked
       _render()
@@ -387,140 +239,111 @@ export async function renderPlanningHistorialPane(
   }
 
   // -------------------------------------------------------------------------
-  // Promover modal
+  // Promover modal — árbol A (bitácora)
   // -------------------------------------------------------------------------
 
+  let _promoverInFlight = false
+
   async function _openPromoverModal(item) {
-    if (!publishedRouteVersionId) {
-      AppToast.error('Seleccioná una clase con ruta publicada para promover este contenido.')
+    if (_promoverInFlight) return
+    _promoverInFlight = true
+
+    if (!claseId) {
+      AppToast.error('Seleccioná una clase para promover este contenido.')
+      _promoverInFlight = false
       return
     }
 
-    // Load hierarchy once
-    let blocks = []
+    let contenidos = []
+    let alumnos = []
     try {
-      blocks = await getRouteVersionHierarchy(publishedRouteVersionId)
+      ;[contenidos, alumnos] = await Promise.all([
+        getContenidosDeClase(claseId),
+        getAlumnosByClase(claseId),
+      ])
     } catch (err) {
-      console.error('[PlanningHistorialPane] Error loading hierarchy:', err)
-      AppToast.error('No se pudo cargar la ruta. Intentá de nuevo.')
+      console.error('[PlanningHistorialPane] Error loading bitácora data:', err)
+      AppToast.error('No se pudo cargar los datos de la bitácora. Intentá de nuevo.')
+      _promoverInFlight = false
       return
     }
 
-    /** @type {{ id: string, name: string }[]} */
-    const allNodes = blocks.flatMap((b) =>
-      (b.levels ?? []).flatMap((l) => (l.nodes ?? []).map((n) => ({ id: n.id, name: n.name ?? '' }))),
-    )
+    if (contenidos.length === 0) {
+      AppToast.error('Esta clase no tiene objetivos/contenidos registrados en la bitácora.')
+      return
+    }
+
+    // Build an overlay modal
+    const overlay = document.createElement('div')
+    overlay.style.cssText = `
+      position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.5);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 10000;
+    `
+
+    const panel = document.createElement('div')
+    panel.style.cssText = `
+      background: var(--pm-surface, #fff);
+      border-radius: 16px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      max-width: 560px;
+      width: 90%;
+      max-height: 90vh;
+      overflow-y: auto;
+      padding: 1.5rem;
+    `
 
     const raw = item.contenido_raw || item.contenido_ia_dsl || ''
     const excerpt = raw.slice(0, 150) + (raw.length > 150 ? '…' : '')
 
-    const bodyHtml = `
-      <div class="pm-ht-modal-excerpt">${excerpt ? escHTML(excerpt) : '<em>Sin contenido de texto</em>'}</div>
-
-      <div class="pm-ht-modal-section">
-        <span class="pm-ht-modal-label">¿Corresponde a un nodo existente?</span>
-        <input
-          type="text"
-          id="pm-ht-node-search"
-          class="pm-ht-modal-search"
-          placeholder="🔍 Buscar nodo…"
-        />
-        <div class="pm-ht-node-list" id="pm-ht-node-list">
-          ${_nodesListHtml(allNodes)}
-        </div>
+    panel.innerHTML = `
+      <h3 style="margin: 0 0 0.75rem 0; font-size: 1.1rem;">Registrar en bitácora</h3>
+      <div style="background: var(--pm-surface-2,#f8f9fa); border-left: 3px solid var(--pm-border,#e2e8f0);
+                  padding: 0.5rem 0.75rem; border-radius: 0 6px 6px 0; font-size: 0.88rem;
+                  margin-bottom: 1rem;">
+        ${excerpt ? escHTML(excerpt) : '<em>Sin contenido</em>'}
       </div>
-
-      <div class="pm-ht-modal-section">
-        <span class="pm-ht-modal-label">Calificación</span>
-        <div class="pm-ht-calificacion">
-          <label class="pm-ht-cal-label"><input type="radio" name="pm-ht-cal" value="bien" /> 🟢 Bien</label>
-          <label class="pm-ht-cal-label"><input type="radio" name="pm-ht-cal" value="regular" /> 🟡 Regular</label>
-          <label class="pm-ht-cal-label"><input type="radio" name="pm-ht-cal" value="mal" /> 🔴 Mal</label>
-        </div>
+      <label style="display:block; font-size:0.82rem; font-weight:600; margin-bottom:0.4rem; text-transform:uppercase; letter-spacing:0.04em; color:var(--pm-text-muted,#64748b);">
+        Objetivo / Contenido
+      </label>
+      <select id="pm-ht-promover-objetivo" style="width:100%; padding:0.5rem 0.7rem; border:1px solid var(--pm-border,#e2e8f0); border-radius:8px; font-size:0.9rem; margin-bottom:1rem; box-sizing:border-box;">
+        <option value="">Seleccioná un objetivo…</option>
+        ${contenidos.map((c) => `<option value="${escHTML(c.id)}">${escHTML(c.descripcion ?? c.nombre ?? c.id)}</option>`).join('')}
+      </select>
+      <div id="pm-ht-promover-modal-container"></div>
+      <div style="display:flex; justify-content:flex-end; margin-top:0.75rem;">
+        <button id="pm-ht-promover-cancel" style="padding:0.5rem 1.2rem; border:1px solid var(--pm-border,#e2e8f0); border-radius:8px; background:var(--pm-surface-2,#f8f9fa); cursor:pointer; font-weight:600;">
+          Cancelar
+        </button>
       </div>
-
-      <div class="pm-ht-divider">ó</div>
-
-      <div class="pm-ht-modal-section">
-        <span class="pm-ht-modal-label">+ Crear nuevo nodo en mi borrador</span>
-        <input
-          type="text"
-          id="pm-ht-new-node"
-          class="pm-ht-new-node-input"
-          placeholder="Nombre del nuevo nodo…"
-        />
-      </div>
-
-      <div class="pm-ht-modal-error" id="pm-ht-modal-error">Seleccioná un nodo existente o escribí un nombre para crear uno nuevo.</div>
     `
 
-    AppModal.open({
-      title: 'Registrar en la ruta',
-      size: 'md',
-      body: bodyHtml,
-      saveText: 'Guardar',
-      onSave: async (bodyEl) => {
-        // Resolve inputs from the modal body element
-        const searchInput = bodyEl.querySelector('#pm-ht-node-search')
-        const nodeListEl = bodyEl.querySelector('#pm-ht-node-list')
-        const newNodeInput = bodyEl.querySelector('#pm-ht-new-node')
-        const errorEl = bodyEl.querySelector('#pm-ht-modal-error')
-        const calRadio = bodyEl.querySelector('input[name="pm-ht-cal"]:checked')
+    overlay.appendChild(panel)
+    document.body.appendChild(overlay)
+    _promoverInFlight = false
 
-        const selectedNodeId = nodeListEl?.querySelector('input[type=radio]:checked')?.value ?? null
-        const newNodeName = newNodeInput?.value?.trim() ?? ''
-        const calificacion = calRadio?.value ?? null
+    const modalContainer = panel.querySelector('#pm-ht-promover-modal-container')
+    const objetivoSelect = panel.querySelector('#pm-ht-promover-objetivo')
 
-        // Wire up search filter (if not already done — modal may have re-rendered)
-        // (filtering is handled in onSave scope; for live filtering we use delegated event)
-
-        if (!selectedNodeId && !newNodeName) {
-          if (errorEl) errorEl.style.display = 'block'
-          return false // keep modal open
-        }
-        if (errorEl) errorEl.style.display = 'none'
-
-        try {
-          let nodeId = selectedNodeId
-          let routeVersionId = publishedRouteVersionId
-
-          if (!selectedNodeId && newNodeName) {
-            // Create a new node in the draft
-            const draftVersionId = await getOrCreateDraftVersion(publishedRouteVersionId)
-            routeVersionId = draftVersionId
-
-            // Use first available level from the published hierarchy
-            const firstLevel = blocks[0]?.levels?.[0]
-            if (!firstLevel) {
-              AppToast.error('La ruta no tiene niveles. Agregá un nivel desde la pestaña Gestionar.')
-              return false
-            }
-
-            const newNode = await addNode({
-              levelId: firstLevel.id,
-              routeVersionId: draftVersionId,
-              name: newNodeName,
-            })
-            nodeId = newNode?.id ?? newNode
-          }
-
-          await createIndicatorObservation({
-            maestroId,
-            routeVersionId,
-            nodeId,
-            claseId,
-            fecha: item.fecha,
-            descripcion: item.contenido_raw?.slice(0, 200) ?? null,
-            calificacion,
-            estudianteIds: [],
-            notasIndividuales: {},
-          })
-
-          // Update item in-place
+    function _renderInnerModal(objetivoId) {
+      const objetivo = contenidos.find((c) => c.id === objetivoId)
+      if (!objetivo) {
+        modalContainer.innerHTML = ''
+        return
+      }
+      renderRegistrarContenidoModal(modalContainer, {
+        claseId,
+        objetivoId,
+        objetivoDescripcion: objetivo.descripcion ?? objetivo.nombre ?? objetivoId,
+        alumnos,
+        prefillFecha: item.fecha || null,
+        prefillObservacion: raw.slice(0, 400) || null,
+        onSaved: () => {
+          // Mark item as registered
           const idx = allItems.findIndex((i) => i.id === item.id)
           if (idx !== -1) allItems[idx] = { ...allItems[idx], estado: 'registrado' }
 
-          // Update card in DOM without full reload
           const card = container.querySelector(`.pm-ht-card[data-id="${CSS.escape(item.id)}"]`)
           if (card) {
             card.classList.remove('sin-planificar')
@@ -528,51 +351,31 @@ export async function renderPlanningHistorialPane(
             const estadoEl = card.querySelector('.pm-ht-estado')
             if (estadoEl) {
               estadoEl.className = 'pm-ht-estado registrado'
-              estadoEl.textContent = '✅ Registrado en ruta'
+              estadoEl.textContent = '✅ Registrado en bitácora'
             }
-            const promoverBtn = card.querySelector('[data-action="promover"]')
-            promoverBtn?.remove()
+            card.querySelector('[data-action="promover"]')?.remove()
           }
 
-          AppToast.success('Contenido registrado en la ruta.')
+          overlay.remove()
+          AppToast.success('Contenido registrado en la bitácora.')
           onPromoted?.()
-          // return undefined → modal closes
-        } catch (err) {
-          console.error('[PlanningHistorialPane] Error promoviendo:', err)
-          AppToast.error('No se pudo registrar el contenido. Intentá de nuevo.')
-          return false
-        }
-      },
-    })
-
-    // Wire live search filter inside the modal (after modal is in DOM)
-    requestAnimationFrame(() => {
-      const searchInput = document.getElementById('pm-ht-node-search')
-      const nodeListEl = document.getElementById('pm-ht-node-list')
-      if (searchInput && nodeListEl) {
-        searchInput.addEventListener('input', () => {
-          const q = searchInput.value.toLowerCase()
-          const filtered = q ? allNodes.filter((n) => n.name.toLowerCase().includes(q)) : allNodes
-          nodeListEl.innerHTML = _nodesListHtml(filtered)
-        })
-      }
-    })
-  }
-
-  function _nodesListHtml(nodes) {
-    if (nodes.length === 0) {
-      return '<div style="padding:0.5rem 0.75rem; font-size:0.85rem; color:var(--pm-text-muted);">Sin resultados</div>'
+        },
+        onCancel: () => {
+          overlay.remove()
+        },
+      })
     }
-    return nodes
-      .map(
-        (n) => `
-        <label class="pm-ht-node-item">
-          <input type="radio" name="pm-ht-node" value="${escHTML(n.id)}" />
-          ${escHTML(n.name)}
-        </label>
-      `,
-      )
-      .join('')
+
+    objetivoSelect.addEventListener('change', () => {
+      _renderInnerModal(objetivoSelect.value)
+    })
+
+    panel.querySelector('#pm-ht-promover-cancel').addEventListener('click', () => {
+      overlay.remove()
+    })
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) overlay.remove()
+    })
   }
 
   // -------------------------------------------------------------------------

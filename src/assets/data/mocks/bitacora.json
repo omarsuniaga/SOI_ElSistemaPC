@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "alumnos": {
+    "clase-001": [
+      { "id": "alumno-001", "nombre_completo": "Ana García" },
+      { "id": "alumno-002", "nombre_completo": "Carlos López" },
+      { "id": "alumno-003", "nombre_completo": "María Torres" }
+    ]
+  },
+  "objetivos": [
+    { "id": "obj-001", "ruta_id": "ruta-001", "clase_id": "clase-001", "descripcion": "Postura y afinación básica", "orden": 1 },
+    { "id": "obj-002", "ruta_id": "ruta-001", "clase_id": "clase-001", "descripcion": "Lectura de notas en clave de Sol", "orden": 2 },
+    { "id": "obj-003", "ruta_id": "ruta-001", "clase_id": "clase-001", "descripcion": "Ritmo y subdivisión", "orden": 3 }
+  ],
+  "sesiones": [
+    {
+      "id": "ses-001",
+      "clase_id": "clase-001",
+      "objetivo_id": "obj-001",
+      "fecha": "2026-06-01",
+      "maestro_id": "maestro-001",
+      "notas": [
+        { "alumno_id": "alumno-001", "nota_cualitativa": "bien",    "observacion": null },
+        { "alumno_id": "alumno-002", "nota_cualitativa": "regular", "observacion": null },
+        { "alumno_id": "alumno-003", "nota_cualitativa": "mal",     "observacion": "Necesita refuerzo" }
+      ]
+    },
+    {
+      "id": "ses-002",
+      "clase_id": "clase-001",
+      "objetivo_id": "obj-001",
+      "fecha": "2026-06-08",
+      "maestro_id": "maestro-001",
+      "notas": [
+        { "alumno_id": "alumno-001", "nota_cualitativa": "bien",    "observacion": null },
+        { "alumno_id": "alumno-002", "nota_cualitativa": "bien",    "observacion": null },
+        { "alumno_id": "alumno-003", "nota_cualitativa": "regular", "observacion": null }
+      ]
+    }
+  ]
+}

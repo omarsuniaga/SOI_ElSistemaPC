@@ -33,6 +33,7 @@ const MAESTRO_VIEWS = [
   'perfil', 'clase-emergente', 'planificacion', 'alumno',
   'gamificacion', 'ruta', 'crear-clase', 'ruta-plan-builder',
   'ruta-semanal', 'ruta-libreria', 'ruta-detalle', 'gestionar-clases',
+  'bitacora-clase',
 ]
 
 export const CACHEABLE_VIEWS = new Set([
@@ -48,7 +49,7 @@ export function setupRouterRoutes(router, _isAdmin, renderView) {
     'metricas', 'perfil', 'clase-emergente', 'planificacion', 'alumno',
     'gamificacion', 'ruta', 'crear-clase', 'ruta-plan-builder',
     'ruta-semanal', 'ruta-libreria', 'gestionar-clases',
-    'register', 'pending-approval',
+    'register', 'pending-approval', 'bitacora-clase',
   ].forEach(route)
 
   router.on('ruta-detalle/:id', (r, params) => renderView('ruta-detalle', params))
@@ -143,6 +144,12 @@ export async function renderViewContent(route, container, params, urlParams, con
     case 'gestionar-clases':
       if (!permisos?.puede_inscribir_clases) { router.navigate('hoy'); return }
       return await renderGestionarClasesView(container)
+    case 'bitacora-clase': {
+      const { renderBitacoraView } = await import('../../modules/bitacora/views/bitacoraView.js')
+      return await renderBitacoraView(container, {
+        claseId: urlParams.get('clase') || params.claseId,
+      })
+    }
     default:
       break
   }

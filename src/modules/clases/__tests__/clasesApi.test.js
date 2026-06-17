@@ -13,6 +13,44 @@ describe('clasesApi Integration', () => {
     vi.clearAllMocks()
   })
 
+  describe('obtenerAlumnosInscritosPorClases', () => {
+    it('should fetch enrollments in one bulk query and group them by class', async () => {
+      const order = vi.fn().mockResolvedValue({
+        data: [
+          { id: 'ins-1', clase_id: 'clase-1', alumno: { nombre_completo: 'Ana' } },
+          { id: 'ins-2', clase_id: 'clase-2', alumno: { nombre_completo: 'Luis' } },
+          { id: 'ins-3', clase_id: 'clase-1', alumno: { nombre_completo: 'María' } },
+        ],
+        error: null,
+      })
+      const eq = vi.fn().mockReturnValue({ order })
+      const inMock = vi.fn().mockReturnValue({ eq })
+      const select = vi.fn().mockReturnValue({ in: inMock })
+
+      supabase.from.mockReturnValue({ select })
+
+      const result = await clasesApi.obtenerAlumnosInscritosPorClases([
+        'clase-1',
+        'clase-2',
+        'clase-1',
+      ])
+
+      expect(supabase.from).toHaveBeenCalledTimes(1)
+      expect(supabase.from).toHaveBeenCalledWith('alumnos_clases')
+      expect(select).toHaveBeenCalledWith('*, alumno:alumnos(*)')
+      expect(inMock).toHaveBeenCalledWith('clase_id', ['clase-1', 'clase-2'])
+      expect(eq).toHaveBeenCalledWith('activo', true)
+      expect(order).toHaveBeenCalledWith('created_at', { ascending: false })
+      expect(result['clase-1']).toHaveLength(2)
+      expect(result['clase-2']).toHaveLength(1)
+    })
+
+    it('should skip the query when no class ids are provided', async () => {
+      await expect(clasesApi.obtenerAlumnosInscritosPorClases([])).resolves.toEqual({})
+      expect(supabase.from).not.toHaveBeenCalled()
+    })
+  })
+
   describe('validarHorario', () => {
     it('should return conflicts if salon is occupied', async () => {
       const mockSchedules = [

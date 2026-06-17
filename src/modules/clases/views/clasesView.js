@@ -6,6 +6,7 @@ import {
   obtenerClases,
   eliminarClase,
   obtenerAlumnosInscritos,
+  obtenerAlumnosInscritosPorClases,
 } from '../api/clasesApi.js'
 import { supabase } from '../../../lib/supabaseClient.js'
 import {
@@ -685,10 +686,13 @@ function attachGlobalEvents(container) {
 
     try {
       const clasesParaReporte = state.clases.length ? state.clases : state.clasesOriginales
-      const report = await Promise.all(clasesParaReporte.map(async (clase) => ({
+      const inscritosPorClase = await obtenerAlumnosInscritosPorClases(
+        clasesParaReporte.map(clase => clase.id)
+      )
+      const report = clasesParaReporte.map((clase) => ({
         clase,
-        inscritos: await obtenerAlumnosInscritos(clase.id),
-      })))
+        inscritos: inscritosPorClase[clase.id] || [],
+      }))
 
       descargarPdfListadoAlumnosPorClases(report, {
         maestros: state.maestros,

@@ -5,12 +5,17 @@ const delay = (ms = 500) => new Promise(resolve => setTimeout(resolve, ms))
 
 function normalizeAlumno(a) {
   if (!a) return null
+  const studentClasses = (inscripciones || [])
+    .filter(i => i.alumno_id === a.id)
+    .map(i => i.clase_nombre)
+    .join(', ') || 'Sin clases'
   return {
     ...a,
     nombre: a.nombre_completo ?? '',
     email: a.correo_representante ?? '',
     instrumento: a.instrumento_principal ?? '',
     is_active: a.activo ?? true,
+    clases: studentClasses,
     contacto_emergencia_nombre: a.contacto_emergencia_nombre ?? '',
     contacto_emergencia_telefono: a.contacto_emergencia_telefono ?? '',
     contacto_emergencia_parentesco: a.contacto_emergencia_parentesco ?? '',
@@ -100,4 +105,61 @@ export async function obtenerAlumnosPorMes(year, month) {
       return d.getFullYear() === year && d.getMonth() + 1 === month
     })
     .map(normalizeAlumno)
+}
+
+/**
+ * Simulación de consulta de alumnos en Supabase con filtros y ordenamiento en modo Demo.
+ */
+export async function obtenerAlumnosFiltradosYOrdenados({
+  id_clase,
+  instrumento,
+  ordenEdadAsc,
+  ordenInstrumentoAsc,
+  soloActivos = true
+} = {}) {
+  await delay()
+  let result = [...alumnos]
+
+  // Filtrar por alumnos activos
+  if (soloActivos) {
+    result = result.filter(a => a.activo !== false && a.is_active !== false)
+  }
+
+  // Filtrar por clase
+  if (id_clase) {
+    const alumnoIds = inscripciones
+      .filter(i => i.clase_id === id_clase)
+      .map(i => i.alumno_id)
+    result = result.filter(a => alumnoIds.includes(a.id))
+  }
+
+  // Filtrar por instrumento
+  if (instrumento) {
+    result = result.filter(a => a.instrumento_principal === instrumento)
+  }
+
+  // Ordenar
+  result.sort((a, b) => {
+    if (ordenInstrumentoAsc !== undefined) {
+      const instA = a.instrumento_principal || ''
+      const instB = b.instrumento_principal || ''
+      const cmp = instA.localeCompare(instB)
+      if (cmp !== 0) {
+        return ordenInstrumentoAsc ? cmp : -cmp
+      }
+    }
+
+    if (ordenEdadAsc !== undefined) {
+      const dateA = a.fecha_nacimiento ? new Date(a.fecha_nacimiento) : new Date(0)
+      const dateB = b.fecha_nacimiento ? new Date(b.fecha_nacimiento) : new Date(0)
+      // Edad ascendente (más joven a más viejo) = fecha_nacimiento de más nueva a más vieja (descendente)
+      // dateB - dateA
+      const cmp = dateB - dateA
+      return ordenEdadAsc ? cmp : -cmp
+    }
+
+    return 0
+  })
+
+  return result.map(normalizeAlumno)
 }

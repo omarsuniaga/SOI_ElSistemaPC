@@ -371,6 +371,27 @@ export async function obtenerAlumnosInscritos(claseId) {
   return data || []
 }
 
+export async function obtenerAlumnosInscritosPorClases(claseIds = []) {
+  const ids = [...new Set((claseIds || []).filter(Boolean))]
+  if (ids.length === 0) return {}
+
+  const { data, error } = await supabase
+    .from('alumnos_clases')
+    .select('*, alumno:alumnos(*)')
+    .in('clase_id', ids)
+    .eq('activo', true)
+    .order('created_at', { ascending: false })
+
+  if (error) throw error
+
+  return (data || []).reduce((acc, inscripcion) => {
+    const claseId = inscripcion.clase_id
+    if (!acc[claseId]) acc[claseId] = []
+    acc[claseId].push(inscripcion)
+    return acc
+  }, {})
+}
+
 export async function validarHorario(horarios, maestroId, excludeClaseId = null) {
   const inputs = (horarios || []).filter(h => h?.dia && h?.hora_inicio && h?.hora_fin)
   if (inputs.length === 0) return []

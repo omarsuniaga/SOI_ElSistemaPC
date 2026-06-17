@@ -20,6 +20,7 @@ import {
   timeToMinutes,
 } from '../utils/clasesUtils.js'
 import { openClaseModal } from '../components/claseModal.js'
+import { descargarPdfClase, descargarPdfListadoAlumnosPorClases } from '../domain/generarPdfClase.js'
 import { HelpPanel } from '../../../shared/components/HelpPanel.js'
 
 const state = {
@@ -145,6 +146,9 @@ function renderContent(container) {
               <i class="bi bi-calendar-week"></i>
             </button>
           </div>
+          <button class="btn btn-outline-secondary" id="btnPdfListadoAlumnosClases" type="button">
+            <i class="bi bi-file-earmark-pdf me-1"></i>PDF Listados Alumnos x Clases
+          </button>
           <button class="btn btn-premium-action" id="btnAgregarClase">
             <i class="bi bi-plus-lg me-1.5"></i>Nueva Clase
           </button>
@@ -285,8 +289,13 @@ function renderClaseCard(clase) {
           <small class="text-muted extra-small mt-1" style="font-size: 0.85rem;"><i class="bi bi-clock me-1"></i>${escapeHTML(horariosTexto)}</small>
         </div>
       </div>
-      <div class="flex-shrink-0 text-muted ms-2 pe-1">
-        <i class="bi bi-chevron-right" style="font-size: 1.1rem; transition: transform 0.2s ease;"></i>
+      <div class="flex-shrink-0 d-flex align-items-center gap-2 ms-2 pe-1">
+        <button class="btn btn-outline-secondary btn-sm btn-class-pdf" data-id="${clase.id}" type="button" title="PDF Listado Alumnos x Clase">
+          <i class="bi bi-file-earmark-pdf me-1"></i>PDF Listado Alumnos x Clase
+        </button>
+        <span class="text-muted">
+          <i class="bi bi-chevron-right" style="font-size: 1.1rem; transition: transform 0.2s ease;"></i>
+        </span>
       </div>
     </div>
   `
@@ -577,6 +586,9 @@ async function openClasePerfilModal(clase) {
             <i class="bi bi-trash"></i> Eliminar Clase
           </button>
           <div class="class-profile-secondary-actions">
+            <button class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1 btn-profile-pdf" data-id="${clase.id}">
+              <i class="bi bi-file-earmark-pdf"></i> PDF Listado Alumnos x Clase
+            </button>
             <button class="btn btn-outline-primary btn-sm d-flex align-items-center gap-1 btn-profile-edit" data-id="${clase.id}">
               <i class="bi bi-pencil"></i> Editar
             </button>
@@ -597,6 +609,21 @@ async function openClasePerfilModal(clase) {
         // Hide the default AppModal footer completely
         const footer = modalBody.closest('.app-modal-dialog')?.querySelector('.app-modal-footer')
         if (footer) footer.style.setProperty('display', 'none', 'important')
+
+        // Wire PDF button
+        modalBody.querySelector('.btn-profile-pdf')?.addEventListener('click', () => {
+          try {
+            descargarPdfClase(clase, inscritos, {
+              maestros: state.maestros,
+              salones: state.salones,
+              programas: state.programas,
+            })
+            AppToast.success('PDF de la clase generado')
+          } catch (error) {
+            console.error(error)
+            AppToast.error('No se pudo generar el PDF de la clase')
+          }
+        })
 
         // Wire edit button
         modalBody.querySelector('.btn-profile-edit')?.addEventListener('click', () => {
@@ -646,6 +673,38 @@ function attachGlobalEvents(container) {
         { icon: 'bi-person-workspace', title: 'Maestro titular y suplente', description: 'Cada clase tiene un maestro principal (obligatorio) y puede tener suplente (opcional). Ambos aparecen en el perfil del maestro.',                            color: '#6b7280' },
       ],
     })
+  })
+
+  container.querySelector('#btnPdfListadoAlumnosClases')?.addEventListener('click', async () => {
+    const button = container.querySelector('#btnPdfListadoAlumnosClases')
+    const originalHTML = button?.innerHTML
+    if (button) {
+      button.disabled = true
+      button.innerHTML = '<span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>Generando PDF...'
+    }
+
+    try {
+      const clasesParaReporte = state.clases.length ? state.clases : state.clasesOriginales
+      const report = await Promise.all(clasesParaReporte.map(async (clase) => ({
+        clase,
+        inscritos: await obtenerAlumnosInscritos(clase.id),
+      })))
+
+      descargarPdfListadoAlumnosPorClases(report, {
+        maestros: state.maestros,
+        salones: state.salones,
+        programas: state.programas,
+      })
+      AppToast.success('PDF de listados por clase generado')
+    } catch (error) {
+      console.error(error)
+      AppToast.error('No se pudo generar el PDF de listados por clase')
+    } finally {
+      if (button) {
+        button.disabled = false
+        button.innerHTML = originalHTML
+      }
+    }
   })
 
   container.querySelector('#btnAgregarClase')?.addEventListener('click', () => {
@@ -714,7 +773,37 @@ function attachGlobalEvents(container) {
     }
   })
 
-  viewContent?.addEventListener('click', (e) => {
+  viewContent?.addEventListener('click', async (e) => {
+    const pdfButton = e.target.closest('.btn-class-pdf[data-id]')
+    if (pdfButton) {
+      e.preventDefault()
+      e.stopPropagation()
+      const id = pdfButton.dataset.id
+      const clase = state.clasesOriginales.find(c => c.id === id)
+      if (!clase) return
+
+      pdfButton.disabled = true
+      const originalHTML = pdfButton.innerHTML
+      pdfButton.innerHTML = '<span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>Generando...'
+
+      try {
+        const inscritos = await obtenerAlumnosInscritos(clase.id)
+        descargarPdfClase(clase, inscritos, {
+          maestros: state.maestros,
+          salones: state.salones,
+          programas: state.programas,
+        })
+        AppToast.success('PDF de la clase generado')
+      } catch (error) {
+        console.error(error)
+        AppToast.error('No se pudo generar el PDF de la clase')
+      } finally {
+        pdfButton.disabled = false
+        pdfButton.innerHTML = originalHTML
+      }
+      return
+    }
+
     // Manejo de clicks en tarjetas de la lista o bloques horarios
     const card = e.target.closest('.list-group-item[data-id], .time-block-card[data-id]')
     if (card) {

@@ -11,10 +11,11 @@ import {
   validarEmail,
 } from '../api/maestrosApi.js'
 import { escapeHTML, getStatusColor, getStatusLabel, getInitials } from '../utils/maestrosUtils.js'
-import { obtenerClasesPorMaestro, actualizarClase } from '../../clases/api/clasesApi.js'
+import { obtenerClasesPorMaestro, actualizarClase, obtenerAlumnosInscritosPorClases } from '../../clases/api/clasesApi.js'
 import { openClaseModal } from '../../clases/components/claseModal.js'
 import { supabase } from '../../../lib/supabaseClient.js'
 import { HelpPanel } from '../../../shared/components/HelpPanel.js'
+import { descargarPdfReporteMaestro } from '../domain/generarPdfReporteMaestro.js'
 
 const state = {
   maestros: [],
@@ -284,6 +285,9 @@ function renderTableRows(maestros) {
           </div>
         </div>
         <div class="d-flex align-items-center gap-2 flex-shrink-0">
+          <button class="btn btn-outline-danger btn-sm rounded-circle d-flex align-items-center justify-content-center btn-maestro-pdf" data-action="pdf" data-id="${a.id}" title="Descargar Reporte PDF de Clases y Alumnos" style="width: 32px; height: 32px; padding: 0;">
+            <i class="bi bi-file-earmark-pdf"></i>
+          </button>
           ${
             a.telefono
               ? `
@@ -371,7 +375,38 @@ function attachEvents(container) {
     if (action === 'edit') openEditModal(id)
     else if (action === 'delete') openDeleteModal(id)
     else if (action === 'whatsapp') openWhatsAppModal(id)
+    else if (action === 'pdf') {
+      const maestro = state.maestrosOriginales.find((m) => m.id === id)
+      if (!maestro) return
+      descargarReporteMaestroPdf(maestro, btn)
+    }
   })
+}
+
+async function descargarReporteMaestroPdf(maestro, btn) {
+  if (btn) {
+    btn.disabled = true
+    btn.style.opacity = '0.5'
+  }
+  try {
+    const clases = await obtenerClasesPorMaestro(maestro.id)
+    const claseIds = clases.map((c) => c.id)
+    let inscripcionesMap = {}
+    if (claseIds.length > 0) {
+      inscripcionesMap = await obtenerAlumnosInscritosPorClases(claseIds)
+    }
+    const { data: salones } = await supabase.from('salones').select('*')
+    descargarPdfReporteMaestro(maestro, clases, inscripcionesMap, { salones })
+    showToast('Reporte PDF descargado exitosamente', 'success')
+  } catch (err) {
+    console.error('Error al generar PDF:', err)
+    showToast('Error al generar PDF: ' + err.message, 'error')
+  } finally {
+    if (btn) {
+      btn.disabled = false
+      btn.style.opacity = '1'
+    }
+  }
 }
 
 function openWhatsAppModal(id) {
@@ -738,6 +773,9 @@ function openViewModal(id) {
       </div>
       
       <div class="d-flex justify-content-end gap-2 pt-3 border-top mt-auto">
+        <button class="btn btn-outline-danger me-auto d-flex align-items-center gap-1" id="modal-view-btn-pdf">
+          <i class="bi bi-file-earmark-pdf"></i> Descargar Reporte PDF
+        </button>
         <button class="btn btn-outline-danger" id="modal-view-btn-delete">
           <i class="bi bi-trash me-1"></i> Eliminar
         </button>
@@ -747,6 +785,9 @@ function openViewModal(id) {
       </div>
     `,
     onShow: async (modalBody) => {
+      modalBody.querySelector('#modal-view-btn-pdf')?.addEventListener('click', (e) => {
+        descargarReporteMaestroPdf(maestro, e.currentTarget)
+      })
       modalBody.querySelector('#modal-view-btn-edit')?.addEventListener('click', () => {
         AppModal.close()
         setTimeout(() => openEditModal(id), 300)

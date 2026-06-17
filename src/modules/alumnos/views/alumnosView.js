@@ -11,7 +11,9 @@ import {
   obtenerInscripcionesAlumno,
   PARENTESCOS,
   getParentescoLabel,
+  obtenerAlumnosFiltradosYOrdenados,
 } from '../api/alumnosApi.js'
+import { descargarPdfListadoAlumnos } from '../domain/generarPdfInscripcion.js'
 import {
   formatDate,
   calcularEdad,
@@ -125,6 +127,9 @@ function renderContent(container) {
           </button>
           <button class="btn btn-outline-danger btn-sm-compact" id="btnPdfDemo" title="Vista previa PDFs">
             <i class="bi bi-file-earmark-pdf"></i> PDFs
+          </button>
+          <button class="btn btn-outline-danger btn-sm-compact" id="btnDescargarPdfListado" title="Descargar PDF del listado de alumnos">
+            <i class="bi bi-file-earmark-pdf"></i> PDF Listado
           </button>
           <button class="btn btn-success btn-sm-compact" id="btnInscribir">
             <i class="bi bi-person-plus me-1"></i>Inscribir
@@ -307,6 +312,27 @@ function attachGlobalEvents(container) {
   container.querySelector('#btnInscribir')?.addEventListener('click', () => window.router?.navigate('alumnos-inscribir'))
   container.querySelector('#btnReporteMes')?.addEventListener('click', () => window.router?.navigate('alumnos-reporte-mes'))
   container.querySelector('#btnPdfDemo')?.addEventListener('click', () => window.router?.navigate('alumnos-pdf-demo'))
+
+  container.querySelector('#btnDescargarPdfListado')?.addEventListener('click', async (e) => {
+    const btn = e.currentTarget
+    const originalText = btn.innerHTML
+    btn.disabled = true
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Generando PDF...'
+    try {
+      const alumnos = await obtenerAlumnosFiltradosYOrdenados({
+        ordenInstrumentoAsc: true,
+        ordenEdadAsc: true
+      })
+      descargarPdfListadoAlumnos(alumnos)
+      AppToast.success('PDF generado y descargado correctamente')
+    } catch (error) {
+      console.error('Error al generar PDF de listado de alumnos:', error)
+      AppToast.error('No se pudo generar el PDF del listado: ' + error.message)
+    } finally {
+      btn.disabled = false
+      btn.innerHTML = originalText
+    }
+  })
 
   container.querySelector('#btnExportarCSV')?.addEventListener('click', () => exportarAlumnosCSV())
 

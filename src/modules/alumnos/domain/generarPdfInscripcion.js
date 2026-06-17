@@ -664,3 +664,76 @@ export function descargarFichaDemo() {
 export async function descargarConstanciaDemo() {
   await descargarConstancia(ALUMNO_DEMO)
 }
+
+/**
+ * Genera y descarga un archivo PDF con el listado de alumnos inscritos.
+ * 
+ * @param {object[]} alumnos - Lista de alumnos a incluir en el reporte.
+ */
+export function descargarPdfListadoAlumnos(alumnos) {
+  const doc = new jsPDF({ unit: 'mm', format: 'letter' })
+  const now = nowLong()
+  const DOC_TITLE = 'REPORTE DE ALUMNOS INSCRITOS'
+  
+  let y = header(doc, DOC_TITLE, `Generado: ${now}`)
+
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(10)
+  doc.setTextColor(...C.grisOscuro)
+  doc.text(`Total de alumnos inscritos: ${alumnos.length}`, MARGIN, y)
+  y += 6
+
+  // Encabezados y cuerpo de la tabla
+  const headers = [['#', 'Nombre Completo', 'Instrumento', 'Edad', 'Clases', 'Teléfono Rep.', 'Estado']]
+  
+  const body = alumnos.map((a, index) => [
+    index + 1,
+    a.nombre || a.nombre_completo || '—',
+    a.instrumento || a.instrumento_principal || '—',
+    a.fecha_nacimiento ? `${edad(a.fecha_nacimiento)}` : '—',
+    a.clases || 'Sin clases',
+    a.telefono || a.familiar_telefono || '—',
+    (a.is_active ?? a.activo) ? 'Activo' : 'Inactivo'
+  ])
+
+  autoTable(doc, {
+    startY: y,
+    margin: { left: MARGIN, right: MARGIN, top: 40, bottom: 18 },
+    theme: 'striped',
+    head: headers,
+    headStyles: {
+      fillColor: C.azul,
+      textColor: C.blanco,
+      fontSize: 8.5,
+      fontStyle: 'bold',
+      halign: 'left'
+    },
+    styles: {
+      fontSize: 8,
+      cellPadding: { top: 3, bottom: 3, left: 2, right: 2 },
+      lineColor: [210, 215, 225],
+      lineWidth: 0.1,
+      textColor: C.grisOscuro,
+    },
+    alternateRowStyles: { fillColor: C.grisClaro },
+    columnStyles: {
+      0: { cellWidth: 8, halign: 'center' }, // #
+      1: { fontStyle: 'bold', cellWidth: 45 }, // Nombre
+      2: { cellWidth: 25 }, // Instrumento
+      3: { cellWidth: 18 }, // Edad
+      4: { cellWidth: 45 }, // Clases
+      5: { cellWidth: 28 }, // Teléfono
+      6: { cellWidth: 18 }  // Estado
+    },
+    body,
+    didDrawPage: (data) => {
+      // Dibujar cabecera en páginas posteriores a la primera
+      if (data.pageNumber > 1) {
+        header(doc, DOC_TITLE, `Continuación · Generado: ${now}`)
+      }
+      footer(doc, data.pageNumber)
+    }
+  })
+
+  doc.save(`listado-alumnos.pdf`)
+}

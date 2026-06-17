@@ -17,6 +17,11 @@ export function getParentescoLabel(value) {
 
 function normalizeAlumno(a) {
   if (!a) return null
+  const clasesList = (a.alumnos_clases || [])
+    .map(ac => ac.clase?.nombre ?? '')
+    .filter(Boolean)
+  const clasesStr = clasesList.length > 0 ? clasesList.join(', ') : (a.clases || '')
+
   return {
     ...a,
     id: a.id,
@@ -26,6 +31,7 @@ function normalizeAlumno(a) {
     telefono: a.familiar_telefono ?? '',
     is_active: a.activo ?? true,
     cedula: a.representante_cedula ?? '',
+    clases: clasesStr || 'Sin clases',
     contacto_emergencia_nombre: a.contacto_emergencia_nombre ?? '',
     contacto_emergencia_telefono: a.contacto_emergencia_telefono ?? '',
     contacto_emergencia_parentesco: a.contacto_emergencia_parentesco ?? '',
@@ -322,5 +328,66 @@ export async function obtenerAlumnosPorMes(year, month) {
     .order('created_at', { ascending: true })
 
   if (error) throw new Error('No se pudieron cargar los alumnos del mes')
+  return data.map(normalizeAlumno)
+}
+
+/**
+ * Consulta la tabla de estudiantes (alumnos) en Supabase con filtros y ordenamiento opcionales.
+ * 
+ * @param {object} params
+ * @param {string} [params.id_clase] - ID de la clase para filtrar inscripciones.
+ * @param {string} [params.instrumento] - Instrumento principal para filtrar.
+ * @param {boolean} [params.ordenEdadAsc] - true para ordenar por edad de forma ascendente (más joven a más viejo, o sea, fecha_nacimiento desc).
+ * @param {boolean} [params.ordenInstrumentoAsc] - true para ordenar instrumento A-Z.
+ * @returns {Promise<object[]>} Lista de alumnos normalizados.
+ */
+export async function obtenerAlumnosFiltradosYOrdenados({
+  id_clase,
+  instrumento,
+  ordenEdadAsc,
+  ordenInstrumentoAsc,
+  soloActivos = true
+} = {}) {
+  let query = supabase.from('alumnos')
+
+  if (id_clase) {
+    // Para filtrar por clase, hacemos un inner join con la tabla alumnos_clases (renombrada para evitar conflictos)
+    query = query
+      .select('*, enrolled_class:alumnos_clases!inner(clase_id), alumnos_clases(clase:clases(nombre))')
+      .eq('enrolled_class.clase_id', id_clase)
+  } else {
+    query = query.select('*, alumnos_clases(clase:clases(nombre))')
+  }
+
+  // Filtro de alumnos activos
+  if (soloActivos) {
+    query = query.eq('activo', true)
+  }
+
+  // Filtro por instrumento principal
+  if (instrumento) {
+    query = query.eq('instrumento_principal', instrumento)
+  }
+
+  // Ordenamiento por instrumento
+  if (ordenInstrumentoAsc !== undefined) {
+    query = query.order('instrumento_principal', { ascending: ordenInstrumentoAsc })
+  }
+
+  // Ordenamiento por edad / fecha_nacimiento
+  // NOTA: Edad ascendente = más jóvenes primero = fecha_nacimiento de más nueva a más vieja (descendente)
+  // Edad descendente = más viejos primero = fecha_nacimiento de más vieja a más nueva (ascendente)
+  if (ordenEdadAsc !== undefined) {
+    const ascendingBirth = !ordenEdadAsc
+    query = query.order('fecha_nacimiento', { ascending: ascendingBirth })
+  }
+
+  const { data, error } = await query
+
+  if (error) {
+    console.error('Error al obtener alumnos filtrados y ordenados:', error.message)
+    throw new Error('No se pudieron obtener los alumnos con los filtros especificados')
+  }
+
   return data.map(normalizeAlumno)
 }

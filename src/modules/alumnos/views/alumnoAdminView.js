@@ -312,7 +312,7 @@ export async function renderAlumnoAdminView(container, params = {}) {
   // Fetch enrolled classes
   const { data: clasesData } = await supabase
     .from('alumnos_clases')
-    .select('clase_id, clases(id, nombre, dia, hora_inicio)')
+    .select('clase_id, clases(id, nombre, clase_horarios(dia, hora_inicio))')
     .eq('alumno_id', alumnoId)
     .eq('activo', true)
 
@@ -384,12 +384,17 @@ export async function renderAlumnoAdminView(container, params = {}) {
           ${clases.length === 0
             ? '<p class="text-muted fst-italic">Sin clases activas.</p>'
             : `<div class="list-group">
-                ${clases.map(c => `
-                  <div class="list-group-item d-flex justify-content-between align-items-center">
-                    <span class="fw-semibold">${val(c.nombre)}</span>
-                    <span class="text-muted small">${val(c.dia)} ${val(c.hora_inicio)}</span>
-                  </div>
-                `).join('')}
+                 ${clases.map(c => {
+                   const horarios = (c.clase_horarios || [])
+                     .map(h => `${val(h.dia)} ${val(h.hora_inicio?.slice(0, 5) || '')}`)
+                     .join(', ') || 'Sin horario'
+                   return `
+                     <div class="list-group-item d-flex justify-content-between align-items-center">
+                       <span class="fw-semibold">${val(c.nombre)}</span>
+                       <span class="text-muted small">${horarios}</span>
+                     </div>
+                   `
+                 }).join('')}
               </div>`
           }
         </div>
@@ -781,6 +786,10 @@ export async function renderAlumnoAdminView(container, params = {}) {
 
     const patch = {}
     for (const field of fields) {
+      // Defensive check: skip fields that do not exist as columns in the DB table
+      if (alumno[field.key] === undefined) {
+        continue
+      }
       const el = document.querySelector(`[name="${field.key}"]`)
       if (!el) continue
       if (field.type === 'checkbox') {

@@ -348,7 +348,7 @@ async function loadClasesForPrograma(programaId, modalBody) {
   try {
     const [clasesRes, maestrosRes] = await Promise.all([
       supabase.from('clases').select('*').eq('programa_id', programaId),
-      supabase.from('maestros').select('id, nombre_completo, nombre'),
+      supabase.from('maestros').select('id, nombre_completo'),
     ])
 
     const clases   = clasesRes.data   || []

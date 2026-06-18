@@ -308,8 +308,8 @@ function _openEmergenteModal(id) {
         let maestroNombre = 'No asignado'
         let salonNombre   = null
         if (e.maestro_id) {
-          const { data: m } = await supabase.from('maestros').select('nombre_completo, nombre').eq('id', e.maestro_id).single()
-          maestroNombre = m?.nombre_completo || m?.nombre || 'No asignado'
+          const { data: m } = await supabase.from('maestros').select('nombre_completo').eq('id', e.maestro_id).single()
+          maestroNombre = m?.nombre_completo || 'No asignado'
         }
         if (e.salon_id) {
           const { data: s } = await supabase.from('salones').select('nombre').eq('id', e.salon_id).single()

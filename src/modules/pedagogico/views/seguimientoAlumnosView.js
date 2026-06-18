@@ -34,7 +34,7 @@ async function _loadData() {
     supabase.from('alumnos').select('id, nombre_completo, instrumento_principal, activo').eq('activo', true).order('nombre_completo'),
     supabase.from('asistencias').select('alumno_id, estado').gte('fecha', desde),
     supabase.from('progresos').select('alumno_id, calificacion').not('calificacion', 'is', null),
-    supabase.from('observaciones').select('alumno_id, tipo, estado').eq('estado', 'activo'),
+    supabase.from('observaciones_alumnos').select('alumno_id, tipo, estado').in('estado', ['abierta', 'seguimiento']),
   ])
 
   state.alumnos = alumnosRes.data || []
@@ -214,7 +214,7 @@ async function _openAlumnoDetail(alumnoId) {
       .order('fecha', { ascending: false }).limit(20),
     supabase.from('progresos').select('*, clase:clases(nombre)').eq('alumno_id', alumnoId)
       .order('fecha_evaluacion', { ascending: false }).limit(10),
-    supabase.from('observaciones').select('*').eq('alumno_id', alumnoId)
+    supabase.from('observaciones_alumnos').select('*').eq('alumno_id', alumnoId)
       .order('created_at', { ascending: false }).limit(5),
     supabase.from('alumnos_clases').select('clase:clases(id, nombre, instrumento)').eq('alumno_id', alumnoId),
   ])

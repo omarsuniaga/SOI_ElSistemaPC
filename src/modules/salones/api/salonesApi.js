@@ -181,3 +181,80 @@ export async function obtenerSalonesActivos() {
 
   return data.map(normalizeSalon)
 }
+
+export async function obtenerUsoSalones(salonIds = []) {
+  const ids = [...new Set((salonIds || []).filter(Boolean))]
+  if (ids.length === 0) return {}
+
+  const { data: horarios, error } = await supabase
+    .from('clase_horarios')
+    .select(`
+      id,
+      salon_id,
+      clase_id,
+      dia,
+      hora_inicio,
+      hora_fin,
+      maestro_id,
+      clases:clase_id (
+        id,
+        nombre,
+        instrumento,
+        maestro_principal_id
+      )
+    `)
+    .in('salon_id', ids)
+    .order('dia', { ascending: true })
+    .order('hora_inicio', { ascending: true })
+
+  if (error) {
+    console.error('Error cargando uso de salones:', error.message)
+    throw new Error('No se pudo cargar el uso de salones')
+  }
+
+  const maestroIds = [
+    ...new Set((horarios || [])
+      .map((h) => h.maestro_id || h.clases?.maestro_principal_id)
+      .filter(Boolean)),
+  ]
+
+  let maestrosById = {}
+  if (maestroIds.length > 0) {
+    const { data: maestros, error: maestrosError } = await supabase
+      .from('maestros')
+      .select('id, nombre_completo')
+      .in('id', maestroIds)
+
+    if (maestrosError) {
+      console.error('Error cargando maestros para uso de salones:', maestrosError.message)
+      throw new Error('No se pudieron cargar los maestros del uso de salones')
+    }
+
+    maestrosById = Object.fromEntries(
+      (maestros || []).map((maestro) => [
+        maestro.id,
+        maestro.nombre_completo || 'Sin maestro',
+      ]),
+    )
+  }
+
+  return (horarios || []).reduce((acc, horario) => {
+    const salonId = horario.salon_id
+    if (!acc[salonId]) acc[salonId] = []
+
+    const maestroId = horario.maestro_id || horario.clases?.maestro_principal_id
+    acc[salonId].push({
+      id: horario.id,
+      dia: horario.dia,
+      hora_inicio: horario.hora_inicio,
+      hora_fin: horario.hora_fin,
+      clase_id: horario.clase_id,
+      clase_nombre: horario.clases?.nombre || 'Sin clase',
+      instrumento: horario.clases?.instrumento || 'General',
+      maestro_id: maestroId,
+      maestro_nombre: maestrosById[maestroId] || 'Sin maestro',
+    })
+
+    return acc
+  }, {})
+}

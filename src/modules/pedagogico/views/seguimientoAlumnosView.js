@@ -1,15 +1,19 @@
 import { supabase } from '../../../lib/supabaseClient.js'
 import { AppModal } from '../../../shared/components/AppModal.js'
-import { THRESHOLDS } from '../../progresos/services/riskRules.js'
 import { HelpPanel } from '../../../shared/components/HelpPanel.js'
+import { fetchSeguimientoAlumnos } from '../services/seguimientoAlumnosService.js'
 
 const state = {
   alumnos: [],
-  asistenciaMap: {},
-  progresosMap: {},
-  observacionesMap: {},
   busqueda: '',
   container: null,
+  totalCount: 0,
+  riskCount: 0,
+  limit: 50,
+  offset: 0,
+  desde: null,
+  hasta: null,
+  loading: false,
 }
 
 export async function renderSeguimientoAlumnosView(container) {
@@ -20,7 +24,6 @@ export async function renderSeguimientoAlumnosView(container) {
   try {
     await _loadData()
     _render()
-    _attachEvents()
   } catch (err) {
     console.error('[SeguimientoAlumnos]', err)
     container.innerHTML = `<div class="page-container"><div class="alert alert-warning">${err.message}</div></div>`
@@ -28,70 +31,32 @@ export async function renderSeguimientoAlumnosView(container) {
 }
 
 async function _loadData() {
-  const desde = new Date(Date.now() - 28 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
-
-  const [alumnosRes, asistenciasRes, progresosRes, observacionesRes] = await Promise.all([
-    supabase.from('alumnos').select('id, nombre_completo, instrumento_principal, activo').eq('activo', true).order('nombre_completo'),
-    supabase.from('asistencias').select('alumno_id, estado').gte('fecha', desde),
-    supabase.from('progresos').select('alumno_id, calificacion').not('calificacion', 'is', null),
-    supabase.from('observaciones_alumnos').select('alumno_id, tipo, estado').in('estado', ['abierta', 'seguimiento']),
-  ])
-
-  state.alumnos = alumnosRes.data || []
-
-  state.asistenciaMap = {}
-  ;(asistenciasRes.data || []).forEach(a => {
-    if (!state.asistenciaMap[a.alumno_id]) state.asistenciaMap[a.alumno_id] = { total: 0, presentes: 0 }
-    state.asistenciaMap[a.alumno_id].total++
-    if (a.estado === 'P') state.asistenciaMap[a.alumno_id].presentes++
-  })
-  Object.values(state.asistenciaMap).forEach(v => {
-    v.rate = v.total > 0 ? v.presentes / v.total : null
+  state.loading = true
+  const result = await fetchSeguimientoAlumnos({
+    desde: state.desde,
+    hasta: state.hasta,
+    limit: state.limit,
+    offset: state.offset,
+    busqueda: state.busqueda,
   })
 
-  state.progresosMap = {}
-  const progresosPorAlumno = {}
-  ;(progresosRes.data || []).forEach(p => {
-    if (!progresosPorAlumno[p.alumno_id]) progresosPorAlumno[p.alumno_id] = []
-    progresosPorAlumno[p.alumno_id].push(p.calificacion)
-  })
-  Object.entries(progresosPorAlumno).forEach(([id, notas]) => {
-    const ultimas = notas.slice(-3)
-    state.progresosMap[id] = {
-      count: ultimas.length,
-      promedio: ultimas.reduce((s, n) => s + n, 0) / ultimas.length,
-    }
-  })
-
-  state.observacionesMap = {}
-  ;(observacionesRes.data || []).forEach(o => {
-    if (!state.observacionesMap[o.alumno_id]) state.observacionesMap[o.alumno_id] = []
-    state.observacionesMap[o.alumno_id].push(o)
-  })
+  state.alumnos = result.alumnos
+  state.totalCount = result.totalCount
+  state.riskCount = result.riskCount
+  state.desde = result.desde
+  state.hasta = result.hasta
+  state.loading = false
 }
 
 function _getAlumnoRisk(alumnoId) {
-  const asist = state.asistenciaMap[alumnoId]
-  const prog  = state.progresosMap[alumnoId]
-  const reasons = []
-
-  if (asist?.total >= 4 && asist.rate < THRESHOLDS.attendance_min_rate) reasons.push('asistencia')
-  if (prog?.count >= 1 && prog.promedio < THRESHOLDS.grade_min_avg) reasons.push('calificacion')
-  if ((state.observacionesMap[alumnoId] || []).some(o => o.tipo === 'disciplina')) reasons.push('disciplina')
-
-  return reasons
+  const alumno = state.alumnos.find(a => a.id === alumnoId)
+  return alumno?.risk_reasons || []
 }
 
 function _render() {
-  const term = state.busqueda.toLowerCase()
-  const filtrados = state.alumnos.filter(a =>
-    !term || a.nombre_completo.toLowerCase().includes(term) ||
-    (a.instrumento_principal || '').toLowerCase().includes(term)
-  )
-
-  const enRiesgo  = filtrados.filter(a => _getAlumnoRisk(a.id).length > 0)
-  const sinRiesgo = filtrados.filter(a => _getAlumnoRisk(a.id).length === 0)
-  const ordenados = [...enRiesgo, ...sinRiesgo]
+  const ordenados = state.alumnos
+  const currentPage = Math.floor(state.offset / state.limit) + 1
+  const totalPages = Math.max(1, Math.ceil(state.totalCount / state.limit))
 
   state.container.innerHTML = `
     <div class="page-container">
@@ -101,28 +66,41 @@ function _render() {
         </div>
         <div class="flex-grow-1">
           <h1 class="page-title mb-0">Seguimiento de Alumnos</h1>
-          <p class="text-muted small mb-0">${state.alumnos.length} alumnos activos · ${enRiesgo.length} en riesgo</p>
+          <p class="text-muted small mb-0">${state.totalCount} alumnos activos - ${state.riskCount} en riesgo - Pagina ${currentPage}/${totalPages}</p>
         </div>
         <button class="btn-help-trigger" id="btn-help-seguimiento" title="¿Cómo funciona esta pantalla?" aria-label="Ayuda">
           <i class="bi bi-question"></i>
         </button>
       </div>
 
-      <div class="input-group mb-3" style="max-width:360px;">
-        <span class="input-group-text bg-transparent border-end-0"><i class="bi bi-search text-muted"></i></span>
-        <input type="text" class="form-control border-start-0" id="busqueda-alumno"
-               placeholder="Buscar alumno o instrumento..." value="${state.busqueda}">
+      <div class="d-flex flex-wrap gap-2 align-items-center mb-3">
+        <div class="input-group" style="max-width:360px;">
+          <span class="input-group-text bg-transparent border-end-0"><i class="bi bi-search text-muted"></i></span>
+          <input type="text" class="form-control border-start-0" id="busqueda-alumno"
+                 placeholder="Buscar alumno o instrumento..." value="${state.busqueda}">
+        </div>
+        <span class="badge bg-body-secondary text-body-secondary">Periodo: ${state.desde} - ${state.hasta}</span>
       </div>
 
-      ${enRiesgo.length ? `
+      ${state.riskCount ? `
         <div class="alert alert-warning border-0 d-flex align-items-center gap-2 mb-3 py-2">
           <i class="bi bi-exclamation-triangle-fill"></i>
-          <span style="font-size:0.85rem;"><strong>${enRiesgo.length}</strong> alumno${enRiesgo.length !== 1 ? 's' : ''} requiere${enRiesgo.length === 1 ? '' : 'n'} atención</span>
+          <span style="font-size:0.85rem;"><strong>${state.riskCount}</strong> alumno${state.riskCount !== 1 ? 's' : ''} requiere${state.riskCount === 1 ? '' : 'n'} atencion</span>
         </div>` : ''}
 
       <div class="d-flex flex-column gap-2" id="lista-alumnos">
         ${ordenados.map(a => _renderAlumnoRow(a)).join('') ||
           '<div class="text-center text-muted py-5">Sin resultados</div>'}
+      </div>
+
+      <div class="d-flex justify-content-between align-items-center mt-3">
+        <button class="btn btn-sm btn-outline-secondary" id="btn-prev-page" ${state.offset <= 0 ? 'disabled' : ''}>
+          <i class="bi bi-chevron-left me-1"></i>Anterior
+        </button>
+        <span class="text-muted small">Mostrando ${state.offset + 1}-${Math.min(state.offset + state.alumnos.length, state.totalCount)} de ${state.totalCount}</span>
+        <button class="btn btn-sm btn-outline-secondary" id="btn-next-page" ${state.offset + state.limit >= state.totalCount ? 'disabled' : ''}>
+          Siguiente<i class="bi bi-chevron-right ms-1"></i>
+        </button>
       </div>
     </div>`
 
@@ -131,9 +109,9 @@ function _render() {
 
 function _renderAlumnoRow(alumno) {
   const risks = _getAlumnoRisk(alumno.id)
-  const asist = state.asistenciaMap[alumno.id]
-  const prog  = state.progresosMap[alumno.id]
-  const obs   = state.observacionesMap[alumno.id] || []
+  const asist = alumno.asistencia
+  const prog  = alumno.progreso
+  const obsCount = alumno.observacionesCount || 0
 
   const asistPct   = asist?.rate != null ? Math.round(asist.rate * 100) : null
   const asistColor = asistPct === null ? 'secondary' : asistPct >= 80 ? 'success' : asistPct >= 60 ? 'warning' : 'danger'
@@ -164,7 +142,7 @@ function _renderAlumnoRow(alumno) {
               <i class="bi bi-star me-1 text-${notaColor}"></i>
               ${prog ? prog.promedio.toFixed(1) : 'Sin notas'}
             </span>
-            ${obs.length ? `<span><i class="bi bi-chat-quote me-1 text-muted"></i>${obs.length} obs.</span>` : ''}
+            ${obsCount ? `<span><i class="bi bi-chat-quote me-1 text-muted"></i>${obsCount} obs.</span>` : ''}
           </div>
         </div>
         <i class="bi bi-chevron-right text-muted flex-shrink-0"></i>
@@ -187,8 +165,29 @@ function _attachEvents() {
     })
   })
 
+  let searchTimer
   state.container.querySelector('#busqueda-alumno')?.addEventListener('input', e => {
     state.busqueda = e.target.value
+    state.offset = 0
+    clearTimeout(searchTimer)
+    searchTimer = setTimeout(async () => {
+      state.container.innerHTML = _renderLoading()
+      await _loadData()
+      _render()
+    }, 300)
+  })
+
+  state.container.querySelector('#btn-prev-page')?.addEventListener('click', async () => {
+    state.offset = Math.max(0, state.offset - state.limit)
+    state.container.innerHTML = _renderLoading()
+    await _loadData()
+    _render()
+  })
+
+  state.container.querySelector('#btn-next-page')?.addEventListener('click', async () => {
+    state.offset += state.limit
+    state.container.innerHTML = _renderLoading()
+    await _loadData()
     _render()
   })
 

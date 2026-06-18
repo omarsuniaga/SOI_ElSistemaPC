@@ -532,7 +532,7 @@ async function _fetchAsistencias(alumnoId) {
 
 async function _fetchObservaciones(alumnoId) {
   const { data, error } = await supabase
-    .from('observaciones')
+    .from('observaciones_alumnos')
     .select('*')
     .eq('alumno_id', alumnoId)
     .order('created_at', { ascending: false })

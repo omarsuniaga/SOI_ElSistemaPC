@@ -2,6 +2,7 @@ import { supabase } from '../../../lib/supabaseClient.js'
 import { router } from '../../../core/router/router.js'
 import { THRESHOLDS } from '../../progresos/services/riskRules.js'
 import { HelpPanel } from '../../../shared/components/HelpPanel.js'
+import { escapeHTML } from '../../../shared/utils/sanitize.js'
 import { AppModal } from '../../../shared/components/AppModal.js'
 import { getCaseKPIs } from '../services/studentCasesService.js'
 import { InfoTooltip, attachInfoTooltipEvents, injectInfoTooltipStyles } from '../../../shared/components/InfoTooltip.js'
@@ -236,14 +237,13 @@ async function _loadEmergentes(container) {
     if (maestroIds.length > 0) {
       const { data: maestros } = await supabase
         .from('maestros')
-        .select('id, nombre_completo, nombre')
+        .select('id, nombre_completo')
         .in('id', maestroIds)
       ;(maestros || []).forEach(m => { maestrosMap[m.id] = m })
     }
 
     const rows = emergentes.map(e => {
       const maestroNombre = maestrosMap[e.maestro_id]?.nombre_completo
-        || maestrosMap[e.maestro_id]?.nombre
         || 'No asignado'
       const fecha = e.fecha
         ? new Date(e.fecha + 'T00:00:00').toLocaleDateString('es-DO', { day: '2-digit', month: '2-digit', year: 'numeric' })
@@ -413,7 +413,7 @@ async function _loadEmergenteAsistencia(asistenciaJson, modalBody) {
     if (alumnoIds.length > 0) {
       const { data: alumnos } = await supabase
         .from('alumnos')
-        .select('id, nombre_completo, name')
+        .select('id, nombre_completo, instrumento_principal')
         .in('id', alumnoIds)
       ;(alumnos || []).forEach(a => { alumnosMap[a.id] = a })
     }
@@ -439,14 +439,18 @@ async function _loadEmergenteAsistencia(asistenciaJson, modalBody) {
       </div>
       ${asistenciaJson.map(a => {
         const alumno = alumnosMap[a.alumno_id]
-        const nombre = alumno?.nombre_completo || alumno?.name || a.alumno_id?.slice(0, 8) || '—'
+        const nombre = alumno?.nombre_completo || '—'
+        const instrumento = alumno?.instrumento_principal || 'Sin instrumento'
         const est    = a.estado || null
         const badge  = est ? (badgeMap[est] || 'bg-secondary-subtle text-secondary-emphasis') : 'bg-secondary-subtle text-secondary-emphasis'
         const label  = est ? (estadoLabel[est] || est) : 'pendiente'
         return `
-          <div class="d-flex align-items-center gap-2 py-2 border-bottom">
-            <span class="badge flex-shrink-0 ${badge}">${label}</span>
-            <div class="small fw-semibold">${nombre}</div>
+          <div class="d-flex align-items-center justify-content-between py-2 border-bottom">
+            <div class="d-flex align-items-center gap-2">
+              <span class="badge flex-shrink-0 ${badge}">${label}</span>
+              <div class="small fw-semibold">${escapeHTML(nombre)}</div>
+            </div>
+            <div class="small text-muted fst-italic">${escapeHTML(instrumento)}</div>
           </div>`
       }).join('')}
     `

@@ -195,26 +195,167 @@ export async function analyzeStudentRisk(alumnoId, options = {}) {
   }
 }
 
-/** Analyze all active students. Returns only students with at least one risk signal. Batches 10 at a time to avoid hanging the UI. */
+/** Analyze all active students. Performs batch queries to minimize network roundtrips (N+1 queries) and processes the risk rules in memory. */
 export async function analyzeAllStudentsRisk(options = {}) {
-  const { data: alumnos } = await supabase
+  const { data: alumnos, error: alumnosError } = await supabase
     .from('alumnos')
     .select('id, nombre_completo')
     .eq('activo', true)
 
-  const list  = alumnos || []
-  const BATCH = 10
-  const results = []
-  for (let i = 0; i < list.length; i += BATCH) {
-    const slice = list.slice(i, i + BATCH)
-    const chunk = await Promise.all(slice.map(a => analyzeStudentRisk(a.id, options).catch(err => {
-      console.error('[analyzeAllStudentsRisk] error for', a.id, err)
-      return null
-    })))
-    for (const r of chunk) {
-      if (r && r.nivelRiesgo) results.push(r)
-    }
+  if (alumnosError) {
+    console.error('[analyzeAllStudentsRisk] Error fetching active students:', alumnosError)
+    throw new Error('No se pudieron obtener los alumnos activos')
   }
+
+  const list = alumnos || []
+  if (list.length === 0) return []
+
+  const alumnoIds = list.map(a => a.id)
+  const [from, to] = options.period?.from && options.period?.to ? [options.period.from, options.period.to] : _monthRange()
+
+  // Cargar las 4 reglas activas
+  const [attRule, tardRule, obsRule, justRule] = await Promise.all([
+    getActiveRuleByTipo('asistencia_irregular'),
+    getActiveRuleByTipo('tardanzas_recurrentes'),
+    getActiveRuleByTipo('observacion_requiere_seguimiento'),
+    getActiveRuleByTipo('justificaciones_pendientes')
+  ])
+
+  // Cargar todos los datos de forma masiva (batch)
+  const [asistenciasRes, observacionesRes, justificacionesRes, documentosRes] = await Promise.all([
+    supabase.from('asistencias').select('alumno_id, estado, fecha').in('alumno_id', alumnoIds).gte('fecha', from).lte('fecha', to),
+    supabase.from('observaciones_alumnos').select('id, alumno_id, prioridad, estado, requiere_seguimiento, observacion, tipo').in('alumno_id', alumnoIds).eq('requiere_seguimiento', true),
+    supabase.from('justificaciones').select('id, alumno_id, estado').in('alumno_id', alumnoIds).eq('estado', 'pendiente'),
+    supabase.from('generated_documents').select('id, alumno_id, tipo').in('alumno_id', alumnoIds).in('estado', ['generado', 'archivado'])
+  ])
+
+  // Agrupar los datos en memoria por alumno_id
+  const asistMap = {}
+  const obsMap = {}
+  const justMap = {}
+  const docsMap = {}
+
+  alumnoIds.forEach(id => {
+    asistMap[id] = []
+    obsMap[id] = []
+    justMap[id] = []
+    docsMap[id] = []
+  })
+
+  ;(asistenciasRes.data || []).forEach(a => { if (asistMap[a.alumno_id]) asistMap[a.alumno_id].push(a) })
+  ;(observacionesRes.data || []).forEach(o => { if (obsMap[o.alumno_id]) obsMap[o.alumno_id].push(o) })
+  ;(justificacionesRes.data || []).forEach(j => { if (justMap[j.alumno_id]) justMap[j.alumno_id].push(j) })
+  ;(documentosRes.data || []).forEach(d => { if (docsMap[d.alumno_id]) docsMap[d.alumno_id].push(d) })
+
+  const results = []
+
+  // Calcular el riesgo en memoria para cada alumno
+  list.forEach(alumno => {
+    const alumnoId = alumno.id
+
+    // 1. Asistencia
+    let attResult = null
+    if (attRule) {
+      const attList = asistMap[alumnoId] || []
+      const ausencias = attList.filter(a => a.estado === 'A').length
+      const justifs   = attList.filter(a => a.estado === 'J').length
+      const contarJ   = attRule.config?.contar_justificadas
+      const count     = contarJ ? (ausencias + justifs) : ausencias
+      const level     = _bucketLevel(count, attRule.config)
+      attResult = {
+        tipo: 'asistencia_irregular',
+        count,
+        level,
+        razon: count > 0 ? `${count} ausencia${count !== 1 ? 's' : ''}${contarJ ? '' : ' injustificada' + (count !== 1 ? 's' : '')} este mes` : null,
+      }
+    }
+
+    // 2. Tardanzas
+    let tardResult = null
+    if (tardRule) {
+      const tardList = asistMap[alumnoId] || []
+      const tardanzas = tardList.filter(a => a.estado === 'T').length
+      const level     = _bucketLevel(tardanzas, tardRule.config)
+      tardResult = {
+        tipo: 'tardanzas_recurrentes',
+        count: tardanzas,
+        level,
+        razon: tardanzas > 0 ? `${tardanzas} tardanza${tardanzas !== 1 ? 's' : ''} este mes` : null,
+      }
+    }
+
+    // 3. Observaciones
+    let obsResult = null
+    if (obsRule) {
+      let obsList = obsMap[alumnoId] || []
+      if (obsRule.config?.solo_pendientes) {
+        obsList = obsList.filter(o => ['pendiente', 'abierta'].includes(o.estado))
+      }
+      const matches = obsList.filter(o => {
+        if (!obsRule.config?.prioridades?.length) return true
+        return obsRule.config.prioridades.includes(o.prioridad)
+      })
+      let level = null
+      if (matches.length === 1) level = 'bajo'
+      else if (matches.length === 2) level = 'medio'
+      else if (matches.length >= 3) level = 'alto'
+
+      obsResult = {
+        tipo: 'observacion_requiere_seguimiento',
+        count: matches.length,
+        level,
+        razon: matches.length > 0 ? `${matches.length} observación${matches.length !== 1 ? 'es' : ''} pendiente${matches.length !== 1 ? 's' : ''} marcadas para seguimiento` : null,
+      }
+    }
+
+    // 4. Justificaciones
+    let justResult = null
+    if (justRule) {
+      const justList = justMap[alumnoId] || []
+      const count = justList.length
+      const max   = justRule.config?.max_pendientes ?? 2
+      const level = count >= max ? (justRule.config?.nivel || 'medio') : null
+      justResult = {
+        tipo: 'justificaciones_pendientes',
+        count,
+        level,
+        razon: count >= max ? `${count} justificación${count !== 1 ? 'es' : ''} sin revisar` : null,
+      }
+    }
+
+    // 5. Historial de documentos
+    const docsList = docsMap[alumnoId] || []
+    const histResult = {
+      tipo: 'historial_documental',
+      count: docsList.length,
+      level: null,
+      razon: null
+    }
+
+    const subResults = [attResult, tardResult, obsResult, justResult].filter(Boolean)
+    const nivelRiesgo = calculateRiskLevel(subResults)
+    const razones     = subResults.map(r => r?.razon).filter(Boolean)
+    const score       = subResults.reduce((s, r) => s + (RISK_RANK[r?.level] || 0) * 20, 0)
+
+    if (nivelRiesgo) {
+      results.push({
+        alumnoId,
+        alumnoNombre: alumno.nombre_completo || '',
+        nivelRiesgo,
+        score,
+        razones,
+        evidencia: {
+          ausenciasInjustificadas: attResult?.count   || 0,
+          tardanzas:               tardResult?.count  || 0,
+          justificacionesPendientes: justResult?.count || 0,
+          observacionesSeguimiento: obsResult?.count  || 0,
+          cartasPrevias:           histResult?.count  || 0,
+        },
+        accionSugerida: _suggestedAction(nivelRiesgo),
+      })
+    }
+  })
+
   results.sort((x, y) => y.score - x.score)
   return results
 }

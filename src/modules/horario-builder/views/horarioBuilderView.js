@@ -67,6 +67,9 @@ import { createConflictPanel, attachConflictPanelListeners } from '../components
 import { PERIODOS } from '../models/scheduleConstraints.model.js';
 import { renderPublishWizard } from '../components/PublishWizard.js';
 import { getRunFeedback, addFeedback, updateScheduleRunEstado, getCurrentUserIsAdmin } from '../api/scheduleFeedbackApi.js';
+import { createConstraintPanel, getConstraintPanelValues } from '../components/constraintPanel.js';
+import { buildJornada } from '../utils/constraintUtils.js';
+import { partitionClases } from '../domain/groupPartitioner.js';
 
 // ─── STATE ──────────────────────────────────────────────────────
 
@@ -76,6 +79,7 @@ function initialState() {
     conflicts: [],
     activeView: 'grid',
     activePeriodo: PERIODOS[0].id,
+    periodoId: PERIODOS[0].id,
     draggable: false,
     conflictPanelExpanded: false,
     scheduleRuns: [],
@@ -87,7 +91,12 @@ function initialState() {
     runId: null,
     isAdmin: false,
     feedback: [],
-    publishWizardOpen: false
+    publishWizardOpen: false,
+    // F5A: config/metricas/noAsignadas for save payload
+    lastConfig: null,
+    noAsignadas: [],
+    metricas: null,
+    runEstado: 'borrador'
   };
 }
 
@@ -173,6 +182,11 @@ function renderShell() {
         <select class="hb-periodo-select" id="hb-periodo-select" title="Seleccionar período">
           ${periodOptions}
         </select>
+      </div>
+
+      <!-- Constraint panel (config: jornada, days, duration, sessions) -->
+      <div id="hb-constraint-panel-slot">
+        ${createConstraintPanel({ classes: [] })}
       </div>
 
       <!-- Stats bar -->
@@ -637,22 +651,52 @@ async function handleGenerate() {
   try {
     const data = await fetchSchedulingData();
 
+    // F1C: Read constraint panel values for jornada / duration / sessions config
+    const panelSlot = _container.querySelector('#hb-constraint-panel-slot');
+    const panelValues = panelSlot
+      ? getConstraintPanelValues(panelSlot)
+      : { startTime: '10:00', endTime: '19:00', selectedDays: ['lunes','martes','miércoles','jueves','viernes'], duracion: 60, gap: 15, sesionesPerSemana: 1 };
+
+    const jornada = buildJornada(panelValues.startTime, panelValues.endTime, panelValues.selectedDays);
+
+    // F5A + F5B: Map classes with per-class duration fallback and sessions
+    const clasesConMaestro = (data.clases || []).map(c => ({
+      id: c.id,
+      nombre: c.nombre,
+      maestro_principal_id: c.maestro_principal_id,
+      total_alumnos: c.total_alumnos || 0,
+      duracion: c.duracion_minutos ?? panelValues.duracion,
+      sesiones_por_semana: panelValues.sesionesPerSemana
+    }));
+
+    // F2B: Partition classes into subgroups if they exceed salon capacity
+    const clasesPartitioned = partitionClases(clasesConMaestro, data.salones || []);
+
+    const config = {
+      jornada,
+      gapMinimo: panelValues.gap,
+      duracionBloque: panelValues.duracion,
+      sesionesPerSemana: panelValues.sesionesPerSemana
+    };
+
+    // F5A: Store config for save payload
+    state.lastConfig = config;
+    state.periodoId = state.activePeriodo;
+
     const result = generateOptimizedSchedule({
-      clasesConMaestro: (data.clases || []).map(c => ({
-        id: c.id,
-        nombre: c.nombre,
-        maestro_principal_id: c.maestro_principal_id,
-        total_alumnos: c.total_alumnos || 0,
-        duracion: 60
-      })),
+      clasesConMaestro: clasesPartitioned,
       maestros: data.maestros || [],
       salones: data.salones || [],
-      config: { gapMinimo: 15, duracionBloque: 60 }
+      config
     });
+
+    // F5A: Store noAsignadas and metricas for save payload
+    state.noAsignadas = result.noAsignadas ?? [];
+    state.metricas = result.metricas ?? {};
 
     const { conflicts, assignments } = detectConflicts(result.assignments, {
       returnAnnotated: true,
-      gapMinutes: 15
+      gapMinutes: panelValues.gap
     });
 
     state.assignments = assignments;
@@ -683,11 +727,25 @@ async function handleSave() {
   if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Guardando…'; }
 
   try {
-    const saved = await saveScheduleRun({
-      assignments: state.assignments,
-      periodo_id: state.activePeriodo,
-      estado: 'borrador'
-    });
+    // F2C: Resolve subgroup synthetic IDs back to original clase_id before DB write
+    const resolvedAssignments = state.assignments.map(a => ({
+      ...a,
+      clase_id: a._originalClaseId ?? a.clase_id
+    }));
+
+    // F5A: Send correct payload shape
+    const payload = {
+      periodo: state.periodoId ?? state.activePeriodo,
+      config: state.lastConfig,
+      resultado: {
+        assignments: resolvedAssignments,
+        noAsignadas: state.noAsignadas ?? []
+      },
+      metricas: state.metricas ?? {},
+      estado: state.runEstado ?? 'borrador'
+    };
+
+    const saved = await saveScheduleRun(payload);
     if (saved?.id) {
       state.runId = saved.id;
       state.estado = 'borrador';

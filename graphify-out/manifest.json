@@ -715,8 +715,8 @@
     "semantic_hash": ""
   },
   "src/modules/alumnos/index.js": {
-    "mtime": 1777761397.3712296,
-    "ast_hash": "5916bd2391423702a53590767cb4a9b3",
+    "mtime": 1781989052.4079685,
+    "ast_hash": "5d82f8cf89af451333842d2f759c05f5",
     "semantic_hash": ""
   },
   "src/modules/alumnos/models/alumno.model.js": {
@@ -5802,6 +5802,11 @@
   "src/modules/horario-builder/__tests__/schedulingEngine.multiSession.test.js": {
     "mtime": 1781980497.5711823,
     "ast_hash": "cdad191c0244504f36b2bc6056a3e741",
+    "semantic_hash": ""
+  },
+  "src/modules/alumnos/__tests__/alumnoModel.test.js": {
+    "mtime": 1781988969.4442554,
+    "ast_hash": "65e150d7d78e2b77889ad59a8d3fd8ea",
     "semantic_hash": ""
   }
 }

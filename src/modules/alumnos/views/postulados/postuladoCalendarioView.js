@@ -211,8 +211,8 @@ function getCitasDelDia(dia) {
 }
 
 function attachEvents(container) {
-  // Selector de mes ←
-  document.getElementById('btn-month-prev')?.addEventListener('click', () => {
+  // Selector de mes ← — scoped to container
+  container.querySelector('#btn-month-prev')?.addEventListener('click', () => {
     state.month--
     if (state.month < 1) {
       state.month = 12
@@ -221,8 +221,8 @@ function attachEvents(container) {
     cargarCitas(container)
   })
 
-  // Selector de mes →
-  document.getElementById('btn-month-next')?.addEventListener('click', () => {
+  // Selector de mes → — scoped to container
+  container.querySelector('#btn-month-next')?.addEventListener('click', () => {
     state.month++
     if (state.month > 12) {
       state.month = 1
@@ -231,8 +231,8 @@ function attachEvents(container) {
     cargarCitas(container)
   })
 
-  // Botón "Hoy"
-  document.getElementById('btn-today')?.addEventListener('click', () => {
+  // Botón "Hoy" — scoped to container
+  container.querySelector('#btn-today')?.addEventListener('click', () => {
     state.year = new Date().getFullYear()
     state.month = new Date().getMonth() + 1
     cargarCitas(container)

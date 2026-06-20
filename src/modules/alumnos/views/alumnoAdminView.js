@@ -740,8 +740,8 @@ export async function renderAlumnoAdminView(container, params = {}) {
       asistenciasTab.addEventListener('shown.bs.tab', loadAsistencias)
     }
 
-    // Edit section buttons
-    document.querySelectorAll('[data-edit-section]').forEach(btn => {
+    // Edit section buttons — scoped to container to avoid leaking to sibling views
+    container.querySelectorAll('[data-edit-section]').forEach(btn => {
       btn.addEventListener('click', () => {
         const sectionKey = btn.getAttribute('data-edit-section')
         openEditModal(sectionKey)
@@ -749,7 +749,7 @@ export async function renderAlumnoAdminView(container, params = {}) {
     })
 
     // Modal save
-    const btnSave = document.getElementById('btn-modal-save')
+    const btnSave = container.querySelector('#btn-modal-save')
     if (btnSave) {
       btnSave.addEventListener('click', saveModal)
     }

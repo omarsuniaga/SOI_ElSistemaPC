@@ -242,6 +242,10 @@ export async function actualizarAlumno(id, actualizaciones) {
     throw new Error(`No se pudo actualizar el alumno: ${error.message || 'Error desconocido'}`)
   }
 
+  if (!data || data.length === 0) {
+    throw new Error('Alumno no encontrado tras actualizar')
+  }
+
   return normalizeAlumno(data[0])
 }
 

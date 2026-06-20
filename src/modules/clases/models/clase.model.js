@@ -23,6 +23,7 @@ export class Clase {
     this.nivel_id = data.nivel_id || null
     this.planificacion_id = data.planificacion_id || null
     this.ruta_id = data.ruta_id || null
+    this.whatsapp_group_jid = data.whatsapp_group_jid || null
     this.created_at = data.created_at || null
     this.updated_at = data.updated_at || null
   }
@@ -153,6 +154,7 @@ export class Clase {
       descripcion: this.descripcion.trim() || null,
       tipo_clase: this.tipo_clase || 'grupal',
       ruta_id: this.ruta_id || null,
+      whatsapp_group_jid: this.whatsapp_group_jid || null,
     }
   }
 

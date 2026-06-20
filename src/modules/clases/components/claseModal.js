@@ -126,6 +126,10 @@ function _getClaseFormHTML(clase, inscritosIds, inscritosSlots = []) {
           ${_getEstadosOptions(clase?.estado || 'activa')}
         </select>
       </div>
+      <div class="col-md-6">
+        <label class="form-label-compact">JID del Grupo de WhatsApp</label>
+        <input type="text" class="form-control input-dense" id="modal-whatsapp_group_jid" placeholder="Ej: 120363028392138@g.us" value="${escapeHTML(clase?.whatsapp_group_jid || '')}">
+      </div>
       
       <div class="col-12 mt-3 pt-2 border-top">
         <label class="form-label-compact d-block mb-2"><i class="bi bi-gear me-1"></i> Dinámica de la Clase *</label>
@@ -378,6 +382,7 @@ async function _handleSave(modalBody, originalClase) {
       instrumento: modalBody.querySelector('#modal-instrumento').value.trim(),
       capacidad_maxima: parseInt(modalBody.querySelector('#modal-max_alumnos').value) || 20,
       estado: modalBody.querySelector('#modal-estado').value,
+      whatsapp_group_jid: modalBody.querySelector('#modal-whatsapp_group_jid')?.value?.trim() || null,
       tipo_clase: modalBody.querySelector('input[name="modal-tipo_clase"]:checked')?.value || 'grupal',
       descripcion: modalBody.querySelector('#modal-notas_pedagogicas').value.trim(),
       ruta_id: modalBody.querySelector('#modal-ruta_id')?.value || null,

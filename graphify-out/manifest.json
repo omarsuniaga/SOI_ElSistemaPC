@@ -715,13 +715,13 @@
     "semantic_hash": ""
   },
   "src/modules/alumnos/index.js": {
-    "mtime": 1777761397.3712296,
-    "ast_hash": "5916bd2391423702a53590767cb4a9b3",
+    "mtime": 1781991634.6551788,
+    "ast_hash": "b5e0d1d87aac6ccb1f4b6ff4fa6323e5",
     "semantic_hash": ""
   },
   "src/modules/alumnos/models/alumno.model.js": {
-    "mtime": 1781989013.918449,
-    "ast_hash": "cd102fff8190441db9d82908f8218b36",
+    "mtime": 1781991634.6594224,
+    "ast_hash": "d45d1a2e6a55fe33de913304690b1231",
     "semantic_hash": ""
   },
   "src/modules/alumnos/utils/alumnosUtils.js": {
@@ -5095,8 +5095,8 @@
     "semantic_hash": ""
   },
   "postulados-2026-05-01-2026-05-31.pdf": {
-    "mtime": 1781977882.0860438,
-    "ast_hash": "61891b48f526871657ee78152dcead4d",
+    "mtime": 1781991634.6459794,
+    "ast_hash": "3cae5bacdbee768f3c406281cec54699",
     "semantic_hash": ""
   },
   "src/portal-maestros/Informe Ruta Violinistica Por Nodos.pdf": {
@@ -5460,8 +5460,8 @@
     "semantic_hash": ""
   },
   "openspec/changes/componentizar-vista-asistencia/proposal.md": {
-    "mtime": 1781535204.493966,
-    "ast_hash": "1ef44035c0da90f88cf11eece770c8b2",
+    "mtime": 1781991634.6280417,
+    "ast_hash": "6ffb77a82f738464c033f427dab4a34b",
     "semantic_hash": ""
   },
   "src/assets/data/mocks/bitacora.json": {
@@ -5540,13 +5540,13 @@
     "semantic_hash": ""
   },
   "docs/scratch/debug_full_update.js": {
-    "mtime": 1781723496.388532,
-    "ast_hash": "b32c7fa5ec804476f72c02a14dce2d4c",
+    "mtime": 1781991633.7729328,
+    "ast_hash": "7e14c94de753e3c85d0523c8b6612056",
     "semantic_hash": ""
   },
   "docs/scratch/debug_update.js": {
-    "mtime": 1781723428.8064396,
-    "ast_hash": "c321d426d901394a668c41dc5f365a4c",
+    "mtime": 1781991633.7732546,
+    "ast_hash": "8f7f7b95ff86ad62c152372fedef2d42",
     "semantic_hash": ""
   },
   "docs/scratch/inspect_columns.js": {
@@ -5590,7 +5590,7 @@
     "semantic_hash": ""
   },
   "src/modules/clases/domain/generarPdfClase.js": {
-    "mtime": 1781723739.683823,
+    "mtime": 1781991634.665187,
     "ast_hash": "59b7043254151e98535a0cf4d0aa9cf8",
     "semantic_hash": ""
   },
@@ -5620,22 +5620,22 @@
     "semantic_hash": ""
   },
   "src/modules/salones/__tests__/salonesApi.test.js": {
-    "mtime": 1781747252.561916,
+    "mtime": 1781991634.6771014,
     "ast_hash": "1988a672615ada9ca52bf2d31ac72c2d",
     "semantic_hash": ""
   },
   "src/modules/salones/domain/generarPdfUsoSalones.js": {
-    "mtime": 1781746926.213423,
-    "ast_hash": "278c91753b114aaf2efe041ee750fdcf",
+    "mtime": 1781991634.683403,
+    "ast_hash": "108b4369e3933810fc7974358a05707c",
     "semantic_hash": ""
   },
   "src/modules/salones/domain/generarPdfUsoSalones.test.js": {
-    "mtime": 1781746956.0787206,
-    "ast_hash": "158ebbb26c086a04a74d70d03d02ad45",
+    "mtime": 1781991634.690196,
+    "ast_hash": "2197adf91af72e2de55a28f86950a939",
     "semantic_hash": ""
   },
   "src/modules/salones/views/salonesView.test.js": {
-    "mtime": 1781757974.7415283,
+    "mtime": 1781991634.6917534,
     "ast_hash": "cb2f2b6daa37b7ea24466d7c26c19e79",
     "semantic_hash": ""
   },
@@ -5675,8 +5675,8 @@
     "semantic_hash": ""
   },
   "openspec/changes/alumnos-audit-fixes/tasks.md": {
-    "mtime": 1781980261.30759,
-    "ast_hash": "50a8f9863c787e68c4b6922e39822fb8",
+    "mtime": 1781991634.6234825,
+    "ast_hash": "03bcfcb1f372de8cded534e8bf32520f",
     "semantic_hash": ""
   },
   "src/modules/alumnos/__tests__/alumnosView.modal.test.js": {
@@ -5740,8 +5740,8 @@
     "semantic_hash": ""
   },
   "openspec/changes/horario-builder-optimization/proposal.md": {
-    "mtime": 1781978677.9230497,
-    "ast_hash": "52ee1d24bc770c711f0ed8888fcaff33",
+    "mtime": 1781991634.6360464,
+    "ast_hash": "adf2e0685591964db9b1c77d1cf7543c",
     "semantic_hash": ""
   },
   "src/modules/alumnos/__tests__/alumnoAdminView.test.js": {
@@ -5790,18 +5790,28 @@
     "semantic_hash": ""
   },
   "openspec/changes/horario-builder-optimization/design.md": {
-    "mtime": 1781978952.9079492,
-    "ast_hash": "0ca683664a97b01386a0e294aa0c2da6",
+    "mtime": 1781991634.6321476,
+    "ast_hash": "0a4d9535d5039c9a56c4a4b71fb35a07",
     "semantic_hash": ""
   },
   "openspec/changes/horario-builder-optimization/tasks.md": {
-    "mtime": 1781980703.3136158,
-    "ast_hash": "98f515c56532ed0438bc45a46d1f1a4d",
+    "mtime": 1781991634.6407351,
+    "ast_hash": "993524e21dbe1acca76bc7253a0222f0",
     "semantic_hash": ""
   },
   "src/modules/horario-builder/__tests__/schedulingEngine.multiSession.test.js": {
     "mtime": 1781980497.5711823,
     "ast_hash": "cdad191c0244504f36b2bc6056a3e741",
+    "semantic_hash": ""
+  },
+  "src/modules/alumnos/__tests__/alumnoModel.test.js": {
+    "mtime": 1781991634.6504166,
+    "ast_hash": "9d076b2051a8cb48fc68b142cf32fd8c",
+    "semantic_hash": ""
+  },
+  "src/modules/alumnos/__tests__/postuladosApi.test.js": {
+    "mtime": 1781989223.1642487,
+    "ast_hash": "170fc62dda8907beea235dd10e7e18a8",
     "semantic_hash": ""
   }
 }

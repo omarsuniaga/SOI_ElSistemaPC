@@ -1,9 +1,9 @@
-import { PERIODOS } from '../models/scheduleConstraints.model.js';
+import { PERIODOS, DIAS_SEMANA } from '../models/scheduleConstraints.model.js';
 
 /**
  * Constraint Panel component.
- * Allows configuring the engine variables (period, default class duration, gap)
- * and lists the pending (unscheduled) classes.
+ * Allows configuring the engine variables (period, default class duration, gap,
+ * work hours, active days, sessions per week) and lists pending classes.
  */
 export function createConstraintPanel({
   classes = [],
@@ -30,13 +30,53 @@ export function createConstraintPanel({
       </div>
     `;
 
+  // Default checked days: Mon–Sat (all except Sunday)
+  const defaultCheckedDays = ['lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
+  const dayCheckboxes = DIAS_SEMANA.map(d => {
+    const checked = defaultCheckedDays.includes(d.key) ? 'checked' : '';
+    return `
+      <label style="display:inline-flex;align-items:center;gap:4px;font-size:0.78rem;cursor:pointer;margin-right:6px;">
+        <input type="checkbox" id="cp-day-${d.key}" data-day="${d.key}" ${checked}
+               style="cursor:pointer;">
+        ${d.label}
+      </label>
+    `;
+  }).join('');
+
   return `
     <div class="hb-card" style="padding: 1.25rem;">
       <h3 class="hb-card-title">
         <i class="bi bi-sliders"></i>
         <span>Configuración del Motor</span>
       </h3>
-      
+
+      <!-- Work hours range -->
+      <div class="hb-form-group" style="display:flex;gap:0.75rem;align-items:flex-end;">
+        <div style="flex:1;">
+          <label for="cp-start-time">Hora inicio</label>
+          <input type="time" id="cp-start-time" class="hb-form-control" value="15:30">
+        </div>
+        <div style="flex:1;">
+          <label for="cp-end-time">Hora fin</label>
+          <input type="time" id="cp-end-time" class="hb-form-control" value="18:30">
+        </div>
+      </div>
+
+      <!-- Active days -->
+      <div class="hb-form-group">
+        <label>Días activos</label>
+        <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px;">
+          ${dayCheckboxes}
+        </div>
+      </div>
+
+      <!-- Sessions per week -->
+      <div class="hb-form-group">
+        <label for="cp-sesiones">Sesiones por semana</label>
+        <input type="number" id="cp-sesiones" class="hb-form-control"
+               min="1" max="5" value="1" style="width:80px;">
+      </div>
+
       <div class="hb-form-group">
         <label for="hb-input-periodo">Período Académico</label>
         <select id="hb-input-periodo" class="hb-form-control">
@@ -47,6 +87,7 @@ export function createConstraintPanel({
       <div class="hb-form-group">
         <label for="hb-input-duracion">Duración de Clases</label>
         <select id="hb-input-duracion" class="hb-form-control">
+          <option value="30" ${config.duracionBloque === 30 ? 'selected' : ''}>30 minutos</option>
           <option value="45" ${config.duracionBloque === 45 ? 'selected' : ''}>45 minutos</option>
           <option value="60" ${config.duracionBloque === 60 || !config.duracionBloque ? 'selected' : ''}>60 minutos</option>
           <option value="90" ${config.duracionBloque === 90 ? 'selected' : ''}>90 minutos</option>
@@ -57,6 +98,7 @@ export function createConstraintPanel({
         <label for="hb-input-gap">Gap entre Clases (Descanso)</label>
         <select id="hb-input-gap" class="hb-form-control">
           <option value="0" ${config.gapMinimo === 0 ? 'selected' : ''}>Sin descanso (0m)</option>
+          <option value="10" ${config.gapMinimo === 10 ? 'selected' : ''}>10 minutos</option>
           <option value="15" ${config.gapMinimo === 15 || !config.gapMinimo ? 'selected' : ''}>15 minutos</option>
           <option value="30" ${config.gapMinimo === 30 ? 'selected' : ''}>30 minutos</option>
         </select>
@@ -65,7 +107,7 @@ export function createConstraintPanel({
       <h4 style="font-size: 0.85rem; font-weight: 700; color: var(--hb-text-muted); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">
         Clases Sin Horario Asignado (${pendingClasses.length})
       </h4>
-      
+
       <div class="hb-pending-classes-list" style="max-height: 200px; overflow-y: auto; margin-bottom: 1.5rem; padding-right: 4px;">
         ${pendingListHtml}
       </div>
@@ -76,4 +118,33 @@ export function createConstraintPanel({
       </button>
     </div>
   `;
+}
+
+/**
+ * Reads the current values from a rendered constraint panel DOM container.
+ *
+ * @param {Element} container - The DOM element that holds the panel HTML
+ * @returns {{ startTime, endTime, selectedDays, duracion, gap, sesionesPerSemana }}
+ */
+export function getConstraintPanelValues(container) {
+  const startTimeEl = container.querySelector('#cp-start-time');
+  const endTimeEl   = container.querySelector('#cp-end-time');
+  const sesionesEl  = container.querySelector('#cp-sesiones');
+  const duracionEl  = container.querySelector('#hb-input-duracion');
+  const gapEl       = container.querySelector('#hb-input-gap');
+
+  const startTime = startTimeEl ? startTimeEl.value : '15:30';
+  const endTime   = endTimeEl   ? endTimeEl.value   : '18:30';
+
+  const selectedDays = Array.from(
+    container.querySelectorAll('[data-day]')
+  )
+    .filter(cb => cb.checked)
+    .map(cb => cb.dataset.day);
+
+  const duracion        = duracionEl  ? parseInt(duracionEl.value, 10)  : 60;
+  const gap             = gapEl       ? parseInt(gapEl.value, 10)       : 15;
+  const sesionesPerSemana = sesionesEl ? parseInt(sesionesEl.value, 10) : 1;
+
+  return { startTime, endTime, selectedDays, duracion, gap, sesionesPerSemana };
 }

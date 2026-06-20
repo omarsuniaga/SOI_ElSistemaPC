@@ -1,6 +1,7 @@
 import { obtenerAlumnosPorMes } from '../api/alumnosApi.js'
 import { descargarReporteMensual } from '../domain/generarReporteMensual.js'
 import { openEditAlumnoModal } from '../domain/editarAlumnoModal.js'
+import { calcularCompletitud as calcularCompletitudDomain } from '../domain/completitudAlumno.js'
 
 const MESES = [
   '',
@@ -16,23 +17,6 @@ const MESES = [
   'Octubre',
   'Noviembre',
   'Diciembre',
-]
-
-const CAMPOS_REQUERIDOS = [
-  { key: 'fecha_nacimiento', label: 'Fecha de nacimiento' },
-  { key: 'nacionalidad', label: 'Nacionalidad' },
-  { key: 'municipio_residencia', label: 'Municipio de residencia' },
-  { key: 'sector_calle_numero', label: 'Dirección / Sector' },
-  { key: 'madre_nombre', label: 'Nombre de la madre' },
-  { key: 'madre_tlf_whatsapp', label: 'Teléfono de la madre' },
-  { key: 'representante_nombre', label: 'Nombre del representante' },
-  { key: 'representante_parentesco', label: 'Parentesco del representante' },
-  { key: 'representante_tlf', label: 'Teléfono del representante' },
-  { key: 'interes_musical', label: 'Interés musical' },
-  { key: 'instrumento_interes', label: 'Instrumento de interés' },
-  { key: 'centro_estudios', label: 'Centro de estudios' },
-  { key: 'acepta_pago_600', label: 'Acepta pago RD$600' },
-  { key: 'autoriza_fotos_redes', label: 'Autoriza fotos/redes' },
 ]
 
 function buildMonthOptions() {
@@ -61,23 +45,16 @@ function edad(fechaStr) {
   }
 }
 
-function campoCompleto(val) {
-  if (val === null || val === undefined) return false
-  if (typeof val === 'boolean') return true
-  if (typeof val === 'string') return val.trim() !== ''
-  return true
-}
-
 function calcularCompletitud(alumno) {
-  const camposFaltantes = CAMPOS_REQUERIDOS.filter((c) => !campoCompleto(alumno[c.key]))
-  const completados = CAMPOS_REQUERIDOS.length - camposFaltantes.length
-  const porcentaje = Math.round((completados / CAMPOS_REQUERIDOS.length) * 100)
+  const r = calcularCompletitudDomain(alumno)
+  const completados = r.camposCompletos.length
+  const total = r.camposCompletos.length + r.camposFaltantes.length
   let estado
-  if (porcentaje === 100) estado = 'completa'
-  else if (porcentaje >= 70) estado = 'casi_completa'
+  if (r.nivel === 'completo') estado = 'completa'
+  else if (r.nivel === 'bueno' || r.nivel === 'parcial') estado = 'casi_completa'
   else estado = 'incompleta'
 
-  return { completados, total: CAMPOS_REQUERIDOS.length, porcentaje, camposFaltantes, estado }
+  return { completados, total, porcentaje: r.porcentaje, camposFaltantes: r.camposFaltantes, estado }
 }
 
 function badgeHtml(estado, porcentaje) {

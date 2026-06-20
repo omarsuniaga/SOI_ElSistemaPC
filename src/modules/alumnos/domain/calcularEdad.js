@@ -2,23 +2,25 @@
  * Calculates the completed age in years from a date string.
  *
  * @param {string} fechaNacimiento - Date string in YYYY-MM-DD format.
- * @param {Date} [today=new Date()] - Reference date (injectable for testing).
- * @returns {number} Completed years of age.
- * @throws {Error} If fechaNacimiento is null, empty, invalid, or in the future.
+ * @param {object} [options] - Optional parameters.
+ * @param {*} [options.fallback=null] - Value to return when fechaNacimiento is null/empty.
+ * @param {Date} [options.today=new Date()] - Reference date (injectable for testing).
+ * @returns {number|*} Completed years of age, or fallback.
+ * @throws {Error} If fechaNacimiento is invalid, in the future, and no fallback is provided.
  */
-export function calcularEdad(fechaNacimiento, today = new Date()) {
+export function calcularEdad(fechaNacimiento, { fallback = null, today = new Date() } = {}) {
   if (!fechaNacimiento) {
-    throw new Error('fechaNacimiento is required')
+    return fallback
   }
 
   const birth = new Date(fechaNacimiento)
 
   if (isNaN(birth.getTime())) {
-    throw new Error(`Invalid date: "${fechaNacimiento}"`)
+    return fallback
   }
 
   if (birth > today) {
-    throw new Error('fechaNacimiento cannot be in the future')
+    return fallback
   }
 
   let age = today.getFullYear() - birth.getFullYear()

@@ -3,7 +3,8 @@
  * Reutilizable para mostrar información resumida de un alumno
  */
 
-import { escapeHTML, getInitials, formatDate, calcularEdad, getEstadoClass, getEstadoLabel } from '../utils/alumnosUtils.js'
+import { escapeHTML, getInitials, formatDate, getEstadoClass, getEstadoLabel } from '../utils/alumnosUtils.js'
+import { calcularEdad } from '../domain/calcularEdad.js'
 
 export function createAlumnoCard(alumno, showActions = true, onEdit = null, onDelete = null) {
   const edad = calcularEdad(alumno.fecha_nacimiento)
@@ -15,16 +16,16 @@ export function createAlumnoCard(alumno, showActions = true, onEdit = null, onDe
       <div class="d-flex justify-content-between align-items-start mb-2">
         <div class="d-flex gap-2 align-items-start flex-grow-1">
           <div class="avatar bg-body-secondary rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width: 40px; height: 40px;">
-            <strong class="small">${getInitials(alumno.name)}</strong>
+            <strong class="small">${getInitials(alumno.nombre)}</strong>
           </div>
           <div class="flex-grow-1">
-            <h6 class="card-title mb-1" title="${escapeHTML(alumno.name)}">
-              ${escapeHTML(alumno.name)}
+            <h6 class="card-title mb-1" title="${escapeHTML(alumno.nombre)}">
+              ${escapeHTML(alumno.nombre)}
             </h6>
-            ${alumno.section ? `<small class="text-muted d-block"><i class="bi bi-music-note"></i> ${escapeHTML(alumno.section)}</small>` : ''}
+            ${alumno.instrumento_principal ? `<small class="text-muted d-block"><i class="bi bi-music-note"></i> ${escapeHTML(alumno.instrumento_principal)}</small>` : ''}
           </div>
         </div>
-        <span class="badge ${getEstadoClass(alumno.es_activo)} flex-shrink-0">${getEstadoLabel(alumno.es_activo)}</span>
+        <span class="badge ${getEstadoClass(alumno.is_active)} flex-shrink-0">${getEstadoLabel(alumno.is_active)}</span>
       </div>
 
       <hr class="my-2">
@@ -33,7 +34,7 @@ export function createAlumnoCard(alumno, showActions = true, onEdit = null, onDe
         ${alumno.email ? `<div class="mb-1"><i class="bi bi-envelope"></i> ${escapeHTML(alumno.email)}</div>` : ''}
         ${alumno.cedula ? `<div class="mb-1"><i class="bi bi-card-text"></i> ${escapeHTML(alumno.cedula)}</div>` : ''}
         ${edad ? `<div class="mb-1"><i class="bi bi-calendar"></i> ${edad} años</div>` : ''}
-        ${alumno.acudiente ? `<div><i class="bi bi-person-check"></i> ${escapeHTML(alumno.acudiente)}</div>` : ''}
+        ${alumno.familiar_nombre ? `<div><i class="bi bi-person-check"></i> ${escapeHTML(alumno.familiar_nombre)}</div>` : ''}
       </div>
 
       <hr class="my-2">
@@ -77,14 +78,14 @@ export function createAlumnoListItem(alumno) {
   li.innerHTML = `
     <div class="d-flex justify-content-between align-items-start">
       <div>
-        <h6 class="mb-1">${escapeHTML(alumno.name)}</h6>
+        <h6 class="mb-1">${escapeHTML(alumno.nombre)}</h6>
         <p class="mb-1 small text-muted">
           ${alumno.cedula ? `<span class="badge bg-body-tertiary text-body me-2 border">${escapeHTML(alumno.cedula)}</span>` : ''}
           ${edad ? `<span class="badge bg-body-tertiary text-body border">${edad} años</span>` : ''}
         </p>
         ${alumno.email ? `<small class="text-muted"><a href="mailto:${escapeHTML(alumno.email)}">${escapeHTML(alumno.email)}</a></small>` : ''}
       </div>
-      <span class="badge ${getEstadoClass(alumno.es_activo)}">${getEstadoLabel(alumno.es_activo)}</span>
+      <span class="badge ${getEstadoClass(alumno.is_active)}">${getEstadoLabel(alumno.is_active)}</span>
     </div>
   `
 

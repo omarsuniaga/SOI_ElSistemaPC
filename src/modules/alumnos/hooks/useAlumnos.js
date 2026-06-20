@@ -48,7 +48,9 @@ export class AlumnosHook {
     this.notifyListeners()
 
     try {
-      this.alumnos = await obtenerAlumnos()
+      // D01: obtenerAlumnos now returns { alumnos, total }
+      const { alumnos } = await obtenerAlumnos()
+      this.alumnos = alumnos
       this.cargando = false
       this.notifyListeners()
       return this.alumnos

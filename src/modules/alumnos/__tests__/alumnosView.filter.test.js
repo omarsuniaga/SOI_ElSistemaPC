@@ -1,6 +1,7 @@
 /**
  * alumnosView.filter.test.js
  * C02 — search filter includes email and cedula
+ * D02 — memoized calcularCompletitud (called once on load, not on filter)
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
@@ -35,7 +36,7 @@ const mockAlumnos = [
 ]
 
 vi.mock('../api/alumnosApi.js', () => ({
-  obtenerAlumnos: vi.fn().mockResolvedValue(mockAlumnos),
+  obtenerAlumnos: vi.fn().mockResolvedValue({ alumnos: mockAlumnos, total: mockAlumnos.length }),
   crearAlumno: vi.fn(),
   actualizarAlumno: vi.fn(),
   eliminarAlumno: vi.fn(),
@@ -46,7 +47,7 @@ vi.mock('../api/alumnosApi.js', () => ({
 }))
 vi.mock('../domain/calcularEdad.js', () => ({ calcularEdad: vi.fn(() => null) }))
 vi.mock('../domain/completitudAlumno.js', () => ({
-  calcularCompletitud: vi.fn(() => ({ porcentaje: 0, nivel: 'bajo' })),
+  calcularCompletitud: vi.fn(() => ({ porcentaje: 0, nivel: 'bajo', camposFaltantes: [], camposCompletos: [], porGrupo: {} })),
   NIVEL_COLOR: {},
   NIVEL_LABEL: {},
 }))
@@ -122,5 +123,77 @@ describe('C02 — search includes email and cedula', () => {
     const applyFiltersBody = source.slice(applyFiltersIdx, applyFiltersIdx + 2000)
     expect(applyFiltersBody).toMatch(/email/)
     expect(applyFiltersBody).toMatch(/cedula/)
+  })
+})
+
+describe('D02 — memoized calcularCompletitud', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('source: alumnosOriginales map attaches _completitud on load', async () => {
+    const fs = await import('fs')
+    const path = await import('path')
+    const { fileURLToPath } = await import('url')
+    const { dirname } = await import('path')
+
+    const thisFile = fileURLToPath(import.meta.url)
+    const viewPath = path.join(dirname(thisFile), '..', 'views', 'alumnosView.js')
+    const source = fs.readFileSync(viewPath, 'utf8')
+
+    // After GREEN: load step must map alumnos to attach _completitud
+    expect(source).toMatch(/_completitud:\s*calcularCompletitud/)
+  })
+
+  it('source: applyFilters uses a._completitud not calcularCompletitud(a)', async () => {
+    const fs = await import('fs')
+    const path = await import('path')
+    const { fileURLToPath } = await import('url')
+    const { dirname } = await import('path')
+
+    const thisFile = fileURLToPath(import.meta.url)
+    const viewPath = path.join(dirname(thisFile), '..', 'views', 'alumnosView.js')
+    const source = fs.readFileSync(viewPath, 'utf8')
+
+    const applyFiltersIdx = source.indexOf('function applyFilters')
+    expect(applyFiltersIdx).toBeGreaterThan(-1)
+    const applyFiltersBody = source.slice(applyFiltersIdx, applyFiltersIdx + 2000)
+
+    // Must NOT call calcularCompletitud(a) inside applyFilters
+    expect(applyFiltersBody).not.toMatch(/calcularCompletitud\s*\(a\)/)
+    // Must use a._completitud instead
+    expect(applyFiltersBody).toMatch(/a\._completitud/)
+  })
+
+  it('source: sort block uses a._completitud not calcularCompletitud(a)', async () => {
+    const fs = await import('fs')
+    const path = await import('path')
+    const { fileURLToPath } = await import('url')
+    const { dirname } = await import('path')
+
+    const thisFile = fileURLToPath(import.meta.url)
+    const viewPath = path.join(dirname(thisFile), '..', 'views', 'alumnosView.js')
+    const source = fs.readFileSync(viewPath, 'utf8')
+
+    // The sort block that references _completitud must use a._completitud.porcentaje
+    expect(source).toMatch(/a\._completitud\.porcentaje/)
+    expect(source).toMatch(/b\._completitud\.porcentaje/)
+  })
+
+  it('calcularCompletitud called exactly N times for N alumnos (once on load, not on filter)', async () => {
+    const { calcularCompletitud } = await import('../domain/completitudAlumno.js')
+    const { renderAlumnosView } = await import('../views/alumnosView.js')
+
+    const container = buildContainer()
+    document.body.appendChild(container)
+
+    calcularCompletitud.mockClear()
+    await renderAlumnosView(container)
+
+    // After memoization: called exactly once per alumno (2 alumnos in mock)
+    const callsAfterLoad = calcularCompletitud.mock.calls.length
+    expect(callsAfterLoad).toBe(mockAlumnos.length)
+
+    document.body.removeChild(container)
   })
 })

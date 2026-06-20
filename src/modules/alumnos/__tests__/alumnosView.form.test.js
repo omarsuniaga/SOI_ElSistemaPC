@@ -21,7 +21,7 @@ vi.mock('../../../shared/components/AppToast.js', () => ({
 }))
 
 vi.mock('../api/alumnosApi.js', () => ({
-  obtenerAlumnos: vi.fn().mockResolvedValue([]),
+  obtenerAlumnos: vi.fn().mockResolvedValue({ alumnos: [], total: 0 }),
   crearAlumno: vi.fn(),
   actualizarAlumno: vi.fn(),
   eliminarAlumno: vi.fn(),

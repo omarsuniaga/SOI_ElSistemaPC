@@ -299,24 +299,24 @@ export async function renderAlumnoAdminView(container, params = {}) {
     </div>
   `
 
-  // Fetch alumno
-  const { data: alumno, error: alumnoError } = await supabase
-    .from('alumnos')
-    .select('*')
-    .eq('id', alumnoId)
-    .single()
+  // D04: Fetch alumno and enrolled classes in parallel
+  const [{ data: alumno, error: alumnoError }, { data: clasesData }] = await Promise.all([
+    supabase
+      .from('alumnos')
+      .select('*')
+      .eq('id', alumnoId)
+      .single(),
+    supabase
+      .from('alumnos_clases')
+      .select('clase_id, clases(id, nombre, clase_horarios(dia, hora_inicio))')
+      .eq('alumno_id', alumnoId)
+      .eq('activo', true),
+  ])
 
   if (alumnoError || !alumno) {
     container.innerHTML = `<div class="alert alert-danger m-4">Error al cargar el alumno: ${escapeHTML(alumnoError?.message || 'No encontrado')}</div>`
     return
   }
-
-  // Fetch enrolled classes
-  const { data: clasesData } = await supabase
-    .from('alumnos_clases')
-    .select('clase_id, clases(id, nombre, clase_horarios(dia, hora_inicio))')
-    .eq('alumno_id', alumnoId)
-    .eq('activo', true)
 
   const clases = (clasesData || []).map(r => r.clases).filter(Boolean)
 

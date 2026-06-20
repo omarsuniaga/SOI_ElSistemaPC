@@ -29,6 +29,7 @@ import {
 const state = {
   alumnos: [],
   alumnosOriginales: [],
+  totalAlumnos: 0,
   cargando: false,
   editando: null,
   viewingId: null,
@@ -40,6 +41,8 @@ const state = {
 }
 
 let currentContainer = null
+// D03: AbortController for SPA event-listener cleanup
+let _abortController = null
 
 const VALIDATION = {
   nombreMax: 100,
@@ -54,13 +57,24 @@ const VALIDATION = {
 
 
 export async function renderAlumnosView(container) {
+  // D03: Abort previous listeners and create fresh AbortController
+  _abortController?.abort()
+  _abortController = new AbortController()
+
   try {
     state.cargando = true
+    currentContainer = container
     renderLoading(container)
 
-    const alumnos = await obtenerAlumnos()
-    state.alumnos = alumnos
-    state.alumnosOriginales = [...alumnos]
+    // D01: obtenerAlumnos now returns { alumnos, total }
+    const { alumnos, total } = await obtenerAlumnos()
+    state.totalAlumnos = total
+    // D02: memoize calcularCompletitud once per alumno at load time
+    state.alumnosOriginales = alumnos.map(a => ({
+      ...a,
+      _completitud: calcularCompletitud(a),
+    }))
+    state.alumnos = [...state.alumnosOriginales]
     state.cargando = false
 
     // Render and wire events first, then apply filters (which includes sort)
@@ -71,6 +85,11 @@ export async function renderAlumnosView(container) {
   } catch (error) {
     console.error(error)
     renderError(container, error.message)
+  }
+
+  // D03: Return teardown function to abort all event listeners
+  return {
+    teardown: () => _abortController?.abort(),
   }
 }
 
@@ -253,7 +272,7 @@ function renderTableRows(alumnos) {
     const accentClass = `border-accent-${isActive ? 'success' : 'secondary'}`
     const statusDotClass = `bg-${isActive ? 'success' : 'secondary'}`
     
-    const { porcentaje, nivel } = calcularCompletitud(a)
+    const { porcentaje, nivel } = a._completitud || { porcentaje: 0, nivel: 'sin_datos' }
     const tieneBadge = nivel !== 'completo'
     const badgeColor = tieneBadge ? NIVEL_COLOR[nivel] : ''
 
@@ -325,12 +344,14 @@ function renderEmpty() {
 
 function attachGlobalEvents(container) {
   currentContainer = container
+  // D03: grab signal so all listeners are cleaned up on teardown
+  const signal = _abortController?.signal
 
-  container.querySelector('#btnAgregarAlumno')?.addEventListener('click', () => openCreateModal())
+  container.querySelector('#btnAgregarAlumno')?.addEventListener('click', () => openCreateModal(), { signal })
 
-  container.querySelector('#btnInscribir')?.addEventListener('click', () => window.router?.navigate('alumnos-inscribir'))
-  container.querySelector('#btnReporteMes')?.addEventListener('click', () => window.router?.navigate('alumnos-reporte-mes'))
-  container.querySelector('#btnPdfDemo')?.addEventListener('click', () => window.router?.navigate('alumnos-pdf-demo'))
+  container.querySelector('#btnInscribir')?.addEventListener('click', () => window.router?.navigate('alumnos-inscribir'), { signal })
+  container.querySelector('#btnReporteMes')?.addEventListener('click', () => window.router?.navigate('alumnos-reporte-mes'), { signal })
+  container.querySelector('#btnPdfDemo')?.addEventListener('click', () => window.router?.navigate('alumnos-pdf-demo'), { signal })
 
   container.querySelector('#btnDescargarPdfListado')?.addEventListener('click', async (e) => {
     const btn = e.currentTarget
@@ -351,9 +372,9 @@ function attachGlobalEvents(container) {
       btn.disabled = false
       btn.innerHTML = originalText
     }
-  })
+  }, { signal })
 
-  container.querySelector('#btnExportarCSV')?.addEventListener('click', () => exportarAlumnosCSV())
+  container.querySelector('#btnExportarCSV')?.addEventListener('click', () => exportarAlumnosCSV(), { signal })
 
   // C07: Sort column headers
   container.querySelectorAll('[data-sort]').forEach(btn => {
@@ -366,15 +387,15 @@ function attachGlobalEvents(container) {
         state.sortDir = 'asc'
       }
       applyFilters()
-    })
+    }, { signal })
   })
 
   const searchInput = container.querySelector('#buscar')
-  searchInput?.addEventListener('input', applyFilters)
+  searchInput?.addEventListener('input', applyFilters, { signal })
 
-  container.querySelector('#filtroWhatsapp')?.addEventListener('change', applyFilters)
-  container.querySelector('#filtroCompletitud')?.addEventListener('change', applyFilters)
-  container.querySelector('#filtroInstrumento')?.addEventListener('change', applyFilters)
+  container.querySelector('#filtroWhatsapp')?.addEventListener('change', applyFilters, { signal })
+  container.querySelector('#filtroCompletitud')?.addEventListener('change', applyFilters, { signal })
+  container.querySelector('#filtroInstrumento')?.addEventListener('change', applyFilters, { signal })
 
   container.querySelector('#btnLimpiarFiltros')?.addEventListener('click', (e) => {
     e.stopPropagation()
@@ -385,7 +406,7 @@ function attachGlobalEvents(container) {
     if (cSelect) cSelect.value = 'todos'
     if (iSelect) iSelect.value = 'todos'
     applyFilters()
-  })
+  }, { signal })
 
   const tbody = container.querySelector('#alumnosTBody')
   tbody?.addEventListener('click', async (e) => {
@@ -405,7 +426,7 @@ function attachGlobalEvents(container) {
     } else if (btn.dataset.action === 'whatsapp') {
       openWhatsAppModal(id)
     }
-  })
+  }, { signal })
 }
 
 function openWhatsAppModal(id) {
@@ -461,8 +482,8 @@ function applyFilters() {
       (filtroWhatsapp === 'con_whatsapp' && tieneWhatsapp) ||
       (filtroWhatsapp === 'sin_whatsapp' && !tieneWhatsapp)
 
-    // 3. Filtro por Completitud (Rango de Badge)
-    const { nivel } = calcularCompletitud(a)
+    // 3. Filtro por Completitud (Rango de Badge) — use memoized _completitud (set at load time)
+    const { nivel } = a._completitud
     const matchCompletitud = filtroCompletitud === 'todos' ||
       (filtroCompletitud === nivel)
 
@@ -501,8 +522,8 @@ function applyFilters() {
   state.alumnos.sort((a, b) => {
     let valA, valB
     if (sortBy === '_completitud') {
-      valA = calcularCompletitud(a).porcentaje ?? 0
-      valB = calcularCompletitud(b).porcentaje ?? 0
+      valA = a._completitud.porcentaje ?? 0
+      valB = b._completitud.porcentaje ?? 0
     } else {
       valA = (a[sortBy] || '').toString().toLowerCase()
       valB = (b[sortBy] || '').toString().toLowerCase()

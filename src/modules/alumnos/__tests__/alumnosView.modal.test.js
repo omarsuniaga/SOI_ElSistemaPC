@@ -42,7 +42,7 @@ let actualizarAlumnoMock
 vi.mock('../api/alumnosApi.js', async () => {
   actualizarAlumnoMock = vi.fn().mockResolvedValue({ id: 1, nombre: 'Test' })
   return {
-    obtenerAlumnos: vi.fn().mockResolvedValue([]),
+    obtenerAlumnos: vi.fn().mockResolvedValue({ alumnos: [], total: 0 }),
     crearAlumno: vi.fn(),
     actualizarAlumno: (...args) => actualizarAlumnoMock(...args),
     eliminarAlumno: vi.fn().mockResolvedValue(undefined),

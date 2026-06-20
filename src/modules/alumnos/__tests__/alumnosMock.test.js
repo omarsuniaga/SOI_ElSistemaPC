@@ -7,13 +7,16 @@ describe('alumnosMock hoisting', () => {
     }).not.toThrow()
   })
 
-  it('obtenerAlumnos returns normalized data without error', async () => {
+  it('obtenerAlumnos returns { alumnos, total } shape with normalized data', async () => {
     const mod = await import('../api/alumnosMock.js')
-    const alumnos = await mod.obtenerAlumnos()
-    expect(Array.isArray(alumnos)).toBe(true)
-    expect(alumnos.length).toBeGreaterThan(0)
+    const result = await mod.obtenerAlumnos()
+    // D01: new return shape is { alumnos, total }
+    expect(result).toHaveProperty('alumnos')
+    expect(result).toHaveProperty('total')
+    expect(Array.isArray(result.alumnos)).toBe(true)
+    expect(result.alumnos.length).toBeGreaterThan(0)
     // Verify normalization ran
-    expect(alumnos[0]).toHaveProperty('nombre')
-    expect(alumnos[0]).toHaveProperty('clases')
+    expect(result.alumnos[0]).toHaveProperty('nombre')
+    expect(result.alumnos[0]).toHaveProperty('clases')
   })
 })

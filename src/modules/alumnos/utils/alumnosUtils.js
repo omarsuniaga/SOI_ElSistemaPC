@@ -14,33 +14,18 @@ export function formatDate(dateStr) {
 }
 
 /**
- * Formatea una edad basada en fecha de nacimiento
- * @param {string|Date} fechaNacimiento
- * @returns {number}
- */
-export function calcularEdad(fechaNacimiento) {
-  if (!fechaNacimiento) return null
-  const hoy = new Date()
-  const fecha = new Date(fechaNacimiento)
-  let edad = hoy.getFullYear() - fecha.getFullYear()
-  const m = hoy.getMonth() - fecha.getMonth()
-  if (m < 0 || (m === 0 && hoy.getDate() < fecha.getDate())) {
-    edad--
-  }
-  return edad
-}
-
-/**
  * Escapa caracteres HTML para prevenir XSS
  * @param {string} str
  * @returns {string}
  */
 export function escapeHTML(str) {
   if (str == null) return ''
-  return String(str).replace(/[&<>]/g, function(m) {
+  return String(str).replace(/[&<>"']/g, function(m) {
     if (m === '&') return '&amp;'
     if (m === '<') return '&lt;'
     if (m === '>') return '&gt;'
+    if (m === '"') return '&quot;'
+    if (m === "'") return '&#39;'
     return m
   })
 }
@@ -127,12 +112,17 @@ export function equalsIgnoreAccents(a, b) {
  */
 export function getInitials(nombre) {
   if (!nombre) return '?'
-  return nombre
+  const initials = nombre
     .split(' ')
     .map(n => n[0])
     .join('')
     .toUpperCase()
     .slice(0, 2)
+  // Single word: take first 2 chars instead of 1
+  if (initials.length === 1) {
+    return nombre.trim().slice(0, 2).toUpperCase()
+  }
+  return initials
 }
 
 /**

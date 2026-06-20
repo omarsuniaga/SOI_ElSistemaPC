@@ -103,10 +103,10 @@ export class AlumnosHook {
 
     const term = searchTerm.toLowerCase()
     return this.alumnos.filter(a =>
-      (a.name || '').toLowerCase().includes(term) ||
+      (a.nombre || '').toLowerCase().includes(term) ||
       (a.email || '').toLowerCase().includes(term) ||
       (a.cedula || '').toLowerCase().includes(term) ||
-      (a.acudiente || '').toLowerCase().includes(term)
+      (a.familiar_nombre || '').toLowerCase().includes(term)
     )
   }
 
@@ -116,7 +116,7 @@ export class AlumnosHook {
    * @returns {Array}
    */
   filterByEstado(esActivo) {
-    return this.alumnos.filter(a => a.es_activo === esActivo)
+    return this.alumnos.filter(a => a.is_active === esActivo)
   }
 
   /**
@@ -133,7 +133,7 @@ export class AlumnosHook {
    * @returns {Array}
    */
   getActivos() {
-    return this.alumnos.filter(a => a.es_activo)
+    return this.alumnos.filter(a => a.is_active)
   }
 
   /**
@@ -141,7 +141,7 @@ export class AlumnosHook {
    * @returns {Array}
    */
   getInactivos() {
-    return this.alumnos.filter(a => !a.es_activo)
+    return this.alumnos.filter(a => !a.is_active)
   }
 
   /**
@@ -158,7 +158,7 @@ export class AlumnosHook {
    */
   countBySection() {
     return this.alumnos.reduce((acc, a) => {
-      const section = a.section || 'Sin sección'
+      const section = a.instrumento_principal || 'Sin sección'
       acc[section] = (acc[section] || 0) + 1
       return acc
     }, {})

@@ -4,7 +4,8 @@
  */
 
 import { supabase } from '../../../lib/supabaseClient.js'
-import { formatDate, calcularEdad, escapeHTML } from '../utils/alumnosUtils.js'
+import { formatDate, escapeHTML } from '../utils/alumnosUtils.js'
+import { calcularEdad } from '../domain/calcularEdad.js'
 import { calcularCompletitud, NIVEL_COLOR, NIVEL_LABEL } from '../domain/completitudAlumno.js'
 import { formatPhone, whatsappLink } from '../../../shared/utils/phoneUtils.js'
 import { descargarFichaAlumno, descargarConstancia } from '../domain/generarPdfInscripcion.js'

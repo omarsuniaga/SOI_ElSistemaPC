@@ -14,9 +14,9 @@ import {
   obtenerAlumnosFiltradosYOrdenados,
 } from '../api/alumnosApi.js'
 import { descargarPdfListadoAlumnos } from '../domain/generarPdfInscripcion.js'
+import { calcularEdad } from '../domain/calcularEdad.js'
 import {
   formatDate,
-  calcularEdad,
   escapeHTML,
   isValidEmail,
   formatGenero,
@@ -1170,7 +1170,7 @@ function exportarAlumnosCSV() {
     a.nombre || '',
     a.email || '',
     a.telefono || '',
-    a.estado || 'activo',
+    a.is_active ? 'Activo' : 'Inactivo',
     a.fecha_nacimiento || '',
     a.section || ''
   ])
@@ -1179,7 +1179,7 @@ function exportarAlumnosCSV() {
     .map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
     .join('\n')
 
-  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+  const blob = new Blob(['\ufeff', csvContent], { type: 'text/csv;charset=utf-8;' })
   const link = document.createElement('a')
   link.href = URL.createObjectURL(blob)
   link.download = `alumnos-${new Date().toISOString().split('T')[0]}.csv`

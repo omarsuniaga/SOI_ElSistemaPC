@@ -12,7 +12,7 @@ vi.mock('../../../shared/components/AppToast.js', () => ({
   AppToast: { success: vi.fn(), error: vi.fn() },
 }))
 vi.mock('../api/alumnosApi.js', () => ({
-  obtenerAlumnos: vi.fn().mockResolvedValue([]),
+  obtenerAlumnos: vi.fn().mockResolvedValue({ alumnos: [], total: 0 }),
   crearAlumno: vi.fn(),
   actualizarAlumno: vi.fn(),
   eliminarAlumno: vi.fn(),
@@ -95,9 +95,10 @@ describe('B02 — refreshTable empty state', () => {
 
   it('tbody has rows and emptyContainer is hidden when alumnos exist', async () => {
     const { obtenerAlumnos } = await import('../api/alumnosApi.js')
-    obtenerAlumnos.mockResolvedValueOnce([
-      { id: 1, nombre: 'Ana Lopez', email: 'ana@test.com', is_active: true },
-    ])
+    obtenerAlumnos.mockResolvedValueOnce({
+      alumnos: [{ id: 1, nombre: 'Ana Lopez', email: 'ana@test.com', is_active: true }],
+      total: 1,
+    })
 
     const { renderAlumnosView } = await import('../views/alumnosView.js')
 

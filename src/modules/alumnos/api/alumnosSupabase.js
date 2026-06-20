@@ -75,18 +75,22 @@ function normalizeAlumno(a) {
   }
 }
 
-export async function obtenerAlumnos() {
-  const { data, error } = await supabase
+export async function obtenerAlumnos({ page = 0, pageSize = 100 } = {}) {
+  const from = page * pageSize
+  const to = from + pageSize - 1
+
+  const { data, error, count } = await supabase
     .from('alumnos')
-    .select('*')
+    .select('*', { count: 'exact' })
     .order('nombre_completo', { ascending: true })
+    .range(from, to)
 
   if (error) {
     console.error('Error cargando alumnos:', error.message)
     throw new Error('No se pudieron cargar los alumnos')
   }
 
-  return data.map(normalizeAlumno)
+  return { alumnos: (data || []).map(normalizeAlumno), total: count ?? 0 }
 }
 
 export async function obtenerAlumno(id) {

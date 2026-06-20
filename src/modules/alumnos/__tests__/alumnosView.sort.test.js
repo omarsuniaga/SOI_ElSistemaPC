@@ -19,11 +19,14 @@ vi.mock('../../../shared/components/AppToast.js', () => ({
   AppToast: { success: vi.fn(), error: vi.fn() },
 }))
 vi.mock('../api/alumnosApi.js', () => ({
-  obtenerAlumnos: vi.fn().mockResolvedValue([
-    { id: 1, nombre: 'Zara Martínez', email: null, is_active: true, instrumento: 'Violin', telefono: '8091111111', familiar_nombre: null },
-    { id: 2, nombre: 'Ana Gómez', email: null, is_active: true, instrumento: 'Piano', telefono: '8092222222', familiar_nombre: null },
-    { id: 3, nombre: 'Luis Pérez', email: null, is_active: true, instrumento: 'Cello', telefono: '8093333333', familiar_nombre: null },
-  ]),
+  obtenerAlumnos: vi.fn().mockResolvedValue({
+    alumnos: [
+      { id: 1, nombre: 'Zara Martínez', email: null, is_active: true, instrumento: 'Violin', telefono: '8091111111', familiar_nombre: null },
+      { id: 2, nombre: 'Ana Gómez', email: null, is_active: true, instrumento: 'Piano', telefono: '8092222222', familiar_nombre: null },
+      { id: 3, nombre: 'Luis Pérez', email: null, is_active: true, instrumento: 'Cello', telefono: '8093333333', familiar_nombre: null },
+    ],
+    total: 3,
+  }),
   crearAlumno: vi.fn(),
   actualizarAlumno: vi.fn(),
   eliminarAlumno: vi.fn(),

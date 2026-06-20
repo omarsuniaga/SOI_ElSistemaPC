@@ -39,9 +39,12 @@ function normalizeAlumno(a) {
 // Persistencia en memoria local (solo por sesión para el demo)
 let alumnos = [...alumnosMockData]
 
-export async function obtenerAlumnos() {
+export async function obtenerAlumnos({ page = 0, pageSize = 100 } = {}) {
   await delay()
-  return alumnos.map(normalizeAlumno)
+  const from = page * pageSize
+  const to = from + pageSize
+  const paginated = alumnos.slice(from, to)
+  return { alumnos: paginated.map(normalizeAlumno), total: alumnos.length }
 }
 
 export async function obtenerAlumno(id) {

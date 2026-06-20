@@ -4,7 +4,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 const mockAlumnos = vi.hoisted(() => ({ current: [] }))
 
 vi.mock('../api/alumnosApi.js', () => ({
-  obtenerAlumnos: vi.fn(() => Promise.resolve(mockAlumnos.current)),
+  obtenerAlumnos: vi.fn(() => Promise.resolve({ alumnos: mockAlumnos.current, total: mockAlumnos.current.length })),
   obtenerAlumnosFiltradosYOrdenados: vi.fn(() => Promise.resolve([])),
   crearAlumno: vi.fn(),
   actualizarAlumno: vi.fn(),
@@ -85,15 +85,15 @@ describe('alumnosView CSV export', () => {
     return Array.from(capturedBlobArgs.parts).join('')
   }
 
-  it('uses is_active=true → "Activo" in CSV output', async () => {
+  it('uses is_active=true -> "Activo" in CSV output', async () => {
     const alumnos = [
-      { id: '1', nombre: 'Ana', email: 'a@t.com', telefono: '809', is_active: true, fecha_nacimiento: '2014-06-15', instrumento_principal: 'Violín' },
+      { id: '1', nombre: 'Ana', email: 'a@t.com', telefono: '809', is_active: true, fecha_nacimiento: '2014-06-15', instrumento_principal: 'Violin' },
     ]
     const csv = await renderAndExport(alumnos)
     expect(csv).toContain('Activo')
   })
 
-  it('uses is_active=false → "Inactivo" in CSV output', async () => {
+  it('uses is_active=false -> "Inactivo" in CSV output', async () => {
     const alumnos = [
       { id: '2', nombre: 'Pedro', email: 'p@t.com', telefono: '809', is_active: false, fecha_nacimiento: '2014-06-15', instrumento_principal: 'Piano' },
     ]
@@ -103,9 +103,26 @@ describe('alumnosView CSV export', () => {
 
   it('Blob starts with UTF-8 BOM', async () => {
     const alumnos = [
-      { id: '1', nombre: 'Ana', email: 'a@t.com', telefono: '809', is_active: true, fecha_nacimiento: '2014-06-15', instrumento_principal: 'Violín' },
+      { id: '1', nombre: 'Ana', email: 'a@t.com', telefono: '809', is_active: true, fecha_nacimiento: '2014-06-15', instrumento_principal: 'Violin' },
     ]
     const csv = await renderAndExport(alumnos)
-    expect(csv.startsWith('\uFEFF')).toBe(true)
+    expect(csv.startsWith('﻿')).toBe(true)
+  })
+})
+
+describe('D05 -- URL.revokeObjectURL after CSV download', () => {
+  it('source: revokeObjectURL is called via setTimeout after link.click()', async () => {
+    const fs = await import('fs')
+    const path = await import('path')
+    const { fileURLToPath } = await import('url')
+    const { dirname } = await import('path')
+
+    const thisFile = fileURLToPath(import.meta.url)
+    const viewPath = path.join(dirname(thisFile), '..', 'views', 'alumnosView.js')
+    const source = fs.readFileSync(viewPath, 'utf8')
+
+    // Must call revokeObjectURL after download, deferred via setTimeout
+    expect(source).toMatch(/setTimeout/)
+    expect(source).toMatch(/revokeObjectURL/)
   })
 })

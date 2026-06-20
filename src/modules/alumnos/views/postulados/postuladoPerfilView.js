@@ -13,6 +13,8 @@ import {
 import { router } from '../../../../core/router/router.js'
 import { guardarBorrador } from '../../../../portal-maestros/components/wizard/draftStorage.js'
 import { calcularEdad as calcularEdadDomain } from '../../domain/calcularEdad.js'
+import { AppToast } from '../../../../shared/components/AppToast.js'
+import { AppModal } from '../../../../shared/components/AppModal.js'
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -675,7 +677,7 @@ function attachEvents(container) {
       const timelineEl = container.querySelector('#notes-timeline')
       if (timelineEl) timelineEl.innerHTML = renderNotesTimeline(state.postulante)
     } catch (err) {
-      alert(`Error al agregar nota: ${err.message}`)
+      AppToast.error(`Error al agregar nota: ${err.message}`)
     } finally {
       btn.disabled = false
       spinner?.classList.add('d-none')
@@ -693,7 +695,7 @@ function attachEvents(container) {
       state.postulante = updated
       renderContent(container)
     } catch (err) {
-      alert(`Error al cambiar estado: ${err.message}`)
+      AppToast.error(`Error al cambiar estado: ${err.message}`)
     }
   })
 
@@ -730,7 +732,7 @@ function attachEvents(container) {
       state.postulante = updated
       renderContent(container)
     } catch (err) {
-      alert(`Error al agendar cita: ${err.message}`)
+      AppToast.error(`Error al agendar cita: ${err.message}`)
     } finally {
       btn.disabled = false
       spinner?.classList.add('d-none')
@@ -746,7 +748,7 @@ function attachEvents(container) {
       state.postulante = updated
       renderContent(container)
     } catch (err) {
-      alert(`Error al actualizar estado: ${err.message}`)
+      AppToast.error(`Error al actualizar estado: ${err.message}`)
     }
   })
 
@@ -759,7 +761,7 @@ function attachEvents(container) {
       state.postulante = updated
       renderContent(container)
     } catch (err) {
-      alert(`Error al actualizar estado: ${err.message}`)
+      AppToast.error(`Error al actualizar estado: ${err.message}`)
     }
   })
 
@@ -777,7 +779,7 @@ function attachEvents(container) {
     const spinner = container.querySelector('#spinner-reprogramar')
 
     if (!input?.value) {
-      alert('Seleccioná una nueva fecha para la cita.')
+      AppToast.error('Seleccioná una nueva fecha para la cita.')
       return
     }
 
@@ -788,7 +790,7 @@ function attachEvents(container) {
       const isoDate = new Date(input.value).toISOString()
       const conflicto = await hayConflictoCita(isoDate, id)
       if (conflicto) {
-        alert('Conflicto: ya existe otra cita en un rango de ±30 minutos.')
+        AppToast.error('Conflicto: ya existe otra cita en un rango de ±30 minutos.')
         return
       }
 
@@ -804,7 +806,7 @@ function attachEvents(container) {
       state.postulante = updated
       renderContent(container)
     } catch (err) {
-      alert(`Error al reprogramar: ${err.message}`)
+      AppToast.error(`Error al reprogramar: ${err.message}`)
     } finally {
       btn.disabled = false
       spinner?.classList.add('d-none')
@@ -812,18 +814,29 @@ function attachEvents(container) {
   })
 
   // Descartar desde no_show
-  container.querySelector('#btn-accion-descartar')?.addEventListener('click', async () => {
-    const razon = prompt('Indicá la razón del descarte:')
-    if (razon === null) return // cancelled
-    try {
-      const updated = await actualizarEstadoPostulante(id, 'descartado', {
-        notas_seguimiento: `Postulación descartada. Razón: ${razon || 'Sin detallar'}`,
-      })
-      state.postulante = updated
-      renderContent(container)
-    } catch (err) {
-      alert(`Error al descartar: ${err.message}`)
-    }
+  container.querySelector('#btn-accion-descartar')?.addEventListener('click', () => {
+    AppModal.open({
+      title: 'Razón del descarte',
+      body: `<div class="mb-3">
+        <label for="razon-descarte" class="form-label">Indicá la razón del descarte:</label>
+        <textarea id="razon-descarte" class="form-control" rows="3" placeholder="Indicá la razón..."></textarea>
+      </div>`,
+      saveText: 'Descartar',
+      onSave: async (modalBody) => {
+        const razon = (modalBody?.querySelector('#razon-descarte')?.value || document.getElementById('razon-descarte')?.value || '').trim()
+        try {
+          const updated = await actualizarEstadoPostulante(id, 'descartado', {
+            notas_seguimiento: `Postulación descartada. Razón: ${razon || 'Sin detallar'}`,
+          })
+          state.postulante = updated
+          AppModal.close()
+          renderContent(container)
+        } catch (err) {
+          AppToast.error(`Error al descartar: ${err.message}`)
+        }
+      },
+      onCancel: () => {},
+    })
   })
 
   // En espera → cita_agendada
@@ -859,7 +872,7 @@ function attachEvents(container) {
       state.postulante = updated
       renderContent(container)
     } catch (err) {
-      alert(`Error al agendar cita: ${err.message}`)
+      AppToast.error(`Error al agendar cita: ${err.message}`)
     } finally {
       btn.disabled = false
       spinner?.classList.add('d-none')

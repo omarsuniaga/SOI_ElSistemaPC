@@ -10,6 +10,7 @@ import { calcularCompletitud, NIVEL_COLOR, NIVEL_LABEL } from '../domain/complet
 import { formatPhone, whatsappLink } from '../../../shared/utils/phoneUtils.js'
 import { descargarFichaAlumno, descargarConstancia } from '../domain/generarPdfInscripcion.js'
 import { buscarPostulante } from '../api/postulantesSupabase.js'
+import { AppToast } from '../../../shared/components/AppToast.js'
 
 // ─── Multi-phone splitter ─────────────────────────────────────────────────────
 
@@ -810,7 +811,7 @@ export async function renderAlumnoAdminView(container, params = {}) {
     if (btnSave) btnSave.disabled = false
 
     if (error) {
-      alert(`Error al guardar: ${error.message}`)
+      AppToast.error(`Error al guardar: ${error.message}`)
       return
     }
 

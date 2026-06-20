@@ -213,3 +213,63 @@ describe('B05 — openDeleteModal race condition', () => {
     expect(vi.isMockFunction(AppModal.open)).toBe(true)
   })
 })
+
+// ─── C06: unsaved-changes warning (structural) ────────────────────────────────
+
+describe('C06 — unsaved-changes warning (structural)', () => {
+  it('openEditModal source includes onCancel with formHasChanges guard', async () => {
+    const fs = await import('fs')
+    const path = await import('path')
+    const { fileURLToPath } = await import('url')
+    const { dirname } = await import('path')
+
+    const thisFile = fileURLToPath(import.meta.url)
+    const viewPath = path.join(dirname(thisFile), '..', 'views', 'alumnosView.js')
+    const source = fs.readFileSync(viewPath, 'utf8')
+
+    // openEditModal must have onCancel
+    const openEditIdx = source.indexOf('function openEditModal')
+    expect(openEditIdx).toBeGreaterThan(-1)
+    const editBody = source.slice(openEditIdx, openEditIdx + 3000)
+    expect(editBody).toMatch(/onCancel/)
+
+    // formHasChanges helper must exist
+    expect(source).toMatch(/function formHasChanges/)
+  })
+
+  it('formHasChanges source checks nombre, email, instrumento fields', async () => {
+    const fs = await import('fs')
+    const path = await import('path')
+    const { fileURLToPath } = await import('url')
+    const { dirname } = await import('path')
+
+    const thisFile = fileURLToPath(import.meta.url)
+    const viewPath = path.join(dirname(thisFile), '..', 'views', 'alumnosView.js')
+    const source = fs.readFileSync(viewPath, 'utf8')
+
+    const fhcIdx = source.indexOf('function formHasChanges')
+    expect(fhcIdx).toBeGreaterThan(-1)
+    const fhcBody = source.slice(fhcIdx, fhcIdx + 1500)
+    expect(fhcBody).toMatch(/nombre/)
+    expect(fhcBody).toMatch(/email/)
+    expect(fhcBody).toMatch(/instrumento/)
+  })
+
+  it('AppModal is called (not window.confirm) when cancelling edit modal', async () => {
+    // Verify the source uses AppModal, not window.confirm for unsaved changes
+    const fs = await import('fs')
+    const path = await import('path')
+    const { fileURLToPath } = await import('url')
+    const { dirname } = await import('path')
+
+    const thisFile = fileURLToPath(import.meta.url)
+    const viewPath = path.join(dirname(thisFile), '..', 'views', 'alumnosView.js')
+    const source = fs.readFileSync(viewPath, 'utf8')
+
+    // Must use AppModal.open for the "Cambios sin guardar" dialog
+    expect(source).toMatch(/Cambios sin guardar/)
+    expect(source).toMatch(/AppModal\.open/)
+    // Must NOT use window.confirm
+    expect(source).not.toMatch(/window\.confirm/)
+  })
+})

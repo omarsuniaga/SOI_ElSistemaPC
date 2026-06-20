@@ -62,7 +62,7 @@
 
 @media (max-width: 480px) {
   :root {
-    font-size: 20px; /* Escalar para que los componentes "compactos" se vean bien en teléfonos */
+    font-size: 15px; /* Mobile: ligeramente más pequeño que desktop para que entre mejor */
   }
 }
 

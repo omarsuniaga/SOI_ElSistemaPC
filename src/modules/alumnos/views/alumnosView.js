@@ -35,6 +35,8 @@ const state = {
   deletingId: null,
   filtroGenero: '',
   filtroEstado: 'todos',
+  sortBy: 'nombre',
+  sortDir: 'asc',
 }
 
 let currentContainer = null
@@ -61,8 +63,11 @@ export async function renderAlumnosView(container) {
     state.alumnosOriginales = [...alumnos]
     state.cargando = false
 
+    // Render and wire events first, then apply filters (which includes sort)
     renderContent(container)
     attachGlobalEvents(container)
+    // C07: Apply initial sort after rendering
+    applyFilters()
   } catch (error) {
     console.error(error)
     renderError(container, error.message)
@@ -212,6 +217,20 @@ function renderContent(container) {
         </div>
       </div>
 
+      <!-- C07: Sort controls -->
+      <div class="d-flex align-items-center gap-3 mb-2 px-1 small text-body-secondary">
+        <span>Ordenar por:</span>
+        <button class="btn btn-link btn-sm text-decoration-none p-0 ${state.sortBy === 'nombre' ? 'fw-bold text-primary' : 'text-body-secondary'}" data-sort="nombre">
+          Nombre ${state.sortBy === 'nombre' ? (state.sortDir === 'asc' ? '↑' : '↓') : ''}
+        </button>
+        <button class="btn btn-link btn-sm text-decoration-none p-0 ${state.sortBy === 'instrumento' ? 'fw-bold text-primary' : 'text-body-secondary'}" data-sort="instrumento">
+          Instrumento ${state.sortBy === 'instrumento' ? (state.sortDir === 'asc' ? '↑' : '↓') : ''}
+        </button>
+        <button class="btn btn-link btn-sm text-decoration-none p-0 ${state.sortBy === '_completitud' ? 'fw-bold text-primary' : 'text-body-secondary'}" data-sort="_completitud">
+          Completitud ${state.sortBy === '_completitud' ? (state.sortDir === 'asc' ? '↑' : '↓') : ''}
+        </button>
+      </div>
+
       <div class="page-glass rounded w-100">
         <div class="list-group list-group-flush w-100" id="alumnosTBody">
           ${renderTableRows(state.alumnos)}
@@ -336,6 +355,20 @@ function attachGlobalEvents(container) {
 
   container.querySelector('#btnExportarCSV')?.addEventListener('click', () => exportarAlumnosCSV())
 
+  // C07: Sort column headers
+  container.querySelectorAll('[data-sort]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const col = btn.dataset.sort
+      if (state.sortBy === col) {
+        state.sortDir = state.sortDir === 'asc' ? 'desc' : 'asc'
+      } else {
+        state.sortBy = col
+        state.sortDir = 'asc'
+      }
+      applyFilters()
+    })
+  })
+
   const searchInput = container.querySelector('#buscar')
   searchInput?.addEventListener('input', applyFilters)
 
@@ -418,7 +451,9 @@ function applyFilters() {
       (a.nombre || '').toLowerCase().includes(searchTerm) ||
       (a.instrumento || '').toLowerCase().includes(searchTerm) ||
       (a.telefono || '').toLowerCase().includes(searchTerm) ||
-      (a.familiar_nombre || '').toLowerCase().includes(searchTerm)
+      (a.familiar_nombre || '').toLowerCase().includes(searchTerm) ||
+      (a.email || '').toLowerCase().includes(searchTerm) ||
+      (a.cedula || '').toLowerCase().includes(searchTerm)
 
     // 2. Filtro por WhatsApp (Tiene número de teléfono cargado)
     const tieneWhatsapp = !!a.telefono && a.telefono.trim() !== ''
@@ -460,6 +495,22 @@ function applyFilters() {
   if (labelEl) {
     labelEl.textContent = `Filtros activos: ${activos}`
   }
+
+  // C07: Sort alumnos before rendering
+  const { sortBy, sortDir } = state
+  state.alumnos.sort((a, b) => {
+    let valA, valB
+    if (sortBy === '_completitud') {
+      valA = calcularCompletitud(a).porcentaje ?? 0
+      valB = calcularCompletitud(b).porcentaje ?? 0
+    } else {
+      valA = (a[sortBy] || '').toString().toLowerCase()
+      valB = (b[sortBy] || '').toString().toLowerCase()
+    }
+    if (valA < valB) return sortDir === 'asc' ? -1 : 1
+    if (valA > valB) return sortDir === 'asc' ? 1 : -1
+    return 0
+  })
 
   refreshTable()
 }
@@ -599,6 +650,7 @@ async function collectAndValidateAlumno(modalBody, existingAlumno = null) {
   const esActivo = modalBody.querySelector('#modal-esActivo').checked
 
   if (!nombre) { AppToast.error('El nombre es obligatorio'); return null }
+  if (email && !isValidEmail(email)) { AppToast.error('El email no tiene un formato válido'); return null }
   if (!instrumento) { AppToast.error('El instrumento es obligatorio'); return null }
   if (!telefono) { AppToast.error('El teléfono es obligatorio para WhatsApp'); return null }
 
@@ -642,6 +694,37 @@ function openCreateModal() {
   })
 }
 
+/**
+ * C06: Compare current form values against the original alumno data.
+ * Returns true if any field has changed.
+ * @param {HTMLElement} container — the modal body element
+ * @param {Object} original — the original alumno object
+ * @returns {boolean}
+ */
+function formHasChanges(container, original) {
+  const fields = [
+    { id: 'modal-nombre', key: 'nombre', transform: v => v.trim() },
+    { id: 'modal-email', key: 'email', transform: v => v.trim().toLowerCase() || null },
+    { id: 'modal-telefono', key: 'telefono', transform: v => v.trim() },
+    { id: 'modal-cedula', key: 'cedula', transform: v => v.trim() || null },
+    { id: 'modal-instrumento', key: 'instrumento', transform: v => v.trim() },
+    { id: 'modal-familiar-nombre', key: 'familiar_nombre', transform: v => v.trim() || null },
+  ]
+  for (const { id, key, transform } of fields) {
+    const el = container.querySelector?.('#' + id) || container.getElementById?.('#' + id)
+    if (!el) continue
+    const current = transform(el.value || '')
+    const orig = original[key] ?? null
+    if (current !== orig) return true
+  }
+  const esActivoEl = container.querySelector?.('#modal-esActivo')
+  if (esActivoEl) {
+    const orig = original.is_active !== false
+    if (esActivoEl.checked !== orig) return true
+  }
+  return false
+}
+
 function openEditModal(id) {
   const capturedId = id
   const alumno = state.alumnosOriginales.find(a => a.id === capturedId)
@@ -649,6 +732,9 @@ function openEditModal(id) {
     AppToast.error('Alumno no encontrado')
     return
   }
+
+  // Snapshot original data for C06 unsaved-changes detection
+  const originalData = { ...alumno }
 
   state.editando = capturedId
   AppModal.open({
@@ -673,7 +759,22 @@ function openEditModal(id) {
         AppToast.error(err.message || 'Error al guardar los cambios')
         return false
       }
-    }
+    },
+    onCancel: (modalBody) => {
+      // C06: check for unsaved changes before closing
+      const hasChanges = formHasChanges(modalBody, originalData)
+      if (!hasChanges) {
+        AppModal.close()
+        return
+      }
+      AppModal.open({
+        title: 'Cambios sin guardar',
+        body: '<p>Tenés cambios sin guardar. ¿Querés salir de todas formas?</p>',
+        saveText: 'Salir sin guardar',
+        onSave: () => AppModal.close(),
+        onCancel: () => {}, // stay in the edit modal
+      })
+    },
   })
 }
 

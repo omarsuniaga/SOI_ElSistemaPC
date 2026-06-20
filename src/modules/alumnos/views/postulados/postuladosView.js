@@ -7,6 +7,8 @@ import {
 import { ESTADO_LABELS, ESTADO_COLOR } from '../../domain/postuladoStateMachine.js'
 import { descargarPdfPostulados } from '../../domain/generarPdfPostulados.js'
 import { router } from '../../../../core/router/router.js'
+import { AppToast } from '../../../../shared/components/AppToast.js'
+import { AppModal } from '../../../../shared/components/AppModal.js'
 
 /**
  * Helper: primer día del mes como string YYYY-MM-DD
@@ -36,6 +38,8 @@ const state = {
   limit: 50,
   pdfDesde: primerDiaMes(),
   pdfHasta: ultimoDiaMes(),
+  hiddenCount: 0,
+  searchQuery: '',
 }
 
 const MESES = [
@@ -154,6 +158,8 @@ async function cargarDatos(container) {
     const todos = await listarPostulantesPorMes(state.year, state.month)
     // Solo postulantes con al menos un número de WhatsApp contactable
     state.postulantes = todos.filter((p) => resolverTelefonoPrincipal(p) !== null)
+    const hiddenCount = todos.length - state.postulantes.length
+    state.hiddenCount = hiddenCount
     state.cargando = false
 
     renderContent(container)
@@ -300,6 +306,18 @@ function renderContent(container) {
       <!-- PIPELINE SUMMARY -->
       ${renderPipelineGraphic(counts, state.postulantes.length)}
 
+      <!-- C04: HIDDEN POSTULANTES BANNER -->
+      ${state.hiddenCount > 0 ? `
+      <div id="hidden-postulantes-banner" class="alert alert-info alert-sm py-2 px-3 mb-3 small" role="alert">
+        <i class="bi bi-info-circle me-2"></i>
+        <strong>${state.hiddenCount}</strong> postulante(s) sin número de contacto están ocultos en este listado.
+      </div>` : ''}
+
+      <!-- C05: SEARCH INPUT -->
+      <div class="mb-3">
+        <input type="search" id="buscar-postulante" class="form-control form-control-sm" placeholder="Buscar por nombre, teléfono o municipio..." value="${state.searchQuery || ''}">
+      </div>
+
       <!-- MINIMALIST TABS -->
       <div class="d-flex gap-4 overflow-x-auto border-bottom border-secondary-subtle mb-4 scrollbar-hidden" style="white-space: nowrap;">
         <button class="btn btn-link px-1 pb-2 text-decoration-none rounded-0 border-0 ${state.filtroEstado === 'todos' ? 'text-body fw-bold border-bottom border-primary border-2' : 'text-body-secondary'}" data-filter="todos">
@@ -350,10 +368,21 @@ function renderContent(container) {
 }
 
 function getFilteredPostulantes() {
-  if (state.filtroEstado === 'todos') {
-    return [...state.postulantes]
+  let list = state.filtroEstado === 'todos'
+    ? [...state.postulantes]
+    : state.postulantes.filter((p) => p.estado === state.filtroEstado)
+
+  // C05: apply text search
+  const q = (state.searchQuery || '').toLowerCase().trim()
+  if (q) {
+    list = list.filter(p =>
+      (resolverNombre(p) || '').toLowerCase().includes(q) ||
+      (resolverTelefonoPrincipal(p) || '').includes(q) ||
+      (p.municipio || '').toLowerCase().includes(q)
+    )
   }
-  return state.postulantes.filter((p) => p.estado === state.filtroEstado)
+
+  return list
 }
 
 function getCountsByStatus() {
@@ -518,6 +547,13 @@ function attachEvents(container) {
     })
   })
 
+  // C05: Search input — filter postulantes by name, phone, or municipio
+  container.querySelector('#buscar-postulante')?.addEventListener('input', (e) => {
+    state.searchQuery = e.target.value
+    state.page = 1
+    renderContent(container)
+  })
+
   // Selector de mes ← — scoped to container
   container.querySelector('#btn-month-prev')?.addEventListener('click', () => {
     state.month--
@@ -553,13 +589,11 @@ function attachEvents(container) {
 
       const result = await sincronizarPostulantes()
 
-      alert(
-        `Sincronización exitosa. Registros procesados: ${result.total_rows || result.upserted || 0}`,
-      )
+      AppToast.success(`Sincronización exitosa. Registros procesados: ${result.total_rows || result.upserted || 0}`)
       state.page = 1
       cargarDatos(container)
     } catch (error) {
-      alert(`Error al sincronizar: ${error.message}`)
+      AppToast.error(`Error al sincronizar: ${error.message}`)
       btn.disabled = false
       spinner.classList.add('d-none')
       icon.classList.remove('d-none')
@@ -593,21 +627,24 @@ function attachEvents(container) {
       const id = button.getAttribute('data-id')
       const name = button.getAttribute('data-name')
 
-      if (
-        confirm(
-          `¿Estás seguro de que deseas eliminar permanentemente la postulación de "${name}"?\n\nEsta acción eliminará el registro de la base de datos de forma irreversible.`,
-        )
-      ) {
-        try {
-          button.disabled = true
-          await eliminarPostulante(id)
-          alert('Postulación eliminada con éxito')
-          cargarDatos(container) // Recargar el listado
-        } catch (error) {
-          alert(`Error al eliminar: ${error.message}`)
-          button.disabled = false
-        }
-      }
+      AppModal.open({
+        title: '¿Eliminar postulante?',
+        body: `<p>Esta acción eliminará permanentemente la postulación de <strong>${name}</strong> de la base de datos. Esta operación no se puede deshacer.</p>`,
+        saveText: 'Eliminar',
+        onSave: async () => {
+          try {
+            button.disabled = true
+            await eliminarPostulante(id)
+            AppModal.close()
+            AppToast.success('Postulación eliminada con éxito')
+            cargarDatos(container) // Recargar el listado
+          } catch (error) {
+            AppToast.error(`Error al eliminar: ${error.message}`)
+            button.disabled = false
+          }
+        },
+        onCancel: () => {},
+      })
     })
   })
 
@@ -620,12 +657,12 @@ function attachEvents(container) {
     const icon = container.querySelector('#pdf-icon')
 
     if (!desde || !hasta) {
-      alert('Debe seleccionar una fecha de inicio y una fecha de fin.')
+      AppToast.error('Debe seleccionar una fecha de inicio y una fecha de fin.')
       return
     }
 
     if (desde > hasta) {
-      alert('La fecha "Desde" no puede ser posterior a la fecha "Hasta".')
+      AppToast.error('La fecha "Desde" no puede ser posterior a la fecha "Hasta".')
       return
     }
 
@@ -637,13 +674,13 @@ function attachEvents(container) {
       const postulantes = await listarPostulantesPorRango(desde, hasta)
 
       if (!postulantes || postulantes.length === 0) {
-        alert('No hay postulados registrados en el rango de fechas seleccionado.')
+        AppToast.error('No hay postulados registrados en el rango de fechas seleccionado.')
         return
       }
 
       descargarPdfPostulados(postulantes, desde, hasta)
     } catch (error) {
-      alert(`Error al generar el PDF: ${error.message}`)
+      AppToast.error(`Error al generar el PDF: ${error.message}`)
     } finally {
       btn.disabled = false
       spinner.classList.add('d-none')

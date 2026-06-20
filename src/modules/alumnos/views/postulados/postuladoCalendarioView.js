@@ -1,5 +1,6 @@
 import { listarCitas } from '../../api/postulantesApi.js'
 import { router } from '../../../../core/router/router.js'
+import { AppToast } from '../../../../shared/components/AppToast.js'
 
 const state = {
   year: new Date().getFullYear(),
@@ -259,7 +260,7 @@ function attachEvents(container) {
         return `• ${c.nombre_completo} (${timeStr})`
       }).join('\n')
 
-      alert(`Citas para el día ${dia} de ${MESES[state.month - 1]}:\n\n${listStr}\n\nSelecciona el perfil para ver detalles.`)
+      AppToast.success(`${citas.length} cita(s) el día ${dia} de ${MESES[state.month - 1]} — seleccioná el perfil para ver detalles.`)
       
       if (citas.length === 1) {
         router.navigate('postulado', { id: citas[0].id })

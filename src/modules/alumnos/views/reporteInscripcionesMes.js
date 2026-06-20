@@ -2,6 +2,7 @@ import { obtenerAlumnosPorMes } from '../api/alumnosApi.js'
 import { descargarReporteMensual } from '../domain/generarReporteMensual.js'
 import { openEditAlumnoModal } from '../domain/editarAlumnoModal.js'
 import { calcularCompletitud as calcularCompletitudDomain } from '../domain/completitudAlumno.js'
+import { AppToast } from '../../../shared/components/AppToast.js'
 
 const MESES = [
   '',
@@ -295,7 +296,7 @@ export async function renderReporteInscripcionesMes(container) {
       descargarReporteMensual(alumnosActuales, currentYear, currentMonth)
     } catch (e) {
       console.error('Error generando PDF:', e)
-      alert('Error al generar el PDF. Por favor intenta de nuevo.')
+      AppToast.error('Error al generar el PDF. Por favor intenta de nuevo.')
     }
   })
 

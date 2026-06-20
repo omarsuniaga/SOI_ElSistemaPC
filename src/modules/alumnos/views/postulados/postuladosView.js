@@ -518,8 +518,8 @@ function attachEvents(container) {
     })
   })
 
-  // Selector de mes ←
-  document.getElementById('btn-month-prev')?.addEventListener('click', () => {
+  // Selector de mes ← — scoped to container
+  container.querySelector('#btn-month-prev')?.addEventListener('click', () => {
     state.month--
     if (state.month < 1) {
       state.month = 12
@@ -529,8 +529,8 @@ function attachEvents(container) {
     cargarDatos(container)
   })
 
-  // Selector de mes →
-  document.getElementById('btn-month-next')?.addEventListener('click', () => {
+  // Selector de mes → — scoped to container
+  container.querySelector('#btn-month-next')?.addEventListener('click', () => {
     state.month++
     if (state.month > 12) {
       state.month = 1
@@ -540,11 +540,11 @@ function attachEvents(container) {
     cargarDatos(container)
   })
 
-  // Botón Sincronizar
-  document.getElementById('btn-sync')?.addEventListener('click', async () => {
-    const btn = document.getElementById('btn-sync')
-    const spinner = document.getElementById('sync-spinner')
-    const icon = document.getElementById('sync-icon')
+  // Botón Sincronizar — scoped to container
+  container.querySelector('#btn-sync')?.addEventListener('click', async () => {
+    const btn = container.querySelector('#btn-sync')
+    const spinner = container.querySelector('#sync-spinner')
+    const icon = container.querySelector('#sync-icon')
 
     try {
       btn.disabled = true
@@ -611,13 +611,13 @@ function attachEvents(container) {
     })
   })
 
-  // Botón Descargar PDF por rango de fechas
-  document.getElementById('btn-descargar-pdf')?.addEventListener('click', async () => {
-    const desde = document.getElementById('pdf-desde')?.value
-    const hasta = document.getElementById('pdf-hasta')?.value
-    const btn = document.getElementById('btn-descargar-pdf')
-    const spinner = document.getElementById('pdf-spinner')
-    const icon = document.getElementById('pdf-icon')
+  // Botón Descargar PDF por rango de fechas — scoped to container
+  container.querySelector('#btn-descargar-pdf')?.addEventListener('click', async () => {
+    const desde = container.querySelector('#pdf-desde')?.value
+    const hasta = container.querySelector('#pdf-hasta')?.value
+    const btn = container.querySelector('#btn-descargar-pdf')
+    const spinner = container.querySelector('#pdf-spinner')
+    const icon = container.querySelector('#pdf-icon')
 
     if (!desde || !hasta) {
       alert('Debe seleccionar una fecha de inicio y una fecha de fin.')
@@ -651,16 +651,16 @@ function attachEvents(container) {
     }
   })
 
-  // Paginación: Anteriores (Más recientes)
-  document.getElementById('btn-page-prev')?.addEventListener('click', () => {
+  // Paginación: Anteriores (Más recientes) — scoped to container
+  container.querySelector('#btn-page-prev')?.addEventListener('click', () => {
     if (state.page > 1) {
       state.page--
       renderContent(container)
     }
   })
 
-  // Paginación: Siguientes (Más antiguos)
-  document.getElementById('btn-page-next')?.addEventListener('click', () => {
+  // Paginación: Siguientes (Más antiguos) — scoped to container
+  container.querySelector('#btn-page-next')?.addEventListener('click', () => {
     state.page++
     renderContent(container)
   })

@@ -139,6 +139,21 @@ export async function agregarNota(id, nota) {
 }
 
 /**
+ * Busca postulantes por nombre completo o email.
+ * @param {string} query - Texto de búsqueda (case-insensitive)
+ * @returns {Promise<object[]>}
+ */
+export async function buscarPostulante(query = '') {
+  await delay()
+  const q = query.toLowerCase()
+  if (!q) return [...data]
+  return data.filter(p =>
+    (p.nombre_completo || '').toLowerCase().includes(q) ||
+    (p.correo || p.email || '').toLowerCase().includes(q)
+  )
+}
+
+/**
  * Elimina permanentemente un postulante de la base de datos en memoria.
  * @param {string} id
  * @returns {Promise<boolean>}

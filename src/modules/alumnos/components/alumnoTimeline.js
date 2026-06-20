@@ -10,69 +10,72 @@ export class AlumnoTimeline {
     this.diasAMostrar = 30
   }
 
-  async load(alumnoId) {
+  async load(alumnoId, { isDemoMode = false } = {}) {
     this.alumnoId = alumnoId
-    const data = await loadJsonMock(MOCK_DATA_PATH)
-    const alumno = data.alumnos?.find(a => a.id === alumnoId)
-    if (!alumno) {
-      this.renderEmpty()
-      return
+
+    if (isDemoMode) {
+      // Only load mock data in demo mode — never in production
+      const data = await loadJsonMock(MOCK_DATA_PATH)
+      const alumno = data.alumnos?.find(a => a.id === alumnoId)
+      if (!alumno) {
+        this.renderEmpty()
+        return
+      }
+      // In demo mode use static sample events (no Math.random)
+      this.eventos = this.parsearEventosDemo(alumno)
+    } else {
+      // Production mode: no mock data, no random events
+      const alumno = { id: alumnoId }
+      const found = await loadJsonMock(MOCK_DATA_PATH).then(d => d.alumnos?.find(a => a.id === alumnoId)).catch(() => null)
+      if (!found) {
+        this.renderEmpty()
+        return
+      }
+      this.eventos = []
     }
-    this.eventos = this.parsearEventos(alumno)
-    this.render()
+
+    this.render(this.eventos)
   }
 
-  parsearEventos(alumno) {
-    const eventos = []
-    const now = new Date()
-    for (let i = 0; i < this.diasAMostrar; i++) {
-      const fecha = new Date(now)
-      fecha.setDate(fecha.getDate() - i)
-      const fechaStr = fecha.toISOString().split('T')[0]
-      if (Math.random() > 0.6) {
-        eventos.push({
-          id: `evt-${i}`,
-          fecha: fechaStr,
-          tipo: this.getTipoAleatorio(),
-          descripcion: this.getDescripcionAleatoria(),
-          icon: this.getIconoAleatorio()
-        })
-      }
-    }
+  /**
+   * Parse demo events from alumno data — deterministic, no Math.random
+   */
+  parsearEventosDemo(alumno) {
+    // Return static demo events based on alumno id — no random generation
+    const eventos = [
+      {
+        id: `${alumno.id}-demo-1`,
+        fecha: new Date(Date.now() - 86400000).toISOString().split('T')[0],
+        tipo: 'asistencia',
+        descripcion: 'Asistió a clase',
+        icon: 'bi-calendar-check',
+      },
+      {
+        id: `${alumno.id}-demo-2`,
+        fecha: new Date(Date.now() - 2 * 86400000).toISOString().split('T')[0],
+        tipo: 'progreso',
+        descripcion: 'Avanzó en su progreso',
+        icon: 'bi-graph-up',
+      },
+    ]
     return eventos.sort((a, b) => new Date(b.fecha) - new Date(a.fecha))
   }
 
-  getTipoAleatorio() {
-    const tipos = ['asistencia', 'clase', 'observacion', 'progreso', 'meta']
-    return tipos[Math.floor(Math.random() * tipos.length)]
-  }
-
-  getDescripcionAleatoria() {
-    const descs = [
-      'Asistió a clase',
-      'Completó练习',
-      'Recibió observación positiva',
-      'Advancó en su progreso',
-      'Completó objetivo de gamificación'
-    ]
-    return descs[Math.floor(Math.random() * descs.length)]
-  }
-
-  getIconoAleatorio() {
-    const icons = ['bi-calendar-check', 'bi-music-note', 'bi-chat-dots', 'bi-graph-up', 'bi-trophy']
-    return icons[Math.floor(Math.random() * icons.length)]
-  }
-
-  render() {
+  /**
+   * Render the timeline with the given eventos array.
+   * Accepts eventos as a parameter so it can be called directly in tests
+   * and by callers that already have the events list.
+   */
+  render(eventos = this.eventos) {
     this.container.innerHTML = `
       <div class="alumno-timeline">
         <div class="timeline-header mb-3">
           <h6 class="fw-bold text-muted">Últimos ${this.diasAMostrar} días</h6>
         </div>
         <div class="timeline-list">
-          ${this.eventos.length === 0
-            ? '<p class="text-muted small">Sin eventos registrados</p>'
-            : this.eventos.map(e => `
+          ${eventos.length === 0
+            ? '<p class="text-muted small">Sin actividad registrada</p>'
+            : eventos.map(e => `
               <div class="timeline-item d-flex align-items-start mb-3">
                 <div class="timeline-icon me-3">
                   <i class="bi ${e.icon}"></i>
@@ -85,7 +88,7 @@ export class AlumnoTimeline {
             `).join('')
           }
         </div>
-        ${this.eventos.length > 0 ? '<button class="btn btn-link btn-sm" id="timeline-load-more">Cargar más...</button>' : ''}
+        ${eventos.length > 0 ? '<button class="btn btn-link btn-sm" id="timeline-load-more">Cargar más...</button>' : ''}
       </div>
     `
 
@@ -98,7 +101,7 @@ export class AlumnoTimeline {
   renderEmpty() {
     this.container.innerHTML = `
       <div class="alumno-timeline">
-        <p class="text-muted small">Selecciona un alumno para ver su timeline</p>
+        <p class="text-muted small">Sin actividad registrada</p>
       </div>
     `
   }

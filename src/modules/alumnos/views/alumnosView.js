@@ -1033,14 +1033,15 @@ function openViewModal(id) {
   })
 }
 
-function openDeleteModal(id) {
-  const alumno = state.alumnosOriginales.find(a => a.id === id)
+async function openDeleteModal(id) {
+  const capturedId = id
+  const alumno = state.alumnosOriginales.find(a => a.id === capturedId)
   if (!alumno) {
     AppToast.error('Alumno no encontrado')
     return
   }
 
-  state.deletingId = id
+  state.deletingId = capturedId
 
   // 1. Abrimos el modal con cargando
   AppModal.open({
@@ -1054,89 +1055,86 @@ function openDeleteModal(id) {
              <p class="text-muted mb-0">Analizando estado de inscripciones...</p>
            </div>`,
     onSave: async () => {
-      await eliminarAlumno(id)
-      state.alumnosOriginales = state.alumnosOriginales.filter(a => a.id !== id)
+      await eliminarAlumno(capturedId)
+      state.alumnosOriginales = state.alumnosOriginales.filter(a => a.id !== capturedId)
       applyFilters()
       AppModal.close()
       AppToast.success('Alumno eliminado correctamente')
     }
   })
 
-  // Ocultamos temporalmente el botón de guardar hasta tener la respuesta
+  // Capture modal body reference BEFORE the await to avoid stale DOM lookups
   const saveBtn = document.querySelector('#app-global-modal .app-modal-btn-save')
+  const bodyEl = document.querySelector('#app-global-modal .app-modal-body')
+
   if (saveBtn) saveBtn.style.display = 'none'
 
-  // 2. Realizamos la consulta asíncrona de inscripciones
-  setTimeout(async () => {
-    try {
-      if (state.deletingId !== id) return // evitar race conditions
+  // 2. Realizamos la consulta asíncrona de inscripciones — direct async/await, no setTimeout
+  try {
+    if (state.deletingId !== capturedId) return
 
-      const inscripciones = await obtenerInscripcionesAlumno(id)
+    const inscripciones = await obtenerInscripcionesAlumno(capturedId)
 
-      const bodyEl = document.querySelector('#app-global-modal .app-modal-body')
-      if (!bodyEl || state.deletingId !== id) return
+    if (!bodyEl || state.deletingId !== capturedId) return
 
-      // Volver a mostrar el botón de guardar
-      if (saveBtn) saveBtn.style.display = ''
+    if (saveBtn) saveBtn.style.display = ''
 
-      if (inscripciones.length === 0) {
-        // Contacto huérfano - Eliminación segura
-        bodyEl.innerHTML = `
-          <div class="alert alert-success d-flex align-items-start gap-3 border-0 rounded-4 p-3 mb-4" style="background: rgba(40, 167, 69, 0.08); color: #155724;">
-            <i class="bi bi-person-check-fill fs-3 text-success mt-1"></i>
-            <div>
-              <h6 class="alert-heading fw-bold mb-1" style="color: #0f6826;">Contacto Huérfano / Eliminación Segura</h6>
-              <p class="mb-0 small" style="opacity: 0.9;">Este alumno no posee matrículas registradas ni está inscrito en ninguna clase activa en el período actual. Su eliminación no afectará datos académicos.</p>
-            </div>
+    if (inscripciones.length === 0) {
+      // Contacto huérfano - Eliminación segura
+      bodyEl.innerHTML = `
+        <div class="alert alert-success d-flex align-items-start gap-3 border-0 rounded-4 p-3 mb-4" style="background: rgba(40, 167, 69, 0.08); color: #155724;">
+          <i class="bi bi-person-check-fill fs-3 text-success mt-1"></i>
+          <div>
+            <h6 class="alert-heading fw-bold mb-1" style="color: #0f6826;">Contacto Huérfano / Eliminación Segura</h6>
+            <p class="mb-0 small" style="opacity: 0.9;">Este alumno no posee matrículas registradas ni está inscrito en ninguna clase activa en el período actual. Su eliminación no afectará datos académicos.</p>
           </div>
-          <p class="mb-2">¿Estás seguro de que querés eliminar permanentemente al alumno <strong>${escapeHTML(alumno.nombre)}</strong>?</p>
-          <p class="text-muted small mb-0"><i class="bi bi-info-circle me-1"></i> Esta acción es irreversible y limpiará todo su registro de contacto del sistema.</p>
-        `
-      } else {
-        // Alumno con clases activas - Alerta Crítica
-        const clasesHtml = inscripciones.map(i => `
-          <li class="d-flex align-items-center gap-2 py-2 border-bottom border-light">
-            <i class="bi bi-journal-bookmark-fill text-danger fs-5"></i>
-            <span class="fw-semibold text-dark" style="font-size: 0.9rem;">${escapeHTML(i.clase_nombre)}</span>
-          </li>
-        `).join('')
+        </div>
+        <p class="mb-2">¿Estás seguro de que querés eliminar permanentemente al alumno <strong>${escapeHTML(alumno.nombre)}</strong>?</p>
+        <p class="text-muted small mb-0"><i class="bi bi-info-circle me-1"></i> Esta acción es irreversible y limpiará todo su registro de contacto del sistema.</p>
+      `
+    } else {
+      // Alumno con clases activas - Alerta Crítica
+      const clasesHtml = inscripciones.map(i => `
+        <li class="d-flex align-items-center gap-2 py-2 border-bottom border-light">
+          <i class="bi bi-journal-bookmark-fill text-danger fs-5"></i>
+          <span class="fw-semibold text-dark" style="font-size: 0.9rem;">${escapeHTML(i.clase_nombre)}</span>
+        </li>
+      `).join('')
 
-        bodyEl.innerHTML = `
-          <div class="alert alert-danger d-flex align-items-start gap-3 border-0 rounded-4 p-3 mb-4" style="background: rgba(220, 53, 69, 0.08); color: #721c24;">
-            <i class="bi bi-exclamation-triangle-fill fs-3 text-danger mt-1"></i>
-            <div>
-              <h6 class="alert-heading fw-bold mb-1" style="color: #af232f;">¡Alumno con Clases Activas!</h6>
-              <p class="mb-2 small" style="opacity: 0.9;">Este alumno está matriculado e inscrito en las siguientes clases del período actual:</p>
-              <ul class="list-unstyled mb-2 ps-0" style="max-height: 150px; overflow-y: auto;">
-                ${clasesHtml}
-              </ul>
-              <p class="mb-0 small fw-bold mt-2"><i class="bi bi-slash-circle-fill me-1"></i> ADVERTENCIA CRÍTICA: Eliminar a este alumno borrará físicamente su registro de asistencia, calificaciones históricas y matrículas activas.</p>
-            </div>
+      bodyEl.innerHTML = `
+        <div class="alert alert-danger d-flex align-items-start gap-3 border-0 rounded-4 p-3 mb-4" style="background: rgba(220, 53, 69, 0.08); color: #721c24;">
+          <i class="bi bi-exclamation-triangle-fill fs-3 text-danger mt-1"></i>
+          <div>
+            <h6 class="alert-heading fw-bold mb-1" style="color: #af232f;">¡Alumno con Clases Activas!</h6>
+            <p class="mb-2 small" style="opacity: 0.9;">Este alumno está matriculado e inscrito en las siguientes clases del período actual:</p>
+            <ul class="list-unstyled mb-2 ps-0" style="max-height: 150px; overflow-y: auto;">
+              ${clasesHtml}
+            </ul>
+            <p class="mb-0 small fw-bold mt-2"><i class="bi bi-slash-circle-fill me-1"></i> ADVERTENCIA CRÍTICA: Eliminar a este alumno borrará físicamente su registro de asistencia, calificaciones históricas y matrículas activas.</p>
           </div>
-          <p class="mb-2">¿Realmente querés eliminar permanentemente al alumno <strong>${escapeHTML(alumno.nombre)}</strong> y todos sus registros?</p>
-          <p class="text-muted small mb-0"><i class="bi bi-exclamation-octagon-fill text-danger me-1"></i> Esta acción no se puede deshacer y puede provocar inconsistencias en los reportes de estas clases.</p>
-        `
-      }
-    } catch (err) {
-      console.error(err)
-      if (state.deletingId !== id) return
-
-      const bodyEl = document.querySelector('#app-global-modal .app-modal-body')
-      if (bodyEl) {
-        if (saveBtn) saveBtn.style.display = ''
-        bodyEl.innerHTML = `
-          <div class="alert alert-warning d-flex align-items-start gap-3 border-0 rounded-4 p-3 mb-3">
-            <i class="bi bi-exclamation-triangle-fill fs-4 text-warning"></i>
-            <div>
-              <h6 class="alert-heading fw-bold mb-1">Error de Verificación</h6>
-              <p class="mb-0 small">No se pudo comprobar si el alumno tiene clases activas. Procedé con precaución.</p>
-            </div>
-          </div>
-          <p>¿Querés eliminar al alumno <strong>${escapeHTML(alumno.nombre)}</strong> de todas formas?</p>
-        `
-      }
+        </div>
+        <p class="mb-2">¿Realmente querés eliminar permanentemente al alumno <strong>${escapeHTML(alumno.nombre)}</strong> y todos sus registros?</p>
+        <p class="text-muted small mb-0"><i class="bi bi-exclamation-octagon-fill text-danger me-1"></i> Esta acción no se puede deshacer y puede provocar inconsistencias en los reportes de estas clases.</p>
+      `
     }
-  }, 300)
+  } catch (err) {
+    console.error(err)
+    if (state.deletingId !== capturedId) return
+
+    if (bodyEl) {
+      if (saveBtn) saveBtn.style.display = ''
+      bodyEl.innerHTML = `
+        <div class="alert alert-warning d-flex align-items-start gap-3 border-0 rounded-4 p-3 mb-3">
+          <i class="bi bi-exclamation-triangle-fill fs-4 text-warning"></i>
+          <div>
+            <h6 class="alert-heading fw-bold mb-1">Error de Verificación</h6>
+            <p class="mb-0 small">No se pudo comprobar si el alumno tiene clases activas. Procedé con precaución.</p>
+          </div>
+        </div>
+        <p>¿Querés eliminar al alumno <strong>${escapeHTML(alumno.nombre)}</strong> de todas formas?</p>
+      `
+    }
+  }
 }
 
 function refreshTable() {

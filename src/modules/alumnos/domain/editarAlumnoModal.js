@@ -17,7 +17,7 @@ function buildForm(alumno) {
     </div>
     <div class="col-md-4">
       <label class="form-label small fw-semibold">Nombre completo</label>
-      <input type="text" class="form-control form-control-sm" id="ed-nombre" value="${a.nombre_completo || ''}" readonly>
+      <input type="text" class="form-control form-control-sm" id="ed-nombre" value="${a.nombre_completo || ''}">
     </div>
     <div class="col-md-3">
       <label class="form-label small fw-semibold">Fecha de nacimiento</label>

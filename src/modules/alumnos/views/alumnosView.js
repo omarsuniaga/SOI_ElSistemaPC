@@ -643,13 +643,14 @@ function openCreateModal() {
 }
 
 function openEditModal(id) {
-  const alumno = state.alumnosOriginales.find(a => a.id === id)
+  const capturedId = id
+  const alumno = state.alumnosOriginales.find(a => a.id === capturedId)
   if (!alumno) {
     AppToast.error('Alumno no encontrado')
     return
   }
 
-  state.editando = id
+  state.editando = capturedId
   AppModal.open({
     title: 'Editar Alumno',
     size: 'lg',
@@ -660,8 +661,8 @@ function openEditModal(id) {
         const datos = await collectAndValidateAlumno(modalBody, alumno)
         if (!datos) return false
 
-        await actualizarAlumno(state.editando, datos)
-        const idx = state.alumnosOriginales.findIndex(a => a.id === state.editando)
+        await actualizarAlumno(capturedId, datos)
+        const idx = state.alumnosOriginales.findIndex(a => a.id === capturedId)
         if (idx !== -1) {
           state.alumnosOriginales[idx] = { ...state.alumnosOriginales[idx], ...datos }
         }
@@ -1142,8 +1143,9 @@ function refreshTable() {
   const tbody = currentContainer.querySelector('#alumnosTBody')
   if (!tbody) return
 
+  // Empty state goes in #emptyContainer only — tbody stays empty when no alumnos
   if (state.alumnos.length === 0) {
-    tbody.innerHTML = renderEmpty()
+    tbody.innerHTML = ''
   } else {
     tbody.innerHTML = renderTableRows(state.alumnos)
   }
@@ -1165,14 +1167,17 @@ function exportarAlumnosCSV() {
     return
   }
 
-  const headers = ['Nombre', 'Email', 'Teléfono', 'Estado', 'Fecha Nac.', 'Sección']
+  const headers = ['Nombre', 'Email', 'Teléfono', 'Estado', 'Fecha Nac.', 'Instrumento', 'Cédula', 'Familiar', 'Municipio']
   const rows = state.alumnosOriginales.map(a => [
     a.nombre || '',
     a.email || '',
-    a.telefono || '',
+    a.telefono_principal || a.telefono || '',
     a.is_active ? 'Activo' : 'Inactivo',
     a.fecha_nacimiento || '',
-    a.section || ''
+    a.instrumento_principal || '',
+    a.cedula || '',
+    a.familiar_nombre || '',
+    a.municipio_residencia || ''
   ])
 
   const csvContent = [headers, ...rows]
@@ -1184,6 +1189,7 @@ function exportarAlumnosCSV() {
   link.href = URL.createObjectURL(blob)
   link.download = `alumnos-${new Date().toISOString().split('T')[0]}.csv`
   link.click()
+  setTimeout(() => URL.revokeObjectURL(link.href), 100)
 
   AppToast.success('CSV exportado exitosamente')
 }

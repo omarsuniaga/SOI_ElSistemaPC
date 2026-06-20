@@ -12,6 +12,7 @@ import {
 } from '../../domain/postuladoStateMachine.js'
 import { router } from '../../../../core/router/router.js'
 import { guardarBorrador } from '../../../../portal-maestros/components/wizard/draftStorage.js'
+import { calcularEdad as calcularEdadDomain } from '../../domain/calcularEdad.js'
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -106,14 +107,9 @@ function buildInscripcionDraft(p) {
 }
 
 function calcularEdad(fechaNacStr) {
-  if (!fechaNacStr) return 'Sin definir'
-  const birthDate = new Date(fechaNacStr)
-  if (isNaN(birthDate.getTime())) return 'Sin definir'
-  const today = new Date()
-  let age = today.getFullYear() - birthDate.getFullYear()
-  const m = today.getMonth() - birthDate.getMonth()
-  if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) age--
-  return `${age} años`
+  const edad = calcularEdadDomain(fechaNacStr, { fallback: null })
+  if (edad === null) return 'Sin definir'
+  return `${edad} años`
 }
 
 function formatDateTime(isoString) {

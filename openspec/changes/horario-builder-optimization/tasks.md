@@ -172,7 +172,7 @@ Chain strategy: stacked-to-main
 
 ## PR-3: Multi-Proposal + UI Integration (F4)
 
-- [ ] TASK-HB-F4A: Implement multiProposalGenerator.js
+- [x] TASK-HB-F4A: Implement multiProposalGenerator.js
   Req: F4 — schedule-multi-proposal
   Files: `src/modules/horario-builder/domain/multiProposalGenerator.js` (CREATE)
   TDD:
@@ -186,7 +186,7 @@ Chain strategy: stacked-to-main
   Depends: none (engine imported via module)
   PR: Batch 3
 
-- [ ] TASK-HB-F4B: Add proposal tabs to horarioBuilderView
+- [x] TASK-HB-F4B: Add proposal tabs to horarioBuilderView
   Req: F4 — schedule-multi-proposal
   Files: `src/modules/horario-builder/views/horarioBuilderView.js`
   TDD:
@@ -199,7 +199,7 @@ Chain strategy: stacked-to-main
   Depends: TASK-HB-F4A
   PR: Batch 3
 
-- [ ] TASK-HB-F4C: Replace single-generate call with generateMultipleProposals
+- [x] TASK-HB-F4C: Replace single-generate call with generateMultipleProposals
   Req: F4 — schedule-multi-proposal
   Files: `src/modules/horario-builder/views/horarioBuilderView.js`
   TDD:
@@ -209,7 +209,7 @@ Chain strategy: stacked-to-main
   Depends: TASK-HB-F4B, TASK-HB-F4A
   PR: Batch 3
 
-- [ ] TASK-HB-F4D: Wire export buttons to horarioExporter
+- [x] TASK-HB-F4D: Wire export buttons to horarioExporter
   Req: F4 — UI completeness
   Files: `src/modules/horario-builder/views/horarioBuilderView.js`
   TDD:

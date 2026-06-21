@@ -58,7 +58,7 @@
 import { fetchSchedulingData, saveScheduleRun, getScheduleRuns } from '../api/horarioBuilderApi.js';
 import { AppToast } from '../../../shared/components/AppToast.js';
 import { minutesBetween, addMinutes } from '../utils/timeUtils.js';
-import { generateOptimizedSchedule } from '../engine/schedulingEngine.js';
+import { generateMultipleProposals } from '../domain/multiProposalGenerator.js';
 import { detectConflicts } from '../engine/conflictDetector.js';
 import { initDragDrop, showConflictMoveModal } from '../engine/DragDropManager.js';
 import { createScheduleGrid, attachScheduleGridListeners } from '../components/ScheduleGrid.js';
@@ -96,7 +96,10 @@ function initialState() {
     lastConfig: null,
     noAsignadas: [],
     metricas: null,
-    runEstado: 'borrador'
+    runEstado: 'borrador',
+    // F4: multi-proposal
+    proposals: [],
+    activeProposalIndex: 0,
   };
 }
 
@@ -189,6 +192,9 @@ function renderShell() {
         ${createConstraintPanel({ classes: [] })}
       </div>
 
+      <!-- Proposal tabs (F4B) -->
+      <div id="hb-proposal-tabs-wrapper" style="${state.proposals.length ? '' : 'display:none'}"></div>
+
       <!-- Stats bar -->
       <div id="hb-stats-wrapper">${hasContent ? _statsBar() : ''}</div>
 
@@ -220,6 +226,12 @@ function renderShell() {
         </div>
         <div style="flex:1;"></div>
         <div class="hb-toolbar-group">
+          <button class="hb-btn hb-btn--ghost" id="btn-export-excel" disabled title="Exportar a Excel">
+            <i class="bi bi-file-earmark-spreadsheet"></i><span>Excel</span>
+          </button>
+          <button class="hb-btn hb-btn--ghost" id="btn-export-pdf" disabled title="Exportar a PDF">
+            <i class="bi bi-filetype-pdf"></i><span>PDF</span>
+          </button>
           <button class="hb-btn hb-btn--success" id="hb-save-btn" disabled>
             <i class="bi bi-floppy-fill"></i><span>Guardar</span>
           </button>
@@ -365,6 +377,32 @@ function _updateStatsBar() {
   const wrapper = _container?.querySelector('#hb-stats-wrapper')
   if (!wrapper) return
   wrapper.innerHTML = state.assignments.length > 0 ? _statsBar() : ''
+}
+
+function renderProposalTabs() {
+  const wrapper = _container?.querySelector('#hb-proposal-tabs-wrapper')
+  if (!wrapper) return
+  if (!state.proposals.length) { wrapper.style.display = 'none'; return }
+
+  wrapper.style.display = ''
+  const tabs = state.proposals.map((p, i) => {
+    const score = p.metricas?.score ?? 0
+    const conflicts = (p.conflicts ?? []).length
+    const isActive = i === state.activeProposalIndex
+    const isDupe = p._duplicate ? ' hb-proposal-tab--duplicate' : ''
+    const activeCls = isActive ? ' hb-proposal-tab--active' : ''
+    const badge = `${score}% · ${conflicts} conflicto${conflicts !== 1 ? 's' : ''}`
+    const dupeLabel = p._duplicate ? ' ⚠️' : ''
+    return `<button class="hb-proposal-tab${activeCls}${isDupe}" data-proposal-index="${i}" title="${p._duplicate ? 'Propuesta duplicada' : ''}">
+      <span class="hb-proposal-tab__label">Propuesta ${p.id}${dupeLabel}</span>
+      <span class="hb-proposal-tab__badge">${badge}</span>
+    </button>`
+  }).join('')
+
+  wrapper.innerHTML = `<div class="hb-proposal-tabs-bar">
+    <span class="hb-toolbar-label" style="margin-right:0.5rem">Propuestas</span>
+    ${tabs}
+  </div>`
 }
 
 function renderGrid() {
@@ -625,6 +663,43 @@ function wireListeners() {
       return;
     }
 
+    // Proposal tab click (F4B)
+    const tabEl = e.target.closest('.hb-proposal-tab[data-proposal-index]')
+    if (tabEl) {
+      const idx = parseInt(tabEl.dataset.proposalIndex, 10)
+      if (idx !== state.activeProposalIndex && state.proposals[idx]) {
+        state.activeProposalIndex = idx
+        const p = state.proposals[idx]
+        state.assignments = p.assignments
+        state.conflicts = p.conflicts ?? []
+        state.noAsignadas = p.noAsignadas ?? []
+        state.metricas = p.metricas ?? {}
+        renderProposalTabs()
+        renderGrid()
+        renderConflictPanel()
+        updateUndoRedoButtons()
+      }
+      return
+    }
+
+    // Export Excel (F4D)
+    if (e.target.closest('#btn-export-excel')) {
+      if (!state.assignments.length) return
+      import('../utils/horarioExporter.js').then(({ exportToExcel }) => {
+        exportToExcel(state.assignments).catch(err => showToast(err.message, 'danger'))
+      })
+      return
+    }
+
+    // Export PDF (F4D)
+    if (e.target.closest('#btn-export-pdf')) {
+      if (!state.assignments.length) return
+      import('../utils/horarioExporter.js').then(({ exportToPDF }) => {
+        exportToPDF(state.assignments).catch(err => showToast(err.message, 'danger'))
+      })
+      return
+    }
+
     // Publish button
     if (e.target.closest('#hb-publish-btn')) {
       state.publishWizardOpen = !state.publishWizardOpen;
@@ -683,25 +758,30 @@ async function handleGenerate() {
     state.lastConfig = config;
     state.periodoId = state.activePeriodo;
 
-    const result = generateOptimizedSchedule({
-      clasesConMaestro: clasesPartitioned,
-      maestros: data.maestros || [],
-      salones: data.salones || [],
-      config
+    // F4C: Generate multiple proposals instead of a single schedule
+    const rawProposals = generateMultipleProposals(
+      { clasesConMaestro: clasesPartitioned, maestros: data.maestros || [], salones: data.salones || [] },
+      config,
+      3
+    );
+
+    // Detect conflicts per proposal and annotate assignments
+    state.proposals = rawProposals.map(p => {
+      const { conflicts, assignments } = detectConflicts(p.assignments, {
+        returnAnnotated: true,
+        gapMinutes: panelValues.gap,
+      });
+      return { ...p, assignments, conflicts };
     });
 
-    // F5A: Store noAsignadas and metricas for save payload
-    state.noAsignadas = result.noAsignadas ?? [];
-    state.metricas = result.metricas ?? {};
+    state.activeProposalIndex = 0;
+    const active = state.proposals[0];
+    state.assignments = active.assignments;
+    state.conflicts = active.conflicts;
+    state.noAsignadas = active.noAsignadas ?? [];
+    state.metricas = active.metricas ?? {};
 
-    const { conflicts, assignments } = detectConflicts(result.assignments, {
-      returnAnnotated: true,
-      gapMinutes: panelValues.gap
-    });
-
-    state.assignments = assignments;
-    state.conflicts = conflicts;
-
+    renderProposalTabs();
     renderGrid();
     renderConflictPanel();
     initDD();
@@ -709,6 +789,12 @@ async function handleGenerate() {
     const saveBtn = _container.querySelector('#hb-save-btn');
     if (saveBtn) saveBtn.disabled = state.assignments.length === 0;
 
+    const exportExcelBtn = _container.querySelector('#btn-export-excel');
+    const exportPdfBtn = _container.querySelector('#btn-export-pdf');
+    if (exportExcelBtn) exportExcelBtn.disabled = state.assignments.length === 0;
+    if (exportPdfBtn) exportPdfBtn.disabled = state.assignments.length === 0;
+
+    const { conflicts } = active;
     const msg = conflicts.length > 0
       ? `Horario generado con ${conflicts.length} conflicto(s)`
       : 'Horario optimizado sin conflictos';

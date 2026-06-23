@@ -1,0 +1,6 @@
+export { registerRoutesInventario } from './inventario.router.js'
+export * from './api/inventarioApi.js'
+export { renderReparacionesView } from './views/reparacionesView.js'
+export { renderDetalleReparacionView } from './views/detalleReparacionView.js'
+export { renderFacturasReparacionView } from './views/facturasReparacionView.js'
+export { renderIntercambioInstrumentosView } from './views/intercambioInstrumentosView.js'

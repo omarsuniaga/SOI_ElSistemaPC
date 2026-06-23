@@ -4,130 +4,598 @@
   "graph": {},
   "nodes": [
     {
+      "label": "main-maestros.js",
+      "file_type": "code",
+      "source_file": "src/main-maestros.js",
+      "source_location": "L1",
+      "id": "src_main_maestros",
+      "community": 62,
+      "norm_label": "main-maestros.js"
+    },
+    {
+      "label": "router",
+      "file_type": "code",
+      "source_file": "src/main-maestros.js",
+      "source_location": "L100",
+      "id": "src_main_maestros_router",
+      "community": 62,
+      "norm_label": "router"
+    },
+    {
+      "label": "_viewContainers",
+      "file_type": "code",
+      "source_file": "src/main-maestros.js",
+      "source_location": "L103",
+      "id": "src_main_maestros_viewcontainers",
+      "community": 62,
+      "norm_label": "_viewcontainers"
+    },
+    {
+      "label": "_viewRendered",
+      "file_type": "code",
+      "source_file": "src/main-maestros.js",
+      "source_location": "L105",
+      "id": "src_main_maestros_viewrendered",
+      "community": 62,
+      "norm_label": "_viewrendered"
+    },
+    {
+      "label": "buildTabs()",
+      "file_type": "code",
+      "source_file": "src/main-maestros.js",
+      "source_location": "L110",
+      "id": "src_main_maestros_buildtabs",
+      "community": 62,
+      "norm_label": "buildtabs()"
+    },
+    {
+      "label": "_syncWithSupabase()",
+      "file_type": "code",
+      "source_file": "src/main-maestros.js",
+      "source_location": "L126",
+      "id": "src_main_maestros_syncwithsupabase",
+      "community": 62,
+      "norm_label": "_syncwithsupabase()"
+    },
+    {
+      "label": "_updateSyncIndicator()",
+      "file_type": "code",
+      "source_file": "src/main-maestros.js",
+      "source_location": "L171",
+      "id": "src_main_maestros_updatesyncindicator",
+      "community": 31,
+      "norm_label": "_updatesyncindicator()"
+    },
+    {
+      "label": "_triggerSync()",
+      "file_type": "code",
+      "source_file": "src/main-maestros.js",
+      "source_location": "L189",
+      "id": "src_main_maestros_triggersync",
+      "community": 62,
+      "norm_label": "_triggersync()"
+    },
+    {
+      "label": "invalidateAllViews()",
+      "file_type": "code",
+      "source_file": "src/main-maestros.js",
+      "source_location": "L207",
+      "id": "src_main_maestros_invalidateallviews",
+      "community": 62,
+      "norm_label": "invalidateallviews()"
+    },
+    {
+      "label": "invalidateView()",
+      "file_type": "code",
+      "source_file": "src/main-maestros.js",
+      "source_location": "L210",
+      "id": "src_main_maestros_invalidateview",
+      "community": 62,
+      "norm_label": "invalidateview()"
+    },
+    {
+      "label": "_renderView()",
+      "file_type": "code",
+      "source_file": "src/main-maestros.js",
+      "source_location": "L214",
+      "id": "src_main_maestros_renderview",
+      "community": 62,
+      "norm_label": "_renderview()"
+    },
+    {
+      "label": "_buildShell()",
+      "file_type": "code",
+      "source_file": "src/main-maestros.js",
+      "source_location": "L290",
+      "id": "src_main_maestros_buildshell",
+      "community": 62,
+      "norm_label": "_buildshell()"
+    },
+    {
+      "label": "_showLoginScreen()",
+      "file_type": "code",
+      "source_file": "src/main-maestros.js",
+      "source_location": "L311",
+      "id": "src_main_maestros_showloginscreen",
+      "community": 62,
+      "norm_label": "_showloginscreen()"
+    },
+    {
+      "label": "_setupRouter()",
+      "file_type": "code",
+      "source_file": "src/main-maestros.js",
+      "source_location": "L355",
+      "id": "src_main_maestros_setuprouter",
+      "community": 62,
+      "norm_label": "_setuprouter()"
+    },
+    {
+      "label": "_scheduleSwAlerts()",
+      "file_type": "code",
+      "source_file": "src/main-maestros.js",
+      "source_location": "L362",
+      "id": "src_main_maestros_scheduleswalerts",
+      "community": 30,
+      "norm_label": "_scheduleswalerts()"
+    },
+    {
+      "label": "initPortal()",
+      "file_type": "code",
+      "source_file": "src/main-maestros.js",
+      "source_location": "L393",
+      "id": "src_main_maestros_initportal",
+      "community": 62,
+      "norm_label": "initportal()"
+    },
+    {
+      "label": "_errorTemplate()",
+      "file_type": "code",
+      "source_file": "src/main-maestros.js",
+      "source_location": "L531",
+      "id": "src_main_maestros_errortemplate",
+      "community": 62,
+      "norm_label": "_errortemplate()"
+    },
+    {
+      "label": "calendarApi.js",
+      "file_type": "code",
+      "source_file": "src/modules/calendario/api/calendarApi.js",
+      "source_location": "L1",
+      "id": "api_calendarapi",
+      "community": 622,
+      "norm_label": "calendarapi.js"
+    },
+    {
+      "label": "calendarApi",
+      "file_type": "code",
+      "source_file": "src/modules/calendario/api/calendarApi.js",
+      "source_location": "L3",
+      "id": "api_calendarapi_calendarapi",
+      "community": 622,
+      "norm_label": "calendarapi"
+    },
+    {
+      "label": "calendarView.js",
+      "file_type": "code",
+      "source_file": "src/modules/calendario/views/calendarView.js",
+      "source_location": "L1",
+      "id": "views_calendarview",
+      "community": 623,
+      "norm_label": "calendarview.js"
+    },
+    {
+      "label": "calendarView",
+      "file_type": "code",
+      "source_file": "src/modules/calendario/views/calendarView.js",
+      "source_location": "L1",
+      "id": "views_calendarview_calendarview",
+      "community": 623,
+      "norm_label": "calendarview"
+    },
+    {
+      "label": "maestrosView.js",
+      "file_type": "code",
+      "source_file": "src/modules/maestros/views/maestrosView.js",
+      "source_location": "L1",
+      "id": "views_maestrosview",
+      "community": 76,
+      "norm_label": "maestrosview.js"
+    },
+    {
+      "label": "state",
+      "file_type": "code",
+      "source_file": "src/modules/maestros/views/maestrosView.js",
+      "source_location": "L19",
+      "id": "views_maestrosview_state",
+      "community": 76,
+      "norm_label": "state"
+    },
+    {
+      "label": "VALIDATION",
+      "file_type": "code",
+      "source_file": "src/modules/maestros/views/maestrosView.js",
+      "source_location": "L26",
+      "id": "views_maestrosview_validation",
+      "community": 76,
+      "norm_label": "validation"
+    },
+    {
+      "label": "ESPECTACULOS_PREDEFINIDOS",
+      "file_type": "code",
+      "source_file": "src/modules/maestros/views/maestrosView.js",
+      "source_location": "L34",
+      "id": "views_maestrosview_espectaculos_predefinidos",
+      "community": 76,
+      "norm_label": "espectaculos_predefinidos"
+    },
+    {
+      "label": "renderMaestrosView()",
+      "file_type": "code",
+      "source_file": "src/modules/maestros/views/maestrosView.js",
+      "source_location": "L60",
+      "id": "views_maestrosview_rendermaestrosview",
+      "community": 76,
+      "norm_label": "rendermaestrosview()"
+    },
+    {
+      "label": "renderLoading()",
+      "file_type": "code",
+      "source_file": "src/modules/maestros/views/maestrosView.js",
+      "source_location": "L76",
+      "id": "views_maestrosview_renderloading",
+      "community": 76,
+      "norm_label": "renderloading()"
+    },
+    {
+      "label": "renderError()",
+      "file_type": "code",
+      "source_file": "src/modules/maestros/views/maestrosView.js",
+      "source_location": "L89",
+      "id": "views_maestrosview_rendererror",
+      "community": 76,
+      "norm_label": "rendererror()"
+    },
+    {
+      "label": "renderEspecialidadesChips()",
+      "file_type": "code",
+      "source_file": "src/modules/maestros/views/maestrosView.js",
+      "source_location": "L113",
+      "id": "views_maestrosview_renderespecialidadeschips",
+      "community": 76,
+      "norm_label": "renderespecialidadeschips()"
+    },
+    {
+      "label": "getEspecialidadesFromModal()",
+      "file_type": "code",
+      "source_file": "src/modules/maestros/views/maestrosView.js",
+      "source_location": "L154",
+      "id": "views_maestrosview_getespecialidadesfrommodal",
+      "community": 76,
+      "norm_label": "getespecialidadesfrommodal()"
+    },
+    {
+      "label": "attachEspecialidadesEvents()",
+      "file_type": "code",
+      "source_file": "src/modules/maestros/views/maestrosView.js",
+      "source_location": "L161",
+      "id": "views_maestrosview_attachespecialidadesevents",
+      "community": 76,
+      "norm_label": "attachespecialidadesevents()"
+    },
+    {
+      "label": "renderContent()",
+      "file_type": "code",
+      "source_file": "src/modules/maestros/views/maestrosView.js",
+      "source_location": "L202",
+      "id": "views_maestrosview_rendercontent",
+      "community": 76,
+      "norm_label": "rendercontent()"
+    },
+    {
+      "label": "renderTableRows()",
+      "file_type": "code",
+      "source_file": "src/modules/maestros/views/maestrosView.js",
+      "source_location": "L255",
+      "id": "views_maestrosview_rendertablerows",
+      "community": 76,
+      "norm_label": "rendertablerows()"
+    },
+    {
+      "label": "attachEvents()",
+      "file_type": "code",
+      "source_file": "src/modules/maestros/views/maestrosView.js",
+      "source_location": "L308",
+      "id": "views_maestrosview_attachevents",
+      "community": 76,
+      "norm_label": "attachevents()"
+    },
+    {
+      "label": "descargarReporteMaestroPdf()",
+      "file_type": "code",
+      "source_file": "src/modules/maestros/views/maestrosView.js",
+      "source_location": "L384",
+      "id": "views_maestrosview_descargarreportemaestropdf",
+      "community": 76,
+      "norm_label": "descargarreportemaestropdf()"
+    },
+    {
+      "label": "openWhatsAppModal()",
+      "file_type": "code",
+      "source_file": "src/modules/maestros/views/maestrosView.js",
+      "source_location": "L410",
+      "id": "views_maestrosview_openwhatsappmodal",
+      "community": 76,
+      "norm_label": "openwhatsappmodal()"
+    },
+    {
+      "label": "applyFilters()",
+      "file_type": "code",
+      "source_file": "src/modules/maestros/views/maestrosView.js",
+      "source_location": "L445",
+      "id": "views_maestrosview_applyfilters",
+      "community": 76,
+      "norm_label": "applyfilters()"
+    },
+    {
+      "label": "openCreateModal()",
+      "file_type": "code",
+      "source_file": "src/modules/maestros/views/maestrosView.js",
+      "source_location": "L473",
+      "id": "views_maestrosview_opencreatemodal",
+      "community": 76,
+      "norm_label": "opencreatemodal()"
+    },
+    {
+      "label": "openEditModal()",
+      "file_type": "code",
+      "source_file": "src/modules/maestros/views/maestrosView.js",
+      "source_location": "L596",
+      "id": "views_maestrosview_openeditmodal",
+      "community": 76,
+      "norm_label": "openeditmodal()"
+    },
+    {
+      "label": "openViewModal()",
+      "file_type": "code",
+      "source_file": "src/modules/maestros/views/maestrosView.js",
+      "source_location": "L693",
+      "id": "views_maestrosview_openviewmodal",
+      "community": 76,
+      "norm_label": "openviewmodal()"
+    },
+    {
+      "label": "openDeleteModal()",
+      "file_type": "code",
+      "source_file": "src/modules/maestros/views/maestrosView.js",
+      "source_location": "L986",
+      "id": "views_maestrosview_opendeletemodal",
+      "community": 76,
+      "norm_label": "opendeletemodal()"
+    },
+    {
+      "label": "refreshTable()",
+      "file_type": "code",
+      "source_file": "src/modules/maestros/views/maestrosView.js",
+      "source_location": "L1021",
+      "id": "views_maestrosview_refreshtable",
+      "community": 76,
+      "norm_label": "refreshtable()"
+    },
+    {
+      "label": "isValidEmail()",
+      "file_type": "code",
+      "source_file": "src/modules/maestros/views/maestrosView.js",
+      "source_location": "L1029",
+      "id": "views_maestrosview_isvalidemail",
+      "community": 76,
+      "norm_label": "isvalidemail()"
+    },
+    {
+      "label": "exportarMaestrosCSV()",
+      "file_type": "code",
+      "source_file": "src/modules/maestros/views/maestrosView.js",
+      "source_location": "L1033",
+      "id": "views_maestrosview_exportarmaestroscsv",
+      "community": 76,
+      "norm_label": "exportarmaestroscsv()"
+    },
+    {
+      "label": "showToast()",
+      "file_type": "code",
+      "source_file": "src/modules/maestros/views/maestrosView.js",
+      "source_location": "L1062",
+      "id": "views_maestrosview_showtoast",
+      "community": 76,
+      "norm_label": "showtoast()"
+    },
+    {
+      "label": "portalRouter.js",
+      "file_type": "code",
+      "source_file": "src/portal-maestros/router/portalRouter.js",
+      "source_location": "L1",
+      "id": "router_portalrouter",
+      "community": 62,
+      "norm_label": "portalrouter.js"
+    },
+    {
+      "label": "createPortalRouter()",
+      "file_type": "code",
+      "source_file": "src/portal-maestros/router/portalRouter.js",
+      "source_location": "L9",
+      "id": "router_portalrouter_createportalrouter",
+      "community": 62,
+      "norm_label": "createportalrouter()"
+    },
+    {
+      "label": "process-whatsapp-queue.js",
+      "file_type": "code",
+      "source_file": "supabase/process-whatsapp-queue.js",
+      "source_location": "L1",
+      "id": "supabase_process_whatsapp_queue",
+      "community": 608,
+      "norm_label": "process-whatsapp-queue.js"
+    },
+    {
+      "label": "__dirname",
+      "file_type": "code",
+      "source_file": "supabase/process-whatsapp-queue.js",
+      "source_location": "L7",
+      "id": "supabase_process_whatsapp_queue_dirname",
+      "community": 608,
+      "norm_label": "__dirname"
+    },
+    {
+      "label": "supabase",
+      "file_type": "code",
+      "source_file": "supabase/process-whatsapp-queue.js",
+      "source_location": "L19",
+      "id": "supabase_process_whatsapp_queue_supabase",
+      "community": 608,
+      "norm_label": "supabase"
+    },
+    {
+      "label": "isQuietHours()",
+      "file_type": "code",
+      "source_file": "supabase/process-whatsapp-queue.js",
+      "source_location": "L24",
+      "id": "supabase_process_whatsapp_queue_isquiethours",
+      "community": 608,
+      "norm_label": "isquiethours()"
+    },
+    {
+      "label": "processQueue()",
+      "file_type": "code",
+      "source_file": "supabase/process-whatsapp-queue.js",
+      "source_location": "L59",
+      "id": "supabase_process_whatsapp_queue_processqueue",
+      "community": 608,
+      "norm_label": "processqueue()"
+    },
+    {
       "label": "generarPdfClase.js",
       "file_type": "code",
       "source_file": "src/modules/clases/domain/generarPdfClase.js",
       "source_location": "L1",
-      "id": "domain_generarpdfclase",
       "community": 276,
-      "norm_label": "generarpdfclase.js"
+      "norm_label": "generarpdfclase.js",
+      "id": "domain_generarpdfclase"
     },
     {
       "label": "C",
       "file_type": "code",
       "source_file": "src/modules/clases/domain/generarPdfClase.js",
       "source_location": "L4",
-      "id": "domain_generarpdfclase_c",
       "community": 276,
-      "norm_label": "c"
+      "norm_label": "c",
+      "id": "domain_generarpdfclase_c"
     },
     {
       "label": "now()",
       "file_type": "code",
       "source_file": "src/modules/clases/domain/generarPdfClase.js",
       "source_location": "L19",
-      "id": "domain_generarpdfclase_now",
       "community": 276,
-      "norm_label": "now()"
+      "norm_label": "now()",
+      "id": "domain_generarpdfclase_now"
     },
     {
       "label": "p()",
       "file_type": "code",
       "source_file": "src/modules/clases/domain/generarPdfClase.js",
       "source_location": "L25",
-      "id": "domain_generarpdfclase_p",
       "community": 276,
-      "norm_label": "p()"
+      "norm_label": "p()",
+      "id": "domain_generarpdfclase_p"
     },
     {
       "label": "header()",
       "file_type": "code",
       "source_file": "src/modules/clases/domain/generarPdfClase.js",
       "source_location": "L30",
-      "id": "domain_generarpdfclase_header",
       "community": 276,
-      "norm_label": "header()"
+      "norm_label": "header()",
+      "id": "domain_generarpdfclase_header"
     },
     {
       "label": "footer()",
       "file_type": "code",
       "source_file": "src/modules/clases/domain/generarPdfClase.js",
       "source_location": "L59",
-      "id": "domain_generarpdfclase_footer",
       "community": 276,
-      "norm_label": "footer()"
+      "norm_label": "footer()",
+      "id": "domain_generarpdfclase_footer"
     },
     {
       "label": "DIAS",
       "file_type": "code",
       "source_file": "src/modules/clases/domain/generarPdfClase.js",
       "source_location": "L71",
-      "id": "domain_generarpdfclase_dias",
       "community": 276,
-      "norm_label": "dias"
+      "norm_label": "dias",
+      "id": "domain_generarpdfclase_dias"
     },
     {
       "label": "buildClasePdfFilename()",
       "file_type": "code",
       "source_file": "src/modules/clases/domain/generarPdfClase.js",
       "source_location": "L76",
-      "id": "domain_generarpdfclase_buildclasepdffilename",
       "community": 276,
-      "norm_label": "buildclasepdffilename()"
+      "norm_label": "buildclasepdffilename()",
+      "id": "domain_generarpdfclase_buildclasepdffilename"
     },
     {
       "label": "buildClasePdfRows()",
       "file_type": "code",
       "source_file": "src/modules/clases/domain/generarPdfClase.js",
       "source_location": "L83",
-      "id": "domain_generarpdfclase_buildclasepdfrows",
       "community": 276,
-      "norm_label": "buildclasepdfrows()"
+      "norm_label": "buildclasepdfrows()",
+      "id": "domain_generarpdfclase_buildclasepdfrows"
     },
     {
       "label": "formatClaseHorariosForPdf()",
       "file_type": "code",
       "source_file": "src/modules/clases/domain/generarPdfClase.js",
       "source_location": "L106",
-      "id": "domain_generarpdfclase_formatclasehorariosforpdf",
       "community": 276,
-      "norm_label": "formatclasehorariosforpdf()"
+      "norm_label": "formatclasehorariosforpdf()",
+      "id": "domain_generarpdfclase_formatclasehorariosforpdf"
     },
     {
       "label": "resolveClasePdfMetadata()",
       "file_type": "code",
       "source_file": "src/modules/clases/domain/generarPdfClase.js",
       "source_location": "L117",
-      "id": "domain_generarpdfclase_resolveclasepdfmetadata",
       "community": 276,
-      "norm_label": "resolveclasepdfmetadata()"
+      "norm_label": "resolveclasepdfmetadata()",
+      "id": "domain_generarpdfclase_resolveclasepdfmetadata"
     },
     {
       "label": "renderClaseHeader()",
       "file_type": "code",
       "source_file": "src/modules/clases/domain/generarPdfClase.js",
       "source_location": "L134",
-      "id": "domain_generarpdfclase_renderclaseheader",
       "community": 276,
-      "norm_label": "renderclaseheader()"
+      "norm_label": "renderclaseheader()",
+      "id": "domain_generarpdfclase_renderclaseheader"
     },
     {
       "label": "descargarPdfClase()",
       "file_type": "code",
       "source_file": "src/modules/clases/domain/generarPdfClase.js",
       "source_location": "L158",
-      "id": "domain_generarpdfclase_descargarpdfclase",
       "community": 276,
-      "norm_label": "descargarpdfclase()"
+      "norm_label": "descargarpdfclase()",
+      "id": "domain_generarpdfclase_descargarpdfclase"
     },
     {
       "label": "descargarPdfListadoAlumnosPorClases()",
       "file_type": "code",
       "source_file": "src/modules/clases/domain/generarPdfClase.js",
       "source_location": "L204",
-      "id": "domain_generarpdfclase_descargarpdflistadoalumnosporclases",
       "community": 276,
-      "norm_label": "descargarpdflistadoalumnosporclases()"
+      "norm_label": "descargarpdflistadoalumnosporclases()",
+      "id": "domain_generarpdfclase_descargarpdflistadoalumnosporclases"
     },
     {
       "label": "package.json",
@@ -2386,159 +2854,6 @@
       "community": 35,
       "norm_label": "supabase",
       "id": "lib_supabaseclient_supabase"
-    },
-    {
-      "label": "main-maestros.js",
-      "file_type": "code",
-      "source_file": "src/main-maestros.js",
-      "source_location": "L1",
-      "community": 62,
-      "norm_label": "main-maestros.js",
-      "id": "src_main_maestros"
-    },
-    {
-      "label": "router",
-      "file_type": "code",
-      "source_file": "src/main-maestros.js",
-      "source_location": "L100",
-      "community": 62,
-      "norm_label": "router",
-      "id": "src_main_maestros_router"
-    },
-    {
-      "label": "_viewContainers",
-      "file_type": "code",
-      "source_file": "src/main-maestros.js",
-      "source_location": "L103",
-      "community": 62,
-      "norm_label": "_viewcontainers",
-      "id": "src_main_maestros_viewcontainers"
-    },
-    {
-      "label": "_viewRendered",
-      "file_type": "code",
-      "source_file": "src/main-maestros.js",
-      "source_location": "L105",
-      "community": 62,
-      "norm_label": "_viewrendered",
-      "id": "src_main_maestros_viewrendered"
-    },
-    {
-      "label": "buildTabs()",
-      "file_type": "code",
-      "source_file": "src/main-maestros.js",
-      "source_location": "L110",
-      "community": 62,
-      "norm_label": "buildtabs()",
-      "id": "src_main_maestros_buildtabs"
-    },
-    {
-      "label": "_syncWithSupabase()",
-      "file_type": "code",
-      "source_file": "src/main-maestros.js",
-      "source_location": "L126",
-      "community": 62,
-      "norm_label": "_syncwithsupabase()",
-      "id": "src_main_maestros_syncwithsupabase"
-    },
-    {
-      "label": "_updateSyncIndicator()",
-      "file_type": "code",
-      "source_file": "src/main-maestros.js",
-      "source_location": "L171",
-      "community": 31,
-      "norm_label": "_updatesyncindicator()",
-      "id": "src_main_maestros_updatesyncindicator"
-    },
-    {
-      "label": "_triggerSync()",
-      "file_type": "code",
-      "source_file": "src/main-maestros.js",
-      "source_location": "L189",
-      "community": 62,
-      "norm_label": "_triggersync()",
-      "id": "src_main_maestros_triggersync"
-    },
-    {
-      "label": "invalidateAllViews()",
-      "file_type": "code",
-      "source_file": "src/main-maestros.js",
-      "source_location": "L207",
-      "community": 62,
-      "norm_label": "invalidateallviews()",
-      "id": "src_main_maestros_invalidateallviews"
-    },
-    {
-      "label": "invalidateView()",
-      "file_type": "code",
-      "source_file": "src/main-maestros.js",
-      "source_location": "L210",
-      "community": 62,
-      "norm_label": "invalidateview()",
-      "id": "src_main_maestros_invalidateview"
-    },
-    {
-      "label": "_renderView()",
-      "file_type": "code",
-      "source_file": "src/main-maestros.js",
-      "source_location": "L214",
-      "community": 62,
-      "norm_label": "_renderview()",
-      "id": "src_main_maestros_renderview"
-    },
-    {
-      "label": "_buildShell()",
-      "file_type": "code",
-      "source_file": "src/main-maestros.js",
-      "source_location": "L290",
-      "community": 62,
-      "norm_label": "_buildshell()",
-      "id": "src_main_maestros_buildshell"
-    },
-    {
-      "label": "_showLoginScreen()",
-      "file_type": "code",
-      "source_file": "src/main-maestros.js",
-      "source_location": "L311",
-      "community": 62,
-      "norm_label": "_showloginscreen()",
-      "id": "src_main_maestros_showloginscreen"
-    },
-    {
-      "label": "_setupRouter()",
-      "file_type": "code",
-      "source_file": "src/main-maestros.js",
-      "source_location": "L355",
-      "community": 62,
-      "norm_label": "_setuprouter()",
-      "id": "src_main_maestros_setuprouter"
-    },
-    {
-      "label": "_scheduleSwAlerts()",
-      "file_type": "code",
-      "source_file": "src/main-maestros.js",
-      "source_location": "L362",
-      "community": 30,
-      "norm_label": "_scheduleswalerts()",
-      "id": "src_main_maestros_scheduleswalerts"
-    },
-    {
-      "label": "initPortal()",
-      "file_type": "code",
-      "source_file": "src/main-maestros.js",
-      "source_location": "L393",
-      "community": 62,
-      "norm_label": "initportal()",
-      "id": "src_main_maestros_initportal"
-    },
-    {
-      "label": "_errorTemplate()",
-      "file_type": "code",
-      "source_file": "src/main-maestros.js",
-      "source_location": "L531",
-      "community": 62,
-      "norm_label": "_errortemplate()",
-      "id": "src_main_maestros_errortemplate"
     },
     {
       "label": "main-phase-c.js",
@@ -11883,42 +12198,6 @@
       "id": "views_bitacoraview_destroybitacoraview"
     },
     {
-      "label": "calendarApi.js",
-      "file_type": "code",
-      "source_file": "src/modules/calendario/api/calendarApi.js",
-      "source_location": "L1",
-      "community": 622,
-      "norm_label": "calendarapi.js",
-      "id": "api_calendarapi"
-    },
-    {
-      "label": "calendarApi",
-      "file_type": "code",
-      "source_file": "src/modules/calendario/api/calendarApi.js",
-      "source_location": "L3",
-      "community": 622,
-      "norm_label": "calendarapi",
-      "id": "api_calendarapi_calendarapi"
-    },
-    {
-      "label": "calendarView.js",
-      "file_type": "code",
-      "source_file": "src/modules/calendario/views/calendarView.js",
-      "source_location": "L1",
-      "community": 623,
-      "norm_label": "calendarview.js",
-      "id": "views_calendarview"
-    },
-    {
-      "label": "calendarView",
-      "file_type": "code",
-      "source_file": "src/modules/calendario/views/calendarView.js",
-      "source_location": "L1",
-      "community": 623,
-      "norm_label": "calendarview",
-      "id": "views_calendarview_calendarview"
-    },
-    {
       "label": "clasesApi.test.js",
       "file_type": "code",
       "source_file": "src/modules/clases/__tests__/clasesApi.test.js",
@@ -16678,222 +16957,6 @@
       "community": 76,
       "norm_label": "validaremail()",
       "id": "utils_maestrosutils_validaremail"
-    },
-    {
-      "label": "maestrosView.js",
-      "file_type": "code",
-      "source_file": "src/modules/maestros/views/maestrosView.js",
-      "source_location": "L1",
-      "community": 76,
-      "norm_label": "maestrosview.js",
-      "id": "views_maestrosview"
-    },
-    {
-      "label": "state",
-      "file_type": "code",
-      "source_file": "src/modules/maestros/views/maestrosView.js",
-      "source_location": "L20",
-      "community": 76,
-      "norm_label": "state",
-      "id": "views_maestrosview_state"
-    },
-    {
-      "label": "VALIDATION",
-      "file_type": "code",
-      "source_file": "src/modules/maestros/views/maestrosView.js",
-      "source_location": "L27",
-      "community": 76,
-      "norm_label": "validation",
-      "id": "views_maestrosview_validation"
-    },
-    {
-      "label": "ESPECTACULOS_PREDEFINIDOS",
-      "file_type": "code",
-      "source_file": "src/modules/maestros/views/maestrosView.js",
-      "source_location": "L35",
-      "community": 76,
-      "norm_label": "espectaculos_predefinidos",
-      "id": "views_maestrosview_espectaculos_predefinidos"
-    },
-    {
-      "label": "renderMaestrosView()",
-      "file_type": "code",
-      "source_file": "src/modules/maestros/views/maestrosView.js",
-      "source_location": "L61",
-      "community": 76,
-      "norm_label": "rendermaestrosview()",
-      "id": "views_maestrosview_rendermaestrosview"
-    },
-    {
-      "label": "renderLoading()",
-      "file_type": "code",
-      "source_file": "src/modules/maestros/views/maestrosView.js",
-      "source_location": "L77",
-      "community": 76,
-      "norm_label": "renderloading()",
-      "id": "views_maestrosview_renderloading"
-    },
-    {
-      "label": "renderError()",
-      "file_type": "code",
-      "source_file": "src/modules/maestros/views/maestrosView.js",
-      "source_location": "L90",
-      "community": 76,
-      "norm_label": "rendererror()",
-      "id": "views_maestrosview_rendererror"
-    },
-    {
-      "label": "renderEspecialidadesChips()",
-      "file_type": "code",
-      "source_file": "src/modules/maestros/views/maestrosView.js",
-      "source_location": "L114",
-      "community": 76,
-      "norm_label": "renderespecialidadeschips()",
-      "id": "views_maestrosview_renderespecialidadeschips"
-    },
-    {
-      "label": "getEspecialidadesFromModal()",
-      "file_type": "code",
-      "source_file": "src/modules/maestros/views/maestrosView.js",
-      "source_location": "L155",
-      "community": 76,
-      "norm_label": "getespecialidadesfrommodal()",
-      "id": "views_maestrosview_getespecialidadesfrommodal"
-    },
-    {
-      "label": "attachEspecialidadesEvents()",
-      "file_type": "code",
-      "source_file": "src/modules/maestros/views/maestrosView.js",
-      "source_location": "L162",
-      "community": 76,
-      "norm_label": "attachespecialidadesevents()",
-      "id": "views_maestrosview_attachespecialidadesevents"
-    },
-    {
-      "label": "renderContent()",
-      "file_type": "code",
-      "source_file": "src/modules/maestros/views/maestrosView.js",
-      "source_location": "L203",
-      "community": 76,
-      "norm_label": "rendercontent()",
-      "id": "views_maestrosview_rendercontent"
-    },
-    {
-      "label": "renderTableRows()",
-      "file_type": "code",
-      "source_file": "src/modules/maestros/views/maestrosView.js",
-      "source_location": "L257",
-      "community": 76,
-      "norm_label": "rendertablerows()",
-      "id": "views_maestrosview_rendertablerows"
-    },
-    {
-      "label": "attachEvents()",
-      "file_type": "code",
-      "source_file": "src/modules/maestros/views/maestrosView.js",
-      "source_location": "L310",
-      "community": 76,
-      "norm_label": "attachevents()",
-      "id": "views_maestrosview_attachevents"
-    },
-    {
-      "label": "descargarReporteMaestroPdf()",
-      "file_type": "code",
-      "source_file": "src/modules/maestros/views/maestrosView.js",
-      "source_location": "L386",
-      "community": 76,
-      "norm_label": "descargarreportemaestropdf()",
-      "id": "views_maestrosview_descargarreportemaestropdf"
-    },
-    {
-      "label": "openWhatsAppModal()",
-      "file_type": "code",
-      "source_file": "src/modules/maestros/views/maestrosView.js",
-      "source_location": "L412",
-      "community": 76,
-      "norm_label": "openwhatsappmodal()",
-      "id": "views_maestrosview_openwhatsappmodal"
-    },
-    {
-      "label": "applyFilters()",
-      "file_type": "code",
-      "source_file": "src/modules/maestros/views/maestrosView.js",
-      "source_location": "L447",
-      "community": 76,
-      "norm_label": "applyfilters()",
-      "id": "views_maestrosview_applyfilters"
-    },
-    {
-      "label": "openCreateModal()",
-      "file_type": "code",
-      "source_file": "src/modules/maestros/views/maestrosView.js",
-      "source_location": "L475",
-      "community": 76,
-      "norm_label": "opencreatemodal()",
-      "id": "views_maestrosview_opencreatemodal"
-    },
-    {
-      "label": "openEditModal()",
-      "file_type": "code",
-      "source_file": "src/modules/maestros/views/maestrosView.js",
-      "source_location": "L598",
-      "community": 76,
-      "norm_label": "openeditmodal()",
-      "id": "views_maestrosview_openeditmodal"
-    },
-    {
-      "label": "openViewModal()",
-      "file_type": "code",
-      "source_file": "src/modules/maestros/views/maestrosView.js",
-      "source_location": "L695",
-      "community": 76,
-      "norm_label": "openviewmodal()",
-      "id": "views_maestrosview_openviewmodal"
-    },
-    {
-      "label": "openDeleteModal()",
-      "file_type": "code",
-      "source_file": "src/modules/maestros/views/maestrosView.js",
-      "source_location": "L988",
-      "community": 76,
-      "norm_label": "opendeletemodal()",
-      "id": "views_maestrosview_opendeletemodal"
-    },
-    {
-      "label": "refreshTable()",
-      "file_type": "code",
-      "source_file": "src/modules/maestros/views/maestrosView.js",
-      "source_location": "L1023",
-      "community": 76,
-      "norm_label": "refreshtable()",
-      "id": "views_maestrosview_refreshtable"
-    },
-    {
-      "label": "isValidEmail()",
-      "file_type": "code",
-      "source_file": "src/modules/maestros/views/maestrosView.js",
-      "source_location": "L1031",
-      "community": 76,
-      "norm_label": "isvalidemail()",
-      "id": "views_maestrosview_isvalidemail"
-    },
-    {
-      "label": "exportarMaestrosCSV()",
-      "file_type": "code",
-      "source_file": "src/modules/maestros/views/maestrosView.js",
-      "source_location": "L1035",
-      "community": 76,
-      "norm_label": "exportarmaestroscsv()",
-      "id": "views_maestrosview_exportarmaestroscsv"
-    },
-    {
-      "label": "showToast()",
-      "file_type": "code",
-      "source_file": "src/modules/maestros/views/maestrosView.js",
-      "source_location": "L1064",
-      "community": 76,
-      "norm_label": "showtoast()",
-      "id": "views_maestrosview_showtoast"
     },
     {
       "label": "metricsApi.test.js",
@@ -31539,24 +31602,6 @@
       "id": "tests_portalrouter_test"
     },
     {
-      "label": "portalRouter.js",
-      "file_type": "code",
-      "source_file": "src/portal-maestros/router/portalRouter.js",
-      "source_location": "L1",
-      "community": 62,
-      "norm_label": "portalrouter.js",
-      "id": "router_portalrouter"
-    },
-    {
-      "label": "createPortalRouter()",
-      "file_type": "code",
-      "source_file": "src/portal-maestros/router/portalRouter.js",
-      "source_location": "L9",
-      "community": 62,
-      "norm_label": "createportalrouter()",
-      "id": "router_portalrouter_createportalrouter"
-    },
-    {
       "label": "seed_ruta_violin_40_niveles.json",
       "file_type": "code",
       "source_file": "src/portal-maestros/seed_ruta_violin_40_niveles.json",
@@ -40672,51 +40717,6 @@
       "community": 283,
       "norm_label": "jsonresponse()",
       "id": "sync_postulantes_index_jsonresponse"
-    },
-    {
-      "label": "process-whatsapp-queue.js",
-      "file_type": "code",
-      "source_file": "supabase/process-whatsapp-queue.js",
-      "source_location": "L1",
-      "community": 608,
-      "norm_label": "process-whatsapp-queue.js",
-      "id": "supabase_process_whatsapp_queue"
-    },
-    {
-      "label": "__dirname",
-      "file_type": "code",
-      "source_file": "supabase/process-whatsapp-queue.js",
-      "source_location": "L7",
-      "community": 608,
-      "norm_label": "__dirname",
-      "id": "supabase_process_whatsapp_queue_dirname"
-    },
-    {
-      "label": "supabase",
-      "file_type": "code",
-      "source_file": "supabase/process-whatsapp-queue.js",
-      "source_location": "L19",
-      "community": 608,
-      "norm_label": "supabase",
-      "id": "supabase_process_whatsapp_queue_supabase"
-    },
-    {
-      "label": "isQuietHours()",
-      "file_type": "code",
-      "source_file": "supabase/process-whatsapp-queue.js",
-      "source_location": "L24",
-      "community": 608,
-      "norm_label": "isquiethours()",
-      "id": "supabase_process_whatsapp_queue_isquiethours"
-    },
-    {
-      "label": "processQueue()",
-      "file_type": "code",
-      "source_file": "supabase/process-whatsapp-queue.js",
-      "source_location": "L59",
-      "community": 608,
-      "norm_label": "processqueue()",
-      "id": "supabase_process_whatsapp_queue_processqueue"
     },
     {
       "label": "run-seed-complete.js",
@@ -81792,14 +81792,2069 @@
   ],
   "links": [
     {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main-maestros.js",
+      "source_location": "L59",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "src_main_maestros",
+      "target": "auth_useportalauth"
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main-maestros.js",
+      "source_location": "L59",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "src_main_maestros",
+      "target": "auth_useportalauth_useportalauth"
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main-maestros.js",
+      "source_location": "L72",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "src_main_maestros",
+      "target": "components_apptoast"
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main-maestros.js",
+      "source_location": "L72",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "src_main_maestros",
+      "target": "components_apptoast_apptoast"
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main-maestros.js",
+      "source_location": "L31",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "src_main_maestros",
+      "target": "components_pwainstaller"
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main-maestros.js",
+      "source_location": "L62",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "src_main_maestros",
+      "target": "lib_supabaseclient"
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main-maestros.js",
+      "source_location": "L62",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "src_main_maestros",
+      "target": "lib_supabaseclient_supabase"
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main-maestros.js",
+      "source_location": "L40",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "src_main_maestros",
+      "target": "middleware_csrfprotection"
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main-maestros.js",
+      "source_location": "L40",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "src_main_maestros",
+      "target": "middleware_csrfprotection_initcsrf"
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main-maestros.js",
+      "source_location": "L39",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "src_main_maestros",
+      "target": "middleware_ratelimit"
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main-maestros.js",
+      "source_location": "L39",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "src_main_maestros",
+      "target": "middleware_ratelimit_initratelimit"
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main-maestros.js",
+      "source_location": "L60",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "src_main_maestros",
+      "target": "router_portalrouter"
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main-maestros.js",
+      "source_location": "L60",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "src_main_maestros",
+      "target": "router_portalrouter_createportalrouter"
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main-maestros.js",
+      "source_location": "L38",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "src_main_maestros",
+      "target": "services_analyticsservice_initanalytics"
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main-maestros.js",
+      "source_location": "L63",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "src_main_maestros",
+      "target": "services_maestrodataservice"
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main-maestros.js",
+      "source_location": "L63",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "src_main_maestros",
+      "target": "services_maestrodataservice_gethorariosclases"
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main-maestros.js",
+      "source_location": "L63",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "src_main_maestros",
+      "target": "services_maestrodataservice_getmisclases"
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main-maestros.js",
+      "source_location": "L63",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "src_main_maestros",
+      "target": "services_maestrodataservice_getsesiones"
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main-maestros.js",
+      "source_location": "L63",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "src_main_maestros",
+      "target": "services_maestrodataservice_prefetchmonthdata"
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main-maestros.js",
+      "source_location": "L71",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "src_main_maestros",
+      "target": "services_navigationhooks"
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main-maestros.js",
+      "source_location": "L71",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "src_main_maestros",
+      "target": "services_navigationhooks_setnavigationcallbacks"
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main-maestros.js",
+      "source_location": "L61",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "src_main_maestros",
+      "target": "services_offlinequeue"
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main-maestros.js",
+      "source_location": "L61",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "src_main_maestros",
+      "target": "services_offlinequeue_getqueue"
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main-maestros.js",
+      "source_location": "L61",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "src_main_maestros",
+      "target": "services_offlinequeue_processqueue"
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main-maestros.js",
+      "source_location": "L70",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "src_main_maestros",
+      "target": "services_permisoservice"
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main-maestros.js",
+      "source_location": "L70",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "src_main_maestros",
+      "target": "services_permisoservice_getpermisos"
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main-maestros.js",
+      "source_location": "L69",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "src_main_maestros",
+      "target": "services_pushservice"
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main-maestros.js",
+      "source_location": "L69",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "src_main_maestros",
+      "target": "services_pushservice_cleanuppushservice"
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main-maestros.js",
+      "source_location": "L69",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "src_main_maestros",
+      "target": "services_pushservice_schedulelocalalerts"
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main-maestros.js",
+      "source_location": "L41",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "src_main_maestros",
+      "target": "services_webvitals"
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main-maestros.js",
+      "source_location": "L41",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "src_main_maestros",
+      "target": "services_webvitals_initwebvitals"
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main-maestros.js",
+      "source_location": "L82",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "src_main_maestros",
+      "target": "shell_portalevents"
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main-maestros.js",
+      "source_location": "L82",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "src_main_maestros",
+      "target": "shell_portalevents_setupglobalappevents"
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main-maestros.js",
+      "source_location": "L76",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "src_main_maestros",
+      "target": "shell_portalroutes"
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main-maestros.js",
+      "source_location": "L76",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "src_main_maestros",
+      "target": "shell_portalroutes_cacheable_views"
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main-maestros.js",
+      "source_location": "L76",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "src_main_maestros",
+      "target": "shell_portalroutes_initviewcontainers"
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main-maestros.js",
+      "source_location": "L76",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "src_main_maestros",
+      "target": "shell_portalroutes_renderviewcontent"
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main-maestros.js",
+      "source_location": "L76",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "src_main_maestros",
+      "target": "shell_portalroutes_setuprouterroutes"
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main-maestros.js",
+      "source_location": "L75",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "src_main_maestros",
+      "target": "shell_portalshell"
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main-maestros.js",
+      "source_location": "L75",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "src_main_maestros",
+      "target": "shell_portalshell_hideshell"
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main-maestros.js",
+      "source_location": "L75",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "src_main_maestros",
+      "target": "shell_portalshell_rendershell"
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main-maestros.js",
+      "source_location": "L75",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "src_main_maestros",
+      "target": "shell_portalshell_setactivetab"
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main-maestros.js",
+      "source_location": "L4",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "src_main_maestros",
+      "target": "src_early_error_suppression"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main-maestros.js",
+      "source_location": "L290",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "src_main_maestros",
+      "target": "src_main_maestros_buildshell"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main-maestros.js",
+      "source_location": "L110",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "src_main_maestros",
+      "target": "src_main_maestros_buildtabs"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main-maestros.js",
+      "source_location": "L531",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "src_main_maestros",
+      "target": "src_main_maestros_errortemplate"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main-maestros.js",
+      "source_location": "L393",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "src_main_maestros",
+      "target": "src_main_maestros_initportal"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main-maestros.js",
+      "source_location": "L207",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "src_main_maestros",
+      "target": "src_main_maestros_invalidateallviews"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main-maestros.js",
+      "source_location": "L210",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "src_main_maestros",
+      "target": "src_main_maestros_invalidateview"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main-maestros.js",
+      "source_location": "L214",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "src_main_maestros",
+      "target": "src_main_maestros_renderview"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main-maestros.js",
+      "source_location": "L100",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "src_main_maestros",
+      "target": "src_main_maestros_router"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main-maestros.js",
+      "source_location": "L362",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "src_main_maestros",
+      "target": "src_main_maestros_scheduleswalerts"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main-maestros.js",
+      "source_location": "L355",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "src_main_maestros",
+      "target": "src_main_maestros_setuprouter"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main-maestros.js",
+      "source_location": "L311",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "src_main_maestros",
+      "target": "src_main_maestros_showloginscreen"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main-maestros.js",
+      "source_location": "L126",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "src_main_maestros",
+      "target": "src_main_maestros_syncwithsupabase"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main-maestros.js",
+      "source_location": "L189",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "src_main_maestros",
+      "target": "src_main_maestros_triggersync"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main-maestros.js",
+      "source_location": "L171",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "src_main_maestros",
+      "target": "src_main_maestros_updatesyncindicator"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main-maestros.js",
+      "source_location": "L103",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "src_main_maestros",
+      "target": "src_main_maestros_viewcontainers"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main-maestros.js",
+      "source_location": "L105",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "src_main_maestros",
+      "target": "src_main_maestros_viewrendered"
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main-maestros.js",
+      "source_location": "L7",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "src_main_maestros",
+      "target": "utils_pulltorefreshblocker"
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main-maestros.js",
+      "source_location": "L7",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "src_main_maestros",
+      "target": "utils_pulltorefreshblocker_disablepulltorefresh"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main-maestros.js",
+      "source_location": "L297",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "src_main_maestros_buildshell",
+      "target": "src_main_maestros_buildtabs"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main-maestros.js",
+      "source_location": "L175",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "src_main_maestros_updatesyncindicator",
+      "target": "services_offlinequeue_getqueue"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main-maestros.js",
+      "source_location": "L525",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "src_main_maestros_initportal",
+      "target": "src_main_maestros_triggersync"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main-maestros.js",
+      "source_location": "L194",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "src_main_maestros_triggersync",
+      "target": "services_offlinequeue_processqueue"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main-maestros.js",
+      "source_location": "L413",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "src_main_maestros_initportal",
+      "target": "src_main_maestros_renderview"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main-maestros.js",
+      "source_location": "L262",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "src_main_maestros_renderview",
+      "target": "shell_portalroutes_renderviewcontent"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main-maestros.js",
+      "source_location": "L227",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "src_main_maestros_renderview",
+      "target": "shell_portalshell_setactivetab"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main-maestros.js",
+      "source_location": "L352",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "src_main_maestros_showloginscreen",
+      "target": "src_main_maestros_renderview"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main-maestros.js",
+      "source_location": "L294",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "src_main_maestros_buildshell",
+      "target": "shell_portalshell_rendershell"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main-maestros.js",
+      "source_location": "L308",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "src_main_maestros_buildshell",
+      "target": "shell_portalshell_setactivetab"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main-maestros.js",
+      "source_location": "L453",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "src_main_maestros_initportal",
+      "target": "src_main_maestros_buildshell"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main-maestros.js",
+      "source_location": "L422",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "src_main_maestros_initportal",
+      "target": "src_main_maestros_showloginscreen"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main-maestros.js",
+      "source_location": "L322",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "src_main_maestros_showloginscreen",
+      "target": "shell_portalroutes_initviewcontainers"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main-maestros.js",
+      "source_location": "L334",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "src_main_maestros_showloginscreen",
+      "target": "shell_portalroutes_renderviewcontent"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main-maestros.js",
+      "source_location": "L331",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "src_main_maestros_showloginscreen",
+      "target": "shell_portalshell_hideshell"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main-maestros.js",
+      "source_location": "L323",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "src_main_maestros_showloginscreen",
+      "target": "src_main_maestros_setuprouter"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main-maestros.js",
+      "source_location": "L411",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "src_main_maestros_initportal",
+      "target": "src_main_maestros_setuprouter"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main-maestros.js",
+      "source_location": "L356",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "src_main_maestros_setuprouter",
+      "target": "shell_portalroutes_setuprouterroutes"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main-maestros.js",
+      "source_location": "L371",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "src_main_maestros_scheduleswalerts",
+      "target": "services_maestrodataservice_gethorariosclases"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main-maestros.js",
+      "source_location": "L370",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "src_main_maestros_scheduleswalerts",
+      "target": "services_maestrodataservice_getmisclases"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main-maestros.js",
+      "source_location": "L372",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "src_main_maestros_scheduleswalerts",
+      "target": "services_maestrodataservice_getsesiones"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main-maestros.js",
+      "source_location": "L384",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "src_main_maestros_scheduleswalerts",
+      "target": "services_pushservice_schedulelocalalerts"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main-maestros.js",
+      "source_location": "L506",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "src_main_maestros_initportal",
+      "target": "services_maestrodataservice_prefetchmonthdata"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main-maestros.js",
+      "source_location": "L491",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "src_main_maestros_initportal",
+      "target": "services_navigationhooks_setnavigationcallbacks"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main-maestros.js",
+      "source_location": "L447",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "src_main_maestros_initportal",
+      "target": "services_permisoservice_getpermisos"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main-maestros.js",
+      "source_location": "L459",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "src_main_maestros_initportal",
+      "target": "shell_portalevents_setupglobalappevents"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main-maestros.js",
+      "source_location": "L410",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "src_main_maestros_initportal",
+      "target": "shell_portalroutes_initviewcontainers"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/main-maestros.js",
+      "source_location": "L486",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "src_main_maestros_initportal",
+      "target": "shell_portalshell_setactivetab"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/modules/calendario/api/calendarApi.js",
+      "source_location": "L3",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "api_calendarapi",
+      "target": "api_calendarapi_calendarapi"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/modules/calendario/views/calendarView.js",
+      "source_location": "L1",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "views_calendarview",
+      "target": "views_calendarview_calendarview"
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/modules/maestros/maestros.router.js",
+      "source_location": "L2",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "maestros_maestros_router",
+      "target": "views_maestrosview"
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/modules/maestros/views/maestrosView.js",
+      "source_location": "L14",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "views_maestrosview",
+      "target": "api_clasesapi"
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/modules/maestros/views/maestrosView.js",
+      "source_location": "L14",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "views_maestrosview",
+      "target": "api_clasesapi_actualizarclase"
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/modules/maestros/views/maestrosView.js",
+      "source_location": "L14",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "views_maestrosview",
+      "target": "api_clasesapi_obteneralumnosinscritosporclases"
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/modules/maestros/views/maestrosView.js",
+      "source_location": "L14",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "views_maestrosview",
+      "target": "api_clasesapi_obtenerclasespormaestro"
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/modules/maestros/views/maestrosView.js",
+      "source_location": "L4",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "views_maestrosview",
+      "target": "api_maestrosapi"
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/modules/maestros/views/maestrosView.js",
+      "source_location": "L4",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "views_maestrosview",
+      "target": "api_maestrosapi_activarmaestro"
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/modules/maestros/views/maestrosView.js",
+      "source_location": "L4",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "views_maestrosview",
+      "target": "api_maestrosapi_actualizarmaestro"
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/modules/maestros/views/maestrosView.js",
+      "source_location": "L4",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "views_maestrosview",
+      "target": "api_maestrosapi_crearmaestro"
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/modules/maestros/views/maestrosView.js",
+      "source_location": "L4",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "views_maestrosview",
+      "target": "api_maestrosapi_eliminarmaestro"
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/modules/maestros/views/maestrosView.js",
+      "source_location": "L4",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "views_maestrosview",
+      "target": "api_maestrosapi_inactivarmaestro"
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/modules/maestros/views/maestrosView.js",
+      "source_location": "L4",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "views_maestrosview",
+      "target": "api_maestrosapi_obtenermaestros"
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/modules/maestros/views/maestrosView.js",
+      "source_location": "L4",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "views_maestrosview",
+      "target": "api_maestrosapi_validaremail"
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/modules/maestros/views/maestrosView.js",
+      "source_location": "L3",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "views_maestrosview",
+      "target": "components_appmodal"
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/modules/maestros/views/maestrosView.js",
+      "source_location": "L3",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "views_maestrosview",
+      "target": "components_appmodal_appmodal"
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/modules/maestros/views/maestrosView.js",
+      "source_location": "L15",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "views_maestrosview",
+      "target": "components_clasemodal"
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/modules/maestros/views/maestrosView.js",
+      "source_location": "L15",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "views_maestrosview",
+      "target": "components_clasemodal_openclasemodal"
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/modules/maestros/views/maestrosView.js",
+      "source_location": "L17",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "views_maestrosview",
+      "target": "components_helppanel"
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/modules/maestros/views/maestrosView.js",
+      "source_location": "L17",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "views_maestrosview",
+      "target": "components_helppanel_helppanel"
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/modules/maestros/views/maestrosView.js",
+      "source_location": "L18",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "views_maestrosview",
+      "target": "domain_generarpdfreportemaestro"
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/modules/maestros/views/maestrosView.js",
+      "source_location": "L18",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "views_maestrosview",
+      "target": "domain_generarpdfreportemaestro_descargarpdfreportemaestro"
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/modules/maestros/views/maestrosView.js",
+      "source_location": "L16",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "views_maestrosview",
+      "target": "lib_supabaseclient"
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/modules/maestros/views/maestrosView.js",
+      "source_location": "L16",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "views_maestrosview",
+      "target": "lib_supabaseclient_supabase"
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/modules/maestros/views/maestrosView.js",
+      "source_location": "L13",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "views_maestrosview",
+      "target": "utils_maestrosutils"
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/modules/maestros/views/maestrosView.js",
+      "source_location": "L13",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "views_maestrosview",
+      "target": "utils_maestrosutils_escapehtml"
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/modules/maestros/views/maestrosView.js",
+      "source_location": "L13",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "views_maestrosview",
+      "target": "utils_maestrosutils_getinitials"
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/modules/maestros/views/maestrosView.js",
+      "source_location": "L13",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "views_maestrosview",
+      "target": "utils_maestrosutils_getstatuscolor"
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/modules/maestros/views/maestrosView.js",
+      "source_location": "L13",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "views_maestrosview",
+      "target": "utils_maestrosutils_getstatuslabel"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/modules/maestros/views/maestrosView.js",
+      "source_location": "L412",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "views_maestrosview",
+      "target": "views_maestrosview_applyfilters"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/modules/maestros/views/maestrosView.js",
+      "source_location": "L161",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "views_maestrosview",
+      "target": "views_maestrosview_attachespecialidadesevents"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/modules/maestros/views/maestrosView.js",
+      "source_location": "L306",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "views_maestrosview",
+      "target": "views_maestrosview_attachevents"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/modules/maestros/views/maestrosView.js",
+      "source_location": "L386",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "views_maestrosview",
+      "target": "views_maestrosview_descargarreportemaestropdf"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/modules/maestros/views/maestrosView.js",
+      "source_location": "L34",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "views_maestrosview",
+      "target": "views_maestrosview_espectaculos_predefinidos"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/modules/maestros/views/maestrosView.js",
+      "source_location": "L994",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "views_maestrosview",
+      "target": "views_maestrosview_exportarmaestroscsv"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/modules/maestros/views/maestrosView.js",
+      "source_location": "L154",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "views_maestrosview",
+      "target": "views_maestrosview_getespecialidadesfrommodal"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/modules/maestros/views/maestrosView.js",
+      "source_location": "L990",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "views_maestrosview",
+      "target": "views_maestrosview_isvalidemail"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/modules/maestros/views/maestrosView.js",
+      "source_location": "L440",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "views_maestrosview",
+      "target": "views_maestrosview_opencreatemodal"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/modules/maestros/views/maestrosView.js",
+      "source_location": "L947",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "views_maestrosview",
+      "target": "views_maestrosview_opendeletemodal"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/modules/maestros/views/maestrosView.js",
+      "source_location": "L563",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "views_maestrosview",
+      "target": "views_maestrosview_openeditmodal"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/modules/maestros/views/maestrosView.js",
+      "source_location": "L660",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "views_maestrosview",
+      "target": "views_maestrosview_openviewmodal"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/modules/maestros/views/maestrosView.js",
+      "source_location": "L377",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "views_maestrosview",
+      "target": "views_maestrosview_openwhatsappmodal"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/modules/maestros/views/maestrosView.js",
+      "source_location": "L982",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "views_maestrosview",
+      "target": "views_maestrosview_refreshtable"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/modules/maestros/views/maestrosView.js",
+      "source_location": "L202",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "views_maestrosview",
+      "target": "views_maestrosview_rendercontent"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/modules/maestros/views/maestrosView.js",
+      "source_location": "L89",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "views_maestrosview",
+      "target": "views_maestrosview_rendererror"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/modules/maestros/views/maestrosView.js",
+      "source_location": "L113",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "views_maestrosview",
+      "target": "views_maestrosview_renderespecialidadeschips"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/modules/maestros/views/maestrosView.js",
+      "source_location": "L76",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "views_maestrosview",
+      "target": "views_maestrosview_renderloading"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/modules/maestros/views/maestrosView.js",
+      "source_location": "L60",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "views_maestrosview",
+      "target": "views_maestrosview_rendermaestrosview"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/modules/maestros/views/maestrosView.js",
+      "source_location": "L256",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "views_maestrosview",
+      "target": "views_maestrosview_rendertablerows"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/modules/maestros/views/maestrosView.js",
+      "source_location": "L1023",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "views_maestrosview",
+      "target": "views_maestrosview_showtoast"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/modules/maestros/views/maestrosView.js",
+      "source_location": "L19",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "views_maestrosview",
+      "target": "views_maestrosview_state"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/modules/maestros/views/maestrosView.js",
+      "source_location": "L26",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "views_maestrosview",
+      "target": "views_maestrosview_validation"
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/modules/maestros/maestros.router.js",
+      "source_location": "L2",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "maestros_maestros_router",
+      "target": "views_maestrosview_rendermaestrosview"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/modules/maestros/views/maestrosView.js",
+      "source_location": "L67",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "views_maestrosview_rendermaestrosview",
+      "target": "views_maestrosview_attachevents"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/modules/maestros/views/maestrosView.js",
+      "source_location": "L66",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "views_maestrosview_rendermaestrosview",
+      "target": "views_maestrosview_rendercontent"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/modules/maestros/views/maestrosView.js",
+      "source_location": "L70",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "views_maestrosview_rendermaestrosview",
+      "target": "views_maestrosview_rendererror"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/modules/maestros/views/maestrosView.js",
+      "source_location": "L62",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "views_maestrosview_rendermaestrosview",
+      "target": "views_maestrosview_renderloading"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/modules/maestros/views/maestrosView.js",
+      "source_location": "L98",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "views_maestrosview_rendererror",
+      "target": "utils_maestrosutils_escapehtml"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/modules/maestros/views/maestrosView.js",
+      "source_location": "L466",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "views_maestrosview_opencreatemodal",
+      "target": "views_maestrosview_renderespecialidadeschips"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/modules/maestros/views/maestrosView.js",
+      "source_location": "L595",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "views_maestrosview_openeditmodal",
+      "target": "views_maestrosview_renderespecialidadeschips"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/modules/maestros/views/maestrosView.js",
+      "source_location": "L124",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "views_maestrosview_renderespecialidadeschips",
+      "target": "utils_maestrosutils_escapehtml"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/modules/maestros/views/maestrosView.js",
+      "source_location": "L174",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "views_maestrosview_attachespecialidadesevents",
+      "target": "utils_maestrosutils_escapehtml"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/modules/maestros/views/maestrosView.js",
+      "source_location": "L247",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "views_maestrosview_rendercontent",
+      "target": "views_maestrosview_rendertablerows"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/modules/maestros/views/maestrosView.js",
+      "source_location": "L985",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "views_maestrosview_refreshtable",
+      "target": "views_maestrosview_rendertablerows"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/modules/maestros/views/maestrosView.js",
+      "source_location": "L280",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "views_maestrosview_rendertablerows",
+      "target": "utils_maestrosutils_escapehtml"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/modules/maestros/views/maestrosView.js",
+      "source_location": "L275",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "views_maestrosview_rendertablerows",
+      "target": "utils_maestrosutils_getinitials"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/modules/maestros/views/maestrosView.js",
+      "source_location": "L396",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "views_maestrosview_descargarreportemaestropdf",
+      "target": "api_clasesapi_obteneralumnosinscritosporclases"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/modules/maestros/views/maestrosView.js",
+      "source_location": "L392",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "views_maestrosview_descargarreportemaestropdf",
+      "target": "api_clasesapi_obtenerclasespormaestro"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/modules/maestros/views/maestrosView.js",
+      "source_location": "L399",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "views_maestrosview_descargarreportemaestropdf",
+      "target": "domain_generarpdfreportemaestro_descargarpdfreportemaestro"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/modules/maestros/views/maestrosView.js",
+      "source_location": "L400",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "views_maestrosview_descargarreportemaestropdf",
+      "target": "views_maestrosview_showtoast"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/modules/maestros/views/maestrosView.js",
+      "source_location": "L384",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "views_maestrosview_openwhatsappmodal",
+      "target": "utils_maestrosutils_escapehtml"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/modules/maestros/views/maestrosView.js",
+      "source_location": "L435",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "views_maestrosview_applyfilters",
+      "target": "views_maestrosview_refreshtable"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/modules/maestros/views/maestrosView.js",
+      "source_location": "L550",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "views_maestrosview_opencreatemodal",
+      "target": "api_maestrosapi_obtenermaestros"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/modules/maestros/views/maestrosView.js",
+      "source_location": "L504",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "views_maestrosview_opencreatemodal",
+      "target": "api_maestrosapi_validaremail"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/modules/maestros/views/maestrosView.js",
+      "source_location": "L650",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "views_maestrosview_openeditmodal",
+      "target": "api_maestrosapi_actualizarmaestro"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/modules/maestros/views/maestrosView.js",
+      "source_location": "L632",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "views_maestrosview_openeditmodal",
+      "target": "api_maestrosapi_validaremail"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/modules/maestros/views/maestrosView.js",
+      "source_location": "L576",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "views_maestrosview_openeditmodal",
+      "target": "utils_maestrosutils_escapehtml"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/modules/maestros/views/maestrosView.js",
+      "source_location": "L566",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "views_maestrosview_openeditmodal",
+      "target": "views_maestrosview_showtoast"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/modules/maestros/views/maestrosView.js",
+      "source_location": "L921",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "views_maestrosview_openviewmodal",
+      "target": "api_clasesapi_actualizarclase"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/modules/maestros/views/maestrosView.js",
+      "source_location": "L766",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "views_maestrosview_openviewmodal",
+      "target": "api_clasesapi_obtenerclasespormaestro"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/modules/maestros/views/maestrosView.js",
+      "source_location": "L900",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "views_maestrosview_openviewmodal",
+      "target": "components_clasemodal_openclasemodal"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/modules/maestros/views/maestrosView.js",
+      "source_location": "L678",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "views_maestrosview_openviewmodal",
+      "target": "utils_maestrosutils_escapehtml"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/modules/maestros/views/maestrosView.js",
+      "source_location": "L716",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "views_maestrosview_openviewmodal",
+      "target": "utils_maestrosutils_getstatuscolor"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/modules/maestros/views/maestrosView.js",
+      "source_location": "L716",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "views_maestrosview_openviewmodal",
+      "target": "utils_maestrosutils_getstatuslabel"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/modules/maestros/views/maestrosView.js",
+      "source_location": "L663",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "views_maestrosview_openviewmodal",
+      "target": "views_maestrosview_showtoast"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/modules/maestros/views/maestrosView.js",
+      "source_location": "L972",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "views_maestrosview_opendeletemodal",
+      "target": "api_maestrosapi_activarmaestro"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/modules/maestros/views/maestrosView.js",
+      "source_location": "L969",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "views_maestrosview_opendeletemodal",
+      "target": "api_maestrosapi_inactivarmaestro"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/modules/maestros/views/maestrosView.js",
+      "source_location": "L963",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "views_maestrosview_opendeletemodal",
+      "target": "utils_maestrosutils_escapehtml"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/modules/maestros/views/maestrosView.js",
+      "source_location": "L950",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "views_maestrosview_opendeletemodal",
+      "target": "views_maestrosview_showtoast"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/modules/maestros/views/maestrosView.js",
+      "source_location": "L996",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "views_maestrosview_exportarmaestroscsv",
+      "target": "views_maestrosview_showtoast"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "src/modules/maestros/views/maestrosView.js",
+      "source_location": "L1047",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "views_maestrosview_showtoast",
+      "target": "utils_maestrosutils_escapehtml"
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/portal-maestros/portalRouter.test.js",
+      "source_location": "L2",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "portal_maestros_portalrouter_test",
+      "target": "router_portalrouter"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/portal-maestros/router/portalRouter.js",
+      "source_location": "L9",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "router_portalrouter",
+      "target": "router_portalrouter_createportalrouter"
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/portal-maestros/router/__tests__/portalRouter.test.js",
+      "source_location": "L6",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "tests_portalrouter_test",
+      "target": "router_portalrouter"
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/portal-maestros/portalRouter.test.js",
+      "source_location": "L2",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "portal_maestros_portalrouter_test",
+      "target": "router_portalrouter_createportalrouter"
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/portal-maestros/router/__tests__/portalRouter.test.js",
+      "source_location": "L6",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "tests_portalrouter_test",
+      "target": "router_portalrouter_createportalrouter"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "supabase/process-whatsapp-queue.js",
+      "source_location": "L7",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "supabase_process_whatsapp_queue",
+      "target": "supabase_process_whatsapp_queue_dirname"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "supabase/process-whatsapp-queue.js",
+      "source_location": "L24",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "supabase_process_whatsapp_queue",
+      "target": "supabase_process_whatsapp_queue_isquiethours"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "supabase/process-whatsapp-queue.js",
+      "source_location": "L59",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "supabase_process_whatsapp_queue",
+      "target": "supabase_process_whatsapp_queue_processqueue"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "supabase/process-whatsapp-queue.js",
+      "source_location": "L19",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "supabase_process_whatsapp_queue",
+      "target": "supabase_process_whatsapp_queue_supabase"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "supabase/process-whatsapp-queue.js",
+      "source_location": "L94",
+      "weight": 1.0,
+      "confidence_score": 1.0,
+      "source": "supabase_process_whatsapp_queue_processqueue",
+      "target": "supabase_process_whatsapp_queue_isquiethours"
+    },
+    {
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/modules/clases/domain/generarPdfClase.js",
       "source_location": "L76",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "domain_generarpdfclase",
-      "target": "domain_generarpdfclase_buildclasepdffilename",
-      "confidence_score": 1.0
+      "target": "domain_generarpdfclase_buildclasepdffilename"
     },
     {
       "relation": "contains",
@@ -81807,9 +83862,9 @@
       "source_file": "src/modules/clases/domain/generarPdfClase.js",
       "source_location": "L83",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "domain_generarpdfclase",
-      "target": "domain_generarpdfclase_buildclasepdfrows",
-      "confidence_score": 1.0
+      "target": "domain_generarpdfclase_buildclasepdfrows"
     },
     {
       "relation": "contains",
@@ -81817,9 +83872,9 @@
       "source_file": "src/modules/clases/domain/generarPdfClase.js",
       "source_location": "L4",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "domain_generarpdfclase",
-      "target": "domain_generarpdfclase_c",
-      "confidence_score": 1.0
+      "target": "domain_generarpdfclase_c"
     },
     {
       "relation": "contains",
@@ -81827,9 +83882,9 @@
       "source_file": "src/modules/clases/domain/generarPdfClase.js",
       "source_location": "L158",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "domain_generarpdfclase",
-      "target": "domain_generarpdfclase_descargarpdfclase",
-      "confidence_score": 1.0
+      "target": "domain_generarpdfclase_descargarpdfclase"
     },
     {
       "relation": "contains",
@@ -81837,9 +83892,9 @@
       "source_file": "src/modules/clases/domain/generarPdfClase.js",
       "source_location": "L204",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "domain_generarpdfclase",
-      "target": "domain_generarpdfclase_descargarpdflistadoalumnosporclases",
-      "confidence_score": 1.0
+      "target": "domain_generarpdfclase_descargarpdflistadoalumnosporclases"
     },
     {
       "relation": "contains",
@@ -81847,9 +83902,9 @@
       "source_file": "src/modules/clases/domain/generarPdfClase.js",
       "source_location": "L71",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "domain_generarpdfclase",
-      "target": "domain_generarpdfclase_dias",
-      "confidence_score": 1.0
+      "target": "domain_generarpdfclase_dias"
     },
     {
       "relation": "contains",
@@ -81857,9 +83912,9 @@
       "source_file": "src/modules/clases/domain/generarPdfClase.js",
       "source_location": "L59",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "domain_generarpdfclase",
-      "target": "domain_generarpdfclase_footer",
-      "confidence_score": 1.0
+      "target": "domain_generarpdfclase_footer"
     },
     {
       "relation": "contains",
@@ -81867,9 +83922,9 @@
       "source_file": "src/modules/clases/domain/generarPdfClase.js",
       "source_location": "L106",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "domain_generarpdfclase",
-      "target": "domain_generarpdfclase_formatclasehorariosforpdf",
-      "confidence_score": 1.0
+      "target": "domain_generarpdfclase_formatclasehorariosforpdf"
     },
     {
       "relation": "contains",
@@ -81877,9 +83932,9 @@
       "source_file": "src/modules/clases/domain/generarPdfClase.js",
       "source_location": "L30",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "domain_generarpdfclase",
-      "target": "domain_generarpdfclase_header",
-      "confidence_score": 1.0
+      "target": "domain_generarpdfclase_header"
     },
     {
       "relation": "contains",
@@ -81887,9 +83942,9 @@
       "source_file": "src/modules/clases/domain/generarPdfClase.js",
       "source_location": "L19",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "domain_generarpdfclase",
-      "target": "domain_generarpdfclase_now",
-      "confidence_score": 1.0
+      "target": "domain_generarpdfclase_now"
     },
     {
       "relation": "contains",
@@ -81897,9 +83952,9 @@
       "source_file": "src/modules/clases/domain/generarPdfClase.js",
       "source_location": "L25",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "domain_generarpdfclase",
-      "target": "domain_generarpdfclase_p",
-      "confidence_score": 1.0
+      "target": "domain_generarpdfclase_p"
     },
     {
       "relation": "contains",
@@ -81907,9 +83962,9 @@
       "source_file": "src/modules/clases/domain/generarPdfClase.js",
       "source_location": "L134",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "domain_generarpdfclase",
-      "target": "domain_generarpdfclase_renderclaseheader",
-      "confidence_score": 1.0
+      "target": "domain_generarpdfclase_renderclaseheader"
     },
     {
       "relation": "contains",
@@ -81917,9 +83972,9 @@
       "source_file": "src/modules/clases/domain/generarPdfClase.js",
       "source_location": "L117",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "domain_generarpdfclase",
-      "target": "domain_generarpdfclase_resolveclasepdfmetadata",
-      "confidence_score": 1.0
+      "target": "domain_generarpdfclase_resolveclasepdfmetadata"
     },
     {
       "relation": "calls",
@@ -81928,9 +83983,9 @@
       "source_file": "src/modules/clases/domain/generarPdfClase.js",
       "source_location": "L160",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "domain_generarpdfclase_descargarpdfclase",
-      "target": "domain_generarpdfclase_now",
-      "confidence_score": 1.0
+      "target": "domain_generarpdfclase_now"
     },
     {
       "relation": "calls",
@@ -81939,9 +83994,9 @@
       "source_file": "src/modules/clases/domain/generarPdfClase.js",
       "source_location": "L206",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "domain_generarpdfclase_descargarpdflistadoalumnosporclases",
-      "target": "domain_generarpdfclase_now",
-      "confidence_score": 1.0
+      "target": "domain_generarpdfclase_now"
     },
     {
       "relation": "calls",
@@ -81950,9 +84005,9 @@
       "source_file": "src/modules/clases/domain/generarPdfClase.js",
       "source_location": "L143",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "domain_generarpdfclase_renderclaseheader",
-      "target": "domain_generarpdfclase_p",
-      "confidence_score": 1.0
+      "target": "domain_generarpdfclase_p"
     },
     {
       "relation": "calls",
@@ -81961,9 +84016,9 @@
       "source_file": "src/modules/clases/domain/generarPdfClase.js",
       "source_location": "L163",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "domain_generarpdfclase_descargarpdfclase",
-      "target": "domain_generarpdfclase_header",
-      "confidence_score": 1.0
+      "target": "domain_generarpdfclase_header"
     },
     {
       "relation": "calls",
@@ -81972,9 +84027,9 @@
       "source_file": "src/modules/clases/domain/generarPdfClase.js",
       "source_location": "L200",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "domain_generarpdfclase_descargarpdfclase",
-      "target": "domain_generarpdfclase_footer",
-      "confidence_score": 1.0
+      "target": "domain_generarpdfclase_footer"
     },
     {
       "relation": "calls",
@@ -81983,9 +84038,9 @@
       "source_file": "src/modules/clases/domain/generarPdfClase.js",
       "source_location": "L161",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "domain_generarpdfclase_descargarpdfclase",
-      "target": "domain_generarpdfclase_buildclasepdffilename",
-      "confidence_score": 1.0
+      "target": "domain_generarpdfclase_buildclasepdffilename"
     },
     {
       "relation": "calls",
@@ -81994,9 +84049,9 @@
       "source_file": "src/modules/clases/domain/generarPdfClase.js",
       "source_location": "L183",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "domain_generarpdfclase_descargarpdfclase",
-      "target": "domain_generarpdfclase_buildclasepdfrows",
-      "confidence_score": 1.0
+      "target": "domain_generarpdfclase_buildclasepdfrows"
     },
     {
       "relation": "calls",
@@ -82005,9 +84060,9 @@
       "source_file": "src/modules/clases/domain/generarPdfClase.js",
       "source_location": "L136",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "domain_generarpdfclase_renderclaseheader",
-      "target": "domain_generarpdfclase_formatclasehorariosforpdf",
-      "confidence_score": 1.0
+      "target": "domain_generarpdfclase_formatclasehorariosforpdf"
     },
     {
       "relation": "calls",
@@ -82016,9 +84071,9 @@
       "source_file": "src/modules/clases/domain/generarPdfClase.js",
       "source_location": "L135",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "domain_generarpdfclase_renderclaseheader",
-      "target": "domain_generarpdfclase_resolveclasepdfmetadata",
-      "confidence_score": 1.0
+      "target": "domain_generarpdfclase_resolveclasepdfmetadata"
     },
     {
       "relation": "calls",
@@ -82027,9 +84082,9 @@
       "source_file": "src/modules/clases/domain/generarPdfClase.js",
       "source_location": "L164",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "domain_generarpdfclase_descargarpdfclase",
-      "target": "domain_generarpdfclase_renderclaseheader",
-      "confidence_score": 1.0
+      "target": "domain_generarpdfclase_renderclaseheader"
     },
     {
       "relation": "contains",
@@ -86255,17 +88310,6 @@
       "relation": "imports_from",
       "context": "import",
       "confidence": "EXTRACTED",
-      "source_file": "src/main-maestros.js",
-      "source_location": "L4",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "src_main_maestros",
-      "target": "src_early_error_suppression"
-    },
-    {
-      "relation": "imports_from",
-      "context": "import",
-      "confidence": "EXTRACTED",
       "source_file": "src/lib/__tests__/fuzzyMatch.test.js",
       "source_location": "L2",
       "weight": 1.0,
@@ -87942,17 +89986,6 @@
       "relation": "imports_from",
       "context": "import",
       "confidence": "EXTRACTED",
-      "source_file": "src/main-maestros.js",
-      "source_location": "L62",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "src_main_maestros",
-      "target": "lib_supabaseclient"
-    },
-    {
-      "relation": "imports_from",
-      "context": "import",
-      "confidence": "EXTRACTED",
       "source_file": "src/main-phase-c.js",
       "source_location": "L6",
       "weight": 1.0,
@@ -88684,17 +90717,6 @@
       "weight": 1.0,
       "confidence_score": 1.0,
       "source": "views_hoyview",
-      "target": "lib_supabaseclient"
-    },
-    {
-      "relation": "imports_from",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/modules/maestros/views/maestrosView.js",
-      "source_location": "L16",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "views_maestrosview",
       "target": "lib_supabaseclient"
     },
     {
@@ -90032,17 +92054,6 @@
       "relation": "imports",
       "context": "import",
       "confidence": "EXTRACTED",
-      "source_file": "src/main-maestros.js",
-      "source_location": "L62",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "src_main_maestros",
-      "target": "lib_supabaseclient_supabase"
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
       "source_file": "src/main-phase-c.js",
       "source_location": "L6",
       "weight": 1.0,
@@ -90758,17 +92769,6 @@
       "relation": "imports",
       "context": "import",
       "confidence": "EXTRACTED",
-      "source_file": "src/modules/maestros/views/maestrosView.js",
-      "source_location": "L16",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "views_maestrosview",
-      "target": "lib_supabaseclient_supabase"
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
       "source_file": "src/portal-maestros/views/metricasView.js",
       "source_location": "L1",
       "weight": 1.0,
@@ -90896,936 +92896,6 @@
       "confidence_score": 1.0,
       "source": "wizard_wizardshell",
       "target": "lib_supabaseclient_supabase"
-    },
-    {
-      "relation": "imports_from",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/main-maestros.js",
-      "source_location": "L59",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "src_main_maestros",
-      "target": "auth_useportalauth"
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/main-maestros.js",
-      "source_location": "L59",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "src_main_maestros",
-      "target": "auth_useportalauth_useportalauth"
-    },
-    {
-      "relation": "imports_from",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/main-maestros.js",
-      "source_location": "L72",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "src_main_maestros",
-      "target": "components_apptoast"
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/main-maestros.js",
-      "source_location": "L72",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "src_main_maestros",
-      "target": "components_apptoast_apptoast"
-    },
-    {
-      "relation": "imports_from",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/main-maestros.js",
-      "source_location": "L31",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "src_main_maestros",
-      "target": "components_pwainstaller"
-    },
-    {
-      "relation": "imports_from",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/main-maestros.js",
-      "source_location": "L40",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "src_main_maestros",
-      "target": "middleware_csrfprotection"
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/main-maestros.js",
-      "source_location": "L40",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "src_main_maestros",
-      "target": "middleware_csrfprotection_initcsrf"
-    },
-    {
-      "relation": "imports_from",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/main-maestros.js",
-      "source_location": "L39",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "src_main_maestros",
-      "target": "middleware_ratelimit"
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/main-maestros.js",
-      "source_location": "L39",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "src_main_maestros",
-      "target": "middleware_ratelimit_initratelimit"
-    },
-    {
-      "relation": "imports_from",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/main-maestros.js",
-      "source_location": "L60",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "src_main_maestros",
-      "target": "router_portalrouter"
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/main-maestros.js",
-      "source_location": "L60",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "src_main_maestros",
-      "target": "router_portalrouter_createportalrouter"
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/main-maestros.js",
-      "source_location": "L38",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "src_main_maestros",
-      "target": "services_analyticsservice_initanalytics"
-    },
-    {
-      "relation": "imports_from",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/main-maestros.js",
-      "source_location": "L63",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "src_main_maestros",
-      "target": "services_maestrodataservice"
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/main-maestros.js",
-      "source_location": "L63",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "src_main_maestros",
-      "target": "services_maestrodataservice_gethorariosclases"
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/main-maestros.js",
-      "source_location": "L63",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "src_main_maestros",
-      "target": "services_maestrodataservice_getmisclases"
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/main-maestros.js",
-      "source_location": "L63",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "src_main_maestros",
-      "target": "services_maestrodataservice_getsesiones"
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/main-maestros.js",
-      "source_location": "L63",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "src_main_maestros",
-      "target": "services_maestrodataservice_prefetchmonthdata"
-    },
-    {
-      "relation": "imports_from",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/main-maestros.js",
-      "source_location": "L71",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "src_main_maestros",
-      "target": "services_navigationhooks"
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/main-maestros.js",
-      "source_location": "L71",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "src_main_maestros",
-      "target": "services_navigationhooks_setnavigationcallbacks"
-    },
-    {
-      "relation": "imports_from",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/main-maestros.js",
-      "source_location": "L61",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "src_main_maestros",
-      "target": "services_offlinequeue"
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/main-maestros.js",
-      "source_location": "L61",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "src_main_maestros",
-      "target": "services_offlinequeue_getqueue"
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/main-maestros.js",
-      "source_location": "L61",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "src_main_maestros",
-      "target": "services_offlinequeue_processqueue"
-    },
-    {
-      "relation": "imports_from",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/main-maestros.js",
-      "source_location": "L70",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "src_main_maestros",
-      "target": "services_permisoservice"
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/main-maestros.js",
-      "source_location": "L70",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "src_main_maestros",
-      "target": "services_permisoservice_getpermisos"
-    },
-    {
-      "relation": "imports_from",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/main-maestros.js",
-      "source_location": "L69",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "src_main_maestros",
-      "target": "services_pushservice"
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/main-maestros.js",
-      "source_location": "L69",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "src_main_maestros",
-      "target": "services_pushservice_cleanuppushservice"
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/main-maestros.js",
-      "source_location": "L69",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "src_main_maestros",
-      "target": "services_pushservice_schedulelocalalerts"
-    },
-    {
-      "relation": "imports_from",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/main-maestros.js",
-      "source_location": "L41",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "src_main_maestros",
-      "target": "services_webvitals"
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/main-maestros.js",
-      "source_location": "L41",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "src_main_maestros",
-      "target": "services_webvitals_initwebvitals"
-    },
-    {
-      "relation": "imports_from",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/main-maestros.js",
-      "source_location": "L82",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "src_main_maestros",
-      "target": "shell_portalevents"
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/main-maestros.js",
-      "source_location": "L82",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "src_main_maestros",
-      "target": "shell_portalevents_setupglobalappevents"
-    },
-    {
-      "relation": "imports_from",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/main-maestros.js",
-      "source_location": "L76",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "src_main_maestros",
-      "target": "shell_portalroutes"
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/main-maestros.js",
-      "source_location": "L76",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "src_main_maestros",
-      "target": "shell_portalroutes_cacheable_views"
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/main-maestros.js",
-      "source_location": "L76",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "src_main_maestros",
-      "target": "shell_portalroutes_initviewcontainers"
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/main-maestros.js",
-      "source_location": "L76",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "src_main_maestros",
-      "target": "shell_portalroutes_renderviewcontent"
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/main-maestros.js",
-      "source_location": "L76",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "src_main_maestros",
-      "target": "shell_portalroutes_setuprouterroutes"
-    },
-    {
-      "relation": "imports_from",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/main-maestros.js",
-      "source_location": "L75",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "src_main_maestros",
-      "target": "shell_portalshell"
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/main-maestros.js",
-      "source_location": "L75",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "src_main_maestros",
-      "target": "shell_portalshell_hideshell"
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/main-maestros.js",
-      "source_location": "L75",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "src_main_maestros",
-      "target": "shell_portalshell_rendershell"
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/main-maestros.js",
-      "source_location": "L75",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "src_main_maestros",
-      "target": "shell_portalshell_setactivetab"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "src/main-maestros.js",
-      "source_location": "L290",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "src_main_maestros",
-      "target": "src_main_maestros_buildshell"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "src/main-maestros.js",
-      "source_location": "L110",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "src_main_maestros",
-      "target": "src_main_maestros_buildtabs"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "src/main-maestros.js",
-      "source_location": "L531",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "src_main_maestros",
-      "target": "src_main_maestros_errortemplate"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "src/main-maestros.js",
-      "source_location": "L393",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "src_main_maestros",
-      "target": "src_main_maestros_initportal"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "src/main-maestros.js",
-      "source_location": "L207",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "src_main_maestros",
-      "target": "src_main_maestros_invalidateallviews"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "src/main-maestros.js",
-      "source_location": "L210",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "src_main_maestros",
-      "target": "src_main_maestros_invalidateview"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "src/main-maestros.js",
-      "source_location": "L214",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "src_main_maestros",
-      "target": "src_main_maestros_renderview"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "src/main-maestros.js",
-      "source_location": "L100",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "src_main_maestros",
-      "target": "src_main_maestros_router"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "src/main-maestros.js",
-      "source_location": "L362",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "src_main_maestros",
-      "target": "src_main_maestros_scheduleswalerts"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "src/main-maestros.js",
-      "source_location": "L355",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "src_main_maestros",
-      "target": "src_main_maestros_setuprouter"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "src/main-maestros.js",
-      "source_location": "L311",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "src_main_maestros",
-      "target": "src_main_maestros_showloginscreen"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "src/main-maestros.js",
-      "source_location": "L126",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "src_main_maestros",
-      "target": "src_main_maestros_syncwithsupabase"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "src/main-maestros.js",
-      "source_location": "L189",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "src_main_maestros",
-      "target": "src_main_maestros_triggersync"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "src/main-maestros.js",
-      "source_location": "L171",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "src_main_maestros",
-      "target": "src_main_maestros_updatesyncindicator"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "src/main-maestros.js",
-      "source_location": "L103",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "src_main_maestros",
-      "target": "src_main_maestros_viewcontainers"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "src/main-maestros.js",
-      "source_location": "L105",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "src_main_maestros",
-      "target": "src_main_maestros_viewrendered"
-    },
-    {
-      "relation": "imports_from",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/main-maestros.js",
-      "source_location": "L7",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "src_main_maestros",
-      "target": "utils_pulltorefreshblocker"
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/main-maestros.js",
-      "source_location": "L7",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "src_main_maestros",
-      "target": "utils_pulltorefreshblocker_disablepulltorefresh"
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "src/main-maestros.js",
-      "source_location": "L297",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "src_main_maestros_buildshell",
-      "target": "src_main_maestros_buildtabs"
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "src/main-maestros.js",
-      "source_location": "L175",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "src_main_maestros_updatesyncindicator",
-      "target": "services_offlinequeue_getqueue"
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "src/main-maestros.js",
-      "source_location": "L525",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "src_main_maestros_initportal",
-      "target": "src_main_maestros_triggersync"
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "src/main-maestros.js",
-      "source_location": "L194",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "src_main_maestros_triggersync",
-      "target": "services_offlinequeue_processqueue"
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "src/main-maestros.js",
-      "source_location": "L413",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "src_main_maestros_initportal",
-      "target": "src_main_maestros_renderview"
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "src/main-maestros.js",
-      "source_location": "L262",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "src_main_maestros_renderview",
-      "target": "shell_portalroutes_renderviewcontent"
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "src/main-maestros.js",
-      "source_location": "L227",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "src_main_maestros_renderview",
-      "target": "shell_portalshell_setactivetab"
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "src/main-maestros.js",
-      "source_location": "L352",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "src_main_maestros_showloginscreen",
-      "target": "src_main_maestros_renderview"
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "src/main-maestros.js",
-      "source_location": "L294",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "src_main_maestros_buildshell",
-      "target": "shell_portalshell_rendershell"
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "src/main-maestros.js",
-      "source_location": "L308",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "src_main_maestros_buildshell",
-      "target": "shell_portalshell_setactivetab"
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "src/main-maestros.js",
-      "source_location": "L453",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "src_main_maestros_initportal",
-      "target": "src_main_maestros_buildshell"
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "src/main-maestros.js",
-      "source_location": "L422",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "src_main_maestros_initportal",
-      "target": "src_main_maestros_showloginscreen"
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "src/main-maestros.js",
-      "source_location": "L322",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "src_main_maestros_showloginscreen",
-      "target": "shell_portalroutes_initviewcontainers"
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "src/main-maestros.js",
-      "source_location": "L334",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "src_main_maestros_showloginscreen",
-      "target": "shell_portalroutes_renderviewcontent"
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "src/main-maestros.js",
-      "source_location": "L331",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "src_main_maestros_showloginscreen",
-      "target": "shell_portalshell_hideshell"
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "src/main-maestros.js",
-      "source_location": "L323",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "src_main_maestros_showloginscreen",
-      "target": "src_main_maestros_setuprouter"
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "src/main-maestros.js",
-      "source_location": "L411",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "src_main_maestros_initportal",
-      "target": "src_main_maestros_setuprouter"
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "src/main-maestros.js",
-      "source_location": "L356",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "src_main_maestros_setuprouter",
-      "target": "shell_portalroutes_setuprouterroutes"
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "src/main-maestros.js",
-      "source_location": "L371",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "src_main_maestros_scheduleswalerts",
-      "target": "services_maestrodataservice_gethorariosclases"
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "src/main-maestros.js",
-      "source_location": "L370",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "src_main_maestros_scheduleswalerts",
-      "target": "services_maestrodataservice_getmisclases"
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "src/main-maestros.js",
-      "source_location": "L372",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "src_main_maestros_scheduleswalerts",
-      "target": "services_maestrodataservice_getsesiones"
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "src/main-maestros.js",
-      "source_location": "L384",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "src_main_maestros_scheduleswalerts",
-      "target": "services_pushservice_schedulelocalalerts"
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "src/main-maestros.js",
-      "source_location": "L506",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "src_main_maestros_initportal",
-      "target": "services_maestrodataservice_prefetchmonthdata"
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "src/main-maestros.js",
-      "source_location": "L491",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "src_main_maestros_initportal",
-      "target": "services_navigationhooks_setnavigationcallbacks"
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "src/main-maestros.js",
-      "source_location": "L447",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "src_main_maestros_initportal",
-      "target": "services_permisoservice_getpermisos"
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "src/main-maestros.js",
-      "source_location": "L459",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "src_main_maestros_initportal",
-      "target": "shell_portalevents_setupglobalappevents"
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "src/main-maestros.js",
-      "source_location": "L410",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "src_main_maestros_initportal",
-      "target": "shell_portalroutes_initviewcontainers"
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "src/main-maestros.js",
-      "source_location": "L486",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "src_main_maestros_initportal",
-      "target": "shell_portalshell_setactivetab"
     },
     {
       "relation": "contains",
@@ -114452,26 +115522,6 @@
       "target": "views_bitacoraview_attachevents"
     },
     {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "src/modules/calendario/api/calendarApi.js",
-      "source_location": "L3",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "api_calendarapi",
-      "target": "api_calendarapi_calendarapi"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "src/modules/calendario/views/calendarView.js",
-      "source_location": "L1",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "views_calendarview",
-      "target": "views_calendarview_calendarview"
-    },
-    {
       "relation": "imports_from",
       "context": "import",
       "confidence": "EXTRACTED",
@@ -114767,17 +115817,6 @@
       "relation": "imports_from",
       "context": "import",
       "confidence": "EXTRACTED",
-      "source_file": "src/modules/maestros/views/maestrosView.js",
-      "source_location": "L14",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "views_maestrosview",
-      "target": "api_clasesapi"
-    },
-    {
-      "relation": "imports_from",
-      "context": "import",
-      "confidence": "EXTRACTED",
       "source_file": "src/portal-maestros/views/registroAlumnoView.js",
       "source_location": "L401",
       "weight": 1.0,
@@ -114987,28 +116026,6 @@
       "relation": "imports",
       "context": "import",
       "confidence": "EXTRACTED",
-      "source_file": "src/modules/maestros/views/maestrosView.js",
-      "source_location": "L14",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "views_maestrosview",
-      "target": "api_clasesapi_actualizarclase"
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "src/modules/maestros/views/maestrosView.js",
-      "source_location": "L921",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "views_maestrosview_openviewmodal",
-      "target": "api_clasesapi_actualizarclase"
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
       "source_file": "src/modules/clases/views/clasesView.js",
       "source_location": "L5",
       "weight": 1.0,
@@ -115047,39 +116064,6 @@
       "source_location": "L94",
       "weight": 1.0,
       "source": "views_gestionarclasesview_rendergestionarclasesview",
-      "target": "api_clasesapi_obtenerclasespormaestro"
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/modules/maestros/views/maestrosView.js",
-      "source_location": "L14",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "views_maestrosview",
-      "target": "api_clasesapi_obtenerclasespormaestro"
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "src/modules/maestros/views/maestrosView.js",
-      "source_location": "L392",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "views_maestrosview_descargarreportemaestropdf",
-      "target": "api_clasesapi_obtenerclasespormaestro"
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "src/modules/maestros/views/maestrosView.js",
-      "source_location": "L766",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "views_maestrosview_openviewmodal",
       "target": "api_clasesapi_obtenerclasespormaestro"
     },
     {
@@ -115399,28 +116383,6 @@
       "weight": 1.0,
       "confidence_score": 1.0,
       "source": "views_clasesview_attachglobalevents",
-      "target": "api_clasesapi_obteneralumnosinscritosporclases"
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/modules/maestros/views/maestrosView.js",
-      "source_location": "L14",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "views_maestrosview",
-      "target": "api_clasesapi_obteneralumnosinscritosporclases"
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "src/modules/maestros/views/maestrosView.js",
-      "source_location": "L396",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "views_maestrosview_descargarreportemaestropdf",
       "target": "api_clasesapi_obteneralumnosinscritosporclases"
     },
     {
@@ -116125,17 +117087,6 @@
       "target": "components_clasemodal"
     },
     {
-      "relation": "imports_from",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/modules/maestros/views/maestrosView.js",
-      "source_location": "L15",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "views_maestrosview",
-      "target": "components_clasemodal"
-    },
-    {
       "relation": "calls",
       "context": "call",
       "confidence": "EXTRACTED",
@@ -116177,28 +117128,6 @@
       "weight": 1.0,
       "confidence_score": 1.0,
       "source": "views_clasesview_openclaseperfilmodal",
-      "target": "components_clasemodal_openclasemodal"
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/modules/maestros/views/maestrosView.js",
-      "source_location": "L15",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "views_maestrosview",
-      "target": "components_clasemodal_openclasemodal"
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "src/modules/maestros/views/maestrosView.js",
-      "source_location": "L900",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "views_maestrosview_openviewmodal",
       "target": "components_clasemodal_openclasemodal"
     },
     {
@@ -125136,17 +126065,6 @@
       "target": "api_maestrosapi"
     },
     {
-      "relation": "imports_from",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/modules/maestros/views/maestrosView.js",
-      "source_location": "L4",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "views_maestrosview",
-      "target": "api_maestrosapi"
-    },
-    {
       "relation": "calls",
       "context": "call",
       "confidence": "EXTRACTED",
@@ -125216,28 +126134,6 @@
       "relation": "imports",
       "context": "import",
       "confidence": "EXTRACTED",
-      "source_file": "src/modules/maestros/views/maestrosView.js",
-      "source_location": "L4",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "views_maestrosview",
-      "target": "api_maestrosapi_obtenermaestros"
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "src/modules/maestros/views/maestrosView.js",
-      "source_location": "L550",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "views_maestrosview_opencreatemodal",
-      "target": "api_maestrosapi_obtenermaestros"
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
       "source_file": "src/modules/maestros/hooks/useMaestros.js",
       "source_location": "L1",
       "weight": 1.0,
@@ -125260,17 +126156,6 @@
       "relation": "imports",
       "context": "import",
       "confidence": "EXTRACTED",
-      "source_file": "src/modules/maestros/views/maestrosView.js",
-      "source_location": "L4",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "views_maestrosview",
-      "target": "api_maestrosapi_crearmaestro"
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
       "source_file": "tests/modules/maestros/maestrosApi.test.js",
       "source_location": "L10",
       "weight": 1.0,
@@ -125282,122 +126167,12 @@
       "relation": "imports",
       "context": "import",
       "confidence": "EXTRACTED",
-      "source_file": "src/modules/maestros/views/maestrosView.js",
-      "source_location": "L4",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "views_maestrosview",
-      "target": "api_maestrosapi_actualizarmaestro"
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "src/modules/maestros/views/maestrosView.js",
-      "source_location": "L650",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "views_maestrosview_openeditmodal",
-      "target": "api_maestrosapi_actualizarmaestro"
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/modules/maestros/views/maestrosView.js",
-      "source_location": "L4",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "views_maestrosview",
-      "target": "api_maestrosapi_inactivarmaestro"
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "src/modules/maestros/views/maestrosView.js",
-      "source_location": "L969",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "views_maestrosview_opendeletemodal",
-      "target": "api_maestrosapi_inactivarmaestro"
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/modules/maestros/views/maestrosView.js",
-      "source_location": "L4",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "views_maestrosview",
-      "target": "api_maestrosapi_activarmaestro"
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "src/modules/maestros/views/maestrosView.js",
-      "source_location": "L972",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "views_maestrosview_opendeletemodal",
-      "target": "api_maestrosapi_activarmaestro"
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
       "source_file": "tests/modules/maestros/maestrosApi.test.js",
       "source_location": "L10",
       "weight": 1.0,
       "confidence_score": 1.0,
       "source": "maestros_maestrosapi_test",
       "target": "api_maestrosapi_eliminarmaestro"
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/modules/maestros/views/maestrosView.js",
-      "source_location": "L4",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "views_maestrosview",
-      "target": "api_maestrosapi_eliminarmaestro"
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/modules/maestros/views/maestrosView.js",
-      "source_location": "L4",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "views_maestrosview",
-      "target": "api_maestrosapi_validaremail"
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "src/modules/maestros/views/maestrosView.js",
-      "source_location": "L504",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "views_maestrosview_opencreatemodal",
-      "target": "api_maestrosapi_validaremail"
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "src/modules/maestros/views/maestrosView.js",
-      "source_location": "L632",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "views_maestrosview_openeditmodal",
-      "target": "api_maestrosapi_validaremail"
     },
     {
       "relation": "contains",
@@ -125878,17 +126653,6 @@
       "target": "domain_generarpdfreportemaestro"
     },
     {
-      "relation": "imports_from",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/modules/maestros/views/maestrosView.js",
-      "source_location": "L18",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "views_maestrosview",
-      "target": "domain_generarpdfreportemaestro"
-    },
-    {
       "relation": "calls",
       "context": "call",
       "confidence": "EXTRACTED",
@@ -125964,28 +126728,6 @@
       "confidence_score": 1.0,
       "source": "domain_generarpdfreportemaestro_test",
       "target": "domain_generarpdfreportemaestro_generarpdfreportemaestro"
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/modules/maestros/views/maestrosView.js",
-      "source_location": "L18",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "views_maestrosview",
-      "target": "domain_generarpdfreportemaestro_descargarpdfreportemaestro"
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "src/modules/maestros/views/maestrosView.js",
-      "source_location": "L399",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "views_maestrosview_descargarreportemaestropdf",
-      "target": "domain_generarpdfreportemaestro_descargarpdfreportemaestro"
     },
     {
       "relation": "contains",
@@ -126257,28 +126999,6 @@
       "target": "maestros_maestros_router_registerroutesmaestros"
     },
     {
-      "relation": "imports_from",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/modules/maestros/maestros.router.js",
-      "source_location": "L2",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "maestros_maestros_router",
-      "target": "views_maestrosview"
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/modules/maestros/maestros.router.js",
-      "source_location": "L2",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "maestros_maestros_router",
-      "target": "views_maestrosview_rendermaestrosview"
-    },
-    {
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/modules/maestros/models/maestro.model.js",
@@ -126519,621 +127239,6 @@
       "confidence_score": 1.0,
       "source": "utils_maestrosutils",
       "target": "utils_maestrosutils_validarnombre"
-    },
-    {
-      "relation": "imports_from",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/modules/maestros/views/maestrosView.js",
-      "source_location": "L13",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "views_maestrosview",
-      "target": "utils_maestrosutils"
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/modules/maestros/views/maestrosView.js",
-      "source_location": "L13",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "views_maestrosview",
-      "target": "utils_maestrosutils_escapehtml"
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "src/modules/maestros/views/maestrosView.js",
-      "source_location": "L174",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "views_maestrosview_attachespecialidadesevents",
-      "target": "utils_maestrosutils_escapehtml"
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "src/modules/maestros/views/maestrosView.js",
-      "source_location": "L963",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "views_maestrosview_opendeletemodal",
-      "target": "utils_maestrosutils_escapehtml"
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "src/modules/maestros/views/maestrosView.js",
-      "source_location": "L576",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "views_maestrosview_openeditmodal",
-      "target": "utils_maestrosutils_escapehtml"
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "src/modules/maestros/views/maestrosView.js",
-      "source_location": "L678",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "views_maestrosview_openviewmodal",
-      "target": "utils_maestrosutils_escapehtml"
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "src/modules/maestros/views/maestrosView.js",
-      "source_location": "L384",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "views_maestrosview_openwhatsappmodal",
-      "target": "utils_maestrosutils_escapehtml"
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "src/modules/maestros/views/maestrosView.js",
-      "source_location": "L98",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "views_maestrosview_rendererror",
-      "target": "utils_maestrosutils_escapehtml"
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "src/modules/maestros/views/maestrosView.js",
-      "source_location": "L124",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "views_maestrosview_renderespecialidadeschips",
-      "target": "utils_maestrosutils_escapehtml"
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "src/modules/maestros/views/maestrosView.js",
-      "source_location": "L280",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "views_maestrosview_rendertablerows",
-      "target": "utils_maestrosutils_escapehtml"
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "src/modules/maestros/views/maestrosView.js",
-      "source_location": "L1047",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "views_maestrosview_showtoast",
-      "target": "utils_maestrosutils_escapehtml"
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/modules/maestros/views/maestrosView.js",
-      "source_location": "L13",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "views_maestrosview",
-      "target": "utils_maestrosutils_getstatuscolor"
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "src/modules/maestros/views/maestrosView.js",
-      "source_location": "L716",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "views_maestrosview_openviewmodal",
-      "target": "utils_maestrosutils_getstatuscolor"
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/modules/maestros/views/maestrosView.js",
-      "source_location": "L13",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "views_maestrosview",
-      "target": "utils_maestrosutils_getstatuslabel"
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "src/modules/maestros/views/maestrosView.js",
-      "source_location": "L716",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "views_maestrosview_openviewmodal",
-      "target": "utils_maestrosutils_getstatuslabel"
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/modules/maestros/views/maestrosView.js",
-      "source_location": "L13",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "views_maestrosview",
-      "target": "utils_maestrosutils_getinitials"
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "src/modules/maestros/views/maestrosView.js",
-      "source_location": "L275",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "views_maestrosview_rendertablerows",
-      "target": "utils_maestrosutils_getinitials"
-    },
-    {
-      "relation": "imports_from",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/modules/maestros/views/maestrosView.js",
-      "source_location": "L3",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "views_maestrosview",
-      "target": "components_appmodal"
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/modules/maestros/views/maestrosView.js",
-      "source_location": "L3",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "views_maestrosview",
-      "target": "components_appmodal_appmodal"
-    },
-    {
-      "relation": "imports_from",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/modules/maestros/views/maestrosView.js",
-      "source_location": "L17",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "views_maestrosview",
-      "target": "components_helppanel"
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/modules/maestros/views/maestrosView.js",
-      "source_location": "L17",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "views_maestrosview",
-      "target": "components_helppanel_helppanel"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "src/modules/maestros/views/maestrosView.js",
-      "source_location": "L412",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "views_maestrosview",
-      "target": "views_maestrosview_applyfilters"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "src/modules/maestros/views/maestrosView.js",
-      "source_location": "L161",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "views_maestrosview",
-      "target": "views_maestrosview_attachespecialidadesevents"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "src/modules/maestros/views/maestrosView.js",
-      "source_location": "L306",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "views_maestrosview",
-      "target": "views_maestrosview_attachevents"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "src/modules/maestros/views/maestrosView.js",
-      "source_location": "L386",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "views_maestrosview",
-      "target": "views_maestrosview_descargarreportemaestropdf"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "src/modules/maestros/views/maestrosView.js",
-      "source_location": "L34",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "views_maestrosview",
-      "target": "views_maestrosview_espectaculos_predefinidos"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "src/modules/maestros/views/maestrosView.js",
-      "source_location": "L994",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "views_maestrosview",
-      "target": "views_maestrosview_exportarmaestroscsv"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "src/modules/maestros/views/maestrosView.js",
-      "source_location": "L154",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "views_maestrosview",
-      "target": "views_maestrosview_getespecialidadesfrommodal"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "src/modules/maestros/views/maestrosView.js",
-      "source_location": "L990",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "views_maestrosview",
-      "target": "views_maestrosview_isvalidemail"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "src/modules/maestros/views/maestrosView.js",
-      "source_location": "L440",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "views_maestrosview",
-      "target": "views_maestrosview_opencreatemodal"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "src/modules/maestros/views/maestrosView.js",
-      "source_location": "L947",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "views_maestrosview",
-      "target": "views_maestrosview_opendeletemodal"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "src/modules/maestros/views/maestrosView.js",
-      "source_location": "L563",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "views_maestrosview",
-      "target": "views_maestrosview_openeditmodal"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "src/modules/maestros/views/maestrosView.js",
-      "source_location": "L660",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "views_maestrosview",
-      "target": "views_maestrosview_openviewmodal"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "src/modules/maestros/views/maestrosView.js",
-      "source_location": "L377",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "views_maestrosview",
-      "target": "views_maestrosview_openwhatsappmodal"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "src/modules/maestros/views/maestrosView.js",
-      "source_location": "L982",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "views_maestrosview",
-      "target": "views_maestrosview_refreshtable"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "src/modules/maestros/views/maestrosView.js",
-      "source_location": "L202",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "views_maestrosview",
-      "target": "views_maestrosview_rendercontent"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "src/modules/maestros/views/maestrosView.js",
-      "source_location": "L89",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "views_maestrosview",
-      "target": "views_maestrosview_rendererror"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "src/modules/maestros/views/maestrosView.js",
-      "source_location": "L113",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "views_maestrosview",
-      "target": "views_maestrosview_renderespecialidadeschips"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "src/modules/maestros/views/maestrosView.js",
-      "source_location": "L76",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "views_maestrosview",
-      "target": "views_maestrosview_renderloading"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "src/modules/maestros/views/maestrosView.js",
-      "source_location": "L60",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "views_maestrosview",
-      "target": "views_maestrosview_rendermaestrosview"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "src/modules/maestros/views/maestrosView.js",
-      "source_location": "L256",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "views_maestrosview",
-      "target": "views_maestrosview_rendertablerows"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "src/modules/maestros/views/maestrosView.js",
-      "source_location": "L1023",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "views_maestrosview",
-      "target": "views_maestrosview_showtoast"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "src/modules/maestros/views/maestrosView.js",
-      "source_location": "L19",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "views_maestrosview",
-      "target": "views_maestrosview_state"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "src/modules/maestros/views/maestrosView.js",
-      "source_location": "L26",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "views_maestrosview",
-      "target": "views_maestrosview_validation"
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "src/modules/maestros/views/maestrosView.js",
-      "source_location": "L67",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "views_maestrosview_rendermaestrosview",
-      "target": "views_maestrosview_attachevents"
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "src/modules/maestros/views/maestrosView.js",
-      "source_location": "L66",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "views_maestrosview_rendermaestrosview",
-      "target": "views_maestrosview_rendercontent"
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "src/modules/maestros/views/maestrosView.js",
-      "source_location": "L70",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "views_maestrosview_rendermaestrosview",
-      "target": "views_maestrosview_rendererror"
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "src/modules/maestros/views/maestrosView.js",
-      "source_location": "L62",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "views_maestrosview_rendermaestrosview",
-      "target": "views_maestrosview_renderloading"
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "src/modules/maestros/views/maestrosView.js",
-      "source_location": "L466",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "views_maestrosview_opencreatemodal",
-      "target": "views_maestrosview_renderespecialidadeschips"
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "src/modules/maestros/views/maestrosView.js",
-      "source_location": "L595",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "views_maestrosview_openeditmodal",
-      "target": "views_maestrosview_renderespecialidadeschips"
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "src/modules/maestros/views/maestrosView.js",
-      "source_location": "L247",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "views_maestrosview_rendercontent",
-      "target": "views_maestrosview_rendertablerows"
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "src/modules/maestros/views/maestrosView.js",
-      "source_location": "L985",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "views_maestrosview_refreshtable",
-      "target": "views_maestrosview_rendertablerows"
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "src/modules/maestros/views/maestrosView.js",
-      "source_location": "L400",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "views_maestrosview_descargarreportemaestropdf",
-      "target": "views_maestrosview_showtoast"
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "src/modules/maestros/views/maestrosView.js",
-      "source_location": "L435",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "views_maestrosview_applyfilters",
-      "target": "views_maestrosview_refreshtable"
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "src/modules/maestros/views/maestrosView.js",
-      "source_location": "L566",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "views_maestrosview_openeditmodal",
-      "target": "views_maestrosview_showtoast"
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "src/modules/maestros/views/maestrosView.js",
-      "source_location": "L663",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "views_maestrosview_openviewmodal",
-      "target": "views_maestrosview_showtoast"
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "src/modules/maestros/views/maestrosView.js",
-      "source_location": "L950",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "views_maestrosview_opendeletemodal",
-      "target": "views_maestrosview_showtoast"
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "src/modules/maestros/views/maestrosView.js",
-      "source_location": "L996",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "views_maestrosview_exportarmaestroscsv",
-      "target": "views_maestrosview_showtoast"
     },
     {
       "relation": "imports_from",
@@ -162008,60 +162113,6 @@
       "target": "data_sesiones_sesiones"
     },
     {
-      "relation": "imports_from",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/portal-maestros/router/__tests__/portalRouter.test.js",
-      "source_location": "L6",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "tests_portalrouter_test",
-      "target": "router_portalrouter"
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/portal-maestros/router/__tests__/portalRouter.test.js",
-      "source_location": "L6",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "tests_portalrouter_test",
-      "target": "router_portalrouter_createportalrouter"
-    },
-    {
-      "relation": "imports_from",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "tests/portal-maestros/portalRouter.test.js",
-      "source_location": "L2",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "portal_maestros_portalrouter_test",
-      "target": "router_portalrouter"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "src/portal-maestros/router/portalRouter.js",
-      "source_location": "L9",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "router_portalrouter",
-      "target": "router_portalrouter_createportalrouter"
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "tests/portal-maestros/portalRouter.test.js",
-      "source_location": "L2",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "portal_maestros_portalrouter_test",
-      "target": "router_portalrouter_createportalrouter"
-    },
-    {
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/portal-maestros/seed_ruta_violin_40_niveles.json",
@@ -181725,57 +181776,6 @@
       "confidence_score": 1.0,
       "source": "sync_postulantes_index_maprowtopostulante",
       "target": "sync_postulantes_index_parsetimestamp"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "supabase/process-whatsapp-queue.js",
-      "source_location": "L7",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "supabase_process_whatsapp_queue",
-      "target": "supabase_process_whatsapp_queue_dirname"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "supabase/process-whatsapp-queue.js",
-      "source_location": "L24",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "supabase_process_whatsapp_queue",
-      "target": "supabase_process_whatsapp_queue_isquiethours"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "supabase/process-whatsapp-queue.js",
-      "source_location": "L59",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "supabase_process_whatsapp_queue",
-      "target": "supabase_process_whatsapp_queue_processqueue"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "supabase/process-whatsapp-queue.js",
-      "source_location": "L19",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "supabase_process_whatsapp_queue",
-      "target": "supabase_process_whatsapp_queue_supabase"
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "supabase/process-whatsapp-queue.js",
-      "source_location": "L94",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "supabase_process_whatsapp_queue_processqueue",
-      "target": "supabase_process_whatsapp_queue_isquiethours"
     },
     {
       "relation": "contains",
@@ -225201,5 +225201,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "4605121b0c00f91fce3a9809a24ab60953ce62a3"
+  "built_at_commit": "71b66aa9cdb983e26fb4dc6881ffa586365f2cd4"
 }

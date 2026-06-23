@@ -330,8 +330,8 @@
     "semantic_hash": ""
   },
   "src/main-maestros.js": {
-    "mtime": 1782188241.1559558,
-    "ast_hash": "338f0c0b3c040d7a9d30459288c2bba8",
+    "mtime": 1782195945.1294675,
+    "ast_hash": "178792b2d0d6ad12d8306b94524a0683",
     "semantic_hash": ""
   },
   "src/main-phase-c.js": {
@@ -1255,8 +1255,8 @@
     "semantic_hash": ""
   },
   "src/modules/maestros/views/maestrosView.js": {
-    "mtime": 1782195477.703957,
-    "ast_hash": "0348cd91dee05d13ada24909812dba38",
+    "mtime": 1782196498.7949588,
+    "ast_hash": "3cdd5fbe8c3068aac4244b9441e260d6",
     "semantic_hash": ""
   },
   "src/modules/metricas/__tests__/metricsApi.test.js": {
@@ -2495,8 +2495,8 @@
     "semantic_hash": ""
   },
   "src/portal-maestros/router/portalRouter.js": {
-    "mtime": 1782188241.214979,
-    "ast_hash": "fa1f545d526ddea2aa6d58821b3e6d59",
+    "mtime": 1782195933.9423656,
+    "ast_hash": "912591dad375cc6d890b6448d3b971ba",
     "semantic_hash": ""
   },
   "src/portal-maestros/seed_ruta_violin_40_niveles.json": {

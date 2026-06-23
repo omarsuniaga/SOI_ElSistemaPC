@@ -1072,6 +1072,7 @@ function showToast(message, type = 'info') {
     box-shadow:0 8px 30px rgba(0,0,0,0.18);
     overflow:hidden;
     font-family:system-ui,-apple-system,sans-serif;
+    will-change:transform;isolation:isolate;
   `
   el.innerHTML = `
     <div style="display:flex;align-items:center;padding:0.75rem 1rem;background:${bgColor};color:#fff;">

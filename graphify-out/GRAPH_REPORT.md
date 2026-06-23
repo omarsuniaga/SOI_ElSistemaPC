@@ -1,7 +1,7 @@
 # Graph Report - sistema-academico-pwa  (2026-06-23)
 
 ## Corpus Check
-- 1157 files · ~1,135,978 words
+- 1157 files · ~1,136,027 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
@@ -10,7 +10,7 @@
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `4605121b`
+- Built from commit: `71b66aa9`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -2681,7 +2681,7 @@ Cohesion: 0.50
 Nodes (4): A-07 calcularEdad Canonicalization, Scenario: Custom fallback returned, Scenario: Null input returns null (default fallback), Scenario: Valid date returns correct age
 
 ## Knowledge Gaps
-- **3646 isolated node(s):** `C`, `DIAS`, `@opencode-ai/plugin`, `supabase`, `supabase` (+3641 more)
+- **3646 isolated node(s):** `router`, `_viewContainers`, `_viewRendered`, `calendarApi`, `calendarView` (+3641 more)
   These have ≤1 connection - possible missing edges or undocumented components.
 - **55 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
@@ -2689,12 +2689,12 @@ Nodes (4): A-07 calcularEdad Canonicalization, Scenario: Custom fallback returne
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `supabase` connect `Community 35` to `Community 0`, `Community 1`, `Community 2`, `Community 4`, `Community 5`, `Community 7`, `Community 8`, `Community 9`, `Community 12`, `Community 13`, `Community 16`, `Community 17`, `Community 19`, `Community 22`, `Community 25`, `Community 29`, `Community 30`, `Community 31`, `Community 36`, `Community 38`, `Community 40`, `Community 46`, `Community 55`, `Community 56`, `Community 61`, `Community 62`, `Community 63`, `Community 68`, `Community 69`, `Community 586`, `Community 588`, `Community 77`, `Community 78`, `Community 76`, `Community 592`, `Community 80`, `Community 594`, `Community 590`, `Community 599`, `Community 603`, `Community 605`, `Community 94`, `Community 97`, `Community 101`, `Community 116`, `Community 117`, `Community 118`, `Community 127`, `Community 141`, `Community 142`, `Community 144`, `Community 145`, `Community 152`, `Community 163`, `Community 166`, `Community 174`, `Community 178`, `Community 182`, `Community 183`, `Community 209`, `Community 224`, `Community 225`, `Community 228`, `Community 229`, `Community 236`, `Community 238`, `Community 254`, `Community 258`, `Community 259`, `Community 260`, `Community 268`, `Community 273`, `Community 298`, `Community 304`, `Community 305`, `Community 309`, `Community 385`, `Community 389`, `Community 407`, `Community 426`, `Community 433`, `Community 438`, `Community 439`, `Community 445`, `Community 481`, `Community 491`?**
-  _High betweenness centrality (0.065) - this node is a cross-community bridge._
+  _High betweenness centrality (0.068) - this node is a cross-community bridge._
 - **Why does `AppToast` connect `Community 56` to `Community 0`, `Community 2`, `Community 132`, `Community 6`, `Community 9`, `Community 13`, `Community 14`, `Community 16`, `Community 17`, `Community 22`, `Community 23`, `Community 30`, `Community 36`, `Community 166`, `Community 40`, `Community 426`, `Community 174`, `Community 178`, `Community 181`, `Community 55`, `Community 60`, `Community 62`, `Community 65`, `Community 69`, `Community 70`, `Community 586`, `Community 77`, `Community 97`, `Community 228`, `Community 101`, `Community 102`, `Community 100`, `Community 106`, `Community 112`, `Community 253`, `Community 126`?**
-  _High betweenness centrality (0.011) - this node is a cross-community bridge._
+  _High betweenness centrality (0.012) - this node is a cross-community bridge._
 - **Why does `AppModal` connect `Community 69` to `Community 0`, `Community 2`, `Community 130`, `Community 259`, `Community 132`, `Community 6`, `Community 9`, `Community 14`, `Community 16`, `Community 17`, `Community 144`, `Community 275`, `Community 273`, `Community 23`, `Community 153`, `Community 409`, `Community 25`, `Community 163`, `Community 36`, `Community 164`, `Community 166`, `Community 35`, `Community 174`, `Community 178`, `Community 181`, `Community 183`, `Community 61`, `Community 63`, `Community 70`, `Community 76`, `Community 77`, `Community 80`, `Community 102`, `Community 236`, `Community 112`, `Community 117`, `Community 376`, `Community 126`?**
-  _High betweenness centrality (0.008) - this node is a cross-community bridge._
-- **What connects `C`, `DIAS`, `@opencode-ai/plugin` to the rest of the system?**
+  _High betweenness centrality (0.007) - this node is a cross-community bridge._
+- **What connects `router`, `_viewContainers`, `_viewRendered` to the rest of the system?**
   _3646 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `Community 2` be split into smaller, more focused modules?**
   _Cohesion score 0.11261261261261261 - nodes in this community are weakly interconnected._

@@ -36,10 +36,13 @@ export default defineConfig({
     outDir: 'dist',
     rollupOptions: {
       input: {
-        index:    'index.html',
-        admin:    'admin.html',
-        maestros: 'maestros.html',
+        index:      'index.html',
+        admin:      'admin.html',
+        maestros:   'maestros.html',
         audiciones: 'audiciones.html',
+        caja:       'caja.html',
+        inventario: 'inventario.html',
+        calendario: 'calendario.html',
       },
       output: {
         manualChunks(id) {
@@ -87,8 +90,20 @@ export default defineConfig({
       name: 'handle-admin-route',
       configureServer(server) {
         server.middlewares.use((req, res, next) => {
-          if (req.url === '/admin' || req.url === '/admin/') {
-            req.url = '/admin.html'
+          const parsedUrl = new URL(req.url, 'http://localhost')
+          const pathname = parsedUrl.pathname
+          const search = parsedUrl.search
+
+          if (pathname === '/admin' || pathname === '/admin/') {
+            req.url = '/admin.html' + search
+          } else if (pathname === '/caja' || pathname === '/caja/') {
+            req.url = '/caja.html' + search
+          } else if (pathname === '/inventario' || pathname === '/inventario/') {
+            req.url = '/inventario.html' + search
+          } else if (pathname === '/calendario' || pathname === '/calendario/') {
+            req.url = '/calendario.html' + search
+          } else if (pathname === '/audiciones' || pathname === '/audiciones/') {
+            req.url = '/audiciones.html' + search
           }
           next()
         })

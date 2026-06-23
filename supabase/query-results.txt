@@ -1,0 +1,3 @@
+◇ injected env (0) from ../../mnt/c/Users/omare/OneDrive/Documentos/SOI_Sistema_Operativo_Institucional/09_SOI_WEB_PORTAL/sistema-academico-pwa/.env.local // tip: ⌘ override existing { override: true }
+◇ injected env (0) from ../../mnt/c/Users/omare/OneDrive/Documentos/SOI_Sistema_Operativo_Institucional/09_SOI_WEB_PORTAL/sistema-academico-pwa/.env // tip: ⌘ enable debugging { debug: true }
+90

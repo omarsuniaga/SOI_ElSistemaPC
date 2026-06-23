@@ -330,6 +330,7 @@ const NAV_GROUPS = [
       { id: 'permisos', label: 'Permisos', icon: 'bi-shield-lock' },
       { id: 'importar-datos', label: 'Importar Datos', icon: 'bi-cloud-upload' },
       { id: 'exportar-datos', label: 'Exportar Datos', icon: 'bi-file-earmark-arrow-down' },
+      { id: 'audiciones', label: 'Audiciones', icon: 'bi-music-note-beamed' },
     ],
   },
 ]
@@ -466,7 +467,13 @@ function renderNavbar(_container, isAuthenticated = false) {
   })
 
   sidebar.querySelectorAll('.nav-item-btn').forEach((btn) => {
-    btn.addEventListener('click', () => router.navigate(btn.dataset.route))
+    btn.addEventListener('click', () => {
+      if (btn.dataset.route === 'audiciones') {
+        window.location.href = '/audiciones'
+      } else {
+        router.navigate(btn.dataset.route)
+      }
+    })
   })
 
   sidebar.querySelector('#sidebarBtnTheme').addEventListener('click', () => {

@@ -39,6 +39,7 @@ export default defineConfig({
         index:    'index.html',
         admin:    'admin.html',
         maestros: 'maestros.html',
+        audiciones: 'audiciones.html',
       },
       output: {
         manualChunks(id) {

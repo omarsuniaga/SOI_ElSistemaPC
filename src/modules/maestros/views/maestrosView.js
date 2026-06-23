@@ -1,5 +1,4 @@
 import '../styles/maestros.css'
-import { Toast } from 'bootstrap'
 import { AppModal } from '../../../shared/components/AppModal.js'
 import {
   obtenerMaestros,
@@ -249,7 +248,6 @@ function renderContent(container) {
         </div>
       </div>
 
-      <div class="toast-container position-fixed top-0 end-0 p-3" id="toastContainer"></div>
     </div>
   `
 }
@@ -1062,33 +1060,35 @@ function exportarMaestrosCSV() {
 }
 
 function showToast(message, type = 'info') {
-  const toastContainer = currentContainer.querySelector('#toastContainer')
-  if (!toastContainer) return
-
-  const bgClass = type === 'success' ? 'bg-success' : type === 'error' ? 'bg-danger' : 'bg-info'
-  const iconClass =
-    type === 'success'
-      ? 'bi-check-circle'
-      : type === 'error'
-        ? 'bi-exclamation-circle'
-        : 'bi-info-circle'
+  const bgColor = type === 'success' ? '#198754' : type === 'error' ? '#dc3545' : '#0dcaf0'
+  const icon = type === 'success' ? 'bi-check-circle' : type === 'error' ? 'bi-exclamation-circle' : 'bi-info-circle'
   const label = type === 'success' ? 'Éxito' : type === 'error' ? 'Error' : 'Información'
 
-  const toastEl = document.createElement('div')
-  toastEl.className = 'toast'
-  toastEl.setAttribute('role', 'alert')
-  toastEl.setAttribute('aria-live', 'assertive')
-  toastEl.setAttribute('aria-atomic', 'true')
-  toastEl.innerHTML = `
-    <div class="toast-header ${bgClass} text-white">
-      <i class="bi ${iconClass} me-2"></i>
-      <strong class="me-auto">${label}</strong>
-      <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
-    </div>
-    <div class="toast-body">${escapeHTML(message)}</div>
+  const el = document.createElement('div')
+  el.style.cssText = `
+    position:fixed;top:1rem;right:1rem;z-index:12000;
+    min-width:280px;max-width:420px;
+    background:#fff;border-radius:8px;
+    box-shadow:0 8px 30px rgba(0,0,0,0.18);
+    overflow:hidden;
+    font-family:system-ui,-apple-system,sans-serif;
   `
-  toastContainer.appendChild(toastEl)
-  const t = new Toast(toastEl, { autohide: true, delay: 3000 })
-  t.show()
-  toastEl.addEventListener('hidden.bs.toast', () => toastEl.remove())
+  el.innerHTML = `
+    <div style="display:flex;align-items:center;padding:0.75rem 1rem;background:${bgColor};color:#fff;">
+      <i class="bi ${icon} me-2" style="font-size:1.1rem;"></i>
+      <strong style="flex:1;font-size:0.9rem;">${label}</strong>
+      <button type="button" style="background:none;border:none;color:#fff;cursor:pointer;font-size:1.1rem;line-height:1;padding:0;">&times;</button>
+    </div>
+    <div style="padding:0.75rem 1rem;font-size:0.875rem;color:#212529;">
+      ${escapeHTML(message)}
+    </div>
+  `
+  document.body.appendChild(el)
+
+  el.querySelector('button').addEventListener('click', () => { el.remove() })
+  setTimeout(() => {
+    el.style.transition = 'opacity .3s'
+    el.style.opacity = '0'
+    setTimeout(() => el.remove(), 300)
+  }, 3000)
 }

@@ -74,6 +74,9 @@ import { registerRoutesAdminNotificaciones } from './modules/admin-notificacione
 import { registerRoutesAdminAprobacion } from './modules/admin-aprobacion/index.js'
 import { registerRoutesAdminUsuarios } from './modules/admin-usuarios/index.js'
 import { registerRoutesBitacora } from './modules/bitacora/index.js'
+import { registerRoutesFinanzas } from './modules/finanzas/index.js'
+import { registerRoutesInventario } from './modules/inventario/index.js'
+import { registerRoutesHermes } from './modules/hermes/index.js'
 import {
   startAdminRealtimeNotifications,
   stopAdminRealtimeNotifications,
@@ -243,6 +246,30 @@ const MODULES_REGISTRY = [
     enabled: true,
     register: registerRoutesConfig,
   },
+  {
+    id: 'finanzas',
+    label: 'Finanzas',
+    icon: 'bi-cash-coin',
+    description: 'Pagos, mensualidades y estado de cuenta',
+    enabled: true,
+    register: registerRoutesFinanzas,
+  },
+  {
+    id: 'inventario',
+    label: 'Inventario',
+    icon: 'bi-music-note-list',
+    description: 'Instrumentos, comodatos y activos',
+    enabled: true,
+    register: registerRoutesInventario,
+  },
+  {
+    id: 'hermes',
+    label: 'Cerebro Hermes',
+    icon: 'bi-cpu',
+    description: 'Calendario Maestro, tareas delegadas y automatización de protocolos.',
+    enabled: true,
+    register: registerRoutesHermes,
+  },
 ]
 
 // ============================================================================
@@ -318,6 +345,31 @@ const NAV_GROUPS = [
     ],
   },
   {
+    id: 'inventario',
+    label: 'Inventario',
+    icon: 'bi-music-note-list',
+    items: [
+      { id: 'inventario-dashboard', label: 'Dashboard', icon: 'bi-grid-1x2' },
+      { id: 'inventario-stock', label: 'Stock', icon: 'bi-music-note-list' },
+      { id: 'inventario-accesorios', label: 'Accesorios', icon: 'bi-box-seam' },
+      { id: 'inventario-reparaciones', label: 'Reparaciones', icon: 'bi-tools' },
+      { id: 'inventario-facturas', label: 'Facturacion', icon: 'bi-receipt' },
+      { id: 'inventario-reportes', label: 'Reportes', icon: 'bi-file-earmark-bar-graph' },
+      { id: 'inventario-alertas', label: 'Alertas', icon: 'bi-exclamation-triangle' },
+    ],
+  },
+  {
+    id: 'hermes',
+    label: 'Cerebro Hermes',
+    icon: 'bi-cpu-fill',
+    items: [
+      { id: 'hermes-calendario', label: 'Calendario Maestro', icon: 'bi-calendar3' },
+      { id: 'hermes-tareas', label: 'Tablero Tareas', icon: 'bi-kanban' },
+      { id: 'hermes-protocolos', label: 'Motor Protocolos', icon: 'bi-gear-wide-connected' },
+      { id: 'hermes-config', label: 'Configuración Alertas', icon: 'bi-sliders' },
+    ],
+  },
+  {
     id: 'sistema',
     label: 'Sistema',
     icon: 'bi-gear',
@@ -330,6 +382,8 @@ const NAV_GROUPS = [
       { id: 'permisos', label: 'Permisos', icon: 'bi-shield-lock' },
       { id: 'importar-datos', label: 'Importar Datos', icon: 'bi-cloud-upload' },
       { id: 'exportar-datos', label: 'Exportar Datos', icon: 'bi-file-earmark-arrow-down' },
+      { id: 'finanzas-balance', label: 'Balance Alumnos', icon: 'bi-cash-coin' },
+      { id: 'finanzas-registro', label: 'Registrar Pago', icon: 'bi-plus-circle' },
     ],
   },
 ]

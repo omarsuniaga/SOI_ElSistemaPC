@@ -4,7 +4,7 @@
  * directamente, sin auto-registro ni aprobación, vía la Edge Function create-user.
  */
 
-import { crearUsuario, listarUsuariosPorRol } from '../api/adminUsuariosApi.js'
+import { crearUsuario, listarUsuariosPortales } from '../api/adminUsuariosApi.js'
 import { AppToast } from '../../../shared/components/AppToast.js'
 
 export async function renderGestionUsuariosView(container) {
@@ -44,8 +44,10 @@ export async function renderGestionUsuariosView(container) {
           <div class="mb-3">
             <label class="form-label">Rol</label>
             <select class="form-select" id="gu-rol">
-              <option value="admin" selected>Administrador</option>
-              <option value="maestro">Maestro</option>
+              <option value="admin">Administrador (portal completo)</option>
+              <option value="maestro">Maestro (portal de clases)</option>
+              <option value="cajero" selected>Cajero (portal /caja)</option>
+              <option value="inventarista">Inventarista (portal /inventario)</option>
             </select>
           </div>
 
@@ -57,9 +59,9 @@ export async function renderGestionUsuariosView(container) {
           </button>
         </form>
 
-        <!-- Lista de administradores -->
+        <!-- Lista de usuarios de portales -->
         <div class="gu-list-card">
-          <h4 class="gu-card-title"><i class="bi bi-shield-check"></i> Administradores</h4>
+          <h4 class="gu-card-title"><i class="bi bi-people"></i> Usuarios de portales</h4>
           <div id="gu-admins-list">
             <div class="pm-loading"><div class="pm-spinner"></div><span>Cargando...</span></div>
           </div>
@@ -126,37 +128,43 @@ function _setLoading(container, loading) {
   container.querySelector('.gu-submit-loading')?.classList.toggle('d-none', !loading)
 }
 
+const ROL_LABEL = {
+  admin: { label: 'Admin', icon: 'bi-shield-check', color: '#a78bfa' },
+  cajero: { label: 'Caja', icon: 'bi-cash-coin', color: '#34d399' },
+  inventarista: { label: 'Inventario', icon: 'bi-music-note-list', color: '#60a5fa' },
+}
+
 async function _loadAdmins(container) {
   const listEl = container.querySelector('#gu-admins-list')
   if (!listEl) return
   try {
-    const admins = await listarUsuariosPorRol('admin')
-    if (!admins.length) {
-      listEl.innerHTML = `<p class="text-muted m-0">No hay administradores registrados.</p>`
+    const users = await listarUsuariosPortales()
+    if (!users.length) {
+      listEl.innerHTML = `<p class="text-muted m-0">No hay usuarios registrados aún.</p>`
       return
     }
     listEl.innerHTML = `
       <ul class="gu-admin-items">
-        ${admins
-          .map(
-            (a) => `
+        ${users.map((u) => {
+          const meta = ROL_LABEL[u.rol] ?? { label: u.rol, icon: 'bi-person-fill', color: '#94a3b8' }
+          return `
           <li class="gu-admin-item">
-            <div class="gu-admin-avatar"><i class="bi bi-person-fill"></i></div>
-            <div class="gu-admin-info">
-              <span class="gu-admin-name">${_esc(a.nombre_completo) || '—'}</span>
-              <span class="gu-admin-email">${_esc(a.email)}</span>
+            <div class="gu-admin-avatar" style="color:${meta.color};background:${meta.color}22">
+              <i class="bi ${meta.icon}"></i>
             </div>
-            <span class="gu-admin-badge gu-admin-badge--${a.estado === 'activo' ? 'active' : 'pending'}">
-              ${_esc(a.estado)}
+            <div class="gu-admin-info">
+              <span class="gu-admin-name">${_esc(u.nombre_completo) || '—'}</span>
+              <span class="gu-admin-email">${_esc(u.email)}</span>
+            </div>
+            <span class="gu-admin-badge" style="background:${meta.color}22;color:${meta.color}">
+              ${_esc(meta.label)}
             </span>
-          </li>
-        `,
-          )
-          .join('')}
+          </li>`
+        }).join('')}
       </ul>
     `
   } catch (err) {
-    listEl.innerHTML = `<p class="text-danger m-0">Error al cargar administradores: ${_esc(err.message)}</p>`
+    listEl.innerHTML = `<p class="text-danger m-0">Error: ${_esc(err.message)}</p>`
   }
 }
 

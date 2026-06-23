@@ -1,16 +1,16 @@
-# Graph Report - sistema-academico-pwa  (2026-06-20)
+# Graph Report - sistema-academico-pwa  (2026-06-21)
 
 ## Corpus Check
-- 1138 files · ~1,135,869 words
+- 1155 files · ~1,143,601 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 9134 nodes · 13896 edges · 649 communities (588 shown, 61 thin omitted)
+- 9151 nodes · 13922 edges · 641 communities (580 shown, 61 thin omitted)
 - Extraction: 100% EXTRACTED · 0% INFERRED · 0% AMBIGUOUS · INFERRED: 25 edges (avg confidence: 0.8)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `0e0b3a27`
+- Built from commit: `36fb5c20`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -588,6 +588,7 @@
 - [[_COMMUNITY_Community 619|Community 619]]
 - [[_COMMUNITY_Community 620|Community 620]]
 - [[_COMMUNITY_Community 621|Community 621]]
+- [[_COMMUNITY_Community 622|Community 622]]
 - [[_COMMUNITY_Community 623|Community 623]]
 - [[_COMMUNITY_Community 627|Community 627]]
 - [[_COMMUNITY_Community 628|Community 628]]
@@ -595,19 +596,13 @@
 - [[_COMMUNITY_Community 630|Community 630]]
 - [[_COMMUNITY_Community 631|Community 631]]
 - [[_COMMUNITY_Community 632|Community 632]]
-- [[_COMMUNITY_Community 635|Community 635]]
-- [[_COMMUNITY_Community 637|Community 637]]
 - [[_COMMUNITY_Community 638|Community 638]]
 - [[_COMMUNITY_Community 639|Community 639]]
 - [[_COMMUNITY_Community 640|Community 640]]
-- [[_COMMUNITY_Community 641|Community 641]]
 - [[_COMMUNITY_Community 642|Community 642]]
 - [[_COMMUNITY_Community 643|Community 643]]
-- [[_COMMUNITY_Community 644|Community 644]]
-- [[_COMMUNITY_Community 645|Community 645]]
 - [[_COMMUNITY_Community 646|Community 646]]
 - [[_COMMUNITY_Community 647|Community 647]]
-- [[_COMMUNITY_Community 648|Community 648]]
 
 ## God Nodes (most connected - your core abstractions)
 1. `supabase` - 192 edges
@@ -622,57 +617,61 @@
 10. `PlanificacionHook` - 31 edges
 
 ## Surprising Connections (you probably didn't know these)
+- `openViewModal()` --calls--> `getParentescoLabel()`  [INFERRED]
+  src/modules/alumnos/views/alumnosView.js → src/modules/alumnos/api/alumnosSupabase.js
 - `openDeleteModal()` --calls--> `obtenerInscripcionesAlumno()`  [INFERRED]
   src/modules/alumnos/views/alumnosView.js → src/modules/alumnos/api/alumnosSupabase.js
 - `_renderVista()` --calls--> `renderLista()`  [INFERRED]
   src/portal-maestros/views/asistenciaView.js → src/modules/alumnos/views/reporteInscripcionesMes.js
 - `setupModal()` --calls--> `openClaseEmergenteModal()`  [EXTRACTED]
   tests/modules/planificacion/claseEmergenteModal.test.js → src/modules/planificacion/components/claseEmergenteModal.js
-- `_onTabChange()` --calls--> `analyticsFillingBehaviorWidget()`  [INFERRED]
-  src/modules/metricas/views/dashboardMetricasView.js → src/modules/admin-dashboard/views/analyticsFillingBehaviorWidget.js
-- `renderAlumnosView()` --calls--> `obtenerAlumnos()`  [INFERRED]
-  src/modules/alumnos/views/alumnosView.js → src/modules/alumnos/api/alumnosMock.js
+- `_updateSyncIndicator()` --calls--> `getQueue()`  [EXTRACTED]
+  src/main-maestros.js → src/portal-maestros/services/offlineQueue.js
 
 ## Import Cycles
 - 1-file cycle: `src/portal-maestros/components/ErrorBoundary.js -> src/portal-maestros/components/ErrorBoundary.js`
 
-## Communities (649 total, 61 thin omitted)
+## Communities (641 total, 61 thin omitted)
 
 ### Community 0 - "Community 0"
 Cohesion: 0.14
 Nodes (21): BRAND_ACCENT, BRAND_DANGER, BRAND_DARK, BRAND_MUTED, BRAND_PRIMARY, BRAND_SUCCESS, BRAND_WARNING, buildSalonDayRows() (+13 more)
 
 ### Community 1 - "Community 1"
-Cohesion: 0.04
-Nodes (31): clearMaestroLocal(), detectarRolMaestro(), getMaestroLocal(), _isPWA(), loginMaestro(), logoutPortal(), PENDING_APPROVAL_SENTINEL, _setPersistentSession() (+23 more)
+Cohesion: 0.05
+Nodes (9): setSession(), gestionarClasesModal(), registrarAlumnoModal(), supabase, DIAS_ES_LARGO, EMERGENTE, getProfileStatus(), isProfileActive() (+1 more)
 
 ### Community 2 - "Community 2"
 Cohesion: 0.05
-Nodes (66): DOCS_KEYS, getConfig(), getDocumentosInstitucionales(), getGroqApiKey(), getOpenRouterApiKey(), getPreferredModel(), setConfig(), setDocumentosInstitucionales() (+58 more)
+Nodes (65): DOCS_KEYS, getConfig(), getDocumentosInstitucionales(), getGroqApiKey(), getOpenRouterApiKey(), getPreferredModel(), setConfig(), setDocumentosInstitucionales() (+57 more)
 
 ### Community 3 - "Community 3"
-Cohesion: 0.09
-Nodes (28): getParentescoLabel(), getParentescoLabel(), buscarPostulante(), normalize(), createAlumnoCard(), createAlumnoListItem(), calcularEdad(), collectData() (+20 more)
+Cohesion: 0.08
+Nodes (24): buscarPostulante(), normalize(), calcularCompletitud(), CAMPOS, NIVEL_COLOR, NIVEL_LABEL, PESO_TOTAL, tieneValor() (+16 more)
 
 ### Community 4 - "Community 4"
-Cohesion: 0.14
-Nodes (18): renderBlockSection(), listeners, rutaEvents, invalidateClasesCache(), loadRouteTree(), resolveRutaIdForClase(), _attachDropdownListener(), _attachGlobalListenersOnce() (+10 more)
+Cohesion: 0.16
+Nodes (20): createCaseFromAlert(), createStudentCase(), discardAlert(), getCasesByStudent(), listAlerts(), listStudentCases(), _logEvent(), markAlertReviewed() (+12 more)
 
 ### Community 5 - "Community 5"
 Cohesion: 0.07
 Nodes (40): currentOptions, getCursorPosition(), getHeaderText(), getIcon(), getNodeEmoji(), handleKeyDown(), hide(), initialPos (+32 more)
 
 ### Community 6 - "Community 6"
-Cohesion: 0.12
-Nodes (30): actualizarPlanificacion(), crearPlanificacion(), eliminarPlanificacion(), marcarRevisadasMasivo(), obtenerClases(), obtenerPlantillas(), renderAsistentePedagogicoPanel(), openCoberturaModal() (+22 more)
+Cohesion: 0.09
+Nodes (39): actualizarPlanificacion(), eliminarPlanificacion(), marcarRevisadasMasivo(), obtenerClases(), obtenerPlantillas(), renderAsistentePedagogicoPanel(), openCoberturaModal(), openCurriculoListModal() (+31 more)
 
 ### Community 7 - "Community 7"
+Cohesion: 0.07
+Nodes (19): registerRoutesAcademicAdmin(), { mockSupabase }, deleteNodeResource(), getAcademicTree(), getInstitutionalRadar(), getNodeHotspots(), getNodeResources(), getRoutes() (+11 more)
+
+### Community 8 - "Community 8"
 Cohesion: 0.06
-Nodes (26): registerRoutesAcademicAdmin(), { mockSupabase }, deleteNodeResource(), getAcademicTree(), getInstitutionalRadar(), getNodeHotspots(), getNodeResources(), getRoutes() (+18 more)
+Nodes (13): obtenerPlanificacion(), obtenerPlanificaciones(), obtenerPlanificacionesConDetalles(), actualizarSesion(), crearSesion(), eliminarSesion(), obtenerClasesDelMaestro(), obtenerSesiones() (+5 more)
 
 ### Community 9 - "Community 9"
-Cohesion: 0.05
-Nodes (54): createAttendanceHeader(), createAutoDraftManager(), createBulkActions(), createJustifModalManager(), createObservationSaveButton(), createRouteTopicAutoInjector(), createStudentList(), createContentSelectionPanel() (+46 more)
+Cohesion: 0.06
+Nodes (48): crearPlanificacion(), createAutoDraftManager(), createBulkActions(), createJustifModalManager(), createObservationSaveButton(), createPlanificationCard(), createRouteTopicAutoInjector(), createStudentList() (+40 more)
 
 ### Community 10 - "Community 10"
 Cohesion: 0.04
@@ -691,20 +690,20 @@ Cohesion: 0.09
 Nodes (33): _cacheKey(), _cleanExpiredDeduplicationKeys(), _cleanStaleLocalAlerts(), cleanupNotificationService(), eliminarNotificacion(), fetchNotificaciones(), _generateDeduplicationKey(), getDedupCount() (+25 more)
 
 ### Community 14 - "Community 14"
-Cohesion: 0.21
-Nodes (14): TIPO_AUSENCIA, URGENCIA_OPTS, buildAbsencePayload(), createAbsenceRequest(), DAY_NAMES, findAffectedClasses(), findAvailableSalons(), findSubstituteTeachers() (+6 more)
+Cohesion: 0.10
+Nodes (19): AppModal, SIZES, TIPO_AUSENCIA, URGENCIA_OPTS, mockResumen, escapeHTML(), openRevisionModal(), buildAbsencePayload() (+11 more)
 
 ### Community 15 - "Community 15"
 Cohesion: 0.04
 Nodes (43): Access Evaluations, Add Evaluation, Biometric Login (Fingerprint / Face ID), Can't Log In, Create a New Plan, Data Export Not Working, During Class, Enable Notifications (+35 more)
 
 ### Community 16 - "Community 16"
-Cohesion: 0.10
-Nodes (28): actualizarPrograma(), crearPrograma(), eliminarPrograma(), exportarProgramasPDF(), getNivelLabel(), NIVELES, obtenerProgramas(), Programa (+20 more)
+Cohesion: 0.09
+Nodes (29): actualizarPrograma(), crearPrograma(), eliminarPrograma(), exportarProgramasPDF(), getNivelLabel(), NIVELES, obtenerProgramas(), Programa (+21 more)
 
 ### Community 17 - "Community 17"
 Cohesion: 0.09
-Nodes (26): actualizarProgreso(), calcularPromedioLocal(), crearProgreso(), eliminarProgreso(), exportarBoletinPDF(), getNivelLabel(), getRiesgoLocal(), getStudentProgress() (+18 more)
+Nodes (27): actualizarProgreso(), calcularPromedioLocal(), crearProgreso(), eliminarProgreso(), exportarBoletinPDF(), getNivelLabel(), getPromedioAlumno(), getPromedioClase() (+19 more)
 
 ### Community 18 - "Community 18"
 Cohesion: 0.05
@@ -715,8 +714,8 @@ Cohesion: 0.24
 Nodes (11): actualizarDecisionAusencia(), aprobarAusencia(), obtenerAusenciasPendientes(), rechazarAusencia(), _injectStyles(), _loadAndRender(), renderAusenciasAdminView(), _renderEmpty() (+3 more)
 
 ### Community 20 - "Community 20"
-Cohesion: 0.13
-Nodes (3): registerRoutesClases(), useClases(), Clase
+Cohesion: 0.16
+Nodes (13): startAdminRealtimeNotifications(), stopAdminRealtimeNotifications(), registerRoutesAlumnos(), registerRoutesAuth(), _getGroupForRoute(), initializeTheme(), MODULES_REGISTRY, NAV_GROUPS (+5 more)
 
 ### Community 21 - "Community 21"
 Cohesion: 0.05
@@ -727,16 +726,16 @@ Cohesion: 0.16
 Nodes (15): obtenerCoberturaPorAlumno(), upsertCobertura(), analizarEnfoque(), authHeaders(), enrichFromText(), enrichText(), extraerCobertura(), getMockEnrichResponse() (+7 more)
 
 ### Community 23 - "Community 23"
-Cohesion: 0.09
-Nodes (29): obtenerAlumnos(), calcularCompletitud(), CAMPOS, NIVEL_COLOR, NIVEL_LABEL, PESO_TOTAL, tieneValor(), mockAlumnos (+21 more)
+Cohesion: 0.10
+Nodes (32): getParentescoLabel(), obtenerAlumnos(), createAlumnoCard(), createAlumnoListItem(), calcularEdad(), mockAlumnos, renderAndExport(), escapeHTML() (+24 more)
 
 ### Community 24 - "Community 24"
 Cohesion: 0.05
 Nodes (38): 1.1 Tokens soportados, 1.2 Lógica de resolución, 1.3 Reglas de precedencia, 1.4 Autocomplete, 1. Parser DSL y Modelo de Tokens, 2.1 Componente: Barra de Nodo Activo, 2.2 Flujo de usuario, 2.3 Semáforo grupal (por indicador, sobre alumnos de la clase) (+30 more)
 
 ### Community 25 - "Community 25"
-Cohesion: 0.22
-Nodes (15): _alumnosToEvents(), _ausenciaToEvent(), daysAgo(), _fetchActiveMaestros(), fetchAdminFeed(), _fetchAlumnosRecientes(), _fetchAusencias(), _fetchEarlyWarningRisks() (+7 more)
+Cohesion: 0.10
+Nodes (29): registerRoutesAdminNotificaciones(), lifecycle, resetAdminNotifBadge(), _scheduleFetch(), _alumnosToEvents(), _ausenciaToEvent(), daysAgo(), _fetchActiveMaestros() (+21 more)
 
 ### Community 26 - "Community 26"
 Cohesion: 0.05
@@ -752,15 +751,15 @@ Nodes (37): 1. Page Load (Cascade), 2. Mark Node as Covered (Manual or Auto), 3.
 
 ### Community 29 - "Community 29"
 Cohesion: 0.09
-Nodes (15): actualizarAlumno(), crearAlumno(), normalizeAlumno(), obtenerInscripcionesAlumno(), PARENTESCOS, EXPECTED_FIELDS, FULL_PAYLOAD, mockFrom (+7 more)
+Nodes (17): actualizarAlumno(), crearAlumno(), getParentescoLabel(), normalizeAlumno(), obtenerAlumno(), obtenerInscripcionesAlumno(), PARENTESCOS, EXPECTED_FIELDS (+9 more)
 
 ### Community 30 - "Community 30"
-Cohesion: 0.12
-Nodes (28): CACHE_KEYS, _findCoveringSessionCache(), getAlumnosPorClaseIds(), _getCacheKeys(), getEmergentesHoy(), getHorariosClases(), getInscripcionesClases(), _getMaestroId() (+20 more)
+Cohesion: 0.09
+Nodes (34): createAttendanceHeader(), pwaInstaller, autoJustificarClasesProgramadas(), CACHE_KEYS, _findCoveringSessionCache(), getAlumnosPorClaseIds(), _getCacheKeys(), getEmergentesHoy() (+26 more)
 
 ### Community 31 - "Community 31"
 Cohesion: 0.09
-Nodes (23): createSyncQueueBadge(), saveObservation(), promocionarObservacionesAlumnos(), clearQueue(), dequeue(), enqueue(), getDB(), getQueue() (+15 more)
+Nodes (21): createSyncQueueBadge(), promocionarObservacionesAlumnos(), clearQueue(), dequeue(), enqueue(), getDB(), getQueue(), getQueueCount() (+13 more)
 
 ### Community 32 - "Community 32"
 Cohesion: 0.05
@@ -775,20 +774,20 @@ Cohesion: 0.06
 Nodes (34): 10. VALIDACIONES Y RESTRICCIONES, 1. VISIÓN GENERAL, 2. FLUJO DE USUARIO (Situacional), 3.1 Tablas Nuevas Requeridas, 3.2 Relaciones con Tablas Existentes, 3.3 Vista Computada (Próxima optimización), 3. MODELO DE DATOS, 4.1 Vista Principal: Dashboard de Indicadores (+26 more)
 
 ### Community 35 - "Community 35"
-Cohesion: 0.07
-Nodes (20): registerRoutesAdminAprobacion(), startAdminRealtimeNotifications(), stopAdminRealtimeNotifications(), registerRoutesAdminUsuarios(), registerRoutesAuth(), SUB_RUTAS, pwaInstaller, registerRoutesHorarioBuilder() (+12 more)
+Cohesion: 0.16
+Nodes (3): SUB_RUTAS, router, renderPendingApprovalView()
 
 ### Community 36 - "Community 36"
-Cohesion: 0.06
-Nodes (31): createAchievementsSummaryModal(), createEvaluationDrawer(), createNodeEvaluationCard(), createStudentProgressPanel(), _escHTML(), _initials(), _injectStyles(), _renderContent() (+23 more)
+Cohesion: 0.09
+Nodes (20): createAchievementsSummaryModal(), createNodeEvaluationCard(), { mockSupabase }, localStorageMock, academicService, MAESTRO_VIEWS, renderViewContent(), testDataFactory (+12 more)
 
 ### Community 37 - "Community 37"
 Cohesion: 0.11
 Nodes (18): 10. Riesgos y mitigaciones, 1. Contexto y problema de raíz, 2. Inventario: qué se mantiene, qué se poda, 3. Decisiones de diseño (cerradas en brainstorming), 4.1 Nueva tabla: `perfil_conocimiento`, 4.2 Nueva tabla: `perfil_conocimiento_historial`, 4.3 Reutilización, 4. Modelo de datos (+10 more)
 
 ### Community 38 - "Community 38"
-Cohesion: 0.08
-Nodes (31): createStructureModal(), createToolbarHelpModal(), buildSeccionContext(), expandSeccionItems(), getAlumnosBySeccion(), SECCION_MAP, analyzeObservation(), applyGuardas() (+23 more)
+Cohesion: 0.15
+Nodes (21): buildSeccionContext(), expandSeccionItems(), getAlumnosBySeccion(), SECCION_MAP, analyzeObservation(), applyGuardas(), authHeaders(), _buildDSL() (+13 more)
 
 ### Community 39 - "Community 39"
 Cohesion: 0.06
@@ -823,8 +822,8 @@ Cohesion: 0.12
 Nodes (7): deletePlanEntrada(), fetchPlanEntradas(), insertPlanEntrada(), updatePlanEntrada(), PlanEstudiosPanel, TIPO_CFG, TIPOS_ORDEN
 
 ### Community 47 - "Community 47"
-Cohesion: 0.12
-Nodes (25): ALERT_TYPE_LABELS, ESTADO_LABELS, ESTADOS_CYCLE, ALERT_TYPES, _attachImplicitSubject(), buildRosterLookup(), detectAlert(), detectContradictions() (+17 more)
+Cohesion: 0.17
+Nodes (22): ALERT_TYPES, _attachImplicitSubject(), buildRosterLookup(), detectAlert(), detectContradictions(), detectNote(), detectPedagogicalAlert(), detectState() (+14 more)
 
 ### Community 48 - "Community 48"
 Cohesion: 0.06
@@ -855,12 +854,12 @@ Cohesion: 0.06
 Nodes (30): Archivos afectados, Archivos afectados, Archivos afectados, Archivos afectados, Archivos afectados, auth-rls-rearchitecture — Tareas de Implementación, Dependencias entre Work Units, Integración y Verificación Final (+22 more)
 
 ### Community 55 - "Community 55"
-Cohesion: 0.19
-Nodes (19): BRAND_ACCENT, BRAND_DARK, BRAND_PRIMARY, buildClasePdfFilename(), buildClasePdfRows(), clean(), descargarPdfClase(), descargarPdfListadoAlumnosPorClases() (+11 more)
+Cohesion: 0.20
+Nodes (18): BRAND_ACCENT, BRAND_DARK, BRAND_PRIMARY, buildClasePdfFilename(), buildClasePdfRows(), clean(), descargarPdfClase(), drawAlumnosTable() (+10 more)
 
 ### Community 56 - "Community 56"
 Cohesion: 0.15
-Nodes (15): actualizarRuta(), aprobarVariante(), crearRuta(), listarRutas(), obtenerProgresoRuta(), obtenerRuta(), obtenerVariantesPendientes(), proponerVariante() (+7 more)
+Nodes (16): actualizarRuta(), aprobarVariante(), crearRuta(), listarRutas(), obtenerProgresoRuta(), obtenerRuta(), obtenerVariantesPendientes(), proponerVariante() (+8 more)
 
 ### Community 57 - "Community 57"
 Cohesion: 0.06
@@ -875,28 +874,28 @@ Cohesion: 0.06
 Nodes (30): 1. Shared CSS & Template Helpers (`reportTemplates.js`), 2. Doc 1 — Daily Attendance Report, 3. Doc 2 — Monthly Attendance Summary, 4. Doc 3 — Monthly Pedagogical Report, 5. Error States, 6. Generation Flow (all 3 docs), Architecture, Attendance state colors (+22 more)
 
 ### Community 60 - "Community 60"
-Cohesion: 0.13
-Nodes (22): getScheduleRuns(), saveScheduleRun(), getCurrentUserIsAdmin(), attachConflictPanelListeners(), createConflictPanel(), createViewToggle(), VIEW_LABELS, VIEWS (+14 more)
+Cohesion: 0.10
+Nodes (27): getScheduleRuns(), saveScheduleRun(), getCurrentUserIsAdmin(), attachConflictPanelListeners(), createConflictPanel(), createViewToggle(), VIEW_LABELS, VIEWS (+19 more)
 
 ### Community 61 - "Community 61"
-Cohesion: 0.08
-Nodes (45): openCaseActionModal(), listCaseActions(), archiveStudentCase(), changeCaseStatus(), changeRiskLevel(), closeStudentCase(), createCaseFromAlert(), createStudentCase() (+37 more)
+Cohesion: 0.13
+Nodes (25): openCaseActionModal(), openCaseLetterModal(), listCaseActions(), archiveStudentCase(), changeCaseStatus(), changeRiskLevel(), closeStudentCase(), escalateStudentCase() (+17 more)
 
 ### Community 62 - "Community 62"
 Cohesion: 0.10
-Nodes (19): createPortalRouter(), setNavigationCallbacks(), CACHEABLE_VIEWS, initViewContainers(), setupRouterRoutes(), hideShell(), renderShell(), setActiveTab() (+11 more)
+Nodes (19): createPortalRouter(), setNavigationCallbacks(), cleanupPushService(), CACHEABLE_VIEWS, initViewContainers(), setupRouterRoutes(), setActiveTab(), SUPPRESSED_PATTERNS (+11 more)
 
 ### Community 63 - "Community 63"
-Cohesion: 0.20
-Nodes (13): registerRoutesPedagogico(), createSeguimientoRule(), DEFAULT_RULES, listSeguimientoRules(), seedDefaultSeguimientoRules(), toggleSeguimientoRule(), updateSeguimientoRule(), _attachEvents() (+5 more)
+Cohesion: 0.25
+Nodes (12): createSeguimientoRule(), DEFAULT_RULES, listSeguimientoRules(), seedDefaultSeguimientoRules(), toggleSeguimientoRule(), updateSeguimientoRule(), _attachEvents(), _load() (+4 more)
 
 ### Community 64 - "Community 64"
 Cohesion: 0.07
 Nodes (28): Catálogo de Claves de Permiso, Escenario: Admin toggle escribe en arreglo, Escenario: Auth anónimo o sin registro, Escenario: fetchCurrent() retorna permisos mapeados, Escenario: Maestro autenticado existe, Escenario: Maestro sin registro en `permisos_maestros`, Escenario: Migración completa, Escenario: Permiso concedido (+20 more)
 
 ### Community 65 - "Community 65"
-Cohesion: 0.11
-Nodes (26): actualizarAlumno(), eliminarAlumno(), getAlumnos(), getApi(), obtenerAlumno(), obtenerAlumnos(), obtenerAlumnosFiltradosYOrdenados(), obtenerAlumnosPorMes() (+18 more)
+Cohesion: 0.12
+Nodes (24): actualizarAlumno(), eliminarAlumno(), getAlumnos(), getApi(), obtenerAlumno(), obtenerAlumnos(), obtenerAlumnosFiltradosYOrdenados(), obtenerAlumnosPorMes() (+16 more)
 
 ### Community 66 - "Community 66"
 Cohesion: 0.07
@@ -911,12 +910,12 @@ Cohesion: 0.18
 Nodes (20): actualizarPermiso(), aprobarSolicitud(), crearSolicitud(), normalizePermiso(), normalizeSolicitud(), obtenerPermisoPorMaestro(), obtenerSolicitudesPendientes(), obtenerSolicitudPorMaestro() (+12 more)
 
 ### Community 69 - "Community 69"
-Cohesion: 0.20
-Nodes (17): obtenerAlumnosInscritos(), _attachModalEvents(), _getAlumnosSelectorHTML(), _getClaseFormHTML(), _getEstadosOptions(), _getInstrumentosDatalist(), _getMaestrosOptions(), _getProgramasOptions() (+9 more)
+Cohesion: 0.15
+Nodes (24): _attachModalEvents(), _getAlumnosSelectorHTML(), _getClaseFormHTML(), _getEstadosOptions(), _getInstrumentosDatalist(), _getMaestrosOptions(), _getProgramasOptions(), _getSalonesOptions() (+16 more)
 
 ### Community 70 - "Community 70"
-Cohesion: 0.10
-Nodes (16): obtenerClases(), mockResumen, renderIaResumenSemanal(), registerRoutesMetricas(), _bindEvents(), _cleanupState(), compilePayloadDSL(), destroyIaReporteGeneradorView() (+8 more)
+Cohesion: 0.13
+Nodes (15): obtenerClases(), renderIaResumenSemanal(), registerRoutesMetricas(), _bindEvents(), _cleanupState(), compilePayloadDSL(), destroyIaReporteGeneradorView(), _fechaHoy() (+7 more)
 
 ### Community 71 - "Community 71"
 Cohesion: 0.07
@@ -939,8 +938,8 @@ Cohesion: 0.12
 Nodes (10): createMaestroTareaMock(), extractTokensFromDsl(), getSesionAlumnoLogMock(), loadDslContent(), loadDslFromSesion(), saveDslContent(), saveDslToSesion(), saveSesionAlumnoLogMock() (+2 more)
 
 ### Community 76 - "Community 76"
-Cohesion: 0.15
-Nodes (24): activarMaestro(), inactivarMaestro(), validarEmail(), escapeHTML(), getInitials(), applyFilters(), attachEspecialidadesEvents(), attachEvents() (+16 more)
+Cohesion: 0.14
+Nodes (26): obtenerAlumnosInscritosPorClases(), activarMaestro(), inactivarMaestro(), validarEmail(), escapeHTML(), getInitials(), applyFilters(), attachEspecialidadesEvents() (+18 more)
 
 ### Community 77 - "Community 77"
 Cohesion: 0.17
@@ -951,8 +950,8 @@ Cohesion: 0.12
 Nodes (11): aprobarAusencia(), crearAusencia(), crearNotificacion(), rechazarAusencia(), revisarAusencia(), buscarClasesAfectadas(), crearSolicitud(), generarNumeroTicket() (+3 more)
 
 ### Community 79 - "Community 79"
-Cohesion: 0.24
-Nodes (11): createPlanningDetailsModal(), createPlanningRegistroModal(), renderPlanningRouteTree(), createIndicatorObservation(), _getEstado(), getIndicatorHistory(), getIndicatorsWithStatus(), getRouteVersionHierarchy() (+3 more)
+Cohesion: 0.11
+Nodes (27): createPlanningDetailsModal(), createPlanningRegistroModal(), renderPlanningRouteTree(), addIndicator(), addLevel(), addNode(), deleteIndicator(), deleteLevel() (+19 more)
 
 ### Community 80 - "Community 80"
 Cohesion: 0.12
@@ -960,15 +959,15 @@ Nodes (15): Architecture Decisions, Data Flow, Decision: `constraintPanel.js` �
 
 ### Community 81 - "Community 81"
 Cohesion: 0.15
-Nodes (28): registerRoutesAlumnos(), ALUMNO_DEMO, C, checkSpace(), conducta(), descargarConstancia(), descargarConstanciaDemo(), descargarFichaAlumno() (+20 more)
+Nodes (28): ALUMNO_DEMO, C, checkSpace(), conducta(), descargarConstancia(), descargarConstanciaDemo(), descargarFichaAlumno(), descargarFichaDemo() (+20 more)
 
 ### Community 82 - "Community 82"
 Cohesion: 0.07
 Nodes (26): Adding a New Service, Adding a New View (Page), Adding Features, Audit Logging (`src/services/auditService.js`), Authentication (`src/portal-maestros/auth/maestroAuth.js`), Browser DevTools, Clone & Install, Common Issues (+18 more)
 
 ### Community 83 - "Community 83"
-Cohesion: 0.12
-Nodes (9): openAsistenciaModal(), VALIDATION, ModalManager, openAsistenciaModal(), openRegistroBulkModal(), VALIDATION, Asistencia, escapeHTML() (+1 more)
+Cohesion: 0.15
+Nodes (8): openAsistenciaModal(), VALIDATION, openAsistenciaModal(), openRegistroBulkModal(), VALIDATION, Asistencia, escapeHTML(), formatDateISO()
 
 ### Community 84 - "Community 84"
 Cohesion: 0.07
@@ -993,10 +992,6 @@ Nodes (25): 1. progressInsightService.js, 2. groqService.js — `proposeCurricul
 ### Community 89 - "Community 89"
 Cohesion: 0.08
 Nodes (23): Architecture Decisions, Architecture Diagram, Component Tree, Conditional Nav Logic (Portal), Data Flow, Decision: Application-level checks, no RLS, Decision: Boolean flags over RBAC, Decision: permisoService.js uses DataAdapter (+15 more)
-
-### Community 90 - "Community 90"
-Cohesion: 0.10
-Nodes (4): obtenerAsistencia(), obtenerAsistencias(), AsistenciasHook, useAsistencias()
 
 ### Community 91 - "Community 91"
 Cohesion: 0.08
@@ -1023,8 +1018,8 @@ Cohesion: 0.08
 Nodes (23): API Layer, Archivos creados (9), Archivos modificados (2), Características de UX, Checklist Completado - FASE 1 y FASE 2, Components, Documentación, Estadísticas (+15 more)
 
 ### Community 97 - "Community 97"
-Cohesion: 0.28
-Nodes (11): applyIndex(), clearAppCache(), CHANGELOG, getLatestVersion(), getVersionTypeMeta(), _bindAIDiagnostics(), _formatDate(), _injectStyles() (+3 more)
+Cohesion: 0.15
+Nodes (18): _bind(), _countAprobaciones(), _countAusencias(), _countPermisos(), ITEMS, _loadCounts(), renderCentroActividadesPanel(), _setCount() (+10 more)
 
 ### Community 98 - "Community 98"
 Cohesion: 0.13
@@ -1095,8 +1090,8 @@ Cohesion: 0.10
 Nodes (20): Architecture Decisions, Backfill, Component tree, D1: Trigger direction, D2: RLS subquery pattern, D3: Helper layers, D4: Register view sigue patrón loginView, Data Flow (+12 more)
 
 ### Community 116 - "Community 116"
-Cohesion: 0.18
-Nodes (17): agruparPorFecha(), crearAsistencia(), ESTADO_LABEL, ESTADO_MAP, ESTADOS, getDetalleSesion(), getMaestros(), getReporteCompleto() (+9 more)
+Cohesion: 0.07
+Nodes (48): agruparPorFecha(), crearAsistencia(), ESTADO_LABEL, ESTADO_MAP, ESTADOS, getClases(), getDetalleSesion(), getMaestros() (+40 more)
 
 ### Community 117 - "Community 117"
 Cohesion: 0.07
@@ -1167,8 +1162,8 @@ Cohesion: 0.17
 Nodes (11): detectConflicts(), overlaps(), timeToMinutes(), initDragDrop(), showConflictMoveModal(), base, DragEvent, addMinutes() (+3 more)
 
 ### Community 134 - "Community 134"
-Cohesion: 0.16
-Nodes (6): notificacionesPanel, ThemeToggle, _currentBreakpoint, getBreakpoint(), _initHeaderSearch(), getAlumnoIndexFromMetricas()
+Cohesion: 0.15
+Nodes (8): notificacionesPanel, ThemeToggle, _currentBreakpoint, getBreakpoint(), hideShell(), _initHeaderSearch(), renderShell(), getAlumnoIndexFromMetricas()
 
 ### Community 135 - "Community 135"
 Cohesion: 0.10
@@ -1195,16 +1190,16 @@ Cohesion: 0.10
 Nodes (19): 1. DB Migration, 2. `linkProgresosToObjetivos` — matching algorithm, 3. `adoptarPropuesta` — return shape change, 4. `asistenciaView.js` — `onAdopt` callback, Architecture, Background / Problem, CRITICAL CONTEXT FOR GEMINI, DB operation (+11 more)
 
 ### Community 141 - "Community 141"
-Cohesion: 0.14
-Nodes (26): eliminarClase(), verificarSolapamiento(), createClaseCard(), createClaseListItem(), formatHorarios(), calcularDuracion(), formatDate(), formatHora() (+18 more)
+Cohesion: 0.11
+Nodes (33): eliminarClase(), obtenerAlumnosInscritos(), registerRoutesClases(), _rowDisponible(), _rowInscrito(), createClaseCard(), createClaseListItem(), formatHorarios() (+25 more)
 
 ### Community 142 - "Community 142"
-Cohesion: 0.19
+Cohesion: 0.17
 Nodes (10): actualizarObservacion(), agregarSeguimiento(), crearObservacion(), normalize(), promoteObservations(), resolverObservacion(), batchPromoteSessionObservations(), promoteSessionObservations() (+2 more)
 
 ### Community 143 - "Community 143"
-Cohesion: 0.13
-Nodes (12): fuzzyMatch(), fuzzyMatchAll(), fuzzyMatchBest(), levenshteinDistance(), SemaphoreCache, getSemaphoreCache(), getSemaphoreCacheKey(), invalidateSemaphoresForClase() (+4 more)
+Cohesion: 0.06
+Nodes (35): renderBlockSection(), fuzzyMatch(), fuzzyMatchAll(), fuzzyMatchBest(), levenshteinDistance(), listeners, rutaEvents, SemaphoreCache (+27 more)
 
 ### Community 144 - "Community 144"
 Cohesion: 0.26
@@ -1232,7 +1227,7 @@ Nodes (17): Cambios de Archivos, Decisiones de Arquitectura, Diseño: RLS + Perm
 
 ### Community 150 - "Community 150"
 Cohesion: 0.17
-Nodes (14): obtenerClases(), registerRoutesBitacora(), escapeHTML(), openHistorialObjetivoModal(), attachEvents(), escapeHTML(), mountDashboard(), obtenerClasesConFallback() (+6 more)
+Nodes (17): obtenerClases(), registerRoutesBitacora(), buildSemaforoMap(), createBitacoraDashboard(), createSemaforoDot(), escapeHTML(), SEMAFORO_CONFIG, attachEvents() (+9 more)
 
 ### Community 151 - "Community 151"
 Cohesion: 0.41
@@ -1279,16 +1274,16 @@ Cohesion: 0.11
 Nodes (17): API del Parser, Capas Estructurales, Configuración de Colores, DSL Parser — Lenguaje de Registro Pedagógico, Ejemplos Completos, Errores Comunes, Evaluación, `getTokenSummary(parsed): string` (+9 more)
 
 ### Community 163 - "Community 163"
-Cohesion: 0.17
-Nodes (11): _alumnosCache, _attachEvents(), _DIAG_FIELDS, _diagData, _ejecutarDiagnostico(), _initSearch(), _p(), _renderDiagLista() (+3 more)
+Cohesion: 0.16
+Nodes (12): obtenerProgresosPorAlumno(), _alumnosCache, _attachEvents(), _DIAG_FIELDS, _diagData, _ejecutarDiagnostico(), _initSearch(), _p() (+4 more)
 
 ### Community 164 - "Community 164"
 Cohesion: 0.15
 Nodes (5): mockAlertas, _procesarAlertas(), _renderAlertas(), renderIaAlertasPredictivas(), MetricasService
 
 ### Community 165 - "Community 165"
-Cohesion: 0.22
-Nodes (14): attachInfoTooltipEvents(), escapeHTML(), injectInfoTooltipStyles(), showInfoModal(), _attachEvents(), _fetchAlumnosEnRiesgo(), _fetchKPIs(), _kpiCard() (+6 more)
+Cohesion: 0.20
+Nodes (16): attachInfoTooltipEvents(), escapeHTML(), InfoTooltip(), injectInfoTooltipStyles(), showInfoModal(), getCaseKPIs(), _attachEvents(), _fetchAlumnosEnRiesgo() (+8 more)
 
 ### Community 166 - "Community 166"
 Cohesion: 0.10
@@ -1339,16 +1334,16 @@ Cohesion: 0.12
 Nodes (15): academic-program-management Specification, Acceptance Criteria, Purpose, Requirement: Academic Program Validation (Model), Requirement: CRUD Operations and Modal Interface, Requirement: Program List Management, Requirement: Standardized PDF Export, Requirements (+7 more)
 
 ### Community 178 - "Community 178"
-Cohesion: 0.22
-Nodes (13): getClases(), getReporteConsolidado(), _attachEvents(), _loadData(), _reloadView(), renderAccordions(), renderAlumnoAsistencia(), renderAsistenciasView() (+5 more)
+Cohesion: 0.18
+Nodes (11): createStudentProgressPanel(), _escHTML(), _initials(), _injectStyles(), _renderContent(), _renderError(), _renderHeader(), _renderIndicators() (+3 more)
 
 ### Community 179 - "Community 179"
 Cohesion: 0.27
 Nodes (14): getAlertasActivas(), getAlertasConfig(), getAlumnosDestacados(), getApi(), getEstadisticasPeriodo(), getEstadisticasPeriodoActivo(), getHistorialEstadoAlumno(), getRachaAusencias() (+6 more)
 
 ### Community 180 - "Community 180"
-Cohesion: 0.18
-Nodes (7): getAlertasActivas(), getAlertasConfig(), getEstadisticasPeriodo(), getEstadisticasPeriodoActivo(), getResumenAlertas(), getResumenAlumnos(), loadJsonMock()
+Cohesion: 0.08
+Nodes (14): getAlertasActivas(), getAlertasConfig(), getEstadisticasPeriodo(), getEstadisticasPeriodoActivo(), getResumenAlertas(), getResumenAlumnos(), AlumnoTimeline, createAlumnoTimeline() (+6 more)
 
 ### Community 181 - "Community 181"
 Cohesion: 0.26
@@ -1439,20 +1434,20 @@ Cohesion: 0.12
 Nodes (14): academic-class-management Specification, Acceptance Criteria, Purpose, Requirement: Class Conflict Detection (Resource Management), Requirement: Class-Student Enrollment Integration, Requirement: Dual-View Interface (Table & Calendar), Requirement: Multi-Schedule Support, Requirements (+6 more)
 
 ### Community 204 - "Community 204"
-Cohesion: 0.19
-Nodes (15): getPeriodoActivo(), getPeriodos(), registerRoutesAsistencias(), _getColorScale(), _procesarHeatmap(), renderAsistenciaHeatmap(), _renderHeatmap(), createKpiCard() (+7 more)
+Cohesion: 0.20
+Nodes (10): createContentSelectionPanel(), createHomeworkPanel(), createMethodologyForm(), FIELDS, assignHomework(), generateClassEvent(), getClassEvent(), getStudentHomework() (+2 more)
 
 ### Community 205 - "Community 205"
-Cohesion: 0.13
-Nodes (10): obtenerCurriculo(), obtenerPlantillasPlanificacion(), _buildInstrumentoOptions(), _buildModalHTML(), esc(), _getModalStyles(), _initCounters(), _loadCurriculoGuide() (+2 more)
+Cohesion: 0.27
+Nodes (9): obtenerCurriculo(), obtenerPlantillasPlanificacion(), _buildInstrumentoOptions(), _buildModalHTML(), esc(), _getModalStyles(), _initCounters(), _loadCurriculoGuide() (+1 more)
 
 ### Community 206 - "Community 206"
 Cohesion: 0.19
 Nodes (7): formatDateShort(), renderAsistenciaRow(), truncate(), getEstadoClass(), getEstadoIcon(), getEstadoLabel(), getInitials()
 
 ### Community 207 - "Community 207"
-Cohesion: 0.24
-Nodes (4): AlumnoTimeline, createAlumnoTimeline(), renderAlumnoTimeline(), mockAlumno
+Cohesion: 0.18
+Nodes (8): createToolbarHelpModal(), enrichToDSL(), transcribeAndStructure(), expandSnippet(), searchSnippets(), SNIPPETS, createDslToolbar(), fetchMock
 
 ### Community 209 - "Community 209"
 Cohesion: 0.17
@@ -1511,8 +1506,8 @@ Cohesion: 0.14
 Nodes (13): Archive Report: WCAG AA Accessibility Audit, Created (2 files), CRITICAL, Engram Artifact Lineage, Files Changed, Known Issues (from Verify Report), Modified (25 tracked files), Next Steps / Recommendations (+5 more)
 
 ### Community 223 - "Community 223"
-Cohesion: 0.20
-Nodes (15): crearAlumno(), actualizarClase(), actualizarTurnoInscripcion(), crearClase(), desinscribirAlumno(), inscribirAlumno(), NIVELES, normalizeClase() (+7 more)
+Cohesion: 0.10
+Nodes (18): crearAlumno(), actualizarClase(), actualizarTurnoInscripcion(), crearClase(), desinscribirAlumno(), inscribirAlumno(), NIVELES, normalizeClase() (+10 more)
 
 ### Community 224 - "Community 224"
 Cohesion: 0.19
@@ -1539,8 +1534,8 @@ Cohesion: 0.31
 Nodes (13): _appendFicha(), C, _check(), descargarFichasLote(), _edad(), _fecha(), _footer(), generarFichasLote() (+5 more)
 
 ### Community 232 - "Community 232"
-Cohesion: 0.22
-Nodes (10): BRAND_ACCENT, BRAND_DARK, BRAND_PRIMARY, clean(), descargarPdfReporteMaestro(), drawFooter(), drawHeader(), generarPdfReporteMaestro() (+2 more)
+Cohesion: 0.24
+Nodes (9): BRAND_ACCENT, BRAND_DARK, BRAND_PRIMARY, clean(), descargarPdfReporteMaestro(), drawFooter(), drawHeader(), generarPdfReporteMaestro() (+1 more)
 
 ### Community 233 - "Community 233"
 Cohesion: 0.14
@@ -1563,7 +1558,7 @@ Cohesion: 0.14
 Nodes (13): 1. DOCUMENTATION TIER, 2. MONITORING TIER, 3. SECURITY TIER, 4. PERFORMANCE TIER, Architecture, Executive Summary, File Structure, Goal (+5 more)
 
 ### Community 238 - "Community 238"
-Cohesion: 0.23
+Cohesion: 0.27
 Nodes (14): renderRegisterView(), attachEvents(), escapeHTML(), handleRegister(), PASSWORD_REQUIREMENTS, renderContent(), renderPasswordRequirements(), renderRegisterView() (+6 more)
 
 ### Community 239 - "Community 239"
@@ -1619,8 +1614,8 @@ Cohesion: 0.18
 Nodes (15): actualizarAlumno(), alumnos, crearAlumno(), delay(), eliminarAlumno(), inscripciones, normalizeAlumno(), obtenerAlumno() (+7 more)
 
 ### Community 252 - "Community 252"
-Cohesion: 0.10
-Nodes (20): PARENTESCOS, obtenerAlumno(), buildForm(), openEditAlumnoModal(), parentescoOptions(), BRAND_ACCENT, BRAND_DARK, BRAND_PRIMARY (+12 more)
+Cohesion: 0.11
+Nodes (19): PARENTESCOS, buildForm(), openEditAlumnoModal(), parentescoOptions(), BRAND_ACCENT, BRAND_DARK, BRAND_PRIMARY, descargarReporteMensual() (+11 more)
 
 ### Community 253 - "Community 253"
 Cohesion: 0.26
@@ -1675,8 +1670,8 @@ Cohesion: 0.15
 Nodes (12): `adoptarPropuesta` current signature (curriculoApi.js), CRITICAL CONTEXT (read before starting), Existing `normalize()` in progressAggregatorService.js (do NOT redefine it), Key file locations, `onAdopt` location in asistenciaView.js, Retroactive objetivo_id Linking — Implementation Plan, Summary of All Files Changed, Task 1 — DB Migration: fix progresos.objetivo_id FK (+4 more)
 
 ### Community 267 - "Community 267"
-Cohesion: 0.25
-Nodes (11): aggregateBatch(), aggregateStudentProgress(), buildAlumnoPartitions(), InvalidWindowError, mergeObservaciones(), reduceAttendance(), reduceGrades(), reduceIndicators() (+3 more)
+Cohesion: 0.21
+Nodes (13): getStudentProgress(), getStudentProgressBatch(), aggregateBatch(), aggregateStudentProgress(), buildAlumnoPartitions(), InvalidWindowError, mergeObservaciones(), reduceAttendance() (+5 more)
 
 ### Community 268 - "Community 268"
 Cohesion: 0.19
@@ -1703,8 +1698,8 @@ Cohesion: 0.30
 Nodes (10): createAusenciaAprobacionCard(), escHTML(), formatDate(), formatDateRange(), getCoverageSummary(), getTeacherEmail(), getTeacherName(), injectCardStyles() (+2 more)
 
 ### Community 274 - "Community 274"
-Cohesion: 0.21
-Nodes (10): registerRoutesAdminNotificaciones(), fetchMaestrosParaNotificar(), fetchNotificacionesEnviadas(), sendNotificacionToMaestros(), CAT_COLORS, CAT_LABELS, CATEGORIES, ESTADO_CONFIG (+2 more)
+Cohesion: 0.23
+Nodes (3): escapeHTML(), openHistorialObjetivoModal(), ModalManager
 
 ### Community 275 - "Community 275"
 Cohesion: 0.26
@@ -1715,8 +1710,8 @@ Cohesion: 0.23
 Nodes (7): getPendientesCount(), getTareas(), getVencidasCount(), loadTareasDemo(), renderTareasBadge(), tareasCache, renderTareasPanel()
 
 ### Community 277 - "Community 277"
-Cohesion: 0.22
-Nodes (13): _rowDisponible(), _rowInscrito(), escapeHTML(), getInitials(), renderClaseCard(), CALIF_COLORS, CALIF_LABELS, _injectStyles() (+5 more)
+Cohesion: 0.29
+Nodes (4): getCriticalMaestros(), getMaestroPendingRegistros(), getMaestrosByCategory(), getMaestrosComplianceStatus()
 
 ### Community 278 - "Community 278"
 Cohesion: 0.17
@@ -1747,8 +1742,8 @@ Cohesion: 0.31
 Nodes (7): initAnalytics(), isEnabled(), setUser(), trackButtonClick(), trackFormSubmit(), trackEvent(), trackPageView()
 
 ### Community 286 - "Community 286"
-Cohesion: 0.15
-Nodes (15): openClaseAnalysisModal(), generateClaseAnalysis(), getClaseDataForAnalysis(), getContentTracking(), getGroqApiKey(), announce(), clearAllFieldErrors(), clearFieldError() (+7 more)
+Cohesion: 0.07
+Nodes (25): clearMaestroLocal(), detectarRolMaestro(), getMaestroLocal(), _isPWA(), loginMaestro(), logoutPortal(), PENDING_APPROVAL_SENTINEL, _setPersistentSession() (+17 more)
 
 ### Community 287 - "Community 287"
 Cohesion: 0.11
@@ -1760,7 +1755,7 @@ Nodes (7): createAsistenteIa(), renderChatWidget(), createAiService(), FREE_MODE
 
 ### Community 289 - "Community 289"
 Cohesion: 0.09
-Nodes (30): createPlanificationCard(), NODE_ICONS, _nodeIcon(), _renderBlock(), _renderLevel(), _renderNode(), CALIF_COLORS, CALIF_LABELS (+22 more)
+Nodes (33): NODE_ICONS, _nodeIcon(), _renderBlock(), _renderLevel(), _renderNode(), CALIF_COLORS, CALIF_LABELS, loadClasses() (+25 more)
 
 ### Community 290 - "Community 290"
 Cohesion: 0.17
@@ -1819,8 +1814,8 @@ Cohesion: 0.20
 Nodes (14): presentes, buildTextoMejorado(), calculateSemaphore(), detectInputMode(), expandTodos(), getSemaphoreForNode(), guardarEvaluaciones(), parseToBlocks() (+6 more)
 
 ### Community 305 - "Community 305"
-Cohesion: 0.27
-Nodes (7): getDisponibilidadBulk(), fetchSchedulingData(), getClasesReal(), getSalonesReal(), mockClases, mockRuns, mockSalones
+Cohesion: 0.13
+Nodes (12): getDisponibilidadBulk(), fetchSchedulingData(), getClasesReal(), getSalonesReal(), mockClases, mockRuns, mockSalones, registerRoutesHorarioBuilder() (+4 more)
 
 ### Community 306 - "Community 306"
 Cohesion: 0.51
@@ -1831,8 +1826,8 @@ Cohesion: 0.36
 Nodes (8): renderPerfilView(), cambiarPassword(), cargarComponentesPerfil(), guardarDatosPersonales(), mostrarError(), mostrarErrorPassword(), mostrarExito(), state
 
 ### Community 310 - "Community 310"
-Cohesion: 0.15
-Nodes (7): getPromedioAlumno(), getPromedioClase(), obtenerBoletinAlumno(), obtenerProgreso(), useProgresos(), Progreso, registerRoutesProgresos()
+Cohesion: 0.23
+Nodes (3): useProgresos(), Progreso, registerRoutesProgresos()
 
 ### Community 311 - "Community 311"
 Cohesion: 0.38
@@ -2142,10 +2137,6 @@ Nodes (8): Archivos afectados, Componente: SessionSummaryPanel.js, Criterios de 
 Cohesion: 0.28
 Nodes (3): getDiasOptions(), getSalonesOptions(), renderHorarioRow()
 
-### Community 388 - "Community 388"
-Cohesion: 0.13
-Nodes (5): AppModal, SIZES, escapeHTML(), openRevisionModal(), renderAprobacionView()
-
 ### Community 389 - "Community 389"
 Cohesion: 0.43
 Nodes (5): boot(), handleLogin(), showLoginView(), showStudentSelector(), STATE
@@ -2219,8 +2210,8 @@ Cohesion: 0.46
 Nodes (5): mapRepresentante(), mapRowToDraft(), normalize(), normalizeYesNo(), parseDate()
 
 ### Community 407 - "Community 407"
-Cohesion: 0.13
-Nodes (19): actualizarSesion(), crearSesion(), eliminarSesion(), obtenerClasesDelMaestro(), obtenerSesiones(), obtenerSesionesCoDocencia(), registrarAsistencia(), _attachPanelEvents() (+11 more)
+Cohesion: 0.27
+Nodes (7): generateMultipleProposals(), lcgRand(), shuffleWithSeed(), mockClaseA, mockConfig, mockMaestro, mockSalon
 
 ### Community 408 - "Community 408"
 Cohesion: 0.39
@@ -2283,8 +2274,12 @@ Cohesion: 0.29
 Nodes (6): 1. Stack & Standards, 2. Architecture: DataAdapter Pattern, 3. Directory Structure, 4. Security & Hygiene, 5. Documentation, Project Governance & Agent Rules
 
 ### Community 426 - "Community 426"
+Cohesion: 0.07
+Nodes (5): marcarEjecutada(), marcarRevisada(), obtenerCoberturaCurricular(), obtenerMaestros(), openAprobacionPlanificacionesModal()
+
+### Community 428 - "Community 428"
 Cohesion: 0.10
-Nodes (8): marcarEjecutada(), marcarRevisada(), obtenerCoberturaCurricular(), obtenerMaestros(), obtenerPlanificacion(), obtenerPlanificaciones(), obtenerPlanificacionesConDetalles(), openAprobacionPlanificacionesModal()
+Nodes (3): AlumnosHook, useAlumnos(), Alumno
 
 ### Community 429 - "Community 429"
 Cohesion: 0.43
@@ -2507,12 +2502,12 @@ Cohesion: 0.47
 Nodes (4): getAuditLogs(), getClientIP(), initAuditService(), auditLog()
 
 ### Community 490 - "Community 490"
-Cohesion: 0.26
-Nodes (3): createGamificacionNodos(), GamificacionNodos, renderGamificacionNodos()
+Cohesion: 0.50
+Nodes (5): openClaseAnalysisModal(), generateClaseAnalysis(), getClaseDataForAnalysis(), getContentTracking(), getGroqApiKey()
 
 ### Community 491 - "Community 491"
 Cohesion: 0.16
-Nodes (10): openCaseLetterModal(), RISK_TEMPLATE_MAP, listTemplates(), buildStudentDocumentContext(), DOCUMENT_REQUIRED_FIELDS, getActiveSchooling(), getMissingDocumentFields(), getStudentDocumentData() (+2 more)
+Nodes (9): RISK_TEMPLATE_MAP, listTemplates(), buildStudentDocumentContext(), DOCUMENT_REQUIRED_FIELDS, getActiveSchooling(), getMissingDocumentFields(), getStudentDocumentData(), getStudentDocumentStatus() (+1 more)
 
 ### Community 492 - "Community 492"
 Cohesion: 0.29
@@ -2524,7 +2519,7 @@ Nodes (4): mockClases, mockPlanificaciones, mockPlanificacionHook, mockSesiones
 
 ### Community 494 - "Community 494"
 Cohesion: 0.29
-Nodes (8): _bind(), _countAprobaciones(), _countAusencias(), _countPermisos(), ITEMS, _loadCounts(), renderCentroActividadesPanel(), _setCount()
+Nodes (3): ALERT_TYPE_LABELS, ESTADO_LABELS, ESTADOS_CYCLE
 
 ### Community 495 - "Community 495"
 Cohesion: 0.31
@@ -2602,10 +2597,6 @@ Nodes (3): niveles, nodos, objetivos
 Cohesion: 0.60
 Nodes (3): indicators, levels, nodes
 
-### Community 518 - "Community 518"
-Cohesion: 0.18
-Nodes (5): lifecycle, resetAdminNotifBadge(), _scheduleFetch(), fetchAdminPendingCount(), LifecycleManager
-
 ### Community 519 - "Community 519"
 Cohesion: 0.50
 Nodes (4): 14.1. Casos de uso IA, 14.2. Límites de IA, 14.3. Prompt base para revisión IA, 14. Integración con IA
@@ -2643,12 +2634,8 @@ Cohesion: 0.38
 Nodes (4): guardarSuscripcion(), subscribe(), urlBase64ToUInt8Array(), usePushNotifications
 
 ### Community 586 - "Community 586"
-Cohesion: 0.31
-Nodes (9): crearUsuario(), listarUsuariosPorRol(), _bindForm(), _esc(), _handleCreate(), _injectStyles(), _loadAdmins(), renderGestionUsuariosView() (+1 more)
-
-### Community 588 - "Community 588"
-Cohesion: 0.13
-Nodes (6): getCriticalMaestros(), getMaestroPendingRegistros(), getMaestrosByCategory(), getMaestrosComplianceStatus(), InfoTooltip(), CumplimientoMaestrosWidget
+Cohesion: 0.24
+Nodes (10): registerRoutesAdminUsuarios(), crearUsuario(), listarUsuariosPorRol(), _bindForm(), _esc(), _handleCreate(), _injectStyles(), _loadAdmins() (+2 more)
 
 ### Community 589 - "Community 589"
 Cohesion: 0.36
@@ -2659,8 +2646,8 @@ Cohesion: 0.53
 Nodes (4): getAuditLogs(), getOperaciones(), getSystemLogs(), recordSystemLog()
 
 ### Community 596 - "Community 596"
-Cohesion: 0.29
-Nodes (5): ESTADO_BADGES, ESTADO_CHIPS, ESTADO_LABELS, groupRecords(), normalizeKey()
+Cohesion: 0.25
+Nodes (6): createSessionSummaryPanel(), ESTADO_BADGES, ESTADO_CHIPS, ESTADO_LABELS, groupRecords(), normalizeKey()
 
 ### Community 597 - "Community 597"
 Cohesion: 0.47
@@ -2675,16 +2662,16 @@ Cohesion: 0.33
 Nodes (4): __dirname, __filename, files, viewsDir
 
 ### Community 601 - "Community 601"
-Cohesion: 0.15
-Nodes (4): actualizarPlanificacion(), marcarEjecutada(), marcarRevisada(), marcarRevisadasMasivo()
+Cohesion: 0.10
+Nodes (5): actualizarPlanificacion(), marcarEjecutada(), marcarRevisada(), marcarRevisadasMasivo(), Planificacion
 
 ### Community 602 - "Community 602"
 Cohesion: 0.14
 Nodes (13): BATCH A — Critical Data Integrity, BATCH B — SPA Bugs, BATCH C — UX Consistency, BATCH D — Performance, BATCH E — Architecture + Reports, Dependency Graph, Files to CREATE (do not exist yet), PR Sizing Estimate (+5 more)
 
 ### Community 605 - "Community 605"
-Cohesion: 0.25
-Nodes (11): addIndicator(), addLevel(), addNode(), deleteIndicator(), deleteLevel(), deleteNode(), getOrCreateDraftVersion(), _nextOrderIndex() (+3 more)
+Cohesion: 0.29
+Nodes (6): diaActual, mockClases, mockEmergentes, mockHorarios, mockInscripciones, mockMaestro
 
 ### Community 606 - "Community 606"
 Cohesion: 0.40
@@ -2719,32 +2706,28 @@ Cohesion: 0.16
 Nodes (7): generateOptimizedSchedule(), getEffectiveAvailability(), timeToMinutes(), mockClase, mockConfig, mockMaestro, mockSalon
 
 ### Community 627 - "Community 627"
-Cohesion: 0.21
-Nodes (8): GROUP_LABELS, partitionClase(), partitionClases(), salones, ALL_DAYS, buildJornada(), handleGenerate(), setLoading()
+Cohesion: 0.47
+Nodes (4): GROUP_LABELS, partitionClase(), partitionClases(), salones
 
 ### Community 628 - "Community 628"
 Cohesion: 0.67
 Nodes (5): buildResolvedDocument(), extractVariables(), getMissingVariables(), resolveTemplate(), validateDocumentData()
 
 ### Community 629 - "Community 629"
-Cohesion: 0.22
-Nodes (5): CACHE_STRATEGIES, getCacheStrategy(), NO_CACHE_PATHS, shouldCache(), STATIC_ASSETS
+Cohesion: 0.21
+Nodes (6): CACHE_STRATEGIES, clearAppCache(), getCacheStrategy(), NO_CACHE_PATHS, shouldCache(), STATIC_ASSETS
 
 ### Community 632 - "Community 632"
 Cohesion: 0.33
 Nodes (5): plan_clases, plan_indicadores, plan_niveles, plan_objetivos, plan_temas
 
 ### Community 638 - "Community 638"
-Cohesion: 0.31
-Nodes (8): normalizeText(), _applyFilters(), _attachEvents(), _loadSolicitudes(), _renderList(), _renderPage(), renderSolicitudesAdminView(), state
+Cohesion: 0.27
+Nodes (8): registerRoutesPedagogico(), _applyFilters(), _attachEvents(), _loadSolicitudes(), _renderList(), _renderPage(), renderSolicitudesAdminView(), state
 
 ### Community 640 - "Community 640"
 Cohesion: 0.36
 Nodes (7): _ensureDOM(), HelpPanel, _injectStyles(), _fetchAlumnosEnRiesgoCompleto(), _fetchRendimientoPorClase(), _render(), renderReportesPedagogicosView()
-
-### Community 641 - "Community 641"
-Cohesion: 0.39
-Nodes (6): consumeRutaTema(), getRutaTemaForAsistencia(), peekRutaTema(), setRutaTema(), mockEditor, mockQuery
 
 ### Community 642 - "Community 642"
 Cohesion: 0.32
@@ -2754,37 +2737,29 @@ Nodes (5): escapeHTML(), HTML_ESCAPE_MAP, sanitizeFormData(), sanitizeText(), _l
 Cohesion: 0.43
 Nodes (5): actualizarVista(), cargarAusencias(), renderRows(), state, renderAusenciaHistorial()
 
-### Community 644 - "Community 644"
-Cohesion: 0.43
-Nodes (5): buildSemaforoMap(), createBitacoraDashboard(), createSemaforoDot(), escapeHTML(), SEMAFORO_CONFIG
-
-### Community 645 - "Community 645"
-Cohesion: 0.60
-Nodes (5): fetchIndicadores(), fetchObservaciones(), getHistorial(), mapIndicadores(), mapObservaciones()
-
 ### Community 646 - "Community 646"
 Cohesion: 0.40
 Nodes (4): objetivos, schemaVersion, semaforos, sesiones
 
 ## Knowledge Gaps
-- **3664 isolated node(s):** `@opencode-ai/plugin`, `supabase`, `supabase`, `supabase`, `supabase` (+3659 more)
+- **3672 isolated node(s):** `Suggested Work Units`, `PR-1: Foundation (F5 save fix · F1 config panel · F2 partitioner)`, `PR-2: Engine Surgery (F3 multi-session)`, `PR-3: Multi-Proposal + UI Integration (F4)`, `Test File Inventory` (+3667 more)
   These have ≤1 connection - possible missing edges or undocumented components.
 - **61 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `supabase` connect `Community 1` to `Community 2`, `Community 3`, `Community 5`, `Community 518`, `Community 7`, `Community 9`, `Community 13`, `Community 14`, `Community 16`, `Community 17`, `Community 19`, `Community 22`, `Community 25`, `Community 29`, `Community 30`, `Community 31`, `Community 35`, `Community 36`, `Community 38`, `Community 40`, `Community 46`, `Community 56`, `Community 61`, `Community 62`, `Community 63`, `Community 68`, `Community 69`, `Community 585`, `Community 586`, `Community 588`, `Community 77`, `Community 78`, `Community 79`, `Community 592`, `Community 76`, `Community 595`, `Community 601`, `Community 605`, `Community 622`, `Community 624`, `Community 625`, `Community 626`, `Community 116`, `Community 118`, `Community 636`, `Community 638`, `Community 127`, `Community 640`, `Community 643`, `Community 645`, `Community 134`, `Community 141`, `Community 142`, `Community 143`, `Community 144`, `Community 145`, `Community 152`, `Community 163`, `Community 165`, `Community 178`, `Community 182`, `Community 183`, `Community 217`, `Community 223`, `Community 224`, `Community 228`, `Community 229`, `Community 238`, `Community 254`, `Community 258`, `Community 259`, `Community 268`, `Community 274`, `Community 286`, `Community 289`, `Community 298`, `Community 304`, `Community 305`, `Community 309`, `Community 385`, `Community 388`, `Community 389`, `Community 407`, `Community 427`, `Community 438`, `Community 442`, `Community 445`, `Community 491`, `Community 494`?**
-  _High betweenness centrality (0.066) - this node is a cross-community bridge._
-- **Why does `AppToast` connect `Community 56` to `Community 1`, `Community 130`, `Community 3`, `Community 132`, `Community 6`, `Community 9`, `Community 638`, `Community 13`, `Community 14`, `Community 141`, `Community 16`, `Community 17`, `Community 22`, `Community 23`, `Community 30`, `Community 289`, `Community 40`, `Community 178`, `Community 181`, `Community 60`, `Community 62`, `Community 69`, `Community 70`, `Community 586`, `Community 79`, `Community 605`, `Community 97`, `Community 228`, `Community 100`, `Community 357`, `Community 102`, `Community 106`, `Community 112`, `Community 252`, `Community 253`, `Community 126`?**
-  _High betweenness centrality (0.013) - this node is a cross-community bridge._
-- **Why does `initAnalytics()` connect `Community 285` to `Community 62`?**
-  _High betweenness centrality (0.009) - this node is a cross-community bridge._
-- **What connects `@opencode-ai/plugin`, `supabase`, `supabase` to the rest of the system?**
-  _3664 weakly-connected nodes found - possible documentation gaps or missing edges._
+- **Why does `supabase` connect `Community 1` to `Community 2`, `Community 3`, `Community 4`, `Community 5`, `Community 7`, `Community 8`, `Community 9`, `Community 13`, `Community 14`, `Community 16`, `Community 17`, `Community 19`, `Community 22`, `Community 25`, `Community 29`, `Community 30`, `Community 31`, `Community 35`, `Community 36`, `Community 38`, `Community 40`, `Community 46`, `Community 56`, `Community 61`, `Community 62`, `Community 63`, `Community 68`, `Community 69`, `Community 585`, `Community 586`, `Community 76`, `Community 77`, `Community 78`, `Community 79`, `Community 592`, `Community 595`, `Community 601`, `Community 97`, `Community 624`, `Community 626`, `Community 116`, `Community 118`, `Community 638`, `Community 127`, `Community 640`, `Community 643`, `Community 134`, `Community 141`, `Community 142`, `Community 143`, `Community 144`, `Community 145`, `Community 152`, `Community 163`, `Community 165`, `Community 178`, `Community 182`, `Community 183`, `Community 204`, `Community 207`, `Community 217`, `Community 223`, `Community 224`, `Community 228`, `Community 229`, `Community 238`, `Community 254`, `Community 258`, `Community 259`, `Community 268`, `Community 277`, `Community 286`, `Community 289`, `Community 298`, `Community 304`, `Community 305`, `Community 309`, `Community 385`, `Community 388`, `Community 389`, `Community 426`, `Community 427`, `Community 438`, `Community 442`, `Community 445`, `Community 479`, `Community 490`, `Community 491`?**
+  _High betweenness centrality (0.073) - this node is a cross-community bridge._
+- **Why does `AppToast` connect `Community 56` to `Community 130`, `Community 3`, `Community 132`, `Community 6`, `Community 9`, `Community 638`, `Community 13`, `Community 14`, `Community 141`, `Community 16`, `Community 17`, `Community 22`, `Community 23`, `Community 286`, `Community 30`, `Community 289`, `Community 40`, `Community 181`, `Community 60`, `Community 62`, `Community 69`, `Community 70`, `Community 586`, `Community 79`, `Community 97`, `Community 228`, `Community 100`, `Community 357`, `Community 102`, `Community 106`, `Community 112`, `Community 116`, `Community 252`, `Community 253`, `Community 126`?**
+  _High betweenness centrality (0.012) - this node is a cross-community bridge._
+- **Why does `AppModal` connect `Community 14` to `Community 2`, `Community 259`, `Community 132`, `Community 388`, `Community 6`, `Community 130`, `Community 4`, `Community 9`, `Community 638`, `Community 141`, `Community 16`, `Community 17`, `Community 144`, `Community 275`, `Community 23`, `Community 153`, `Community 409`, `Community 25`, `Community 289`, `Community 164`, `Community 165`, `Community 426`, `Community 181`, `Community 183`, `Community 61`, `Community 63`, `Community 69`, `Community 70`, `Community 76`, `Community 79`, `Community 223`, `Community 357`, `Community 102`, `Community 491`, `Community 112`, `Community 116`, `Community 376`, `Community 252`, `Community 126`?**
+  _High betweenness centrality (0.007) - this node is a cross-community bridge._
+- **What connects `Suggested Work Units`, `PR-1: Foundation (F5 save fix · F1 config panel · F2 partitioner)`, `PR-2: Engine Surgery (F3 multi-session)` to the rest of the system?**
+  _3672 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `Community 0` be split into smaller, more focused modules?**
   _Cohesion score 0.14333333333333334 - nodes in this community are weakly interconnected._
 - **Should `Community 1` be split into smaller, more focused modules?**
-  _Cohesion score 0.03523166023166023 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.045875251509054325 - nodes in this community are weakly interconnected._
 - **Should `Community 2` be split into smaller, more focused modules?**
-  _Cohesion score 0.05078855920876771 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.05170998632010944 - nodes in this community are weakly interconnected._

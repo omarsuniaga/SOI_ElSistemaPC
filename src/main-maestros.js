@@ -109,7 +109,7 @@ const _viewRendered = new Set()
 // ============================================
 function buildTabs(permisos) {
   const tabs = [
-    { id: 'calendario', label: 'Calendario', icon: 'bi-calendar3' },
+    { id: 'mi-calendario', label: 'Calendario', icon: 'bi-calendar3' },
     { id: 'hoy', label: 'Hoy', icon: 'bi-house-door' },
     { id: 'planificacion', label: 'Plan', icon: 'bi-signpost-split' },
     { id: 'metricas', label: 'Métricas', icon: 'bi-bar-chart-line' },
@@ -212,7 +212,9 @@ export function invalidateView(name) {
 }
 
 async function _renderView(route, params = {}, { silent = false } = {}) {
-  const queryStr = window.location.hash.includes('?') ? window.location.hash.split('?')[1] : ''
+  const hashQuery = window.location.hash.includes('?') ? window.location.hash.split('?')[1] : ''
+  const searchQuery = window.location.search.replace(/^\?/, '')
+  const queryStr = hashQuery || searchQuery
   const urlParams = new URLSearchParams(queryStr)
   const baseRoute = route.split('?')[0]
 
@@ -505,7 +507,7 @@ async function initPortal() {
   // 8. Prefetch + precargar vistas
   prefetchMonthData()
     .then(async () => {
-      const PRELOAD_VIEWS = ['hoy', 'calendario', 'metricas']
+      const PRELOAD_VIEWS = ['hoy', 'mi-calendario', 'metricas']
       const current = (router.currentRoute?.() || 'hoy').split('?')[0]
       const pending = PRELOAD_VIEWS.filter((v) => v !== current && !_viewRendered.has(v))
 

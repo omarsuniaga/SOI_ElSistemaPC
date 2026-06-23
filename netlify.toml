@@ -6,6 +6,31 @@
   NODE_VERSION = "20"
 
 [[redirects]]
+  from = "/admin"
+  to = "/admin.html"
+  status = 200
+
+[[redirects]]
+  from = "/caja"
+  to = "/caja.html"
+  status = 200
+
+[[redirects]]
+  from = "/inventario"
+  to = "/inventario.html"
+  status = 200
+
+[[redirects]]
+  from = "/calendario"
+  to = "/calendario.html"
+  status = 200
+
+[[redirects]]
+  from = "/audiciones/*"
+  to = "/audiciones/:splat"
+  status = 200
+
+[[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200

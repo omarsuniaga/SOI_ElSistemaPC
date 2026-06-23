@@ -16,12 +16,14 @@ export function createPortalRouter() {
 
   function currentRoute() {
     const path = window.location.pathname
+    const search = window.location.search
     const hash = window.location.hash
     if (hash && hash !== '#') {
       return hash.replace('#/', '').replace('#', '')
     }
     if (path && path !== '/') {
-      return path.replace('/', '')
+      const cleanPath = path.replace(/^\/+|\/+$/g, '')
+      return cleanPath ? cleanPath + search : DEFAULT_ROUTE
     }
     return DEFAULT_ROUTE
   }
@@ -36,19 +38,20 @@ export function createPortalRouter() {
   let _pendingParams = null
 
   function navigate(route, params = {}) {
+    const cleanRoute = route.replace(/^\//, '')
     // Guard directo: no autenticado intentando ruta privada → login
-    if (_guardEnabled && _authCheck && !_publicRoutes.includes(route)) {
+    if (_guardEnabled && _authCheck && !_publicRoutes.includes(cleanRoute)) {
       if (!_authCheck()) {
-        localStorage.setItem('intended-route', route)
-        history.pushState({ route: 'login' }, '', '#/login')
+        localStorage.setItem('intended-route', cleanRoute)
+        history.pushState({ route: 'login' }, '', '/login')
         _dispatch('login')
         return
       }
     }
     // Guard inverso: ya autenticado intentando ruta pública (login) → default
-    if (_guardEnabled && _authCheck && _publicRoutes.includes(route)) {
+    if (_guardEnabled && _authCheck && _publicRoutes.includes(cleanRoute)) {
       if (_authCheck()) {
-        history.replaceState({ route: DEFAULT_ROUTE }, '', `#/${DEFAULT_ROUTE}`)
+        history.replaceState({ route: DEFAULT_ROUTE }, '', `/${DEFAULT_ROUTE}`)
         _dispatch(DEFAULT_ROUTE)
         return
       }
@@ -58,23 +61,24 @@ export function createPortalRouter() {
       // Force re-dispatch even if already on this route (e.g. open a specific record)
       _currentRoute = null
     }
-    const url = `#/${route}`
-    history.pushState({ route }, '', url)
-    _dispatch(route)
+    const url = `/${cleanRoute}`
+    history.pushState({ route: cleanRoute }, '', url)
+    _dispatch(cleanRoute)
   }
 
   function replace(route) {
-    if (_guardEnabled && _authCheck && !_publicRoutes.includes(route)) {
+    const cleanRoute = route.replace(/^\//, '')
+    if (_guardEnabled && _authCheck && !_publicRoutes.includes(cleanRoute)) {
       if (!_authCheck()) {
-        localStorage.setItem('intended-route', route)
-        history.replaceState({ route: 'login' }, '', '#/login')
+        localStorage.setItem('intended-route', cleanRoute)
+        history.replaceState({ route: 'login' }, '', '/login')
         _dispatch('login')
         return
       }
     }
-    const url = `#/${route}`
-    history.replaceState({ route }, '', url)
-    _dispatch(route)
+    const url = `/${cleanRoute}`
+    history.replaceState({ route: cleanRoute }, '', url)
+    _dispatch(cleanRoute)
   }
 
   function on(route, handler) {
@@ -212,6 +216,15 @@ export function createPortalRouter() {
         _dispatch(e.state.route)
       } else {
         _dispatch(currentRoute())
+      }
+    })
+
+    // Capturar cambios de hash para compatibilidad con código antiguo
+    window.addEventListener('hashchange', () => {
+      const hash = window.location.hash
+      if (hash && hash.startsWith('#/')) {
+        const route = hash.replace('#/', '')
+        navigate(route)
       }
     })
 

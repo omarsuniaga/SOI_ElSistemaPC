@@ -96,5 +96,6 @@ export async function backfillDesdePostulantes(dryRun = false) {
   }
 }
 
+// @deprecated — use postulantesApi.js dispatcher instead
 export * from './postuladosSupabase.js'
 

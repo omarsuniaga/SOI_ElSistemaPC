@@ -955,8 +955,8 @@
     "semantic_hash": ""
   },
   "src/modules/clases/components/claseModal.js": {
-    "mtime": 1780772269.474342,
-    "ast_hash": "b6d0aa7ffc411c15ca4b6d02b6db0de0",
+    "mtime": 1781996830.18528,
+    "ast_hash": "c1100e0a4e28c67fa1063c274d352b8a",
     "semantic_hash": ""
   },
   "src/modules/clases/components/sustitucionModal.js": {
@@ -975,8 +975,8 @@
     "semantic_hash": ""
   },
   "src/modules/clases/models/clase.model.js": {
-    "mtime": 1780205327.0067604,
-    "ast_hash": "d2ec0606751d00bcc0fcf2c40985f5ff",
+    "mtime": 1781996825.9518392,
+    "ast_hash": "1e7bc39f281ba547a283b6d577b2d0fb",
     "semantic_hash": ""
   },
   "src/modules/clases/models/clase.model.test.js": {
@@ -1205,8 +1205,8 @@
     "semantic_hash": ""
   },
   "src/modules/horario-builder/views/horarioBuilderView.js": {
-    "mtime": 1781980096.6165533,
-    "ast_hash": "0296bfa1d7f5314b0131b623ffb3d3fd",
+    "mtime": 1782026085.094977,
+    "ast_hash": "1db7c2d8786f6df7b971fce457e6bcea",
     "semantic_hash": ""
   },
   "src/modules/maestros/api/maestroDisponibilidadApi.js": {
@@ -5795,8 +5795,8 @@
     "semantic_hash": ""
   },
   "openspec/changes/horario-builder-optimization/tasks.md": {
-    "mtime": 1781991634.6407351,
-    "ast_hash": "993524e21dbe1acca76bc7253a0222f0",
+    "mtime": 1782026185.5209198,
+    "ast_hash": "f1c551b07709ce231ebd29f2849aae89",
     "semantic_hash": ""
   },
   "src/modules/horario-builder/__tests__/schedulingEngine.multiSession.test.js": {
@@ -5812,6 +5812,91 @@
   "src/modules/alumnos/__tests__/postuladosApi.test.js": {
     "mtime": 1781989223.1642487,
     "ast_hash": "170fc62dda8907beea235dd10e7e18a8",
+    "semantic_hash": ""
+  },
+  "src/lib/hermesClient.js": {
+    "mtime": 1782000314.2337875,
+    "ast_hash": "176287c95fd9049e11c04f896b89deac",
+    "semantic_hash": ""
+  },
+  "src/modules/horario-builder/__tests__/horarioBuilderView.proposals.test.js": {
+    "mtime": 1782026139.5964954,
+    "ast_hash": "a001bcabd69290bee72eeb6f83c0a022",
+    "semantic_hash": ""
+  },
+  "src/modules/horario-builder/__tests__/multiProposalGenerator.test.js": {
+    "mtime": 1782026024.262651,
+    "ast_hash": "186c9209b5d6979119c0a034af23161b",
+    "semantic_hash": ""
+  },
+  "src/modules/horario-builder/domain/multiProposalGenerator.js": {
+    "mtime": 1782026005.7853677,
+    "ast_hash": "e24ed6f20e25c59ef0916d70c778ef36",
+    "semantic_hash": ""
+  },
+  "src/services/workers/asistenciaWhatsappCron.js": {
+    "mtime": 1782000338.4851336,
+    "ast_hash": "c6ffb3f10b4147c7ca2baeafad0d9e15",
+    "semantic_hash": ""
+  },
+  "src/services/workers/bitacoraAlertCron.js": {
+    "mtime": 1782000327.8843265,
+    "ast_hash": "8659144393ce24ee3f49f011612c3fb0",
+    "semantic_hash": ""
+  },
+  "src/services/workers/index.js": {
+    "mtime": 1782000387.0950098,
+    "ast_hash": "1dcf3aa939090c67f31f8004eb1f17b8",
+    "semantic_hash": ""
+  },
+  "src/services/workers/reportesPdfCron.js": {
+    "mtime": 1782000381.151142,
+    "ast_hash": "f1dfbc4e02bed963f63c64e2c3f5edc6",
+    "semantic_hash": ""
+  },
+  "src/services/workers/riesgoPedagogicoCron.js": {
+    "mtime": 1782000354.2510953,
+    "ast_hash": "f41046d014e4a04075f317403445c227",
+    "semantic_hash": ""
+  },
+  "supabase/analyze-risk.js": {
+    "mtime": 1781994861.8852663,
+    "ast_hash": "402f0c0bf997250747d15e342c0867f2",
+    "semantic_hash": ""
+  },
+  "supabase/ask.js": {
+    "mtime": 1782025244.3357244,
+    "ast_hash": "2f3fc7067172898ebcb2e72f86bca344",
+    "semantic_hash": ""
+  },
+  "supabase/daily-class-reminders.js": {
+    "mtime": 1781997809.2250416,
+    "ast_hash": "7a05437d10408c55f8b791ae614dbfa9",
+    "semantic_hash": ""
+  },
+  "supabase/get-schema-info.js": {
+    "mtime": 1782025137.536832,
+    "ast_hash": "278801bf1e8b49f2e3ff53cfb816f903",
+    "semantic_hash": ""
+  },
+  "supabase/migrations/20260620000000_add_whatsapp_group_jid_to_clases.sql": {
+    "mtime": 1781996478.2766678,
+    "ast_hash": "0a625d5cc4b3bc9695f133892d1be89a",
+    "semantic_hash": ""
+  },
+  "supabase/program-schedule-summary.js": {
+    "mtime": 1781997765.371923,
+    "ast_hash": "8639c9657c08da96d2369f242e8e88b9",
+    "semantic_hash": ""
+  },
+  "supabase/query.js": {
+    "mtime": 1781994027.354153,
+    "ast_hash": "d70feb608be5ab169dad9650e7003ac9",
+    "semantic_hash": ""
+  },
+  "supabase/seed-saturday-schedule.js": {
+    "mtime": 1781997605.8077216,
+    "ast_hash": "5730f50dd305f006fef27beaf2596766",
     "semantic_hash": ""
   }
 }

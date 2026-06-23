@@ -7,15 +7,15 @@ const CSP = [
   "default-src 'self'",
   // Scripts: self + dynamic imports (Vite HMR needs 'self')
   // pdf.js, mammoth, tesseract loaded dynamically from cdnjs/jsdelivr
-  "script-src 'self' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net",
+  "script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net",
   // Styles: unsafe-inline needed — Bootstrap and component styles are inline
-  "style-src 'self' 'unsafe-inline'",
+  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   // Images: self, data URIs (avatars), blob (canvas/pdf previews), Supabase Storage
   "img-src 'self' data: blob: https://*.supabase.co",
-  // Fonts: self only (no Google Fonts)
-  "font-src 'self'",
+  // Fonts: self + Google Fonts
+  "font-src 'self' https://fonts.gstatic.com",
   // API calls: Supabase REST + Realtime, Groq AI
-  "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.groq.com https://docs.google.com",
+  "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.groq.com https://docs.google.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://fonts.gstatic.com",
   // Workers: blob (pdf.js spawns a worker from blob URL)
   "worker-src 'self' blob:",
   // Media: self + blob (audio recording)
@@ -36,9 +36,12 @@ export default defineConfig({
     outDir: 'dist',
     rollupOptions: {
       input: {
-        index:    'index.html',
-        admin:    'admin.html',
-        maestros: 'maestros.html',
+        index:      'index.html',
+        admin:      'admin.html',
+        maestros:   'maestros.html',
+        caja:       'caja.html',
+        inventario: 'inventario.html',
+        calendario: 'calendario.html',
       },
       output: {
         manualChunks(id) {
@@ -86,8 +89,25 @@ export default defineConfig({
       name: 'handle-admin-route',
       configureServer(server) {
         server.middlewares.use((req, res, next) => {
-          if (req.url === '/admin' || req.url === '/admin/') {
-            req.url = '/admin.html'
+          // Parse request URL to safely extract pathname and search parameters
+          const parsedUrl = new URL(req.url, 'http://localhost')
+          const pathname = parsedUrl.pathname
+          const search = parsedUrl.search
+
+          if (pathname === '/admin' || pathname === '/admin/') {
+            req.url = '/admin.html' + search
+          } else if (pathname === '/caja' || pathname === '/caja/') {
+            req.url = '/caja.html' + search
+          } else if (pathname === '/inventario' || pathname === '/inventario/') {
+            req.url = '/inventario.html' + search
+          } else if (pathname === '/calendario' || pathname === '/calendario/') {
+            req.url = '/calendario.html' + search
+          } else if (pathname === '/audiciones') {
+            res.writeHead(301, { Location: '/audiciones/' + search })
+            res.end()
+            return
+          } else if (pathname === '/audiciones/') {
+            req.url = '/audiciones/index.html' + search
           }
           next()
         })

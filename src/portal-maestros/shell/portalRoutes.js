@@ -29,14 +29,14 @@ import { renderGestionarClasesView } from '../views/gestionarClasesView.js'
 
 const MAESTRO_VIEWS = [
   'login', 'logout', 'register', 'pending-approval',
-  'calendario', 'clases', 'hoy', 'asistencia', 'metricas',
+  'mi-calendario', 'clases', 'hoy', 'asistencia', 'metricas',
   'perfil', 'clase-emergente', 'planificacion', 'alumno',
   'gamificacion', 'ruta', 'crear-clase', 'ruta-plan-builder',
   'ruta-semanal', 'ruta-libreria', 'ruta-detalle', 'gestionar-clases',
 ]
 
 export const CACHEABLE_VIEWS = new Set([
-  'hoy', 'calendario', 'metricas', 'perfil', 'ruta',
+  'hoy', 'mi-calendario', 'metricas', 'perfil', 'ruta',
   'gamificacion', 'crear-clase', 'planificacion', 'ruta-libreria',
 ])
 
@@ -44,7 +44,7 @@ export function setupRouterRoutes(router, _isAdmin, renderView) {
   const route = (name) => router.on(name, (r, params) => renderView(name, params))
 
   ;[
-    'login', 'logout', 'calendario', 'clases', 'hoy', 'asistencia',
+    'login', 'logout', 'mi-calendario', 'clases', 'hoy', 'asistencia',
     'metricas', 'perfil', 'clase-emergente', 'planificacion', 'alumno',
     'gamificacion', 'ruta', 'crear-clase', 'ruta-plan-builder',
     'ruta-semanal', 'ruta-libreria', 'gestionar-clases',
@@ -93,7 +93,7 @@ export async function renderViewContent(route, container, params, urlParams, con
       stopRealtime()
       logoutMaestro().then(() => window.location.reload())
       break
-    case 'calendario':
+    case 'mi-calendario':
     case 'clases':
       return await renderCalendarioView(container)
     case 'hoy':

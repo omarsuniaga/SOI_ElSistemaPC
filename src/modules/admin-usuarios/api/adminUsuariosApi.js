@@ -16,8 +16,9 @@ export async function crearUsuario({ nombre, email, password, rol } = {}) {
   if (!nombre || !email || !password) {
     throw new Error('Nombre, email y contraseña son obligatorios')
   }
-  if (rol !== 'admin' && rol !== 'maestro') {
-    throw new Error("El rol debe ser 'admin' o 'maestro'")
+  const ROLES_VALIDOS = ['admin', 'maestro', 'cajero', 'inventarista']
+  if (!ROLES_VALIDOS.includes(rol)) {
+    throw new Error(`El rol debe ser uno de: ${ROLES_VALIDOS.join(', ')}`)
   }
 
   const { data, error } = await supabase.functions.invoke('create-user', {
@@ -52,5 +53,21 @@ export async function listarUsuariosPorRol(rol) {
   if (error) {
     throw new Error(error.message || 'Error al listar usuarios')
   }
+  return data || []
+}
+
+/**
+ * Lista usuarios de portales especializados (cajero + inventarista + admin).
+ * Excludes maestros from this list.
+ */
+export async function listarUsuariosPortales() {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('id, email, nombre_completo, rol, estado, created_at')
+    .in('rol', ['admin', 'cajero', 'inventarista'])
+    .order('rol')
+    .order('created_at', { ascending: false })
+
+  if (error) throw new Error(error.message || 'Error al listar usuarios')
   return data || []
 }

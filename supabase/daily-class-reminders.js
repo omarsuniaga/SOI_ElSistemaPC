@@ -1,5 +1,3 @@
-#!/usr/bin/env node
-
 import { createClient } from '@supabase/supabase-js'
 import dotenv from 'dotenv'
 import path from 'path'
@@ -183,7 +181,7 @@ async function run() {
   }, {});
 
   const groupReminders = [];
-  const individualStudents = {};
+  const classGroupedReminders = {}; // Nueva estructura para agrupar por clase
   const missingPhones = [];
   const suspendedClasses = [];
 
@@ -194,6 +192,9 @@ async function run() {
     const classId = clase.id;
     const className = clase.nombre;
     const mainTeacherId = clase.maestro_principal_id;
+    const startTime = formatTime(schedule.hora_inicio);
+    const endTime = formatTime(schedule.hora_fin);
+    const classKey = `${className}_${schedule.hora_inicio}-${schedule.hora_fin}`; // Clave para agrupar
 
     // A. Check if the class is permanently suspended or finished
     if (clase.estado && clase.estado !== 'activa') {
@@ -227,17 +228,26 @@ async function run() {
 
     // C. Compile reminders for active classes
     if (clase.whatsapp_group_jid && clase.whatsapp_group_jid.trim() !== '') {
-      // Group reminders
+      // Group reminders (for classes with a WhatsApp group)
       groupReminders.push({
         type: 'group',
         recipient_jid: clase.whatsapp_group_jid.trim(),
         recipient_name: `Grupo de "${clase.nombre}"`,
-        message: `Estimados padres y representantes, les recordamos que hoy tenemos clase de "${clase.nombre}", de ${formatTime(schedule.hora_inicio)} a ${formatTime(schedule.hora_fin)}.`,
+        message: `Estimados padres y representantes, les recordamos que hoy tenemos clase de "${clase.nombre}", de ${startTime} a ${endTime}.`,
         class_name: clase.nombre,
-        horario: `${formatTime(schedule.hora_inicio)}-${formatTime(schedule.hora_fin)}`
+        horario: `${startTime}-${endTime}`
       });
     } else {
-      // Individual fallback reminders
+      // Individual fallback reminders (grouped by class for output)
+      if (!classGroupedReminders[classKey]) {
+        classGroupedReminders[classKey] = {
+          nombre_clase: className,
+          hora_inicio: schedule.hora_inicio,
+          hora_fin: schedule.hora_fin,
+          alumnos: []
+        };
+      }
+
       const enrollments = clase.alumnos_clases || [];
       for (const enrollment of enrollments) {
         if (enrollment.activo === false) continue;
@@ -256,67 +266,50 @@ async function run() {
           });
           continue;
         }
-
-        if (!individualStudents[studentId]) {
-          individualStudents[studentId] = {
-            student_id: studentId,
-            nombre_alumno: student.nombre_completo,
-            familiar_nombre: student.familiar_nombre || 'Representante',
-            familiar_telefono: student.familiar_telefono,
-            familiar_parentesco: student.familiar_parentesco || 'Padre/Madre',
-            classes: []
-          };
-        }
-
-        individualStudents[studentId].classes.push({
-          nombre_clase: clase.nombre,
-          hora_inicio: schedule.hora_inicio,
-          hora_fin: schedule.hora_fin,
-          sortTime: schedule.hora_inicio
+        
+        classGroupedReminders[classKey].alumnos.push({
+          id: student.id,
+          nombre_completo: student.nombre_completo,
+          familiar_nombre: student.familiar_nombre,
+          familiar_telefono: student.familiar_telefono,
+          familiar_parentesco: student.familiar_parentesco
         });
       }
     }
   }
 
-  const individualReminders = [];
+  const formattedIndividualReminders = [];
+  
+  // Generar los mensajes agrupados por clase
+  for (const classKey in classGroupedReminders) {
+    const classInfo = classGroupedReminders[classKey];
+    if (classInfo.alumnos.length === 0) continue; // No hay alumnos activos en esta clase sin grupo de WA
 
-  for (const studentId of Object.keys(individualStudents)) {
-    const info = individualStudents[studentId];
-    const phoneJid = formatPhoneJid(info.familiar_telefono);
-    
-    info.classes.sort((a, b) => a.sortTime.localeCompare(b.sortTime));
+    const classStartTime = formatTime(classInfo.hora_inicio);
+    const classEndTime = formatTime(classInfo.hora_fin);
 
-    let message = `Estimado/a ${info.familiar_nombre}, le recordamos que ${info.nombre_alumno} tiene `;
-    
-    if (info.classes.length === 1) {
-      const cls = info.classes[0];
-      message += `clase de "${cls.nombre_clase}", de ${formatTime(cls.hora_inicio)} a ${formatTime(cls.hora_fin)}.`;
-    } else if (info.classes.length === 2) {
-      const cls1 = info.classes[0];
-      const cls2 = info.classes[1];
-      message += `clase de "${cls1.nombre_clase}", de ${formatTime(cls1.hora_inicio)} a ${formatTime(cls1.hora_fin)}, y posteriormente su clase de "${cls2.nombre_clase}", de ${formatTime(cls2.hora_inicio)} a ${formatTime(cls2.hora_fin)}.`;
-    } else {
-      message += `clase de "${info.classes[0].nombre_clase}", de ${formatTime(info.classes[0].hora_inicio)} a ${formatTime(info.classes[0].hora_fin)}`;
-      for (let i = 1; i < info.classes.length - 1; i++) {
-        const cls = info.classes[i];
-        message += `, posteriormente su clase de "${cls.nombre_clase}", de ${formatTime(cls.hora_inicio)} a ${formatTime(cls.hora_fin)}`;
-      }
-      const lastCls = info.classes[info.classes.length - 1];
-      message += `, y finalmente su clase de "${lastCls.nombre_clase}", de ${formatTime(lastCls.hora_inicio)} a ${formatTime(lastCls.hora_fin)}.`;
+    let messageBody = `**${classInfo.nombre_clase}** _${classStartTime} a ${classEndTime}_:\n`;
+    for (const student of classInfo.alumnos) {
+      messageBody += `- ${student.nombre_completo}.\n`;
     }
 
-    individualReminders.push({
-      type: 'individual',
-      recipient_jid: phoneJid,
-      recipient_name: `${info.familiar_nombre} (${info.nombre_alumno})`,
-      message: message,
-      nombre_alumno: info.nombre_alumno,
-      classes: info.classes.map(c => ({ nombre: c.nombre_clase, horario: `${formatTime(c.hora_inicio)}-${formatTime(c.hora_fin)}` }))
+    // Para cada alumno en la clase, generamos un recordatorio individual
+    // Esto se mantiene para que cada representante reciba un mensaje por su hijo/a,
+    // pero el contenido ahora está agrupado por clase para el output.
+    // La idea es que este 'messageBody' sea lo que se enviaría, quizás con un prefijo individualizado.
+    // Para el reporte consolidado, se presenta así:
+
+    formattedIndividualReminders.push({
+        type: 'clase_agrupada',
+        nombre_clase: classInfo.nombre_clase,
+        horario: `${classStartTime}-${classEndTime}`,
+        alumnos: classInfo.alumnos.map(a => a.nombre_completo),
+        message_for_report: messageBody // Este es el mensaje consolidado por clase
     });
   }
 
-  const allReminders = [...groupReminders, ...individualReminders];
-  
+  const allReminders = [...groupReminders, ...formattedIndividualReminders]; // Combinar con los recordatorios grupales
+
   // Output JSON with alerts, warnings and suspended items
   const output = {
     reminders: allReminders,

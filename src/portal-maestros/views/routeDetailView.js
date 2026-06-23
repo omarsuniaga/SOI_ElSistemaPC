@@ -4,7 +4,7 @@ export const RouteDetailView = {
   async render(params) {
     const routeId = params?.id;
     // Buscamos studentId en la URL si existe (ej. #/ruta-detalle/id?studentId=...)
-    const urlParams = new URLSearchParams(window.location.hash.split('?')[1]);
+    const urlParams = new URLSearchParams(window.location.search || window.location.hash.split('?')[1] || '');
     const studentId = urlParams.get('studentId');
 
     const container = document.createElement('div');

@@ -10,7 +10,7 @@ import { createAlumnoPickerModal } from '../components/AlumnoPickerModal.js';
  * @param {{ maestroId: string }} options
  */
 export async function renderClaseEmergenteView(container, { maestroId }) {
-  const urlParams = new URLSearchParams(window.location.hash.split('?')[1] || '');
+  const urlParams = new URLSearchParams(window.location.search || window.location.hash.split('?')[1] || '');
   const fechaDefault = urlParams.get('fecha') || new Date().toISOString().split('T')[0];
 
   container.innerHTML = `

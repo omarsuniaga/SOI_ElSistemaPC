@@ -89,6 +89,20 @@ export function getEstadoLabel(esActivo) {
 }
 
 /**
+ * Escapa un valor para incluirlo en CSV (RFC 4180)
+ * @param {*} val
+ * @returns {string}
+ */
+export function escapeCSV(val) {
+  if (val == null) return ''
+  const s = String(val).replace(/"/g, '""')
+  if (s.includes(',') || s.includes('"') || s.includes('\n') || s.includes('\r')) {
+    return `"${s}"`
+  }
+  return s
+}
+
+/**
  * Compara dos strings ignorando mayúsculas y acentos
  * @param {string} a
  * @param {string} b

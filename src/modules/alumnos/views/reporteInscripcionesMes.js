@@ -3,6 +3,7 @@ import { descargarReporteMensual } from '../domain/generarReporteMensual.js'
 import { openEditAlumnoModal } from '../domain/editarAlumnoModal.js'
 import { calcularCompletitud as calcularCompletitudDomain } from '../domain/completitudAlumno.js'
 import { AppToast } from '../../../shared/components/AppToast.js'
+import { escapeCSV } from '../utils/alumnosUtils.js'
 
 const MESES = [
   '',
@@ -207,11 +208,53 @@ function initOpenEditOnClick(container) {
   })
 }
 
+function exportarCSV(alumnos) {
+  const header = ['Nombre', 'Instrumento', 'Municipio', 'Fecha inscripción', 'Completitud %', 'Familiar', 'Teléfono']
+  const rows = alumnos.map((a) => {
+    const c = calcularCompletitudDomain(a)
+    return [
+      escapeCSV(a.nombre_completo),
+      escapeCSV(a.instrumento_principal),
+      escapeCSV(a.municipio_residencia || a.municipio),
+      escapeCSV(a.created_at ? new Date(a.created_at).toLocaleDateString('es-DO') : ''),
+      escapeCSV(c.porcentaje),
+      escapeCSV(a.familiar_nombre),
+      escapeCSV(a.representante_tlf || a.madre_tlf_whatsapp),
+    ].join(',')
+  })
+  const csv = '﻿' + [header.join(','), ...rows].join('\n')
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = 'inscripciones-reporte.csv'
+  link.click()
+  setTimeout(() => URL.revokeObjectURL(url), 100)
+}
+
 export async function renderReporteInscripcionesMes(container) {
   const hoy = new Date()
   let currentYear = hoy.getFullYear()
   let currentMonth = hoy.getMonth() + 1
   let alumnosActuales = []
+
+  function applyLocalFilters() {
+    const instrVal = container.querySelector('#filtroInstrumentoReporte')?.value || ''
+    const munVal = (container.querySelector('#filtroMunicipioReporte')?.value || '').toLowerCase().trim()
+
+    const filtrados = alumnosActuales.filter((a) => {
+      const matchInstr = !instrVal || (a.instrumento_principal || '') === instrVal
+      const municipio = (a.municipio_residencia || a.municipio || '').toLowerCase()
+      const matchMun = !munVal || municipio.includes(munVal)
+      return matchInstr && matchMun
+    })
+
+    const resultDiv = container.querySelector('#reporte-resultado')
+    if (resultDiv) {
+      resultDiv.innerHTML = renderResumen(filtrados) + renderLista(filtrados)
+      initOpenEditOnClick(resultDiv)
+    }
+  }
 
   async function cargar(year, month) {
     const resultDiv = container.querySelector('#reporte-resultado')
@@ -225,6 +268,14 @@ export async function renderReporteInscripcionesMes(container) {
     try {
       alumnosActuales = await obtenerAlumnosPorMes(year, month)
 
+      const instrSelect = container.querySelector('#filtroInstrumentoReporte')
+      if (instrSelect) {
+        const instrs = [...new Set(alumnosActuales.map((a) => a.instrumento_principal).filter(Boolean))].sort()
+        instrSelect.innerHTML =
+          '<option value="">Todos</option>' +
+          instrs.map((i) => `<option value="${i}">${i}</option>`).join('')
+      }
+
       if (resultDiv) {
         resultDiv.innerHTML = renderResumen(alumnosActuales) + renderLista(alumnosActuales)
         initOpenEditOnClick(resultDiv)
@@ -237,6 +288,11 @@ export async function renderReporteInscripcionesMes(container) {
           alumnosActuales.length > 0
             ? `Descargar PDF (${alumnosActuales.length} alumnos)`
             : 'Sin inscritos'
+      }
+
+      const btnCsv = container.querySelector('#btnExportarCSVReporte')
+      if (btnCsv) {
+        btnCsv.disabled = alumnosActuales.length === 0
       }
     } catch (err) {
       console.error(err)
@@ -255,9 +311,14 @@ export async function renderReporteInscripcionesMes(container) {
           <h4 class="mb-0"><i class="bi bi-file-earmark-bar-graph me-2 text-primary"></i>Reporte de Inscripciones</h4>
           <p class="text-muted small mb-0">Alumnos inscritos por mes — El Sistema Punta Cana</p>
         </div>
-        <button id="btn-descargar-pdf" class="btn btn-primary" disabled>
-          <i class="bi bi-file-earmark-pdf me-2"></i>Descargar PDF
-        </button>
+        <div class="d-flex gap-2 flex-wrap">
+          <button id="btnExportarCSVReporte" class="btn btn-outline-success btn-sm" disabled>
+            <i class="bi bi-file-earmark-spreadsheet me-1"></i>Exportar CSV
+          </button>
+          <button id="btn-descargar-pdf" class="btn btn-primary" disabled>
+            <i class="bi bi-file-earmark-pdf me-2"></i>Descargar PDF
+          </button>
+        </div>
       </div>
 
       <div class="card shadow-sm">
@@ -273,6 +334,16 @@ export async function renderReporteInscripcionesMes(container) {
               <button id="btn-filtrar" class="btn btn-outline-primary btn-sm">
                 <i class="bi bi-search me-1"></i>Consultar
               </button>
+            </div>
+            <div class="col-auto">
+              <label class="form-label mb-1 small fw-semibold">Instrumento</label>
+              <select id="filtroInstrumentoReporte" class="form-select form-select-sm" style="min-width:140px">
+                <option value="">Todos</option>
+              </select>
+            </div>
+            <div class="col-auto">
+              <label class="form-label mb-1 small fw-semibold">Municipio</label>
+              <input id="filtroMunicipioReporte" type="text" class="form-control form-control-sm" placeholder="Filtrar municipio…" style="min-width:160px">
             </div>
           </div>
         </div>
@@ -299,6 +370,18 @@ export async function renderReporteInscripcionesMes(container) {
       AppToast.error('Error al generar el PDF. Por favor intenta de nuevo.')
     }
   })
+
+  container.querySelector('#btnExportarCSVReporte')?.addEventListener('click', () => {
+    try {
+      exportarCSV(alumnosActuales)
+    } catch (e) {
+      console.error('Error generando CSV:', e)
+      AppToast.error('Error al generar el CSV. Por favor intenta de nuevo.')
+    }
+  })
+
+  container.querySelector('#filtroInstrumentoReporte')?.addEventListener('change', applyLocalFilters)
+  container.querySelector('#filtroMunicipioReporte')?.addEventListener('input', applyLocalFilters)
 
   cargar(currentYear, currentMonth)
 }

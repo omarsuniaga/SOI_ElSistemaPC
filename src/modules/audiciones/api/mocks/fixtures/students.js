@@ -1,0 +1,17 @@
+export const STUDENTS = [
+  { id: 'stu-1', full_name: 'Ana García',    section_id: 'sec-1' },
+  { id: 'stu-2', full_name: 'Bruno López',   section_id: 'sec-1' },
+  { id: 'stu-3', full_name: 'Carla Martín',  section_id: 'sec-1' },
+  { id: 'stu-4', full_name: 'David Sánchez', section_id: 'sec-2' },
+  { id: 'stu-5', full_name: 'Elena Díaz',    section_id: 'sec-2' },
+  { id: 'stu-6', full_name: 'Fernando Ruiz', section_id: 'sec-2' },
+  { id: 'stu-7', full_name: 'Gabriela Paz',  section_id: 'sec-3' },
+  { id: 'stu-8', full_name: 'Hugo Medina',   section_id: 'sec-3' },
+  { id: 'stu-9', full_name: 'Irene Castillo', section_id: 'sec-3' },
+  { id: 'stu-10', full_name: 'Javier Ríos',  section_id: 'sec-4' },
+  { id: 'stu-11', full_name: 'Karen Luna',   section_id: 'sec-4' },
+  { id: 'stu-12', full_name: 'Luis Torres',  section_id: 'sec-4' },
+  { id: 'stu-13', full_name: 'María Vega',   section_id: 'sec-5' },
+  { id: 'stu-14', full_name: 'Nicolás Paz',  section_id: 'sec-5' },
+  { id: 'stu-15', full_name: 'Olivia Rivas', section_id: 'sec-5' },
+]

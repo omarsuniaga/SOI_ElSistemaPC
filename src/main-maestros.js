@@ -212,7 +212,7 @@ export function invalidateView(name) {
 }
 
 async function _renderView(route, params = {}, { silent = false } = {}) {
-  const queryStr = window.location.hash.includes('?') ? window.location.hash.split('?')[1] : ''
+  const queryStr = window.location.search || (window.location.hash.includes('?') ? window.location.hash.split('?')[1] : '')
   const urlParams = new URLSearchParams(queryStr)
   const baseRoute = route.split('?')[0]
 
@@ -348,7 +348,7 @@ function _showLoginScreen() {
   Object.assign(_viewContainers, initViewContainers())
   _setupRouter()
   router.setAuthGuard(() => usePortalAuth.isAuthenticated(), publicRoutes)
-  history.replaceState({ route: 'login' }, '', '#/login')
+  history.replaceState({ route: 'login' }, '', '/login')
   _renderView('login')
 }
 
@@ -409,7 +409,7 @@ async function initPortal() {
     }
     Object.assign(_viewContainers, initViewContainers(false))
     _setupRouter()
-    history.replaceState({ route: 'pending-approval' }, '', '#/pending-approval')
+    history.replaceState({ route: 'pending-approval' }, '', '/pending-approval')
     _renderView('pending-approval')
     return
   }

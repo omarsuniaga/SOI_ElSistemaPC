@@ -4,7 +4,7 @@
  * No usa window.location.hash que causa recargas completas
  */
 
-const DEFAULT_ROUTE = 'calendario'
+const DEFAULT_ROUTE = 'hoy'
 
 export function createPortalRouter() {
   const handlers = new Map()
@@ -21,7 +21,7 @@ export function createPortalRouter() {
       return hash.replace('#/', '').replace('#', '')
     }
     if (path && path !== '/') {
-      return path.replace('/', '')
+      return path.replace(/^\//, '')
     }
     return DEFAULT_ROUTE
   }
@@ -40,7 +40,7 @@ export function createPortalRouter() {
     if (_guardEnabled && _authCheck && !_publicRoutes.includes(route)) {
       if (!_authCheck()) {
         localStorage.setItem('intended-route', route)
-        history.pushState({ route: 'login' }, '', '#/login')
+        history.pushState({ route: 'login' }, '', '/login')
         _dispatch('login')
         return
       }
@@ -48,7 +48,7 @@ export function createPortalRouter() {
     // Guard inverso: ya autenticado intentando ruta pública (login) → default
     if (_guardEnabled && _authCheck && _publicRoutes.includes(route)) {
       if (_authCheck()) {
-        history.replaceState({ route: DEFAULT_ROUTE }, '', `#/${DEFAULT_ROUTE}`)
+        history.replaceState({ route: DEFAULT_ROUTE }, '', DEFAULT_ROUTE === 'hoy' ? '/' : `/${DEFAULT_ROUTE}`)
         _dispatch(DEFAULT_ROUTE)
         return
       }
@@ -58,7 +58,7 @@ export function createPortalRouter() {
       // Force re-dispatch even if already on this route (e.g. open a specific record)
       _currentRoute = null
     }
-    const url = `#/${route}`
+    const url = route === 'hoy' ? '/' : `/${route}`
     history.pushState({ route }, '', url)
     _dispatch(route)
   }
@@ -67,12 +67,12 @@ export function createPortalRouter() {
     if (_guardEnabled && _authCheck && !_publicRoutes.includes(route)) {
       if (!_authCheck()) {
         localStorage.setItem('intended-route', route)
-        history.replaceState({ route: 'login' }, '', '#/login')
+        history.replaceState({ route: 'login' }, '', '/login')
         _dispatch('login')
         return
       }
     }
-    const url = `#/${route}`
+    const url = route === 'hoy' ? '/' : `/${route}`
     history.replaceState({ route }, '', url)
     _dispatch(route)
   }
@@ -212,6 +212,17 @@ export function createPortalRouter() {
         _dispatch(e.state.route)
       } else {
         _dispatch(currentRoute())
+      }
+    })
+
+    // Backwards-compatibility interceptor for window.location.hash updates
+    window.addEventListener('hashchange', () => {
+      const hash = window.location.hash
+      if (hash && hash.startsWith('#/')) {
+        const route = hash.replace('#/', '')
+        // Clean hash from URL without reloading
+        history.replaceState(null, '', window.location.pathname + window.location.search)
+        navigate(route)
       }
     })
 

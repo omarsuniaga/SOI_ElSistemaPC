@@ -5,7 +5,9 @@
 
 import { router } from '../../core/router/router.js'
 import { renderComunicacionesView } from './views/comunicacionesView.js'
+import { renderSeguimientoView } from './views/seguimientoView.js'
 
 export function registerRoutesComunicaciones() {
   router.register('comunicaciones', (mount) => renderComunicacionesView(mount))
+  router.register('com-seguimiento', (mount) => renderSeguimientoView(mount))
 }

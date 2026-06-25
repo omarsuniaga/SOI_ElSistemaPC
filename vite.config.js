@@ -44,6 +44,7 @@ export default defineConfig({
         acm:        'acm.html',
         adm:        'adm.html',
         com:        'com.html',
+        tecnico:    'tecnico.html',
         inventario: 'inventario.html',
         calendario: 'calendario.html',
       },
@@ -107,6 +108,8 @@ export default defineConfig({
             req.url = '/adm.html' + search
           } else if (pathname === '/com' || pathname === '/com/') {
             req.url = '/com.html' + search
+          } else if (pathname === '/tecnico' || pathname === '/tecnico/') {
+            req.url = '/tecnico.html' + search
           } else if (pathname === '/inventario' || pathname === '/inventario/') {
             req.url = '/inventario.html' + search
           } else if (pathname === '/calendario' || pathname === '/calendario/') {

@@ -18,6 +18,7 @@ const NAV_ITEMS = [
   { hash: '#/accesorios',     icon: 'bi-box-seam-fill',     label: 'Accesorios' },
   { hash: '#/notificaciones', icon: 'bi-bell-fill',         label: 'Notificaciones', badge: true },
   { hash: '#/tareas',         icon: 'bi-kanban-fill',       label: 'Tareas' },
+  { hash: '#/hermes',         icon: 'bi-robot',             label: 'Hermes' },
   { hash: '#/cierre',         icon: 'bi-cash-stack',        label: 'Cierre de Caja' },
   { hash: '#/reportes',       icon: 'bi-bar-chart-fill',    label: 'Reportes' },
   { hash: '#/minutas',        icon: 'bi-journal-text',      label: 'Minutas' },
@@ -42,7 +43,7 @@ async function setupPushNotifications(session) {
   if (!('serviceWorker' in navigator) || !('PushManager' in window)) return
 
   try {
-    const reg = await navigator.serviceWorker.register('/sw-caja.js', { scope: '/caja.html' })
+    const reg = await navigator.serviceWorker.register('/sw-fin.js', { scope: '/fin.html' })
     await navigator.serviceWorker.ready
 
     const permission = await Notification.requestPermission()
@@ -108,7 +109,7 @@ export function initCajaModule(app, session) {
     + 'box-shadow:0 2px 8px rgba(0,0,0,0.15);position:sticky;top:0;z-index:200">'
     + '<div style="display:flex;align-items:center;gap:0.75rem">'
     + '<i class="bi bi-cash-coin" style="font-size:1.25rem"></i>'
-    + '<span style="font-weight:700;font-size:1rem;letter-spacing:0.02em">Portal de Caja</span>'
+    + '<span style="font-weight:700;font-size:1rem;letter-spacing:0.02em">Portal FIN</span>'
     + '</div>'
     + '<div style="display:flex;align-items:center;gap:1rem">'
     + '<span style="font-size:0.8125rem;opacity:0.85">' + userEmail + '</span>'
@@ -179,7 +180,7 @@ export function initCajaModule(app, session) {
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${supabaseKey}` },
           body: JSON.stringify({
             profile_id: session.user.id,
-            title: newNotif.titulo || 'Portal Caja',
+            title: newNotif.titulo || 'Portal FIN',
             body: newNotif.cuerpo || '',
             data: { tipo: newNotif.tipo, familia_id: newNotif.familia_id },
           }),

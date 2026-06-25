@@ -1,0 +1,54 @@
+/* comunicaciones.css — Central de Comunicaciones (portal COM) */
+
+.comm-portal {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1.25rem;
+}
+
+.comm-tabs .nav-link.comm-tab-btn {
+  color: var(--bs-secondary-color, #6c757d);
+  border-radius: 999px;
+  font-size: 0.875rem;
+}
+.comm-tabs .nav-link.comm-tab-btn.active {
+  background: #db2777;
+  color: #fff;
+}
+
+.comm-table-wrap {
+  max-height: 56vh;
+  overflow-y: auto;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: 10px;
+}
+.comm-table-wrap thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.comm-recipients {
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+.comm-wa-list {
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.comm-tpl-preview {
+  background: var(--bs-tertiary-bg, #f8f9fa);
+  border-radius: 8px;
+  padding: 0.5rem 0.625rem;
+  white-space: pre-wrap;
+  min-height: 56px;
+}
+
+.comm-sticky-actions {
+  position: sticky;
+  bottom: 0;
+  background: linear-gradient(transparent, var(--bs-body-bg, #fff) 40%);
+  padding-top: 0.5rem;
+}

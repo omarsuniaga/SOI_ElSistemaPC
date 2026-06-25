@@ -136,6 +136,50 @@ export async function guardarFeedback(tareaId, feedbackTexto) {
   return data
 }
 
+/**
+ * Crea un evento institucional. El INSERT dispara el trigger
+ * fn_hermes_auto_delegar_tareas (cascada Hermes), que genera las tareas
+ * departamentales según el protocolo de la categoría del evento.
+ *
+ * Esquema verificado de calendario_institucional:
+ *   titulo (NOT NULL), descripcion, categoria (event_categoria:
+ *   concierto|ensayo|reunion|patrocinio|pago|corte|inscripcion|auditoria|otro),
+ *   fecha_inicio (NOT NULL tstz), fecha_fin (NOT NULL tstz), ubicacion,
+ *   departamento_responsable (soi_departamento, default DIR), metadata, estado.
+ *
+ * @param {object} evento
+ * @returns {Promise<{evento: object, tareasGeneradas: object[]}>}
+ */
+export async function crearEventoInstitucional(evento) {
+  const payload = {
+    titulo: evento.titulo,
+    descripcion: evento.descripcion || null,
+    categoria: evento.categoria || 'otro',
+    fecha_inicio: evento.fecha_inicio,
+    fecha_fin: evento.fecha_fin || evento.fecha_inicio,
+    ubicacion: evento.ubicacion || null,
+    departamento_responsable: evento.departamento_responsable || 'DIR',
+  }
+
+  const { data, error } = await supabase
+    .from('calendario_institucional')
+    .insert(payload)
+    .select('id, titulo, categoria, fecha_inicio, fecha_fin, departamento_responsable')
+    .single()
+
+  if (error) throw error
+
+  // El trigger corre en la misma transacción: al volver el INSERT, las tareas ya existen.
+  let tareasGeneradas = []
+  try {
+    tareasGeneradas = await getTareasByEvento(data.id)
+  } catch (_e) {
+    // No bloquear la creación si la lectura posterior falla
+  }
+
+  return { evento: data, tareasGeneradas }
+}
+
 export async function getTareasFiltradas(filtros = {}) {
   let query = supabase.from(TABLA).select(COLUMNAS)
 

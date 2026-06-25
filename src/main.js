@@ -74,6 +74,7 @@ import { registerRoutesAdminNotificaciones } from './modules/admin-notificacione
 import { registerRoutesAdminAprobacion } from './modules/admin-aprobacion/index.js'
 import { registerRoutesAdminUsuarios } from './modules/admin-usuarios/index.js'
 import { registerRoutesBitacora } from './modules/bitacora/index.js'
+import { renderScoreDirectorView } from './modules/hermes/views/scoreDirectorView.js'
 import {
   startAdminRealtimeNotifications,
   stopAdminRealtimeNotifications,
@@ -268,6 +269,14 @@ function toggleTheme() {
 // GRUPOS DE NAVEGACIÓN
 // ============================================================================
 const NAV_GROUPS = [
+  {
+    id: 'direccion',
+    label: 'Dirección',
+    icon: 'bi-bullseye',
+    items: [
+      { id: 'dir-score', label: 'Score del Director', icon: 'bi-bullseye' },
+    ],
+  },
   {
     id: 'academico',
     label: 'Académico',
@@ -586,6 +595,13 @@ function registerModules() {
     }
   })
 
+  // Score del Director (DIR): vista global de tareas Hermes + creación de eventos
+  try {
+    router.register('dir-score', (mount) => renderScoreDirectorView(mount))
+  } catch (error) {
+    console.error('Error registering dir-score route:', error)
+  }
+
   // Centro de Actividad se registra dinámicamente desde MODULES_REGISTRY
 }
 
@@ -627,10 +643,10 @@ async function startApp() {
     localStorage.setItem('current-view', 'login')
     router.navigate('login')
   } else if (isAuthenticated && authRoutes.includes(currentRoute)) {
-    // Redirigir a programas si ya está autenticado
-    localStorage.setItem('current-view', 'programas')
+    // Tras login, el admin aterriza en el Score del Director (vista DIR)
+    localStorage.setItem('current-view', 'dir-score')
     renderNavbar(app, true)
-    router.navigate('programas')
+    router.navigate('dir-score')
   } else {
     // Navegación normal
     if (isAuthenticated) {

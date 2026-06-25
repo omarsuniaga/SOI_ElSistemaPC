@@ -210,6 +210,63 @@ export async function guardarFeedback(tareaId, feedbackTexto) {
   return delay(clone(tarea))
 }
 
+// Plantillas de cascada por categoría de evento (espejo de hermes_protocolos).
+// Cada entrada genera una tarea departamental al crear el evento.
+const CASCADA_POR_CATEGORIA = {
+  concierto: [
+    { departamento: 'ACM', prioridad: 'critica', dias: 21, titulo: '🎼 ACM: Definir repertorio y ensayos', checklist: ['Definir repertorio', 'Asignar partituras', 'Ensayos seccionales', 'Ensayo general'] },
+    { departamento: 'COM', prioridad: 'media', dias: 25, titulo: '📢 COM: Difusión y prensa', checklist: ['Diseñar afiche', 'Publicar en redes', 'Nota de prensa', 'Coordinar fotógrafo'] },
+    { departamento: 'LOG', prioridad: 'alta', dias: 28, titulo: '📦 LOG: Logística, sonido e hidratación', checklist: ['Reservar transporte', 'Sonido e iluminación', 'Refrigerios', 'Montaje de tarima'] },
+    { departamento: 'FIN', prioridad: 'alta', dias: 30, titulo: '💰 FIN: Viáticos y aranceles de sala', checklist: ['Revisar presupuesto', 'Pagos a proveedores', 'Pago de arancel de sala'] },
+    { departamento: 'DIR', prioridad: 'critica', dias: 32, titulo: '🎯 DIR: Protocolo, invitaciones y discurso', checklist: ['Invitaciones a sponsors', 'Confirmar protocolo', 'Palabras de apertura'] },
+  ],
+  reunion: [
+    { departamento: 'DIR', prioridad: 'media', dias: 3, titulo: '🎯 DIR: Preparar agenda y convocatoria', checklist: ['Definir agenda', 'Convocar participantes'] },
+  ],
+  pago: [
+    { departamento: 'FIN', prioridad: 'alta', dias: 5, titulo: '💰 FIN: Procesar pago programado', checklist: ['Verificar fondos', 'Emitir pago', 'Registrar comprobante'] },
+  ],
+}
+
+let _eventSeq = 1
+
+/**
+ * Simula la cascada Hermes: crea un evento y genera tareas departamentales
+ * según la categoría. Espejo de fn_hermes_auto_delegar_tareas.
+ */
+export async function crearEventoInstitucional(evento) {
+  const eventId = `mock-event-${String(_eventSeq++).padStart(4, '0')}`
+  const base = evento.fecha_inicio ? new Date(evento.fecha_inicio) : new Date()
+  const plantilla = CASCADA_POR_CATEGORIA[evento.categoria] || []
+
+  const generadas = plantilla.map((p, i) => {
+    const venc = new Date(base.getTime() - p.dias * 86400000)
+    return {
+      id: `${eventId}-t${i}`,
+      titulo: p.titulo,
+      descripcion: `Generada por Hermes para «${evento.titulo}».`,
+      departamento: p.departamento,
+      estado: 'pendiente',
+      prioridad: p.prioridad,
+      fecha_vencimiento: venc.toISOString().slice(0, 10),
+      asignado_a: null,
+      checklist: p.checklist.map((item) => ({ item, completado: false })),
+      feedback: null,
+      documentos_adjuntos: [],
+      event_id: eventId,
+      minuta_id: null,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    }
+  })
+
+  tareas.push(...generadas)
+  return delay({
+    evento: { id: eventId, titulo: evento.titulo, categoria: evento.categoria, fecha_inicio: evento.fecha_inicio, fecha_fin: evento.fecha_fin, departamento_responsable: evento.departamento_responsable || 'DIR' },
+    tareasGeneradas: generadas.map(clone),
+  })
+}
+
 export async function getTareasFiltradas(filtros = {}) {
   let res = tareas.map(clone)
   if (filtros.departamento) res = res.filter((t) => t.departamento === filtros.departamento)

@@ -40,7 +40,7 @@ export default defineConfig({
         admin:      'admin.html',
         maestros:   'maestros.html',
         audiciones: 'audiciones.html',
-        caja:       'caja.html',
+        fin:        'fin.html',
         inventario: 'inventario.html',
         calendario: 'calendario.html',
       },
@@ -96,8 +96,8 @@ export default defineConfig({
 
           if (pathname === '/admin' || pathname === '/admin/') {
             req.url = '/admin.html' + search
-          } else if (pathname === '/caja' || pathname === '/caja/') {
-            req.url = '/caja.html' + search
+          } else if (pathname === '/fin' || pathname === '/fin/') {
+            req.url = '/fin.html' + search
           } else if (pathname === '/inventario' || pathname === '/inventario/') {
             req.url = '/inventario.html' + search
           } else if (pathname === '/calendario' || pathname === '/calendario/') {

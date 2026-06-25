@@ -41,6 +41,8 @@ export default defineConfig({
         maestros:   'maestros.html',
         audiciones: 'audiciones.html',
         fin:        'fin.html',
+        acm:        'acm.html',
+        adm:        'adm.html',
         inventario: 'inventario.html',
         calendario: 'calendario.html',
       },
@@ -98,6 +100,10 @@ export default defineConfig({
             req.url = '/admin.html' + search
           } else if (pathname === '/fin' || pathname === '/fin/') {
             req.url = '/fin.html' + search
+          } else if (pathname === '/acm' || pathname === '/acm/') {
+            req.url = '/acm.html' + search
+          } else if (pathname === '/adm' || pathname === '/adm/') {
+            req.url = '/adm.html' + search
           } else if (pathname === '/inventario' || pathname === '/inventario/') {
             req.url = '/inventario.html' + search
           } else if (pathname === '/calendario' || pathname === '/calendario/') {

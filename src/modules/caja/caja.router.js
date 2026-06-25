@@ -16,6 +16,7 @@ import { render as mensajesRender }          from './views/mensajesView.js'
 import { render as reportesRender }          from './views/reportesView.js'
 import { render as cierreRender }            from './views/cierresCajaView.js'
 import { render as campanasRender }          from './views/campanasView.js'
+import { renderTareasView as hermesRender }  from '../hermes/views/tareasView.js'
 
 let _currentTeardown = null
 let _contentEl = null
@@ -39,6 +40,7 @@ function matchRoute(route) {
   if (/^\/wallet\/(.+)$/.test(route)) return { view: 'wallet', params: { familiaId: route.split('/')[2] } }
   if (route === '/notificaciones') return { view: 'notificaciones', params: {} }
   if (route === '/tareas') return { view: 'tareas', params: {} }
+  if (route === '/hermes') return { view: 'hermes', params: {} }
   if (route === '/score')    return { view: 'score',    params: {} }
   if (route === '/minutas')  return { view: 'minutas',  params: {} }
   if (route === '/mensajes') return { view: 'mensajes', params: {} }
@@ -69,6 +71,7 @@ async function loadView(matched) {
   else if (view === 'wallet')          result = await walletRender(_contentEl, _session, params)
   else if (view === 'notificaciones')  result = await notificacionesRender(_contentEl, _session, params, _notifBadgeCallback)
   else if (view === 'tareas')          result = await tareasRender(_contentEl, _session)
+  else if (view === 'hermes')          result = await hermesRender(_contentEl, { departamento: 'FIN', hideCalendarBtn: true })
   else if (view === 'score')           result = await scoreRender(_contentEl, _session)
   else if (view === 'minutas')         result = await minutasRender(_contentEl, _session)
   else if (view === 'mensajes')        result = await mensajesRender(_contentEl, _session)

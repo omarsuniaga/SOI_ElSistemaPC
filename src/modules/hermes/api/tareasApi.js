@@ -1,0 +1,28 @@
+/**
+ * tareasApi.js — Dispatcher: enruta las llamadas a tareasMock o tareasSupabase
+ * según la variable de entorno VITE_USE_MOCK.
+ *
+ * Uso:
+ *   import * as tareasApi from './tareasApi.js'
+ *   const tareas = await tareasApi.getTareas()
+ *
+ * Las tareas son generadas automáticamente por el motor Hermes
+ * (fn_hermes_auto_delegar_tareas) al insertarse un evento en
+ * calendario_institucional. Este módulo las LEE y permite actualizarlas.
+ */
+
+import * as mock from './tareasMock.js'
+import * as real from './tareasSupabase.js'
+
+const USE_MOCK = import.meta.env.VITE_USE_MOCK === 'true'
+const api = USE_MOCK ? mock : real
+
+export const getTareas = api.getTareas
+export const getTareaById = api.getTareaById
+export const getTareasByDepartamento = api.getTareasByDepartamento
+export const getTareasByEvento = api.getTareasByEvento
+export const updateTareaEstado = api.updateTareaEstado
+export const updateChecklistItem = api.updateChecklistItem
+export const completarTarea = api.completarTarea
+export const guardarFeedback = api.guardarFeedback
+export const getTareasFiltradas = api.getTareasFiltradas

@@ -10,3 +10,4 @@ const api = USE_MOCK ? mock : real
 
 export const getDepartamentos = api.getDepartamentos
 export const actualizarDepartamento = api.actualizarDepartamento
+export const enviarCorreoPrueba = api.enviarCorreoPrueba

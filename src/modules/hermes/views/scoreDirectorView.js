@@ -12,6 +12,7 @@
 
 import '../styles/tareas.css'
 import * as tareasApi from '../api/tareasApi.js'
+import { clasificarDepartamento } from '../api/clasificadorApi.js'
 import { AppToast } from '../../../shared/components/AppToast.js'
 import { AppModal } from '../../../shared/components/AppModal.js'
 
@@ -156,9 +157,14 @@ function renderContent(container, tareas) {
               <p class="text-muted small mb-0">Vista global · Hermes · ${total} tareas en ${deptList.length} departamentos</p>
             </div>
           </div>
-          <button class="btn btn-primary" id="btnCrearEvento">
-            <i class="bi bi-calendar-plus me-1"></i> Crear evento
-          </button>
+          <div class="d-flex gap-2">
+            <button class="btn btn-outline-primary" id="btnAsignarTarea">
+              <i class="bi bi-stars me-1"></i> Asignar tarea (IA)
+            </button>
+            <button class="btn btn-primary" id="btnCrearEvento">
+              <i class="bi bi-calendar-plus me-1"></i> Crear evento
+            </button>
+          </div>
         </div>
 
         <div class="tareas-kpis d-flex gap-2 flex-wrap">
@@ -248,6 +254,7 @@ function attachEvents(container, tareas) {
   const signal = _abortController.signal
 
   container.querySelector('#btnCrearEvento')?.addEventListener('click', () => openCrearEventoModal(container), { signal })
+  container.querySelector('#btnAsignarTarea')?.addEventListener('click', () => openAsignarTareaModal(container), { signal })
 
   // Click en card → navegar a la lista filtrada por departamento (router admin)
   container.querySelectorAll('.score-dept-card').forEach((card) => {
@@ -387,6 +394,114 @@ function openCrearEventoModal(container) {
             : 'Evento creado (sin tareas para esta categoría)',
           'success',
         )
+        await renderScoreDirectorView(container)
+      } catch (err) {
+        AppToast.show(`Error: ${err.message}`, 'error')
+        return false
+      }
+    },
+  })
+}
+
+// ── Enrutamiento inteligente: texto libre → departamento → tarea ────────────────
+const PRIORIDADES_TAREA = {
+  baja: 'Baja',
+  media: 'Media',
+  alta: 'Alta',
+  critica: 'Crítica',
+}
+
+function openAsignarTareaModal(container) {
+  AppModal.open({
+    title: 'Asignar tarea desde texto',
+    size: 'lg',
+    body: `
+      <div class="alert alert-info small py-2">
+        <i class="bi bi-stars me-1"></i> Pegá la solicitud en texto libre. La IA detecta el
+        departamento que debe atenderla y arma la tarea. Vos confirmás antes de crearla.
+      </div>
+      <textarea class="form-control" id="atTexto" rows="4"
+        placeholder="Ej. Necesito que me manden la relación de pago del mes de febrero"></textarea>
+    `,
+    saveText: '<i class="bi bi-stars me-1"></i>Analizar con IA',
+    onSave: async (mb) => {
+      const texto = mb.querySelector('#atTexto').value.trim()
+      if (!texto) {
+        AppToast.show('Escribí la solicitud primero', 'error')
+        return false
+      }
+      try {
+        const c = await clasificarDepartamento(texto)
+        // Cerramos este modal y abrimos el de confirmación con lo sugerido.
+        setTimeout(() => openConfirmarTareaModal(container, c), 50)
+      } catch (err) {
+        AppToast.show(`IA no disponible: ${err.message}`, 'error')
+        return false
+      }
+    },
+  })
+}
+
+function openConfirmarTareaModal(container, c) {
+  const conf = Math.round((c.confianza ?? 0.5) * 100)
+  AppModal.open({
+    title: 'Confirmar y asignar tarea',
+    size: 'lg',
+    body: `
+      <div class="d-flex align-items-center gap-2 mb-3">
+        <span class="badge bg-primary bg-opacity-10 text-primary border border-primary-subtle">
+          <i class="bi bi-robot me-1"></i>IA sugiere: ${DEPARTAMENTOS[c.departamento] || c.departamento}
+        </span>
+        <span class="text-muted small">confianza ${conf}%</span>
+      </div>
+      <div class="row g-3 mb-3">
+        <div class="col-md-6">
+          <label class="form-label small fw-semibold">Departamento <span class="text-danger">*</span></label>
+          <select class="form-select" id="atDepto">
+            ${Object.entries(DEPARTAMENTOS)
+              .map(([k, v]) => `<option value="${k}" ${k === c.departamento ? 'selected' : ''}>${v} (${k})</option>`)
+              .join('')}
+          </select>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label small fw-semibold">Prioridad</label>
+          <select class="form-select" id="atPrioridad">
+            ${Object.entries(PRIORIDADES_TAREA)
+              .map(([k, v]) => `<option value="${k}" ${k === c.prioridad ? 'selected' : ''}>${v}</option>`)
+              .join('')}
+          </select>
+        </div>
+      </div>
+      <div class="mb-3">
+        <label class="form-label small fw-semibold">Título <span class="text-danger">*</span></label>
+        <input type="text" class="form-control" id="atTitulo" value="${escapeHTML(c.titulo)}">
+      </div>
+      <div class="mb-2">
+        <label class="form-label small fw-semibold">Descripción</label>
+        <textarea class="form-control" id="atDescripcion" rows="3">${escapeHTML(c.descripcion)}</textarea>
+      </div>
+      <p class="text-muted extra-small mb-0">
+        <i class="bi bi-info-circle me-1"></i> Al crearla, aparece en el portal del departamento.
+        Si es <strong>alta</strong> o <strong>crítica</strong>, Hermes encola un aviso de WhatsApp al encargado.
+      </p>
+    `,
+    saveText: 'Crear y asignar',
+    onSave: async (mb) => {
+      const titulo = mb.querySelector('#atTitulo').value.trim()
+      if (!titulo) {
+        AppToast.show('El título es obligatorio', 'error')
+        return false
+      }
+      const departamento = mb.querySelector('#atDepto').value
+      try {
+        await tareasApi.crearTareaInstitucional({
+          titulo,
+          descripcion: mb.querySelector('#atDescripcion').value.trim() || null,
+          departamento,
+          prioridad: mb.querySelector('#atPrioridad').value,
+          estado: 'pendiente',
+        })
+        AppToast.show(`Tarea creada y asignada a ${DEPARTAMENTOS[departamento] || departamento}`, 'success')
         await renderScoreDirectorView(container)
       } catch (err) {
         AppToast.show(`Error: ${err.message}`, 'error')

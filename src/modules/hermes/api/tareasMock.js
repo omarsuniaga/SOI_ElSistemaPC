@@ -267,6 +267,28 @@ export async function crearEventoInstitucional(evento) {
   })
 }
 
+export async function crearTareaInstitucional(payload) {
+  const nueva = {
+    id: `mock-tarea-${String(_eventSeq++).padStart(4, '0')}`,
+    titulo: payload.titulo,
+    descripcion: payload.descripcion || null,
+    departamento: payload.departamento,
+    estado: payload.estado || 'pendiente',
+    prioridad: payload.prioridad || 'media',
+    fecha_vencimiento: payload.fecha_vencimiento || null,
+    asignado_a: payload.asignado_a || null,
+    checklist: payload.checklist || [],
+    feedback: null,
+    documentos_adjuntos: [],
+    event_id: null,
+    minuta_id: null,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  }
+  tareas.unshift(nueva)
+  return delay(clone(nueva))
+}
+
 export async function getTareasFiltradas(filtros = {}) {
   let res = tareas.map(clone)
   if (filtros.departamento) res = res.filter((t) => t.departamento === filtros.departamento)

@@ -180,6 +180,27 @@ export async function crearEventoInstitucional(evento) {
   return { evento: data, tareasGeneradas }
 }
 
+/**
+ * Crea una tarea institucional directamente (sin pasar por la cascada de calendario).
+ * El INSERT dispara el trigger fn_trigger_hermes_task_wa_alert, que encola un aviso
+ * de WhatsApp si la prioridad es alta o critica.
+ */
+export async function crearTareaInstitucional(payload) {
+  const row = {
+    titulo: payload.titulo,
+    descripcion: payload.descripcion || null,
+    departamento: payload.departamento,
+    estado: payload.estado || 'pendiente',
+    prioridad: payload.prioridad || 'media',
+    fecha_vencimiento: payload.fecha_vencimiento || null,
+    asignado_a: payload.asignado_a || null,
+    checklist: payload.checklist || [],
+  }
+  const { data, error } = await supabase.from(TABLA).insert(row).select(COLUMNAS).single()
+  if (error) throw error
+  return data
+}
+
 export async function getTareasFiltradas(filtros = {}) {
   let query = supabase.from(TABLA).select(COLUMNAS)
 

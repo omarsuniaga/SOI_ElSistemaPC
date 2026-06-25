@@ -15,6 +15,7 @@ import { mejorarConIA } from '../api/comunicacionesApi.js'
 import { FAMILIAS, construirWaLink, resolverVariables, normalizarTelefono } from '../domain/secciones.js'
 import { AppModal } from '../../../shared/components/AppModal.js'
 import { AppToast } from '../../../shared/components/AppToast.js'
+import { openRegistroSeguimientoModal } from './seguimientoView.js'
 
 const VARIABLES = ['{nombre_alumno}', '{representante}', '{instrumento}', '{seccion}']
 
@@ -153,12 +154,12 @@ function renderDirectorio(container, body) {
       <table class="table table-sm table-hover align-middle mb-0">
         <thead class="table-light"><tr>
           <th style="width:36px"></th><th>Alumno</th><th>Instrumento</th><th>Representante</th>
-          <th>WhatsApp</th><th>Correo</th>
+          <th>WhatsApp</th><th>Correo</th><th style="width:44px"></th>
         </tr></thead>
         <tbody>
           ${
             lista.length === 0
-              ? `<tr><td colspan="6" class="text-center text-muted py-4">Sin contactos para este filtro</td></tr>`
+              ? `<tr><td colspan="7" class="text-center text-muted py-4">Sin contactos para este filtro</td></tr>`
               : lista.map(filaContacto).join('')
           }
         </tbody>
@@ -200,6 +201,13 @@ function renderDirectorio(container, body) {
   )
 
   body.querySelector('#commToComposer')?.addEventListener('click', () => { state.tab = 'compositor'; renderShell(container) }, { signal })
+
+  body.querySelectorAll('.comm-seg-btn').forEach((b) =>
+    b.addEventListener('click', () => {
+      const contacto = state.contactos.find((c) => c.alumnoId === b.dataset.id)
+      if (contacto) openRegistroSeguimientoModal(null, null, contacto)
+    }, { signal }),
+  )
 }
 
 function filaContacto(c) {
@@ -211,6 +219,7 @@ function filaContacto(c) {
     <td class="small">${escapeHTML(c.contactoNombre || '')}</td>
     <td class="small">${wa ? `<i class="bi bi-whatsapp text-success"></i> ${escapeHTML(c.whatsapp)}` : '<span class="text-muted">—</span>'}</td>
     <td class="small">${c.email ? `<i class="bi bi-envelope text-primary"></i> ${escapeHTML(c.email)}` : '<span class="text-muted">—</span>'}</td>
+    <td><button class="btn btn-sm btn-outline-primary comm-seg-btn" data-id="${c.alumnoId}" title="Registrar seguimiento"><i class="bi bi-telephone-plus"></i></button></td>
   </tr>`
 }
 

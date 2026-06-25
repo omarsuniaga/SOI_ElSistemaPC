@@ -17,6 +17,7 @@ const navGroups = [
     icon: 'bi-megaphone',
     items: [
       { id: 'comunicaciones', label: 'Central de Comunicaciones', icon: 'bi-send' },
+      { id: 'com-seguimiento', label: 'Seguimiento', icon: 'bi-telephone-outbound' },
       { id: 'hermes-tareas', label: 'Tareas Institucionales', icon: 'bi-check2-square' },
       { id: 'admin-notificaciones', label: 'Centro de Actividad', icon: 'bi-bell' },
     ],

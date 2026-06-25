@@ -12,10 +12,11 @@ import { allRegistrars } from '../_shared/allRegistrars.js'
 
 const navGroups = [
   {
-    id: 'hermes',
-    label: 'Comunicaciones',
+    id: 'central',
+    label: 'Central',
     icon: 'bi-megaphone',
     items: [
+      { id: 'comunicaciones', label: 'Central de Comunicaciones', icon: 'bi-send' },
       { id: 'hermes-tareas', label: 'Tareas Institucionales', icon: 'bi-check2-square' },
       { id: 'admin-notificaciones', label: 'Centro de Actividad', icon: 'bi-bell' },
     ],
@@ -36,7 +37,7 @@ bootAdminPortal({
   navGroups,
   registrars: allRegistrars,
   allowedRoles: ['admin'],
-  defaultRoute: 'hermes-tareas',
+  defaultRoute: 'comunicaciones',
   hermesDept: 'COM',
 }).catch((err) => {
   console.error('[com] boot falló:', err)

@@ -25,8 +25,10 @@ import { registerRoutesAdminNotificaciones } from '../../modules/admin-notificac
 import { registerRoutesAdminAprobacion } from '../../modules/admin-aprobacion/index.js'
 import { registerRoutesAdminUsuarios } from '../../modules/admin-usuarios/index.js'
 import { registerRoutesBitacora } from '../../modules/bitacora/index.js'
+import { registerRoutesComunicaciones } from '../../modules/comunicaciones/index.js'
 
 export const allRegistrars = [
+  registerRoutesComunicaciones,
   registerRoutesProgramas,
   registerRoutesClases,
   registerRoutesSalones,

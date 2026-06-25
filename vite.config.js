@@ -43,6 +43,7 @@ export default defineConfig({
         fin:        'fin.html',
         acm:        'acm.html',
         adm:        'adm.html',
+        com:        'com.html',
         inventario: 'inventario.html',
         calendario: 'calendario.html',
       },
@@ -104,6 +105,8 @@ export default defineConfig({
             req.url = '/acm.html' + search
           } else if (pathname === '/adm' || pathname === '/adm/') {
             req.url = '/adm.html' + search
+          } else if (pathname === '/com' || pathname === '/com/') {
+            req.url = '/com.html' + search
           } else if (pathname === '/inventario' || pathname === '/inventario/') {
             req.url = '/inventario.html' + search
           } else if (pathname === '/calendario' || pathname === '/calendario/') {

@@ -27,3 +27,4 @@ export const completarTarea = api.completarTarea
 export const guardarFeedback = api.guardarFeedback
 export const getTareasFiltradas = api.getTareasFiltradas
 export const crearEventoInstitucional = api.crearEventoInstitucional
+export const crearTareaInstitucional = api.crearTareaInstitucional

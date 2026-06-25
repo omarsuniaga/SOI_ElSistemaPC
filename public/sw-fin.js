@@ -1,4 +1,4 @@
-const CACHE_NAME = 'caja-v1'
+const CACHE_NAME = 'fin-v1'
 
 self.addEventListener('install', event => {
   event.waitUntil(self.skipWaiting())
@@ -14,7 +14,7 @@ self.addEventListener('activate', event => {
 
 // ─── PUSH NOTIFICATIONS ────────────────────────────────────
 self.addEventListener('push', event => {
-  let payload = { title: 'Portal Caja', body: '', data: {}, actions: [] }
+  let payload = { title: 'Portal FIN', body: '', data: {}, actions: [] }
   if (event.data) {
     try { payload = { ...payload, ...event.data.json() } } catch { payload.body = event.data.text() }
   }
@@ -26,14 +26,14 @@ self.addEventListener('push', event => {
     data: payload.data || {},
     vibrate: [200, 100, 200],
     requireInteraction: false,
-    tag: 'caja-push',
+    tag: 'fin-push',
     lang: 'es',
     dir: 'ltr',
     actions: payload.actions || [],
   }
 
   event.waitUntil(
-    self.registration.showNotification(payload.title || 'Portal Caja', options)
+    self.registration.showNotification(payload.title || 'Portal FIN', options)
       .then(() => {
         self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(clientList => {
           clientList.forEach(client => client.postMessage({
@@ -42,7 +42,7 @@ self.addEventListener('push', event => {
           }))
         })
       })
-      .catch(err => console.error('[SW-Caja] Error showing notification:', err))
+      .catch(err => console.error('[SW-Fin] Error showing notification:', err))
   )
 })
 
@@ -52,9 +52,9 @@ self.addEventListener('notificationclick', event => {
 
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then(clientList => {
-      const cajaClient = clientList.find(c => c.url.includes('caja'))
-      if (cajaClient) return cajaClient.focus()
-      return clients.openWindow('/caja.html#/dashboard')
+      const finClient = clientList.find(c => c.url.includes('fin'))
+      if (finClient) return finClient.focus()
+      return clients.openWindow('/fin.html#/dashboard')
     })
   )
 })

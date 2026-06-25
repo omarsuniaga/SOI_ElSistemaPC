@@ -45,11 +45,11 @@ function renderMonthGrid(months, pagosAlumno, checkedKeys) {
       <div class="month-cell" data-key="${m.key}" data-future="${m.isFuture}" data-paid="${paid}"
         style="border-radius:8px;padding:0.5rem 0.4rem;text-align:center;cursor:${canToggle ? 'pointer' : 'default'};
           user-select:none;transition:all 0.15s;min-width:68px;${style}">
-        ${paid
+        \${paid
           ? `<div style="font-size:0.95rem">✅</div>`
-          : `<div style="font-size:0.95rem">${checked ? (m.isFuture ? '☑️' : '❌') : (m.isFuture ? '⬜' : '☐')}</div>`}
-        <div style="font-size:0.7rem;font-weight:600;margin-top:2px;line-height:1.2">${m.label}</div>
-        ${m.isCurrent && !paid ? '<div style="font-size:0.6rem;margin-top:1px;opacity:0.7">Actual</div>' : ''}
+          : `<div style="font-size:0.95rem">\${checked ? (m.isFuture ? '☑️' : '❌') : (m.isFuture ? '⬜' : '☐')}</div>`}
+        <div style="font-size:0.7rem;font-weight:600;margin-top:2px;line-height:1.2">\${m.label}</div>
+        \${m.isCurrent && !paid ? '<div style="font-size:0.6rem;margin-top:1px;opacity:0.7">Actual</div>' : ''}
       </div>
     `
   }).join('')
@@ -183,8 +183,8 @@ export async function renderCobrosView(container, session, initialStudent = null
     grid.innerHTML = renderMonthGrid(months, pagosAlumno, checkedKeys)
     const count = checkedKeys.size
     const total = count * MONTO_MENSUALIDAD
-    container.querySelector('#total-label').textContent = `RD$ ${total.toLocaleString('es-DO')}`
-    container.querySelector('#meses-label').textContent = `${count} ${count === 1 ? 'mes' : 'meses'} seleccionado${count !== 1 ? 's' : ''}`
+    container.querySelector('#total-label').textContent = `RD$ \${total.toLocaleString('es-DO')}`
+    container.querySelector('#meses-label').textContent = `\${count} \${count === 1 ? 'mes' : 'meses'} seleccionado\${count !== 1 ? 's' : ''}`
     const btn = container.querySelector('#btn-confirmar')
     btn.disabled = count === 0
     btn.style.opacity = count === 0 ? '0.5' : '1'
@@ -228,7 +228,7 @@ export async function renderCobrosView(container, session, initialStudent = null
     } else if (pendingCount === 0) {
       badge.innerHTML = '<span style="font-size:0.75rem;background:#dcfce7;color:#166534;border-radius:6px;padding:2px 8px;font-weight:600">Al día ✓</span>'
     } else {
-      badge.innerHTML = `<span style="font-size:0.75rem;background:#fee2e2;color:#991b1b;border-radius:6px;padding:2px 8px;font-weight:600">${pendingCount} mes${pendingCount !== 1 ? 'es' : ''} pendiente${pendingCount !== 1 ? 's' : ''}</span>`
+      badge.innerHTML = `<span style="font-size:0.75rem;background:#fee2e2;color:#991b1b;border-radius:6px;padding:2px 8px;font-weight:600">\${pendingCount} mes\${pendingCount !== 1 ? 'es' : ''} pendiente\${pendingCount !== 1 ? 's' : ''}</span>`
     }
 
     refreshGrid()
@@ -246,10 +246,10 @@ export async function renderCobrosView(container, session, initialStudent = null
       searchResults.innerHTML = `<div style="padding:0.75rem 1rem;color:#94a3b8;font-size:0.875rem">Sin resultados</div>`
     } else {
       searchResults.innerHTML = matches.map(a => `
-        <div class="search-item" data-id="${a.id}"
+        <div class="search-item" data-id="\${a.id}"
           style="padding:0.7rem 1rem;cursor:pointer;font-size:0.875rem;color:#0f172a;
             border-bottom:1px solid #f1f5f9;transition:background 0.1s">
-          <i class="bi bi-person-circle me-2" style="color:#059669"></i>${a.nombre_completo}
+          <i class="bi bi-person-circle me-2" style="color:#059669"></i>\${a.nombre_completo}
         </div>
       `).join('')
     }
@@ -330,7 +330,7 @@ export async function renderCobrosView(container, session, initialStudent = null
     const { error } = await registrarPagosLote(pagos)
 
     if (error) {
-      errEl.textContent = `Error al registrar: ${error.message}`
+      errEl.textContent = `Error al registrar: \${error.message}`
       errEl.style.display = 'block'
       btn.disabled = false
       btn.innerHTML = '<i class="bi bi-receipt me-2"></i>Registrar cobro y generar recibo'
@@ -364,7 +364,7 @@ export async function renderCobrosView(container, session, initialStudent = null
     // Confirmation flash
     const flash = document.createElement('div')
     flash.style.cssText = 'position:fixed;top:70px;right:1.5rem;background:#059669;color:#fff;border-radius:10px;padding:0.75rem 1.25rem;font-size:0.875rem;font-weight:600;z-index:9999;box-shadow:0 4px 16px rgba(0,0,0,0.15)'
-    flash.textContent = `✅ Cobro registrado — RD$ ${(checkedKeys.size * MONTO_MENSUALIDAD || mesesLabels.length * MONTO_MENSUALIDAD).toLocaleString('es-DO')}`
+    flash.textContent = `✅ Cobro registrado — RD$ \${(checkedKeys.size * MONTO_MENSUALIDAD || mesesLabels.length * MONTO_MENSUALIDAD).toLocaleString('es-DO')}`
     document.body.appendChild(flash)
     setTimeout(() => flash.remove(), 3500)
   }, { signal })

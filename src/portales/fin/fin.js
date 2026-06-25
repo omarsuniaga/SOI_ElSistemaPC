@@ -1,7 +1,7 @@
 import 'bootstrap/dist/css/bootstrap.min.css'
 import 'bootstrap-icons/font/bootstrap-icons.css'
 import { supabase } from '../../lib/supabaseClient.js'
-import { renderCajaPortal } from './cajaDashboardView.js'
+import { renderFinPortal } from './finDashboardView.js'
 
 async function hasPortalAccess(userId) {
   const { data } = await supabase
@@ -24,7 +24,7 @@ function renderLogin(app, errorMsg = null) {
             display:flex;align-items:center;justify-content:center;margin:0 auto 1rem">
             <i class="bi bi-cash-coin" style="font-size:1.5rem;color:#059669"></i>
           </div>
-          <h4 style="color:#111;margin:0;font-weight:700">Portal de Caja</h4>
+          <h4 style="color:#111;margin:0;font-weight:700">Portal FIN</h4>
           <p style="color:#6b7280;font-size:0.875rem;margin-top:0.25rem">El Sistema Punta Cana</p>
         </div>
         ${errorMsg ? `<div class="alert alert-danger py-2 small">${errorMsg}</div>` : ''}
@@ -73,7 +73,7 @@ function renderLogin(app, errorMsg = null) {
       return
     }
 
-    renderCajaPortal(app, data.session)
+    renderFinPortal(app, data.session)
   })
 }
 
@@ -93,7 +93,7 @@ async function init() {
     return
   }
 
-  renderCajaPortal(app, session)
+  renderFinPortal(app, session)
 }
 
 init()

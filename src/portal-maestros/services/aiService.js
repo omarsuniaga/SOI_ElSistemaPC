@@ -1,4 +1,13 @@
-const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions'
+/**
+ * aiService.js — Asistente de IA del portal de maestros.
+ *
+ * SEGURIDAD: todas las llamadas a IA pasan por la Edge Function `groq-proxy`.
+ * Las API keys (Groq y OpenRouter) viven en los secrets del servidor y NUNCA
+ * se envían al navegador. (Antes este servicio leía la key de `system_config`
+ * y llamaba a los proveedores directo desde el browser — eso quedó eliminado.)
+ */
+
+import { supabase } from '../../lib/supabaseClient.js'
 
 const FREE_MODELS = [
   'google/gemini-2.0-flash-exp',
@@ -10,130 +19,85 @@ const FREE_MODELS = [
   'poolside/laguna-xs.2',
   'mistralai/mistral-7b-instruct',
   'anthropic/claude-3-haiku',
-  'openrouter/auto'
+  'openrouter/auto',
 ]
 
-let currentProvider = 'openrouter'
 let currentModel = 'google/gemini-flash-1.5-exp'
 
-async function getApiKey(provider) {
-  if (provider === 'openrouter') {
-    try {
-      const { supabase } = await import('../../lib/supabaseClient.js')
-      const { data } = await supabase
-        .from('system_config')
-        .select('value')
-        .eq('key', 'openrouter_api_key')
-        .single()
-      return data?.value || localStorage.getItem('portal-maestros:openrouter-key')
-    } catch { return null }
+// ── Proxy (groq-proxy Edge Function) ────────────────────────────────────────
+function proxyBase() {
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL ?? ''
+  return `${supabaseUrl}/functions/v1/groq-proxy`
+}
+
+async function authHeaders() {
+  const {
+    data: { session },
+  } = await supabase.auth.getSession()
+  const anon = import.meta.env.VITE_SUPABASE_ANON_KEY ?? ''
+  return {
+    Authorization: `Bearer ${session?.access_token ?? anon}`,
+    'Content-Type': 'application/json',
+    apikey: anon,
   }
-  
-  if (provider === 'groq') {
-    try {
-      const { supabase } = await import('../../lib/supabaseClient.js')
-      const { data } = await supabase
-        .from('system_config')
-        .select('value')
-        .eq('key', 'groq_api_key')
-        .single()
-      return data?.value || localStorage.getItem('portal-maestros:groq-key')
-    } catch { return null }
+}
+
+async function proxyChat(body) {
+  const res = await fetch(`${proxyBase()}/chat`, {
+    method: 'POST',
+    headers: await authHeaders(),
+    body: JSON.stringify(body),
+  })
+  let data
+  try {
+    data = await res.json()
+  } catch {
+    throw new Error(`IA proxy devolvió respuesta no-JSON (status ${res.status})`)
   }
-  
-  return null
+  if (!res.ok || data.error) {
+    throw new Error(data.error?.message ?? data.error ?? `IA proxy error ${res.status}`)
+  }
+  return data.choices?.[0]?.message?.content || ''
 }
 
 async function requestOpenRouter(messages, model = 'google/gemini-flash-1.5-exp', temp = 0.7) {
-  const apiKey = await getApiKey('openrouter')
-  if (!apiKey) throw new Error('OpenRouter API key no configurada')
-
-  const res = await fetch(OPENROUTER_URL, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-      'HTTP-Referer': window.location.origin,
-      'X-Title': 'SOI Sistema Académico'
-    },
-    body: JSON.stringify({
-      model,
-      messages,
-      temperature: temp,
-      max_tokens: 1024
-    })
-  })
-
-  if (!res.ok) {
-    const err = await res.text()
-    throw new Error(`OpenRouter error: ${res.status} - ${err}`)
-  }
-
-  const data = await res.json()
-  return data.choices?.[0]?.message?.content || ''
+  return proxyChat({ provider: 'openrouter', model, messages, temperature: temp, max_tokens: 1024 })
 }
 
 async function requestGroq(messages, temp = 0.7) {
-  const apiKey = await getApiKey('groq')
-  if (!apiKey) throw new Error('GROQ API key no configurada')
-
-  const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${apiKey}`,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      model: 'llama-3.3-70b-versatile',
-      messages,
-      temperature: temp,
-      max_tokens: 1024
-    })
+  return proxyChat({
+    provider: 'groq',
+    model: 'llama-3.3-70b-versatile',
+    messages,
+    temperature: temp,
+    max_tokens: 1024,
   })
-
-  if (!res.ok) {
-    const err = await res.text()
-    throw new Error(`GROQ error: ${res.status} - ${err}`)
-  }
-
-  const data = await res.json()
-  return data.choices?.[0]?.message?.content || ''
 }
 
 export async function createAiService() {
-  let groqKey = await getApiKey('groq')
-  let openrouterKey = await getApiKey('openrouter')
+  // Disponibilidad de proveedores: el servidor decide qué key existe. Intentamos
+  // OpenRouter primero (modelos gratuitos) y caemos a Groq si falla.
+  let tryOpenRouter = true
+  let tryGroq = true
 
-  /**
-   * Ejecuta una petición con fallback y cache.
-   * @param {Array} messages - [{role, content}]
-   * @param {number} temp - Temperatura
-   * @param {string} cacheKey - Clave para cache semántica
-   */
   async function _requestWithFallback(messages, temp = 0.7, cacheKey = null) {
     const { canMakeRequest, withRateLimit, getCachedResponse } = await import('./groqRateLimiter.js')
-    
-    // 1. Prioridad 0: Cache (Ahorro total de tokens)
+
     if (cacheKey) {
       const cached = getCachedResponse(cacheKey)
       if (cached) return { fromCache: true, data: cached, provider: 'cache' }
     }
 
-    // 2. Control de ráfagas
     const status = canMakeRequest()
     if (!status.allowed) {
-      throw new Error(`Límite alcanzado. Espera ${Math.ceil(status.resetIn/1000)}s.`)
+      throw new Error(`Límite alcanzado. Espera ${Math.ceil(status.resetIn / 1000)}s.`)
     }
 
     let lastError = null
 
-    // 3. Intento con OpenRouter (Modelos gratuitos preferidos)
-    if (openrouterKey) {
+    if (tryOpenRouter) {
       try {
-        const result = await withRateLimit(
-          () => requestOpenRouter(messages, currentModel, temp),
-          cacheKey
-        )
+        const result = await withRateLimit(() => requestOpenRouter(messages, currentModel, temp), cacheKey)
         return { fromCache: result.fromCache, data: result.data, provider: 'openrouter' }
       } catch (e) {
         console.warn('OpenRouter fallback:', e.message)
@@ -141,13 +105,9 @@ export async function createAiService() {
       }
     }
 
-    // 4. Intento con GROQ (Backup de alta velocidad)
-    if (groqKey) {
+    if (tryGroq) {
       try {
-        const result = await withRateLimit(
-          () => requestGroq(messages, temp),
-          cacheKey
-        )
+        const result = await withRateLimit(() => requestGroq(messages, temp), cacheKey)
         return { fromCache: result.fromCache, data: result.data, provider: 'groq' }
       } catch (e) {
         console.warn('GROQ fallback:', e.message)
@@ -155,7 +115,7 @@ export async function createAiService() {
       }
     }
 
-    throw lastError || new Error('No hay proveedores de IA configurados o las API keys son inválidas.')
+    throw lastError || new Error('No hay proveedores de IA disponibles en el servidor.')
   }
 
   return {
@@ -166,10 +126,8 @@ export async function createAiService() {
      */
     async chat(message, context = {}) {
       const cleanMessage = message.trim().toLowerCase()
-      
-      // Detectar tipo de consulta para dar respuestas más precisas
+
       let intent = 'general'
-      
       if (cleanMessage.includes('hola') || cleanMessage.includes('buenos') || cleanMessage.includes('buenas')) {
         intent = 'saludo'
       } else if (cleanMessage.includes('alumno') || cleanMessage.includes('estudiante')) {
@@ -185,7 +143,6 @@ Ayudas a maestros y personal administrativo con información útil sobre el sist
 Sé directo, conciso y muy amigable. Si no tienes información específica, indica que el usuario debe usar las funciones del sistema.`
 
       let userPrompt = ''
-      
       switch (intent) {
         case 'saludo':
           userPrompt = `El usuario dice: "${message}". Saluda de manera cálida y presenta brevemente cómo puedes ayudar en el Sistema Académico SOI.`
@@ -205,7 +162,7 @@ Sé directo, conciso y muy amigable. Si no tienes información específica, indi
 
       const messages = [
         { role: 'system', content: systemPrompt },
-        { role: 'user', content: userPrompt }
+        { role: 'user', content: userPrompt },
       ]
 
       const cacheKey = `chat:${cleanMessage.substring(0, 30)}`
@@ -220,18 +177,18 @@ Sé directo, conciso y muy amigable. Si no tienes información específica, indi
     async analizarProgreso(opts) {
       const isFull = opts.fullContext === true
       const historyLimit = isFull ? undefined : -5
-      
+
       const systemPrompt = `Eres un asistente de análisis pedagógico musical. Tu objetivo es proveer feedback constructivo y preciso.`
-      
+
       const userPrompt = `
 Analiza el progreso de ${opts.nombre} (${opts.instrumento}).
 Modo de análisis: ${isFull ? 'PROFUNDO (Historial completo)' : 'RÁPIDO (Sesiones recientes)'}
 
 Comentarios:
-${opts.comentarios?.slice(historyLimit).map(c => `- ${c}`).join('\n') || 'Sin comentarios'}
+${opts.comentarios?.slice(historyLimit).map((c) => `- ${c}`).join('\n') || 'Sin comentarios'}
 
 Sesiones:
-${opts.sesiones?.slice(historyLimit).map(s => `- Fecha: ${s.fecha}, Calif: ${s.calif || 'N/A'}, Estado: ${s.estado}`).join('\n') || 'Sin sesiones'}
+${opts.sesiones?.slice(historyLimit).map((s) => `- Fecha: ${s.fecha}, Calif: ${s.calif || 'N/A'}, Estado: ${s.estado}`).join('\n') || 'Sin sesiones'}
 
 Responde en 3-4 oraciones identificando fortalezas, áreas de mejora y una tarea específica.
 `.trim()
@@ -239,9 +196,9 @@ Responde en 3-4 oraciones identificando fortalezas, áreas de mejora y una tarea
       const cacheKey = `progreso:${opts.nombre}:${opts.instrumento}:${opts.sesiones?.length || 0}:${isFull ? 'full' : 'quick'}`
       const messages = [
         { role: 'system', content: systemPrompt },
-        { role: 'user', content: userPrompt }
+        { role: 'user', content: userPrompt },
       ]
-      
+
       const result = await _requestWithFallback(messages, 0.6, cacheKey)
       return result.data
     },
@@ -256,9 +213,9 @@ Responde en 3-4 oraciones identificando fortalezas, áreas de mejora y una tarea
       const cacheKey = `contenido:${opts.instrumento}:${opts.nivel}:${opts.objetivos?.join('|')}`
       const messages = [
         { role: 'system', content: systemPrompt },
-        { role: 'user', content: userPrompt }
+        { role: 'user', content: userPrompt },
       ]
-      
+
       const result = await _requestWithFallback(messages, 0.8, cacheKey)
       return result.data
     },
@@ -277,7 +234,7 @@ Resumen de sesión:
 Presentes (${opts.presente?.length || 0}): ${opts.presente?.join(', ')}
 Ausentes (${opts.ausente?.length || 0}): ${opts.ausente?.join(', ')}
 Comentarios:
-${opts.comentarios?.slice(limit).map(c => `- ${c}`).join('\n') || 'Sin novedades'}
+${opts.comentarios?.slice(limit).map((c) => `- ${c}`).join('\n') || 'Sin novedades'}
 
 Genera un resumen de 2 oraciones para el acta oficial.
 `.trim()
@@ -285,7 +242,7 @@ Genera un resumen de 2 oraciones para el acta oficial.
       const cacheKey = `resumen:${new Date().toISOString().split('T')[0]}:${opts.presente?.length}:${opts.comentarios?.length}:${isFull}`
       const messages = [
         { role: 'system', content: systemPrompt },
-        { role: 'user', content: userPrompt }
+        { role: 'user', content: userPrompt },
       ]
 
       const result = await _requestWithFallback(messages, 0.5, cacheKey)
@@ -318,9 +275,7 @@ ${rawText}
 
 Respondé SOLO con el DSL estructurado, sin explicaciones.`
 
-      const messages = [
-        { role: 'user', content: prompt }
-      ]
+      const messages = [{ role: 'user', content: prompt }]
 
       const cacheKey = `structureDSL:${rawText.substring(0, 40)}`
       const result = await _requestWithFallback(messages, 0.3, cacheKey)
@@ -345,20 +300,20 @@ ALUMNOS REZAGADOS (nota < 3): ${names}
 
 Respondé SOLO la sugerencia.`
 
-      const messages = [
-        { role: 'user', content: prompt }
-      ]
+      const messages = [{ role: 'user', content: prompt }]
 
       const cacheKey = `suggestIndicador:${indicadorNombre}:${avg}:${alumnosRezagados.join('|')}`
       const result = await _requestWithFallback(messages, 0.6, cacheKey)
       return result.data
     },
 
-    setGroqKey(k) { groqKey = k },
-    setOpenRouterKey(k) { openrouterKey = k },
+    // Compatibilidad: el manejo de keys ahora es server-side; estos toggles solo
+    // habilitan/deshabilitan el intento de cada proveedor desde el cliente.
+    setGroqKey(k) { tryGroq = !!k || tryGroq },
+    setOpenRouterKey(k) { tryOpenRouter = !!k || tryOpenRouter },
     getAvailableProviders() {
-      return { openrouter: !!openrouterKey, groq: !!groqKey }
-    }
+      return { openrouter: tryOpenRouter, groq: tryGroq }
+    },
   }
 }
 

@@ -1,6 +1,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { analizarIntencion } from './intentParser.ts'
 import { decidirAccion, CONV_ESTADOS, REINTENTOS_MAX, conflictoToMensaje } from './stateMachine.ts'
+import { buscarFaq, MENSAJE_FUERA_DE_ALCANCE } from './kb.ts'
 
 const GROQ_API_KEY = Deno.env.get('GROQ_API_KEY') ?? ''
 
@@ -267,6 +268,18 @@ Deno.serve(async (req: Request) => {
     return json({ ok: true, opted_out: true, jid })
   }
 
+  // ── Rate-limit por número (anti-abuso + economía de tokens) ──────────────
+  // Corta floods ANTES del LLM.
+  try {
+    const { data: excedido } = await supabase.rpc('fn_whatsapp_rate_excedido', { p_jid: jid })
+    if (excedido === true) {
+      console.log(`[webhook] Rate-limit excedido para ${jid} — ignorado sin LLM`)
+      return json({ ok: true, ignored: 'rate_limited', jid })
+    }
+  } catch (err) {
+    console.warn('[webhook] Error chequeando rate-limit:', err instanceof Error ? err.message : String(err))
+  }
+
   let conversacion: Conversacion | null
   try {
     conversacion = maybeSingle(
@@ -283,8 +296,34 @@ Deno.serve(async (req: Request) => {
   }
 
   if (!conversacion) {
-    console.log(`[webhook] JID ${jid} no tiene conversación activa (pushName: ${pushName})`)
-    return json({ ok: true, ignored: 'no_active_conversation', jid })
+    // Servicio público: solo abierto si hay un período activo que lo habilita.
+    // Responde SIN LLM, solo desde la KB cerrada (anti-inyección + ahorro de tokens).
+    let servicioActivo = false
+    try {
+      const { data } = await supabase.rpc('fn_servicio_publico_activo')
+      servicioActivo = data === true
+    } catch (err) {
+      console.warn('[webhook] Error chequeando servicio público:', err instanceof Error ? err.message : String(err))
+    }
+
+    if (!servicioActivo) {
+      console.log(`[webhook] JID ${jid} sin conversación y servicio público cerrado — ignorado`)
+      return json({ ok: true, ignored: 'no_active_conversation', jid })
+    }
+
+    const faq = buscarFaq(texto)
+    const respuestaPublica = faq ? faq.respuesta : MENSAJE_FUERA_DE_ALCANCE
+    try {
+      await supabase.from('hermes_whatsapp_queue').insert({ jid, mensaje: respuestaPublica, estado: 'pendiente' })
+      await supabase.from('whatsapp_webhook_log').insert({
+        message_id: messageId, jid_remitente: jid, mensaje_texto: texto, push_name: pushName,
+        intencion_detectada: faq ? `faq:${faq.id}` : 'fuera_de_alcance',
+        respuesta_enviada: respuestaPublica,
+      })
+    } catch (err) {
+      console.error('[webhook] Error en respuesta pública:', err instanceof Error ? err.message : String(err))
+    }
+    return json({ ok: true, servicio_publico: true, faq: faq?.id ?? null, jid })
   }
 
   const postulanteId = conversacion.postulante_id
@@ -334,6 +373,13 @@ Deno.serve(async (req: Request) => {
   let mensajeFinal = decision.mensaje
   let estadoFinal = decision.siguienteEstado as string
   let pipelineFinal = decision.pipelineAction
+
+  // KB cerrada: para consultas/requisitos el texto sale SIEMPRE de la FAQ curada,
+  // nunca del LLM (anti-inyección). Si no matchea, respuesta de alcance acotado.
+  if (intencion.intencion === 'consulta_general' || intencion.intencion === 'preguntar_requisitos') {
+    const faq = buscarFaq(texto, intencion.intencion)
+    mensajeFinal = faq ? faq.respuesta : MENSAJE_FUERA_DE_ALCANCE
+  }
 
   if (
     decision.siguienteEstado === CONV_ESTADOS.AGENDANDO_CITA &&

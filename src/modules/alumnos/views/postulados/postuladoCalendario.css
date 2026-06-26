@@ -58,6 +58,9 @@
 .pcal-day-item { border-bottom: 1px solid var(--bs-border-color); }
 .pcal-day-item:last-child { border-bottom: none; }
 
+/* Barra de filtros por estado */
+.pcal-filtros .pcal-filtro { line-height: 1.1; }
+
 /* ── Responsive ─────────────────────────────────────────────── */
 @media (max-width: 768px) {
   .pcal-cell { min-height: 70px; padding: 4px !important; }
@@ -66,4 +69,7 @@
   /* Semana: scroll horizontal en pantallas chicas */
   .pcal-week-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
   .pcal-week-scroll > .row { flex-wrap: nowrap; min-width: 640px; }
+  /* Filtros: permitir scroll horizontal sin romper layout */
+  .pcal-filtros { flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .pcal-filtros .pcal-filtro { flex-shrink: 0; }
 }

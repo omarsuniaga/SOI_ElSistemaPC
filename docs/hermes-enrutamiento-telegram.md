@@ -25,7 +25,25 @@ La lógica de clasificación es la misma que usa la web (`src/modules/hermes/api
 
 Ejemplo: *"necesito que me manden la relación de pago del mes de febrero"* → `FIN`.
 
-## 2. Crear la tarea (Supabase MCP)
+## 2.A Crear la tarea (RECOMENDADO — Edge Function `hermes-crear-tarea`)
+
+Hermes solo manda el **texto crudo**; el servidor clasifica (GROQ) e inserta la tarea.
+Aparece automáticamente en `tareasView.js` del departamento. Si es `alta`/`critica`,
+dispara el aviso de WhatsApp.
+
+```bash
+curl -X POST 'https://zmhmdvmyeyswunurcyow.supabase.co/functions/v1/hermes-crear-tarea' \
+  -H "Authorization: Bearer <ANON_KEY>" \
+  -H "x-hermes-token: <HERMES_EMAIL_TOKEN>" \
+  -H 'Content-Type: application/json' \
+  -d '{"texto":"necesito la relacion de pago de febrero"}'
+```
+
+Respuesta: `{ ok, clasificacion:{departamento,titulo,descripcion,prioridad,confianza}, tarea:{id,...} }`.
+Opcional: agregar `"departamento":"FIN"` al body para forzar el destino y saltar la
+clasificación de departamento.
+
+## 2.B Crear la tarea (alternativa manual — Supabase MCP)
 
 Una vez clasificado, Hermes inserta la tarea. El INSERT dispara el aviso de WhatsApp
 para `alta`/`critica`. NO hay que tocar nada más: el portal del departamento ya la muestra.

@@ -1,12 +1,17 @@
 import './postuladoCalendario.css'
 import { listarCitas } from '../../api/postulantesApi.js'
 import { router } from '../../../../core/router/router.js'
+import { ESTADO_LABELS, ESTADO_COLOR } from '../../domain/postuladoStateMachine.js'
 
 const state = {
   vista: 'mes', // mes | semana | dia
   ref: new Date(), // fecha de referencia (ancla de la vista)
   citas: [],
+  filtroEstado: 'todos', // 'todos' | <estado>
 }
+
+function estadoDe(c) { return c.estado || 'postulado' }
+function colorDe(c) { return ESTADO_COLOR[estadoDe(c)] || 'secondary' }
 
 const MESES = [
   'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
@@ -49,6 +54,10 @@ async function cargarCitas(container) {
       hasta = endOfDay(state.ref)
     }
     state.citas = await listarCitas(desde.toISOString(), hasta.toISOString())
+    // Si el estado filtrado ya no está presente en la nueva data, volver a "Todos"
+    if (state.filtroEstado !== 'todos' && !state.citas.some((c) => estadoDe(c) === state.filtroEstado)) {
+      state.filtroEstado = 'todos'
+    }
     renderContent(container)
   } catch (error) {
     renderError(container, error.message)
@@ -99,7 +108,7 @@ function renderContent(container) {
       <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
         <div>
           <h1 class="h3 fw-bold mb-1">Calendario de Citas</h1>
-          <p class="text-body-secondary mb-0 small">Entrevistas de admisión · ${state.citas.length} cita${state.citas.length === 1 ? '' : 's'} en vista</p>
+          <p class="text-body-secondary mb-0 small">Entrevistas de admisión · ${citasVisibles().length} cita${citasVisibles().length === 1 ? '' : 's'} en vista</p>
         </div>
         <div class="d-flex align-items-center gap-2 flex-wrap">
           <div class="btn-group btn-group-sm shadow-sm" role="group">
@@ -114,6 +123,8 @@ function renderContent(container) {
         </div>
       </div>
 
+      ${renderFiltros()}
+
       <div id="cal-body">
         ${state.vista === 'mes' ? renderMes() : state.vista === 'semana' ? renderSemana() : renderDia()}
       </div>
@@ -122,10 +133,44 @@ function renderContent(container) {
   attachEvents(container)
 }
 
+function citasVisibles() {
+  if (state.filtroEstado === 'todos') return state.citas
+  return state.citas.filter((c) => estadoDe(c) === state.filtroEstado)
+}
+
 function citasDeDia(date) {
-  return state.citas
+  return citasVisibles()
     .filter((c) => c.fecha_cita && sameDay(new Date(c.fecha_cita), date))
     .sort((a, b) => new Date(a.fecha_cita) - new Date(b.fecha_cita))
+}
+
+// Barra de filtros por estado — solo muestra los estados presentes en la vista.
+function renderFiltros() {
+  const counts = {}
+  for (const c of state.citas) {
+    const e = estadoDe(c)
+    counts[e] = (counts[e] || 0) + 1
+  }
+  const estados = Object.keys(counts)
+  if (estados.length <= 1) return '' // nada para filtrar
+
+  const chip = (key, label, color, count) => {
+    const active = state.filtroEstado === key
+    const cls = active ? `btn-${color}` : `btn-outline-${color}`
+    return `<button type="button" class="btn btn-sm rounded-pill pcal-filtro ${cls}" data-estado="${key}">${label} (${count})</button>`
+  }
+
+  const chips = estados
+    .sort()
+    .map((e) => chip(e, ESTADO_LABELS[e] || e, ESTADO_COLOR[e] || 'secondary', counts[e]))
+    .join('')
+
+  return `
+    <div class="d-flex align-items-center gap-2 flex-wrap mb-3 pcal-filtros">
+      <span class="small text-body-secondary me-1"><i class="bi bi-funnel me-1"></i>Estado:</span>
+      ${chip('todos', 'Todos', 'secondary', state.citas.length)}
+      ${chips}
+    </div>`
 }
 
 // ── Vista MES ─────────────────────────────────────────────────────────────────
@@ -152,7 +197,7 @@ function renderMes() {
         </div>
         <div class="d-flex flex-column gap-1 overflow-auto" style="max-height:74px">
           ${citas.map((c) => `
-            <span class="pcal-cita text-truncate">
+            <span class="pcal-cita text-truncate" style="border-left:3px solid var(--bs-${colorDe(c)})" title="${esc(ESTADO_LABELS[estadoDe(c)] || '')}">
               <i class="bi bi-clock me-1"></i>${horaStr(c.fecha_cita)} · ${esc(c.nombre_completo)}
             </span>`).join('')}
         </div>
@@ -185,7 +230,7 @@ function renderSemana() {
         </div>
         <div class="p-2 d-flex flex-column gap-1">
           ${citas.length === 0 ? '<div class="text-body-secondary text-center small mt-3">—</div>' : citas.map((c) => `
-            <span class="pcal-cita">
+            <span class="pcal-cita" style="border-left:3px solid var(--bs-${colorDe(c)})" title="${esc(ESTADO_LABELS[estadoDe(c)] || '')}">
               <span class="fw-semibold"><i class="bi bi-clock me-1"></i>${horaStr(c.fecha_cita)}</span><br>
               <span class="text-truncate d-block">${esc(c.nombre_completo)}</span>
             </span>`).join('')}
@@ -221,7 +266,10 @@ function renderDia() {
             <div class="fw-bold text-primary fs-6">${horaStr(c.fecha_cita)}</div>
           </div>
           <div class="flex-grow-1 min-w-0">
-            <div class="fw-semibold">${esc(c.nombre_completo)}</div>
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+              <span class="fw-semibold">${esc(c.nombre_completo)}</span>
+              <span class="badge rounded-pill text-bg-${colorDe(c)}" style="font-size:.65rem">${esc(ESTADO_LABELS[estadoDe(c)] || estadoDe(c))}</span>
+            </div>
             <div class="small text-body-secondary d-flex flex-wrap gap-3">
               ${repre ? `<span><i class="bi bi-person me-1"></i>Rep.: ${esc(repre)}</span>` : ''}
               ${tel ? `<span><i class="bi bi-whatsapp me-1 text-success"></i>${esc(tel)}</span>` : ''}
@@ -239,6 +287,10 @@ function renderDia() {
 function attachEvents(container) {
   container.querySelectorAll('.cal-vista').forEach((b) =>
     b.addEventListener('click', () => { state.vista = b.dataset.vista; cargarCitas(container) }))
+
+  // Filtros por estado — re-render local sin recargar de la API
+  container.querySelectorAll('.pcal-filtro').forEach((b) =>
+    b.addEventListener('click', () => { state.filtroEstado = b.dataset.estado; renderContent(container) }))
 
   container.querySelector('#btn-today')?.addEventListener('click', () => { state.ref = new Date(); cargarCitas(container) })
   container.querySelector('#btn-prev')?.addEventListener('click', () => { navegar(-1); cargarCitas(container) })

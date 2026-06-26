@@ -1,21 +1,32 @@
 /**
  * tareasMock.js — Datos en memoria que reflejan el esquema REAL de
- * `tareas_institucionales` (verificado 2026-06-25). Espejo del adaptador Supabase.
+ * `tareas_institucionales` (verificado 2026-06-25, SP-0 ampliado 2026-06-26).
+ * Espejo del adaptador Supabase — MISMA API, datos en memoria.
  *
  * Enums reales:
  *   departamento: DIR | ACM | ADM | FIN | LOG | COM | TECNICO
- *   estado:       pendiente | en_progreso | completada | bloqueada | cancelada
+ *   estado:       pendiente | en_progreso | completada | bloqueada | cancelada | observada
  *   prioridad:    baja | media | alta | critica
  * checklist: jsonb [{ item, completado }]
  * feedback:  TEXT (no objeto)
  *
- * Las tareas demo imitan las que genera el protocolo de concierto vía
- * fn_hermes_auto_delegar_tareas, más algunas de otros departamentos.
+ * SP-0 agrega:
+ *   entidad_tipo, entidad_id, entidad_label (asociación polimórfica)
+ *   correlation_id (agrupación por caso)
+ *   updated_by, updated_by_nombre (actor real del cambio)
+ *   tarea_comentarios, tarea_historial, documentos_adjuntos con storage_path
+ *
+ * "Mock First": la feature funciona en Demo mode antes de ir a producción.
  */
 
 const LATENCIA = 250
 
 const EVENT_DEMO = '00000000-0000-0000-0000-0000000000ev'
+const CORR_CONCIERTO = 'corr-0000-0000-0000-concierto2026'
+
+const ENTIDAD_TIPOS_VALIDOS = [
+  'alumno', 'maestro', 'postulante', 'representante', 'instrumento', 'evento', 'otro',
+]
 
 const tareas = [
   {
@@ -35,11 +46,28 @@ const tareas = [
       { item: 'Realizar ensayo general', completado: false },
     ],
     feedback: null,
-    documentos_adjuntos: [],
+    documentos_adjuntos: [
+      {
+        id: 'adj-acm-001',
+        nombre: 'repertorio-gala-2026.pdf',
+        storage_path: 'tareas/tarea-acm-001/adj-acm-001.pdf',
+        mime_type: 'application/pdf',
+        size_bytes: 128000,
+        subido_por: 'actor-demo-uuid',
+        subido_por_nombre: 'Prof. Ramírez',
+        created_at: '2026-06-22T10:00:00Z',
+      },
+    ],
     event_id: EVENT_DEMO,
     minuta_id: null,
     created_at: '2026-06-20T09:00:00Z',
     updated_at: '2026-06-24T14:30:00Z',
+    entidad_tipo: 'evento',
+    entidad_id: EVENT_DEMO,
+    entidad_label: 'Concierto de Gala 2026',
+    correlation_id: CORR_CONCIERTO,
+    updated_by: null,
+    updated_by_nombre: null,
   },
   {
     id: 'tarea-com-001',
@@ -63,6 +91,12 @@ const tareas = [
     minuta_id: null,
     created_at: '2026-06-20T09:00:00Z',
     updated_at: '2026-06-20T09:00:00Z',
+    entidad_tipo: null,
+    entidad_id: null,
+    entidad_label: null,
+    correlation_id: CORR_CONCIERTO,
+    updated_by: null,
+    updated_by_nombre: null,
   },
   {
     id: 'tarea-log-001',
@@ -86,6 +120,12 @@ const tareas = [
     minuta_id: null,
     created_at: '2026-06-20T09:00:00Z',
     updated_at: '2026-06-20T09:00:00Z',
+    entidad_tipo: null,
+    entidad_id: null,
+    entidad_label: null,
+    correlation_id: CORR_CONCIERTO,
+    updated_by: null,
+    updated_by_nombre: null,
   },
   {
     id: 'tarea-fin-001',
@@ -108,6 +148,12 @@ const tareas = [
     minuta_id: null,
     created_at: '2026-06-20T09:00:00Z',
     updated_at: '2026-06-23T16:00:00Z',
+    entidad_tipo: null,
+    entidad_id: null,
+    entidad_label: null,
+    correlation_id: CORR_CONCIERTO,
+    updated_by: null,
+    updated_by_nombre: null,
   },
   {
     id: 'tarea-dir-001',
@@ -130,6 +176,12 @@ const tareas = [
     minuta_id: null,
     created_at: '2026-06-20T09:00:00Z',
     updated_at: '2026-06-20T09:00:00Z',
+    entidad_tipo: null,
+    entidad_id: null,
+    entidad_label: null,
+    correlation_id: CORR_CONCIERTO,
+    updated_by: null,
+    updated_by_nombre: null,
   },
   {
     id: 'tarea-log-002',
@@ -150,11 +202,60 @@ const tareas = [
     minuta_id: null,
     created_at: '2026-06-10T09:00:00Z',
     updated_at: '2026-06-18T11:00:00Z',
+    entidad_tipo: 'instrumento',
+    entidad_id: 'inst-comodato-lote-a',
+    entidad_label: 'Lote A — Comodatos 2026',
+    correlation_id: 'corr-log-002-standalone',
+    updated_by: null,
+    updated_by_nombre: null,
   },
 ]
 
+// ─── In-memory stores for SP-0 tables ────────────────────────────────────────
+
+const comentarios = [
+  {
+    id: 'coment-demo-001',
+    tarea_id: 'tarea-acm-001',
+    autor_id: 'actor-demo-uuid',
+    autor_nombre: 'Prof. Ramírez',
+    cuerpo: 'Repertorio confirmado con el director. Iniciamos ensayos seccionales el lunes.',
+    created_at: '2026-06-22T09:00:00Z',
+  },
+  {
+    id: 'coment-demo-002',
+    tarea_id: 'tarea-acm-001',
+    autor_id: 'actor-dir-uuid',
+    autor_nombre: 'Director García',
+    cuerpo: 'Confirmo el repertorio. Recuerden coordinar con LOG el traslado de instrumentos.',
+    created_at: '2026-06-23T11:00:00Z',
+  },
+]
+
+const historial = [
+  {
+    id: 'hist-demo-001',
+    tarea_id: 'tarea-acm-001',
+    campo: 'estado',
+    valor_anterior: 'pendiente',
+    valor_nuevo: 'en_progreso',
+    actor_id: 'actor-dir-uuid',
+    actor_nombre: 'Director García',
+    actor_rol: null,
+    actor_departamento: 'DIR',
+    created_at: '2026-06-21T08:00:00Z',
+  },
+]
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
 const clone = (t) => JSON.parse(JSON.stringify(t))
 const delay = (val) => new Promise((resolve) => setTimeout(() => resolve(val), LATENCIA))
+
+let _mockSeq = 1
+const genId = (prefix) => `${prefix}-${String(_mockSeq++).padStart(4, '0')}`
+
+// ─── Existing API (unchanged) ─────────────────────────────────────────────────
 
 export async function getTareas() {
   return delay(tareas.map(clone))
@@ -211,7 +312,6 @@ export async function guardarFeedback(tareaId, feedbackTexto) {
 }
 
 // Plantillas de cascada por categoría de evento (espejo de hermes_protocolos).
-// Cada entrada genera una tarea departamental al crear el evento.
 const CASCADA_POR_CATEGORIA = {
   concierto: [
     { departamento: 'ACM', prioridad: 'critica', dias: 21, titulo: '🎼 ACM: Definir repertorio y ensayos', checklist: ['Definir repertorio', 'Asignar partituras', 'Ensayos seccionales', 'Ensayo general'] },
@@ -230,12 +330,9 @@ const CASCADA_POR_CATEGORIA = {
 
 let _eventSeq = 1
 
-/**
- * Simula la cascada Hermes: crea un evento y genera tareas departamentales
- * según la categoría. Espejo de fn_hermes_auto_delegar_tareas.
- */
 export async function crearEventoInstitucional(evento) {
   const eventId = `mock-event-${String(_eventSeq++).padStart(4, '0')}`
+  const correlationId = `corr-${eventId}`
   const base = evento.fecha_inicio ? new Date(evento.fecha_inicio) : new Date()
   const plantilla = CASCADA_POR_CATEGORIA[evento.categoria] || []
 
@@ -257,6 +354,12 @@ export async function crearEventoInstitucional(evento) {
       minuta_id: null,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
+      entidad_tipo: 'evento',
+      entidad_id: eventId,
+      entidad_label: evento.titulo,
+      correlation_id: correlationId,
+      updated_by: null,
+      updated_by_nombre: null,
     }
   })
 
@@ -284,6 +387,12 @@ export async function crearTareaInstitucional(payload) {
     minuta_id: null,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
+    entidad_tipo: payload.entidad_tipo || null,
+    entidad_id: payload.entidad_id || null,
+    entidad_label: payload.entidad_label || null,
+    correlation_id: payload.correlation_id || genId('corr'),
+    updated_by: null,
+    updated_by_nombre: null,
   }
   tareas.unshift(nueva)
   return delay(clone(nueva))
@@ -305,4 +414,128 @@ export async function getTareasFiltradas(filtros = {}) {
     )
   }
   return delay(res)
+}
+
+// ─── SP-0: Comentarios ────────────────────────────────────────────────────────
+
+export async function listarComentarios(tareaId) {
+  const result = comentarios
+    .filter((c) => c.tarea_id === tareaId)
+    .sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
+  return delay(result.map(clone))
+}
+
+export async function agregarComentario(tareaId, cuerpo, actor) {
+  if (!cuerpo || cuerpo.trim().length === 0) {
+    throw new Error('El cuerpo del comentario no puede estar vacío (comentario vacío)')
+  }
+  const nuevo = {
+    id: genId('coment'),
+    tarea_id: tareaId,
+    autor_id: actor?.id ?? null,
+    autor_nombre: actor?.nombre ?? null,
+    cuerpo: cuerpo.trim(),
+    created_at: new Date().toISOString(),
+  }
+  comentarios.push(nuevo)
+  return delay(clone(nuevo))
+}
+
+// ─── SP-0: Historial ──────────────────────────────────────────────────────────
+
+export async function listarHistorial(tareaId) {
+  const result = historial
+    .filter((h) => h.tarea_id === tareaId)
+    .sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
+  return delay(result.map(clone))
+}
+
+function _registrarHistorial(tareaId, campo, valorAnterior, valorNuevo, actor) {
+  historial.push({
+    id: genId('hist'),
+    tarea_id: tareaId,
+    campo,
+    valor_anterior: valorAnterior != null ? String(valorAnterior) : null,
+    valor_nuevo: valorNuevo != null ? String(valorNuevo) : null,
+    actor_id: actor?.id ?? null,
+    actor_nombre: actor?.nombre ?? null,
+    actor_rol: null,
+    actor_departamento: null,
+    created_at: new Date().toISOString(),
+  })
+}
+
+// ─── SP-0: Entidad asociada ───────────────────────────────────────────────────
+
+export async function actualizarEntidadAsociada(tareaId, entidad, actor) {
+  if (!ENTIDAD_TIPOS_VALIDOS.includes(entidad.tipo)) {
+    throw new Error(`tipo inválido: "${entidad.tipo}". Debe ser uno de: ${ENTIDAD_TIPOS_VALIDOS.join(', ')}`)
+  }
+  const tarea = tareas.find((t) => t.id === tareaId)
+  if (!tarea) throw new Error('Tarea no encontrada')
+
+  const prev = { tipo: tarea.entidad_tipo, id: tarea.entidad_id, label: tarea.entidad_label }
+  tarea.entidad_tipo = entidad.tipo
+  tarea.entidad_id = entidad.id
+  tarea.entidad_label = entidad.label
+  tarea.updated_by = actor?.id ?? null
+  tarea.updated_by_nombre = actor?.nombre ?? null
+  tarea.updated_at = new Date().toISOString()
+
+  if (prev.tipo !== entidad.tipo || prev.id !== entidad.id) {
+    _registrarHistorial(tareaId, 'entidad_tipo', prev.tipo, entidad.tipo, actor)
+  }
+
+  return delay(clone(tarea))
+}
+
+// ─── SP-0: Adjuntos ───────────────────────────────────────────────────────────
+
+export async function agregarAdjunto(tareaId, adjunto) {
+  if (!adjunto?.storage_path) {
+    throw new Error('storage_path requerido en el adjunto (required)')
+  }
+  const tarea = tareas.find((t) => t.id === tareaId)
+  if (!tarea) throw new Error('Tarea no encontrada')
+
+  const adjuntos = Array.isArray(tarea.documentos_adjuntos) ? tarea.documentos_adjuntos : []
+  adjuntos.push(adjunto)
+  tarea.documentos_adjuntos = adjuntos
+  tarea.updated_at = new Date().toISOString()
+  return delay(clone(tarea))
+}
+
+export async function urlFirmada(storagePath) {
+  return delay(`https://mock-storage.supabase.co/signed/${encodeURIComponent(storagePath)}?token=mock`)
+}
+
+// ─── SP-0: observarTarea (RPC atómico simulado) ───────────────────────────────
+
+export async function observarTarea(tareaId, comentario, actor) {
+  if (!comentario || comentario.trim().length === 0) {
+    throw new Error('observar requiere comentario (comentario vacío)')
+  }
+  const tarea = tareas.find((t) => t.id === tareaId)
+  if (!tarea) throw new Error('Tarea no encontrada')
+
+  const estadoAnterior = tarea.estado
+
+  const nuevoComentario = {
+    id: genId('coment'),
+    tarea_id: tareaId,
+    autor_id: actor?.id ?? null,
+    autor_nombre: actor?.nombre ?? null,
+    cuerpo: comentario.trim(),
+    created_at: new Date().toISOString(),
+  }
+  comentarios.push(nuevoComentario)
+
+  tarea.estado = 'observada'
+  tarea.updated_by = actor?.id ?? null
+  tarea.updated_by_nombre = actor?.nombre ?? null
+  tarea.updated_at = new Date().toISOString()
+
+  _registrarHistorial(tareaId, 'estado', estadoAnterior, 'observada', actor)
+
+  return delay(undefined)
 }

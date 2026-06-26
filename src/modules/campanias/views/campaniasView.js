@@ -4,6 +4,7 @@ import {
   desactivarCampania,
   previewCampania,
   activarCampania,
+  encolarCampania,
 } from '../api/campaniasApi.js'
 
 const state = {
@@ -176,6 +177,9 @@ function renderPanelEjecucion(c) {
           <button class="btn btn-sm btn-primary rounded-pill px-3" id="btn-activar" ${state.preview ? '' : 'disabled'}>
             <i class="bi bi-megaphone me-1"></i>Activar y materializar
           </button>
+          ${c.activo ? `<button class="btn btn-sm btn-success rounded-pill px-3" id="btn-encolar" title="Mueve una tanda a la cola respetando opt-out y tope diario">
+            <i class="bi bi-send me-1"></i>Encolar tanda (anti-ban)
+          </button>` : ''}
           ${c.activo ? `<button class="btn btn-sm btn-outline-secondary rounded-pill px-3" id="btn-desactivar">Desactivar</button>` : ''}
         </div>
       </div>
@@ -231,6 +235,17 @@ function attach(container) {
       await cargar(container)
     } catch (err) {
       alert(`Error al activar: ${err.message}`)
+    }
+  })
+
+  container.querySelector('#btn-encolar')?.addEventListener('click', async () => {
+    if (!confirm('Esto mueve una tanda a la cola de envío (respeta opt-out y tope diario). Los mensajes se despachan con ritmo anti-ban solo si el gateway está activo. ¿Continuar?')) return
+    try {
+      const r = await encolarCampania(state.seleccionada)
+      alert(`Encolados: ${r.encolados}. Tope hoy: ${r.cap_hoy} · Enviados hoy: ${r.enviados_hoy} · Restante: ${r.restante_tras_encolar}.`)
+      await cargar(container)
+    } catch (err) {
+      alert(`Error al encolar: ${err.message}`)
     }
   })
 

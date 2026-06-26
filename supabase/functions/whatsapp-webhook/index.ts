@@ -109,6 +109,17 @@ function esNumeroPersonal(jid: string): boolean {
   return jid.endsWith('@s.whatsapp.net') && !jid.endsWith('@g.us')
 }
 
+// Anti-ban / consentimiento: detectar intención de baja sin gastar tokens del LLM.
+function esOptOut(texto: string): boolean {
+  const t = texto
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .trim()
+    .toUpperCase()
+  if (t === 'BAJA' || t === 'STOP' || t === 'CANCELAR' || t === 'SALIR') return true
+  return /\b(NO\s+MOLESTAR|DAR(ME)?\s+DE\s+BAJA|NO\s+ESCRIB)/.test(t)
+}
+
 async function checkDisponibilidad(
   supabase: ReturnType<typeof createClient>,
   fechaSugerida: string,
@@ -239,6 +250,22 @@ Deno.serve(async (req: Request) => {
   const messageId = payload.data.key.id || 'unknown'
 
   const supabase = getClient(true)
+
+  // ── Opt-out (consentimiento / anti-ban) ─────────────────────────────────
+  // Se evalúa ANTES del LLM: respeta la baja y ahorra tokens.
+  if (esOptOut(texto)) {
+    try {
+      await supabase.rpc('fn_whatsapp_optout', { p_jid: jid, p_motivo: 'usuario_baja' })
+      await supabase.from('hermes_whatsapp_queue').insert({
+        jid,
+        mensaje: 'Listo, no le enviaremos más mensajes. Si desea retomar el proceso, escríbanos cuando guste. — El Sistema Punta Cana',
+        estado: 'pendiente',
+      })
+    } catch (err) {
+      console.error('[webhook] Error procesando opt-out:', err instanceof Error ? err.message : String(err))
+    }
+    return json({ ok: true, opted_out: true, jid })
+  }
 
   let conversacion: Conversacion | null
   try {

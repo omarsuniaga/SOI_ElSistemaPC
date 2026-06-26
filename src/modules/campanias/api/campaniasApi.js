@@ -52,6 +52,16 @@ export async function activarCampania(id) {
   return data
 }
 
+/** Encola una tanda a la cola viva respetando opt-out + tope diario (warm-up). */
+export async function encolarCampania(id, limite = null) {
+  const { data, error } = await supabase.rpc('fn_encolar_campania', {
+    p_campania_id: id,
+    p_limite: limite,
+  })
+  if (error) throw error
+  return data
+}
+
 /** Cupos en vivo de las clases de iniciación. */
 export async function listarCuposIniciacion() {
   const { data, error } = await supabase

@@ -28,6 +28,7 @@ const navGroups = [
     icon: 'bi-clipboard-data',
     items: [
       { id: 'campanias', label: 'Períodos / Campañas', icon: 'bi-megaphone' },
+      { id: 'gateway-config', label: 'Gateway WhatsApp', icon: 'bi-chat-dots' },
       { id: 'asistencias', label: 'Resumen Asistencias', icon: 'bi-calendar-check' },
       { id: 'admin-dashboard', label: 'Cumplimiento Maestros', icon: 'bi-clipboard-check' },
       { id: 'admin-ausencias', label: 'Gestión Ausencias', icon: 'bi-calendar-x' },

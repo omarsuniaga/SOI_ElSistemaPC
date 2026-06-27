@@ -48,6 +48,15 @@ const navGroups = [
     ],
   },
   {
+    id: 'direccion',
+    label: 'Dirección',
+    icon: 'bi-diagram-3',
+    items: [
+      { id: 'hermes-procedimientos', label: 'Procedimientos', icon: 'bi-diagram-3' },
+      { id: 'dir-score', label: 'Score Departamentos', icon: 'bi-speedometer2' },
+    ],
+  },
+  {
     id: 'hermes',
     label: 'Hermes',
     icon: 'bi-robot',

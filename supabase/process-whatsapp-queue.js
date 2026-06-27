@@ -20,6 +20,10 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY, {
   auth: { persistSession: false }
 })
 
+// Anti-ban: pausa con jitter entre envíos (mimetiza ritmo humano)
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
+const randInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min
+
 // Helper to check if current time is inside quiet hours
 function isQuietHours(startStr, endStr) {
   if (!startStr || !endStr) return false
@@ -96,14 +100,25 @@ async function processQueue() {
     process.exit(0)
   }
 
-  // 3. Fetch pending messages
+  // 2b. Anti-ban: respetar tope diario efectivo (warm-up) antes de enviar
+  const { data: capHoy } = await supabase.rpc('fn_whatsapp_cap_hoy')
+  const { data: enviadosHoy } = await supabase.rpc('fn_whatsapp_enviados_hoy')
+  const restanteHoy = Math.max((capHoy ?? 0) - (enviadosHoy ?? 0), 0)
+  if (restanteHoy <= 0) {
+    console.log(`🚦 Tope diario alcanzado (${enviadosHoy}/${capHoy}). No se envía más hoy.`)
+    process.exit(0)
+  }
+  const batchSize = config.batch_size ?? 10
+  const limite = Math.min(batchSize, restanteHoy)
+
+  // 3. Fetch pending messages (respetando el tope efectivo)
   const { data: pendingMessages, error: queueError } = await supabase
     .from('hermes_whatsapp_queue')
     .select('*')
     .eq('estado', 'pendiente')
     .lt('intentos', 3)
     .order('created_at', { ascending: true })
-    .limit(10)
+    .limit(limite)
 
   if (queueError) {
     console.error('❌ Error consultando la cola de mensajes:', queueError.message)
@@ -117,7 +132,11 @@ async function processQueue() {
 
   console.log(`✉️ Procesando ${pendingMessages.length} mensaje(s) pendiente(s)...`)
 
-  for (const message of pendingMessages) {
+  const jitterMin = config.jitter_min_seg ?? 8
+  const jitterMax = config.jitter_max_seg ?? 20
+
+  for (let i = 0; i < pendingMessages.length; i++) {
+    const message = pendingMessages[i]
     console.log(`🔹 Enviando mensaje ID ${message.id} a ${message.jid.split('@')[0]}...`)
 
     await supabase
@@ -176,6 +195,13 @@ async function processQueue() {
           error_msg: err.message
         })
         .eq('id', message.id)
+    }
+
+    // Anti-ban: pausa con jitter antes del próximo envío (no tras el último)
+    if (i < pendingMessages.length - 1) {
+      const espera = randInt(jitterMin, jitterMax)
+      console.log(`   ⏳ Esperando ${espera}s antes del próximo envío...`)
+      await sleep(espera * 1000)
     }
   }
 

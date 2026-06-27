@@ -15,7 +15,7 @@ jobs:
     
     strategy:
       matrix:
-        node-version: [18, 20]
+        node-version: ['20.19', 22]
     
     steps:
       - name: Checkout code
@@ -38,6 +38,9 @@ jobs:
       
       - name: Run tests
         run: npm run test:run
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
       
       - name: Upload build logs
         if: always()

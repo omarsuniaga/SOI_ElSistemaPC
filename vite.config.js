@@ -40,9 +40,14 @@ export default defineConfig({
         admin:      'admin.html',
         maestros:   'maestros.html',
         audiciones: 'audiciones.html',
-        caja:       'caja.html',
+        fin:        'fin.html',
+        acm:        'acm.html',
+        adm:        'adm.html',
+        com:        'com.html',
+        tecnico:    'tecnico.html',
         inventario: 'inventario.html',
         calendario: 'calendario.html',
+        luteria:    'luteria.html',
       },
       output: {
         manualChunks(id) {
@@ -96,14 +101,24 @@ export default defineConfig({
 
           if (pathname === '/admin' || pathname === '/admin/') {
             req.url = '/admin.html' + search
-          } else if (pathname === '/caja' || pathname === '/caja/') {
-            req.url = '/caja.html' + search
+          } else if (pathname === '/fin' || pathname === '/fin/') {
+            req.url = '/fin.html' + search
+          } else if (pathname === '/acm' || pathname === '/acm/') {
+            req.url = '/acm.html' + search
+          } else if (pathname === '/adm' || pathname === '/adm/') {
+            req.url = '/adm.html' + search
+          } else if (pathname === '/com' || pathname === '/com/') {
+            req.url = '/com.html' + search
+          } else if (pathname === '/tecnico' || pathname === '/tecnico/') {
+            req.url = '/tecnico.html' + search
           } else if (pathname === '/inventario' || pathname === '/inventario/') {
             req.url = '/inventario.html' + search
           } else if (pathname === '/calendario' || pathname === '/calendario/') {
             req.url = '/calendario.html' + search
           } else if (pathname === '/audiciones' || pathname === '/audiciones/') {
             req.url = '/audiciones.html' + search
+          } else if (pathname === '/luteria' || pathname === '/luteria/') {
+            req.url = '/luteria.html' + search
           }
           next()
         })

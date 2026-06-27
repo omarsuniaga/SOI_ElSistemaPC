@@ -649,6 +649,52 @@ export async function getReporteConsolidado({ periodoId, fecha, claseId } = {}) 
         clases: clases.sort((a, b) => (a.hora_inicio || '').localeCompare(b.hora_inicio || '')),
       }))
 
+    // ── Dedup defensivo por alumno + recuento + enriquecimiento con instrumento ──
+    // La vista SQL puede multiplicar filas por alumno; deduplicamos por alumno_id
+    // (prioridad presente > justificado > ausente) y recontamos para que las
+    // estadísticas coincidan con lo que se ve.
+    const PRIO = { presente: 0, justificado: 1, ausente: 2 }
+    const idSet = new Set()
+    for (const dia of timeline) {
+      for (const clase of dia.clases) {
+        const vistos = new Map()
+        for (const a of clase.asistencias || []) {
+          if (!a) continue
+          const key = a.alumno_id || a.alumnoId || a.alumno_nombre
+          const prev = vistos.get(key)
+          if (!prev || (PRIO[a.estado] ?? 9) < (PRIO[prev.estado] ?? 9)) vistos.set(key, a)
+        }
+        clase.asistencias = [...vistos.values()].sort((a, b) =>
+          (a.alumno_nombre || '').localeCompare(b.alumno_nombre || ''),
+        )
+        clase.presentes = clase.asistencias.filter((a) => a.estado === 'presente').length
+        clase.ausentes = clase.asistencias.filter((a) => a.estado === 'ausente').length
+        clase.justificados = clase.asistencias.filter((a) => a.estado === 'justificado').length
+        clase.total_alumnos = clase.asistencias.length
+        clase.asistencias.forEach((a) => idSet.add(a.alumno_id || a.alumnoId))
+      }
+    }
+
+    // Enriquecer cada asistencia con el instrumento principal del alumno (1 query).
+    if (idSet.size > 0) {
+      const ids = [...idSet].filter(Boolean)
+      const { data: alumnosInst } = await supabase
+        .from('alumnos')
+        .select('id, instrumento_principal')
+        .in('id', ids)
+      const instMap = {}
+      ;(alumnosInst || []).forEach((al) => {
+        instMap[al.id] = al.instrumento_principal || null
+      })
+      for (const dia of timeline) {
+        for (const clase of dia.clases) {
+          for (const a of clase.asistencias) {
+            a.instrumento = instMap[a.alumno_id || a.alumnoId] || null
+          }
+        }
+      }
+    }
+
     // Calcular resumen global
     const todasLasClases = timeline.flatMap((d) => d.clases)
     const resumenGlobal = {

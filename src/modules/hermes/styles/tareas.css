@@ -1,0 +1,202 @@
+/* ============================================================================
+   TAREAS INSTITUCIONALES (HERMES) — Estilos CSS
+   ============================================================================ */
+
+/* Page Container */
+.page-container {
+  padding: 1.5rem 1rem 3rem;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+/* ── Header ── */
+.tareas-header {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding-bottom: 1.5rem;
+}
+
+.tareas-title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.brand-badge {
+  flex-shrink: 0;
+}
+
+/* ── KPIs ── */
+.tareas-kpis {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.kpi-card {
+  flex: 1;
+  min-width: 140px;
+  padding: 1rem !important;
+  border-radius: 0.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.2s ease;
+}
+
+.kpi-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+/* ── Filtros ── */
+.tareas-filters {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 2rem;
+}
+
+.tareas-filters .form-control,
+.tareas-filters .form-select {
+  border-radius: 0.375rem;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background-color: rgba(255, 255, 255, 0.05);
+  color: var(--bs-body-color);
+}
+
+.tareas-filters .form-control:focus,
+.tareas-filters .form-select:focus {
+  border-color: var(--bs-primary);
+  background-color: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+
+/* ── Lista de Tareas ── */
+.tareas-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.tarea-card {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 0.5rem;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.tarea-card:hover {
+  border-color: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.04);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.tarea-card .card-title {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.tarea-card .card-text {
+  font-size: 0.875rem;
+  line-height: 1.4;
+}
+
+.tarea-card .badge {
+  font-size: 0.7rem;
+  padding: 0.35rem 0.6rem;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+/* Progress Bar */
+.progress {
+  background-color: rgba(255, 255, 255, 0.1);
+  border-radius: 0.25rem;
+}
+
+.progress-bar {
+  transition: width 0.3s ease;
+}
+
+/* Botones */
+.btn-expandir {
+  padding: 0.35rem 0.6rem;
+  font-size: 0.875rem;
+}
+
+.btn-expandir:hover {
+  transform: translateX(2px);
+}
+
+/* ── Modal Content ── */
+.modal-tarea-content {
+  font-size: 0.95rem;
+}
+
+.modal-tarea-content .list-group-item {
+  background: transparent;
+  border-color: rgba(255, 255, 255, 0.1);
+  padding: 0.5rem 0;
+}
+
+.modal-tarea-content .form-check-input {
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.modal-tarea-content .form-check-input:checked {
+  background-color: var(--bs-success);
+  border-color: var(--bs-success);
+}
+
+/* ── Empty State ── */
+.alert-info {
+  background-color: rgba(13, 202, 240, 0.15);
+  border-color: rgba(13, 202, 240, 0.3);
+  color: #0dcaf0;
+}
+
+/* ── Responsive ── */
+@media (max-width: 768px) {
+  .page-container {
+    padding: 1rem 0.5rem 2rem;
+  }
+
+  .tareas-title {
+    font-size: 1.5rem;
+  }
+
+  .tareas-filters {
+    gap: 0.5rem;
+  }
+
+  .tareas-filters .form-select {
+    max-width: 100%;
+  }
+
+  .tarea-card .card-body {
+    padding: 1rem !important;
+  }
+
+  .d-flex.gap-3 {
+    flex-wrap: wrap;
+  }
+
+  .flex-shrink-0 {
+    margin-top: 0.5rem;
+  }
+}
+
+/* ── Dark Mode Support ── */
+@media (prefers-color-scheme: dark) {
+  .tarea-card {
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+
+  .tareas-filters .form-control,
+  .tareas-filters .form-select {
+    background-color: rgba(0, 0, 0, 0.3);
+  }
+}

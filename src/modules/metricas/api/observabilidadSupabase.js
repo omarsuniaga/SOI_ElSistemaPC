@@ -148,21 +148,39 @@ export async function getOperaciones() {
 }
 
 /**
- * Compila el Payload DSL en producción: consulta las vistas de base de datos
+ * Compila el Payload DSL en producción: consulta las vistas de base de datos.
+ * Cada fuente se aísla: si una vista no existe o falla por RLS, devuelve []
+ * sin tumbar a las demás (algunas vistas como view_institutional_radar pueden
+ * no estar provisionadas en todos los entornos).
  * @returns {Promise<{radarData: Array, nodeDifficulty: Array, complianceData: Array}>}
  */
 export async function callDslRpc() {
-  const [radarRes, nodeRes, complianceRes] = await Promise.all([
-    supabase.from('view_institutional_radar').select('*'),
-    supabase
-      .from('view_node_difficulty')
-      .select('*')
-      .order('failure_percentage', { ascending: false }),
-    supabase.from('vw_rendimiento_maestro').select('*'),
-  ])
-  return {
-    radarData: radarRes.data || [],
-    nodeDifficulty: nodeRes.data || [],
-    complianceData: complianceRes.data || [],
+  const safe = async (query, fuente) => {
+    try {
+      const { data, error } = await query
+      if (error) {
+        await recordSystemLog({
+          level: 'WARNING',
+          module: 'ObservabilidadAPI',
+          message: `Fuente DSL no disponible (${fuente}): ${error.message}`,
+        })
+        return []
+      }
+      return data || []
+    } catch (err) {
+      console.warn(`callDslRpc: ${fuente} no disponible:`, err.message || err)
+      return []
+    }
   }
+
+  const [radarData, nodeDifficulty, complianceData] = await Promise.all([
+    safe(supabase.from('view_institutional_radar').select('*'), 'view_institutional_radar'),
+    safe(
+      supabase.from('view_node_difficulty').select('*').order('failure_percentage', { ascending: false }),
+      'view_node_difficulty',
+    ),
+    safe(supabase.from('vw_rendimiento_maestro').select('*'), 'vw_rendimiento_maestro'),
+  ])
+
+  return { radarData, nodeDifficulty, complianceData }
 }

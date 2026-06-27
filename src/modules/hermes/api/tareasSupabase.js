@@ -75,6 +75,19 @@ export async function getProcedimientos() {
   return data || []
 }
 
+// SP-4: abre un caso de "alumno en riesgo" (fan-out ACM/COM/FIN/DIR). Devuelve correlation_id.
+export async function reportarAlumnoRiesgo(alumnoId, alumnoNombre, motivo, actor = {}) {
+  const { data, error } = await supabase.rpc('fn_reportar_alumno_riesgo', {
+    p_alumno_id: alumnoId || null,
+    p_alumno_nombre: alumnoNombre || null,
+    p_motivo: motivo || null,
+    p_actor_id: actor.id || null,
+    p_actor_nombre: actor.nombre || null,
+  })
+  if (error) throw error
+  return data
+}
+
 export async function getTareasByEvento(eventId) {
   const { data, error } = await supabase
     .from(TABLA)

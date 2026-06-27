@@ -31,8 +31,20 @@ export async function renderProcedimientosView(container) {
   const ac = new AbortController()
   await cargar(container)
 
-  const onClick = (e) => {
-    if (e.target.closest('#btn-refrescar-proc')) cargar(container)
+  const onClick = async (e) => {
+    if (e.target.closest('#btn-refrescar-proc')) return cargar(container)
+    if (e.target.closest('#btn-caso-alumno')) {
+      const nombre = window.prompt('Nombre del alumno en riesgo:')
+      if (!nombre?.trim()) return
+      const motivo = window.prompt('Motivo (ausencias, bajo progreso, morosidad…):') || ''
+      try {
+        await tareasApi.reportarAlumnoRiesgo(null, nombre.trim(), motivo.trim())
+        alert('Caso abierto: se delegaron tareas a Académico, Comunicación, Finanzas y Dirección.')
+        cargar(container)
+      } catch (err) {
+        alert(`Error: ${err.message}`)
+      }
+    }
   }
   container.addEventListener('click', onClick, { signal: ac.signal })
 
@@ -97,9 +109,14 @@ function render(container) {
           <h3 class="mb-0"><i class="bi bi-diagram-3 me-2"></i>Procedimientos institucionales</h3>
           <p class="text-muted mb-0 small">Vista consolidada del Director — avance por caso (correlation_id)</p>
         </div>
-        <button id="btn-refrescar-proc" class="btn btn-outline-primary btn-sm" ${state.cargando ? 'disabled' : ''}>
-          <i class="bi bi-arrow-clockwise"></i> ${state.cargando ? 'Actualizando…' : 'Refrescar'}
-        </button>
+        <div class="d-flex gap-2">
+          <button id="btn-caso-alumno" class="btn btn-outline-danger btn-sm">
+            <i class="bi bi-person-exclamation"></i> Caso: alumno en riesgo
+          </button>
+          <button id="btn-refrescar-proc" class="btn btn-outline-primary btn-sm" ${state.cargando ? 'disabled' : ''}>
+            <i class="bi bi-arrow-clockwise"></i> ${state.cargando ? 'Actualizando…' : 'Refrescar'}
+          </button>
+        </div>
       </div>
 
       <div class="row row-cols-2 row-cols-md-5 g-2 mb-4">

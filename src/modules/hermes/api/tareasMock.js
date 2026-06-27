@@ -307,6 +307,11 @@ export async function getProcedimientos() {
   return delay(resumen)
 }
 
+// SP-4: simula el caso "alumno en riesgo" (devuelve un correlation_id ficticio).
+export async function reportarAlumnoRiesgo(_alumnoId, _alumnoNombre, _motivo, _actor = {}) {
+  return delay('00000000-0000-0000-0000-0000000000a1')
+}
+
 export async function updateTareaEstado(tareaId, nuevoEstado) {
   const tarea = tareas.find((t) => t.id === tareaId)
   if (!tarea) throw new Error('Tarea no encontrada')

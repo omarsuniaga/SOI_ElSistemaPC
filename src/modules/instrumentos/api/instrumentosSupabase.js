@@ -124,3 +124,23 @@ export async function asignarInstrumento(id, alumnoId, alumnoNombre) {
   if (error) throw error
   return data
 }
+
+/**
+ * SP-4: reporta un instrumento dañado. Abre un CASO Hermes (RPC) que marca el
+ * instrumento como 'danado' y delega tareas a LUT, LOG, FIN, ACM y COM
+ * compartiendo un correlation_id. Devuelve el correlation_id del caso.
+ * @param {string} id
+ * @param {string} descripcion
+ * @param {{ id?: string, nombre?: string }} [actor]
+ * @returns {Promise<string>} correlation_id
+ */
+export async function reportarInstrumentoDanado(id, descripcion, actor = {}) {
+  const { data, error } = await supabase.rpc('fn_reportar_instrumento_danado', {
+    p_instrumento_id: id,
+    p_descripcion: descripcion || null,
+    p_actor_id: actor.id || null,
+    p_actor_nombre: actor.nombre || null,
+  })
+  if (error) throw error
+  return data
+}

@@ -245,67 +245,60 @@ function renderAccordions() {
 }
 
 function renderClaseDetalles(clase) {
-  // Separar alumnos por estado
   const asistencias = clase.asistencias || []
   const presentes = asistencias.filter((a) => a.estado === 'presente')
   const ausentes = asistencias.filter((a) => a.estado === 'ausente')
   const justificados = asistencias.filter((a) => a.estado === 'justificado')
 
-  // Función helper para renderizar listado con estructura de árbol
-  const renderListadoEstado = (titulo, alumnos, colorBadge) => {
-    if (alumnos.length === 0) return ''
+  const key = `${clase.clase_id || 'c'}_${clase.fecha || 'f'}`
 
+  // Sección colapsable por estado (minimalista). `abierto` define el estado inicial.
+  const grupo = (titulo, alumnos, color, icon, abierto) => {
+    if (alumnos.length === 0) return ''
+    const targetId = `asis-${key}-${color}`
     return `
-      <div class="mb-3">
-        <h6 class="fw-bold mb-2">
-          <span class="badge bg-${colorBadge} me-2">${alumnos.length}</span>
-          ${titulo}
-        </h6>
-        <div class="listado-alumnos ps-3" style="border-left: 2px solid #dee2e6; padding-left: 1rem;">
-          ${alumnos
-            .map(
-              (a, idx) => `
-            <div class="alumno-item mb-2">
-              <span style="color: #6c757d; margin-right: 0.5rem;">
-                ${idx === alumnos.length - 1 ? '└─' : '├─'}
-              </span>
-              <span>${escapeHTML(a.alumno_nombre || 'Sin nombre')}</span>
-            </div>
-          `,
-            )
-            .join('')}
+      <div class="asis-grupo">
+        <button class="asis-grupo-toggle ${abierto ? '' : 'collapsed'}" type="button"
+          data-bs-toggle="collapse" data-bs-target="#${targetId}" aria-expanded="${abierto}">
+          <i class="bi ${icon} text-${color} me-2"></i>
+          <span class="fw-semibold">${titulo}</span>
+          <span class="badge rounded-pill text-bg-${color} ms-2">${alumnos.length}</span>
+          <i class="bi bi-chevron-down asis-chevron ms-auto"></i>
+        </button>
+        <div id="${targetId}" class="collapse ${abierto ? 'show' : ''}">
+          <ul class="list-group list-group-flush asis-lista">
+            ${alumnos
+              .map(
+                (a) => `
+              <li class="list-group-item d-flex justify-content-between align-items-center gap-2 px-0 py-1 border-0 bg-transparent">
+                <span class="asis-nombre text-truncate">${escapeHTML(a.alumno_nombre || 'Sin nombre')}</span>
+                ${
+                  a.instrumento
+                    ? `<span class="badge rounded-pill asis-instrumento"><i class="bi bi-music-note me-1"></i>${escapeHTML(a.instrumento)}</span>`
+                    : ''
+                }
+              </li>`,
+              )
+              .join('')}
+          </ul>
         </div>
       </div>
     `
   }
 
+  const obs = clase.observacion_sesion || clase.observacion_clase
   return `
-    <div class="clase-details-container">
-      <!-- Listado de Alumnos por Estado -->
-      <div class="alumnos-por-estado mb-4">
-        ${renderListadoEstado('Presentes', presentes, 'success')}
-        ${renderListadoEstado('Ausentes', ausentes, 'danger')}
-        ${renderListadoEstado('Justificados', justificados, 'warning')}
-      </div>
-
-      <!-- Observaciones del Maestro -->
+    <div class="asis-detalle">
+      ${grupo('Presentes', presentes, 'success', 'bi-check-circle', false)}
+      ${grupo('Ausentes', ausentes, 'danger', 'bi-x-circle', true)}
+      ${grupo('Justificados', justificados, 'warning', 'bi-exclamation-circle', false)}
       ${
-        clase.observacion_sesion || clase.observacion_clase || clase.tema_principal
-          ? `
-        <div class="observaciones-section border-top pt-3">
-          <h6 class="fw-bold mb-2"><i class="bi bi-chat-left-text me-2"></i>Observaciones de la Clase</h6>
-          <div class="alert alert-light border">
-            <p class="mb-0 text-secondary">
-              ${escapeHTML(clase.observacion_sesion || clase.observacion_clase || 'Sin observaciones registradas')}
-            </p>
-          </div>
-        </div>
-      `
-          : `
-        <div class="text-muted small text-center py-3">
-          <i class="bi bi-info-circle me-2"></i>No hay observaciones registradas para esta clase.
-        </div>
-      `
+        obs
+          ? `<div class="asis-obs mt-2 pt-2 border-top">
+               <i class="bi bi-chat-left-text me-1 text-muted"></i>
+               <span class="text-secondary small">${escapeHTML(obs)}</span>
+             </div>`
+          : ''
       }
     </div>
   `

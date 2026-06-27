@@ -17,6 +17,8 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const GROQ_API_KEY = Deno.env.get('GROQ_API_KEY') ?? ''
 const GROQ_BASE    = 'https://api.groq.com/openai/v1'
+const OPENROUTER_API_KEY = Deno.env.get('OPENROUTER_API_KEY') ?? ''
+const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions'
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
@@ -83,8 +85,27 @@ Deno.serve(async (req: Request) => {
 
   // ── POST /chat ────────────────────────────────────────────────────────────
   if (path === 'chat') {
-    let body: unknown
+    let body: Record<string, unknown>
     try { body = await req.json() } catch { return errorResponse('Invalid JSON body') }
+
+    // `provider` es un campo interno (no se reenvía al upstream): groq (default) | openrouter.
+    const provider = body?.provider === 'openrouter' ? 'openrouter' : 'groq'
+    delete body.provider
+
+    if (provider === 'openrouter') {
+      if (!OPENROUTER_API_KEY) return errorResponse('OPENROUTER_API_KEY not configured', 500)
+      const upstream = await fetch(OPENROUTER_URL, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${OPENROUTER_API_KEY}`,
+          'Content-Type': 'application/json',
+          'X-Title': 'SOI Sistema Academico',
+        },
+        body: JSON.stringify(body),
+      })
+      const data = await upstream.json()
+      return json(data, upstream.status)
+    }
 
     const upstream = await fetch(`${GROQ_BASE}/chat/completions`, {
       method: 'POST',

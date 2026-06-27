@@ -877,3 +877,53 @@
   }
 }
 
+
+/* ── Detalle de clase minimalista (listas colapsables P/A/J) ─────────────── */
+.asis-detalle {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+.asis-grupo-toggle {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  border: none;
+  background: transparent;
+  padding: 0.5rem 0.25rem;
+  border-radius: 8px;
+  color: var(--bs-body-color);
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+.asis-grupo-toggle:hover {
+  background: var(--bs-secondary-bg, rgba(125, 125, 125, 0.12));
+}
+.asis-chevron {
+  font-size: 0.75rem;
+  opacity: 0.6;
+  transition: transform 0.2s ease;
+}
+.asis-grupo-toggle.collapsed .asis-chevron {
+  transform: rotate(-90deg);
+}
+.asis-lista {
+  padding: 0.25rem 0.5rem 0.5rem 1.9rem;
+}
+.asis-lista .list-group-item {
+  font-size: 0.875rem;
+  color: var(--bs-body-color);
+}
+.asis-lista .list-group-item + .list-group-item {
+  border-top: 1px solid var(--bs-border-color-translucent, rgba(125, 125, 125, 0.15)) !important;
+}
+.asis-nombre {
+  min-width: 0;
+}
+.asis-instrumento {
+  flex-shrink: 0;
+  font-weight: 500;
+  background: var(--bs-secondary-bg, rgba(125, 125, 125, 0.15));
+  color: var(--bs-secondary-color, #6c757d);
+}

@@ -1,0 +1,44 @@
+[
+  {
+    "id": "requisitos",
+    "intencion": "preguntar_requisitos",
+    "claves": ["requisito", "documento", "papel", "llevar", "traer", "partida", "acta", "cedula", "foto", "necesito"],
+    "respuesta": "Para inscribirte en El Sistema Punta Cana necesitás: copia del acta de nacimiento del niño/a, copia de la cédula del representante, 2 fotos 2x2 y completar el formulario de inscripción. La primera etapa es la clase de Iniciación Musical."
+  },
+  {
+    "id": "costo",
+    "intencion": "consulta_general",
+    "claves": ["costo", "cuesta", "precio", "pagar", "pago", "gratis", "gratuito", "mensualidad", "cuota"],
+    "respuesta": "El Sistema Punta Cana es un programa social de formación musical. La inscripción y la clase de Iniciación Musical no tienen costo. Te confirmamos los detalles en tu cita."
+  },
+  {
+    "id": "horarios",
+    "intencion": "consulta_general",
+    "claves": ["horario", "hora", "dias", "cuando", "turno", "manana", "tarde", "empiezan", "clases"],
+    "respuesta": "Las clases de Iniciación Musical tienen turnos en la mañana y en la tarde. El horario exacto se asigna en tu cita de inscripción según el cupo disponible."
+  },
+  {
+    "id": "ubicacion",
+    "intencion": "consulta_general",
+    "claves": ["donde", "ubicacion", "direccion", "queda", "lugar", "sede"],
+    "respuesta": "El Sistema Punta Cana funciona en su sede de Punta Cana. La dirección exacta y cómo llegar te las damos al confirmar tu cita de inscripción."
+  },
+  {
+    "id": "edad",
+    "intencion": "consulta_general",
+    "claves": ["edad", "anos", "años", "edades", "mayor", "menor", "puede entrar", "acepta"],
+    "respuesta": "El Sistema Punta Cana recibe niños y jóvenes. La edad de ingreso a Iniciación Musical se evalúa en la cita. Escribinos los datos del niño/a y te orientamos."
+  },
+  {
+    "id": "iniciacion",
+    "intencion": "consulta_general",
+    "claves": ["iniciacion", "primera clase", "como empieza", "que es", "como funciona", "proceso"],
+    "respuesta": "Todos los nuevos ingresan por la clase de Iniciación Musical (teoría y solfeo). Al terminarla se hacen audiciones para pasar a Coro y/o Iniciación Instrumental."
+  },
+  {
+    "id": "instrumento",
+    "intencion": "consulta_general",
+    "claves": ["instrumento", "violin", "piano", "guitarra", "cello", "toca", "aprender a tocar"],
+    "respuesta": "El instrumento se asigna después de la Iniciación Musical, mediante audición. Primero se cursa Iniciación Musical (teoría y solfeo) y luego se pasa a Iniciación Instrumental."
+  }
+]

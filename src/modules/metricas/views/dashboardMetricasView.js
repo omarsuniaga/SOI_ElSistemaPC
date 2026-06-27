@@ -6,6 +6,7 @@ import {
   getAlumnosDestacados,
 } from '../api/metricasApi.js'
 import { callDslRpc } from '../api/observabilidadApi.js'
+import { callGroq } from '../../../portal-maestros/services/groqService.js'
 import { renderMetricCard } from '../components/MetricCard.js'
 import { escapeHTML } from '../../clases/utils/clasesUtils.js'
 import { systemLogsWidget } from './systemLogsWidget.js'
@@ -345,43 +346,115 @@ async function _onTabChange() {
   }
 }
 
+const IA_SYSTEM_PROMPT = `Actuás como el Analista de Inteligencia Institucional de "El Sistema Punta Cana",
+una fundación de educación musical. Se te entrega un JSON con métricas REALES pre-calculadas
+(KPIs del período, alertas, hotspots pedagógicos y rendimiento docente).
+
+Tu tarea: redactar un análisis ejecutivo breve en markdown limpio con:
+1. Estado general del grupo en 2-3 frases.
+2. Los 1-2 focos de atención más críticos (si los datos los muestran).
+3. Una recomendación accionable (máximo 2 bullets).
+
+REGLA CRÍTICA ANTIALUCINACIÓN: NO inventes números ni porcentajes que no estén en el JSON.
+Si un arreglo viene vacío, decilo explícitamente ("sin datos suficientes") en vez de suponer.
+Sé conciso y concreto.`
+
+/**
+ * Compila el contexto de datos REALES para la IA a partir del estado del Hub
+ * (KPIs ya cargados) más el payload DSL (hotspots y rendimiento docente).
+ */
+function _compilarContextoIA(dslData) {
+  const s = state.stats || {}
+  const ra = state.resumenAlertas || {}
+  return {
+    periodo_activo: {
+      total_alumnos: s.total_alumnos ?? null,
+      promedio_general: s.promedio_general ?? null,
+      asistencia_hoy_porcentaje: s.asistencia_hoy_porcentaje ?? null,
+    },
+    alertas: { total: ra.total ?? 0, rojas: ra.rojas ?? 0 },
+    hotspots_pedagogicos: (dslData?.nodeDifficulty || []).slice(0, 5),
+    rendimiento_docente: (dslData?.complianceData || []).slice(0, 10),
+  }
+}
+
 function _attachGlobalEventsIA() {
   state.container.querySelector('#btn-run-ia')?.addEventListener('click', async () => {
     const area = state.container.querySelector('#ia-result-area')
     if (!area) return
     area.innerHTML =
-      '<div class="text-center"><div class="spinner-border spinner-border-sm text-primary"></div><p class="small mt-2">Compilando datos y analizando con IA...</p></div>'
+      '<div class="text-center"><div class="spinner-border spinner-border-sm text-primary"></div><p class="small mt-2">Compilando datos reales y analizando con IA...</p></div>'
 
     try {
-      // Compilar datos mediante DataAdapter (mock o Supabase RPC según modo)
+      // 1. Compilar datos reales (DataAdapter: Supabase RPC o mock según modo)
       const dslData = await callDslRpc('global')
+      const contexto = _compilarContextoIA(dslData)
 
-      if (!dslData) {
-        area.innerHTML = `<div class="alert alert-warning small"><i class="bi bi-exclamation-circle me-1"></i> No hay datos disponibles para analizar.</div>`
-        return
+      // 2. Síntesis con IA real (GROQ) con prompt antialucinación
+      let narrativa = null
+      try {
+        const respuesta = await callGroq([
+          { role: 'system', content: IA_SYSTEM_PROMPT },
+          {
+            role: 'user',
+            content: `Datos institucionales reales (JSON):\n${JSON.stringify(contexto, null, 2)}\n\nGenerá el análisis según tus instrucciones.`,
+          },
+        ])
+        narrativa = typeof respuesta === 'string' ? respuesta : respuesta?.content || null
+      } catch (iaErr) {
+        console.warn('[IA Hub] GROQ no disponible, uso resumen local:', iaErr.message)
       }
 
-      // Aquí se llamaría a groqService para la síntesis con IA
-      // Por ahora mostramos los datos compilados
-      const analysis = _formatAnalysisFromDSL(dslData)
-      area.innerHTML = `
-        <div class="page-glass p-3 border-primary border-start border-4">
-          <p class="small mb-2"><strong>Análisis Institucional:</strong></p>
-          <p class="extra-small text-secondary">${escapeHTML(analysis)}</p>
-          <button class="btn btn-xs btn-outline-primary mt-2" id="btn-copy-report">Copiar Reporte</button>
-        </div>
-      `
-
-      // Adjuntar evento de copiado
-      state.container.querySelector('#btn-copy-report')?.addEventListener('click', () => {
-        navigator.clipboard.writeText(analysis)
-        AppToast.show('Reporte copiado al portapapeles', 'success')
-      })
+      // 3. Render: narrativa IA, o fallback determinístico si la IA falló
+      if (narrativa && narrativa.trim()) {
+        area.innerHTML = `
+          <div class="page-glass p-3 border-primary border-start border-4">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <strong class="small"><i class="bi bi-stars text-primary me-1"></i>Análisis Institucional</strong>
+              <span class="badge bg-success bg-opacity-10 text-success border border-success-subtle extra-small">GROQ · datos reales</span>
+            </div>
+            <div class="ia-content markdown-body small text-secondary">${_formatMarkdown(escapeHTML(narrativa.trim()))}</div>
+            <div class="d-flex gap-2 mt-3">
+              <button class="btn btn-xs btn-outline-primary" id="btn-copy-report"><i class="bi bi-clipboard me-1"></i>Copiar</button>
+              <a href="#/metricas-ia-reportes" class="btn btn-xs btn-outline-secondary"><i class="bi bi-file-earmark-pdf me-1"></i>Reporte completo + PDF</a>
+            </div>
+          </div>
+        `
+        state.container.querySelector('#btn-copy-report')?.addEventListener('click', () => {
+          navigator.clipboard.writeText(narrativa.trim())
+          AppToast.show('Reporte copiado al portapapeles', 'success')
+        })
+      } else {
+        const resumen = _formatAnalysisFromDSL(dslData)
+        area.innerHTML = `
+          <div class="page-glass p-3 border-warning border-start border-4">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <strong class="small">Resumen automático</strong>
+              <span class="badge bg-warning bg-opacity-10 text-warning border border-warning-subtle extra-small">IA no disponible</span>
+            </div>
+            <p class="extra-small text-secondary mb-0">${escapeHTML(resumen)}</p>
+          </div>
+        `
+      }
     } catch (err) {
       console.error('Error en análisis IA:', err)
       area.innerHTML = `<div class="alert alert-danger small"><i class="bi bi-exclamation-triangle me-1"></i> Error al compilar análisis: ${escapeHTML(err.message)}</div>`
     }
   })
+}
+
+/**
+ * Convierte markdown básico (encabezados, negritas, bullets) a HTML seguro.
+ * El texto entra ya escapado con escapeHTML, así que sólo agrega tags controlados.
+ */
+function _formatMarkdown(text) {
+  return text
+    .replace(/^### (.*$)/gim, '<h6 class="fw-bold mt-3 mb-1 text-dark">$1</h6>')
+    .replace(/^## (.*$)/gim, '<h6 class="fw-bold mt-3 mb-1 text-dark">$1</h6>')
+    .replace(/^# (.*$)/gim, '<h6 class="fw-bold mb-2 text-primary">$1</h6>')
+    .replace(/^[*-] (.*$)/gim, '<li class="ms-3 mb-1">$1</li>')
+    .replace(/\*\*(.*?)\*\*/g, '<strong class="text-dark">$1</strong>')
+    .replace(/\n/g, '<br>')
 }
 
 /**

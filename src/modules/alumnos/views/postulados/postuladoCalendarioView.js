@@ -1,20 +1,39 @@
+import './postuladoCalendario.css'
 import { listarCitas } from '../../api/postulantesApi.js'
 import { router } from '../../../../core/router/router.js'
-import { AppToast } from '../../../../shared/components/AppToast.js'
+import { ESTADO_LABELS, ESTADO_COLOR } from '../../domain/postuladoStateMachine.js'
 
 const state = {
-  year: new Date().getFullYear(),
-  month: new Date().getMonth() + 1, // 1-12
+  vista: 'mes', // mes | semana | dia
+  ref: new Date(), // fecha de referencia (ancla de la vista)
   citas: [],
-  cargando: false,
+  filtroEstado: 'todos', // 'todos' | <estado>
 }
+
+function estadoDe(c) { return c.estado || 'postulado' }
+function colorDe(c) { return ESTADO_COLOR[estadoDe(c)] || 'secondary' }
 
 const MESES = [
   'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-  'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+  'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
 ]
-
 const DIAS_SEMANA = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb']
+
+// ── Helpers de fecha ──────────────────────────────────────────────────────────
+function startOfDay(d) { const x = new Date(d); x.setHours(0, 0, 0, 0); return x }
+function endOfDay(d) { const x = new Date(d); x.setHours(23, 59, 59, 999); return x }
+function startOfWeek(d) { const x = startOfDay(d); x.setDate(x.getDate() - x.getDay()); return x }
+function addDays(d, n) { const x = new Date(d); x.setDate(x.getDate() + n); return x }
+function sameDay(a, b) {
+  return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate()
+}
+function isoDate(d) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+function fromIso(s) { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d) }
+function horaStr(iso) {
+  return new Date(iso).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', hour12: true })
+}
 
 export async function renderPostuladoCalendarioView(container) {
   await cargarCitas(container)
@@ -22,249 +41,284 @@ export async function renderPostuladoCalendarioView(container) {
 
 async function cargarCitas(container) {
   try {
-    state.cargando = true
     renderSkeleton(container)
-
-    // Definir el rango del mes seleccionado
-    const primerDia = new Date(state.year, state.month - 1, 1, 0, 0, 0).toISOString()
-    const ultimoDia = new Date(state.year, state.month, 0, 23, 59, 59).toISOString()
-
-    state.citas = await listarCitas(primerDia, ultimoDia)
-    state.cargando = false
-
+    let desde, hasta
+    if (state.vista === 'mes') {
+      desde = new Date(state.ref.getFullYear(), state.ref.getMonth(), 1, 0, 0, 0)
+      hasta = new Date(state.ref.getFullYear(), state.ref.getMonth() + 1, 0, 23, 59, 59)
+    } else if (state.vista === 'semana') {
+      desde = startOfWeek(state.ref)
+      hasta = endOfDay(addDays(desde, 6))
+    } else {
+      desde = startOfDay(state.ref)
+      hasta = endOfDay(state.ref)
+    }
+    state.citas = await listarCitas(desde.toISOString(), hasta.toISOString())
+    // Si el estado filtrado ya no está presente en la nueva data, volver a "Todos"
+    if (state.filtroEstado !== 'todos' && !state.citas.some((c) => estadoDe(c) === state.filtroEstado)) {
+      state.filtroEstado = 'todos'
+    }
     renderContent(container)
   } catch (error) {
-    state.cargando = false
     renderError(container, error.message)
   }
 }
 
 function renderSkeleton(container) {
   container.innerHTML = `
-    <div class="container-fluid py-4 px-3 px-md-4">
-      <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
-        <div>
-          <h1 class="h3 fw-bold mb-1">Calendario de Citas</h1>
-          <p class="text-muted mb-0">Seguimiento mensual de entrevistas de admisión</p>
-        </div>
+    <div class="container-fluid py-4 px-3 px-md-4 pcal-wrap">
+      <h1 class="h3 fw-bold mb-4">Calendario de Citas</h1>
+      <div class="d-flex justify-content-center align-items-center" style="min-height: 360px;">
+        <div class="spinner-border text-primary" role="status"></div>
       </div>
-      <div class="d-flex justify-content-center align-items-center" style="min-height: 400px;">
-        <div class="text-center">
-          <div class="spinner-border text-primary" role="status">
-            <span class="visually-hidden">Cargando calendario...</span>
-          </div>
-          <p class="text-muted mt-2">Cargando citas...</p>
-        </div>
-      </div>
-    </div>
-  `
+    </div>`
 }
 
 function renderError(container, message) {
   container.innerHTML = `
-    <div class="container py-5 text-center">
-      <div class="alert alert-danger shadow-sm border-0 d-flex flex-column align-items-center p-4 rounded-3" role="alert">
-        <i class="bi bi-exclamation-triangle-fill text-danger fs-1 mb-2"></i>
-        <h4 class="alert-heading fw-bold">Error al cargar citas</h4>
+    <div class="container py-5 text-center pcal-wrap">
+      <div class="alert alert-danger border-0 shadow-sm p-4 rounded-3">
+        <i class="bi bi-exclamation-triangle-fill text-danger fs-1 mb-2 d-block"></i>
+        <h4 class="fw-bold">Error al cargar citas</h4>
         <p>${message}</p>
-        <button class="btn btn-primary rounded-pill px-4 mt-3" id="btn-error-retry">
+        <button class="btn btn-primary rounded-pill px-4 mt-2" id="btn-error-retry">
           <i class="bi bi-arrow-clockwise me-1"></i> Reintentar
         </button>
       </div>
-    </div>
-  `
+    </div>`
   document.getElementById('btn-error-retry')?.addEventListener('click', () => renderPostuladoCalendarioView(container))
 }
 
+function tituloRango() {
+  if (state.vista === 'mes') return `${MESES[state.ref.getMonth()]} ${state.ref.getFullYear()}`
+  if (state.vista === 'semana') {
+    const ini = startOfWeek(state.ref)
+    const fin = addDays(ini, 6)
+    return `${ini.getDate()} ${MESES[ini.getMonth()].slice(0, 3)} – ${fin.getDate()} ${MESES[fin.getMonth()].slice(0, 3)} ${fin.getFullYear()}`
+  }
+  return `${DIAS_SEMANA[state.ref.getDay()]} ${state.ref.getDate()} de ${MESES[state.ref.getMonth()]} ${state.ref.getFullYear()}`
+}
+
 function renderContent(container) {
-  // Cantidad de días en el mes
-  const diasEnMes = new Date(state.year, state.month, 0).getDate()
-  // Día de la semana en que inicia el mes (0 = Domingo, 1 = Lunes...)
-  const primerDiaSemana = new Date(state.year, state.month - 1, 1).getDay()
+  const btn = (v, label) =>
+    `<button class="btn btn-sm ${state.vista === v ? 'btn-primary' : 'btn-outline-secondary'} cal-vista" data-vista="${v}">${label}</button>`
 
   container.innerHTML = `
-    <div class="container-fluid py-4 px-3 px-md-4">
-      <!-- HEADER -->
-      <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+    <div class="container-fluid py-4 px-3 px-md-4 pcal-wrap">
+      <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
         <div>
           <h1 class="h3 fw-bold mb-1">Calendario de Citas</h1>
-          <p class="text-muted mb-0">Seguimiento mensual de entrevistas de admisión</p>
+          <p class="text-body-secondary mb-0 small">Entrevistas de admisión · ${citasVisibles().length} cita${citasVisibles().length === 1 ? '' : 's'} en vista</p>
         </div>
-        
-        <!-- SELECTOR MES -->
-        <div class="d-flex align-items-center gap-2">
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+          <div class="btn-group btn-group-sm shadow-sm" role="group">
+            ${btn('mes', 'Mes')}${btn('semana', 'Semana')}${btn('dia', 'Día')}
+          </div>
           <button class="btn btn-sm btn-outline-secondary rounded-pill px-3" id="btn-today">Hoy</button>
-          <div class="input-group input-group-sm shadow-sm" style="max-width: 250px;">
-            <button class="btn btn-outline-secondary" id="btn-month-prev" type="button">
-              <i class="bi bi-chevron-left"></i>
-            </button>
-            <span class="form-control text-center fw-semibold bg-light d-flex align-items-center justify-content-center" style="min-width: 140px;">
-              ${MESES[state.month - 1]} ${state.year}
-            </span>
-            <button class="btn btn-outline-secondary" id="btn-month-next" type="button">
-              <i class="bi bi-chevron-right"></i>
-            </button>
+          <div class="input-group input-group-sm shadow-sm" style="max-width: 280px;">
+            <button class="btn btn-outline-secondary" id="btn-prev"><i class="bi bi-chevron-left"></i></button>
+            <span class="input-group-text flex-grow-1 justify-content-center fw-semibold">${tituloRango()}</span>
+            <button class="btn btn-outline-secondary" id="btn-next"><i class="bi bi-chevron-right"></i></button>
           </div>
         </div>
       </div>
 
-      <!-- CALENDAR CARD -->
-      <div class="card border-0 shadow-sm rounded-3 overflow-hidden">
-        <div class="card-body p-0">
-          
-          <!-- DIAS SEMANA HEADER -->
-          <div class="row g-0 bg-light text-center border-bottom py-2 fw-bold text-muted small">
-            ${DIAS_SEMANA.map(dia => `<div class="col" style="width: 14.28%;">${dia}</div>`).join('')}
-          </div>
+      ${renderFiltros()}
 
-          <!-- GRID CALENDARIO -->
-          <div class="row g-0 flex-wrap" id="calendar-grid">
-            ${renderGrid(primerDiaSemana, diasEnMes)}
-          </div>
-
-        </div>
+      <div id="cal-body">
+        ${state.vista === 'mes' ? renderMes() : state.vista === 'semana' ? renderSemana() : renderDia()}
       </div>
-    </div>
-  `
+    </div>`
 
   attachEvents(container)
 }
 
-function renderGrid(offset, totalDays) {
-  let html = ''
-  
-  // 1. Celdas vacías al principio del mes
-  for (let i = 0; i < offset; i++) {
-    html += `
-      <div class="col p-2 bg-light bg-opacity-25 border-end border-bottom d-none d-md-block" style="width: 14.28%; min-height: 120px;">
-        <span class="text-muted opacity-25 small"></span>
-      </div>
-    `
-  }
-
-  const hoy = new Date()
-  const esMesActual = hoy.getFullYear() === state.year && (hoy.getMonth() + 1) === state.month
-
-  // 2. Pintar los días del mes
-  for (let dia = 1; dia <= totalDays; dia++) {
-    const esHoy = esMesActual && hoy.getDate() === dia
-    const citasDelDia = getCitasDelDia(dia)
-    
-    html += `
-      <div class="col border-end border-bottom position-relative p-2" style="width: 14.28%; min-width: 14%; min-height: 120px; background-color: ${esHoy ? 'rgba(13, 110, 253, 0.04)' : '#fff'};">
-        <div class="d-flex justify-content-between align-items-center mb-1">
-          <span class="badge ${esHoy ? 'bg-primary text-white' : 'text-secondary'} fw-bold rounded-circle small p-1 d-inline-flex align-items-center justify-content-center" style="width: 24px; height: 24px;">
-            ${dia}
-          </span>
-          ${citasDelDia.length > 0 ? `<span class="badge bg-light-primary text-primary d-md-none rounded-pill border border-primary border-opacity-25" style="font-size: 0.7rem;">${citasDelDia.length}</span>` : ''}
-        </div>
-        
-        <!-- CITAS CONTAINER -->
-        <div class="d-flex flex-column gap-1 overflow-y-auto scrollbar-hidden mt-1" style="max-height: 90px;">
-          ${citasDelDia.map(c => {
-            const timeStr = new Date(c.fecha_cita).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', hour12: true })
-            return `
-              <div class="calendar-event-badge bg-light-primary text-primary border border-primary border-opacity-10 rounded px-2 py-1 small cursor-pointer hover-shadow transition-all d-none d-md-block btn-goto-perfil" data-id="${c.id}" title="${c.nombre_completo} - ${timeStr}">
-                <div class="fw-semibold text-truncate" style="font-size: 0.75rem;">${c.nombre_completo}</div>
-                <div class="text-secondary" style="font-size: 0.65rem;"><i class="bi bi-clock me-0.5"></i>${timeStr}</div>
-              </div>
-            `
-          }).join('')}
-          
-          <!-- VISTA MOBILE FLUIDA -->
-          ${citasDelDia.length > 0 ? `
-            <div class="d-md-none text-center mt-1">
-              <button class="btn btn-link text-decoration-none p-0 text-primary fw-semibold btn-view-mobile-day" style="font-size: 0.7rem;" data-day="${dia}">
-                Ver ${citasDelDia.length} citas
-              </button>
-            </div>
-          ` : ''}
-        </div>
-      </div>
-    `
-    
-    // Si llegamos al final de la semana, cerramos la fila en CSS Grid virtualmente (Bootstrap se encarga al tener anchos fijos de 14.28% y flexbox wrapping, lo cual es excelente).
-  }
-
-  // 3. Rellenar con celdas vacías al final si no termina en sábado (para que el grid quede cuadrado)
-  const celdasTotales = offset + totalDays
-  const sobrante = celdasTotales % 7
-  if (sobrante > 0) {
-    const faltantes = 7 - sobrante
-    for (let i = 0; i < faltantes; i++) {
-      html += `
-        <div class="col p-2 bg-light bg-opacity-25 border-end border-bottom d-none d-md-block" style="width: 14.28%; min-height: 120px;">
-          <span class="text-muted opacity-25 small"></span>
-        </div>
-      `
-    }
-  }
-
-  return html
+function citasVisibles() {
+  if (state.filtroEstado === 'todos') return state.citas
+  return state.citas.filter((c) => estadoDe(c) === state.filtroEstado)
 }
 
-function getCitasDelDia(dia) {
-  return state.citas.filter((c) => {
-    if (!c.fecha_cita) return false
-    const date = new Date(c.fecha_cita)
-    return date.getDate() === dia && date.getMonth() + 1 === state.month && date.getFullYear() === state.year
-  })
+function citasDeDia(date) {
+  return citasVisibles()
+    .filter((c) => c.fecha_cita && sameDay(new Date(c.fecha_cita), date))
+    .sort((a, b) => new Date(a.fecha_cita) - new Date(b.fecha_cita))
+}
+
+// Barra de filtros por estado — solo muestra los estados presentes en la vista.
+function renderFiltros() {
+  const counts = {}
+  for (const c of state.citas) {
+    const e = estadoDe(c)
+    counts[e] = (counts[e] || 0) + 1
+  }
+  const estados = Object.keys(counts)
+  if (estados.length <= 1) return '' // nada para filtrar
+
+  const chip = (key, label, color, count) => {
+    const active = state.filtroEstado === key
+    const cls = active ? `btn-${color}` : `btn-outline-${color}`
+    return `<button type="button" class="btn btn-sm rounded-pill pcal-filtro ${cls}" data-estado="${key}">${label} (${count})</button>`
+  }
+
+  const chips = estados
+    .sort()
+    .map((e) => chip(e, ESTADO_LABELS[e] || e, ESTADO_COLOR[e] || 'secondary', counts[e]))
+    .join('')
+
+  return `
+    <div class="d-flex align-items-center gap-2 flex-wrap mb-3 pcal-filtros">
+      <span class="small text-body-secondary me-1"><i class="bi bi-funnel me-1"></i>Estado:</span>
+      ${chip('todos', 'Todos', 'secondary', state.citas.length)}
+      ${chips}
+    </div>`
+}
+
+// ── Vista MES ─────────────────────────────────────────────────────────────────
+function renderMes() {
+  const year = state.ref.getFullYear()
+  const month = state.ref.getMonth()
+  const diasEnMes = new Date(year, month + 1, 0).getDate()
+  const offset = new Date(year, month, 1).getDay()
+  const hoy = new Date()
+
+  let celdas = ''
+  for (let i = 0; i < offset; i++) {
+    celdas += `<div class="col pcal-cell is-empty" style="width:14.28%"></div>`
+  }
+  for (let dia = 1; dia <= diasEnMes; dia++) {
+    const fecha = new Date(year, month, dia)
+    const esHoy = sameDay(fecha, hoy)
+    const citas = citasDeDia(fecha)
+    celdas += `
+      <div class="col pcal-cell ${esHoy ? 'is-today' : ''} p-2" style="width:14.28%;min-width:14%" data-date="${isoDate(fecha)}" role="button">
+        <div class="d-flex justify-content-between align-items-center mb-1">
+          <span class="pcal-daynum ${esHoy ? 'is-today' : ''} fw-bold rounded-circle">${dia}</span>
+          ${citas.length ? `<span class="badge rounded-pill text-bg-secondary" style="font-size:.62rem">${citas.length}</span>` : ''}
+        </div>
+        <div class="d-flex flex-column gap-1 overflow-auto" style="max-height:74px">
+          ${citas.map((c) => `
+            <span class="pcal-cita text-truncate" style="border-left:3px solid var(--bs-${colorDe(c)})" title="${esc(ESTADO_LABELS[estadoDe(c)] || '')}">
+              <i class="bi bi-clock me-1"></i>${horaStr(c.fecha_cita)} · ${esc(c.nombre_completo)}
+            </span>`).join('')}
+        </div>
+      </div>`
+  }
+
+  return `
+    <div class="card border-0 shadow-sm rounded-3 overflow-hidden pcal-card">
+      <div class="row g-0 text-center py-2 fw-bold small pcal-weekhead">
+        ${DIAS_SEMANA.map((d) => `<div class="col" style="width:14.28%">${d}</div>`).join('')}
+      </div>
+      <div class="row g-0 flex-wrap">${celdas}</div>
+    </div>`
+}
+
+// ── Vista SEMANA ──────────────────────────────────────────────────────────────
+function renderSemana() {
+  const ini = startOfWeek(state.ref)
+  const hoy = new Date()
+  let cols = ''
+  for (let i = 0; i < 7; i++) {
+    const fecha = addDays(ini, i)
+    const esHoy = sameDay(fecha, hoy)
+    const citas = citasDeDia(fecha)
+    cols += `
+      <div class="col pcal-weekcol" data-date="${isoDate(fecha)}" role="button" style="min-width:0">
+        <div class="text-center py-2 pcal-weekhead-day ${esHoy ? 'is-today' : ''}">
+          <div class="small text-body-secondary">${DIAS_SEMANA[fecha.getDay()]}</div>
+          <div class="fw-bold ${esHoy ? 'text-primary' : ''}">${fecha.getDate()}</div>
+        </div>
+        <div class="p-2 d-flex flex-column gap-1">
+          ${citas.length === 0 ? '<div class="text-body-secondary text-center small mt-3">—</div>' : citas.map((c) => `
+            <span class="pcal-cita" style="border-left:3px solid var(--bs-${colorDe(c)})" title="${esc(ESTADO_LABELS[estadoDe(c)] || '')}">
+              <span class="fw-semibold"><i class="bi bi-clock me-1"></i>${horaStr(c.fecha_cita)}</span><br>
+              <span class="text-truncate d-block">${esc(c.nombre_completo)}</span>
+            </span>`).join('')}
+        </div>
+      </div>`
+  }
+  return `
+    <div class="card border-0 shadow-sm rounded-3 overflow-hidden pcal-card pcal-week-scroll">
+      <div class="row g-0">${cols}</div>
+    </div>`
+}
+
+// ── Vista DÍA (detalle) ───────────────────────────────────────────────────────
+function renderDia() {
+  const citas = citasDeDia(state.ref)
+  if (citas.length === 0) {
+    return `
+      <div class="card border-0 shadow-sm rounded-3 pcal-card">
+        <div class="card-body text-center py-5 text-body-secondary">
+          <i class="bi bi-calendar-x fs-1 d-block mb-2 opacity-50"></i>
+          No hay citas agendadas para este día.
+        </div>
+      </div>`
+  }
+  return `
+    <div class="card border-0 shadow-sm rounded-3 overflow-hidden pcal-card">
+      ${citas.map((c) => {
+        const repre = c.madre_nombre || c.padre_nombre || c.representante_parentesco || null
+        const tel = c.madre_tlf_whatsapp || c.padre_tlf_whatsapp || c.telefono_alumno || null
+        return `
+        <div class="pcal-day-item d-flex align-items-center gap-3 py-3 px-3">
+          <div class="text-center flex-shrink-0" style="width:78px">
+            <div class="fw-bold text-primary fs-6">${horaStr(c.fecha_cita)}</div>
+          </div>
+          <div class="flex-grow-1 min-w-0">
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+              <span class="fw-semibold">${esc(c.nombre_completo)}</span>
+              <span class="badge rounded-pill text-bg-${colorDe(c)}" style="font-size:.65rem">${esc(ESTADO_LABELS[estadoDe(c)] || estadoDe(c))}</span>
+            </div>
+            <div class="small text-body-secondary d-flex flex-wrap gap-3">
+              ${repre ? `<span><i class="bi bi-person me-1"></i>Rep.: ${esc(repre)}</span>` : ''}
+              ${tel ? `<span><i class="bi bi-whatsapp me-1 text-success"></i>${esc(tel)}</span>` : ''}
+              ${c.instrumento ? `<span><i class="bi bi-music-note me-1"></i>${esc(c.instrumento)}</span>` : ''}
+            </div>
+          </div>
+          <button class="btn btn-sm btn-outline-primary rounded-pill px-3 flex-shrink-0 cal-cita-form" data-id="${c.id}">
+            <i class="bi bi-file-earmark-person me-1"></i><span class="d-none d-sm-inline">Ver formulario</span>
+          </button>
+        </div>`
+      }).join('')}
+    </div>`
 }
 
 function attachEvents(container) {
-  // Selector de mes ← — scoped to container
-  container.querySelector('#btn-month-prev')?.addEventListener('click', () => {
-    state.month--
-    if (state.month < 1) {
-      state.month = 12
-      state.year--
-    }
-    cargarCitas(container)
-  })
+  container.querySelectorAll('.cal-vista').forEach((b) =>
+    b.addEventListener('click', () => { state.vista = b.dataset.vista; cargarCitas(container) }))
 
-  // Selector de mes → — scoped to container
-  container.querySelector('#btn-month-next')?.addEventListener('click', () => {
-    state.month++
-    if (state.month > 12) {
-      state.month = 1
-      state.year++
-    }
-    cargarCitas(container)
-  })
+  // Filtros por estado — re-render local sin recargar de la API
+  container.querySelectorAll('.pcal-filtro').forEach((b) =>
+    b.addEventListener('click', () => { state.filtroEstado = b.dataset.estado; renderContent(container) }))
 
-  // Botón "Hoy" — scoped to container
-  container.querySelector('#btn-today')?.addEventListener('click', () => {
-    state.year = new Date().getFullYear()
-    state.month = new Date().getMonth() + 1
-    cargarCitas(container)
-  })
+  container.querySelector('#btn-today')?.addEventListener('click', () => { state.ref = new Date(); cargarCitas(container) })
+  container.querySelector('#btn-prev')?.addEventListener('click', () => { navegar(-1); cargarCitas(container) })
+  container.querySelector('#btn-next')?.addEventListener('click', () => { navegar(1); cargarCitas(container) })
 
-  // Clicks en eventos de escritorio
-  container.querySelectorAll('.btn-goto-perfil').forEach((badge) => {
-    badge.addEventListener('click', (e) => {
+  // Clic en una fecha (mes/semana) → ver las citas de ese día (vista Día)
+  container.querySelectorAll('[data-date]').forEach((cell) =>
+    cell.addEventListener('click', () => {
+      state.vista = 'dia'
+      state.ref = fromIso(cell.dataset.date)
+      cargarCitas(container)
+    }))
+
+  // Botón "Ver formulario" en vista Día → perfil del postulado
+  container.querySelectorAll('.cal-cita-form').forEach((b) =>
+    b.addEventListener('click', (e) => {
       e.stopPropagation()
-      const id = e.currentTarget.getAttribute('data-id')
-      router.navigate('postulado', { id })
-    })
-  })
+      router.navigate('postulado', { id: b.dataset.id })
+    }))
+}
 
-  // Clicks en vista mobile (ver citas del día)
-  container.querySelectorAll('.btn-view-mobile-day').forEach((btn) => {
-    btn.addEventListener('click', (e) => {
-      e.stopPropagation()
-      const dia = parseInt(e.currentTarget.getAttribute('data-day'))
-      const citas = getCitasDelDia(dia)
-      
-      const listStr = citas.map(c => {
-        const timeStr = new Date(c.fecha_cita).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', hour12: true })
-        return `• ${c.nombre_completo} (${timeStr})`
-      }).join('\n')
+function navegar(dir) {
+  if (state.vista === 'mes') state.ref = new Date(state.ref.getFullYear(), state.ref.getMonth() + dir, 1)
+  else if (state.vista === 'semana') state.ref = addDays(state.ref, 7 * dir)
+  else state.ref = addDays(state.ref, dir)
+}
 
-      AppToast.success(`${citas.length} cita(s) el día ${dia} de ${MESES[state.month - 1]} — seleccioná el perfil para ver detalles.`)
-      
-      if (citas.length === 1) {
-        router.navigate('postulado', { id: citas[0].id })
-      }
-    })
-  })
+function esc(s) {
+  if (s == null) return ''
+  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
 }

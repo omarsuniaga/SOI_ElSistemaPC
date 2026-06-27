@@ -256,8 +256,57 @@ Deno.serve(async (req: Request) => {
   }
 
   if (!conversacion) {
-    console.log(`[webhook] JID ${jid} no tiene conversación activa (pushName: ${pushName})`)
-    return json({ ok: true, ignored: 'no_active_conversation', jid })
+    console.log(`[webhook] JID ${jid} no tiene conversación activa — intentando crear (pushName: ${pushName})`)
+
+    const telefono = jid.replace(/@s\.whatsapp\.net$/, '')
+
+    let nuevoPostulante: Postulante | null = null
+    try {
+      nuevoPostulante = maybeSingle(
+        await supabase
+          .from('postulantes')
+          .select('*')
+          .or(
+            `madre_tlf_whatsapp.ilike.%${telefono},padre_tlf_whatsapp.ilike.%${telefono},telefono_alumno.ilike.%${telefono}`,
+          )
+          .limit(1)
+          .maybeSingle(),
+      )
+    } catch {
+      // ignore query errors
+    }
+
+    if (!nuevoPostulante) {
+      console.log(`[webhook] JID ${jid} desconocido, sin postulante asociado (pushName: ${pushName})`)
+      return json({ ok: true, ignored: 'unknown_number', jid })
+    }
+
+    const { error: createErr } = await supabase
+      .from('conversaciones_whatsapp')
+      .insert({
+        postulante_id: nuevoPostulante.id,
+        jid,
+        estado_conversacion: CONV_ESTADOS.ESPERANDO_RESPUESTA,
+        reintentos: 0,
+        updated_at: new Date().toISOString(),
+      })
+
+    if (createErr) {
+      console.error(`[webhook] Error creando conversación para ${jid}:`, createErr.message)
+      return errorResponse('Error al crear conversación', 502)
+    }
+
+    conversacion = {
+      id: 'new',
+      postulante_id: nuevoPostulante.id,
+      jid,
+      estado_conversacion: CONV_ESTADOS.ESPERANDO_RESPUESTA,
+      reintentos: 0,
+    }
+    postulante = nuevoPostulante
+    postulanteId = nuevoPostulante.id
+
+    console.log(`[webhook] Conversación creada para postulante ${nuevoPostulante.id.slice(0, 8)} vía entrada pública`)
   }
 
   const postulanteId = conversacion.postulante_id
@@ -308,9 +357,15 @@ Deno.serve(async (req: Request) => {
   let estadoFinal = decision.siguienteEstado as string
   let pipelineFinal = decision.pipelineAction
 
+  function esFechaValida(s: string | null | undefined): s is string {
+    if (!s) return false
+    const d = new Date(s)
+    return !isNaN(d.getTime())
+  }
+
   if (
     decision.siguienteEstado === CONV_ESTADOS.AGENDANDO_CITA &&
-    intencion.fecha_sugerida
+    esFechaValida(intencion.fecha_sugerida)
   ) {
     const disponible = await checkDisponibilidad(supabase, intencion.fecha_sugerida, postulanteId)
 

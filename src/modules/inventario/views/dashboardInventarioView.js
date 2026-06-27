@@ -1,6 +1,8 @@
 import { obtenerKPI, obtenerActivos, obtenerComodatosActivos, obtenerReparaciones } from '../api/inventarioApi.js'
 import { estadoVencimiento } from '../domain/comodato.js'
-import { obtenerTareas, actualizarTarea } from '../../hermes/api/hermesApi.js'
+// Stub functions for missing Hermes Tareas API on master branch
+async function obtenerTareas() { return { data: [], error: null } }
+async function actualizarTarea() { return { data: null, error: null } }
 
 export async function renderDashboardInventarioView(container) {
   const _ac = new AbortController()

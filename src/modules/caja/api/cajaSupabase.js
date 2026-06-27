@@ -285,8 +285,9 @@ export async function marcarNotificacionLeida(id) {
  * @returns {Function} unsubscribe function
  */
 export function subscribeNotificaciones(callback) {
+  const channelId = `caja-notificaciones-realtime-${Math.random().toString(36).substring(2, 9)}`
   const channel = supabase
-    .channel('caja-notificaciones-realtime')
+    .channel(channelId)
     .on(
       'postgres_changes',
       { event: 'INSERT', schema: 'public', table: 'notificaciones_caja' },

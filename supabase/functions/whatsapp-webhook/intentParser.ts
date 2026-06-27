@@ -7,6 +7,8 @@ export const INTENTS = {
   CONFIRMAR_ASISTENCIA: 'confirmar_asistencia',
   PREGUNTAR_REQUISITOS: 'preguntar_requisitos',
   CONSULTA_GENERAL: 'consulta_general',
+  AGRADECIMIENTO: 'agradecimiento',
+  DESPEDIDA: 'despedida',
   NO_RESPUESTA: 'no_respuesta',
 } as const
 
@@ -55,13 +57,22 @@ INTENCIONES POSIBLES (elegí UNA):
   Frases: "cuánto cuesta", "horarios", "dónde queda", "qué días",
   "es gratis", "cuándo empiezan las clases".
 
-- no_respuesta: Saludo, mensaje vacío, irrelevante, o que no expresa intención clara.
-  Frases: "hola", "jaja", "gracias", "ok", "bueno", emojis solos, "ah ok".
+- agradecimiento: El padre da las gracias o expresa gratitud sin intención de agendar.
+  Frases: "muchas gracias", "gracias por todo", "te agradezco", "muy amable".
+
+- despedida: El padre se despide o indica que la conversación terminó.
+  Frases: "que tengas buen día", "adiós", "nos vemos", "hasta luego", "cuídese",
+  "chao", "bye".
+
+- no_respuesta: Saludo inicial, mensaje vacío, irrelevante, o que no expresa intención clara.
+  Frases: "hola", "jaja", "ok", "bueno", emojis solos, "ah ok".
 
 REGLAS:
 - Priorizá la intención más específica sobre no_respuesta. "ok" después de
   ofrecer un horario → agendar_cita, no no_respuesta.
-- Si el mensaje menciona una fecha/día/hora, incluíla en fecha_sugerida.
+- fecha_sugerida: SOLO si el MENSAJE DEL REPRESENTANTE menciona una fecha/día/hora
+  NUEVA. NO uses fechas del CONTEXTO. Si no hay fecha en el mensaje del
+  representante, poné null.
 - Confianza: 0.0 a 1.0. Soltá 0.0 si estás adivinando.
 
 Devolvé SOLO un JSON válido (sin markdown, sin texto adicional):

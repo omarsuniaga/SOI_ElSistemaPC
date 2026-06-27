@@ -19,7 +19,7 @@ function _injectStyles() {
       position: fixed;
       bottom: 1.25rem;
       right: 1.25rem;
-      z-index: 10050;
+      z-index: 12000;
       display: flex;
       flex-direction: column;
       gap: 0.5rem;

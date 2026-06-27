@@ -31,7 +31,7 @@ function ensureDOM() {
     display:none;position:fixed;inset:0;
     z-index:11001;
     overflow-y:auto;
-    padding:1.5rem;
+    padding:clamp(0.5rem, 2vw, 1rem);
     align-items:center;
     justify-content:center;
   `
@@ -112,7 +112,7 @@ function getEls() {
 }
 
 // Sizes
-const SIZES = { sm: '400px', md: '520px', lg: '720px', xl: '960px' }
+const SIZES = { sm: '500px', md: '680px', lg: '900px', xl: '1140px' }
 
 export const AppModal = {
   _saveHandler: null,
@@ -128,8 +128,10 @@ export const AppModal = {
     const footer = els.dialog.querySelector('.app-modal-footer')
     if (footer) footer.style.removeProperty('display')
 
-    // Size
-    els.dialog.style.maxWidth = SIZES[size] || SIZES.md
+    // Size — responsive: 20% margin on each side (60vw max), capped by configured size
+    const sizePx = parseInt(SIZES[size] || SIZES.md)
+    const maxByMargin = window.innerWidth * 0.6
+    els.dialog.style.maxWidth = `${Math.max(Math.min(maxByMargin, sizePx), 320)}px`
 
     // Content
     els.title.textContent = title

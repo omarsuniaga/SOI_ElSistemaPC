@@ -156,10 +156,7 @@ function renderContent(container) {
             <i class="bi bi-file-earmark-pdf"></i> PDF Listado
           </button>
           <button class="btn btn-success btn-sm-compact" id="btnInscribir">
-            <i class="bi bi-person-plus me-1"></i>Inscribir
-          </button>
-          <button class="btn btn-premium-action" id="btnAgregarAlumno">
-            <i class="bi bi-plus-lg me-1"></i>Nuevo Alumno
+            <i class="bi bi-person-plus me-1"></i>Inscribir Alumno
           </button>
         </div>
       </div>
@@ -347,9 +344,12 @@ function attachGlobalEvents(container) {
   // D03: grab signal so all listeners are cleaned up on teardown
   const signal = _abortController?.signal
 
-  container.querySelector('#btnAgregarAlumno')?.addEventListener('click', () => openCreateModal(), { signal })
-
-  container.querySelector('#btnInscribir')?.addEventListener('click', () => window.router?.navigate('alumnos-inscribir'), { signal })
+  container.querySelector('#btnInscribir')?.addEventListener('click', () => {
+    // Limpiar draft previo para que el PreloadSearch siempre aparezca.
+    // El draft solo se preserva cuando se viene desde el perfil del postulante.
+    localStorage.removeItem('wizard-inscripcion-draft')
+    window.router?.navigate('alumnos-inscribir')
+  }, { signal })
   container.querySelector('#btnReporteMes')?.addEventListener('click', () => window.router?.navigate('alumnos-reporte-mes'), { signal })
   container.querySelector('#btnPdfDemo')?.addEventListener('click', () => window.router?.navigate('alumnos-pdf-demo'), { signal })
 
@@ -694,25 +694,6 @@ async function collectAndValidateAlumno(modalBody, existingAlumno = null) {
     alergias: modalBody.querySelector('#modal-alergias').value.trim() || null,
     medicamentos: modalBody.querySelector('#modal-medicamentos').value.trim() || null,
   }
-}
-
-function openCreateModal() {
-  state.editando = null
-  AppModal.open({
-    title: 'Crear Nuevo Alumno',
-    size: 'lg',
-    body: buildAlumnoForm(),
-    saveText: 'Guardar',
-    onSave: async (modalBody) => {
-      const datos = await collectAndValidateAlumno(modalBody)
-      if (!datos) return false
-
-      const nuevo = await crearAlumno(datos)
-      state.alumnosOriginales.push(nuevo)
-      applyFilters()
-      AppToast.success('Alumno creado exitosamente')
-    }
-  })
 }
 
 /**

@@ -131,14 +131,14 @@ function _getClaseFormHTML(clase, inscritosIds, inscritosSlots = []) {
         <label class="form-label-compact d-block mb-2"><i class="bi bi-gear me-1"></i> Dinámica de la Clase *</label>
         <div class="d-flex align-items-center bg-body-tertiary p-2 rounded border">
           <div class="form-check me-4">
-            <input class="form-check-input cursor-pointer" type="radio" name="modal-tipo_clase" id="tipo-grupal" value="grupal" ${!clase || clase.tipo_clase !== 'rotativa' ? 'checked' : ''}>
+            <input class="form-check-input cursor-pointer" type="radio" name="modal-tipo_clase" id="tipo-grupal" value="grupal" ${!clase || (clase.tipo_clase !== 'individual' && clase.tipo_clase !== 'rotativa') ? 'checked' : ''}>
             <label class="form-check-label small cursor-pointer lh-sm" for="tipo-grupal">
               <strong>Grupal</strong><br>
               <span class="text-muted" style="font-size: 0.75rem;">Asistencia global, todos los alumnos asisten en el mismo horario.</span>
             </label>
           </div>
           <div class="form-check">
-            <input class="form-check-input cursor-pointer" type="radio" name="modal-tipo_clase" id="tipo-rotativa" value="rotativa" ${clase?.tipo_clase === 'rotativa' ? 'checked' : ''}>
+            <input class="form-check-input cursor-pointer" type="radio" name="modal-tipo_clase" id="tipo-rotativa" value="individual" ${clase?.tipo_clase === 'individual' || clase?.tipo_clase === 'rotativa' ? 'checked' : ''}>
             <label class="form-check-label small cursor-pointer lh-sm" for="tipo-rotativa">
               <strong>Rotativa (Turnos)</strong><br>
               <span class="text-muted" style="font-size: 0.75rem;">Clase individual o micro-grupos. Se asignan slots de tiempo a cada alumno.</span>
@@ -164,12 +164,12 @@ function _getClaseFormHTML(clase, inscritosIds, inscritosSlots = []) {
         <textarea class="form-control input-dense" id="modal-notas_pedagogicas" rows="2" placeholder="Observaciones sobre el grupo o metodología..." maxlength="${VALIDATION.notasMax}">${escapeHTML(clase?.descripcion || '')}</textarea>
       </div>
 
-      <div class="col-12 mt-3 border-top pt-3" id="seccion-alumnos-grupal" style="display:${clase?.tipo_clase === 'rotativa' ? 'none' : 'block'}">
+      <div class="col-12 mt-3 border-top pt-3" id="seccion-alumnos-grupal" style="display:${clase?.tipo_clase === 'individual' ? 'none' : 'block'}">
         <label class="form-label-compact mb-2"><i class="bi bi-people me-1"></i>Inscribir Alumnos</label>
         ${_getAlumnosSelectorHTML(inscritosIds)}
       </div>
 
-      <div class="col-12 mt-3 border-top pt-3" id="seccion-alumnos-rotativa" style="display:${clase?.tipo_clase === 'rotativa' ? 'block' : 'none'}">
+      <div class="col-12 mt-3 border-top pt-3" id="seccion-alumnos-rotativa" style="display:${clase?.tipo_clase === 'individual' ? 'block' : 'none'}">
         <label class="form-label-compact mb-2"><i class="bi bi-person-lines-fill me-1"></i>Turnos individuales</label>
         ${_getSlotBuilderHTML(inscritosSlots)}
       </div>
@@ -285,7 +285,7 @@ function _attachModalEvents(modalBody, clase) {
 
   modalBody.querySelectorAll('input[name="modal-tipo_clase"]').forEach(radio => {
     radio.addEventListener('change', () => {
-      const esRotativa = modalBody.querySelector('input[name="modal-tipo_clase"]:checked')?.value === 'rotativa'
+      const esRotativa = modalBody.querySelector('input[name="modal-tipo_clase"]:checked')?.value === 'individual'
       seccionGrupal.style.display   = esRotativa ? 'none'  : 'block'
       seccionRotativa.style.display = esRotativa ? 'block' : 'none'
     })
@@ -449,7 +449,7 @@ async function _handleSave(modalBody, originalClase) {
     let resultClase
     if (isEdicion) {
       resultClase = await actualizarClase(originalClase.id, formData)
-      if (formData.tipo_clase === 'rotativa') {
+      if (formData.tipo_clase === 'individual') {
         const ok = await _syncRotativa(resultClase.id)
         if (!ok) return false
       } else {
@@ -457,7 +457,7 @@ async function _handleSave(modalBody, originalClase) {
       }
     } else {
       resultClase = await crearClase(formData)
-      if (formData.tipo_clase === 'rotativa') {
+      if (formData.tipo_clase === 'individual') {
         const ok = await _syncRotativa(resultClase.id)
         if (!ok) return false
       } else {

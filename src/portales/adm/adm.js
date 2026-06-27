@@ -9,6 +9,8 @@
 
 import { bootAdminPortal } from '../_shared/adminPortalShell.js'
 import { allRegistrars } from '../_shared/allRegistrars.js'
+import { router } from '../../core/router/router.js'
+import { renderEventosAdmView } from '../../modules/hermes/views/eventosAdmView.js'
 
 const navGroups = [
   {
@@ -49,7 +51,10 @@ const navGroups = [
     id: 'hermes',
     label: 'Hermes',
     icon: 'bi-robot',
-    items: [{ id: 'hermes-tareas', label: 'Tareas Institucionales', icon: 'bi-check2-square' }],
+    items: [
+      { id: 'hermes-tareas', label: 'Tareas Institucionales', icon: 'bi-check2-square' },
+      { id: 'eventos', label: 'Eventos Institucionales', icon: 'bi-calendar-event' },
+    ],
   },
 ]
 
@@ -61,6 +66,9 @@ bootAdminPortal({
   allowedRoles: ['admin'],
   defaultRoute: 'alumnos',
   hermesDept: 'ADM',
+}).then(() => {
+  // Registrar vista de Eventos Institucionales (específica de ADM)
+  router.register('eventos', renderEventosAdmView)
 }).catch((err) => {
   console.error('[adm] boot falló:', err)
   const app = document.querySelector('#app')

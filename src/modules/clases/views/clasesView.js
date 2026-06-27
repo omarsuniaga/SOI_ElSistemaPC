@@ -456,7 +456,7 @@ async function openClasePerfilModal(clase) {
         const salonNombre = salon ? salon.nombre : 'Online/Otro'
         return `
           <div class="d-flex align-items-center gap-2 mb-1">
-            <span class="badge bg-secondary-subtle text-secondary-custom py-1" style="font-size: 0.75rem; min-width: 60px;">${diaLabel}</span>
+            <span class="badge bg-secondary-subtle text-body-emphasis py-1" style="font-size: 0.75rem; min-width: 60px;">${diaLabel}</span>
             <span class="small fw-semibold">${formatHora(h.hora_inicio)} - ${formatHora(h.hora_fin)}</span>
             <span class="small text-muted">• <i class="bi bi-geo-alt me-0.5"></i>${escapeHTML(salonNombre)}</span>
           </div>
@@ -511,14 +511,14 @@ async function openClasePerfilModal(clase) {
         <!-- Profile Header / Hero Card -->
         <div class="class-hero-card d-flex align-items-center gap-3 p-3 rounded mb-4" style="background: linear-gradient(135deg, rgba(13,110,253,0.08) 0%, rgba(88,86,214,0.08) 100%); border: 1px solid rgba(13,110,253,0.15);">
           <div class="position-relative">
-            <div class="avatar-large bg-primary bg-opacity-15 text-primary border border-primary-subtle d-flex align-items-center justify-content-center rounded-circle" style="width: 56px; height: 56px; font-size: 1.5rem; font-weight: 700;">
+            <div class="avatar-large bg-primary bg-opacity-15 text-white border border-primary-subtle d-flex align-items-center justify-content-center rounded-circle" style="width: 56px; height: 56px; font-size: 1.5rem; font-weight: 700;">
               <i class="bi ${getInstrumentoIcon(clase.instrumento)}"></i>
             </div>
             <span class="position-absolute bottom-0 end-0 p-1.5 bg-${clase.estado === 'activa' ? 'success' : clase.estado === 'suspendida' ? 'warning' : 'secondary'} border border-light rounded-circle" style="transform: translate(10%, 10%);"></span>
           </div>
           <div class="overflow-hidden">
             <h4 class="mb-1 fw-bold text-truncate" style="letter-spacing: -0.02em; font-size: 1.2rem; color: var(--bs-body-color);">${escapeHTML(clase.nombre)}</h4>
-            <span class="badge rounded-pill bg-${clase.estado === 'activa' ? 'success' : clase.estado === 'suspendida' ? 'warning' : 'secondary'} text-capitalize" style="font-size: 0.75rem;">${getEstadoLabel(clase.estado)}</span>
+            <span class="badge rounded-pill text-bg-${clase.estado === 'activa' ? 'success' : clase.estado === 'suspendida' ? 'warning' : 'secondary'} text-capitalize" style="font-size: 0.75rem;">${getEstadoLabel(clase.estado)}</span>
           </div>
         </div>
 
@@ -557,7 +557,7 @@ async function openClasePerfilModal(clase) {
         <div class="enrollment-occupancy-card p-3 rounded mb-4 border bg-body-tertiary">
           <div class="d-flex justify-content-between align-items-center mb-2">
             <span class="fw-semibold small text-muted"><i class="bi bi-people me-1"></i>Ocupación e Inscripciones</span>
-            <span class="badge bg-secondary bg-opacity-10 text-secondary-custom small fw-semibold" style="font-size: 0.75rem;">${alumnosInscritosCount} / ${capacity} Alumnos</span>
+            <span class="badge bg-secondary bg-opacity-10 text-body small fw-semibold" style="font-size: 0.75rem;">${alumnosInscritosCount} / ${capacity} Alumnos</span>
           </div>
           <div class="progress bg-body-secondary" style="height: 10px; border-radius: 6px; overflow: hidden;">
             <div class="progress-bar ${progressColorClass} progress-bar-striped progress-bar-animated" role="progressbar" style="width: ${occupancyPercentage}%" aria-valuenow="${alumnosInscritosCount}" aria-valuemin="0" aria-valuemax="${capacity}"></div>

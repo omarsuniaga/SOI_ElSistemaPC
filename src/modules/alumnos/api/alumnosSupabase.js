@@ -179,10 +179,10 @@ export async function crearAlumno(alumno) {
     tiene_alergia_medicamento: alumno.tiene_alergia_medicamento ?? null,
     alergia_medicamento_desc: alumno.alergia_medicamento_desc ?? null,
     impedimento_social: alumno.impedimento_social ?? null,
-    problemas_conducta: alumno.problemas_conducta || null,
+    problemas_conducta: alumno.problemas_conducta ?? null,
     centro_estudios: alumno.centro_estudios ?? null,
     grado_nivel: alumno.grado_nivel ?? null,
-    padres_en_vida: alumno.padres_en_vida || null,
+    padres_en_vida: alumno.padres_en_vida ?? null,
     // ── Step 7 — Compromisos y Autorizaciones ──────────────────
     acepta_beca_4500: alumno.acepta_beca_4500 ?? false,
     fecha_aceptacion_beca: alumno.acepta_beca_4500 ? new Date().toISOString() : null,

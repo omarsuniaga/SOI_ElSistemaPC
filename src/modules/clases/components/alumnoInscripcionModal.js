@@ -45,7 +45,7 @@ export async function openAlumnoInscripcionModal(claseId) {
 }
 
 function _buildBody(inscritos, disponibles, claseId, clase, inscritosRaw) {
-  const isRotativa = clase?.tipo_clase === 'rotativa'
+  const isRotativa = clase?.tipo_clase === 'individual'
 
   return `
     <div class="input-group mb-3">
@@ -193,7 +193,7 @@ function _rowDisponible(a, isRotativa) {
 }
 
 function _wireEvents(claseId, clase) {
-  const isRotativa = clase?.tipo_clase === 'rotativa'
+  const isRotativa = clase?.tipo_clase === 'individual'
   // Búsqueda en inscritos y disponibles
   document.getElementById('insc-buscar')?.addEventListener('input', e => {
     const term = e.target.value.toLowerCase()

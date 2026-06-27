@@ -17,6 +17,8 @@ const navGroups = [
     icon: 'bi-megaphone',
     items: [
       { id: 'comunicaciones', label: 'Central de Comunicaciones', icon: 'bi-send' },
+      { id: 'com-instituciones', label: 'Directorio B2B', icon: 'bi-building' },
+      { id: 'com-campanias', label: 'Campañas Marketing', icon: 'bi-megaphone' },
       { id: 'com-seguimiento', label: 'Seguimiento', icon: 'bi-telephone-outbound' },
       { id: 'com-calendario', label: 'Calendario', icon: 'bi-calendar-week' },
       { id: 'hermes-tareas', label: 'Tareas Institucionales', icon: 'bi-check2-square' },

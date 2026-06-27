@@ -24,6 +24,19 @@ function badgeHtml(r) {
   return '<span class="badge bg-warning-subtle text-warning-emphasis"><i class="bi bi-clock me-1"></i>Pendiente</span>'
 }
 
+const PRELOAD_SEARCH_STYLE = document.createElement('style')
+PRELOAD_SEARCH_STYLE.textContent = `
+  [data-bs-theme="dark"] .preload-search .card-header {
+    background: rgba(30, 41, 59, 0.95);
+    border-bottom-color: rgba(255,255,255,0.05);
+  }
+  [data-bs-theme="dark"] .preload-search .card-footer {
+    background: rgba(30, 41, 59, 0.8);
+    border-top-color: rgba(255,255,255,0.05);
+  }
+`
+document.head.appendChild(PRELOAD_SEARCH_STYLE)
+
 export function mountPreloadSearch(container) {
   return new Promise((resolve) => {
     // Si el draft ya tiene _postulante_id (viene desde la vista de postulados),
@@ -37,6 +50,7 @@ export function mountPreloadSearch(container) {
     }
 
     let filtro = 'pendiente'
+    let debounceTimer = null
 
     container.innerHTML = `
       <div class="preload-search card shadow-sm mb-4">
@@ -44,7 +58,7 @@ export function mountPreloadSearch(container) {
           <i class="bi bi-cloud-download text-primary fs-5"></i>
           <div class="flex-grow-1">
             <h5 class="mb-0">Buscar postulante</h5>
-            <small class="text-muted">Busca por nombre o teléfono para precargar los datos del formulario de postulación</small>
+            <small class="text-muted">Escribí nombre o teléfono para buscar. Si no encontrás, podés continuar sin buscar.</small>
           </div>
           <button id="preload-btn-sync" class="btn btn-outline-secondary btn-sm" title="Sincronizar postulantes desde Google">
             <i class="bi bi-arrow-repeat"></i>
@@ -87,7 +101,6 @@ export function mountPreloadSearch(container) {
               <div class="input-group">
                 <span class="input-group-text"><i class="bi bi-search"></i></span>
                 <input id="preload-query" type="text" class="form-control" placeholder="Nombre del alumno o número de teléfono..." autocomplete="off" />
-                <button id="preload-btn-search" class="btn btn-primary" type="button">Buscar</button>
               </div>
             </div>
             <div class="col-sm-4">
@@ -100,9 +113,14 @@ export function mountPreloadSearch(container) {
             </div>
           </div>
 
-          <div id="preload-results"></div>
+          <div id="preload-results">
+            <div class="text-muted small text-center py-3">
+              <i class="bi bi-arrow-up me-1"></i>Empezá a escribir para buscar postulantes
+            </div>
+          </div>
         </div>
-        <div class="card-footer d-flex justify-content-end">
+        <div class="card-footer d-flex justify-content-between align-items-center">
+          <small class="text-muted"><i class="bi bi-info-circle me-1"></i>Buscá postulantes por nombre o teléfono para precargar sus datos</small>
           <button id="preload-btn-skip" class="btn btn-link text-muted btn-sm">
             <i class="bi bi-skip-forward me-1"></i>Continuar sin buscar
           </button>
@@ -110,7 +128,6 @@ export function mountPreloadSearch(container) {
       </div>`
 
     const input = container.querySelector('#preload-query')
-    const searchBtn = container.querySelector('#preload-btn-search')
     const skipBtn = container.querySelector('#preload-btn-skip')
     const resultsDiv = container.querySelector('#preload-results')
 
@@ -222,9 +239,16 @@ export function mountPreloadSearch(container) {
       }
     }
 
-    searchBtn.addEventListener('click', () => doSearch())
-    input.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') doSearch()
+    input.addEventListener('input', () => {
+      clearTimeout(debounceTimer)
+      debounceTimer = setTimeout(() => {
+        const q = input.value.trim()
+        if (q.length >= 2) {
+          doSearch(q)
+        } else {
+          resultsDiv.innerHTML = '<div class="text-muted small text-center py-3"><i class="bi bi-arrow-up me-1"></i>Empezá a escribir para buscar postulantes</div>'
+        }
+      }, 300)
     })
     skipBtn.addEventListener('click', () => resolve(null))
 

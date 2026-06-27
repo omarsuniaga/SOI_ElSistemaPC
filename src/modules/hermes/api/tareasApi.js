@@ -41,3 +41,6 @@ export const actualizarEntidadAsociada = api.actualizarEntidadAsociada
 export const agregarAdjunto = api.agregarAdjunto
 export const urlFirmada = api.urlFirmada
 export const observarTarea = api.observarTarea
+
+// ─── SP-3: vista de procedimientos (Director) ──────────────────────────────────
+export const getProcedimientos = api.getProcedimientos

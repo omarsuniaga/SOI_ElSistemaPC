@@ -30,6 +30,8 @@ import { router } from '../../core/router/router.js'
 import { useAuth } from '../../modules/auth/hooks/useAuth.js'
 import { registerRoutesAuth } from '../../modules/auth/index.js'
 import { renderTareasView } from '../../modules/hermes/views/tareasView.js'
+import { renderProcedimientosView } from '../../modules/hermes/views/procedimientosView.js'
+import { renderScoreDirectorView } from '../../modules/hermes/views/scoreDirectorView.js'
 
 window.router = router
 
@@ -223,6 +225,10 @@ export async function bootAdminPortal(profile) {
   router.register(HERMES_ROUTE, (mount) =>
     renderTareasView(mount, { departamento: profile.hermesDept, hideCalendarBtn: true }),
   )
+
+  // SP-3: vistas de Dirección (procedimientos consolidados + score por departamento).
+  router.register('hermes-procedimientos', (mount) => renderProcedimientosView(mount))
+  router.register('dir-score', (mount) => renderScoreDirectorView(mount))
 
   router.initCustomEvents()
 

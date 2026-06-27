@@ -275,6 +275,38 @@ export async function getTareasByEvento(eventId) {
   return delay(tareas.filter((t) => t.event_id === eventId).map(clone))
 }
 
+// SP-3: agrupa las tareas mock por correlation_id (o event_id como fallback) para el Director.
+export async function getProcedimientos() {
+  const grupos = new Map()
+  for (const t of tareas) {
+    const key = t.correlation_id || t.event_id || t.id
+    if (!grupos.has(key)) grupos.set(key, [])
+    grupos.get(key).push(t)
+  }
+  const PRIO = { critica: 0, alta: 1, media: 2, baja: 3 }
+  const resumen = [...grupos.entries()].map(([key, ts]) => {
+    const noCanceladas = ts.filter((t) => t.estado !== 'cancelada')
+    const completadas = ts.filter((t) => t.estado === 'completada').length
+    const cuenta = (e) => ts.filter((t) => t.estado === e).length
+    return {
+      correlation_id: key,
+      titulo_muestra: [...ts].sort((a, b) => (a.created_at || '').localeCompare(b.created_at || ''))[0]?.titulo || 'Procedimiento',
+      total: ts.length,
+      completadas,
+      pendientes: cuenta('pendiente'),
+      en_progreso: cuenta('en_progreso'),
+      bloqueadas: cuenta('bloqueada'),
+      observadas: cuenta('observada'),
+      canceladas: cuenta('cancelada'),
+      pct_avance: noCanceladas.length === 0 ? 0 : Math.round((100 * completadas) / noCanceladas.length),
+      departamentos: [...new Set(ts.map((t) => t.departamento))],
+      prioridad_max: [...ts].sort((a, b) => (PRIO[a.prioridad] ?? 9) - (PRIO[b.prioridad] ?? 9))[0]?.prioridad || 'media',
+      ultima_actividad: ts.reduce((m, t) => (t.updated_at > m ? t.updated_at : m), ''),
+    }
+  })
+  return delay(resumen)
+}
+
 export async function updateTareaEstado(tareaId, nuevoEstado) {
   const tarea = tareas.find((t) => t.id === tareaId)
   if (!tarea) throw new Error('Tarea no encontrada')

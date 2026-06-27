@@ -68,6 +68,13 @@ export async function getTareasByDepartamento(departamento) {
   return data || []
 }
 
+// SP-3: vista consolidada de procedimientos (agrupados por correlation_id) para el Director.
+export async function getProcedimientos() {
+  const { data, error } = await supabase.rpc('fn_procedimientos_resumen')
+  if (error) throw error
+  return data || []
+}
+
 export async function getTareasByEvento(eventId) {
   const { data, error } = await supabase
     .from(TABLA)

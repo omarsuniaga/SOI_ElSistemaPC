@@ -29,6 +29,7 @@ import { registerRoutesComunicaciones } from '../../modules/comunicaciones/index
 import { registerRoutesDepartamentos } from '../../modules/departamentos/index.js'
 import { registerRoutesCampanias } from '../../modules/campanias/index.js'
 import { registerRoutesGatewayConfig } from '../../modules/gateway-config/index.js'
+import { registerRoutesLuteria } from '../../modules/luteria/index.js'
 
 export const allRegistrars = [
   registerRoutesComunicaciones,
@@ -55,4 +56,5 @@ export const allRegistrars = [
   registerRoutesAdminUsuarios,
   registerRoutesCampanias,
   registerRoutesGatewayConfig,
+  registerRoutesLuteria,
 ]

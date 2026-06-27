@@ -31,6 +31,7 @@ import { useAuth } from '../../modules/auth/hooks/useAuth.js'
 import { registerRoutesAuth } from '../../modules/auth/index.js'
 import { renderTareasView } from '../../modules/hermes/views/tareasView.js'
 import { renderProcedimientosView } from '../../modules/hermes/views/procedimientosView.js'
+import { renderCasoDetalleView } from '../../modules/hermes/views/casoDetalleView.js'
 import { renderScoreDirectorView } from '../../modules/hermes/views/scoreDirectorView.js'
 import { renderHermesConsultaView } from '../../modules/hermes/views/hermesConsultaView.js'
 
@@ -223,8 +224,15 @@ export async function bootAdminPortal(profile) {
   })
 
   // Ruta de Tareas Hermes del departamento
-  router.register(HERMES_ROUTE, (mount) =>
-    renderTareasView(mount, { departamento: profile.hermesDept, hideCalendarBtn: true }),
+  router.register(HERMES_ROUTE, (mount, params = {}) =>
+    renderTareasView(mount, {
+      departamento: profile.hermesDept,
+      hideCalendarBtn: true,
+      ...params,
+    }),
+  )
+  router.register('hermes-caso', (mount, params = {}) =>
+    renderCasoDetalleView(mount, params),
   )
 
   // SP-3: vistas de Dirección (procedimientos consolidados + score por departamento).

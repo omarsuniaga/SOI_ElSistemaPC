@@ -312,6 +312,34 @@ export async function reportarAlumnoRiesgo(_alumnoId, _alumnoNombre, _motivo, _a
   return delay('00000000-0000-0000-0000-0000000000a1')
 }
 
+// SP-5: snapshot institucional mock (derivado de las tareas mock en memoria).
+export async function getConsultaEstado() {
+  const cuenta = (e) => tareas.filter((t) => t.estado === e).length
+  const deptos = [...new Set(tareas.map((t) => t.departamento))].map((dep) => {
+    const ts = tareas.filter((t) => t.departamento === dep)
+    return {
+      departamento: dep,
+      abiertas: ts.filter((t) => !['completada', 'cancelada'].includes(t.estado)).length,
+      pendientes: ts.filter((t) => t.estado === 'pendiente').length,
+      bloqueadas: ts.filter((t) => t.estado === 'bloqueada').length,
+      total: ts.length,
+    }
+  }).sort((a, b) => b.pendientes - a.pendientes)
+  const atencion = tareas
+    .filter((t) => t.estado === 'bloqueada' || (t.prioridad === 'critica' && !['completada', 'cancelada'].includes(t.estado)))
+    .map((t) => ({ titulo: t.titulo, departamento: t.departamento, prioridad: t.prioridad, estado: t.estado }))
+  return delay({
+    tareas: {
+      total: tareas.length, pendiente: cuenta('pendiente'), en_progreso: cuenta('en_progreso'),
+      completada: cuenta('completada'), bloqueada: cuenta('bloqueada'),
+      observada: cuenta('observada'), cancelada: cuenta('cancelada'),
+    },
+    por_departamento: deptos,
+    atencion_inmediata: atencion,
+    total_procedimientos: new Set(tareas.map((t) => t.correlation_id || t.event_id || t.id)).size,
+  })
+}
+
 export async function updateTareaEstado(tareaId, nuevoEstado) {
   const tarea = tareas.find((t) => t.id === tareaId)
   if (!tarea) throw new Error('Tarea no encontrada')

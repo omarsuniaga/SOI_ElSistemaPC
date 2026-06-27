@@ -458,6 +458,87 @@ describe('tareasMock — SP-0 new fields', () => {
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
+
+
+describe('Process Backbone V1 - Supabase adapter', () => {
+  it('lists active SOI process contracts ordered by process_code', async () => {
+    const contracts = [
+      { process_code: 'ACM-P02', process_name: 'Asistencia y contenido de clase', active: true },
+    ]
+    _resolveValue = { data: contracts, error: null }
+
+    const result = await sb.getProcessContracts()
+
+    expect(result).toEqual(contracts)
+    expect(mockFrom).toHaveBeenCalledWith('soi_process_contracts')
+    expect(mockEq).toHaveBeenCalledWith('active', true)
+    expect(mockOrder).toHaveBeenCalledWith('process_code', { ascending: true })
+  })
+
+  it('starts a process case through fn_hermes_start_process_case', async () => {
+    _rpcValue = { data: 'case-uuid', error: null }
+
+    const result = await sb.startProcessCase({
+      process_code: 'FIN-P13',
+      title: 'Caso de mora',
+      description: 'Representante con deuda vencida',
+      requested_by: ACTOR.id,
+      requested_by_name: ACTOR.nombre,
+    })
+
+    expect(result).toBe('case-uuid')
+    expect(mockRpc).toHaveBeenCalledWith('fn_hermes_start_process_case', {
+      p_process_code: 'FIN-P13',
+      p_title: 'Caso de mora',
+      p_description: 'Representante con deuda vencida',
+      p_source: 'manual',
+      p_priority: 'media',
+      p_requested_by: ACTOR.id,
+      p_requested_by_name: ACTOR.nombre,
+      p_entity_type: null,
+      p_entity_id: null,
+      p_entity_label: null,
+      p_metadata: {},
+    })
+  })
+
+  it('rejects startProcessCase without process_code before hitting RPC', async () => {
+    await expect(sb.startProcessCase({ title: 'Sin contrato' }))
+      .rejects.toThrow(/process_code.*requerido/i)
+    expect(mockRpc).not.toHaveBeenCalled()
+  })
+})
+
+describe('Process Backbone V1 - mock implementation', () => {
+  it('lists executable contracts including Luteria as LUT task owner', async () => {
+    const { getProcessContracts } = await import('../api/tareasMock.js')
+    const contracts = await getProcessContracts()
+
+    expect(contracts.some((contract) => contract.process_code === 'ACM-P02')).toBe(true)
+    const luteria = contracts.find((contract) => contract.process_code === 'OPR-P10')
+    expect(luteria.responsible_departments).toContain('LUT')
+  })
+
+  it('opens a process case and creates tasks tied by correlation_id and process_code', async () => {
+    const { startProcessCase, getTareasFiltradas } = await import('../api/tareasMock.js')
+
+    const caseId = await startProcessCase({
+      process_code: 'FIN-P13',
+      title: 'Caso demo de mora',
+      requested_by: ACTOR.id,
+      requested_by_name: ACTOR.nombre,
+    })
+    const tasks = await getTareasFiltradas({ process_code: 'FIN-P13' })
+
+    expect(caseId).toMatch(/case-fin-p13/i)
+    expect(tasks.length).toBeGreaterThanOrEqual(2)
+    tasks.forEach((task) => {
+      expect(task.correlation_id).toBe(caseId)
+      expect(task.process_code).toBe('FIN-P13')
+    })
+  })
+})
+
 // tareasApi dispatcher — SP-0 export surface
 // ─────────────────────────────────────────────────────────────────────────────
 describe('tareasApi dispatcher — SP-0 exports', () => {
@@ -494,6 +575,16 @@ describe('tareasApi dispatcher — SP-0 exports', () => {
   it('exports observarTarea', async () => {
     const api = await import('../api/tareasApi.js')
     expect(typeof api.observarTarea).toBe('function')
+  })
+
+  it('exports getProcessContracts', async () => {
+    const api = await import('../api/tareasApi.js')
+    expect(typeof api.getProcessContracts).toBe('function')
+  })
+
+  it('exports startProcessCase', async () => {
+    const api = await import('../api/tareasApi.js')
+    expect(typeof api.startProcessCase).toBe('function')
   })
 })
 

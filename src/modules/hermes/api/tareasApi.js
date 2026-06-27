@@ -54,3 +54,4 @@ export const getConsultaEstado = api.getConsultaEstado
 // Process Backbone V1: contratos SOI + apertura de casos Hermes.
 export const getProcessContracts = api.getProcessContracts
 export const startProcessCase = api.startProcessCase
+export const getProcessCaseDetail = api.getProcessCaseDetail

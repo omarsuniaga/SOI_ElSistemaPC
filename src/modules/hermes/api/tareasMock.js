@@ -540,6 +540,42 @@ export async function startProcessCase(payload = {}) {
   return delay(caseId)
 }
 
+export async function getProcessCaseDetail({ correlationId = null, processCode = null } = {}) {
+  const filters = {}
+  if (correlationId) filters.correlation_id = correlationId
+  if (processCode) filters.process_code = processCode
+
+  const [contracts, tasks] = await Promise.all([
+    getProcessContracts(),
+    getTareasFiltradas(filters),
+  ])
+
+  const contract = processCode
+    ? contracts.find((item) => item.process_code === processCode) || null
+    : tasks[0]?.process_code
+      ? contracts.find((item) => item.process_code === tasks[0].process_code) || null
+      : null
+
+  const caseId = correlationId || tasks[0]?.correlation_id || null
+  const metrics = {
+    total: tasks.length,
+    completadas: tasks.filter((task) => task.estado === 'completada').length,
+    bloqueadas: tasks.filter((task) => task.estado === 'bloqueada').length,
+    observadas: tasks.filter((task) => task.estado === 'observada').length,
+    evidencias: tasks.reduce(
+      (acc, task) => acc + (Array.isArray(task.documentos_adjuntos) ? task.documentos_adjuntos.length : 0),
+      0,
+    ),
+  }
+
+  return delay({
+    contract,
+    correlation_id: caseId,
+    tasks,
+    metrics,
+  })
+}
+
 export async function updateTareaEstado(tareaId, nuevoEstado) {
   const tarea = tareas.find((t) => t.id === tareaId)
   if (!tarea) throw new Error('Tarea no encontrada')
@@ -673,6 +709,7 @@ export async function getTareasFiltradas(filtros = {}) {
   if (filtros.asignado_a) res = res.filter((t) => t.asignado_a === filtros.asignado_a)
   if (filtros.event_id) res = res.filter((t) => t.event_id === filtros.event_id)
   if (filtros.process_code) res = res.filter((t) => t.process_code === filtros.process_code)
+  if (filtros.correlation_id) res = res.filter((t) => t.correlation_id === filtros.correlation_id)
   if (filtros.buscar) {
     const q = filtros.buscar.toLowerCase()
     res = res.filter(

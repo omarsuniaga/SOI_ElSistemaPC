@@ -47,6 +47,7 @@ export default defineConfig({
         tecnico:    'tecnico.html',
         inventario: 'inventario.html',
         calendario: 'calendario.html',
+        luteria:    'luteria.html',
       },
       output: {
         manualChunks(id) {
@@ -116,6 +117,8 @@ export default defineConfig({
             req.url = '/calendario.html' + search
           } else if (pathname === '/audiciones' || pathname === '/audiciones/') {
             req.url = '/audiciones.html' + search
+          } else if (pathname === '/luteria' || pathname === '/luteria/') {
+            req.url = '/luteria.html' + search
           }
           next()
         })

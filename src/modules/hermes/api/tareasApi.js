@@ -47,3 +47,6 @@ export const getProcedimientos = api.getProcedimientos
 
 // ─── SP-4: flujo de dominio "alumno en riesgo" (fan-out cross-departamental) ─────
 export const reportarAlumnoRiesgo = api.reportarAlumnoRiesgo
+
+// ─── SP-5: capa de consulta de Hermes (snapshot institucional factual) ──────────
+export const getConsultaEstado = api.getConsultaEstado

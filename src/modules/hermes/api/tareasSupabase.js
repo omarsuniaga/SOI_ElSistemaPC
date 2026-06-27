@@ -75,6 +75,13 @@ export async function getProcedimientos() {
   return data || []
 }
 
+// SP-5: snapshot institucional para la capa de consulta de Hermes (respuestas factuales).
+export async function getConsultaEstado() {
+  const { data, error } = await supabase.rpc('fn_hermes_consulta_estado')
+  if (error) throw error
+  return data
+}
+
 // SP-4: abre un caso de "alumno en riesgo" (fan-out ACM/COM/FIN/DIR). Devuelve correlation_id.
 export async function reportarAlumnoRiesgo(alumnoId, alumnoNombre, motivo, actor = {}) {
   const { data, error } = await supabase.rpc('fn_reportar_alumno_riesgo', {

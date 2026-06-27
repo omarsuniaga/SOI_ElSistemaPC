@@ -44,3 +44,6 @@ export const observarTarea = api.observarTarea
 
 // ─── SP-3: vista de procedimientos (Director) ──────────────────────────────────
 export const getProcedimientos = api.getProcedimientos
+
+// ─── SP-4: flujo de dominio "alumno en riesgo" (fan-out cross-departamental) ─────
+export const reportarAlumnoRiesgo = api.reportarAlumnoRiesgo

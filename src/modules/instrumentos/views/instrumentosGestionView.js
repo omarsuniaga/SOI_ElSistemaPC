@@ -84,7 +84,7 @@ function renderFormCrear(onCrear) {
   return form
 }
 
-function renderRow(inst, onCambiarEstado, onAsignar) {
+function renderRow(inst, onCambiarEstado, onAsignar, onReportarDanado) {
   const tr = document.createElement('tr')
   tr.innerHTML = `
     <td style="font-size:0.8125rem;font-weight:600">${inst.codigo}</td>
@@ -100,8 +100,11 @@ function renderRow(inst, onCambiarEstado, onAsignar) {
             .map(([v, { label }]) => `<option value="${v}" ${v === inst.estado ? 'selected' : ''}>${label}</option>`)
             .join('')}
         </select>
-        <button class="btn btn-sm btn-outline-secondary btn-asignar" data-id="${inst.id}" style="font-size:0.75rem">
+        <button class="btn btn-sm btn-outline-secondary btn-asignar" data-id="${inst.id}" style="font-size:0.75rem" title="Asignar a alumno">
           <i class="bi bi-person-check"></i>
+        </button>
+        <button class="btn btn-sm btn-outline-danger btn-danar" data-id="${inst.id}" style="font-size:0.75rem" title="Reportar daño (abre caso Hermes)">
+          <i class="bi bi-exclamation-triangle"></i>
         </button>
       </div>
     </td>
@@ -126,6 +129,21 @@ function renderRow(inst, onCambiarEstado, onAsignar) {
     if (!alumnoNombre?.trim()) return
     const alumnoId = `alu-${Date.now()}`
     onAsignar(inst.id, alumnoId, alumnoNombre.trim())
+  })
+
+  tr.querySelector('.btn-danar').addEventListener('click', async (e) => {
+    const desc = window.prompt(`Describí el daño de "${inst.nombre}". Esto abre un caso Hermes (Lutería, Inventario, Finanzas, Académico, Comunicación):`)
+    if (desc === null) return
+    const btn = e.currentTarget
+    btn.disabled = true
+    try {
+      await onReportarDanado(inst.id, desc.trim())
+      alert('Caso abierto: se delegaron tareas a los departamentos involucrados.')
+    } catch (err) {
+      alert(`Error: ${err.message}`)
+    } finally {
+      btn.disabled = false
+    }
   })
 
   return tr
@@ -217,6 +235,10 @@ export async function renderInstrumentosGestionView(container) {
         },
         async (id, alumnoId, alumnoNombre) => {
           await instrumentosApi.asignarInstrumento(id, alumnoId, alumnoNombre)
+          await load()
+        },
+        async (id, descripcion) => {
+          await instrumentosApi.reportarInstrumentoDanado(id, descripcion)
           await load()
         },
       )

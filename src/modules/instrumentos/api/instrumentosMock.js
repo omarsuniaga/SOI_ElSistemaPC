@@ -155,3 +155,12 @@ export async function asignarInstrumento(id, alumnoId, alumnoNombre) {
   inst.updated_at = new Date().toISOString()
   return delay(clone(inst))
 }
+
+// SP-4: simula el caso Hermes (marca danado + devuelve un correlation_id ficticio).
+export async function reportarInstrumentoDanado(id, _descripcion, _actor = {}) {
+  const inst = instrumentos.find((i) => i.id === id)
+  if (!inst) throw new Error('Instrumento no encontrado')
+  inst.estado = 'danado'
+  inst.updated_at = new Date().toISOString()
+  return delay('00000000-0000-0000-0000-0000000000ca')
+}

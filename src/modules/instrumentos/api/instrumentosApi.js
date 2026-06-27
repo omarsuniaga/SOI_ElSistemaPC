@@ -18,3 +18,5 @@ export const crearInstrumento = api.crearInstrumento
 export const actualizarInstrumento = api.actualizarInstrumento
 export const cambiarEstadoInstrumento = api.cambiarEstadoInstrumento
 export const asignarInstrumento = api.asignarInstrumento
+// SP-4: abre caso Hermes por instrumento dañado (fan-out cross-departamental).
+export const reportarInstrumentoDanado = api.reportarInstrumentoDanado

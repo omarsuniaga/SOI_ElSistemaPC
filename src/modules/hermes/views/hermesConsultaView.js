@@ -179,8 +179,8 @@ function render(container) {
         ${mensajes}
       </div>
 
-      <div class="input-group input-group-lg shadow-sm rounded-3 overflow-hidden border">
-        <input id="hermes-q" type="text" class="form-control border-0 bg-body py-3 text-body" placeholder="Escribí tu pregunta sobre la operación…" autocomplete="off" />
+      <div class="input-group input-group-lg shadow-sm rounded-3 overflow-hidden border hermes-input-group">
+        <input id="hermes-q" type="text" class="form-control border-0 py-3 text-body" placeholder="Escribí tu pregunta sobre la operación…" autocomplete="off" />
         <button id="hermes-send" class="btn btn-primary px-4 border-0 d-flex align-items-center justify-content-center"><i class="bi bi-send-fill fs-5"></i></button>
       </div>
     </div>`

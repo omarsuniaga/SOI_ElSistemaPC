@@ -259,6 +259,7 @@
 }
 
 .hermes-chat-log {
+  background-color: var(--card-bg) !important;
   border-color: var(--bs-border-color) !important;
   scrollbar-width: thin;
 }
@@ -311,11 +312,19 @@
 }
 
 /* Estilos de input y botón */
-.input-group.shadow-sm {
+.hermes-input-group {
+  background-color: var(--card-bg) !important;
   border-color: var(--bs-border-color) !important;
 }
 
+#hermes-q {
+  background-color: var(--card-bg) !important;
+  color: var(--bs-body-color) !important;
+}
+
 #hermes-q:focus {
+  background-color: var(--card-bg) !important;
+  color: var(--bs-body-color) !important;
   box-shadow: none !important;
 }
 

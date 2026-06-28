@@ -16,14 +16,14 @@ describe('portalRouter', () => {
 
   it('devuelve ruta por defecto si hash está vacío', () => {
     window.location.hash = ''
-    expect(router.currentRoute()).toBe('calendario')
+    expect(router.currentRoute()).toBe('hoy')
   })
 
-  it('navigate cambia el hash y dispara handlers', () => {
+  it('navigate cambia la ruta actual (History API)', () => {
     const handler = vi.fn()
     router.on('hoy', handler)
     router.navigate('hoy')
-    expect(window.location.hash).toBe('#/hoy')
+    expect(router.currentRoute()).toBe('hoy')
   })
 
   it('registrar handler para ruta desconocida usa fallback', () => {

@@ -1,0 +1,85 @@
+{
+  "authoritative_source": "SOI_DOCUMENTO_VIGENCIA.json",
+  "documents": {
+    "AGT-P03": {
+      "doc_id": "AGT-P03",
+      "status": "vigente",
+      "current_version": "V8",
+      "path": "06_IA_AGENTS_LOGIC/AGT-P03_Fabrica_Procesos_V8.md",
+      "canonical_path": "06_IA_AGENTS_LOGIC/AGT-P03_Fabrica_Procesos_V8.md",
+      "department": "AGT",
+      "owner": "Agente SOI (SOI-AGT-001) / Dirección Ejecutiva",
+      "has_frontmatter": true
+    },
+    "DIR-P05": {
+      "doc_id": "DIR-P05",
+      "status": "vigente",
+      "current_version": "V8",
+      "path": "01_DEPARTAMENTOS/01_DIR_DIRECCION_EJECUTIVA/DIR-P05_Gestion_Crisis_V8.md",
+      "canonical_path": "01_DEPARTAMENTOS/01_DIR_DIRECCION_EJECUTIVA/DIR-P05_Gestion_Crisis_V8.md",
+      "department": "DIR",
+      "owner": "Romina Aschpurwis",
+      "has_frontmatter": true
+    },
+    "EVT-P01": {
+      "doc_id": "EVT-P01",
+      "status": "vigente",
+      "current_version": "V8",
+      "path": "01_DEPARTAMENTOS/04_LOG_LOGISTICA_Y_EVENTOS/EVT-P01_Gestion_Solicitud_Eventos_V8.md",
+      "canonical_path": "01_DEPARTAMENTOS/04_LOG_LOGISTICA_Y_EVENTOS/EVT-P01_Gestion_Solicitud_Eventos_V8.md",
+      "department": "EVT",
+      "owner": "Raquel Payán — Coordinadora de Eventos",
+      "has_frontmatter": true
+    },
+    "ACM-P02": {
+      "doc_id": "ACM-P02",
+      "status": "vigente",
+      "current_version": "V8",
+      "path": "01_DEPARTAMENTOS/02_ACM_ACADEMICO_MUSICAL/ACM-P02_Asistencia_y_Contenido_V8.md",
+      "canonical_path": "01_DEPARTAMENTOS/02_ACM_ACADEMICO_MUSICAL/ACM-P02_Asistencia_y_Contenido_V8.md",
+      "department": "ACM",
+      "owner": "Manuel Marcano — Coordinador General",
+      "has_frontmatter": true
+    },
+    "ADM-P02": {
+      "doc_id": "ADM-P02",
+      "status": "vigente",
+      "current_version": "V8",
+      "path": "01_DEPARTAMENTOS/05_ADM_FIN_ADMINISTRATIVO_FINANCIERO/ADM-P02_Gestion_Expedientes_Archivo_V8.md",
+      "canonical_path": "01_DEPARTAMENTOS/05_ADM_FIN_ADMINISTRATIVO_FINANCIERO/ADM-P02_Gestion_Expedientes_Archivo_V8.md",
+      "department": "ADM",
+      "owner": "Cristofer",
+      "has_frontmatter": true
+    },
+    "ADM-P08": {
+      "doc_id": "ADM-P08",
+      "status": "vigente",
+      "current_version": "V8",
+      "path": "01_DEPARTAMENTOS/05_ADM_FIN_ADMINISTRATIVO_FINANCIERO/ADM-P08_Gestion_Justificaciones_V8.md",
+      "canonical_path": "01_DEPARTAMENTOS/05_ADM_FIN_ADMINISTRATIVO_FINANCIERO/ADM-P08_Gestion_Justificaciones_V8.md",
+      "department": "ADM",
+      "owner": "TODO_ASIGNAR",
+      "has_frontmatter": true
+    },
+    "FIN-P13": {
+      "doc_id": "FIN-P13",
+      "status": "vigente",
+      "current_version": "V8",
+      "path": "01_DEPARTAMENTOS/05_ADM_FIN_ADMINISTRATIVO_FINANCIERO/FIN-P13_Gestion_Mora_y_Cobranza_V8.md",
+      "canonical_path": "01_DEPARTAMENTOS/05_ADM_FIN_ADMINISTRATIVO_FINANCIERO/FIN-P13_Gestion_Mora_y_Cobranza_V8.md",
+      "department": "FIN",
+      "owner": "Katherine Sánchez — Encargada de Finanzas",
+      "has_frontmatter": true
+    },
+    "LOG-P03": {
+      "doc_id": "LOG-P03",
+      "status": "vigente",
+      "current_version": "V8",
+      "path": "01_DEPARTAMENTOS/04_LOG_LOGISTICA_Y_EVENTOS/LOG-P03_Reparaciones_V8.md",
+      "canonical_path": "01_DEPARTAMENTOS/04_LOG_LOGISTICA_Y_EVENTOS/LOG-P03_Reparaciones_V8.md",
+      "department": "LOG",
+      "owner": "TODO_ASIGNAR",
+      "has_frontmatter": true
+    }
+  }
+}

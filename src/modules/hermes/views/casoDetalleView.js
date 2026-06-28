@@ -12,6 +12,7 @@
 import '../styles/tareas.css'
 import * as tareasApi from '../api/tareasApi.js'
 import { router } from '../../../core/router/router.js'
+import { useAuth } from '../../auth/hooks/useAuth.js'
 
 const DEPARTAMENTOS = {
   DIR: 'Dirección',
@@ -61,7 +62,7 @@ export async function renderCasoDetalleView(container, opciones = {}) {
     return { teardown: () => ac.abort() }
   }
 
-  container.addEventListener('click', (e) => {
+  container.addEventListener('click', async (e) => {
     const goTasks = e.target.closest('[data-open-case-tasks]')
     if (goTasks) {
       router.navigate('hermes-tareas', {
@@ -74,6 +75,28 @@ export async function renderCasoDetalleView(container, opciones = {}) {
     const goProcedimientos = e.target.closest('#btn-back-procedimientos')
     if (goProcedimientos) {
       router.navigate('hermes-procedimientos')
+      return
+    }
+
+    const closeBtn = e.target.closest('#btn-cerrar-caso')
+    if (!closeBtn) return
+    const caseId = closeBtn.dataset.caseId
+    if (!caseId) return
+    const resumen = window.prompt('Resumen de cierre (opcional):')
+    if (resumen === null) return // user cancelled
+    try {
+      closeBtn.disabled = true
+      closeBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Cerrando...'
+      await tareasApi.closeProcessCase({
+        caseId,
+        closureSummary: resumen?.trim() || null,
+        actor: useAuth().getUsuario?.() || {},
+      })
+      router.navigate('hermes-procedimientos')
+    } catch (err) {
+      alert(`Error al cerrar el caso: ${err.message}`)
+      closeBtn.disabled = false
+      closeBtn.innerHTML = '<i class="bi bi-check2-all"></i> Cerrar caso'
     }
   }, { signal: ac.signal })
 
@@ -127,6 +150,10 @@ function render(container, opciones) {
           <button class="btn btn-primary btn-sm" data-open-case-tasks data-process-code="${esc(code)}" data-correlation-id="${esc(detail.correlation_id || opciones.correlationId || '')}">
             <i class="bi bi-list-check"></i> Ver tareas del caso
           </button>
+          ${closed && detail.correlation_id ? `
+          <button id="btn-cerrar-caso" class="btn btn-success btn-sm" data-case-id="${esc(detail.correlation_id)}">
+            <i class="bi bi-check2-all"></i> Cerrar caso
+          </button>` : ''}
         </div>
       </div>
 

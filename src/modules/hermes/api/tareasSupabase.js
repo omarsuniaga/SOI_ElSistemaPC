@@ -155,6 +155,19 @@ export async function getProcessCaseDetail({ correlationId = null, processCode =
   }
 }
 
+export async function closeProcessCase({ caseId, closureSummary = null, actor = {}, force = false } = {}) {
+  if (!caseId) throw new Error('caseId es requerido para cerrar un caso')
+  const rpcName = force ? 'fn_hermes_force_close_process_case' : 'fn_hermes_close_process_case'
+  const { data, error } = await supabase.rpc(rpcName, {
+    p_case_id: caseId,
+    p_closure_summary: closureSummary,
+    p_actor_id: actor.id || null,
+    p_actor_nombre: actor.nombre || null,
+  })
+  if (error) throw error
+  return data
+}
+
 // SP-4: abre un caso de "alumno en riesgo" (fan-out ACM/COM/FIN/DIR). Devuelve correlation_id.
 export async function reportarAlumnoRiesgo(alumnoId, alumnoNombre, motivo, actor = {}) {
   const { data, error } = await supabase.rpc('fn_reportar_alumno_riesgo', {

@@ -576,6 +576,22 @@ export async function getProcessCaseDetail({ correlationId = null, processCode =
   })
 }
 
+export async function closeProcessCase({ caseId, closureSummary = null, actor = {}, force = false } = {}) {
+  if (!caseId) throw new Error('caseId es requerido para cerrar un caso')
+  const pending = tareas.filter(
+    (t) => t.correlation_id === caseId && !['completada', 'cancelada'].includes(t.estado),
+  )
+  if (!force && pending.length > 0) {
+    throw new Error(`No se puede cerrar el caso: ${pending.length} tarea(s) pendiente(s)`)
+  }
+  return delay({
+    case_id: caseId,
+    status: 'closed',
+    closed_at: new Date().toISOString(),
+    summary: closureSummary || 'Cerrado sin observaciones',
+  })
+}
+
 export async function updateTareaEstado(tareaId, nuevoEstado) {
   const tarea = tareas.find((t) => t.id === tareaId)
   if (!tarea) throw new Error('Tarea no encontrada')

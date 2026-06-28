@@ -89,6 +89,9 @@ function ensureDOM() {
     </div>
   `
   document.body.appendChild(modal)
+
+  // Cerrar el modal automáticamente al cambiar de ruta en la SPA
+  window.addEventListener('routeChanged', () => AppModal.close())
 }
 
 function escapeHTML(text) {
@@ -118,10 +121,15 @@ export const AppModal = {
   _saveHandler: null,
   _cancelHandler: null,
   _keydownHandler: null,
+  _backdropClickHandler: null,
+  _previouslyFocusedElement: null,
 
   open({ title = '', body = '', saveText = 'Guardar', cancelText = 'Cancelar', deleteText = 'Eliminar', onSave = null, onCancel = null, onDelete = null, onShow = null, onOpen = null, size = 'md', hideSave = false } = {}) {
     ensureDOM()
     const els = getEls()
+
+    // Guardar el elemento que tiene el foco para restablecerlo al cerrar
+    this._previouslyFocusedElement = document.activeElement
 
     // Reset footer visibility so a previous call with `!important` inline
     // style cannot bleed into this new modal (e.g. profile modal hiding footer).
@@ -158,10 +166,14 @@ export const AppModal = {
       els.btnDelete.style.display = 'none'
     }
 
-    // Trap focus on first input when open
+    // Trap focus on first input when open (accesibilidad)
     setTimeout(() => {
-      const first = els.body.querySelector('input,select,textarea')
-      if (first) first.focus()
+      const first = els.body.querySelector('input,select,textarea,button:not([disabled])')
+      if (first) {
+        first.focus()
+      } else {
+        els.closeX.focus()
+      }
     }, 280)
 
     // Wire handlers — remove old ones first
@@ -173,6 +185,14 @@ export const AppModal = {
       }
     }
     document.addEventListener('keydown', this._keydownHandler)
+
+    // Click fuera del modal (en el backdrop/overlay) para cerrar
+    this._backdropClickHandler = (e) => {
+      if (e.target === els.modal) {
+        this._cancelHandler ? this._cancelHandler() : this.close()
+      }
+    }
+    els.modal.addEventListener('click', this._backdropClickHandler)
 
     this._saveHandler = async () => {
       if (onSave) {
@@ -229,8 +249,14 @@ export const AppModal = {
     els.btnDelete.addEventListener('click', this._deleteHandler)
 
     // Close-X hover style
-    els.closeX.onmouseenter = () => { els.closeX.style.background = 'var(--bs-secondary-bg)'; els.closeX.style.color = 'var(--bs-body-color)' }
-    els.closeX.onmouseleave = () => { els.closeX.style.background = 'none'; els.closeX.style.color = 'var(--bs-secondary-color)' }
+    els.closeX.onmouseenter = () => { 
+      els.closeX.style.background = 'rgba(255,255,255,0.25)'
+      els.closeX.style.color = '#ffffff'
+    }
+    els.closeX.onmouseleave = () => { 
+      els.closeX.style.background = 'rgba(255,255,255,0.15)'
+      els.closeX.style.color = '#ffffff'
+    }
 
     // Show
     els.backdrop.style.display = 'block'
@@ -259,27 +285,44 @@ export const AppModal = {
       els.modal.style.display = 'none'
       els.body.innerHTML = ''
       document.body.style.overflow = ''
+
+      // Devolver foco al elemento anterior por accesibilidad
+      if (this._previouslyFocusedElement && typeof this._previouslyFocusedElement.focus === 'function') {
+        this._previouslyFocusedElement.focus()
+      }
+      this._previouslyFocusedElement = null
     }, 220)
   },
 
   _detachHandlers() {
-    const els = getEls()
-    if (!els.btnSave) return
-    if (this._saveHandler) els.btnSave.removeEventListener('click', this._saveHandler)
-    if (this._cancelHandler) {
-      els.btnCancel.removeEventListener('click', this._cancelHandler)
-      els.closeX.removeEventListener('click', this._cancelHandler)
-    }
-    if (this._deleteHandler) {
-      els.btnDelete.removeEventListener('click', this._deleteHandler)
-    }
+    // 1. Remover listeners globales primero para evitar leaks
     if (this._keydownHandler) {
       document.removeEventListener('keydown', this._keydownHandler)
+      this._keydownHandler = null
     }
-    this._saveHandler = null
-    this._cancelHandler = null
-    this._deleteHandler = null
-    this._keydownHandler = null
+
+    const els = getEls()
+    if (!els.modal) return
+
+    if (this._backdropClickHandler) {
+      els.modal.removeEventListener('click', this._backdropClickHandler)
+      this._backdropClickHandler = null
+    }
+
+    // 2. Remover listeners de los elementos interactivos del modal si existen
+    if (els.btnSave && this._saveHandler) {
+      els.btnSave.removeEventListener('click', this._saveHandler)
+      this._saveHandler = null
+    }
+    if (els.btnCancel && this._cancelHandler) {
+      els.btnCancel.removeEventListener('click', this._cancelHandler)
+      els.closeX.removeEventListener('click', this._cancelHandler)
+      this._cancelHandler = null
+    }
+    if (els.btnDelete && this._deleteHandler) {
+      els.btnDelete.removeEventListener('click', this._deleteHandler)
+      this._deleteHandler = null
+    }
   },
 
   // Reset save button after error (call from onSave catch if you handle errors yourself)

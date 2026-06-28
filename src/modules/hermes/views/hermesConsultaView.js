@@ -129,31 +129,60 @@ function responder(pregunta) {
 
 function render(container) {
   const mensajes = state.historial.length === 0
-    ? `<div class="text-muted text-center py-4">
-         <i class="bi bi-robot fs-1"></i>
-         <p class="mt-2 mb-0">Preguntale a Hermes sobre el estado de la operación.</p>
+    ? `<div class="d-flex flex-column align-items-center justify-content-center py-5 text-muted">
+         <div class="hermes-avatar-pulse mb-3">
+           <div class="hermes-avatar-inner">
+             <i class="bi bi-robot fs-2 text-white"></i>
+           </div>
+         </div>
+         <p class="mb-0 fw-semibold text-body-secondary">Consultas Inteligentes Hermes</p>
+         <span class="small text-muted text-center px-4 mt-1">Preguntame sobre tareas pendientes, urgencias o el avance de procedimientos.</span>
        </div>`
     : state.historial.map((m) => m.rol === 'user'
-        ? `<div class="d-flex justify-content-end mb-2"><div class="p-2 px-3 rounded bg-primary text-white" style="max-width:80%">${esc(m.texto)}</div></div>`
-        : `<div class="d-flex justify-content-start mb-3"><div class="p-2 px-3 rounded bg-light border" style="max-width:90%"><div class="small text-muted mb-1"><i class="bi bi-robot"></i> Hermes</div>${m.html}</div></div>`
+        ? `<div class="d-flex justify-content-end mb-3">
+             <div class="p-2 px-3 rounded-3 bg-primary text-white shadow-sm chat-bubble-user" style="max-width:80%; font-size: 0.95rem;">${esc(m.texto)}</div>
+           </div>`
+        : `<div class="d-flex justify-content-start mb-3">
+             <div class="p-3 rounded-3 bg-body-tertiary border border-light-subtle shadow-sm chat-bubble-hermes" style="max-width:90%; font-size: 0.95rem;">
+               <div class="small text-muted mb-2 d-flex align-items-center gap-1 fw-bold">
+                 <span class="hermes-status-dot me-1"></span>
+                 <i class="bi bi-robot text-primary"></i> Hermes
+               </div>
+               <div class="hermes-response-body text-body">${m.html}</div>
+             </div>
+           </div>`
       ).join('')
 
   container.innerHTML = `
-    <div class="p-3 p-md-4" style="max-width:900px;margin:0 auto">
-      <h3 class="mb-1"><i class="bi bi-robot me-2"></i>Consultar a Hermes</h3>
-      <p class="text-muted small">Respuestas factuales desde el estado real — sin generación libre.</p>
-
-      <div class="mb-2 d-flex flex-wrap gap-2">
-        ${SUGERENCIAS.map((s) => `<button class="btn btn-sm btn-outline-secondary hermes-sug" data-q="${esc(s)}">${esc(s)}</button>`).join('')}
+    <div class="hermes-chat-container p-3 p-md-4">
+      <div class="d-flex align-items-center justify-content-between mb-3 pb-3 border-bottom">
+        <div>
+          <h4 class="mb-1 fw-bold d-flex align-items-center gap-2">
+            <i class="bi bi-robot text-primary fs-3"></i>
+            <span>Consultar a Hermes</span>
+          </h4>
+          <p class="text-body-secondary small mb-0">Asistente operativo de consulta factual y estado en tiempo real.</p>
+        </div>
+        <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2.5 py-1 fw-semibold small">
+          <i class="bi bi-shield-check me-1"></i> Factual Mode
+        </span>
       </div>
 
-      <div id="hermes-log" class="border rounded p-3 mb-2 bg-white" style="height:380px;overflow-y:auto">
+      <div class="mb-3">
+        <label class="form-label small text-muted fw-semibold mb-2"><i class="bi bi-lightning-charge me-1"></i>Preguntas sugeridas</label>
+        <div class="d-flex flex-wrap gap-2">
+          ${SUGERENCIAS.map((s) => `<button class="btn btn-sm hermes-sug hermes-sug-chip rounded-pill px-3" data-q="${esc(s)}">${esc(s)}</button>`).join('')}
+        </div>
+      </div>
+
+      <div id="hermes-log" class="border rounded-3 p-3 mb-3 bg-body shadow-sm hermes-chat-log" style="height:400px;overflow-y:auto;">
         ${mensajes}
       </div>
 
-      <div class="input-group">
-        <input id="hermes-q" type="text" class="form-control" placeholder="Escribí tu pregunta…" autocomplete="off" />
-        <button id="hermes-send" class="btn btn-primary"><i class="bi bi-send"></i></button>
+      <div class="input-group input-group-lg shadow-sm rounded-3 overflow-hidden border">
+        <input id="hermes-q" type="text" class="form-control border-0 bg-body py-3 text-body" placeholder="Escribí tu pregunta sobre la operación…" autocomplete="off" />
+        <button id="hermes-send" class="btn btn-primary px-4 border-0 d-flex align-items-center justify-content-center"><i class="bi bi-send-fill fs-5"></i></button>
       </div>
     </div>`
 }
+

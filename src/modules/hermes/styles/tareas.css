@@ -200,3 +200,147 @@
     background-color: rgba(0, 0, 0, 0.3);
   }
 }
+
+/* ── Hermes Chat Consulta ── */
+.hermes-chat-container {
+  max-width: 850px;
+  margin: 0 auto;
+}
+
+.hermes-avatar-pulse {
+  position: relative;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: rgba(13, 110, 253, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: hermes-pulse 2s infinite ease-in-out;
+}
+
+.hermes-avatar-inner {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #0d6efd, #7c3aed);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 10px rgba(13, 110, 253, 0.3);
+}
+
+@keyframes hermes-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(13, 110, 253, 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 15px rgba(13, 110, 253, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(13, 110, 253, 0);
+  }
+}
+
+.hermes-sug-chip {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  border-color: rgba(13, 110, 253, 0.2);
+  background-color: rgba(13, 110, 253, 0.03);
+  color: var(--bs-primary);
+  font-size: 0.8rem;
+}
+
+.hermes-sug-chip:hover {
+  transform: translateY(-1px);
+  background-color: var(--bs-primary);
+  border-color: var(--bs-primary);
+  color: #fff;
+  box-shadow: 0 4px 8px rgba(13, 110, 253, 0.15);
+}
+
+.hermes-chat-log {
+  border-color: var(--bs-border-color) !important;
+  scrollbar-width: thin;
+}
+
+/* Scrollbar personalizado para el log de chat */
+.hermes-chat-log::-webkit-scrollbar {
+  width: 6px;
+}
+
+.hermes-chat-log::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.hermes-chat-log::-webkit-scrollbar-thumb {
+  background-color: var(--bs-border-color);
+  border-radius: 3px;
+}
+
+.chat-bubble-user {
+  border-bottom-right-radius: 4px !important;
+  background: linear-gradient(135deg, #0d6efd, #0b5ed7) !important;
+}
+
+.chat-bubble-hermes {
+  border-bottom-left-radius: 4px !important;
+  background-color: var(--bs-tertiary-bg) !important;
+}
+
+.hermes-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: var(--bs-success);
+  display: inline-block;
+  animation: hermes-blink 1.5s infinite ease-in-out;
+}
+
+@keyframes hermes-blink {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 1; }
+}
+
+.hermes-response-body ul {
+  padding-left: 1.25rem;
+  margin-top: 0.5rem;
+}
+
+.hermes-response-body li {
+  margin-bottom: 0.4rem;
+}
+
+/* Estilos de input y botón */
+.input-group.shadow-sm {
+  border-color: var(--bs-border-color) !important;
+}
+
+#hermes-q:focus {
+  box-shadow: none !important;
+}
+
+#hermes-send {
+  transition: background-color 0.15s ease;
+}
+
+#hermes-send:hover {
+  background-color: #0b5ed7;
+}
+
+/* Ajustes de modo oscuro/claro */
+[data-bs-theme="dark"] .chat-bubble-hermes {
+  background-color: rgba(255, 255, 255, 0.04) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+[data-bs-theme="dark"] .hermes-sug-chip {
+  background-color: rgba(13, 110, 253, 0.1);
+  color: #398bfd;
+  border-color: rgba(13, 110, 253, 0.3);
+}
+
+[data-bs-theme="dark"] .hermes-sug-chip:hover {
+  background-color: #0d6efd;
+  color: #fff;
+}
+

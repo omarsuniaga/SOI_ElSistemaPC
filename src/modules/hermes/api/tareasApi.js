@@ -51,7 +51,8 @@ export const reportarAlumnoRiesgo = api.reportarAlumnoRiesgo
 // ─── SP-5: capa de consulta de Hermes (snapshot institucional factual) ──────────
 export const getConsultaEstado = api.getConsultaEstado
 
-// Process Backbone V1: contratos SOI + apertura de casos Hermes.
+// Process Backbone V1: contratos SOI + apertura/cierre de casos Hermes.
 export const getProcessContracts = api.getProcessContracts
 export const startProcessCase = api.startProcessCase
 export const getProcessCaseDetail = api.getProcessCaseDetail
+export const closeProcessCase = api.closeProcessCase

@@ -307,9 +307,164 @@ export async function getProcedimientos() {
   return delay(resumen)
 }
 
-// SP-4: simula el caso "alumno en riesgo" (devuelve un correlation_id ficticio).
-export async function reportarAlumnoRiesgo(_alumnoId, _alumnoNombre, _motivo, _actor = {}) {
-  return delay('00000000-0000-0000-0000-0000000000a1')
+// SP-4: simula el caso "alumno en riesgo" (creando tareas inter-departamentales y la conversación del investigador autónomo).
+export async function reportarAlumnoRiesgo(alumnoId, alumnoNombre, motivo, actor = {}) {
+  const correlationId = `corr-riesgo-${Date.now()}`
+  const aId = alumnoId || `alumno-${Date.now()}`
+  const aNombre = alumnoNombre || 'Alumno Desconocido'
+  const mot = motivo || 'Faltas reiteradas injustificadas'
+  
+  const actorId = actor.id || 'actor-sistema'
+  const actorNombre = actor.nombre || 'Hermes Automatizador'
+
+  const t1Id = `tarea-acm-riesgo-${Date.now()}`
+  const t2Id = `tarea-com-riesgo-${Date.now()}`
+  const t3Id = `tarea-fin-riesgo-${Date.now()}`
+
+  // 1. Tarea del Investigador Autónomo (COM) - Empieza completada con acuerdo
+  const t2 = {
+    id: t2Id,
+    titulo: `📢 COM-Hermes: Investigar inasistencias de ${aNombre} con su representante`,
+    descripcion: `Contacto autónomo con el representante para esclarecer motivos de inasistencias y riesgos reportados: ${mot}.`,
+    departamento: 'COM',
+    estado: 'completada',
+    prioridad: 'alta',
+    fecha_vencimiento: new Date(Date.now() + 86400000 * 2).toISOString().slice(0, 10),
+    asignado_a: null,
+    checklist: [
+      { item: 'Establecer canal de comunicación vía WhatsApp', completado: true },
+      { item: 'Consultar motivos de inasistencia al padre', completado: true },
+      { item: 'Proponer acuerdo de regularización', completado: true },
+      { item: 'Generar reporte para ACM', completado: true }
+    ],
+    feedback: `Investigación autónoma completada. Representante Juan Pérez (Padre) confirmó que las faltas se debieron a un cuadro de influenza y la falta de transporte temporal. Se comprometió a presentar justificativo médico mañana y solicita apoyo académico para regularizar contenidos.`,
+    documentos_adjuntos: [],
+    event_id: null,
+    minuta_id: null,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    entidad_tipo: 'alumno',
+    entidad_id: aId,
+    entidad_label: aNombre,
+    correlation_id: correlationId,
+    updated_by: actorId,
+    updated_by_nombre: actorNombre,
+  }
+
+  // 2. Tarea de Académica (ACM) - Pendiente por resolver en base al acuerdo
+  const t1 = {
+    id: t1Id,
+    titulo: `🎼 ACM: Evaluar plan pedagógico y justificar faltas de ${aNombre}`,
+    descripcion: `Revisar justificativo médico enviado por el representante y coordinar con los profesores de las clases afectadas para plan de nivelación, según el acuerdo del caso de riesgo.`,
+    departamento: 'ACM',
+    estado: 'pendiente',
+    prioridad: 'alta',
+    fecha_vencimiento: new Date(Date.now() + 86400000 * 5).toISOString().slice(0, 10),
+    asignado_a: null,
+    checklist: [
+      { item: 'Validar justificativo médico en el portal', completado: false },
+      { item: 'Coordinar con maestros principales plan de nivelación', completado: false },
+      { item: 'Justificar ausencias en el registro de asistencias', completado: false }
+    ],
+    feedback: null,
+    documentos_adjuntos: [],
+    event_id: null,
+    minuta_id: null,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    entidad_tipo: 'alumno',
+    entidad_id: aId,
+    entidad_label: aNombre,
+    correlation_id: correlationId,
+    updated_by: null,
+    updated_by_nombre: null,
+  }
+
+  // 3. Tarea de Finanzas (FIN) - Pendiente por revisar
+  const t3 = {
+    id: t3Id,
+    titulo: `💳 FIN: Revisar estado de cuotas y becas del alumno ${aNombre}`,
+    descripcion: `Evaluar si la situación de riesgo académico y ausentismo está relacionada con problemas financieros de cuotas atrasadas.`,
+    departamento: 'FIN',
+    estado: 'pendiente',
+    prioridad: 'baja',
+    fecha_vencimiento: new Date(Date.now() + 86400000 * 7).toISOString().slice(0, 10),
+    asignado_a: null,
+    checklist: [
+      { item: 'Verificar estado de cuenta de cuotas mensuales', completado: false },
+      { item: 'Verificar si posee beca o asistencia financiera', completado: false }
+    ],
+    feedback: null,
+    documentos_adjuntos: [],
+    event_id: null,
+    minuta_id: null,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    entidad_tipo: 'alumno',
+    entidad_id: aId,
+    entidad_label: aNombre,
+    correlation_id: correlationId,
+    updated_by: null,
+    updated_by_nombre: null,
+  }
+
+  // Insertar tareas en el mock
+  tareas.push(t2, t1, t3)
+
+  // 4. Inyectar conversación inmutable en los comentarios de la tarea del Investigador
+  const baseTime = new Date()
+  const c1 = {
+    id: `com-riesgo-1-${Date.now()}`,
+    tarea_id: t2Id,
+    autor_id: 'hermes-bot',
+    autor_nombre: '🤖 Hermes Investigador',
+    texto: `[SISTEMA] Alerta de riesgo activada. Iniciando contacto de investigación autónoma con el representante Juan Pérez (Padre de ${aNombre}). Canales habilitados: WhatsApp / Email.`,
+    created_at: new Date(baseTime.getTime() - 600000).toISOString()
+  }
+  const c2 = {
+    id: `com-riesgo-2-${Date.now()}`,
+    tarea_id: t2Id,
+    autor_id: 'parent-juan',
+    autor_nombre: 'Juan Pérez (Representante)',
+    texto: `Hola. Sí, disculpen la falta de comunicación. Lo que pasa es que ${aNombre} estuvo con un cuadro gripal muy fuerte (influenza) y yo también caí enfermo. Se nos complicó salir y no pudimos llevarla a la academia esta semana. Tampoco teníamos transporte disponible.`,
+    created_at: new Date(baseTime.getTime() - 500000).toISOString()
+  }
+  const c3 = {
+    id: `com-riesgo-3-${Date.now()}`,
+    tarea_id: t2Id,
+    autor_id: 'hermes-bot',
+    autor_nombre: '🤖 Hermes Investigador',
+    texto: `Entiendo perfectamente, don Juan. Lamento mucho la enfermedad familiar. En el SOI valoramos mucho la salud. Para justificar oficialmente las ausencias en el portal Académico (ACM) y evitar penalizaciones de inasistencia, ¿podría facilitarnos una foto del justificativo médico o una nota firmada mañana?`,
+    created_at: new Date(baseTime.getTime() - 400000).toISOString()
+  }
+  const c4 = {
+    id: `com-riesgo-4-${Date.now()}`,
+    tarea_id: t2Id,
+    autor_id: 'parent-juan',
+    autor_nombre: 'Juan Pérez (Representante)',
+    texto: `Sí, claro. Mañana mismo le pido a ella que lleve la nota y la receta médica para entregársela al profesor. O si puedo, le tomo una foto y la subo yo mismo. Me preocupa mucho que se haya atrasado con las lecciones de violín.`,
+    created_at: new Date(baseTime.getTime() - 300000).toISOString()
+  }
+  const c5 = {
+    id: `com-riesgo-5-${Date.now()}`,
+    tarea_id: t2Id,
+    autor_id: 'hermes-bot',
+    autor_nombre: '🤖 Hermes Investigador',
+    texto: `Despreocúpese por el atraso, don Juan. He registrado su compromiso en el sistema. Al presentar el justificativo, el departamento Académico (ACM) abrirá un plan de nivelación con su maestro principal para apoyarla. Le deseamos una pronta recuperación completa.`,
+    created_at: new Date(baseTime.getTime() - 200000).toISOString()
+  }
+  const c6 = {
+    id: `com-riesgo-6-${Date.now()}`,
+    tarea_id: t2Id,
+    autor_id: 'hermes-bot',
+    autor_nombre: '🤖 Hermes Investigador',
+    texto: `[SISTEMA] Conversación finalizada con acuerdo favorable. Alumno: ${aNombre}. Estado: Caso resuelto en primer nivel, derivado a ACM para plan pedagógico. Cerrando canal de investigación autónomo.`,
+    created_at: new Date(baseTime.getTime() - 100000).toISOString()
+  }
+
+  comentarios.push(c1, c2, c3, c4, c5, c6)
+
+  return delay(correlationId)
 }
 
 // SP-5: snapshot institucional mock (derivado de las tareas mock en memoria).

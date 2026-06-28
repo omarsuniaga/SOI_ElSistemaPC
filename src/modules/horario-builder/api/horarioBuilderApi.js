@@ -40,12 +40,31 @@ async function getSalonesReal() {
 }
 
 async function getClasesReal() {
-  const { data: clases, error } = await supabase
+  let clases;
+  const res1 = await supabase
     .from('clases')
     .select('id, nombre, maestro_principal_id, capacidad_maxima, instrumento, duracion_minutos')
     .order('nombre', { ascending: true });
 
-  if (error) throw new Error('Error al cargar clases reales: ' + error.message);
+  if (res1.error) {
+    const msg = String(res1.error.message).toLowerCase();
+    if (msg.includes('duracion_minutos') || msg.includes('does not exist') || res1.error.code === 'P0002') {
+      console.warn('[horarioBuilderApi] La columna duracion_minutos no existe en clases. Reintentando sin ella...');
+      const res2 = await supabase
+        .from('clases')
+        .select('id, nombre, maestro_principal_id, capacidad_maxima, instrumento')
+        .order('nombre', { ascending: true });
+      
+      if (res2.error) {
+        throw new Error('Error al cargar clases reales (fallback): ' + res2.error.message);
+      }
+      clases = res2.data;
+    } else {
+      throw new Error('Error al cargar clases reales: ' + res1.error.message);
+    }
+  } else {
+    clases = res1.data;
+  }
 
   const { data: horarios } = await supabase
     .from('clase_horarios')

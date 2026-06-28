@@ -11,6 +11,7 @@
 
 import '../styles/tareas.css'
 import * as tareasApi from '../api/tareasApi.js'
+import { resolvePolicyForInput } from '../api/soiPolicyApi.js'
 
 const DEPARTAMENTOS = {
   DIR: 'Dirección', ACM: 'Académica', ADM: 'Administración', FIN: 'Financiero',
@@ -19,8 +20,8 @@ const DEPARTAMENTOS = {
 const SUGERENCIAS = [
   '¿Cómo va la operación en general?',
   '¿Qué departamentos tienen tareas pendientes?',
-  '¿Qué casos requieren atención inmediata?',
-  '¿Cómo va la reinscripción?',
+  '¿Cómo va la política de asistencia ACM-P02?',
+  '¿Cómo van las reparaciones en el taller de lutería?',
 ]
 
 const state = { snapshot: null, procedimientos: [], historial: [] }
@@ -80,7 +81,33 @@ function responder(pregunta) {
   const q = norm(pregunta)
   const s = state.snapshot
 
-  // 1) Atención inmediata / bloqueos / urgencias / críticos
+  // 1) Detección de Políticas y Parámetros del SOI
+  if (/(politica|documento|norma|manual|due[nñ]o|propietario|acm-p02|dir-p05|evt-p01|adm-p02|adm-p08|fin-p13|log-p03|agt-p03)/.test(q)) {
+    const policy = resolvePolicyForInput({ query: pregunta })
+    if (policy.ok) {
+      const docNames = {
+        'ACM-P02': 'Asistencia y Contenido Académico-Musical',
+        'DIR-P05': 'Gestión de Crisis e Incidencias',
+        'EVT-P01': 'Gestión y Aprobación de Eventos',
+        'ADM-P02': 'Gestión de Expedientes y Archivos',
+        'ADM-P08': 'Gestión de Justificaciones e Inasistencias',
+        'FIN-P13': 'Gestión de Mora y Cobranza Financiera',
+        'LOG-P03': 'Reparaciones y Mantenimiento de Instrumentos',
+        'AGT-P03': 'Fábrica de Procesos e Integraciones de IA'
+      }
+      return `<p><strong>Parámetro SOI Canónico Resuelto:</strong></p>
+        <ul class="mb-0">
+          <li><strong>Código:</strong> <code>${policy.doc_id}</code> (Versión ${policy.version})</li>
+          <li><strong>Proceso:</strong> ${docNames[policy.doc_id] || 'Procedimiento Institucional'}</li>
+          <li><strong>Propietario / Dueño:</strong> ${esc(policy.owner)}</li>
+          <li><strong>Departamento Límite:</strong> ${esc(DEPARTAMENTOS[policy.department] || policy.department)}</li>
+          <li><strong>Ruta Canónica:</strong> <span class="text-primary small d-block mt-1" style="word-break:break-all;"><i class="bi bi-file-earmark-code me-1"></i>${policy.canonical_path}</span></li>
+        </ul>
+        <span class="small text-muted d-block mt-2"><i class="bi bi-info-circle me-1"></i>Este es un parámetro operacional regulado por la Dirección General del SOI.</span>`
+    }
+  }
+
+  // 2) Atención inmediata / bloqueos / urgencias / críticos
   if (/(atencion|inmediat|urgent|bloque|critic|riesgo|priorid)/.test(q)) {
     const items = s.atencion_inmediata || []
     if (items.length === 0) return `<p>✅ No hay tareas bloqueadas ni críticas abiertas. Nada requiere atención inmediata.</p>`
@@ -89,7 +116,7 @@ function responder(pregunta) {
         <strong>${esc(DEPARTAMENTOS[t.departamento] || t.departamento)}</strong> — ${esc(t.titulo)}</li>`).join('') + '</ul>'
   }
 
-  // 2) Pendientes por departamento
+  // 3) Pendientes por departamento
   if (/(pendient|departament|quien|quienes|cargad|saturad)/.test(q)) {
     const deptos = (s.por_departamento || []).filter((d) => d.abiertas > 0)
     if (deptos.length === 0) return `<p>No hay tareas abiertas en ningún departamento.</p>`
@@ -98,23 +125,38 @@ function responder(pregunta) {
         (${d.pendientes} pendientes${d.bloqueadas > 0 ? `, <span class="text-danger">${d.bloqueadas} bloqueadas</span>` : ''})</li>`).join('') + '</ul>'
   }
 
-  // 3) Procedimiento específico (busca por keyword en el título del caso)
+  // 4) Procedimiento específico (casos u operaciones activas de otros departamentos)
   const palabras = q.split(/\s+/).filter((w) => w.length >= 4 &&
-    !['como','va','van','esta','estan','sobre','para','proceso','procedimiento','caso'].includes(w))
-  if (/(como va|como van|proceso|procedimiento|caso|estado de)/.test(q) && palabras.length > 0) {
+    !['como','va','van','esta','estan','sobre','para','proceso','procedimiento','caso','ver','mostrar'].includes(w))
+  if (palabras.length > 0 && (/(como va|como van|proceso|procedimiento|caso|estado de|reparaci|lutheria|asistencia|vencer|vencido)/.test(q) || 
+      palabras.some(w => ['reparaciones', 'lutería', 'asistencias', 'justificaciones', 'becas'].includes(w)))) {
     const matches = state.procedimientos.filter((p) => {
       const t = norm(p.titulo_muestra)
       return palabras.some((w) => t.includes(w))
     })
     if (matches.length > 0) {
-      return `<p>Encontré ${matches.length} procedimiento(s) relacionados:</p><ul class="mb-0">` +
-        matches.slice(0, 8).map((p) => `<li><strong>${p.pct_avance}%</strong> — ${esc(p.titulo_muestra)}
-          <span class="text-muted">(${p.completadas}/${p.total} tareas${p.bloqueadas > 0 ? `, ${p.bloqueadas} bloqueadas` : ''})</span></li>`).join('') + '</ul>'
+      return `<p>Encontré ${matches.length} caso(s) o procedimiento(s) en ejecución:</p><ul class="mb-0">` +
+        matches.slice(0, 8).map((p) => {
+          const deptoBadges = p.departamentos.map(d => `<span class="badge bg-secondary-subtle text-secondary-emphasis me-1" style="font-size:0.75rem;">${d}</span>`).join('')
+          return `<li class="mb-2">
+            <div class="d-flex align-items-center justify-content-between">
+              <strong>${esc(p.titulo_muestra)}</strong>
+              <span class="badge bg-primary">${p.pct_avance}% avance</span>
+            </div>
+            <div class="small text-muted mt-1">
+              Tareas: ${p.completadas}/${p.total} completadas 
+              ${p.bloqueadas > 0 ? `· <span class="text-danger">${p.bloqueadas} bloqueadas</span>` : ''}
+              ${p.observadas > 0 ? `· <span class="text-warning">${p.observadas} observadas</span>` : ''}
+            </div>
+            <div class="mt-1">
+              <span class="small text-muted">Deptos involucrados:</span> ${deptoBadges}
+            </div>
+          </li>`
+        }).join('') + '</ul>'
     }
-    // sin match: cae al resumen general
   }
 
-  // 4) Resumen general (default)
+  // 5) Resumen general (default)
   const t = s.tareas
   const abiertas = t.pendiente + t.en_progreso + t.bloqueada + t.observada
   return `<p>Estado general de la operación:</p>

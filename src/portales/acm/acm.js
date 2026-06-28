@@ -52,7 +52,11 @@ const navGroups = [
     id: 'hermes',
     label: 'Hermes',
     icon: 'bi-robot',
-    items: [{ id: 'hermes-tareas', label: 'Tareas Institucionales', icon: 'bi-check2-square' }],
+    items: [
+      { id: 'hermes-consulta', label: 'Consultar a Hermes', icon: 'bi-chat-dots' },
+      { id: 'hermes-procedimientos', label: 'Procedimientos y Casos', icon: 'bi-diagram-3' },
+      { id: 'hermes-tareas', label: 'Tareas Institucionales', icon: 'bi-check2-square' },
+    ],
   },
 ]
 

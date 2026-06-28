@@ -1,0 +1,197 @@
+/* luteria.css — Estilos específicos del Portal de Lutería */
+
+/* ─── Contenedor general ──────────────────────────────────────────────────── */
+
+.luteria-portal .page-container {
+  padding: 1.25rem;
+  max-width: 1400px;
+}
+
+/* ─── KPI cards ────────────────────────────────────────────────────────────── */
+
+.luteria-portal .kpi-card {
+  min-width: 100px;
+  padding: 0.75rem 1rem;
+  border-radius: 10px;
+  transition: transform 0.15s ease;
+}
+.luteria-portal .kpi-card:hover {
+  transform: translateY(-1px);
+}
+.luteria-portal .kpi-card small {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.luteria-portal .kpi-card .kpi-value {
+  font-size: 1.4rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+/* ─── Filtros ──────────────────────────────────────────────────────────────── */
+
+.luteria-portal .filtros-bar {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+/* ─── Tabla de órdenes ──────────────────────────────────────────────────────── */
+
+.luteria-portal .orden-row {
+  cursor: pointer;
+  transition: background-color 0.12s ease;
+}
+.luteria-portal .orden-row:hover {
+  background-color: rgba(124, 58, 237, 0.04);
+}
+.luteria-portal .orden-row td {
+  vertical-align: middle;
+}
+
+/* ─── Timeline de estados ──────────────────────────────────────────────────── */
+
+.lut-timeline {
+  position: relative;
+  padding-left: 2rem;
+}
+.lut-timeline::before {
+  content: '';
+  position: absolute;
+  left: 0.5rem;
+  top: 0.5rem;
+  bottom: 0.5rem;
+  width: 2px;
+  background: var(--bs-border-color, #dee2e6);
+  border-radius: 1px;
+}
+.lut-timeline-item {
+  position: relative;
+  padding-bottom: 1.25rem;
+}
+.lut-timeline-item:last-child {
+  padding-bottom: 0;
+}
+.lut-timeline-dot {
+  position: absolute;
+  left: -1.625rem;
+  top: 0.2rem;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid var(--bs-border-color, #dee2e6);
+  background: var(--bs-body-bg, #fff);
+  z-index: 1;
+}
+.lut-timeline-dot.active {
+  background: #7c3aed;
+  border-color: #7c3aed;
+}
+.lut-timeline-dot.current {
+  background: #7c3aed;
+  border-color: #7c3aed;
+  box-shadow: 0 0 0 4px rgba(124, 58, 237, 0.2);
+}
+.lut-timeline-dot.past {
+  background: #198754;
+  border-color: #198754;
+}
+
+/* ─── Detail sections ──────────────────────────────────────────────────────── */
+
+.lut-detail-section {
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: 12px;
+  padding: 1.25rem;
+  margin-bottom: 1rem;
+}
+.lut-detail-section h6 {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--bs-secondary-color, #6c757d);
+  margin-bottom: 0.75rem;
+}
+
+/* ─── Badge de estado ──────────────────────────────────────────────────────── */
+
+.lut-estado-badge {
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 0.25em 0.7em;
+  border-radius: 20px;
+  white-space: nowrap;
+}
+
+/* ─── Evidence gallery ─────────────────────────────────────────────────────── */
+
+.lut-evidence-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 0.75rem;
+}
+.lut-evidence-item {
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: 8px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: box-shadow 0.15s ease;
+}
+.lut-evidence-item:hover {
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+}
+.lut-evidence-placeholder {
+  aspect-ratio: 4/3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bs-light, #f8f9fa);
+  color: var(--bs-secondary-color, #6c757d);
+  font-size: 1.5rem;
+}
+.lut-evidence-caption {
+  padding: 0.35rem 0.5rem;
+  font-size: 0.7rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ─── Stock indicators ──────────────────────────────────────────────────────── */
+
+.lut-stock-bar {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--bs-border-color, #dee2e6);
+  overflow: hidden;
+  max-width: 120px;
+}
+.lut-stock-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+/* ─── Instrument search ────────────────────────────────────────────────────── */
+
+.lut-search-input {
+  border-radius: 10px;
+  border: 2px solid var(--bs-border-color, #dee2e6);
+  padding: 0.6rem 1rem;
+  font-size: 0.95rem;
+  transition: border-color 0.15s ease;
+}
+.lut-search-input:focus {
+  border-color: #7c3aed;
+  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.12);
+}
+.lut-search-result {
+  cursor: pointer;
+  transition: background-color 0.1s ease, transform 0.1s ease;
+}
+.lut-search-result:hover {
+  background-color: rgba(124, 58, 237, 0.04);
+  transform: translateY(-1px);
+}

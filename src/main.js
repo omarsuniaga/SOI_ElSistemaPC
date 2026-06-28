@@ -74,6 +74,8 @@ import { registerRoutesAdminNotificaciones } from './modules/admin-notificacione
 import { registerRoutesAdminAprobacion } from './modules/admin-aprobacion/index.js'
 import { registerRoutesAdminUsuarios } from './modules/admin-usuarios/index.js'
 import { registerRoutesBitacora } from './modules/bitacora/index.js'
+import { renderHermesConsultaView } from './modules/hermes/views/hermesConsultaView.js'
+import { renderProcedimientosView } from './modules/hermes/views/procedimientosView.js'
 import { renderScoreDirectorView } from './modules/hermes/views/scoreDirectorView.js'
 import {
   startAdminRealtimeNotifications,
@@ -275,6 +277,13 @@ const NAV_GROUPS = [
     icon: 'bi-bullseye',
     items: [
       { id: 'dir-score', label: 'Score del Director', icon: 'bi-bullseye' },
+      { id: 'dir-procedimientos', label: 'Procedimientos', icon: 'bi-diagram-3' },
+      { id: 'dir-hermes-consulta', label: 'Consultar a Hermes', icon: 'bi-robot' },
+      { id: 'admin-dashboard-reportes', label: 'Reportes Director', icon: 'bi-file-earmark-pdf' },
+      { id: 'admin-dashboard-tendencias', label: 'Tendencias', icon: 'bi-arrow-up-right' },
+      { id: 'admin-notificaciones', label: 'Centro de Actividad', icon: 'bi-bell' },
+      { id: 'admin-aprobacion', label: 'Aprobaciones', icon: 'bi-person-check' },
+      { id: 'permisos', label: 'Permisos', icon: 'bi-shield-lock' },
     ],
   },
   {
@@ -598,8 +607,10 @@ function registerModules() {
   // Score del Director (DIR): vista global de tareas Hermes + creación de eventos
   try {
     router.register('dir-score', (mount) => renderScoreDirectorView(mount))
+    router.register('dir-procedimientos', (mount) => renderProcedimientosView(mount))
+    router.register('dir-hermes-consulta', (mount) => renderHermesConsultaView(mount))
   } catch (error) {
-    console.error('Error registering dir-score route:', error)
+    console.error('Error registering DIR routes:', error)
   }
 
   // Centro de Actividad se registra dinámicamente desde MODULES_REGISTRY

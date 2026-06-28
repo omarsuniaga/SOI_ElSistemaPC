@@ -59,52 +59,7 @@ const DEFAULT_STEPS = [
   }
 ]
 
-const CSS = `
-  .pm-tour-overlay {
-    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(0, 0, 0, 0.8); z-index: 10000;
-    pointer-events: auto; display: none; opacity: 0;
-    transition: opacity 0.3s;
-  }
-  .pm-tour-spotlight {
-    position: fixed; border-radius: 12px;
-    box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.7);
-    z-index: 10001; transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-    pointer-events: none; border: 2px solid var(--pm-primary);
-  }
-  .pm-tour-tooltip {
-    position: fixed; width: 280px; background: var(--pm-surface);
-    border: 1px solid var(--pm-border); border-radius: 16px;
-    padding: 1.5rem; z-index: 10002; color: #fff;
-    box-shadow: 0 10px 40px rgba(0,0,0,0.5);
-    transition: top 0.4s, left 0.4s; pointer-events: auto;
-  }
-  .pm-tour-tooltip h4 {
-    margin: 0 0 0.5rem; color: var(--pm-primary);
-    font-size: 1.1rem; display: flex; align-items: center; gap: 0.5rem;
-  }
-  .pm-tour-tooltip p { margin: 0; font-size: 0.9rem; line-height: 1.4; color: var(--pm-text-muted); }
-  .pm-tour-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 1.25rem; }
-  .pm-tour-progress { font-size: 0.75rem; color: var(--pm-text-muted); }
-  .pm-tour-btn-skip { background: none; border: none; color: var(--pm-text-muted); font-size: 0.8rem; cursor: pointer; text-decoration: underline; padding: 0; }
-  .pm-tour-btn-next {
-    background: var(--pm-primary); color: #fff; border: none;
-    padding: 0.5rem 1rem; border-radius: 20px; font-weight: 700; cursor: pointer;
-    font-size: 0.85rem; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
-  }
-  .pm-help-btn {
-    width: 32px; height: 32px; border-radius: 50%;
-    background: rgba(var(--pm-primary-rgb), 0.15); color: var(--pm-primary);
-    border: 1px solid rgba(var(--pm-primary-rgb), 0.3);
-    display: flex; align-items: center; justify-content: center;
-    cursor: pointer; transition: all 0.2s; font-size: 1rem;
-  }
-  .pm-help-btn:hover { background: var(--pm-primary); color: #fff; transform: scale(1.1); }
-  [data-theme="light"] .pm-tour-tooltip { background: #fff; color: #111; }
-  @media (max-width: 480px) {
-    .pm-tour-tooltip { width: calc(100% - 40px); left: 20px !important; font-size: 0.85rem; }
-  }
-`
+''
 
 export class AsistenciaTour {
   /**
@@ -197,16 +152,6 @@ export class AsistenciaTour {
   }
 
   // ── Private ───────────────────────────────────────────────────────────────
-
-  _injectStyles() {
-    // Evitar duplicados si el componente se monta dos veces (HMR, etc.)
-    if (document.getElementById('pm-tour-styles')) return
-    const style = document.createElement('style')
-    style.id = 'pm-tour-styles'
-    style.textContent = CSS
-    document.head.appendChild(style)
-    this._styleEl = style
-  }
 
   _injectDOM() {
     // Limpiar elementos huérfanos de instancias anteriores que no fueron

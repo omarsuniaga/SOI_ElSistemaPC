@@ -13,6 +13,7 @@
 import '../styles/tareas.css'
 import * as tareasApi from '../api/tareasApi.js'
 import { clasificarDepartamento } from '../api/clasificadorApi.js'
+import { createTaskContract } from '../api/contractsApi.js'
 import { AppToast } from '../../../shared/components/AppToast.js'
 import { AppModal } from '../../../shared/components/AppModal.js'
 
@@ -444,6 +445,7 @@ function openAsignarTareaModal(container) {
 
 function openConfirmarTareaModal(container, c) {
   const conf = Math.round((c.confianza ?? 0.5) * 100)
+  const policy = c.policy || { ok: false, error: 'policy_gap', reason: 'Sin política canónica resuelta.' }
   AppModal.open({
     title: 'Confirmar y asignar tarea',
     size: 'lg',
@@ -453,6 +455,17 @@ function openConfirmarTareaModal(container, c) {
           <i class="bi bi-robot me-1"></i>IA sugiere: ${DEPARTAMENTOS[c.departamento] || c.departamento}
         </span>
         <span class="text-muted small">confianza ${conf}%</span>
+      </div>
+      <div class="alert ${policy.ok ? 'alert-success' : 'alert-warning'} small py-2">
+        <div class="fw-semibold mb-1"><i class="bi ${policy.ok ? 'bi-shield-check' : 'bi-exclamation-triangle'} me-1"></i>
+          ${policy.ok ? 'Política SOI canónica resuelta' : 'Policy gap detectado'}
+        </div>
+        ${
+          policy.ok
+            ? `<div><strong>${policy.doc_id}</strong> · ${escapeHTML(policy.canonical_path)}</div>
+               <div class="text-muted">Fuente: ${escapeHTML(policy.authoritative_source)} · match: ${escapeHTML(policy.matched_by)}</div>`
+            : `<div>${escapeHTML(policy.reason || 'No se pudo validar la autoridad documental.')}</div>`
+        }
       </div>
       <div class="row g-3 mb-3">
         <div class="col-md-6">
@@ -487,6 +500,10 @@ function openConfirmarTareaModal(container, c) {
     `,
     saveText: 'Crear y asignar',
     onSave: async (mb) => {
+      if (!policy.ok) {
+        AppToast.show('No puedo crear la tarea: falta política canónica vigente para esta solicitud', 'error')
+        return false
+      }
       const titulo = mb.querySelector('#atTitulo').value.trim()
       if (!titulo) {
         AppToast.show('El título es obligatorio', 'error')
@@ -494,12 +511,55 @@ function openConfirmarTareaModal(container, c) {
       }
       const departamento = mb.querySelector('#atDepto').value
       try {
-        await tareasApi.crearTareaInstitucional({
+        const tarea = await tareasApi.crearTareaInstitucional({
           titulo,
-          descripcion: mb.querySelector('#atDescripcion').value.trim() || null,
+          descripcion: `${mb.querySelector('#atDescripcion').value.trim() || ''}\n\n[SOI_POLICY] ${policy.doc_id} · ${policy.canonical_path}`.trim(),
           departamento,
           prioridad: mb.querySelector('#atPrioridad').value,
           estado: 'pendiente',
+        })
+        await createTaskContract({
+          contract_id: crypto.randomUUID().slice(0, 8), 
+          emitted_by: 'hermes:manual',
+          source_event: {
+            channel: 'pwa',
+            raw_ref: 'scoreDirectorView',
+            detected_at: new Date().toISOString(),
+            summary: c.descripcion,
+            classification: {
+              category: inferCategoryFromPolicy(policy.doc_id),
+              confidence: c.confianza ?? 0.5,
+            },
+          },
+          soi_policy_ref: {
+            doc_id: policy.doc_id,
+            doc_version: policy.version,
+            resolved_at: new Date().toISOString(),
+            resolved_by: 'src/modules/hermes/api/soiPolicyApi.js',
+            canonical_path: policy.canonical_path,
+          },
+          assignee: {
+            role_code: `${departamento}-PENDIENTE`,
+            person: {
+              user_id: null,
+              full_name: null,
+              resolved_from: policy.canonical_path,
+            },
+            channels: { primary: 'pwa', fallback: [] },
+          },
+          assignee_user_id: null,
+          action_required: titulo,
+          evidence_required: {
+            type: 'manual_review',
+            description: `Cumplir la tarea conforme a ${policy.doc_id}`,
+          },
+          close_criteria: `La tarea debe completarse con evidencia coherente con ${policy.doc_id}.`,
+          deadline: inferDeadlineIso(),
+          priority: mapPriorityToContract(mb.querySelector('#atPrioridad').value),
+          escalation_path: [],
+          state: 'emitted',
+          linked_task_id: tarea.id,
+          tags: [policy.doc_id, departamento, 'pwa_manual_emission'],
         })
         AppToast.show(`Tarea creada y asignada a ${DEPARTAMENTOS[departamento] || departamento}`, 'success')
         await renderScoreDirectorView(container)
@@ -518,4 +578,24 @@ function escapeHTML(str) {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
+}
+
+function mapPriorityToContract(priority) {
+  return { critica: 'critica', alta: 'urgente', media: 'normal', baja: 'normal' }[priority] || 'normal'
+}
+
+function inferDeadlineIso() {
+  const deadline = new Date()
+  deadline.setDate(deadline.getDate() + 2)
+  return deadline.toISOString()
+}
+
+function inferCategoryFromPolicy(docId) {
+  if (docId === 'FIN-P13') return 'mora_pago'
+  if (docId === 'DIR-P05') return 'alerta_crisis'
+  if (docId === 'EVT-P01') return 'solicitud_evento'
+  if (docId === 'LOG-P03') return 'dano_instrumento'
+  if (docId === 'ADM-P02') return 'expediente_alumno'
+  if (docId === 'ADM-P08') return 'justificacion_inasistencia'
+  return 'otro'
 }

@@ -124,40 +124,6 @@ export function createAsistenciaLista(container, { alumnos = [], onStateChange }
     return String(str ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   }
 
-  // Estilos específicos para los botones de asistencia dentro del componente
-  if (!document.getElementById('pm-asistencia-styles')) {
-    const style = document.createElement('style');
-    style.id = 'pm-asistencia-styles';
-    style.textContent = `
-      .pm-asistencia-btn {
-        width: 36px;
-        height: 36px;
-        border-radius: 50%;
-        border: 2px solid var(--pm-border);
-        background: var(--pm-surface);
-        color: var(--pm-text-muted);
-        font-weight: 700;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: all 0.15s;
-        font-size: 0.9rem;
-      }
-      .pm-asistencia-btn.active[data-action="P"] { background: var(--pm-success); color: white; border-color: var(--pm-success); }
-      .pm-asistencia-btn.active[data-action="A"] { background: var(--pm-danger); color: white; border-color: var(--pm-danger); }
-      .pm-asistencia-btn.active[data-action="J"] { background: var(--pm-warning); color: white; border-color: var(--pm-warning); }
-      
-      .pm-asistencia-card {
-        transition: transform 0.3s ease, background 0.2s ease;
-      }
-      .pm-asistencia-card.marcado {
-        opacity: 0.8;
-      }
-    `;
-    document.head.appendChild(style);
-  }
-
   render();
 
   return {

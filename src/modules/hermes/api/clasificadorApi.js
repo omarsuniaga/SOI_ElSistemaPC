@@ -11,6 +11,7 @@
 
 import { callGroq } from '../../../portal-maestros/services/groqService.js'
 import * as tareasApi from './tareasApi.js'
+import { resolvePolicyForInput } from './soiPolicyApi.js'
 
 export const DEPARTAMENTOS_VALIDOS = ['DIR', 'ACM', 'ADM', 'FIN', 'LOG', 'COM', 'TECNICO']
 export const PRIORIDADES_VALIDAS = ['baja', 'media', 'alta', 'critica']
@@ -63,12 +64,14 @@ export async function clasificarDepartamento(texto) {
 
   const departamento = DEPARTAMENTOS_VALIDOS.includes(p.departamento) ? p.departamento : 'DIR'
   const prioridad = PRIORIDADES_VALIDAS.includes(p.prioridad) ? p.prioridad : 'media'
+  const policy = resolvePolicyForInput({ query: texto, department: departamento })
   return {
     departamento,
     titulo: (p.titulo || 'Solicitud institucional').toString().trim(),
     descripcion: (p.descripcion || texto).toString().trim(),
     prioridad,
     confianza: typeof p.confianza === 'number' ? p.confianza : 0.5,
+    policy,
   }
 }
 
@@ -79,6 +82,12 @@ export async function clasificarDepartamento(texto) {
  */
 export async function crearTareaDesdeTexto(texto, overrides = {}) {
   const clasificacion = await clasificarDepartamento(texto)
+  if (!clasificacion.policy?.ok) {
+    const error = new Error(clasificacion.policy?.reason || 'policy_gap')
+    error.code = 'policy_gap'
+    error.policy = clasificacion.policy
+    throw error
+  }
   const tarea = await tareasApi.crearTareaInstitucional({
     titulo: overrides.titulo || clasificacion.titulo,
     descripcion: overrides.descripcion || clasificacion.descripcion,

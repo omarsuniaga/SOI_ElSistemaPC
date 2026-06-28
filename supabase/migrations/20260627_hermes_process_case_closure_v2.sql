@@ -21,7 +21,6 @@ DECLARE
   v_total_tasks int;
   v_pending_tasks int;
   v_blocked_tasks int;
-  v_evidence_met boolean;
   v_evidence_required jsonb;
   v_missing_evidence text[];
 BEGIN
@@ -80,8 +79,7 @@ BEGIN
     closure_summary = COALESCE(p_closure_summary, closure_summary, 'Cerrado sin observaciones'),
     closed_at = now(),
     updated_at = now()
-  WHERE id = p_case_id
-  RETURNING row_to_json(hermes_process_cases.*) INTO v_evidence_met; -- reuse as out-param
+  WHERE id = p_case_id;
 
   RETURN jsonb_build_object(
     'case_id', p_case_id,

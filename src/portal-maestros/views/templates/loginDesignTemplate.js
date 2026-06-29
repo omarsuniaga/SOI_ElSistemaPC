@@ -10,7 +10,7 @@ export const templateHtml = `<div class="op-frame-frame-login-screen">
       <div class="op-text-text-branding-title">Portal de Maestros</div>
       <div class="op-text-text-branding-subtitle">by SOI - El Sistema Punta Cana</div>
       <div class="op-rect-rect-form-side"></div>
-      <div class="op-rect-rect-login-card"></div>
+      <div class="op-rect-rect-login-card">
       <div class="op-text-text-card-title">Iniciar Sesión</div>
       <div class="op-group-group-input-email">
       <div class="op-text-text-label-email">CORREO ELECTRÓNICO</div>
@@ -32,11 +32,11 @@ export const templateHtml = `<div class="op-frame-frame-login-screen">
           </span>
         </button>
       <button class="op-rect-rect-btn-biometric pm-btn-secondary" id="pm-biometric-btn" type="button"><i class="bi bi-fingerprint"></i> Usar huella o Face ID</button>
-      <a class="op-text-text-register-link pm-link" id="pm-register-route-link" href="#" data-route="register">¿No tienes cuenta? Regístrate como maestro</a>
+      <a class="op-text-text-register-link pm-link" id="pm-register-route-link" href="#" data-route="register">¿No tienes cuenta? Regístrate como maestro</a></div>
       <p class="pm-error-msg" id="pm-login-error" aria-live="polite" style="position:absolute; left:900px; top:690px; width:360px; color:#ef4444; font-size:12px; font-weight:600;"></p>
     </div>`
 
-export const templateCss = `/* Frame: Portal Maestros - Login Screen */
+export const templateCss = `/* Frame: Portal de Maestros - Login Screen */
 .op-frame-frame-login-screen {
   position: relative;
   width: 100%;

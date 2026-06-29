@@ -860,6 +860,19 @@ function _attachEvents(container) {
     })
   }
 
+  if (state.viewMode === 'acm') {
+    container.querySelector('#btn-publicar-version')?.addEventListener('click', () => _openAcmPublishModal())
+    container.querySelector('#btn-asignar-ruta-acm')?.addEventListener('click', () => _openAcmRouteModal())
+    container.querySelector('#btn-curriculo-admin')?.addEventListener('click', () => {
+      openCurriculoListModal()
+    })
+    container.querySelector('#planes-tbody')?.addEventListener('click', async (e) => {
+      const btn = e.target.closest('button[data-acm-action="publish-version"]')
+      if (!btn) return
+      await _publicarVersionDesdePanel(btn.dataset.versionId)
+    })
+  }
+
   // Row-level delegates
   container.querySelector('#planes-tbody')?.addEventListener('change', (e) => {
     if (!e.target.classList.contains('plan-check')) return

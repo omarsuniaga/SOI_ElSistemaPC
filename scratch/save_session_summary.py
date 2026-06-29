@@ -24,6 +24,7 @@ Implement the initial weekly plans and the semantic semaphore grid for the Acade
    - Added automatic injection of real interactive inner contents and icons (like `pm-btn-loader` spinners, eye icons, and biometric fingerprint layouts) based on design element IDs.
    - Injected auto-generated CSS media queries for high-fidelity responsive layouts on mobile viewports.
    - Refactored tablet and mobile layouts (`max-width: 1024px`) to discard absolute positioning in favor of a fluid relative Flexbox flow, adapting components vertically to any viewport width and orientation.
+   - Repositioned the branding elements (logo, title, subtitle) relative and centered above the login card on mobile/tablet viewports to form a native Hero banner.
 8. **Real Login Refactor**: Integrated the compiled template inside the production `loginView.js` view. Event listeners, validation rules, error tracking, and biometric auth remain fully active on top of the newly generated OpenPencil markup.
 9. **Build Fixes**: Resolved missing mock/production exports in `weeklyPlanAdapter.js`, `weeklyPlanMock.js`, and `weeklyPlanSupabase.js` for curriculum versioning methods.
 10. **Git Hygiene**: Committed changes to local branch `feat/acm-ruta-academica-mvp1` using conventional commits.

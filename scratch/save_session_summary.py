@@ -18,13 +18,14 @@ Implement the initial weekly plans and the semantic semaphore grid for the Acade
 3. **Interactive Weekly UI**: Refactored `PlanificationCard.js` to render a premium interactive week-by-week navigator containing themes, objectives, strategies, and evidence.
 4. **Semantic Semaphore Grid**: Rewrote `studentProgressPanel.js` to render a 6-state semaphore grid (`not_started`, `worked`, `in_process`, `achieved`, `needs_reinforcement`, `failed`, `exceeded`) and persist student qualifications through the unified adapter.
 5. **Operational Student CTAs**: Injected hover-revealed CTAs (Ver Perfil, Evaluar Indicador, Registrar Evidencia) directly in the student rows of the Pedagogical Map traceability panel (`mapaPedagogicoPanel.js`), opening evaluation and evidence modals linked to `weeklyPlanAdapter`.
-6. **OpenPencil Design Integration (Design-as-Code)**: Established the workflow standard in `OPENPENCIL_WORKFLOW.md` and designed 3 vector layouts:
-   - `mapa_pedagogico_trazabilidad.op`: Visual and logical layout for student evaluation and Quick CTAs.
-   - `login_view.op`: Two-column responsive desktop layout for the teacher auth interface.
-   - `hoy_view.op`: The dashboard overview displaying schedule class cards, status badges, pending notifications, and auto-navigation banners.
-7. **Design Compilation Engine**: Coded `scripts/compile_design.js` in native ESM format, which parses vector layers, colors, boundaries, and sizes from `.op` JSON files. It automatically converts them to HTML/CSS templates, mapping design elements with brackets annotations (e.g. `[tag:input][id:pm-email]`) to real interactive HTML elements.
-8. **Real Login Refactor**: Integrated the compiled template inside the production `loginView.js` view. Event listeners, validation rules, error tracking (#pm-login-error), and biometric auth remain fully active on top of the newly generated OpenPencil markup.
-9. **Git Hygiene**: Committed changes to local branch `feat/acm-ruta-academica-mvp1` using conventional commits.
+6. **OpenPencil Design Integration (Design-as-Code)**: Established the workflow standard in `OPENPENCIL_WORKFLOW.md` and designed 3 vector layouts (`mapa_pedagogico_trazabilidad.op`, `login_view.op`, `hoy_view.op`).
+7. **Design Compilation Engine Optimizations**:
+   - Implemented an exclusion list (`excludedIds`) in `compile_design.js` to filter out redundant vector placeholder labels and button text nodes, preventing them from superposing and blocking HTML input typing.
+   - Added automatic injection of real interactive inner contents and icons (like `pm-btn-loader` spinners, eye icons, and biometric fingerprint layouts) based on design element IDs.
+   - Injected auto-generated CSS media queries for high-fidelity responsive layouts on mobile viewports.
+8. **Real Login Refactor**: Integrated the compiled template inside the production `loginView.js` view. Event listeners, validation rules, error tracking, and biometric auth remain fully active on top of the newly generated OpenPencil markup.
+9. **Build Fixes**: Resolved missing mock/production exports in `weeklyPlanAdapter.js`, `weeklyPlanMock.js`, and `weeklyPlanSupabase.js` for curriculum versioning methods required by `planificacionView.js`.
+10. **Git Hygiene**: Committed changes to local branch `feat/acm-ruta-academica-mvp1` using conventional commits.
 
 ## Next Steps
 - Implement the admin planning matrix panel in the Academics (ACM) Portal to assign these weekly schedules.
@@ -34,7 +35,7 @@ Implement the initial weekly plans and the semantic semaphore grid for the Acade
 - `src/portal-maestros/views/loginView.js`
 - `src/portal-maestros/views/templates/loginDesignTemplate.js`
 - `scripts/compile_design.js`
-- `docs/planning/ui/designs/login_view.op`"""
+- `src/modules/planificacion/api/weeklyPlanAdapter.js`"""
 
 now_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 new_sync_id = f"obs-{uuid.uuid4().hex[:16]}"

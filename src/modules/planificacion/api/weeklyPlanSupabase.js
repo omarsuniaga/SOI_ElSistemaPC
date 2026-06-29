@@ -131,10 +131,65 @@ export async function obtenerProgresoGrupo(groupId, levelId = null) {
 }
 
 export async function obtenerVersionesCurriculares() {
-  return []
+  const [{ data: versions, error: versionsError }, { data: plans, error: plansError }] = await Promise.all([
+    supabase
+      .from('acm_curriculum_versions')
+      .select('*, source:acm_curriculum_sources(*)')
+      .order('created_at', { ascending: false }),
+    supabase
+      .from('acm_weekly_plans')
+      .select('id, curriculum_version_id'),
+  ])
+
+  if (versionsError) throw versionsError
+  if (plansError) throw plansError
+
+  const planMap = new Map((plans || []).map((plan) => [plan.curriculum_version_id, plan.id]))
+  return (versions || []).map((version) => ({
+    ...version,
+    weekly_plan_id: planMap.get(version.id) || null,
+  }))
 }
 
 export async function publicarVersionCurricular(versionId) {
-  return { success: true }
+  if (!versionId) throw new Error('Se requiere versionId')
+
+  const timestamp = new Date().toISOString()
+  const { data: version, error: versionError } = await supabase
+    .from('acm_curriculum_versions')
+    .update({
+      status: 'active',
+      is_active: true,
+      approved_at: timestamp,
+      updated_at: timestamp,
+    })
+    .eq('id', versionId)
+    .select('*, source:acm_curriculum_sources(*)')
+    .single()
+  if (versionError) throw versionError
+
+  const { error: deactivateError } = await supabase
+    .from('acm_curriculum_versions')
+    .update({
+      is_active: false,
+      updated_at: timestamp,
+    })
+    .neq('id', versionId)
+    .eq('status', 'active')
+  if (deactivateError) throw deactivateError
+
+  if (version?.source_id) {
+    const { error: sourceError } = await supabase
+      .from('acm_curriculum_sources')
+      .update({
+        status: 'active',
+        related_version_id: version.id,
+        updated_at: timestamp,
+      })
+      .eq('id', version.source_id)
+    if (sourceError) throw sourceError
+  }
+
+  return version
 }
 

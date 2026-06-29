@@ -129,3 +129,12 @@ export async function obtenerProgresoGrupo(groupId, levelId = null) {
     return acc
   }, {})
 }
+
+export async function obtenerVersionesCurriculares() {
+  return []
+}
+
+export async function publicarVersionCurricular(versionId) {
+  return { success: true }
+}
+

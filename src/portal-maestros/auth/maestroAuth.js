@@ -34,13 +34,19 @@ function _isPWA() {
  * Fija la expiración de sesión a 30 días desde ahora.
  * Se llama automáticamente en cada login exitoso.
  */
-function _setPersistentSession() {
-  localStorage.setItem(
-    'pm-session-expires',
-    new Date(Date.now() + SESSION_DURATION_MS).toISOString(),
-  )
+function _setSessionMode(persistent = true) {
+  if (persistent) {
+    localStorage.setItem(
+      'pm-session-expires',
+      new Date(Date.now() + SESSION_DURATION_MS).toISOString(),
+    )
+  } else {
+    localStorage.removeItem('pm-session-expires')
+  }
+
   if (typeof sessionStorage !== 'undefined') {
-    sessionStorage.setItem('pm-session-active', 'true')
+    if (persistent) sessionStorage.setItem('pm-session-active', 'true')
+    else sessionStorage.removeItem('pm-session-active')
   }
 }
 
@@ -50,7 +56,8 @@ function _setPersistentSession() {
  * @param {string} password
  * @returns {Promise<{success: boolean, maestro?: object, error?: string}>}
  */
-export async function loginMaestro(email, password) {
+export async function loginMaestro(email, password, options = {}) {
+  const keepSession = options.keepSession !== false
   const { data, error } = await supabase.auth.signInWithPassword({ email, password })
 
   if (error || !data.user) {
@@ -139,7 +146,7 @@ export async function loginMaestro(email, password) {
         }
 
     localStorage.setItem(STORAGE_KEY, JSON.stringify(adminMaestro))
-    _setPersistentSession()
+    _setSessionMode(keepSession)
     return { success: true, maestro: adminMaestro, session: data.session }
   }
 
@@ -205,7 +212,7 @@ export async function loginMaestro(email, password) {
 
   // Guardar en localStorage + marcar sesión persistente (30 días por defecto)
   localStorage.setItem(STORAGE_KEY, JSON.stringify(maestro))
-  _setPersistentSession()
+  _setSessionMode(keepSession)
 
   return { success: true, maestro, session: data.session }
 }

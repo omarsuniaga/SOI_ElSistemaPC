@@ -1,3 +1,5 @@
+import '../styles/login.css'
+
 import { supabase } from '../../lib/supabaseClient.js'
 import { setFieldError, clearAllFieldErrors } from '../utils/a11yUtils.js'
 
@@ -8,118 +10,150 @@ import { setFieldError, clearAllFieldErrors } from '../utils/a11yUtils.js'
  */
 export function renderRegisterView(container, { onSuccess }) {
   container.innerHTML = `
-    <div class="pm-login">
-      <!-- Branding Side (Desktop) -->
-      <div class="pm-login-branding">
-        <div class="pm-login-logo"><i class="bi bi-music-note-beamed"></i></div>
-        <h1 class="pm-login-title">Registro de Maestro</h1>
-        <p class="pm-login-subtitle">Sistema Operativo Institucional — SOI</p>
-      </div>
+    <div class="pm-login-shell">
+      <div class="pm-login-glow pm-login-glow-1"></div>
+      <div class="pm-login-glow pm-login-glow-2"></div>
 
-      <!-- Form Side -->
-      <div class="pm-login-form">
-        <div class="pm-login-card">
-          <div class="pm-input-group">
-            <label for="pm-reg-nombre">Nombre completo</label>
-            <input
-              type="text"
-              id="pm-reg-nombre"
-              class="pm-input"
-              placeholder="Tu nombre completo"
-              autocomplete="name"
-            />
+      <div class="pm-login-grid">
+        <section class="pm-login-branding">
+          <div class="pm-login-brand-badge" aria-hidden="true">
+            <span class="pm-login-brand-icon">🎻</span>
           </div>
 
-          <div class="pm-input-group">
-            <label for="pm-reg-email">Correo electrónico</label>
-            <input
-              type="email"
-              id="pm-reg-email"
-              class="pm-input"
-              placeholder="tu@correo.com"
-              autocomplete="email"
-              inputmode="email"
-            />
+          <div class="pm-login-brand-copy">
+            <span class="pm-login-kicker">Portal de Maestros</span>
+            <h1 class="pm-login-title">Solicitá tu cuenta docente.</h1>
+            <p class="pm-login-subtitle">
+              Creá tu perfil para entrar al portal con una interfaz limpia, profesional y lista para mobile,
+              tablet y desktop.
+            </p>
           </div>
 
-          <div class="pm-input-group">
-            <label for="pm-reg-password">Contraseña</label>
-            <div class="pm-password-wrapper">
-              <input
-                type="password"
-                id="pm-reg-password"
-                class="pm-input"
-                placeholder="Mínimo 6 caracteres"
-                autocomplete="new-password"
-              />
-              <button
-                type="button"
-                id="pm-reg-toggle-password"
-                class="pm-password-toggle"
-                title="Mostrar contraseña"
-                aria-label="Mostrar contraseña"
-              >
-                <i class="bi bi-eye"></i>
+          <div class="pm-login-highlights" aria-hidden="true">
+            <span class="pm-login-pill">Registro simple</span>
+            <span class="pm-login-pill">Pendiente de aprobación</span>
+            <span class="pm-login-pill">Dark / Light</span>
+          </div>
+        </section>
+
+        <section class="pm-login-form-side">
+          <div class="pm-login-card">
+            <div class="pm-login-card-header">
+              <div>
+                <h2 class="pm-login-card-title">Crear cuenta</h2>
+                <p class="pm-login-card-subtitle">
+                  Completá tus datos institucionales para solicitar acceso.
+                </p>
+              </div>
+              <button class="pm-login-theme-hint" type="button" tabindex="-1" aria-hidden="true">
+                <i class="bi bi-person-plus"></i>
               </button>
             </div>
-          </div>
 
-          <div class="pm-input-group">
-            <label for="pm-reg-confirm-password">Confirmar contraseña</label>
-            <div class="pm-password-wrapper">
+            <p class="pm-login-error" id="pm-reg-error" aria-live="polite" role="alert"></p>
+
+            <div class="pm-login-field">
+              <label class="pm-login-label" for="pm-reg-nombre">Nombre completo</label>
               <input
-                type="password"
-                id="pm-reg-confirm-password"
-                class="pm-input"
-                placeholder="Repetí tu contraseña"
-                autocomplete="new-password"
+                type="text"
+                id="pm-reg-nombre"
+                class="pm-login-input"
+                placeholder="Tu nombre y apellido"
+                autocomplete="name"
               />
-              <button
-                type="button"
-                id="pm-reg-toggle-confirm-password"
-                class="pm-password-toggle"
-                title="Mostrar contraseña"
-                aria-label="Mostrar contraseña"
-              >
-                <i class="bi bi-eye"></i>
-              </button>
+            </div>
+
+            <div class="pm-login-field">
+              <label class="pm-login-label" for="pm-reg-email">Correo electrónico</label>
+              <input
+                type="email"
+                id="pm-reg-email"
+                class="pm-login-input"
+                placeholder="tu@correo.com"
+                autocomplete="email"
+                inputmode="email"
+              />
+            </div>
+
+            <div class="pm-login-field">
+              <label class="pm-login-label" for="pm-reg-password">Contraseña</label>
+              <div class="pm-password-wrapper">
+                <input
+                  type="password"
+                  id="pm-reg-password"
+                  class="pm-login-input"
+                  placeholder="Mínimo 6 caracteres"
+                  autocomplete="new-password"
+                />
+                <button
+                  type="button"
+                  id="pm-reg-toggle-password"
+                  class="pm-password-toggle"
+                  title="Mostrar contraseña"
+                  aria-label="Mostrar contraseña"
+                >
+                  <i class="bi bi-eye"></i>
+                </button>
+              </div>
+            </div>
+
+            <div class="pm-login-field">
+              <label class="pm-login-label" for="pm-reg-confirm-password">Confirmar contraseña</label>
+              <div class="pm-password-wrapper">
+                <input
+                  type="password"
+                  id="pm-reg-confirm-password"
+                  class="pm-login-input"
+                  placeholder="Repetí tu contraseña"
+                  autocomplete="new-password"
+                />
+                <button
+                  type="button"
+                  id="pm-reg-toggle-confirm-password"
+                  class="pm-password-toggle"
+                  title="Mostrar contraseña"
+                  aria-label="Mostrar contraseña"
+                >
+                  <i class="bi bi-eye"></i>
+                </button>
+              </div>
+            </div>
+
+            <div class="pm-login-field">
+              <label class="pm-login-label" for="pm-reg-instrumento">Instrumento principal</label>
+              <input
+                type="text"
+                id="pm-reg-instrumento"
+                class="pm-login-input"
+                placeholder="Ej: Violín, Piano, Guitarra..."
+              />
+            </div>
+
+            <div class="pm-login-field">
+              <label class="pm-login-label" for="pm-reg-resena">Breve reseña (opcional)</label>
+              <textarea
+                id="pm-reg-resena"
+                class="pm-login-input"
+                placeholder="Contanos brevemente sobre tu experiencia..."
+                rows="3"
+              ></textarea>
+            </div>
+
+            <button type="button" class="pm-login-btn-primary" id="pm-register-btn">
+              <span class="pm-btn-text">Crear cuenta</span>
+              <span class="pm-btn-loader d-none">
+                <span class="pm-spinner-sm"></span>
+                Registrando...
+              </span>
+            </button>
+
+            <div class="pm-login-footer">
+              <a href="#" data-route="login" class="pm-login-register-link">¿Ya tenés cuenta? Iniciar sesión</a>
+              <span class="pm-login-footer-dot">•</span>
+              <span class="pm-login-footer-note">La solicitud queda pendiente de aprobación</span>
             </div>
           </div>
-
-          <div class="pm-input-group">
-            <label for="pm-reg-instrumento">Instrumento principal</label>
-            <input
-              type="text"
-              id="pm-reg-instrumento"
-              class="pm-input"
-              placeholder="Ej: Violín, Piano, Guitarra..."
-            />
-          </div>
-
-          <div class="pm-input-group">
-            <label for="pm-reg-resena">Breve reseña (opcional)</label>
-            <textarea
-              id="pm-reg-resena"
-              class="pm-input"
-              placeholder="Contanos brevemente sobre tu experiencia..."
-              rows="3"
-            ></textarea>
-          </div>
-
-          <button type="button" class="pm-btn-primary" id="pm-register-btn">
-            <span class="pm-btn-text">Crear cuenta</span>
-            <span class="pm-btn-loader d-none">
-              <span class="pm-spinner-sm"></span>
-              Registrando...
-            </span>
-          </button>
-
-          <p class="pm-error-msg" id="pm-reg-error" aria-live="polite"></p>
-
-          <p class="pm-login-register-link">
-            <a href="#" data-route="login" class="pm-link">¿Ya tienes cuenta? Iniciar sesión</a>
-          </p>
-        </div>
+        </section>
       </div>
     </div>
   `
@@ -151,7 +185,10 @@ export function renderRegisterView(container, { onSuccess }) {
     confirmPasswordInput.type = confirmPasswordVisible ? 'text' : 'password'
     toggleConfirmPwdBtn.querySelector('i').className = confirmPasswordVisible ? 'bi bi-eye-slash' : 'bi bi-eye'
     toggleConfirmPwdBtn.title = confirmPasswordVisible ? 'Ocultar contraseña' : 'Mostrar contraseña'
-    toggleConfirmPwdBtn.setAttribute('aria-label', confirmPasswordVisible ? 'Ocultar contraseña' : 'Mostrar contraseña')
+    toggleConfirmPwdBtn.setAttribute(
+      'aria-label',
+      confirmPasswordVisible ? 'Ocultar contraseña' : 'Mostrar contraseña',
+    )
   })
 
   async function handleRegister() {
@@ -213,9 +250,10 @@ export function renderRegisterView(container, { onSuccess }) {
     })
 
     if (error) {
-      errorMsg.textContent = error.message === 'User already registered'
-        ? 'Este correo ya está registrado. Si ya sos maestro, intentá iniciar sesión.'
-        : error.message || 'Error al registrarse. Intentá de nuevo.'
+      errorMsg.textContent =
+        error.message === 'User already registered'
+          ? 'Este correo ya está registrado. Si ya sos maestro, intentá iniciar sesión.'
+          : error.message || 'Error al registrarse. Intentá de nuevo.'
       setLoading(false)
       return
     }
@@ -223,14 +261,17 @@ export function renderRegisterView(container, { onSuccess }) {
     // Garantizar el row en profiles aunque el trigger DB falle.
     // estado: 'pendiente' — el usuario NO puede acceder hasta que un admin apruebe.
     if (data?.user) {
-      await supabase.from('profiles').upsert({
-        id: data.user.id,
-        email,
-        nombre_completo: nombre,
-        resena: `Instrumento: ${instrumento}${resenaInput.value.trim() ? ' | ' + resenaInput.value.trim() : ''}`,
-        rol: 'maestro',
-        estado: 'pendiente',
-      }, { onConflict: 'id', ignoreDuplicates: false })
+      await supabase.from('profiles').upsert(
+        {
+          id: data.user.id,
+          email,
+          nombre_completo: nombre,
+          resena: `Instrumento: ${instrumento}${resenaInput.value.trim() ? ' | ' + resenaInput.value.trim() : ''}`,
+          rol: 'maestro',
+          estado: 'pendiente',
+        },
+        { onConflict: 'id', ignoreDuplicates: false },
+      )
 
       // CRÍTICO: cerrar la sesión de Supabase inmediatamente para evitar
       // que el usuario entre al sistema antes de ser aprobado.
@@ -277,11 +318,10 @@ export function renderRegisterView(container, { onSuccess }) {
   }
 
   registerBtn.addEventListener('click', handleRegister)
-  confirmPasswordInput.addEventListener('keydown', e => {
+  confirmPasswordInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') handleRegister()
   })
 
-  // Handle navigation links
   const loginLink = container.querySelector('[data-route="login"]')
   loginLink?.addEventListener('click', (e) => {
     e.preventDefault()
@@ -294,3 +334,4 @@ export function renderRegisterView(container, { onSuccess }) {
 
   requestAnimationFrame(() => nombreInput.focus())
 }
+

@@ -1,9 +1,12 @@
-﻿import * as routeAdapter from '../api/routeAdapter.js'
+import * as routeAdapter from '../api/routeAdapter.js'
 import { obtenerClases } from '../api/planificacionAdapter.js'
 import { escapeHTML } from '../../clases/utils/clasesUtils.js'
 import { AppToast } from '../../../shared/components/AppToast.js'
+import { AppModal } from '../../../shared/components/AppModal.js'
 import { sugerirEjercicioIndicador } from '../api/groqService.js'
 import { buildAcademicIndicatorLabel, mapMasteryStateMeta } from './mapaPedagogicoHelpers.js'
+import * as weeklyPlanAdapter from '../api/weeklyPlanAdapter.js'
+
 
 function safeArray(value) {
   return Array.isArray(value) ? value : []
@@ -316,14 +319,27 @@ function renderDetailCard(detail, saving, suggesting, options = {}) {
                       .map((student) => {
                         const meta = mapMasteryStateMeta(student.state)
                         return `
-                          <div class="pm-mapa-student-row">
+                          <div class="pm-mapa-student-row" data-student-id="${student.student_id}" data-student-name="${escapeHTML(student.student_name || '')}">
                             <div class="pm-mapa-student-main">
                               <strong>${escapeHTML(student.student_name || 'Alumno')}</strong>
                               <span>${student.nota != null ? `Nota ${student.nota}` : 'Sin nota registrada'}</span>
                             </div>
-                            <span class="pm-mapa-student-state pm-mapa-student-state--${meta.tone}">
-                              ${escapeHTML(meta.label)}
-                            </span>
+                            <div class="pm-mapa-student-meta-wrap">
+                              <span class="pm-mapa-student-state pm-mapa-student-state--${meta.tone}">
+                                ${escapeHTML(meta.label)}
+                              </span>
+                              <div class="pm-mapa-student-actions">
+                                <button class="pm-mapa-action-btn pm-mapa-action-btn--profile" data-action="view-profile" title="Ver Perfil del Alumno">
+                                  <i class="bi bi-person-badge"></i>
+                                </button>
+                                <button class="pm-mapa-action-btn pm-mapa-action-btn--eval" data-action="eval-student" data-indicator-id="${link?.indicator_id || ''}" title="Abrir Evaluación de Indicador">
+                                  <i class="bi bi-check2-circle"></i>
+                                </button>
+                                <button class="pm-mapa-action-btn pm-mapa-action-btn--evidence" data-action="upload-evidence" data-indicator-id="${link?.indicator_id || ''}" title="Registrar Evidencia">
+                                  <i class="bi bi-cloud-upload"></i>
+                                </button>
+                              </div>
+                            </div>
                           </div>
                         `
                       })
@@ -449,9 +465,69 @@ function renderEmpty() {
 export function renderMapaPedagogicoPanel(container, { maestroId = null } = {}) {
   if (!container) return
 
+  const _injectStyles = () => {
+    if (document.getElementById('pm-mapa-cta-styles')) return
+    const style = document.createElement('style')
+    style.id = 'pm-mapa-cta-styles'
+    style.textContent = `
+      .pm-mapa-student-row {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 10px 14px; border-radius: 10px; background: rgba(255,255,255,0.01);
+        margin-bottom: 6px; border: 1px solid rgba(255,255,255,0.04);
+        transition: all 0.2s ease;
+      }
+      .pm-mapa-student-row:hover {
+        background: rgba(255,255,255,0.03); border-color: rgba(255,255,255,0.08);
+      }
+      .pm-mapa-student-meta-wrap {
+        display: flex; align-items: center; gap: 14px;
+      }
+      .pm-mapa-student-actions {
+        display: flex; gap: 6px; opacity: 0; transition: opacity 0.2s ease, transform 0.2s ease;
+        transform: translateX(5px);
+      }
+      .pm-mapa-student-row:hover .pm-mapa-student-actions {
+        opacity: 1; transform: translateX(0);
+      }
+      .pm-mapa-action-btn {
+        background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+        color: #fff; width: 30px; height: 30px; border-radius: 50%;
+        display: flex; align-items: center; justify-content: center; cursor: pointer;
+        font-size: 0.85rem; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      .pm-mapa-action-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      }
+      .pm-mapa-action-btn--profile:hover { background: rgba(59,130,246,0.15); color: #60a5fa; border-color: rgba(59,130,246,0.3); }
+      .pm-mapa-action-btn--eval:hover { background: rgba(16,185,129,0.15); color: #34d399; border-color: rgba(16,185,129,0.3); }
+      .pm-mapa-action-btn--evidence:hover { background: rgba(245,158,11,0.15); color: #facc15; border-color: rgba(245,158,11,0.3); }
+      
+      .pm-mapa-modal-status-grid {
+        display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 15px;
+      }
+      .pm-mapa-modal-status-btn {
+        padding: 8px 4px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);
+        background: rgba(255,255,255,0.03); color: #fff; font-weight: 600; font-size: 0.72rem; cursor: pointer; transition: all 0.2s;
+        display: flex; flex-direction: column; align-items: center; gap: 4px;
+      }
+      .pm-mapa-modal-status-btn:hover { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.2); }
+      .pm-mapa-modal-status-btn.active.achieved { background: rgba(16,185,129,0.2); border-color: #10b981; color: #34d399; }
+      .pm-mapa-modal-status-btn.active.in_process { background: rgba(234,179,8,0.2); border-color: #eab308; color: #facc15; }
+      .pm-mapa-modal-status-btn.active.needs_reinforcement { background: rgba(249,115,22,0.2); border-color: #f97316; color: #ff9800; }
+      .pm-mapa-modal-status-btn.active.failed { background: rgba(239,68,68,0.2); border-color: #ef4444; color: #f87171; }
+      .pm-mapa-modal-status-btn.active.exceeded { background: rgba(59,130,246,0.2); border-color: #3b82f6; color: #60a5fa; }
+      .pm-mapa-modal-status-btn.active.not_started { background: rgba(156,163,175,0.2); border-color: #9ca3af; color: #e5e7eb; }
+    `
+    document.head.appendChild(style)
+  }
+
+  _injectStyles()
+
   const state = {
     clases: [],
     clase: null,
+
     levels: [],
     indicatorCatalog: [],
     currentLink: null,
@@ -808,6 +884,174 @@ export function renderMapaPedagogicoPanel(container, { maestroId = null } = {}) 
 
     container.querySelector('#pm-mapa-link-remove')?.addEventListener('click', async () => {
       await removeIndicatorLink()
+    })
+
+    // Delegación de eventos para CTAs de alumnos en la trazabilidad
+    container.addEventListener('click', async (event) => {
+      const btn = event.target.closest('[data-action]')
+      if (!btn) return
+      
+      const action = btn.dataset.action
+      const row = btn.closest('.pm-mapa-student-row')
+      if (!row) return
+      
+      const studentId = row.dataset.studentId
+      const studentName = row.dataset.studentName
+      const indicatorId = btn.dataset.indicatorId
+      
+      if (action === 'view-profile') {
+        event.stopPropagation()
+        window.location.hash = `#/alumno/${studentId}`
+        AppToast.success(`Redirigiendo al perfil de ${studentName}`)
+        return
+      }
+      
+      if (action === 'eval-student') {
+        event.stopPropagation()
+        openEvalStudentModal(studentId, studentName, indicatorId)
+        return
+      }
+      
+      if (action === 'upload-evidence') {
+        event.stopPropagation()
+        openEvidenceModal(studentId, studentName, indicatorId)
+        return
+      }
+    })
+  }
+
+  const openEvalStudentModal = async (studentId, studentName, indicatorId) => {
+    if (!indicatorId) {
+      AppToast.error('Este indicador no está vinculado a un indicador real aún')
+      return
+    }
+    
+    const record = state.currentMasteryDetails.find(d => d.student_id === studentId && d.indicator_id === indicatorId) || null
+    let selectedStatus = record?.status || 'not_started'
+    
+    AppModal.open({
+      title: `Evaluar Indicador — ${studentName}`,
+      body: `
+        <div class="pm-student-panel__modal-field">
+          <label style="display:block;font-size:0.75rem;font-weight:700;color:rgba(255,255,255,0.5);margin-bottom:8px;text-transform:uppercase;">Nivel de Logro (Semáforo)</label>
+          <div class="pm-mapa-modal-status-grid">
+            <button class="pm-mapa-modal-status-btn ${selectedStatus === 'not_started' ? 'active' : ''} not_started" data-status="not_started">
+              <span>⚫</span><span>Sin iniciar</span>
+            </button>
+            <button class="pm-mapa-modal-status-btn ${selectedStatus === 'in_process' ? 'active' : ''} in_process" data-status="in_process">
+              <span>🟡</span><span>En proceso</span>
+            </button>
+            <button class="pm-mapa-modal-status-btn ${selectedStatus === 'achieved' ? 'active' : ''} achieved" data-status="achieved">
+              <span>🟢</span><span>Dominado</span>
+            </button>
+            <button class="pm-mapa-modal-status-btn ${selectedStatus === 'needs_reinforcement' ? 'active' : ''} needs_reinforcement" data-status="needs_reinforcement">
+              <span>🟠</span><span>Requiere refuerzo</span>
+            </button>
+            <button class="pm-mapa-modal-status-btn ${selectedStatus === 'failed' ? 'active' : ''} failed" data-status="failed">
+              <span>🔴</span><span>No aprobado</span>
+            </button>
+            <button class="pm-mapa-modal-status-btn ${selectedStatus === 'exceeded' ? 'active' : ''} exceeded" data-status="exceeded">
+              <span>🔵</span><span>Sobresaliente</span>
+            </button>
+          </div>
+        </div>
+        <div class="pm-student-panel__modal-field" style="margin-top:15px;">
+          <label style="display:block;font-size:0.75rem;font-weight:700;color:rgba(255,255,255,0.5);margin-bottom:8px;text-transform:uppercase;">Observaciones / Comentarios</label>
+          <textarea id="mapa-modal-obs" rows="3" style="width: 100%; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; color: #fff; padding: 10px; font-size: 0.9rem; resize: none; outline: none;" placeholder="Comentarios sobre el desempeño...">${record?.observation || ''}</textarea>
+        </div>
+        <div class="pm-student-panel__modal-field" style="margin-top:15px;">
+          <label style="display:block;font-size:0.75rem;font-weight:700;color:rgba(255,255,255,0.5);margin-bottom:8px;text-transform:uppercase;">Enlace de Evidencia (Video/Audio)</label>
+          <input type="text" id="mapa-modal-evidence" style="width: 100%; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; color: #fff; padding: 10px; font-size: 0.9rem; outline: none;" placeholder="URL de video o audio en drive/supabase..." value="${record?.evidence_url || ''}">
+        </div>
+      `,
+      confirmText: 'Guardar Evaluación',
+      cancelText: 'Cancelar',
+      onSave: async () => {
+        const obs = document.getElementById('mapa-modal-obs').value
+        const evidence = document.getElementById('mapa-modal-evidence').value
+        
+        try {
+          await weeklyPlanAdapter.registrarProgresoIndicador(
+            studentId,
+            indicatorId,
+            selectedStatus,
+            obs.trim(),
+            evidence.trim()
+          )
+          
+          await reloadHierarchy()
+          render()
+          AppToast.success('Evaluación del alumno guardada con éxito')
+          return true
+        } catch (err) {
+          console.error(err)
+          AppToast.error('Error al guardar: ' + err.message)
+          return false
+        }
+      }
+    })
+    
+    setTimeout(() => {
+      const modal = document.querySelector('.pm-mapa-modal-status-grid')
+      if (modal) {
+        modal.addEventListener('click', (e) => {
+          const btn = e.target.closest('[data-status]')
+          if (btn) {
+            modal.querySelectorAll('[data-status]').forEach(b => b.classList.remove('active'))
+            btn.classList.add('active')
+            selectedStatus = btn.dataset.status
+          }
+        })
+      }
+    }, 150)
+  }
+
+  const openEvidenceModal = async (studentId, studentName, indicatorId) => {
+    if (!indicatorId) {
+      AppToast.error('Este indicador no está vinculado a un indicador real aún')
+      return
+    }
+    
+    const record = state.currentMasteryDetails.find(d => d.student_id === studentId && d.indicator_id === indicatorId) || null
+    const currentStatus = record?.status || 'in_process'
+    
+    AppModal.open({
+      title: `Registrar Evidencia — ${studentName}`,
+      body: `
+        <div class="pm-student-panel__modal-field">
+          <label style="display:block;font-size:0.75rem;font-weight:700;color:rgba(255,255,255,0.5);margin-bottom:8px;text-transform:uppercase;">Enlace de Evidencia (Video/Audio)</label>
+          <input type="text" id="mapa-modal-evidence" style="width: 100%; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; color: #fff; padding: 10px; font-size: 0.9rem; outline: none;" placeholder="URL de video o audio en drive/supabase..." value="${record?.evidence_url || ''}">
+        </div>
+        <div class="pm-student-panel__modal-field" style="margin-top:15px;">
+          <label style="display:block;font-size:0.75rem;font-weight:700;color:rgba(255,255,255,0.5);margin-bottom:8px;text-transform:uppercase;">Comentarios / Observaciones</label>
+          <textarea id="mapa-modal-obs" rows="3" style="width: 100%; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; color: #fff; padding: 10px; font-size: 0.9rem; resize: none; outline: none;" placeholder="Comentarios sobre la evidencia...">${record?.observation || ''}</textarea>
+        </div>
+      `,
+      confirmText: 'Registrar Evidencia',
+      cancelText: 'Cancelar',
+      onSave: async () => {
+        const obs = document.getElementById('mapa-modal-obs').value
+        const evidence = document.getElementById('mapa-modal-evidence').value
+        
+        try {
+          await weeklyPlanAdapter.registrarProgresoIndicador(
+            studentId,
+            indicatorId,
+            currentStatus,
+            obs.trim(),
+            evidence.trim()
+          )
+          
+          await reloadHierarchy()
+          render()
+          AppToast.success('Evidencia registrada con éxito')
+          return true
+        } catch (err) {
+          console.error(err)
+          AppToast.error('Error al guardar: ' + err.message)
+          return false
+        }
+      }
     })
   }
 

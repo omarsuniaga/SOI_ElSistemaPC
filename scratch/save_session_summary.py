@@ -33,13 +33,12 @@ Implement the initial weekly plans and the semantic semaphore grid for the Acade
    - Re-implemented the standard inputs background `rgba(255, 255, 255, 0.02)` and the primary blue button `#3b82f6` with hover states.
    - Maintained all nesting structural corrections to preserve 100% responsive fluid stacking for tablets.
 9. **UI Specification Prompt**: Designed and committed `login_ui_spec_prompt.md` containing a professional, production-ready specification of requirements for the login portal.
-10. **Hermes & WhatsApp Security Specification**: Designed and committed `hermes_whatsapp_architecture_spec.md` which establishes:
-    - A parent-child distributed agent navigation loop (`{DEP}-AGT.md`) for visual/textual recursion by LLMs.
-    - Anti-Ban message scheduling formulas (typing alerts and character-length pacing delays) using Cloud API.
-    - Prompt Injection firewall parameters and RAG sandboxing boundaries to strictly isolate public institutional support from operational database schemas.
-11. **Real Login Refactor**: Integrated the compiled template inside the production `loginView.js` view. Event listeners, validation rules, error tracking, and biometric auth remain fully active on top of the newly generated OpenPencil markup.
-12. **Build Fixes**: Resolved missing mock/production exports in `weeklyPlanAdapter.js`, `weeklyPlanMock.js`, and `weeklyPlanSupabase.js` for curriculum versioning methods.
-13. **Git Hygiene**: Committed changes to local branch `feat/acm-ruta-academica-mvp1` using conventional commits.
+10. **Hermes & WhatsApp Security Specification**: Designed and committed `hermes_whatsapp_architecture_spec.md` which establishes parent-child distributed agent navigation loops, Anti-Ban message scheduling delays, and Prompt Injection firewall parameters.
+11. **Obsidian Link Graph Auditor**: Created and optimized `audit_obsidian_graph.py` which parses Wikilinks, filters out legacy `SOI_QUARANTINE_BACKUP` noise, and lists active orphan nodes grouped by department.
+12. **Gemma Graph Resolution**: Updated the index in `00_HOME.md` to link all 11 Gemma files, successfully resolving their orphan status and boosting the active vault's Graph Cohesion Score from 37.34% to 41.91%.
+13. **Real Login Refactor**: Integrated the compiled template inside the production `loginView.js` view. Event listeners, validation rules, error tracking, and biometric auth remain fully active on top of the newly generated OpenPencil markup.
+14. **Build Fixes**: Resolved missing mock/production exports in `weeklyPlanAdapter.js`, `weeklyPlanMock.js`, and `weeklyPlanSupabase.js` for curriculum versioning methods.
+15. **Git Hygiene**: Committed changes to local branch `feat/acm-ruta-academica-mvp1` using conventional commits.
 
 ## Next Steps
 - Implement the admin planning matrix panel in the Academics (ACM) Portal to assign these weekly schedules.

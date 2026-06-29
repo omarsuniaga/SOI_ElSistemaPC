@@ -32,9 +32,10 @@ Implement the initial weekly plans and the semantic semaphore grid for the Acade
    - Re-established the brand left-side hero layout with the `linear-gradient(135deg, #1e3a8a 0%, #1d4ed8 100%)` blue gradient and the standard white/translucent circular logo.
    - Re-implemented the standard inputs background `rgba(255, 255, 255, 0.02)` and the primary blue button `#3b82f6` with hover states.
    - Maintained all nesting structural corrections to preserve 100% responsive fluid stacking for tablets.
-9. **Real Login Refactor**: Integrated the compiled template inside the production `loginView.js` view. Event listeners, validation rules, error tracking, and biometric auth remain fully active on top of the newly generated OpenPencil markup.
-10. **Build Fixes**: Resolved missing mock/production exports in `weeklyPlanAdapter.js`, `weeklyPlanMock.js`, and `weeklyPlanSupabase.js` for curriculum versioning methods.
-11. **Git Hygiene**: Committed changes to local branch `feat/acm-ruta-academica-mvp1` using conventional commits.
+9. **UI Specification Prompt**: Designed and committed `login_ui_spec_prompt.md` containing a professional, production-ready specification of requirements, variables, micro-animations, validation triggers, accessibility tags, and themes for the login portal.
+10. **Real Login Refactor**: Integrated the compiled template inside the production `loginView.js` view. Event listeners, validation rules, error tracking, and biometric auth remain fully active on top of the newly generated OpenPencil markup.
+11. **Build Fixes**: Resolved missing mock/production exports in `weeklyPlanAdapter.js`, `weeklyPlanMock.js`, and `weeklyPlanSupabase.js` for curriculum versioning methods.
+12. **Git Hygiene**: Committed changes to local branch `feat/acm-ruta-academica-mvp1` using conventional commits.
 
 ## Next Steps
 - Implement the admin planning matrix panel in the Academics (ACM) Portal to assign these weekly schedules.

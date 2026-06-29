@@ -130,7 +130,7 @@ describe('loginView', () => {
 
     await vi.waitUntil(() => loginMaestro.mock.calls.length > 0, { timeout: 1000 })
 
-    expect(loginMaestro).toHaveBeenCalledWith('carlos@test.com', 'password123')
+    expect(loginMaestro).toHaveBeenCalledWith('carlos@test.com', 'password123', { keepSession: true })
     expect(usePortalAuth.setMaestro).toHaveBeenCalledWith(mockMaestro)
     expect(onSuccess).toHaveBeenCalled()
   })

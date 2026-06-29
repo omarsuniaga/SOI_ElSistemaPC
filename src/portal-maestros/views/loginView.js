@@ -1,7 +1,8 @@
 import { loginMaestro } from '../auth/maestroAuth.js'
 import { usePortalAuth } from '../auth/usePortalAuth.js'
 import { setFieldError, clearFieldError, clearAllFieldErrors } from '../utils/a11yUtils.js'
-import { templateHtml, templateCss } from './templates/loginDesignTemplate.js'
+import { templateHtml } from './templates/loginDesignTemplate.js'
+import '../styles/login.css'
 
 /**
  * Renderiza la vista de login del portal maestros en el contenedor dado.
@@ -9,14 +10,6 @@ import { templateHtml, templateCss } from './templates/loginDesignTemplate.js'
  * @param {{ onSuccess: () => void }} options
  */
 export function renderLoginView(container, { onSuccess }) {
-  // Inyectar estilos de OpenPencil si no están presentes
-  if (!document.getElementById('pm-openpencil-login-styles')) {
-    const style = document.createElement('style')
-    style.id = 'pm-openpencil-login-styles'
-    style.textContent = templateCss
-    document.head.appendChild(style)
-  }
-
   container.innerHTML = templateHtml
 
   const emailInput       = container.querySelector('#pm-email')
@@ -46,6 +39,11 @@ export function renderLoginView(container, { onSuccess }) {
     rememberEmailChk.checked = true
   }
 
+  const savedKeepSession = localStorage.getItem('pm-keep-session')
+  if (savedKeepSession !== null) {
+    keepSessionChk.checked = savedKeepSession === 'true'
+  }
+
   // --- Handle Remember Email checkbox ---
   rememberEmailChk.addEventListener('change', () => {
     if (rememberEmailChk.checked) {
@@ -60,6 +58,10 @@ export function renderLoginView(container, { onSuccess }) {
     if (rememberEmailChk.checked) {
       localStorage.setItem('pm-saved-email', emailInput.value)
     }
+  })
+
+  keepSessionChk.addEventListener('change', () => {
+    localStorage.setItem('pm-keep-session', keepSessionChk.checked ? 'true' : 'false')
   })
 
   async function handleLogin() {
@@ -88,7 +90,7 @@ export function renderLoginView(container, { onSuccess }) {
 
     // La sesión persistente siempre se activa por defecto (30 días).
     // loginMaestro() llama a _setPersistentSession() internamente.
-    const result = await loginMaestro(email, password)
+    const result = await loginMaestro(email, password, { keepSession: keepSessionChk.checked })
 
     if (result.success) {
       usePortalAuth.setMaestro(result.maestro)

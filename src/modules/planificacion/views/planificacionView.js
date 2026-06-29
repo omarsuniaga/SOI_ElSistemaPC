@@ -127,7 +127,7 @@ function renderContent(container) {
     ? 'ACM define, versiona y publica. El portal de maestros solo hereda lo activo.'
     : isAdmin
       ? `${hook.planificaciones.length} planes pendientes de revisi?n`
-      : `${hook.planificaciones.length} planes registrados`
+      : 'Vista de consulta. La gu?a se hereda desde ACM para esta clase.'
 
   // Stats for admin mode
   const statsHtml = state.viewMode === 'acm' ? _renderAcmAuthorityPanel() : isAdmin ? _renderAdminStats() : ''
@@ -168,8 +168,8 @@ function renderContent(container) {
             </button>
           `
               : `
-            <button class="btn btn-premium-action" id="btn-nuevo-plan">
-              <i class="bi bi-plus-lg me-1"></i>Nuevo Plan
+            <button class="btn btn-outline-info btn-sm" id="btn-ver-guia-acm">
+              <i class="bi bi-diagram-3 me-1"></i>Ver gu?a ACM
             </button>
           `
           }
@@ -233,42 +233,19 @@ function renderContent(container) {
         </div>
       </div>
 
-      ${
-        !isAdmin
-          ? `
-      <ul class="nav nav-tabs mb-3" id="planificacion-tabs">
-        <li class="nav-item">
-          <button class="nav-link active" data-tab="planes">
-            <i class="bi bi-journal-text me-1"></i>
-            Mis planes
-          </button>
-        </li>
-        <li class="nav-item">
-          <button class="nav-link" data-tab="plantillas">
-            <i class="bi bi-file-earmark-template me-1"></i>Plantillas
-          </button>
-        </li>
-        <li class="nav-item">
-          <button class="nav-link" data-tab="historial">
-            <i class="bi bi-clock-history me-1"></i>Historial
-          </button>
-        </li>
-        <li class="nav-item">
-          <button class="nav-link" data-tab="rutas">
-            <i class="bi bi-diagram-3 me-1"></i>Rutas
-          </button>
-        </li>
-        <li class="nav-item">
-          <button class="nav-link" data-tab="asistente">
-            <i class="bi bi-robot me-1"></i>Asistente IA
-          </button>
-        </li>
-      </ul>
-      `
-          : ''
-      }
+
 
       <div id="tab-content-planes">
+      ${state.viewMode === 'maestro' ? `
+      <div class="alert alert-primary border-0 mb-3">
+        <div class="d-flex align-items-start gap-3">
+          <i class="bi bi-diagram-3 fs-4"></i>
+          <div>
+            <div class="fw-bold">Gu?a heredada desde ACM</div>
+            <div class="small">Aqu? solo consult?s la planificaci?n oficial publicada. Los cambios se hacen en ACM.</div>
+          </div>
+        </div>
+      </div>` : ''}
       <!-- Table -->
       <div class="page-glass rounded">
         <div class="table-responsive">
@@ -476,15 +453,6 @@ function _renderTableRows(planes) {
         <td class="text-end align-middle">
           <div class="quick-actions justify-content-end">
             ${
-              !isAdmin
-                ? `
-              <button class="btn btn-sm btn-outline-primary btn-icon-compact" data-action="edit" data-id="${p.id}" title="Editar">
-                <i class="bi bi-pencil"></i>
-              </button>
-            `
-                : ''
-            }
-            ${
               isAdmin && p.canApprove()
                 ? `
               <button class="btn btn-sm btn-outline-success btn-icon-compact" data-action="approve" data-id="${p.id}" title="Aprobar">
@@ -494,7 +462,7 @@ function _renderTableRows(planes) {
                 : ''
             }
             ${
-              !isAdmin && p.estado === 'planificado'
+              state.viewMode === 'admin' && p.estado === 'planificado'
                 ? `
               <button class="btn btn-sm btn-outline-success btn-icon-compact" data-action="ejecutar" data-id="${p.id}" title="Marcar como ejecutado">
                 <i class="bi bi-play-fill"></i>
@@ -506,7 +474,7 @@ function _renderTableRows(planes) {
               <i class="bi bi-eye"></i>
             </button>
             ${
-              !p.isLocked()
+              (isAdmin || state.viewMode === 'acm') && !p.isLocked()
                 ? `
               <button class="btn btn-sm btn-outline-danger btn-icon-compact" data-action="delete" data-id="${p.id}" title="Eliminar">
                 <i class="bi bi-trash"></i>
@@ -753,7 +721,20 @@ function _attachEvents(container) {
   })
 
   if (!isAdmin) {
-    container.querySelector('#btn-nuevo-plan')?.addEventListener('click', () => openEditModal(null))
+    container.querySelector('#btn-ver-guia-acm')?.addEventListener('click', () => {
+      AppModal.open({
+        title: 'Gu?a heredada desde ACM',
+        saveText: 'Entendido',
+        size: 'md',
+        body: `
+          <div class="alert alert-info border-0 mb-0">
+            <div class="fw-bold mb-2">La planificaci?n oficial vive en ACM</div>
+            <p class="mb-0 small">Desde aqu? solo consult?s la gu?a que ACM public? para tu clase. Si necesit?s correcciones, se solicitan en ACM.</p>
+          </div>
+        `,
+        onSave: async () => true,
+      })
+    })
   }
 
   // Check-all for admin/acm
@@ -846,14 +827,6 @@ function _attachEvents(container) {
     }
   })
 
-  document.addEventListener(
-    'planificacion:nuevoPlan',
-    (e) => {
-      openEditModal(null)
-    },
-    { once: true },
-  )
-
   if (isAdmin) {
     container.querySelector('#btn-curriculo-admin')?.addEventListener('click', () => {
       openCurriculoListModal()
@@ -886,7 +859,7 @@ function _attachEvents(container) {
     const btn = e.target.closest('button[data-action]')
     if (!btn) return
     const { action, id } = btn.dataset
-    if (action === 'edit') openEditModal(id)
+    if (state.viewMode === 'maestro' && action !== 'view') return
     if (action === 'delete') openDeleteModal(id)
     if (action === 'approve') _approveOne(id)
     if (action === 'view') _viewDetail(id)

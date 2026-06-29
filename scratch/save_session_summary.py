@@ -38,9 +38,10 @@ Implement the initial weekly plans and the semantic semaphore grid for the Acade
 12. **Gemma Graph Resolution**: Updated the index in `00_HOME.md` to link all 11 Gemma files, successfully resolving their orphan status and boosting the active vault's Graph Cohesion Score from 37.34% to 41.91%.
 13. **Agent Lector de Portales (AGT-PORTAL)**: Executed the observer agent protocol, producing `SOI_INVENTARIO_Y_RELACION_PORTALES_V9.md` mapping the 5 active unified web portals.
 14. **Document Normalization (AGT-NORM)**: Designed and executed `normalize_doc_headers.py` in production mode over the entire Obsidian vault. Standardized the YAML frontmatter (ID, type, department, owner, paths, backlinks) for 194 active markdown files.
-15. **Real Login Refactor**: Integrated the compiled template inside the production `loginView.js` view. Event listeners, validation rules, error tracking, and biometric auth remain fully active on top of the newly generated OpenPencil markup.
-16. **Build Fixes**: Resolved missing mock/production exports in `weeklyPlanAdapter.js`, `weeklyPlanMock.js`, and `weeklyPlanSupabase.js` for curriculum versioning methods.
-17. **Git Hygiene**: Committed changes to local branch `feat/acm-ruta-academica-mvp1` using conventional commits.
+15. **Doctrinal Alignment Cleanup (AGT-DOCTRINA)**: Programmed and ran `doctrinal_cleaner.py` in production mode across the entire active V9 vault. Audited 194 files and processed 115 files containing human names (e.g. Romina, Catherine, Gessica, Manuel, Omar, Kalani), successfully replacing them with their respective canonical institutional roles (Directora Ejecutiva, Encargada de Finanzas, Encargada de Administración, Coordinador Académico, Director Académico-Musical, Luthier Sede) to enforce the SOI principle of human-independent operational governance.
+16. **Real Login Refactor**: Integrated the compiled template inside the production `loginView.js` view. Event listeners, validation rules, error tracking, and biometric auth remain fully active on top of the newly generated OpenPencil markup.
+17. **Build Fixes**: Resolved missing mock/production exports in `weeklyPlanAdapter.js`, `weeklyPlanMock.js`, and `weeklyPlanSupabase.js` for curriculum versioning methods.
+18. **Git Hygiene**: Committed changes to local branch `feat/acm-ruta-academica-mvp1` using conventional commits.
 
 ## Next Steps
 - Implement the admin planning matrix panel in the Academics (ACM) Portal to assign these weekly schedules.

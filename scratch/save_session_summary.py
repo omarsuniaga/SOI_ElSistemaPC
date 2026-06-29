@@ -26,12 +26,12 @@ Implement the initial weekly plans and the semantic semaphore grid for the Acade
    - Refactored tablet and mobile layouts (`max-width: 1024px`) to discard absolute positioning in favor of a fluid relative Flexbox flow, adapting components vertically to any viewport width and orientation.
    - Repositioned the branding elements (logo, title, subtitle) relative and centered above the login card on mobile/tablet viewports to form a native Hero banner.
    - Nested all input fields, checkboxes, labels, and buttons inside the children array of `rect-login-card` in the design file, ensuring the generated DOM correctly nests controls within the visual background card container, eliminating empty spatial boxes on responsive reflows.
-8. **Dribbble Premium UI Replication**:
-   - Replicated the split card layout from the Dribbble design reference.
-   - Designed a minimal login container (`rect-login-container`) on white `#ffffff` with ultra-rounded borders (`32px`) and subtle drop-shadows.
-   - Implemented a neon lime button (`#bef264`) with dark slate text for the primary call-to-action.
-   - Added a rights-side hero section (`rect-branding-side`) featuring ambient pastel auroras via overlay CSS radial-gradients.
-   - Injected two floatable glassmorphic cards (`rect-glass-tabs` and `rect-glass-chart`) with backdrop filters, custom slider tabs ("Clases", "Alumnos", "Planificación"), SVG line charts, and student avatars to represent the OSPC academic dashboard visually.
+8. **Restored Original SOI Branding**:
+   - Reverted Dribbble layout clone.
+   - Restored the canvas background `#0f172a` and card background `#1e293b`.
+   - Re-established the brand left-side hero layout with the `linear-gradient(135deg, #1e3a8a 0%, #1d4ed8 100%)` blue gradient and the standard white/translucent circular logo.
+   - Re-implemented the standard inputs background `rgba(255, 255, 255, 0.02)` and the primary blue button `#3b82f6` with hover states.
+   - Maintained all nesting structural corrections to preserve 100% responsive fluid stacking for tablets.
 9. **Real Login Refactor**: Integrated the compiled template inside the production `loginView.js` view. Event listeners, validation rules, error tracking, and biometric auth remain fully active on top of the newly generated OpenPencil markup.
 10. **Build Fixes**: Resolved missing mock/production exports in `weeklyPlanAdapter.js`, `weeklyPlanMock.js`, and `weeklyPlanSupabase.js` for curriculum versioning methods.
 11. **Git Hygiene**: Committed changes to local branch `feat/acm-ruta-academica-mvp1` using conventional commits.

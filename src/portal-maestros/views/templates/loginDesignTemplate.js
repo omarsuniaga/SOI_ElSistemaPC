@@ -14,12 +14,10 @@ export const templateHtml = `<div class="op-frame-frame-login-screen">
       <div class="op-text-text-card-title">Iniciar Sesión</div>
       <div class="op-group-group-input-email">
       <div class="op-text-text-label-email">CORREO ELECTRÓNICO</div>
-      <input class="op-rect-rect-input-email pm-input" id="pm-email" type="email" placeholder="tu@correo.com" />
-      <div class="op-text-text-placeholder-email">tu@correo.com</div></div>
+      <input class="op-rect-rect-input-email pm-input" id="pm-email" type="email" placeholder="tu@correo.com" /></div>
       <div class="op-group-group-input-password">
       <div class="op-text-text-label-password">CONTRASEÑA</div>
       <input class="op-rect-rect-input-password pm-input" id="pm-password" type="password" placeholder="••••••••" />
-      <div class="op-text-text-placeholder-password">••••••••</div>
       <button class="op-rect-rect-btn-eye pm-password-toggle" id="pm-toggle-password" type="button"><i class="bi bi-eye"></i></button></div>
       <div class="op-group-group-checkboxes">
       <input class="op-rect-rect-chk-remember" id="pm-remember-email" type="checkbox" />
@@ -33,9 +31,7 @@ export const templateHtml = `<div class="op-frame-frame-login-screen">
             Validando...
           </span>
         </button>
-      <div class="op-text-text-btn-login-label">Iniciar sesión</div>
-      <button class="op-rect-rect-btn-biometric pm-btn-secondary" id="pm-biometric-btn" type="button"></button>
-      <div class="op-text-text-btn-biometric-label">🧬 Usar huella o Face ID</div>
+      <button class="op-rect-rect-btn-biometric pm-btn-secondary" id="pm-biometric-btn" type="button"><i class="bi bi-fingerprint"></i> Usar huella o Face ID</button>
       <a class="op-text-text-register-link pm-link" id="pm-register-route-link" href="#" data-route="register">¿No tienes cuenta? Regístrate como maestro</a>
       <p class="pm-error-msg" id="pm-login-error" aria-live="polite" style="position:absolute; left:900px; top:690px; width:360px; color:#ef4444; font-size:12px; font-weight:600;"></p>
     </div>`
@@ -161,18 +157,6 @@ export const templateCss = `/* Frame: Portal Maestros - Login Screen */
   transition: all 0.2s ease-in-out;
 }
 
-.op-text-text-placeholder-email {
-  position: absolute;
-  left: 916px;
-  top: 326px;
-  width: 300px;
-  height: 18px;
-  color: rgba(255, 255, 255, 0.3);
-  font-size: 14px;
-  font-weight: 500;
-  line-height: 1.4;
-}
-
 .op-text-text-label-password {
   position: absolute;
   left: 900px;
@@ -195,18 +179,6 @@ export const templateCss = `/* Frame: Portal Maestros - Login Screen */
   border-radius: 12px;
   border: 1px solid rgba(255, 255, 255, 0.1);
   transition: all 0.2s ease-in-out;
-}
-
-.op-text-text-placeholder-password {
-  position: absolute;
-  left: 916px;
-  top: 416px;
-  width: 300px;
-  height: 18px;
-  color: rgba(255, 255, 255, 0.3);
-  font-size: 14px;
-  font-weight: 500;
-  line-height: 1.4;
 }
 
 .op-rect-rect-btn-eye {
@@ -281,18 +253,6 @@ export const templateCss = `/* Frame: Portal Maestros - Login Screen */
   transition: all 0.2s ease-in-out;
 }
 
-.op-text-text-btn-login-label {
-  position: absolute;
-  left: 1040px;
-  top: 560px;
-  width: 100px;
-  height: 18px;
-  color: #ffffff;
-  font-size: 13px;
-  font-weight: 700;
-  line-height: 1.4;
-}
-
 .op-rect-rect-btn-biometric {
   position: absolute;
   left: 900px;
@@ -305,18 +265,6 @@ export const templateCss = `/* Frame: Portal Maestros - Login Screen */
   transition: all 0.2s ease-in-out;
 }
 
-.op-text-text-btn-biometric-label {
-  position: absolute;
-  left: 1005px;
-  top: 618px;
-  width: 200px;
-  height: 16px;
-  color: #60a5fa;
-  font-size: 12px;
-  font-weight: 600;
-  line-height: 1.4;
-}
-
 .op-text-text-register-link {
   position: absolute;
   left: 900px;
@@ -327,4 +275,84 @@ export const templateCss = `/* Frame: Portal Maestros - Login Screen */
   font-size: 11px;
   font-weight: 600;
   line-height: 1.4;
+}
+
+/* --- Adaptabilidad Responsive (Auto-inyectado) --- */
+@media (max-width: 1024px) {
+  .op-frame-frame-login-screen {
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    align-items: center !important;
+    height: 100vh !important;
+    min-height: 100vh !important;
+    background: #0f172a !important;
+    padding: 20px !important;
+  }
+  .op-rect-rect-branding-side,
+  .op-text-text-branding-logo,
+  .op-text-text-branding-title,
+  .op-text-text-branding-subtitle,
+  .op-rect-rect-form-side {
+    display: none !important;
+  }
+  .op-rect-rect-login-card {
+    position: relative !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    max-width: 440px !important;
+    height: auto !important;
+    min-height: 520px !important;
+    padding: 30px !important;
+    margin: 0 auto !important;
+  }
+  .op-text-text-card-title {
+    position: absolute !important; left: 40px !important; top: 40px !important;
+  }
+  .op-group-group-input-email {
+    position: absolute !important; left: 40px !important; top: 95px !important; width: calc(100% - 80px) !important;
+  }
+  .op-rect-rect-input-email {
+    position: relative !important; left: 0 !important; top: 22px !important; width: 100% !important;
+  }
+  .op-group-group-input-password {
+    position: absolute !important; left: 40px !important; top: 185px !important; width: calc(100% - 80px) !important;
+  }
+  .op-rect-rect-input-password {
+    position: relative !important; left: 0 !important; top: 22px !important; width: 100% !important;
+  }
+  .op-rect-rect-btn-eye {
+    position: absolute !important; right: 12px !important; top: 31px !important; left: auto !important;
+  }
+  .op-group-group-checkboxes {
+    position: absolute !important; left: 40px !important; top: 275px !important; width: calc(100% - 80px) !important;
+  }
+  .op-rect-rect-chk-remember {
+    position: absolute !important; left: 0 !important; top: 0 !important;
+  }
+  .op-text-text-lbl-remember {
+    position: absolute !important; left: 24px !important; top: 1px !important;
+  }
+  .op-rect-rect-chk-keep {
+    position: absolute !important; left: 0 !important; top: 30px !important;
+  }
+  .op-text-text-lbl-keep {
+    position: absolute !important; left: 24px !important; top: 31px !important;
+  }
+  .op-rect-rect-btn-login {
+    position: absolute !important; left: 40px !important; top: 350px !important; width: calc(100% - 80px) !important;
+  }
+  .op-text-text-btn-login-label {
+    position: absolute !important; left: 50% !important; top: 365px !important; transform: translateX(-50%) !important; width: auto !important;
+  }
+  .op-rect-rect-btn-biometric {
+    position: absolute !important; left: 40px !important; top: 410px !important; width: calc(100% - 80px) !important;
+  }
+  .op-text-text-btn-biometric-label {
+    position: absolute !important; left: 50% !important; top: 423px !important; transform: translateX(-50%) !important; width: auto !important;
+  }
+  .op-text-text-register-link {
+    position: absolute !important; left: 50% !important; top: 470px !important; transform: translateX(-50%) !important; text-align: center !important; width: auto !important;
+  }
 }`

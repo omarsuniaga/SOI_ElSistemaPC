@@ -14,7 +14,10 @@ import {
 } from '../api/planificacionAdapter.js'
 import {
   obtenerFuentesCurriculares,
+  obtenerVersionesCurriculares,
   obtenerRutasActivas,
+  publicarVersionCurricular,
+  crearRutaActiva,
 } from '../api/weeklyPlanAdapter.js'
 import { escapeHTML } from '../../clases/utils/clasesUtils.js'
 import { HelpPanel } from '../../../shared/components/HelpPanel.js'
@@ -37,7 +40,7 @@ const state = {
   asistenteRendered: false,
   rutasRendered: false,
   historialRendered: false,
-  acmAuthority: { sources: [], routes: [] },
+  acmAuthority: { sources: [], versions: [], routes: [] },
   seleccionados: new Set(),
   container: null,
 }
@@ -53,7 +56,7 @@ export async function renderPlanificacionView(container, { viewMode = 'maestro' 
   state.asistenteRendered = false
   state.rutasRendered = false
   state.historialRendered = false
-  state.acmAuthority = { sources: [], routes: [] }
+  state.acmAuthority = { sources: [], versions: [], routes: [] }
 
   if (viewMode === 'plantillas') {
     renderTemplatesContent(container)
@@ -67,11 +70,12 @@ export async function renderPlanificacionView(container, { viewMode = 'maestro' 
     await hook.fetchPlanificacionesConDetalles()
     state.planes = [...hook.planificaciones]
     if (viewMode === 'acm') {
-      const [sources, routes] = await Promise.all([
+      const [sources, versions, routes] = await Promise.all([
         obtenerFuentesCurriculares().catch(() => []),
+        obtenerVersionesCurriculares().catch(() => []),
         obtenerRutasActivas().catch(() => []),
       ])
-      state.acmAuthority = { sources, routes }
+      state.acmAuthority = { sources, versions, routes }
     }
     state.cargando = false
 
@@ -113,7 +117,7 @@ function renderError(container, msg) {
 function renderContent(container) {
   const isAdmin = state.viewMode === 'admin'
 
-  const headerTitle = state.viewMode === 'acm' ? 'ACM Planning' : isAdmin ? 'Todas las Planificaciones' : 'Mis Planes de Clase'
+  const headerTitle = state.viewMode === 'acm' ? 'ACM ? Gobernanza Curricular' : isAdmin ? 'Todas las Planificaciones' : 'Mis Planes de Clase'
   const headerIcon = state.viewMode === 'acm' ? 'bi-diagram-3' : isAdmin ? 'bi-shield-check' : 'bi-journal-check'
   const headerDesc = isAdmin
     ? `${hook.planificaciones.length} planes pendientes de revisión`

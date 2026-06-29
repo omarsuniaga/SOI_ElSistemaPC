@@ -21,6 +21,17 @@ export function compileOpToJs(opFilePath, outputJsPath) {
   let cssRules = []
   
   function processNode(node, parentFrame = null) {
+    // Excluir placeholders y labels vectoriales redundantes superpuestos
+    const excludedIds = [
+      'text-placeholder-email',
+      'text-placeholder-password',
+      'text-btn-login-label',
+      'text-btn-biometric-label'
+    ]
+    if (excludedIds.includes(node.id)) {
+      return ''
+    }
+
     let x = node.x
     let y = node.y
     if (parentFrame) {
@@ -117,6 +128,8 @@ export function compileOpToJs(opFilePath, outputJsPath) {
         `
       } else if (realId === 'pm-toggle-password') {
         innerContent = `<i class="bi bi-eye"></i>`
+      } else if (realId === 'pm-biometric-btn') {
+        innerContent = `<i class="bi bi-fingerprint"></i> Usar huella o Face ID`
       } else if (realId === 'pm-register-route-link') {
         extraAttrs += ' data-route="register"'
       }
@@ -185,6 +198,89 @@ export function compileOpToJs(opFilePath, outputJsPath) {
   nodes.forEach(node => {
     htmlResult += processNode(node, null)
   })
+
+  // Inyectar reglas responsivas de adaptabilidad premium para el login en móviles y centrado en pantallas grandes
+  cssRules.push(`
+/* --- Adaptabilidad Responsive (Auto-inyectado) --- */
+@media (max-width: 1024px) {
+  .op-frame-frame-login-screen {
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    align-items: center !important;
+    height: 100vh !important;
+    min-height: 100vh !important;
+    background: #0f172a !important;
+    padding: 20px !important;
+  }
+  .op-rect-rect-branding-side,
+  .op-text-text-branding-logo,
+  .op-text-text-branding-title,
+  .op-text-text-branding-subtitle,
+  .op-rect-rect-form-side {
+    display: none !important;
+  }
+  .op-rect-rect-login-card {
+    position: relative !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    max-width: 440px !important;
+    height: auto !important;
+    min-height: 520px !important;
+    padding: 30px !important;
+    margin: 0 auto !important;
+  }
+  .op-text-text-card-title {
+    position: absolute !important; left: 40px !important; top: 40px !important;
+  }
+  .op-group-group-input-email {
+    position: absolute !important; left: 40px !important; top: 95px !important; width: calc(100% - 80px) !important;
+  }
+  .op-rect-rect-input-email {
+    position: relative !important; left: 0 !important; top: 22px !important; width: 100% !important;
+  }
+  .op-group-group-input-password {
+    position: absolute !important; left: 40px !important; top: 185px !important; width: calc(100% - 80px) !important;
+  }
+  .op-rect-rect-input-password {
+    position: relative !important; left: 0 !important; top: 22px !important; width: 100% !important;
+  }
+  .op-rect-rect-btn-eye {
+    position: absolute !important; right: 12px !important; top: 31px !important; left: auto !important;
+  }
+  .op-group-group-checkboxes {
+    position: absolute !important; left: 40px !important; top: 275px !important; width: calc(100% - 80px) !important;
+  }
+  .op-rect-rect-chk-remember {
+    position: absolute !important; left: 0 !important; top: 0 !important;
+  }
+  .op-text-text-lbl-remember {
+    position: absolute !important; left: 24px !important; top: 1px !important;
+  }
+  .op-rect-rect-chk-keep {
+    position: absolute !important; left: 0 !important; top: 30px !important;
+  }
+  .op-text-text-lbl-keep {
+    position: absolute !important; left: 24px !important; top: 31px !important;
+  }
+  .op-rect-rect-btn-login {
+    position: absolute !important; left: 40px !important; top: 350px !important; width: calc(100% - 80px) !important;
+  }
+  .op-text-text-btn-login-label {
+    position: absolute !important; left: 50% !important; top: 365px !important; transform: translateX(-50%) !important; width: auto !important;
+  }
+  .op-rect-rect-btn-biometric {
+    position: absolute !important; left: 40px !important; top: 410px !important; width: calc(100% - 80px) !important;
+  }
+  .op-text-text-btn-biometric-label {
+    position: absolute !important; left: 50% !important; top: 423px !important; transform: translateX(-50%) !important; width: auto !important;
+  }
+  .op-text-text-register-link {
+    position: absolute !important; left: 50% !important; top: 470px !important; transform: translateX(-50%) !important; text-align: center !important; width: auto !important;
+  }
+}
+`)
 
   const outputContent = `/**
  * AUTO-GENERATED TEMPLATE FROM OPENPENCIL DESIGN

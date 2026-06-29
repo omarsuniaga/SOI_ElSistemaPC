@@ -8,468 +8,468 @@
       "file_type": "code",
       "source_file": "src/main-maestros.js",
       "source_location": "L1",
-      "id": "src_main_maestros",
       "community": 62,
-      "norm_label": "main-maestros.js"
+      "norm_label": "main-maestros.js",
+      "id": "src_main_maestros"
     },
     {
       "label": "router",
       "file_type": "code",
       "source_file": "src/main-maestros.js",
       "source_location": "L100",
-      "id": "src_main_maestros_router",
       "community": 62,
-      "norm_label": "router"
+      "norm_label": "router",
+      "id": "src_main_maestros_router"
     },
     {
       "label": "_viewContainers",
       "file_type": "code",
       "source_file": "src/main-maestros.js",
       "source_location": "L103",
-      "id": "src_main_maestros_viewcontainers",
       "community": 62,
-      "norm_label": "_viewcontainers"
+      "norm_label": "_viewcontainers",
+      "id": "src_main_maestros_viewcontainers"
     },
     {
       "label": "_viewRendered",
       "file_type": "code",
       "source_file": "src/main-maestros.js",
       "source_location": "L105",
-      "id": "src_main_maestros_viewrendered",
       "community": 62,
-      "norm_label": "_viewrendered"
+      "norm_label": "_viewrendered",
+      "id": "src_main_maestros_viewrendered"
     },
     {
       "label": "buildTabs()",
       "file_type": "code",
       "source_file": "src/main-maestros.js",
       "source_location": "L110",
-      "id": "src_main_maestros_buildtabs",
       "community": 62,
-      "norm_label": "buildtabs()"
+      "norm_label": "buildtabs()",
+      "id": "src_main_maestros_buildtabs"
     },
     {
       "label": "_syncWithSupabase()",
       "file_type": "code",
       "source_file": "src/main-maestros.js",
       "source_location": "L126",
-      "id": "src_main_maestros_syncwithsupabase",
       "community": 62,
-      "norm_label": "_syncwithsupabase()"
+      "norm_label": "_syncwithsupabase()",
+      "id": "src_main_maestros_syncwithsupabase"
     },
     {
       "label": "_updateSyncIndicator()",
       "file_type": "code",
       "source_file": "src/main-maestros.js",
       "source_location": "L171",
-      "id": "src_main_maestros_updatesyncindicator",
-      "community": 31,
-      "norm_label": "_updatesyncindicator()"
+      "community": 62,
+      "norm_label": "_updatesyncindicator()",
+      "id": "src_main_maestros_updatesyncindicator"
     },
     {
       "label": "_triggerSync()",
       "file_type": "code",
       "source_file": "src/main-maestros.js",
       "source_location": "L189",
-      "id": "src_main_maestros_triggersync",
       "community": 62,
-      "norm_label": "_triggersync()"
+      "norm_label": "_triggersync()",
+      "id": "src_main_maestros_triggersync"
     },
     {
       "label": "invalidateAllViews()",
       "file_type": "code",
       "source_file": "src/main-maestros.js",
       "source_location": "L207",
-      "id": "src_main_maestros_invalidateallviews",
       "community": 62,
-      "norm_label": "invalidateallviews()"
+      "norm_label": "invalidateallviews()",
+      "id": "src_main_maestros_invalidateallviews"
     },
     {
       "label": "invalidateView()",
       "file_type": "code",
       "source_file": "src/main-maestros.js",
       "source_location": "L210",
-      "id": "src_main_maestros_invalidateview",
       "community": 62,
-      "norm_label": "invalidateview()"
+      "norm_label": "invalidateview()",
+      "id": "src_main_maestros_invalidateview"
     },
     {
       "label": "_renderView()",
       "file_type": "code",
       "source_file": "src/main-maestros.js",
       "source_location": "L214",
-      "id": "src_main_maestros_renderview",
       "community": 62,
-      "norm_label": "_renderview()"
+      "norm_label": "_renderview()",
+      "id": "src_main_maestros_renderview"
     },
     {
       "label": "_buildShell()",
       "file_type": "code",
       "source_file": "src/main-maestros.js",
       "source_location": "L290",
-      "id": "src_main_maestros_buildshell",
       "community": 62,
-      "norm_label": "_buildshell()"
+      "norm_label": "_buildshell()",
+      "id": "src_main_maestros_buildshell"
     },
     {
       "label": "_showLoginScreen()",
       "file_type": "code",
       "source_file": "src/main-maestros.js",
       "source_location": "L311",
-      "id": "src_main_maestros_showloginscreen",
       "community": 62,
-      "norm_label": "_showloginscreen()"
+      "norm_label": "_showloginscreen()",
+      "id": "src_main_maestros_showloginscreen"
     },
     {
       "label": "_setupRouter()",
       "file_type": "code",
       "source_file": "src/main-maestros.js",
       "source_location": "L355",
-      "id": "src_main_maestros_setuprouter",
       "community": 62,
-      "norm_label": "_setuprouter()"
+      "norm_label": "_setuprouter()",
+      "id": "src_main_maestros_setuprouter"
     },
     {
       "label": "_scheduleSwAlerts()",
       "file_type": "code",
       "source_file": "src/main-maestros.js",
       "source_location": "L362",
-      "id": "src_main_maestros_scheduleswalerts",
       "community": 30,
-      "norm_label": "_scheduleswalerts()"
+      "norm_label": "_scheduleswalerts()",
+      "id": "src_main_maestros_scheduleswalerts"
     },
     {
       "label": "initPortal()",
       "file_type": "code",
       "source_file": "src/main-maestros.js",
       "source_location": "L393",
-      "id": "src_main_maestros_initportal",
       "community": 62,
-      "norm_label": "initportal()"
+      "norm_label": "initportal()",
+      "id": "src_main_maestros_initportal"
     },
     {
       "label": "_errorTemplate()",
       "file_type": "code",
       "source_file": "src/main-maestros.js",
       "source_location": "L531",
-      "id": "src_main_maestros_errortemplate",
       "community": 62,
-      "norm_label": "_errortemplate()"
+      "norm_label": "_errortemplate()",
+      "id": "src_main_maestros_errortemplate"
     },
     {
       "label": "calendarApi.js",
       "file_type": "code",
       "source_file": "src/modules/calendario/api/calendarApi.js",
       "source_location": "L1",
-      "id": "api_calendarapi",
       "community": 622,
-      "norm_label": "calendarapi.js"
+      "norm_label": "calendarapi.js",
+      "id": "api_calendarapi"
     },
     {
       "label": "calendarApi",
       "file_type": "code",
       "source_file": "src/modules/calendario/api/calendarApi.js",
       "source_location": "L3",
-      "id": "api_calendarapi_calendarapi",
       "community": 622,
-      "norm_label": "calendarapi"
+      "norm_label": "calendarapi",
+      "id": "api_calendarapi_calendarapi"
     },
     {
       "label": "calendarView.js",
       "file_type": "code",
       "source_file": "src/modules/calendario/views/calendarView.js",
       "source_location": "L1",
-      "id": "views_calendarview",
       "community": 623,
-      "norm_label": "calendarview.js"
+      "norm_label": "calendarview.js",
+      "id": "views_calendarview"
     },
     {
       "label": "calendarView",
       "file_type": "code",
       "source_file": "src/modules/calendario/views/calendarView.js",
       "source_location": "L1",
-      "id": "views_calendarview_calendarview",
       "community": 623,
-      "norm_label": "calendarview"
+      "norm_label": "calendarview",
+      "id": "views_calendarview_calendarview"
     },
     {
       "label": "maestrosView.js",
       "file_type": "code",
       "source_file": "src/modules/maestros/views/maestrosView.js",
       "source_location": "L1",
-      "id": "views_maestrosview",
       "community": 76,
-      "norm_label": "maestrosview.js"
+      "norm_label": "maestrosview.js",
+      "id": "views_maestrosview"
     },
     {
       "label": "state",
       "file_type": "code",
       "source_file": "src/modules/maestros/views/maestrosView.js",
       "source_location": "L19",
-      "id": "views_maestrosview_state",
       "community": 76,
-      "norm_label": "state"
+      "norm_label": "state",
+      "id": "views_maestrosview_state"
     },
     {
       "label": "VALIDATION",
       "file_type": "code",
       "source_file": "src/modules/maestros/views/maestrosView.js",
       "source_location": "L26",
-      "id": "views_maestrosview_validation",
       "community": 76,
-      "norm_label": "validation"
+      "norm_label": "validation",
+      "id": "views_maestrosview_validation"
     },
     {
       "label": "ESPECTACULOS_PREDEFINIDOS",
       "file_type": "code",
       "source_file": "src/modules/maestros/views/maestrosView.js",
       "source_location": "L34",
-      "id": "views_maestrosview_espectaculos_predefinidos",
       "community": 76,
-      "norm_label": "espectaculos_predefinidos"
+      "norm_label": "espectaculos_predefinidos",
+      "id": "views_maestrosview_espectaculos_predefinidos"
     },
     {
       "label": "renderMaestrosView()",
       "file_type": "code",
       "source_file": "src/modules/maestros/views/maestrosView.js",
       "source_location": "L60",
-      "id": "views_maestrosview_rendermaestrosview",
       "community": 76,
-      "norm_label": "rendermaestrosview()"
+      "norm_label": "rendermaestrosview()",
+      "id": "views_maestrosview_rendermaestrosview"
     },
     {
       "label": "renderLoading()",
       "file_type": "code",
       "source_file": "src/modules/maestros/views/maestrosView.js",
       "source_location": "L76",
-      "id": "views_maestrosview_renderloading",
       "community": 76,
-      "norm_label": "renderloading()"
+      "norm_label": "renderloading()",
+      "id": "views_maestrosview_renderloading"
     },
     {
       "label": "renderError()",
       "file_type": "code",
       "source_file": "src/modules/maestros/views/maestrosView.js",
       "source_location": "L89",
-      "id": "views_maestrosview_rendererror",
       "community": 76,
-      "norm_label": "rendererror()"
+      "norm_label": "rendererror()",
+      "id": "views_maestrosview_rendererror"
     },
     {
       "label": "renderEspecialidadesChips()",
       "file_type": "code",
       "source_file": "src/modules/maestros/views/maestrosView.js",
       "source_location": "L113",
-      "id": "views_maestrosview_renderespecialidadeschips",
       "community": 76,
-      "norm_label": "renderespecialidadeschips()"
+      "norm_label": "renderespecialidadeschips()",
+      "id": "views_maestrosview_renderespecialidadeschips"
     },
     {
       "label": "getEspecialidadesFromModal()",
       "file_type": "code",
       "source_file": "src/modules/maestros/views/maestrosView.js",
       "source_location": "L154",
-      "id": "views_maestrosview_getespecialidadesfrommodal",
       "community": 76,
-      "norm_label": "getespecialidadesfrommodal()"
+      "norm_label": "getespecialidadesfrommodal()",
+      "id": "views_maestrosview_getespecialidadesfrommodal"
     },
     {
       "label": "attachEspecialidadesEvents()",
       "file_type": "code",
       "source_file": "src/modules/maestros/views/maestrosView.js",
       "source_location": "L161",
-      "id": "views_maestrosview_attachespecialidadesevents",
       "community": 76,
-      "norm_label": "attachespecialidadesevents()"
+      "norm_label": "attachespecialidadesevents()",
+      "id": "views_maestrosview_attachespecialidadesevents"
     },
     {
       "label": "renderContent()",
       "file_type": "code",
       "source_file": "src/modules/maestros/views/maestrosView.js",
       "source_location": "L202",
-      "id": "views_maestrosview_rendercontent",
       "community": 76,
-      "norm_label": "rendercontent()"
+      "norm_label": "rendercontent()",
+      "id": "views_maestrosview_rendercontent"
     },
     {
       "label": "renderTableRows()",
       "file_type": "code",
       "source_file": "src/modules/maestros/views/maestrosView.js",
       "source_location": "L255",
-      "id": "views_maestrosview_rendertablerows",
       "community": 76,
-      "norm_label": "rendertablerows()"
+      "norm_label": "rendertablerows()",
+      "id": "views_maestrosview_rendertablerows"
     },
     {
       "label": "attachEvents()",
       "file_type": "code",
       "source_file": "src/modules/maestros/views/maestrosView.js",
       "source_location": "L308",
-      "id": "views_maestrosview_attachevents",
       "community": 76,
-      "norm_label": "attachevents()"
+      "norm_label": "attachevents()",
+      "id": "views_maestrosview_attachevents"
     },
     {
       "label": "descargarReporteMaestroPdf()",
       "file_type": "code",
       "source_file": "src/modules/maestros/views/maestrosView.js",
       "source_location": "L384",
-      "id": "views_maestrosview_descargarreportemaestropdf",
       "community": 76,
-      "norm_label": "descargarreportemaestropdf()"
+      "norm_label": "descargarreportemaestropdf()",
+      "id": "views_maestrosview_descargarreportemaestropdf"
     },
     {
       "label": "openWhatsAppModal()",
       "file_type": "code",
       "source_file": "src/modules/maestros/views/maestrosView.js",
       "source_location": "L410",
-      "id": "views_maestrosview_openwhatsappmodal",
       "community": 76,
-      "norm_label": "openwhatsappmodal()"
+      "norm_label": "openwhatsappmodal()",
+      "id": "views_maestrosview_openwhatsappmodal"
     },
     {
       "label": "applyFilters()",
       "file_type": "code",
       "source_file": "src/modules/maestros/views/maestrosView.js",
       "source_location": "L445",
-      "id": "views_maestrosview_applyfilters",
       "community": 76,
-      "norm_label": "applyfilters()"
+      "norm_label": "applyfilters()",
+      "id": "views_maestrosview_applyfilters"
     },
     {
       "label": "openCreateModal()",
       "file_type": "code",
       "source_file": "src/modules/maestros/views/maestrosView.js",
       "source_location": "L473",
-      "id": "views_maestrosview_opencreatemodal",
       "community": 76,
-      "norm_label": "opencreatemodal()"
+      "norm_label": "opencreatemodal()",
+      "id": "views_maestrosview_opencreatemodal"
     },
     {
       "label": "openEditModal()",
       "file_type": "code",
       "source_file": "src/modules/maestros/views/maestrosView.js",
       "source_location": "L596",
-      "id": "views_maestrosview_openeditmodal",
       "community": 76,
-      "norm_label": "openeditmodal()"
+      "norm_label": "openeditmodal()",
+      "id": "views_maestrosview_openeditmodal"
     },
     {
       "label": "openViewModal()",
       "file_type": "code",
       "source_file": "src/modules/maestros/views/maestrosView.js",
       "source_location": "L693",
-      "id": "views_maestrosview_openviewmodal",
-      "community": 76,
-      "norm_label": "openviewmodal()"
+      "community": 117,
+      "norm_label": "openviewmodal()",
+      "id": "views_maestrosview_openviewmodal"
     },
     {
       "label": "openDeleteModal()",
       "file_type": "code",
       "source_file": "src/modules/maestros/views/maestrosView.js",
       "source_location": "L986",
-      "id": "views_maestrosview_opendeletemodal",
       "community": 76,
-      "norm_label": "opendeletemodal()"
+      "norm_label": "opendeletemodal()",
+      "id": "views_maestrosview_opendeletemodal"
     },
     {
       "label": "refreshTable()",
       "file_type": "code",
       "source_file": "src/modules/maestros/views/maestrosView.js",
       "source_location": "L1021",
-      "id": "views_maestrosview_refreshtable",
       "community": 76,
-      "norm_label": "refreshtable()"
+      "norm_label": "refreshtable()",
+      "id": "views_maestrosview_refreshtable"
     },
     {
       "label": "isValidEmail()",
       "file_type": "code",
       "source_file": "src/modules/maestros/views/maestrosView.js",
       "source_location": "L1029",
-      "id": "views_maestrosview_isvalidemail",
       "community": 76,
-      "norm_label": "isvalidemail()"
+      "norm_label": "isvalidemail()",
+      "id": "views_maestrosview_isvalidemail"
     },
     {
       "label": "exportarMaestrosCSV()",
       "file_type": "code",
       "source_file": "src/modules/maestros/views/maestrosView.js",
       "source_location": "L1033",
-      "id": "views_maestrosview_exportarmaestroscsv",
       "community": 76,
-      "norm_label": "exportarmaestroscsv()"
+      "norm_label": "exportarmaestroscsv()",
+      "id": "views_maestrosview_exportarmaestroscsv"
     },
     {
       "label": "showToast()",
       "file_type": "code",
       "source_file": "src/modules/maestros/views/maestrosView.js",
       "source_location": "L1062",
-      "id": "views_maestrosview_showtoast",
       "community": 76,
-      "norm_label": "showtoast()"
+      "norm_label": "showtoast()",
+      "id": "views_maestrosview_showtoast"
     },
     {
       "label": "portalRouter.js",
       "file_type": "code",
       "source_file": "src/portal-maestros/router/portalRouter.js",
       "source_location": "L1",
-      "id": "router_portalrouter",
       "community": 62,
-      "norm_label": "portalrouter.js"
+      "norm_label": "portalrouter.js",
+      "id": "router_portalrouter"
     },
     {
       "label": "createPortalRouter()",
       "file_type": "code",
       "source_file": "src/portal-maestros/router/portalRouter.js",
       "source_location": "L9",
-      "id": "router_portalrouter_createportalrouter",
       "community": 62,
-      "norm_label": "createportalrouter()"
+      "norm_label": "createportalrouter()",
+      "id": "router_portalrouter_createportalrouter"
     },
     {
       "label": "process-whatsapp-queue.js",
       "file_type": "code",
       "source_file": "supabase/process-whatsapp-queue.js",
       "source_location": "L1",
-      "id": "supabase_process_whatsapp_queue",
       "community": 608,
-      "norm_label": "process-whatsapp-queue.js"
+      "norm_label": "process-whatsapp-queue.js",
+      "id": "supabase_process_whatsapp_queue"
     },
     {
       "label": "__dirname",
       "file_type": "code",
       "source_file": "supabase/process-whatsapp-queue.js",
       "source_location": "L7",
-      "id": "supabase_process_whatsapp_queue_dirname",
       "community": 608,
-      "norm_label": "__dirname"
+      "norm_label": "__dirname",
+      "id": "supabase_process_whatsapp_queue_dirname"
     },
     {
       "label": "supabase",
       "file_type": "code",
       "source_file": "supabase/process-whatsapp-queue.js",
       "source_location": "L19",
-      "id": "supabase_process_whatsapp_queue_supabase",
       "community": 608,
-      "norm_label": "supabase"
+      "norm_label": "supabase",
+      "id": "supabase_process_whatsapp_queue_supabase"
     },
     {
       "label": "isQuietHours()",
       "file_type": "code",
       "source_file": "supabase/process-whatsapp-queue.js",
       "source_location": "L24",
-      "id": "supabase_process_whatsapp_queue_isquiethours",
       "community": 608,
-      "norm_label": "isquiethours()"
+      "norm_label": "isquiethours()",
+      "id": "supabase_process_whatsapp_queue_isquiethours"
     },
     {
       "label": "processQueue()",
       "file_type": "code",
       "source_file": "supabase/process-whatsapp-queue.js",
       "source_location": "L59",
-      "id": "supabase_process_whatsapp_queue_processqueue",
       "community": 608,
-      "norm_label": "processqueue()"
+      "norm_label": "processqueue()",
+      "id": "supabase_process_whatsapp_queue_processqueue"
     },
     {
       "label": "generarPdfClase.js",
@@ -1600,7 +1600,7 @@
       "file_type": "code",
       "source_file": "src/__tests__/integration/attendance-notifications-e2e.test.js",
       "source_location": "L1",
-      "community": 9,
+      "community": 13,
       "norm_label": "attendance-notifications-e2e.test.js",
       "id": "integration_attendance_notifications_e2e_test"
     },
@@ -1636,7 +1636,7 @@
       "file_type": "code",
       "source_file": "src/__tests__/integration/escalation-analytics.integration.test.js",
       "source_location": "L1",
-      "community": 588,
+      "community": 498,
       "norm_label": "escalation-analytics.integration.test.js",
       "id": "integration_escalation_analytics_integration_test"
     },
@@ -1879,7 +1879,7 @@
       "file_type": "code",
       "source_file": "src/assets/data/mocks/clases.json",
       "source_location": "L1",
-      "community": 8,
+      "community": 143,
       "norm_label": "clases.json",
       "id": "c_users_omare_onedrive_documentos_soi_sistema_operativo_institucional_09_soi_web_portal_sistema_academico_pwa_claude_worktrees_cool_nightingale_f4ebb9_src_assets_data_mocks_clases_json"
     },
@@ -1888,7 +1888,7 @@
       "file_type": "code",
       "source_file": "src/assets/data/mocks/clases.json",
       "source_location": "L2",
-      "community": 8,
+      "community": 143,
       "norm_label": "clases",
       "id": "mocks_clases_clases"
     },
@@ -2104,7 +2104,7 @@
       "file_type": "code",
       "source_file": "src/assets/data/mocks/ruta_academica.json",
       "source_location": "L1",
-      "community": 151,
+      "community": 614,
       "norm_label": "ruta_academica.json",
       "id": "mocks_ruta_academica"
     },
@@ -2113,7 +2113,7 @@
       "file_type": "code",
       "source_file": "src/assets/data/mocks/ruta_academica.json",
       "source_location": "L2",
-      "community": 151,
+      "community": 614,
       "norm_label": "plan_clases",
       "id": "mocks_ruta_academica_plan_clases"
     },
@@ -2122,7 +2122,7 @@
       "file_type": "code",
       "source_file": "src/assets/data/mocks/ruta_academica.json",
       "source_location": "L18",
-      "community": 151,
+      "community": 614,
       "norm_label": "plan_niveles",
       "id": "mocks_ruta_academica_plan_niveles"
     },
@@ -2131,7 +2131,7 @@
       "file_type": "code",
       "source_file": "src/assets/data/mocks/ruta_academica.json",
       "source_location": "L48",
-      "community": 151,
+      "community": 614,
       "norm_label": "plan_temas",
       "id": "mocks_ruta_academica_plan_temas"
     },
@@ -2140,7 +2140,7 @@
       "file_type": "code",
       "source_file": "src/assets/data/mocks/ruta_academica.json",
       "source_location": "L106",
-      "community": 151,
+      "community": 614,
       "norm_label": "plan_objetivos",
       "id": "mocks_ruta_academica_plan_objetivos"
     },
@@ -2149,7 +2149,7 @@
       "file_type": "code",
       "source_file": "src/assets/data/mocks/ruta_academica.json",
       "source_location": "L174",
-      "community": 151,
+      "community": 614,
       "norm_label": "plan_indicadores",
       "id": "mocks_ruta_academica_plan_indicadores"
     },
@@ -2635,7 +2635,7 @@
       "file_type": "code",
       "source_file": "src/lib/__tests__/fuzzyMatch.test.js",
       "source_location": "L1",
-      "community": 4,
+      "community": 407,
       "norm_label": "fuzzymatch.test.js",
       "id": "tests_fuzzymatch_test"
     },
@@ -2653,7 +2653,7 @@
       "file_type": "code",
       "source_file": "src/lib/__tests__/semaphoreCache.test.js",
       "source_location": "L1",
-      "community": 4,
+      "community": 407,
       "norm_label": "semaphorecache.test.js",
       "id": "tests_semaphorecache_test"
     },
@@ -2662,7 +2662,7 @@
       "file_type": "code",
       "source_file": "src/lib/fuzzyMatch.js",
       "source_location": "L1",
-      "community": 4,
+      "community": 407,
       "norm_label": "fuzzymatch.js",
       "id": "lib_fuzzymatch"
     },
@@ -2671,7 +2671,7 @@
       "file_type": "code",
       "source_file": "src/lib/fuzzyMatch.js",
       "source_location": "L10",
-      "community": 4,
+      "community": 407,
       "norm_label": "levenshteindistance()",
       "id": "lib_fuzzymatch_levenshteindistance"
     },
@@ -2680,7 +2680,7 @@
       "file_type": "code",
       "source_file": "src/lib/fuzzyMatch.js",
       "source_location": "L50",
-      "community": 4,
+      "community": 407,
       "norm_label": "fuzzymatch()",
       "id": "lib_fuzzymatch_fuzzymatch"
     },
@@ -2689,7 +2689,7 @@
       "file_type": "code",
       "source_file": "src/lib/fuzzyMatch.js",
       "source_location": "L78",
-      "community": 4,
+      "community": 407,
       "norm_label": "fuzzymatchbest()",
       "id": "lib_fuzzymatch_fuzzymatchbest"
     },
@@ -2698,7 +2698,7 @@
       "file_type": "code",
       "source_file": "src/lib/fuzzyMatch.js",
       "source_location": "L101",
-      "community": 4,
+      "community": 407,
       "norm_label": "fuzzymatchall()",
       "id": "lib_fuzzymatch_fuzzymatchall"
     },
@@ -2734,7 +2734,7 @@
       "file_type": "code",
       "source_file": "src/lib/semaphoreCache.js",
       "source_location": "L1",
-      "community": 4,
+      "community": 407,
       "norm_label": "semaphorecache.js",
       "id": "lib_semaphorecache"
     },
@@ -2743,7 +2743,7 @@
       "file_type": "code",
       "source_file": "src/lib/semaphoreCache.js",
       "source_location": "L5",
-      "community": 4,
+      "community": 407,
       "norm_label": "semaphorecache",
       "id": "lib_semaphorecache_semaphorecache"
     },
@@ -2752,7 +2752,7 @@
       "file_type": "code",
       "source_file": "src/lib/semaphoreCache.js",
       "source_location": "L10",
-      "community": 4,
+      "community": 407,
       "norm_label": ".constructor()",
       "id": "lib_semaphorecache_semaphorecache_constructor"
     },
@@ -2761,7 +2761,7 @@
       "file_type": "code",
       "source_file": "src/lib/semaphoreCache.js",
       "source_location": "L20",
-      "community": 4,
+      "community": 407,
       "norm_label": ".set()",
       "id": "lib_semaphorecache_semaphorecache_set"
     },
@@ -2770,7 +2770,7 @@
       "file_type": "code",
       "source_file": "src/lib/semaphoreCache.js",
       "source_location": "L30",
-      "community": 4,
+      "community": 407,
       "norm_label": ".get()",
       "id": "lib_semaphorecache_semaphorecache_get"
     },
@@ -2779,7 +2779,7 @@
       "file_type": "code",
       "source_file": "src/lib/semaphoreCache.js",
       "source_location": "L47",
-      "community": 4,
+      "community": 407,
       "norm_label": ".has()",
       "id": "lib_semaphorecache_semaphorecache_has"
     },
@@ -2788,7 +2788,7 @@
       "file_type": "code",
       "source_file": "src/lib/semaphoreCache.js",
       "source_location": "L63",
-      "community": 4,
+      "community": 407,
       "norm_label": ".delete()",
       "id": "lib_semaphorecache_semaphorecache_delete"
     },
@@ -2797,7 +2797,7 @@
       "file_type": "code",
       "source_file": "src/lib/semaphoreCache.js",
       "source_location": "L70",
-      "community": 4,
+      "community": 407,
       "norm_label": ".clear()",
       "id": "lib_semaphorecache_semaphorecache_clear"
     },
@@ -2806,7 +2806,7 @@
       "file_type": "code",
       "source_file": "src/lib/semaphoreCache.js",
       "source_location": "L78",
-      "community": 4,
+      "community": 407,
       "norm_label": ".size()",
       "id": "lib_semaphorecache_semaphorecache_size"
     },
@@ -2815,7 +2815,7 @@
       "file_type": "code",
       "source_file": "src/lib/semaphoreCache.js",
       "source_location": "L94",
-      "community": 4,
+      "community": 407,
       "norm_label": ".batchset()",
       "id": "lib_semaphorecache_semaphorecache_batchset"
     },
@@ -2824,7 +2824,7 @@
       "file_type": "code",
       "source_file": "src/lib/semaphoreCache.js",
       "source_location": "L105",
-      "community": 4,
+      "community": 407,
       "norm_label": ".batchget()",
       "id": "lib_semaphorecache_semaphorecache_batchget"
     },
@@ -2833,7 +2833,7 @@
       "file_type": "code",
       "source_file": "src/lib/semaphoreCache.js",
       "source_location": "L120",
-      "community": 4,
+      "community": 407,
       "norm_label": ".invalidateprefix()",
       "id": "lib_semaphorecache_semaphorecache_invalidateprefix"
     },
@@ -2860,7 +2860,7 @@
       "file_type": "code",
       "source_file": "src/main-phase-c.js",
       "source_location": "L1",
-      "community": 260,
+      "community": 602,
       "norm_label": "main-phase-c.js",
       "id": "src_main_phase_c"
     },
@@ -2869,7 +2869,7 @@
       "file_type": "code",
       "source_file": "src/main-phase-c.js",
       "source_location": "L8",
-      "community": 260,
+      "community": 602,
       "norm_label": "state",
       "id": "src_main_phase_c_state"
     },
@@ -2878,7 +2878,7 @@
       "file_type": "code",
       "source_file": "src/main-phase-c.js",
       "source_location": "L20",
-      "community": 260,
+      "community": 602,
       "norm_label": "showloginview()",
       "id": "src_main_phase_c_showloginview"
     },
@@ -2887,7 +2887,7 @@
       "file_type": "code",
       "source_file": "src/main-phase-c.js",
       "source_location": "L56",
-      "community": 260,
+      "community": 602,
       "norm_label": "handlelogin()",
       "id": "src_main_phase_c_handlelogin"
     },
@@ -2896,7 +2896,7 @@
       "file_type": "code",
       "source_file": "src/main-phase-c.js",
       "source_location": "L88",
-      "community": 260,
+      "community": 602,
       "norm_label": "showstudentselector()",
       "id": "src_main_phase_c_showstudentselector"
     },
@@ -2905,7 +2905,7 @@
       "file_type": "code",
       "source_file": "src/main-phase-c.js",
       "source_location": "L147",
-      "community": 260,
+      "community": 602,
       "norm_label": "showrouteview()",
       "id": "src_main_phase_c_showrouteview"
     },
@@ -2914,7 +2914,7 @@
       "file_type": "code",
       "source_file": "src/main-phase-c.js",
       "source_location": "L370",
-      "community": 260,
+      "community": 602,
       "norm_label": "boot()",
       "id": "src_main_phase_c_boot"
     },
@@ -3031,7 +3031,7 @@
       "file_type": "code",
       "source_file": "src/middleware/__tests__/csrfProtection.test.js",
       "source_location": "L1",
-      "community": 261,
+      "community": 62,
       "norm_label": "csrfprotection.test.js",
       "id": "tests_csrfprotection_test"
     },
@@ -3067,7 +3067,7 @@
       "file_type": "code",
       "source_file": "src/middleware/csrfProtection.js",
       "source_location": "L1",
-      "community": 261,
+      "community": 62,
       "norm_label": "csrfprotection.js",
       "id": "middleware_csrfprotection"
     },
@@ -3076,7 +3076,7 @@
       "file_type": "code",
       "source_file": "src/middleware/csrfProtection.js",
       "source_location": "L7",
-      "community": 261,
+      "community": 62,
       "norm_label": "tokenhistory",
       "id": "middleware_csrfprotection_tokenhistory"
     },
@@ -3085,7 +3085,7 @@
       "file_type": "code",
       "source_file": "src/middleware/csrfProtection.js",
       "source_location": "L9",
-      "community": 261,
+      "community": 62,
       "norm_label": "generaterandomtoken()",
       "id": "middleware_csrfprotection_generaterandomtoken"
     },
@@ -3094,7 +3094,7 @@
       "file_type": "code",
       "source_file": "src/middleware/csrfProtection.js",
       "source_location": "L30",
-      "community": 261,
+      "community": 62,
       "norm_label": "initcsrf()",
       "id": "middleware_csrfprotection_initcsrf"
     },
@@ -3103,7 +3103,7 @@
       "file_type": "code",
       "source_file": "src/middleware/csrfProtection.js",
       "source_location": "L41",
-      "community": 261,
+      "community": 62,
       "norm_label": "generatetoken()",
       "id": "middleware_csrfprotection_generatetoken"
     },
@@ -3112,7 +3112,7 @@
       "file_type": "code",
       "source_file": "src/middleware/csrfProtection.js",
       "source_location": "L58",
-      "community": 261,
+      "community": 62,
       "norm_label": "validatetoken()",
       "id": "middleware_csrfprotection_validatetoken"
     },
@@ -3121,7 +3121,7 @@
       "file_type": "code",
       "source_file": "src/middleware/csrfProtection.js",
       "source_location": "L78",
-      "community": 261,
+      "community": 62,
       "norm_label": "gettoken()",
       "id": "middleware_csrfprotection_gettoken"
     },
@@ -3130,7 +3130,7 @@
       "file_type": "code",
       "source_file": "src/middleware/csrfProtection.js",
       "source_location": "L86",
-      "community": 261,
+      "community": 62,
       "norm_label": "createtokeninput()",
       "id": "middleware_csrfprotection_createtokeninput"
     },
@@ -3139,7 +3139,7 @@
       "file_type": "code",
       "source_file": "src/middleware/csrfProtection.js",
       "source_location": "L95",
-      "community": 261,
+      "community": 62,
       "norm_label": "csrfmiddleware()",
       "id": "middleware_csrfprotection_csrfmiddleware"
     },
@@ -3841,7 +3841,7 @@
       "file_type": "code",
       "source_file": "src/modules/academic-routes/services/academicService.js",
       "source_location": "L1",
-      "community": 62,
+      "community": 257,
       "norm_label": "academicservice.js",
       "id": "services_academicservice"
     },
@@ -3850,7 +3850,7 @@
       "file_type": "code",
       "source_file": "src/modules/academic-routes/services/academicService.js",
       "source_location": "L6",
-      "community": 62,
+      "community": 257,
       "norm_label": "academicservice",
       "id": "services_academicservice_academicservice"
     },
@@ -4174,7 +4174,7 @@
       "file_type": "code",
       "source_file": "src/modules/admin-aprobacion/views/__tests__/aprobacionView.test.js",
       "source_location": "L1",
-      "community": 35,
+      "community": 593,
       "norm_label": "aprobacionview.test.js",
       "id": "tests_aprobacionview_test"
     },
@@ -4183,7 +4183,7 @@
       "file_type": "code",
       "source_file": "src/modules/admin-aprobacion/views/__tests__/aprobacionView.test.js",
       "source_location": "L40",
-      "community": 35,
+      "community": 593,
       "norm_label": "mockselectchain()",
       "id": "tests_aprobacionview_test_mockselectchain"
     },
@@ -4201,7 +4201,7 @@
       "file_type": "code",
       "source_file": "src/modules/admin-aprobacion/views/aprobacionView.js",
       "source_location": "L1",
-      "community": 35,
+      "community": 593,
       "norm_label": "aprobacionview.js",
       "id": "views_aprobacionview"
     },
@@ -4210,7 +4210,7 @@
       "file_type": "code",
       "source_file": "src/modules/admin-aprobacion/views/aprobacionView.js",
       "source_location": "L9",
-      "community": 35,
+      "community": 593,
       "norm_label": "renderaprobacionview()",
       "id": "views_aprobacionview_renderaprobacionview"
     },
@@ -4219,7 +4219,7 @@
       "file_type": "code",
       "source_file": "src/modules/admin-aprobacion/views/aprobacionView.js",
       "source_location": "L120",
-      "community": 35,
+      "community": 593,
       "norm_label": "openapprovemodal()",
       "id": "views_aprobacionview_openapprovemodal"
     },
@@ -4228,7 +4228,7 @@
       "file_type": "code",
       "source_file": "src/modules/admin-aprobacion/views/aprobacionView.js",
       "source_location": "L147",
-      "community": 35,
+      "community": 593,
       "norm_label": "handleaction()",
       "id": "views_aprobacionview_handleaction"
     },
@@ -4237,7 +4237,7 @@
       "file_type": "code",
       "source_file": "src/modules/admin-aprobacion/views/aprobacionView.js",
       "source_location": "L285",
-      "community": 35,
+      "community": 593,
       "norm_label": "eschtml()",
       "id": "views_aprobacionview_eschtml"
     },
@@ -4246,7 +4246,7 @@
       "file_type": "code",
       "source_file": "src/modules/admin-aprobacion/views/aprobacionView.js",
       "source_location": "L294",
-      "community": 35,
+      "community": 593,
       "norm_label": "formatdate()",
       "id": "views_aprobacionview_formatdate"
     },
@@ -4354,7 +4354,7 @@
       "file_type": "code",
       "source_file": "src/modules/admin-dashboard/api/__tests__/analyticsFillingBehaviorService.test.js",
       "source_location": "L1",
-      "community": 588,
+      "community": 498,
       "norm_label": "analyticsfillingbehaviorservice.test.js",
       "id": "tests_analyticsfillingbehaviorservice_test"
     },
@@ -4372,7 +4372,7 @@
       "file_type": "code",
       "source_file": "src/modules/admin-dashboard/api/adminMaestroApi.js",
       "source_location": "L1",
-      "community": 78,
+      "community": 583,
       "norm_label": "adminmaestroapi.js",
       "id": "api_adminmaestroapi"
     },
@@ -4381,7 +4381,7 @@
       "file_type": "code",
       "source_file": "src/modules/admin-dashboard/api/adminMaestroApi.js",
       "source_location": "L12",
-      "community": 78,
+      "community": 583,
       "norm_label": "getmaestroscompliancestatus()",
       "id": "api_adminmaestroapi_getmaestroscompliancestatus"
     },
@@ -4390,7 +4390,7 @@
       "file_type": "code",
       "source_file": "src/modules/admin-dashboard/api/adminMaestroApi.js",
       "source_location": "L49",
-      "community": 78,
+      "community": 583,
       "norm_label": "getmaestropendingregistros()",
       "id": "api_adminmaestroapi_getmaestropendingregistros"
     },
@@ -4399,7 +4399,7 @@
       "file_type": "code",
       "source_file": "src/modules/admin-dashboard/api/adminMaestroApi.js",
       "source_location": "L84",
-      "community": 78,
+      "community": 583,
       "norm_label": "getmaestronotificationhistory()",
       "id": "api_adminmaestroapi_getmaestronotificationhistory"
     },
@@ -4408,7 +4408,7 @@
       "file_type": "code",
       "source_file": "src/modules/admin-dashboard/api/adminMaestroApi.js",
       "source_location": "L119",
-      "community": 78,
+      "community": 583,
       "norm_label": "getmaestrosbycategory()",
       "id": "api_adminmaestroapi_getmaestrosbycategory"
     },
@@ -4417,7 +4417,7 @@
       "file_type": "code",
       "source_file": "src/modules/admin-dashboard/api/adminMaestroApi.js",
       "source_location": "L155",
-      "community": 78,
+      "community": 583,
       "norm_label": "getcriticalmaestros()",
       "id": "api_adminmaestroapi_getcriticalmaestros"
     },
@@ -4426,7 +4426,7 @@
       "file_type": "code",
       "source_file": "src/modules/admin-dashboard/api/adminMaestroApi.js",
       "source_location": "L202",
-      "community": 78,
+      "community": 583,
       "norm_label": "updatemaestrocategory()",
       "id": "api_adminmaestroapi_updatemaestrocategory"
     },
@@ -4507,7 +4507,7 @@
       "file_type": "code",
       "source_file": "src/modules/admin-dashboard/api/adminReportingApi.js",
       "source_location": "L412",
-      "community": 588,
+      "community": 498,
       "norm_label": "getinstitutiontrendreportwithfilling()",
       "id": "api_adminreportingapi_getinstitutiontrendreportwithfilling"
     },
@@ -4516,7 +4516,7 @@
       "file_type": "code",
       "source_file": "src/modules/admin-dashboard/api/analyticsFillingBehaviorService.js",
       "source_location": "L1",
-      "community": 588,
+      "community": 498,
       "norm_label": "analyticsfillingbehaviorservice.js",
       "id": "api_analyticsfillingbehaviorservice"
     },
@@ -4525,7 +4525,7 @@
       "file_type": "code",
       "source_file": "src/modules/admin-dashboard/api/analyticsFillingBehaviorService.js",
       "source_location": "L3",
-      "community": 588,
+      "community": 498,
       "norm_label": "getteacherfillingmetrics()",
       "id": "api_analyticsfillingbehaviorservice_getteacherfillingmetrics"
     },
@@ -4543,7 +4543,7 @@
       "file_type": "code",
       "source_file": "src/modules/admin-dashboard/api/analyticsFillingBehaviorService.js",
       "source_location": "L36",
-      "community": 588,
+      "community": 498,
       "norm_label": "getfillingmetricsbydaterange()",
       "id": "api_analyticsfillingbehaviorservice_getfillingmetricsbydaterange"
     },
@@ -4633,7 +4633,7 @@
       "file_type": "code",
       "source_file": "src/modules/admin-dashboard/views/cumplimientoMaestrosWidget.js",
       "source_location": "L1",
-      "community": 78,
+      "community": 583,
       "norm_label": "cumplimientomaestroswidget.js",
       "id": "views_cumplimientomaestroswidget"
     },
@@ -4678,7 +4678,7 @@
       "file_type": "code",
       "source_file": "src/modules/admin-dashboard/views/cumplimientoMaestrosWidget.js",
       "source_location": "L86",
-      "community": 78,
+      "community": 583,
       "norm_label": ".getpendingcount()",
       "id": "views_cumplimientomaestroswidget_cumplimientomaestroswidget_getpendingcount"
     },
@@ -4687,7 +4687,7 @@
       "file_type": "code",
       "source_file": "src/modules/admin-dashboard/views/cumplimientoMaestrosWidget.js",
       "source_location": "L98",
-      "community": 78,
+      "community": 583,
       "norm_label": ".getoldestdiasatraso()",
       "id": "views_cumplimientomaestroswidget_cumplimientomaestroswidget_getoldestdiasatraso"
     },
@@ -4966,7 +4966,7 @@
       "file_type": "code",
       "source_file": "src/modules/admin-notificaciones/admin-notificaciones.router.js",
       "source_location": "L1",
-      "community": 127,
+      "community": 25,
       "norm_label": "admin-notificaciones.router.js",
       "id": "admin_notificaciones_admin_notificaciones_router"
     },
@@ -4975,7 +4975,7 @@
       "file_type": "code",
       "source_file": "src/modules/admin-notificaciones/admin-notificaciones.router.js",
       "source_location": "L7",
-      "community": 127,
+      "community": 25,
       "norm_label": "registerroutesadminnotificaciones()",
       "id": "admin_notificaciones_admin_notificaciones_router_registerroutesadminnotificaciones"
     },
@@ -4984,7 +4984,7 @@
       "file_type": "code",
       "source_file": "src/modules/admin-notificaciones/api/__tests__/adminNotifApi.test.js",
       "source_location": "L1",
-      "community": 25,
+      "community": 35,
       "norm_label": "adminnotifapi.test.js",
       "id": "tests_adminnotifapi_test"
     },
@@ -4993,7 +4993,7 @@
       "file_type": "code",
       "source_file": "src/modules/admin-notificaciones/api/__tests__/adminNotifApi.test.js",
       "source_location": "L11",
-      "community": 25,
+      "community": 35,
       "norm_label": "createmockchain()",
       "id": "tests_adminnotifapi_test_createmockchain"
     },
@@ -5182,7 +5182,7 @@
       "file_type": "code",
       "source_file": "src/modules/admin-notificaciones/index.js",
       "source_location": "L1",
-      "community": 127,
+      "community": 25,
       "norm_label": "index.js",
       "id": "admin_notificaciones_index"
     },
@@ -5254,7 +5254,7 @@
       "file_type": "code",
       "source_file": "src/modules/admin-notificaciones/views/__tests__/adminNotificacionesView.test.js",
       "source_location": "L1",
-      "community": 25,
+      "community": 35,
       "norm_label": "adminnotificacionesview.test.js",
       "id": "tests_adminnotificacionesview_test"
     },
@@ -5974,7 +5974,7 @@
       "file_type": "code",
       "source_file": "src/modules/alumnos/api/alumnosApi.js",
       "source_location": "L32",
-      "community": 165,
+      "community": 23,
       "norm_label": "actualizaralumno()",
       "id": "api_alumnosapi_actualizaralumno"
     },
@@ -6037,7 +6037,7 @@
       "file_type": "code",
       "source_file": "src/modules/alumnos/api/alumnosApi.js",
       "source_location": "L41",
-      "community": 23,
+      "community": 65,
       "norm_label": "parentescos",
       "id": "api_alumnosapi_parentescos"
     },
@@ -7045,7 +7045,7 @@
       "file_type": "code",
       "source_file": "src/modules/alumnos/domain/editarAlumnoModal.js",
       "source_location": "L1",
-      "community": 69,
+      "community": 65,
       "norm_label": "editaralumnomodal.js",
       "id": "domain_editaralumnomodal"
     },
@@ -7054,7 +7054,7 @@
       "file_type": "code",
       "source_file": "src/modules/alumnos/domain/editarAlumnoModal.js",
       "source_location": "L5",
-      "community": 69,
+      "community": 65,
       "norm_label": "parentescooptions()",
       "id": "domain_editaralumnomodal_parentescooptions"
     },
@@ -7063,7 +7063,7 @@
       "file_type": "code",
       "source_file": "src/modules/alumnos/domain/editarAlumnoModal.js",
       "source_location": "L12",
-      "community": 69,
+      "community": 65,
       "norm_label": "buildform()",
       "id": "domain_editaralumnomodal_buildform"
     },
@@ -7072,7 +7072,7 @@
       "file_type": "code",
       "source_file": "src/modules/alumnos/domain/editarAlumnoModal.js",
       "source_location": "L152",
-      "community": 69,
+      "community": 55,
       "norm_label": "collectdata()",
       "id": "domain_editaralumnomodal_collectdata"
     },
@@ -7108,7 +7108,7 @@
       "file_type": "code",
       "source_file": "src/modules/alumnos/domain/generarPdfInscripcion.js",
       "source_location": "L30",
-      "community": 81,
+      "community": 251,
       "norm_label": "alumno_demo",
       "id": "domain_generarpdfinscripcion_alumno_demo"
     },
@@ -7441,7 +7441,7 @@
       "file_type": "code",
       "source_file": "src/modules/alumnos/domain/generarReporteMensual.js",
       "source_location": "L1",
-      "community": 65,
+      "community": 494,
       "norm_label": "generarreportemensual.js",
       "id": "domain_generarreportemensual"
     },
@@ -7450,7 +7450,7 @@
       "file_type": "code",
       "source_file": "src/modules/alumnos/domain/generarReporteMensual.js",
       "source_location": "L8",
-      "community": 65,
+      "community": 494,
       "norm_label": "brand_primary",
       "id": "domain_generarreportemensual_brand_primary"
     },
@@ -7459,7 +7459,7 @@
       "file_type": "code",
       "source_file": "src/modules/alumnos/domain/generarReporteMensual.js",
       "source_location": "L9",
-      "community": 65,
+      "community": 494,
       "norm_label": "brand_accent",
       "id": "domain_generarreportemensual_brand_accent"
     },
@@ -7468,7 +7468,7 @@
       "file_type": "code",
       "source_file": "src/modules/alumnos/domain/generarReporteMensual.js",
       "source_location": "L10",
-      "community": 65,
+      "community": 494,
       "norm_label": "brand_dark",
       "id": "domain_generarreportemensual_brand_dark"
     },
@@ -7477,7 +7477,7 @@
       "file_type": "code",
       "source_file": "src/modules/alumnos/domain/generarReporteMensual.js",
       "source_location": "L12",
-      "community": 65,
+      "community": 494,
       "norm_label": "meses",
       "id": "domain_generarreportemensual_meses"
     },
@@ -7486,7 +7486,7 @@
       "file_type": "code",
       "source_file": "src/modules/alumnos/domain/generarReporteMensual.js",
       "source_location": "L17",
-      "community": 65,
+      "community": 494,
       "norm_label": "pad()",
       "id": "domain_generarreportemensual_pad"
     },
@@ -7495,7 +7495,7 @@
       "file_type": "code",
       "source_file": "src/modules/alumnos/domain/generarReporteMensual.js",
       "source_location": "L22",
-      "community": 65,
+      "community": 494,
       "norm_label": "edad()",
       "id": "domain_generarreportemensual_edad"
     },
@@ -7504,7 +7504,7 @@
       "file_type": "code",
       "source_file": "src/modules/alumnos/domain/generarReporteMensual.js",
       "source_location": "L33",
-      "community": 65,
+      "community": 494,
       "norm_label": "intereslabel()",
       "id": "domain_generarreportemensual_intereslabel"
     },
@@ -7513,7 +7513,7 @@
       "file_type": "code",
       "source_file": "src/modules/alumnos/domain/generarReporteMensual.js",
       "source_location": "L37",
-      "community": 65,
+      "community": 494,
       "norm_label": "drawheader()",
       "id": "domain_generarreportemensual_drawheader"
     },
@@ -7522,7 +7522,7 @@
       "file_type": "code",
       "source_file": "src/modules/alumnos/domain/generarReporteMensual.js",
       "source_location": "L55",
-      "community": 65,
+      "community": 494,
       "norm_label": "drawfooter()",
       "id": "domain_generarreportemensual_drawfooter"
     },
@@ -7531,7 +7531,7 @@
       "file_type": "code",
       "source_file": "src/modules/alumnos/domain/generarReporteMensual.js",
       "source_location": "L75",
-      "community": 65,
+      "community": 494,
       "norm_label": "generarreportemensual()",
       "id": "domain_generarreportemensual_generarreportemensual"
     },
@@ -7540,7 +7540,7 @@
       "file_type": "code",
       "source_file": "src/modules/alumnos/domain/generarReporteMensual.js",
       "source_location": "L214",
-      "community": 65,
+      "community": 494,
       "norm_label": "descargarreportemensual()",
       "id": "domain_generarreportemensual_descargarreportemensual"
     },
@@ -8458,7 +8458,7 @@
       "file_type": "code",
       "source_file": "src/modules/alumnos/views/pdfDemoView.js",
       "source_location": "L1",
-      "community": 81,
+      "community": 251,
       "norm_label": "pdfdemoview.js",
       "id": "views_pdfdemoview"
     },
@@ -9133,7 +9133,7 @@
       "file_type": "code",
       "source_file": "src/modules/asistencias/api/asistenciasApi.js",
       "source_location": "L30",
-      "community": 178,
+      "community": 116,
       "norm_label": "estado_label",
       "id": "api_asistenciasapi_estado_label"
     },
@@ -9178,7 +9178,7 @@
       "file_type": "code",
       "source_file": "src/modules/asistencias/api/asistenciasApi.js",
       "source_location": "L165",
-      "community": 178,
+      "community": 116,
       "norm_label": "getdetallesesion()",
       "id": "api_asistenciasapi_getdetallesesion"
     },
@@ -9241,7 +9241,7 @@
       "file_type": "code",
       "source_file": "src/modules/asistencias/api/asistenciasApi.js",
       "source_location": "L409",
-      "community": 116,
+      "community": 90,
       "norm_label": "obtenerasistencias()",
       "id": "api_asistenciasapi_obtenerasistencias"
     },
@@ -9250,7 +9250,7 @@
       "file_type": "code",
       "source_file": "src/modules/asistencias/api/asistenciasApi.js",
       "source_location": "L418",
-      "community": 116,
+      "community": 90,
       "norm_label": "obtenerasistencia()",
       "id": "api_asistenciasapi_obtenerasistencia"
     },
@@ -9376,7 +9376,7 @@
       "file_type": "code",
       "source_file": "src/modules/asistencias/components/asistenciaHeatmap.js",
       "source_location": "L1",
-      "community": 479,
+      "community": 204,
       "norm_label": "asistenciaheatmap.js",
       "id": "components_asistenciaheatmap"
     },
@@ -9385,7 +9385,7 @@
       "file_type": "code",
       "source_file": "src/modules/asistencias/components/asistenciaHeatmap.js",
       "source_location": "L3",
-      "community": 479,
+      "community": 204,
       "norm_label": "renderasistenciaheatmap()",
       "id": "components_asistenciaheatmap_renderasistenciaheatmap"
     },
@@ -9394,7 +9394,7 @@
       "file_type": "code",
       "source_file": "src/modules/asistencias/components/asistenciaHeatmap.js",
       "source_location": "L30",
-      "community": 479,
+      "community": 204,
       "norm_label": "_procesarheatmap()",
       "id": "components_asistenciaheatmap_procesarheatmap"
     },
@@ -9403,7 +9403,7 @@
       "file_type": "code",
       "source_file": "src/modules/asistencias/components/asistenciaHeatmap.js",
       "source_location": "L60",
-      "community": 479,
+      "community": 204,
       "norm_label": "_renderheatmap()",
       "id": "components_asistenciaheatmap_renderheatmap"
     },
@@ -9412,7 +9412,7 @@
       "file_type": "code",
       "source_file": "src/modules/asistencias/components/asistenciaHeatmap.js",
       "source_location": "L94",
-      "community": 479,
+      "community": 204,
       "norm_label": "_getcolorscale()",
       "id": "components_asistenciaheatmap_getcolorscale"
     },
@@ -9646,7 +9646,7 @@
       "file_type": "code",
       "source_file": "src/modules/asistencias/hooks/useAsistencias.js",
       "source_location": "L1",
-      "community": 116,
+      "community": 90,
       "norm_label": "useasistencias.js",
       "id": "hooks_useasistencias"
     },
@@ -9844,7 +9844,7 @@
       "file_type": "code",
       "source_file": "src/modules/asistencias/hooks/useAsistencias.js",
       "source_location": "L277",
-      "community": 204,
+      "community": 90,
       "norm_label": "useasistencias()",
       "id": "hooks_useasistencias_useasistencias"
     },
@@ -10006,7 +10006,7 @@
       "file_type": "code",
       "source_file": "src/modules/asistencias/utils/asistenciasUtils.js",
       "source_location": "L32",
-      "community": 206,
+      "community": 83,
       "norm_label": "escapehtml()",
       "id": "utils_asistenciasutils_escapehtml"
     },
@@ -10402,7 +10402,7 @@
       "file_type": "code",
       "source_file": "src/modules/asistencias/views/asistenciasView.js",
       "source_location": "L407",
-      "community": 178,
+      "community": 116,
       "norm_label": "opendetailmodal()",
       "id": "views_asistenciasview_opendetailmodal"
     },
@@ -10420,7 +10420,7 @@
       "file_type": "code",
       "source_file": "src/modules/auth/authManager.js",
       "source_location": "L1",
-      "community": 35,
+      "community": 256,
       "norm_label": "authmanager.js",
       "id": "src_modules_auth_authmanager_js_auth_authmanager"
     },
@@ -10573,7 +10573,7 @@
       "file_type": "code",
       "source_file": "src/modules/auth/components/ausenciaHistorial.js",
       "source_location": "L1",
-      "community": 260,
+      "community": 601,
       "norm_label": "ausenciahistorial.js",
       "id": "src_modules_auth_components_ausenciahistorial_js_components_ausenciahistorial"
     },
@@ -10582,7 +10582,7 @@
       "file_type": "code",
       "source_file": "src/modules/auth/components/ausenciaHistorial.js",
       "source_location": "L3",
-      "community": 260,
+      "community": 601,
       "norm_label": "state",
       "id": "components_ausenciahistorial_state"
     },
@@ -10591,7 +10591,7 @@
       "file_type": "code",
       "source_file": "src/modules/auth/components/ausenciaHistorial.js",
       "source_location": "L8",
-      "community": 260,
+      "community": 601,
       "norm_label": "renderausenciahistorial()",
       "id": "src_modules_auth_components_ausenciahistorial_js_components_ausenciahistorial_renderausenciahistorial"
     },
@@ -10600,7 +10600,7 @@
       "file_type": "code",
       "source_file": "src/modules/auth/components/ausenciaHistorial.js",
       "source_location": "L38",
-      "community": 260,
+      "community": 601,
       "norm_label": "renderrows()",
       "id": "components_ausenciahistorial_renderrows"
     },
@@ -10609,7 +10609,7 @@
       "file_type": "code",
       "source_file": "src/modules/auth/components/ausenciaHistorial.js",
       "source_location": "L60",
-      "community": 260,
+      "community": 601,
       "norm_label": "formatdate()",
       "id": "components_ausenciahistorial_formatdate"
     },
@@ -10618,7 +10618,7 @@
       "file_type": "code",
       "source_file": "src/modules/auth/components/ausenciaHistorial.js",
       "source_location": "L69",
-      "community": 260,
+      "community": 601,
       "norm_label": "cargarausencias()",
       "id": "components_ausenciahistorial_cargarausencias"
     },
@@ -10627,7 +10627,7 @@
       "file_type": "code",
       "source_file": "src/modules/auth/components/ausenciaHistorial.js",
       "source_location": "L97",
-      "community": 260,
+      "community": 601,
       "norm_label": "actualizarvista()",
       "id": "components_ausenciahistorial_actualizarvista"
     },
@@ -10636,7 +10636,7 @@
       "file_type": "code",
       "source_file": "src/modules/auth/components/biometricoLogin.js",
       "source_location": "L1",
-      "community": 478,
+      "community": 254,
       "norm_label": "biometricologin.js",
       "id": "components_biometricologin"
     },
@@ -10645,7 +10645,7 @@
       "file_type": "code",
       "source_file": "src/modules/auth/components/biometricoLogin.js",
       "source_location": "L3",
-      "community": 478,
+      "community": 254,
       "norm_label": "biometricologin",
       "id": "components_biometricologin_biometricologin"
     },
@@ -10654,7 +10654,7 @@
       "file_type": "code",
       "source_file": "src/modules/auth/components/biometricoLogin.js",
       "source_location": "L4",
-      "community": 478,
+      "community": 254,
       "norm_label": ".constructor()",
       "id": "components_biometricologin_biometricologin_constructor"
     },
@@ -10663,7 +10663,7 @@
       "file_type": "code",
       "source_file": "src/modules/auth/components/biometricoLogin.js",
       "source_location": "L12",
-      "community": 478,
+      "community": 254,
       "norm_label": ".init()",
       "id": "components_biometricologin_biometricologin_init"
     },
@@ -10672,7 +10672,7 @@
       "file_type": "code",
       "source_file": "src/modules/auth/components/biometricoLogin.js",
       "source_location": "L22",
-      "community": 478,
+      "community": 254,
       "norm_label": ".loadcredential()",
       "id": "components_biometricologin_biometricologin_loadcredential"
     },
@@ -10681,7 +10681,7 @@
       "file_type": "code",
       "source_file": "src/modules/auth/components/biometricoLogin.js",
       "source_location": "L30",
-      "community": 478,
+      "community": 254,
       "norm_label": ".render()",
       "id": "components_biometricologin_biometricologin_render"
     },
@@ -10690,7 +10690,7 @@
       "file_type": "code",
       "source_file": "src/modules/auth/components/biometricoLogin.js",
       "source_location": "L55",
-      "community": 478,
+      "community": 254,
       "norm_label": ".renderunsupported()",
       "id": "components_biometricologin_biometricologin_renderunsupported"
     },
@@ -10699,7 +10699,7 @@
       "file_type": "code",
       "source_file": "src/modules/auth/components/biometricoLogin.js",
       "source_location": "L64",
-      "community": 478,
+      "community": 254,
       "norm_label": ".login()",
       "id": "components_biometricologin_biometricologin_login"
     },
@@ -10708,7 +10708,7 @@
       "file_type": "code",
       "source_file": "src/modules/auth/components/biometricoLogin.js",
       "source_location": "L78",
-      "community": 478,
+      "community": 254,
       "norm_label": ".register()",
       "id": "components_biometricologin_biometricologin_register"
     },
@@ -10717,7 +10717,7 @@
       "file_type": "code",
       "source_file": "src/modules/auth/components/biometricoLogin.js",
       "source_location": "L100",
-      "community": 478,
+      "community": 254,
       "norm_label": "createbiometricologin()",
       "id": "components_biometricologin_createbiometricologin"
     },
@@ -10726,7 +10726,7 @@
       "file_type": "code",
       "source_file": "src/modules/auth/components/biometricoLogin.js",
       "source_location": "L106",
-      "community": 478,
+      "community": 254,
       "norm_label": "renderbiometricologin()",
       "id": "components_biometricologin_renderbiometricologin"
     },
@@ -11068,7 +11068,7 @@
       "file_type": "code",
       "source_file": "src/modules/auth/sessionStorage.js",
       "source_location": "L1",
-      "community": 482,
+      "community": 256,
       "norm_label": "sessionstorage.js",
       "id": "src_modules_auth_sessionstorage_js_auth_sessionstorage"
     },
@@ -11077,7 +11077,7 @@
       "file_type": "code",
       "source_file": "src/modules/auth/sessionStorage.js",
       "source_location": "L3",
-      "community": 482,
+      "community": 256,
       "norm_label": "getsession()",
       "id": "src_modules_auth_sessionstorage_js_auth_sessionstorage_getsession"
     },
@@ -11086,7 +11086,7 @@
       "file_type": "code",
       "source_file": "src/modules/auth/sessionStorage.js",
       "source_location": "L13",
-      "community": 482,
+      "community": 256,
       "norm_label": "setsession()",
       "id": "auth_sessionstorage_setsession"
     },
@@ -11095,7 +11095,7 @@
       "file_type": "code",
       "source_file": "src/modules/auth/sessionStorage.js",
       "source_location": "L21",
-      "community": 482,
+      "community": 256,
       "norm_label": "clearsession()",
       "id": "src_modules_auth_sessionstorage_js_auth_sessionstorage_clearsession"
     },
@@ -11797,7 +11797,7 @@
       "file_type": "code",
       "source_file": "src/modules/bitacora/api/bitacoraSupabase.js",
       "source_location": "L1",
-      "community": 35,
+      "community": 637,
       "norm_label": "bitacorasupabase.js",
       "id": "api_bitacorasupabase"
     },
@@ -11806,7 +11806,7 @@
       "file_type": "code",
       "source_file": "src/modules/bitacora/api/bitacoraSupabase.js",
       "source_location": "L3",
-      "community": 35,
+      "community": 637,
       "norm_label": "getobjetivosclase()",
       "id": "api_bitacorasupabase_getobjetivosclase"
     },
@@ -11815,7 +11815,7 @@
       "file_type": "code",
       "source_file": "src/modules/bitacora/api/bitacoraSupabase.js",
       "source_location": "L14",
-      "community": 35,
+      "community": 637,
       "norm_label": "getsemaforoclase()",
       "id": "api_bitacorasupabase_getsemaforoclase"
     },
@@ -11824,7 +11824,7 @@
       "file_type": "code",
       "source_file": "src/modules/bitacora/api/bitacoraSupabase.js",
       "source_location": "L24",
-      "community": 35,
+      "community": 637,
       "norm_label": "registrarsesion()",
       "id": "api_bitacorasupabase_registrarsesion"
     },
@@ -11833,7 +11833,7 @@
       "file_type": "code",
       "source_file": "src/modules/bitacora/api/bitacoraSupabase.js",
       "source_location": "L36",
-      "community": 35,
+      "community": 637,
       "norm_label": "gethistorialcontenido()",
       "id": "api_bitacorasupabase_gethistorialcontenido"
     },
@@ -11860,7 +11860,7 @@
       "file_type": "code",
       "source_file": "src/modules/bitacora/components/BitacoraDashboard.js",
       "source_location": "L1",
-      "community": 428,
+      "community": 3,
       "norm_label": "bitacoradashboard.js",
       "id": "components_bitacoradashboard"
     },
@@ -11869,7 +11869,7 @@
       "file_type": "code",
       "source_file": "src/modules/bitacora/components/BitacoraDashboard.js",
       "source_location": "L3",
-      "community": 428,
+      "community": 3,
       "norm_label": "semaforo_config",
       "id": "components_bitacoradashboard_semaforo_config"
     },
@@ -11878,7 +11878,7 @@
       "file_type": "code",
       "source_file": "src/modules/bitacora/components/BitacoraDashboard.js",
       "source_location": "L10",
-      "community": 428,
+      "community": 3,
       "norm_label": "escapehtml()",
       "id": "components_bitacoradashboard_escapehtml"
     },
@@ -11887,7 +11887,7 @@
       "file_type": "code",
       "source_file": "src/modules/bitacora/components/BitacoraDashboard.js",
       "source_location": "L17",
-      "community": 428,
+      "community": 3,
       "norm_label": "getalumnoname()",
       "id": "components_bitacoradashboard_getalumnoname"
     },
@@ -11896,7 +11896,7 @@
       "file_type": "code",
       "source_file": "src/modules/bitacora/components/BitacoraDashboard.js",
       "source_location": "L22",
-      "community": 428,
+      "community": 3,
       "norm_label": "createsemaforodot()",
       "id": "components_bitacoradashboard_createsemaforodot"
     },
@@ -11905,7 +11905,7 @@
       "file_type": "code",
       "source_file": "src/modules/bitacora/components/BitacoraDashboard.js",
       "source_location": "L38",
-      "community": 428,
+      "community": 3,
       "norm_label": "buildsemaforomap()",
       "id": "components_bitacoradashboard_buildsemaforomap"
     },
@@ -11914,7 +11914,7 @@
       "file_type": "code",
       "source_file": "src/modules/bitacora/components/BitacoraDashboard.js",
       "source_location": "L47",
-      "community": 428,
+      "community": 3,
       "norm_label": "createbitacoradashboard()",
       "id": "components_bitacoradashboard_createbitacoradashboard"
     },
@@ -12211,7 +12211,7 @@
       "file_type": "code",
       "source_file": "src/modules/clases/api/clasesApi.js",
       "source_location": "L1",
-      "community": 117,
+      "community": 20,
       "norm_label": "clasesapi.js",
       "id": "api_clasesapi"
     },
@@ -12220,7 +12220,7 @@
       "file_type": "code",
       "source_file": "src/modules/clases/api/clasesApi.js",
       "source_location": "L5",
-      "community": 117,
+      "community": 20,
       "norm_label": "niveles",
       "id": "api_clasesapi_niveles"
     },
@@ -12229,7 +12229,7 @@
       "file_type": "code",
       "source_file": "src/modules/clases/api/clasesApi.js",
       "source_location": "L23",
-      "community": 117,
+      "community": 20,
       "norm_label": "verificarsolapamiento()",
       "id": "api_clasesapi_verificarsolapamiento"
     },
@@ -12238,7 +12238,7 @@
       "file_type": "code",
       "source_file": "src/modules/clases/api/clasesApi.js",
       "source_location": "L82",
-      "community": 117,
+      "community": 20,
       "norm_label": "normalizeclase()",
       "id": "api_clasesapi_normalizeclase"
     },
@@ -12256,7 +12256,7 @@
       "file_type": "code",
       "source_file": "src/modules/clases/api/clasesApi.js",
       "source_location": "L117",
-      "community": 117,
+      "community": 20,
       "norm_label": "obtenerclase()",
       "id": "api_clasesapi_obtenerclase"
     },
@@ -12265,7 +12265,7 @@
       "file_type": "code",
       "source_file": "src/modules/clases/api/clasesApi.js",
       "source_location": "L139",
-      "community": 117,
+      "community": 20,
       "norm_label": "crearclase()",
       "id": "api_clasesapi_crearclase"
     },
@@ -12301,7 +12301,7 @@
       "file_type": "code",
       "source_file": "src/modules/clases/api/clasesApi.js",
       "source_location": "L320",
-      "community": 117,
+      "community": 20,
       "norm_label": "inscribiralumno()",
       "id": "api_clasesapi_inscribiralumno"
     },
@@ -12310,7 +12310,7 @@
       "file_type": "code",
       "source_file": "src/modules/clases/api/clasesApi.js",
       "source_location": "L340",
-      "community": 117,
+      "community": 20,
       "norm_label": "desinscribiralumno()",
       "id": "api_clasesapi_desinscribiralumno"
     },
@@ -12319,7 +12319,7 @@
       "file_type": "code",
       "source_file": "src/modules/clases/api/clasesApi.js",
       "source_location": "L350",
-      "community": 117,
+      "community": 20,
       "norm_label": "actualizarturnoinscripcion()",
       "id": "api_clasesapi_actualizarturnoinscripcion"
     },
@@ -12328,7 +12328,7 @@
       "file_type": "code",
       "source_file": "src/modules/clases/api/clasesApi.js",
       "source_location": "L362",
-      "community": 117,
+      "community": 20,
       "norm_label": "obteneralumnosinscritos()",
       "id": "api_clasesapi_obteneralumnosinscritos"
     },
@@ -12337,7 +12337,7 @@
       "file_type": "code",
       "source_file": "src/modules/clases/api/clasesApi.js",
       "source_location": "L374",
-      "community": 76,
+      "community": 174,
       "norm_label": "obteneralumnosinscritosporclases()",
       "id": "api_clasesapi_obteneralumnosinscritosporclases"
     },
@@ -12346,7 +12346,7 @@
       "file_type": "code",
       "source_file": "src/modules/clases/api/clasesApi.js",
       "source_location": "L395",
-      "community": 117,
+      "community": 20,
       "norm_label": "validarhorario()",
       "id": "api_clasesapi_validarhorario"
     },
@@ -12355,7 +12355,7 @@
       "file_type": "code",
       "source_file": "src/modules/clases/api/clasesApi.js",
       "source_location": "L443",
-      "community": 117,
+      "community": 20,
       "norm_label": "getconflictolabel()",
       "id": "api_clasesapi_getconflictolabel"
     },
@@ -12382,7 +12382,7 @@
       "file_type": "code",
       "source_file": "src/modules/clases/components/alumnoInscripcionModal.js",
       "source_location": "L1",
-      "community": 117,
+      "community": 20,
       "norm_label": "alumnoinscripcionmodal.js",
       "id": "components_alumnoinscripcionmodal"
     },
@@ -12391,7 +12391,7 @@
       "file_type": "code",
       "source_file": "src/modules/clases/components/alumnoInscripcionModal.js",
       "source_location": "L7",
-      "community": 117,
+      "community": 20,
       "norm_label": "openalumnoinscripcionmodal()",
       "id": "components_alumnoinscripcionmodal_openalumnoinscripcionmodal"
     },
@@ -12400,7 +12400,7 @@
       "file_type": "code",
       "source_file": "src/modules/clases/components/alumnoInscripcionModal.js",
       "source_location": "L47",
-      "community": 117,
+      "community": 20,
       "norm_label": "_buildbody()",
       "id": "components_alumnoinscripcionmodal_buildbody"
     },
@@ -12409,7 +12409,7 @@
       "file_type": "code",
       "source_file": "src/modules/clases/components/alumnoInscripcionModal.js",
       "source_location": "L120",
-      "community": 174,
+      "community": 20,
       "norm_label": "_rowinscrito()",
       "id": "components_alumnoinscripcionmodal_rowinscrito"
     },
@@ -12418,7 +12418,7 @@
       "file_type": "code",
       "source_file": "src/modules/clases/components/alumnoInscripcionModal.js",
       "source_location": "L162",
-      "community": 174,
+      "community": 20,
       "norm_label": "_rowdisponible()",
       "id": "components_alumnoinscripcionmodal_rowdisponible"
     },
@@ -12427,7 +12427,7 @@
       "file_type": "code",
       "source_file": "src/modules/clases/components/alumnoInscripcionModal.js",
       "source_location": "L195",
-      "community": 117,
+      "community": 20,
       "norm_label": "_wireevents()",
       "id": "components_alumnoinscripcionmodal_wireevents"
     },
@@ -12436,7 +12436,7 @@
       "file_type": "code",
       "source_file": "src/modules/clases/components/alumnoInscripcionModal.js",
       "source_location": "L330",
-      "community": 117,
+      "community": 20,
       "norm_label": "_resetnuevoform()",
       "id": "components_alumnoinscripcionmodal_resetnuevoform"
     },
@@ -12544,7 +12544,7 @@
       "file_type": "code",
       "source_file": "src/modules/clases/components/claseModal.js",
       "source_location": "L365",
-      "community": 117,
+      "community": 20,
       "norm_label": "_handlesave()",
       "id": "components_clasemodal_handlesave"
     },
@@ -13489,7 +13489,7 @@
       "file_type": "code",
       "source_file": "src/modules/config/components/DocumentPreviewModal.js",
       "source_location": "L1",
-      "community": 183,
+      "community": 478,
       "norm_label": "documentpreviewmodal.js",
       "id": "components_documentpreviewmodal"
     },
@@ -13498,7 +13498,7 @@
       "file_type": "code",
       "source_file": "src/modules/config/components/DocumentPreviewModal.js",
       "source_location": "L5",
-      "community": 163,
+      "community": 478,
       "norm_label": "opendocumentpreview()",
       "id": "components_documentpreviewmodal_opendocumentpreview"
     },
@@ -14065,7 +14065,7 @@
       "file_type": "code",
       "source_file": "src/modules/config/index.js",
       "source_location": "L9",
-      "community": 127,
+      "community": 80,
       "norm_label": "registerroutesconfig()",
       "id": "config_index_registerroutesconfig"
     },
@@ -14110,7 +14110,7 @@
       "file_type": "code",
       "source_file": "src/modules/config/services/documentBatchService.js",
       "source_location": "L34",
-      "community": 183,
+      "community": 478,
       "norm_label": "savegenerateddocument()",
       "id": "services_documentbatchservice_savegenerateddocument"
     },
@@ -14128,7 +14128,7 @@
       "file_type": "code",
       "source_file": "src/modules/config/services/documentBatchService.js",
       "source_location": "L51",
-      "community": 183,
+      "community": 478,
       "norm_label": "archivedocument()",
       "id": "services_documentbatchservice_archivedocument"
     },
@@ -14146,7 +14146,7 @@
       "file_type": "code",
       "source_file": "src/modules/config/services/documentGeneratorService.js",
       "source_location": "L1",
-      "community": 163,
+      "community": 635,
       "norm_label": "documentgeneratorservice.js",
       "id": "services_documentgeneratorservice"
     },
@@ -14155,7 +14155,7 @@
       "file_type": "code",
       "source_file": "src/modules/config/services/documentGeneratorService.js",
       "source_location": "L1",
-      "community": 163,
+      "community": 635,
       "norm_label": "extractvariables()",
       "id": "services_documentgeneratorservice_extractvariables"
     },
@@ -14164,7 +14164,7 @@
       "file_type": "code",
       "source_file": "src/modules/config/services/documentGeneratorService.js",
       "source_location": "L6",
-      "community": 163,
+      "community": 635,
       "norm_label": "resolvetemplate()",
       "id": "services_documentgeneratorservice_resolvetemplate"
     },
@@ -14173,7 +14173,7 @@
       "file_type": "code",
       "source_file": "src/modules/config/services/documentGeneratorService.js",
       "source_location": "L16",
-      "community": 163,
+      "community": 635,
       "norm_label": "getmissingvariables()",
       "id": "services_documentgeneratorservice_getmissingvariables"
     },
@@ -14182,7 +14182,7 @@
       "file_type": "code",
       "source_file": "src/modules/config/services/documentGeneratorService.js",
       "source_location": "L25",
-      "community": 163,
+      "community": 635,
       "norm_label": "validatedocumentdata()",
       "id": "services_documentgeneratorservice_validatedocumentdata"
     },
@@ -14191,7 +14191,7 @@
       "file_type": "code",
       "source_file": "src/modules/config/services/documentGeneratorService.js",
       "source_location": "L32",
-      "community": 163,
+      "community": 635,
       "norm_label": "buildresolveddocument()",
       "id": "services_documentgeneratorservice_buildresolveddocument"
     },
@@ -14209,7 +14209,7 @@
       "file_type": "code",
       "source_file": "src/modules/config/services/documentTemplateService.js",
       "source_location": "L3",
-      "community": 163,
+      "community": 183,
       "norm_label": "listtemplates()",
       "id": "services_documenttemplateservice_listtemplates"
     },
@@ -14272,7 +14272,7 @@
       "file_type": "code",
       "source_file": "src/modules/config/services/pdfDocumentService.js",
       "source_location": "L1",
-      "community": 183,
+      "community": 478,
       "norm_label": "pdfdocumentservice.js",
       "id": "services_pdfdocumentservice"
     },
@@ -14281,7 +14281,7 @@
       "file_type": "code",
       "source_file": "src/modules/config/services/pdfDocumentService.js",
       "source_location": "L3",
-      "community": 183,
+      "community": 478,
       "norm_label": "c",
       "id": "services_pdfdocumentservice_c"
     },
@@ -14290,7 +14290,7 @@
       "file_type": "code",
       "source_file": "src/modules/config/services/pdfDocumentService.js",
       "source_location": "L16",
-      "community": 183,
+      "community": 478,
       "norm_label": "_header()",
       "id": "services_pdfdocumentservice_header"
     },
@@ -14299,7 +14299,7 @@
       "file_type": "code",
       "source_file": "src/modules/config/services/pdfDocumentService.js",
       "source_location": "L39",
-      "community": 183,
+      "community": 478,
       "norm_label": "_footerallpages()",
       "id": "services_pdfdocumentservice_footerallpages"
     },
@@ -14308,7 +14308,7 @@
       "file_type": "code",
       "source_file": "src/modules/config/services/pdfDocumentService.js",
       "source_location": "L55",
-      "community": 183,
+      "community": 478,
       "norm_label": "generateinstitutionalpdf()",
       "id": "services_pdfdocumentservice_generateinstitutionalpdf"
     },
@@ -14317,7 +14317,7 @@
       "file_type": "code",
       "source_file": "src/modules/config/services/pdfDocumentService.js",
       "source_location": "L100",
-      "community": 183,
+      "community": 478,
       "norm_label": "downloadpdf()",
       "id": "services_pdfdocumentservice_downloadpdf"
     },
@@ -14326,7 +14326,7 @@
       "file_type": "code",
       "source_file": "src/modules/config/services/pdfDocumentService.js",
       "source_location": "L104",
-      "community": 183,
+      "community": 478,
       "norm_label": "getpdfblob()",
       "id": "services_pdfdocumentservice_getpdfblob"
     },
@@ -14335,7 +14335,7 @@
       "file_type": "code",
       "source_file": "src/modules/config/services/pdfDocumentService.js",
       "source_location": "L108",
-      "community": 183,
+      "community": 478,
       "norm_label": "builddocumentfilename()",
       "id": "services_pdfdocumentservice_builddocumentfilename"
     },
@@ -14632,7 +14632,7 @@
       "file_type": "code",
       "source_file": "src/modules/config/views/generatedDocumentsView.js",
       "source_location": "L1",
-      "community": 183,
+      "community": 478,
       "norm_label": "generateddocumentsview.js",
       "id": "views_generateddocumentsview"
     },
@@ -14641,7 +14641,7 @@
       "file_type": "code",
       "source_file": "src/modules/config/views/generatedDocumentsView.js",
       "source_location": "L5",
-      "community": 183,
+      "community": 478,
       "norm_label": "rendergenerateddocumentsview()",
       "id": "views_generateddocumentsview_rendergenerateddocumentsview"
     },
@@ -14650,7 +14650,7 @@
       "file_type": "code",
       "source_file": "src/modules/config/views/generatedDocumentsView.js",
       "source_location": "L14",
-      "community": 183,
+      "community": 478,
       "norm_label": "_load()",
       "id": "views_generateddocumentsview_load"
     },
@@ -14659,7 +14659,7 @@
       "file_type": "code",
       "source_file": "src/modules/config/views/generatedDocumentsView.js",
       "source_location": "L28",
-      "community": 183,
+      "community": 478,
       "norm_label": "_render()",
       "id": "views_generateddocumentsview_render"
     },
@@ -16180,7 +16180,7 @@
       "file_type": "code",
       "source_file": "src/modules/maestros/api/maestrosApi.js",
       "source_location": "L1",
-      "community": 209,
+      "community": 518,
       "norm_label": "maestrosapi.js",
       "id": "api_maestrosapi"
     },
@@ -16189,7 +16189,7 @@
       "file_type": "code",
       "source_file": "src/modules/maestros/api/maestrosApi.js",
       "source_location": "L3",
-      "community": 209,
+      "community": 518,
       "norm_label": "normalizemaestro()",
       "id": "api_maestrosapi_normalizemaestro"
     },
@@ -16198,7 +16198,7 @@
       "file_type": "code",
       "source_file": "src/modules/maestros/api/maestrosApi.js",
       "source_location": "L18",
-      "community": 209,
+      "community": 518,
       "norm_label": "obtenermaestros()",
       "id": "api_maestrosapi_obtenermaestros"
     },
@@ -16207,7 +16207,7 @@
       "file_type": "code",
       "source_file": "src/modules/maestros/api/maestrosApi.js",
       "source_location": "L32",
-      "community": 209,
+      "community": 518,
       "norm_label": "obtenermaestro()",
       "id": "api_maestrosapi_obtenermaestro"
     },
@@ -16216,7 +16216,7 @@
       "file_type": "code",
       "source_file": "src/modules/maestros/api/maestrosApi.js",
       "source_location": "L47",
-      "community": 209,
+      "community": 518,
       "norm_label": "crearmaestro()",
       "id": "api_maestrosapi_crearmaestro"
     },
@@ -16225,7 +16225,7 @@
       "file_type": "code",
       "source_file": "src/modules/maestros/api/maestrosApi.js",
       "source_location": "L76",
-      "community": 209,
+      "community": 518,
       "norm_label": "actualizarmaestro()",
       "id": "api_maestrosapi_actualizarmaestro"
     },
@@ -16252,7 +16252,7 @@
       "file_type": "code",
       "source_file": "src/modules/maestros/api/maestrosApi.js",
       "source_location": "L150",
-      "community": 209,
+      "community": 518,
       "norm_label": "eliminarmaestro()",
       "id": "api_maestrosapi_eliminarmaestro"
     },
@@ -16261,7 +16261,7 @@
       "file_type": "code",
       "source_file": "src/modules/maestros/api/maestrosApi.js",
       "source_location": "L164",
-      "community": 209,
+      "community": 518,
       "norm_label": "buscarmaestros()",
       "id": "api_maestrosapi_buscarmaestros"
     },
@@ -16279,7 +16279,7 @@
       "file_type": "code",
       "source_file": "src/modules/maestros/api/maestrosApi.js",
       "source_location": "L196",
-      "community": 209,
+      "community": 518,
       "norm_label": "obtenermaestrosactivos()",
       "id": "api_maestrosapi_obtenermaestrosactivos"
     },
@@ -16288,7 +16288,7 @@
       "file_type": "code",
       "source_file": "src/modules/maestros/components/maestroCard.js",
       "source_location": "L1",
-      "community": 76,
+      "community": 117,
       "norm_label": "maestrocard.js",
       "id": "components_maestrocard"
     },
@@ -16297,7 +16297,7 @@
       "file_type": "code",
       "source_file": "src/modules/maestros/components/maestroCard.js",
       "source_location": "L3",
-      "community": 76,
+      "community": 117,
       "norm_label": "createmaestrocard()",
       "id": "components_maestrocard_createmaestrocard"
     },
@@ -16306,7 +16306,7 @@
       "file_type": "code",
       "source_file": "src/modules/maestros/components/maestroCard.js",
       "source_location": "L64",
-      "community": 76,
+      "community": 117,
       "norm_label": "createmaestrolistitem()",
       "id": "components_maestrocard_createmaestrolistitem"
     },
@@ -16315,7 +16315,7 @@
       "file_type": "code",
       "source_file": "src/modules/maestros/components/maestroModal.js",
       "source_location": "L1",
-      "community": 76,
+      "community": 117,
       "norm_label": "maestromodal.js",
       "id": "components_maestromodal"
     },
@@ -16324,7 +16324,7 @@
       "file_type": "code",
       "source_file": "src/modules/maestros/components/maestroModal.js",
       "source_location": "L4",
-      "community": 76,
+      "community": 117,
       "norm_label": "validation",
       "id": "components_maestromodal_validation"
     },
@@ -16567,7 +16567,7 @@
       "file_type": "code",
       "source_file": "src/modules/maestros/hooks/useMaestros.js",
       "source_location": "L1",
-      "community": 209,
+      "community": 518,
       "norm_label": "usemaestros.js",
       "id": "hooks_usemaestros"
     },
@@ -16846,7 +16846,7 @@
       "file_type": "code",
       "source_file": "src/modules/maestros/utils/maestrosUtils.js",
       "source_location": "L1",
-      "community": 76,
+      "community": 117,
       "norm_label": "maestrosutils.js",
       "id": "utils_maestrosutils"
     },
@@ -16855,7 +16855,7 @@
       "file_type": "code",
       "source_file": "src/modules/maestros/utils/maestrosUtils.js",
       "source_location": "L1",
-      "community": 76,
+      "community": 117,
       "norm_label": "formatdate()",
       "id": "utils_maestrosutils_formatdate"
     },
@@ -16873,7 +16873,7 @@
       "file_type": "code",
       "source_file": "src/modules/maestros/utils/maestrosUtils.js",
       "source_location": "L17",
-      "community": 76,
+      "community": 117,
       "norm_label": "isvalidemail()",
       "id": "utils_maestrosutils_isvalidemail"
     },
@@ -16882,7 +16882,7 @@
       "file_type": "code",
       "source_file": "src/modules/maestros/utils/maestrosUtils.js",
       "source_location": "L22",
-      "community": 76,
+      "community": 117,
       "norm_label": "formatphone()",
       "id": "utils_maestrosutils_formatphone"
     },
@@ -16891,7 +16891,7 @@
       "file_type": "code",
       "source_file": "src/modules/maestros/utils/maestrosUtils.js",
       "source_location": "L31",
-      "community": 76,
+      "community": 117,
       "norm_label": "formatinstrumento()",
       "id": "utils_maestrosutils_formatinstrumento"
     },
@@ -16900,7 +16900,7 @@
       "file_type": "code",
       "source_file": "src/modules/maestros/utils/maestrosUtils.js",
       "source_location": "L57",
-      "community": 76,
+      "community": 117,
       "norm_label": "getstatuscolor()",
       "id": "utils_maestrosutils_getstatuscolor"
     },
@@ -16909,7 +16909,7 @@
       "file_type": "code",
       "source_file": "src/modules/maestros/utils/maestrosUtils.js",
       "source_location": "L61",
-      "community": 76,
+      "community": 117,
       "norm_label": "getstatuslabel()",
       "id": "utils_maestrosutils_getstatuslabel"
     },
@@ -16927,7 +16927,7 @@
       "file_type": "code",
       "source_file": "src/modules/maestros/utils/maestrosUtils.js",
       "source_location": "L75",
-      "community": 76,
+      "community": 117,
       "norm_label": "getinstrumentos()",
       "id": "utils_maestrosutils_getinstrumentos"
     },
@@ -16936,7 +16936,7 @@
       "file_type": "code",
       "source_file": "src/modules/maestros/utils/maestrosUtils.js",
       "source_location": "L100",
-      "community": 76,
+      "community": 117,
       "norm_label": "getconsistentcolor()",
       "id": "utils_maestrosutils_getconsistentcolor"
     },
@@ -16945,7 +16945,7 @@
       "file_type": "code",
       "source_file": "src/modules/maestros/utils/maestrosUtils.js",
       "source_location": "L107",
-      "community": 76,
+      "community": 117,
       "norm_label": "validarnombre()",
       "id": "utils_maestrosutils_validarnombre"
     },
@@ -16954,7 +16954,7 @@
       "file_type": "code",
       "source_file": "src/modules/maestros/utils/maestrosUtils.js",
       "source_location": "L114",
-      "community": 76,
+      "community": 117,
       "norm_label": "validaremail()",
       "id": "utils_maestrosutils_validaremail"
     },
@@ -18637,7 +18637,7 @@
       "file_type": "code",
       "source_file": "src/modules/observaciones/__tests__/observacionesApi.promoteObservations.integration.test.js",
       "source_location": "L1",
-      "community": 142,
+      "community": 35,
       "norm_label": "observacionesapi.promoteobservations.integration.test.js",
       "id": "tests_observacionesapi_promoteobservations_integration_test"
     },
@@ -18646,7 +18646,7 @@
       "file_type": "code",
       "source_file": "src/modules/observaciones/__tests__/observacionesApi.promoteObservations.integration.test.js",
       "source_location": "L17",
-      "community": 142,
+      "community": 35,
       "norm_label": "setupmocks()",
       "id": "tests_observacionesapi_promoteobservations_integration_test_setupmocks"
     },
@@ -19474,7 +19474,7 @@
       "file_type": "code",
       "source_file": "src/modules/pedagogico/components/CaseLetterModal.js",
       "source_location": "L1",
-      "community": 163,
+      "community": 183,
       "norm_label": "caselettermodal.js",
       "id": "components_caselettermodal"
     },
@@ -19483,7 +19483,7 @@
       "file_type": "code",
       "source_file": "src/modules/pedagogico/components/CaseLetterModal.js",
       "source_location": "L11",
-      "community": 163,
+      "community": 183,
       "norm_label": "risk_template_map",
       "id": "components_caselettermodal_risk_template_map"
     },
@@ -19492,7 +19492,7 @@
       "file_type": "code",
       "source_file": "src/modules/pedagogico/components/CaseLetterModal.js",
       "source_location": "L18",
-      "community": 163,
+      "community": 183,
       "norm_label": "opencaselettermodal()",
       "id": "components_caselettermodal_opencaselettermodal"
     },
@@ -19501,7 +19501,7 @@
       "file_type": "code",
       "source_file": "src/modules/pedagogico/index.js",
       "source_location": "L1",
-      "community": 63,
+      "community": 639,
       "norm_label": "index.js",
       "id": "pedagogico_index"
     },
@@ -19510,7 +19510,7 @@
       "file_type": "code",
       "source_file": "src/modules/pedagogico/pedagogico.router.js",
       "source_location": "L1",
-      "community": 63,
+      "community": 639,
       "norm_label": "pedagogico.router.js",
       "id": "pedagogico_pedagogico_router"
     },
@@ -19519,7 +19519,7 @@
       "file_type": "code",
       "source_file": "src/modules/pedagogico/pedagogico.router.js",
       "source_location": "L10",
-      "community": 63,
+      "community": 639,
       "norm_label": "registerroutespedagogico()",
       "id": "pedagogico_pedagogico_router_registerroutespedagogico"
     },
@@ -19753,7 +19753,7 @@
       "file_type": "code",
       "source_file": "src/modules/pedagogico/services/studentCasesService.js",
       "source_location": "L1",
-      "community": 61,
+      "community": 273,
       "norm_label": "studentcasesservice.js",
       "id": "services_studentcasesservice"
     },
@@ -19762,7 +19762,7 @@
       "file_type": "code",
       "source_file": "src/modules/pedagogico/services/studentCasesService.js",
       "source_location": "L8",
-      "community": 61,
+      "community": 273,
       "norm_label": "_logevent()",
       "id": "services_studentcasesservice_logevent"
     },
@@ -19798,7 +19798,7 @@
       "file_type": "code",
       "source_file": "src/modules/pedagogico/services/studentCasesService.js",
       "source_location": "L37",
-      "community": 61,
+      "community": 273,
       "norm_label": "createstudentcase()",
       "id": "services_studentcasesservice_createstudentcase"
     },
@@ -19807,7 +19807,7 @@
       "file_type": "code",
       "source_file": "src/modules/pedagogico/services/studentCasesService.js",
       "source_location": "L54",
-      "community": 61,
+      "community": 273,
       "norm_label": "createcasefromalert()",
       "id": "services_studentcasesservice_createcasefromalert"
     },
@@ -19906,7 +19906,7 @@
       "file_type": "code",
       "source_file": "src/modules/pedagogico/services/studentCasesService.js",
       "source_location": "L160",
-      "community": 61,
+      "community": 273,
       "norm_label": "archivealert()",
       "id": "services_studentcasesservice_archivealert"
     },
@@ -19915,7 +19915,7 @@
       "file_type": "code",
       "source_file": "src/modules/pedagogico/services/studentCasesService.js",
       "source_location": "L166",
-      "community": 273,
+      "community": 236,
       "norm_label": "getcasekpis()",
       "id": "services_studentcasesservice_getcasekpis"
     },
@@ -20338,7 +20338,7 @@
       "file_type": "code",
       "source_file": "src/modules/pedagogico/views/seguimientoInstitucionalView.js",
       "source_location": "L23",
-      "community": 273,
+      "community": 639,
       "norm_label": "renderseguimientoinstitucionalview()",
       "id": "views_seguimientoinstitucionalview_renderseguimientoinstitucionalview"
     },
@@ -21382,7 +21382,7 @@
       "file_type": "code",
       "source_file": "src/modules/planificacion/__tests__/planificacion.model.test.js",
       "source_location": "L1",
-      "community": 12,
+      "community": 205,
       "norm_label": "planificacion.model.test.js",
       "id": "tests_planificacion_model_test"
     },
@@ -21814,7 +21814,7 @@
       "file_type": "code",
       "source_file": "src/modules/planificacion/api/planificacionAdapter.js",
       "source_location": "L1",
-      "community": 130,
+      "community": 6,
       "norm_label": "planificacionadapter.js",
       "id": "api_planificacionadapter"
     },
@@ -21850,7 +21850,7 @@
       "file_type": "code",
       "source_file": "src/modules/planificacion/api/planificacionAdapter.js",
       "source_location": "L27",
-      "community": 9,
+      "community": 6,
       "norm_label": "crearplanificacion()",
       "id": "api_planificacionadapter_crearplanificacion"
     },
@@ -21886,7 +21886,7 @@
       "file_type": "code",
       "source_file": "src/modules/planificacion/api/planificacionAdapter.js",
       "source_location": "L32",
-      "community": 130,
+      "community": 205,
       "norm_label": "marcarrevisada()",
       "id": "api_planificacionadapter_marcarrevisada"
     },
@@ -21895,7 +21895,7 @@
       "file_type": "code",
       "source_file": "src/modules/planificacion/api/planificacionAdapter.js",
       "source_location": "L33",
-      "community": 130,
+      "community": 205,
       "norm_label": "marcarejecutada()",
       "id": "api_planificacionadapter_marcarejecutada"
     },
@@ -21913,7 +21913,7 @@
       "file_type": "code",
       "source_file": "src/modules/planificacion/api/planificacionAdapter.js",
       "source_location": "L35",
-      "community": 130,
+      "community": 6,
       "norm_label": "obtenermaestros()",
       "id": "api_planificacionadapter_obtenermaestros"
     },
@@ -21922,7 +21922,7 @@
       "file_type": "code",
       "source_file": "src/modules/planificacion/api/planificacionAdapter.js",
       "source_location": "L36",
-      "community": 130,
+      "community": 6,
       "norm_label": "obtenermaestro()",
       "id": "api_planificacionadapter_obtenermaestro"
     },
@@ -21931,7 +21931,7 @@
       "file_type": "code",
       "source_file": "src/modules/planificacion/api/planificacionAdapter.js",
       "source_location": "L37",
-      "community": 130,
+      "community": 6,
       "norm_label": "obtenersesiones()",
       "id": "api_planificacionadapter_obtenersesiones"
     },
@@ -21940,7 +21940,7 @@
       "file_type": "code",
       "source_file": "src/modules/planificacion/api/planificacionAdapter.js",
       "source_location": "L45",
-      "community": 130,
+      "community": 6,
       "norm_label": "obtenercoberturacurricular()",
       "id": "api_planificacionadapter_obtenercoberturacurricular"
     },
@@ -21958,7 +21958,7 @@
       "file_type": "code",
       "source_file": "src/modules/planificacion/api/planificacionAdapter.js",
       "source_location": "L50",
-      "community": 130,
+      "community": 6,
       "norm_label": "obtenerplantilla()",
       "id": "api_planificacionadapter_obtenerplantilla"
     },
@@ -21967,7 +21967,7 @@
       "file_type": "code",
       "source_file": "src/modules/planificacion/api/planificacionAdapter.js",
       "source_location": "L51",
-      "community": 130,
+      "community": 6,
       "norm_label": "crearplantilla()",
       "id": "api_planificacionadapter_crearplantilla"
     },
@@ -21976,7 +21976,7 @@
       "file_type": "code",
       "source_file": "src/modules/planificacion/api/planificacionAdapter.js",
       "source_location": "L52",
-      "community": 130,
+      "community": 6,
       "norm_label": "actualizarplantilla()",
       "id": "api_planificacionadapter_actualizarplantilla"
     },
@@ -21985,7 +21985,7 @@
       "file_type": "code",
       "source_file": "src/modules/planificacion/api/planificacionAdapter.js",
       "source_location": "L53",
-      "community": 130,
+      "community": 6,
       "norm_label": "eliminarplantilla()",
       "id": "api_planificacionadapter_eliminarplantilla"
     },
@@ -22003,7 +22003,7 @@
       "file_type": "code",
       "source_file": "src/modules/planificacion/api/planificacionAdapter.js",
       "source_location": "L59",
-      "community": 130,
+      "community": 6,
       "norm_label": "obtenerplantillaplanificacion()",
       "id": "api_planificacionadapter_obtenerplantillaplanificacion"
     },
@@ -22012,7 +22012,7 @@
       "file_type": "code",
       "source_file": "src/modules/planificacion/api/planificacionAdapter.js",
       "source_location": "L61",
-      "community": 130,
+      "community": 6,
       "norm_label": "crearplantillaplanificacion()",
       "id": "api_planificacionadapter_crearplantillaplanificacion"
     },
@@ -22021,7 +22021,7 @@
       "file_type": "code",
       "source_file": "src/modules/planificacion/api/planificacionAdapter.js",
       "source_location": "L63",
-      "community": 130,
+      "community": 6,
       "norm_label": "actualizarplantillaplanificacion()",
       "id": "api_planificacionadapter_actualizarplantillaplanificacion"
     },
@@ -22030,7 +22030,7 @@
       "file_type": "code",
       "source_file": "src/modules/planificacion/api/planificacionAdapter.js",
       "source_location": "L65",
-      "community": 130,
+      "community": 6,
       "norm_label": "eliminarplantillaplanificacion()",
       "id": "api_planificacionadapter_eliminarplantillaplanificacion"
     },
@@ -22786,7 +22786,7 @@
       "file_type": "code",
       "source_file": "src/modules/planificacion/api/routeSupabase.js",
       "source_location": "L1",
-      "community": 407,
+      "community": 35,
       "norm_label": "routesupabase.js",
       "id": "api_routesupabase"
     },
@@ -22795,7 +22795,7 @@
       "file_type": "code",
       "source_file": "src/modules/planificacion/api/routeSupabase.js",
       "source_location": "L3",
-      "community": 407,
+      "community": 35,
       "norm_label": "getclasses()",
       "id": "api_routesupabase_getclasses"
     },
@@ -22804,7 +22804,7 @@
       "file_type": "code",
       "source_file": "src/modules/planificacion/api/routeSupabase.js",
       "source_location": "L11",
-      "community": 407,
+      "community": 35,
       "norm_label": "getlevelsbyclass()",
       "id": "api_routesupabase_getlevelsbyclass"
     },
@@ -22813,7 +22813,7 @@
       "file_type": "code",
       "source_file": "src/modules/planificacion/api/routeSupabase.js",
       "source_location": "L21",
-      "community": 407,
+      "community": 35,
       "norm_label": "getnodesbylevel()",
       "id": "api_routesupabase_getnodesbylevel"
     },
@@ -22822,7 +22822,7 @@
       "file_type": "code",
       "source_file": "src/modules/planificacion/api/routeSupabase.js",
       "source_location": "L31",
-      "community": 407,
+      "community": 35,
       "norm_label": "getobjectivesbynode()",
       "id": "api_routesupabase_getobjectivesbynode"
     },
@@ -22831,7 +22831,7 @@
       "file_type": "code",
       "source_file": "src/modules/planificacion/api/routeSupabase.js",
       "source_location": "L41",
-      "community": 407,
+      "community": 35,
       "norm_label": "getindicatorsbyobjective()",
       "id": "api_routesupabase_getindicatorsbyobjective"
     },
@@ -22840,7 +22840,7 @@
       "file_type": "code",
       "source_file": "src/modules/planificacion/api/routeSupabase.js",
       "source_location": "L51",
-      "community": 407,
+      "community": 35,
       "norm_label": "getfullhierarchy()",
       "id": "api_routesupabase_getfullhierarchy"
     },
@@ -22849,7 +22849,7 @@
       "file_type": "code",
       "source_file": "src/modules/planificacion/api/routeSupabase.js",
       "source_location": "L72",
-      "community": 407,
+      "community": 35,
       "norm_label": "updateindicatorcalificacion()",
       "id": "api_routesupabase_updateindicatorcalificacion"
     },
@@ -23083,7 +23083,7 @@
       "file_type": "code",
       "source_file": "src/modules/planificacion/components/aprobacionPlanificacionesModal.js",
       "source_location": "L1",
-      "community": 130,
+      "community": 205,
       "norm_label": "aprobacionplanificacionesmodal.js",
       "id": "components_aprobacionplanificacionesmodal"
     },
@@ -23092,7 +23092,7 @@
       "file_type": "code",
       "source_file": "src/modules/planificacion/components/aprobacionPlanificacionesModal.js",
       "source_location": "L4",
-      "community": 130,
+      "community": 205,
       "norm_label": "openaprobacionplanificacionesmodal()",
       "id": "components_aprobacionplanificacionesmodal_openaprobacionplanificacionesmodal"
     },
@@ -23101,7 +23101,7 @@
       "file_type": "code",
       "source_file": "src/modules/planificacion/components/aprobacionPlanificacionesModal.js",
       "source_location": "L128",
-      "community": 130,
+      "community": 205,
       "norm_label": "_esc()",
       "id": "components_aprobacionplanificacionesmodal_esc"
     },
@@ -23110,7 +23110,7 @@
       "file_type": "code",
       "source_file": "src/modules/planificacion/components/aprobacionPlanificacionesModal.js",
       "source_location": "L133",
-      "community": 130,
+      "community": 205,
       "norm_label": "_getbadgeclass()",
       "id": "components_aprobacionplanificacionesmodal_getbadgeclass"
     },
@@ -23866,7 +23866,7 @@
       "file_type": "code",
       "source_file": "src/modules/planificacion/components/tareasPanel.js",
       "source_location": "L1",
-      "community": 254,
+      "community": 482,
       "norm_label": "tareaspanel.js",
       "id": "src_modules_planificacion_components_tareaspanel_js_components_tareaspanel"
     },
@@ -23875,7 +23875,7 @@
       "file_type": "code",
       "source_file": "src/modules/planificacion/components/tareasPanel.js",
       "source_location": "L3",
-      "community": 254,
+      "community": 482,
       "norm_label": "tareascache",
       "id": "components_tareaspanel_tareascache"
     },
@@ -23884,7 +23884,7 @@
       "file_type": "code",
       "source_file": "src/modules/planificacion/components/tareasPanel.js",
       "source_location": "L5",
-      "community": 254,
+      "community": 482,
       "norm_label": "loadtareasdemo()",
       "id": "components_tareaspanel_loadtareasdemo"
     },
@@ -23893,7 +23893,7 @@
       "file_type": "code",
       "source_file": "src/modules/planificacion/components/tareasPanel.js",
       "source_location": "L16",
-      "community": 254,
+      "community": 482,
       "norm_label": "gettareas()",
       "id": "components_tareaspanel_gettareas"
     },
@@ -23902,7 +23902,7 @@
       "file_type": "code",
       "source_file": "src/modules/planificacion/components/tareasPanel.js",
       "source_location": "L25",
-      "community": 254,
+      "community": 482,
       "norm_label": "savetareas()",
       "id": "components_tareaspanel_savetareas"
     },
@@ -23911,7 +23911,7 @@
       "file_type": "code",
       "source_file": "src/modules/planificacion/components/tareasPanel.js",
       "source_location": "L30",
-      "community": 254,
+      "community": 482,
       "norm_label": "filterbyalumno()",
       "id": "components_tareaspanel_filterbyalumno"
     },
@@ -23920,7 +23920,7 @@
       "file_type": "code",
       "source_file": "src/modules/planificacion/components/tareasPanel.js",
       "source_location": "L34",
-      "community": 254,
+      "community": 482,
       "norm_label": "getpendientescount()",
       "id": "components_tareaspanel_getpendientescount"
     },
@@ -23929,7 +23929,7 @@
       "file_type": "code",
       "source_file": "src/modules/planificacion/components/tareasPanel.js",
       "source_location": "L38",
-      "community": 254,
+      "community": 482,
       "norm_label": "getvencidascount()",
       "id": "components_tareaspanel_getvencidascount"
     },
@@ -23938,7 +23938,7 @@
       "file_type": "code",
       "source_file": "src/modules/planificacion/components/tareasPanel.js",
       "source_location": "L47",
-      "community": 254,
+      "community": 482,
       "norm_label": "rendertareasbadge()",
       "id": "components_tareaspanel_rendertareasbadge"
     },
@@ -23947,7 +23947,7 @@
       "file_type": "code",
       "source_file": "src/modules/planificacion/components/tareasPanel.js",
       "source_location": "L62",
-      "community": 254,
+      "community": 482,
       "norm_label": "rendertareaspanel()",
       "id": "src_modules_planificacion_components_tareaspanel_js_components_tareaspanel_rendertareaspanel"
     },
@@ -23956,7 +23956,7 @@
       "file_type": "code",
       "source_file": "src/modules/planificacion/components/tareasPanel.js",
       "source_location": "L158",
-      "community": 254,
+      "community": 482,
       "norm_label": "formatdatesimple()",
       "id": "components_tareaspanel_formatdatesimple"
     },
@@ -23965,7 +23965,7 @@
       "file_type": "code",
       "source_file": "src/modules/planificacion/components/tareasPanel.js",
       "source_location": "L163",
-      "community": 254,
+      "community": 482,
       "norm_label": "escapehtml()",
       "id": "components_tareaspanel_escapehtml"
     },
@@ -24424,7 +24424,7 @@
       "file_type": "code",
       "source_file": "src/modules/planificacion/index.js",
       "source_location": "L1",
-      "community": 130,
+      "community": 205,
       "norm_label": "index.js",
       "id": "planificacion_index"
     },
@@ -24433,7 +24433,7 @@
       "file_type": "code",
       "source_file": "src/modules/planificacion/models/planificacion.model.js",
       "source_location": "L1",
-      "community": 12,
+      "community": 205,
       "norm_label": "planificacion.model.js",
       "id": "models_planificacion_model"
     },
@@ -24442,7 +24442,7 @@
       "file_type": "code",
       "source_file": "src/modules/planificacion/models/planificacion.model.js",
       "source_location": "L4",
-      "community": 12,
+      "community": 205,
       "norm_label": "planificacion",
       "id": "models_planificacion_model_planificacion"
     },
@@ -24451,7 +24451,7 @@
       "file_type": "code",
       "source_file": "src/modules/planificacion/models/planificacion.model.js",
       "source_location": "L5",
-      "community": 12,
+      "community": 205,
       "norm_label": ".constructor()",
       "id": "models_planificacion_model_planificacion_constructor"
     },
@@ -24460,7 +24460,7 @@
       "file_type": "code",
       "source_file": "src/modules/planificacion/models/planificacion.model.js",
       "source_location": "L31",
-      "community": 12,
+      "community": 205,
       "norm_label": ".validate()",
       "id": "models_planificacion_model_planificacion_validate"
     },
@@ -24469,7 +24469,7 @@
       "file_type": "code",
       "source_file": "src/modules/planificacion/models/planificacion.model.js",
       "source_location": "L78",
-      "community": 12,
+      "community": 205,
       "norm_label": ".canedit()",
       "id": "models_planificacion_model_planificacion_canedit"
     },
@@ -24478,7 +24478,7 @@
       "file_type": "code",
       "source_file": "src/modules/planificacion/models/planificacion.model.js",
       "source_location": "L86",
-      "community": 12,
+      "community": 205,
       "norm_label": ".canapprove()",
       "id": "models_planificacion_model_planificacion_canapprove"
     },
@@ -24487,7 +24487,7 @@
       "file_type": "code",
       "source_file": "src/modules/planificacion/models/planificacion.model.js",
       "source_location": "L94",
-      "community": 12,
+      "community": 205,
       "norm_label": ".islocked()",
       "id": "models_planificacion_model_planificacion_islocked"
     },
@@ -24496,7 +24496,7 @@
       "file_type": "code",
       "source_file": "src/modules/planificacion/models/planificacion.model.js",
       "source_location": "L98",
-      "community": 12,
+      "community": 205,
       "norm_label": ".getestados()",
       "id": "models_planificacion_model_planificacion_getestados"
     },
@@ -24505,7 +24505,7 @@
       "file_type": "code",
       "source_file": "src/modules/planificacion/models/planificacion.model.js",
       "source_location": "L106",
-      "community": 12,
+      "community": 205,
       "norm_label": ".getestadoconfig()",
       "id": "models_planificacion_model_planificacion_getestadoconfig"
     },
@@ -24514,7 +24514,7 @@
       "file_type": "code",
       "source_file": "src/modules/planificacion/models/planificacion.model.js",
       "source_location": "L120",
-      "community": 12,
+      "community": 205,
       "norm_label": ".tojson()",
       "id": "models_planificacion_model_planificacion_tojson"
     },
@@ -24604,7 +24604,7 @@
       "file_type": "code",
       "source_file": "src/modules/planificacion/planificacion.router.js",
       "source_location": "L1",
-      "community": 130,
+      "community": 205,
       "norm_label": "planificacion.router.js",
       "id": "planificacion_planificacion_router"
     },
@@ -24613,7 +24613,7 @@
       "file_type": "code",
       "source_file": "src/modules/planificacion/planificacion.router.js",
       "source_location": "L5",
-      "community": 130,
+      "community": 205,
       "norm_label": "registerroutesplanificacion()",
       "id": "planificacion_planificacion_router_registerroutesplanificacion"
     },
@@ -25027,7 +25027,7 @@
       "file_type": "code",
       "source_file": "src/modules/planificacion/views/planificacionView.js",
       "source_location": "L1033",
-      "community": 130,
+      "community": 205,
       "norm_label": "rendercoberturaview()",
       "id": "views_planificacionview_rendercoberturaview"
     },
@@ -25819,7 +25819,7 @@
       "file_type": "code",
       "source_file": "src/modules/progresos/api/progresosApi.js",
       "source_location": "L25",
-      "community": 17,
+      "community": 428,
       "norm_label": "obteneralumnos()",
       "id": "api_progresosapi_obteneralumnos"
     },
@@ -25846,7 +25846,7 @@
       "file_type": "code",
       "source_file": "src/modules/progresos/api/progresosApi.js",
       "source_location": "L67",
-      "community": 17,
+      "community": 428,
       "norm_label": "obtenerprogresos()",
       "id": "api_progresosapi_obtenerprogresos"
     },
@@ -25864,7 +25864,7 @@
       "file_type": "code",
       "source_file": "src/modules/progresos/api/progresosApi.js",
       "source_location": "L96",
-      "community": 17,
+      "community": 428,
       "norm_label": "crearprogreso()",
       "id": "api_progresosapi_crearprogreso"
     },
@@ -25873,7 +25873,7 @@
       "file_type": "code",
       "source_file": "src/modules/progresos/api/progresosApi.js",
       "source_location": "L149",
-      "community": 17,
+      "community": 428,
       "norm_label": "actualizarprogreso()",
       "id": "api_progresosapi_actualizarprogreso"
     },
@@ -25891,7 +25891,7 @@
       "file_type": "code",
       "source_file": "src/modules/progresos/api/progresosApi.js",
       "source_location": "L221",
-      "community": 17,
+      "community": 163,
       "norm_label": "obtenerprogresosporalumno()",
       "id": "api_progresosapi_obtenerprogresosporalumno"
     },
@@ -25900,7 +25900,7 @@
       "file_type": "code",
       "source_file": "src/modules/progresos/api/progresosApi.js",
       "source_location": "L236",
-      "community": 17,
+      "community": 428,
       "norm_label": "obtenerprogresosporclase()",
       "id": "api_progresosapi_obtenerprogresosporclase"
     },
@@ -25999,7 +25999,7 @@
       "file_type": "code",
       "source_file": "src/modules/progresos/api/progresosApi.js",
       "source_location": "L411",
-      "community": 188,
+      "community": 17,
       "norm_label": "getstudentprogress()",
       "id": "api_progresosapi_getstudentprogress"
     },
@@ -26008,7 +26008,7 @@
       "file_type": "code",
       "source_file": "src/modules/progresos/api/progresosApi.js",
       "source_location": "L440",
-      "community": 188,
+      "community": 17,
       "norm_label": "getstudentprogressbatch()",
       "id": "api_progresosapi_getstudentprogressbatch"
     },
@@ -26287,7 +26287,7 @@
       "file_type": "code",
       "source_file": "src/modules/progresos/hooks/useProgresos.js",
       "source_location": "L190",
-      "community": 310,
+      "community": 127,
       "norm_label": "useprogresos()",
       "id": "hooks_useprogresos_useprogresos"
     },
@@ -26296,7 +26296,7 @@
       "file_type": "code",
       "source_file": "src/modules/progresos/index.js",
       "source_location": "L1",
-      "community": 310,
+      "community": 127,
       "norm_label": "index.js",
       "id": "progresos_index"
     },
@@ -26377,7 +26377,7 @@
       "file_type": "code",
       "source_file": "src/modules/progresos/progresos.router.js",
       "source_location": "L1",
-      "community": 310,
+      "community": 127,
       "norm_label": "progresos.router.js",
       "id": "progresos_progresos_router"
     },
@@ -26386,7 +26386,7 @@
       "file_type": "code",
       "source_file": "src/modules/progresos/progresos.router.js",
       "source_location": "L4",
-      "community": 310,
+      "community": 127,
       "norm_label": "registerroutesprogresos()",
       "id": "progresos_progresos_router_registerroutesprogresos"
     },
@@ -26593,7 +26593,7 @@
       "file_type": "code",
       "source_file": "src/modules/progresos/services/progresoDataService.js",
       "source_location": "L1",
-      "community": 17,
+      "community": 428,
       "norm_label": "progresodataservice.js",
       "id": "services_progresodataservice"
     },
@@ -26602,7 +26602,7 @@
       "file_type": "code",
       "source_file": "src/modules/progresos/services/progresoDataService.js",
       "source_location": "L19",
-      "community": 17,
+      "community": 428,
       "norm_label": "calcularrendimiento()",
       "id": "services_progresodataservice_calcularrendimiento"
     },
@@ -26611,7 +26611,7 @@
       "file_type": "code",
       "source_file": "src/modules/progresos/services/progresoDataService.js",
       "source_location": "L45",
-      "community": 17,
+      "community": 428,
       "norm_label": "getresumenprogresosclase()",
       "id": "services_progresodataservice_getresumenprogresosclase"
     },
@@ -26620,7 +26620,7 @@
       "file_type": "code",
       "source_file": "src/modules/progresos/services/progresoDataService.js",
       "source_location": "L62",
-      "community": 17,
+      "community": 428,
       "norm_label": "progreso_service",
       "id": "services_progresodataservice_progreso_service"
     },
@@ -26749,24 +26749,6 @@
       "community": 188,
       "norm_label": "evaluate()",
       "id": "services_riskrules_evaluate"
-    },
-    {
-      "label": "useProgresosStore.js",
-      "file_type": "code",
-      "source_file": "src/modules/progresos/stores/useProgresosStore.js",
-      "source_location": "L1",
-      "community": 257,
-      "norm_label": "useprogresosstore.js",
-      "id": "stores_useprogresosstore"
-    },
-    {
-      "label": "useProgresosStore",
-      "file_type": "code",
-      "source_file": "src/modules/progresos/stores/useProgresosStore.js",
-      "source_location": "L10",
-      "community": 257,
-      "norm_label": "useprogresosstore",
-      "id": "stores_useprogresosstore_useprogresosstore"
     },
     {
       "label": "progresosUtils.js",
@@ -26904,110 +26886,11 @@
       "id": "tests_studentprogresspanel_test"
     },
     {
-      "label": "dashboardFilterBar.vue",
-      "file_type": "code",
-      "source_file": "src/modules/progresos/views/components/dashboardFilterBar.vue",
-      "source_location": "L1",
-      "community": 257,
-      "norm_label": "dashboardfilterbar.vue",
-      "id": "components_dashboardfilterbar"
-    },
-    {
-      "label": "selectedPeriodo",
-      "file_type": "code",
-      "source_file": "src/modules/progresos/views/components/dashboardFilterBar.vue",
-      "source_location": "L46",
-      "community": 257,
-      "norm_label": "selectedperiodo",
-      "id": "components_dashboardfilterbar_selectedperiodo"
-    },
-    {
-      "label": "dashboardStudentRow.vue",
-      "file_type": "code",
-      "source_file": "src/modules/progresos/views/components/dashboardStudentRow.vue",
-      "source_location": "L1",
-      "community": 257,
-      "norm_label": "dashboardstudentrow.vue",
-      "id": "components_dashboardstudentrow"
-    },
-    {
-      "label": "props",
-      "file_type": "code",
-      "source_file": "src/modules/progresos/views/components/dashboardStudentRow.vue",
-      "source_location": "L32",
-      "community": 257,
-      "norm_label": "props",
-      "id": "components_dashboardstudentrow_props"
-    },
-    {
-      "label": "progressDashboard.vue",
-      "file_type": "code",
-      "source_file": "src/modules/progresos/views/components/progressDashboard.vue",
-      "source_location": "L1",
-      "community": 257,
-      "norm_label": "progressdashboard.vue",
-      "id": "components_progressdashboard"
-    },
-    {
-      "label": "store",
-      "file_type": "code",
-      "source_file": "src/modules/progresos/views/components/progressDashboard.vue",
-      "source_location": "L42",
-      "community": 257,
-      "norm_label": "store",
-      "id": "components_progressdashboard_store"
-    },
-    {
-      "label": "periodos",
-      "file_type": "code",
-      "source_file": "src/modules/progresos/views/components/progressDashboard.vue",
-      "source_location": "L44",
-      "community": 257,
-      "norm_label": "periodos",
-      "id": "components_progressdashboard_periodos"
-    },
-    {
-      "label": "filterRiesgo",
-      "file_type": "code",
-      "source_file": "src/modules/progresos/views/components/progressDashboard.vue",
-      "source_location": "L45",
-      "community": 257,
-      "norm_label": "filterriesgo",
-      "id": "components_progressdashboard_filterriesgo"
-    },
-    {
-      "label": "filteredRows",
-      "file_type": "code",
-      "source_file": "src/modules/progresos/views/components/progressDashboard.vue",
-      "source_location": "L47",
-      "community": 257,
-      "norm_label": "filteredrows",
-      "id": "components_progressdashboard_filteredrows"
-    },
-    {
-      "label": "applyFilters()",
-      "file_type": "code",
-      "source_file": "src/modules/progresos/views/components/progressDashboard.vue",
-      "source_location": "L54",
-      "community": 257,
-      "norm_label": "applyfilters()",
-      "id": "components_progressdashboard_applyfilters"
-    },
-    {
-      "label": "openPanel()",
-      "file_type": "code",
-      "source_file": "src/modules/progresos/views/components/progressDashboard.vue",
-      "source_location": "L62",
-      "community": 257,
-      "norm_label": "openpanel()",
-      "id": "components_progressdashboard_openpanel"
-    },
-    {
       "label": "progresosView.js",
       "file_type": "code",
       "source_file": "src/modules/progresos/views/progresosView.js",
       "source_location": "L1",
-      "community": 17,
+      "community": 428,
       "norm_label": "progresosview.js",
       "id": "views_progresosview"
     },
@@ -27016,7 +26899,7 @@
       "file_type": "code",
       "source_file": "src/modules/progresos/views/progresosView.js",
       "source_location": "L18",
-      "community": 17,
+      "community": 428,
       "norm_label": "state",
       "id": "views_progresosview_state"
     },
@@ -27025,7 +26908,7 @@
       "file_type": "code",
       "source_file": "src/modules/progresos/views/progresosView.js",
       "source_location": "L31",
-      "community": 17,
+      "community": 428,
       "norm_label": "renderprogresosview()",
       "id": "views_progresosview_renderprogresosview"
     },
@@ -27034,7 +26917,7 @@
       "file_type": "code",
       "source_file": "src/modules/progresos/views/progresosView.js",
       "source_location": "L58",
-      "community": 17,
+      "community": 428,
       "norm_label": "renderloading()",
       "id": "views_progresosview_renderloading"
     },
@@ -27043,7 +26926,7 @@
       "file_type": "code",
       "source_file": "src/modules/progresos/views/progresosView.js",
       "source_location": "L62",
-      "community": 17,
+      "community": 428,
       "norm_label": "rendererror()",
       "id": "views_progresosview_rendererror"
     },
@@ -27052,7 +26935,7 @@
       "file_type": "code",
       "source_file": "src/modules/progresos/views/progresosView.js",
       "source_location": "L76",
-      "community": 17,
+      "community": 428,
       "norm_label": "rendercontent()",
       "id": "views_progresosview_rendercontent"
     },
@@ -27061,7 +26944,7 @@
       "file_type": "code",
       "source_file": "src/modules/progresos/views/progresosView.js",
       "source_location": "L176",
-      "community": 17,
+      "community": 428,
       "norm_label": "rendergroupedbyalumno()",
       "id": "views_progresosview_rendergroupedbyalumno"
     },
@@ -27070,7 +26953,7 @@
       "file_type": "code",
       "source_file": "src/modules/progresos/views/progresosView.js",
       "source_location": "L233",
-      "community": 17,
+      "community": 428,
       "norm_label": "_attachevents()",
       "id": "views_progresosview_attachevents"
     },
@@ -27088,7 +26971,7 @@
       "file_type": "code",
       "source_file": "src/modules/progresos/views/progresosView.js",
       "source_location": "L267",
-      "community": 17,
+      "community": 428,
       "norm_label": "_showdetail()",
       "id": "views_progresosview_showdetail"
     },
@@ -27097,7 +26980,7 @@
       "file_type": "code",
       "source_file": "src/modules/progresos/views/progresosView.js",
       "source_location": "L324",
-      "community": 17,
+      "community": 428,
       "norm_label": "opencreatemodal()",
       "id": "views_progresosview_opencreatemodal"
     },
@@ -28258,7 +28141,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/auth/__tests__/detectarRolMaestro.test.js",
       "source_location": "L1",
-      "community": 35,
+      "community": 130,
       "norm_label": "detectarrolmaestro.test.js",
       "id": "tests_detectarrolmaestro_test"
     },
@@ -28267,7 +28150,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/auth/__tests__/detectarRolMaestro.test.js",
       "source_location": "L34",
-      "community": 35,
+      "community": 130,
       "norm_label": "mocksession()",
       "id": "tests_detectarrolmaestro_test_mocksession"
     },
@@ -28276,7 +28159,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/auth/__tests__/detectarRolMaestro.test.js",
       "source_location": "L48",
-      "community": 35,
+      "community": 130,
       "norm_label": "mocknosession()",
       "id": "tests_detectarrolmaestro_test_mocknosession"
     },
@@ -28285,7 +28168,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/auth/__tests__/detectarRolMaestro.test.js",
       "source_location": "L56",
-      "community": 35,
+      "community": 130,
       "norm_label": "mocktables()",
       "id": "tests_detectarrolmaestro_test_mocktables"
     },
@@ -28294,7 +28177,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/auth/__tests__/maestroAuth.admin-maestro.test.js",
       "source_location": "L1",
-      "community": 35,
+      "community": 130,
       "norm_label": "maestroauth.admin-maestro.test.js",
       "id": "tests_maestroauth_admin_maestro_test"
     },
@@ -28303,7 +28186,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/auth/__tests__/maestroAuth.admin-maestro.test.js",
       "source_location": "L21",
-      "community": 35,
+      "community": 130,
       "norm_label": "mocktables()",
       "id": "tests_maestroauth_admin_maestro_test_mocktables"
     },
@@ -28312,7 +28195,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/auth/__tests__/maestroAuth.test.js",
       "source_location": "L1",
-      "community": 35,
+      "community": 130,
       "norm_label": "maestroauth.test.js",
       "id": "tests_maestroauth_test"
     },
@@ -28321,7 +28204,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/auth/__tests__/maestroAuth.test.js",
       "source_location": "L17",
-      "community": 35,
+      "community": 130,
       "norm_label": "mocktable()",
       "id": "tests_maestroauth_test_mocktable"
     },
@@ -28339,7 +28222,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/auth/__tests__/portalSecurity.test.js",
       "source_location": "L1",
-      "community": 35,
+      "community": 130,
       "norm_label": "portalsecurity.test.js",
       "id": "tests_portalsecurity_test"
     },
@@ -28348,7 +28231,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/auth/__tests__/portalSecurity.test.js",
       "source_location": "L28",
-      "community": 35,
+      "community": 130,
       "norm_label": "mocksignin()",
       "id": "tests_portalsecurity_test_mocksignin"
     },
@@ -28357,7 +28240,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/auth/__tests__/portalSecurity.test.js",
       "source_location": "L38",
-      "community": 35,
+      "community": 130,
       "norm_label": "mocktablechain()",
       "id": "tests_portalsecurity_test_mocktablechain"
     },
@@ -28366,7 +28249,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/auth/__tests__/portalSecurity.test.js",
       "source_location": "L53",
-      "community": 35,
+      "community": 130,
       "norm_label": "mocksessionfor()",
       "id": "tests_portalsecurity_test_mocksessionfor"
     },
@@ -28375,7 +28258,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/auth/maestroAuth.js",
       "source_location": "L1",
-      "community": 35,
+      "community": 130,
       "norm_label": "maestroauth.js",
       "id": "auth_maestroauth"
     },
@@ -28384,7 +28267,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/auth/maestroAuth.js",
       "source_location": "L12",
-      "community": 35,
+      "community": 130,
       "norm_label": "pending_approval_sentinel",
       "id": "auth_maestroauth_pending_approval_sentinel"
     },
@@ -28393,7 +28276,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/auth/maestroAuth.js",
       "source_location": "L21",
-      "community": 35,
+      "community": 130,
       "norm_label": "_ispwa()",
       "id": "auth_maestroauth_ispwa"
     },
@@ -28402,7 +28285,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/auth/maestroAuth.js",
       "source_location": "L37",
-      "community": 35,
+      "community": 130,
       "norm_label": "_setpersistentsession()",
       "id": "auth_maestroauth_setpersistentsession"
     },
@@ -28411,7 +28294,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/auth/maestroAuth.js",
       "source_location": "L53",
-      "community": 35,
+      "community": 130,
       "norm_label": "loginmaestro()",
       "id": "auth_maestroauth_loginmaestro"
     },
@@ -28420,7 +28303,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/auth/maestroAuth.js",
       "source_location": "L217",
-      "community": 35,
+      "community": 130,
       "norm_label": "detectarrolmaestro()",
       "id": "auth_maestroauth_detectarrolmaestro"
     },
@@ -28429,7 +28312,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/auth/maestroAuth.js",
       "source_location": "L326",
-      "community": 35,
+      "community": 130,
       "norm_label": "logoutportal()",
       "id": "auth_maestroauth_logoutportal"
     },
@@ -28438,7 +28321,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/auth/maestroAuth.js",
       "source_location": "L335",
-      "community": 35,
+      "community": 130,
       "norm_label": "getmaestrolocal()",
       "id": "auth_maestroauth_getmaestrolocal"
     },
@@ -28447,7 +28330,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/auth/maestroAuth.js",
       "source_location": "L407",
-      "community": 35,
+      "community": 130,
       "norm_label": "clearmaestrolocal()",
       "id": "auth_maestroauth_clearmaestrolocal"
     },
@@ -28456,7 +28339,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/auth/usePortalAuth.js",
       "source_location": "L1",
-      "community": 35,
+      "community": 130,
       "norm_label": "useportalauth.js",
       "id": "auth_useportalauth"
     },
@@ -28465,7 +28348,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/auth/usePortalAuth.js",
       "source_location": "L4",
-      "community": 35,
+      "community": 130,
       "norm_label": "state",
       "id": "auth_useportalauth_state"
     },
@@ -28474,7 +28357,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/auth/usePortalAuth.js",
       "source_location": "L14",
-      "community": 35,
+      "community": 130,
       "norm_label": "notify()",
       "id": "auth_useportalauth_notify"
     },
@@ -28483,7 +28366,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/auth/usePortalAuth.js",
       "source_location": "L18",
-      "community": 35,
+      "community": 130,
       "norm_label": "useportalauth",
       "id": "auth_useportalauth_useportalauth"
     },
@@ -28492,7 +28375,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/components/AchievementsSummaryModal.js",
       "source_location": "L1",
-      "community": 166,
+      "community": 257,
       "norm_label": "achievementssummarymodal.js",
       "id": "components_achievementssummarymodal"
     },
@@ -28501,7 +28384,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/components/AchievementsSummaryModal.js",
       "source_location": "L7",
-      "community": 166,
+      "community": 257,
       "norm_label": "createachievementssummarymodal()",
       "id": "components_achievementssummarymodal_createachievementssummarymodal"
     },
@@ -28969,7 +28852,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/components/EvaluationDrawer.js",
       "source_location": "L1",
-      "community": 166,
+      "community": 257,
       "norm_label": "evaluationdrawer.js",
       "id": "components_evaluationdrawer"
     },
@@ -28978,7 +28861,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/components/EvaluationDrawer.js",
       "source_location": "L8",
-      "community": 9,
+      "community": 257,
       "norm_label": "createevaluationdrawer()",
       "id": "components_evaluationdrawer_createevaluationdrawer"
     },
@@ -29104,7 +28987,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/components/NodeEvaluationCard.js",
       "source_location": "L1",
-      "community": 166,
+      "community": 257,
       "norm_label": "nodeevaluationcard.js",
       "id": "components_nodeevaluationcard"
     },
@@ -29113,7 +28996,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/components/NodeEvaluationCard.js",
       "source_location": "L7",
-      "community": 166,
+      "community": 257,
       "norm_label": "createnodeevaluationcard()",
       "id": "components_nodeevaluationcard_createnodeevaluationcard"
     },
@@ -29500,7 +29383,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/components/ProgressPreviewPanel.js",
       "source_location": "L60",
-      "community": 9,
+      "community": 432,
       "norm_label": "createprogresspreviewpanel()",
       "id": "components_progresspreviewpanel_createprogresspreviewpanel"
     },
@@ -29599,7 +29482,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/components/SessionSummaryPanel.js",
       "source_location": "L118",
-      "community": 9,
+      "community": 596,
       "norm_label": "createsessionsummarypanel()",
       "id": "components_sessionsummarypanel_createsessionsummarypanel"
     },
@@ -29860,7 +29743,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/components/attendance/AttendanceHeader.js",
       "source_location": "L1",
-      "community": 30,
+      "community": 491,
       "norm_label": "attendanceheader.js",
       "id": "attendance_attendanceheader"
     },
@@ -29869,7 +29752,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/components/attendance/AttendanceHeader.js",
       "source_location": "L18",
-      "community": 30,
+      "community": 491,
       "norm_label": "createattendanceheader()",
       "id": "attendance_attendanceheader_createattendanceheader"
     },
@@ -29986,7 +29869,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/components/attendance/PlanificationCard.js",
       "source_location": "L1",
-      "community": 9,
+      "community": 166,
       "norm_label": "planificationcard.js",
       "id": "attendance_planificationcard"
     },
@@ -29995,7 +29878,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/components/attendance/PlanificationCard.js",
       "source_location": "L12",
-      "community": 9,
+      "community": 166,
       "norm_label": "createplanificationcard()",
       "id": "attendance_planificationcard_createplanificationcard"
     },
@@ -30004,7 +29887,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/components/attendance/PlanificationCard.js",
       "source_location": "L248",
-      "community": 9,
+      "community": 166,
       "norm_label": "getcompletedtopics()",
       "id": "attendance_planificationcard_getcompletedtopics"
     },
@@ -30049,7 +29932,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/components/ausenciaForm.js",
       "source_location": "L1",
-      "community": 35,
+      "community": 130,
       "norm_label": "ausenciaform.js",
       "id": "src_portal_maestros_components_ausenciaform_js_components_ausenciaform"
     },
@@ -30058,7 +29941,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/components/ausenciaForm.js",
       "source_location": "L4",
-      "community": 35,
+      "community": 130,
       "norm_label": "state",
       "id": "src_portal_maestros_components_ausenciaform_js_components_ausenciaform_state"
     },
@@ -30067,7 +29950,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/components/ausenciaForm.js",
       "source_location": "L9",
-      "community": 35,
+      "community": 130,
       "norm_label": "renderausenciaform()",
       "id": "src_portal_maestros_components_ausenciaform_js_components_ausenciaform_renderausenciaform"
     },
@@ -30076,7 +29959,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/components/ausenciaForm.js",
       "source_location": "L54",
-      "community": 35,
+      "community": 130,
       "norm_label": "initausenciaform()",
       "id": "src_portal_maestros_components_ausenciaform_js_components_ausenciaform_initausenciaform"
     },
@@ -30085,7 +29968,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/components/ausenciaForm.js",
       "source_location": "L59",
-      "community": 35,
+      "community": 130,
       "norm_label": "cargarmaestros()",
       "id": "src_portal_maestros_components_ausenciaform_js_components_ausenciaform_cargarmaestros"
     },
@@ -30094,7 +29977,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/components/ausenciaForm.js",
       "source_location": "L81",
-      "community": 35,
+      "community": 130,
       "norm_label": "configurareventos()",
       "id": "src_portal_maestros_components_ausenciaform_js_components_ausenciaform_configurareventos"
     },
@@ -30103,7 +29986,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/components/ausenciaForm.js",
       "source_location": "L100",
-      "community": 35,
+      "community": 130,
       "norm_label": "enviarsolicitud()",
       "id": "src_portal_maestros_components_ausenciaform_js_components_ausenciaform_enviarsolicitud"
     },
@@ -30112,7 +29995,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/components/ausenciaForm.js",
       "source_location": "L156",
-      "community": 35,
+      "community": 130,
       "norm_label": "mostrarerror()",
       "id": "src_portal_maestros_components_ausenciaform_js_components_ausenciaform_mostrarerror"
     },
@@ -30121,7 +30004,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/components/ausenciaHistorial.js",
       "source_location": "L1",
-      "community": 101,
+      "community": 130,
       "norm_label": "ausenciahistorial.js",
       "id": "src_portal_maestros_components_ausenciahistorial_js_components_ausenciahistorial"
     },
@@ -30328,7 +30211,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/components/ausenciaHistorial.js",
       "source_location": "L604",
-      "community": 101,
+      "community": 130,
       "norm_label": "refreshausenciahistorial()",
       "id": "components_ausenciahistorial_refreshausenciahistorial"
     },
@@ -30337,7 +30220,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/components/ausenciaHistorial.js",
       "source_location": "L611",
-      "community": 101,
+      "community": 130,
       "norm_label": "destroyausenciahistorial()",
       "id": "components_ausenciahistorial_destroyausenciahistorial"
     },
@@ -30481,7 +30364,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/components/ausenciasPanel.js",
       "source_location": "L1",
-      "community": 101,
+      "community": 130,
       "norm_label": "ausenciaspanel.js",
       "id": "components_ausenciaspanel"
     },
@@ -30787,7 +30670,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/components/notificacionesPanel.js",
       "source_location": "L39",
-      "community": 150,
+      "community": 62,
       "norm_label": "notificacionespanel",
       "id": "components_notificacionespanel_notificacionespanel"
     },
@@ -30859,7 +30742,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/components/pwaInstaller.js",
       "source_location": "L1",
-      "community": 35,
+      "community": 30,
       "norm_label": "pwainstaller.js",
       "id": "components_pwainstaller"
     },
@@ -30895,7 +30778,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/components/routeTreeBar.js",
       "source_location": "L1",
-      "community": 9,
+      "community": 166,
       "norm_label": "routetreebar.js",
       "id": "components_routetreebar"
     },
@@ -30904,7 +30787,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/components/routeTreeBar.js",
       "source_location": "L7",
-      "community": 9,
+      "community": 166,
       "norm_label": "_eschtml()",
       "id": "components_routetreebar_eschtml"
     },
@@ -30913,7 +30796,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/components/routeTreeBar.js",
       "source_location": "L13",
-      "community": 9,
+      "community": 166,
       "norm_label": "createroutetreebar()",
       "id": "components_routetreebar_createroutetreebar"
     },
@@ -30949,7 +30832,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/components/studentProgressPanel.js",
       "source_location": "L24",
-      "community": 94,
+      "community": 9,
       "norm_label": "_injectstyles()",
       "id": "components_studentprogresspanel_injectstyles"
     },
@@ -31066,7 +30949,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/components/studentProgressPanel.js",
       "source_location": "L383",
-      "community": 94,
+      "community": 9,
       "norm_label": "createstudentprogresspanel()",
       "id": "components_studentprogresspanel_createstudentprogresspanel"
     },
@@ -31750,7 +31633,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/services/__tests__/emergenteJustificacionService.test.js",
       "source_location": "L1",
-      "community": 35,
+      "community": 479,
       "norm_label": "emergentejustificacionservice.test.js",
       "id": "tests_emergentejustificacionservice_test"
     },
@@ -31759,7 +31642,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/services/__tests__/emergenteJustificacionService.test.js",
       "source_location": "L15",
-      "community": 35,
+      "community": 479,
       "norm_label": "makechain()",
       "id": "tests_emergentejustificacionservice_test_makechain"
     },
@@ -31768,7 +31651,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/services/__tests__/emergenteJustificacionService.test.js",
       "source_location": "L32",
-      "community": 35,
+      "community": 479,
       "norm_label": "emergente",
       "id": "tests_emergentejustificacionservice_test_emergente"
     },
@@ -31786,7 +31669,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/services/__tests__/evaluationService.offline.test.js",
       "source_location": "L1",
-      "community": 31,
+      "community": 304,
       "norm_label": "evaluationservice.offline.test.js",
       "id": "tests_evaluationservice_offline_test"
     },
@@ -31795,7 +31678,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/services/__tests__/evaluationService.offline.test.js",
       "source_location": "L4",
-      "community": 31,
+      "community": 304,
       "norm_label": "store",
       "id": "tests_evaluationservice_offline_test_store"
     },
@@ -31804,7 +31687,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/services/__tests__/evaluationService.offline.test.js",
       "source_location": "L7",
-      "community": 31,
+      "community": 304,
       "norm_label": "mockdb",
       "id": "tests_evaluationservice_offline_test_mockdb"
     },
@@ -31813,7 +31696,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/services/__tests__/evaluationService.offline.test.js",
       "source_location": "L37",
-      "community": 31,
+      "community": 304,
       "norm_label": "mockchain()",
       "id": "tests_evaluationservice_offline_test_mockchain"
     },
@@ -31840,7 +31723,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/services/__tests__/groqService.test.js",
       "source_location": "L1",
-      "community": 481,
+      "community": 38,
       "norm_label": "groqservice.test.js",
       "id": "tests_groqservice_test"
     },
@@ -31849,7 +31732,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/services/__tests__/groqService.test.js",
       "source_location": "L22",
-      "community": 481,
+      "community": 38,
       "norm_label": "fetchmock",
       "id": "tests_groqservice_test_fetchmock"
     },
@@ -31858,7 +31741,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/services/__tests__/groqService.test.js",
       "source_location": "L37",
-      "community": 481,
+      "community": 38,
       "norm_label": "mockfetchsuccess()",
       "id": "tests_groqservice_test_mockfetchsuccess"
     },
@@ -31867,7 +31750,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/services/__tests__/groqService.test.js",
       "source_location": "L47",
-      "community": 481,
+      "community": 38,
       "norm_label": "mockfetcherror()",
       "id": "tests_groqservice_test_mockfetcherror"
     },
@@ -31876,7 +31759,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/services/__tests__/groqService.test.js",
       "source_location": "L55",
-      "community": 481,
+      "community": 38,
       "norm_label": "mockfetchnetworkerror()",
       "id": "tests_groqservice_test_mockfetchnetworkerror"
     },
@@ -31885,7 +31768,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/services/__tests__/maestroDataService.test.js",
       "source_location": "L1",
-      "community": 4,
+      "community": 30,
       "norm_label": "maestrodataservice.test.js",
       "id": "tests_maestrodataservice_test"
     },
@@ -32164,7 +32047,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/services/__tests__/rutaService.fuzzy.test.js",
       "source_location": "L1",
-      "community": 4,
+      "community": 407,
       "norm_label": "rutaservice.fuzzy.test.js",
       "id": "tests_rutaservice_fuzzy_test"
     },
@@ -32173,7 +32056,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/services/__tests__/rutaService.lazyLoad.test.js",
       "source_location": "L1",
-      "community": 4,
+      "community": 407,
       "norm_label": "rutaservice.lazyload.test.js",
       "id": "tests_rutaservice_lazyload_test"
     },
@@ -32182,7 +32065,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/services/__tests__/rutaService.test.js",
       "source_location": "L1",
-      "community": 4,
+      "community": 407,
       "norm_label": "rutaservice.test.js",
       "id": "tests_rutaservice_test"
     },
@@ -33091,7 +32974,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/services/classEventService.js",
       "source_location": "L206",
-      "community": 9,
+      "community": 491,
       "norm_label": "updateclasseventstatus()",
       "id": "services_classeventservice_updateclasseventstatus"
     },
@@ -33181,7 +33064,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/services/emergenteJustificacionService.js",
       "source_location": "L1",
-      "community": 35,
+      "community": 479,
       "norm_label": "emergentejustificacionservice.js",
       "id": "services_emergentejustificacionservice"
     },
@@ -33190,7 +33073,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/services/emergenteJustificacionService.js",
       "source_location": "L4",
-      "community": 35,
+      "community": 479,
       "norm_label": "dias_es_largo",
       "id": "services_emergentejustificacionservice_dias_es_largo"
     },
@@ -33199,7 +33082,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/services/emergenteJustificacionService.js",
       "source_location": "L14",
-      "community": 35,
+      "community": 479,
       "norm_label": "autojustificarclasesprogramadas()",
       "id": "services_emergentejustificacionservice_autojustificarclasesprogramadas"
     },
@@ -33307,7 +33190,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/services/evaluationService.js",
       "source_location": "L164",
-      "community": 9,
+      "community": 304,
       "norm_label": "saveevaluaciones()",
       "id": "services_evaluationservice_saveevaluaciones"
     },
@@ -33649,7 +33532,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/services/groqService.js",
       "source_location": "L308",
-      "community": 481,
+      "community": 38,
       "norm_label": "enrichtodsl()",
       "id": "services_groqservice_enrichtodsl"
     },
@@ -33658,7 +33541,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/services/groqService.js",
       "source_location": "L320",
-      "community": 481,
+      "community": 38,
       "norm_label": "transcribeandstructure()",
       "id": "services_groqservice_transcribeandstructure"
     },
@@ -33991,7 +33874,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/services/maestroDataService.js",
       "source_location": "L347",
-      "community": 4,
+      "community": 30,
       "norm_label": "invalidateclasescache()",
       "id": "services_maestrodataservice_invalidateclasescache"
     },
@@ -34036,7 +33919,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/services/navigationHooks.js",
       "source_location": "L14",
-      "community": 9,
+      "community": 62,
       "norm_label": "invalidateview()",
       "id": "services_navigationhooks_invalidateview"
     },
@@ -34198,7 +34081,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/services/notificationService.js",
       "source_location": "L167",
-      "community": 13,
+      "community": 589,
       "norm_label": "onnotificacioneschange()",
       "id": "services_notificationservice_onnotificacioneschange"
     },
@@ -34261,7 +34144,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/services/notificationService.js",
       "source_location": "L417",
-      "community": 13,
+      "community": 589,
       "norm_label": "getunreadcount()",
       "id": "services_notificationservice_getunreadcount"
     },
@@ -34270,7 +34153,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/services/notificationService.js",
       "source_location": "L431",
-      "community": 13,
+      "community": 589,
       "norm_label": "startrealtime()",
       "id": "services_notificationservice_startrealtime"
     },
@@ -34279,7 +34162,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/services/notificationService.js",
       "source_location": "L504",
-      "community": 13,
+      "community": 589,
       "norm_label": "stoprealtime()",
       "id": "services_notificationservice_stoprealtime"
     },
@@ -34288,7 +34171,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/services/notificationService.js",
       "source_location": "L516",
-      "community": 13,
+      "community": 589,
       "norm_label": "cleanupnotificationservice()",
       "id": "services_notificationservice_cleanupnotificationservice"
     },
@@ -34333,7 +34216,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/services/notificationService.js",
       "source_location": "L670",
-      "community": 13,
+      "community": 589,
       "norm_label": "_stoppolling()",
       "id": "services_notificationservice_stoppolling"
     },
@@ -34747,7 +34630,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/services/progressInsightService.js",
       "source_location": "L1",
-      "community": 9,
+      "community": 35,
       "norm_label": "progressinsightservice.js",
       "id": "services_progressinsightservice"
     },
@@ -35179,7 +35062,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/services/routeConfigAdapter.js",
       "source_location": "L1",
-      "community": 9,
+      "community": 166,
       "norm_label": "routeconfigadapter.js",
       "id": "services_routeconfigadapter"
     },
@@ -35188,7 +35071,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/services/routeConfigAdapter.js",
       "source_location": "L7",
-      "community": 9,
+      "community": 166,
       "norm_label": "routeconfigadapter",
       "id": "services_routeconfigadapter_routeconfigadapter"
     },
@@ -35251,7 +35134,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/services/rutaService.js",
       "source_location": "L1",
-      "community": 4,
+      "community": 407,
       "norm_label": "rutaservice.js",
       "id": "services_rutaservice"
     },
@@ -35260,7 +35143,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/services/rutaService.js",
       "source_location": "L14",
-      "community": 4,
+      "community": 407,
       "norm_label": "getsemaphorecache()",
       "id": "services_rutaservice_getsemaphorecache"
     },
@@ -35269,7 +35152,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/services/rutaService.js",
       "source_location": "L27",
-      "community": 4,
+      "community": 407,
       "norm_label": "getsemaphorecachekey()",
       "id": "services_rutaservice_getsemaphorecachekey"
     },
@@ -35278,7 +35161,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/services/rutaService.js",
       "source_location": "L40",
-      "community": 4,
+      "community": 407,
       "norm_label": "loadsemaphoresinbatch()",
       "id": "services_rutaservice_loadsemaphoresinbatch"
     },
@@ -35287,7 +35170,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/services/rutaService.js",
       "source_location": "L90",
-      "community": 4,
+      "community": 407,
       "norm_label": "invalidatesemaphoresforclase()",
       "id": "services_rutaservice_invalidatesemaphoresforclase"
     },
@@ -35296,7 +35179,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/services/rutaService.js",
       "source_location": "L103",
-      "community": 4,
+      "community": 407,
       "norm_label": "resolverutaidforclasewithfuzzy()",
       "id": "services_rutaservice_resolverutaidforclasewithfuzzy"
     },
@@ -35305,7 +35188,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/services/rutaService.js",
       "source_location": "L160",
-      "community": 4,
+      "community": 407,
       "norm_label": "loadnodesforlevel()",
       "id": "services_rutaservice_loadnodesforlevel"
     },
@@ -35314,7 +35197,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/services/rutaService.js",
       "source_location": "L182",
-      "community": 4,
+      "community": 407,
       "norm_label": "loadindicatorsfornode()",
       "id": "services_rutaservice_loadindicatorsfornode"
     },
@@ -35701,7 +35584,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/shell/__tests__/portalRoutes.security.test.js",
       "source_location": "L1",
-      "community": 62,
+      "community": 257,
       "norm_label": "portalroutes.security.test.js",
       "id": "tests_portalroutes_security_test"
     },
@@ -35710,7 +35593,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/shell/__tests__/portalRoutes.security.test.js",
       "source_location": "L54",
-      "community": 62,
+      "community": 257,
       "norm_label": "makecontainer()",
       "id": "tests_portalroutes_security_test_makecontainer"
     },
@@ -35719,7 +35602,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/shell/__tests__/portalRoutes.security.test.js",
       "source_location": "L61",
-      "community": 62,
+      "community": 257,
       "norm_label": "makerouter()",
       "id": "tests_portalroutes_security_test_makerouter"
     },
@@ -35728,7 +35611,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/shell/portalEvents.js",
       "source_location": "L1",
-      "community": 13,
+      "community": 589,
       "norm_label": "portalevents.js",
       "id": "shell_portalevents"
     },
@@ -35737,7 +35620,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/shell/portalEvents.js",
       "source_location": "L22",
-      "community": 13,
+      "community": 589,
       "norm_label": "setupglobalappevents()",
       "id": "shell_portalevents_setupglobalappevents"
     },
@@ -35746,7 +35629,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/shell/portalEvents.js",
       "source_location": "L93",
-      "community": 13,
+      "community": 589,
       "norm_label": "_subscribetopermisos()",
       "id": "shell_portalevents_subscribetopermisos"
     },
@@ -35755,7 +35638,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/shell/portalEvents.js",
       "source_location": "L139",
-      "community": 13,
+      "community": 589,
       "norm_label": "teardownglobalevents()",
       "id": "shell_portalevents_teardownglobalevents"
     },
@@ -35764,7 +35647,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/shell/portalRoutes.js",
       "source_location": "L1",
-      "community": 62,
+      "community": 257,
       "norm_label": "portalroutes.js",
       "id": "shell_portalroutes"
     },
@@ -35773,7 +35656,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/shell/portalRoutes.js",
       "source_location": "L30",
-      "community": 62,
+      "community": 257,
       "norm_label": "maestro_views",
       "id": "shell_portalroutes_maestro_views"
     },
@@ -35782,7 +35665,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/shell/portalRoutes.js",
       "source_location": "L38",
-      "community": 62,
+      "community": 257,
       "norm_label": "cacheable_views",
       "id": "shell_portalroutes_cacheable_views"
     },
@@ -35809,7 +35692,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/shell/portalRoutes.js",
       "source_location": "L77",
-      "community": 62,
+      "community": 257,
       "norm_label": "renderviewcontent()",
       "id": "shell_portalroutes_renderviewcontent"
     },
@@ -35836,7 +35719,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/shell/portalShell.js",
       "source_location": "L14",
-      "community": 13,
+      "community": 62,
       "norm_label": "getbreakpoint()",
       "id": "shell_portalshell_getbreakpoint"
     },
@@ -35926,7 +35809,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/utils/a11yUtils.js",
       "source_location": "L20",
-      "community": 30,
+      "community": 225,
       "norm_label": "announce()",
       "id": "utils_a11yutils_announce"
     },
@@ -36385,7 +36268,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/utils/portalUtils.js",
       "source_location": "L1",
-      "community": 30,
+      "community": 491,
       "norm_label": "portalutils.js",
       "id": "utils_portalutils"
     },
@@ -36394,7 +36277,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/utils/portalUtils.js",
       "source_location": "L5",
-      "community": 30,
+      "community": 479,
       "norm_label": "dias_es",
       "id": "utils_portalutils_dias_es"
     },
@@ -36403,7 +36286,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/utils/portalUtils.js",
       "source_location": "L6",
-      "community": 30,
+      "community": 479,
       "norm_label": "meses_es",
       "id": "utils_portalutils_meses_es"
     },
@@ -36412,7 +36295,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/utils/portalUtils.js",
       "source_location": "L13",
-      "community": 30,
+      "community": 491,
       "norm_label": "onclick()",
       "id": "utils_portalutils_onclick"
     },
@@ -36430,7 +36313,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/utils/portalUtils.js",
       "source_location": "L48",
-      "community": 30,
+      "community": 491,
       "norm_label": "formathora()",
       "id": "utils_portalutils_formathora"
     },
@@ -36448,7 +36331,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/utils/portalUtils.js",
       "source_location": "L68",
-      "community": 30,
+      "community": 491,
       "norm_label": "formatfechaportal()",
       "id": "utils_portalutils_formatfechaportal"
     },
@@ -36466,7 +36349,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/utils/portalUtils.js",
       "source_location": "L92",
-      "community": 94,
+      "community": 491,
       "norm_label": "getbreakpoint()",
       "id": "utils_portalutils_getbreakpoint"
     },
@@ -36475,7 +36358,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/utils/portalUtils.js",
       "source_location": "L104",
-      "community": 94,
+      "community": 491,
       "norm_label": "onbreakpointchange()",
       "id": "utils_portalutils_onbreakpointchange"
     },
@@ -36592,7 +36475,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/views/__tests__/calendarioView-bug-today.test.js",
       "source_location": "L1",
-      "community": 30,
+      "community": 479,
       "norm_label": "calendarioview-bug-today.test.js",
       "id": "tests_calendarioview_bug_today_test"
     },
@@ -36601,7 +36484,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/views/__tests__/loginView.test.js",
       "source_location": "L1",
-      "community": 35,
+      "community": 130,
       "norm_label": "loginview.test.js",
       "id": "tests_loginview_test"
     },
@@ -36610,7 +36493,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/views/__tests__/loginView.test.js",
       "source_location": "L23",
-      "community": 35,
+      "community": 130,
       "norm_label": "mockmaestro",
       "id": "tests_loginview_test_mockmaestro"
     },
@@ -36619,7 +36502,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/views/__tests__/loginView.test.js",
       "source_location": "L30",
-      "community": 35,
+      "community": 130,
       "norm_label": "createcontainer()",
       "id": "tests_loginview_test_createcontainer"
     },
@@ -36628,7 +36511,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/views/__tests__/loginView.test.js",
       "source_location": "L36",
-      "community": 35,
+      "community": 130,
       "norm_label": "setuproutermock()",
       "id": "tests_loginview_test_setuproutermock"
     },
@@ -36637,7 +36520,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/views/__tests__/pendingApprovalView.test.js",
       "source_location": "L1",
-      "community": 62,
+      "community": 127,
       "norm_label": "pendingapprovalview.test.js",
       "id": "tests_pendingapprovalview_test"
     },
@@ -36646,7 +36529,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/views/__tests__/pendingApprovalView.test.js",
       "source_location": "L33",
-      "community": 62,
+      "community": 127,
       "norm_label": "mocksession()",
       "id": "tests_pendingapprovalview_test_mocksession"
     },
@@ -36655,7 +36538,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/views/__tests__/pendingApprovalView.test.js",
       "source_location": "L39",
-      "community": 62,
+      "community": 127,
       "norm_label": "mocknosession()",
       "id": "tests_pendingapprovalview_test_mocknosession"
     },
@@ -36664,7 +36547,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/views/__tests__/pendingApprovalView.test.js",
       "source_location": "L43",
-      "community": 62,
+      "community": 127,
       "norm_label": "mockprofile()",
       "id": "tests_pendingapprovalview_test_mockprofile"
     },
@@ -36673,7 +36556,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/views/__tests__/pendingApprovalView.test.js",
       "source_location": "L54",
-      "community": 62,
+      "community": 127,
       "norm_label": "mockprofileerror()",
       "id": "tests_pendingapprovalview_test_mockprofileerror"
     },
@@ -36682,7 +36565,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/views/__tests__/pendingApprovalView.test.js",
       "source_location": "L62",
-      "community": 62,
+      "community": 127,
       "norm_label": "waitforstatusmsg()",
       "id": "tests_pendingapprovalview_test_waitforstatusmsg"
     },
@@ -36691,7 +36574,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/views/__tests__/registerView.pendingApproval.test.js",
       "source_location": "L1",
-      "community": 35,
+      "community": 238,
       "norm_label": "registerview.pendingapproval.test.js",
       "id": "tests_registerview_pendingapproval_test"
     },
@@ -36700,7 +36583,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/views/__tests__/registerView.pendingApproval.test.js",
       "source_location": "L36",
-      "community": 35,
+      "community": 238,
       "norm_label": "fillvalidform()",
       "id": "tests_registerview_pendingapproval_test_fillvalidform"
     },
@@ -36709,7 +36592,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/views/__tests__/registerView.test.js",
       "source_location": "L1",
-      "community": 35,
+      "community": 238,
       "norm_label": "registerview.test.js",
       "id": "tests_registerview_test"
     },
@@ -36718,7 +36601,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/views/__tests__/registroAlumnoView.test.js",
       "source_location": "L1",
-      "community": 30,
+      "community": 372,
       "norm_label": "registroalumnoview.test.js",
       "id": "tests_registroalumnoview_test"
     },
@@ -36727,7 +36610,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/views/__tests__/registroAlumnoView.test.js",
       "source_location": "L33",
-      "community": 30,
+      "community": 372,
       "norm_label": "mock_maestro",
       "id": "tests_registroalumnoview_test_mock_maestro"
     },
@@ -36736,7 +36619,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/views/__tests__/registroAlumnoView.test.js",
       "source_location": "L34",
-      "community": 30,
+      "community": 372,
       "norm_label": "mock_permisos",
       "id": "tests_registroalumnoview_test_mock_permisos"
     },
@@ -36745,7 +36628,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/views/__tests__/registroAlumnoView.test.js",
       "source_location": "L35",
-      "community": 30,
+      "community": 372,
       "norm_label": "mock_clases",
       "id": "tests_registroalumnoview_test_mock_clases"
     },
@@ -36763,7 +36646,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/views/academicPlanBuilderView.js",
       "source_location": "L1",
-      "community": 62,
+      "community": 257,
       "norm_label": "academicplanbuilderview.js",
       "id": "views_academicplanbuilderview"
     },
@@ -36772,7 +36655,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/views/academicPlanBuilderView.js",
       "source_location": "L10",
-      "community": 62,
+      "community": 257,
       "norm_label": "renderacademicplanbuilderview()",
       "id": "views_academicplanbuilderview_renderacademicplanbuilderview"
     },
@@ -36934,7 +36817,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/views/calendarioView.js",
       "source_location": "L1",
-      "community": 30,
+      "community": 479,
       "norm_label": "calendarioview.js",
       "id": "views_calendarioview"
     },
@@ -36943,7 +36826,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/views/calendarioView.js",
       "source_location": "L14",
-      "community": 30,
+      "community": 479,
       "norm_label": "dias_header",
       "id": "views_calendarioview_dias_header"
     },
@@ -36952,7 +36835,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/views/calendarioView.js",
       "source_location": "L22",
-      "community": 30,
+      "community": 479,
       "norm_label": "rendercalendarioview()",
       "id": "views_calendarioview_rendercalendarioview"
     },
@@ -36970,7 +36853,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/views/calendarioView.js",
       "source_location": "L221",
-      "community": 30,
+      "community": 479,
       "norm_label": "_rendercalendario()",
       "id": "views_calendarioview_rendercalendario"
     },
@@ -36979,7 +36862,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/views/calendarioView.js",
       "source_location": "L375",
-      "community": 30,
+      "community": 479,
       "norm_label": "_openactiondrawer()",
       "id": "views_calendarioview_openactiondrawer"
     },
@@ -36988,7 +36871,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/views/calendarioView.js",
       "source_location": "L716",
-      "community": 35,
+      "community": 479,
       "norm_label": "_abrirmodalclaseemergente()",
       "id": "views_calendarioview_abrirmodalclaseemergente"
     },
@@ -36997,7 +36880,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/views/claseEmergenteView.js",
       "source_location": "L1",
-      "community": 31,
+      "community": 257,
       "norm_label": "claseemergenteview.js",
       "id": "views_claseemergenteview"
     },
@@ -37006,7 +36889,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/views/claseEmergenteView.js",
       "source_location": "L12",
-      "community": 62,
+      "community": 257,
       "norm_label": "renderclaseemergenteview()",
       "id": "views_claseemergenteview_renderclaseemergenteview"
     },
@@ -37033,7 +36916,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/views/components/routeConfigurator.js",
       "source_location": "L14",
-      "community": 9,
+      "community": 166,
       "norm_label": "renderrouteconfigurator()",
       "id": "components_routeconfigurator_renderrouteconfigurator"
     },
@@ -37132,7 +37015,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/views/crearClaseView.js",
       "source_location": "L1",
-      "community": 35,
+      "community": 130,
       "norm_label": "crearclaseview.js",
       "id": "views_crearclaseview"
     },
@@ -37141,7 +37024,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/views/crearClaseView.js",
       "source_location": "L5",
-      "community": 35,
+      "community": 130,
       "norm_label": "dias_semana",
       "id": "views_crearclaseview_dias_semana"
     },
@@ -37150,7 +37033,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/views/crearClaseView.js",
       "source_location": "L7",
-      "community": 62,
+      "community": 257,
       "norm_label": "rendercrearclaseview()",
       "id": "views_crearclaseview_rendercrearclaseview"
     },
@@ -37159,7 +37042,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/views/gamificacionView.js",
       "source_location": "L1",
-      "community": 166,
+      "community": 613,
       "norm_label": "gamificacionview.js",
       "id": "views_gamificacionview"
     },
@@ -37168,7 +37051,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/views/gamificacionView.js",
       "source_location": "L6",
-      "community": 166,
+      "community": 613,
       "norm_label": "node_icons",
       "id": "views_gamificacionview_node_icons"
     },
@@ -37177,7 +37060,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/views/gamificacionView.js",
       "source_location": "L12",
-      "community": 166,
+      "community": 613,
       "norm_label": "status_colors",
       "id": "views_gamificacionview_status_colors"
     },
@@ -37186,7 +37069,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/views/gamificacionView.js",
       "source_location": "L16",
-      "community": 166,
+      "community": 613,
       "norm_label": "status_labels",
       "id": "views_gamificacionview_status_labels"
     },
@@ -37195,7 +37078,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/views/gamificacionView.js",
       "source_location": "L20",
-      "community": 166,
+      "community": 613,
       "norm_label": "getnodeicon()",
       "id": "views_gamificacionview_getnodeicon"
     },
@@ -37204,7 +37087,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/views/gamificacionView.js",
       "source_location": "L36",
-      "community": 166,
+      "community": 613,
       "norm_label": "statusicon()",
       "id": "views_gamificacionview_statusicon"
     },
@@ -37213,7 +37096,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/views/gamificacionView.js",
       "source_location": "L40",
-      "community": 62,
+      "community": 257,
       "norm_label": "rendergamificacionview()",
       "id": "views_gamificacionview_rendergamificacionview"
     },
@@ -37222,7 +37105,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/views/gamificacionView.js",
       "source_location": "L151",
-      "community": 166,
+      "community": 613,
       "norm_label": "loadstudentprogress()",
       "id": "views_gamificacionview_loadstudentprogress"
     },
@@ -37402,7 +37285,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/views/gestionarClasesView.js",
       "source_location": "L425",
-      "community": 117,
+      "community": 100,
       "norm_label": "_attachpanelevents()",
       "id": "views_gestionarclasesview_attachpanelevents"
     },
@@ -37537,7 +37420,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/views/metricasView.js",
       "source_location": "L1",
-      "community": 30,
+      "community": 225,
       "norm_label": "metricasview.js",
       "id": "views_metricasview"
     },
@@ -37546,7 +37429,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/views/metricasView.js",
       "source_location": "L9",
-      "community": 30,
+      "community": 225,
       "norm_label": "barchartcontent()",
       "id": "views_metricasview_barchartcontent"
     },
@@ -37555,7 +37438,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/views/metricasView.js",
       "source_location": "L27",
-      "community": 30,
+      "community": 225,
       "norm_label": "estadoactual",
       "id": "views_metricasview_estadoactual"
     },
@@ -37564,7 +37447,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/views/metricasView.js",
       "source_location": "L37",
-      "community": 30,
+      "community": 225,
       "norm_label": "cargardatos()",
       "id": "views_metricasview_cargardatos"
     },
@@ -37573,7 +37456,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/views/metricasView.js",
       "source_location": "L73",
-      "community": 30,
+      "community": 225,
       "norm_label": "procesardatos()",
       "id": "views_metricasview_procesardatos"
     },
@@ -37582,7 +37465,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/views/metricasView.js",
       "source_location": "L174",
-      "community": 30,
+      "community": 225,
       "norm_label": "generarhtml()",
       "id": "views_metricasview_generarhtml"
     },
@@ -37591,7 +37474,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/views/metricasView.js",
       "source_location": "L628",
-      "community": 30,
+      "community": 225,
       "norm_label": "bindevents()",
       "id": "views_metricasview_bindevents"
     },
@@ -37609,7 +37492,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/views/metricasView.js",
       "source_location": "L767",
-      "community": 30,
+      "community": 225,
       "norm_label": "rendermetricasview()",
       "id": "views_metricasview_rendermetricasview"
     },
@@ -37987,7 +37870,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/views/routeDetailView.js",
       "source_location": "L1",
-      "community": 62,
+      "community": 257,
       "norm_label": "routedetailview.js",
       "id": "views_routedetailview"
     },
@@ -37996,7 +37879,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/views/routeDetailView.js",
       "source_location": "L3",
-      "community": 62,
+      "community": 257,
       "norm_label": "routedetailview",
       "id": "views_routedetailview_routedetailview"
     },
@@ -38005,7 +37888,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/views/routeLibraryView.js",
       "source_location": "L1",
-      "community": 62,
+      "community": 257,
       "norm_label": "routelibraryview.js",
       "id": "views_routelibraryview"
     },
@@ -38014,7 +37897,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/views/routeLibraryView.js",
       "source_location": "L3",
-      "community": 62,
+      "community": 257,
       "norm_label": "routelibraryview",
       "id": "views_routelibraryview_routelibraryview"
     },
@@ -38140,7 +38023,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/views/weeklyPlanView.js",
       "source_location": "L1",
-      "community": 62,
+      "community": 257,
       "norm_label": "weeklyplanview.js",
       "id": "views_weeklyplanview"
     },
@@ -38149,7 +38032,7 @@
       "file_type": "code",
       "source_file": "src/portal-maestros/views/weeklyPlanView.js",
       "source_location": "L10",
-      "community": 62,
+      "community": 257,
       "norm_label": "renderweeklyplanview()",
       "id": "views_weeklyplanview_renderweeklyplanview"
     },
@@ -39274,7 +39157,7 @@
       "file_type": "code",
       "source_file": "src/services/swCaching.js",
       "source_location": "L89",
-      "community": 591,
+      "community": 97,
       "norm_label": "clearappcache()",
       "id": "services_swcaching_clearappcache"
     },
@@ -39580,7 +39463,7 @@
       "file_type": "code",
       "source_file": "src/shared/components/InfoTooltip.js",
       "source_location": "L1",
-      "community": 78,
+      "community": 236,
       "norm_label": "infotooltip()",
       "id": "components_infotooltip_infotooltip"
     },
@@ -39913,7 +39796,7 @@
       "file_type": "code",
       "source_file": "src/shared/services/lifecycleManager.js",
       "source_location": "L10",
-      "community": 25,
+      "community": 636,
       "norm_label": "lifecyclemanager",
       "id": "services_lifecyclemanager_lifecyclemanager"
     },
@@ -39922,7 +39805,7 @@
       "file_type": "code",
       "source_file": "src/shared/services/lifecycleManager.js",
       "source_location": "L11",
-      "community": 25,
+      "community": 636,
       "norm_label": ".constructor()",
       "id": "services_lifecyclemanager_lifecyclemanager_constructor"
     },
@@ -39931,7 +39814,7 @@
       "file_type": "code",
       "source_file": "src/shared/services/lifecycleManager.js",
       "source_location": "L18",
-      "community": 25,
+      "community": 636,
       "norm_label": ".registerchannel()",
       "id": "services_lifecyclemanager_lifecyclemanager_registerchannel"
     },
@@ -39940,7 +39823,7 @@
       "file_type": "code",
       "source_file": "src/shared/services/lifecycleManager.js",
       "source_location": "L24",
-      "community": 25,
+      "community": 636,
       "norm_label": ".registerinterval()",
       "id": "services_lifecyclemanager_lifecyclemanager_registerinterval"
     },
@@ -39949,7 +39832,7 @@
       "file_type": "code",
       "source_file": "src/shared/services/lifecycleManager.js",
       "source_location": "L30",
-      "community": 25,
+      "community": 636,
       "norm_label": ".registerlistener()",
       "id": "services_lifecyclemanager_lifecyclemanager_registerlistener"
     },
@@ -39958,7 +39841,7 @@
       "file_type": "code",
       "source_file": "src/shared/services/lifecycleManager.js",
       "source_location": "L36",
-      "community": 25,
+      "community": 636,
       "norm_label": ".destroy()",
       "id": "services_lifecyclemanager_lifecyclemanager_destroy"
     },
@@ -39994,7 +39877,7 @@
       "file_type": "code",
       "source_file": "src/shared/utils/compactUI.js",
       "source_location": "L1",
-      "community": 495,
+      "community": 238,
       "norm_label": "compactui.js",
       "id": "utils_compactui"
     },
@@ -40003,7 +39886,7 @@
       "file_type": "code",
       "source_file": "src/shared/utils/compactUI.js",
       "source_location": "L7",
-      "community": 495,
+      "community": 238,
       "norm_label": "compactui",
       "id": "utils_compactui_compactui"
     },
@@ -40939,7 +40822,7 @@
       "file_type": "code",
       "source_file": "tests/modules/maestros/maestrosApi.test.js",
       "source_location": "L1",
-      "community": 209,
+      "community": 518,
       "norm_label": "maestrosapi.test.js",
       "id": "maestros_maestrosapi_test"
     },
@@ -40975,7 +40858,7 @@
       "file_type": "code",
       "source_file": "tests/portal-maestros/academicService.test.js",
       "source_location": "L1",
-      "community": 62,
+      "community": 257,
       "norm_label": "academicservice.test.js",
       "id": "portal_maestros_academicservice_test"
     },
@@ -40984,7 +40867,7 @@
       "file_type": "code",
       "source_file": "tests/portal-maestros/academicService.test.js",
       "source_location": "L6",
-      "community": 62,
+      "community": 257,
       "norm_label": "{ mocksupabase }",
       "id": "portal_maestros_academicservice_test_mocksupabase"
     },
@@ -41011,7 +40894,7 @@
       "file_type": "code",
       "source_file": "tests/portal-maestros/authCoexistencia.test.js",
       "source_location": "L1",
-      "community": 35,
+      "community": 130,
       "norm_label": "authcoexistencia.test.js",
       "id": "portal_maestros_authcoexistencia_test"
     },
@@ -41038,7 +40921,7 @@
       "file_type": "code",
       "source_file": "tests/portal-maestros/components.test.js",
       "source_location": "L1",
-      "community": 166,
+      "community": 257,
       "norm_label": "components.test.js",
       "id": "portal_maestros_components_test"
     },
@@ -41146,7 +41029,7 @@
       "file_type": "code",
       "source_file": "tests/portal-maestros/maestroAuth.test.js",
       "source_location": "L1",
-      "community": 35,
+      "community": 130,
       "norm_label": "maestroauth.test.js",
       "id": "portal_maestros_maestroauth_test"
     },
@@ -41218,7 +41101,7 @@
       "file_type": "code",
       "source_file": "tests/portal-maestros/utils/testDataFactory.js",
       "source_location": "L1",
-      "community": 62,
+      "community": 257,
       "norm_label": "testdatafactory.js",
       "id": "utils_testdatafactory"
     },
@@ -41227,7 +41110,7 @@
       "file_type": "code",
       "source_file": "tests/portal-maestros/utils/testDataFactory.js",
       "source_location": "L1",
-      "community": 62,
+      "community": 257,
       "norm_label": "testdatafactory",
       "id": "utils_testdatafactory_testdatafactory"
     },
@@ -80323,7 +80206,7 @@
       "file_type": "code",
       "source_file": "src/modules/auth/views/registerView.js",
       "source_location": "L17",
-      "community": 35,
+      "community": 238,
       "norm_label": "renderregisterview()",
       "id": "views_registerview_renderregisterview"
     },
@@ -80350,7 +80233,7 @@
       "file_type": "code",
       "source_file": "src/modules/auth/views/pendingApprovalView.js",
       "source_location": "L1",
-      "community": 62,
+      "community": 127,
       "norm_label": "pendingapprovalview.js",
       "id": "views_pendingapprovalview"
     },
@@ -80359,7 +80242,7 @@
       "file_type": "code",
       "source_file": "src/modules/auth/views/pendingApprovalView.js",
       "source_location": "L5",
-      "community": 62,
+      "community": 127,
       "norm_label": "renderpendingapprovalview()",
       "id": "views_pendingapprovalview_renderpendingapprovalview"
     },
@@ -80741,7 +80624,7 @@
       "file_type": "code",
       "source_file": "src/assets/data/mocks/clases.json",
       "source_location": "L1",
-      "community": 8,
+      "community": 143,
       "norm_label": "clases.json",
       "id": "mocks_clases"
     },
@@ -148022,17 +147905,6 @@
       "relation": "imports_from",
       "context": "import",
       "confidence": "EXTRACTED",
-      "source_file": "src/modules/progresos/stores/useProgresosStore.js",
-      "source_location": "L8",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "stores_useprogresosstore",
-      "target": "api_progresosapi"
-    },
-    {
-      "relation": "imports_from",
-      "context": "import",
-      "confidence": "EXTRACTED",
       "source_file": "src/modules/progresos/views/progresosView.js",
       "source_location": "L4",
       "weight": 1.0,
@@ -150068,38 +149940,6 @@
       "target": "services_riskrules_thresholds"
     },
     {
-      "relation": "imports_from",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/modules/progresos/views/components/progressDashboard.vue",
-      "source_location": "L38",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "components_progressdashboard",
-      "target": "stores_useprogresosstore"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "src/modules/progresos/stores/useProgresosStore.js",
-      "source_location": "L10",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "stores_useprogresosstore",
-      "target": "stores_useprogresosstore_useprogresosstore"
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/modules/progresos/views/components/progressDashboard.vue",
-      "source_location": "L38",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "components_progressdashboard",
-      "target": "stores_useprogresosstore_useprogresosstore"
-    },
-    {
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "src/modules/progresos/utils/progresosUtils.js",
@@ -150228,108 +150068,6 @@
       "confidence_score": 1.0,
       "source": "utils_progresosutils",
       "target": "utils_progresosutils_gettipolabel"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "src/modules/progresos/views/components/dashboardFilterBar.vue",
-      "source_location": "L46",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "components_dashboardfilterbar",
-      "target": "components_dashboardfilterbar_selectedperiodo"
-    },
-    {
-      "relation": "imports_from",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/modules/progresos/views/components/progressDashboard.vue",
-      "source_location": "L39",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "components_progressdashboard",
-      "target": "components_dashboardfilterbar"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "src/modules/progresos/views/components/dashboardStudentRow.vue",
-      "source_location": "L32",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "components_dashboardstudentrow",
-      "target": "components_dashboardstudentrow_props"
-    },
-    {
-      "relation": "imports_from",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "src/modules/progresos/views/components/progressDashboard.vue",
-      "source_location": "L40",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "components_progressdashboard",
-      "target": "components_dashboardstudentrow"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "src/modules/progresos/views/components/progressDashboard.vue",
-      "source_location": "L54",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "components_progressdashboard",
-      "target": "components_progressdashboard_applyfilters"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "src/modules/progresos/views/components/progressDashboard.vue",
-      "source_location": "L47",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "components_progressdashboard",
-      "target": "components_progressdashboard_filteredrows"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "src/modules/progresos/views/components/progressDashboard.vue",
-      "source_location": "L45",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "components_progressdashboard",
-      "target": "components_progressdashboard_filterriesgo"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "src/modules/progresos/views/components/progressDashboard.vue",
-      "source_location": "L62",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "components_progressdashboard",
-      "target": "components_progressdashboard_openpanel"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "src/modules/progresos/views/components/progressDashboard.vue",
-      "source_location": "L44",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "components_progressdashboard",
-      "target": "components_progressdashboard_periodos"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "src/modules/progresos/views/components/progressDashboard.vue",
-      "source_location": "L42",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "components_progressdashboard",
-      "target": "components_progressdashboard_store"
     },
     {
       "relation": "imports_from",
@@ -225201,5 +224939,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "71b66aa9cdb983e26fb4dc6881ffa586365f2cd4"
+  "built_at_commit": "891ded475e5a7e10a39f6f0e266a365c9af52699"
 }

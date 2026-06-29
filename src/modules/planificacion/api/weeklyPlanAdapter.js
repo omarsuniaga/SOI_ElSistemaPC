@@ -36,3 +36,10 @@ export const registrarProgresoIndicador = (studentId, indicatorId, status, obser
 
 export const obtenerProgresoGrupo = (groupId, levelId = null) => 
   impl.obtenerProgresoGrupo(groupId, levelId)
+
+export const obtenerVersionesCurriculares = () => 
+  impl.obtenerVersionesCurriculares()
+
+export const publicarVersionCurricular = (versionId) => 
+  impl.publicarVersionCurricular(versionId)
+

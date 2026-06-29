@@ -22,19 +22,19 @@ Implement the initial weekly plans and the semantic semaphore grid for the Acade
    - `mapa_pedagogico_trazabilidad.op`: Visual and logical layout for student evaluation and Quick CTAs.
    - `login_view.op`: Two-column responsive desktop layout for the teacher auth interface.
    - `hoy_view.op`: The dashboard overview displaying schedule class cards, status badges, pending notifications, and auto-navigation banners.
-7. **Git Hygiene**: Committed changes to local branch `feat/acm-ruta-academica-mvp1` using conventional commits.
+7. **Design Compilation Engine**: Coded `scripts/compile_design.js` in native ESM format, which parses vector layers, colors, boundaries, and sizes from `.op` JSON files. It automatically converts them to HTML/CSS templates, mapping design elements with brackets annotations (e.g. `[tag:input][id:pm-email]`) to real interactive HTML elements.
+8. **Real Login Refactor**: Integrated the compiled template inside the production `loginView.js` view. Event listeners, validation rules, error tracking (#pm-login-error), and biometric auth remain fully active on top of the newly generated OpenPencil markup.
+9. **Git Hygiene**: Committed changes to local branch `feat/acm-ruta-academica-mvp1` using conventional commits.
 
 ## Next Steps
 - Implement the admin planning matrix panel in the Academics (ACM) Portal to assign these weekly schedules.
 - Connect real Supabase tables for weekly schedules to production.
 
 ## Relevant Files
-- `src/portal-maestros/components/studentProgressPanel.js`
-- `src/portal-maestros/components/attendance/PlanificationCard.js`
-- `src/modules/planificacion/components/mapaPedagogicoPanel.js`
-- `docs/planning/ui/OPENPENCIL_WORKFLOW.md`
-- `docs/planning/ui/designs/login_view.op`
-- `docs/planning/ui/designs/hoy_view.op`"""
+- `src/portal-maestros/views/loginView.js`
+- `src/portal-maestros/views/templates/loginDesignTemplate.js`
+- `scripts/compile_design.js`
+- `docs/planning/ui/designs/login_view.op`"""
 
 now_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 new_sync_id = f"obs-{uuid.uuid4().hex[:16]}"

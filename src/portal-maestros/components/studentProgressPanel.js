@@ -12,11 +12,12 @@
  * rutaId: route_version_id
  */
 
+import { config } from '../../core/config/config.js'
 import { supabase } from '../../lib/supabaseClient.js'
 import { getBreakpoint, onBreakpointChange } from '../utils/portalUtils.js'
-import { saveEvaluaciones } from '../services/evaluationService.js'
 import { getMaestroLocal } from '../auth/maestroAuth.js'
 import { enableTrap } from '../utils/focusTrap.js'
+import * as weeklyPlanAdapter from '../../modules/planificacion/api/weeklyPlanAdapter.js'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Styles
@@ -27,7 +28,7 @@ function _injectStyles() {
   style.id = 'pm-student-panel-styles'
   style.textContent = `
     .pm-student-panel {
-      position: fixed; top: 0; right: 0; bottom: 0; width: 100%; max-width: 400px;
+      position: fixed; top: 0; right: 0; bottom: 0; width: 100%; max-width: 420px;
       background: var(--pm-surface, #1e293b); color: #fff; z-index: 1000;
       transform: translateX(100%); transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
       box-shadow: -10px 0 30px rgba(0,0,0,0.3); display: flex; flex-direction: column;
@@ -99,7 +100,7 @@ function _injectStyles() {
     }
     .pm-student-panel__modal-content {
       background: #1e293b; border: 1px solid rgba(255,255,255,0.1); border-radius: 20px;
-      width: 100%; max-width: 360px; box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+      width: 100%; max-width: 440px; box-shadow: 0 20px 50px rgba(0,0,0,0.5);
       animation: pm-panel-modal-in 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
     }
     @keyframes pm-panel-modal-in { from { transform: scale(0.9) translateY(20px); opacity: 0; } to { transform: scale(1) translateY(0); opacity: 1; } }
@@ -114,13 +115,19 @@ function _injectStyles() {
     .pm-student-panel__modal-field { margin-bottom: 20px; }
     .pm-student-panel__modal-field label { display: block; font-size: 0.75rem; font-weight: 700; color: rgba(255,255,255,0.5); margin-bottom: 8px; text-transform: uppercase; }
     
-    .pm-student-panel__nota-picker { display: flex; justify-content: space-between; gap: 8px; }
-    .pm-student-panel__nota-btn {
-      flex: 1; aspect-ratio: 1; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);
-      background: rgba(255,255,255,0.03); color: #fff; font-weight: 700; cursor: pointer; transition: all 0.2s;
+    .pm-student-panel__status-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+    .pm-student-panel__status-btn {
+      padding: 10px 4px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);
+      background: rgba(255,255,255,0.03); color: #fff; font-weight: 600; font-size: 0.72rem; cursor: pointer; transition: all 0.2s;
+      display: flex; flex-direction: column; align-items: center; gap: 4px;
     }
-    .pm-student-panel__nota-btn:hover { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.2); }
-    .pm-student-panel__nota-btn.active { background: #3b82f6; border-color: #3b82f6; box-shadow: 0 0 15px rgba(59,130,246,0.5); }
+    .pm-student-panel__status-btn:hover { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.2); }
+    .pm-student-panel__status-btn.active.achieved { background: rgba(16,185,129,0.2); border-color: #10b981; color: #34d399; }
+    .pm-student-panel__status-btn.active.in_process { background: rgba(234,179,8,0.2); border-color: #eab308; color: #facc15; }
+    .pm-student-panel__status-btn.active.needs_reinforcement { background: rgba(249,115,22,0.2); border-color: #f97316; color: #ff9800; }
+    .pm-student-panel__status-btn.active.failed { background: rgba(239,68,68,0.2); border-color: #ef4444; color: #f87171; }
+    .pm-student-panel__status-btn.active.exceeded { background: rgba(59,130,246,0.2); border-color: #3b82f6; color: #60a5fa; }
+    .pm-student-panel__status-btn.active.not_started { background: rgba(156,163,175,0.2); border-color: #9ca3af; color: #e5e7eb; }
     
     .pm-student-panel__modal-footer { padding: 20px; display: flex; gap: 10px; border-top: 1px solid rgba(255,255,255,0.05); }
     .pm-btn {
@@ -160,90 +167,98 @@ function _formatDate(iso) {
   return d.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: '2-digit' })
 }
 
-function _semaphore(nota) {
-  if (nota == null) return { color: 'gray', icon: '⚫', label: 'Sin evaluar' }
-  if (nota >= 4) return { color: 'green', icon: '🟢', label: 'Dominado' }
-  if (nota >= 2) return { color: 'yellow', icon: '🟡', label: 'En progreso' }
-  return { color: 'red', icon: '🔴', label: 'Necesita trabajo' }
+const SEMAPHORES = {
+  achieved: { color: 'green', icon: '🟢', label: 'Dominado' },
+  in_process: { color: 'yellow', icon: '🟡', label: 'En proceso' },
+  needs_reinforcement: { color: 'orange', icon: '🟠', label: 'Requiere refuerzo' },
+  failed: { color: 'red', icon: '🔴', label: 'No aprobado' },
+  exceeded: { color: 'blue', icon: '🔵', label: 'Sobresaliente' },
+  not_started: { color: 'gray', icon: '⚫', label: 'Sin iniciar' }
+}
+
+function _semaphore(status) {
+  return SEMAPHORES[status] || SEMAPHORES.not_started
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Data loading
+// Data loading via DataAdapter
 // ─────────────────────────────────────────────────────────────────────────────
 
-async function _loadProgress(alumnoId, rutaId) {
-  // 1. All indicators for this route (to know total count)
-  const { data: indicators, error: indErr } = await supabase
-    .from('indicators')
-    .select('id, nombre, description, order_index, node_id, nodes(id, name, order_index, level_id, levels(id, name, level_number))')
-    .eq('nodes.route_version_id', rutaId)
-    .eq('activo', true)
-    .order('order_index')
-
-  if (indErr) throw indErr
-
-  // Filter out indicators whose node didn't match (Supabase returns nulls when join fails)
-  const validIndicators = (indicators ?? []).filter(i => i.nodes !== null)
-
-  // 2. All attempts for this student
-  const { data: attempts, error: attErr } = await supabase
-    .from('indicator_attempts')
-    .select('id, indicator_id, nota, observations, tarea, created_at, node_id, status, session_id')
-    .eq('student_id', alumnoId)
-    .order('created_at', { ascending: false })
-
-  if (attErr) throw attErr
-
-  // Group attempts by indicator_id
-  const attemptsByIndicator = {}
-  for (const att of attempts ?? []) {
-    if (!attemptsByIndicator[att.indicator_id]) {
-      attemptsByIndicator[att.indicator_id] = []
-    }
-    attemptsByIndicator[att.indicator_id].push(att)
+async function _loadProgress(alumnoId, rutaId, claseId = null) {
+  let indicators = []
+  
+  if (config.isDemoMode) {
+    // 1. Cargar la jerarquía de temas del mock
+    const { getFullHierarchy } = await import('../../modules/planificacion/api/routeMock.js')
+    const hierarchy = await getFullHierarchy(claseId || 'pclase_001')
+    
+    // Aplanar los indicadores de todos los temas
+    hierarchy.forEach(level => {
+      level.plan_temas.forEach(tema => {
+        tema.plan_objetivos.forEach(obj => {
+          obj.plan_indicators.forEach(ind => {
+            indicators.push({
+              id: ind.id,
+              nombre: ind.descripcion,
+              node: {
+                id: tema.id,
+                name: tema.nombre,
+                level: {
+                  id: level.id,
+                  level_number: level.numero_nivel,
+                  name: level.nombre
+                }
+              }
+            })
+          })
+        })
+      })
+    })
+  } else {
+    // Modo Real: Supabase query
+    const { data, error } = await supabase
+      .from('indicators')
+      .select('id, nombre, description, order_index, node_id, nodes(id, name, order_index, level_id, levels(id, name, level_number))')
+      .eq('nodes.route_version_id', rutaId)
+      .eq('activo', true)
+      .order('order_index')
+      
+    if (error) throw error
+    indicators = (data ?? []).filter(i => i.nodes !== null).map(i => ({
+      id: i.id,
+      nombre: i.nombre || i.description,
+      node: i.nodes
+    }))
   }
 
-  // Build indicator summaries
-  const allSummaries = validIndicators.map(ind => {
-    const history = attemptsByIndicator[ind.id] ?? []
-    const latest = history[0] ?? null
-    const sem = _semaphore(latest?.nota ?? null)
+  // 2. Cargar el historial de calificaciones registradas
+  const progressMap = await weeklyPlanAdapter.obtenerProgresoGrupo(claseId)
+  
+  // Build summaries
+  const allSummaries = indicators.map(ind => {
+    const key = `${alumnoId}_${ind.id}`
+    const record = progressMap[key] || null
+    const sem = _semaphore(record?.status || 'not_started')
+    
     return {
       id: ind.id,
-      nombre: ind.nombre || ind.description || `Indicador ${ind.id}`,
-      node: ind.nodes,
-      latestNota: latest?.nota ?? null,
-      latestObs: latest?.observations ?? null,
-      latestTarea: latest?.tarea ?? null,
+      nombre: ind.nombre,
+      node: ind.node,
+      latestStatus: record?.status || 'not_started',
+      latestObs: record?.observation || '',
+      latestEvidence: record?.evidence_url || '',
       semColor: sem.color,
       semIcon: sem.icon,
-      history
+      history: record ? [record] : []
     }
   })
 
-  // 1. Calculate overall progress BEFORE filtering for display
-  const dominados = allSummaries.filter(i => i.latestNota >= 4).length
+  // Calcular porcentaje de avance (achieved o exceeded = dominado)
+  const dominados = allSummaries.filter(i => i.latestStatus === 'achieved' || i.latestStatus === 'exceeded').length
   const total = allSummaries.length
   const avance = total > 0 ? Math.round((dominados / total) * 100) : 0
 
-  // 2. Filter indicators to show only those worked on or with a non-zero grade
-  // Also deduplicate by ID just in case the route definition has overlaps
-  const seenIds = new Set()
-  const indicatorSummaries = allSummaries.filter(i => {
-    if (seenIds.has(i.id)) return false
-    seenIds.add(i.id)
-    
-    const hasHistory = i.history.length > 0
-    const hasValidNote = i.latestNota !== null && i.latestNota !== 0
-    return hasHistory || hasValidNote
-  })
-
-  // 3. Pending tasks: latest evaluation per indicator that has a tarea
-  const pendingTasks = allSummaries
-    .filter(i => i.latestTarea)
-    .map(i => ({ indicadorNombre: i.nombre, tarea: i.latestTarea }))
-
-  return { indicatorSummaries, dominados, total, avance, pendingTasks }
+  return { indicatorSummaries: allSummaries, dominados, total, avance, pendingTasks: [] }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -271,14 +286,14 @@ function _renderTimeline(history, indicatorIdx) {
   const items = history.map((h, hIdx) => `
     <li class="pm-eval-timeline__item">
       <div class="pm-eval-timeline__header">
-        <span class="pm-eval-timeline__date">${_escHTML(_formatDate(h.created_at))}</span>
+        <span class="pm-eval-timeline__date">${_escHTML(_formatDate(h.updated_at || h.created_at))}</span>
         <button class="pm-eval-timeline__edit" data-action="edit-eval" data-idx="${indicatorIdx}" data-hidx="${hIdx}">
           <i class="bi bi-pencil"></i>
         </button>
       </div>
-      <span class="pm-eval-timeline__nota">Nota: ${_escHTML(String(h.nota ?? '-'))}</span>
-      ${h.observations ? `<span class="pm-eval-timeline__detail">${_escHTML(h.observations)}</span>` : ''}
-      ${h.tarea ? `<span class="pm-eval-timeline__detail"><strong>Tarea:</strong> ${_escHTML(h.tarea)}</span>` : ''}
+      <span class="pm-eval-timeline__nota">Estado: ${_semaphore(h.status).label}</span>
+      ${h.observation ? `<span class="pm-eval-timeline__detail">${_escHTML(h.observation)}</span>` : ''}
+      ${h.evidence_url ? `<span class="pm-eval-timeline__detail"><strong>Evidencia:</strong> <a href="${h.evidence_url}" target="_blank">Ver Enlace</a></span>` : ''}
     </li>
   `).join('')
 
@@ -289,13 +304,13 @@ function _renderTimeline(history, indicatorIdx) {
       </button>
     </div>
     <ul class="pm-eval-timeline">
-      ${items || '<p class="pm-empty-history">Sin evaluaciones previas</p>'}
+      ${items || '<p class="pm-empty-history">Sin evaluaciones registradas</p>'}
     </ul>
   `
 }
 
 function _renderIndicators(indicatorSummaries) {
-  if (!indicatorSummaries.length) return '<p style="padding:8px">No hay indicadores en esta ruta.</p>'
+  if (!indicatorSummaries.length) return '<p style="padding:8px">No hay indicadores cargados para este nivel.</p>'
 
   return indicatorSummaries.map((ind, idx) => `
     <div class="pm-route-indicador pm-route-indicador--${_escHTML(ind.semColor)}"
@@ -308,8 +323,8 @@ function _renderIndicators(indicatorSummaries) {
       <div class="pm-route-indicador__info">
         <span class="pm-route-indicador__name">${_escHTML(ind.nombre)}</span>
         <span class="pm-route-indicador__stats">
-          ${ind.latestNota != null ? `Última nota: ${ind.latestNota}` : 'Sin evaluar'}
-          · ${ind.history.length} eval${ind.history.length !== 1 ? 's' : ''}
+          ${ind.latestStatus !== 'not_started' ? `Estado: ${_semaphore(ind.latestStatus).label}` : 'Sin evaluar'}
+          · ${ind.history.length} registro${ind.history.length !== 1 ? 's' : ''}
         </span>
       </div>
     </div>
@@ -319,29 +334,12 @@ function _renderIndicators(indicatorSummaries) {
   `).join('')
 }
 
-function _renderPendingTasks(pendingTasks) {
-  if (!pendingTasks.length) return ''
-  return `
-    <section class="pm-student-panel__section">
-      <h3 class="pm-student-panel__section-title">Tareas pendientes</h3>
-      <ul class="pm-pending-tasks">
-        ${pendingTasks.map(t => `
-          <li class="pm-pending-tasks__item">
-            <strong>${_escHTML(t.indicadorNombre)}:</strong> ${_escHTML(t.tarea)}
-          </li>
-        `).join('')}
-      </ul>
-    </section>
-  `
-}
-
-function _renderContent(alumno, { indicatorSummaries, avance, pendingTasks }) {
+function _renderContent(alumno, { indicatorSummaries, avance }) {
   return `
     ${_renderHeader(alumno, avance)}
     <div class="pm-student-panel__body">
-      ${_renderPendingTasks(pendingTasks)}
       <section class="pm-student-panel__section">
-        <h3 class="pm-student-panel__section-title">Ruta de aprendizaje</h3>
+        <h3 class="pm-student-panel__section-title">Progreso Curricular (Semáforo)</h3>
         <div class="pm-route-map">
           ${_renderIndicators(indicatorSummaries)}
         </div>
@@ -358,7 +356,7 @@ function _renderLoading() {
       <button class="pm-student-panel__close" data-action="close" aria-label="Cerrar">×</button>
     </div>
     <div class="pm-student-panel__body" style="padding:16px;color:var(--color-text-muted,#888)">
-      Cargando datos del alumno…
+      Cargando progreso del alumno…
     </div>
   `
 }
@@ -383,7 +381,6 @@ function _renderError(msg) {
 export function createStudentProgressPanel({ alumno, rutaId, sessionId, claseId, fecha, horaInicio }) {
   _injectStyles()
 
-  // Create DOM element
   const el = document.createElement('aside')
   el.className = 'pm-student-panel'
   el.setAttribute('role', 'dialog')
@@ -391,11 +388,9 @@ export function createStudentProgressPanel({ alumno, rutaId, sessionId, claseId,
   el.setAttribute('aria-label', `Progreso de ${alumno.nombre_completo}`)
   document.body.appendChild(el)
 
-  // Keep reference to loaded summaries for event delegation
   let _summaries = []
   let _focusTrap = null
 
-  // ── Event delegation ──────────────────────────────────────────────────────
   function _adaptToBreakpoint() {
     const bp = getBreakpoint()
     if (bp === 'desktop') {
@@ -442,13 +437,10 @@ export function createStudentProgressPanel({ alumno, rutaId, sessionId, claseId,
     }
   }
 
-  /**
-   * Modal logic for adding/editing evaluations
-   */
   async function _onOpenEvalModal(indicatorIdx, historyIdx = null) {
     const indicator = _summaries[indicatorIdx]
     const evaluation = historyIdx !== null ? indicator.history[historyIdx] : null
-    let selectedNota = evaluation?.nota ?? null
+    let selectedStatus = evaluation?.status ?? 'not_started'
 
     const overlay = document.createElement('div')
     overlay.className = 'pm-student-panel__modal-overlay pm-animate-fade-in'
@@ -462,37 +454,44 @@ export function createStudentProgressPanel({ alumno, rutaId, sessionId, claseId,
         
         <div class="pm-student-panel__modal-body">
           <div class="pm-student-panel__modal-field">
-            <label>Nota del indicador</label>
-            <div class="pm-student-panel__nota-picker">
-              ${[0, 1, 2, 3, 4, 5].map(n => `
-                <button class="pm-student-panel__nota-btn ${selectedNota === n ? 'active' : ''}" data-nota="${n}">${n}</button>
+            <label>Nivel de Logro (Semáforo)</label>
+            <div class="pm-student-panel__status-grid">
+              ${Object.entries(SEMAPHORES).map(([statusKey, semObj]) => `
+                <button class="pm-student-panel__status-btn ${selectedStatus === statusKey ? 'active' : ''} ${statusKey}" data-status="${statusKey}">
+                  <span>${semObj.icon}</span>
+                  <span>${semObj.label}</span>
+                </button>
               `).join('')}
             </div>
           </div>
           
           <div class="pm-student-panel__modal-field">
-            <label>Observaciones / Comentarios</label>
-            <textarea id="modal-obs" rows="4" style="width: 100%; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; color: #fff; padding: 12px; font-size: 0.9rem; resize: none; outline: none;" placeholder="Escribe aquí las observaciones...">${evaluation ? _escHTML(evaluation.observations) : ''}</textarea>
+            <label>Observaciones / Evidencia</label>
+            <textarea id="modal-obs" rows="3" style="width: 100%; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; color: #fff; padding: 12px; font-size: 0.9rem; resize: none; outline: none;" placeholder="Comentarios sobre el desempeño...">${evaluation ? _escHTML(evaluation.observation) : ''}</textarea>
+          </div>
+          
+          <div class="pm-student-panel__modal-field">
+            <label>Enlace de Evidencia (Video/Audio)</label>
+            <input type="text" id="modal-evidence" style="width: 100%; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; color: #fff; padding: 10px; font-size: 0.9rem; outline: none;" placeholder="URL de video o audio en drive/supabase..." value="${evaluation ? _escHTML(evaluation.evidence_url) : ''}">
           </div>
         </div>
 
         <div class="pm-student-panel__modal-footer">
           <button class="pm-btn pm-btn-outline" data-action="modal-close">Cancelar</button>
           <button class="pm-btn pm-btn-primary" data-action="modal-save">
-            ${evaluation ? 'Actualizar' : 'Guardar Evaluación'}
+            ${evaluation ? 'Actualizar' : 'Guardar'}
           </button>
         </div>
       </div>
     `
     document.body.appendChild(overlay)
 
-    // Modal internal listeners
     overlay.addEventListener('click', async (e) => {
-      const btn = e.target.closest('[data-nota]')
+      const btn = e.target.closest('[data-status]')
       if (btn) {
-        overlay.querySelectorAll('[data-nota]').forEach(b => b.classList.remove('active'))
+        overlay.querySelectorAll('[data-status]').forEach(b => b.classList.remove('active'))
         btn.classList.add('active')
-        selectedNota = parseInt(btn.dataset.nota)
+        selectedStatus = btn.dataset.status
         return
       }
 
@@ -500,50 +499,39 @@ export function createStudentProgressPanel({ alumno, rutaId, sessionId, claseId,
       if (action === 'modal-close') {
         overlay.remove()
       } else if (action === 'modal-save') {
-        const observations = overlay.querySelector('#modal-obs').value
-        await _saveEvaluation(indicator.id, selectedNota, observations, evaluation?.id)
+        const obs = overlay.querySelector('#modal-obs').value
+        const evidence = overlay.querySelector('#modal-evidence').value
+        await _saveEvaluation(indicator.id, selectedStatus, obs, evidence)
         overlay.remove()
       }
     })
     
-    // Backdrop click close
     overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove() })
   }
 
-  async function _saveEvaluation(indicatorId, nota, observations, attemptId = null) {
+  async function _saveEvaluation(indicatorId, status, observation, evidenceUrl) {
     try {
-      const maestro = getMaestroLocal();
-      if (!maestro) throw new Error('No hay sesión de maestro activa.');
+      const maestro = getMaestroLocal()
+      if (!maestro) throw new Error('No hay sesión de maestro activa.')
 
-      console.log('[studentProgressPanel] Saving via RPC...', { 
-        claseId, fecha, horaInicio, indicatorId, studentId: alumno.id, nota 
-      })
+      await weeklyPlanAdapter.registrarProgresoIndicador(
+        alumno.id,
+        indicatorId,
+        status,
+        observation.trim(),
+        evidenceUrl.trim(),
+        sessionId
+      )
 
-      // Llamamos al RPC atómico que asegura la sesión y guarda la evaluación en un solo paso
-      const { data: newSessionId, error } = await supabase.rpc('ensure_session_and_save_evaluation', {
-        p_clase_id: claseId,
-        p_maestro_id: maestro.id,
-        p_fecha: fecha,
-        p_hora_inicio: horaInicio,
-        p_indicator_id: indicatorId,
-        p_student_id: alumno.id,
-        p_nota: nota,
-        p_observations: (observations || '').trim()
-      });
-
-      if (error) throw error;
-
-      console.log('[studentProgressPanel] Save successful. Session ID:', newSessionId)
       await open() 
     } catch (err) {
-      console.error('[studentProgressPanel] Error during RPC save flow:', err)
-      alert('Error al guardar la evaluación: ' + (err.message || 'Error de base de datos'))
+      console.error('[studentProgressPanel] Error saving:', err)
+      alert('Error al guardar: ' + (err.message || err))
     }
   }
 
   el.addEventListener('click', _onClick)
 
-  // Keyboard accessibility for toggle-history buttons
   el.addEventListener('keydown', e => {
     if (e.key === 'Enter' || e.key === ' ') {
       const target = e.target.closest('[data-action="toggle-history"]')
@@ -554,21 +542,19 @@ export function createStudentProgressPanel({ alumno, rutaId, sessionId, claseId,
     }
   })
 
-  // ── Public API ────────────────────────────────────────────────────────────
   async function open() {
     el.innerHTML = _renderLoading()
     el.classList.add('pm-student-panel--open')
 
-    // Focus trap
     if (_focusTrap) _focusTrap.dispose()
     _focusTrap = enableTrap(el, { onClose: () => close() })
 
     try {
-      const data = await _loadProgress(alumno.id, rutaId)
+      const data = await _loadProgress(alumno.id, rutaId, claseId)
       _summaries = data.indicatorSummaries
       el.innerHTML = _renderContent(alumno, data)
     } catch (err) {
-      console.error('[studentProgressPanel] Error loading progress:', err)
+      console.error('[studentProgressPanel] Error loading:', err)
       el.innerHTML = _renderError(err?.message ?? 'Error desconocido al cargar datos.')
     }
   }
@@ -576,7 +562,6 @@ export function createStudentProgressPanel({ alumno, rutaId, sessionId, claseId,
   function close() {
     el.classList.remove('pm-student-panel--open')
     if (_focusTrap) { _focusTrap.dispose(); _focusTrap = null }
-    // Clear content after CSS transition (300ms)
     setTimeout(() => {
       if (!el.classList.contains('pm-student-panel--open')) {
         el.innerHTML = ''

@@ -1,0 +1,209 @@
+{
+  "curriculum_sources": [
+    {
+      "id": "source-violin-rector",
+      "title": "Guía del Maestro - Cátedra de Violín y Viola OSPC",
+      "file_name": "Guia_Maestro_Catedra_Violin_Viola_OSPC_Version_2_0_Editables_Corregida.pdf",
+      "source_type": "documento_rector",
+      "author": "Dirección Académica OSPC",
+      "version_label": "2.0",
+      "status": "approved"
+    },
+    {
+      "id": "source-manuel-inicial",
+      "title": "Lenguaje Musical Inicial N0 (Manuel)",
+      "file_name": "Planificación de iniciación.docx",
+      "source_type": "documento_complementary",
+      "author": "Manuel Marcano",
+      "version_label": "1.0",
+      "status": "approved"
+    }
+  ],
+  "weekly_plans": [
+    {
+      "id": "wplan-violin-n0",
+      "instrument": "violín",
+      "level_id": "pnivel_001",
+      "source_id": "source-violin-rector",
+      "items": [
+        {
+          "id": "witem-violin-1",
+          "week_number": 1,
+          "topic": "Diagnóstico y Postura corporal básica",
+          "objective": "Identificar perfil de entrada y establecer postura de pie relajada",
+          "teacher_strategy": "Juegos rítmicos, imitación de postura (estatua/espejo) y equilibrio sobre un pie",
+          "student_activity": "Caminar al compás, imitar la postura del maestro sin sostener instrumento",
+          "homework": "Ejercicios de balance erguido frente al espejo (2 min diarios)",
+          "evidence": "Registro de checklist inicial por maestro",
+          "assessment_method": "Evaluación Diagnóstica",
+          "node_id": "ptema_001",
+          "indicator_id": "pind_001"
+        },
+        {
+          "id": "witem-violin-2",
+          "week_number": 2,
+          "topic": "Colocación en el hombro y arco con lápiz",
+          "objective": "Aprender el agarre del violín al hombro y simular arco sobre lápiz",
+          "teacher_strategy": "Explicar los puntos de apoyo del violín en el hombro. Mostrar agarre de arco usando un lápiz.",
+          "student_activity": "Posicionar el violín sobre el hombro izquierdo con soporte. Ejercitar agarre de arco (dedos redondos) en el lápiz.",
+          "homework": "Practicar agarre de lápiz con la mano del arco cuidando pulgar curvo",
+          "evidence": "Foto breve de la mano derecha sujetando el lápiz",
+          "assessment_method": "Rúbrica parcial N0",
+          "node_id": "ptema_001",
+          "indicator_id": "pind_003"
+        },
+        {
+          "id": "witem-violin-3",
+          "week_number": 3,
+          "topic": "Sostén del instrumento sin manos",
+          "objective": "Lograr sostener el violín con la barbilla/hombro durante 10 segundos sin tensión",
+          "teacher_strategy": "Transiciones de descanso a toque por señal. Acompañar físicamente el peso del instrumento.",
+          "student_activity": "Sostener el violín usando solo cabeza y hombro mientras camina un paso lateral",
+          "homework": "Intentar sostén sin manos durante 10 segundos (bajo supervisión de padres)",
+          "evidence": "Video de 10 segundos de la postura sin sostener con manos",
+          "assessment_method": "Lista de cotejo de postura",
+          "node_id": "ptema_001",
+          "indicator_id": "pind_002"
+        },
+        {
+          "id": "witem-violin-4",
+          "week_number": 4,
+          "topic": "Cuerdas al aire (La y Mi) con arco real",
+          "objective": "Deslizar el arco real sobre cuerdas al aire manteniendo sonido constante",
+          "teacher_strategy": "Explicar el movimiento de bisagra del codo. Guiar la trayectoria recta del arco.",
+          "student_activity": "Tocar redondas y blancas en cuerdas al aire cuidando el punto de contacto",
+          "homework": "Cuerdas al aire frente al espejo buscando que el arco vaya paralelo al puente",
+          "evidence": "Audio de cuerdas al aire (30 segundos)",
+          "assessment_method": "Rúbrica de Sonido (Crítico)",
+          "node_id": "ptema_002",
+          "indicator_id": "pind_004"
+        },
+        {
+          "id": "witem-violin-5",
+          "week_number": 5,
+          "topic": "Mano izquierda - Dedos 1 y 2",
+          "objective": "Colocar dedos 1 (Si) y 2 (Do#) en cuerda La con afinación básica",
+          "teacher_strategy": "Marcar los puntos en el diapasón si es necesario. Explicar la forma de martillo de los dedos.",
+          "student_activity": "Pisar cuerda La en las marcas y emitir notas alternando con cuerda Mi al aire",
+          "homework": "Ejercicios de colocación de dedos 1 y 2 cuidando muñeca recta",
+          "evidence": "Nota de afinación registrada por afinador digital",
+          "assessment_method": "Rúbrica de Afinación (Crítico)",
+          "node_id": "ptema_002",
+          "indicator_id": "pind_005"
+        },
+        {
+          "id": "witem-violin-6",
+          "week_number": 6,
+          "topic": "Repaso general y evaluación del bloque",
+          "objective": "Demostrar postura, arco básico y afinación de los dos primeros dedos",
+          "teacher_strategy": "Audición individual breve. Consolidar el checklist de hitos de N0.",
+          "student_activity": "Ejecutar la melodía simple de 4 compases frente al grupo",
+          "homework": "Preparar la muestra final de clase",
+          "evidence": "Lista de cotejo integral N0",
+          "assessment_method": "Rúbrica final N0",
+          "node_id": "ptema_002",
+          "indicator_id": "pind_007"
+        }
+      ]
+    },
+    {
+      "id": "wplan-lenguaje-n0",
+      "instrument": "teoría / lenguaje",
+      "level_id": "pnivel_001",
+      "source_id": "source-manuel-inicial",
+      "items": [
+        {
+          "id": "witem-lenguaje-1",
+          "week_number": 1,
+          "topic": "Sonido y Silencio",
+          "objective": "Diferenciar el sonido del silencio a través de dinámicas corporales",
+          "teacher_strategy": "Alternar música y pausas repentinas, pidiendo a los niños congelarse en el silencio.",
+          "student_activity": "Bailar o marchar con el pulso y quedarse estatua cuando la música para.",
+          "homework": "Explicar en casa la diferencia entre sonido y silencio con ejemplos cotidianos",
+          "evidence": "Lista de observación grupal",
+          "assessment_method": "Evaluación Formativa",
+          "node_id": "ptema_005",
+          "indicator_id": "pind_010"
+        },
+        {
+          "id": "witem-lenguaje-2",
+          "week_number": 2,
+          "topic": "La Clave de Sol y el Pentagrama",
+          "objective": "Identificar el pentagrama de 5 líneas y dibujar la Clave de Sol",
+          "teacher_strategy": "Uso de alfombra gigante con las 5 líneas. Dibujar Clave de Sol paso a paso.",
+          "student_activity": "Caminar sobre las líneas de la alfombra. Trazar la clave en hoja pautada grande.",
+          "homework": "Dibujar 5 Claves de Sol en su cuaderno de música",
+          "evidence": "Cuaderno pautado físico con dibujos",
+          "assessment_method": "Lista de cotejo",
+          "node_id": "ptema_005",
+          "indicator_id": "pind_009"
+        },
+        {
+          "id": "witem-lenguaje-3",
+          "week_number": 3,
+          "topic": "Notas DO, RE y MI",
+          "objective": "Cantar y ubicar DO, RE y MI en el pentagrama",
+          "teacher_strategy": "Uso de tarjetas de notas de colores y xilófono.",
+          "student_activity": "Cantar la escala ascendente tocando las tarjetas correspondientes.",
+          "homework": "Cantar la melodía de 3 notas DO-RE-MI a sus padres",
+          "evidence": "Prueba de canto individual",
+          "assessment_method": "Rúbrica de afinación vocal",
+          "node_id": "ptema_005",
+          "indicator_id": "pind_009"
+        },
+        {
+          "id": "witem-lenguaje-4",
+          "week_number": 4,
+          "topic": "Figuras rítmicas: Redonda y Blanca",
+          "objective": "Reconocer y ejecutar redondas (4 tiempos) y blancas (2 tiempos)",
+          "teacher_strategy": "Marcar pulso constante y pedir aplaudir sosteniendo la duración de las figuras.",
+          "student_activity": "Aplaudir y cantar 'táaa' de 4 tiempos para redondas y 2 para blancas.",
+          "homework": "Practicar aplausos de blancas en casa con metrónomo",
+          "evidence": "Video corto grupal percutiendo",
+          "assessment_method": "Evaluación Formativa",
+          "node_id": "ptema_005",
+          "indicator_id": "pind_010"
+        },
+        {
+          "id": "witem-lenguaje-5",
+          "week_number": 5,
+          "topic": "Figuras rítmicas: Negra y Corchea",
+          "objective": "Ejecutar negras (1 tiempo) y corcheas (medio tiempo)",
+          "teacher_strategy": "Patrones rítmicos combinando negras y corcheas en pizarra.",
+          "student_activity": "Ejecutar con panderetas o palmas patrones como 'corro, voy'",
+          "homework": "Practicar lectura del ritmo impreso con voz",
+          "evidence": "Ficha de lectura rítmica",
+          "assessment_method": "Prueba de ejecución",
+          "node_id": "ptema_005",
+          "indicator_id": "pind_010"
+        },
+        {
+          "id": "witem-lenguaje-6",
+          "week_number": 6,
+          "topic": "El Compás de 4/4",
+          "objective": "Marcar compases sencillos en 4/4 e identificar tiempos fuertes",
+          "teacher_strategy": "Dirigir con las manos el compás (abajo, adentro, afuera, arriba).",
+          "student_activity": "Marcar los 4 tiempos en el aire y acentuar el tiempo 1 con percusión de pie.",
+          "homework": "Ejecutar marcha contando del 1 al 4",
+          "evidence": "Lista de cotejo grupal",
+          "assessment_method": "Evaluación formativa",
+          "node_id": "ptema_005",
+          "indicator_id": "pind_010"
+        }
+      ]
+    }
+  ],
+  "active_routes": [
+    {
+      "id": "aroute-001",
+      "weekly_plan_id": "wplan-violin-n0",
+      "teacher_id": "maestro_001",
+      "group_id": "clase_001",
+      "level_id": "pnivel_001",
+      "current_week": 3,
+      "status": "active",
+      "start_date": "2026-06-01",
+      "end_date": "2026-08-30"
+    }
+  ]
+}

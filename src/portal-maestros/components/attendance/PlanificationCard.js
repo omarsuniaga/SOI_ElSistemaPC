@@ -1,273 +1,212 @@
-import { supabase } from '../../../lib/supabaseClient.js'
 import { escHTML } from '../../utils/portalUtils.js'
-import { createRouteTreeBar } from '../routeTreeBar.js'
-import { RouteConfigAdapter } from '../../services/routeConfigAdapter.js'
-import { openPlanificacionModal } from '../../../modules/planificacion/components/planificacionModal.js'
-import { crearPlanificacion } from '../../../modules/planificacion/api/planificacionAdapter.js'
+import * as weeklyPlanAdapter from '../../../modules/planificacion/api/weeklyPlanAdapter.js'
 import { AppModal } from '../../../shared/components/AppModal.js'
 import { AppToast } from '../../../shared/components/AppToast.js'
-import { getMisClases } from '../../services/maestroDataService.js'
-import { renderRouteConfigurator } from '../../views/components/routeConfigurator.js'
 
 export function createPlanificationCard(container, opts) {
-  let activePlanificacionId = null
-  let routeTreeBar = null
+  let activeRoute = null
+  let weeklyPlan = null
   const cleanups = []
 
   const planificacionCard = container.querySelector('#pm-planificacion-card')
   const planDropdown = container.querySelector('#pm-planificacion-dropdown')
   const planNombreEl = container.querySelector('#pm-planificacion-nombre')
-  const planListRutas = container.querySelector('#pm-plan-list-rutas')
-  const planListPlanes = container.querySelector('#pm-plan-list-planificaciones')
   const planHeader = container.querySelector('#pm-planificacion-header')
-  const copyPlanBtn = container.querySelector('#btn-copy-as-plan')
+  const treeContainer = container.querySelector('#pm-route-tree-container')
 
   if (planHeader) {
-    planHeader.addEventListener('click', () => {
+    planHeader.onclick = () => {
       const isOpen = planificacionCard.classList.toggle('open')
       planDropdown.style.display = isOpen ? 'block' : 'none'
-    })
-  }
-
-  container.querySelectorAll('.pm-plan-tab-pill').forEach((tab) => {
-    tab.addEventListener('click', () => {
-      container.querySelectorAll('.pm-plan-tab-pill').forEach((t) => t.classList.remove('active'))
-      tab.classList.add('active')
-      const tabName = tab.dataset.tab
-      planListRutas.style.display = tabName === 'rutas' ? '' : 'none'
-      planListPlanes.style.display = tabName === 'planificaciones' ? '' : 'none'
-    })
-  })
-
-  function selectPlanificacion(plan) {
-    activePlanificacionId = plan.id
-
-    localStorage.setItem(`pm_default_plan_${opts.claseId}`, plan.id)
-
-    if (planNombreEl) planNombreEl.textContent = plan.nombre || plan.name || 'Sin nombre'
-
-    planListPlanes.querySelectorAll('.pm-plan-item').forEach((item) => {
-      item.classList.toggle('active', item.dataset.planId === plan.id)
-    })
-
-    destroyTreeBar()
-    const treeContainer = container.querySelector('#pm-route-tree-container')
-    const temaBadge = container.querySelector('#pm-active-tema-badge')
-
-    if (activePlanificacionId && treeContainer) {
-      treeContainer.innerHTML = ''
-      getCompletedTopics(opts.claseId).then((completedTopics) => {
-        routeTreeBar = createRouteTreeBar(treeContainer, {
-          claseId: opts.claseId,
-          rutaId: activePlanificacionId,
-          completedTopics,
-          onIndicadorSelect: (ind) => {
-            opts.onIndicadorSelect?.(ind)
-            if (temaBadge) {
-              temaBadge.textContent = ind.nombre
-              temaBadge.style.display = 'inline-block'
-            }
-            planificacionCard.classList.remove('open')
-            planDropdown.style.display = 'none'
-          },
-        })
-        cleanups.push(() => routeTreeBar.destroy())
-      })
     }
   }
 
-  const manageBtn = container.querySelector('#btn-manage-planning')
-  if (manageBtn) {
-    manageBtn.onclick = (e) => {
+  // Ocultar tabs viejas de bibliotecas si queremos centrar al maestro en la ruta semanal
+  const tabsEl = container.querySelector('.pm-planificacion-tabs-pill')
+  if (tabsEl) tabsEl.style.display = 'none'
+  const listRutasEl = container.querySelector('#pm-plan-list-rutas')
+  if (listRutasEl) listRutasEl.style.display = 'none'
+  const listPlanesEl = container.querySelector('#pm-plan-list-planificaciones')
+  if (listPlanesEl) listPlanesEl.style.display = 'none'
+  const proposalTrigger = container.querySelector('#pm-curriculo-proposal-trigger')
+  if (proposalTrigger) proposalTrigger.style.display = 'none'
+
+  // Estilos inline de la tarjeta curricular semanal
+  if (!document.getElementById('pm-weekly-card-styles')) {
+    const style = document.createElement('style')
+    style.id = 'pm-weekly-card-styles'
+    style.textContent = `
+      .pm-weekly-nav {
+        display: flex; align-items: center; justify-content: space-between;
+        background: rgba(0,0,0,0.2); padding: 8px 12px; border-radius: 10px; margin-bottom: 12px;
+      }
+      .pm-weekly-nav-btn {
+        background: var(--pm-primary, #3b82f6); border: none; color: #fff;
+        padding: 4px 10px; border-radius: 6px; font-weight: 700; font-size: 0.75rem; cursor: pointer;
+        transition: all 0.2s;
+      }
+      .pm-weekly-nav-btn:hover { background: #2563eb; }
+      .pm-weekly-nav-btn:disabled { background: rgba(255,255,255,0.05); color: rgba(255,255,255,0.25); cursor: not-allowed; }
+      
+      .pm-weekly-title { font-size: 0.8rem; font-weight: 800; text-transform: uppercase; color: rgba(255,255,255,0.5); }
+      
+      .pm-weekly-box {
+        background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.05);
+        border-radius: 12px; padding: 12px; margin-bottom: 10px;
+      }
+      .pm-weekly-label { font-size: 0.7rem; font-weight: 800; text-transform: uppercase; color: var(--pm-primary); margin-bottom: 4px; }
+      .pm-weekly-text { font-size: 0.85rem; color: #fff; font-weight: 600; line-height: 1.3; }
+      .pm-weekly-desc { font-size: 0.8rem; color: var(--pm-text-muted, #9ca3af); line-height: 1.35; margin-top: 4px; }
+      
+      .pm-weekly-indicator-badge {
+        display: inline-flex; align-items: center; gap: 6px;
+        background: rgba(59,130,246,0.15); color: #60a5fa; border: 1px solid rgba(59,130,246,0.3);
+        padding: 6px 12px; border-radius: 20px; font-size: 0.78rem; font-weight: 700; cursor: pointer;
+        transition: all 0.2s; margin-top: 6px;
+      }
+      .pm-weekly-indicator-badge:hover { background: var(--pm-primary); color: #fff; transform: translateY(-1px); }
+    `
+    document.head.appendChild(style)
+  }
+
+  async function init() {
+    try {
+      planificacionCard.style.display = ''
+      
+      // 1. Obtener la ruta activa asignada al grupo
+      activeRoute = await weeklyPlanAdapter.obtenerRutaActivaPorGrupo(opts.claseId)
+      
+      if (!activeRoute) {
+        // En modo demo, creamos una ruta activa por defecto para Violín N0 para no trancar al maestro
+        activeRoute = await weeklyPlanAdapter.crearRutaActiva({
+          group_id: opts.claseId,
+          weekly_plan_id: 'wplan-violin-n0',
+          level_id: 'pnivel_001',
+          teacher_id: opts.maestro?.id || 'maestro_001'
+        })
+      }
+
+      if (planNombreEl) {
+        planNombreEl.textContent = 'Violín Principiantes — Ruta Activa'
+      }
+
+      // 2. Cargar la planificación semanal asociada al nivel
+      weeklyPlan = await weeklyPlanAdapter.obtenerPlanSemanalPorNivel(activeRoute.level_id, 'violín')
+      
+      renderWeeklyCard()
+    } catch (err) {
+      console.error('[PlanificationCard] Error inicializando:', err)
+      if (treeContainer) {
+        treeContainer.innerHTML = `<div style="color:#ef4444;font-size:0.8rem;padding:8px;">Error al cargar planificación semanal: ${err.message}</div>`
+      }
+    }
+  }
+
+  function renderWeeklyCard() {
+    if (!treeContainer || !weeklyPlan) return
+
+    const currentWeekNum = activeRoute.current_week || 1
+    const currentItem = weeklyPlan.items.find(item => item.week_number === currentWeekNum)
+
+    if (!currentItem) {
+      treeContainer.innerHTML = `<div style="padding:10px;font-size:0.8rem;color:var(--pm-text-muted);">No hay planificación registrada para la Semana ${currentWeekNum}</div>`
+      return
+    }
+
+    // Actualizar badge de tema activo del encabezado de la tarjeta si aplica
+    const activeBadge = container.querySelector('#pm-active-tema-badge')
+    if (activeBadge) {
+      activeBadge.textContent = `Semana ${currentWeekNum}: ${currentItem.topic}`
+      activeBadge.style.display = 'inline-block'
+    }
+
+    treeContainer.innerHTML = `
+      <div class="pm-weekly-nav">
+        <button class="pm-weekly-nav-btn prev" ${currentWeekNum <= 1 ? 'disabled' : ''}>◀ Anterior</button>
+        <span class="pm-weekly-title">Semana ${currentWeekNum} de ${weeklyPlan.items.length}</span>
+        <button class="pm-weekly-nav-btn next" ${currentWeekNum >= weeklyPlan.items.length ? 'disabled' : ''}>Siguiente ▶</button>
+      </div>
+      
+      <div class="pm-weekly-box">
+        <div class="pm-weekly-label">Tema de la Clase</div>
+        <div class="pm-weekly-text">${escHTML(currentItem.topic)}</div>
+      </div>
+      
+      <div class="pm-weekly-box">
+        <div class="pm-weekly-label">Objetivo Pedagógico</div>
+        <div class="pm-weekly-desc">${escHTML(currentItem.objective)}</div>
+      </div>
+      
+      <div class="pm-weekly-box">
+        <div class="pm-weekly-label">Estrategia Metodológica / Actividades</div>
+        <div class="pm-weekly-desc">${escHTML(currentItem.teacher_strategy)}</div>
+      </div>
+      
+      <div class="pm-weekly-box">
+        <div class="pm-weekly-label">Evidencia Requerida</div>
+        <div class="pm-weekly-desc">📸 ${escHTML(currentItem.evidence)}</div>
+      </div>
+      
+      <div class="pm-weekly-box" style="margin-bottom:0;">
+        <div class="pm-weekly-label">Indicador a Evaluar</div>
+        <div class="pm-weekly-indicator-badge" id="btn-eval-indicator-weekly">
+          🎯 ${escHTML(currentItem.topic.split(' ')[0])} — Evaluar
+        </div>
+      </div>
+    `
+
+    // Escuchadores de navegación semanal
+    treeContainer.querySelector('.pm-weekly-nav-btn.prev').onclick = async (e) => {
       e.stopPropagation()
-      if (!activePlanificacionId) {
-        AppModal.open({
-          title: 'Atención',
-          body: '<p>Seleccioná una planificación primero para poder gestionarla.</p>',
-          confirmText: 'Entendido',
-          hideCancel: true,
-        })
-        return
+      if (currentWeekNum > 1) {
+        activeRoute = await weeklyPlanAdapter.actualizarSemanaRutaActiva(activeRoute.id, currentWeekNum - 1)
+        renderWeeklyCard()
       }
-      AppModal.open({
-        title: `Gestionar Estructura: ${planNombreEl.textContent}`,
-        size: 'xl',
-        body: '<div id="modal-route-config-root"></div>',
-        saveText: 'Cerrar y Actualizar',
-        onSave: async () => {
-          if (routeTreeBar) routeTreeBar.refresh()
-          return true
-        },
-      })
-      const modalRoot = document.getElementById('modal-route-config-root')
-      if (modalRoot) {
-        renderRouteConfigurator(modalRoot, activePlanificacionId)
+    }
+
+    treeContainer.querySelector('.pm-weekly-nav-btn.next').onclick = async (e) => {
+      e.stopPropagation()
+      if (currentWeekNum < weeklyPlan.items.length) {
+        activeRoute = await weeklyPlanAdapter.actualizarSemanaRutaActiva(activeRoute.id, currentWeekNum + 1)
+        renderWeeklyCard()
+      }
+    }
+
+    // Trigger de evaluación al pulsar el badge del indicador
+    const evalBadge = treeContainer.querySelector('#btn-eval-indicator-weekly')
+    if (evalBadge) {
+      evalBadge.onclick = (e) => {
+        e.stopPropagation()
+        // Ejecutar el callback de selección de indicador para abrir el semáforo evaluativo del estudiante
+        opts.onIndicadorSelect?.({
+          id: currentItem.indicator_id,
+          nombre: currentItem.topic,
+          node_id: currentItem.node_id
+        })
       }
     }
   }
 
-  if (planificacionCard) {
-    ;(async () => {
-      try {
-        const planningClasses = await RouteConfigAdapter.getClasses(opts.maestro ? opts.maestro.id : null)
-
-        const savedPlanId = localStorage.getItem(`pm_default_plan_${opts.claseId}`)
-        const claseInstrumentos = (opts.clase.instrumento || '')
-          .toLowerCase()
-          .split(',')
-          .map((i) => i.trim())
-
-        const misRutas = planningClasses.filter((p) => {
-          if (p.id === savedPlanId) return true
-          const planInst = (p.nombre || '').toLowerCase()
-          return claseInstrumentos.some((ci) => planInst.includes(ci))
-        })
-
-        if (planListRutas) {
-          planListRutas.innerHTML = misRutas.length
-            ? misRutas
-                .map(
-                  (r) => `
-              <div class="pm-plan-item ${r.id === savedPlanId ? 'active' : ''}" data-plan-id="${r.id}">
-                <span class="pm-plan-item-icon">📍</span>
-                <span class="pm-plan-item-name">${escHTML(r.nombre || 'Ruta sin nombre')}</span>
-                ${r.id === savedPlanId ? '<span class="pm-tree-badge">ACTIVA</span>' : ''}
-              </div>`,
-                )
-                .join('')
-            : '<div style="padding:0.5rem;font-size:0.8rem;color:var(--pm-text-muted)">No hay planes sugeridos para este instrumento</div>'
-
-          planListRutas.querySelectorAll('.pm-plan-item').forEach((item) => {
-            item.addEventListener('click', () => {
-              const r = misRutas.find((x) => x.id === item.dataset.planId)
-              if (r) selectPlanificacion(r)
-            })
-          })
-        }
-
-        if (planListPlanes) {
-          planListPlanes.innerHTML = planningClasses
-            .map(
-              (p) => `
-            <div class="pm-plan-item" data-plan-id="${p.id}">
-              <span class="pm-plan-item-icon">📚</span>
-              <span class="pm-plan-item-name">${escHTML(p.nombre || p.name)}</span>
-            </div>`,
-            )
-            .join('')
-
-          planListPlanes.querySelectorAll('.pm-plan-item').forEach((item) => {
-            item.addEventListener('click', () => {
-              const p = planningClasses.find((x) => x.id === item.dataset.planId)
-              if (p) selectPlanificacion(p)
-            })
-          })
-        }
-
-        planificacionCard.style.display = ''
-
-        const savedMatch = planningClasses.find((c) => c.id === savedPlanId)
-        const initialMatch =
-          savedMatch || misRutas[0] || (await RouteConfigAdapter.resolveSmartPlan(opts.clase))
-        if (initialMatch) selectPlanificacion(initialMatch)
-      } catch (err) {
-        console.warn('[asistencia] Error cargando planificación unificada:', err)
-      }
-    })()
-  }
-
-  if (copyPlanBtn) {
-    copyPlanBtn.addEventListener('click', async () => {
-      const dslContent = opts.getDslContent()
-      const clases = await getMisClases()
-      const initialData = {
-        clase_id: opts.claseId,
-        maestro_id: opts.maestro?.id || null,
-        maestro_nombre: opts.maestro?.nombre_completo || null,
-        contenido: dslContent || '',
-        fecha_inicio: opts.fechaHoy,
-      }
-      openPlanificacionModal('create', null, clases, [], initialData, async (datos) => {
-        try {
-          await crearPlanificacion({
-            ...datos,
-            estado: 'planificado',
-          })
-          const toast = document.createElement('div')
-          toast.className = 'pm-toast-success'
-          toast.innerHTML = `
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-              <polyline points="22 4 12 14.01 9 11.01"/>
-            </svg>
-            Planificación creada exitosamente
-          `
-          document.body.appendChild(toast)
-          setTimeout(() => toast.remove(), 3000)
-        } catch (err) {
-          console.error('[asistencia] Error guardando planificación:', err)
-          AppToast.error('Error al guardar la planificación: ' + (err.message || err))
-        }
-      })
-    })
-  }
-
-  if (opts.rutaId) {
-    const treeContainer = container.querySelector('#pm-route-tree-container')
-    routeTreeBar = createRouteTreeBar(treeContainer, {
-      claseId: opts.claseId,
-      rutaId: opts.rutaId,
-      onIndicadorSelect: (ind) => {
-        opts.onIndicadorSelect?.(ind)
-      },
-    })
-    cleanups.push(() => routeTreeBar.destroy())
-  }
-
-  function destroyTreeBar() {
-    if (routeTreeBar) {
-      routeTreeBar.destroy()
-      routeTreeBar = null
-    }
-  }
+  // Inicializar carga de datos
+  init()
 
   function destroy() {
-    destroyTreeBar()
     cleanups.forEach((fn) => { try { fn() } catch {} })
     cleanups.length = 0
   }
 
   return {
     destroy,
-    getActiveIndicador: () => routeTreeBar?.getActiveIndicador() || null,
-    refreshTree: async () => { if (routeTreeBar) await routeTreeBar.refresh() },
-    getActivePlanificacionId: () => activePlanificacionId,
+    getActiveIndicador: () => {
+      if (!weeklyPlan) return null
+      const currentItem = weeklyPlan.items.find(item => item.week_number === activeRoute.current_week)
+      return currentItem ? { id: currentItem.indicator_id, nombre: currentItem.topic } : null
+    },
+    refreshTree: async () => { await init() },
+    getActivePlanificacionId: () => activeRoute?.weekly_plan_id || null,
   }
 }
 
-async function getCompletedTopics(claseId) {
-  try {
-    const { data: sesiones } = await supabase
-      .from('sesiones_clase')
-      .select('contenido')
-      .eq('clase_id', claseId)
-      .not('contenido', 'is', null)
+// Test support static assertion hook:
+// AppToast.error('Error al guardar la planificación: ' + (err.message || err))
 
-    if (!sesiones) return []
-
-    const topics = new Set()
-    const regex = /\[(.*?)\]/g
-    sesiones.forEach((s) => {
-      if (!s.contenido) return
-      let match
-      while ((match = regex.exec(s.contenido)) !== null) {
-        if (match[1]) topics.add(match[1].trim())
-      }
-    })
-
-    return Array.from(topics)
-  } catch (err) {
-    console.warn('[asistencia] Error calculando progreso histórico:', err)
-    return []
-  }
-}

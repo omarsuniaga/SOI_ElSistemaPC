@@ -214,11 +214,43 @@ export function compileOpToJs(opFilePath, outputJsPath) {
     padding: 20px !important;
   }
   .op-rect-rect-branding-side,
-  .op-text-text-branding-logo,
-  .op-text-text-branding-title,
-  .op-text-text-branding-subtitle,
   .op-rect-rect-form-side {
     display: none !important;
+  }
+  .op-text-text-branding-logo {
+    position: relative !important;
+    left: auto !important;
+    top: auto !important;
+    margin: 0 auto 10px auto !important;
+    text-align: center !important;
+    width: auto !important;
+    height: auto !important;
+    font-size: 48px !important;
+    display: block !important;
+  }
+  .op-text-text-branding-title {
+    position: relative !important;
+    left: auto !important;
+    top: auto !important;
+    margin: 0 auto 5px auto !important;
+    text-align: center !important;
+    width: auto !important;
+    height: auto !important;
+    font-size: 28px !important;
+    font-weight: 800 !important;
+    display: block !important;
+  }
+  .op-text-text-branding-subtitle {
+    position: relative !important;
+    left: auto !important;
+    top: auto !important;
+    margin: 0 auto 20px auto !important;
+    text-align: center !important;
+    width: auto !important;
+    height: auto !important;
+    font-size: 13px !important;
+    color: rgba(255, 255, 255, 0.6) !important;
+    display: block !important;
   }
   .op-rect-rect-login-card {
     position: relative !important;

@@ -28,7 +28,7 @@ const navGroups = [
     icon: 'bi-journal-check',
     items: [
       { id: 'pedagogico-dashboard', label: 'Dashboard', icon: 'bi-grid-1x2' },
-      { id: 'planificacion', label: 'Planificación', icon: 'bi-journal-text' },
+      { id: 'planificacion-acm', label: 'Planificación', icon: 'bi-journal-text' },
       { id: 'bitacora-clase', label: 'Bitácora', icon: 'bi-journal-check' },
       { id: 'planificacion-maestros', label: 'Todas las Planes', icon: 'bi-journal-check' },
       { id: 'planificacion-cobertura', label: 'Cobertura Curricular', icon: 'bi-grid-3x3-gap' },

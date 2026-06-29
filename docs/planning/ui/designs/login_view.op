@@ -1,7 +1,7 @@
 {
   "version": "1.0.0",
   "canvas": {
-    "backgroundColor": "#0f172a",
+    "backgroundColor": "#f1f5f9",
     "width": 1440,
     "height": 900
   },
@@ -14,328 +14,338 @@
       "y": 0,
       "width": 1440,
       "height": 900,
-      "backgroundColor": "#0f172a",
+      "backgroundColor": "#f1f5f9",
       "borderRadius": 0,
       "children": [
         {
-          "id": "rect-branding-side",
+          "id": "rect-login-container",
           "type": "rect",
-          "name": "Branding Side (Desktop)",
-          "x": 0,
-          "y": 0,
-          "width": 720,
-          "height": 900,
-          "fill": "linear-gradient(135deg, #1e3a8a 0%, #1d4ed8 100%)",
-          "borderRadius": 0
-        },
-        {
-          "id": "text-branding-logo",
-          "type": "text",
-          "name": "Branding Icon",
-          "x": 200,
-          "y": 380,
-          "width": 80,
-          "height": 80,
-          "content": "🎵",
-          "fontSize": 72,
-          "fontWeight": 700,
-          "color": "#ffffff"
-        },
-        {
-          "id": "text-branding-title",
-          "type": "text",
-          "name": "Branding Title",
-          "x": 200,
-          "y": 480,
-          "width": 400,
-          "height": 40,
-          "content": "Portal de Maestros",
-          "fontSize": 36,
-          "fontWeight": 800,
-          "color": "#ffffff"
-        },
-        {
-          "id": "text-branding-subtitle",
-          "type": "text",
-          "name": "Branding Subtitle",
-          "x": 200,
-          "y": 530,
-          "width": 400,
-          "height": 20,
-          "content": "by SOI - El Sistema Punta Cana",
-          "fontSize": 14,
-          "fontWeight": 500,
-          "color": "rgba(255, 255, 255, 0.7)"
-        },
-        {
-          "id": "rect-form-side",
-          "type": "rect",
-          "name": "Form Side Background",
-          "x": 720,
-          "y": 0,
-          "width": 720,
-          "height": 900,
-          "fill": "#0f172a",
-          "borderRadius": 0
-        },
-        {
-          "id": "rect-login-card",
-          "type": "rect",
-          "name": "Login Card",
-          "x": 860,
-          "y": 200,
-          "width": 440,
-          "height": 500,
-          "fill": "#1e293b",
-          "borderRadius": 24,
+          "name": "Main Container Card",
+          "x": 120,
+          "y": 50,
+          "width": 1200,
+          "height": 800,
+          "fill": "#ffffff",
+          "borderRadius": 32,
           "border": {
-            "color": "rgba(255, 255, 255, 0.05)",
+            "color": "rgba(0, 0, 0, 0.03)",
             "width": 1
           },
           "children": [
             {
-              "id": "text-card-title",
-              "type": "text",
-              "name": "Card Welcome",
-              "x": 900,
-              "y": 240,
-              "width": 360,
-              "height": 24,
-              "content": "Iniciar Sesión",
-              "fontSize": 20,
-              "fontWeight": 800,
-              "color": "#ffffff"
-            },
-            {
-              "id": "group-input-email",
-              "type": "group",
-              "name": "Email Input Group",
+              "id": "rect-form-side",
+              "type": "rect",
+              "name": "Left Form Side",
+              "x": 120,
+              "y": 50,
+              "width": 600,
+              "height": 800,
+              "fill": "#ffffff",
+              "borderRadius": 0,
               "children": [
                 {
-                  "id": "text-label-email",
+                  "id": "text-branding-logo",
                   "type": "text",
-                  "name": "Label Email",
-                  "x": 900,
-                  "y": 290,
-                  "width": 360,
-                  "height": 14,
-                  "content": "CORREO ELECTRÓNICO",
-                  "fontSize": 10,
+                  "name": "Branding Logo Icon",
+                  "x": 380,
+                  "y": 140,
+                  "width": 80,
+                  "height": 80,
+                  "content": "🎵",
+                  "fontSize": 48,
                   "fontWeight": 700,
-                  "color": "rgba(255, 255, 255, 0.5)"
+                  "color": "#ffffff"
                 },
                 {
-                  "id": "rect-input-email",
+                  "id": "text-card-welcome",
+                  "type": "text",
+                  "name": "Card Title",
+                  "x": 240,
+                  "y": 240,
+                  "width": 360,
+                  "height": 36,
+                  "content": "¡Te damos la bienvenida!",
+                  "fontSize": 28,
+                  "fontWeight": 800,
+                  "color": "#0f172a"
+                },
+                {
+                  "id": "text-card-subtitle",
+                  "type": "text",
+                  "name": "Card Subtitle",
+                  "x": 240,
+                  "y": 285,
+                  "width": 360,
+                  "height": 20,
+                  "content": "Ingresa tus credenciales para continuar",
+                  "fontSize": 13,
+                  "fontWeight": 500,
+                  "color": "#64748b"
+                },
+                {
+                  "id": "group-input-email",
+                  "type": "group",
+                  "name": "Email Input Group",
+                  "children": [
+                    {
+                      "id": "rect-input-email",
+                      "type": "rect",
+                      "name": "Email Input Bg [tag:input][id:pm-email][class:pm-input][type:email][placeholder:Correo electrónico]",
+                      "x": 240,
+                      "y": 330,
+                      "width": 360,
+                      "height": 48,
+                      "fill": "#ffffff",
+                      "borderRadius": 12,
+                      "border": {
+                        "color": "#cbd5e1",
+                        "width": 1
+                      }
+                    },
+                    {
+                      "id": "text-placeholder-email",
+                      "type": "text",
+                      "name": "Email Placeholder Text",
+                      "x": 256,
+                      "y": 344,
+                      "width": 300,
+                      "height": 18,
+                      "content": "Correo electrónico",
+                      "fontSize": 14,
+                      "fontWeight": 500,
+                      "color": "#94a3b8"
+                    }
+                  ]
+                },
+                {
+                  "id": "group-input-password",
+                  "type": "group",
+                  "name": "Password Input Group",
+                  "children": [
+                    {
+                      "id": "rect-input-password",
+                      "type": "rect",
+                      "name": "Password Input Bg [tag:input][id:pm-password][class:pm-input][type:password][placeholder:Contraseña]",
+                      "x": 240,
+                      "y": 395,
+                      "width": 360,
+                      "height": 48,
+                      "fill": "#ffffff",
+                      "borderRadius": 12,
+                      "border": {
+                        "color": "#cbd5e1",
+                        "width": 1
+                      }
+                    },
+                    {
+                      "id": "text-placeholder-password",
+                      "type": "text",
+                      "name": "Password Placeholder Text",
+                      "x": 256,
+                      "y": 409,
+                      "width": 300,
+                      "height": 18,
+                      "content": "Contraseña",
+                      "fontSize": 14,
+                      "fontWeight": 500,
+                      "color": "#94a3b8"
+                    },
+                    {
+                      "id": "rect-btn-eye",
+                      "type": "rect",
+                      "name": "Btn Toggle Password [tag:button][id:pm-toggle-password][class:pm-password-toggle][type:button]",
+                      "x": 560,
+                      "y": 406,
+                      "width": 26,
+                      "height": 26,
+                      "fill": "#f1f5f9",
+                      "borderRadius": 6
+                    }
+                  ]
+                },
+                {
+                  "id": "group-checkboxes",
+                  "type": "group",
+                  "name": "Preferences Group",
+                  "children": [
+                    {
+                      "id": "rect-chk-remember",
+                      "type": "rect",
+                      "name": "Chk Remember [tag:input][id:pm-remember-email][type:checkbox]",
+                      "x": 240,
+                      "y": 465,
+                      "width": 16,
+                      "height": 16,
+                      "fill": "#ffffff",
+                      "borderRadius": 4,
+                      "border": {
+                        "color": "#cbd5e1",
+                        "width": 1
+                      }
+                    },
+                    {
+                      "id": "text-lbl-remember",
+                      "type": "text",
+                      "name": "Label Remember",
+                      "x": 264,
+                      "y": 466,
+                      "width": 180,
+                      "height": 14,
+                      "content": "Recordarme por 30 días",
+                      "fontSize": 12,
+                      "fontWeight": 600,
+                      "color": "#475569"
+                    },
+                    {
+                      "id": "text-forgot-link",
+                      "type": "text",
+                      "name": "Forgot Password Link [tag:a][id:pm-forgot-link][class:pm-link-purple][href:#]",
+                      "x": 460,
+                      "y": 466,
+                      "width": 140,
+                      "height": 14,
+                      "content": "¿Olvidaste tu contraseña?",
+                      "fontSize": 12,
+                      "fontWeight": 600,
+                      "color": "#7c3aed"
+                    }
+                  ]
+                },
+                {
+                  "id": "rect-btn-login",
                   "type": "rect",
-                  "name": "Email Input Bg [tag:input][id:pm-email][class:pm-input][type:email][placeholder:tu@correo.com]",
-                  "x": 900,
-                  "y": 312,
+                  "name": "Button Login [tag:button][id:pm-login-btn][class:pm-btn-lime][type:button]",
+                  "x": 240,
+                  "y": 510,
+                  "width": 360,
+                  "height": 48,
+                  "fill": "#bef264",
+                  "borderRadius": 12
+                },
+                {
+                  "id": "text-btn-login-label",
+                  "type": "text",
+                  "name": "Button Login Label",
+                  "x": 380,
+                  "y": 525,
+                  "width": 100,
+                  "height": 18,
+                  "content": "Iniciar sesión",
+                  "fontSize": 14,
+                  "fontWeight": 700,
+                  "color": "#0f172a"
+                },
+                {
+                  "id": "rect-btn-biometric",
+                  "type": "rect",
+                  "name": "Button Biometric [tag:button][id:pm-biometric-btn][class:pm-btn-flat][type:button]",
+                  "x": 240,
+                  "y": 570,
                   "width": 360,
                   "height": 45,
-                  "fill": "rgba(255, 255, 255, 0.02)",
+                  "fill": "#ffffff",
                   "borderRadius": 12,
                   "border": {
-                    "color": "rgba(255, 255, 255, 0.1)",
+                    "color": "#cbd5e1",
                     "width": 1
                   }
                 },
                 {
-                  "id": "text-placeholder-email",
+                  "id": "text-btn-biometric-label",
                   "type": "text",
-                  "name": "Email Placeholder",
-                  "x": 916,
-                  "y": 326,
-                  "width": 300,
-                  "height": 18,
-                  "content": "tu@correo.com",
-                  "fontSize": 14,
-                  "fontWeight": 500,
-                  "color": "rgba(255, 255, 255, 0.3)"
+                  "name": "Button Biometric Label",
+                  "x": 340,
+                  "y": 583,
+                  "width": 200,
+                  "height": 16,
+                  "content": "🧬 Usar huella o Face ID",
+                  "fontSize": 13,
+                  "fontWeight": 600,
+                  "color": "#0f172a"
+                },
+                {
+                  "id": "text-register-link",
+                  "type": "text",
+                  "name": "Register Link [tag:a][id:pm-register-route-link][class:pm-link-footer][href:#]",
+                  "x": 240,
+                  "y": 640,
+                  "width": 360,
+                  "height": 16,
+                  "content": "¿No tienes cuenta? Regístrate como maestro",
+                  "fontSize": 12,
+                  "fontWeight": 600,
+                  "color": "#7c3aed"
                 }
               ]
             },
             {
-              "id": "group-input-password",
-              "type": "group",
-              "name": "Password Input Group",
+              "id": "rect-branding-side",
+              "type": "rect",
+              "name": "Right Branding Side",
+              "x": 720,
+              "y": 50,
+              "width": 600,
+              "height": 800,
+              "fill": "#faf5ff",
+              "borderRadius": 32,
               "children": [
                 {
-                  "id": "text-label-password",
+                  "id": "text-branding-title",
                   "type": "text",
-                  "name": "Label Password",
-                  "x": 900,
-                  "y": 380,
-                  "width": 360,
-                  "height": 14,
-                  "content": "CONTRASEÑA",
-                  "fontSize": 10,
-                  "fontWeight": 700,
-                  "color": "rgba(255, 255, 255, 0.5)"
+                  "name": "Branding Hero Title",
+                  "x": 780,
+                  "y": 140,
+                  "width": 480,
+                  "height": 80,
+                  "content": "El hogar de la excelencia y el progreso musical",
+                  "fontSize": 28,
+                  "fontWeight": 800,
+                  "color": "#0f172a"
                 },
                 {
-                  "id": "rect-input-password",
+                  "id": "text-branding-subtitle",
+                  "type": "text",
+                  "name": "Branding Hero Subtitle",
+                  "x": 780,
+                  "y": 235,
+                  "width": 480,
+                  "height": 20,
+                  "content": "by SOI - El Sistema Punta Cana",
+                  "fontSize": 13,
+                  "fontWeight": 600,
+                  "color": "#64748b"
+                },
+                {
+                  "id": "rect-glass-tabs",
                   "type": "rect",
-                  "name": "Password Input Bg [tag:input][id:pm-password][class:pm-input][type:password][placeholder:••••••••]",
-                  "x": 900,
-                  "y": 402,
-                  "width": 360,
-                  "height": 45,
-                  "fill": "rgba(255, 255, 255, 0.02)",
-                  "borderRadius": 12,
+                  "name": "Glassmorphism Tab Widget",
+                  "x": 780,
+                  "y": 320,
+                  "width": 480,
+                  "height": 90,
+                  "fill": "rgba(255, 255, 255, 0.4)",
+                  "borderRadius": 20,
                   "border": {
-                    "color": "rgba(255, 255, 255, 0.1)",
+                    "color": "rgba(255, 255, 255, 0.6)",
                     "width": 1
                   }
                 },
                 {
-                  "id": "text-placeholder-password",
-                  "type": "text",
-                  "name": "Password Placeholder",
-                  "x": 916,
-                  "y": 416,
-                  "width": 300,
-                  "height": 18,
-                  "content": "••••••••",
-                  "fontSize": 14,
-                  "fontWeight": 500,
-                  "color": "rgba(255, 255, 255, 0.3)"
-                },
-                {
-                  "id": "rect-btn-eye",
+                  "id": "rect-glass-chart",
                   "type": "rect",
-                  "name": "Btn Toggle Password [tag:button][id:pm-toggle-password][class:pm-password-toggle][type:button]",
-                  "x": 1220,
-                  "y": 412,
-                  "width": 26,
-                  "height": 26,
-                  "fill": "rgba(255, 255, 255, 0.05)",
-                  "borderRadius": 6
-                }
-              ]
-            },
-            {
-              "id": "group-checkboxes",
-              "type": "group",
-              "name": "Session Preferences Group",
-              "children": [
-                {
-                  "id": "rect-chk-remember",
-                  "type": "rect",
-                  "name": "Chk Remember Email [tag:input][id:pm-remember-email][type:checkbox]",
-                  "x": 900,
-                  "y": 472,
-                  "width": 16,
-                  "height": 16,
-                  "fill": "rgba(255, 255, 255, 0.05)",
-                  "borderRadius": 4,
+                  "name": "Glassmorphism Chart Widget",
+                  "x": 780,
+                  "y": 440,
+                  "width": 480,
+                  "height": 260,
+                  "fill": "rgba(255, 255, 255, 0.4)",
+                  "borderRadius": 24,
                   "border": {
-                    "color": "rgba(255, 255, 255, 0.2)",
+                    "color": "rgba(255, 255, 255, 0.6)",
                     "width": 1
                   }
-                },
-                {
-                  "id": "text-lbl-remember",
-                  "type": "text",
-                  "name": "Label Remember Email",
-                  "x": 924,
-                  "y": 473,
-                  "width": 240,
-                  "height": 14,
-                  "content": "Recordar correo electrónico",
-                  "fontSize": 11,
-                  "fontWeight": 600,
-                  "color": "#e5e7eb"
-                },
-                {
-                  "id": "rect-chk-keep",
-                  "type": "rect",
-                  "name": "Chk Keep Session [tag:input][id:pm-keep-session][type:checkbox]",
-                  "x": 900,
-                  "y": 502,
-                  "width": 16,
-                  "height": 16,
-                  "fill": "#3b82f6",
-                  "borderRadius": 4
-                },
-                {
-                  "id": "text-lbl-keep",
-                  "type": "text",
-                  "name": "Label Keep Session",
-                  "x": 924,
-                  "y": 503,
-                  "width": 240,
-                  "height": 14,
-                  "content": "Mantener sesión activa (30 días)",
-                  "fontSize": 11,
-                  "fontWeight": 600,
-                  "color": "#e5e7eb"
                 }
               ]
-            },
-            {
-              "id": "rect-btn-login",
-              "type": "rect",
-              "name": "Button Login [tag:button][id:pm-login-btn][class:pm-btn-primary][type:button]",
-              "x": 900,
-              "y": 545,
-              "width": 360,
-              "height": 48,
-              "fill": "#3b82f6",
-              "borderRadius": 12
-            },
-            {
-              "id": "text-btn-login-label",
-              "type": "text",
-              "name": "Button Login Label",
-              "x": 1040,
-              "y": 560,
-              "width": 100,
-              "height": 18,
-              "content": "Iniciar sesión",
-              "fontSize": 13,
-              "fontWeight": 700,
-              "color": "#ffffff"
-            },
-            {
-              "id": "rect-btn-biometric",
-              "type": "rect",
-              "name": "Button Biometric [tag:button][id:pm-biometric-btn][class:pm-btn-secondary][type:button]",
-              "x": 900,
-              "y": 605,
-              "width": 360,
-              "height": 42,
-              "fill": "rgba(255, 255, 255, 0.03)",
-              "borderRadius": 12,
-              "border": {
-                "color": "rgba(255, 255, 255, 0.1)",
-                "width": 1
-              }
-            },
-            {
-              "id": "text-btn-biometric-label",
-              "type": "text",
-              "name": "Button Biometric Label",
-              "x": 1005,
-              "y": 618,
-              "width": 200,
-              "height": 16,
-              "content": "🧬 Usar huella o Face ID",
-              "fontSize": 12,
-              "fontWeight": 600,
-              "color": "#60a5fa"
-            },
-            {
-              "id": "text-register-link",
-              "type": "text",
-              "name": "Register Route Link [tag:a][id:pm-register-route-link][class:pm-link][href:#]",
-              "x": 900,
-              "y": 662,
-              "width": 360,
-              "height": 16,
-              "content": "¿No tienes cuenta? Regístrate como maestro",
-              "fontSize": 11,
-              "fontWeight": 600,
-              "color": "#3b82f6"
             }
           ]
         }

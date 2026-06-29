@@ -11,6 +11,7 @@ import {
   getSalones,
   getEmergentesHoy,
 } from '../services/maestroDataService.js'
+import { obtenerRutasActivas, obtenerGuiaHeredadaPorClase } from '../../modules/planificacion/api/weeklyPlanAdapter.js'
 import { openClaseAnalysisModal } from '../components/claseAnalysisModal.js'
 
 // ─── Detección de clase en curso ───────────────────────────────
@@ -129,6 +130,15 @@ export async function renderHoyView(container, { onClaseClick } = {}) {
 
     const claseIds = misClases.map((c) => c.id)
     const clasesMap = Object.fromEntries(misClases.map((c) => [c.id, c]))
+    const rutasActivas = await obtenerRutasActivas(maestro.id).catch(() => [])
+    const rutaMap = Object.fromEntries((rutasActivas || []).map((ruta) => [String(ruta.group_id), ruta]))
+    const guias = await Promise.all(
+      misClases.map(async (clase) => [
+        clase.id,
+        await obtenerGuiaHeredadaPorClase(clase.id, maestro.id).catch(() => null),
+      ]),
+    )
+    const guiaMap = Object.fromEntries(guias)
 
     // 2. Obtener horarios de hoy para esas clases (con cache)
     const todosHorarios = await getHorariosClases(claseIds)
@@ -201,6 +211,8 @@ export async function renderHoyView(container, { onClaseClick } = {}) {
         const registrada = registradasHoy.has(clase.id)
         const totalAlumnos = alumnosPorClase[clase.id] || 0
         const temporal = _estadoTemporal(h.hora_inicio, h.hora_fin, ahoraMin)
+        const ruta = rutaMap[String(clase.id)] || null
+        const guia = guiaMap[String(clase.id)] || null
 
         // Rastrear clase en curso
         if (temporal === 'en-curso') {
@@ -245,6 +257,11 @@ export async function renderHoyView(container, { onClaseClick } = {}) {
             <div class="meta-item"><i class="bi bi-people"></i> ${totalAlumnos} alumnos</div>
             ${h.salon_id ? `<div class="meta-item"><i class="bi bi-geo-alt"></i> ${escHTML(salonMap[h.salon_id] || 'Salón')}</div>` : ''}
           </div>
+          ${
+            ruta
+              ? `<div class="pm-badge pm-badge-info mt-2"><i class="bi bi-diagram-3 me-1"></i>ACM Semana ${ruta.current_week || 1}${guia?.plan?.main_topic ? ` · ${escHTML(guia.plan.main_topic)}` : ''}</div>`
+              : ''
+          }
         </div>
       `
       })

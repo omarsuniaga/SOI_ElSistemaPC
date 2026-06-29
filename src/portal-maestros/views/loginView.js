@@ -1,6 +1,7 @@
 import { loginMaestro } from '../auth/maestroAuth.js'
 import { usePortalAuth } from '../auth/usePortalAuth.js'
 import { setFieldError, clearFieldError, clearAllFieldErrors } from '../utils/a11yUtils.js'
+import { templateHtml, templateCss } from './templates/loginDesignTemplate.js'
 
 /**
  * Renderiza la vista de login del portal maestros en el contenedor dado.
@@ -8,89 +9,15 @@ import { setFieldError, clearFieldError, clearAllFieldErrors } from '../utils/a1
  * @param {{ onSuccess: () => void }} options
  */
 export function renderLoginView(container, { onSuccess }) {
-  container.innerHTML = `
-    <div class="pm-login">
-      <!-- Branding Side (Desktop) -->
-      <div class="pm-login-branding">
-        <div class="pm-login-logo"><i class="bi bi-music-note-beamed"></i></div>
-        <h1 class="pm-login-title">Portal Maestros</h1>
-        <p class="pm-login-subtitle">Sistema Operativo Institucional — SOI</p>
-      </div>
+  // Inyectar estilos de OpenPencil si no están presentes
+  if (!document.getElementById('pm-openpencil-login-styles')) {
+    const style = document.createElement('style')
+    style.id = 'pm-openpencil-login-styles'
+    style.textContent = templateCss
+    document.head.appendChild(style)
+  }
 
-      <!-- Form Side -->
-      <div class="pm-login-form">
-        <div class="pm-login-card">
-          <div class="pm-input-group">
-            <label for="pm-email">Correo electrónico</label>
-            <input
-              type="email"
-              id="pm-email"
-              class="pm-input"
-              placeholder="tu@correo.com"
-              autocomplete="username"
-              inputmode="email"
-            />
-          </div>
-
-          <div class="pm-input-group">
-            <label for="pm-password">Contraseña</label>
-            <div class="pm-password-wrapper">
-              <input
-                type="password"
-                id="pm-password"
-                class="pm-input"
-                placeholder="••••••••"
-                autocomplete="current-password"
-              />
-              <button
-                type="button"
-                id="pm-toggle-password"
-                class="pm-password-toggle"
-                title="Mostrar contraseña"
-                aria-label="Mostrar contraseña"
-              >
-                <i class="bi bi-eye"></i>
-            </button>
-          </div>
-        </div>
-
-        <div class="pm-checkbox-group">
-          <label class="pm-checkbox-label">
-            <input type="checkbox" id="pm-remember-email" />
-            Recordar correo electrónico
-          </label>
-          <label class="pm-checkbox-label">
-            <input type="checkbox" id="pm-keep-session" checked />
-            Mantener sesión activa (30 días)
-          </label>
-        </div>
-
-        <button type="button" class="pm-btn-primary" id="pm-login-btn">
-          <span class="pm-btn-text">Iniciar sesión</span>
-          <span class="pm-btn-loader d-none">
-            <span class="pm-spinner-sm"></span>
-            Validando...
-          </span>
-        </button>
-
-        <button type="button" class="pm-btn-secondary" id="pm-biometric-btn" style="display:none;">
-          <i class="bi bi-fingerprint"></i> Usar huella o Face ID
-        </button>
-
-        <p class="pm-error-msg" id="pm-login-error" aria-live="polite"></p>
-
-        <p class="pm-login-register-link">
-          <a href="#" data-route="register" class="pm-link">¿No tienes cuenta? Regístrate como maestro</a>
-        </p>
-      </div>
-    </div>
-    <style>
-      .pm-input[aria-invalid="true"] {
-        border-color: var(--pm-danger, #ef4444);
-        box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15);
-      }
-    </style>
-  `
+  container.innerHTML = templateHtml
 
   const emailInput       = container.querySelector('#pm-email')
   const passwordInput    = container.querySelector('#pm-password')

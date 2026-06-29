@@ -7,6 +7,9 @@ export function registerRoutesPlanificacion() {
   router.register('planificacion', (container) =>
     renderPlanificacionView(container, { viewMode: 'maestro' }),
   )
+  router.register('planificacion-acm', (container) =>
+    renderPlanificacionView(container, { viewMode: 'acm' }),
+  )
   // "Plantillas" - biblioteca de plantillas DSL
   router.register('planificacion-plantillas', (container) =>
     renderPlanificacionView(container, { viewMode: 'plantillas' }),

@@ -17,7 +17,12 @@ Implement the initial weekly plans and the semantic semaphore grid for the Acade
 2. **Weekly planning mockup**: Wrote `acm_weekly_plans.json` containing the schedule (weeks 1 to 6) of Violin N0 (OSPC Guide V2.0) and Language Music (Manuel's guide) for demo mode.
 3. **Interactive Weekly UI**: Refactored `PlanificationCard.js` to render a premium interactive week-by-week navigator containing themes, objectives, strategies, and evidence.
 4. **Semantic Semaphore Grid**: Rewrote `studentProgressPanel.js` to render a 6-state semaphore grid (`not_started`, `worked`, `in_process`, `achieved`, `needs_reinforcement`, `failed`, `exceeded`) and persist student qualifications through the unified adapter.
-5. **Git Hygiene**: Committed changes to local branch `feat/acm-ruta-academica-mvp1` using conventional commits.
+5. **Operational Student CTAs**: Injected hover-revealed CTAs (Ver Perfil, Evaluar Indicador, Registrar Evidencia) directly in the student rows of the Pedagogical Map traceability panel (`mapaPedagogicoPanel.js`), opening evaluation and evidence modals linked to `weeklyPlanAdapter`.
+6. **OpenPencil Design Integration (Design-as-Code)**: Established the workflow standard in `OPENPENCIL_WORKFLOW.md` and designed 3 vector layouts:
+   - `mapa_pedagogico_trazabilidad.op`: Visual and logical layout for student evaluation and Quick CTAs.
+   - `login_view.op`: Two-column responsive desktop layout for the teacher auth interface.
+   - `hoy_view.op`: The dashboard overview displaying schedule class cards, status badges, pending notifications, and auto-navigation banners.
+7. **Git Hygiene**: Committed changes to local branch `feat/acm-ruta-academica-mvp1` using conventional commits.
 
 ## Next Steps
 - Implement the admin planning matrix panel in the Academics (ACM) Portal to assign these weekly schedules.
@@ -26,7 +31,10 @@ Implement the initial weekly plans and the semantic semaphore grid for the Acade
 ## Relevant Files
 - `src/portal-maestros/components/studentProgressPanel.js`
 - `src/portal-maestros/components/attendance/PlanificationCard.js`
-- `src/modules/planificacion/api/weeklyPlanAdapter.js`"""
+- `src/modules/planificacion/components/mapaPedagogicoPanel.js`
+- `docs/planning/ui/OPENPENCIL_WORKFLOW.md`
+- `docs/planning/ui/designs/login_view.op`
+- `docs/planning/ui/designs/hoy_view.op`"""
 
 now_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 new_sync_id = f"obs-{uuid.uuid4().hex[:16]}"
@@ -42,6 +50,6 @@ try:
     """, ("session_summary", obs_title, obs_topic, summary_content, "project", project, new_sync_id, session_id, now_str, now_str, now_str))
     conn.commit()
     conn.close()
-    print("Session summary successfully recorded in Engram.")
+    print("Session summary successfully updated in Engram.")
 except Exception as e:
     print(f"Error saving session summary: {e}")

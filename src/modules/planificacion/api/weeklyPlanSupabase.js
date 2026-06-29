@@ -36,6 +36,19 @@ export async function obtenerRutasActivas(maestroId = null) {
   return data
 }
 
+export async function obtenerGuiaHeredadaPorClase(claseId, maestroId = null) {
+  const routes = await obtenerRutasActivas(maestroId)
+  const route = routes.find((item) => String(item.group_id) === String(claseId) && item.status === 'active')
+  if (!route) return null
+
+  const plan = await obtenerPlanSemanalPorNivel(route.level_id)
+  return {
+    route,
+    plan,
+    source: plan?.source_id || null,
+  }
+}
+
 export async function obtenerRutaActivaPorGrupo(groupId) {
   const { data, error } = await supabase
     .from('acm_active_routes')
@@ -51,10 +64,15 @@ export async function crearRutaActiva(routeData) {
   const { data, error } = await supabase
     .from('acm_active_routes')
     .insert({
-      weekly_plan_id: routeData.weekly_plan_id,
+      weekly_plan_id: routeData.weekly_plan_id || routeData.weekly_plan_version_id,
       teacher_id: routeData.teacher_id,
       group_id: routeData.group_id,
       level_id: routeData.level_id,
+      program_id: routeData.program_id || null,
+      area_id: routeData.area_id || null,
+      instrument_id: routeData.instrument_id || null,
+      module_id: routeData.module_id || null,
+      phase_id: routeData.phase_id || null,
       current_week: 1,
       status: 'active',
       start_date: routeData.start_date || new Date().toISOString().slice(0, 10),

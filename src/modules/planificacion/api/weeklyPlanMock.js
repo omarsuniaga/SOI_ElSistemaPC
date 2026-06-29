@@ -81,6 +81,20 @@ export async function obtenerRutasActivas(maestroId = null) {
   return [...routes]
 }
 
+export async function obtenerGuiaHeredadaPorClase(claseId, maestroId = null) {
+  await _delay()
+  _ensureStore()
+  const routes = await obtenerRutasActivas(maestroId)
+  const route = routes.find((r) => String(r.group_id) === String(claseId) && r.status === 'active')
+  if (!route) return null
+  const plan = _data.weekly_plans.find((p) => p.id === route.weekly_plan_id || p.level_id === route.level_id)
+  return {
+    route: { ...route },
+    plan: plan ? { ...plan } : null,
+    source: plan?.source_id || null,
+  }
+}
+
 export async function obtenerRutaActivaPorGrupo(groupId) {
   await _delay()
   _ensureStore()
@@ -93,10 +107,15 @@ export async function crearRutaActiva(routeData) {
   _ensureStore()
   const newRoute = {
     id: `aroute-${Date.now()}`,
-    weekly_plan_id: routeData.weekly_plan_id || 'wplan-violin-n0',
+    weekly_plan_id: routeData.weekly_plan_id || routeData.weekly_plan_version_id || 'wplan-violin-n0',
     teacher_id: routeData.teacher_id || 'maestro_001',
     group_id: routeData.group_id,
     level_id: routeData.level_id || 'pnivel_001',
+    program_id: routeData.program_id || null,
+    area_id: routeData.area_id || null,
+    instrument_id: routeData.instrument_id || null,
+    module_id: routeData.module_id || null,
+    phase_id: routeData.phase_id || null,
     current_week: 1,
     status: 'active',
     start_date: routeData.start_date || new Date().toISOString().slice(0, 10),

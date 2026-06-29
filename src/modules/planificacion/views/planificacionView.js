@@ -12,6 +12,10 @@ import {
   obtenerMaestros,
   obtenerPlantillas,
 } from '../api/planificacionAdapter.js'
+import {
+  obtenerFuentesCurriculares,
+  obtenerRutasActivas,
+} from '../api/weeklyPlanAdapter.js'
 import { escapeHTML } from '../../clases/utils/clasesUtils.js'
 import { HelpPanel } from '../../../shared/components/HelpPanel.js'
 import { openPlanificacionModal } from '../components/planificacionModal.js'
@@ -33,6 +37,7 @@ const state = {
   asistenteRendered: false,
   rutasRendered: false,
   historialRendered: false,
+  acmAuthority: { sources: [], routes: [] },
   seleccionados: new Set(),
   container: null,
 }
@@ -48,6 +53,7 @@ export async function renderPlanificacionView(container, { viewMode = 'maestro' 
   state.asistenteRendered = false
   state.rutasRendered = false
   state.historialRendered = false
+  state.acmAuthority = { sources: [], routes: [] }
 
   if (viewMode === 'plantillas') {
     renderTemplatesContent(container)
@@ -60,6 +66,13 @@ export async function renderPlanificacionView(container, { viewMode = 'maestro' 
 
     await hook.fetchPlanificacionesConDetalles()
     state.planes = [...hook.planificaciones]
+    if (viewMode === 'acm') {
+      const [sources, routes] = await Promise.all([
+        obtenerFuentesCurriculares().catch(() => []),
+        obtenerRutasActivas().catch(() => []),
+      ])
+      state.acmAuthority = { sources, routes }
+    }
     state.cargando = false
 
     renderContent(container)
@@ -100,14 +113,14 @@ function renderError(container, msg) {
 function renderContent(container) {
   const isAdmin = state.viewMode === 'admin'
 
-  const headerTitle = isAdmin ? 'Todas las Planificaciones' : 'Mis Planes de Clase'
-  const headerIcon = isAdmin ? 'bi-shield-check' : 'bi-journal-check'
+  const headerTitle = state.viewMode === 'acm' ? 'ACM Planning' : isAdmin ? 'Todas las Planificaciones' : 'Mis Planes de Clase'
+  const headerIcon = state.viewMode === 'acm' ? 'bi-diagram-3' : isAdmin ? 'bi-shield-check' : 'bi-journal-check'
   const headerDesc = isAdmin
     ? `${hook.planificaciones.length} planes pendientes de revisión`
     : `${hook.planificaciones.length} planes registrados`
 
   // Stats for admin mode
-  const statsHtml = isAdmin ? _renderAdminStats() : ''
+  const statsHtml = state.viewMode === 'acm' ? _renderAcmAuthorityPanel() : isAdmin ? _renderAdminStats() : ''
 
   container.innerHTML = `
     <div class="page-container">
@@ -127,7 +140,7 @@ function renderContent(container) {
             <i class="bi bi-question"></i>
           </button>
           ${
-            isAdmin
+            (isAdmin || state.viewMode === 'acm')
               ? `
             <button class="btn btn-outline-secondary btn-sm" id="btn-curriculo-admin">
               <i class="bi bi-journal-bookmark me-1"></i>Currículo
@@ -154,7 +167,7 @@ function renderContent(container) {
           <input type="text" class="form-control premium-search-input" placeholder="Buscar por tema..." id="buscar-plan">
         </div>
         ${
-          isAdmin
+          (isAdmin || state.viewMode === 'acm')
             ? `
         <div class="premium-select-container">
           <i class="bi bi-person select-icon-muted"></i>
@@ -244,9 +257,9 @@ function renderContent(container) {
           <table class="table table-compact table-hover mb-0">
             <thead class="table-light">
               <tr>
-                ${isAdmin ? '<th style="width:36px"><input type="checkbox" id="check-all" title="Seleccionar todos"></th>' : ''}
+                ${(isAdmin || state.viewMode === 'acm') ? '<th style="width:36px"><input type="checkbox" id="check-all" title="Seleccionar todos"></th>' : ''}
                 <th>Clase / Tema</th>
-                ${isAdmin ? '<th class="d-none d-md-table-cell">Maestro</th>' : ''}
+                ${(isAdmin || state.viewMode === 'acm') ? '<th class="d-none d-md-table-cell">Maestro</th>' : ''}
                 <th class="d-none d-md-table-cell">Estado</th>
                 <th class="d-none d-lg-table-cell">Fecha</th>
                 <th class="text-end">Acciones</th>
@@ -304,6 +317,85 @@ function _renderAdminStats() {
         <div class="stat-card border-start border-4 border-info">
           <div class="stat-label">Tasa aprobación</div>
           <div class="stat-value">${total > 0 ? Math.round((revisados / total) * 100) : 0}%</div>
+        </div>
+      </div>
+    </div>
+  `
+}
+
+function _renderAcmAuthorityPanel() {
+  const sources = state.acmAuthority.sources || []
+  const routes = state.acmAuthority.routes || []
+  return `
+    <div class="stats-panel mb-4">
+      <div class="stats-grid">
+        <div class="stat-card border-start border-4 border-primary">
+          <div class="stat-label">Fuentes</div>
+          <div class="stat-value">${sources.length}</div>
+        </div>
+        <div class="stat-card border-start border-4 border-success">
+          <div class="stat-label">Rutas activas</div>
+          <div class="stat-value">${routes.length}</div>
+        </div>
+        <div class="stat-card border-start border-4 border-info">
+          <div class="stat-label">Publicadas</div>
+          <div class="stat-value">${sources.filter((s) => s.status === 'active' || s.status === 'approved').length}</div>
+        </div>
+        <div class="stat-card border-start border-4 border-warning">
+          <div class="stat-label">Herencias listas</div>
+          <div class="stat-value">${routes.filter((r) => r.status === 'active').length}</div>
+        </div>
+      </div>
+
+      <div class="page-glass mt-3 p-3">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+          <div>
+            <div class="fw-bold">Gobernanza ACM</div>
+            <small class="text-muted">ACM define, versiona y publica. El maestro solo consume lo activo.</small>
+          </div>
+          <span class="badge text-bg-primary">Source of truth</span>
+        </div>
+        <div class="row g-3">
+          <div class="col-12 col-lg-6">
+            <div class="rounded border p-3 h-100">
+              <div class="fw-semibold mb-2">Fuentes curriculares</div>
+              <div class="d-flex flex-column gap-2">
+                ${sources
+                  .map(
+                    (s) => `
+                      <div class="d-flex justify-content-between align-items-center rounded border p-2">
+                        <div>
+                          <div class="fw-semibold">${escapeHTML(s.title || s.file_name || 'Fuente')}</div>
+                          <small class="text-muted">${escapeHTML(s.source_type || 'documento')}</small>
+                        </div>
+                        <span class="badge ${s.status === 'active' ? 'text-bg-success' : s.status === 'approved' ? 'text-bg-primary' : 'text-bg-secondary'}">${escapeHTML(s.status || 'draft')}</span>
+                      </div>
+                    `,
+                  )
+                  .join('') || '<div class="text-muted small">Sin fuentes cargadas.</div>'}
+              </div>
+            </div>
+          </div>
+          <div class="col-12 col-lg-6">
+            <div class="rounded border p-3 h-100">
+              <div class="fw-semibold mb-2">Rutas activas</div>
+              <div class="d-flex flex-column gap-2">
+                ${routes
+                  .map(
+                    (r) => `
+                      <div class="d-flex justify-content-between align-items-center rounded border p-2">
+                        <div>
+                          <div class="fw-semibold">Grupo ${escapeHTML(r.group_id || '—')}</div>
+                          <small class="text-muted">Semana ${r.current_week || 1} · ${escapeHTML(r.status || 'active')}</small>
+                        </div>
+                        <span class="badge text-bg-success">Activa</span>
+                      </div>
+                    `,
+                  )
+                  .join('') || '<div class="text-muted small">Sin rutas activas.</div>'}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -573,7 +665,7 @@ function _attachEvents(container) {
   container.querySelector('#buscar-plan')?.addEventListener('input', _applyFilters)
   container.querySelector('#select-estado')?.addEventListener('change', _applyFilters)
   container.querySelector('#select-clase')?.addEventListener('change', _applyFilters)
-  if (isAdmin) {
+  if (isAdmin || state.viewMode === 'acm') {
     container.querySelector('#select-maestro')?.addEventListener('change', _applyFilters)
   }
 
@@ -619,8 +711,8 @@ function _attachEvents(container) {
     container.querySelector('#btn-nuevo-plan')?.addEventListener('click', () => openEditModal(null))
   }
 
-  // Check-all for admin
-  if (isAdmin) {
+  // Check-all for admin/acm
+  if (isAdmin || state.viewMode === 'acm') {
     container.querySelector('#check-all')?.addEventListener('change', (e) => {
       const checked = e.target.checked
       state.seleccionados = checked ? new Set(state.planes.map((p) => p.id)) : new Set()

@@ -343,6 +343,7 @@ function _renderAdminStats() {
 
 function _renderAcmAuthorityPanel() {
   const sources = state.acmAuthority.sources || []
+  const versions = state.acmAuthority.versions || []
   const routes = state.acmAuthority.routes || []
   return `
     <div class="stats-panel mb-4">
@@ -352,16 +353,16 @@ function _renderAcmAuthorityPanel() {
           <div class="stat-value">${sources.length}</div>
         </div>
         <div class="stat-card border-start border-4 border-success">
+          <div class="stat-label">Versiones</div>
+          <div class="stat-value">${versions.length}</div>
+        </div>
+        <div class="stat-card border-start border-4 border-info">
           <div class="stat-label">Rutas activas</div>
           <div class="stat-value">${routes.length}</div>
         </div>
-        <div class="stat-card border-start border-4 border-info">
-          <div class="stat-label">Publicadas</div>
-          <div class="stat-value">${sources.filter((s) => s.status === 'active' || s.status === 'approved').length}</div>
-        </div>
         <div class="stat-card border-start border-4 border-warning">
-          <div class="stat-label">Herencias listas</div>
-          <div class="stat-value">${routes.filter((r) => r.status === 'active').length}</div>
+          <div class="stat-label">Publicadas</div>
+          <div class="stat-value">${versions.filter((v) => v.status === 'active').length}</div>
         </div>
       </div>
 
@@ -374,7 +375,7 @@ function _renderAcmAuthorityPanel() {
           <span class="badge text-bg-primary">Source of truth</span>
         </div>
         <div class="row g-3">
-          <div class="col-12 col-lg-6">
+          <div class="col-12 col-lg-4">
             <div class="rounded border p-3 h-100">
               <div class="fw-semibold mb-2">Fuentes curriculares</div>
               <div class="d-flex flex-column gap-2">
@@ -394,7 +395,33 @@ function _renderAcmAuthorityPanel() {
               </div>
             </div>
           </div>
-          <div class="col-12 col-lg-6">
+          <div class="col-12 col-lg-4">
+            <div class="rounded border p-3 h-100">
+              <div class="fw-semibold mb-2">Versiones publicables</div>
+              <div class="d-flex flex-column gap-2">
+                ${versions
+                  .map(
+                    (v) => `
+                      <div class="rounded border p-2">
+                        <div class="d-flex justify-content-between align-items-start gap-2">
+                          <div>
+                            <div class="fw-semibold">${escapeHTML(v.name || 'Versi?n')}</div>
+                            <small class="text-muted">${escapeHTML(v.source?.title || v.description || 'Sin descripci?n')}</small>
+                          </div>
+                          <span class="badge ${v.status === 'active' ? 'text-bg-success' : v.status === 'approved' ? 'text-bg-primary' : 'text-bg-secondary'}">${escapeHTML(v.status || 'draft')}</span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mt-2">
+                          <small class="text-muted">${v.is_active ? 'Activa' : 'Inactiva'}</small>
+                          <button class="btn btn-sm btn-outline-primary" data-acm-action="publish-version" data-version-id="${v.id}" ${v.status === 'active' ? 'disabled' : ''}>Publicar</button>
+                        </div>
+                      </div>
+                    `,
+                  )
+                  .join('') || '<div class="text-muted small">Sin versiones curriculares.</div>'}
+              </div>
+            </div>
+          </div>
+          <div class="col-12 col-lg-4">
             <div class="rounded border p-3 h-100">
               <div class="fw-semibold mb-2">Rutas activas</div>
               <div class="d-flex flex-column gap-2">
@@ -403,8 +430,8 @@ function _renderAcmAuthorityPanel() {
                     (r) => `
                       <div class="d-flex justify-content-between align-items-center rounded border p-2">
                         <div>
-                          <div class="fw-semibold">Grupo ${escapeHTML(r.group_id || '—')}</div>
-                          <small class="text-muted">Semana ${r.current_week || 1} · ${escapeHTML(r.status || 'active')}</small>
+                          <div class="fw-semibold">Grupo ${escapeHTML(r.group_id || '?')}</div>
+                          <small class="text-muted">Semana ${r.current_week || 1} ? ${escapeHTML(r.status || 'active')}</small>
                         </div>
                         <span class="badge text-bg-success">Activa</span>
                       </div>

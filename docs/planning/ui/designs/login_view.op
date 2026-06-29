@@ -49,7 +49,7 @@
           "y": 480,
           "width": 400,
           "height": 40,
-          "content": "Portal Maestros",
+          "content": "Portal de Maestros",
           "fontSize": 36,
           "fontWeight": 800,
           "color": "#ffffff"
@@ -62,7 +62,7 @@
           "y": 530,
           "width": 400,
           "height": 20,
-          "content": "Sistema Operativo Institucional — SOI",
+          "content": "by SOI - El Sistema Punta Cana",
           "fontSize": 14,
           "fontWeight": 500,
           "color": "rgba(255, 255, 255, 0.7)"

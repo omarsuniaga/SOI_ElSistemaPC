@@ -23,8 +23,9 @@ Implement the initial weekly plans and the semantic semaphore grid for the Acade
    - Implemented an exclusion list (`excludedIds`) in `compile_design.js` to filter out redundant vector placeholder labels and button text nodes, preventing them from superposing and blocking HTML input typing.
    - Added automatic injection of real interactive inner contents and icons (like `pm-btn-loader` spinners, eye icons, and biometric fingerprint layouts) based on design element IDs.
    - Injected auto-generated CSS media queries for high-fidelity responsive layouts on mobile viewports.
+   - Refactored tablet and mobile layouts (`max-width: 1024px`) to discard absolute positioning in favor of a fluid relative Flexbox flow, adapting components vertically to any viewport width and orientation.
 8. **Real Login Refactor**: Integrated the compiled template inside the production `loginView.js` view. Event listeners, validation rules, error tracking, and biometric auth remain fully active on top of the newly generated OpenPencil markup.
-9. **Build Fixes**: Resolved missing mock/production exports in `weeklyPlanAdapter.js`, `weeklyPlanMock.js`, and `weeklyPlanSupabase.js` for curriculum versioning methods required by `planificacionView.js`.
+9. **Build Fixes**: Resolved missing mock/production exports in `weeklyPlanAdapter.js`, `weeklyPlanMock.js`, and `weeklyPlanSupabase.js` for curriculum versioning methods.
 10. **Git Hygiene**: Committed changes to local branch `feat/acm-ruta-academica-mvp1` using conventional commits.
 
 ## Next Steps

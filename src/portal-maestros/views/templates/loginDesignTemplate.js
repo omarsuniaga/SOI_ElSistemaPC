@@ -7,8 +7,8 @@
 export const templateHtml = `<div class="op-frame-frame-login-screen">
       <div class="op-rect-rect-branding-side"></div>
       <div class="op-text-text-branding-logo">🎵</div>
-      <div class="op-text-text-branding-title">Portal Maestros</div>
-      <div class="op-text-text-branding-subtitle">Sistema Operativo Institucional — SOI</div>
+      <div class="op-text-text-branding-title">Portal de Maestros</div>
+      <div class="op-text-text-branding-subtitle">by SOI - El Sistema Punta Cana</div>
       <div class="op-rect-rect-form-side"></div>
       <div class="op-rect-rect-login-card"></div>
       <div class="op-text-text-card-title">Iniciar Sesión</div>
@@ -290,11 +290,43 @@ export const templateCss = `/* Frame: Portal Maestros - Login Screen */
     padding: 20px !important;
   }
   .op-rect-rect-branding-side,
-  .op-text-text-branding-logo,
-  .op-text-text-branding-title,
-  .op-text-text-branding-subtitle,
   .op-rect-rect-form-side {
     display: none !important;
+  }
+  .op-text-text-branding-logo {
+    position: relative !important;
+    left: auto !important;
+    top: auto !important;
+    margin: 0 auto 10px auto !important;
+    text-align: center !important;
+    width: auto !important;
+    height: auto !important;
+    font-size: 48px !important;
+    display: block !important;
+  }
+  .op-text-text-branding-title {
+    position: relative !important;
+    left: auto !important;
+    top: auto !important;
+    margin: 0 auto 5px auto !important;
+    text-align: center !important;
+    width: auto !important;
+    height: auto !important;
+    font-size: 28px !important;
+    font-weight: 800 !important;
+    display: block !important;
+  }
+  .op-text-text-branding-subtitle {
+    position: relative !important;
+    left: auto !important;
+    top: auto !important;
+    margin: 0 auto 20px auto !important;
+    text-align: center !important;
+    width: auto !important;
+    height: auto !important;
+    font-size: 13px !important;
+    color: rgba(255, 255, 255, 0.6) !important;
+    display: block !important;
   }
   .op-rect-rect-login-card {
     position: relative !important;

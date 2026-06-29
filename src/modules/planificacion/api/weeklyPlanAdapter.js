@@ -19,6 +19,9 @@ export const obtenerPlanSemanalPorNivel = (levelId, instrument = 'violín') =>
 export const obtenerRutasActivas = (maestroId = null) => 
   impl.obtenerRutasActivas(maestroId)
 
+export const obtenerGuiaHeredadaPorClase = (claseId, maestroId = null) =>
+  impl.obtenerGuiaHeredadaPorClase(claseId, maestroId)
+
 export const obtenerRutaActivaPorGrupo = (groupId) => 
   impl.obtenerRutaActivaPorGrupo(groupId)
 

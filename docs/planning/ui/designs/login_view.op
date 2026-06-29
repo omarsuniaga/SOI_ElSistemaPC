@@ -127,7 +127,7 @@
             {
               "id": "rect-input-email",
               "type": "rect",
-              "name": "Email Input Bg",
+              "name": "Email Input Bg [tag:input][id:pm-email][class:pm-input][type:email][placeholder:tu@correo.com]",
               "x": 900,
               "y": 312,
               "width": 360,
@@ -175,7 +175,7 @@
             {
               "id": "rect-input-password",
               "type": "rect",
-              "name": "Password Input Bg",
+              "name": "Password Input Bg [tag:input][id:pm-password][class:pm-input][type:password][placeholder:••••••••]",
               "x": 900,
               "y": 402,
               "width": 360,
@@ -203,7 +203,7 @@
             {
               "id": "rect-btn-eye",
               "type": "rect",
-              "name": "Btn Toggle Password",
+              "name": "Btn Toggle Password [tag:button][id:pm-toggle-password][class:pm-password-toggle][type:button]",
               "x": 1220,
               "y": 412,
               "width": 26,
@@ -221,7 +221,7 @@
             {
               "id": "rect-chk-remember",
               "type": "rect",
-              "name": "Chk Remember Email",
+              "name": "Chk Remember Email [tag:input][id:pm-remember-email][type:checkbox]",
               "x": 900,
               "y": 472,
               "width": 16,
@@ -249,7 +249,7 @@
             {
               "id": "rect-chk-keep",
               "type": "rect",
-              "name": "Chk Keep Session",
+              "name": "Chk Keep Session [tag:input][id:pm-keep-session][type:checkbox]",
               "x": 900,
               "y": 502,
               "width": 16,
@@ -275,7 +275,7 @@
         {
           "id": "rect-btn-login",
           "type": "rect",
-          "name": "Button Login",
+          "name": "Button Login [tag:button][id:pm-login-btn][class:pm-btn-primary][type:button]",
           "x": 900,
           "y": 545,
           "width": 360,
@@ -299,7 +299,7 @@
         {
           "id": "rect-btn-biometric",
           "type": "rect",
-          "name": "Button Biometric",
+          "name": "Button Biometric [tag:button][id:pm-biometric-btn][class:pm-btn-secondary][type:button]",
           "x": 900,
           "y": 605,
           "width": 360,
@@ -327,7 +327,7 @@
         {
           "id": "text-register-link",
           "type": "text",
-          "name": "Register Route Link",
+          "name": "Register Route Link [tag:a][id:pm-register-route-link][class:pm-link][href:#]",
           "x": 900,
           "y": 662,
           "width": 360,

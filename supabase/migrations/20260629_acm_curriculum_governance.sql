@@ -54,7 +54,9 @@ CREATE TABLE IF NOT EXISTS public.acm_curriculum_versions (
 );
 
 ALTER TABLE public.acm_curriculum_sources
-  ADD CONSTRAINT IF NOT EXISTS acm_curriculum_sources_related_version_fkey
+  DROP CONSTRAINT IF EXISTS acm_curriculum_sources_related_version_fkey;
+ALTER TABLE public.acm_curriculum_sources
+  ADD CONSTRAINT acm_curriculum_sources_related_version_fkey
   FOREIGN KEY (related_version_id) REFERENCES public.acm_curriculum_versions(id) ON DELETE SET NULL;
 
 CREATE INDEX IF NOT EXISTS idx_acm_curriculum_sources_status ON public.acm_curriculum_sources(status);
@@ -84,7 +86,7 @@ CREATE TABLE IF NOT EXISTS public.acm_weekly_plan_items (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   weekly_plan_id uuid NOT NULL REFERENCES public.acm_weekly_plans(id) ON DELETE CASCADE,
   node_id uuid,
-  indicator_id uuid REFERENCES public.acm_indicators(id) ON DELETE SET NULL,
+  indicator_id uuid REFERENCES public.indicators(id) ON DELETE SET NULL,
   topic text,
   objective text,
   teacher_strategy text,
@@ -143,7 +145,7 @@ CREATE TABLE IF NOT EXISTS public.teacher_class_sessions (
 CREATE TABLE IF NOT EXISTS public.teacher_session_indicators (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   session_id uuid NOT NULL REFERENCES public.teacher_class_sessions(id) ON DELETE CASCADE,
-  indicator_id uuid REFERENCES public.acm_indicators(id) ON DELETE SET NULL,
+  indicator_id uuid REFERENCES public.indicators(id) ON DELETE SET NULL,
   planned_topic text,
   planned_objective text,
   worked_status text NOT NULL DEFAULT 'not_started',
@@ -155,7 +157,7 @@ CREATE TABLE IF NOT EXISTS public.teacher_session_indicators (
 CREATE TABLE IF NOT EXISTS public.student_indicator_progress (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   student_id uuid NOT NULL REFERENCES public.alumnos(id) ON DELETE CASCADE,
-  indicator_id uuid NOT NULL REFERENCES public.acm_indicators(id) ON DELETE CASCADE,
+  indicator_id uuid NOT NULL REFERENCES public.indicators(id) ON DELETE CASCADE,
   session_id uuid REFERENCES public.teacher_class_sessions(id) ON DELETE SET NULL,
   status text NOT NULL DEFAULT 'not_started',
   score numeric,
@@ -171,7 +173,7 @@ CREATE TABLE IF NOT EXISTS public.acm_evidence_files (
   student_id uuid REFERENCES public.alumnos(id) ON DELETE CASCADE,
   group_id uuid REFERENCES public.clases(id) ON DELETE SET NULL,
   session_id uuid REFERENCES public.teacher_class_sessions(id) ON DELETE SET NULL,
-  indicator_id uuid REFERENCES public.acm_indicators(id) ON DELETE SET NULL,
+  indicator_id uuid REFERENCES public.indicators(id) ON DELETE SET NULL,
   file_url text NOT NULL,
   file_type text,
   description text,
@@ -181,4 +183,3 @@ CREATE TABLE IF NOT EXISTS public.acm_evidence_files (
 
 CREATE INDEX IF NOT EXISTS idx_acm_evidence_files_indicator ON public.acm_evidence_files(indicator_id);
 CREATE INDEX IF NOT EXISTS idx_acm_evidence_files_session ON public.acm_evidence_files(session_id);
-

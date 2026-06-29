@@ -923,6 +923,132 @@ function _toggleBulkBtn() {
 }
 
 // ── Modals ────────────────────────────────────────────────────────────────────
+
+async function _publicarVersionDesdePanel(versionId) {
+  try {
+    await publicarVersionCurricular(versionId)
+    AppToast.success('Versi?n curricular publicada')
+    renderPlanificacionView(state.container, { viewMode: 'acm' })
+  } catch (error) {
+    AppToast.error(error.message)
+  }
+}
+
+function _openAcmPublishModal() {
+  const versions = state.acmAuthority.versions || []
+  if (versions.length === 0) {
+    AppToast.info('No hay versiones curriculares para publicar')
+    return
+  }
+
+  const options = versions
+    .map((v) => `<option value="${v.id}" ${v.status === 'active' ? 'selected' : ''}>${escapeHTML(v.name || v.id)}</option>`)
+    .join('')
+
+  AppModal.open({
+    title: 'Publicar versi?n curricular',
+    saveText: 'Publicar',
+    size: 'md',
+    body: `
+      <div class="d-grid gap-2">
+        <label class="form-label-compact">Selecciona la versi?n a publicar</label>
+        <select class="form-select input-dense" id="acm-version-select">${options}</select>
+        <div class="alert alert-info small mb-0">
+          La versi?n activa define la ruta oficial que el portal de maestros hereda por clase.
+        </div>
+      </div>
+    `,
+    onSave: async (modalBody) => {
+      const versionId = modalBody.querySelector('#acm-version-select')?.value
+      if (!versionId) {
+        AppToast.error('Selecciona una versi?n')
+        return false
+      }
+      await _publicarVersionDesdePanel(versionId)
+      return true
+    },
+  })
+}
+
+async function _openAcmRouteModal() {
+  const [clases, maestros, versiones] = await Promise.all([
+    obtenerClases().catch(() => []),
+    obtenerMaestros().catch(() => []),
+    obtenerVersionesCurriculares().catch(() => []),
+  ])
+
+  const claseOptions = clases.map((c) => `<option value="${c.id}">${escapeHTML(c.nombre)}</option>`).join('')
+  const maestroOptions = maestros
+    .map((m) => `<option value="${m.id}">${escapeHTML(m.nombre_completo || m.nombre || m.email || m.id)}</option>`)
+    .join('')
+  const versionOptions = versiones.map((v) => `<option value="${v.id}">${escapeHTML(v.name || v.id)}</option>`).join('')
+
+  AppModal.open({
+    title: 'Asignar ruta activa',
+    saveText: 'Asignar',
+    size: 'lg',
+    body: `
+      <form class="row g-3" id="acm-route-form">
+        <div class="col-md-6">
+          <label class="form-label-compact">Clase / Grupo</label>
+          <select class="form-select input-dense" id="acm-route-clase" required>
+            <option value="">Seleccionar clase...</option>
+            ${claseOptions}
+          </select>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label-compact">Maestro</label>
+          <select class="form-select input-dense" id="acm-route-maestro" required>
+            <option value="">Seleccionar maestro...</option>
+            ${maestroOptions}
+          </select>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label-compact">Versi?n curricular</label>
+          <select class="form-select input-dense" id="acm-route-version" required>
+            <option value="">Seleccionar versi?n...</option>
+            ${versionOptions}
+          </select>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label-compact">Semana inicial</label>
+          <input type="number" min="1" class="form-control input-dense" id="acm-route-week" value="1">
+        </div>
+        <div class="col-md-3">
+          <label class="form-label-compact">Nivel</label>
+          <input type="text" class="form-control input-dense" id="acm-route-level" placeholder="pnivel_001">
+        </div>
+      </form>
+    `,
+    onSave: async (modalBody) => {
+      const groupId = modalBody.querySelector('#acm-route-clase')?.value
+      const teacherId = modalBody.querySelector('#acm-route-maestro')?.value
+      const versionId = modalBody.querySelector('#acm-route-version')?.value
+      const currentWeek = Number(modalBody.querySelector('#acm-route-week')?.value || 1)
+      const levelId = modalBody.querySelector('#acm-route-level')?.value?.trim() || null
+
+      if (!groupId || !teacherId || !versionId) {
+        AppToast.error('Completa clase, maestro y versi?n')
+        return false
+      }
+
+      const selectedVersion = versiones.find((v) => v.id === versionId)
+
+      await crearRutaActiva({
+        group_id: groupId,
+        teacher_id: teacherId,
+        weekly_plan_version_id: versionId,
+        weekly_plan_id: selectedVersion?.weekly_plan_id || selectedVersion?.id || versionId,
+        current_week: currentWeek,
+        level_id: levelId || undefined,
+      })
+      AppToast.success('Ruta activa asignada')
+      renderPlanificacionView(state.container, { viewMode: 'acm' })
+      return true
+    },
+  })
+}
+
 async function openEditModal(id, prefill = {}) {
   const plan = id ? hook.getById(id) || new Planificacion(prefill) : new Planificacion(prefill)
 

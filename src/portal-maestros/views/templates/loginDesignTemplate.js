@@ -5,78 +5,35 @@
  */
 
 export const templateHtml = `<div class="op-frame-frame-login-screen">
-      <div class="op-rect-rect-login-container">
-      <div class="op-rect-rect-form-side">
+      <div class="op-rect-rect-branding-side"></div>
       <div class="op-text-text-branding-logo">🎵</div>
-      <div class="op-text-text-card-welcome">¡Te damos la bienvenida!</div>
-      <div class="op-text-text-card-subtitle">Ingresa tus credenciales para continuar</div>
+      <div class="op-text-text-branding-title">Portal de Maestros</div>
+      <div class="op-text-text-branding-subtitle">by SOI - El Sistema Punta Cana</div>
+      <div class="op-rect-rect-form-side">
+      <div class="op-rect-rect-login-card">
+      <div class="op-text-text-card-title">Iniciar Sesión</div>
       <div class="op-group-group-input-email">
-      <input class="op-rect-rect-input-email pm-input" id="pm-email" type="email" placeholder="Correo electrónico" /></div>
+      <div class="op-text-text-label-email">CORREO ELECTRÓNICO</div>
+      <input class="op-rect-rect-input-email pm-input" id="pm-email" type="email" placeholder="tu@correo.com" /></div>
       <div class="op-group-group-input-password">
-      <input class="op-rect-rect-input-password pm-input" id="pm-password" type="password" placeholder="Contraseña" />
+      <div class="op-text-text-label-password">CONTRASEÑA</div>
+      <input class="op-rect-rect-input-password pm-input" id="pm-password" type="password" placeholder="••••••••" />
       <button class="op-rect-rect-btn-eye pm-password-toggle" id="pm-toggle-password" type="button"><i class="bi bi-eye"></i></button></div>
       <div class="op-group-group-checkboxes">
       <input class="op-rect-rect-chk-remember" id="pm-remember-email" type="checkbox" />
-      <div class="op-text-text-lbl-remember">Recordarme por 30 días</div>
-      <a class="op-text-text-forgot-link pm-link-purple" id="pm-forgot-link" href="#">¿Olvidaste tu contraseña?</a></div>
-      <button class="op-rect-rect-btn-login pm-btn-lime" id="pm-login-btn" type="button">
+      <div class="op-text-text-lbl-remember">Recordar correo electrónico</div>
+      <input class="op-rect-rect-chk-keep" id="pm-keep-session" type="checkbox" />
+      <div class="op-text-text-lbl-keep">Mantener sesión activa (30 días)</div></div>
+      <button class="op-rect-rect-btn-login pm-btn-primary" id="pm-login-btn" type="button">
           <span class="pm-btn-text">Iniciar sesión</span>
           <span class="pm-btn-loader d-none">
             <span class="pm-spinner-sm"></span>
             Validando...
           </span>
         </button>
-      <button class="op-rect-rect-btn-biometric pm-btn-flat" id="pm-biometric-btn" type="button"><i class="bi bi-fingerprint"></i> Usar huella o Face ID</button>
-      <a class="op-text-text-register-link pm-link-footer" id="pm-register-route-link" href="#" data-route="register">¿No tienes cuenta? Regístrate como maestro</a>
+      <button class="op-rect-rect-btn-biometric pm-btn-secondary" id="pm-biometric-btn" type="button"><i class="bi bi-fingerprint"></i> Usar huella o Face ID</button>
+      <a class="op-text-text-register-link pm-link" id="pm-register-route-link" href="#" data-route="register">¿No tienes cuenta? Regístrate como maestro</a></div>
       <p class="pm-error-msg" id="pm-login-error" aria-live="polite" style="position:absolute; left:240px; top:690px; width:360px; color:#ef4444; font-size:12px; font-weight:600; text-align:center;"></p></div>
-      <div class="op-rect-rect-branding-side">
-      <div class="op-text-text-branding-title">El hogar de la excelencia y el progreso musical</div>
-      <div class="op-text-text-branding-subtitle">by SOI - El Sistema Punta Cana</div>
-      <div class="op-rect-rect-glass-tabs">
-          <div class="pm-glass-tabs-container">
-            <button class="pm-glass-tab active">Clases</button>
-            <button class="pm-glass-tab">Alumnos</button>
-            <button class="pm-glass-tab">Planificación</button>
-          </div>
-        </div>
-      <div class="op-rect-rect-glass-chart">
-          <div class="pm-glass-chart-container">
-            <div class="pm-chart-header">
-              <div class="pm-chart-meta">
-                <span class="pm-indicator-dot dot-green"></span>
-                <span class="pm-indicator-label">Progreso</span>
-                <span class="pm-indicator-value">+18.4%</span>
-              </div>
-              <div class="pm-chart-meta">
-                <span class="pm-indicator-dot dot-blue"></span>
-                <span class="pm-indicator-label">Evidencias</span>
-                <span class="pm-indicator-value">+42.1%</span>
-              </div>
-              <div class="pm-avatar-group">
-                <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=32&h=32&q=80" alt="Alumna" class="pm-avatar-img" />
-                <img src="https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=32&h=32&q=80" alt="Alumno" class="pm-avatar-img" />
-              </div>
-            </div>
-            <div class="pm-chart-svg-wrapper">
-              <svg class="pm-chart-svg" viewBox="0 0 420 120" preserveAspectRatio="none">
-                <defs>
-                  <linearGradient id="chart-grad-electric" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stop-color="#7c3aed" stop-opacity="0.25"/>
-                    <stop offset="100%" stop-color="#7c3aed" stop-opacity="0.0"/>
-                  </linearGradient>
-                </defs>
-                <path d="M 0 90 Q 105 85 210 50 T 420 20 L 420 120 L 0 120 Z" fill="url(#chart-grad-electric)" />
-                <path d="M 0 90 Q 105 85 210 50 T 420 20" fill="none" stroke="#7c3aed" stroke-width="3" stroke-linecap="round" />
-                <circle cx="420" cy="20" r="5" fill="#7c3aed" stroke="#ffffff" stroke-width="2" />
-              </svg>
-            </div>
-            <div class="pm-chart-footer">
-              <span>Abril</span>
-              <span>Mayo</span>
-              <span>Junio</span>
-            </div>
-          </div>
-        </div></div></div>
     </div>`
 
 export const templateCss = `/* Frame: Portal de Maestros - Login Screen */
@@ -85,32 +42,20 @@ export const templateCss = `/* Frame: Portal de Maestros - Login Screen */
   width: 100%;
   max-width: 1440px;
   height: 900px;
-  background: #f1f5f9;
+  background: #0f172a;
   border-radius: 0px;
   overflow: hidden;
   box-shadow: 0 10px 30px rgba(0,0,0,0.05);
   margin: 0 auto;
 }
 
-.op-rect-rect-login-container {
-  position: absolute;
-  left: 120px;
-  top: 50px;
-  width: 1200px;
-  height: 800px;
-  background: #ffffff;
-  border-radius: 32px;
-  border: 1px solid rgba(0, 0, 0, 0.03);
-  transition: all 0.2s ease-in-out;
-}
-
-.op-rect-rect-form-side {
+.op-rect-rect-branding-side {
   position: absolute;
   left: 0px;
   top: 0px;
-  width: 600px;
-  height: 800px;
-  background: #ffffff;
+  width: 720px;
+  height: 900px;
+  background: linear-gradient(135deg, #1e3a8a 0%, #1d4ed8 100%);
   border-radius: 0px;
   
   transition: all 0.2s ease-in-out;
@@ -118,37 +63,85 @@ export const templateCss = `/* Frame: Portal de Maestros - Login Screen */
 
 .op-text-text-branding-logo {
   position: absolute;
-  left: 260px;
-  top: 90px;
+  left: 200px;
+  top: 380px;
   width: 80px;
   height: 80px;
   color: #ffffff;
-  font-size: 48px;
+  font-size: 72px;
   font-weight: 700;
   line-height: 1.4;
 }
 
-.op-text-text-card-welcome {
+.op-text-text-branding-title {
   position: absolute;
-  left: 120px;
-  top: 190px;
-  width: 360px;
-  height: 36px;
-  color: #0f172a;
-  font-size: 28px;
+  left: 200px;
+  top: 480px;
+  width: 400px;
+  height: 40px;
+  color: #ffffff;
+  font-size: 36px;
   font-weight: 800;
   line-height: 1.4;
 }
 
-.op-text-text-card-subtitle {
+.op-text-text-branding-subtitle {
   position: absolute;
-  left: 120px;
-  top: 235px;
-  width: 360px;
+  left: 200px;
+  top: 530px;
+  width: 400px;
   height: 20px;
-  color: #64748b;
-  font-size: 13px;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 14px;
   font-weight: 500;
+  line-height: 1.4;
+}
+
+.op-rect-rect-form-side {
+  position: absolute;
+  left: 720px;
+  top: 0px;
+  width: 720px;
+  height: 900px;
+  background: #0f172a;
+  border-radius: 0px;
+  
+  transition: all 0.2s ease-in-out;
+}
+
+.op-rect-rect-login-card {
+  position: absolute;
+  left: 140px;
+  top: 200px;
+  width: 440px;
+  height: 500px;
+  background: #1e293b;
+  border-radius: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  transition: all 0.2s ease-in-out;
+}
+
+.op-text-text-card-title {
+  position: absolute;
+  left: 40px;
+  top: 40px;
+  width: 360px;
+  height: 24px;
+  color: #ffffff;
+  font-size: 20px;
+  font-weight: 800;
+  line-height: 1.4;
+}
+
+.op-text-text-label-email {
+  position: absolute;
+  left: NaNpx;
+  top: NaNpx;
+  width: 360px;
+  height: 14px;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 10px;
+  font-weight: 700;
   line-height: 1.4;
 }
 
@@ -157,11 +150,23 @@ export const templateCss = `/* Frame: Portal de Maestros - Login Screen */
   left: NaNpx;
   top: NaNpx;
   width: 360px;
-  height: 48px;
-  background: #ffffff;
+  height: 45px;
+  background: rgba(255, 255, 255, 0.02);
   border-radius: 12px;
-  border: 1px solid #cbd5e1;
+  border: 1px solid rgba(255, 255, 255, 0.1);
   transition: all 0.2s ease-in-out;
+}
+
+.op-text-text-label-password {
+  position: absolute;
+  left: NaNpx;
+  top: NaNpx;
+  width: 360px;
+  height: 14px;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.4;
 }
 
 .op-rect-rect-input-password {
@@ -169,10 +174,10 @@ export const templateCss = `/* Frame: Portal de Maestros - Login Screen */
   left: NaNpx;
   top: NaNpx;
   width: 360px;
-  height: 48px;
-  background: #ffffff;
+  height: 45px;
+  background: rgba(255, 255, 255, 0.02);
   border-radius: 12px;
-  border: 1px solid #cbd5e1;
+  border: 1px solid rgba(255, 255, 255, 0.1);
   transition: all 0.2s ease-in-out;
 }
 
@@ -182,7 +187,7 @@ export const templateCss = `/* Frame: Portal de Maestros - Login Screen */
   top: NaNpx;
   width: 26px;
   height: 26px;
-  background: #f1f5f9;
+  background: rgba(255, 255, 255, 0.05);
   border-radius: 6px;
   
   transition: all 0.2s ease-in-out;
@@ -194,9 +199,9 @@ export const templateCss = `/* Frame: Portal de Maestros - Login Screen */
   top: NaNpx;
   width: 16px;
   height: 16px;
-  background: #ffffff;
+  background: rgba(255, 255, 255, 0.05);
   border-radius: 4px;
-  border: 1px solid #cbd5e1;
+  border: 1px solid rgba(255, 255, 255, 0.2);
   transition: all 0.2s ease-in-out;
 }
 
@@ -204,33 +209,45 @@ export const templateCss = `/* Frame: Portal de Maestros - Login Screen */
   position: absolute;
   left: NaNpx;
   top: NaNpx;
-  width: 180px;
+  width: 240px;
   height: 14px;
-  color: #475569;
-  font-size: 12px;
+  color: #e5e7eb;
+  font-size: 11px;
   font-weight: 600;
   line-height: 1.4;
 }
 
-.op-text-text-forgot-link {
+.op-rect-rect-chk-keep {
   position: absolute;
   left: NaNpx;
   top: NaNpx;
-  width: 140px;
+  width: 16px;
+  height: 16px;
+  background: #3b82f6;
+  border-radius: 4px;
+  
+  transition: all 0.2s ease-in-out;
+}
+
+.op-text-text-lbl-keep {
+  position: absolute;
+  left: NaNpx;
+  top: NaNpx;
+  width: 240px;
   height: 14px;
-  color: #7c3aed;
-  font-size: 12px;
+  color: #e5e7eb;
+  font-size: 11px;
   font-weight: 600;
   line-height: 1.4;
 }
 
 .op-rect-rect-btn-login {
   position: absolute;
-  left: 120px;
-  top: 460px;
+  left: 40px;
+  top: 345px;
   width: 360px;
   height: 48px;
-  background: #bef264;
+  background: #3b82f6;
   border-radius: 12px;
   
   transition: all 0.2s ease-in-out;
@@ -238,86 +255,26 @@ export const templateCss = `/* Frame: Portal de Maestros - Login Screen */
 
 .op-rect-rect-btn-biometric {
   position: absolute;
-  left: 120px;
-  top: 520px;
+  left: 40px;
+  top: 405px;
   width: 360px;
-  height: 45px;
-  background: #ffffff;
+  height: 42px;
+  background: rgba(255, 255, 255, 0.03);
   border-radius: 12px;
-  border: 1px solid #cbd5e1;
+  border: 1px solid rgba(255, 255, 255, 0.1);
   transition: all 0.2s ease-in-out;
 }
 
 .op-text-text-register-link {
   position: absolute;
-  left: 120px;
-  top: 590px;
+  left: 40px;
+  top: 462px;
   width: 360px;
   height: 16px;
-  color: #7c3aed;
-  font-size: 12px;
+  color: #3b82f6;
+  font-size: 11px;
   font-weight: 600;
   line-height: 1.4;
-}
-
-.op-rect-rect-branding-side {
-  position: absolute;
-  left: 600px;
-  top: 0px;
-  width: 600px;
-  height: 800px;
-  background: #faf5ff;
-  border-radius: 32px;
-  
-  transition: all 0.2s ease-in-out;
-}
-
-.op-text-text-branding-title {
-  position: absolute;
-  left: 60px;
-  top: 90px;
-  width: 480px;
-  height: 80px;
-  color: #0f172a;
-  font-size: 28px;
-  font-weight: 800;
-  line-height: 1.4;
-}
-
-.op-text-text-branding-subtitle {
-  position: absolute;
-  left: 60px;
-  top: 185px;
-  width: 480px;
-  height: 20px;
-  color: #64748b;
-  font-size: 13px;
-  font-weight: 600;
-  line-height: 1.4;
-}
-
-.op-rect-rect-glass-tabs {
-  position: absolute;
-  left: 60px;
-  top: 270px;
-  width: 480px;
-  height: 90px;
-  background: rgba(255, 255, 255, 0.4);
-  border-radius: 20px;
-  border: 1px solid rgba(255, 255, 255, 0.6);
-  transition: all 0.2s ease-in-out;
-}
-
-.op-rect-rect-glass-chart {
-  position: absolute;
-  left: 60px;
-  top: 390px;
-  width: 480px;
-  height: 260px;
-  background: rgba(255, 255, 255, 0.4);
-  border-radius: 24px;
-  border: 1px solid rgba(255, 255, 255, 0.6);
-  transition: all 0.2s ease-in-out;
 }
 
 /* --- Adaptabilidad Responsive (Auto-inyectado) --- */
@@ -329,24 +286,26 @@ export const templateCss = `/* Frame: Portal de Maestros - Login Screen */
     align-items: center !important;
     height: auto !important;
     min-height: 100vh !important;
-    background: #f1f5f9 !important;
+    background: #0f172a !important;
     padding: 20px !important;
   }
-  .op-rect-rect-login-container {
+  .op-rect-rect-login-card {
     position: relative !important;
     left: auto !important;
     top: auto !important;
     width: 100% !important;
-    max-width: 480px !important;
+    max-width: 440px !important;
     height: auto !important;
     min-height: auto !important;
-    padding: 40px 24px !important;
+    padding: 40px !important;
     margin: 0 auto !important;
     display: flex !important;
     flex-direction: column !important;
-    gap: 24px !important;
+    gap: 20px !important;
+    background: #1e293b !important;
+    border-radius: 24px !important;
+    border: 1px solid rgba(255, 255, 255, 0.05) !important;
     box-sizing: border-box !important;
-    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05) !important;
   }
   .op-rect-rect-branding-side,
   .op-rect-rect-form-side {
@@ -363,23 +322,37 @@ export const templateCss = `/* Frame: Portal de Maestros - Login Screen */
     font-size: 32px !important;
     display: flex !important;
   }
-  .op-text-text-card-welcome {
+  .op-text-text-branding-title {
     position: relative !important;
     left: auto !important;
     top: auto !important;
-    width: 100% !important;
-    height: auto !important;
+    margin: 0 auto 5px auto !important;
     text-align: center !important;
-    margin-bottom: 5px !important;
+    width: auto !important;
+    height: auto !important;
     font-size: 24px !important;
+    font-weight: 800 !important;
+    color: #ffffff !important;
+    display: block !important;
   }
-  .op-text-text-card-subtitle {
+  .op-text-text-branding-subtitle {
+    position: relative !important;
+    left: auto !important;
+    top: auto !important;
+    margin: 0 auto 20px auto !important;
+    text-align: center !important;
+    width: auto !important;
+    height: auto !important;
+    font-size: 12px !important;
+    color: rgba(255, 255, 255, 0.6) !important;
+    display: block !important;
+  }
+  .op-text-text-card-title {
     position: relative !important;
     left: auto !important;
     top: auto !important;
     width: 100% !important;
     height: auto !important;
-    text-align: center !important;
     margin-bottom: 5px !important;
   }
   .op-group-group-input-email,
@@ -393,19 +366,27 @@ export const templateCss = `/* Frame: Portal de Maestros - Login Screen */
     flex-direction: column !important;
     gap: 6px !important;
   }
+  .op-text-text-label-email,
+  .op-text-text-label-password {
+    position: relative !important;
+    left: auto !important;
+    top: auto !important;
+    width: auto !important;
+    height: auto !important;
+  }
   .op-rect-rect-input-email,
   .op-rect-rect-input-password {
     position: relative !important;
     left: auto !important;
     top: auto !important;
     width: 100% !important;
-    height: 48px !important;
+    height: 45px !important;
     margin: 0 !important;
   }
   .op-rect-rect-btn-eye {
     position: absolute !important;
     right: 12px !important;
-    top: 11px !important;
+    top: 31px !important;
     left: auto !important;
     width: 26px !important;
     height: 26px !important;
@@ -421,7 +402,8 @@ export const templateCss = `/* Frame: Portal de Maestros - Login Screen */
     gap: 12px !important;
     margin: 5px 0 !important;
   }
-  .op-rect-rect-chk-remember {
+  .op-rect-rect-chk-remember,
+  .op-rect-rect-chk-keep {
     position: relative !important;
     left: auto !important;
     top: auto !important;
@@ -429,7 +411,8 @@ export const templateCss = `/* Frame: Portal de Maestros - Login Screen */
     margin-right: 8px !important;
     vertical-align: middle !important;
   }
-  .op-text-text-lbl-remember {
+  .op-text-text-lbl-remember,
+  .op-text-text-lbl-keep {
     position: relative !important;
     left: auto !important;
     top: auto !important;
@@ -437,15 +420,6 @@ export const templateCss = `/* Frame: Portal de Maestros - Login Screen */
     width: auto !important;
     height: auto !important;
     vertical-align: middle !important;
-  }
-  .op-text-forgot-link {
-    position: relative !important;
-    left: auto !important;
-    top: auto !important;
-    display: block !important;
-    width: 100% !important;
-    height: auto !important;
-    margin-top: 5px !important;
   }
   .op-rect-rect-btn-login {
     position: relative !important;
@@ -466,7 +440,7 @@ export const templateCss = `/* Frame: Portal de Maestros - Login Screen */
     left: auto !important;
     top: auto !important;
     width: 100% !important;
-    height: 45px !important;
+    height: 42px !important;
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
@@ -494,152 +468,39 @@ export const templateCss = `/* Frame: Portal de Maestros - Login Screen */
 }
 
 
-/* --- Estilos Personalizados Dribbble (Auto-inyectado) --- */
-.op-rect-rect-login-container {
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.04) !important;
-  border: 1px solid rgba(0, 0, 0, 0.04) !important;
-  display: flex !important;
-}
+/* --- Estilos Personalizados SOI (Auto-inyectado) --- */
 .op-rect-rect-branding-side {
-  background: #faf5ff !important;
-  background-image: 
-    radial-gradient(at 10% 20%, rgba(254, 243, 199, 0.4) 0px, transparent 50%),
-    radial-gradient(at 90% 10%, rgba(253, 224, 71, 0.25) 0px, transparent 50%),
-    radial-gradient(at 50% 80%, rgba(233, 213, 255, 0.5) 0px, transparent 50%),
-    radial-gradient(at 80% 90%, rgba(219, 234, 254, 0.3) 0px, transparent 50%) !important;
-  background-size: 100% 100% !important;
-  position: relative !important;
-  overflow: hidden !important;
+  background: linear-gradient(135deg, #1e3a8a 0%, #1d4ed8 100%) !important;
 }
 .op-text-text-branding-logo {
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
-  background: #7c3aed !important;
+  background: rgba(255, 255, 255, 0.1) !important;
   border-radius: 50% !important;
-  box-shadow: 0 10px 20px -3px rgba(124, 58, 237, 0.25) !important;
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
 }
-.op-rect-rect-glass-tabs {
-  background: rgba(255, 255, 255, 0.45) !important;
-  backdrop-filter: blur(20px) !important;
-  -webkit-backdrop-filter: blur(20px) !important;
-  border: 1px solid rgba(255, 255, 255, 0.7) !important;
-  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.03) !important;
-}
-.op-rect-rect-glass-chart {
-  background: rgba(255, 255, 255, 0.45) !important;
-  backdrop-filter: blur(20px) !important;
-  -webkit-backdrop-filter: blur(20px) !important;
-  border: 1px solid rgba(255, 255, 255, 0.7) !important;
-  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.03) !important;
-}
-.pm-glass-tabs-container {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 12px 16px;
-  height: 100%;
-  box-sizing: border-box;
-  position: relative;
-}
-.pm-glass-tab {
-  background: transparent;
-  border: none;
-  color: #64748b;
-  font-size: 13px;
-  font-weight: 700;
-  padding: 10px 20px;
-  border-radius: 12px;
-  cursor: pointer;
-  transition: all 0.2s ease-in-out;
-}
-.pm-glass-tab.active {
-  background: #ffffff;
-  color: #0f172a;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
-}
-.pm-glass-chart-container {
-  display: flex;
-  flex-direction: column;
-  padding: 24px;
-  height: 100%;
-  box-sizing: border-box;
-  justify-content: space-between;
-}
-.pm-chart-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 10px;
-}
-.pm-chart-meta {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 11px;
-  font-weight: 700;
-}
-.pm-indicator-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-}
-.pm-indicator-dot.dot-green {
-  background: #10b981;
-}
-.pm-indicator-dot.dot-blue {
-  background: #3b82f6;
-}
-.pm-indicator-label {
-  color: #64748b;
-}
-.pm-indicator-value {
-  color: #0f172a;
-}
-.pm-avatar-group {
-  display: flex;
-  align-items: center;
-}
-.pm-avatar-img {
-  width: 26px;
-  height: 26px;
-  border-radius: 50%;
-  border: 2.5px solid #ffffff;
-  margin-left: -10px;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-}
-.pm-avatar-img:first-child {
-  margin-left: 0;
-}
-.pm-chart-svg-wrapper {
-  flex-grow: 1;
-  margin: 15px 0;
-  position: relative;
-}
-.pm-chart-svg {
-  width: 100%;
-  height: 100%;
-}
-.pm-chart-footer {
-  display: flex;
-  justify-content: space-between;
-  font-size: 11px;
-  font-weight: 700;
-  color: #94a3b8;
-  padding-top: 5px;
-}
-.op-rect-rect-btn-login:hover {
-  background: #a3e635 !important;
-  transform: translateY(-1px);
-  box-shadow: 0 10px 15px -3px rgba(163, 230, 53, 0.15) !important;
-}
-.op-rect-rect-btn-biometric:hover {
-  background: #f8fafc !important;
-  border-color: #94a3b8 !important;
+.op-rect-rect-input-email,
+.op-rect-rect-input-password {
+  background: rgba(255, 255, 255, 0.02) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  color: #ffffff !important;
 }
 .op-rect-rect-input-email:focus,
 .op-rect-rect-input-password:focus {
-  border-color: #7c3aed !important;
-  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.15) !important;
+  border-color: #3b82f6 !important;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25) !important;
   outline: none !important;
+}
+.op-rect-rect-btn-login:hover {
+  background: #2563eb !important;
+  transform: translateY(-1px);
+  box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.3) !important;
+}
+.op-rect-rect-btn-biometric:hover {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border-color: rgba(255, 255, 255, 0.2) !important;
 }`

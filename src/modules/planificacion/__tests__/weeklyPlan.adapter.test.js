@@ -52,6 +52,22 @@ describe('weeklyPlanAdapter routing & mock lifecycle', () => {
     expect(plan.items[0].topic).toContain('Diagnóstico')
   })
 
+  it('should expose curriculum versions and publish one in demo mode', async () => {
+    vi.doMock('../../../core/config/config.js', () => ({
+      config: { isDemoMode: true },
+    }))
+    const adapter = await import('../api/weeklyPlanAdapter.js')
+    await flushPromises()
+
+    const versions = await adapter.obtenerVersionesCurriculares()
+    expect(Array.isArray(versions)).toBe(true)
+    expect(versions.length).toBeGreaterThan(0)
+
+    const published = await adapter.publicarVersionCurricular(versions[0].id)
+    expect(published.id).toBe(versions[0].id)
+    expect(published.status).toBe('active')
+  })
+
   it('should create and update active route status', async () => {
     vi.doMock('../../../core/config/config.js', () => ({
       config: { isDemoMode: true },

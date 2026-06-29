@@ -133,56 +133,6 @@ export function compileOpToJs(opFilePath, outputJsPath) {
         extraAttrs += ' data-route="register"'
       }
 
-      // Inyección específica de contenido para widgets de Dribbble
-      if (node.id === 'rect-glass-tabs') {
-        innerContent = `
-          <div class="pm-glass-tabs-container">
-            <button class="pm-glass-tab active">Clases</button>
-            <button class="pm-glass-tab">Alumnos</button>
-            <button class="pm-glass-tab">Planificación</button>
-          </div>
-        `
-      } else if (node.id === 'rect-glass-chart') {
-        innerContent = `
-          <div class="pm-glass-chart-container">
-            <div class="pm-chart-header">
-              <div class="pm-chart-meta">
-                <span class="pm-indicator-dot dot-green"></span>
-                <span class="pm-indicator-label">Progreso</span>
-                <span class="pm-indicator-value">+18.4%</span>
-              </div>
-              <div class="pm-chart-meta">
-                <span class="pm-indicator-dot dot-blue"></span>
-                <span class="pm-indicator-label">Evidencias</span>
-                <span class="pm-indicator-value">+42.1%</span>
-              </div>
-              <div class="pm-avatar-group">
-                <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=32&h=32&q=80" alt="Alumna" class="pm-avatar-img" />
-                <img src="https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=32&h=32&q=80" alt="Alumno" class="pm-avatar-img" />
-              </div>
-            </div>
-            <div class="pm-chart-svg-wrapper">
-              <svg class="pm-chart-svg" viewBox="0 0 420 120" preserveAspectRatio="none">
-                <defs>
-                  <linearGradient id="chart-grad-electric" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stop-color="#7c3aed" stop-opacity="0.25"/>
-                    <stop offset="100%" stop-color="#7c3aed" stop-opacity="0.0"/>
-                  </linearGradient>
-                </defs>
-                <path d="M 0 90 Q 105 85 210 50 T 420 20 L 420 120 L 0 120 Z" fill="url(#chart-grad-electric)" />
-                <path d="M 0 90 Q 105 85 210 50 T 420 20" fill="none" stroke="#7c3aed" stroke-width="3" stroke-linecap="round" />
-                <circle cx="420" cy="20" r="5" fill="#7c3aed" stroke="#ffffff" stroke-width="2" />
-              </svg>
-            </div>
-            <div class="pm-chart-footer">
-              <span>Abril</span>
-              <span>Mayo</span>
-              <span>Junio</span>
-            </div>
-          </div>
-        `
-      }
-
       // Si es un tag autodefinido interactivo
       if (tag === 'input') {
         return `\n      <input class="op-rect-${node.id}${extraClasses}"${idAttr}${typeAttr}${placeholderAttr} />`
@@ -259,24 +209,26 @@ export function compileOpToJs(opFilePath, outputJsPath) {
     align-items: center !important;
     height: auto !important;
     min-height: 100vh !important;
-    background: #f1f5f9 !important;
+    background: #0f172a !important;
     padding: 20px !important;
   }
-  .op-rect-rect-login-container {
+  .op-rect-rect-login-card {
     position: relative !important;
     left: auto !important;
     top: auto !important;
     width: 100% !important;
-    max-width: 480px !important;
+    max-width: 440px !important;
     height: auto !important;
     min-height: auto !important;
-    padding: 40px 24px !important;
+    padding: 40px !important;
     margin: 0 auto !important;
     display: flex !important;
     flex-direction: column !important;
-    gap: 24px !important;
+    gap: 20px !important;
+    background: #1e293b !important;
+    border-radius: 24px !important;
+    border: 1px solid rgba(255, 255, 255, 0.05) !important;
     box-sizing: border-box !important;
-    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05) !important;
   }
   .op-rect-rect-branding-side,
   .op-rect-rect-form-side {
@@ -293,23 +245,37 @@ export function compileOpToJs(opFilePath, outputJsPath) {
     font-size: 32px !important;
     display: flex !important;
   }
-  .op-text-text-card-welcome {
+  .op-text-text-branding-title {
     position: relative !important;
     left: auto !important;
     top: auto !important;
-    width: 100% !important;
-    height: auto !important;
+    margin: 0 auto 5px auto !important;
     text-align: center !important;
-    margin-bottom: 5px !important;
+    width: auto !important;
+    height: auto !important;
     font-size: 24px !important;
+    font-weight: 800 !important;
+    color: #ffffff !important;
+    display: block !important;
   }
-  .op-text-text-card-subtitle {
+  .op-text-text-branding-subtitle {
+    position: relative !important;
+    left: auto !important;
+    top: auto !important;
+    margin: 0 auto 20px auto !important;
+    text-align: center !important;
+    width: auto !important;
+    height: auto !important;
+    font-size: 12px !important;
+    color: rgba(255, 255, 255, 0.6) !important;
+    display: block !important;
+  }
+  .op-text-text-card-title {
     position: relative !important;
     left: auto !important;
     top: auto !important;
     width: 100% !important;
     height: auto !important;
-    text-align: center !important;
     margin-bottom: 5px !important;
   }
   .op-group-group-input-email,
@@ -323,19 +289,27 @@ export function compileOpToJs(opFilePath, outputJsPath) {
     flex-direction: column !important;
     gap: 6px !important;
   }
+  .op-text-text-label-email,
+  .op-text-text-label-password {
+    position: relative !important;
+    left: auto !important;
+    top: auto !important;
+    width: auto !important;
+    height: auto !important;
+  }
   .op-rect-rect-input-email,
   .op-rect-rect-input-password {
     position: relative !important;
     left: auto !important;
     top: auto !important;
     width: 100% !important;
-    height: 48px !important;
+    height: 45px !important;
     margin: 0 !important;
   }
   .op-rect-rect-btn-eye {
     position: absolute !important;
     right: 12px !important;
-    top: 11px !important;
+    top: 31px !important;
     left: auto !important;
     width: 26px !important;
     height: 26px !important;
@@ -351,7 +325,8 @@ export function compileOpToJs(opFilePath, outputJsPath) {
     gap: 12px !important;
     margin: 5px 0 !important;
   }
-  .op-rect-rect-chk-remember {
+  .op-rect-rect-chk-remember,
+  .op-rect-rect-chk-keep {
     position: relative !important;
     left: auto !important;
     top: auto !important;
@@ -359,7 +334,8 @@ export function compileOpToJs(opFilePath, outputJsPath) {
     margin-right: 8px !important;
     vertical-align: middle !important;
   }
-  .op-text-text-lbl-remember {
+  .op-text-text-lbl-remember,
+  .op-text-text-lbl-keep {
     position: relative !important;
     left: auto !important;
     top: auto !important;
@@ -367,15 +343,6 @@ export function compileOpToJs(opFilePath, outputJsPath) {
     width: auto !important;
     height: auto !important;
     vertical-align: middle !important;
-  }
-  .op-text-forgot-link {
-    position: relative !important;
-    left: auto !important;
-    top: auto !important;
-    display: block !important;
-    width: 100% !important;
-    height: auto !important;
-    margin-top: 5px !important;
   }
   .op-rect-rect-btn-login {
     position: relative !important;
@@ -396,7 +363,7 @@ export function compileOpToJs(opFilePath, outputJsPath) {
     left: auto !important;
     top: auto !important;
     width: 100% !important;
-    height: 45px !important;
+    height: 42px !important;
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
@@ -424,156 +391,43 @@ export function compileOpToJs(opFilePath, outputJsPath) {
 }
 `)
 
-  // Inyectar reglas personalizadas de la estética Dribbble en desktop
+  // Inyectar estilos personalizados del SOI original
   cssRules.push(`
-/* --- Estilos Personalizados Dribbble (Auto-inyectado) --- */
-.op-rect-rect-login-container {
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.04) !important;
-  border: 1px solid rgba(0, 0, 0, 0.04) !important;
-  display: flex !important;
-}
+/* --- Estilos Personalizados SOI (Auto-inyectado) --- */
 .op-rect-rect-branding-side {
-  background: #faf5ff !important;
-  background-image: 
-    radial-gradient(at 10% 20%, rgba(254, 243, 199, 0.4) 0px, transparent 50%),
-    radial-gradient(at 90% 10%, rgba(253, 224, 71, 0.25) 0px, transparent 50%),
-    radial-gradient(at 50% 80%, rgba(233, 213, 255, 0.5) 0px, transparent 50%),
-    radial-gradient(at 80% 90%, rgba(219, 234, 254, 0.3) 0px, transparent 50%) !important;
-  background-size: 100% 100% !important;
-  position: relative !important;
-  overflow: hidden !important;
+  background: linear-gradient(135deg, #1e3a8a 0%, #1d4ed8 100%) !important;
 }
 .op-text-text-branding-logo {
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
-  background: #7c3aed !important;
+  background: rgba(255, 255, 255, 0.1) !important;
   border-radius: 50% !important;
-  box-shadow: 0 10px 20px -3px rgba(124, 58, 237, 0.25) !important;
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
 }
-.op-rect-rect-glass-tabs {
-  background: rgba(255, 255, 255, 0.45) !important;
-  backdrop-filter: blur(20px) !important;
-  -webkit-backdrop-filter: blur(20px) !important;
-  border: 1px solid rgba(255, 255, 255, 0.7) !important;
-  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.03) !important;
-}
-.op-rect-rect-glass-chart {
-  background: rgba(255, 255, 255, 0.45) !important;
-  backdrop-filter: blur(20px) !important;
-  -webkit-backdrop-filter: blur(20px) !important;
-  border: 1px solid rgba(255, 255, 255, 0.7) !important;
-  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.03) !important;
-}
-.pm-glass-tabs-container {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 12px 16px;
-  height: 100%;
-  box-sizing: border-box;
-  position: relative;
-}
-.pm-glass-tab {
-  background: transparent;
-  border: none;
-  color: #64748b;
-  font-size: 13px;
-  font-weight: 700;
-  padding: 10px 20px;
-  border-radius: 12px;
-  cursor: pointer;
-  transition: all 0.2s ease-in-out;
-}
-.pm-glass-tab.active {
-  background: #ffffff;
-  color: #0f172a;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
-}
-.pm-glass-chart-container {
-  display: flex;
-  flex-direction: column;
-  padding: 24px;
-  height: 100%;
-  box-sizing: border-box;
-  justify-content: space-between;
-}
-.pm-chart-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 10px;
-}
-.pm-chart-meta {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 11px;
-  font-weight: 700;
-}
-.pm-indicator-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-}
-.pm-indicator-dot.dot-green {
-  background: #10b981;
-}
-.pm-indicator-dot.dot-blue {
-  background: #3b82f6;
-}
-.pm-indicator-label {
-  color: #64748b;
-}
-.pm-indicator-value {
-  color: #0f172a;
-}
-.pm-avatar-group {
-  display: flex;
-  align-items: center;
-}
-.pm-avatar-img {
-  width: 26px;
-  height: 26px;
-  border-radius: 50%;
-  border: 2.5px solid #ffffff;
-  margin-left: -10px;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-}
-.pm-avatar-img:first-child {
-  margin-left: 0;
-}
-.pm-chart-svg-wrapper {
-  flex-grow: 1;
-  margin: 15px 0;
-  position: relative;
-}
-.pm-chart-svg {
-  width: 100%;
-  height: 100%;
-}
-.pm-chart-footer {
-  display: flex;
-  justify-content: space-between;
-  font-size: 11px;
-  font-weight: 700;
-  color: #94a3b8;
-  padding-top: 5px;
-}
-.op-rect-rect-btn-login:hover {
-  background: #a3e635 !important;
-  transform: translateY(-1px);
-  box-shadow: 0 10px 15px -3px rgba(163, 230, 53, 0.15) !important;
-}
-.op-rect-rect-btn-biometric:hover {
-  background: #f8fafc !important;
-  border-color: #94a3b8 !important;
+.op-rect-rect-input-email,
+.op-rect-rect-input-password {
+  background: rgba(255, 255, 255, 0.02) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  color: #ffffff !important;
 }
 .op-rect-rect-input-email:focus,
 .op-rect-rect-input-password:focus {
-  border-color: #7c3aed !important;
-  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.15) !important;
+  border-color: #3b82f6 !important;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25) !important;
   outline: none !important;
+}
+.op-rect-rect-btn-login:hover {
+  background: #2563eb !important;
+  transform: translateY(-1px);
+  box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.3) !important;
+}
+.op-rect-rect-btn-biometric:hover {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border-color: rgba(255, 255, 255, 0.2) !important;
 }
 `)
 

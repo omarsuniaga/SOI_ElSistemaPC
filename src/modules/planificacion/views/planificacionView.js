@@ -117,11 +117,17 @@ function renderError(container, msg) {
 function renderContent(container) {
   const isAdmin = state.viewMode === 'admin'
 
-  const headerTitle = state.viewMode === 'acm' ? 'ACM ? Gobernanza Curricular' : isAdmin ? 'Todas las Planificaciones' : 'Mis Planes de Clase'
+  const headerTitle = state.viewMode === 'acm'
+    ? 'ACM ? Gobernanza Curricular'
+    : isAdmin
+      ? 'Todas las Planificaciones'
+      : 'Mis Planes de Clase'
   const headerIcon = state.viewMode === 'acm' ? 'bi-diagram-3' : isAdmin ? 'bi-shield-check' : 'bi-journal-check'
-  const headerDesc = isAdmin
-    ? `${hook.planificaciones.length} planes pendientes de revisión`
-    : `${hook.planificaciones.length} planes registrados`
+  const headerDesc = state.viewMode === 'acm'
+    ? 'ACM define, versiona y publica. El portal de maestros solo hereda lo activo.'
+    : isAdmin
+      ? `${hook.planificaciones.length} planes pendientes de revisi?n`
+      : `${hook.planificaciones.length} planes registrados`
 
   // Stats for admin mode
   const statsHtml = state.viewMode === 'acm' ? _renderAcmAuthorityPanel() : isAdmin ? _renderAdminStats() : ''
@@ -140,15 +146,23 @@ function renderContent(container) {
           </div>
         </div>
         <div class="planificacion-header-actions">
-          <button class="btn-help-trigger" id="btn-help-planificacion" title="¿Cómo funciona esta pantalla?" aria-label="Ayuda">
+          <button class="btn-help-trigger" id="btn-help-planificacion" title="?C?mo funciona esta pantalla?" aria-label="Ayuda">
             <i class="bi bi-question"></i>
           </button>
           ${
             (isAdmin || state.viewMode === 'acm')
               ? `
             <button class="btn btn-outline-secondary btn-sm" id="btn-curriculo-admin">
-              <i class="bi bi-journal-bookmark me-1"></i>Currículo
+              <i class="bi bi-journal-bookmark me-1"></i>Curr?culo
             </button>
+            ${state.viewMode === 'acm' ? `
+            <button class="btn btn-outline-primary btn-sm" id="btn-publicar-version">
+              <i class="bi bi-broadcast me-1"></i>Publicar Versi?n
+            </button>
+            <button class="btn btn-outline-info btn-sm" id="btn-asignar-ruta-acm">
+              <i class="bi bi-diagram-3 me-1"></i>Asignar Ruta
+            </button>
+            ` : ''}
             <button class="btn btn-outline-success btn-sm" id="btn-aprobar-bulk" style="display:none">
               <i class="bi bi-check-all me-1"></i>Aprobar Seleccionados
             </button>
@@ -284,7 +298,7 @@ function renderContent(container) {
       <div id="tab-content-plantillas" style="display:none">
         <div class="alert alert-info border-0 py-3" style="font-size:0.875rem;">
           <i class="bi bi-file-earmark-template me-2"></i>
-          Las plantillas de planificación estarán disponibles próximamente.
+          Las plantillas de planificaci?n estar?n disponibles pr?ximamente.
         </div>
       </div>
       <div id="tab-content-historial" style="display:none"></div>

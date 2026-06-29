@@ -298,61 +298,135 @@ export const templateCss = `/* Frame: Portal Maestros - Login Screen */
   }
   .op-rect-rect-login-card {
     position: relative !important;
-    left: 0 !important;
-    top: 0 !important;
+    left: auto !important;
+    top: auto !important;
     width: 100% !important;
-    max-width: 440px !important;
+    max-width: 460px !important;
     height: auto !important;
-    min-height: 520px !important;
-    padding: 30px !important;
+    min-height: auto !important;
+    padding: 40px !important;
     margin: 0 auto !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 20px !important;
+    box-sizing: border-box !important;
   }
   .op-text-text-card-title {
-    position: absolute !important; left: 40px !important; top: 40px !important;
+    position: relative !important;
+    left: auto !important;
+    top: auto !important;
+    width: 100% !important;
+    height: auto !important;
+    margin-bottom: 5px !important;
   }
-  .op-group-group-input-email {
-    position: absolute !important; left: 40px !important; top: 95px !important; width: calc(100% - 80px) !important;
-  }
-  .op-rect-rect-input-email {
-    position: relative !important; left: 0 !important; top: 22px !important; width: 100% !important;
-  }
+  .op-group-group-input-email,
   .op-group-group-input-password {
-    position: absolute !important; left: 40px !important; top: 185px !important; width: calc(100% - 80px) !important;
+    position: relative !important;
+    left: auto !important;
+    top: auto !important;
+    width: 100% !important;
+    height: auto !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 6px !important;
   }
+  .op-text-text-label-email,
+  .op-text-text-label-password {
+    position: relative !important;
+    left: auto !important;
+    top: auto !important;
+    width: auto !important;
+    height: auto !important;
+  }
+  .op-rect-rect-input-email,
   .op-rect-rect-input-password {
-    position: relative !important; left: 0 !important; top: 22px !important; width: 100% !important;
+    position: relative !important;
+    left: auto !important;
+    top: auto !important;
+    width: 100% !important;
+    height: 45px !important;
+    margin: 0 !important;
   }
   .op-rect-rect-btn-eye {
-    position: absolute !important; right: 12px !important; top: 31px !important; left: auto !important;
+    position: absolute !important;
+    right: 12px !important;
+    top: 31px !important;
+    left: auto !important;
+    width: 26px !important;
+    height: 26px !important;
   }
   .op-group-group-checkboxes {
-    position: absolute !important; left: 40px !important; top: 275px !important; width: calc(100% - 80px) !important;
+    position: relative !important;
+    left: auto !important;
+    top: auto !important;
+    width: 100% !important;
+    height: auto !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 12px !important;
+    margin: 5px 0 !important;
   }
-  .op-rect-rect-chk-remember {
-    position: absolute !important; left: 0 !important; top: 0 !important;
-  }
-  .op-text-text-lbl-remember {
-    position: absolute !important; left: 24px !important; top: 1px !important;
-  }
+  .op-rect-rect-chk-remember,
   .op-rect-rect-chk-keep {
-    position: absolute !important; left: 0 !important; top: 30px !important;
+    position: relative !important;
+    left: auto !important;
+    top: auto !important;
+    display: inline-block !important;
+    margin-right: 8px !important;
+    vertical-align: middle !important;
   }
+  .op-text-text-lbl-remember,
   .op-text-text-lbl-keep {
-    position: absolute !important; left: 24px !important; top: 31px !important;
+    position: relative !important;
+    left: auto !important;
+    top: auto !important;
+    display: inline-block !important;
+    width: auto !important;
+    height: auto !important;
+    vertical-align: middle !important;
   }
   .op-rect-rect-btn-login {
-    position: absolute !important; left: 40px !important; top: 350px !important; width: calc(100% - 80px) !important;
+    position: relative !important;
+    left: auto !important;
+    top: auto !important;
+    width: 100% !important;
+    height: 48px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    margin-top: 10px !important;
   }
   .op-text-text-btn-login-label {
-    position: absolute !important; left: 50% !important; top: 365px !important; transform: translateX(-50%) !important; width: auto !important;
+    display: none !important;
   }
   .op-rect-rect-btn-biometric {
-    position: absolute !important; left: 40px !important; top: 410px !important; width: calc(100% - 80px) !important;
+    position: relative !important;
+    left: auto !important;
+    top: auto !important;
+    width: 100% !important;
+    height: 42px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
   }
   .op-text-text-btn-biometric-label {
-    position: absolute !important; left: 50% !important; top: 423px !important; transform: translateX(-50%) !important; width: auto !important;
+    display: none !important;
   }
   .op-text-text-register-link {
-    position: absolute !important; left: 50% !important; top: 470px !important; transform: translateX(-50%) !important; text-align: center !important; width: auto !important;
+    position: relative !important;
+    left: auto !important;
+    top: auto !important;
+    width: 100% !important;
+    height: auto !important;
+    text-align: center !important;
+    margin-top: 5px !important;
+  }
+  .pm-error-msg {
+    position: relative !important;
+    left: auto !important;
+    top: auto !important;
+    width: 100% !important;
+    text-align: center !important;
+    margin: 5px 0 !important;
   }
 }`

@@ -1,4 +1,4 @@
-import{t as e}from"./AppToast-Dk3fEiuP.js";import{t}from"./AppModal-2uZhR2ML.js";import{_ as n,c as r,d as i,f as a,l as o,m as s,n as c,p as l,t as u,v as d,y as f}from"./tareasApi-BvbmTiyy.js";var p={pendiente:{label:`Pendiente`,color:`secondary`,icon:`bi-clock`},en_progreso:{label:`En Progreso`,color:`info`,icon:`bi-play-circle`},completada:{label:`Completada`,color:`success`,icon:`bi-check-circle`},bloqueada:{label:`Bloqueada`,color:`danger`,icon:`bi-x-octagon`},cancelada:{label:`Cancelada`,color:`dark`,icon:`bi-dash-circle`},observada:{label:`Observada`,color:`warning`,icon:`bi-eye`}};function m(e){let t=p[e]??{label:e,color:`secondary`,icon:`bi-question-circle`};return`<span class="badge bg-${t.color} task-status-badge" data-estado="${e}"><i class="bi ${t.icon} me-1"></i>${t.label}</span>`}function h(){return{...p}}var g={alumno:`bi-person`,maestro:`bi-person-workspace`,postulante:`bi-person-plus`,representante:`bi-people`,instrumento:`bi-music-note-beamed`,evento:`bi-calendar-event`,otro:`bi-link-45deg`},_={alumno:`Alumno`,maestro:`Maestro`,postulante:`Postulante`,representante:`Representante`,instrumento:`Instrumento`,evento:`Evento`,otro:`Otro`};function v(e){if(!e?.entidad_tipo)return``;let t=e.entidad_tipo,n=e.entidad_label||t,r=g[t]??`bi-link-45deg`,i=_[t]??t,a=String(n).replace(/&/g,`&amp;`).replace(/</g,`&lt;`).replace(/>/g,`&gt;`).replace(/"/g,`&quot;`),o=String(i).replace(/&/g,`&amp;`).replace(/</g,`&lt;`).replace(/>/g,`&gt;`);return`<span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 task-entity-chip" title="${o}: ${a}"><i class="bi ${r} me-1"></i>${o}: ${a}</span>`}function y(e){return e==null?``:String(e).replace(/&/g,`&amp;`).replace(/</g,`&lt;`).replace(/>/g,`&gt;`).replace(/"/g,`&quot;`)}function b(e){if(!e)return``;try{return new Date(e).toLocaleString(`es-VE`,{day:`2-digit`,month:`short`,year:`numeric`,hour:`2-digit`,minute:`2-digit`})}catch{return e}}function x(e,t=[]){let n=t.length===0?`<p class="text-muted small text-center py-2"><i class="bi bi-chat-square-dots me-1"></i>Sin comentarios aún.</p>`:t.map(e=>`
+import{t as e}from"./AppToast-Dk3fEiuP.js";import{t}from"./AppModal-2uZhR2ML.js";import{b as n,d as r,g as i,h as a,m as o,p as s,r as c,t as l,u,x as d,y as f}from"./tareasApi-CG6j5SPo.js";var p={pendiente:{label:`Pendiente`,color:`secondary`,icon:`bi-clock`},en_progreso:{label:`En Progreso`,color:`info`,icon:`bi-play-circle`},completada:{label:`Completada`,color:`success`,icon:`bi-check-circle`},bloqueada:{label:`Bloqueada`,color:`danger`,icon:`bi-x-octagon`},cancelada:{label:`Cancelada`,color:`dark`,icon:`bi-dash-circle`},observada:{label:`Observada`,color:`warning`,icon:`bi-eye`}};function m(e){let t=p[e]??{label:e,color:`secondary`,icon:`bi-question-circle`};return`<span class="badge bg-${t.color} task-status-badge" data-estado="${e}"><i class="bi ${t.icon} me-1"></i>${t.label}</span>`}function h(){return{...p}}var g={alumno:`bi-person`,maestro:`bi-person-workspace`,postulante:`bi-person-plus`,representante:`bi-people`,instrumento:`bi-music-note-beamed`,evento:`bi-calendar-event`,otro:`bi-link-45deg`},_={alumno:`Alumno`,maestro:`Maestro`,postulante:`Postulante`,representante:`Representante`,instrumento:`Instrumento`,evento:`Evento`,otro:`Otro`};function v(e){if(!e?.entidad_tipo)return``;let t=e.entidad_tipo,n=e.entidad_label||t,r=g[t]??`bi-link-45deg`,i=_[t]??t,a=String(n).replace(/&/g,`&amp;`).replace(/</g,`&lt;`).replace(/>/g,`&gt;`).replace(/"/g,`&quot;`),o=String(i).replace(/&/g,`&amp;`).replace(/</g,`&lt;`).replace(/>/g,`&gt;`);return`<span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 task-entity-chip" title="${o}: ${a}"><i class="bi ${r} me-1"></i>${o}: ${a}</span>`}function y(e){return e==null?``:String(e).replace(/&/g,`&amp;`).replace(/</g,`&lt;`).replace(/>/g,`&gt;`).replace(/"/g,`&quot;`)}function b(e){if(!e)return``;try{return new Date(e).toLocaleString(`es-VE`,{day:`2-digit`,month:`short`,year:`numeric`,hour:`2-digit`,minute:`2-digit`})}catch{return e}}function x(e,t=[]){let n=t.length===0?`<p class="text-muted small text-center py-2"><i class="bi bi-chat-square-dots me-1"></i>Sin comentarios aún.</p>`:t.map(e=>`
         <div class="task-comment-item d-flex gap-2 mb-3" data-comment-id="${y(e.id)}">
           <div class="task-comment-avatar flex-shrink-0 rounded-circle bg-primary bg-opacity-10 text-primary d-flex align-items-center justify-content-center" style="width:32px;height:32px;">
             <i class="bi bi-person-fill small"></i>
@@ -98,7 +98,7 @@ import{t as e}from"./AppToast-Dk3fEiuP.js";import{t}from"./AppModal-2uZhR2ML.js"
         ${n}
       </div>
     </div>
-  `}function j(e,t,n){e.querySelectorAll(`.task-attachment-download`).forEach(e=>{e.addEventListener(`click`,async()=>{let n=e.dataset.storagePath;if(n)try{e.disabled=!0,e.innerHTML=`<span class="spinner-border spinner-border-sm"></span>`;let r=await t(n);window.open(r,`_blank`,`noopener,noreferrer`)}catch(e){console.error(`[taskAttachmentsPanel] Error al obtener URL firmada:`,e.message)}finally{e.disabled=!1,e.innerHTML=`<i class="bi bi-download"></i>`}},n?{signal:n}:{})})}var M={DIR:`Dirección`,ACM:`Académica`,ADM:`Administración`,FIN:`Financiero`,LOG:`Logística`,COM:`Comunicaciones`,TECNICO:`Técnico`},N=Object.fromEntries(Object.entries(h()).map(([e,t])=>[e,{label:t.label,color:t.color}])),P={baja:{label:`Baja`,color:`secondary`,orden:3},media:{label:`Media`,color:`info`,orden:2},alta:{label:`Alta`,color:`warning`,orden:1},critica:{label:`Crítica`,color:`danger`,orden:0}},F={tareas:[],cargando:!1,filtroEstado:`todos`,filtroDepartamento:`todos`,filtroPrioridad:`todos`,busqueda:``,departamentoFijo:null,actor:null},I=null;async function L(e,t={}){I?.abort(),I=new AbortController,F.departamentoFijo=t.departamento||null,t.actor!==void 0&&(F.actor=t.actor);try{F.cargando=!0,R(e),F.tareas=F.departamentoFijo?await o(F.departamentoFijo):await r(),F.cargando=!1,B(e),U(e)}catch(t){console.error(`[TareasView] Error:`,t.message),z(e,t.message)}return{teardown:()=>I?.abort()}}function R(e){e.innerHTML=`
+  `}function j(e,t,n){e.querySelectorAll(`.task-attachment-download`).forEach(e=>{e.addEventListener(`click`,async()=>{let n=e.dataset.storagePath;if(n)try{e.disabled=!0,e.innerHTML=`<span class="spinner-border spinner-border-sm"></span>`;let r=await t(n);window.open(r,`_blank`,`noopener,noreferrer`)}catch(e){console.error(`[taskAttachmentsPanel] Error al obtener URL firmada:`,e.message)}finally{e.disabled=!1,e.innerHTML=`<i class="bi bi-download"></i>`}},n?{signal:n}:{})})}var M={DIR:`Dirección`,ACM:`Académica`,ADM:`Administración`,FIN:`Financiero`,LOG:`Logística`,COM:`Comunicaciones`,TECNICO:`Técnico`},N=Object.fromEntries(Object.entries(h()).map(([e,t])=>[e,{label:t.label,color:t.color}])),P={baja:{label:`Baja`,color:`secondary`,orden:3},media:{label:`Media`,color:`info`,orden:2},alta:{label:`Alta`,color:`warning`,orden:1},critica:{label:`Crítica`,color:`danger`,orden:0}},F={tareas:[],cargando:!1,filtroEstado:`todos`,filtroDepartamento:`todos`,filtroPrioridad:`todos`,busqueda:``,departamentoFijo:null,processCode:null,correlationId:null,actor:null},I=null;async function L(e,t={}){I?.abort(),I=new AbortController,F.departamentoFijo=t.departamento||null,F.processCode=t.processCode||null,F.correlationId=t.correlationId||null,t.actor!==void 0&&(F.actor=t.actor);try{F.cargando=!0,R(e),F.tareas=U(F.departamentoFijo?await r(F.departamentoFijo):await u()),F.cargando=!1,B(e),W(e)}catch(t){console.error(`[TareasView] Error:`,t.message),z(e,t.message)}return{teardown:()=>I?.abort()}}function R(e){e.innerHTML=`
     <div class="d-flex justify-content-center align-items-center" style="min-height: 400px;">
       <div class="text-center">
         <div class="spinner-border text-primary mb-3" role="status">
@@ -113,7 +113,7 @@ import{t as e}from"./AppToast-Dk3fEiuP.js";import{t}from"./AppModal-2uZhR2ML.js"
         <div class="col-md-6">
           <div class="alert alert-danger" role="alert">
             <h4 class="alert-heading"><i class="bi bi-exclamation-triangle"></i> Error al cargar</h4>
-            <p>${K(t)}</p>
+            <p>${q(t)}</p>
             <hr>
             <button class="btn btn-primary" id="retryBtn">
               <i class="bi bi-arrow-clockwise"></i> Reintentar
@@ -130,8 +130,9 @@ import{t as e}from"./AppToast-Dk3fEiuP.js";import{t}from"./AppModal-2uZhR2ML.js"
             <i class="bi bi-check2-square fs-4"></i>
           </div>
           <div>
-            <h1 class="tareas-title mb-0">${K(F.departamentoFijo?`Tareas — ${M[F.departamentoFijo]||F.departamentoFijo}`:`Tareas Institucionales`)}</h1>
+            <h1 class="tareas-title mb-0">${q(F.departamentoFijo?`Tareas — ${M[F.departamentoFijo]||F.departamentoFijo}`:F.processCode?`Tareas del caso ${F.processCode}`:`Tareas Institucionales`)}</h1>
             <p class="text-muted small mb-0">Sistema Hermes · delegación automática</p>
+            ${F.correlationId?`<p class="text-muted small mb-0">Caso: <code>${q(F.correlationId)}</code></p>`:``}
           </div>
         </div>
 
@@ -162,7 +163,7 @@ import{t as e}from"./AppToast-Dk3fEiuP.js";import{t}from"./AppModal-2uZhR2ML.js"
       <div class="tareas-filters mb-4 d-flex gap-2 flex-wrap">
         <div class="flex-grow-1" style="min-width: 200px;">
           <input type="text" class="form-control form-control-sm" id="buscarTarea"
-            placeholder="🔍 Buscar tarea..." autocomplete="off" value="${K(F.busqueda)}">
+            placeholder="🔍 Buscar tarea..." autocomplete="off" value="${q(F.busqueda)}">
         </div>
         <select class="form-select form-select-sm" id="filtroEstado" style="max-width: 150px;">
           <option value="todos">Todos Estados</option>
@@ -190,8 +191,8 @@ import{t as e}from"./AppToast-Dk3fEiuP.js";import{t}from"./AppModal-2uZhR2ML.js"
             <span class="badge bg-${n.color}" title="${n.label}">${n.label}</span>
           </div>
           <div class="flex-grow-1">
-            <h5 class="card-title mb-1">${K(e.titulo)}</h5>
-            <p class="card-text text-muted small mb-2">${K(e.descripcion||``)}</p>
+            <h5 class="card-title mb-1">${q(e.titulo)}</h5>
+            <p class="card-text text-muted small mb-2">${q(e.descripcion||``)}</p>
             <div class="d-flex flex-wrap gap-2 mb-2 small align-items-center">
               <span class="text-muted"><i class="bi bi-building"></i> ${M[e.departamento]||e.departamento}</span>
               ${e.fecha_vencimiento?`<span class="${c}"><i class="bi bi-calendar"></i> ${e.fecha_vencimiento}${s!==null&&s<0?` (vencida)`:``}</span>`:``}
@@ -217,13 +218,13 @@ import{t as e}from"./AppToast-Dk3fEiuP.js";import{t}from"./AppModal-2uZhR2ML.js"
         </div>
       </div>
     </div>
-  `}function H(){let e=[...F.tareas];if(F.filtroEstado!==`todos`&&(e=e.filter(e=>e.estado===F.filtroEstado)),!F.departamentoFijo&&F.filtroDepartamento!==`todos`&&(e=e.filter(e=>e.departamento===F.filtroDepartamento)),F.filtroPrioridad!==`todos`&&(e=e.filter(e=>e.prioridad===F.filtroPrioridad)),F.busqueda){let t=F.busqueda.toLowerCase();e=e.filter(e=>e.titulo.toLowerCase().includes(t)||(e.descripcion||``).toLowerCase().includes(t))}return e.sort((e,t)=>(P[e.prioridad]?.orden??9)-(P[t.prioridad]?.orden??9)),e}function U(e){let t=I.signal,n=()=>{B(e),U(e)};e.querySelector(`#buscarTarea`)?.addEventListener(`input`,t=>{F.busqueda=t.target.value;let n=e.querySelector(`#tareasList`),r=H();n.innerHTML=r.length===0?`<div class="alert alert-info text-center py-4"><i class="bi bi-inbox"></i> No hay tareas que cumplan con los filtros</div>`:r.map(V).join(``),W(e)},{signal:t}),e.querySelector(`#filtroEstado`)?.addEventListener(`change`,e=>{F.filtroEstado=e.target.value,n()},{signal:t}),e.querySelector(`#filtroDepartamento`)?.addEventListener(`change`,e=>{F.filtroDepartamento=e.target.value,n()},{signal:t}),e.querySelector(`#filtroPrioridad`)?.addEventListener(`change`,e=>{F.filtroPrioridad=e.target.value,n()},{signal:t}),W(e)}function W(e){let t=I.signal;e.querySelectorAll(`.btn-detalle`).forEach(n=>{n.addEventListener(`click`,()=>{let t=F.tareas.find(e=>e.id===n.dataset.tareaId);t&&G(e,t)},{signal:t})})}async function G(r,o){let p=P[o.prioridad]||P.media,h=Array.isArray(o.checklist)?o.checklist:[],g=m(o.estado),_=v(o),y=[],b=[];try{[y,b]=await Promise.all([a(o.id),l(o.id)])}catch{}let S=Array.isArray(o.documentos_adjuntos)?o.documentos_adjuntos:[],C=Object.entries(N).filter(([e])=>e!==`observada`);t.open({title:o.titulo,size:`xl`,body:`
+  `}function H(){let e=[...F.tareas];if(F.filtroEstado!==`todos`&&(e=e.filter(e=>e.estado===F.filtroEstado)),!F.departamentoFijo&&F.filtroDepartamento!==`todos`&&(e=e.filter(e=>e.departamento===F.filtroDepartamento)),F.filtroPrioridad!==`todos`&&(e=e.filter(e=>e.prioridad===F.filtroPrioridad)),F.busqueda){let t=F.busqueda.toLowerCase();e=e.filter(e=>e.titulo.toLowerCase().includes(t)||(e.descripcion||``).toLowerCase().includes(t))}return e.sort((e,t)=>(P[e.prioridad]?.orden??9)-(P[t.prioridad]?.orden??9)),e}function U(e){let t=[...e];return F.processCode&&(t=t.filter(e=>e.process_code===F.processCode)),F.correlationId&&(t=t.filter(e=>e.correlation_id===F.correlationId)),t}function W(e){let t=I.signal,n=()=>{B(e),W(e)};e.querySelector(`#buscarTarea`)?.addEventListener(`input`,t=>{F.busqueda=t.target.value;let n=e.querySelector(`#tareasList`),r=H();n.innerHTML=r.length===0?`<div class="alert alert-info text-center py-4"><i class="bi bi-inbox"></i> No hay tareas que cumplan con los filtros</div>`:r.map(V).join(``),G(e)},{signal:t}),e.querySelector(`#filtroEstado`)?.addEventListener(`change`,e=>{F.filtroEstado=e.target.value,n()},{signal:t}),e.querySelector(`#filtroDepartamento`)?.addEventListener(`change`,e=>{F.filtroDepartamento=e.target.value,n()},{signal:t}),e.querySelector(`#filtroPrioridad`)?.addEventListener(`change`,e=>{F.filtroPrioridad=e.target.value,n()},{signal:t}),G(e)}function G(e){let t=I.signal;e.querySelectorAll(`.btn-detalle`).forEach(n=>{n.addEventListener(`click`,()=>{let t=F.tareas.find(e=>e.id===n.dataset.tareaId);t&&K(e,t)},{signal:t})})}async function K(r,u){let p=P[u.prioridad]||P.media,h=Array.isArray(u.checklist)?u.checklist:[],g=m(u.estado),_=v(u),y=[],b=[];try{[y,b]=await Promise.all([o(u.id),a(u.id)])}catch{}let S=Array.isArray(u.documentos_adjuntos)?u.documentos_adjuntos:[],C=Object.entries(N).filter(([e])=>e!==`observada`);t.open({title:u.titulo,size:`xl`,body:`
       <div class="modal-tarea-content">
-        <p>${K(o.descripcion||``)}</p>
+        <p>${q(u.descripcion||``)}</p>
         <div class="row mb-3">
-          <div class="col-md-4"><strong>Departamento</strong><p>${M[o.departamento]||o.departamento}</p></div>
+          <div class="col-md-4"><strong>Departamento</strong><p>${M[u.departamento]||u.departamento}</p></div>
           <div class="col-md-4"><strong>Prioridad</strong><p><span class="badge bg-${p.color}">${p.label}</span></p></div>
-          <div class="col-md-4"><strong>Vencimiento</strong><p>${o.fecha_vencimiento||`—`}</p></div>
+          <div class="col-md-4"><strong>Vencimiento</strong><p>${u.fecha_vencimiento||`—`}</p></div>
         </div>
 
         ${_?`<div class="mb-3"><strong>Entidad asociada</strong><div class="mt-1">${_}</div></div>`:``}
@@ -231,13 +232,13 @@ import{t as e}from"./AppToast-Dk3fEiuP.js";import{t}from"./AppModal-2uZhR2ML.js"
         <div class="mb-3">
           <strong>Estado actual</strong>
           <div class="mt-1 mb-2">${g}</div>
-          ${o.estado===`observada`?`<input type="hidden" id="modalEstado" value="observada">
+          ${u.estado===`observada`?`<input type="hidden" id="modalEstado" value="observada">
                  <p class="text-muted small mt-1"><i class="bi bi-info-circle me-1"></i>Este estado sólo puede modificarse mediante una nueva transición.</p>`:`<select class="form-select form-select-sm" id="modalEstado">
-                   ${C.map(([e,t])=>`<option value="${e}" ${o.estado===e?`selected`:``}>${t.label}</option>`).join(``)}
+                   ${C.map(([e,t])=>`<option value="${e}" ${u.estado===e?`selected`:``}>${t.label}</option>`).join(``)}
                  </select>`}
         </div>
 
-        ${o.estado===`observada`?``:`<div class="mb-3 border rounded p-3 bg-warning bg-opacity-10">
+        ${u.estado===`observada`?``:`<div class="mb-3 border rounded p-3 bg-warning bg-opacity-10">
                  <strong class="d-block mb-2"><i class="bi bi-eye me-1 text-warning"></i>Marcar como Observada</strong>
                  <p class="small text-muted mb-2">Requiere un comentario obligatorio que explique la observación.</p>
                  <textarea class="form-control form-control-sm" id="modalObservarComentario" rows="2"
@@ -253,7 +254,7 @@ import{t as e}from"./AppToast-Dk3fEiuP.js";import{t}from"./AppModal-2uZhR2ML.js"
                    ${h.map((e,t)=>`
                      <label class="list-group-item px-0 d-flex align-items-center gap-2">
                        <input class="form-check-input m-0 chk-item" type="checkbox" data-idx="${t}" ${e.completado?`checked`:``}>
-                       <span class="${e.completado?`text-decoration-line-through text-muted`:``}">${K(e.item)}</span>
+                       <span class="${e.completado?`text-decoration-line-through text-muted`:``}">${q(e.item)}</span>
                      </label>`).join(``)}
                  </div>
                </div>`:``}
@@ -261,21 +262,21 @@ import{t as e}from"./AppToast-Dk3fEiuP.js";import{t}from"./AppModal-2uZhR2ML.js"
         <div class="mb-3">
           <strong>Feedback / notas de cierre</strong>
           <textarea class="form-control form-control-sm mt-1" id="modalFeedback" rows="2"
-            placeholder="Comentario del responsable...">${K(o.feedback||``)}</textarea>
+            placeholder="Comentario del responsable...">${q(u.feedback||``)}</textarea>
         </div>
 
         <!-- SP-0: Comments, History, Attachments panels -->
         <hr>
         <div class="row g-3 mt-1">
           <div class="col-md-6">
-            ${x(o.id,y)}
+            ${x(u.id,y)}
           </div>
           <div class="col-md-6">
-            ${A(o.id,S)}
+            ${A(u.id,S)}
           </div>
         </div>
         <div class="mt-3">
           ${T(b)}
         </div>
       </div>
-    `,saveText:`Guardar cambios`,onOpen:n=>{let i=I.signal;j(n,f,i);let c=n.querySelector(`#btnObservar`);c?.addEventListener(`click`,async()=>{let i=n.querySelector(`#modalObservarComentario`)?.value?.trim()||``;if(!i){e.show(`El comentario es obligatorio para marcar como Observada`,`error`);return}try{c.disabled=!0;let n=F.actor||{id:null,nombre:`Usuario`};await s(o.id,i,n),e.show(`Tarea marcada como Observada`,`success`),t.close?.(),await L(r,{departamento:F.departamentoFijo,actor:F.actor})}catch(t){e.show(`Error: ${t.message}`,`error`),c.disabled=!1}},{signal:i});let l=n.querySelector(`.task-comment-submit`);l?.addEventListener(`click`,async()=>{let t=n.querySelector(`.task-comment-input`),r=t?.value?.trim()||``;if(!r){e.show(`El comentario no puede estar vacío`,`error`);return}try{l.disabled=!0;let i=F.actor||{id:null,nombre:`Usuario`};await u(o.id,r,i),e.show(`Comentario agregado`,`success`),t&&(t.value=``);let s=await a(o.id),c=n.querySelector(`.task-comments-panel`);c&&(c.outerHTML=x(o.id,s))}catch(t){e.show(`Error: ${t.message}`,`error`)}finally{l.disabled=!1}},{signal:i})},onSave:async t=>{let a=t.querySelector(`#modalEstado`).value,s=t.querySelector(`#modalFeedback`).value.trim();try{let l=t.querySelectorAll(`.chk-item`);for(let e of l){let t=parseInt(e.dataset.idx,10);!!h[t]?.completado!==e.checked&&await n(o.id,t,e.checked)}a===`completada`?await c(o.id,s||null):a!==`observada`&&(await d(o.id,a),s!==(o.feedback||``)&&await i(o.id,s)),e.show(`Tarea actualizada`,`success`),await L(r,{departamento:F.departamentoFijo,actor:F.actor})}catch(t){e.show(`Error: ${t.message}`,`error`)}}})}function K(e){return e==null?``:String(e).replace(/&/g,`&amp;`).replace(/</g,`&lt;`).replace(/>/g,`&gt;`).replace(/"/g,`&quot;`)}export{L as t};
+    `,saveText:`Guardar cambios`,onOpen:n=>{let a=I.signal;j(n,d,a);let s=n.querySelector(`#btnObservar`);s?.addEventListener(`click`,async()=>{let a=n.querySelector(`#modalObservarComentario`)?.value?.trim()||``;if(!a){e.show(`El comentario es obligatorio para marcar como Observada`,`error`);return}try{s.disabled=!0;let n=F.actor||{id:null,nombre:`Usuario`};await i(u.id,a,n),e.show(`Tarea marcada como Observada`,`success`),t.close?.(),await L(r,{departamento:F.departamentoFijo,actor:F.actor})}catch(t){e.show(`Error: ${t.message}`,`error`),s.disabled=!1}},{signal:a});let c=n.querySelector(`.task-comment-submit`);c?.addEventListener(`click`,async()=>{let t=n.querySelector(`.task-comment-input`),r=t?.value?.trim()||``;if(!r){e.show(`El comentario no puede estar vacío`,`error`);return}try{c.disabled=!0;let i=F.actor||{id:null,nombre:`Usuario`};await l(u.id,r,i),e.show(`Comentario agregado`,`success`),t&&(t.value=``);let a=await o(u.id),s=n.querySelector(`.task-comments-panel`);s&&(s.outerHTML=x(u.id,a))}catch(t){e.show(`Error: ${t.message}`,`error`)}finally{c.disabled=!1}},{signal:a})},onSave:async t=>{let i=t.querySelector(`#modalEstado`).value,a=t.querySelector(`#modalFeedback`).value.trim();try{let o=t.querySelectorAll(`.chk-item`);for(let e of o){let t=parseInt(e.dataset.idx,10);!!h[t]?.completado!==e.checked&&await f(u.id,t,e.checked)}i===`completada`?await c(u.id,a||null):i!==`observada`&&(await n(u.id,i),a!==(u.feedback||``)&&await s(u.id,a)),e.show(`Tarea actualizada`,`success`),await L(r,{departamento:F.departamentoFijo,actor:F.actor})}catch(t){e.show(`Error: ${t.message}`,`error`)}}})}function q(e){return e==null?``:String(e).replace(/&/g,`&amp;`).replace(/</g,`&lt;`).replace(/>/g,`&gt;`).replace(/"/g,`&quot;`)}export{L as t};

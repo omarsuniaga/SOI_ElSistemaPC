@@ -25,20 +25,20 @@ describe('calcularEdad', () => {
     expect(calcularEdad('2000-02-29', new Date('2026-05-28'))).toBe(26)
   })
 
-  it('throws for a future date', () => {
-    expect(() => calcularEdad('2030-01-01', new Date('2026-05-28'))).toThrow()
+  it('returns fallback for a future date', () => {
+    expect(calcularEdad('2030-01-01', { today: new Date('2026-05-28') })).toBeNull()
   })
 
-  it('throws for null input', () => {
-    expect(() => calcularEdad(null)).toThrow()
+  it('returns fallback for null input', () => {
+    expect(calcularEdad(null)).toBeNull()
   })
 
-  it('throws for empty string', () => {
-    expect(() => calcularEdad('')).toThrow()
+  it('returns fallback for empty string', () => {
+    expect(calcularEdad('')).toBeNull()
   })
 
-  it('throws for invalid date string', () => {
-    expect(() => calcularEdad('not-a-date')).toThrow()
+  it('returns fallback for invalid date string', () => {
+    expect(calcularEdad('not-a-date')).toBeNull()
   })
 
   it('uses today by default (smoke test — just checks it returns a number)', () => {

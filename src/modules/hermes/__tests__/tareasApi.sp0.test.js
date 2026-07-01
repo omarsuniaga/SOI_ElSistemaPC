@@ -537,6 +537,27 @@ describe('Process Backbone V1 - mock implementation', () => {
       expect(task.process_code).toBe('FIN-P13')
     })
   })
+
+  it('builds a process case detail with metrics and evidence counts', async () => {
+    const { startProcessCase, getProcessCaseDetail } = await import('../api/tareasMock.js')
+
+    const correlationId = await startProcessCase({
+      process_code: 'ACM-P02',
+      title: 'Caso demo ACM',
+      requested_by: ACTOR.id,
+      requested_by_name: ACTOR.nombre,
+    })
+
+    const detail = await getProcessCaseDetail({
+      processCode: 'ACM-P02',
+      correlationId,
+    })
+
+    expect(detail.contract.process_code).toBe('ACM-P02')
+    expect(detail.correlation_id).toBe(correlationId)
+    expect(detail.metrics.total).toBeGreaterThan(0)
+    expect(detail.metrics.completadas).toBeGreaterThanOrEqual(0)
+  })
 })
 
 // tareasApi dispatcher — SP-0 export surface
@@ -585,6 +606,11 @@ describe('tareasApi dispatcher — SP-0 exports', () => {
   it('exports startProcessCase', async () => {
     const api = await import('../api/tareasApi.js')
     expect(typeof api.startProcessCase).toBe('function')
+  })
+
+  it('exports getProcessCaseDetail', async () => {
+    const api = await import('../api/tareasApi.js')
+    expect(typeof api.getProcessCaseDetail).toBe('function')
   })
 })
 

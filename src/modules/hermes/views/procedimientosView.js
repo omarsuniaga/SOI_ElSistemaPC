@@ -13,6 +13,7 @@
 
 import '../styles/tareas.css'
 import * as tareasApi from '../api/tareasApi.js'
+import { router } from '../../../core/router/router.js'
 
 const DEPARTAMENTOS = {
   DIR: 'Dirección', ACM: 'Académica', ADM: 'Administración', FIN: 'Financiero',
@@ -33,6 +34,14 @@ export async function renderProcedimientosView(container) {
 
   const onClick = async (e) => {
     if (e.target.closest('#btn-refrescar-proc')) return cargar(container)
+    const detailBtn = e.target.closest('[data-open-case-detail]')
+    if (detailBtn) {
+      router.navigate('hermes-caso', {
+        processCode: detailBtn.dataset.processCode || null,
+        correlationId: detailBtn.dataset.correlationId || null,
+      })
+      return
+    }
     const contractBtn = e.target.closest('[data-start-process-code]')
     if (contractBtn) {
       const processCode = contractBtn.dataset.startProcessCode
@@ -204,7 +213,12 @@ function renderProcCard(p) {
             <span>${p.pct_avance}% completado</span>
             <span>${p.completadas}/${p.total} tareas</span>
           </div>
-          <div>${alertas.join('') || '<span class="badge bg-light text-success border"><i class="bi bi-check-circle"></i> sin bloqueos</span>'}</div>
+          <div class="d-flex justify-content-between align-items-center gap-2 flex-wrap">
+            <div>${alertas.join('') || '<span class="badge bg-light text-success border"><i class="bi bi-check-circle"></i> sin bloqueos</span>'}</div>
+            <button class="btn btn-sm btn-outline-secondary" data-open-case-detail data-process-code="${esc(p.process_code || '')}" data-correlation-id="${esc(p.correlation_id || '')}">
+              <i class="bi bi-binoculars"></i> Ver caso
+            </button>
+          </div>
         </div>
       </div>
     </div>`

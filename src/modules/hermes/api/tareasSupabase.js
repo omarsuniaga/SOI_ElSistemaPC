@@ -118,6 +118,56 @@ export async function startProcessCase(payload = {}) {
   return data
 }
 
+export async function getProcessCaseDetail({ correlationId = null, processCode = null } = {}) {
+  const filters = {}
+  if (correlationId) filters.correlation_id = correlationId
+  if (processCode) filters.process_code = processCode
+
+  const [contracts, tasks] = await Promise.all([
+    getProcessContracts(),
+    getTareasFiltradas(filters),
+  ])
+
+  const contract = processCode
+    ? contracts.find((item) => item.process_code === processCode) || null
+    : tasks[0]?.process_code
+      ? contracts.find((item) => item.process_code === tasks[0].process_code) || null
+      : null
+
+  const caseId = correlationId || tasks[0]?.correlation_id || null
+  const taskTotal = tasks.length
+  const taskCompletadas = tasks.filter((task) => task.estado === 'completada').length
+  const taskBloqueadas = tasks.filter((task) => task.estado === 'bloqueada').length
+  const taskObservadas = tasks.filter((task) => task.estado === 'observada').length
+  const evidenceCount = tasks.reduce((acc, task) => acc + (Array.isArray(task.documentos_adjuntos) ? task.documentos_adjuntos.length : 0), 0)
+
+  return {
+    contract,
+    correlation_id: caseId,
+    tasks,
+    metrics: {
+      total: taskTotal,
+      completadas: taskCompletadas,
+      bloqueadas: taskBloqueadas,
+      observadas: taskObservadas,
+      evidencias: evidenceCount,
+    },
+  }
+}
+
+export async function closeProcessCase({ caseId, closureSummary = null, actor = {}, force = false } = {}) {
+  if (!caseId) throw new Error('caseId es requerido para cerrar un caso')
+  const rpcName = force ? 'fn_hermes_force_close_process_case' : 'fn_hermes_close_process_case'
+  const { data, error } = await supabase.rpc(rpcName, {
+    p_case_id: caseId,
+    p_closure_summary: closureSummary,
+    p_actor_id: actor.id || null,
+    p_actor_nombre: actor.nombre || null,
+  })
+  if (error) throw error
+  return data
+}
+
 // SP-4: abre un caso de "alumno en riesgo" (fan-out ACM/COM/FIN/DIR). Devuelve correlation_id.
 export async function reportarAlumnoRiesgo(alumnoId, alumnoNombre, motivo, actor = {}) {
   const { data, error } = await supabase.rpc('fn_reportar_alumno_riesgo', {
@@ -288,6 +338,7 @@ export async function getTareasFiltradas(filtros = {}) {
   if (filtros.asignado_a) query = query.eq('asignado_a', filtros.asignado_a)
   if (filtros.event_id) query = query.eq('event_id', filtros.event_id)
   if (filtros.process_code) query = query.eq('process_code', filtros.process_code)
+  if (filtros.correlation_id) query = query.eq('correlation_id', filtros.correlation_id)
   if (filtros.buscar) {
     query = query.or(`titulo.ilike.%${filtros.buscar}%,descripcion.ilike.%${filtros.buscar}%`)
   }

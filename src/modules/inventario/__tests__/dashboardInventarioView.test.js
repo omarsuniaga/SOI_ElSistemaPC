@@ -5,6 +5,14 @@ process.env.VITE_SUPABASE_URL = 'http://localhost'
 process.env.VITE_SUPABASE_ANON_KEY = 'test-key'
 config.isDemoMode = true
 
+// The dashboard pulls Hermes tasks (departamento LOG). hermesApi is not
+// demo-aware, so without this mock the view awaits a real fetch that never
+// resolves and the test times out. Mock it to keep the test hermetic.
+vi.mock('../../hermes/api/hermesApi.js', () => ({
+  obtenerTareas: vi.fn().mockResolvedValue([]),
+  actualizarTarea: vi.fn().mockResolvedValue({}),
+}))
+
 globalThis.bootstrap = {
   Modal: class {
     constructor() { this._shown = false }

@@ -11,14 +11,15 @@ import {
 
 describe('CUOTA_ESTADOS', () => {
   test('exports all 7 estados', () => {
-    expect(CUOTA_ESTADOS).toContain('pendiente')
-    expect(CUOTA_ESTADOS).toContain('pagada')
-    expect(CUOTA_ESTADOS).toContain('vencida')
-    expect(CUOTA_ESTADOS).toContain('en_mora')
-    expect(CUOTA_ESTADOS).toContain('exonerada')
-    expect(CUOTA_ESTADOS).toContain('becada')
-    expect(CUOTA_ESTADOS).toContain('pre_pagada')
-    expect(Object.values(CUOTA_ESTADOS)).toHaveLength(7)
+    const estados = Object.values(CUOTA_ESTADOS)
+    expect(estados).toContain('pendiente')
+    expect(estados).toContain('pagada')
+    expect(estados).toContain('vencida')
+    expect(estados).toContain('en_mora')
+    expect(estados).toContain('exonerada')
+    expect(estados).toContain('becada')
+    expect(estados).toContain('pre_pagada')
+    expect(estados).toHaveLength(7)
   })
 })
 

@@ -27,7 +27,7 @@ import { supabase } from '../../../lib/supabaseClient.js'
 
 const TABLA = 'tareas_institucionales'
 const COLUMNAS =
-  'id, titulo, descripcion, departamento, estado, prioridad, fecha_vencimiento, asignado_a, checklist, feedback, documentos_adjuntos, event_id, minuta_id, created_at, updated_at, entidad_tipo, entidad_id, entidad_label, correlation_id, updated_by, updated_by_nombre'
+  'id, titulo, descripcion, departamento, estado, prioridad, fecha_vencimiento, asignado_a, checklist, feedback, documentos_adjuntos, event_id, minuta_id, process_code, created_at, updated_at, entidad_tipo, entidad_id, entidad_label, correlation_id, updated_by, updated_by_nombre'
 
 const STORAGE_BUCKET = 'tareas'
 const SIGNED_URL_EXPIRES = 3600 // 1 hour
@@ -78,6 +78,42 @@ export async function getProcedimientos() {
 // SP-5: snapshot institucional para la capa de consulta de Hermes (respuestas factuales).
 export async function getConsultaEstado() {
   const { data, error } = await supabase.rpc('fn_hermes_consulta_estado')
+  if (error) throw error
+  return data
+}
+
+// Process Backbone V1: contratos SOI ejecutables por Hermes.
+export async function getProcessContracts({ active = true, owner = null } = {}) {
+  let query = supabase
+    .from('soi_process_contracts')
+    .select('process_code, process_name, department_owner, canonical_doc_path, doc_id, trigger_type, required_evidence, closure_criteria, responsible_departments, task_templates, automation_status, recurrence_count, active, metadata, created_at, updated_at')
+
+  if (active != null) query = query.eq('active', active)
+  if (owner) query = query.eq('department_owner', owner)
+
+  const { data, error } = await query.order('process_code', { ascending: true })
+  if (error) throw error
+  return data || []
+}
+
+export async function startProcessCase(payload = {}) {
+  if (!payload.process_code) {
+    throw new Error('process_code requerido para abrir un caso SOI')
+  }
+
+  const { data, error } = await supabase.rpc('fn_hermes_start_process_case', {
+    p_process_code: payload.process_code,
+    p_title: payload.title || null,
+    p_description: payload.description || null,
+    p_source: payload.source || 'manual',
+    p_priority: payload.priority || 'media',
+    p_requested_by: payload.requested_by || null,
+    p_requested_by_name: payload.requested_by_name || null,
+    p_entity_type: payload.entity_type || null,
+    p_entity_id: payload.entity_id || null,
+    p_entity_label: payload.entity_label || null,
+    p_metadata: payload.metadata || {},
+  })
   if (error) throw error
   return data
 }
@@ -236,6 +272,7 @@ export async function crearTareaInstitucional(payload) {
     fecha_vencimiento: payload.fecha_vencimiento || null,
     asignado_a: payload.asignado_a || null,
     checklist: payload.checklist || [],
+    process_code: payload.process_code || null,
   }
   const { data, error } = await supabase.from(TABLA).insert(row).select(COLUMNAS).single()
   if (error) throw error
@@ -250,6 +287,7 @@ export async function getTareasFiltradas(filtros = {}) {
   if (filtros.prioridad) query = query.eq('prioridad', filtros.prioridad)
   if (filtros.asignado_a) query = query.eq('asignado_a', filtros.asignado_a)
   if (filtros.event_id) query = query.eq('event_id', filtros.event_id)
+  if (filtros.process_code) query = query.eq('process_code', filtros.process_code)
   if (filtros.buscar) {
     query = query.or(`titulo.ilike.%${filtros.buscar}%,descripcion.ilike.%${filtros.buscar}%`)
   }

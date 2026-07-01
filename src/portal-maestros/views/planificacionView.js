@@ -15,6 +15,7 @@ import { announce } from '../utils/a11yUtils.js'
 import { AppToast } from '../../shared/components/AppToast.js'
 import { createPlanningRegistroModal } from '../components/PlanningRegistroModal.js'
 import { createPlanningDetailsModal } from '../components/PlanningDetailsModal.js'
+import { getProximoIndicador, getResumenProgreso } from '../utils/planningGuide.js'
 
 export async function renderPlanificacionView(container, { maestroId }) {
   let _currentRoute = null
@@ -60,6 +61,51 @@ export async function renderPlanificacionView(container, { maestroId }) {
         font-size: 0.85rem;
         font-weight: 600;
         color: var(--pm-text-muted);
+      }
+
+      .pm-planning-faro {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        padding: 1rem 1.25rem;
+        margin-bottom: 1.25rem;
+        border-radius: 14px;
+        background: linear-gradient(135deg, var(--pm-primary), #1d4ed8);
+        color: #fff;
+        box-shadow: 0 6px 20px rgba(29, 78, 216, 0.25);
+      }
+      .pm-planning-faro-done {
+        background: linear-gradient(135deg, #16a34a, #15803d);
+        box-shadow: 0 6px 20px rgba(21, 128, 61, 0.25);
+      }
+      .pm-planning-faro-icon { font-size: 2rem; line-height: 1; }
+      .pm-planning-faro-body { flex: 1; min-width: 0; }
+      .pm-planning-faro-label {
+        margin: 0;
+        font-size: 0.72rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        opacity: 0.85;
+      }
+      .pm-planning-faro-title {
+        margin: 0.15rem 0 0;
+        font-size: 1.1rem;
+        font-weight: 800;
+      }
+      .pm-planning-faro-meta {
+        margin: 0.15rem 0 0;
+        font-size: 0.8rem;
+        opacity: 0.85;
+      }
+      .pm-planning-faro .pm-planning-btn {
+        white-space: nowrap;
+        background: rgba(255, 255, 255, 0.2);
+        color: #fff;
+        border: 1px solid rgba(255, 255, 255, 0.35);
+      }
+      .pm-planning-faro .pm-planning-btn:hover {
+        background: rgba(255, 255, 255, 0.3);
       }
 
       .pm-planning-filter select {
@@ -602,7 +648,14 @@ export async function renderPlanificacionView(container, { maestroId }) {
       )
       .join('')
 
-    contentDiv.innerHTML = `<div class="pm-planning-grid">${html}</div>`
+    contentDiv.innerHTML = `${_renderFaroBanner()}<div class="pm-planning-grid">${html}</div>`
+
+    // CTA del faro: ir directo a registrar el próximo indicador recomendado
+    const faroBtn = contentDiv.querySelector('[data-faro-register]')
+    if (faroBtn) {
+      const proximo = getProximoIndicador(_indicators)
+      faroBtn.addEventListener('click', () => _showRegistroModal(proximo))
+    }
 
     // Agregar listeners
     contentDiv.querySelectorAll('[data-indicator-id]').forEach((card) => {
@@ -623,6 +676,39 @@ export async function renderPlanificacionView(container, { maestroId }) {
         _showRegistroModal(indicator)
       })
     })
+  }
+
+  // Faro: bloque "Próximo a trabajar" al tope del semáforo. Convierte el tablero
+  // de estado en una guía accionable (qué sigue + CTA directo a registrar).
+  function _renderFaroBanner() {
+    const resumen = getResumenProgreso(_indicators)
+    const proximo = getProximoIndicador(_indicators)
+
+    if (!proximo) {
+      return `
+        <div class="pm-planning-faro pm-planning-faro-done" role="status">
+          <div class="pm-planning-faro-icon">🎉</div>
+          <div class="pm-planning-faro-body">
+            <p class="pm-planning-faro-label">Ruta al día</p>
+            <p class="pm-planning-faro-title">Todos los indicadores están completados (${resumen.completados}/${resumen.total})</p>
+          </div>
+        </div>
+      `
+    }
+
+    return `
+      <div class="pm-planning-faro" role="status">
+        <div class="pm-planning-faro-icon">🧭</div>
+        <div class="pm-planning-faro-body">
+          <p class="pm-planning-faro-label">Próximo a trabajar · ${resumen.completados}/${resumen.total} completados</p>
+          <p class="pm-planning-faro-title">${proximo.nombre}</p>
+          <p class="pm-planning-faro-meta">${proximo.estudiantes_vieron}/${proximo.estudiantes_totales} alumnos lo han visto</p>
+        </div>
+        <button class="pm-planning-btn pm-planning-btn-info" data-faro-register>
+          Registrar avance
+        </button>
+      </div>
+    `
   }
 
   function _renderIndicatorCard(indicator) {

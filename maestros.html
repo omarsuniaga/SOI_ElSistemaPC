@@ -2,13 +2,18 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <meta name="theme-color" content="#5856D6" />
+  <meta name="description" content="Sistema Académico Institucional - Portal de Maestros para gestión de clases, asistencia y planificación académica." />
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   <link rel="apple-touch-icon" href="/icons/icon-192.png" />
   <link rel="manifest" href="/manifest.json" />
   <title>Portal Maestros - SOI</title>
-  
+
+  <!-- Preconnect: Supabase -->
+  <link rel="preconnect" href="https://zmhmdvmyeyswunurcyow.supabase.co" />
+  <link rel="dns-prefetch" href="https://zmhmdvmyeyswunurcyow.supabase.co" />
+
   <!-- PWA Meta Tags -->
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -17,53 +22,165 @@
   <meta name="application-name" content="SOI Maestros" />
   <meta name="msapplication-TileColor" content="#5856D6" />
   <meta name="msapplication-config" content="none" />
-  
+
+  <!-- Social / Open Graph -->
+  <meta property="og:title" content="Portal Maestros - SOI" />
+  <meta property="og:description" content="Sistema Académico Institucional - Portal de Maestros. Gestiona tus clases, asistencia y planificación académica." />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://soi.el-sistema.com/maestros.html" />
+  <meta property="og:image" content="/icons/icon-512.png" />
+  <meta property="og:locale" content="es_DO" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Portal Maestros - SOI" />
+  <meta name="twitter:description" content="Sistema Académico Institucional - Portal de Maestros." />
+  <meta name="twitter:image" content="/icons/icon-512.png" />
+
+  <!-- iOS Splash Screen (iPad Pro 12.9"+) -->
+  <link rel="apple-touch-startup-image" media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2)" href="/icons/icon-512.png" />
+  <link rel="apple-touch-startup-image" media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)" href="/icons/icon-512.png" />
+  <!-- iPad 10.5" -->
+  <link rel="apple-touch-startup-image" media="screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2)" href="/icons/icon-512.png" />
+  <!-- iPhone Pro Max / Plus -->
+  <link rel="apple-touch-startup-image" media="screen and (device-width: 428px) and (device-height: 926px) and (-webkit-device-pixel-ratio: 3)" href="/icons/icon-512.png" />
+  <link rel="apple-touch-startup-image" media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3)" href="/icons/icon-512.png" />
+  <!-- iPhone X / XS / 11 Pro -->
+  <link rel="apple-touch-startup-image" media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3)" href="/icons/icon-512.png" />
+  <!-- iPhone SE / 8 / 7 / 6 -->
+  <link rel="apple-touch-startup-image" media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2)" href="/icons/icon-512.png" />
+
   <style>
-    body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #ffffff; }
+    /* ── Loading Splash (App Shell) ── */
+    body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #fbfbfd; }
     #portal-app { min-height: 100vh; }
-    .pm-loading-splash { 
-      display: flex; 
-      flex-direction: column; 
-      align-items: center; 
-      justify-content: center; 
-      height: 100vh; 
+
+    .pm-loading-splash {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
       background: #fbfbfd;
       animation: fadeIn 0.5s ease;
+      padding: 2rem;
+      text-align: center;
     }
-    .pm-spinner { 
-      width: 44px; 
-      height: 44px; 
-      border: 3.5px solid rgba(0, 122, 255, 0.15); 
-      border-top-color: #007aff; 
-      border-radius: 50%; 
-      animation: pm-spin 0.8s cubic-bezier(0.4, 0, 0.2, 1) infinite; 
+
+    .pm-loading-icon {
+      width: 72px;
+      height: 72px;
+      margin-bottom: 32px;
+      animation: pm-breathe 2s ease-in-out infinite;
     }
-    @keyframes pm-spin { 
+
+    .pm-loading-icon svg {
+      width: 100%;
+      height: 100%;
+    }
+
+    .pm-loading-spinner {
+      width: 28px;
+      height: 28px;
+      border: 3px solid rgba(0, 122, 255, 0.12);
+      border-top-color: #007aff;
+      border-radius: 50%;
+      animation: pm-spin 0.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+      margin-bottom: 20px;
+    }
+
+    .pm-loading-text {
+      color: #1d1d1f;
+      font-size: 15px;
+      font-weight: 500;
+      letter-spacing: -0.01em;
+      margin-bottom: 4px;
+    }
+
+    .pm-loading-sub {
+      color: #86868b;
+      font-size: 13px;
+      font-weight: 400;
+      letter-spacing: -0.01em;
+    }
+
+    .pm-loading-progress {
+      width: 120px;
+      height: 3px;
+      background: rgba(0, 122, 255, 0.12);
+      border-radius: 2px;
+      margin-top: 32px;
+      overflow: hidden;
+    }
+
+    .pm-loading-progress-bar {
+      height: 100%;
+      width: 0%;
+      background: #007aff;
+      border-radius: 2px;
+      animation: pm-progress 2.5s ease-in-out forwards;
+    }
+
+    @keyframes pm-spin {
       from { transform: rotate(0deg); }
-      to { transform: rotate(360deg); } 
+      to { transform: rotate(360deg); }
     }
+
     @keyframes fadeIn {
       from { opacity: 0; }
       to { opacity: 1; }
     }
-    .pm-loading-text { 
-      margin-top: 24px; 
-      color: #1d1d1f; 
-      font-size: 15px; 
-      font-weight: 500;
-      letter-spacing: -0.01em;
+
+    @keyframes pm-breathe {
+      0%, 100% { opacity: 0.6; transform: scale(0.97); }
+      50% { opacity: 1; transform: scale(1); }
     }
 
+    @keyframes pm-progress {
+      0% { width: 0%; }
+      40% { width: 35%; }
+      70% { width: 65%; }
+      100% { width: 85%; }
+    }
+
+    @media (prefers-color-scheme: dark) {
+      body { background: #000000; }
+      .pm-loading-splash { background: #000000; }
+      .pm-loading-text { color: #f5f5f7; }
+      .pm-loading-sub { color: #6e6e73; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .pm-loading-icon { animation: none; }
+      .pm-loading-spinner { animation: none; border-top-color: transparent; }
+      .pm-loading-progress-bar { animation: none; width: 50%; }
+    }
   </style>
 </head>
 <body>
   <a href="#portal-app" class="pm-skip-link">Saltar al contenido principal</a>
   <div id="portal-app" tabindex="-1">
-    <div class="pm-loading-splash">
-      <div class="pm-spinner"></div>
-      <div class="pm-loading-text">Cargando Portal Maestros...</div>
+    <div class="pm-loading-splash" id="pm-loading-splash">
+      <div class="pm-loading-icon">
+        <svg viewBox="0 0 72 72" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect width="72" height="72" rx="18" fill="#5856D6"/>
+          <path d="M36 20c-2.5 0-4.5 2-4.5 4.5v4.5h-4.5c-2.5 0-4.5 2-4.5 4.5s2 4.5 4.5 4.5h4.5v4.5c0 2.5 2 4.5 4.5 4.5s4.5-2 4.5-4.5V38h4.5c2.5 0 4.5-2 4.5-4.5s-2-4.5-4.5-4.5h-4.5v-4.5c0-2.5-2-4.5-4.5-4.5z" fill="white"/>
+        </svg>
+      </div>
+      <div class="pm-loading-spinner" id="pm-loading-spinner"></div>
+      <div class="pm-loading-text">Portal Maestros</div>
+      <div class="pm-loading-sub">Preparando tu espacio de trabajo...</div>
+      <div class="pm-loading-progress">
+        <div class="pm-loading-progress-bar" id="pm-loading-progress-bar"></div>
+      </div>
     </div>
   </div>
+
+  <!-- Inline script to finish progress bar on DOMContentLoaded -->
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const bar = document.getElementById('pm-loading-progress-bar')
+      if (bar) bar.style.width = '100%'
+    })
+  </script>
 
   <script type="module" src="/src/main-maestros.js"></script>
 </body>

@@ -8,13 +8,109 @@ import { disablePullToRefresh } from './shared/utils/pullToRefreshBlocker.js'
 disablePullToRefresh()
 
 // ============================================
-// PWA: Registrar Service Worker
+// PWA: Registrar Service Worker + Update Detection
 // ============================================
+let _swRegistration = null
+let _swUpdateToast = null
+
+function _showUpdateToast() {
+  if (_swUpdateToast) return
+  _swUpdateToast = true
+
+  // Inject base toast styles if not yet present
+  if (!document.getElementById('app-toast-styles')) {
+    const s = document.createElement('style')
+    s.id = 'app-toast-styles'
+    s.textContent = `
+      #app-toast-container {
+        position: fixed; bottom: 1.25rem; right: 1.25rem;
+        z-index: 11020; display: flex; flex-direction: column;
+        gap: 0.5rem; pointer-events: none;
+      }
+      .app-toast {
+        pointer-events: all; display: flex; align-items: flex-start;
+        gap: 0.65rem; min-width: 280px; max-width: 360px;
+        padding: 0.85rem 1rem; border-radius: 14px;
+        border: 1px solid rgba(255,255,255,0.08);
+        background: rgba(24,24,32,0.97);
+        backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+        box-shadow: 0 8px 32px rgba(0,0,0,0.3); color: #fff;
+        font-size: 0.875rem; line-height: 1.4;
+        opacity: 0; transform: translateY(12px) scale(0.97);
+        transition: opacity 0.3s ease, transform 0.35s cubic-bezier(0.16,1,0.3,1);
+      }
+      .app-toast--visible { opacity: 1; transform: translateY(0) scale(1); }
+      .app-toast__icon { font-size: 1.1rem; flex-shrink: 0; margin-top: 1px; }
+      .app-toast__body { flex: 1; min-width: 0; }
+      .app-toast__title { font-weight: 700; font-size: 0.78rem; letter-spacing: 0.03em; text-transform: uppercase; margin-bottom: 2px; opacity: 0.75; }
+      .app-toast__msg { font-size: 0.875rem; color: rgba(255,255,255,0.9); }
+      .app-toast--info .app-toast__icon { color: #60a5fa; }
+      .app-toast--info { border-color: rgba(96,165,250,0.2); }
+      @media (max-width: 400px) {
+        #app-toast-container { right: 0.75rem; left: 0.75rem; }
+        .app-toast { min-width: unset; max-width: 100%; }
+      }
+    `
+    document.head.appendChild(s)
+  }
+
+  // Ensure toast container exists
+  let container = document.getElementById('app-toast-container')
+  if (!container) {
+    container = document.createElement('div')
+    container.id = 'app-toast-container'
+    document.body.appendChild(container)
+  }
+
+  const toastEl = document.createElement('div')
+  toastEl.className = 'app-toast app-toast--info'
+  toastEl.setAttribute('role', 'alert')
+  toastEl.innerHTML = `
+    <i class="bi bi-arrow-clockwise app-toast__icon" aria-hidden="true"></i>
+    <div class="app-toast__body">
+      <div class="app-toast__title">ACTUALIZACIÓN</div>
+      <div class="app-toast__msg">Nueva versión disponible</div>
+    </div>
+    <button class="app-toast__close" id="pm-update-btn" style="background:var(--pm-primary,#007aff);color:#fff;border:none;padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;flex-shrink:0;">Actualizar</button>
+  `
+  container.appendChild(toastEl)
+  requestAnimationFrame(() => requestAnimationFrame(() => toastEl.classList.add('app-toast--visible')))
+
+  toastEl.querySelector('#pm-update-btn')?.addEventListener('click', () => {
+    if (_swRegistration?.waiting) {
+      _swRegistration.waiting.postMessage({ type: 'SKIP_WAITING' })
+    }
+    toastEl.remove()
+  })
+
+  // Re-load when the new SW takes control
+  let refreshing = false
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (refreshing) return
+    refreshing = true
+    window.location.reload()
+  })
+}
+
 if ('serviceWorker' in navigator && import.meta.env.PROD) {
   const registerSW = async () => {
     try {
-      const registration = await navigator.serviceWorker.register('/sw.js')
-      console.log('[PWA] Service Worker registered:', registration.scope)
+      _swRegistration = await navigator.serviceWorker.register('/sw.js')
+      console.log('[PWA] Service Worker registered:', _swRegistration.scope)
+
+      // Check if a new SW is already waiting
+      if (_swRegistration.waiting) _showUpdateToast()
+
+      // Listen for new SW installations
+      _swRegistration.addEventListener('updatefound', () => {
+        const newSW = _swRegistration.installing
+        if (!newSW) return
+        newSW.addEventListener('statechange', () => {
+          if (newSW.state === 'installed' && navigator.serviceWorker.controller) {
+            _showUpdateToast()
+          }
+        })
+      })
     } catch (error) {
       console.log('[PWA] Service Worker registration failed:', error)
     }
@@ -109,7 +205,7 @@ const _viewRendered = new Set()
 // ============================================
 function buildTabs(permisos) {
   const tabs = [
-    { id: 'calendario', label: 'Calendario', icon: 'bi-calendar3' },
+    { id: 'fechas', label: 'Fechas', icon: 'bi-calendar3' },
     { id: 'hoy', label: 'Hoy', icon: 'bi-house-door' },
     { id: 'planificacion', label: 'Plan', icon: 'bi-signpost-split' },
     { id: 'metricas', label: 'Métricas', icon: 'bi-bar-chart-line' },
@@ -168,6 +264,21 @@ async function _syncWithSupabase(item) {
 
 let _syncTimeout = null
 
+async function updateAppBadge() {
+  if (!navigator.setAppBadge) return
+  try {
+    const queue = await getQueue()
+    const count = queue.length
+    if (count > 0) {
+      await navigator.setAppBadge(count)
+    } else {
+      await navigator.clearAppBadge()
+    }
+  } catch {
+    // Badging API not supported or denied
+  }
+}
+
 async function _updateSyncIndicator() {
   const indicator = document.getElementById('pm-sync-indicator')
   if (!indicator) return
@@ -184,6 +295,7 @@ async function _updateSyncIndicator() {
     indicator.className = 'pm-online-dot error'
     indicator.title = 'Error de sincronización'
   }
+  await updateAppBadge()
 }
 
 async function _triggerSync() {
@@ -388,6 +500,18 @@ async function _scheduleSwAlerts() {
 }
 
 // ============================================
+// SPLASH SCREEN TEARDOWN
+// ============================================
+function _removeSplash() {
+  const splash = document.getElementById('pm-loading-splash')
+  if (!splash) return
+  splash.style.transition = 'opacity 0.3s ease, transform 0.35s cubic-bezier(0.16,1,0.3,1)'
+  splash.style.opacity = '0'
+  splash.style.transform = 'scale(0.97)'
+  setTimeout(() => splash.remove(), 400)
+}
+
+// ============================================
 // BOOTSTRAP PRINCIPAL
 // ============================================
 async function initPortal() {
@@ -495,6 +619,9 @@ async function initPortal() {
   router.setAuthGuard(() => usePortalAuth.isAuthenticated(), publicRoutes)
   router.start()
 
+  // Remove splash screen now that the app is interactive
+  _removeSplash()
+
   // Después del login siempre aterrizar en 'hoy'.
   // Si el hash sigue en #/login (o está vacío), navegar a 'hoy'.
   const startRoute = (router.currentRoute?.() || '').split('?')[0]
@@ -505,7 +632,7 @@ async function initPortal() {
   // 8. Prefetch + precargar vistas
   prefetchMonthData()
     .then(async () => {
-      const PRELOAD_VIEWS = ['hoy', 'calendario', 'metricas']
+      const PRELOAD_VIEWS = ['hoy', 'fechas', 'calendario', 'metricas']
       const current = (router.currentRoute?.() || 'hoy').split('?')[0]
       const pending = PRELOAD_VIEWS.filter((v) => v !== current && !_viewRendered.has(v))
 

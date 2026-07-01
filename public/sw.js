@@ -1,8 +1,9 @@
-const CACHE_NAME = 'sistema-academico-v3';
-const STATIC_PRECACHE = ['/', '/index.html']; // Ampliar con build tool
+const CACHE_NAME = 'sistema-academico-v4';
+const STATIC_PRECACHE = ['/', '/index.html', '/offline.html', '/manifest.json'];
 
 self.addEventListener('install', event => {
   console.log('[SW] Instalando...');
+  self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME).then(cache => {
       return cache.addAll(STATIC_PRECACHE).catch(err => {
@@ -10,7 +11,6 @@ self.addEventListener('install', event => {
       });
     })
   );
-  // No forzar activación inmediata en producción; mejor notificar al usuario.
 });
 
 self.addEventListener('activate', event => {
@@ -71,7 +71,9 @@ async function networkFirst(request) {
     return response;
   } catch (error) {
     const cached = await caches.match(request);
-    return cached || new Response('Sin conexión', { status: 503 });
+    if (cached) return cached;
+    const offlinePage = await caches.match('/offline.html');
+    return offlinePage || new Response('Sin conexión', { status: 503 });
   }
 }
 

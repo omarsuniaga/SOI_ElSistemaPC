@@ -6,6 +6,9 @@
 -- ============================================================================ */
 
 :root {
+  touch-action: manipulation;
+  -webkit-touch-callout: none;
+
   /* Colors - Apple Design */
   --apple-primary: #0066cc;
   --apple-primary-focus: #0071e3;

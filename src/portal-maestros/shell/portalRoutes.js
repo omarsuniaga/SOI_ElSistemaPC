@@ -7,25 +7,10 @@
  * El panel admin vive en /admin (admin.html).
  */
 
-import { renderLoginView } from '../views/loginView.js'
-import { renderRegisterView } from '../views/registerView.js'
-import { renderPendingApprovalView } from '../views/pendingApprovalView.js'
-import { renderHoyView } from '../views/hoyView.js'
-import { renderCalendarioView } from '../views/calendarioView.js'
-import { renderMetricasView } from '../views/metricasView.js'
-import { renderAsistenciaView } from '../views/asistenciaView.js'
-import { renderClaseEmergenteView } from '../views/claseEmergenteView.js'
-import { renderPerfilView } from '../views/perfilView.js'
-import { renderPlanificacionView } from '../views/planificacionView.js'
-import { renderAlumnoPerfilView } from '../views/alumnoPerfilView.js'
-import { renderGamificacionView } from '../views/gamificacionView.js'
-import { renderRutaGameificadaView } from '../views/rutaGameificadaView.js'
-import { renderCrearClaseView } from '../views/crearClaseView.js'
-import { renderAcademicPlanBuilderView } from '../views/academicPlanBuilderView.js'
-import { renderWeeklyPlanView } from '../views/weeklyPlanView.js'
-import { RouteLibraryView } from '../views/routeLibraryView.js'
-import { RouteDetailView } from '../views/routeDetailView.js'
-import { renderGestionarClasesView } from '../views/gestionarClasesView.js'
+// Views are lazy-loaded via dynamic import() inside renderViewContent (see below).
+// This keeps them out of the main-maestros entry bundle so the login path only
+// downloads the view it actually renders. ES module caching makes repeat
+// navigations to an already-loaded view instant.
 
 const MAESTRO_VIEWS = [
   'login', 'logout', 'register', 'pending-approval',
@@ -78,15 +63,21 @@ export async function renderViewContent(route, container, params, urlParams, con
   const { maestroId, permisos, router, showLoginScreen, cleanupPushService, stopRealtime, logoutMaestro } = context
 
   switch (route) {
-    case 'login':
+    case 'login': {
+      const { renderLoginView } = await import('../views/loginView.js')
       renderLoginView(container, { onSuccess: context.onLoginSuccess })
       break
-    case 'register':
+    }
+    case 'register': {
+      const { renderRegisterView } = await import('../views/registerView.js')
       renderRegisterView(container, { onSuccess: () => router.navigate('pending-approval') })
       break
-    case 'pending-approval':
+    }
+    case 'pending-approval': {
+      const { renderPendingApprovalView } = await import('../views/pendingApprovalView.js')
       renderPendingApprovalView(container, { onBackToLogin: () => router.navigate('login') })
       break
+    }
     case 'logout':
       showLoginScreen()
       cleanupPushService()
@@ -94,55 +85,87 @@ export async function renderViewContent(route, container, params, urlParams, con
       logoutMaestro().then(() => window.location.reload())
       break
     case 'calendario':
-    case 'clases':
+    case 'clases': {
+      const { renderCalendarioView } = await import('../views/calendarioView.js')
       return await renderCalendarioView(container)
-    case 'hoy':
+    }
+    case 'hoy': {
+      const { renderHoyView } = await import('../views/hoyView.js')
       return await renderHoyView(container, {
         onClaseClick: (id) => router.navigate(`asistencia?clase=${id}`),
       })
-    case 'asistencia':
+    }
+    case 'asistencia': {
+      const { renderAsistenciaView } = await import('../views/asistenciaView.js')
       return await renderAsistenciaView(container, {
         claseId: urlParams.get('clase'),
         fecha: urlParams.get('fecha'),
         sesionId: urlParams.get('sesion'),
         router,
       })
-    case 'metricas':
+    }
+    case 'metricas': {
+      const { renderMetricasView } = await import('../views/metricasView.js')
       return renderMetricasView(container)
-    case 'perfil':
+    }
+    case 'perfil': {
+      const { renderPerfilView } = await import('../views/perfilView.js')
       return renderPerfilView(container)
-    case 'clase-emergente':
+    }
+    case 'clase-emergente': {
+      const { renderClaseEmergenteView } = await import('../views/claseEmergenteView.js')
       return renderClaseEmergenteView(container, { maestroId })
-    case 'planificacion':
+    }
+    case 'planificacion': {
+      const { renderPlanificacionView } = await import('../views/planificacionView.js')
       return await renderPlanificacionView(container, { maestroId })
-    case 'alumno':
+    }
+    case 'alumno': {
+      const { renderAlumnoPerfilView } = await import('../views/alumnoPerfilView.js')
       return renderAlumnoPerfilView(container, { alumnoId: urlParams.get('id') || params.id })
-    case 'gamificacion':
+    }
+    case 'gamificacion': {
+      const { renderGamificacionView } = await import('../views/gamificacionView.js')
       await renderGamificacionView(container)
       break
-    case 'ruta':
+    }
+    case 'ruta': {
+      const { renderRutaGameificadaView } = await import('../views/rutaGameificadaView.js')
       await renderRutaGameificadaView(container, {
         onTopicSelected: (id) => router.navigate(`asistencia?clase=${id}`),
       })
       break
-    case 'crear-clase':
+    }
+    case 'crear-clase': {
+      const { renderCrearClaseView } = await import('../views/crearClaseView.js')
       renderCrearClaseView(container)
       break
-    case 'ruta-plan-builder':
+    }
+    case 'ruta-plan-builder': {
+      const { renderAcademicPlanBuilderView } = await import('../views/academicPlanBuilderView.js')
       renderAcademicPlanBuilderView(container, { alumnoId: urlParams.get('id') })
       break
-    case 'ruta-semanal':
+    }
+    case 'ruta-semanal': {
+      const { renderWeeklyPlanView } = await import('../views/weeklyPlanView.js')
       renderWeeklyPlanView(container, { alumnoId: urlParams.get('id') })
       break
-    case 'ruta-libreria':
+    }
+    case 'ruta-libreria': {
+      const { RouteLibraryView } = await import('../views/routeLibraryView.js')
       RouteLibraryView.render().then((view) => { container.innerHTML = ''; container.appendChild(view) })
       break
-    case 'ruta-detalle':
+    }
+    case 'ruta-detalle': {
+      const { RouteDetailView } = await import('../views/routeDetailView.js')
       RouteDetailView.render(params).then((view) => { container.innerHTML = ''; container.appendChild(view) })
       break
-    case 'gestionar-clases':
+    }
+    case 'gestionar-clases': {
       if (!permisos?.puede_inscribir_clases) { router.navigate('hoy'); return }
+      const { renderGestionarClasesView } = await import('../views/gestionarClasesView.js')
       return await renderGestionarClasesView(container)
+    }
     default:
       break
   }

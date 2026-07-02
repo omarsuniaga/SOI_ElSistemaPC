@@ -107,7 +107,7 @@ describe('alumnosMock — crearAlumno wizard fields', () => {
 
   it('persists alumno so subsequent obtenerAlumnos returns it', async () => {
     await mock.crearAlumno({ ...FULL_DRAFT, nombre_completo: 'Persist Test' })
-    const list = await mock.obtenerAlumnos()
-    expect(list.some(a => a.nombre_completo === 'Persist Test')).toBe(true)
+    const { alumnos } = await mock.obtenerAlumnos()
+    expect(alumnos.some(a => a.nombre_completo === 'Persist Test')).toBe(true)
   })
 })

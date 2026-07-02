@@ -76,9 +76,7 @@ describe('aprobacionView', () => {
     expect(container.querySelector('table')).toBeTruthy()
     expect(container.textContent).toContain('Ana López')
     expect(container.textContent).toContain('Carlos Ruiz')
-    expect(container.textContent).toContain('Descripción')
-    expect(container.textContent).toContain('Violín')
-    expect(container.textContent).toContain('Piano')
+    expect(container.textContent).toContain('Rol solicitado')
   })
 
   it('shows empty message when no pending teachers', async () => {

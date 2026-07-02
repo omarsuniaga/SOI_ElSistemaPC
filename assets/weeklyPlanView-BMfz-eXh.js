@@ -1,4 +1,4 @@
-import{i as e}from"./supabase-Dhe7Tlxd.js";import{t}from"./academicService-osA8Qsjr.js";import{i as n}from"./portalUtils-CkF82Yyk.js";async function r(i,{alumnoId:a}){i.innerHTML=`<div class="pm-loading"><div class="pm-spinner"></div></div>`;try{let{data:o,error:s}=await e.from(`academic_plans`).select(`*, route_versions(route_id, version_number, routes(name, instrument_id))`).eq(`student_id`,a).eq(`status`,`in_process`).maybeSingle();if(s)throw s;if(!o){i.innerHTML=`
+import{i as e}from"./supabase-Dhe7Tlxd.js";import{t}from"./academicService-or-p50Yc.js";import{i as n}from"./portalUtils-CkF82Yyk.js";async function r(i,{alumnoId:a}){i.innerHTML=`<div class="pm-loading"><div class="pm-spinner"></div></div>`;try{let{data:o,error:s}=await e.from(`academic_plans`).select(`*, route_versions(route_id, version_number, routes(name, instrument_id))`).eq(`student_id`,a).eq(`status`,`in_process`).maybeSingle();if(s)throw s;if(!o){i.innerHTML=`
         <div class="pm-placeholder">
           <i class="bi bi-journal-x"></i>
           <p>El alumno no tiene un plan académico activo.</p>

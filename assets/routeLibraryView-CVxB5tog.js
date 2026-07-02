@@ -1,4 +1,4 @@
-import{t as e}from"./academicService-osA8Qsjr.js";var t={async render(){let e=document.createElement(`div`);return e.className=`pm-view pm-animate-fade-in`,e.innerHTML=`
+import{t as e}from"./academicService-or-p50Yc.js";var t={async render(){let e=document.createElement(`div`);return e.className=`pm-view pm-animate-fade-in`,e.innerHTML=`
       <div class="pm-asist-header">
         <h2 class="apple-display-md" style="font-size: 1.75rem;">Librería de Rutas</h2>
         <p class="apple-caption">Explora y selecciona las rutas académicas disponibles.</p>

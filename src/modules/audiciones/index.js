@@ -24,6 +24,7 @@ export async function mountAudiciones(role) {
             <div class="card-header">Secciones</div>
             <ul class="list-group list-group-flush">
               ${sections.map(s => `<li class="list-group-item">${s.name}</li>`).join('')}
+              <li class="list-group-item"><a href="#tareas">Tareas institucionales</a></li>
             </ul>
           </div>
         </div>

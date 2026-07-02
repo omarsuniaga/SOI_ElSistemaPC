@@ -24,6 +24,7 @@
  */
 
 import { supabase } from '../../../lib/supabaseClient.js'
+import { shouldBlockSensitiveMessage, clampMessageText, WHATSAPP_SECURITY_DEFAULTS } from './whatsappSecurityGuard.js'
 
 const TABLA = 'tareas_institucionales'
 const COLUMNAS =
@@ -227,9 +228,15 @@ export async function crearEventoInstitucional(evento) {
  * de WhatsApp si la prioridad es alta o critica.
  */
 export async function crearTareaInstitucional(payload) {
+  const titulo = clampMessageText(payload.titulo || '', WHATSAPP_SECURITY_DEFAULTS.maxCharsPerMessage)
+  const descripcion = clampMessageText(payload.descripcion || '', WHATSAPP_SECURITY_DEFAULTS.maxCharsPerMessage * 2)
+  if (shouldBlockSensitiveMessage(`${titulo}\n${descripcion}`)) {
+    throw new Error('Solicitud bloqueada por política de seguridad WhatsApp + HERMES')
+  }
+
   const row = {
-    titulo: payload.titulo,
-    descripcion: payload.descripcion || null,
+    titulo,
+    descripcion: descripcion || null,
     departamento: payload.departamento,
     estado: payload.estado || 'pendiente',
     prioridad: payload.prioridad || 'media',

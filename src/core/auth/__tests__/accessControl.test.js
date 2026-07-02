@@ -18,7 +18,7 @@ describe('canAccess() — usuario administrador', () => {
     const adminOnlyRoutes = [
       'admin-programas', 'admin-maestros', 'admin-metricas',
       'admin-config', 'admin-sesiones', 'admin-aprobacion',
-      'admin-ausencias', 'admin-notificaciones',
+      'admin-ausencias', 'admin-notificaciones', 'cierre-academico',
     ]
     adminOnlyRoutes.forEach(route => {
       expect(canAccess(route, adminCtx), `admin debe acceder a ${route}`).toBe(true)
@@ -52,7 +52,7 @@ describe('canAccess() — maestro sin permisos especiales', () => {
     const blocked = [
       'admin-programas', 'admin-maestros', 'admin-metricas',
       'admin-config', 'admin-sesiones', 'admin-aprobacion',
-      'admin-ausencias', 'admin-notificaciones',
+      'admin-ausencias', 'admin-notificaciones', 'cierre-academico',
     ]
     blocked.forEach(route => {
       expect(canAccess(route, maestroCtx), `maestro sin permiso debe ser bloqueado en ${route}`).toBe(false)
@@ -145,6 +145,11 @@ describe('accessDeniedMessage()', () => {
     expect(msg).toContain('administrador')
   })
 
+  it('devuelve mensaje específico para cierre académico', () => {
+    const msg = accessDeniedMessage('cierre-academico')
+    expect(msg.toLowerCase()).toContain('cierre académico')
+  })
+
   it('devuelve mensaje específico de alumnos para admin-alumnos', () => {
     const msg = accessDeniedMessage('admin-alumnos')
     expect(msg.toLowerCase()).toContain('alumnos')
@@ -169,7 +174,7 @@ describe('ROUTE_PERMISSIONS — integridad del mapa', () => {
     const adminOnly = [
       'admin-programas', 'admin-maestros', 'admin-metricas',
       'admin-config', 'admin-sesiones', 'admin-aprobacion',
-      'admin-ausencias', 'admin-notificaciones',
+      'admin-ausencias', 'admin-notificaciones', 'cierre-academico',
     ]
     adminOnly.forEach(route => {
       expect(ROUTE_PERMISSIONS[route]?.requiresAdmin, `${route} debe tener requiresAdmin`).toBe(true)

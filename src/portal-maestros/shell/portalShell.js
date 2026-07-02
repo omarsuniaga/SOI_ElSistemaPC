@@ -6,7 +6,6 @@
 
 import { themeToggle } from '../components/themeToggle.js'
 import { notificacionesPanel } from '../components/notificacionesPanel.js'
-import { getAlumnoIndexFromMetricas } from '../views/metricasView.js'
 import { supabase } from '../../lib/supabaseClient.js'
 
 let _currentBreakpoint = getBreakpoint()
@@ -243,11 +242,12 @@ function _initHeaderSearch(onNavigate) {
     })
   }
 
-  searchInput?.addEventListener('input', () => {
+  searchInput?.addEventListener('input', async () => {
     const q = searchInput.value.trim()
     clearTimeout(_searchTimer)
     if (q.length < 1) { removeDropdown(); return }
 
+    const { getAlumnoIndexFromMetricas } = await import('../views/metricasView.js')
     const localIndex = getAlumnoIndexFromMetricas()
     if (localIndex) {
       const lower = q.toLowerCase()

@@ -2,10 +2,12 @@ import MOCK_WEEKLY_DATA from '../../../assets/data/mocks/acm_weekly_plans.json'
 
 const STORAGE_KEY = 'acm_weekly_plans_demo'
 const PROGRESS_STORAGE_KEY = 'student_indicator_progress_demo'
+const TEACHER_ADJUSTMENTS_STORAGE_KEY = 'acm_teacher_plan_adjustments_demo'
 const SCHEMA_VERSION = 2
 
 let _data = null
 let _progress = {}
+let _teacherAdjustments = {}
 
 function _seedVersionsFromSources(data) {
   if (Array.isArray(data.curriculum_versions) && data.curriculum_versions.length > 0) {
@@ -60,6 +62,18 @@ function _ensureStore() {
   } catch {
     _progress = {}
   }
+
+  try {
+    const rawAdjustments = localStorage.getItem(TEACHER_ADJUSTMENTS_STORAGE_KEY)
+    if (rawAdjustments) {
+      _teacherAdjustments = JSON.parse(rawAdjustments)
+    } else {
+      _teacherAdjustments = {}
+      _persistTeacherAdjustments()
+    }
+  } catch {
+    _teacherAdjustments = {}
+  }
 }
 
 function _persist() {
@@ -75,6 +89,14 @@ function _persistProgress() {
     localStorage.setItem(PROGRESS_STORAGE_KEY, JSON.stringify(_progress))
   } catch (e) {
     console.warn('[weeklyPlanMock] Failed to persist progress:', e.message)
+  }
+}
+
+function _persistTeacherAdjustments() {
+  try {
+    localStorage.setItem(TEACHER_ADJUSTMENTS_STORAGE_KEY, JSON.stringify(_teacherAdjustments))
+  } catch (e) {
+    console.warn('[weeklyPlanMock] Failed to persist teacher adjustments:', e.message)
   }
 }
 
@@ -181,13 +203,79 @@ export async function publicarVersionCurricular(versionId) {
 export async function obtenerRutaActivaPorGrupo(groupId) {
   await _delay()
   _ensureStore()
-  const route = _data.active_routes.find((r) => r.group_id === groupId && r.status === 'active')
+  const route = _data.active_routes.find((r) => String(r.group_id) === String(groupId) && r.status === 'active')
   return route ? _clone(route) : null
+}
+
+export async function obtenerAjustesPlanDocente(groupId, teacherId, weeklyPlanId) {
+  await _delay()
+  _ensureStore()
+  const prefix = `${groupId || ''}__${teacherId || ''}__${weeklyPlanId || ''}__`
+  return Object.entries(_teacherAdjustments)
+    .filter(([key]) => key.startsWith(prefix))
+    .map(([, value]) => _clone(value))
+    .sort((a, b) => Number(a.week_number || 0) - Number(b.week_number || 0))
+}
+
+export async function guardarAjustePlanDocente(adjustmentData) {
+  await _delay()
+  _ensureStore()
+
+  const {
+    group_id,
+    teacher_id,
+    weekly_plan_id,
+    week_number,
+    teacher_strategy,
+    student_activity,
+    homework,
+    evidence,
+    teacher_notes,
+  } = adjustmentData || {}
+
+  if (!group_id || !teacher_id || !weekly_plan_id || !week_number) {
+    throw new Error('Faltan datos obligatorios para guardar el ajuste docente.')
+  }
+
+  const key = `${group_id}__${teacher_id}__${weekly_plan_id}__${week_number}`
+  _teacherAdjustments[key] = {
+    id: _teacherAdjustments[key]?.id || `tadj-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    group_id,
+    teacher_id,
+    weekly_plan_id,
+    week_number,
+    teacher_strategy: teacher_strategy || '',
+    student_activity: student_activity || '',
+    homework: homework || '',
+    evidence: evidence || '',
+    teacher_notes: teacher_notes || '',
+    updated_at: new Date().toISOString(),
+  }
+
+  _persistTeacherAdjustments()
+  return _clone(_teacherAdjustments[key])
 }
 
 export async function crearRutaActiva(routeData) {
   await _delay()
   _ensureStore()
+  if (!routeData?.group_id) {
+    throw new Error('Se requiere group_id para crear una ruta activa.')
+  }
+
+  const archiveDate = routeData.end_date || new Date().toISOString().slice(0, 10)
+  _data.active_routes = _data.active_routes.map((route) => {
+    if (String(route.group_id) !== String(routeData.group_id) || route.status !== 'active') {
+      return route
+    }
+    return {
+      ...route,
+      status: 'archived',
+      end_date: route.end_date || archiveDate,
+      updated_at: new Date().toISOString(),
+    }
+  })
+
   const newRoute = {
     id: `aroute-${Date.now()}`,
     weekly_plan_id: routeData.weekly_plan_id || routeData.weekly_plan_version_id || 'wplan-violin-n0',

@@ -44,6 +44,7 @@ export const ROUTE_PERMISSIONS = {
   'admin-ausencias':      { requiresAdmin: true },
   'admin-notificaciones': { requiresAdmin: true },
   'admin-sistema':        { requiresAdmin: true },
+  'cierre-academico':     { requiresAdmin: true },
 
   // ── Rutas accesibles a maestros con permiso explícito ─────────
   'admin-alumnos': { requiresPermission: 'puede_registrar_alumnos' },
@@ -87,6 +88,7 @@ export function canAccess(route, { isAdmin = false, permisos = null } = {}) {
 export function accessDeniedMessage(route) {
   const rule = ROUTE_PERMISSIONS[route]
   if (!rule) return 'Acceso denegado.'
+  if (route === 'cierre-academico') return 'El cierre académico solo puede ejecutarlo Dirección o Coordinación autorizada.'
   if (rule.requiresAdmin) return 'Esta sección es solo para administradores.'
   if (rule.requiresPermission === 'puede_registrar_alumnos')
     return 'Necesitas autorización del administrador para ver alumnos.'

@@ -291,10 +291,10 @@ export async function renderAsistenciaView(
     const [snapshots, salonesData] = await Promise.all([
       sesionId
         ? supabase
-            .from('class_session_content_snapshots')
-            .select('*')
-            .eq('session_id', sesionId)
-            .then((r) => r.data || [])
+          .from('class_session_content_snapshots')
+          .select('*')
+          .eq('session_id', sesionId)
+          .then((r) => r.data || [])
         : Promise.resolve([]),
       salonIds.length > 0 ? getSalones(salonIds) : Promise.resolve([]), // cache: 1hr
     ])
@@ -457,6 +457,11 @@ function _renderVista(container, ctx) {
     router,
   } = ctx
   let sesionId = ctx.sesionId
+  let isSessionRegistered =
+    Boolean(ctx.sesionId) &&
+    (sesionExistenteData?.borrador === false ||
+      sesionExistenteData?.estado === 'registrada' ||
+      sesionExistenteData?.estado === 'cerrada')
 
   const navigateTo = (route) => {
     if (router?.navigate) {
@@ -965,9 +970,9 @@ function _renderVista(container, ctx) {
       tour.destroy()
       try {
         _justifModal.close()
-      } catch (_) {}
+      } catch (_) { }
       _cleanups.forEach((fn) => {
-        try { fn() } catch (_) {}
+        try { fn() } catch (_) { }
       })
       navigateTo('hoy')
     },
@@ -1061,7 +1066,7 @@ function _renderVista(container, ctx) {
           AppToast.error('Error al crear el plan: ' + err.message)
         }
       },
-      onCancel: () => {},
+      onCancel: () => { },
     },
   )
 
@@ -1166,6 +1171,11 @@ function _renderVista(container, ctx) {
       const obsBtn = container.querySelector('#btn-guardar-obs')
       if (obsBtn) obsBtn.style.display = ''
     },
+    getSessionState: () => ({
+      isRegistered: isSessionRegistered,
+      hasContent: Boolean(dslContent && dslContent.trim()),
+      sessionId: sesionId,
+    }),
     getDslContent: () => editor.getValue(),
   })
   _cleanups.push(() => planificationCard.destroy())
@@ -1298,6 +1308,7 @@ function _renderVista(container, ctx) {
     alumnos,
     estado,
     rutaId,
+    canOpenProgressPanel: Boolean(claseId || rutaId),
     sesionId,
     fechaHoy,
     snapshots,
@@ -1315,6 +1326,11 @@ function _renderVista(container, ctx) {
         claseId,
         fecha: fechaHoy,
         horaInicio: horario?.hora_inicio || null,
+        onProgressSaved: async () => {
+          if (planificationCard?.refreshTree) {
+            await planificationCard.refreshTree()
+          }
+        },
       })
       _activeStudentPanel.open()
       _cleanups.push(() => { if (_activeStudentPanel) _activeStudentPanel.destroy() })
@@ -1634,6 +1650,10 @@ function _renderVista(container, ctx) {
           fetchNotificaciones().catch((e) =>
             console.warn('[asistenciaView] Error al actualizar notificaciones:', e),
           )
+          isSessionRegistered = true
+          if (planificationCard?.refreshTree) {
+            await planificationCard.refreshTree()
+          }
         }
 
         // 3. Procesar cierre de sesión y recálculo de progreso
@@ -1788,7 +1808,7 @@ function _renderVista(container, ctx) {
         if (calBtn)
           calBtn.onclick = () => {
             overlay.remove()
-            navigateTo('calendario')
+            navigateTo('fechas')
           }
 
         const reporteDiaBtn = overlay.querySelector('#btn-reporte-dia-overlay')
@@ -1891,7 +1911,7 @@ function _renderVista(container, ctx) {
     tour.destroy()
     try {
       _justifModal.close()
-    } catch (_) {}
+    } catch (_) { }
 
     // Remover overlay de "Sesión Guardada" si quedó en el DOM
     document.querySelectorAll('.pm-saved-overlay').forEach((el) => el.remove())
@@ -1899,7 +1919,7 @@ function _renderVista(container, ctx) {
     _cleanups.forEach((fn) => {
       try {
         fn()
-      } catch (_) {}
+      } catch (_) { }
     })
   }
 }

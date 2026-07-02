@@ -46,6 +46,8 @@ const navGroups = [
       { id: 'observaciones', label: 'Observaciones', icon: 'bi-eye' },
       { id: 'asistencias', label: 'Asistencias', icon: 'bi-calendar-check' },
       { id: 'metricas', label: 'Métricas', icon: 'bi-bar-chart-line' },
+      { id: 'cierre-academico', label: 'Cierre Académico', icon: 'bi-archive' },
+      { id: 'cierre-academico-historico', label: 'Historial de Cierres', icon: 'bi-clock-history' },
     ],
   },
   {

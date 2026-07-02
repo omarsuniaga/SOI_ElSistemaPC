@@ -186,8 +186,34 @@ function _semaphore(status) {
 
 async function _loadProgress(alumnoId, rutaId, claseId = null) {
   let indicators = []
-  
-  if (config.isDemoMode) {
+
+  if (claseId) {
+    const guia = await weeklyPlanAdapter.obtenerGuiaHeredadaPorClase(claseId).catch(() => null)
+    const planItems = guia?.plan?.items || []
+    const seen = new Set()
+    indicators = planItems
+      .filter((item) => {
+        const key = item.indicator_id || `${item.node_id}:${item.week_number}`
+        if (seen.has(key)) return false
+        seen.add(key)
+        return true
+      })
+      .map((item) => ({
+        id: item.indicator_id || item.node_id || item.id,
+        nombre: item.topic || item.objective || 'Indicador',
+        node: {
+          id: item.node_id || item.id,
+          name: item.topic || 'Tema',
+          level: {
+            id: guia?.route?.level_id || null,
+            level_number: item.week_number,
+            name: `Semana ${item.week_number}`,
+          },
+        },
+      }))
+  }
+
+  if (!indicators.length && config.isDemoMode) {
     // 1. Cargar la jerarquía de temas del mock
     const { getFullHierarchy } = await import('../../modules/planificacion/api/routeMock.js')
     const hierarchy = await getFullHierarchy(claseId || 'pclase_001')
@@ -214,7 +240,7 @@ async function _loadProgress(alumnoId, rutaId, claseId = null) {
         })
       })
     })
-  } else {
+  } else if (!indicators.length) {
     // Modo Real: Supabase query
     const { data, error } = await supabase
       .from('indicators')
@@ -378,7 +404,7 @@ function _renderError(msg) {
 // Factory
 // ─────────────────────────────────────────────────────────────────────────────
 
-export function createStudentProgressPanel({ alumno, rutaId, sessionId, claseId, fecha, horaInicio }) {
+export function createStudentProgressPanel({ alumno, rutaId, sessionId, claseId, fecha, horaInicio, onProgressSaved }) {
   _injectStyles()
 
   const el = document.createElement('aside')
@@ -523,6 +549,9 @@ export function createStudentProgressPanel({ alumno, rutaId, sessionId, claseId,
         sessionId
       )
 
+      if (typeof onProgressSaved === 'function') {
+        await onProgressSaved({ alumnoId: alumno.id, indicatorId, status })
+      }
       await open() 
     } catch (err) {
       console.error('[studentProgressPanel] Error saving:', err)

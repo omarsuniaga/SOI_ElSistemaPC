@@ -478,10 +478,10 @@ async function _scheduleSwAlerts() {
     const diaHoy = hoy.toLocaleDateString('es-ES', { weekday: 'long' }).toLowerCase()
     const fechaHoy = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}-${String(hoy.getDate()).padStart(2, '0')}`
 
-    const [clases, horarios, sesiones] = await Promise.all([
-      getMisClases(),
-      getMisClases().then((c) => getHorariosClases(c.map((x) => x.id))),
-      getMisClases().then(() => getSesiones(_maestro.id, fechaHoy, fechaHoy)),
+    const clases = await getMisClases()
+    const [horarios, sesiones] = await Promise.all([
+      getHorariosClases(clases.map((x) => x.id)),
+      getSesiones(_maestro.id, fechaHoy, fechaHoy),
     ])
 
     const clasesMap = Object.fromEntries(clases.map((c) => [c.id, c]))
@@ -500,15 +500,65 @@ async function _scheduleSwAlerts() {
 }
 
 // ============================================
-// SPLASH SCREEN TEARDOWN
+// SPLASH SCREEN — PROGRESSIVE DISCLOSURE
 // ============================================
+const _SPLASH_PHASES = {
+  auth:      { bar: 25 },
+  profile:   { bar: 50, txt: 'Cargando tu perfil...' },
+  preparing: { bar: 75, txt: 'Preparando tu espacio de trabajo...' },
+  ready:     { bar: 100, txt: '¡Listo!' },
+}
+
 function _removeSplash() {
   const splash = document.getElementById('pm-loading-splash')
   if (!splash) return
   splash.style.transition = 'opacity 0.3s ease, transform 0.35s cubic-bezier(0.16,1,0.3,1)'
   splash.style.opacity = '0'
   splash.style.transform = 'scale(0.97)'
+  splash.style.pointerEvents = 'none'
   setTimeout(() => splash.remove(), 400)
+}
+
+function _updateSplashState(phase, maestro) {
+  const splash = document.getElementById('pm-loading-splash')
+  if (!splash) return
+
+  if (phase === 'remove') { _removeSplash(); return }
+
+  const step = _SPLASH_PHASES[phase]
+  if (!step) return
+
+  const statusEl = document.getElementById('pm-loading-status')
+  const greetingEl = document.getElementById('pm-loading-greeting')
+  const barEl = document.getElementById('pm-loading-progress-bar')
+  const spinnerEl = document.getElementById('pm-loading-spinner')
+
+  switch (phase) {
+    case 'auth':
+      if (greetingEl) greetingEl.textContent = `Hola, ${maestro?.nombre_completo || 'Maestro'}!`
+      if (statusEl) statusEl.textContent = 'Conectando...'
+      break
+    case 'profile':
+      if (statusEl && step.txt) statusEl.textContent = step.txt
+      break
+    case 'preparing':
+      if (statusEl && step.txt) statusEl.textContent = step.txt
+      if (spinnerEl) spinnerEl.style.opacity = '0.5'
+      break
+    case 'ready':
+      if (statusEl && step.txt) statusEl.textContent = step.txt
+      if (spinnerEl) spinnerEl.remove()
+      break
+  }
+
+  if (barEl) {
+    barEl.style.transition = 'width 0.6s cubic-bezier(0.22,1,0.36,1)'
+    barEl.style.width = step.bar + '%'
+  }
+
+  if (phase === 'ready') {
+    setTimeout(() => _removeSplash(), 400)
+  }
 }
 
 // ============================================
@@ -524,6 +574,8 @@ async function initPortal() {
   const maestro = await usePortalAuth.init()
   console.log('[Init] Auth:', maestro ? 'con maestro' : 'sin maestro')
 
+  if (maestro) _updateSplashState('auth', maestro)
+
   // Cuenta registrada pero pendiente de aprobación por un administrador.
   // Mostrar pantalla de espera sin importar qué ruta intentó abrir el usuario.
   if (usePortalAuth.isPendingApproval()) {
@@ -535,6 +587,7 @@ async function initPortal() {
     _setupRouter()
     history.replaceState({ route: 'pending-approval' }, '', '/pending-approval')
     _renderView('pending-approval')
+    _removeSplash()
     return
   }
 
@@ -544,6 +597,7 @@ async function initPortal() {
 
   if (!maestro && !isPublicRoute) {
     _showLoginScreen()
+    _removeSplash()
     return
   }
 
@@ -555,17 +609,20 @@ async function initPortal() {
     _setupRouter()
     router.setAuthGuard(() => usePortalAuth.isAuthenticated(), publicRoutes)
     router.start()
+    _removeSplash()
     return
   }
 
   // Admin puro (sin rol de maestro) → redirigir al panel admin
   if (maestro.es_admin && !maestro.es_maestro) {
     console.log('[Init] Admin puro detectado → redirigiendo a /admin')
+    _removeSplash()
     window.location.href = '/admin'
     return
   }
 
   // 2. Permisos del maestro
+  _updateSplashState('profile', maestro)
   let permisos = null
   try {
     permisos = await getPermisos(maestro.id)
@@ -575,6 +632,7 @@ async function initPortal() {
 
   // 3. Shell
   _buildShell(app, maestro, permisos)
+  _updateSplashState('preparing')
 
   // 4. Contenedores de vista
   Object.assign(_viewContainers, initViewContainers())
@@ -604,10 +662,9 @@ async function initPortal() {
     },
     onNavigate: (route) => router.navigate(route),
     onResize: () => {
-      _buildShell(app, _maestro, _permisos)
-      Object.assign(_viewContainers, initViewContainers())
       const route = (router.currentRoute?.() || 'hoy').split('?')[0]
       setActiveTab(route)
+      _updateSyncIndicator()
     },
   })
 
@@ -619,8 +676,8 @@ async function initPortal() {
   router.setAuthGuard(() => usePortalAuth.isAuthenticated(), publicRoutes)
   router.start()
 
-  // Remove splash screen now that the app is interactive
-  _removeSplash()
+  // App is interactive — smooth reveal of shell
+  _updateSplashState('ready')
 
   // Después del login siempre aterrizar en 'hoy'.
   // Si el hash sigue en #/login (o está vacío), navegar a 'hoy'.
@@ -636,12 +693,10 @@ async function initPortal() {
       const current = (router.currentRoute?.() || 'hoy').split('?')[0]
       const pending = PRELOAD_VIEWS.filter((v) => v !== current && !_viewRendered.has(v))
 
-      await pending.reduce((chain, viewName) => {
-        return chain.then(() => {
-          const container = _viewContainers[viewName]
-          if (container) return _renderView(viewName, {}, { silent: true })
-        })
-      }, Promise.resolve())
+      await Promise.all(pending.map((viewName) => {
+        const container = _viewContainers[viewName]
+        if (container) return _renderView(viewName, {}, { silent: true })
+      }))
 
       _scheduleSwAlerts()
       window.pwaInstaller?.evaluateInsights()

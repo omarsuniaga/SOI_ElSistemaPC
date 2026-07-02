@@ -61,7 +61,7 @@ export function setupGlobalAppEvents({
     _keys.push(e.key.toLowerCase())
 
     if (_keys[_keys.length - 2] === 'g') {
-      const shortcuts = { h: 'hoy', c: 'calendario', r: 'ruta', m: 'metricas', p: 'perfil' }
+      const shortcuts = { h: 'hoy', c: 'fechas', r: 'ruta', m: 'metricas', p: 'perfil' }
       const dest = shortcuts[e.key.toLowerCase()]
       if (dest) { onNavigate(dest); _keys.length = 0 }
     }

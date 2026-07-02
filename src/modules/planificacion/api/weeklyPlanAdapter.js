@@ -16,6 +16,9 @@ export const obtenerFuentesCurriculares = () => impl.obtenerFuentesCurriculares(
 export const obtenerPlanSemanalPorNivel = (levelId, instrument = 'violín') => 
   impl.obtenerPlanSemanalPorNivel(levelId, instrument)
 
+export const obtenerPlanSemanalPorId = (planId) =>
+  impl.obtenerPlanSemanalPorId(planId)
+
 export const obtenerRutasActivas = (maestroId = null) => 
   impl.obtenerRutasActivas(maestroId)
 
@@ -24,6 +27,12 @@ export const obtenerGuiaHeredadaPorClase = (claseId, maestroId = null) =>
 
 export const obtenerRutaActivaPorGrupo = (groupId) => 
   impl.obtenerRutaActivaPorGrupo(groupId)
+
+export const obtenerAjustesPlanDocente = (groupId, teacherId, weeklyPlanId) =>
+  impl.obtenerAjustesPlanDocente(groupId, teacherId, weeklyPlanId)
+
+export const guardarAjustePlanDocente = (adjustmentData) =>
+  impl.guardarAjustePlanDocente(adjustmentData)
 
 export const crearRutaActiva = (routeData) => 
   impl.crearRutaActiva(routeData)

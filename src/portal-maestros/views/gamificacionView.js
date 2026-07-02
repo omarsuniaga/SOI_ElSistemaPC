@@ -10,11 +10,15 @@ const NODE_ICONS = {
 
 /** Status → color mapping */
 const STATUS_COLORS = {
-  approved: '#34C759', in_process: '#007AFF', pending: '#ccc', failed: '#FF3B30',
+  approved: '#34C759', achieved: '#34C759', exceeded: '#007AFF',
+  in_process: '#007AFF', needs_reinforcement: '#FF9500',
+  pending: '#ccc', not_started: '#ccc', failed: '#FF3B30',
 }
 
 const STATUS_LABELS = {
-  approved: 'Aprobado', in_process: 'En proceso', pending: 'Pendiente', failed: 'Fallido',
+  approved: 'Aprobado', achieved: 'Dominado', exceeded: 'Sobresaliente',
+  in_process: 'En proceso', needs_reinforcement: 'Requiere refuerzo',
+  pending: 'Pendiente', not_started: 'Sin iniciar', failed: 'Fallido',
 }
 
 function getNodeIcon(name) {
@@ -62,7 +66,7 @@ export async function renderGamificacionView(container) {
     // Get all students from teacher's classes
     const { data: enrollments } = await supabase
       .from('inscripciones')
-      .select('alumno_id, alumnos(id, nombre, apellido)')
+      .select('alumno_id, clase_id, alumnos(id, nombre, apellido), clases(id, nombre)')
       .in('clase_id', clases.map(c => c.id))
 
     const students = [...new Map(
@@ -170,10 +174,95 @@ async function loadStudentProgress(container, studentId) {
       .limit(1)
       .maybeSingle()
 
+    const { data: studentEnrollments } = await supabase
+      .from('inscripciones')
+      .select('clase_id, clases(id, nombre)')
+      .eq('alumno_id', studentId)
+
+    const enrolledClassIds = (studentEnrollments || []).map((row) => row.clase_id).filter(Boolean)
+    let acmRoutes = []
+    if (enrolledClassIds.length > 0) {
+      const { data } = await supabase
+        .from('acm_active_routes')
+        .select('id, group_id, weekly_plan_id, current_week, status')
+        .in('group_id', enrolledClassIds)
+        .eq('status', 'active')
+      acmRoutes = data || []
+    }
+
+    let acmPlanItems = []
+    const weeklyPlanIds = [...new Set(acmRoutes.map((route) => route.weekly_plan_id).filter(Boolean))]
+    if (weeklyPlanIds.length > 0) {
+      const { data } = await supabase
+        .from('acm_weekly_plan_items')
+        .select('weekly_plan_id, week_number, topic, objective')
+        .in('weekly_plan_id', weeklyPlanIds)
+      acmPlanItems = data || []
+    }
+
+    let acmProgressRows = []
+    const acmIndicatorIds = [...new Set(acmPlanItems.map((item) => item.indicator_id).filter(Boolean))]
+    if (acmIndicatorIds.length > 0) {
+      const { data } = await supabase
+        .from('student_indicator_progress')
+        .select('indicator_id, status, updated_at')
+        .eq('student_id', studentId)
+        .in('indicator_id', acmIndicatorIds)
+      acmProgressRows = data || []
+    }
+
+    const acmContextCards = (studentEnrollments || []).map((enrollment) => {
+      const activeRoute = acmRoutes.find((route) => route.group_id === enrollment.clase_id)
+      if (!activeRoute) return null
+      const currentItem = acmPlanItems.find((item) =>
+        item.weekly_plan_id === activeRoute.weekly_plan_id &&
+        Number(item.week_number) === Number(activeRoute.current_week || 1))
+
+      return {
+        className: enrollment.clases?.nombre || 'Clase',
+        currentWeek: activeRoute.current_week || 1,
+        topic: currentItem?.topic || 'Semana sin tema cargado',
+        objective: currentItem?.objective || '',
+      }
+    }).filter(Boolean)
+
+    const acmProgressCards = acmContextCards.map((card) => {
+      const matchingRoute = acmRoutes.find((route) => route.current_week === card.currentWeek)
+      const item = acmPlanItems.find((planItem) =>
+        planItem.weekly_plan_id === matchingRoute?.weekly_plan_id &&
+        Number(planItem.week_number) === Number(card.currentWeek))
+      const progress = item?.indicator_id
+        ? acmProgressRows.find((row) => row.indicator_id === item.indicator_id)
+        : null
+
+      return {
+        ...card,
+        progressLabel: progress ? (STATUS_LABELS[progress.status] || progress.status) : 'Sin progreso registrado',
+        progressColor: progress ? (STATUS_COLORS[progress.status] || '#ccc') : '#ccc',
+        progressDate: progress?.updated_at || null,
+      }
+    })
+
     if (!plan) {
       contentEl.innerHTML = `
         <div class="pm-empty-state">
           <p>Este alumno no tiene un plan académico activo.</p>
+          ${acmContextCards.length > 0 ? `
+            <div class="pm-student-summary" style="margin-top:1rem;text-align:left;">
+              <div class="pm-summary-row">
+                <span class="pm-summary-label">Contexto curricular ACM disponible</span>
+                <span class="pm-summary-value">${acmContextCards.length} clase(s)</span>
+              </div>
+              ${acmProgressCards.map(card => `
+                <div style="padding:0.75rem;border-radius:10px;background:var(--pm-surface-2);border:1px solid var(--pm-border);">
+                  <div style="font-weight:700;">${escHTML(card.className)} · Semana ${escHTML(String(card.currentWeek))}</div>
+                  <div style="font-size:0.82rem;color:var(--pm-text-muted);margin-top:0.25rem;"><strong>Tema:</strong> ${escHTML(card.topic)}</div>
+                  ${card.objective ? `<div style="font-size:0.82rem;color:var(--pm-text-muted);margin-top:0.2rem;"><strong>Objetivo:</strong> ${escHTML(card.objective)}</div>` : ''}
+                  <div style="font-size:0.82rem;margin-top:0.35rem;color:${card.progressColor};"><strong>Progreso:</strong> ${escHTML(card.progressLabel)}</div>
+                </div>
+              `).join('')}
+            </div>
+          ` : ''}
           <a href="#/ruta-plan-builder?id=${studentId}" class="pm-btn pm-btn-primary" style="display:inline-block;margin-top:0.5rem;">
             Crear Plan
           </a>
@@ -227,6 +316,19 @@ async function loadStudentProgress(container, studentId) {
         <div class="pm-progress-bar">
           <div class="pm-progress-fill" style="width:${progressPct}%"></div>
         </div>
+        ${acmContextCards.length > 0 ? `
+          <div style="display:grid;gap:0.5rem;margin-top:0.5rem;">
+            ${acmProgressCards.map(card => `
+              <div style="padding:0.75rem;border-radius:10px;background:var(--pm-surface-2);border:1px solid var(--pm-border);">
+                <div style="font-weight:700;">${escHTML(card.className)} · Guía ACM · Semana ${escHTML(String(card.currentWeek))}</div>
+                <div style="font-size:0.82rem;color:var(--pm-text-muted);margin-top:0.25rem;"><strong>Tema:</strong> ${escHTML(card.topic)}</div>
+                ${card.objective ? `<div style="font-size:0.82rem;color:var(--pm-text-muted);margin-top:0.2rem;"><strong>Objetivo:</strong> ${escHTML(card.objective)}</div>` : ''}
+                <div style="font-size:0.82rem;margin-top:0.35rem;color:${card.progressColor};"><strong>Estado ACM:</strong> ${escHTML(card.progressLabel)}</div>
+                ${card.progressDate ? `<div style="font-size:0.72rem;color:var(--pm-text-muted);margin-top:0.15rem;">Actualizado: ${new Date(card.progressDate).toLocaleDateString('es')}</div>` : ''}
+              </div>
+            `).join('')}
+          </div>
+        ` : ''}
       </div>
 
       <div class="pm-duolingo-path">

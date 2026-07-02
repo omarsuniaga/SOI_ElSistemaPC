@@ -1,6 +1,8 @@
 export { registerRoutesMetricas } from './metricas.router.js'
 export { metricasService } from './services/metricasService.js'
 export { renderDashboardMetricasView } from './views/dashboardMetricasView.js'
+export { renderCierreAcademicoView } from './views/cierreAcademicoView.js'
+export { renderCierreHistoricoView } from './views/cierreHistoricoView.js'
 export { renderGamificacionNodos } from './components/gamificacionNodos.js'
 export { renderIaReporteGeneradorView } from './views/iaReporteGeneradorView.js'
 export { renderIaAlertasPredictivas } from './components/iaAlertasPredictivas.js'

@@ -13,6 +13,7 @@
 
 import '../styles/tareas.css'
 import * as tareasApi from '../api/tareasApi.js'
+import { buildSafeRejectionMessage, shouldBlockSensitiveMessage } from '../api/whatsappSecurityGuard.js'
 
 const DEPARTAMENTOS = {
   DIR: 'Dirección', ACM: 'Académica', ADM: 'Administración', FIN: 'Financiero',
@@ -37,6 +38,10 @@ export async function renderProcedimientosView(container) {
       const nombre = window.prompt('Nombre del alumno en riesgo:')
       if (!nombre?.trim()) return
       const motivo = window.prompt('Motivo (ausencias, bajo progreso, morosidad…):') || ''
+      if (shouldBlockSensitiveMessage(`${nombre}\n${motivo}`)) {
+        alert(buildSafeRejectionMessage())
+        return
+      }
       try {
         await tareasApi.reportarAlumnoRiesgo(null, nombre.trim(), motivo.trim())
         alert('Caso abierto: se delegaron tareas a Académico, Comunicación, Finanzas y Dirección.')

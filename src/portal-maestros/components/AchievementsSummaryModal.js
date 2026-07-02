@@ -26,6 +26,14 @@ export function createAchievementsSummaryModal(container, results) {
       <div class="pm-achievement-student">
         <span class="pm-student-name">${escHTML(res.studentName)}</span>
       </div>
+      ${res.planningContext ? `
+        <div class="pm-achievement-context">
+          <div class="pm-achievement-context-title">Guía ACM · Semana ${escHTML(String(res.planningContext.currentWeek || '—'))}</div>
+          ${res.planningContext.topic ? `<div class="pm-achievement-context-line"><strong>Tema:</strong> ${escHTML(res.planningContext.topic)}</div>` : ''}
+          ${res.planningContext.objective ? `<div class="pm-achievement-context-line"><strong>Objetivo:</strong> ${escHTML(res.planningContext.objective)}</div>` : ''}
+          ${res.planningContext.hasTeacherAdjustment ? `<div class="pm-achievement-context-line"><strong>Ajuste docente:</strong> aplicado</div>` : ''}
+        </div>
+      ` : ''}
       <div class="pm-achievement-details">
         ${res.approvedNodes.map(node => `
           <div class="pm-badge-node">
@@ -92,6 +100,24 @@ export function createAchievementsSummaryModal(container, results) {
         border-radius: 16px;
         padding: 1rem;
         margin-bottom: 1rem;
+      }
+      .pm-achievement-context {
+        margin-bottom: 0.75rem;
+        padding: 0.75rem;
+        border-radius: 12px;
+        background: rgba(0, 122, 255, 0.08);
+        border: 1px solid rgba(0, 122, 255, 0.15);
+      }
+      .pm-achievement-context-title {
+        font-size: 0.8rem;
+        font-weight: 800;
+        color: #007aff;
+        margin-bottom: 0.35rem;
+      }
+      .pm-achievement-context-line {
+        font-size: 0.76rem;
+        color: var(--apple-text-muted);
+        line-height: 1.35;
       }
       .pm-student-name {
         font-weight: 700;

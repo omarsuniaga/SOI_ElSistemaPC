@@ -1,5 +1,10 @@
 import { supabase } from '../../../lib/supabaseClient';
 
+function isMissingSchemaTableError(error, tableName) {
+  return Boolean(error && error.code === 'PGRST205' && String(error.message || '').includes(tableName))
+}
+
+
 /**
  * Servicio para la gestión de Rutas Académicas y Progreso.
  */
@@ -464,7 +469,12 @@ export const academicService = {
       .eq('student_id', studentId)
       .in('node_id', nodeIds);
 
-    if (pError) throw pError;
+    if (pError) {
+      if (isMissingSchemaTableError(pError, 'student_indicator_progress')) {
+        return [];
+      }
+      throw pError;
+    }
 
     const approvedNodes = new Set([
       ...remoteProgress.filter(p => p.status === 'approved').map(p => p.node_id),
@@ -544,20 +554,114 @@ export const academicService = {
   /**
    * Orquestador de cierre de sesión: recorre los alumnos evaluados y dispara recálculos.
    */
-  async processSessionClosure(sessionId) {
-    // 1. Obtener todos los alumnos que tuvieron evaluaciones en esta sesión
-    const { data: evaluations, error: eError } = await supabase
+  async _loadAcmClosureContext(sessionId) {
+    try {
+      const { data: session, error: sessionError } = await supabase
+        .from('sesiones_clase')
+        .select('id, clase_id, maestro_id, fecha')
+        .eq('id', sessionId)
+        .maybeSingle();
+
+      if (sessionError || !session?.clase_id) return null;
+
+      const { data: activeRoute, error: routeError } = await supabase
+        .from('acm_active_routes')
+        .select('id, group_id, teacher_id, weekly_plan_id, current_week')
+        .eq('group_id', session.clase_id)
+        .eq('status', 'active')
+        .maybeSingle();
+
+      if (routeError || !activeRoute?.weekly_plan_id) return null;
+
+      const { data: planItems, error: itemsError } = await supabase
+        .from('acm_weekly_plan_items')
+        .select('week_number, topic, objective, teacher_strategy, student_activity, homework, evidence, indicator_id')
+        .eq('weekly_plan_id', activeRoute.weekly_plan_id);
+
+      if (itemsError) return null;
+
+      const { data: adjustments } = await supabase
+        .from('acm_teacher_week_adjustments')
+        .select('week_number, teacher_strategy, student_activity, homework, evidence, teacher_notes')
+        .eq('group_id', session.clase_id)
+        .eq('teacher_id', session.maestro_id)
+        .eq('weekly_plan_id', activeRoute.weekly_plan_id);
+
+      const adjustmentMap = new Map((adjustments || []).map((item) => [String(item.week_number), item]));
+      const weeklyItem =
+        (planItems || []).find((item) => Number(item.week_number) == Number(activeRoute.current_week || 1)) ||
+        null;
+
+      if (!weeklyItem) return null;
+
+      const adjustment = adjustmentMap.get(String(weeklyItem.week_number)) || null;
+      return {
+        session,
+        activeRoute,
+        weeklyItem: {
+          ...weeklyItem,
+          teacher_strategy: adjustment?.teacher_strategy || weeklyItem.teacher_strategy,
+          student_activity: adjustment?.student_activity || weeklyItem.student_activity,
+          homework: adjustment?.homework || weeklyItem.homework,
+          evidence: adjustment?.evidence || weeklyItem.evidence,
+          teacher_notes: adjustment?.teacher_notes || '',
+          hasTeacherAdjustment: Boolean(adjustment),
+        }
+      };
+    } catch (_error) {
+      return null;
+    }
+  },
+
+  async _getSessionEvaluations(sessionId) {
+    const { data: attempts, error: attemptsError } = await supabase
       .from('indicator_attempts')
       .select('student_id, indicator_id')
       .eq('session_id', sessionId);
 
-    if (eError) {
-      console.warn('Error obtener indicator_attempts:', eError.message);
-      return [];
+    if (attemptsError) {
+      console.warn('Error obtener indicator_attempts:', attemptsError.message);
     }
+
+    const { data: progressRows, error: progressError } = await supabase
+      .from('student_indicator_progress')
+      .select('student_id, indicator_id, status')
+      .eq('session_id', sessionId)
+      .neq('status', 'not_started');
+
+    if (progressError) {
+      if (isMissingSchemaTableError(progressError, 'student_indicator_progress')) {
+        return [];
+      }
+      console.warn('Error obtener student_indicator_progress:', progressError.message);
+    }
+
+    const merged = new Map();
+
+    (attempts || []).forEach((row) => {
+      if (!row?.student_id || !row?.indicator_id) return;
+      merged.set(`${row.student_id}::${row.indicator_id}`, {
+        student_id: row.student_id,
+        indicator_id: row.indicator_id,
+      });
+    });
+
+    (progressRows || []).forEach((row) => {
+      if (!row?.student_id || !row?.indicator_id) return;
+      merged.set(`${row.student_id}::${row.indicator_id}`, {
+        student_id: row.student_id,
+        indicator_id: row.indicator_id,
+      });
+    });
+
+    return Array.from(merged.values());
+  },
+
+  async processSessionClosure(sessionId) {
+    const acmContext = await this._loadAcmClosureContext(sessionId);
+    const evaluations = await this._getSessionEvaluations(sessionId);
     if (!evaluations || evaluations.length === 0) return [];
 
-    // 1b. Obtener node_id desde indicators (la tabla indicator_attempts no tiene node_id)
     const indicatorIds = [...new Set(evaluations.map(e => e.indicator_id).filter(Boolean))];
     let nodeMap = new Map();
     if (indicatorIds.length > 0) {
@@ -566,13 +670,11 @@ export const academicService = {
       nodeMap = new Map((indicators || []).map(i => [i.id, i.node_id]));
     }
 
-    // Mapear node_id a cada evaluación
     evaluations.forEach(ev => { ev.node_id = nodeMap.get(ev.indicator_id) ?? ev.node_id; });
 
-    // 2. Agrupar por estudiante para evitar redundancia
     const studentMap = new Map();
     evaluations.forEach(ev => {
-      if (!ev.node_id) return; // skip if no node_id found
+      if (!ev.node_id) return;
       if (!studentMap.has(ev.student_id)) studentMap.set(ev.student_id, new Set());
       studentMap.get(ev.student_id).add(ev.node_id);
     });
@@ -586,15 +688,12 @@ export const academicService = {
         levelPromoted: null
       };
 
-      // Recalcular cada nodo evaluado
       for (const nodeId of nodesEvaluated) {
         const nodeRes = await this.recalculateNodeProgress(studentId, nodeId);
         if (nodeRes.status === 'approved') {
-          // Obtener nombre del nodo para el feedback
           const { data: nodeData } = await supabase.from('nodes').select('title, level_id').eq('id', nodeId).single();
           studentAchievements.approvedNodes.push(nodeData.title);
 
-          // Si el nodo se aprobó, verificar si el nivel también
           if (nodeData.level_id) {
             const levelRes = await this.checkLevelCompletion(studentId, nodeData.level_id);
             if (levelRes.status === 'approved') {
@@ -606,15 +705,27 @@ export const academicService = {
       }
 
       if (studentAchievements.approvedNodes.length > 0 || studentAchievements.levelPromoted) {
-        // Obtener nombre del alumno
         const { data: stu } = await supabase.from('alumnos').select('nombre_completo').eq('id', studentId).single();
         results.push({
           ...studentAchievements,
-          studentName: stu.nombre_completo
+          studentName: stu.nombre_completo,
+          planningContext: acmContext ? {
+            source: 'acm',
+            currentWeek: acmContext.activeRoute?.current_week || null,
+            topic: acmContext.weeklyItem?.topic || null,
+            objective: acmContext.weeklyItem?.objective || null,
+            teacherStrategy: acmContext.weeklyItem?.teacher_strategy || null,
+            studentActivity: acmContext.weeklyItem?.student_activity || null,
+            homework: acmContext.weeklyItem?.homework || null,
+            evidence: acmContext.weeklyItem?.evidence || null,
+            teacherNotes: acmContext.weeklyItem?.teacher_notes || null,
+            hasTeacherAdjustment: Boolean(acmContext.weeklyItem?.hasTeacherAdjustment),
+          } : null
         });
       }
     }
 
     return results;
   }
+
 };

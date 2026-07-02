@@ -17,6 +17,7 @@ export function createStudentList(container, {
   alumnos,
   estado,
   rutaId,
+  canOpenProgressPanel = Boolean(rutaId),
   sesionId,
   fechaHoy,
   snapshots,
@@ -97,7 +98,7 @@ export function createStudentList(container, {
       const student = alumnos.find((a) => a.id === studentId)
       if (!student) return
 
-      if (rutaId) {
+      if (canOpenProgressPanel) {
         if (_activeProgressPanel) _activeProgressPanel.destroy()
         if (onOpenProgressPanel) onOpenProgressPanel(student)
         return

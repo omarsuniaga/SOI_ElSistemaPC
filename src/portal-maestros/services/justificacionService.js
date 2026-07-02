@@ -53,8 +53,15 @@ async function deleteEvidencia(publicUrl) {
  * @returns {Promise<Object>}
  */
 export async function guardarJustificacion({ sesionId, alumnoId, claseId, fecha, motivo, evidenciaBase64, creadoPor }, evidenciaFile = null) {
-  if (!sesionId || !alumnoId || !claseId || !fecha || !motivo) {
-    return { error: { message: 'Faltan campos requeridos' } };
+  const missing = []
+  if (!sesionId) missing.push('sesionId')
+  if (!alumnoId) missing.push('alumnoId')
+  if (!fecha) missing.push('fecha')
+  if (!motivo) missing.push('motivo')
+  if (!creadoPor) missing.push('creadoPor')
+
+  if (missing.length > 0) {
+    return { error: { message: `Faltan campos requeridos: ${missing.join(', ')}` } };
   }
 
   let evidenciaUrl = null
@@ -72,7 +79,7 @@ export async function guardarJustificacion({ sesionId, alumnoId, claseId, fecha,
   const payload = {
     sesion_id: sesionId,
     alumno_id: alumnoId,
-    clase_id: claseId,
+    clase_id: claseId || null,
     fecha,
     motivo,
     evidencia_url: evidenciaUrl || null,

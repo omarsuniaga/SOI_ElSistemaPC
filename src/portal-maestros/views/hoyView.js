@@ -11,8 +11,9 @@ import {
   getSalones,
   getEmergentesHoy,
 } from '../services/maestroDataService.js'
-import { obtenerRutasActivas, obtenerGuiaHeredadaPorClase } from '../../modules/planificacion/api/weeklyPlanAdapter.js'
+import { obtenerRutasActivas } from '../../modules/planificacion/api/weeklyPlanAdapter.js'
 import { openClaseAnalysisModal } from '../components/claseAnalysisModal.js'
+import { openClaseEmergenteModal } from '../../modules/planificacion/components/claseEmergenteModal.js'
 
 // ─── Detección de clase en curso ───────────────────────────────
 
@@ -124,7 +125,19 @@ export async function renderHoyView(container, { onClaseClick } = {}) {
     // 1. Obtener clases del maestro (con cache)
     const misClases = await getMisClases()
     if (!misClases || misClases.length === 0) {
-      container.innerHTML = `<p class="pm-empty">No tienes clases asignadas.</p>`
+      container.innerHTML = `
+        <div class="pm-hoy-empty-state">
+          <div class="pm-hoy-empty-card">
+            <div class="pm-hoy-empty-icon"><i class="bi bi-lightning-charge-fill"></i></div>
+            <h2 class="pm-hoy-empty-title">No tienes clases registradas hoy</h2>
+            <p class="pm-hoy-empty-text">Si vas a impartir una clase especial o de reemplazo, puedes crearla aquí mismo.</p>
+            <button class="pm-btn pm-btn-primary pm-hoy-emergente-btn" id="btn-clase-emergente">
+              <i class="bi bi-plus-circle me-1"></i> Clase emergente
+            </button>
+          </div>
+        </div>
+      `
+      _bindEmptyStateEmergente(container, fechaHoy, maestro.id, [])
       return
     }
 
@@ -132,13 +145,6 @@ export async function renderHoyView(container, { onClaseClick } = {}) {
     const clasesMap = Object.fromEntries(misClases.map((c) => [c.id, c]))
     const rutasActivas = await obtenerRutasActivas(maestro.id).catch(() => [])
     const rutaMap = Object.fromEntries((rutasActivas || []).map((ruta) => [String(ruta.group_id), ruta]))
-    const guias = await Promise.all(
-      misClases.map(async (clase) => [
-        clase.id,
-        await obtenerGuiaHeredadaPorClase(clase.id, maestro.id).catch(() => null),
-      ]),
-    )
-    const guiaMap = Object.fromEntries(guias)
 
     // 2. Obtener horarios de hoy para esas clases (con cache)
     const todosHorarios = await getHorariosClases(claseIds)
@@ -148,9 +154,21 @@ export async function renderHoyView(container, { onClaseClick } = {}) {
 
     if (!horarios || horarios.length === 0) {
       container.innerHTML = `
-        <h2 class="pm-date-header">${capitalize(diaHoy)} ${formatFechaPortal(hoy)}</h2>
-        <p class="pm-empty">No tienes clases hoy.</p>
+        <div style="padding: 1rem 1rem 2rem;">
+          <h2 class="pm-date-header">${capitalize(diaHoy)} ${formatFechaPortal(hoy)}</h2>
+          <div class="pm-hoy-empty-state">
+            <div class="pm-hoy-empty-card">
+              <div class="pm-hoy-empty-icon"><i class="bi bi-lightning-charge-fill"></i></div>
+              <h2 class="pm-hoy-empty-title">No tienes clases programadas hoy</h2>
+              <p class="pm-hoy-empty-text">Si vas a dar una clase especial, abre la clase emergente desde aquí.</p>
+              <button class="pm-btn pm-btn-primary pm-hoy-emergente-btn" id="btn-clase-emergente">
+                <i class="bi bi-plus-circle me-1"></i> Clase emergente
+              </button>
+            </div>
+          </div>
+        </div>
       `
+      _bindEmptyStateEmergente(container, fechaHoy, maestro.id, misClases)
       return
     }
 
@@ -212,7 +230,6 @@ export async function renderHoyView(container, { onClaseClick } = {}) {
         const totalAlumnos = alumnosPorClase[clase.id] || 0
         const temporal = _estadoTemporal(h.hora_inicio, h.hora_fin, ahoraMin)
         const ruta = rutaMap[String(clase.id)] || null
-        const guia = guiaMap[String(clase.id)] || null
 
         // Rastrear clase en curso
         if (temporal === 'en-curso') {
@@ -259,7 +276,7 @@ export async function renderHoyView(container, { onClaseClick } = {}) {
           </div>
           ${
             ruta
-              ? `<div class="pm-badge pm-badge-info mt-2"><i class="bi bi-diagram-3 me-1"></i>ACM Semana ${ruta.current_week || 1}${guia?.plan?.main_topic ? ` · ${escHTML(guia.plan.main_topic)}` : ''}</div>`
+              ? `<div class="pm-badge pm-badge-info mt-2"><i class="bi bi-diagram-3 me-1"></i>ACM Semana ${ruta.current_week || 1}</div>`
               : ''
           }
         </div>
@@ -454,6 +471,59 @@ function _bindEmergenteClicks(container, fechaHoy, maestroId) {
         window.router.navigate(`clase-emergente?fecha=${fechaHoy}`)
       }
       card.classList.remove('pm-card-loading')
+    })
+  })
+}
+
+function _bindEmptyStateEmergente(container, fechaHoy, maestroId, clases) {
+  container.querySelector('#btn-clase-emergente')?.addEventListener('click', async () => {
+    let alumnos = []
+    try {
+      const claseIds = (clases || []).map((c) => c.id)
+      if (claseIds.length > 0) {
+        const inscripciones = await getInscripcionesClases(claseIds)
+        const alumnoClasesMap = {}
+        inscripciones.forEach((i) => {
+          if (!i.alumnos) return
+          if (!alumnoClasesMap[i.alumno_id]) alumnoClasesMap[i.alumno_id] = []
+          const clase = clases.find((c) => c.id === i.clase_id)
+          if (clase) alumnoClasesMap[i.alumno_id].push(clase.nombre)
+        })
+        const seen = new Set()
+        alumnos = inscripciones
+          .map((i) => i.alumnos)
+          .filter(Boolean)
+          .filter((a) => {
+            if (seen.has(a.id)) return false
+            seen.add(a.id)
+            return true
+          })
+          .map((a) => ({
+            ...a,
+            clase_nombres: alumnoClasesMap[a.id] || [],
+          }))
+      }
+    } catch (err) {
+      console.warn('[HoyView] No se pudieron cargar alumnos para clase emergente:', err)
+    }
+
+    openClaseEmergenteModal({
+      fecha: fechaHoy,
+      clases: clases || [],
+      alumnos,
+      maestroId,
+      onSave: async (datos) => {
+        const { data, error } = await supabase
+          .from('sesiones_clase')
+          .insert([datos])
+          .select()
+          .single()
+
+        if (error) throw error
+
+        AppToast.success('Clase emergente creada. Procedé a pasar asistencia.')
+        window.location.hash = `#/asistencia?sesion=${data.id}&fecha=${datos.fecha}`
+      },
     })
   })
 }
@@ -698,6 +768,54 @@ if (!document.getElementById('pm-hoy-pendientes-styles')) {
     .pm-autonav-cancel:hover {
       background: var(--pm-surface-2);
       color: var(--pm-text);
+    }
+
+    .pm-hoy-empty-state {
+      min-height: 55vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem 1rem;
+    }
+    .pm-hoy-empty-card {
+      width: min(100%, 560px);
+      text-align: center;
+      background: var(--pm-surface);
+      border: 1px solid var(--pm-border);
+      border-radius: 24px;
+      padding: 2rem 1.5rem;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.08);
+    }
+    .pm-hoy-empty-icon {
+      width: 72px;
+      height: 72px;
+      border-radius: 999px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 1rem;
+      background: rgba(245,158,11,0.12);
+      color: var(--pm-warning, #f59e0b);
+      font-size: 2rem;
+    }
+    .pm-hoy-empty-title {
+      margin: 0 0 0.5rem;
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: var(--pm-text);
+    }
+    .pm-hoy-empty-text {
+      margin: 0 auto 1.25rem;
+      max-width: 42ch;
+      color: var(--pm-text-muted);
+      font-size: 0.95rem;
+      line-height: 1.5;
+    }
+    .pm-hoy-emergente-btn {
+      min-width: 220px;
+      padding: 0.85rem 1.25rem;
+      border-radius: 999px;
+      box-shadow: 0 12px 30px rgba(59,130,246,0.22);
     }
   `
   document.head.appendChild(s)

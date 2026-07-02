@@ -1,6 +1,7 @@
 import { router } from '../../core/router/router.js'
 import { renderAcademicAdminView } from './views/academicAdminView.js'
 import { AcademicDashboardView } from './views/AcademicDashboardView.js'
+import { renderPlanningAssignmentMatrixView } from './views/PlanningAssignmentMatrixView.js'
 
 /**
  * Registra las rutas del módulo de Gestión Académica (Curricular)
@@ -12,7 +13,7 @@ export function registerRoutesAcademicAdmin() {
   
   // Alias sugerido por la tarea
   router.register('planificacion-curricular', (container) => {
-    renderAcademicAdminView(container)
+    renderPlanningAssignmentMatrixView(container)
   })
 
   // Torre de Control (Dashboard Analítico)

@@ -206,8 +206,8 @@ export async function aprobarSolicitud(solicitudId, adminId) {
     const solicitud = normalizeSolicitud(data)
     const permisosArray = []
 
-    if (solicitud.solicita_alumnos) permisosArray.push('registrar_alumnos', 'alumnos:create')
-    if (solicitud.solicita_clases) permisosArray.push('inscribir_clases', 'clases:enroll')
+  if (solicitud.solicita_alumnos) permisosArray.push('registrar_alumnos', 'alumnos:create')
+    if (solicitud.solicita_clases) permisosArray.push('inscribir_clases', 'clases:enroll', 'clases:create')
 
     const permisoActual = await obtenerPermisoPorMaestro(data.maestro_id)
     const permisosActuales = Array.isArray(permisoActual?.permisos) ? permisoActual.permisos : []

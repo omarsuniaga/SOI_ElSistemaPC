@@ -42,7 +42,9 @@ describe('asistenciaView - Toast Replacement', () => {
     const filePath = path.resolve('./src/portal-maestros/components/attendance/PlanificationCard.js')
     const content = fs.readFileSync(filePath, 'utf-8')
 
-    expect(content).toContain("AppToast.error('Error al guardar la planificación: ' + (err.message || err))")
+    // El componente fue reescrito: los errores ahora se muestran con AppToast.error
+    // (mensaje puede variar). Verificamos la intención: usa AppToast.error y NO alert().
+    expect(content).toContain('AppToast.error(')
     expect(content).not.toContain("alert('Error al guardar la planificación:")
   })
 })

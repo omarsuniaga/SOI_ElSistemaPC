@@ -2,13 +2,18 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <meta name="theme-color" content="#5856D6" />
+  <meta name="description" content="Sistema Académico Institucional - Portal de Maestros para gestión de clases, asistencia y planificación académica." />
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   <link rel="apple-touch-icon" href="/icons/icon-192.png" />
   <link rel="manifest" href="/manifest.json" />
   <title>Portal Maestros - SOI</title>
-  
+
+  <!-- Preconnect: Supabase -->
+  <link rel="preconnect" href="https://zmhmdvmyeyswunurcyow.supabase.co" />
+  <link rel="dns-prefetch" href="https://zmhmdvmyeyswunurcyow.supabase.co" />
+
   <!-- PWA Meta Tags -->
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -17,80 +22,186 @@
   <meta name="application-name" content="SOI Maestros" />
   <meta name="msapplication-TileColor" content="#5856D6" />
   <meta name="msapplication-config" content="none" />
-  
+
+  <!-- Social / Open Graph -->
+  <meta property="og:title" content="Portal Maestros - SOI" />
+  <meta property="og:description" content="Sistema Académico Institucional - Portal de Maestros. Gestiona tus clases, asistencia y planificación académica." />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://soi.el-sistema.com/maestros.html" />
+  <meta property="og:image" content="/icons/icon-512.png" />
+  <meta property="og:locale" content="es_DO" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Portal Maestros - SOI" />
+  <meta name="twitter:description" content="Sistema Académico Institucional - Portal de Maestros." />
+  <meta name="twitter:image" content="/icons/icon-512.png" />
+
+  <!-- iOS Splash Screen (iPad Pro 12.9"+) -->
+  <link rel="apple-touch-startup-image" media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2)" href="/icons/icon-512.png" />
+  <link rel="apple-touch-startup-image" media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)" href="/icons/icon-512.png" />
+  <!-- iPad 10.5" -->
+  <link rel="apple-touch-startup-image" media="screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2)" href="/icons/icon-512.png" />
+  <!-- iPhone Pro Max / Plus -->
+  <link rel="apple-touch-startup-image" media="screen and (device-width: 428px) and (device-height: 926px) and (-webkit-device-pixel-ratio: 3)" href="/icons/icon-512.png" />
+  <link rel="apple-touch-startup-image" media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3)" href="/icons/icon-512.png" />
+  <!-- iPhone X / XS / 11 Pro -->
+  <link rel="apple-touch-startup-image" media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3)" href="/icons/icon-512.png" />
+  <!-- iPhone SE / 8 / 7 / 6 -->
+  <link rel="apple-touch-startup-image" media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2)" href="/icons/icon-512.png" />
+
   <style>
-    body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #ffffff; }
+    /* ── Loading Splash (App Shell) ── */
+    body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #fbfbfd; }
     #portal-app { min-height: 100vh; }
-    .pm-loading-splash { 
-      display: flex; 
-      flex-direction: column; 
-      align-items: center; 
-      justify-content: center; 
-      height: 100vh; 
+
+    #pm-loading-splash {
+      position: fixed;
+      inset: 0;
+      z-index: 10000;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
       background: #fbfbfd;
       animation: fadeIn 0.5s ease;
+      padding: 2rem;
+      text-align: center;
     }
-    .pm-spinner { 
-      width: 44px; 
-      height: 44px; 
-      border: 3.5px solid rgba(0, 122, 255, 0.15); 
-      border-top-color: #007aff; 
-      border-radius: 50%; 
-      animation: pm-spin 0.8s cubic-bezier(0.4, 0, 0.2, 1) infinite; 
+
+    .pm-loading-icon {
+      width: 72px;
+      height: 72px;
+      margin-bottom: 32px;
+      animation: pm-breathe 2s ease-in-out infinite;
     }
-    @keyframes pm-spin { 
+
+    .pm-loading-icon svg {
+      width: 100%;
+      height: 100%;
+    }
+
+    .pm-loading-spinner {
+      width: 28px;
+      height: 28px;
+      border: 3px solid rgba(0, 122, 255, 0.12);
+      border-top-color: #007aff;
+      border-radius: 50%;
+      animation: pm-spin 0.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+      margin-bottom: 20px;
+    }
+
+    .pm-loading-text {
+      color: #1d1d1f;
+      font-size: 15px;
+      font-weight: 500;
+      letter-spacing: -0.01em;
+      margin-bottom: 4px;
+    }
+
+    .pm-loading-greeting {
+      color: #1d1d1f;
+      font-size: 16px;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      margin-bottom: 2px;
+      min-height: 1.2em;
+    }
+
+    .pm-loading-sub {
+      color: #86868b;
+      font-size: 13px;
+      font-weight: 400;
+      letter-spacing: -0.01em;
+      min-height: 1.2em;
+    }
+
+    .pm-loading-progress {
+      width: 120px;
+      height: 3px;
+      background: rgba(0, 122, 255, 0.12);
+      border-radius: 2px;
+      margin-top: 32px;
+      overflow: hidden;
+    }
+
+    .pm-loading-progress-bar {
+      height: 100%;
+      width: 0%;
+      background: #007aff;
+      border-radius: 2px;
+      transition: width 0.5s cubic-bezier(0.22,1,0.36,1);
+    }
+
+    @keyframes pm-spin {
       from { transform: rotate(0deg); }
-      to { transform: rotate(360deg); } 
+      to { transform: rotate(360deg); }
     }
+
     @keyframes fadeIn {
       from { opacity: 0; }
       to { opacity: 1; }
     }
-    .pm-loading-text { 
-      margin-top: 24px; 
-      color: #1d1d1f; 
-      font-size: 15px; 
-      font-weight: 500;
-      letter-spacing: -0.01em;
+
+    @keyframes pm-breathe {
+      0%, 100% { opacity: 0.6; transform: scale(0.97); }
+      50% { opacity: 1; transform: scale(1); }
     }
 
+    @media (prefers-color-scheme: dark) {
+      body { background: #000000; }
+      #pm-loading-splash { background: #000000; }
+      .pm-loading-text { color: #f5f5f7; }
+      .pm-loading-greeting { color: #f5f5f7; }
+      .pm-loading-sub { color: #6e6e73; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .pm-loading-icon { animation: none; }
+      .pm-loading-spinner { animation: none; border-top-color: transparent; }
+    }
   </style>
   <script type="module" crossorigin src="/assets/modulepreload-polyfill-Ke7zwH0v.js"></script>
-  <script type="module" crossorigin src="/assets/preload-helper-lqsI3teB.js"></script>
+  <script type="module" crossorigin src="/assets/preload-helper-eAV8hweq.js"></script>
   <script type="module" crossorigin src="/assets/rolldown-runtime-DlOssbPu.js"></script>
   <script type="module" crossorigin src="/assets/vendor-BUMNmNsE.js"></script>
   <script type="module" crossorigin src="/assets/supabase-KnARm58N.js"></script>
-  <script type="module" crossorigin src="/assets/maestroAuth-lT-ZcZZd.js"></script>
-  <script type="module" crossorigin src="/assets/usePortalAuth-Cvu3esVL.js"></script>
-  <script type="module" crossorigin src="/assets/maestroDataService-BGjCE976.js"></script>
-  <script type="module" crossorigin src="/assets/pwaInstaller-lF8xX1Dv.js"></script>
-  <script type="module" crossorigin src="/assets/pushService-DVAfSSV4.js"></script>
+  <script type="module" crossorigin src="/assets/maestroAuth-CgmSmLyS.js"></script>
+  <script type="module" crossorigin src="/assets/usePortalAuth-BESl58Dx.js"></script>
+  <script type="module" crossorigin src="/assets/maestroDataService-9gztUGVK.js"></script>
+  <script type="module" crossorigin src="/assets/pwaInstaller-Do35UbNj.js"></script>
+  <script type="module" crossorigin src="/assets/pushService-DFPonvfY.js"></script>
   <script type="module" crossorigin src="/assets/lifecycleManager-CSbEuGDH.js"></script>
-  <script type="module" crossorigin src="/assets/notificationService-CNqqkcMX.js"></script>
+  <script type="module" crossorigin src="/assets/notificationService-DdsQPLVo.js"></script>
   <script type="module" crossorigin src="/assets/idb-DphCmdhj.js"></script>
   <script type="module" crossorigin src="/assets/offlineQueue-C8tVR5V3.js"></script>
-  <script type="module" crossorigin src="/assets/permisosSupabase-BFQ2fEUb.js"></script>
-  <script type="module" crossorigin src="/assets/permisoService-C_6egrWz.js"></script>
+  <script type="module" crossorigin src="/assets/permisosSupabase-OUju-023.js"></script>
+  <script type="module" crossorigin src="/assets/permisoService-CO79I3bS.js"></script>
   <script type="module" crossorigin src="/assets/focusTrap-_L6o1rch.js"></script>
-  <script type="module" crossorigin src="/assets/groqService-DqCFHp7y.js"></script>
-  <script type="module" crossorigin src="/assets/claseAnalysisModal-CVDuqLFh.js"></script>
-  <script type="module" crossorigin src="/assets/a11yUtils-DoZA0IX7.js"></script>
-  <script type="module" crossorigin src="/assets/portalUtils-DbrsCFDo.js"></script>
-  <script type="module" crossorigin src="/assets/metricasView-DrA0PgKt.js"></script>
   <script type="module" crossorigin src="/assets/errorReporter-CDvSLm79.js"></script>
-  <script type="module" crossorigin src="/assets/AppToast-Bli1nFQQ.js"></script>
-  <script type="module" crossorigin src="/assets/main-maestros-Bb4snDdO.js"></script>
+  <script type="module" crossorigin src="/assets/AppToast-3qbHkRVc.js"></script>
+  <script type="module" crossorigin src="/assets/main-maestros-lKqYKFku.js"></script>
   <link rel="stylesheet" crossorigin href="/assets/vendor-COf7rB16.css">
-  <link rel="stylesheet" crossorigin href="/assets/main-maestros-5VSG2_Qu.css">
+  <link rel="stylesheet" crossorigin href="/assets/main-maestros-j-hYLO3G.css">
 </head>
 <body>
   <a href="#portal-app" class="pm-skip-link">Saltar al contenido principal</a>
-  <div id="portal-app" tabindex="-1">
-    <div class="pm-loading-splash">
-      <div class="pm-spinner"></div>
-      <div class="pm-loading-text">Cargando Portal Maestros...</div>
+
+  <div id="pm-loading-splash">
+    <div class="pm-loading-icon">
+      <svg viewBox="0 0 72 72" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect width="72" height="72" rx="18" fill="#5856D6"/>
+        <path d="M36 20c-2.5 0-4.5 2-4.5 4.5v4.5h-4.5c-2.5 0-4.5 2-4.5 4.5s2 4.5 4.5 4.5h4.5v4.5c0 2.5 2 4.5 4.5 4.5s4.5-2 4.5-4.5V38h4.5c2.5 0 4.5-2 4.5-4.5s-2-4.5-4.5-4.5h-4.5v-4.5c0-2.5-2-4.5-4.5-4.5z" fill="white"/>
+      </svg>
+    </div>
+    <div class="pm-loading-spinner" id="pm-loading-spinner"></div>
+    <div class="pm-loading-text">Portal Maestros</div>
+    <div class="pm-loading-greeting" id="pm-loading-greeting"></div>
+    <div class="pm-loading-sub" id="pm-loading-status">Iniciando sesión...</div>
+    <div class="pm-loading-progress">
+      <div class="pm-loading-progress-bar" id="pm-loading-progress-bar"></div>
     </div>
   </div>
+
+  <div id="portal-app" tabindex="-1"></div>
 
 </body>
 </html>

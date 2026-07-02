@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#5856D6" />
+  <title>Sin Conexión — SOI</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #fbfbfd;
+      color: #1d1d1f;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100dvh;
+      padding: 2rem;
+      text-align: center;
+    }
+    .offline-container {
+      max-width: 380px;
+      animation: fadeIn 0.5s ease;
+    }
+    .offline-icon {
+      width: 72px;
+      height: 72px;
+      margin: 0 auto 28px;
+      background: rgba(0, 0, 0, 0.04);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .offline-icon::before {
+      content: '';
+      display: block;
+      width: 32px;
+      height: 32px;
+      border: 3px solid #86868b;
+      border-radius: 50%;
+      border-top-color: transparent;
+    }
+    h1 {
+      font-size: 22px;
+      font-weight: 600;
+      margin-bottom: 8px;
+      letter-spacing: -0.02em;
+    }
+    p {
+      font-size: 15px;
+      color: #86868b;
+      line-height: 1.5;
+      margin-bottom: 32px;
+    }
+    .offline-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: #007aff;
+      color: #fff;
+      border: none;
+      padding: 12px 28px;
+      border-radius: 9999px;
+      font-size: 15px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+    .offline-btn:active { opacity: 0.7; }
+    .offline-btn::before {
+      content: '';
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(255,255,255,0.6);
+      border-radius: 50%;
+      border-top-color: #fff;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @media (prefers-color-scheme: dark) {
+      body { background: #000; color: #f5f5f7; }
+      p { color: #6e6e73; }
+      .offline-icon { background: rgba(255,255,255,0.06); }
+    }
+  </style>
+</head>
+<body>
+  <div class="offline-container">
+    <div class="offline-icon"></div>
+    <h1>Sin conexión</h1>
+    <p>No tienes acceso a internet en este momento. Algunas funciones pueden no estar disponibles.</p>
+    <button class="offline-btn" onclick="window.location.reload()">Reintentar</button>
+  </div>
+</body>
+</html>

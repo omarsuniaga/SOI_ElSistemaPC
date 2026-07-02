@@ -1,8 +1,9 @@
-const CACHE_NAME = 'sistema-academico-v3';
-const STATIC_PRECACHE = ['/', '/index.html']; // Ampliar con build tool
+const CACHE_NAME = 'sistema-academico-v4';
+const STATIC_PRECACHE = ['/', '/index.html', '/offline.html', '/manifest.json'];
 
 self.addEventListener('install', event => {
   console.log('[SW] Instalando...');
+  self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME).then(cache => {
       return cache.addAll(STATIC_PRECACHE).catch(err => {
@@ -10,7 +11,6 @@ self.addEventListener('install', event => {
       });
     })
   );
-  // No forzar activación inmediata en producción; mejor notificar al usuario.
 });
 
 self.addEventListener('activate', event => {
@@ -71,7 +71,9 @@ async function networkFirst(request) {
     return response;
   } catch (error) {
     const cached = await caches.match(request);
-    return cached || new Response('Sin conexión', { status: 503 });
+    if (cached) return cached;
+    const offlinePage = await caches.match('/offline.html');
+    return offlinePage || new Response('Sin conexión', { status: 503 });
   }
 }
 
@@ -198,31 +200,8 @@ async function handleBackgroundAction(action, data) {
     console.warn('[SW] Error enviando mensaje a pestañas:', err.message);
   }
 
-  // Ejemplo de acción directa contra Supabase en segundo plano:
-  // Marcar una notificación como leída directamente usando el endpoint REST de Supabase
-  if (action === 'mark-read' && data.notification_id) {
-    try {
-      const supabaseUrl = 'https://zmhmdvmyeyswunurcyow.supabase.co';
-      const anonKey = 'sb_publishable_-TE6E79mrn4fSs4XGnvWnw_2QgDrX0P';
-
-      const res = await fetch(`${supabaseUrl}/rest/v1/notificaciones?id=eq.${data.notification_id}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'apikey': anonKey,
-          'Authorization': `Bearer ${anonKey}`,
-          'Prefer': 'return=minimal'
-        },
-        body: JSON.stringify({
-          estado: 'leida',
-          leida_en: new Date().toISOString()
-        })
-      });
-      console.log(`[SW] Notificación ${data.notification_id} marcada como leída en background. Status: ${res.status}`);
-    } catch (err) {
-      console.error('[SW] Error marcando leída en segundo plano:', err.message);
-    }
-  }
+  // Las acciones sensibles se resuelven en la app autenticada o en backend.
+  // El Service Worker solo notifica y enruta.
 }
 
 function resolveNotificationUrl(data) {

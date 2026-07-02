@@ -72,7 +72,7 @@ serve(async (req: Request) => {
   if (req.method !== 'POST') return errorResponse('Method not allowed', 405);
 
   const url = new URL(req.url);
-  if (url.pathname !== '/process') return errorResponse('Not found', 404);
+  if (!url.pathname.endsWith('/process')) return errorResponse('Not found', 404);
 
   try {
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);

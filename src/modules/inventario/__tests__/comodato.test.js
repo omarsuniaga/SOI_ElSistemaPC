@@ -136,7 +136,12 @@ describe('estaVencido', () => {
   test('retorna true si fecha_vencimiento = ayer', () => {
     const ayer = new Date()
     ayer.setDate(ayer.getDate() - 1)
-    const comodato = { fecha_vencimiento: ayer.toISOString().split('T')[0] }
+    // Construir la fecha con partes LOCALES (no toISOString/UTC) para que coincida
+    // con cómo estaVencido parsea el string como medianoche local — evita el
+    // off-by-one por zona horaria (ej. UTC-4 de noche).
+    const comodato = {
+      fecha_vencimiento: `${ayer.getFullYear()}-${String(ayer.getMonth() + 1).padStart(2, '0')}-${String(ayer.getDate()).padStart(2, '0')}`,
+    }
     expect(estaVencido(comodato)).toBe(true)
   })
 

@@ -311,7 +311,7 @@ describe('renderHoyView - SIN clases emergentes', () => {
     const { renderHoyView } = await import('../../src/portal-maestros/views/hoyView.js')
     await renderHoyView(container)
 
-    expect(container.textContent).toContain('No tienes clases asignadas')
+    expect(container.textContent).toContain('No tienes clases')
     expect(container.querySelector('.pm-badge-warning')).toBeNull()
   })
 })

@@ -270,7 +270,7 @@ export async function detectarRolMaestro() {
     if (cached) {
       try {
         const parsed = JSON.parse(cached)
-        if (_isPWA()) _setPersistentSession()
+        if (_isPWA()) _setSessionMode(true)
         return parsed
       } catch {
         /* corrupted — continuar y reconstruir desde Supabase */
@@ -302,7 +302,7 @@ export async function detectarRolMaestro() {
           }
 
       localStorage.setItem(STORAGE_KEY, JSON.stringify(adminMaestro))
-      _setPersistentSession()
+      _setSessionMode(true)
       return adminMaestro
     }
 
@@ -319,7 +319,7 @@ export async function detectarRolMaestro() {
     }
 
     localStorage.setItem(STORAGE_KEY, JSON.stringify(maestro))
-    _setPersistentSession()
+    _setSessionMode(true)
     return maestro
   } catch (err) {
     console.error('[Auth] Error in detectarRolMaestro:', err.message)
@@ -362,7 +362,7 @@ export function getMaestroLocal() {
         const expireDate = expires ? new Date(expires) : null
         if (!expireDate || Date.now() > expireDate.getTime()) {
           // Sesión expirada o sin fecha → renovar (el token de Supabase sigue válido)
-          _setPersistentSession()
+          _setSessionMode(true)
         }
         // En PWA nunca bloqueamos por sessionStorage — la app no tiene "pestañas"
         return parsed

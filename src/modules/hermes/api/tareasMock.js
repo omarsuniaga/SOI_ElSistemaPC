@@ -28,6 +28,140 @@ const ENTIDAD_TIPOS_VALIDOS = [
   'alumno', 'maestro', 'postulante', 'representante', 'instrumento', 'evento', 'otro',
 ]
 
+const processContracts = [
+  {
+    process_code: 'ACM-P02',
+    process_name: 'Asistencia y contenido de clase',
+    department_owner: 'ACM',
+    canonical_doc_path: '01_DEPARTAMENTOS/02_ACM_ACADEMICO_MUSICAL/ACM-P02_Asistencia_y_Contenido_V8.md',
+    doc_id: 'ACM-P02',
+    trigger_type: 'manual',
+    required_evidence: [
+      { type: 'attendance_record', label: 'Registro de asistencia' },
+      { type: 'class_content', label: 'Contenido trabajado' },
+    ],
+    closure_criteria: [
+      'Asistencia registrada',
+      'Contenido pedagógico documentado',
+      'Observaciones críticas escaladas si aplica',
+    ],
+    responsible_departments: ['ACM', 'ADM'],
+    task_templates: [
+      {
+        department: 'ACM',
+        title: 'ACM: Registrar asistencia y contenido',
+        priority: 'alta',
+        due_in_days: 1,
+        checklist: [
+          { item: 'Registrar asistencia', completado: false },
+          { item: 'Registrar contenido trabajado', completado: false },
+          { item: 'Escalar observaciones críticas', completado: false },
+        ],
+      },
+    ],
+    automation_status: 'semi_auto',
+    recurrence_count: 0,
+    active: true,
+    metadata: { source: 'mock_v1' },
+    created_at: '2026-06-27T00:00:00Z',
+    updated_at: '2026-06-27T00:00:00Z',
+  },
+  {
+    process_code: 'FIN-P13',
+    process_name: 'Gestión de mora y cobranza',
+    department_owner: 'FIN',
+    canonical_doc_path: '01_DEPARTAMENTOS/05_ADM_FIN_ADMINISTRATIVO_FINANCIERO/FIN-P13_Gestion_Mora_y_Cobranza_V8.md',
+    doc_id: 'FIN-P13',
+    trigger_type: 'data_driven',
+    required_evidence: [
+      { type: 'account_status', label: 'Estado de cuenta' },
+      { type: 'contact_log', label: 'Registro de contacto al representante' },
+    ],
+    closure_criteria: [
+      'Estado de deuda verificado',
+      'Representante contactado',
+      'Acuerdo o decisión documentada',
+    ],
+    responsible_departments: ['FIN', 'COM', 'DIR'],
+    task_templates: [
+      {
+        department: 'FIN',
+        title: 'FIN: Verificar estado de mora',
+        priority: 'alta',
+        due_in_days: 1,
+        checklist: [
+          { item: 'Revisar estado de cuenta', completado: false },
+          { item: 'Confirmar monto vencido', completado: false },
+        ],
+      },
+      {
+        department: 'COM',
+        title: 'COM: Contactar representante por mora',
+        priority: 'media',
+        due_in_days: 2,
+        checklist: [
+          { item: 'Enviar comunicación aprobada', completado: false },
+          { item: 'Registrar respuesta', completado: false },
+        ],
+      },
+    ],
+    automation_status: 'semi_auto',
+    recurrence_count: 0,
+    active: true,
+    metadata: { source: 'mock_v1' },
+    created_at: '2026-06-27T00:00:00Z',
+    updated_at: '2026-06-27T00:00:00Z',
+  },
+  {
+    process_code: 'OPR-P10',
+    process_name: 'Taller de lutería y mantenimiento',
+    department_owner: 'OPR',
+    canonical_doc_path: '01_DEPARTAMENTOS/06_OPR_OPERACIONES/OPR-P10_Taller_Lutheria_Mantenimiento_V9.md',
+    doc_id: 'OPR-P10',
+    trigger_type: 'manual',
+    required_evidence: [
+      { type: 'diagnostic', label: 'Diagnóstico técnico' },
+      { type: 'photo', label: 'Evidencia fotográfica' },
+      { type: 'closure_note', label: 'Nota de cierre' },
+    ],
+    closure_criteria: [
+      'Instrumento diagnosticado',
+      'Evidencia adjunta',
+      'Decisión de reparación o cierre documentada',
+    ],
+    responsible_departments: ['LUT', 'FIN', 'ACM', 'COM'],
+    task_templates: [
+      {
+        department: 'LUT',
+        title: 'LUT: Diagnosticar instrumento en taller',
+        priority: 'alta',
+        due_in_days: 2,
+        checklist: [
+          { item: 'Registrar diagnóstico', completado: false },
+          { item: 'Adjuntar evidencia fotográfica', completado: false },
+          { item: 'Definir acción correctiva', completado: false },
+        ],
+      },
+      {
+        department: 'FIN',
+        title: 'FIN: Evaluar costo de reparación',
+        priority: 'media',
+        due_in_days: 3,
+        checklist: [
+          { item: 'Revisar presupuesto', completado: false },
+          { item: 'Confirmar aprobación si aplica', completado: false },
+        ],
+      },
+    ],
+    automation_status: 'manual',
+    recurrence_count: 0,
+    active: true,
+    metadata: { source: 'mock_v1' },
+    created_at: '2026-06-27T00:00:00Z',
+    updated_at: '2026-06-27T00:00:00Z',
+  },
+]
+
 const tareas = [
   {
     id: 'tarea-acm-001',
@@ -60,6 +194,7 @@ const tareas = [
     ],
     event_id: EVENT_DEMO,
     minuta_id: null,
+    process_code: null,
     created_at: '2026-06-20T09:00:00Z',
     updated_at: '2026-06-24T14:30:00Z',
     entidad_tipo: 'evento',
@@ -89,6 +224,7 @@ const tareas = [
     documentos_adjuntos: [],
     event_id: EVENT_DEMO,
     minuta_id: null,
+    process_code: null,
     created_at: '2026-06-20T09:00:00Z',
     updated_at: '2026-06-20T09:00:00Z',
     entidad_tipo: null,
@@ -118,6 +254,7 @@ const tareas = [
     documentos_adjuntos: [],
     event_id: EVENT_DEMO,
     minuta_id: null,
+    process_code: null,
     created_at: '2026-06-20T09:00:00Z',
     updated_at: '2026-06-20T09:00:00Z',
     entidad_tipo: null,
@@ -146,6 +283,7 @@ const tareas = [
     documentos_adjuntos: [],
     event_id: EVENT_DEMO,
     minuta_id: null,
+    process_code: null,
     created_at: '2026-06-20T09:00:00Z',
     updated_at: '2026-06-23T16:00:00Z',
     entidad_tipo: null,
@@ -174,6 +312,7 @@ const tareas = [
     documentos_adjuntos: [],
     event_id: EVENT_DEMO,
     minuta_id: null,
+    process_code: null,
     created_at: '2026-06-20T09:00:00Z',
     updated_at: '2026-06-20T09:00:00Z',
     entidad_tipo: null,
@@ -200,6 +339,7 @@ const tareas = [
     documentos_adjuntos: [],
     event_id: null,
     minuta_id: null,
+    process_code: null,
     created_at: '2026-06-10T09:00:00Z',
     updated_at: '2026-06-18T11:00:00Z',
     entidad_tipo: 'instrumento',
@@ -340,6 +480,118 @@ export async function getConsultaEstado() {
   })
 }
 
+export async function getProcessContracts({ active = true, owner = null } = {}) {
+  let result = processContracts.map(clone)
+  if (active != null) result = result.filter((contract) => contract.active === active)
+  if (owner) result = result.filter((contract) => contract.department_owner === owner)
+  result.sort((a, b) => a.process_code.localeCompare(b.process_code))
+  return delay(result)
+}
+
+export async function startProcessCase(payload = {}) {
+  if (!payload.process_code) {
+    throw new Error('process_code requerido para abrir un caso SOI')
+  }
+
+  const contract = processContracts.find(
+    (item) => item.process_code === payload.process_code && item.active,
+  )
+  if (!contract) {
+    throw new Error(`Contrato de proceso no encontrado: ${payload.process_code}`)
+  }
+
+  const caseId = genId(`case-${contract.process_code.toLowerCase()}`)
+  const now = new Date().toISOString()
+  const templates = Array.isArray(contract.task_templates) ? contract.task_templates : []
+  const generated = templates.map((template, index) => {
+    const due = template.due_in_days != null
+      ? new Date(Date.now() + Number(template.due_in_days) * 86400000).toISOString().slice(0, 10)
+      : null
+
+    return {
+      id: `${caseId}-task-${index + 1}`,
+      titulo: template.title || template.titulo || contract.process_name,
+      descripcion: template.description || template.descripcion || payload.description || null,
+      departamento: template.department,
+      estado: 'pendiente',
+      prioridad: template.priority || payload.priority || 'media',
+      fecha_vencimiento: due,
+      asignado_a: null,
+      checklist: Array.isArray(template.checklist) ? clone(template.checklist) : [],
+      feedback: null,
+      documentos_adjuntos: [],
+      event_id: null,
+      minuta_id: null,
+      process_code: contract.process_code,
+      created_at: now,
+      updated_at: now,
+      entidad_tipo: payload.entity_type || null,
+      entidad_id: payload.entity_id || null,
+      entidad_label: payload.entity_label || null,
+      correlation_id: caseId,
+      updated_by: payload.requested_by || null,
+      updated_by_nombre: payload.requested_by_name || null,
+    }
+  })
+
+  tareas.unshift(...generated)
+  contract.recurrence_count += 1
+  contract.updated_at = now
+  return delay(caseId)
+}
+
+export async function getProcessCaseDetail({ correlationId = null, processCode = null } = {}) {
+  const filters = {}
+  if (correlationId) filters.correlation_id = correlationId
+  if (processCode) filters.process_code = processCode
+
+  const [contracts, tasks] = await Promise.all([
+    getProcessContracts(),
+    getTareasFiltradas(filters),
+  ])
+
+  const contract = processCode
+    ? contracts.find((item) => item.process_code === processCode) || null
+    : tasks[0]?.process_code
+      ? contracts.find((item) => item.process_code === tasks[0].process_code) || null
+      : null
+
+  const caseId = correlationId || tasks[0]?.correlation_id || null
+  const metrics = {
+    total: tasks.length,
+    completadas: tasks.filter((task) => task.estado === 'completada').length,
+    bloqueadas: tasks.filter((task) => task.estado === 'bloqueada').length,
+    observadas: tasks.filter((task) => task.estado === 'observada').length,
+    evidencias: tasks.reduce(
+      (acc, task) => acc + (Array.isArray(task.documentos_adjuntos) ? task.documentos_adjuntos.length : 0),
+      0,
+    ),
+  }
+
+  return delay({
+    contract,
+    correlation_id: caseId,
+    tasks,
+    metrics,
+  })
+}
+
+export async function closeProcessCase({ caseId, closureSummary = null, actor = {}, force = false } = {}) {
+  if (!caseId) throw new Error('caseId es requerido para cerrar un caso')
+  const pending = tareas.filter(
+    (t) => t.correlation_id === caseId && !['completada', 'cancelada'].includes(t.estado),
+  )
+  if (!force && pending.length > 0) {
+    throw new Error(`No se puede cerrar el caso: ${pending.length} tarea(s) pendiente(s)`)
+  }
+  return delay({
+    case_id: caseId,
+    status: 'closed',
+    closed_at: new Date().toISOString(),
+    summary: closureSummary || 'Cerrado sin observaciones',
+  })
+}
+
 export async function updateTareaEstado(tareaId, nuevoEstado) {
   const tarea = tareas.find((t) => t.id === tareaId)
   if (!tarea) throw new Error('Tarea no encontrada')
@@ -417,6 +669,7 @@ export async function crearEventoInstitucional(evento) {
       documentos_adjuntos: [],
       event_id: eventId,
       minuta_id: null,
+      process_code: null,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
       entidad_tipo: 'evento',
@@ -450,6 +703,7 @@ export async function crearTareaInstitucional(payload) {
     documentos_adjuntos: [],
     event_id: null,
     minuta_id: null,
+    process_code: payload.process_code || null,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
     entidad_tipo: payload.entidad_tipo || null,
@@ -470,6 +724,8 @@ export async function getTareasFiltradas(filtros = {}) {
   if (filtros.prioridad) res = res.filter((t) => t.prioridad === filtros.prioridad)
   if (filtros.asignado_a) res = res.filter((t) => t.asignado_a === filtros.asignado_a)
   if (filtros.event_id) res = res.filter((t) => t.event_id === filtros.event_id)
+  if (filtros.process_code) res = res.filter((t) => t.process_code === filtros.process_code)
+  if (filtros.correlation_id) res = res.filter((t) => t.correlation_id === filtros.correlation_id)
   if (filtros.buscar) {
     const q = filtros.buscar.toLowerCase()
     res = res.filter(

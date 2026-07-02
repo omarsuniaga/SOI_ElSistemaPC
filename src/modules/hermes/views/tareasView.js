@@ -71,6 +71,8 @@ const state = {
   filtroPrioridad: 'todos',
   busqueda: '',
   departamentoFijo: null,
+  processCode: null,
+  correlationId: null,
   // SP-0: current session actor for audit trail (updated_by / autor_id)
   actor: null,
 }
@@ -116,6 +118,8 @@ export async function renderTareasView(container, opciones = {}) {
   _abortController?.abort()
   _abortController = new AbortController()
   state.departamentoFijo = opciones.departamento || null
+  state.processCode = opciones.processCode || null
+  state.correlationId = opciones.correlationId || null
   // SP-0: capture actor from options for audit trail
   if (opciones.actor !== undefined) state.actor = opciones.actor
 
@@ -180,7 +184,9 @@ function renderContent(container) {
   const cuenta = (estado) => state.tareas.filter((t) => t.estado === estado).length
   const tituloPortal = state.departamentoFijo
     ? `Tareas — ${DEPARTAMENTOS[state.departamentoFijo] || state.departamentoFijo}`
-    : 'Tareas Institucionales'
+    : state.processCode
+      ? `Tareas del caso ${state.processCode}`
+      : 'Tareas Institucionales'
 
   container.innerHTML = `
     <div class="page-container">
@@ -192,6 +198,11 @@ function renderContent(container) {
           <div>
             <h1 class="tareas-title mb-0">${escapeHTML(tituloPortal)}</h1>
             <p class="text-muted small mb-0">Sistema Hermes · delegación automática</p>
+            ${
+              state.correlationId
+                ? `<p class="text-muted small mb-0">Caso: <code>${escapeHTML(state.correlationId)}</code></p>`
+                : ''
+            }
           </div>
         </div>
 
@@ -337,6 +348,17 @@ function filtrarTareas() {
     )
   }
   res.sort((a, b) => (PRIORIDADES[a.prioridad]?.orden ?? 9) - (PRIORIDADES[b.prioridad]?.orden ?? 9))
+  return res
+}
+
+function filtrarPorCaso(tareas) {
+  let res = [...tareas]
+  if (state.processCode) {
+    res = res.filter((t) => t.process_code === state.processCode)
+  }
+  if (state.correlationId) {
+    res = res.filter((t) => t.correlation_id === state.correlationId)
+  }
   return res
 }
 

@@ -48,7 +48,11 @@ Columnas: `id (uuid)`, `maestro_id (uuid)`, `maestro_nombre (text)`, `tipo_neces
 
 ### GOTCHAS importantes
 - **`solicitudes.maestro_id` = `maestros.id` (row id), NO `auth.uid()`.** Las RLS mapean vía `maestros.user_id = auth.uid()`.
-- Admin/rol se valida en `public.profiles` (`profiles.id = auth.uid()`, `profiles.rol`). Los departamentos de un usuario: revisar cómo se determina el rol ACM/FIN (ver `permisoService.js` y `profiles`/`maestros`; puede requerir un campo de departamento — **confirmar con el usuario si no existe**).
+- Admin/rol se valida en `public.profiles` (`profiles.id = auth.uid()`, `profiles.rol`).
+- **REGLA ACM/FIN (confirmada, consistente con el gating de los portales):** NO hay campo `departamento` por usuario. Se usa `profiles.rol`:
+  - **Etapa ACM (pre-aprobar/rechazar):** `EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND rol = 'admin')` (ACM es admin-only hoy; `acm.js` usa `allowedRoles:['admin']`).
+  - **Etapa FIN (presupuestar):** `EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND rol IN ('admin','cajero'))` (`fin.js` gatea por rol admin/cajero).
+  - Nota: ACM/FIN están hoy colapsados en `rol` (no son grupos de usuarios separados). Roles finos (ej. `coordinador_academico`) están planeados pero NO implementados. La RLS por `rol` es correcta ahora y se actualiza en una migración futura si se agregan roles/departamentos finos. NO bloquea la implementación.
 
 ## 2. Diseño aprobado (HÍBRIDO)
 

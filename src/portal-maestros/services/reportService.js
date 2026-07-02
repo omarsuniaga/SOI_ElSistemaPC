@@ -1108,3 +1108,203 @@ export async function generateMonthlyPedagogical(claseId, year, month) {
     AppToast.error('Error al generar el informe pedagógico: ' + err.message)
   }
 }
+
+/**
+ * Generate and print an institutional academic closure report from a precomputed snapshot.
+ * @param {Object} payload
+ * @param {Object} payload.periodo
+ * @param {Object} payload.resumen
+ * @param {Array} payload.clases
+ * @param {Array} payload.alumnos
+ */
+export async function generateAcademicClosureReport(payload = {}) {
+  try {
+    const periodo = payload.periodo || {}
+    const resumen = payload.resumen || {}
+    const clases = Array.isArray(payload.clases) ? payload.clases : []
+    const alumnos = Array.isArray(payload.alumnos) ? payload.alumnos : []
+    const totalAsistencias = (resumen.totalPresentes || 0) + (resumen.totalAusentes || 0) + (resumen.totalJustificados || 0)
+    const tasaGlobal = totalAsistencias > 0 ? (((resumen.totalPresentes || 0) + (resumen.totalJustificados || 0)) / totalAsistencias) * 100 : null
+    const alumnosEnRiesgo = alumnos.filter((a) => (a.tasaAsistencia != null ? a.tasaAsistencia : 100) < 70)
+    const alumnosDestacados = alumnos.filter((a) => (a.tasaAsistencia != null ? a.tasaAsistencia : 0) >= 90)
+    const justificacionesFrecuentes = alumnos
+      .flatMap((a) => Array.isArray(a.justificaciones) ? a.justificaciones : [])
+      .reduce((acc, texto) => {
+        const key = String(texto || '').trim().toLowerCase()
+        if (!key) return acc
+        acc[key] = (acc[key] || 0) + 1
+        return acc
+      }, {})
+    const topJustificaciones = Object.entries(justificacionesFrecuentes)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+
+    const headerHtml = header({
+      docTag: 'CIERRE ACADÉMICO',
+      clase: periodo.nombre || 'Período institucional',
+      docente: 'Coordinación / Dirección',
+      periodo: `${formatDate(periodo.fecha_inicio || periodo.fechaInicio)} a ${formatDate(periodo.fecha_fin || periodo.fechaFin)}`.trim(),
+      extraItems: [
+        { label: 'Estado', value: periodo.cerrado ? 'Cerrado' : 'Activo' },
+        { label: 'Período ID', value: periodo.id || periodo.periodo_id || 'N/D' },
+      ],
+    })
+
+    const resumenHtml = metricChips([
+      { label: 'Clases', value: resumen.totalClases || 0, type: 'navy' },
+      { label: 'Contenido', value: resumen.totalContenido || 0, type: 'info' },
+      { label: 'Presentes', value: resumen.totalPresentes || 0, type: 'ok' },
+      { label: 'Ausentes', value: resumen.totalAusentes || 0, type: 'bad' },
+      { label: 'Justificados', value: resumen.totalJustificados || 0, type: 'warn' },
+      { label: 'Alumnos', value: resumen.totalAlumnos || alumnos.length || 0, type: 'navy' },
+    ])
+
+    const clasesHtml = clases.length
+      ? `
+        <p class="rpt-section-title">Detalle por clase</p>
+        <table class="rpt-table">
+          <thead>
+            <tr>
+              <th>Clase</th>
+              <th>Docente</th>
+              <th>Sesiones</th>
+              <th>Contenido</th>
+              <th>P</th>
+              <th>A</th>
+              <th>J</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${clases
+              .map(
+                (c) => `
+                <tr>
+                  <td>${esc(c.claseNombre || c.nombre || '—')}</td>
+                  <td>${esc(c.maestroNombre || '—')}</td>
+                  <td>${esc(c.sesiones ?? 0)}</td>
+                  <td>${esc(c.contenidosTrabajados ?? 0)}</td>
+                  <td>${esc(c.presentes ?? 0)}</td>
+                  <td>${esc(c.ausentes ?? 0)}</td>
+                  <td>${esc(c.justificados ?? 0)}</td>
+                </tr>`,
+              )
+              .join('')}
+          </tbody>
+        </table>
+      `
+      : `<div class="nota-dir">No hay clases consolidadas para este período.</div>`
+
+    const alumnosHtml = alumnos.length
+      ? `
+        <p class="rpt-section-title">Detalle por alumno</p>
+        <table class="rpt-table">
+          <thead>
+            <tr>
+              <th>Alumno</th>
+              <th>Presentes</th>
+              <th>Ausentes</th>
+              <th>Justificados</th>
+              <th>Asistencia</th>
+              <th>Progreso</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${alumnos
+              .slice(0, 30)
+              .map(
+                (a) => `
+                <tr>
+                  <td>${esc(a.alumnoNombre || a.nombre_completo || '—')}</td>
+                  <td>${esc(a.presentes ?? 0)}</td>
+                  <td>${esc(a.ausentes ?? 0)}</td>
+                  <td>${esc(a.justificados ?? 0)}</td>
+                  <td>${esc(a.tasaAsistencia != null ? `${a.tasaAsistencia.toFixed(1)}%` : 'N/D')}</td>
+                  <td>${esc(a.totalRegistrosProgreso ?? 0)}</td>
+                </tr>`,
+              )
+              .join('')}
+          </tbody>
+        </table>
+      `
+      : `<div class="nota-dir">No hay alumnos consolidados para este período.</div>`
+
+    const indicadoresHtml = `
+      <p class="rpt-section-title">Indicadores institucionales</p>
+      <div class="reco-grid" style="grid-template-columns:repeat(4,1fr)">
+        <div class="reco-card"><div class="reco-title">Cumplimiento de clases</div><div>${esc(resumen.totalClases || 0)}</div></div>
+        <div class="reco-card"><div class="reco-title">Asistencia global</div><div>${esc(`${resumen.totalPresentes || 0} / ${resumen.totalAusentes || 0} / ${resumen.totalJustificados || 0}`)}</div></div>
+        <div class="reco-card"><div class="reco-title">Cobertura de alumnos</div><div>${esc(resumen.totalAlumnos || alumnos.length || 0)}</div></div>
+        <div class="reco-card"><div class="reco-title">Tasa global</div><div>${esc(tasaGlobal != null ? `${tasaGlobal.toFixed(1)}%` : 'N/D')}</div></div>
+      </div>
+    `
+
+    const alumnosHtmlExtra = `
+      <p class="rpt-section-title">Lectura ejecutiva</p>
+      <div class="reco-grid" style="grid-template-columns:repeat(3,1fr)">
+        <div class="reco-card">
+          <div class="reco-title">Alumnos en riesgo</div>
+          <div>${esc(alumnosEnRiesgo.length)}</div>
+        </div>
+        <div class="reco-card">
+          <div class="reco-title">Alumnos destacados</div>
+          <div>${esc(alumnosDestacados.length)}</div>
+        </div>
+        <div class="reco-card">
+          <div class="reco-title">Justificaciones frecuentes</div>
+          <div>${esc(topJustificaciones.length)}</div>
+        </div>
+      </div>
+    `
+
+    const justificacionesHtml = topJustificaciones.length
+      ? `
+        <p class="rpt-section-title">Razones de justificación más frecuentes</p>
+        <table class="rpt-table">
+          <thead><tr><th>Razón</th><th>Cantidad</th></tr></thead>
+          <tbody>
+            ${topJustificaciones
+              .map(([razon, cantidad]) => `<tr><td>${esc(razon)}</td><td>${esc(cantidad)}</td></tr>`)
+              .join('')}
+          </tbody>
+        </table>
+      `
+      : ''
+
+    const note = `
+      <div class="nota-dir">
+        <div class="nota-title">Cierre institucional</div>
+        <div>Este informe consolida el período académico cerrado y debe archivarse como evidencia oficial de semestre/año escolar.</div>
+      </div>
+    `
+
+    const p1 = `
+      <div class="page">
+        ${headerHtml}
+        ${resumenHtml}
+        ${indicadoresHtml}
+        ${alumnosHtmlExtra}
+        ${justificacionesHtml}
+        ${note}
+        ${footer(1, 2, `${formatDate(periodo.fecha_inicio || periodo.fechaInicio)} - ${formatDate(periodo.fecha_fin || periodo.fechaFin)}`)}
+      </div>
+    `
+
+    const p2 = `
+      <div class="page land">
+        ${headerHtml}
+        ${clasesHtml}
+        ${alumnosHtml}
+        ${footer(2, 2, `${formatDate(periodo.fecha_inicio || periodo.fechaInicio)} - ${formatDate(periodo.fecha_fin || periodo.fechaFin)}`)}
+      </div>
+    `
+
+    const html = wrapDocument(p1 + p2, true)
+    const opened = openReport(html, `cierre-academico-${periodo.id || 'periodo'}`)
+    if (!opened) {
+      AppToast.info('El reporte se descargó como archivo HTML. Abrilo en el navegador e imprimilo como PDF.')
+    }
+  } catch (err) {
+    console.error('[reportService] generateAcademicClosureReport:', err)
+    AppToast.error('Error al generar el cierre académico: ' + err.message)
+  }
+}

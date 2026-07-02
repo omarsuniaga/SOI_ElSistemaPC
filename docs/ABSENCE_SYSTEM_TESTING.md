@@ -1,3 +1,32 @@
+---
+doc_id: PORTAL-008
+doc_type: manual
+version: V9
+status: vigente
+department: SIS
+owner: Arquitecto SOI
+created_at: 2026-06-29
+last_reviewed: 2026-06-29
+next_review_due: 2026-12-26
+review_cycle_days: 180
+canonical_path: 09_SOI_WEB_PORTAL\sistema-academico-pwa\docs\ABSENCE_SYSTEM_TESTING.md
+origin_path: null
+destination_path: null
+supersedes: null
+superseded_by: null
+change_reason: null
+aliases:
+  - PORTAL-008
+tags:
+  - portal
+  - web
+related_docs:
+  - "[[00_HOME]]"
+  - "[[00_MOCS/MOC_SIS]]"
+  - "[[00_SISTEMA_MAESTRO/SOI_MASTER_BOOK_V9]]"
+  - "[[00_SISTEMA_MAESTRO/SOI_HERMES_CORE_V9]]"
+---
+
 # Absence System — Testing Documentation
 
 ## Overview

@@ -69,8 +69,8 @@ Portal Maestros is built on a modular, PWA-first architecture:
 
 - **Frontend**: Vue 3 + Vite (< 500KB gzipped)
 - **Backend**: Supabase (PostgreSQL + Auth)
-- **Real-time**: Web Push + Service Worker
-- **Notifications**: 30-second polling + Web Push
+- **Real-time**: Web Push + Service Worker + Supabase Realtime
+- **Notifications**: Web Push + PWA reminders + inbox realtime + polling fallback
 - **Testing**: Vitest + Playwright
 - **Monitoring**: Sentry + Web Vitals
 
@@ -125,8 +125,8 @@ config/
 |------|---------|
 | `src/main-maestros.js` | App entry point |
 | `src/portal-maestros/auth/maestroAuth.js` | Login logic |
-| `src/portal-maestros/services/notificationService.js` | Polling + dedup |
-| `src/portal-maestros/services/pushService.js` | Web Push |
+| `src/portal-maestros/services/notificationService.js` | Inbox + realtime + dedup + toast |
+| `src/portal-maestros/services/pushService.js` | Web Push + preferences + local reminders |
 | `src/portal-maestros/views/` | All page routes |
 
 ## ⚗️ Testing

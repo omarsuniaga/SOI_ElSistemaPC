@@ -40,4 +40,29 @@ describe('metricsApi Standardization', () => {
       await expect(metricsApi.getResumenAlertas()).rejects.toThrow('No se pudo obtener el resumen de alertas')
     })
   })
+
+  describe('getCierresAcademicos', () => {
+    it('should load historical closure entries', async () => {
+      const mockRows = [
+        {
+          id: '1',
+          periodo_id: 'periodo-1',
+          fecha_inicio: '2026-01-01',
+          fecha_fin: '2026-06-30',
+          resumen: { totalClases: 10 },
+          periodos: { nombre: 'Semestre 1', activo: false, cerrado: true },
+        },
+      ]
+
+      supabase.from.mockReturnValue({
+        select: vi.fn().mockReturnThis(),
+        order: vi.fn().mockReturnThis(),
+        limit: vi.fn().mockResolvedValue({ data: mockRows, error: null }),
+      })
+
+      const rows = await metricsApi.getCierresAcademicos({ limit: 5 })
+      expect(rows).toHaveLength(1)
+      expect(rows[0].periodos.nombre).toBe('Semestre 1')
+    })
+  })
 })

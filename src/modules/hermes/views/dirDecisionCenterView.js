@@ -14,6 +14,7 @@ import '../styles/tareas.css'
 import * as tareasApi from '../api/tareasApi.js'
 import * as cajaApi from '../../caja/api/cajaApi.js'
 import * as dirGovernanceApi from '../api/dirGovernanceApi.js'
+import { buildSafeRejectionMessage, shouldBlockSensitiveMessage } from '../api/whatsappSecurityGuard.js'
 
 const PLAYBOOKS = [
   {
@@ -247,6 +248,10 @@ async function createBoardMinutesWorkflow({ load, state, button }) {
   if (!meetingType?.trim()) return
   const meetingDate = window.prompt('Fecha del acta (YYYY-MM-DD):', new Date().toISOString().slice(0, 10))
   if (!meetingDate?.trim()) return
+  if (shouldBlockSensitiveMessage(`${meetingType}\n${meetingDate}`)) {
+    toast(buildSafeRejectionMessage(), 'danger')
+    return
+  }
 
   const original = button.innerHTML
   state.creating = true
@@ -338,6 +343,10 @@ async function createPaymentApprovalWorkflow({ load, state, button }) {
   if (!amount?.trim()) return
   const concept = window.prompt('Concepto del pago:', 'Pago institucional')
   if (!concept?.trim()) return
+  if (shouldBlockSensitiveMessage(`${amount}\n${concept}`)) {
+    toast(buildSafeRejectionMessage(), 'danger')
+    return
+  }
 
   const original = button.innerHTML
   state.creating = true

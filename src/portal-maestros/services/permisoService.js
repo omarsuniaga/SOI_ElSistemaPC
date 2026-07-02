@@ -61,6 +61,7 @@ export async function getPermisos(maestroId) {
     const puedeInscribirClases =
       permisosArray.includes('clases:enroll') ||
       permisosArray.includes('inscribir_clases') ||
+      permisosArray.includes('clases:create') ||
       (permiso.puede_inscribir_clases ?? false) ||
       (solicitudAprobada?.solicita_clases ?? false)
 

@@ -6,6 +6,7 @@
 import { Planificacion } from '../models/planificacion.model.js'
 import { createDslEditorWithToolbar } from './dslToolbar.js'
 import { createAlumnoPickerModal } from './alumnoPickerModal.js'
+import { createClasePickerModal } from './clasePickerModal.js'
 import { getAlumnos } from '../../alumnos/api/alumnosApi.js'
 import { obtenerCurriculo } from '../api/curriculoApi.js'
 import { obtenerPlantillasPlanificacion } from '../api/planificacionAdapter.js'
@@ -61,6 +62,7 @@ export async function openPlanificacionModal(
   }
 
   const plan = isEdit ? new Planificacion(planData) : new Planificacion(planData)
+  const selectedClase = clases.find((c) => String(c.id) === String(plan.clase_id)) || null
 
   // Crear modal standalone con estilos propios
   let modalEl = document.getElementById('pm-planificacion-modal')
@@ -256,13 +258,27 @@ export async function openPlanificacionModal(
       }
       claseSelectForGuide.addEventListener('change', onClaseChange)
       // Load immediately if editing an existing plan with a clase
-      if (plan.clase_id) {
-        const existingClase = clases.find((c) => c.id === plan.clase_id)
-        if (existingClase?.instrumento && existingClase?.plan_estudio) {
-          _loadCurriculoGuide(existingClase.instrumento, existingClase.plan_estudio, modalEl)
-        }
+      if (selectedClase?.instrumento && selectedClase?.plan_estudio) {
+        _loadCurriculoGuide(selectedClase.instrumento, selectedClase.plan_estudio, modalEl)
       }
     }
+  }
+
+  const clasePickerHost = modalEl.querySelector('#pl-clase-picker-host')
+  const clasePickerButton = modalEl.querySelector('#pl-open-clase-picker')
+  if (clasePickerHost) {
+    const clasePickerModal = createClasePickerModal({
+      clases,
+      onSelect: (clase) => {
+        const claseSelect = modalEl.querySelector('#pl-clase_id')
+        if (claseSelect) {
+          claseSelect.value = clase.id
+          claseSelect.dispatchEvent(new Event('change', { bubbles: true }))
+        }
+      },
+    })
+    document.body.appendChild(clasePickerModal)
+    clasePickerButton?.addEventListener('click', () => clasePickerModal.openModal())
   }
 
   // Mostrar modal
@@ -381,10 +397,19 @@ function _buildModalHTML(isEdit, plan, clases, maestros, plantillas = []) {
           <div class="pm-plan-grid-2">
             <div class="pm-plan-field">
               <label class="pm-plan-label" for="pl-clase_id">Clase *</label>
-              <select class="pm-plan-select" id="pl-clase_id" required>
-                <option value="">Seleccionar clase</option>
-                ${clasesOptions}
-              </select>
+              <div class="d-flex gap-2 flex-wrap align-items-center">
+                <select class="pm-plan-select flex-grow-1" id="pl-clase_id" required>
+                  <option value="">Seleccionar clase</option>
+                  ${clasesOptions}
+                </select>
+                <button type="button" class="btn btn-outline-primary btn-sm" id="pl-open-clase-picker">
+                  <i class="bi bi-grid-3x3-gap me-1"></i>Ver clases
+                </button>
+              </div>
+              <div class="form-text mt-2" id="pl-clase-note">
+                Selecciona una clase para cargar su gu?a, revisar contenidos y abrir su perfil curricular.
+              </div>
+              <div id="pl-clase-picker-host" class="d-none"></div>
             </div>
             <div class="pm-plan-field">
               <label class="pm-plan-label" for="pl-maestro_id">Maestro</label>

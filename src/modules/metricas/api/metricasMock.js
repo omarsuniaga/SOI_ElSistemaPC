@@ -23,6 +23,40 @@ export async function getEstadisticasPeriodoActivo() {
   return activo ? { ...activo, ...est } : null
 }
 
+export async function getResumenCierreAcademico() {
+  return {
+    rango: { fechaInicio: null, fechaFin: null },
+    resumen: {
+      totalClases: 12,
+      totalContenido: 34,
+      totalPresentes: 210,
+      totalAusentes: 18,
+      totalJustificados: 9,
+      totalAlumnos: 42,
+    },
+    clases: [
+      { claseNombre: 'Violín 1', instrumento: 'Violín', maestroNombre: 'Prof. A', sesiones: 6, contenidosTrabajados: 18, presentes: 104, ausentes: 8, justificados: 4 },
+      { claseNombre: 'Coro Inicial', instrumento: 'Coro', maestroNombre: 'Prof. B', sesiones: 6, contenidosTrabajados: 16, presentes: 106, ausentes: 10, justificados: 5 },
+    ],
+    alumnos: [
+      { alumnoNombre: 'Valeria Russo', presentes: 12, ausentes: 0, justificados: 0, totalRegistrosProgreso: 8, tasaAsistencia: 100, justificaciones: [] },
+      { alumnoNombre: 'Mateo Fernández', presentes: 10, ausentes: 2, justificados: 1, totalRegistrosProgreso: 7, tasaAsistencia: 84.6, justificaciones: ['Cita médica'] },
+    ],
+  }
+}
+
+export async function cerrarPeriodoAcademico({ periodoId, fechaInicio, fechaFin, cerradoPor = null, observaciones = null } = {}) {
+  return {
+    ok: true,
+    periodoId: periodoId || 'mock-periodo',
+    fechaInicio: fechaInicio || null,
+    fechaFin: fechaFin || null,
+    cerradoPor,
+    observaciones,
+    snapshotId: 'mock-snapshot',
+  }
+}
+
 export async function getTasaAsistenciaPeriodo(alumnoId, desde, hasta = null) {
   return 87.5
 }

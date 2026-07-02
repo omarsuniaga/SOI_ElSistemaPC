@@ -241,8 +241,8 @@ function renderContent(container) {
         <div class="d-flex align-items-start gap-3">
           <i class="bi bi-diagram-3 fs-4"></i>
           <div>
-            <div class="fw-bold">Gu?a heredada desde ACM</div>
-            <div class="small">Aqu? solo consult?s la planificaci?n oficial publicada. Los cambios se hacen en ACM.</div>
+            <div class="fw-bold">C?mo usar esta planificaci?n</div>
+            <div class="small">1) Elige tu clase. 2) Revisa el perfil de temas e indicadores. 3) Ajusta la ejecuci?n semanal sin romper la gu?a publicada. 4) Marca vistos, avances y observaciones desde la clase seleccionada.</div>
           </div>
         </div>
       </div>` : ''}

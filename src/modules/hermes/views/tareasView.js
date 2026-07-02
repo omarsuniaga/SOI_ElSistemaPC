@@ -32,6 +32,7 @@
 
 import '../styles/tareas.css'
 import * as tareasApi from '../api/tareasApi.js'
+import { supabase } from '../../../lib/supabaseClient.js'
 import { AppToast } from '../../../shared/components/AppToast.js'
 import { AppModal } from '../../../shared/components/AppModal.js'
 import { renderTaskStatusBadge, getEstadoConfig } from '../components/taskStatusBadge.js'
@@ -75,6 +76,41 @@ const state = {
 }
 
 let _abortController = null
+let _realtimeChannel = null
+
+async function loadTareasData() {
+  return state.departamentoFijo
+    ? tareasApi.getTareasByDepartamento(state.departamentoFijo)
+    : tareasApi.getTareas()
+}
+
+async function refreshTareas(container) {
+  const tareas = await loadTareasData()
+  state.tareas = tareas
+  state.cargando = false
+  renderContent(container)
+  attachGlobalEvents(container)
+}
+
+function setupRealtime(container) {
+  if (!supabase?.channel) return
+  _realtimeChannel?.unsubscribe?.()
+  _realtimeChannel = supabase
+    .channel('hermes:tareas_institucionales')
+    .on(
+      'postgres_changes',
+      { event: '*', schema: 'public', table: 'tareas_institucionales' },
+      async () => {
+        if (_abortController?.signal.aborted) return
+        try {
+          await refreshTareas(container)
+        } catch (err) {
+          console.error('[TareasView] Realtime refresh error:', err.message)
+        }
+      },
+    )
+    .subscribe()
+}
 
 export async function renderTareasView(container, opciones = {}) {
   _abortController?.abort()
@@ -86,21 +122,20 @@ export async function renderTareasView(container, opciones = {}) {
   try {
     state.cargando = true
     renderLoading(container)
-
-    const tareas = state.departamentoFijo
-      ? await tareasApi.getTareasByDepartamento(state.departamentoFijo)
-      : await tareasApi.getTareas()
-    state.tareas = tareas
-    state.cargando = false
-
-    renderContent(container)
-    attachGlobalEvents(container)
+    await refreshTareas(container)
+    setupRealtime(container)
   } catch (error) {
     console.error('[TareasView] Error:', error.message)
     renderError(container, error.message)
   }
 
-  return { teardown: () => _abortController?.abort() }
+  return {
+    teardown: () => {
+      _abortController?.abort()
+      _realtimeChannel?.unsubscribe?.()
+      _realtimeChannel = null
+    },
+  }
 }
 
 function renderLoading(container) {
@@ -135,7 +170,7 @@ function renderError(container, mensaje) {
   `
   container.querySelector('#retryBtn')?.addEventListener(
     'click',
-    () => renderTareasView(container, { departamento: state.departamentoFijo }),
+    () => renderTareasView(container, { departamento: state.departamentoFijo, actor: state.actor }),
     { signal: _abortController.signal },
   )
 }

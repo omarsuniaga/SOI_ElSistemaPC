@@ -269,17 +269,45 @@ function renderSolicitudesNecesidades(container, maestro) {
     <section class="card-apple pm-settings-section" aria-labelledby="solicitudes-title" id="pm-solicitudes-section">
       <div class="pm-settings-section__header">
         <i class="bi bi-envelope-paper pm-icon-blue" aria-hidden="true"></i>
-        <div>
-          <h3 id="solicitudes-title" class="pm-settings-section__title">Solicitudes de necesidades</h3>
-          <p class="pm-settings-section__desc">Comunicá necesidades pedagógicas o materiales a coordinación</p>
+        <div style="flex-grow: 1;">
+          <h3 id="solicitudes-title" class="pm-settings-section__title">Necesidades</h3>
+          <p class="pm-settings-section__desc">Materiales y pedagógicas</p>
         </div>
+        <button class="btn-apple-secondary btn-apple-sm" id="btn-nueva-necesidad">
+          <i class="bi bi-plus-lg" aria-hidden="true"></i> Solicitar
+        </button>
       </div>
 
+      <div id="sol-historial" class="mt-3">
+        <div class="text-center text-muted py-2" style="font-size:0.85rem;">
+          <span class="spinner-border spinner-border-sm me-1"></span>Cargando...
+        </div>
+      </div>
+    </section>`);
+
+  _initSolicitudesSection(maestro);
+}
+
+async function _initSolicitudesSection(maestro) {
+  await _loadSolicitudesHistorial(maestro.id);
+
+  document.getElementById('btn-nueva-necesidad')?.addEventListener('click', () => {
+    openNuevaSolicitudModal(maestro);
+  });
+}
+
+function openNuevaSolicitudModal(maestro) {
+  AppModal.open({
+    title: 'Nueva Solicitud',
+    size: 'lg',
+    hideSave: true,
+    cancelText: 'Cerrar',
+    body: `
       <form id="form-sol-necesidad" novalidate>
-        <div class="row g-2">
+        <div class="row g-3">
           <div class="col-12 col-sm-6">
-            <label class="form-label small fw-semibold">Tipo *</label>
-            <select class="form-select form-select-sm" id="sol-tipo" required>
+            <label class="form-label small fw-semibold text-muted mb-1">Tipo *</label>
+            <select class="form-select input-apple" id="sol-tipo" required>
               <option value="">Seleccioná el tipo</option>
               <option value="material">Material</option>
               <option value="pedagogico">Pedagógico</option>
@@ -288,8 +316,8 @@ function renderSolicitudesNecesidades(container, maestro) {
             </select>
           </div>
           <div class="col-12 col-sm-6">
-            <label class="form-label small fw-semibold">Categoría</label>
-            <select class="form-select form-select-sm" id="sol-categoria">
+            <label class="form-label small fw-semibold text-muted mb-1">Categoría</label>
+            <select class="form-select input-apple" id="sol-categoria">
               <option value="">— sin categoría —</option>
               <option value="cuerdas">Cuerdas</option>
               <option value="cañas">Cañas</option>
@@ -307,21 +335,21 @@ function renderSolicitudesNecesidades(container, maestro) {
             </select>
           </div>
           <div class="col-12">
-            <label class="form-label small fw-semibold">Título *</label>
-            <input type="text" class="form-control form-control-sm" id="sol-titulo"
+            <label class="form-label small fw-semibold text-muted mb-1">Título *</label>
+            <input type="text" class="form-control input-apple" id="sol-titulo"
                    placeholder="Ej: Cuerdas para violines de iniciación" required maxlength="120">
           </div>
           <div class="col-12 col-sm-6">
-            <label class="form-label small fw-semibold">Área / Instrumento</label>
-            <input type="text" class="form-control form-control-sm" id="sol-area" placeholder="Ej: Violín">
+            <label class="form-label small fw-semibold text-muted mb-1">Área / Instrumento</label>
+            <input type="text" class="form-control input-apple" id="sol-area" placeholder="Ej: Violín">
           </div>
           <div class="col-6 col-sm-3">
-            <label class="form-label small fw-semibold">Cantidad</label>
-            <input type="number" class="form-control form-control-sm" id="sol-cantidad" min="1" placeholder="10">
+            <label class="form-label small fw-semibold text-muted mb-1">Cantidad</label>
+            <input type="number" class="form-control input-apple" id="sol-cantidad" min="1" placeholder="10">
           </div>
           <div class="col-6 col-sm-3">
-            <label class="form-label small fw-semibold">Prioridad *</label>
-            <select class="form-select form-select-sm" id="sol-prioridad" required>
+            <label class="form-label small fw-semibold text-muted mb-1">Prioridad *</label>
+            <select class="form-select input-apple" id="sol-prioridad" required>
               <option value="baja">Baja</option>
               <option value="media" selected>Media</option>
               <option value="alta">Alta</option>
@@ -329,86 +357,82 @@ function renderSolicitudesNecesidades(container, maestro) {
             </select>
           </div>
           <div class="col-12">
-            <label class="form-label small fw-semibold">Descripción *</label>
-            <textarea class="form-control form-control-sm" id="sol-descripcion" rows="3"
+            <label class="form-label small fw-semibold text-muted mb-1">Descripción *</label>
+            <textarea class="form-control input-apple" id="sol-descripcion" rows="3"
                       placeholder="Describí la necesidad con detalle..." required maxlength="800"></textarea>
           </div>
           <div class="col-12">
-            <label class="form-label small fw-semibold">Observaciones adicionales</label>
-            <textarea class="form-control form-control-sm" id="sol-observaciones" rows="2"
+            <label class="form-label small fw-semibold text-muted mb-1">Observaciones adicionales</label>
+            <textarea class="form-control input-apple" id="sol-observaciones" rows="2"
                       placeholder="Preferencias, especificaciones, etc." maxlength="400"></textarea>
           </div>
-          <div class="col-12 d-flex align-items-center gap-2">
-            <button type="submit" class="btn-apple-primary" id="btn-sol-submit">
-              <i class="bi bi-send me-1" aria-hidden="true"></i>Enviar solicitud
+          <div class="col-12 d-flex align-items-center gap-3 mt-4 pt-3 border-top">
+            <button type="submit" class="btn-apple-primary flex-grow-1" id="btn-sol-submit">
+              <i class="bi bi-send me-1" aria-hidden="true"></i>Enviar Solicitud
             </button>
-            <span id="sol-status" class="small text-muted" style="display:none;"></span>
+            <span id="sol-status" class="small text-muted" style="display:none; flex-grow:1; text-align:right;"></span>
           </div>
         </div>
       </form>
+    `,
+    onOpen: (modalBody) => {
+      const form = modalBody.querySelector('#form-sol-necesidad');
+      
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const tipo        = modalBody.querySelector('#sol-tipo')?.value?.trim();
+        const titulo      = modalBody.querySelector('#sol-titulo')?.value?.trim();
+        const descripcion = modalBody.querySelector('#sol-descripcion')?.value?.trim();
+        const prioridad   = modalBody.querySelector('#sol-prioridad')?.value || 'media';
 
-      <hr class="my-3">
+        // Validación inline
+        if (!tipo || !titulo || !descripcion) {
+          [{ id: '#sol-tipo', v: tipo }, { id: '#sol-titulo', v: titulo }, { id: '#sol-descripcion', v: descripcion }]
+            .forEach(({ id, v }) => modalBody.querySelector(id)?.classList.toggle('is-invalid', !v));
+          return;
+        }
 
-      <h4 class="pm-settings-section__title" style="font-size:0.85rem;">Mis solicitudes anteriores</h4>
-      <div id="sol-historial" class="mt-2">
-        <div class="text-center text-muted py-2" style="font-size:0.85rem;">
-          <span class="spinner-border spinner-border-sm me-1"></span>Cargando...
-        </div>
-      </div>
-    </section>`);
+        const btn    = modalBody.querySelector('#btn-sol-submit');
+        const status = modalBody.querySelector('#sol-status');
+        if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Enviando...'; }
+        if (status) { status.style.display = 'none'; }
 
-  // Cargar historial y eventos de forma asíncrona
-  _initSolicitudesSection(maestro);
-}
+        try {
+          const { error } = await supabase.from('solicitudes_necesidades').insert({
+            maestro_id:     maestro.id,
+            maestro_nombre: maestro.nombre_completo || maestro.nombre || '',
+            tipo_necesidad: tipo,
+            categoria:      modalBody.querySelector('#sol-categoria')?.value || null,
+            titulo,
+            descripcion,
+            prioridad,
+            cantidad:       parseInt(modalBody.querySelector('#sol-cantidad')?.value) || null,
+            area:           modalBody.querySelector('#sol-area')?.value?.trim()           || null,
+            observaciones:  modalBody.querySelector('#sol-observaciones')?.value?.trim()  || null,
+            estado:         'pendiente',
+            fecha_solicitud: new Date().toISOString().split('T')[0],
+          });
+          if (error) throw error;
 
-async function _initSolicitudesSection(maestro) {
-  await _loadSolicitudesHistorial(maestro.id);
-
-  document.getElementById('form-sol-necesidad')?.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const tipo        = document.getElementById('sol-tipo')?.value?.trim();
-    const titulo      = document.getElementById('sol-titulo')?.value?.trim();
-    const descripcion = document.getElementById('sol-descripcion')?.value?.trim();
-    const prioridad   = document.getElementById('sol-prioridad')?.value || 'media';
-
-    // Validación inline
-    if (!tipo || !titulo || !descripcion) {
-      [{ id: 'sol-tipo', v: tipo }, { id: 'sol-titulo', v: titulo }, { id: 'sol-descripcion', v: descripcion }]
-        .forEach(({ id, v }) => document.getElementById(id)?.classList.toggle('is-invalid', !v));
-      return;
-    }
-
-    const btn    = document.getElementById('btn-sol-submit');
-    const status = document.getElementById('sol-status');
-    if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Enviando...'; }
-    if (status) { status.style.display = 'none'; }
-
-    try {
-      const { error } = await supabase.from('solicitudes_necesidades').insert({
-        maestro_id:     maestro.id,
-        maestro_nombre: maestro.nombre_completo || maestro.nombre || '',
-        tipo_necesidad: tipo,
-        categoria:      document.getElementById('sol-categoria')?.value || null,
-        titulo,
-        descripcion,
-        prioridad,
-        cantidad:       parseInt(document.getElementById('sol-cantidad')?.value) || null,
-        area:           document.getElementById('sol-area')?.value?.trim()           || null,
-        observaciones:  document.getElementById('sol-observaciones')?.value?.trim()  || null,
-        estado:         'pendiente',
-        fecha_solicitud: new Date().toISOString().split('T')[0],
+          if (status) { status.textContent = '✓ Solicitud enviada correctamente'; status.className = 'small text-success'; status.style.display = 'block'; }
+          
+          window.dispatchEvent(new CustomEvent('showToast', {
+            detail: { message: 'Solicitud enviada correctamente', type: 'success' }
+          }));
+          
+          await _loadSolicitudesHistorial(maestro.id);
+          
+          setTimeout(() => {
+            AppModal.close();
+          }, 1000);
+          
+        } catch (err) {
+          console.error('[solicitudes]', err);
+          if (status) { status.textContent = 'Error al enviar. Intentá de nuevo.'; status.className = 'small text-danger'; status.style.display = 'block'; }
+        } finally {
+          if (btn) { btn.disabled = false; btn.innerHTML = '<i class="bi bi-send me-1"></i>Enviar solicitud'; }
+        }
       });
-      if (error) throw error;
-
-      document.getElementById('form-sol-necesidad')?.reset();
-      document.querySelectorAll('#pm-solicitudes-section .is-invalid').forEach(el => el.classList.remove('is-invalid'));
-      if (status) { status.textContent = '✓ Solicitud enviada correctamente'; status.className = 'small text-success'; status.style.display = 'inline'; }
-      await _loadSolicitudesHistorial(maestro.id);
-    } catch (err) {
-      console.error('[solicitudes]', err);
-      if (status) { status.textContent = 'Error al enviar. Intentá de nuevo.'; status.className = 'small text-danger'; status.style.display = 'inline'; }
-    } finally {
-      if (btn) { btn.disabled = false; btn.innerHTML = '<i class="bi bi-send me-1"></i>Enviar solicitud'; }
     }
   });
 }
@@ -545,7 +569,7 @@ function renderCollaborationPermissions(container, perm, maestroId, solicitarPer
     {
       key: 'alumnos:create',
       title: 'Registrar Alumnos',
-      desc: 'Matricular nuevos estudiantes directamente en el sistema desde tu portal.',
+      desc: 'Dar de alta estudiantes para preparar su inscripción y seguimiento académico.',
       icon: 'bi-person-plus',
       iconClass: 'pm-icon-blue',
       active: perm.puede_registrar_alumnos,
@@ -554,8 +578,8 @@ function renderCollaborationPermissions(container, perm, maestroId, solicitarPer
     },
     {
       key: 'clases:enroll',
-      title: 'Gestionar e Inscribir Clases',
-      desc: 'Asignar alumnos matriculados a tus clases vigentes sin intermediarios.',
+      title: 'Crear y Gestionar Clases',
+      desc: 'Crear clases, inscribir alumnos y mantener la secuencia operativa del grupo.',
       icon: 'bi-journal-bookmark',
       iconClass: 'pm-icon-teal',
       active: perm.puede_inscribir_clases,
@@ -591,7 +615,7 @@ function renderCollaborationPermissions(container, perm, maestroId, solicitarPer
               actionHtml = `
                 <button class="btn-apple-primary btn-apple-sm w-100 pm-collab-action-btn" data-route="gestionar-clases"
                   style="padding: 0.45rem 0.9rem; font-size: 0.8rem; display:flex; align-items:center; justify-content:center; gap:0.4rem; background: linear-gradient(135deg, #0d9488, #0891b2);">
-                  <i class="bi bi-mortarboard-fill"></i> Gestionar Clases
+                  <i class="bi bi-mortarboard-fill"></i> Crear / Gestionar Clases
                 </button>`;
             } else {
               actionHtml = `<p class="pm-collab-help-text">Permiso activo.</p>`;

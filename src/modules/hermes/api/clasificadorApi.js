@@ -11,6 +11,10 @@
 
 import { callGroq } from '../../../portal-maestros/services/groqService.js'
 import * as tareasApi from './tareasApi.js'
+import {
+  buildSafeRejectionMessage,
+  shouldBlockSensitiveMessage,
+} from './whatsappSecurityGuard.js'
 
 export const DEPARTAMENTOS_VALIDOS = ['DIR', 'ACM', 'ADM', 'FIN', 'LOG', 'COM', 'TECNICO']
 export const PRIORIDADES_VALIDAS = ['baja', 'media', 'alta', 'critica']
@@ -54,6 +58,17 @@ function parseJsonGroq(raw) {
  * @returns {Promise<{departamento, titulo, descripcion, prioridad, confianza}>}
  */
 export async function clasificarDepartamento(texto) {
+  if (shouldBlockSensitiveMessage(texto)) {
+    return {
+      departamento: 'DIR',
+      titulo: 'Solicitud bloqueada por seguridad',
+      descripcion: buildSafeRejectionMessage(),
+      prioridad: 'media',
+      confianza: 1,
+      bloqueada: true,
+    }
+  }
+
   const resp = await callGroq([
     { role: 'system', content: SYSTEM_PROMPT },
     { role: 'user', content: texto },
@@ -69,6 +84,7 @@ export async function clasificarDepartamento(texto) {
     descripcion: (p.descripcion || texto).toString().trim(),
     prioridad,
     confianza: typeof p.confianza === 'number' ? p.confianza : 0.5,
+    bloqueada: false,
   }
 }
 
@@ -79,6 +95,12 @@ export async function clasificarDepartamento(texto) {
  */
 export async function crearTareaDesdeTexto(texto, overrides = {}) {
   const clasificacion = await clasificarDepartamento(texto)
+  if (clasificacion.bloqueada) {
+    return {
+      clasificacion,
+      tarea: null,
+    }
+  }
   const tarea = await tareasApi.crearTareaInstitucional({
     titulo: overrides.titulo || clasificacion.titulo,
     descripcion: overrides.descripcion || clasificacion.descripcion,

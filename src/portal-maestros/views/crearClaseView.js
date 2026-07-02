@@ -214,7 +214,7 @@ export async function renderCrearClaseView(container) {
         }
 
         alert('¡Clase creada exitosamente!')
-        window.location.hash = '#/calendario'
+        window.location.hash = '#/fechas'
 
       } catch (err) {
         console.error(err)

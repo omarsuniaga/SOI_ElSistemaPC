@@ -200,31 +200,8 @@ async function handleBackgroundAction(action, data) {
     console.warn('[SW] Error enviando mensaje a pestañas:', err.message);
   }
 
-  // Ejemplo de acción directa contra Supabase en segundo plano:
-  // Marcar una notificación como leída directamente usando el endpoint REST de Supabase
-  if (action === 'mark-read' && data.notification_id) {
-    try {
-      const supabaseUrl = 'https://zmhmdvmyeyswunurcyow.supabase.co';
-      const anonKey = 'sb_publishable_-TE6E79mrn4fSs4XGnvWnw_2QgDrX0P';
-
-      const res = await fetch(`${supabaseUrl}/rest/v1/notificaciones?id=eq.${data.notification_id}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'apikey': anonKey,
-          'Authorization': `Bearer ${anonKey}`,
-          'Prefer': 'return=minimal'
-        },
-        body: JSON.stringify({
-          estado: 'leida',
-          leida_en: new Date().toISOString()
-        })
-      });
-      console.log(`[SW] Notificación ${data.notification_id} marcada como leída en background. Status: ${res.status}`);
-    } catch (err) {
-      console.error('[SW] Error marcando leída en segundo plano:', err.message);
-    }
-  }
+  // Las acciones sensibles se resuelven en la app autenticada o en backend.
+  // El Service Worker solo notifica y enruta.
 }
 
 function resolveNotificationUrl(data) {

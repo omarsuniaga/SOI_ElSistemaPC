@@ -2,10 +2,12 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 
 const STORAGE_KEY = 'acm_weekly_plans_demo'
 const PROGRESS_STORAGE_KEY = 'student_indicator_progress_demo'
+const TEACHER_ADJUSTMENTS_STORAGE_KEY = 'acm_teacher_plan_adjustments_demo'
 
 function clearStorage() {
   localStorage.removeItem(STORAGE_KEY)
   localStorage.removeItem(PROGRESS_STORAGE_KEY)
+  localStorage.removeItem(TEACHER_ADJUSTMENTS_STORAGE_KEY)
 }
 
 async function flushPromises(ms = 150) {
@@ -90,6 +92,41 @@ describe('weeklyPlanAdapter routing & mock lifecycle', () => {
     expect(updated.current_week).toBe(4)
   })
 
+  it('should keep a single active route per class in demo mode', async () => {
+    vi.doMock('../../../core/config/config.js', () => ({
+      config: { isDemoMode: true },
+    }))
+    const adapter = await import('../api/weeklyPlanAdapter.js')
+    await flushPromises()
+
+    const firstRoute = await adapter.crearRutaActiva({
+      weekly_plan_id: 'wplan-violin-n0',
+      teacher_id: 'maestro_999',
+      group_id: 'clase_unica',
+      level_id: 'pnivel_001',
+    })
+
+    const secondRoute = await adapter.crearRutaActiva({
+      weekly_plan_id: 'wplan-violin-n0',
+      teacher_id: 'maestro_999',
+      group_id: 'clase_unica',
+      level_id: 'pnivel_001',
+    })
+
+    const activeRoutes = await adapter.obtenerRutasActivas('maestro_999')
+    const sameGroupRoutes = activeRoutes.filter((route) => route.group_id === 'clase_unica')
+    const activeSameGroupRoutes = sameGroupRoutes.filter((route) => route.status === 'active')
+
+    expect(activeSameGroupRoutes).toHaveLength(1)
+    expect(activeSameGroupRoutes[0].id).toBe(secondRoute.id)
+
+    const archivedFirstRoute = sameGroupRoutes.find((route) => route.id === firstRoute.id)
+    expect(archivedFirstRoute?.status).toBe('archived')
+
+    const resolvedActiveRoute = await adapter.obtenerRutaActivaPorGrupo('clase_unica')
+    expect(resolvedActiveRoute?.id).toBe(secondRoute.id)
+  })
+
   it('should register and fetch student indicator progress maps', async () => {
     vi.doMock('../../../core/config/config.js', () => ({
       config: { isDemoMode: true },
@@ -112,5 +149,37 @@ describe('weeklyPlanAdapter routing & mock lifecycle', () => {
     const map = await adapter.obtenerProgresoGrupo('clase_001')
     expect(map['student_001_pind_001']).toBeDefined()
     expect(map['student_001_pind_001'].status).toBe('achieved')
+  })
+
+  it('should save and retrieve controlled teacher plan adjustments in demo mode', async () => {
+    vi.doMock('../../../core/config/config.js', () => ({
+      config: { isDemoMode: true },
+    }))
+    const adapter = await import('../api/weeklyPlanAdapter.js')
+    await flushPromises()
+
+    const saved = await adapter.guardarAjustePlanDocente({
+      group_id: 'clase_001',
+      teacher_id: 'maestro_001',
+      weekly_plan_id: 'wplan-violin-n0',
+      week_number: 1,
+      teacher_strategy: 'Trabajo por estaciones y modelado.',
+      student_activity: 'Rotación breve por postura y arco.',
+      homework: 'Práctica guiada de 3 minutos.',
+      evidence: 'Video corto de postura.',
+      teacher_notes: 'Se adaptó por heterogeneidad del grupo.',
+    })
+
+    expect(saved.week_number).toBe(1)
+    expect(saved.teacher_strategy).toContain('estaciones')
+
+    const adjustments = await adapter.obtenerAjustesPlanDocente(
+      'clase_001',
+      'maestro_001',
+      'wplan-violin-n0',
+    )
+
+    expect(adjustments).toHaveLength(1)
+    expect(adjustments[0].teacher_notes).toContain('heterogeneidad')
   })
 })

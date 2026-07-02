@@ -33,6 +33,7 @@ import { renderTareasView } from '../../modules/hermes/views/tareasView.js'
 import { renderProcedimientosView } from '../../modules/hermes/views/procedimientosView.js'
 import { renderScoreDirectorView } from '../../modules/hermes/views/scoreDirectorView.js'
 import { renderHermesConsultaView } from '../../modules/hermes/views/hermesConsultaView.js'
+import { renderCierreAcademicoView } from '../../modules/metricas/views/cierreAcademicoView.js'
 
 window.router = router
 
@@ -226,6 +227,7 @@ export async function bootAdminPortal(profile) {
   router.register(HERMES_ROUTE, (mount) =>
     renderTareasView(mount, { departamento: profile.hermesDept, hideCalendarBtn: true }),
   )
+  router.register('cierre-academico', (mount) => renderCierreAcademicoView(mount))
 
   // SP-3: vistas de Dirección (procedimientos consolidados + score por departamento).
   router.register('hermes-procedimientos', (mount) => renderProcedimientosView(mount))

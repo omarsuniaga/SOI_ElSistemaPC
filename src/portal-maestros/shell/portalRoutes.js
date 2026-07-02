@@ -3,52 +3,55 @@
  * Responsabilidad: Registrar las rutas del portal de maestros y
  * gestionar los contenedores de vistas persistentes.
  *
+ * Las vistas se cargan con dynamic import() para que Vite las divida
+ * en chunks separados — el bundle inicial solo incluye la vista activa.
+ *
  * Este portal es exclusivo para maestros.
  * El panel admin vive en /admin (admin.html).
  */
 
-import { renderLoginView } from '../views/loginView.js'
-import { renderRegisterView } from '../views/registerView.js'
-import { renderPendingApprovalView } from '../views/pendingApprovalView.js'
-import { renderHoyView } from '../views/hoyView.js'
-import { renderCalendarioView } from '../views/calendarioView.js'
-import { renderMetricasView } from '../views/metricasView.js'
-import { renderAsistenciaView } from '../views/asistenciaView.js'
-import { renderClaseEmergenteView } from '../views/claseEmergenteView.js'
-import { renderPerfilView } from '../views/perfilView.js'
-import { renderPlanificacionView } from '../views/planificacionView.js'
-import { renderAlumnoPerfilView } from '../views/alumnoPerfilView.js'
-import { renderGamificacionView } from '../views/gamificacionView.js'
-import { renderRutaGameificadaView } from '../views/rutaGameificadaView.js'
-import { renderCrearClaseView } from '../views/crearClaseView.js'
-import { renderAcademicPlanBuilderView } from '../views/academicPlanBuilderView.js'
-import { renderWeeklyPlanView } from '../views/weeklyPlanView.js'
-import { RouteLibraryView } from '../views/routeLibraryView.js'
-import { RouteDetailView } from '../views/routeDetailView.js'
-import { renderGestionarClasesView } from '../views/gestionarClasesView.js'
+const VIEW_LOADERS = {
+  login:             () => import('../views/loginView.js'),
+  register:          () => import('../views/registerView.js'),
+  'pending-approval':() => import('../views/pendingApprovalView.js'),
+  hoy:               () => import('../views/hoyView.js'),
+  fechas:            () => import('../views/calendarioView.js'),
+  calendario:        () => import('../views/calendarioView.js'),
+  clases:            () => import('../views/calendarioView.js'),
+  metricas:          () => import('../views/metricasView.js'),
+  asistencia:        () => import('../views/asistenciaView.js'),
+  'clase-emergente': () => import('../views/claseEmergenteView.js'),
+  perfil:            () => import('../views/perfilView.js'),
+  planificacion:     () => import('../views/planificacionView.js'),
+  alumno:            () => import('../views/alumnoPerfilView.js'),
+  gamificacion:      () => import('../views/gamificacionView.js'),
+  ruta:              () => import('../views/rutaGameificadaView.js'),
+  'crear-clase':     () => import('../views/crearClaseView.js'),
+  'ruta-plan-builder':() => import('../views/academicPlanBuilderView.js'),
+  'ruta-semanal':    () => import('../views/weeklyPlanView.js'),
+  'ruta-libreria':   () => import('../views/routeLibraryView.js'),
+  'ruta-detalle':    () => import('../views/routeDetailView.js'),
+  'gestionar-clases':() => import('../views/gestionarClasesView.js'),
+  'gestionar-horario':() => import('../views/disponibilidadView.js'),
+}
 
-const MAESTRO_VIEWS = [
-  'login', 'logout', 'register', 'pending-approval',
-  'calendario', 'clases', 'hoy', 'asistencia', 'metricas',
-  'perfil', 'clase-emergente', 'planificacion', 'alumno',
-  'gamificacion', 'ruta', 'crear-clase', 'ruta-plan-builder',
-  'ruta-semanal', 'ruta-libreria', 'ruta-detalle', 'gestionar-clases',
-]
+const MAESTRO_VIEWS = Object.keys(VIEW_LOADERS).concat(['logout'])
 
 export const CACHEABLE_VIEWS = new Set([
-  'hoy', 'calendario', 'metricas', 'perfil', 'ruta',
+  'hoy', 'fechas', 'calendario', 'metricas', 'perfil', 'ruta',
   'gamificacion', 'crear-clase', 'planificacion', 'ruta-libreria',
+  'gestionar-horario',
 ])
 
 export function setupRouterRoutes(router, _isAdmin, renderView) {
   const route = (name) => router.on(name, (r, params) => renderView(name, params))
 
   ;[
-    'login', 'logout', 'calendario', 'clases', 'hoy', 'asistencia',
+    'login', 'logout', 'fechas', 'calendario', 'clases', 'hoy', 'asistencia',
     'metricas', 'perfil', 'clase-emergente', 'planificacion', 'alumno',
     'gamificacion', 'ruta', 'crear-clase', 'ruta-plan-builder',
     'ruta-semanal', 'ruta-libreria', 'gestionar-clases',
-    'register', 'pending-approval',
+    'register', 'pending-approval', 'gestionar-horario',
   ].forEach(route)
 
   router.on('ruta-detalle/:id', (r, params) => renderView('ruta-detalle', params))
@@ -77,74 +80,86 @@ export function initViewContainers() {
 export async function renderViewContent(route, container, params, urlParams, context) {
   const { maestroId, permisos, router, showLoginScreen, cleanupPushService, stopRealtime, logoutMaestro } = context
 
+  if (route === 'logout') {
+    showLoginScreen()
+    cleanupPushService()
+    stopRealtime()
+    logoutMaestro().then(() => window.location.reload())
+    return null
+  }
+
+  if (route === 'gestionar-clases' && !permisos?.puede_inscribir_clases) {
+    router.navigate('hoy')
+    return
+  }
+
+  const load = VIEW_LOADERS[route]
+  if (!load) return null
+
+  const mod = await load()
+
   switch (route) {
     case 'login':
-      renderLoginView(container, { onSuccess: context.onLoginSuccess })
+      mod.renderLoginView(container, { onSuccess: context.onLoginSuccess })
       break
     case 'register':
-      renderRegisterView(container, { onSuccess: () => router.navigate('pending-approval') })
+      mod.renderRegisterView(container, { onSuccess: () => router.navigate('pending-approval') })
       break
     case 'pending-approval':
-      renderPendingApprovalView(container, { onBackToLogin: () => router.navigate('login') })
+      mod.renderPendingApprovalView(container, { onBackToLogin: () => router.navigate('login') })
       break
-    case 'logout':
-      showLoginScreen()
-      cleanupPushService()
-      stopRealtime()
-      logoutMaestro().then(() => window.location.reload())
-      break
+    case 'fechas':
     case 'calendario':
     case 'clases':
-      return await renderCalendarioView(container)
+      return await mod.renderCalendarioView(container)
     case 'hoy':
-      return await renderHoyView(container, {
+      return await mod.renderHoyView(container, {
         onClaseClick: (id) => router.navigate(`asistencia?clase=${id}`),
       })
     case 'asistencia':
-      return await renderAsistenciaView(container, {
+      return await mod.renderAsistenciaView(container, {
         claseId: urlParams.get('clase'),
         fecha: urlParams.get('fecha'),
         sesionId: urlParams.get('sesion'),
         router,
       })
     case 'metricas':
-      return renderMetricasView(container)
+      return mod.renderMetricasView(container)
     case 'perfil':
-      return renderPerfilView(container)
+      return mod.renderPerfilView(container)
     case 'clase-emergente':
-      return renderClaseEmergenteView(container, { maestroId })
+      return mod.renderClaseEmergenteView(container, { maestroId })
     case 'planificacion':
-      return await renderPlanificacionView(container, { maestroId })
+      return await mod.renderPlanificacionView(container, { maestroId })
     case 'alumno':
-      return renderAlumnoPerfilView(container, { alumnoId: urlParams.get('id') || params.id })
+      return mod.renderAlumnoPerfilView(container, { alumnoId: urlParams.get('id') || params.id })
     case 'gamificacion':
-      await renderGamificacionView(container)
+      await mod.renderGamificacionView(container)
       break
     case 'ruta':
-      await renderRutaGameificadaView(container, {
+      await mod.renderRutaGameificadaView(container, {
         onTopicSelected: (id) => router.navigate(`asistencia?clase=${id}`),
       })
       break
     case 'crear-clase':
-      renderCrearClaseView(container)
+      mod.renderCrearClaseView(container)
       break
     case 'ruta-plan-builder':
-      renderAcademicPlanBuilderView(container, { alumnoId: urlParams.get('id') })
+      mod.renderAcademicPlanBuilderView(container, { alumnoId: urlParams.get('id') })
       break
     case 'ruta-semanal':
-      renderWeeklyPlanView(container, { alumnoId: urlParams.get('id') })
+      mod.renderWeeklyPlanView(container, { alumnoId: urlParams.get('id') })
       break
     case 'ruta-libreria':
-      RouteLibraryView.render().then((view) => { container.innerHTML = ''; container.appendChild(view) })
+      mod.RouteLibraryView.render().then((view) => { container.innerHTML = ''; container.appendChild(view) })
       break
     case 'ruta-detalle':
-      RouteDetailView.render(params).then((view) => { container.innerHTML = ''; container.appendChild(view) })
+      mod.RouteDetailView.render(params).then((view) => { container.innerHTML = ''; container.appendChild(view) })
       break
     case 'gestionar-clases':
-      if (!permisos?.puede_inscribir_clases) { router.navigate('hoy'); return }
-      return await renderGestionarClasesView(container)
-    default:
-      break
+      return await mod.renderGestionarClasesView(container)
+    case 'gestionar-horario':
+      return await mod.renderDisponibilidadView(container, { maestroId })
   }
 
   return null

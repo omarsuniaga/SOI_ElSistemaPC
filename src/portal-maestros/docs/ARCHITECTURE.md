@@ -62,7 +62,8 @@ Portal Maestros is a Progressive Web App (PWA) with a modern, scalable architect
 **Files:** `src/portal-maestros/services/`
 
 Services encapsulate core logic:
-- `notificationService.js` — polling + deduplication
+- `pushService.js` — Web Push subscriptions, preferences, local reminders
+- `notificationService.js` — inbox, realtime, deduplication, toast and deep links
 - `lessonPlanService.js` — CRUD for lesson plans
 - `observationService.js` — recording and storage
 - `authService.js` — authentication flows
@@ -180,8 +181,9 @@ notificationService updates UI
 ### Real-Time Updates
 
 - Supabase Realtime for multi-user scenarios
-- WebSocket subscriptions on notification table
-- Client-side deduplication to prevent duplicates
+- Web Push via Service Worker for offline delivery
+- Notification inbox synchronized from Supabase with client-side deduplication
+- Polling fallback only when realtime is unavailable
 
 ## Error Handling
 

@@ -141,6 +141,225 @@ export async function getEstadisticasPeriodoActivo() {
   return (data && data.length > 0) ? data[0] : null
 }
 
+export async function getResumenCierreAcademico({ periodoId = null, fechaInicio, fechaFin, claseId = null, maestroId = null } = {}) {
+  let sesionesQuery = supabase
+    .from('sesiones_clase')
+    .select(`
+      id,
+      fecha,
+      hora_inicio,
+      hora_fin,
+      tema_principal,
+      observaciones_generales,
+      estado,
+      clase_id,
+      clases (
+        id,
+        nombre,
+        instrumento,
+        maestro_principal_id,
+        maestros!fk_clases_maestro_principal (
+          id,
+          nombre_completo
+        )
+      ),
+      asistencias (
+        id,
+        estado,
+        justificacion_texto,
+        alumno_id,
+        alumnos (
+          id,
+          nombre_completo
+        )
+      ),
+      contenidos_sesion (
+        id,
+        descripcion,
+        nivel_logro
+      )
+    `)
+    .order('fecha', { ascending: true })
+    .order('hora_inicio', { ascending: true })
+
+  if (fechaInicio) sesionesQuery = sesionesQuery.gte('fecha', fechaInicio)
+  if (fechaFin) sesionesQuery = sesionesQuery.lte('fecha', fechaFin)
+  if (claseId) sesionesQuery = sesionesQuery.eq('clase_id', claseId)
+
+  const { data: sesiones, error: sesionesError } = await sesionesQuery
+  if (sesionesError) throw new Error('No se pudo cargar el consolidado de cierre: ' + sesionesError.message)
+
+  const filas = sesiones || []
+  const alumnosMap = new Map()
+  const clasesMap = new Map()
+  const alumnosPorClase = new Map()
+
+  let totalPresentes = 0
+  let totalAusentes = 0
+  let totalJustificados = 0
+  let totalClases = 0
+  let totalContenido = 0
+
+  for (const sesion of filas) {
+    totalClases += 1
+    const clase = sesion.clases || {}
+    if (maestroId && String(clase.maestro_principal_id || '') !== String(maestroId)) continue
+
+    const asistencias = Array.isArray(sesion.asistencias) ? sesion.asistencias : []
+    const contenidos = Array.isArray(sesion.contenidos_sesion) ? sesion.contenidos_sesion : []
+    totalContenido += contenidos.length
+
+    const claseKey = sesion.clase_id
+    if (!clasesMap.has(claseKey)) {
+      clasesMap.set(claseKey, {
+        claseId: claseKey,
+        claseNombre: clase.nombre || '—',
+        instrumento: clase.instrumento || '—',
+        maestroNombre: clase.maestros?.nombre_completo || '—',
+        sesiones: 0,
+        contenidosTrabajados: 0,
+        presentes: 0,
+        ausentes: 0,
+        justificados: 0,
+      })
+    }
+    const claseAgg = clasesMap.get(claseKey)
+    claseAgg.sesiones += 1
+    claseAgg.contenidosTrabajados += contenidos.length
+
+    if (!alumnosPorClase.has(claseKey)) alumnosPorClase.set(claseKey, new Map())
+
+    for (const a of asistencias) {
+      const alumnoId = a.alumno_id
+      const alumnoNombre = a.alumnos?.nombre_completo || '—'
+      if (!alumnosMap.has(alumnoId)) {
+        alumnosMap.set(alumnoId, {
+          alumnoId,
+          alumnoNombre,
+          presentes: 0,
+          ausentes: 0,
+          justificados: 0,
+          justificaciones: [],
+          progreso: 0,
+        })
+      }
+      const alumnoAgg = alumnosMap.get(alumnoId)
+      const porClase = alumnosPorClase.get(claseKey)
+      if (!porClase.has(alumnoId)) porClase.set(alumnoId, { alumnoId, alumnoNombre, presentes: 0, ausentes: 0, justificados: 0 })
+      const claseAlumno = porClase.get(alumnoId)
+
+      if (a.estado === 'presente') { totalPresentes += 1; alumnoAgg.presentes += 1; claseAgg.presentes += 1; claseAlumno.presentes += 1 }
+      if (a.estado === 'ausente') { totalAusentes += 1; alumnoAgg.ausentes += 1; claseAgg.ausentes += 1; claseAlumno.ausentes += 1 }
+      if (a.estado === 'justificado') {
+        totalJustificados += 1
+        alumnoAgg.justificados += 1
+        claseAgg.justificados += 1
+        claseAlumno.justificados += 1
+        if (a.justificacion_texto) alumnoAgg.justificaciones.push(a.justificacion_texto)
+      }
+    }
+  }
+
+  const { data: progresos, error: progresosError } = await supabase
+    .from('progresos')
+    .select('id, alumno_id, clase_id, evaluacion_tipo, estado_cualitativo, calificacion, observaciones, fecha_evaluacion, alumnos(id, nombre_completo), clases(id, nombre, instrumento)')
+    .order('fecha_evaluacion', { ascending: false })
+
+  if (progresosError) throw new Error('No se pudo cargar el progreso académico: ' + progresosError.message)
+
+  const progresoPorAlumno = new Map()
+  for (const p of (progresos || [])) {
+    const alumnoId = p.alumno_id
+    if (!alumnoId) continue
+    if (!progresoPorAlumno.has(alumnoId)) {
+      progresoPorAlumno.set(alumnoId, {
+        alumnoId,
+        alumnoNombre: p.alumnos?.nombre_completo || '—',
+        totalRegistros: 0,
+        promedio: 0,
+        estados: {},
+        observaciones: [],
+      })
+    }
+    const agg = progresoPorAlumno.get(alumnoId)
+    agg.totalRegistros += 1
+    if (p.calificacion != null) agg.promedio += Number(p.calificacion)
+    agg.estados[p.estado_cualitativo || 'sin_estado'] = (agg.estados[p.estado_cualitativo || 'sin_estado'] || 0) + 1
+    if (p.observaciones) agg.observaciones.push(p.observaciones)
+  }
+
+  const alumnos = Array.from(alumnosMap.values()).map((a) => {
+    const prog = progresoPorAlumno.get(a.alumnoId)
+    return {
+      ...a,
+      promedioProgreso: prog && prog.totalRegistros ? (prog.promedio / prog.totalRegistros) : null,
+      totalRegistrosProgreso: prog?.totalRegistros || 0,
+      estadosProgreso: prog?.estados || {},
+      observacionesProgreso: prog?.observaciones || [],
+      tasaAsistencia: (a.presentes + a.ausentes + a.justificados) > 0
+        ? ((a.presentes + a.justificados) / (a.presentes + a.ausentes + a.justificados)) * 100
+        : null,
+    }
+  })
+
+  return {
+    periodoId: periodoId || null,
+    rango: { fechaInicio: fechaInicio || null, fechaFin: fechaFin || null },
+    resumen: {
+      totalClases,
+      totalContenido,
+      totalPresentes,
+      totalAusentes,
+      totalJustificados,
+      totalAlumnos: alumnos.length,
+    },
+    clases: Array.from(clasesMap.values()),
+    alumnos,
+  }
+}
+
+export async function cerrarPeriodoAcademico({ periodoId, fechaInicio, fechaFin, cerradoPor = null, observaciones = null } = {}) {
+  const payload = {
+    p_periodo_id: periodoId,
+    p_fecha_inicio: fechaInicio || null,
+    p_fecha_fin: fechaFin || null,
+    p_cerrado_por: cerradoPor || null,
+    p_observaciones: observaciones || null,
+  }
+
+  const { data, error } = await supabase.rpc('fn_cerrar_periodo_academico', payload)
+  if (error) throw new Error('No se pudo cerrar el período académico: ' + error.message)
+  return data
+}
+
+export async function getCierresAcademicos({ limit = 20 } = {}) {
+  const { data, error } = await supabase
+    .from('periodos_cierre_auditoria')
+    .select(`
+      id,
+      periodo_id,
+      fecha_inicio,
+      fecha_fin,
+      cerrado_por,
+      observaciones,
+      resumen,
+      snapshot,
+      created_at,
+      periodos (
+        id,
+        nombre,
+        activo,
+        cerrado,
+        cerrado_at
+      )
+    `)
+    .order('created_at', { ascending: false })
+    .limit(limit)
+
+  if (error) throw new Error('No se pudo cargar el historial de cierres: ' + error.message)
+  return data || []
+}
+
 // ─── DESTACADOS Y RIESGO ACADÉMICO ──────────────────────────────────────────
 
 export async function getDestacadosYRiesgoAcademico({ categoria = null } = {}) {

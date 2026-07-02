@@ -91,7 +91,8 @@ export function renderPerfilView(container) {
 
   renderHero(colIzq, maestro);
   renderPersonalData(colIzq, maestro);
-  renderAvailability(colIzq, maestro);
+  // [OCULTO] Sección "Disponibilidad Horaria" — descomentar para reactivar.
+  // renderAvailability(colIzq, maestro);
   renderAppearance(colDer);
   renderNotifications(colDer, maestro);
   renderAbsences(colDer);
@@ -113,7 +114,8 @@ export function renderPerfilView(container) {
       const perm = await getPermisos(maestro.id);
       const collabContainer = document.getElementById('pm-collaboration-container');
       if (collabContainer) {
-        renderCollaborationPermissions(collabContainer, perm, maestro.id, solicitarPermiso);
+        // [OCULTO] Sección "Colaboración de Inscripción" — descomentar para reactivar.
+        // renderCollaborationPermissions(collabContainer, perm, maestro.id, solicitarPermiso);
       }
 
     } catch (err) {

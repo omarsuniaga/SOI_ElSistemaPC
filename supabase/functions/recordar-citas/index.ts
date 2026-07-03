@@ -24,6 +24,21 @@ function json(body: unknown, status = 200) {
   })
 }
 
+// ────────────────────────────────────────────────────────────────────────────
+// Recess kill-switch (D1)
+//
+// Toggle the DISABLE_RECALL secret in the Supabase Edge Function runtime
+// to flip this function on/off without redeploying and without losing its
+// deployment history. Behaviour:
+//   - DISABLE_RECALL unset / "0" / "false"  → normal execution (default).
+//   - DISABLE_RECALL "1" / "true" / "yes"   → short-circuit 200, no DB
+//     writes, no hermes_whatsapp_queue inserts, no WhatsApp side-effects.
+// The handler still validates the request method so a misconfigured
+// caller (e.g. accidental GET) gets a 405 instead of a 200.
+// ────────────────────────────────────────────────────────────────────────────
+const DISABLE_RECALL = (Deno.env.get('DISABLE_RECALL') || '').toLowerCase()
+const RECESS_ENABLED = ['1', 'true', 'yes', 'on'].includes(DISABLE_RECALL)
+
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? ''
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
 
@@ -78,6 +93,17 @@ Deno.serve(async (req: Request) => {
 
   if (req.method !== 'POST') {
     return json({ error: 'Método no permitido' }, 405)
+  }
+
+  // Recess kill-switch (D1): short-circuit before any DB or queue work.
+  if (RECESS_ENABLED) {
+    console.log('[recordar-citas] Skipped: DISABLE_RECALL=1 (institutional receso)')
+    return json({
+      ok: true,
+      skipped: true,
+      reason: 'receso',
+      note: 'Function is in institutional recess mode. No side effects executed.',
+    })
   }
 
   const supabase = getClient()

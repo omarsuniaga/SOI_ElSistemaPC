@@ -21,6 +21,34 @@ function errorResponse(message: string, status = 400) {
   return json({ error: message }, status)
 }
 
+// ────────────────────────────────────────────────────────────────────────────
+// Global channel kill-switch — honours system_config.whatsapp_ingest_enabled.
+// Reads from public.system_config using the service_role key (which bypasses
+// RLS by design). Defaults to "enabled" if the key is missing or the query
+// fails: this function is the inbound path; failing closed would block real
+// traffic during a Supabase hiccup. The bridge (outbound) and recordar-citas
+// (scheduled D-1) are the surfaces that fail closed by design.
+// ────────────────────────────────────────────────────────────────────────────
+async function isWhatsAppIngestDisabled(): Promise<boolean> {
+  try {
+    const supabase = getClient(true)
+    const { data, error } = await supabase
+      .from('system_config')
+      .select('value')
+      .eq('key', 'whatsapp_ingest_enabled')
+      .maybeSingle()
+    if (error) {
+      console.warn('[whatsapp-webhook] flag lookup error, defaulting to enabled:', error.message)
+      return false
+    }
+    const v = (data?.value ?? 'true').toString().toLowerCase()
+    return ['false', '0', 'no', 'off'].includes(v)
+  } catch (err) {
+    console.warn('[whatsapp-webhook] flag lookup exception, defaulting to enabled:', err)
+    return false
+  }
+}
+
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? ''
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
 const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY') ?? ''
@@ -215,6 +243,22 @@ Deno.serve(async (req: Request) => {
 
   if (req.method !== 'POST') {
     return errorResponse('Método no permitido', 405)
+  }
+
+  // Global kill-switch from system_config (defence in depth alongside the
+  // local switch.state.json consumed by the bridge). Inbound path returns
+  // 503 fast without reading GROQ config or hitting the DB beyond the
+  // flag lookup itself.
+  if (await isWhatsAppIngestDisabled()) {
+    return json(
+      {
+        ok: false,
+        error: 'channel_disabled',
+        message: 'WhatsApp ingest disabled by institutional kill-switch.',
+        reEnable: "Set system_config.whatsapp_ingest_enabled='true'",
+      },
+      503,
+    )
   }
 
   if (!GROQ_API_KEY) {

@@ -36,9 +36,54 @@ import { renderScoreDirectorView } from '../../modules/hermes/views/scoreDirecto
 import { renderHermesConsultaView } from '../../modules/hermes/views/hermesConsultaView.js'
 import { renderCierreAcademicoView } from '../../modules/metricas/views/cierreAcademicoView.js'
 
+// ── PWA dev hygiene ───────────────────────────────────────────────────────────
+// Departmental portals never register a Service Worker, but one installed at
+// scope '/' (from a prod visit or an installed PWA) intercepts these pages and
+// serves stale JS via stale-while-revalidate — so working-tree changes only show
+// up on a second reload, or never. In dev, proactively unregister any SW and drop
+// its caches so code changes always take effect. Mirrors the cleanup in main.js,
+// which only runs on the '/' admin entry (never when opening /ACM, /adm, …).
+if (import.meta.env.DEV && 'serviceWorker' in navigator) {
+  navigator.serviceWorker
+    .getRegistrations()
+    .then((regs) => Promise.all(regs.map((r) => r.unregister())))
+    .then(async (results) => {
+      const removedSW = results.some(Boolean)
+      if (typeof caches !== 'undefined') {
+        const keys = await caches.keys()
+        await Promise.all(keys.map((k) => caches.delete(k)))
+        // Reload once so the page is served fresh from the network, not the SW.
+        if (removedSW || keys.length > 0) window.location.reload()
+      }
+    })
+    .catch((err) => console.warn('[portalShell] SW dev cleanup failed:', err))
+}
+
 window.router = router
 
 const HERMES_ROUTE = 'hermes-tareas'
+
+// ── Badge de solicitudes pendientes ──────────────────────────────────────────
+async function _updateSolicitudesBadge() {
+  const badges = document.querySelectorAll('.solicitudes-badge')
+  if (!badges.length) return
+  try {
+    const { count, error } = await supabase
+      .from('solicitudes_necesidades')
+      .select('id', { count: 'exact', head: true })
+      .eq('estado', 'pendiente')
+    if (error) throw error
+    const display = count > 0 ? 'inline-flex' : 'none'
+    const text = count > 99 ? '99+' : (count || '')
+    badges.forEach(b => {
+      b.textContent = text
+      b.style.display = display
+    })
+  } catch (err) {
+    console.error('[SolicitudesBadge]', err)
+    badges.forEach(b => { b.style.display = 'none' })
+  }
+}
 
 // ── Tema ────────────────────────────────────────────────────────────────────
 function initializeTheme() {
@@ -65,12 +110,30 @@ function getGroupForRoute(navGroups, route) {
   return navGroups[0]?.id
 }
 
+// Friendly titles for routes registered by the shell that don't live in navGroups.
+const EXTRA_ROUTE_TITLES = {
+  'hermes-caso': 'Detalle de caso',
+  'cierre-academico': 'Cierre académico',
+  'hermes-procedimientos': 'Procedimientos',
+  'dir-score': 'Score de dirección',
+  'hermes-consulta': 'Consulta Hermes',
+}
+
+function getRouteTitle(navGroups, route) {
+  for (const g of navGroups) {
+    const item = g.items.find((i) => i.id === route)
+    if (item) return item.label
+  }
+  return EXTRA_ROUTE_TITLES[route] || ''
+}
+
 function renderNavbar(profile, isAuthenticated, storageKey) {
   _navAbortController?.abort()
   _navAbortController = new AbortController()
 
   document.querySelector('.app-sidebar')?.remove()
   document.querySelector('.app-bottom-nav')?.remove()
+  document.querySelector('.app-topbar')?.remove()
 
   if (!isAuthenticated) return
 
@@ -104,6 +167,7 @@ function renderNavbar(profile, isAuthenticated, storageKey) {
               <button class="nav-item-btn ${item.id === currentRoute ? 'active' : ''}" data-route="${item.id}">
                 <i class="bi ${item.icon}"></i>
                 <span>${item.label}</span>
+                ${item.id === 'pedagogico-solicitudes' ? '<span class="notif-badge solicitudes-badge" style="display:none"></span>' : ''}
               </button>`,
               )
               .join('')}
@@ -126,9 +190,62 @@ function renderNavbar(profile, isAuthenticated, storageKey) {
     </div>
   `
 
+  // ── Bottom nav (mobile) ───────────────────────────────────
+  const bottomNav = document.createElement('nav')
+  bottomNav.className = 'app-bottom-nav'
+  bottomNav.innerHTML = profile.navGroups
+    .map(
+      (g) => {
+        const hasSolicitudes = g.items.some(i => i.id === 'pedagogico-solicitudes')
+        return `
+    <button class="bottom-tab ${g.id === activeGroup ? 'active' : ''}" data-group="${g.id}">
+      ${hasSolicitudes
+        ? '<span class="bottom-tab-icon"><i class="bi ' + g.icon + '"></i><span class="notif-badge solicitudes-badge" style="display:none"></span></span>'
+        : '<i class="bi ' + g.icon + '"></i>'}
+      <span>${g.label}</span>
+    </button>
+  `
+      },
+    )
+    .join('')
+
+  // ── Mobile sub-sheet ──────────────────────────────────────
+  const subSheet = document.createElement('div')
+  subSheet.className = 'mobile-sub-sheet'
+  subSheet.innerHTML = `
+    <div class="sheet-handle"></div>
+    <div class="sheet-title" id="sheetTitle"></div>
+    <div class="sheet-items" id="sheetItems"></div>
+  `
+
+  // ── Top bar (title + back + home, on every view) ──────────
+  const topbar = document.createElement('header')
+  topbar.className = 'app-topbar'
+  topbar.innerHTML = `
+    <button class="app-topbar__btn" id="topbarBack" aria-label="Atrás" title="Atrás">
+      <i class="bi bi-chevron-left"></i>
+    </button>
+    <span class="app-topbar__title" id="topbarTitle">${getRouteTitle(profile.navGroups, currentRoute)}</span>
+    <button class="app-topbar__btn" id="topbarHome" aria-label="Inicio" title="Inicio">
+      <i class="bi bi-house-door"></i>
+    </button>
+  `
+
+  document.body.prepend(subSheet)
+  document.body.prepend(bottomNav)
+  document.body.prepend(topbar)
   document.body.prepend(sidebar)
 
   const { signal } = _navAbortController
+
+  const topbarBack = topbar.querySelector('#topbarBack')
+  topbarBack.disabled = !router.canGoBack()
+  topbarBack.addEventListener('click', () => router.back(), { signal })
+  topbar.querySelector('#topbarHome').addEventListener(
+    'click',
+    () => router.navigate(profile.defaultRoute),
+    { signal },
+  )
 
   sidebar.querySelectorAll('.nav-group-header').forEach((btn) => {
     btn.addEventListener(
@@ -146,6 +263,105 @@ function renderNavbar(profile, isAuthenticated, storageKey) {
   sidebar.querySelectorAll('.nav-item-btn').forEach((btn) => {
     btn.addEventListener('click', () => router.navigate(btn.dataset.route), { signal })
   })
+
+  // ── Bottom nav events ─────────────────────────────────────
+  function openSheet(groupId) {
+    const group = profile.navGroups.find((g) => g.id === groupId)
+    if (!group) return
+    const route = localStorage.getItem(storageKey) || ''
+    document.getElementById('sheetTitle').textContent = group.label
+    document.getElementById('sheetItems').innerHTML = group.items
+      .map(
+        (item) => `
+      <button class="sheet-item ${item.id === route ? 'active' : ''}" data-route="${item.id}">
+        <i class="bi ${item.icon}"></i>
+        <span>${item.label}</span>
+        ${item.id === 'pedagogico-solicitudes' ? '<span class="notif-badge solicitudes-badge" style="display:none"></span>' : ''}
+      </button>
+    `,
+      )
+      .join('')
+    _updateSolicitudesBadge()
+    subSheet.dataset.group = groupId
+    subSheet.classList.add('open')
+    // Open at the middle snap point unless the user already resized it this session
+    if (!subSheet.style.getPropertyValue('--sheet-vh')) {
+      subSheet.style.setProperty('--sheet-vh', Math.round(window.innerHeight * 0.55) + 'px')
+    }
+    subSheet.querySelectorAll('.sheet-item').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        router.navigate(btn.dataset.route)
+        subSheet.classList.remove('open')
+      })
+    })
+  }
+
+  bottomNav.querySelectorAll('.bottom-tab').forEach((tab) => {
+    tab.addEventListener('click', () => {
+      const groupId = tab.dataset.group
+      if (subSheet.classList.contains('open') && subSheet.dataset.group === groupId) {
+        subSheet.classList.remove('open')
+      } else {
+        openSheet(groupId)
+        bottomNav
+          .querySelectorAll('.bottom-tab')
+          .forEach((t) => t.classList.toggle('active', t.dataset.group === groupId))
+      }
+    })
+  })
+
+  // Close sheet on backdrop click
+  subSheet.addEventListener('click', (e) => {
+    if (e.target === subSheet) subSheet.classList.remove('open')
+  })
+
+  // ── Drag-to-resize the sheet from its top edge (handle + title) ──────────
+  // Snap points as fractions of the viewport height. Dragging below the first
+  // one (past ~22%) closes the sheet, iOS-style.
+  const SHEET_SNAPS = [0.4, 0.6, 0.9]
+  let _drag = null
+  const setSheetH = (px) => subSheet.style.setProperty('--sheet-vh', Math.round(px) + 'px')
+
+  const onDragStart = (e) => {
+    _drag = { y: e.clientY, h: subSheet.getBoundingClientRect().height }
+    subSheet.classList.add('dragging')
+    try {
+      e.currentTarget.setPointerCapture?.(e.pointerId)
+    } catch {
+      /* setPointerCapture can throw if the pointer is already released */
+    }
+    e.preventDefault()
+  }
+
+  const onDragMove = (e) => {
+    if (!_drag) return
+    const dy = _drag.y - e.clientY // dragging UP is positive → taller
+    const h = Math.max(60, Math.min(window.innerHeight * 0.95, _drag.h + dy))
+    setSheetH(h)
+  }
+
+  const onDragEnd = () => {
+    if (!_drag) return
+    _drag = null
+    subSheet.classList.remove('dragging')
+    const frac = subSheet.getBoundingClientRect().height / window.innerHeight
+    if (frac < 0.22) {
+      subSheet.classList.remove('open')
+      subSheet.style.removeProperty('--sheet-vh')
+      return
+    }
+    const nearest = SHEET_SNAPS.reduce((a, b) =>
+      Math.abs(b - frac) < Math.abs(a - frac) ? b : a,
+    )
+    setSheetH(window.innerHeight * nearest)
+  }
+
+  subSheet.querySelectorAll('.sheet-handle, .sheet-title').forEach((el) => {
+    el.addEventListener('pointerdown', onDragStart, { signal })
+  })
+  window.addEventListener('pointermove', onDragMove, { signal })
+  window.addEventListener('pointerup', onDragEnd, { signal })
+  window.addEventListener('pointercancel', onDragEnd, { signal })
 
   sidebar.querySelector('#sidebarBtnTheme').addEventListener(
     'click',
@@ -259,6 +475,36 @@ export async function bootAdminPortal(profile) {
     localStorage.setItem(storageKey, path)
   }
 
+  // Start each portal session with a clean back-history (avoids inheriting a
+  // stale 'current-view' left by another portal on the same origin).
+  router.resetHistory()
+
+  // Sync sidebar + bottom nav active state on every route change
+  window.addEventListener('routeChanged', (e) => {
+    const route = e.detail
+    if (!route) return
+    const titleEl = document.getElementById('topbarTitle')
+    if (titleEl) titleEl.textContent = getRouteTitle(profile.navGroups, route)
+    const backEl = document.getElementById('topbarBack')
+    if (backEl) backEl.disabled = !router.canGoBack()
+    document.querySelectorAll('.nav-item-btn').forEach((btn) => {
+      btn.classList.toggle('active', btn.dataset.route === route)
+    })
+    document.querySelectorAll('.nav-group').forEach((g) => {
+      const hasActive = g.querySelector('.nav-item-btn.active')
+      g.classList.toggle('expanded', !!hasActive)
+    })
+    document.querySelectorAll('.sheet-item').forEach((btn) => {
+      btn.classList.toggle('active', btn.dataset.route === route)
+    })
+    const activeGroup = profile.navGroups.find((g) =>
+      g.items.some((i) => i.id === route),
+    )
+    document.querySelectorAll('.bottom-tab').forEach((t) => {
+      t.classList.toggle('active', t.dataset.group === activeGroup?.id)
+    })
+  })
+
   const gate = async () => {
     if (!useAuth.isAuthenticated()) {
       renderNavbar(profile, false, storageKey)
@@ -279,6 +525,7 @@ export async function bootAdminPortal(profile) {
       return
     }
     renderNavbar(profile, true, storageKey)
+    _updateSolicitudesBadge()
     const stored = localStorage.getItem(storageKey)
     router.navigate(stored && router.routes[stored] ? stored : profile.defaultRoute)
   }

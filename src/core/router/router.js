@@ -5,6 +5,8 @@ export const router = {
   _authCheck: null,
   _publicRoutes: ['login', 'register'],
   _guardEnabled: false,
+  _history: [],
+  _navigatingBack: false,
 
   register(path, renderFunction) {
     this.routes[path] = renderFunction
@@ -49,6 +51,17 @@ export const router = {
   _navigateTo(path, params = {}) {
     const app = document.querySelector('#app')
     if (app) {
+      // Push the route we're leaving onto the history stack so the header's
+      // back button can return to it. Skip when this navigation IS a "back",
+      // when it's a no-op, or when the previous route isn't registered here.
+      const prev = localStorage.getItem('current-view')
+      if (!this._navigatingBack && prev && prev !== path && this.routes[prev]) {
+        const prevParamsRaw = localStorage.getItem('current-view-params')
+        this._history.push({ path: prev, params: prevParamsRaw ? JSON.parse(prevParamsRaw) : {} })
+        if (this._history.length > 50) this._history.shift()
+      }
+      this._navigatingBack = false
+
       this._cleanupModals()
       app.innerHTML = ''
       this.routes[path](app, params)
@@ -60,6 +73,33 @@ export const router = {
       }
       window.dispatchEvent(new CustomEvent('routeChanged', { detail: path }))
     }
+  },
+
+  /** Whether there is a previous route to return to. */
+  canGoBack() {
+    return this._history.length > 0
+  },
+
+  /**
+   * Navigate to the previous route in history. Skips any stale entries whose
+   * route is no longer registered. Returns true if it navigated.
+   */
+  back() {
+    while (this._history.length > 0) {
+      const entry = this._history.pop()
+      if (this.routes[entry.path]) {
+        this._navigatingBack = true
+        this.navigate(entry.path, entry.params || {})
+        return true
+      }
+    }
+    return false
+  },
+
+  /** Clears the navigation history (e.g. on portal boot or logout). */
+  resetHistory() {
+    this._history = []
+    this._navigatingBack = false
   },
 
   init() {

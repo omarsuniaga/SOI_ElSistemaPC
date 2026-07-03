@@ -15,6 +15,7 @@ import {
   formatHora,
   getEstadoBadgeClass,
   getEstadoLabel,
+  getRevisionBadgeHTML,
   getInstrumentoIcon,
   getInitials,
   getConsistentColor,
@@ -51,6 +52,7 @@ export async function renderClasesView(container) {
   if (!container) return
 
   try {
+    injectClasesMobilePolish()
     state.container = container
     state.cargando = true
     renderLoading(container)
@@ -147,8 +149,9 @@ function renderContent(container) {
               <i class="bi bi-calendar-week"></i>
             </button>
           </div>
-          <button class="btn btn-outline-secondary" id="btnPdfListadoAlumnosClases" type="button">
-            <i class="bi bi-file-earmark-pdf me-1"></i>PDF Listados Alumnos x Clases
+          <button class="btn btn-outline-secondary d-inline-flex align-items-center justify-content-center" id="btnPdfListadoAlumnosClases" type="button" title="PDF Listados Alumnos x Clases" aria-label="PDF Listados Alumnos x Clases">
+            <i class="bi bi-file-earmark-pdf"></i>
+            <span class="d-none d-md-inline ms-1">PDF Listados Alumnos x Clases</span>
           </button>
           <button class="btn btn-premium-action" id="btnAgregarClase">
             <i class="bi bi-plus-lg me-1.5"></i>Nueva Clase
@@ -273,8 +276,8 @@ function renderClaseCard(clase) {
     : 'Sin horarios'
 
   return `
-    <div class="list-group-item list-group-item-action d-flex align-items-center justify-content-between p-3 w-100 border-start-accent ${accentClass}" data-id="${clase.id}" style="cursor: pointer;">
-      <div class="d-flex align-items-center gap-3 flex-grow-1 overflow-hidden">
+    <div class="list-group-item list-group-item-action d-flex align-items-center justify-content-between p-3 w-100 border-start-accent clase-card-item ${accentClass}" data-id="${clase.id}" style="cursor: pointer;">
+      <div class="d-flex align-items-center gap-3 flex-grow-1 overflow-hidden clase-card-main">
         <div class="position-relative flex-shrink-0">
           <div class="avatar-compact bg-primary bg-opacity-10 text-primary border border-primary-subtle d-flex align-items-center justify-content-center rounded-circle" style="width: 48px; height: 48px; font-size: 1.2rem; font-weight: 600;">
             ${initials}
@@ -283,16 +286,17 @@ function renderClaseCard(clase) {
             <span class="visually-hidden">${estado}</span>
           </span>
         </div>
-        <div class="d-flex flex-column flex-grow-1 overflow-hidden pe-3">
-          <span class="fw-bold text-truncate" style="font-size: 1.05rem;">${escapeHTML(nombre)}</span>
+        <div class="d-flex flex-column flex-grow-1 overflow-hidden pe-3 clase-card-copy">
+          <span class="fw-bold text-truncate" style="font-size: 1.05rem;">${escapeHTML(nombre)} ${getRevisionBadgeHTML(clase.necesita_revision)}</span>
           <small class="text-muted text-truncate"><i class="bi bi-person-badge me-1"></i>${escapeHTML(maestroNombre)} • ${escapeHTML(clase.instrumento || '-')}</small>
-          ${maestroSuplenteNombre ? `<small class="text-muted text-truncate" style="font-size: 0.82rem;"><i class="bi bi-person-dash me-1"></i>Suplente: ${escapeHTML(maestroSuplenteNombre)}</small>` : ''}
-          <small class="text-muted extra-small mt-1" style="font-size: 0.85rem;"><i class="bi bi-clock me-1"></i>${escapeHTML(horariosTexto)}</small>
+          ${maestroSuplenteNombre ? `<small class="text-muted text-truncate clase-card-suplente" style="font-size: 0.82rem;"><i class="bi bi-person-dash me-1"></i>Suplente: ${escapeHTML(maestroSuplenteNombre)}</small>` : ''}
+          <small class="text-muted extra-small mt-1 clase-card-horarios" style="font-size: 0.85rem;"><i class="bi bi-clock me-1"></i>${escapeHTML(horariosTexto)}</small>
         </div>
       </div>
-      <div class="flex-shrink-0 d-flex align-items-center gap-2 ms-2 pe-1">
-        <button class="btn btn-outline-secondary btn-sm btn-class-pdf" data-id="${clase.id}" type="button" title="PDF Listado Alumnos x Clase">
-          <i class="bi bi-file-earmark-pdf me-1"></i>PDF Listado Alumnos x Clase
+      <div class="flex-shrink-0 d-flex align-items-center gap-2 ms-2 pe-1 clase-card-actions">
+        <button class="btn btn-outline-secondary btn-sm btn-class-pdf d-inline-flex align-items-center justify-content-center" data-id="${clase.id}" type="button" title="PDF Listado Alumnos x Clase" aria-label="PDF Listado Alumnos x Clase">
+          <i class="bi bi-file-earmark-pdf"></i>
+          <span class="d-none d-md-inline ms-1">PDF Listado Alumnos x Clase</span>
         </button>
         <span class="text-muted">
           <i class="bi bi-chevron-right" style="font-size: 1.1rem; transition: transform 0.2s ease;"></i>
@@ -519,8 +523,18 @@ async function openClasePerfilModal(clase) {
           <div class="overflow-hidden">
             <h4 class="mb-1 fw-bold text-truncate" style="letter-spacing: -0.02em; font-size: 1.2rem; color: var(--bs-body-color);">${escapeHTML(clase.nombre)}</h4>
             <span class="badge rounded-pill bg-${clase.estado === 'activa' ? 'success' : clase.estado === 'suspendida' ? 'warning' : 'secondary'} text-capitalize" style="font-size: 0.75rem;">${getEstadoLabel(clase.estado)}</span>
+            ${clase.necesita_revision ? ` ${getRevisionBadgeHTML(true)}` : ''}
           </div>
         </div>
+
+        ${clase.necesita_revision ? `
+        <div class="alert alert-danger small d-flex align-items-start gap-2 mb-4">
+          <i class="bi bi-exclamation-triangle-fill mt-1"></i>
+          <div>
+            <strong>Esta clase necesita revisión.</strong>
+            <div>${escapeHTML(clase.revision_motivo || 'Sin motivo especificado.')}</div>
+          </div>
+        </div>` : ''}
 
         <!-- Details Grid -->
         <div class="row g-3 mb-4">
@@ -587,8 +601,9 @@ async function openClasePerfilModal(clase) {
             <i class="bi bi-trash"></i> Eliminar Clase
           </button>
           <div class="class-profile-secondary-actions">
-            <button class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1 btn-profile-pdf" data-id="${clase.id}">
-              <i class="bi bi-file-earmark-pdf"></i> PDF Listado Alumnos x Clase
+            <button class="btn btn-outline-secondary btn-sm d-inline-flex align-items-center justify-content-center btn-profile-pdf" data-id="${clase.id}" title="PDF Listado Alumnos x Clase" aria-label="PDF Listado Alumnos x Clase">
+              <i class="bi bi-file-earmark-pdf"></i>
+              <span class="d-none d-md-inline ms-1">PDF Listado Alumnos x Clase</span>
             </button>
             <button class="btn btn-outline-primary btn-sm d-flex align-items-center gap-1 btn-profile-edit" data-id="${clase.id}">
               <i class="bi bi-pencil"></i> Editar

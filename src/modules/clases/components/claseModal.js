@@ -1,6 +1,7 @@
 import { normalizeText } from '../../../core/utils/normalizeText.js'
 import { AppModal } from '../../../shared/components/AppModal.js'
 import { AppToast } from '../../../shared/components/AppToast.js'
+import { confirmDialog } from '../../../shared/components/AppConfirmDialog.js'
 import { supabase } from '../../../lib/supabaseClient.js'
 import {
   crearClase,
@@ -9,8 +10,10 @@ import {
   inscribirAlumno,
   desinscribirAlumno,
   actualizarTurnoInscripcion,
+  marcarComoRevisado,
   NIVELES
 } from '../api/clasesApi.js'
+import { inscribirConManejoDeConflicto } from '../domain/inscripcionConflicto.js'
 import {
   escapeHTML,
   getConsistentColor,
@@ -71,9 +74,30 @@ export async function openClaseModal(clase = null, options = {}) {
   })
 }
 
+function _getRevisionAlertHTML(clase) {
+  if (!clase?.necesita_revision) return ''
+  return `
+    <div class="col-12">
+      <div class="alert alert-danger d-flex align-items-start justify-content-between gap-2 mb-0" id="alerta-revision-clase">
+        <div class="d-flex align-items-start gap-2">
+          <i class="bi bi-exclamation-triangle-fill mt-1"></i>
+          <div>
+            <strong>Esta clase necesita revisión.</strong>
+            <div class="small">${escapeHTML(clase.revision_motivo || 'Sin motivo especificado.')}</div>
+          </div>
+        </div>
+        <button type="button" class="btn btn-sm btn-outline-danger flex-shrink-0" id="btn-marcar-revisado">
+          <i class="bi bi-check2-circle me-1"></i>Marcar como revisado
+        </button>
+      </div>
+    </div>
+  `
+}
+
 function _getClaseFormHTML(clase, inscritosIds, inscritosSlots = []) {
   return `
     <form class="row g-3" id="formClase">
+      ${_getRevisionAlertHTML(clase)}
       <div class="col-md-6">
         <label class="form-label-compact">Nombre de la Clase *</label>
         <input type="text" class="form-control input-dense" id="modal-nombre" required placeholder="Ej: Violín Básico A" value="${escapeHTML(clase?.nombre || '')}" maxlength="${VALIDATION.nombreMax}">
@@ -225,6 +249,27 @@ function _getSlotBuilderHTML(inscritosSlots = []) {
 }
 
 function _attachModalEvents(modalBody, clase) {
+  // Marcar clase como revisada (limpia el flag necesita_revision)
+  modalBody.querySelector('#btn-marcar-revisado')?.addEventListener('click', async (e) => {
+    if (!clase?.id) return
+    const btn = e.currentTarget
+    btn.disabled = true
+    const original = btn.innerHTML
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>'
+    try {
+      await marcarComoRevisado(clase.id)
+      clase.necesita_revision = false
+      clase.revision_motivo = null
+      modalBody.querySelector('#alerta-revision-clase')?.remove()
+      AppToast.success('Clase marcada como revisada')
+      if (_options.onSuccess) _options.onSuccess()
+    } catch (err) {
+      AppToast.error(err.message)
+      btn.disabled = false
+      btn.innerHTML = original
+    }
+  })
+
   // Botón para seleccionar ruta
   const btnSeleccionarRuta = modalBody.querySelector('#btn-seleccionar-ruta')
   if (btnSeleccionarRuta) {
@@ -408,16 +453,26 @@ async function _handleSave(modalBody, originalClase) {
       hora_fin:    row.querySelector('.slot-hora-fin').value,
     })).filter(s => s.alumno_id)
 
+  const _alumnoNombre = (alumnoId) => {
+    const a = (_options.alumnos || []).find(x => x.id === alumnoId)
+    return a?.nombre_completo || 'El alumno'
+  }
+
   const _syncGrupal = async (claseId) => {
     const newIds = Array.from(modalBody.querySelectorAll('.alumnos-list input[type="checkbox"]:checked')).map(cb => cb.value)
     const currentEnrolled = await obtenerAlumnosInscritos(claseId)
     const currentIds = currentEnrolled.map(i => i.alumno_id)
     const toAdd    = newIds.filter(id => !currentIds.includes(id))
     const toRemove = currentIds.filter(id => !newIds.includes(id))
-    await Promise.all([
-      ...toAdd.map(aid    => inscribirAlumno(claseId, aid)),
-      ...toRemove.map(aid => desinscribirAlumno(claseId, aid)),
-    ])
+
+    for (const aid of toAdd) {
+      await inscribirConManejoDeConflicto({
+        alumnoId: aid,
+        claseDestinoId: claseId,
+        alumnoNombre: _alumnoNombre(aid),
+      })
+    }
+    await Promise.all(toRemove.map(aid => desinscribirAlumno(claseId, aid)))
   }
 
   const _syncRotativa = async (claseId) => {
@@ -437,34 +492,80 @@ async function _handleSave(modalBody, originalClase) {
     await Promise.all(toRemove.map(aid => desinscribirAlumno(claseId, aid)))
 
     // Upsert each slot: update time if already enrolled, insert if new
-    await Promise.all(slots.map(s =>
-      currentIds.includes(s.alumno_id)
-        ? actualizarTurnoInscripcion(claseId, s.alumno_id, s.hora_inicio, s.hora_fin)
-        : inscribirAlumno(claseId, s.alumno_id, s.hora_inicio, s.hora_fin)
-    ))
+    for (const s of slots) {
+      if (currentIds.includes(s.alumno_id)) {
+        await actualizarTurnoInscripcion(claseId, s.alumno_id, s.hora_inicio, s.hora_fin)
+      } else {
+        await inscribirConManejoDeConflicto({
+          alumnoId: s.alumno_id,
+          claseDestinoId: claseId,
+          alumnoNombre: _alumnoNombre(s.alumno_id),
+          horaInicio: s.hora_inicio,
+          horaFin: s.hora_fin,
+        })
+      }
+    }
     return true
   }
 
-  try {
-    let resultClase
-    if (isEdicion) {
-      resultClase = await actualizarClase(originalClase.id, formData)
-      if (formData.tipo_clase === 'rotativa') {
-        const ok = await _syncRotativa(resultClase.id)
-        if (!ok) return false
-      } else {
-        await _syncGrupal(resultClase.id)
-      }
-    } else {
-      resultClase = await crearClase(formData)
-      if (formData.tipo_clase === 'rotativa') {
-        const ok = await _syncRotativa(resultClase.id)
-        if (!ok) return false
-      } else {
-        const selectedIds = Array.from(modalBody.querySelectorAll('.alumnos-list input[type="checkbox"]:checked')).map(cb => cb.value)
-        if (selectedIds.length > 0) {
-          await Promise.all(selectedIds.map(aid => inscribirAlumno(resultClase.id, aid)))
+  // ── Guarda la clase, reintentando cuando hay conflictos de horario/salón/
+  // maestro que el admin decide resolver uno por uno (secuencial, un diálogo
+  // a la vez, hasta que no queden más conflictos o el admin cancele) ────────
+  const _guardarConResolucionDeConflictos = async () => {
+    const resolvedConflicts = []
+    // eslint-disable-next-line no-constant-condition
+    while (true) {
+      try {
+        const opt = { force: false, resolvedConflicts }
+        return isEdicion
+          ? await actualizarClase(originalClase.id, formData, opt)
+          : await crearClase(formData, opt)
+      } catch (err) {
+        if (!err.isConflict) throw err
+
+        const conflictData = err.conflictData
+        const mensaje = `La clase <strong>${escapeHTML(conflictData.clase_nombre)}</strong> ya tiene una clase asignada el ${escapeHTML(conflictData.horario)}. ` +
+          `¿Deseás reasignar este horario a la clase actual de todas formas? "${escapeHTML(conflictData.clase_nombre)}" quedará marcada para revisión.`
+
+        const aceptado = await confirmDialog({
+          title: 'Conflicto de horario',
+          message: mensaje,
+          confirmText: 'Sí, reasignar',
+          cancelText: 'Cancelar',
+        })
+
+        if (!aceptado) {
+          _resaltarHorarioConflictivo(modalBody, conflictData.horario_local)
+          return null
         }
+
+        const motivo = `Se liberó este horario (${conflictData.horario}) porque fue reasignado a la clase "${formData.nombre}".`
+        resolvedConflicts.push({
+          clase_horario_id: conflictData.clase_horario_id,
+          clase_id: conflictData.clase_id,
+          motivo,
+        })
+      }
+    }
+  }
+
+  try {
+    const resultClase = await _guardarConResolucionDeConflictos()
+    if (!resultClase) return false // Admin canceló ante un conflicto
+
+    if (formData.tipo_clase === 'rotativa') {
+      const ok = await _syncRotativa(resultClase.id)
+      if (!ok) return false
+    } else if (isEdicion) {
+      await _syncGrupal(resultClase.id)
+    } else {
+      const selectedIds = Array.from(modalBody.querySelectorAll('.alumnos-list input[type="checkbox"]:checked')).map(cb => cb.value)
+      for (const aid of selectedIds) {
+        await inscribirConManejoDeConflicto({
+          alumnoId: aid,
+          claseDestinoId: resultClase.id,
+          alumnoNombre: _alumnoNombre(aid),
+        })
       }
     }
 
@@ -472,14 +573,29 @@ async function _handleSave(modalBody, originalClase) {
     if (_options.onSuccess) _options.onSuccess()
     return true
   } catch (err) {
-    if (err.isConflict) {
-      AppToast.warning(`Conflicto detected: ${err.message}`)
-      // Here we could implement the "Force" or "Reubicar" UI if needed
-    } else {
-      AppToast.error(err.message)
-    }
+    AppToast.error(err.message)
     return false
   }
+}
+
+/**
+ * Ante una cancelación de conflicto, resalta la fila de horario que lo causó
+ * (scroll + borde rojo temporal) para que el admin la corrija manualmente.
+ */
+function _resaltarHorarioConflictivo(modalBody, horarioLocal) {
+  if (!horarioLocal) return
+  const rows = Array.from(modalBody.querySelectorAll('.horario-row'))
+  const row = rows.find(r => {
+    const dia = r.querySelector('[name="horario-dia"]')?.value
+    const hi  = r.querySelector('[name="horario-hora_inicio"]')?.value
+    const hf  = r.querySelector('[name="horario-hora_fin"]')?.value
+    return dia === horarioLocal.dia && hi === (horarioLocal.hora_inicio || '').slice(0, 5) && hf === (horarioLocal.hora_fin || '').slice(0, 5)
+  })
+  if (!row) return
+
+  row.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  row.classList.add('horario-row--conflict')
+  setTimeout(() => row.classList.remove('horario-row--conflict'), 3000)
 }
 
 // -- Helpers de Renderizado --
@@ -545,7 +661,15 @@ function _renderHorariosContainer(horarios = []) {
 }
 
 function _getAlumnosSelectorHTML(selectedIds = []) {
-  const alumnos = _options.alumnos || []
+  // Alumnos ya inscritos primero (para que el admin los vea de inmediato al
+  // editar una clase existente), luego el resto — orden alfabético dentro de
+  // cada grupo, igual que antes.
+  const alumnos = [..._options.alumnos || []].sort((a, b) => {
+    const aSelected = selectedIds.includes(a.id)
+    const bSelected = selectedIds.includes(b.id)
+    if (aSelected !== bSelected) return aSelected ? -1 : 1
+    return (a.nombre_completo || '').localeCompare(b.nombre_completo || '')
+  })
   return `
     <div class="alumnos-selector-container">
       <div class="input-group input-group-sm mb-2">

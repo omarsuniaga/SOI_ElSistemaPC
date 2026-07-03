@@ -25,6 +25,7 @@ async function verificarSolapamiento({ salonId, maestroId, dia, horaInicio, hora
 
   const startMin = timeToMinutes(horaInicio)
   const endMin = timeToMinutes(horaFin)
+  const horarioLocal = { dia, hora_inicio: horaInicio, hora_fin: horaFin, salon_id: salonId || null }
 
   // 1. Verificar solapamiento por SALÓN
   if (salonId) {
@@ -43,8 +44,11 @@ async function verificarSolapamiento({ salonId, maestroId, dia, horaInicio, hora
           return {
             tipo: 'salón',
             clase_nombre: h.clases?.nombre || 'Otra clase',
+            clase_id: h.clase_id,
+            clase_horario_id: h.id,
             detalle: `El salón ya está ocupado por "${h.clases?.nombre}"`,
-            horario: `${h.dia} de ${formatHora(h.hora_inicio)} a ${formatHora(h.hora_fin)}`
+            horario: `${h.dia} de ${formatHora(h.hora_inicio)} a ${formatHora(h.hora_fin)}`,
+            horario_local: horarioLocal,
           }
         }
       }
@@ -68,8 +72,11 @@ async function verificarSolapamiento({ salonId, maestroId, dia, horaInicio, hora
           return {
             tipo: 'maestro',
             clase_nombre: h.clases?.nombre || 'Otra clase',
+            clase_id: h.clase_id,
+            clase_horario_id: h.id,
             detalle: `El maestro ya tiene otra clase asignada ("${h.clases?.nombre}")`,
-            horario: `${h.dia} de ${formatHora(h.hora_inicio)} a ${formatHora(h.hora_fin)}`
+            horario: `${h.dia} de ${formatHora(h.hora_inicio)} a ${formatHora(h.hora_fin)}`,
+            horario_local: horarioLocal,
           }
         }
       }
@@ -77,6 +84,67 @@ async function verificarSolapamiento({ salonId, maestroId, dia, horaInicio, hora
   }
 
   return null
+}
+
+/**
+ * Normaliza el 3er parámetro de crearClase/actualizarClase.
+ * Acepta el legado (boolean "force") o un objeto { force, resolvedConflicts }.
+ * @param {boolean|Object} opt
+ * @returns {{force: boolean, resolvedConflicts: Array}}
+ */
+function _normalizeOptions(opt) {
+  if (typeof opt === 'boolean') {
+    return { force: opt, resolvedConflicts: [] }
+  }
+  if (opt && typeof opt === 'object') {
+    return {
+      force: !!opt.force,
+      resolvedConflicts: Array.isArray(opt.resolvedConflicts) ? opt.resolvedConflicts : [],
+    }
+  }
+  return { force: false, resolvedConflicts: [] }
+}
+
+/**
+ * Aplica la resolución de un conflicto: borra el horario conflictivo de LA OTRA
+ * clase y la marca como necesita_revision=true con el motivo indicado.
+ * @param {{clase_horario_id: string, clase_id: string, motivo: string}} resolved
+ */
+async function _aplicarResolucionConflicto(resolved) {
+  if (!resolved) return
+
+  if (resolved.clase_horario_id) {
+    const { error: errorDeleteHorario } = await supabase
+      .from('clase_horarios')
+      .delete()
+      .eq('id', resolved.clase_horario_id)
+
+    if (errorDeleteHorario) {
+      console.error('Error eliminando horario en conflicto:', errorDeleteHorario.message)
+      throw new Error('No se pudo eliminar el horario en conflicto de la otra clase')
+    }
+  }
+
+  if (resolved.clase_id) {
+    const { error: errorUpdateClase } = await supabase
+      .from('clases')
+      .update({ necesita_revision: true, revision_motivo: resolved.motivo || null })
+      .eq('id', resolved.clase_id)
+
+    if (errorUpdateClase) {
+      console.error('Error marcando clase para revisión:', errorUpdateClase.message)
+      throw new Error('No se pudo marcar la otra clase para revisión')
+    }
+  }
+}
+
+/**
+ * Busca si el conflicto encontrado corresponde a alguno de los resolvedConflicts
+ * ya aceptados por el admin (mismo clase_horario_id).
+ */
+function _buscarResolucion(solapamiento, resolvedConflicts) {
+  if (!solapamiento || !resolvedConflicts?.length) return null
+  return resolvedConflicts.find(r => r.clase_horario_id === solapamiento.clase_horario_id) || null
 }
 
 function normalizeClase(c) {
@@ -136,7 +204,8 @@ export async function obtenerClase(id) {
   return claseObj
 }
 
-export async function crearClase(claseData, force = false) {
+export async function crearClase(claseData, opt = false) {
+  const { force, resolvedConflicts } = _normalizeOptions(opt)
   const clase = normalizeClase(claseData)
   clase.horarios = claseData.horarios || []
 
@@ -156,6 +225,11 @@ export async function crearClase(claseData, force = false) {
       })
 
       if (solapamiento) {
+        const resolucion = _buscarResolucion(solapamiento, resolvedConflicts)
+        if (resolucion) {
+          await _aplicarResolucionConflicto(resolucion)
+          continue
+        }
         const err = new Error(`Conflicto de ${solapamiento.tipo}: ${solapamiento.detalle} el ${solapamiento.horario}`)
         err.isConflict = true
         err.conflictData = solapamiento
@@ -204,10 +278,11 @@ export async function crearClase(claseData, force = false) {
   return normalizeClase(claseCreada)
 }
 
-export async function actualizarClase(id, actualizaciones, force = false) {
+export async function actualizarClase(id, actualizaciones, opt = false) {
+  const { force, resolvedConflicts } = _normalizeOptions(opt)
   const original = await obtenerClase(id)
   const fusionada = new Clase({ ...original, ...actualizaciones })
-  
+
   // Asegurar que conservamos horarios si no se enviaron nuevos
   if (actualizaciones.horarios === undefined) {
     fusionada.horarios = original.horarios
@@ -232,6 +307,11 @@ export async function actualizarClase(id, actualizaciones, force = false) {
       })
 
       if (solapamiento) {
+        const resolucion = _buscarResolucion(solapamiento, resolvedConflicts)
+        if (resolucion) {
+          await _aplicarResolucionConflicto(resolucion)
+          continue
+        }
         const err = new Error(`Conflicto de ${solapamiento.tipo}: ${solapamiento.detalle} el ${solapamiento.horario}`)
         err.isConflict = true
         err.conflictData = solapamiento
@@ -446,4 +526,99 @@ export function getConflictoLabel(tipo) {
     'maestro': 'Conflicto de maestro',
   }
   return labels[tipo] || tipo
+}
+
+/**
+ * Verifica si inscribir a un alumno en `claseDestinoId` genera un conflicto de
+ * horario con alguna OTRA clase (activa) en la que el alumno ya está inscrito.
+ * A diferencia de verificarSolapamiento, esto ignora el salón: un alumno no
+ * puede estar físicamente en dos lugares al mismo tiempo, sin importar dónde.
+ * @param {string} alumnoId
+ * @param {string} claseDestinoId
+ * @returns {Promise<{clase_id: string, clase_nombre: string, horario: string}|null>}
+ */
+export async function verificarConflictoInscripcion(alumnoId, claseDestinoId) {
+  if (!alumnoId || !claseDestinoId) return null
+
+  const claseDestino = await obtenerClase(claseDestinoId)
+  const horariosDestino = claseDestino.horarios || []
+  if (horariosDestino.length === 0) return null
+
+  const { data: inscripciones, error: errorInscripciones } = await supabase
+    .from('alumnos_clases')
+    .select('clase_id, clases(id, nombre)')
+    .eq('alumno_id', alumnoId)
+    .eq('activo', true)
+
+  if (errorInscripciones || !inscripciones) return null
+
+  const otrasClasesIds = [...new Set(
+    inscripciones.map(i => i.clase_id).filter(id => id && id !== claseDestinoId)
+  )]
+  if (otrasClasesIds.length === 0) return null
+
+  const { data: horariosOtras, error: errorHorarios } = await supabase
+    .from('clase_horarios')
+    .select('*, clases(id, nombre)')
+    .in('clase_id', otrasClasesIds)
+
+  if (errorHorarios || !horariosOtras) return null
+
+  for (const hDestino of horariosDestino) {
+    if (!hDestino.dia || !hDestino.hora_inicio || !hDestino.hora_fin) continue
+    const startMin = timeToMinutes(hDestino.hora_inicio)
+    const endMin = timeToMinutes(hDestino.hora_fin)
+
+    for (const hOtra of horariosOtras) {
+      if ((hOtra.dia || '').toLowerCase().trim() !== (hDestino.dia || '').toLowerCase().trim()) continue
+      const hStartMin = timeToMinutes(hOtra.hora_inicio)
+      const hEndMin = timeToMinutes(hOtra.hora_fin)
+      if (startMin < hEndMin && hStartMin < endMin) {
+        return {
+          clase_id: hOtra.clase_id,
+          clase_nombre: hOtra.clases?.nombre || 'Otra clase',
+          horario: `${hOtra.dia} de ${formatHora(hOtra.hora_inicio)} a ${formatHora(hOtra.hora_fin)}`,
+        }
+      }
+    }
+  }
+
+  return null
+}
+
+/**
+ * Resuelve un conflicto de inscripción: desinscribe al alumno de `claseId`
+ * (la clase que "pierde") y la marca para revisión administrativa.
+ * @param {string} claseId
+ * @param {string} alumnoId
+ * @param {string} motivoTexto
+ */
+export async function resolverConflictoInscripcion(claseId, alumnoId, motivoTexto) {
+  await desinscribirAlumno(claseId, alumnoId)
+
+  const { error } = await supabase
+    .from('clases')
+    .update({ necesita_revision: true, revision_motivo: motivoTexto || null })
+    .eq('id', claseId)
+
+  if (error) {
+    console.error('Error marcando clase para revisión:', error.message)
+    throw new Error('No se pudo marcar la clase para revisión')
+  }
+}
+
+/**
+ * Limpia el flag de revisión administrativa de una clase.
+ * @param {string} claseId
+ */
+export async function marcarComoRevisado(claseId) {
+  const { error } = await supabase
+    .from('clases')
+    .update({ necesita_revision: false, revision_motivo: null })
+    .eq('id', claseId)
+
+  if (error) {
+    console.error('Error al marcar clase como revisada:', error.message)
+    throw new Error('No se pudo marcar la clase como revisada')
+  }
 }

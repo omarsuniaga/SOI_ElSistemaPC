@@ -16,6 +16,19 @@ describe('Clase Model', () => {
       expect(clase.max_alumnos).toBe(20)
       expect(clase.estado).toBe('activa')
       expect(clase.notas_pedagogicas).toBe('')
+      expect(clase.necesita_revision).toBe(false)
+      expect(clase.revision_motivo).toBeNull()
+    })
+
+    it('should honor provided necesita_revision and revision_motivo', () => {
+      const clase = new Clase({
+        nombre: 'Test',
+        necesita_revision: true,
+        revision_motivo: 'Conflicto de horario con Clase X',
+      })
+
+      expect(clase.necesita_revision).toBe(true)
+      expect(clase.revision_motivo).toBe('Conflicto de horario con Clase X')
     })
 
     it('should create instance with provided data', () => {
@@ -182,6 +195,24 @@ describe('Clase Model', () => {
         tipo_clase: 'grupal',
         ruta_id: null,
       })
+    })
+
+    it('should NOT include necesita_revision/revision_motivo even when set', () => {
+      const clase = new Clase({
+        id: '123',
+        nombre: 'Test Clase',
+        maestro_id: 'maestro-1',
+        programa_id: 'prog-1',
+        instrumento: 'violin',
+        horarios: [],
+        necesita_revision: true,
+        revision_motivo: 'Conflicto de maestro',
+      })
+
+      const json = clase.toJSON()
+
+      expect(json).not.toHaveProperty('necesita_revision')
+      expect(json).not.toHaveProperty('revision_motivo')
     })
   })
 })

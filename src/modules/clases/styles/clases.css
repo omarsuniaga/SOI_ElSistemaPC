@@ -742,3 +742,19 @@
   box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.05) !important;
 }
 
+
+/* Resalta temporalmente la fila de horario que causó un conflicto rechazado
+   por el admin en el flujo de override (ver claseModal.js) */
+.horario-row--conflict {
+  border-color: var(--bs-danger, #dc3545) !important;
+  box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.2);
+  transition: box-shadow 0.3s ease, border-color 0.3s ease;
+}
+
+/* Resalta temporalmente la fila de un alumno disponible cuyo intento de
+   inscripción fue cancelado por conflicto de horario (ver alumnoInscripcionModal.js) */
+.disponible-item--conflict {
+  background-color: rgba(220, 53, 69, 0.08);
+  box-shadow: inset 3px 0 0 var(--bs-danger, #dc3545);
+  transition: background-color 0.3s ease;
+}

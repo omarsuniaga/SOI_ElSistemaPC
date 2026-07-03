@@ -1,6 +1,7 @@
 import { AppModal } from '../../../shared/components/AppModal.js'
 import { supabase } from '../../../lib/supabaseClient.js'
 import { inscribirAlumno, desinscribirAlumno, obtenerAlumnosInscritos, obtenerClase, actualizarTurnoInscripcion } from '../api/clasesApi.js'
+import { inscribirConManejoDeConflicto } from '../domain/inscripcionConflicto.js'
 import { crearAlumno } from '../../alumnos/api/alumnosApi.js'
 import { escapeHTML, getInitials } from '../utils/clasesUtils.js'
 
@@ -239,7 +240,11 @@ function _wireEvents(claseId, clase) {
         familiar_telefono:      telefono,
         activo:                 true,
       })
-      await inscribirAlumno(claseId, nuevoAlumno.id)
+      await inscribirConManejoDeConflicto({
+        alumnoId: nuevoAlumno.id,
+        claseDestinoId: claseId,
+        alumnoNombre: nombre,
+      })
       openAlumnoInscripcionModal(claseId)
     } catch (err) {
       alert(err.message)
@@ -309,14 +314,31 @@ function _wireEvents(claseId, clase) {
     btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Inscribiendo...'
 
     try {
+      let algunaOmitida = false
       for (const cb of checks) {
         let horaInicio = null, horaFin = null
+        const row = cb.closest('.disponible-item')
         if (isRotativa) {
-          const row = cb.closest('.disponible-item')
           horaInicio = row.querySelector('.new-hora-inicio')?.value || null
           horaFin = row.querySelector('.new-hora-fin')?.value || null
         }
-        await inscribirAlumno(claseId, cb.value, horaInicio, horaFin)
+        const nombre = row?.dataset?.name || 'El alumno'
+        const resultado = await inscribirConManejoDeConflicto({
+          alumnoId: cb.value,
+          claseDestinoId: claseId,
+          alumnoNombre: nombre,
+          horaInicio,
+          horaFin,
+        })
+        if (resultado.cancelled) {
+          algunaOmitida = true
+          row?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+          row?.classList.add('disponible-item--conflict')
+          setTimeout(() => row?.classList.remove('disponible-item--conflict'), 3000)
+        }
+      }
+      if (algunaOmitida) {
+        alert('Algunos alumnos no se inscribieron por conflicto de horario')
       }
       openAlumnoInscripcionModal(claseId)
     } catch (err) {

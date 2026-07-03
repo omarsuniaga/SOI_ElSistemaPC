@@ -105,6 +105,18 @@ export function getEstadoBadgeClass(estado) {
 }
 
 /**
+ * Devuelve el HTML del badge "Necesita revisión" para clases marcadas por
+ * un conflicto de horario/maestro/inscripción resuelto por un admin.
+ * Sigue el mismo patrón visual que getEstadoBadgeClass/getEstadoLabel.
+ * @param {boolean} necesitaRevision
+ * @returns {string}
+ */
+export function getRevisionBadgeHTML(necesitaRevision) {
+  if (!necesitaRevision) return ''
+  return `<span class="badge bg-danger" title="Esta clase requiere revisión administrativa"><i class="bi bi-exclamation-triangle-fill me-1"></i>Necesita revisión</span>`
+}
+
+/**
  * Obtiene el ícono para un instrumento
  * @param {string} instrumento
  * @returns {string}

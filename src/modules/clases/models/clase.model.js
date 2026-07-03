@@ -25,6 +25,13 @@ export class Clase {
     this.ruta_id = data.ruta_id || null
     this.created_at = data.created_at || null
     this.updated_at = data.updated_at || null
+    // Flag de revisión administrativa: se activa cuando otra clase "gana"
+    // un conflicto de horario/maestro y esta clase pierde ese horario.
+    // Nunca se setea via toJSON() — solo a través de las funciones de
+    // resolución de conflictos en clasesApi.js (marcarComoRevisado,
+    // resolverConflictoInscripcion, actualizarClase con resolvedConflicts).
+    this.necesita_revision = data.necesita_revision ?? false
+    this.revision_motivo = data.revision_motivo ?? null
   }
 
   // Getters/Setters para compatibilidad hacia atrás con el código legacy y tests

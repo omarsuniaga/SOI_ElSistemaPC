@@ -122,14 +122,14 @@ export async function obtenerProgresoRuta(claseId) {
   // Get clase + ruta
   const { data: clase, error: claseError } = await supabase
     .from('clases')
-    .select('*, rutas_contenido(id, duracion_semanas, nombre)')
+    .select('id, nombre, created_at, ruta_id')
     .eq('id', claseId)
     .single()
 
   if (claseError) throw claseError
-  if (!clase.rutas_contenido) throw new Error('Clase sin ruta asignada')
+  if (!clase.ruta_id) throw new Error('Clase sin ruta asignada')
 
-  const ruta = clase.rutas_contenido
+  const ruta = await obtenerRuta(clase.ruta_id)
   const duracionSemanas = ruta.duracion_semanas
 
   // Calculate semana_actual

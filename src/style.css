@@ -2338,13 +2338,13 @@ body:has(.app-sidebar) .page-container {
     bottom: 0;
     left: 0;
     right: 0;
-    height: 72px;
+    height: 48px;
     background: var(--apple-canvas);
     border-top: 1px solid var(--apple-hairline);
     z-index: 10000;
     justify-content: space-around;
     align-items: stretch;
-    padding: 0 4px;
+    padding: 0 2px;
     box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
@@ -2360,22 +2360,22 @@ body:has(.app-sidebar) .page-container {
   
   .app-bottom-nav .bottom-tab {
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     align-items: center;
     justify-content: center;
-    gap: 4px;
-    padding: 8px 8px;
+    gap: 3px;
+    padding: 2px 4px;
     background: transparent;
     border: none;
-    border-radius: 12px;
+    border-radius: 8px;
     cursor: pointer;
     color: var(--apple-ink-muted-48);
     font-family: var(--sans);
-    font-size: 11px;
+    font-size: 9px;
     font-weight: 500;
     transition: all 0.2s ease;
     flex: 1;
-    max-width: 80px;
+    max-width: none;
   }
   
   .app-bottom-nav .bottom-tab:active {
@@ -2387,14 +2387,22 @@ body:has(.app-sidebar) .page-container {
   }
   
   .app-bottom-nav .bottom-tab.active i {
-    transform: scale(1.1);
+    transform: none;
   }
   
   .app-bottom-nav .bottom-tab i {
-    font-size: 22px;
+    font-size: 1rem;
     transition: transform 0.2s ease;
   }
-  
+
+  .app-bottom-nav .bottom-tab span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 100%;
+    line-height: 1.3;
+  }
+
   /* Badge para tareas pendientes en mobile */
   .app-bottom-nav .badge-count {
     position: absolute;

@@ -598,6 +598,16 @@ export async function generateMonthlyPedagogical(claseId, year, month) {
     const prevStart = `${prevYear}-${prevMM}-01`
     const prevEnd = `${prevYear}-${prevMM}-${prevLastDay}`
 
+    // Resolve session IDs first to build observaciones filter
+    const sesionIds = (
+      await supabase
+        .from('sesiones_clase')
+        .select('id')
+        .eq('clase_id', claseId)
+        .gte('fecha', rangeStart)
+        .lte('fecha', rangeEnd)
+    ).data?.map((s) => s.id) || []
+
     // Parallel data fetch
     const [sesRes, obsRes, progRes, claseRes, alumnosRes, prevSesRes, justRes] = await Promise.all([
       supabase
@@ -607,27 +617,18 @@ export async function generateMonthlyPedagogical(claseId, year, month) {
         .gte('fecha', rangeStart)
         .lte('fecha', rangeEnd)
         .order('fecha'),
-      supabase
-        .from('observaciones_sesion')
-        .select('sesion_clase_id, contenido_ia_dsl, contenido_dsl')
-        .in(
-          'sesion_clase_id',
-          // will be filtered after sesiones are loaded — fetch broad and filter
-          (
-            await supabase
-              .from('sesiones_clase')
-              .select('id')
-              .eq('clase_id', claseId)
-              .gte('fecha', rangeStart)
-              .lte('fecha', rangeEnd)
-          ).data?.map((s) => s.id) || [],
-        ),
+      sesionIds.length > 0
+        ? supabase
+            .from('observaciones_sesion')
+            .select('sesion_id, contenido_ia_dsl')
+            .in('sesion_id', sesionIds)
+        : { data: [] },
       supabase
         .from('progresos')
         .select(
           `id, alumno_id, objetivo_id, tipo, contenido_dsl, created_at,
                  alumnos(nombre_completo),
-                 curriculo_objetivos(descripcion, categoria)`,
+                 plan_objetivos(nombre)`,
         )
         .eq('clase_id', claseId)
         .gte('created_at', rangeStart)
@@ -650,7 +651,7 @@ export async function generateMonthlyPedagogical(claseId, year, month) {
         .lte('fecha', prevEnd),
       supabase
         .from('justificaciones')
-        .select('alumno_id, fecha, tipo, motivo')
+        .select('alumno_id, fecha, motivo')
         .eq('clase_id', claseId)
         .gte('fecha', rangeStart)
         .lte('fecha', rangeEnd),
@@ -696,7 +697,7 @@ export async function generateMonthlyPedagogical(claseId, year, month) {
 
     const obsMap = {}
     obsData.forEach((o) => {
-      obsMap[o.sesion_clase_id] = o
+      obsMap[o.sesion_id] = o
     })
 
     // Aggregate totals

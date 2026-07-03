@@ -56,3 +56,6 @@ supabase/.temp/
 
 # Claude AI worktrees and metadata
 .claude/
+
+# Knowledge-graph output (graphify) — removed from project
+graphify-out/

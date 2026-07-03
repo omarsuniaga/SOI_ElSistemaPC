@@ -475,7 +475,7 @@ body:has(.app-sidebar) #app {
     bottom: 0;
     left: 0;
     right: 0;
-    height: 56px;
+    height: 48px;
     z-index: 500;
     border-top: 1px solid;
     padding: 0;
@@ -495,22 +495,25 @@ body:has(.app-sidebar) #app {
     box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.3);
   }
 
-  .bottom-tab {
+  .bottom-tab,
+  .app-bottom-nav .bottom-tab {
     flex: 1;
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     align-items: center;
     justify-content: center;
-    gap: 4px;
+    gap: 3px;
     background: transparent;
     border: none;
     cursor: pointer;
-    font-size: 10px;
+    font-size: 9px;
     font-weight: 500;
     letter-spacing: -0.1px;
     transition: all 0.15s ease;
-    padding: 0;
+    padding: 2px 4px;
     min-width: 0;
+    max-width: none;
+    overflow: hidden;
   }
 
   [data-bs-theme="light"] .bottom-tab {
@@ -541,12 +544,19 @@ body:has(.app-sidebar) #app {
     color: #0084ff;
   }
 
-  .bottom-tab i {
-    font-size: 1.25rem;
+  .bottom-tab i,
+  .app-bottom-nav .bottom-tab i {
+    font-size: 1rem;
   }
 
-  .bottom-tab span {
-    display: block;
+  .bottom-tab span,
+  .app-bottom-nav .bottom-tab span {
+    display: inline-block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 100%;
+    line-height: 1.3;
   }
 
   /* Content area adjustment for bottom nav */
@@ -554,20 +564,20 @@ body:has(.app-sidebar) #app {
     margin-left: 0;
     width: 100%;
     padding: 1rem;
-    padding-bottom: calc(56px + 1rem);
+    padding-bottom: calc(48px + 1rem);
   }
 
   body:has(.app-sidebar) .page-container {
-    padding-bottom: 56px;
+    padding-bottom: 48px;
   }
 
   .mobile-sub-sheet {
     display: none;
     position: fixed;
-    bottom: 56px;
+    bottom: 48px;
     left: 0;
     right: 0;
-    max-height: calc(100vh - 56px);
+    max-height: calc(100vh - 48px);
     z-index: 600;
     border-radius: 16px 16px 0 0;
     overflow: hidden;
@@ -630,12 +640,12 @@ body:has(.app-sidebar) #app {
     width: 100%;
     display: flex;
     align-items: center;
-    gap: 12px;
-    padding: 12px 16px;
+    gap: 10px;
+    padding: 10px 14px;
     background: transparent;
     border: none;
     cursor: pointer;
-    font-size: 15px;
+    font-size: 13px;
     transition: all 0.15s ease;
     text-align: left;
   }
@@ -702,15 +712,19 @@ body:has(.app-sidebar) #app {
 
   body:has(.app-sidebar) #app {
     padding: 0.75rem;
-    padding-bottom: calc(56px + 0.75rem);
+    padding-bottom: calc(48px + 0.75rem);
   }
 
+  .app-bottom-nav .bottom-tab,
   .bottom-tab {
-    font-size: 9px;
+    font-size: 8px;
+    gap: 2px;
+    padding: 2px 2px;
   }
 
+  .app-bottom-nav .bottom-tab i,
   .bottom-tab i {
-    font-size: 1.1rem;
+    font-size: 0.9rem;
   }
 
   .sheet-title {
@@ -719,9 +733,9 @@ body:has(.app-sidebar) #app {
   }
 
   .sheet-item {
-    padding: 10px 12px;
-    font-size: 14px;
-    gap: 10px;
+    padding: 8px 10px;
+    font-size: 12px;
+    gap: 8px;
   }
 }
 
@@ -774,6 +788,10 @@ body:has(.app-sidebar) #app {
 
   .app-bottom-nav .bottom-tab,
   .bottom-tab {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
     flex: 1 1 0 !important;
     min-width: 0 !important;
     max-width: none !important;
@@ -859,16 +877,21 @@ body:has(.app-sidebar) #app {
   }
 
   .sheet-items {
+    display: flex !important;
+    flex-direction: column !important;
     padding: 0.4rem !important;
     gap: 0.25rem !important;
   }
 
   .sheet-item {
-    min-height: 48px !important;
-    padding: 0.7rem 0.85rem !important;
-    border-radius: 14px !important;
-    font-size: 0.92rem !important;
-    font-weight: 650 !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 0.5rem !important;
+    min-height: 44px !important;
+    padding: 0.6rem 0.75rem !important;
+    border-radius: 12px !important;
+    font-size: 0.85rem !important;
+    font-weight: 600 !important;
   }
 
   .sheet-item.active {
@@ -975,4 +998,205 @@ body:has(.app-sidebar) #app {
   0%   { transform: scale(0.6); opacity: 0; }
   70%  { transform: scale(1.15); }
   100% { transform: scale(1);   opacity: 1; }
+}
+
+.bottom-tab-icon {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.bottom-tab-icon .solicitudes-badge {
+  position: absolute;
+  top: -4px;
+  right: -6px;
+  min-width: 14px;
+  height: 14px;
+  padding: 0 3px;
+  font-size: 7px;
+  line-height: 14px;
+  border-radius: 7px;
+  margin-left: 0;
+  box-shadow: 0 1px 3px rgba(239, 68, 68, 0.5);
+}
+
+/* ============================================================================
+   DRAGGABLE BOTTOM SHEET + SINGLE-LINE ITEMS (consolidated override)
+   Loaded last so it wins the specificity/order battle against the fragmented
+   rules above and in style.css. Height is driven by the --sheet-vh variable,
+   which the JS drag handler updates live.
+   ============================================================================ */
+@media (max-width: 1024px) {
+  .mobile-sub-sheet.open {
+    display: flex !important;
+    flex-direction: column !important;
+    height: var(--sheet-vh, 55vh) !important;
+    max-height: 94vh !important;
+    min-height: 96px !important;
+    transition: height 0.28s cubic-bezier(0.32, 0.72, 0, 1);
+  }
+
+  .mobile-sub-sheet.dragging {
+    transition: none !important;
+    will-change: height;
+  }
+
+  /* Larger grab target on the top edge; the visible bar is drawn with ::after */
+  .mobile-sub-sheet .sheet-handle {
+    width: 100% !important;
+    height: auto !important;
+    padding: 12px 0 6px !important;
+    margin: 0 !important;
+    background: transparent !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    cursor: grab;
+    touch-action: none;
+    flex-shrink: 0;
+  }
+
+  .mobile-sub-sheet .sheet-handle::after {
+    content: '' !important;
+    width: 42px !important;
+    height: 5px !important;
+    border-radius: 3px !important;
+    background: rgba(148, 163, 184, 0.6) !important;
+  }
+
+  .mobile-sub-sheet.dragging .sheet-handle {
+    cursor: grabbing;
+  }
+
+  .mobile-sub-sheet .sheet-title {
+    cursor: grab;
+    touch-action: none;
+    flex-shrink: 0;
+  }
+
+  .mobile-sub-sheet .sheet-items {
+    display: flex !important;
+    flex-direction: column !important;
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Icon and text on the SAME line, always */
+  .mobile-sub-sheet .sheet-item {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 12px !important;
+    text-align: left !important;
+    white-space: nowrap !important;
+  }
+
+  .mobile-sub-sheet .sheet-item i {
+    flex: 0 0 auto !important;
+    width: 22px !important;
+    font-size: 1.15rem !important;
+    text-align: center !important;
+    line-height: 1 !important;
+  }
+
+  .mobile-sub-sheet .sheet-item span {
+    flex: 1 1 auto !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  .mobile-sub-sheet .sheet-item .notif-badge {
+    flex: 0 0 auto !important;
+    margin-left: auto !important;
+  }
+}
+
+/* ============================================================================
+   APP TOP BAR — per-view header with back / title / home, on every portal view
+   Fixed to the top of the content column (right of the sidebar on desktop,
+   full width on mobile). #app gets top padding so content clears it.
+   ============================================================================ */
+.app-topbar {
+  position: fixed;
+  top: 0;
+  left: 260px;
+  right: 0;
+  height: 56px;
+  z-index: 900;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0 1rem;
+  border-bottom: 1px solid;
+}
+
+[data-bs-theme="light"] .app-topbar {
+  background: #ffffff;
+  color: #1a1a1a;
+  border-bottom-color: rgba(0, 0, 0, 0.08);
+}
+
+[data-bs-theme="dark"] .app-topbar {
+  background: #1a1a1a;
+  color: #f5f5f7;
+  border-bottom-color: rgba(255, 255, 255, 0.08);
+}
+
+.app-topbar__btn {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  font-size: 1.15rem;
+  cursor: pointer;
+  transition: background 0.15s ease, opacity 0.15s ease;
+}
+
+.app-topbar__btn:not(:disabled):hover {
+  background: rgba(128, 128, 128, 0.14);
+}
+
+.app-topbar__btn:disabled {
+  opacity: 0.32;
+  cursor: default;
+}
+
+.app-topbar__title {
+  flex: 1;
+  min-width: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: -0.2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+body:has(.app-topbar) #app {
+  padding-top: 72px !important;
+}
+
+@media (max-width: 1024px) {
+  .app-topbar {
+    left: 0;
+    height: 52px;
+  }
+  body:has(.app-topbar) #app {
+    padding-top: 62px !important;
+  }
+}
+
+@media print {
+  .app-topbar {
+    display: none !important;
+  }
 }

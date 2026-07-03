@@ -70,6 +70,7 @@ import { getRunFeedback, addFeedback, updateScheduleRunEstado, getCurrentUserIsA
 import { createConstraintPanel, getConstraintPanelValues } from '../components/constraintPanel.js';
 import { buildJornada } from '../utils/constraintUtils.js';
 import { partitionClases } from '../domain/groupPartitioner.js';
+import { escapeHtml } from '../utils/escapeHtml.js';
 
 // ─── STATE ──────────────────────────────────────────────────────
 
@@ -145,6 +146,7 @@ function _statsBar() {
   const conflicts = state.conflicts.length
   const locked    = state.assignments.filter(a => a.locked).length
   const canUndo   = state.undoStack.length
+  const noAsig    = state.noAsignadas.length
   return `
     <div class="hb-stats-bar">
       <span class="hb-stat"><i class="bi bi-calendar3"></i> <strong>${total}</strong> bloque${total !== 1 ? 's' : ''}</span>
@@ -152,6 +154,7 @@ function _statsBar() {
         <i class="bi ${conflicts > 0 ? 'bi-exclamation-triangle-fill' : 'bi-check-circle-fill'}"></i>
         <strong>${conflicts}</strong> conflicto${conflicts !== 1 ? 's' : ''}
       </span>
+      ${noAsig > 0 ? `<span class="hb-stat hb-stat--danger"><i class="bi bi-slash-circle-fill"></i> <strong>${noAsig}</strong> sin asignar</span>` : ''}
       <span class="hb-stat"><i class="bi bi-lock-fill"></i> <strong>${locked}</strong> bloqueado${locked !== 1 ? 's' : ''}</span>
       ${canUndo > 0 ? `<span class="hb-stat hb-stat--muted"><i class="bi bi-clock-history"></i> ${canUndo} en historial</span>` : ''}
       ${state.runId ? _estadoBadge() : ''}
@@ -229,8 +232,14 @@ function renderShell() {
         </div>
       </div>
 
+      <!-- Generation health metrics -->
+      <div id="hb-metrics-wrapper"></div>
+
       <!-- Conflict panel -->
       <div id="hb-conflict-panel-wrapper"></div>
+
+      <!-- Unassigned classes panel -->
+      <div id="hb-noasignadas-wrapper"></div>
 
       <!-- Grid / empty state -->
       <div id="hb-grid-wrapper" class="hb-grid-wrapper">
@@ -357,6 +366,50 @@ function _injectHBStyles() {
     width:18px;height:18px;border-radius:50%;background:var(--hb-primary);color:#fff;
     display:flex;align-items:center;justify-content:center;font-size:0.62rem;font-weight:700;flex-shrink:0;
   }
+
+  /* Generation health metrics */
+  .hb-metrics {
+    display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:0.6rem;
+    margin-bottom:0.875rem;
+  }
+  .hb-metric {
+    display:flex;flex-direction:column;gap:0.15rem;padding:0.7rem 0.9rem;
+    background:var(--hb-card-bg);border:1px solid var(--hb-border);
+    border-left:3px solid var(--hb-primary);border-radius:10px;
+  }
+  .hb-metric__val { font-size:1.35rem;font-weight:700;color:var(--hb-text);line-height:1; }
+  .hb-metric__val-sub { font-size:0.85rem;font-weight:600;color:var(--hb-text-muted); }
+  .hb-metric__label { font-size:0.7rem;color:var(--hb-text-muted);font-weight:600; }
+  .hb-metric--ok     { border-left-color:var(--hb-success); }
+  .hb-metric--ok .hb-metric__val     { color:var(--hb-success); }
+  .hb-metric--warn   { border-left-color:var(--hb-warning); }
+  .hb-metric--warn .hb-metric__val   { color:var(--hb-warning); }
+  .hb-metric--danger { border-left-color:var(--hb-danger); }
+  .hb-metric--danger .hb-metric__val { color:var(--hb-danger); }
+
+  /* Unassigned classes panel */
+  .hb-na {
+    border:1px solid var(--hb-danger);border-radius:12px;margin-bottom:0.875rem;
+    background:rgba(239,68,68,0.05);overflow:hidden;
+  }
+  .hb-na__summary {
+    display:flex;align-items:center;gap:0.4rem;padding:0.6rem 0.875rem;cursor:pointer;
+    font-size:0.85rem;color:var(--hb-danger);list-style:none;user-select:none;
+  }
+  .hb-na__summary::-webkit-details-marker { display:none; }
+  .hb-na__summary strong { font-weight:700; }
+  .hb-na__hint { color:var(--hb-text-muted);font-weight:400;font-size:0.78rem; }
+  .hb-na__chevron { margin-left:auto;transition:transform 0.2s ease; }
+  .hb-na[open] .hb-na__chevron { transform:rotate(180deg); }
+  .hb-na__list { list-style:none;margin:0;padding:0 0.5rem 0.5rem; }
+  .hb-na-item {
+    display:flex;align-items:flex-start;gap:0.6rem;padding:0.55rem 0.7rem;
+    background:var(--hb-card-bg);border:1px solid var(--hb-border);border-radius:8px;margin-top:0.4rem;
+  }
+  .hb-na-item__icon { color:var(--hb-danger);font-size:0.85rem;margin-top:0.15rem;flex-shrink:0; }
+  .hb-na-item__body { display:flex;flex-direction:column;gap:0.1rem;min-width:0; }
+  .hb-na-item__name { font-size:0.82rem;font-weight:600;color:var(--hb-text); }
+  .hb-na-item__reason { font-size:0.76rem;color:var(--hb-text-muted);line-height:1.4; }
   `
   document.head.appendChild(s)
 }
@@ -378,6 +431,89 @@ function renderGrid() {
     periodoId: state.activePeriodo
   });
   attachScheduleGridListeners(wrapper);
+}
+
+function _updateDragToggle() {
+  const btn = _container?.querySelector('#hb-drag-toggle')
+  if (!btn) return
+  const editing = state.draggable
+  btn.classList.toggle('hb-btn--editing', editing)
+  btn.classList.toggle('hb-btn--ghost', !editing)
+  btn.title = editing ? 'Desactivar edición' : 'Activar drag & drop'
+  btn.innerHTML = `<i class="bi ${editing ? 'bi-unlock-fill' : 'bi-lock-fill'}"></i><span>${editing ? 'Editando' : 'Editar'}</span>`
+}
+
+function renderMetrics() {
+  const wrapper = _container?.querySelector('#hb-metrics-wrapper')
+  if (!wrapper) return
+  const m = state.metricas
+  if (!m || !state.assignments.length) { wrapper.innerHTML = ''; return }
+
+  const salones = Object.values(m.ocupacionSalones || {})
+  const ocupProm = salones.length
+    ? Math.round(salones.reduce((acc, s) => acc + (s.porcentaje || 0), 0) / salones.length)
+    : 0
+  const maestros = Object.values(m.cargaMaestros || {}).filter(t => t.horas > 0)
+  const horasProm = maestros.length
+    ? Math.round((maestros.reduce((acc, t) => acc + (t.horas || 0), 0) / maestros.length) * 10) / 10
+    : 0
+
+  const score = m.score ?? 0
+  const scoreClass = score >= 90 ? 'hb-metric--ok' : score >= 70 ? 'hb-metric--warn' : 'hb-metric--danger'
+
+  wrapper.innerHTML = `
+    <div class="hb-metrics">
+      <div class="hb-metric ${scoreClass}">
+        <span class="hb-metric__val">${score}%</span>
+        <span class="hb-metric__label">Cobertura</span>
+      </div>
+      <div class="hb-metric">
+        <span class="hb-metric__val">${m.clasesAsignadas ?? 0}<span class="hb-metric__val-sub">/${m.totalClases ?? 0}</span></span>
+        <span class="hb-metric__label">Clases asignadas</span>
+      </div>
+      <div class="hb-metric ${(m.clasesNoAsignadas ?? 0) > 0 ? 'hb-metric--danger' : ''}">
+        <span class="hb-metric__val">${m.clasesNoAsignadas ?? 0}</span>
+        <span class="hb-metric__label">Sin asignar</span>
+      </div>
+      <div class="hb-metric">
+        <span class="hb-metric__val">${ocupProm}%</span>
+        <span class="hb-metric__label">Ocupación salones</span>
+      </div>
+      <div class="hb-metric">
+        <span class="hb-metric__val">${horasProm}<span class="hb-metric__val-sub">h</span></span>
+        <span class="hb-metric__label">Carga media/maestro</span>
+      </div>
+    </div>
+  `
+}
+
+function renderNoAsignadas() {
+  const wrapper = _container?.querySelector('#hb-noasignadas-wrapper')
+  if (!wrapper) return
+  const items = state.noAsignadas || []
+  if (!items.length) { wrapper.innerHTML = ''; return }
+
+  const rows = items.map(it => `
+    <li class="hb-na-item">
+      <i class="bi bi-slash-circle-fill hb-na-item__icon"></i>
+      <div class="hb-na-item__body">
+        <span class="hb-na-item__name">${escapeHtml(it.nombre ?? 'Clase sin nombre')}</span>
+        <span class="hb-na-item__reason">${escapeHtml(it.razon ?? 'Sin razón especificada')}</span>
+      </div>
+    </li>
+  `).join('')
+
+  wrapper.innerHTML = `
+    <details class="hb-na" open>
+      <summary class="hb-na__summary">
+        <i class="bi bi-exclamation-octagon-fill"></i>
+        <strong>${items.length}</strong> clase${items.length !== 1 ? 's' : ''} sin asignar
+        <span class="hb-na__hint">— revisá el motivo de cada una</span>
+        <i class="bi bi-chevron-down hb-na__chevron"></i>
+      </summary>
+      <ul class="hb-na__list">${rows}</ul>
+    </details>
+  `
 }
 
 function renderConflictPanel() {
@@ -572,12 +708,7 @@ function wireListeners() {
     // Drag toggle
     if (e.target.closest('#hb-drag-toggle')) {
       state.draggable = !state.draggable;
-      const btn = _container.querySelector('#hb-drag-toggle');
-      if (btn) {
-        btn.innerHTML = state.draggable
-          ? '<i class="bi bi-unlock-fill"></i> Bloqueando'
-          : '<i class="bi bi-lock-fill"></i> Editar';
-      }
+      _updateDragToggle();
       renderGrid();
       initDD();
       return;
@@ -702,6 +833,8 @@ async function handleGenerate() {
     state.assignments = assignments;
     state.conflicts = conflicts;
 
+    renderMetrics();
+    renderNoAsignadas();
     renderGrid();
     renderConflictPanel();
     initDD();

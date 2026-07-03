@@ -255,8 +255,17 @@ export async function obtenerProgresoGrupo(groupId, levelId = null) {
   const { data, error } = await supabase
     .from('student_indicator_progress')
     .select('*')
-  if (error) throw error
-  
+  if (error) {
+    if (isMissingSchemaTableError(error, 'student_indicator_progress')) {
+      if (!_warnedMissingTables.has('student_indicator_progress')) {
+        console.warn('[planificacion] student_indicator_progress no está disponible todavía; devolviendo progreso vacío.')
+        _warnedMissingTables.add('student_indicator_progress')
+      }
+      return {}
+    }
+    throw error
+  }
+
   const list = data || []
   return list.reduce((acc, curr) => {
     acc[`${curr.student_id}_${curr.indicator_id}`] = curr

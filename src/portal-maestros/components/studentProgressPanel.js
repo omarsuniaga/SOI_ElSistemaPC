@@ -186,9 +186,13 @@ function _semaphore(status) {
 
 async function _loadProgress(alumnoId, rutaId, claseId = null) {
   let indicators = []
+  let guia = null
+  const effectiveRutaId = rutaId || null
+  const fromDate = new Date(Date.now() - 28 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
+  const today = new Date().toISOString().slice(0, 10)
 
   if (claseId) {
-    const guia = await weeklyPlanAdapter.obtenerGuiaHeredadaPorClase(claseId).catch(() => null)
+    guia = await weeklyPlanAdapter.obtenerGuiaHeredadaPorClase(claseId).catch(() => null)
     const planItems = guia?.plan?.items || []
     const seen = new Set()
     indicators = planItems
@@ -240,12 +244,12 @@ async function _loadProgress(alumnoId, rutaId, claseId = null) {
         })
       })
     })
-  } else if (!indicators.length) {
+  } else if (!indicators.length && effectiveRutaId) {
     // Modo Real: Supabase query
     const { data, error } = await supabase
       .from('indicators')
       .select('id, nombre, description, order_index, node_id, nodes(id, name, order_index, level_id, levels(id, name, level_number))')
-      .eq('nodes.route_version_id', rutaId)
+      .eq('nodes.route_version_id', effectiveRutaId)
       .eq('activo', true)
       .order('order_index')
       
@@ -255,10 +259,36 @@ async function _loadProgress(alumnoId, rutaId, claseId = null) {
       nombre: i.nombre || i.description,
       node: i.nodes
     }))
+  } else if (!indicators.length && !config.isDemoMode) {
+    console.warn('[studentProgressPanel] No hay ruta válida para cargar indicadores; usando panel vacío.')
   }
 
   // 2. Cargar el historial de calificaciones registradas
   const progressMap = await weeklyPlanAdapter.obtenerProgresoGrupo(claseId)
+  const [attendanceRes, observationsRes] = await Promise.all([
+    supabase
+      .from('asistencias')
+      .select('estado, fecha, justificacion_texto, clase_id')
+      .eq('alumno_id', alumnoId)
+      .gte('fecha', fromDate)
+      .lte('fecha', today)
+      .order('fecha', { ascending: false }),
+    supabase
+      .from('observaciones_alumnos')
+      .select('id, tipo, titulo, observacion, prioridad, estado, created_at')
+      .eq('alumno_id', alumnoId)
+      .order('created_at', { ascending: false })
+      .limit(5),
+  ])
+
+  const attendanceRows = attendanceRes.data || []
+  const observationsRows = observationsRes.data || []
+  const presentCount = attendanceRows.filter((r) => r.estado === 'P' || r.estado === 'presente').length
+  const absentCount = attendanceRows.filter((r) => r.estado === 'A' || r.estado === 'ausente').length
+  const justifiedCount = attendanceRows.filter((r) => r.estado === 'J' || r.estado === 'justificado').length
+  const attendanceRate = attendanceRows.length
+    ? Math.round((presentCount / attendanceRows.length) * 100)
+    : null
   
   // Build summaries
   const allSummaries = indicators.map(ind => {
@@ -284,7 +314,39 @@ async function _loadProgress(alumnoId, rutaId, claseId = null) {
   const total = allSummaries.length
   const avance = total > 0 ? Math.round((dominados / total) * 100) : 0
 
-  return { indicatorSummaries: allSummaries, dominados, total, avance, pendingTasks: [] }
+  const alerts = []
+  if (attendanceRows.length >= 3 && presentCount === 0) alerts.push('Sin asistencia reciente')
+  if (attendanceRate !== null && attendanceRate < 70) alerts.push('Asistencia por debajo de 70%')
+  if (allSummaries.filter((i) => i.latestStatus === 'needs_reinforcement' || i.latestStatus === 'failed').length >= 3) {
+    alerts.push('Requiere refuerzo en varios indicadores')
+  }
+  if (observationsRows.some((o) => (o.prioridad || '').toLowerCase() === 'alta')) {
+    alerts.push('Tiene observaciones prioritarias')
+  }
+
+  return {
+    indicatorSummaries: allSummaries,
+    dominados,
+    total,
+    avance,
+    pendingTasks: [],
+    attendanceSummary: {
+      total: attendanceRows.length,
+      present: presentCount,
+      absent: absentCount,
+      justified: justifiedCount,
+      rate: attendanceRate,
+      fromDate,
+      toDate: today,
+      latest: attendanceRows[0] || null,
+      rows: attendanceRows.slice(0, 8),
+    },
+    observationsSummary: {
+      total: observationsRows.length,
+      rows: observationsRows,
+    },
+    alerts,
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -360,15 +422,101 @@ function _renderIndicators(indicatorSummaries) {
   `).join('')
 }
 
-function _renderContent(alumno, { indicatorSummaries, avance }) {
+function _renderCompactList(items, emptyText, renderItem) {
+  if (!items || items.length === 0) return `<div class="text-muted small">${_escHTML(emptyText)}</div>`
+  return `<div class="d-flex flex-column gap-2">${items.map(renderItem).join('')}</div>`
+}
+
+function _renderContent(alumno, { indicatorSummaries, avance, attendanceSummary, observationsSummary, alerts }) {
+  const attendanceRate = attendanceSummary?.rate
+  const progressBlocks = [
+    { label: 'Dominados', value: `${avance}%`, hint: `${indicatorSummaries.filter((i) => i.latestStatus === 'achieved' || i.latestStatus === 'exceeded').length}/${indicatorSummaries.length || 0}` },
+    { label: 'Asistencia', value: attendanceRate !== null ? `${attendanceRate}%` : '—', hint: `${attendanceSummary?.present || 0} presentes · ${attendanceSummary?.absent || 0} ausentes` },
+    { label: 'Alertas', value: `${alerts?.length || 0}`, hint: alerts?.length ? alerts.join(' · ') : 'Sin alertas activas' },
+  ]
   return `
     ${_renderHeader(alumno, avance)}
     <div class="pm-student-panel__body">
       <section class="pm-student-panel__section">
-        <h3 class="pm-student-panel__section-title">Progreso Curricular (Semáforo)</h3>
-        <div class="pm-route-map">
-          ${_renderIndicators(indicatorSummaries)}
+        <h3 class="pm-student-panel__section-title">Resumen rápido</h3>
+        <div class="row g-2">
+          ${progressBlocks.map((block) => `
+            <div class="col-4">
+              <div class="rounded-3 p-2" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);">
+                <div class="small text-uppercase text-muted fw-bold">${_escHTML(block.label)}</div>
+                <div class="fs-6 fw-bold">${_escHTML(block.value)}</div>
+                <div class="small text-muted">${_escHTML(block.hint)}</div>
+              </div>
+            </div>
+          `).join('')}
         </div>
+      </section>
+
+      <section class="pm-student-panel__section">
+        <h3 class="pm-student-panel__section-title">Asistencia reciente</h3>
+        <div class="rounded-3 p-3" style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);">
+          <div class="d-flex justify-content-between small text-muted mb-2">
+            <span>Últimos 28 días</span>
+            <span>${attendanceSummary?.fromDate || '—'} → ${attendanceSummary?.toDate || '—'}</span>
+          </div>
+          <div class="d-flex gap-2 flex-wrap mb-2">
+            <span class="badge text-bg-success">Presentes: ${attendanceSummary?.present || 0}</span>
+            <span class="badge text-bg-danger">Ausentes: ${attendanceSummary?.absent || 0}</span>
+            <span class="badge text-bg-warning">Justificados: ${attendanceSummary?.justified || 0}</span>
+            <span class="badge text-bg-info">Total: ${attendanceSummary?.total || 0}</span>
+          </div>
+          <div class="pm-student-panel__progress-bar mb-2">
+            <div class="pm-student-panel__progress-fill" style="width:${attendanceRate ?? 0}%"></div>
+          </div>
+          <div class="small text-muted">${attendanceRate !== null ? `Asistencia acumulada: ${attendanceRate}%` : 'Sin registros recientes de asistencia.'}</div>
+        </div>
+      </section>
+
+      <section class="pm-student-panel__section">
+        <h3 class="pm-student-panel__section-title">Progreso Curricular (Semáforo)</h3>
+        <div class="rounded-3 p-3 mb-2" style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);">
+          <div class="d-flex justify-content-between small text-muted">
+            <span>Contenido recibido</span>
+            <span>${indicatorSummaries.length} indicadores</span>
+          </div>
+          <div class="pm-student-panel__progress-bar mt-2">
+            <div class="pm-student-panel__progress-fill" style="width:${avance}%"></div>
+          </div>
+          <div class="small text-muted mt-2">Dominados ${indicatorSummaries.filter((i) => i.latestStatus === 'achieved' || i.latestStatus === 'exceeded').length} de ${indicatorSummaries.length}</div>
+        </div>
+        <div class="pm-route-map">
+          ${_renderIndicators(indicatorSummaries.slice(0, 6))}
+        </div>
+      </section>
+
+      <section class="pm-student-panel__section">
+        <h3 class="pm-student-panel__section-title">Últimas observaciones</h3>
+        ${_renderCompactList(
+          observationsSummary?.rows || [],
+          'No hay observaciones recientes.',
+          (obs) => `
+            <div class="rounded-3 p-2" style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);">
+              <div class="d-flex justify-content-between small">
+                <strong>${_escHTML(obs.titulo || obs.tipo || 'Observación')}</strong>
+                <span class="text-muted">${_escHTML(obs.prioridad || obs.estado || '')}</span>
+              </div>
+              <div class="small text-muted">${_escHTML(obs.observacion || '')}</div>
+            </div>
+          `,
+        )}
+      </section>
+
+      <section class="pm-student-panel__section">
+        <h3 class="pm-student-panel__section-title">Alertas pedagógicas</h3>
+        ${_renderCompactList(
+          alerts || [],
+          'Sin alertas activas.',
+          (alert) => `
+            <div class="rounded-3 p-2" style="background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.22);">
+              <div class="small fw-semibold text-danger">${_escHTML(alert)}</div>
+            </div>
+          `,
+        )}
       </section>
     </div>
   `

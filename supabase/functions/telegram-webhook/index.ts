@@ -2,7 +2,7 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0';
 import { isValidUser } from './lib/allowlist.ts';
 import { checkRateLimit } from './lib/rateLimit.ts';
-import { processOptOut } from './lib/optOut.ts';
+import { processOptOut, isOptOutMessage } from './lib/optOut.ts';
 import { getUpdates, sendMessage, TelegramUpdate } from './lib/telegramApi.ts';
 import { logINFO, logWARNING } from './lib/log.ts';
 
@@ -95,8 +95,12 @@ serve(async (req: Request) => {
         const withinLimit = await checkRateLimit(supabase, userId, maxPerHour);
         if (!withinLimit) { skipped++; continue; }
 
-        const isOptOut = await processOptOut(supabase, userId);
-        if (isOptOut) { skipped++; continue; }
+        if (isOptOutMessage(msg.text)) {
+          await processOptOut(supabase, userId);
+          await sendMessage(TELEGRAM_BOT_TOKEN, chatId, 'Listo, no recibirás más mensajes de este bot. Si querés reactivarlo, contactá a un administrador.');
+          skipped++;
+          continue;
+        }
 
         const deptTurnoRegex = /^(direccion|secretaria|docencia|atencion|calidad|desarrollo|dirección)/i;
         const match = msg.text.match(deptTurnoRegex);

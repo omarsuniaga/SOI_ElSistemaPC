@@ -34,8 +34,8 @@ export async function renderCalendarioView(container, { onFechaClick } = {}) {
 
   async function cargarYRenderizar() {
     try {
-      const estado = await _calcularEstadoMes(maestro.id, anio, mes)
-      _renderCalendario(container, anio, mes, hoy, estado, {
+      const dotsMap = await _calcularEstadoMes(maestro.id, anio, mes)
+      _renderCalendario(container, anio, mes, hoy, dotsMap, {
         onFechaClick: (fecha) => {
           _openActionDrawer(fecha)
           onFechaClick?.(fecha)
@@ -68,8 +68,40 @@ export async function renderCalendarioView(container, { onFechaClick } = {}) {
 }
 
 /**
- * Calcula el estado de cada fecha del mes para un maestro.
- * Retorna un Map<'YYYY-MM-DD', 'registrada'|'pendiente'|'vencida'|'sin-clase'>
+ * Determina el color de punto para una sesión individual.
+ * Para HOY el criterio es más estricto (solo asistencia real marcada, o
+ * cubierta por actividad especial): una sesión con contenido guardado pero
+ * sin asistencia sigue siendo "naranja" mientras la clase es del día actual,
+ * para no marcarla verde antes de que el maestro realmente pase lista.
+ * Para fechas pasadas también cuenta como registrada si se guardó en firme
+ * (borrador=false) con contenido, aunque no haya asistencia explícita.
+ * @returns {'verde'|'naranja'}
+ */
+function _colorSesion(sesion, esHoy) {
+  if (!sesion) return 'naranja'
+  const tieneAsistencia = Array.isArray(sesion.asistencia) && sesion.asistencia.length > 0
+  const tieneContenido = typeof sesion.contenido === 'string' && sesion.contenido.trim().length > 0
+  const cubiertaEmergente = !!sesion.emergente_id // cubierta por actividad especial → ya resuelta
+
+  const registrada = esHoy
+    ? tieneAsistencia || cubiertaEmergente
+    : sesion.estado === 'registrada' ||
+      sesion.estado === 'cerrada' ||
+      tieneAsistencia ||
+      (sesion.borrador === false && tieneContenido) ||
+      cubiertaEmergente
+
+  return registrada ? 'verde' : 'naranja' // sino, sigue en borrador/pendiente
+}
+
+/**
+ * Calcula, por cada fecha del mes, un punto de color por cada instancia de
+ * clase (regular o emergente) programada ese día:
+ * - 'verde': sesión registrada (asistencia tomada, o cubierta por actividad especial)
+ * - 'naranja': sesión guardada como borrador, sin finalizar
+ * - 'rojo': la clase ya debió darse y no tiene ninguna sesión
+ * Fechas futuras o sin ninguna clase programada devuelven un array vacío.
+ * Retorna un Map<'YYYY-MM-DD', Array<'verde'|'naranja'|'rojo'>>
  */
 async function _calcularEstadoMes(maestroId, anio, mes) {
   const primerDia = new Date(anio, mes, 1)
@@ -85,58 +117,35 @@ async function _calcularEstadoMes(maestroId, anio, mes) {
     return new Map()
   }
 
-  // 2. Horarios de esas clases (con cache)
+  // 2. Horarios de esas clases (con cache), agrupados por día de la semana
   const horarios = await getHorariosClases(claseIds)
-  const diasConClase = new Set(horarios.map((h) => h.dia?.toLowerCase()))
-  const horaFinPorDia = new Map() // Map<"lunes"|"martes"|..., max_hora_fin>
+  const horariosPorDia = new Map() // Map<"lunes"|"martes"|..., [{clase_id, hora_fin}, ...]>
   horarios.forEach((h) => {
     const dia = h.dia?.toLowerCase()
-    const horaFin = h.hora_fin || '23:59'
-    if ((dia && !horaFinPorDia.has(dia)) || horaFin > horaFinPorDia.get(dia)) {
-      horaFinPorDia.set(dia, horaFin)
+    if (!dia) return
+    if (!horariosPorDia.has(dia)) horariosPorDia.set(dia, [])
+    horariosPorDia.get(dia).push(h)
+  })
+
+  // 3. Sesiones del mes (con cache), indexadas por fecha+clase (regulares)
+  // y por fecha (emergentes, clase_id = null)
+  const todasSesiones = await getSesiones(maestroId, desde, hasta)
+  const sesionPorFechaClase = new Map() // Map<"fecha|clase_id", sesion>
+  const emergentesPorFecha = new Map() // Map<fecha, [sesion, ...]>
+  todasSesiones.forEach((s) => {
+    if (s.clase_id) {
+      sesionPorFechaClase.set(`${s.fecha}|${s.clase_id}`, s)
+    } else {
+      if (!emergentesPorFecha.has(s.fecha)) emergentesPorFecha.set(s.fecha, [])
+      emergentesPorFecha.get(s.fecha).push(s)
     }
   })
 
-  // 3. Sesiones del mes (con cache)
-  const todasSesiones = await getSesiones(maestroId, desde, hasta)
-
-  // Filtrar en JS: sesión registrada si:
-  // - tiene estado registrada/cerrada, O
-  // - tiene asistencia marcada (independientemente de borrador), O
-  // - fue guardada (borrador=false) con contenido en observaciones
-  const sesiones = todasSesiones.filter((s) => {
-    const tieneAsistencia = Array.isArray(s.asistencia) && s.asistencia.length > 0
-    const tieneContenido = typeof s.contenido === 'string' && s.contenido.trim().length > 0
-    return (
-      s.estado === 'registrada' ||
-      s.estado === 'cerrada' ||
-      tieneAsistencia ||
-      (s.borrador === false && tieneContenido)
-    )
-  })
-
-  const fechasRegistradas = new Set(sesiones.map((s) => s.fecha))
-
-  // Dates where a scheduled class was auto-justified due to an emergent session
-  const fechasCubiertasEmergente = new Set(
-    todasSesiones
-      .filter((s) => s.clase_id && s.emergente_id)
-      .map((s) => s.fecha),
-  )
-
-  // Fechas con sesiones emergentes (clase_id = null) — agrupadas por fecha
-  const emergentePorFecha = new Map()
-  todasSesiones
-    .filter((s) => !s.clase_id)
-    .forEach((s) => {
-      if (!emergentePorFecha.has(s.fecha)) emergentePorFecha.set(s.fecha, [])
-      emergentePorFecha.get(s.fecha).push(s)
-    })
-
-  // 4. Calcular estado por día
-  const estadoMap = new Map()
+  // 4. Calcular puntos por día
+  const dotsMap = new Map()
   const hoy = new Date()
   hoy.setHours(0, 0, 0, 0)
+  const ahora = new Date()
 
   for (let d = new Date(primerDia); d <= ultimoDia; d.setDate(d.getDate() + 1)) {
     const y = d.getFullYear()
@@ -144,81 +153,55 @@ async function _calcularEstadoMes(maestroId, anio, mes) {
     const dia = String(d.getDate()).padStart(2, '0')
     const fecha = `${y}-${m}-${dia}`
     const diaEs = DIAS_ES[d.getDay()]
-    const tieneCl = diasConClase.has(diaEs)
-    const emergentesFecha = emergentePorFecha.get(fecha) || []
+    const horariosHoy = horariosPorDia.get(diaEs) || []
+    const emergentesHoy = emergentesPorFecha.get(fecha) || []
 
-    // Si no hay clase programada pero sí hay sesión emergente, evaluarla
-    if (!tieneCl && emergentesFecha.length === 0) {
-      estadoMap.set(fecha, 'sin-clase')
+    if (horariosHoy.length === 0 && emergentesHoy.length === 0) {
+      dotsMap.set(fecha, [])
       continue
     }
 
-    const fechaDate = new Date(d)
-    const diffDias = Math.floor((hoy - fechaDate) / 86400000)
+    const diffDias = Math.floor((hoy - new Date(d)) / 86400000)
 
-    // Caso especial: HOY (diffDias === 0)
-    // Sin color hasta que la clase finalice
-    if (diffDias === 0) {
-      const sesionHoy = todasSesiones.find((s) => s.fecha === fecha)
-      const tieneAsistencia =
-        sesionHoy && Array.isArray(sesionHoy.asistencia) && sesionHoy.asistencia.length > 0
-
-      // Si ya tiene asistencia → registrada (verde)
-      if (tieneAsistencia) {
-        estadoMap.set(fecha, 'registrada')
-        continue
-      }
-
-      // If today has any auto-justified scheduled class → cubierta-emergente
-      // (use the Set to handle multi-class days correctly)
-      if (fechasCubiertasEmergente.has(fecha)) {
-        estadoMap.set(fecha, 'cubierta-emergente')
-        continue
-      }
-
-      // Verificar si la clase ya finalizó hoy
-      const horaFinDia = horaFinPorDia.get(diaEs)
-      if (horaFinDia) {
-        const ahora = new Date()
-        const [hFinStr, minFinStr] = horaFinDia.split(':')
-        const horaFinMs = parseInt(hFinStr) * 60 * 60 * 1000 + parseInt(minFinStr || 0) * 60 * 1000
-        const ahoraMs = ahora.getHours() * 60 * 60 * 1000 + ahora.getMinutes() * 60 * 1000
-
-        // Si aún no finalizó → sin color
-        if (ahoraMs < horaFinMs) {
-          estadoMap.set(fecha, 'sin-clase')
-          continue
-        }
-      }
-
-      // Finalizó pero sin asistencia → pendiente (naranja)
-      estadoMap.set(fecha, 'pendiente')
-      continue
-    }
-
-    // Fechas pasadas: cubierta-emergente has priority over registrada
-    if (diffDias > 0 && fechasCubiertasEmergente.has(fecha)) {
-      estadoMap.set(fecha, 'cubierta-emergente')
-      continue
-    }
-    if (diffDias > 0 && fechasRegistradas.has(fecha)) {
-      estadoMap.set(fecha, 'registrada')
-      continue
-    }
-
+    // Fechas futuras: la clase todavía no ocurrió, nada que mostrar
     if (diffDias < 0) {
-      estadoMap.set(fecha, 'sin-clase')
-    } else if (diffDias <= UMBRAL_VENCIDA) {
-      estadoMap.set(fecha, 'pendiente')
-    } else {
-      estadoMap.set(fecha, 'vencida')
+      dotsMap.set(fecha, [])
+      continue
     }
+
+    const esHoy = diffDias === 0
+    const dots = []
+
+    horariosHoy.forEach((h) => {
+      const sesion = sesionPorFechaClase.get(`${fecha}|${h.clase_id}`)
+      if (sesion) {
+        dots.push(_colorSesion(sesion, esHoy))
+        return
+      }
+      // Sin sesión: si es hoy, sólo cuenta como "sin registrar" si la clase ya finalizó
+      if (esHoy) {
+        const horaFin = h.hora_fin || '23:59'
+        const [hFinStr, minFinStr] = horaFin.split(':')
+        const finMs = parseInt(hFinStr) * 3600000 + parseInt(minFinStr || 0) * 60000
+        const ahoraMs = ahora.getHours() * 3600000 + ahora.getMinutes() * 60000
+        if (ahoraMs < finMs) return // aún no termina, no mostrar punto todavía
+      }
+      dots.push('rojo')
+    })
+
+    emergentesHoy.forEach((s) => {
+      dots.push(_colorSesion(s, esHoy))
+    })
+
+    dotsMap.set(fecha, dots)
   }
 
-  return estadoMap
+  return dotsMap
 }
 
-function _renderCalendario(container, anio, mes, hoy, estadoMap, { onFechaClick, onPrev, onNext }) {
+const MAX_DOTS_VISIBLES = 4
+
+function _renderCalendario(container, anio, mes, hoy, dotsMap, { onFechaClick, onPrev, onNext }) {
   const primerDia = new Date(anio, mes, 1)
   const ultimoDia = new Date(anio, mes + 1, 0)
   const primerDiaSem = primerDia.getDay()
@@ -241,17 +224,28 @@ function _renderCalendario(container, anio, mes, hoy, estadoMap, { onFechaClick,
 
   for (let d = 1; d <= diasEnMes; d++) {
     const fecha = `${anio}-${String(mes + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`
-    const estado = estadoMap.get(fecha) || 'sin-clase'
+    const dots = dotsMap.get(fecha) || []
     const esHoy = fecha === hoyStr ? 'today' : ''
+    const conClases = dots.length > 0 ? 'has-sessions' : ''
     const isActive = fecha === activeDate
 
     const ariaLabel = `${d} de ${MESES_ES[mes]} ${anio}`
     const ariaCurrent = fecha === hoyStr ? ' aria-current="date"' : ''
     const tabIndex = isActive ? '0' : '-1'
 
+    const dotsVisibles = dots.slice(0, MAX_DOTS_VISIBLES)
+    const restantes = dots.length - dotsVisibles.length
+    const dotsHTML = dots.length
+      ? `<div class="pm-cal-day-dots">
+          ${dotsVisibles.map((c) => `<span class="pm-cal-dot pm-cal-dot--${c}"></span>`).join('')}
+          ${restantes > 0 ? `<span class="pm-cal-dot-mas">+${restantes}</span>` : ''}
+        </div>`
+      : ''
+
     diasHTML += `
-      <div class="pm-cal-day estado-${estado} ${esHoy}" data-fecha="${fecha}" title="${fecha}" role="gridcell" tabindex="${tabIndex}" aria-label="${ariaLabel}" aria-selected="false"${ariaCurrent}>
+      <div class="pm-cal-day ${conClases} ${esHoy}" data-fecha="${fecha}" title="${fecha}" role="gridcell" tabindex="${tabIndex}" aria-label="${ariaLabel}" aria-selected="false"${ariaCurrent}>
         ${d}
+        ${dotsHTML}
       </div>
     `
   }
@@ -279,18 +273,17 @@ function _renderCalendario(container, anio, mes, hoy, estadoMap, { onFechaClick,
 
       <div class="pm-cal-legend">
         <div class="pm-cal-legend-item">
-          <div class="pm-cal-legend-dot" style="background:var(--pm-success)"></div> Registrada
+          <div class="pm-cal-legend-dot" style="background:var(--pm-success)"></div> Clase registrada
         </div>
         <div class="pm-cal-legend-item">
-          <div class="pm-cal-legend-dot" style="background:#0891b2"></div> Cubierta por actividad especial
+          <div class="pm-cal-legend-dot" style="background:var(--pm-warning)"></div> Borrador sin finalizar
         </div>
         <div class="pm-cal-legend-item">
-          <div class="pm-cal-legend-dot" style="background:var(--pm-warning)"></div> Pendiente
+          <div class="pm-cal-legend-dot" style="background:var(--pm-danger)"></div> Sin registrar
         </div>
-        <div class="pm-cal-legend-item">
-          <div class="pm-cal-legend-dot" style="background:var(--pm-danger)"></div> Sin registro >7 días
+        <div class="pm-cal-legend-item" style="font-size:0.65rem;opacity:0.8;">
+          Un punto por cada clase programada ese día
         </div>
-</div>
       </div>
     </div>
   `

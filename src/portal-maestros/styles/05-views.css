@@ -886,55 +886,46 @@
   pointer-events: none;
 }
 
-.pm-cal-day.estado-registrada {
-  background: var(--pm-success-bg);
-  color: var(--pm-success-text);
-}
-.pm-cal-day.estado-pendiente {
-  background: var(--pm-warning-bg);
-  color: var(--pm-warning-text);
-}
-.pm-cal-day.estado-vencida {
-  background: var(--pm-danger-bg);
-  color: var(--pm-danger-text);
-}
-.pm-cal-day.estado-cubierta-emergente {
-  background: #e0f2fe;
-  color: #0c4a6e;
-}
-.pm-cal-day.estado-sin-clase {
-  color: var(--pm-text-muted);
-}
 .pm-cal-day.otro-mes {
   opacity: 0.3;
   pointer-events: none;
 }
 
-.pm-cal-day::after {
-  content: '';
-  position: absolute;
-  bottom: 3px;
+/* Un punto por cada clase programada ese día, en vez de pintar toda la
+   celda de un solo color "peor caso" (ver bug: día con 1 clase registrada
+   y 1 sin registrar no debe verse como si estuviera todo completo). */
+.pm-cal-day-dots {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 2px;
+  margin-top: 2px;
+  max-width: 90%;
+}
+
+.pm-cal-dot {
   width: 4px;
   height: 4px;
   border-radius: 50%;
-  display: none;
+  flex-shrink: 0;
 }
 
-.pm-cal-day.estado-registrada::after {
-  display: block;
+.pm-cal-dot--verde {
   background: var(--pm-success);
 }
-.pm-cal-day.estado-pendiente::after {
-  display: block;
+.pm-cal-dot--naranja {
   background: var(--pm-warning);
 }
-.pm-cal-day.estado-vencida::after {
-  display: block;
+.pm-cal-dot--rojo {
   background: var(--pm-danger);
 }
-.pm-cal-day.estado-cubierta-emergente::after {
-  display: block;
-  background: #0891b2;
+
+.pm-cal-dot-mas {
+  font-size: 0.5rem;
+  line-height: 1;
+  color: var(--pm-text-muted);
+  font-weight: 600;
 }
 
 .pm-cal-legend {
@@ -2123,10 +2114,18 @@
     flex-shrink: 0;
   }
 
-  .pm-cal-day::after {
-    width: 2px;
-    height: 2px;
-    bottom: 1px;
+  .pm-cal-day-dots {
+    gap: 1px;
+    margin-top: 1px;
+  }
+
+  .pm-cal-dot {
+    width: 3px;
+    height: 3px;
+  }
+
+  .pm-cal-dot-mas {
+    font-size: 0.4rem;
   }
 }
 

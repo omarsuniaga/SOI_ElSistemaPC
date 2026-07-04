@@ -67,11 +67,11 @@ describe('calendarioView - Bug 1: Today should not appear green without attendan
 
     await renderCalendarioView(container)
 
-    // Today should be ORANGE (estado-pendiente), not GREEN (estado-registrada)
+    // Today should show an ORANGE dot (borrador), not a GREEN one (registrada)
     const todayCell = container.querySelector(`[data-fecha="${dateStr}"]`)
     expect(todayCell).toBeTruthy()
-    expect(todayCell.classList.contains('estado-pendiente')).toBe(true)
-    expect(todayCell.classList.contains('estado-registrada')).toBe(false)
+    expect(todayCell.querySelector('.pm-cal-dot--naranja')).toBeTruthy()
+    expect(todayCell.querySelector('.pm-cal-dot--verde')).toBeFalsy()
   })
 
   it('should show today as registrada when attendance IS recorded', async () => {
@@ -112,9 +112,9 @@ describe('calendarioView - Bug 1: Today should not appear green without attendan
 
     await renderCalendarioView(container)
 
-    // Today SHOULD be GREEN (estado-registrada) when attendance exists
+    // Today SHOULD show a GREEN dot when attendance exists
     const todayCell = container.querySelector(`[data-fecha="${dateStr}"]`)
     expect(todayCell).toBeTruthy()
-    expect(todayCell.classList.contains('estado-registrada')).toBe(true)
+    expect(todayCell.querySelector('.pm-cal-dot--verde')).toBeTruthy()
   })
 })

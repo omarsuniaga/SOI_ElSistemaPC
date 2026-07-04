@@ -123,6 +123,81 @@ function getSalonOptions() {
   ).join('')
 }
 
+function injectClasesMobilePolish() {
+  if (document.getElementById('clases-mobile-polish')) return
+  const style = document.createElement('style')
+  style.id = 'clases-mobile-polish'
+  style.textContent = `
+    @media (max-width: 767.98px) {
+      .clases-header-premium {
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.75rem;
+      }
+
+      .clases-header-actions {
+        display: grid !important;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.5rem;
+      }
+
+      .clases-header-actions > * {
+        width: 100%;
+      }
+
+      .clases-filter-toolbar {
+        display: grid !important;
+        grid-template-columns: 1fr;
+      }
+
+      .clases-filter-toolbar .premium-search-container,
+      .clases-filter-toolbar .premium-select-container {
+        width: 100%;
+        min-width: 0 !important;
+      }
+
+      .clase-card-item {
+        align-items: flex-start !important;
+        gap: 0.75rem;
+      }
+
+      .clase-card-main {
+        width: 100%;
+        min-width: 0;
+      }
+
+      .clase-card-copy {
+        padding-right: 0 !important;
+      }
+
+      .clase-card-suplente {
+        display: none;
+      }
+
+      .clase-card-horarios {
+        font-size: 0.78rem !important;
+      }
+
+      .clase-card-actions {
+        margin-left: 0 !important;
+        padding-right: 0 !important;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.35rem;
+      }
+
+      .clase-card-actions .btn {
+        width: 2.5rem;
+        min-width: 2.5rem;
+        padding-left: 0;
+        padding-right: 0;
+      }
+    }
+  `
+  document.head.appendChild(style)
+}
+
 function renderContent(container) {
   container.innerHTML = `
     <div class="page-container">

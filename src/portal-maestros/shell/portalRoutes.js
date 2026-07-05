@@ -33,6 +33,7 @@ const VIEW_LOADERS = {
   'ruta-detalle':    () => import('../views/routeDetailView.js'),
   'gestionar-clases':() => import('../views/gestionarClasesView.js'),
   'gestionar-horario':() => import('../views/disponibilidadView.js'),
+  'proponer-contenido':() => import('../views/proponerContenidoView.js'),
 }
 
 const MAESTRO_VIEWS = Object.keys(VIEW_LOADERS).concat(['logout'])
@@ -51,7 +52,7 @@ export function setupRouterRoutes(router, _isAdmin, renderView) {
     'metricas', 'perfil', 'clase-emergente', 'planificacion', 'alumno',
     'gamificacion', 'ruta', 'crear-clase', 'ruta-plan-builder',
     'ruta-semanal', 'ruta-libreria', 'gestionar-clases',
-    'register', 'pending-approval', 'gestionar-horario',
+    'register', 'pending-approval', 'gestionar-horario', 'proponer-contenido',
   ].forEach(route)
 
   router.on('ruta-detalle/:id', (r, params) => renderView('ruta-detalle', params))
@@ -160,6 +161,11 @@ export async function renderViewContent(route, container, params, urlParams, con
       return await mod.renderGestionarClasesView(container)
     case 'gestionar-horario':
       return await mod.renderDisponibilidadView(container, { maestroId })
+    case 'proponer-contenido':
+      return mod.renderProponerContenidoView(container, {
+        maestroId,
+        claseId: urlParams.get('clase'),
+      })
   }
 
   return null

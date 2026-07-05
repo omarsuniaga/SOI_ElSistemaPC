@@ -6,7 +6,7 @@
  */
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 
-vi.mock('../../api/propuestasApi.js', () => ({
+vi.mock('../../api/propuestasAdapter.js', () => ({
   listarPropuestasPendientes: vi.fn(),
   publicarPropuesta: vi.fn(),
   devolverPropuesta: vi.fn(),
@@ -16,7 +16,7 @@ import {
   listarPropuestasPendientes,
   publicarPropuesta,
   devolverPropuesta,
-} from '../../api/propuestasApi.js'
+} from '../../api/propuestasAdapter.js'
 import { renderAcmPropuestasView } from '../acmProuestasView.js'
 
 const mockPropuesta = {

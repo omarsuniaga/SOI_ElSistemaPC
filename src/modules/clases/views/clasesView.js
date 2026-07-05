@@ -56,19 +56,19 @@ export async function renderClasesView(container) {
     renderLoading(container)
 
     const [clases, maestros, salones, programas, alumnos] = await Promise.all([
-      obtenerClases(),
-      supabase.from('maestros').select('*').order('nombre_completo', { ascending: true }),
-      supabase.from('salones').select('*').order('nombre', { ascending: true }),
-      supabase.from('programas').select('*').order('nombre', { ascending: true }),
-      supabase.from('alumnos').select('*').eq('activo', true).order('nombre_completo', { ascending: true }),
-    ])
+          obtenerClases(),
+          supabase.from('maestros').select('*').order('nombre_completo', { ascending: true }),
+          supabase.from('salones').select('*').order('nombre', { ascending: true }),
+          supabase.from('programas').select('*').order('nombre', { ascending: true }),
+          supabase.rpc('get_alumnos_disponibles_para_inscripcion'),
+        ])
 
-    state.clases = clases
-    state.clasesOriginales = [...clases]
-    state.maestros = maestros.data || []
-    state.salones = salones.data || []
-    state.programas = programas.data || []
-    state.alumnos = alumnos.data || []
+        state.clases = clases
+        state.clasesOriginales = [...clases]
+        state.maestros = maestros.data || []
+        state.salones = salones.data || []
+        state.programas = programas.data || []
+        state.alumnos = alumnos.data || []
     state.cargando = false
 
     renderContent(container)

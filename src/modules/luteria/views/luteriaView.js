@@ -5,9 +5,13 @@
  *
  * Ruta registrada: luteria-diagnosticos
  * Portal: Lutería (LUT)
+ *
+ * Loop 17 Sesión 2: botón "+ Nueva orden" en el header abre el wizard
+ * luteriaOrdenWizard.js.
  */
 
 import * as instrumentosApi from '../../instrumentos/api/instrumentosApi.js'
+import { openLuteriaOrdenWizard } from '../components/luteriaOrdenWizard.js'
 
 const ESTADOS_ACCION = {
   en_reparacion: { label: 'En reparación', color: '#d97706', bg: '#fef3c7' },
@@ -30,7 +34,7 @@ function estadoBadge(estado) {
     font-size:0.75rem;font-weight:600;background:${cfg.bg};color:${cfg.color}">${cfg.label}</span>`
 }
 
-function renderCard(inst, onCambiarEstado) {
+function renderCard(inst, onCambiarEstado, onCrearOrden) {
   const card = document.createElement('div')
   card.className = 'luteria-card'
   card.style.cssText = `background:#fff;border:1px solid #e2e8f0;border-radius:12px;
@@ -62,6 +66,11 @@ function renderCard(inst, onCambiarEstado) {
               ${cfg.label}
             </button>`,
           ).join('')}
+        <button class="btn-crear-orden" data-id="${inst.id}"
+          style="border:none;border-radius:8px;padding:0.3rem 0.75rem;font-size:0.8rem;
+          font-weight:600;cursor:pointer;background:#2563eb;color:#fff">
+          <i class="bi bi-clipboard-plus me-1"></i>Crear orden
+        </button>
       </div>
     </div>
   `
@@ -81,6 +90,10 @@ function renderCard(inst, onCambiarEstado) {
     })
   })
 
+  card.querySelector('.btn-crear-orden')?.addEventListener('click', async () => {
+    await onCrearOrden(inst.id)
+  })
+
   return card
 }
 
@@ -96,9 +109,14 @@ export async function renderLuteriaView(container) {
             Instrumentos dañados o en reparación
           </p>
         </div>
-        <button id="btn-refresh-luteria" class="btn btn-outline-secondary btn-sm">
-          <i class="bi bi-arrow-clockwise me-1"></i>Actualizar
-        </button>
+        <div style="display:flex;gap:0.5rem;flex-wrap:wrap">
+          <button id="btn-nueva-orden" class="btn btn-warning btn-sm" style="font-weight:600">
+            <i class="bi bi-plus-circle me-1"></i>Nueva orden
+          </button>
+          <button id="btn-refresh-luteria" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-arrow-clockwise me-1"></i>Actualizar
+          </button>
+        </div>
       </div>
       <div id="luteria-list">
         <div class="d-flex justify-content-center align-items-center" style="min-height:200px">
@@ -118,7 +136,6 @@ export async function renderLuteriaView(container) {
     </div>`
 
     try {
-      // Fetch both damaged states in parallel
       const [danados, enReparacion] = await Promise.all([
         instrumentosApi.listarInstrumentos({ estado: 'danado' }),
         instrumentosApi.listarInstrumentos({ estado: 'en_reparacion' }),
@@ -141,10 +158,19 @@ export async function renderLuteriaView(container) {
       const frag = document.createDocumentFragment()
 
       todos.forEach((inst) => {
-        const card = renderCard(inst, async (id, nuevoEstado) => {
-          await instrumentosApi.cambiarEstadoInstrumento(id, nuevoEstado)
-          await load()
-        })
+        const card = renderCard(
+          inst,
+          async (id, nuevoEstado) => {
+            await instrumentosApi.cambiarEstadoInstrumento(id, nuevoEstado)
+            await load()
+          },
+          async (instrumentoId) => {
+            await openLuteriaOrdenWizard({
+              instrumentoId,
+              onSuccess: () => load(),
+            })
+          },
+        )
         frag.appendChild(card)
       })
 
@@ -155,6 +181,10 @@ export async function renderLuteriaView(container) {
       </div>`
     }
   }
+
+  container.querySelector('#btn-nueva-orden')?.addEventListener('click', async () => {
+    await openLuteriaOrdenWizard({ onSuccess: () => load() })
+  }, { signal: ac.signal })
 
   container.querySelector('#btn-refresh-luteria')?.addEventListener('click', load, { signal: ac.signal })
 

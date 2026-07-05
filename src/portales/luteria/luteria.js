@@ -16,6 +16,7 @@ const navGroups = [
     icon: 'bi-tools',
     items: [
       { id: 'luteria-diagnosticos', label: 'Diagnósticos', icon: 'bi-wrench-adjustable' },
+      { id: 'luteria-ordenes', label: 'Órdenes de Reparación', icon: 'bi-clipboard-data' },
       { id: 'hermes-tareas', label: 'Tareas Institucionales', icon: 'bi-check2-square' },
     ],
   },

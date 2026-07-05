@@ -886,21 +886,11 @@
   pointer-events: none;
 }
 
-.pm-cal-day.estado-registrada {
-  background: var(--pm-success-bg);
-  color: var(--pm-success-text);
-}
-.pm-cal-day.estado-pendiente {
+/* Fondo de la fecha: amarillo SOLO cuando hay clases sin registrar o en borrador.
+   El estado por clase lo llevan los puntos (.pm-day-dot), no el fondo. */
+.pm-cal-day.dia-alerta {
   background: var(--pm-warning-bg);
   color: var(--pm-warning-text);
-}
-.pm-cal-day.estado-vencida {
-  background: var(--pm-danger-bg);
-  color: var(--pm-danger-text);
-}
-.pm-cal-day.estado-cubierta-emergente {
-  background: #e0f2fe;
-  color: #0c4a6e;
 }
 .pm-cal-day.estado-sin-clase {
   color: var(--pm-text-muted);
@@ -910,31 +900,25 @@
   pointer-events: none;
 }
 
-.pm-cal-day::after {
-  content: '';
-  position: absolute;
-  bottom: 3px;
-  width: 4px;
-  height: 4px;
+/* Puntos por clase: uno por clase programada/emergente del día */
+.pm-day-dot {
+  width: 5px;
+  height: 5px;
   border-radius: 50%;
-  display: none;
+  flex: 0 0 auto;
 }
-
-.pm-cal-day.estado-registrada::after {
-  display: block;
+.pm-dot-verde {
   background: var(--pm-success);
 }
-.pm-cal-day.estado-pendiente::after {
-  display: block;
+.pm-dot-amarillo {
   background: var(--pm-warning);
 }
-.pm-cal-day.estado-vencida::after {
-  display: block;
+.pm-dot-rojo {
   background: var(--pm-danger);
 }
-.pm-cal-day.estado-cubierta-emergente::after {
-  display: block;
-  background: #0891b2;
+.pm-dot-gris {
+  background: var(--pm-text-muted);
+  opacity: 0.5;
 }
 
 .pm-cal-legend {
@@ -962,6 +946,9 @@
   display: flex;
   gap: 2px;
   margin-top: 2px;
+  flex-wrap: wrap;
+  justify-content: center;
+  max-width: 90%;
 }
 
 .pm-dot {
@@ -2123,10 +2110,9 @@
     flex-shrink: 0;
   }
 
-  .pm-cal-day::after {
-    width: 2px;
-    height: 2px;
-    bottom: 1px;
+  .pm-day-dot {
+    width: 3px;
+    height: 3px;
   }
 }
 

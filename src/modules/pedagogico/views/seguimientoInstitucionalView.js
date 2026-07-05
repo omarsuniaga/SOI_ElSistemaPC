@@ -279,7 +279,7 @@ async function _runRiskAnalysis() {
 }
 
 async function _openNewCaseModal() {
-  const { data: alumnos } = await supabase.from('alumnos').select('id, nombre_completo').eq('activo', true).order('nombre_completo')
+  const { data: alumnos } = await supabase.rpc('get_alumnos_disponibles_para_inscripcion')
 
   AppModal.open({
     title:    'Nuevo caso institucional',

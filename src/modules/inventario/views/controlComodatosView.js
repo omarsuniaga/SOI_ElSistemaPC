@@ -87,7 +87,7 @@ export async function renderControlComodatosView(container) {
     '</div></div></div>',
   ].join('\n')
 
-  supabase.from('alumnos').select('id, nombre_completo').eq('activo', true).order('nombre_completo').then(({ data: alumnos }) => {
+  supabase.rpc('get_alumnos_disponibles_para_inscripcion').then(({ data: alumnos }) => {
     const sel = container.querySelector('#select-alumno'); if (!sel || !alumnos) return
     sel.innerHTML = '<option value="">\u2014 Seleccionar alumno \u2014</option>' + alumnos.map(a => '<option value="' + a.id + '">' + a.nombre_completo + '</option>').join('')
   })

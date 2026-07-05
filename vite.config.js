@@ -33,22 +33,23 @@ const CSP = [
 export default defineConfig({
   base: '/',
   build: {
-    outDir: 'dist',
-    rollupOptions: {
-      input: {
-        index:      'index.html',
-        admin:      'admin.html',
-        maestros:   'maestros.html',
-        audiciones: 'audiciones.html',
-        fin:        'fin.html',
-        acm:        'acm.html',
-        adm:        'adm.html',
-        com:        'com.html',
-        tecnico:    'tecnico.html',
-        inventario: 'inventario.html',
-        calendario: 'calendario.html',
-        luteria:    'luteria.html',
-      },
+      outDir: 'dist',
+      rollupOptions: {
+        input: {
+          index:      'index.html',
+          admin:      'admin.html',
+          maestros:   'maestros.html',
+          audiciones: 'audiciones.html',
+          fin:        'fin.html',
+          acm:        'acm.html',
+          adm:        'adm.html',
+          com:        'com.html',
+          tecnico:    'tecnico.html',
+          inventario: 'inventario.html',
+          calendario: 'calendario.html',
+          luteria:    'luteria.html',
+          lut:        'lut.html',
+        },
       output: {
         manualChunks(id) {
           if (id.includes('supabase')) return 'supabase'

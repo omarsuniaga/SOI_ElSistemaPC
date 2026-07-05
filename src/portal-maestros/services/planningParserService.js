@@ -122,8 +122,129 @@ function loadScript(src) {
   });
 }
 
+const DEFAULT_MAX_CHARS = 5000;
+const NIVEL_HEADER_REGEX = /(?=^Nivel\b)/m;
+
 /**
- * Función principal: Procesa el archivo y devuelve la estructura JSON
+ * Divide el texto de una planificación en "chunks" procesables por la IA.
+ *
+ * Estrategia (curriculo-tres-planos WU #4):
+ *   1. Si el texto contiene encabezados de la forma "Nivel ..." al inicio de
+ *      línea, se divide por esos encabezados (cada nivel es una unidad
+ *      pedagógica natural — evita partir un nivel a la mitad).
+ *   2. Si no hay encabezados "Nivel" pero el texto excede `maxChars`, se
+ *      divide en bloques de tamaño fijo (fallback puramente mecánico).
+ *   3. Si no aplica ninguno de los dos casos, se devuelve un único chunk.
+ *
+ * @param {string} text
+ * @param {{ maxChars?: number }} [options]
+ * @returns {string[]}
+ */
+export function chunkPlanningText(text, { maxChars = DEFAULT_MAX_CHARS } = {}) {
+  const nivelChunks = text.split(NIVEL_HEADER_REGEX).filter((chunk) => chunk.trim().length > 0);
+
+  if (nivelChunks.length > 1) {
+    return nivelChunks;
+  }
+
+  if (text.length <= maxChars) {
+    return [text];
+  }
+
+  const sizeChunks = [];
+  for (let i = 0; i < text.length; i += maxChars) {
+    sizeChunks.push(text.slice(i, i + maxChars));
+  }
+  return sizeChunks;
+}
+
+/**
+ * Valida que un objeto parseado de la IA respete la jerarquía de 4 niveles
+ * (Nivel -> Tema -> Objetivo -> Indicador) exigida por EXTRACT_PLANNING_PROMPT.
+ *
+ * Lanza un `Error` descriptivo en el primer nivel de la jerarquía donde falte
+ * la clave esperada — el mensaje siempre menciona el nombre de la clave
+ * faltante para facilitar debugging (ver tests).
+ *
+ * @param {unknown} structure
+ * @returns {true}
+ */
+export function validatePlanningStructure(structure) {
+  if (!structure || !Array.isArray(structure.niveles)) {
+    throw new Error('Estructura inválida: falta la clave "niveles" (debe ser un array).');
+  }
+
+  structure.niveles.forEach((nivel, nIdx) => {
+    if (!Array.isArray(nivel?.temas)) {
+      throw new Error(`Estructura inválida: el nivel #${nIdx + 1} no tiene "temas" (debe ser un array).`);
+    }
+
+    nivel.temas.forEach((tema, tIdx) => {
+      if (!Array.isArray(tema?.objetivos)) {
+        throw new Error(
+          `Estructura inválida: el tema #${tIdx + 1} del nivel #${nIdx + 1} no tiene "objetivos" (debe ser un array).`,
+        );
+      }
+
+      tema.objetivos.forEach((objetivo, oIdx) => {
+        if (!Array.isArray(objetivo?.indicadores)) {
+          throw new Error(
+            `Estructura inválida: el objetivo #${oIdx + 1} del tema #${tIdx + 1} no tiene "indicadores" (debe ser un array).`,
+          );
+        }
+
+        objetivo.indicadores.forEach((indicador, iIdx) => {
+          if (!indicador || typeof indicador.descripcion !== 'string' || !indicador.descripcion.trim()) {
+            throw new Error(
+              `Estructura inválida: el indicador #${iIdx + 1} del objetivo #${oIdx + 1} no tiene "descripcion".`,
+            );
+          }
+        });
+      });
+    });
+  });
+
+  return true;
+}
+
+/**
+ * Fusiona los resultados parciales de múltiples chunks en una única
+ * estructura, concatenando los niveles en el orden en que aparecieron.
+ */
+function mergeChunkResults(results) {
+  return {
+    niveles: results.flatMap((result) => (Array.isArray(result?.niveles) ? result.niveles : [])),
+  };
+}
+
+/**
+ * Envía un chunk de texto a la IA y devuelve el JSON parseado (sin validar).
+ */
+async function parseChunkWithAI(chunkText) {
+  const messages = [
+    { role: 'system', content: EXTRACT_PLANNING_PROMPT },
+    { role: 'user', content: `Analiza esta planificación y devuelve SOLO el JSON:\n\n${chunkText}` },
+  ];
+
+  const jsonResponse = await callGroq(messages);
+
+  // ROBUSTEZ: Extraer solo el bloque JSON (por si la IA añade texto extra)
+  const jsonMatch = jsonResponse.match(/\{[\s\S]*\}/);
+  if (!jsonMatch) {
+    throw new Error('La IA no devolvió un formato de datos válido.');
+  }
+
+  return JSON.parse(jsonMatch[0].trim());
+}
+
+/**
+ * Función principal: Procesa el archivo y devuelve la estructura JSON.
+ *
+ * MODO BORRADOR: esta función NUNCA persiste datos — solo extrae texto,
+ * lo divide en chunks (WU #4), llama a la IA por cada chunk, fusiona los
+ * resultados y valida la estructura final antes de devolverla. La decisión
+ * de guardar (como propuesta o descartar) es responsabilidad exclusiva de
+ * la vista que la invoca (proponerContenidoView.js, WU #7).
  */
 export async function parsePlanningFile(file, onProgress) {
   let text = '';
@@ -144,23 +265,17 @@ export async function parsePlanningFile(file, onProgress) {
 
     if (!text.trim()) throw new Error('El archivo parece estar vacío o no contiene texto legible.');
 
-    // Llamada a Groq
-    const messages = [
-      { role: 'system', content: EXTRACT_PLANNING_PROMPT },
-      { role: 'user', content: `Analiza esta planificación y devuelve SOLO el JSON:\n\n${text.substring(0, 8000)}` }
-    ];
-
-    const jsonResponse = await callGroq(messages);
-    
-    // ROBUSTEZ: Extraer solo el bloque JSON (por si la IA añade texto extra)
-    const jsonMatch = jsonResponse.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) {
-      throw new Error('La IA no devolvió un formato de datos válido.');
+    const chunks = chunkPlanningText(text);
+    const partials = [];
+    for (const chunk of chunks) {
+      partials.push(await parseChunkWithAI(chunk));
     }
 
-    const cleanJson = jsonMatch[0].trim();
-    return JSON.parse(cleanJson);
+    const merged = chunks.length > 1 ? mergeChunkResults(partials) : partials[0];
 
+    validatePlanningStructure(merged);
+
+    return merged;
   } catch (err) {
     console.error('[PlanningParser] Error:', err);
     throw err;

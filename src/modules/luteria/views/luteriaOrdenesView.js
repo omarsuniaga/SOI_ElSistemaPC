@@ -11,6 +11,7 @@
 
 import { getOrdenes, updateOrdenEstado } from '../../luteria-taller/api/luteriaTallerSupabase.js'
 import { openLuteriaOrdenWizard } from '../components/luteriaOrdenWizard.js'
+import '../styles/luteria.css'
 
 const ESTADOS_FLOW = [
   'reportado',
@@ -84,8 +85,7 @@ function siguienteEstado(estadoActual) {
 
 function renderCard(orden, onAvanzar) {
   const card = document.createElement('div')
-  card.className = 'luteria-orden-card'
-  card.style.cssText = `background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:1rem 1.25rem;margin-bottom:0.75rem;box-shadow:0 1px 3px rgba(0,0,0,0.06)`
+  card.className = 'lut-card'
 
   const instrumentoNombre = orden.alumno_nombre
     ? `${orden.alumno_nombre} — instrumento`
@@ -95,34 +95,35 @@ function renderCard(orden, onAvanzar) {
   const sigLabel = sig ? ESTADOS_LABELS[sig] : null
 
   card.innerHTML = `
-    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;flex-wrap:wrap">
+    <div class="lut-card-row" style="display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;flex-wrap:wrap">
       <div style="flex:1;min-width:0">
-        <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.25rem;flex-wrap:wrap">
-          <span style="font-weight:700;font-size:0.9rem;color:#111">${escapeHTML(instrumentoNombre)}</span>
+        <div class="lut-card-meta" style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.25rem;flex-wrap:wrap">
+          <span class="lut-card-title">${escapeHTML(instrumentoNombre)}</span>
           ${estadoBadge(orden.estado)}
           ${prioridadBadge(orden.prioridad)}
         </div>
-        <div style="font-size:0.8125rem;color:#6b7280;margin-bottom:0.25rem">
+        <div class="lut-card-meta">
           <span class="me-2"><i class="bi bi-person me-1"></i>Reportado por: ${escapeHTML(orden.reportado_por_nombre || 'N/D')}</span>
           <span><i class="bi bi-building me-1"></i>Origen: ${escapeHTML(orden.departamento_origen || 'N/D')}</span>
         </div>
-        ${orden.descripcion_inicial ? `<div style="font-size:0.8125rem;color:#374151;margin-top:0.5rem;padding:0.5rem 0.75rem;background:#f8fafc;border-radius:6px;border-left:3px solid #cbd5e1">
+        ${orden.descripcion_inicial ? `<div class="lut-text-damage">
           <strong>Daño:</strong> ${escapeHTML(orden.descripcion_inicial)}
         </div>` : ''}
-        ${orden.diagnostico_resumen ? `<div style="font-size:0.8125rem;color:#374151;margin-top:0.25rem;padding:0.5rem 0.75rem;background:#f0f9ff;border-radius:6px;border-left:3px solid #0ea5e9">
+        ${orden.diagnostico_resumen ? `<div class="lut-text-diagnostic">
           <strong>Diagnóstico:</strong> ${escapeHTML(orden.diagnostico_resumen)}
         </div>` : ''}
-        <div style="font-size:0.75rem;color:#9ca3af;margin-top:0.5rem">
+        <div class="lut-text-timestamp">
           <i class="bi bi-clock me-1"></i>Creado: ${new Date(orden.created_at).toLocaleString('es-DO')}
         </div>
       </div>
-      ${sig ? `<div style="flex-shrink:0">
-        <button class="btn-avanzar-orden" data-id="${orden.id}" data-sig-estado="${sig}"
-          style="border:none;border-radius:8px;padding:0.4rem 0.9rem;font-size:0.8rem;font-weight:600;cursor:pointer;background:#2563eb;color:#fff">
+      ${sig ? `<div class="lut-card-actions">
+        <button class="lut-btn lut-btn-primary btn-avanzar-orden" data-id="${orden.id}" data-sig-estado="${sig}">
           <i class="bi bi-arrow-right-circle me-1"></i>Avanzar a: ${escapeHTML(sigLabel)}
         </button>
-      </div>` : `<div style="flex-shrink:0;color:#059669;font-size:0.875rem;font-weight:600">
-        <i class="bi bi-check-circle me-1"></i>Finalizado
+      </div>` : `<div class="lut-card-actions">
+        <div class="lut-btn-finalizado">
+          <i class="bi bi-check-circle me-1"></i>Finalizado
+        </div>
       </div>`}
     </div>
   `
@@ -152,15 +153,15 @@ export async function renderLuteriaOrdenesView(container, filtrosIniciales = {})
   let filtroEstado = filtrosIniciales.estado || 'todos'
 
   container.innerHTML = `
-    <div style="padding:1.5rem;max-width:1000px;margin:0 auto">
-      <div style="margin-bottom:1.5rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem">
+    <div class="lut-container" style="max-width:1000px">
+      <div class="lut-header">
         <div>
-          <h5 style="margin:0;font-weight:700;color:#111">Taller de Lutería — Órdenes de Reparación</h5>
-          <p style="margin:0.25rem 0 0;font-size:0.875rem;color:#6b7280">
+          <h5 class="lut-section-title">Taller de Lutería — Órdenes de Reparación</h5>
+          <p class="lut-section-subtitle">
             Workflow completo: 13 estados desde reportado hasta cerrado
           </p>
         </div>
-        <div style="display:flex;gap:0.5rem;align-items:center">
+        <div class="lut-header-actions" style="display:flex;gap:0.5rem;align-items:center">
           <button id="btn-nueva-orden-2" class="btn btn-warning btn-sm" style="font-weight:600">
             <i class="bi bi-plus-circle me-1"></i>Nueva orden
           </button>
@@ -186,7 +187,7 @@ export async function renderLuteriaOrdenesView(container, filtrosIniciales = {})
         </div>
       </div>
       <div id="ordenes-list">
-        <div class="d-flex justify-content-center align-items-center" style="min-height:200px">
+        <div class="lut-loader">
           <div class="spinner-border text-warning" role="status">
             <span class="visually-hidden">Cargando...</span>
           </div>
@@ -201,7 +202,7 @@ export async function renderLuteriaOrdenesView(container, filtrosIniciales = {})
   const listEl = container.querySelector('#ordenes-list')
 
   async function load() {
-    listEl.innerHTML = `<div class="d-flex justify-content-center align-items-center" style="min-height:200px">
+    listEl.innerHTML = `<div class="lut-loader">
       <div class="spinner-border text-warning" role="status"><span class="visually-hidden">Cargando...</span></div>
     </div>`
 
@@ -211,7 +212,7 @@ export async function renderLuteriaOrdenesView(container, filtrosIniciales = {})
 
       if (ordenes.length === 0) {
         listEl.innerHTML = `
-          <div style="text-align:center;padding:3rem 1rem;color:#6b7280">
+          <div class="lut-empty">
             <i class="bi bi-inbox" style="font-size:2.5rem;display:block;margin-bottom:0.75rem"></i>
             <p style="font-weight:600;margin:0">Sin órdenes ${filtroEstado !== 'todos' ? `en estado "${ESTADOS_LABELS[filtroEstado] || filtroEstado}"` : ''}</p>
             <p style="margin:0.25rem 0 0;font-size:0.875rem">No hay trabajo pendiente en el taller.</p>

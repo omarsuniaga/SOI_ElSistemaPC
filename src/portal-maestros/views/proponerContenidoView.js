@@ -1,5 +1,5 @@
 import { parsePlanningFile } from '../services/planningParserService.js'
-import { enviarPropuesta } from '../services/proponerContenidoService.js'
+import { enviarPropuesta } from '../services/proponerContenidoAdapter.js'
 
 /**
  * Vista maestro — proponer contenido curricular (curriculo-tres-planos WU #7).

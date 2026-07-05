@@ -3,7 +3,7 @@ import {
   listarPropuestasPendientes,
   publicarPropuesta,
   devolverPropuesta,
-} from '../api/propuestasApi.js'
+} from '../api/propuestasAdapter.js'
 
 /**
  * Vista ACM — revisión de propuestas de contenido curricular enviadas por

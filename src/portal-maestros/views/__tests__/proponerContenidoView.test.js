@@ -11,12 +11,12 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 vi.mock('../../services/planningParserService.js', () => ({
   parsePlanningFile: vi.fn(),
 }))
-vi.mock('../../services/proponerContenidoService.js', () => ({
+vi.mock('../../services/proponerContenidoAdapter.js', () => ({
   enviarPropuesta: vi.fn(),
 }))
 
 import { parsePlanningFile } from '../../services/planningParserService.js'
-import { enviarPropuesta } from '../../services/proponerContenidoService.js'
+import { enviarPropuesta } from '../../services/proponerContenidoAdapter.js'
 import { renderProponerContenidoView } from '../proponerContenidoView.js'
 
 const estructuraParsed = {

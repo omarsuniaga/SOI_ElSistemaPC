@@ -6,6 +6,7 @@
  * Gating: rol 'admin' por ahora.
  */
 
+import '../../modules/luteria/styles/luteria.css'
 import { bootAdminPortal } from '../_shared/adminPortalShell.js'
 import { allRegistrars } from '../_shared/allRegistrars.js'
 

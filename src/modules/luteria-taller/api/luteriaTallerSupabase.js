@@ -15,6 +15,8 @@ const TABLAS = {
   MOVIMIENTOS: 'lut_movimientos_insumos',
   SOLICITUDES: 'lut_solicitudes_compra',
   EVIDENCIAS: 'lut_evidencias',
+  INVENTARIO: 'inventario_activos',
+  HISTORIAL: 'inventario_historial',
 }
 
 // ─── Órdenes de reparación ────────────────────────────────────────────────────
@@ -72,6 +74,8 @@ export async function createOrden(datos) {
       departamento_origen: datos.departamento_origen || 'LUT',
       estado: 'reportado',
       prioridad: datos.prioridad || 'media',
+      gravedad: datos.gravedad || null,
+      tipo_dano: datos.tipo_dano || null,
       descripcion_inicial: datos.descripcion_inicial || '',
       requiere_reemplazo: datos.requiere_reemplazo || false,
       requiere_cobro: datos.requiere_cobro || false,
@@ -387,4 +391,103 @@ export async function getDashboard() {
     con_cobro_pendiente: abiertasData.filter((o) => o.requiere_cobro).length,
     insumos_stock_bajo: insumosBajos?.length || 0,
   }
+}
+
+// ─── Inventario (fuente de verdad desde Loop 18) ────────────────────────────
+
+/**
+ * Busca un activo en inventario_activos por número de serie.
+ * Retorna el activo o null si no existe.
+ */
+export async function getActivoBySerie(numeroSerie) {
+  if (!numeroSerie || !numeroSerie.trim()) return null
+  const { data, error } = await supabase
+    .from(TABLAS.INVENTARIO)
+    .select('id, codigo_inventario, tipo_instrumento, marca, modelo, numero_serie, estado_uso, estado_conservacion, notas, activo')
+    .eq('numero_serie', numeroSerie.trim())
+    .eq('activo', true)
+    .maybeSingle()
+  if (error) throw error
+  return data
+}
+
+/**
+ * Crea un nuevo activo en inventario_activos.
+ * Retorna el activo creado con su id asignado.
+ */
+export async function createActivo(datos) {
+  const { data, error } = await supabase
+    .from(TABLAS.INVENTARIO)
+    .insert({
+      tipo_instrumento: datos.tipo_instrumento,
+      marca: datos.marca || null,
+      modelo: datos.modelo || null,
+      numero_serie: datos.numero_serie,
+      codigo_inventario: datos.codigo_inventario || `INV-${Date.now()}`,
+      estado_uso: datos.estado_uso || 'disponible',
+      estado_conservacion: datos.estado_conservacion || 'bueno',
+      activo: true,
+      notas: datos.notas || null,
+      foto_url: datos.foto_url || null,
+    })
+    .select()
+    .single()
+  if (error) throw error
+  return data
+}
+
+/**
+ * Actualiza el estado de un activo en inventario_activos.
+ */
+export async function updateActivoEstado(activoId, campos) {
+  const { data, error } = await supabase
+    .from(TABLAS.INVENTARIO)
+    .update(campos)
+    .eq('id', activoId)
+    .select()
+    .single()
+  if (error) throw error
+  return data
+}
+
+/**
+ * Inserta un evento en inventario_historial.
+ * tipo_evento: 'dañado' | 'en_reparacion' | 'reparado' | 'entregado' | 'baja'.
+ */
+export async function registrarEventoHistorial(activoId, tipoEvento, descripcion, usuarioId = null, metadata = null) {
+  const { data, error} = await supabase
+    .from(TABLAS.HISTORIAL)
+    .insert({
+      activo_id: activoId,
+      tipo_evento: tipoEvento,
+      descripcion,
+      fecha: new Date().toISOString(),
+      usuario_id: usuarioId,
+      metadata,
+    })
+    .select()
+    .single()
+  if (error) throw error
+  return data
+}
+
+/**
+ * Sube una foto de instrumento al bucket instrumentos-fotos.
+ * path: instrumentos-fotos/<numero_serie>/<timestamp>-<nombre>.
+ * Retorna la URL pública.
+ */
+export async function uploadFotoInstrumento(file, numeroSerie) {
+  const ext = file.name.split('.').pop().toLowerCase()
+  const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_')
+  const path = `instrumentos-fotos/${numeroSerie}/${Date.now()}-${safeName}`
+
+  const { error: upErr } = await supabase.storage
+    .from('instrumentos-fotos')
+    .upload(path, file, { upsert: false, contentType: file.type })
+  if (upErr) throw upErr
+
+  const { data: urlData } = supabase.storage
+    .from('instrumentos-fotos')
+    .getPublicUrl(path)
+  return urlData.publicUrl
 }

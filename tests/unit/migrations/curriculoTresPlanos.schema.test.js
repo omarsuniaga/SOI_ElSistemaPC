@@ -102,3 +102,45 @@ describe('migration: 20260704_000002_route_status_enum.sql', () => {
     expect(doBlocks).toBe(endBlocks)
   })
 })
+
+describe('migration: 20260704_000003_fn_objetivo_actual_alumno.sql', () => {
+  const sql = readMigration('20260704_000003_fn_objetivo_actual_alumno.sql')
+
+  it('creates the function with the exact signature (student_id, route_version_id) -> json', () => {
+    expect(sql).toMatch(
+      /CREATE OR REPLACE FUNCTION public\.fn_objetivo_actual_alumno\(\s*p_student_id uuid,\s*p_route_version_id uuid\s*\)\s*RETURNS json/,
+    )
+  })
+
+  it('walks the real hierarchy levels -> nodes -> objetivos -> indicators', () => {
+    expect(sql).toMatch(/FROM public\.levels lv/)
+    expect(sql).toMatch(/JOIN public\.nodes n ON n\.level_id = lv\.id/)
+    expect(sql).toMatch(/JOIN public\.objetivos o ON o\.node_id = n\.id/)
+    expect(sql).toMatch(/FROM public\.indicators i/)
+  })
+
+  it('scopes required indicators using the REAL is_required column (not an aspirational es_requerido)', () => {
+    expect(sql).toMatch(/i\.is_required/)
+    expect(sql).not.toMatch(/i\.es_requerido/)
+  })
+
+  it('filters approved attempts using the REAL indicator_attempts columns (student_id, result)', () => {
+    expect(sql).toMatch(/FROM public\.indicator_attempts ia/)
+    expect(sql).toMatch(/ia\.student_id = p_student_id/)
+    expect(sql).toMatch(/ia\.result = 'approved'/)
+  })
+
+  it('orders by level_number, node order, objetivo order to pick the FIRST pending objective', () => {
+    expect(sql).toMatch(/ORDER BY oo\.level_number, oo\.node_order, oo\.objetivo_order/)
+    expect(sql).toMatch(/LIMIT 1/)
+  })
+
+  it('returns an explicit null-shaped json when there is no pending objective (route completed or empty)', () => {
+    expect(sql).toMatch(/IF v_result IS NULL THEN/)
+    expect(sql).toMatch(/'objetivo_actual_id', NULL/)
+  })
+
+  it('grants EXECUTE to authenticated role', () => {
+    expect(sql).toMatch(/GRANT EXECUTE ON FUNCTION public\.fn_objetivo_actual_alumno\(uuid, uuid\) TO authenticated/)
+  })
+})

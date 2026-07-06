@@ -369,7 +369,10 @@ describe('Notification System Integration', () => {
 
   describe('Real-world scenario: polling + manual push', () => {
     it('should prevent duplicate when notification is fetched then pushed', async () => {
-      const now = Date.now();
+      // Align to the start of a dedup window bucket so the +2s offset below
+      // can never cross into the next minute bucket (flaky near :58-:59s).
+      const DEDUP_WINDOW_MS = 60 * 1000;
+      const now = Math.floor(Date.now() / DEDUP_WINDOW_MS) * DEDUP_WINDOW_MS;
       vi.setSystemTime(now);
 
       const notification = {

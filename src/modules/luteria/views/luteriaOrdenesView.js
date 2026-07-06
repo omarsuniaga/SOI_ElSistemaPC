@@ -11,6 +11,7 @@
 
 import { getOrdenes, updateOrdenEstado } from '../../luteria-taller/api/luteriaTallerSupabase.js'
 import { openLuteriaOrdenWizard } from '../components/luteriaOrdenWizard.js'
+import { openDiagnosticoWizard } from '../components/luteriaDiagnosticoWizard.js'
 import '../styles/luteria.css'
 
 const ESTADOS_FLOW = [
@@ -120,6 +121,10 @@ function renderCard(orden, onAvanzar) {
         <button class="lut-btn lut-btn-primary btn-avanzar-orden" data-id="${orden.id}" data-sig-estado="${sig}">
           <i class="bi bi-arrow-right-circle me-1"></i>Avanzar a: ${escapeHTML(sigLabel)}
         </button>
+        <button class="lut-btn btn-diagnosticar-orden" data-id="${orden.id}"
+          style="background:#0ea5e9;color:#fff">
+          <i class="bi bi-clipboard-data me-1"></i>Diagnosticar
+        </button>
       </div>` : `<div class="lut-card-actions">
         <div class="lut-btn-finalizado">
           <i class="bi bi-check-circle me-1"></i>Finalizado
@@ -140,6 +145,17 @@ function renderCard(orden, onAvanzar) {
       console.error('[luteriaOrdenesView] avanzar error:', err)
       alert('Error al avanzar: ' + err.message)
     }
+  })
+
+  card.querySelector('.btn-diagnosticar-orden')?.addEventListener('click', async () => {
+    await openDiagnosticoWizard({
+      ordenId: orden.id,
+      orden,
+      instrumentoLabel: orden.alumno_nombre || 'Instrumento sin asignar',
+      onSuccess: () => {
+        if (onSuccess) onSuccess(orden.id)
+      },
+    })
   })
 
   return card

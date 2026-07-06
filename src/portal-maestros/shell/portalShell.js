@@ -33,7 +33,7 @@ export function hideShell() {
   const app = document.getElementById('portal-app')
   if (!app) return
   const header = app.querySelector('.pm-header')
-  const nav = app.querySelector('.pm-bottom-nav')
+  const nav = app.querySelector('.pm-footer-nav, .pm-bottom-nav')
   const view = app.querySelector('.pm-view')
   if (header) header.style.display = 'none'
   if (nav) nav.style.display = 'none'
@@ -44,7 +44,7 @@ export function showShell() {
   const app = document.getElementById('portal-app')
   if (!app) return
   const header = app.querySelector('.pm-header')
-  const nav = app.querySelector('.pm-bottom-nav')
+  const nav = app.querySelector('.pm-footer-nav, .pm-bottom-nav')
   const view = app.querySelector('.pm-view')
   if (header) header.style.display = ''
   if (nav) nav.style.display = ''
@@ -142,7 +142,7 @@ export function renderShell(app, maestro, tabs, onNavigate, updateSyncIndicator)
       <main class="pm-view" id="pm-view-container"></main>
 
       <!-- Footer Nav (mobile/tablet only) -->
-      <nav class="pm-footer-nav" id="pm-footer-nav">
+      <nav class="pm-footer-nav pm-bottom-nav" id="pm-footer-nav">
         <div class="pm-footer-nav__inner">
           ${tabs.map((tab) => `
             <button class="pm-nav-tab" data-route="${tab.id}" title="${tab.label}" aria-label="${tab.label}">

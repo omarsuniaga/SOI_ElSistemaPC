@@ -33,6 +33,6 @@ describe('RLS: route_versions admin UPDATE policy (curriculo-tres-planos fix)', 
     // publicarPropuesta and devolverPropuesta both call .update() on route_versions
     expect(content).toContain('publicarPropuesta')
     expect(content).toContain('devolverPropuesta')
-    expect(content).toMatch(/route_versions.*update/)
+    expect(content).toMatch(/route_versions[\s\S]*?\.update\(/i)
   })
 })

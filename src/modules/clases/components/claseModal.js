@@ -50,8 +50,13 @@ export async function openClaseModal(clase = null, options = {}) {
   if (isEdicion) {
     AppToast.info('Cargando datos de la clase...')
     const inscritos = await obtenerAlumnosInscritos(clase.id)
-    inscritosIds   = (inscritos || []).map(i => i.alumno_id)
-    inscritosSlots = inscritos || []
+    const inscritosOrdenados = [...(inscritos || [])].sort((a, b) => {
+      const an = (a.alumno?.nombre_completo || a.alumno?.nombre || '').toString().toLocaleLowerCase('es')
+      const bn = (b.alumno?.nombre_completo || b.alumno?.nombre || '').toString().toLocaleLowerCase('es')
+      return an.localeCompare(bn, 'es')
+    })
+    inscritosIds   = inscritosOrdenados.map(i => i.alumno_id)
+    inscritosSlots = inscritosOrdenados
   }
 
   const title = isEdicion ? `Editar Clase: ${clase.nombre}` : 'Nueva Clase'
@@ -545,7 +550,19 @@ function _renderHorariosContainer(horarios = []) {
 }
 
 function _getAlumnosSelectorHTML(selectedIds = []) {
-  const alumnos = _options.alumnos || []
+  const selectedSet = new Set(selectedIds || [])
+  const alumnos = [...(_options.alumnos || [])].sort((a, b) => {
+    const aSelected = selectedSet.has(a.id)
+    const bSelected = selectedSet.has(b.id)
+    if (aSelected !== bSelected) return aSelected ? -1 : 1
+
+    const an = (a.nombre_completo || '').toString().toLocaleLowerCase('es')
+    const bn = (b.nombre_completo || '').toString().toLocaleLowerCase('es')
+    const nameCmp = an.localeCompare(bn, 'es')
+    if (nameCmp !== 0) return nameCmp
+
+    return String(a.id).localeCompare(String(b.id), 'es')
+  })
   return `
     <div class="alumnos-selector-container">
       <div class="input-group input-group-sm mb-2">

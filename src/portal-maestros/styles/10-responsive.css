@@ -31,7 +31,12 @@
 
   /* Footer nav: siempre visible en móvil */
   .pm-footer-nav {
-    display: block !important;
+    display: flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    transform: none !important;
+    pointer-events: none !important;
+    z-index: 9999 !important;
   }
 
   .pm-header-greeting {
@@ -94,12 +99,15 @@
     padding: 0.5rem 0.75rem 0.5rem;
     bottom: 0;
     position: fixed;
+    left: 0;
+    right: 0;
   }
 
   .pm-footer-nav__inner {
     border-radius: 20px;
     height: 56px;
     pointer-events: auto;
+    width: 100%;
   }
 
   .pm-nav-tab {

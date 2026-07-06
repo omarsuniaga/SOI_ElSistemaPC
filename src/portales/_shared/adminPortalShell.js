@@ -71,6 +71,7 @@ function renderNavbar(profile, isAuthenticated, storageKey) {
 
   document.querySelector('.app-sidebar')?.remove()
   document.querySelector('.app-bottom-nav')?.remove()
+  document.querySelector('.mobile-sub-sheet')?.remove()
 
   if (!isAuthenticated) return
 
@@ -126,9 +127,43 @@ function renderNavbar(profile, isAuthenticated, storageKey) {
     </div>
   `
 
+  const bottomNav = document.createElement('nav')
+  bottomNav.className = 'app-bottom-nav'
+  bottomNav.innerHTML = profile.navGroups
+    .map(
+      (g) => `
+    <button class="bottom-tab ${g.id === activeGroup ? 'active' : ''}" data-group="${g.id}">
+      <i class="bi ${g.icon}"></i>
+      <span>${g.label}</span>
+    </button>
+  `,
+    )
+    .join('')
+
+  const subSheet = document.createElement('div')
+  subSheet.className = 'mobile-sub-sheet'
+  subSheet.innerHTML = `
+    <div class="sheet-handle"></div>
+    <div class="sheet-title" id="sheetTitle"></div>
+    <div class="sheet-items" id="sheetItems"></div>
+  `
+
   document.body.prepend(sidebar)
+  document.body.prepend(bottomNav)
+  document.body.prepend(subSheet)
 
   const { signal } = _navAbortController
+
+  const syncBottomNavState = (route = localStorage.getItem(storageKey) || profile.defaultRoute) => {
+    const nextGroup = getGroupForRoute(profile.navGroups, route)
+    bottomNav.querySelectorAll('.bottom-tab').forEach((tab) => {
+      tab.classList.toggle('active', tab.dataset.group === nextGroup)
+    })
+    const currentSheetGroup = subSheet.dataset.group
+    if (subSheet.classList.contains('open') && currentSheetGroup && currentSheetGroup !== nextGroup) {
+      subSheet.classList.remove('open')
+    }
+  }
 
   sidebar.querySelectorAll('.nav-group-header').forEach((btn) => {
     btn.addEventListener(
@@ -144,7 +179,13 @@ function renderNavbar(profile, isAuthenticated, storageKey) {
   })
 
   sidebar.querySelectorAll('.nav-item-btn').forEach((btn) => {
-    btn.addEventListener('click', () => router.navigate(btn.dataset.route), { signal })
+    btn.addEventListener(
+      'click',
+      () => {
+        router.navigate(btn.dataset.route)
+      },
+      { signal },
+    )
   })
 
   sidebar.querySelector('#sidebarBtnTheme').addEventListener(
@@ -167,6 +208,64 @@ function renderNavbar(profile, isAuthenticated, storageKey) {
     },
     { signal },
   )
+
+  function openSheet(groupId) {
+    const group = profile.navGroups.find((g) => g.id === groupId)
+    if (!group) return
+    const route = localStorage.getItem(storageKey) || profile.defaultRoute
+    const titleEl = document.getElementById('sheetTitle')
+    const itemsEl = document.getElementById('sheetItems')
+    if (!titleEl || !itemsEl) return
+
+    titleEl.textContent = group.label
+    itemsEl.innerHTML = group.items
+      .map(
+        (item) => `
+      <button class="sheet-item ${item.id === route ? 'active' : ''}" data-route="${item.id}">
+        <i class="bi ${item.icon}"></i>
+        <span>${item.label}</span>
+      </button>
+    `,
+      )
+      .join('')
+
+    subSheet.dataset.group = groupId
+    subSheet.classList.add('open')
+
+    itemsEl.querySelectorAll('.sheet-item').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        router.navigate(btn.dataset.route)
+        subSheet.classList.remove('open')
+        bottomNav.querySelectorAll('.bottom-tab').forEach((t) =>
+          t.classList.toggle('active', t.dataset.group === getGroupForRoute(profile.navGroups, btn.dataset.route)),
+        )
+      })
+    })
+  }
+
+  bottomNav.querySelectorAll('.bottom-tab').forEach((tab) => {
+    tab.addEventListener('click', () => {
+      const groupId = tab.dataset.group
+      if (subSheet.classList.contains('open') && subSheet.dataset.group === groupId) {
+        subSheet.classList.remove('open')
+      } else {
+        openSheet(groupId)
+        bottomNav
+          .querySelectorAll('.bottom-tab')
+          .forEach((t) => t.classList.toggle('active', t.dataset.group === groupId))
+      }
+    })
+  })
+
+  window.addEventListener(
+    'routeChanged',
+    (e) => {
+      syncBottomNavState(e.detail)
+    },
+    { signal },
+  )
+
+  syncBottomNavState(currentRoute)
 }
 
 // ── Acceso por rol ────────────────────────────────────────────────────────────
@@ -177,6 +276,8 @@ async function getUserRole(userId) {
 
 function renderAccessDenied(app, brandText) {
   document.querySelector('.app-sidebar')?.remove()
+  document.querySelector('.app-bottom-nav')?.remove()
+  document.querySelector('.mobile-sub-sheet')?.remove()
   app.innerHTML = `
     <div class="d-flex align-items-center justify-content-center" style="min-height:100vh">
       <div class="text-center p-4">
@@ -313,6 +414,8 @@ export async function bootAdminPortal(profile) {
 
 function renderBootError(app, brandText, err) {
   document.querySelector('.app-sidebar')?.remove()
+  document.querySelector('.app-bottom-nav')?.remove()
+  document.querySelector('.mobile-sub-sheet')?.remove()
   app.innerHTML = `
     <div class="d-flex align-items-center justify-content-center" style="min-height:100vh">
       <div class="text-center p-4" style="max-width:520px">

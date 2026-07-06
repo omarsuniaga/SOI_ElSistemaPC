@@ -42,6 +42,7 @@ const state = {
   vista: 'tabla',
   container: null,
   mostrarDiasVacios: true,
+  filtrosAbiertos: typeof window !== 'undefined' ? window.innerWidth >= 992 : true,
 }
 
 /**
@@ -52,6 +53,7 @@ export async function renderClasesView(container) {
 
   try {
     state.container = container
+    injectClasesResponsiveStyles()
     state.cargando = true
     renderLoading(container)
 
@@ -121,7 +123,83 @@ function getSalonOptions() {
   ).join('')
 }
 
+function getClaseIssues(clase) {
+  const issues = []
+  const horarios = Array.isArray(clase?.horarios) ? clase.horarios : []
+  const maestros = Array.isArray(state.maestros) ? state.maestros : []
+  const allClases = Array.isArray(state.clasesOriginales) ? state.clasesOriginales : []
+
+  const maestroPrincipal = maestros.find(m => m.id === clase?.maestro_principal_id)
+  const maestroSuplente = maestros.find(m => m.id === clase?.maestro_suplente_id)
+
+  if (!clase?.maestro_principal_id || !maestroPrincipal) {
+    issues.push({ key: 'maestro-principal', label: 'Sin maestro', icon: 'bi-person-exclamation', tone: 'danger' })
+  }
+
+  if (!clase?.maestro_suplente_id || !maestroSuplente) {
+    issues.push({ key: 'maestro-suplente', label: 'Sin suplente', icon: 'bi-person-dash', tone: 'warning' })
+  }
+
+  if (!horarios.length) {
+    issues.push({ key: 'horario', label: 'Sin horario', icon: 'bi-calendar-x', tone: 'danger' })
+  }
+
+  const totalAlumnos = Number(clase?.total_alumnos ?? 0)
+  if (totalAlumnos <= 0) {
+    issues.push({ key: 'alumnos', label: 'Sin alumnos', icon: 'bi-people', tone: 'warning' })
+  }
+
+  const overlaps = new Set()
+  for (const horario of horarios) {
+    const currentStart = timeToMinutes(horario?.hora_inicio || '00:00')
+    const currentEnd = timeToMinutes(horario?.hora_fin || '00:00')
+    if (!horario?.dia || currentStart >= currentEnd) continue
+
+    for (const other of allClases) {
+      if (!other || other.id === clase?.id) continue
+      for (const otherHorario of (other.horarios || [])) {
+        if (!otherHorario?.dia || otherHorario.dia !== horario.dia) continue
+        const otherStart = timeToMinutes(otherHorario.hora_inicio || '00:00')
+        const otherEnd = timeToMinutes(otherHorario.hora_fin || '00:00')
+        if (currentStart < otherEnd && otherStart < currentEnd) {
+          const sameTeacher = clase?.maestro_principal_id && (
+            other.maestro_principal_id === clase.maestro_principal_id ||
+            other.maestro_suplente_id === clase.maestro_principal_id
+          )
+          const sameRoom = horario.salon_id && otherHorario.salon_id && horario.salon_id === otherHorario.salon_id
+
+          if (sameTeacher) overlaps.add('maestro')
+          if (sameRoom) overlaps.add('salon')
+        }
+      }
+    }
+  }
+
+  if (overlaps.has('maestro')) {
+    issues.push({ key: 'solape-maestro', label: 'Solape maestro', icon: 'bi-person-workspace', tone: 'danger' })
+  }
+  if (overlaps.has('salon')) {
+    issues.push({ key: 'solape-salon', label: 'Solape salón', icon: 'bi-building-exclamation', tone: 'danger' })
+  }
+
+  return issues
+}
+
+function renderIssuesBadge(issues = []) {
+  if (!issues.length) return ''
+  const toneClass = issues.some(i => i.tone === 'danger') ? 'text-bg-danger' : 'text-bg-warning'
+  return `
+    <span class="badge rounded-pill ${toneClass} clase-issue-badge" title="${escapeHTML(issues.map(i => i.label).join(' · '))}">
+      <i class="bi bi-exclamation-triangle-fill me-1"></i>${issues.length}
+    </span>
+  `
+}
+
 function renderContent(container) {
+  if (typeof state.filtrosAbiertos !== 'boolean') {
+    state.filtrosAbiertos = window.innerWidth >= 992
+  }
+
   container.innerHTML = `
     <div class="page-container">
       <div class="clases-header-premium mb-4">
@@ -147,8 +225,9 @@ function renderContent(container) {
               <i class="bi bi-calendar-week"></i>
             </button>
           </div>
-          <button class="btn btn-outline-secondary" id="btnPdfListadoAlumnosClases" type="button">
-            <i class="bi bi-file-earmark-pdf me-1"></i>PDF Listados Alumnos x Clases
+          <button class="btn btn-outline-secondary btn-clases-pdf" id="btnPdfListadoAlumnosClases" type="button" aria-label="Descargar PDF de listados de alumnos por clase" title="Descargar PDF de listados de alumnos por clase">
+            <i class="bi bi-file-earmark-pdf" aria-hidden="true"></i>
+            <span class="btn-clases-pdf__label">PDF Listados Alumnos x Clases</span>
           </button>
           <button class="btn btn-premium-action" id="btnAgregarClase">
             <i class="bi bi-plus-lg me-1.5"></i>Nueva Clase
@@ -156,7 +235,24 @@ function renderContent(container) {
         </div>
       </div>
 
-      <div class="clases-filter-toolbar mb-4 flex-wrap gap-2">
+      <div class="clases-filters-panel mb-4">
+        <div class="clases-filters-panel__header">
+          <div class="d-flex align-items-center gap-2">
+            <div class="clases-filters-panel__icon">
+              <i class="bi bi-funnel"></i>
+            </div>
+            <div>
+              <div class="clases-filters-panel__title">Filtros</div>
+              <div class="clases-filters-panel__subtitle text-muted small">Busca y segmenta las clases visibles</div>
+            </div>
+          </div>
+          <button class="btn btn-outline-secondary btn-sm" id="btnToggleFiltros" type="button" aria-expanded="${state.filtrosAbiertos ? 'true' : 'false'}">
+            <i class="bi ${state.filtrosAbiertos ? 'bi-chevron-up' : 'bi-chevron-down'} me-1"></i>
+            ${state.filtrosAbiertos ? 'Ocultar' : 'Mostrar'}
+          </button>
+        </div>
+        <div class="clases-filters-panel__body ${state.filtrosAbiertos ? 'is-open' : 'is-collapsed'}" id="clasesFiltersPanelBody">
+          <div class="clases-filter-toolbar flex-wrap gap-2">
         <div class="premium-search-container flex-grow-1" style="min-width:200px;">
           <i class="bi bi-search search-icon-muted"></i>
           <input type="text" class="form-control premium-search-input" placeholder="Buscar por nombre, maestro, instrumento..." id="buscar" value="${escapeHTML(state.filtroBuscar)}">
@@ -234,6 +330,8 @@ function renderContent(container) {
         <button class="btn btn-outline-secondary btn-sm align-self-center" id="btnLimpiarFiltros" type="button" title="Limpiar filtros">
           <i class="bi bi-x-circle me-1"></i>Limpiar
         </button>
+          </div>
+        </div>
       </div>
 
       <div id="view-content">
@@ -271,6 +369,12 @@ function renderClaseCard(clase) {
   const horariosTexto = horarios.length > 0
     ? horarios.map(h => `${(h.dia || '').slice(0, 2).toUpperCase()} ${(h.hora_inicio || '').slice(0, 5)}`).join(' • ')
     : 'Sin horarios'
+  const warnings = getClaseIssues(clase)
+  if ((clase.horarios || []).length > 1) warnings.push({ key: 'multi-horario', label: 'M?ltiples horarios', icon: 'bi-clock-history', tone: 'warning' })
+  if (clase.capacidad_maxima && clase.total_alumnos != null && clase.total_alumnos / clase.capacidad_maxima >= 0.85) {
+    warnings.push({ key: 'cupo-alto', label: 'Cupo alto', icon: 'bi-people-fill', tone: 'warning' })
+  }
+
 
   return `
     <div class="list-group-item list-group-item-action d-flex align-items-center justify-content-between p-3 w-100 border-start-accent ${accentClass}" data-id="${clase.id}" style="cursor: pointer;">
@@ -284,15 +388,24 @@ function renderClaseCard(clase) {
           </span>
         </div>
         <div class="d-flex flex-column flex-grow-1 overflow-hidden pe-3">
-          <span class="fw-bold text-truncate" style="font-size: 1.05rem;">${escapeHTML(nombre)}</span>
+          <div class="d-flex align-items-center gap-2">
+            <span class="fw-bold text-truncate" style="font-size: 1.05rem;">${escapeHTML(nombre)}</span>
+            ${renderIssuesBadge(warnings)}
+          </div>
           <small class="text-muted text-truncate"><i class="bi bi-person-badge me-1"></i>${escapeHTML(maestroNombre)} • ${escapeHTML(clase.instrumento || '-')}</small>
           ${maestroSuplenteNombre ? `<small class="text-muted text-truncate" style="font-size: 0.82rem;"><i class="bi bi-person-dash me-1"></i>Suplente: ${escapeHTML(maestroSuplenteNombre)}</small>` : ''}
           <small class="text-muted extra-small mt-1" style="font-size: 0.85rem;"><i class="bi bi-clock me-1"></i>${escapeHTML(horariosTexto)}</small>
+          ${warnings.length > 0 ? `
+            <div class="mt-2 d-flex flex-wrap gap-1">
+              ${warnings.map(w => `<span class="badge rounded-pill ${w.tone === 'danger' ? 'text-bg-danger' : 'text-bg-warning-subtle text-warning-emphasis border border-warning-subtle'} classes-warning-chip"><i class="bi ${w.icon} me-1"></i>${escapeHTML(w.label)}</span>`).join('')}
+            </div>
+          ` : ''}
         </div>
       </div>
       <div class="flex-shrink-0 d-flex align-items-center gap-2 ms-2 pe-1">
-        <button class="btn btn-outline-secondary btn-sm btn-class-pdf" data-id="${clase.id}" type="button" title="PDF Listado Alumnos x Clase">
-          <i class="bi bi-file-earmark-pdf me-1"></i>PDF Listado Alumnos x Clase
+        <button class="btn btn-outline-secondary btn-sm btn-class-pdf" data-id="${clase.id}" type="button" title="PDF Listado Alumnos x Clase" aria-label="Descargar PDF de listados de alumnos por clase">
+          <i class="bi bi-file-earmark-pdf" aria-hidden="true"></i>
+          <span class="btn-class-pdf__label">PDF Listado Alumnos x Clase</span>
         </button>
         <span class="text-muted">
           <i class="bi bi-chevron-right" style="font-size: 1.1rem; transition: transform 0.2s ease;"></i>
@@ -390,14 +503,21 @@ function renderCalendarView() {
                   const salon = state.salones.find(s => s.id === item.salon_id)
                   const salonNombre = salon ? salon.nombre : 'Online/Otro'
                   const borderClass = `border-accent-${estado === 'activa' ? 'success' : estado === 'suspendida' ? 'warning' : 'secondary'}`
+                  const issues = getClaseIssues(c)
                   
                   return `
                     <div class="time-block-card p-2 rounded mb-2 border-start-accent ${borderClass}" data-id="${c.id}" style="cursor: pointer;">
                       <div class="d-flex align-items-center justify-content-between mb-1">
                         <span class="time-range small fw-bold text-primary"><i class="bi bi-clock me-1"></i>${start} - ${end}</span>
-                        <i class="bi ${getInstrumentoIcon(c.instrumento)} text-muted" style="font-size: 0.85rem;"></i>
+                        <div class="d-flex align-items-center gap-1">
+                          ${issues.length > 0 ? `<span class="badge rounded-pill ${issues.some(i => i.tone === 'danger') ? 'text-bg-danger' : 'text-bg-warning'} clase-issue-badge--compact" title="${escapeHTML(issues.map(i => i.label).join(' ? '))}"><i class="bi bi-exclamation-triangle-fill"></i></span>` : ''}
+                          <i class="bi ${getInstrumentoIcon(c.instrumento)} text-muted" style="font-size: 0.85rem;"></i>
+                        </div>
                       </div>
-                      <div class="fw-semibold text-truncate small class-name" style="font-size: 0.9rem;">${escapeHTML(c.nombre)}</div>
+                      <div class="d-flex align-items-center gap-2">
+                        <div class="fw-semibold text-truncate small class-name" style="font-size: 0.9rem;">${escapeHTML(c.nombre)}</div>
+                        ${renderIssuesBadge(issues)}
+                      </div>
                       <div class="d-flex justify-content-between align-items-center mt-1 extra-small text-muted">
                         <span class="text-truncate" style="max-width: 60%;"><i class="bi bi-person me-0.5"></i>${escapeHTML(state.maestros.find(m => m.id === c.maestro_principal_id)?.nombre_completo || 'Sin maestro')}</span>
                         <span class="badge bg-body-secondary text-body-secondary-custom px-1.5 py-0.5 rounded" style="font-size: 0.7rem;"><i class="bi bi-geo-alt me-0.5"></i>${escapeHTML(salonNombre)}</span>
@@ -505,6 +625,12 @@ async function openClasePerfilModal(clase) {
     let progressColorClass = 'bg-success'
     if (occupancyPercentage >= 90) progressColorClass = 'bg-danger'
     else if (occupancyPercentage >= 70) progressColorClass = 'bg-warning'
+    const warningItems = []
+    if (occupancyPercentage >= 90) warningItems.push({ icon: 'bi-exclamation-triangle-fill', text: 'Capacidad crítica: revisa cupos y reubicación' })
+    else if (occupancyPercentage >= 70) warningItems.push({ icon: 'bi-exclamation-circle-fill', text: 'Capacidad alta: conviene revisar cupos pronto' })
+    if (!suplenteNombre) warningItems.push({ icon: 'bi-person-dash-fill', text: 'No tiene maestro suplente asignado' })
+    if (!clase.horarios || clase.horarios.length === 0) warningItems.push({ icon: 'bi-calendar-x-fill', text: 'No tiene horarios definidos' })
+    if ((clase.horarios || []).length > 1) warningItems.push({ icon: 'bi-clock-history', text: 'La clase tiene múltiples horarios registrados' })
 
     const bodyHTML = `
       <div class="class-profile-container">
@@ -521,6 +647,23 @@ async function openClasePerfilModal(clase) {
             <span class="badge rounded-pill bg-${clase.estado === 'activa' ? 'success' : clase.estado === 'suspendida' ? 'warning' : 'secondary'} text-capitalize" style="font-size: 0.75rem;">${getEstadoLabel(clase.estado)}</span>
           </div>
         </div>
+
+        ${warningItems.length > 0 ? `
+          <div class="class-warning-banner p-3 rounded mb-4 border border-warning-subtle bg-warning-subtle">
+            <div class="d-flex align-items-center gap-2 mb-2">
+              <i class="bi bi-exclamation-triangle-fill text-warning"></i>
+              <strong class="small text-warning-emphasis">Advertencias de la clase</strong>
+            </div>
+            <div class="d-flex flex-column gap-2">
+              ${warningItems.map(item => `
+                <div class="class-warning-item d-flex align-items-start gap-2 small">
+                  <i class="bi ${item.icon} text-warning mt-1"></i>
+                  <span>${escapeHTML(item.text)}</span>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        ` : ''}
 
         <!-- Details Grid -->
         <div class="row g-3 mb-4">
@@ -735,6 +878,12 @@ function attachGlobalEvents(container) {
     attachGlobalEvents(container)
   })
 
+  container.querySelector('#btnToggleFiltros')?.addEventListener('click', () => {
+    state.filtrosAbiertos = !state.filtrosAbiertos
+    renderContent(container)
+    attachGlobalEvents(container)
+  })
+
   container.querySelector('#buscar')?.addEventListener('input', applyFilters)
   container.querySelector('#filtroEstado')?.addEventListener('change', applyFilters)
   container.querySelector('#filtroInstrumento')?.addEventListener('change', applyFilters)
@@ -820,6 +969,50 @@ function attachGlobalEvents(container) {
   })
 }
 
+function injectClasesResponsiveStyles() {
+  const styleId = 'clases-responsive-polish'
+  if (document.getElementById(styleId)) return
+
+  const style = document.createElement('style')
+  style.id = styleId
+  style.textContent = `
+    .btn-clases-pdf {
+      display: inline-flex;
+      align-items: center;
+      gap: .5rem;
+      white-space: nowrap;
+    }
+    .btn-class-pdf {
+      display: inline-flex;
+      align-items: center;
+      gap: .45rem;
+      white-space: nowrap;
+    }
+    @media (max-width: 767.98px) {
+      .btn-clases-pdf {
+        width: 2.75rem;
+        justify-content: center;
+        padding-left: .7rem;
+        padding-right: .7rem;
+      }
+      .btn-clases-pdf__label {
+        display: none !important;
+      }
+      .btn-class-pdf {
+        width: 2.75rem;
+        justify-content: center;
+        padding-left: .7rem;
+        padding-right: .7rem;
+        flex-shrink: 0;
+      }
+      .btn-class-pdf__label {
+        display: none !important;
+      }
+    }
+  `
+  document.head.appendChild(style)
+}
+
 function saveFilterState() {
   const c = state.container
   if (!c) return
@@ -842,6 +1035,14 @@ function applyFilters() {
   const filtroSalon  = c.querySelector('#filtroSalon')?.value      || ''
   const filtroDia    = c.querySelector('#filtroDia')?.value        || ''
   const term         = normalizeText(rawSearch)
+
+  state.filtroBuscar = rawSearch
+  state.filtroEstado = filtroEstado
+  state.filtroInstrumento = filtroInstr
+  state.filtroNivel = filtroNivel
+  state.filtroTipo = filtroTipo
+  state.filtroSalon = filtroSalon
+  state.filtroDia = filtroDia
 
   state.clases = state.clasesOriginales.filter(clase => {
     // ── Search text ─────────────────────────────────────────────────────────

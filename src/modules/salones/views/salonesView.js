@@ -1,31 +1,79 @@
+import '../../../shared/styles/patterns.css'
 import '../styles/salones.css'
+import { escapeHTML } from '../../../shared/utils/sanitize.js'
 import { AppModal } from '../../../shared/components/AppModal.js'
 import { AppToast } from '../../../shared/components/AppToast.js'
 import { useSalones } from '../hooks/useSalones.js'
 import * as salonesApi from '../api/salonesApi.js'
+import { renderFilterPanel } from '../../../shared/components/pageShell.js'
+import { renderHeroCard, renderDetailGrid } from '../../../shared/components/profileModal.js'
 
 const state = {
   editandoId: null,
+  filtrosAbiertos: typeof window !== 'undefined' ? window.innerWidth >= 992 : true,
 }
 
-function escapeHTML(str) {
-  if (!str) return ''
-  return String(str)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;')
+function getCondicionBadge(condicion) {
+  const colors = {
+    excelente: 'bg-success',
+    buena: 'bg-primary',
+    regular: 'bg-warning',
+    mala: 'bg-danger',
+  }
+  const labels = {
+    excelente: 'Excelente',
+    buena: 'Buena',
+    regular: 'Regular',
+    mala: 'Mala',
+  }
+  const color = colors[condicion] || 'bg-secondary'
+  const label = labels[condicion] || '-'
+  return `<span class="badge badge-compact ${color}">${label}</span>`
 }
 
-function getInitials(nombre) {
-  if (!nombre) return '?'
-  const parts = String(nombre).trim().split(/\s+/)
-  if (parts.length === 1) return parts[0].substring(0, 2).toUpperCase()
-  return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase()
+function getFilterConfigHtml() {
+  return `
+    <div class="premium-search-container flex-grow-1" style="min-width: 180px;">
+      <i class="bi bi-search search-icon-muted"></i>
+      <input type="text" class="form-control premium-search-input" placeholder="Buscar por nombre, código o ubicación..." id="searchSalon" autocomplete="off">
+    </div>
+    <div class="premium-select-container">
+      <i class="bi bi-funnel select-icon-muted"></i>
+      <select class="form-select premium-filter-select" id="filterCondicion">
+        <option value="">Todas las condiciones</option>
+        <option value="excelente">Excelente</option>
+        <option value="buena">Buena</option>
+        <option value="regular">Regular</option>
+        <option value="mala">Mala</option>
+      </select>
+    </div>
+    <div class="premium-select-container">
+      <i class="bi bi-layers select-icon-muted"></i>
+      <select class="form-select premium-filter-select" id="filterPiso">
+        <option value="">Todos los pisos</option>
+        <option value="0">Planta Baja</option>
+        <option value="1">Piso 1</option>
+        <option value="2">Piso 2</option>
+        <option value="3">Piso 3</option>
+        <option value="4">Piso 4</option>
+      </select>
+    </div>
+    <button class="btn btn-outline-secondary btn-sm" id="btnLimpiarFiltrosSalones" type="button" title="Limpiar filtros">
+      <i class="bi bi-x-circle me-1"></i>Limpiar
+    </button>
+  `
 }
 
 export function renderSalonesView(container) {
+  if (container.cleanup) {
+    container.cleanup()
+  }
+
+  state.container = container
+  if (typeof state.filtrosAbiertos !== 'boolean') {
+    state.filtrosAbiertos = window.innerWidth >= 992
+  }
+
   container.innerHTML = `
     <div class="page-container">
       <div class="salones-header-premium mb-4">
@@ -38,161 +86,133 @@ export function renderSalonesView(container) {
             <p class="text-muted small mb-0"><span id="salonesCount">0</span> salones en total</p>
           </div>
         </div>
-        
+
         <div class="salones-header-actions">
-          <button class="btn btn-premium-action" id="btnCrearSalon">
-            <i class="bi bi-plus-lg me-1.5"></i>Nuevo Salón
+          <button class="btn btn-premium-action btn-icon-only" id="btnCrearSalon" title="Nuevo Salón" aria-label="Nuevo Salón">
+            <i class="bi bi-plus-lg"></i>
           </button>
         </div>
       </div>
 
-      <div class="salones-filter-toolbar mb-4">
-        <div class="premium-search-container flex-grow-1" style="min-width: 180px;">
-          <i class="bi bi-search search-icon-muted"></i>
-          <input type="text" class="form-control premium-search-input" placeholder="Buscar por nombre, código o ubicación..." id="searchSalon" autocomplete="off">
-        </div>
-        
-        <div class="premium-select-container">
-          <i class="bi bi-funnel select-icon-muted"></i>
-          <select class="form-select premium-filter-select" id="filterCondicion">
-            <option value="">Todas las condiciones</option>
-            <option value="excelente">Excelente</option>
-            <option value="buena">Buena</option>
-            <option value="regular">Regular</option>
-            <option value="mala">Mala</option>
-          </select>
-        </div>
+      ${renderFilterPanel({
+        isOpen: state.filtrosAbiertos,
+        filtersHtml: getFilterConfigHtml(),
+        onToggleId: 'btnToggleFiltrosSalones',
+      })}
 
-        <div class="premium-select-container">
-          <i class="bi bi-layers select-icon-muted"></i>
-          <select class="form-select premium-filter-select" id="filterPiso">
-            <option value="">Todos los pisos</option>
-            <option value="0">Planta Baja</option>
-            <option value="1">Piso 1</option>
-            <option value="2">Piso 2</option>
-            <option value="3">Piso 3</option>
-            <option value="4">Piso 4</option>
-          </select>
-        </div>
-      </div>
-
-      <!-- Table Compact Overhauled to modern List-Group -->
       <div class="page-glass rounded w-100">
         <div class="list-group list-group-flush w-100" id="salonesTableBody">
           <div class="text-center py-5 text-muted"><div class="spinner-border text-primary mb-3" role="status"></div><br><small class="text-muted">Cargando salones...</small></div>
         </div>
       </div>
-
     </div>
   `
 
+  renderTable()
+  attachEvents(container)
+
+  useSalones.fetchSalones()
+}
+
+function renderTable() {
+  const container = state.container
   const tbody = container.querySelector('#salonesTableBody')
-  const searchInput = container.querySelector('#searchSalon')
-  const filterCondicion = container.querySelector('#filterCondicion')
-  const filterPiso = container.querySelector('#filterPiso')
   const salonesCount = container.querySelector('#salonesCount')
 
-  const renderTable = () => {
-    const query = searchInput.value
-    const condicion = filterCondicion.value
-    const piso = filterPiso.value
-    const salones = useSalones.getFiltered(query, piso, condicion)
+  const query = (container.querySelector('#searchSalon')?.value || '').trim()
+  const condicion = container.querySelector('#filterCondicion')?.value || ''
+  const piso = container.querySelector('#filterPiso')?.value || ''
+  const salones = useSalones.getFiltered(query, piso, condicion)
 
-    if (useSalones.cargando) {
-      tbody.innerHTML = `<div class="text-center py-5 text-muted"><div class="spinner-border text-primary mb-3" role="status"></div><br><small class="text-muted">Cargando salones...</small></div>`
-      return
-    }
+  if (useSalones.cargando) {
+    tbody.innerHTML = `<div class="text-center py-5 text-muted"><div class="spinner-border text-primary mb-3" role="status"></div><br><small class="text-muted">Cargando salones...</small></div>`
+    return
+  }
 
-    if (useSalones.error) {
-      tbody.innerHTML = `<div class="text-center py-5 text-danger"><i class="bi bi-exclamation-triangle fs-3 d-block mb-2"></i> Error: ${escapeHTML(useSalones.error)}</div>`
-      return
-    }
+  if (useSalones.error) {
+    tbody.innerHTML = `<div class="text-center py-5 text-danger"><i class="bi bi-exclamation-triangle fs-3 d-block mb-2"></i> Error: ${escapeHTML(useSalones.error)}</div>`
+    return
+  }
 
-    if (salones.length === 0) {
-      tbody.innerHTML = `
-        <div class="text-center py-5 w-100 text-muted list-group-item" style="background: transparent; border: none;">
-          <i class="bi bi-inbox fs-1 d-block mb-3" style="color: var(--bs-secondary);"></i>
-          No se encontraron salones con esos filtros.
-        </div>`
-      return
-    }
+  if (salones.length === 0) {
+    tbody.innerHTML = `
+      <div class="text-center py-5 w-100 text-muted list-group-item" style="background: transparent; border: none;">
+        <i class="bi bi-inbox fs-1 d-block mb-3" style="color: var(--bs-secondary);"></i>
+        No se encontraron salones con esos filtros.
+      </div>`
+    return
+  }
 
-    salonesCount.textContent = salones.length
+  salonesCount.textContent = salones.length
 
-    tbody.innerHTML = salones
-      .map((salon) => {
-        const initials = getInitials(salon.nombre || 'S')
-        const active = salon.is_active !== false
-        const condicionBadge = getCondicionBadge(salon.condicion)
-        const accentClass = `border-accent-${active ? 'success' : 'secondary'}`
-        const statusDotClass = `bg-${active ? 'success' : 'secondary'}`
+  tbody.innerHTML = salones
+    .map((salon) => {
+      const active = salon.is_active !== false
+      const condicionBadge = getCondicionBadge(salon.condicion)
+      const accentClass = `border-accent-${active ? 'success' : 'secondary'}`
 
-        return `
-        <div class="list-group-item list-group-item-action d-flex align-items-center justify-content-between p-3 w-100 border-start-accent ${accentClass}" data-id="${salon.id}" style="cursor: pointer;">
-          <div class="d-flex align-items-center gap-3 flex-grow-1 overflow-hidden">
-            <div class="position-relative flex-shrink-0">
-              <div class="avatar-compact bg-primary bg-opacity-10 text-primary border border-primary-subtle d-flex align-items-center justify-content-center rounded-circle" style="width: 48px; height: 48px; font-size: 1.2rem; font-weight: 600;">${initials}</div>
-              <span class="position-absolute bottom-0 end-0 p-1 ${statusDotClass} border border-light rounded-circle" style="transform: translate(10%, 10%);">
-                <span class="visually-hidden">${active ? 'Activo' : 'Inactivo'}</span>
-              </span>
-            </div>
-            <div class="d-flex flex-column flex-grow-1 overflow-hidden pe-3">
-              <span class="fw-bold text-truncate" style="font-size: 1.05rem;">${escapeHTML(salon.nombre || '-')}</span>
-              <small class="text-muted text-truncate">Capacidad: ${salon.capacidad || '-'} personas • Piso: ${salon.piso === 0 || salon.piso === '0' ? 'Planta Baja' : `Piso ${salon.piso}`}</small>
-            </div>
-          </div>
-          <div class="d-flex align-items-center gap-2 flex-shrink-0">
-            ${condicionBadge}
-            <i class="bi bi-chevron-right text-muted ms-1" style="font-size: 1.1rem; transition: transform 0.2s ease;"></i>
+      return `
+      <div class="list-group-item list-group-item-action d-flex align-items-center justify-content-between p-3 w-100 border-start-accent ${accentClass}" data-id="${salon.id}" style="cursor: pointer;">
+        <div class="d-flex align-items-center gap-3 flex-grow-1 overflow-hidden">
+          <div class="d-flex flex-column flex-grow-1 overflow-hidden pe-3">
+            <span class="fw-bold text-truncate" style="font-size: 1.05rem;">${escapeHTML(salon.nombre || '-')}</span>
+            <small class="text-muted text-truncate"><i class="bi bi-people me-1"></i>Capacidad: ${salon.capacidad || '-'} personas • Piso: ${salon.piso === 0 || salon.piso === '0' ? 'Planta Baja' : `Piso ${salon.piso}`}</small>
           </div>
         </div>
-      `
-      })
-      .join('')
-  }
+        <div class="d-flex align-items-center gap-2 flex-shrink-0">
+          ${condicionBadge}
+          <i class="bi bi-chevron-right text-muted ms-1" style="font-size: 1.1rem; transition: transform 0.2s ease;"></i>
+        </div>
+      </div>
+    `
+    })
+    .join('')
+}
 
-  const getCondicionBadge = (condicion) => {
-    const colors = {
-      excelente: 'bg-success',
-      buena: 'bg-primary',
-      regular: 'bg-warning',
-      mala: 'bg-danger',
-    }
-    const labels = {
-      excelente: 'Excelente',
-      buena: 'Buena',
-      regular: 'Regular',
-      mala: 'Mala',
-    }
-    const color = colors[condicion] || 'bg-secondary'
-    const label = labels[condicion] || '-'
-    return `<span class="badge badge-compact ${color}">${label}</span>`
-  }
-
+function attachEvents(container) {
   const unsubscribe = useSalones.subscribe(renderTable)
 
   let debounceTimer
-  searchInput.addEventListener('input', () => {
-    clearTimeout(debounceTimer)
-    debounceTimer = setTimeout(renderTable, 300)
+  container.addEventListener('input', (e) => {
+    if (e.target.id === 'searchSalon') {
+      clearTimeout(debounceTimer)
+      debounceTimer = setTimeout(renderTable, 300)
+    }
   })
 
-  filterCondicion.addEventListener('change', renderTable)
-  filterPiso.addEventListener('change', renderTable)
+  container.addEventListener('change', (e) => {
+    if (e.target.id === 'filterCondicion' || e.target.id === 'filterPiso') {
+      renderTable()
+    }
+  })
+
+  container.querySelector('#btnToggleFiltrosSalones')?.addEventListener('click', () => {
+    state.filtrosAbiertos = !state.filtrosAbiertos
+    renderSalonesView(state.container)
+  })
+
+  container.querySelector('#btnLimpiarFiltrosSalones')?.addEventListener('click', () => {
+    const ids = ['searchSalon', 'filterCondicion', 'filterPiso']
+    ids.forEach(id => {
+      const el = container.querySelector(`#${id}`)
+      if (!el) return
+      if (el.tagName === 'SELECT') el.value = el.options[0]?.value || ''
+      else el.value = ''
+    })
+    renderTable()
+  })
 
   container.querySelector('#btnCrearSalon')?.addEventListener('click', () => {
     openCreateModal()
   })
 
-  tbody?.addEventListener('click', async (e) => {
+  container.querySelector('#salonesTableBody')?.addEventListener('click', async (e) => {
     const item = e.target.closest('.list-group-item[data-id]')
     if (item) {
       const id = item.dataset.id
       openViewModal(id)
     }
   })
-
-  useSalones.fetchSalones()
 
   container.cleanup = () => {
     unsubscribe()
@@ -365,7 +385,7 @@ function openEditModal(id) {
       } catch (error) {
         console.error('Error al actualizar salón:', error)
         AppToast.error(error.message || 'Error al actualizar el salón')
-        return false // Evita que el modal se cierre y detiene el spinner de carga
+        return false
       }
     },
   })
@@ -380,90 +400,76 @@ function openViewModal(id) {
 
   const ubicacionPiso =
     salon.piso === 0 || salon.piso === '0' ? 'Planta Baja' : `Piso ${salon.piso}`
-  const condicionLabel =
-    { excelente: 'Excelente', buena: 'Buena', regular: 'Regular', mala: 'Mala' }[salon.condicion] ||
-    '-'
   const estadoLabel = salon.is_active !== false ? 'Activo' : 'Inactivo'
-  const estadoClass = salon.is_active !== false ? 'bg-success' : 'bg-secondary'
+  const estadoBadgeClass = salon.is_active !== false ? 'bg-success' : 'bg-secondary'
+
+  const bodyHTML = `
+    <div class="salon-profile-container">
+      ${renderHeroCard({
+        title: salon.nombre || 'Salón',
+        badgesHtml: `
+          ${getCondicionBadge(salon.condicion)}
+          <span class="d-inline-block rounded-circle ${salon.is_active !== false ? 'bg-success' : 'bg-secondary'}" style="width: 10px; height: 10px;" title="${estadoLabel}"></span>
+        `,
+        actionsHtml: `
+          <button class="btn btn-outline-primary btn-sm btn-profile-edit" data-id="${salon.id}" type="button" title="Editar salón">
+            <i class="bi bi-pencil"></i>
+          </button>
+          <button class="btn btn-outline-danger btn-sm btn-profile-delete" data-id="${salon.id}" type="button" title="Inactivar salón">
+            <i class="bi bi-trash"></i>
+          </button>
+        `,
+      })}
+
+      ${renderDetailGrid({
+        items: [
+          { icon: 'bi-upc-scan', label: 'Código', value: `<code>${escapeHTML(salon.codigo || '-')}</code>` },
+          { icon: 'bi-door-open', label: 'Nombre', value: escapeHTML(salon.nombre || '-') },
+          { icon: 'bi-people', label: 'Capacidad', value: `${salon.capacidad || '-'} personas` },
+          { icon: 'bi-geo-alt', label: 'Ubicación', value: escapeHTML(ubicacionPiso) },
+          {
+            icon: 'bi-clipboard-check',
+            label: 'Condición',
+            value: getCondicionBadge(salon.condicion),
+          },
+          {
+            icon: 'bi-toggle-on',
+            label: 'Estado',
+            value: `<span class="d-inline-block rounded-circle ${estadoBadgeClass} me-1" style="width: 10px; height: 10px;" title="${estadoLabel}"></span> ${estadoLabel}`,
+          },
+          { icon: 'bi-tools', label: 'Equipamiento', value: escapeHTML(salon.equipamiento || 'Sin equipamiento registrado') },
+        ],
+      })}
+
+      ${salon.descripcion ? `
+        <div class="description-card p-3 rounded mb-4 border bg-body-tertiary">
+          <small class="text-muted d-block mb-1"><i class="bi bi-file-earmark-text me-1"></i>Descripción</small>
+          <p class="mb-0 text-muted small" style="white-space: pre-line; line-height: 1.5;">${escapeHTML(salon.descripcion)}</p>
+        </div>
+      ` : ''}
+    </div>
+  `
 
   AppModal.open({
-    title: escapeHTML(salon.nombre || 'Salón'),
+    title: `Perfil de Salón: ${escapeHTML(salon.nombre || 'Salón')}`,
     hideSave: true,
-    cancelText: 'Cerrar',
+    size: 'md',
+    body: bodyHTML,
     onShow: (modalBody) => {
-      modalBody.querySelector('#modal-view-btn-edit')?.addEventListener('click', () => {
+      const footer = modalBody.closest('.app-modal-dialog')?.querySelector('.app-modal-footer')
+      if (footer) footer.style.setProperty('display', 'none', 'important')
+
+      modalBody.querySelector('.btn-profile-edit')?.addEventListener('click', () => {
         AppModal.close()
-        setTimeout(() => openEditModal(id), 300)
+        setTimeout(() => openEditModal(id), 250)
       })
-      modalBody.querySelector('#modal-view-btn-delete')?.addEventListener('click', () => {
+
+      modalBody.querySelector('.btn-profile-delete')?.addEventListener('click', () => {
         AppModal.close()
-        setTimeout(() => openDeleteModal(id), 300)
+        setTimeout(() => openDeleteModal(id), 250)
       })
+
     },
-    body: `
-      <div class="row">
-        <div class="col-md-6">
-          <div class="mb-3">
-            <label class="form-label fw-bold">Código</label>
-            <p class="form-control-plaintext"><code>${escapeHTML(salon.codigo || '-')}</code></p>
-          </div>
-          <div class="mb-3">
-            <label class="form-label fw-bold">Nombre</label>
-            <p class="form-control-plaintext">${escapeHTML(salon.nombre || '-')}</p>
-          </div>
-          <div class="mb-3">
-            <label class="form-label fw-bold">Capacidad</label>
-            <p class="form-control-plaintext">${salon.capacidad || '-'} personas</p>
-          </div>
-          <div class="mb-3">
-            <label class="form-label fw-bold">Ubicación</label>
-            <p class="form-control-plaintext">${escapeHTML(ubicacionPiso)}</p>
-          </div>
-        </div>
-        <div class="col-md-6">
-          <div class="mb-3">
-            <label class="form-label fw-bold">Condición</label>
-            <p class="form-control-plaintext">
-              <span class="badge ${salon.condicion === 'excelente' ? 'bg-success' : salon.condicion === 'buena' ? 'bg-primary' : salon.condicion === 'regular' ? 'bg-warning' : 'bg-danger'}">${condicionLabel}</span>
-            </p>
-          </div>
-          <div class="mb-3">
-            <label class="form-label fw-bold">Estado</label>
-            <p class="form-control-plaintext">
-              <span class="badge ${estadoClass}">${estadoLabel}</span>
-            </p>
-          </div>
-          <div class="mb-3">
-            <label class="form-label fw-bold">Equipamiento</label>
-            <p class="form-control-plaintext">${escapeHTML(salon.equipamiento || 'Sin equipamiento registrado')}</p>
-          </div>
-        </div>
-      </div>
-      ${
-        salon.descripcion
-          ? `
-      <hr>
-      <div class="row">
-        <div class="col-12">
-          <div class="mb-3">
-            <label class="form-label fw-bold">Descripción</label>
-            <p class="form-control-plaintext">${escapeHTML(salon.descripcion)}</p>
-          </div>
-        </div>
-      </div>
-      `
-          : ''
-      }
-      
-      <div class="d-flex justify-content-end gap-2 pt-3 border-top mt-4">
-        <button class="btn btn-outline-danger" id="modal-view-btn-delete">
-          <i class="bi bi-trash me-1"></i> Inactivar
-        </button>
-        <button class="btn btn-primary" id="modal-view-btn-edit">
-          <i class="bi bi-pencil me-1"></i> Editar
-        </button>
-      </div>
-    `,
   })
 }
 

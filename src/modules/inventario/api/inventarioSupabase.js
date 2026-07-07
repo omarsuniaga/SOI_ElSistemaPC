@@ -29,7 +29,7 @@ export async function obtenerActivos(filtros = {}) {
 
 export async function obtenerActivoPorId(id) {
   try {
-    const { data, error } = await supabase.from("inventario_activos").select("*, inventario_accesorios(*), comodatos_activos!inner(*)").eq("id", id).single()
+    const { data, error } = await supabase.from("inventario_activos").select("*, inventario_accesorios(*), comodatos_activos(*)").eq("id", id).single()
     if (error) return handleError(error)
     if (!data) return { data: null, error: { code: 404, message: "Activo no encontrado" } }
     return { data, error: null }

@@ -1,6 +1,7 @@
 import { router } from '../../core/router/router.js'
 import { renderPlanificacionView, renderCoberturaView } from './views/planificacionView.js'
 import { renderRutaAcademicaView } from './views/rutaAcademicaView.js'
+import { renderAcmPropuestasView } from './views/acmProuestasView.js'
 
 export function registerRoutesPlanificacion() {
   // "Mis Planes" - vista del maestro logueado
@@ -22,5 +23,7 @@ export function registerRoutesPlanificacion() {
   router.register('planificacion-cobertura', (container) => renderCoberturaView(container))
   // "Ruta Académica" - contenidos curriculares por clase (admin)
   router.register('planificacion-ruta', (container) => renderRutaAcademicaView(container))
+  // "Propuestas de Maestros" - revisión ACM de contenido propuesto (curriculo-tres-planos WU #6)
+  router.register('maestro-propuestas-pendientes', (container) => renderAcmPropuestasView(container))
   // planificacion-curricular queda bajo academic-admin.router.js (no registrar aquí)
 }

@@ -80,16 +80,73 @@ export async function obtenerRutasActivas(maestroId = null) {
   throw error
 }
 
-export async function obtenerGuiaHeredadaPorClase(claseId, maestroId = null) {
-  const routes = await obtenerRutasActivas(maestroId)
-  const route = routes.find((item) => String(item.group_id) === String(claseId) && item.status === 'active')
-  if (!route) return null
+/**
+ * Aplana la jerarquía route_versions -> levels -> nodes -> objetivos ->
+ * indicators en una lista de "items" con la forma que ya consumen las
+ * vistas del portal del maestro (indicator_id, node_id, topic, week_number).
+ *
+ * NOTA: el esquema real no modela "semanas" explícitas; se usa
+ * level.level_number como proxy de semana/orden, igual que el resto del
+ * módulo de planificación.
+ */
+function _flattenRouteVersionToPlanItems(routeVersion) {
+  const levels = Array.isArray(routeVersion?.levels) ? routeVersion.levels : []
+  const items = []
 
-  const plan = await obtenerPlanSemanalPorNivel(route.level_id)
+  for (const level of levels) {
+    const nodes = Array.isArray(level?.nodes) ? level.nodes : []
+    for (const node of nodes) {
+      const objetivos = Array.isArray(node?.objetivos) ? node.objetivos : []
+      for (const objetivo of objetivos) {
+        const indicators = Array.isArray(objetivo?.indicators) ? objetivo.indicators : []
+        for (const indicator of indicators) {
+          items.push({
+            indicator_id: indicator.id,
+            node_id: node.id,
+            topic: node.name,
+            objetivo_id: objetivo.id,
+            week_number: level.level_number,
+          })
+        }
+      }
+    }
+  }
+
+  return items
+}
+
+/**
+ * Deriva la "guía heredada" de una clase a partir de la ruta PUBLICADA más
+ * reciente (route_versions.status = 'published' — el valor real del enum en
+ * producción, ver supabase/migrations/ruta-academica-tables.sql).
+ *
+ * Reemplaza la lectura previa de las tablas fantasma acm_weekly_plans /
+ * acm_active_routes (0 filas en SOI_DDBB_EL_SISTEMAPC, error tragado
+ * silenciosamente). Si no hay versión publicada para la clase, devuelve
+ * `null` explícitamente — no es un error, es "revisión pendiente".
+ *
+ * Mantiene la misma interfaz que antes: { route, plan, source }.
+ */
+export async function obtenerGuiaHeredadaPorClase(claseId, _maestroId = null) {
+  const { data, error } = await supabase
+    .from('route_versions')
+    .select('*, levels(id, level_number, nodes(id, name, objetivos(id, indicators(id))))')
+    .eq('clase_id', claseId)
+    .eq('status', 'published')
+    .order('created_at', { ascending: false })
+    .limit(1)
+
+  if (error) throw error
+
+  const routeVersion = Array.isArray(data) ? data[0] : data
+  if (!routeVersion) return null
+
+  const items = _flattenRouteVersionToPlanItems(routeVersion)
+
   return {
-    route,
-    plan,
-    source: plan?.source_id || null,
+    route: routeVersion,
+    plan: { items },
+    source: routeVersion.id,
   }
 }
 

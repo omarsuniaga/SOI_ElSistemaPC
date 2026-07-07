@@ -1,6 +1,6 @@
 /**
  * Admin API for maestro compliance tracking
- * Queries maestro_desempeño and registros_pendientes for dashboard reporting
+ * Queries maestro_desempeno and registros_pendientes for dashboard reporting
  */
 
 import { supabase } from '../../../lib/supabaseClient.js'
@@ -12,7 +12,7 @@ import { supabase } from '../../../lib/supabaseClient.js'
 export async function getMaestrosComplianceStatus() {
   try {
     const { data, error } = await supabase
-      .from('maestro_desempeño')
+      .from('maestro_desempeno')
       .select(
         `
         id,
@@ -26,12 +26,18 @@ export async function getMaestrosComplianceStatus() {
         categoria,
         tendencia,
         fecha_ultima_evaluacion,
+        pending_count,
+        oldest_dias_atraso,
         updated_at
         `
       )
       .order('updated_at', { ascending: false })
 
     if (error) {
+      if (error.code === 'PGRST301' || (typeof error.message === 'string' && error.message.includes('relation') && error.message.includes('does not exist'))) {
+        console.warn('[getMaestrosComplianceStatus] Tabla maestro_desempeno no disponible; devolviendo vacío.')
+        return []
+      }
       console.error('[getMaestrosComplianceStatus] Error:', error)
       throw error
     }
@@ -119,7 +125,7 @@ export async function getMaestroNotificationHistory(maestroId, limit = 20) {
 export async function getMaestrosByCategory(categoria) {
   try {
     const { data, error } = await supabase
-      .from('maestro_desempeño')
+      .from('maestro_desempeno')
       .select(
         `
         id,
@@ -202,7 +208,7 @@ export async function getCriticalMaestros() {
 export async function updateMaestroCategory(maestroId, newCategory) {
   try {
     const { data, error } = await supabase
-      .from('maestro_desempeño')
+      .from('maestro_desempeno')
       .update({
         categoria: newCategory,
         fecha_ultima_evaluacion: new Date().toISOString()

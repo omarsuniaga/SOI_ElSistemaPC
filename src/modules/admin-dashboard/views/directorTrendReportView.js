@@ -45,9 +45,9 @@ export function directorTrendReportView(containerId) {
             ${sortedDates.slice(0, 10).map(date => `
               <tr>
                 <td><strong>${date}</strong></td>
-                <td><span class="badge bg-secondary bg-opacity-10 text-secondary px-2 py-1">${trends[date].total_classes || 0}</span></td>
-                <td><span class="badge bg-primary bg-opacity-10 text-primary px-2 py-1">${trends[date].asistencia_first_percent || 0}%</span></td>
-                <td><span class="badge bg-success bg-opacity-10 text-success px-2 py-1">${trends[date].avg_ai_usage_percent || 0}%</span></td>
+                <td><span class="badge bg-secondary-subtle text-secondary-emphasis px-2 py-1">${trends[date].total_classes || 0}</span></td>
+                <td><span class="badge bg-primary-subtle text-primary-emphasis px-2 py-1">${trends[date].asistencia_first_percent || 0}%</span></td>
+                <td><span class="badge bg-success-subtle text-success-emphasis px-2 py-1">${trends[date].avg_ai_usage_percent || 0}%</span></td>
               </tr>
             `).join('')}
           </tbody>

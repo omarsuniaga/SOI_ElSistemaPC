@@ -34,8 +34,8 @@ export async function renderCalendarioView(container, { onFechaClick } = {}) {
 
   async function cargarYRenderizar() {
     try {
-      const estado = await _calcularEstadoMes(maestro.id, anio, mes)
-      _renderCalendario(container, anio, mes, hoy, estado, {
+      const { estadoMap, dotsMap } = await _calcularEstadoMes(maestro.id, anio, mes)
+      _renderCalendario(container, anio, mes, hoy, estadoMap, dotsMap, {
         onFechaClick: (fecha) => {
           _openActionDrawer(fecha)
           onFechaClick?.(fecha)
@@ -69,7 +69,9 @@ export async function renderCalendarioView(container, { onFechaClick } = {}) {
 
 /**
  * Calcula el estado de cada fecha del mes para un maestro.
- * Retorna un Map<'YYYY-MM-DD', 'registrada'|'pendiente'|'vencida'|'sin-clase'>
+ * Retorna:
+ * - estadoMap: Map<'YYYY-MM-DD', 'registrada'|'pendiente'|'vencida'|'sin-clase'|'cubierta-emergente'>
+ * - dotsMap: Map<'YYYY-MM-DD', Array<'verde'|'amarillo'|'rojo'|'gris'>> — un punto por clase del día
  */
 async function _calcularEstadoMes(maestroId, anio, mes) {
   const primerDia = new Date(anio, mes, 1)
@@ -100,11 +102,11 @@ async function _calcularEstadoMes(maestroId, anio, mes) {
   // 3. Sesiones del mes (con cache)
   const todasSesiones = await getSesiones(maestroId, desde, hasta)
 
-  // Filtrar en JS: sesión registrada si:
+  // Sesión registrada si:
   // - tiene estado registrada/cerrada, O
   // - tiene asistencia marcada (independientemente de borrador), O
   // - fue guardada (borrador=false) con contenido en observaciones
-  const sesiones = todasSesiones.filter((s) => {
+  const esSesionRegistrada = (s) => {
     const tieneAsistencia = Array.isArray(s.asistencia) && s.asistencia.length > 0
     const tieneContenido = typeof s.contenido === 'string' && s.contenido.trim().length > 0
     return (
@@ -113,7 +115,8 @@ async function _calcularEstadoMes(maestroId, anio, mes) {
       tieneAsistencia ||
       (s.borrador === false && tieneContenido)
     )
-  })
+  }
+  const sesiones = todasSesiones.filter(esSesionRegistrada)
 
   const fechasRegistradas = new Set(sesiones.map((s) => s.fecha))
 
@@ -133,8 +136,36 @@ async function _calcularEstadoMes(maestroId, anio, mes) {
       emergentePorFecha.get(s.fecha).push(s)
     })
 
+  // Estructuras por clase, para los puntos por día
+  const clasesPorDiaSem = new Map() // 'lunes' -> Set<claseId>
+  const horaFinPorClaseDia = new Map() // 'lunes|claseId' -> hora_fin máxima
+  horarios.forEach((h) => {
+    const dia = h.dia?.toLowerCase()
+    if (!dia || !h.clase_id) return
+    if (!clasesPorDiaSem.has(dia)) clasesPorDiaSem.set(dia, new Set())
+    clasesPorDiaSem.get(dia).add(h.clase_id)
+    const key = `${dia}|${h.clase_id}`
+    const horaFin = h.hora_fin || '23:59'
+    if (!horaFinPorClaseDia.has(key) || horaFin > horaFinPorClaseDia.get(key)) {
+      horaFinPorClaseDia.set(key, horaFin)
+    }
+  })
+
+  // Sesión por clase+fecha (si hay varias, prima la registrada)
+  const sesionPorClaseFecha = new Map()
+  todasSesiones
+    .filter((s) => s.clase_id)
+    .forEach((s) => {
+      const key = `${s.fecha}|${s.clase_id}`
+      const prev = sesionPorClaseFecha.get(key)
+      if (!prev || (!esSesionRegistrada(prev) && esSesionRegistrada(s))) {
+        sesionPorClaseFecha.set(key, s)
+      }
+    })
+
   // 4. Calcular estado por día
   const estadoMap = new Map()
+  const dotsMap = new Map()
   const hoy = new Date()
   hoy.setHours(0, 0, 0, 0)
 
@@ -146,15 +177,38 @@ async function _calcularEstadoMes(maestroId, anio, mes) {
     const diaEs = DIAS_ES[d.getDay()]
     const tieneCl = diasConClase.has(diaEs)
     const emergentesFecha = emergentePorFecha.get(fecha) || []
+    const fechaDate = new Date(d)
+    const diffDias = Math.floor((hoy - fechaDate) / 86400000)
+
+    // Puntos por clase: verde registrada, amarillo borrador, rojo sin registrar, gris futura/en curso
+    const dots = []
+    const clasesDelDia = clasesPorDiaSem.get(diaEs) || new Set()
+    clasesDelDia.forEach((claseId) => {
+      const s = sesionPorClaseFecha.get(`${fecha}|${claseId}`)
+      if (diffDias === 0) {
+        // HOY: verde solo con asistencia marcada (regla Bug 1)
+        const tieneAsistencia = s && Array.isArray(s.asistencia) && s.asistencia.length > 0
+        if (s && (s.emergente_id || tieneAsistencia)) dots.push('verde')
+        else if (s) dots.push('amarillo')
+        else if (!_claseFinalizoHoy(horaFinPorClaseDia.get(`${diaEs}|${claseId}`))) dots.push('gris')
+        else dots.push('rojo')
+        return
+      }
+      if (s && (s.emergente_id || esSesionRegistrada(s))) dots.push('verde')
+      else if (s) dots.push('amarillo')
+      else if (diffDias < 0) dots.push('gris')
+      else dots.push('rojo')
+    })
+    emergentesFecha.forEach((s) => {
+      dots.push(esSesionRegistrada(s) ? 'verde' : 'amarillo')
+    })
+    dotsMap.set(fecha, dots)
 
     // Si no hay clase programada pero sí hay sesión emergente, evaluarla
     if (!tieneCl && emergentesFecha.length === 0) {
       estadoMap.set(fecha, 'sin-clase')
       continue
     }
-
-    const fechaDate = new Date(d)
-    const diffDias = Math.floor((hoy - fechaDate) / 86400000)
 
     // Caso especial: HOY (diffDias === 0)
     // Sin color hasta que la clase finalice
@@ -215,10 +269,18 @@ async function _calcularEstadoMes(maestroId, anio, mes) {
     }
   }
 
-  return estadoMap
+  return { estadoMap, dotsMap }
 }
 
-function _renderCalendario(container, anio, mes, hoy, estadoMap, { onFechaClick, onPrev, onNext }) {
+/** ¿La clase de hoy ya finalizó según su hora_fin? */
+function _claseFinalizoHoy(horaFin) {
+  const fin = (horaFin || '23:59').slice(0, 5)
+  const ahora = new Date()
+  const ahoraStr = `${String(ahora.getHours()).padStart(2, '0')}:${String(ahora.getMinutes()).padStart(2, '0')}`
+  return ahoraStr >= fin
+}
+
+function _renderCalendario(container, anio, mes, hoy, estadoMap, dotsMap, { onFechaClick, onPrev, onNext }) {
   const primerDia = new Date(anio, mes, 1)
   const ultimoDia = new Date(anio, mes + 1, 0)
   const primerDiaSem = primerDia.getDay()
@@ -242,16 +304,23 @@ function _renderCalendario(container, anio, mes, hoy, estadoMap, { onFechaClick,
   for (let d = 1; d <= diasEnMes; d++) {
     const fecha = `${anio}-${String(mes + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`
     const estado = estadoMap.get(fecha) || 'sin-clase'
+    const dots = dotsMap?.get(fecha) || []
+    // Fondo amarillo SOLO si hay clases sin registrar o en borrador
+    const hayAlerta = dots.includes('rojo') || dots.includes('amarillo')
+    const dotsHTML = dots.length
+      ? `<div class="pm-day-dots">${dots.map((c) => `<span class="pm-day-dot pm-dot-${c}"></span>`).join('')}</div>`
+      : ''
     const esHoy = fecha === hoyStr ? 'today' : ''
     const isActive = fecha === activeDate
 
-    const ariaLabel = `${d} de ${MESES_ES[mes]} ${anio}`
+    const ariaLabel = `${d} de ${MESES_ES[mes]} ${anio}${dots.length ? `, ${dots.length} clase(s)` : ''}`
     const ariaCurrent = fecha === hoyStr ? ' aria-current="date"' : ''
     const tabIndex = isActive ? '0' : '-1'
 
     diasHTML += `
-      <div class="pm-cal-day estado-${estado} ${esHoy}" data-fecha="${fecha}" title="${fecha}" role="gridcell" tabindex="${tabIndex}" aria-label="${ariaLabel}" aria-selected="false"${ariaCurrent}>
-        ${d}
+      <div class="pm-cal-day estado-${estado}${hayAlerta ? ' dia-alerta' : ''} ${esHoy}" data-fecha="${fecha}" title="${fecha}" role="gridcell" tabindex="${tabIndex}" aria-label="${ariaLabel}" aria-selected="false"${ariaCurrent}>
+        <span class="pm-cal-day-num">${d}</span>
+        ${dotsHTML}
       </div>
     `
   }
@@ -279,16 +348,19 @@ function _renderCalendario(container, anio, mes, hoy, estadoMap, { onFechaClick,
 
       <div class="pm-cal-legend">
         <div class="pm-cal-legend-item">
-          <div class="pm-cal-legend-dot" style="background:var(--pm-success)"></div> Registrada
+          <div class="pm-cal-legend-dot" style="background:var(--pm-success)"></div> Clase registrada
         </div>
         <div class="pm-cal-legend-item">
-          <div class="pm-cal-legend-dot" style="background:#0891b2"></div> Cubierta por actividad especial
+          <div class="pm-cal-legend-dot" style="background:var(--pm-warning)"></div> Borrador
         </div>
         <div class="pm-cal-legend-item">
-          <div class="pm-cal-legend-dot" style="background:var(--pm-warning)"></div> Pendiente
+          <div class="pm-cal-legend-dot" style="background:var(--pm-danger)"></div> Sin registrar
         </div>
         <div class="pm-cal-legend-item">
-          <div class="pm-cal-legend-dot" style="background:var(--pm-danger)"></div> Sin registro >7 días
+          <div class="pm-cal-legend-dot" style="background:var(--pm-text-muted);opacity:.5"></div> Programada
+        </div>
+        <div class="pm-cal-legend-item">
+          <div class="pm-cal-legend-dot" style="background:var(--pm-warning-bg);border:1px solid var(--pm-warning);border-radius:3px"></div> Día con registro pendiente
         </div>
 </div>
       </div>

@@ -15,6 +15,9 @@ const SUPPRESSED_PATTERNS = [
   'content.js',
   'Failed to load module script',
   'net::ERR_BLOCKED_BY_CLIENT',
+  'lock:sb-soi-auth',
+  'gotrue-js: Lock',
+  'was not released within',
 ]
 
 /**

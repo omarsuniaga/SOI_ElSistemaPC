@@ -2,6 +2,9 @@
 // SISTEMA ACADÉMICO - Main Entry Point
 // ============================================================================
 
+// EARLY ERROR SUPPRESSION (Must be first!)
+import './early-error-suppression.js'
+
 // Desactivar gestos de recarga pull-to-refresh (Look and Feel nativo)
 import { disablePullToRefresh } from './shared/utils/pullToRefreshBlocker.js'
 disablePullToRefresh()
@@ -74,6 +77,9 @@ import { registerRoutesAdminNotificaciones } from './modules/admin-notificacione
 import { registerRoutesAdminAprobacion } from './modules/admin-aprobacion/index.js'
 import { registerRoutesAdminUsuarios } from './modules/admin-usuarios/index.js'
 import { registerRoutesBitacora } from './modules/bitacora/index.js'
+import { registerRoutesFinanzas } from './modules/finanzas/index.js'
+import { registerRoutesLuteria } from './modules/luteria/index.js'
+import { registerRoutesInventario } from './modules/inventario/index.js'
 import { renderScoreDirectorView } from './modules/hermes/views/scoreDirectorView.js'
 import {
   startAdminRealtimeNotifications,
@@ -244,6 +250,30 @@ const MODULES_REGISTRY = [
     enabled: true,
     register: registerRoutesConfig,
   },
+  {
+    id: 'finanzas',
+    label: 'Finanzas',
+    icon: 'bi-bank',
+    description: 'Balances de alumnos y registro de pagos',
+    enabled: true,
+    register: registerRoutesFinanzas,
+  },
+  {
+    id: 'luteria',
+    label: 'Lutería',
+    icon: 'bi-tools',
+    description: 'Diagnósticos y órdenes de reparación',
+    enabled: true,
+    register: registerRoutesLuteria,
+  },
+  {
+    id: 'inventario',
+    label: 'Inventario',
+    icon: 'bi-box-seam',
+    description: 'Control de stock y comodatos de instrumentos',
+    enabled: true,
+    register: registerRoutesInventario,
+  },
 ]
 
 // ============================================================================
@@ -324,6 +354,18 @@ const NAV_GROUPS = [
       { id: 'admin-dashboard-reportes', label: 'Reportes Director', icon: 'bi-file-earmark-pdf' },
       { id: 'admin-dashboard-analitca-llenado', label: 'Analítica Llenado', icon: 'bi-graph-up' },
       { id: 'admin-dashboard-tendencias', label: 'Tendencias', icon: 'bi-arrow-up-right' },
+    ],
+  },
+  {
+    id: 'operaciones',
+    label: 'Operaciones y Finanzas',
+    icon: 'bi-bank',
+    items: [
+      { id: 'finanzas-balance', label: 'Balances de Alumnos', icon: 'bi-wallet2' },
+      { id: 'finanzas-registro', label: 'Registro de Pagos', icon: 'bi-cash-coin' },
+      { id: 'inventario-stock', label: 'Stock Instrumentos', icon: 'bi-box-seam' },
+      { id: 'inventario-comodatos', label: 'Comodatos/Préstamos', icon: 'bi-file-earmark-text' },
+      { id: 'inventario-reparaciones', label: 'Reparaciones (Lutería)', icon: 'bi-tools' },
     ],
   },
   {

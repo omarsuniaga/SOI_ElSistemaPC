@@ -860,3 +860,54 @@ export async function observarTarea(tareaId, comentario, actor) {
 
   return delay(undefined)
 }
+
+// ─── Slice 4: aprobación humana de tool_calls (Domain: hermes-write-approval) ──
+
+/**
+ * Simula la ejecución diferida de una tool_call aprobada. En mock no hay
+ * gateway real: marca la tarea como completada con feedback de simulación.
+ * @param {string} tareaId
+ * @param {{ id: string, nombre: string }} actor
+ */
+export async function aprobarToolCall(tareaId, actor) {
+  const tarea = tareas.find((t) => t.id === tareaId)
+  if (!tarea) throw new Error('Tarea no encontrada')
+  if (tarea.entidad_tipo !== 'tool_call') throw new Error('La tarea no es una solicitud de tool_call')
+
+  const estadoAnterior = tarea.estado
+  tarea.estado = 'completada'
+  tarea.feedback = `[Mock] Tool "${tarea.entidad_label}" aprobada y ejecutada (simulado, sin gateway real).`
+  tarea.updated_by = actor?.id ?? null
+  tarea.updated_by_nombre = actor?.nombre ?? null
+  tarea.updated_at = new Date().toISOString()
+
+  _registrarHistorial(tareaId, 'estado', estadoAnterior, 'completada', actor)
+
+  return delay({ resultado: 'ejecutado', mensaje: tarea.feedback })
+}
+
+/**
+ * Rechaza una tarea de aprobación de tool_call: la cancela con feedback.
+ * @param {string} tareaId
+ * @param {string} motivo
+ * @param {{ id: string, nombre: string }} actor
+ */
+export async function rechazarToolCall(tareaId, motivo, actor) {
+  if (!motivo || motivo.trim().length === 0) {
+    throw new Error('El motivo de rechazo es obligatorio (comentario vacío)')
+  }
+  const tarea = tareas.find((t) => t.id === tareaId)
+  if (!tarea) throw new Error('Tarea no encontrada')
+  if (tarea.entidad_tipo !== 'tool_call') throw new Error('La tarea no es una solicitud de tool_call')
+
+  const estadoAnterior = tarea.estado
+  tarea.estado = 'cancelada'
+  tarea.feedback = motivo.trim()
+  tarea.updated_by = actor?.id ?? null
+  tarea.updated_by_nombre = actor?.nombre ?? null
+  tarea.updated_at = new Date().toISOString()
+
+  _registrarHistorial(tareaId, 'estado', estadoAnterior, 'cancelada', actor)
+
+  return delay(undefined)
+}

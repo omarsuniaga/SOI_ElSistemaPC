@@ -185,6 +185,21 @@ async function checkAndSendAdminAlerts() {
   console.log('[AdminAlerts] Starting check:', new Date().toISOString())
 
   try {
+    // Guard de receso académico / vacaciones (lee de system_config)
+    const { data: configRow, error: configError } = await supabase
+      .from('system_config')
+      .select('value')
+      .eq('key', 'whatsapp_ingest_enabled')
+      .maybeSingle()
+
+    if (configError) {
+      console.error('[AdminAlerts] Error leyendo system_config:', configError.message)
+      return { status: 'skipped', reason: 'db_error', error: configError.message }
+    } else if (configRow?.value === 'false') {
+      console.log('[AdminAlerts] Receso académico activo (whatsapp_ingest_enabled=false). Saltando alertas.')
+      return { status: 'skipped', reason: 'receso' }
+    }
+
     // Check NARANJA transitions
     const naranjaAlerts = await checkNaranjaTransitions()
     for (const alert of naranjaAlerts) {

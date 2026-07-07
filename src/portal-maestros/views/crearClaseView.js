@@ -34,11 +34,14 @@ export async function renderCrearClaseView(container) {
       return
     }
 
-    // Obtener instrumentos disponibles
-    const { data: instrumentos } = await supabase
-      .from('instrumentos')
-      .select('id, nombre')
-      .order('nombre')
+    // Obtener tipos de instrumento desde inventario activo
+    const { data: activos } = await supabase
+      .from('inventario_activos')
+      .select('tipo_instrumento')
+      .eq('activo', true)
+      .not('tipo_instrumento', 'is', null)
+      .order('tipo_instrumento')
+    const instrumentos = [...new Map((activos || []).map(a => [a.tipo_instrumento, { nombre: a.tipo_instrumento }])).values()]
 
     // Obtener maestros para co-docencia
     const { data: maestros } = await supabase
@@ -67,7 +70,7 @@ export async function renderCrearClaseView(container) {
             <label class="pm-label">Instrumento *</label>
             <select id="nueva-clase-instrumento" class="pm-input">
               <option value="">Seleccionar instrumento...</option>
-              ${(instrumentos || []).map(i => `<option value="${i.id}">${escHTML(i.nombre)}</option>`).join('')}
+              ${(instrumentos || []).map(i => `<option value="${escHTML(i.nombre)}">${escHTML(i.nombre)}</option>`).join('')}
             </select>
           </div>
 
@@ -176,7 +179,7 @@ export async function renderCrearClaseView(container) {
           .from('clases')
           .insert({
             nombre,
-            instrumento_id: instrumentoId,
+            instrumento: instrumentoId,
             capacidad_maxima: capacidad,
             salon,
             maestro_principal_id: maestro.id,

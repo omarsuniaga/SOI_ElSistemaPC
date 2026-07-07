@@ -52,6 +52,22 @@ export async function setPreferredModel(model) {
   return setConfig('preferred_ai_model', model)
 }
 
+export async function getTelegramClassifierModel() {
+  return getConfig('telegram_classifier_model')
+}
+
+export async function setTelegramClassifierModel(model) {
+  return setConfig('telegram_classifier_model', model)
+}
+
+export async function getHermesClassifierModel() {
+  return getConfig('hermes_classifier_model')
+}
+
+export async function setHermesClassifierModel(model) {
+  return setConfig('hermes_classifier_model', model)
+}
+
 // ── Documentos institucionales ─────────────────────────────────────────────
 
 export const DOCS_KEYS = {

@@ -49,12 +49,14 @@ export default defineConfig({
           calendario: 'calendario.html',
           luteria:    'luteria.html',
           lut:        'lut.html',
+          simulador:  'simulador.html',
         },
       output: {
         manualChunks(id) {
           if (id.includes('supabase')) return 'supabase'
           if (id.includes('bootstrap')) return 'vendor'
           if (id.includes('idb'))       return 'idb'
+          if (id.includes('three'))     return 'three'
         }
       }
     }
@@ -120,6 +122,8 @@ export default defineConfig({
             req.url = '/audiciones.html' + search
           } else if (pathname === '/luteria' || pathname === '/luteria/') {
             req.url = '/luteria.html' + search
+          } else if (pathname === '/simulador' || pathname === '/simulador/') {
+            req.url = '/simulador.html' + search
           }
           next()
         })

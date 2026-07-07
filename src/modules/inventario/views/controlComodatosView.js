@@ -1,10 +1,12 @@
 import { Modal } from 'bootstrap'
 import { supabase } from '../../../lib/supabaseClient.js'
+import SignaturePad from 'signature_pad'
 import { obtenerActivos, obtenerComodatosActivos, crearComodato, devolverComodato, subirContratoComodato, obtenerComodatosAlumno, renovarComodato } from '../api/inventarioApi.js'
 import { puedeAsignarse, estadoVencimiento, puedeRenovarse, TIPOS_COMODATO } from '../domain/comodato.js'
 
 export async function renderControlComodatosView(container) {
   const _ac = new AbortController()
+  let signaturePad = null
   container.innerHTML = '<p class="p-4">Cargando comodatos...</p>'
   const [{ data: comodatos, error: errComodatos }, { data: activos, error: errActivos }] = await Promise.all([
     obtenerComodatosActivos(), obtenerActivos({ estado_uso: 'disponible' }),
@@ -68,7 +70,12 @@ export async function renderControlComodatosView(container) {
     '<div class="row g-3 mb-3"><div class="col-6"><label class="form-label fw-semibold">Tipo comodato</label><select class="form-select" name="tipo_comodato">' + tipoComodatoOptions + '</select></div>',
     '<div class="col-6"><label class="form-label fw-semibold">Fecha vencimiento</label><input type="date" class="form-control" name="fecha_vencimiento"></div></div>',
     '<div class="mb-3"><label class="form-label fw-semibold">Instrumento propio ID</label><input type="text" class="form-control" name="instrumento_propio_id" placeholder="Opcional"></div>',
-    '<div class="mb-3"><label class="form-label fw-semibold">Observaciones</label><textarea class="form-control" name="observaciones" rows="2"></textarea></div><div class="mb-3"><label class="form-label fw-semibold">Contrato firmado (PDF)</label><input type="file" class="form-control" id="contrato-file" accept=".pdf,image/*"></div>',
+    '<div class="mb-3"><label class="form-label fw-semibold">Observaciones</label><textarea class="form-control" name="observaciones" rows="2"></textarea></div>' +
+    '<div class="mb-3"><label class="form-label fw-semibold">Contrato firmado (PDF)</label><input type="file" class="form-control" id="contrato-file" accept=".pdf,image/*"></div>' +
+    '<div class="mb-3"><label class="form-label fw-semibold d-block">Firma Digital del Representante</label>' +
+    '<div class="p-1" style="border: 1.5px solid rgba(0,0,0,0.15); background: white; border-radius: 8px;"><canvas id="signature-pad-canvas" width="450" height="150" style="width: 100%; height: 150px; background: white; border-radius: 6px; cursor: crosshair;"></canvas></div>' +
+    '<button type="button" class="btn btn-sm btn-outline-secondary mt-2" id="btn-limpiar-firma">Limpiar Firma</button>' +
+    '</div>',
     '<div id="modal-comodato-error" class="alert alert-danger d-none"></div>',
     '</form></div>',
     '<div class="modal-footer"><button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>',
@@ -96,6 +103,16 @@ export async function renderControlComodatosView(container) {
   container.querySelector('#btn-nuevo-comodato')?.addEventListener('click', () => {
     container.querySelector('#form-comodato')?.reset(); container.querySelector('#modal-comodato-error')?.classList.add('d-none')
     getModal('modal-comodato')?.show()
+    setTimeout(() => {
+      const canvas = container.querySelector('#signature-pad-canvas')
+      if (canvas) {
+        signaturePad = new SignaturePad(canvas, { penColor: 'rgb(0, 0, 0)' })
+      }
+    }, 250)
+  }, { signal: _ac.signal })
+
+  container.querySelector('#btn-limpiar-firma')?.addEventListener('click', () => {
+    signaturePad?.clear()
   }, { signal: _ac.signal })
 
   container.querySelector('#tbody-comodatos')?.addEventListener('click', async (e) => {
@@ -139,12 +156,20 @@ export async function renderControlComodatosView(container) {
 
   container.querySelector('#btn-guardar-comodato')?.addEventListener('click', async () => {
     const form = container.querySelector('#form-comodato'); const errEl = container.querySelector('#modal-comodato-error')
-    const fd = new FormData(form); const activo_id = fd.get('activo_id'); const alumno_id = fd.get('alumno_id'); const observaciones = fd.get('observaciones') || null
+    const fd = new FormData(form); const activo_id = fd.get('activo_id'); const alumno_id = fd.get('alumno_id'); let observaciones = fd.get('observaciones') || ''
     const tipo_comodato = fd.get('tipo_comodato') || 'escolar'; const fecha_vencimiento = fd.get('fecha_vencimiento') || null; const instrumento_propio_id = fd.get('instrumento_propio_id') || null
     if (!activo_id || !alumno_id) { errEl.textContent = 'Seleccion\u00e1 el instrumento y el alumno.'; errEl.classList.remove('d-none'); return }
+    
+    let firmaHash = null
+    if (signaturePad && !signaturePad.isEmpty()) {
+      const signatureDataUrl = signaturePad.toDataURL()
+      firmaHash = 'SHA256:' + btoa(signatureDataUrl).substring(0, 32).toUpperCase()
+      observaciones = observaciones ? `${observaciones} [Firma Digital: ${firmaHash}]` : `[Firma Digital: ${firmaHash}]`
+    }
+
     const btn = container.querySelector('#btn-guardar-comodato'); btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Guardando...'
     const { data: session } = await supabase.auth.getSession()
-    const { data: newComodato, error } = await crearComodato({ activo_id, alumno_id, observaciones, registrado_por: session?.session?.user?.id ?? null, fecha_entrega: new Date().toISOString().split('T')[0], estado: 'activo', tipo_comodato, fecha_vencimiento, instrumento_propio_id })
+    const { data: newComodato, error } = await crearComodato({ activo_id, alumno_id, observaciones: observaciones || null, registrado_por: session?.session?.user?.id ?? null, fecha_entrega: new Date().toISOString().split('T')[0], estado: 'activo', tipo_comodato, fecha_vencimiento, instrumento_propio_id })
     btn.disabled = false; btn.innerHTML = '<i class="bi bi-save me-1"></i> Asignar'
     if (error) { errEl.textContent = error.message.includes('uix_comodato_activo') ? 'Este instrumento ya tiene un comodato activo.' : error.message; errEl.classList.remove('d-none') } else {
       const contratoFile = container.querySelector('#contrato-file')?.files?.[0]

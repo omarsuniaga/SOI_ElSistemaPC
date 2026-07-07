@@ -260,7 +260,11 @@ function renderNavbar(profile, isAuthenticated, storageKey) {
   window.addEventListener(
     'routeChanged',
     (e) => {
-      syncBottomNavState(e.detail)
+      const route = e.detail
+      syncBottomNavState(route)
+      sidebar.querySelectorAll('.nav-item-btn').forEach((btn) => {
+        btn.classList.toggle('active', btn.dataset.route === route)
+      })
     },
     { signal },
   )

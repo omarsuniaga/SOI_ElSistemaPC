@@ -4,7 +4,7 @@
  */
 
 import { supabase } from '../../../lib/supabaseClient.js'
-import { getTeacherFillingMetrics, getFillingMetricsByMaestro } from './analyticsFillingBehaviorService.js'
+import { getFillingMetricsByMaestro, getTeacherFillingMetricsPerSession } from './analyticsFillingBehaviorAdapter.js'
 import * as trendService from './trendAnalysisService.js'
 
 /**
@@ -15,7 +15,7 @@ export async function getMaestroPerformanceReport(maestroId) {
   try {
     // Get current desempeño
     const { data: desempeño, error: dError } = await supabase
-      .from('maestro_desempeño')
+      .from('maestro_desempeno')
       .select('*')
       .eq('maestro_id', maestroId)
       .single()
@@ -119,7 +119,7 @@ function calculatePerformanceMetrics(registros) {
 export async function getInstitutionComplianceSummary() {
   try {
     const { data: allDesempeño, error } = await supabase
-      .from('maestro_desempeño')
+      .from('maestro_desempeno')
       .select(
         `
         id,
@@ -413,8 +413,8 @@ export async function getInstitutionTrendReportWithFilling(daysBack = 30) {
   try {
     const since = new Date(Date.now() - daysBack * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
 
-    // Get all filling metrics
-    const allMetrics = await getTeacherFillingMetrics()
+    // Get all filling metrics (per-session view for trend analysis)
+    const allMetrics = await getTeacherFillingMetricsPerSession()
     const recentMetrics = allMetrics.filter(m => m.fecha >= since)
 
     // Aggregate by date and by maestro

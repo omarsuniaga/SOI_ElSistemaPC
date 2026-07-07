@@ -42,6 +42,10 @@ export const agregarAdjunto = api.agregarAdjunto
 export const urlFirmada = api.urlFirmada
 export const observarTarea = api.observarTarea
 
+// ─── Slice 4: aprobación humana de tool_calls ─────────────────────────────────
+export const aprobarToolCall = api.aprobarToolCall
+export const rechazarToolCall = api.rechazarToolCall
+
 // ─── SP-3: vista de procedimientos (Director) ──────────────────────────────────
 export const getProcedimientos = api.getProcedimientos
 

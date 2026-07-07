@@ -42,7 +42,7 @@ async function getSalonesReal() {
 async function getClasesReal() {
   const { data: clases, error } = await supabase
     .from('clases')
-    .select('id, nombre, maestro_principal_id, capacidad_maxima, instrumento, duracion_minutos')
+    .select('id, nombre, maestro_principal_id, capacidad_maxima, instrumento')
     .order('nombre', { ascending: true });
 
   if (error) throw new Error('Error al cargar clases reales: ' + error.message);

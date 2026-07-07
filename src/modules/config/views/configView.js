@@ -2,6 +2,8 @@ import {
   getGroqApiKey, setGroqApiKey,
   getOpenRouterApiKey, setOpenRouterApiKey,
   getPreferredModel, setPreferredModel,
+  getTelegramClassifierModel, setTelegramClassifierModel,
+  getHermesClassifierModel, setHermesClassifierModel,
   getDocumentosInstitucionales, setDocumentosInstitucionales,
 } from '../api/configApi.js'
 import {
@@ -46,10 +48,12 @@ function getUsageStats() {
 }
 
 export async function renderConfigView(container) {
-  const [groqKey, openrouterKey, preferredModel, docs] = await Promise.all([
+  const [groqKey, openrouterKey, preferredModel, telegramClassifierModel, hermesClassifierModel, docs] = await Promise.all([
     getGroqApiKey() || getLocalStorageKey('groq-key') || '',
     getOpenRouterApiKey() || getLocalStorageKey('openrouter-key') || '',
     getPreferredModel() || 'google/gemini-2.0-flash-exp',
+    getTelegramClassifierModel() || 'llama-3.1-8b-instant',
+    getHermesClassifierModel() || 'llama-3.1-8b-instant',
     getDocumentosInstitucionales(),
   ])
 
@@ -90,6 +94,31 @@ export async function renderConfigView(container) {
                   `).join('')}
                 </select>
                 <div class="form-text">Este modelo se usará por defecto en todas las requests</div>
+              </div>
+
+              <div class="row g-3 mb-4">
+                <div class="col-12 col-lg-6">
+                  <label class="form-label fw-semibold">Modelo clasificador Telegram</label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="telegram-classifier-model"
+                    value="${telegramClassifierModel}"
+                    placeholder="llama-3.1-8b-instant"
+                  >
+                  <div class="form-text">Usado por telegram-classifier-cron para clasificar mensajes.</div>
+                </div>
+                <div class="col-12 col-lg-6">
+                  <label class="form-label fw-semibold">Modelo clasificador Hermes</label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="hermes-classifier-model"
+                    value="${hermesClassifierModel}"
+                    placeholder="llama-3.1-8b-instant"
+                  >
+                  <div class="form-text">Usado por hermes-crear-tarea para clasificar solicitudes.</div>
+                </div>
               </div>
 
               <hr class="my-4">
@@ -388,6 +417,14 @@ export async function renderConfigView(container) {
                     <td><code>${preferredModel}</code></td>
                   </tr>
                   <tr>
+                    <td class="text-muted">Telegram model</td>
+                    <td><code>${telegramClassifierModel}</code></td>
+                  </tr>
+                  <tr>
+                    <td class="text-muted">Hermes model</td>
+                    <td><code>${hermesClassifierModel}</code></td>
+                  </tr>
+                  <tr>
                     <td class="text-muted">Fallback</td>
                     <td>${openrouterKey && groqKey ? '<span class="text-success">Automático</span>' : (openrouterKey ? 'OpenRouter only' : 'GROQ only')}</td>
                   </tr>
@@ -425,6 +462,8 @@ export async function renderConfigView(container) {
     const groq = document.getElementById('groq-api-key').value.trim()
     const openrouter = document.getElementById('openrouter-api-key').value.trim()
     const model = document.getElementById('preferred-model').value
+    const telegramClassifier = document.getElementById('telegram-classifier-model').value.trim()
+    const hermesClassifier = document.getElementById('hermes-classifier-model').value.trim()
     const status = document.getElementById('config-status')
     
     status.innerHTML = '<div class="spinner-border spinner-border-sm me-2"></div> Guardando...'
@@ -439,6 +478,8 @@ export async function renderConfigView(container) {
         saveLocalStorageKey('openrouter-key', openrouter)
       }
       await setPreferredModel(model)
+      if (telegramClassifier) await setTelegramClassifierModel(telegramClassifier)
+      if (hermesClassifier) await setHermesClassifierModel(hermesClassifier)
       status.innerHTML = '<div class="alert alert-success alert-dismissible fade show mb-0">' +
         '<i class="bi bi-check-circle me-1"></i> Configuración guardada correctamente' +
         '<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>'

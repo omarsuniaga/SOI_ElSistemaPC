@@ -71,7 +71,7 @@ export class DirectorReportingPanel {
               <h1 class="page-title">Reporte Institucional de Cumplimiento</h1>
               <div class="admin-header-subtitle">
                 Análisis de desempeño de maestros en registro de asistencias
-                <span class="badge">${this.summary.totalMaestros} Maestros</span>
+                <span class="badge bg-primary-subtle text-primary-emphasis">${this.summary.totalMaestros} Maestros</span>
               </div>
             </div>
           </div>
@@ -216,9 +216,9 @@ export class DirectorReportingPanel {
             <tr>
               <td><strong>${m.nombre}</strong></td>
               <td>${m.diasAtraso} días</td>
-              <td><span class="badge bg-warning bg-opacity-10 text-warning px-2 py-1">${m.naranjaCount}</span></td>
+              <td><span class="badge bg-warning-subtle text-warning-emphasis px-2 py-1">${m.naranjaCount}</span></td>
               <td>
-                <span class="badge ${m.rojoCount > 0 ? 'bg-danger text-white' : 'bg-secondary bg-opacity-10 text-secondary'} px-2 py-1">
+                <span class="badge ${m.rojoCount > 0 ? 'bg-danger text-white' : 'bg-secondary-subtle text-secondary-emphasis'} px-2 py-1">
                   ${m.rojoCount}
                 </span>
               </td>

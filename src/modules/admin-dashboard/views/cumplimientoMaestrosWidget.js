@@ -5,9 +5,6 @@
 
 import {
   getMaestrosComplianceStatus,
-  getMaestrosByCategory,
-  getCriticalMaestros,
-  getMaestroPendingRegistros,
 } from '../api/adminMaestroApi.js'
 import { InfoTooltip, attachInfoTooltipEvents, injectInfoTooltipStyles } from '../../../shared/components/InfoTooltip.js'
 import '../styles/admin-dashboard.css'
@@ -61,54 +58,15 @@ export class CumplimientoMaestrosWidget {
   async loadData() {
     const maestros = await getMaestrosComplianceStatus()
 
-    // Enrich each maestro with pending registros info
-    this.maestros = await Promise.all(
-      maestros.map(async (m) => {
-        const pendingCount = await this.getPendingCount(m.maestro_id)
-        const oldestDiasAtraso = await this.getOldestDiasAtraso(m.maestro_id)
-
-        return {
-          ...m,
-          pendingCount,
-          oldestDiasAtraso,
-          statusColor: this.getStatusColor(m.categoria),
-          categoryLabel: this.getCategoryLabel(m.categoria),
-        }
-      }),
-    )
+    this.maestros = (maestros || []).map(m => ({
+      ...m,
+      pendingCount: m.pending_count ?? 0,
+      oldestDiasAtraso: m.oldest_dias_atraso ?? 0,
+      statusColor: this.getStatusColor(m.categoria),
+      categoryLabel: this.getCategoryLabel(m.categoria),
+    }))
 
     this.filteredMaestros = [...this.maestros]
-  }
-
-  /**
-   * Get count of pending registros for maestro
-   */
-  async getPendingCount(maestroId) {
-    try {
-      const registros = await getMaestroPendingRegistros(maestroId)
-      return registros.length
-    } catch {
-      return 0
-    }
-  }
-
-  /**
-   * Get oldest pending registro dias_atraso
-   */
-  async getOldestDiasAtraso(maestroId) {
-    try {
-      const registros = await getMaestroPendingRegistros(maestroId)
-      if (registros.length === 0) return 0
-
-      return registros.reduce((max, reg) => {
-        const created = new Date(reg.created_at).getTime()
-        const now = Date.now()
-        const dias = Math.ceil((now - created) / (1000 * 60 * 60 * 24))
-        return Math.max(max, dias)
-      }, 0)
-    } catch {
-      return 0
-    }
   }
 
   /**
@@ -431,9 +389,9 @@ export class CumplimientoMaestrosWidget {
     const maestro = this.maestros.find((m) => m.maestro_id === maestroId)
     if (!maestro) return
 
-    // Could open a modal or navigate to detail page
-    // Example: navigate to /admin/maestros/{maestroId}/detail
-    window.location.href = `/admin/maestros/${maestroId}/detail`
+    import('../../../core/router/router.js').then(({ router }) => {
+      router.navigate('admin-maestro-detalle', { maestroId })
+    })
   }
 }
 

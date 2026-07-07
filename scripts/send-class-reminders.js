@@ -29,6 +29,20 @@ if (!SUPABASE_URL || !SERVICE_KEY || !FCM_SERVER_KEY) {
 
 const supabase = createClient(SUPABASE_URL, SERVICE_KEY)
 
+// ── 0. Guard de receso académico / vacaciones (lee de system_config) ────
+const { data: configRow, error: configError } = await supabase
+  .from('system_config')
+  .select('value')
+  .eq('key', 'whatsapp_ingest_enabled')
+  .maybeSingle()
+
+if (configError) {
+  console.error('[reminders] Error leyendo system_config:', configError.message)
+} else if (configRow?.value === 'false') {
+  console.log('[reminders] Receso académico activo (whatsapp_ingest_enabled=false). Saltando alertas.')
+  process.exit(0)
+}
+
 /**
  * Envía una notificación push vía FCM.
  */

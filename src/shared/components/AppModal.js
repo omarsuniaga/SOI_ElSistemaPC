@@ -9,6 +9,50 @@ const BACKDROP_ID = 'app-global-backdrop'
 function ensureDOM() {
   if (document.getElementById(MODAL_ID)) return
 
+  const style = document.createElement('style')
+  style.id = `${MODAL_ID}-styles`
+  style.textContent = `
+    #${MODAL_ID} .app-modal-dialog {
+      display: flex;
+      flex-direction: column;
+      width: 90vw;
+      max-width: 90vw;
+      max-height: 90vh;
+    }
+
+    #${MODAL_ID} .app-modal-body {
+      flex: 1 1 auto;
+      overflow: auto;
+      min-height: 0;
+    }
+
+    #${MODAL_ID} .app-modal-header,
+    #${MODAL_ID} .app-modal-footer {
+      flex-shrink: 0;
+    }
+
+    @media (max-width: 767.98px) {
+      #${MODAL_ID} {
+        padding: 0.5rem;
+      }
+
+      #${MODAL_ID} .app-modal-dialog {
+        width: 95vw;
+        max-width: 95vw;
+        max-height: 92vh;
+        border-radius: 14px;
+      }
+
+      #${MODAL_ID} .app-modal-header,
+      #${MODAL_ID} .app-modal-body,
+      #${MODAL_ID} .app-modal-footer {
+        padding-left: 0.9rem !important;
+        padding-right: 0.9rem !important;
+      }
+    }
+  `
+  document.head.appendChild(style)
+
   // Backdrop
   const backdrop = document.createElement('div')
   backdrop.id = BACKDROP_ID
@@ -42,13 +86,16 @@ function ensureDOM() {
       border:1px solid var(--pm-border, var(--bs-border-color, #dee2e6));
       border-radius:16px;
       box-shadow:0 20px 60px rgba(0,0,0,0.2);
-      width:100%;
-      max-width:480px;
+      width:90vw;
+      max-width:90vw;
+      max-height:90vh;
       margin:auto;
       transform:translateY(20px) scale(0.97);
       transition:transform .25s cubic-bezier(.34,1.56,.64,1), opacity .2s ease;
       opacity:0;
       overflow:hidden;
+      display:flex;
+      flex-direction:column;
     ">
       <!-- Header -->
       <div class="app-modal-header" style="
@@ -71,7 +118,7 @@ function ensureDOM() {
       </div>
 
       <!-- Body -->
-      <div class="app-modal-body" style="padding:1.25rem; background:var(--pm-surface, var(--bs-body-bg, #ffffff));"></div>
+      <div class="app-modal-body" style="padding:1.25rem; background:var(--pm-surface, var(--bs-body-bg, #ffffff)); overflow:auto; min-height:0;"></div>
 
       <!-- Footer -->
       <div class="app-modal-footer" style="

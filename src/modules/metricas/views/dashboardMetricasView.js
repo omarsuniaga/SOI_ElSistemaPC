@@ -152,6 +152,12 @@ function renderResumenTab() {
       <div class="col-md-6 col-lg-3">
         ${renderMetricCard({ label: 'Asistencia Hoy', value: (s.asistencia_hoy_porcentaje || 0) + '%', icon: 'bi-check2-circle', color: 'info' })}
       </div>
+      <div class="col-md-6 col-lg-3">
+        ${renderMetricCard({ label: 'Riesgo Pedagógico (<2.5)', value: s.alumnos_riesgo || 0, icon: 'bi-exclamation-triangle-fill', color: 'warning' })}
+      </div>
+      <div class="col-md-6 col-lg-3">
+        ${renderMetricCard({ label: 'Instrumentos en Lutería', value: s.instrumentos_taller || 0, icon: 'bi-tools', color: 'dark' })}
+      </div>
       
       <div class="col-12 mt-4">
         <h5 class="fw-bold mb-3"><i class="bi bi-trophy me-2 text-warning"></i>Alumnos Destacados</h5>

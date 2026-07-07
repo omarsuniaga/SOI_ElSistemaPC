@@ -7,7 +7,7 @@ export class Planificacion {
     this.clase_id = data.clase_id || null
     this.maestro_id = data.maestro_id || null
     this.fecha_inicio = data.fecha_inicio || null
-    this.tema = data.tema || ''
+    this.tema = data.tema || data.titulo || ''
     this.objetivos = data.objetivos || ''
     this.contenido = data.contenido || ''
     this.recursos = Array.isArray(data.recursos) ? data.recursos : []
@@ -122,7 +122,7 @@ export class Planificacion {
       clase_id: this.clase_id,
       maestro_id: this.maestro_id,
       fecha_inicio: this.fecha_inicio,
-      tema: this.tema.trim(),
+      titulo: this.tema.trim(),
       objetivos: this.objetivos.trim() || null,
       contenido: this.contenido.trim() || null,
       recursos: this.recursos,

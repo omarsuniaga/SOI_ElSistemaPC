@@ -19,6 +19,7 @@ const GROQ_API_KEY = Deno.env.get('GROQ_API_KEY') ?? ''
 const HERMES_TOKEN = Deno.env.get('HERMES_EMAIL_TOKEN') ?? ''
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? ''
 const SERVICE_ROLE = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+const DEFAULT_HERMES_CLASSIFIER_MODEL = Deno.env.get('HERMES_CLASSIFIER_MODEL') ?? 'llama-3.1-8b-instant'
 
 const DEPTOS = ['DIR', 'ACM', 'ADM', 'FIN', 'LOG', 'COM', 'TECNICO']
 const PRIOS = ['baja', 'media', 'alta', 'critica']
@@ -29,6 +30,16 @@ const CORS = {
 }
 const json = (b: unknown, s = 200) =>
   new Response(JSON.stringify(b), { status: s, headers: { ...CORS, 'Content-Type': 'application/json' } })
+
+async function readConfig(sb: ReturnType<typeof createClient>, key: string): Promise<string | null> {
+  const { data, error } = await sb
+    .from('system_config')
+    .select('value')
+    .eq('key', key)
+    .single()
+  if (error || !data) return null
+  return data.value
+}
 
 const SYSTEM = `Sos el clasificador de solicitudes de "El Sistema Punta Cana". Dada una solicitud en
 texto libre, identificá qué DEPARTAMENTO debe atenderla y resumí la tarea.
@@ -42,14 +53,14 @@ texto libre, identificá qué DEPARTAMENTO debe atenderla y resumí la tarea.
 Devolvé SOLO un JSON: {"departamento":"FIN","titulo":"...","descripcion":"...","prioridad":"media","confianza":0.0}
 con prioridad ∈ baja|media|alta|critica.`
 
-async function clasificar(texto: string) {
+async function clasificar(texto: string, model: string) {
   const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
     method: 'POST',
     headers: { Authorization: `Bearer ${GROQ_API_KEY}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      model: 'llama-3.3-70b-versatile',
-      temperature: 0.2,
-      max_tokens: 512,
+      model,
+      temperature: 0.1,
+      max_tokens: 256,
       messages: [
         { role: 'system', content: SYSTEM },
         { role: 'user', content: texto },
@@ -87,9 +98,11 @@ Deno.serve(async (req: Request) => {
   const texto = (body.texto || '').trim()
   if (!texto) return json({ error: 'Falta el campo "texto"' }, 400)
 
+  const sb = createClient(SUPABASE_URL, SERVICE_ROLE)
   let clasif
   try {
-    clasif = await clasificar(texto)
+    const model = (await readConfig(sb, 'hermes_classifier_model'))?.trim() || DEFAULT_HERMES_CLASSIFIER_MODEL
+    clasif = await clasificar(texto, model)
   } catch (err) {
     return json({ error: `Clasificación falló: ${(err as Error).message}` }, 502)
   }
@@ -99,7 +112,6 @@ Deno.serve(async (req: Request) => {
     clasif.departamento = body.departamento.toUpperCase()
   }
 
-  const sb = createClient(SUPABASE_URL, SERVICE_ROLE)
   const { data, error } = await sb
     .from('tareas_institucionales')
     .insert({

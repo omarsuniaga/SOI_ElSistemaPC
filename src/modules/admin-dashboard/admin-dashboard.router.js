@@ -45,6 +45,19 @@ export function registerRoutesAdminDashboard() {
     }
   })
 
+  // Detalle de Maestro - Registros pendientes
+  router.register('admin-maestro-detalle', async (container, params) => {
+    try {
+      container.innerHTML = `<div id="maestro-detalle-container" class="p-4"></div>`
+      const { default: MaestroDetalleView } = await import('./views/maestroDetalleView.js')
+      const view = new MaestroDetalleView('maestro-detalle-container', params.maestroId)
+      view.init()
+    } catch (error) {
+      console.error('[admin-maestro-detalle] Error:', error)
+      container.innerHTML = `<div class="pm-placeholder"><i class="bi bi-exclamation-triangle"></i><p>Error al cargar detalle: ${error.message}</p></div>`
+    }
+  })
+
   // Reporte de Tendencias para Director
   router.register('admin-dashboard-tendencias', (container) => {
     try {

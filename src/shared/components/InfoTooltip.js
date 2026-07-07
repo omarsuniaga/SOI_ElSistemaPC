@@ -41,8 +41,8 @@ export function attachInfoTooltipEvents(container) {
   })
 }
 
-function showInfoModal(term) {
-  const { glossary } = require('./metrics-glossary.js')
+async function showInfoModal(term) {
+  const { glossary } = await import('./metrics-glossary.js')
   const definition = glossary[term]
 
   if (!definition) return

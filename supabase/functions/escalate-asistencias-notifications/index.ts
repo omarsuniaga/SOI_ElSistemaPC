@@ -114,11 +114,25 @@ async function sendPushNotification(
   }
 }
 
-// Main scheduler logic
 async function escalateNotifications() {
   console.log('[Scheduler Start]', new Date().toISOString())
 
   try {
+    // Guard de receso académico / vacaciones (lee de system_config)
+    const { data: configRow, error: configError } = await supabase
+      .from('system_config')
+      .select('value')
+      .eq('key', 'whatsapp_ingest_enabled')
+      .maybeSingle()
+
+    if (configError) {
+      console.error('[escalateNotifications] Error leyendo system_config:', configError.message)
+      return { status: 'skipped', reason: 'db_error', error: configError.message }
+    } else if (configRow?.value === 'false') {
+      console.log('[escalateNotifications] Receso académico activo (whatsapp_ingest_enabled=false). Saltando procesamiento.')
+      return { status: 'skipped', reason: 'receso' }
+    }
+
     // 1. Get all pending registros
     const { data: pendingRegistros, error: queryError } = await supabase
       .from('registros_pendientes')

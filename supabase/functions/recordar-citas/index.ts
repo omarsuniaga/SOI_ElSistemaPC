@@ -82,6 +82,20 @@ Deno.serve(async (req: Request) => {
 
   const supabase = getClient()
 
+  // ── 0. Guard de receso académico / vacaciones (lee de system_config) ────
+  const { data: configRow, error: configError } = await supabase
+    .from('system_config')
+    .select('value')
+    .eq('key', 'whatsapp_ingest_enabled')
+    .maybeSingle()
+
+  if (configError) {
+    console.error('[recordar-citas] Error leyendo system_config:', configError.message)
+  } else if (configRow?.value === 'false') {
+    console.log('[recordar-citas] Receso académico activo (whatsapp_ingest_enabled=false). Saltando envío.')
+    return json({ ok: true, skipped: true, reason: 'receso' })
+  }
+
   // ── 1. Calcular ventana de mañana ──────────────────────────────────────
   const ahora = new Date()
   const manana = new Date(ahora)

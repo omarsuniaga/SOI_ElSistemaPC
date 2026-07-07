@@ -12,9 +12,44 @@ export class ModalManager {
       existing.remove();
     }
 
+    if (!document.getElementById('modal-manager-viewport-styles')) {
+      const style = document.createElement('style');
+      style.id = 'modal-manager-viewport-styles';
+      style.textContent = `
+        .modal-dialog.modal-viewport-large {
+          width: 90vw;
+          max-width: 90vw;
+          max-height: 90vh;
+          margin: 1.5rem auto;
+        }
+        .modal-dialog.modal-viewport-large .modal-content {
+          max-height: 90vh;
+          display: flex;
+          flex-direction: column;
+        }
+        .modal-dialog.modal-viewport-large .modal-body {
+          overflow: auto;
+          min-height: 0;
+          flex: 1 1 auto;
+        }
+        @media (max-width: 767.98px) {
+          .modal-dialog.modal-viewport-large {
+            width: 95vw;
+            max-width: 95vw;
+            max-height: 92vh;
+            margin: 0.5rem auto;
+          }
+          .modal-dialog.modal-viewport-large .modal-content {
+            max-height: 92vh;
+          }
+        }
+      `;
+      document.head.appendChild(style);
+    }
+
     const modalHTML = `
       <div class="modal fade" id="${id}" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog ${size}">
+        <div class="modal-dialog modal-viewport-large ${size}">
           <div class="modal-content">
             <div class="modal-header">
               <h5 class="modal-title">${title}</h5>

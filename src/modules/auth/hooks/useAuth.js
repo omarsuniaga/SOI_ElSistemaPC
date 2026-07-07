@@ -77,6 +77,9 @@ async function login(email, password, remember = false) {
     }
 
     if (hasUser) {
+      localStorage.removeItem('demo_mode')
+      config.isDemoMode = false
+
       const { data: profile } = await supabase
         .from('profiles')
         .select('rol, estado')
@@ -196,6 +199,10 @@ async function refreshAuth() {
   // Sincronizar custom storage para que isAuthenticated() siga funcionando
   const persistent = getSession()?.persistent ?? true
   saveSession(session, persistent)
+
+  // Desactivar modo demo si hay una sesión real de Supabase activa
+  localStorage.removeItem('demo_mode')
+  config.isDemoMode = false
 
   state.session = session
   state.user = session.user

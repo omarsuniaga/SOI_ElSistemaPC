@@ -33,27 +33,30 @@ const CSP = [
 export default defineConfig({
   base: '/',
   build: {
-    outDir: 'dist',
-    rollupOptions: {
-      input: {
-        index:      'index.html',
-        admin:      'admin.html',
-        maestros:   'maestros.html',
-        audiciones: 'audiciones.html',
-        fin:        'fin.html',
-        acm:        'acm.html',
-        adm:        'adm.html',
-        com:        'com.html',
-        tecnico:    'tecnico.html',
-        inventario: 'inventario.html',
-        calendario: 'calendario.html',
-        luteria:    'luteria.html',
-      },
+      outDir: 'dist',
+      rollupOptions: {
+        input: {
+          index:      'index.html',
+          admin:      'admin.html',
+          maestros:   'maestros.html',
+          audiciones: 'audiciones.html',
+          fin:        'fin.html',
+          acm:        'acm.html',
+          adm:        'adm.html',
+          com:        'com.html',
+          tecnico:    'tecnico.html',
+          inventario: 'inventario.html',
+          calendario: 'calendario.html',
+          luteria:    'luteria.html',
+          lut:        'lut.html',
+          simulador:  'simulador.html',
+        },
       output: {
         manualChunks(id) {
           if (id.includes('supabase')) return 'supabase'
           if (id.includes('bootstrap')) return 'vendor'
           if (id.includes('idb'))       return 'idb'
+          if (id.includes('three'))     return 'three'
         }
       }
     }
@@ -119,6 +122,8 @@ export default defineConfig({
             req.url = '/audiciones.html' + search
           } else if (pathname === '/luteria' || pathname === '/luteria/') {
             req.url = '/luteria.html' + search
+          } else if (pathname === '/simulador' || pathname === '/simulador/') {
+            req.url = '/simulador.html' + search
           }
           next()
         })

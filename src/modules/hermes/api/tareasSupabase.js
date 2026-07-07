@@ -533,3 +533,70 @@ export async function observarTarea(tareaId, comentario, actor) {
 
   if (error) throw error
 }
+
+// ─── Slice 4: aprobación humana de tool_calls (Domain: hermes-write-approval) ──
+// Convención (design obs #2738 "Aprobación humana PWA", ADR#2): el botón
+// Aprobar invoca DIRECTO al gateway con `tarea_id` (segunda invocación del
+// mismo endpoint) usando el JWT de la sesión humana en curso — sin API
+// intermedia, mismo patrón de invocación que el resto del portal usa para
+// edge functions (`supabase.functions.invoke`, que adjunta el JWT
+// automáticamente si hay sesión persistida).
+
+/**
+ * Aprueba y ejecuta una tool_call pendiente: marca la tarea como
+ * `completada` (requisito del gateway: `estado='completada'` antes de
+ * invocar, ver `tool-gateway/index.ts` -> `ejecutarAprobacionDiferida`) y
+ * luego invoca el gateway con `tarea_id` para disparar la ejecución diferida.
+ * @param {string} tareaId
+ * @param {{ id: string, nombre: string }} actor
+ * @returns {Promise<object>} respuesta del gateway ({resultado, mensaje, data?})
+ */
+export async function aprobarToolCall(tareaId, actor) {
+  const { error: updateError } = await supabase
+    .from(TABLA)
+    .update({
+      estado: 'completada',
+      updated_by: actor?.id ?? null,
+      updated_by_nombre: actor?.nombre ?? null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', tareaId)
+    .eq('entidad_tipo', 'tool_call')
+
+  if (updateError) throw updateError
+
+  const { data, error } = await supabase.functions.invoke('tool-gateway', {
+    body: { tarea_id: tareaId },
+  })
+
+  if (error) throw error
+  if (data?.error) throw new Error(data.error)
+  return data
+}
+
+/**
+ * Rechaza una tarea de aprobación de tool_call: la cancela con el feedback
+ * obligatorio. No invoca el gateway (nunca se ejecuta la tool_call).
+ * @param {string} tareaId
+ * @param {string} motivo
+ * @param {{ id: string, nombre: string }} actor
+ */
+export async function rechazarToolCall(tareaId, motivo, actor) {
+  if (!motivo || motivo.trim().length === 0) {
+    throw new Error('El motivo de rechazo es obligatorio (comentario vacío)')
+  }
+
+  const { error } = await supabase
+    .from(TABLA)
+    .update({
+      estado: 'cancelada',
+      feedback: motivo.trim(),
+      updated_by: actor?.id ?? null,
+      updated_by_nombre: actor?.nombre ?? null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', tareaId)
+    .eq('entidad_tipo', 'tool_call')
+
+  if (error) throw error
+}

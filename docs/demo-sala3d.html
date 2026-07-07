@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Demo — Sala de Trabajo 3D</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: monospace; background: #1a1a2e; color: #eee; }
+  #controls {
+    position: fixed; bottom: 0; left: 0; right: 0; z-index: 10;
+    background: rgba(0,0,0,0.8); padding: 12px 16px;
+    display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
+    border-top: 1px solid #333;
+  }
+  #controls button {
+    background: #0f3460; color: #eee; border: 1px solid #533483;
+    padding: 8px 16px; font: 13px monospace; cursor: pointer; border-radius: 4px;
+  }
+  #controls button:hover { background: #533483; }
+  #controls .log {
+    flex: 1; min-width: 200px; font-size: 12px; color: #aaa;
+    background: #111; padding: 6px 10px; border-radius: 4px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  #container { width: 100vw; height: calc(100vh - 80px); display: block; }
+  .badge {
+    position: fixed; top: 12px; right: 12px; z-index: 10;
+    background: rgba(0,0,0,0.7); padding: 6px 12px; border-radius: 4px;
+    font-size: 12px; border: 1px solid #533483;
+  }
+  #legend {
+    position: fixed; top: 12px; left: 12px; z-index: 10;
+    background: rgba(0,0,0,0.7); padding: 10px 14px; border-radius: 4px;
+    font-size: 11px; line-height: 1.6; border: 1px solid #333;
+    display: none;
+  }
+  #legend.visible { display: block; }
+  #legend-toggle {
+    position: fixed; top: 12px; left: 12px; z-index: 11;
+    background: rgba(0,0,0,0.7); border: 1px solid #333; color: #aaa;
+    padding: 4px 10px; font: 11px monospace; cursor: pointer; border-radius: 4px;
+  }
+  #legend-toggle:hover { color: #fff; }
+</style>
+</head>
+<body>
+<div class="badge">Sala 3D · DEMO <span id="fps">--</span> FPS</div>
+<button id="legend-toggle">📋 Leyenda</button>
+<div id="legend">
+  <strong>DEPARTAMENTOS</strong><br>
+  🟣 DIR · 🟢 ACM · 🔵 ADM · 🟡 FIN · 🟠 LOG · 🔴 COM · ⚪ TECNICO
+</div>
+<div id="container"></div>
+<div id="controls">
+  <button id="btn-dir">📨 DIR → ACM</button>
+  <button id="btn-acm">📨 ACM → FIN</button>
+  <button id="btn-adm">📨 ADM → LOG</button>
+  <button id="btn-fin">📨 FIN → TECNICO</button>
+  <button id="btn-multi">⚡ RÁFAGA (5 eventos)</button>
+  <button id="btn-self">🏠 Mismo depto</button>
+  <span class="log" id="log">Listo. Haz clic en un botón para simular un evento.</span>
+</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.170.0/build/three.module.js"
+  }
+}
+</script>
+<script type="module">
+import * as THREE from 'three'
+
+const DEPARTAMENTOS = ['DIR','ACM','ADM','FIN','LOG','COM','TECNICO']
+
+// ============ LAYOUT ============
+function calcularLayout(width, height) {
+  const cols = 4; const rows = 2
+  const gapX = 20; const gapY = 20
+  const deskW = (width - gapX * (cols + 1)) / cols
+  const deskH = (height - gapY * (rows + 1)) / rows
+  const layout = {}
+  DEPARTAMENTOS.forEach((d, i) => {
+    const col = i % cols; const row = Math.floor(i / cols)
+    layout[d] = {
+      x: gapX + col * (deskW + gapX),
+      y: gapY + row * (deskH + gapY),
+      w: deskW, h: deskH,
+    }
+  })
+  return layout
+}
+
+function mapearLayout2Da3D(layout2D, escala = 1.5, origenZ = 0) {
+  const layout3D = {}
+  for (const [d, p] of Object.entries(layout2D)) {
+    layout3D[d] = {
+      x: (p.x + p.w / 2) * escala - 200,
+      z: (p.y + p.h / 2) * escala + origenZ,
+    }
+  }
+  return layout3D
+}
+
+function construirGrafoWaypoints(layout3D) {
+  const waypoints = {}
+  const adyacencias = {}
+  for (const [d, p] of Object.entries(layout3D)) {
+    waypoints[d] = { x: p.x, z: p.z }
+    adyacencias[d] = []
+  }
+  const depts = Object.keys(layout3D)
+  for (let i = 0; i < depts.length; i++) {
+    for (let j = i + 1; j < depts.length; j++) {
+      adyacencias[depts[i]].push(depts[j])
+      adyacencias[depts[j]].push(depts[i])
+    }
+  }
+  return { waypoints, adyacencias }
+}
+
+// ============ TEMAS ============
+function tokensTema(oscuro) {
+  if (oscuro) return { fondo: '#16213e', escritorio: '#1a1a3e', borde: '#533483', texto: '#e0e0e0', muneco: '#e0aaff', dialogoFondo: '#1e1e3a' }
+  return { fondo: '#f0f0f5', escritorio: '#ddddee', borde: '#7c3aed', texto: '#1a1a2e', muneco: '#7c3aed', dialogoFondo: '#ffffff' }
+}
+
+// ============ ESCENA ============
+function construirEscena(THREE, layout3D, layout2D, colores) {
+  const scene = new THREE.Scene()
+  scene.background = new THREE.Color(colores.fondo)
+
+  const xs = Object.values(layout3D).map(p => p.x)
+  const zs = Object.values(layout3D).map(p => p.z)
+  const minX = Math.min(...xs); const maxX = Math.max(...xs)
+  const minZ = Math.min(...zs); const maxZ = Math.max(...zs)
+  const cx = (minX + maxX) / 2; const cz = (minZ + maxZ) / 2
+  const margen = Math.max(maxX - minX, maxZ - minZ) * 0.3
+  const ancho = maxX - minX + margen * 2
+  const fondo = maxZ - minZ + margen * 2
+
+  const geomPiso = new THREE.PlaneGeometry(ancho, fondo)
+  const matPiso = new THREE.MeshStandardMaterial({ color: colores.escritorio, roughness: 0.8 })
+  const piso = new THREE.Mesh(geomPiso, matPiso)
+  piso.rotation.x = -Math.PI / 2
+  piso.position.set(cx, -2, cz)
+  scene.add(piso)
+
+  const alturaPared = 100; const espesorPared = 2
+  const colorPared = new THREE.Color(colores.borde)
+
+  function crearPared(anchoP, altoP, x, y, z, rotY) {
+    const g = new THREE.BoxGeometry(anchoP, altoP, espesorPared)
+    const m = new THREE.MeshStandardMaterial({ color: colorPared, roughness: 0.9, transparent: true, opacity: 0.15 })
+    const pared = new THREE.Mesh(g, m)
+    pared.position.set(x, y, z)
+    if (rotY) pared.rotation.y = rotY
+    scene.add(pared)
+    return { geometry: g, material: m }
+  }
+
+  const disp = []
+  disp.push(crearPared(ancho + espesorPared * 2, alturaPared, cx, alturaPared / 2 - 2, minZ - margen - espesorPared / 2))
+  disp.push(crearPared(ancho + espesorPared * 2, alturaPared, cx, alturaPared / 2 - 2, maxZ + margen + espesorPared / 2))
+  disp.push(crearPared(fondo + espesorPared * 2, alturaPared, minX - margen - espesorPared / 2, alturaPared / 2 - 2, cz, Math.PI / 2))
+  disp.push(crearPared(fondo + espesorPared * 2, alturaPared, maxX + margen + espesorPared / 2, alturaPared / 2 - 2, cz, Math.PI / 2))
+
+  const luzAmbiente = new THREE.AmbientLight(0xffffff, 0.6)
+  scene.add(luzAmbiente)
+  const luzDir = new THREE.DirectionalLight(0xffffff, 0.8)
+  luzDir.position.set(cx, 300, cz + 200)
+  scene.add(luzDir)
+
+  const escritorios = []
+  const COLORES_DEPT = { DIR:'#a855f7', ACM:'#22c55e', ADM:'#3b82f6', FIN:'#eab308', LOG:'#f97316', COM:'#ef4444', TECNICO:'#e2e8f0' }
+  const materialesEscritorios = []
+
+  for (const dept of Object.keys(layout3D)) {
+    const pos = layout3D[dept]
+    const pos2D = layout2D[dept]
+    const deskW = pos2D.w * 0.7; const deskD = pos2D.h * 0.7
+
+    const geomDesk = new THREE.BoxGeometry(deskW, 6, deskD)
+    const matDesk = new THREE.MeshStandardMaterial({ color: COLORES_DEPT[dept] || colores.escritorio, roughness: 0.6, metalness: 0.1 })
+    materialesEscritorios.push(matDesk)
+    const desk = new THREE.Mesh(geomDesk, matDesk)
+    desk.position.set(pos.x, 0, pos.z)
+    scene.add(desk)
+    escritorios.push({ mesh: desk, geometry: geomDesk, departamento: dept })
+
+    const canvas = document.createElement('canvas')
+    canvas.width = 256; canvas.height = 64
+    const ctx = canvas.getContext('2d')
+    ctx.clearRect(0,0,canvas.width,canvas.height)
+    ctx.font = 'bold 28px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'
+    ctx.fillStyle = COLORES_DEPT[dept]; ctx.fillRect(40, 8, 176, 48)
+    ctx.fillStyle = '#fff'; ctx.fillText(dept, 128, 36)
+    const tex = new THREE.CanvasTexture(canvas); tex.needsUpdate = true
+    const labelMat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false })
+    const label = new THREE.Sprite(labelMat)
+    label.position.set(pos.x, 18, pos.z); label.scale.set(40, 10, 1)
+    scene.add(label)
+  }
+
+  const camera = new THREE.PerspectiveCamera(45, 1, 1, 2000)
+  camera.position.set(cx, 500, cz + 500)
+  camera.lookAt(cx, 0, cz)
+
+  return { scene, camera, escritorios, disposables: { geometries: [geomPiso], materials: [matPiso] } }
+}
+
+// ============ AVATARES ============
+function crearAvatares(THREE, layout3D, colores) {
+  return Object.keys(layout3D).map(dept => {
+    const pos = layout3D[dept]
+    const grupo = new THREE.Group()
+    const color = new THREE.Color(colores.muneco)
+
+    const geomCuerpo = new THREE.CylinderGeometry(6, 6, 14, 8)
+    const matCuerpo = new THREE.MeshStandardMaterial({ color, roughness: 0.5 })
+    const cuerpo = new THREE.Mesh(geomCuerpo, matCuerpo)
+    cuerpo.position.y = 7; grupo.add(cuerpo)
+
+    const geomCabeza = new THREE.SphereGeometry(5, 8, 8)
+    const matCabeza = new THREE.MeshStandardMaterial({ color, roughness: 0.3 })
+    const cabeza = new THREE.Mesh(geomCabeza, matCabeza)
+    cabeza.position.y = 18; grupo.add(cabeza)
+
+    grupo.position.set(pos.x, -2, pos.z)
+
+    return { grupo, departamento: dept, materiales: [matCuerpo, matCabeza], geometrias: [geomCuerpo, geomCabeza] }
+  })
+}
+
+// ============ SISTEMA GLOBO ============
+function crearSistemaGlobo(THREE, colores) {
+  const globos = {}
+  return {
+    montar(dept, avatarGrupo) {
+      const canvas = document.createElement('canvas'); canvas.width = 128; canvas.height = 48
+      const ctx = canvas.getContext('2d')
+      const tex = new THREE.CanvasTexture(canvas); tex.needsUpdate = true
+      const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false })
+      const sprite = new THREE.Sprite(mat)
+      sprite.position.y = 30; sprite.scale.set(40, 15, 1); sprite.visible = false
+      avatarGrupo.add(sprite)
+      globos[dept] = { sprite, material: mat, texture: tex }
+    },
+    mostrar(dept, texto) {
+      const g = globos[dept]; if (!g) return
+      const ancho = Math.min(Math.max(texto.length * 10, 80), 300)
+      const alto = 48 + Math.floor(texto.length / 12) * 18
+      const canvas = document.createElement('canvas'); canvas.width = ancho; canvas.height = alto
+      const ctx = canvas.getContext('2d')
+      const radius = 12
+      ctx.fillStyle = colores.dialogoFondo
+      ctx.beginPath(); ctx.moveTo(radius,0); ctx.lineTo(ancho-radius,0)
+      ctx.quadraticCurveTo(ancho,0,ancho,radius); ctx.lineTo(ancho,alto-radius)
+      ctx.quadraticCurveTo(ancho,alto,ancho-radius,alto); ctx.lineTo(radius,alto)
+      ctx.quadraticCurveTo(0,alto,0,alto-radius); ctx.lineTo(0,radius)
+      ctx.quadraticCurveTo(0,0,radius,0); ctx.closePath(); ctx.fill()
+      ctx.strokeStyle = colores.borde; ctx.lineWidth = 2; ctx.stroke()
+      ctx.font = '14px sans-serif'; ctx.fillStyle = colores.texto
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle'
+      const palabras = texto.split(' '); const lineas = []; let actual = ''
+      for (const p of palabras) {
+        const t = actual ? actual+' '+p : p
+        if (ctx.measureText(t).width > ancho-24 && actual) { lineas.push(actual); actual = p }
+        else actual = t
+      }
+      if (actual) lineas.push(actual)
+      const lh = 20; const sy = (alto - lineas.length*lh)/2 + lh/2
+      for (let i = 0; i < lineas.length; i++) ctx.fillText(lineas[i], ancho/2, sy + i*lh)
+      const tex = new THREE.CanvasTexture(canvas); tex.needsUpdate = true
+      g.sprite.material.map = tex; g.sprite.material.needsUpdate = true
+      g.sprite.scale.set(ancho*0.3, alto*0.3, 1); g.sprite.visible = true
+      if (g.texture !== tex) g.texture.dispose()
+      g.texture = tex; g.canvas = canvas
+    },
+    ocultar(dept) { const g = globos[dept]; if (g) g.sprite.visible = false },
+    ocultarTodos() { for (const d of Object.keys(globos)) globos[d].sprite.visible = false },
+  }
+}
+
+// ============ LOCOMOCION ============
+function posicionEnT(ruta, t, velocidad = 2) {
+  if (!ruta || ruta.length < 2) return { x: 0, z: 0, terminado: true, anguloOrientacion: 0 }
+  const distTotal = ruta.slice(0, -1).reduce((sum, wp, i) => {
+    const dx = ruta[i+1].x - wp.x; const dz = ruta[i+1].z - wp.z
+    return sum + Math.sqrt(dx*dx + dz*dz)
+  }, 0)
+  const dRecorrida = t * velocidad
+  if (dRecorrida >= distTotal) {
+    const last = ruta[ruta.length-1]; const prev = ruta[ruta.length-2]
+    const ang = Math.atan2(last.z - prev.z, last.x - prev.x)
+    return { x: last.x, z: last.z, terminado: true, anguloOrientacion: ang }
+  }
+  let acum = 0
+  for (let i = 0; i < ruta.length - 1; i++) {
+    const dx = ruta[i+1].x - ruta[i].x; const dz = ruta[i+1].z - ruta[i].z
+    const segLen = Math.sqrt(dx*dx + dz*dz)
+    if (acum + segLen >= dRecorrida) {
+      const frac = (dRecorrida - acum) / segLen
+      return { x: ruta[i].x + dx*frac, z: ruta[i].z + dz*frac, terminado: false, anguloOrientacion: Math.atan2(dz, dx) }
+    }
+    acum += segLen
+  }
+  const last = ruta[ruta.length-1]
+  return { x: last.x, z: last.z, terminado: true, anguloOrientacion: 0 }
+}
+
+function construirRuta(origenId, destinoId, grafo) {
+  const { waypoints, adyacencias } = grafo
+  if (!waypoints[origenId] || !waypoints[destinoId]) throw new Error(`Waypoint no encontrado: ${origenId} → ${destinoId}`)
+  const cols = 4; const fila = d => Math.floor(DEPARTAMENTOS.indexOf(d) / cols)
+  const ruta = [origenId]
+  const oFila = fila(origenId); const dFila = fila(destinoId)
+  if (oFila !== dFila) {
+    const pasilloUp = 'pasillo_u'; const pasilloDn = 'pasillo_d'
+    if (!waypoints[pasilloUp]) {
+      const zUp = Math.min(...Object.values(waypoints).map(p => p.z)) - 30
+      waypoints[pasilloUp] = { x: 0, z: zUp }; adyacencias[pasilloUp] = [origenId, destinoId]
+      waypoints[pasilloDn] = { x: 0, z: zUp + 60 }; adyacencias[pasilloDn] = [origenId, destinoId]
+      adyacencias[origenId].push(pasilloUp, pasilloDn)
+      adyacencias[destinoId].push(pasilloUp, pasilloDn)
+    }
+    ruta.push(pasilloUp, destinoId)
+  } else ruta.push(destinoId)
+  return ruta.map(id => waypoints[id])
+}
+
+function crearColaLocomocion(posInicial) {
+  let cola = []; let t = 0; let rutaActual = null; let destinoActual = null
+  return {
+    encolarDestino(destXZ, grafo, origenId, destinoId) {
+      const id = destinoId || 'dest'
+      if (rutaActual == null) {
+        rutaActual = construirRuta(origenId, destinoId, grafo)
+        destinoActual = destXZ; t = 0
+      } else cola.push({ destXZ, grafo, origenId, destinoId })
+    },
+    tick(delta) {
+      if (!rutaActual) return
+      t += delta
+      const pos = posicionEnT(rutaActual, t)
+      if (pos.terminado) {
+        if (cola.length > 0) {
+          const sig = cola.shift()
+          rutaActual = construirRuta(sig.origenId, sig.destinoId, sig.grafo)
+          destinoActual = sig.destXZ; t = 0
+        } else { rutaActual = null; destinoActual = null; t = 0 }
+      }
+    },
+    getPosicionActual() {
+      if (!rutaActual) return posInicial || { x: 0, z: 0 }
+      return posicionEnT(rutaActual, t)
+    },
+    getEstado() { return rutaActual ? 'walking' : 'idle' },
+  }
+}
+
+// ============ MAQUINA ESTADOS ============
+function crearMaquinaEstados() {
+  let estado = 'idle'; let dialogo = ''; let cola = []; let timerId = null
+  const DURACION_TALKING = 3000; const DURACION_WALKING = 1200
+
+  function procesarSiguiente() {
+    if (cola.length === 0) { estado = 'idle'; dialogo = ''; return }
+    const ev = cola.shift()
+    if (ev.requiereCaminata) {
+      estado = 'walking'; dialogo = ''
+      timerId = setTimeout(() => { estado = 'working'; procesarSiguiente() }, DURACION_WALKING)
+    } else {
+      estado = 'working'; dialogo = ''
+      setTimeout(() => { estado = 'talking'; dialogo = ev.texto; timerId = setTimeout(procesarSiguiente, DURACION_TALKING) }, 100)
+    }
+  }
+
+  return {
+    encolarEvento(ev) {
+      if (!ev || !ev.texto) throw new Error('Evento sin texto')
+      cola.push(ev)
+      if (estado === 'idle') procesarSiguiente()
+    },
+    getEstado() { return estado },
+    getDialogo() { return dialogo },
+  }
+}
+
+// ============ INICIALIZAR ============
+const container = document.getElementById('container')
+const layout2D = calcularLayout(800, 400)
+const layout3D = mapearLayout2Da3D(layout2D)
+const grafo = construirGrafoWaypoints(layout3D)
+const colores = tokensTema(true)
+
+const sceneData = construirEscena(THREE, layout3D, layout2D, colores)
+const avatares = crearAvatares(THREE, layout3D, colores)
+const sistemaGlobo = crearSistemaGlobo(THREE, colores)
+
+const maquinas = {}
+const colasLocomocion = {}
+const posIniciales = {}
+
+for (const avatar of avatares) {
+  sceneData.scene.add(avatar.grupo)
+  sistemaGlobo.montar(avatar.departamento, avatar.grupo)
+  maquinas[avatar.departamento] = crearMaquinaEstados()
+  const pi = layout3D[avatar.departamento]
+  posIniciales[avatar.departamento] = { x: pi.x, z: pi.z }
+  colasLocomocion[avatar.departamento] = crearColaLocomocion(posIniciales[avatar.departamento])
+}
+
+const canvas = document.createElement('canvas')
+canvas.id = 'canvas3d'
+container.innerHTML = ''; container.appendChild(canvas)
+
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false, powerPreference: 'high-performance' })
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+renderer.setSize(container.clientWidth || 800, container.clientHeight || 500)
+
+const camera = sceneData.camera
+camera.aspect = renderer.domElement.width / renderer.domElement.height
+camera.updateProjectionMatrix()
+
+const timer = new THREE.Timer()
+let rafId = null
+
+function animar() {
+  if (document.hidden) { rafId = null; return }
+  const delta = timer.update()
+
+  for (const dept of Object.keys(maquinas)) {
+    const estado = maquinas[dept].getEstado()
+    const avatar = avatares.find(a => a.departamento === dept)
+    if (!avatar) continue
+
+    if (estado === 'walking') {
+      colasLocomocion[dept].tick(delta)
+      const pos = colasLocomocion[dept].getPosicionActual()
+      avatar.grupo.position.x = pos.x
+      avatar.grupo.position.z = pos.z
+    }
+
+    if (estado === 'talking') sistemaGlobo.mostrar(dept, maquinas[dept].getDialogo())
+    else if (estado !== 'walking') sistemaGlobo.ocultar(dept)
+  }
+
+  renderer.render(sceneData.scene, camera)
+  rafId = requestAnimationFrame(animar)
+}
+
+new ResizeObserver(() => {
+  const w = container.clientWidth || 800; const h = container.clientHeight || 500
+  renderer.setSize(w, h); camera.aspect = w / h; camera.updateProjectionMatrix()
+}).observe(container)
+
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden && rafId != null) { cancelAnimationFrame(rafId); rafId = null }
+  else if (!document.hidden && rafId == null) { timer.update(); rafId = requestAnimationFrame(animar) }
+})
+
+rafId = requestAnimationFrame(animar)
+
+// FPS counter
+let frames = 0; let lastFps = performance.now()
+function contFps() {
+  frames++
+  const now = performance.now()
+  if (now - lastFps > 1000) { document.getElementById('fps').textContent = frames; frames = 0; lastFps = now }
+  requestAnimationFrame(contFps)
+}
+requestAnimationFrame(contFps)
+
+// ============ EVENTOS MOCK ============
+const TEXTS = [
+  'Solicitando expediente del alumno #1234',
+  'Reporte de morosidad del mes actualizado',
+  'Validar plan de pago para el representante',
+  'Confirmación de inscripción recibida',
+  'Actualizar horario de clases del aula 5',
+  'Revisión de notas del período completada',
+  'Notificación de reunión de padres enviada',
+  'Certificado de estudios solicitado',
+]
+
+function dispararEvento(origen, destino) {
+  const texto = TEXTS[Math.floor(Math.random() * TEXTS.length)]
+  const log = document.getElementById('log')
+  log.textContent = `📨 ${origen} → ${destino}: "${texto}"`
+
+  const maquina = maquinas[destino]
+  if (!maquina) return
+  const necesitaCaminata = origen !== destino
+
+  if (necesitaCaminata) {
+    const colaOrigen = colasLocomocion[origen]
+    if (colaOrigen) colaOrigen.encolarDestino(layout3D[destino], grafo, origen, destino)
+  }
+
+  maquina.encolarEvento({ texto, requiereCaminata: necesitaCaminata })
+}
+
+// ============ BOTONES ============
+document.getElementById('btn-dir').onclick = () => dispararEvento('DIR', 'ACM')
+document.getElementById('btn-acm').onclick = () => dispararEvento('ACM', 'FIN')
+document.getElementById('btn-adm').onclick = () => dispararEvento('ADM', 'LOG')
+document.getElementById('btn-fin').onclick = () => dispararEvento('FIN', 'TECNICO')
+document.getElementById('btn-self').onclick = () => dispararEvento('DIR', 'DIR')
+
+document.getElementById('btn-multi').onclick = () => {
+  const pares = [['DIR','ACM'],['ACM','FIN'],['ADM','LOG'],['COM','TECNICO'],['FIN','DIR']]
+  for (const [o, d] of pares) dispararEvento(o, d)
+  document.getElementById('log').textContent = `⚡ RÁFAGA: ${pares.length} eventos encolados`
+}
+
+// Legend toggle
+let legendVisible = false
+document.getElementById('legend-toggle').onclick = () => {
+  legendVisible = !legendVisible
+  document.getElementById('legend').classList.toggle('visible', legendVisible)
+}
+
+console.log('✅ Demo 3D Sala de Trabajo lista. Haz clic en los botones para simular eventos.')
+</script>
+</body>
+</html>

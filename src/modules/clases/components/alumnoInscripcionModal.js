@@ -15,14 +15,14 @@ export async function openAlumnoInscripcionModal(claseId) {
 
   try {
     const [inscritosRaw, todosRes, clase] = await Promise.all([
-      obtenerAlumnosInscritos(claseId),
-      supabase.from('alumnos').select('*').eq('activo', true).order('nombre_completo', { ascending: true }),
-      obtenerClase(claseId)
-    ])
+          obtenerAlumnosInscritos(claseId),
+          supabase.rpc('get_alumnos_disponibles_para_inscripcion'),
+          obtenerClase(claseId)
+        ])
 
-    const inscritosIds = new Set(inscritosRaw.map(r => r.alumno_id))
-    const inscritos   = inscritosRaw.map(r => r.alumno).filter(Boolean)
-    const disponibles = (todosRes.data || []).filter(a => !inscritosIds.has(a.id))
+        const inscritosIds = new Set(inscritosRaw.map(r => r.alumno_id))
+        const inscritos   = inscritosRaw.map(r => r.alumno).filter(Boolean)
+        const disponibles = (todosRes.data || []).filter(a => !inscritosIds.has(a.id))
 
     AppModal.open({
       title: 'Inscripción de alumnos',

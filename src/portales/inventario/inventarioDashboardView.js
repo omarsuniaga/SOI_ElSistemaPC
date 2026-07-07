@@ -6,7 +6,6 @@ import { renderDetalleInstrumentoView } from '../../modules/inventario/views/det
 import { renderHistorialInstrumentoView } from '../../modules/inventario/views/historialInstrumentoView.js'
 import { renderDashboardInventarioView } from '../../modules/inventario/views/dashboardInventarioView.js'
 import { renderTareasView } from '../../modules/hermes/views/tareasView.js'
-import { renderInstrumentosGestionView } from '../../modules/instrumentos/views/instrumentosGestionView.js'
 
 export function renderInventarioPortal(app, session) {
   const userEmail = session?.user?.email ?? 'Usuario'
@@ -55,11 +54,6 @@ export function renderInventarioPortal(app, session) {
         cursor:pointer;border-bottom:2px solid transparent;color:#64748b;font-weight:500">
         <i class="bi bi-list-task me-1"></i>Tareas (Hermes)
       </button>
-      <button class="portal-tab" data-view="instrumentos-gestion"
-        style="border:none;background:none;padding:0.875rem 1.25rem;font-size:0.875rem;
-        cursor:pointer;border-bottom:2px solid transparent;color:#64748b;font-weight:500">
-        <i class="bi bi-music-note-beamed me-1"></i>Instrumentos
-      </button>
     </div>
 
     <div id="portal-content" style="background:#f8fafc;min-height:calc(100vh - 105px)"></div>
@@ -87,8 +81,6 @@ export function renderInventarioPortal(app, session) {
       renderAlertasComodatosView(content).then(r => { _teardown = r })
     } else if (viewName === 'tareas') {
       renderTareasView(content, { departamento: 'LOG', hideCalendarBtn: true }).then(r => { _teardown = r })
-    } else if (viewName === 'instrumentos-gestion') {
-      renderInstrumentosGestionView(content).then(r => { _teardown = r })
     }
   }
 
@@ -114,8 +106,6 @@ export function renderInventarioPortal(app, session) {
         showTab('alertas')
       } else if (path === 'inventario-tareas') {
         showTab('tareas')
-      } else if (path === 'inventario-instrumentos') {
-        showTab('instrumentos-gestion')
       } else if (path === 'inventario-detalle') {
         _teardown?.teardown?.()
         renderDetalleInstrumentoView(content, params).then(r => { _teardown = r })

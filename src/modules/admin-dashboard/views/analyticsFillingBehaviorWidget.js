@@ -1,11 +1,193 @@
 import '../styles/analyticsFillingBehavior.css'
-import { getTeacherFillingMetrics } from '../api/analyticsFillingBehaviorService.js'
+import { getTeacherFillingMetrics, getFillingMetricsByMaestro } from '../api/analyticsFillingBehaviorAdapter.js'
 import { InfoTooltip, attachInfoTooltipEvents, injectInfoTooltipStyles } from '../../../shared/components/InfoTooltip.js'
+
+function esc(str) {
+  if (!str) return ''
+  return String(str).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c])
+}
+
+function classifyOrder(m) {
+  if (m.orden_asistencia_primero > m.orden_observaciones_primero && m.orden_asistencia_primero > m.orden_simultaneo) return 'asistencia_primero'
+  if (m.orden_observaciones_primero > m.orden_asistencia_primero && m.orden_observaciones_primero > m.orden_simultaneo) return 'observaciones_primero'
+  if (m.orden_simultaneo > 0) return 'simultaneo'
+  return 'sin_clasificar'
+}
+
+function classifyAvgDuration(seconds) {
+  if (seconds <= 0) return 'sin_datos'
+  if (seconds < 30) return 'rapida'
+  if (seconds < 90) return 'normal'
+  return 'detallada'
+}
+
+function calculateStats(metrics) {
+  const total = metrics.length
+  if (total === 0) return { total: 0 }
+
+  const asistenciaP = metrics.reduce((s, m) => s + (m.orden_asistencia_primero || 0), 0)
+  const observacionesP = metrics.reduce((s, m) => s + (m.orden_observaciones_primero || 0), 0)
+  const simultaneo = metrics.reduce((s, m) => s + (m.orden_simultaneo || 0), 0)
+  const faltaAsistencia = metrics.reduce((s, m) => s + (m.incompleto_falta_asistencia || 0), 0)
+  const faltaObservaciones = metrics.reduce((s, m) => s + (m.incompleto_falta_observaciones || 0), 0)
+  const faltaAmbos = metrics.reduce((s, m) => s + (m.incompleto_falta_ambos || 0), 0)
+  const totalClases = metrics.reduce((s, m) => s + (m.total_clases || 0), 0)
+
+  const avgDuration = metrics.length > 0
+    ? (metrics.reduce((s, m) => s + (m.promedio_duracion_observaciones || 0), 0) / metrics.length)
+    : 0
+
+  const avgAi = metrics.length > 0
+    ? (metrics.reduce((s, m) => s + (m.uso_ai_fill_percent || 0), 0) / metrics.length)
+    : 0
+
+  const firstOrder = metrics.filter(m => classifyOrder(m) === 'asistencia_primero').length
+  const obsOrder = metrics.filter(m => classifyOrder(m) === 'observaciones_primero').length
+  const simOrder = metrics.filter(m => classifyOrder(m) === 'simultaneo').length
+  const unclassified = metrics.filter(m => classifyOrder(m) === 'sin_clasificar').length
+
+  return {
+    total,
+    totalClases,
+    asistenciaPrimero: totalClases > 0 ? ((asistenciaP / totalClases) * 100).toFixed(1) : 0,
+    observacionesPrimero: totalClases > 0 ? ((observacionesP / totalClases) * 100).toFixed(1) : 0,
+    simultaneo: totalClases > 0 ? ((simultaneo / totalClases) * 100).toFixed(1) : 0,
+    incompleto: totalClases > 0 ? (((faltaAsistencia + faltaObservaciones + faltaAmbos) / totalClases) * 100).toFixed(1) : 0,
+    avgDuration: avgDuration.toFixed(1),
+    avgAi: avgAi.toFixed(1),
+    firstOrderCount: firstOrder,
+    obsOrderCount: obsOrder,
+    simOrderCount: simOrder,
+    unclassifiedCount: unclassified,
+    firstOrderPct: total > 0 ? ((firstOrder / total) * 100).toFixed(0) : 0,
+    obsOrderPct: total > 0 ? ((obsOrder / total) * 100).toFixed(0) : 0,
+    simOrderPct: total > 0 ? ((simOrder / total) * 100).toFixed(0) : 0,
+    unclassifiedPct: total > 0 ? ((unclassified / total) * 100).toFixed(0) : 0,
+  }
+}
+
+function bar(width, color) {
+  return `<div style="width:${Math.min(width, 100)}%;height:6px;border-radius:3px;background:${color};transition:width 0.4s ease;"></div>`
+}
+
+function renderDistributionBar(stats) {
+  const segments = [
+    { pct: parseFloat(stats.firstOrderPct), color: '#3b82f6', label: 'Asistencia 1°' },
+    { pct: parseFloat(stats.obsOrderPct), color: '#8b5cf6', label: 'Obs. 1°' },
+    { pct: parseFloat(stats.simOrderPct), color: '#10b981', label: 'Simultáneo' },
+    { pct: parseFloat(stats.unclassifiedPct), color: '#9ca3af', label: 'Sin clasif.' },
+  ]
+  const totalW = segments.reduce((s, x) => s + x.pct, 0) || 1
+  return segments.map(s => {
+    const w = (s.pct / totalW) * 100
+    return `<span style="display:inline-block;width:${w}%;min-width:4px;height:6px;background:${s.color};border-radius:3px 0 0 3px;" title="${s.label}: ${s.pct}%"></span>`
+  }).join('')
+}
 
 export function analyticsFillingBehaviorWidget(containerId) {
   const container = document.getElementById(containerId)
+  let currentStartDate = ''
+  let currentEndDate = ''
+
+  function getDefaultStartDate() {
+    const d = new Date()
+    d.setMonth(d.getMonth() - 1)
+    return d.toISOString().slice(0, 10)
+  }
+
+  function initDateRange() {
+    const end = new Date().toISOString().slice(0, 10)
+    const start = getDefaultStartDate()
+    currentStartDate = start
+    currentEndDate = end
+    return { start, end }
+  }
+
+  function dateRangeHTML() {
+    return `
+      <div class="admin-toolbar-dense" style="display:flex;gap:0.75rem;align-items:center;flex-wrap:wrap;margin-bottom:1.5rem;">
+        <div style="display:flex;align-items:center;gap:0.5rem;">
+          <label style="font-size:0.8rem;font-weight:600;color:var(--bs-secondary-color);">Desde:</label>
+          <input type="date" id="filterStartDate" value="${esc(currentStartDate)}" class="form-control form-control-sm" style="width:150px;">
+        </div>
+        <div style="display:flex;align-items:center;gap:0.5rem;">
+          <label style="font-size:0.8rem;font-weight:600;color:var(--bs-secondary-color);">Hasta:</label>
+          <input type="date" id="filterEndDate" value="${esc(currentEndDate)}" class="form-control form-control-sm" style="width:150px;">
+        </div>
+        <button id="btnApplyFilter" class="btn-premium-action btn-premium-primary" style="padding:0.35rem 1rem;font-size:0.85rem;">
+          <i class="bi bi-funnel"></i> Filtrar
+        </button>
+        <button id="btnResetFilter" class="btn-premium-action btn-premium-secondary" style="padding:0.35rem 1rem;font-size:0.85rem;">
+          <i class="bi bi-x-circle"></i> Limpiar
+        </button>
+      </div>
+    `
+  }
+
+  function renderStatsCards(stats) {
+    return `
+      <div class="stats-grid">
+        <div class="stat-card" style="border-left-color:#3b82f6;">
+          <div class="stat-label">Asistencia 1° ${InfoTooltip('analitca_comportamiento')}</div>
+          <div class="stat-value" style="color:#3b82f6;">${stats.asistenciaPrimero}%</div>
+          <div class="stat-subtitle" style="font-size:0.7rem;color:var(--bs-secondary-color);margin-top:0.25rem;">${stats.firstOrderCount} maestros</div>
+        </div>
+        <div class="stat-card" style="border-left-color:#8b5cf6;">
+          <div class="stat-label">Observaciones 1° ${InfoTooltip('observacion')}</div>
+          <div class="stat-value" style="color:#8b5cf6;">${stats.observacionesPrimero}%</div>
+          <div class="stat-subtitle" style="font-size:0.7rem;color:var(--bs-secondary-color);margin-top:0.25rem;">${stats.obsOrderCount} maestros</div>
+        </div>
+        <div class="stat-card" style="border-left-color:#10b981;">
+          <div class="stat-label">Simultáneo ${InfoTooltip('analitca_comportamiento')}</div>
+          <div class="stat-value" style="color:#10b981;">${stats.simultaneo}%</div>
+          <div class="stat-subtitle" style="font-size:0.7rem;color:var(--bs-secondary-color);margin-top:0.25rem;">${stats.simOrderCount} maestros</div>
+        </div>
+        <div class="stat-card" style="border-left-color:#f59e0b;">
+          <div class="stat-label">Incompleto ${InfoTooltip('analitca_comportamiento')}</div>
+          <div class="stat-value" style="color:#f59e0b;">${stats.incompleto}%</div>
+          <div class="stat-subtitle" style="font-size:0.7rem;color:var(--bs-secondary-color);margin-top:0.25rem;">${stats.unclassifiedCount} sin clasificar</div>
+        </div>
+        <div class="stat-card" style="border-left-color:#06b6d4;">
+          <div class="stat-label">Duración Prom. ${InfoTooltip('observacion')}</div>
+          <div class="stat-value" style="color:#06b6d4;">${stats.avgDuration}s</div>
+          <div class="stat-subtitle" style="font-size:0.7rem;color:var(--bs-secondary-color);margin-top:0.25rem;">Por observación</div>
+        </div>
+        <div class="stat-card" style="border-left-color:#f97316;">
+          <div class="stat-label">Uso IA Prom. ${InfoTooltip('confianza_ia')}</div>
+          <div class="stat-value" style="color:#f97316;">${stats.avgAi}%</div>
+          <div class="stat-subtitle" style="font-size:0.7rem;color:var(--bs-secondary-color);margin-top:0.25rem;">${stats.total} maestros</div>
+        </div>
+      </div>
+    `
+  }
+
+  function renderDistribution(stats) {
+    const items = [
+      { label: 'Asistencia 1°', pct: stats.firstOrderPct, count: stats.firstOrderCount, color: '#3b82f6' },
+      { label: 'Obs. 1°', pct: stats.obsOrderPct, count: stats.obsOrderCount, color: '#8b5cf6' },
+      { label: 'Simultáneo', pct: stats.simOrderPct, count: stats.simOrderCount, color: '#10b981' },
+      { label: 'Sin clasificar', pct: stats.unclassifiedPct, count: stats.unclassifiedCount, color: '#9ca3af' },
+    ]
+    const maxPct = Math.max(...items.map(i => parseFloat(i.pct)), 1)
+
+    return items.map(i => {
+      const w = (parseFloat(i.pct) / maxPct) * 100
+      return `
+        <div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:0.5rem;">
+          <span style="width:120px;font-size:0.8rem;text-align:right;color:var(--bs-secondary-color);">${i.label}</span>
+          <div style="flex:1;height:20px;background:var(--bs-border-color);border-radius:4px;overflow:hidden;">
+            ${bar(w, i.color)}
+          </div>
+          <span style="width:60px;font-size:0.8rem;font-weight:600;">${i.pct}%</span>
+          <span style="width:30px;font-size:0.75rem;color:var(--bs-secondary-color);">(${i.count})</span>
+        </div>
+      `
+    }).join('')
+  }
 
   function renderMaestroTable(metrics) {
+    if (metrics.length === 0) return '<div class="premium-no-data">Sin datos</div>'
+
     return `
       <div class="premium-table-container">
         <table class="premium-table">
@@ -14,52 +196,63 @@ export function analyticsFillingBehaviorWidget(containerId) {
               <th>Maestro</th>
               <th>Total Clases ${InfoTooltip('cumplimiento_sesiones')}</th>
               <th>Asistencia 1° ${InfoTooltip('analitca_comportamiento')}</th>
-              <th>Duración Obs (seg) ${InfoTooltip('observacion')}</th>
-              <th>IA Promedio ${InfoTooltip('confianza_ia')}</th>
+              <th>Obs. 1° ${InfoTooltip('observacion')}</th>
+              <th>Simultáneo</th>
+              <th>Incompleto ${InfoTooltip('analitca_comportamiento')}</th>
+              <th>Dur. Obs (s) ${InfoTooltip('observacion')}</th>
+              <th>IA % ${InfoTooltip('confianza_ia')}</th>
+              <th>Orden Pref.</th>
+              <th>Última Clase</th>
             </tr>
           </thead>
           <tbody>
-            ${metrics.map(m => `
-              <tr>
-                <td><strong>${m.maestro_nombre}</strong></td>
-                <td><span class="badge bg-secondary bg-opacity-10 text-secondary px-2 py-1">${m.total_clases || 0}</span></td>
-                <td><span class="badge bg-primary bg-opacity-10 text-primary px-2 py-1">${m.orden_asistencia_primero || 0}</span></td>
-                <td><span class="badge bg-warning bg-opacity-10 text-warning px-2 py-1">${m.promedio_duracion_observaciones || 0}s</span></td>
-                <td>
-                  <span class="badge ${m.uso_ai_fill_percent > 70 ? 'bg-success text-white' : m.uso_ai_fill_percent > 30 ? 'bg-primary text-white' : 'bg-secondary bg-opacity-10 text-secondary'} px-2 py-1">
-                    ${m.uso_ai_fill_percent || 0}%
-                  </span>
-                </td>
-              </tr>
-            `).join('')}
+            ${metrics.map(m => {
+              const total = m.total_clases || 0
+              const clasificadas = (m.orden_asistencia_primero || 0) + (m.orden_observaciones_primero || 0) + (m.orden_simultaneo || 0)
+              const incompleto = total - clasificadas
+              const aiPct = m.uso_ai_fill_percent || 0
+              const orderLabel = classifyOrder(m) === 'asistencia_primero' ? 'Asistencia' : classifyOrder(m) === 'observaciones_primero' ? 'Obs.' : classifyOrder(m) === 'simultaneo' ? 'Simul.' : '—'
+              return `
+                <tr>
+                  <td><strong>${esc(m.maestro_nombre)}</strong></td>
+                  <td><span class="badge bg-secondary-subtle text-secondary-emphasis px-2 py-1">${total}</span></td>
+                  <td><span class="badge bg-primary-subtle text-primary-emphasis px-2 py-1">${m.orden_asistencia_primero || 0}</span></td>
+                  <td><span class="badge" style="background:rgba(139,92,246,0.12);color:#7c3aed;font-size:0.75rem;font-weight:600;">${m.orden_observaciones_primero || 0}</span></td>
+                  <td><span class="badge bg-success-subtle text-success-emphasis px-2 py-1">${m.orden_simultaneo || 0}</span></td>
+                  <td>
+                    <span class="badge ${incompleto > 0 ? 'bg-warning-subtle text-warning-emphasis' : 'bg-secondary-subtle text-secondary-emphasis'} px-2 py-1">${incompleto}</span>
+                  </td>
+                  <td>
+                    <span class="badge ${classifyAvgDuration(m.promedio_duracion_observaciones) === 'detallada' ? 'bg-success text-white' : classifyAvgDuration(m.promedio_duracion_observaciones) === 'normal' ? 'bg-primary text-white' : 'bg-secondary-subtle text-secondary-emphasis'} px-2 py-1">
+                      ${m.promedio_duracion_observaciones || 0}
+                    </span>
+                  </td>
+                  <td>
+                    <div style="display:flex;align-items:center;gap:0.5rem;">
+                      <div style="flex:1;height:6px;background:var(--bs-border-color);border-radius:3px;overflow:hidden;min-width:40px;">
+                        ${bar(aiPct, aiPct > 70 ? '#10b981' : aiPct > 30 ? '#3b82f6' : '#9ca3af')}
+                      </div>
+                      <span style="font-size:0.75rem;font-weight:600;${aiPct > 70 ? 'color:#10b981' : aiPct > 30 ? 'color:#3b82f6' : 'color:var(--bs-secondary-color)'}">${aiPct}%</span>
+                    </div>
+                  </td>
+                  <td><span class="badge bg-info-subtle text-info-emphasis px-2 py-1" style="font-size:0.7rem;">${orderLabel}</span></td>
+                  <td style="font-size:0.75rem;color:var(--bs-secondary-color);">${m.fecha_ultima_clase || '—'}</td>
+                </tr>
+              `
+            }).join('')}
           </tbody>
         </table>
       </div>
     `
   }
 
-  function calculateStats(data) {
-    const total = data.length
-    const asistenciaPrimero = data.filter(m => m.orden_asistencia_primero === 1).length
-    const observacionesPrimero = data.filter(m => m.orden_observaciones_primero === 1).length
-    const simultaneo = data.filter(m => m.orden_simultaneo === 1).length
-
-    const avgAiUsage = data.length > 0
-      ? (data.reduce((sum, m) => sum + (m.uso_ai_fill_percent || 0), 0) / data.length).toFixed(1)
-      : 0
-
-    return {
-      asistenciaPrimero: total > 0 ? ((asistenciaPrimero / total) * 100).toFixed(1) : 0,
-      observacionesPrimero: total > 0 ? ((observacionesPrimero / total) * 100).toFixed(1) : 0,
-      simultaneo: total > 0 ? ((simultaneo / total) * 100).toFixed(1) : 0,
-      avgAiUsage,
-      total
-    }
-  }
-
   const widget = {
     async init() {
       injectInfoTooltipStyles()
+      const { start, end } = initDateRange()
+      currentStartDate = start
+      currentEndDate = end
+
       container.innerHTML = `
         <div class="premium-loading">
           <div class="premium-loading-spinner"></div>
@@ -68,14 +261,17 @@ export function analyticsFillingBehaviorWidget(containerId) {
       `
 
       try {
-        const metrics = await getTeacherFillingMetrics()
+        const metrics = await getTeacherFillingMetrics(currentStartDate, currentEndDate)
 
         if (!metrics || metrics.length === 0) {
           container.innerHTML = `
             <div class="analytics-widget">
-              <div class="premium-no-data">No hay datos disponibles</div>
+              <h2><i class="bi bi-bar-chart-steps text-primary"></i> Analítica de Llenado de Asistencias ${InfoTooltip('analitca_comportamiento')}</h2>
+              ${dateRangeHTML()}
+              <div class="premium-no-data">No hay datos disponibles para el rango seleccionado</div>
             </div>
           `
+          this.attachFilterEvents()
           return
         }
 
@@ -83,45 +279,55 @@ export function analyticsFillingBehaviorWidget(containerId) {
       } catch (err) {
         console.error('[analyticsFillingBehaviorWidget] Error:', err)
         container.innerHTML = `
-          <div class="premium-error-card">
-            <i class="bi bi-exclamation-triangle-fill"></i>
-            <div>Error cargando analítica: ${err.message}</div>
+          <div class="analytics-widget">
+            <h2><i class="bi bi-bar-chart-steps text-primary"></i> Analítica de Llenado de Asistencias</h2>
+            <div class="premium-error-card">
+              <i class="bi bi-exclamation-triangle-fill"></i>
+              <div>Error: ${esc(err.message)}</div>
+            </div>
           </div>
         `
       }
     },
 
     render(metrics) {
-      if (metrics.length === 0) {
-        return
-      }
-
       const stats = calculateStats(metrics)
 
       const html = `
         <div class="analytics-widget">
           <h2><i class="bi bi-bar-chart-steps text-primary"></i> Analítica de Llenado de Asistencias ${InfoTooltip('analitca_comportamiento')}</h2>
 
-          <div class="stats-grid">
-            <div class="stat-card primary">
-              <div class="stat-label">Asistencia Primero ${InfoTooltip('analitca_comportamiento')}</div>
-              <div class="stat-value">${stats.asistenciaPrimero}%</div>
-              <div class="stat-subtitle">Orden de llenado preferido</div>
+          ${dateRangeHTML()}
+
+          ${renderStatsCards(stats)}
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-bottom:2rem;">
+            <div class="maestro-metrics-section" style="margin-top:0;">
+              <h3>Distribución de Orden de Llenado</h3>
+              <div class="premium-table-container">
+                ${renderDistribution(stats)}
+              </div>
             </div>
-            <div class="stat-card">
-              <div class="stat-label">Observaciones Primero ${InfoTooltip('observacion')}</div>
-              <div class="stat-value">${stats.observacionesPrimero}%</div>
-              <div class="stat-subtitle">Enfoque en comentarios</div>
-            </div>
-            <div class="stat-card warning">
-              <div class="stat-label">Simultáneo ${InfoTooltip('analitca_comportamiento')}</div>
-              <div class="stat-value">${stats.simultaneo}%</div>
-              <div class="stat-subtitle">Registro en tiempo real</div>
-            </div>
-            <div class="stat-card success">
-              <div class="stat-label">Uso IA Promedio ${InfoTooltip('confianza_ia')}</div>
-              <div class="stat-value">${stats.avgAiUsage}%</div>
-              <div class="stat-subtitle">Asistente activado</div>
+            <div class="maestro-metrics-section" style="margin-top:0;">
+              <h3>Resumen de Clases</h3>
+              <div style="display:flex;flex-direction:column;gap:0.75rem;">
+                <div style="display:flex;justify-content:space-between;padding:0.75rem 1rem;background:var(--bs-secondary-bg);border-radius:8px;">
+                  <span style="font-size:0.85rem;color:var(--bs-secondary-color);">Total clases analizadas</span>
+                  <span style="font-weight:700;font-size:1.1rem;">${stats.totalClases}</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;padding:0.75rem 1rem;background:var(--bs-secondary-bg);border-radius:8px;">
+                  <span style="font-size:0.85rem;color:var(--bs-secondary-color);">Maestros activos</span>
+                  <span style="font-weight:700;font-size:1.1rem;">${stats.total}</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;padding:0.75rem 1rem;background:var(--bs-secondary-bg);border-radius:8px;">
+                  <span style="font-size:0.85rem;color:var(--bs-secondary-color);">Promedio duración observaciones</span>
+                  <span style="font-weight:700;font-size:1.1rem;">${stats.avgDuration}s</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;padding:0.75rem 1rem;background:var(--bs-secondary-bg);border-radius:8px;">
+                  <span style="font-size:0.85rem;color:var(--bs-secondary-color);">Uso IA promedio</span>
+                  <span style="font-weight:700;font-size:1.1rem;">${stats.avgAi}%</span>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -133,13 +339,37 @@ export function analyticsFillingBehaviorWidget(containerId) {
       `
 
       container.innerHTML = html
+      this.attachFilterEvents()
       attachInfoTooltipEvents(container)
     },
 
-    destroy() {
-      if (container) {
-        container.innerHTML = ''
+    attachFilterEvents() {
+      const startInput = document.getElementById('filterStartDate')
+      const endInput = document.getElementById('filterEndDate')
+      const btnApply = document.getElementById('btnApplyFilter')
+      const btnReset = document.getElementById('btnResetFilter')
+
+      const applyFilter = () => {
+        currentStartDate = startInput?.value || ''
+        currentEndDate = endInput?.value || ''
+        this.init()
       }
+
+      if (btnApply) btnApply.addEventListener('click', applyFilter)
+      if (btnReset) {
+        btnReset.addEventListener('click', () => {
+          const { start, end } = initDateRange()
+          currentStartDate = start
+          currentEndDate = end
+          if (startInput) startInput.value = start
+          if (endInput) endInput.value = end
+          this.init()
+        })
+      }
+    },
+
+    destroy() {
+      if (container) container.innerHTML = ''
     }
   }
 

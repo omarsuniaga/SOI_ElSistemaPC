@@ -1,8 +1,8 @@
+import '../../../shared/styles/patterns.css'
 import '../styles/programas.css'
-import { supabase } from '../../../lib/supabaseClient.js'
+import { escapeHTML } from '../../../shared/utils/sanitize.js'
 import { AppModal } from '../../../shared/components/AppModal.js'
 import { AppToast } from '../../../shared/components/AppToast.js'
-import { Programa } from '../models/programa.model.js'
 import {
   obtenerProgramas,
   crearPrograma,
@@ -12,11 +12,29 @@ import {
   NIVELES,
   getNivelLabel,
 } from '../api/programasApi.js'
+import { renderFilterPanel } from '../../../shared/components/pageShell.js'
+import { renderHeroCard, renderDetailGrid } from '../../../shared/components/profileModal.js'
+import { Programa } from '../models/programa.model.js'
+import { supabase } from '../../../lib/supabaseClient.js'
 
 const state = {
   programas: [],
   programasOriginales: [],
   cargando: false,
+  filtrosAbiertos: typeof window !== 'undefined' ? window.innerWidth >= 992 : true,
+  container: null,
+  filtroBuscar: '',
+  filtroEstado: 'todos',
+}
+
+export function resetProgramasStateForTests() {
+  state.programas = []
+  state.programasOriginales = []
+  state.cargando = false
+  state.filtrosAbiertos = typeof window !== 'undefined' ? window.innerWidth >= 992 : true
+  state.container = null
+  state.filtroBuscar = ''
+  state.filtroEstado = 'todos'
 }
 
 const VALIDATION = {
@@ -24,28 +42,11 @@ const VALIDATION = {
   descripcionMax: 500,
 }
 
-function escapeHTML(str) {
-  if (!str) return ''
-  return String(str)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;')
-}
-
 function formatDate(dateStr) {
   if (!dateStr) return 'N/A'
   return new Date(dateStr).toLocaleDateString('es-ES', {
     year: 'numeric', month: 'short', day: 'numeric'
   })
-}
-
-function getInitials(nombre) {
-  if (!nombre) return '?'
-  const parts = String(nombre).trim().split(/\s+/)
-  if (parts.length === 1) return parts[0].charAt(0).toUpperCase()
-  return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase()
 }
 
 function getStatusColor(activo) {
@@ -57,30 +58,48 @@ function getStatusLabel(activo) {
 }
 
 function getNivelOptions(selectedValue = '') {
-  return NIVELES.map(n => 
+  return NIVELES.map(n =>
     `<option value="${n.value}" ${n.value === selectedValue ? 'selected' : ''}>${n.label}</option>`
   ).join('')
 }
 
-/**
- * Vista de Programas Académicos (Refactored)
- */
+function saveFilterState() {
+  const c = state.container
+  if (!c) return
+  state.filtroBuscar = c.querySelector('#buscarPrograma')?.value || ''
+  state.filtroEstado = c.querySelector('#filtroEstado')?.value || 'todos'
+}
+
 export async function renderProgramasView(container) {
-  try {
-    state.cargando = true
-    renderLoading(container)
+  saveFilterState()
 
-    const programas = await obtenerProgramas()
-    state.programas = programas
-    state.programasOriginales = [...programas]
-    state.cargando = false
-
-    renderContent(container)
-    attachGlobalEvents(container)
-  } catch (error) {
-    console.error('[ProgramasView]', error)
-    renderError(container, error.message)
+  if (container.cleanup) {
+    container.cleanup()
   }
+
+  state.container = container
+  if (typeof state.filtrosAbiertos !== 'boolean') {
+    state.filtrosAbiertos = window.innerWidth >= 992
+  }
+
+  if (state.programasOriginales.length === 0) {
+    try {
+      state.cargando = true
+      renderLoading(container)
+      const programas = await obtenerProgramas()
+      state.programas = programas
+      state.programasOriginales = [...programas]
+      state.cargando = false
+    } catch (error) {
+      console.error('[ProgramasView]', error)
+      renderError(container, error.message)
+      return
+    }
+  }
+
+  renderContent()
+  attachEvents()
+  applyFilters()
 }
 
 function renderLoading(container) {
@@ -107,7 +126,25 @@ function renderError(container, mensaje) {
   container.querySelector('#retryBtn')?.addEventListener('click', () => renderProgramasView(container))
 }
 
-function renderContent(container) {
+function getFilterConfigHtml() {
+  return `
+    <div class="premium-search-container flex-grow-1" style="min-width: 180px;">
+      <i class="bi bi-search search-icon-muted"></i>
+      <input type="text" class="form-control premium-search-input" placeholder="Buscar programa..." id="buscarPrograma" autocomplete="off" value="${escapeHTML(state.filtroBuscar)}">
+    </div>
+    <div class="premium-select-container">
+      <i class="bi bi-funnel select-icon-muted"></i>
+      <select class="form-select premium-filter-select" id="filtroEstado">
+        <option value="todos" ${state.filtroEstado === 'todos' ? 'selected' : ''}>Todos los estados</option>
+        <option value="activo" ${state.filtroEstado === 'activo' ? 'selected' : ''}>Activos</option>
+        <option value="inactivo" ${state.filtroEstado === 'inactivo' ? 'selected' : ''}>Inactivos</option>
+      </select>
+    </div>
+  `
+}
+
+function renderContent() {
+  const container = state.container
   container.innerHTML = `
     <div class="page-container">
       <div class="programas-header-premium mb-4">
@@ -116,36 +153,26 @@ function renderContent(container) {
             <i class="bi bi-journal-bookmark fs-4"></i>
           </div>
           <div>
-            <h1 class="programas-title-premium page-title mb-0">Programas</h1>
-            <p class="text-muted small mb-0">${state.programas.length} programas en total</p>
+            <h1 class="programas-title-premium mb-0">Programas</h1>
+            <p class="text-muted small mb-0"><span id="programasCount">${state.programas.length}</span> programas en total</p>
           </div>
         </div>
-        
+
         <div class="programas-header-actions">
-          <button class="btn btn-outline-secondary btn-sm-compact me-2" id="btnExportarPDF" title="Exportar PDF">
+          <button class="btn btn-outline-secondary btn-sm me-2" id="btnExportarPDF" title="Exportar PDF">
             <i class="bi bi-file-earmark-pdf"></i> PDF
           </button>
-          <button class="btn btn-premium-action" id="btnAgregarPrograma">
-            <i class="bi bi-plus-lg me-1.5"></i>Nuevo Programa
+          <button class="btn btn-premium-action btn-icon-only" id="btnAgregarPrograma" title="Nuevo Programa" aria-label="Nuevo Programa">
+            <i class="bi bi-plus-lg"></i>
           </button>
         </div>
       </div>
 
-      <div class="programas-filter-toolbar mb-4">
-        <div class="premium-search-container flex-grow-1">
-          <i class="bi bi-search search-icon-muted"></i>
-          <input type="text" class="form-control premium-search-input" placeholder="Buscar programa..." id="buscar">
-        </div>
-        
-        <div class="premium-select-container">
-          <i class="bi bi-funnel select-icon-muted"></i>
-          <select class="form-select premium-filter-select" id="filtroEstado">
-            <option value="todos">Todos los estados</option>
-            <option value="activo">Activos</option>
-            <option value="inactivo">Inactivos</option>
-          </select>
-        </div>
-      </div>
+      ${renderFilterPanel({
+        isOpen: state.filtrosAbiertos,
+        filtersHtml: getFilterConfigHtml(),
+        onToggleId: 'btnToggleFiltros',
+      })}
 
       <div class="page-glass rounded w-100">
         <div class="list-group list-group-flush w-100" id="programasTBody">
@@ -163,21 +190,13 @@ function renderTableRows(programas) {
   if (!programas.length) return ''
 
   return programas.map(p => {
-    const initials = getInitials(p.nombre)
     const nivel = getNivelLabel(p.nivel)
     const descripcion = escapeHTML(p.descripcion || 'Sin descripción')
     const accentClass = `border-accent-${p.activo ? 'success' : 'secondary'}`
-    const statusDotClass = `bg-${p.activo ? 'success' : 'secondary'}`
 
     return `
       <div class="list-group-item list-group-item-action d-flex align-items-center justify-content-between p-3 w-100 border-start-accent ${accentClass}" data-id="${p.id}" style="cursor: pointer;">
         <div class="d-flex align-items-center gap-3 flex-grow-1 overflow-hidden">
-          <div class="position-relative flex-shrink-0">
-            <div class="avatar-compact bg-primary bg-opacity-10 text-primary border border-primary-subtle d-flex align-items-center justify-content-center rounded-circle" style="width: 48px; height: 48px; font-size: 1.2rem; font-weight: 600;">
-              ${initials}
-            </div>
-            <span class="position-absolute bottom-0 end-0 p-1 ${statusDotClass} border border-light rounded-circle" style="transform: translate(10%, 10%);"></span>
-          </div>
           <div class="d-flex flex-column flex-grow-1 overflow-hidden pe-3">
             <span class="fw-bold text-truncate" style="font-size: 1.05rem;">${escapeHTML(p.nombre)}</span>
             <small class="text-muted text-truncate">${nivel} • ${descripcion.substring(0, 50)}${descripcion.length > 50 ? '...' : ''}</small>
@@ -200,13 +219,11 @@ function renderEmpty() {
   `
 }
 
-let currentContainer = null
-
-function attachGlobalEvents(container) {
-  currentContainer = container
+function attachEvents() {
+  const container = state.container
 
   container.querySelector('#btnAgregarPrograma')?.addEventListener('click', () => openCreateModal())
-  
+
   container.querySelector('#btnExportarPDF')?.addEventListener('click', async () => {
     try {
       await exportarProgramasPDF(state.programas)
@@ -216,26 +233,43 @@ function attachGlobalEvents(container) {
     }
   })
 
-  container.querySelector('#buscar')?.addEventListener('input', applyFilters)
-  container.querySelector('#filtroEstado')?.addEventListener('change', applyFilters)
+  container.querySelector('#btnToggleFiltros')?.addEventListener('click', () => {
+    state.filtrosAbiertos = !state.filtrosAbiertos
+    renderProgramasView(state.container)
+  })
+
+  let debounceTimer
+  container.addEventListener('input', (e) => {
+    if (e.target.id === 'buscarPrograma') {
+      saveFilterState()
+      clearTimeout(debounceTimer)
+      debounceTimer = setTimeout(applyFilters, 300)
+    }
+  })
+
+  container.addEventListener('change', (e) => {
+    if (e.target.id === 'filtroEstado') {
+      saveFilterState()
+      applyFilters()
+    }
+  })
 
   container.querySelector('#programasTBody')?.addEventListener('click', (e) => {
-    const btn = e.target.closest('button[data-action]')
-    if (!btn) {
-      const row = e.target.closest('.list-group-item[data-id]')
-      if (row) openViewModal(row.dataset.id)
-      return
+    const item = e.target.closest('.list-group-item[data-id]')
+    if (item) {
+      openViewModal(item.dataset.id)
     }
-
-    const { action, id } = btn.dataset
-    if (action === 'edit') openEditModal(id)
-    if (action === 'delete') openDeleteModal(id)
   })
+
+  container.cleanup = () => {}
 }
 
 function applyFilters() {
-  const searchTerm = currentContainer.querySelector('#buscar')?.value.trim().toLowerCase() || ''
-  const filtroEstado = currentContainer.querySelector('#filtroEstado')?.value || 'todos'
+  const c = state.container
+  if (!c) return
+
+  const searchTerm = c.querySelector('#buscarPrograma')?.value.trim().toLowerCase() || ''
+  const filtroEstado = c.querySelector('#filtroEstado')?.value || 'todos'
 
   state.programas = state.programasOriginales.filter(p => {
     const matchSearch = !searchTerm ||
@@ -253,11 +287,17 @@ function applyFilters() {
 }
 
 function refreshTable() {
-  const tbody = currentContainer.querySelector('#programasTBody')
+  const c = state.container
+  if (!c) return
+
+  const tbody = c.querySelector('#programasTBody')
   if (tbody) tbody.innerHTML = renderTableRows(state.programas)
-  
-  const empty = currentContainer.querySelector('#emptyContainer')
+
+  const empty = c.querySelector('#emptyContainer')
   if (empty) empty.innerHTML = state.programas.length === 0 ? renderEmpty() : ''
+
+  const count = c.querySelector('#programasCount')
+  if (count) count.textContent = state.programas.length
 }
 
 function openCreateModal() {
@@ -359,7 +399,6 @@ async function loadClasesForPrograma(programaId, modalBody) {
       return
     }
 
-    // Summary stats
     const totalAlumnos  = clases.reduce((sum, c) => sum + (c.alumnos_inscritos || 0), 0)
     const instruments   = [...new Set(clases.map(c => c.instrumento).filter(Boolean))]
     const maestrosIds   = [...new Set([
@@ -441,126 +480,75 @@ function openViewModal(id) {
   const p = state.programasOriginales.find(x => x.id === id)
   if (!p) return
 
-  AppModal.open({
-    title: 'Perfil del Programa',
-    hideSave: true,
-    cancelText: 'Cerrar',
-    body: `
-      <div class="programa-profile">
-        <!-- Header Banner / Avatar Section -->
-        <div class="d-flex align-items-center gap-3 mb-4 pb-3 border-bottom border-light-subtle">
-          <div class="position-relative" style="flex-shrink: 0;">
-            <div class="avatar-large bg-primary bg-opacity-10 text-primary border border-primary-subtle d-flex align-items-center justify-content-center fw-bold" 
-                 style="width: 60px; height: 60px; font-size: 1.6rem; border-radius: 50%;">
-              ${getInitials(p.nombre)}
-            </div>
-            <span class="position-absolute bottom-0 end-0 p-1 bg-${p.activo ? 'success' : 'danger'} border border-light rounded-circle" 
-                  style="transform: translate(10%, 10%);"
-                  title="${p.activo ? 'Activo' : 'Inactivo'}">
-            </span>
-          </div>
-          <div class="overflow-hidden">
-            <h4 class="h5 mb-1 fw-bold text-truncate" style="letter-spacing: -0.01em;">${escapeHTML(p.nombre)}</h4>
-            <span class="badge bg-primary bg-opacity-10 text-primary border border-primary-subtle">${getNivelLabel(p.nivel)}</span>
-          </div>
+  const nivel = getNivelLabel(p.nivel)
+  const estadoLabel = p.activo ? 'Activo' : 'Inactivo'
+  const estadoDotClass = p.activo ? 'bg-success' : 'bg-secondary'
+
+  const bodyHTML = `
+    <div class="programa-profile-container">
+      ${renderHeroCard({
+        title: p.nombre || 'Programa',
+        badgesHtml: `
+          <span class="badge bg-primary bg-opacity-10 text-primary border border-primary-subtle" style="font-size: 0.75rem;">${escapeHTML(nivel)}</span>
+          <span class="d-inline-block rounded-circle ${estadoDotClass}" style="width: 10px; height: 10px;" title="${estadoLabel}"></span>
+        `,
+        actionsHtml: `
+          <button class="btn btn-outline-primary btn-sm btn-profile-edit" data-id="${p.id}" type="button" title="Editar programa">
+            <i class="bi bi-pencil"></i>
+          </button>
+          <button class="btn btn-outline-danger btn-sm btn-profile-delete" data-id="${p.id}" type="button" title="Eliminar programa">
+            <i class="bi bi-trash"></i>
+          </button>
+        `,
+      })}
+
+      ${renderDetailGrid({
+        items: [
+          { icon: 'bi-clock', label: 'Duración', value: p.duracion_anios ? `${p.duracion_anios} ${p.duracion_anios === 1 ? 'año' : 'años'}` : 'No especificada' },
+          { icon: 'bi-fingerprint', label: 'Identificador', value: `<code>${escapeHTML(p.id)}</code>` },
+          { icon: 'bi-calendar-check', label: 'Creado', value: formatDate(p.created_at) },
+          { icon: 'bi-calendar-event', label: 'Modificado', value: p.updated_at ? formatDate(p.updated_at) : formatDate(p.created_at) },
+        ],
+      })}
+
+      ${p.descripcion ? `
+        <div class="description-card p-3 rounded mb-4 border bg-body-tertiary">
+          <small class="text-muted d-block mb-1"><i class="bi bi-file-earmark-text me-1"></i>Descripción</small>
+          <p class="mb-0 text-muted small" style="white-space: pre-line; line-height: 1.5;">${escapeHTML(p.descripcion)}</p>
         </div>
+      ` : ''}
 
-        <!-- Info Grid -->
-        <div class="row g-3">
-          <div class="col-md-6">
-            <div class="programa-profile-card h-100">
-              <label class="programa-profile-label small text-uppercase fw-bold mb-1 d-block" style="font-size: 0.75rem; letter-spacing: 0.05em;">
-                <i class="bi bi-clock me-1 text-primary"></i> Duración
-              </label>
-              <p class="mb-0 fw-semibold programa-profile-value" style="font-size: 0.95rem;">
-                ${p.duracion_anios ? `${p.duracion_anios} ${p.duracion_anios === 1 ? 'año' : 'años'}` : 'No especificada'}
-              </p>
-            </div>
-          </div>
-          
-          <div class="col-md-6">
-            <div class="programa-profile-card h-100 d-flex flex-column justify-content-between">
-              <label class="programa-profile-label small text-uppercase fw-bold mb-1 d-block" style="font-size: 0.75rem; letter-spacing: 0.05em;">
-                <i class="bi bi-fingerprint me-1 text-primary"></i> Identificador
-              </label>
-              <div class="d-flex align-items-center justify-content-between">
-                <span class="font-monospace programa-profile-value small text-truncate pe-2" style="font-size: 0.85rem;">${p.id}</span>
-                <button class="btn btn-link btn-sm p-0 text-decoration-none text-muted" id="copy-id-btn" title="Copiar ID" style="cursor: pointer;">
-                  <i class="bi bi-copy"></i>
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <div class="col-12">
-            <div class="programa-profile-card">
-              <label class="programa-profile-label small text-uppercase fw-bold mb-1 d-block" style="font-size: 0.75rem; letter-spacing: 0.05em;">
-                <i class="bi bi-file-text me-1 text-primary"></i> Descripción
-              </label>
-              <p class="mb-0 programa-profile-desc" style="font-size: 0.9rem; line-height: 1.5; white-space: pre-line;">
-                ${escapeHTML(p.descripcion || 'Sin descripción detallada.')}
-              </p>
-            </div>
-          </div>
-
-          <div class="col-12">
-            <div class="programa-profile-card">
-              <div class="row g-2">
-                <div class="col-sm-6">
-                  <label class="programa-profile-label small text-uppercase fw-bold mb-1 d-block" style="font-size: 0.72rem; letter-spacing: 0.05em;">
-                    <i class="bi bi-calendar-check me-1"></i> Creado
-                  </label>
-                  <p class="mb-0 programa-profile-value small" style="opacity: 0.85;">${formatDate(p.created_at)}</p>
-                </div>
-                <div class="col-sm-6">
-                  <label class="programa-profile-label small text-uppercase fw-bold mb-1 d-block" style="font-size: 0.72rem; letter-spacing: 0.05em;">
-                    <i class="bi bi-calendar-event me-1"></i> Modificado
-                  </label>
-                  <p class="mb-0 programa-profile-value small" style="opacity: 0.85;">${p.updated_at ? formatDate(p.updated_at) : formatDate(p.created_at)}</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Actions -->
-          <div class="col-12 text-end d-flex align-items-center justify-content-end gap-2 mt-2">
-            <button class="btn btn-outline-danger btn-sm px-3" id="view-delete-btn" title="Eliminar programa">
-              <i class="bi bi-trash me-1"></i> Eliminar
-            </button>
-            <button class="btn btn-primary btn-sm px-4" id="view-edit-btn" title="Editar programa">
-              <i class="bi bi-pencil me-1"></i> Editar
-            </button>
-          </div>
-
-          <!-- Clases del programa -->
-          <div class="col-12 mt-2">
-            <h6 class="fw-bold border-bottom pb-2 mb-3" style="font-size:0.85rem; text-transform:uppercase; letter-spacing:0.05em;">
-              <i class="bi bi-collection me-2 text-primary"></i>Clases del programa
-            </h6>
-            <div id="programa-clases-section">
-              <div class="text-center text-muted py-3">
-                <span class="spinner-border spinner-border-sm me-2"></span>Cargando clases...
-              </div>
-            </div>
+      <div class="mt-2">
+        <h6 class="fw-bold border-bottom pb-2 mb-3" style="font-size:0.85rem; text-transform:uppercase; letter-spacing:0.05em;">
+          <i class="bi bi-collection me-2 text-primary"></i>Clases del programa
+        </h6>
+        <div id="programa-clases-section">
+          <div class="text-center text-muted py-3">
+            <span class="spinner-border spinner-border-sm me-2"></span>Cargando clases...
           </div>
         </div>
       </div>
-    `,
+    </div>
+  `
+
+  AppModal.open({
+    title: `Perfil del Programa: ${escapeHTML(p.nombre || 'Programa')}`,
+    hideSave: true,
+    body: bodyHTML,
     onShow: (modalBody) => {
-      modalBody.querySelector('#view-edit-btn').addEventListener('click', () => {
+      const footer = modalBody.closest('.app-modal-dialog')?.querySelector('.app-modal-footer')
+      if (footer) footer.style.setProperty('display', 'none', 'important')
+
+      modalBody.querySelector('.btn-profile-edit')?.addEventListener('click', () => {
         AppModal.close()
-        setTimeout(() => openEditModal(id), 300)
-      })
-      modalBody.querySelector('#view-delete-btn').addEventListener('click', () => {
-        AppModal.close()
-        setTimeout(() => openDeleteModal(id), 300)
-      })
-      modalBody.querySelector('#copy-id-btn')?.addEventListener('click', () => {
-        navigator.clipboard.writeText(p.id)
-        AppToast.success('ID copiado al portapapeles')
+        setTimeout(() => openEditModal(id), 250)
       })
 
-      // Load classes for this programa asynchronously
+      modalBody.querySelector('.btn-profile-delete')?.addEventListener('click', () => {
+        AppModal.close()
+        setTimeout(() => openDeleteModal(id), 250)
+      })
+
       loadClasesForPrograma(id, modalBody)
     }
   })

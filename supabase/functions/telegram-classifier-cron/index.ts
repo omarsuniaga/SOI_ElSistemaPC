@@ -12,6 +12,7 @@ const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const GROQ_API_KEY = Deno.env.get('GROQ_API_KEY')!;
 const TELEGRAM_BOT_TOKEN = Deno.env.get('TELEGRAM_BOT_TOKEN')!;
+const DEFAULT_TELEGRAM_CLASSIFIER_MODEL = Deno.env.get('TELEGRAM_CLASSIFIER_MODEL') ?? 'llama-3.1-8b-instant';
 
 function json(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
@@ -38,7 +39,7 @@ async function readConfig(supabase: SupabaseClient, key: string): Promise<string
   return data.value;
 }
 
-async function callGroq(userText: string): Promise<string> {
+async function callGroq(userText: string, model: string): Promise<string> {
   const messages = [
     { role: 'system', content: systemPrompt },
     ...fewShots,
@@ -52,9 +53,10 @@ async function callGroq(userText: string): Promise<string> {
       Authorization: `Bearer ${GROQ_API_KEY}`,
     },
     body: JSON.stringify({
-      model: 'llama-3.3-70b-versatile',
+      model,
       messages,
       temperature: 0.1,
+      max_tokens: 256,
       response_format: { type: 'json_object' },
     }),
   });
@@ -89,6 +91,9 @@ serve(async (req: Request) => {
       logINFO('KillSwitch', 'Ingest disabled, skipping');
       return json({ skipped: 'kill_switch' });
     }
+
+    const classifierModel =
+      (await readConfig(supabase, 'telegram_classifier_model'))?.trim() || DEFAULT_TELEGRAM_CLASSIFIER_MODEL;
 
     const { data: inboxRows, error: inboxError } = await supabase
       .from('hermes_inbox')
@@ -129,7 +134,7 @@ serve(async (req: Request) => {
           continue;
         }
 
-        const groqRaw = await callGroq(messageText);
+        const groqRaw = await callGroq(messageText, classifierModel);
         logINFO('GROQ', `Raw response: ${groqRaw.substring(0, 200)}`);
 
         const parsed = parseGroqResponse(groqRaw);

@@ -24,5 +24,20 @@ CREATE INDEX IF NOT EXISTS idx_conversaciones_estado
 ALTER TABLE public.conversaciones_whatsapp ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS allow_all_conversaciones ON public.conversaciones_whatsapp;
-CREATE POLICY allow_all_conversaciones
-  ON public.conversaciones_whatsapp FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY admin_all_conversaciones
+  ON public.conversaciones_whatsapp FOR ALL
+  TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.profiles
+      WHERE profiles.id = auth.uid()
+        AND profiles.rol = 'admin'
+    )
+  )
+  WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM public.profiles
+      WHERE profiles.id = auth.uid()
+        AND profiles.rol = 'admin'
+    )
+  );

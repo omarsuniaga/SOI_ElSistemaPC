@@ -6,6 +6,7 @@
  * Gating: rol 'admin' por ahora.
  */
 
+import '../../modules/luteria/styles/luteria.css'
 import { bootAdminPortal } from '../_shared/adminPortalShell.js'
 import { allRegistrars } from '../_shared/allRegistrars.js'
 
@@ -16,6 +17,7 @@ const navGroups = [
     icon: 'bi-tools',
     items: [
       { id: 'luteria-diagnosticos', label: 'Diagnósticos', icon: 'bi-wrench-adjustable' },
+      { id: 'luteria-ordenes', label: 'Órdenes de Reparación', icon: 'bi-clipboard-data' },
       { id: 'hermes-tareas', label: 'Tareas Institucionales', icon: 'bi-check2-square' },
     ],
   },

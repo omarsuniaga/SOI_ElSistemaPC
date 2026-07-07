@@ -9,6 +9,10 @@ vi.mock('../../api/configApi.js', () => ({
   setOpenRouterApiKey: vi.fn(async () => {}),
   getPreferredModel: vi.fn(async () => 'google/gemini-2.0-flash-exp'),
   setPreferredModel: vi.fn(async () => {}),
+  getTelegramClassifierModel: vi.fn(async () => ''),
+  setTelegramClassifierModel: vi.fn(async () => {}),
+  getHermesClassifierModel: vi.fn(async () => ''),
+  setHermesClassifierModel: vi.fn(async () => {}),
   getDocumentosInstitucionales: vi.fn(async () => ({
     reglamento: '',
     horario: '',

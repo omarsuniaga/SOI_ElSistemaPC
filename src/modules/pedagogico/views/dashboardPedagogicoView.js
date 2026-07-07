@@ -32,7 +32,7 @@ export async function renderDashboardPedagogicoView(container) {
 
 async function _fetchKPIs() {
   const [alumnos, planes, clases, asistencias] = await Promise.all([
-    supabase.from('alumnos').select('id', { count: 'exact' }).eq('activo', true),
+    supabase.rpc('count_alumnos_activos'),
     supabase.from('planificaciones').select('id, estado').gte(
       'fecha_inicio', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
     ),
@@ -50,8 +50,8 @@ async function _fetchKPIs() {
   const planesPlanificados = planes.data?.filter(p => p.estado === 'planificado').length || 0
 
   return {
-    alumnosActivos: alumnos.count || 0,
-    clasesActivas: clases.count || 0,
+      alumnosActivos: Number(alumnos.data) || 0,
+      clasesActivas: clases.count || 0,
     planesEstaSemana: planes.data?.length || 0,
     planesEjecutados,
     planesPlanificados,

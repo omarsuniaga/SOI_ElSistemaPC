@@ -82,6 +82,7 @@ function initialState() {
     periodoId: PERIODOS[0].id,
     draggable: false,
     conflictPanelExpanded: false,
+    constraintsExpanded: false,
     scheduleRuns: [],
     loading: false,
     error: null,
@@ -184,9 +185,23 @@ function renderShell() {
         </select>
       </div>
 
-      <!-- Constraint panel (config: jornada, days, duration, sessions) -->
-      <div id="hb-constraint-panel-slot">
-        ${createConstraintPanel({ classes: [] })}
+      <!-- Constraint panel (advanced / collapsible) -->
+      <div class="hb-collapse-panel hb-collapse-panel--constraints">
+        <button class="hb-collapse-toggle" id="hb-toggle-constraints" type="button" aria-expanded="${state.constraintsExpanded ? 'true' : 'false'}">
+          <span class="d-flex align-items-center gap-2">
+            <i class="bi ${state.constraintsExpanded ? 'bi-sliders' : 'bi-sliders'}"></i>
+            <strong>Configuración avanzada</strong>
+          </span>
+          <span class="hb-collapse-toggle__meta">
+            ${state.constraintsExpanded ? 'Ocultar' : 'Mostrar'}
+            <i class="bi ${state.constraintsExpanded ? 'bi-chevron-up' : 'bi-chevron-down'}"></i>
+          </span>
+        </button>
+        <div class="hb-collapse-panel__body ${state.constraintsExpanded ? 'is-open' : 'is-collapsed'}" id="hb-constraint-panel-shell">
+          <div id="hb-constraint-panel-slot">
+            ${createConstraintPanel({ classes: [] })}
+          </div>
+        </div>
       </div>
 
       <!-- Stats bar -->
@@ -229,8 +244,23 @@ function renderShell() {
         </div>
       </div>
 
-      <!-- Conflict panel -->
-      <div id="hb-conflict-panel-wrapper"></div>
+      <!-- Conflict panel (collapsible) -->
+      <div class="hb-collapse-panel hb-collapse-panel--conflicts">
+        <button class="hb-collapse-toggle" id="hb-toggle-conflicts" type="button" aria-expanded="${state.conflictPanelExpanded ? 'true' : 'false'}" ${state.conflicts.length === 0 ? 'disabled' : ''}>
+          <span class="d-flex align-items-center gap-2">
+            <i class="bi bi-exclamation-triangle"></i>
+            <strong>Conflictos</strong>
+            <span id="hb-conflict-count" class="hb-collapse-count">${state.conflicts.length > 0 ? `(${state.conflicts.length})` : ''}</span>
+          </span>
+          <span class="hb-collapse-toggle__meta">
+            ${state.conflictPanelExpanded ? 'Ocultar' : 'Mostrar'}
+            <i class="bi ${state.conflictPanelExpanded ? 'bi-chevron-up' : 'bi-chevron-down'}"></i>
+          </span>
+        </button>
+        <div class="hb-collapse-panel__body ${state.conflictPanelExpanded && state.conflicts.length > 0 ? 'is-open' : 'is-collapsed'}" id="hb-conflict-panel-shell">
+          <div id="hb-conflict-panel-wrapper"></div>
+        </div>
+      </div>
 
       <!-- Grid / empty state -->
       <div id="hb-grid-wrapper" class="hb-grid-wrapper">
@@ -331,6 +361,54 @@ function _injectHBStyles() {
     border-color:var(--hb-warning);color:var(--hb-warning);background:var(--hb-warning-light);
     animation:hb-pulse-border 1.5s ease-in-out infinite;
   }
+  .hb-collapse-panel {
+    background:var(--hb-card-bg);
+    border:1px solid var(--hb-border);
+    border-radius:12px;
+    overflow:hidden;
+    margin-bottom:0.875rem;
+  }
+  .hb-collapse-toggle {
+    width:100%;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:0.75rem;
+    padding:0.7rem 0.875rem;
+    border:none;
+    background:linear-gradient(180deg, rgba(99,102,241,0.06), rgba(99,102,241,0.02));
+    color:var(--hb-text);
+    font-size:0.84rem;
+    font-weight:700;
+    cursor:pointer;
+  }
+  .hb-collapse-toggle:disabled { cursor:not-allowed; opacity:0.55; }
+  .hb-collapse-toggle__meta {
+    display:inline-flex;
+    align-items:center;
+    gap:0.35rem;
+    color:var(--hb-text-muted);
+    font-size:0.75rem;
+    font-weight:600;
+    white-space:nowrap;
+  }
+  .hb-collapse-count {
+    color:var(--hb-danger);
+    font-size:0.75rem;
+    font-weight:700;
+  }
+  .hb-collapse-panel__body {
+    border-top:1px solid var(--hb-border);
+    padding:0.75rem;
+    background:var(--hb-grid-bg);
+  }
+  .hb-collapse-panel__body.is-collapsed { display:none; }
+  .hb-collapse-panel--constraints .hb-collapse-toggle {
+    background:linear-gradient(180deg, rgba(59,130,246,0.08), rgba(59,130,246,0.03));
+  }
+  .hb-collapse-panel--conflicts .hb-collapse-toggle {
+    background:linear-gradient(180deg, rgba(245,158,11,0.10), rgba(245,158,11,0.04));
+  }
   @keyframes hb-pulse-border {
     0%,100%{box-shadow:0 0 0 0 rgba(245,158,11,0);}
     50%{box-shadow:0 0 0 3px rgba(245,158,11,0.2);}
@@ -357,6 +435,31 @@ function _injectHBStyles() {
     width:18px;height:18px;border-radius:50%;background:var(--hb-primary);color:#fff;
     display:flex;align-items:center;justify-content:center;font-size:0.62rem;font-weight:700;flex-shrink:0;
   }
+
+  @media (max-width: 768px) {
+    .hb-toolbar-main {
+      padding:0.6rem;
+      gap:0.6rem;
+    }
+
+    .hb-toolbar-divider {
+      display:none;
+    }
+
+    .hb-toolbar-group {
+      flex-wrap:wrap;
+    }
+
+    .hb-toolbar-group--views {
+      width:100%;
+      justify-content:space-between;
+    }
+
+    .hb-toolbar-main .hb-btn span,
+    .hb-toolbar-main .hb-toolbar-label {
+      font-size:0.8rem;
+    }
+  }
   `
   document.head.appendChild(s)
 }
@@ -365,6 +468,35 @@ function _updateStatsBar() {
   const wrapper = _container?.querySelector('#hb-stats-wrapper')
   if (!wrapper) return
   wrapper.innerHTML = state.assignments.length > 0 ? _statsBar() : ''
+}
+
+function syncCollapsePanels() {
+  const constraintsBtn = _container?.querySelector('#hb-toggle-constraints')
+  const constraintsBody = _container?.querySelector('#hb-constraint-panel-shell')
+  if (constraintsBtn && constraintsBody) {
+    constraintsBtn.setAttribute('aria-expanded', state.constraintsExpanded ? 'true' : 'false')
+    const meta = constraintsBtn.querySelector('.hb-collapse-toggle__meta')
+    if (meta) {
+      meta.innerHTML = `${state.constraintsExpanded ? 'Ocultar' : 'Mostrar'} <i class="bi ${state.constraintsExpanded ? 'bi-chevron-up' : 'bi-chevron-down'}"></i>`
+    }
+    constraintsBody.classList.toggle('is-open', state.constraintsExpanded)
+    constraintsBody.classList.toggle('is-collapsed', !state.constraintsExpanded)
+  }
+
+  const conflictsBtn = _container?.querySelector('#hb-toggle-conflicts')
+  const conflictsBody = _container?.querySelector('#hb-conflict-panel-shell')
+  if (conflictsBtn && conflictsBody) {
+    conflictsBtn.disabled = state.conflicts.length === 0
+    conflictsBtn.setAttribute('aria-expanded', state.conflictPanelExpanded ? 'true' : 'false')
+    const count = conflictsBtn.querySelector('#hb-conflict-count')
+    if (count) count.textContent = state.conflicts.length > 0 ? `(${state.conflicts.length})` : ''
+    const meta = conflictsBtn.querySelector('.hb-collapse-toggle__meta')
+    if (meta) {
+      meta.innerHTML = `${state.conflictPanelExpanded ? 'Ocultar' : 'Mostrar'} <i class="bi ${state.conflictPanelExpanded ? 'bi-chevron-up' : 'bi-chevron-down'}"></i>`
+    }
+    conflictsBody.classList.toggle('is-open', state.conflictPanelExpanded && state.conflicts.length > 0)
+    conflictsBody.classList.toggle('is-collapsed', !(state.conflictPanelExpanded && state.conflicts.length > 0))
+  }
 }
 
 function renderGrid() {
@@ -402,6 +534,7 @@ function renderConflictPanel() {
       }
     });
   });
+  syncCollapsePanels();
 }
 
 function renderViewToggle() {
@@ -557,6 +690,21 @@ function wireListeners() {
   });
 
   _container.addEventListener('click', async e => {
+    if (e.target.closest('#hb-toggle-constraints')) {
+      state.constraintsExpanded = !state.constraintsExpanded;
+      renderShell();
+      wireListeners();
+      return;
+    }
+
+    if (e.target.closest('#hb-toggle-conflicts')) {
+      if (state.conflicts.length === 0) return;
+      state.conflictPanelExpanded = !state.conflictPanelExpanded;
+      renderShell();
+      wireListeners();
+      return;
+    }
+
     // View toggle pill
     const pill = e.target.closest('.vt-pill[data-view]');
     if (pill) {

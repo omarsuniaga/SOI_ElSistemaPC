@@ -194,7 +194,7 @@ export async function obtenerCoberturaCurricular(maestroId = null) {
   if (claseIds.length > 0) {
     const { data: planificaciones, error: planError } = await supabase
       .from('planificaciones')
-      .select('id, clase_id, estado, tema, updated_at')
+      .select('id, clase_id, estado, titulo, updated_at')
       .in('clase_id', claseIds)
 
     if (planError) throw new Error(`Error cargando planificaciones: ${planError.message}`)
@@ -235,7 +235,7 @@ export async function obtenerCoberturaCurricular(maestroId = null) {
       tiene_plan: !!plan,
       plan_id: plan?.id ?? null,
       plan_estado: plan?.estado ?? null,
-      plan_tema: plan?.tema ?? null,
+      plan_tema: plan?.titulo ?? null,
       plan_updated_at: plan?.updated_at ?? null,
     }
   })

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { renderProgramasView } from '../views/programasView.js'
+import { renderProgramasView, resetProgramasStateForTests } from '../views/programasView.js'
 import * as programasApi from '../api/programasApi.js'
 import { AppModal } from '../../../shared/components/AppModal.js'
 
@@ -36,6 +36,7 @@ describe('Programas Integration', () => {
 
   beforeEach(() => {
     container = document.createElement('div')
+    resetProgramasStateForTests()
     vi.clearAllMocks()
   })
 
@@ -48,7 +49,7 @@ describe('Programas Integration', () => {
 
     await renderProgramasView(container)
 
-    expect(container.querySelector('.page-title').textContent).toContain('Programas')
+    expect(container.querySelector('.programas-title-premium').textContent).toContain('Programas')
     expect(container.querySelectorAll('#programasTBody .list-group-item').length).toBe(2)
     expect(container.textContent).toContain('Programa A')
     expect(container.textContent).toContain('Programa B')
@@ -63,9 +64,11 @@ describe('Programas Integration', () => {
 
     await renderProgramasView(container)
 
-    const searchInput = container.querySelector('#buscar')
+    const searchInput = container.querySelector('#buscarPrograma')
     searchInput.value = 'Cuerdas'
-    searchInput.dispatchEvent(new Event('input'))
+    searchInput.dispatchEvent(new Event('input', { bubbles: true }))
+
+    await new Promise((resolve) => setTimeout(resolve, 350))
 
     expect(container.querySelectorAll('#programasTBody .list-group-item').length).toBe(1)
     expect(container.textContent).toContain('Cuerdas')

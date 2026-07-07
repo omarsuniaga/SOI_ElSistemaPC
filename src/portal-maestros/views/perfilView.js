@@ -19,6 +19,7 @@ const viewState = {
   dirty: false,
   saving: false,
   theme: localStorage.getItem('portal-maestros-theme') || 'system',
+  fontScale: localStorage.getItem('portal-maestros-font-scale') || '1',
   pushEnabled: false
 };
 
@@ -206,6 +207,33 @@ function renderAppearance(container) {
         <button class="pm-theme-opt" data-theme="system" id="pm-theme-system" role="radio" aria-checked="false">
           <div class="pm-theme-preview system"></div><span>Auto</span>
         </button>
+      </div>
+      <div class="pm-text-size-panel" aria-labelledby="text-size-title">
+        <div class="pm-text-size-panel__head">
+          <div>
+            <h4 id="text-size-title" class="pm-settings-section__subtitle">Tamaño de texto</h4>
+            <p class="pm-settings-section__desc">Ajusta la letra del portal para mejorar la lectura</p>
+          </div>
+          <span class="pm-text-size-chip" id="pm-font-scale-label">100%</span>
+        </div>
+        <div class="pm-text-size-controls" role="group" aria-label="Ajustar tamaño de letra">
+          <button type="button" class="btn-apple-utility pm-font-size-btn" data-font-scale="0.92" aria-label="Reducir tamaño de texto">
+            <i class="bi bi-dash-lg" aria-hidden="true"></i>
+            <span>A-</span>
+          </button>
+          <button type="button" class="btn-apple-utility pm-font-size-btn" data-font-scale="1" aria-label="Tamaño de texto normal">
+            <i class="bi bi-fonts" aria-hidden="true"></i>
+            <span>Normal</span>
+          </button>
+          <button type="button" class="btn-apple-utility pm-font-size-btn" data-font-scale="1.08" aria-label="Aumentar tamaño de texto">
+            <i class="bi bi-plus-lg" aria-hidden="true"></i>
+            <span>A+</span>
+          </button>
+          <button type="button" class="btn-apple-utility pm-font-size-btn" data-font-scale="1.16" aria-label="Tamaño de texto muy grande">
+            <i class="bi bi-type-bold" aria-hidden="true"></i>
+            <span>Muy grande</span>
+          </button>
+        </div>
       </div>
     </section>`);
 }
@@ -849,6 +877,12 @@ function initListeners(maestro) {
   document.getElementById('pm-theme-dark')?.addEventListener('click', () => applyTheme('dark'));
   document.getElementById('pm-theme-system')?.addEventListener('click', () => applyTheme('system'));
 
+  // Tamaño de texto
+  document.querySelectorAll('.pm-font-size-btn').forEach(btn => {
+    btn.addEventListener('click', () => applyFontScale(btn.dataset.fontScale));
+  });
+  syncFontScaleUI(viewState.fontScale);
+
   // Ausencias
   document.getElementById('pm-btn-ver-ausencias')?.addEventListener('click', async () => {
     const { ausenciasPanel } = await import('../components/ausenciasPanel.js');
@@ -1010,6 +1044,33 @@ function applyTheme(theme) {
   });
   localStorage.setItem('portal-maestros-theme', theme);
   viewState.theme = theme;
+}
+
+function applyFontScale(scale) {
+  const allowed = new Set(['0.92', '1', '1.08', '1.16']);
+  const resolved = allowed.has(String(scale)) ? String(scale) : '1';
+  document.documentElement.style.setProperty('--pm-font-scale', resolved);
+  localStorage.setItem('portal-maestros-font-scale', resolved);
+  viewState.fontScale = resolved;
+  syncFontScaleUI(resolved);
+  window.dispatchEvent(new CustomEvent('fontScaleChanged', { detail: { scale: resolved } }));
+}
+
+function syncFontScaleUI(scale) {
+  const allowed = new Set(['0.92', '1', '1.08', '1.16']);
+  const resolved = allowed.has(String(scale)) ? String(scale) : '1';
+  const labelMap = {
+    '0.92': '92%',
+    '1': '100%',
+    '1.08': '108%',
+    '1.16': '116%'
+  };
+  const labelEl = document.getElementById('pm-font-scale-label');
+  if (labelEl) labelEl.textContent = labelMap[resolved] || '100%';
+  document.querySelectorAll('.pm-font-size-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.fontScale === resolved);
+    btn.setAttribute('aria-pressed', btn.dataset.fontScale === resolved ? 'true' : 'false');
+  });
 }
 
 // ─── PERFIL INCOMPLETO ──────────────────────────────────────

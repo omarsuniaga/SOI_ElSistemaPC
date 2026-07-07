@@ -40,6 +40,7 @@ import { renderTaskEntityChip } from '../components/taskEntityChip.js'
 import { renderTaskCommentsPanel } from '../components/taskCommentsPanel.js'
 import { renderTaskHistoryTimeline } from '../components/taskHistoryTimeline.js'
 import { renderTaskAttachmentsPanel, wireTaskAttachmentsPanel } from '../components/taskAttachmentsPanel.js'
+import { esTareaToolCallAprobable, extraerToolCallPayload, formatearArgsToolCall } from '../logic/toolApprovalFormatter.js'
 
 const DEPARTAMENTOS = {
   DIR: 'Dirección',
@@ -291,6 +292,8 @@ function renderTareaCard(tarea) {
   // SP-0: entity chip and status badge from sub-components
   const entityChip = renderTaskEntityChip(tarea)
   const statusBadge = renderTaskStatusBadge(tarea.estado)
+  // Slice 4: badge "Tool" para solicitudes de aprobación de tool_call.
+  const esToolCall = tarea.entidad_tipo === 'tool_call'
 
   return `
     <div class="tarea-card card border-0 mb-3 shadow-sm" data-tarea-id="${tarea.id}">
@@ -298,6 +301,7 @@ function renderTareaCard(tarea) {
         <div class="d-flex align-items-start gap-3">
           <div class="flex-shrink-0">
             <span class="badge bg-${prioridad.color}" title="${prioridad.label}">${prioridad.label}</span>
+            ${esToolCall ? `<span class="badge bg-dark ms-1" title="Solicitud de aprobación de tool"><i class="bi bi-robot me-1"></i>Tool</span>` : ''}
           </div>
           <div class="flex-grow-1">
             <h5 class="card-title mb-1">${escapeHTML(tarea.titulo)}</h5>
@@ -453,6 +457,11 @@ async function openTareaModal(container, tarea) {
   // (must use the dedicated "Observar" button which calls the RPC with mandatory comment)
   const estadosParaSelect = Object.entries(ESTADOS).filter(([k]) => k !== 'observada')
 
+  // Slice 4: panel de aprobación humana para tool_calls (Domain: hermes-write-approval).
+  const esAprobableToolCall = esTareaToolCallAprobable(tarea)
+  const toolCallPayload = esAprobableToolCall ? extraerToolCallPayload(tarea) : null
+  const toolCallArgsFilas = toolCallPayload ? formatearArgsToolCall(toolCallPayload.args) : []
+
   AppModal.open({
     title: tarea.titulo,
     size: 'xl',
@@ -466,6 +475,39 @@ async function openTareaModal(container, tarea) {
         </div>
 
         ${entityChip ? `<div class="mb-3"><strong>Entidad asociada</strong><div class="mt-1">${entityChip}</div></div>` : ''}
+
+        ${
+          esAprobableToolCall && toolCallPayload
+            ? `<div class="mb-3 border rounded p-3 bg-dark bg-opacity-10" id="toolApprovalPanel">
+                 <strong class="d-block mb-2"><i class="bi bi-robot me-1"></i>Solicitud de ejecución de tool</strong>
+                 <div class="row mb-2 small">
+                   <div class="col-md-6"><span class="text-muted">Tool</span><p class="mb-0 fw-semibold">${escapeHTML(tarea.entidad_label || toolCallPayload.tool_name)}</p></div>
+                   <div class="col-md-6"><span class="text-muted">Departamento</span><p class="mb-0">${DEPARTAMENTOS[tarea.departamento] || tarea.departamento}</p></div>
+                 </div>
+                 ${
+                   toolCallArgsFilas.length > 0
+                     ? `<table class="table table-sm table-borderless mb-2">
+                          <tbody>
+                            ${toolCallArgsFilas
+                              .map((f) => `<tr><td class="text-muted small" style="width:40%;">${escapeHTML(f.clave)}</td><td class="small">${escapeHTML(f.valor)}</td></tr>`)
+                              .join('')}
+                          </tbody>
+                        </table>`
+                     : '<p class="text-muted small mb-2">Esta tool no requiere argumentos.</p>'
+                 }
+                 <textarea class="form-control form-control-sm mb-2" id="toolRechazoMotivo" rows="2"
+                   placeholder="Motivo del rechazo (obligatorio solo si rechazás)..."></textarea>
+                 <div class="d-flex gap-2">
+                   <button class="btn btn-sm btn-success" id="btnAprobarTool" type="button">
+                     <i class="bi bi-check-circle me-1"></i>Aprobar y ejecutar
+                   </button>
+                   <button class="btn btn-sm btn-outline-danger" id="btnRechazarTool" type="button">
+                     <i class="bi bi-x-circle me-1"></i>Rechazar
+                   </button>
+                 </div>
+               </div>`
+            : ''
+        }
 
         <div class="mb-3">
           <strong>Estado actual</strong>
@@ -563,6 +605,55 @@ async function openTareaModal(container, tarea) {
           } catch (err) {
             AppToast.show(`Error: ${err.message}`, 'error')
             btnObservar.disabled = false
+          }
+        },
+        { signal },
+      )
+
+      // Slice 4: wire "Aprobar y ejecutar" / "Rechazar" tool_call buttons
+      const btnAprobarTool = modalBody.querySelector('#btnAprobarTool')
+      const btnRechazarTool = modalBody.querySelector('#btnRechazarTool')
+
+      btnAprobarTool?.addEventListener(
+        'click',
+        async () => {
+          try {
+            btnAprobarTool.disabled = true
+            if (btnRechazarTool) btnRechazarTool.disabled = true
+            const actor = state.actor || { id: null, nombre: 'Usuario' }
+            const resultado = await tareasApi.aprobarToolCall(tarea.id, actor)
+            AppToast.show(resultado?.mensaje || 'Tool ejecutada correctamente', 'success')
+            AppModal.close?.()
+            await renderTareasView(container, { departamento: state.departamentoFijo, actor: state.actor })
+          } catch (err) {
+            AppToast.show(`Error al aprobar la tool: ${err.message}`, 'error')
+            btnAprobarTool.disabled = false
+            if (btnRechazarTool) btnRechazarTool.disabled = false
+          }
+        },
+        { signal },
+      )
+
+      btnRechazarTool?.addEventListener(
+        'click',
+        async () => {
+          const motivo = modalBody.querySelector('#toolRechazoMotivo')?.value?.trim() || ''
+          if (!motivo) {
+            AppToast.show('El motivo del rechazo es obligatorio', 'error')
+            return
+          }
+          try {
+            btnRechazarTool.disabled = true
+            if (btnAprobarTool) btnAprobarTool.disabled = true
+            const actor = state.actor || { id: null, nombre: 'Usuario' }
+            await tareasApi.rechazarToolCall(tarea.id, motivo, actor)
+            AppToast.show('Solicitud de tool rechazada', 'success')
+            AppModal.close?.()
+            await renderTareasView(container, { departamento: state.departamentoFijo, actor: state.actor })
+          } catch (err) {
+            AppToast.show(`Error al rechazar la tool: ${err.message}`, 'error')
+            btnRechazarTool.disabled = false
+            if (btnAprobarTool) btnAprobarTool.disabled = false
           }
         },
         { signal },

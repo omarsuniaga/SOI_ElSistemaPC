@@ -20,7 +20,12 @@ export async function getEstadisticasPeriodoActivo() {
   const data = await loadJsonMock(DATA_PATH)
   const activo = data.configuraciones.find(c => c.activo)
   const est = data.estadisticas_periodo.find(e => e.periodo_id === activo?.id)
-  return activo ? { ...activo, ...est } : null
+  return activo ? { 
+    ...activo, 
+    ...est,
+    alumnos_riesgo: 3,
+    instrumentos_taller: 2
+  } : null
 }
 
 export async function getResumenCierreAcademico() {

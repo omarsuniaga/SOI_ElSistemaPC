@@ -106,6 +106,10 @@
 
   /* ── Accessibility ────────────────────────────────────────── */
   --pm-touch-min: 44px; /* WCAG AA 2.5.8 touch target minimum */
+
+  /* Typography accessibility */
+  --pm-font-scale: 1;
+  --pm-font-size-base: calc(16px * var(--pm-font-scale));
 }
 
 /* Global Glass Utility */

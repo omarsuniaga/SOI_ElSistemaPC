@@ -171,17 +171,26 @@ export async function openPlanificacionModal(
   // Save button
   const saveBtn = modalEl.querySelector('.pm-plan-save-btn')
   saveBtn.onclick = async () => {
-    const tema = modalEl.querySelector('#pl-tema')?.value.trim()
-    const claseId = modalEl.querySelector('#pl-clase_id')?.value
+    const temaEl = modalEl.querySelector('#pl-tema')
+    const claseEl = modalEl.querySelector('#pl-clase_id')
+    const tema = temaEl?.value.trim()
+    const claseId = claseEl?.value
 
+    const inputs = [temaEl, claseEl]
+    inputs.forEach((el) => el?.classList.remove('error'))
+
+    let hasError = false
     if (!tema) {
-      modalEl.querySelector('#pl-tema').focus()
-      return
+      temaEl.classList.add('error')
+      temaEl.focus()
+      hasError = true
     }
     if (!claseId) {
-      modalEl.querySelector('#pl-clase_id').focus()
-      return
+      claseEl.classList.add('error')
+      if (!hasError) claseEl.focus()
+      hasError = true
     }
+    if (hasError) return
 
     saveBtn.disabled = true
     saveBtn.innerHTML = '<span class="pm-plan-spinner"></span> Guardando...'
@@ -223,23 +232,23 @@ export async function openPlanificacionModal(
   const modalBody = modalEl.querySelector('.pm-plan-body')
   if (modalBody) {
     const guideHtml = `
-      <div style="position:sticky;top:0;width:220px;flex-shrink:0" id="pl-curriculo-wrapper">
-        <div class="card border-0 bg-body-secondary">
-          <div class="card-header bg-transparent py-2 border-bottom">
-            <span class="small fw-semibold"><i class="bi bi-journal-bookmark me-1 text-primary"></i>Guía curricular</span>
+      <div class="pm-plan-guide-wrapper" id="pl-curriculo-wrapper">
+        <div class="pm-plan-guide-card">
+          <div class="pm-plan-guide-header">
+            <i class="bi bi-journal-bookmark me-1"></i>Guía curricular
           </div>
-          <div class="card-body p-2 small" id="pl-curriculo-body" style="max-height:350px;overflow-y:auto">
-            <div class="text-muted text-center small py-3">Seleccioná una clase para ver la guía</div>
+          <div class="pm-plan-guide-body" id="pl-curriculo-body">
+            <div class="pm-plan-guide-empty">Seleccioná una clase para ver la guía</div>
           </div>
         </div>
       </div>`
     const wrapper = document.createElement('div')
-    wrapper.style.cssText = 'display:flex;gap:1rem;align-items:flex-start'
+    wrapper.className = 'pm-plan-body-layout'
     // Wrap existing body content
     const fragment = document.createDocumentFragment()
     while (modalBody.firstChild) fragment.appendChild(modalBody.firstChild)
     const innerDiv = document.createElement('div')
-    innerDiv.style.cssText = 'flex:1;min-width:0'
+    innerDiv.className = 'pm-plan-body-main'
     innerDiv.appendChild(fragment)
     wrapper.appendChild(innerDiv)
     wrapper.insertAdjacentHTML('beforeend', guideHtml)
@@ -291,24 +300,23 @@ export async function openPlanificacionModal(
 async function _loadCurriculoGuide(instrumento, nivel, modalEl) {
   const body = modalEl.querySelector('#pl-curriculo-body')
   if (!body) return
-  body.innerHTML = `<div class="text-center py-2"><div class="spinner-border spinner-border-sm text-muted"></div></div>`
+  body.innerHTML = `<div class="pm-plan-guide-empty"><div class="spinner-border spinner-border-sm" role="status"></div></div>`
   try {
     const curriculo = await obtenerCurriculo(instrumento, nivel)
     if (!curriculo) {
-      body.innerHTML = `<p class="text-muted small text-center py-2">Sin guía curricular<br>para ${instrumento} — ${nivel}</p>`
+      body.innerHTML = `<div class="pm-plan-guide-empty">Sin guía curricular<br>para ${instrumento} — ${nivel}</div>`
       return
     }
     body.innerHTML = curriculo.curriculo_pilares
       .map(
         (p) => `
       <div class="mb-2">
-        <div class="fw-semibold text-uppercase text-muted mb-1" style="font-size:.7rem;letter-spacing:.05em">${p.nombre}</div>
+        <div class="pm-plan-guide-pilar">${p.nombre}</div>
         ${p.curriculo_objetivos
           .map(
             (o) => `
-          <div class="d-flex align-items-start gap-1 mb-1">
-            <i class="bi bi-circle text-muted" style="font-size:.65rem;margin-top:3px;flex-shrink:0"></i>
-            <span style="font-size:.78rem">${o.descripcion}</span>
+          <div class="pm-plan-guide-objetivo">
+            <span>${o.descripcion}</span>
           </div>`,
           )
           .join('')}
@@ -316,7 +324,7 @@ async function _loadCurriculoGuide(instrumento, nivel, modalEl) {
       )
       .join('')
   } catch (err) {
-    body.innerHTML = `<p class="text-danger small">${err.message}</p>`
+    body.innerHTML = `<div class="pm-plan-guide-empty text-danger">${err.message}</div>`
   }
 }
 
@@ -536,8 +544,18 @@ function _getModalStyles() {
     .pm-plan-backdrop {
       position: absolute;
       inset: 0;
-      background: rgba(0, 0, 0, 0.5);
       backdrop-filter: blur(4px);
+      transition: background 0.2s ease;
+    }
+    
+    [data-bs-theme="light"] .pm-plan-backdrop,
+    [data-portal-theme="light"] .pm-plan-backdrop {
+      background: rgba(0, 0, 0, 0.4);
+    }
+    
+    [data-bs-theme="dark"] .pm-plan-backdrop,
+    [data-portal-theme="dark"] .pm-plan-backdrop {
+      background: rgba(0, 0, 0, 0.65);
     }
     
     .pm-plan-modal {
@@ -640,20 +658,28 @@ function _getModalStyles() {
       border-radius: 3px;
     }
     
+    .pm-plan-body::-webkit-scrollbar-thumb:hover {
+      background: var(--pm-text-muted);
+    }
+    
     .pm-plan-section {
       margin-bottom: 1.5rem;
+      padding-bottom: 1.5rem;
+      border-bottom: 1px solid var(--pm-border);
     }
     
     .pm-plan-section:last-child {
       margin-bottom: 0;
+      padding-bottom: 0;
+      border-bottom: none;
     }
     
     .pm-plan-section-title {
       font-size: 0.7rem;
-      font-weight: 600;
+      font-weight: 700;
       text-transform: uppercase;
-      letter-spacing: 0.05em;
-      color: var(--pm-text-muted);
+      letter-spacing: 0.06em;
+      color: var(--pm-primary);
       margin: 0 0 0.75rem;
     }
     
@@ -714,12 +740,33 @@ function _getModalStyles() {
       transition: border-color 0.15s ease, box-shadow 0.15s ease;
     }
     
+    .pm-plan-input::placeholder,
+    .pm-plan-textarea::placeholder {
+      color: var(--pm-text-muted);
+      opacity: 0.55;
+    }
+    
     .pm-plan-input:focus,
     .pm-plan-select:focus,
     .pm-plan-textarea:focus {
       outline: none;
       border-color: var(--pm-primary);
       box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+    }
+    
+    .pm-plan-input.error,
+    .pm-plan-select.error,
+    .pm-plan-textarea.error {
+      border-color: #ef4444;
+      box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15);
+      animation: pm-plan-shake 0.35s ease;
+    }
+    
+    @keyframes pm-plan-shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-4px); }
+      50% { transform: translateX(4px); }
+      75% { transform: translateX(-2px); }
     }
     
     .pm-plan-textarea {
@@ -741,6 +788,106 @@ function _getModalStyles() {
       color: var(--pm-text-muted);
       text-align: right;
       margin-top: 0.2rem;
+      transition: color 0.15s ease;
+    }
+    
+    .pm-plan-char-count.warning {
+      color: var(--pm-warning-text, #b45309);
+    }
+    
+    .pm-plan-char-count.danger {
+      color: var(--pm-danger-text, #dc2626);
+      font-weight: 600;
+    }
+    
+    .pm-plan-body-layout {
+      display: flex;
+      gap: 1rem;
+      align-items: flex-start;
+    }
+    
+    .pm-plan-body-main {
+      flex: 1;
+      min-width: 0;
+    }
+    
+    .pm-plan-guide-wrapper {
+      position: sticky;
+      top: 0;
+      width: 220px;
+      flex-shrink: 0;
+    }
+    
+    .pm-plan-guide-card {
+      border: 1px solid var(--pm-border);
+      border-radius: 10px;
+      background: var(--pm-surface-2);
+      overflow: hidden;
+    }
+    
+    .pm-plan-guide-header {
+      padding: 0.5rem 0.75rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--pm-text);
+      border-bottom: 1px solid var(--pm-border);
+      background: var(--pm-surface);
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+    
+    .pm-plan-guide-body {
+      padding: 0.5rem;
+      font-size: 0.78rem;
+      max-height: 350px;
+      overflow-y: auto;
+      color: var(--pm-text);
+    }
+    
+    .pm-plan-guide-body::-webkit-scrollbar {
+      width: 4px;
+    }
+    
+    .pm-plan-guide-body::-webkit-scrollbar-thumb {
+      background: var(--pm-border);
+      border-radius: 2px;
+    }
+    
+    .pm-plan-guide-pilar {
+      font-weight: 600;
+      text-transform: uppercase;
+      color: var(--pm-text-muted);
+      font-size: 0.65rem;
+      letter-spacing: 0.06em;
+      margin-bottom: 0.35rem;
+    }
+    
+    .pm-plan-guide-objetivo {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.35rem;
+      margin-bottom: 0.25rem;
+      font-size: 0.75rem;
+      color: var(--pm-text);
+      line-height: 1.35;
+    }
+    
+    .pm-plan-guide-objetivo::before {
+      content: '';
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: var(--pm-text-muted);
+      flex-shrink: 0;
+      margin-top: 6px;
+    }
+    
+    .pm-plan-guide-empty {
+      color: var(--pm-text-muted);
+      text-align: center;
+      padding: 0.75rem 0.5rem;
+      font-size: 0.75rem;
     }
     
     .pm-plan-dsl-summary {
@@ -775,6 +922,7 @@ function _getModalStyles() {
       color: var(--pm-text);
       cursor: pointer;
       transition: all 0.15s ease;
+      min-height: var(--pm-touch-min, 44px);
     }
     
     .pm-plan-cancel-btn:hover {
@@ -795,11 +943,17 @@ function _getModalStyles() {
       display: flex;
       align-items: center;
       gap: 0.5rem;
+      min-height: var(--pm-touch-min, 44px);
     }
     
     .pm-plan-save-btn:hover:not(:disabled) {
       transform: translateY(-1px);
       box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+    }
+    
+    .pm-plan-save-btn:active:not(:disabled) {
+      transform: translateY(0);
+      box-shadow: 0 1px 4px rgba(59, 130, 246, 0.3);
     }
     
     .pm-plan-save-btn:disabled {
@@ -820,9 +974,10 @@ function _getModalStyles() {
       to { transform: rotate(360deg); }
     }
     
-    @media (max-width: 640px) {
+    @media (max-width: 768px) {
       .pm-plan-modal {
         max-height: 95vh;
+        border-radius: 12px;
       }
       
       .pm-plan-header {
@@ -839,6 +994,13 @@ function _getModalStyles() {
       
       .pm-plan-footer {
         padding: 0.875rem 1rem;
+        flex-direction: column-reverse;
+      }
+      
+      .pm-plan-footer .pm-plan-cancel-btn,
+      .pm-plan-footer .pm-plan-save-btn {
+        width: 100%;
+        justify-content: center;
       }
     }
   `
@@ -846,37 +1008,47 @@ function _getModalStyles() {
 
 function _initCounters(modalEl) {
   const counters = [
-    { input: 'pl-tema', count: 'pl-tema-count' },
-    { input: 'pl-objetivos', count: 'pl-obj-count' },
-    { input: 'pl-contenido', count: 'pl-cont-count' },
-    { input: 'pl-evaluacion', count: 'pl-eval-count' },
-    { input: 'pl-observaciones', count: 'pl-obs-count' },
+    { input: 'pl-tema', count: 'pl-tema-count', max: 200 },
+    { input: 'pl-objetivos', count: 'pl-obj-count', max: 1000 },
+    { input: 'pl-contenido', count: 'pl-cont-count', max: 2000 },
+    { input: 'pl-evaluacion', count: 'pl-eval-count', max: 500 },
+    { input: 'pl-observaciones', count: 'pl-obs-count', max: 1000 },
   ]
 
-  counters.forEach(({ input, count }) => {
+  counters.forEach(({ input, count, max }) => {
     const inputEl = modalEl.querySelector('#' + input)
     const countEl = modalEl.querySelector('#' + count)
     if (inputEl && countEl) {
-      inputEl.addEventListener('input', () => {
-        countEl.textContent = inputEl.value.length
-      })
+      const update = () => {
+        const len = inputEl.value.length
+        countEl.textContent = len
+        countEl.classList.remove('warning', 'danger')
+        if (len >= max) countEl.classList.add('danger')
+        else if (len >= max * 0.8) countEl.classList.add('warning')
+      }
+      inputEl.addEventListener('input', update)
+      update()
     }
   })
 }
 
 function _updateAllCounters(modalEl) {
   const counters = [
-    { input: 'pl-objetivos', count: 'pl-obj-count' },
-    { input: 'pl-contenido', count: 'pl-cont-count' },
-    { input: 'pl-evaluacion', count: 'pl-eval-count' },
-    { input: 'pl-observaciones', count: 'pl-obs-count' },
+    { input: 'pl-objetivos', count: 'pl-obj-count', max: 1000 },
+    { input: 'pl-contenido', count: 'pl-cont-count', max: 2000 },
+    { input: 'pl-evaluacion', count: 'pl-eval-count', max: 500 },
+    { input: 'pl-observaciones', count: 'pl-obs-count', max: 1000 },
   ]
 
-  counters.forEach(({ input, count }) => {
+  counters.forEach(({ input, count, max }) => {
     const inputEl = modalEl.querySelector('#' + input)
     const countEl = modalEl.querySelector('#' + count)
     if (inputEl && countEl) {
-      countEl.textContent = inputEl.value.length
+      const len = inputEl.value.length
+      countEl.textContent = len
+      countEl.classList.remove('warning', 'danger')
+      if (len >= max) countEl.classList.add('danger')
+      else if (len >= max * 0.8) countEl.classList.add('warning')
     }
   })
 }

@@ -1,96 +1,79 @@
-# Design: Curriculo Tres Planos
+# Design: Curriculo Tres Planos (Capa de Servicios)
 
 ## Technical Approach
+Implementar una fachada compatible en `weeklyPlanSupabase.js` que intercepte y reemplace las consultas dirigidas a las tablas de planificación fantasma (`acm_*`) redirigiéndolas a la tabla canónica de producción `route_versions` (para la guía curricular) y a la tabla de progreso real `indicator_attempts` (para calificaciones).
 
-Implement the change in small slices using the existing canonical spine. First, add the missing objective tier and proposal metadata in Supabase, then redirect reads away from phantom ACM tables toward `route_versions`, then enable parser-to-draft flow and ACM review UI. The first slice must be schema-only and read-compatible so current behavior does not break.
+---
 
 ## Architecture Decisions
 
-### Decision: Add an explicit objectives tier
-**Choice**: Create `objetivos` as a first-class table between `nodes` and `indicators`.
-**Alternatives considered**: Keep a single `nodes.objective` text field; encode objectives inside JSON.
-**Rationale**: The current model cannot represent multiple objectives per theme cleanly.
+### Decision: Redireccionar consultas de planificación a route_versions
 
-### Decision: Keep ACM as sole publisher
-**Choice**: Teachers may propose content, but ACM alone can publish it.
-**Alternatives considered**: Let teachers publish directly.
-**Rationale**: Preserves the institutional authority model already used by the portal.
+| Opción | Tradeoff | Decisión |
+| :--- | :--- | :--- |
+| Crear tablas `acm_*` en prod | Requiere migración masiva; duplica datos del spine | Rechazar |
+| **Adaptar capa de servicio** | Mapeo intermedio en JS; mantiene UI intacta y compatible | **Adoptar** |
 
-### Decision: Replace phantom-table reads with canonical derivation
-**Choice**: `weeklyPlanSupabase.js` must derive content from published `route_versions`.
-**Alternatives considered**: Recreate `acm_*` tables.
-**Rationale**: The phantom tables are absent in production and hide failures.
+**Rationale**: `route_versions` ya almacena el árbol curricular de forma completa. Adaptar el servicio evita alterar la UI y previene regresiones en la SPA en producción.
 
-### Decision: Parser output is draft-only
-**Choice**: `planningParserService.js` produces a reviewable draft, never auto-saves.
-**Alternatives considered**: Auto-create proposals on parse success.
-**Rationale**: Prevents silent corruption from parser mistakes.
+### Decision: Usar indicator_attempts para la persistencia del progreso
+
+| Opción | Tradeoff | Decisión |
+| :--- | :--- | :--- |
+| Crear `student_indicator_progress` | Tabla vacía adicional; rompe sincronización central | Rechazar |
+| **Adaptar a indicator_attempts** | Requiere resolver maestro en sesión; usa la tabla canónica de producción | **Adoptar** |
+
+**Rationale**: `indicator_attempts` ya se utiliza para calificar en el portal. Enlazar la guía con esta tabla permite consolidar los semáforos de avance de forma unificada.
+
+---
 
 ## Data Flow
 
-Teacher upload -> parser draft -> teacher review -> proposal -> ACM review -> published route version -> ACM weekly plan reads published version.
+```
+Visualización:
+Vista/UI ──> weeklyPlanAdapter ──> weeklyPlanSupabase ──> Query route_versions (status='published') ──> Retorna Plan Semanal
 
-    Upload
-      ↓
-  Parser draft
-      ↓
-  Maestro review
-      ↓
-   propuesta
-      ↓
-   ACM review
-    ↙     ↘
-publicada  devuelta
+Calificación:
+Vista/UI ──> registrarProgresoIndicador ──> Resolver maestro en sesión ──> Upsert a indicator_attempts (status, covered_by_clase_id)
+```
+
+---
 
 ## File Changes
 
 | File | Action | Description |
-|------|--------|-------------|
-| `supabase/migrations/*_create_objetivos_tier.sql` | Create | New objectives table and indexes |
-| `supabase/migrations/*_migrate_nodes_objective.sql` | Create | Move legacy objective text into objectives |
-| `supabase/migrations/*_extend_route_status_enum.sql` | Create | Add proposal/returned route states |
-| `supabase/migrations/*_add_route_authorship_columns.sql` | Create | Add authorship and class scope metadata |
-| `src/modules/planificacion/api/weeklyPlanSupabase.js` | Modify | Read from published canonical versions |
-| `src/modules/planificacion/api/routeSupabase.js` | Modify | Remove deprecated plan_* reads |
-| `src/portal-maestros/services/planningParserService.js` | Modify | Chunking, draft mode, schema validation |
-| `src/modules/progresos/api/` | Create/Modify | Sequential progression function/API |
-| `src/modules/planificacion/views/` | Create/Modify | ACM proposal review UI |
-| `src/portal-maestros/views/` | Create/Modify | Upload and draft review UI |
+| :--- | :--- | :--- |
+| `weeklyPlanSupabase.js` | Modify | Redirigir consultas a `route_versions` e `indicator_attempts`. |
+| `weeklyPlanMock.js` | Modify | Adaptar mocks para mantener la consistencia en Modo Demo. |
+
+---
 
 ## Interfaces / Contracts
 
-```ts
-type ProposalRouteVersion = {
-  origen: 'acm' | 'maestro'
-  propuesta_por?: string
-  clase_id?: string
-  feedback?: string
-  route_status: 'borrador' | 'propuesta' | 'publicada' | 'devuelta'
+```js
+// weeklyPlanSupabase.js — Helper de resolución de maestro
+async function _obtenerMaestroIdActual() {
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Usuario no autenticado')
+  const { data: maestro } = await supabase
+    .from('maestros')
+    .select('id')
+    .eq('email', user.email)
+    .single()
+  return maestro?.id || null
 }
 ```
+
+---
 
 ## Testing Strategy
 
 | Layer | What to Test | Approach |
-|-------|-------------|----------|
-| Unit | Parser draft output and chunking | Mock long documents and invalid JSON |
-| Integration | Weekly plan derivation and proposal persistence | Supabase-backed service tests |
-| E2E | Upload -> review -> propose -> publish | Pilot happy path in portal flows |
+| :--- | :--- | :--- |
+| Unit | Mapeo de `route_versions` a plan semanal | Mockear respuesta de Supabase y validar estructura resultante. |
+| Integration | Inserción en `indicator_attempts` | Ejecutar upsert con sesión activa y validar claves únicas. |
+
+---
 
 ## Migration / Rollout
-
-Roll out in slices:
-1. Schema foundation
-2. Route status/authorship
-3. Read path fixes
-4. Parser draft flow
-5. Progression engine
-6. UI review flows
-
-No destructive rollout is required in this slice.
-
-## Open Questions
-
-- [ ] Should historical `planificaciones` be migrated or kept as archive only?
-- [ ] Should progression be materialized or computed on demand?
-
+No requiere migraciones de base de datos adicionales (las tablas e índices requeridos en `indicator_attempts` y `route_versions` ya existen). La subida de los archivos de servicio refactorizados activa el flujo de forma transparente.

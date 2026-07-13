@@ -1,73 +1,34 @@
-# Delta for Curriculo Tres Planos
+# Delta for Planificación y Progreso (Servicios)
 
 ## ADDED Requirements
 
-### Requirement: Objetivos explícitos en el spine curricular
-El sistema MUST representar los objetivos como un nivel propio entre temas y indicadores.
+### Requirement: Lectura curricular desde route_versions
+El sistema MUST obtener la guía y planeación semanal de clases derivándola dinámicamente de `route_versions` en estado `'published'`, eliminando la dependencia de tablas `acm_*` inexistentes en producción.
 
-#### Scenario: Creación de contenido con objetivo
-- GIVEN una ruta publicada con niveles y temas
-- WHEN se registra un contenido con uno o más objetivos
-- THEN el sistema persiste el objetivo como entidad separada
-- AND los indicadores quedan asociados al objetivo correcto
+#### Scenario: Guía institucional obtenida con éxito
+- GIVEN una clase con una versión de ruta con `status = 'published'` en la base de datos
+- WHEN se solicita la guía semanal de la clase (`obtenerRutaActivaPorGrupo` y `obtenerPlanSemanalPorId`)
+- THEN el sistema devuelve el plan aplanado mapeando niveles, nodos, objetivos e indicadores de esa versión
+- AND no se realiza ninguna llamada a tablas `acm_*`
 
-#### Scenario: Tema sin objetivos
-- GIVEN un tema existente sin objetivos migrados aún
-- WHEN se consulta el contenido
-- THEN el sistema MUST seguir respondiendo sin romper la lectura
+#### Scenario: Clase sin guía asignada
+- GIVEN una clase sin ninguna versión de ruta en estado `'published'`
+- WHEN se solicita la guía semanal de la clase
+- THEN el sistema devuelve `null` de forma segura (sin errores de base de datos)
 
-### Requirement: Propuestas de contenido por maestro
-El sistema MUST permitir que un maestro cree una propuesta de contenido scoped a una clase y la envíe para revisión ACM.
+---
 
-#### Scenario: Propuesta válida
-- GIVEN un maestro autenticado y una clase asignada
-- WHEN el maestro guarda una propuesta
-- THEN la versión queda en estado `propuesta`
-- AND queda asociada a `propuesta_por` y `clase_id`
+### Requirement: Persistencia del progreso en indicator_attempts
+El sistema MUST registrar y consultar las calificaciones e hitos de avance directamente sobre la tabla canónica `indicator_attempts`, mapeando la autoría del docente de forma dinámica.
 
-#### Scenario: Propuesta inválida
-- GIVEN un usuario sin clase asignada
-- WHEN intenta guardar una propuesta
-- THEN el sistema MUST rechazar la operación
+#### Scenario: Registro de calificación con autoría
+- GIVEN un maestro autenticado en el portal
+- WHEN califica un indicador para un alumno (`registrarProgresoIndicador`)
+- THEN el sistema resuelve el ID del maestro desde la sesión
+- AND realiza un upsert en `indicator_attempts` con `student_id`, `indicator_id`, `created_by` (maestro) y `covered_by_clase_id` (clase)
 
-### Requirement: Revisión ACM de propuestas
-El sistema MUST permitir que ACM publique o devuelva una propuesta con feedback.
-
-#### Scenario: Publicar propuesta
-- GIVEN una propuesta en estado `propuesta`
-- WHEN ACM la aprueba
-- THEN el estado cambia a `publicada`
-
-#### Scenario: Devolver propuesta
-- GIVEN una propuesta en estado `propuesta`
-- WHEN ACM la rechaza con feedback
-- THEN el estado cambia a `devuelta`
-- AND el feedback queda guardado
-
-### Requirement: Lectura heredada desde versiones publicadas
-El sistema MUST derivar la guía heredada desde `route_versions` publicadas.
-
-#### Scenario: Guía con versión publicada
-- GIVEN una ruta con versiones publicadas
-- WHEN ACM abre la planificación
-- THEN la vista muestra contenido derivado de `route_versions`
-
-#### Scenario: Sin tablas fantasma
-- GIVEN que no existen tablas ACM antiguas en producción
-- WHEN la vista resuelve datos
-- THEN la consulta MUST no depender de tablas `acm_*`
-
-### Requirement: Parser como borrador revisable
-El sistema MUST convertir la planificación subida por el maestro en borrador y exigir revisión antes de guardar.
-
-#### Scenario: Documento parseable
-- GIVEN un archivo PDF, DOCX o MD
-- WHEN el parser lo procesa
-- THEN el sistema devuelve un borrador estructurado
-- AND no guarda nada automáticamente
-
-#### Scenario: Documento largo
-- GIVEN un documento que supera el límite de texto
-- WHEN se procesa
-- THEN el sistema MUST conservar el contenido completo por chunks
-
+#### Scenario: Consulta de progreso del grupo
+- GIVEN una clase que contiene alumnos calificados
+- WHEN se solicita el progreso acumulado (`obtenerProgresoGrupo`)
+- THEN el sistema consulta `indicator_attempts` filtrando por `covered_by_clase_id` igual al ID de la clase
+- AND retorna el mapa de estado por alumno e indicador

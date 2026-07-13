@@ -15,6 +15,7 @@
  *      las entradas de ese departamento.
  */
 
+import { escapeHTML } from '../../../shared/utils/sanitize.js'
 import * as simuladorApi from '../api/simuladorApi.js'
 import { supabase } from '../../../lib/supabaseClient.js'
 
@@ -159,13 +160,4 @@ function attachEvents(container) {
     },
     { signal },
   )
-}
-
-function escapeHTML(str) {
-  if (str == null) return ''
-  return String(str)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
 }

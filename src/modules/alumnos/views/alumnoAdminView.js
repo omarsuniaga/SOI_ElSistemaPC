@@ -1,16 +1,18 @@
-/**
- * alumnoAdminView.js — Admin portal student profile view.
- * Queries Supabase directly via select('*') — uses raw DB column names.
- */
-
-import { supabase } from '../../../lib/supabaseClient.js'
 import { formatDate, escapeHTML } from '../utils/alumnosUtils.js'
 import { calcularEdad } from '../domain/calcularEdad.js'
 import { calcularCompletitud, NIVEL_COLOR, NIVEL_LABEL } from '../domain/completitudAlumno.js'
 import { formatPhone, whatsappLink } from '../../../shared/utils/phoneUtils.js'
 import { descargarFichaAlumno, descargarConstancia } from '../domain/generarPdfInscripcion.js'
-import { buscarPostulante } from '../api/postulantesSupabase.js'
 import { AppToast } from '../../../shared/components/AppToast.js'
+import { AlumnoForm, SECTIONS } from '../components/AlumnoForm.js'
+import { PostulanteResolver } from '../components/PostulanteResolver.js'
+import {
+  obtenerAlumno,
+  obtenerInscripcionesDetalladasAlumno,
+  obtenerProgresoAlumno,
+  obtenerAsistenciasAlumno,
+  actualizarAlumno,
+} from '../api/alumnosApi.js'
 
 // ─── Multi-phone splitter ─────────────────────────────────────────────────────
 
@@ -113,79 +115,8 @@ function phoneDisplay(raw) {
   }).join('<span class="text-muted mx-1">·</span>')
 }
 
-// ─── Sections definition ─────────────────────────────────────────────────────
+// SECTIONS is imported from AlumnoForm.js
 
-const SECTIONS = {
-  personal: [
-    { key: 'nombre_completo', label: 'Nombre completo' },
-    { key: 'fecha_nacimiento', label: 'Fecha de nacimiento', type: 'date' },
-    { key: 'genero', label: 'Género', type: 'select', options: [{ v: '', l: '—' }, { v: 'M', l: 'Masculino' }, { v: 'F', l: 'Femenino' }, { v: 'O', l: 'Otro' }] },
-    { key: 'nacionalidad', label: 'Nacionalidad' },
-    { key: 'tiene_pasaporte', label: 'Tiene pasaporte', type: 'checkbox' },
-    { key: 'sabe_leer', label: 'Sabe leer', type: 'checkbox' },
-    { key: 'sabe_escribir', label: 'Sabe escribir', type: 'checkbox' },
-    { key: 'como_se_entero', label: 'Cómo se enteró' },
-    { key: 'municipio_residencia', label: 'Municipio' },
-    { key: 'sector_calle_numero', label: 'Sector / Calle / Número' },
-    { key: 'direccion', label: 'Dirección completa', type: 'textarea' },
-    { key: 'ubicacion_maps_url', label: 'URL Google Maps' },
-    { key: 'activo', label: 'Alumno activo', type: 'checkbox' },
-  ],
-  madre: [
-    { key: 'madre_nombre', label: 'Nombre' },
-    { key: 'madre_cedula', label: 'Cédula' },
-    { key: 'madre_tlf_whatsapp', label: 'Teléfono / WhatsApp', type: 'phone' },
-  ],
-  padre: [
-    { key: 'padre_nombre', label: 'Nombre' },
-    { key: 'padre_cedula', label: 'Cédula' },
-    { key: 'padre_tlf_whatsapp', label: 'Teléfono / WhatsApp', type: 'phone' },
-  ],
-  representante: [
-    { key: 'representante_nombre', label: 'Nombre' },
-    { key: 'representante_parentesco', label: 'Parentesco' },
-    { key: 'representante_cedula', label: 'Cédula' },
-    { key: 'representante_tlf', label: 'Teléfono', type: 'phone' },
-    { key: 'correo_representante', label: 'Correo electrónico' },
-    { key: 'otro_responsable_nombre', label: 'Otro responsable — Nombre' },
-    { key: 'otro_responsable_cedula', label: 'Otro responsable — Cédula' },
-    { key: 'otro_responsable_tlf', label: 'Otro responsable — Teléfono', type: 'phone' },
-    { key: 'contacto_emergencia_nombre', label: 'Emergencia — Nombre' },
-    { key: 'contacto_emergencia_telefono', label: 'Emergencia — Teléfono', type: 'phone' },
-    { key: 'beneficiario_subsidio_estado', label: 'Beneficiario subsidio', type: 'checkbox' },
-    { key: 'subsidio_descripcion', label: 'Descripción subsidio', type: 'textarea' },
-    { key: 'apoyo_actividades', label: 'Apoyo en actividades', type: 'textarea' },
-  ],
-  salud: [
-    { key: 'tiene_alergias', label: 'Tiene alergias', type: 'checkbox' },
-    { key: 'alergias_descripcion', label: 'Descripción alergias', type: 'textarea' },
-    { key: 'tiene_condicion_transmisible', label: 'Tiene condición transmisible', type: 'checkbox' },
-    { key: 'condicion_transmisible_desc', label: 'Descripción condición', type: 'textarea' },
-    { key: 'tiene_alergia_medicamento', label: 'Tiene alergia a medicamento', type: 'checkbox' },
-    { key: 'alergia_medicamento_desc', label: 'Descripción alergia medicamento', type: 'textarea' },
-    { key: 'impedimento_social', label: 'Impedimento social', type: 'checkbox' },
-    { key: 'problemas_conducta', label: 'Problemas de conducta' },
-    { key: 'centro_estudios', label: 'Centro de estudios' },
-    { key: 'grado_nivel', label: 'Grado / Nivel' },
-    { key: 'padres_en_vida', label: 'Padres en vida' },
-  ],
-  musical: [
-    { key: 'instrumento_principal', label: 'Instrumento principal' },
-    { key: 'nivel_actual', label: 'Nivel actual' },
-    { key: 'tiene_conocimientos_musicales', label: 'Tiene conocimientos musicales', type: 'checkbox' },
-    { key: 'instrumento_previo', label: 'Instrumento previo' },
-    { key: 'nivel_lectura_musical', label: 'Nivel de lectura musical' },
-    { key: 'interes_musical', label: 'Interés musical' },
-    { key: 'instrumento_interes', label: 'Instrumento de interés' },
-    { key: 'sentimiento_musica_clasica', label: 'Sentimiento hacia música clásica', type: 'textarea' },
-    { key: 'sentimiento_aprender_instrumento', label: 'Sentimiento al aprender instrumento', type: 'textarea' },
-    { key: 'aspiracion_instrumento', label: 'Aspiración con el instrumento', type: 'textarea' },
-    { key: 'musico_favorito', label: 'Músico favorito' },
-    { key: 'preferencia_aprendizaje_musical', label: 'Preferencia de aprendizaje', type: 'textarea' },
-    { key: 'por_que_unirse', label: 'Por qué unirse', type: 'textarea' },
-    { key: 'autoriza_fotos_redes', label: 'Autoriza fotos en redes', type: 'checkbox' },
-  ],
-}
 
 const TAB_LABELS = {
   personal: 'Personal',
@@ -218,59 +149,7 @@ function renderFieldList(fields, alumno) {
   `).join('')
 }
 
-function renderFormField(field, alumno) {
-  const v = alumno[field.key]
-  const id = `modal-field-${field.key}`
-
-  if (field.type === 'checkbox') {
-    const checked = (v === true || v === 'true' || v === 1 || v === '1') ? 'checked' : ''
-    return `
-      <div class="mb-3 form-check">
-        <input type="checkbox" class="form-check-input" id="${id}" name="${escapeHTML(field.key)}" ${checked}>
-        <label class="form-check-label" for="${id}">${escapeHTML(field.label)}</label>
-      </div>
-    `
-  }
-
-  if (field.type === 'textarea') {
-    return `
-      <div class="mb-3">
-        <label class="form-label fw-semibold" for="${id}">${escapeHTML(field.label)}</label>
-        <textarea class="form-control" id="${id}" name="${escapeHTML(field.key)}" rows="3">${v != null ? escapeHTML(String(v)) : ''}</textarea>
-      </div>
-    `
-  }
-
-  if (field.type === 'select') {
-    const opts = (field.options || []).map(o =>
-      `<option value="${escapeHTML(o.v)}" ${v === o.v ? 'selected' : ''}>${escapeHTML(o.l)}</option>`
-    ).join('')
-    return `
-      <div class="mb-3">
-        <label class="form-label fw-semibold" for="${id}">${escapeHTML(field.label)}</label>
-        <select class="form-select" id="${id}" name="${escapeHTML(field.key)}">${opts}</select>
-      </div>
-    `
-  }
-
-  if (field.type === 'date') {
-    const dateVal = v ? String(v).slice(0, 10) : ''
-    return `
-      <div class="mb-3">
-        <label class="form-label fw-semibold" for="${id}">${escapeHTML(field.label)}</label>
-        <input type="date" class="form-control" id="${id}" name="${escapeHTML(field.key)}" value="${escapeHTML(dateVal)}">
-      </div>
-    `
-  }
-
-  // default: text (also handles phone — editable as plain text)
-  return `
-    <div class="mb-3">
-      <label class="form-label fw-semibold" for="${id}">${escapeHTML(field.label)}</label>
-      <input type="text" class="form-control" id="${id}" name="${escapeHTML(field.key)}" value="${v != null ? escapeHTML(String(v)) : ''}">
-    </div>
-  `
-}
+// renderFormField is removed since form rendering is managed by AlumnoForm component
 
 // ─── Initials avatar ──────────────────────────────────────────────────────────
 
@@ -299,26 +178,19 @@ export async function renderAlumnoAdminView(container, params = {}) {
     </div>
   `
 
-  // D04: Fetch alumno and enrolled classes in parallel
-  const [{ data: alumno, error: alumnoError }, { data: clasesData }] = await Promise.all([
-    supabase
-      .from('alumnos')
-      .select('*')
-      .eq('id', alumnoId)
-      .single(),
-    supabase
-      .from('alumnos_clases')
-      .select('clase_id, clases(id, nombre, clase_horarios(dia, hora_inicio))')
-      .eq('alumno_id', alumnoId)
-      .eq('activo', true),
-  ])
-
-  if (alumnoError || !alumno) {
-    container.innerHTML = `<div class="alert alert-danger m-4">Error al cargar el alumno: ${escapeHTML(alumnoError?.message || 'No encontrado')}</div>`
+  let alumno, clases
+  try {
+    // Consulta en paralelo para la tabla alumnos y la relacion de alumnos_clases (D04 Promise.all)
+    const [alumnoRes, clasesRes] = await Promise.all([
+      obtenerAlumno(alumnoId),
+      obtenerInscripcionesDetalladasAlumno(alumnoId)
+    ])
+    alumno = alumnoRes
+    clases = clasesRes
+  } catch (err) {
+    container.innerHTML = `<div class="alert alert-danger m-4">Error al cargar el alumno: ${escapeHTML(err.message || 'No encontrado')}</div>`
     return
   }
-
-  const clases = (clasesData || []).map(r => r.clases).filter(Boolean)
 
   // Lazy-load state
   let progresoLoaded = false
@@ -423,7 +295,9 @@ export async function renderAlumnoAdminView(container, params = {}) {
           <i class="bi bi-arrow-left me-1"></i>Volver a Alumnos
         </button>
 
-        ${renderCompletitudBanner(alumno)}
+        <div id="completitud-banner-container">
+          ${renderCompletitudBanner(alumno)}
+        </div>
 
         <!-- Header card -->
         <div class="card shadow-sm mb-4">
@@ -511,60 +385,55 @@ export async function renderAlumnoAdminView(container, params = {}) {
     const el = document.getElementById('progreso-content')
     if (!el) return
 
-    const { data, error } = await supabase
-      .from('progresos')
-      .select('*')
-      .eq('alumno_id', alumnoId)
-      .order('fecha', { ascending: false })
+    try {
+      const data = await obtenerProgresoAlumno(alumnoId)
 
-    if (error) {
-      el.innerHTML = `<div class="alert alert-warning">Error al cargar progreso: ${escapeHTML(error.message)}</div>`
-      return
-    }
+      if (!data || data.length === 0) {
+        el.innerHTML = '<p class="text-muted fst-italic">Sin registros de progreso.</p>'
+        return
+      }
 
-    if (!data || data.length === 0) {
-      el.innerHTML = '<p class="text-muted fst-italic">Sin registros de progreso.</p>'
-      return
-    }
+      // Group by contenido_dsl
+      const grouped = {}
+      for (const p of data) {
+        const key = p.contenido_dsl || 'Sin categoría'
+        if (!grouped[key]) grouped[key] = []
+        grouped[key].push(p)
+      }
 
-    // Group by contenido_dsl
-    const grouped = {}
-    for (const p of data) {
-      const key = p.contenido_dsl || 'Sin categoría'
-      if (!grouped[key]) grouped[key] = []
-      grouped[key].push(p)
-    }
+      function estadoBadgeClass(e) {
+        if (!e) return 'bg-secondary'
+        const l = e.toLowerCase()
+        if (l.includes('excel') || l.includes('muy bien')) return 'bg-success'
+        if (l.includes('bien') || l.includes('regular')) return 'bg-info text-dark'
+        if (l.includes('mal') || l.includes('inici')) return 'bg-warning text-dark'
+        return 'bg-secondary'
+      }
 
-    function estadoBadgeClass(e) {
-      if (!e) return 'bg-secondary'
-      const l = e.toLowerCase()
-      if (l.includes('excel') || l.includes('muy bien')) return 'bg-success'
-      if (l.includes('bien') || l.includes('regular')) return 'bg-info text-dark'
-      if (l.includes('mal') || l.includes('inici')) return 'bg-warning text-dark'
-      return 'bg-secondary'
-    }
-
-    el.innerHTML = `
-      <h6 class="fw-bold text-uppercase text-muted small mb-3">Progreso</h6>
-      ${Object.entries(grouped).map(([grupo, items]) => `
-        <div class="mb-4">
-          <div class="fw-semibold mb-2 border-bottom pb-1">${val(grupo)}</div>
-          <div class="list-group list-group-flush">
-            ${items.map(p => `
-              <div class="list-group-item px-0 py-2 d-flex justify-content-between align-items-start">
-                <div>
-                  ${val(p.observaciones)}
-                  ${p.fecha ? `<div class="text-muted small mt-1">${val(formatDate(p.fecha))}</div>` : ''}
+      el.innerHTML = `
+        <h6 class="fw-bold text-uppercase text-muted small mb-3">Progreso</h6>
+        ${Object.entries(grouped).map(([grupo, items]) => `
+          <div class="mb-4">
+            <div class="fw-semibold mb-2 border-bottom pb-1">${val(grupo)}</div>
+            <div class="list-group list-group-flush">
+              ${items.map(p => `
+                <div class="list-group-item px-0 py-2 d-flex justify-content-between align-items-start">
+                  <div>
+                    ${val(p.observaciones)}
+                    ${p.fecha ? `<div class="text-muted small mt-1">${val(formatDate(p.fecha))}</div>` : ''}
+                  </div>
+                  ${p.estado_cualitativo
+                    ? `<span class="badge ${estadoBadgeClass(p.estado_cualitativo)} ms-2 flex-shrink-0">${val(p.estado_cualitativo)}</span>`
+                    : ''}
                 </div>
-                ${p.estado_cualitativo
-                  ? `<span class="badge ${estadoBadgeClass(p.estado_cualitativo)} ms-2 flex-shrink-0">${val(p.estado_cualitativo)}</span>`
-                  : ''}
-              </div>
-            `).join('')}
+              `).join('')}
+            </div>
           </div>
-        </div>
-      `).join('')}
-    `
+        `).join('')}
+      `
+    } catch (error) {
+      el.innerHTML = `<div class="alert alert-warning">Error al cargar progreso: ${escapeHTML(error.message)}</div>`
+    }
   }
 
   async function loadAsistencias() {
@@ -573,97 +442,91 @@ export async function renderAlumnoAdminView(container, params = {}) {
     const el = document.getElementById('asistencias-content')
     if (!el) return
 
-    const { data, error } = await supabase
-      .from('asistencias')
-      .select('*')
-      .eq('alumno_id', alumnoId)
-      .order('fecha', { ascending: false })
-      .limit(30)
+    try {
+      const data = await obtenerAsistenciasAlumno(alumnoId)
 
-    if (error) {
-      el.innerHTML = `<div class="alert alert-warning">Error al cargar asistencias: ${escapeHTML(error.message)}</div>`
-      return
-    }
+      if (!data || data.length === 0) {
+        el.innerHTML = '<p class="text-muted fst-italic">Sin registros de asistencia.</p>'
+        return
+      }
 
-    if (!data || data.length === 0) {
-      el.innerHTML = '<p class="text-muted fst-italic">Sin registros de asistencia.</p>'
-      return
-    }
+      let presente = 0, ausente = 0, justificado = 0
+      for (const a of data) {
+        const e = (a.estado || a.asistio || '').toString().toLowerCase()
+        if (e === 'true' || e === 'presente' || e === '1') presente++
+        else if (e === 'justificado' || e === 'justified') justificado++
+        else ausente++
+      }
+      const total = data.length
+      const pct = total > 0 ? Math.round((presente / total) * 100) : 0
 
-    let presente = 0, ausente = 0, justificado = 0
-    for (const a of data) {
-      const e = (a.estado || a.asistio || '').toString().toLowerCase()
-      if (e === 'true' || e === 'presente' || e === '1') presente++
-      else if (e === 'justificado' || e === 'justified') justificado++
-      else ausente++
-    }
-    const total = data.length
-    const pct = total > 0 ? Math.round((presente / total) * 100) : 0
+      function estadoLabel(a) {
+        const e = (a.estado || a.asistio || '').toString().toLowerCase()
+        if (e === 'true' || e === 'presente' || e === '1') return '<span class="badge bg-success">Presente</span>'
+        if (e === 'justificado' || e === 'justified') return '<span class="badge bg-warning text-dark">Justificado</span>'
+        return '<span class="badge bg-danger">Ausente</span>'
+      }
 
-    function estadoLabel(a) {
-      const e = (a.estado || a.asistio || '').toString().toLowerCase()
-      if (e === 'true' || e === 'presente' || e === '1') return '<span class="badge bg-success">Presente</span>'
-      if (e === 'justificado' || e === 'justified') return '<span class="badge bg-warning text-dark">Justificado</span>'
-      return '<span class="badge bg-danger">Ausente</span>'
-    }
-
-    el.innerHTML = `
-      <h6 class="fw-bold text-uppercase text-muted small mb-3">Asistencias (últimas 30)</h6>
-      <div class="row g-2 mb-3">
-        <div class="col-6 col-md-3">
-          <div class="card text-center border-0 bg-light">
-            <div class="card-body py-2">
-              <div class="fs-4 fw-bold text-success">${escapeHTML(String(pct))}%</div>
-              <div class="small text-muted">Asistencia</div>
+      el.innerHTML = `
+        <h6 class="fw-bold text-uppercase text-muted small mb-3">Asistencias (últimas 30)</h6>
+        <div class="row g-2 mb-3">
+          <div class="col-6 col-md-3">
+            <div class="card text-center border-0 bg-light">
+              <div class="card-body py-2">
+                <div class="fs-4 fw-bold text-success">${escapeHTML(String(pct))}%</div>
+                <div class="small text-muted">Asistencia</div>
+              </div>
+            </div>
+          </div>
+          <div class="col-6 col-md-3">
+            <div class="card text-center border-0 bg-light">
+              <div class="card-body py-2">
+                <div class="fs-4 fw-bold text-success">${escapeHTML(String(presente))}</div>
+                <div class="small text-muted">Presentes</div>
+              </div>
+            </div>
+          </div>
+          <div class="col-6 col-md-3">
+            <div class="card text-center border-0 bg-light">
+              <div class="card-body py-2">
+                <div class="fs-4 fw-bold text-danger">${escapeHTML(String(ausente))}</div>
+                <div class="small text-muted">Ausentes</div>
+              </div>
+            </div>
+          </div>
+          <div class="col-6 col-md-3">
+            <div class="card text-center border-0 bg-light">
+              <div class="card-body py-2">
+                <div class="fs-4 fw-bold text-warning">${escapeHTML(String(justificado))}</div>
+                <div class="small text-muted">Justificados</div>
+              </div>
             </div>
           </div>
         </div>
-        <div class="col-6 col-md-3">
-          <div class="card text-center border-0 bg-light">
-            <div class="card-body py-2">
-              <div class="fs-4 fw-bold text-success">${escapeHTML(String(presente))}</div>
-              <div class="small text-muted">Presentes</div>
-            </div>
-          </div>
-        </div>
-        <div class="col-6 col-md-3">
-          <div class="card text-center border-0 bg-light">
-            <div class="card-body py-2">
-              <div class="fs-4 fw-bold text-danger">${escapeHTML(String(ausente))}</div>
-              <div class="small text-muted">Ausentes</div>
-            </div>
-          </div>
-        </div>
-        <div class="col-6 col-md-3">
-          <div class="card text-center border-0 bg-light">
-            <div class="card-body py-2">
-              <div class="fs-4 fw-bold text-warning">${escapeHTML(String(justificado))}</div>
-              <div class="small text-muted">Justificados</div>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="table-responsive">
-        <table class="table table-sm table-hover align-middle">
-          <thead class="table-light">
-            <tr>
-              <th>Fecha</th>
-              <th>Estado</th>
-              <th>Observaciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${data.map(a => `
+        <div class="table-responsive">
+          <table class="table table-sm table-hover align-middle">
+            <thead class="table-light">
               <tr>
-                <td class="text-nowrap">${val(a.fecha ? formatDate(a.fecha) : null)}</td>
-                <td>${estadoLabel(a)}</td>
-                <td>${val(a.observaciones)}</td>
+                <th>Fecha</th>
+                <th>Estado</th>
+                <th>Observaciones</th>
               </tr>
-            `).join('')}
-          </tbody>
-        </table>
-      </div>
-    `
+            </thead>
+            <tbody>
+              ${data.map(a => `
+                <tr>
+                  <td class="text-nowrap">${val(a.fecha ? formatDate(a.fecha) : null)}</td>
+                  <td>${estadoLabel(a)}</td>
+                  <td>${val(a.observaciones)}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+      `
+    } catch (error) {
+      el.innerHTML = `<div class="alert alert-warning">Error al cargar asistencias: ${escapeHTML(error.message)}</div>`
+    }
   }
 
   // ─── Event wiring ─────────────────────────────────────────────────────────────
@@ -727,7 +590,25 @@ export async function renderAlumnoAdminView(container, params = {}) {
     // Postulante lookup
     const btnPostulante = document.getElementById('btn-postulante')
     if (btnPostulante) {
-      btnPostulante.addEventListener('click', () => _buscarYmostrarPostulante(alumno, container))
+      btnPostulante.addEventListener('click', () => {
+        const panel = container.querySelector('#postulante-panel')
+        if (panel) {
+          PostulanteResolver.resolve(alumno, panel, () => {
+            // After data resolution, refresh tabs
+            const activeTab = container.querySelector('.nav-link.active')
+            if (activeTab) {
+              const tabId = activeTab.id
+              if (tabId === 'tab-progreso') {
+                progresoLoaded = false
+                loadProgreso()
+              } else if (tabId === 'tab-asistencias') {
+                asistenciasLoaded = false
+                loadAsistencias()
+              }
+            }
+          })
+        }
+      })
     }
 
     // Tab change — lazy load
@@ -756,15 +637,17 @@ export async function renderAlumnoAdminView(container, params = {}) {
     }
   }
 
+  let activeFormInstance = null
+
   function openEditModal(sectionKey) {
     activeModalSection = sectionKey
-    const fields = SECTIONS[sectionKey]
     const body = document.getElementById('editModalBody')
     const title = document.getElementById('editModalLabel')
 
     if (title) title.textContent = `Editar — ${TAB_LABELS[sectionKey]}`
     if (body) {
-      body.innerHTML = `<form id="edit-form">${fields.map(f => renderFormField(f, alumno)).join('')}</form>`
+      activeFormInstance = new AlumnoForm({ alumno, section: sectionKey })
+      body.innerHTML = activeFormInstance.render()
     }
 
     const modalEl = document.getElementById('editModal')
@@ -777,194 +660,64 @@ export async function renderAlumnoAdminView(container, params = {}) {
   }
 
   async function saveModal() {
-    if (!activeModalSection) return
+    if (!activeModalSection || !activeFormInstance) return
 
-    const fields = SECTIONS[activeModalSection]
     const spinner = document.getElementById('modal-save-spinner')
     const btnSave = document.getElementById('btn-modal-save')
+
+    const validation = activeFormInstance.validate(document.getElementById('editModalBody'))
+    if (!validation.valid) {
+      const firstErr = Object.values(validation.errors)[0]
+      AppToast.error(firstErr)
+      return
+    }
 
     if (spinner) spinner.classList.remove('d-none')
     if (btnSave) btnSave.disabled = true
 
-    const patch = {}
-    for (const field of fields) {
-      // Defensive check: skip fields that do not exist as columns in the DB table
-      if (alumno[field.key] === undefined) {
-        continue
+    try {
+      const patch = validation.data
+      await actualizarAlumno(alumno.id, patch)
+
+      if (spinner) spinner.classList.add('d-none')
+      if (btnSave) btnSave.disabled = false
+
+      // Update local alumno object and re-render the active section's field list
+      Object.assign(alumno, patch)
+
+      const fieldsContainer = document.getElementById(`fields-${activeModalSection}`)
+      if (fieldsContainer) {
+        fieldsContainer.innerHTML = renderFieldList(SECTIONS[activeModalSection], alumno)
       }
-      const el = document.querySelector(`[name="${field.key}"]`)
-      if (!el) continue
-      if (field.type === 'checkbox') {
-        patch[field.key] = el.checked
-      } else {
-        const raw = el.value.trim()
-        patch[field.key] = raw === '' ? null : raw
+
+      // Re-render completitud banner if it exists
+      const bannerContainer = container.querySelector('#completitud-banner-container')
+      if (bannerContainer) {
+        bannerContainer.innerHTML = renderCompletitudBanner(alumno)
+        // Re-bind completitud details toggle
+        const btnToggle = bannerContainer.querySelector('#btn-toggle-completitud')
+        if (btnToggle) {
+          btnToggle.addEventListener('click', () => {
+            const detail = bannerContainer.querySelector('#completitud-detalle')
+            if (detail) {
+              const hidden = detail.style.display === 'none'
+              detail.style.display = hidden ? 'block' : 'none'
+              btnToggle.innerHTML = hidden ? '<i class="bi bi-chevron-up"></i> Ocultar detalle' : '<i class="bi bi-chevron-down"></i> Ver detalle'
+            }
+          })
+        }
       }
+
+      if (bsModal) bsModal.hide()
+    } catch (err) {
+      if (spinner) spinner.classList.add('d-none')
+      if (btnSave) btnSave.disabled = false
+      console.error('[alumnoAdminView] Error al guardar cambios:', err)
+      AppToast.error(err.message || 'Error al guardar los cambios')
     }
-
-    const { error } = await supabase
-      .from('alumnos')
-      .update(patch)
-      .eq('id', alumnoId)
-
-    if (spinner) spinner.classList.add('d-none')
-    if (btnSave) btnSave.disabled = false
-
-    if (error) {
-      AppToast.error(`Error al guardar: ${error.message}`)
-      return
-    }
-
-    // Update local alumno object and re-render the active section's field list
-    Object.assign(alumno, patch)
-
-    const fieldsContainer = document.getElementById(`fields-${activeModalSection}`)
-    if (fieldsContainer) {
-      fieldsContainer.innerHTML = renderFieldList(fields, alumno)
-    }
-
-    if (bsModal) bsModal.hide()
   }
 
   // ─── Initial render ───────────────────────────────────────────────────────────
 
   renderView()
-}
-
-// ─── Postulante lookup ────────────────────────────────────────────────────────
-
-async function _buscarYmostrarPostulante(alumno, container) {
-  const panel = container.querySelector('#postulante-panel')
-  if (!panel) return
-
-  panel.innerHTML = `
-    <div class="card border-warning shadow-sm mb-4">
-      <div class="card-body text-center py-3">
-        <div class="spinner-border spinner-border-sm text-warning me-2"></div>
-        <span class="small text-muted">Buscando en postulantes...</span>
-      </div>
-    </div>`
-
-  try {
-    const resultados = await buscarPostulante(alumno.nombre_completo)
-
-    if (!resultados || resultados.length === 0) {
-      panel.innerHTML = `
-        <div class="alert alert-info d-flex align-items-center gap-2 mb-4">
-          <i class="bi bi-info-circle"></i>
-          <span class="small">No se encontraron postulantes con el nombre <strong>${escapeHTML(alumno.nombre_completo)}</strong>.</span>
-          <button class="btn btn-sm btn-outline-secondary ms-auto" id="btn-close-panel"><i class="bi bi-x"></i></button>
-        </div>`
-      panel.querySelector('#btn-close-panel')?.addEventListener('click', () => panel.innerHTML = '')
-      return
-    }
-
-    const postulante = resultados[0]
-
-    // Detectar campos que están vacíos en alumno pero tienen valor en postulante
-    const CAMPOS_PRECARGABLES = [
-      'madre_nombre', 'madre_cedula', 'madre_tlf_whatsapp',
-      'padre_nombre', 'padre_cedula', 'padre_tlf_whatsapp',
-      'representante_nombre', 'representante_parentesco', 'representante_tlf', 'representante_cedula',
-      'correo_representante', 'municipio_residencia', 'sector_calle_numero', 'direccion',
-      'nacionalidad', 'centro_estudios', 'grado_nivel', 'instrumento_interes',
-      'como_se_entero', 'ubicacion_maps_url',
-    ]
-
-    const camposDisponibles = CAMPOS_PRECARGABLES.filter(k => {
-      const enAlumno = alumno[k]
-      const enPostulante = postulante[k]
-      return (!enAlumno || enAlumno === '') && enPostulante && enPostulante !== ''
-    })
-
-    const filas = CAMPOS_PRECARGABLES.map(k => {
-      const vAlumno = alumno[k]
-      const vPost = postulante[k]
-      const tieneDato = vPost && vPost !== ''
-      const yaLleno = vAlumno && vAlumno !== ''
-      if (!tieneDato) return ''
-      return `<tr class="${yaLleno ? '' : 'table-warning'}">
-        <td class="small fw-semibold">${escapeHTML(k.replace(/_/g, ' '))}</td>
-        <td class="small">${escapeHTML(String(vPost))}</td>
-        <td class="small text-muted">${yaLleno ? escapeHTML(String(vAlumno)) : '<em>vacío</em>'}</td>
-        <td class="text-center">${yaLleno ? '' : '<i class="bi bi-arrow-left-circle text-warning"></i>'}</td>
-      </tr>`
-    }).filter(Boolean).join('')
-
-    panel.innerHTML = `
-      <div class="card border-warning shadow-sm mb-4">
-        <div class="card-header d-flex align-items-center gap-2 bg-warning bg-opacity-10">
-          <i class="bi bi-person-check text-warning fs-5"></i>
-          <div class="flex-grow-1">
-            <div class="fw-bold small">Postulante encontrado: ${escapeHTML(postulante.nombre_completo || '')}</div>
-            <div class="text-muted" style="font-size:0.72rem">Estado: ${escapeHTML(postulante.estado || '—')} · ID: ${escapeHTML(postulante.id || '')}</div>
-          </div>
-          <button class="btn btn-sm btn-outline-secondary" id="btn-close-panel"><i class="bi bi-x"></i></button>
-        </div>
-        <div class="card-body p-0">
-          <div class="table-responsive">
-            <table class="table table-sm mb-0">
-              <thead class="table-light">
-                <tr>
-                  <th class="small">Campo</th>
-                  <th class="small">En postulante</th>
-                  <th class="small">En alumno</th>
-                  <th class="small text-center">Nuevo</th>
-                </tr>
-              </thead>
-              <tbody>${filas || '<tr><td colspan="4" class="text-center text-muted small py-3">Todos los datos ya están cargados en el alumno.</td></tr>'}</tbody>
-            </table>
-          </div>
-        </div>
-        ${camposDisponibles.length > 0 ? `
-        <div class="card-footer d-flex justify-content-between align-items-center">
-          <span class="small text-muted"><i class="bi bi-arrow-left-circle text-warning me-1"></i>${camposDisponibles.length} campo(s) nuevo(s) disponibles</span>
-          <button class="btn btn-sm btn-warning" id="btn-precargar">
-            <i class="bi bi-cloud-download me-1"></i>Precargar datos faltantes
-          </button>
-        </div>` : ''}
-      </div>`
-
-    panel.querySelector('#btn-close-panel')?.addEventListener('click', () => panel.innerHTML = '')
-
-    panel.querySelector('#btn-precargar')?.addEventListener('click', async () => {
-      const btn = panel.querySelector('#btn-precargar')
-      btn.disabled = true
-      btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Guardando...'
-
-      try {
-        const patch = {}
-        camposDisponibles.forEach(k => {
-          if (postulante[k]) patch[k] = postulante[k]
-        })
-
-        const { error } = await supabase.from('alumnos').update(patch).eq('id', alumno.id)
-        if (error) throw error
-
-        Object.assign(alumno, patch)
-
-        panel.innerHTML = `
-          <div class="alert alert-success d-flex align-items-center gap-2 mb-4">
-            <i class="bi bi-check-circle-fill"></i>
-            <span class="small">${camposDisponibles.length} campo(s) precargados correctamente desde postulante. Recargá los tabs para ver los cambios.</span>
-            <button class="btn btn-sm btn-outline-secondary ms-auto" id="btn-close-panel2"><i class="bi bi-x"></i></button>
-          </div>`
-        panel.querySelector('#btn-close-panel2')?.addEventListener('click', () => panel.innerHTML = '')
-      } catch (err) {
-        btn.disabled = false
-        btn.innerHTML = '<i class="bi bi-cloud-download me-1"></i>Precargar datos faltantes'
-        panel.insertAdjacentHTML('beforeend', `
-          <div class="alert alert-danger small mt-2">Error al guardar: ${escapeHTML(err.message)}</div>`)
-      }
-    })
-
-  } catch (err) {
-    panel.innerHTML = `
-      <div class="alert alert-danger d-flex align-items-center gap-2 mb-4">
-        <i class="bi bi-exclamation-triangle"></i>
-        <span class="small">Error al buscar postulante: ${escapeHTML(err.message)}</span>
-        <button class="btn btn-sm btn-outline-secondary ms-auto" id="btn-close-panel"><i class="bi bi-x"></i></button>
-      </div>`
-    panel.querySelector('#btn-close-panel')?.addEventListener('click', () => panel.innerHTML = '')
-  }
 }

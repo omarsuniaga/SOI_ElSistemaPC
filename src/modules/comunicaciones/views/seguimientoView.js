@@ -18,6 +18,7 @@ import {
 } from '../domain/seguimiento.js'
 import { AppModal } from '../../../shared/components/AppModal.js'
 import { AppToast } from '../../../shared/components/AppToast.js'
+import { escapeHTML } from '../../../shared/utils/sanitize.js'
 
 const state = {
   registros: [],
@@ -303,9 +304,4 @@ export function openRegistroSeguimientoModal(registro, onSaved, contactoPrefill 
       }
     },
   })
-}
-
-function escapeHTML(str) {
-  if (str == null) return ''
-  return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
 }

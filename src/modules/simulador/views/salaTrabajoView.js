@@ -44,6 +44,7 @@
  *      reciente del log como fallback.
  */
 
+import { escapeHTML } from '../../../shared/utils/sanitize.js'
 import * as simuladorApi from '../api/simuladorApi.js'
 import { supabase } from '../../../lib/supabaseClient.js'
 import { DEPARTAMENTOS_SALA, calcularLayoutEscritorios } from '../logic/escritorioLayout.js'
@@ -414,13 +415,4 @@ export async function renderSalaTrabajoView(container, opciones = {}) {
       _visibilityHandler = null
     },
   }
-}
-
-function escapeHTML(str) {
-  if (str == null) return ''
-  return String(str)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
 }

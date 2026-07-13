@@ -88,15 +88,12 @@ function buildModalBody(overrides = {}) {
   return body
 }
 
-describe('C03 — email validation in collectAndValidateAlumno', () => {
+describe('C03 — email validation in AlumnoForm', () => {
   beforeEach(() => {
     vi.clearAllMocks()
   })
 
   it('returns null and shows error for malformed email', async () => {
-    // Import the module fresh
-    // We need to access collectAndValidateAlumno indirectly via the open modal save
-    // Since it's not exported, we test via AppToast.error being called
     const { isValidEmail } = await import('../utils/alumnosUtils.js')
 
     // Verify the utility itself works
@@ -104,23 +101,19 @@ describe('C03 — email validation in collectAndValidateAlumno', () => {
     expect(isValidEmail('also-bad')).toBe(false)
     expect(isValidEmail('missing@')).toBe(false)
 
-    // Verify the source code wires isValidEmail into collectAndValidateAlumno
+    // Verify the AlumnoForm class wires isValidEmail into validation
     const fs = await import('fs')
     const path = await import('path')
     const { fileURLToPath } = await import('url')
     const { dirname } = await import('path')
 
     const thisFile = fileURLToPath(import.meta.url)
-    const viewPath = path.join(dirname(thisFile), '..', 'views', 'alumnosView.js')
-    const source = fs.readFileSync(viewPath, 'utf8')
+    const formPath = path.join(dirname(thisFile), '..', 'components', 'AlumnoForm.js')
+    const source = fs.readFileSync(formPath, 'utf8')
 
-    // The collectAndValidateAlumno function must call isValidEmail
-    const collectIdx = source.indexOf('async function collectAndValidateAlumno')
-    expect(collectIdx).toBeGreaterThan(-1)
-
-    const collectBody = source.slice(collectIdx, collectIdx + 3000)
-    expect(collectBody).toMatch(/isValidEmail/)
-    expect(collectBody).toMatch(/email.*formato|formato.*email/i)
+    // The AlumnoForm class must call isValidEmail
+    expect(source).toContain('isValidEmail')
+    expect(source).toMatch(/email.*formato|formato.*email/i)
   })
 
   it('isValidEmail passes for a valid email address', async () => {
@@ -131,23 +124,19 @@ describe('C03 — email validation in collectAndValidateAlumno', () => {
 
   it('isValidEmail treats empty string as invalid (caller guards empty before calling)', async () => {
     const { isValidEmail } = await import('../utils/alumnosUtils.js')
-    // collectAndValidateAlumno should NOT call isValidEmail when email is empty
-    // The guard: if (email && !isValidEmail(email)) — so empty passes through
-    expect(isValidEmail('')).toBe(false) // isValidEmail itself returns false for empty
-    // But the caller skips validation when email is ''
-    // Test that the source code has the guard:
+    expect(isValidEmail('')).toBe(false)
+
+    // Verify that AlumnoForm validation has the guard: if (email && !isValidEmail(email))
     const fs = await import('fs')
     const path = await import('path')
     const { fileURLToPath } = await import('url')
     const { dirname } = await import('path')
 
     const thisFile = fileURLToPath(import.meta.url)
-    const viewPath = path.join(dirname(thisFile), '..', 'views', 'alumnosView.js')
-    const source = fs.readFileSync(viewPath, 'utf8')
+    const formPath = path.join(dirname(thisFile), '..', 'components', 'AlumnoForm.js')
+    const source = fs.readFileSync(formPath, 'utf8')
 
-    const collectIdx = source.indexOf('async function collectAndValidateAlumno')
-    const collectBody = source.slice(collectIdx, collectIdx + 3000)
     // Must have the guard: if (email && !isValidEmail(email))
-    expect(collectBody).toMatch(/if\s*\(\s*email\s*&&\s*!isValidEmail\s*\(/)
+    expect(source).toMatch(/if\s*\(\s*email\s*&&\s*!isValidEmail\s*\(/)
   })
 })

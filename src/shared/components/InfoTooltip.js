@@ -1,3 +1,5 @@
+import { escapeHTML } from '../utils/sanitize.js'
+
 export function InfoTooltip(term, options = {}) {
   const { placement = 'top', className = '' } = options
 
@@ -76,11 +78,6 @@ async function showInfoModal(term) {
   backdrop.addEventListener('click', (e) => {
     if (e.target === backdrop) backdrop.remove()
   })
-}
-
-function escapeHTML(str) {
-  if (typeof str !== 'string') return ''
-  return str.replace(/[&<>]/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[m])
 }
 
 // Estilos inyectados

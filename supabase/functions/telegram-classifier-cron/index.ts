@@ -79,10 +79,9 @@ serve(async (req: Request) => {
   try {
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    const monitorToken = await readConfig(supabase, 'telegram_monitor_healthcheck_secret');
-    const headerToken = req.headers.get('X-Monitor-Token');
-    if (monitorToken && headerToken !== monitorToken) {
-      logWARNING('Auth', 'Invalid X-Monitor-Token');
+    const intKey = Deno.env.get('INTERNAL_FN_KEY')
+    if (!intKey || req.headers.get('x-internal-key') !== intKey) {
+      logWARNING('Auth', 'Invalid or missing x-internal-key');
       return errorResponse('Unauthorized', 401);
     }
 

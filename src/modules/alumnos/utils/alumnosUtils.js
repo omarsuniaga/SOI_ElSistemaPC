@@ -1,5 +1,7 @@
+export { escapeHTML } from '../../../shared/utils/sanitize.js'
+
 /**
- * Utilidades para el módulo de Alumnos
+ * Utilidades para el mÃ³dulo de Alumnos
  */
 
 /**
@@ -13,25 +15,9 @@ export function formatDate(dateStr) {
   return date.toLocaleDateString('es-ES', { year: 'numeric', month: 'short', day: 'numeric' })
 }
 
-/**
- * Escapa caracteres HTML para prevenir XSS
- * @param {string} str
- * @returns {string}
- */
-export function escapeHTML(str) {
-  if (str == null) return ''
-  return String(str).replace(/[&<>"']/g, function(m) {
-    if (m === '&') return '&amp;'
-    if (m === '<') return '&lt;'
-    if (m === '>') return '&gt;'
-    if (m === '"') return '&quot;'
-    if (m === "'") return '&#39;'
-    return m
-  })
-}
 
 /**
- * Valida si un email es válido
+ * Valida si un email es vÃ¡lido
  * @param {string} email
  * @returns {boolean}
  */
@@ -41,7 +27,7 @@ export function isValidEmail(email) {
 }
 
 /**
- * Formatea género a label legible
+ * Formatea gÃ©nero a label legible
  * @param {string} genero
  * @returns {string}
  */
@@ -56,7 +42,7 @@ export function formatGenero(genero) {
 }
 
 /**
- * Obtiene el ícono de género en Bootstrap Icons
+ * Obtiene el Ã­cono de gÃ©nero en Bootstrap Icons
  * @param {string} genero
  * @returns {string}
  */
@@ -89,7 +75,7 @@ export function getEstadoLabel(esActivo) {
 }
 
 /**
- * Compara dos strings ignorando mayúsculas y acentos
+ * Compara dos strings ignorando mayÃºsculas y acentos
  * @param {string} a
  * @param {string} b
  * @returns {boolean}
@@ -98,10 +84,10 @@ export function equalsIgnoreAccents(a, b) {
   if (!a || !b) return false
   return a
     .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
+    .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase() === b
     .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
+    .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase()
 }
 
@@ -126,7 +112,7 @@ export function getInitials(nombre) {
 }
 
 /**
- * Formatea teléfono con máscara (simplificado)
+ * Formatea telÃ©fono con mÃ¡scara (simplificado)
  * @param {string} telefono
  * @returns {string}
  */
@@ -140,7 +126,7 @@ export function formatPhoneNumber(telefono) {
 }
 
 /**
- * Obtiene color de badge aleatorio pero consistente según el ID
+ * Obtiene color de badge aleatorio pero consistente segÃºn el ID
  * @param {string} id
  * @returns {string}
  */

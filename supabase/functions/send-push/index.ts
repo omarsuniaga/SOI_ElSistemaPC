@@ -25,9 +25,38 @@ const CORS_HEADERS = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+async function verifyAuth(req: Request): Promise<boolean> {
+  const intKey = Deno.env.get('INTERNAL_FN_KEY')
+  if (intKey && req.headers.get('x-internal-key') === intKey) return true
+
+  const anonKey = Deno.env.get('SUPABASE_ANON_KEY')
+  if (anonKey && req.headers.get('apikey') === anonKey) return true
+
+  const auth = req.headers.get('Authorization')
+  if (auth && anonKey && auth === `Bearer ${anonKey}`) return true
+
+  if (auth) {
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
+    const client = createClient(supabaseUrl, anonKey ?? '', {
+      global: { headers: { Authorization: auth } },
+    })
+    const { error } = await client.auth.getUser()
+    if (!error) return true
+  }
+
+  return false
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: CORS_HEADERS })
+  }
+
+  if (!await verifyAuth(req)) {
+    return new Response(JSON.stringify({ error: 'No autorizado' }), {
+      status: 401,
+      headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
+    })
   }
 
   try {
@@ -35,7 +64,6 @@ Deno.serve(async (req) => {
       throw new Error('❌ Faltan las variables VAPID_PUBLIC_KEY o VAPID_PRIVATE_KEY en Supabase')
     }
 
-    // Cliente admin para saltar RLS
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',

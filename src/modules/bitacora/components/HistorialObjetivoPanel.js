@@ -1,12 +1,6 @@
 import * as bitacoraAdapter from '../api/bitacoraAdapter.js'
 import { ModalManager } from '../../../shared/components/modal.js'
-
-function escapeHTML(str) {
-  if (!str) return ''
-  return String(str).replace(/[&<>"']/g, (m) =>
-    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m])
-  )
-}
+import { escapeHTML } from '../../../shared/utils/sanitize.js'
 
 function formatDateShort(dateStr) {
   if (!dateStr) return '-'

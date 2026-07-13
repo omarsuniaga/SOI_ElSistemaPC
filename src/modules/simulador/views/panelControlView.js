@@ -23,6 +23,7 @@
  *   6. Pulsar "Reanudar": confirmar que continúa desde la fecha pausada.
  */
 
+import { escapeHTML } from '../../../shared/utils/sanitize.js'
 import * as simuladorApi from '../api/simuladorApi.js'
 import { crearSimuladorEngine } from '../logic/simuladorEngine.js'
 import { formatearFechaSimulada, calcularProgresoRun, mapEstadoRunABadge } from '../logic/simuladorFormato.js'
@@ -278,13 +279,4 @@ function attachEvents(container) {
     },
     { signal },
   )
-}
-
-function escapeHTML(str) {
-  if (str == null) return ''
-  return String(str)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
 }

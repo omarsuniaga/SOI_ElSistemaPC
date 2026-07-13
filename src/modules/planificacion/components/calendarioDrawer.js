@@ -1,5 +1,6 @@
-import { openClaseEmergenteModal, openEditarSesionModal, openVerSesionModal } from './claseEmergenteModal.js'
+﻿import { openClaseEmergenteModal, openEditarSesionModal, openVerSesionModal } from './claseEmergenteModal.js'
 import { AppToast } from '../../../shared/components/AppToast.js'
+import { escapeHTML } from '../../../shared/utils/sanitize.js'
 
 const DRAWER_ID = 'calendario-drawer'
 let drawerCallbacks = {
@@ -51,7 +52,7 @@ function _crearDrawer(fecha, sesiones, clases, maestros, maestroId, puedeEditar)
       <div class="drawer-header">
         <div>
           <h5 class="mb-0">${fechaFormateada}</h5>
-          <small class="text-muted">${sesionCount} sesión${sesionCount !== 1 ? 'es' : ''}</small>
+          <small class="text-muted">${sesionCount} sesiÃ³n${sesionCount !== 1 ? 'es' : ''}</small>
         </div>
         <button class="btn-close-drawer" aria-label="Cerrar">
           <i class="bi bi-x-lg"></i>
@@ -66,15 +67,15 @@ function _crearDrawer(fecha, sesiones, clases, maestros, maestroId, puedeEditar)
         </div>
         
         <div class="sesiones-list">
-          <h6 class="fw-bold mb-2 text-muted">Sesiones del día</h6>
+          <h6 class="fw-bold mb-2 text-muted">Sesiones del dÃ­a</h6>
           ${sesionesHTML}
         </div>
       </div>
       
       <div class="drawer-footer">
         <div class="drawer-legend">
-          <span class="badge bg-success me-1">●</span> Regular
-          <span class="badge bg-warning text-dark ms-2 me-1">●</span> Emergente
+          <span class="badge bg-success me-1">â—</span> Regular
+          <span class="badge bg-warning text-dark ms-2 me-1">â—</span> Emergente
         </div>
       </div>
     </div>
@@ -89,7 +90,7 @@ function _renderSesionCard(sesion, clases, puedeEditar) {
   const esEmergente = sesion.tipo === 'emergente'
   
   const badgeClass = esEmergente ? 'bg-warning text-dark' : 'bg-success'
-  const badgeLabel = esEmergente ? '⚡' : '📅'
+  const badgeLabel = esEmergente ? 'âš¡' : 'ðŸ“…'
   
   const tieneAsistencia = sesion.asistencia && (sesion.asistencia.presentes > 0 || sesion.asistencia.ausentes > 0)
   const asistenciaLabel = tieneAsistencia 
@@ -103,7 +104,7 @@ function _renderSesionCard(sesion, clases, puedeEditar) {
         <span class="sesion-hora">${sesion.hora_inicio || ''} - ${sesion.hora_fin || ''}</span>
       </div>
       <div class="sesion-card-body">
-        <h6 class="mb-1">${escapeHTML(sesion.tema || 'Sin título')}</h6>
+        <h6 class="mb-1">${escapeHTML(sesion.tema || 'Sin tÃ­tulo')}</h6>
         <small class="text-muted">${escapeHTML(claseNombre)}</small>
         <div class="sesion-meta mt-1">
           <small class="text-muted">${asistenciaLabel}</small>
@@ -183,7 +184,7 @@ function _attachDrawerEvents(drawer, fecha, sesiones, clases, maestros, maestroI
           if (drawerCallbacks.onEditarSesion) {
             await drawerCallbacks.onEditarSesion(id, datos)
           }
-          AppToast.success('Sesión actualizada')
+          AppToast.success('SesiÃ³n actualizada')
         }
       })
     })
@@ -206,11 +207,6 @@ function _formatFecha(fechaStr) {
   const fecha = new Date(fechaStr + 'T00:00:00')
   const opciones = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }
   return fecha.toLocaleDateString('es-ES', opciones)
-}
-
-function escapeHTML(str) {
-  if (!str) return ''
-  return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 }
 
 export function renderCalendarioCompleto(container, opciones = {}) {
@@ -303,9 +299,9 @@ function _renderCalendarioMes(container, year, month, sesiones, clases, onFechaC
   container.innerHTML = `
     <div class="calendario-completo">
       <div class="cal-header">
-        <button class="btn-nav" id="cal-prev">‹</button>
+        <button class="btn-nav" id="cal-prev">â€¹</button>
         <h3>${MESES[month]} ${year}</h3>
-        <button class="btn-nav" id="cal-next">›</button>
+        <button class="btn-nav" id="cal-next">â€º</button>
       </div>
       
       <div class="cal-grid" role="grid" aria-label="Calendario ${MESES[month]} ${year}">

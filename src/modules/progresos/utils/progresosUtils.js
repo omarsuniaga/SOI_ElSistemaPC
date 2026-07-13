@@ -1,17 +1,9 @@
+﻿export { escapeHTML } from '../../../shared/utils/sanitize.js'
+
 export function formatDate(dateStr) {
   if (!dateStr) return 'Fecha desconocida'
   const date = new Date(dateStr)
   return date.toLocaleDateString('es-ES', { year: 'numeric', month: 'short', day: 'numeric' })
-}
-
-export function escapeHTML(str) {
-  if (!str) return ''
-  return str.replace(/[&<>]/g, function(m) {
-    if (m === '&') return '&amp;'
-    if (m === '<') return '&lt;'
-    if (m === '>') return '&gt;'
-    return m
-  })
 }
 
 export function formatCalificacion(calif) {

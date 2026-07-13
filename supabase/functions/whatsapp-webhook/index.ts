@@ -217,6 +217,11 @@ Deno.serve(async (req: Request) => {
     return errorResponse('Método no permitido', 405)
   }
 
+  const webhookSecret = Deno.env.get('WHATSAPP_WEBHOOK_SECRET')
+  if (!webhookSecret || req.headers.get('x-webhook-secret') !== webhookSecret) {
+    return errorResponse('No autorizado', 401)
+  }
+
   if (!GROQ_API_KEY) {
     return errorResponse('GROQ_API_KEY no configurada', 500)
   }

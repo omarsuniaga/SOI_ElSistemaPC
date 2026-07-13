@@ -28,7 +28,29 @@ async function authHeaders() {
   }
 }
 
+async function ollamaChat(messages, { maxTokens, temperature, responseFormat } = {}) {
+  const body = {
+    model: config.ai.ollamaModel,
+    messages,
+    ...(maxTokens     && { max_tokens: maxTokens }),
+    ...(temperature   !== undefined && { temperature }),
+    ...(responseFormat && { response_format: responseFormat }),
+  }
+  const res = await fetch(`${config.ai.ollamaUrl}/v1/chat/completions`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
+  const data = await res.json()
+  if (!res.ok || data.error) throw new Error(data.error?.message ?? `Ollama error ${res.status}`)
+  return data.choices[0].message.content.trim()
+}
+
 async function proxyChat(messages, { maxTokens, temperature, responseFormat } = {}) {
+  if (config.ai.provider === 'ollama') {
+    return ollamaChat(messages, { maxTokens, temperature, responseFormat })
+  }
+
   const headers = await authHeaders()
   const body = {
     model: config.groq.model,
@@ -48,6 +70,10 @@ async function proxyChat(messages, { maxTokens, temperature, responseFormat } = 
 }
 
 async function proxyTranscribe(audioBlob, fileName = 'audio.webm') {
+  if (config.ai.provider === 'ollama') {
+    throw new Error('Transcripción de audio no disponible en modo Ollama (usa VITE_AI_PROVIDER=groq o modo demo)')
+  }
+
   const { data: { session } } = await supabase.auth.getSession()
   const token = session?.access_token ?? ''
 

@@ -166,3 +166,30 @@ export async function obtenerAlumnosFiltradosYOrdenados({
 
   return result.map(normalizeAlumno)
 }
+
+export async function verificarEliminacionAlumno(alumnoId) {
+  await delay()
+  const studentClasses = inscripciones.filter(i => i.alumno_id === alumnoId)
+  return {
+    canDelete: studentClasses.length === 0,
+    activeClasses: studentClasses.map(i => i.clase_nombre)
+  }
+}
+
+export async function obtenerProgresoAlumno(alumnoId) {
+  await delay()
+  return []
+}
+
+export async function obtenerAsistenciasAlumno(alumnoId) {
+  await delay()
+  return []
+}
+
+export async function obtenerInscripcionesDetalladasAlumno(alumnoId) {
+  await delay()
+  return [
+    { id: 'clase_001', nombre: 'Violín Principiantes A', clase_horarios: [{ dia: 'Lunes', hora_inicio: '14:00:00' }] }
+  ]
+}
+

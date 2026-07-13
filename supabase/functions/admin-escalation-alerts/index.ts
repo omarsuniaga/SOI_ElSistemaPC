@@ -245,6 +245,11 @@ serve(async (req) => {
     return new Response('Method not allowed', { status: 405 })
   }
 
+  const intKey = Deno.env.get('INTERNAL_FN_KEY')
+  if (!intKey || req.headers.get('x-internal-key') !== intKey) {
+    return new Response('No autorizado', { status: 401 })
+  }
+
   try {
     const result = await checkAndSendAdminAlerts()
     return new Response(JSON.stringify(result), {

@@ -1,8 +1,9 @@
-import { supabase } from '../../../lib/supabaseClient.js'
+﻿import { supabase } from '../../../lib/supabaseClient.js'
 import { router } from '../../../core/router/router.js'
 import { AppToast } from '../../../shared/components/AppToast.js'
 import { getCasesByStudent } from '../services/studentCasesService.js'
 import { analyzeStudentRisk } from '../services/studentRiskDetectorService.js'
+import { escapeHTML } from '../../../shared/utils/sanitize.js'
 
 const state = {
   container: null,
@@ -14,11 +15,7 @@ const state = {
   attendanceSummary: null,
   classes: [],
   cases: [],
-}
-
-function escapeHTML(value) {
-  if (value === null || value === undefined) return ''
-  return String(value).replace(/[&<>"']/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]))
+}[m]))
 }
 
 function getRiskBadge(level) {

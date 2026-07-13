@@ -13,6 +13,7 @@
  *      reunión mensual de ese mes si comparten fecha_inicio exacta.
  */
 
+import { escapeHTML } from '../../../shared/utils/sanitize.js'
 import * as simuladorApi from '../api/simuladorApi.js'
 import { formatearFechaSimulada, agruparEventosPorFecha } from '../logic/simuladorFormato.js'
 
@@ -115,13 +116,4 @@ function renderEventoCard(evento) {
       </div>
     </div>
   `
-}
-
-function escapeHTML(str) {
-  if (str == null) return ''
-  return String(str)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
 }

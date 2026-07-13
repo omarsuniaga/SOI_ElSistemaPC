@@ -1,4 +1,5 @@
-import { config } from '../../../core/config/config.js'
+﻿import { config } from '../../../core/config/config.js'
+import { escapeHTML } from '../../../shared/utils/sanitize.js'
 
 let tareasCache = []
 
@@ -49,7 +50,7 @@ export function renderTareasBadge(tareas) {
   const vencidas = getVencidasCount(tareas)
 
   if (pendientes === 0 && vencidas === 0) {
-    return `<span class="badge bg-success">✓</span>`
+    return `<span class="badge bg-success">âœ“</span>`
   }
 
   if (vencidas > 0) {
@@ -92,7 +93,7 @@ export async function renderTareasPanel(container, opciones = {}) {
               <h2 class="accordion-header">
                 <button class="accordion-button ${pendientes === 0 ? '' : ''}" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-${idx}">
                   <span class="me-auto fw-semibold">#${nombre}</span>
-                  ${vencidas > 0 ? `<span class="badge bg-danger me-2">${vencidas}☠</span>` : ''}
+                  ${vencidas > 0 ? `<span class="badge bg-danger me-2">${vencidas}â˜ </span>` : ''}
                   ${pendientes > 0 ? `<span class="badge bg-warning text-dark">${pendientes}</span>` : ''}
                 </button>
               </h2>
@@ -115,7 +116,7 @@ export async function renderTareasPanel(container, opciones = {}) {
                             <small>${escapeHTML(tarea.descripcion)}</small>
                             ${tarea.fecha_entrega ? `
                               <br><small class="${isVencida ? 'text-danger fw-bold' : 'text-muted'}">
-                                📅 ${formatDateSimple(tarea.fecha_entrega)}
+                                ðŸ“… ${formatDateSimple(tarea.fecha_entrega)}
                               </small>
                             ` : ''}
                           </div>
@@ -158,9 +159,4 @@ export async function renderTareasPanel(container, opciones = {}) {
 function formatDateSimple(isoDate) {
   const date = new Date(isoDate)
   return date.toLocaleDateString('es-DO', { day: 'numeric', month: 'short' })
-}
-
-function escapeHTML(text) {
-  if (!text) return ''
-  return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 }

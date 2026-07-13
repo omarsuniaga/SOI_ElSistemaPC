@@ -10,6 +10,7 @@
 import '../styles/comunicaciones.css'
 import * as api from '../api/calendarioComApi.js'
 import { CATEGORIAS_EVENTO, agruparPorMes, diasHasta, esProximo } from '../domain/calendarioCom.js'
+import { escapeHTML } from '../../../shared/utils/sanitize.js'
 
 const state = {
   eventos: [],
@@ -150,9 +151,4 @@ function renderEvento(e) {
       </div>
     </div>
   `
-}
-
-function escapeHTML(str) {
-  if (str == null) return ''
-  return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
 }

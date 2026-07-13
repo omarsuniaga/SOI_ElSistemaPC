@@ -1,4 +1,5 @@
 import * as bitacoraAdapter from '../api/bitacoraAdapter.js'
+import { escapeHTML } from '../../../shared/utils/sanitize.js'
 
 const SEMAFORO_CONFIG = {
   verde: { class: 'bg-success', label: 'Bien', icon: 'bi-check-circle-fill' },
@@ -7,12 +8,6 @@ const SEMAFORO_CONFIG = {
   gris: { class: 'bg-secondary', label: 'Sin datos', icon: 'bi-dash-circle' },
 }
 
-function escapeHTML(str) {
-  if (!str) return ''
-  return String(str).replace(/[&<>"']/g, (m) =>
-    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m])
-  )
-}
 
 function getAlumnoName(alumnos, alumnoId) {
   const a = alumnos?.find((x) => x.id === alumnoId)

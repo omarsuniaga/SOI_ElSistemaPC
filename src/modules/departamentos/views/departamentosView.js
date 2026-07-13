@@ -1,14 +1,15 @@
-/**
- * departamentosView.js — Gestión de correos y responsables de departamentos (portal ADM).
+﻿/**
+ * departamentosView.js â€” GestiÃ³n de correos y responsables de departamentos (portal ADM).
  * Permite registrar/editar, por departamento: correo institucional, responsable
  * (nombre + correo) y estado. Esos correos los usa Hermes para despachar mensajes
  * por departamento desde Telegram (edge function send-email + fn_email_departamento).
  *
- * Patrón: retorna { teardown() } (AbortController).
+ * PatrÃ³n: retorna { teardown() } (AbortController).
  */
 
 import * as api from '../api/departamentosApi.js'
 import { AppToast } from '../../../shared/components/AppToast.js'
+import { escapeHTML } from '../../../shared/utils/sanitize.js'
 
 const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/
 
@@ -51,7 +52,7 @@ function renderContent(container, departamentos) {
       ${
         sinCorreo > 0
           ? `<div class="alert alert-warning small py-2"><i class="bi bi-exclamation-triangle me-1"></i>
-              ${sinCorreo} departamento${sinCorreo === 1 ? '' : 's'} sin correo definido. Hermes no podrá enviarles hasta cargarlo.</div>`
+              ${sinCorreo} departamento${sinCorreo === 1 ? '' : 's'} sin correo definido. Hermes no podrÃ¡ enviarles hasta cargarlo.</div>`
           : `<div class="alert alert-success small py-2"><i class="bi bi-check-circle me-1"></i>
               Todos los departamentos tienen correo configurado.</div>`
       }
@@ -102,7 +103,7 @@ function tarjeta(d) {
               <i class="bi bi-check-lg me-1"></i>Guardar
             </button>
             <button class="btn btn-sm btn-outline-secondary dep-test" data-id="${d.id}" data-codigo="${escapeHTML(d.codigo)}"
-              ${d.email ? '' : 'disabled'} title="${d.email ? 'Enviar correo de prueba' : 'Cargá un correo primero'}">
+              ${d.email ? '' : 'disabled'} title="${d.email ? 'Enviar correo de prueba' : 'CargÃ¡ un correo primero'}">
               <i class="bi bi-send me-1"></i>Probar
             </button>
           </div>
@@ -133,8 +134,8 @@ async function guardar(container, departamentos, btn) {
   const activo = card.querySelector('.dep-activo').checked
 
   if (!nombre) { AppToast.show('El nombre es obligatorio', 'error'); return }
-  if (email && !EMAIL_RE.test(email)) { AppToast.show('El correo institucional no es válido', 'error'); return }
-  if (respEmail && !EMAIL_RE.test(respEmail)) { AppToast.show('El correo del responsable no es válido', 'error'); return }
+  if (email && !EMAIL_RE.test(email)) { AppToast.show('El correo institucional no es vÃ¡lido', 'error'); return }
+  if (respEmail && !EMAIL_RE.test(respEmail)) { AppToast.show('El correo del responsable no es vÃ¡lido', 'error'); return }
 
   const original = btn.innerHTML
   btn.disabled = true
@@ -160,7 +161,7 @@ async function probar(container, btn) {
   const card = btn.closest('.dep-card')
   const email = card.querySelector('.dep-email').value.trim()
   if (!email || !EMAIL_RE.test(email)) {
-    AppToast.show('Cargá un correo válido antes de probar', 'error')
+    AppToast.show('CargÃ¡ un correo vÃ¡lido antes de probar', 'error')
     return
   }
   const original = btn.innerHTML
@@ -175,9 +176,4 @@ async function probar(container, btn) {
     btn.disabled = false
     btn.innerHTML = original
   }
-}
-
-function escapeHTML(str) {
-  if (str == null) return ''
-  return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
 }

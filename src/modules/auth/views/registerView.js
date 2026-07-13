@@ -1,7 +1,8 @@
-import { Modal, Toast } from 'bootstrap'
+﻿import { Modal, Toast } from 'bootstrap'
 import { useAuth } from '../hooks/useAuth.js'
 import { router } from '../../../core/router/router.js'
 import { CompactUI } from '../../../shared/utils/compactUI.js'
+import { escapeHTML } from '../../../shared/utils/sanitize.js'
 
 const state = {
   loading: false,
@@ -446,12 +447,6 @@ function showToast(message, type, container) {
   toastElement.addEventListener('hidden.bs.toast', () => {
     toastElement.remove()
   })
-}
-
-function escapeHTML(str) {
-  if (str == null) return ''
-  const s = typeof str === 'string' ? str : (str?.message ?? String(str))
-  return s.replace(/[&<>]/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[m])
 }
 
 export default { renderRegisterView }

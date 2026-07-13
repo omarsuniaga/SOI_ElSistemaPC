@@ -1,17 +1,9 @@
+﻿export { escapeHTML } from '../../../shared/utils/sanitize.js'
+
 export function formatDate(dateStr) {
   if (!dateStr) return 'Fecha desconocida'
   const date = new Date(dateStr)
   return date.toLocaleDateString('es-ES', { year: 'numeric', month: 'short', day: 'numeric' })
-}
-
-export function escapeHTML(str) {
-  if (!str) return ''
-  return str.replace(/[&<>]/g, function(m) {
-    if (m === '&') return '&amp;'
-    if (m === '<') return '&lt;'
-    if (m === '>') return '&gt;'
-    return m
-  })
 }
 
 export function isValidEmail(email) {
@@ -30,7 +22,7 @@ export function formatPhone(phone) {
 
 export function formatInstrumento(instrumento) {
   const mapa = {
-    'violin': 'Violín',
+    'violin': 'ViolÃ­n',
     'viola': 'Viola',
     'cello': 'Cello',
     'bajo': 'Bajo',
@@ -40,16 +32,16 @@ export function formatInstrumento(instrumento) {
     'fagot': 'Fagot',
     'trompa': 'Trompa',
     'trompeta': 'Trompeta',
-    'trombon': 'Trombón',
+    'trombon': 'TrombÃ³n',
     'tuba': 'Tuba',
     'piano': 'Piano',
     'guitarra': 'Guitarra',
     'arpa': 'Arpa',
-    'percusion': 'Percusión',
+    'percusion': 'PercusiÃ³n',
     'voz': 'Voz',
-    'direccion': 'Dirección',
+    'direccion': 'DirecciÃ³n',
     'solfeo': 'Solfeo',
-    'teoría': 'Teoría',
+    'teorÃ­a': 'TeorÃ­a',
   }
   return mapa[instrumento?.toLowerCase()] || instrumento || 'No especificado'
 }
@@ -74,7 +66,7 @@ export function getInitials(nombre) {
 
 export function getInstrumentos() {
   return [
-    { value: 'violin', label: 'Violín' },
+    { value: 'violin', label: 'ViolÃ­n' },
     { value: 'viola', label: 'Viola' },
     { value: 'cello', label: 'Cello' },
     { value: 'bajo', label: 'Bajo' },
@@ -84,16 +76,16 @@ export function getInstrumentos() {
     { value: 'fagot', label: 'Fagot' },
     { value: 'trompa', label: 'Trompa' },
     { value: 'trompeta', label: 'Trompeta' },
-    { value: 'trombon', label: 'Trombón' },
+    { value: 'trombon', label: 'TrombÃ³n' },
     { value: 'tuba', label: 'Tuba' },
     { value: 'piano', label: 'Piano' },
     { value: 'guitarra', label: 'Guitarra' },
     { value: 'arpa', label: 'Arpa' },
-    { value: 'percusion', label: 'Percusión' },
+    { value: 'percusion', label: 'PercusiÃ³n' },
     { value: 'voz', label: 'Voz' },
-    { value: 'direccion', label: 'Dirección' },
+    { value: 'direccion', label: 'DirecciÃ³n' },
     { value: 'solfeo', label: 'Solfeo' },
-    { value: 'teoría', label: 'Teoría' },
+    { value: 'teorÃ­a', label: 'TeorÃ­a' },
   ]
 }
 

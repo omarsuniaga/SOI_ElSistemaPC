@@ -36,6 +36,10 @@ export const validarCedula = (...args) => getApi().validarCedula(...args)
 export const obtenerInscripcionesAlumno = (...args) => getApi().obtenerInscripcionesAlumno(...args)
 export const obtenerAlumnosPorMes = (...args) => getApi().obtenerAlumnosPorMes(...args)
 export const obtenerAlumnosFiltradosYOrdenados = (...args) => getApi().obtenerAlumnosFiltradosYOrdenados(...args)
+export const verificarEliminacionAlumno = (...args) => getApi().verificarEliminacionAlumno(...args)
+export const obtenerProgresoAlumno = (...args) => getApi().obtenerProgresoAlumno(...args)
+export const obtenerAsistenciasAlumno = (...args) => getApi().obtenerAsistenciasAlumno(...args)
+export const obtenerInscripcionesDetalladasAlumno = (...args) => getApi().obtenerInscripcionesDetalladasAlumno(...args)
 
 // Re-exportar constantes (copiadas para evitar problemas de inicialización circular)
 export const PARENTESCOS = [

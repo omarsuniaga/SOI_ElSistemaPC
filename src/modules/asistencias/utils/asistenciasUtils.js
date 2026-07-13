@@ -1,5 +1,7 @@
+﻿export { escapeHTML } from '../../../shared/utils/sanitize.js'
+
 /**
- * Utilidades para el módulo de Asistencias
+ * Utilidades para el mÃ³dulo de Asistencias
  */
 
 /**
@@ -24,20 +26,6 @@ export function formatDateISO(dateStr) {
   return date.toISOString().split('T')[0]
 }
 
-/**
- * Escapa caracteres HTML para prevenir XSS
- * @param {string} str
- * @returns {string}
- */
-export function escapeHTML(str) {
-  if (!str) return ''
-  return str.replace(/[&<>]/g, function(m) {
-    if (m === '&') return '&amp;'
-    if (m === '<') return '&lt;'
-    if (m === '>') return '&gt;'
-    return m
-  })
-}
 
 /**
  * Devuelve la clase de Bootstrap para el estado de asistencia
@@ -68,7 +56,7 @@ export function getEstadoLabel(estado) {
 }
 
 /**
- * Devuelve el ícono de Bootstrap Icons para el estado
+ * Devuelve el Ã­cono de Bootstrap Icons para el estado
  * @param {string} estado
  * @returns {string}
  */
@@ -132,7 +120,7 @@ export function formatResumen(stats) {
 }
 
 /**
- * Obtiene color de badge aleatorio pero consistente según el ID
+ * Obtiene color de badge aleatorio pero consistente segÃºn el ID
  * @param {string} id
  * @returns {string}
  */

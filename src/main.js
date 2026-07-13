@@ -80,6 +80,7 @@ import { registerRoutesBitacora } from './modules/bitacora/index.js'
 import { registerRoutesFinanzas } from './modules/finanzas/index.js'
 import { registerRoutesLuteria } from './modules/luteria/index.js'
 import { registerRoutesInventario } from './modules/inventario/index.js'
+import { registerRoutesHelp } from './modules/help/index.js'
 import { renderScoreDirectorView } from './modules/hermes/views/scoreDirectorView.js'
 import {
   startAdminRealtimeNotifications,
@@ -473,6 +474,9 @@ function renderNavbar(_container, isAuthenticated = false) {
         <i class="bi bi-person-circle"></i>
         <span class="sidebar-user-name" title="${userDisplay}">${userDisplay.split('@')[0]}</span>
       </div>
+      <button class="sidebar-action-btn" id="sidebarBtnHelp" title="Centro de Ayuda">
+        <i class="bi bi-question-circle"></i>
+      </button>
       <button class="sidebar-action-btn" id="sidebarBtnTheme" title="Cambiar tema">
         <i class="bi ${isDark ? 'bi-sun-fill' : 'bi-moon-fill'}"></i>
       </button>
@@ -525,6 +529,10 @@ function renderNavbar(_container, isAuthenticated = false) {
         router.navigate(btn.dataset.route)
       }
     })
+  })
+
+  sidebar.querySelector('#sidebarBtnHelp').addEventListener('click', () => {
+    router.navigate('ayuda')
   })
 
   sidebar.querySelector('#sidebarBtnTheme').addEventListener('click', () => {
@@ -642,6 +650,13 @@ function registerModules() {
     router.register('dir-score', (mount) => renderScoreDirectorView(mount))
   } catch (error) {
     console.error('Error registering dir-score route:', error)
+  }
+
+  // Centro de Ayuda
+  try {
+    registerRoutesHelp()
+  } catch (error) {
+    console.error('Error registering help routes:', error)
   }
 
   // Centro de Actividad se registra dinámicamente desde MODULES_REGISTRY

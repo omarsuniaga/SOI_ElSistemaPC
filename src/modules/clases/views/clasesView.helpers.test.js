@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest'
+import { escapeHTML } from '../../../shared/utils/sanitize.js'
 
 // Helper functions extracted for testing
 function getDiasOptions(selectedValue = '') {
@@ -82,15 +83,7 @@ function formatHorariosDisplay(horarios) {
   }).join(', ')
 }
 
-function escapeHTML(str) {
-  if (!str) return ''
-  return String(str)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;')
-}
+
 
 describe('clasesView Helpers', () => {
   describe('getDiasOptions()', () => {

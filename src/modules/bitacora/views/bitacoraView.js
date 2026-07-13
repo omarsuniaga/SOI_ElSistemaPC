@@ -5,6 +5,7 @@ import { obtenerAlumnos } from '../../alumnos/api/alumnosApi.js'
 import { obtenerClases } from '../../clases/api/clasesApi.js'
 import { config } from '../../../core/config/config.js'
 import * as bitacoraAdapter from '../api/bitacoraAdapter.js'
+import { escapeHTML } from '../../../shared/utils/sanitize.js'
 
 const state = {
   claseId: null,
@@ -17,12 +18,6 @@ const state = {
   destroyed: false,
 }
 
-function escapeHTML(str) {
-  if (!str) return ''
-  return String(str).replace(/[&<>"']/g, (m) =>
-    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m])
-  )
-}
 
 function renderLoading(container) {
   container.innerHTML = `

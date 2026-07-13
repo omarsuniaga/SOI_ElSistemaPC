@@ -1,5 +1,7 @@
+export { escapeHTML } from '../../../shared/utils/sanitize.js'
+
 /**
- * Utilidades para el módulo de Clases
+ * Utilidades para el mÃ³dulo de Clases
  */
 
 /**
@@ -13,20 +15,6 @@ export function formatDate(dateStr) {
   return date.toLocaleDateString('es-ES', { year: 'numeric', month: 'short', day: 'numeric' })
 }
 
-/**
- * Escapa caracteres HTML para prevenir XSS
- * @param {string} str
- * @returns {string}
- */
-export function escapeHTML(str) {
-  if (!str) return ''
-  return str.replace(/[&<>]/g, function(m) {
-    if (m === '&') return '&amp;'
-    if (m === '<') return '&lt;'
-    if (m === '>') return '&gt;'
-    return m
-  })
-}
 
 /**
  * Formatea una hora (HH:MM:SS) a formato legible (HH:MM)
@@ -43,7 +31,7 @@ export function formatHora(timeStr) {
 }
 
 /**
- * Formatea un array de días a string legible
+ * Formatea un array de dÃ­as a string legible
  * @param {string[]} dias
  * @returns {string}
  */
@@ -105,7 +93,7 @@ export function getEstadoBadgeClass(estado) {
 }
 
 /**
- * Obtiene el ícono para un instrumento
+ * Obtiene el Ã­cono para un instrumento
  * @param {string} instrumento
  * @returns {string}
  */
@@ -156,7 +144,7 @@ export function getInitials(nombre) {
 }
 
 /**
- * Calcula la duración en minutos entre dos horas
+ * Calcula la duraciÃ³n en minutos entre dos horas
  * @param {string} horaInicio - Formato HH:MM
  * @param {string} horaFin - Formato HH:MM
  * @returns {number}
@@ -176,7 +164,7 @@ export function calcularDuracion(horaInicio, horaFin) {
 }
 
 /**
- * Obtiene color de badge consistente según el ID (formato hex)
+ * Obtiene color de badge consistente segÃºn el ID (formato hex)
  * @param {string} id
  * @returns {string}
  */

@@ -53,10 +53,10 @@ describe('analyticsFillingBehaviorWidget', () => {
 
   it('should calculate fill order distribution stats', async () => {
     const mockMetrics = [
-      { orden_asistencia_primero: 1, orden_observaciones_primero: 0, orden_simultaneo: 0 }, // asistencia first
-      { orden_asistencia_primero: 1, orden_observaciones_primero: 0, orden_simultaneo: 0 },
-      { orden_asistencia_primero: 0, orden_observaciones_primero: 1, orden_simultaneo: 0 }, // observaciones first
-      { orden_asistencia_primero: 0, orden_observaciones_primero: 0, orden_simultaneo: 1 }  // simultaneous
+      { total_clases: 1, orden_asistencia_primero: 1, orden_observaciones_primero: 0, orden_simultaneo: 0 }, // asistencia first
+      { total_clases: 1, orden_asistencia_primero: 1, orden_observaciones_primero: 0, orden_simultaneo: 0 },
+      { total_clases: 1, orden_asistencia_primero: 0, orden_observaciones_primero: 1, orden_simultaneo: 0 }, // observaciones first
+      { total_clases: 1, orden_asistencia_primero: 0, orden_observaciones_primero: 0, orden_simultaneo: 1 }  // simultaneous
     ]
 
     analyticsService.getTeacherFillingMetrics.mockResolvedValueOnce(mockMetrics)

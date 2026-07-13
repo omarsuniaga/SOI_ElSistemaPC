@@ -1,4 +1,5 @@
-import { AppToast } from '../../../shared/components/AppToast.js'
+﻿import { AppToast } from '../../../shared/components/AppToast.js'
+import { escapeHTML } from '../../../shared/utils/sanitize.js'
 import {
   obtenerPermisos,
   actualizarPermiso,
@@ -14,15 +15,6 @@ const state = {
 }
 
 let currentContainer = null
-
-function escapeHTML(str) {
-  if (!str) return ''
-  return String(str)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-}
 
 export async function renderPermisosView(container) {
   currentContainer = container

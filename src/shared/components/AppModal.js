@@ -1,3 +1,5 @@
+import { escapeHTML } from '../utils/sanitize.js'
+
 // Global modal singleton — lives in <body>, never touched by the router.
 // Usage:
 //   AppModal.open({ title, body, onSave, onCancel, saveText, size })
@@ -136,11 +138,6 @@ function ensureDOM() {
     </div>
   `
   document.body.appendChild(modal)
-}
-
-function escapeHTML(text) {
-  if (!text) return ''
-  return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 }
 
 function getEls() {

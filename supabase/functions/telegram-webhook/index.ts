@@ -44,6 +44,11 @@ serve(async (req: Request) => {
   const url = new URL(req.url);
   if (!url.pathname.endsWith('/poll')) return errorResponse('Not found', 404);
 
+  const intKey = Deno.env.get('INTERNAL_FN_KEY')
+  if (!intKey || req.headers.get('x-internal-key') !== intKey) {
+    return errorResponse('Unauthorized', 401)
+  }
+
   try {
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 

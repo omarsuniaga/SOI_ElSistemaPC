@@ -128,7 +128,7 @@ Chain strategy: stacked-to-main
 
 ---
 
-- [ ] TASK-B01-RED: Write failing test for stale closure in openEditModal
+- [x] TASK-B01-RED: Write failing test for stale closure in openEditModal
   Req: B-01
   Files: `src/modules/alumnos/__tests__/alumnosView.modal.test.js` (CREATE)
   TDD:
@@ -138,7 +138,7 @@ Chain strategy: stacked-to-main
   Depends: none
   PR: Batch B
 
-- [ ] TASK-B02-RED: Write failing test for double empty-state render
+- [x] TASK-B02-RED: Write failing test for double empty-state render
   Req: B-02
   Files: `src/modules/alumnos/__tests__/alumnosView.table.test.js` (CREATE)
   TDD:
@@ -148,7 +148,7 @@ Chain strategy: stacked-to-main
   Depends: none
   PR: Batch B
 
-- [ ] TASK-B03-RED: Write failing test for container-scoped event listeners
+- [x] TASK-B03-RED: Write failing test for container-scoped event listeners
   Req: B-03
   Files: `src/modules/alumnos/__tests__/eventScoping.test.js` (CREATE)
   TDD:
@@ -158,7 +158,7 @@ Chain strategy: stacked-to-main
   Depends: none
   PR: Batch B
 
-- [ ] TASK-B04-RED: Write failing test for actualizarAlumno null guard
+- [x] TASK-B04-RED: Write failing test for actualizarAlumno null guard
   Req: B-04
   Files: `src/modules/alumnos/__tests__/alumnosSupabase.test.js` (CREATE)
   TDD:
@@ -168,7 +168,7 @@ Chain strategy: stacked-to-main
   Depends: none
   PR: Batch B
 
-- [ ] TASK-B05-RED: Write failing test for delete modal race condition
+- [x] TASK-B05-RED: Write failing test for delete modal race condition
   Req: B-05
   Files: `src/modules/alumnos/__tests__/alumnosView.modal.test.js`
   TDD:
@@ -178,7 +178,7 @@ Chain strategy: stacked-to-main
   Depends: none
   PR: Batch B
 
-- [ ] TASK-B06-RED: Write failing tests for alumnoTimeline cleanup
+- [x] TASK-B06-RED: Write failing tests for alumnoTimeline cleanup
   Req: B-06
   Files: `src/modules/alumnos/__tests__/alumnoTimeline.test.js` (CREATE)
   TDD:
@@ -188,7 +188,7 @@ Chain strategy: stacked-to-main
   Depends: none
   PR: Batch B
 
-- [ ] TASK-B07-RED: Write failing test for editarAlumnoModal nombre field editable
+- [x] TASK-B07-RED: Write failing test for editarAlumnoModal nombre field editable
   Req: B-07
   Files: `src/modules/alumnos/__tests__/editarAlumnoModal.test.js` (CREATE)
   TDD:
@@ -198,7 +198,7 @@ Chain strategy: stacked-to-main
   Depends: none
   PR: Batch B
 
-- [ ] TASK-B08-RED: Write failing test for postuladosMock.buscarPostulante
+- [x] TASK-B08-RED: Write failing test for postuladosMock.buscarPostulante
   Req: B-08
   Files: `src/modules/alumnos/__tests__/postuladosMock.test.js` (CREATE)
   TDD:
@@ -216,14 +216,14 @@ Chain strategy: stacked-to-main
 
 ---
 
-- [ ] TASK-C00 (SPIKE): Verify AppModal and AppToast API signatures
+- [x] TASK-C00 (SPIKE): Verify AppModal and AppToast API signatures
   Req: R-1 (risk mitigation)
   Files: `src/shared/components/AppModal.js` (READ), `src/shared/components/AppToast.js` (READ)
   TDD: n/a — this is a read-only spike; document exact `open/confirm` signature and `success/error` method names
   Depends: none
   PR: Batch C (must be done before TASK-C01)
 
-- [ ] TASK-C01-RED: Write failing test for native dialog replacement
+- [x] TASK-C01-RED: Write failing test for native dialog replacement
   Req: C-01
   Files: `src/modules/alumnos/__tests__/nativeDialogs.test.js` (CREATE)
   TDD:
@@ -233,7 +233,7 @@ Chain strategy: stacked-to-main
   Depends: TASK-C00
   PR: Batch C
 
-- [ ] TASK-C02-RED: Write failing test for email and cedula in search filter
+- [x] TASK-C02-RED: Write failing test for email and cedula in search filter
   Req: C-02
   Files: `src/modules/alumnos/__tests__/alumnosView.filter.test.js` (CREATE)
   TDD:
@@ -243,7 +243,7 @@ Chain strategy: stacked-to-main
   Depends: none
   PR: Batch C
 
-- [ ] TASK-C03-RED: Write failing test for email validation in form
+- [x] TASK-C03-RED: Write failing test for email validation in form
   Req: C-03
   Files: `src/modules/alumnos/__tests__/alumnosView.form.test.js` (CREATE)
   TDD:
@@ -253,7 +253,7 @@ Chain strategy: stacked-to-main
   Depends: none
   PR: Batch C
 
-- [ ] TASK-C04-RED: Write failing test for phone-filter banner
+- [x] TASK-C04-RED: Write failing test for phone-filter banner
   Req: C-04
   Files: `src/modules/alumnos/__tests__/postuladosView.test.js` (CREATE)
   TDD:
@@ -263,7 +263,7 @@ Chain strategy: stacked-to-main
   Depends: TASK-B03-RED (container scoping required first)
   PR: Batch C
 
-- [ ] TASK-C05-RED: Write failing test for name search in postulados view
+- [x] TASK-C05-RED: Write failing test for name search in postulados view
   Req: C-05
   Files: `src/modules/alumnos/__tests__/postuladosView.test.js`
   TDD:
@@ -273,7 +273,7 @@ Chain strategy: stacked-to-main
   Depends: TASK-B03-RED
   PR: Batch C
 
-- [ ] TASK-C06-RED: Write failing test for unsaved-changes warning
+- [x] TASK-C06-RED: Write failing test for unsaved-changes warning
   Req: C-06
   Files: `src/modules/alumnos/__tests__/alumnosView.modal.test.js`
   TDD:
@@ -283,7 +283,7 @@ Chain strategy: stacked-to-main
   Depends: TASK-C00, TASK-B07-RED
   PR: Batch C
 
-- [ ] TASK-C07-RED: Write failing test for sortable columns
+- [x] TASK-C07-RED: Write failing test for sortable columns
   Req: C-07
   Files: `src/modules/alumnos/__tests__/alumnosView.table.test.js`
   TDD:
@@ -302,7 +302,7 @@ Chain strategy: stacked-to-main
 
 ---
 
-- [ ] TASK-D01-RED: Write failing tests for obtenerAlumnos pagination
+- [x] TASK-D01-RED: Write failing tests for obtenerAlumnos pagination
   Req: D-01
   Files: `src/modules/alumnos/__tests__/alumnosSupabase.test.js`
   TDD:
@@ -312,7 +312,7 @@ Chain strategy: stacked-to-main
   Depends: none
   PR: Batch D
 
-- [ ] TASK-D02-RED: Write failing test for memoized calcularCompletitud
+- [x] TASK-D02-RED: Write failing test for memoized calcularCompletitud
   Req: D-02
   Files: `src/modules/alumnos/__tests__/alumnosView.filter.test.js`
   TDD:
@@ -322,7 +322,7 @@ Chain strategy: stacked-to-main
   Depends: TASK-A06-RED (domain import must be in place)
   PR: Batch D
 
-- [ ] TASK-D03-RED: Write failing test for AbortController cleanup
+- [x] TASK-D03-RED: Write failing test for AbortController cleanup
   Req: D-03
   Files: `src/modules/alumnos/__tests__/alumnosView.lifecycle.test.js` (CREATE)
   TDD:
@@ -332,7 +332,7 @@ Chain strategy: stacked-to-main
   Depends: TASK-B03-RED
   PR: Batch D
 
-- [ ] TASK-D04-RED: Write failing test for parallel queries in alumnoAdminView
+- [x] TASK-D04-RED: Write failing test for parallel queries in alumnoAdminView
   Req: D-04
   Files: `src/modules/alumnos/__tests__/alumnoAdminView.test.js` (CREATE)
   TDD:
@@ -342,7 +342,7 @@ Chain strategy: stacked-to-main
   Depends: none
   PR: Batch D
 
-- [ ] TASK-D05-RED: Write failing test for URL.revokeObjectURL after download
+- [x] TASK-D05-RED: Write failing test for URL.revokeObjectURL after download
   Req: D-05
   Files: `src/modules/alumnos/__tests__/alumnosView.csv.test.js`
   TDD:
@@ -360,7 +360,7 @@ Chain strategy: stacked-to-main
 
 ---
 
-- [ ] TASK-E01-RED: Write failing test for alumno.model.js schema fields
+- [x] TASK-E01-RED: Write failing test for alumno.model.js schema fields
   Req: E-01
   Files: `src/modules/alumnos/__tests__/alumnoModel.test.js` (CREATE)
   TDD:
@@ -370,7 +370,7 @@ Chain strategy: stacked-to-main
   Depends: none
   PR: Batch E
 
-- [ ] TASK-E02-RED: Write failing test for postuladosApi dispatcher
+- [x] TASK-E02-RED: Write failing test for postuladosApi dispatcher
   Req: E-02
   Files: `src/modules/alumnos/__tests__/postuladosApi.test.js` (CREATE)
   TDD:
@@ -380,7 +380,7 @@ Chain strategy: stacked-to-main
   Depends: TASK-B08-RED (buscarPostulante must exist in mock first)
   PR: Batch E
 
-- [ ] TASK-E03-RED: Write failing test for useAlumnos removal from public API
+- [x] TASK-E03-RED: Write failing test for useAlumnos removal from public API
   Req: E-03
   Files: `src/modules/alumnos/__tests__/index.exports.test.js` (CREATE)
   TDD:
@@ -390,7 +390,7 @@ Chain strategy: stacked-to-main
   Depends: TASK-A05-RED (schema fixes must be in place before deletion of export)
   PR: Batch E
 
-- [ ] TASK-E04-RED: Write failing tests for reporte mensual CSV export
+- [x] TASK-E04-RED: Write failing tests for reporte mensual CSV export
   Req: E-04
   Files: `src/modules/alumnos/__tests__/reporteInscripcionesMes.test.js` (CREATE)
   TDD:
@@ -400,7 +400,7 @@ Chain strategy: stacked-to-main
   Depends: TASK-A06-RED (domain completitud import must be in place)
   PR: Batch E
 
-- [ ] TASK-E05-RED: Write failing test for reporte mensual filters
+- [x] TASK-E05-RED: Write failing test for reporte mensual filters
   Req: E-05
   Files: `src/modules/alumnos/__tests__/reporteInscripcionesMes.test.js`
   TDD:
@@ -410,7 +410,7 @@ Chain strategy: stacked-to-main
   Depends: TASK-A06-RED
   PR: Batch E
 
-- [ ] TASK-E06-RED: Write failing tests for localStorage namespacing
+- [x] TASK-E06-RED: Write failing tests for localStorage namespacing
   Req: E-06
   Files: `src/modules/alumnos/__tests__/postuladoPerfilView.test.js` (CREATE)
   TDD:
@@ -420,7 +420,7 @@ Chain strategy: stacked-to-main
   Depends: none
   PR: Batch E
 
-- [ ] TASK-E07-RED: Write failing test for listarPostulantesPorRango date normalization
+- [x] TASK-E07-RED: Write failing test for listarPostulantesPorRango date normalization
   Req: E-07
   Files: `src/modules/alumnos/__tests__/postuladosSupabase.test.js` (CREATE)
   TDD:
@@ -430,7 +430,7 @@ Chain strategy: stacked-to-main
   Depends: none
   PR: Batch E
 
-- [ ] TASK-E08-RED: Write failing test for PDF postulados columns
+- [x] TASK-E08-RED: Write failing test for PDF postulados columns
   Req: E-08
   Files: `src/modules/alumnos/__tests__/generarPdfPostulados.test.js` (CREATE)
   TDD:

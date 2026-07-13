@@ -80,6 +80,11 @@ Deno.serve(async (req: Request) => {
     return json({ error: 'Método no permitido' }, 405)
   }
 
+  const intKey = Deno.env.get('INTERNAL_FN_KEY')
+  if (!intKey || req.headers.get('x-internal-key') !== intKey) {
+    return json({ error: 'No autorizado' }, 401)
+  }
+
   const supabase = getClient()
 
   // ── 0. Guard de receso académico / vacaciones (lee de system_config) ────

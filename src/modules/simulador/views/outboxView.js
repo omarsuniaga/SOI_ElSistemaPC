@@ -15,6 +15,7 @@
  *      sim_outbox.estado correctamente.
  */
 
+import { escapeHTML } from '../../../shared/utils/sanitize.js'
 import * as simuladorApi from '../api/simuladorApi.js'
 import { mapEstadoOutboxABadge } from '../logic/simuladorFormato.js'
 
@@ -111,13 +112,4 @@ function renderOutboxRow(mensaje) {
       <td><small class="text-muted">${new Date(mensaje.created_at).toLocaleString('es-ES')}</small></td>
     </tr>
   `
-}
-
-function escapeHTML(str) {
-  if (str == null) return ''
-  return String(str)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
 }

@@ -16,6 +16,7 @@ import { FAMILIAS, construirWaLink, resolverVariables, normalizarTelefono } from
 import { AppModal } from '../../../shared/components/AppModal.js'
 import { AppToast } from '../../../shared/components/AppToast.js'
 import { openRegistroSeguimientoModal } from './seguimientoView.js'
+import { escapeHTML } from '../../../shared/utils/sanitize.js'
 
 const VARIABLES = ['{nombre_alumno}', '{representante}', '{instrumento}', '{seccion}']
 
@@ -580,9 +581,4 @@ function mensajeAHtml(texto) {
   return `<div style="font-family:-apple-system,Segoe UI,Roboto,sans-serif;font-size:15px;line-height:1.6;color:#1f2937">
     ${escapeHTML(texto).replace(/\n/g, '<br>')}
   </div>`
-}
-
-function escapeHTML(str) {
-  if (str == null) return ''
-  return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
 }

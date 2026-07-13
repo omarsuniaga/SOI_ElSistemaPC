@@ -283,7 +283,7 @@ export function analyticsFillingBehaviorWidget(containerId) {
             <h2><i class="bi bi-bar-chart-steps text-primary"></i> Analítica de Llenado de Asistencias</h2>
             <div class="premium-error-card">
               <i class="bi bi-exclamation-triangle-fill"></i>
-              <div>Error: ${esc(err.message)}</div>
+              <div>Error cargando analítica. Detalle: ${esc(err.message)}</div>
             </div>
           </div>
         `

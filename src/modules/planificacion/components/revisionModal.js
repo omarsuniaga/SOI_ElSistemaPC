@@ -1,5 +1,6 @@
-import { AppModal } from '../../../shared/components/AppModal.js'
+﻿import { AppModal } from '../../../shared/components/AppModal.js'
 import { highlightDsl, parseDsl, getTokenSummary } from '../utils/dslParser.js'
+import { escapeHTML } from '../../../shared/utils/sanitize.js'
 
 export function openRevisionModal(originalText, dslResult, onAccept) {
   const parsed = parseDsl(dslResult)
@@ -7,28 +8,28 @@ export function openRevisionModal(originalText, dslResult, onAccept) {
   const highlighted = highlightDsl(dslResult)
 
   AppModal.open({
-    title: '✨ Revisión IA',
+    title: 'âœ¨ RevisiÃ³n IA',
     size: 'lg',
     saveText: 'Aceptar y usar',
     cancelText: 'Cancelar',
     body: `
       <div class="row">
         <div class="col-12 mb-3">
-          <label class="form-label fw-bold text-muted small">📝 Texto original</label>
+          <label class="form-label fw-bold text-muted small">ðŸ“ Texto original</label>
           <div class="p-2 bg-light rounded" style="font-size: 0.9rem;">
             ${escapeHTML(originalText)}
           </div>
         </div>
         
         <div class="col-12 mb-3">
-          <label class="form-label fw-bold text-success small">✨ DSL estructurado</label>
+          <label class="form-label fw-bold text-success small">âœ¨ DSL estructurado</label>
           <div class="p-3 bg-white border rounded" style="font-size: 0.95rem; white-space: pre-wrap;">
             ${highlighted || escapeHTML(dslResult)}
           </div>
         </div>
         
         <div class="col-12">
-          <label class="form-label fw-bold text-muted small">📊 Resumen</label>
+          <label class="form-label fw-bold text-muted small">ðŸ“Š Resumen</label>
           <div class="d-flex flex-wrap gap-2">
             ${summary !== 'Sin tokens' ? summary.split(', ').map(token => `
               <span class="badge bg-secondary bg-opacity-10 text-secondary border">
@@ -54,14 +55,4 @@ export function openRevisionModal(originalText, dslResult, onAccept) {
       if (onAccept) onAccept(dslResult)
     },
   })
-}
-
-function escapeHTML(text) {
-  if (!text) return ''
-  return text
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;')
 }

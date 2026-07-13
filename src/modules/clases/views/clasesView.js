@@ -394,20 +394,20 @@ function renderClaseCard(clase) {
   }
 
   return `
-    <div class="list-group-item list-group-item-action d-flex align-items-center justify-content-between p-3 w-100 border-start-accent ${accentClass}" data-id="${clase.id}" style="cursor: pointer;">
-      <div class="d-flex align-items-center gap-3 flex-grow-1 overflow-hidden">
-        <div class="d-flex flex-column flex-grow-1 overflow-hidden pe-3">
+    <div class="list-group-item list-group-item-action d-flex align-items-center justify-content-between p-3 w-100 border-start-accent clase-card-item ${accentClass}" data-id="${clase.id}" style="cursor: pointer;">
+      <div class="d-flex align-items-center gap-3 flex-grow-1 overflow-hidden clase-card-main">
+        <div class="d-flex flex-column flex-grow-1 overflow-hidden pe-3 clase-card-copy">
           <div class="d-flex align-items-center gap-2">
             <span class="fw-bold text-truncate" style="font-size: 1.05rem;">${escapeHTML(nombre)}</span>
             ${renderIssuesBadge(warnings)}
           </div>
           <small class="text-muted text-truncate"><i class="bi bi-person-badge me-1"></i>${escapeHTML(maestroNombre)} • ${escapeHTML(clase.instrumento || '-')}</small>
-          ${maestroSuplenteNombre ? `<small class="text-muted text-truncate" style="font-size: 0.82rem;"><i class="bi bi-person-dash me-1"></i>Suplente: ${escapeHTML(maestroSuplenteNombre)}</small>` : ''}
-          <small class="text-muted extra-small mt-1" style="font-size: 0.85rem;"><i class="bi bi-clock me-1"></i>${escapeHTML(horariosTexto)}</small>
+          ${maestroSuplenteNombre ? `<small class="text-muted text-truncate clase-card-suplente" style="font-size: 0.82rem;"><i class="bi bi-person-dash me-1"></i>Suplente: ${escapeHTML(maestroSuplenteNombre)}</small>` : ''}
+          <small class="text-muted extra-small mt-1 clase-card-horarios" style="font-size: 0.85rem;"><i class="bi bi-clock me-1"></i>${escapeHTML(horariosTexto)}</small>
           ${renderIssueChips(warnings)}
         </div>
       </div>
-      <div class="flex-shrink-0 d-flex align-items-center gap-2 ms-2 pe-1">
+      <div class="flex-shrink-0 d-flex align-items-center gap-2 ms-2 pe-1 clase-card-actions">
         <button class="btn btn-outline-secondary btn-sm btn-class-pdf clases-ui-btn" data-id="${clase.id}" type="button" title="PDF Listado Alumnos x Clase" aria-label="Descargar PDF de listados de alumnos por clase">
           <i class="bi bi-file-earmark-pdf" aria-hidden="true"></i>
           <span class="btn-class-pdf__label">PDF Listado Alumnos x Clase</span>
@@ -993,11 +993,96 @@ function injectClasesResponsiveStyles() {
       white-space: nowrap;
     }
     @media (max-width: 767.98px) {
+      .clases-header-premium {
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.75rem;
+      }
+
+      .clases-header-actions {
+        display: grid !important;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.5rem;
+        width: 100%;
+      }
+
+      .clases-header-actions > * {
+        width: 100%;
+        min-width: 0;
+      }
+
+      .clases-filters-panel__header {
+        flex-wrap: wrap;
+        gap: 0.5rem;
+      }
+
+      .clases-filters-panel__header > :first-child {
+        min-width: 0;
+        flex: 1 1 auto;
+      }
+
+      .clases-filter-toolbar {
+        display: grid !important;
+        grid-template-columns: 1fr;
+        gap: 0.75rem !important;
+      }
+
+      .clases-filter-toolbar .premium-search-container,
+      .clases-filter-toolbar .premium-select-container {
+        width: 100%;
+        min-width: 0 !important;
+      }
+
+      .clases-filter-toolbar .btn {
+        width: 100%;
+      }
+
+      .clase-card-item {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 0.85rem;
+      }
+
+      .clase-card-main {
+        width: 100%;
+        min-width: 0;
+        padding-right: 0 !important;
+      }
+
+      .clase-card-copy {
+        padding-right: 0 !important;
+      }
+
+      .clase-card-suplente {
+        display: none;
+      }
+
+      .clase-card-horarios {
+        font-size: 0.78rem !important;
+      }
+
+      .clase-card-actions {
+        margin-left: 0 !important;
+        padding-right: 0 !important;
+        width: 100%;
+        flex-wrap: wrap;
+        gap: 0.35rem;
+      }
+
+      .clase-card-actions .btn {
+        flex: 1 1 2.75rem;
+        min-width: 2.75rem;
+        padding-left: 0;
+        padding-right: 0;
+      }
+
       .btn-clases-pdf {
         width: 2.75rem;
         justify-content: center;
         padding-left: .7rem;
         padding-right: .7rem;
+        flex-shrink: 0;
       }
       .btn-clases-pdf__label {
         display: none !important;

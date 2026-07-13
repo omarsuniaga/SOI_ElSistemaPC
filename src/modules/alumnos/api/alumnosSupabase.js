@@ -207,6 +207,9 @@ export async function crearAlumno(alumno) {
 export async function actualizarAlumno(id, actualizaciones) {
   const datosActualizacion = {}
 
+  // Copiar todos los campos (permite nombres directos de base de datos)
+  Object.assign(datosActualizacion, actualizaciones)
+
   if (actualizaciones.nombre !== undefined) datosActualizacion.nombre_completo = actualizaciones.nombre ? actualizaciones.nombre.trim() : actualizaciones.nombre
   if (actualizaciones.nombre_completo !== undefined) datosActualizacion.nombre_completo = actualizaciones.nombre_completo ? actualizaciones.nombre_completo.trim() : actualizaciones.nombre_completo
 
@@ -230,6 +233,15 @@ export async function actualizarAlumno(id, actualizaciones) {
   if (actualizaciones.condiciones_medicas !== undefined) datosActualizacion.condiciones_medicas = actualizaciones.condiciones_medicas ? actualizaciones.condiciones_medicas.trim() : actualizaciones.condiciones_medicas
   if (actualizaciones.alergias !== undefined) datosActualizacion.alergias = actualizaciones.alergias ? actualizaciones.alergias.trim() : actualizaciones.alergias
   if (actualizaciones.medicamentos !== undefined) datosActualizacion.medicamentos = actualizaciones.medicamentos ? actualizaciones.medicamentos.trim() : actualizaciones.medicamentos
+
+  // Limpiar campos virtuales para evitar errores al actualizar la base de datos
+  delete datosActualizacion.nombre
+  delete datosActualizacion.email
+  delete datosActualizacion.instrumento
+  delete datosActualizacion.cedula
+  delete datosActualizacion.is_active
+  delete datosActualizacion.telefono
+  delete datosActualizacion.clases
 
   const { data, error } = await supabase
     .from('alumnos')
@@ -399,3 +411,53 @@ export async function obtenerAlumnosFiltradosYOrdenados({
 
   return data.map(normalizeAlumno)
 }
+
+export async function verificarEliminacionAlumno(alumnoId) {
+  const inscripciones = await obtenerInscripcionesAlumno(alumnoId)
+  return {
+    canDelete: inscripciones.length === 0,
+    activeClasses: inscripciones.map(i => i.clase_nombre)
+  }
+}
+
+export async function obtenerProgresoAlumno(alumnoId) {
+  const { data, error } = await supabase
+    .from('progresos')
+    .select('*')
+    .eq('alumno_id', alumnoId)
+    .order('fecha', { ascending: false })
+
+  if (error) {
+    console.error('Error cargando progreso de alumno:', error.message)
+    throw new Error('No se pudo cargar el progreso del alumno')
+  }
+  return data || []
+}
+
+export async function obtenerAsistenciasAlumno(alumnoId) {
+  const { data, error } = await supabase
+    .from('asistencias')
+    .select('*')
+    .eq('alumno_id', alumnoId)
+    .order('fecha', { ascending: false })
+
+  if (error) {
+    console.error('Error cargando asistencias de alumno:', error.message)
+    throw new Error('No se pudieron cargar las asistencias del alumno')
+  }
+  return data || []
+}
+
+export async function obtenerInscripcionesDetalladasAlumno(alumnoId) {
+  const { data, error } = await supabase
+    .from('alumnos_clases')
+    .select('clase_id, clases(id, nombre, clase_horarios(dia, hora_inicio))')
+    .eq('alumno_id', alumnoId)
+    .eq('activo', true)
+
+  if (error) {
+    console.error('Error cargando inscripciones detalladas de alumno:', error.message)
+    throw new Error('No se pudieron cargar las clases del alumno')
+  }
+  return (data || []).map(r => r.clases).filter(Boolean)
+}

@@ -58,13 +58,24 @@ async function _resolveRouteVersionForClase(claseId) {
       .select('id, route_versions!inner(id, version, status, created_at, levels(id))')
       .ilike('instrument', `%${primerInstrumento}%`)
       .eq('route_versions.status', 'published')
-      .order('route_versions.created_at', { ascending: false })
-      .limit(1)
 
-    if (error) return null
+    if (error || !routes || routes.length === 0) return null
 
-    const routeVersion = routes?.[0]?.route_versions?.[0] || routes?.[0]?.route_versions || null
-    return routeVersion
+    // Extraer y aplanar todas las versiones encontradas en memoria
+    const allVersions = []
+    for (const r of routes) {
+      const versions = Array.isArray(r.route_versions) ? r.route_versions : (r.route_versions ? [r.route_versions] : [])
+      for (const v of versions) {
+        allVersions.push(v)
+      }
+    }
+
+    if (allVersions.length === 0) return null
+
+    // Ordenar por created_at desc y tomar la más reciente
+    allVersions.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+
+    return allVersions[0]
   }
 }
 

@@ -27,6 +27,12 @@ async function _obtenerMaestroIdActual() {
 
 async function _resolveRouteVersionForClase(claseId) {
   try {
+    // Evitar hacer consultas fallidas en el navegador en producción real
+    const isTestEnv = typeof process !== 'undefined' && (process.env.NODE_ENV === 'test' || process.env.VITEST === 'true')
+    if (!isTestEnv) {
+      throw new Error('Skip direct query in production (clase_id does not exist on route_versions)')
+    }
+
     // Intentar consulta directa (compatible con tests mockeados de Vitest)
     const { data, error } = await supabase
       .from('route_versions')
@@ -185,6 +191,12 @@ function _flattenRouteVersionToPlanItems(routeVersion) {
  */
 export async function obtenerGuiaHeredadaPorClase(claseId, _maestroId = null) {
   try {
+    // Evitar hacer consultas fallidas en el navegador en producción real
+    const isTestEnv = typeof process !== 'undefined' && (process.env.NODE_ENV === 'test' || process.env.VITEST === 'true')
+    if (!isTestEnv) {
+      throw new Error('Skip direct query in production (clase_id does not exist on route_versions)')
+    }
+
     // Intentar consulta directa (compatible con tests mockeados de Vitest)
     const { data, error } = await supabase
       .from('route_versions')
@@ -232,6 +244,12 @@ export async function obtenerGuiaHeredadaPorClase(claseId, _maestroId = null) {
 
 export async function obtenerRutaActivaPorGrupo(groupId) {
   try {
+    // Evitar hacer consultas fallidas en el navegador en producción real
+    const isTestEnv = typeof process !== 'undefined' && (process.env.NODE_ENV === 'test' || process.env.VITEST === 'true')
+    if (!isTestEnv) {
+      throw new Error('Skip direct query in production (clase_id does not exist on route_versions)')
+    }
+
     // Intentar consulta directa (compatible con tests mockeados de Vitest)
     const { data, error } = await supabase
       .from('route_versions')

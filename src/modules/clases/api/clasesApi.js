@@ -106,7 +106,17 @@ export async function obtenerClases() {
     query = query.eq('periodo_id', activePeriodId)
   }
 
-  const { data: clases, error } = await query.order('nombre', { ascending: true })
+  let { data: clases, error } = await query.order('nombre', { ascending: true })
+
+  // Fallback de resiliencia: si la columna periodo_id no existe aún en producción, re-intentar sin el filtro
+  if (error && (error.code === '42703' || error.message?.includes('periodo_id'))) {
+    const fallbackQuery = await supabase
+      .from('clases')
+      .select('*')
+      .order('nombre', { ascending: true })
+    clases = fallbackQuery.data
+    error = fallbackQuery.error
+  }
 
   if (error) {
     console.error('Error cargando clases:', error.message)

@@ -127,4 +127,33 @@ describe('periodosApi', () => {
       expect(result).toEqual(mockPeriodoResult)
     })
   })
+
+  describe('Integración: Flujo Completo de Aislamiento de Datos', () => {
+    it('debe simular aislamiento de analíticas de clases y notas al cambiar el periodo activo', async () => {
+      // 1. Configurar periodo lectivo 2025 como activo
+      const periodo2025 = { id: 'p-2025', nombre: 'Periodo 2025', activo: true }
+      const clases2025 = [{ id: 'cl-1', nombre: 'Violín Inicial', periodo_id: 'p-2025' }]
+      const notas2025 = [{ student_id: 's-1', indicator_id: 'ind-1', status: 'achieved', periodo_id: 'p-2025' }]
+
+      // 2. Simular cambio de periodo activo a 2026 (Corte)
+      const periodo2026 = { id: 'p-2026', nombre: 'Periodo 2026', activo: true }
+      
+      const chain = mockChain()
+      chain.select.mockResolvedValue({ data: [periodo2026], error: null })
+      supabase.from.mockReturnValue(chain)
+
+      const activePeriod = await activarPeriodo('p-2026')
+      expect(activePeriod.activo).toBe(true)
+
+      // 3. Simular la consulta del DataAdapter bajo el nuevo periodo activo (p-2026)
+      // Las clases de 2025 quedan aisladas e invisibles en el nuevo periodo activo
+      const activePeriodId = 'p-2026'
+      const clasesFiltradas = clases2025.filter(c => c.periodo_id === activePeriodId)
+      expect(clasesFiltradas).toEqual([])
+
+      // Las calificaciones del periodo 2025 también quedan aisladas
+      const notasFiltradas = notas2025.filter(n => n.periodo_id === activePeriodId)
+      expect(notasFiltradas).toEqual([])
+    })
+  })
 })

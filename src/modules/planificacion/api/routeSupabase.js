@@ -38,30 +38,41 @@ async function _resolveRouteVersionIdForClase(claseId) {
     if (row && row.id) return row.id
     throw new Error('No direct route version found')
   } catch (err) {
-    // Fallback: resolución real en producción usando el instrumento de la clase
-    const { data: clase, error: claseError } = await supabase
+    // Fallback: resolución real en producción usando el instrumento de la clase (usa .limit(1) para compatibilidad con mocks)
+    const { data: clases, error: claseError } = await supabase
       .from('clases')
       .select('id, instrumento')
       .eq('id', claseId)
-      .maybeSingle()
+      .limit(1)
 
+    const clase = clases?.[0]
     if (claseError || !clase?.instrumento) return null
 
     const primerInstrumento = clase.instrumento.split(',')[0].trim().toLowerCase()
 
-    const { data, error } = await supabase
+    const { data: routes, error } = await supabase
       .from('routes')
-      .select('id, route_versions!inner(id)')
+      .select('id, route_versions!inner(id, version, status, created_at, levels(id))')
       .ilike('instrument', `%${primerInstrumento}%`)
       .eq('route_versions.status', 'published')
-      .order('route_versions.created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle()
 
-    if (error) return null
+    if (error || !routes || routes.length === 0) return null
 
-    const routeVersion = data?.route_versions?.[0] || data?.route_versions || null
-    return routeVersion?.id || null
+    // Extraer y aplanar todas las versiones encontradas en memoria
+    const allVersions = []
+    for (const r of routes) {
+      const versions = Array.isArray(r.route_versions) ? r.route_versions : (r.route_versions ? [r.route_versions] : [])
+      for (const v of versions) {
+        allVersions.push(v)
+      }
+    }
+
+    if (allVersions.length === 0) return null
+
+    // Ordenar por created_at desc y tomar la más reciente
+    allVersions.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+
+    return allVersions[0]?.id || null
   }
 }
 

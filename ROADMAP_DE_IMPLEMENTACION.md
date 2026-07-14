@@ -10,13 +10,13 @@
 
 | Métrica | Estado / Valor | Fecha de Medición | Acción Requerida |
 | :--- | :--- | :--- | :--- |
-| **Estado General** | ✅ **ESTABLE** | 2026-07-13 | Commitear los cambios locales auditados. |
-| **Tests Totales (Vitest)** | 2789 / 2789 Pasados (0 Fallados) | 2026-07-13 | Mantener la suite de pruebas libre de fallos (strict_tdd). |
-| **Cambios sin Confirmar** | 58 archivos (-2692 / +2277 líneas) | 2026-07-13 | Auditar cambios de la vista de alumnos y consolidar. |
-| **Estado Supabase DB** | ✅ Sincronizado | 2026-07-13 | Monitorear migraciones untracked (`20260715`). |
+| **Estado General** | ✅ **ESTABLE** | 2026-07-14 | Todo respaldado y en GitHub master remoto. |
+| **Tests Totales (Vitest)** | 2789 / 2789 Pasados (0 Fallados) | 2026-07-14 | Suite de pruebas global al 100% en verde. |
+| **Cambios sin Confirmar** | 0 archivos (Clean) | 2026-07-14 | Working tree libre de cambios pendientes. |
+| **Estado Supabase DB** | ✅ Sincronizado | 2026-07-14 | Monitorear la migración de cierre de período. |
 
 ### Pruebas Unitarias Recientes:
-*   ✅ **TODAS PASANDO**. La suite completa de pruebas unitarias y de integración se ejecutó con éxito (2789 tests en total, 0 fallados). Se estabilizaron los fallos en el módulo de alumnos, el widget de analítica y la vista de administración de alumnos.
+*   ✅ **TODAS PASANDO**. La suite completa de pruebas unitarias y de integración se ejecutó con éxito (2789 tests en total, 0 fallados). Se integraron los tests del módulo de periodos y se validó la compatibilidad con el sniffer de base de datos.
 
 ---
 
@@ -30,6 +30,7 @@ Este índice cruza las especificaciones técnicas estructuradas de los cambios e
 | **[planificacion-dataadapter](file:///C:/Users/omare/OneDrive/Documentos/SOI_Sistema_Operativo_Institucional/09_SOI_WEB_PORTAL/sistema-academico-pwa/openspec/changes/planificacion-dataadapter/tasks.md)** | 🟢 **Completada** (100%) | `planificacion.adapter.test.js` | `planificacionAdapter.js`<br>`planificacionMock.js`<br>`usePlanificacion.js` | Todos los lotes están implementados e integrados en el codebase. El DataAdapter y su almacenamiento mock en localStorage pasan sus tests. |
 | **[curriculo-tres-planos](file:///C:/Users/omare/OneDrive/Documentos/SOI_Sistema_Operativo_Institucional/09_SOI_WEB_PORTAL/sistema-academico-pwa/openspec/changes/curriculo-tres-planos/tasks.md)** | 🟢 **Completada** (100%) | `weeklyPlan.adapter.test.js` | `weeklyPlanSupabase.js`<br>`weeklyPlanMock.js` | Las Fases de BD y de Capa de Servicios de datos (redirección a tablas reales `route_versions` e `indicator_attempts`) están 100% completas y validadas. |
 | **[modulo-planificacion-standardization](file:///C:/Users/omare/OneDrive/Documentos/SOI_Sistema_Operativo_Institucional/09_SOI_WEB_PORTAL/sistema-academico-pwa/openspec/changes/modulo-planificacion-standardization/tasks.md)** | 🟢 **Completada** (100%) | `planificacion.adapter.test.js`<br>`planificacion.model.test.js` | `planificacion.model.js`<br>`planificacionView.js` | La unificación visual y de API del módulo bajo el modelo Planificacion, el editor DSL y las vistas consolidadas están 100% integradas. |
+| **cierre-periodo** | 🟢 **Completada** (100%) | `periodosApi.test.js` | `periodosView.js`<br>`clasesApi.js`<br>`weeklyPlanSupabase.js`<br>`periodoSniffer.js` | Archivado de ciclos, aislamiento de datos operativos por período activo e inmutabilidad con triggers SQL de Supabase. |
 
 ---
 

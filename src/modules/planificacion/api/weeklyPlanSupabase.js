@@ -1,4 +1,5 @@
 import { supabase } from '../../../lib/supabaseClient.js'
+import { checkPeriodoSupport } from '../../../lib/periodoSniffer.js'
 
 const _warnedMissingTables = new Set()
 
@@ -355,13 +356,19 @@ export async function registrarProgresoIndicador(studentId, indicatorId, status,
     .maybeSingle()
   const nodeId = indicatorData?.node_id || null
 
-  // Obtener el período activo (si existe en base de datos)
-  const { data: periodos, error: pError } = await supabase
-    .from('periodos')
-    .select('id')
-    .eq('activo', true)
-    .limit(1)
-  const activePeriodId = (!pError && periodos?.length > 0) ? periodos[0].id : null
+  // Obtener el período activo (si existe en base de datos y hay soporte de columnas en DB)
+  const isPeriodoSupported = await checkPeriodoSupport()
+  let activePeriodId = null
+  if (isPeriodoSupported) {
+    const { data: periodos, error: pError } = await supabase
+      .from('periodos')
+      .select('id')
+      .eq('activo', true)
+      .limit(1)
+    if (!pError && periodos?.length > 0) {
+      activePeriodId = periodos[0].id
+    }
+  }
 
   const row = {
     student_id: studentId,
@@ -375,7 +382,7 @@ export async function registrarProgresoIndicador(studentId, indicatorId, status,
     covered_date: new Date().toISOString().slice(0, 10),
     updated_at: new Date().toISOString()
   }
-  if (activePeriodId) {
+  if (isPeriodoSupported && activePeriodId) {
     row.periodo_id = activePeriodId
   }
 
@@ -390,17 +397,22 @@ export async function registrarProgresoIndicador(studentId, indicatorId, status,
 }
 
 export async function obtenerProgresoGrupo(groupId, levelId = null) {
-  // Obtener el período activo (si existe en base de datos)
-  const { data: periodos, error: pError } = await supabase
-    .from('periodos')
-    .select('id')
-    .eq('activo', true)
-    .limit(1)
-
-  const activePeriodId = (!pError && periodos?.length > 0) ? periodos[0].id : null
+  // Obtener el período activo (si existe en base de datos y hay soporte de columnas en DB)
+  const isPeriodoSupported = await checkPeriodoSupport()
+  let activePeriodId = null
+  if (isPeriodoSupported) {
+    const { data: periodos, error: pError } = await supabase
+      .from('periodos')
+      .select('id')
+      .eq('activo', true)
+      .limit(1)
+    if (!pError && periodos?.length > 0) {
+      activePeriodId = periodos[0].id
+    }
+  }
 
   let query = supabase.from('indicator_attempts').select('*').eq('covered_by_clase_id', groupId)
-  if (activePeriodId) {
+  if (isPeriodoSupported && activePeriodId) {
     query = query.eq('periodo_id', activePeriodId)
   }
 

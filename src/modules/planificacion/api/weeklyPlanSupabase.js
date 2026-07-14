@@ -326,6 +326,14 @@ export async function registrarProgresoIndicador(studentId, indicatorId, status,
     .maybeSingle()
   const nodeId = indicatorData?.node_id || null
 
+  // Obtener el período activo (si existe en base de datos)
+  const { data: periodos, error: pError } = await supabase
+    .from('periodos')
+    .select('id')
+    .eq('activo', true)
+    .limit(1)
+  const activePeriodId = (!pError && periodos?.length > 0) ? periodos[0].id : null
+
   const row = {
     student_id: studentId,
     indicator_id: indicatorId,
@@ -337,6 +345,9 @@ export async function registrarProgresoIndicador(studentId, indicatorId, status,
     covered_by_clase_id: claseId,
     covered_date: new Date().toISOString().slice(0, 10),
     updated_at: new Date().toISOString()
+  }
+  if (activePeriodId) {
+    row.periodo_id = activePeriodId
   }
 
   const { data, error } = await supabase
@@ -350,10 +361,21 @@ export async function registrarProgresoIndicador(studentId, indicatorId, status,
 }
 
 export async function obtenerProgresoGrupo(groupId, levelId = null) {
-  const { data, error } = await supabase
-    .from('indicator_attempts')
-    .select('*')
-    .eq('covered_by_clase_id', groupId)
+  // Obtener el período activo (si existe en base de datos)
+  const { data: periodos, error: pError } = await supabase
+    .from('periodos')
+    .select('id')
+    .eq('activo', true)
+    .limit(1)
+
+  const activePeriodId = (!pError && periodos?.length > 0) ? periodos[0].id : null
+
+  let query = supabase.from('indicator_attempts').select('*').eq('covered_by_clase_id', groupId)
+  if (activePeriodId) {
+    query = query.eq('periodo_id', activePeriodId)
+  }
+
+  const { data, error } = await query
 
   if (error) throw error
   

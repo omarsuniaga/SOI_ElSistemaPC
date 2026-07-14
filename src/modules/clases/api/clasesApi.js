@@ -92,10 +92,21 @@ function normalizeClase(c) {
 }
 
 export async function obtenerClases() {
-  const { data: clases, error } = await supabase
-    .from('clases')
-    .select('*')
-    .order('nombre', { ascending: true })
+  // Obtener el período activo (si existe en base de datos)
+  const { data: periodos, error: pError } = await supabase
+    .from('periodos')
+    .select('id')
+    .eq('activo', true)
+    .limit(1)
+
+  const activePeriodId = (!pError && periodos?.length > 0) ? periodos[0].id : null
+
+  let query = supabase.from('clases').select('*')
+  if (activePeriodId) {
+    query = query.eq('periodo_id', activePeriodId)
+  }
+
+  const { data: clases, error } = await query.order('nombre', { ascending: true })
 
   if (error) {
     console.error('Error cargando clases:', error.message)
@@ -167,6 +178,17 @@ export async function crearClase(claseData, force = false) {
   // Para INSERT, no enviar id (que será null) - dejar que BD genere con DEFAULT
   const claseJSON = clase.toJSON()
   delete claseJSON.id
+
+  // Obtener el período activo para asociar la nueva clase automáticamente
+  const { data: periodos, error: pError } = await supabase
+    .from('periodos')
+    .select('id')
+    .eq('activo', true)
+    .limit(1)
+
+  if (!pError && periodos?.length > 0) {
+    claseJSON.periodo_id = periodos[0].id
+  }
 
   const { data, error } = await supabase
     .from('clases')

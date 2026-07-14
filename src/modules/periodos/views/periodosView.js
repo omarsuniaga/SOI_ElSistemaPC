@@ -253,15 +253,41 @@ export async function renderPeriodosView(container) {
   }
 
   async function activarPeriodo(id) {
-    if (confirm('¿Estás seguro de que quieres activar este período? Se desactivarán los demás.')) {
-      try {
-        await PeriodosApi.activarPeriodo(id)
-        showToast('Período activado con éxito')
-        await loadPeriodos()
-      } catch (error) {
-        showToast(error.message, 'danger')
+    const periodos = await PeriodosApi.getPeriodos()
+    const periodo = periodos.find(p => p.id === id)
+    if (!periodo) return
+
+    AppModal.open({
+      title: '⚠️ Corte de Período Académico (Archivo Histórico)',
+      saveText: 'Confirmar Activación y Corte',
+      body: `
+        <div class="p-2">
+          <div class="alert alert-warning border-warning-subtle d-flex align-items-start gap-2 mb-3">
+            <i class="bi bi-exclamation-triangle-fill text-warning fs-5"></i>
+            <div>
+              <strong class="d-block mb-1">¡Advertencia de Integridad Académica!</strong>
+              Estás a punto de activar el período <strong>"${periodo.nombre}"</strong> y archivar el período anterior.
+            </div>
+          </div>
+          <p class="mb-2">Esta acción aplicará los siguientes cambios operativos en cascada:</p>
+          <ul class="small text-muted mb-3 ps-3">
+            <li class="mb-1"><strong>Aislamiento de Analíticas</strong>: Los tableros, asistencias y promedios se inicializarán en blanco para el nuevo período.</li>
+            <li class="mb-1"><strong>Bloqueo de Modificaciones</strong>: Los registros del período archivado quedarán bloqueados para edición, asegurando la inmutabilidad histórica.</li>
+            <li class="mb-1"><strong>Acceso de Lectura</strong>: El personal administrativo y ACM podrán seguir consultando los datos archivados únicamente en modo de lectura.</li>
+          </ul>
+          <p class="mb-0 text-danger fw-semibold small">¿Confirmas que deseas aplicar el corte académico e iniciar el nuevo ciclo?</p>
+        </div>
+      `,
+      onSave: async () => {
+        try {
+          await PeriodosApi.activarPeriodo(id)
+          showToast('Período activado e historial archivado con éxito')
+          await loadPeriodos()
+        } catch (error) {
+          showToast(error.message, 'danger')
+        }
       }
-    }
+    })
   }
 
   loadPeriodos()

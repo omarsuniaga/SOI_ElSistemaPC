@@ -25,27 +25,27 @@ Chain strategy: size-exception
 
 ## Phase 1: Model & API Foundation (TDD)
 
-- [ ] 1.1 Update `src/modules/planificacion/models/planificacion.model.js`: Add state guards and rich validation.
-- [ ] 1.2 Create `src/modules/planificacion/__tests__/planificacion.model.test.js`: Test validation and status logic (RED).
-- [ ] 1.3 Implement model logic to pass tests (GREEN).
-- [ ] 1.4 Refactor `src/modules/planificacion/api/planificacionApi.js`: Normalize all returns as `Planificacion` instances.
+- [x] 1.1 Update `src/modules/planificacion/models/planificacion.model.js`: Add state guards and rich validation.
+- [x] 1.2 Create `src/modules/planificacion/__tests__/planificacion.model.test.js`: Test validation and status logic (RED).
+- [x] 1.3 Implement model logic to pass tests (GREEN).
+- [x] 1.4 Refactor `src/modules/planificacion/api/planificacionApi.js`: Normalize all returns as `Planificacion` instances.
 
 ## Phase 2: View Consolidation (Core Refinement)
 
-- [ ] 2.1 Refactor `src/modules/planificacion/views/planificacionView.js`: Adopt `page-header` and `table-compact`.
-- [ ] 2.2 Implement role-based tabs/filters (Mis Planes vs Todos) within the main view.
-- [ ] 2.3 Integrate `DSLEditor` in the planning form modal.
-- [ ] 2.4 Implement bulk approval UI for administrator role.
-- [ ] 2.5 Port `quick-actions` for plan management (View, Edit, Delete, Run).
+- [x] 2.1 Refactor `src/modules/planificacion/views/planificacionView.js`: Adopt `page-header` and `table-compact`.
+- [x] 2.2 Implement role-based tabs/filters (Mis Planes vs Todos) within the main view.
+- [x] 2.3 Integrate `DSLEditor` in the planning form modal.
+- [x] 2.4 Implement bulk approval UI for administrator role.
+- [x] 2.5 Port `quick-actions` for plan management (View, Edit, Delete, Run).
 
 ## Phase 3: Cleanup & Integration
 
-- [ ] 3.1 Delete redundant views: `planificacionesMaestrosView.js` and `plantillasAdminView.js`.
-- [ ] 3.2 Update `planificacion.router.js` to point all planning routes to the consolidated view.
-- [ ] 3.3 Ensure PDF export consumes the new normalized model data.
+- [x] 3.1 Delete redundant views: `planificacionesMaestrosView.js` and `plantillasAdminView.js`.
+- [x] 3.2 Update `planificacion.router.js` to point all planning routes to the consolidated view.
+- [x] 3.3 Ensure PDF export consumes the new normalized model data.
 
 ## Phase 4: Verification & Final Cierre
 
-- [ ] 4.1 Create `src/modules/planificacion/__tests__/planificacion.integration.test.js` for approval flow.
-- [ ] 4.2 Run `npm run test:run` for the entire project.
-- [ ] 4.3 Manual check: Verify role-based visibility in the consolidated view.
+- [x] 4.1 Create `src/modules/planificacion/__tests__/planificacion.integration.test.js` for approval flow.
+- [x] 4.2 Run `npm run test:run` for the entire project.
+- [x] 4.3 Manual check: Verify role-based visibility in the consolidated view.

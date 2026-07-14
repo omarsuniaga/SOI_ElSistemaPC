@@ -1,1 +1,0 @@
-var e={"&":`&amp;`,"<":`&lt;`,">":`&gt;`,'"':`&quot;`,"'":`&#39;`,"/":`&#x2F;`};function t(t){return t==null?``:String(t).replace(/[&<>"'/]/g,t=>e[t])}export{t};

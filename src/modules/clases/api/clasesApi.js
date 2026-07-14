@@ -1,5 +1,6 @@
 import { supabase } from '../../../lib/supabaseClient.js'
 import { formatHora, timeToMinutes } from '../utils/clasesUtils.js'
+import { checkPeriodoSupport } from '../../../lib/periodoSniffer.js'
 import { Clase } from '../models/clase.model.js'
 
 export const NIVELES = [
@@ -92,31 +93,26 @@ function normalizeClase(c) {
 }
 
 export async function obtenerClases() {
-  // Obtener el período activo (si existe en base de datos)
-  const { data: periodos, error: pError } = await supabase
-    .from('periodos')
-    .select('id')
-    .eq('activo', true)
-    .limit(1)
+  const isPeriodoSupported = await checkPeriodoSupport()
 
-  const activePeriodId = (!pError && periodos?.length > 0) ? periodos[0].id : null
+  let activePeriodId = null
+  if (isPeriodoSupported) {
+    const { data: periodos, error: pError } = await supabase
+      .from('periodos')
+      .select('id')
+      .eq('activo', true)
+      .limit(1)
+    if (!pError && periodos?.length > 0) {
+      activePeriodId = periodos[0].id
+    }
+  }
 
   let query = supabase.from('clases').select('*')
-  if (activePeriodId) {
+  if (isPeriodoSupported && activePeriodId) {
     query = query.eq('periodo_id', activePeriodId)
   }
 
-  let { data: clases, error } = await query.order('nombre', { ascending: true })
-
-  // Fallback de resiliencia: si la columna periodo_id no existe aún en producción, re-intentar sin el filtro
-  if (error && (error.code === '42703' || error.message?.includes('periodo_id'))) {
-    const fallbackQuery = await supabase
-      .from('clases')
-      .select('*')
-      .order('nombre', { ascending: true })
-    clases = fallbackQuery.data
-    error = fallbackQuery.error
-  }
+  const { data: clases, error } = await query.order('nombre', { ascending: true })
 
   if (error) {
     console.error('Error cargando clases:', error.message)
@@ -189,15 +185,21 @@ export async function crearClase(claseData, force = false) {
   const claseJSON = clase.toJSON()
   delete claseJSON.id
 
-  // Obtener el período activo para asociar la nueva clase automáticamente
-  const { data: periodos, error: pError } = await supabase
-    .from('periodos')
-    .select('id')
-    .eq('activo', true)
-    .limit(1)
+  // Obtener el período activo para asociar la nueva clase automáticamente si hay soporte en base de datos
+  const isPeriodoSupported = await checkPeriodoSupport()
+  if (isPeriodoSupported) {
+    const { data: periodos, error: pError } = await supabase
+      .from('periodos')
+      .select('id')
+      .eq('activo', true)
+      .limit(1)
 
-  if (!pError && periodos?.length > 0) {
-    claseJSON.periodo_id = periodos[0].id
+    if (!pError && periodos?.length > 0) {
+      claseJSON.periodo_id = periodos[0].id
+    }
+  } else {
+    // Si no hay soporte, quitar periodo_id para evitar errores 400 en insercion
+    delete claseJSON.periodo_id
   }
 
   const { data, error } = await supabase

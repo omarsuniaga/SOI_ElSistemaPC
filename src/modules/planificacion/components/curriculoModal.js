@@ -17,6 +17,9 @@ import {
 } from '../api/curriculoApi.js'
 import { supabase } from '../../../lib/supabaseClient.js'
 import { AppToast } from '../../../shared/components/AppToast.js'
+import * as bootstrapLib from 'bootstrap'
+
+const bootstrap = window.bootstrap || bootstrapLib
 
 const STYLE = `
 <style id="curriculo-modal-style">

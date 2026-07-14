@@ -1,4 +1,5 @@
 import { supabase } from '../../../lib/supabaseClient.js'
+import { obtenerGuiaHeredadaPorClase } from '../../planificacion/api/weeklyPlanSupabase.js'
 
 function mapStatusToNota(status) {
   if (['achieved', 'exceeded'].includes(status)) return 'bien'
@@ -26,6 +27,46 @@ function buildSemaforoEntry(alumnoId, claseId, objetivoId, notas = []) {
   return { ...counts, semaforo }
 }
 
+async function _getObjetivosFromRoute(claseId, planItems = []) {
+  try {
+    const guia = await obtenerGuiaHeredadaPorClase(claseId)
+    if (!guia?.route?.levels) return []
+
+    const objetivosReales = []
+    for (const lvl of guia.route.levels) {
+      if (lvl.nodes) {
+        for (const nd of lvl.nodes) {
+          if (nd.objetivos) {
+            for (const obj of nd.objetivos) {
+              const indicatorIds = (obj.indicators || []).map(i => i.id)
+              const matchingWeeks = (planItems || [])
+                .filter(item => indicatorIds.includes(item.indicator_id))
+                .map(item => Number(item.week_number))
+                .filter(Boolean)
+
+              const semana_inicio = matchingWeeks.length > 0 ? Math.min(...matchingWeeks) : 1
+              const semana_fin = matchingWeeks.length > 0 ? Math.max(...matchingWeeks) : 16
+
+              objetivosReales.push({
+                id: obj.id,
+                clase_id: claseId,
+                nombre: obj.name || obj.nombre || 'Objetivo',
+                semana_inicio,
+                semana_fin,
+                activo: true
+              })
+            }
+          }
+        }
+      }
+    }
+    return objetivosReales
+  } catch (err) {
+    console.error('Error al resolver objetivos de la ruta:', err)
+    return []
+  }
+}
+
 async function loadAcmBitacoraBase(claseId) {
   const { data: activeRoute } = await supabase
     .from('acm_active_routes')
@@ -36,12 +77,7 @@ async function loadAcmBitacoraBase(claseId) {
 
   if (!activeRoute?.weekly_plan_id) return null
 
-  const [{ data: objetivos }, { data: planItems }, { data: sesiones }] = await Promise.all([
-    supabase
-      .from('ruta_contenido_objetivos')
-      .select('*')
-      .eq('clase_id', claseId)
-      .is('activo', true),
+  const [{ data: planItems }, { data: sesiones }] = await Promise.all([
     supabase
       .from('acm_weekly_plan_items')
       .select('id, week_number, indicator_id, topic')
@@ -51,6 +87,8 @@ async function loadAcmBitacoraBase(claseId) {
       .select('id, fecha, clase_id')
       .eq('clase_id', claseId),
   ])
+
+  const objetivos = await _getObjetivosFromRoute(claseId, planItems || [])
 
   const sessionIds = (sesiones || []).map((sesion) => sesion.id).filter(Boolean)
   const indicatorIds = [...new Set((planItems || []).map((item) => item.indicator_id).filter(Boolean))]
@@ -191,14 +229,24 @@ function mergeSemaforos(primary = [], secondary = []) {
 }
 
 export async function getObjetivosClase(claseId) {
-  const { data, error } = await supabase
-    .from('ruta_contenido_objetivos')
-    .select('*')
-    .eq('clase_id', claseId)
-    .is('activo', true)
+  // Para obtener los planItems de la ruta activa y calcular el mapeo de semanas
+  const { data: activeRoute } = await supabase
+    .from('acm_active_routes')
+    .select('weekly_plan_id')
+    .eq('group_id', claseId)
+    .eq('status', 'active')
+    .maybeSingle()
 
-  if (error) throw error
-  return data
+  let planItems = []
+  if (activeRoute?.weekly_plan_id) {
+    const { data } = await supabase
+      .from('acm_weekly_plan_items')
+      .select('indicator_id, week_number')
+      .eq('weekly_plan_id', activeRoute.weekly_plan_id)
+    planItems = data || []
+  }
+
+  return _getObjetivosFromRoute(claseId, planItems)
 }
 
 export async function getSemaforoClase(claseId) {

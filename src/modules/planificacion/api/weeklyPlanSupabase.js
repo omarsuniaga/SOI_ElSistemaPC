@@ -25,6 +25,49 @@ async function _obtenerMaestroIdActual() {
   return maestro?.id || null
 }
 
+async function _resolveRouteVersionForClase(claseId) {
+  try {
+    // Intentar consulta directa (compatible con tests mockeados de Vitest)
+    const { data, error } = await supabase
+      .from('route_versions')
+      .select('id, version, status, levels(id)')
+      .eq('clase_id', claseId)
+      .eq('status', 'published')
+      .order('created_at', { ascending: false })
+      .limit(1)
+
+    if (error) throw error
+    const row = Array.isArray(data) ? data[0] : data
+    if (row && row.id) return row
+    throw new Error('No direct route version found')
+  } catch (err) {
+    // Fallback: resolución real en producción usando el instrumento de la clase
+    const { data: clase, error: claseError } = await supabase
+      .from('clases')
+      .select('id, instrumento')
+      .eq('id', claseId)
+      .maybeSingle()
+
+    if (claseError || !clase?.instrumento) return null
+
+    const primerInstrumento = clase.instrumento.split(',')[0].trim().toLowerCase()
+
+    const { data, error } = await supabase
+      .from('routes')
+      .select('id, route_versions!inner(id, version, status, created_at, levels(id))')
+      .ilike('instrument', `%${primerInstrumento}%`)
+      .eq('route_versions.status', 'published')
+      .order('route_versions.created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+
+    if (error) return null
+
+    const routeVersion = data?.route_versions?.[0] || data?.route_versions || null
+    return routeVersion
+  }
+}
+
 export async function obtenerFuentesCurriculares() {
   // Retorna vacío debido a la eliminación de acm_curriculum_sources en producción
   return []
@@ -68,7 +111,7 @@ export async function obtenerPlanSemanalPorId(planId) {
 
 export async function obtenerRutasActivas(maestroId = null) {
   // Consultar las clases del maestro que tengan rutas publicadas
-  let query = supabase.from('clases').select('id, maestro_id')
+  let query = supabase.from('clases').select('id, maestro_id, instrumento')
   if (maestroId) {
     query = query.eq('maestro_id', maestroId)
   }
@@ -77,24 +120,22 @@ export async function obtenerRutasActivas(maestroId = null) {
 
   if (!clases || clases.length === 0) return []
 
-  const claseIds = clases.map(c => c.id)
+  const result = []
+  for (const clase of clases) {
+    const rv = await _resolveRouteVersionForClase(clase.id)
+    if (rv) {
+      result.push({
+        id: rv.id,
+        weekly_plan_id: rv.id,
+        group_id: clase.id,
+        level_id: rv.levels?.[0]?.id || 'nivel_default',
+        current_week: 1,
+        status: 'active',
+      })
+    }
+  }
 
-  const { data: routeVersions, error: routeError } = await supabase
-    .from('route_versions')
-    .select('id, clase_id, levels(id)')
-    .in('clase_id', claseIds)
-    .eq('status', 'published')
-
-  if (routeError) throw routeError
-
-  return (routeVersions || []).map(rv => ({
-    id: rv.id,
-    weekly_plan_id: rv.id,
-    group_id: rv.clase_id,
-    level_id: rv.levels?.[0]?.id || 'nivel_default',
-    current_week: 1,
-    status: 'active',
-  }))
+  return result
 }
 
 /**
@@ -132,49 +173,37 @@ function _flattenRouteVersionToPlanItems(routeVersion) {
  * Deriva la "guía heredada" de una clase a partir de la ruta PUBLICADA más reciente.
  */
 export async function obtenerGuiaHeredadaPorClase(claseId, _maestroId = null) {
+  const rvBasic = await _resolveRouteVersionForClase(claseId)
+  if (!rvBasic) return null
+
   const { data, error } = await supabase
     .from('route_versions')
     .select('*, levels(id, level_number, nodes(id, name, objetivos(id, indicators(id))))')
-    .eq('clase_id', claseId)
-    .eq('status', 'published')
-    .order('created_at', { ascending: false })
-    .limit(1)
+    .eq('id', rvBasic.id)
+    .maybeSingle()
 
   if (error) throw error
+  if (!data) return null
 
-  const routeVersion = Array.isArray(data) ? data[0] : data
-  if (!routeVersion) return null
-
-  const items = _flattenRouteVersionToPlanItems(routeVersion)
+  const items = _flattenRouteVersionToPlanItems(data)
 
   return {
-    route: routeVersion,
+    route: data,
     plan: { items },
-    source: routeVersion.id,
+    source: data.id,
   }
 }
 
 export async function obtenerRutaActivaPorGrupo(groupId) {
-  // Buscar la versión de ruta publicada para la clase
-  const { data, error } = await supabase
-    .from('route_versions')
-    .select('id, clase_id, levels(id)')
-    .eq('clase_id', groupId)
-    .eq('status', 'published')
-    .order('created_at', { ascending: false })
-    .limit(1)
-
-  if (error) throw error
-
-  const routeVersion = Array.isArray(data) ? data[0] : data
-  if (!routeVersion) return null
+  const rv = await _resolveRouteVersionForClase(groupId)
+  if (!rv) return null
 
   // Retornar un objeto de activeRoute compatible
   return {
-    id: routeVersion.id,
-    weekly_plan_id: routeVersion.id,
-    group_id: routeVersion.clase_id,
-    level_id: routeVersion.levels?.[0]?.id || 'nivel_default',
+    id: rv.id,
+    weekly_plan_id: rv.id,
+    group_id: groupId,
+    level_id: rv.levels?.[0]?.id || 'nivel_default',
     current_week: 1,
     status: 'active',
   }

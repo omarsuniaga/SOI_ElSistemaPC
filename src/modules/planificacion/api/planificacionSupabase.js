@@ -129,7 +129,7 @@ export async function obtenerMaestros() {
   const { data, error } = await supabase
     .from('maestros')
     .select('id, nombre_completo')
-    .eq('estado', 'activo')
+    .eq('activo', true)
     .order('nombre_completo')
   if (error) throw error
   return (data || []).map((m) => ({ id: m.id, nombre: m.nombre_completo }))

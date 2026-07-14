@@ -148,6 +148,8 @@ initErrorReporter({
 // Bootstrap CSS — requerido por vistas admin
 import 'bootstrap/dist/css/bootstrap.min.css'
 import 'bootstrap-icons/font/bootstrap-icons.css'
+import * as bootstrapLib from 'bootstrap'
+window.bootstrap = bootstrapLib
 
 // ============================================
 // MÓDULOS DEL PORTAL

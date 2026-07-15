@@ -4,12 +4,11 @@ import { isEligible } from '../domain/eligibility.js'
 const validEval = {
   student_id: 'stu-1',
   jurado_id: 'usr-jurado-1',
-  c1: 3, c2: 3, c3: 3, c4: 3,
-  c5: 3, c6: 3, c7: 3, c8: 3,
+  c1: 3, c2: 4, c3: 5, c4: 3,
 }
 
 describe('isEligible', () => {
-  it('returns true when all 8 criteria are valid integers 1-4', () => {
+  it('returns true when all 4 criteria are valid integers 1-5', () => {
     expect(isEligible(validEval)).toBe(true)
   })
 
@@ -19,7 +18,7 @@ describe('isEligible', () => {
 
   it('returns false when any criterion is undefined', () => {
     const partial = { ...validEval }
-    delete partial.c5
+    delete partial.c3
     expect(isEligible(partial)).toBe(false)
   })
 
@@ -27,8 +26,12 @@ describe('isEligible', () => {
     expect(isEligible({ ...validEval, c1: 0 })).toBe(false)
   })
 
-  it('returns false when any criterion is 5 (out of range)', () => {
-    expect(isEligible({ ...validEval, c2: 5 })).toBe(false)
+  it('returns false when any criterion is 6 (out of range)', () => {
+    expect(isEligible({ ...validEval, c2: 6 })).toBe(false)
+  })
+
+  it('returns true when any criterion is 5 (within range)', () => {
+    expect(isEligible({ ...validEval, c2: 5 })).toBe(true)
   })
 
   it('returns false when student_id is missing', () => {

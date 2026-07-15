@@ -1,29 +1,28 @@
-# Stage 1: Build
+# ==============================================================================
+# Dockerfile - Portal Académico/Financiero (PWA)
+# Compilación multi-stage optimizada para producción en VPS.
+# ==============================================================================
+
+# Etapa 1: Compilación
 FROM node:20-alpine AS builder
 
 WORKDIR /app
 
+# Instalar dependencias primero para optimizar el cacheo de capas de Docker
 COPY package*.json ./
+RUN npm install
 
-RUN npm ci
-
+# Copiar el código fuente y compilar
 COPY . .
-
-# Declare build args so Vite can access them at build time
-ARG VITE_SUPABASE_URL
-ARG VITE_SUPABASE_ANON_KEY
-
-# Expose as env vars for the Vite build process
-ENV VITE_SUPABASE_URL=$VITE_SUPABASE_URL
-ENV VITE_SUPABASE_ANON_KEY=$VITE_SUPABASE_ANON_KEY
-
 RUN npm run build
 
-# Stage 2: Serve
-FROM nginx:alpine
+# Etapa 2: Servido estático en producción
+FROM nginx:stable-alpine
 
+# Copiar el compilado de Vite
 COPY --from=builder /app/dist /usr/share/nginx/html
 
+# Copiar la configuración personalizada de Nginx para enrutamiento SPA
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 EXPOSE 80

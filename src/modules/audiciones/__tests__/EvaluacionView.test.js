@@ -11,7 +11,7 @@ const mockEval = {
   student_id: 'stu-1',
   jurado_id: 'usr-jurado-1',
   c1: 3, c2: 4, c3: 3, c4: 4,
-  c5: 3, c6: 4, c7: 3, c8: 4,
+  c5: null, c6: null, c7: null, c8: null,
 }
 
 const mockAdapter = {
@@ -49,7 +49,7 @@ describe('EvaluacionView', () => {
     const btn = container.querySelector('[data-student-id="stu-1"]')
     btn.click()
     const selects = container.querySelectorAll('[data-key]')
-    expect(selects.length).toBe(8)
+    expect(selects.length).toBe(4)
   })
 
   it('save button is present', () => {

@@ -23,4 +23,9 @@ export const config = {
     localStorageKey: 'maestro_tarea',
     diasVencimientoDefault: 7,
   },
+  // Feature flags — per-phase rollout
+  FEATURES: {
+    UPLOAD_PARSER: import.meta.env.VITE_FEATURE_UPLOAD_PARSER === 'true' || import.meta.env.MODE === 'development',
+    GEAR_GRADING: import.meta.env.VITE_FEATURE_GEAR_GRADING === 'true' || false,
+  },
 }

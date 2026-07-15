@@ -28,7 +28,26 @@
   gap: 12px;
 }
 
+/* ── Card Elements ──────────────────────────────────────────────────────── */
+
+.programa-estado-badge {
+  flex-shrink: 0;
+  font-size: 0.68rem;
+  line-height: 1;
+  padding: 0.3rem 0.55rem;
+}
+
+.programa-card-descripcion {
+  font-size: 0.85rem;
+}
+
 /* ── Responsive (mobile) ────────────────────────────────────────────────── */
+
+@media (max-width: 767.98px) {
+  .programa-card-descripcion {
+    display: none;
+  }
+}
 
 @media (max-width: 576px) {
   .programas-header-premium {
@@ -43,5 +62,10 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
+  }
+
+  .programa-estado-badge {
+    font-size: 0.6rem;
+    padding: 0.2rem 0.45rem;
   }
 }

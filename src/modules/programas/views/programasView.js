@@ -193,13 +193,23 @@ function renderTableRows(programas) {
     const nivel = getNivelLabel(p.nivel)
     const descripcion = escapeHTML(p.descripcion || 'Sin descripción')
     const accentClass = `border-accent-${p.activo ? 'success' : 'secondary'}`
+    const estadoBadge = p.activo
+      ? '<span class="badge rounded-pill bg-success-subtle text-success-emphasis programa-estado-badge">Activo</span>'
+      : '<span class="badge rounded-pill bg-secondary-subtle text-secondary-emphasis programa-estado-badge">Inactivo</span>'
+    const duracion = p.duracion_anios
+      ? `${p.duracion_anios} ${p.duracion_anios === 1 ? 'año' : 'años'}`
+      : 'Sin especificar'
 
     return `
       <div class="list-group-item list-group-item-action d-flex align-items-center justify-content-between p-3 w-100 border-start-accent ${accentClass}" data-id="${p.id}" style="cursor: pointer;">
-        <div class="d-flex align-items-center gap-3 flex-grow-1 overflow-hidden">
-          <div class="d-flex flex-column flex-grow-1 overflow-hidden pe-3">
-            <span class="fw-bold text-truncate" style="font-size: 1.05rem;">${escapeHTML(p.nombre)}</span>
-            <small class="text-muted text-truncate">${nivel} • ${descripcion.substring(0, 50)}${descripcion.length > 50 ? '...' : ''}</small>
+        <div class="d-flex align-items-center gap-3 flex-grow-1 overflow-hidden programa-card-main">
+          <div class="d-flex flex-column flex-grow-1 overflow-hidden pe-3 programa-card-copy">
+            <div class="d-flex align-items-center gap-2">
+              <span class="fw-bold text-truncate" style="font-size: 1.05rem;">${escapeHTML(p.nombre)}</span>
+              ${estadoBadge}
+            </div>
+            <small class="text-muted text-truncate"><i class="bi bi-bar-chart-steps me-1"></i>${nivel} <span class="mx-1">•</span> <i class="bi bi-clock me-1"></i>${duracion}</small>
+            <small class="text-muted extra-small mt-1 programa-card-descripcion" style="font-size: 0.85rem;"><i class="bi bi-file-earmark-text me-1"></i>${descripcion.substring(0, 80)}${descripcion.length > 80 ? '...' : ''}</small>
           </div>
         </div>
         <div class="flex-shrink-0 text-muted ms-2 pe-1">

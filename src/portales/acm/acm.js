@@ -56,6 +56,12 @@ const navGroups = [
     icon: 'bi-robot',
     items: [{ id: 'hermes-tareas', label: 'Tareas Institucionales', icon: 'bi-check2-square' }],
   },
+  {
+    id: 'periodos',
+    label: 'Periodos',
+    icon: 'bi-calendar-range',
+    items: [{ id: 'transicion-semestre', label: 'Transición de Semestre', icon: 'bi-arrow-repeat' }],
+  },
 ]
 
 bootAdminPortal({

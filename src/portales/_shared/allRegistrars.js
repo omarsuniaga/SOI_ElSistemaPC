@@ -31,6 +31,7 @@ import { registerRoutesCampanias } from '../../modules/campanias/index.js'
 import { registerRoutesGatewayConfig } from '../../modules/gateway-config/index.js'
 import { registerRoutesLuteria } from '../../modules/luteria/index.js'
 import { registerRoutesSimulador } from '../../modules/simulador/index.js'
+import { registerRoutesTransicionSemestre } from '../../modules/transicion-semestre/index.js'
 
 export const allRegistrars = [
   registerRoutesComunicaciones,
@@ -59,4 +60,5 @@ export const allRegistrars = [
   registerRoutesGatewayConfig,
   registerRoutesLuteria,
   registerRoutesSimulador,
+  registerRoutesTransicionSemestre,
 ]

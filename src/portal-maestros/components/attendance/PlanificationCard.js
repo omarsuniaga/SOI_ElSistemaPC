@@ -356,11 +356,17 @@ export function createPlanificationCard(container, opts) {
     if (evalBadge) {
       evalBadge.onclick = (e) => {
         e.stopPropagation()
-        opts.onIndicadorSelect?.({
+        const indicator = {
           id: currentItem.indicator_id,
           nombre: currentItem.topic,
           node_id: currentItem.node_id,
-        })
+        }
+        // PR2: open grade panel if available, otherwise fallback to indicator select
+        if (opts.onOpenGradePanel) {
+          opts.onOpenGradePanel(currentItem)
+        } else {
+          opts.onIndicadorSelect?.(indicator)
+        }
       }
     }
 

@@ -1,4 +1,5 @@
 import { supabase } from '../../lib/supabaseClient.js'
+import { config } from '../../core/config/config.js'
 import { getMaestroLocal } from '../auth/maestroAuth.js'
 import { escHTML } from '../utils/portalUtils.js'
 import { announce } from '../utils/a11yUtils.js'
@@ -73,6 +74,8 @@ import { createRouteTopicAutoInjector } from '../components/attendance/RouteTopi
 import { createPlanificationCard } from '../components/attendance/PlanificationCard.js'
 import { createDslSection } from '../components/attendance/DslSection.js'
 import { createBulkActions } from '../components/attendance/BulkActions.js'
+import { createRouteSelector } from '../components/attendance/RouteSelector.js'
+import { createGradePanel } from '../components/attendance/GradePanel.js'
 import { createAutoDraftManager } from '../components/attendance/AutoDraftManager.js'
 import { createJustifModalManager } from '../components/attendance/JustifModalManager.js'
 import { createStudentList } from '../components/attendance/StudentList.js'
@@ -1165,6 +1168,11 @@ function _renderVista(container, ctx) {
     fechaHoy,
     rutaId,
     editor,
+    onOpenGradePanel: (currentItem) => {
+      if (gradePanel) {
+        gradePanel.open(currentItem)
+      }
+    },
     onIndicadorSelect: (ind) => {
       editor.insertText(`[${ind.nombre}] `)
       if (toolbar) toolbar.setContext({ indicadorActivo: ind.nombre })
@@ -1180,9 +1188,55 @@ function _renderVista(container, ctx) {
   })
   _cleanups.push(() => planificationCard.destroy())
 
+  // === Route Selector (PR2: Grading Flow) ===
+  let routeSelector = null
+  let gradePanel = null
 
+  if (config.FEATURES.GEAR_GRADING) {
+    // Wire gear icon → open RouteSelector
+    const btnManagePlanning = container.querySelector('#btn-manage-planning')
+    if (btnManagePlanning) {
+      btnManagePlanning.onclick = () => {
+        if (routeSelector) {
+          // Toggle: if selector already visible, hide it
+          const wrap = container.querySelector('.pm-route-selector-wrap')
+          if (wrap) {
+            wrap.style.display = wrap.style.display === 'none' ? '' : 'none'
+          }
+        }
+      }
+    }
 
-  // Wire "Proponer plan curricular" button
+    // Create RouteSelector
+    routeSelector = createRouteSelector(container, {
+      claseId,
+      rutaId,
+      onRouteChange: (newRouteId, newRoute) => {
+        rutaId = newRouteId
+        // Refresh planification card with new route
+        if (planificationCard?.refreshTree) {
+          planificationCard.refreshTree()
+        }
+      },
+    })
+    _cleanups.push(() => routeSelector?.destroy?.())
+
+    // Create GradePanel (used by PlanificationCard indicator eval)
+    gradePanel = createGradePanel(container, {
+      alumnos,
+      estado,
+      currentItem: null, // set dynamically when opened
+      rutaId,
+      sesionId,
+      onGraded: async () => {
+        // Refresh progress map after grading
+        if (planificationCard?.refreshTree) {
+          await planificationCard.refreshTree()
+        }
+      },
+    })
+    _cleanups.push(() => gradePanel?.destroy?.())
+  }  // Wire "Proponer plan curricular" button
   const btnProponerCurriculo = container.querySelector('#btn-proponer-curriculo')
   if (btnProponerCurriculo) {
     btnProponerCurriculo.onclick = async () => {

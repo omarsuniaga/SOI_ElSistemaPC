@@ -14,6 +14,7 @@
  */
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { CURRICULUM_PARSE_SYSTEM_PROMPT, buildCurriculumParseUserPrompt } from './parsePrompt.ts'
 
 const GROQ_API_KEY = Deno.env.get('GROQ_API_KEY') ?? ''
 const GROQ_BASE    = 'https://api.groq.com/openai/v1'
@@ -87,6 +88,35 @@ Deno.serve(async (req: Request) => {
   if (path === 'chat') {
     let body: Record<string, unknown>
     try { body = await req.json() } catch { return errorResponse('Invalid JSON body') }
+
+    const parseMode = body?.parseMode as string | undefined
+
+    if (parseMode === 'curriculum') {
+      const content = (body?.content as string) || ''
+      if (!content.trim()) return errorResponse('Missing "content" field for curriculum parsing')
+
+      const messages = [
+        { role: 'system', content: CURRICULUM_PARSE_SYSTEM_PROMPT },
+        { role: 'user', content: buildCurriculumParseUserPrompt(content) },
+      ]
+
+      const upstream = await fetch(`${GROQ_BASE}/chat/completions`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${GROQ_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'llama-3.1-8b-instant',
+          messages,
+          temperature: 0.1,
+          max_tokens: 4096,
+          response_format: { type: 'json_object' },
+        }),
+      })
+      const data = await upstream.json()
+      return json(data, upstream.status)
+    }
 
     // `provider` es un campo interno (no se reenvía al upstream): groq (default) | openrouter.
     const provider = body?.provider === 'openrouter' ? 'openrouter' : 'groq'

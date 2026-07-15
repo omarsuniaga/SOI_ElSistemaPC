@@ -30,6 +30,9 @@ import { usePlanificacion } from '../hooks/usePlanificacion.js'
 import { createDslEditorWithToolbar } from '../components/dslToolbar.js'
 import { getAlumnos } from '../../alumnos/api/alumnosApi.js'
 import { renderHistorialContenidosPanel } from '../components/historialContenidosPanel.js'
+import { config } from '../../../core/config/config.js'
+import { validateFile, extractTextFromFile, parseWithAI } from '../api/uploadAdapter.js'
+import { openUploadReviewModal } from '../components/uploadReviewModal.js'
 
 // ── State ─────────────────────────────────────────────────────────────────────
 const state = {
@@ -43,12 +46,16 @@ const state = {
   acmAuthority: { sources: [], versions: [], routes: [] },
   seleccionados: new Set(),
   container: null,
+  uploadProcessing: false,
 }
+
+// Module-level reference to clean up document event listener between renders
+let _focusPlanHandler = null
 
 const hook = usePlanificacion()
 
 // ── Entry Point ───────────────────────────────────────────────────────────────
-export async function renderPlanificacionView(container, { viewMode = 'maestro' } = {}) {
+export async function renderPlanificacionView(container, { viewMode = 'maestro', skipFetch = false } = {}) {
   if (!container) return
   state.container = container
   state.viewMode = viewMode
@@ -67,15 +74,17 @@ export async function renderPlanificacionView(container, { viewMode = 'maestro' 
     state.cargando = true
     renderLoading(container)
 
-    await hook.fetchPlanificacionesConDetalles()
-    state.planes = [...hook.planificaciones]
-    if (viewMode === 'acm') {
-      const [sources, versions, routes] = await Promise.all([
-        obtenerFuentesCurriculares().catch(() => []),
-        obtenerVersionesCurriculares().catch(() => []),
-        obtenerRutasActivas().catch(() => []),
-      ])
-      state.acmAuthority = { sources, versions, routes }
+    if (!skipFetch) {
+      await hook.fetchPlanificacionesConDetalles()
+      state.planes = [...hook.planificaciones]
+      if (viewMode === 'acm') {
+        const [sources, versions, routes] = await Promise.all([
+          obtenerFuentesCurriculares().catch((e) => { console.warn('[planificacionView] Fuentes curriculares:', e.message); return [] }),
+          obtenerVersionesCurriculares().catch((e) => { console.warn('[planificacionView] Versiones curriculares:', e.message); return [] }),
+          obtenerRutasActivas().catch((e) => { console.warn('[planificacionView] Rutas activas:', e.message); return [] }),
+        ])
+        state.acmAuthority = { sources, versions, routes }
+      }
     }
     state.cargando = false
 
@@ -105,7 +114,7 @@ function renderError(container, msg) {
         <div>
           <h5 class="alert-heading mb-1">Tabla no encontrada o sin acceso</h5>
           <p class="mb-2 small">${escapeHTML(msg)}</p>
-          <p class="mb-0 small text-muted">Verificá que la tabla <code>planificaciones</code> existe en Supabase y que las políticas RLS permiten la lectura.</p>
+          <p class="mb-0 small text-muted">Verifique que la tabla <code>planificaciones</code> existe en Supabase y que las políticas RLS permiten la lectura.</p>
         </div>
       </div>
     </div>`
@@ -118,7 +127,7 @@ function renderContent(container) {
   const isAdmin = state.viewMode === 'admin'
 
   const headerTitle = state.viewMode === 'acm'
-    ? 'ACM ? Gobernanza Curricular'
+    ? 'ACM → Gobernanza Curricular'
     : isAdmin
       ? 'Todas las Planificaciones'
       : 'Mis Planes de Clase'
@@ -126,8 +135,8 @@ function renderContent(container) {
   const headerDesc = state.viewMode === 'acm'
     ? 'ACM define, versiona y publica. El portal de maestros solo hereda lo activo.'
     : isAdmin
-      ? `${hook.planificaciones.length} planes pendientes de revisi?n`
-      : 'Vista de consulta. La gu?a se hereda desde ACM para esta clase.'
+      ? `${hook.planificaciones.length} planes pendientes de revisión`
+      : 'Vista de consulta. La guía se hereda desde ACM para esta clase.'
 
   // Stats for admin mode
   const statsHtml = state.viewMode === 'acm' ? _renderAcmAuthorityPanel() : isAdmin ? _renderAdminStats() : ''
@@ -146,18 +155,26 @@ function renderContent(container) {
           </div>
         </div>
         <div class="planificacion-header-actions">
-          <button class="btn-help-trigger" id="btn-help-planificacion" title="?C?mo funciona esta pantalla?" aria-label="Ayuda">
+          <button class="btn-help-trigger" id="btn-help-planificacion" title="¿Cómo funciona esta pantalla?" aria-label="Ayuda">
             <i class="bi bi-question"></i>
           </button>
           ${
             (isAdmin || state.viewMode === 'acm')
               ? `
             <button class="btn btn-outline-secondary btn-sm" id="btn-curriculo-admin">
-              <i class="bi bi-journal-bookmark me-1"></i>Curr?culo
+              <i class="bi bi-journal-bookmark me-1"></i>Currículo
             </button>
             ${state.viewMode === 'acm' ? `
+            ${config.FEATURES.UPLOAD_PARSER ? `
+            <button class="btn btn-outline-success btn-sm" id="btn-upload-curriculum">
+              <i class="bi bi-cloud-arrow-up me-1"></i>Cargar Curriculo
+            </button>
+            ` : ''}
+            <button class="btn btn-outline-primary btn-sm" id="btn-create-plan-manual">
+              <i class="bi bi-plus-circle me-1"></i>Crear Plan
+            </button>
             <button class="btn btn-outline-primary btn-sm" id="btn-publicar-version">
-              <i class="bi bi-broadcast me-1"></i>Publicar Versi?n
+              <i class="bi bi-broadcast me-1"></i>Publicar Versión
             </button>
             <button class="btn btn-outline-info btn-sm" id="btn-asignar-ruta-acm">
               <i class="bi bi-diagram-3 me-1"></i>Asignar Ruta
@@ -169,7 +186,7 @@ function renderContent(container) {
           `
               : `
             <button class="btn btn-outline-info btn-sm" id="btn-ver-guia-acm">
-              <i class="bi bi-diagram-3 me-1"></i>Ver gu?a ACM
+              <i class="bi bi-diagram-3 me-1"></i>Ver guía ACM
             </button>
           `
           }
@@ -241,8 +258,8 @@ function renderContent(container) {
         <div class="d-flex align-items-start gap-3">
           <i class="bi bi-diagram-3 fs-4"></i>
           <div>
-            <div class="fw-bold">C?mo usar esta planificaci?n</div>
-            <div class="small">1) Elige tu clase. 2) Revisa el perfil de temas e indicadores. 3) Ajusta la ejecuci?n semanal sin romper la gu?a publicada. 4) Marca vistos, avances y observaciones desde la clase seleccionada.</div>
+            <div class="fw-bold">Cómo usar esta planificación</div>
+            <div class="small">1) Elige tu clase. 2) Revisa el perfil de temas e indicadores. 3) Ajusta la ejecución semanal sin romper la guía publicada. 4) Marca vistos, avances y observaciones desde la clase seleccionada.</div>
           </div>
         </div>
       </div>` : ''}
@@ -275,7 +292,7 @@ function renderContent(container) {
       <div id="tab-content-plantillas" style="display:none">
         <div class="alert alert-info border-0 py-3" style="font-size:0.875rem;">
           <i class="bi bi-file-earmark-template me-2"></i>
-          Las plantillas de planificaci?n estar?n disponibles pr?ximamente.
+          Las plantillas de planificación estarán disponibles próximamente.
         </div>
       </div>
       <div id="tab-content-historial" style="display:none"></div>
@@ -382,8 +399,8 @@ function _renderAcmAuthorityPanel() {
                       <div class="rounded border p-2">
                         <div class="d-flex justify-content-between align-items-start gap-2">
                           <div>
-                            <div class="fw-semibold">${escapeHTML(v.name || 'Versi?n')}</div>
-                            <small class="text-muted">${escapeHTML(v.source?.title || v.description || 'Sin descripci?n')}</small>
+                            <div class="fw-semibold">${escapeHTML(v.name || 'Versión')}</div>
+                            <small class="text-muted">${escapeHTML(v.source?.title || v.description || 'Sin descripción')}</small>
                           </div>
                           <span class="badge ${v.status === 'active' ? 'text-bg-success' : v.status === 'approved' ? 'text-bg-primary' : 'text-bg-secondary'}">${escapeHTML(v.status || 'draft')}</span>
                         </div>
@@ -408,7 +425,7 @@ function _renderAcmAuthorityPanel() {
                       <div class="d-flex justify-content-between align-items-center rounded border p-2">
                         <div>
                           <div class="fw-semibold">Grupo ${escapeHTML(r.group_id || '?')}</div>
-                          <small class="text-muted">Semana ${r.current_week || 1} ? ${escapeHTML(r.status || 'active')}</small>
+                          <small class="text-muted">Semana ${r.current_week || 1} \u00b7 ${escapeHTML(r.status || 'active')}</small>
                         </div>
                         <span class="badge text-bg-success">Activa</span>
                       </div>
@@ -548,7 +565,7 @@ async function renderTemplatesContent(container) {
             </div>
             <div>
               <h1 class="planificacion-title-premium page-title mb-0">Plantillas de Planificación</h1>
-              <p class="text-muted small mb-0">${plantillas.length} plantilla${plantillas.length !== 1 ? 's' : ''} disponible${plantillas.length !== 1 ? 's' : ''} — seleccioná una y personalizala</p>
+              <p class="text-muted small mb-0">${plantillas.length} plantilla${plantillas.length !== 1 ? 's' : ''} disponible${plantillas.length !== 1 ? 's' : ''} — seleccione una y personalícela</p>
             </div>
           </div>
         </div>
@@ -692,7 +709,7 @@ function _attachEvents(container) {
           icon: 'bi-journal-text',
           title: 'Tab Mis planes',
           description:
-            'Lista tus planes personales. Filtrá por estado (planificado, ejecutado, cancelado) y creá nuevos desde "Nuevo plan".',
+            'Lista tus planes personales. Filtre por estado (planificado, ejecutado, cancelado) y cree nuevos desde "Nuevo plan".',
           color: '#3b82f6',
         },
         {
@@ -704,7 +721,7 @@ function _attachEvents(container) {
         },
         {
           icon: 'bi-journal-check',
-          title: 'Todas las planes (admin)',
+          title: 'Todos los planes (admin)',
           description:
             'Solo visible para administradores. Muestra los planes de todos los maestros para supervisión.',
           color: '#10b981',
@@ -723,13 +740,13 @@ function _attachEvents(container) {
   if (!isAdmin) {
     container.querySelector('#btn-ver-guia-acm')?.addEventListener('click', () => {
       AppModal.open({
-        title: 'Gu?a heredada desde ACM',
+        title: 'Guía heredada desde ACM',
         saveText: 'Entendido',
         size: 'md',
         body: `
           <div class="alert alert-info border-0 mb-0">
-            <div class="fw-bold mb-2">La planificaci?n oficial vive en ACM</div>
-            <p class="mb-0 small">Desde aqu? solo consult?s la gu?a que ACM public? para tu clase. Si necesit?s correcciones, se solicitan en ACM.</p>
+            <div class="fw-bold mb-2">La planificación oficial vive en ACM</div>
+            <p class="mb-0 small">Desde aquí solo consultas la guía que ACM publicó para tu clase. Si necesitas correcciones, se solicitan en ACM.</p>
           </div>
         `,
         onSave: async () => true,
@@ -754,7 +771,7 @@ function _attachEvents(container) {
       try {
         await marcarRevisadasMasivo(ids)
         AppToast.success(`${ids.length} plan(es) aprobados`)
-        renderPlanificacionView(container, { viewMode: state.viewMode })
+        renderPlanificacionView(container, { viewMode: state.viewMode, skipFetch: true })
       } catch (err) {
         AppToast.error(err.message)
       }
@@ -807,7 +824,8 @@ function _attachEvents(container) {
     })
   })
 
-  document.addEventListener('planificacion:focusPlan', (e) => {
+  if (_focusPlanHandler) document.removeEventListener('planificacion:focusPlan', _focusPlanHandler)
+  _focusPlanHandler = (e) => {
     const { planId } = e.detail || {}
     if (!planId) return
 
@@ -825,7 +843,8 @@ function _attachEvents(container) {
         row.style.backgroundColor = ''
       }, 2500)
     }
-  })
+  }
+  document.addEventListener('planificacion:focusPlan', _focusPlanHandler)
 
   if (isAdmin) {
     container.querySelector('#btn-curriculo-admin')?.addEventListener('click', () => {
@@ -839,6 +858,13 @@ function _attachEvents(container) {
     container.querySelector('#btn-curriculo-admin')?.addEventListener('click', () => {
       openCurriculoListModal()
     })
+
+    if (config.FEATURES.UPLOAD_PARSER) {
+      container.querySelector('#btn-upload-curriculum')?.addEventListener('click', () => _openUploadDialog())
+    }
+
+    container.querySelector('#btn-create-plan-manual')?.addEventListener('click', () => _openManualCreationDialog())
+
     container.querySelector('#planes-tbody')?.addEventListener('click', async (e) => {
       const btn = e.target.closest('button[data-acm-action="publish-version"]')
       if (!btn) return
@@ -895,13 +921,82 @@ function _toggleBulkBtn() {
   btn.style.display = state.seleccionados.size > 0 ? '' : 'none'
 }
 
+// ── Upload Flow ───────────────────────────────────────────────────────────────
+function _openUploadDialog() {
+  const input = document.createElement('input')
+  input.type = 'file'
+  input.accept = '.pdf,.xlsx,.xls,.md,.txt,.doc,.docx'
+  input.style.display = 'none'
+
+  input.addEventListener('change', async (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    const validation = validateFile(file)
+    if (!validation.valid) {
+      AppToast.error(validation.error)
+      return
+    }
+
+    if (state.uploadProcessing) return
+    state.uploadProcessing = true
+
+    AppToast.info('Extrayendo texto del documento...')
+
+    try {
+      const extractedText = await extractTextFromFile(file)
+      if (!extractedText || extractedText.trim().length < 20) {
+        AppToast.error('No se pudo extraer texto suficiente del documento.')
+        state.uploadProcessing = false
+        return
+      }
+
+      AppToast.info('Analizando con IA... esto puede tomar unos segundos')
+
+      const hierarchy = await parseWithAI(extractedText)
+
+      openUploadReviewModal(hierarchy, {
+        onSave: async (confirmedData) => {
+        AppToast.success('Jerarquía guardada. Puede revisarla en la gestión de rutas.')
+        renderPlanificacionView(state.container, { viewMode: state.viewMode, skipFetch: true })
+        },
+      })
+    } catch (err) {
+      console.error('[upload]', err)
+      AppToast.error(err.message || 'Error al procesar el documento')
+    } finally {
+      state.uploadProcessing = false
+    }
+  })
+
+  document.body.appendChild(input)
+  input.click()
+  setTimeout(() => input.remove(), 1000)
+}
+
+function _openManualCreationDialog() {
+  const emptyHierarchy = {
+    route: { nombre: '', nivel: '' },
+    levels: [],
+  }
+
+  openUploadReviewModal(emptyHierarchy, {
+    title: 'Crear Planificación',
+    subtitle: 'Construya la estructura manualmente: niveles, temas, objetivos e indicadores',
+    onSave: async (confirmedData) => {
+      AppToast.success('Planificación creada. Puede revisarla en la gestión de rutas.')
+      renderPlanificacionView(state.container, { viewMode: state.viewMode, skipFetch: true })
+    },
+  })
+}
+
 // ── Modals ────────────────────────────────────────────────────────────────────
 
 async function _publicarVersionDesdePanel(versionId) {
   try {
     await publicarVersionCurricular(versionId)
-    AppToast.success('Versi?n curricular publicada')
-    renderPlanificacionView(state.container, { viewMode: 'acm' })
+    AppToast.success('Versión curricular publicada')
+    renderPlanificacionView(state.container, { viewMode: 'acm', skipFetch: true })
   } catch (error) {
     AppToast.error(error.message)
   }
@@ -919,22 +1014,22 @@ function _openAcmPublishModal() {
     .join('')
 
   AppModal.open({
-    title: 'Publicar versi?n curricular',
+    title: 'Publicar versión curricular',
     saveText: 'Publicar',
     size: 'md',
     body: `
       <div class="d-grid gap-2">
-        <label class="form-label-compact">Selecciona la versi?n a publicar</label>
+        <label class="form-label-compact">Selecciona la versión a publicar</label>
         <select class="form-select input-dense" id="acm-version-select">${options}</select>
         <div class="alert alert-info small mb-0">
-          La versi?n activa define la ruta oficial que el portal de maestros hereda por clase.
+          La versión activa define la ruta oficial que el portal de maestros hereda por clase.
         </div>
       </div>
     `,
     onSave: async (modalBody) => {
       const versionId = modalBody.querySelector('#acm-version-select')?.value
       if (!versionId) {
-        AppToast.error('Selecciona una versi?n')
+        AppToast.error('Selecciona una versión')
         return false
       }
       await _publicarVersionDesdePanel(versionId)
@@ -977,9 +1072,9 @@ async function _openAcmRouteModal() {
           </select>
         </div>
         <div class="col-md-6">
-          <label class="form-label-compact">Versi?n curricular</label>
+          <label class="form-label-compact">Versión curricular</label>
           <select class="form-select input-dense" id="acm-route-version" required>
-            <option value="">Seleccionar versi?n...</option>
+            <option value="">Seleccionar versión...</option>
             ${versionOptions}
           </select>
         </div>
@@ -1001,7 +1096,7 @@ async function _openAcmRouteModal() {
       const levelId = modalBody.querySelector('#acm-route-level')?.value?.trim() || null
 
       if (!groupId || !teacherId || !versionId) {
-        AppToast.error('Completa clase, maestro y versi?n')
+        AppToast.error('Completa clase, maestro y versión')
         return false
       }
 
@@ -1016,7 +1111,7 @@ async function _openAcmRouteModal() {
         level_id: levelId || undefined,
       })
       AppToast.success('Ruta activa asignada')
-      renderPlanificacionView(state.container, { viewMode: 'acm' })
+      renderPlanificacionView(state.container, { viewMode: 'acm', skipFetch: true })
       return true
     },
   })
@@ -1103,6 +1198,7 @@ async function openEditModal(id, prefill = {}) {
     onSave: async (modalBody) => {
       const dslEditor = modalBody._dslEditor
       const data = {
+        maestro_id: hook.maestroActualId,
         tema: modalBody.querySelector('#plan-tema').value.trim(),
         clase_id: modalBody.querySelector('#plan-clase_id').value,
         objetivos: modalBody.querySelector('#plan-objetivos').value.trim(),
@@ -1128,7 +1224,7 @@ async function openEditModal(id, prefill = {}) {
           await crearPlanificacion(data)
           AppToast.success('Plan creado correctamente')
         }
-        renderPlanificacionView(state.container, { viewMode: state.viewMode })
+        renderPlanificacionView(state.container, { viewMode: state.viewMode, skipFetch: true })
         return true
       } catch (err) {
         AppToast.error(err.message)
@@ -1200,7 +1296,7 @@ async function _approveOne(id) {
   try {
     await marcarRevisadasMasivo([id])
     AppToast.success('Plan aprobado y marcado como revisado')
-    renderPlanificacionView(state.container, { viewMode: state.viewMode })
+    renderPlanificacionView(state.container, { viewMode: state.viewMode, skipFetch: true })
   } catch (err) {
     AppToast.error(err.message)
   }

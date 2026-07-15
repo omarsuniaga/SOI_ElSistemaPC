@@ -17,8 +17,9 @@ import { obtenerPlantillasPlanificacion } from '../api/planificacionAdapter.js'
  * @param {object} data - Datos de la planificación a editar
  * @param {array} clases - Lista de clases disponibles
  * @param {array} maestros - Lista de maestros
- * @param {object} initialData - Datos iniciales para préllenar (para flujo "Copiar como planificación")
+ * @param {object} initialData - Datos iniciales para prellenar (para flujo "Copiar como planificación")
  * @param {function} onSave - Callback cuando se guarda
+ * @param {object} seedData - Jerarquía parseada por IA { route, levels } para pre-poblar el editor
  */
 export async function openPlanificacionModal(
   mode,
@@ -27,6 +28,7 @@ export async function openPlanificacionModal(
   maestros = [],
   initialData = {},
   onSave,
+  seedData = null,
 ) {
   const isEdit = mode === 'edit' && !!data
 
@@ -40,6 +42,12 @@ export async function openPlanificacionModal(
 
   // Crear plan con datos iniciales o de edición
   const planData = isEdit ? data : { ...initialData }
+
+  // Si hay seedData de IA, mapear jerarquía → campos del plan
+  if (!isEdit && seedData) {
+    const mapped = _mapSeedDataToPlan(seedData)
+    Object.assign(planData, mapped)
+  }
 
   // Si hay contenido DSL pero no notas_dsl, mapear contenido -> notas_dsl
   if (!isEdit && initialData.contenido && !planData.notas_dsl) {
@@ -238,7 +246,7 @@ export async function openPlanificacionModal(
             <i class="bi bi-journal-bookmark me-1"></i>Guía curricular
           </div>
           <div class="pm-plan-guide-body" id="pl-curriculo-body">
-            <div class="pm-plan-guide-empty">Seleccioná una clase para ver la guía</div>
+            <div class="pm-plan-guide-empty">Seleccione una clase para ver la guía</div>
           </div>
         </div>
       </div>`
@@ -328,6 +336,31 @@ async function _loadCurriculoGuide(instrumento, nivel, modalEl) {
   }
 }
 
+function _mapSeedDataToPlan(seedData) {
+  const routeName = seedData.route?.nombre || ''
+  const allObjetivos = []
+  const allIndicadores = []
+
+  for (const level of seedData.levels || []) {
+    for (const node of level.nodes || []) {
+      for (const obj of node.objetivos || []) {
+        allObjetivos.push(obj.descripcion)
+        for (const ind of obj.indicadores || []) {
+          allIndicadores.push(ind.descripcion)
+        }
+      }
+    }
+  }
+
+  return {
+    tema: routeName,
+    objetivos: allObjetivos.join('\n'),
+    contenido: allIndicadores.length > 0
+      ? `Indicadores extraídos del currículo:\n${allIndicadores.map((i) => `- ${i}`).join('\n')}`
+      : '',
+  }
+}
+
 function _buildModalHTML(isEdit, plan, clases, maestros, plantillas = []) {
   const clasesOptions = clases.length
     ? clases
@@ -392,7 +425,7 @@ function _buildModalHTML(isEdit, plan, clases, maestros, plantillas = []) {
             <select class="pm-plan-select" id="pl-plantilla">
               ${templateOptions}
             </select>
-            <span class="pm-plan-hint">Selecciona una plantilla para préllenar el formulario</span>
+            <span class="pm-plan-hint">Selecciona una plantilla para prellenar el formulario</span>
           </div>
         </div>
         `
@@ -415,7 +448,7 @@ function _buildModalHTML(isEdit, plan, clases, maestros, plantillas = []) {
                 </button>
               </div>
               <div class="form-text mt-2" id="pl-clase-note">
-                Selecciona una clase para cargar su gu?a, revisar contenidos y abrir su perfil curricular.
+                Selecciona una clase para cargar su guía, revisar contenidos y abrir su perfil curricular.
               </div>
               <div id="pl-clase-picker-host" class="d-none"></div>
             </div>
@@ -544,6 +577,7 @@ function _getModalStyles() {
     .pm-plan-backdrop {
       position: absolute;
       inset: 0;
+      background: rgba(0, 0, 0, 0.5);
       backdrop-filter: blur(4px);
       transition: background 0.2s ease;
     }

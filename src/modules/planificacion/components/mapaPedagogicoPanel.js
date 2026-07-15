@@ -162,8 +162,8 @@ function buildDetail(level, tema, objetivo, indicador) {
   return {
     type: 'empty',
     entityId: null,
-    title: 'Seleccioná una rama',
-    subtitle: 'Explorá la estructura pedagógica de la clase',
+    title: 'Seleccione una rama',
+    subtitle: 'Explore la estructura pedagógica de la clase',
     badges: [],
     hints: [
       {
@@ -594,7 +594,7 @@ export function renderMapaPedagogicoPanel(container, { maestroId = null } = {}) 
     const selected = findCurrentSelection(state.levels, state.selection)
     const detail = buildDetail(selected.level, selected.tema, selected.objetivo, selected.indicador)
     const meta = buildClassMeta(state.clase)
-    const heroName = state.clase?.nombre || 'Seleccioná una clase'
+    const heroName = state.clase?.nombre || 'Seleccione una clase'
 
     container.innerHTML = `
       <div class="pm-mapa-shell">
@@ -789,7 +789,7 @@ export function renderMapaPedagogicoPanel(container, { maestroId = null } = {}) 
     const indicatorId = container.querySelector('#pm-mapa-link-select')?.value
     if (!planIndicatorId) return
     if (!indicatorId) {
-      AppToast.error('Seleccioná un indicador académico real antes de guardar')
+      AppToast.error('Seleccione un indicador académico real antes de guardar')
       return
     }
 

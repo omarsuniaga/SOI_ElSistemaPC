@@ -7,7 +7,7 @@
  *   1. Maestro: proponerContenidoView.js — sube archivo, lo parsea
  *      (planningParserService real, con callGroq mockeado), revisa el
  *      árbol y hace click en [Proponer].
- *   2. ACM: acmProuestasView.js — ve la propuesta recién creada en su
+ *   2. ACM: acmPropuestasView.js — ve la propuesta recién creada en su
  *      bandeja, abre el detalle y hace click en [Publicar].
  *   3. Progresión: progressionAdapter.getObjetivoActual — contrato de
  *      salida válido para un alumno sin intentos previos.
@@ -84,7 +84,7 @@ describe('curriculo-tres-planos E2E (DOM): proponer -> publicar -> progresión',
 
   it('sube y propone contenido desde la vista del maestro, el ACM lo publica desde su vista, y queda disponible para progresión', async () => {
     const { renderProponerContenidoView } = await import('../../../src/portal-maestros/views/proponerContenidoView.js')
-    const { renderAcmPropuestasView } = await import('../../../src/modules/planificacion/views/acmProuestasView.js')
+    const { renderAcmPropuestasView } = await import('../../../src/modules/planificacion/views/acmPropuestasView.js')
     const { getObjetivoActual } = await import('../../../src/modules/progresos/api/progressionAdapter.js')
 
     // ── 1. Maestro sube y propone ──────────────────────────────────────────

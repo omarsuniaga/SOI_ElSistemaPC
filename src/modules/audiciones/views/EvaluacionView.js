@@ -1,11 +1,12 @@
 import { isEligible } from '../domain/eligibility.js'
+import { EvaluacionMapper } from '../domain/EvaluacionMapper.js'
 
 export function createEvaluacionView(container, adapter) {
   const state = {
     students: [],
     evaluations: new Map(),
     selectedStudentId: null,
-    formState: { c1: null, c2: null, c3: null, c4: null, c5: null, c6: null, c7: null, c8: null },
+    formState: { afinacion: null, ritmo: null, postura: null, musicalidad: null },
     saving: false,
   }
 
@@ -34,7 +35,8 @@ export function createEvaluacionView(container, adapter) {
     const list = container.querySelector('#student-list')
     list.innerHTML = state.students.map(s => {
       const ev = state.evaluations.get(s.id)
-      const isComplete = ev && ev.c1 !== null
+      const dom = ev ? EvaluacionMapper.toDomain(ev) : null
+      const isComplete = dom && dom.afinacion !== 0
       const badge = isComplete
         ? '<span class="badge bg-success ms-2">✓</span>'
         : '<span class="badge bg-secondary ms-2">—</span>'
@@ -52,20 +54,20 @@ export function createEvaluacionView(container, adapter) {
   const renderForm = () => {
     const form = container.querySelector('#evaluation-form')
     const criteria = [
-      { key: 'c3', label: 'Postura y Técnica (30%)' },
-      { key: 'c1', label: 'Afinación (30%)' },
-      { key: 'c2', label: 'Ritmo (20%)' },
-      { key: 'c4', label: 'Musicalidad (20%)' },
+      { key: 'postura', label: 'Postura y Técnica (30%)' },
+      { key: 'afinacion', label: 'Afinación (30%)' },
+      { key: 'ritmo', label: 'Ritmo (20%)' },
+      { key: 'musicalidad', label: 'Musicalidad (20%)' },
     ]
 
     const canSave = isEligible({ ...state.formState, student_id: state.selectedStudentId, jurado_id: 'placeholder' })
     
-    // Cálculo en tiempo real del promedio ponderado
-    const c1 = Number(state.formState.c1) || 0
-    const c2 = Number(state.formState.c2) || 0
-    const c3 = Number(state.formState.c3) || 0
-    const c4 = Number(state.formState.c4) || 0
-    const promedio = (c3 * 0.3) + (c1 * 0.3) + (c2 * 0.2) + (c4 * 0.2)
+    // Cálculo en tiempo real del promedio ponderado en base al dominio limpio
+    const afinacion = Number(state.formState.afinacion) || 0
+    const ritmo = Number(state.formState.ritmo) || 0
+    const postura = Number(state.formState.postura) || 0
+    const musicalidad = Number(state.formState.musicalidad) || 0
+    const promedio = (postura * 0.3) + (afinacion * 0.3) + (ritmo * 0.2) + (musicalidad * 0.2)
 
     let dictamen = 'INCOMPLETO'
     let badgeClass = 'bg-secondary'
@@ -103,7 +105,7 @@ export function createEvaluacionView(container, adapter) {
             </div>
           </div>`).join('')}
         
-        <div class="my-4 p-3 bg-light rounded border border-secondary-subtle">
+         <div class="my-4 p-3 bg-light rounded border border-secondary-subtle">
           <div class="d-flex justify-content-between align-items-center mb-2">
             <span class="fw-bold text-secondary">Promedio Ponderado:</span>
             <span class="fs-4 fw-bold text-primary">${canSave ? promedio.toFixed(2) : '—'} / 5.00</span>
@@ -132,27 +134,16 @@ export function createEvaluacionView(container, adapter) {
       state.saving = true
       renderForm()
       try {
+        const persistencePayload = EvaluacionMapper.toPersistence(state.formState)
         await adapter.saveEvaluation({
           student_id: state.selectedStudentId,
           jurado_id: 'usr-jurado-1',
-          c1: state.formState.c1,
-          c2: state.formState.c2,
-          c3: state.formState.c3,
-          c4: state.formState.c4,
-          c5: null,
-          c6: null,
-          c7: null,
-          c8: null
+          ...persistencePayload
         })
         state.evaluations.set(state.selectedStudentId, { 
-          c1: state.formState.c1, 
-          c2: state.formState.c2, 
-          c3: state.formState.c3, 
-          c4: state.formState.c4,
-          c5: null,
-          c6: null,
-          c7: null,
-          c8: null
+          student_id: state.selectedStudentId,
+          jurado_id: 'usr-jurado-1',
+          ...persistencePayload
         })
         renderStudentList()
       } catch (err) {
@@ -168,8 +159,8 @@ export function createEvaluacionView(container, adapter) {
     state.selectedStudentId = studentId
     const existing = state.evaluations.get(studentId)
     state.formState = existing
-      ? { c1: existing.c1, c2: existing.c2, c3: existing.c3, c4: existing.c4, c5: null, c6: null, c7: null, c8: null }
-      : { c1: null, c2: null, c3: null, c4: null, c5: null, c6: null, c7: null, c8: null }
+      ? EvaluacionMapper.toDomain(existing)
+      : { afinacion: null, ritmo: null, postura: null, musicalidad: null }
     renderStudentList()
     renderForm()
   }

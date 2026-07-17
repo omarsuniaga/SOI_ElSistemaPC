@@ -990,3 +990,48 @@ tr.border-start-accent:hover {
   font-size: 0.75rem;
 }
 
+/* Premium Nuevo Plan Action Button styling */
+.btn-planificacion-nuevo {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 8px 16px !important;
+  font-weight: 600 !important;
+  font-size: 0.875rem !important;
+  border-radius: 10px !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  background: linear-gradient(135deg, var(--bs-primary), #00c6ff) !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 14px rgba(13, 110, 253, 0.3) !important;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  cursor: pointer;
+}
+
+[data-bs-theme="dark"] .btn-planificacion-nuevo {
+  background: linear-gradient(135deg, var(--bs-primary), #0072ff) !important;
+  box-shadow: 0 4px 18px rgba(13, 110, 253, 0.35) !important;
+}
+
+.btn-planificacion-nuevo:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 8px 22px rgba(13, 110, 253, 0.45) !important;
+  filter: brightness(1.08) !important;
+}
+
+.btn-planificacion-nuevo:active {
+  transform: translateY(0) !important;
+}
+
+/* Style Option tags in Select fields for theme contrast consistency */
+.premium-filter-select option,
+.form-select option {
+  background-color: #ffffff !important;
+  color: #212529 !important;
+}
+
+[data-bs-theme="dark"] .premium-filter-select option,
+[data-bs-theme="dark"] .form-select option {
+  background-color: #1e1e1e !important;
+  color: #e0e0e0 !important;
+}
+

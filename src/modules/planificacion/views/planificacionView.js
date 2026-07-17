@@ -187,7 +187,7 @@ function renderContent(container) {
           <button class="btn-help-trigger" id="btn-help-planificacion" title="¿Cómo funciona esta pantalla?" aria-label="Ayuda">
             <i class="bi bi-question"></i>
           </button>
-          <button class="btn btn-primary btn-sm" id="btn-nuevo-plan">
+          <button class="btn-planificacion-nuevo" id="btn-nuevo-plan">
             <i class="bi bi-plus-lg me-1"></i>Nuevo Plan
           </button>
           ${

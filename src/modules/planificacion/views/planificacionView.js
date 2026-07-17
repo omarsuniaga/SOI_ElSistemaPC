@@ -10,7 +10,8 @@ import {
   obtenerClases,
   obtenerCoberturaCurricular,
   obtenerMaestros,
-  obtenerPlantillas,
+  obtenerPlantillasPlanificacion,
+  obtenerCoberturaEvaluacion,
 } from '../api/planificacionAdapter.js'
 import {
   obtenerFuentesCurriculares,
@@ -21,15 +22,8 @@ import {
 } from '../api/weeklyPlanAdapter.js'
 import { escapeHTML } from '../../clases/utils/clasesUtils.js'
 import { HelpPanel } from '../../../shared/components/HelpPanel.js'
-import { openPlanificacionModal } from '../components/planificacionModal.js'
-import { openCoberturaModal } from '../components/coberturaModal.js'
-import { renderAsistentePedagogicoPanel } from '../components/asistentePedagogicoPanel.js'
-import { openCurriculoListModal } from '../components/curriculoModal.js'
-import { renderRutasManagementPanel } from '../components/rutasManagementPanel.js'
 import { usePlanificacion } from '../hooks/usePlanificacion.js'
-import { createDslEditorWithToolbar } from '../components/dslToolbar.js'
 import { getAlumnos } from '../../alumnos/api/alumnosApi.js'
-import { renderHistorialContenidosPanel } from '../components/historialContenidosPanel.js'
 
 // ── State ─────────────────────────────────────────────────────────────────────
 const state = {
@@ -43,12 +37,14 @@ const state = {
   acmAuthority: { sources: [], versions: [], routes: [] },
   seleccionados: new Set(),
   container: null,
+  maestrosCatalogo: [],
+  clasesCatalogo: []
 }
 
 const hook = usePlanificacion()
 
 // ── Entry Point ───────────────────────────────────────────────────────────────
-export async function renderPlanificacionView(container, { viewMode = 'maestro' } = {}) {
+export async function renderPlanificacionView(container, { viewMode = 'maestro', skipFetch = false } = {}) {
   if (!container) return
   state.container = container
   state.viewMode = viewMode
@@ -67,8 +63,23 @@ export async function renderPlanificacionView(container, { viewMode = 'maestro' 
     state.cargando = true
     renderLoading(container)
 
-    await hook.fetchPlanificacionesConDetalles()
+    const [maestros, clases] = await Promise.all([
+      obtenerMaestros().catch(() => []),
+      obtenerClases().catch(() => [])
+    ])
+    state.maestrosCatalogo = maestros
+    state.clasesCatalogo = clases
+
+    if (!skipFetch) {
+      hook.currentPage = 1
+      hook.searchTerm = ''
+      hook.filterClaseId = ''
+      hook.filterEstado = ''
+      await hook.fetchPlanificacionesConDetalles()
+    }
+    
     state.planes = [...hook.planificaciones]
+    
     if (viewMode === 'acm') {
       const [sources, versions, routes] = await Promise.all([
         obtenerFuentesCurriculares().catch(() => []),
@@ -81,6 +92,7 @@ export async function renderPlanificacionView(container, { viewMode = 'maestro' 
 
     renderContent(container)
     _attachEvents(container)
+    _actualizarPaginadorUi()
   } catch (error) {
     console.error('[planificacionView]', error)
     renderError(container, error.message)
@@ -118,19 +130,45 @@ function renderContent(container) {
   const isAdmin = state.viewMode === 'admin'
 
   const headerTitle = state.viewMode === 'acm'
-    ? 'ACM ? Gobernanza Curricular'
+    ? 'Rutas y Versiones Curriculares'
     : isAdmin
       ? 'Todas las Planificaciones'
       : 'Mis Planes de Clase'
   const headerIcon = state.viewMode === 'acm' ? 'bi-diagram-3' : isAdmin ? 'bi-shield-check' : 'bi-journal-check'
   const headerDesc = state.viewMode === 'acm'
-    ? 'ACM define, versiona y publica. El portal de maestros solo hereda lo activo.'
+    ? 'Diseño, control y asignación del currículo oficial y rutas de clase del núcleo.'
     : isAdmin
-      ? `${hook.planificaciones.length} planes pendientes de revisi?n`
-      : 'Vista de consulta. La gu?a se hereda desde ACM para esta clase.'
+      ? `${hook.totalCount} planes en el sistema`
+      : 'Vista de consulta. La guía se hereda desde ACM para esta clase.'
 
   // Stats for admin mode
   const statsHtml = state.viewMode === 'acm' ? _renderAcmAuthorityPanel() : isAdmin ? _renderAdminStats() : ''
+
+  // Segmented control tabs (iOS Style)
+  const tabsHtml = `
+    <div class="planificacion-segmented-control mb-4" id="planificacion-tabs">
+      <button class="planificacion-segment-btn ${state.activeTab === 'planes' ? 'active' : ''}" data-tab="planes">
+        <i class="bi bi-journal-text me-1"></i> Planes
+      </button>
+      ${(isAdmin || state.viewMode === 'acm') ? `
+      <button class="planificacion-segment-btn ${state.activeTab === 'clases' ? 'active' : ''}" data-tab="clases">
+        <i class="bi bi-shield-check me-1"></i> Cobertura Clases
+      </button>
+      ` : ''}
+      <button class="planificacion-segment-btn ${state.activeTab === 'plantillas' ? 'active' : ''}" data-tab="plantillas">
+        <i class="bi bi-file-earmark-template me-1"></i> Plantillas
+      </button>
+      <button class="planificacion-segment-btn ${state.activeTab === 'historial' ? 'active' : ''}" data-tab="historial">
+        <i class="bi bi-clock-history me-1"></i> Historial
+      </button>
+      <button class="planificacion-segment-btn ${state.activeTab === 'rutas' ? 'active' : ''}" data-tab="rutas">
+        <i class="bi bi-diagram-3 me-1"></i> Rutas
+      </button>
+      <button class="planificacion-segment-btn ${state.activeTab === 'asistente' ? 'active' : ''}" data-tab="asistente">
+        <i class="bi bi-cpu me-1"></i> Asistente IA
+      </button>
+    </div>
+  `
 
   container.innerHTML = `
     <div class="page-container">
@@ -146,18 +184,21 @@ function renderContent(container) {
           </div>
         </div>
         <div class="planificacion-header-actions">
-          <button class="btn-help-trigger" id="btn-help-planificacion" title="?C?mo funciona esta pantalla?" aria-label="Ayuda">
+          <button class="btn-help-trigger" id="btn-help-planificacion" title="¿Cómo funciona esta pantalla?" aria-label="Ayuda">
             <i class="bi bi-question"></i>
+          </button>
+          <button class="btn btn-primary btn-sm" id="btn-nuevo-plan">
+            <i class="bi bi-plus-lg me-1"></i>Nuevo Plan
           </button>
           ${
             (isAdmin || state.viewMode === 'acm')
               ? `
             <button class="btn btn-outline-secondary btn-sm" id="btn-curriculo-admin">
-              <i class="bi bi-journal-bookmark me-1"></i>Curr?culo
+              <i class="bi bi-journal-bookmark me-1"></i>Currículo
             </button>
             ${state.viewMode === 'acm' ? `
             <button class="btn btn-outline-primary btn-sm" id="btn-publicar-version">
-              <i class="bi bi-broadcast me-1"></i>Publicar Versi?n
+              <i class="bi bi-broadcast me-1"></i>Publicar Versión
             </button>
             <button class="btn btn-outline-info btn-sm" id="btn-asignar-ruta-acm">
               <i class="bi bi-diagram-3 me-1"></i>Asignar Ruta
@@ -169,7 +210,7 @@ function renderContent(container) {
           `
               : `
             <button class="btn btn-outline-info btn-sm" id="btn-ver-guia-acm">
-              <i class="bi bi-diagram-3 me-1"></i>Ver gu?a ACM
+              <i class="bi bi-diagram-3 me-1"></i>Ver guía ACM
             </button>
           `
           }
@@ -177,113 +218,152 @@ function renderContent(container) {
       </div>
 
       ${statsHtml}
+      ${tabsHtml}
 
-      <!-- Toolbar -->
-      <div class="planificacion-filter-toolbar mb-4">
-        <div class="premium-search-container flex-grow-1" style="min-width: 200px;">
-          <i class="bi bi-search search-icon-muted"></i>
-          <input type="text" class="form-control premium-search-input" placeholder="Buscar por tema..." id="buscar-plan">
-        </div>
-        ${
-          (isAdmin || state.viewMode === 'acm')
-            ? `
-        <div class="premium-select-container">
-          <i class="bi bi-person select-icon-muted"></i>
-          <select class="form-select premium-filter-select" id="select-maestro">
-            <option value="">Todos los maestros</option>
-            ${Array.from(
-              new Set(
-                hook.planificaciones
-                  .map((p) => p.maestro_nombre)
-                  .filter((n) => n && n !== 'Sin asignar'),
-              ),
-            )
-              .sort()
-              .map((m) => `<option value="${escapeHTML(m)}">${escapeHTML(m)}</option>`)
-              .join('')}
-          </select>
-        </div>
-        `
-            : ''
-        }
-        <div class="premium-select-container">
-          <i class="bi bi-book select-icon-muted"></i>
-          <select class="form-select premium-filter-select" id="select-clase">
-            <option value="">Todas las clases</option>
-            ${Array.from(
-              new Set(
-                hook.planificaciones
-                  .map((p) => p.clase_nombre)
-                  .filter((n) => n && n !== 'Sin asignar'),
-              ),
-            )
-              .sort()
-              .map((c) => `<option value="${escapeHTML(c)}">${escapeHTML(c)}</option>`)
-              .join('')}
-          </select>
-        </div>
-        <div class="premium-select-container">
-          <i class="bi bi-funnel select-icon-muted"></i>
-          <select class="form-select premium-filter-select" id="select-estado">
-            <option value="">Todos los estados</option>
-            ${Planificacion.getEstados()
-              .map((e) => `<option value="${e.value}">${e.label}</option>`)
-              .join('')}
-          </select>
-        </div>
-      </div>
-
-
-
-      <div id="tab-content-planes">
-      ${state.viewMode === 'maestro' ? `
-      <div class="alert alert-primary border-0 mb-3">
-        <div class="d-flex align-items-start gap-3">
-          <i class="bi bi-diagram-3 fs-4"></i>
-          <div>
-            <div class="fw-bold">C?mo usar esta planificaci?n</div>
-            <div class="small">1) Elige tu clase. 2) Revisa el perfil de temas e indicadores. 3) Ajusta la ejecuci?n semanal sin romper la gu?a publicada. 4) Marca vistos, avances y observaciones desde la clase seleccionada.</div>
+      <!-- Tab Content Planes -->
+      <div id="tab-content-planes" style="${state.activeTab === 'planes' ? 'block' : 'none'}">
+        <!-- Toolbar -->
+        <div class="planificacion-filter-toolbar mb-4">
+          <div class="premium-search-container flex-grow-1" style="min-width: 200px;">
+            <i class="bi bi-search search-icon-muted"></i>
+            <input type="text" class="form-control premium-search-input" placeholder="Buscar por tema..." id="buscar-plan" value="${escapeHTML(hook.searchTerm || '')}">
+          </div>
+          ${
+            (isAdmin || state.viewMode === 'acm')
+              ? `
+          <div class="premium-select-container">
+            <i class="bi bi-person select-icon-muted"></i>
+            <select class="form-select premium-filter-select" id="select-maestro">
+              <option value="">Todos los maestros</option>
+              ${(state.maestrosCatalogo || [])
+                .map((m) => `<option value="${m.id}" ${hook.maestroActualId === m.id ? 'selected' : ''}>${escapeHTML(m.nombre_completo)}</option>`)
+                .join('')}
+            </select>
+          </div>
+          `
+              : ''
+          }
+          <div class="premium-select-container">
+            <i class="bi bi-book select-icon-muted"></i>
+            <select class="form-select premium-filter-select" id="select-clase">
+              <option value="">Todas las clases</option>
+              ${(state.clasesCatalogo || [])
+                .map((c) => `<option value="${c.id}" ${hook.filterClaseId === c.id ? 'selected' : ''}>${escapeHTML(c.nombre)}</option>`)
+                .join('')}
+            </select>
+          </div>
+          <div class="premium-select-container">
+            <i class="bi bi-funnel select-icon-muted"></i>
+            <select class="form-select premium-filter-select" id="select-estado">
+              <option value="">Todos los estados</option>
+              ${Planificacion.getEstados()
+                .map((e) => `<option value="${e.value}" ${hook.filterEstado === e.value ? 'selected' : ''}>${e.label}</option>`)
+                .join('')}
+            </select>
           </div>
         </div>
-      </div>` : ''}
-      <!-- Table -->
-      <div class="page-glass rounded">
-        <div class="table-responsive">
-          <table class="table table-compact table-hover mb-0">
-            <thead class="table-light">
-              <tr>
-                ${(isAdmin || state.viewMode === 'acm') ? '<th style="width:36px"><input type="checkbox" id="check-all" title="Seleccionar todos"></th>' : ''}
-                <th>Clase / Tema</th>
-                ${(isAdmin || state.viewMode === 'acm') ? '<th class="d-none d-md-table-cell">Maestro</th>' : ''}
-                <th class="d-none d-md-table-cell">Estado</th>
-                <th class="d-none d-lg-table-cell">Fecha</th>
-                <th class="text-end">Acciones</th>
-              </tr>
-            </thead>
-            <tbody id="planes-tbody">
-              ${_renderTableRows(state.planes)}
-            </tbody>
-          </table>
+
+        ${state.viewMode === 'maestro' ? `
+        <div class="alert alert-primary border-0 mb-3">
+          <div class="d-flex align-items-start gap-3">
+            <i class="bi bi-diagram-3 fs-4"></i>
+            <div>
+              <div class="fw-bold">Cómo usar esta planificación</div>
+              <div class="small">1) Elige tu clase. 2) Revisa el perfil de temas e indicadores. 3) Ajusta la ejecución semanal sin romper la guía publicada. 4) Marca vistos, avances y observaciones desde la clase seleccionada.</div>
+            </div>
+          </div>
+        </div>` : ''}
+
+        <!-- Table -->
+        <div class="page-glass rounded position-relative">
+          <div id="tabla-loading-spinner" style="display:none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 10;">
+            <div class="spinner-border text-primary" role="status"></div>
+          </div>
+          <div class="table-responsive">
+            <table class="table table-compact table-hover mb-0">
+              <thead class="table-light">
+                <tr>
+                  ${(isAdmin || state.viewMode === 'acm') ? '<th style="width:36px"><input type="checkbox" id="check-all" title="Seleccionar todos"></th>' : ''}
+                  <th>Clase / Tema</th>
+                  ${(isAdmin || state.viewMode === 'acm') ? '<th class="d-none d-md-table-cell">Maestro</th>' : ''}
+                  <th class="d-none d-md-table-cell">Estado</th>
+                  <th class="d-none d-lg-table-cell">Fecha</th>
+                  <th class="text-end">Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="planes-tbody">
+                ${_renderTableRows(state.planes)}
+              </tbody>
+            </table>
+          </div>
+          <div id="empty-container">${state.planes.length === 0 ? _renderEmpty() : ''}</div>
+          
+          <!-- Paginator Footer -->
+          <div class="d-flex justify-content-between align-items-center mt-4 px-3 py-2 page-glass rounded-3 border" style="background: rgba(255,255,255,0.01);">
+            <small class="text-muted" id="pagination-info">Cargando paginación...</small>
+            <div class="d-flex align-items-center gap-2">
+              <button class="btn-pagination-nav" id="btn-page-prev" title="Página anterior" disabled>
+                <i class="bi bi-chevron-left"></i>
+              </button>
+              <span class="small fw-bold px-2 py-1 bg-primary bg-opacity-10 text-primary rounded" id="current-page-badge">1</span>
+              <button class="btn-pagination-nav" id="btn-page-next" title="Página siguiente" disabled>
+                <i class="bi bi-chevron-right"></i>
+              </button>
+            </div>
+          </div>
         </div>
-        <div id="empty-container">${state.planes.length === 0 ? _renderEmpty() : ''}</div>
-      </div>
       </div>
 
-      ${
-        !isAdmin
-          ? `
-      <div id="tab-content-plantillas" style="display:none">
-        <div class="alert alert-info border-0 py-3" style="font-size:0.875rem;">
-          <i class="bi bi-file-earmark-template me-2"></i>
-          Las plantillas de planificaci?n estar?n disponibles pr?ximamente.
-        </div>
+      <!-- Tab Content Clases -->
+      ${(isAdmin || state.viewMode === 'acm') ? `
+      <div id="tab-content-clases" style="${state.activeTab === 'clases' ? 'block' : 'none'}">
+        ${_renderClasesTab()}
       </div>
-      <div id="tab-content-historial" style="display:none"></div>
-      <div id="tab-content-rutas" style="display:none"></div>
-      <div id="tab-content-asistente" style="display:none"></div>
-      `
-          : ''
-      }
+      ` : ''}
+
+      <!-- Other Tabs -->
+      <div id="tab-content-plantillas" style="${state.activeTab === 'plantillas' ? 'block' : 'none'}"></div>
+      <div id="tab-content-historial" style="${state.activeTab === 'historial' ? 'block' : 'none'}"></div>
+      <div id="tab-content-rutas" style="${state.activeTab === 'rutas' ? 'block' : 'none'}"></div>
+      <div id="tab-content-asistente" style="${state.activeTab === 'asistente' ? 'block' : 'none'}"></div>
+    </div>
+  `
+}
+
+function _renderClasesTab() {
+  const clases = state.clasesCatalogo || []
+  if (clases.length === 0) {
+    return `<div class="p-4 text-center text-muted">No hay clases registradas en este núcleo.</div>`
+  }
+  
+  return `
+    <div class="page-glass rounded">
+      <div class="table-responsive">
+        <table class="table table-compact table-hover mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Instrumento / Clase</th>
+              <th>Maestro Principal</th>
+              <th class="text-center" style="width: 250px;">Progreso de Alumnos (Cobertura)</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${clases.map(c => `
+              <tr class="border-start-accent border-accent-secondary align-middle">
+                <td class="fw-semibold">${escapeHTML(c.nombre)}</td>
+                <td class="small text-muted">${escapeHTML(c.maestro_nombre || 'Sin asignar')}</td>
+                <td class="text-center">
+                  <div class="cobertura-interactive-wrapper" id="cobertura-wrapper-${c.id}">
+                    <button class="btn-load-cobertura-premium" data-clase-id="${c.id}">
+                      <i class="bi bi-shield-check me-1"></i> Calcular Cobertura
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
     </div>
   `
 }
@@ -346,8 +426,8 @@ function _renderAcmAuthorityPanel() {
       <div class="page-glass mt-3 p-3">
         <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
           <div>
-            <div class="fw-bold">Gobernanza ACM</div>
-            <small class="text-muted">ACM define, versiona y publica. El maestro solo consume lo activo.</small>
+            <div class="fw-bold">Rutas y Versiones Oficiales</div>
+            <small class="text-muted">Definición y control del currículo oficial del núcleo. Las clases heredan la ruta activa definida aquí.</small>
           </div>
           <span class="badge text-bg-primary">Source of truth</span>
         </div>
@@ -382,8 +462,8 @@ function _renderAcmAuthorityPanel() {
                       <div class="rounded border p-2">
                         <div class="d-flex justify-content-between align-items-start gap-2">
                           <div>
-                            <div class="fw-semibold">${escapeHTML(v.name || 'Versi?n')}</div>
-                            <small class="text-muted">${escapeHTML(v.source?.title || v.description || 'Sin descripci?n')}</small>
+                            <div class="fw-semibold">${escapeHTML(v.name || 'Versión')}</div>
+                            <small class="text-muted">${escapeHTML(v.source?.title || v.description || 'Sin descripción')}</small>
                           </div>
                           <span class="badge ${v.status === 'active' ? 'text-bg-success' : v.status === 'approved' ? 'text-bg-primary' : 'text-bg-secondary'}">${escapeHTML(v.status || 'draft')}</span>
                         </div>
@@ -408,7 +488,7 @@ function _renderAcmAuthorityPanel() {
                       <div class="d-flex justify-content-between align-items-center rounded border p-2">
                         <div>
                           <div class="fw-semibold">Grupo ${escapeHTML(r.group_id || '?')}</div>
-                          <small class="text-muted">Semana ${r.current_week || 1} ? ${escapeHTML(r.status || 'active')}</small>
+                          <small class="text-muted">Semana ${r.current_week || 1} | ${escapeHTML(r.status || 'active')}</small>
                         </div>
                         <span class="badge text-bg-success">Activa</span>
                       </div>
@@ -519,7 +599,7 @@ async function renderTemplatesContent(container) {
     </div>`
 
   try {
-    const plantillas = await obtenerPlantillas()
+    const plantillas = await obtenerPlantillasPlanificacion()
 
     if (!plantillas || plantillas.length === 0) {
       container.innerHTML = `
@@ -548,7 +628,7 @@ async function renderTemplatesContent(container) {
             </div>
             <div>
               <h1 class="planificacion-title-premium page-title mb-0">Plantillas de Planificación</h1>
-              <p class="text-muted small mb-0">${plantillas.length} plantilla${plantillas.length !== 1 ? 's' : ''} disponible${plantillas.length !== 1 ? 's' : ''} — seleccioná una y personalizala</p>
+              <p class="text-muted small mb-0">${plantillas.length} plantilla${plantillas.length !== 1 ? 's' : ''} disponible${plantillas.length !== 1 ? 's' : ''} — selecciona una y personalízala</p>
             </div>
           </div>
         </div>
@@ -675,12 +755,98 @@ function _openTemplateModal(tpl) {
 function _attachEvents(container) {
   const isAdmin = state.viewMode === 'admin'
 
-  container.querySelector('#buscar-plan')?.addEventListener('input', _applyFilters)
+  // Debounced Search input to avoid concurrency race conditions
+  let searchTimeout = null
+  container.querySelector('#buscar-plan')?.addEventListener('input', (e) => {
+    if (searchTimeout) clearTimeout(searchTimeout)
+    searchTimeout = setTimeout(() => {
+      _applyFilters()
+    }, 300)
+  })
+
   container.querySelector('#select-estado')?.addEventListener('change', _applyFilters)
   container.querySelector('#select-clase')?.addEventListener('change', _applyFilters)
   if (isAdmin || state.viewMode === 'acm') {
     container.querySelector('#select-maestro')?.addEventListener('change', _applyFilters)
   }
+
+  // Paginator events
+  container.querySelector('#btn-page-prev')?.addEventListener('click', async () => {
+    if (hook.currentPage > 1) {
+      state.seleccionados.clear()
+      _toggleBulkBtn()
+      _setLoadingUi(true)
+      try {
+        await hook.setPage(hook.currentPage - 1)
+        state.planes = [...hook.planificaciones]
+        const tbody = container.querySelector('#planes-tbody')
+        if (tbody) tbody.innerHTML = _renderTableRows(state.planes)
+        _actualizarPaginadorUi()
+      } catch (err) {
+        AppToast.error(err.message)
+      } finally {
+        _setLoadingUi(false)
+      }
+    }
+  })
+
+  container.querySelector('#btn-page-next')?.addEventListener('click', async () => {
+    if (hook.currentPage * hook.pageSize < hook.totalCount) {
+      state.seleccionados.clear()
+      _toggleBulkBtn()
+      _setLoadingUi(true)
+      try {
+        await hook.setPage(hook.currentPage + 1)
+        state.planes = [...hook.planificaciones]
+        const tbody = container.querySelector('#planes-tbody')
+        if (tbody) tbody.innerHTML = _renderTableRows(state.planes)
+        _actualizarPaginadorUi()
+      } catch (err) {
+        AppToast.error(err.message)
+      } finally {
+        _setLoadingUi(false)
+      }
+    }
+  })
+
+  // Lazy Load Coverage trigger for classes rows
+  container.querySelectorAll('.btn-load-cobertura-premium').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const claseId = btn.getAttribute('data-clase-id')
+      const wrapper = container.querySelector(`#cobertura-wrapper-${claseId}`)
+      if (!wrapper) return
+
+      wrapper.innerHTML = `
+        <div class="d-flex align-items-center justify-content-center gap-2 cobertura-fade-in text-primary small">
+          <div class="spinner-border spinner-border-sm" role="status" style="width: 1rem; height: 1rem;"></div>
+          <span class="fw-semibold">Cargando...</span>
+        </div>
+      `
+
+      try {
+        const result = await obtenerCoberturaEvaluacion(claseId)
+        const pct = result.coverage_pct || 0
+        const color = pct >= 80 ? 'bg-success' : pct >= 50 ? 'bg-warning' : 'bg-danger'
+
+        wrapper.innerHTML = `
+          <div class="d-flex align-items-center justify-content-center gap-3 cobertura-fade-in">
+            <div class="progress" style="width: 80px; height: 6px; background: rgba(0,0,0,0.06);" title="${pct}% de cobertura (${result.evaluated_indicators}/${result.total_indicators} indicadores evaluados)">
+              <div class="progress-bar ${color}" role="progressbar" style="width: ${pct}%"></div>
+            </div>
+            <span class="small fw-bold text-muted">${pct}%</span>
+          </div>
+        `
+      } catch (err) {
+        AppToast.error('Error calculando cobertura: ' + err.message)
+        wrapper.innerHTML = `
+          <button class="btn-load-cobertura-premium text-danger border-danger" data-clase-id="${claseId}">
+            <i class="bi bi-exclamation-triangle me-1"></i> Reintentar
+          </button>
+        `
+        _attachEvents(container)
+      }
+    })
+  })
 
   container.querySelector('#btn-help-planificacion')?.addEventListener('click', () => {
     HelpPanel.open({
@@ -690,9 +856,9 @@ function _attachEvents(container) {
       sections: [
         {
           icon: 'bi-journal-text',
-          title: 'Tab Mis planes',
+          title: 'Tab Planes',
           description:
-            'Lista tus planes personales. Filtrá por estado (planificado, ejecutado, cancelado) y creá nuevos desde "Nuevo plan".',
+            'Lista tus planes personales. Filtra por estado (planificado, ejecutado, cancelado) y crea nuevos desde "Nuevo plan".',
           color: '#3b82f6',
         },
         {
@@ -704,7 +870,7 @@ function _attachEvents(container) {
         },
         {
           icon: 'bi-journal-check',
-          title: 'Todas las planes (admin)',
+          title: 'Todos los planes (admin)',
           description:
             'Solo visible para administradores. Muestra los planes de todos los maestros para supervisión.',
           color: '#10b981',
@@ -713,7 +879,7 @@ function _attachEvents(container) {
           icon: 'bi-circle-fill',
           title: 'Estados del plan',
           description:
-            '"Planificado" = no dictado aún. "Ejecutado" = clase dada. "Cancelado" = no se realizó. Mantenerlos actualizados mejora los reportes.',
+            '"Planificado" = no dictado aún. "Ejecutado" = clase dada. "Revisado" = plan auditado. Mantenerlos actualizados mejora los reportes.',
           color: '#f59e0b',
         },
       ],
@@ -723,13 +889,13 @@ function _attachEvents(container) {
   if (!isAdmin) {
     container.querySelector('#btn-ver-guia-acm')?.addEventListener('click', () => {
       AppModal.open({
-        title: 'Gu?a heredada desde ACM',
+        title: 'Guía heredada desde ACM',
         saveText: 'Entendido',
         size: 'md',
         body: `
           <div class="alert alert-info border-0 mb-0">
-            <div class="fw-bold mb-2">La planificaci?n oficial vive en ACM</div>
-            <p class="mb-0 small">Desde aqu? solo consult?s la gu?a que ACM public? para tu clase. Si necesit?s correcciones, se solicitan en ACM.</p>
+            <div class="fw-bold mb-2">La planificación oficial vive en ACM</div>
+            <p class="mb-0 small">Desde aquí solo consultas la guía que ACM publicó para tu clase. Si necesitas correcciones, se solicitan en ACM.</p>
           </div>
         `,
         onSave: async () => true,
@@ -761,25 +927,34 @@ function _attachEvents(container) {
     })
   }
 
-  // Tab switching
-  container.querySelectorAll('#planificacion-tabs .nav-link').forEach((btn) => {
-    btn.addEventListener('click', () => {
+  // Segmented Control Tab switching (iOS Style)
+  container.querySelectorAll('#planificacion-tabs .planificacion-segment-btn').forEach((btn) => {
+    btn.addEventListener('click', async () => {
       state.activeTab = btn.dataset.tab
 
-      const allContent = ['planes', 'plantillas', 'historial', 'rutas', 'asistente']
+      const allContent = ['planes', 'clases', 'plantillas', 'historial', 'rutas', 'asistente']
       allContent.forEach((tab) => {
         const div = container.querySelector(`#tab-content-${tab}`)
         if (div) div.style.display = state.activeTab === tab ? 'block' : 'none'
       })
 
       container
-        .querySelectorAll('#planificacion-tabs .nav-link')
+        .querySelectorAll('#planificacion-tabs .planificacion-segment-btn')
         .forEach((b) => b.classList.remove('active'))
       btn.classList.add('active')
+
+      if (state.activeTab === 'plantillas' && !state.plantillasRendered) {
+        const plantillasDiv = container.querySelector('#tab-content-plantillas')
+        if (plantillasDiv) {
+          await renderTemplatesContent(plantillasDiv)
+          state.plantillasRendered = true
+        }
+      }
 
       if (state.activeTab === 'historial' && !state.historialRendered) {
         const historialDiv = container.querySelector('#tab-content-historial')
         if (historialDiv) {
+          const { renderHistorialContenidosPanel } = await import('../components/historialContenidosPanel.js')
           renderHistorialContenidosPanel(historialDiv, {
             maestroId: hook.maestroActualId,
             planificaciones: hook.planificaciones,
@@ -792,6 +967,7 @@ function _attachEvents(container) {
       if (state.activeTab === 'rutas' && !state.rutasRendered) {
         const rutasDiv = container.querySelector('#tab-content-rutas')
         if (rutasDiv) {
+          const { renderRutasManagementPanel } = await import('../components/rutasManagementPanel.js')
           renderRutasManagementPanel(rutasDiv, state.viewMode)
           state.rutasRendered = true
         }
@@ -800,6 +976,7 @@ function _attachEvents(container) {
       if (state.activeTab === 'asistente' && !state.asistenteRendered) {
         const asistenteDiv = container.querySelector('#tab-content-asistente')
         if (asistenteDiv) {
+          const { renderAsistentePedagogicoPanel } = await import('../components/asistentePedagogicoPanel.js')
           renderAsistentePedagogicoPanel(asistenteDiv)
           state.asistenteRendered = true
         }
@@ -812,7 +989,7 @@ function _attachEvents(container) {
     if (!planId) return
 
     // Switch to "planes" tab
-    const tabBtn = container.querySelector('#planificacion-tabs .nav-link[data-tab="planes"]')
+    const tabBtn = container.querySelector('#planificacion-tabs .planificacion-segment-btn[data-tab="planes"]')
     if (tabBtn) tabBtn.click()
 
     // Highlight the row
@@ -827,8 +1004,11 @@ function _attachEvents(container) {
     }
   })
 
+  container.querySelector('#btn-nuevo-plan')?.addEventListener('click', () => openEditModal(null))
+
   if (isAdmin) {
-    container.querySelector('#btn-curriculo-admin')?.addEventListener('click', () => {
+    container.querySelector('#btn-curriculo-admin')?.addEventListener('click', async () => {
+      const { openCurriculoListModal } = await import('../components/curriculoModal.js')
       openCurriculoListModal()
     })
   }
@@ -836,7 +1016,8 @@ function _attachEvents(container) {
   if (state.viewMode === 'acm') {
     container.querySelector('#btn-publicar-version')?.addEventListener('click', () => _openAcmPublishModal())
     container.querySelector('#btn-asignar-ruta-acm')?.addEventListener('click', () => _openAcmRouteModal())
-    container.querySelector('#btn-curriculo-admin')?.addEventListener('click', () => {
+    container.querySelector('#btn-curriculo-admin')?.addEventListener('click', async () => {
+      const { openCurriculoListModal } = await import('../components/curriculoModal.js')
       openCurriculoListModal()
     })
     container.querySelector('#planes-tbody')?.addEventListener('click', async (e) => {
@@ -867,26 +1048,79 @@ function _attachEvents(container) {
   })
 }
 
-function _applyFilters() {
-  const term = state.container.querySelector('#buscar-plan')?.value.toLowerCase() || ''
+async function _applyFilters() {
+  const term = state.container.querySelector('#buscar-plan')?.value || ''
   const estado = state.container.querySelector('#select-estado')?.value || ''
-  const clase = state.container.querySelector('#select-clase')?.value || ''
-  const maestro = state.container.querySelector('#select-maestro')?.value || ''
+  const claseId = state.container.querySelector('#select-clase')?.value || ''
+  const maestroId = state.container.querySelector('#select-maestro')?.value || ''
 
-  state.planes = hook.planificaciones.filter((p) => {
-    const matchSearch =
-      (p.tema || '').toLowerCase().includes(term) ||
-      (p.clase_nombre || '').toLowerCase().includes(term)
-    const matchEstado = !estado || p.estado === estado
-    const matchClase = !clase || p.clase_nombre === clase
-    const matchMaestro = !maestro || p.maestro_nombre === maestro
-    return matchSearch && matchEstado && matchClase && matchMaestro
-  })
+  state.seleccionados.clear()
+  _toggleBulkBtn()
+  _setLoadingUi(true)
 
+  try {
+    // Configurar maestro actual en el hook si cambia el selector
+    if (maestroId !== hook.maestroActualId) {
+      hook.setMaestroActual(maestroId || null)
+    }
+
+    await hook.setFilters({
+      searchTerm: term,
+      filterClaseId: claseId,
+      filterEstado: estado
+    })
+    
+    state.planes = [...hook.planificaciones]
+    const tbody = state.container.querySelector('#planes-tbody')
+    const empty = state.container.querySelector('#empty-container')
+    
+    if (tbody) tbody.innerHTML = _renderTableRows(state.planes)
+    if (empty) empty.innerHTML = state.planes.length === 0 ? _renderEmpty() : ''
+    
+    _actualizarPaginadorUi()
+  } catch (err) {
+    AppToast.error(err.message)
+  } finally {
+    _setLoadingUi(false)
+  }
+}
+
+function _setLoadingUi(cargando) {
+  state.cargando = cargando
+  const spinner = state.container.querySelector('#tabla-loading-spinner')
   const tbody = state.container.querySelector('#planes-tbody')
-  const empty = state.container.querySelector('#empty-container')
-  if (tbody) tbody.innerHTML = _renderTableRows(state.planes)
-  if (empty) empty.innerHTML = state.planes.length === 0 ? _renderEmpty() : ''
+  
+  if (spinner) spinner.style.display = cargando ? 'block' : 'none'
+  if (tbody) tbody.style.opacity = cargando ? '0.4' : '1'
+  
+  // Deshabilitar controles interactivos durante la recarga para prevenir Race Conditions
+  const controls = state.container.querySelectorAll(
+    '.premium-filter-select, .premium-search-input, .btn-pagination-nav'
+  )
+  controls.forEach(c => c.disabled = cargando)
+}
+
+function _actualizarPaginadorUi() {
+  const info = state.container.querySelector('#pagination-info')
+  const badge = state.container.querySelector('#current-page-badge')
+  const prevBtn = state.container.querySelector('#btn-page-prev')
+  const nextBtn = state.container.querySelector('#btn-page-next')
+  
+  if (info) {
+    const from = (hook.currentPage - 1) * hook.pageSize + 1
+    const to = Math.min(hook.currentPage * hook.pageSize, hook.totalCount)
+    info.textContent = hook.totalCount > 0 
+      ? `Mostrando ${from}-${to} de ${hook.totalCount} planificaciones` 
+      : 'No hay planificaciones'
+  }
+  
+  if (badge) badge.textContent = hook.currentPage
+  
+  if (prevBtn) prevBtn.disabled = hook.currentPage === 1 || state.cargando
+  if (nextBtn) {
+    const hasNext = hook.currentPage * hook.pageSize < hook.totalCount
+    nextBtn.disabled = !hasNext || state.cargando
+  }
 }
 
 function _toggleBulkBtn() {
@@ -900,7 +1134,7 @@ function _toggleBulkBtn() {
 async function _publicarVersionDesdePanel(versionId) {
   try {
     await publicarVersionCurricular(versionId)
-    AppToast.success('Versi?n curricular publicada')
+    AppToast.success('Versión curricular publicada')
     renderPlanificacionView(state.container, { viewMode: 'acm' })
   } catch (error) {
     AppToast.error(error.message)
@@ -919,22 +1153,22 @@ function _openAcmPublishModal() {
     .join('')
 
   AppModal.open({
-    title: 'Publicar versi?n curricular',
+    title: 'Publicar versión curricular',
     saveText: 'Publicar',
     size: 'md',
     body: `
       <div class="d-grid gap-2">
-        <label class="form-label-compact">Selecciona la versi?n a publicar</label>
+        <label class="form-label-compact">Selecciona la versión a publicar</label>
         <select class="form-select input-dense" id="acm-version-select">${options}</select>
         <div class="alert alert-info small mb-0">
-          La versi?n activa define la ruta oficial que el portal de maestros hereda por clase.
+          La versión activa define la ruta oficial que el portal de maestros hereda por clase.
         </div>
       </div>
     `,
     onSave: async (modalBody) => {
       const versionId = modalBody.querySelector('#acm-version-select')?.value
       if (!versionId) {
-        AppToast.error('Selecciona una versi?n')
+        AppToast.error('Selecciona una versión')
         return false
       }
       await _publicarVersionDesdePanel(versionId)
@@ -977,9 +1211,9 @@ async function _openAcmRouteModal() {
           </select>
         </div>
         <div class="col-md-6">
-          <label class="form-label-compact">Versi?n curricular</label>
+          <label class="form-label-compact">Versión curricular</label>
           <select class="form-select input-dense" id="acm-route-version" required>
-            <option value="">Seleccionar versi?n...</option>
+            <option value="">Seleccionar versión...</option>
             ${versionOptions}
           </select>
         </div>
@@ -1001,7 +1235,7 @@ async function _openAcmRouteModal() {
       const levelId = modalBody.querySelector('#acm-route-level')?.value?.trim() || null
 
       if (!groupId || !teacherId || !versionId) {
-        AppToast.error('Completa clase, maestro y versi?n')
+        AppToast.error('Completa clase, maestro y versión')
         return false
       }
 
@@ -1078,6 +1312,7 @@ async function openEditModal(id, prefill = {}) {
 
       // Create DSL editor with toolbar
       const dslContainer = modalBody.querySelector('#plan-dsl-container')
+      const { createDslEditorWithToolbar } = await import('../components/dslToolbar.js')
       const dslEditor = createDslEditorWithToolbar({
         initialContent: plan.notas_dsl || '',
         onChange: (content, parsed) => {
@@ -1225,6 +1460,7 @@ async function _ejecutarPlan(id) {
 
   const maestroId = hook.maestroActualId || plan.maestro_id
 
+  const { openCoberturaModal } = await import('../components/coberturaModal.js')
   openCoberturaModal({
     plan,
     claseId,
@@ -1235,7 +1471,7 @@ async function _ejecutarPlan(id) {
       try {
         await actualizarPlanificacion(id, { estado: 'ejecutado' })
         AppToast.success('Plan marcado como ejecutado')
-        renderPlanificacionView(state.container, { viewMode: state.viewMode })
+        renderPlanificacionView(state.container, { viewMode: state.viewMode, skipFetch: true })
       } catch (err) {
         AppToast.error(err.message)
       }
@@ -1244,7 +1480,7 @@ async function _ejecutarPlan(id) {
       try {
         await actualizarPlanificacion(id, { estado: 'ejecutado' })
         AppToast.success('Plan ejecutado (sin cobertura)')
-        renderPlanificacionView(state.container, { viewMode: state.viewMode })
+        renderPlanificacionView(state.container, { viewMode: state.viewMode, skipFetch: true })
       } catch (err) {
         AppToast.error(err.message)
       }
@@ -1263,7 +1499,7 @@ async function openDeleteModal(id) {
       try {
         await eliminarPlanificacion(id)
         AppToast.success('Plan eliminado')
-        renderPlanificacionView(state.container, { viewMode: state.viewMode })
+        renderPlanificacionView(state.container, { viewMode: state.viewMode, skipFetch: true })
         return true
       } catch (err) {
         AppToast.error(err.message)
@@ -1371,6 +1607,7 @@ export async function renderCoberturaView(container) {
       btn.addEventListener('click', async () => {
         const claseId = btn.dataset.claseId
         const [clases, maestros] = await Promise.all([obtenerClases(), obtenerMaestros()])
+        const { openPlanificacionModal } = await import('../components/planificacionModal.js')
         openPlanificacionModal(
           'create',
           null,
@@ -1394,6 +1631,7 @@ export async function renderCoberturaView(container) {
           obtenerClases(),
           obtenerMaestros(),
         ])
+        const { openPlanificacionModal } = await import('../components/planificacionModal.js')
         openPlanificacionModal('edit', plan, clases, maestros, {}, async (datos) => {
           await actualizarPlanificacion(planId, datos)
           AppToast.success('Plan actualizado')

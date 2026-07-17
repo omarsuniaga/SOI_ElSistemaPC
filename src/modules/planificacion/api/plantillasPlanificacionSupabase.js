@@ -10,18 +10,31 @@ import { supabase } from '../../../lib/supabaseClient.js'
  * @returns {Promise<Array<{id: string, nombre: string, objetivos: string, contenido: string, recursos: string, evaluacion_metodo: string}>>}
  */
 export async function obtenerPlantillasPlanificacion() {
-  const { data, error } = await supabase
-    .from('plantillas_planificacion')
-    .select('id, nombre, objetivos, contenido, recursos, evaluacion_metodo')
-    .eq('activo', true)
-    .order('nombre')
+  try {
+    const { data, error } = await supabase
+      .from('plantillas_planificacion')
+      .select('id, nombre, objetivos, contenido, recursos, evaluacion_metodo')
+      .eq('activo', true)
+      .order('nombre')
 
-  if (error) {
-    console.error('Error cargando plantillas de planificación:', error.message)
-    throw new Error('No se pudieron cargar las plantillas de planificación')
+    if (error) {
+      if (error.code === 'PGRST104' || error.message.includes('plantillas_planificacion') || error.message.includes('Could not find')) {
+        throw new Error('TABLE_NOT_FOUND')
+      }
+      console.error('Error cargando plantillas de planificación:', error.message)
+      throw new Error('No se pudieron cargar las plantillas de planificación')
+    }
+
+    return data || []
+  } catch (err) {
+    console.warn('Tabla plantillas_planificacion no disponible, usando fallback local...', err.message)
+    try {
+      const { default: mockTemplates } = await import('../../../assets/data/mocks/plantillas-planificacion.json')
+      return (mockTemplates || []).map(p => ({ ...p, activo: true }))
+    } catch (e) {
+      return []
+    }
   }
-
-  return data || []
 }
 
 /**
@@ -30,18 +43,33 @@ export async function obtenerPlantillasPlanificacion() {
  * @returns {Promise<object|null>}
  */
 export async function obtenerPlantillaPlanificacion(id) {
-  const { data, error } = await supabase
-    .from('plantillas_planificacion')
-    .select('*')
-    .eq('id', id)
-    .single()
+  try {
+    const { data, error } = await supabase
+      .from('plantillas_planificacion')
+      .select('*')
+      .eq('id', id)
+      .single()
 
-  if (error) {
-    console.error('Error cargando plantilla de planificación:', error.message)
-    throw new Error('Plantilla de planificación no encontrada')
+    if (error) {
+      if (error.code === 'PGRST104' || error.message.includes('plantillas_planificacion') || error.message.includes('Could not find')) {
+        throw new Error('TABLE_NOT_FOUND')
+      }
+      console.error('Error cargando plantilla de planificación:', error.message)
+      throw new Error('Plantilla de planificación no encontrada')
+    }
+
+    return data
+  } catch (err) {
+    console.warn('Tabla plantillas_planificacion no disponible para getById, usando fallback local...', err.message)
+    try {
+      const { default: mockTemplates } = await import('../../../assets/data/mocks/plantillas-planificacion.json')
+      const found = (mockTemplates || []).find(t => t.id === id)
+      if (!found) throw new Error('Plantilla no encontrada en fallback local')
+      return { ...found, activo: true }
+    } catch (e) {
+      throw new Error('Plantilla de planificación no encontrada')
+    }
   }
-
-  return data
 }
 
 /**

@@ -43,7 +43,7 @@ export async function renderAsistentePedagogicoPanel(container) {
             </select>
           </div>
           <div id="ap-brechas-content">
-            <p class="text-muted small">Seleccioná un alumno para ver su cobertura curricular.</p>
+            <p class="text-muted small">Seleccione un alumno para ver su cobertura curricular.</p>
           </div>
         </div>
       </div>
@@ -93,13 +93,22 @@ export async function renderAsistentePedagogicoPanel(container) {
   const { data: { user } } = await supabase.auth.getUser()
   const { data: maestro } = await supabase
     .from('maestros')
-    .select('id, instrumento')
+    .select('id, instrumento_principal')
     .eq('user_id', user.id)
     .single()
   state.maestroId = maestro?.id
-  state.instrumento = maestro?.instrumento
+  state.instrumento = maestro?.instrumento_principal
 
   // Load alumnos del maestro via their classes
+  if (!state.maestroId) {
+    state.alumnos = []
+    const sel = container.querySelector('#ap-alumno-sel')
+    if (sel) {
+      sel.innerHTML = '<option value="">No hay alumnos asignados</option>'
+    }
+    return
+  }
+
   const { data: inscripciones } = await supabase
     .from('alumnos_clases')
     .select('alumnos(id, nombre_completo), clases(instrumento, plan_estudio, maestro_principal_id)')
@@ -124,7 +133,7 @@ export async function renderAsistentePedagogicoPanel(container) {
   sel.addEventListener('change', async () => {
     const id = sel.value
     if (!id) {
-      container.querySelector('#ap-brechas-content').innerHTML = '<p class="text-muted small">Seleccioná un alumno.</p>'
+      container.querySelector('#ap-brechas-content').innerHTML = '<p class="text-muted small">Seleccione un alumno.</p>'
       container.querySelector('#ap-btn-draft').disabled = true
       state.selectedAlumnoId = null
       state.selectedAlumno = null

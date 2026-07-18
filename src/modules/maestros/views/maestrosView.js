@@ -983,7 +983,7 @@ function openViewModal(id) {
   })
 }
 
-function openDeleteModal(id) {
+function openToggleStatusModal(id) {
   const maestro = state.maestrosOriginales.find((a) => a.id === id)
   if (!maestro) {
     showToast('Maestro no encontrado', 'error')
@@ -1013,6 +1013,53 @@ function openDeleteModal(id) {
       }
       applyFilters()
     },
+  })
+}
+
+function openDeleteModal(id) {
+  const maestro = state.maestrosOriginales.find((a) => a.id === id)
+  if (!maestro) {
+    showToast('Maestro no encontrado', 'error')
+    return
+  }
+
+  const nombre = maestro.nombre || maestro.name || ''
+
+  AppModal.open({
+    title: '⚠️ Eliminar Maestro Permanentemente',
+    size: 'sm',
+    saveText: 'Eliminar definitivamente',
+    cancelText: 'Cancelar',
+    body: `
+      <p class="text-danger">¿Estás seguro de que deseas eliminar permanentemente al maestro <strong>${escapeHTML(nombre)}</strong>?</p>
+      <p class="text-muted small mb-3">Esta acción eliminará al maestro de forma definitiva. Solo se permite si el maestro no tiene clases asignadas.</p>
+      <div class="mb-3">
+        <label class="form-label-compact">Escribe <strong>ELIMINAR</strong> para confirmar:</label>
+        <input type="text" class="form-control input-dense mt-1" id="confirm-delete-input" placeholder="ELIMINAR">
+      </div>
+    `,
+    onSave: async (modalBody) => {
+      const confirmInput = modalBody.querySelector('#confirm-delete-input')?.value.trim()
+      if (confirmInput !== 'ELIMINAR') {
+        showToast('Debes escribir ELIMINAR para confirmar la acción', 'warning')
+        return false
+      }
+
+      try {
+        await eliminarMaestro(id)
+        
+        // Remover de las listas locales
+        state.maestrosOriginales = state.maestrosOriginales.filter((m) => m.id !== id)
+        state.maestros = state.maestros.filter((m) => m.id !== id)
+        
+        applyFilters()
+        showToast('Maestro eliminado permanentemente', 'success')
+      } catch (err) {
+        console.error('Error eliminando maestro:', err)
+        showToast(err.message || 'Error al eliminar el maestro', 'error')
+        return false
+      }
+    }
   })
 }
 

@@ -1049,6 +1049,9 @@ function _attachEvents(container) {
 }
 
 async function _applyFilters() {
+  const currentSequence = (state.querySequence || 0) + 1
+  state.querySequence = currentSequence
+
   const term = state.container.querySelector('#buscar-plan')?.value || ''
   const estado = state.container.querySelector('#select-estado')?.value || ''
   const claseId = state.container.querySelector('#select-clase')?.value || ''
@@ -1070,6 +1073,9 @@ async function _applyFilters() {
       filterEstado: estado
     })
     
+    // Ignorar si se inició otra búsqueda después (Race Condition Guard)
+    if (state.querySequence !== currentSequence) return
+
     state.planes = [...hook.planificaciones]
     const tbody = state.container.querySelector('#planes-tbody')
     const empty = state.container.querySelector('#empty-container')
@@ -1079,9 +1085,13 @@ async function _applyFilters() {
     
     _actualizarPaginadorUi()
   } catch (err) {
-    AppToast.error(err.message)
+    if (state.querySequence === currentSequence) {
+      AppToast.error(err.message)
+    }
   } finally {
-    _setLoadingUi(false)
+    if (state.querySequence === currentSequence) {
+      _setLoadingUi(false)
+    }
   }
 }
 
@@ -1093,9 +1103,10 @@ function _setLoadingUi(cargando) {
   if (spinner) spinner.style.display = cargando ? 'block' : 'none'
   if (tbody) tbody.style.opacity = cargando ? '0.4' : '1'
   
-  // Deshabilitar controles interactivos durante la recarga para prevenir Race Conditions
+  // Deshabilitar controles interactivos durante la recarga para prevenir Race Conditions,
+  // pero NUNCA deshabilitar el input de búsqueda para no interrumpir la escritura (Focus Hijacking).
   const controls = state.container.querySelectorAll(
-    '.premium-filter-select, .premium-search-input, .btn-pagination-nav'
+    '.premium-filter-select, .btn-pagination-nav'
   )
   controls.forEach(c => c.disabled = cargando)
 }
@@ -1280,9 +1291,13 @@ async function openEditModal(id, prefill = {}) {
           <textarea class="form-control input-dense" id="plan-objetivos" rows="2">${escapeHTML(plan.objetivos)}</textarea>
         </div>
         <div class="col-12">
-          <label class="form-label-compact">Contenido Pedagógico (DSL)</label>
-          <div id="plan-dsl-container" style="margin-bottom: 1rem;"></div>
-          <div class="small text-muted" id="plan-dsl-summary" style="margin-top: 0.5rem;"></div>
+          <label class="form-label-compact fw-bold d-flex justify-content-between">
+            Indicadores de Logro
+            <button type="button" class="btn btn-sm btn-link p-0" id="add-indicador-btn">
+              <i class="bi bi-plus-circle me-1"></i>Agregar
+            </button>
+          </label>
+          <div id="indicadores-list" class="d-flex flex-column gap-2 mt-2"></div>
         </div>
         <div class="col-md-4">
           <label class="form-label-compact">Fecha de inicio</label>
@@ -1310,39 +1325,45 @@ async function openEditModal(id, prefill = {}) {
           )
           .join('')
 
-      // Create DSL editor with toolbar
-      const dslContainer = modalBody.querySelector('#plan-dsl-container')
-      const { createDslEditorWithToolbar } = await import('../components/dslToolbar.js')
-      const dslEditor = createDslEditorWithToolbar({
-        initialContent: plan.notas_dsl || '',
-        onChange: (content, parsed) => {
-          const summaryEl = modalBody.querySelector('#plan-dsl-summary')
-          if (summaryEl && parsed.items && parsed.items.length > 0) {
-            summaryEl.innerHTML = `<strong>Elementos:</strong> ${parsed.items.length} indicadores/actividades parseadas`
-          }
-        },
-        onAlumnoClick: async () => {
-          const allAlumnos = await getAlumnos()
-          const selected = allAlumnos
-            .slice(0, 3)
-            .map((a) => `#${a.nombre_completo}`)
-            .join(', ')
-          if (dslEditor.component) {
-            dslEditor.component.insertText(selected + ' ')
-          }
-        },
-      })
-      dslContainer.appendChild(dslEditor)
-      modalBody._dslEditor = dslEditor
+      // Indicadores dinámicos
+      const container = modalBody.querySelector('#indicadores-container')
+      const addBtn = modalBody.querySelector('#add-indicador-btn')
+      
+      const renderIndicador = (val = '', pond = 3) => {
+        const div = document.createElement('div')
+        div.className = 'indicador-row d-flex gap-2 mb-2 align-items-center'
+        div.innerHTML = `
+          <input type="text" class="form-control input-dense ind-text" placeholder="Indicador..." value="${escapeHTML(val)}">
+          <select class="form-select input-dense ind-pond" style="width: 80px;">
+            ${[1,2,3,4,5].map(n => `<option value="${n}" ${n == pond ? 'selected' : ''}>${n}</option>`).join('')}
+          </select>
+          <button type="button" class="btn btn-outline-danger btn-sm ind-del"><i class="bi bi-trash"></i></button>
+        `
+        div.querySelector('.ind-del').onclick = () => div.remove()
+        container.appendChild(div)
+      }
+
+      // Cargar indicadores si existen (asumiendo formato JSON en notas_dsl temporalmente)
+      try {
+        const indData = plan.notas_dsl ? JSON.parse(plan.notas_dsl) : []
+        indData.forEach(i => renderIndicador(i.texto, i.ponderacion))
+      } catch(e) { /* fallback si no es JSON */ renderIndicador(plan.notas_dsl || '') }
+
+      addBtn.onclick = () => renderIndicador()
     },
     onSave: async (modalBody) => {
-      const dslEditor = modalBody._dslEditor
+      const filas = modalBody.querySelectorAll('.indicador-row')
+      const indicadores = Array.from(filas).map(row => ({
+        texto: row.querySelector('.ind-text').value.trim(),
+        ponderacion: parseInt(row.querySelector('.ind-pond').value)
+      })).filter(i => i.texto)
+
       const data = {
         tema: modalBody.querySelector('#plan-tema').value.trim(),
         clase_id: modalBody.querySelector('#plan-clase_id').value,
         objetivos: modalBody.querySelector('#plan-objetivos').value.trim(),
         contenido: modalBody.querySelector('#plan-contenido')?.value.trim() || '',
-        notas_dsl: dslEditor ? dslEditor.getContent() : '',
+        notas_dsl: JSON.stringify(indicadores),
         fecha_inicio: modalBody.querySelector('#plan-fecha').value || null,
         instrumento: modalBody.querySelector('#plan-instrumento').value.trim() || null,
         evaluacion_metodo: modalBody.querySelector('#plan-eval').value.trim() || null,

@@ -387,5 +387,16 @@ export const AppModal = {
     if (!els.btnSave) return
     els.btnSave.style.display = ''
     els.btnCancel.style.display = ''
+  },
+
+  updateBody(content) {
+    const els = getEls()
+    if (!els.body) return
+    if (typeof content === 'string') {
+      els.body.innerHTML = content
+    } else if (content instanceof HTMLElement) {
+      els.body.innerHTML = ''
+      els.body.appendChild(content)
+    }
   }
 }

@@ -168,6 +168,72 @@ export async function openPlanificacionModal(
     modalEl._dslEditor = dslEditor
   }
 
+  // --- Motor de Indicadores de Logro ---
+  let indicadores = plan.indicadores || []
+  if (typeof indicadores === 'string') {
+    try {
+      indicadores = JSON.parse(indicadores)
+    } catch {
+      indicadores = indicadores.split(',').map(i => i.trim()).filter(Boolean)
+    }
+  }
+  if (!Array.isArray(indicadores)) {
+    indicadores = []
+  }
+
+  const indicadoresContainer = modalEl.querySelector('#indicadores-container')
+  
+  const renderIndicadores = () => {
+    if (!indicadoresContainer) return
+    if (indicadores.length === 0) {
+      indicadoresContainer.innerHTML = `
+        <div class="text-muted small py-2 text-center" id="empty-indicadores">
+          No hay indicadores agregados. Agrega uno para medir el logro de la clase.
+        </div>`
+      return
+    }
+
+    indicadoresContainer.innerHTML = indicadores.map((ind, index) => `
+      <div class="d-flex gap-2 align-items-center mb-2" data-index="${index}">
+        <input type="text" class="form-control pm-plan-input input-indicador" placeholder="Ej: Entonación precisa del primer intervalo" value="${esc(ind)}" style="flex-grow: 1;">
+        <button type="button" class="btn btn-outline-danger btn-sm rounded-circle btn-remove-indicador d-flex align-items-center justify-content-center" style="width: 32px; height: 32px; padding: 0; min-width: 32px;">
+          <i class="bi bi-trash"></i>
+        </button>
+      </div>
+    `).join('')
+
+    // Conectar eventos de input
+    indicadoresContainer.querySelectorAll('.input-indicador').forEach((inp, idx) => {
+      inp.addEventListener('input', (e) => {
+        indicadores[idx] = e.target.value.trim()
+      })
+    })
+
+    // Conectar eventos de eliminar
+    indicadoresContainer.querySelectorAll('.btn-remove-indicador').forEach((btn, idx) => {
+      btn.onclick = () => {
+        indicadores.splice(idx, 1)
+        renderIndicadores()
+      }
+    })
+  }
+
+  const addIndicadorBtn = modalEl.querySelector('#add-indicador-btn')
+  if (addIndicadorBtn) {
+    addIndicadorBtn.onclick = () => {
+      indicadores.push('')
+      renderIndicadores()
+      // Poner foco en el último input
+      setTimeout(() => {
+        const inputs = indicadoresContainer.querySelectorAll('.input-indicador')
+        if (inputs.length) inputs[inputs.length - 1].focus()
+      }, 50)
+    }
+  }
+
+  // Render inicial
+  renderIndicadores()
+
   // Save button
   const saveBtn = modalEl.querySelector('.pm-plan-save-btn')
   saveBtn.onclick = async () => {
@@ -214,6 +280,7 @@ export async function openPlanificacionModal(
         evaluacion_metodo: modalEl.querySelector('#pl-evaluacion')?.value.trim(),
         observaciones: modalEl.querySelector('#pl-observaciones')?.value.trim(),
         notas_dsl: dslEditor ? dslEditor.getContent() : '',
+        indicadores: indicadores.filter(Boolean),
         estado: isEdit
           ? modalEl.querySelector('#pl-estado')?.value || 'planificado'
           : 'planificado',
@@ -238,7 +305,7 @@ export async function openPlanificacionModal(
             <i class="bi bi-journal-bookmark me-1"></i>Guía curricular
           </div>
           <div class="pm-plan-guide-body" id="pl-curriculo-body">
-            <div class="pm-plan-guide-empty">Seleccioná una clase para ver la guía</div>
+            <div class="pm-plan-guide-empty">Seleccione una clase para ver la guía</div>
           </div>
         </div>
       </div>`
@@ -386,7 +453,7 @@ function _buildModalHTML(isEdit, plan, clases, maestros, plantillas = []) {
         ${
           !isEdit
             ? `
-        <div class="pm-plan-section">
+        <div class="pm-plan-section d-none">
           <div class="pm-plan-field">
             <label class="pm-plan-label" for="pl-plantilla">Plantilla</label>
             <select class="pm-plan-select" id="pl-plantilla">
@@ -415,7 +482,7 @@ function _buildModalHTML(isEdit, plan, clases, maestros, plantillas = []) {
                 </button>
               </div>
               <div class="form-text mt-2" id="pl-clase-note">
-                Selecciona una clase para cargar su gu?a, revisar contenidos y abrir su perfil curricular.
+                Selecciona una clase para cargar su guía, revisar contenidos y abrir su perfil curricular.
               </div>
               <div id="pl-clase-picker-host" class="d-none"></div>
             </div>
@@ -472,12 +539,6 @@ function _buildModalHTML(isEdit, plan, clases, maestros, plantillas = []) {
               placeholder="¿Qué quieres lograr en esta clase?">${esc(plan.objetivos || '')}</textarea>
             <span class="pm-plan-char-count"><span id="pl-obj-count">${(plan.objetivos || '').length}</span>/1000</span>
           </div>
-          <div class="pm-plan-field">
-            <label class="pm-plan-label" for="pl-contenido">Contenido</label>
-            <textarea class="pm-plan-textarea" id="pl-contenido" rows="3" maxlength="2000"
-              placeholder="Desarrollo del tema, actividades...">${esc(plan.contenido || '')}</textarea>
-            <span class="pm-plan-char-count"><span id="pl-cont-count">${(plan.contenido || '').length}</span>/2000</span>
-          </div>
         </div>
 
         <!-- Recursos y evaluación -->
@@ -504,12 +565,15 @@ function _buildModalHTML(isEdit, plan, clases, maestros, plantillas = []) {
           </div>
         </div>
 
-        <!-- DSL Notes -->
+        <!-- Indicadores -->
         <div class="pm-plan-section">
-          <h3 class="pm-plan-section-title">Notas DSL</h3>
-          <p class="pm-plan-section-desc">Usa notación simplificada: <code>#Alumno</code> <code>[Contenido]</code> <code>(Sugerencia)</code> <code>{Tarea}</code> <code>$Medida</code> <code>&gt;Objetivo</code></p>
-          <div id="dsl-editor-container"></div>
-          <span class="pm-plan-dsl-summary"><span id="dsl-summary">Sin tokens</span></span>
+          <h3 class="pm-plan-section-title">Indicadores de Logro</h3>
+          <div id="indicadores-container">
+             <!-- Filas de indicadores se inyectarán aquí -->
+          </div>
+          <button type="button" class="btn btn-outline-primary btn-sm mt-2" id="add-indicador-btn">
+            <i class="bi bi-plus-lg me-1"></i> Agregar Indicador
+          </button>
         </div>
       </div>
 
@@ -546,32 +610,34 @@ function _getModalStyles() {
       inset: 0;
       backdrop-filter: blur(4px);
       transition: background 0.2s ease;
-    }
-    
-    [data-bs-theme="light"] .pm-plan-backdrop,
-    [data-portal-theme="light"] .pm-plan-backdrop {
-      background: rgba(0, 0, 0, 0.4);
-    }
-    
-    [data-bs-theme="dark"] .pm-plan-backdrop,
-    [data-portal-theme="dark"] .pm-plan-backdrop {
-      background: rgba(0, 0, 0, 0.65);
-    }
-    
-    .pm-plan-modal {
-      position: relative;
-      background: var(--pm-surface);
-      border-radius: 16px;
-      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25),
-                  0 0 0 1px var(--pm-border);
-      width: 100%;
-      max-width: 640px;
-      max-height: 90vh;
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-      transform: scale(0.95) translateY(10px);
-      transition: transform 0.25s cubic-bezier(0.32, 0.72, 0, 1);
+      background: black;
+      }
+      
+      [data-bs-theme="light"] .pm-plan-backdrop,
+      [data-portal-theme="light"] .pm-plan-backdrop {
+        width: 100%;
+        background: rgba(255, 255, 255, 0.8);
+        }
+        
+        [data-bs-theme="dark"] .pm-plan-backdrop,
+        [data-portal-theme="dark"] .pm-plan-backdrop {
+          background: black;
+          }
+          
+          .pm-plan-modal {
+            position: relative;
+            background: var(--pm-surface);
+            border-radius: 16px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25),
+                        0 0 0 1px var(--pm-border);
+            width: 100%;
+            max-width: 640px;
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            transform: scale(0.95) translateY(10px);
+            transition: transform 0.25s cubic-bezier(0.32, 0.72, 0, 1);
     }
     
     .pm-plan-modal-overlay.open .pm-plan-modal {

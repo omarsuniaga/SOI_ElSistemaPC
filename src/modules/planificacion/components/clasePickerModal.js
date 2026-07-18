@@ -157,9 +157,26 @@ export function createClasePickerModal(options = {}) {
     searchInput.value = ''
     renderGrid()
     renderDetail()
-    const bsModal = new bootstrap.Modal(modal)
-    bsModal.show()
-    modal.bsModal = bsModal
+    const bootstrapObj = window.bootstrap || (typeof bootstrap !== 'undefined' ? bootstrap : null)
+    if (bootstrapObj) {
+      const bsModal = new bootstrapObj.Modal(modal)
+      bsModal.show()
+      modal.bsModal = bsModal
+    } else {
+      // Fallback nativo libre de dependencias si bootstrap no está cargado en JS
+      modal.style.display = 'block'
+      modal.classList.add('show')
+      const backdrop = document.createElement('div')
+      backdrop.className = 'modal-backdrop fade show'
+      document.body.appendChild(backdrop)
+      modal.bsModal = {
+        hide: () => {
+          modal.style.display = 'none'
+          modal.classList.remove('show')
+          backdrop.remove()
+        }
+      }
+    }
   }
 
   function closeModal() {

@@ -49,20 +49,20 @@
 
 /* Text Styles - Theme Aware */
 [data-bs-theme="light"] .list-group-item .fw-bold {
-  color: #1a1a1a;
+  color: var(--soi-text);
 }
 
 [data-bs-theme="dark"] .list-group-item .fw-bold {
-  color: #f0f0f0;
+  color: var(--soi-surface-raised);
 }
 
 /* Small text styles */
 [data-bs-theme="light"] .list-group-item .text-muted {
-  color: #6c757d !important;
+  color: var(--soi-text-muted) !important;
 }
 
 [data-bs-theme="dark"] .list-group-item .text-muted {
-  color: #adb5bd !important;
+  color: var(--soi-text-muted) !important;
 }
 
 /* Page Glass Container */
@@ -97,10 +97,10 @@
   border-left: 4px solid transparent !important;
 }
 .border-accent-success {
-  border-left-color: #198754 !important;
+  border-left-color: var(--soi-color-success) !important;
 }
 .border-accent-secondary {
-  border-left-color: #6c757d !important;
+  border-left-color: var(--soi-color-secondary) !important;
 }
 
 /* Chevron interaction */
@@ -179,7 +179,7 @@
   font-weight: 600;
   border-radius: 9px;
   background: var(--bs-primary);
-  color: #ffffff !important;
+  color: var(--soi-text-on-primary) !important;
   border: none;
   box-shadow: 0 2px 8px rgba(13, 110, 253, 0.15);
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
@@ -188,7 +188,7 @@
 
 .btn-premium-action:hover {
   transform: translateY(-1px);
-  background: #0b5ed7;
+  background: var(--soi-color-primary-hover);
   box-shadow: 0 4px 12px rgba(13, 110, 253, 0.25);
 }
 
@@ -240,7 +240,7 @@
 }
 
 .premium-search-input:focus {
-  background: #ffffff !important;
+  background: var(--soi-surface) !important;
   border-color: var(--bs-primary) !important;
   box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.1) !important;
 }
@@ -286,7 +286,7 @@
 }
 
 .premium-filter-select:focus {
-  background-color: #ffffff !important;
+  background-color: var(--soi-surface) !important;
   border-color: var(--bs-primary) !important;
   box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.1) !important;
 }
@@ -305,12 +305,51 @@
   transition: all 0.2s ease !important;
 }
 [data-bs-theme="dark"] .chip-item {
-  background-color: rgba(13, 110, 253, 0.15) !important;
-  color: #a6caff !important;
+  background-color: var(--soi-color-primary-light) !important;
+  color: var(--soi-color-info) !important;
 }
 .chip-item:hover {
   transform: translateY(-1px);
 }
 .chip-remove:hover {
   color: var(--bs-danger) !important;
+}
+
+/* --- Rich Aesthetics - Maestros Vista --- */
+.maestro-row-card {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+}
+
+.maestro-row-card:hover {
+  transform: translateY(-2px);
+}
+
+.btn-maestro-pdf-premium:hover {
+  background-color: var(--bs-danger) !important;
+  color: white !important;
+  transform: scale(1.06);
+}
+
+.btn-maestro-whatsapp-premium:hover {
+  transform: scale(1.03);
+  box-shadow: 0 4px 10px rgba(25, 135, 84, 0.2);
+}
+
+.maestro-row-card:hover .chevron-icon-maestro {
+  transform: translateX(4px);
+  color: var(--bs-primary) !important;
+}
+
+/* Stat Cards Premium styling */
+.stat-card-premium {
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.stat-card-premium:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08) !important;
+}
+
+[data-bs-theme="dark"] .stat-card-premium:hover {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25) !important;
 }

@@ -226,10 +226,56 @@ function renderContent(container) {
         </div>
       </div>
 
+      <!-- Grid de Estadísticas Premium -->
+      <div class="row g-3 mb-4">
+        <div class="col-md-4">
+          <div class="stat-card-premium page-glass p-3 position-relative overflow-hidden">
+            <div class="position-absolute top-0 start-0 w-100" style="height: 3px; background: linear-gradient(90deg, #0d6efd, #0dcaf0);"></div>
+            <div class="d-flex align-items-center justify-content-between">
+              <div>
+                <span class="text-muted small d-block mb-1">Plantel Docente</span>
+                <h3 class="fw-bold mb-0 text-body" id="stat-total-maestros">0</h3>
+              </div>
+              <div class="stat-icon bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center" style="width: 44px; height: 44px;">
+                <i class="bi bi-people fs-4"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="stat-card-premium page-glass p-3 position-relative overflow-hidden">
+            <div class="position-absolute top-0 start-0 w-100" style="height: 3px; background: linear-gradient(90deg, #198754, #20c997);"></div>
+            <div class="d-flex align-items-center justify-content-between">
+              <div>
+                <span class="text-muted small d-block mb-1">Docentes Activos</span>
+                <h3 class="fw-bold mb-0 text-body" id="stat-activos-maestros">0</h3>
+              </div>
+              <div class="stat-icon bg-success bg-opacity-10 text-success rounded-circle d-flex align-items-center justify-content-center" style="width: 44px; height: 44px;">
+                <i class="bi bi-person-check fs-4"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="stat-card-premium page-glass p-3 position-relative overflow-hidden">
+            <div class="position-absolute top-0 start-0 w-100" style="height: 3px; background: linear-gradient(90deg, #fd7e14, #ffc107);"></div>
+            <div class="d-flex align-items-center justify-content-between">
+              <div>
+                <span class="text-muted small d-block mb-1">Docentes en Reserva</span>
+                <h3 class="fw-bold mb-0 text-body" id="stat-inactivos-maestros">0</h3>
+              </div>
+              <div class="stat-icon bg-warning bg-opacity-10 text-warning rounded-circle d-flex align-items-center justify-content-center" style="width: 44px; height: 44px;">
+                <i class="bi bi-person-dash fs-4"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div class="maestros-filter-toolbar mb-4">
         <div class="premium-search-container flex-grow-1">
           <i class="bi bi-search search-icon-muted"></i>
-          <input type="text" class="form-control premium-search-input" placeholder="Buscar maestro..." id="buscar" autocomplete="off">
+          <input type="text" class="form-control premium-search-input" placeholder="Buscar maestro por nombre, email o instrumento..." id="buscar" autocomplete="off">
         </div>
         
         <div class="premium-select-container">
@@ -266,36 +312,51 @@ function renderTableRows(maestros) {
       const isActive = a.is_active ?? true
       const accentClass = `border-accent-${isActive ? 'success' : 'secondary'}`
       const statusDotClass = `bg-${isActive ? 'success' : 'secondary'}`
+      const especialidadesBadges = (a.especialidades || [])
+        .slice(0, 2)
+        .map(esp => `<span class="badge bg-secondary-subtle text-secondary-emphasis rounded-pill me-1" style="font-size: 0.72rem; font-weight: 500;">${escapeHTML(esp)}</span>`)
+        .join('')
+      const masEspecialidades = (a.especialidades || []).length > 2 
+        ? `<span class="badge bg-light-subtle text-muted border rounded-pill" style="font-size: 0.72rem; padding: 0.15rem 0.4rem;">+${a.especialidades.length - 2}</span>` 
+        : ''
+
       return `
-      <div class="list-group-item list-group-item-action d-flex align-items-center justify-content-between p-3 w-100 border-start-accent ${accentClass}" data-id="${a.id}" style="cursor: pointer;">
+      <div class="list-group-item list-group-item-action d-flex align-items-center justify-content-between p-3 w-100 border-start-accent ${accentClass} maestro-row-card" data-id="${a.id}" style="cursor: pointer; margin-bottom: 8px; border-radius: 10px; transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);">
         <div class="d-flex align-items-center gap-3 flex-grow-1 overflow-hidden">
           <div class="position-relative flex-shrink-0">
-            <div class="avatar-compact bg-primary bg-opacity-10 text-primary border border-primary-subtle d-flex align-items-center justify-content-center rounded-circle" style="width: 48px; height: 48px; font-size: 1.2rem; font-weight: 600;">
+            <div class="avatar-compact bg-primary bg-opacity-10 text-primary border border-primary-subtle d-flex align-items-center justify-content-center rounded-circle" style="width: 48px; height: 48px; font-size: 1.15rem; font-weight: 600; transition: transform 0.2s ease;">
               ${getInitials(nombre)}
             </div>
-            <span class="position-absolute bottom-0 end-0 p-1 ${statusDotClass} border border-light rounded-circle" style="transform: translate(10%, 10%);"></span>
+            <span class="position-absolute bottom-0 end-0 p-1 ${statusDotClass} border border-light rounded-circle" style="transform: translate(10%, 10%); width: 12px; height: 12px;"></span>
           </div>
           <div class="d-flex flex-column flex-grow-1 overflow-hidden pe-3">
-            <span class="fw-bold text-truncate" style="font-size: 1.05rem;">${escapeHTML(nombre)}</span>
-            <small class="text-muted text-truncate">
-              ${escapeHTML(a.instrumento || 'Sin instrumento especificado')}
-            </small>
+            <span class="fw-bold text-truncate text-body mb-0.5" style="font-size: 1.05rem;">${escapeHTML(nombre)}</span>
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+              <small class="text-muted text-truncate" style="font-size: 0.85rem;">
+                <i class="bi bi-music-note me-0.5"></i> ${escapeHTML(a.instrumento || 'Sin instrumento')}
+              </small>
+              ${especialidadesBadges ? `<span class="text-muted" style="opacity: 0.5;">|</span>` : ''}
+              <div class="d-flex align-items-center">
+                ${especialidadesBadges}
+                ${masEspecialidades}
+              </div>
+            </div>
           </div>
         </div>
         <div class="d-flex align-items-center gap-2 flex-shrink-0">
-          <button class="btn btn-outline-danger btn-sm rounded-circle d-flex align-items-center justify-content-center btn-maestro-pdf" data-action="pdf" data-id="${a.id}" title="Descargar Reporte PDF de Clases y Alumnos" style="width: 32px; height: 32px; padding: 0;">
+          <button class="btn btn-outline-danger btn-sm rounded-circle d-flex align-items-center justify-content-center btn-maestro-pdf-premium" data-action="pdf" data-id="${a.id}" title="Descargar Reporte PDF de Clases y Alumnos" style="width: 34px; height: 34px; padding: 0; border: 1px solid rgba(220, 53, 69, 0.2); transition: all 0.2s ease;">
             <i class="bi bi-file-earmark-pdf"></i>
           </button>
           ${
             a.telefono
               ? `
-            <button class="btn btn-sm btn-success bg-gradient text-white rounded-pill px-3 shadow-sm d-flex align-items-center gap-2" data-action="whatsapp" data-id="${a.id}" title="Enviar WhatsApp" style="min-height: 32px;" ${!isActive ? 'disabled' : ''}>
+            <button class="btn btn-sm btn-success bg-gradient text-white rounded-pill px-3 shadow-sm d-flex align-items-center gap-2 btn-maestro-whatsapp-premium" data-action="whatsapp" data-id="${a.id}" title="Enviar WhatsApp" style="min-height: 34px; transition: all 0.2s ease;" ${!isActive ? 'disabled' : ''}>
               <i class="bi bi-whatsapp"></i> <span class="d-none d-sm-inline fw-medium">${escapeHTML(a.telefono)}</span>
             </button>
           `
-              : '<span class="badge bg-light text-muted border d-none d-sm-inline-block">Sin número</span>'
+              : '<span class="badge bg-light text-muted border d-none d-sm-inline-block px-2.5 py-1.5" style="font-size: 0.75rem;">Sin número</span>'
           }
-          <i class="bi bi-chevron-right text-muted ms-1" style="font-size: 1.1rem; transition: transform 0.2s ease;"></i>
+          <i class="bi bi-chevron-right text-muted ms-1 chevron-icon-maestro" style="font-size: 1.1rem; transition: transform 0.2s ease;"></i>
         </div>
       </div>
     `
@@ -1069,8 +1130,22 @@ function refreshTable() {
   const tbody = currentContainer.querySelector('#maestrosTBody')
   if (!tbody) return
   tbody.innerHTML = renderTableRows(state.maestros)
+
+  // Actualizar estadísticas superiores
+  const totalEl = currentContainer.querySelector('#stat-total-maestros')
+  const activosEl = currentContainer.querySelector('#stat-activos-maestros')
+  const inactivosEl = currentContainer.querySelector('#stat-inactivos-maestros')
+
+  const total = state.maestrosOriginales.length
+  const activos = state.maestrosOriginales.filter(m => m.is_active !== false).length
+  const inactivos = total - activos
+
+  if (totalEl) totalEl.textContent = total
+  if (activosEl) activosEl.textContent = activos
+  if (inactivosEl) inactivosEl.textContent = inactivos
+
   const countEl = currentContainer.querySelector('.maestros-header-premium p.text-muted')
-  if (countEl) countEl.textContent = `${state.maestros.length} maestros en total`
+  if (countEl) countEl.textContent = `${state.maestros.length} filtrados / ${total} en total`
 }
 
 function isValidEmail(email) {

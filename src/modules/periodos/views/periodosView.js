@@ -1,6 +1,16 @@
 import * as PeriodosApi from '../api/periodosApi.js'
 import { Toast } from 'bootstrap'
 import { AppModal } from '../../../shared/components/AppModal.js'
+import { escapeHTML } from '../../../shared/utils/sanitize.js'
+import { router } from '../../../core/router/router.js'
+import {
+  obtenerReporteCierre,
+  activarPeriodoAtomico,
+  clasificarDocente,
+  fmtPct,
+  ESTADO,
+} from '../api/reporteCierreApi.js'
+import { generarInformePdfCierreSemestre } from '../services/pdfCierreSemestre.js'
 
 export async function renderPeriodosView(container) {
   container.innerHTML = `
@@ -58,14 +68,17 @@ export async function renderPeriodosView(container) {
     }
 
     tableBody.innerHTML = periodos.map(p => {
-      const start = new Date(p.fecha_inicio).toLocaleDateString()
-      const end = new Date(p.fecha_fin).toLocaleDateString()
-      
+      // fecha_fin es nullable en el esquema: sin guardia, `new Date(null)` imprime
+      // "Invalid Date" en una tabla que la directiva puede llegar a ver.
+      const start = fmtFecha(p.fecha_inicio)
+      const end = fmtFecha(p.fecha_fin)
+
       return `
       <tr>
         <td class="ps-4">
-          <span class="fw-bold text-body d-block">${p.nombre}</span>
+          <span class="fw-bold text-body d-block">${escapeHTML(p.nombre)}</span>
           ${p.activo ? '<span class="badge bg-success-subtle text-success border border-success-subtle small" style="font-size: 0.7rem;">PERÍODO ACTUAL</span>' : ''}
+          ${p.cerrado ? '<span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle small ms-1" style="font-size: 0.7rem;">CERRADO</span>' : ''}
         </td>
         <td class="text-muted">${start}</td>
         <td class="text-muted">${end}</td>
@@ -76,6 +89,9 @@ export async function renderPeriodosView(container) {
         </td>
         <td class="text-end pe-4">
           <div class="btn-group shadow-sm">
+            <button class="btn btn-sm btn-outline-info px-2" data-action="auditar" data-id="${p.id}" title="Auditar Cierre de Semestre">
+              <i class="bi bi-clipboard-check"></i> Auditar
+            </button>
             ${!p.activo ? `
               <button class="btn btn-sm btn-outline-success px-3" data-action="activar" data-id="${p.id}">
                 Activar
@@ -93,18 +109,26 @@ export async function renderPeriodosView(container) {
     `}).join('')
   }
 
+  function fmtFecha(valor) {
+    if (!valor) return '—'
+    const d = new Date(`${valor}T00:00:00`)
+    return Number.isNaN(d.getTime()) ? '—' : d.toLocaleDateString()
+  }
+
   function showToast(message, type = 'success') {
     const container = document.querySelector('.toast-container')
     if (!container) return
     const toastId = 'toast-' + Date.now()
-    container.innerHTML += `
+    // insertAdjacentHTML en vez de `innerHTML +=`: la concatenación reconstruye
+    // todo el contenedor y mata los listeners de los toasts ya visibles.
+    container.insertAdjacentHTML('beforeend', `
       <div id="${toastId}" class="toast align-items-center text-white bg-${type} border-0" role="alert" aria-live="assertive" aria-atomic="true">
         <div class="d-flex">
-          <div class="toast-body">${message}</div>
+          <div class="toast-body">${escapeHTML(message)}</div>
           <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
         </div>
       </div>
-    `
+    `)
     const toastEl = document.getElementById(toastId)
     if (toastEl) new Toast(toastEl).show()
   }
@@ -121,13 +145,196 @@ export async function renderPeriodosView(container) {
     const action = btn.dataset.action
     
     if (action === 'activar') {
-      await activarPeriodo(id)
+      await openActivarModal(id)
+    } else if (action === 'auditar') {
+      await openAuditoriaModal(id)
     } else if (action === 'edit') {
       await openEditModal(id)
     } else if (action === 'delete') {
       await openDeleteModal(id)
     }
   })
+
+  /**
+   * Resumen del informe de cierre, con acceso al PDF y al informe completo.
+   *
+   * Consume `obtenerReporteCierre` (RPC) en lugar de la auditoría anterior, que
+   * agrupaba por `sesiones_clase.maestro_id` — el autor del registro, no el
+   * docente de la clase — y atribuía el trabajo de todo el cuerpo docente a una
+   * sola persona.
+   */
+  async function openAuditoriaModal(periodoId) {
+    AppModal.open({
+      title: 'Informe de cierre',
+      body: '<div class="text-center py-4"><div class="spinner-border text-primary"></div></div>',
+      saveText: 'Cerrar',
+      hideSave: true,
+    })
+
+    let reporte
+    try {
+      reporte = await obtenerReporteCierre(periodoId)
+      if (!reporte?.resumen) throw new Error('El informe no devolvió datos del período')
+    } catch (err) {
+      AppModal.close()
+      showToast(err.message, 'danger')
+      return
+    }
+
+    const s = reporte.resumen ?? {}
+    const a = reporte.asistencia ?? {}
+    const evaluables = reporte.docentesEvaluables ?? []
+    const sinEvaluar = (reporte.docentes ?? []).filter(d => d.estado_evaluacion !== ESTADO.EVALUABLE)
+
+    const docentesHTML = evaluables.length === 0
+      ? '<p class="text-muted small my-2">Ningún docente registró sesiones en este período.</p>'
+      : `<div class="list-group list-group-flush my-2" style="max-height: 220px; overflow-y: auto;">
+          ${evaluables.map(m => {
+            const ef = clasificarDocente(m.pct_puntualidad, m.estado_evaluacion)
+            return `
+            <div class="list-group-item d-flex justify-content-between align-items-center px-0 py-2">
+              <div>
+                <div class="fw-semibold small">${escapeHTML(m.nombre)}</div>
+                <div class="text-muted" style="font-size:0.75rem;">
+                  ${m.registradas ?? 0} registradas / ${m.borradores ?? 0} en borrador (${m.sesiones ?? 0} sesiones)
+                </div>
+              </div>
+              <div class="d-flex align-items-center gap-1">
+                <span class="badge bg-${ef.tone}-subtle text-${ef.tone} border border-${ef.tone}-subtle small" style="font-size:0.7rem;">${escapeHTML(ef.badge)}</span>
+                <span class="badge bg-${ef.tone} rounded-pill">${escapeHTML(fmtPct(m.pct_puntualidad))}</span>
+              </div>
+            </div>`
+          }).join('')}
+        </div>`
+
+    AppModal.open({
+      title: `Informe de cierre: ${reporte.periodo?.nombre ?? ''}`,
+      size: 'lg',
+      saveText: 'Ver informe completo',
+      cancelText: 'Cerrar',
+      body: `
+        <div class="mb-2">
+          <button id="btn-descargar-pdf-cierre" class="btn btn-outline-danger btn-sm w-100 mb-3 d-flex align-items-center justify-content-center gap-2 py-2">
+            <i class="bi bi-file-earmark-pdf-fill fs-5"></i>
+            <span>Descargar Informe Ejecutivo PDF</span>
+          </button>
+
+          <div class="p-3 rounded bg-body-tertiary mb-3">
+            <div class="row g-2 text-center small">
+              <div class="col-4"><div class="p-2 rounded bg-body">
+                <div class="text-muted" style="font-size:.7rem;">CUMPLIM. REGISTRO</div>
+                <div class="fw-bold text-primary fs-6">${escapeHTML(fmtPct(s.pct_cumplimiento_registro))}</div>
+                <div class="text-muted" style="font-size:.65rem;">${s.sesiones_registradas ?? 0}/${s.sesiones_periodo ?? 0}</div>
+              </div></div>
+              <div class="col-4"><div class="p-2 rounded bg-body">
+                <div class="text-muted" style="font-size:.7rem;">ASISTENCIA</div>
+                <div class="fw-bold text-success fs-6">${escapeHTML(fmtPct(a.tasa_global))}</div>
+                <div class="text-muted" style="font-size:.65rem;">${a.total_marcas ?? 0} marcas</div>
+              </div></div>
+              <div class="col-4"><div class="p-2 rounded bg-body">
+                <div class="text-muted" style="font-size:.7rem;">REGISTRO PUNTUAL</div>
+                <div class="fw-bold text-warning fs-6">${escapeHTML(fmtPct(a.pct_registro_puntual))}</div>
+                <div class="text-muted" style="font-size:.65rem;">${a.marcas_tardias ?? 0} tardías</div>
+              </div></div>
+            </div>
+          </div>
+
+          <h6 class="fw-bold small mb-1">Desempeño docente</h6>
+          ${docentesHTML}
+          ${sinEvaluar.length === 0 ? '' : `
+            <p class="text-muted mt-2 mb-0" style="font-size:.72rem;">
+              <i class="bi bi-info-circle"></i>
+              ${sinEvaluar.length} docente(s) sin actividad registrada no se clasifican:
+              ausencia de datos no equivale a incumplimiento.
+            </p>`}
+        </div>`,
+      onSave: () => {
+        AppModal.close()
+        router.navigate('reporte-cierre')
+        return false
+      },
+    })
+
+    const btnPdf = document.getElementById('btn-descargar-pdf-cierre')
+    if (btnPdf) {
+      btnPdf.addEventListener('click', async () => {
+        const original = btnPdf.innerHTML
+        btnPdf.disabled = true
+        btnPdf.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Generando PDF…'
+        try {
+          const doc = await generarInformePdfCierreSemestre(reporte)
+          const nombre = String(reporte.periodo?.nombre ?? 'periodo').replace(/[^\w\-]+/g, '_')
+          doc.save(`Informe_Cierre_${nombre}.pdf`)
+          showToast('Informe PDF descargado')
+        } catch (pdfErr) {
+          showToast('Error al generar PDF: ' + pdfErr.message, 'danger')
+        } finally {
+          btnPdf.disabled = false
+          btnPdf.innerHTML = original
+        }
+      })
+    }
+  }
+
+  /**
+   * Corte de período académico.
+   *
+   * Este modal existía en el archivo pero nunca se abría: el listener enviaba a la
+   * auditoría, y aquella pasaba `onConfirm` a AppModal — que solo entiende `onSave`.
+   * El resultado era un botón que cerraba el diálogo sin activar nada.
+   */
+  async function openActivarModal(periodoId) {
+    const periodos = await PeriodosApi.getPeriodos()
+    const periodo = periodos.find(p => p.id === periodoId)
+    if (!periodo) {
+      showToast('Período no encontrado', 'danger')
+      return
+    }
+    if (periodo.cerrado) {
+      showToast('No se puede activar un período cerrado', 'warning')
+      return
+    }
+
+    const saliente = periodos.find(p => p.activo && p.id !== periodoId)
+
+    AppModal.open({
+      title: 'Corte de período académico',
+      saveText: 'Confirmar activación',
+      cancelText: 'Cancelar',
+      body: `
+        <div class="p-2">
+          <div class="alert alert-warning border-warning-subtle d-flex align-items-start gap-2 mb-3">
+            <i class="bi bi-exclamation-triangle-fill text-warning fs-5"></i>
+            <div>
+              <strong class="d-block mb-1">Advertencia de integridad académica</strong>
+              Se activará <strong>${escapeHTML(periodo.nombre)}</strong>${
+                saliente ? ` y se desactivará <strong>${escapeHTML(saliente.nombre)}</strong>` : ''}.
+            </div>
+          </div>
+          <p class="mb-2 small">Esta acción aplica los siguientes cambios:</p>
+          <ul class="small text-muted mb-3 ps-3">
+            <li class="mb-1"><strong>Período de referencia</strong>: el nuevo período pasa a ser el activo del sistema.</li>
+            <li class="mb-1"><strong>Operación atómica</strong>: el cambio ocurre completo o no ocurre; el sistema no queda sin período activo.</li>
+            <li class="mb-1"><strong>Consulta histórica</strong>: los registros del período saliente siguen disponibles para lectura.</li>
+          </ul>
+          <div class="alert alert-info border-info-subtle small mb-0">
+            <i class="bi bi-info-circle"></i>
+            <strong>Nota:</strong> activar un período <em>no</em> congela por sí solo los datos del anterior.
+            El bloqueo de escritura histórica requiere cerrar el período desde el informe de cierre.
+          </div>
+        </div>`,
+      onSave: async () => {
+        try {
+          await activarPeriodoAtomico(periodoId)
+          showToast('Período activado correctamente')
+          await loadPeriodos()
+        } catch (error) {
+          showToast(error.message, 'danger')
+          return false
+        }
+      },
+    })
+  }
 
   async function openCreateModal() {
     AppModal.open({
@@ -189,15 +396,15 @@ export async function renderPeriodosView(container) {
       body: `<form class="row g-3" id="form-periodo">
         <div class="col-12">
           <label class="form-label fw-semibold small">Nombre del Período *</label>
-          <input type="text" class="form-control" id="modal-nombre" value="${periodo.nombre}" required>
+          <input type="text" class="form-control" id="modal-nombre" value="${escapeHTML(periodo.nombre)}" required>
         </div>
         <div class="col-md-6">
           <label class="form-label fw-semibold small">Fecha Inicio *</label>
-          <input type="date" class="form-control" id="modal-fecha_inicio" value="${periodo.fecha_inicio}" required>
+          <input type="date" class="form-control" id="modal-fecha_inicio" value="${escapeHTML(periodo.fecha_inicio)}" required>
         </div>
         <div class="col-md-6">
           <label class="form-label fw-semibold small">Fecha Fin *</label>
-          <input type="date" class="form-control" id="modal-fecha_fin" value="${periodo.fecha_fin}" required>
+          <input type="date" class="form-control" id="modal-fecha_fin" value="${escapeHTML(periodo.fecha_fin)}" required>
         </div>
         <div class="col-12">
           <div class="form-check form-switch">
@@ -240,51 +447,22 @@ export async function renderPeriodosView(container) {
 
     AppModal.open({
       title: '⚠️ Eliminar Período',
-      size: 'sm',
       saveText: 'Eliminar',
-      body: `<p>¿Estás seguro de que deseas eliminar el período <strong>${periodo.nombre}</strong>?</p>
-             <p class="text-muted small mb-0">Esta acción no se puede deshacer.</p>`,
-      onSave: async () => {
-        await PeriodosApi.eliminarPeriodo(id)
-        showToast('Período eliminado con éxito')
-        await loadPeriodos()
-      }
-    })
-  }
-
-  async function activarPeriodo(id) {
-    const periodos = await PeriodosApi.getPeriodos()
-    const periodo = periodos.find(p => p.id === id)
-    if (!periodo) return
-
-    AppModal.open({
-      title: '⚠️ Corte de Período Académico (Archivo Histórico)',
-      saveText: 'Confirmar Activación y Corte',
-      body: `
-        <div class="p-2">
-          <div class="alert alert-warning border-warning-subtle d-flex align-items-start gap-2 mb-3">
-            <i class="bi bi-exclamation-triangle-fill text-warning fs-5"></i>
-            <div>
-              <strong class="d-block mb-1">¡Advertencia de Integridad Académica!</strong>
-              Estás a punto de activar el período <strong>"${periodo.nombre}"</strong> y archivar el período anterior.
-            </div>
-          </div>
-          <p class="mb-2">Esta acción aplicará los siguientes cambios operativos en cascada:</p>
-          <ul class="small text-muted mb-3 ps-3">
-            <li class="mb-1"><strong>Aislamiento de Analíticas</strong>: Los tableros, asistencias y promedios se inicializarán en blanco para el nuevo período.</li>
-            <li class="mb-1"><strong>Bloqueo de Modificaciones</strong>: Los registros del período archivado quedarán bloqueados para edición, asegurando la inmutabilidad histórica.</li>
-            <li class="mb-1"><strong>Acceso de Lectura</strong>: El personal administrativo y ACM podrán seguir consultando los datos archivados únicamente en modo de lectura.</li>
-          </ul>
-          <p class="mb-0 text-danger fw-semibold small">¿Confirmas que deseas aplicar el corte académico e iniciar el nuevo ciclo?</p>
-        </div>
-      `,
+      body: `<p>¿Estás seguro de que deseas eliminar el período <strong>${escapeHTML(periodo.nombre)}</strong>?</p>
+             <div class="alert alert-warning small mb-0">
+               <i class="bi bi-exclamation-triangle"></i>
+               Las claves foráneas hacia este período están definidas como <code>ON DELETE SET NULL</code>:
+               los registros asociados <strong>no se borran, quedan sin período asignado</strong> y dejan de
+               aparecer en los informes de cierre. Esta acción no se puede deshacer.
+             </div>`,
       onSave: async () => {
         try {
-          await PeriodosApi.activarPeriodo(id)
-          showToast('Período activado e historial archivado con éxito')
+          await PeriodosApi.eliminarPeriodo(id)
+          showToast('Período eliminado')
           await loadPeriodos()
         } catch (error) {
           showToast(error.message, 'danger')
+          return false
         }
       }
     })

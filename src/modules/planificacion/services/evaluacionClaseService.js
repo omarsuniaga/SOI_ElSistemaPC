@@ -1,0 +1,121 @@
+/**
+ * evaluacionClaseService.js — Service layer for evaluacion_indicador CRUD + RPCs
+ *
+ * Manages per-indicator, per-student evaluation tracking. Supports
+ * UPSERT via unique constraint (alumno_id, indicator_id, clase_id).
+ *
+ * Pattern: pure service functions using Supabase client directly.
+ */
+
+import { supabase } from '../../../lib/supabaseClient.js'
+
+const ESTADOS_VALIDOS = ['sin_evaluar', 'inicia', 'en_progreso', 'avanzado', 'dominado']
+
+/**
+ * Register or update an evaluation for a student on a specific indicator.
+ * Uses UPSERT on the UNIQUE(alumno_id, indicator_id, clase_id) constraint.
+ *
+ * @param {object} data - { alumno_id, indicator_id, clase_id, nota?, estado?, observaciones?, evaluado_por? }
+ * @returns {Promise<object>} The upserted evaluation record
+ */
+export async function registrarEvaluacion(data) {
+  if (!data.alumno_id || !data.indicator_id || !data.clase_id) {
+    throw new Error('alumno_id, indicator_id y clase_id son requeridos')
+  }
+
+  if (data.nota !== null && data.nota !== undefined) {
+    if (data.nota < 1 || data.nota > 5) {
+      throw new Error('La nota debe estar entre 1 y 5')
+    }
+  }
+
+  const row = {
+    alumno_id: data.alumno_id,
+    indicator_id: data.indicator_id,
+    clase_id: data.clase_id,
+    nota: data.nota ?? null,
+    estado: data.estado || 'sin_evaluar',
+    observaciones: data.observaciones || null,
+    evaluado_por: data.evaluado_por || null,
+    fecha_evaluacion: new Date().toISOString(),
+  }
+
+  const { data: result, error } = await supabase
+    .from('evaluacion_indicador')
+    .upsert(row, { onConflict: 'alumno_id,indicator_id,clase_id' })
+    .select()
+    .single()
+
+  if (error) throw error
+  return result
+}
+
+/**
+ * Get all evaluations for a specific class.
+ *
+ * @param {string} claseId - ID of the class
+ * @returns {Promise<Array<object>>} Evaluations with joined student/indicator data
+ */
+export async function obtenerEvaluacionesPorClase(claseId) {
+  const { data, error } = await supabase
+    .from('evaluacion_indicador')
+    .select('*')
+    .eq('clase_id', claseId)
+    .order('created_at', { ascending: false })
+
+  if (error) throw error
+  return data || []
+}
+
+/**
+ * Get evaluations for a specific student in a specific class.
+ *
+ * @param {string} alumnoId - ID of the student
+ * @param {string} claseId - ID of the class
+ * @returns {Promise<Array<object>>} Student's evaluations for the class
+ */
+export async function obtenerEvaluacionPorAlumno(alumnoId, claseId) {
+  const { data, error } = await supabase
+    .from('evaluacion_indicador')
+    .select('*')
+    .eq('alumno_id', alumnoId)
+    .eq('clase_id', claseId)
+    .order('created_at', { ascending: false })
+
+  if (error) throw error
+  return data || []
+}
+
+/**
+ * Get progress summary for all students in a class via RPC.
+ *
+ * @param {string} claseId - ID of the class
+ * @returns {Promise<Array<object>>} Per-student progress aggregation
+ */
+export async function obtenerProgresoAlumnos(claseId) {
+  const { data, error } = await supabase.rpc('fn_evaluacion_indicadores_por_clase', {
+    p_clase_id: claseId,
+  })
+
+  if (error) throw error
+  return data || []
+}
+
+/**
+ * Get evaluations for a specific indicator across all students in a class.
+ *
+ * @param {string} indicatorId - ID of the indicator
+ * @param {string} claseId - ID of the class
+ * @returns {Promise<Array<object>>} All student evaluations for this indicator
+ */
+export async function obtenerProgresoPorIndicador(indicatorId, claseId) {
+  const { data, error } = await supabase
+    .from('evaluacion_indicador')
+    .select('*')
+    .eq('indicator_id', indicatorId)
+    .eq('clase_id', claseId)
+    .order('created_at', { ascending: false })
+
+  if (error) throw error
+  return data || []
+}

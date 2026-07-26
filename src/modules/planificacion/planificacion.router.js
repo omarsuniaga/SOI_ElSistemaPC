@@ -2,6 +2,7 @@ import { router } from '../../core/router/router.js'
 import { renderPlanificacionView, renderCoberturaView } from './views/planificacionView.js'
 import { renderRutaAcademicaView } from './views/rutaAcademicaView.js'
 import { renderAcmPropuestasView } from './views/acmProuestasView.js'
+import { renderClasePlanificacionView } from './views/clasePlanificacionView.js'
 
 export function registerRoutesPlanificacion() {
   // "Mis Planes" - vista del maestro logueado
@@ -18,6 +19,10 @@ export function registerRoutesPlanificacion() {
   // "Todas las Planificaciones" - vista administrativa
   router.register('planificacion-maestros', (container) =>
     renderPlanificacionView(container, { viewMode: 'admin' }),
+  )
+  // "Planificación de Clase" - vista del maestro para planificar clases con ruta curricular
+  router.register('planificacion-clase', (container) =>
+    renderClasePlanificacionView(container),
   )
   // "Cobertura Curricular" - mapa clases vs planificaciones
   router.register('planificacion-cobertura', (container) => renderCoberturaView(container))

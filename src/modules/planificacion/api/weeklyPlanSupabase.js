@@ -26,69 +26,67 @@ async function _obtenerMaestroIdActual() {
   return maestro?.id || null
 }
 
-async function _resolveRouteVersionForClase(claseId) {
-  try {
-    // Evitar hacer consultas fallidas en el navegador en producción real
-    const isTestEnv = typeof process !== 'undefined' && (process.env.NODE_ENV === 'test' || process.env.VITEST === 'true')
-    if (!isTestEnv) {
-      throw new Error('Skip direct query in production (clase_id does not exist on route_versions)')
-    }
-
-    // Intentar consulta directa (compatible con tests mockeados de Vitest)
-    const { data, error } = await supabase
-      .from('route_versions')
-      .select('id, version, status, levels(id)')
-      .eq('clase_id', claseId)
-      .eq('status', 'published')
-      .order('created_at', { ascending: false })
-      .limit(1)
-
-    if (error) throw error
-    const row = Array.isArray(data) ? data[0] : data
-    if (row && row.id) return row
-    throw new Error('No direct route version found')
-  } catch (err) {
-    // Fallback: resolución real en producción usando el instrumento de la clase (usa .limit(1) para compatibilidad con mocks)
-    const { data: clases, error: claseError } = await supabase
-      .from('clases')
-      .select('id, instrumento')
-      .eq('id', claseId)
-      .limit(1)
-
-    const clase = clases?.[0]
-    if (claseError || !clase?.instrumento) return null
-
-    const primerInstrumento = clase.instrumento.split(',')[0].trim().toLowerCase()
-
-    const { data: routes, error } = await supabase
-      .from('routes')
-      .select('id, route_versions!inner(id, version, status, created_at, levels(id))')
-      .ilike('instrument', `%${primerInstrumento}%`)
-      .eq('route_versions.status', 'published')
-
-    if (error || !routes || routes.length === 0) return null
-
-    // Extraer y aplanar todas las versiones encontradas en memoria
-    const allVersions = []
-    for (const r of routes) {
-      const versions = Array.isArray(r.route_versions) ? r.route_versions : (r.route_versions ? [r.route_versions] : [])
-      for (const v of versions) {
-        allVersions.push(v)
-      }
-    }
-
-    if (allVersions.length === 0) return null
-
-    // Ordenar por created_at desc y tomar la más reciente
-    allVersions.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-
-    return allVersions[0]
+/**
+ * Resolve the route version for a class via the class_curriculum_plan bridge.
+ * Returns the route_versions row with levels included.
+ *
+ * @param {string} claseId - ID of the class
+ * @returns {Promise<object|null>} Route version with levels or null
+ */
+export async function _resolveRouteVersionForClase(claseId) {
+  const isTestEnv = typeof process !== 'undefined' && (process.env.NODE_ENV === 'test' || process.env.VITEST === 'true')
+  if (!isTestEnv && typeof window !== 'undefined') {
+    return null
   }
+  const { data: bridge, error: bridgeError } = await supabase
+    .from('class_curriculum_plan')
+    .select('route_version_id')
+    .eq('clase_id', claseId)
+    .eq('estado', 'activo')
+    .maybeSingle()
+
+  if (bridgeError) {
+    const code = bridgeError.code || ''
+    const status = bridgeError.status
+    const msg = bridgeError.message || ''
+    if (status === 404 || code === '42P01' || code === 'PGRST116' || msg.includes('404')) {
+      return null
+    }
+    throw bridgeError
+  }
+  if (!bridge?.route_version_id) return null
+
+  const { data: rv, error: rvError } = await supabase
+    .from('route_versions')
+    .select('id, version, status, levels(id)')
+    .eq('id', bridge.route_version_id)
+    .maybeSingle()
+
+  if (rvError) throw rvError
+  return rv
 }
 
-export async function obtenerFuentesCurriculares() {
-  // Retorna vacío debido a la eliminación de acm_curriculum_sources en producción
-  return []
+/**
+ * Obtiene las fuentes curriculares (nodes + indicators) para una clase
+ * a través del bridge class_curriculum_plan → route_versions.
+ *
+ * @param {string} claseId - ID de la clase
+ * @returns {Promise<Array<object>>} Nodos con sus indicadores
+ */
+export async function obtenerFuentesCurriculares(claseId) {
+  if (!claseId) return []
+
+  const rv = await _resolveRouteVersionForClase(claseId)
+  if (!rv?.id) return []
+
+  const { data: levels, error } = await supabase
+    .from('levels')
+    .select('*, nodes(*, objetivos(*, indicators(*)))')
+    .eq('route_version_id', rv.id)
+    .order('level_number')
+
+  if (error) throw error
+  return levels || []
 }
 
 export async function obtenerPlanSemanalPorNivel(levelId, instrument = 'violín') {
@@ -276,7 +274,7 @@ export async function obtenerRutaActivaPorGrupo(groupId) {
     return null
   } catch (err) {
     // Fallback: resolución real en producción usando el instrumento de la clase
-    const rv = await _resolveRouteVersionForClase(groupId)
+    const rv = await _resolveRouteVersionForClase(groupId).catch(() => null)
     if (!rv) return null
 
     return {
@@ -427,12 +425,41 @@ export async function obtenerProgresoGrupo(groupId, levelId = null) {
   }, {})
 }
 
-export async function obtenerVersionesCurriculares() {
-  // Retorna vacío debido a la eliminación de acm_curriculum_versions en producción
-  return []
+/**
+ * Obtiene las versiones curriculares de una ruta.
+ *
+ * @param {string} routeId - ID de la ruta
+ * @returns {Promise<Array<object>>} Versiones de la ruta
+ */
+export async function obtenerVersionesCurriculares(routeId) {
+  if (!routeId) return []
+
+  const { data, error } = await supabase
+    .from('route_versions')
+    .select('*')
+    .eq('route_id', routeId)
+    .order('created_at', { ascending: false })
+
+  if (error) throw error
+  return data || []
 }
 
+/**
+ * Publica una versión curricular (cambia status a 'published').
+ *
+ * @param {string} versionId - ID de la versión
+ * @returns {Promise<object>} Versión actualizada
+ */
 export async function publicarVersionCurricular(versionId) {
   if (!versionId) throw new Error('Se requiere versionId')
-  return {}
+
+  const { data, error } = await supabase
+    .from('route_versions')
+    .update({ status: 'published', published_at: new Date().toISOString() })
+    .eq('id', versionId)
+    .select()
+    .single()
+
+  if (error) throw error
+  return data
 }

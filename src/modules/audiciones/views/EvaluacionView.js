@@ -1,11 +1,12 @@
 import { isEligible } from '../domain/eligibility.js'
+import { EvaluacionMapper } from '../domain/EvaluacionMapper.js'
 
 export function createEvaluacionView(container, adapter) {
   const state = {
     students: [],
     evaluations: new Map(),
     selectedStudentId: null,
-    formState: { c1: null, c2: null, c3: null, c4: null, c5: null, c6: null, c7: null, c8: null },
+    formState: { afinacion: null, ritmo: null, postura: null, musicalidad: null },
     saving: false,
   }
 
@@ -34,7 +35,8 @@ export function createEvaluacionView(container, adapter) {
     const list = container.querySelector('#student-list')
     list.innerHTML = state.students.map(s => {
       const ev = state.evaluations.get(s.id)
-      const isComplete = ev && ev.c1 !== null
+      const dom = ev ? EvaluacionMapper.toDomain(ev) : null
+      const isComplete = dom && dom.afinacion !== 0
       const badge = isComplete
         ? '<span class="badge bg-success ms-2">✓</span>'
         : '<span class="badge bg-secondary ms-2">—</span>'
@@ -52,30 +54,69 @@ export function createEvaluacionView(container, adapter) {
   const renderForm = () => {
     const form = container.querySelector('#evaluation-form')
     const criteria = [
-      { key: 'c1', label: 'Afinación General' },
-      { key: 'c2', label: 'Ritmo Escala' },
-      { key: 'c3', label: 'Sonido' },
-      { key: 'c4', label: 'Digitación' },
-      { key: 'c5', label: 'Afinación Repertorio' },
-      { key: 'c6', label: 'Ritmo Repertorio' },
-      { key: 'c7', label: 'Articulación' },
-      { key: 'c8', label: 'Lectura' },
+      { key: 'postura', label: 'Postura y Técnica (30%)' },
+      { key: 'afinacion', label: 'Afinación (30%)' },
+      { key: 'ritmo', label: 'Ritmo (20%)' },
+      { key: 'musicalidad', label: 'Musicalidad (20%)' },
     ]
 
     const canSave = isEligible({ ...state.formState, student_id: state.selectedStudentId, jurado_id: 'placeholder' })
+    
+    // Cálculo en tiempo real del promedio ponderado en base al dominio limpio
+    const afinacion = Number(state.formState.afinacion) || 0
+    const ritmo = Number(state.formState.ritmo) || 0
+    const postura = Number(state.formState.postura) || 0
+    const musicalidad = Number(state.formState.musicalidad) || 0
+    const promedio = (postura * 0.3) + (afinacion * 0.3) + (ritmo * 0.2) + (musicalidad * 0.2)
+
+    let dictamen = 'INCOMPLETO'
+    let badgeClass = 'bg-secondary'
+    if (canSave) {
+      if (promedio >= 4.0) {
+        dictamen = 'PROMOVIDO'
+        badgeClass = 'bg-success'
+      } else if (promedio >= 2.8) {
+        dictamen = 'PERMANECE EN NIVEL ACTUAL'
+        badgeClass = 'bg-warning text-dark'
+      } else {
+        dictamen = 'NO PROMOVIDO'
+        badgeClass = 'bg-danger'
+      }
+    }
+
+    const valueLabels = {
+      1: '1 - Inicial',
+      2: '2 - En Desarrollo',
+      3: '3 - Competente',
+      4: '4 - Sobresaliente',
+      5: '5 - Excepcional'
+    }
+
     form.innerHTML = `
       <form id="eval-form">
         ${criteria.map(c => `
-          <div class="mb-2 row">
-            <label class="col-sm-4 col-form-label">${c.label}</label>
-            <div class="col-sm-8">
+          <div class="mb-3 row align-items-center">
+            <label class="col-sm-5 col-form-label fw-semibold">${c.label}</label>
+            <div class="col-sm-7">
               <select class="form-select" data-key="${c.key}">
-                <option value="">—</option>
-                ${[1,2,3,4].map(v => `<option value="${v}" ${state.formState[c.key] === v ? 'selected' : ''}>${v}</option>`).join('')}
+                <option value="">— Seleccionar nota —</option>
+                ${[1,2,3,4,5].map(v => `<option value="${v}" ${state.formState[c.key] === v ? 'selected' : ''}>${valueLabels[v]}</option>`).join('')}
               </select>
             </div>
           </div>`).join('')}
-        <button type="submit" class="btn btn-primary w-100" ${canSave ? '' : 'disabled'}>
+        
+         <div class="my-4 p-3 bg-light rounded border border-secondary-subtle">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <span class="fw-bold text-secondary">Promedio Ponderado:</span>
+            <span class="fs-4 fw-bold text-primary">${canSave ? promedio.toFixed(2) : '—'} / 5.00</span>
+          </div>
+          <div class="d-flex justify-content-between align-items-center">
+            <span class="fw-bold text-secondary">Dictamen Sugerido:</span>
+            <span class="badge ${badgeClass} fs-6 px-3 py-2">${dictamen}</span>
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary w-100 py-2 fs-5" ${canSave ? '' : 'disabled'}>
           ${state.saving ? 'Guardando...' : 'Guardar Evaluación'}
         </button>
       </form>`
@@ -93,12 +134,17 @@ export function createEvaluacionView(container, adapter) {
       state.saving = true
       renderForm()
       try {
+        const persistencePayload = EvaluacionMapper.toPersistence(state.formState)
         await adapter.saveEvaluation({
           student_id: state.selectedStudentId,
           jurado_id: 'usr-jurado-1',
-          ...state.formState,
+          ...persistencePayload
         })
-        state.evaluations.set(state.selectedStudentId, { ...state.formState, c1: state.formState.c1 })
+        state.evaluations.set(state.selectedStudentId, { 
+          student_id: state.selectedStudentId,
+          jurado_id: 'usr-jurado-1',
+          ...persistencePayload
+        })
         renderStudentList()
       } catch (err) {
         alert('Error al guardar: ' + err.message)
@@ -113,8 +159,8 @@ export function createEvaluacionView(container, adapter) {
     state.selectedStudentId = studentId
     const existing = state.evaluations.get(studentId)
     state.formState = existing
-      ? { c1: existing.c1, c2: existing.c2, c3: existing.c3, c4: existing.c4, c5: existing.c5, c6: existing.c6, c7: existing.c7, c8: existing.c8 }
-      : { c1: null, c2: null, c3: null, c4: null, c5: null, c6: null, c7: null, c8: null }
+      ? EvaluacionMapper.toDomain(existing)
+      : { afinacion: null, ritmo: null, postura: null, musicalidad: null }
     renderStudentList()
     renderForm()
   }

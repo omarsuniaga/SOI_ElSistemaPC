@@ -3,6 +3,7 @@ import { STUDENTS } from './fixtures/students.js'
 import { EVALUATIONS } from './fixtures/evaluations.js'
 import { REPERTOIRE } from './fixtures/repertoire.js'
 import { isEligible } from '../../domain/eligibility.js'
+import { EvaluacionMapper } from '../../domain/EvaluacionMapper.js'
 
 export async function getCurrentUser() {
   return { id: 'usr-jurado-1', email: 'jurado1@test.com', role: 'jurado' }
@@ -25,7 +26,12 @@ export async function getEvaluationsByJurado(juradoId) {
 }
 
 export async function saveEvaluation(payload) {
-  if (!isEligible(payload)) {
+  const domainEval = {
+    student_id: payload.student_id,
+    jurado_id: payload.jurado_id,
+    ...EvaluacionMapper.toDomain(payload)
+  }
+  if (!isEligible(domainEval)) {
     throw new Error('incomplete evaluation')
   }
   const idx = EVALUATIONS.findIndex(

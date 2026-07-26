@@ -4,31 +4,37 @@ import { isEligible } from '../domain/eligibility.js'
 const validEval = {
   student_id: 'stu-1',
   jurado_id: 'usr-jurado-1',
-  c1: 3, c2: 3, c3: 3, c4: 3,
-  c5: 3, c6: 3, c7: 3, c8: 3,
+  afinacion: 3,
+  ritmo: 4,
+  postura: 5,
+  musicalidad: 3,
 }
 
 describe('isEligible', () => {
-  it('returns true when all 8 criteria are valid integers 1-4', () => {
+  it('returns true when all 4 criteria are valid integers 1-5', () => {
     expect(isEligible(validEval)).toBe(true)
   })
 
   it('returns false when any criterion is null', () => {
-    expect(isEligible({ ...validEval, c3: null })).toBe(false)
+    expect(isEligible({ ...validEval, postura: null })).toBe(false)
   })
 
   it('returns false when any criterion is undefined', () => {
     const partial = { ...validEval }
-    delete partial.c5
+    delete partial.postura
     expect(isEligible(partial)).toBe(false)
   })
 
   it('returns false when any criterion is 0 (out of range)', () => {
-    expect(isEligible({ ...validEval, c1: 0 })).toBe(false)
+    expect(isEligible({ ...validEval, afinacion: 0 })).toBe(false)
   })
 
-  it('returns false when any criterion is 5 (out of range)', () => {
-    expect(isEligible({ ...validEval, c2: 5 })).toBe(false)
+  it('returns false when any criterion is 6 (out of range)', () => {
+    expect(isEligible({ ...validEval, ritmo: 6 })).toBe(false)
+  })
+
+  it('returns true when any criterion is 5 (within range)', () => {
+    expect(isEligible({ ...validEval, ritmo: 5 })).toBe(true)
   })
 
   it('returns false when student_id is missing', () => {

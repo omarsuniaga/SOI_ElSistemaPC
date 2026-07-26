@@ -9,3 +9,10 @@ export { parseDsl, highlightDsl, getTokenSummary, validateDsl } from './utils/ds
 export { createDslEditor } from './components/dslEditor.js'
 export { createDslToolbar, createDslEditorWithToolbar } from './components/dslToolbar.js'
 export { createAlumnoPickerModal } from './components/alumnoPickerModal.js'
+
+// ── Phase 3: Planificación de Clase ──
+export { renderClasePlanificacionView } from './views/clasePlanificacionView.js'
+export { renderEvaluacionClaseModal } from './components/evaluacionClaseModal.js'
+export { renderProgresoAlumnosPanel } from './components/progresoAlumnosPanel.js'
+export { renderCurriculumLinkerPanel } from './components/curriculumLinkerPanel.js'
+export { useClasePlanificacion } from './hooks/useClasePlanificacion.js'

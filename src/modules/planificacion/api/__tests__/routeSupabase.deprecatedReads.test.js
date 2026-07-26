@@ -48,7 +48,16 @@ describe('routeSupabase — no deprecated plan_* table reads', () => {
     const routeVersionEq = vi.fn().mockReturnValue({ order: routeVersionOrder })
     const routeVersionSelect = vi.fn().mockReturnValue({ eq: routeVersionEq })
 
+    const ccpSelect = vi.fn().mockReturnValue({
+      eq: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
+          maybeSingle: vi.fn().mockResolvedValue({ data: { route_version_id: 'rv-1' }, error: null }),
+        }),
+      }),
+    })
+
     supabase.from.mockImplementation((table) => {
+      if (table === 'class_curriculum_plan') return { select: ccpSelect }
       if (table === 'route_versions') return { select: routeVersionSelect }
       if (table === 'levels') return { select: levelsSelect }
       throw new Error(`Unexpected table: ${table}`)
@@ -56,8 +65,7 @@ describe('routeSupabase — no deprecated plan_* table reads', () => {
 
     const levels = await routeSupabase.getLevelsByClass('clase-1')
 
-    expect(supabase.from).toHaveBeenCalledWith('route_versions')
-    expect(supabase.from).toHaveBeenCalledWith('levels')
+    expect(supabase.from).toHaveBeenCalledWith('class_curriculum_plan')
     expect(supabase.from).not.toHaveBeenCalledWith('plan_niveles')
     expect(levelsEq).toHaveBeenCalledWith('route_version_id', 'rv-1')
     expect(levels[0]).toMatchObject({ numero_nivel: 1, nombre: 'Nivel 1' })
@@ -120,7 +128,16 @@ describe('routeSupabase — no deprecated plan_* table reads', () => {
     const routeVersionEq = vi.fn().mockReturnValue({ order: routeVersionOrder })
     const routeVersionSelect = vi.fn().mockReturnValue({ eq: routeVersionEq })
 
+    const ccpSelect = vi.fn().mockReturnValue({
+      eq: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
+          maybeSingle: vi.fn().mockResolvedValue({ data: { route_version_id: 'rv-1' }, error: null }),
+        }),
+      }),
+    })
+
     supabase.from.mockImplementation((table) => {
+      if (table === 'class_curriculum_plan') return { select: ccpSelect }
       if (table === 'route_versions') return { select: routeVersionSelect }
       if (table === 'levels') return { select: hierarchySelect }
       throw new Error(`Unexpected table: ${table}`)
@@ -129,6 +146,7 @@ describe('routeSupabase — no deprecated plan_* table reads', () => {
     const levels = await routeSupabase.getFullHierarchy('clase-1')
 
     const calledTables = supabase.from.mock.calls.map((call) => call[0])
+    expect(calledTables).toContain('class_curriculum_plan')
     expect(calledTables).not.toContain('plan_clases')
     expect(calledTables).not.toContain('plan_niveles')
     expect(calledTables).not.toContain('plan_temas')

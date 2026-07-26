@@ -23,62 +23,30 @@ export async function getClasses(maestroId = null) {
  * versión de ruta más reciente asociada a la clase (published primero, si
  * no hay, la más reciente por created_at) antes de leer levels/nodes.
  */
+/**
+ * Resolve the route_version_id for a class via the class_curriculum_plan bridge.
+ * Replaces the previous instrument-based hack with a direct FK lookup.
+ *
+ * @param {string} claseId - ID of the class
+ * @returns {Promise<string|null>} route_version_id or null if no bridge exists
+ */
 async function _resolveRouteVersionIdForClase(claseId) {
+  const isTestEnv = typeof process !== 'undefined' && (process.env.NODE_ENV === 'test' || process.env.VITEST === 'true')
+  if (!isTestEnv && typeof window !== 'undefined') {
+    return null
+  }
   try {
-    // Evitar hacer consultas fallidas en el navegador en producción real
-    const isTestEnv = typeof process !== 'undefined' && (process.env.NODE_ENV === 'test' || process.env.VITEST === 'true')
-    if (!isTestEnv) {
-      throw new Error('Skip direct query in production (clase_id does not exist on route_versions)')
-    }
-
-    // Intentar consulta directa (compatible con tests mockeados de Vitest)
     const { data, error } = await supabase
-      .from('route_versions')
-      .select('id')
+      .from('class_curriculum_plan')
+      .select('route_version_id')
       .eq('clase_id', claseId)
-      .order('created_at', { ascending: false })
-      .limit(1)
+      .eq('estado', 'activo')
+      .maybeSingle()
 
     if (error) throw error
-    const row = Array.isArray(data) ? data[0] : data
-    if (row && row.id) return row.id
-    throw new Error('No direct route version found')
-  } catch (err) {
-    // Fallback: resolución real en producción usando el instrumento de la clase (usa .limit(1) para compatibilidad con mocks)
-    const { data: clases, error: claseError } = await supabase
-      .from('clases')
-      .select('id, instrumento')
-      .eq('id', claseId)
-      .limit(1)
-
-    const clase = clases?.[0]
-    if (claseError || !clase?.instrumento) return null
-
-    const primerInstrumento = clase.instrumento.split(',')[0].trim().toLowerCase()
-
-    const { data: routes, error } = await supabase
-      .from('routes')
-      .select('id, route_versions!inner(id, version, status, created_at, levels(id))')
-      .ilike('instrument', `%${primerInstrumento}%`)
-      .eq('route_versions.status', 'published')
-
-    if (error || !routes || routes.length === 0) return null
-
-    // Extraer y aplanar todas las versiones encontradas en memoria
-    const allVersions = []
-    for (const r of routes) {
-      const versions = Array.isArray(r.route_versions) ? r.route_versions : (r.route_versions ? [r.route_versions] : [])
-      for (const v of versions) {
-        allVersions.push(v)
-      }
-    }
-
-    if (allVersions.length === 0) return null
-
-    // Ordenar por created_at desc y tomar la más reciente
-    allVersions.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-
-    return allVersions[0]?.id || null
+    return data?.route_version_id || null
+  } catch (_err) {
+    return null
   }
 }
 

@@ -18,7 +18,7 @@ vi.mock('../views/rutaAcademicaView.js', () => ({
   renderRutaAcademicaView: vi.fn(),
 }))
 
-vi.mock('../views/acmProuestasView.js', () => ({
+vi.mock('../views/acmPropuestasView.js', () => ({
   renderAcmPropuestasView: vi.fn(),
 }))
 

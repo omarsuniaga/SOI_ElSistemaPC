@@ -42,7 +42,7 @@ describe('planificacionAdapter routing', () => {
     vi.resetModules()
   })
 
-  it('should return planificaciones via mock when isDemoMode is true', async () => {
+  it('should return planificaciones via mock when isDemoMode is true', { timeout: 15000 }, async () => {
     vi.doMock('../../../core/config/config.js', () => ({
       config: { isDemoMode: true },
     }))

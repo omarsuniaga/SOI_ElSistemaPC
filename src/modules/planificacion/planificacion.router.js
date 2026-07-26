@@ -1,7 +1,7 @@
 import { router } from '../../core/router/router.js'
 import { renderPlanificacionView, renderCoberturaView } from './views/planificacionView.js'
 import { renderRutaAcademicaView } from './views/rutaAcademicaView.js'
-import { renderAcmPropuestasView } from './views/acmProuestasView.js'
+import { renderAcmPropuestasView } from './views/acmPropuestasView.js'
 import { renderClasePlanificacionView } from './views/clasePlanificacionView.js'
 
 export function registerRoutesPlanificacion() {

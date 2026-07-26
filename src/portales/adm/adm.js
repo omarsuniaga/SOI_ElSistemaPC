@@ -27,6 +27,8 @@ const navGroups = [
     label: 'Operación',
     icon: 'bi-clipboard-data',
     items: [
+      { id: 'periodos', label: 'Períodos Académicos', icon: 'bi-calendar-event' },
+      { id: 'reporte-cierre', label: 'Informe de Cierre', icon: 'bi-file-earmark-bar-graph' },
       { id: 'campanias', label: 'Períodos / Campañas', icon: 'bi-megaphone' },
       { id: 'gateway-config', label: 'Gateway WhatsApp', icon: 'bi-chat-dots' },
       { id: 'asistencias', label: 'Resumen Asistencias', icon: 'bi-calendar-check' },

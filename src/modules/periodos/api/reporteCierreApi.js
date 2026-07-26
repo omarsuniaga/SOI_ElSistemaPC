@@ -158,6 +158,28 @@ export async function listarPeriodosReportables() {
 }
 
 /**
+ * Explica por qué una consulta de períodos volvió vacía.
+ *
+ * RLS no falla cuando filtra: devuelve cero filas sin error. Eso hace que una
+ * tabla llena y un usuario sin permisos se vean exactamente igual desde el
+ * cliente. Mostrar "no hay períodos registrados" en el segundo caso es afirmar
+ * algo falso sobre el estado del sistema, y manda al usuario a crear un período
+ * que ya existe.
+ *
+ * La política de lectura vigente es `periodos_admin_read` con `es_admin()`,
+ * que sólo admite los roles admin e inventarista.
+ */
+export async function explicarListaVacia() {
+  const { data } = await supabase.auth.getUser()
+
+  if (!data?.user) {
+    return 'Sesión no iniciada. Inicie sesión para consultar los períodos académicos.'
+  }
+  return 'No hay períodos visibles para su rol. La consulta de períodos requiere perfil administrador; ' +
+         'si esperaba ver períodos aquí, solicite el permiso correspondiente.'
+}
+
+/**
  * Persiste el informe como snapshot inmutable en `periodos_cierre_auditoria`.
  *
  * Se apoya en `fn_cerrar_periodo_academico`, que ya existía en la base y que el

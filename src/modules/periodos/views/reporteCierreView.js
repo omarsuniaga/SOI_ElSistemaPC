@@ -2,6 +2,7 @@ import { escapeHTML } from '../../../shared/utils/sanitize.js'
 import {
   obtenerReporteCierre,
   listarPeriodosReportables,
+  explicarListaVacia,
   clasificarDocente,
   fmtPct,
   ESTADO,
@@ -85,14 +86,22 @@ export async function renderReporteCierreView(container) {
 
   try {
     const periodos = await listarPeriodosReportables()
-    selPeriodo.innerHTML = periodos.length === 0
-      ? '<option value="">No hay períodos registrados</option>'
-      : periodos.map(p => {
-          const marca = p.activo ? ' — activo' : p.cerrado ? ' — cerrado' : ''
-          return `<option value="${escapeHTML(p.id)}">${escapeHTML(p.nombre)}${escapeHTML(marca)}</option>`
-        }).join('')
+
+    if (periodos.length === 0) {
+      // Cero filas no significa "no existen": RLS filtra sin devolver error.
+      const motivo = await explicarListaVacia()
+      selPeriodo.innerHTML = '<option value="">Sin períodos disponibles</option>'
+      btnGenerar.disabled = true
+      contenido.innerHTML = alerta('warning', 'No hay períodos disponibles para consultar', motivo)
+    } else {
+      selPeriodo.innerHTML = periodos.map(p => {
+        const marca = p.activo ? ' — activo' : p.cerrado ? ' — cerrado' : ''
+        return `<option value="${escapeHTML(p.id)}">${escapeHTML(p.nombre)}${escapeHTML(marca)}</option>`
+      }).join('')
+    }
   } catch (err) {
     selPeriodo.innerHTML = '<option value="">Error al cargar</option>'
+    btnGenerar.disabled = true
     contenido.innerHTML = alerta('danger', 'No se pudieron cargar los períodos', err.message)
   }
 

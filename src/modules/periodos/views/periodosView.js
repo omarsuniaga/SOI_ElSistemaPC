@@ -6,6 +6,7 @@ import { router } from '../../../core/router/router.js'
 import {
   obtenerReporteCierre,
   activarPeriodoAtomico,
+  explicarListaVacia,
   clasificarDocente,
   fmtPct,
   ESTADO,
@@ -55,15 +56,22 @@ export async function renderPeriodosView(container) {
   async function loadPeriodos() {
     try {
       const periodos = await PeriodosApi.getPeriodos()
-      renderTable(periodos)
+      await renderTable(periodos)
     } catch (error) {
       showToast(error.message, 'danger')
     }
   }
 
-  function renderTable(periodos) {
+  async function renderTable(periodos) {
     if (periodos.length === 0) {
-      tableBody.innerHTML = '<tr><td colspan="5" class="text-center py-5 text-muted">No hay períodos registrados.</td></tr>'
+      // RLS filtra devolviendo cero filas, sin error. Sin esta distinción la
+      // tabla afirma "no hay períodos" cuando la verdad puede ser "no podés
+      // verlos", y empuja al usuario a crear uno que ya existe.
+      const motivo = await explicarListaVacia()
+      tableBody.innerHTML = `<tr><td colspan="5" class="text-center py-5">
+        <div class="text-muted mb-1">No hay períodos para mostrar</div>
+        <div class="small text-secondary">${escapeHTML(motivo)}</div>
+      </td></tr>`
       return
     }
 

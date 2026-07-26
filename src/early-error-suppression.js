@@ -70,18 +70,6 @@ window.addEventListener('error', (event) => {
   }
 }, true) // Capture phase to intercept early
 
-// ============================================
-// Suppress WebSocket errors more aggressively
-// ============================================
-const originalFetch = window.fetch
-window.fetch = async function(...args) {
-  try {
-    return await originalFetch.apply(window, args)
-  } catch (err) {
-    if (!isSuppressed(err.message)) {
-      throw err
-    }
-    // Silently suppress if it's a suppressed pattern
-    return null
-  }
-}
+// NOTE: window.fetch monkey-patch REMOVED — was silently returning null on
+// suppressed errors, causing cascading bugs. Console/event suppression kept
+// for browser extension noise (chrome-extension://, content.js, polyfill).

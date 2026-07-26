@@ -1,150 +1,52 @@
-# Migraciones - Sistema Académico PWA
+# Migrations — Sistema Académico PWA
 
-## 📋 Estado de Migraciones
+## Quick Reference
 
-| # | Archivo | Estado | Notas |
-|---|---------|--------|-------|
-| 001 | `001_create_tables.sql` | ⏳ Pendiente de verificar | Crea planificaciones, progresos_academicos, observaciones |
-| 002 | `002_create_missing_tables.sql` | ⏳ Pendiente de verificar | Crea students, progresos, observaciones, campos adicionales |
-| 003 | `003_auth_profiles.sql` | ⏳ Pendiente de verificar | Crea perfiles para autenticación |
-| 004 | `004_rls_policies.sql` | 🔄 Por crear | Políticas de RLS por rol |
+| Category | Date Range | Files | Description |
+|----------|-----------|-------|-------------|
+| Core Schema | — | 001–005 | Base tables: students, clases, maestros, planificaciones, profiles |
+| Academic Routes | — | 006–012 | Curriculum routes, levels, nodes, indicators, weekly plans |
+| Auth & RLS | 2026-05-13 → 2026-05-19 | ~10 | Profile auto-creation, role-based RLS, admin policies |
+| Planification | 2026-05-07 → 2026-05-11 | ~5 | Planning documents, indicator attempts, coverage fields |
+| Attendance & Ausencias | 2026-05-19 → 2026-06-06 | ~8 | Ausencias workflow, notification triggers, escalation |
+| Notifications | 2026-05-20 → 2026-05-23 | ~6 | Push notifications, deep links, cron schedules |
+| Maestro Registration | 2026-05-26 → 2026-05-30 | ~10 | Signup flow fixes, instrument handling, pre-existence linking |
+| Pedagógico | 2026-06-07 → 2026-06-28 | ~6 | Institutional follow-up, segumiento, plan-indicator links |
+| Hermes (Telegram) | 2026-06-22 → 2026-06-30 | ~10 | Core Hermes, WhatsApp integration, bot hardening |
+| Simulador & Tools | 2026-07-04 → 2026-07-13 | ~6 | Simulator core, tool catalog, tool gateway |
+| Lutería | 2026-06-27 → 2026-07-12 | ~3 | Workshop schema, FK inventario activos |
+| Rediseño Planificación | 2026-07-22 | 4 | Bridge table, objetivo linking, evaluation, cleanup |
+| Cierre de Semestre | 2026-07-26 | 6 | Asistencia docente, calendario lectivo, cierre validado |
+| Other | Various | ~10 | Hermes governance, ACM governance, misc fixes |
 
----
+## Naming Conventions
 
-## 📦 Tablas Creadas por Migración
+Two naming patterns coexist:
 
-### Migration 001: `001_create_tables.sql`
+1. **Numbered** (`001_*.sql` → `012_*.sql`) — original migrations, no timestamp prefix
+2. **Date-stamped** (`YYYYMMDD_*.sql` or `YYYYMMDDHHMMSS_*.sql`) — added as project grew
 
-| Tabla | Descripción | Relaciones |
-|-------|-------------|------------|
-| `planificaciones` | Planificación pedagógica de clases | → `clases`, `maestros` |
-| `progresos_academicos` | Calificaciones y progreso académico | → `students`, `clases`, `maestros` |
-| `observaciones` | Anotaciones y seguimiento | → `students`, `maestros` |
+**Rule for new migrations:** Use `YYYYMMDD_description.sql` format. Example: `20260727_add_feature.sql`
 
-### Migration 002: `002_create_missing_tables.sql`
+## How to Apply
 
-| Tabla | Descripción | Notas |
-|-------|-------------|-------|
-| `students` | Tabla principal de estudiantes | Reemplaza/actualiza schema existente |
-| `progresos_academicos` | Versión actualizada | Incluye campos opcionales |
-| `observaciones` | Versión actualizada | Campos adicionales |
-| `planificaciones` | Planificación pedagógica | Tabla completa |
-
-**Campos agregados a tablas existentes:**
-- `salones`: `codigo_salon`, `ubicacion`, `piso`, `updated_at`
-- `maestros`: `name`, `especialidad`, `bio`, `is_active`
-
-### Migration 003: `003_auth_profiles.sql`
-
-| Tabla | Descripción | Notas |
-|-------|-------------|-------|
-| `profiles` | Perfiles de usuario (linked a auth.users) | Auto-crea perfil en signup |
-
----
-
-## 🔒 Row Level Security (RLS)
-
-### Estado Actual (Migration 002 ya aplicada)
-
-| Tabla | RLS Habilitado | Policy |
-|-------|---------------|--------|
-| `students` | ✅ Sí | `Allow public access` (permisiva) |
-| `progresos_academicos` | ✅ Sí | `Allow public access` (permisiva) |
-| `observaciones` | ✅ Sí | `Allow public access` (permisiva) |
-| `planificaciones` | ✅ Sí | `Allow public access` (permisiva) |
-| `profiles` | ❌ No | - |
-
-### Notas Importantes
-
-- **Las políticas actuales son permisivas** (`Allow public access`) - adecuado para desarrollo
-- **Migration 004** implementará políticas granulares por rol:
-  - `admin`: acceso total a todas las tablas
-  - `teacher`: lectura/escritura en sus datos, lectura en students
-  - `user` (estudiante): solo lectura de sus propios datos
-
----
-
-## 🚀 Cómo Ejecutar
-
-1. Abrir **Supabase Dashboard** → **SQL Editor**
-2. Seleccionar archivo `001_create_tables.sql`
-3. Ejecutar (Ctrl + Enter)
-4. Repetir para cada migration en orden numérico
-5. Verificar en **Table Editor** que las tablas fueron creadas
-
-> ⚠️ **Nota**: Las políticas actuales permiten acceso público. Para producción, revisar y ajustar según necesidades de seguridad.
-
----
-
-## 📝 Referencia de Relaciones
-
-```
-students (id) ← progresos_academicos (alumno_id)
-students (id) ← observaciones (alumno_id)
-clases (id) ← planificaciones (clase_id)
-clases (id) ← progresos_academicos (clase_id)
-maestros (id) ← planificaciones (maestro_id)
-maestros (id) ← progresos_academicos (maestro_id)
-maestros (id) ← observaciones (maestro_id)
-ensembles (id) ← students (ensemble_id)
-auth.users (id) ← profiles (id)
-```
-
----
-
-## 📋 Campos por Tabla
-
-### students
-```
-id (UUID, PK), name, section, ensemble_id, atril, posicion_atril,
-parent_email, parent_phone, acudiente, email, cedula,
-fecha_nacimiento, genero, direccion, es_activo, final_score
-```
-
-### progresos_academicos
-```
-id (UUID, PK), alumno_id (FK → students), clase_id (FK → clases),
-maestro_id (FK → maestros), fecha_evaluacion, tipo_evaluacion,
-calificacion, observaciones, estado
-```
-
-### observaciones
-```
-id (UUID, PK), alumno_id (FK → students), maestro_id (FK → maestros),
-tipo, titulo, descripcion, prioridad, estado,
-fecha_observacion, seguimiento_fecha, seguimiento_observacion
-```
-
-### planificaciones
-```
-id (UUID, PK), clase_id (FK → clases), maestro_id (FK → maestros),
-fecha_inicio, tema, objetivos, contenido, recursos,
-evaluacion_metodo, observaciones, estado
-```
-
-### profiles
-```
-id (UUID, PK → auth.users), email, full_name, role,
-department, avatar_url, is_active
-```
-
----
+1. Open **Supabase Dashboard → SQL Editor**
+2. Run each `.sql` file in order (date-stamped files are already chronological)
+3. Verify in **Table Editor** that tables/columns were created
+4. Check `supabase migration list` for applied vs pending status
 
 ## Troubleshooting
 
-### Error: "relation already exists"
-- Es normal si ejecutas las migraciones dos veces
-- El SQL usa `IF NOT EXISTS` para evitar errores
+| Error | Fix |
+|-------|-----|
+| `relation already exists` | Normal if re-running — files use `IF NOT EXISTS` |
+| `foreign key constraint fails` | Run migrations in order; dependent tables must exist first |
+| `column already exists` | Check if a later migration already added this column |
+| `permission denied for table` | RLS policy may be blocking — check with service role key |
 
-### Error: "foreign key constraint fails"
-- Verifica que las tablas referenciadas existen (clases, maestros, students)
-- Ejecuta las migraciones en orden
+## Notes
 
-### Error: "syntax error"
-- Copia TODO el contenido del archivo (no solo partes)
-- Verifica que no hay caracteres especiales en la copia/pegada
-
----
-
-**Última actualización**: 2026-05-04  
-**Estado**: Phase 2 completada - migration 004 por crear
+- **DO NOT rename or reorder existing files** — Supabase tracks applied migrations by filename
+- **DO NOT squash** unless you're sure the remote DB state matches
+- `schema_reference.sql` and `seed-*.sql` are reference/seed files, NOT proper migrations
+- Last updated: 2026-07-26

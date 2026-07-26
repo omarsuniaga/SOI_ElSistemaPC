@@ -2,7 +2,7 @@ import '../styles/maestros.css'
 import { AppModal } from '../../../shared/components/AppModal.js'
 import {
   obtenerMaestros,
-  crearMaestro,
+  crearMaestroConAuth,
   actualizarMaestro,
   inactivarMaestro,
   activarMaestro,
@@ -564,7 +564,7 @@ function openCreateModal() {
       </div>
     </form>`,
     onShow: (modalBody) => attachEspecialidadesEvents(modalBody),
-    saveText: 'Guardar',
+    saveText: 'Crear Maestro',
     onSave: async (modalBody) => {
       const nombre = modalBody.querySelector('#modal-nombre').value.trim()
       const email = modalBody.querySelector('#modal-email').value.trim().toLowerCase()
@@ -594,62 +594,29 @@ function openCreateModal() {
         return false
       }
 
-      if (email) {
-        const emailExiste = await validarEmail(email)
-        if (emailExiste) {
-          showToast('El email ya está registrado', 'error')
-          return false
-        }
+      const emailExiste = await validarEmail(email)
+      if (emailExiste) {
+        showToast('El email ya está registrado', 'error')
+        return false
       }
 
       const especialidades = getEspecialidadesFromModal(modalBody)
 
-      try {
-        // 1. Crear auth user
-        const { data: authData, error: signUpError } = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            data: { full_name: nombre, rol: 'maestro' },
-          },
-        })
+      await crearMaestroConAuth({
+        nombre,
+        email,
+        password,
+        telefono,
+        instrumento,
+        especialidades,
+        bio,
+      })
 
-        if (signUpError) {
-          showToast(signUpError.message || 'Error al crear usuario', 'error')
-          return false
-        }
-
-        if (!authData?.user) {
-          showToast('No se pudo crear el usuario', 'error')
-          return false
-        }
-
-        const userId = authData.user.id
-
-        // 2. Activar perfil inmediatamente (admin lo está creando)
-        await supabase.from('profiles').update({ estado: 'activo' }).eq('id', userId)
-
-        // 3. Actualizar maestros con datos adicionales
-        await supabase
-          .from('maestros')
-          .update({
-            tlf: telefono || null,
-            especialidad: instrumento || null,
-            resena: bio || null,
-            especialidades,
-          })
-          .eq('user_id', userId)
-
-        // 4. Recargar la lista (el trigger ya creó el row en maestros)
-        const maestros = await obtenerMaestros()
-        state.maestros = maestros
-        state.maestrosOriginales = [...maestros]
-        applyFilters()
-        showToast('Maestro creado exitosamente. Ya puede iniciar sesión.', 'success')
-      } catch (error) {
-        console.error('Error creando maestro:', error)
-        showToast('Error al crear el maestro: ' + error.message, 'error')
-      }
+      const maestros = await obtenerMaestros()
+      state.maestros = maestros
+      state.maestrosOriginales = [...maestros]
+      applyFilters()
+      showToast('Maestro creado exitosamente. Ya puede iniciar sesión.', 'success')
     },
   })
 }

@@ -34,6 +34,7 @@ const state = {
   asistenteRendered: false,
   rutasRendered: false,
   historialRendered: false,
+  clasePlanRendered: false,
   acmAuthority: { sources: [], versions: [], routes: [] },
   seleccionados: new Set(),
   container: null,
@@ -52,6 +53,7 @@ export async function renderPlanificacionView(container, { viewMode = 'maestro',
   state.asistenteRendered = false
   state.rutasRendered = false
   state.historialRendered = false
+  state.clasePlanRendered = false
   state.acmAuthority = { sources: [], versions: [], routes: [] }
 
   if (viewMode === 'plantillas') {
@@ -149,6 +151,9 @@ function renderContent(container) {
     <div class="planificacion-segmented-control mb-4" id="planificacion-tabs">
       <button class="planificacion-segment-btn ${state.activeTab === 'planes' ? 'active' : ''}" data-tab="planes">
         <i class="bi bi-journal-text me-1"></i> Planes
+      </button>
+      <button class="planificacion-segment-btn ${state.activeTab === 'clase-plan' ? 'active' : ''}" data-tab="clase-plan">
+        <i class="bi bi-journal-check me-1"></i> Planificación de Clase
       </button>
       ${(isAdmin || state.viewMode === 'acm') ? `
       <button class="planificacion-segment-btn ${state.activeTab === 'clases' ? 'active' : ''}" data-tab="clases">
@@ -322,6 +327,7 @@ function renderContent(container) {
       ` : ''}
 
       <!-- Other Tabs -->
+      <div id="tab-content-clase-plan" style="${state.activeTab === 'clase-plan' ? 'block' : 'none'}"></div>
       <div id="tab-content-plantillas" style="${state.activeTab === 'plantillas' ? 'block' : 'none'}"></div>
       <div id="tab-content-historial" style="${state.activeTab === 'historial' ? 'block' : 'none'}"></div>
       <div id="tab-content-rutas" style="${state.activeTab === 'rutas' ? 'block' : 'none'}"></div>
@@ -932,7 +938,7 @@ function _attachEvents(container) {
     btn.addEventListener('click', async () => {
       state.activeTab = btn.dataset.tab
 
-      const allContent = ['planes', 'clases', 'plantillas', 'historial', 'rutas', 'asistente']
+      const allContent = ['planes', 'clase-plan', 'clases', 'plantillas', 'historial', 'rutas', 'asistente']
       allContent.forEach((tab) => {
         const div = container.querySelector(`#tab-content-${tab}`)
         if (div) div.style.display = state.activeTab === tab ? 'block' : 'none'
@@ -942,6 +948,15 @@ function _attachEvents(container) {
         .querySelectorAll('#planificacion-tabs .planificacion-segment-btn')
         .forEach((b) => b.classList.remove('active'))
       btn.classList.add('active')
+
+      if (state.activeTab === 'clase-plan' && !state.clasePlanRendered) {
+        const clasePlanDiv = container.querySelector('#tab-content-clase-plan')
+        if (clasePlanDiv) {
+          const { renderClasePlanificacionView } = await import('../views/clasePlanificacionView.js')
+          renderClasePlanificacionView(clasePlanDiv)
+          state.clasePlanRendered = true
+        }
+      }
 
       if (state.activeTab === 'plantillas' && !state.plantillasRendered) {
         const plantillasDiv = container.querySelector('#tab-content-plantillas')

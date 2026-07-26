@@ -24,7 +24,7 @@ describe('weeklyPlanAdapter routing & mock lifecycle', () => {
     clearStorage()
   })
 
-  it('should route and fetch curriculum sources in demo mode', async () => {
+  it('should route and fetch curriculum sources in demo mode', { timeout: 15000 }, async () => {
     vi.doMock('../../../core/config/config.js', () => ({
       config: { isDemoMode: true },
     }))

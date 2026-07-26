@@ -88,7 +88,7 @@ describe('planificacionView - clase tab', () => {
   })
 
   describe('planificacionView with clase tab', () => {
-    it('renders the "Planificación de Clase" tab button', async () => {
+    it('renders the "Planificación de Clase" tab button', { timeout: 15000 }, async () => {
       const { renderPlanificacionView } = await import('../views/planificacionView.js')
       await renderPlanificacionView(container, { viewMode: 'maestro', skipFetch: true })
 

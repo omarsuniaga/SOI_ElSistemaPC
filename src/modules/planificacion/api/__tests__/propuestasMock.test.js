@@ -2,7 +2,7 @@
  * Tests para propuestasMock.js — curriculo-tres-planos WU #8 (demo parity).
  *
  * Réplica en memoria (localStorage) de propuestasApi.js para que la vista
- * ACM (acmProuestasView.js, WU #6) funcione en modo demo sin Supabase.
+ * ACM (acmPropuestasView.js, WU #6) funcione en modo demo sin Supabase.
  *
  * Cada test reimporta el módulo con vi.resetModules() para evitar fugas de
  * estado entre tests — el mock mantiene un singleton en memoria

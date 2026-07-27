@@ -16,6 +16,8 @@ export class Planificacion {
     this.notas_dsl = data.notas_dsl || ''
     this.estado = data.estado || 'planificado'
     this.instrumento = data.instrumento || null
+    this.class_curriculum_plan_id = data.class_curriculum_plan_id || null
+    this.route_version_id = data.route_version_id || null
     this.created_at = data.created_at || null
     this.updated_at = data.updated_at || null
 
@@ -131,6 +133,8 @@ export class Planificacion {
       notas_dsl: this.notas_dsl || null,
       estado: this.estado,
       instrumento: this.instrumento?.trim() || null,
+      class_curriculum_plan_id: this.class_curriculum_plan_id || null,
+      route_version_id: this.route_version_id || null,
     }
   }
 }

@@ -2,6 +2,7 @@ import {
   obtenerPlanificaciones,
   obtenerPlanificacion,
   obtenerPlanificacionesConDetalles,
+  obtenerPlanificacionesPaginadas,
 } from '../api/planificacionAdapter.js'
 import {
   obtenerSesiones,
@@ -24,6 +25,12 @@ export class PlanificacionHook {
     this.cargando = false
     this.error = null
     this.listeners = []
+    this.currentPage = 1
+    this.pageSize = 20
+    this.totalCount = 0
+    this.searchTerm = ''
+    this.filterClaseId = ''
+    this.filterEstado = ''
   }
 
   subscribe(callback) {
@@ -50,6 +57,12 @@ export class PlanificacionHook {
         esCoDocencia: this.esCoDocencia,
         cargando: this.cargando,
         error: this.error,
+        currentPage: this.currentPage,
+        pageSize: this.pageSize,
+        totalCount: this.totalCount,
+        searchTerm: this.searchTerm,
+        filterClaseId: this.filterClaseId,
+        filterEstado: this.filterEstado
       })
     })
   }
@@ -78,7 +91,15 @@ export class PlanificacionHook {
     this.notifyListeners()
 
     try {
-      this.planificaciones = await obtenerPlanificacionesConDetalles(this.maestroActualId)
+      const response = await obtenerPlanificacionesPaginadas(this.maestroActualId, {
+        page: this.currentPage,
+        pageSize: this.pageSize,
+        searchTerm: this.searchTerm,
+        filterClaseId: this.filterClaseId,
+        filterEstado: this.filterEstado
+      })
+      this.planificaciones = response.data
+      this.totalCount = response.totalCount
       this.cargando = false
       this.notifyListeners()
       return this.planificaciones
@@ -108,11 +129,31 @@ export class PlanificacionHook {
     }
   }
 
+  setPage(page) {
+    this.currentPage = page
+    return this.fetchPlanificacionesConDetalles()
+  }
+
+  setFilters({ searchTerm = null, filterClaseId = null, filterEstado = null } = {}) {
+    if (searchTerm !== null) this.searchTerm = searchTerm
+    if (filterClaseId !== null) this.filterClaseId = filterClaseId
+    if (filterEstado !== null) this.filterEstado = filterEstado
+    
+    // Reset Guard de Paginación
+    this.currentPage = 1
+    return this.fetchPlanificacionesConDetalles()
+  }
+
   reset() {
     this.planificaciones = []
     this.planificacionActual = null
     this.cargando = false
     this.error = null
+    this.currentPage = 1
+    this.totalCount = 0
+    this.searchTerm = ''
+    this.filterClaseId = ''
+    this.filterEstado = ''
     this.notifyListeners()
   }
 

@@ -14,7 +14,6 @@ function resetStore() {
     nodes: [],
     objetivos: [],
     indicators: [],
-    class_curriculum_plan: [],
   }
   nextId = 1
 }
@@ -111,23 +110,27 @@ import { getLevelsByClass, getFullHierarchy } from '../api/routeSupabase.js'
 
 // ── Tests ──────────────────────────────────────────────────────
 
-describe('routeSupabase — bridge resolution', () => {
+/**
+ * Resolución de ruta por clase.
+ *
+ * Estas pruebas afirmaban la tabla puente `class_curriculum_plan`, que nunca
+ * llegó a producción: su migración quedó sin aplicar y el código terminó
+ * cortocircuitado para no arrastrar el error. La relación real es la columna
+ * `clases.route_version_id`, que ya existía. Las pruebas se reescribieron sobre
+ * esa relación en vez de seguir describiendo un puente inexistente.
+ */
+describe('routeSupabase — resolución de ruta por clase', () => {
   beforeEach(() => {
     resetStore()
   })
 
-  it('should resolve route_version_id from class_curriculum_plan', async () => {
-    // Setup: bridge exists
-    tables.class_curriculum_plan.push({
-      id: 'ccp_001',
-      clase_id: 'clase_001',
+  it('resuelve la versión de ruta desde clases.route_version_id', async () => {
+    tables.clases.push({
+      id: 'clase_001',
       route_version_id: 'rv_001',
-      estado: 'activo',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
+      activo: true,
     })
 
-    // Setup: levels for that route version
     tables.levels.push({
       id: 'lvl_001',
       route_version_id: 'rv_001',
@@ -143,52 +146,26 @@ describe('routeSupabase — bridge resolution', () => {
     expect(levels[0].numero_nivel).toBe(1)
   })
 
-  it('should return empty array when no bridge exists for class', async () => {
+  it('devuelve arreglo vacío cuando la clase no tiene ruta asignada', async () => {
+    tables.clases.push({ id: 'clase_002', route_version_id: null, activo: true })
+    const levels = await getLevelsByClass('clase_002')
+    expect(levels).toEqual([])
+  })
+
+  it('devuelve arreglo vacío cuando la clase no existe', async () => {
     const levels = await getLevelsByClass('clase_999')
     expect(levels).toEqual([])
   })
 
-  it('should use the most recent active bridge when multiple exist', async () => {
-    tables.class_curriculum_plan.push(
-      {
-        id: 'ccp_001',
-        clase_id: 'clase_001',
-        route_version_id: 'rv_old',
-        estado: 'archivado',
-        created_at: '2026-01-01T00:00:00Z',
-        updated_at: '2026-01-01T00:00:00Z',
-      },
-      {
-        id: 'ccp_002',
-        clase_id: 'clase_001',
-        route_version_id: 'rv_new',
-        estado: 'activo',
-        created_at: '2026-07-01T00:00:00Z',
-        updated_at: '2026-07-01T00:00:00Z',
-      },
-    )
-
-    tables.levels.push({
-      id: 'lvl_001',
-      route_version_id: 'rv_new',
-      level_number: 1,
-      name: 'Nivel Nuevo',
-    })
-
-    const levels = await getLevelsByClass('clase_001')
-    expect(levels.length).toBe(1)
-    expect(levels[0].nombre).toBe('Nivel Nuevo')
-  })
-
-  it('should NOT use instrument-based fallback', async () => {
-    // Setup: no bridge, but instrument exists on class
+  it('no infiere la ruta por instrumento cuando la clase no la tiene asignada', async () => {
+    // Una clase sin ruta debe reportar que no la tiene, no adivinar por
+    // instrumento: elegir currículo es una decisión de ACM, no del resolver.
     tables.clases.push({
       id: 'clase_001',
       instrumento: 'violín',
+      route_version_id: null,
       activo: true,
     })
-
-    // Setup: routes with instrument match (should NOT be used)
     tables.routes.push({ id: 'route_001', instrument: 'violín' })
     tables.route_versions.push({
       id: 'rv_fallback',
@@ -201,15 +178,26 @@ describe('routeSupabase — bridge resolution', () => {
     expect(levels).toEqual([])
   })
 
-  it('getFullHierarchy should return full hierarchy via bridge', async () => {
-    tables.class_curriculum_plan.push({
-      id: 'ccp_001',
-      clase_id: 'clase_001',
+  it('consulta la jerarquía en el navegador, no solo bajo test', async () => {
+    // El resolver anterior hacía `if (!isTestEnv && typeof window !== 'undefined')
+    // return null`, de modo que en producción nunca consultaba. Con jsdom
+    // presente (window definido), la consulta debe ocurrir igual.
+    expect(typeof window).toBe('object')
+
+    tables.clases.push({ id: 'clase_001', route_version_id: 'rv_001', activo: true })
+    tables.levels.push({
+      id: 'lvl_001',
       route_version_id: 'rv_001',
-      estado: 'activo',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
+      level_number: 1,
+      name: 'Nivel 1',
     })
+
+    const levels = await getLevelsByClass('clase_001')
+    expect(levels.length).toBe(1)
+  })
+
+  it('getFullHierarchy devuelve la jerarquía completa', async () => {
+    tables.clases.push({ id: 'clase_001', route_version_id: 'rv_001', activo: true })
 
     tables.levels.push({
       id: 'lvl_001',

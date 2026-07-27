@@ -40,8 +40,15 @@ export const crearRutaActiva = (routeData) =>
 export const actualizarSemanaRutaActiva = (routeId, nuevaSemana) => 
   impl.actualizarSemanaRutaActiva(routeId, nuevaSemana)
 
-export const registrarProgresoIndicador = (studentId, indicatorId, status, observation = '', evidenceUrl = '', sessionId = null) => 
-  impl.registrarProgresoIndicador(studentId, indicatorId, status, observation, evidenceUrl, sessionId)
+export const registrarProgresoIndicador = async (studentId, indicatorId, status, observation = '', evidenceUrl = '', sessionId = null) => {
+  const result = await impl.registrarProgresoIndicador(studentId, indicatorId, status, observation, evidenceUrl, sessionId)
+  if (status === 'achieved') {
+    import('../../comunicaciones/services/boletinesService.js')
+      .then((m) => m.procesarAvancePedagogico(studentId, indicatorId))
+      .catch(console.error)
+  }
+  return result
+}
 
 export const obtenerProgresoGrupo = (groupId, levelId = null) => 
   impl.obtenerProgresoGrupo(groupId, levelId)

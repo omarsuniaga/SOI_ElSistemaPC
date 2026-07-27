@@ -34,32 +34,19 @@ async function _obtenerMaestroIdActual() {
  * @returns {Promise<object|null>} Route version with levels or null
  */
 export async function _resolveRouteVersionForClase(claseId) {
-  const isTestEnv = typeof process !== 'undefined' && (process.env.NODE_ENV === 'test' || process.env.VITEST === 'true')
-  if (!isTestEnv && typeof window !== 'undefined') {
-    return null
-  }
-  const { data: bridge, error: bridgeError } = await supabase
-    .from('class_curriculum_plan')
+  const { data: clase, error: claseError } = await supabase
+    .from('clases')
     .select('route_version_id')
-    .eq('clase_id', claseId)
-    .eq('estado', 'activo')
+    .eq('id', claseId)
     .maybeSingle()
 
-  if (bridgeError) {
-    const code = bridgeError.code || ''
-    const status = bridgeError.status
-    const msg = bridgeError.message || ''
-    if (status === 404 || code === '42P01' || code === 'PGRST116' || msg.includes('404')) {
-      return null
-    }
-    throw bridgeError
-  }
-  if (!bridge?.route_version_id) return null
+  if (claseError) throw claseError
+  if (!clase?.route_version_id) return null
 
   const { data: rv, error: rvError } = await supabase
     .from('route_versions')
     .select('id, version, status, levels(id)')
-    .eq('id', bridge.route_version_id)
+    .eq('id', clase.route_version_id)
     .maybeSingle()
 
   if (rvError) throw rvError
@@ -186,116 +173,88 @@ function _flattenRouteVersionToPlanItems(routeVersion) {
 }
 
 /**
- * Deriva la "guía heredada" de una clase a partir de la ruta PUBLICADA más reciente.
+ * Deriva la guía curricular de una clase a partir de la versión de ruta que
+ * tiene asignada.
+ *
+ * La versión anterior consultaba `route_versions.clase_id`, columna que no
+ * existe: la relación va en sentido contrario, `clases.route_version_id`. Para
+ * evitar el HTTP 400 resultante, la función lanzaba un error a propósito
+ * (`Skip direct query in production`) y caía a un catch que llamaba a un
+ * resolver a su vez cortocircuitado. Todas las ramas devolvían null en el
+ * navegador. Con la relación correcta, la consulta directa alcanza.
  */
 export async function obtenerGuiaHeredadaPorClase(claseId, _maestroId = null) {
-  try {
-    // Evitar hacer consultas fallidas en el navegador en producción real
-    const isTestEnv = typeof process !== 'undefined' && (process.env.NODE_ENV === 'test' || process.env.VITEST === 'true')
-    if (!isTestEnv) {
-      throw new Error('Skip direct query in production (clase_id does not exist on route_versions)')
-    }
+  const rvBasic = await _resolveRouteVersionForClase(claseId)
+  if (!rvBasic) return null
 
-    // Intentar consulta directa (compatible con tests mockeados de Vitest)
-    const { data, error } = await supabase
-      .from('route_versions')
-      .select('*, levels(id, level_number, nodes(id, name, objetivos(id, indicators(id))))')
-      .eq('clase_id', claseId)
-      .eq('status', 'published')
-      .order('created_at', { ascending: false })
-      .limit(1)
+  const { data, error } = await supabase
+    .from('route_versions')
+    .select('*, levels(id, level_number, nodes(id, name, objetivos(id, indicators(id))))')
+    .eq('id', rvBasic.id)
+    .maybeSingle()
 
-    if (error) throw error
+  if (error) throw error
+  if (!data) return null
 
-    const routeVersion = Array.isArray(data) ? data[0] : data
-    if (routeVersion) {
-      const items = _flattenRouteVersionToPlanItems(routeVersion)
-      return {
-        route: routeVersion,
-        plan: { items },
-        source: routeVersion.id,
-      }
-    }
-    return null
-  } catch (err) {
-    // Fallback: resolución real en producción usando el instrumento de la clase
-    const rvBasic = await _resolveRouteVersionForClase(claseId)
-    if (!rvBasic) return null
-
-    const { data: routeVersions, error } = await supabase
-      .from('route_versions')
-      .select('*, levels(id, level_number, nodes(id, name, objetivos(id, indicators(id))))')
-      .eq('id', rvBasic.id)
-      .limit(1)
-
-    if (error) throw error
-    const routeVersion = Array.isArray(routeVersions) ? routeVersions[0] : routeVersions
-    if (!routeVersion) return null
-
-    const items = _flattenRouteVersionToPlanItems(routeVersion)
-    return {
-      route: routeVersion,
-      plan: { items },
-      source: routeVersion.id,
-    }
+  return {
+    route: data,
+    plan: { items: _flattenRouteVersionToPlanItems(data) },
+    source: data.id,
   }
 }
 
 export async function obtenerRutaActivaPorGrupo(groupId) {
-  try {
-    // Evitar hacer consultas fallidas en el navegador en producción real
-    const isTestEnv = typeof process !== 'undefined' && (process.env.NODE_ENV === 'test' || process.env.VITEST === 'true')
-    if (!isTestEnv) {
-      throw new Error('Skip direct query in production (clase_id does not exist on route_versions)')
-    }
+  const rv = await _resolveRouteVersionForClase(groupId)
+  if (!rv) return null
 
-    // Intentar consulta directa (compatible con tests mockeados de Vitest)
-    const { data, error } = await supabase
-      .from('route_versions')
-      .select('id, clase_id, levels(id)')
-      .eq('clase_id', groupId)
-      .eq('status', 'published')
-      .order('created_at', { ascending: false })
-      .limit(1)
-
-    if (error) throw error
-
-    const routeVersion = Array.isArray(data) ? data[0] : data
-    if (routeVersion) {
-      return {
-        id: routeVersion.id,
-        weekly_plan_id: routeVersion.id,
-        group_id: routeVersion.clase_id || groupId,
-        level_id: routeVersion.levels?.[0]?.id || 'nivel_default',
-        current_week: 1,
-        status: 'active',
-      }
-    }
-    return null
-  } catch (err) {
-    // Fallback: resolución real en producción usando el instrumento de la clase
-    const rv = await _resolveRouteVersionForClase(groupId).catch(() => null)
-    if (!rv) return null
-
-    return {
-      id: rv.id,
-      weekly_plan_id: rv.id,
-      group_id: groupId,
-      level_id: rv.levels?.[0]?.id || 'nivel_default',
-      current_week: 1,
-      status: 'active',
-    }
+  return {
+    id: rv.id,
+    weekly_plan_id: rv.id,
+    group_id: groupId,
+    level_id: rv.levels?.[0]?.id || null,
+    current_week: 1,
+    status: 'active',
   }
 }
 
+/**
+ * Ajustes semanales del docente sobre el plan de su grupo.
+ *
+ * Ambas funciones estaban anuladas: la lectura devolvía [] alegando que
+ * `acm_teacher_week_adjustments` había sido eliminada —la tabla existe— y la
+ * escritura devolvía el objeto recibido "simulando éxito". El maestro guardaba
+ * su ajuste, la interfaz confirmaba, y el dato se perdía. Un guardado que miente
+ * cuesta más que uno que falla: el usuario no se entera hasta que necesita el
+ * trabajo y ya no está.
+ */
 export async function obtenerAjustesPlanDocente(groupId, teacherId, weeklyPlanId) {
-  // Retorna vacío debido a la eliminación de acm_teacher_week_adjustments en producción
-  return []
+  let q = supabase
+    .from('acm_teacher_week_adjustments')
+    .select('*')
+    .order('week_number', { ascending: true })
+
+  if (groupId) q = q.eq('group_id', groupId)
+  if (teacherId) q = q.eq('teacher_id', teacherId)
+  if (weeklyPlanId) q = q.eq('weekly_plan_id', weeklyPlanId)
+
+  const { data, error } = await q
+  if (error) throw error
+  return data ?? []
 }
 
 export async function guardarAjustePlanDocente(adjustmentData) {
-  // Retorna el objeto recibido simulando éxito
-  return adjustmentData
+  if (!adjustmentData?.group_id || !adjustmentData?.teacher_id) {
+    throw new Error('El ajuste requiere group_id y teacher_id')
+  }
+
+  const { data, error } = await supabase
+    .from('acm_teacher_week_adjustments')
+    .upsert(adjustmentData)
+    .select()
+    .maybeSingle()
+
+  if (error) throw error
+  return data
 }
 
 export async function crearRutaActiva(routeData) {

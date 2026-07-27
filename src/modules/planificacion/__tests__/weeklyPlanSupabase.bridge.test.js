@@ -7,7 +7,7 @@ let nextId = 1
 
 function resetStore() {
   tables = {
-    class_curriculum_plan: [],
+
     route_versions: [],
     routes: [],
     levels: [],
@@ -130,13 +130,12 @@ describe('weeklyPlanSupabase — stub replacement', () => {
   })
 
   describe('obtenerFuentesCurriculares', () => {
-    it('should return nodes and indicators via bridge for a class', async () => {
-      // Setup bridge
-      tables.class_curriculum_plan.push({
-        id: 'ccp_001',
-        clase_id: 'clase_001',
+    it('devuelve nodos e indicadores de la ruta asignada a la clase', async () => {
+      // La ruta se resuelve por clases.route_version_id, no por una tabla puente.
+      tables.clases.push({
+        id: 'clase_001',
         route_version_id: 'rv_001',
-        estado: 'activo',
+        activo: true,
       })
 
       // Setup route version with hierarchy
@@ -239,12 +238,11 @@ describe('weeklyPlanSupabase — stub replacement', () => {
   })
 
   describe('_resolveRouteVersionForClase', () => {
-    it('should resolve via class_curriculum_plan bridge', async () => {
-      tables.class_curriculum_plan.push({
-        id: 'ccp_001',
-        clase_id: 'clase_001',
+    it('resuelve la versión de ruta desde clases.route_version_id', async () => {
+      tables.clases.push({
+        id: 'clase_001',
         route_version_id: 'rv_001',
-        estado: 'activo',
+        activo: true,
       })
 
       tables.route_versions.push({

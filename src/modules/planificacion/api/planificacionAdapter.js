@@ -24,6 +24,9 @@ export const obtenerPlanificaciones = (maestroId) => impl.obtenerPlanificaciones
 export const obtenerPlanificacion = (id) => impl.obtenerPlanificacion(id)
 export const obtenerPlanificacionesConDetalles = (maestroId) =>
   impl.obtenerPlanificacionesConDetalles(maestroId)
+export const obtenerPlanificacionesPaginadas = (maestroId, params) =>
+  impl.obtenerPlanificacionesPaginadas(maestroId, params)
+export const obtenerCoberturaEvaluacion = (claseId) => impl.obtenerCoberturaEvaluacion(claseId)
 export const crearPlanificacion = (planData) => impl.crearPlanificacion(planData)
 export const actualizarPlanificacion = (id, actualizaciones) =>
   impl.actualizarPlanificacion(id, actualizaciones)

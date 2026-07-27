@@ -30,6 +30,7 @@ import { usePlanificacion } from '../hooks/usePlanificacion.js'
 import { createDslEditorWithToolbar } from '../components/dslToolbar.js'
 import { getAlumnos } from '../../alumnos/api/alumnosApi.js'
 import { renderHistorialContenidosPanel } from '../components/historialContenidosPanel.js'
+import { renderClasePlanificacionView } from './clasePlanificacionView.js'
 
 // ── State ─────────────────────────────────────────────────────────────────────
 const state = {
@@ -178,6 +179,27 @@ function renderContent(container) {
 
       ${statsHtml}
 
+      <ul class="nav nav-tabs mb-4" id="planificacion-tabs" role="tablist">
+        <li class="nav-item">
+          <button class="nav-link planificacion-segment-btn active" data-tab="planes">Planes</button>
+        </li>
+        <li class="nav-item">
+          <button class="nav-link planificacion-segment-btn" data-tab="clase-plan">Planificación de Clase</button>
+        </li>
+        <li class="nav-item">
+          <button class="nav-link planificacion-segment-btn" data-tab="plantillas">Plantillas</button>
+        </li>
+        <li class="nav-item">
+          <button class="nav-link planificacion-segment-btn" data-tab="historial">Historial</button>
+        </li>
+        <li class="nav-item">
+          <button class="nav-link planificacion-segment-btn" data-tab="rutas">Rutas</button>
+        </li>
+        <li class="nav-item">
+          <button class="nav-link planificacion-segment-btn" data-tab="asistente">Asistente</button>
+        </li>
+      </ul>
+
       <!-- Toolbar -->
       <div class="planificacion-filter-toolbar mb-4">
         <div class="premium-search-container flex-grow-1" style="min-width: 200px;">
@@ -269,6 +291,7 @@ function renderContent(container) {
       </div>
       </div>
 
+      <div id="tab-content-clase-plan" style="display:none"></div>
       ${
         !isAdmin
           ? `
@@ -766,7 +789,7 @@ function _attachEvents(container) {
     btn.addEventListener('click', () => {
       state.activeTab = btn.dataset.tab
 
-      const allContent = ['planes', 'plantillas', 'historial', 'rutas', 'asistente']
+      const allContent = ['planes', 'clase-plan', 'plantillas', 'historial', 'rutas', 'asistente']
       allContent.forEach((tab) => {
         const div = container.querySelector(`#tab-content-${tab}`)
         if (div) div.style.display = state.activeTab === tab ? 'block' : 'none'
@@ -776,6 +799,13 @@ function _attachEvents(container) {
         .querySelectorAll('#planificacion-tabs .nav-link')
         .forEach((b) => b.classList.remove('active'))
       btn.classList.add('active')
+
+      if (state.activeTab === 'clase-plan') {
+        const clasePlanDiv = container.querySelector('#tab-content-clase-plan')
+        if (clasePlanDiv) {
+          renderClasePlanificacionView(clasePlanDiv, { maestroId: hook.maestroActualId })
+        }
+      }
 
       if (state.activeTab === 'historial' && !state.historialRendered) {
         const historialDiv = container.querySelector('#tab-content-historial')

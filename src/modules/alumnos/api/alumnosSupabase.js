@@ -112,9 +112,40 @@ export async function crearAlumno(alumno) {
   const nombre = (alumno.nombre || alumno.nombre_completo || '').trim()
   if (!nombre) throw new Error('El nombre es obligatorio')
 
+  // `alumnos.familia_id` es NOT NULL con FK a `familias`: sin familia no hay alta.
+  //
+  // La versión anterior insertaba directo en `familias` con la columna `nombre`,
+  // que no existe —la columna es `nombre_familia`— y además desestructuraba sólo
+  // `data`, nunca `error`. Como el cliente de Supabase no lanza excepción sino que
+  // devuelve `{ data: null, error }`, el try/catch jamás se disparaba: el insert
+  // fallaba en silencio, familiaId quedaba en null, y el fallo reaparecía dos
+  // pasos después como "familia_id violates not-null constraint" — un mensaje que
+  // no menciona la causa real.
+  //
+  // La creación va por RPC porque las políticas no coincidían: escribir en
+  // `alumnos` sólo exige ser maestro, pero escribir en `familias` exigía ser
+  // admin. Un maestro podía crear el alumno y no la familia que ese alumno
+  // necesita obligatoriamente.
+  let familiaId = alumno.familia_id || null
+  let familiaCreadaAqui = false
+
+  if (!familiaId) {
+    const { data, error } = await supabase.rpc('fn_crear_familia_para_alumno', {
+      p_nombre: `Familia ${nombre}`,
+    })
+    if (error) {
+      throw new Error(`No se pudo registrar la familia del alumno: ${error.message}`)
+    }
+    familiaId = data
+    familiaCreadaAqui = true
+  }
+
+  if (!familiaId) {
+    throw new Error('No se pudo determinar la familia del alumno')
+  }
+
   const datosLimpios = {
     nombre_completo: nombre,
-    familia_id: alumno.familia_id || null,
     correo_representante: (alumno.email || '').trim().toLowerCase() || null,
     representante_cedula: (alumno.cedula || alumno.representante_cedula || '').trim() || null,
     instrumento_principal: (alumno.instrumento || '').trim() || null,
@@ -192,14 +223,24 @@ export async function crearAlumno(alumno) {
     autoriza_fotos_redes: alumno.autoriza_fotos_redes ?? false,
   }
 
+  datosLimpios.familia_id = familiaId
+
   const { data, error } = await supabase
     .from('alumnos')
     .insert([datosLimpios])
     .select()
 
   if (error) {
+    // Si la familia se creó en esta misma operación y el alumno no llegó a
+    // insertarse, esa familia queda sin dueño. Se revierte para no acumular
+    // registros que nadie referencia.
+    if (familiaCreadaAqui) {
+      await supabase
+        .rpc('fn_eliminar_familia_huerfana', { p_familia_id: familiaId })
+        .catch(() => {})
+    }
     console.error('Error creando alumno:', error.message)
-    throw new Error('No se pudo crear el alumno')
+    throw new Error(error.message || 'No se pudo crear el alumno')
   }
 
   return normalizeAlumno(data[0])

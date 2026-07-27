@@ -35,7 +35,21 @@ describe('routeSupabase — no deprecated plan_* table reads', () => {
     expect(supabase.from).not.toHaveBeenCalledWith('plan_clases')
   })
 
-  it('getLevelsByClass resolves clase_id -> route_versions.id -> levels, not "plan_niveles"', async () => {
+  // La ruta de una clase se resuelve por `clases.route_version_id`. La versión
+  // anterior consultaba la tabla puente `class_curriculum_plan`, que nunca se
+  // desplegó en producción.
+  function mockClaseConRuta(routeVersionId) {
+    return vi.fn().mockReturnValue({
+      eq: vi.fn().mockReturnValue({
+        maybeSingle: vi.fn().mockResolvedValue({
+          data: { route_version_id: routeVersionId },
+          error: null,
+        }),
+      }),
+    })
+  }
+
+  it('getLevelsByClass resuelve clases.route_version_id -> levels, no "plan_niveles"', async () => {
     const levelsOrder = vi.fn().mockResolvedValue({
       data: [{ id: 'l1', level_number: 1, name: 'Nivel 1' }],
       error: null,
@@ -43,32 +57,29 @@ describe('routeSupabase — no deprecated plan_* table reads', () => {
     const levelsEq = vi.fn().mockReturnValue({ order: levelsOrder })
     const levelsSelect = vi.fn().mockReturnValue({ eq: levelsEq })
 
-    const routeVersionLimit = vi.fn().mockResolvedValue({ data: [{ id: 'rv-1' }], error: null })
-    const routeVersionOrder = vi.fn().mockReturnValue({ limit: routeVersionLimit })
-    const routeVersionEq = vi.fn().mockReturnValue({ order: routeVersionOrder })
-    const routeVersionSelect = vi.fn().mockReturnValue({ eq: routeVersionEq })
-
-    const ccpSelect = vi.fn().mockReturnValue({
-      eq: vi.fn().mockReturnValue({
-        eq: vi.fn().mockReturnValue({
-          maybeSingle: vi.fn().mockResolvedValue({ data: { route_version_id: 'rv-1' }, error: null }),
-        }),
-      }),
-    })
-
     supabase.from.mockImplementation((table) => {
-      if (table === 'class_curriculum_plan') return { select: ccpSelect }
-      if (table === 'route_versions') return { select: routeVersionSelect }
+      if (table === 'clases') return { select: mockClaseConRuta('rv-1') }
       if (table === 'levels') return { select: levelsSelect }
       throw new Error(`Unexpected table: ${table}`)
     })
 
     const levels = await routeSupabase.getLevelsByClass('clase-1')
 
-    expect(supabase.from).toHaveBeenCalledWith('class_curriculum_plan')
+    expect(supabase.from).toHaveBeenCalledWith('clases')
     expect(supabase.from).not.toHaveBeenCalledWith('plan_niveles')
+    expect(supabase.from).not.toHaveBeenCalledWith('class_curriculum_plan')
     expect(levelsEq).toHaveBeenCalledWith('route_version_id', 'rv-1')
     expect(levels[0]).toMatchObject({ numero_nivel: 1, nombre: 'Nivel 1' })
+  })
+
+  it('getLevelsByClass devuelve [] cuando la clase no tiene ruta asignada', async () => {
+    supabase.from.mockImplementation((table) => {
+      if (table === 'clases') return { select: mockClaseConRuta(null) }
+      throw new Error(`Unexpected table: ${table}`)
+    })
+
+    const levels = await routeSupabase.getLevelsByClass('clase-sin-ruta')
+    expect(levels).toEqual([])
   })
 
   it('getNodesByLevel reads from "nodes", not "plan_temas"', async () => {
@@ -123,22 +134,8 @@ describe('routeSupabase — no deprecated plan_* table reads', () => {
     const hierarchyEq = vi.fn().mockReturnValue({ order: hierarchyOrder })
     const hierarchySelect = vi.fn().mockReturnValue({ eq: hierarchyEq })
 
-    const routeVersionLimit = vi.fn().mockResolvedValue({ data: [{ id: 'rv-1' }], error: null })
-    const routeVersionOrder = vi.fn().mockReturnValue({ limit: routeVersionLimit })
-    const routeVersionEq = vi.fn().mockReturnValue({ order: routeVersionOrder })
-    const routeVersionSelect = vi.fn().mockReturnValue({ eq: routeVersionEq })
-
-    const ccpSelect = vi.fn().mockReturnValue({
-      eq: vi.fn().mockReturnValue({
-        eq: vi.fn().mockReturnValue({
-          maybeSingle: vi.fn().mockResolvedValue({ data: { route_version_id: 'rv-1' }, error: null }),
-        }),
-      }),
-    })
-
     supabase.from.mockImplementation((table) => {
-      if (table === 'class_curriculum_plan') return { select: ccpSelect }
-      if (table === 'route_versions') return { select: routeVersionSelect }
+      if (table === 'clases') return { select: mockClaseConRuta('rv-1') }
       if (table === 'levels') return { select: hierarchySelect }
       throw new Error(`Unexpected table: ${table}`)
     })
@@ -146,7 +143,8 @@ describe('routeSupabase — no deprecated plan_* table reads', () => {
     const levels = await routeSupabase.getFullHierarchy('clase-1')
 
     const calledTables = supabase.from.mock.calls.map((call) => call[0])
-    expect(calledTables).toContain('class_curriculum_plan')
+    expect(calledTables).toContain('clases')
+    expect(calledTables).not.toContain('class_curriculum_plan')
     expect(calledTables).not.toContain('plan_clases')
     expect(calledTables).not.toContain('plan_niveles')
     expect(calledTables).not.toContain('plan_temas')

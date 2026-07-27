@@ -114,6 +114,83 @@ export async function obtenerPlanificacionesConDetalles(maestroId = null) {
     )
 }
 
+export async function obtenerPlanificacionesPaginadas(maestroId = null, { page = 1, pageSize = 20, searchTerm = '', filterClaseId = '', filterEstado = '' } = {}) {
+  await _simulateDelay()
+  _ensureStore()
+
+  let results = _data
+  if (maestroId) {
+    results = results.filter((p) => p.maestro_id === maestroId)
+  }
+  if (filterClaseId) {
+    results = results.filter((p) => p.clase_id === filterClaseId)
+  }
+  if (filterEstado) {
+    results = results.filter((p) => p.estado === filterEstado)
+  }
+
+  if (searchTerm && searchTerm.trim()) {
+    const term = searchTerm.toLowerCase()
+    results = results.filter(p => 
+      (p.tema || p.titulo || '').toLowerCase().includes(term) ||
+      (p.contenido || '').toLowerCase().includes(term) ||
+      (p.objetivos || '').toLowerCase().includes(term)
+    )
+  }
+
+  const totalCount = results.length
+
+  const from = (page - 1) * pageSize
+  const to = from + pageSize
+  const sliced = results
+    .sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0))
+    .slice(from, to)
+
+  const clases = MOCK_CLASES?.clases || []
+  const maestros = MOCK_MAESTROS || []
+
+  return {
+    data: sliced.map(
+      (p) =>
+        new Planificacion({
+          ...p,
+          clase_nombre: clases.find((c) => c.id === p.clase_id)?.nombre || 'Sin asignar',
+          maestro_nombre:
+            maestros.find((m) => m.id === p.maestro_id)?.nombre_completo || 'Sin asignar',
+        }),
+    ),
+    totalCount
+  }
+}
+
+export async function obtenerCoberturaEvaluacion(claseId) {
+  await _simulateDelay()
+  // Mock verosímil de cobertura académica
+  const seed = claseId.charCodeAt(0) || 1
+  const evaluated_indicators = (seed % 4) + 1
+  const total_indicators = 5
+  const total_students = (seed % 10) + 5
+  const evaluated_students = (seed % 5) + 3
+  const coverage_pct = Math.round((evaluated_indicators / total_indicators) * 100)
+  
+  return {
+    total_indicators,
+    evaluated_indicators,
+    total_students,
+    evaluated_students,
+    coverage_pct,
+    by_teacher: [
+      {
+        teacher_name: 'Manuel Marcano',
+        teacher_id: 'maestro-001',
+        evaluated: evaluated_indicators,
+        total: total_indicators,
+        pct: coverage_pct
+      }
+    ]
+  }
+}
+
 export async function crearPlanificacion(planData) {
   await _simulateDelay()
   _ensureStore()

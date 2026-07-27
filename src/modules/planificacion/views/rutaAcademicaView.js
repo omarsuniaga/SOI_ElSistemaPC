@@ -49,7 +49,7 @@ export async function renderRutaAcademicaView(container) {
       <div id="ra-tree-container" class="ra-tree-container">
         <div class="ra-placeholder">
           <i class="bi bi-arrow-up-circle"></i>
-          <p>Seleccioná una clase para ver su ruta académica</p>
+          <p>Seleccione una clase para ver su ruta académica</p>
         </div>
       </div>
     </div>
@@ -69,7 +69,7 @@ export async function renderRutaAcademicaView(container) {
         container.querySelector('#ra-tree-container').innerHTML = `
           <div class="ra-placeholder">
             <i class="bi bi-arrow-up-circle"></i>
-            <p>Seleccioná una clase para ver su ruta académica</p>
+          <p>Seleccione una clase para ver su ruta académica</p>
           </div>`
         container.querySelector('#ra-stats').innerHTML = ''
       }

@@ -24,30 +24,30 @@ export async function getClasses(maestroId = null) {
  * no hay, la más reciente por created_at) antes de leer levels/nodes.
  */
 /**
- * Resolve the route_version_id for a class via the class_curriculum_plan bridge.
- * Replaces the previous instrument-based hack with a direct FK lookup.
+ * Resuelve la versión de ruta de una clase leyendo `clases.route_version_id`.
  *
- * @param {string} claseId - ID of the class
- * @returns {Promise<string|null>} route_version_id or null if no bridge exists
+ * La versión anterior consultaba la tabla puente `class_curriculum_plan`, que
+ * nunca llegó a existir en producción: su migración quedó sin aplicar. Para que
+ * la consulta fallida no ensuciara la consola, la función cortaba antes de
+ * intentarla —`if (!isTestEnv && typeof window !== 'undefined') return null`—
+ * de modo que en el navegador devolvía null siempre y `getLevelsByClass`
+ * respondía [] para toda clase. Los tests pasaban porque la rama se saltea bajo
+ * Vitest y el mock responde.
+ *
+ * El puente era innecesario: `clases.route_version_id` ya modela esa relación.
+ *
+ * @param {string} claseId
+ * @returns {Promise<string|null>} route_version_id, o null si la clase no tiene ruta asignada
  */
 async function _resolveRouteVersionIdForClase(claseId) {
-  const isTestEnv = typeof process !== 'undefined' && (process.env.NODE_ENV === 'test' || process.env.VITEST === 'true')
-  if (!isTestEnv && typeof window !== 'undefined') {
-    return null
-  }
-  try {
-    const { data, error } = await supabase
-      .from('class_curriculum_plan')
-      .select('route_version_id')
-      .eq('clase_id', claseId)
-      .eq('estado', 'activo')
-      .maybeSingle()
+  const { data, error } = await supabase
+    .from('clases')
+    .select('route_version_id')
+    .eq('id', claseId)
+    .maybeSingle()
 
-    if (error) throw error
-    return data?.route_version_id || null
-  } catch (_err) {
-    return null
-  }
+  if (error) throw error
+  return data?.route_version_id || null
 }
 
 export async function getLevelsByClass(classId) {

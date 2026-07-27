@@ -56,6 +56,94 @@ export async function obtenerPlanificacionesConDetalles(maestroId = null) {
   )
 }
 
+/**
+ * Igual que obtenerPlanificacionesConDetalles pero paginada, filtrada y buscable.
+ *
+ * Existía sólo en planificacionMock: en producción el adaptador resolvía a este
+ * módulo y la llamada moría con "impl.obtenerPlanificacionesPaginadas is not a
+ * function", dejando las vistas de Planificaciones y Todos los planes en blanco.
+ * El mock la tenía porque el modo demo sí se probó; esta ruta no.
+ *
+ * Contrato que espera usePlanificacion: `{ data, totalCount }`.
+ */
+export async function obtenerPlanificacionesPaginadas(
+  maestroId = null,
+  { page = 1, pageSize = 20, searchTerm = '', filterClaseId = '', filterEstado = '' } = {},
+) {
+  let query = supabase
+    .from('planificaciones')
+    .select(
+      `*, clase:clases (nombre), maestro:maestros (nombre_completo)`,
+      { count: 'exact' },
+    )
+
+  if (maestroId) query = query.eq('maestro_id', maestroId)
+  if (filterClaseId) query = query.eq('clase_id', filterClaseId)
+  if (filterEstado) query = query.eq('estado', filterEstado)
+
+  const termino = searchTerm.trim()
+  if (termino) {
+    // Sólo columnas de texto reales. El mock buscaba en `tema`, `contenido` y
+    // `objetivos`, que no existen en el esquema; `contenidos` sí existe pero es
+    // jsonb y no admite ilike.
+    const t = termino.replace(/[%,()]/g, '')
+    query = query.or(`titulo.ilike.%${t}%,descripcion.ilike.%${t}%`)
+  }
+
+  const desde = (page - 1) * pageSize
+  const { data, error, count } = await query
+    .order('created_at', { ascending: false })
+    .range(desde, desde + pageSize - 1)
+
+  if (error) {
+    console.error('Error cargando planificaciones:', error.message)
+    throw new Error('No se pudieron cargar las planificaciones')
+  }
+
+  return {
+    data: (data ?? []).map(
+      (p) =>
+        new Planificacion({
+          ...p,
+          clase_nombre: p.clase?.nombre || 'Sin asignar',
+          maestro_nombre: p.maestro?.nombre_completo || 'Sin asignar',
+        }),
+    ),
+    totalCount: count ?? 0,
+  }
+}
+
+/**
+ * Cobertura de evaluación por indicadores de una clase.
+ *
+ * Era la otra función que el adaptador delegaba y sólo existía en el mock: la
+ * vista de evaluaciones habría fallado igual que las de planificación en cuanto
+ * alguien abriera esa pantalla.
+ *
+ * Delega en fn_evaluacion_cobertura, que resuelve el conteo del lado del
+ * servidor en vez de traer todos los intentos al navegador para contarlos.
+ */
+export async function obtenerCoberturaEvaluacion(claseId) {
+  if (!claseId) {
+    return {
+      total_indicators: 0, evaluated_indicators: 0,
+      total_students: 0, evaluated_students: 0,
+      coverage_pct: 0, by_teacher: [],
+    }
+  }
+
+  const { data, error } = await supabase.rpc('fn_evaluacion_cobertura', {
+    p_clase_id: claseId,
+  })
+
+  if (error) {
+    console.error('Error cargando cobertura de evaluación:', error.message)
+    throw new Error('No se pudo cargar la cobertura de evaluación')
+  }
+
+  return data
+}
+
 export async function crearPlanificacion(planData) {
   const model = new Planificacion(planData)
   const errores = model.validate()

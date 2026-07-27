@@ -415,7 +415,7 @@ function _buildModalHTML(isEdit, plan, clases, maestros, plantillas = []) {
                 </button>
               </div>
               <div class="form-text mt-2" id="pl-clase-note">
-                Selecciona una clase para cargar su gu?a, revisar contenidos y abrir su perfil curricular.
+                Selecciona una clase para cargar su guía, revisar contenidos y abrir su perfil curricular.
               </div>
               <div id="pl-clase-picker-host" class="d-none"></div>
             </div>

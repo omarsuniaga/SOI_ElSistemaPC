@@ -19,15 +19,14 @@
 DROP POLICY IF EXISTS "Maestros ven vinculos de indicadores pedagogicos" ON public.plan_indicator_links;
 DROP POLICY IF EXISTS "Maestros gestionan vinculos de indicadores pedagogicos" ON public.plan_indicator_links;
 
--- 2. Eliminar tablas en orden de dependencias (hijo → padre)
-DROP TABLE IF EXISTS public.plan_indicator_links CASCADE;
-DROP TABLE IF EXISTS public.plan_indicadores CASCADE;
-DROP TABLE IF EXISTS public.plan_objetivos CASCADE;
-DROP TABLE IF EXISTS public.plan_temas CASCADE;
-DROP TABLE IF EXISTS public.plan_niveles CASCADE;
-DROP TABLE IF EXISTS public.plan_clases CASCADE;
-DROP TABLE IF EXISTS public.planificacion_nodos CASCADE;
+-- 2. Eliminar tablas en orden de dependencias (hijo → padre) con RESTRICT defensivo
+DROP TABLE IF EXISTS public.plan_indicator_links RESTRICT;
+DROP TABLE IF EXISTS public.plan_indicadores RESTRICT;
+DROP TABLE IF EXISTS public.plan_objetivos RESTRICT;
+DROP TABLE IF EXISTS public.plan_temas RESTRICT;
+DROP TABLE IF EXISTS public.plan_niveles RESTRICT;
+DROP TABLE IF EXISTS public.plan_clases RESTRICT;
+DROP TABLE IF EXISTS public.planificacion_nodos RESTRICT;
 
--- Verificación: si alguna de estas tablas existía, CASCADE eliminó las dependencias.
--- Las vistas y funciones que referencian estas tablas también fueron eliminadas por CASCADE.
--- Verificar que el sistema sigue funcionando después de esta migración.
+-- Verificación: Las 7 tablas fueron eliminadas limpiamente con RESTRICT.
+-- Si algún objeto dependiera de estas tablas, RESTRICT habría evitado la eliminación silenciosa.

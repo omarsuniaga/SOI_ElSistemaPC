@@ -4,9 +4,9 @@ import { resolve } from 'path'
 
 /**
  * Migration validation tests for:
- * - 20260722_planificacion_rediseño_modificaciones.sql (Task 1.2)
- * - 20260722_planificacion_rediseño_limpieza.sql (Task 1.3)
- * - 20260722_planificacion_rediseño_rpcs.sql (Task 1.4)
+ * - 20260722000002_planificacion_rediseño_modificaciones.sql (Task 1.2)
+ * - 20260722000000_planificacion_rediseño_limpieza.sql (Task 1.3)
+ * - 20260722000003_planificacion_rediseño_rpcs.sql (Task 1.4)
  */
 
 const P = (name) => `(public\\.)?${name}`
@@ -25,9 +25,9 @@ let limpieza
 let rpcs
 
 beforeAll(() => {
-  modificaciones = readMigration('20260722_planificacion_rediseño_modificaciones.sql')
-  limpieza = readMigration('20260722_planificacion_rediseño_limpieza.sql')
-  rpcs = readMigration('20260722_planificacion_rediseño_rpcs.sql')
+  modificaciones = readMigration('20260722000002_planificacion_rediseño_modificaciones.sql')
+  limpieza = readMigration('20260722000000_planificacion_rediseño_limpieza.sql')
+  rpcs = readMigration('20260722000003_planificacion_rediseño_rpcs.sql')
 })
 
 // ============================================================================
@@ -95,33 +95,37 @@ describe('Migration: planificacion_rediseño_limpieza.sql', () => {
     })
   })
 
+  // Se exige RESTRICT y no CASCADE: se verifico contra produccion que cero vistas
+  // y cero funciones dependen de estas tablas, de modo que RESTRICT no bloquea el
+  // borrado. Si en el futuro algo pasara a depender de ellas, RESTRICT falla y
+  // avisa, mientras que CASCADE se lo llevaria por delante en silencio.
   describe('DROP deprecated plan_* tables', () => {
-    it('should DROP TABLE IF EXISTS plan_indicator_links CASCADE', () => {
-      expect(limpieza).toMatch(/DROP\s+TABLE\s+IF\s+EXISTS\s+(public\.)?plan_indicator_links\s+CASCADE/i)
+    it('should DROP TABLE IF EXISTS plan_indicator_links RESTRICT', () => {
+      expect(limpieza).toMatch(/DROP\s+TABLE\s+IF\s+EXISTS\s+(public\.)?plan_indicator_links\s+RESTRICT/i)
     })
 
-    it('should DROP TABLE IF EXISTS plan_indicadores CASCADE', () => {
-      expect(limpieza).toMatch(/DROP\s+TABLE\s+IF\s+EXISTS\s+(public\.)?plan_indicadores\s+CASCADE/i)
+    it('should DROP TABLE IF EXISTS plan_indicadores RESTRICT', () => {
+      expect(limpieza).toMatch(/DROP\s+TABLE\s+IF\s+EXISTS\s+(public\.)?plan_indicadores\s+RESTRICT/i)
     })
 
-    it('should DROP TABLE IF EXISTS plan_objetivos CASCADE', () => {
-      expect(limpieza).toMatch(/DROP\s+TABLE\s+IF\s+EXISTS\s+(public\.)?plan_objetivos\s+CASCADE/i)
+    it('should DROP TABLE IF EXISTS plan_objetivos RESTRICT', () => {
+      expect(limpieza).toMatch(/DROP\s+TABLE\s+IF\s+EXISTS\s+(public\.)?plan_objetivos\s+RESTRICT/i)
     })
 
-    it('should DROP TABLE IF EXISTS plan_temas CASCADE', () => {
-      expect(limpieza).toMatch(/DROP\s+TABLE\s+IF\s+EXISTS\s+(public\.)?plan_temas\s+CASCADE/i)
+    it('should DROP TABLE IF EXISTS plan_temas RESTRICT', () => {
+      expect(limpieza).toMatch(/DROP\s+TABLE\s+IF\s+EXISTS\s+(public\.)?plan_temas\s+RESTRICT/i)
     })
 
-    it('should DROP TABLE IF EXISTS plan_niveles CASCADE', () => {
-      expect(limpieza).toMatch(/DROP\s+TABLE\s+IF\s+EXISTS\s+(public\.)?plan_niveles\s+CASCADE/i)
+    it('should DROP TABLE IF EXISTS plan_niveles RESTRICT', () => {
+      expect(limpieza).toMatch(/DROP\s+TABLE\s+IF\s+EXISTS\s+(public\.)?plan_niveles\s+RESTRICT/i)
     })
 
-    it('should DROP TABLE IF EXISTS plan_clases CASCADE', () => {
-      expect(limpieza).toMatch(/DROP\s+TABLE\s+IF\s+EXISTS\s+(public\.)?plan_clases\s+CASCADE/i)
+    it('should DROP TABLE IF EXISTS plan_clases RESTRICT', () => {
+      expect(limpieza).toMatch(/DROP\s+TABLE\s+IF\s+EXISTS\s+(public\.)?plan_clases\s+RESTRICT/i)
     })
 
-    it('should DROP TABLE IF EXISTS planificacion_nodos CASCADE', () => {
-      expect(limpieza).toMatch(/DROP\s+TABLE\s+IF\s+EXISTS\s+(public\.)?planificacion_nodos\s+CASCADE/i)
+    it('should DROP TABLE IF EXISTS planificacion_nodos RESTRICT', () => {
+      expect(limpieza).toMatch(/DROP\s+TABLE\s+IF\s+EXISTS\s+(public\.)?planificacion_nodos\s+RESTRICT/i)
     })
   })
 

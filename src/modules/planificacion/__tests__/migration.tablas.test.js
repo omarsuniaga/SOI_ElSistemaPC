@@ -10,7 +10,7 @@ import { resolve } from 'path'
 
 const MIGRATION_PATH = resolve(
   process.cwd(),
-  'supabase/migrations/20260722_planificacion_rediseño_tablas.sql'
+  'supabase/migrations/20260722000001_planificacion_rediseño_tablas.sql'
 )
 
 let sql

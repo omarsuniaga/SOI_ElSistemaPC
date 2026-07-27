@@ -11,6 +11,8 @@ import { getMisClases, getInscripcionesClases } from '../services/maestroDataSer
 import * as weeklyPlanAdapter from '../../modules/planificacion/api/weeklyPlanAdapter.js'
 import { announce } from '../utils/a11yUtils.js'
 import { AppToast } from '../../shared/components/AppToast.js'
+import { createPlanClasePanel } from '../components/planning/PlanClasePanel.js'
+import { supabase } from '../../lib/supabaseClient.js'
 import * as bootstrap from 'bootstrap'
 
 // ─── Constantes ────────────────────────────────────────────────────────────────
@@ -728,6 +730,7 @@ export async function renderPlanificacionView(container, { maestroId }) {
           <!-- Pestañas -->
           <div style="display:flex; gap:0; padding:0 1.5rem; border-bottom:1px solid var(--pm-border); overflow-x:auto;">
             ${tabBtn('general',     '📋', 'Perfil')}
+            ${tabBtn('plan',        '📝', 'Mi Plan')}
             ${tabBtn('temas',       '📅', 'Temas y Ajustes')}
             ${tabBtn('indicadores', '🎯', 'Indicadores')}
           </div>
@@ -783,6 +786,11 @@ export async function renderPlanificacionView(container, { maestroId }) {
                   </div>
                 </div>
               </div>
+            </div>
+
+            <!-- ── Pestaña: Mi Plan ── -->
+            <div class="pm-tab-pane ${initialTab === 'plan' ? '' : 'd-none'}" data-pane="plan">
+              <div id="pm-plan-clase-host"></div>
             </div>
 
             <!-- ── Pestaña: Temas y Ajustes ── -->
@@ -962,8 +970,42 @@ export async function renderPlanificacionView(container, { maestroId }) {
         const target = btn.dataset.tab
         allTabBtns.forEach((b) => b.classList.toggle('active', b.dataset.tab === target))
         allTabPanes.forEach((p) => p.classList.toggle('d-none', p.dataset.pane !== target))
+        if (target === 'plan') _montarPanelPlan()
       })
     })
+
+    // ── Pestaña "Mi Plan" ────────────────────────────────────────────────────
+    // Se monta al abrirla por primera vez y no antes: consulta la base, y la
+    // mayoría de las veces el maestro entra al modal para otra cosa.
+    let panelPlan = null
+    async function _montarPanelPlan() {
+      if (panelPlan) return
+      const host = classDetailModal.querySelector('#pm-plan-clase-host')
+      if (!host) return
+
+      // El período en curso rotula el plan. Si no hay ninguno activo el plan se
+      // guarda igual, sin período: es preferible a bloquear al maestro por una
+      // configuración que no depende de él.
+      let periodoActivo = null
+      try {
+        const { data } = await supabase
+          .from('periodos')
+          .select('nombre, fecha_inicio, fecha_fin')
+          .eq('activo', true)
+          .maybeSingle()
+        periodoActivo = data ?? null
+      } catch {
+        periodoActivo = null
+      }
+
+      panelPlan = createPlanClasePanel(host, {
+        clase,
+        periodoActivo,
+        onCambio: () => announce('Plan de clase actualizado'),
+      })
+    }
+
+    if (initialTab === 'plan') _montarPanelPlan()
 
     // ── Acordeón de semanas (implementación manual) ──────────────────────────
     classDetailModal.querySelectorAll('.pm-week-header').forEach((header) => {

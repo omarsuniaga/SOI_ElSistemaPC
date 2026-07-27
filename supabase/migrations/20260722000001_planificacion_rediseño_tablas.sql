@@ -1,10 +1,11 @@
 -- ============================================================================
+-- 📦 ARCHIVADO / OMITIDO DE DESPLIEGUE
 -- MIGRACION: Rediseño Planificación de Clases — Tablas Nuevas
 -- Fecha: 2026-07-22
--- Descripción: Crea las 3 tablas del nuevo modelo de planificación:
---   1. class_curriculum_plan (bridge clase → ruta)
---   2. clase_objetivos (vinculación planificación ↔ nodos/indicadores)
---   3. evaluacion_indicador (evaluación por indicador por alumno)
+-- Razón de Omisión:
+--   1. RLS permisivo inseguro: auth.role() = 'authenticated' sin WITH CHECK.
+--   2. Tablas pre-creadas vacías en producción.
+--   3. FK NOT NULL bloqueante contra planificaciones (0 filas).
 -- ============================================================================
 
 -- ============================================================================

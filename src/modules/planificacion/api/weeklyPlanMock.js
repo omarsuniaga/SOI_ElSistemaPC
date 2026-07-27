@@ -120,7 +120,7 @@ export async function obtenerVersionesCurriculares() {
   return [..._data.curriculum_versions]
 }
 
-export async function obtenerPlanSemanalPorNivel(levelId, instrument = 'viol?n') {
+export async function obtenerPlanSemanalPorNivel(levelId, instrument = 'violín') {
   await _delay()
   _ensureStore()
   const plan = _data.weekly_plans.find(
@@ -166,7 +166,7 @@ export async function publicarVersionCurricular(versionId) {
   await _delay()
   _ensureStore()
   const idx = _data.curriculum_versions.findIndex((v) => v.id === versionId)
-  if (idx === -1) throw new Error('Versi?n curricular no encontrada')
+  if (idx === -1) throw new Error('Versión curricular no encontrada')
 
   const timestamp = new Date().toISOString()
   _data.curriculum_versions = _data.curriculum_versions.map((version) => {

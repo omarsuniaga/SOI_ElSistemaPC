@@ -1,8 +1,9 @@
 -- ============================================================================
+-- 📦 ARCHIVADO / OMITIDO DE DESPLIEGUE
 -- MIGRACION: Rediseño Planificación — RPCs
 -- Fecha: 2026-07-22
--- Descripción: Funciones RPC para el módulo de planificación rediseñado.
--- DEBE ejecutarse DESPUÉS de 20260722_planificacion_rediseño_tablas.sql
+-- Razón de Omisión:
+--   1. Depende del modelo de bridge class_curriculum_plan omitido.
 -- ============================================================================
 
 -- ============================================================================

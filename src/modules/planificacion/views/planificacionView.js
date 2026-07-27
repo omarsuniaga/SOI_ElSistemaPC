@@ -127,8 +127,8 @@ function renderContent(container) {
   const headerDesc = state.viewMode === 'acm'
     ? 'ACM define, versiona y publica. El portal de maestros solo hereda lo activo.'
     : isAdmin
-      ? `${hook.planificaciones.length} planes pendientes de revisi?n`
-      : 'Vista de consulta. La gu?a se hereda desde ACM para esta clase.'
+      ? `${hook.planificaciones.length} planes pendientes de revisión`
+      : 'Vista de consulta. La guía se hereda desde ACM para esta clase.'
 
   // Stats for admin mode
   const statsHtml = state.viewMode === 'acm' ? _renderAcmAuthorityPanel() : isAdmin ? _renderAdminStats() : ''
@@ -147,18 +147,18 @@ function renderContent(container) {
           </div>
         </div>
         <div class="planificacion-header-actions">
-          <button class="btn-help-trigger" id="btn-help-planificacion" title="?C?mo funciona esta pantalla?" aria-label="Ayuda">
+          <button class="btn-help-trigger" id="btn-help-planificacion" title="¿Cómo funciona esta pantalla?" aria-label="Ayuda">
             <i class="bi bi-question"></i>
           </button>
           ${
             (isAdmin || state.viewMode === 'acm')
               ? `
             <button class="btn btn-outline-secondary btn-sm" id="btn-curriculo-admin">
-              <i class="bi bi-journal-bookmark me-1"></i>Curr?culo
+              <i class="bi bi-journal-bookmark me-1"></i>Currículo
             </button>
             ${state.viewMode === 'acm' ? `
             <button class="btn btn-outline-primary btn-sm" id="btn-publicar-version">
-              <i class="bi bi-broadcast me-1"></i>Publicar Versi?n
+              <i class="bi bi-broadcast me-1"></i>Publicar Versión
             </button>
             <button class="btn btn-outline-info btn-sm" id="btn-asignar-ruta-acm">
               <i class="bi bi-diagram-3 me-1"></i>Asignar Ruta
@@ -170,7 +170,7 @@ function renderContent(container) {
           `
               : `
             <button class="btn btn-outline-info btn-sm" id="btn-ver-guia-acm">
-              <i class="bi bi-diagram-3 me-1"></i>Ver gu?a ACM
+              <i class="bi bi-diagram-3 me-1"></i>Ver guía ACM
             </button>
           `
           }
@@ -263,8 +263,8 @@ function renderContent(container) {
         <div class="d-flex align-items-start gap-3">
           <i class="bi bi-diagram-3 fs-4"></i>
           <div>
-            <div class="fw-bold">C?mo usar esta planificaci?n</div>
-            <div class="small">1) Elige tu clase. 2) Revisa el perfil de temas e indicadores. 3) Ajusta la ejecuci?n semanal sin romper la gu?a publicada. 4) Marca vistos, avances y observaciones desde la clase seleccionada.</div>
+            <div class="fw-bold">Cómo usar esta planificación</div>
+            <div class="small">1) Elige tu clase. 2) Revisa el perfil de temas e indicadores. 3) Ajusta la ejecución semanal sin romper la guía publicada. 4) Marca vistos, avances y observaciones desde la clase seleccionada.</div>
           </div>
         </div>
       </div>` : ''}
@@ -298,7 +298,7 @@ function renderContent(container) {
       <div id="tab-content-plantillas" style="display:none">
         <div class="alert alert-info border-0 py-3" style="font-size:0.875rem;">
           <i class="bi bi-file-earmark-template me-2"></i>
-          Las plantillas de planificaci?n estar?n disponibles pr?ximamente.
+          Las plantillas de planificación estarán disponibles próximamente.
         </div>
       </div>
       <div id="tab-content-historial" style="display:none"></div>
@@ -405,8 +405,8 @@ function _renderAcmAuthorityPanel() {
                       <div class="rounded border p-2">
                         <div class="d-flex justify-content-between align-items-start gap-2">
                           <div>
-                            <div class="fw-semibold">${escapeHTML(v.name || 'Versi?n')}</div>
-                            <small class="text-muted">${escapeHTML(v.source?.title || v.description || 'Sin descripci?n')}</small>
+                            <div class="fw-semibold">${escapeHTML(v.name || 'Versión')}</div>
+                            <small class="text-muted">${escapeHTML(v.source?.title || v.description || 'Sin descripción')}</small>
                           </div>
                           <span class="badge ${v.status === 'active' ? 'text-bg-success' : v.status === 'approved' ? 'text-bg-primary' : 'text-bg-secondary'}">${escapeHTML(v.status || 'draft')}</span>
                         </div>
@@ -431,7 +431,7 @@ function _renderAcmAuthorityPanel() {
                       <div class="d-flex justify-content-between align-items-center rounded border p-2">
                         <div>
                           <div class="fw-semibold">Grupo ${escapeHTML(r.group_id || '?')}</div>
-                          <small class="text-muted">Semana ${r.current_week || 1} ? ${escapeHTML(r.status || 'active')}</small>
+                          <small class="text-muted">Semana ${r.current_week || 1} · ${escapeHTML(r.status || 'active')}</small>
                         </div>
                         <span class="badge text-bg-success">Activa</span>
                       </div>
@@ -746,13 +746,13 @@ function _attachEvents(container) {
   if (!isAdmin) {
     container.querySelector('#btn-ver-guia-acm')?.addEventListener('click', () => {
       AppModal.open({
-        title: 'Gu?a heredada desde ACM',
+        title: 'Guía heredada desde ACM',
         saveText: 'Entendido',
         size: 'md',
         body: `
           <div class="alert alert-info border-0 mb-0">
-            <div class="fw-bold mb-2">La planificaci?n oficial vive en ACM</div>
-            <p class="mb-0 small">Desde aqu? solo consult?s la gu?a que ACM public? para tu clase. Si necesit?s correcciones, se solicitan en ACM.</p>
+            <div class="fw-bold mb-2">La planificación oficial vive en ACM</div>
+            <p class="mb-0 small">Desde aqu? solo consultás la guía que ACM public? para tu clase. Si necesitás correcciones, se solicitan en ACM.</p>
           </div>
         `,
         onSave: async () => true,
@@ -930,7 +930,7 @@ function _toggleBulkBtn() {
 async function _publicarVersionDesdePanel(versionId) {
   try {
     await publicarVersionCurricular(versionId)
-    AppToast.success('Versi?n curricular publicada')
+    AppToast.success('Versión curricular publicada')
     renderPlanificacionView(state.container, { viewMode: 'acm' })
   } catch (error) {
     AppToast.error(error.message)
@@ -949,22 +949,22 @@ function _openAcmPublishModal() {
     .join('')
 
   AppModal.open({
-    title: 'Publicar versi?n curricular',
+    title: 'Publicar versión curricular',
     saveText: 'Publicar',
     size: 'md',
     body: `
       <div class="d-grid gap-2">
-        <label class="form-label-compact">Selecciona la versi?n a publicar</label>
+        <label class="form-label-compact">Selecciona la versión a publicar</label>
         <select class="form-select input-dense" id="acm-version-select">${options}</select>
         <div class="alert alert-info small mb-0">
-          La versi?n activa define la ruta oficial que el portal de maestros hereda por clase.
+          La versión activa define la ruta oficial que el portal de maestros hereda por clase.
         </div>
       </div>
     `,
     onSave: async (modalBody) => {
       const versionId = modalBody.querySelector('#acm-version-select')?.value
       if (!versionId) {
-        AppToast.error('Selecciona una versi?n')
+        AppToast.error('Selecciona una versión')
         return false
       }
       await _publicarVersionDesdePanel(versionId)
@@ -1007,9 +1007,9 @@ async function _openAcmRouteModal() {
           </select>
         </div>
         <div class="col-md-6">
-          <label class="form-label-compact">Versi?n curricular</label>
+          <label class="form-label-compact">Versión curricular</label>
           <select class="form-select input-dense" id="acm-route-version" required>
-            <option value="">Seleccionar versi?n...</option>
+            <option value="">Seleccionar versión...</option>
             ${versionOptions}
           </select>
         </div>
@@ -1031,7 +1031,7 @@ async function _openAcmRouteModal() {
       const levelId = modalBody.querySelector('#acm-route-level')?.value?.trim() || null
 
       if (!groupId || !teacherId || !versionId) {
-        AppToast.error('Completa clase, maestro y versi?n')
+        AppToast.error('Completa clase, maestro y versión')
         return false
       }
 

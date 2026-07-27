@@ -1,8 +1,10 @@
 -- ============================================================================
+-- 📦 ARCHIVADO / OMITIDO DE DESPLIEGUE
 -- MIGRACION: Rediseño Planificación — Modificar Tablas Existentes
 -- Fecha: 2026-07-22
--- Descripción: Agrega FKs a planificaciones y migra datos existentes.
--- DEBE ejecutarse DESPUÉS de 20260722_planificacion_rediseño_tablas.sql
+-- Razón de Omisión:
+--   1. Bug de matcheo por instrumento con ILIKE (no funciona con plurales/acentos).
+--   2. DISTINCT ON sin ORDER BY (asociación no determinista).
 -- ============================================================================
 
 -- ============================================================================

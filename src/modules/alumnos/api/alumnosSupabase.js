@@ -114,6 +114,7 @@ export async function crearAlumno(alumno) {
 
   const datosLimpios = {
     nombre_completo: nombre,
+    familia_id: alumno.familia_id || null,
     correo_representante: (alumno.email || '').trim().toLowerCase() || null,
     representante_cedula: (alumno.cedula || alumno.representante_cedula || '').trim() || null,
     instrumento_principal: (alumno.instrumento || '').trim() || null,

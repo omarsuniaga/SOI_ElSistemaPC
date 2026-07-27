@@ -24,6 +24,7 @@ import {
 import { AsistenciaTour } from '../components/AsistenciaTour.js'
 import { AppToast } from '../../shared/components/AppToast.js'
 import { invalidateView as navInvalidateView } from '../services/navigationHooks.js'
+import { eliminarSesion } from '../../modules/planificacion/api/sesionesSupabase.js'
 import { createStudentProgressPanel } from '../components/studentProgressPanel.js'
 import { createSessionSummaryPanel } from '../components/SessionSummaryPanel.js'
 import { consumeRutaTema } from '../services/rutaTopicStore.js'
@@ -72,6 +73,8 @@ import { createAttendanceHeader } from '../components/attendance/AttendanceHeade
 import { createRouteTopicAutoInjector } from '../components/attendance/RouteTopicAutoInjector.js'
 import { createPlanificationCard } from '../components/attendance/PlanificationCard.js'
 import { createDslSection } from '../components/attendance/DslSection.js'
+import { createCategoriaTrabajoBar } from '../components/attendance/CategoriaTrabajoBar.js'
+import { confirmarCategoria } from '../api/nodoSesionApi.js'
 import { createBulkActions } from '../components/attendance/BulkActions.js'
 import { createAutoDraftManager } from '../components/attendance/AutoDraftManager.js'
 import { createJustifModalManager } from '../components/attendance/JustifModalManager.js'
@@ -103,7 +106,8 @@ async function _renderEmergenteSesion(container, { sesionId, fecha, maestro, rou
       .single()
 
     if (error || !sesion) {
-      container.innerHTML = `<p class="pm-empty">Sesión no encontrada.</p>`
+      if (router?.navigate) router.navigate('fechas')
+      else window.location.hash = '#/fechas'
       return
     }
 
@@ -195,7 +199,12 @@ export async function renderAsistenciaView(
     if (sesionId) {
       return _renderEmergenteSesion(container, { sesionId, fecha, maestro, router })
     }
-    container.innerHTML = `<p class="pm-empty">No se indicó la clase.</p>`
+    // Redirigir automáticamente al Calendario/Fechas si no se indica clase
+    if (router?.navigate) {
+      router.navigate('fechas')
+    } else {
+      window.location.hash = '#/fechas'
+    }
     return
   }
 
@@ -538,6 +547,34 @@ function _renderVista(container, ctx) {
       .pm-copy-plan-btn:hover { background: var(--pm-primary); color: #fff; border-color: var(--pm-primary); }
       [data-theme="light"] .pm-copy-plan-btn { background: #f3f4f6; color: #6b7280; border-color: #d1d5db; }
       [data-theme="light"] .pm-copy-plan-btn:hover { background: var(--pm-primary); color: #fff; border-color: var(--pm-primary); }
+      .pm-cat-btn {
+        padding: 0.28rem 0.7rem; border-radius: 16px; border: none;
+        background: var(--pm-primary); color: #fff;
+        font-size: 0.74rem; font-weight: 600; cursor: pointer;
+      }
+      .pm-cat-btn:hover { filter: brightness(1.1); }
+      .pm-cat-link {
+        padding: 0.28rem 0.55rem; border-radius: 16px;
+        border: 1px solid var(--pm-border, rgba(255,255,255,0.15));
+        background: transparent; color: var(--pm-text-muted, #9ca3af);
+        font-size: 0.74rem; cursor: pointer; transition: all 0.15s;
+      }
+      .pm-cat-link:hover { color: var(--pm-text, #fff); border-color: var(--pm-primary); }
+      .pm-cat-opt {
+        padding: 0.3rem 0.6rem; border-radius: 8px;
+        border: 1px solid var(--pm-border, rgba(255,255,255,0.15));
+        background: var(--pm-surface-2, rgba(255,255,255,0.04));
+        color: var(--pm-text, inherit); font-size: 0.74rem; cursor: pointer;
+      }
+      .pm-cat-opt:hover { background: var(--pm-primary); color: #fff; border-color: var(--pm-primary); }
+      .pm-cat-hint { font-size: 0.7rem; color: var(--pm-text-muted, #9ca3af); }
+      .pm-categoria-bar code {
+        background: var(--pm-surface-2, rgba(255,255,255,0.06));
+        padding: 0 .25rem; border-radius: 3px; font-size: .9em;
+      }
+      .pm-cat-btn:focus-visible, .pm-cat-link:focus-visible, .pm-cat-opt:focus-visible {
+        outline: 2px solid var(--pm-primary); outline-offset: 2px;
+      }
       .pm-route-selector-wrap {
         display: flex;
         align-items: center;
@@ -990,10 +1027,33 @@ function _renderVista(container, ctx) {
   const dslSection = createDslSection(container, {
     initialContent: serverDSL,
     claseId,
-    onEditorChange: (value) => { dslContent = value },
+    onEditorChange: (value) => {
+      dslContent = value
+      categoriaBar?.onTextoCambia(value)
+    },
   })
   const editor = dslSection.getEditor()
   const editorContainer = container.querySelector('#pm-dsl-editor-container')
+
+  // Categoría de trabajo: se deriva de lo que el maestro ya escribió y él la
+  // confirma con un toque. Se guarda por separado del flujo de asistencia, que
+  // tiene su propia cadena de reintentos y no conviene alterar.
+  let categoriaTrabajo = { codigo: null, origen: null }
+  const categoriaBar = createCategoriaTrabajoBar(
+    container.querySelector('.pm-asist-dsl-section') || container,
+    {
+      onChange: async ({ codigo, origen }) => {
+        categoriaTrabajo = { codigo, origen }
+        if (!sesionId) return // la sesión aún no existe; se persiste al guardarla
+        try {
+          await confirmarCategoria(sesionId, codigo, origen)
+        } catch (err) {
+          console.warn('[asistencia] No se pudo guardar la categoría:', err.message)
+        }
+      },
+    },
+  )
+  if (serverDSL) categoriaBar.analizarAhora(serverDSL)
 
   // === Generar Informe Modal ===
   const informeModal = createGenerarInformeModal(container, {
@@ -1230,6 +1290,7 @@ function _renderVista(container, ctx) {
   // === Modal de Justificación ===
   const _justifModal = createJustifModalManager(container, {
     sesionId,
+    getSesionId: () => sesionId,
     claseId,
     fechaHoy,
     maestroId: maestro.id,
@@ -1314,6 +1375,10 @@ function _renderVista(container, ctx) {
     snapshots,
     justificaciones,
     obtenerJustificacion,
+    eliminarJustificacion,
+    onJustifDeleted: (alumnoId) => {
+      delete justificaciones[alumnoId]
+    },
     onEstadoChange: (id, newEstado) => {
       estado[id] = newEstado
     },
@@ -1389,6 +1454,24 @@ function _renderVista(container, ctx) {
         borrador: true,
         asistencia: asistencia || [],
         contenido: dslContent || '',
+        // Solo se persiste si el maestro la confirmó. Sin confirmación va null:
+        // la cobertura que lee la coordinación no se alimenta de inferencias.
+        ...(categoriaTrabajo.codigo
+          ? { node_codigo: categoriaTrabajo.codigo, node_origen: categoriaTrabajo.origen }
+          : {}),
+      }
+
+      // Si se desmarcaron todos los alumnos y no hay contenido, eliminar borrador automáticamente para limpiar la fecha
+      if (asistencia.length === 0 && !(dslContent || '').trim() && sesionId) {
+        try {
+          await eliminarSesion(sesionId)
+          sesionId = null
+          localStorage.removeItem(`${localKey}_updated`)
+          console.log('[asistencia] Borrador vaciado y eliminado automáticamente')
+          return
+        } catch (_err) {
+          console.warn('[asistencia] Error al autolimpiar borrador:', _err)
+        }
       }
 
       if (navigator.onLine) {
@@ -1826,6 +1909,30 @@ function _renderVista(container, ctx) {
           }
         }
 
+        // Handler para descartar borrador
+        const btnDescartarBorrador = container.querySelector('#btn-descartar-borrador')
+        if (btnDescartarBorrador) {
+          btnDescartarBorrador.addEventListener('click', async () => {
+            if (confirm('¿Deseas descartar este borrador? La fecha se limpiará por completo.')) {
+              try {
+                btnDescartarBorrador.disabled = true
+                btnDescartarBorrador.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> Descartando...'
+                if (sesionExistenteData?.id) {
+                  await eliminarSesion(sesionExistenteData.id)
+                }
+                AppToast.show('Borrador descartado correctamente', 'success')
+                invalidateClasesCache()
+                navInvalidateView('calendario')
+                window.location.hash = '#/fechas'
+              } catch (err) {
+                AppToast.show('Error al descartar: ' + err.message, 'danger')
+                btnDescartarBorrador.disabled = false
+                btnDescartarBorrador.innerHTML = '<i class="bi bi-trash"></i> Descartar'
+              }
+            }
+          })
+        }
+
         const resumenMesBtn = overlay.querySelector('#btn-resumen-mes-overlay')
         if (resumenMesBtn) {
           // Los reportes mensuales requieren un claseId — no aplican para sesiones emergentes
@@ -1892,6 +1999,13 @@ function _renderVista(container, ctx) {
       _updateProgress()
       try { await _autoSave(true) } catch (_e) { console.warn(`[asistencia] autoSave error on bulk ${tipo}:`, _e) }
       announce(`Todos los ${alumnos.length} alumnos marcados como ${tipo === 'P' ? 'presentes' : 'ausentes'}.`)
+    },
+    onClearAll: async () => {
+      alumnos.forEach((a) => { estado[a.id] = null })
+      studentList.render()
+      _updateProgress()
+      try { await _autoSave(true) } catch (_e) { console.warn(`[asistencia] autoSave error on clear all:`, _e) }
+      announce(`Se desmarcaron las asistencias de todos los alumnos.`)
     },
   })
   _cleanups.push(() => _bulkActions.destroy())

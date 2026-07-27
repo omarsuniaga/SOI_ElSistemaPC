@@ -48,6 +48,7 @@ const navGroups = [
       { id: 'asistencias', label: 'Asistencias', icon: 'bi-calendar-check' },
       { id: 'metricas', label: 'Métricas', icon: 'bi-bar-chart-line' },
       { id: 'periodos', label: 'Períodos Académicos', icon: 'bi-calendar-event' },
+      { id: 'periodo-lectivo', label: 'Período Lectivo', icon: 'bi-calendar-range' },
       { id: 'reporte-cierre', label: 'Informe de Cierre', icon: 'bi-file-earmark-bar-graph' },
       { id: 'cierre-academico', label: 'Cierre Académico', icon: 'bi-archive' },
       { id: 'cierre-academico-historico', label: 'Historial de Cierres', icon: 'bi-clock-history' },

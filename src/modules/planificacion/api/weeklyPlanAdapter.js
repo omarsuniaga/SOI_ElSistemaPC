@@ -11,7 +11,7 @@ import * as mock from './weeklyPlanMock.js'
 
 const impl = config.isDemoMode ? mock : supabase
 
-export const obtenerFuentesCurriculares = () => impl.obtenerFuentesCurriculares()
+export const obtenerFuentesCurriculares = (claseId = null) => impl.obtenerFuentesCurriculares(claseId)
 
 export const obtenerPlanSemanalPorNivel = (levelId, instrument = 'violín') => 
   impl.obtenerPlanSemanalPorNivel(levelId, instrument)
@@ -53,8 +53,8 @@ export const registrarProgresoIndicador = async (studentId, indicatorId, status,
 export const obtenerProgresoGrupo = (groupId, levelId = null) => 
   impl.obtenerProgresoGrupo(groupId, levelId)
 
-export const obtenerVersionesCurriculares = () => 
-  impl.obtenerVersionesCurriculares()
+export const obtenerVersionesCurriculares = (routeId = null) =>
+  impl.obtenerVersionesCurriculares(routeId)
 
 export const publicarVersionCurricular = (versionId) => 
   impl.publicarVersionCurricular(versionId)

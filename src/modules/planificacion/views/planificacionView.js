@@ -372,7 +372,7 @@ function _renderAcmAuthorityPanel() {
             <div class="fw-bold">Gobernanza ACM</div>
             <small class="text-muted">ACM define, versiona y publica. El maestro solo consume lo activo.</small>
           </div>
-          <span class="badge text-bg-primary">Source of truth</span>
+          <span class="badge text-bg-primary" style="cursor:default" title="Este panel es informativo: aquí se ve qué currículo, versión y ruta rigen hoy. Publicar o editar se hace desde las acciones de cada tarjeta, no desde esta etiqueta.">Fuente de verdad (solo lectura)</span>
         </div>
         <div class="row g-3">
           <div class="col-12 col-lg-4">
@@ -430,8 +430,8 @@ function _renderAcmAuthorityPanel() {
                     (r) => `
                       <div class="d-flex justify-content-between align-items-center rounded border p-2">
                         <div>
-                          <div class="fw-semibold">Grupo ${escapeHTML(r.group_id || '?')}</div>
-                          <small class="text-muted">Semana ${r.current_week || 1} · ${escapeHTML(r.status || 'active')}</small>
+                          <div class="fw-semibold">${escapeHTML(r.group_nombre || 'Clase sin nombre')}</div>
+                          <small class="text-muted">${escapeHTML(r.instrumento || 'Sin instrumento')}</small>
                         </div>
                         <span class="badge text-bg-success">Activa</span>
                       </div>

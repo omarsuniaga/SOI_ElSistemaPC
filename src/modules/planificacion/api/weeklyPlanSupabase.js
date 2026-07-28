@@ -60,8 +60,30 @@ export async function _resolveRouteVersionForClase(claseId) {
  * @param {string} claseId - ID de la clase
  * @returns {Promise<Array<object>>} Nodos con sus indicadores
  */
+/**
+ * Sin `claseId` devuelve las fuentes a nivel institucional: las rutas
+ * curriculares disponibles. Con `claseId` devuelve los niveles de la ruta
+ * asignada a esa clase.
+ *
+ * El panel de Gobernanza ACM la llamaba sin argumento y la función cortaba en
+ * `if (!claseId) return []`, de modo que "Fuentes curriculares" aparecía siempre
+ * vacío. No faltaban datos: hay 8 rutas cargadas.
+ */
 export async function obtenerFuentesCurriculares(claseId) {
-  if (!claseId) return []
+  if (!claseId) {
+    const { data, error } = await supabase
+      .from('routes')
+      .select('id, name, instrument, status')
+      .order('name')
+
+    if (error) throw error
+    return (data ?? []).map((r) => ({
+      id: r.id,
+      title: r.name,
+      source_type: r.instrument || 'currículo',
+      status: r.status,
+    }))
+  }
 
   const rv = await _resolveRouteVersionForClase(claseId)
   if (!rv?.id) return []
@@ -112,33 +134,46 @@ export async function obtenerPlanSemanalPorId(planId) {
   }
 }
 
+/**
+ * Clases con ruta curricular asignada.
+ *
+ * Dos correcciones sobre la versión anterior:
+ *
+ *  · Se incluye `nombre`. Antes la consulta pedía sólo `id, maestro_id,
+ *    instrumento`, así que la vista no tenía con qué rotular la tarjeta y
+ *    terminaba imprimiendo el UUID de la clase.
+ *  · El filtro por docente usa `maestro_principal_id`. Usaba `maestro_id`, que
+ *    está NULL en las 11 clases activas: cualquier llamada con maestroId —como
+ *    la de hoyView— devolvía siempre cero resultados.
+ */
 export async function obtenerRutasActivas(maestroId = null) {
-  // Consultar las clases del maestro que tengan rutas publicadas
-  let query = supabase.from('clases').select('id, maestro_id, instrumento')
+  let query = supabase
+    .from('clases')
+    .select('id, nombre, instrumento, maestro_principal_id, maestro_suplente_id, route_version_id')
+    .eq('activo', true)
+
   if (maestroId) {
-    query = query.eq('maestro_id', maestroId)
-  }
-  const { data: clases, error: clasesError } = await query
-  if (clasesError) throw clasesError
-
-  if (!clases || clases.length === 0) return []
-
-  const result = []
-  for (const clase of clases) {
-    const rv = await _resolveRouteVersionForClase(clase.id)
-    if (rv) {
-      result.push({
-        id: rv.id,
-        weekly_plan_id: rv.id,
-        group_id: clase.id,
-        level_id: rv.levels?.[0]?.id || 'nivel_default',
-        current_week: 1,
-        status: 'active',
-      })
-    }
+    query = query.or(
+      `maestro_principal_id.eq.${maestroId},maestro_suplente_id.eq.${maestroId}`,
+    )
   }
 
-  return result
+  const { data: clases, error } = await query.order('nombre')
+  if (error) throw error
+  if (!clases?.length) return []
+
+  return clases
+    .filter((c) => c.route_version_id)
+    .map((c) => ({
+      id: c.route_version_id,
+      weekly_plan_id: c.route_version_id,
+      group_id: c.id,
+      group_nombre: c.nombre,
+      instrumento: c.instrumento,
+      level_id: null,
+      current_week: 1,
+      status: 'active',
+    }))
 }
 
 /**
@@ -390,17 +425,35 @@ export async function obtenerProgresoGrupo(groupId, levelId = null) {
  * @param {string} routeId - ID de la ruta
  * @returns {Promise<Array<object>>} Versiones de la ruta
  */
+/**
+ * Sin `routeId` devuelve todas las versiones curriculares del sistema, que es
+ * lo que necesita el panel de Gobernanza para poder publicar. Con `routeId`
+ * devuelve sólo las de esa ruta.
+ *
+ * Antes cortaba en `if (!routeId) return []` y el panel la llamaba sin
+ * argumento: la lista quedaba vacía y el botón "Publicar" nunca era alcanzable,
+ * pese a existir 9 versiones cargadas.
+ *
+ * Se incluye el conteo de niveles para que la coordinación distinga las
+ * versiones con contenido de las que están publicadas pero vacías.
+ */
 export async function obtenerVersionesCurriculares(routeId) {
-  if (!routeId) return []
-
-  const { data, error } = await supabase
+  let query = supabase
     .from('route_versions')
-    .select('*')
-    .eq('route_id', routeId)
+    .select('*, route:routes (name, instrument), levels (id)')
     .order('created_at', { ascending: false })
 
+  if (routeId) query = query.eq('route_id', routeId)
+
+  const { data, error } = await query
   if (error) throw error
-  return data || []
+
+  return (data ?? []).map((v) => ({
+    ...v,
+    name: v.route?.name ? `${v.route.name} · v${v.version}` : `Versión ${v.version}`,
+    description: `${v.levels?.length ?? 0} niveles`,
+    is_active: v.status === 'published',
+  }))
 }
 
 /**

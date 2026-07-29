@@ -119,7 +119,7 @@ function renderContent(container) {
   const isAdmin = state.viewMode === 'admin'
 
   const headerTitle = state.viewMode === 'acm'
-    ? 'ACM ? Gobernanza Curricular'
+    ? 'ACM · Gobernanza Curricular'
     : isAdmin
       ? 'Todas las Planificaciones'
       : 'Mis Planes de Clase'

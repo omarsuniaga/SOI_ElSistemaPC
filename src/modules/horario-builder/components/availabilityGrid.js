@@ -27,7 +27,7 @@ export function createAvailabilityGrid({
   const hourLabelsHtml = [];
   for (let h = startHour; h < endHour; h++) {
     hourLabelsHtml.push(`
-      <div class="hb-time-label-cell" style="height: ${hourHeight}px; border-bottom: 1px dashed var(--hb-border); text-align: right; padding-right: 8px; font-size: 0.75rem; color: var(--hb-text-muted);">
+      <div class="hb-time-label-cell" style="height: ${hourHeight}px; border-bottom: 1px dashed var(--soi-border); text-align: right; padding-right: 8px; font-size: 0.75rem; color: var(--soi-text-muted);">
         ${h.toString().padStart(2, '0')}:00
       </div>
     `);
@@ -84,13 +84,13 @@ export function createAvailabilityGrid({
 
       if (top < 0 || height <= 0) return '';
 
-      const teacherColor = as.color || 'var(--hb-primary-light)';
+      const teacherColor = as.color || 'var(--soi-color-primary-light)';
       const isConflict = as.conflict;
 
       return `
         <div class="hb-slot-assigned hb-draggable-class ${isConflict ? 'border-danger' : ''}" 
              draggable="true"
-             style="top: ${top}px; height: ${height}px; background-color: ${isConflict ? 'var(--hb-danger-light)' : teacherColor}; border-left-color: ${isConflict ? 'var(--hb-danger)' : 'var(--hb-primary)'}; color: var(--hb-gray-800);"
+             style="top: ${top}px; height: ${height}px; background-color: ${isConflict ? 'var(--soi-color-danger-light)' : teacherColor}; border-left-color: ${isConflict ? 'var(--soi-color-danger)' : 'var(--soi-color-primary)'}; color: var(--soi-text);"
              data-id="${as.clase_id}"
              title="${as.clase_nombre} - Prof: ${as.maestro_nombre}\nSalón: ${as.salon_nombre}\nHorario: ${as.hora_inicio} - ${as.hora_fin}">
           <div style="font-weight: 700; font-size: 0.75rem; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">
@@ -110,12 +110,12 @@ export function createAvailabilityGrid({
     const linesHtml = [];
     for (let h = startHour; h < endHour; h++) {
       linesHtml.push(`
-        <div style="position: absolute; left: 0; right: 0; top: ${(h - startHour) * hourHeight}px; height: 1px; border-bottom: 1px dashed var(--hb-border); pointer-events: none;"></div>
+        <div style="position: absolute; left: 0; right: 0; top: ${(h - startHour) * hourHeight}px; height: 1px; border-bottom: 1px dashed var(--soi-border); pointer-events: none;"></div>
       `);
     }
 
     return `
-      <div class="hb-day-column" data-day="${day.key}" style="position: relative; height: ${gridHeight}px; border-left: 1px solid var(--hb-border); background: var(--hb-grid-bg);">
+      <div class="hb-day-column" data-day="${day.key}" style="position: relative; height: ${gridHeight}px; border-left: 1px solid var(--soi-border); background: var(--soi-bg-subtle);">
         ${linesHtml.join('')}
         ${availHtml}
         ${assignmentsHtml}
@@ -125,12 +125,12 @@ export function createAvailabilityGrid({
 
   return `
     <div class="hb-calendar-container">
-      <div class="hb-calendar-grid" style="display: grid; grid-template-columns: 80px repeat(6, 1fr); min-width: 800px; border-bottom: 1px solid var(--hb-border); background: var(--hb-card-bg);">
-        <div class="hb-cal-header" style="padding: 10px; font-weight: 700; text-align: center; color: var(--hb-text-muted);">Hora</div>
-        ${DIAS_SEMANA.map(d => `<div class="hb-cal-header" style="padding: 10px; font-weight: 700; text-align: center; color: var(--hb-primary);">${d.label}</div>`).join('')}
+      <div class="hb-calendar-grid" style="display: grid; grid-template-columns: 80px repeat(6, 1fr); min-width: 800px; border-bottom: 1px solid var(--soi-border); background: var(--soi-surface);">
+        <div class="hb-cal-header" style="padding: 10px; font-weight: 700; text-align: center; color: var(--soi-text-muted);">Hora</div>
+        ${DIAS_SEMANA.map(d => `<div class="hb-cal-header" style="padding: 10px; font-weight: 700; text-align: center; color: var(--soi-color-primary);">${d.label}</div>`).join('')}
       </div>
-      <div class="hb-calendar-grid" style="display: grid; grid-template-columns: 80px repeat(6, 1fr); min-width: 800px; position: relative; height: ${gridHeight}px; background: var(--hb-card-bg);">
-        <div class="hb-time-labels-col" style="position: relative; height: ${gridHeight}px; border-right: 1px solid var(--hb-border);">
+      <div class="hb-calendar-grid" style="display: grid; grid-template-columns: 80px repeat(6, 1fr); min-width: 800px; position: relative; height: ${gridHeight}px; background: var(--soi-surface);">
+        <div class="hb-time-labels-col" style="position: relative; height: ${gridHeight}px; border-right: 1px solid var(--soi-border);">
           ${hourLabelsHtml.join('')}
         </div>
         ${columnsHtml}

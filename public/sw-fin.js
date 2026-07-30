@@ -6,9 +6,15 @@ self.addEventListener('install', event => {
 
 self.addEventListener('activate', event => {
   event.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)))
-    ).then(() => self.clients.claim())
+    (async () => {
+      const keys = await caches.keys()
+      await Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)))
+      try {
+        await self.clients.claim()
+      } catch (err) {
+        console.warn('[SW-Fin] clients.claim warning:', err)
+      }
+    })()
   )
 })
 

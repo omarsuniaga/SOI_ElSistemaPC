@@ -75,7 +75,7 @@ function normalizeAlumno(a) {
   }
 }
 
-export async function obtenerAlumnos({ page = 0, pageSize = 100 } = {}) {
+export async function obtenerAlumnos({ page = 0, pageSize = 1000 } = {}) {
   const from = page * pageSize
   const to = from + pageSize - 1
 
@@ -112,20 +112,6 @@ export async function crearAlumno(alumno) {
   const nombre = (alumno.nombre || alumno.nombre_completo || '').trim()
   if (!nombre) throw new Error('El nombre es obligatorio')
 
-  // `alumnos.familia_id` es NOT NULL con FK a `familias`: sin familia no hay alta.
-  //
-  // La versión anterior insertaba directo en `familias` con la columna `nombre`,
-  // que no existe —la columna es `nombre_familia`— y además desestructuraba sólo
-  // `data`, nunca `error`. Como el cliente de Supabase no lanza excepción sino que
-  // devuelve `{ data: null, error }`, el try/catch jamás se disparaba: el insert
-  // fallaba en silencio, familiaId quedaba en null, y el fallo reaparecía dos
-  // pasos después como "familia_id violates not-null constraint" — un mensaje que
-  // no menciona la causa real.
-  //
-  // La creación va por RPC porque las políticas no coincidían: escribir en
-  // `alumnos` sólo exige ser maestro, pero escribir en `familias` exigía ser
-  // admin. Un maestro podía crear el alumno y no la familia que ese alumno
-  // necesita obligatoriamente.
   let familiaId = alumno.familia_id || null
   let familiaCreadaAqui = false
 
@@ -284,6 +270,9 @@ export async function actualizarAlumno(id, actualizaciones) {
   delete datosActualizacion.is_active
   delete datosActualizacion.telefono
   delete datosActualizacion.clases
+  delete datosActualizacion.genero
+  delete datosActualizacion._completitud
+  delete datosActualizacion.id
 
   const { data, error } = await supabase
     .from('alumnos')
@@ -467,13 +456,55 @@ export async function obtenerProgresoAlumno(alumnoId) {
     .from('progresos')
     .select('*')
     .eq('alumno_id', alumnoId)
-    .order('fecha', { ascending: false })
+    .order('created_at', { ascending: false })
 
   if (error) {
     console.error('Error cargando progreso de alumno:', error.message)
     throw new Error('No se pudo cargar el progreso del alumno')
   }
   return data || []
+}
+
+/**
+ * Resumen académico del alumno: el nivel y promedio base (cargados una
+ * vez desde el reconciliado de alumnos activos) combinados con las
+ * evaluaciones reales que el maestro va registrando en sus clases
+ * (tabla `progresos`, escala 0-5 — la que efectivamente escribe el DSL
+ * de asistencia; `evaluacion_indicador` y el resto del rediseño por
+ * indicadores están vacías en producción, no son la fuente real hoy).
+ *
+ * El promedio base cuenta como un dato más en el promedio combinado —no
+ * se pisa ni se descarta— así que se va diluyendo solo a medida que se
+ * acumulan evaluaciones reales, sin necesidad de un peso arbitrario.
+ */
+export async function obtenerResumenAcademico(alumnoId) {
+  const [{ data: alumno, error: errAlumno }, { data: evaluaciones, error: errEval }] = await Promise.all([
+    supabase.from('alumnos').select('nivel, promedio_notas').eq('id', alumnoId).maybeSingle(),
+    supabase.from('progresos').select('calificacion, fecha_evaluacion, contenido_dsl').eq('alumno_id', alumnoId).not('calificacion', 'is', null),
+  ])
+
+  if (errAlumno) throw new Error(`No se pudo cargar el resumen académico: ${errAlumno.message}`)
+  if (errEval) throw new Error(`No se pudo cargar el resumen académico: ${errEval.message}`)
+
+  const base = alumno?.promedio_notas != null ? Number(alumno.promedio_notas) : null
+  // calificacion es 0-5 (escala del DSL); se convierte a 0-100 para poder
+  // promediarla junto al promedio base, que ya viene en 0-100.
+  const notasEnCien = (evaluaciones || []).map(e => Number(e.calificacion) * 20)
+
+  const puntos = [...(base != null ? [base] : []), ...notasEnCien]
+  const promedioActualizado = puntos.length > 0
+    ? Math.round((puntos.reduce((a, b) => a + b, 0) / puntos.length) * 10) / 10
+    : null
+
+  return {
+    nivel: alumno?.nivel || null,
+    promedioBase: base,
+    totalEvaluaciones: notasEnCien.length,
+    promedioEvaluaciones: notasEnCien.length > 0
+      ? Math.round((notasEnCien.reduce((a, b) => a + b, 0) / notasEnCien.length) * 10) / 10
+      : null,
+    promedioActualizado,
+  }
 }
 
 export async function obtenerAsistenciasAlumno(alumnoId) {

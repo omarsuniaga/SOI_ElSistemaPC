@@ -48,7 +48,11 @@ async function ollamaChat(messages, { maxTokens, temperature, responseFormat } =
 
 async function proxyChat(messages, { maxTokens, temperature, responseFormat } = {}) {
   if (config.ai.provider === 'ollama') {
-    return ollamaChat(messages, { maxTokens, temperature, responseFormat })
+    try {
+      return await ollamaChat(messages, { maxTokens, temperature, responseFormat })
+    } catch (e) {
+      console.warn('[groqService] Ollama call failed (CSP/network), using edge proxy fallback:', e)
+    }
   }
 
   const headers = await authHeaders()
@@ -325,3 +329,14 @@ Tono: colega experto, respetuoso, propositivo. Sin tecnicismos innecesarios. Res
     return { success: false, feedback: '', error: error.message }
   }
 }
+
+/**
+ * Llamada directa de bajo nivel a GROQ Proxy
+ */
+export async function callGroq(messages, options = {}) {
+  if (config.isDemoMode) {
+    return 'Respuesta generada en Modo Demo de Inteligencia Artificial (GROQ Proxy).'
+  }
+  return proxyChat(messages, options)
+}
+

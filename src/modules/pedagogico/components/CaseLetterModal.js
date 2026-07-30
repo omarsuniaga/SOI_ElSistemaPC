@@ -42,7 +42,7 @@ export async function openCaseLetterModal(caso, _alumno, onSaved) {
         <div class="mb-3">
           <label class="form-label fw-semibold">Plantilla *</label>
           <select class="form-select form-select-sm" id="clt-template">
-            <option value="">Seleccioná una plantilla...</option>
+            <option value="">Seleccione una plantilla...</option>
             ${activeTemplates.map(t => `
               <option value="${t.id}" data-tipo="${t.tipo}" data-nombre="${t.nombre}">
                 ${suggestedTipos.includes(t.tipo) ? '⭐ ' : ''}${t.nombre}
@@ -74,7 +74,7 @@ export async function openCaseLetterModal(caso, _alumno, onSaved) {
         const templateNombre   = sel?.selectedOptions[0]?.dataset.nombre
         const templateTipo     = sel?.selectedOptions[0]?.dataset.tipo
 
-        if (!templateId) { alert('Seleccioná una plantilla.'); return }
+        if (!templateId) { alert('Seleccione una plantilla.'); return }
 
         const motivo      = modalBody.querySelector('#clt-motivo')?.value?.trim() || ''
         const responsable = modalBody.querySelector('#clt-responsable')?.value?.trim() || 'Coordinación Pedagógica'

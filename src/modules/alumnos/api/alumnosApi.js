@@ -38,6 +38,7 @@ export const obtenerAlumnosPorMes = (...args) => getApi().obtenerAlumnosPorMes(.
 export const obtenerAlumnosFiltradosYOrdenados = (...args) => getApi().obtenerAlumnosFiltradosYOrdenados(...args)
 export const verificarEliminacionAlumno = (...args) => getApi().verificarEliminacionAlumno(...args)
 export const obtenerProgresoAlumno = (...args) => getApi().obtenerProgresoAlumno(...args)
+export const obtenerResumenAcademico = (...args) => getApi().obtenerResumenAcademico(...args)
 export const obtenerAsistenciasAlumno = (...args) => getApi().obtenerAsistenciasAlumno(...args)
 export const obtenerInscripcionesDetalladasAlumno = (...args) => getApi().obtenerInscripcionesDetalladasAlumno(...args)
 

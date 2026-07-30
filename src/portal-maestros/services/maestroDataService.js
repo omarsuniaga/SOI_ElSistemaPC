@@ -207,7 +207,7 @@ export async function getInscripcionesClases(claseIds, forceRefresh = false) {
 
   const { data, error } = await supabase
     .from('alumnos_clases')
-    .select('clase_id, alumno_id, alumnos(id, nombre_completo, instrumento_principal)')
+    .select('clase_id, alumno_id, hora_inicio, hora_fin, alumnos(id, nombre_completo, instrumento_principal)')
     .in('clase_id', claseIds)
     .eq('activo', true)
 
@@ -239,6 +239,8 @@ export async function getAlumnosPorClaseIds(claseIds) {
         id: ins.alumnos.id,
         nombre_completo: ins.alumnos.nombre_completo,
         instrumento_principal: ins.alumnos.instrumento_principal,
+        hora_inicio: ins.hora_inicio,
+        hora_fin: ins.hora_fin,
       })
     }
   })

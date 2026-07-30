@@ -5,6 +5,7 @@ import { AppModal } from '../../../shared/components/AppModal.js'
 import { AppToast } from '../../../shared/components/AppToast.js'
 import { AlumnoForm } from '../components/AlumnoForm.js'
 import { AlumnoDeleteModal } from '../components/AlumnoDeleteModal.js'
+import { PostuladosBackfillModal } from '../components/PostuladosBackfillModal.js'
 import {
   obtenerAlumnos,
   crearAlumno,
@@ -153,6 +154,9 @@ export async function renderAlumnosView(container) {
           </div>
           
           <div class="alumnos-header-actions flex-wrap">
+            <button class="btn btn-outline-warning btn-sm-compact" id="btnConciliarPostulados" title="Completar datos faltantes desde Postulados">
+              <i class="bi bi-arrow-repeat me-1"></i>Conciliar Postulados
+            </button>
             <button class="btn btn-outline-success btn-sm-compact" id="btnExportarCSV" title="Exportar CSV">
               <i class="bi bi-file-earmark-spreadsheet"></i> CSV
             </button>
@@ -332,6 +336,13 @@ export async function renderAlumnosView(container) {
               ` : ''}
             </div>
             
+            <!-- Columna Botón Eliminar (36px de ancho fijo) -->
+            <div class="d-flex justify-content-center align-items-center flex-shrink-0" style="width: 36px;">
+              <button class="btn btn-sm btn-outline-danger rounded-circle d-flex align-items-center justify-content-center" data-action="delete" data-id="${a.id}" title="Eliminar alumno" style="height: 32px; width: 32px; min-height: 32px; padding: 0;">
+                <i class="bi bi-trash"></i>
+              </button>
+            </div>
+            
             <!-- Flecha de Navegación -->
             <i class="bi bi-chevron-right text-muted ms-1" style="font-size: 1.1rem; transition: transform 0.2s ease;"></i>
           </div>
@@ -370,6 +381,24 @@ export async function renderAlumnosView(container) {
     }, { signal })
 
     container.querySelector('#btnExportarCSV')?.addEventListener('click', () => exportarAlumnosCSV(), { signal })
+
+    container.querySelector('#btnConciliarPostulados')?.addEventListener('click', () => {
+      PostuladosBackfillModal.open({
+        onSuccess: async () => {
+          try {
+            const { alumnos, total } = await obtenerAlumnos()
+            state.totalAlumnos = total
+            state.alumnosOriginales = alumnos.map(a => ({
+              ...a,
+              _completitud: calcularCompletitud(a),
+            }))
+            applyFilters()
+          } catch (err) {
+            console.error('[alumnosView] Error reloading alumnos after backfill:', err)
+          }
+        }
+      })
+    }, { signal })
 
     container.querySelectorAll('[data-sort]').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -982,7 +1011,7 @@ export async function renderAlumnosView(container) {
 
     AlumnoDeleteModal.open({
       alumnoId: capturedId,
-      alumnoNombre: alumno.nombre,
+      alumnoNombre: alumno.nombre || alumno.nombre_completo || 'Alumno',
       onDeleted: () => {
         state.alumnosOriginales = state.alumnosOriginales.filter(a => a.id !== capturedId)
         applyFilters()

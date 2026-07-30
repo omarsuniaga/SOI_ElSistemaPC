@@ -31,8 +31,10 @@ import { registerRoutesCampanias } from '../../modules/campanias/index.js'
 import { registerRoutesGatewayConfig } from '../../modules/gateway-config/index.js'
 import { registerRoutesLuteria } from '../../modules/luteria/index.js'
 import { registerRoutesSimulador } from '../../modules/simulador/index.js'
+import { registerRoutesPeriodos } from '../../modules/periodos/index.js'
 
 export const allRegistrars = [
+  registerRoutesPeriodos,
   registerRoutesComunicaciones,
   registerRoutesDepartamentos,
   registerRoutesProgramas,

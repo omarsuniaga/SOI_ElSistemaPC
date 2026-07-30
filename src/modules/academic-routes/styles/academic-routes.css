@@ -30,8 +30,8 @@
 }
 
 .pm-node-item:hover {
-    border-color: var(--pm-border);
-    background: var(--pm-surface) !important;
+    border-color: var(--soi-border);
+    background: var(--soi-surface) !important;
 }
 
 /* Iconos de Estado */
@@ -50,7 +50,7 @@
 }
 
 .pm-indicators-list span:hover {
-    background: var(--pm-bg-hover) !important;
+    background: var(--soi-color-primary-light) !important;
 }
 
 /* Grid de Rutas (Librería) */

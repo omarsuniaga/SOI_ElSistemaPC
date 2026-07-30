@@ -21,11 +21,18 @@ const SUPPRESSED_PATTERNS = [
 ]
 
 /**
- * Check if an error message matches any suppressed pattern
+ * Check if an error message, stack, or object matches any suppressed pattern (Chrome extension noise)
  */
-function isSuppressed(message = '') {
-  const msg = String(message).toLowerCase()
-  return SUPPRESSED_PATTERNS.some(pattern => msg.includes(pattern.toLowerCase()))
+function isSuppressed(target = '') {
+  if (!target) return false
+  let str = ''
+  if (typeof target === 'object' && target !== null) {
+    str = `${target.message || ''} ${target.stack || ''} ${target.reason || ''} ${target.filename || ''}`
+  } else {
+    str = String(target)
+  }
+  str = str.toLowerCase()
+  return SUPPRESSED_PATTERNS.some(pattern => str.includes(pattern.toLowerCase()))
 }
 
 // ============================================
@@ -33,7 +40,8 @@ function isSuppressed(message = '') {
 // ============================================
 const originalError = console.error
 console.error = function(...args) {
-  if (args.length > 0 && !isSuppressed(args[0])) {
+  const hasSuppressed = args.some(a => isSuppressed(a))
+  if (!hasSuppressed) {
     originalError.apply(console, args)
   }
 }
@@ -43,7 +51,8 @@ console.error = function(...args) {
 // ============================================
 const originalWarn = console.warn
 console.warn = function(...args) {
-  if (args.length > 0 && !isSuppressed(args[0])) {
+  const hasSuppressed = args.some(a => isSuppressed(a))
+  if (!hasSuppressed) {
     originalWarn.apply(console, args)
   }
 }
@@ -52,8 +61,7 @@ console.warn = function(...args) {
 // Suppress unhandledrejection events
 // ============================================
 window.addEventListener('unhandledrejection', (event) => {
-  const reason = String(event.reason || '')
-  if (isSuppressed(reason)) {
+  if (isSuppressed(event.reason)) {
     event.preventDefault()
     event.stopImmediatePropagation()
   }
@@ -63,8 +71,7 @@ window.addEventListener('unhandledrejection', (event) => {
 // Suppress global error handler
 // ============================================
 window.addEventListener('error', (event) => {
-  const message = event.message || ''
-  if (isSuppressed(message)) {
+  if (isSuppressed(event.message) || isSuppressed(event.filename) || isSuppressed(event.error)) {
     event.preventDefault()
     event.stopImmediatePropagation()
   }

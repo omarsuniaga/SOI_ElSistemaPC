@@ -40,6 +40,48 @@
  * │                                                                 │
  * │  6. PUBLICAR  → El botón "Publicar" abre el PublishWizard,      │
  * │     que permite cambiar el estado del run                       │
+/**
+ * horarioBuilderView.js — Editor visual de horarios del SOI
+ *
+ * ┌─────────────────────────────────────────────────────────────────┐
+ * │  FLUJO COMPLETO DEL EDITOR                                      │
+ * ├─────────────────────────────────────────────────────────────────┤
+ * │                                                                 │
+ * │  1. GENERAR  → El botón "Generar" llama a fetchSchedulingData() │
+ * │     para cargar clases, maestros y salones desde Supabase.     │
+ * │     Luego generateOptimizedSchedule() asigna horarios usando    │
+ * │     el schedulingEngine, que distribuye clases evitando         │
+ * │     solapamientos básicos.                                      │
+ * │                                                                 │
+ * │  2. REVISAR CONFLICTOS  → detectConflicts() analiza maestro-    │
+ * │     conflicto (mismo maestro, mismo día/hora) y sala-conflicto  │
+ * │     (mismo salón, mismo bloque). Los conflictos se muestran en  │
+ * │     el ConflictPanel y los bloques afectados se marcan en rojo. │
+ * │     Clic en un conflicto hace scroll + highlight del bloque.    │
+ * │                                                                 │
+ * │  3. EDITAR (Drag & Drop)  → El botón "Editar" desbloquea el    │
+ * │     modo drag. DragDropManager gestiona dragstart/dragover/drop │
+ * │     con delegación de eventos. Al soltar un bloque:             │
+ * │       a) Si no hay conflicto → onMove() actualiza state y       │
+ * │          re-renderiza grid + conflictPanel.                     │
+ * │       b) Si hay conflicto → onConflict() abre un modal de       │
+ * │          confirmación. El usuario puede forzar el movimiento.   │
+ * │     Cada movimiento empuja un snapshot a undoStack.             │
+ * │     Undo/Redo restauran snapshots de la pila.                   │
+ * │     Los bloques individuales pueden "bloquearse" (🔒) para      │
+ * │     protegerlos del drag accidental.                            │
+ * │                                                                 │
+ * │  4. VISTAS  → ViewToggle permite cambiar entre:                 │
+ * │     · grid     → tabla hora × día (vista por defecto)           │
+ * │     · teacher  → agrupado por maestro                           │
+ * │     · room     → agrupado por salón                             │
+ * │     · student  → agrupado por clase                             │
+ * │                                                                 │
+ * │  5. GUARDAR  → saveScheduleRun() persiste el horario en         │
+ * │     Supabase como estado "borrador". Devuelve un runId.         │
+ * │                                                                 │
+ * │  6. PUBLICAR  → El botón "Publicar" abre el PublishWizard,      │
+ * │     que permite cambiar el estado del run                       │
  * │     (borrador → en_revision → publicado → archivado) y agregar  │
  * │     comentarios de feedback entre administradores.              │
  * │                                                                 │
@@ -55,7 +97,8 @@
  * └─────────────────────────────────────────────────────────────────┘
  */
 
-import { fetchSchedulingData, saveScheduleRun, getScheduleRuns } from '../api/horarioBuilderApi.js';
+import { fetchSchedulingData, saveScheduleRun, getScheduleRuns, fetchRegisteredScheduleData } from '../api/horarioBuilderApi.js';
+import { exportToPDF, exportToExcel } from '../utils/horarioExporter.js';
 import { AppToast } from '../../../shared/components/AppToast.js';
 import { minutesBetween, addMinutes } from '../utils/timeUtils.js';
 import { generateOptimizedSchedule } from '../engine/schedulingEngine.js';
@@ -76,6 +119,15 @@ import { partitionClases } from '../domain/groupPartitioner.js';
 function initialState() {
   return {
     assignments: [],
+    registeredAssignments: [],
+    alumnos: [],
+    maestros: [],
+    salones: [],
+    clases: [],
+    selectedAlumnoId: '',
+    selectedClaseId: '',
+    selectedMaestroId: '',
+    selectedSalonId: '',
     conflicts: [],
     activeView: 'grid',
     activePeriodo: PERIODOS[0].id,
@@ -93,7 +145,6 @@ function initialState() {
     isAdmin: false,
     feedback: [],
     publishWizardOpen: false,
-    // F5A: config/metricas/noAsignadas for save payload
     lastConfig: null,
     noAsignadas: [],
     metricas: null,
@@ -114,6 +165,7 @@ export function init(container) {
 
   renderShell();
   wireListeners();
+  loadRegisteredSchedule();
 
   // Load schedule runs history (non-blocking)
   getScheduleRuns()
@@ -126,14 +178,81 @@ export function init(container) {
     .catch(() => { /* non-critical */ });
 }
 
+async function loadRegisteredSchedule() {
+  setLoading(true);
+  try {
+    let data;
+    try {
+      data = await fetchRegisteredScheduleData();
+    } catch (e) {
+      data = await fetchSchedulingData();
+    }
+    state.registeredAssignments = data?.assignments || [];
+    state.assignments = [...state.registeredAssignments];
+    state.alumnos = data?.alumnos || [];
+    state.maestros = data?.maestros || [];
+    state.salones = data?.salones || [];
+    state.clases = data?.clases || [];
+
+    const { conflicts, assignments } = detectConflicts(state.assignments, { returnAnnotated: true });
+    state.conflicts = conflicts;
+    state.assignments = assignments;
+
+    renderShell();
+    renderGrid();
+    renderConflictPanel();
+  } catch (err) {
+    console.error('[horarioBuilderView] loadRegisteredSchedule error:', err);
+    showToast('Error al cargar horarios registrados: ' + err.message, 'danger');
+  } finally {
+    setLoading(false);
+  }
+}
+
+function getFilteredAssignments() {
+  let list = state.assignments;
+
+  if (state.activeView === 'student' && state.selectedAlumnoId) {
+    list = list.filter(a => (a.alumnos_ids || []).includes(state.selectedAlumnoId));
+  } else if (state.activeView === 'class' && state.selectedClaseId) {
+    list = list.filter(a => a.clase_id === state.selectedClaseId);
+  } else if (state.activeView === 'teacher' && state.selectedMaestroId) {
+    list = list.filter(a => a.maestro_id === state.selectedMaestroId);
+  } else if (state.activeView === 'room' && state.selectedSalonId) {
+    list = list.filter(a => a.salon_id === state.selectedSalonId);
+  }
+
+  return list;
+}
+
+function getActiveEntityInfo() {
+  if (state.activeView === 'student' && state.selectedAlumnoId) {
+    const al = state.alumnos.find(a => a.id === state.selectedAlumnoId);
+    return al ? { name: `Alumno: ${al.nombre_completo}`, detail: al.instrumento_principal ? `Instrumento: ${al.instrumento_principal}` : '' } : null;
+  }
+  if (state.activeView === 'class' && state.selectedClaseId) {
+    const cl = state.clases.find(c => c.id === state.selectedClaseId);
+    return cl ? { name: `Clase: ${cl.nombre}`, detail: cl.instrumento ? `Cátedra: ${cl.instrumento}` : '' } : null;
+  }
+  if (state.activeView === 'teacher' && state.selectedMaestroId) {
+    const m = state.maestros.find(x => x.id === state.selectedMaestroId);
+    return m ? { name: `Maestro: ${m.nombre_completo || m.nombre}`, detail: 'Docente Titular' } : null;
+  }
+  if (state.activeView === 'room' && state.selectedSalonId) {
+    const s = state.salones.find(x => x.id === state.selectedSalonId);
+    return s ? { name: `Salón: ${s.nombre}`, detail: s.capacidad ? `Capacidad: ${s.capacidad} alumnos` : '' } : null;
+  }
+  return { name: 'Horario General Institucional', detail: 'Todas las clases registradas' };
+}
+
 // ─── RENDER HELPERS ─────────────────────────────────────────────
 
 function _estadoBadge() {
   const map = {
-    borrador:    { color: '#f59e0b', bg: 'rgba(245,158,11,0.12)',  icon: 'bi-pencil-fill',       label: 'Borrador'    },
-    en_revision: { color: '#3b82f6', bg: 'rgba(59,130,246,0.12)', icon: 'bi-eye-fill',           label: 'En revisión' },
-    publicado:   { color: '#10b981', bg: 'rgba(16,185,129,0.12)', icon: 'bi-check-circle-fill',  label: 'Publicado'   },
-    archivado:   { color: '#6b7280', bg: 'rgba(107,114,128,0.12)',icon: 'bi-archive-fill',        label: 'Archivado'   },
+    borrador:    { color: 'var(--soi-color-warning)', bg: 'var(--soi-color-warning-light)', icon: 'bi-pencil-fill',       label: 'Borrador'    },
+    en_revision: { color: 'var(--soi-color-primary)', bg: 'var(--soi-color-primary-light)', icon: 'bi-eye-fill',           label: 'En revisión' },
+    publicado:   { color: 'var(--soi-color-success)', bg: 'var(--soi-color-success-light)', icon: 'bi-check-circle-fill',  label: 'Publicado'   },
+    archivado:   { color: 'var(--soi-text-muted)',    bg: 'var(--soi-bg-muted)',            icon: 'bi-archive-fill',        label: 'Archivado'   },
   }
   const m = map[state.estado] ?? map.borrador
   return `<span style="display:inline-flex;align-items:center;gap:0.3rem;padding:0.2rem 0.6rem;border-radius:20px;font-size:0.72rem;font-weight:600;background:${m.bg};color:${m.color};">
@@ -142,12 +261,16 @@ function _estadoBadge() {
 }
 
 function _statsBar() {
-  const total     = state.assignments.length
-  const conflicts = state.conflicts.length
-  const locked    = state.assignments.filter(a => a.locked).length
-  const canUndo   = state.undoStack.length
+  const filtered  = getFilteredAssignments();
+  const total     = filtered.length;
+  const conflicts = state.conflicts.length;
+  const locked    = state.assignments.filter(a => a.locked).length;
+  const canUndo   = state.undoStack.length;
+  const info      = getActiveEntityInfo();
+
   return `
     <div class="hb-stats-bar">
+      <span class="hb-stat me-2"><i class="bi bi-info-circle-fill text-primary"></i> <strong>${info?.name || 'Vista General'}</strong> ${info?.detail ? `(${info.detail})` : ''}</span>
       <span class="hb-stat"><i class="bi bi-calendar3"></i> <strong>${total}</strong> bloque${total !== 1 ? 's' : ''}</span>
       <span class="hb-stat ${conflicts > 0 ? 'hb-stat--danger' : 'hb-stat--ok'}">
         <i class="bi ${conflicts > 0 ? 'bi-exclamation-triangle-fill' : 'bi-check-circle-fill'}"></i>
@@ -158,6 +281,46 @@ function _statsBar() {
       ${state.runId ? _estadoBadge() : ''}
     </div>
   `
+}
+
+function renderEntitySelector() {
+  if (state.activeView === 'grid') return '';
+
+  let label = '';
+  let id = '';
+  let optionsHtml = '';
+
+  if (state.activeView === 'student') {
+    label = 'Seleccionar Alumno:';
+    id = 'hb-alumno-select';
+    optionsHtml = `<option value="">-- Todos los Alumnos (${state.alumnos.length}) --</option>` +
+      state.alumnos.map(a => `<option value="${a.id}" ${a.id === state.selectedAlumnoId ? 'selected' : ''}>${a.nombre_completo} ${a.instrumento_principal ? `(${a.instrumento_principal})` : ''}</option>`).join('');
+  } else if (state.activeView === 'class') {
+    label = 'Seleccionar Clase:';
+    id = 'hb-clase-select';
+    optionsHtml = `<option value="">-- Todas las Clases (${state.clases.length}) --</option>` +
+      state.clases.map(c => `<option value="${c.id}" ${c.id === state.selectedClaseId ? 'selected' : ''}>${c.nombre} ${c.instrumento ? `[${c.instrumento}]` : ''}</option>`).join('');
+  } else if (state.activeView === 'teacher') {
+    label = 'Seleccionar Maestro:';
+    id = 'hb-maestro-select';
+    optionsHtml = `<option value="">-- Todos los Maestros (${state.maestros.length}) --</option>` +
+      state.maestros.map(m => `<option value="${m.id}" ${m.id === state.selectedMaestroId ? 'selected' : ''}>${m.nombre_completo || m.nombre}</option>`).join('');
+  } else if (state.activeView === 'room') {
+    label = 'Seleccionar Salón:';
+    id = 'hb-salon-select';
+    optionsHtml = `<option value="">-- Todos los Salones (${state.salones.length}) --</option>` +
+      state.salones.map(s => `<option value="${s.id}" ${s.id === state.selectedSalonId ? 'selected' : ''}>${s.nombre}</option>`).join('');
+  }
+
+  return `
+    <div class="hb-entity-selector-bar d-flex align-items-center gap-2 p-2 mb-2 bg-body-tertiary rounded border">
+      <i class="bi bi-funnel-fill text-primary"></i>
+      <label for="${id}" class="form-label mb-0 small fw-bold text-nowrap">${label}</label>
+      <select class="form-select form-select-sm" id="${id}" style="max-width:320px;">
+        ${optionsHtml}
+      </select>
+    </div>
+  `;
 }
 
 function renderShell() {
@@ -176,21 +339,26 @@ function renderShell() {
         <div class="hb-page-header__left">
           <div class="hb-page-header__icon"><i class="bi bi-calendar-week-fill"></i></div>
           <div>
-            <h2 class="hb-page-header__title">Constructor de Horarios</h2>
-            <p class="hb-page-header__sub">Genera, edita y publica el horario académico del período</p>
+            <h2 class="hb-page-header__title">Horarios Institucionales</h2>
+            <p class="hb-page-header__sub">Consulta, edita y exporta el horario por Alumno, Maestro, Salón o General</p>
           </div>
         </div>
-        <select class="hb-periodo-select" id="hb-periodo-select" title="Seleccionar período">
-          ${periodOptions}
-        </select>
+        <div class="d-flex align-items-center gap-2">
+          <select class="hb-periodo-select" id="hb-periodo-select" title="Seleccionar período">
+            ${periodOptions}
+          </select>
+          <button class="btn btn-outline-secondary btn-sm d-print-none" id="hb-refresh-btn" title="Recargar del servidor">
+            <i class="bi bi-arrow-clockwise"></i>
+          </button>
+        </div>
       </div>
 
       <!-- Constraint panel (advanced / collapsible) -->
-      <div class="hb-collapse-panel hb-collapse-panel--constraints">
+      <div class="hb-collapse-panel hb-collapse-panel--constraints d-print-none">
         <button class="hb-collapse-toggle" id="hb-toggle-constraints" type="button" aria-expanded="${state.constraintsExpanded ? 'true' : 'false'}">
           <span class="d-flex align-items-center gap-2">
-            <i class="bi ${state.constraintsExpanded ? 'bi-sliders' : 'bi-sliders'}"></i>
-            <strong>Configuración avanzada</strong>
+            <i class="bi bi-sliders"></i>
+            <strong>Configuración avanzada y Generador IA</strong>
           </span>
           <span class="hb-collapse-toggle__meta">
             ${state.constraintsExpanded ? 'Ocultar' : 'Mostrar'}
@@ -207,16 +375,19 @@ function renderShell() {
       <!-- Stats bar -->
       <div id="hb-stats-wrapper">${hasContent ? _statsBar() : ''}</div>
 
+      <!-- Entity Filter Bar (Alumno/Clase/Maestro/Salón) -->
+      <div id="hb-entity-selector-slot" class="d-print-none">${renderEntitySelector()}</div>
+
       <!-- Toolbar principal -->
-      <div class="hb-toolbar-main">
+      <div class="hb-toolbar-main d-print-none">
         <div class="hb-toolbar-group">
-          <button class="hb-btn hb-btn--primary hb-btn--lg" id="hb-generate-btn">
-            <i class="bi bi-lightning-fill"></i><span>Generar horario</span>
+          <button class="hb-btn hb-btn--primary hb-btn--lg" id="hb-generate-btn" title="Generar nuevo esquema optimizado">
+            <i class="bi bi-lightning-fill"></i><span>Generar IA</span>
           </button>
         </div>
         <div class="hb-toolbar-divider"></div>
         <div class="hb-toolbar-group hb-toolbar-group--views">
-          <span class="hb-toolbar-label">Vista</span>
+          <span class="hb-toolbar-label">Vista:</span>
           <div id="hb-view-toggle-slot">${createViewToggle(state.activeView)}</div>
         </div>
         <div class="hb-toolbar-divider"></div>
@@ -235,7 +406,18 @@ function renderShell() {
         </div>
         <div style="flex:1;"></div>
         <div class="hb-toolbar-group">
-          <button class="hb-btn hb-btn--success" id="hb-save-btn" disabled>
+          <!-- Botones de Exportación e Impresión -->
+          <button class="btn btn-outline-danger btn-sm d-flex align-items-center gap-1" id="hb-export-pdf-btn" title="Exportar reporte PDF">
+            <i class="bi bi-file-earmark-pdf"></i> PDF
+          </button>
+          <button class="btn btn-outline-success btn-sm d-flex align-items-center gap-1" id="hb-export-excel-btn" title="Exportar Excel">
+            <i class="bi bi-file-earmark-excel"></i> Excel
+          </button>
+          <button class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1" id="hb-print-btn" title="Imprimir horario">
+            <i class="bi bi-printer"></i> Imprimir
+          </button>
+          <div class="hb-toolbar-divider"></div>
+          <button class="hb-btn hb-btn--success" id="hb-save-btn">
             <i class="bi bi-floppy-fill"></i><span>Guardar</span>
           </button>
           <button class="hb-btn hb-btn--outline" id="hb-publish-btn" disabled>
@@ -245,7 +427,7 @@ function renderShell() {
       </div>
 
       <!-- Conflict panel (collapsible) -->
-      <div class="hb-collapse-panel hb-collapse-panel--conflicts">
+      <div class="hb-collapse-panel hb-collapse-panel--conflicts d-print-none">
         <button class="hb-collapse-toggle" id="hb-toggle-conflicts" type="button" aria-expanded="${state.conflictPanelExpanded ? 'true' : 'false'}" ${state.conflicts.length === 0 ? 'disabled' : ''}>
           <span class="d-flex align-items-center gap-2">
             <i class="bi bi-exclamation-triangle"></i>
@@ -260,11 +442,6 @@ function renderShell() {
         <div class="hb-collapse-panel__body ${state.conflictPanelExpanded && state.conflicts.length > 0 ? 'is-open' : 'is-collapsed'}" id="hb-conflict-panel-shell">
           <div id="hb-conflict-panel-wrapper"></div>
         </div>
-      </div>
-
-      <!-- Grid / empty state -->
-      <div id="hb-grid-wrapper" class="hb-grid-wrapper">
-        ${!hasContent ? _emptyState() : ''}
       </div>
 
       <!-- Publish wizard -->
@@ -310,36 +487,36 @@ function _injectHBStyles() {
   .hb-page-header__left { display:flex;align-items:center;gap:0.75rem; }
   .hb-page-header__icon {
     width:44px;height:44px;border-radius:12px;
-    background:var(--hb-primary-light);color:var(--hb-primary);
+    background:var(--soi-color-primary-light);color:var(--soi-color-primary);
     display:flex;align-items:center;justify-content:center;font-size:1.25rem;flex-shrink:0;
   }
-  .hb-page-header__title { font-size:1.1rem;font-weight:700;margin:0;color:var(--hb-text); }
-  .hb-page-header__sub   { font-size:0.75rem;color:var(--hb-text-muted);margin:0; }
+  .hb-page-header__title { font-size:1.1rem;font-weight:700;margin:0;color:var(--soi-text); }
+  .hb-page-header__sub   { font-size:0.75rem;color:var(--soi-text-muted);margin:0; }
   .hb-periodo-select {
-    padding:0.4rem 0.75rem;border-radius:10px;border:1.5px solid var(--hb-border);
-    background:var(--hb-card-bg);color:var(--hb-text);font-size:0.85rem;cursor:pointer;outline:none;
+    padding:0.4rem 0.75rem;border-radius:10px;border:1.5px solid var(--soi-border);
+    background:var(--soi-surface);color:var(--soi-text);font-size:0.85rem;cursor:pointer;outline:none;
   }
-  .hb-periodo-select:focus { border-color:var(--hb-primary); }
+  .hb-periodo-select:focus { border-color:var(--soi-color-primary); }
   .hb-stats-bar {
     display:flex;align-items:center;flex-wrap:wrap;gap:0.75rem;
-    padding:0.55rem 0.875rem;background:var(--hb-card-bg);
-    border:1px solid var(--hb-border);border-radius:10px;margin-bottom:0.875rem;font-size:0.8rem;
+    padding:0.55rem 0.875rem;background:var(--soi-surface);
+    border:1px solid var(--soi-border);border-radius:10px;margin-bottom:0.875rem;font-size:0.8rem;
   }
-  .hb-stat { display:flex;align-items:center;gap:0.3rem;color:var(--hb-text-muted); }
-  .hb-stat strong { color:var(--hb-text); }
-  .hb-stat--ok .bi     { color:var(--hb-success); }
+  .hb-stat { display:flex;align-items:center;gap:0.3rem;color:var(--soi-text-muted); }
+  .hb-stat strong { color:var(--soi-text); }
+  .hb-stat--ok .bi     { color:var(--soi-color-success); }
   .hb-stat--danger .bi,
-  .hb-stat--danger strong { color:var(--hb-danger); }
+  .hb-stat--danger strong { color:var(--soi-color-danger); }
   .hb-stat--muted { opacity:0.6; }
   .hb-toolbar-main {
     display:flex;align-items:center;flex-wrap:wrap;gap:0.5rem;
-    background:var(--hb-card-bg);border:1px solid var(--hb-border);
+    background:var(--soi-surface);border:1px solid var(--soi-border);
     border-radius:12px;padding:0.55rem 0.875rem;margin-bottom:0.875rem;
   }
   .hb-toolbar-group { display:flex;align-items:center;gap:0.375rem; }
   .hb-toolbar-group--views { gap:0.5rem; }
-  .hb-toolbar-label { font-size:0.72rem;color:var(--hb-text-muted);font-weight:600;white-space:nowrap; }
-  .hb-toolbar-divider { width:1px;height:22px;background:var(--hb-border);flex-shrink:0; }
+  .hb-toolbar-label { font-size:0.72rem;color:var(--soi-text-muted);font-weight:600;white-space:nowrap; }
+  .hb-toolbar-divider { width:1px;height:22px;background:var(--soi-border);flex-shrink:0; }
   .hb-btn {
     display:inline-flex;align-items:center;gap:0.35rem;
     padding:0.38rem 0.875rem;border-radius:8px;border:1.5px solid transparent;
@@ -349,21 +526,21 @@ function _injectHBStyles() {
   .hb-btn:disabled { opacity:0.38;cursor:not-allowed;pointer-events:none; }
   .hb-btn--lg   { padding:0.48rem 1.1rem;font-size:0.875rem; }
   .hb-btn--icon { padding:0.38rem 0.5rem; }
-  .hb-btn--primary { background:var(--hb-primary);color:#fff;border-color:var(--hb-primary); }
-  .hb-btn--primary:hover { background:var(--hb-primary-hover);border-color:var(--hb-primary-hover); }
-  .hb-btn--success { background:var(--hb-success);color:#fff;border-color:var(--hb-success); }
+  .hb-btn--primary { background:var(--soi-color-primary);color:var(--soi-text-on-primary);border-color:var(--soi-color-primary); }
+  .hb-btn--primary:hover { background:var(--soi-color-primary-hover);border-color:var(--soi-color-primary-hover); }
+  .hb-btn--success { background:var(--soi-color-success);color:var(--soi-text-on-primary);border-color:var(--soi-color-success); }
   .hb-btn--success:hover { filter:brightness(1.08); }
-  .hb-btn--outline { border-color:var(--hb-primary);color:var(--hb-primary); }
-  .hb-btn--outline:hover { background:var(--hb-primary-light); }
-  .hb-btn--ghost { border-color:var(--hb-border);color:var(--hb-text-muted); }
-  .hb-btn--ghost:hover { border-color:var(--hb-primary);color:var(--hb-primary); }
+  .hb-btn--outline { border-color:var(--soi-color-primary);color:var(--soi-color-primary); }
+  .hb-btn--outline:hover { background:var(--soi-color-primary-light); }
+  .hb-btn--ghost { border-color:var(--soi-border);color:var(--soi-text-muted); }
+  .hb-btn--ghost:hover { border-color:var(--soi-color-primary);color:var(--soi-color-primary); }
   .hb-btn--editing {
-    border-color:var(--hb-warning);color:var(--hb-warning);background:var(--hb-warning-light);
+    border-color:var(--soi-color-warning);color:var(--soi-color-warning);background:var(--soi-color-warning-light);
     animation:hb-pulse-border 1.5s ease-in-out infinite;
   }
   .hb-collapse-panel {
-    background:var(--hb-card-bg);
-    border:1px solid var(--hb-border);
+    background:var(--soi-surface);
+    border:1px solid var(--soi-border);
     border-radius:12px;
     overflow:hidden;
     margin-bottom:0.875rem;
@@ -377,7 +554,7 @@ function _injectHBStyles() {
     padding:0.7rem 0.875rem;
     border:none;
     background:linear-gradient(180deg, rgba(99,102,241,0.06), rgba(99,102,241,0.02));
-    color:var(--hb-text);
+    color:var(--soi-text);
     font-size:0.84rem;
     font-weight:700;
     cursor:pointer;
@@ -387,20 +564,20 @@ function _injectHBStyles() {
     display:inline-flex;
     align-items:center;
     gap:0.35rem;
-    color:var(--hb-text-muted);
+    color:var(--soi-text-muted);
     font-size:0.75rem;
     font-weight:600;
     white-space:nowrap;
   }
   .hb-collapse-count {
-    color:var(--hb-danger);
+    color:var(--soi-color-danger);
     font-size:0.75rem;
     font-weight:700;
   }
   .hb-collapse-panel__body {
-    border-top:1px solid var(--hb-border);
+    border-top:1px solid var(--soi-border);
     padding:0.75rem;
-    background:var(--hb-grid-bg);
+    background:var(--soi-bg-subtle);
   }
   .hb-collapse-panel__body.is-collapsed { display:none; }
   .hb-collapse-panel--constraints .hb-collapse-toggle {
@@ -416,23 +593,23 @@ function _injectHBStyles() {
   .hb-empty {
     display:flex;flex-direction:column;align-items:center;justify-content:center;
     text-align:center;padding:3rem 1.5rem;min-height:320px;
-    border:2px dashed var(--hb-border);border-radius:16px;background:var(--hb-grid-bg);
+    border:2px dashed var(--soi-border);border-radius:16px;background:var(--soi-bg-subtle);
   }
   .hb-empty__icon {
-    width:68px;height:68px;border-radius:50%;background:var(--hb-primary-light);
-    color:var(--hb-primary);display:flex;align-items:center;justify-content:center;
+    width:68px;height:68px;border-radius:50%;background:var(--soi-color-primary-light);
+    color:var(--soi-color-primary);display:flex;align-items:center;justify-content:center;
     font-size:1.875rem;margin-bottom:1rem;
   }
-  .hb-empty__title { font-size:1.05rem;font-weight:700;margin:0 0 0.5rem;color:var(--hb-text); }
-  .hb-empty__desc  { font-size:0.85rem;color:var(--hb-text-muted);max-width:360px;margin:0 auto 1.25rem;line-height:1.6; }
+  .hb-empty__title { font-size:1.05rem;font-weight:700;margin:0 0 0.5rem;color:var(--soi-text); }
+  .hb-empty__desc  { font-size:0.85rem;color:var(--soi-text-muted);max-width:360px;margin:0 auto 1.25rem;line-height:1.6; }
   .hb-empty__steps { display:flex;flex-wrap:wrap;justify-content:center;gap:0.6rem;max-width:460px; }
   .hb-empty__step  {
-    display:flex;align-items:center;gap:0.45rem;background:var(--hb-card-bg);
-    border:1px solid var(--hb-border);border-radius:8px;padding:0.35rem 0.7rem;
-    font-size:0.76rem;color:var(--hb-text-muted);
+    display:flex;align-items:center;gap:0.45rem;background:var(--soi-surface);
+    border:1px solid var(--soi-border);border-radius:8px;padding:0.35rem 0.7rem;
+    font-size:0.76rem;color:var(--soi-text-muted);
   }
   .hb-empty__step-num {
-    width:18px;height:18px;border-radius:50%;background:var(--hb-primary);color:#fff;
+    width:18px;height:18px;border-radius:50%;background:var(--soi-color-primary);color:var(--soi-text-on-primary);
     display:flex;align-items:center;justify-content:center;font-size:0.62rem;font-weight:700;flex-shrink:0;
   }
 
@@ -499,12 +676,36 @@ function syncCollapsePanels() {
   }
 }
 
+function setLoading(on) {
+  state.loading = on;
+  const el = _container?.querySelector('#hb-status');
+  if (!el) return;
+  el.innerHTML = on
+    ? `<div class="d-flex align-items-center gap-2 mt-2 text-muted" style="font-size:0.85rem;">
+         <div class="spinner-border spinner-border-sm" role="status"></div>
+         <span>Procesando...</span>
+       </div>`
+    : '';
+}
+
+function showToast(message, type = 'success') {
+  if (type === 'danger') { AppToast.error(message); return; }
+  if (type === 'warning') { AppToast.show(message, 'warning'); return; }
+  AppToast.success(message);
+}
+
 function renderGrid() {
   const wrapper = _container.querySelector('#hb-grid-wrapper');
   if (!wrapper) return;
   _updateStatsBar();
+
+  const entitySlot = _container.querySelector('#hb-entity-selector-slot');
+  if (entitySlot) entitySlot.innerHTML = renderEntitySelector();
+
+  const filtered = getFilteredAssignments();
+
   wrapper.innerHTML = createScheduleGrid({
-    assignments: state.assignments,
+    assignments: filtered,
     activeView: state.activeView,
     draggable: state.draggable,
     periodoId: state.activePeriodo
@@ -516,7 +717,6 @@ function renderConflictPanel() {
   const wrapper = _container.querySelector('#hb-conflict-panel-wrapper');
   if (!wrapper) return;
 
-  // Snapshot expanded state from DOM before re-render
   const cpBody = wrapper.querySelector('.cp-body');
   if (cpBody) {
     state.conflictPanelExpanded = cpBody.style.display === 'block';
@@ -537,68 +737,8 @@ function renderConflictPanel() {
   syncCollapsePanels();
 }
 
-function renderViewToggle() {
-  const slot = _container.querySelector('#hb-view-toggle-slot');
-  if (!slot) return;
-  slot.innerHTML = createViewToggle(state.activeView);
-}
-
-function renderPublishPanel() {
-  const wrapper = _container.querySelector('#hb-publish-wrapper');
-  if (!wrapper) return;
-  if (!state.publishWizardOpen || !state.runId) {
-    wrapper.style.display = 'none';
-    return;
-  }
-  wrapper.style.display = '';
-
-  renderPublishWizard(wrapper, {
-    runId: state.runId,
-    estadoActual: state.estado,
-    isAdmin: state.isAdmin,
-    feedback: state.feedback,
-    async onEstadoChange(newEstado) {
-      try {
-        await updateScheduleRunEstado(state.runId, newEstado);
-        state.estado = newEstado;
-        renderPublishPanel();
-      } catch (err) {
-        console.error('[horario-builder] estado update failed:', err);
-      }
-    },
-    async onFeedbackAdd({ comentario, tipo }) {
-      try {
-        const newItem = await addFeedback({ runId: state.runId, comentario, tipo });
-        state.feedback = [...state.feedback, newItem];
-        renderPublishPanel();
-      } catch (err) {
-        console.error('[horario-builder] feedback add failed:', err);
-      }
-    }
-  });
-}
-
-function setLoading(on) {
-  state.loading = on;
-  const el = _container.querySelector('#hb-status');
-  if (!el) return;
-  el.innerHTML = on
-    ? `<div class="d-flex align-items-center gap-2 mt-2 text-muted" style="font-size:0.85rem;">
-         <div class="spinner-border spinner-border-sm" role="status"></div>
-         <span>Generando horario optimizado…</span>
-       </div>`
-    : '';
-}
-
-function showToast(message, type = 'success') {
-  if (type === 'danger') { AppToast.error(message); return; }
-  if (type === 'warning') { AppToast.show(message, 'warning'); return; }
-  AppToast.success(message);
-}
-
 // ─── HELPERS ─────────────────────────────────────────────────────
 
-/** Deep-clones the assignments array for undo/redo snapshots. */
 function cloneAssignments(assignments) {
   return JSON.parse(JSON.stringify(assignments));
 }
@@ -640,7 +780,6 @@ function initDD() {
       initDD();
     },
     async onConflict({ assignment, targetDay, targetHour, conflicts }) {
-      // Disable interactive controls while modal is open to prevent race conditions
       const dragToggle = _container.querySelector('#hb-drag-toggle');
       const undoBtn = _container.querySelector('#hb-undo-btn');
       const redoBtn = _container.querySelector('#hb-redo-btn');
@@ -671,7 +810,6 @@ function initDD() {
         updateUndoRedoButtons();
         initDD();
       } finally {
-        // Re-enable controls (updateUndoRedoButtons will correct undo/redo state)
         if (dragToggle) dragToggle.disabled = false;
         updateUndoRedoButtons();
       }
@@ -693,7 +831,6 @@ function wireListeners() {
     if (e.target.closest('#hb-toggle-constraints')) {
       state.constraintsExpanded = !state.constraintsExpanded;
       renderShell();
-      wireListeners();
       return;
     }
 
@@ -701,7 +838,6 @@ function wireListeners() {
       if (state.conflicts.length === 0) return;
       state.conflictPanelExpanded = !state.conflictPanelExpanded;
       renderShell();
-      wireListeners();
       return;
     }
 

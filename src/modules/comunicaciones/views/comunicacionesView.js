@@ -78,6 +78,7 @@ function renderShell(container) {
         ${tabBtn('directorio', 'bi-journal-text', 'Directorio')}
         ${tabBtn('compositor', 'bi-pencil-square', `Compositor${state.seleccion.size ? ` (${state.seleccion.size})` : ''}`)}
         ${tabBtn('plantillas', 'bi-files', 'Plantillas')}
+        ${tabBtn('boletines', 'bi-robot', 'Boletines Automáticos')}
       </ul>
 
       <div id="comm-body"></div>
@@ -98,7 +99,8 @@ function renderBody(container) {
   const body = container.querySelector('#comm-body')
   if (state.tab === 'directorio') renderDirectorio(container, body)
   else if (state.tab === 'compositor') renderCompositor(container, body)
-  else renderPlantillas(container, body)
+  else if (state.tab === 'plantillas') renderPlantillas(container, body)
+  else renderBoletines(container, body)
 }
 
 // ── Tab 1: Directorio ─────────────────────────────────────────────────────────
@@ -581,4 +583,125 @@ function mensajeAHtml(texto) {
   return `<div style="font-family:-apple-system,Segoe UI,Roboto,sans-serif;font-size:15px;line-height:1.6;color:#1f2937">
     ${escapeHTML(texto).replace(/\n/g, '<br>')}
   </div>`
+}
+
+async function renderBoletines(container, body) {
+  const service = await import('../services/boletinesService.js')
+  const logs = service.obtenerBoletinesEnviados()
+
+  const badgeConfig = {
+    ausencia_irregular: { label: 'Ausencia Irregular', css: 'bg-danger-subtle text-danger border border-danger-subtle' },
+    desempeno_bajo: { label: 'Desempeño Bajo', css: 'bg-warning-subtle text-warning-emphasis border border-warning-subtle' },
+    logro_pedagogico: { label: 'Logro Pedagógico', css: 'bg-success-subtle text-success border border-success-subtle' },
+    cumpleanos: { label: 'Cumpleaños', css: 'bg-info-subtle text-info-emphasis border border-info-subtle' }
+  }
+
+  body.innerHTML = `
+    <div class="row g-3">
+      <div class="col-md-4">
+        <div class="card border-0 shadow-sm rounded-3 mb-3">
+          <div class="card-body p-3">
+            <h6 class="card-title fw-bold mb-2"><i class="bi bi-gear-fill text-primary"></i> Disparadores de Boletines</h6>
+            <p class="text-muted small">Simula los disparos automáticos del sistema o tareas programadas (Fase 1).</p>
+            <div class="d-grid gap-2">
+              <button class="btn btn-outline-danger btn-sm text-start" id="btnRunAusencias">
+                <i class="bi bi-calendar-x me-1"></i> Verificar Ausencias Semanales
+              </button>
+              <button class="btn btn-outline-info btn-sm text-start" id="btnRunCumpleanos">
+                <i class="bi bi-gift me-1"></i> Verificar Cumpleaños Diarios
+              </button>
+              <button class="btn btn-outline-success btn-sm text-start" id="btnRunAvanceMock">
+                <i class="bi bi-trophy me-1"></i> Simular Avance Pedagógico (Logro)
+              </button>
+            </div>
+            <hr class="my-3">
+            <div class="bg-light p-2 rounded-2 small text-muted">
+              <i class="bi bi-info-circle me-1"></i> En producción, estos disparadores corren como tareas programadas (cron jobs) o ganchos del servidor.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-8">
+        <div class="card border-0 shadow-sm rounded-3">
+          <div class="card-body p-3">
+            <div class="d-flex align-items-center justify-content-between mb-3">
+              <h6 class="fw-bold mb-0"><i class="bi bi-clock-history"></i> Boletines Enviados Recientemente</h6>
+              <span class="badge bg-secondary rounded-pill small">${logs.length} en total</span>
+            </div>
+
+            ${logs.length === 0 ? `
+              <div class="text-center py-5 text-muted">
+                <i class="bi bi-chat-left-dots fs-1 mb-2 d-block"></i>
+                No se han disparado boletines automáticos todavía hoy.
+              </div>
+            ` : `
+              <div class="table-responsive" style="max-height: 450px;">
+                <table class="table table-hover align-middle table-sm border-0">
+                  <thead>
+                    <tr class="table-light">
+                      <th class="border-0 small">Fecha y Hora</th>
+                      <th class="border-0 small">Estudiante</th>
+                      <th class="border-0 small">Tipo</th>
+                      <th class="border-0 small">Mensaje Pre-cargado</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${logs.map(log => {
+                      const badge = badgeConfig[log.tipo] || { label: log.tipo, css: 'bg-secondary' }
+                      const dateFormatted = new Date(log.fecha_envio).toLocaleString('es-ES', {
+                        month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+                      })
+                      return `
+                        <tr>
+                          <td class="small text-muted">${dateFormatted}</td>
+                          <td>
+                            <div class="fw-semibold small">${escapeHTML(log.alumno_nombre)}</div>
+                            <div class="text-muted small" style="font-size:11px">${escapeHTML(log.contacto_nombre)} (${escapeHTML(log.contacto_telefono)})</div>
+                          </td>
+                          <td><span class="badge rounded-pill ${badge.css} small" style="font-size:10px">${badge.label}</span></td>
+                          <td class="small text-muted" style="max-width:250px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" 
+                              title="${escapeHTML(log.mensaje)}">${escapeHTML(log.mensaje)}</td>
+                        </tr>
+                      `
+                    }).join('')}
+                  </tbody>
+                </table>
+              </div>
+            `}
+          </div>
+        </div>
+      </div>
+    </div>
+  `
+
+  body.querySelector('#btnRunAusencias').addEventListener('click', async () => {
+    try {
+      const res = await service.procesarAusenciasSemanales()
+      AppToast.show(`Simulación completada: ${res.procesados} estudiantes analizados, ${res.enviados} boletines enviados.`, 'success')
+      renderBoletines(container, body)
+    } catch (e) {
+      AppToast.show(`Error: ${e.message}`, 'error')
+    }
+  })
+
+  body.querySelector('#btnRunCumpleanos').addEventListener('click', async () => {
+    try {
+      const res = await service.procesarCumpleanosDiarios()
+      AppToast.show(`Simulación completada: ${res.enviados} saludos de cumpleaños enviados.`, 'success')
+      renderBoletines(container, body)
+    } catch (e) {
+      AppToast.show(`Error: ${e.message}`, 'error')
+    }
+  })
+
+  body.querySelector('#btnRunAvanceMock').addEventListener('click', async () => {
+    try {
+      await service.procesarAvancePedagogico('1', 'demo-ind-2')
+      AppToast.show('Simulación completada: Logro pedagógico registrado y notificado.', 'success')
+      renderBoletines(container, body)
+    } catch (e) {
+      AppToast.show(`Error: ${e.message}`, 'error')
+    }
+  })
 }

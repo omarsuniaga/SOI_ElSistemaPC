@@ -1,5 +1,15 @@
 import { supabase } from '../../../lib/supabaseClient.js'
 
+let colInstrumento = null
+
+function resolverColumna(m) {
+  if (colInstrumento) return colInstrumento
+  if (m) {
+    colInstrumento = 'instrumento_principal' in m ? 'instrumento_principal' : 'especialidad'
+  }
+  return colInstrumento || 'especialidad'
+}
+
 function normalizeMaestro(m) {
   if (!m) return null
   return {
@@ -8,7 +18,7 @@ function normalizeMaestro(m) {
     nombre: m.nombre_completo ?? '',
     email: m.correo ?? '',
     telefono: m.tlf ?? '',
-    instrumento: m.especialidad ?? '',
+    instrumento: m.instrumento_principal ?? m.especialidad ?? '',
     bio: m.resena ?? '',
     is_active: m.activo ?? true,
     especialidades: Array.isArray(m.especialidades) ? m.especialidades : [],
@@ -26,6 +36,10 @@ export async function obtenerMaestros() {
     throw new Error('No se pudieron cargar los maestros')
   }
 
+  if (data && data.length > 0) {
+    resolverColumna(data[0])
+  }
+
   return data.map(normalizeMaestro)
 }
 
@@ -41,6 +55,10 @@ export async function obtenerMaestro(id) {
     throw new Error('Maestro no encontrado')
   }
 
+  if (data) {
+    resolverColumna(data)
+  }
+
   return normalizeMaestro(data)
 }
 
@@ -48,16 +66,19 @@ export async function crearMaestro(maestro) {
   const nombre = (maestro.nombre || maestro.nombre_completo || '').trim()
   if (!nombre) throw new Error('El nombre es obligatorio')
 
+  const col = resolverColumna()
+
   const datosLimpios = {
     nombre_completo: nombre,
     correo: (maestro.email || maestro.correo || '').trim().toLowerCase() || null,
     tlf: (maestro.telefono || maestro.tlf || '').trim() || null,
-    especialidad: (maestro.instrumento || maestro.especialidad || '').trim() || null,
     resena: (maestro.bio || maestro.resena || '').trim() || null,
     activo: maestro.is_active !== undefined ? maestro.is_active : (maestro.activo !== undefined ? maestro.activo : true),
     especialidades: Array.isArray(maestro.especialidades) ? maestro.especialidades : [],
     user_id: maestro.user_id || null,
   }
+
+  datosLimpios[col] = (maestro.instrumento || maestro.especialidad || '').trim() || null
 
   const { data, error } = await supabase
     .from('maestros')
@@ -68,7 +89,6 @@ export async function crearMaestro(maestro) {
     console.error('Error creando maestro:', error.message)
     throw new Error('No se pudo crear el maestro')
   }
-
 
   return normalizeMaestro(data[0])
 }
@@ -86,7 +106,10 @@ export async function actualizarMaestro(id, actualizaciones) {
   if (tlf !== undefined) datosActualizacion.tlf = tlf.trim()
 
   const especialidad = actualizaciones.instrumento || actualizaciones.especialidad
-  if (especialidad !== undefined) datosActualizacion.especialidad = especialidad.trim()
+  if (especialidad !== undefined) {
+    const col = resolverColumna()
+    datosActualizacion[col] = especialidad.trim()
+  }
 
   const resena = actualizaciones.bio || actualizaciones.resena
   if (resena !== undefined) datosActualizacion.resena = resena.trim()
@@ -191,6 +214,99 @@ export async function validarEmail(email) {
   }
 
   return !!data
+}
+
+/**
+ * Crea un maestro completo: auth user + perfil activo + row en maestros.
+ *
+ * Estrategia: usar la cadena de triggers DB existente.
+ * 1. SignUp CON rol='maestro' en metadata → handle_new_user() crea profile
+ *    con estado='pendiente' y auto-confirma el email (evita el 500 de SMTP).
+ * 2. on_profile_insert_maestro crea el row en maestros con los datos del metadata.
+ * 3. Post-signup: actualizar profile a estado='activo' y upsert datos extra
+ *    (tlf, especialidades) que los triggers no manejan.
+ */
+export async function crearMaestroConAuth({ nombre, email, password, telefono, instrumento, especialidades, bio }) {
+  const nombreLimpio = (nombre || '').trim()
+  if (!nombreLimpio) throw new Error('El nombre es obligatorio')
+
+  const emailLimpio = (email || '').trim().toLowerCase()
+  if (!emailLimpio) throw new Error('El email es obligatorio')
+
+  if (!password || password.length < 6) {
+    throw new Error('La contraseña debe tener al menos 6 caracteres')
+  }
+
+  const instrumentoLimpio = (instrumento || '').trim()
+  const resenaLimpia = (bio || '').trim()
+
+  // 1. Crear auth user CON rol='maestro' en metadata.
+  //    handle_new_user() → crea profile con estado='pendiente' y auto-confirma email.
+  //    on_profile_insert_maestro → crea row en maestros (con fallback especialidad).
+  const { data: authData, error: signUpError } = await supabase.auth.signUp({
+    email: emailLimpio,
+    password,
+    options: {
+      data: {
+        full_name: nombreLimpio,
+        rol: 'maestro',
+        instrumento: instrumentoLimpio,
+        resena: resenaLimpia || null,
+      },
+    },
+  })
+
+  if (signUpError) {
+    throw new Error(signUpError.message || 'Error al crear usuario')
+  }
+
+  if (!authData?.user) {
+    throw new Error('No se pudo crear el usuario')
+  }
+
+  const userId = authData.user.id
+
+  // 2. Actualizar profile → estado='activo' (lo creó el trigger como 'pendiente')
+  const { error: profileError } = await supabase
+    .from('profiles')
+    .update({
+      estado: 'activo',
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', userId)
+
+  if (profileError) {
+    console.error('Error activando profile:', profileError.message)
+  }
+
+  // 3. Upsert datos extra en maestros que el trigger no maneja (tlf, especialidades)
+  const col = resolverColumna()
+  const { error: maestroUpdateErr } = await supabase
+    .from('maestros')
+    .update({
+      tlf: (telefono || '').trim() || null,
+      especialidades: Array.isArray(especialidades) ? especialidades : [],
+    })
+    .eq('user_id', userId)
+
+  if (maestroUpdateErr) {
+    console.error('Error actualizando datos del maestro:', maestroUpdateErr.message)
+  }
+
+  // 4. Leer el maestro completo para retornarlo
+  const { data: maestroData } = await supabase
+    .from('maestros')
+    .select('*')
+    .eq('user_id', userId)
+    .single()
+
+  return normalizeMaestro({
+    user_id: userId,
+    nombre_completo: nombreLimpio,
+    correo: emailLimpio,
+    activo: true,
+    ...(maestroData || {}),
+  })
 }
 
 export async function obtenerMaestrosActivos() {

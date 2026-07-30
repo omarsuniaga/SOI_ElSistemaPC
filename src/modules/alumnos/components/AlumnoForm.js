@@ -5,6 +5,8 @@ import { PARENTESCOS } from '../api/alumnosApi.js'
 export const SECTIONS = {
   personal: [
     { key: 'nombre_completo', label: 'Nombre completo' },
+    { key: 'instrumento_principal', label: 'Instrumento principal' },
+    { key: 'familiar_telefono', label: 'Teléfono / WhatsApp', type: 'phone' },
     { key: 'fecha_nacimiento', label: 'Fecha de nacimiento', type: 'date' },
     { key: 'genero', label: 'Género', type: 'select', options: [{ v: '', l: '—' }, { v: 'M', l: 'Masculino' }, { v: 'F', l: 'Femenino' }, { v: 'O', l: 'Otro' }, { v: 'N', l: 'No binario' }] },
     { key: 'nacionalidad', label: 'Nacionalidad' },
@@ -363,13 +365,17 @@ export class AlumnoForm {
   _renderFullForm() {
     const a = this.alumno
     return `<form class="row g-2">
-      <div class="col-12">
+      <div class="col-md-6">
         <label class="form-label-compact">Nombre Completo *</label>
         <input type="text" class="form-control input-dense" id="modal-nombre" maxlength="100" required placeholder="Juan Pérez" autocomplete="off" value="${escapeHTML(a.nombre || '')}">
       </div>
       <div class="col-md-6">
-        <label class="form-label-compact">Teléfono (WhatsApp) *</label>
-        <input type="tel" class="form-control input-dense" id="modal-telefono" required placeholder="+58 412 555 1234" autocomplete="off" value="${escapeHTML(a.telefono || '')}">
+        <label class="form-label-compact"><i class="bi bi-music-note-beamed text-primary me-1"></i>Instrumento Principal *</label>
+        <input type="text" class="form-control input-dense border-primary-subtle" id="modal-instrumento" required maxlength="50" placeholder="Violín, Piano..." autocomplete="off" value="${escapeHTML(a.instrumento || '')}">
+      </div>
+      <div class="col-md-6">
+        <label class="form-label-compact"><i class="bi bi-whatsapp text-success me-1"></i>Teléfono (WhatsApp) *</label>
+        <input type="tel" class="form-control input-dense border-success-subtle" id="modal-telefono" required placeholder="+58 412 555 1234" autocomplete="off" value="${escapeHTML(a.telefono || '')}">
       </div>
       <div class="col-md-6">
         <label class="form-label-compact">Email</label>
@@ -394,10 +400,6 @@ export class AlumnoForm {
         </select>
       </div>
       <div class="col-md-6">
-        <label class="form-label-compact">Instrumento *</label>
-        <input type="text" class="form-control input-dense" id="modal-instrumento" required maxlength="50" placeholder="Violín, Piano..." autocomplete="off" value="${escapeHTML(a.instrumento || '')}">
-      </div>
-      <div class="col-12">
         <label class="form-label-compact">Dirección</label>
         <input type="text" class="form-control input-dense" id="modal-direccion" maxlength="200" placeholder="Dirección completa" autocomplete="off" value="${escapeHTML(a.direccion || '')}">
       </div>

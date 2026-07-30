@@ -23,6 +23,8 @@ const VIEW_LOADERS = {
   'clase-emergente': () => import('../views/claseEmergenteView.js'),
   perfil:            () => import('../views/perfilView.js'),
   planificacion:     () => import('../views/planificacionView.js'),
+  'planificacion-disenador': () => import('../../modules/planificacion/views/DisenadorCurricularView.js'),
+  'planificacion-ruta':      () => import('../../modules/planificacion/views/RutaPedagogicaView.js'),
   alumno:            () => import('../views/alumnoPerfilView.js'),
   gamificacion:      () => import('../views/gamificacionView.js'),
   ruta:              () => import('../views/rutaGameificadaView.js'),
@@ -40,7 +42,7 @@ const MAESTRO_VIEWS = Object.keys(VIEW_LOADERS).concat(['logout'])
 
 export const CACHEABLE_VIEWS = new Set([
   'hoy', 'fechas', 'calendario', 'metricas', 'perfil', 'ruta',
-  'gamificacion', 'crear-clase', 'planificacion', 'ruta-libreria',
+  'gamificacion', 'crear-clase', 'planificacion', 'planificacion-disenador', 'planificacion-ruta', 'ruta-libreria',
   'gestionar-horario',
 ])
 
@@ -49,7 +51,7 @@ export function setupRouterRoutes(router, _isAdmin, renderView) {
 
   ;[
     'login', 'logout', 'fechas', 'calendario', 'clases', 'hoy', 'asistencia',
-    'metricas', 'perfil', 'clase-emergente', 'planificacion', 'alumno',
+    'metricas', 'perfil', 'clase-emergente', 'planificacion', 'planificacion-disenador', 'planificacion-ruta', 'alumno',
     'gamificacion', 'ruta', 'crear-clase', 'ruta-plan-builder',
     'ruta-semanal', 'ruta-libreria', 'gestionar-clases',
     'register', 'pending-approval', 'gestionar-horario', 'proponer-contenido',
@@ -132,6 +134,10 @@ export async function renderViewContent(route, container, params, urlParams, con
       return mod.renderClaseEmergenteView(container, { maestroId })
     case 'planificacion':
       return await mod.renderPlanificacionView(container, { maestroId })
+    case 'planificacion-disenador':
+      return await mod.renderDisenadorCurricularView(container)
+    case 'planificacion-ruta':
+      return await mod.renderRutaPedagogicaView(container)
     case 'alumno':
       return mod.renderAlumnoPerfilView(container, { alumnoId: urlParams.get('id') || params.id })
     case 'gamificacion':

@@ -1,0 +1,411 @@
+/* ============================================================
+   GUIDANCE ENGINE — Contextual Hints & UI Styles
+   Uses Portal Maestros design tokens (01-tokens.css)
+   ============================================================ */
+
+/* ── Inline Hint Card ───────────────────────────────────────── */
+.guidance-hint {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--pm-space-3);
+  padding: var(--pm-space-3) var(--pm-space-4);
+  border-radius: var(--pm-radius-sm);
+  background: var(--pm-glass-bg);
+  backdrop-filter: blur(var(--pm-glass-blur));
+  -webkit-backdrop-filter: blur(var(--pm-glass-blur));
+  border: 1px solid var(--pm-glass-border);
+  box-shadow: var(--pm-shadow-sm);
+  margin-bottom: var(--pm-space-3);
+  transition: opacity var(--pm-transition-base), transform var(--pm-transition-base);
+  animation: guidance-hint-enter var(--pm-transition-spring) forwards;
+}
+
+@keyframes guidance-hint-enter {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.guidance-hint--exiting {
+  animation: guidance-hint-exit var(--pm-transition-base) forwards;
+}
+
+@keyframes guidance-hint-exit {
+  to {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+}
+
+/* ── Priority Variants ──────────────────────────────────────── */
+.guidance-hint--critical {
+  border-left: 3px solid var(--pm-danger);
+}
+
+.guidance-hint--high {
+  border-left: 3px solid var(--pm-warning);
+}
+
+.guidance-hint--medium {
+  border-left: 3px solid var(--pm-primary);
+}
+
+.guidance-hint--low {
+  border-left: 3px solid var(--pm-text-muted);
+}
+
+/* ── Hint Icon ──────────────────────────────────────────────── */
+.guidance-hint__icon {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  margin-top: 1px;
+}
+
+.guidance-hint--critical .guidance-hint__icon { color: var(--pm-danger); }
+.guidance-hint--high .guidance-hint__icon     { color: var(--pm-warning); }
+.guidance-hint--medium .guidance-hint__icon   { color: var(--pm-primary); }
+.guidance-hint--low .guidance-hint__icon      { color: var(--pm-text-muted); }
+
+/* ── Hint Body ──────────────────────────────────────────────── */
+.guidance-hint__body {
+  flex: 1;
+  min-width: 0;
+}
+
+.guidance-hint__message {
+  font-size: var(--pm-font-size-base);
+  font-weight: 500;
+  color: var(--pm-text);
+  line-height: 1.4;
+  margin: 0;
+}
+
+.guidance-hint__action {
+  font-size: calc(var(--pm-font-size-base) * 0.875);
+  color: var(--pm-text-muted);
+  margin: var(--pm-space-1) 0 0;
+  line-height: 1.3;
+}
+
+/* ── Hint Dismiss Button ────────────────────────────────────── */
+.guidance-hint__dismiss {
+  flex-shrink: 0;
+  width: var(--pm-touch-min);
+  height: var(--pm-touch-min);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  color: var(--pm-text-muted);
+  cursor: pointer;
+  border-radius: var(--pm-radius-xs);
+  transition: background var(--pm-transition-fast), color var(--pm-transition-fast);
+  font-size: 14px;
+}
+
+.guidance-hint__dismiss:hover {
+  background: var(--pm-surface-hover);
+  color: var(--pm-text);
+}
+
+.guidance-hint__dismiss:focus-visible {
+  outline: 2px solid var(--pm-primary);
+  outline-offset: 2px;
+}
+
+/* ── Hints Container ────────────────────────────────────────── */
+.guidance-hints {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: var(--pm-space-2) 0;
+}
+
+/* ── Guidance Panel (slide-from-right) ──────────────────────── */
+.guidance-panel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: min(380px, 90vw);
+  height: 100vh;
+  background: var(--pm-surface);
+  border-left: 1px solid var(--pm-border);
+  box-shadow: var(--pm-shadow-xl);
+  z-index: var(--pm-z-overlay);
+  display: flex;
+  flex-direction: column;
+  transform: translateX(100%);
+  transition: transform var(--pm-transition-slow);
+}
+
+.guidance-panel--open {
+  transform: translateX(0);
+}
+
+.guidance-panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--pm-space-4) var(--pm-space-5);
+  border-bottom: 1px solid var(--pm-border);
+  min-height: 56px;
+}
+
+.guidance-panel__title {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--pm-text);
+  margin: 0;
+}
+
+.guidance-panel__close {
+  width: var(--pm-touch-min);
+  height: var(--pm-touch-min);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  color: var(--pm-text-muted);
+  cursor: pointer;
+  border-radius: var(--pm-radius-xs);
+  transition: background var(--pm-transition-fast);
+  font-size: 18px;
+}
+
+.guidance-panel__close:hover {
+  background: var(--pm-surface-hover);
+}
+
+.guidance-panel__body {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--pm-space-4) var(--pm-space-5);
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ── Panel Sections ─────────────────────────────────────────── */
+.guidance-section {
+  margin-bottom: var(--pm-space-6);
+}
+
+.guidance-section__title {
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--pm-text-muted);
+  margin: 0 0 var(--pm-space-3);
+}
+
+/* ── Actions List ───────────────────────────────────────────── */
+.guidance-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pm-space-2);
+}
+
+.guidance-action {
+  display: flex;
+  align-items: center;
+  gap: var(--pm-space-3);
+  padding: var(--pm-space-3) var(--pm-space-4);
+  border-radius: var(--pm-radius-sm);
+  background: var(--pm-surface);
+  border: 1px solid var(--pm-border);
+  color: var(--pm-text);
+  text-decoration: none;
+  font-size: var(--pm-font-size-base);
+  font-weight: 500;
+  min-height: var(--pm-touch-min);
+  transition: background var(--pm-transition-fast), border-color var(--pm-transition-fast);
+  cursor: pointer;
+}
+
+.guidance-action:hover {
+  background: var(--pm-bg-hover);
+  border-color: var(--pm-primary);
+}
+
+.guidance-action__icon {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--pm-primary);
+  font-size: 14px;
+}
+
+.guidance-action--secondary {
+  background: transparent;
+  border-color: transparent;
+  color: var(--pm-text-muted);
+}
+
+.guidance-action--secondary:hover {
+  background: var(--pm-surface-hover);
+  color: var(--pm-text);
+  border-color: transparent;
+}
+
+/* ── Smart Alert Banner ─────────────────────────────────────── */
+.guidance-alert {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--pm-space-3);
+  padding: var(--pm-space-4);
+  border-radius: var(--pm-radius-sm);
+  margin-bottom: var(--pm-space-3);
+  animation: guidance-alert-enter var(--pm-transition-spring) forwards;
+}
+
+@keyframes guidance-alert-enter {
+  from { opacity: 0; transform: scale(0.95); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+.guidance-alert--critical {
+  background: var(--pm-danger-bg);
+  border: 1px solid var(--pm-danger);
+  color: var(--pm-danger-text);
+}
+
+.guidance-alert--high {
+  background: var(--pm-warning-bg);
+  border: 1px solid var(--pm-warning);
+  color: var(--pm-warning-text);
+}
+
+.guidance-alert__body {
+  flex: 1;
+}
+
+.guidance-alert__message {
+  font-weight: 600;
+  font-size: var(--pm-font-size-base);
+  margin: 0;
+}
+
+.guidance-alert__action {
+  font-size: calc(var(--pm-font-size-base) * 0.875);
+  margin: var(--pm-space-1) 0 0;
+  opacity: 0.9;
+}
+
+.guidance-alert__dismiss {
+  flex-shrink: 0;
+  width: var(--pm-touch-min);
+  height: var(--pm-touch-min);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  border-radius: var(--pm-radius-xs);
+  opacity: 0.7;
+}
+
+.guidance-alert__dismiss:hover { opacity: 1; }
+
+/* ── Overlay (mobile backdrop) ──────────────────────────────── */
+.guidance-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: calc(var(--pm-z-overlay) - 1);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--pm-transition-base);
+}
+
+.guidance-overlay--visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* ── Responsive ─────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .guidance-panel {
+    width: 100vw;
+  }
+
+  .guidance-hint {
+    padding: var(--pm-space-2) var(--pm-space-3);
+  }
+}
+
+@media (min-width: 769px) and (max-width: 1024px) {
+  .guidance-panel {
+    width: 360px;
+  }
+}
+
+/* ── Dark Mode Overrides ────────────────────────────────────── */
+[data-bs-theme="dark"] .guidance-hint {
+  background: var(--pm-glass-bg);
+  border-color: var(--pm-glass-border);
+}
+
+[data-bs-theme="dark"] .guidance-action {
+  background: var(--pm-surface);
+  border-color: var(--pm-border);
+}
+
+[data-bs-theme="dark"] .guidance-action:hover {
+  background: var(--pm-bg-hover);
+  border-color: var(--pm-primary);
+}
+
+/* ── Loading Skeleton ───────────────────────────────────────── */
+.guidance-skeleton {
+  height: 60px;
+  border-radius: var(--pm-radius-sm);
+  background: linear-gradient(
+    90deg,
+    var(--pm-surface-hover) 25%,
+    var(--pm-surface) 50%,
+    var(--pm-surface-hover) 75%
+  );
+  background-size: 200% 100%;
+  animation: guidance-skeleton-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes guidance-skeleton-pulse {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ── Focus styles (accessibility) ───────────────────────────── */
+.guidance-hint:focus-within {
+  outline: 2px solid var(--pm-primary);
+  outline-offset: 2px;
+}
+
+.guidance-action:focus-visible {
+  outline: 2px solid var(--pm-primary);
+  outline-offset: 2px;
+}
+
+/* ── Print ──────────────────────────────────────────────────── */
+@media print {
+  .guidance-hint,
+  .guidance-panel,
+  .guidance-alert,
+  .guidance-overlay {
+    display: none !important;
+  }
+}

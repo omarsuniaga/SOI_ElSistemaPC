@@ -291,7 +291,7 @@ async function _openNewCaseModal() {
           <div class="col-12">
             <label class="form-label small fw-semibold">Alumno *</label>
             <select class="form-select form-select-sm" id="nc-alumno" required>
-              <option value="">Seleccioná un alumno...</option>
+              <option value="">Seleccione un alumno...</option>
               ${(alumnos || []).map(a => `<option value="${a.id}" data-nombre="${a.nombre_completo}">${a.nombre_completo}</option>`).join('')}
             </select>
           </div>

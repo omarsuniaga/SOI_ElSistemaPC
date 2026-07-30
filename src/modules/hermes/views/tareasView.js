@@ -1,4 +1,4 @@
-﻿/**
+/**
  * tareasView.js â€” Vista de Tareas Institucionales (Hermes).
  * Lee las tareas generadas por el motor de cascada y permite al staff
  * actualizar estado, checklist y feedback.
@@ -199,12 +199,17 @@ function renderContent(container) {
           </div>
           <div>
             <h1 class="tareas-title mb-0">${escapeHTML(tituloPortal)}</h1>
-            <p class="text-muted small mb-0">Sistema Hermes Â· delegaciÃ³n automÃ¡tica</p>
+            <p class="text-muted small mb-0">Sistema Hermes · delegación automática</p>
             ${
               state.correlationId
                 ? `<p class="text-muted small mb-0">Caso: <code>${escapeHTML(state.correlationId)}</code></p>`
                 : ''
             }
+          </div>
+          <div class="ms-auto">
+            <button class="btn btn-sm btn-outline-info" id="btnSimularTelegram">
+              <i class="bi bi-telegram me-1"></i>Simular Ingesta Telegram
+            </button>
           </div>
         </div>
 
@@ -414,6 +419,12 @@ function attachGlobalEvents(container) {
       state.filtroPrioridad = e.target.value
       rerender()
     },
+    { signal },
+  )
+
+  container.querySelector('#btnSimularTelegram')?.addEventListener(
+    'click',
+    () => simularIngestaTelegram(container),
     { signal },
   )
 
@@ -723,6 +734,78 @@ async function openTareaModal(container, tarea) {
         AppToast.show(`Error: ${err.message}`, 'error')
       }
     },
+  })
+}
+
+function simularIngestaTelegram(container) {
+  AppModal.open({
+    title: 'Simulador de Ingesta de Telegram (Bot de Tareas)',
+    size: 'md',
+    body: `
+      <div class="mb-3">
+        <label class="form-label small fw-semibold">Mensaje de Telegram</label>
+        <textarea class="form-control" id="telegramMsg" rows="3" 
+                  placeholder="Ej: direccion urgente necesito una constancia de estudios para beca"></textarea>
+        <p class="text-muted small mt-1" style="font-size:11px">Escribe tu mensaje indicando el departamento como prefijo (ej: direccion, docencia, atencion, luteria, calidad, desarrollo).</p>
+      </div>
+      <div class="mb-2">
+        <label class="form-label small fw-semibold">Simular Usuario</label>
+        <select class="form-select form-select-sm" id="telegramUser">
+          <option value="1">Juan Pérez (Docente)</option>
+          <option value="2">María Gómez (Coordinadora)</option>
+          <option value="3">Pedro Núñez (Luthier)</option>
+        </select>
+      </div>
+    `,
+    saveText: 'Procesar con IA (Groq)',
+    onSave: async (mb) => {
+      const msg = mb.querySelector('#telegramMsg').value.trim()
+      if (!msg) {
+        AppToast.show('Escribe un mensaje primero', 'error')
+        return false
+      }
+      
+      try {
+        const deptTurnoRegex = /^(direccion|secretaria|docencia|atencion|calidad|desarrollo|dirección|luteria|finanzas)/i;
+        const match = msg.match(deptTurnoRegex);
+        if (!match) {
+          AppToast.show('Formato incorrecto. El mensaje debe comenzar con el departamento.', 'error')
+          return false
+        }
+
+        const deptoAbbr = match[1].toLowerCase()
+        const deptoMap = {
+          direccion: 'DIR',
+          secretaria: 'SEC',
+          docencia: 'ACM',
+          atencion: 'ADM',
+          calidad: 'DIR',
+          desarrollo: 'ACM',
+          luteria: 'LOG',
+          finanzas: 'FIN'
+        }
+        
+        const depto = deptoMap[deptoAbbr] || 'DIR'
+        const contentText = msg.replace(deptTurnoRegex, '').trim()
+        
+        const payload = {
+          titulo: `Telegram: ${contentText.length > 50 ? contentText.substring(0, 50) + '...' : contentText}`,
+          descripcion: `Mensaje de Telegram: "${msg}"`,
+          departamento: depto,
+          estado: 'pendiente',
+          prioridad: msg.toLowerCase().includes('urgente') ? 'alta' : 'media',
+          correlation_id: `corr_tg_${Date.now()}`
+        }
+
+        await tareasApi.crearTareaInstitucional(payload)
+        AppToast.show('Mensaje procesado: Tarea creada en ' + depto, 'success')
+        
+        await refreshTareas(container)
+      } catch (err) {
+        AppToast.show('Error al procesar: ' + err.message, 'error')
+        return false
+      }
+    }
   })
 }
 

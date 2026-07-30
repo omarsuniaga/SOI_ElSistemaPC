@@ -218,7 +218,7 @@ function _openSolicitudModal(id) {
           <div class="col-12">
             <label class="form-label fw-semibold small">Respuesta administrativa</label>
             <textarea class="form-control form-control-sm" id="modal-sol-respuesta" rows="3"
-                      placeholder="Escribí la respuesta para el maestro...">${s.respuesta_admin || ''}</textarea>
+                      placeholder="Escriba la respuesta para el maestro...">${s.respuesta_admin || ''}</textarea>
           </div>
         </div>
       </div>

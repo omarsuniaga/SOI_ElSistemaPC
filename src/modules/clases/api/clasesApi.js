@@ -119,14 +119,24 @@ export async function obtenerClases() {
     throw new Error('No se pudieron cargar las clases')
   }
 
-  const { data: horarios } = await supabase
-    .from('clase_horarios')
-    .select('*')
-    .order('dia', { ascending: true })
+  const [{ data: horarios }, { data: alumnosClases }] = await Promise.all([
+    supabase.from('clase_horarios').select('*').order('dia', { ascending: true }),
+    supabase.from('alumnos_clases').select('clase_id, alumno_id')
+  ])
+
+  const alumnosByClase = (alumnosClases || []).reduce((acc, row) => {
+    if (row.clase_id) {
+      if (!acc[row.clase_id]) acc[row.clase_id] = []
+      if (row.alumno_id) acc[row.clase_id].push(row.alumno_id)
+    }
+    return acc
+  }, {})
 
   return (clases || []).map(c => {
     const claseObj = normalizeClase(c)
     claseObj.horarios = horarios?.filter(h => h.clase_id === c.id) || []
+    claseObj.alumnos_ids = alumnosByClase[c.id] || []
+    claseObj.total_alumnos = claseObj.alumnos_ids.length
     return claseObj
   })
 }
@@ -202,10 +212,19 @@ export async function crearClase(claseData, force = false) {
     delete claseJSON.periodo_id
   }
 
-  const { data, error } = await supabase
+  let payload = claseJSON
+  let { data, error } = await supabase
     .from('clases')
-    .insert([claseJSON])
+    .insert([payload])
     .select()
+
+  if (error && error.message?.includes('clases_tipo_clase_check') && payload.tipo_clase === 'rotativa') {
+    console.warn('[clasesApi] DB check constraint fallback: saving tipo_clase as "individual"')
+    payload = { ...payload, tipo_clase: 'individual' }
+    const retry = await supabase.from('clases').insert([payload]).select()
+    data = retry.data
+    error = retry.error
+  }
 
   if (error) {
     console.error('Error creando clase:', error.message)
@@ -274,11 +293,24 @@ export async function actualizarClase(id, actualizaciones, force = false) {
     }
   }
 
-  const { data, error } = await supabase
+  let updatePayload = fusionada.toJSON()
+  let { data, error } = await supabase
     .from('clases')
-    .update(fusionada.toJSON())
+    .update(updatePayload)
     .eq('id', id)
     .select()
+
+  if (error && error.message?.includes('clases_tipo_clase_check') && updatePayload.tipo_clase === 'rotativa') {
+    console.warn('[clasesApi] DB check constraint fallback: updating tipo_clase as "individual"')
+    updatePayload = { ...updatePayload, tipo_clase: 'individual' }
+    const retry = await supabase
+      .from('clases')
+      .update(updatePayload)
+      .eq('id', id)
+      .select()
+    data = retry.data
+    error = retry.error
+  }
 
   if (error) {
     console.error('Error actualizando clase:', error.message)
@@ -478,6 +510,189 @@ export function getConflictoLabel(tipo) {
   const labels = {
     'salón': 'Conflicto de salón',
     'maestro': 'Conflicto de maestro',
+    'alumnos': 'Conflicto de alumnos coincidentes'
   }
   return labels[tipo] || tipo
+}
+
+/**
+ * Verifica exhaustivamente solapes de maestro, salón y alumnos coincidentes para una clase.
+ */
+export async function verificarSolapamientoCompleto({ claseId = null, maestroId, horarios = [], alumnosIds = [] }) {
+  const conflictos = []
+  if (!horarios || horarios.length === 0) return conflictos
+
+  const { data: todasClases, error } = await supabase
+    .from('clases')
+    .select(`
+      id,
+      nombre,
+      maestro_principal_id,
+      maestro_suplente_id,
+      clase_horarios ( dia, hora_inicio, hora_fin, salon_id, salones(nombre) ),
+      alumnos_clases ( alumno_id, alumnos(nombre_completo) )
+    `)
+
+  if (error || !todasClases) return conflictos
+
+  for (const newH of horarios) {
+    if (!newH?.dia || !newH?.hora_inicio || !newH?.hora_fin) continue
+    const startNew = timeToMinutes(newH.hora_inicio)
+    const endNew = timeToMinutes(newH.hora_fin)
+
+    for (const c of todasClases) {
+      if (claseId && c.id === claseId) continue
+
+      for (const exH of (c.clase_horarios || [])) {
+        if (!exH?.dia || exH.dia.toLowerCase() !== newH.dia.toLowerCase()) continue
+        const startEx = timeToMinutes(exH.hora_inicio)
+        const endEx = timeToMinutes(exH.hora_fin)
+
+        if (startNew < endEx && startEx < endNew) {
+          // Datos estructurados del horario en conflicto, para poder actuar
+          // sobre él (no solo mostrarlo) cuando el usuario confirme.
+          const exHorario = { dia: exH.dia, hora_inicio: exH.hora_inicio, hora_fin: exH.hora_fin }
+
+          // 1. Mismo Maestro
+          if (maestroId && (c.maestro_principal_id === maestroId || c.maestro_suplente_id === maestroId)) {
+            conflictos.push({
+              tipo: 'maestro',
+              clase_id: c.id,
+              clase_nombre: c.nombre,
+              detalle: `El maestro ya tiene asignada la clase "${c.nombre}" en este horario.`,
+              horario: `${exH.dia} ${formatHora(exH.hora_inicio)} - ${formatHora(exH.hora_fin)}`,
+              ...exHorario,
+            })
+          }
+
+          // 2. Mismo Salón
+          if (newH.salon_id && exH.salon_id && newH.salon_id === exH.salon_id) {
+            const salonNombre = exH.salones?.nombre || 'el salón'
+            conflictos.push({
+              tipo: 'salón',
+              clase_id: c.id,
+              clase_nombre: c.nombre,
+              detalle: `El salón "${salonNombre}" está ocupado por la clase "${c.nombre}".`,
+              horario: `${exH.dia} ${formatHora(exH.hora_inicio)} - ${formatHora(exH.hora_fin)}`,
+              ...exHorario,
+            })
+          }
+
+          // 3. Alumnos Coincidentes
+          if (alumnosIds.length > 0 && exH.alumnos_clases?.length > 0) {
+            const alumnosCoincidentes = exH.alumnos_clases.filter(ac => alumnosIds.includes(ac.alumno_id))
+            if (alumnosCoincidentes.length > 0) {
+              const nombres = alumnosCoincidentes.map(ac => ac.alumnos?.nombre_completo || 'Alumno').join(', ')
+              conflictos.push({
+                tipo: 'alumnos',
+                clase_id: c.id,
+                clase_nombre: c.nombre,
+                detalle: `${alumnosCoincidentes.length} ${alumnosCoincidentes.length === 1 ? 'alumno' : 'alumnos'} (${nombres}) en dos clases a la misma hora.`,
+                horario: `${exH.dia} ${formatHora(exH.hora_inicio)} - ${formatHora(exH.hora_fin)}`,
+                ...exHorario,
+              })
+            }
+          }
+        }
+      }
+    }
+  }
+
+  return Array.from(new Set(conflictos.map(JSON.stringify))).map(JSON.parse)
+}
+
+/**
+ * Marca las clases en conflicto como pendientes de revisión, en vez de
+ * mutar sus datos en automático (desalojar salón, quitar alumnos): quien
+ * coordina horarios decide cómo resolver el solape, no el sistema.
+ *
+ * @param {Array} conflictos - conflictos devueltos por verificarSolapamientoCompleto
+ * @param {string} nuevaClaseNombre - nombre de la clase que se guardó pese al solape
+ */
+export async function resolverConflictosClases(conflictos = [], nuevaClaseNombre = '') {
+  const porClase = new Map()
+  for (const c of conflictos) {
+    if (!c.clase_id) continue
+    if (!porClase.has(c.clase_id)) porClase.set(c.clase_id, [])
+    porClase.get(c.clase_id).push(c)
+  }
+  if (porClase.size === 0) return
+
+  await Promise.all(Array.from(porClase.entries()).map(async ([claseId, confs]) => {
+    const acciones = []
+
+    // Salón: recurso físico, no hay ambigüedad pedagógica en liberarlo.
+    // La clase nueva pasa a usarlo; la vieja queda sin salón en ese
+    // horario hasta que alguien le asigne otro.
+    for (const c of confs.filter(c => c.tipo === 'salón' && c.dia && c.hora_inicio && c.hora_fin)) {
+      await supabase
+        .from('clase_horarios')
+        .update({ salon_id: null })
+        .eq('clase_id', claseId)
+        .eq('dia', c.dia)
+        .eq('hora_inicio', c.hora_inicio)
+        .eq('hora_fin', c.hora_fin)
+      acciones.push(
+        `Se liberó el salón del ${c.dia} ${formatHora(c.hora_inicio)}-${formatHora(c.hora_fin)} ` +
+        `(ahora lo usa "${nuevaClaseNombre}") — asignale uno nuevo a este horario.`
+      )
+    }
+
+    // Maestro y alumnos: no se mutan. Desasignar un maestro o desinscribir
+    // un alumno es una decisión pedagógica — y el solape de alumnos muchas
+    // veces es intencional (ensayos generales que se superponen con
+    // clases individuales). Quedan señalados para que alguien decida.
+    for (const c of confs.filter(c => c.tipo !== 'salón')) {
+      acciones.push(c.detalle)
+    }
+
+    await supabase
+      .from('clases')
+      .update({
+        necesita_revision: true,
+        revision_motivo: `Conflicto con "${nuevaClaseNombre}": ${acciones.join(' ')}`,
+      })
+      .eq('id', claseId)
+  }))
+}
+
+/**
+ * Alumnos activos que no están inscritos en ninguna clase activa,
+ * agrupados por instrumento — para encontrar a quién se le olvidó asignar
+ * una clase. El módulo asume que todo alumno activo debería pertenecer a
+ * alguna, y hoy no hay forma de verlo sin revisar clase por clase.
+ */
+export async function obtenerAlumnosSinClase() {
+  const [{ data: alumnos, error: errAlumnos }, { data: inscripciones, error: errInscripciones }] = await Promise.all([
+    supabase
+      .from('alumnos')
+      .select('id, nombre_completo, instrumento_principal, tlf_alumno, familiar_telefono, representante_tlf, fecha_ingreso, nivel, promedio_notas')
+      .eq('activo', true)
+      .order('nombre_completo'),
+    supabase
+      .from('alumnos_clases')
+      .select('alumno_id')
+      .eq('activo', true),
+  ])
+
+  if (errAlumnos) throw errAlumnos
+  if (errInscripciones) throw errInscripciones
+
+  const idsInscritos = new Set((inscripciones || []).map(i => i.alumno_id))
+  const sinClase = (alumnos || []).filter(a => !idsInscritos.has(a.id))
+
+  const porInstrumento = new Map()
+  for (const alumno of sinClase) {
+    const key = alumno.instrumento_principal || 'Sin instrumento definido'
+    if (!porInstrumento.has(key)) porInstrumento.set(key, [])
+    porInstrumento.get(key).push(alumno)
+  }
+
+  return Array.from(porInstrumento.entries())
+    .map(([instrumento, alumnosDelInstrumento]) => ({
+      instrumento,
+      alumnos: alumnosDelInstrumento,
+      total: alumnosDelInstrumento.length,
+    }))
+    .sort((a, b) => b.total - a.total)
 }

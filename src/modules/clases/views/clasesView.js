@@ -7,6 +7,8 @@ import {
   eliminarClase,
   obtenerAlumnosInscritos,
   obtenerAlumnosInscritosPorClases,
+  obtenerAlumnosSinClase,
+  inscribirAlumno,
 } from '../api/clasesApi.js'
 import { supabase } from '../../../lib/supabaseClient.js'
 import {
@@ -18,6 +20,8 @@ import {
   getInitials,
   getConsistentColor,
   timeToMinutes,
+  normalizarInstrumento,
+  rendimientoBadgeHTML,
 } from '../utils/clasesUtils.js'
 import { openClaseModal } from '../components/claseModal.js'
 import { descargarPdfClase, descargarPdfListadoAlumnosPorClases } from '../domain/generarPdfClase.js'
@@ -44,6 +48,29 @@ const state = {
   filtrosAbiertos: typeof window !== 'undefined' ? window.innerWidth >= 992 : true,
 }
 
+// Últimos filtros elegidos por el usuario: sobreviven a un refresh del
+// navegador (el `state` de arriba es solo memoria y se pierde con F5).
+const FILTROS_STORAGE_KEY = 'soi_clases_filtros_v1'
+const FILTRO_KEYS = ['filtroBuscar', 'filtroEstado', 'filtroInstrumento', 'filtroNivel', 'filtroTipo', 'filtroSalon', 'filtroDia']
+
+function _guardarFiltrosStorage() {
+  try {
+    const payload = Object.fromEntries(FILTRO_KEYS.map(k => [k, state[k]]))
+    localStorage.setItem(FILTROS_STORAGE_KEY, JSON.stringify(payload))
+  } catch { /* localStorage no disponible (modo privado, etc.) — no es crítico */ }
+}
+
+function _restaurarFiltrosStorage() {
+  try {
+    const raw = localStorage.getItem(FILTROS_STORAGE_KEY)
+    if (!raw) return
+    const guardado = JSON.parse(raw)
+    for (const k of FILTRO_KEYS) {
+      if (typeof guardado[k] === 'string') state[k] = guardado[k]
+    }
+  } catch { /* dato corrupto o localStorage no disponible — seguimos con los defaults */ }
+}
+
 /**
  * Vista de Clases Académicas (Simplified Refactor)
  */
@@ -52,6 +79,7 @@ export async function renderClasesView(container) {
 
   try {
     state.container = container
+    _restaurarFiltrosStorage()
     injectClasesResponsiveStyles()
     state.cargando = true
     renderLoading(container)
@@ -74,6 +102,10 @@ export async function renderClasesView(container) {
 
     renderContent(container)
     attachGlobalEvents(container)
+    // Los <select>/<input> ya se pintaron con los valores restaurados de
+    // localStorage; hay que aplicar el filtrado real para que la lista de
+    // abajo coincida con lo que el usuario ve seleccionado arriba.
+    applyFilters()
   } catch (error) {
     console.error(error)
     renderError(container, error.message)
@@ -141,9 +173,16 @@ function getClaseIssues(clase) {
     pushIssue({ key: 'maestro-principal', label: 'Sin maestro', icon: 'bi-person-exclamation', tone: 'danger' })
   }
 
-  if (!clase?.maestro_suplente_id || !maestroSuplente) {
-    pushIssue({ key: 'maestro-suplente', label: 'Sin suplente', icon: 'bi-person-dash', tone: 'warning' })
+  if (clase?.necesita_revision) {
+    pushIssue({
+      key: 'revision-pendiente',
+      label: clase.revision_motivo || 'Marcada para revisión',
+      icon: 'bi-flag-fill',
+      tone: 'warning',
+    })
   }
+
+
 
   if (!horarios.length) {
     pushIssue({ key: 'horario', label: 'Sin horario', icon: 'bi-calendar-x', tone: 'danger' })
@@ -152,9 +191,14 @@ function getClaseIssues(clase) {
   const totalAlumnos = Number(clase?.total_alumnos ?? 0)
   if (totalAlumnos <= 0) {
     pushIssue({ key: 'alumnos', label: 'Sin alumnos', icon: 'bi-people', tone: 'warning' })
+  } else {
+    pushIssue({ key: 'alumnos', label: `${totalAlumnos} ${totalAlumnos === 1 ? 'alumno' : 'alumnos'}`, icon: 'bi-people-fill', tone: 'success' })
   }
 
   const overlaps = new Set()
+  const conflictingStudentsMap = new Map()
+  const claseAlumnos = new Set(clase?.alumnos_ids || [])
+
   for (const horario of horarios) {
     const currentStart = timeToMinutes(horario?.hora_inicio || '00:00')
     const currentEnd = timeToMinutes(horario?.hora_fin || '00:00')
@@ -163,7 +207,7 @@ function getClaseIssues(clase) {
     for (const other of allClases) {
       if (!other || other.id === clase?.id) continue
       for (const otherHorario of (other.horarios || [])) {
-        if (!otherHorario?.dia || otherHorario.dia !== horario.dia) continue
+        if (!otherHorario?.dia || (otherHorario.dia || '').toLowerCase() !== (horario.dia || '').toLowerCase()) continue
         const otherStart = timeToMinutes(otherHorario.hora_inicio || '00:00')
         const otherEnd = timeToMinutes(otherHorario.hora_fin || '00:00')
         if (currentStart < otherEnd && otherStart < currentEnd) {
@@ -175,30 +219,57 @@ function getClaseIssues(clase) {
 
           if (sameTeacher) overlaps.add('maestro')
           if (sameRoom) overlaps.add('salon')
+
+          if (claseAlumnos.size > 0 && (other.alumnos_ids || []).length > 0) {
+            for (const studentId of (other.alumnos_ids || [])) {
+              if (claseAlumnos.has(studentId)) {
+                conflictingStudentsMap.set(studentId, {
+                  studentId,
+                  otherClaseId: other.id,
+                  otherClaseNombre: other.nombre,
+                  dia: horario.dia,
+                  horaInicio: horario.hora_inicio,
+                  horaFin: horario.hora_fin
+                })
+              }
+            }
+          }
         }
       }
     }
   }
 
   if (overlaps.has('maestro')) {
-    pushIssue({ key: 'solape-maestro', label: 'Solape maestro', icon: 'bi-person-workspace', tone: 'danger' })
+    pushIssue({ key: 'solape-maestro', label: 'Solape maestro (misma hora)', icon: 'bi-person-workspace', tone: 'danger' })
   }
   if (overlaps.has('salon')) {
-    pushIssue({ key: 'solape-salon', label: 'Solape salón', icon: 'bi-building-exclamation', tone: 'danger' })
+    pushIssue({ key: 'solape-salon', label: 'Solape salón (misma hora)', icon: 'bi-building-exclamation', tone: 'danger' })
+  }
+  if (conflictingStudentsMap.size > 0) {
+    const count = conflictingStudentsMap.size
+    pushIssue({
+      key: 'solape-alumnos',
+      label: `${count} ${count === 1 ? 'alumno' : 'alumnos'} en 2 clases a la misma hora`,
+      icon: 'bi-people-fill',
+      tone: 'warning',
+      conflictsMap: conflictingStudentsMap,
+      conflictsList: Array.from(conflictingStudentsMap.values())
+    })
   }
 
   return issues
 }
 
 function renderIssuesBadge(issues = []) {
-  if (!issues.length) return ''
+  const warnings = issues.filter(i => i.tone === 'danger' || i.tone === 'warning')
+  if (!warnings.length) return ''
   const hasDanger = issues.some(i => i.tone === 'danger')
   const toneClass = hasDanger ? 'text-bg-danger' : 'text-bg-warning'
   const iconClass = hasDanger ? 'bi-exclamation-circle-fill' : 'bi-exclamation-triangle-fill'
   const countLabel = issues.length === 1 ? '1 advertencia' : `${issues.length} advertencias`
   return `
-    <span class="badge rounded-pill ${toneClass} clase-issue-badge" title="${escapeHTML(issues.map(i => i.label).join(' · '))}" aria-label="${escapeHTML(countLabel)}">
-      <i class="bi ${iconClass} me-1"></i>${issues.length}
+    <span class="badge rounded-pill ${toneClass} clase-issue-badge" title="${escapeHTML(warnings.map(i => i.label).join(' · '))}" aria-label="${escapeHTML(countLabel)}">
+      <i class="bi ${iconClass} me-1"></i>${warnings.length}
     </span>
   `
 }
@@ -208,7 +279,7 @@ function renderIssueChips(issues = []) {
   return `
     <div class="mt-2 d-flex flex-wrap gap-1">
       ${issues.map(issue => `
-        <span class="badge rounded-pill ${issue.tone === 'danger' ? 'text-bg-danger' : 'text-bg-warning-subtle text-warning-emphasis border border-warning-subtle'} classes-warning-chip">
+        <span class="badge rounded-pill ${issue.tone === 'danger' ? 'text-bg-danger' : issue.tone === 'success' ? 'text-bg-success-subtle text-success-emphasis border border-success-subtle' : 'text-bg-warning-subtle text-warning-emphasis border border-warning-subtle'} classes-warning-chip">
           <i class="bi ${issue.icon} me-1"></i>${escapeHTML(issue.label)}
         </span>
       `).join('')}
@@ -236,7 +307,7 @@ function renderContent(container) {
         
         <div class="clases-header-actions">
           <button class="btn-help-trigger clases-ui-btn clases-ui-btn--icon" id="btn-help-clases" title="¿Cómo funciona esta pantalla?" aria-label="Ayuda">
-            <i class="bi bi-question"></i>
+            <i class="bi bi-question-lg"></i>
           </button>
           <div class="view-segmented-control">
             <button class="view-segment-btn clases-ui-btn clases-ui-btn--icon ${state.vista === 'tabla' ? 'active' : ''}" id="btn-vista-tabla" title="Vista de lista" aria-label="Vista de lista">
@@ -246,9 +317,11 @@ function renderContent(container) {
               <i class="bi bi-calendar-week"></i>
             </button>
           </div>
-          <button class="btn btn-outline-secondary btn-clases-pdf clases-ui-btn" id="btnPdfListadoAlumnosClases" type="button" aria-label="Descargar PDF de listados de alumnos por clase" title="Descargar PDF de listados de alumnos por clase">
+          <button class="btn btn-outline-secondary btn-clases-pdf clases-ui-btn clases-ui-btn--icon" id="btnPdfListadoAlumnosClases" type="button" aria-label="Descargar PDF Listados Alumnos x Clase" title="Descargar PDF Listados Alumnos x Clase">
             <i class="bi bi-file-earmark-pdf" aria-hidden="true"></i>
-            <span class="btn-clases-pdf__label">PDF Listados Alumnos x Clases</span>
+          </button>
+          <button class="btn btn-outline-warning clases-ui-btn clases-ui-btn--icon" id="btnAlumnosSinClase" type="button" aria-label="Ver alumnos sin clase asignada" title="Ver alumnos sin clase asignada">
+            <i class="bi bi-person-exclamation" aria-hidden="true"></i>
           </button>
           <button class="btn btn-premium-action btn-icon-only clases-ui-btn clases-ui-btn--icon" id="btnAgregarClase" title="Nueva clase" aria-label="Nueva clase">
             <i class="bi bi-plus-lg" aria-hidden="true"></i>
@@ -263,8 +336,11 @@ function renderContent(container) {
               <i class="bi bi-funnel"></i>
             </div>
             <div>
-              <div class="clases-filters-panel__title">Filtros</div>
-              <div class="clases-filters-panel__subtitle text-muted small">Busca y segmenta las clases visibles</div>
+              <div class="d-flex align-items-center gap-2">
+                <div class="clases-filters-panel__title">Filtros</div>
+                <span class="badge text-bg-primary rounded-pill d-none" id="filtrosBadgeCount" style="font-size: 0.7rem;">0</span>
+              </div>
+              <div class="clases-filters-panel__subtitle text-muted small" id="filtrosActivosCount">Busca y segmenta las clases visibles</div>
             </div>
           </div>
           <button class="btn btn-outline-secondary btn-sm clases-ui-btn clases-ui-btn--icon" id="btnToggleFiltros" type="button" aria-expanded="${state.filtrosAbiertos ? 'true' : 'false'}" title="${state.filtrosAbiertos ? 'Ocultar filtros' : 'Mostrar filtros'}" aria-label="${state.filtrosAbiertos ? 'Ocultar filtros' : 'Mostrar filtros'}">
@@ -272,84 +348,90 @@ function renderContent(container) {
           </button>
         </div>
         <div class="clases-filters-panel__body ${state.filtrosAbiertos ? 'is-open' : 'is-collapsed'}" id="clasesFiltersPanelBody">
-          <div class="clases-filter-toolbar flex-wrap gap-2">
-        <div class="premium-search-container flex-grow-1" style="min-width:200px;">
-          <i class="bi bi-search search-icon-muted"></i>
-          <input type="text" class="form-control premium-search-input" placeholder="Buscar por nombre, maestro, instrumento..." id="buscar" value="${escapeHTML(state.filtroBuscar)}">
-        </div>
+          <div class="d-flex flex-column gap-2">
+            <!-- Barra Superior: Búsqueda + Estado + Limpiar -->
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+              <div class="premium-search-container flex-grow-1" style="min-width:200px;">
+                <i class="bi bi-search search-icon-muted"></i>
+                <input type="text" class="form-control premium-search-input" placeholder="Buscar por nombre, maestro, instrumento..." id="buscar" value="${escapeHTML(state.filtroBuscar)}">
+              </div>
 
-        <div class="premium-select-container">
-          <i class="bi bi-funnel select-icon-muted"></i>
-          <select class="form-select premium-filter-select" id="filtroEstado">
-            <option value="todos"      ${state.filtroEstado === 'todos'      ? 'selected' : ''}>Todos los estados</option>
-            <option value="activa"     ${state.filtroEstado === 'activa'     ? 'selected' : ''}>Activa</option>
-            <option value="suspendida" ${state.filtroEstado === 'suspendida' ? 'selected' : ''}>Pausada</option>
-            <option value="finalizada" ${state.filtroEstado === 'finalizada' ? 'selected' : ''}>Finalizada</option>
-            <option value="emergente"  ${state.filtroEstado === 'emergente'  ? 'selected' : ''}>Emergente</option>
-            <option value="cancelada"  ${state.filtroEstado === 'cancelada'  ? 'selected' : ''}>Cancelada</option>
-          </select>
-        </div>
+              <div class="premium-select-container" style="min-width: 170px;">
+                <i class="bi bi-funnel select-icon-muted"></i>
+                <select class="form-select premium-filter-select" id="filtroEstado">
+                  <option value="todos"      ${state.filtroEstado === 'todos'      ? 'selected' : ''}>Todos los estados</option>
+                  <option value="activa"     ${state.filtroEstado === 'activa'     ? 'selected' : ''}>Activa</option>
+                  <option value="suspendida" ${state.filtroEstado === 'suspendida' ? 'selected' : ''}>Pausada</option>
+                  <option value="finalizada" ${state.filtroEstado === 'finalizada' ? 'selected' : ''}>Finalizada</option>
+                  <option value="emergente"  ${state.filtroEstado === 'emergente'  ? 'selected' : ''}>Emergente</option>
+                  <option value="cancelada"  ${state.filtroEstado === 'cancelada'  ? 'selected' : ''}>Cancelada</option>
+                </select>
+              </div>
 
-        <div class="premium-select-container">
-          <i class="bi bi-music-note select-icon-muted"></i>
-          <select class="form-select premium-filter-select" id="filtroInstrumento">
-            <option value="">Instrumento</option>
-            ${getInstrumentoOptions()}
-          </select>
-        </div>
+              <button class="btn btn-outline-secondary btn-sm clases-ui-btn clases-ui-btn--icon" id="btnLimpiarFiltros" type="button" title="Limpiar todos los filtros">
+                <i class="bi bi-x-lg"></i>
+              </button>
+            </div>
 
-        <div class="premium-select-container">
-          <i class="bi bi-bar-chart-steps select-icon-muted"></i>
-          <select class="form-select premium-filter-select" id="filtroNivel">
-            <option value=""           ${state.filtroNivel === ''           ? 'selected' : ''}>Nivel</option>
-            <option value="iniciacion" ${state.filtroNivel === 'iniciacion' ? 'selected' : ''}>Iniciación</option>
-            <option value="basico"     ${state.filtroNivel === 'basico'     ? 'selected' : ''}>Básico</option>
-            <option value="intermedio" ${state.filtroNivel === 'intermedio' ? 'selected' : ''}>Intermedio</option>
-            <option value="avanzado"   ${state.filtroNivel === 'avanzado'   ? 'selected' : ''}>Avanzado</option>
-            <option value="preparatoria" ${state.filtroNivel === 'preparatoria' ? 'selected' : ''}>Preparatoria</option>
-          </select>
-        </div>
+            <!-- Grilla Comprimida de Filtros Secundarios -->
+            <div class="clases-filter-grid mt-1">
+              <div class="premium-select-container">
+                <i class="bi bi-music-note select-icon-muted"></i>
+                <select class="form-select premium-filter-select" id="filtroInstrumento">
+                  <option value="">Instrumento (Todos)</option>
+                  ${getInstrumentoOptions()}
+                </select>
+              </div>
 
-        <div class="premium-select-container">
-          <i class="bi bi-tag select-icon-muted"></i>
-          <select class="form-select premium-filter-select" id="filtroTipo">
-            <option value=""            ${state.filtroTipo === ''            ? 'selected' : ''}>Tipo</option>
-            <option value="regular"     ${state.filtroTipo === 'regular'     ? 'selected' : ''}>Regular</option>
-            <option value="taller"      ${state.filtroTipo === 'taller'      ? 'selected' : ''}>Taller</option>
-            <option value="seccional"   ${state.filtroTipo === 'seccional'   ? 'selected' : ''}>Seccional</option>
-            <option value="orquesta"    ${state.filtroTipo === 'orquesta'    ? 'selected' : ''}>Orquesta</option>
-            <option value="coro"        ${state.filtroTipo === 'coro'        ? 'selected' : ''}>Coro</option>
-            <option value="preparatoria" ${state.filtroTipo === 'preparatoria' ? 'selected' : ''}>Preparatoria</option>
-            <option value="iniciacion"  ${state.filtroTipo === 'iniciacion'  ? 'selected' : ''}>Iniciación</option>
-            <option value="emergente"   ${state.filtroTipo === 'emergente'   ? 'selected' : ''}>Emergente</option>
-            <option value="refuerzo"    ${state.filtroTipo === 'refuerzo'    ? 'selected' : ''}>Refuerzo</option>
-          </select>
-        </div>
+              <div class="premium-select-container">
+                <i class="bi bi-bar-chart-steps select-icon-muted"></i>
+                <select class="form-select premium-filter-select" id="filtroNivel">
+                  <option value=""           ${state.filtroNivel === ''           ? 'selected' : ''}>Nivel (Todos)</option>
+                  <option value="iniciacion" ${state.filtroNivel === 'iniciacion' ? 'selected' : ''}>Iniciación</option>
+                  <option value="basico"     ${state.filtroNivel === 'basico'     ? 'selected' : ''}>Básico</option>
+                  <option value="intermedio" ${state.filtroNivel === 'intermedio' ? 'selected' : ''}>Intermedio</option>
+                  <option value="avanzado"   ${state.filtroNivel === 'avanzado'   ? 'selected' : ''}>Avanzado</option>
+                  <option value="preparatoria" ${state.filtroNivel === 'preparatoria' ? 'selected' : ''}>Preparatoria</option>
+                </select>
+              </div>
 
-        <div class="premium-select-container">
-          <i class="bi bi-door-open select-icon-muted"></i>
-          <select class="form-select premium-filter-select" id="filtroSalon">
-            <option value="">Salón</option>
-            ${getSalonOptions()}
-          </select>
-        </div>
+              <div class="premium-select-container">
+                <i class="bi bi-tag select-icon-muted"></i>
+                <select class="form-select premium-filter-select" id="filtroTipo">
+                  <option value=""            ${state.filtroTipo === ''            ? 'selected' : ''}>Tipo (Todos)</option>
+                  <option value="regular"     ${state.filtroTipo === 'regular'     ? 'selected' : ''}>Regular</option>
+                  <option value="taller"      ${state.filtroTipo === 'taller'      ? 'selected' : ''}>Taller</option>
+                  <option value="seccional"   ${state.filtroTipo === 'seccional'   ? 'selected' : ''}>Seccional</option>
+                  <option value="orquesta"    ${state.filtroTipo === 'orquesta'    ? 'selected' : ''}>Orquesta</option>
+                  <option value="coro"        ${state.filtroTipo === 'coro'        ? 'selected' : ''}>Coro</option>
+                  <option value="preparatoria" ${state.filtroTipo === 'preparatoria' ? 'selected' : ''}>Preparatoria</option>
+                  <option value="iniciacion"  ${state.filtroTipo === 'iniciacion'  ? 'selected' : ''}>Iniciación</option>
+                  <option value="emergente"   ${state.filtroTipo === 'emergente'   ? 'selected' : ''}>Emergente</option>
+                  <option value="refuerzo"    ${state.filtroTipo === 'refuerzo'    ? 'selected' : ''}>Refuerzo</option>
+                </select>
+              </div>
 
-        <div class="premium-select-container">
-          <i class="bi bi-calendar-week select-icon-muted"></i>
-          <select class="form-select premium-filter-select" id="filtroDia">
-            <option value=""         ${state.filtroDia === ''         ? 'selected' : ''}>Día</option>
-            <option value="lunes"    ${state.filtroDia === 'lunes'    ? 'selected' : ''}>Lunes</option>
-            <option value="martes"   ${state.filtroDia === 'martes'   ? 'selected' : ''}>Martes</option>
-            <option value="miercoles" ${state.filtroDia === 'miercoles' ? 'selected' : ''}>Miércoles</option>
-            <option value="jueves"   ${state.filtroDia === 'jueves'   ? 'selected' : ''}>Jueves</option>
-            <option value="viernes"  ${state.filtroDia === 'viernes'  ? 'selected' : ''}>Viernes</option>
-            <option value="sabado"   ${state.filtroDia === 'sabado'   ? 'selected' : ''}>Sábado</option>
-          </select>
-        </div>
+              <div class="premium-select-container">
+                <i class="bi bi-door-open select-icon-muted"></i>
+                <select class="form-select premium-filter-select" id="filtroSalon">
+                  <option value="">Salón (Todos)</option>
+                  ${getSalonOptions()}
+                </select>
+              </div>
 
-        <button class="btn btn-outline-secondary btn-sm clases-ui-btn" id="btnLimpiarFiltros" type="button" title="Limpiar filtros">
-          <i class="bi bi-x-circle me-1"></i>Limpiar
-        </button>
+              <div class="premium-select-container">
+                <i class="bi bi-calendar-week select-icon-muted"></i>
+                <select class="form-select premium-filter-select" id="filtroDia">
+                  <option value=""         ${state.filtroDia === ''         ? 'selected' : ''}>Día (Todos)</option>
+                  <option value="lunes"    ${state.filtroDia === 'lunes'    ? 'selected' : ''}>Lunes</option>
+                  <option value="martes"   ${state.filtroDia === 'martes'   ? 'selected' : ''}>Martes</option>
+                  <option value="miercoles" ${state.filtroDia === 'miercoles' ? 'selected' : ''}>Miércoles</option>
+                  <option value="jueves"   ${state.filtroDia === 'jueves'   ? 'selected' : ''}>Jueves</option>
+                  <option value="viernes"  ${state.filtroDia === 'viernes'  ? 'selected' : ''}>Viernes</option>
+                  <option value="sabado"   ${state.filtroDia === 'sabado'   ? 'selected' : ''}>Sábado</option>
+                </select>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -383,12 +465,25 @@ function renderClaseCard(clase) {
   const maestroSuplenteNombre = maestroSuplente ? (maestroSuplente.nombre_completo || maestroSuplente.nombre) : null
   const estado = clase.estado || 'activa'
   const accentClass = `border-accent-${estado === 'activa' ? 'success' : estado === 'suspendida' ? 'warning' : 'secondary'}`
-  const horarios = (clase.horarios || []).slice(0, 3) // Mostrar máximo 3 horarios
+
+  // Construcción limpia de la línea de maestro y suplente
+  const docenteTexto = maestroSuplenteNombre
+    ? `${escapeHTML(maestroNombre)} <span class="text-secondary">(Suplente: ${escapeHTML(maestroSuplenteNombre)})</span>`
+    : escapeHTML(maestroNombre)
+
+  // Construcción detallada de vista previa de horarios con nombre de salón
+  const horarios = (clase.horarios || []).slice(0, 3)
   const horariosTexto = horarios.length > 0
-    ? horarios.map(h => `${(h.dia || '').slice(0, 2).toUpperCase()} ${(h.hora_inicio || '').slice(0, 5)}`).join(' • ')
+    ? horarios.map(h => {
+        const diaStr = (h.dia || '').slice(0, 2).toUpperCase()
+        const horaStr = (h.hora_inicio || '').slice(0, 5)
+        const salonObj = state.salones ? state.salones.find(s => s.id === h.salon_id) : null
+        const salonStr = salonObj?.nombre ? ` (${escapeHTML(salonObj.nombre)})` : ''
+        return `${diaStr} ${horaStr}${salonStr}`
+      }).join(' • ')
     : 'Sin horarios'
-  const warnings = getClaseIssues(clase)
-  if ((clase.horarios || []).length > 1) warnings.push({ key: 'multi-horario', label: 'Múltiples horarios', icon: 'bi-clock-history', tone: 'warning' })
+
+  const warnings = getClaseIssues(clase, state.clasesOriginales || state.clases)
   if (clase.capacidad_maxima && clase.total_alumnos != null && clase.total_alumnos / clase.capacidad_maxima >= 0.85) {
     warnings.push({ key: 'cupo-alto', label: 'Cupo alto', icon: 'bi-people-fill', tone: 'warning' })
   }
@@ -401,9 +496,8 @@ function renderClaseCard(clase) {
             <span class="fw-bold text-truncate" style="font-size: 1.05rem;">${escapeHTML(nombre)}</span>
             ${renderIssuesBadge(warnings)}
           </div>
-          <small class="text-muted text-truncate"><i class="bi bi-person-badge me-1"></i>${escapeHTML(maestroNombre)} • ${escapeHTML(clase.instrumento || '-')}</small>
-          ${maestroSuplenteNombre ? `<small class="text-muted text-truncate clase-card-suplente" style="font-size: 0.82rem;"><i class="bi bi-person-dash me-1"></i>Suplente: ${escapeHTML(maestroSuplenteNombre)}</small>` : ''}
-          <small class="text-muted extra-small mt-1 clase-card-horarios" style="font-size: 0.85rem;"><i class="bi bi-clock me-1"></i>${escapeHTML(horariosTexto)}</small>
+          <small class="text-muted text-truncate"><i class="bi bi-person-badge me-1"></i>${docenteTexto} • ${escapeHTML(clase.instrumento || '-')}</small>
+          <small class="text-muted extra-small mt-1 clase-card-horarios" style="font-size: 0.85rem;"><i class="bi bi-clock me-1"></i>${horariosTexto}</small>
           ${renderIssueChips(warnings)}
         </div>
       </div>
@@ -544,13 +638,269 @@ function renderCalendarView() {
   `
 }
 
+function _telefonoAlumno(alumno = {}) {
+  return alumno.tlf_alumno || alumno.representante_tlf || alumno.familiar_telefono || null
+}
+
+/**
+ * Modal con los alumnos activos que no están inscritos en ninguna clase,
+ * agrupados por instrumento. Este módulo asume que asignar a todos los
+ * alumnos a una clase es el flujo normal — esto muestra a quién se le
+ * quedó pendiente, sin tener que revisar clase por clase. Cada alumno es
+ * clickeable: abre las clases de su mismo instrumento para asignarlo ahí
+ * mismo, sin salir del modal.
+ */
+// Instrumento del último grupo que el usuario tuvo abierto en el modal de
+// "Alumnos sin clase" — para que reabrir el modal (p. ej. después de
+// asignar a un alumno) no vuelva siempre al primero de la lista.
+let _grupoSinClaseAbierto = null
+
+function _abrirModalAlumnosSinClase(grupos = []) {
+  const totalAlumnos = grupos.reduce((acc, g) => acc + g.total, 0)
+  const idxAbierto = Math.max(0, grupos.findIndex(g => g.instrumento === _grupoSinClaseAbierto))
+
+  const bodyHtml = totalAlumnos === 0
+    ? `
+      <div class="text-center text-muted py-4">
+        <i class="bi bi-check-circle-fill d-block mb-2" style="font-size: 2rem; color: var(--bs-success);"></i>
+        Todos los alumnos activos están inscritos en al menos una clase.
+      </div>
+    `
+    : `
+      <div class="alert alert-warning d-flex align-items-center gap-2 mb-3">
+        <i class="bi bi-person-exclamation fs-4 flex-shrink-0"></i>
+        <div>
+          <strong class="d-block">${totalAlumnos} ${totalAlumnos === 1 ? 'alumno' : 'alumnos'} sin clase asignada</strong>
+          <span class="small text-muted">Agrupados por instrumento principal. Tocá un alumno para asignarlo a una clase.</span>
+        </div>
+      </div>
+      <div class="accordion" id="acc-alumnos-sin-clase">
+        ${grupos.map((g, idx) => `
+          <div class="accordion-item">
+            <h2 class="accordion-header">
+              <button class="accordion-button ${idx === idxAbierto ? '' : 'collapsed'}" type="button" data-bs-toggle="collapse" data-bs-target="#grupo-sin-clase-${idx}" data-instrumento="${escapeHTML(g.instrumento)}">
+                <span class="fw-semibold">${escapeHTML(g.instrumento)}</span>
+                <span class="badge text-bg-warning ms-2">${g.total}</span>
+              </button>
+            </h2>
+            <div id="grupo-sin-clase-${idx}" class="accordion-collapse collapse ${idx === idxAbierto ? 'show' : ''}" data-bs-parent="#acc-alumnos-sin-clase">
+              <div class="accordion-body p-0">
+                <div class="list-group list-group-flush">
+                  ${g.alumnos.map(a => `
+                    <button type="button" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center gap-2 btn-asignar-alumno" data-alumno-id="${a.id}">
+                      <div class="text-start">
+                        <div class="fw-semibold">${escapeHTML(a.nombre_completo)}</div>
+                        <small class="text-muted">${a.fecha_ingreso ? `Ingresó ${escapeHTML(formatDate(a.fecha_ingreso))}` : 'Sin fecha de ingreso'}</small>
+                      </div>
+                      <span class="small text-muted text-nowrap d-flex align-items-center gap-2">
+                        <i class="bi bi-telephone"></i>${escapeHTML(_telefonoAlumno(a) || 'Sin teléfono')}
+                        <i class="bi bi-chevron-right"></i>
+                      </span>
+                    </button>
+                  `).join('')}
+                </div>
+              </div>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    `
+
+  AppModal.open({
+    title: '🎻 Alumnos sin clase asignada',
+    size: 'md',
+    hideSave: true,
+    cancelText: 'Cerrar',
+    body: bodyHtml,
+    onShow: (body) => {
+      if (totalAlumnos === 0) return
+      body.querySelectorAll('.accordion-button').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          _grupoSinClaseAbierto = btn.dataset.instrumento
+        })
+      })
+      body.querySelectorAll('.btn-asignar-alumno').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const alumnoId = btn.dataset.alumnoId
+          const grupo = grupos.find(g => g.alumnos.some(a => a.id === alumnoId))
+          const alumno = grupo?.alumnos.find(a => a.id === alumnoId)
+          if (grupo) _grupoSinClaseAbierto = grupo.instrumento
+          if (alumno) _abrirModalAsignarClaseAAlumno(alumno, grupos)
+        })
+      })
+    },
+  })
+}
+
+/**
+ * Muestra las clases activas cuyo instrumento coincide con el del alumno
+ * (comparando con normalizarInstrumento, porque en los datos reales
+ * "Violín" y "Violines" — o "Viola"/"Violas" — conviven como valores
+ * distintos) y permite inscribirlo ahí mismo.
+ */
+// Nivel numérico aproximado a partir del NOMBRE de la clase — no hay un
+// nivel_id estructurado en `clases` hoy (está vacío en las 11 clases
+// activas), así que esto es una lectura del convenio de nombres ("0A-",
+// "1B", "N3", "Iniciación..."), no un dato confiable al 100%. Por eso solo
+// se usa para ORDENAR y para separar visualmente, nunca para ocultar de
+// forma permanente una clase.
+function _inferirNivelNumClase(nombre = '') {
+  const n = nombre.toLowerCase()
+  if (/ensayo|orquesta sinf/.test(n)) return null // ensambles: aceptan variedad de niveles
+  const lead = n.match(/^\s*(\d+)/)
+  if (lead) return parseInt(lead[1], 10)
+  const conN = n.match(/\bn\s*(\d+)/)
+  if (conN) return parseInt(conN[1], 10)
+  const trail = n.match(/(\d+)\s*$/)
+  if (trail) return parseInt(trail[1], 10)
+  if (/iniciaci[oó]n/.test(n)) return 0
+  return null
+}
+
+const RANGO_NIVEL_ALUMNO = {
+  basico: [0, 1],
+  'básico': [0, 1],
+  intermedio: [1, 2],
+  avanzado: [2, 99],
+}
+
+function _distanciaNivel(nivelAlumno, nivelClaseNum) {
+  if (nivelClaseNum === null || !nivelAlumno) return null // sin dato suficiente: neutral
+  const rango = RANGO_NIVEL_ALUMNO[String(nivelAlumno).toLowerCase()]
+  if (!rango) return null
+  const [min, max] = rango
+  if (nivelClaseNum < min) return min - nivelClaseNum
+  if (nivelClaseNum > max) return nivelClaseNum - max
+  return 0
+}
+
+function _abrirModalAsignarClaseAAlumno(alumno, grupos) {
+  const claseUniverso = state.clasesOriginales?.length ? state.clasesOriginales : state.clases
+  const clavAlumno = normalizarInstrumento(alumno.instrumento_principal)
+
+  const candidatas = clavAlumno
+    ? claseUniverso
+        .filter(c => c.activo !== false && normalizarInstrumento(c.instrumento) === clavAlumno)
+        .map(c => {
+          const nivelClaseNum = _inferirNivelNumClase(c.nombre)
+          return { ...c, _nivelClaseNum: nivelClaseNum, _distanciaNivel: _distanciaNivel(alumno.nivel, nivelClaseNum) }
+        })
+        .sort((a, b) => {
+          const da = a._distanciaNivel ?? 0.5 // "sin dato" queda entre las buenas y las descartadas
+          const db = b._distanciaNivel ?? 0.5
+          return da - db
+        })
+    : []
+
+  const buenEncaje = candidatas.filter(c => (c._distanciaNivel ?? 0) <= 1)
+  const otroNivel = candidatas.filter(c => (c._distanciaNivel ?? 0) > 1)
+
+  const renderClase = (c) => {
+    const ocupacion = c.capacidad_maxima ? Math.round((c.total_alumnos / c.capacidad_maxima) * 100) : 0
+    const cupoAlto = c.capacidad_maxima && ocupacion >= 90
+    return `
+      <div class="list-group-item d-flex justify-content-between align-items-center gap-2">
+        <div>
+          <div class="fw-semibold">${escapeHTML(c.nombre)}</div>
+          <small class="text-muted">${c.total_alumnos ?? 0}${c.capacidad_maxima ? ` / ${c.capacidad_maxima}` : ''} alumnos${cupoAlto ? ' · <span class="text-warning">cupo alto</span>' : ''}</small>
+        </div>
+        <button type="button" class="btn btn-sm btn-primary btn-confirmar-asignar" data-clase-id="${c.id}" data-clase-nombre="${escapeHTML(c.nombre)}">
+          Asignar
+        </button>
+      </div>
+    `
+  }
+
+  const nivelLabel = alumno.nivel ? alumno.nivel.charAt(0).toUpperCase() + alumno.nivel.slice(1) : null
+
+  const bodyHtml = `
+    <button type="button" class="btn btn-link btn-sm text-decoration-none ps-0 mb-2 btn-volver-sin-clase">
+      <i class="bi bi-arrow-left me-1"></i>Volver al listado
+    </button>
+    <div class="d-flex align-items-center gap-2 mb-3">
+      <div class="avatar-compact text-white d-flex align-items-center justify-content-center rounded-circle flex-shrink-0" style="width: 36px; height: 36px; font-size: 0.85rem; background-color: ${getConsistentColor(alumno.nombre_completo)}; font-weight:600;">
+        ${getInitials(alumno.nombre_completo)}
+      </div>
+      <div>
+        <div class="fw-bold">${escapeHTML(alumno.nombre_completo)}</div>
+        <small class="text-muted">
+          ${escapeHTML(alumno.instrumento_principal || 'Sin instrumento definido')}
+          ${nivelLabel ? ` · ${escapeHTML(nivelLabel)}` : ''}
+          ${alumno.promedio_notas != null ? ` · Promedio ${escapeHTML(String(alumno.promedio_notas))}` : ''}
+        </small>
+      </div>
+    </div>
+
+    ${!clavAlumno ? `
+      <div class="alert alert-secondary small mb-0">
+        Este alumno no tiene instrumento principal definido — no se puede sugerir una clase automáticamente. Editalo desde el módulo de Alumnos primero.
+      </div>
+    ` : candidatas.length === 0 ? `
+      <div class="alert alert-secondary small mb-0">
+        No hay clases activas de "${escapeHTML(alumno.instrumento_principal)}" todavía.
+      </div>
+    ` : `
+      ${buenEncaje.length > 0 ? `<div class="list-group mb-2">${buenEncaje.map(renderClase).join('')}</div>` : ''}
+      ${otroNivel.length > 0 ? `
+        <details class="small">
+          <summary class="text-muted mb-2" style="cursor:pointer;">
+            ${otroNivel.length} ${otroNivel.length === 1 ? 'clase más' : 'clases más'} de otro nivel
+          </summary>
+          <div class="list-group mt-2">${otroNivel.map(renderClase).join('')}</div>
+        </details>
+      ` : ''}
+      ${buenEncaje.length === 0 && otroNivel.length === 0 ? `
+        <div class="alert alert-secondary small mb-0">No hay clases activas de este instrumento todavía.</div>
+      ` : ''}
+    `}
+  `
+
+  AppModal.open({
+    title: 'Asignar clase',
+    size: 'md',
+    hideSave: true,
+    cancelText: 'Cerrar',
+    body: bodyHtml,
+    onShow: (body) => {
+      body.querySelector('.btn-volver-sin-clase')?.addEventListener('click', () => {
+        _abrirModalAlumnosSinClase(grupos)
+      })
+      body.querySelectorAll('.btn-confirmar-asignar').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          const claseId = btn.dataset.claseId
+          const claseNombre = btn.dataset.claseNombre
+          btn.disabled = true
+          btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>'
+          try {
+            await inscribirAlumno(claseId, alumno.id)
+            AppToast.success(`${alumno.nombre_completo} asignado a "${claseNombre}"`)
+
+            // Sacar al alumno de los grupos en memoria para que el listado
+            // que vuelve a mostrarse ya refleje la asignación.
+            for (const g of grupos) {
+              g.alumnos = g.alumnos.filter(a => a.id !== alumno.id)
+              g.total = g.alumnos.length
+            }
+            _abrirModalAlumnosSinClase(grupos.filter(g => g.total > 0))
+          } catch (error) {
+            console.error(error)
+            AppToast.error(error.message || 'No se pudo asignar al alumno')
+            btn.disabled = false
+            btn.innerHTML = 'Asignar'
+          }
+        })
+      })
+    },
+  })
+}
+
 async function openClasePerfilModal(clase) {
   if (!clase) return
 
   AppModal.open({
     title: 'Cargando...',
     hideSave: true,
-    size: 'md',
+    size: 'xl',
     body: `
       <div class="text-center py-5">
         <div class="spinner-border text-primary mb-3" role="status"></div>
@@ -591,7 +941,11 @@ async function openClasePerfilModal(clase) {
       horariosListHTML = '<div class="text-muted small">Sin horarios asignados</div>'
     }
 
-    // 4. Render Students
+    // 4. Render Students con badges de conflicto si aplica
+    const modalIssues = getClaseIssues(clase, state.clasesOriginales || state.clases)
+    const solapeAlumnosIssue = modalIssues.find(i => i.key === 'solape-alumnos')
+    const conflictsMap = solapeAlumnosIssue?.conflictsMap || new Map()
+
     let alumnosInscritosListHTML = ''
     if (inscritos && inscritos.length > 0) {
       alumnosInscritosListHTML = `
@@ -601,15 +955,20 @@ async function openClasePerfilModal(clase) {
             if (!a) return ''
             const aInitials = getInitials(a.nombre_completo || a.nombre || '?')
             const color = getConsistentColor(a.id)
+            const conf = conflictsMap.get(a.id)
+            const confBadge = conf
+              ? `<span class="badge text-bg-warning-subtle text-warning-emphasis border border-warning-subtle extra-small ms-auto flex-shrink-0" title="Choca a la misma hora con '${escapeHTML(conf.otherClaseNombre)}'"><i class="bi bi-exclamation-triangle-fill me-1"></i>Choca con "${escapeHTML(conf.otherClaseNombre)}"</span>`
+              : ''
             return `
-              <div class="list-group-item d-flex align-items-center gap-3 py-2 px-3 border-bottom-0 bg-transparent">
-                <div class="avatar-compact text-white d-flex align-items-center justify-content-center rounded-circle" style="width: 32px; height: 32px; font-size: 0.85rem; background-color: ${color}; font-weight:600;">
+              <div class="list-group-item d-flex align-items-center gap-3 py-2 px-3 border-bottom-0 bg-transparent flex-wrap">
+                <div class="avatar-compact text-white d-flex align-items-center justify-content-center rounded-circle flex-shrink-0" style="width: 32px; height: 32px; font-size: 0.85rem; background-color: ${color}; font-weight:600;">
                   ${aInitials}
                 </div>
-                <div class="d-flex flex-column overflow-hidden">
+                <div class="d-flex flex-column overflow-hidden flex-grow-1">
                   <span class="fw-semibold text-truncate small" style="font-size: 0.9rem; color: var(--bs-body-color);">${escapeHTML(a.nombre_completo || a.nombre)}</span>
-                  <small class="text-muted extra-small">${escapeHTML(a.instrumento_principal || 'Sin instrumento')}</small>
+                  <small class="text-muted extra-small">${escapeHTML(a.instrumento_principal || 'Sin instrumento')} ${rendimientoBadgeHTML(a)}</small>
                 </div>
+                ${confBadge}
               </div>
             `
           }).join('')}
@@ -636,9 +995,33 @@ async function openClasePerfilModal(clase) {
     if (!suplenteNombre) warningItems.push({ icon: 'bi-person-dash-fill', text: 'No tiene maestro suplente asignado' })
     if (!clase.horarios || clase.horarios.length === 0) warningItems.push({ icon: 'bi-calendar-x-fill', text: 'No tiene horarios definidos' })
     if ((clase.horarios || []).length > 1) warningItems.push({ icon: 'bi-clock-history', text: 'La clase tiene múltiples horarios registrados' })
-    const modalIssues = getClaseIssues(clase)
+    if (solapeAlumnosIssue && solapeAlumnosIssue.conflictsList) {
+      const detailsList = solapeAlumnosIssue.conflictsList.map(c => {
+        const al = (inscritos || []).find(i => i.alumno_id === c.studentId)?.alumno || (state.alumnos || []).find(a => a.id === c.studentId)
+        const alNombre = al ? (al.nombre_completo || al.nombre) : 'Alumno'
+        return `<strong>${escapeHTML(alNombre)}</strong> (choca con "${escapeHTML(c.otherClaseNombre)}")`
+      }).join(', ')
+      warningItems.push({
+        icon: 'bi-people-fill',
+        html: `Alumnos coincidentes en 2 clases a la misma hora: ${detailsList}`
+      })
+    }
     if (occupancyPercentage >= 90) modalIssues.push({ key: 'ocupacion-critica', label: 'Capacidad crítica', icon: 'bi-exclamation-triangle-fill', tone: 'danger' })
     else if (occupancyPercentage >= 70) modalIssues.push({ key: 'ocupacion-alta', label: 'Capacidad alta', icon: 'bi-exclamation-circle-fill', tone: 'warning' })
+
+    const headerActionsHTML = `
+      <div class="d-flex align-items-center gap-1">
+        <button class="btn btn-sm btn-profile-pdf text-white border-0 d-inline-flex align-items-center justify-content-center" style="background: rgba(255,255,255,0.18); width: 30px; height: 30px; border-radius: 8px;" data-id="${clase.id}" type="button" title="PDF listado alumnos" aria-label="PDF listado alumnos">
+          <i class="bi bi-file-earmark-pdf" style="font-size: 0.95rem;"></i>
+        </button>
+        <button class="btn btn-sm btn-profile-edit text-white border-0 d-inline-flex align-items-center justify-content-center" style="background: rgba(255,255,255,0.18); width: 30px; height: 30px; border-radius: 8px;" data-id="${clase.id}" type="button" title="Editar clase" aria-label="Editar clase">
+          <i class="bi bi-pencil" style="font-size: 0.95rem;"></i>
+        </button>
+        <button class="btn btn-sm btn-profile-delete text-white border-0 d-inline-flex align-items-center justify-content-center" style="background: rgba(220, 53, 69, 0.45); width: 30px; height: 30px; border-radius: 8px;" data-id="${clase.id}" type="button" title="Eliminar clase" aria-label="Eliminar clase">
+          <i class="bi bi-trash" style="font-size: 0.95rem;"></i>
+        </button>
+      </div>
+    `
 
     const bodyHTML = `
       <div class="class-profile-container">
@@ -652,20 +1035,6 @@ async function openClasePerfilModal(clase) {
             <span class="badge rounded-pill bg-${clase.estado === 'activa' ? 'success' : clase.estado === 'suspendida' ? 'warning' : 'secondary'} text-capitalize" style="font-size: 0.75rem;">${getEstadoLabel(clase.estado)}</span>
             ${renderIssueChips(modalIssues)}
           </div>
-          <div class="class-profile-actions-toolbar d-flex align-items-center gap-2 ms-auto">
-            <button class="btn btn-outline-secondary btn-sm btn-profile-pdf clases-ui-btn clases-ui-btn--icon d-inline-flex align-items-center justify-content-center" data-id="${clase.id}" type="button" title="PDF listado alumnos" aria-label="PDF listado alumnos">
-              <i class="bi bi-file-earmark-pdf" aria-hidden="true"></i>
-            </button>
-            <button class="btn btn-outline-primary btn-sm btn-profile-edit clases-ui-btn clases-ui-btn--icon d-inline-flex align-items-center justify-content-center" data-id="${clase.id}" type="button" title="Editar clase" aria-label="Editar clase">
-              <i class="bi bi-pencil" aria-hidden="true"></i>
-            </button>
-            <button class="btn btn-outline-danger btn-sm btn-profile-delete clases-ui-btn clases-ui-btn--icon d-inline-flex align-items-center justify-content-center" data-id="${clase.id}" type="button" title="Eliminar clase" aria-label="Eliminar clase">
-              <i class="bi bi-trash" aria-hidden="true"></i>
-            </button>
-            <button class="btn btn-secondary btn-sm btn-profile-close clases-ui-btn clases-ui-btn--icon d-inline-flex align-items-center justify-content-center" type="button" title="Cerrar" aria-label="Cerrar">
-              <i class="bi bi-x-lg" aria-hidden="true"></i>
-            </button>
-          </div>
         </div>
 
         ${warningItems.length > 0 ? `
@@ -678,7 +1047,7 @@ async function openClasePerfilModal(clase) {
               ${warningItems.map(item => `
                 <div class="class-warning-item d-flex align-items-start gap-2 small">
                   <i class="bi ${item.icon} text-warning mt-1"></i>
-                  <span>${escapeHTML(item.text)}</span>
+                  <span>${item.html ? item.html : escapeHTML(item.text)}</span>
                 </div>
               `).join('')}
             </div>
@@ -733,33 +1102,43 @@ async function openClasePerfilModal(clase) {
           <p class="mb-0 text-muted small" style="white-space: pre-line; line-height: 1.5;">${escapeHTML(clase.descripcion || 'Sin notas pedagógicas registradas.')}</p>
         </div>
 
-        <!-- Alumnos Inscritos List -->
+        <!-- Alumnos Inscritos List con Buscador Integrado -->
         <div class="alumnos-inscritos-section mb-4">
-          <h6 class="fw-bold mb-3 d-flex align-items-center gap-2" style="font-size: 0.95rem;">
-            <i class="bi bi-person-check text-primary"></i> Alumnos Inscritos
-            <span class="badge text-bg-primary rounded-pill small" style="font-size: 0.75rem;">${alumnosInscritosCount}</span>
-          </h6>
-          <div class="alumnos-scroll-list border rounded" style="max-height: 180px; overflow-y: auto;">
+          <div class="d-flex align-items-center justify-content-between mb-2 flex-wrap gap-2">
+            <h6 class="fw-bold mb-0 d-flex align-items-center gap-2" style="font-size: 0.95rem;">
+              <i class="bi bi-person-check text-primary"></i> Alumnos Inscritos
+              <span class="badge text-bg-primary rounded-pill small" id="profile-alumnos-count" style="font-size: 0.75rem;">${alumnosInscritosCount}</span>
+            </h6>
+            ${inscritos && inscritos.length > 0 ? `
+              <div class="position-relative" style="min-width: 200px;">
+                <input type="text" class="form-control form-control-sm pe-4" id="search-profile-alumnos" placeholder="Buscar alumno..." style="font-size: 0.82rem; height: 32px;">
+                <i class="bi bi-search position-absolute top-50 end-0 translate-middle-y me-2 text-muted" style="font-size: 0.75rem; pointer-events: none;"></i>
+              </div>
+            ` : ''}
+          </div>
+          <div class="alumnos-scroll-list border rounded" style="max-height: 200px; overflow-y: auto;" id="profile-alumnos-container">
             ${alumnosInscritosListHTML}
           </div>
         </div>
-
-        <!-- Action buttons moved to the header -->
       </div>
     `
 
     AppModal.open({
       title: `Perfil de Clase: ${clase.nombre}`,
+      headerActions: headerActionsHTML,
+      autoFocus: false,
       hideSave: true,
-      size: 'md',
+      size: 'lg',
       body: bodyHTML,
       onShow: (modalBody) => {
+        const dialog = modalBody.closest('.app-modal-dialog')
+
         // Hide the default AppModal footer completely
-        const footer = modalBody.closest('.app-modal-dialog')?.querySelector('.app-modal-footer')
+        const footer = dialog?.querySelector('.app-modal-footer')
         if (footer) footer.style.setProperty('display', 'none', 'important')
 
         // Wire PDF button
-        modalBody.querySelector('.btn-profile-pdf')?.addEventListener('click', () => {
+        dialog?.querySelector('.btn-profile-pdf')?.addEventListener('click', () => {
           try {
             descargarPdfClase(clase, inscritos, {
               maestros: state.maestros,
@@ -774,7 +1153,7 @@ async function openClasePerfilModal(clase) {
         })
 
         // Wire edit button
-        modalBody.querySelector('.btn-profile-edit')?.addEventListener('click', () => {
+        dialog?.querySelector('.btn-profile-edit')?.addEventListener('click', () => {
           AppModal.close()
           setTimeout(() => {
             openClaseModal(clase, {
@@ -788,17 +1167,52 @@ async function openClasePerfilModal(clase) {
         })
 
         // Wire delete button
-        modalBody.querySelector('.btn-profile-delete')?.addEventListener('click', () => {
+        dialog?.querySelector('.btn-profile-delete')?.addEventListener('click', () => {
           AppModal.close()
           setTimeout(() => {
             openDeleteModal(clase.id)
           }, 250)
         })
 
-        // Wire close button
-        modalBody.querySelector('.btn-profile-close')?.addEventListener('click', () => {
-          AppModal.close()
-        })
+        // Wire live student search input
+        const searchInput = modalBody.querySelector('#search-profile-alumnos')
+        const container = modalBody.querySelector('#profile-alumnos-container')
+        const countBadge = modalBody.querySelector('#profile-alumnos-count')
+
+        if (searchInput && container) {
+          searchInput.addEventListener('input', (e) => {
+            const term = normalizeText(e.target.value)
+            const items = container.querySelectorAll('.list-group-item')
+            let visibleCount = 0
+
+            items.forEach(item => {
+              const text = normalizeText(item.textContent || '')
+              const matches = !term || text.includes(term)
+              item.style.display = matches ? 'flex' : 'none'
+              if (matches) visibleCount++
+            })
+
+            let noResultMsg = container.querySelector('.no-search-results')
+            if (visibleCount === 0) {
+              if (!noResultMsg) {
+                noResultMsg = document.createElement('div')
+                noResultMsg.className = 'no-search-results text-muted text-center py-4 small'
+                noResultMsg.innerHTML = '<i class="bi bi-search d-block mb-1 opacity-50" style="font-size: 1.25rem;"></i>No se encontraron alumnos'
+                const listGroup = container.querySelector('.list-group')
+                if (listGroup) listGroup.appendChild(noResultMsg)
+                else container.appendChild(noResultMsg)
+              } else {
+                noResultMsg.style.display = 'block'
+              }
+            } else if (noResultMsg) {
+              noResultMsg.style.display = 'none'
+            }
+
+            if (countBadge) {
+              countBadge.textContent = term ? `${visibleCount} de ${inscritos.length}` : `${inscritos.length}`
+            }
+          })
+        }
       }
     })
   } catch (error) {
@@ -850,6 +1264,28 @@ function attachGlobalEvents(container) {
     } catch (error) {
       console.error(error)
       AppToast.error('No se pudo generar el PDF de listados por clase')
+    } finally {
+      if (button) {
+        button.disabled = false
+        button.innerHTML = originalHTML
+      }
+    }
+  })
+
+  container.querySelector('#btnAlumnosSinClase')?.addEventListener('click', async () => {
+    const button = container.querySelector('#btnAlumnosSinClase')
+    const originalHTML = button?.innerHTML
+    if (button) {
+      button.disabled = true
+      button.innerHTML = '<span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>Buscando...'
+    }
+
+    try {
+      const grupos = await obtenerAlumnosSinClase()
+      _abrirModalAlumnosSinClase(grupos)
+    } catch (error) {
+      console.error(error)
+      AppToast.error('No se pudo obtener el listado de alumnos sin clase')
     } finally {
       if (button) {
         button.disabled = false
@@ -1132,6 +1568,7 @@ function applyFilters() {
   state.filtroTipo = filtroTipo
   state.filtroSalon = filtroSalon
   state.filtroDia = filtroDia
+  _guardarFiltrosStorage()
 
   state.clases = state.clasesOriginales.filter(clase => {
     // ── Search text ─────────────────────────────────────────────────────────
@@ -1175,6 +1612,30 @@ function applyFilters() {
 
     return true
   })
+
+  const activosCount = [
+    filtroEstado !== 'todos',
+    !!filtroInstr,
+    !!filtroNivel,
+    !!filtroTipo,
+    !!filtroSalon,
+    !!filtroDia,
+    !!term,
+  ].filter(Boolean).length
+
+  const badgeEl = c.querySelector('#filtrosBadgeCount')
+  if (badgeEl) {
+    badgeEl.textContent = activosCount
+    if (activosCount > 0) badgeEl.classList.remove('d-none')
+    else badgeEl.classList.add('d-none')
+  }
+
+  const labelEl = c.querySelector('#filtrosActivosCount')
+  if (labelEl) {
+    labelEl.textContent = activosCount > 0
+      ? `${activosCount} filtro(s) activo(s) aplicado(s)`
+      : 'Busca y segmenta las clases visibles'
+  }
 
   const viewContent = c.querySelector('#view-content')
   if (viewContent) {

@@ -1,4 +1,3 @@
-import '../../../shared/styles/patterns.css'
 import '../styles/programas.css'
 import { escapeHTML } from '../../../shared/utils/sanitize.js'
 import { AppModal } from '../../../shared/components/AppModal.js'
@@ -324,6 +323,7 @@ function _renderFormModal({ title, saveText, programa = null }) {
           <label class="form-label-compact">Nivel / Año *</label>
           <select class="form-select input-dense" id="prog-nivel">
             ${getNivelOptions(programa?.nivel || '')}
+            
           </select>
         </div>
         <div class="col-md-6">
@@ -337,6 +337,7 @@ function _renderFormModal({ title, saveText, programa = null }) {
         <div class="col-12">
           <div class="form-check">
             <input class="form-check-input" type="checkbox" id="prog-activo" ${programa?.activo !== false ? 'checked' : ''}>
+            <p>aqui estoy  </p>
             <label class="form-check-label" for="prog-activo">Programa Activo</label>
           </div>
         </div>
@@ -386,24 +387,54 @@ async function loadClasesForPrograma(programaId, modalBody) {
   if (!section) return
 
   try {
-    const [clasesRes, maestrosRes] = await Promise.all([
+    const [clasesRes, maestrosRes, salonesRes, horariosRes, alumnosClasesRes] = await Promise.all([
       supabase.from('clases').select('*').eq('programa_id', programaId),
-      supabase.from('maestros').select('id, nombre_completo'),
+      supabase.from('maestros').select('id, nombre_completo, nombre'),
+      supabase.from('salones').select('id, nombre'),
+      supabase.from('clase_horarios').select('*'),
+      supabase.from('alumnos_clases').select('clase_id, alumno_id'),
     ])
 
-    const clases   = clasesRes.data   || []
-    const maestros = maestrosRes.data || []
+    const clases        = clasesRes.data   || []
+    const maestros      = maestrosRes.data || []
+    const salonesData   = salonesRes.data   || []
+    const horariosData  = horariosRes.data  || []
+    const alumnosClases = alumnosClasesRes.data || []
 
     if (clases.length === 0) {
       section.innerHTML = `<p class="text-muted small fst-italic mb-0">Este programa no tiene clases registradas.</p>`
       return
     }
 
-    const totalAlumnos  = clases.reduce((sum, c) => sum + (c.alumnos_inscritos || 0), 0)
-    const instruments   = [...new Set(clases.map(c => c.instrumento).filter(Boolean))]
-    const maestrosIds   = [...new Set([
-      ...clases.map(c => c.maestro_principal_id),
-      ...clases.map(c => c.maestro_suplente_id),
+    const salonesMap = salonesData.reduce((acc, s) => {
+      acc[s.id] = s.nombre || s.name
+      return acc
+    }, {})
+
+    const horariosByClase = horariosData.reduce((acc, h) => {
+      if (h.clase_id) {
+        if (!acc[h.clase_id]) acc[h.clase_id] = []
+        acc[h.clase_id].push(h)
+      }
+      return acc
+    }, {})
+
+    const alumnosByClase = alumnosClases.reduce((acc, row) => {
+      if (row.clase_id) {
+        if (!acc[row.clase_id]) acc[row.clase_id] = new Set()
+        if (row.alumno_id) acc[row.clase_id].add(row.alumno_id)
+      }
+      return acc
+    }, {})
+
+    const totalAlumnos = clases.reduce((sum, c) => {
+      const count = alumnosByClase[c.id] ? alumnosByClase[c.id].size : (c.alumnos_inscritos || 0)
+      return sum + count
+    }, 0)
+
+    const instruments = [...new Set(clases.map(c => c.instrumento).filter(Boolean))]
+    const maestrosIds = [...new Set([
+      ...clases.map(c => c.maestro_principal_id || c.maestro_id)
     ].filter(Boolean))]
 
     const summaryHtml = `
@@ -436,15 +467,29 @@ async function loadClasesForPrograma(programaId, modalBody) {
     `
 
     const clasesHtml = clases.map(clase => {
-      const principal = maestros.find(m => m.id === clase.maestro_principal_id)
-      const suplente  = maestros.find(m => m.id === clase.maestro_suplente_id)
-      const nombreP   = principal ? (principal.nombre_completo || principal.nombre) : 'No asignado'
-      const nombreS   = suplente  ? (suplente.nombre_completo  || suplente.nombre)  : null
-      const horarios  = (clase.horarios || []).slice(0, 2)
-      const horarioStr = horarios.length > 0
-        ? horarios.map(h => `${(h.dia || '').slice(0, 2).toUpperCase()} ${(h.hora_inicio || '').slice(0, 5)}`).join(' · ')
+      const principal = maestros.find(m => m.id === (clase.maestro_principal_id || clase.maestro_id))
+      const nombreP   = principal ? (principal.nombre_completo || principal.nombre) : (clase.maestro_nombre || 'No asignado')
+      
+      const claseHorarios = horariosByClase[clase.id] || clase.horarios || []
+      const horarioStr = claseHorarios.length > 0
+        ? claseHorarios.map(h => {
+            const dia = (h.dia || '').slice(0, 3).toUpperCase()
+            const inicio = (h.hora_inicio || '').slice(0, 5)
+            const fin = (h.hora_fin || '').slice(0, 5)
+            return fin ? `${dia} ${inicio}-${fin}` : `${dia} ${inicio}`
+          }).join(' · ')
         : 'Sin horario'
-      const alumnos   = clase.alumnos_inscritos ?? 0
+
+      let salonStr = clase.salon || null
+      if (!salonStr && claseHorarios.length > 0) {
+        const salonId = claseHorarios.find(h => h.salon_id)?.salon_id
+        if (salonId && salonesMap[salonId]) {
+          salonStr = salonesMap[salonId]
+        }
+      }
+      if (!salonStr) salonStr = 'Sin salón'
+
+      const alumnos = alumnosByClase[clase.id] ? alumnosByClase[clase.id].size : (clase.alumnos_inscritos ?? 0)
 
       return `
         <div class="card mb-2 border-0 shadow-sm">
@@ -456,13 +501,12 @@ async function loadClasesForPrograma(programaId, modalBody) {
               </div>
               <span class="badge ms-2 flex-shrink-0 ${clase.estado === 'activa' ? 'bg-success-subtle text-success-emphasis' : 'bg-secondary-subtle text-secondary-emphasis'}">${escapeHTML(clase.estado || 'activa')}</span>
             </div>
-            <div class="row g-1 mt-1 small text-muted">
+            <div class="row g-2 mt-1 small text-muted">
               <div class="col-6"><i class="bi bi-person-badge me-1"></i>${escapeHTML(nombreP)}</div>
-              <div class="col-6"><i class="bi bi-person-dash me-1"></i>${nombreS ? escapeHTML(nombreS) : 'Sin maestro suplente'}</div>
               <div class="col-6"><i class="bi bi-music-note me-1"></i>${escapeHTML(clase.instrumento || '-')} · ${escapeHTML(clase.nivel || '-')}</div>
-              <div class="col-6"><i class="bi bi-people me-1"></i>${alumnos} alumno${alumnos !== 1 ? 's' : ''} inscritos</div>
+              <div class="col-6"><i class="bi bi-people me-1"></i>${alumnos} alumno${alumnos !== 1 ? 's' : ''} inscrito${alumnos !== 1 ? 's' : ''}</div>
               <div class="col-6"><i class="bi bi-clock me-1"></i>${escapeHTML(horarioStr)}</div>
-              <div class="col-6"><i class="bi bi-door-open me-1"></i>${escapeHTML(clase.salon || 'Sin salón')}</div>
+              <div class="col-6"><i class="bi bi-door-open me-1"></i>${escapeHTML(salonStr)}</div>
             </div>
           </div>
         </div>
@@ -489,7 +533,7 @@ function openViewModal(id) {
       ${renderHeroCard({
         title: p.nombre || 'Programa',
         badgesHtml: `
-          <span class="badge bg-primary bg-opacity-10 text-primary border border-primary-subtle" style="font-size: 0.75rem;">${escapeHTML(nivel)}</span>
+          <span class="badge bg-primary bg-opacity-10 text-white border border-primary-subtle" style="font-size: 0.75rem;">${escapeHTML(nivel)}</span>
           <span class="d-inline-block rounded-circle ${estadoDotClass}" style="width: 10px; height: 10px;" title="${estadoLabel}"></span>
         `,
         actionsHtml: `

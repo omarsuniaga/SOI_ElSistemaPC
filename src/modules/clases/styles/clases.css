@@ -951,3 +951,46 @@
   box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.05) !important;
 }
 
+/* ============================================================================
+   COMPRESSED FILTER GRID & DESKTOP 75% MODALS
+   ============================================================================ */
+
+.clases-filter-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 8px;
+  width: 100%;
+}
+
+.clases-filter-grid .premium-select-container {
+  min-width: 0;
+  width: 100%;
+}
+
+.clases-filter-grid .premium-filter-select {
+  padding-top: 6px !important;
+  padding-bottom: 6px !important;
+  font-size: 0.85rem !important;
+  border-radius: 8px !important;
+}
+
+.clases-filter-grid .select-icon-muted {
+  font-size: 0.8rem;
+  left: 10px;
+}
+
+.clases-filter-grid .premium-filter-select {
+  padding-left: 30px !important;
+}
+
+@media (min-width: 992px) {
+  /* Modales en vista Escritorio ocupan 75% de las dimensiones de la pantalla */
+  #app-global-modal .app-modal-dialog,
+  #app-global-modal .app-modal-dialog.modal-size-xl {
+    width: 75vw !important;
+    max-width: 75vw !important;
+    height: 75vh !important;
+    max-height: 75vh !important;
+    border-radius: 20px;
+  }
+}

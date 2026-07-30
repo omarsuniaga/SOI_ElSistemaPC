@@ -1,7 +1,7 @@
 import alumnosMockData from '../../../assets/data/mocks/alumnos.json'
 
-// Simulación de delay para que se sienta como una API real
-const delay = (ms = 500) => new Promise(resolve => setTimeout(resolve, ms))
+// Simulación de delay para que se sienta como una API real (0ms en modo test)
+const delay = (ms = 500) => new Promise(resolve => setTimeout(resolve, (typeof process !== 'undefined' && process.env.NODE_ENV === 'test') ? 0 : ms))
 
 // Simulated active class enrollments for Demo/Mock Mode
 const inscripciones = [
@@ -36,8 +36,26 @@ function normalizeAlumno(a) {
   }
 }
 
-// Persistencia en memoria local (solo por sesión para el demo)
-let alumnos = [...alumnosMockData]
+const MOCK_STORAGE_KEY = 'soi_mock_alumnos'
+function getSavedAlumnos() {
+  try {
+    if (typeof localStorage !== 'undefined' && (typeof process === 'undefined' || process.env.NODE_ENV !== 'test')) {
+      const saved = localStorage.getItem(MOCK_STORAGE_KEY)
+      if (saved) return JSON.parse(saved)
+    }
+  } catch (e) {}
+  return [...alumnosMockData]
+}
+
+function saveAlumnos(list) {
+  try {
+    if (typeof localStorage !== 'undefined' && (typeof process === 'undefined' || process.env.NODE_ENV !== 'test')) {
+      localStorage.setItem(MOCK_STORAGE_KEY, JSON.stringify(list))
+    }
+  } catch (e) {}
+}
+
+let alumnos = getSavedAlumnos()
 
 export async function obtenerAlumnos({ page = 0, pageSize = 100 } = {}) {
   await delay()
@@ -63,6 +81,7 @@ export async function crearAlumno(alumno) {
     activo: alumno.is_active !== undefined ? alumno.is_active : true
   }
   alumnos.push(nuevo)
+  saveAlumnos(alumnos)
   return normalizeAlumno(nuevo)
 }
 
@@ -72,12 +91,14 @@ export async function actualizarAlumno(id, actualizaciones) {
   if (index === -1) throw new Error('Alumno no encontrado (Demo)')
   
   alumnos[index] = { ...alumnos[index], ...actualizaciones }
+  saveAlumnos(alumnos)
   return normalizeAlumno(alumnos[index])
 }
 
 export async function eliminarAlumno(id) {
   await delay()
   alumnos = alumnos.filter(a => a.id !== id)
+  saveAlumnos(alumnos)
 }
 
 export async function validarEmail(email) {
@@ -179,6 +200,11 @@ export async function verificarEliminacionAlumno(alumnoId) {
 export async function obtenerProgresoAlumno(alumnoId) {
   await delay()
   return []
+}
+
+export async function obtenerResumenAcademico(alumnoId) {
+  await delay()
+  return { nivel: null, promedioBase: null, totalEvaluaciones: 0, promedioEvaluaciones: null, promedioActualizado: null }
 }
 
 export async function obtenerAsistenciasAlumno(alumnoId) {

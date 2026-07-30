@@ -1,12 +1,13 @@
 // src/modules/horario-builder/components/ViewToggle.js
 
-export const VIEWS = ['grid', 'teacher', 'room', 'student'];
+export const VIEWS = ['grid', 'student', 'teacher', 'room', 'class'];
 
 const VIEW_LABELS = {
-  grid:    { label: 'Grilla',      icon: 'bi-grid-3x3' },
-  teacher: { label: 'Por Maestro', icon: 'bi-person-lines-fill' },
+  grid:    { label: 'General',     icon: 'bi-grid-3x3' },
+  student: { label: 'Por Alumno',  icon: 'bi-mortarboard' },
+  teacher: { label: 'Por Maestro', icon: 'bi-person-badge' },
   room:    { label: 'Por Salón',   icon: 'bi-door-open' },
-  student: { label: 'Por Alumno',  icon: 'bi-mortarboard' }
+  class:   { label: 'Por Clase',   icon: 'bi-journal-bookmark' }
 };
 
 /**

@@ -1,0 +1,30 @@
+/* ============================================================================
+   SOI UTILITIES — Reusable utility classes
+   Additive — not replacements for Bootstrap utilities.
+   ============================================================================ */
+
+/* ── Vertical Stack ────────────────────────────────────────────────────── */
+.u-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--soi-space-md);
+}
+
+/* ── Full Width ────────────────────────────────────────────────────────── */
+.u-full-width {
+  width: 100%;
+}
+
+/* ── Flex Between ──────────────────────────────────────────────────────── */
+.u-flex-between {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* ── Text Truncate ─────────────────────────────────────────────────────── */
+.u-truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

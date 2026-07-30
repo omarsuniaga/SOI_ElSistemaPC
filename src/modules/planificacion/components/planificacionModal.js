@@ -544,26 +544,28 @@ function _getModalStyles() {
     .pm-plan-backdrop {
       position: absolute;
       inset: 0;
-      backdrop-filter: blur(4px);
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(8px);
       transition: background 0.2s ease;
     }
     
     [data-bs-theme="light"] .pm-plan-backdrop,
     [data-portal-theme="light"] .pm-plan-backdrop {
-      background: rgba(0, 0, 0, 0.4);
+      background: rgba(0, 0, 0, 0.5);
     }
     
     [data-bs-theme="dark"] .pm-plan-backdrop,
     [data-portal-theme="dark"] .pm-plan-backdrop {
-      background: rgba(0, 0, 0, 0.65);
+      background: rgba(0, 0, 0, 0.8);
     }
     
     .pm-plan-modal {
       position: relative;
-      background: var(--pm-surface);
+      background: var(--pm-surface, var(--bs-body-bg, #16181d));
+      color: var(--pm-text, var(--bs-body-color, #f8f9fa));
       border-radius: 16px;
-      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25),
-                  0 0 0 1px var(--pm-border);
+      box-shadow: 0 25px 60px -10px rgba(0, 0, 0, 0.7),
+                  0 0 0 1px var(--pm-border, rgba(255, 255, 255, 0.12));
       width: 100%;
       max-width: 640px;
       max-height: 90vh;
@@ -583,8 +585,8 @@ function _getModalStyles() {
       align-items: flex-start;
       justify-content: space-between;
       padding: 1.25rem 1.5rem;
-      background: var(--pm-surface-2);
-      border-bottom: 1px solid var(--pm-border);
+      background: var(--pm-surface-2, var(--bs-tertiary-bg, #1e222a));
+      border-bottom: 1px solid var(--pm-border, rgba(255, 255, 255, 0.1));
       flex-shrink: 0;
     }
     
@@ -623,7 +625,7 @@ function _getModalStyles() {
       width: 32px;
       height: 32px;
       border: none;
-      background: var(--pm-surface-2);
+      background: var(--pm-surface-2, var(--bs-tertiary-bg, #1e222a));
       border-radius: 8px;
       cursor: pointer;
       display: flex;
@@ -665,7 +667,7 @@ function _getModalStyles() {
     .pm-plan-section {
       margin-bottom: 1.5rem;
       padding-bottom: 1.5rem;
-      border-bottom: 1px solid var(--pm-border);
+      border-bottom: 1px solid var(--pm-border, rgba(255, 255, 255, 0.1));
     }
     
     .pm-plan-section:last-child {
@@ -731,12 +733,12 @@ function _getModalStyles() {
     .pm-plan-select,
     .pm-plan-textarea {
       width: 100%;
-      background: var(--pm-surface);
-      border: 1px solid var(--pm-border);
+      background: var(--pm-surface-2, var(--bs-tertiary-bg, #222731));
+      border: 1px solid var(--pm-border, rgba(255, 255, 255, 0.15));
       border-radius: 8px;
       padding: 0.5rem 0.75rem;
       font-size: 0.875rem;
-      color: var(--pm-text);
+      color: var(--pm-text, var(--bs-body-color, #ffffff));
       transition: border-color 0.15s ease, box-shadow 0.15s ease;
     }
     
@@ -907,7 +909,7 @@ function _getModalStyles() {
       justify-content: flex-end;
       gap: 0.75rem;
       padding: 1rem 1.5rem;
-      border-top: 1px solid var(--pm-border);
+      border-top: 1px solid var(--pm-border, rgba(255, 255, 255, 0.1));
       background: var(--pm-surface-2);
       flex-shrink: 0;
     }

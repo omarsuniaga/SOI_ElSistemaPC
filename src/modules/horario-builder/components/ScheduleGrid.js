@@ -6,6 +6,15 @@ import { roundToHour } from '../utils/timeUtils.js';
 
 const EMPTY_STATE = '<p class="text-muted text-center py-4">No hay asignaciones para mostrar.</p>';
 
+function normalizeDayKey(dayStr) {
+  if (!dayStr) return '';
+  return dayStr
+    .toLowerCase()
+    .trim()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+}
+
 /**
  * Renders a weekly grid (table-like) view grouped by hour × day.
  * @param {Array}   assignments
@@ -14,17 +23,19 @@ const EMPTY_STATE = '<p class="text-muted text-center py-4">No hay asignaciones 
  * @returns {string} HTML
  */
 function renderGridView(assignments, draggable, periodoId) {
-  // Build map: hour -> day -> [assignment]
+  // Build map: hour -> dayKey -> [assignment]
   const hourDayMap = new Map();
   for (const a of assignments) {
-    const hour = roundToHour(a.hora_inicio);
+    const hour = roundToHour(a.hora_inicio || '08:00');
     if (!hourDayMap.has(hour)) hourDayMap.set(hour, new Map());
     const dayMap = hourDayMap.get(hour);
-    const dayKey = (a.dia || '').toLowerCase();
+    const dayKey = normalizeDayKey(a.dia);
     if (!dayMap.has(dayKey)) dayMap.set(dayKey, []);
     dayMap.get(dayKey).push(a);
   }
-  const hours = [...hourDayMap.keys()].sort();
+
+  const defaultHours = ['08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00'];
+  const hours = Array.from(new Set([...defaultHours, ...hourDayMap.keys()])).sort();
 
   const headerCells = DIAS_SEMANA.map(
     d => `<th class="sg-col-header" data-day="${d.key}">${d.label}</th>`
@@ -33,7 +44,8 @@ function renderGridView(assignments, draggable, periodoId) {
   const rows = hours.map(hour => {
     const dayMap = hourDayMap.get(hour);
     const cells = DIAS_SEMANA.map(d => {
-      const blocks = (dayMap.get(d.key) || [])
+      const normKey = normalizeDayKey(d.key);
+      const blocks = (dayMap?.get(normKey) || [])
         .map(a => createScheduleBlock(a, { draggable }))
         .join('');
       return `<td class="sg-cell" data-day="${d.key}" data-hour="${hour}">${blocks}</td>`;
@@ -45,12 +57,11 @@ function renderGridView(assignments, draggable, periodoId) {
   }).join('');
 
   return `
-    <div class="schedule-grid-wrapper">
+    <div class="schedule-grid-wrapper mt-3">
       <table class="schedule-grid">
-        ${periodoId ? `<caption class="text-muted">${periodoId}</caption>` : ''}
         <thead>
           <tr>
-            <th class="sg-hour-col" aria-label="Hora"></th>
+            <th class="sg-hour-col" aria-label="Hora">Hora</th>
             ${headerCells}
           </tr>
         </thead>
@@ -108,8 +119,10 @@ export function createScheduleGrid({ assignments, activeView, draggable = false,
       return renderGroupedView(assignments, 'maestro_nombre', draggable);
     case 'room':
       return renderGroupedView(assignments, 'salon_nombre', draggable);
-    case 'student':
+    case 'class':
       return renderGroupedView(assignments, 'clase_nombre', draggable);
+    case 'student':
+      return renderGridView(assignments, draggable, periodoId);
     case 'grid':
     default:
       return renderGridView(assignments, draggable, periodoId);
@@ -117,10 +130,8 @@ export function createScheduleGrid({ assignments, activeView, draggable = false,
 }
 
 /**
- * Attaches DOM listeners needed for the grid (currently none — D&D handled separately in Task 8).
- * Reserved for future expansion.
+ * Attaches DOM listeners needed for the grid.
  *
- * @param {HTMLElement} container
+ * @param {HTMLElement} _container
  */
-// Reserved for future use; D&D is managed by DragDropManager.
 export function attachScheduleGridListeners(_container) {}

@@ -68,12 +68,20 @@ function _renderLoading() {
     </div>`
 }
 
+function _esJustificada(s) {
+  if (!s) return false
+  const est = (s.estado || '').toLowerCase()
+  return est === 'justificada' || est === 'cancelada' || est === 'suspendida' || !!s.es_justificada || !!s.justificada
+}
+
 function _getFilteredSesiones() {
   return panelState.sesionesEnriquecidas.filter((s) => {
+    const esJust = _esJustificada(s)
     if (panelState.filtroClase && s.clase_id !== panelState.filtroClase) return false
     if (panelState.filtroFechaDesde && s.fecha < panelState.filtroFechaDesde) return false
     if (panelState.filtroFechaHasta && s.fecha > panelState.filtroFechaHasta) return false
-    if (panelState.soloSinPlan && s.tiene_plan) return false
+    // Si el filtro "Solo sin planificar" está activo, ignorar también las sesiones justificadas/canceladas
+    if (panelState.soloSinPlan && (s.tiene_plan || esJust)) return false
     return true
   })
 }
@@ -81,8 +89,9 @@ function _getFilteredSesiones() {
 function _renderPanel() {
   const filtradas = _getFilteredSesiones()
   const totalSesiones = panelState.sesionesEnriquecidas.length
-  const sinPlan = panelState.sesionesEnriquecidas.filter((s) => !s.tiene_plan).length
-  const conPlan = totalSesiones - sinPlan
+  const planificables = panelState.sesionesEnriquecidas.filter(s => !_esJustificada(s))
+  const sinPlan = planificables.filter((s) => !s.tiene_plan).length
+  const conPlan = planificables.length - sinPlan
 
   // Group by clase
   const agrupadas = new Map()
@@ -179,9 +188,18 @@ function _renderGroups(agrupadas) {
 }
 
 function _renderSesionCard(sesion, clase) {
+  const esJust = _esJustificada(sesion)
   const tienePlan = sesion.tiene_plan
-  const accentClass = tienePlan ? 'historial-card--planned' : 'historial-card--unplanned'
-  const badgeHtml = tienePlan
+  const accentClass = esJust
+    ? 'historial-card--justified border-secondary'
+    : tienePlan
+    ? 'historial-card--planned'
+    : 'historial-card--unplanned'
+
+  const estadoLabel = sesion.estado === 'suspendida' ? 'Suspendida' : sesion.estado === 'cancelada' ? 'Cancelada' : 'Justificada'
+  const badgeHtml = esJust
+    ? `<span class="badge bg-secondary bg-opacity-10 text-secondary border-0"><i class="bi bi-shield-slash me-1"></i>${escapeHTML(estadoLabel)}</span>`
+    : tienePlan
     ? '<span class="badge bg-success bg-opacity-10 text-success border-0"><i class="bi bi-check-circle me-1"></i>Planificado</span>'
     : '<span class="badge bg-warning bg-opacity-10 text-warning border-0"><i class="bi bi-exclamation-circle me-1"></i>Sin planificar</span>'
 
@@ -214,7 +232,9 @@ function _renderSesionCard(sesion, clase) {
         </div>
         <div class="historial-card-actions">
           ${
-            !tienePlan
+            esJust
+              ? `<span class="small text-muted opacity-75" title="Registro exclusivo de asistencia (sin contenido pedagógico impartido)"><i class="bi bi-info-circle me-1"></i>No planificable (Registro de Asistencia)</span>`
+              : !tienePlan
               ? `<button class="btn btn-sm btn-promover-plan" data-action="promover" data-sesion-id="${sesion.id}" title="Agregar a planificación oficial">
                   <i class="bi bi-journal-plus me-1"></i>Agregar a Plan
                 </button>`

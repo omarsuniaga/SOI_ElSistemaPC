@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Teacher Availability Card component.
  * Displays a list of active teachers with indicators of their total weekly availability,
  * and allows clicking to filter the main grid.
@@ -52,16 +52,16 @@ export function createTeacherAvailabilityCardList({
     return `
       <div class="hb-teacher-badge card-action ${isSelected ? 'border-primary bg-primary-subtle' : ''}" 
            data-id="${teacher.id}" 
-           style="cursor: pointer; display: flex; align-items: center; gap: 12px; padding: 10px 14px; border: 1px solid var(--hb-border); border-radius: 12px; margin-bottom: 8px; background: ${isSelected ? 'var(--hb-primary-light)' : 'var(--hb-card-bg)'}; transition: all 0.2s;"
+           style="cursor: pointer; display: flex; align-items: center; gap: 12px; padding: 10px 14px; border: 1px solid var(--soi-border); border-radius: 12px; margin-bottom: 8px; background: ${isSelected ? 'var(--soi-color-primary-light)' : 'var(--soi-surface)'}; transition: all 0.2s;"
            id="teacher-card-${teacher.id}">
-        <div style="width: 40px; height: 40px; border-radius: 50%; background: ${isSelected ? 'var(--hb-primary)' : 'var(--hb-gray-300)'}; color: ${isSelected ? '#fff' : 'var(--hb-gray-700)'}; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 1.1rem; box-shadow: 0 2px 6px rgba(0,0,0,0.05);">
+        <div style="width: 40px; height: 40px; border-radius: 50%; background: ${isSelected ? 'var(--soi-color-primary)' : 'var(--soi-border)'}; color: ${isSelected ? 'var(--soi-text-on-primary)' : 'var(--soi-text-muted)'}; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 1.1rem; box-shadow: 0 2px 6px rgba(0,0,0,0.05);">
           ${initial}
         </div>
         <div style="flex: 1; min-width: 0;">
-          <div style="font-weight: 650; font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--hb-text);">
+          <div style="font-weight: 650; font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--soi-text);">
             ${teacher.nombre}
           </div>
-          <div style="font-size: 0.75rem; color: var(--hb-text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+          <div style="font-size: 0.75rem; color: var(--soi-text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
             🎻 ${skillsList}
           </div>
         </div>
@@ -81,14 +81,14 @@ export function createTeacherAvailabilityCardList({
       <div style="margin-bottom: 12px;">
         <div class="hb-teacher-badge ${selectedTeacherId === 'all' ? 'border-primary bg-primary-subtle' : ''}" 
              data-id="all" 
-             style="cursor: pointer; display: flex; align-items: center; gap: 12px; padding: 10px 14px; border: 1px solid var(--hb-border); border-radius: 12px; background: ${selectedTeacherId === 'all' ? 'var(--hb-primary-light)' : 'var(--hb-card-bg)'}; transition: all 0.2s;"
+             style="cursor: pointer; display: flex; align-items: center; gap: 12px; padding: 10px 14px; border: 1px solid var(--soi-border); border-radius: 12px; background: ${selectedTeacherId === 'all' ? 'var(--soi-color-primary-light)' : 'var(--soi-surface)'}; transition: all 0.2s;"
              id="teacher-card-all">
-          <div style="width: 40px; height: 40px; border-radius: 50%; background: ${selectedTeacherId === 'all' ? 'var(--hb-primary)' : 'var(--hb-gray-300)'}; color: ${selectedTeacherId === 'all' ? '#fff' : 'var(--hb-gray-700)'}; display: flex; align-items: center; justify-content: center; font-weight: 700;">
+          <div style="width: 40px; height: 40px; border-radius: 50%; background: ${selectedTeacherId === 'all' ? 'var(--soi-color-primary)' : 'var(--soi-border)'}; color: ${selectedTeacherId === 'all' ? 'var(--soi-text-on-primary)' : 'var(--soi-text-muted)'}; display: flex; align-items: center; justify-content: center; font-weight: 700;">
             🌐
           </div>
           <div style="flex: 1;">
-            <div style="font-weight: 700; font-size: 0.9rem; color: var(--hb-text);">Ver Todos</div>
-            <div style="font-size: 0.75rem; color: var(--hb-text-muted);">Mostrar disponibilidad unificada</div>
+            <div style="font-weight: 700; font-size: 0.9rem; color: var(--soi-text);">Ver Todos</div>
+            <div style="font-size: 0.75rem; color: var(--soi-text-muted);">Mostrar disponibilidad unificada</div>
           </div>
           <span class="badge bg-secondary" style="font-size: 0.7rem; font-weight: 600; padding: 4px 8px;">
             ${teachers.length} profes

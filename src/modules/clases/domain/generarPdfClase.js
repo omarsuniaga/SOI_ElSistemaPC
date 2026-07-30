@@ -41,7 +41,7 @@ function header(doc, titulo, subtitulo = '') {
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(8)
   doc.setTextColor(200, 215, 240)
-  doc.text('Programa de Formación Musical · República Dominicana', M + 2, 20)
+  doc.text('Tocamos Corazones, Cambiamos Vidas · Punta Cana', M + 2, 20)
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(9)
   doc.setTextColor(...C.dorado)
@@ -58,9 +58,9 @@ function header(doc, titulo, subtitulo = '') {
 
 function footer(doc, page) {
   doc.setFillColor(...C.azul)
-  doc.rect(0, H - 12, W, 12, 'F')
+  doc.rect(0, H - 8, W, 8, 'F')
   doc.setFillColor(...C.dorado)
-  doc.rect(0, H - 12, 4, 12, 'F')
+  doc.rect(0, H - 8, 4, 8, 'F')
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(6.5)
   doc.setTextColor(...C.blanco)
@@ -73,6 +73,51 @@ const DIAS = {
   jueves: 'Jueves', viernes: 'Viernes', sábado: 'Sábado', domingo: 'Domingo',
 }
 
+const DIAS_ABREV = {
+  lunes: 'Lun', martes: 'Mar', miércoles: 'Mié',
+  jueves: 'Jue', viernes: 'Vie', sábado: 'Sáb', domingo: 'Dom',
+}
+
+function formatFechaCorta(dateStr) {
+  if (!dateStr) return '—'
+  return new Date(dateStr.slice(0, 10) + 'T12:00:00')
+    .toLocaleDateString('es-DO', { day: 'numeric', month: 'short', year: 'numeric' })
+    .replace(' de ', ' ')
+}
+
+/**
+ * Teléfono de contacto del alumno. Los alumnos son en su mayoría menores de
+ * edad sin número propio, así que se resuelve por prioridad: el suyo si lo
+ * tiene, luego el del representante/familiar que realmente firma la
+ * inscripción, y por último los contactos de emergencia.
+ */
+function resolverTelefonoAlumno(alumno = {}) {
+  const candidatos = [
+    alumno.tlf_alumno,
+    alumno.representante_tlf,
+    alumno.familiar_telefono,
+    alumno.madre_tlf_whatsapp,
+    alumno.padre_tlf_whatsapp,
+    alumno.contacto_emergencia_telefono,
+  ]
+  return candidatos.find(v => String(v ?? '').trim()) || null
+}
+
+/**
+ * Horario para la tabla: compacto (día abreviado + rango), sin salón.
+ * Varios bloques semanales se apilan en la misma celda.
+ */
+function formatHorarioCompacto(horarios) {
+  if (!Array.isArray(horarios) || horarios.length === 0) return null
+  const lineas = horarios
+    .filter(h => h?.hora_inicio && h?.hora_fin)
+    .map(h => {
+      const dia = DIAS_ABREV[h.dia] || h.dia
+      return `${dia} ${h.hora_inicio.slice(0, 5)}-${h.hora_fin.slice(0, 5)}`
+    })
+  return lineas.length ? lineas.join('\n') : null
+}
+
 export function buildClasePdfFilename(nombre, dateStr) {
   const slug = nombre.toLowerCase()
     .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
@@ -80,31 +125,31 @@ export function buildClasePdfFilename(nombre, dateStr) {
   return `clase-${slug}-${dateStr}.pdf`
 }
 
-export function buildClasePdfRows(inscripciones) {
+/**
+ * @param {Array} inscripciones - filas de alumnos_clases con alumno embebido
+ * @param {Array} claseHorarios - clase.horarios; se usa cuando la inscripción
+ *   no trae hora_inicio/hora_fin propios (caso "Grupal", la inmensa mayoría).
+ */
+export function buildClasePdfRows(inscripciones, claseHorarios = []) {
+  const horarioClase = formatHorarioCompacto(claseHorarios)
   return inscripciones.map((ins, i) => {
     const a = ins.alumno || {}
-    const fecha = ins.fecha_inscripcion
-      ? new Date(ins.fecha_inscripcion + 'T12:00:00')
-          .toLocaleDateString('es-DO', { day: 'numeric', month: 'short', year: 'numeric' })
-          .replace(' de ', ' ')
-      : '—'
-    const horario = ins.hora_inicio && ins.hora_fin
-      ? `${ins.hora_inicio.slice(0, 5)} - ${ins.hora_fin.slice(0, 5)}`
-      : '—'
+    const horarioPropio = ins.hora_inicio && ins.hora_fin
+      ? `${ins.hora_inicio.slice(0, 5)}-${ins.hora_fin.slice(0, 5)}`
+      : null
     return [
       i + 1,
       p(a.nombre_completo),
-      p(a.documento_identidad),
       p(a.instrumento_principal),
-      p(a.telefono),
-      fecha,
-      horario,
+      p(resolverTelefonoAlumno(a)),
+      formatFechaCorta(a.updated_at),
+      p(horarioPropio || horarioClase),
     ]
   })
 }
 
 export function formatClaseHorariosForPdf(horarios, salones = []) {
-  if (!Array.isArray(horarios) || horarios.length === 0) return 'Sin horario'
+  if (!Array.isArray(horarios) || horarios.length === 0) return 'Sin horarios'
   return horarios.map(h => {
     const dia = DIAS[h.dia] || h.dia
     const ini = (h.hora_inicio || '').slice(0, 5)
@@ -180,18 +225,18 @@ export function descargarPdfClase(clase, inscritos, context) {
   y += 5
 
   if (inscritos.length > 0) {
-    const rows = buildClasePdfRows(inscritos)
+    const rows = buildClasePdfRows(inscritos, clase.horarios)
     autoTable(doc, {
       startY: y,
-      margin: { left: M, right: M },
+      margin: { top: 44, left: M, right: M },
       theme: 'grid',
-      head: [['#', 'Nombre', 'Cédula', 'Instrumento', 'Teléfono', 'Inscrito', 'Horario']],
+      head: [['#', 'Nombre', 'Instrumento', 'Teléfono', 'Última actualización', 'Horarios']],
       headStyles: { fillColor: C.azul, textColor: C.blanco, fontStyle: 'bold', fontSize: 7.5 },
       styles: { fontSize: 7, cellPadding: { top: 1.5, bottom: 1.5, left: 2, right: 2 }, overflow: 'linebreak' },
       alternateRowStyles: { fillColor: C.grisClaro },
       body: rows,
       didDrawPage: (data) => {
-        header(doc, 'FICHA DE CLASE', `Continuación · ${clase.nombre}`)
+        header(doc, 'FICHA DE CLASE', `FUNEYCA PC · ${clase.nombre}`)
         footer(doc, data.pageNumber)
       },
     })
@@ -221,7 +266,7 @@ export function descargarPdfListadoAlumnosPorClases(report, context) {
     doc.setFont('helvetica', 'normal')
     doc.setFontSize(8)
     doc.setTextColor(200, 215, 240)
-    doc.text('Programa de Formación Musical · República Dominicana', M + 2, 20)
+    doc.text('Tocamos Corazones, Cambiamos vidas · Punta Cana', M + 2, 20)
     doc.setFont('helvetica', 'bold')
     doc.setFontSize(9)
     doc.setTextColor(...C.dorado)
@@ -237,9 +282,9 @@ export function descargarPdfListadoAlumnosPorClases(report, context) {
 
   function lFooter(page) {
     doc.setFillColor(...C.azul)
-    doc.rect(0, HL - 12, WL, 12, 'F')
+    doc.rect(0, HL - 8, WL, 8, 'F')
     doc.setFillColor(...C.dorado)
-    doc.rect(0, HL - 12, 4, 12, 'F')
+    doc.rect(0, HL - 8, 4, 8, 'F')
     doc.setFont('helvetica', 'normal')
     doc.setFontSize(6.5)
     doc.setTextColor(...C.blanco)
@@ -261,7 +306,7 @@ export function descargarPdfListadoAlumnosPorClases(report, context) {
     if (y > HL - 35) {
       lFooter(doc.internal.getNumberOfPages())
       doc.addPage()
-      lHeader('LISTADO DE ALUMNOS POR CLASE', `Continuación`)
+      lHeader('LISTADO DE ALUMNOS POR CLASE', `EL SISTEMA PC`)
       y = 38
     }
 
@@ -278,12 +323,12 @@ export function descargarPdfListadoAlumnosPorClases(report, context) {
     y += 12
 
     if (inscritos.length > 0) {
-      const rows = buildClasePdfRows(inscritos)
+      const rows = buildClasePdfRows(inscritos, clase.horarios)
       autoTable(doc, {
         startY: y,
-        margin: { left: M, right: M },
+        margin: { top: 38, left: M, right: M },
         theme: 'grid',
-        head: [['#', 'Nombre', 'Cédula', 'Instrumento', 'Teléfono', 'Inscrito', 'Horario']],
+        head: [['#', 'Nombre', 'Instrumento', 'Teléfono', 'Última actualización', 'Horarios']],
         headStyles: { fillColor: C.azul, textColor: C.blanco, fontStyle: 'bold', fontSize: 7 },
         styles: { fontSize: 6.5, cellPadding: { top: 1.2, bottom: 1.2, left: 1.5, right: 1.5 }, overflow: 'linebreak' },
         alternateRowStyles: { fillColor: C.grisClaro },
@@ -293,7 +338,7 @@ export function descargarPdfListadoAlumnosPorClases(report, context) {
         },
         body: rows,
         didDrawPage: (data) => {
-          lHeader('LISTADO DE ALUMNOS POR CLASE', `Continuación`)
+          lHeader('LISTADO DE ALUMNOS POR CLASE', `EL SISTEMA PC`)
           lFooter(data.pageNumber)
         },
       })

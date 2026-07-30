@@ -6,6 +6,7 @@ import { renderSolicitudesAdminView }          from './views/solicitudesAdminVie
 import { renderSeguimientoInstitucionalView }  from './views/seguimientoInstitucionalView.js'
 import { renderStudentCaseDetailView }         from './views/studentCaseDetailView.js'
 import { renderSeguimientoRulesView }          from './views/seguimientoRulesView.js'
+import { renderEvaluacionesDashboardView }     from './views/evaluacionesDashboardView.js'
 
 export function registerRoutesPedagogico() {
   router.register('pedagogico-dashboard',                 (c) => renderDashboardPedagogicoView(c))
@@ -15,4 +16,5 @@ export function registerRoutesPedagogico() {
   router.register('pedagogico-seguimiento-institucional', (c) => renderSeguimientoInstitucionalView(c))
   router.register('pedagogico-caso',                      (c) => renderStudentCaseDetailView(c))
   router.register('pedagogico-seguimiento-reglas',        (c) => renderSeguimientoRulesView(c))
+  router.register('pedagogico-evaluaciones',              (c) => renderEvaluacionesDashboardView(c))
 }

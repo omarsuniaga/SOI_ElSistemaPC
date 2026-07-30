@@ -167,4 +167,136 @@ describe('clasesApi Integration', () => {
       expect(conflictos[0].tipo).toBe('maestro')
     })
   })
+
+  describe('resolverConflictosClases', () => {
+    function makeChain() {
+      const chain = {}
+      chain.eq = vi.fn(() => chain)
+      chain.then = (resolve) => resolve({ data: null, error: null })
+      return chain
+    }
+
+    function mockTables() {
+      const updates = { clase_horarios: [], clases: [] }
+      supabase.from.mockImplementation((table) => ({
+        update: vi.fn((payload) => {
+          const chain = makeChain()
+          updates[table]?.push({ payload, chain })
+          return chain
+        }),
+      }))
+      return updates
+    }
+
+    it('frees the room for a salón conflict and flags the class for review', async () => {
+      const updates = mockTables()
+      const conflictos = [
+        {
+          clase_id: 'clase-vieja', tipo: 'salón',
+          detalle: 'El salón "A" está ocupado por la clase "Violas".',
+          dia: 'miércoles', hora_inicio: '16:30:00', hora_fin: '18:30:00',
+        },
+      ]
+
+      await clasesApi.resolverConflictosClases(conflictos, 'Clase Nueva')
+
+      expect(supabase.from).toHaveBeenCalledWith('clase_horarios')
+      const horarioUpdate = updates.clase_horarios[0]
+      expect(horarioUpdate.payload).toEqual({ salon_id: null })
+      expect(horarioUpdate.chain.eq).toHaveBeenCalledWith('clase_id', 'clase-vieja')
+      expect(horarioUpdate.chain.eq).toHaveBeenCalledWith('dia', 'miércoles')
+      expect(horarioUpdate.chain.eq).toHaveBeenCalledWith('hora_inicio', '16:30:00')
+      expect(horarioUpdate.chain.eq).toHaveBeenCalledWith('hora_fin', '18:30:00')
+
+      expect(supabase.from).toHaveBeenCalledWith('clases')
+      const claseUpdate = updates.clases[0]
+      expect(claseUpdate.payload.necesita_revision).toBe(true)
+      expect(claseUpdate.payload.revision_motivo).toContain('liberó el salón')
+      expect(claseUpdate.chain.eq).toHaveBeenCalledWith('id', 'clase-vieja')
+    })
+
+    it('does NOT touch class_horarios for maestro/alumnos conflicts — only flags for human review', async () => {
+      const updates = mockTables()
+      const conflictos = [
+        { clase_id: 'clase-vieja', tipo: 'maestro', detalle: 'El maestro ya tiene la clase "Violas" en este horario.' },
+        { clase_id: 'clase-vieja', tipo: 'alumnos', detalle: '2 alumnos en dos clases a la misma hora.' },
+      ]
+
+      await clasesApi.resolverConflictosClases(conflictos, 'Clase Nueva')
+
+      expect(supabase.from).not.toHaveBeenCalledWith('clase_horarios')
+      expect(updates.clases).toHaveLength(1)
+      expect(updates.clases[0].payload.necesita_revision).toBe(true)
+      expect(updates.clases[0].payload.revision_motivo).toContain('El maestro ya tiene')
+      expect(updates.clases[0].payload.revision_motivo).toContain('2 alumnos en dos clases')
+      expect(updates.clases[0].payload.revision_motivo).not.toContain('liberó el salón')
+    })
+
+    it('does nothing when there are no conflicting class ids', async () => {
+      mockTables()
+      await clasesApi.resolverConflictosClases([], 'Clase Nueva')
+      expect(supabase.from).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('obtenerAlumnosSinClase', () => {
+    it('excludes enrolled students and groups the rest by instrumento_principal, most-missing first', async () => {
+      supabase.from.mockImplementation((table) => {
+        if (table === 'alumnos') {
+          return {
+            select: vi.fn().mockReturnThis(),
+            eq: vi.fn().mockReturnThis(),
+            order: vi.fn().mockResolvedValue({
+              data: [
+                { id: 'a1', nombre_completo: 'Ana', instrumento_principal: 'Violín' },
+                { id: 'a2', nombre_completo: 'Beto', instrumento_principal: 'Violín' },
+                { id: 'a3', nombre_completo: 'Caro', instrumento_principal: 'Piano' },
+                { id: 'a4', nombre_completo: 'Dana', instrumento_principal: null },
+              ],
+              error: null,
+            }),
+          }
+        }
+        if (table === 'alumnos_clases') {
+          return {
+            select: vi.fn().mockReturnThis(),
+            eq: vi.fn().mockResolvedValue({ data: [{ alumno_id: 'a2' }], error: null }),
+          }
+        }
+        throw new Error(`unexpected table ${table}`)
+      })
+
+      const grupos = await clasesApi.obtenerAlumnosSinClase()
+
+      const porInstrumento = Object.fromEntries(grupos.map(g => [g.instrumento, g]))
+      expect(porInstrumento['Violín'].total).toBe(1)
+      expect(porInstrumento['Violín'].alumnos.map(a => a.id)).toEqual(['a1'])
+      expect(porInstrumento['Piano'].total).toBe(1)
+      expect(porInstrumento['Sin instrumento definido'].total).toBe(1)
+      // El alumno inscrito (a2) no debe aparecer en ningún grupo.
+      expect(grupos.flatMap(g => g.alumnos.map(a => a.id))).not.toContain('a2')
+    })
+
+    it('returns an empty list when every active student has an active enrollment', async () => {
+      supabase.from.mockImplementation((table) => {
+        if (table === 'alumnos') {
+          return {
+            select: vi.fn().mockReturnThis(),
+            eq: vi.fn().mockReturnThis(),
+            order: vi.fn().mockResolvedValue({
+              data: [{ id: 'a1', nombre_completo: 'Ana', instrumento_principal: 'Violín' }],
+              error: null,
+            }),
+          }
+        }
+        return {
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockResolvedValue({ data: [{ alumno_id: 'a1' }], error: null }),
+        }
+      })
+
+      const grupos = await clasesApi.obtenerAlumnosSinClase()
+      expect(grupos).toEqual([])
+    })
+  })
 })

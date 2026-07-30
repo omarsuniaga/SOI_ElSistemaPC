@@ -119,9 +119,9 @@ describe('Migration: 20260731000003_evaluacion_indicador_clase_scope.sql', () =>
   })
 
   describe('Índices únicos parciales (reemplazan el UNIQUE original)', () => {
-    it('should DROP the original inline UNIQUE index', () => {
+    it('should DROP the original inline UNIQUE constraint (not DROP INDEX — it is constraint-backed, 2BP01)', () => {
       expect(sql).toMatch(
-        /DROP\s+INDEX\s+IF\s+EXISTS\s+evaluacion_indicador_alumno_id_indicator_id_clase_id_key/i
+        /DROP\s+CONSTRAINT\s+IF\s+EXISTS\s+evaluacion_indicador_alumno_id_indicator_id_clase_id_key/i
       )
     })
 
@@ -140,7 +140,13 @@ describe('Migration: 20260731000003_evaluacion_indicador_clase_scope.sql', () =>
 
   describe('Vista vw_evaluacion_indicador_global (fuente única para reportes ACM)', () => {
     it('should CREATE (OR REPLACE) VIEW vw_evaluacion_indicador_global', () => {
-      expect(sql).toMatch(/CREATE\s+(OR\s+REPLACE\s+)?VIEW\s+public\.vw_evaluacion_indicador_global\s+AS/i)
+      expect(sql).toMatch(/CREATE\s+(OR\s+REPLACE\s+)?VIEW\s+public\.vw_evaluacion_indicador_global/i)
+    })
+
+    it('should set security_invoker = true — without it the view bypasses RLS via the owner\'s privileges (Supabase advisor: "Security Definer View")', () => {
+      const viewMatch = sql.match(/CREATE\s+(OR\s+REPLACE\s+)?VIEW\s+public\.vw_evaluacion_indicador_global[\s\S]*?AS/i)
+      expect(viewMatch).not.toBeNull()
+      expect(viewMatch[0]).toMatch(/WITH\s*\(\s*security_invoker\s*=\s*true\s*\)/i)
     })
 
     it('should expose indicator_id_global as COALESCE(ei.indicator_id, cmi.origen_indicator_id)', () => {

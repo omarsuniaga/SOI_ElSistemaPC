@@ -62,7 +62,12 @@ ALTER TABLE public.evaluacion_indicador
 
 CREATE INDEX idx_ei_clase_indicador ON public.evaluacion_indicador(clase_indicador_id);
 
-DROP INDEX IF EXISTS evaluacion_indicador_alumno_id_indicator_id_clase_id_key; -- el UNIQUE original
+-- El UNIQUE original se declaró inline en el CREATE TABLE, por lo tanto es un
+-- table constraint respaldado por índice, no un índice suelto: DROP INDEX
+-- falla con 2BP01 ("requires it"). Hay que dropear el constraint, que
+-- arrastra su índice automáticamente.
+ALTER TABLE public.evaluacion_indicador
+  DROP CONSTRAINT IF EXISTS evaluacion_indicador_alumno_id_indicator_id_clase_id_key;
 
 CREATE UNIQUE INDEX ei_unq_global ON public.evaluacion_indicador(alumno_id, indicator_id, clase_id)
   WHERE indicator_id IS NOT NULL;
@@ -75,7 +80,15 @@ CREATE UNIQUE INDEX ei_unq_clase ON public.evaluacion_indicador(alumno_id, clase
 --    Nunca leer la tabla cruda para reportería: siempre esta vista.
 -- ----------------------------------------------------------------------------
 
-CREATE OR REPLACE VIEW public.vw_evaluacion_indicador_global AS
+-- security_invoker = true es obligatorio acá: sin esto, Postgres ejecuta la
+-- vista con los privilegios del OWNER (quien corrió la migración), lo que
+-- bypasea el RLS de evaluacion_indicador/clase_mapa_indicadores para
+-- cualquier usuario autenticado que consulte la vista — exactamente la fuga
+-- cruzada entre clases que esta migración existe para cerrar (REQ-13).
+-- Confirmado con get_advisors(type: "security") tras el primer apply: sin
+-- este flag, Supabase reporta ERROR "Security Definer View".
+CREATE OR REPLACE VIEW public.vw_evaluacion_indicador_global
+WITH (security_invoker = true) AS
 SELECT
   ei.id,
   ei.alumno_id,
@@ -101,8 +114,9 @@ GRANT SELECT ON public.vw_evaluacion_indicador_global TO authenticated;
 -- DROP VIEW IF EXISTS public.vw_evaluacion_indicador_global;
 -- DROP INDEX IF EXISTS ei_unq_clase;
 -- DROP INDEX IF EXISTS ei_unq_global;
--- CREATE UNIQUE INDEX evaluacion_indicador_alumno_id_indicator_id_clase_id_key
---   ON public.evaluacion_indicador(alumno_id, indicator_id, clase_id);
+-- ALTER TABLE public.evaluacion_indicador
+--   ADD CONSTRAINT evaluacion_indicador_alumno_id_indicator_id_clase_id_key
+--   UNIQUE (alumno_id, indicator_id, clase_id);
 -- DROP INDEX IF EXISTS idx_ei_clase_indicador;
 -- ALTER TABLE public.evaluacion_indicador
 --   DROP CONSTRAINT IF EXISTS ei_una_sola_fuente,

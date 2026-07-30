@@ -3,6 +3,7 @@
  * Suscripción, permisos, preferencias y scheduling de alertas locales.
  */
 
+import { openDB } from 'idb'
 import { supabase } from '../../lib/supabaseClient.js'
 import { getMaestroLocal } from '../auth/maestroAuth.js'
 
@@ -56,6 +57,104 @@ if ('serviceWorker' in navigator) {
     }
   };
   navigator.serviceWorker.addEventListener('message', _swMessageListener);
+}
+
+// ── Auth bridge (IndexedDB) para el Service Worker ──────────────────
+// El SW no tiene localStorage ni import.meta.env: necesita el JWT de sesión y la
+// VAPID key persistidos aquí para poder autenticar llamadas en background
+// (pushsubscriptionchange, botones de acción) con el teléfono bloqueado.
+const BRIDGE_DB_NAME = 'soi-push-bridge'
+const BRIDGE_DB_VERSION = 1
+const BRIDGE_STORE = 'kv'
+
+async function _getBridgeDB() {
+  return openDB(BRIDGE_DB_NAME, BRIDGE_DB_VERSION, {
+    upgrade(db) {
+      if (!db.objectStoreNames.contains(BRIDGE_STORE)) {
+        db.createObjectStore(BRIDGE_STORE, { keyPath: 'key' })
+      }
+    },
+  })
+}
+
+async function _syncAuthBridge(session) {
+  try {
+    const db = await _getBridgeDB()
+    const tx = db.transaction(BRIDGE_STORE, 'readwrite')
+    await Promise.all([
+      tx.store.put({ key: 'access_token', value: session?.access_token || null }),
+      tx.store.put({ key: 'refresh_token', value: session?.refresh_token || null }),
+      tx.store.put({ key: 'supabase_url', value: import.meta.env.VITE_SUPABASE_URL || null }),
+      tx.store.put({
+        key: 'supabase_anon_key',
+        value: import.meta.env.VITE_SUPABASE_ANON_KEY ?? import.meta.env.VITE_SUPABASE_KEY ?? null,
+      }),
+      tx.store.put({ key: 'vapid_public_key', value: import.meta.env.VITE_VAPID_PUBLIC_KEY || null }),
+    ])
+    await tx.done
+  } catch (err) {
+    console.warn('[Push] No se pudo sincronizar el bridge de autenticación del SW:', err.message)
+  }
+}
+
+function _decodeJwtIat(token) {
+  try {
+    const payload = token.split('.')[1]
+    const base64 = payload.replace(/-/g, '+').replace(/_/g, '/')
+    const json = decodeURIComponent(
+      atob(base64).split('').map(c => '%' + c.charCodeAt(0).toString(16).padStart(2, '0')).join('')
+    )
+    return JSON.parse(json).iat || 0
+  } catch {
+    return 0
+  }
+}
+
+/**
+ * Los refresh_token de Supabase son de un solo uso (rotan al canjearse). El SW puede
+ * refrescar la sesión en background (teléfono bloqueado, sin este hilo vivo) para poder
+ * ejecutar acciones autenticadas; si esta pestaña luego intenta refrescar con su propio
+ * refresh_token ya rotado, Supabase lo rechaza y desloguea al maestro sin motivo aparente.
+ * Por eso, al iniciar, se adopta la sesión del bridge si es más nueva que la propia.
+ */
+async function _reconcileSessionFromBridge() {
+  try {
+    const db = await _getBridgeDB()
+    const [accessRec, refreshRec] = await Promise.all([
+      db.get(BRIDGE_STORE, 'access_token'),
+      db.get(BRIDGE_STORE, 'refresh_token'),
+    ])
+    const bridgeAccessToken = accessRec?.value
+    const bridgeRefreshToken = refreshRec?.value
+    if (!bridgeAccessToken || !bridgeRefreshToken) return
+
+    const { data: { session } = {} } = await supabase.auth.getSession()
+    const currentAccessToken = session?.access_token
+    if (currentAccessToken === bridgeAccessToken) return
+
+    const bridgeIsNewer = _decodeJwtIat(bridgeAccessToken) > (currentAccessToken ? _decodeJwtIat(currentAccessToken) : 0)
+    if (!bridgeIsNewer) return
+
+    const { error } = await supabase.auth.setSession({
+      access_token: bridgeAccessToken,
+      refresh_token: bridgeRefreshToken,
+    })
+    if (error) {
+      console.warn('[Push] No se pudo adoptar la sesión refrescada en background por el SW:', error.message)
+    }
+  } catch (err) {
+    console.warn('[Push] Error reconciliando sesión con el bridge:', err.message)
+  }
+}
+
+// Mantener el bridge al día ante login, refresh de token y logout. Al cargar, primero se
+// reconcilia con lo que el SW haya refrescado en background (ver _reconcileSessionFromBridge).
+if (supabase?.auth?.onAuthStateChange) {
+  _reconcileSessionFromBridge().finally(() => {
+    supabase.auth.onAuthStateChange((_event, session) => {
+      _syncAuthBridge(session)
+    })
+  })
 }
 
 let _prefsCache = null
@@ -197,6 +296,10 @@ export async function subscribeToPush() {
     // Marcar push_activo en preferencias
     await saveNotificationPreferences({ push_activo: true })
 
+    // Asegurar que el SW tenga credenciales frescas para re-suscripción/acciones en background
+    const { data: { session } = {} } = await supabase.auth.getSession()
+    await _syncAuthBridge(session)
+
     // Notificar a servicios de la suscripción exitosa
     _notifyPushCallbacks({ event: 'subscriptionChanged', subscribed: true });
 
@@ -268,32 +371,6 @@ export async function getSubscriptionStatus() {
   } catch (err) {
     return { subscribed: false, error: err.message }
   }
-}
-
-// ── Alertas locales (SW scheduler) ──
-
-/**
- * Envía datos de horarios al Service Worker para que programe alertas del día.
- * Llamar después del prefetch mensual.
- */
-export async function scheduleLocalAlerts(horariosHoy, sesionesRegistradas) {
-  if (!('serviceWorker' in navigator)) return
-
-  const prefs = await getNotificationPreferences()
-  if (!prefs.recordatorios_activos) return
-
-  const registration = await navigator.serviceWorker.ready
-  registration.active?.postMessage({
-    type: 'SCHEDULE_ALERTS',
-    horarios: horariosHoy,
-    sesionesRegistradas: [...sesionesRegistradas],
-    prefs: {
-      alerta_pre_clase: prefs.alerta_pre_clase,
-      min_antes_clase: prefs.min_antes_clase,
-      alerta_post_clase: prefs.alerta_post_clase,
-      min_post_clase_sin_registro: prefs.min_post_clase_sin_registro,
-    },
-  })
 }
 
 // ── Test ──

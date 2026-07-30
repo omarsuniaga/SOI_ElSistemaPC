@@ -158,13 +158,8 @@ import { usePortalAuth, logoutMaestro } from './portal-maestros/auth/usePortalAu
 import { createPortalRouter } from './portal-maestros/router/portalRouter.js'
 import { processQueue, getQueue } from './portal-maestros/services/offlineQueue.js'
 import { supabase } from './lib/supabaseClient.js'
-import {
-  prefetchMonthData,
-  getMisClases,
-  getHorariosClases,
-  getSesiones,
-} from './portal-maestros/services/maestroDataService.js'
-import { scheduleLocalAlerts, cleanupPushService } from './portal-maestros/services/pushService.js'
+import { prefetchMonthData } from './portal-maestros/services/maestroDataService.js'
+import { cleanupPushService } from './portal-maestros/services/pushService.js'
 import { getPermisos } from './portal-maestros/services/permisoService.js'
 import { setNavigationCallbacks } from './portal-maestros/services/navigationHooks.js'
 import { AppToast } from './shared/components/AppToast.js'
@@ -178,6 +173,7 @@ import {
   CACHEABLE_VIEWS,
 } from './portal-maestros/shell/portalRoutes.js'
 import { setupGlobalAppEvents } from './portal-maestros/shell/portalEvents.js'
+import { registerRoutesPlanificacion } from './modules/planificacion/index.js'
 
 // Módulo de Rutas Académicas
 import './modules/academic-routes/styles/academic-routes.css'
@@ -467,38 +463,8 @@ function _showLoginScreen() {
 }
 
 function _setupRouter() {
+  registerRoutesPlanificacion()
   setupRouterRoutes(router, _isAdmin, _renderView)
-}
-
-// ============================================
-// ALERTAS DEL DÍA
-// ============================================
-async function _scheduleSwAlerts() {
-  if (!_maestro) return
-  try {
-    const hoy = new Date()
-    const diaHoy = hoy.toLocaleDateString('es-ES', { weekday: 'long' }).toLowerCase()
-    const fechaHoy = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}-${String(hoy.getDate()).padStart(2, '0')}`
-
-    const clases = await getMisClases()
-    const [horarios, sesiones] = await Promise.all([
-      getHorariosClases(clases.map((x) => x.id)),
-      getSesiones(_maestro.id, fechaHoy, fechaHoy),
-    ])
-
-    const clasesMap = Object.fromEntries(clases.map((c) => [c.id, c]))
-    const horariosHoy = horarios
-      .filter((h) => h.dia?.toLowerCase() === diaHoy)
-      .map((h) => ({ ...h, clase_nombre: clasesMap[h.clase_id]?.nombre || 'Clase' }))
-
-    const sesionesRegistradas = sesiones
-      .filter((s) => s.borrador === false || s.estado === 'registrada')
-      .map((s) => s.clase_id)
-
-    await scheduleLocalAlerts(horariosHoy, sesionesRegistradas)
-  } catch (err) {
-    console.warn('[Alerts] Error programando alertas:', err.message)
-  }
 }
 
 // ============================================
@@ -700,7 +666,6 @@ async function initPortal() {
         if (container) return _renderView(viewName, {}, { silent: true })
       }))
 
-      _scheduleSwAlerts()
       window.pwaInstaller?.evaluateInsights()
     })
     .catch((err) => console.warn('[Prefetch] Error:', err.message))

@@ -14,6 +14,12 @@ import { AppToast } from '../../shared/components/AppToast.js'
 import { createPlanClasePanel } from '../components/planning/PlanClasePanel.js'
 import { supabase } from '../../lib/supabaseClient.js'
 import * as bootstrap from 'bootstrap'
+import { router } from '../../core/router/router.js'
+import { renderMapaContenidoSVG } from '../../modules/planificacion/components/MapaContenidoSVG.js'
+import { obtenerAlumnosRealesPorClase } from '../../modules/planificacion/services/realAlumnosService.js'
+import { OfflineSyncAdapter } from '../../modules/planificacion/api/offlineSyncAdapter.js'
+import { IndicadorLogro } from '../../modules/planificacion/domain/IndicadorLogro.js'
+
 
 // ─── Constantes ────────────────────────────────────────────────────────────────
 
@@ -403,6 +409,14 @@ export async function renderPlanificacionView(container, { maestroId }) {
           ACM define la guía institucional. Adapta pedagógicamente la ejecución de tu grupo
           y evalúa el progreso en tiempo real.
         </p>
+        <div style="display:flex; gap:0.6rem; margin-top:0.85rem; flex-wrap:wrap;">
+          <button type="button" class="btn btn-sm btn-light text-primary fw-bold rounded-3 shadow-sm" id="btn-pm-header-disenador">
+            <i class="bi bi-pencil-square me-1"></i>🎨 Diseñador Curricular (ACM)
+          </button>
+          <button type="button" class="btn btn-sm btn-outline-light fw-bold rounded-3 shadow-sm" id="btn-pm-header-ruta">
+            <i class="bi bi-diagram-3 me-1"></i>🗺️ Ver Ruta Pedagógica SVG
+          </button>
+        </div>
       </div>
 
       <div class="pm-stepper" id="pm-guide-stepper" aria-label="Guía de uso paso a paso" role="region">
@@ -494,6 +508,15 @@ export async function renderPlanificacionView(container, { maestroId }) {
 
     goTo(0)
   })()
+
+  container.querySelector('#btn-pm-header-disenador')?.addEventListener('click', () => {
+    router.navigate('planificacion-disenador')
+  })
+
+  container.querySelector('#btn-pm-header-ruta')?.addEventListener('click', () => {
+    router.navigate('planificacion-ruta')
+  })
+
 
   // ─── Actualización parcial de una tarjeta (evita recargar todo el grid) ───
   async function updateClassCard(claseId) {
@@ -733,6 +756,7 @@ export async function renderPlanificacionView(container, { maestroId }) {
             ${tabBtn('plan',        '📝', 'Mi Plan')}
             ${tabBtn('temas',       '📅', 'Temas y Ajustes')}
             ${tabBtn('indicadores', '🎯', 'Indicadores')}
+            ${tabBtn('ruta_svg',    '🗺️', 'Ruta SVG')}
           </div>
 
           <!-- Cuerpo -->
@@ -782,6 +806,24 @@ export async function renderPlanificacionView(container, { maestroId }) {
                         ${clase.progressPercentage < 30 ? 'Inicial' : clase.progressPercentage < 70 ? 'En progreso' : 'Avanzado'}
                       </span>
                       <span>100%</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Banner de Construcción de Ruta & Vista Completa -->
+                <div class="col-12 mt-2">
+                  <div style="padding:1rem 1.25rem; border:1px solid rgba(59,130,246,0.3); border-radius:14px; background:rgba(59,130,246,0.06); display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:0.75rem;">
+                    <div>
+                      <div style="font-weight:700; font-size:0.9rem; color:var(--pm-text);">Construcción de Ruta & Evaluación por Nodos</div>
+                      <div style="font-size:0.78rem; color:var(--pm-text-muted);">Diseñá el itinerario semestral desde cero o explorá la ruta vectorial con nodos.</div>
+                    </div>
+                    <div style="display:flex; gap:0.5rem;">
+                      <button type="button" class="btn btn-sm btn-primary fw-semibold rounded-3 btn-modal-disenador" data-bs-dismiss="modal">
+                        🎨 Diseñador ACM
+                      </button>
+                      <button type="button" class="btn btn-sm btn-outline-primary fw-semibold rounded-3 btn-modal-ruta-full" data-bs-dismiss="modal">
+                        🗺️ Vista SVG
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -945,6 +987,42 @@ export async function renderPlanificacionView(container, { maestroId }) {
               `}
             </div>
 
+            <!-- ── Pestaña: Ruta Pedagógica SVG ── -->
+            <div class="pm-tab-pane ${initialTab === 'ruta_svg' ? '' : 'd-none'}" data-pane="ruta_svg">
+              <div style="padding:1rem; border:1px solid var(--pm-border); border-radius:14px; background:var(--pm-surface-2,rgba(0,0,0,0.015));">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; flex-wrap:wrap; gap:0.5rem;">
+                  <div>
+                    <h5 style="margin:0; font-weight:800; color:var(--pm-text);">Grafo Vectorial SVG - ${escapeHtml(clase.nombre)}</h5>
+                    <div style="font-size:0.8rem; color:var(--pm-text-muted);">Tocá cualquier nodo para abrir la matriz de alumnos reales y evaluar con 1-Tap ★.</div>
+                  </div>
+                  <button type="button" class="btn btn-sm btn-outline-primary fw-semibold rounded-3 btn-modal-ruta-full" data-bs-dismiss="modal">
+                    <i class="bi bi-arrows-fullscreen me-1"></i>Ver en Pantalla Completa
+                  </button>
+                </div>
+
+                <div id="pm-svg-canvas-host-${clase.id}" style="min-height:260px; background:var(--pm-surface); border-radius:12px; padding:1rem; border:1px solid var(--pm-border);"></div>
+
+                <!-- Panel de Alumnos por Nodo -->
+                <div id="pm-nodo-alumnos-host-${clase.id}" style="display:none; margin-top:1.2rem; padding-top:1rem; border-top:1px dashed var(--pm-border);">
+                  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem;">
+                    <h6 style="font-weight:700; color:var(--pm-text); margin:0;" id="pm-nodo-titulo-${clase.id}">Evaluación por Alumno</h6>
+                    <span class="badge bg-primary-subtle text-primary border px-2 py-1">1-Tap Star Rating</span>
+                  </div>
+                  <div class="table-responsive" style="max-height:260px;">
+                    <table class="table table-sm table-hover align-middle mb-0">
+                      <thead>
+                        <tr>
+                          <th>Alumno Real</th>
+                          <th class="text-center">Calificación (1-5★)</th>
+                        </tr>
+                      </thead>
+                      <tbody id="pm-nodo-alumnos-tbody-${clase.id}"></tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+
           </div>
 
           <!-- Footer -->
@@ -971,8 +1049,67 @@ export async function renderPlanificacionView(container, { maestroId }) {
         allTabBtns.forEach((b) => b.classList.toggle('active', b.dataset.tab === target))
         allTabPanes.forEach((p) => p.classList.toggle('d-none', p.dataset.pane !== target))
         if (target === 'plan') _montarPanelPlan()
+        if (target === 'ruta_svg') _montarPanelRutaSVG()
       })
     })
+
+    const _closeModalAndNavigate = (targetRoute) => {
+      if (document.activeElement) document.activeElement.blur()
+      bs.hide()
+      setTimeout(() => {
+        bootstrap.Modal.getInstance(classDetailModal)?.dispose()
+        document.querySelectorAll('.modal-backdrop').forEach((el) => el.remove())
+        document.body.classList.remove('modal-open')
+        document.body.style.removeProperty('overflow')
+        document.body.style.removeProperty('padding-right')
+        if (classDetailModal) {
+          classDetailModal.remove()
+          classDetailModal = null
+        }
+        router.navigate(targetRoute)
+      }, 150)
+    }
+
+    classDetailModal.querySelectorAll('.btn-modal-disenador').forEach((b) => {
+      b.addEventListener('click', () => _closeModalAndNavigate('planificacion-disenador'))
+    })
+    classDetailModal.querySelectorAll('.btn-modal-ruta-full').forEach((b) => {
+      b.addEventListener('click', () => _closeModalAndNavigate('planificacion-ruta'))
+    })
+
+    let rutaSvgMontado = false
+    async function _montarPanelRutaSVG() {
+      if (rutaSvgMontado) return
+      rutaSvgMontado = true
+
+      const canvasHost = classDetailModal.querySelector(`#pm-svg-canvas-host-${clase.id}`)
+      if (!canvasHost) return
+
+      const alumnosReales = await obtenerAlumnosRealesPorClase(clase.id)
+
+      const nodosDemo = (weekItems || []).map((w, i) => ({
+        id: `w-node-${w.week_number || i + 1}`,
+        titulo: w.topic || `Clase ${w.week_number || i + 1}`,
+        estado: i === 0 ? 'logrado' : i === 1 ? 'en_proceso' : 'pendiente',
+      }))
+
+      const nodosFinales = nodosDemo.length > 0 ? nodosDemo : [
+        { id: 'nd-1', titulo: 'Postura corporal y emisión sonora libre', estado: 'logrado' },
+        { id: 'nd-2', titulo: 'Escala de Do Mayor en cuerdas Re-Sol', estado: 'en_proceso' },
+        { id: 'nd-3', titulo: 'Estudio Nº 4: Control de pulso a 80 BPM', estado: 'pendiente' },
+      ]
+
+      renderMapaContenidoSVG({
+        container: canvasHost,
+        nodos: nodosFinales,
+        onNodeClick: (nodo) => {
+          _renderAlumnosModalNodo(classDetailModal, clase.id, nodo, alumnosReales)
+        },
+      })
+    }
+
+    if (initialTab === 'ruta_svg') _montarPanelRutaSVG()
+
 
     // ── Pestaña "Mi Plan" ────────────────────────────────────────────────────
     // Se monta al abrirla por primera vez y no antes: consulta la base, y la
@@ -1213,6 +1350,57 @@ export async function renderPlanificacionView(container, { maestroId }) {
     announce(`Panel de clase ${clase.nombre} abierto.`)
   }
 
+  function _renderAlumnosModalNodo(modal, claseId, nodo, alumnosReales) {
+    const panel = modal.querySelector(`#pm-nodo-alumnos-host-${claseId}`)
+    const lblTitulo = modal.querySelector(`#pm-nodo-titulo-${claseId}`)
+    const tbody = modal.querySelector(`#pm-nodo-alumnos-tbody-${claseId}`)
+    if (!panel || !tbody) return
+
+    panel.style.display = 'block'
+    if (lblTitulo) lblTitulo.textContent = `Evaluación Alumnos: ${nodo.titulo}`
+
+    const _draw = () => {
+      tbody.innerHTML = (alumnosReales || [])
+        .map((a) => {
+          let starsHTML = ''
+          for (let i = 1; i <= 5; i++) {
+            starsHTML += i <= a.estrellas ? '<i class="bi bi-star-fill text-warning me-1"></i>' : '<i class="bi bi-star text-secondary opacity-50 me-1"></i>'
+          }
+          return `
+          <tr class="pm-row-alumno-node" data-id="${a.id}" style="cursor:pointer;">
+            <td class="fw-bold" style="color:var(--pm-text);">${escapeHtml(a.nombre)}</td>
+            <td class="text-center">
+              <span class="fs-6">${starsHTML}</span>
+              <small style="color:var(--pm-text-muted);" class="ms-1">(${a.estrellas > 0 ? a.estrellas + '/5★' : 'Sin Registrar'})</small>
+            </td>
+          </tr>
+        `
+        })
+        .join('')
+
+      tbody.querySelectorAll('.pm-row-alumno-node').forEach((tr) => {
+        tr.addEventListener('click', () => {
+          const id = tr.dataset.id
+          const target = alumnosReales.find((al) => String(al.id) === String(id))
+          if (target) {
+            target.estrellas = IndicadorLogro.siguienteEstrella(target.estrellas)
+            OfflineSyncAdapter.guardarLocal({
+              alumnoId: target.id,
+              claseId,
+              nodoId: nodo.id,
+              estrellas: target.estrellas,
+            })
+            _draw()
+            AppToast.show(`${target.nombre}: ${target.estrellas}★ guardados`, 'info')
+          }
+        })
+      })
+    }
+
+    _draw()
+  }
+
   // ── Iniciar la carga ────────────────────────────────────────────────────────
   await loadClassesGrid()
 }
+

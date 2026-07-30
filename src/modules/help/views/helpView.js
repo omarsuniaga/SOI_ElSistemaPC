@@ -136,6 +136,13 @@ const SECTIONS = [
         how: 'Selecciona un alumno para ver su evolución detallada y comparativa con el grupo.',
         tip: 'Usa los filtros de período para comparar progreso entre trimestres.',
       },
+      {
+        name: 'Evaluaciones',
+        icon: 'bi-clipboard2-check',
+        what: 'Explorador de calificaciones y evaluaciones pedagógicas: cobertura por maestro, matriz de alumnos × indicadores, y timeline de evaluaciones recientes.',
+        how: 'Seleccione una clase para ver qué indicadores ya fueron evaluados, la cobertura por maestro y el detalle de cada alumno con sus notas.',
+        tip: 'Use el botón de detalle en cada fila para ver el historial completo de evaluaciones de un alumno.',
+      },
     ],
   },
   {

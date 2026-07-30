@@ -48,7 +48,7 @@ describe('generarPdfClase helpers', () => {
     expect(horarios).toBe('Lunes 16:00 - 17:00 · Salón A\nMiércoles 18:00 - 19:30 · Sin salón')
   })
 
-  it('builds rows from enrolled students with enrollment data', () => {
+  it('builds rows with own hora_inicio/hora_fin when the enrollment carries it (turnos rotativos)', () => {
     const rows = buildClasePdfRows([
       {
         fecha_inscripcion: '2026-05-10',
@@ -56,15 +56,43 @@ describe('generarPdfClase helpers', () => {
         hora_fin: '16:30',
         alumno: {
           nombre_completo: 'Carla Gómez',
-          documento_identidad: '001',
           instrumento_principal: 'Violín',
-          telefono: '809-000-0000',
+          tlf_alumno: '809-000-0000',
+          updated_at: '2026-06-01T10:00:00Z',
         },
       },
-    ])
+    ], clase.horarios)
 
     expect(rows).toEqual([
-      [1, 'Carla Gómez', '001', 'Violín', '809-000-0000', '10 may 2026', '16:00 - 16:30'],
+      [1, 'Carla Gómez', 'Violín', '809-000-0000', '1 jun 2026', '16:00-16:30'],
+    ])
+  })
+
+  it('falls back to the class schedule when the enrollment has no own hora_inicio/hora_fin (caso grupal)', () => {
+    const rows = buildClasePdfRows([
+      {
+        fecha_inscripcion: '2026-05-10',
+        alumno: {
+          nombre_completo: 'Carla Gómez',
+          instrumento_principal: 'Violín',
+          representante_tlf: '809-111-1111',
+          updated_at: '2026-06-01T10:00:00Z',
+        },
+      },
+    ], clase.horarios)
+
+    expect(rows).toEqual([
+      [1, 'Carla Gómez', 'Violín', '809-111-1111', '1 jun 2026', 'Lun 16:00-17:00\nMié 18:00-19:30'],
+    ])
+  })
+
+  it('falls back through phone candidates and shows — when nothing is on file', () => {
+    const rows = buildClasePdfRows([
+      { alumno: { nombre_completo: 'Sin Datos', instrumento_principal: 'Viola' } },
+    ], [])
+
+    expect(rows).toEqual([
+      [1, 'Sin Datos', 'Viola', '—', '—', '—'],
     ])
   })
 

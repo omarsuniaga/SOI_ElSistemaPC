@@ -11,11 +11,24 @@ export function openDocumentPreview(opts) {
 
   const hasCritical = variablesFaltantes.length > 0
 
+  const headerActionsHTML = `
+    <div class="d-flex align-items-center gap-2">
+      <button class="btn btn-sm text-white border-0 d-inline-flex align-items-center justify-content-center px-2 py-1" id="btn-preview-draft" style="background: rgba(255,255,255,0.18); font-size: 0.8rem; border-radius: 6px;" type="button" title="Guardar borrador">
+        <i class="bi bi-floppy me-1"></i>Borrador
+      </button>
+      <button class="btn btn-sm text-white border-0 d-inline-flex align-items-center justify-content-center px-2 py-1 ${hasCritical ? 'disabled opacity-50' : ''}" id="btn-preview-pdf" style="background: rgba(255,255,255,0.3); font-size: 0.8rem; border-radius: 6px;" type="button" ${hasCritical ? 'disabled' : ''} title="Generar PDF">
+        <i class="bi bi-file-earmark-pdf me-1"></i>Generar PDF
+      </button>
+    </div>
+  `
+
   AppModal.open({
-    title:      `Vista previa — ${title}`,
-    size:       'xl',
-    hideSave:   true,
-    cancelText: 'Cerrar',
+    title:         `Vista previa — ${title}`,
+    headerActions: headerActionsHTML,
+    autoFocus:     false,
+    size:          'xl',
+    hideSave:      true,
+    cancelText:    'Cerrar',
     body: `
       <div class="row g-3">
         <div class="col-md-4">
@@ -47,19 +60,11 @@ export function openDocumentPreview(opts) {
                     rows="18" style="font-size:0.8rem;line-height:1.5;">${contenidoFinal}</textarea>
         </div>
       </div>
-      <div class="d-flex gap-2 mt-3 justify-content-end">
-        <button class="btn btn-sm btn-outline-secondary" id="btn-preview-draft">
-          <i class="bi bi-floppy me-1"></i>Guardar borrador
-        </button>
-        <button class="btn btn-sm btn-primary ${hasCritical ? 'disabled' : ''}" id="btn-preview-pdf"
-                ${hasCritical ? 'disabled title="Faltan datos críticos"' : ''}>
-          <i class="bi bi-file-earmark-pdf me-1"></i>Generar PDF
-        </button>
-      </div>
       ${hasCritical ? `<p class="text-danger small mt-2 mb-0"><i class="bi bi-exclamation-triangle me-1"></i>Hay datos críticos faltantes. Completá los datos antes de generar.</p>` : ''}
     `,
-    onOpen: (modalBody) => {
-      modalBody.querySelector('#btn-preview-draft')?.addEventListener('click', async () => {
+    onShow: (modalBody) => {
+      const dialog = modalBody.closest('.app-modal-dialog')
+      dialog?.querySelector('#btn-preview-draft')?.addEventListener('click', async () => {
         const contenido = modalBody.querySelector('#preview-content-editor')?.value || contenidoFinal
         try {
           const doc = await saveGeneratedDocument({
@@ -75,9 +80,9 @@ export function openDocumentPreview(opts) {
         } catch (err) { alert(`Error al guardar: ${err.message}`) }
       })
 
-      modalBody.querySelector('#btn-preview-pdf')?.addEventListener('click', async () => {
+      dialog?.querySelector('#btn-preview-pdf')?.addEventListener('click', async () => {
         const contenido = modalBody.querySelector('#preview-content-editor')?.value || contenidoFinal
-        const btn = modalBody.querySelector('#btn-preview-pdf')
+        const btn = dialog.querySelector('#btn-preview-pdf')
         if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Generando...' }
         try {
           const pdf = generateInstitutionalPdf({ title, content: contenido, metadata: { alumnoNombre, tipo } })

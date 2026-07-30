@@ -39,6 +39,18 @@ vi.mock('idb', () => ({
   }),
 }))
 
+vi.mock('../../../lib/supabaseClient.js', () => ({
+  supabase: {
+    auth: {
+      getUser: vi.fn(() => Promise.resolve({ data: { user: null }, error: null })),
+    },
+  },
+}))
+
+vi.mock('../services/evaluacionClaseService.js', () => ({
+  registrarEvaluacion: vi.fn(() => Promise.resolve()),
+}))
+
 describe('Evaluación por Estrellas y Protocolo SDD Suite', () => {
   beforeEach(() => {
     localStorage.clear()
@@ -307,6 +319,18 @@ describe('Evaluación por Estrellas y Protocolo SDD Suite', () => {
       const cola = await OfflineSyncAdapter.obtenerCola()
       expect(cola).toHaveLength(1)
       expect(cola[0].alumnoId).toBe('fail')
+    })
+
+    it('skips queued items with non-UUID identifiers instead of retrying forever', async () => {
+      Object.defineProperty(navigator, 'onLine', { value: true, configurable: true })
+      await OfflineSyncAdapter.guardarLocal({ alumnoId: 'nd-1', claseId: 'c1', nodoId: 'nd-2', estrellas: 4 })
+
+      const remoteSyncFn = vi.fn().mockResolvedValue(undefined)
+      const result = await OfflineSyncAdapter.sincronizarEnSegundoPlano(remoteSyncFn)
+
+      expect(remoteSyncFn).not.toHaveBeenCalled()
+      expect(result).toEqual({ synced: 0, failed: 0 })
+      expect(await OfflineSyncAdapter.obtenerCola()).toHaveLength(0)
     })
 
     it('does not double-process items when sync is triggered concurrently (idempotent)', async () => {

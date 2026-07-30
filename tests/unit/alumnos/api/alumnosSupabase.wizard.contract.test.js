@@ -14,10 +14,12 @@ vi.mock('../../../../src/assets/data/mocks/alumnos.json', () => ({
 const mockInsert = vi.fn()
 const mockSelect = vi.fn()
 const mockFrom = vi.fn()
+const mockRpc = vi.fn().mockResolvedValue({ data: 'fam-123', error: null })
 
 vi.mock('../../../../src/lib/supabaseClient.js', () => ({
   supabase: {
-    from: (...args) => mockFrom(...args)
+    from: (...args) => mockFrom(...args),
+    rpc: (...args) => mockRpc(...args),
   }
 }))
 

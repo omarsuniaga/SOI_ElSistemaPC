@@ -9,6 +9,7 @@ import { parseDSL } from '../utils/dslParser.js'
 import { supabase } from '../../lib/supabaseClient.js'
 import { structureTextToDSL } from './groqService.js'
 import { enqueue } from './offlineQueue.js'
+import { procesarEvaluacionBaja } from '../../modules/comunicaciones/services/boletinesService.js'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Pure helpers
@@ -203,6 +204,14 @@ export async function saveEvaluaciones(
     })
 
     if (error) throw error
+
+    // Disparar boletines por bajo desempeño asíncronamente
+    rows.forEach((r) => {
+      if (r.nota !== null && Number(r.nota) < 3) {
+        procesarEvaluacionBaja(r.session_id, r.student_id, Number(r.nota), r.observations, r.indicator_id).catch(console.error)
+      }
+    })
+
     return { data, error: null }
   } catch (err) {
     // Fallback offline: encolar evaluaciones individualmente

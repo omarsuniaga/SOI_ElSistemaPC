@@ -2,11 +2,10 @@
  * createBulkActions
  * Manejadores para botones de marcar todos presentes/ausentes.
  */
-export function createBulkActions(container, { onMarkAll }) {
-  if (!onMarkAll) return { destroy() {} }
-
+export function createBulkActions(container, { onMarkAll, onClearAll }) {
   const btnP = container.querySelector('#btn-bulk-p')
   const btnA = container.querySelector('#btn-bulk-a')
+  const btnClear = container.querySelector('#btn-bulk-clear')
   const _listeners = []
 
   function _on(el, event, handler) {
@@ -17,12 +16,17 @@ export function createBulkActions(container, { onMarkAll }) {
 
   _on(btnP, 'click', (e) => {
     e.preventDefault()
-    onMarkAll('P')
+    if (onMarkAll) onMarkAll('P')
   })
 
   _on(btnA, 'click', (e) => {
     e.preventDefault()
-    onMarkAll('A')
+    if (onMarkAll) onMarkAll('A')
+  })
+
+  _on(btnClear, 'click', (e) => {
+    e.preventDefault()
+    if (onClearAll) onClearAll()
   })
 
   return {

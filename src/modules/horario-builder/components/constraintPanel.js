@@ -1,4 +1,4 @@
-import { PERIODOS, DIAS_SEMANA } from '../models/scheduleConstraints.model.js';
+﻿import { PERIODOS, DIAS_SEMANA } from '../models/scheduleConstraints.model.js';
 
 /**
  * Constraint Panel component.
@@ -13,10 +13,10 @@ export function createConstraintPanel({
 
   const pendingListHtml = pendingClasses.length > 0
     ? pendingClasses.map(cl => `
-        <div style="display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; border: 1px dashed var(--hb-border); border-radius: 8px; margin-bottom: 6px; background: var(--hb-gray-100); font-size: 0.8rem;">
+        <div style="display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; border: 1px dashed var(--soi-border); border-radius: 8px; margin-bottom: 6px; background: var(--soi-bg-subtle); font-size: 0.8rem;">
           <div style="min-width: 0; flex: 1; padding-right: 8px;">
-            <div style="font-weight: 650; text-overflow: ellipsis; overflow: hidden; white-space: nowrap; color: var(--hb-text);">${cl.nombre}</div>
-            <div style="font-size: 0.7rem; color: var(--hb-text-muted);">🎻 Especialidad: ${cl.instrumento}</div>
+            <div style="font-weight: 650; text-overflow: ellipsis; overflow: hidden; white-space: nowrap; color: var(--soi-text);">${cl.nombre}</div>
+            <div style="font-size: 0.7rem; color: var(--soi-text-muted);">🎻 Especialidad: ${cl.instrumento}</div>
           </div>
           <span class="badge bg-secondary-subtle text-secondary" style="font-size: 0.65rem; border-radius: 6px; font-weight: 600; padding: 4px 6px;">
             👤 ${cl.total_alumnos} alum.
@@ -24,7 +24,7 @@ export function createConstraintPanel({
         </div>
       `).join('')
     : `
-      <div style="text-align: center; padding: 1.5rem; border: 1px dashed var(--hb-border); border-radius: 12px; background: var(--hb-success-light); color: var(--hb-success); font-size: 0.85rem; font-weight: 650;">
+      <div style="text-align: center; padding: 1.5rem; border: 1px dashed var(--soi-border); border-radius: 12px; background: var(--soi-color-success-light); color: var(--soi-color-success); font-size: 0.85rem; font-weight: 650;">
         <i class="bi bi-check-circle-fill" style="font-size: 1.2rem; display: block; margin-bottom: 4px;"></i>
         ¡Todas las clases ya tienen horarios!
       </div>
@@ -104,7 +104,7 @@ export function createConstraintPanel({
         </select>
       </div>
 
-      <h4 style="font-size: 0.85rem; font-weight: 700; color: var(--hb-text-muted); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">
+      <h4 style="font-size: 0.85rem; font-weight: 700; color: var(--soi-text-muted); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">
         Clases Sin Horario Asignado (${pendingClasses.length})
       </h4>
 

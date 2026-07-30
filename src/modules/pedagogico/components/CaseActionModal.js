@@ -55,7 +55,7 @@ const MODAL_CONFIG = {
         <div class="col-12">
           <label class="form-label fw-semibold">Resultado *</label>
           <select class="form-select form-select-sm" id="cma-resultado">
-            <option value="">Seleccioná...</option>
+            <option value="">Seleccione...</option>
             <option value="contactado_exitoso">Contactado exitoso</option>
             <option value="no_contesto">No contestó</option>
             <option value="numero_incorrecto">Número incorrecto</option>

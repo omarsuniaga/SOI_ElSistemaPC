@@ -1,0 +1,30 @@
+/* ============================================================================
+   SOI DARK MODE — Consolidated dark theme overrides
+   All shared dark-mode token values. Uses [data-bs-theme="dark"] exclusively.
+   Views MUST NOT use prefers-color-scheme — that belongs to the theme toggle.
+   ============================================================================ */
+
+[data-bs-theme="dark"] {
+  /* ── Surface & Background ────────────────────────────────────────────── */
+  --soi-surface: #1e293b;
+  --soi-surface-raised: #1e293b;
+  --soi-bg: #0f172a;
+  --soi-bg-subtle: #1a2332;
+  --soi-bg-muted: rgba(255, 255, 255, 0.02);
+
+  /* ── Text ────────────────────────────────────────────────────────────── */
+  --soi-text: #cbd5e1;
+  --soi-text-muted: #94a3b8;
+  --soi-text-on-primary: #ffffff;
+
+  /* ── Border ──────────────────────────────────────────────────────────── */
+  --soi-border: #334155;
+  --soi-border-subtle: rgba(255, 255, 255, 0.06);
+
+  /* ── Semantic Color Light Variants (dark overrides) ──────────────────── */
+  --soi-color-primary-light: rgba(var(--soi-color-primary-rgb), 0.15);
+  --soi-color-primary-hover: #6366f1;
+  --soi-color-success-light: rgba(52, 211, 153, 0.2);
+  --soi-color-warning-light: rgba(251, 191, 36, 0.2);
+  --soi-color-danger-light: rgba(248, 113, 113, 0.2);
+}

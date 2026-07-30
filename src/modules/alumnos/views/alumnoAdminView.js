@@ -1,3 +1,4 @@
+import { Modal } from 'bootstrap'
 import { formatDate, escapeHTML } from '../utils/alumnosUtils.js'
 import { calcularEdad } from '../domain/calcularEdad.js'
 import { calcularCompletitud, NIVEL_COLOR, NIVEL_LABEL } from '../domain/completitudAlumno.js'
@@ -6,10 +7,12 @@ import { descargarFichaAlumno, descargarConstancia } from '../domain/generarPdfI
 import { AppToast } from '../../../shared/components/AppToast.js'
 import { AlumnoForm, SECTIONS } from '../components/AlumnoForm.js'
 import { PostulanteResolver } from '../components/PostulanteResolver.js'
+import { AlumnoDeleteModal } from '../components/AlumnoDeleteModal.js'
 import {
   obtenerAlumno,
   obtenerInscripcionesDetalladasAlumno,
   obtenerProgresoAlumno,
+  obtenerResumenAcademico,
   obtenerAsistenciasAlumno,
   actualizarAlumno,
 } from '../api/alumnosApi.js'
@@ -329,6 +332,9 @@ export async function renderAlumnoAdminView(container, params = {}) {
                 <button class="btn btn-outline-success btn-sm" id="btn-constancia">
                   <i class="bi bi-file-earmark-text me-1"></i>Constancia
                 </button>
+                <button class="btn btn-outline-danger btn-sm" id="btn-eliminar-alumno">
+                  <i class="bi bi-trash me-1"></i>Eliminar alumno
+                </button>
               </div>
             </div>
           </div>
@@ -379,6 +385,44 @@ export async function renderAlumnoAdminView(container, params = {}) {
 
   // ─── Lazy loaders ─────────────────────────────────────────────────────────────
 
+  const NIVEL_LABEL_ACADEMICO = { basico: 'Básico', intermedio: 'Intermedio', avanzado: 'Avanzado' }
+
+  function renderResumenAcademico(resumen) {
+    if (!resumen || (resumen.promedioBase == null && resumen.totalEvaluaciones === 0)) return ''
+
+    const nivelLabel = resumen.nivel ? (NIVEL_LABEL_ACADEMICO[resumen.nivel] || resumen.nivel) : null
+
+    return `
+      <div class="card bg-body-tertiary border-0 mb-4">
+        <div class="card-body">
+          <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2">
+            <h6 class="fw-bold text-uppercase text-muted small mb-0">Resumen académico</h6>
+            ${nivelLabel ? `<span class="badge text-bg-secondary">${val(nivelLabel)}</span>` : ''}
+          </div>
+          <div class="row g-3 text-center">
+            <div class="col-4">
+              <div class="fs-4 fw-bold">${resumen.promedioBase != null ? resumen.promedioBase : '—'}</div>
+              <div class="small text-muted">Base (reconciliado)</div>
+            </div>
+            <div class="col-4">
+              <div class="fs-4 fw-bold">${resumen.promedioEvaluaciones != null ? resumen.promedioEvaluaciones : '—'}</div>
+              <div class="small text-muted">${resumen.totalEvaluaciones} ${resumen.totalEvaluaciones === 1 ? 'evaluación' : 'evaluaciones'} del maestro</div>
+            </div>
+            <div class="col-4">
+              <div class="fs-4 fw-bold text-primary">${resumen.promedioActualizado != null ? resumen.promedioActualizado : '—'}</div>
+              <div class="small text-muted">Promedio actualizado</div>
+            </div>
+          </div>
+          ${resumen.totalEvaluaciones > 0 ? `
+            <div class="small text-muted mt-2 mb-0">
+              El promedio actualizado combina el dato base con cada evaluación registrada por el maestro — se va diluyendo solo a medida que hay más evaluaciones reales.
+            </div>
+          ` : ''}
+        </div>
+      </div>
+    `
+  }
+
   async function loadProgreso() {
     if (progresoLoaded) return
     progresoLoaded = true
@@ -386,10 +430,15 @@ export async function renderAlumnoAdminView(container, params = {}) {
     if (!el) return
 
     try {
-      const data = await obtenerProgresoAlumno(alumnoId)
+      const [data, resumen] = await Promise.all([
+        obtenerProgresoAlumno(alumnoId),
+        obtenerResumenAcademico(alumnoId).catch(() => null),
+      ])
+
+      const resumenHtml = renderResumenAcademico(resumen)
 
       if (!data || data.length === 0) {
-        el.innerHTML = '<p class="text-muted fst-italic">Sin registros de progreso.</p>'
+        el.innerHTML = resumenHtml || '<p class="text-muted fst-italic">Sin registros de progreso.</p>'
         return
       }
 
@@ -411,7 +460,8 @@ export async function renderAlumnoAdminView(container, params = {}) {
       }
 
       el.innerHTML = `
-        <h6 class="fw-bold text-uppercase text-muted small mb-3">Progreso</h6>
+        ${resumenHtml}
+        <h6 class="fw-bold text-uppercase text-muted small mb-3">Evaluaciones registradas</h6>
         ${Object.entries(grouped).map(([grupo, items]) => `
           <div class="mb-4">
             <div class="fw-semibold mb-2 border-bottom pb-1">${val(grupo)}</div>
@@ -420,7 +470,7 @@ export async function renderAlumnoAdminView(container, params = {}) {
                 <div class="list-group-item px-0 py-2 d-flex justify-content-between align-items-start">
                   <div>
                     ${val(p.observaciones)}
-                    ${p.fecha ? `<div class="text-muted small mt-1">${val(formatDate(p.fecha))}</div>` : ''}
+                    ${p.fecha_evaluacion ? `<div class="text-muted small mt-1">${val(formatDate(p.fecha_evaluacion))}</div>` : ''}
                   </div>
                   ${p.estado_cualitativo
                     ? `<span class="badge ${estadoBadgeClass(p.estado_cualitativo)} ms-2 flex-shrink-0">${val(p.estado_cualitativo)}</span>`
@@ -587,6 +637,24 @@ export async function renderAlumnoAdminView(container, params = {}) {
       })
     }
 
+    // Delete student
+    const btnEliminar = document.getElementById('btn-eliminar-alumno')
+    if (btnEliminar) {
+      btnEliminar.addEventListener('click', () => {
+        AlumnoDeleteModal.open({
+          alumnoId: alumno.id,
+          alumnoNombre: alumno.nombre_completo || alumno.nombre,
+          onDeleted: () => {
+            if (window.router?.navigate) {
+              window.router.navigate('alumnos')
+            } else {
+              history.back()
+            }
+          }
+        })
+      })
+    }
+
     // Postulante lookup
     const btnPostulante = document.getElementById('btn-postulante')
     if (btnPostulante) {
@@ -654,7 +722,8 @@ export async function renderAlumnoAdminView(container, params = {}) {
     if (!modalEl) return
 
     if (!bsModal) {
-      bsModal = new bootstrap.Modal(modalEl)
+      const ModalClass = Modal || window.bootstrap?.Modal
+      bsModal = new ModalClass(modalEl)
     }
     bsModal.show()
   }

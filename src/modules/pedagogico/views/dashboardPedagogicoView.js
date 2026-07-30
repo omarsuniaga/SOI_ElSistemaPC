@@ -174,7 +174,7 @@ function _renderContent(kpis, alumnosRiesgo) {
       <div class="row g-3 mb-4">
         ${_quickCard('bi-journal-text', 'Planificación', 'Planes de clase, plantillas y revisión', 'planificacion', 'primary')}
         ${_quickCard('bi-person-lines-fill', 'Seguimiento', 'Progreso y asistencia por alumno', 'pedagogico-seguimiento', 'success')}
-        ${_quickCard('bi-graph-up', 'Evaluaciones', 'Calificaciones y boletines', 'progresos', 'warning')}
+        ${_quickCard('bi-clipboard2-check', 'Evaluaciones', 'Calificaciones, cobertura y análisis por clase', 'pedagogico-evaluaciones', 'warning')}
         ${_quickCard('bi-file-earmark-bar-graph', 'Reportes', 'Rendimiento por clase y riesgo', 'pedagogico-reportes', 'info')}
         ${_quickCard('bi-envelope-paper', 'Solicitudes', 'Necesidades enviadas por maestros', 'pedagogico-solicitudes', 'secondary')}
       </div>
@@ -567,7 +567,7 @@ function _attachEvents(container) {
         { icon: 'bi-journal-text',           title: 'Planes esta semana',          description: 'Planificaciones con fecha de inicio en los últimos 7 días. Muestra cuántas fueron ejecutadas y cuántas siguen pendientes.',                            color: '#10b981' },
         { icon: 'bi-calendar-check',         title: 'Asistencia (7 días)',         description: 'Porcentaje de asistencia del total de la institución en los últimos 7 días. Verde ≥ 80%, amarillo ≥ 60%, rojo < 60%.',                                 color: '#f59e0b' },
         { icon: 'bi-exclamation-triangle-fill', title: 'Alumnos con asistencia baja', description: 'Alumnos que en las últimas 4 semanas tuvieron menos del 70% de asistencia (mínimo 4 clases). Requieren atención prioritaria.',                     color: '#ef4444' },
-        { icon: 'bi-grid-1x2',              title: 'Acceso rápido',               description: 'Los 4 cards al pie llevan directamente a Planificación, Seguimiento de alumnos, Evaluaciones y Reportes. Hacé clic para navegar.',                    color: '#3b82f6' },
+        { icon: 'bi-grid-1x2',              title: 'Acceso rápido',               description: 'Los 5 cards al pie llevan directamente a Planificación, Seguimiento, Evaluaciones, Reportes y Solicitudes. Haga clic para navegar.',                    color: '#3b82f6' },
       ],
     })
   })

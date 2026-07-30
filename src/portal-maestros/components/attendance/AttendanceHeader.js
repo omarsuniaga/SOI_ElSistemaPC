@@ -50,8 +50,9 @@ export function createAttendanceHeader(container, opts) {
         <div id="pm-sync-badge-container"></div>
         <button id="pm-btn-help" class="pm-help-btn" title="Guía rápida"><i class="bi bi-question-lg"></i></button>
         <div class="pm-asist-bulk-circles">
-          <button id="btn-bulk-p" class="pm-bulk-circle p" title="Todos presentes">P</button>
-          <button id="btn-bulk-a" class="pm-bulk-circle a" title="Todos ausentes">A</button>
+          <button id="btn-bulk-p" class="pm-bulk-circle p" title="Marcar todos presentes">P</button>
+          <button id="btn-bulk-a" class="pm-bulk-circle a" title="Marcar todos ausentes">A</button>
+          <button id="btn-bulk-clear" class="pm-bulk-circle clear" title="Desmarcar a todos los alumnos"><i class="bi bi-arrow-counterclockwise"></i></button>
         </div>
       </div>
     </div>

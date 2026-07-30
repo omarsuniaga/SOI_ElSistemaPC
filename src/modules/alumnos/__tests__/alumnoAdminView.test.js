@@ -76,4 +76,19 @@ describe('D04 — parallel queries in alumnoAdminView', () => {
     expect(alumnoResult.data).toBeDefined()
     expect(clasesResult.data).toBeDefined()
   })
+
+  it('source: includes AlumnoDeleteModal and btn-eliminar-alumno', async () => {
+    const fs = await import('fs')
+    const path = await import('path')
+    const { fileURLToPath } = await import('url')
+    const { dirname } = await import('path')
+
+    const thisFile = fileURLToPath(import.meta.url)
+    const viewPath = path.join(dirname(thisFile), '..', 'views', 'alumnoAdminView.js')
+    const source = fs.readFileSync(viewPath, 'utf8')
+
+    expect(source).toMatch(/import \{ AlumnoDeleteModal \} from '\.\.\/components\/AlumnoDeleteModal\.js'/)
+    expect(source).toMatch(/id="btn-eliminar-alumno"/)
+    expect(source).toMatch(/AlumnoDeleteModal\.open/)
+  })
 })

@@ -1,0 +1,73 @@
+/* ============================================================================
+   SOI DESIGN TOKENS — Unified CSS custom properties
+   Single source of truth for all shared design values.
+   Aliases existing Bootstrap / bootstrap-theme.css variables for zero visual change.
+   ============================================================================ */
+
+:root {
+  /* ── Semantic Color Tokens (aliases to bootstrap-theme.css) ──────────── */
+  --soi-color-primary: var(--bs-primary);
+  --soi-color-primary-rgb: var(--bs-primary-rgb);
+  --soi-color-secondary: var(--bs-secondary);
+  --soi-color-success: var(--bs-success);
+  --soi-color-success-rgb: var(--bs-success-rgb);
+  --soi-color-warning: var(--bs-warning);
+  --soi-color-danger: var(--bs-danger);
+  --soi-color-danger-rgb: var(--bs-danger-rgb);
+  --soi-color-info: var(--bs-info);
+
+  /* ── Semantic Color Light Variants (for backgrounds & hover states) ──── */
+  --soi-color-primary-light: rgba(var(--soi-color-primary-rgb), 0.10);
+  --soi-color-primary-hover: #1d4ed8;
+  --soi-color-success-light: rgba(16, 185, 129, 0.15);
+  --soi-color-warning-light: rgba(245, 158, 11, 0.15);
+  --soi-color-danger-light: rgba(239, 68, 68, 0.15);
+
+  /* ── Surface & Background ────────────────────────────────────────────── */
+  --soi-surface: var(--surface-color);
+  --soi-surface-raised: var(--surface-color);
+  --soi-bg: var(--bs-body-bg);
+  --soi-bg-subtle: #f8fafc;
+  --soi-bg-muted: rgba(0, 0, 0, 0.02);
+
+  /* ── Text ────────────────────────────────────────────────────────────── */
+  --soi-text: var(--bs-body-color);
+  --soi-text-muted: var(--bs-secondary);
+  --soi-text-on-primary: #ffffff;
+
+  /* ── Border ──────────────────────────────────────────────────────────── */
+  --soi-border: var(--border-color);
+  --soi-border-subtle: rgba(0, 0, 0, 0.05);
+
+  /* ── Shadow (re-exports from bootstrap-theme) ────────────────────────── */
+  --soi-shadow-sm: var(--shadow-sm);
+  --soi-shadow-md: var(--shadow-md);
+  --soi-shadow-lg: var(--shadow-lg);
+
+  /* ── Radius (re-exports from bootstrap-theme) ────────────────────────── */
+  --soi-radius-sm: var(--radius-sm);
+  --soi-radius-md: var(--radius-md);
+  --soi-radius-lg: var(--radius-lg);
+
+  /* ── Transition ──────────────────────────────────────────────────────── */
+  --soi-transition: var(--transition-smooth);
+
+  /* ── Layout ──────────────────────────────────────────────────────────── */
+  --soi-sidebar-width: var(--sidebar-width);
+  --soi-bottom-nav-height: var(--bottom-nav-height);
+
+  /* ── Spacing Scale ───────────────────────────────────────────────────── */
+  --soi-space-xs: 0.25rem;   /* 4px  */
+  --soi-space-sm: 0.5rem;    /* 8px  */
+  --soi-space-md: 1rem;      /* 16px */
+  --soi-space-lg: 1.5rem;    /* 24px */
+  --soi-space-xl: 2rem;      /* 32px */
+
+  /* ── Typography Scale ────────────────────────────────────────────────── */
+  --soi-font-size-xs: 0.75rem;
+  --soi-font-size-sm: 0.85rem;
+  --soi-font-size-base: 0.95rem;
+  --soi-font-size-lg: 1.15rem;
+  --soi-font-size-xl: 1.5rem;
+  --soi-font-size-2xl: 1.75rem;
+}

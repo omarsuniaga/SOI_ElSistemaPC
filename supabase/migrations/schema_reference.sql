@@ -232,7 +232,7 @@ CREATE TABLE public.clases (
   nivel_id uuid,
   maestro_principal_id uuid NOT NULL,
   maestro_suplente_id uuid,
-  tipo_clase text DEFAULT 'grupal'::text CHECK (tipo_clase = ANY (ARRAY['individual'::text, 'grupal'::text, 'seccional'::text, 'orquesta'::text, 'coro'::text, 'teoria'::text, 'preparatoria'::text, 'otro'::text])),
+  tipo_clase text DEFAULT 'grupal'::text CHECK (tipo_clase = ANY (ARRAY['individual'::text, 'grupal'::text, 'rotativa'::text, 'seccional'::text, 'orquesta'::text, 'coro'::text, 'teoria'::text, 'preparatoria'::text, 'otro'::text])),
   instrumento text,
   descripcion text,
   capacidad_maxima integer CHECK (capacidad_maxima IS NULL OR capacidad_maxima > 0),

@@ -15,10 +15,27 @@
  */
 
 import { openDB } from 'idb'
+import { supabase } from '../../../lib/supabaseClient.js'
+import { registrarEvaluacion } from '../services/evaluacionClaseService.js'
 
 const DB_NAME = 'planificacion-eval-queue'
 const DB_VERSION = 1
 const STORE_NAME = 'evaluaciones'
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+
+function _isUuid(value) {
+  return typeof value === 'string' && UUID_REGEX.test(value)
+}
+
+function _isVirtualLikeId(value) {
+  return typeof value === 'string' && /^(nd|demo|local|obj|ind|al|clase|nodo|alu|mae|stu|ses|plan|route|node|tarea|item|preview|temp)[-_]/i.test(value)
+}
+
+function _shouldSkipItem(item) {
+  return [item?.alumnoId, item?.claseId, item?.nodoId].some((value) => {
+    return typeof value === 'string' && !_isUuid(value) && _isVirtualLikeId(value)
+  })
+}
 
 /** @type {Promise<import('idb').IDBPDatabase> | null} */
 let _dbPromise = null
@@ -158,6 +175,12 @@ async function _procesarCola(remoteSyncFn) {
   let failed = 0
 
   for (const item of queue) {
+    if (_shouldSkipItem(item)) {
+      await OfflineSyncAdapter.eliminarDeCola(item)
+      console.warn('[OfflineSyncAdapter] Se omite un item con identificadores virtuales/no UUID:', item)
+      continue
+    }
+
     try {
       await remoteSyncFn(item)
       await OfflineSyncAdapter.eliminarDeCola(item)
@@ -173,62 +196,62 @@ async function _procesarCola(remoteSyncFn) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────
-// remoteSyncFn por defecto
+// remoteSyncFn real — evaluacion_indicador (desplegada vía
+// 20260730000001_deploy_evaluacion_indicador.sql con RLS corregido)
 // ─────────────────────────────────────────────────────────────────────────
 //
-// TODO(evaluaciones-offline — requiere decisión humana antes de implementar):
+// Mapeo del payload offline:
+//   alumnoId → alumno_id (FK → public.alumnos)
+//   nodoId   → indicator_id (FK → public.indicators)
+//   claseId  → clase_id (FK → public.clases)
+//   estrellas → nota (1-5) + estado derivado
 //
-// Se buscó un adaptador existente para persistir evaluaciones por estrella
-// (alumno + clase + nodo) en Supabase, siguiendo el patrón DataAdapter de este
-// módulo. El candidato más cercano es
-// `registrarEvaluacion()` en `src/modules/planificacion/services/evaluacionClaseService.js`,
-// que escribe en la tabla `evaluacion_indicador` con una forma compatible
-// (alumno_id/indicator_id/clase_id/nota/estado).
-//
-// SIN EMBARGO esa tabla está marcada explícitamente como
-// "📦 ARCHIVADO / OMITIDO DE DESPLIEGUE" en la cabecera de
-// supabase/migrations/20260722000001_planificacion_rediseño_tablas.sql, y
-// supabase/migrations/RECONCILIACION_LEDGER.md la confirma NO aplicada en
-// producción (fila: "20260722000001_planificacion_rediseño_tablas.sql |
-// class_curriculum_plan, clase_objetivos, evaluacion_indicador | archivada, no
-// desplegar" — motivos documentados: RLS permisivo sin WITH CHECK, tablas
-// pre-creadas vacías, FK NOT NULL bloqueante). Usar `registrarEvaluacion()`
-// aquí escribiría silenciosamente contra una tabla que no existe en
-// producción, fallando siempre (o peor: funcionando solo en entornos locales
-// donde alguien la creó a mano).
-//
-// El otro candidato con datos reales en producción, `indicator_attempts`
-// (ver handler en src/portal-maestros/services/syncManager.js), tiene una
-// forma distinta (session_id/indicator_id/student_id vía
-// indicator_sessions) que no se puede derivar del payload actual de
-// `guardarLocal()` ({ alumnoId, claseId, nodoId, estrellas }) sin inventar un
-// mapeo — tampoco es seguro asumirlo.
-//
-// Antes de reemplazar este stub hace falta decidir:
-//   1) Desplegar `evaluacion_indicador` arreglando los motivos de archivo
-//      documentados en RECONCILIACION_LEDGER.md, o
-//   2) Elegir explícitamente `indicator_attempts` (u otra tabla) y definir
-//      cómo mapear alumnoId/claseId/nodoId/estrellas a su forma real.
-//
-// Nota para quien lo implemente: `estrellas` es 0-5, donde 0 = "sin evaluar".
-// Si el destino es `evaluacion_indicador`, su columna `nota` tiene
-// `CHECK (nota BETWEEN 1 AND 5)` — estrellas=0 debe mapearse a
-// `nota: null, estado: 'sin_evaluar'`, NUNCA a `nota: 0` (violaría el check).
-//
-// Mientras tanto, este stub falla siempre a propósito: los items quedan en
-// cola indefinidamente (no se pierden) y cada intento de sync los reporta
-// como "pendiente" en el log, en vez de sincronizar contra un destino
-// adivinado.
+// estrellas=0 se mapea a nota:null, estado:'sin_evaluar' porque la columna
+// nota tiene CHECK (nota BETWEEN 1 AND 5) — NUNCA insertar nota:0.
+
+const MAPA_ESTRELLAS_A_ESTADO = {
+  0: 'sin_evaluar',
+  1: 'inicia',
+  2: 'en_progreso',
+  3: 'avanzado',
+  4: 'avanzado',
+  5: 'dominado',
+}
+
 /**
  * @param {{alumnoId: string, claseId: string, nodoId: string, estrellas: number}} item
  * @returns {Promise<void>}
  */
-async function _remoteSyncEvaluacionTODO(item) {
-  throw new Error(
-    '[OfflineSyncAdapter] remoteSyncFn no implementado todavía: falta decidir la tabla/RPC destino ' +
-      '(ver TODO en offlineSyncAdapter.js). Item pendiente: ' +
-      JSON.stringify(item),
-  )
+async function _remoteSyncEvaluacion(item) {
+  if (!item.alumnoId || !item.claseId || !item.nodoId) {
+    throw new Error(
+      '[OfflineSyncAdapter] Item inválido: faltan campos requeridos: ' +
+        JSON.stringify(item),
+    )
+  }
+
+  const nota = item.estrellas > 0 ? item.estrellas : null
+  const estado = MAPA_ESTRELLAS_A_ESTADO[item.estrellas] ?? 'sin_evaluar'
+
+  let evaluadoPor = null
+  try {
+    const { data: { user } } = await supabase.auth.getUser()
+    evaluadoPor = user?.id ?? null
+  } catch {
+    // Sin sesión detectable: se envía sin evaluado_por (RLS requiere
+    // evaluado_por = auth.uid() en INSERT, así que esto fallará si la
+    // tabla tiene RLS activo y el usuario no está autenticado — que es
+    // exactamente el comportamiento correcto: no sincronizar sin sesión.
+  }
+
+  await registrarEvaluacion({
+    alumno_id: item.alumnoId,
+    indicator_id: item.nodoId,
+    clase_id: item.claseId,
+    nota,
+    estado,
+    evaluado_por: evaluadoPor,
+  })
 }
 
 let _initialized = false
@@ -241,11 +264,10 @@ let _initialized = false
  *
  * Segura de llamar más de una vez (no registra listeners duplicados).
  *
- * @param {(item: object) => Promise<void>} [remoteSyncFn] — por defecto, el
- *   stub `_remoteSyncEvaluacionTODO` (ver TODO arriba) hasta que se decida el
- *   destino real en Supabase.
+ * @param {(item: object) => Promise<void>} [remoteSyncFn] — por defecto,
+ *   `_remoteSyncEvaluacion` que escribe en evaluacion_indicador.
  */
-export function initOfflineSync(remoteSyncFn = _remoteSyncEvaluacionTODO) {
+export function initOfflineSync(remoteSyncFn = _remoteSyncEvaluacion) {
   if (_initialized) return
   _initialized = true
 

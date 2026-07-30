@@ -1,57 +1,18 @@
 /* ============================================================================
    SOI ACADEMIC PORTAL — HORARIO BUILDER STYLES
+   Migrated to --soi-* design tokens. Dark mode handled by dark-mode.css.
    ============================================================================ */
 
-:root {
-  --hb-primary: #6366f1;
-  --hb-primary-hover: #4f46e5;
-  --hb-primary-light: rgba(99, 102, 241, 0.1);
-  --hb-success: #10b981;
-  --hb-success-light: rgba(16, 185, 129, 0.15);
-  --hb-warning: #f59e0b;
-  --hb-warning-light: rgba(245, 158, 11, 0.15);
-  --hb-danger: #ef4444;
-  --hb-danger-light: rgba(239, 68, 68, 0.15);
-  --hb-gray-100: #f3f4f6;
-  --hb-gray-200: #e5e7eb;
-  --hb-gray-300: #d1d5db;
-  --hb-gray-700: #374151;
-  --hb-gray-800: #1f2937;
-  --hb-card-bg: #ffffff;
-  --hb-border: #e5e7eb;
-  --hb-text: #1f2937;
-  --hb-text-muted: #6b7280;
-  --hb-grid-bg: #f9fafb;
-}
-
-[data-bs-theme="dark"] {
-  --hb-primary: #818cf8;
-  --hb-primary-hover: #6366f1;
-  --hb-primary-light: rgba(129, 140, 248, 0.15);
-  --hb-success: #34d399;
-  --hb-success-light: rgba(52, 211, 153, 0.2);
-  --hb-warning: #fbbf24;
-  --hb-warning-light: rgba(251, 191, 36, 0.2);
-  --hb-danger: #f87171;
-  --hb-danger-light: rgba(248, 113, 113, 0.2);
-  --hb-gray-100: #1f2937;
-  --hb-gray-200: #374151;
-  --hb-gray-300: #4b5563;
-  --hb-gray-700: #d1d5db;
-  --hb-gray-800: #f3f4f6;
-  --hb-card-bg: #111827;
-  --hb-border: #374151;
-  --hb-text: #f9fafb;
-  --hb-text-muted: #9ca3af;
-  --hb-grid-bg: #1f2937;
-}
+/* NOTE: --hb-* variables removed. All values now come from --soi-* tokens
+   defined in src/styles/design-tokens.css and src/styles/dark-mode.css.
+   See design-tokens.css for the light-variant mappings. */
 
 .hb-container {
   padding: 1.5rem;
   max-width: 1600px;
   margin: 0 auto;
   font-family: 'Outfit', 'Inter', system-ui, sans-serif;
-  color: var(--hb-text);
+  color: var(--soi-text);
   animation: fadeIn 0.4s ease-out;
 }
 
@@ -62,8 +23,8 @@
 
 /* Glassmorphism Header */
 .hb-header {
-  background: var(--hb-card-bg);
-  border: 1px solid var(--hb-border);
+  background: var(--soi-surface);
+  border: 1px solid var(--soi-border);
   padding: 1.5rem;
   border-radius: 16px;
   margin-bottom: 1.5rem;
@@ -79,13 +40,13 @@
   font-size: 1.75rem;
   font-weight: 700;
   margin: 0;
-  background: linear-gradient(135deg, var(--hb-primary), #a78bfa);
+  background: linear-gradient(135deg, var(--soi-color-primary), rgba(var(--soi-color-primary-rgb), 0.5));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
 .hb-title-group p {
-  color: var(--hb-text-muted);
+  color: var(--soi-text-muted);
   margin: 0.25rem 0 0 0;
   font-size: 0.9rem;
 }
@@ -106,8 +67,8 @@
 
 /* Custom Cards */
 .hb-card {
-  background: var(--hb-card-bg);
-  border: 1px solid var(--hb-border);
+  background: var(--soi-surface);
+  border: 1px solid var(--soi-border);
   border-radius: 16px;
   padding: 1.5rem;
   box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05);
@@ -127,8 +88,8 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  color: var(--hb-primary);
-  border-bottom: 1px dashed var(--hb-border);
+  color: var(--soi-color-primary);
+  border-bottom: 1px dashed var(--soi-border);
   padding-bottom: 0.75rem;
 }
 
@@ -140,7 +101,7 @@
 .hb-form-group label {
   font-size: 0.85rem;
   font-weight: 600;
-  color: var(--hb-text-muted);
+  color: var(--soi-text-muted);
   margin-bottom: 0.35rem;
   display: block;
 }
@@ -149,25 +110,25 @@
   width: 100%;
   padding: 0.65rem 0.85rem;
   border-radius: 10px;
-  border: 1px solid var(--hb-border);
-  background: var(--hb-gray-100);
-  color: var(--hb-text);
+  border: 1px solid var(--soi-border);
+  background: var(--soi-bg-subtle);
+  color: var(--soi-text);
   font-size: 0.9rem;
   transition: border-color 0.2s, box-shadow 0.2s;
 }
 
 .hb-form-control:focus {
   outline: none;
-  border-color: var(--hb-primary);
-  box-shadow: 0 0 0 3px var(--hb-primary-light);
+  border-color: var(--soi-color-primary);
+  box-shadow: 0 0 0 3px var(--soi-color-primary-light);
 }
 
 /* Beautiful Interactive Availability Grid */
 .hb-calendar-container {
   overflow-x: auto;
   border-radius: 16px;
-  border: 1px solid var(--hb-border);
-  background: var(--hb-card-bg);
+  border: 1px solid var(--soi-border);
+  background: var(--soi-surface);
   box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05);
 }
 
@@ -181,10 +142,10 @@
   font-weight: 600;
   text-align: center;
   padding: 0.75rem;
-  background: var(--hb-primary-light);
-  color: var(--hb-primary);
-  border-bottom: 1px solid var(--hb-border);
-  border-left: 1px solid var(--hb-border);
+  background: var(--soi-color-primary-light);
+  color: var(--soi-color-primary);
+  border-bottom: 1px solid var(--soi-border);
+  border-left: 1px solid var(--soi-border);
 }
 
 .hb-cal-header:first-child {
@@ -199,34 +160,34 @@
   padding-top: 0.5rem;
   font-size: 0.75rem;
   font-weight: 600;
-  color: var(--hb-text-muted);
-  border-bottom: 1px solid var(--hb-border);
+  color: var(--soi-text-muted);
+  border-bottom: 1px solid var(--soi-border);
 }
 
 .hb-day-cell {
   position: relative;
   min-height: 50px;
-  border-bottom: 1px solid var(--hb-border);
-  border-left: 1px solid var(--hb-border);
-  background: var(--hb-grid-bg);
+  border-bottom: 1px solid var(--soi-border);
+  border-left: 1px solid var(--soi-border);
+  background: var(--soi-bg-subtle);
   transition: background-color 0.15s;
 }
 
 .hb-day-cell:hover {
-  background: rgba(99, 102, 241, 0.02);
+  background: rgba(var(--soi-color-primary-rgb), 0.02);
 }
 
 /* Availability block highlights inside grid */
 .hb-slot-available {
-  background: var(--hb-success-light);
-  border-left: 3px solid var(--hb-success);
+  background: var(--soi-color-success-light);
+  border-left: 3px solid var(--soi-color-success);
   position: absolute;
   left: 4px;
   right: 4px;
   border-radius: 4px;
   padding: 4px 8px;
   font-size: 0.7rem;
-  color: var(--hb-success);
+  color: var(--soi-color-success);
   font-weight: 600;
   pointer-events: none;
   display: flex;
@@ -236,9 +197,9 @@
 }
 
 .hb-slot-assigned {
-  background: var(--hb-primary-light);
-  border: 1px solid var(--hb-primary);
-  border-left: 4px solid var(--hb-primary);
+  background: var(--soi-color-primary-light);
+  border: 1px solid var(--soi-color-primary);
+  border-left: 4px solid var(--soi-color-primary);
   position: absolute;
   left: 6px;
   right: 6px;
@@ -246,7 +207,7 @@
   padding: 6px 10px;
   font-size: 0.75rem;
   font-weight: 700;
-  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.12);
+  box-shadow: 0 4px 12px rgba(var(--soi-color-primary-rgb), 0.12);
   z-index: 5;
   cursor: pointer;
   transition: transform 0.2s, box-shadow 0.2s;
@@ -257,7 +218,7 @@
 
 .hb-slot-assigned:hover {
   transform: scale(1.02);
-  box-shadow: 0 6px 18px rgba(99, 102, 241, 0.2);
+  box-shadow: 0 6px 18px rgba(var(--soi-color-primary-rgb), 0.2);
   z-index: 10;
 }
 
@@ -268,9 +229,9 @@
   justify-content: space-between;
   padding: 0.75rem;
   border-radius: 12px;
-  border: 1px solid var(--hb-border);
+  border: 1px solid var(--soi-border);
   margin-bottom: 0.5rem;
-  background: var(--hb-gray-100);
+  background: var(--soi-bg-subtle);
   transition: transform 0.2s;
 }
 
@@ -290,7 +251,7 @@
 
 .hb-teacher-spec {
   font-size: 0.75rem;
-  color: var(--hb-text-muted);
+  color: var(--soi-text-muted);
 }
 
 .hb-teacher-status {
@@ -301,13 +262,13 @@
 }
 
 .hb-teacher-status.available {
-  background: var(--hb-success-light);
-  color: var(--hb-success);
+  background: var(--soi-color-success-light);
+  color: var(--soi-color-success);
 }
 
 .hb-teacher-status.partial {
-  background: var(--hb-warning-light);
-  color: var(--hb-warning);
+  background: var(--soi-color-warning-light);
+  color: var(--soi-color-warning);
 }
 
 /* Drag & Drop Visual styling */
@@ -317,7 +278,7 @@
 }
 
 .hb-drag-hover {
-  background: rgba(99, 102, 241, 0.08) !important;
+  background: rgba(var(--soi-color-primary-rgb), 0.08) !important;
 }
 
 /* Conflict & Metrics Panels */
@@ -326,15 +287,15 @@
   align-items: center;
   gap: 0.75rem;
   padding: 0.75rem 1rem;
-  background: var(--hb-gray-100);
-  border: 1px solid var(--hb-border);
+  background: var(--soi-bg-subtle);
+  border: 1px solid var(--soi-border);
   border-radius: 12px;
   font-size: 0.85rem;
 }
 
 .hb-metric-pill i {
   font-size: 1.25rem;
-  color: var(--hb-primary);
+  color: var(--soi-color-primary);
 }
 
 .hb-metric-num {
@@ -343,13 +304,13 @@
 }
 
 .hb-conflict-item {
-  border-left: 4px solid var(--hb-danger);
-  background: var(--hb-danger-light);
+  border-left: 4px solid var(--soi-color-danger);
+  background: var(--soi-color-danger-light);
   padding: 0.75rem 1rem;
   border-radius: 0 8px 8px 0;
   margin-bottom: 0.75rem;
   font-size: 0.85rem;
-  color: var(--hb-text);
+  color: var(--soi-text);
 }
 
 .hb-conflict-item h5 {
@@ -360,7 +321,7 @@
 
 .hb-conflict-item p {
   margin: 0;
-  color: var(--hb-text-muted);
+  color: var(--soi-text-muted);
 }
 
 /* Modal and Schedule Preview styling */
@@ -382,22 +343,22 @@
 }
 
 .hb-btn-primary {
-  background: var(--hb-primary);
-  color: #ffffff;
+  background: var(--soi-color-primary);
+  color: var(--soi-text-on-primary);
 }
 
 .hb-btn-primary:hover {
-  background: var(--hb-primary-hover);
+  background: var(--soi-color-primary-hover);
   transform: translateY(-1px);
 }
 
 .hb-btn-secondary {
-  background: var(--hb-gray-200);
-  color: var(--hb-text);
+  background: var(--soi-border);
+  color: var(--soi-text);
 }
 
 .hb-btn-secondary:hover {
-  background: var(--hb-gray-300);
+  background: var(--soi-text-muted);
 }
 
 .hb-toast {
@@ -406,13 +367,13 @@
   right: 24px;
   padding: 1rem 1.5rem;
   border-radius: 12px;
-  background: var(--hb-card-bg);
+  background: var(--soi-surface);
   box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.2);
   z-index: 1000;
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  border-left: 4px solid var(--hb-primary);
+  border-left: 4px solid var(--soi-color-primary);
   animation: slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
@@ -436,7 +397,7 @@
 }
 
 .schedule-block--conflict {
-  border-color: #ef4444;
+  border-color: var(--soi-color-danger);
 }
 
 .schedule-block__header {
@@ -450,7 +411,7 @@
 .schedule-block__title {
   font-size: 0.65rem;
   font-weight: 700;
-  color: #1e293b;
+  color: var(--soi-text);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -464,7 +425,7 @@
 }
 
 .schedule-block__body {
-  background: #f8fafc;
+  background: var(--soi-bg-subtle);
   padding: 3px 6px;
   display: flex;
   align-items: center;
@@ -480,24 +441,24 @@
   border-radius: 50%;
   font-size: 0.45rem;
   font-weight: 700;
-  color: #1e293b;
+  color: var(--soi-text);
   flex-shrink: 0;
 }
 
 .schedule-block__teacher-name {
   font-size: 0.58rem;
-  color: #475569;
+  color: var(--soi-text-muted);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .schedule-block__footer {
-  background: #f1f5f9;
+  background: rgba(0, 0, 0, 0.02);
   padding: 2px 6px;
   font-size: 0.55rem;
-  color: #64748b;
-  border-top: 1px solid #e2e8f0;
+  color: var(--soi-text-muted);
+  border-top: 1px solid var(--soi-border);
 }
 
 .sb-lock-btn {
@@ -510,13 +471,13 @@
 }
 
 .hb-highlight {
-  outline: 2px solid var(--hb-primary);
+  outline: 2px solid var(--soi-color-primary);
   outline-offset: 2px;
   transition: outline 0.3s;
 }
 
 .hb-drop-target {
-  background: var(--hb-primary-light) !important;
+  background: var(--soi-color-primary-light) !important;
 }
 
 /* ── Schedule Grid ───────────────────────────────────────────── */
@@ -526,31 +487,63 @@
 
 .schedule-grid {
   width: 100%;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0;
+  background: var(--soi-surface);
+  border: 1px solid var(--soi-border);
+  border-radius: 12px;
+  overflow: hidden;
 }
 
 .sg-col-header {
   text-align: center;
-  padding: 4px 6px;
-  font-size: 0.75rem;
+  padding: 8px 12px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  background: var(--soi-color-primary-light);
+  color: var(--soi-color-primary);
+  border-bottom: 1px solid var(--soi-border);
+  border-right: 1px solid var(--soi-border);
 }
 
 .sg-hour-label {
-  font-size: 0.7rem;
-  color: #64748b;
-  padding: 4px 8px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--soi-text-muted);
+  padding: 8px 12px;
   white-space: nowrap;
-  vertical-align: top;
+  vertical-align: middle;
+  text-align: center;
+  border-bottom: 1px solid var(--soi-border);
+  border-right: 1px solid var(--soi-border);
+  background: var(--soi-bg-subtle);
 }
 
 .sg-cell {
   vertical-align: top;
-  padding: 3px;
-  min-width: 100px;
+  padding: 6px;
+  min-width: 110px;
+  min-height: 48px;
+  border-bottom: 1px solid var(--soi-border);
+  border-right: 1px solid var(--soi-border);
+  background: var(--soi-surface);
+  transition: background-color 0.15s;
+}
+
+.sg-cell:hover {
+  background: rgba(var(--soi-color-primary-rgb), 0.04);
 }
 
 .sg-hour-col {
-  min-width: 56px;
+  min-width: 65px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  background: var(--soi-color-primary-light);
+  color: var(--soi-color-primary);
+  padding: 8px;
+  text-align: center;
+  border-bottom: 1px solid var(--soi-border);
+  border-right: 1px solid var(--soi-border);
 }
 
 .sg-group {
@@ -560,7 +553,7 @@
 .sg-group-title {
   font-size: 0.85rem;
   font-weight: 700;
-  color: #1e293b;
+  color: var(--soi-text);
   margin-bottom: 0.5rem;
 }
 
@@ -568,4 +561,81 @@
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
+}
+
+/* ── Responsive ─────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .hb-container {
+    padding: 1rem;
+  }
+
+  .hb-title-group h1 {
+    font-size: 1.35rem;
+  }
+
+  .hb-header {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 1rem;
+  }
+
+  .hb-card {
+    padding: 1rem;
+  }
+
+  .hb-calendar-grid {
+    min-width: 600px;
+  }
+
+  .schedule-block__title {
+    font-size: 0.6rem;
+  }
+
+  .schedule-block__body {
+    padding: 2px 4px;
+  }
+
+  .schedule-block__teacher-name {
+    font-size: 0.5rem;
+  }
+
+  .schedule-block__footer {
+    font-size: 0.5rem;
+  }
+
+  .sg-cell {
+    min-width: 70px;
+  }
+
+  .hb-btn {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.8rem;
+  }
+
+  .hb-btn span {
+    display: none;
+  }
+}
+
+@media (max-width: 576px) {
+  .hb-container {
+    padding: 0.75rem;
+  }
+
+  .hb-title-group h1 {
+    font-size: 1.15rem;
+  }
+
+  .hb-card {
+    padding: 0.75rem;
+    border-radius: 12px;
+  }
+
+  .hb-calendar-grid {
+    min-width: 500px;
+  }
+
+  .sg-cell {
+    min-width: 60px;
+  }
 }

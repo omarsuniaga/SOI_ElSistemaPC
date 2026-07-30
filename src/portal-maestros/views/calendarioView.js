@@ -8,8 +8,12 @@ import {
   getHorariosClases,
   getSesiones,
   getInscripcionesClases,
+  invalidateClasesCache,
 } from '../services/maestroDataService.js'
 import { autoJustificarClasesProgramadas } from '../services/emergenteJustificacionService.js'
+import { getPeriodoActivo, obtenerEstadoCumplimientoMaestro } from '../../modules/asistencias/api/asistenciasSupabase.js'
+import { eliminarSesion } from '../../modules/planificacion/api/sesionesSupabase.js'
+import { invalidateView as navInvalidateView } from '../services/navigationHooks.js'
 
 const DIAS_HEADER = ['Do', 'Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sa']
 const UMBRAL_VENCIDA = 7
@@ -102,18 +106,16 @@ async function _calcularEstadoMes(maestroId, anio, mes) {
   // 3. Sesiones del mes (con cache)
   const todasSesiones = await getSesiones(maestroId, desde, hasta)
 
-  // Sesión registrada si:
-  // - tiene estado registrada/cerrada, O
-  // - tiene asistencia marcada (independientemente de borrador), O
-  // - fue guardada (borrador=false) con contenido en observaciones
+  // Sesión registrada/completada solo si NO es un borrador pendiente
   const esSesionRegistrada = (s) => {
+    if (!s) return false
+    if (s.borrador === true || s.estado === 'pendiente') return false
     const tieneAsistencia = Array.isArray(s.asistencia) && s.asistencia.length > 0
     const tieneContenido = typeof s.contenido === 'string' && s.contenido.trim().length > 0
     return (
       s.estado === 'registrada' ||
       s.estado === 'cerrada' ||
-      tieneAsistencia ||
-      (s.borrador === false && tieneContenido)
+      (s.borrador === false && (tieneAsistencia || tieneContenido))
     )
   }
   const sesiones = todasSesiones.filter(esSesionRegistrada)
@@ -169,6 +171,9 @@ async function _calcularEstadoMes(maestroId, anio, mes) {
   const hoy = new Date()
   hoy.setHours(0, 0, 0, 0)
 
+  const periodoActivo = await getPeriodoActivo().catch(() => null)
+  const cumplimiento = await obtenerEstadoCumplimientoMaestro(maestroId, periodoActivo?.id).catch(() => ({ esCompleto: true, pendientesCount: 0 }))
+
   for (let d = new Date(primerDia); d <= ultimoDia; d.setDate(d.getDate() + 1)) {
     const y = d.getFullYear()
     const m = String(d.getMonth() + 1).padStart(2, '0')
@@ -180,15 +185,25 @@ async function _calcularEstadoMes(maestroId, anio, mes) {
     const fechaDate = new Date(d)
     const diffDias = Math.floor((hoy - fechaDate) / 86400000)
 
+    // Si la fecha está fuera del período activo y no hay sesión registrada en ese día → Receso Académico
+    const esFueraDePeriodo = periodoActivo && (fecha < periodoActivo.fecha_inicio || fecha > periodoActivo.fecha_fin)
+    const tieneSesionRealEnFecha = Array.from(sesionPorClaseFecha.keys()).some(k => k.startsWith(`${fecha}|`)) || emergentesFecha.length > 0
+
+    if (esFueraDePeriodo && !tieneSesionRealEnFecha) {
+      estadoMap.set(fecha, 'receso-academico')
+      dotsMap.set(fecha, [])
+      continue
+    }
+
     // Puntos por clase: verde registrada, amarillo borrador, rojo sin registrar, gris futura/en curso
     const dots = []
     const clasesDelDia = clasesPorDiaSem.get(diaEs) || new Set()
     clasesDelDia.forEach((claseId) => {
       const s = sesionPorClaseFecha.get(`${fecha}|${claseId}`)
       if (diffDias === 0) {
-        // HOY: verde solo con asistencia marcada (regla Bug 1)
-        const tieneAsistencia = s && Array.isArray(s.asistencia) && s.asistencia.length > 0
-        if (s && (s.emergente_id || tieneAsistencia)) dots.push('verde')
+        // HOY: verde solo si la sesión está guardada como finalizada/registrada (no borrador)
+        const esRegistradaHoy = s && s.borrador === false && (s.emergente_id || esSesionRegistrada(s))
+        if (esRegistradaHoy) dots.push('verde')
         else if (s) dots.push('amarillo')
         else if (!_claseFinalizoHoy(horaFinPorClaseDia.get(`${diaEs}|${claseId}`))) dots.push('gris')
         else dots.push('rojo')
@@ -211,15 +226,19 @@ async function _calcularEstadoMes(maestroId, anio, mes) {
     }
 
     // Caso especial: HOY (diffDias === 0)
-    // Sin color hasta que la clase finalice
     if (diffDias === 0) {
       const sesionHoy = todasSesiones.find((s) => s.fecha === fecha)
-      const tieneAsistencia =
-        sesionHoy && Array.isArray(sesionHoy.asistencia) && sesionHoy.asistencia.length > 0
+      const esRegistradaHoy = sesionHoy && sesionHoy.borrador === false && esSesionRegistrada(sesionHoy)
 
-      // Si ya tiene asistencia → registrada (verde)
-      if (tieneAsistencia) {
+      // Si ya está finalizada/registrada → registrada (verde)
+      if (esRegistradaHoy) {
         estadoMap.set(fecha, 'registrada')
+        continue
+      }
+
+      // Si hay sesión en borrador → pendiente (naranja/amarillo)
+      if (sesionHoy && (sesionHoy.borrador === true || sesionHoy.estado === 'pendiente')) {
+        estadoMap.set(fecha, 'pendiente')
         continue
       }
 
@@ -514,6 +533,36 @@ async function _openActionDrawer(fecha) {
   const [y, m, d] = fecha.split('-').map(Number)
   const fechaLocal = new Date(y, m - 1, d)
   const diaSemana = fechaLocal.toLocaleDateString('es-ES', { weekday: 'long' }).toLowerCase()
+
+  const periodoActivo = await getPeriodoActivo().catch(() => null)
+  const cumplimiento = await obtenerEstadoCumplimientoMaestro(maestro.id, periodoActivo?.id).catch(() => ({ esCompleto: true, pendientesCount: 0 }))
+  const esFueraDePeriodo = periodoActivo && (fecha < periodoActivo.fecha_inicio || fecha > periodoActivo.fecha_fin)
+
+  let recesoBannerHTML = ''
+  if (esFueraDePeriodo) {
+    if (cumplimiento.esCompleto) {
+      recesoBannerHTML = `
+        <div style="background:rgba(59,130,246,0.12); color:#60a5fa; border:1px solid rgba(59,130,246,0.25); border-radius:12px; padding:12px; margin-bottom:12px; display:flex; align-items:center; gap:10px;">
+          <i class="bi bi-sun-fill" style="font-size:1.4rem;"></i>
+          <div>
+            <div style="font-weight:700; font-size:0.9rem;">RECESO ACADÉMICO</div>
+            <div style="font-size:0.78rem; opacity:0.9;">Has completado el 100% de tus asistencias del período (${escHTML(periodoActivo.nombre)}). Disfruta tu receso.</div>
+          </div>
+        </div>
+      `
+    } else {
+      recesoBannerHTML = `
+        <div style="background:rgba(245,158,11,0.12); color:#fbbf24; border:1px solid rgba(245,158,11,0.25); border-radius:12px; padding:12px; margin-bottom:12px; display:flex; align-items:center; gap:10px;">
+          <i class="bi bi-exclamation-triangle-fill" style="font-size:1.4rem;"></i>
+          <div>
+            <div style="font-weight:700; font-size:0.9rem;">PENDIENTE DE CIERRE DE SEMESTRE</div>
+            <div style="font-size:0.78rem; opacity:0.9;">Tienes ${cumplimiento.pendientesCount} clase(s) sin finalizar en el período (${escHTML(periodoActivo.nombre)}). Completa tus asistencias para entrar en Receso Académico.</div>
+          </div>
+        </div>
+      `
+    }
+  }
+
   const clasesProgramadas = clasesDelMaestro
     .filter((c) => horarios.some((h) => h.clase_id === c.id && h.dia?.toLowerCase() === diaSemana))
     .map((c) => {
@@ -540,7 +589,7 @@ async function _openActionDrawer(fecha) {
           s.estado === 'registrada' || s.estado === 'cerrada' || tieneAsistencia
 
         return `
-        <div class="pm-drawer-clase-item" style="border-left: 3px solid var(--pm-warning);">
+        <div class="pm-drawer-clase-item btn-ver-sesion-emergente" data-sesion="${s.id}" style="border-left: 3px solid var(--pm-warning); cursor: pointer;">
           <div class="pm-drawer-clase-info">
             <span class="pm-drawer-clase-hora">${(s.hora_inicio || '--:--').slice(0, 5)} - ${(s.hora_fin || '--:--').slice(0, 5)}</span>
             <span class="pm-drawer-clase-nombre">${escHTML(s.actividad || 'Clase Emergente')}</span>
@@ -548,16 +597,8 @@ async function _openActionDrawer(fecha) {
               <i class="bi bi-lightning-charge-fill"></i> Actividad especial
             </span>
           </div>
-          <div class="pm-drawer-clase-actions">
-            <button class="pm-btn btn-ver-sesion-emergente"
-              data-sesion="${s.id}"
-              style="background:var(--pm-${estaRegistrada ? 'success' : 'primary'}); border-color:var(--pm-${estaRegistrada ? 'success' : 'primary'});">
-              <i class="bi bi-${estaRegistrada ? 'eye' : 'person-check'}"></i>
-              ${estaRegistrada ? 'Ver asistencia' : 'Pasar asistencia'}
-            </button>
-          </div>
-          <div class="pm-clase-status ${estaRegistrada ? 'completed' : ''}" style="margin-left: auto;">
-            ${estaRegistrada ? '<i class="bi bi-check-circle-fill" style="color:var(--pm-success)"></i>' : ''}
+          <div class="pm-clase-status ${estaRegistrada ? 'completed' : ''}" style="margin-left: auto; display:flex; align-items:center;">
+            ${estaRegistrada ? '<i class="bi bi-check-circle-fill" style="color:var(--pm-success); font-size:1.2rem;"></i>' : '<i class="bi bi-chevron-right" style="color:var(--pm-text-muted); font-size:1.2rem;"></i>'}
           </div>
         </div>
       `
@@ -586,45 +627,15 @@ async function _openActionDrawer(fecha) {
           (c.sesion.estado === 'pendiente' || c.sesion.borrador === true)
 
         return `
-        <div class="pm-drawer-clase-item">
+        <div class="pm-drawer-clase-item btn-ver-sesion" data-clase="${c.id}" style="cursor: pointer;">
           <div class="pm-drawer-clase-info">
             <span class="pm-drawer-clase-hora">${(c.hora_inicio || '--:--').slice(0, 5)} - ${(c.hora_fin || '--:--').slice(0, 5)}</span>
             <span class="pm-drawer-clase-nombre">${escHTML(c.nombre)}</span>
             <span class="pm-drawer-clase-instrumento">${escHTML(c.instrumento || '')}</span>
           </div>
 
-          <div class="pm-drawer-clase-actions">
-            ${
-              !tieneSesion
-                ? `
-              <button class="pm-btn pm-btn-primary btn-pasar-asistencia" data-clase="${c.id}">
-                <i class="bi bi-person-check"></i> Pasar asistencia
-              </button>
-            `
-                : ''
-            }
-            ${
-              tieneSesion
-                ? `
-              <button class="pm-btn btn-ver-sesion" data-clase="${c.id}" style="background:var(--pm-success); border-color:var(--pm-success);">
-                <i class="bi bi-eye"></i> Ver
-              </button>
-            `
-                : ''
-            }
-            ${
-              esPendiente
-                ? `
-              <button class="pm-btn btn-continuar-sesion" data-clase="${c.id}">
-                <i class="bi bi-pencil"></i> Continuar
-              </button>
-            `
-                : ''
-            }
-          </div>
-
-          <div class="pm-clase-status ${tieneSesion ? 'completed' : esPendiente ? 'pending' : ''}" style="margin-left: auto;">
-             ${tieneSesion ? '<i class="bi bi-check-circle-fill" style="color:var(--pm-success)"></i>' : esPendiente ? '<i class="bi bi-pencil-fill" style="color:var(--pm-warning)"></i>' : ''}
+          <div class="pm-clase-status ${tieneSesion ? 'completed' : esPendiente ? 'pending' : ''}" style="margin-left: auto; display:flex; align-items:center;">
+             ${tieneSesion ? '<i class="bi bi-check-circle-fill" style="color:var(--pm-success); font-size:1.2rem;"></i>' : esPendiente ? '<i class="bi bi-pencil-fill" style="color:var(--pm-warning); font-size:1.2rem;"></i>' : '<i class="bi bi-chevron-right" style="color:var(--pm-text-muted); font-size:1.2rem;"></i>'}
           </div>
         </div>
       `
@@ -690,17 +701,19 @@ async function _openActionDrawer(fecha) {
         </div>
       </div>
       <div class="pm-drawer-body">
-        ${clasesHTML || '<p style="text-align:center;color:var(--pm-text-muted);padding:2rem 1rem;">No hay clases programadas para esta fecha</p>'}
-        ${suspendidaSeccionHTML}
+        ${recesoBannerHTML}
         ${
-          !isPast && !isToday
-            ? `
-          <button class="pm-btn pm-btn-secondary" style="margin-top:0.5rem; width:100%;">
-            <i class="bi bi-plus-circle"></i> Agregar Clase a Horario
-          </button>
+          clasesHTML || `
+          <div style="text-align:center; padding:1.5rem 1rem; background:rgba(255,255,255,0.03); border-radius:12px; margin:0.5rem 0; border:1px dashed var(--pm-border-color, #334155);">
+            <i class="bi bi-calendar-x" style="font-size:2rem; color:var(--pm-text-muted); display:block; margin-bottom:0.5rem;"></i>
+            <p style="margin:0 0 1rem; color:var(--pm-text-muted); font-size:0.9rem;">No hay clases programadas para esta fecha</p>
+            <button class="pm-btn pm-btn-primary" id="pm-drawer-emergente-body" style="background:var(--pm-primary); border:none; padding:0.6rem 1.2rem; border-radius:10px; font-weight:600;">
+              <i class="bi bi-lightning-charge-fill"></i> Crear Clase Emergente
+            </button>
+          </div>
         `
-            : ''
         }
+        ${suspendidaSeccionHTML}
       </div>
     </div>
   `
@@ -772,12 +785,32 @@ async function _openActionDrawer(fecha) {
     })
   })
 
-  const btnEmergente = drawer.querySelector('#pm-drawer-emergente')
-  if (btnEmergente) {
-    btnEmergente.addEventListener('click', () => {
+  drawer.querySelectorAll('.btn-descartar-borrador').forEach((btn) => {
+    btn.addEventListener('click', async (e) => {
+      e.stopPropagation()
+      const sesionId = btn.dataset.sesion
+      if (!sesionId) return
+      if (confirm('¿Deseas descartar este borrador? La fecha se desmarcará por completo.')) {
+        try {
+          await eliminarSesion(sesionId)
+          invalidateClasesCache()
+          navInvalidateView('calendario')
+          AppToast.show('Borrador descartado. Fecha desmarcada.', 'success')
+          close()
+          await renderCalendarioView(container)
+        } catch (err) {
+          AppToast.show('Error al descartar: ' + err.message, 'danger')
+        }
+      }
+    })
+  })
+
+  const btnsEmergentes = drawer.querySelectorAll('#pm-drawer-emergente, #pm-drawer-emergente-body')
+  btnsEmergentes.forEach((btn) => {
+    btn.addEventListener('click', () => {
       _abrirModalClaseEmergente(fecha, clasesDelMaestro)
     })
-  }
+  })
 
   setTimeout(() => drawer.classList.add('open'), 10)
 }

@@ -728,7 +728,7 @@ export async function renderPlanificacionView(container, { maestroId }) {
     classDetailModal.setAttribute('aria-label', `Detalle de clase: ${clase.nombre}`)
 
     classDetailModal.innerHTML = `
-      <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+      <div class="modal-dialog modal-xxl modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content" style="background:var(--pm-surface); color:var(--pm-text); border:1px solid var(--pm-border); border-radius:20px; box-shadow:0 24px 64px rgba(0,0,0,0.15);">
 
           <!-- Header del modal -->

@@ -7,6 +7,7 @@ import { createJustificacionModal } from '../JustificacionModal.js'
  */
 export function createJustifModalManager(container, {
   sesionId,
+  getSesionId,
   claseId,
   fechaHoy,
   maestroId,
@@ -22,6 +23,8 @@ export function createJustifModalManager(container, {
   onAnnounce,
 }) {
   let destroyed = false
+
+  const resolveSesionId = () => (typeof getSesionId === 'function' ? getSesionId() : sesionId)
 
   const modal = createJustificacionModal(document.body, {
     onDelete: async ({ alumnoId, justificacionId, existingUrl }) => {
@@ -75,9 +78,13 @@ export function createJustifModalManager(container, {
           if (error) throw error
           savedRecord = data
         } else {
-          if (!sesionId) await onAutoSave(true, false)
+          let currentSesionId = resolveSesionId()
+          if (!currentSesionId) {
+            await onAutoSave(true, false)
+            currentSesionId = resolveSesionId()
+          }
           const result = await guardarJustificacion(
-            { sesionId, alumnoId, claseId, fecha: fechaHoy, motivo, creadoPor: maestroId },
+            { sesionId: currentSesionId, alumnoId, claseId, fecha: fechaHoy, motivo, creadoPor: maestroId },
             evidenciaFile,
           )
           if (result.error) throw result.error

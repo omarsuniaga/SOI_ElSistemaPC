@@ -1,4 +1,3 @@
-import '../../../shared/styles/patterns.css'
 import '../styles/salones.css'
 import { escapeHTML } from '../../../shared/utils/sanitize.js'
 import { AppModal } from '../../../shared/components/AppModal.js'

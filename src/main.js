@@ -41,10 +41,14 @@ import 'bootstrap-icons/font/bootstrap-icons.css'
 import * as bootstrapLib from 'bootstrap'
 window.bootstrap = bootstrapLib
 import './style.css'
+import './styles/design-tokens.css'
+import './styles/breakpoints.css'
+import './styles/dark-mode.css'
+import './styles/utilities.css'
+import './styles/patterns.css'
 import './styles/bootstrap-support.css'
 import './styles/sidebar.css'
 import './modules/academic-admin/styles/academic-admin.css'
-import './modules/horario-builder/styles/horario-builder.css'
 
 // Core
 import { router } from './core/router/router.js'
@@ -81,6 +85,7 @@ import { registerRoutesFinanzas } from './modules/finanzas/index.js'
 import { registerRoutesLuteria } from './modules/luteria/index.js'
 import { registerRoutesInventario } from './modules/inventario/index.js'
 import { registerRoutesHelp } from './modules/help/index.js'
+import { registerRoutesPeriodos } from './modules/periodos/index.js'
 import { renderScoreDirectorView } from './modules/hermes/views/scoreDirectorView.js'
 import {
   startAdminRealtimeNotifications,
@@ -91,6 +96,14 @@ import {
 // MÓDULOS REGISTRY - Define todos los módulos de la aplicación
 // ============================================================================
 const MODULES_REGISTRY = [
+  {
+    id: 'periodos',
+    label: 'Períodos Académicos',
+    icon: 'bi-calendar-event',
+    description: 'Gestión y auditoría de períodos y cierres semestrales',
+    enabled: true,
+    register: registerRoutesPeriodos,
+  },
   {
     id: 'programas',
     label: 'Programas',
@@ -342,6 +355,7 @@ const NAV_GROUPS = [
       { id: 'planificacion-cobertura', label: 'Cobertura Curricular', icon: 'bi-grid-3x3-gap' },
       { id: 'planificacion-ruta', label: 'Ruta Académica', icon: 'bi-diagram-3' },
       { id: 'pedagogico-seguimiento', label: 'Seguimiento', icon: 'bi-person-lines-fill' },
+      { id: 'pedagogico-evaluaciones', label: 'Evaluaciones', icon: 'bi-clipboard2-check' },
       { id: 'pedagogico-reportes', label: 'Reportes', icon: 'bi-file-earmark-bar-graph' },
     ],
   },
@@ -503,13 +517,20 @@ function renderNavbar(_container, isAuthenticated = false) {
   subSheet.className = 'mobile-sub-sheet'
   subSheet.innerHTML = `
     <div class="sheet-handle"></div>
-    <div class="sheet-title" id="sheetTitle"></div>
+    <div class="sheet-header d-flex align-items-center justify-content-between px-3 pt-1 pb-2">
+      <div class="sheet-title" id="sheetTitle"></div>
+      <button type="button" class="btn-close sheet-close-btn small opacity-75" id="sheetCloseBtn" aria-label="Cerrar"></button>
+    </div>
     <div class="sheet-items" id="sheetItems"></div>
   `
 
   document.body.prepend(subSheet)
   document.body.prepend(bottomNav)
   document.body.prepend(sidebar)
+
+  subSheet.querySelector('#sheetCloseBtn')?.addEventListener('click', () => {
+    subSheet.classList.remove('open')
+  })
 
   // ── Eventos sidebar ───────────────────────────────────────
   sidebar.querySelectorAll('.nav-group-header').forEach((btn) => {
@@ -553,13 +574,13 @@ function renderNavbar(_container, isAuthenticated = false) {
     const group = NAV_GROUPS.find((g) => g.id === groupId)
     if (!group) return
     const route = localStorage.getItem('current-view') || ''
-    document.getElementById('sheetTitle').textContent = group.label
+    document.getElementById('sheetTitle').textContent = group.label.toUpperCase()
     document.getElementById('sheetItems').innerHTML = group.items
       .map(
         (item) => `
       <button class="sheet-item ${item.id === route ? 'active' : ''}" data-route="${item.id}">
-        <i class="bi ${item.icon}"></i>
-        <span>${item.label}</span>
+        <span class="sheet-item-icon"><i class="bi ${item.icon}"></i></span>
+        <span class="sheet-item-text">${item.label}</span>
       </button>
     `,
       )
@@ -686,13 +707,26 @@ async function startApp() {
   console.log('🔄 Sincronizando sesión...')
   await useAuth.refreshAuth()
 
-  // 4. Configurar guard de rutas
+  // 4. Configurar guard de rutas (solo admin)
   const authRoutes = ['login', 'register']
-  router.setAuthGuard(() => useAuth.isAuthenticated(), authRoutes)
+  router.setAuthGuard(() => {
+    if (!useAuth.isAuthenticated()) return false
+    const { user } = useAuth.getState()
+    return user?.user_metadata?.rol === 'admin' || user?.app_metadata?.rol === 'admin'
+  }, authRoutes)
 
-  // 5. Verificar autenticación
+  // 5. Verificar autenticación Y rol
   const currentRoute = localStorage.getItem('current-view') || 'programas'
-  const isAuthenticated = useAuth.isAuthenticated()
+  let isAuthenticated = useAuth.isAuthenticated()
+
+  if (isAuthenticated) {
+    const { user } = useAuth.getState()
+    const rol = user?.user_metadata?.rol || user?.app_metadata?.rol
+    if (rol !== 'admin') {
+      await useAuth.logout()
+      isAuthenticated = false
+    }
+  }
 
   // 5. Lógica de enrutamiento inicial
   if (!isAuthenticated && !authRoutes.includes(currentRoute)) {

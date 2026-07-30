@@ -21,13 +21,15 @@ export function createStudentList(container, {
   sesionId,
   fechaHoy,
   snapshots,
-  justificaciones,
+  justificaciones = {},
   obtenerJustificacion,
+  eliminarJustificacion,
   // callbacks
   onEstadoChange,
   onOpenProgressPanel,
   onOpenEvaluationDrawer,
   onOpenJustifModal,
+  onJustifDeleted,
   onAutoSave,
   onAnnounce,
   onUpdateSnapshots,
@@ -43,6 +45,9 @@ export function createStudentList(container, {
       const bM = estado[b.id] !== null
       if (!aM && bM) return -1
       if (aM && !bM) return 1
+      if (a.hora_inicio && b.hora_inicio) {
+        return a.hora_inicio.localeCompare(b.hora_inicio)
+      }
       return 0
     })
   }
@@ -73,12 +78,14 @@ export function createStudentList(container, {
 
   function _renderAlumnoItem(a, est) {
     const colorClass = est ? `estado-${est.toLowerCase()}` : ''
+    const tieneTurno = a.hora_inicio && a.hora_fin
+    const turnoStr = tieneTurno ? ` · 🕒 ${a.hora_inicio.slice(0, 5)}–${a.hora_fin.slice(0, 5)}` : ''
     return `
       <div class="pm-asist-item ${colorClass}" data-id="${a.id}">
         <div class="pm-asist-avatar">${a.nombre_completo[0]}</div>
         <div class="pm-asist-info">
           <span class="pm-asist-nombre">${escHTML(a.nombre_completo)}</span>
-          <span class="pm-asist-instrumento">${escHTML(a.instrumento_principal || '—')}</span>
+          <span class="pm-asist-instrumento">${escHTML(a.instrumento_principal || '—')}${escHTML(turnoStr)}</span>
         </div>
         <div class="pm-asist-btns">
           <button class="pm-asist-btn ${est === 'P' ? 'active-p' : ''}" data-action="P" data-id="${a.id}">P</button>
@@ -136,15 +143,19 @@ export function createStudentList(container, {
       if (!alumno) return
 
       if (estado[id] === 'J') {
-        let justifExistente = justificaciones[id] || null
-        if (!justifExistente && sesionId && obtenerJustificacion) {
-          justifExistente = await obtenerJustificacion(sesionId, id)
-          if (justifExistente && onUpdateSnapshots) {
-            // Store in parent's justificaciones — handled by callback
-          }
+        // Al presionar sobre el mismo botón 'J', desmarcar (pasar a null)
+        if (onEstadoChange) onEstadoChange(id, null)
+        let justifExistente = justificaciones?.[id] || null
+        if (justifExistente?.id && typeof eliminarJustificacion === 'function') {
+          eliminarJustificacion(justifExistente.id).catch(console.warn)
         }
-        if (onOpenJustifModal) onOpenJustifModal(alumno, justifExistente, null)
-        if (onAnnounce) onAnnounce(`Editando justificación de ${alumno.nombre_completo}.`)
+        if (justificaciones && justificaciones[id]) {
+          delete justificaciones[id]
+        }
+        if (typeof onJustifDeleted === 'function') onJustifDeleted(id)
+        renderLista(id)
+        if (onAutoSave) await onAutoSave(true)
+        if (onAnnounce) onAnnounce(`Justificación desmarcada para ${alumno.nombre_completo}.`)
       } else {
         if (onEstadoChange) onEstadoChange(id, 'J')
         renderLista(id)

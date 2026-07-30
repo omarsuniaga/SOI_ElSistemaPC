@@ -384,7 +384,9 @@ export async function renderHoyView(container, { onClaseClick } = {}) {
       // Scroll suave a la tarjeta activa
       requestAnimationFrame(() => {
         const card = container.querySelector(`[data-clase-id="${enCursoId}"]`)
-        card?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        if (card && typeof card.scrollIntoView === 'function') {
+          card.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        }
       })
 
       // Auto-navegar solo si la clase está en curso Y no registrada

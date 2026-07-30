@@ -9,12 +9,18 @@ import {
   inscribirAlumno,
   desinscribirAlumno,
   actualizarTurnoInscripcion,
+  verificarSolapamientoCompleto,
+  resolverConflictosClases,
   NIVELES
 } from '../api/clasesApi.js'
+import { openClaseConflictModal } from './claseConflictModal.js'
 import {
   escapeHTML,
   getConsistentColor,
-  formatHora
+  formatHora,
+  timeToMinutes,
+  minutesToTime,
+  rendimientoBadgeHTML,
 } from '../utils/clasesUtils.js'
 import { Clase } from '../models/clase.model.js'
 import { openRutaSelectorModal } from '../../planificacion/components/rutaSelectorModal.js'
@@ -65,7 +71,7 @@ export async function openClaseModal(clase = null, options = {}) {
   AppModal.open({
     title,
     saveText,
-    size: 'lg',
+    size: 'xl',
     body: _getClaseFormHTML(clase, inscritosIds, inscritosSlots),
     onShow: (modalBody) => {
       _attachModalEvents(modalBody, clase)
@@ -207,8 +213,14 @@ function _getSlotBuilderHTML(inscritosSlots = []) {
       </div>`
   }
 
-  const existingRows = inscritosSlots.length
-    ? inscritosSlots.map(s => slotRow(
+  const sortedSlots = [...inscritosSlots].sort((a, b) => {
+    const minA = timeToMinutes(a.hora_inicio || '23:59')
+    const minB = timeToMinutes(b.hora_inicio || '23:59')
+    return minA - minB
+  })
+
+  const existingRows = sortedSlots.length
+    ? sortedSlots.map(s => slotRow(
         s.alumno_id,
         (s.hora_inicio || '').slice(0, 5),
         (s.hora_fin   || '').slice(0, 5)
@@ -219,9 +231,31 @@ function _getSlotBuilderHTML(inscritosSlots = []) {
     <div id="slots-container" class="mb-2">
       ${existingRows}
     </div>
-    <button type="button" class="btn btn-sm btn-outline-primary w-100" id="btn-add-slot">
-      <i class="bi bi-plus-circle me-1"></i> Agregar turno
-    </button>
+    <div class="d-flex flex-wrap gap-2 mb-2 align-items-center">
+      <button type="button" class="btn btn-sm btn-outline-primary" id="btn-add-slot">
+        <i class="bi bi-plus-circle me-1"></i> Agregar turno
+      </button>
+
+      <div class="input-group input-group-sm flex-grow-1" style="min-width: 210px; max-width: 320px;">
+        <span class="input-group-text bg-body-tertiary"><i class="bi bi-clock me-1"></i> Duración</span>
+        <select class="form-select form-select-sm" id="slot-duration-select" title="Seleccionar duración del turno">
+          <option value="15">15 min</option>
+          <option value="20">20 min</option>
+          <option value="30" selected>30 min</option>
+          <option value="45">45 min</option>
+          <option value="60">60 min (1h)</option>
+          <option value="90">90 min (1.5h)</option>
+          <option value="custom">Personalizado…</option>
+        </select>
+        <button type="button" class="btn btn-outline-success" id="btn-auto-slots" title="Generar franjas según el horario global y la duración seleccionada">
+          <i class="bi bi-magic me-1"></i> Auto-generar
+        </button>
+      </div>
+
+      <button type="button" class="btn btn-sm btn-outline-secondary ms-auto" id="btn-sort-slots" title="Ordenar los turnos en orden ascendente por horario">
+        <i class="bi bi-sort-numeric-down me-1"></i> Ordenar
+      </button>
+    </div>
     <div class="text-end mt-1">
       <small class="text-muted" id="slots-count">
         ${inscritosSlots.length || 0} turno${inscritosSlots.length !== 1 ? 's' : ''} asignado${inscritosSlots.length !== 1 ? 's' : ''}
@@ -331,6 +365,110 @@ function _attachModalEvents(modalBody, clase) {
     _updateSlotsCount()
   })
 
+  // Auto-generar turnos con duración personalizada según el horario global de la clase
+  modalBody.querySelector('#btn-auto-slots')?.addEventListener('click', () => {
+    const durationSelect = modalBody.querySelector('#slot-duration-select')
+    let durationMin = parseInt(durationSelect?.value || '30', 10)
+
+    if (durationSelect?.value === 'custom') {
+      const customVal = prompt('Ingresá la duración de cada turno en minutos (ej: 15, 25, 40, 50):', '30')
+      if (customVal === null) return
+      const parsed = parseInt(customVal, 10)
+      if (isNaN(parsed) || parsed <= 0) {
+        AppToast.warning('La duración ingresada no es válida')
+        return
+      }
+      durationMin = parsed
+    }
+
+    const horaFinInputs = modalBody.querySelectorAll('#modal-horarios-container input[type="time"]')
+    let startStr = ''
+    let endStr = ''
+
+    if (horaFinInputs.length >= 2) {
+      startStr = horaFinInputs[0].value
+      endStr   = horaFinInputs[1].value
+    }
+
+    if (!startStr || !endStr) {
+      AppToast.warning('Por favor definí primero el horario de inicio y fin en "Horarios y Salones"')
+      return
+    }
+
+    const startMin = timeToMinutes(startStr)
+    const endMin   = timeToMinutes(endStr)
+
+    if (endMin <= startMin) {
+      AppToast.warning('La hora de fin debe ser posterior a la hora de inicio')
+      return
+    }
+
+    const turnosGenerados = []
+    for (let m = startMin; m + durationMin <= endMin; m += durationMin) {
+      turnosGenerados.push({
+        inicio: minutesToTime(m),
+        fin: minutesToTime(m + durationMin)
+      })
+    }
+
+    if (turnosGenerados.length === 0) {
+      AppToast.warning(`El horario global de la clase debe durar al menos ${durationMin} minutos`)
+      return
+    }
+
+    const existingRows = Array.from(slotsContainer.querySelectorAll('.slot-row'))
+    const alumnos = _options.alumnos || []
+
+    turnosGenerados.forEach((t, idx) => {
+      let row = existingRows[idx]
+      if (!row) {
+        row = document.createElement('div')
+        row.className = 'slot-row d-flex align-items-center gap-2 mb-2 p-2 rounded border bg-body-tertiary'
+        row.innerHTML = `
+          <select class="form-select form-select-sm slot-alumno-select flex-grow-1" style="min-width:0;" required>
+            <option value="">Seleccionar alumno…</option>
+            ${alumnos.map(a => `<option value="${a.id}">${escapeHTML(a.nombre_completo)}${a.instrumento_principal ? ` — ${escapeHTML(a.instrumento_principal)}` : ''}</option>`).join('')}
+          </select>
+          <div class="d-flex align-items-center gap-1 flex-shrink-0">
+            <input type="time" class="form-control form-control-sm slot-hora-inicio" style="width:110px;" required title="Hora inicio">
+            <span class="text-muted small">–</span>
+            <input type="time" class="form-control form-control-sm slot-hora-fin" style="width:110px;" required title="Hora fin">
+          </div>
+          <button type="button" class="btn btn-sm btn-link text-danger p-0 btn-remove-slot" title="Quitar turno">
+            <i class="bi bi-x-circle-fill fs-5"></i>
+          </button>`
+        slotsContainer.appendChild(row)
+      }
+      row.querySelector('.slot-hora-inicio').value = t.inicio
+      row.querySelector('.slot-hora-fin').value = t.fin
+    })
+
+    _updateSlotsCount()
+    _sortSlotRows()
+    AppToast.success(`Se generaron ${turnosGenerados.length} franjas de ${durationMin} min (${startStr} a ${endStr})`)
+  })
+
+  // Función para ordenar turnos en la UI por hora_inicio ascendente
+  const _sortSlotRows = () => {
+    if (!slotsContainer) return
+    const rows = Array.from(slotsContainer.querySelectorAll('.slot-row'))
+    if (rows.length <= 1) return
+
+    rows.sort((a, b) => {
+      const hA = a.querySelector('.slot-hora-inicio')?.value || '23:59'
+      const hB = b.querySelector('.slot-hora-inicio')?.value || '23:59'
+      return timeToMinutes(hA) - timeToMinutes(hB)
+    })
+
+    rows.forEach(r => slotsContainer.appendChild(r))
+  }
+
+  // Evento botón Ordenar turnos
+  modalBody.querySelector('#btn-sort-slots')?.addEventListener('click', () => {
+    _sortSlotRows()
+    AppToast.success('Turnos ordenados por horario ascendente')
+  })
+
   // Quitar turno (delegado)
   slotsContainer?.addEventListener('click', e => {
     if (e.target.closest('.btn-remove-slot')) {
@@ -412,6 +550,7 @@ async function _handleSave(modalBody, originalClase) {
       hora_inicio: row.querySelector('.slot-hora-inicio').value,
       hora_fin:    row.querySelector('.slot-hora-fin').value,
     })).filter(s => s.alumno_id)
+      .sort((a, b) => timeToMinutes(a.hora_inicio || '23:59') - timeToMinutes(b.hora_inicio || '23:59'))
 
   const _syncGrupal = async (claseId) => {
     const newIds = Array.from(modalBody.querySelectorAll('.alumnos-list input[type="checkbox"]:checked')).map(cb => cb.value)
@@ -448,6 +587,36 @@ async function _handleSave(modalBody, originalClase) {
         : inscribirAlumno(claseId, s.alumno_id, s.hora_inicio, s.hora_fin)
     ))
     return true
+  }
+
+  // ── Verificación de Solapes/Conflictos ──────────────────────────────────
+  if (!modalBody.dataset.overrideConflicts) {
+    const selectedAlumnoIds = formData.tipo_clase === 'rotativa'
+      ? _readSlots().map(s => s.alumno_id)
+      : Array.from(modalBody.querySelectorAll('.alumnos-list input[type="checkbox"]:checked')).map(cb => cb.value)
+
+    const conflictos = await verificarSolapamientoCompleto({
+      claseId: isEdicion ? originalClase.id : null,
+      maestroId: formData.maestro_principal_id,
+      horarios: formData.horarios,
+      alumnosIds: selectedAlumnoIds
+    })
+
+    if (conflictos.length > 0) {
+      return new Promise((resolve) => {
+        openClaseConflictModal({
+          conflictos,
+          onConfirm: async () => {
+            modalBody.dataset.overrideConflicts = 'true'
+            const saved = await _handleSave(modalBody, originalClase)
+            if (saved) {
+              await resolverConflictosClases(conflictos, formData.nombre)
+            }
+            resolve(saved)
+          }
+        })
+      })
+    }
   }
 
   try {
@@ -549,6 +718,7 @@ function _renderHorariosContainer(horarios = []) {
   return horarios.map((h, i) => _renderHorarioRow(h, i)).join('')
 }
 
+
 function _getAlumnosSelectorHTML(selectedIds = []) {
   const selectedSet = new Set(selectedIds || [])
   const alumnos = [...(_options.alumnos || [])].sort((a, b) => {
@@ -575,6 +745,7 @@ function _getAlumnosSelectorHTML(selectedIds = []) {
             <input class="form-check-input" type="checkbox" value="${a.id}" id="chk-a-${a.id}" ${selectedIds.includes(a.id) ? 'checked' : ''}>
             <label class="form-check-label small w-100 cursor-pointer" for="chk-a-${a.id}">
               ${escapeHTML(a.nombre_completo)} <span class="text-muted">(${escapeHTML(a.instrumento_principal || 'N/A')})</span>
+              ${rendimientoBadgeHTML(a)}
             </label>
           </div>
         `).join('')}

@@ -1,0 +1,12 @@
+/* ============================================================================
+   SOI BREAKPOINTS — Standard responsive breakpoints
+   Use these values in @media queries for consistent responsive behavior.
+   Note: CSS custom properties cannot be used inside @media rules directly;
+   use the px values below and reference this file as the source of truth.
+   ============================================================================ */
+
+:root {
+  --bp-sm: 576px;
+  --bp-md: 768px;
+  --bp-lg: 1024px;
+}

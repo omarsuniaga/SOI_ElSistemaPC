@@ -189,14 +189,3 @@
   }
 }
 
-/* ── Dark Mode Support ── */
-@media (prefers-color-scheme: dark) {
-  .tarea-card {
-    border-color: rgba(255, 255, 255, 0.1);
-  }
-
-  .tareas-filters .form-control,
-  .tareas-filters .form-select {
-    background-color: rgba(0, 0, 0, 0.3);
-  }
-}

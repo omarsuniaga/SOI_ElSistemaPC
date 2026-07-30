@@ -102,6 +102,102 @@ export async function fetchSchedulingData() {
 }
 
 /**
+ * Fetches current registered schedule assignments from the database
+ * along with student enrollments (alumnos_clases) for per-student filtering.
+ */
+export async function fetchRegisteredScheduleData() {
+  if (config.isDemoMode) {
+    // Generate simulated assignments for demo mode
+    const assignments = [
+      { id: '1', clase_id: 'c-001', clase_nombre: 'Violín Inicial', maestro_id: 'm-001', maestro_nombre: 'Jaime de la Cruz', salon_id: 's-104', salon_nombre: 'Salón Vivaldi (Violín)', dia: 'lunes', hora_inicio: '08:00', hora_fin: '10:00', alumnos_ids: ['a-101', 'a-102'] },
+      { id: '2', clase_id: 'c-002', clase_nombre: 'Violín Intermedio', maestro_id: 'm-001', maestro_nombre: 'Jaime de la Cruz', salon_id: 's-104', salon_nombre: 'Salón Vivaldi (Violín)', dia: 'miércoles', hora_inicio: '10:00', hora_fin: '12:00', alumnos_ids: ['a-101', 'a-103'] },
+      { id: '3', clase_id: 'c-003', clase_nombre: 'Piano Inicial A', maestro_id: 'm-002', maestro_nombre: 'María Naroldy Hilario', salon_id: 's-103', salon_nombre: 'Salón Bach (Piano)', dia: 'martes', hora_inicio: '09:00', hora_fin: '11:00', alumnos_ids: ['a-102', 'a-104'] },
+      { id: '4', clase_id: 'c-004', clase_nombre: 'Teoría y Solfeo I', maestro_id: 'm-006', maestro_nombre: 'Carlos Mendoza', salon_id: 's-101', salon_nombre: 'Salón Mozart (Grande)', dia: 'jueves', hora_inicio: '14:00', hora_fin: '16:00', alumnos_ids: ['a-101', 'a-102', 'a-103', 'a-104'] }
+    ];
+
+    const alumnos = [
+      { id: 'a-101', nombre_completo: 'Mateo Alejandro García', instrumento_principal: 'Violín' },
+      { id: 'a-102', nombre_completo: 'Sofía Isabella Martínez', instrumento_principal: 'Piano' },
+      { id: 'a-103', nombre_completo: 'Gabriel Eduardo López', instrumento_principal: 'Violín' },
+      { id: 'a-104', nombre_completo: 'Lucía Fernanda Rodríguez', instrumento_principal: 'Solfeo' }
+    ];
+
+    return {
+      assignments,
+      alumnos,
+      maestros: mockTeachers,
+      salones: mockSalones,
+      clases: mockClases
+    };
+  }
+
+  try {
+    const [clasesRes, horariosRes, maestrosRes, salonesRes, inscripcionesRes, alumnosRes] = await Promise.all([
+      supabase.from('clases').select('id, nombre, maestro_principal_id, instrumento, estado'),
+      supabase.from('clase_horarios').select('*'),
+      supabase.from('maestros').select('id, nombre_completo, nombre'),
+      supabase.from('salones').select('id, nombre, capacidad'),
+      supabase.from('alumnos_clases').select('clase_id, alumno_id').eq('activo', true),
+      supabase.from('alumnos').select('id, nombre_completo, instrumento_principal').eq('activo', true).order('nombre_completo')
+    ]);
+
+    const clases = clasesRes.data || [];
+    const horarios = horariosRes.data || [];
+    const maestros = maestrosRes.data || [];
+    const salones = salonesRes.data || [];
+    const inscripciones = inscripcionesRes.data || [];
+    const alumnos = alumnosRes.data || [];
+
+    const clasesMap = clases.reduce((acc, c) => { acc[c.id] = c; return acc; }, {});
+    const maestrosMap = maestros.reduce((acc, m) => { acc[m.id] = m.nombre_completo || m.nombre; return acc; }, {});
+    const salonesMap = salones.reduce((acc, s) => { acc[s.id] = s.nombre; return acc; }, {});
+
+    const alumnosByClase = inscripciones.reduce((acc, row) => {
+      if (row.clase_id) {
+        if (!acc[row.clase_id]) acc[row.clase_id] = [];
+        if (row.alumno_id && !acc[row.clase_id].includes(row.alumno_id)) {
+          acc[row.clase_id].push(row.alumno_id);
+        }
+      }
+      return acc;
+    }, {});
+
+    const assignments = horarios.map(h => {
+      const clase = clasesMap[h.clase_id] || {};
+      const maestroId = h.maestro_id || clase.maestro_principal_id;
+      const maestroNombre = maestrosMap[maestroId] || 'Sin maestro';
+      const salonNombre = salonesMap[h.salon_id] || 'Sin salón';
+
+      return {
+        id: h.id,
+        clase_id: h.clase_id,
+        clase_nombre: clase.nombre || 'Clase sin nombre',
+        instrumento: clase.instrumento || 'General',
+        maestro_id: maestroId,
+        maestro_nombre: maestroNombre,
+        salon_id: h.salon_id,
+        salon_nombre: salonNombre,
+        dia: (h.dia || '').toLowerCase(),
+        hora_inicio: (h.hora_inicio || '').slice(0, 5),
+        hora_fin: (h.hora_fin || '').slice(0, 5),
+        alumnos_ids: alumnosByClase[h.clase_id] || []
+      };
+    });
+
+    return {
+      assignments,
+      alumnos,
+      maestros,
+      salones,
+      clases
+    };
+  } catch (error) {
+    console.error('[horarioBuilderApi] Error in fetchRegisteredScheduleData:', error);
+    throw error;
+  }
+}
+
+/**
  * Saves a schedule run as a draft or applies it.
  */
 export async function saveScheduleRun(runData) {
@@ -149,7 +245,6 @@ export async function applyScheduleRun(runId, assignments) {
       run.estado = 'aplicado';
       run.applied_at = new Date().toISOString();
     }
-    // Update local mock class schedules
     assignments.forEach(as => {
       const cl = mockClases.find(c => c.id === as.clase_id);
       if (cl) {
@@ -165,11 +260,8 @@ export async function applyScheduleRun(runId, assignments) {
   }
 
   try {
-    // 1. Delete old class schedules affected or all?
-    // According to plan, we should batch replace the active schedules for these classes.
     const classIds = [...new Set(assignments.map(a => a.clase_id))];
     
-    // Perform in transaction/sequential queries
     const { error: deleteErr } = await supabase
       .from('clase_horarios')
       .delete()
@@ -177,7 +269,6 @@ export async function applyScheduleRun(runId, assignments) {
 
     if (deleteErr) throw deleteErr;
 
-    // 2. Insert new schedules
     const newHorarios = assignments.map(a => ({
       clase_id: a.clase_id,
       dia: a.dia,
@@ -193,7 +284,6 @@ export async function applyScheduleRun(runId, assignments) {
 
     if (insertErr) throw insertErr;
 
-    // 3. Update the run status to 'aplicado'
     const { error: updateRunErr } = await supabase
       .from('schedule_runs')
       .update({ estado: 'aplicado', applied_at: new Date().toISOString() })

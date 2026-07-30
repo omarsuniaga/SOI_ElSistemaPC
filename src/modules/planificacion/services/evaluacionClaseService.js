@@ -10,6 +10,19 @@
 import { supabase } from '../../../lib/supabaseClient.js'
 
 const ESTADOS_VALIDOS = ['sin_evaluar', 'inicia', 'en_progreso', 'avanzado', 'dominado']
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+
+function _isUuid(value) {
+  return typeof value === 'string' && UUID_REGEX.test(value)
+}
+
+function _isVirtualLikeId(value) {
+  return typeof value === 'string' && /^(nd|demo|local|obj|ind|al|clase|nodo|alu|mae|stu|ses|plan|route|node|tarea|item|preview|temp)[-_]/i.test(value)
+}
+
+function _shouldSkipRemoteWrite(values) {
+  return values.some((value) => typeof value === 'string' && !_isUuid(value) && _isVirtualLikeId(value))
+}
 
 /**
  * Register or update an evaluation for a student on a specific indicator.
@@ -21,6 +34,11 @@ const ESTADOS_VALIDOS = ['sin_evaluar', 'inicia', 'en_progreso', 'avanzado', 'do
 export async function registrarEvaluacion(data) {
   if (!data.alumno_id || !data.indicator_id || !data.clase_id) {
     throw new Error('alumno_id, indicator_id y clase_id son requeridos')
+  }
+
+  if (_shouldSkipRemoteWrite([data.alumno_id, data.indicator_id, data.clase_id])) {
+    console.warn('[registrarEvaluacion] Se omite la escritura remota para IDs virtuales/no UUID:', data)
+    return null
   }
 
   if (data.nota !== null && data.nota !== undefined) {

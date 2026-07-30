@@ -2350,14 +2350,6 @@ body:has(.app-sidebar) .page-container {
     -webkit-backdrop-filter: blur(20px);
   }
   
-  /* Dark mode bottom nav */
-  @media (prefers-color-scheme: dark) {
-    .app-bottom-nav {
-      background: rgba(0, 0, 0, 0.95);
-      border-top-color: var(--apple-hairline);
-    }
-  }
-  
   .app-bottom-nav .bottom-tab {
     display: flex;
     flex-direction: column;

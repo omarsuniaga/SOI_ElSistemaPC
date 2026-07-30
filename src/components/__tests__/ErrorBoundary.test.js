@@ -22,6 +22,8 @@ describe('ErrorBoundary', () => {
 
   it('catches errors and calls onError handler', async () => {
     const onError = vi.fn()
+    // Suppress expected console error for this test
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
     const errorFn = () => { throw new Error('Test error') }
     
     renderErrorBoundary(container, {
@@ -34,6 +36,7 @@ describe('ErrorBoundary', () => {
     
     await new Promise(resolve => setTimeout(resolve, 10))
     expect(onError).toHaveBeenCalled()
+    consoleSpy.mockRestore()
   })
 
   it('displays error message to user', async () => {

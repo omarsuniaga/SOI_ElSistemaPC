@@ -1,4 +1,6 @@
 export { escapeHTML } from '../../../shared/utils/sanitize.js'
+import { escapeHTML } from '../../../shared/utils/sanitize.js'
+import { normalizeText } from '../../../core/utils/normalizeText.js'
 
 /**
  * Utilidades para el mÃ³dulo de Clases
@@ -194,12 +196,14 @@ export function timeToMinutes(timeStr) {
   if (!timeStr) return 0
   const cleanTime = timeStr.trim()
   let isPM = false
+  let isAM = false
   let timePart = cleanTime
 
   if (cleanTime.toLowerCase().includes('pm')) {
     isPM = true
     timePart = cleanTime.toLowerCase().replace('pm', '').trim()
   } else if (cleanTime.toLowerCase().includes('am')) {
+    isAM = true
     timePart = cleanTime.toLowerCase().replace('am', '').trim()
   }
 
@@ -209,10 +213,65 @@ export function timeToMinutes(timeStr) {
 
   if (isPM && hours < 12) {
     hours += 12
-  } else if (!isPM && hours === 12) {
+  } else if (isAM && hours === 12) {
     hours = 0
   }
 
   return hours * 60 + minutes
 }
+
+// Variantes de escritura que aparecen en datos reales y que la regla de
+// plural/acento no puede resolver por sí sola (cambian de raíz, no de
+// sufijo): "violonchelo" vs "violoncello", etc.
+const SINONIMOS_INSTRUMENTO = {
+  violoncello: 'cello',
+  violonchelo: 'cello',
+}
+
+/**
+ * Normaliza un nombre de instrumento para comparar alumno.instrumento_principal
+ * contra clase.instrumento pese a variaciones reales de captura: acentos
+ * ("Violín" vs "Violin"), plural irregular ("Violín" vs "Violines", "Viola"
+ * vs "Violas") y sinónimos de escritura ("Violonchelo" vs "Violoncello").
+ * No es infalible — es la mejor aproximación sin normalizar los datos en la DB.
+ */
+export function normalizarInstrumento(raw) {
+  if (!raw) return ''
+  let s = normalizeText(raw)
+  if (SINONIMOS_INSTRUMENTO[s]) return SINONIMOS_INSTRUMENTO[s]
+  if (s.endsWith('es') && s.length > 4) s = s.slice(0, -2)
+  else if (s.endsWith('s') && s.length > 3) s = s.slice(0, -1)
+  return SINONIMOS_INSTRUMENTO[s] || s
+}
+
+const NIVEL_LABEL_ACADEMICO = { basico: 'Básico', intermedio: 'Intermedio', avanzado: 'Avanzado' }
+
+/**
+ * Etiqueta "Nivel · Prom. X" para ubicar de un vistazo el rendimiento de un
+ * alumno al armar/revisar una clase. `alumno` debe traer `nivel` y
+ * `promedio_notas` (ver alumnosSupabase.obtenerResumenAcademico para de
+ * dónde sale ese dato). Devuelve '' si no hay nada que mostrar.
+ */
+export function rendimientoBadgeHTML(alumno = {}) {
+  const nivel = alumno.nivel ? (NIVEL_LABEL_ACADEMICO[alumno.nivel] || alumno.nivel) : null
+  const promedio = alumno.promedio_notas != null ? Number(alumno.promedio_notas) : null
+  if (!nivel && promedio == null) return ''
+  const partes = [nivel, promedio != null ? `Prom. ${promedio}` : null].filter(Boolean)
+  return `<span class="badge text-bg-light border ms-1" style="font-size: 0.7rem; font-weight: 500;">${escapeHTML(partes.join(' · '))}</span>`
+}
+
+/**
+ * Convierte minutos desde la medianoche a string de hora (HH:MM)
+ * @param {number} mins
+ * @returns {string} HH:MM
+ */
+export function minutesToTime(mins) {
+  if (mins === null || mins === undefined || isNaN(mins)) return '00:00'
+  const h = Math.floor(mins / 60) % 24
+  const m = mins % 60
+  const hh = String(h).padStart(2, '0')
+  const mm = String(m).padStart(2, '0')
+  return `${hh}:${mm}`
+}
+
 

@@ -26,6 +26,7 @@ setup-structure.*
 
 # OS files
 nul
+NUL
 Thumbs.db
 
 # Editor directories and files
@@ -56,3 +57,6 @@ supabase/.temp/
 
 # Claude AI worktrees and metadata
 .claude/
+
+# Graphify artifacts
+graphify-out/

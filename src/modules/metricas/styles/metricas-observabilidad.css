@@ -1,8 +1,7 @@
 /* ============================================================================
    MÉTRICAS — OBSERVABILIDAD HUB STYLES
    External CSS extracted from inline styles for CSP compliance.
-   Conventions: .obs-* prefix, uses --pm-* and --apple-* custom properties,
-   Bootstrap 5.3 tokens.
+   Conventions: .obs-* prefix, uses --soi-* and Bootstrap 5.3 tokens.
    ============================================================================ */
 
 /* ---------------------------------------------------------------------------
@@ -178,7 +177,7 @@
   background: none;
   border: none;
   border-radius: 10px;
-  color: var(--pm-text-muted, #6c757d);
+   color: var(--soi-text-muted);
   padding: 0.75rem 1rem;
   text-align: left;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
@@ -249,7 +248,7 @@
   padding: 0.4rem 0.65rem;
   font-size: 0.725rem;
   font-family: var(--bs-font-monospace, monospace);
-  color: var(--pm-text-muted, #6c757d);
+   color: var(--soi-text-muted);
   display: inline-flex;
   align-items: center;
 }
@@ -378,4 +377,56 @@
 /* Border color utility for guia modal */
 .obs-border-subtle {
   border-color: rgba(var(--bs-border-color-rgb, 222, 226, 230), 0.15) !important;
+}
+
+/* ============================================================================
+   RESPONSIVE — Mobile breakpoints for metricas views
+   ============================================================================ */
+
+@media (max-width: 768px) {
+  .obs-terminal-body {
+    height: 220px;
+    font-size: 0.7rem;
+  }
+
+  .obs-terminal-container {
+    padding: 0.75rem;
+    border-radius: 8px;
+  }
+
+  .obs-guia-modal-body .vstack {
+    gap: 0.75rem;
+  }
+
+  .obs-guia-panel-card {
+    padding: 0.85rem;
+  }
+
+  .obs-guia-section-title {
+    font-size: 0.9rem;
+  }
+
+  .obs-loading-area {
+    min-height: 250px;
+  }
+}
+
+@media (max-width: 576px) {
+  .obs-terminal-body {
+    height: 180px;
+    font-size: 0.65rem;
+    line-height: 1.4;
+  }
+
+  .obs-terminal-container {
+    padding: 0.5rem;
+  }
+
+  .obs-ia-result-box {
+    max-width: 100%;
+  }
+
+  .obs-time-input {
+    width: 80px;
+  }
 }

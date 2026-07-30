@@ -31,13 +31,13 @@
     font-weight: 800;
     letter-spacing: -0.04em;
     margin-bottom: 0.5rem;
-    background: linear-gradient(135deg, var(--pm-primary), #5856d6);
+    background: linear-gradient(135deg, var(--soi-color-primary), #5856d6);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
 }
 
 .aa-subtitle {
-    color: var(--pm-text-muted);
+    color: var(--soi-text-muted);
     font-size: 1.1rem;
     margin-bottom: 2rem;
 }
@@ -57,7 +57,7 @@
 .aa-table th {
     padding: 1rem;
     text-align: left;
-    color: var(--pm-text-muted);
+    color: var(--soi-text-muted);
     font-weight: 600;
     font-size: 0.85rem;
     text-transform: uppercase;
@@ -75,19 +75,19 @@
 
 .aa-table td {
     padding: 1.25rem 1rem;
-    background: var(--pm-surface);
-    border-top: 1px solid var(--pm-border);
-    border-bottom: 1px solid var(--pm-border);
+    background: var(--soi-surface);
+    border-top: 1px solid var(--soi-border);
+    border-bottom: 1px solid var(--soi-border);
 }
 
 .aa-table td:first-child {
-    border-left: 1px solid var(--pm-border);
+    border-left: 1px solid var(--soi-border);
     border-top-left-radius: 12px;
     border-bottom-left-radius: 12px;
 }
 
 .aa-table td:last-child {
-    border-right: 1px solid var(--pm-border);
+    border-right: 1px solid var(--soi-border);
     border-top-right-radius: 12px;
     border-bottom-right-radius: 12px;
 }
@@ -148,10 +148,10 @@
 }
 
 .aa-hotspot-card {
-    background: var(--pm-surface);
+    background: var(--soi-surface);
     border-radius: 16px;
     padding: 1.25rem;
-    border: 1px solid var(--pm-border);
+    border: 1px solid var(--soi-border);
     display: flex;
     flex-direction: column;
     gap: 0.75rem;
@@ -160,7 +160,7 @@
 
 .aa-hotspot-card:hover {
     box-shadow: 0 10px 20px rgba(0,0,0,0.1);
-    border-color: var(--pm-danger);
+    border-color: var(--soi-color-danger);
 }
 
 .aa-hotspot-header {
@@ -172,23 +172,23 @@
 .aa-hotspot-name {
     font-weight: 700;
     font-size: 1rem;
-    color: var(--pm-text);
+    color: var(--soi-text);
 }
 
 .aa-hotspot-level {
     font-size: 0.8rem;
-    color: var(--pm-text-muted);
+    color: var(--soi-text-muted);
 }
 
 .aa-hotspot-rate {
     font-size: 1.5rem;
     font-weight: 800;
-    color: var(--pm-danger);
+    color: var(--soi-color-danger);
 }
 
 .aa-hotspot-meta {
     font-size: 0.8rem;
-    color: var(--pm-text-muted);
-    border-top: 1px solid var(--pm-border);
+    color: var(--soi-text-muted);
+    border-top: 1px solid var(--soi-border);
     padding-top: 0.5rem;
 }

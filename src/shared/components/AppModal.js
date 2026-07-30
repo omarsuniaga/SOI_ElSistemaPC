@@ -33,6 +33,15 @@ function ensureDOM() {
       flex-shrink: 0;
     }
 
+    @media (min-width: 992px) {
+      #${MODAL_ID} .app-modal-dialog.modal-size-xl {
+        width: 75vw !important;
+        max-width: 75vw !important;
+        height: 75vh !important;
+        max-height: 75vh !important;
+      }
+    }
+
     @media (max-width: 767.98px) {
       #${MODAL_ID} {
         padding: 0.5rem;
@@ -107,6 +116,7 @@ function ensureDOM() {
         background: linear-gradient(135deg, var(--pm-primary, var(--bs-primary, #0d6efd)) 0%, #5856d6 100%);
       ">
         <h5 class="app-modal-title mb-0 fw-bold" style="flex:1;font-size:1.0625rem;color:white;font-weight:600;letter-spacing:-0.01em;"></h5>
+        <div class="app-modal-header-actions d-flex align-items-center gap-1 me-1"></div>
         <button class="app-modal-close-x" type="button" aria-label="Cerrar" style="
           background:rgba(255,255,255,0.15);border:none;cursor:pointer;
           width:28px;height:28px;border-radius:50%;
@@ -142,28 +152,29 @@ function ensureDOM() {
 
 function getEls() {
   return {
-    backdrop: document.getElementById(BACKDROP_ID),
-    modal:    document.getElementById(MODAL_ID),
-    dialog:   document.querySelector(`#${MODAL_ID} .app-modal-dialog`),
-    title:    document.querySelector(`#${MODAL_ID} .app-modal-title`),
-    body:     document.querySelector(`#${MODAL_ID} .app-modal-body`),
-    closeX:   document.querySelector(`#${MODAL_ID} .app-modal-close-x`),
-    btnCancel:document.querySelector(`#${MODAL_ID} .app-modal-btn-cancel`),
-    btnSave:  document.querySelector(`#${MODAL_ID} .app-modal-btn-save`),
-    btnDelete:document.querySelector(`#${MODAL_ID} .app-modal-btn-delete`),
-    saveText: document.querySelector(`#${MODAL_ID} .app-modal-save-text`),
+    backdrop:      document.getElementById(BACKDROP_ID),
+    modal:         document.getElementById(MODAL_ID),
+    dialog:        document.querySelector(`#${MODAL_ID} .app-modal-dialog`),
+    title:         document.querySelector(`#${MODAL_ID} .app-modal-title`),
+    headerActions: document.querySelector(`#${MODAL_ID} .app-modal-header-actions`),
+    body:          document.querySelector(`#${MODAL_ID} .app-modal-body`),
+    closeX:        document.querySelector(`#${MODAL_ID} .app-modal-close-x`),
+    btnCancel:     document.querySelector(`#${MODAL_ID} .app-modal-btn-cancel`),
+    btnSave:       document.querySelector(`#${MODAL_ID} .app-modal-btn-save`),
+    btnDelete:     document.querySelector(`#${MODAL_ID} .app-modal-btn-delete`),
+    saveText:      document.querySelector(`#${MODAL_ID} .app-modal-save-text`),
   }
 }
 
 // Sizes
-const SIZES = { sm: '400px', md: '520px', lg: '720px', xl: '960px' }
+const SIZES = { sm: '400px', md: '520px', lg: '720px', xl: '75vw' }
 
 export const AppModal = {
   _saveHandler: null,
   _cancelHandler: null,
   _keydownHandler: null,
 
-  open({ title = '', body = '', saveText = 'Guardar', cancelText = 'Cancelar', deleteText = 'Eliminar', onSave = null, onCancel = null, onDelete = null, onShow = null, onOpen = null, size = 'md', hideSave = false } = {}) {
+  open({ title = '', body = '', headerActions = '', autoFocus = true, saveText = 'Guardar', cancelText = 'Cancelar', deleteText = 'Eliminar', onSave = null, onCancel = null, onDelete = null, onShow = null, onOpen = null, size = 'md', hideSave = false } = {}) {
     ensureDOM()
     const els = getEls()
 
@@ -172,11 +183,24 @@ export const AppModal = {
     const footer = els.dialog.querySelector('.app-modal-footer')
     if (footer) footer.style.removeProperty('display')
 
-    // Size
+    // Size class & maxWidth
+    els.dialog.classList.remove('modal-size-sm', 'modal-size-md', 'modal-size-lg', 'modal-size-xl')
+    els.dialog.classList.add(`modal-size-${size}`)
     els.dialog.style.maxWidth = SIZES[size] || SIZES.md
 
     // Content
     els.title.textContent = title
+    if (els.headerActions) {
+      if (typeof headerActions === 'string') {
+        els.headerActions.innerHTML = headerActions
+      } else if (headerActions instanceof HTMLElement) {
+        els.headerActions.innerHTML = ''
+        els.headerActions.appendChild(headerActions)
+      } else {
+        els.headerActions.innerHTML = ''
+      }
+    }
+
     if (typeof body === 'string') {
       els.body.innerHTML = body
     } else if (body instanceof HTMLElement) {
@@ -202,11 +226,13 @@ export const AppModal = {
       els.btnDelete.style.display = 'none'
     }
 
-    // Trap focus on first input when open
-    setTimeout(() => {
-      const first = els.body.querySelector('input,select,textarea')
-      if (first) first.focus()
-    }, 280)
+    // Trap focus on first input when open (unless autoFocus === false)
+    if (autoFocus) {
+      setTimeout(() => {
+        const first = els.body.querySelector('input,select,textarea')
+        if (first) first.focus()
+      }, 280)
+    }
 
     // Wire handlers — remove old ones first
     this._detachHandlers()
@@ -302,6 +328,7 @@ export const AppModal = {
       els.backdrop.style.display = 'none'
       els.modal.style.display = 'none'
       els.body.innerHTML = ''
+      if (els.headerActions) els.headerActions.innerHTML = ''
       document.body.style.overflow = ''
     }, 220)
   },

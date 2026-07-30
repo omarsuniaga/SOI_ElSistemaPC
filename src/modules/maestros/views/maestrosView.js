@@ -2,7 +2,7 @@ import '../styles/maestros.css'
 import { AppModal } from '../../../shared/components/AppModal.js'
 import {
   obtenerMaestros,
-  crearMaestro,
+  crearMaestroConAuth,
   actualizarMaestro,
   inactivarMaestro,
   activarMaestro,
@@ -503,7 +503,7 @@ function openCreateModal() {
       </div>
     </form>`,
     onShow: (modalBody) => attachEspecialidadesEvents(modalBody),
-    saveText: 'Guardar',
+    saveText: 'Crear Maestro',
     onSave: async (modalBody) => {
       const nombre = modalBody.querySelector('#modal-nombre').value.trim()
       const email = modalBody.querySelector('#modal-email').value.trim().toLowerCase()
@@ -533,62 +533,29 @@ function openCreateModal() {
         return false
       }
 
-      if (email) {
-        const emailExiste = await validarEmail(email)
-        if (emailExiste) {
-          showToast('El email ya está registrado', 'error')
-          return false
-        }
+      const emailExiste = await validarEmail(email)
+      if (emailExiste) {
+        showToast('El email ya está registrado', 'error')
+        return false
       }
 
       const especialidades = getEspecialidadesFromModal(modalBody)
 
-      try {
-        // 1. Crear auth user
-        const { data: authData, error: signUpError } = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            data: { full_name: nombre, rol: 'maestro' },
-          },
-        })
+      await crearMaestroConAuth({
+        nombre,
+        email,
+        password,
+        telefono,
+        instrumento,
+        especialidades,
+        bio,
+      })
 
-        if (signUpError) {
-          showToast(signUpError.message || 'Error al crear usuario', 'error')
-          return false
-        }
-
-        if (!authData?.user) {
-          showToast('No se pudo crear el usuario', 'error')
-          return false
-        }
-
-        const userId = authData.user.id
-
-        // 2. Activar perfil inmediatamente (admin lo está creando)
-        await supabase.from('profiles').update({ estado: 'activo' }).eq('id', userId)
-
-        // 3. Actualizar maestros con datos adicionales
-        await supabase
-          .from('maestros')
-          .update({
-            tlf: telefono || null,
-            especialidad: instrumento || null,
-            resena: bio || null,
-            especialidades,
-          })
-          .eq('user_id', userId)
-
-        // 4. Recargar la lista (el trigger ya creó el row en maestros)
-        const maestros = await obtenerMaestros()
-        state.maestros = maestros
-        state.maestrosOriginales = [...maestros]
-        applyFilters()
-        showToast('Maestro creado exitosamente. Ya puede iniciar sesión.', 'success')
-      } catch (error) {
-        console.error('Error creando maestro:', error)
-        showToast('Error al crear el maestro: ' + error.message, 'error')
-      }
+      const maestros = await obtenerMaestros()
+      state.maestros = maestros
+      state.maestrosOriginales = [...maestros]
+      applyFilters()
+      showToast('Maestro creado exitosamente. Ya puede iniciar sesión.', 'success')
     },
   })
 }
@@ -699,10 +666,26 @@ function openViewModal(id) {
 
   const nombre = maestro.nombre || maestro.name || '-'
   const isActive = maestro.is_active ?? true
+  const headerActionsHTML = `
+    <div class="d-flex align-items-center gap-1">
+      <button class="btn btn-sm text-white border-0 d-inline-flex align-items-center justify-content-center px-2 py-1" id="modal-view-btn-pdf" style="background: rgba(255,255,255,0.18); font-size: 0.8rem; border-radius: 6px;" type="button" title="Descargar Reporte PDF">
+        <i class="bi bi-file-earmark-pdf me-1"></i>PDF
+      </button>
+      <button class="btn btn-sm text-white border-0 d-inline-flex align-items-center justify-content-center px-2 py-1" id="modal-view-btn-edit" style="background: rgba(255,255,255,0.18); font-size: 0.8rem; border-radius: 6px;" type="button" title="Editar Perfil">
+        <i class="bi bi-pencil me-1"></i>Editar
+      </button>
+      <button class="btn btn-sm text-white border-0 d-inline-flex align-items-center justify-content-center px-2 py-1" id="modal-view-btn-delete" style="background: rgba(220, 53, 69, 0.45); font-size: 0.8rem; border-radius: 6px;" type="button" title="Eliminar Maestro">
+        <i class="bi bi-trash me-1"></i>Eliminar
+      </button>
+    </div>
+  `
+
   AppModal.open({
-    title: nombre,
-    hideSave: true,
-    cancelText: 'Cerrar',
+    title:         nombre,
+    headerActions: headerActionsHTML,
+    autoFocus:     false,
+    hideSave:      true,
+    cancelText:    'Cerrar',
     body: `
       <div class="row">
         <div class="col-md-6">
@@ -769,28 +752,17 @@ function openViewModal(id) {
           </div>
         </div>
       </div>
-      
-      <div class="d-flex justify-content-end gap-2 pt-3 border-top mt-auto">
-        <button class="btn btn-outline-danger me-auto d-flex align-items-center gap-1" id="modal-view-btn-pdf">
-          <i class="bi bi-file-earmark-pdf"></i> Descargar Reporte PDF
-        </button>
-        <button class="btn btn-outline-danger" id="modal-view-btn-delete">
-          <i class="bi bi-trash me-1"></i> Eliminar
-        </button>
-        <button class="btn btn-primary" id="modal-view-btn-edit">
-          <i class="bi bi-pencil me-1"></i> Editar Perfil
-        </button>
-      </div>
     `,
     onShow: async (modalBody) => {
-      modalBody.querySelector('#modal-view-btn-pdf')?.addEventListener('click', (e) => {
+      const dialog = modalBody.closest('.app-modal-dialog')
+      dialog?.querySelector('#modal-view-btn-pdf')?.addEventListener('click', (e) => {
         descargarReporteMaestroPdf(maestro, e.currentTarget)
       })
-      modalBody.querySelector('#modal-view-btn-edit')?.addEventListener('click', () => {
+      dialog?.querySelector('#modal-view-btn-edit')?.addEventListener('click', () => {
         AppModal.close()
         setTimeout(() => openEditModal(id), 300)
       })
-      modalBody.querySelector('#modal-view-btn-delete')?.addEventListener('click', () => {
+      dialog?.querySelector('#modal-view-btn-delete')?.addEventListener('click', () => {
         AppModal.close()
         setTimeout(() => openDeleteModal(id), 300)
       })

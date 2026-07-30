@@ -49,20 +49,20 @@
 
 /* Text Styles - Theme Aware */
 [data-bs-theme="light"] .list-group-item .fw-bold {
-  color: #1a1a1a;
+  color: var(--soi-text);
 }
 
 [data-bs-theme="dark"] .list-group-item .fw-bold {
-  color: #f0f0f0;
+  color: var(--soi-surface-raised);
 }
 
 /* Small text styles */
 [data-bs-theme="light"] .list-group-item .text-muted {
-  color: #6c757d !important;
+  color: var(--soi-text-muted) !important;
 }
 
 [data-bs-theme="dark"] .list-group-item .text-muted {
-  color: #adb5bd !important;
+  color: var(--soi-text-muted) !important;
 }
 
 /* Page Glass Container */
@@ -110,10 +110,10 @@
   border-left: 4px solid transparent !important;
 }
 .border-accent-success {
-  border-left-color: #198754 !important;
+  border-left-color: var(--soi-color-success) !important;
 }
 .border-accent-secondary {
-  border-left-color: #6c757d !important;
+  border-left-color: var(--soi-color-secondary) !important;
 }
 
 /* Chevron interaction */
@@ -194,7 +194,7 @@
   font-weight: 600;
   border-radius: 7px;
   background: var(--bs-primary);
-  color: #ffffff !important;
+  color: var(--soi-text-on-primary) !important;
   border: none;
   box-shadow: 0 2px 8px rgba(13, 110, 253, 0.15);
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
@@ -203,7 +203,7 @@
 
 .btn-premium-action:hover {
   transform: translateY(-1px);
-  background: #0b5ed7;
+  background: var(--soi-color-primary-hover);
   box-shadow: 0 4px 12px rgba(13, 110, 253, 0.25);
 }
 
@@ -270,7 +270,7 @@
 }
 
 .premium-search-input:focus {
-  background: #ffffff !important;
+  background: var(--soi-surface) !important;
   border-color: var(--bs-primary) !important;
   box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.1) !important;
 }
@@ -310,15 +310,15 @@
 }
 
 [data-bs-theme="light"] .premium-filter-select {
-  background-color: #ffffff !important;
+  background-color: var(--soi-surface) !important;
   border-color: rgba(0, 0, 0, 0.15) !important;
-  color: #212529 !important;
+  color: var(--soi-text) !important;
 }
 
 [data-bs-theme="dark"] .premium-filter-select {
-  background-color: #212529 !important;
+  background-color: var(--soi-surface) !important;
   border-color: rgba(255, 255, 255, 0.18) !important;
-  color: #f8f9fa !important;
+  color: var(--soi-text) !important;
 }
 
 /* Forzar a que las opciones hereden estrictamente el fondo del tema activo */
@@ -328,13 +328,13 @@
 }
 
 [data-bs-theme="light"] .premium-filter-select option {
-  background-color: #ffffff !important;
-  color: #212529 !important;
+  background-color: var(--soi-surface) !important;
+  color: var(--soi-text) !important;
 }
 
 [data-bs-theme="dark"] .premium-filter-select option {
-  background-color: #212529 !important;
-  color: #f8f9fa !important;
+  background-color: var(--soi-surface) !important;
+  color: var(--soi-text) !important;
 }
 
 .premium-filter-select:focus {
@@ -404,39 +404,39 @@
 
 /* Light Theme Button Enhancements */
 [data-bs-theme="light"] .btn-outline-primary {
-  color: #0d6efd !important;
+  color: var(--bs-primary) !important;
   border-color: rgba(13, 110, 253, 0.4) !important;
 }
 [data-bs-theme="light"] .btn-outline-primary:hover {
-  background-color: #0d6efd !important;
-  color: #ffffff !important;
+  background-color: var(--bs-primary) !important;
+  color: var(--soi-text-on-primary) !important;
 }
 
 [data-bs-theme="light"] .btn-outline-success {
-  color: #198754 !important;
+  color: var(--bs-success) !important;
   border-color: rgba(25, 135, 84, 0.4) !important;
 }
 [data-bs-theme="light"] .btn-outline-success:hover {
-  background-color: #198754 !important;
-  color: #ffffff !important;
+  background-color: var(--bs-success) !important;
+  color: var(--soi-text-on-primary) !important;
 }
 
 [data-bs-theme="light"] .btn-outline-secondary {
-  color: #495057 !important;
+  color: var(--bs-secondary) !important;
   border-color: rgba(108, 117, 125, 0.4) !important;
 }
 [data-bs-theme="light"] .btn-outline-secondary:hover {
-  background-color: #6c757d !important;
-  color: #ffffff !important;
+  background-color: var(--bs-secondary) !important;
+  color: var(--soi-text-on-primary) !important;
 }
 
 [data-bs-theme="light"] .btn-outline-danger {
-  color: #dc3545 !important;
+  color: var(--bs-danger) !important;
   border-color: rgba(220, 53, 69, 0.4) !important;
 }
 [data-bs-theme="light"] .btn-outline-danger:hover {
-  background-color: #dc3545 !important;
-  color: #ffffff !important;
+  background-color: var(--bs-danger) !important;
+  color: var(--soi-text-on-primary) !important;
 }
 
 /* Dark Theme Button Enhancements (Glassmorphism & Glowing Accents) */
@@ -486,9 +486,9 @@
 
 /* Solid Buttons Theme Integration */
 [data-bs-theme="dark"] .btn-success {
-  background-color: #198754 !important;
-  border-color: #198754 !important;
-  color: #ffffff !important;
+  background-color: var(--bs-success) !important;
+  border-color: var(--bs-success) !important;
+  color: var(--soi-text-on-primary) !important;
 }
 [data-bs-theme="dark"] .btn-success:hover {
   background-color: #157347 !important;
@@ -496,11 +496,11 @@
 }
 
 [data-bs-theme="dark"] .btn-premium-action {
-  background-color: #0d6efd !important;
+  background-color: var(--bs-primary) !important;
   box-shadow: 0 4px 12px rgba(13, 110, 253, 0.3) !important;
 }
 [data-bs-theme="dark"] .btn-premium-action:hover {
-  background-color: #0b5ed7 !important;
+  background-color: var(--soi-color-primary-hover) !important;
 }
 
 

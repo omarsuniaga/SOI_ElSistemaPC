@@ -16,16 +16,21 @@ self.addEventListener('install', event => {
 self.addEventListener('activate', event => {
   console.log('[SW] Activando...');
   event.waitUntil(
-    caches.keys().then(keys => {
-      return Promise.all(
+    (async () => {
+      const keys = await caches.keys();
+      await Promise.all(
         keys.filter(key => key !== CACHE_NAME).map(key => {
           console.log('[SW] Eliminando caché antigua:', key);
           return caches.delete(key);
         })
       );
-    })
+      try {
+        await self.clients.claim();
+      } catch (err) {
+        console.warn('[SW] clients.claim warning:', err);
+      }
+    })()
   );
-  self.clients.claim();
 });
 
 self.addEventListener('fetch', event => {
@@ -200,8 +205,37 @@ async function handleBackgroundAction(action, data) {
     console.warn('[SW] Error enviando mensaje a pestañas:', err.message);
   }
 
-  // Las acciones sensibles se resuelven en la app autenticada o en backend.
-  // El Service Worker solo notifica y enruta.
+  // Ejecutar la acción de verdad contra el backend (no depende de que haya una
+  // pestaña abierta). Usa el JWT del maestro persistido vía el bridge de IndexedDB.
+  if (VALID_BACKGROUND_ACTIONS.has(action) && data.notification_id) {
+    await _executeNotificationAction(action, data.notification_id);
+  }
+}
+
+const VALID_BACKGROUND_ACTIONS = new Set(['mark-read']);
+
+async function _executeNotificationAction(action, notificationId) {
+  try {
+    const { accessToken, anonKey, supabaseUrl } = await _getFreshAccessToken();
+    if (!accessToken || !anonKey || !supabaseUrl) {
+      console.warn('[SW] Sin credenciales frescas para ejecutar la acción en backend:', action);
+      return;
+    }
+    const res = await fetch(`${supabaseUrl}/functions/v1/notification-actions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        apikey: anonKey,
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify({ notification_id: notificationId, action }),
+    });
+    if (!res.ok) {
+      console.warn(`[SW] notification-actions respondió ${res.status} para acción ${action}`);
+    }
+  } catch (err) {
+    console.error('[SW] Error ejecutando acción en backend:', err.message);
+  }
 }
 
 function resolveNotificationUrl(data) {
@@ -233,5 +267,169 @@ self.addEventListener('message', event => {
   if (event.data.type === 'SKIP_WAITING') {
     self.skipWaiting();
   }
-  // Las alertas locales ya no se manejan aquí.
 });
+
+// ─── AUTH BRIDGE (IndexedDB) ────────────────────────────────
+// El SW no tiene acceso a localStorage ni a import.meta.env. pushService.js
+// (hilo principal) persiste aquí el JWT de sesión y la VAPID key para que el SW
+// pueda autenticar llamadas en background (pushsubscriptionchange, botones de
+// acción) incluso horas después, con el teléfono bloqueado y sin pestañas abiertas.
+const AUTH_BRIDGE_DB = 'soi-push-bridge';
+const AUTH_BRIDGE_STORE = 'kv';
+
+function _openBridgeDB() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(AUTH_BRIDGE_DB, 1);
+    req.onupgradeneeded = () => {
+      if (!req.result.objectStoreNames.contains(AUTH_BRIDGE_STORE)) {
+        req.result.createObjectStore(AUTH_BRIDGE_STORE, { keyPath: 'key' });
+      }
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function _getBridgeValue(key) {
+  try {
+    const db = await _openBridgeDB();
+    return await new Promise((resolve, reject) => {
+      const tx = db.transaction(AUTH_BRIDGE_STORE, 'readonly');
+      const req = tx.objectStore(AUTH_BRIDGE_STORE).get(key);
+      req.onsuccess = () => resolve(req.result ? req.result.value : null);
+      req.onerror = () => reject(req.error);
+    });
+  } catch {
+    return null;
+  }
+}
+
+async function _setBridgeValue(key, value) {
+  try {
+    const db = await _openBridgeDB();
+    await new Promise((resolve, reject) => {
+      const tx = db.transaction(AUTH_BRIDGE_STORE, 'readwrite');
+      tx.objectStore(AUTH_BRIDGE_STORE).put({ key, value });
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+  } catch (err) {
+    console.warn('[SW] No se pudo escribir en el bridge de auth:', err.message);
+  }
+}
+
+function _decodeJwtSub(token) {
+  try {
+    const payload = token.split('.')[1];
+    const base64 = payload.replace(/-/g, '+').replace(/_/g, '/');
+    const json = decodeURIComponent(
+      atob(base64).split('').map(c => '%' + c.charCodeAt(0).toString(16).padStart(2, '0')).join('')
+    );
+    return JSON.parse(json).sub || null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * El access_token persistido puede llevar horas vencido si el SW despierta con
+ * la app cerrada. Se intenta refrescar con el refresh_token antes de usarlo,
+ * ya que aquí no hay un cliente supabase-js con auto-refresh vivo.
+ */
+async function _getFreshAccessToken() {
+  const [supabaseUrl, anonKey, refreshToken, accessToken] = await Promise.all([
+    _getBridgeValue('supabase_url'),
+    _getBridgeValue('supabase_anon_key'),
+    _getBridgeValue('refresh_token'),
+    _getBridgeValue('access_token'),
+  ]);
+
+  if (!supabaseUrl || !anonKey || !refreshToken) {
+    return { accessToken, anonKey, supabaseUrl };
+  }
+
+  try {
+    const res = await fetch(`${supabaseUrl}/auth/v1/token?grant_type=refresh_token`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', apikey: anonKey },
+      body: JSON.stringify({ refresh_token: refreshToken }),
+    });
+    if (res.ok) {
+      const refreshed = await res.json();
+      await Promise.all([
+        _setBridgeValue('access_token', refreshed.access_token),
+        _setBridgeValue('refresh_token', refreshed.refresh_token),
+      ]);
+      return { accessToken: refreshed.access_token, anonKey, supabaseUrl };
+    }
+  } catch (err) {
+    console.warn('[SW] No se pudo refrescar el token en background:', err.message);
+  }
+
+  return { accessToken, anonKey, supabaseUrl };
+}
+
+function _urlBase64ToUint8Array(base64String) {
+  const padding = '='.repeat((4 - base64String.length % 4) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const rawData = atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+  for (let i = 0; i < rawData.length; ++i) outputArray[i] = rawData.charCodeAt(i);
+  return outputArray;
+}
+
+// ─── RENOVACIÓN DE SUSCRIPCIÓN EN BACKGROUND ────────────────
+// El navegador puede rotar/invalidar la suscripción push sin que la app esté
+// abierta. Sin este handler, esa suscripción quedaba huérfana en push_subscriptions
+// y el maestro dejaba de recibir push silenciosamente.
+self.addEventListener('pushsubscriptionchange', event => {
+  event.waitUntil(_resubscribeAndPersist(event.newSubscription));
+});
+
+async function _resubscribeAndPersist(providedNewSubscription) {
+  try {
+    let subscription = providedNewSubscription;
+    if (!subscription) {
+      const vapidKey = await _getBridgeValue('vapid_public_key');
+      if (!vapidKey) {
+        console.warn('[SW] pushsubscriptionchange sin VAPID key en el bridge; no se puede re-suscribir.');
+        return;
+      }
+      subscription = await self.registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: _urlBase64ToUint8Array(vapidKey),
+      });
+    }
+
+    const { accessToken, anonKey, supabaseUrl } = await _getFreshAccessToken();
+    const profileId = accessToken ? _decodeJwtSub(accessToken) : null;
+    if (!accessToken || !anonKey || !supabaseUrl || !profileId) {
+      console.warn('[SW] Sin credenciales frescas para persistir la nueva suscripción push.');
+      return;
+    }
+
+    const subJSON = subscription.toJSON();
+    const res = await fetch(`${supabaseUrl}/rest/v1/push_subscriptions?on_conflict=endpoint`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        apikey: anonKey,
+        Authorization: `Bearer ${accessToken}`,
+        Prefer: 'resolution=merge-duplicates,return=minimal',
+      },
+      body: JSON.stringify([{
+        profile_id: profileId,
+        endpoint: subJSON.endpoint,
+        p256dh: subJSON.keys.p256dh,
+        auth: subJSON.keys.auth,
+        activo: true,
+        updated_at: new Date().toISOString(),
+      }]),
+    });
+    if (!res.ok) {
+      console.warn('[SW] Falló la persistencia de la nueva suscripción push:', res.status);
+    }
+  } catch (err) {
+    console.error('[SW] Error re-suscribiendo push tras pushsubscriptionchange:', err.message);
+  }
+}

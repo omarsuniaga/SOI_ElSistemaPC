@@ -120,6 +120,17 @@ vi.mock('../../../modules/planificacion/components/bitacoraSesionPanel.js', () =
   renderBitacoraSesionPanel: vi.fn(),
 }))
 
+// AsistenciaTour schedules a real setTimeout auto-start (AUTO_START_DELAY)
+// that calls the real scrollIntoView (unimplemented in jsdom) — mocked here
+// so it never fires as stray async noise across this file's several tests.
+vi.mock('../../components/AsistenciaTour.js', () => ({
+  AsistenciaTour: vi.fn().mockImplementation(function AsistenciaTourMock() {
+    this.mount = vi.fn()
+    this.start = vi.fn()
+    this.destroy = vi.fn()
+  }),
+}))
+
 vi.mock('../../../shared/components/AppToast.js', () => ({
   AppToast: {
     show: vi.fn(),

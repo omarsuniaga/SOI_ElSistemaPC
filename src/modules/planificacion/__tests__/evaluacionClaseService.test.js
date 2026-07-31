@@ -49,24 +49,6 @@ function buildChain(forTable) {
       rows.forEach((r) => Object.assign(r, pendingData, { updated_at: new Date().toISOString() }))
       pendingOp = null
       pendingData = null
-    } else if (pendingOp === 'upsert') {
-      const items = Array.isArray(pendingData) ? pendingData : [pendingData]
-      for (const item of items) {
-        const existing = tables[forTable].findIndex(
-          (r) =>
-            r.alumno_id === item.alumno_id &&
-            r.indicator_id === item.indicator_id &&
-            r.clase_id === item.clase_id,
-        )
-        if (existing >= 0) {
-          Object.assign(tables[forTable][existing], item, { updated_at: new Date().toISOString() })
-        } else {
-          const id = item.id || `${forTable}_${nextId++}`
-          tables[forTable].push({ ...item, id, created_at: new Date().toISOString(), updated_at: new Date().toISOString() })
-        }
-      }
-      pendingOp = null
-      pendingData = null
     } else if (pendingOp === 'delete') {
       const rows = applyFilters(tables[forTable] || [])
       const ids = new Set(rows.map((r) => r.id))
@@ -134,13 +116,15 @@ function buildChain(forTable) {
     }),
     upsert: vi.fn((data, opts) => {
       const items = Array.isArray(data) ? data : [data]
+      const conflictKeys = (opts?.onConflict || '').split(',').filter(Boolean)
       const upserted = []
       for (const item of items) {
-        const existingIdx = tables[forTable].findIndex(
-          (r) =>
-            r.alumno_id === item.alumno_id &&
-            r.indicator_id === item.indicator_id &&
-            r.clase_id === item.clase_id,
+        const existingIdx = tables[forTable].findIndex((r) =>
+          conflictKeys.length > 0
+            ? conflictKeys.every((k) => r[k] === item[k])
+            : r.alumno_id === item.alumno_id &&
+              r.indicator_id === item.indicator_id &&
+              r.clase_id === item.clase_id,
         )
         if (existingIdx >= 0) {
           Object.assign(tables[forTable][existingIdx], item, { updated_at: new Date().toISOString() })
@@ -201,6 +185,7 @@ import {
   obtenerEvaluacionPorAlumno,
   obtenerProgresoAlumnos,
   obtenerProgresoPorIndicador,
+  esNotaSuperada,
 } from '../services/evaluacionClaseService.js'
 
 // ── Tests ──────────────────────────────────────────────────────
@@ -210,7 +195,7 @@ describe('evaluacionClaseService', () => {
     resetStore()
   })
 
-  describe('registrarEvaluacion', () => {
+  describe('registrarEvaluacion — global indicator_id path (legacy curriculum route flow)', () => {
     it('should upsert an evaluation for alumno+indicator+clase', async () => {
       const data = {
         alumno_id: 'alu_001',
@@ -227,6 +212,7 @@ describe('evaluacionClaseService', () => {
       expect(result).toBeDefined()
       expect(result.alumno_id).toBe('alu_001')
       expect(result.indicator_id).toBe('ind_001')
+      expect(result.clase_indicador_id).toBeNull()
       expect(result.clase_id).toBe('clase_001')
       expect(result.nota).toBe(4)
       expect(result.estado).toBe('avanzado')
@@ -246,19 +232,30 @@ describe('evaluacionClaseService', () => {
     it('should throw if alumno_id is missing', async () => {
       await expect(
         registrarEvaluacion({ indicator_id: 'ind_001', clase_id: 'clase_001' }),
-      ).rejects.toThrow('alumno_id, indicator_id y clase_id son requeridos')
-    })
-
-    it('should throw if indicator_id is missing', async () => {
-      await expect(
-        registrarEvaluacion({ alumno_id: 'alu_001', clase_id: 'clase_001' }),
-      ).rejects.toThrow('alumno_id, indicator_id y clase_id son requeridos')
+      ).rejects.toThrow('alumno_id')
     })
 
     it('should throw if clase_id is missing', async () => {
       await expect(
         registrarEvaluacion({ alumno_id: 'alu_001', indicator_id: 'ind_001' }),
-      ).rejects.toThrow('alumno_id, indicator_id y clase_id son requeridos')
+      ).rejects.toThrow('clase_id')
+    })
+
+    it('should throw if neither indicator_id nor clase_indicador_id is provided', async () => {
+      await expect(
+        registrarEvaluacion({ alumno_id: 'alu_001', clase_id: 'clase_001' }),
+      ).rejects.toThrow('indicator_id')
+    })
+
+    it('should throw if BOTH indicator_id and clase_indicador_id are provided (ei_una_sola_fuente CHECK, Decisión 2)', async () => {
+      await expect(
+        registrarEvaluacion({
+          alumno_id: 'alu_001',
+          clase_id: 'clase_001',
+          indicator_id: 'ind_001',
+          clase_indicador_id: 'cmi_001',
+        }),
+      ).rejects.toThrow('exactamente uno')
     })
 
     it('should validate nota range (1-5)', async () => {
@@ -280,6 +277,74 @@ describe('evaluacionClaseService', () => {
         nota: null,
       })
       expect(result.nota).toBeNull()
+    })
+  })
+
+  describe('registrarEvaluacion — clase_indicador_id path (new mapa gamificado, REQ-05/REQ-14)', () => {
+    it('should upsert an evaluation for alumno+clase_indicador_id, leaving indicator_id null', async () => {
+      const result = await registrarEvaluacion({
+        alumno_id: 'alu_001',
+        clase_indicador_id: 'cmi_001',
+        clase_id: 'clase_001',
+        nota: 5,
+        evaluado_por: 'mae_001',
+      })
+
+      expect(result.alumno_id).toBe('alu_001')
+      expect(result.clase_indicador_id).toBe('cmi_001')
+      expect(result.indicator_id).toBeNull()
+      expect(result.nota).toBe(5)
+    })
+
+    it('should upsert (update, not duplicate) on a second call with the same alumno + clase_indicador_id', async () => {
+      await registrarEvaluacion({
+        alumno_id: 'alu_001',
+        clase_indicador_id: 'cmi_001',
+        clase_id: 'clase_001',
+        nota: 2,
+      })
+
+      await registrarEvaluacion({
+        alumno_id: 'alu_001',
+        clase_indicador_id: 'cmi_001',
+        clase_id: 'clase_001',
+        nota: 4,
+      })
+
+      const rows = tables.evaluacion_indicador.filter(
+        (r) => r.alumno_id === 'alu_001' && r.clase_indicador_id === 'cmi_001',
+      )
+      expect(rows.length).toBe(1)
+      expect(rows[0].nota).toBe(4)
+    })
+
+    it('should validate nota range (1-5) on the clase_indicador_id path too', async () => {
+      await expect(
+        registrarEvaluacion({
+          alumno_id: 'alu_001',
+          clase_indicador_id: 'cmi_001',
+          clase_id: 'clase_001',
+          nota: 0,
+        }),
+      ).rejects.toThrow('La nota debe estar entre 1 y 5')
+    })
+  })
+
+  describe('esNotaSuperada (REQ-05: nota >= 3 = superado)', () => {
+    it('returns true for nota 3, 4, 5', () => {
+      expect(esNotaSuperada(3)).toBe(true)
+      expect(esNotaSuperada(4)).toBe(true)
+      expect(esNotaSuperada(5)).toBe(true)
+    })
+
+    it('returns false for nota 1, 2', () => {
+      expect(esNotaSuperada(1)).toBe(false)
+      expect(esNotaSuperada(2)).toBe(false)
+    })
+
+    it('returns false for null/undefined (not evaluated — never counts as superado)', () => {
+      expect(esNotaSuperada(null)).toBe(false)
+      expect(esNotaSuperada(undefined)).toBe(false)
     })
   })
 

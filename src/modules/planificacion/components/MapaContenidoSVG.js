@@ -11,9 +11,10 @@
  *
  * Retrocompatibilidad: los nodos sin `estrellas` (número) siguen usando el
  * coloreado legado por `estado` ('logrado'|'en_proceso'|'pendiente') — los
- * 5 call-sites existentes (RutaPedagogicaView, DisenadorCurricularView,
- * EditorPlanificacionModal, planificacionView, asistenciasView) no pasan
- * `modo` ni `estrellas` y deben seguir renderizando exactamente igual.
+ * call-sites legado restantes (RutaPedagogicaView, EditorPlanificacionModal,
+ * planificacionView, asistenciasView — `DisenadorCurricularView.js` dejó de
+ * usar este componente en la Tarea 3.6, ver design.md Migration/Rollout §2)
+ * no pasan `modo` ni `estrellas` y deben seguir renderizando exactamente igual.
  */
 import { escapeHTML } from '../../clases/utils/clasesUtils.js'
 

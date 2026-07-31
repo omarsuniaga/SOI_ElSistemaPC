@@ -281,6 +281,24 @@ export async function clonarPlantillaAClase(claseId, plantillaId, nodeIds = null
   return data || []
 }
 
+/**
+ * List the active seed templates (`mapa_plantillas`, Decisión 6, REQ-10),
+ * optionally scoped to a single `level_id`. Used by
+ * `DisenadorCurricularView.js` (Tarea 3.6) to offer "Clonar desde plantilla"
+ * only for the levels actually assigned to the class.
+ *
+ * @param {string|null} [levelId]
+ * @returns {Promise<Array<object>>}
+ */
+export async function obtenerPlantillasDisponibles(levelId = null) {
+  let query = supabase.from('mapa_plantillas').select('*').eq('activo', true).order('nombre')
+  if (levelId) query = query.eq('level_id', levelId)
+
+  const { data, error } = await query
+  if (error) throw error
+  return data || []
+}
+
 // ── Niveles asignados / estrellas del nodo (Tarea 3.2 — MapaClaseView) ────
 
 /**

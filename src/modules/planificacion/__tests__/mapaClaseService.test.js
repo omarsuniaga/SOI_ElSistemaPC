@@ -21,6 +21,7 @@ function resetStore() {
     acm_active_routes: [],
     levels: [],
     vw_clase_objetivo_estrellas: [],
+    mapa_plantillas: [],
   }
   nextId = 1
   deleteShouldFail = null
@@ -176,6 +177,7 @@ import {
   clonarPlantillaAClase,
   obtenerNivelesAsignadosClase,
   obtenerEstrellasPorClase,
+  obtenerPlantillasDisponibles,
   RequiereArchivarError,
 } from '../services/mapaClaseService.js'
 
@@ -416,6 +418,34 @@ describe('mapaClaseService', () => {
       const result = await obtenerEstrellasPorClase('clase_001')
       expect(result.length).toBe(1)
       expect(result[0].objetivoId).toBe('o1')
+    })
+  })
+
+  // ── Tarea 3.6: plantillas semilla disponibles para "Clonar desde plantilla" (REQ-10) ──
+
+  describe('obtenerPlantillasDisponibles (mapa_plantillas, REQ-10)', () => {
+    it('returns only active plantillas, ordered by nombre', async () => {
+      tables.mapa_plantillas.push(
+        { id: 'p1', nombre: 'Violín Nivel 2', instrumento: 'Violín', level_id: 'level_A', activo: true },
+        { id: 'p2', nombre: 'Arpa Nivel 1', instrumento: 'Arpa', level_id: 'level_B', activo: true },
+        { id: 'p3', nombre: 'Piano Nivel 1', instrumento: 'Piano', level_id: 'level_A', activo: false },
+      )
+
+      const result = await obtenerPlantillasDisponibles()
+
+      expect(result.map((p) => p.id)).toEqual(['p2', 'p1'])
+    })
+
+    it('scopes by level_id when provided', async () => {
+      tables.mapa_plantillas.push(
+        { id: 'p1', nombre: 'Violín Nivel 2', instrumento: 'Violín', level_id: 'level_A', activo: true },
+        { id: 'p2', nombre: 'Arpa Nivel 1', instrumento: 'Arpa', level_id: 'level_B', activo: true },
+      )
+
+      const result = await obtenerPlantillasDisponibles('level_B')
+
+      expect(result.length).toBe(1)
+      expect(result[0].id).toBe('p2')
     })
   })
 })

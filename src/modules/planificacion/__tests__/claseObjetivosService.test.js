@@ -1,24 +1,26 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 // ── In-memory Supabase mock ────────────────────────────────────
+//
+// Targets clase_mapa_objetivos (Decisión 8, design.md): claseObjetivosService.js
+// used to point to clase_objetivos / class_curriculum_plan, tables that never
+// existed in production (to_regclass = NULL). This rewrite targets the real
+// class-owned map table introduced by REQ-14 / Decisión 1.
 
 let tables = {}
 let nextId = 1
 
 function resetStore() {
   tables = {
-    clase_objetivos: [],
-    nodes: [],
-    indicators: [],
-    class_curriculum_plan: [],
+    clase_mapa_objetivos: [],
   }
   nextId = 1
 }
 
 function buildChain(forTable) {
   let queryFilters = {}
+  let queryIsFilters = {}
   let queryOrder = null
-  let queryLimit = null
   let pendingOp = null // 'update' | 'delete' | null
   let pendingData = null
 
@@ -26,14 +28,16 @@ function buildChain(forTable) {
     let result = rows.filter((r) =>
       Object.entries(queryFilters).every(([k, v]) => r[k] === v),
     )
+    result = result.filter((r) =>
+      Object.entries(queryIsFilters).every(([k, v]) => (r[k] ?? null) === v),
+    )
     if (queryOrder) {
       const [field, asc] = queryOrder
       result.sort((a, b) => {
-        if (asc) return a[field] > b[field] ? 1 : -1
-        return a[field] < b[field] ? 1 : -1
+        if (asc) return (a[field] ?? 0) > (b[field] ?? 0) ? 1 : -1
+        return (a[field] ?? 0) < (b[field] ?? 0) ? 1 : -1
       })
     }
-    if (queryLimit) result = result.slice(0, queryLimit)
     return result
   }
 
@@ -57,16 +61,12 @@ function buildChain(forTable) {
       queryFilters[k] = v
       return c
     }),
-    in: vi.fn((k, arr) => {
-      queryFilters[k] = arr
+    is: vi.fn((k, v) => {
+      queryIsFilters[k] = v
       return c
     }),
     order: vi.fn((field, opts) => {
       queryOrder = [field, opts?.ascending !== false]
-      return c
-    }),
-    limit: vi.fn((n) => {
-      queryLimit = n
       return c
     }),
     single: vi.fn(() => {
@@ -76,11 +76,6 @@ function buildChain(forTable) {
         data: rows[0] || null,
         error: rows.length ? null : { message: 'not found' },
       })
-    }),
-    maybeSingle: vi.fn(() => {
-      executePending()
-      const rows = applyFilters(tables[forTable] || [])
-      return Promise.resolve({ data: rows[0] || null, error: null })
     }),
     insert: vi.fn((data) => {
       const items = Array.isArray(data) ? data : [data]
@@ -143,25 +138,25 @@ import {
 
 // ── Tests ──────────────────────────────────────────────────────
 
-describe('claseObjetivosService', () => {
+describe('claseObjetivosService (clase_mapa_objetivos, REQ-14 / Decisión 8)', () => {
   beforeEach(() => {
     resetStore()
   })
 
   describe('agregarObjetivos', () => {
-    it('should bulk insert objectives for a planificacion', async () => {
+    it('should bulk insert objetivos scoped by clase_id + level_id', async () => {
       const objetivos = [
         {
-          planificacion_id: 'plan_001',
-          class_curriculum_plan_id: 'ccp_001',
-          node_id: 'node_001',
-          indicator_id: 'ind_001',
+          clase_id: 'clase_001',
+          level_id: 'level_001',
+          nombre: 'La 3ra posición',
+          orden_objetivo: 1,
         },
         {
-          planificacion_id: 'plan_001',
-          class_curriculum_plan_id: 'ccp_001',
-          node_id: 'node_001',
-          indicator_id: 'ind_002',
+          clase_id: 'clase_001',
+          level_id: 'level_001',
+          nombre: 'Vibrato básico',
+          orden_objetivo: 2,
         },
       ]
 
@@ -169,23 +164,9 @@ describe('claseObjetivosService', () => {
 
       expect(Array.isArray(result)).toBe(true)
       expect(result.length).toBe(2)
-      expect(result[0].planificacion_id).toBe('plan_001')
-      expect(result[0].node_id).toBe('node_001')
-      expect(result[1].indicator_id).toBe('ind_002')
-    })
-
-    it('should default estado to pendiente', async () => {
-      const objetivos = [
-        {
-          planificacion_id: 'plan_001',
-          class_curriculum_plan_id: 'ccp_001',
-          node_id: 'node_001',
-          indicator_id: 'ind_001',
-        },
-      ]
-
-      const result = await agregarObjetivos(objetivos)
-      expect(result[0].estado).toBe('pendiente')
+      expect(result[0].clase_id).toBe('clase_001')
+      expect(result[0].nombre).toBe('La 3ra posición')
+      expect(result[1].orden_objetivo).toBe(2)
     })
 
     it('should throw if objetivos array is empty', async () => {
@@ -194,184 +175,231 @@ describe('claseObjetivosService', () => {
       )
     })
 
-    it('should set semana when provided', async () => {
+    it('should preserve origen_node_id/origen_objetivo_id when provided (plantilla clonada)', async () => {
       const objetivos = [
         {
-          planificacion_id: 'plan_001',
-          class_curriculum_plan_id: 'ccp_001',
-          node_id: 'node_001',
-          indicator_id: 'ind_001',
-          semana: 3,
+          clase_id: 'clase_001',
+          level_id: 'level_001',
+          nombre: 'Escalas mayores',
+          orden_objetivo: 1,
+          origen_node_id: 'node_gl_1',
+          origen_objetivo_id: 'obj_gl_1',
         },
       ]
 
       const result = await agregarObjetivos(objetivos)
-      expect(result[0].semana).toBe(3)
+      expect(result[0].origen_node_id).toBe('node_gl_1')
+      expect(result[0].origen_objetivo_id).toBe('obj_gl_1')
+    })
+
+    it('should default origen_node_id/origen_objetivo_id to null for teacher-authored objetivos', async () => {
+      const objetivos = [
+        { clase_id: 'clase_001', level_id: 'level_001', nombre: 'Objetivo propio', orden_objetivo: 1 },
+      ]
+
+      const result = await agregarObjetivos(objetivos)
+      expect(result[0].origen_node_id).toBeNull()
+      expect(result[0].origen_objetivo_id).toBeNull()
     })
   })
 
-  describe('obtenerObjetivosPorPlanificacion', () => {
-    it('should return objectives for a given planificacion', async () => {
-      tables.clase_objetivos.push(
+  describe('obtenerObjetivosPorPlanificacion (scoped by clase_id in the new model)', () => {
+    it('should return only non-archived objetivos for the given clase_id', async () => {
+      tables.clase_mapa_objetivos.push(
         {
-          id: 'co_001',
-          planificacion_id: 'plan_001',
-          class_curriculum_plan_id: 'ccp_001',
-          node_id: 'node_001',
-          indicator_id: 'ind_001',
-          estado: 'pendiente',
+          id: 'cmo_001',
+          clase_id: 'clase_001',
+          level_id: 'level_001',
+          nombre: 'Objetivo A',
+          order_index: 0,
+          archived_at: null,
           created_at: new Date().toISOString(),
         },
         {
-          id: 'co_002',
-          planificacion_id: 'plan_001',
-          class_curriculum_plan_id: 'ccp_001',
-          node_id: 'node_001',
-          indicator_id: 'ind_002',
-          estado: 'en_progreso',
+          id: 'cmo_002',
+          clase_id: 'clase_001',
+          level_id: 'level_001',
+          nombre: 'Objetivo B (archivado)',
+          order_index: 1,
+          archived_at: new Date().toISOString(),
           created_at: new Date().toISOString(),
         },
         {
-          id: 'co_003',
-          planificacion_id: 'plan_002',
-          class_curriculum_plan_id: 'ccp_001',
-          node_id: 'node_002',
-          indicator_id: 'ind_003',
-          estado: 'completado',
+          id: 'cmo_003',
+          clase_id: 'clase_002',
+          level_id: 'level_001',
+          nombre: 'Objetivo de otra clase',
+          order_index: 0,
+          archived_at: null,
           created_at: new Date().toISOString(),
         },
       )
 
-      const result = await obtenerObjetivosPorPlanificacion('plan_001')
+      const result = await obtenerObjetivosPorPlanificacion('clase_001')
 
       expect(Array.isArray(result)).toBe(true)
-      expect(result.length).toBe(2)
-      result.forEach((o) => expect(o.planificacion_id).toBe('plan_001'))
+      expect(result.length).toBe(1)
+      expect(result[0].id).toBe('cmo_001')
     })
 
-    it('should return empty array when no objectives exist', async () => {
-      const result = await obtenerObjetivosPorPlanificacion('plan_999')
+    it('should return empty array when the class has no objetivos', async () => {
+      const result = await obtenerObjetivosPorPlanificacion('clase_999')
       expect(Array.isArray(result)).toBe(true)
       expect(result.length).toBe(0)
     })
   })
 
   describe('actualizarObjetivo', () => {
-    it('should update the estado of an objective', async () => {
-      tables.clase_objetivos.push({
-        id: 'co_001',
-        planificacion_id: 'plan_001',
-        class_curriculum_plan_id: 'ccp_001',
-        node_id: 'node_001',
-        indicator_id: 'ind_001',
-        estado: 'pendiente',
+    it('should update nombre and descripcion', async () => {
+      tables.clase_mapa_objetivos.push({
+        id: 'cmo_001',
+        clase_id: 'clase_001',
+        level_id: 'level_001',
+        nombre: 'Nombre viejo',
+        descripcion: null,
+        order_index: 0,
+        archived_at: null,
         created_at: new Date().toISOString(),
       })
 
-      const result = await actualizarObjetivo('co_001', { estado: 'completado' })
+      const result = await actualizarObjetivo('cmo_001', {
+        nombre: 'Nombre nuevo',
+        descripcion: 'Descripción nueva',
+      })
 
-      expect(result).toBeDefined()
-      expect(result.estado).toBe('completado')
+      expect(result.nombre).toBe('Nombre nuevo')
+      expect(result.descripcion).toBe('Descripción nueva')
     })
 
-    it('should update semana of an objective', async () => {
-      tables.clase_objetivos.push({
-        id: 'co_001',
-        planificacion_id: 'plan_001',
-        class_curriculum_plan_id: 'ccp_001',
-        node_id: 'node_001',
-        indicator_id: 'ind_001',
-        estado: 'pendiente',
-        semana: null,
+    it('should update order_index (visual reorder only)', async () => {
+      tables.clase_mapa_objetivos.push({
+        id: 'cmo_001',
+        clase_id: 'clase_001',
+        level_id: 'level_001',
+        nombre: 'Objetivo',
+        order_index: 0,
+        archived_at: null,
         created_at: new Date().toISOString(),
       })
 
-      const result = await actualizarObjetivo('co_001', { semana: 5 })
-      expect(result.semana).toBe(5)
+      const result = await actualizarObjetivo('cmo_001', { order_index: 5 })
+      expect(result.order_index).toBe(5)
+    })
+
+    it('should reject orden_objetivo and level_id — immutable per REQ-04 (whitelist, defense in depth)', async () => {
+      tables.clase_mapa_objetivos.push({
+        id: 'cmo_001',
+        clase_id: 'clase_001',
+        level_id: 'level_001',
+        nombre: 'Objetivo',
+        orden_objetivo: 1,
+        order_index: 0,
+        archived_at: null,
+        created_at: new Date().toISOString(),
+      })
+
+      const result = await actualizarObjetivo('cmo_001', { orden_objetivo: 99, level_id: 'level_999', nombre: 'Cambio válido' })
+      expect(result.nombre).toBe('Cambio válido')
+      expect(result.orden_objetivo).toBe(1) // unchanged — silently dropped from the whitelist
+      expect(result.level_id).toBe('level_001') // unchanged
+    })
+
+    it('should throw when no allowed field is present in updates', async () => {
+      tables.clase_mapa_objetivos.push({
+        id: 'cmo_001',
+        clase_id: 'clase_001',
+        level_id: 'level_001',
+        nombre: 'Objetivo',
+        order_index: 0,
+        archived_at: null,
+        created_at: new Date().toISOString(),
+      })
+
+      await expect(actualizarObjetivo('cmo_001', { orden_objetivo: 99 })).rejects.toThrow(
+        'No hay campos válidos para actualizar',
+      )
     })
   })
 
   describe('eliminarObjetivos', () => {
-    it('should remove all objectives for a planificacion', async () => {
-      tables.clase_objetivos.push(
+    it('should hard-delete all objetivos for a clase_id', async () => {
+      tables.clase_mapa_objetivos.push(
         {
-          id: 'co_001',
-          planificacion_id: 'plan_001',
-          class_curriculum_plan_id: 'ccp_001',
-          node_id: 'node_001',
-          indicator_id: 'ind_001',
-          estado: 'pendiente',
+          id: 'cmo_001',
+          clase_id: 'clase_001',
+          level_id: 'level_001',
+          nombre: 'Objetivo A',
+          order_index: 0,
+          archived_at: null,
           created_at: new Date().toISOString(),
         },
         {
-          id: 'co_002',
-          planificacion_id: 'plan_001',
-          class_curriculum_plan_id: 'ccp_001',
-          node_id: 'node_001',
-          indicator_id: 'ind_002',
-          estado: 'pendiente',
-          created_at: new Date().toISOString(),
-        },
-        {
-          id: 'co_003',
-          planificacion_id: 'plan_002',
-          class_curriculum_plan_id: 'ccp_001',
-          node_id: 'node_002',
-          indicator_id: 'ind_003',
-          estado: 'pendiente',
+          id: 'cmo_002',
+          clase_id: 'clase_002',
+          level_id: 'level_001',
+          nombre: 'Objetivo de otra clase',
+          order_index: 0,
+          archived_at: null,
           created_at: new Date().toISOString(),
         },
       )
 
-      await eliminarObjetivos('plan_001')
+      await eliminarObjetivos('clase_001')
 
-      expect(tables.clase_objetivos.length).toBe(1)
-      expect(tables.clase_objetivos[0].planificacion_id).toBe('plan_002')
+      expect(tables.clase_mapa_objetivos.length).toBe(1)
+      expect(tables.clase_mapa_objetivos[0].clase_id).toBe('clase_002')
     })
 
-    it('should not throw for non-existent planificacion', async () => {
-      await expect(eliminarObjetivos('plan_999')).resolves.not.toThrow()
+    it('should not throw for a clase_id with no objetivos', async () => {
+      await expect(eliminarObjetivos('clase_999')).resolves.not.toThrow()
     })
   })
 
   describe('reordenarObjetivos', () => {
-    it('should update semana for multiple objectives', async () => {
-      tables.clase_objetivos.push(
+    it('should update order_index (never orden_objetivo) for multiple objetivos of the same clase', async () => {
+      tables.clase_mapa_objetivos.push(
         {
-          id: 'co_001',
-          planificacion_id: 'plan_001',
-          class_curriculum_plan_id: 'ccp_001',
-          node_id: 'node_001',
-          indicator_id: 'ind_001',
-          semana: 1,
-          estado: 'pendiente',
+          id: 'cmo_001',
+          clase_id: 'clase_001',
+          level_id: 'level_001',
+          nombre: 'Objetivo A',
+          orden_objetivo: 1,
+          order_index: 0,
+          archived_at: null,
           created_at: new Date().toISOString(),
         },
         {
-          id: 'co_002',
-          planificacion_id: 'plan_001',
-          class_curriculum_plan_id: 'ccp_001',
-          node_id: 'node_001',
-          indicator_id: 'ind_002',
-          semana: 2,
-          estado: 'pendiente',
+          id: 'cmo_002',
+          clase_id: 'clase_001',
+          level_id: 'level_001',
+          nombre: 'Objetivo B',
+          orden_objetivo: 2,
+          order_index: 1,
+          archived_at: null,
           created_at: new Date().toISOString(),
         },
       )
 
       const orden = [
-        { id: 'co_001', semana: 3 },
-        { id: 'co_002', semana: 1 },
+        { id: 'cmo_001', orderIndex: 3 },
+        { id: 'cmo_002', orderIndex: 0 },
       ]
 
-      const result = await reordenarObjetivos('plan_001', orden)
+      const result = await reordenarObjetivos('clase_001', orden)
 
       expect(result).toBe(true)
-      // Verify the store was updated
-      const co1 = tables.clase_objetivos.find((o) => o.id === 'co_001')
-      const co2 = tables.clase_objetivos.find((o) => o.id === 'co_002')
-      expect(co1.semana).toBe(3)
-      expect(co2.semana).toBe(1)
+      const cmo1 = tables.clase_mapa_objetivos.find((o) => o.id === 'cmo_001')
+      const cmo2 = tables.clase_mapa_objetivos.find((o) => o.id === 'cmo_002')
+      expect(cmo1.order_index).toBe(3)
+      expect(cmo2.order_index).toBe(0)
+      // orden_objetivo (the hierarchical-ID segment) must never be touched by reordering
+      expect(cmo1.orden_objetivo).toBe(1)
+      expect(cmo2.orden_objetivo).toBe(2)
+    })
+
+    it('should return false (no-op) when orden is not an array', async () => {
+      const result = await reordenarObjetivos('clase_001', null)
+      expect(result).toBe(false)
     })
   })
 })

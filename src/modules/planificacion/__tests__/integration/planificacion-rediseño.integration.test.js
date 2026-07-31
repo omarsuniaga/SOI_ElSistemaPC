@@ -9,7 +9,7 @@ let nextId = 1
 function resetStore() {
   tables = {
     class_curriculum_plan: [],
-    clase_objetivos: [],
+    clase_mapa_objetivos: [],
     evaluacion_indicador: [],
     planificaciones: [],
     route_versions: [],
@@ -29,9 +29,14 @@ function buildChain(forTable) {
   let pendingOp = null
   let pendingData = null
 
+  let queryIsFilters = {}
+
   const applyFilters = (rows) => {
     let result = rows.filter((r) =>
       Object.entries(queryFilters).every(([k, v]) => r[k] === v),
+    )
+    result = result.filter((r) =>
+      Object.entries(queryIsFilters).every(([k, v]) => (r[k] ?? null) === v),
     )
     if (queryOrder) {
       const [field, asc] = queryOrder
@@ -89,6 +94,10 @@ function buildChain(forTable) {
     }),
     in: vi.fn((k, arr) => {
       queryFilters[k] = arr
+      return c
+    }),
+    is: vi.fn((k, v) => {
+      queryIsFilters[k] = v
       return c
     }),
     order: vi.fn((field, opts) => {
@@ -237,37 +246,23 @@ describe('Planificación Rediseño — Integration Flow', () => {
     expect(activeBridge).toBeDefined()
     expect(activeBridge.id).toBe(bridge.id)
 
-    // ── Step 3: Create a planification and link objectives ──
+    // ── Step 3: Create objetivos owned directly by the class (REQ-14, Decisión 8) ──
+    // clase_mapa_objetivos has no planificacion_id bridge — objetivos belong to
+    // clase_id + level_id directly, independent of any route-assignment bridge.
     const objetivos = [
-      {
-        planificacion_id: 'plan_001',
-        class_curriculum_plan_id: bridge.id,
-        node_id: 'node_001',
-        indicator_id: 'ind_001',
-      },
-      {
-        planificacion_id: 'plan_001',
-        class_curriculum_plan_id: bridge.id,
-        node_id: 'node_001',
-        indicator_id: 'ind_002',
-      },
-      {
-        planificacion_id: 'plan_001',
-        class_curriculum_plan_id: bridge.id,
-        node_id: 'node_002',
-        indicator_id: 'ind_003',
-        semana: 3,
-      },
+      { clase_id: 'clase_001', level_id: 'level_001', nombre: 'Objetivo 1', orden_objetivo: 1 },
+      { clase_id: 'clase_001', level_id: 'level_001', nombre: 'Objetivo 2', orden_objetivo: 2 },
+      { clase_id: 'clase_001', level_id: 'level_001', nombre: 'Objetivo 3', orden_objetivo: 3 },
     ]
 
     const linked = await agregarObjetivos(objetivos)
     expect(linked.length).toBe(3)
-    expect(linked[0].planificacion_id).toBe('plan_001')
+    expect(linked[0].clase_id).toBe('clase_001')
 
-    // ── Step 4: Verify objectives are linked ──
-    const planObjetivos = await obtenerObjetivosPorPlanificacion('plan_001')
-    expect(planObjetivos.length).toBe(3)
-    expect(planObjetivos[2].semana).toBe(3)
+    // ── Step 4: Verify objectives are linked to the class ──
+    const claseObjetivos = await obtenerObjetivosPorPlanificacion('clase_001')
+    expect(claseObjetivos.length).toBe(3)
+    expect(claseObjetivos[2].orden_objetivo).toBe(3)
 
     // ── Step 5: Evaluate indicators for students ──
     await registrarEvaluacion({
@@ -331,18 +326,15 @@ describe('Planificación Rediseño — Integration Flow', () => {
     expect(progress[1].alumno_nombre).toBe('María García')
   })
 
-  it('archiving old route when assigning new one preserves objectives', async () => {
+  it('archiving old route when assigning new one preserves the class-owned objetivos (REQ-14: no cascade, no bridge dependency)', async () => {
     // Assign first route
     const bridge1 = await asignarRutaAClase('clase_001', 'rv_001')
 
-    // Link objectives to a planification using this bridge
+    // Objetivos belong to clase_id directly (clase_mapa_objetivos) — there is
+    // no class_curriculum_plan_id column in the new model, so they never
+    // reference the route-assignment bridge at all.
     await agregarObjetivos([
-      {
-        planificacion_id: 'plan_001',
-        class_curriculum_plan_id: bridge1.id,
-        node_id: 'node_001',
-        indicator_id: 'ind_001',
-      },
+      { clase_id: 'clase_001', level_id: 'level_001', nombre: 'Objetivo 1', orden_objetivo: 1 },
     ])
 
     // Assign second route (should archive the first)
@@ -353,10 +345,11 @@ describe('Planificación Rediseño — Integration Flow', () => {
     const oldBridge = tables.class_curriculum_plan.find((b) => b.id === bridge1.id)
     expect(oldBridge.estado).toBe('archivado')
 
-    // Objectives should still be linked to the old bridge (no cascade)
-    const objetivos = await obtenerObjetivosPorPlanificacion('plan_001')
+    // Objetivos should still be there, unaffected by route archival (no cascade,
+    // no dependency on the bridge at all — they are owned by clase_id directly)
+    const objetivos = await obtenerObjetivosPorPlanificacion('clase_001')
     expect(objetivos.length).toBe(1)
-    expect(objetivos[0].class_curriculum_plan_id).toBe(bridge1.id)
+    expect(objetivos[0].clase_id).toBe('clase_001')
   })
 
   it('evaluation upsert updates existing record', async () => {

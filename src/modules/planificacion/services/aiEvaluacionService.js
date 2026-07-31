@@ -55,3 +55,43 @@ export async function sugerirTareaRefuerzoIA({ indicadorTitulo, alumnosNecesitan
     return `Practicar en casa 15 minutos diarios los ejercicios de ${indicadorTitulo} a velocidad lenta.`
   }
 }
+
+/**
+ * "Profesionalizar con IA" (REQ-11, Tarea 3.5): toma el texto libre de la
+ * bitácora de sesión (`bitacoraSesionPanel.js`) y devuelve una versión
+ * redactada con tono profesional/pedagógico, para que el maestro la revise
+ * y decida si la acepta — nunca se guarda sola (ver
+ * `bitacoraSesionService.guardarTextoProfesionalizado`, que exige
+ * `aceptadoPorMaestro: true` explícito).
+ *
+ * Reutiliza la misma integración GROQ que `sugerirRutaDidacticaIA`
+ * (`callGroq` vía `api/groqService.js` — proxy Edge Function, la API key
+ * nunca llega al navegador). No usa el `improveText` de
+ * `portal-maestros/services/groqService.js` a propósito: ese vive en un
+ * módulo distinto (portal de maestros) y este componente pertenece al
+ * módulo `planificacion`, que ya tiene su propio proxy GROQ — cruzar esa
+ * frontera introduciría un acoplamiento entre módulos que no existe hoy.
+ *
+ * @param {string} texto - texto libre original escrito por el maestro
+ * @returns {Promise<string>} versión profesionalizada del texto
+ */
+export async function profesionalizarBitacoraIA(texto) {
+  if (!texto || !texto.trim()) return ''
+
+  const prompt = `Redactá de forma profesional y pedagógica la siguiente nota de bitácora de un maestro de música de El Sistema, manteniendo los hechos EXACTOS que describe (no inventes nombres, notas, ni datos que no estén en el texto original). Máximo 3 oraciones, tono institucional pero cálido.
+
+Texto original del maestro:
+"""
+${texto}
+"""
+
+Responde ÚNICAMENTE con el texto profesionalizado, sin comillas ni explicaciones adicionales.`
+
+  try {
+    const raw = await callGroq([{ role: 'user', content: prompt }])
+    return raw.trim()
+  } catch (err) {
+    console.warn('[aiEvaluacionService] Error profesionalizando bitácora con GROQ:', err)
+    return texto
+  }
+}

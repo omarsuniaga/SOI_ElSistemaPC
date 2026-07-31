@@ -116,9 +116,6 @@ function _renderUI(container, planes) {
               `
                   : ''
               }
-              <button class="btn btn-sm btn-outline-primary btn-promocionar-plantilla" data-id="${p.id}" title="Promocionar a Plantilla Oficial Institucional">
-                <i class="bi bi-star me-1"></i>Hacer Plantilla
-              </button>
               ${
                 diagVelocidad.alertaDesfase
                   ? `
@@ -161,18 +158,6 @@ function _renderUI(container, planes) {
           renderAcmAprobacionView(container)
         } catch (err) {
           AppToast.show(`Error al aprobar: ${err.message}`, 'error')
-        }
-      })
-    })
-
-    tbody.querySelectorAll('.btn-promocionar-plantilla').forEach((btn) => {
-      btn.addEventListener('click', async () => {
-        try {
-          await actualizarPlanificacion(btn.dataset.id, { esPlantillaOficial: true, estado: 'publicada' })
-          AppToast.show('Planificación promocionada a Plantilla Oficial Institucional ⭐', 'success')
-          renderAcmAprobacionView(container)
-        } catch (err) {
-          AppToast.show(`Error al promocionar: ${err.message}`, 'error')
         }
       })
     })

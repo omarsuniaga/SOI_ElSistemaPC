@@ -177,7 +177,7 @@ export async function openEditorPlanificacionModal({ plan = null, esACM = false,
         <div class="form-check form-switch">
           <input class="form-check-input" type="checkbox" id="editor-plan-enviar" ${plan?.estado === 'publicada' || esACM ? 'checked' : ''}>
           <label class="form-check-label fw-medium text-body" for="editor-plan-enviar">
-            ${esACM ? 'Publicar como Plantilla Oficial Institucional' : 'Enviar a revisión pedagógica ACM'}
+            ${esACM ? 'Publicar como Plan Institucional (ACM)' : 'Enviar a revisión pedagógica ACM'}
           </label>
         </div>
       </div>
@@ -417,7 +417,6 @@ export async function openEditorPlanificacionModal({ plan = null, esACM = false,
         objetivosEstructurados: estadoEstructura.objetivos,
         contenidos,
         estado,
-        esPlantillaOficial: esACM,
         fecha: plan?.fecha || new Date().toISOString().slice(0, 10),
       }
 

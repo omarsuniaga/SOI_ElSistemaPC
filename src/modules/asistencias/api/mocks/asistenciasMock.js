@@ -297,6 +297,22 @@ export async function registrarAsistenciaBulk(asistencias) {
   return asistencias
 }
 
+// ─── GATE DE MODO SESIÓN (mapa-gamificado-planificacion, Tarea 3.2, REQ-03) ──
+
+export async function obtenerAsistenciaDelDia({ claseId, fecha } = {}) {
+  if (!claseId || !fecha) return { tomada: false, presentes: [] }
+
+  const registros = dbAsistencias.filter((a) => a.clase_id === claseId && a.fecha === fecha)
+  const presentes = registros
+    .filter((a) => a.estado === ESTADOS.PRESENTE)
+    .map((a) => {
+      const studentInfo = (alumnosMock || []).find((st) => st.id === a.alumno_id) || {}
+      return { id: a.alumno_id, nombre: studentInfo.nombre_completo ?? 'Estudiante Mock' }
+    })
+
+  return { tomada: registros.length > 0, presentes }
+}
+
 // ─── REPORTE CONSOLIDADO ─────────────────────────────────────────────────────
 
 export async function getReporteConsolidado({ fecha, claseId } = {}) {

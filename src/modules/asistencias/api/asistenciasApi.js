@@ -63,3 +63,9 @@ export async function registrarAsistenciaBulk(asistencias) {
 export async function getReporteConsolidado(params) {
   return impl.getReporteConsolidado(params)
 }
+
+// ─── GATE DE MODO SESIÓN (mapa-gamificado-planificacion, Tarea 3.2, REQ-03) ──
+
+export async function obtenerAsistenciaDelDia(params) {
+  return impl.obtenerAsistenciaDelDia(params)
+}

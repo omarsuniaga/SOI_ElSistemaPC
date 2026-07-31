@@ -425,6 +425,38 @@ export async function obtenerEstadoCumplimientoMaestro(maestroId, periodoId = nu
   }
 }
 
+// ─── GATE DE MODO SESIÓN (mapa-gamificado-planificacion, Tarea 3.2, REQ-03) ──
+
+/**
+ * Checks whether attendance has already been recorded for a class on a
+ * given date, and returns the roster of PRESENT students for that day.
+ * Used by `MapaClaseView.js` to gate the switch into "Dar Clase" (Modo
+ * Sesión MUST NOT be reachable for a date without recorded attendance,
+ * REQ-03) and by `calificacionIndicadorPanel.js` to scope grading to
+ * students actually present today (REQ-05 — not the full class roster).
+ *
+ * @param {{claseId: string, fecha: string}} params
+ * @returns {Promise<{tomada: boolean, presentes: Array<{id: string, nombre: string}>}>}
+ */
+export async function obtenerAsistenciaDelDia({ claseId, fecha } = {}) {
+  if (!claseId || !fecha) return { tomada: false, presentes: [] }
+
+  const { data, error } = await supabase
+    .from('asistencias')
+    .select('id, estado, alumno_id, alumnos ( id, nombre_completo )')
+    .eq('clase_id', claseId)
+    .eq('fecha', fecha)
+
+  if (error) throwError('No se pudo verificar la asistencia del día', error)
+
+  const registros = data || []
+  const presentes = registros
+    .filter((r) => r.estado === ESTADOS.PRESENTE)
+    .map((r) => ({ id: r.alumno_id, nombre: r.alumnos?.nombre_completo ?? '—' }))
+
+  return { tomada: registros.length > 0, presentes }
+}
+
 export async function getClases() {
   const { data, error } = await supabase
     .from('clases')

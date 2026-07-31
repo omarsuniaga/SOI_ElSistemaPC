@@ -18,6 +18,9 @@ function resetStore() {
   tables = {
     clase_mapa_objetivos: [],
     clase_mapa_indicadores: [],
+    acm_active_routes: [],
+    levels: [],
+    vw_clase_objetivo_estrellas: [],
   }
   nextId = 1
   deleteShouldFail = null
@@ -26,6 +29,7 @@ function resetStore() {
 function buildChain(forTable) {
   let queryFilters = {}
   let queryIsFilters = {}
+  let queryInFilters = {}
   let queryOrder = null
   let pendingOp = null
   let pendingData = null
@@ -36,6 +40,9 @@ function buildChain(forTable) {
     )
     result = result.filter((r) =>
       Object.entries(queryIsFilters).every(([k, v]) => (r[k] ?? null) === v),
+    )
+    result = result.filter((r) =>
+      Object.entries(queryInFilters).every(([k, arr]) => arr.includes(r[k])),
     )
     if (queryOrder) {
       const [field, asc] = queryOrder
@@ -76,6 +83,10 @@ function buildChain(forTable) {
     }),
     is: vi.fn((k, v) => {
       queryIsFilters[k] = v
+      return c
+    }),
+    in: vi.fn((k, arr) => {
+      queryInFilters[k] = arr
       return c
     }),
     order: vi.fn((field, opts) => {
@@ -163,6 +174,8 @@ import {
   archivarIndicador,
   eliminarIndicador,
   clonarPlantillaAClase,
+  obtenerNivelesAsignadosClase,
+  obtenerEstrellasPorClase,
   RequiereArchivarError,
 } from '../services/mapaClaseService.js'
 
@@ -330,6 +343,79 @@ describe('mapaClaseService', () => {
       await expect(clonarPlantillaAClase('clase_001', 'plantilla_001')).rejects.toThrow(
         'SOI-MAPA-02',
       )
+    })
+  })
+
+  // ── Tarea 3.2: niveles asignados a la clase (REQ-01) + estrellas del nodo ──
+
+  describe('obtenerNivelesAsignadosClase (REQ-01, scoping del selector de Nivel)', () => {
+    it('returns the distinct, active levels assigned to the class via acm_active_routes', async () => {
+      tables.acm_active_routes.push(
+        { id: 'r1', group_id: 'clase_001', level_id: 'level_A', status: 'active' },
+        { id: 'r2', group_id: 'clase_001', level_id: 'level_B', status: 'active' },
+        { id: 'r3', group_id: 'clase_001', level_id: 'level_A', status: 'active' }, // duplicate level
+        { id: 'r4', group_id: 'clase_001', level_id: 'level_C', status: 'paused' }, // inactive, excluded
+        { id: 'r5', group_id: 'clase_002', level_id: 'level_D', status: 'active' }, // otra clase
+      )
+      tables.levels.push(
+        { id: 'level_A', name: 'Nivel 1' },
+        { id: 'level_B', name: 'Nivel 2' },
+        { id: 'level_C', name: 'Nivel 3' },
+      )
+
+      const result = await obtenerNivelesAsignadosClase('clase_001')
+
+      expect(result.length).toBe(2)
+      expect(result.map((n) => n.id).sort()).toEqual(['level_A', 'level_B'])
+      expect(result.find((n) => n.id === 'level_A').nombre).toBe('Nivel 1')
+    })
+
+    it('returns an empty array when the class has no active levels assigned — the UI must block node creation (REQ-01)', async () => {
+      const result = await obtenerNivelesAsignadosClase('clase_sin_niveles')
+      expect(result).toEqual([])
+    })
+  })
+
+  describe('obtenerEstrellasPorClase (vw_clase_objetivo_estrellas, REQ-06/07/08)', () => {
+    it('maps the view rows to camelCase for MapaContenidoSVG', async () => {
+      tables.vw_clase_objetivo_estrellas.push({
+        objetivo_id: 'o1',
+        clase_id: 'clase_001',
+        total_indicadores: 4,
+        indicadores_evaluados: 2,
+        pct_avance: 50,
+        alumnos_superadores: 0,
+        promedio_superadores: null,
+        estrellas: 0,
+        estado_visual: 'en_progreso',
+      })
+
+      const result = await obtenerEstrellasPorClase('clase_001')
+
+      expect(result).toEqual([
+        {
+          objetivoId: 'o1',
+          claseId: 'clase_001',
+          totalIndicadores: 4,
+          indicadoresEvaluados: 2,
+          pctAvance: 50,
+          alumnosSuperadores: 0,
+          promedioSuperadores: null,
+          estrellas: 0,
+          estadoVisual: 'en_progreso',
+        },
+      ])
+    })
+
+    it('scopes strictly by clase_id', async () => {
+      tables.vw_clase_objetivo_estrellas.push(
+        { objetivo_id: 'o1', clase_id: 'clase_001', total_indicadores: 1, indicadores_evaluados: 1, pct_avance: 100, alumnos_superadores: 1, promedio_superadores: 5, estrellas: 3, estado_visual: 'con_estrellas' },
+        { objetivo_id: 'o2', clase_id: 'clase_002', total_indicadores: 1, indicadores_evaluados: 0, pct_avance: 0, alumnos_superadores: 0, promedio_superadores: null, estrellas: 0, estado_visual: 'en_progreso' },
+      )
+
+      const result = await obtenerEstrellasPorClase('clase_001')
+      expect(result.length).toBe(1)
+      expect(result[0].objetivoId).toBe('o1')
     })
   })
 })

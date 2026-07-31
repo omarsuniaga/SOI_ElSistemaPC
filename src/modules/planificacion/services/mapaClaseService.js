@@ -280,3 +280,66 @@ export async function clonarPlantillaAClase(claseId, plantillaId, nodeIds = null
   if (error) throw new Error(error.message || 'Error al clonar la plantilla')
   return data || []
 }
+
+// ── Niveles asignados / estrellas del nodo (Tarea 3.2 — MapaClaseView) ────
+
+/**
+ * Get the distinct, active levels assigned to a class via `acm_active_routes`
+ * (REQ-01, Decisión "RLS concreta" de design.md). El selector de Nivel del
+ * builder de `objetivoEditorModal.js` MUST ofrecer únicamente estos niveles;
+ * un array vacío significa que la clase no tiene niveles asignados y la UI
+ * MUST bloquear la creación de nodos.
+ *
+ * @param {string} claseId
+ * @returns {Promise<Array<{id: string, nombre: string}>>}
+ */
+export async function obtenerNivelesAsignadosClase(claseId) {
+  const { data: rutas, error } = await supabase
+    .from('acm_active_routes')
+    .select('level_id')
+    .eq('group_id', claseId)
+    .eq('status', 'active')
+
+  if (error) throw error
+
+  const levelIds = [...new Set((rutas || []).map((r) => r.level_id).filter(Boolean))]
+  if (levelIds.length === 0) return []
+
+  const { data: levels, error: errorLevels } = await supabase
+    .from('levels')
+    .select('id, name')
+    .in('id', levelIds)
+
+  if (errorLevels) throw errorLevels
+  return (levels || []).map((l) => ({ id: l.id, nombre: l.name }))
+}
+
+/**
+ * Get the derived stars/progress for every objetivo of a class from
+ * `vw_clase_objetivo_estrellas` (Decisión 5: las estrellas nunca se
+ * escriben, se derivan en SQL — REQ-06/07/08). Rows are mapped to camelCase
+ * to match the `{estrellas, pctAvance, estadoVisual}` shape MapaContenidoSVG
+ * expects per node (Tarea 3.1).
+ *
+ * @param {string} claseId
+ * @returns {Promise<Array<{objetivoId, claseId, totalIndicadores, indicadoresEvaluados, pctAvance, alumnosSuperadores, promedioSuperadores, estrellas, estadoVisual}>>}
+ */
+export async function obtenerEstrellasPorClase(claseId) {
+  const { data, error } = await supabase
+    .from('vw_clase_objetivo_estrellas')
+    .select('*')
+    .eq('clase_id', claseId)
+
+  if (error) throw error
+  return (data || []).map((row) => ({
+    objetivoId: row.objetivo_id,
+    claseId: row.clase_id,
+    totalIndicadores: row.total_indicadores,
+    indicadoresEvaluados: row.indicadores_evaluados,
+    pctAvance: row.pct_avance,
+    alumnosSuperadores: row.alumnos_superadores,
+    promedioSuperadores: row.promedio_superadores,
+    estrellas: row.estrellas,
+    estadoVisual: row.estado_visual,
+  }))
+}

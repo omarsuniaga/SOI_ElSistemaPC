@@ -1,6 +1,6 @@
 // src/modules/asistencias/api/__tests__/asistenciasApi.test.js
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { registrarAsistenciaBulk } from '../asistenciasApi.js'
+import { registrarAsistenciaBulk, obtenerAsistenciaDelDia } from '../asistenciasApi.js'
 import { supabase } from '../../../../lib/supabaseClient.js'
 
 vi.mock('../../../../lib/supabaseClient.js', () => ({
@@ -120,5 +120,47 @@ describe('registrarAsistenciaBulk - Constraint Error Detection', () => {
     await expect(registrarAsistenciaBulk(asistencias))
       .rejects
       .toThrow(/registrar las asistencias/i)
+  })
+})
+
+// ── Tarea 3.2 (mapa-gamificado-planificacion): gate de asistencia para Modo Sesión (REQ-03) ──
+describe('obtenerAsistenciaDelDia — gate REQ-03 (Modo Sesión exige asistencia ya tomada)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('returns tomada=false and presentes=[] when there is no attendance recorded for that clase+fecha', async () => {
+    const eqFecha = vi.fn().mockResolvedValue({ data: [], error: null })
+    const eqClase = vi.fn().mockReturnValue({ eq: eqFecha })
+    const selectMock = vi.fn().mockReturnValue({ eq: eqClase })
+    supabase.from.mockReturnValue({ select: selectMock })
+
+    const result = await obtenerAsistenciaDelDia({ claseId: 'clase-1', fecha: '2026-07-30' })
+
+    expect(result).toEqual({ tomada: false, presentes: [] })
+    expect(supabase.from).toHaveBeenCalledWith('asistencias')
+  })
+
+  it('returns tomada=true and only the PRESENTE students when attendance was taken (REQ-03, REQ-05 roster)', async () => {
+    const rows = [
+      { id: 'a1', estado: 'presente', alumno_id: 'al-1', alumnos: { id: 'al-1', nombre_completo: 'Ana Pérez' } },
+      { id: 'a2', estado: 'ausente', alumno_id: 'al-2', alumnos: { id: 'al-2', nombre_completo: 'Luis Gómez' } },
+      { id: 'a3', estado: 'justificado', alumno_id: 'al-3', alumnos: { id: 'al-3', nombre_completo: 'Pedro Ruiz' } },
+    ]
+    const eqFecha = vi.fn().mockResolvedValue({ data: rows, error: null })
+    const eqClase = vi.fn().mockReturnValue({ eq: eqFecha })
+    const selectMock = vi.fn().mockReturnValue({ eq: eqClase })
+    supabase.from.mockReturnValue({ select: selectMock })
+
+    const result = await obtenerAsistenciaDelDia({ claseId: 'clase-1', fecha: '2026-07-30' })
+
+    expect(result.tomada).toBe(true)
+    expect(result.presentes).toEqual([{ id: 'al-1', nombre: 'Ana Pérez' }])
+  })
+
+  it('returns tomada=false without querying Supabase when claseId or fecha is missing', async () => {
+    const result = await obtenerAsistenciaDelDia({ claseId: null, fecha: '2026-07-30' })
+    expect(result).toEqual({ tomada: false, presentes: [] })
+    expect(supabase.from).not.toHaveBeenCalled()
   })
 })

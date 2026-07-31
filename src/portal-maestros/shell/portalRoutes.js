@@ -25,6 +25,7 @@ const VIEW_LOADERS = {
   planificacion:     () => import('../views/planificacionView.js'),
   'planificacion-disenador': () => import('../../modules/planificacion/views/DisenadorCurricularView.js'),
   'planificacion-ruta':      () => import('../../modules/planificacion/views/RutaPedagogicaView.js'),
+  'planificacion-mapa-clase':() => import('../../modules/planificacion/views/MapaClaseView.js'),
   alumno:            () => import('../views/alumnoPerfilView.js'),
   gamificacion:      () => import('../views/gamificacionView.js'),
   ruta:              () => import('../views/rutaGameificadaView.js'),
@@ -51,7 +52,8 @@ export function setupRouterRoutes(router, _isAdmin, renderView) {
 
   ;[
     'login', 'logout', 'fechas', 'calendario', 'clases', 'hoy', 'asistencia',
-    'metricas', 'perfil', 'clase-emergente', 'planificacion', 'planificacion-disenador', 'planificacion-ruta', 'alumno',
+    'metricas', 'perfil', 'clase-emergente', 'planificacion', 'planificacion-disenador', 'planificacion-ruta',
+    'planificacion-mapa-clase', 'alumno',
     'gamificacion', 'ruta', 'crear-clase', 'ruta-plan-builder',
     'ruta-semanal', 'ruta-libreria', 'gestionar-clases',
     'register', 'pending-approval', 'gestionar-horario', 'proponer-contenido',
@@ -138,6 +140,11 @@ export async function renderViewContent(route, container, params, urlParams, con
       return await mod.renderDisenadorCurricularView(container)
     case 'planificacion-ruta':
       return await mod.renderRutaPedagogicaView(container)
+    case 'planificacion-mapa-clase':
+      return await mod.renderMapaClaseView(container, {
+        claseId: urlParams.get('clase'),
+        maestroId,
+      })
     case 'alumno':
       return mod.renderAlumnoPerfilView(container, { alumnoId: urlParams.get('id') || params.id })
     case 'gamificacion':

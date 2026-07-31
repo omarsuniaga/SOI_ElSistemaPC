@@ -85,6 +85,7 @@ import {
   generateMonthlyAttendance,
   generateMonthlyPedagogical,
 } from '../services/reportService.js'
+import { renderBitacoraSesionPanel } from '../../modules/planificacion/components/bitacoraSesionPanel.js'
 
 /**
  * Vista Asistencia Optimizada (F3+): toma de asistencia con micro-interacciones.
@@ -977,6 +978,17 @@ function _renderVista(container, ctx) {
         </div>
       </div>
 
+      <!-- Tarea 3.8 (mapa-gamificado-planificacion): entrada real a Modo Sesión (mapa) + Bitácora.
+           No reemplaza ni modifica el registro DSL de arriba — es un punto de entrada aparte. -->
+      <div class="pm-mapa-gamificado-entry" id="pm-mapa-gamificado-entry" style="margin-top:1.25rem; display:flex; gap:0.5rem; flex-wrap:wrap;">
+        <button type="button" class="pm-btn pm-btn-outline" id="btn-ir-modo-sesion">
+          <i class="bi bi-map"></i> Ir a Modo Sesión (Mapa)
+        </button>
+        <button type="button" class="pm-btn pm-btn-outline" id="btn-abrir-bitacora">
+          <i class="bi bi-journal-text"></i> Bitácora de la sesión
+        </button>
+      </div>
+
       <div id="pm-academic-tools" style="margin-top:1.5rem; display:none;"></div>
 
       <!-- Barra de Acciones Fija (Por encima del menú inferior) -->
@@ -1278,6 +1290,33 @@ function _renderVista(container, ctx) {
         btnProponerCurriculo.innerHTML =
           '<i class="bi bi-stars"></i> Proponer plan curricular con IA'
       }
+    }
+  }
+
+  // === Tarea 3.8 (mapa-gamificado-planificacion): entrada a Modo Sesión (mapa) + Bitácora ===
+  // El gate de REQ-03 ("Dar Clase exige asistencia tomada de hoy") lo aplica
+  // `MapaClaseView.js` (Tarea 3.2) al abrir — este botón solo navega, no
+  // duplica esa validación. La DSL de arriba (`createDslSection`) no se toca.
+  const btnIrModoSesion = container.querySelector('#btn-ir-modo-sesion')
+  if (btnIrModoSesion) {
+    btnIrModoSesion.onclick = () => {
+      navigateTo(`planificacion-mapa-clase?clase=${claseId}`)
+    }
+  }
+
+  const btnAbrirBitacora = container.querySelector('#btn-abrir-bitacora')
+  if (btnAbrirBitacora) {
+    btnAbrirBitacora.onclick = () => {
+      if (!sesionId) {
+        AppToast.warning('Guardá la asistencia de hoy antes de abrir la bitácora de la sesión.')
+        return
+      }
+      renderBitacoraSesionPanel({
+        sesionId,
+        claseId,
+        maestroId: maestro.id,
+        onSaved: () => AppToast.success('Bitácora guardada'),
+      })
     }
   }
 

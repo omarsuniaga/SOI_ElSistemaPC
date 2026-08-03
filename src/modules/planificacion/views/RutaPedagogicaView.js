@@ -210,7 +210,7 @@ function _renderUI(container, clases, planificaciones, { parentRoute = 'planific
           if (cached) {
             alumnosClase = cached
             nodoDatosListos = true
-            openNodoDetailModal(nodo, alumnosClase)
+            openNodoDetailModal(nodo, alumnosClase, nodos)
             _renderTbody()
             return
           }
@@ -223,7 +223,7 @@ function _renderUI(container, clases, planificaciones, { parentRoute = 'planific
             nodoEvalCache.set(nodo.id, lista)
             alumnosClase = lista
             nodoDatosListos = true
-            openNodoDetailModal(nodo, alumnosClase)
+            openNodoDetailModal(nodo, alumnosClase, nodos)
             _renderTbody()
           })
         },
@@ -296,7 +296,7 @@ function _getEtiquetaEstrella(cant) {
 
 let activeNodeModal = null
 
-async function openNodoDetailModal(nodo, alumnosList = []) {
+async function openNodoDetailModal(nodo, alumnosList = [], nodosSecuencia = []) {
   const colaOfflineData = await OfflineSyncAdapter.obtenerCola()
   alumnosList._colaOfflineData = colaOfflineData
   if (activeNodeModal) {
@@ -339,19 +339,10 @@ async function openNodoDetailModal(nodo, alumnosList = []) {
       const esEvaluable = a.presente && !a.justificado
       const statusLabel = a.justificado ? 'Bloqueado (Justificado)' : a.presente ? 'Presente' : 'Bloqueado (Ausente)'
 
-      // Evaluación de Deuda Pedagógica por Nodos Previos No Aprobados/Inasistencia
-      const nodosDemoSecuencia = [
-        { id: 'nd-1', titulo: 'Postura corporal y emisión sonora libre' },
-        { id: 'nd-2', titulo: 'Escala de Do Mayor en cuerdas Re-Sol' },
-        { id: 'nd-3', titulo: 'Estudio Nº 4: Control de pulso a 80 BPM' },
-        { id: 'nd-4', titulo: 'Articulación de 1er y 2do dedo' },
-        { id: 'nd-5', titulo: 'Repertorio: Canción de Mayo (Suzuki)' },
-      ]
-
       const analisisDeuda = DeudaPedagogicaEngine.evaluarDeuda({
         alumnoId: a.id,
         nodoActual: nodo,
-        nodosOrdenados: nodosDemoSecuencia,
+        nodosOrdenados: nodosSecuencia,
         colaOffline: alumnosList._colaOfflineData || [],
       })
 

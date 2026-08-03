@@ -18,7 +18,26 @@ const NIVELES_TECNICOS = [
   { id: 'nivel-3', nombre: 'Nivel 3: Avanzado / Maestría Institucional', color: 'danger' },
 ]
 
-import { getMisClases } from '../../../portal-maestros/services/maestroDataService.js'
+import { getMisClases, getHorariosClases } from '../../../portal-maestros/services/maestroDataService.js'
+
+/**
+ * Frecuencia semanal real de una clase: cuenta los días distintos en
+ * `horarios` (tabla real, vía getHorariosClases) para esa clase. Reemplaza
+ * la detección anterior que adivinaba campos `diasSemana`/`horario` que no
+ * existen en `clases` — siempre caía al default de 2.
+ * @returns {Promise<number>} clases/semana (mínimo 1 si hay horario, si no 0)
+ */
+async function _detectarFrecuenciaSemanalReal(claseId) {
+  if (!claseId) return 0
+  try {
+    const horarios = await getHorariosClases([claseId])
+    const dias = new Set((horarios || []).filter((h) => h.clase_id === claseId).map((h) => h.dia))
+    return dias.size
+  } catch (err) {
+    console.error('[DisenadorCurricularView] Error detectando frecuencia horaria:', err)
+    return 0
+  }
+}
 
 /**
  * Vista de Pantalla Completa: Diseñador Curricular Institucional (Premium UI/UX con Datos Reales)
@@ -80,6 +99,16 @@ export async function renderDisenadorCurricularView(container, { maestroId, clas
         ],
       },
     ],
+  }
+
+  // Sin frecuencia guardada en un plan previo: detectar del horario real de
+  // la clase en vez de quedarse con el default hardcodeado de 2/semana.
+  if (!planExistente?.frecuenciaSemanal) {
+    const detectada = await _detectarFrecuenciaSemanalReal(estadoEstructura.claseId)
+    if (detectada > 0) {
+      estadoEstructura.frecuenciaSemanal = detectada
+      estadoEstructura.frecuenciaOrigen = 'horario'
+    }
   }
 
   _renderUI(container, clases, estadoEstructura)
@@ -335,15 +364,33 @@ function _attachEventsFull(container, clases, estadoEstructura, alumnosState, _l
 
   container.querySelector('#select-clase-full')?.addEventListener('change', async (e) => {
     estadoEstructura.claseId = e.target.value
+    let frecuenciaGuardada = null
     try {
       const planes = await obtenerPlanificacionesConDetalles().catch(() => [])
       const match = planes.find((p) => String(p.clase_id || p.claseId) === String(estadoEstructura.claseId))
       if (match && Array.isArray(match.objetivosEstructurados) && match.objetivosEstructurados.length > 0) {
         estadoEstructura.objetivos = match.objetivosEstructurados
         if (match.nivelId) estadoEstructura.nivelId = match.nivelId
-        if (match.frecuenciaSemanal) estadoEstructura.frecuenciaSemanal = match.frecuenciaSemanal
+        if (match.frecuenciaSemanal) frecuenciaGuardada = match.frecuenciaSemanal
       }
     } catch {}
+
+    // Si el plan guardado ya trae una frecuencia (el maestro la fijó a mano
+    // antes), respetarla. Si no, detectarla del horario real de la clase.
+    if (frecuenciaGuardada) {
+      estadoEstructura.frecuenciaSemanal = frecuenciaGuardada
+      estadoEstructura.frecuenciaOrigen = 'manual'
+    } else {
+      const detectada = await _detectarFrecuenciaSemanalReal(estadoEstructura.claseId)
+      if (detectada > 0) {
+        estadoEstructura.frecuenciaSemanal = detectada
+        estadoEstructura.frecuenciaOrigen = 'horario'
+      }
+    }
+    const inp = container.querySelector('#input-frecuencia-full')
+    if (inp) inp.value = estadoEstructura.frecuenciaSemanal
+    _updateRitmoBanner(container, estadoEstructura)
+
     _loadAlumnosModal().then(() => _renderObjetivosFull(container, estadoEstructura, alumnosState))
   })
 
@@ -352,26 +399,24 @@ function _attachEventsFull(container, clases, estadoEstructura, alumnosState, _l
     _updateRitmoBanner(container, estadoEstructura)
   })
 
-  container.querySelector('#btn-auto-frecuencia')?.addEventListener('click', () => {
-    const targetClase = clases.find((c) => String(c.id) === String(estadoEstructura.claseId))
-    if (!targetClase) {
+  container.querySelector('#btn-auto-frecuencia')?.addEventListener('click', async () => {
+    if (!estadoEstructura.claseId) {
       AppToast.show('Selecciona primero una clase para detectar su horario', 'warning')
       return
     }
 
-    let detectedFreq = 2
-    if (Array.isArray(targetClase.diasSemana)) {
-      detectedFreq = targetClase.diasSemana.length
-    } else if (typeof targetClase.horario === 'string') {
-      const matches = targetClase.horario.match(/lunes|martes|miércoles|jueves|viernes|sábado|domingo/gi)
-      if (matches) detectedFreq = new Set(matches.map((m) => m.toLowerCase())).size
+    const detectedFreq = await _detectarFrecuenciaSemanalReal(estadoEstructura.claseId)
+    if (detectedFreq === 0) {
+      AppToast.show('Esta clase no tiene horario cargado todavía — no se pudo detectar la frecuencia', 'warning')
+      return
     }
 
     estadoEstructura.frecuenciaSemanal = detectedFreq
+    estadoEstructura.frecuenciaOrigen = 'horario'
     const inp = container.querySelector('#input-frecuencia-full')
     if (inp) inp.value = detectedFreq
 
-    AppToast.show(`Horario detectado: ${detectedFreq} clases/semana`, 'info')
+    AppToast.show(`Horario detectado: ${detectedFreq} clase(s)/semana`, 'info')
     _updateRitmoBanner(container, estadoEstructura)
   })
 

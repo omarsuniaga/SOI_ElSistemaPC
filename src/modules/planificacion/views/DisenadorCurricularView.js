@@ -131,7 +131,9 @@ function _todosLosIndicadores(unidades) {
   const out = []
   unidades.forEach((u) => {
     ;(u.objetivos || []).forEach((o) => {
-      ;(o.indicadores || []).forEach((ind) => out.push(ind))
+      ;(o.indicadores || []).forEach((ind) =>
+        out.push({ ...ind, unidadTitulo: u.titulo, objTitulo: o.titulo }),
+      )
     })
   })
   return out
@@ -718,9 +720,12 @@ function _updateSVGFull(container, estadoEstructura, alumnosState) {
   const canvasEl = container.querySelector('#full-svg-canvas-container')
   if (!canvasEl) return
 
+  // El canvas es una cadena plana de nodos (no dibuja sub-árboles), así que
+  // la jerarquía Unidad › Objetivo se muestra como contexto en el título de
+  // cada indicador — siempre visible, sin perder de dónde viene cada nodo.
   const nodos = _todosLosIndicadores(estadoEstructura.objetivos).map((ind) => ({
     id: ind.id,
-    titulo: ind.titulo,
+    titulo: `${ind.unidadTitulo} › ${ind.objTitulo} › ${ind.titulo}`,
     estado: ind.prerrequisitoId ? 'en_proceso' : 'logrado',
   }))
 

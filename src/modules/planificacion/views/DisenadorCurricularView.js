@@ -4,8 +4,8 @@ import { obtenerClases } from '../api/planificacionAdapter.js'
 import { sugerirRutaDidacticaIA } from '../services/aiEvaluacionService.js'
 import {
   obtenerNivelesAsignadosClase,
-  obtenerPlantillasDisponibles,
-  clonarPlantillaAClase,
+  clonarCatalogoAClase,
+  obtenerObjetivosPorClase,
   crearObjetivo,
   crearIndicador,
 } from '../services/mapaClaseService.js'
@@ -59,8 +59,7 @@ export async function renderDisenadorCurricularView(container) {
   const state = {
     claseId: clases[0]?.id || '',
     niveles: [],
-    plantillas: [],
-    plantillaId: '',
+    nivelIdClonar: '',
     nivelIdIA: '',
   }
 
@@ -71,8 +70,7 @@ export async function renderDisenadorCurricularView(container) {
 async function _cargarDependenciasClase(state) {
   if (!state.claseId) {
     state.niveles = []
-    state.plantillas = []
-    state.plantillaId = ''
+    state.nivelIdClonar = ''
     state.nivelIdIA = ''
     return
   }
@@ -80,21 +78,19 @@ async function _cargarDependenciasClase(state) {
   try {
     state.niveles = await obtenerNivelesAsignadosClase(state.claseId)
   } catch (err) {
-    console.error('[DisenadorCurricularView] Error cargando niveles asignados:', err)
+    console.error('[DisenadorCurricularView] Error cargando niveles del catálogo:', err)
     state.niveles = []
   }
 
-  try {
-    const todas = await obtenerPlantillasDisponibles()
-    const levelIds = new Set(state.niveles.map((n) => n.id))
-    state.plantillas = todas.filter((p) => levelIds.has(p.level_id))
-  } catch (err) {
-    console.error('[DisenadorCurricularView] Error cargando plantillas:', err)
-    state.plantillas = []
-  }
-
-  state.plantillaId = state.plantillas[0]?.id || ''
+  state.nivelIdClonar = state.niveles[0]?.id || ''
   state.nivelIdIA = state.niveles[0]?.id || ''
+}
+
+/** Próximo orden_objetivo libre para (claseId, nivelId) — mismo criterio que el RPC clonar_catalogo_a_clase. */
+async function _siguienteOrdenObjetivo(claseId, nivelId) {
+  const existentes = await obtenerObjetivosPorClase(claseId)
+  const delNivel = existentes.filter((o) => o.level_id === nivelId)
+  return delNivel.reduce((max, o) => Math.max(max, o.orden_objetivo || 0), 0) + 1
 }
 
 function _renderUI(container, clases, state) {
@@ -144,30 +140,30 @@ function _renderUI(container, clases, state) {
           sinNiveles
             ? `
           <div class="alert alert-warning mt-3 mb-0" role="alert">
-            <i class="bi bi-exclamation-triangle me-2"></i>Esta clase no tiene niveles asignados en la matriz ACM. Asigná un nivel antes de armar su mapa (REQ-01).
+            <i class="bi bi-exclamation-triangle me-2"></i>Todavía no hay niveles cargados en el catálogo para el instrumento de esta clase.
           </div>
         `
             : ''
         }
       </div>
 
-      <!-- ENTRADAS: CLONAR DESDE PLANTILLA / GENERAR CON IA -->
+      <!-- ENTRADAS: CLONAR DESDE CATÁLOGO / GENERAR CON IA -->
       <div class="row g-4">
         <div class="col-lg-6">
           <div class="card border border-secondary-subtle bg-body-tertiary rounded-4 p-4 shadow-sm h-100">
-            <h5 class="fw-bold text-body mb-2"><i class="bi bi-copy me-2 text-primary"></i>Clonar desde plantilla</h5>
-            <p class="text-body-secondary small mb-3">Copia editable e independiente de una plantilla semilla curada por ACM (REQ-10).</p>
+            <h5 class="fw-bold text-body mb-2"><i class="bi bi-copy me-2 text-primary"></i>Clonar desde catálogo</h5>
+            <p class="text-body-secondary small mb-3">Copia editable e independiente de un nivel del catálogo institucional.</p>
 
-            <label class="form-label fw-semibold text-body">Plantilla</label>
-            <select class="form-select border-secondary-subtle mb-3" id="select-plantilla-disenador" ${state.plantillas.length === 0 ? 'disabled' : ''}>
+            <label class="form-label fw-semibold text-body">Nivel</label>
+            <select class="form-select border-secondary-subtle mb-3" id="select-nivel-clonar-disenador" ${state.niveles.length === 0 ? 'disabled' : ''}>
               ${
-                state.plantillas.length === 0
-                  ? '<option value="">Sin plantillas disponibles para el nivel de esta clase</option>'
-                  : state.plantillas
+                state.niveles.length === 0
+                  ? '<option value="">Sin niveles en el catálogo para esta clase</option>'
+                  : state.niveles
                       .map(
-                        (p) => `
-                    <option value="${p.id}" ${p.id === state.plantillaId ? 'selected' : ''}>
-                      ${escapeHTML(p.nombre)}${p.instrumento ? ` (${escapeHTML(p.instrumento)})` : ''}
+                        (n) => `
+                    <option value="${n.id}" ${n.id === state.nivelIdClonar ? 'selected' : ''}>
+                      ${escapeHTML(n.nombre)}
                     </option>
                   `,
                       )
@@ -175,7 +171,7 @@ function _renderUI(container, clases, state) {
               }
             </select>
 
-            <button type="button" class="btn btn-primary" id="btn-clonar-plantilla" ${bloqueado || state.plantillas.length === 0 ? 'disabled' : ''}>
+            <button type="button" class="btn btn-primary" id="btn-clonar-plantilla" ${bloqueado ? 'disabled' : ''}>
               <i class="bi bi-copy me-1"></i>Clonar a esta clase
             </button>
           </div>
@@ -220,8 +216,8 @@ function _attachEvents(container, clases, state) {
     _renderUI(container, clases, state)
   })
 
-  container.querySelector('#select-plantilla-disenador')?.addEventListener('change', (e) => {
-    state.plantillaId = e.target.value
+  container.querySelector('#select-nivel-clonar-disenador')?.addEventListener('change', (e) => {
+    state.nivelIdClonar = e.target.value
   })
 
   container.querySelector('#select-nivel-ia-disenador')?.addEventListener('change', (e) => {
@@ -229,16 +225,16 @@ function _attachEvents(container, clases, state) {
   })
 
   container.querySelector('#btn-clonar-plantilla')?.addEventListener('click', async () => {
-    if (!state.claseId || !state.plantillaId) return
+    if (!state.claseId || !state.nivelIdClonar) return
     const btn = container.querySelector('#btn-clonar-plantilla')
     btn.disabled = true
 
     try {
-      await clonarPlantillaAClase(state.claseId, state.plantillaId)
-      AppToast.show('Plantilla clonada a la clase con éxito ⭐', 'success')
+      await clonarCatalogoAClase(state.claseId, state.nivelIdClonar)
+      AppToast.show('Nivel del catálogo clonado a la clase con éxito ⭐', 'success')
       window.router?.navigate('planificacion-acm')
     } catch (err) {
-      AppToast.show(`Error al clonar la plantilla: ${err.message}`, 'error')
+      AppToast.show(`Error al clonar el catálogo: ${err.message}`, 'error')
       btn.disabled = false
     }
   })
@@ -258,11 +254,13 @@ function _attachEvents(container, clases, state) {
         nivelIndex: nivelIndex >= 0 ? nivelIndex : 0,
       })
 
+      let ordenObjetivo = await _siguienteOrdenObjetivo(state.claseId, state.nivelIdIA)
       for (const sug of sugerencias || []) {
         const objetivoCreado = await crearObjetivo({
           clase_id: state.claseId,
           level_id: state.nivelIdIA,
           nombre: sug.titulo || sug.id || 'Objetivo generado por IA',
+          orden_objetivo: ordenObjetivo++,
         })
 
         for (const ind of sug.indicadores || []) {

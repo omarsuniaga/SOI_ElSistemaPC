@@ -6,16 +6,17 @@
  * vista deja de serializar `objetivosEstructurados`/`esPlantillaOficial`
  * hacia `planificaciones` (campos fantasma que la base descartaba en
  * silencio — nunca hubo persistencia real) y pasa a ser el punto de
- * entrada de "Clonar desde plantilla" (REQ-10) + "Generar con IA", que
- * ahora persiste directamente en `clase_mapa_objetivos`/`clase_mapa_indicadores`
+ * entrada de "Clonar desde catálogo" + "Generar con IA", que
+ * persiste directamente en `clase_mapa_objetivos`/`clase_mapa_indicadores`
  * (REQ-14) en vez de quedar en un estado de demo en memoria.
  *
- * Los tests de regresión previos (C-2/M-7/M-3) cubrían el editor de
- * objetivos/indicadores en memoria + ciclado de estrellas vía
- * `IndicadorLogro`/`OfflineSyncAdapter` — exactamente la maqueta de "semillas
- * en memoria, nunca persistidas" que Migration/Rollout §2 de design.md
- * ordena eliminar con esta reescritura. Se reemplazan por los tests de la
- * nueva superficie.
+ * 2026-08-03: el árbol viejo (routes/route_versions/levels/nodes/objetivos/
+ * indicators + mapa_plantillas) se reemplaza por un catálogo propio del mapa
+ * gamificado (catalogo_niveles / catalogo_objetivos_generales /
+ * catalogo_objetivos_especificos), clonado vía RPC clonar_catalogo_a_clase
+ * (mapaClaseService.clonarCatalogoAClase). "Clonar desde plantilla" pasa a
+ * ser "Clonar desde catálogo": ya no hay selector de plantilla, se clona
+ * directamente el nivel elegido.
  */
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { readFileSync } from 'fs'
@@ -32,8 +33,8 @@ vi.mock('../../services/aiEvaluacionService.js', () => ({
 
 vi.mock('../../services/mapaClaseService.js', () => ({
   obtenerNivelesAsignadosClase: vi.fn(),
-  obtenerPlantillasDisponibles: vi.fn(),
-  clonarPlantillaAClase: vi.fn(),
+  clonarCatalogoAClase: vi.fn(),
+  obtenerObjetivosPorClase: vi.fn(),
   crearObjetivo: vi.fn(),
   crearIndicador: vi.fn(),
 }))
@@ -46,8 +47,8 @@ import { obtenerClases, crearPlanificacion } from '../../api/planificacionAdapte
 import { sugerirRutaDidacticaIA } from '../../services/aiEvaluacionService.js'
 import {
   obtenerNivelesAsignadosClase,
-  obtenerPlantillasDisponibles,
-  clonarPlantillaAClase,
+  clonarCatalogoAClase,
+  obtenerObjetivosPorClase,
   crearObjetivo,
   crearIndicador,
 } from '../../services/mapaClaseService.js'
@@ -69,78 +70,71 @@ describe('DisenadorCurricularView', () => {
     document.body.appendChild(container)
     vi.clearAllMocks()
     window.router = router
+    obtenerObjetivosPorClase.mockResolvedValue([])
   })
 
   afterEach(() => {
     document.body.removeChild(container)
   })
 
-  it('carga clases, niveles asignados y plantillas compatibles con esos niveles', async () => {
+  it('carga clases y niveles del catálogo para la clase seleccionada', async () => {
     obtenerClases.mockResolvedValue([{ id: 'clase-1', nombre: 'Violín Inicial' }])
     obtenerNivelesAsignadosClase.mockResolvedValue([{ id: 'level-A', nombre: 'Nivel 2' }])
-    obtenerPlantillasDisponibles.mockResolvedValue([
-      { id: 'plantilla-1', nombre: 'Violín Nivel 2', instrumento: 'Violín', level_id: 'level-A' },
-      { id: 'plantilla-2', nombre: 'Piano Nivel 1', instrumento: 'Piano', level_id: 'level-otro' },
-    ])
 
     await renderDisenadorCurricularView(container)
 
     expect(obtenerNivelesAsignadosClase).toHaveBeenCalledWith('clase-1')
-    const opciones = [...container.querySelectorAll('#select-plantilla-disenador option')].map((o) => o.value)
-    expect(opciones).toEqual(['plantilla-1'])
+    const opciones = [...container.querySelectorAll('#select-nivel-clonar-disenador option')].map((o) => o.value)
+    expect(opciones).toEqual(['level-A'])
     expect(container.querySelector('#btn-clonar-plantilla').disabled).toBe(false)
   })
 
-  it('bloquea "Clonar" y "Generar con IA" si la clase no tiene niveles asignados (REQ-01)', async () => {
+  it('bloquea "Clonar" y "Generar con IA" si el catálogo no tiene niveles para el instrumento de la clase', async () => {
     obtenerClases.mockResolvedValue([{ id: 'clase-1', nombre: 'Violín Inicial' }])
     obtenerNivelesAsignadosClase.mockResolvedValue([])
-    obtenerPlantillasDisponibles.mockResolvedValue([])
 
     await renderDisenadorCurricularView(container)
 
-    expect(container.textContent).toContain('no tiene niveles asignados')
+    expect(container.textContent).toContain('no hay niveles cargados en el catálogo')
     expect(container.querySelector('#btn-clonar-plantilla').disabled).toBe(true)
     expect(container.querySelector('#btn-generar-ia').disabled).toBe(true)
   })
 
-  it('"Clonar a esta clase" invoca clonarPlantillaAClase y navega a planificacion-acm al tener éxito', async () => {
+  it('"Clonar a esta clase" invoca clonarCatalogoAClase y navega a planificacion-acm al tener éxito', async () => {
     obtenerClases.mockResolvedValue([{ id: 'clase-1', nombre: 'Violín Inicial' }])
     obtenerNivelesAsignadosClase.mockResolvedValue([{ id: 'level-A', nombre: 'Nivel 2' }])
-    obtenerPlantillasDisponibles.mockResolvedValue([
-      { id: 'plantilla-1', nombre: 'Violín Nivel 2', instrumento: 'Violín', level_id: 'level-A' },
-    ])
-    clonarPlantillaAClase.mockResolvedValue([{ objetivo_id: 'o1' }])
+    clonarCatalogoAClase.mockResolvedValue([{ objetivo_id: 'o1' }])
 
     await renderDisenadorCurricularView(container)
     await container.querySelector('#btn-clonar-plantilla').click()
     await flush()
 
-    expect(clonarPlantillaAClase).toHaveBeenCalledWith('clase-1', 'plantilla-1')
-    expect(AppToast.show).toHaveBeenCalledWith(expect.stringContaining('clonada'), 'success')
+    expect(clonarCatalogoAClase).toHaveBeenCalledWith('clase-1', 'level-A')
+    expect(AppToast.show).toHaveBeenCalledWith(expect.stringContaining('clonado'), 'success')
     expect(router.navigate).toHaveBeenCalledWith('planificacion-acm')
   })
 
-  it('muestra un error y no navega si clonarPlantillaAClase falla (ej. SOI-MAPA-02)', async () => {
+  it('muestra un error y no navega si clonarCatalogoAClase falla (ej. SOI-CAT-02)', async () => {
     obtenerClases.mockResolvedValue([{ id: 'clase-1', nombre: 'Violín Inicial' }])
     obtenerNivelesAsignadosClase.mockResolvedValue([{ id: 'level-A', nombre: 'Nivel 2' }])
-    obtenerPlantillasDisponibles.mockResolvedValue([
-      { id: 'plantilla-1', nombre: 'Violín Nivel 2', instrumento: 'Violín', level_id: 'level-A' },
-    ])
-    clonarPlantillaAClase.mockRejectedValue(new Error('SOI-MAPA-02: nivel no asignado a la clase'))
+    clonarCatalogoAClase.mockRejectedValue(new Error('SOI-CAT-02: nivel de catálogo no existe o está inactivo'))
 
     await renderDisenadorCurricularView(container)
     await container.querySelector('#btn-clonar-plantilla').click()
     await flush()
 
-    expect(AppToast.show).toHaveBeenCalledWith(expect.stringContaining('SOI-MAPA-02'), 'error')
+    expect(AppToast.show).toHaveBeenCalledWith(expect.stringContaining('SOI-CAT-02'), 'error')
     expect(router.navigate).not.toHaveBeenCalled()
     expect(container.querySelector('#btn-clonar-plantilla').disabled).toBe(false)
   })
 
-  it('"Generar Mapeo con IA" crea los objetivos/indicadores sugeridos directamente en el mapa de la clase', async () => {
+  it('"Generar Mapeo con IA" crea los objetivos/indicadores sugeridos directamente en el mapa de la clase, con orden_objetivo consecutivo', async () => {
     obtenerClases.mockResolvedValue([{ id: 'clase-1', nombre: 'Violín Inicial' }])
     obtenerNivelesAsignadosClase.mockResolvedValue([{ id: 'level-A', nombre: 'Nivel 2' }])
-    obtenerPlantillasDisponibles.mockResolvedValue([])
+    obtenerObjetivosPorClase.mockResolvedValue([
+      { level_id: 'level-A', orden_objetivo: 3 },
+      { level_id: 'otro-nivel', orden_objetivo: 99 }, // de otro nivel, no debe contar
+    ])
     sugerirRutaDidacticaIA.mockResolvedValue([
       { id: 'obj-1', titulo: 'Postura', indicadores: [{ id: 'ind-1', titulo: 'Postura corporal' }, 'Emisión sonora libre'] },
     ])
@@ -153,7 +147,12 @@ describe('DisenadorCurricularView', () => {
     await flush()
 
     expect(sugerirRutaDidacticaIA).toHaveBeenCalledWith({ instrumento: 'Violín Inicial', nivelIndex: 0 })
-    expect(crearObjetivo).toHaveBeenCalledWith({ clase_id: 'clase-1', level_id: 'level-A', nombre: 'Postura' })
+    expect(crearObjetivo).toHaveBeenCalledWith({
+      clase_id: 'clase-1',
+      level_id: 'level-A',
+      nombre: 'Postura',
+      orden_objetivo: 4, // MAX(orden_objetivo) del nivel (3) + 1
+    })
     expect(crearIndicador).toHaveBeenCalledWith({
       objetivo_id: 'objetivo-creado-1',
       clase_id: 'clase-1',
@@ -167,7 +166,7 @@ describe('DisenadorCurricularView', () => {
     expect(router.navigate).toHaveBeenCalledWith('planificacion-acm')
   })
 
-  it('al cambiar de clase, recarga niveles y plantillas de la nueva clase', async () => {
+  it('al cambiar de clase, recarga los niveles del catálogo de la nueva clase', async () => {
     obtenerClases.mockResolvedValue([
       { id: 'clase-1', nombre: 'Violín Inicial' },
       { id: 'clase-2', nombre: 'Piano Avanzado' },
@@ -176,7 +175,6 @@ describe('DisenadorCurricularView', () => {
       if (claseId === 'clase-2') return Promise.resolve([{ id: 'level-B', nombre: 'Nivel 1' }])
       return Promise.resolve([{ id: 'level-A', nombre: 'Nivel 2' }])
     })
-    obtenerPlantillasDisponibles.mockResolvedValue([])
 
     await renderDisenadorCurricularView(container)
 
@@ -192,10 +190,7 @@ describe('DisenadorCurricularView', () => {
   it('nunca llama a crearPlanificacion (ya no serializa objetivosEstructurados/esPlantillaOficial)', async () => {
     obtenerClases.mockResolvedValue([{ id: 'clase-1', nombre: 'Violín Inicial' }])
     obtenerNivelesAsignadosClase.mockResolvedValue([{ id: 'level-A', nombre: 'Nivel 2' }])
-    obtenerPlantillasDisponibles.mockResolvedValue([
-      { id: 'plantilla-1', nombre: 'Violín Nivel 2', instrumento: 'Violín', level_id: 'level-A' },
-    ])
-    clonarPlantillaAClase.mockResolvedValue([])
+    clonarCatalogoAClase.mockResolvedValue([])
 
     await renderDisenadorCurricularView(container)
     await container.querySelector('#btn-clonar-plantilla').click()

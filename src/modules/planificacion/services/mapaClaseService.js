@@ -299,38 +299,140 @@ export async function obtenerPlantillasDisponibles(levelId = null) {
   return data || []
 }
 
-// ── Niveles asignados / estrellas del nodo (Tarea 3.2 — MapaClaseView) ────
+// ── Catálogo propio (Nivel → Objetivo General → Objetivo Específico) ─────
+// Reemplaza al árbol viejo (routes/route_versions/levels/nodes/objetivos/
+// indicators, compartido por 50+ archivos de otros módulos — no se toca).
+// Este catálogo es propio del mapa gamificado, scoped por `clases.instrumento`.
 
 /**
- * Get the distinct, active levels assigned to a class via `acm_active_routes`
- * (REQ-01, Decisión "RLS concreta" de design.md). El selector de Nivel del
- * builder de `objetivoEditorModal.js` MUST ofrecer únicamente estos niveles;
- * un array vacío significa que la clase no tiene niveles asignados y la UI
- * MUST bloquear la creación de nodos.
+ * Niveles del catálogo para el instrumento de una clase (REQ-01: el selector
+ * de Nivel del builder MUST ofrecer únicamente estos). Array vacío = todavía
+ * no hay catálogo cargado para ese instrumento, la UI MUST bloquear la
+ * creación de nodos y sugerir clonar/crear desde cero.
  *
  * @param {string} claseId
  * @returns {Promise<Array<{id: string, nombre: string}>>}
  */
 export async function obtenerNivelesAsignadosClase(claseId) {
-  const { data: rutas, error } = await supabase
-    .from('acm_active_routes')
-    .select('level_id')
-    .eq('group_id', claseId)
-    .eq('status', 'active')
+  const { data: clase, error: claseError } = await supabase
+    .from('clases')
+    .select('instrumento')
+    .eq('id', claseId)
+    .single()
+
+  if (claseError || !clase?.instrumento) return []
+
+  const { data, error } = await supabase
+    .from('catalogo_niveles')
+    .select('id, nombre')
+    .eq('instrumento', clase.instrumento)
+    .eq('activo', true)
+    .order('orden')
 
   if (error) throw error
-
-  const levelIds = [...new Set((rutas || []).map((r) => r.level_id).filter(Boolean))]
-  if (levelIds.length === 0) return []
-
-  const { data: levels, error: errorLevels } = await supabase
-    .from('levels')
-    .select('id, name')
-    .in('id', levelIds)
-
-  if (errorLevels) throw errorLevels
-  return (levels || []).map((l) => ({ id: l.id, nombre: l.name }))
+  return (data || []).map((l) => ({ id: l.id, nombre: l.nombre }))
 }
+
+/**
+ * Niveles del catálogo para un instrumento dado (uso directo por la vista de
+ * curación ACM, sin pasar por una clase).
+ *
+ * @param {string} instrumento
+ * @returns {Promise<Array<object>>}
+ */
+export async function obtenerCatalogoNiveles(instrumento) {
+  let query = supabase.from('catalogo_niveles').select('*').order('orden')
+  if (instrumento) query = query.eq('instrumento', instrumento)
+
+  const { data, error } = await query
+  if (error) throw error
+  return data || []
+}
+
+/** @returns {Promise<object>} */
+export async function crearNivelCatalogo({ nombre, instrumento, orden, createdBy }) {
+  const { data, error } = await supabase
+    .from('catalogo_niveles')
+    .insert({ nombre, instrumento, orden, created_by: createdBy || null })
+    .select()
+    .single()
+
+  if (error) throw error
+  return data
+}
+
+/** @returns {Promise<Array<object>>} */
+export async function obtenerObjetivosGeneralesCatalogo(nivelId) {
+  const { data, error } = await supabase
+    .from('catalogo_objetivos_generales')
+    .select('*')
+    .eq('nivel_id', nivelId)
+    .eq('activo', true)
+    .order('orden')
+
+  if (error) throw error
+  return data || []
+}
+
+/** @returns {Promise<object>} */
+export async function crearObjetivoGeneralCatalogo({ nivelId, nombre, descripcion, orden }) {
+  const { data, error } = await supabase
+    .from('catalogo_objetivos_generales')
+    .insert({ nivel_id: nivelId, nombre, descripcion: descripcion || null, orden })
+    .select()
+    .single()
+
+  if (error) throw error
+  return data
+}
+
+/** @returns {Promise<Array<object>>} */
+export async function obtenerObjetivosEspecificosCatalogo(objetivoGeneralId) {
+  const { data, error } = await supabase
+    .from('catalogo_objetivos_especificos')
+    .select('*')
+    .eq('objetivo_general_id', objetivoGeneralId)
+    .eq('activo', true)
+    .order('orden')
+
+  if (error) throw error
+  return data || []
+}
+
+/** @returns {Promise<object>} */
+export async function crearObjetivoEspecificoCatalogo({ objetivoGeneralId, nombre, orden }) {
+  const { data, error } = await supabase
+    .from('catalogo_objetivos_especificos')
+    .insert({ objetivo_general_id: objetivoGeneralId, nombre, orden })
+    .select()
+    .single()
+
+  if (error) throw error
+  return data
+}
+
+/**
+ * Invoke the `clonar_catalogo_a_clase` RPC — copia objetivos generales +
+ * indicadores de un nivel del catálogo propio hacia clase_mapa_objetivos /
+ * clase_mapa_indicadores. Reemplaza a `clonarPlantillaAClase` (árbol viejo).
+ *
+ * @param {string} claseId
+ * @param {string} nivelId
+ * @param {Array<string>|null} [objetivoGeneralIds] - filtro opcional
+ * @returns {Promise<Array<object>>}
+ */
+export async function clonarCatalogoAClase(claseId, nivelId, objetivoGeneralIds = null) {
+  const { data, error } = await supabase.rpc('clonar_catalogo_a_clase', {
+    p_clase_id: claseId,
+    p_nivel_id: nivelId,
+    p_objetivo_general_ids: objetivoGeneralIds,
+  })
+
+  if (error) throw new Error(error.message || 'Error al clonar el catálogo')
+  return data || []
+}
+
+// ── Estrellas del nodo (Tarea 3.2 — MapaClaseView) ─────────────────────
 
 /**
  * Get the derived stars/progress for every objetivo of a class from

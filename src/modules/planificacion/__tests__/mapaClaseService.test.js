@@ -22,6 +22,8 @@ function resetStore() {
     levels: [],
     vw_clase_objetivo_estrellas: [],
     mapa_plantillas: [],
+    clases: [],
+    catalogo_niveles: [],
   }
   nextId = 1
   deleteShouldFail = null
@@ -350,19 +352,14 @@ describe('mapaClaseService', () => {
 
   // ── Tarea 3.2: niveles asignados a la clase (REQ-01) + estrellas del nodo ──
 
-  describe('obtenerNivelesAsignadosClase (REQ-01, scoping del selector de Nivel)', () => {
-    it('returns the distinct, active levels assigned to the class via acm_active_routes', async () => {
-      tables.acm_active_routes.push(
-        { id: 'r1', group_id: 'clase_001', level_id: 'level_A', status: 'active' },
-        { id: 'r2', group_id: 'clase_001', level_id: 'level_B', status: 'active' },
-        { id: 'r3', group_id: 'clase_001', level_id: 'level_A', status: 'active' }, // duplicate level
-        { id: 'r4', group_id: 'clase_001', level_id: 'level_C', status: 'paused' }, // inactive, excluded
-        { id: 'r5', group_id: 'clase_002', level_id: 'level_D', status: 'active' }, // otra clase
-      )
-      tables.levels.push(
-        { id: 'level_A', name: 'Nivel 1' },
-        { id: 'level_B', name: 'Nivel 2' },
-        { id: 'level_C', name: 'Nivel 3' },
+  describe('obtenerNivelesAsignadosClase (catálogo propio, scoping por instrumento de la clase)', () => {
+    it('returns the active catalog levels for the class instrument', async () => {
+      tables.clases.push({ id: 'clase_001', instrumento: 'Violín' })
+      tables.catalogo_niveles.push(
+        { id: 'level_A', nombre: 'Nivel 1', instrumento: 'Violín', activo: true, orden: 1 },
+        { id: 'level_B', nombre: 'Nivel 2', instrumento: 'Violín', activo: true, orden: 2 },
+        { id: 'level_C', nombre: 'Nivel 3', instrumento: 'Violín', activo: false, orden: 3 }, // inactive, excluded
+        { id: 'level_D', nombre: 'Nivel 1 Cello', instrumento: 'Cello', activo: true, orden: 1 }, // otro instrumento
       )
 
       const result = await obtenerNivelesAsignadosClase('clase_001')
@@ -372,8 +369,14 @@ describe('mapaClaseService', () => {
       expect(result.find((n) => n.id === 'level_A').nombre).toBe('Nivel 1')
     })
 
-    it('returns an empty array when the class has no active levels assigned — the UI must block node creation (REQ-01)', async () => {
+    it('returns an empty array when the class instrument has no catalog levels yet — the UI must block node creation', async () => {
+      tables.clases.push({ id: 'clase_sin_niveles', instrumento: 'Tuba' })
       const result = await obtenerNivelesAsignadosClase('clase_sin_niveles')
+      expect(result).toEqual([])
+    })
+
+    it('returns an empty array when the class itself is not found', async () => {
+      const result = await obtenerNivelesAsignadosClase('clase_inexistente')
       expect(result).toEqual([])
     })
   })

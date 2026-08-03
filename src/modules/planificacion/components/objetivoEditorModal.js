@@ -27,6 +27,7 @@ import {
   eliminarObjetivo,
   crearIndicador,
   obtenerIndicadoresPorObjetivo,
+  obtenerObjetivosPorClase,
   actualizarIndicador,
   archivarIndicador,
   eliminarIndicador,
@@ -124,7 +125,11 @@ function _wireEvents({ overlay, claseId, niveles, maestroId, state, close, rende
           _showError(overlay, 'Seleccioná un nivel')
           return
         }
-        const creado = await crearObjetivo({ clase_id: claseId, level_id: levelId, nombre, descripcion, created_by: maestroId })
+        const existentes = await obtenerObjetivosPorClase(claseId)
+        const ordenObjetivo = existentes
+          .filter((o) => o.level_id === levelId)
+          .reduce((max, o) => Math.max(max, o.orden_objetivo || 0), 0) + 1
+        const creado = await crearObjetivo({ clase_id: claseId, level_id: levelId, nombre, descripcion, orden_objetivo: ordenObjetivo, created_by: maestroId })
         state.objetivo = creado
         onSaved?.(creado)
       }

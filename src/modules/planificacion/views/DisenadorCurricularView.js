@@ -18,10 +18,12 @@ const NIVELES_TECNICOS = [
   { id: 'nivel-3', nombre: 'Nivel 3: Avanzado / Maestría Institucional', color: 'danger' },
 ]
 
+import { getMisClases } from '../../../portal-maestros/services/maestroDataService.js'
+
 /**
  * Vista de Pantalla Completa: Diseñador Curricular Institucional (Premium UI/UX con Datos Reales)
  */
-export async function renderDisenadorCurricularView(container) {
+export async function renderDisenadorCurricularView(container, { maestroId } = {}) {
   if (!container) return
 
   container.innerHTML = `
@@ -36,7 +38,10 @@ export async function renderDisenadorCurricularView(container) {
 
   let clases = []
   try {
-    clases = await obtenerClases()
+    clases = await getMisClases().catch(() => [])
+    if (!clases || clases.length === 0) {
+      clases = await obtenerClases()
+    }
   } catch (err) {
     console.error('[DisenadorCurricularView] Error:', err)
   }
@@ -416,7 +421,8 @@ function _attachEventsFull(container, clases, estadoEstructura, alumnosState, _l
     try {
       await crearPlanificacion(payload)
       AppToast.show('Plan Institucional Oficial publicado con éxito ⭐', 'success')
-      router.navigate('planificacion-acm')
+      const activeNav = (typeof window !== 'undefined' && window.router) ? window.router : router
+      activeNav.navigate('planificacion')
     } catch (err) {
       AppToast.show(`Error al publicar plan: ${err.message}`, 'error')
     }

@@ -88,7 +88,7 @@ async function _calcularEstadoMes(maestroId, anio, mes) {
   const claseIds = clases.map((c) => c.id)
 
   if (claseIds.length === 0) {
-    return new Map()
+    return { estadoMap: new Map(), dotsMap: new Map() }
   }
 
   // 2. Horarios de esas clases (con cache)

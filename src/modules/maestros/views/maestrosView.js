@@ -560,6 +560,68 @@ function openCreateModal() {
   })
 }
 
+/**
+ * Da credenciales de acceso a un maestro que ya existe en la lista (con
+ * clases ya asignadas) pero todavía no tiene login. A diferencia de
+ * "Crear Nuevo Maestro", esto vincula por ID de maestro, no por email —
+ * evita que un email de login distinto al que ACM tiene cargado cree una
+ * ficha duplicada sin las clases ya asignadas.
+ */
+function openDarAccesoModal(maestro) {
+  const nombre = maestro.nombre || maestro.name || ''
+  AppModal.open({
+    title: `Dar acceso — ${nombre}`,
+    body: `<form class="row g-2" novalidate>
+      <div class="col-12">
+        <p class="text-muted small mb-2">
+          Se le va a crear un usuario para que pueda iniciar sesión en el Portal de Maestros.
+          Sus clases y datos ya cargados en ACM se conservan — no se crea una ficha nueva.
+        </p>
+      </div>
+      <div class="col-12">
+        <label class="form-label-compact">Email de acceso *</label>
+        <input type="email" class="form-control input-dense" id="modal-acceso-email" required placeholder="email@ejemplo.com" value="${escapeHTML(maestro.email || '')}">
+        <small class="text-muted">Puede ser distinto al correo que ACM tiene registrado — no hace falta que coincida.</small>
+      </div>
+      <div class="col-12">
+        <label class="form-label-compact">Contraseña *</label>
+        <input type="password" class="form-control input-dense" id="modal-acceso-password" required placeholder="Contraseña para iniciar sesión" minlength="6">
+      </div>
+    </form>`,
+    saveText: 'Dar acceso',
+    onSave: async (modalBody) => {
+      const email = modalBody.querySelector('#modal-acceso-email').value.trim().toLowerCase()
+      const password = modalBody.querySelector('#modal-acceso-password')?.value
+
+      if (!email) {
+        showToast('El email es obligatorio', 'error')
+        return false
+      }
+      if (!isValidEmail(email)) {
+        showToast('El formato del email no es válido', 'error')
+        return false
+      }
+      if (!password || password.length < 6) {
+        showToast('La contraseña debe tener al menos 6 caracteres', 'error')
+        return false
+      }
+
+      await crearMaestroConAuth({
+        nombre,
+        email,
+        password,
+        maestroId: maestro.id,
+      })
+
+      const maestros = await obtenerMaestros()
+      state.maestros = maestros
+      state.maestrosOriginales = [...maestros]
+      applyFilters()
+      showToast(`Acceso creado para ${nombre}. Ya puede iniciar sesión.`, 'success')
+    },
+  })
+}
+
 function openEditModal(id) {
   const maestro = state.maestrosOriginales.find((a) => a.id === id)
   if (!maestro) {
@@ -666,8 +728,16 @@ function openViewModal(id) {
 
   const nombre = maestro.nombre || maestro.name || '-'
   const isActive = maestro.is_active ?? true
+  const tieneAcceso = !!maestro.user_id
   const headerActionsHTML = `
     <div class="d-flex align-items-center gap-1">
+      ${
+        tieneAcceso
+          ? ''
+          : `<button class="btn btn-sm text-white border-0 d-inline-flex align-items-center justify-content-center px-2 py-1" id="modal-view-btn-dar-acceso" style="background: rgba(25,135,84,0.55); font-size: 0.8rem; border-radius: 6px;" type="button" title="Dar acceso al Portal de Maestros">
+        <i class="bi bi-key me-1"></i>Dar acceso
+      </button>`
+      }
       <button class="btn btn-sm text-white border-0 d-inline-flex align-items-center justify-content-center px-2 py-1" id="modal-view-btn-pdf" style="background: rgba(255,255,255,0.18); font-size: 0.8rem; border-radius: 6px;" type="button" title="Descargar Reporte PDF">
         <i class="bi bi-file-earmark-pdf me-1"></i>PDF
       </button>
@@ -757,6 +827,10 @@ function openViewModal(id) {
       const dialog = modalBody.closest('.app-modal-dialog')
       dialog?.querySelector('#modal-view-btn-pdf')?.addEventListener('click', (e) => {
         descargarReporteMaestroPdf(maestro, e.currentTarget)
+      })
+      dialog?.querySelector('#modal-view-btn-dar-acceso')?.addEventListener('click', () => {
+        AppModal.close()
+        setTimeout(() => openDarAccesoModal(maestro), 300)
       })
       dialog?.querySelector('#modal-view-btn-edit')?.addEventListener('click', () => {
         AppModal.close()

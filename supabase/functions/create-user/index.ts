@@ -42,10 +42,10 @@ serve(async (req: Request) => {
   }
 
   // Parse body
-  let body: { nombre?: string; email?: string; password?: string; rol?: string }
+  let body: { nombre?: string; email?: string; password?: string; rol?: string; maestroId?: string }
   try { body = await req.json() } catch { return json({ error: 'Body inválido' }, 400) }
 
-  const { nombre, email, password, rol } = body
+  const { nombre, email, password, rol, maestroId } = body
 
   if (!nombre || !email || !password) {
     return json({ error: 'nombre, email y password son obligatorios' }, 400)
@@ -92,21 +92,43 @@ serve(async (req: Request) => {
   // idempotente, y cualquier fallo queda visible en los logs de esta función
   // en vez de perderse en un trigger silencioso.
   if (rol === 'maestro') {
-    const { data: existing, error: findErr } = await supabaseAdmin
-      .from('maestros')
-      .select('id')
-      .ilike('correo', email)
-      .maybeSingle()
-
-    if (findErr) {
-      await supabaseAdmin.auth.admin.deleteUser(created.user.id)
-      return json({ error: `No se pudo buscar maestro existente: ${findErr.message}` }, 500)
+    // Si el llamador ya sabe a qué maestro apunta (ej: botón "Dar acceso"
+    // desde el perfil de un maestro precargado en ACM), vincula por ID en
+    // vez de por correo — el correo de login puede no coincidir con el que
+    // ACM tiene registrado para esa persona.
+    let existing: { id: string } | null = null
+    if (maestroId) {
+      const { data, error: findErr } = await supabaseAdmin
+        .from('maestros')
+        .select('id')
+        .eq('id', maestroId)
+        .maybeSingle()
+      if (findErr) {
+        await supabaseAdmin.auth.admin.deleteUser(created.user.id)
+        return json({ error: `No se pudo buscar el maestro indicado: ${findErr.message}` }, 500)
+      }
+      if (!data) {
+        await supabaseAdmin.auth.admin.deleteUser(created.user.id)
+        return json({ error: 'El maestro indicado no existe' }, 404)
+      }
+      existing = data
+    } else {
+      const { data, error: findErr } = await supabaseAdmin
+        .from('maestros')
+        .select('id')
+        .ilike('correo', email)
+        .maybeSingle()
+      if (findErr) {
+        await supabaseAdmin.auth.admin.deleteUser(created.user.id)
+        return json({ error: `No se pudo buscar maestro existente: ${findErr.message}` }, 500)
+      }
+      existing = data
     }
 
     if (existing) {
       const { error: linkErr } = await supabaseAdmin
         .from('maestros')
-        .update({ user_id: created.user.id, activo: true })
+        .update({ user_id: created.user.id, correo: email, activo: true })
         .eq('id', existing.id)
 
       if (linkErr) {

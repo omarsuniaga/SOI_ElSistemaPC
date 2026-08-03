@@ -231,8 +231,14 @@ export async function validarEmail(email) {
  * existe una fila en `maestros` con ese correo (maestro cargado antes, con
  * clases ya asignadas, sin credenciales), la Edge Function la vincula en vez
  * de crear una duplicada.
+ *
+ * @param {string} [maestroId] — si se pasa (ej. botón "Dar acceso" desde el
+ *   perfil de un maestro existente), la Edge Function vincula ESA fila por
+ *   ID en vez de buscarla por correo. Usar siempre que el maestro ya exista
+ *   en la lista de ACM: el correo de login puede no coincidir con el que
+ *   ACM tiene cargado para esa persona.
  */
-export async function crearMaestroConAuth({ nombre, email, password, telefono, instrumento, especialidades, bio }) {
+export async function crearMaestroConAuth({ nombre, email, password, telefono, instrumento, especialidades, bio, maestroId }) {
   const nombreLimpio = (nombre || '').trim()
   if (!nombreLimpio) throw new Error('El nombre es obligatorio')
 
@@ -244,7 +250,7 @@ export async function crearMaestroConAuth({ nombre, email, password, telefono, i
   }
 
   const { data, error } = await supabase.functions.invoke('create-user', {
-    body: { nombre: nombreLimpio, email: emailLimpio, password, rol: 'maestro' },
+    body: { nombre: nombreLimpio, email: emailLimpio, password, rol: 'maestro', maestroId: maestroId || undefined },
   })
 
   if (error) {

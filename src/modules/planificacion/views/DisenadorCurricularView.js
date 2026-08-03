@@ -108,6 +108,8 @@ function _renderUI(container, clases, estadoEstructura) {
   }
 
   const _renderMain = () => {
+    const claseSel = clases.find((c) => String(c.id) === String(estadoEstructura.claseId))
+    const nombreClase = claseSel?.nombre || claseSel?.name || (estadoEstructura.claseId ? `Clase ${estadoEstructura.claseId}` : 'Sin clase seleccionada')
     container.innerHTML = `
       <div class="container-fluid px-4 py-4">
         <!-- HEADER EN GLASSMORPHISM Y GRADIENTE HSL PREMIUM -->
@@ -152,19 +154,11 @@ function _renderUI(container, clases, estadoEstructura) {
           
           <div class="row g-3">
             <div class="col-md-5">
-              <label class="form-label fw-semibold text-body">Clase / Asignatura <span class="text-danger">*</span></label>
-              <select class="form-select border-secondary-subtle" id="select-clase-full">
-                <option value="">-- Seleccionar Clase --</option>
-                ${clases
-                  .map(
-                    (c) => `
-                  <option value="${c.id}" ${c.id === estadoEstructura.claseId ? 'selected' : ''}>
-                    ${escapeHTML(c.nombre || c.name || `Clase ${c.id}`)}
-                  </option>
-                `,
-                  )
-                  .join('')}
-              </select>
+              <label class="form-label fw-semibold text-body">Clase / Asignatura</label>
+              <div class="d-flex align-items-center gap-2 bg-white border border-secondary-subtle rounded-3 px-3 py-2">
+                <i class="bi bi-book-fill text-primary"></i>
+                <span class="fw-bold text-dark">${escapeHTML(nombreClase)}</span>
+              </div>
             </div>
 
             <div class="col-md-4">
@@ -335,21 +329,6 @@ function _attachEventsFull(container, clases, estadoEstructura, alumnosState, _l
     activeNav.navigate('planificacion-ruta', { parentRoute: 'planificacion-disenador' })
   })
 
-  container.querySelector('#select-clase-full')?.addEventListener('change', async (e) => {
-    estadoEstructura.claseId = e.target.value
-    try {
-      const plantillas = await obtenerPlantillasPlanificacion().catch(() => [])
-      const match = plantillas.find((p) => String(p.clase_id) === String(estadoEstructura.claseId))
-      if (match) {
-        const arbol = typeof match.objetivos === 'string' ? JSON.parse(match.objetivos) : match.objetivos
-        if (Array.isArray(arbol) && arbol.length > 0) {
-          estadoEstructura.objetivos = arbol
-        }
-      }
-    } catch {}
-    _loadAlumnosModal().then(() => _renderObjetivosFull(container, estadoEstructura, alumnosState))
-  })
-
   container.querySelector('#input-frecuencia-full')?.addEventListener('input', (e) => {
     estadoEstructura.frecuenciaSemanal = parseFloat(e.target.value || '2')
     _updateRitmoBanner(container, estadoEstructura)
@@ -439,7 +418,8 @@ function _attachEventsFull(container, clases, estadoEstructura, alumnosState, _l
 
     const nivelId = container.querySelector('#select-nivel-full')?.value || estadoEstructura.nivelId || 'nivel-1'
     const nivelNombre = NIVELES_TECNICOS.find((n) => n.id === nivelId)?.nombre || nivelId
-    const claseNombre = document.querySelector('#select-clase-full option:checked')?.textContent?.trim() || estadoEstructura.claseId
+    const claseSel = clases.find((c) => String(c.id) === String(estadoEstructura.claseId))
+    const claseNombre = claseSel?.nombre || claseSel?.name || estadoEstructura.claseId
 
     const payload = {
       id: (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : `${Date.now()}`,

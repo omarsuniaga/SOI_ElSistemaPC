@@ -6,6 +6,7 @@ import { renderAcmPropuestasView } from './views/acmPropuestasView.js'
 import { renderClasePlanificacionView } from './views/clasePlanificacionView.js'
 import { renderDisenadorCurricularView } from './views/DisenadorCurricularView.js'
 import { renderRutaPedagogicaView } from './views/RutaPedagogicaView.js'
+import { renderCatalogoAcmView } from './views/CatalogoAcmView.js'
 
 export function registerRoutesPlanificacion() {
   // "Mis Planes" - vista del maestro logueado
@@ -29,6 +30,11 @@ export function registerRoutesPlanificacion() {
   // "Ruta Pedagógica Completa (SVG)" - Pantalla Completa con Alumnos y Estrellas
   router.register('planificacion-ruta', (container) =>
     renderRutaPedagogicaView(container),
+  )
+
+  // "Catálogo de Planificación (ACM)" - curación de Nivel/Objetivo General/Objetivo Específico
+  router.register('planificacion-catalogo', (container) =>
+    renderCatalogoAcmView(container),
   )
 
   // "Cobertura Curricular" - mapa de cumplimiento pedagógico para Dirección

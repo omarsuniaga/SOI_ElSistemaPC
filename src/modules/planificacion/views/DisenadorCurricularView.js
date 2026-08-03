@@ -112,6 +112,9 @@ function _renderUI(container, clases, state) {
             </span>
             <h2 class="fw-bold mb-0 text-white">Diseñador Curricular Institucional</h2>
           </div>
+          <button class="btn btn-light btn-sm ms-auto" id="btn-ir-catalogo">
+            <i class="bi bi-collection me-1"></i>Gestionar catálogo
+          </button>
         </div>
       </div>
 
@@ -208,6 +211,10 @@ function _renderUI(container, clases, state) {
 function _attachEvents(container, clases, state) {
   container.querySelector('#btn-volver-acm')?.addEventListener('click', () => {
     window.router?.navigate('planificacion-acm')
+  })
+
+  container.querySelector('#btn-ir-catalogo')?.addEventListener('click', () => {
+    window.router?.navigate('planificacion-catalogo')
   })
 
   container.querySelector('#select-clase-disenador')?.addEventListener('change', async (e) => {

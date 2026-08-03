@@ -276,9 +276,9 @@ function _renderEstrellasSVG(cant) {
   let html = ''
   for (let i = 1; i <= 5; i++) {
     if (i <= cant) {
-      html += '<i class="bi bi-star-fill text-warning me-1"></i>'
+      html += `<i class="bi bi-star-fill text-warning me-1 star-click-item" data-star-val="${i}" style="cursor: pointer; padding: 2px;"></i>`
     } else {
-      html += '<i class="bi bi-star text-secondary opacity-50 me-1"></i>'
+      html += `<i class="bi bi-star text-secondary opacity-50 me-1 star-click-item" data-star-val="${i}" style="cursor: pointer; padding: 2px;"></i>`
     }
   }
   return html
@@ -429,7 +429,7 @@ function openNodoDetailModal(nodo, alumnosList = []) {
   document.body.appendChild(modalEl)
   activeNodeModal = modalEl
 
-  // Event listener para ciclar estrellas dentro del modal de 90%
+  // Event listener con soporte para clic directo en estrella o clic de fila (ciclo)
   const tbodyModal = modalEl.querySelector('#tbody-modal-alumnos')
   tbodyModal?.addEventListener('click', (e) => {
     const tr = e.target.closest('.row-alumno-modal-eval')
@@ -438,7 +438,13 @@ function openNodoDetailModal(nodo, alumnosList = []) {
     const targetAl = alumnosList.find((al) => String(al.id) === String(alId))
 
     if (targetAl && targetAl.presente) {
-      targetAl.estrellas = IndicadorLogro.siguienteEstrella(targetAl.estrellas || 0)
+      // Verificar si el clic fue en un ícono de estrella específico
+      const starIcon = e.target.closest('.star-click-item')
+      if (starIcon && starIcon.dataset.starVal) {
+        targetAl.estrellas = parseInt(starIcon.dataset.starVal, 10)
+      } else {
+        targetAl.estrellas = IndicadorLogro.siguienteEstrella(targetAl.estrellas || 0)
+      }
 
       // Guardar persistencia
       OfflineSyncAdapter.guardarLocal({

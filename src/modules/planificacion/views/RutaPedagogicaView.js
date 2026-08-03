@@ -7,10 +7,12 @@ import { obtenerAlumnosRealesPorClase } from '../services/realAlumnosService.js'
 import { OfflineSyncAdapter } from '../api/offlineSyncAdapter.js'
 import { IndicadorLogro } from '../domain/IndicadorLogro.js'
 
+import { getMisClases } from '../../../portal-maestros/services/maestroDataService.js'
+
 /**
  * Vista de Pantalla Completa: Ruta Pedagógica SVG Premium (UI/UX Rediseñada con Datos Reales)
  */
-export async function renderRutaPedagogicaView(container) {
+export async function renderRutaPedagogicaView(container, { maestroId } = {}) {
   if (!container) return
 
   container.innerHTML = `
@@ -26,11 +28,11 @@ export async function renderRutaPedagogicaView(container) {
   let clases = []
   let planificaciones = []
   try {
-    const [cRes, pRes] = await Promise.all([
-      obtenerClases(),
+    const [misClases, pRes] = await Promise.all([
+      getMisClases().catch(() => []),
       obtenerPlanificacionesConDetalles(),
     ])
-    clases = cRes || []
+    clases = misClases && misClases.length > 0 ? misClases : await obtenerClases()
     planificaciones = pRes || []
   } catch (err) {
     console.error('[RutaPedagogicaView] Error:', err)

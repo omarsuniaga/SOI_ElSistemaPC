@@ -15,6 +15,13 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 vi.mock('../../api/planificacionAdapter.js', () => ({
   obtenerClases: vi.fn(),
   crearPlanificacion: vi.fn(),
+  obtenerPlantillasPlanificacion: vi.fn(() => Promise.resolve([])),
+  crearPlantillaPlanificacion: vi.fn(() => Promise.resolve({})),
+  actualizarPlantillaPlanificacion: vi.fn(() => Promise.resolve({})),
+}))
+
+vi.mock('../../../../portal-maestros/services/maestroDataService.js', () => ({
+  getMisClases: vi.fn(() => Promise.resolve([])),
 }))
 
 vi.mock('../../services/realAlumnosService.js', () => ({
@@ -106,31 +113,24 @@ describe('DisenadorCurricularView', () => {
     )
   })
 
-  it('actualiza el panel de evaluación con los alumnos de la nueva clase tras cambiar el selector (regresión M-7)', async () => {
+  it('muestra el nombre de la clase como texto estático en la cabecera de parámetros (sin selector editable)', async () => {
     obtenerClases.mockResolvedValue([
       { id: 'clase-1', nombre: 'Violín Inicial' },
       { id: 'clase-2', nombre: 'Piano Avanzado' },
     ])
     obtenerAlumnosRealesPorClase.mockImplementation((claseId) => {
       if (claseId === 'clase-1') return Promise.resolve([{ id: 'al-1', nombre: 'Alumno Clase Uno', estrellas: 0 }])
-      if (claseId === 'clase-2') return Promise.resolve([{ id: 'al-2', nombre: 'Alumno Clase Dos', estrellas: 0 }])
       return Promise.resolve([])
     })
 
     await renderDisenadorCurricularView(container)
     await flush()
 
-    // Cambia la clase seleccionada en el dropdown.
-    const select = container.querySelector('#select-clase-full')
-    select.value = 'clase-2'
-    select.dispatchEvent(new Event('change'))
-    await flush()
-
-    lastOnNodeClick({ id: 'ind-1', titulo: 'Nodo' })
-
-    // Debe mostrar el alumno de la clase NUEVA, no el de la clase anterior (stale reference).
-    expect(container.textContent).toContain('Alumno Clase Dos')
-    expect(container.textContent).not.toContain('Alumno Clase Uno')
+    // La vista se abre según la clase presionada; la cabecera ya no ofrece selector editable.
+    expect(container.querySelector('#select-clase-full')).toBeNull()
+    expect(container.textContent).toContain('Violín Inicial')
+    expect(container.textContent).toContain('Parámetros Curriculares y Frecuencia Horaria')
+    expect(obtenerAlumnosRealesPorClase).toHaveBeenCalledWith('clase-1')
   })
 
   describe('cambio de nodo (regresión M-3 — integración)', () => {

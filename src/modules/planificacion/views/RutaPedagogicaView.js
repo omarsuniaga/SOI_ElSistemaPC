@@ -120,12 +120,9 @@ function _renderUI(container, clases, planificaciones, { parentRoute = 'planific
                 <i class="bi bi-arrow-left text-dark fs-5"></i>
               </button>
               <div>
-                <div class="d-flex align-items-center gap-2 mb-1">
+                <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
                   <span class="badge bg-white text-primary fw-bold shadow-sm px-2 py-1">
                     <i class="bi bi-music-note-beamed me-1"></i>${escapeHTML(targetClaseObj.nombre || 'Clase Académica')}
-                  </span>
-                  <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1">
-                    <i class="bi bi-wifi me-1"></i>Modo Datos Reales + Sync Offline
                   </span>
                   ${nodos.esDemo ? `<span class="badge bg-warning text-dark border border-warning px-2 py-1"><i class="bi bi-exclamation-triangle-fill me-1"></i>Ruta de ejemplo — sin plan real todavía</span>` : ''}
                 </div>
@@ -133,19 +130,8 @@ function _renderUI(container, clases, planificaciones, { parentRoute = 'planific
               </div>
             </div>
 
-            <!-- SELECTOR DE CLASE Y ACCIONES -->
+            <!-- ACCIONES -->
             <div class="d-flex flex-wrap align-items-center gap-2">
-              <select class="form-select border-0 shadow-sm text-body  fw-bold" id="select-clase-ruta" style="min-width: 240px; ">
-                ${clases
-                  .map(
-                    (c) => `
-                  <option value="${c.id}" ${c.id === selectedClaseId ? 'selected' : ''}>
-                    ${escapeHTML(c.nombre || c.name || `Clase ${c.id}`)}
-                  </option>
-                `,
-                  )
-                  .join('')}
-              </select>
               <button class="btn btn-warning fw-bold d-inline-flex align-items-center gap-1 shadow-sm px-3" id="btn-ir-disenador">
                 <i class="bi bi-pencil-square"></i>Diseñar Estructura ACM
               </button>
@@ -245,12 +231,6 @@ function _renderUI(container, clases, planificaciones, { parentRoute = 'planific
     container.querySelector('#btn-ir-disenador')?.addEventListener('click', () => {
       const activeNav = (typeof window !== 'undefined' && window.router) ? window.router : router
       activeNav.navigate(`planificacion-disenador?clase=${selectedClaseId}`)
-    })
-
-    container.querySelector('#select-clase-ruta')?.addEventListener('change', (e) => {
-      selectedClaseId = e.target.value
-      selectedNodo = null
-      _loadAlumnosYRender()
     })
 
     // Delegación ÚNICA para evaluar estrellas: un solo listener en el tbody
@@ -431,7 +411,6 @@ async function openNodoDetailModal(nodo, alumnosList = [], nodosSecuencia = [], 
   modalEl.className = 'modal fade'
   modalEl.id = 'nodoDetailModal90'
   modalEl.tabIndex = -1
-  modalEl.setAttribute('aria-hidden', 'true')
 
   const rawTitle = nodo.titulo || nodo.nombre || 'Postura corporal y emisión sonora libre'
 
@@ -621,6 +600,14 @@ async function openNodoDetailModal(nodo, alumnosList = [], nodosSecuencia = [], 
   })
 
   const bsModal = new bootstrap.Modal(modalEl, { backdrop: true })
+  modalEl.addEventListener('hide.bs.modal', () => {
+    // Libera el foco antes de que Bootstrap marque el modal con aria-hidden;
+    // evita el warning de accesibilidad por foco retenido dentro de un
+    // elemento oculto del árbol de accesibilidad.
+    if (modalEl.contains(document.activeElement)) {
+      document.activeElement.blur()
+    }
+  })
   modalEl.addEventListener('hidden.bs.modal', () => {
     try {
       bsModal.dispose()

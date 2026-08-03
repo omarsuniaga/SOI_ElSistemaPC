@@ -1136,10 +1136,10 @@ export async function renderPlanificacionView(container, { maestroId, router: po
     }
 
     classDetailModal.querySelectorAll('.btn-modal-disenador').forEach((b) => {
-      b.addEventListener('click', () => _closeModalAndNavigate('planificacion-disenador'))
+      b.addEventListener('click', () => _closeModalAndNavigate(`planificacion-disenador?clase=${clase.id}`))
     })
     classDetailModal.querySelectorAll('.btn-modal-ruta-full').forEach((b) => {
-      b.addEventListener('click', () => _closeModalAndNavigate('planificacion-ruta'))
+      b.addEventListener('click', () => _closeModalAndNavigate(`planificacion-ruta?clase=${clase.id}`))
     })
 
     let rutaSvgMontado = false

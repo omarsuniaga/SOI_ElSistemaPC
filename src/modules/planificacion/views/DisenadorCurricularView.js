@@ -96,22 +96,45 @@ export async function renderDisenadorCurricularView(container, { maestroId, clas
 function _objetivosDemoSeed() {
   return [
     {
-      id: 'obj-1',
-      titulo: 'Dominio de Postura y Emisión Sonora Libre',
-      indicadores: [
-        { id: 'ind-1', titulo: 'Postura corporal equilibrada y relajada', prerrequisitoId: null },
-        { id: 'ind-2', titulo: 'Distribución fluida del arco en cuerdas abiertas', prerrequisitoId: 'ind-1' },
+      id: 'unidad-1',
+      titulo: 'Unidad 1: Postura y Emisión Sonora',
+      objetivos: [
+        {
+          id: 'obj-1',
+          titulo: 'Dominio de Postura Corporal',
+          indicadores: [
+            { id: 'ind-1', titulo: 'Postura corporal equilibrada y relajada', prerrequisitoId: null },
+            { id: 'ind-2', titulo: 'Distribución fluida del arco en cuerdas abiertas', prerrequisitoId: 'ind-1' },
+          ],
+        },
       ],
     },
     {
-      id: 'obj-2',
-      titulo: 'Afinación y Articulación Digital',
-      indicadores: [
-        { id: 'ind-3', titulo: 'Colocación exacta de 1er y 2do dedo', prerrequisitoId: 'ind-2' },
-        { id: 'ind-4', titulo: 'Independencia digital a pulso 60 BPM', prerrequisitoId: 'ind-3' },
+      id: 'unidad-2',
+      titulo: 'Unidad 2: Afinación y Articulación Digital',
+      objetivos: [
+        {
+          id: 'obj-2',
+          titulo: 'Colocación de Dedos',
+          indicadores: [
+            { id: 'ind-3', titulo: 'Colocación exacta de 1er y 2do dedo', prerrequisitoId: 'ind-2' },
+            { id: 'ind-4', titulo: 'Independencia digital a pulso 60 BPM', prerrequisitoId: 'ind-3' },
+          ],
+        },
       ],
     },
   ]
+}
+
+/** Recorre unidades → objetivos → indicadores y devuelve la lista plana de indicadores (para prerrequisitos y canvas SVG). */
+function _todosLosIndicadores(unidades) {
+  const out = []
+  unidades.forEach((u) => {
+    ;(u.objetivos || []).forEach((o) => {
+      ;(o.indicadores || []).forEach((ind) => out.push(ind))
+    })
+  })
+  return out
 }
 
 function _renderUI(container, clases, estadoEstructura) {
@@ -266,82 +289,97 @@ function _renderObjetivosFull(container, estadoEstructura, alumnosState) {
     listEl.innerHTML = `
       <div class="text-center py-5 text-body-secondary border border-secondary-subtle rounded-3 bg-body">
         <i class="bi bi-journal-x display-5 d-block mb-2"></i>
-        Sin objetivos agregados. Presiona <strong>"+ Agregar Objetivo"</strong>.
+        Sin unidades agregadas. Presiona <strong>"+ Agregar Unidad"</strong>.
       </div>
     `
     return
   }
 
-  const todosIndicadores = []
-  estadoEstructura.objetivos.forEach((o) => {
-    o.indicadores.forEach((ind) => {
-      todosIndicadores.push({ id: ind.id, titulo: ind.titulo, objTitulo: o.titulo })
-    })
-  })
-
+  const todosIndicadores = _todosLosIndicadores(estadoEstructura.objetivos)
   let claseCounter = 1
 
   listEl.innerHTML = estadoEstructura.objetivos
     .map(
-      (obj, objIdx) => `
-    <div class="card mb-3 border border-secondary-subtle shadow-sm bg-body text-body" data-obj-idx="${objIdx}">
-      <div class="card-header bg-body-secondary d-flex align-items-center justify-content-between py-2 border-bottom border-secondary-subtle">
+      (unidad, uIdx) => `
+    <div class="card mb-3 border border-primary-subtle shadow-sm bg-body text-body" data-u-idx="${uIdx}">
+      <div class="card-header bg-body-secondary d-flex align-items-center justify-content-between py-2 border-bottom border-primary-subtle">
         <div class="d-flex align-items-center gap-2 flex-grow-1 me-2">
-          <span class="badge bg-primary rounded-pill">Unidad ${objIdx + 1}</span>
-          <input type="text" class="form-control form-control-sm fw-bold input-obj-title bg-body text-body" data-obj-idx="${objIdx}" value="${escapeHTML(obj.titulo)}" placeholder="Título del Objetivo Pedagógico">
-          ${obj.clasesEstimadas ? `
-            <span class="badge bg-info-subtle text-info-emphasis border border-info-subtle px-2 py-1 text-nowrap" style="font-size:0.75rem;" title="${escapeHTML(obj.justificacionPedagogica || 'Estimación basada en complejidad')}">
-              <i class="bi bi-clock me-1"></i>~${obj.clasesEstimadas} Clases Est.
+          <span class="badge bg-primary rounded-pill">Unidad ${uIdx + 1}</span>
+          <input type="text" class="form-control form-control-sm fw-bold input-unidad-title bg-body text-body" data-u-idx="${uIdx}" value="${escapeHTML(unidad.titulo)}" placeholder="Título de la Unidad">
+          ${unidad.clasesEstimadas ? `
+            <span class="badge bg-info-subtle text-info-emphasis border border-info-subtle px-2 py-1 text-nowrap" style="font-size:0.75rem;" title="${escapeHTML(unidad.justificacionPedagogica || 'Estimación basada en complejidad')}">
+              <i class="bi bi-clock me-1"></i>~${unidad.clasesEstimadas} Clases Est.
             </span>
           ` : ''}
         </div>
-        <button type="button" class="btn btn-sm btn-outline-danger btn-del-obj" data-obj-idx="${objIdx}" title="Eliminar Unidad">
+        <button type="button" class="btn btn-sm btn-outline-danger btn-del-unidad" data-u-idx="${uIdx}" title="Eliminar Unidad">
           <i class="bi bi-trash"></i>
         </button>
       </div>
 
       <div class="card-body p-3">
-        ${obj.justificacionPedagogica ? `
+        ${unidad.justificacionPedagogica ? `
           <div class="alert alert-info py-1 px-2 border-0 bg-info bg-opacity-10 text-info-emphasis mb-2 small" style="font-size:0.78rem;">
-            <i class="bi bi-robot me-1"></i><strong>Análisis GROQ:</strong> ${escapeHTML(obj.justificacionPedagogica)}
+            <i class="bi bi-robot me-1"></i><strong>Análisis GROQ:</strong> ${escapeHTML(unidad.justificacionPedagogica)}
           </div>
         ` : ''}
-        <label class="form-label text-body-secondary small fw-bold text-uppercase mb-2">Indicadores Evaluables (1 Clase por Indicador)</label>
-        
-        <div class="indicadores-wrapper">
-          ${obj.indicadores
-            .map((ind, indIdx) => {
-              const currentClaseNum = claseCounter++
-              return `
-            <div class="d-flex align-items-center gap-2 mb-2 p-2 border border-secondary-subtle rounded bg-body-tertiary" data-obj-idx="${objIdx}" data-ind-idx="${indIdx}">
-              <span class="badge bg-secondary-subtle text-secondary-emphasis border border-secondary-subtle text-nowrap">Clase ${currentClaseNum}</span>
-              <input type="text" class="form-control form-control-sm flex-grow-1 input-ind-title bg-body text-body" data-obj-idx="${objIdx}" data-ind-idx="${indIdx}" value="${escapeHTML(ind.titulo)}" placeholder="Objetivo evaluable de la clase">
 
-              <select class="form-select form-select-sm select-prereq bg-body text-body" data-obj-idx="${objIdx}" data-ind-idx="${indIdx}" style="max-width: 190px;">
-                <option value="">Sin Prerrequisito</option>
-                ${todosIndicadores
-                  .filter((item) => item.id !== ind.id)
-                  .map(
-                    (item) => `
-                  <option value="${item.id}" ${item.id === ind.prerrequisitoId ? 'selected' : ''}>
-                    Requiere: ${escapeHTML(item.titulo.slice(0, 18))}…
-                  </option>
-                `,
-                  )
+        ${(unidad.objetivos || [])
+          .map(
+            (obj, objIdx) => `
+          <div class="card mb-2 border border-secondary-subtle bg-body-tertiary" data-u-idx="${uIdx}" data-obj-idx="${objIdx}">
+            <div class="card-body p-2">
+              <div class="d-flex align-items-center gap-2 mb-2">
+                <span class="badge bg-secondary rounded-pill text-nowrap">Objetivo ${objIdx + 1}</span>
+                <input type="text" class="form-control form-control-sm fw-semibold input-obj-title bg-body text-body" data-u-idx="${uIdx}" data-obj-idx="${objIdx}" value="${escapeHTML(obj.titulo)}" placeholder="Título del Objetivo">
+                <button type="button" class="btn btn-sm btn-link text-danger p-0 px-1 btn-del-obj" data-u-idx="${uIdx}" data-obj-idx="${objIdx}" title="Eliminar Objetivo">
+                  <i class="bi bi-x-circle"></i>
+                </button>
+              </div>
+
+              <div class="indicadores-wrapper ps-3">
+                ${(obj.indicadores || [])
+                  .map((ind, indIdx) => {
+                    const currentClaseNum = claseCounter++
+                    return `
+                  <div class="d-flex align-items-center gap-2 mb-2 p-2 border border-secondary-subtle rounded bg-body" data-u-idx="${uIdx}" data-obj-idx="${objIdx}" data-ind-idx="${indIdx}">
+                    <span class="badge bg-secondary-subtle text-secondary-emphasis border border-secondary-subtle text-nowrap">Clase ${currentClaseNum}</span>
+                    <input type="text" class="form-control form-control-sm flex-grow-1 input-ind-title bg-body text-body" data-u-idx="${uIdx}" data-obj-idx="${objIdx}" data-ind-idx="${indIdx}" value="${escapeHTML(ind.titulo)}" placeholder="Indicador evaluable de la clase">
+
+                    <select class="form-select form-select-sm select-prereq bg-body text-body" data-u-idx="${uIdx}" data-obj-idx="${objIdx}" data-ind-idx="${indIdx}" style="max-width: 190px;">
+                      <option value="">Sin Prerrequisito</option>
+                      ${todosIndicadores
+                        .filter((item) => item.id !== ind.id)
+                        .map(
+                          (item) => `
+                        <option value="${item.id}" ${item.id === ind.prerrequisitoId ? 'selected' : ''}>
+                          Requiere: ${escapeHTML(item.titulo.slice(0, 18))}…
+                        </option>
+                      `,
+                        )
+                        .join('')}
+                    </select>
+
+                    <button type="button" class="btn btn-sm btn-link text-danger p-0 px-1 btn-del-ind" data-u-idx="${uIdx}" data-obj-idx="${objIdx}" data-ind-idx="${indIdx}">
+                      <i class="bi bi-x-circle"></i>
+                    </button>
+                  </div>
+                `
+                  })
                   .join('')}
-              </select>
+              </div>
 
-              <button type="button" class="btn btn-sm btn-link text-danger p-0 px-1 btn-del-ind" data-obj-idx="${objIdx}" data-ind-idx="${indIdx}">
-                <i class="bi bi-x-circle"></i>
+              <button type="button" class="btn btn-sm btn-link text-primary p-0 mt-1 btn-add-ind" data-u-idx="${uIdx}" data-obj-idx="${objIdx}">
+                <i class="bi bi-plus-short"></i>+ Añadir Indicador
               </button>
             </div>
-          `
-            })
-            .join('')}
-        </div>
+          </div>
+        `,
+          )
+          .join('')}
 
-        <button type="button" class="btn btn-sm btn-link text-primary p-0 mt-1 btn-add-ind" data-obj-idx="${objIdx}">
-          <i class="bi bi-plus-short"></i>+ Añadir Clase / Indicador
+        <button type="button" class="btn btn-sm btn-outline-primary mt-1 btn-add-obj" data-u-idx="${uIdx}">
+          <i class="bi bi-plus-circle me-1"></i>+ Agregar Objetivo
         </button>
       </div>
     </div>
@@ -422,10 +460,25 @@ function _attachEventsFull(container, clases, estadoEstructura, alumnosState, _l
       if (nuevaUnidad && nuevaUnidad.titulo) {
         if (eraDataDemo) estadoEstructura.objetivos = []
         estadoEstructura.esDataDemo = false
-        estadoEstructura.objetivos.push(nuevaUnidad)
-        _renderObjetivosFull(container, estadoEstructura, alumnosState)
-        
         const cantInds = nuevaUnidad.indicadores?.length || 0
+        // GROQ devuelve indicadores planos por unidad — se envuelven en un
+        // único Objetivo General (el maestro puede reorganizarlos/agregar
+        // más objetivos después desde el editor).
+        estadoEstructura.objetivos.push({
+          id: nuevaUnidad.id || `unidad-${Date.now()}`,
+          titulo: nuevaUnidad.titulo,
+          clasesEstimadas: nuevaUnidad.clasesEstimadas,
+          justificacionPedagogica: nuevaUnidad.justificacionPedagogica,
+          objetivos: [
+            {
+              id: `obj-${Date.now()}`,
+              titulo: 'Objetivo General (generado por IA)',
+              indicadores: nuevaUnidad.indicadores || [],
+            },
+          ],
+        })
+        _renderObjetivosFull(container, estadoEstructura, alumnosState)
+
         const estimacion = nuevaUnidad.clasesEstimadas || cantInds
         AppToast.show(`¡Unidad ${numSiguiente} generada! (${cantInds} Indicadores, ~${estimacion} clases estimadas) ⭐`, 'success')
       }
@@ -467,9 +520,12 @@ function _attachEventsFull(container, clases, estadoEstructura, alumnosState, _l
       // El árbol completo de unidades + indicadores serializado como JSON en el campo TEXT `objetivos`
       objetivos: JSON.stringify(estadoEstructura.objetivos),
       contenido: estadoEstructura.objetivos
-        .map((obj) => [
-          `[UNIDAD] ${obj.titulo}`,
-          ...(obj.indicadores || []).map((ind) => `  • ${ind.titulo}`),
+        .map((unidad) => [
+          `[UNIDAD] ${unidad.titulo}`,
+          ...(unidad.objetivos || []).flatMap((obj) => [
+            `  [OBJETIVO] ${obj.titulo}`,
+            ...(obj.indicadores || []).map((ind) => `    • ${ind.titulo}`),
+          ]),
         ].join('\n'))
         .join('\n\n'),
       recursos: '',
@@ -518,10 +574,16 @@ function _attachEventsFull(container, clases, estadoEstructura, alumnosState, _l
     }
     const count = estadoEstructura.objetivos.length + 1
     estadoEstructura.objetivos.push({
-      id: `obj-${Date.now()}`,
+      id: `unidad-${Date.now()}`,
       titulo: `Unidad Didáctica ${count}`,
-      indicadores: [
-        { id: `ind-${Date.now()}-1`, titulo: `Contenido Evaluables 1`, prerrequisitoId: null },
+      objetivos: [
+        {
+          id: `obj-${Date.now()}`,
+          titulo: 'Objetivo General 1',
+          indicadores: [
+            { id: `ind-${Date.now()}-1`, titulo: 'Contenido Evaluable 1', prerrequisitoId: null },
+          ],
+        },
       ],
     })
     _renderObjetivosFull(container, estadoEstructura, alumnosState)
@@ -529,11 +591,24 @@ function _attachEventsFull(container, clases, estadoEstructura, alumnosState, _l
 }
 
 function _attachEventsObjetivos(container, estadoEstructura, alumnosState) {
+  const unidades = estadoEstructura.objetivos
+
+  container.querySelectorAll('.input-unidad-title').forEach((inp) => {
+    inp.addEventListener('input', (e) => {
+      const uIdx = parseInt(e.target.dataset.uIdx, 10)
+      if (unidades[uIdx]) {
+        unidades[uIdx].titulo = e.target.value
+        _updateSVGFull(container, estadoEstructura, alumnosState)
+      }
+    })
+  })
+
   container.querySelectorAll('.input-obj-title').forEach((inp) => {
     inp.addEventListener('input', (e) => {
-      const idx = parseInt(e.target.dataset.objIdx, 10)
-      if (estadoEstructura.objetivos[idx]) {
-        estadoEstructura.objetivos[idx].titulo = e.target.value
+      const uIdx = parseInt(e.target.dataset.uIdx, 10)
+      const objIdx = parseInt(e.target.dataset.objIdx, 10)
+      if (unidades[uIdx]?.objetivos[objIdx]) {
+        unidades[uIdx].objetivos[objIdx].titulo = e.target.value
         _updateSVGFull(container, estadoEstructura, alumnosState)
       }
     })
@@ -541,10 +616,11 @@ function _attachEventsObjetivos(container, estadoEstructura, alumnosState) {
 
   container.querySelectorAll('.input-ind-title').forEach((inp) => {
     inp.addEventListener('input', (e) => {
+      const uIdx = parseInt(e.target.dataset.uIdx, 10)
       const objIdx = parseInt(e.target.dataset.objIdx, 10)
       const indIdx = parseInt(e.target.dataset.indIdx, 10)
-      if (estadoEstructura.objetivos[objIdx]?.indicadores[indIdx]) {
-        estadoEstructura.objetivos[objIdx].indicadores[indIdx].titulo = e.target.value
+      if (unidades[uIdx]?.objetivos[objIdx]?.indicadores[indIdx]) {
+        unidades[uIdx].objetivos[objIdx].indicadores[indIdx].titulo = e.target.value
         _updateSVGFull(container, estadoEstructura, alumnosState)
       }
     })
@@ -552,31 +628,61 @@ function _attachEventsObjetivos(container, estadoEstructura, alumnosState) {
 
   container.querySelectorAll('.select-prereq').forEach((sel) => {
     sel.addEventListener('change', (e) => {
+      const uIdx = parseInt(e.target.dataset.uIdx, 10)
       const objIdx = parseInt(e.target.dataset.objIdx, 10)
       const indIdx = parseInt(e.target.dataset.indIdx, 10)
-      if (estadoEstructura.objetivos[objIdx]?.indicadores[indIdx]) {
-        estadoEstructura.objetivos[objIdx].indicadores[indIdx].prerrequisitoId = e.target.value || null
+      if (unidades[uIdx]?.objetivos[objIdx]?.indicadores[indIdx]) {
+        unidades[uIdx].objetivos[objIdx].indicadores[indIdx].prerrequisitoId = e.target.value || null
         _updateSVGFull(container, estadoEstructura, alumnosState)
+      }
+    })
+  })
+
+  container.querySelectorAll('.btn-del-unidad').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const uIdx = parseInt(btn.dataset.uIdx, 10)
+      unidades.splice(uIdx, 1)
+      _renderObjetivosFull(container, estadoEstructura, alumnosState)
+    })
+  })
+
+  container.querySelectorAll('.btn-add-obj').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const uIdx = parseInt(btn.dataset.uIdx, 10)
+      if (unidades[uIdx]) {
+        if (!Array.isArray(unidades[uIdx].objetivos)) unidades[uIdx].objetivos = []
+        const n = unidades[uIdx].objetivos.length + 1
+        unidades[uIdx].objetivos.push({
+          id: `obj-${Date.now()}`,
+          titulo: `Objetivo General ${n}`,
+          indicadores: [{ id: `ind-${Date.now()}-1`, titulo: 'Contenido Evaluable 1', prerrequisitoId: null }],
+        })
+        _renderObjetivosFull(container, estadoEstructura, alumnosState)
       }
     })
   })
 
   container.querySelectorAll('.btn-del-obj').forEach((btn) => {
     btn.addEventListener('click', () => {
-      const idx = parseInt(btn.dataset.objIdx, 10)
-      estadoEstructura.objetivos.splice(idx, 1)
-      _renderObjetivosFull(container, estadoEstructura, alumnosState)
+      const uIdx = parseInt(btn.dataset.uIdx, 10)
+      const objIdx = parseInt(btn.dataset.objIdx, 10)
+      if (unidades[uIdx]?.objetivos) {
+        unidades[uIdx].objetivos.splice(objIdx, 1)
+        _renderObjetivosFull(container, estadoEstructura, alumnosState)
+      }
     })
   })
 
   container.querySelectorAll('.btn-add-ind').forEach((btn) => {
     btn.addEventListener('click', () => {
+      const uIdx = parseInt(btn.dataset.uIdx, 10)
       const objIdx = parseInt(btn.dataset.objIdx, 10)
-      if (estadoEstructura.objetivos[objIdx]) {
+      const objetivo = unidades[uIdx]?.objetivos[objIdx]
+      if (objetivo) {
         const newId = `ind-${Date.now()}`
-        estadoEstructura.objetivos[objIdx].indicadores.push({
+        objetivo.indicadores.push({
           id: newId,
-          titulo: `Objetivo de Clase ${estadoEstructura.objetivos[objIdx].indicadores.length + 1}`,
+          titulo: `Contenido Evaluable ${objetivo.indicadores.length + 1}`,
           prerrequisitoId: null,
         })
         _renderObjetivosFull(container, estadoEstructura, alumnosState)
@@ -586,10 +692,11 @@ function _attachEventsObjetivos(container, estadoEstructura, alumnosState) {
 
   container.querySelectorAll('.btn-del-ind').forEach((btn) => {
     btn.addEventListener('click', () => {
+      const uIdx = parseInt(btn.dataset.uIdx, 10)
       const objIdx = parseInt(btn.dataset.objIdx, 10)
       const indIdx = parseInt(btn.dataset.indIdx, 10)
-      if (estadoEstructura.objetivos[objIdx]?.indicadores) {
-        estadoEstructura.objetivos[objIdx].indicadores.splice(indIdx, 1)
+      if (unidades[uIdx]?.objetivos[objIdx]?.indicadores) {
+        unidades[uIdx].objetivos[objIdx].indicadores.splice(indIdx, 1)
         _renderObjetivosFull(container, estadoEstructura, alumnosState)
       }
     })
@@ -611,16 +718,11 @@ function _updateSVGFull(container, estadoEstructura, alumnosState) {
   const canvasEl = container.querySelector('#full-svg-canvas-container')
   if (!canvasEl) return
 
-  const nodos = []
-  estadoEstructura.objetivos.forEach((obj) => {
-    obj.indicadores.forEach((ind) => {
-      nodos.push({
-        id: ind.id,
-        titulo: ind.titulo,
-        estado: ind.prerrequisitoId ? 'en_proceso' : 'logrado',
-      })
-    })
-  })
+  const nodos = _todosLosIndicadores(estadoEstructura.objetivos).map((ind) => ({
+    id: ind.id,
+    titulo: ind.titulo,
+    estado: ind.prerrequisitoId ? 'en_proceso' : 'logrado',
+  }))
 
   if (nodos.length === 0) {
     canvasEl.innerHTML = `<div class="text-body-secondary small py-5 text-center">Agregá indicadores para visualizar el mapa SVG en tiempo real.</div>`

@@ -246,21 +246,33 @@ function _extraerNodosDePlan(plan, claseObj = {}) {
 
   // 1. Si el plan posee objetivosEstructurados (del Diseñador ACM / Supabase)
   if (plan && Array.isArray(plan.objetivosEstructurados) && plan.objetivosEstructurados.length > 0) {
-    plan.objetivosEstructurados.forEach((obj, objIdx) => {
-      if (Array.isArray(obj.indicadores) && obj.indicadores.length > 0) {
-        obj.indicadores.forEach((ind, indIdx) => {
-          nodos.push({
-            id: ind.id || `node-${plan.id || claseObj.id}-${objIdx + 1}-${indIdx + 1}`,
-            titulo: ind.titulo || `${obj.titulo}: Indicador ${indIdx + 1}`,
-            estado: ind.prerrequisitoId ? 'en_proceso' : 'logrado',
-            prerrequisitoId: ind.prerrequisitoId || null,
+    plan.objetivosEstructurados.forEach((unidad, uIdx) => {
+      // Estructura nueva (Unidad -> Objetivos -> Indicadores). Fallback a la
+      // vieja (Unidad -> Indicadores directo) para planes guardados antes
+      // del cambio de esquema, sin romper su lectura.
+      const objetivosDeUnidad = Array.isArray(unidad.objetivos) && unidad.objetivos.length > 0
+        ? unidad.objetivos
+        : [{ id: unidad.id, titulo: unidad.titulo, indicadores: unidad.indicadores || [] }]
+
+      let huboIndicador = false
+      objetivosDeUnidad.forEach((obj, objIdx) => {
+        if (Array.isArray(obj.indicadores) && obj.indicadores.length > 0) {
+          huboIndicador = true
+          obj.indicadores.forEach((ind, indIdx) => {
+            nodos.push({
+              id: ind.id || `node-${plan.id || claseObj.id}-${uIdx + 1}-${objIdx + 1}-${indIdx + 1}`,
+              titulo: ind.titulo || `${obj.titulo}: Indicador ${indIdx + 1}`,
+              estado: ind.prerrequisitoId ? 'en_proceso' : 'logrado',
+              prerrequisitoId: ind.prerrequisitoId || null,
+            })
           })
-        })
-      } else {
+        }
+      })
+      if (!huboIndicador) {
         nodos.push({
-          id: obj.id || `node-${plan.id || claseObj.id}-${objIdx + 1}`,
-          titulo: obj.titulo || `Unidad ${objIdx + 1}`,
-          estado: objIdx === 0 ? 'logrado' : 'en_proceso',
+          id: unidad.id || `node-${plan.id || claseObj.id}-${uIdx + 1}`,
+          titulo: unidad.titulo || `Unidad ${uIdx + 1}`,
+          estado: uIdx === 0 ? 'logrado' : 'en_proceso',
         })
       }
     })

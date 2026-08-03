@@ -23,6 +23,7 @@ vi.mock('../../services/realAlumnosService.js', () => ({
 
 vi.mock('../../services/aiEvaluacionService.js', () => ({
   sugerirRutaDidacticaIA: vi.fn(),
+  sugerirSiguienteUnidadIA: vi.fn(),
 }))
 
 vi.mock('../../api/offlineSyncAdapter.js', () => ({

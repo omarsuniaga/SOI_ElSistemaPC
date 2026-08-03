@@ -70,7 +70,7 @@ Responde ÚNICAMENTE en JSON válido con este esquema exacto (sin texto adiciona
  *
  * Analiza el instrumento, nivel técnico, unidades existentes y la complejidad pedagógica para:
  * 1. Proponer 1 nueva Unidad coherente sin repetir contenidos.
- * 2. Determinar analíticamente la cantidad exacta de Indicadores Evaluables necesarios (2 a 5).
+ * 2. Determinar analíticamente la cantidad exacta de Indicadores Evaluables necesarios (2 a 4).
  * 3. Asignar los prerrequisitos técnicos inmediatos para cada indicador.
  * 4. Estimación del número de clases presenciales necesarias según la dificultad del tema.
  *
@@ -139,8 +139,10 @@ Responde ÚNICAMENTE en formato JSON válido (sin explicaciones afuera del JSON)
     prerrequisitoId: j > 0 ? `ind-ia-seq-${now}-${j}` : null,
   }))
 
-  if (indicadoresFormateados.length === 0) {
-    throw new Error('GROQ no generó indicadores para esta unidad. Intenta nuevamente.')
+  if (indicadoresFormateados.length < 2 || indicadoresFormateados.length > 4) {
+    throw new Error(
+      `GROQ devolvió ${indicadoresFormateados.length} indicadores (fuera del rango 2-4 exigido). Intenta nuevamente.`,
+    )
   }
 
   return {

@@ -328,6 +328,9 @@ function openNodoDetailModal(nodo, alumnosList = []) {
       const statusColor = a.justificado ? '#8b5cf6' : a.presente ? '#10b981' : '#ef4444'
       const statusTitle = a.justificado ? 'Justificado' : a.presente ? 'Presente' : 'Ausente'
 
+      const prevEstrellas = a.estrellasAnteriores || a.prevEstrellas || (a.estrellas > 0 ? Math.max(1, a.estrellas - 1) : 0)
+      const prevTexto = prevEstrellas > 0 ? `Previo: ${prevEstrellas}★ (${_getEtiquetaEstrella(prevEstrellas)})` : 'Sin calificación previa'
+
       return `
         <tr class="row-alumno-modal-eval" data-id="${a.id}" style="cursor: pointer;">
           <td>
@@ -337,7 +340,9 @@ function openNodoDetailModal(nodo, alumnosList = []) {
                     title="${statusTitle}"></span>
               <span class="fw-bold text-body fs-6">${escapeHTML(a.nombre)}</span>
             </div>
-            <small class="text-body-secondary d-block" style="font-size: 0.75rem;">ID: ${a.id.slice(0, 8)}</small>
+            <small class="text-body-secondary d-block" style="font-size: 0.75rem;">
+              <i class="bi bi-clock-history me-1"></i>${escapeHTML(prevTexto)}
+            </small>
           </td>
           <td class="text-center">
             <span class="badge ${a.idia >= 80 ? 'bg-success-subtle text-success' : 'bg-warning-subtle text-warning-emphasis'} border px-2 py-1" style="font-size: 0.75rem;">

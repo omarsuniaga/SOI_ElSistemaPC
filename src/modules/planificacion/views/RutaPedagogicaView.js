@@ -333,8 +333,11 @@ function openNodoDetailModal(nodo, alumnosList = []) {
         ? `Previo: ${prevEstrellas}★ (${_getEtiquetaEstrella(prevEstrellas)})` 
         : 'Sin calificación previa'
 
+      const esEvaluable = a.presente && !a.justificado
+      const statusLabel = a.justificado ? 'Bloqueado (Justificado)' : a.presente ? 'Presente' : 'Bloqueado (Ausente)'
+
       return `
-        <tr class="row-alumno-modal-eval" data-id="${a.id}" style="cursor: pointer;">
+        <tr class="row-alumno-modal-eval${esEvaluable ? '' : ' opacity-50'}" data-id="${a.id}" style="cursor: ${esEvaluable ? 'pointer' : 'not-allowed'};">
           <td>
             <div class="d-flex align-items-center gap-2 flex-wrap">
               <span class="rounded-circle d-inline-block shadow-sm"
@@ -352,10 +355,12 @@ function openNodoDetailModal(nodo, alumnosList = []) {
             </span>
           </td>
           <td class="text-center text-nowrap" style="white-space: nowrap;">
-            <div class="d-inline-flex align-items-center gap-1 text-warning user-select-none text-nowrap" style="white-space: nowrap;">
-              ${_renderEstrellasSVG(a.estrellas || 0)}
+            <div class="d-inline-flex align-items-center gap-1 ${esEvaluable ? 'text-warning' : 'text-secondary opacity-50'} user-select-none text-nowrap" style="white-space: nowrap; ${esEvaluable ? '' : 'pointer-events: none;'}">
+              ${_renderEstrellasSVG(a.estrellas || 0, esEvaluable)}
             </div>
-            <small class="fw-bold text-body-secondary d-block" style="font-size: 0.75rem;">${a.estrellas > 0 ? `${a.estrellas}★ (${_getEtiquetaEstrella(a.estrellas)})` : 'Sin Registrar (0★)'}</small>
+            <small class="fw-bold ${esEvaluable ? 'text-body-secondary' : 'text-danger'} d-block" style="font-size: 0.75rem;">
+              ${esEvaluable ? (a.estrellas > 0 ? `${a.estrellas}★ (${_getEtiquetaEstrella(a.estrellas)})` : 'Sin Registrar (0★)') : statusLabel}
+            </small>
           </td>
         </tr>
       `
@@ -437,7 +442,7 @@ function openNodoDetailModal(nodo, alumnosList = []) {
     const alId = tr.dataset.id
     const targetAl = alumnosList.find((al) => String(al.id) === String(alId))
 
-    if (targetAl && targetAl.presente) {
+    if (targetAl && targetAl.presente && !targetAl.justificado) {
       // Verificar si el clic fue en un ícono de estrella específico
       const starIcon = e.target.closest('.star-click-item')
       if (starIcon && starIcon.dataset.starVal) {
@@ -469,4 +474,35 @@ function openNodoDetailModal(nodo, alumnosList = []) {
   }, { once: true })
 
   bsModal.show()
+}
+
+function _extraerNodosDePlan(plan) {
+  const nodos = []
+  if (Array.isArray(plan.objetivosEstructurados)) {
+    plan.objetivosEstructurados.forEach((obj) => {
+      if (Array.isArray(obj.indicadores)) {
+        obj.indicadores.forEach((ind) => {
+          nodos.push({
+            id: ind.id,
+            titulo: `${obj.titulo}: ${ind.titulo}`,
+            estado: ind.prerrequisitoId ? 'en_proceso' : 'logrado',
+          })
+        })
+      }
+    })
+  }
+  return nodos
+}
+
+function _renderEstrellasSVG(cant, esEvaluable = true) {
+  let html = ''
+  const pointerStyle = esEvaluable ? 'cursor: pointer;' : 'cursor: not-allowed; pointer-events: none;'
+  for (let i = 1; i <= 5; i++) {
+    if (i <= cant) {
+      html += `<i class="bi bi-star-fill text-warning me-1 star-click-item" data-star-val="${i}" style="${pointerStyle} padding: 2px;"></i>`
+    } else {
+      html += `<i class="bi bi-star text-secondary opacity-50 me-1 star-click-item" data-star-val="${i}" style="${pointerStyle} padding: 2px;"></i>`
+    }
+  }
+  return html
 }

@@ -189,10 +189,10 @@ function _renderUI(container, clases, estadoEstructura) {
           </div>
         </div>
 
-        <!-- EDITOR A DOS COLUMNAS -->
+        <!-- ESTRUCTURA A ANCHO COMPLETO -->
         <div class="row g-4">
-          <!-- ESTRUCTURA DE UNIDADES -->
-          <div class="col-lg-7">
+          <!-- ESTRUCTURA DE UNIDADES (100% ANCHO) -->
+          <div class="col-12">
             <div class="card border border-secondary-subtle bg-body-tertiary rounded-4 p-4 shadow-sm mb-4">
               <div class="d-flex align-items-center justify-content-between mb-3">
                 <h5 class="fw-bold text-body mb-0"><i class="bi bi-list-check me-2 text-primary"></i>Unidades e Indicadores de Logro</h5>
@@ -205,9 +205,9 @@ function _renderUI(container, clases, estadoEstructura) {
             </div>
           </div>
 
-          <!-- MAPA SVG & MATRIZ DE ALUMNOS -->
-          <div class="col-lg-5">
-            <div class="card border border-secondary-subtle bg-body-tertiary rounded-4 p-4 shadow-sm sticky-top" style="top: 20px;">
+          <!-- MAPA SVG & MATRIZ DE ALUMNOS (100% ANCHO A CONTINUACIÓN) -->
+          <div class="col-12">
+            <div class="card border border-secondary-subtle bg-body-tertiary rounded-4 p-4 shadow-sm">
               <h5 class="fw-bold text-body mb-2"><i class="bi bi-diagram-3 me-2 text-primary"></i>Grafo Vectorial de Ruta SVG</h5>
               <p class="text-body-secondary small mb-3">Toca cualquier nodo para consultar o ciclar la evaluación de los alumnos reales.</p>
 

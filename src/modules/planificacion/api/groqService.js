@@ -28,92 +28,44 @@ async function authHeaders() {
   }
 }
 
-async function ollamaChat(messages, { maxTokens, temperature, responseFormat } = {}) {
-  const body = {
-    model: config.ai.ollamaModel,
-    messages,
-    ...(maxTokens     && { max_tokens: maxTokens }),
-    ...(temperature   !== undefined && { temperature }),
-    ...(responseFormat && { response_format: responseFormat }),
-  }
-  const res = await fetch(`${config.ai.ollamaUrl}/v1/chat/completions`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  })
-  const data = await res.json()
-  if (!res.ok || data.error) throw new Error(data.error?.message ?? `Ollama error ${res.status}`)
-  return data.choices[0].message.content.trim()
-}
-
-let _cachedApiKey = null
-
-async function _obtenerApiKeyDeSupabase() {
-  if (_cachedApiKey) return _cachedApiKey
-  try {
-    const { data, error } = await supabase
-      .from('api_keys')
-      .select('key_value, api_key, value')
-      .or('provider.eq.groq,service.eq.groq,nombre.eq.groq')
-      .limit(1)
-      .maybeSingle()
-
-    if (!error && data) {
-      _cachedApiKey = data.key_value || data.api_key || data.value
-      if (_cachedApiKey) return _cachedApiKey
-    }
-  } catch (err) {
-    console.warn('[groqService] No se pudo leer api_keys de Supabase:', err)
-  }
-  return null
-}
-
-async function proxyChat(messages, { maxTokens, temperature, responseFormat } = {}) {
-  // Intentar llamada directa con API key de la tabla `api_keys` de Supabase si está disponible
-  const dbApiKey = await _obtenerApiKeyDeSupabase()
-  if (dbApiKey) {
-    try {
-      const resDirect = await fetch(`${config.groq.endpoint}/chat/completions`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${dbApiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: config.groq.model,
-          messages,
-          ...(maxTokens && { max_tokens: maxTokens }),
-          ...(temperature !== undefined && { temperature }),
-          ...(responseFormat && { response_format: responseFormat }),
-        }),
-      })
-      const dataDirect = await resDirect.json()
-      if (resDirect.ok && dataDirect.choices?.[0]?.message?.content) {
-        return dataDirect.choices[0].message.content.trim()
-      }
-    } catch (e) {
-      console.warn('[groqService] Error con API Key directa de tabla BD, intentando proxy edge:', e)
-    }
-  }
-
-  // Fallback: Llamada al Supabase Edge Function Proxy oficial
+async function proxyChat(messages, { maxTokens, temperature = 0.3, responseFormat } = {}) {
   const headers = await authHeaders()
+
   const body = {
     model: config.groq.model,
     messages,
+    temperature,
     ...(maxTokens     && { max_tokens: maxTokens }),
-    ...(temperature   !== undefined && { temperature }),
     ...(responseFormat && { response_format: responseFormat }),
   }
+
   const res = await fetch(`${proxyBase()}/chat`, {
     method: 'POST',
     headers,
     body: JSON.stringify(body),
   })
-  const data = await res.json()
-  if (!res.ok || data.error) throw new Error(data.error?.message ?? `Groq proxy error ${res.status}`)
-  return data.choices[0].message.content.trim()
+
+  let data
+  try {
+    data = await res.json()
+  } catch {
+    throw new Error(`groq-proxy devolvió una respuesta no-JSON (status ${res.status})`)
+  }
+
+  if (!res.ok || data.error) {
+    const msg = data.error?.message ?? data.error ?? `groq-proxy error ${res.status}`
+    console.error('[groqService] proxyChat error:', res.status, data)
+    throw new Error(msg)
+  }
+
+  const content = data.choices?.[0]?.message?.content
+  if (!content) {
+    throw new Error('GROQ devolvió una respuesta vacía. Intenta nuevamente.')
+  }
+
+  return content.trim()
 }
+
 
 async function proxyTranscribe(audioBlob, fileName = 'audio.webm') {
   if (config.ai.provider === 'ollama') {

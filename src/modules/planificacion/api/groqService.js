@@ -46,15 +46,57 @@ async function ollamaChat(messages, { maxTokens, temperature, responseFormat } =
   return data.choices[0].message.content.trim()
 }
 
+let _cachedApiKey = null
+
+async function _obtenerApiKeyDeSupabase() {
+  if (_cachedApiKey) return _cachedApiKey
+  try {
+    const { data, error } = await supabase
+      .from('api_keys')
+      .select('key_value, api_key, value')
+      .or('provider.eq.groq,service.eq.groq,nombre.eq.groq')
+      .limit(1)
+      .maybeSingle()
+
+    if (!error && data) {
+      _cachedApiKey = data.key_value || data.api_key || data.value
+      if (_cachedApiKey) return _cachedApiKey
+    }
+  } catch (err) {
+    console.warn('[groqService] No se pudo leer api_keys de Supabase:', err)
+  }
+  return null
+}
+
 async function proxyChat(messages, { maxTokens, temperature, responseFormat } = {}) {
-  if (config.ai.provider === 'ollama') {
+  // Intentar llamada directa con API key de la tabla `api_keys` de Supabase si está disponible
+  const dbApiKey = await _obtenerApiKeyDeSupabase()
+  if (dbApiKey) {
     try {
-      return await ollamaChat(messages, { maxTokens, temperature, responseFormat })
+      const resDirect = await fetch(`${config.groq.endpoint}/chat/completions`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${dbApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: config.groq.model,
+          messages,
+          ...(maxTokens && { max_tokens: maxTokens }),
+          ...(temperature !== undefined && { temperature }),
+          ...(responseFormat && { response_format: responseFormat }),
+        }),
+      })
+      const dataDirect = await resDirect.json()
+      if (resDirect.ok && dataDirect.choices?.[0]?.message?.content) {
+        return dataDirect.choices[0].message.content.trim()
+      }
     } catch (e) {
-      console.warn('[groqService] Ollama call failed (CSP/network), using edge proxy fallback:', e)
+      console.warn('[groqService] Error con API Key directa de tabla BD, intentando proxy edge:', e)
     }
   }
 
+  // Fallback: Llamada al Supabase Edge Function Proxy oficial
   const headers = await authHeaders()
   const body = {
     model: config.groq.model,

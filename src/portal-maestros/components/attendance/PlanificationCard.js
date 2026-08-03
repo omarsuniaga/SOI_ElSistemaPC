@@ -1,6 +1,8 @@
 import { escHTML } from '../../utils/portalUtils.js'
 import * as weeklyPlanAdapter from '../../../modules/planificacion/api/weeklyPlanAdapter.js'
 import { renderMapaContenidoSVG } from '../../../modules/planificacion/components/MapaContenidoSVG.js'
+import { extraerNodosDePlan } from '../../../modules/planificacion/components/routeNodes.js'
+import { obtenerPlanificacionesConDetalles } from '../../../modules/planificacion/api/planificacionAdapter.js'
 import { config } from '../../../core/config/config.js'
 import { AppToast } from '../../../shared/components/AppToast.js'
 
@@ -135,13 +137,7 @@ export function createPlanificationCard(container, opts) {
           })
         } else {
           if (planNombreEl) planNombreEl.textContent = 'Sin guía ACM asignada'
-          if (treeContainer) {
-            treeContainer.innerHTML = `
-              <div style="padding:10px;font-size:0.82rem;color:var(--pm-text-muted);">
-                ACM todavía no ha asignado una guía institucional a esta clase.
-              </div>
-            `
-          }
+          renderNoRouteMap()
           return
         }
       }
@@ -374,6 +370,57 @@ export function createPlanificationCard(container, opts) {
     }
 
     renderRouteMap(currentWeekNum)
+  }
+
+  async function renderNoRouteMap() {
+    if (!treeContainer) return
+
+    // Sin guía ACM no hay ruta activa, pero la clase puede tener una
+    // planificación propia (objetivos/indicadores reales del maestro). Se
+    // cargan para dibujar nodos reales; si no existe, se cae a nodos de
+    // ejemplo (esDemo) — el mismo criterio que usa RutaPedagogicaView.
+    let planClase = null
+    try {
+      const planificaciones = (await obtenerPlanificacionesConDetalles()) || []
+      planClase =
+        planificaciones.find(
+          (p) => String(p.clase_id || p.claseId) === String(opts.claseId),
+        ) || null
+    } catch (err) {
+      console.warn('[PlanificationCard] No se pudo cargar la planificación de la clase:', err)
+    }
+
+    const nodos = extraerNodosDePlan(planClase, opts.clase || {})
+
+    treeContainer.innerHTML = `
+      <div style="padding:10px;font-size:0.82rem;color:var(--pm-text-muted);">
+        ACM todavía no ha asignado una guía institucional a esta clase.
+        ${nodos.esDemo
+          ? '<strong>Mostrando ruta de ejemplo.</strong>'
+          : 'Mostrando la ruta de tu planificación actual.'}
+      </div>
+    `
+
+    const mapaEl = document.createElement('div')
+    mapaEl.id = 'pm-ruta-mapa-preview'
+    mapaEl.style.marginTop = '12px'
+    treeContainer.appendChild(mapaEl)
+
+    renderMapaContenidoSVG({
+      container: mapaEl,
+      nodos,
+      onNodeClick: (nodo) => {
+        if (nodos.esDemo) {
+          AppToast.info('ACM todavía no ha asignado una guía institucional a esta clase.')
+          return
+        }
+        opts.onIndicadorSelect?.({
+          id: nodo.id,
+          nombre: nodo.titulo,
+          node_id: nodo.node_id || null,
+        })
+      },
+    })
   }
 
   function renderRouteMap(currentWeekNum) {

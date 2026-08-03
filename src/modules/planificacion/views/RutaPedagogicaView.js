@@ -3,6 +3,7 @@ import { escapeHTML } from '../../clases/utils/clasesUtils.js'
 import { AppToast } from '../../../shared/components/AppToast.js'
 import { obtenerClases, obtenerPlanificacionesConDetalles } from '../api/planificacionAdapter.js'
 import { renderMapaContenidoSVG } from '../components/MapaContenidoSVG.js'
+import { extraerNodosDePlan } from '../components/routeNodes.js'
 import { obtenerAlumnosRealesPorClase } from '../services/realAlumnosService.js'
 import { OfflineSyncAdapter } from '../api/offlineSyncAdapter.js'
 import { IndicadorLogro } from '../domain/IndicadorLogro.js'
@@ -98,7 +99,7 @@ function _renderUI(container, clases, planificaciones, { parentRoute = 'planific
     const planClase = planificaciones.find((p) => String(p.clase_id || p.claseId) === String(selectedClaseId)) || planificaciones[0]
     const targetClaseObj = clases.find((c) => String(c.id) === String(selectedClaseId)) || { nombre: 'Clase General' }
 
-    const nodos = _extraerNodosDePlan(planClase, targetClaseObj)
+    const nodos = extraerNodosDePlan(planClase, targetClaseObj)
 
     // Métricas para la cabecera Premium
     const totalAlumnosCount = alumnosClase.length
@@ -239,78 +240,6 @@ function _renderUI(container, clases, planificaciones, { parentRoute = 'planific
   }
 
   _loadAlumnosYRender()
-}
-
-function _extraerNodosDePlan(plan, claseObj = {}) {
-  const nodos = []
-
-  // 1. Si el plan posee objetivosEstructurados (del Diseñador ACM / Supabase)
-  if (plan && Array.isArray(plan.objetivosEstructurados) && plan.objetivosEstructurados.length > 0) {
-    plan.objetivosEstructurados.forEach((unidad, uIdx) => {
-      // Estructura nueva (Unidad -> Objetivos -> Indicadores). Fallback a la
-      // vieja (Unidad -> Indicadores directo) para planes guardados antes
-      // del cambio de esquema, sin romper su lectura.
-      const objetivosDeUnidad = Array.isArray(unidad.objetivos) && unidad.objetivos.length > 0
-        ? unidad.objetivos
-        : [{ id: unidad.id, titulo: unidad.titulo, indicadores: unidad.indicadores || [] }]
-
-      let huboIndicador = false
-      objetivosDeUnidad.forEach((obj, objIdx) => {
-        if (Array.isArray(obj.indicadores) && obj.indicadores.length > 0) {
-          huboIndicador = true
-          obj.indicadores.forEach((ind, indIdx) => {
-            nodos.push({
-              id: ind.id || `node-${plan.id || claseObj.id}-${uIdx + 1}-${objIdx + 1}-${indIdx + 1}`,
-              titulo: ind.titulo || `${obj.titulo}: Indicador ${indIdx + 1}`,
-              estado: ind.prerrequisitoId ? 'en_proceso' : 'logrado',
-              prerrequisitoId: ind.prerrequisitoId || null,
-            })
-          })
-        }
-      })
-      if (!huboIndicador) {
-        nodos.push({
-          id: unidad.id || `node-${plan.id || claseObj.id}-${uIdx + 1}`,
-          titulo: unidad.titulo || `Unidad ${uIdx + 1}`,
-          estado: uIdx === 0 ? 'logrado' : 'en_proceso',
-        })
-      }
-    })
-    return nodos
-  }
-
-  // 2. Si el plan posee contenido/tema directo en la base de datos Supabase
-  if (plan && (plan.tema || plan.contenido)) {
-    const items = (plan.contenido || plan.tema)
-      .split(/[\n,;•.]/)
-      .map((s) => s.trim())
-      .filter((s) => s.length > 3)
-
-    if (items.length > 0) {
-      items.forEach((itemText, idx) => {
-        nodos.push({
-          id: `node-${plan.id || 'real'}-${idx + 1}`,
-          titulo: itemText,
-          estado: idx === 0 ? 'logrado' : idx === 1 ? 'en_proceso' : 'pendiente',
-        })
-      })
-      return nodos
-    }
-  }
-
-  // 3. Sin plan real todavía: muestra de ejemplo (NO son datos reales de la
-  //    clase). Se marca esDemo=true para que la UI avise — se reemplaza por
-  //    completo en cuanto el maestro publique un plan real desde el Diseñador.
-  const prefix = claseObj?.id ? `node-${claseObj.id}` : 'node-real'
-  const nodosDemo = [
-    { id: `${prefix}-u1`, titulo: `Unidad 1: Técnica Base - ${claseObj.nombre || 'Instrumento'}`, estado: 'logrado' },
-    { id: `${prefix}-u2`, titulo: `Unidad 2: Escalas y Articulación`, estado: 'en_proceso' },
-    { id: `${prefix}-u3`, titulo: `Unidad 3: Control de Pulso y Ritmo`, estado: 'pendiente' },
-    { id: `${prefix}-u4`, titulo: `Unidad 4: Independencia y Dinámicas`, estado: 'pendiente' },
-    { id: `${prefix}-u5`, titulo: `Unidad 5: Repertorio e Interpretación`, estado: 'pendiente' },
-  ]
-  nodosDemo.esDemo = true
-  return nodosDemo
 }
 
 function _renderEstrellasSVG(cant) {

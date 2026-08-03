@@ -170,7 +170,7 @@ export async function loginMaestro(email, password, options = {}) {
     const { data: byEmail } = await supabase
       .from('maestros')
       .select('*')
-      .or(`correo.eq.${data.user.email},email.eq.${data.user.email}`)
+      .ilike('correo', data.user.email)
       .maybeSingle()
 
     if (byEmail) {
@@ -187,23 +187,24 @@ export async function loginMaestro(email, password, options = {}) {
     // Último recurso: crear row en maestros con datos del perfil
     const { data: profileData } = await supabase
       .from('profiles')
-      .select('nombre_completo, resena')
+      .select('nombre_completo')
       .eq('id', data.user.id)
       .maybeSingle()
 
-    const { data: nuevoMaestro } = await supabase
+    const { data: nuevoMaestro, error: nuevoMaestroError } = await supabase
       .from('maestros')
       .insert({
         user_id: data.user.id,
         nombre_completo: profileData?.nombre_completo || data.user.user_metadata?.full_name || data.user.email,
         correo: data.user.email,
-        instrumento: data.user.user_metadata?.instrumento || '',
+        especialidad: data.user.user_metadata?.instrumento || '',
         activo: true,
       })
       .select()
       .single()
 
-    if (!nuevoMaestro) {
+    if (nuevoMaestroError || !nuevoMaestro) {
+      console.error('[Auth] No se pudo crear la ficha de maestro:', nuevoMaestroError?.message)
       await supabase.auth.signOut()
       return { success: false, error: 'No se pudo vincular tu cuenta. Contactá al administrador.' }
     }

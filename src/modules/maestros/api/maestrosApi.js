@@ -202,10 +202,16 @@ export async function buscarMaestros(query) {
   return data.map(normalizeMaestro)
 }
 
+/**
+ * Verifica si un email ya tiene credenciales de acceso (user_id asignado).
+ * Un maestro con fila en `maestros` pero sin user_id (cargado previamente
+ * con sus clases, sin login todavía) NO cuenta como "ya registrado": ese es
+ * justamente el caso que `crearMaestroConAuth` debe poder resolver.
+ */
 export async function validarEmail(email) {
   const { data, error } = await supabase
     .from('maestros')
-    .select('id')
+    .select('id, user_id')
     .eq('correo', email.trim().toLowerCase())
     .maybeSingle()
 
@@ -213,18 +219,18 @@ export async function validarEmail(email) {
     console.error('Error validando email:', error.message)
   }
 
-  return !!data
+  return !!data?.user_id
 }
 
 /**
  * Crea un maestro completo: auth user + perfil activo + row en maestros.
  *
- * Estrategia: usar la cadena de triggers DB existente.
- * 1. SignUp CON rol='maestro' en metadata → handle_new_user() crea profile
- *    con estado='pendiente' y auto-confirma el email (evita el 500 de SMTP).
- * 2. on_profile_insert_maestro crea el row en maestros con los datos del metadata.
- * 3. Post-signup: actualizar profile a estado='activo' y upsert datos extra
- *    (tlf, especialidades) que los triggers no manejan.
+ * La creación corre en la Edge Function `create-user` (service role): no
+ * toca la sesión del coordinador que la invoca, y evita el auth hook de
+ * envío de email que dispara supabase.auth.signUp() del lado cliente. Si ya
+ * existe una fila en `maestros` con ese correo (maestro cargado antes, con
+ * clases ya asignadas, sin credenciales), la Edge Function la vincula en vez
+ * de crear una duplicada.
  */
 export async function crearMaestroConAuth({ nombre, email, password, telefono, instrumento, especialidades, bio }) {
   const nombreLimpio = (nombre || '').trim()
@@ -237,63 +243,42 @@ export async function crearMaestroConAuth({ nombre, email, password, telefono, i
     throw new Error('La contraseña debe tener al menos 6 caracteres')
   }
 
-  const instrumentoLimpio = (instrumento || '').trim()
-  const resenaLimpia = (bio || '').trim()
-
-  // 1. Crear auth user CON rol='maestro' en metadata.
-  //    handle_new_user() → crea profile con estado='pendiente' y auto-confirma email.
-  //    on_profile_insert_maestro → crea row en maestros (con fallback especialidad).
-  const { data: authData, error: signUpError } = await supabase.auth.signUp({
-    email: emailLimpio,
-    password,
-    options: {
-      data: {
-        full_name: nombreLimpio,
-        rol: 'maestro',
-        instrumento: instrumentoLimpio,
-        resena: resenaLimpia || null,
-      },
-    },
+  const { data, error } = await supabase.functions.invoke('create-user', {
+    body: { nombre: nombreLimpio, email: emailLimpio, password, rol: 'maestro' },
   })
 
-  if (signUpError) {
-    throw new Error(signUpError.message || 'Error al crear usuario')
+  if (error) {
+    throw new Error(error.message || 'Error al crear el usuario')
+  }
+  if (data?.error) {
+    throw new Error(data.error)
+  }
+  if (!data?.ok || !data?.user) {
+    throw new Error('Respuesta inesperada del servidor')
   }
 
-  if (!authData?.user) {
-    throw new Error('No se pudo crear el usuario')
-  }
+  const userId = data.user.id
 
-  const userId = authData.user.id
-
-  // 2. Actualizar profile → estado='activo' (lo creó el trigger como 'pendiente')
-  const { error: profileError } = await supabase
-    .from('profiles')
-    .update({
-      estado: 'activo',
-      updated_at: new Date().toISOString(),
-    })
-    .eq('id', userId)
-
-  if (profileError) {
-    console.error('Error activando profile:', profileError.message)
-  }
-
-  // 3. Upsert datos extra en maestros que el trigger no maneja (tlf, especialidades)
+  // Datos extra que la Edge Function no maneja (tlf, instrumento, especialidades, bio)
   const col = resolverColumna()
+  const instrumentoLimpio = (instrumento || '').trim()
+  const resenaLimpia = (bio || '').trim()
+  const extra = {
+    tlf: (telefono || '').trim() || null,
+    especialidades: Array.isArray(especialidades) ? especialidades : [],
+  }
+  if (instrumentoLimpio) extra[col] = instrumentoLimpio
+  if (resenaLimpia) extra.resena = resenaLimpia
+
   const { error: maestroUpdateErr } = await supabase
     .from('maestros')
-    .update({
-      tlf: (telefono || '').trim() || null,
-      especialidades: Array.isArray(especialidades) ? especialidades : [],
-    })
+    .update(extra)
     .eq('user_id', userId)
 
   if (maestroUpdateErr) {
     console.error('Error actualizando datos del maestro:', maestroUpdateErr.message)
   }
 
-  // 4. Leer el maestro completo para retornarlo
   const { data: maestroData } = await supabase
     .from('maestros')
     .select('*')

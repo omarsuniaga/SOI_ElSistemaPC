@@ -61,7 +61,7 @@ describe('maestroAuth', () => {
       return {
         select: vi.fn().mockReturnThis(),
         eq: vi.fn().mockReturnThis(),
-        or: vi.fn().mockReturnThis(),
+        ilike: vi.fn().mockReturnThis(),
         single: vi.fn().mockResolvedValue({ data: null, error: { message: 'No rows' } }),
         maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
         insert: vi.fn().mockReturnThis(),
@@ -100,7 +100,7 @@ describe('maestroAuth', () => {
       return {
         select: vi.fn().mockReturnThis(),
         eq: vi.fn().mockReturnThis(),
-        or: vi.fn().mockReturnThis(),
+        ilike: vi.fn().mockReturnThis(),
         single: vi.fn().mockResolvedValue({ data: maestroMock, error: null }),
         maybeSingle: vi.fn().mockResolvedValue({ data: maestroMock, error: null }),
       }

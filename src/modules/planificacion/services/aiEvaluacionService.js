@@ -123,49 +123,33 @@ Responde ÚNICAMENTE en formato JSON válido (sin explicaciones afuera del JSON)
   ]
 }`
 
-  try {
-    const raw = await callGroq([{ role: 'user', content: prompt }])
-    const jsonStr = raw.replace(/```json/g, '').replace(/```/g, '').trim()
-    const parsed = JSON.parse(jsonStr)
+  const raw = await callGroq([{ role: 'user', content: prompt }])
+  const jsonStr = raw.replace(/```json/g, '').replace(/```/g, '').trim()
+  const parsed = JSON.parse(jsonStr)
 
-    if (parsed && parsed.titulo) {
-      const now = Date.now()
-      const objId = `obj-ia-seq-${now}`
-      const indicadoresFormateados = (Array.isArray(parsed.indicadores) ? parsed.indicadores : [
-        { titulo: 'Técnica base de la unidad' },
-        { titulo: 'Ejecución del ejercicio evaluable' },
-      ]).map((ind, j) => ({
-        id: `ind-ia-seq-${now}-${j + 1}`,
-        titulo: typeof ind === 'string' ? ind : ind.titulo || `Indicador ${j + 1}`,
-        prerrequisitoId: j > 0 ? `ind-ia-seq-${now}-${j}` : null,
-      }))
-
-      return {
-        id: objId,
-        titulo: parsed.titulo,
-        complejidad: parsed.complejidad || 'media',
-        clasesEstimadas: parsed.clasesEstimadas || indicadoresFormateados.length,
-        justificacionPedagogica: parsed.justificacionPedagogica || '',
-        indicadores: indicadoresFormateados,
-      }
-    }
-  } catch (err) {
-    console.warn('[aiEvaluacionService] Error generando siguiente unidad en GROQ, aplicando fallback didáctico:', err)
+  if (!parsed || !parsed.titulo) {
+    throw new Error('GROQ no devolvió una estructura de unidad válida. Intenta nuevamente.')
   }
 
-  // Fallback didáctico analítico si falla la llamada
   const now = Date.now()
+  const objId = `obj-ia-seq-${now}`
+  const indicadoresFormateados = (Array.isArray(parsed.indicadores) ? parsed.indicadores : []).map((ind, j) => ({
+    id: `ind-ia-seq-${now}-${j + 1}`,
+    titulo: typeof ind === 'string' ? ind : ind.titulo || `Indicador ${j + 1}`,
+    prerrequisitoId: j > 0 ? `ind-ia-seq-${now}-${j}` : null,
+  }))
+
+  if (indicadoresFormateados.length === 0) {
+    throw new Error('GROQ no generó indicadores para esta unidad. Intenta nuevamente.')
+  }
+
   return {
-    id: `obj-ia-fallback-${now}`,
-    titulo: `Unidad ${numeroUnidad}: Avance Didáctico e Interpretativo - ${instrumento}`,
-    complejidad: 'media',
-    clasesEstimadas: 3,
-    justificacionPedagogica: 'Secuencia base ajustada para desarrollo progresivo de la materia.',
-    indicadores: [
-      { id: `ind-ia-fb-${now}-1`, titulo: `Afinación, postura y sonoridad en ${instrumento}`, prerrequisitoId: null },
-      { id: `ind-ia-fb-${now}-2`, titulo: 'Digitación, pulso rítmico y control de dinámicas', prerrequisitoId: `ind-ia-fb-${now}-1` },
-      { id: `ind-ia-fb-${now}-3`, titulo: 'Ejecución del pasaje o pieza de articulación', prerrequisitoId: `ind-ia-fb-${now}-2` },
-    ],
+    id: objId,
+    titulo: parsed.titulo,
+    complejidad: parsed.complejidad || 'media',
+    clasesEstimadas: parsed.clasesEstimadas || indicadoresFormateados.length,
+    justificacionPedagogica: parsed.justificacionPedagogica || '',
+    indicadores: indicadoresFormateados,
   }
 }
 

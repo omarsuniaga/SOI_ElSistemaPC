@@ -42,19 +42,16 @@ describe('sugerirSiguienteUnidadIA - Prueba Analítica e Incremental', () => {
     expect(resultado.indicadores[2].prerrequisitoId).toBe(resultado.indicadores[1].id)
   })
 
-  it('debe ejecutar el fallback pedagógico seguro en caso de fallas de red', async () => {
+  it('debe lanzar un error y notificar al maestro cuando GROQ falla, sin inventar datos', async () => {
     vi.spyOn(groqModule, 'callGroq').mockRejectedValueOnce(new Error('Network error'))
 
-    const resultado = await sugerirSiguienteUnidadIA({
-      instrumento: 'Piano',
-      nivelNombre: 'Nivel 2: Intermedio',
-      numeroUnidad: 3,
-      unidadesExistentes: [],
-    })
-
-    expect(resultado).toBeDefined()
-    expect(resultado.titulo).toContain('Unidad 3')
-    expect(resultado.indicadores.length).toBe(3)
-    expect(resultado.indicadores[1].prerrequisitoId).toBe(resultado.indicadores[0].id)
+    await expect(
+      sugerirSiguienteUnidadIA({
+        instrumento: 'Piano',
+        nivelNombre: 'Nivel 2: Intermedio',
+        numeroUnidad: 3,
+        unidadesExistentes: [],
+      })
+    ).rejects.toThrow('Network error')
   })
 })

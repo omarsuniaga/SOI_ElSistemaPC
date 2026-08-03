@@ -46,13 +46,19 @@ export async function renderDisenadorCurricularView(container, { maestroId } = {
     console.error('[DisenadorCurricularView] Error:', err)
   }
 
+  let planExistente = null
+  try {
+    const planes = await obtenerPlanificacionesConDetalles().catch(() => [])
+    planExistente = planes.find((p) => String(p.clase_id || p.claseId) === String(clases[0]?.id))
+  } catch {}
+
   let estadoEstructura = {
     claseId: clases[0]?.id || '',
-    nivelId: 'nivel-1',
-    frecuenciaSemanal: 2,
+    nivelId: planExistente?.nivelId || 'nivel-1',
+    frecuenciaSemanal: planExistente?.frecuenciaSemanal || 2,
     frecuenciaOrigen: 'manual',
     semanasTotales: 24,
-    objetivos: [
+    objetivos: planExistente?.objetivosEstructurados || [
       {
         id: 'obj-1',
         titulo: 'Dominio de Postura y Emisión Sonora Libre',
@@ -313,8 +319,17 @@ function _attachEventsFull(container, clases, estadoEstructura, alumnosState, _l
     activeNav.navigate('planificacion-ruta', { parentRoute: 'planificacion-disenador' })
   })
 
-  container.querySelector('#select-clase-full')?.addEventListener('change', (e) => {
+  container.querySelector('#select-clase-full')?.addEventListener('change', async (e) => {
     estadoEstructura.claseId = e.target.value
+    try {
+      const planes = await obtenerPlanificacionesConDetalles().catch(() => [])
+      const match = planes.find((p) => String(p.clase_id || p.claseId) === String(estadoEstructura.claseId))
+      if (match && Array.isArray(match.objetivosEstructurados) && match.objetivosEstructurados.length > 0) {
+        estadoEstructura.objetivos = match.objetivosEstructurados
+        if (match.nivelId) estadoEstructura.nivelId = match.nivelId
+        if (match.frecuenciaSemanal) estadoEstructura.frecuenciaSemanal = match.frecuenciaSemanal
+      }
+    } catch {}
     _loadAlumnosModal().then(() => _renderObjetivosFull(container, estadoEstructura, alumnosState))
   })
 

@@ -83,17 +83,7 @@ function _renderUI(container, clases, planificaciones, { parentRoute = 'planific
     const planClase = planificaciones.find((p) => String(p.clase_id || p.claseId) === String(selectedClaseId)) || planificaciones[0]
     const targetClaseObj = clases.find((c) => String(c.id) === String(selectedClaseId)) || { nombre: 'Clase General' }
 
-    const nodosDemo = [
-      { id: 'nd-1', titulo: 'Postura corporal y emisión sonora libre', estado: 'logrado' },
-      { id: 'nd-2', titulo: 'Escala de Do Mayor en cuerdas Re-Sol', estado: 'en_proceso' },
-      { id: 'nd-3', titulo: 'Estudio Nº 4: Control de pulso a 80 BPM', estado: 'pendiente' },
-      { id: 'nd-4', titulo: 'Articulación de 1er y 2do dedo', estado: 'pendiente' },
-      { id: 'nd-5', titulo: 'Repertorio: Canción de Mayo (Suzuki)', estado: 'pendiente' },
-    ]
-
-    const nodos = planClase?.objetivosEstructurados
-      ? _extraerNodosDePlan(planClase)
-      : nodosDemo
+    const nodos = _extraerNodosDePlan(planClase, targetClaseObj)
 
     // Métricas para la cabecera Premium
     const totalAlumnosCount = alumnosClase.length
@@ -210,7 +200,7 @@ function _renderUI(container, clases, planificaciones, { parentRoute = 'planific
           if (cached) {
             alumnosClase = cached
             nodoDatosListos = true
-            openNodoDetailModal(nodo, alumnosClase, nodos)
+            openNodoDetailModal(nodo, alumnosClase, nodos, selectedClaseId)
             _renderTbody()
             return
           }
@@ -223,7 +213,7 @@ function _renderUI(container, clases, planificaciones, { parentRoute = 'planific
             nodoEvalCache.set(nodo.id, lista)
             alumnosClase = lista
             nodoDatosListos = true
-            openNodoDetailModal(nodo, alumnosClase, nodos)
+            openNodoDetailModal(nodo, alumnosClase, nodos, selectedClaseId)
             _renderTbody()
           })
         },
@@ -255,22 +245,60 @@ function _renderUI(container, clases, planificaciones, { parentRoute = 'planific
   _loadAlumnosYRender()
 }
 
-function _extraerNodosDePlan(plan) {
+function _extraerNodosDePlan(plan, claseObj = {}) {
   const nodos = []
-  if (Array.isArray(plan.objetivosEstructurados)) {
-    plan.objetivosEstructurados.forEach((obj) => {
-      if (Array.isArray(obj.indicadores)) {
-        obj.indicadores.forEach((ind) => {
+
+  // 1. Si el plan posee objetivosEstructurados (del Diseñador ACM / Supabase)
+  if (plan && Array.isArray(plan.objetivosEstructurados) && plan.objetivosEstructurados.length > 0) {
+    plan.objetivosEstructurados.forEach((obj, objIdx) => {
+      if (Array.isArray(obj.indicadores) && obj.indicadores.length > 0) {
+        obj.indicadores.forEach((ind, indIdx) => {
           nodos.push({
-            id: ind.id,
-            titulo: `${obj.titulo}: ${ind.titulo}`,
+            id: ind.id || `node-${plan.id || claseObj.id}-${objIdx + 1}-${indIdx + 1}`,
+            titulo: ind.titulo || `${obj.titulo}: Indicador ${indIdx + 1}`,
             estado: ind.prerrequisitoId ? 'en_proceso' : 'logrado',
+            prerrequisitoId: ind.prerrequisitoId || null,
           })
+        })
+      } else {
+        nodos.push({
+          id: obj.id || `node-${plan.id || claseObj.id}-${objIdx + 1}`,
+          titulo: obj.titulo || `Unidad ${objIdx + 1}`,
+          estado: objIdx === 0 ? 'logrado' : 'en_proceso',
         })
       }
     })
+    return nodos
   }
-  return nodos
+
+  // 2. Si el plan posee contenido/tema directo en la base de datos Supabase
+  if (plan && (plan.tema || plan.contenido)) {
+    const items = (plan.contenido || plan.tema)
+      .split(/[\n,;•.]/)
+      .map((s) => s.trim())
+      .filter((s) => s.length > 3)
+
+    if (items.length > 0) {
+      items.forEach((itemText, idx) => {
+        nodos.push({
+          id: `node-${plan.id || 'real'}-${idx + 1}`,
+          titulo: itemText,
+          estado: idx === 0 ? 'logrado' : idx === 1 ? 'en_proceso' : 'pendiente',
+        })
+      })
+      return nodos
+    }
+  }
+
+  // 3. Estructura base de fallback indexada a la clase real seleccionada (IDs reales para la BD)
+  const prefix = claseObj?.id ? `node-${claseObj.id}` : 'node-real'
+  return [
+    { id: `${prefix}-u1`, titulo: `Unidad 1: Técnica Base - ${claseObj.nombre || 'Instrumento'}`, estado: 'logrado' },
+    { id: `${prefix}-u2`, titulo: `Unidad 2: Escalas y Articulación`, estado: 'en_proceso' },
+    { id: `${prefix}-u3`, titulo: `Unidad 3: Control de Pulso y Ritmo`, estado: 'pendiente' },
+    { id: `${prefix}-u4`, titulo: `Unidad 4: Independencia y Dinámicas`, estado: 'pendiente' },
+    { id: `${prefix}-u5`, titulo: `Unidad 5: Repertorio e Interpretación`, estado: 'pendiente' },
+  ]
 }
 
 function _renderEstrellasSVG(cant) {
@@ -367,7 +395,7 @@ function _getEtiquetaEstrella(cant) {
 
 let activeNodeModal = null
 
-async function openNodoDetailModal(nodo, alumnosList = [], nodosSecuencia = []) {
+async function openNodoDetailModal(nodo, alumnosList = [], nodosSecuencia = [], selectedClaseId = '') {
   const colaOfflineData = await OfflineSyncAdapter.obtenerCola()
   alumnosList._colaOfflineData = colaOfflineData
   if (activeNodeModal) {
@@ -559,10 +587,10 @@ async function openNodoDetailModal(nodo, alumnosList = [], nodosSecuencia = []) 
         targetAl.estrellas = IndicadorLogro.siguienteEstrella(targetAl.estrellas || 0)
       }
 
-      // Guardar persistencia
+      // Guardar persistencia con IDs reales de Alumno, Clase y Nodo en Supabase/IndexedDB
       OfflineSyncAdapter.guardarLocal({
         alumnoId: targetAl.id,
-        claseId: targetAl.claseId || 'clase-1',
+        claseId: targetAl.claseId || selectedClaseId,
         nodoId: nodo.id,
         estrellas: targetAl.estrellas,
       })

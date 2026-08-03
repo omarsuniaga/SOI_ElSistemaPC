@@ -259,9 +259,11 @@ function _extraerNodosDePlan(plan, claseObj = {}) {
         if (Array.isArray(obj.indicadores) && obj.indicadores.length > 0) {
           huboIndicador = true
           obj.indicadores.forEach((ind, indIdx) => {
+            const tituloInd = ind.titulo || `Indicador ${indIdx + 1}`
             nodos.push({
               id: ind.id || `node-${plan.id || claseObj.id}-${uIdx + 1}-${objIdx + 1}-${indIdx + 1}`,
-              titulo: ind.titulo || `${obj.titulo}: Indicador ${indIdx + 1}`,
+              // Jerarquía siempre visible en el nodo: Unidad › Objetivo › Indicador.
+              titulo: `${unidad.titulo} › ${obj.titulo} › ${tituloInd}`,
               estado: ind.prerrequisitoId ? 'en_proceso' : 'logrado',
               prerrequisitoId: ind.prerrequisitoId || null,
             })

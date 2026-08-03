@@ -389,6 +389,12 @@ export async function registrarProgresoIndicador(studentId, indicatorId, status,
 }
 
 export async function obtenerProgresoGrupo(groupId, levelId = null) {
+  // Sin groupId (ej. sesión de asistencia emergente sin clase vinculada) no
+  // hay nada que consultar — `.eq('covered_by_clase_id', groupId)` con
+  // groupId null/undefined serializa el string "null" y Postgres lo rechaza
+  // (columna uuid): "invalid input syntax for type uuid: null".
+  if (!groupId) return {}
+
   // Obtener el período activo (si existe en base de datos y hay soporte de columnas en DB)
   const isPeriodoSupported = await checkPeriodoSupport()
   let activePeriodId = null

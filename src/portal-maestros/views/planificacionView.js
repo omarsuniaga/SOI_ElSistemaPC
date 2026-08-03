@@ -14,7 +14,7 @@ import { AppToast } from '../../shared/components/AppToast.js'
 import { createPlanClasePanel } from '../components/planning/PlanClasePanel.js'
 import { supabase } from '../../lib/supabaseClient.js'
 import * as bootstrap from 'bootstrap'
-import { router } from '../../core/router/router.js'
+import { router as internalRouter } from '../../core/router/router.js'
 import { renderMapaContenidoSVG } from '../../modules/planificacion/components/MapaContenidoSVG.js'
 import { obtenerAlumnosRealesPorClase } from '../../modules/planificacion/services/realAlumnosService.js'
 import { OfflineSyncAdapter } from '../../modules/planificacion/api/offlineSyncAdapter.js'
@@ -166,7 +166,8 @@ function renderEmptyState(container, message) {
 
 // ─── Vista principal ───────────────────────────────────────────────────────────
 
-export async function renderPlanificacionView(container, { maestroId }) {
+export async function renderPlanificacionView(container, { maestroId, router: portalRouter } = {}) {
+  const activeRouter = portalRouter || window.router || internalRouter
   let currentClaseId    = null
   let currentGuide      = null
   let currentIndicators = []
@@ -539,11 +540,11 @@ export async function renderPlanificacionView(container, { maestroId }) {
   })()
 
   container.querySelector('#btn-pm-header-disenador')?.addEventListener('click', () => {
-    router.navigate('planificacion-disenador')
+    activeRouter.navigate('planificacion-disenador')
   })
 
   container.querySelector('#btn-pm-header-ruta')?.addEventListener('click', () => {
-    router.navigate('planificacion-ruta')
+    activeRouter.navigate('planificacion-ruta')
   })
 
 
@@ -1131,7 +1132,7 @@ export async function renderPlanificacionView(container, { maestroId }) {
       document.body.classList.remove('modal-open')
       document.body.style.removeProperty('overflow')
       document.body.style.removeProperty('padding-right')
-      router.navigate(targetRoute)
+      activeRouter.navigate(targetRoute)
     }
 
     classDetailModal.querySelectorAll('.btn-modal-disenador').forEach((b) => {

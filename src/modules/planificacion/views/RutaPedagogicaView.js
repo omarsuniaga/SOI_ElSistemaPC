@@ -325,14 +325,17 @@ function openNodoDetailModal(nodo, alumnosList = []) {
       `
     }
     return list.map((a) => {
+      const statusColor = a.justificado ? '#8b5cf6' : a.presente ? '#10b981' : '#ef4444'
+      const statusTitle = a.justificado ? 'Justificado' : a.presente ? 'Presente' : 'Ausente'
+
       return `
         <tr class="row-alumno-modal-eval" data-id="${a.id}" style="cursor: pointer;">
           <td>
             <div class="d-flex align-items-center gap-2 flex-wrap">
+              <span class="rounded-circle d-inline-block shadow-sm"
+                    style="width: 10px; height: 10px; background-color: ${statusColor}; flex-shrink: 0;"
+                    title="${statusTitle}"></span>
               <span class="fw-bold text-body fs-6">${escapeHTML(a.nombre)}</span>
-              <span class="badge ${a.presente ? 'bg-success text-white' : 'bg-danger text-white'}" style="font-size: 0.7rem;">
-                ${a.presente ? 'Presente' : 'Ausente'}
-              </span>
             </div>
             <small class="text-body-secondary d-block" style="font-size: 0.75rem;">ID: ${a.id.slice(0, 8)}</small>
           </td>

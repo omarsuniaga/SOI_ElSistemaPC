@@ -1,5 +1,6 @@
 import { escHTML } from '../../utils/portalUtils.js'
 import * as weeklyPlanAdapter from '../../../modules/planificacion/api/weeklyPlanAdapter.js'
+import { renderMapaContenidoSVG } from '../../../modules/planificacion/components/MapaContenidoSVG.js'
 import { config } from '../../../core/config/config.js'
 import { AppToast } from '../../../shared/components/AppToast.js'
 
@@ -371,6 +372,56 @@ export function createPlanificationCard(container, opts) {
         openAdjustmentModal(currentItem)
       }
     }
+
+    renderRouteMap(currentWeekNum)
+  }
+
+  function renderRouteMap(currentWeekNum) {
+    if (!treeContainer || !weeklyPlan || !Array.isArray(weeklyPlan.items) || weeklyPlan.items.length === 0) return
+
+    // Un nodo por semana de la guía activa de la clase. El id es único por
+    // semana: varios items comparten node_id (ptema_005 repite), por lo que
+    // usar node_id como id rompería el lookup del click (primera coincidencia).
+    const nodos = weeklyPlan.items.map((item) => {
+      const status = resolveWeekStatus(item, currentWeekNum)
+      const estado =
+        status === STATUS_META.graded ? 'logrado'
+        : status === STATUS_META.pending ? 'pendiente'
+        : 'en_proceso'
+      return {
+        id: `week-${item.week_number}`,
+        titulo: `Semana ${item.week_number}: ${item.topic}`,
+        estado,
+        item,
+      }
+    })
+
+    const mapaEl = document.createElement('div')
+    mapaEl.id = 'pm-ruta-mapa-canvas'
+    mapaEl.style.marginTop = '12px'
+    treeContainer.appendChild(mapaEl)
+
+    renderMapaContenidoSVG({
+      container: mapaEl,
+      nodos,
+      onNodeClick: async (nodo) => {
+        if (!nodo?.item) return
+        const targetWeek = Number(nodo.item.week_number)
+        if (Number.isFinite(targetWeek) && targetWeek !== currentWeekNum) {
+          try {
+            activeRoute = await weeklyPlanAdapter.actualizarSemanaRutaActiva(activeRoute.id, targetWeek)
+            await init()
+          } catch (err) {
+            console.error('[PlanificationCard] Error cambiando semana desde el mapa de ruta:', err)
+          }
+        }
+        opts.onIndicadorSelect?.({
+          id: nodo.item.indicator_id,
+          nombre: nodo.item.topic,
+          node_id: nodo.item.node_id,
+        })
+      },
+    })
   }
 
   init()

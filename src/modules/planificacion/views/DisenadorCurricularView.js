@@ -509,16 +509,16 @@ function _attachEventsFull(container, clases, estadoEstructura, alumnosState, _l
 
     const payload = {
       clase_id: estadoEstructura.claseId,
-      semana: 1,
+      fecha_inicio: new Date().toISOString().slice(0, 10),
       titulo: `Plan Didáctico Semestral - ${estadoEstructura.frecuenciaSemanal} clases/sem`,
       nivelId: container.querySelector('#select-nivel-full')?.value || 'nivel-1',
       frecuenciaSemanal: estadoEstructura.frecuenciaSemanal,
       semanasTotales: 24,
       objetivosEstructurados: estadoEstructura.objetivos,
-      contenidos,
-      estado: 'publicada',
-      esPlantillaOficial: true,
-      fecha: new Date().toISOString().slice(0, 10),
+      // 'activa': único valor real que acepta el CHECK constraint de
+      // planificaciones.estado (borrador|activa|cerrada|archivada) —
+      // 'publicada' nunca existió ni en el modelo ni en la base.
+      estado: 'activa',
     }
 
     try {

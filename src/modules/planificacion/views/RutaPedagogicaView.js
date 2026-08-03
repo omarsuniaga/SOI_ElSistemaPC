@@ -378,8 +378,8 @@ function openNodoDetailModal(nodo, alumnosList = []) {
               <i class="bi bi-award-fill"></i>
             </div>
             <div>
-              <span class="badge bg-white bg-opacity-20 text-white border border-white border-opacity-25 px-2 py-0.5 mb-0.5" style="font-size:0.7rem;">
-                <i class="bi bi-journal-check me-1"></i>Calificación de Alumnos
+              <span class="badge bg-white text-dark fw-bold shadow-sm px-2 py-1 mb-1" style="font-size:0.75rem;">
+                <i class="bi bi-journal-check me-1 text-primary"></i>Calificación de Alumnos
               </span>
               <h5 class="fw-bold mb-0 text-white" style="font-size: 1rem;">${escapeHTML(rawTitle)}</h5>
             </div>

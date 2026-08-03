@@ -21,6 +21,20 @@ export class Planificacion {
     this.created_at = data.created_at || null
     this.updated_at = data.updated_at || null
 
+    // Diseñador Curricular (feat/planificacion-clases-rediseño): árbol de
+    // unidades/indicadores real, columnas propias en `planificaciones`
+    // (objetivos_estructurados / frecuencia_semanal / semanas_totales /
+    // nivel_texto). Antes se mandaban como objetivosEstructurados/etc. y se
+    // descartaban en silencio porque el modelo no las serializaba.
+    this.objetivosEstructurados = Array.isArray(data.objetivos_estructurados)
+      ? data.objetivos_estructurados
+      : Array.isArray(data.objetivosEstructurados)
+        ? data.objetivosEstructurados
+        : []
+    this.frecuenciaSemanal = data.frecuencia_semanal ?? data.frecuenciaSemanal ?? null
+    this.semanasTotales = data.semanas_totales ?? data.semanasTotales ?? null
+    this.nivelId = data.nivel_texto ?? data.nivelId ?? null
+
     // UI Helpers
     this.clase_nombre = data.clase_nombre || null
     this.maestro_nombre = data.maestro_nombre || null
@@ -135,6 +149,10 @@ export class Planificacion {
       instrumento: this.instrumento?.trim() || null,
       class_curriculum_plan_id: this.class_curriculum_plan_id || null,
       route_version_id: this.route_version_id || null,
+      objetivos_estructurados: Array.isArray(this.objetivosEstructurados) ? this.objetivosEstructurados : [],
+      frecuencia_semanal: this.frecuenciaSemanal ?? null,
+      semanas_totales: this.semanasTotales ?? null,
+      nivel_texto: this.nivelId || null,
     }
   }
 }

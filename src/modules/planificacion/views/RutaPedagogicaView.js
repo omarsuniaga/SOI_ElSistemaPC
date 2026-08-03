@@ -337,11 +337,13 @@ function _renderUI(container, clases, planificaciones) {
 
     // Attach Event Listeners
     container.querySelector('#btn-volver-plan')?.addEventListener('click', () => {
-      router.navigate('planificacion')
+      const activeNav = (typeof window !== 'undefined' && window.router) ? window.router : router
+      activeNav.navigate('planificacion')
     })
 
     container.querySelector('#btn-ir-disenador')?.addEventListener('click', () => {
-      router.navigate('planificacion-disenador')
+      const activeNav = (typeof window !== 'undefined' && window.router) ? window.router : router
+      activeNav.navigate('planificacion-disenador')
     })
 
     container.querySelector('#select-clase-ruta')?.addEventListener('change', (e) => {

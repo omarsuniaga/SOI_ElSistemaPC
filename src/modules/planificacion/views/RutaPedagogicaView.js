@@ -71,10 +71,23 @@ function _renderUI(container, clases, planificaciones, { parentRoute = 'planific
 
   const _renderTbody = () => {
     // La evaluación se gestiona limpiamente en la tabla interactiva dentro del modal del 90%
+    const totalAlumnosCount = alumnosClase.length
+
     const chipEvaluados = container.querySelector('#kpi-evaluados-count')
     if (chipEvaluados) {
       const evaluadosCount = alumnosClase.filter((a) => a.estrellas > 0).length
-      chipEvaluados.textContent = `${evaluadosCount} / ${alumnosClase.length}`
+      chipEvaluados.textContent = `${evaluadosCount} / ${totalAlumnosCount}`
+    }
+
+    // Bug: este chip se calculaba una sola vez en _renderShell() y nunca se
+    // refrescaba tras calificar — quedaba en 0% o desactualizado toda la
+    // sesión aunque el maestro siguiera evaluando alumnos.
+    const chipIdia = container.querySelector('#kpi-idia-promedio')
+    if (chipIdia) {
+      const idiaPromedio = Math.round(
+        alumnosClase.reduce((acc, a) => acc + (a.idia || 0), 0) / (totalAlumnosCount || 1),
+      )
+      chipIdia.textContent = `${idiaPromedio}%`
     }
   }
 
@@ -154,7 +167,7 @@ function _renderUI(container, clases, planificaciones, { parentRoute = 'planific
                 <div class="p-2 bg-white bg-opacity-10 rounded-3" style="background:rgba(255,255,255,.15);"><i class="bi bi-activity fs-4"></i></div>
                 <div>
                   <div class="small opacity-75">Salud IDIA Promedio</div>
-                  <div class="fw-bold fs-5">${idiaPromedio}%</div>
+                  <div class="fw-bold fs-5" id="kpi-idia-promedio">${idiaPromedio}%</div>
                 </div>
               </div>
             </div>

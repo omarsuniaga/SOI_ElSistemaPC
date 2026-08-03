@@ -301,13 +301,13 @@ function _renderUI(container, clases, planificaciones, { parentRoute = 'planific
         onNodeClick: (nodo) => {
           selectedNodo = nodo
           _actualizarPanelNodo()
-          openNodoDetailModal(nodo)
 
           // Roster ya resuelto para este nodo en esta sesión: repinta al toque.
           const cached = nodoEvalCache.get(nodo.id)
           if (cached) {
             alumnosClase = cached
             nodoDatosListos = true
+            openNodoDetailModal(nodo, alumnosClase)
             _renderTbody()
             return
           }
@@ -320,6 +320,7 @@ function _renderUI(container, clases, planificaciones, { parentRoute = 'planific
             nodoEvalCache.set(nodo.id, lista)
             alumnosClase = lista
             nodoDatosListos = true
+            openNodoDetailModal(nodo, alumnosClase)
             _renderTbody()
           })
         },
@@ -415,13 +416,7 @@ function _getEtiquetaEstrella(cant) {
   if (cant === 2) return 'En Proceso'
   if (cant === 3) return 'Aprobado Básico'
   if (cant === 4) return 'Logrado Fluido'
-  if (cant === 5) return 'Dominado Total'
-  return 'Sin Registrar'
-}
-
-let activeNodeModal = null
-
-function openNodoDetailModal(nodo) {
+  if (cant === 5) return 'Dominadofunction openNodoDetailModal(nodo, alumnosList = []) {
   if (activeNodeModal) {
     try {
       const bsModal = bootstrap.Modal.getInstance(activeNodeModal)
@@ -439,6 +434,65 @@ function openNodoDetailModal(nodo) {
 
   const rawTitle = nodo.titulo || nodo.nombre || 'Postura corporal y emisión sonora libre'
 
+  const renderModalTbody = (list) => {
+    if (!list || list.length === 0) {
+      return `
+        <tr>
+          <td colspan="5" class="text-center py-4 text-muted">
+            <i class="bi bi-person-x display-6 d-block mb-2"></i>
+            No hay alumnos registrados o cargando lista de la clase...
+          </td>
+        </tr>
+      `
+    }
+    return list.map((a) => {
+      const initials = a.nombre
+        .split(' ')
+        .slice(0, 2)
+        .map((n) => n[0])
+        .join('')
+        .toUpperCase()
+
+      return `
+        <tr class="row-alumno-modal-eval" data-id="${a.id}" style="cursor: pointer;">
+          <td>
+            <div class="d-flex align-items-center gap-3">
+              <div class="rounded-circle text-white fw-bold d-flex align-items-center justify-content-center shadow-sm"
+                   style="width: 40px; height: 40px; background: linear-gradient(135deg, hsl(220, 80%, 55%), hsl(280, 75%, 60%)); flex-shrink: 0;">
+                ${initials}
+              </div>
+              <div>
+                <div class="fw-bold text-body fs-6">${escapeHTML(a.nombre)}</div>
+                <small class="text-body-secondary">ID: ${a.id.slice(0, 8)}</small>
+              </div>
+            </div>
+          </td>
+          <td class="text-center">
+            <span class="badge ${a.idia >= 80 ? 'bg-success-subtle text-success' : 'bg-warning-subtle text-warning-emphasis'} border px-2 py-1">
+              IDIA ${a.idia || 85}%
+            </span>
+          </td>
+          <td class="text-center">
+            <span class="badge ${a.presente ? 'bg-success-subtle text-success border border-success-subtle' : 'bg-danger-subtle text-danger border border-danger-subtle'}">
+              ${a.presente ? 'Presente' : 'Ausente'}
+            </span>
+          </td>
+          <td class="text-center">
+            <div class="fs-4 text-warning user-select-none">
+              ${_renderEstrellasSVG(a.estrellas || 0)}
+            </div>
+            <small class="fw-bold text-body-secondary">${a.estrellas > 0 ? `${a.estrellas}★ (${_getEtiquetaEstrella(a.estrellas)})` : 'Sin Registrar (0★)'}</small>
+          </td>
+          <td class="text-end">
+            <button class="btn btn-sm ${a.presente ? 'btn-primary' : 'btn-outline-secondary'} btn-modal-tap-star" data-id="${a.id}" ${!a.presente ? 'disabled' : ''}>
+              <i class="bi bi-star-fill me-1"></i>Ciclar 1-5★
+            </button>
+          </td>
+        </tr>
+      `
+    }).join('')
+  }
+
   modalEl.innerHTML = `
     <div class="modal-dialog modal-dialog-centered modal-dialog-90" style="max-width: 92vw; width: 92vw;">
       <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden" style="height: 88vh;">
@@ -451,7 +505,7 @@ function openNodoDetailModal(nodo) {
             </div>
             <div>
               <span class="badge bg-white bg-opacity-20 text-white border border-white border-opacity-25 px-2 py-1 mb-1" style="font-size:0.75rem;">
-                <i class="bi bi-journal-check me-1"></i>Detalle de Unidad & Contenido Didáctico
+                <i class="bi bi-journal-check me-1"></i>Calificación de Alumnos vs Contenido del Nodo
               </span>
               <h4 class="fw-bold mb-0 text-white">${escapeHTML(rawTitle)}</h4>
             </div>
@@ -459,82 +513,42 @@ function openNodoDetailModal(nodo) {
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
         </div>
 
-        <!-- Body del Modal (Scrollable) -->
+        <!-- Body del Modal (Scrollable 90%) -->
         <div class="modal-body p-4 overflow-y-auto" style="background: var(--bs-body-bg, #0f172a);">
           
-          <!-- SECCIÓN SOLICITADA: POSTURA CORPORAL Y EMISIÓN SONORA LIBRE -->
+          <!-- TARJETA DEL NODO SELECCIONADO -->
           <div class="card border border-primary-subtle bg-primary-subtle bg-opacity-10 rounded-4 p-4 mb-4 shadow-sm">
-            <div class="d-flex align-items-center justify-content-between mb-3">
+            <div class="d-flex align-items-center justify-content-between mb-2">
               <h5 class="fw-bold text-primary mb-0">
-                <i class="bi bi-person-workspace me-2"></i>Postura corporal y emisión sonora libre
+                <i class="bi bi-award me-2"></i>${escapeHTML(rawTitle)}
               </h5>
-              <span class="badge bg-primary px-3 py-2 fs-6">Unidad Fundamental</span>
+              <span class="badge bg-primary px-3 py-2 fs-6">Nodo Activo</span>
             </div>
-            <p class="text-body-secondary mb-3 fs-6" style="line-height: 1.6;">
-              Diagnóstico y desarrollo de la alineación biomecánica del estudiante, equilibrio de peso sobre ambos pies, relajación de hombros, posición del instrumento/voz y emisión sonora sin tensiones parásitas.
+            <p class="text-body-secondary mb-0 small">
+              Toca el botón o la fila de cualquier alumno para evaluar o ciclar de 1 a 5 estrellas. Las calificaciones se sincronizan en tiempo real y en modo offline.
             </p>
+          </div>
 
-            <div class="row g-3">
-              <div class="col-md-4">
-                <div class="p-3 bg-body rounded-3 border border-secondary-subtle">
-                  <div class="fw-bold text-body mb-1"><i class="bi bi-check2-square text-success me-1"></i>Objetivo Biomecánico</div>
-                  <small class="text-body-secondary">Asegurar balance simétrico del torso y libertad de movimiento articular en los brazos.</small>
-                </div>
-              </div>
-              <div class="col-md-4">
-                <div class="p-3 bg-body rounded-3 border border-secondary-subtle">
-                  <div class="fw-bold text-body mb-1"><i class="bi bi-soundwave text-info me-1"></i>Resonancia y Sonido</div>
-                  <small class="text-body-secondary">Emisión sonora continua con volumen pleno, resonancia abierta y apoyo diafragmático/brazo.</small>
-                </div>
-              </div>
-              <div class="col-md-4">
-                <div class="p-3 bg-body rounded-3 border border-secondary-subtle">
-                  <div class="fw-bold text-body mb-1"><i class="bi bi-shield-exclamation text-warning me-1"></i>Indicador de Corrección</div>
-                  <small class="text-body-secondary">Prevención inmediata de rigidez cervical, elevación de hombros o agarre tenso.</small>
-                </div>
-              </div>
+          <!-- TABLA DE ALUMNOS DE LA CLASE EN EL MODAL DE 90% -->
+          <div class="card border border-secondary-subtle bg-body-tertiary rounded-4 p-3 shadow-sm">
+            <div class="table-responsive">
+              <table class="table table-hover align-middle mb-0">
+                <thead>
+                  <tr>
+                    <th>Alumno Inscrito</th>
+                    <th class="text-center">Índice IDIA</th>
+                    <th class="text-center">Asistencia</th>
+                    <th class="text-center">Calificación (1-5★)</th>
+                    <th class="text-end">Acción 1-Tap</th>
+                  </tr>
+                </thead>
+                <tbody id="tbody-modal-alumnos">
+                  ${renderModalTbody(alumnosList)}
+                </tbody>
+              </table>
             </div>
           </div>
 
-          <!-- DETALLES DE APRENDIZAJE Y TÉCNICA -->
-          <div class="row g-4 mb-4">
-            <div class="col-md-6">
-              <div class="card border border-secondary-subtle bg-body-tertiary rounded-4 p-4 h-100 shadow-sm">
-                <h6 class="fw-bold text-body mb-3"><i class="bi bi-list-task text-primary me-2"></i>Estrategias Didácticas Recomendadas</h6>
-                <ul class="list-group list-group-flush bg-transparent">
-                  <li class="list-group-item bg-transparent text-body border-secondary-subtle px-0 py-2">
-                    <i class="bi bi-arrow-right-circle text-primary me-2"></i>Ejercicios de espejo y conciencia propioceptiva sin instrumento.
-                  </li>
-                  <li class="list-group-item bg-transparent text-body border-secondary-subtle px-0 py-2">
-                    <i class="bi bi-arrow-right-circle text-primary me-2"></i>Pulsación rítmica libre sobre cuerdas/teclas abiertas buscando sonido rotundo.
-                  </li>
-                  <li class="list-group-item bg-transparent text-body border-secondary-subtle px-0 py-2">
-                    <i class="bi bi-arrow-right-circle text-primary me-2"></i>Respiración sincronizada antes del ataque del sonido.
-                  </li>
-                </ul>
-              </div>
-            </div>
-
-            <div class="col-md-6">
-              <div class="card border border-secondary-subtle bg-body-tertiary rounded-4 p-4 h-100 shadow-sm">
-                <h6 class="fw-bold text-body mb-3"><i class="bi bi-star-fill text-warning me-2"></i>Escala de Dominio (1 a 5 Estrellas)</h6>
-                <div class="d-flex flex-column gap-2">
-                  <div class="d-flex align-items-center justify-content-between p-2 rounded-3 bg-body border border-secondary-subtle">
-                    <span class="fw-bold text-body">1★ - Iniciado:</span>
-                    <small class="text-body-secondary">Presenta tensión visible o postura desalineada.</small>
-                  </div>
-                  <div class="d-flex align-items-center justify-content-between p-2 rounded-3 bg-body border border-secondary-subtle">
-                    <span class="fw-bold text-body">3★ - Aprobado Básico:</span>
-                    <small class="text-body-secondary">Mantiene buena postura con corrección esporádica.</small>
-                  </div>
-                  <div class="d-flex align-items-center justify-content-between p-2 rounded-3 bg-body border border-secondary-subtle">
-                    <span class="fw-bold text-success">5★ - Dominado Total:</span>
-                    <small class="text-body-secondary">Emisión sonora libre e impecable de forma natural.</small>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
         </div>
 
         <!-- Footer del Modal -->
@@ -547,6 +561,31 @@ function openNodoDetailModal(nodo) {
 
   document.body.appendChild(modalEl)
   activeNodeModal = modalEl
+
+  // Event listener para ciclar estrellas dentro del modal de 90%
+  const tbodyModal = modalEl.querySelector('#tbody-modal-alumnos')
+  tbodyModal?.addEventListener('click', (e) => {
+    const tr = e.target.closest('.row-alumno-modal-eval')
+    if (!tr) return
+    const alId = tr.dataset.id
+    const targetAl = alumnosList.find((al) => String(al.id) === String(alId))
+
+    if (targetAl && targetAl.presente) {
+      targetAl.estrellas = IndicadorLogro.siguienteEstrella(targetAl.estrellas || 0)
+
+      // Guardar persistencia
+      OfflineSyncAdapter.guardarLocal({
+        alumnoId: targetAl.id,
+        claseId: targetAl.claseId || 'clase-1',
+        nodoId: nodo.id,
+        estrellas: targetAl.estrellas,
+      })
+
+      // Actualizar vista dentro del modal
+      tbodyModal.innerHTML = renderModalTbody(alumnosList)
+      AppToast.show(`${targetAl.nombre}: ${targetAl.estrellas}★ evaluad@ en este nodo`, 'info')
+    }
+  })
 
   const bsModal = new bootstrap.Modal(modalEl, { backdrop: true })
   modalEl.addEventListener('hidden.bs.modal', () => {

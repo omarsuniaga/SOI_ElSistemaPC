@@ -58,33 +58,60 @@ export async function renderDisenadorCurricularView(container, { maestroId, clas
     planExistente = plantillas.find((p) => String(p.clase_id) === String(claseIdInicial))
   } catch {}
 
+  // El árbol de unidades viaja serializado como JSON-string en la columna
+  // TEXT `objetivos` — hay que parsearlo. Bug encontrado: esto solo se hacía
+  // al cambiar de clase en el selector, nunca en la carga inicial, así que
+  // la primera vista de una clase con plan real seguía mostrando la muestra
+  // demo (y agregar una unidad la apilaba encima del contenido inventado).
+  let objetivosReales = null
+  if (planExistente?.objetivos) {
+    try {
+      const parsed = typeof planExistente.objetivos === 'string'
+        ? JSON.parse(planExistente.objetivos)
+        : planExistente.objetivos
+      if (Array.isArray(parsed) && parsed.length > 0) objetivosReales = parsed
+    } catch (err) {
+      console.error('[DisenadorCurricularView] Error parseando objetivos guardados:', err)
+    }
+  }
+
   let estadoEstructura = {
+    esDataDemo: !objetivosReales,
     claseId: claseIdInicial,
     nivelId: planExistente?.nivelId || 'nivel-1',
     frecuenciaSemanal: planExistente?.frecuenciaSemanal || 2,
     frecuenciaOrigen: 'manual',
     semanasTotales: 24,
-    objetivos: planExistente?.objetivosEstructurados || [
-      {
-        id: 'obj-1',
-        titulo: 'Dominio de Postura y Emisión Sonora Libre',
-        indicadores: [
-          { id: 'ind-1', titulo: 'Postura corporal equilibrada y relajada', prerrequisitoId: null },
-          { id: 'ind-2', titulo: 'Distribución fluida del arco en cuerdas abiertas', prerrequisitoId: 'ind-1' },
-        ],
-      },
-      {
-        id: 'obj-2',
-        titulo: 'Afinación y Articulación Digital',
-        indicadores: [
-          { id: 'ind-3', titulo: 'Colocación exacta de 1er y 2do dedo', prerrequisitoId: 'ind-2' },
-          { id: 'ind-4', titulo: 'Independencia digital a pulso 60 BPM', prerrequisitoId: 'ind-3' },
-        ],
-      },
-    ],
+    objetivos: objetivosReales || _objetivosDemoSeed(),
   }
 
   _renderUI(container, clases, estadoEstructura)
+}
+
+/**
+ * Muestra de ejemplo (NO son datos reales de ninguna clase). Se reemplaza
+ * por completo — nunca se apila — en cuanto el maestro crea su primera
+ * unidad real (manual o con IA).
+ */
+function _objetivosDemoSeed() {
+  return [
+    {
+      id: 'obj-1',
+      titulo: 'Dominio de Postura y Emisión Sonora Libre',
+      indicadores: [
+        { id: 'ind-1', titulo: 'Postura corporal equilibrada y relajada', prerrequisitoId: null },
+        { id: 'ind-2', titulo: 'Distribución fluida del arco en cuerdas abiertas', prerrequisitoId: 'ind-1' },
+      ],
+    },
+    {
+      id: 'obj-2',
+      titulo: 'Afinación y Articulación Digital',
+      indicadores: [
+        { id: 'ind-3', titulo: 'Colocación exacta de 1er y 2do dedo', prerrequisitoId: 'ind-2' },
+        { id: 'ind-4', titulo: 'Independencia digital a pulso 60 BPM', prerrequisitoId: 'ind-3' },
+      ],
+    },
+  ]
 }
 
 function _renderUI(container, clases, estadoEstructura) {
@@ -215,6 +242,11 @@ function _renderUI(container, clases, estadoEstructura) {
                 </button>
               </div>
 
+              <div id="banner-data-demo" class="alert alert-warning d-flex align-items-center gap-2 py-2 mb-3" style="font-size:0.85rem; display:${estadoEstructura.esDataDemo ? '' : 'none'};">
+                <i class="bi bi-info-circle-fill"></i>
+                <div><strong>Datos de ejemplo</strong> — esta clase todavía no tiene un plan real guardado. Se reemplazan por completo apenas agregues o generes la primera unidad.</div>
+              </div>
+
               <div id="lista-objetivos-container"></div>
             </div>
           </div>
@@ -230,6 +262,9 @@ function _renderUI(container, clases, estadoEstructura) {
 }
 
 function _renderObjetivosFull(container, estadoEstructura, alumnosState) {
+  const banner = container.querySelector('#banner-data-demo')
+  if (banner) banner.style.display = estadoEstructura.esDataDemo ? '' : 'none'
+
   const listEl = container.querySelector('#lista-objetivos-container')
   if (!listEl) return
 
@@ -340,11 +375,19 @@ function _attachEventsFull(container, clases, estadoEstructura, alumnosState, _l
     try {
       const plantillas = await obtenerPlantillasPlanificacion().catch(() => [])
       const match = plantillas.find((p) => String(p.clase_id) === String(estadoEstructura.claseId))
-      if (match) {
-        const arbol = typeof match.objetivos === 'string' ? JSON.parse(match.objetivos) : match.objetivos
-        if (Array.isArray(arbol) && arbol.length > 0) {
-          estadoEstructura.objetivos = arbol
-        }
+      let arbol = null
+      if (match?.objetivos) {
+        const parsed = typeof match.objetivos === 'string' ? JSON.parse(match.objetivos) : match.objetivos
+        if (Array.isArray(parsed) && parsed.length > 0) arbol = parsed
+      }
+      if (arbol) {
+        estadoEstructura.objetivos = arbol
+        estadoEstructura.esDataDemo = false
+      } else {
+        // Esta otra clase tampoco tiene plan real — mostrar la muestra demo
+        // de nuevo, no arrastrar los datos de la clase anterior.
+        estadoEstructura.objetivos = _objetivosDemoSeed()
+        estadoEstructura.esDataDemo = true
       }
     } catch {}
     _loadAlumnosModal().then(() => _renderObjetivosFull(container, estadoEstructura, alumnosState))
@@ -392,17 +435,22 @@ function _attachEventsFull(container, clases, estadoEstructura, alumnosState, _l
     const instrumentoNombre = claseActual?.nombre || claseActual?.name || 'Música e Instrumento'
     const nivelNombre = nivelObj?.nombre || 'Nivel 1: Básico'
 
-    const numSiguiente = estadoEstructura.objetivos.length + 1
+    // Si lo que hay todavía es la muestra demo, la primera unidad real la
+    // reemplaza por completo — nunca se apila arriba de datos inventados.
+    const eraDataDemo = estadoEstructura.esDataDemo
+    const numSiguiente = eraDataDemo ? 1 : estadoEstructura.objetivos.length + 1
 
     try {
       const nuevaUnidad = await sugerirSiguienteUnidadIA({
         instrumento: instrumentoNombre,
         nivelNombre,
         numeroUnidad: numSiguiente,
-        unidadesExistentes: estadoEstructura.objetivos,
+        unidadesExistentes: eraDataDemo ? [] : estadoEstructura.objetivos,
       })
 
       if (nuevaUnidad && nuevaUnidad.titulo) {
+        if (eraDataDemo) estadoEstructura.objetivos = []
+        estadoEstructura.esDataDemo = false
         estadoEstructura.objetivos.push(nuevaUnidad)
         _renderObjetivosFull(container, estadoEstructura, alumnosState)
         
@@ -492,6 +540,10 @@ function _attachEventsFull(container, clases, estadoEstructura, alumnosState, _l
   })
 
   container.querySelector('#btn-add-objetivo-full')?.addEventListener('click', () => {
+    if (estadoEstructura.esDataDemo) {
+      estadoEstructura.objetivos = []
+      estadoEstructura.esDataDemo = false
+    }
     const count = estadoEstructura.objetivos.length + 1
     estadoEstructura.objetivos.push({
       id: `obj-${Date.now()}`,

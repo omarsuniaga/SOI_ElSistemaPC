@@ -475,34 +475,3 @@ function openNodoDetailModal(nodo, alumnosList = []) {
 
   bsModal.show()
 }
-
-function _extraerNodosDePlan(plan) {
-  const nodos = []
-  if (Array.isArray(plan.objetivosEstructurados)) {
-    plan.objetivosEstructurados.forEach((obj) => {
-      if (Array.isArray(obj.indicadores)) {
-        obj.indicadores.forEach((ind) => {
-          nodos.push({
-            id: ind.id,
-            titulo: `${obj.titulo}: ${ind.titulo}`,
-            estado: ind.prerrequisitoId ? 'en_proceso' : 'logrado',
-          })
-        })
-      }
-    })
-  }
-  return nodos
-}
-
-function _renderEstrellasSVG(cant, esEvaluable = true) {
-  let html = ''
-  const pointerStyle = esEvaluable ? 'cursor: pointer;' : 'cursor: not-allowed; pointer-events: none;'
-  for (let i = 1; i <= 5; i++) {
-    if (i <= cant) {
-      html += `<i class="bi bi-star-fill text-warning me-1 star-click-item" data-star-val="${i}" style="${pointerStyle} padding: 2px;"></i>`
-    } else {
-      html += `<i class="bi bi-star text-secondary opacity-50 me-1 star-click-item" data-star-val="${i}" style="${pointerStyle} padding: 2px;"></i>`
-    }
-  }
-  return html
-}

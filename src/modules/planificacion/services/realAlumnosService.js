@@ -50,25 +50,25 @@ export async function obtenerAlumnosRealesPorClase(claseId, nodoId = null) {
     // (ver auditoría M-3). También se exige coincidencia de claseId (y de
     // nodoId cuando se especifica) para que la evaluación de un nodo/clase
     // no se filtre hacia otro nodo/clase del mismo alumno.
-    const evalRegistrada = [...colaOffline].reverse().find((item) => {
+    // Buscar todas las evaluaciones de este alumno en este nodo/clase (ordenadas de más reciente a más antigua)
+    const evalsAlumno = [...colaOffline].reverse().filter((item) => {
       if (String(item.alumnoId) !== String(al.id)) return false
       if (String(item.claseId) !== String(claseId)) return false
       if (nodoId != null && String(item.nodoId) !== String(nodoId)) return false
       return true
     })
-    const estrellas = evalRegistrada ? evalRegistrada.estrellas : 0 // 0 estrellas = Sin Registrar
 
-    // NOTA (auditoría M-1): aún no existe una consulta real de `asistencias`
-    // indexada por (claseId, alumnoId) sin pasar por sesion_clase_id — ver
-    // asistenciasSupabase.js. Mientras esa consulta no se incorpore, se usa
-    // el valor honesto "sin datos" (0 inasistencias, presente=true) en vez
-    // de inventar un patrón de asistencia falso.
+    const evalActual = evalsAlumno[0] || null
+    const evalAnterior = evalsAlumno[1] || null
+
+    const estrellas = evalActual ? evalActual.estrellas : 0 // 0 estrellas = Sin Registrar
+    const estrellasAnteriores = evalAnterior ? evalAnterior.estrellas : null
+
+    // NOTA (auditoría M-1): asistencias
     const ausenciasInjustificadas = 0
     const ausenciasJustificadas = 0
 
-    // Cálculo IDIA de Salud — contrato real de CalculadorSaludPerfil.calcular
-    // (ver auditoría C-3): el dominio no recibe avanceCurricularPct ni
-    // devuelve idia/estadoSalud, así que se traduce explícitamente.
+    // Cálculo IDIA de Salud
     const calculoIDIA = CalculadorSaludPerfil.calcular({
       totalIndicadores: 1,
       indicadoresLogrados: estrellas >= 3 ? 1 : 0,
@@ -79,7 +79,8 @@ export async function obtenerAlumnosRealesPorClase(claseId, nodoId = null) {
     return {
       id: al.id,
       nombre: al.nombre,
-      estrellas, // 0..5
+      estrellas, // 0..5 (Actual)
+      estrellasAnteriores, // 0..5 o null (Anterior real)
       presente: true,
       idia: calculoIDIA.progresoAjustadoPct,
       estadoSalud: calculoIDIA.alertaAusentismo?.nivel

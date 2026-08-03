@@ -328,8 +328,10 @@ function openNodoDetailModal(nodo, alumnosList = []) {
       const statusColor = a.justificado ? '#8b5cf6' : a.presente ? '#10b981' : '#ef4444'
       const statusTitle = a.justificado ? 'Justificado' : a.presente ? 'Presente' : 'Ausente'
 
-      const prevEstrellas = a.estrellasAnteriores || a.prevEstrellas || (a.estrellas > 0 ? Math.max(1, a.estrellas - 1) : 0)
-      const prevTexto = prevEstrellas > 0 ? `Previo: ${prevEstrellas}★ (${_getEtiquetaEstrella(prevEstrellas)})` : 'Sin calificación previa'
+      const prevEstrellas = typeof a.estrellasAnteriores === 'number' ? a.estrellasAnteriores : null
+      const prevTexto = prevEstrellas !== null && prevEstrellas > 0 
+        ? `Previo: ${prevEstrellas}★ (${_getEtiquetaEstrella(prevEstrellas)})` 
+        : 'Sin calificación previa'
 
       return `
         <tr class="row-alumno-modal-eval" data-id="${a.id}" style="cursor: pointer;">

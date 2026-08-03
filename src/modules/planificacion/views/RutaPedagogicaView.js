@@ -285,6 +285,76 @@ function _renderEstrellasSVG(cant) {
   return html
 }
 
+function _mostrarExplicacionIDIA() {
+  const existingModal = document.getElementById('modalInfoIDIA')
+  if (existingModal) existingModal.remove()
+
+  const infoModalEl = document.createElement('div')
+  infoModalEl.className = 'modal fade'
+  infoModalEl.id = 'modalInfoIDIA'
+  infoModalEl.tabIndex = -1
+
+  infoModalEl.innerHTML = `
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 520px;">
+      <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+        <div class="modal-header text-white px-4 py-3 border-0" style="background: linear-gradient(135deg, hsl(190, 85%, 25%), hsl(210, 80%, 35%));">
+          <div class="d-flex align-items-center gap-2">
+            <div class="rounded-circle bg-white text-info p-2 d-flex align-items-center justify-content-center fw-bold fs-5" style="width:36px; height:36px;">
+              <i class="bi bi-shield-check"></i>
+            </div>
+            <div>
+              <h5 class="fw-bold mb-0 text-white">¿Qué es el Índice IDIA?</h5>
+              <small class="text-white opacity-75">Índice de Salud e Integridad Académica</small>
+            </div>
+          </div>
+          <button type="button" class="btn-close btn-close-white ms-auto" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+
+        <div class="modal-body p-4" style="background: var(--bs-body-bg, #0f172a);">
+          <div class="alert alert-info border-0 rounded-3 mb-3 small" style="background: rgba(13, 202, 240, 0.1); color: var(--bs-body-color);">
+            <strong>El IDIA (%)</strong> es la métrica institucional que mide la <strong>salud pedagógica global</strong> del estudiante en su programa académico.
+          </div>
+
+          <h6 class="fw-bold mb-2 text-primary"><i class="bi bi-calculator me-1"></i>¿Cómo se calcula el IDIA?</h6>
+          <ul class="small text-body-secondary ps-3 mb-3">
+            <li class="mb-1"><strong>Logro Curricular (+):</strong> Porcentaje de unidades o nodos aprobados con 3★ o más.</li>
+            <li class="mb-1"><strong>Inasistencias Injustificadas (-4%):</strong> Cada falta no justificada resta 4 puntos porcentuales al IDIA.</li>
+            <li class="mb-1"><strong>Inasistencias Justificadas (-1.5%):</strong> Cada falta justificada resta 1.5 puntos por atraso de práctica instrumental.</li>
+          </ul>
+
+          <h6 class="fw-bold mb-2 text-primary"><i class="bi bi-speedometer2 me-1"></i>Escala de Salud IDIA:</h6>
+          <div class="d-flex flex-column gap-2 small">
+            <div class="d-flex align-items-center justify-content-between p-2 rounded bg-info bg-opacity-10 border border-info border-opacity-25">
+              <span><i class="bi bi-check-circle-fill text-info me-2"></i><strong>80% - 100%</strong> (Saludable / Excelente)</span>
+              <span class="badge bg-info-subtle text-info-emphasis">Saludable</span>
+            </div>
+            <div class="d-flex align-items-center justify-content-between p-2 rounded bg-warning bg-opacity-10 border border-warning border-opacity-25">
+              <span><i class="bi bi-exclamation-triangle-fill text-warning me-2"></i><strong>50% - 79%</strong> (Requiere Atención / Refuerzo)</span>
+              <span class="badge bg-warning-subtle text-warning-emphasis">Atención</span>
+            </div>
+            <div class="d-flex align-items-center justify-content-between p-2 rounded bg-danger bg-opacity-10 border border-danger border-opacity-25">
+              <span><i class="bi bi-x-circle-fill text-danger me-2"></i><strong>Menos de 50%</strong> (En Riesgo Académico)</span>
+              <span class="badge bg-danger-subtle text-danger">Riesgo</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer border-0 bg-body-tertiary px-4 py-2">
+          <button type="button" class="btn btn-sm btn-primary rounded-3 px-4 fw-semibold ms-auto" data-bs-dismiss="modal">Entendido</button>
+        </div>
+      </div>
+    </div>
+  `
+
+  document.body.appendChild(infoModalEl)
+  const bsModal = new bootstrap.Modal(infoModalEl)
+  infoModalEl.addEventListener('hidden.bs.modal', () => {
+    try { bsModal.dispose() } catch {}
+    infoModalEl.remove()
+  }, { once: true })
+  bsModal.show()
+}
+
 function _getEtiquetaEstrella(cant) {
   if (cant === 1) return 'Iniciado'
   if (cant === 2) return 'En Proceso'
@@ -374,7 +444,7 @@ async function openNodoDetailModal(nodo, alumnosList = [], nodosSecuencia = []) 
             ` : ''}
           </td>
           <td class="text-center">
-            <span class="badge ${a.idia >= 80 ? 'bg-success-subtle text-success' : 'bg-warning-subtle text-warning-emphasis'} border px-2 py-1" style="font-size: 0.75rem;">
+            <span class="badge ${a.idia >= 80 ? 'bg-info-subtle text-info-emphasis border border-info-subtle' : 'bg-secondary-subtle text-body border'} px-2 py-1" style="font-size: 0.75rem;">
               IDIA ${a.idia || 85}%
             </span>
           </td>
@@ -434,7 +504,14 @@ async function openNodoDetailModal(nodo, alumnosList = [], nodosSecuencia = []) 
                 <thead>
                   <tr>
                     <th>Alumno</th>
-                    <th class="text-center">IDIA</th>
+                    <th class="text-center">
+                      <div class="d-inline-flex align-items-center justify-content-center gap-1">
+                        <span>IDIA</span>
+                        <button type="button" class="btn btn-link p-0 text-info text-decoration-none" id="btn-info-idia" title="¿Qué es el Índice IDIA? Tap para saber más">
+                          <i class="bi bi-info-circle-fill fs-6"></i>
+                        </button>
+                      </div>
+                    </th>
                     <th class="text-center text-nowrap" style="white-space: nowrap;">Calificación (1-5★)</th>
                   </tr>
                 </thead>
@@ -457,6 +534,12 @@ async function openNodoDetailModal(nodo, alumnosList = [], nodosSecuencia = []) 
 
   document.body.appendChild(modalEl)
   activeNodeModal = modalEl
+
+  // Event listener para el botón explicativo "¿Qué es IDIA?"
+  modalEl.querySelector('#btn-info-idia')?.addEventListener('click', (e) => {
+    e.stopPropagation()
+    _mostrarExplicacionIDIA()
+  })
 
   // Event listener con soporte para clic directo en estrella o clic de fila (ciclo)
   const tbodyModal = modalEl.querySelector('#tbody-modal-alumnos')

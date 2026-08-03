@@ -1024,6 +1024,12 @@ function _renderVista(container, ctx) {
   }
 
   // === Editor DSL & Toolbar Section ===
+  // categoriaBar se declara antes del editor para que el callback
+  // onEditorChange pueda referenciarlo de forma segura con `?.`
+  // (createDslSection invoca el callback inmediatamente con initialContent).
+  let categoriaTrabajo = { codigo: null, origen: null }
+  let categoriaBar = null
+
   const dslSection = createDslSection(container, {
     initialContent: serverDSL,
     claseId,
@@ -1038,8 +1044,7 @@ function _renderVista(container, ctx) {
   // Categoría de trabajo: se deriva de lo que el maestro ya escribió y él la
   // confirma con un toque. Se guarda por separado del flujo de asistencia, que
   // tiene su propia cadena de reintentos y no conviene alterar.
-  let categoriaTrabajo = { codigo: null, origen: null }
-  const categoriaBar = createCategoriaTrabajoBar(
+  categoriaBar = createCategoriaTrabajoBar(
     container.querySelector('.pm-asist-dsl-section') || container,
     {
       onChange: async ({ codigo, origen }) => {

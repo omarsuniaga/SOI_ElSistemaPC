@@ -1,4 +1,5 @@
 import { supabase } from '../../lib/supabaseClient.js'
+import viewCache from '../services/viewCache.js'
 
 export const STORAGE_KEY = 'portal-maestros:maestro'
 export const PM_AUTH_KEY  = 'portal-maestros:auth'
@@ -145,6 +146,10 @@ export async function loginMaestro(email, password, options = {}) {
           es_admin: true,
         }
 
+    // Invalida cualquier dato cacheado en memoria de una sesión anterior
+    // (otro maestro/admin logueado antes en esta misma pestaña) — evita que
+    // clases/horarios/sesiones de OTRA persona queden servidos bajo esta sesión.
+    viewCache.invalidateAll()
     localStorage.setItem(STORAGE_KEY, JSON.stringify(adminMaestro))
     _setSessionMode(keepSession)
     return { success: true, maestro: adminMaestro, session: data.session }
@@ -210,6 +215,11 @@ export async function loginMaestro(email, password, options = {}) {
     }
     maestro = nuevoMaestro
   }
+
+  // Invalida cualquier dato cacheado en memoria de una sesión anterior
+  // (otro maestro/admin logueado antes en esta misma pestaña) — evita que
+  // clases/horarios/sesiones de OTRA persona queden servidos bajo esta sesión.
+  viewCache.invalidateAll()
 
   // Guardar en localStorage + marcar sesión persistente (30 días por defecto)
   localStorage.setItem(STORAGE_KEY, JSON.stringify(maestro))
@@ -333,6 +343,7 @@ export async function detectarRolMaestro() {
  */
 export async function logoutPortal() {
   localStorage.removeItem(STORAGE_KEY)
+  viewCache.invalidateAll()
   await supabase.auth.signOut()
 }
 

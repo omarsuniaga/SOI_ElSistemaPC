@@ -121,6 +121,9 @@ function _renderUI(container, clases, estadoEstructura) {
             </div>
 
             <div class="d-flex align-items-center gap-2">
+              <button type="button" class="btn btn-outline-light fw-bold d-inline-flex align-items-center gap-1 shadow-sm px-3" id="btn-ver-rutas-svg">
+                <i class="bi bi-diagram-3"></i>Ver Rutas (SVG)
+              </button>
               <button type="button" class="btn btn-light text-primary fw-bold d-inline-flex align-items-center gap-1 shadow-sm px-3" id="btn-ia-generar-full">
                 <i class="bi bi-magic"></i>Generar Mapeo con IA (GROQ)
               </button>
@@ -189,9 +192,8 @@ function _renderUI(container, clases, estadoEstructura) {
           </div>
         </div>
 
-        <!-- ESTRUCTURA A ANCHO COMPLETO -->
+        <!-- ESTRUCTURA A ANCHO COMPLETO (100%) -->
         <div class="row g-4">
-          <!-- ESTRUCTURA DE UNIDADES (100% ANCHO) -->
           <div class="col-12">
             <div class="card border border-secondary-subtle bg-body-tertiary rounded-4 p-4 shadow-sm mb-4">
               <div class="d-flex align-items-center justify-content-between mb-3">
@@ -202,36 +204,6 @@ function _renderUI(container, clases, estadoEstructura) {
               </div>
 
               <div id="lista-objetivos-container"></div>
-            </div>
-          </div>
-
-          <!-- MAPA SVG & MATRIZ DE ALUMNOS (100% ANCHO A CONTINUACIÓN) -->
-          <div class="col-12">
-            <div class="card border border-secondary-subtle bg-body-tertiary rounded-4 p-4 shadow-sm">
-              <h5 class="fw-bold text-body mb-2"><i class="bi bi-diagram-3 me-2 text-primary"></i>Grafo Vectorial de Ruta SVG</h5>
-              <p class="text-body-secondary small mb-3">Toca cualquier nodo para consultar o ciclar la evaluación de los alumnos reales.</p>
-
-              <div id="full-svg-canvas-container" style="min-height: 240px;"></div>
-
-              <!-- PANEL DE ALUMNOS DE LA CLASE -->
-              <div id="nodo-alumnos-eval-panel" class="mt-4 pt-3 border-top border-secondary-subtle" style="display: none;">
-                <div class="d-flex align-items-center justify-content-between mb-2">
-                  <h6 class="fw-bold mb-0 text-body" id="lbl-nodo-eval-titulo">Alumnos en la Clase</h6>
-                  <span class="badge bg-primary" id="badge-nodo-eval-estado">En Tiempo Real</span>
-                </div>
-
-                <div class="table-responsive" style="max-height: 260px;">
-                  <table class="table table-sm table-hover align-middle mb-0">
-                    <thead>
-                      <tr>
-                        <th>Alumno Real</th>
-                        <th class="text-center">Calificación (1-5★)</th>
-                      </tr>
-                    </thead>
-                    <tbody id="tbody-alumnos-eval"></tbody>
-                  </table>
-                </div>
-              </div>
             </div>
           </div>
         </div>
@@ -332,7 +304,13 @@ function _renderObjetivosFull(container, estadoEstructura, alumnosState) {
 
 function _attachEventsFull(container, clases, estadoEstructura, alumnosState, _loadAlumnosModal) {
   container.querySelector('#btn-volver-acm')?.addEventListener('click', () => {
-    router.navigate('planificacion')
+    const activeNav = (typeof window !== 'undefined' && window.router) ? window.router : router
+    activeNav.navigate('planificacion')
+  })
+
+  container.querySelector('#btn-ver-rutas-svg')?.addEventListener('click', () => {
+    const activeNav = (typeof window !== 'undefined' && window.router) ? window.router : router
+    activeNav.navigate('planificacion-ruta')
   })
 
   container.querySelector('#select-clase-full')?.addEventListener('change', (e) => {

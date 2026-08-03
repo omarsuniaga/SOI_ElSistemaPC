@@ -665,9 +665,7 @@ export async function renderPlanificacionView(container, { maestroId, router: po
           const claseId  = card.dataset.claseId
           const selected = clasesConMetricas.find((c) => String(c.id) === String(claseId))
           if (!selected) return
-          currentClaseId = selected.id
-          await refreshData()
-          openClassDetail(selected)
+          activeRouter.navigate(`planificacion-ruta?clase=${selected.id}`)
         }
         card.addEventListener('click', handler)
         card.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handler() } })

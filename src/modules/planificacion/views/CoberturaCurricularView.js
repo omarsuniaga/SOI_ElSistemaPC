@@ -104,7 +104,7 @@ function _renderUI(container, data) {
               ${clasesList.length === 0 ? `
                 <tr><td colspan="4" class="text-center py-4 text-muted">Sin datos de clases disponibles.</td></tr>
               ` : clasesList.map(c => {
-                const nombre = c.nombre || c.name || `Clase ${c.id}`
+                const nombre = c.clase_nombre || c.nombre || c.name || (c.id ? `Clase ${c.id}` : 'Clase sin nombre')
                 const maestro = c.maestro_nombre || c.maestro || 'Sin asignar'
                 const tienePlan = Boolean(c.plan_id || c.tienePlan || c.planificacion)
                 const pct = c.porcentaje || (tienePlan ? 85 : 0)

@@ -364,32 +364,6 @@ function _attachEventsFull(container, clases, estadoEstructura, alumnosState, _l
     activeNav.navigate('planificacion-ruta', { parentRoute: 'planificacion-disenador' })
   })
 
-<<<<<<< Updated upstream
-  container.querySelector('#select-clase-full')?.addEventListener('change', async (e) => {
-    estadoEstructura.claseId = e.target.value
-    try {
-      const plantillas = await obtenerPlantillasPlanificacion().catch(() => [])
-      const match = plantillas.find((p) => String(p.clase_id) === String(estadoEstructura.claseId))
-      let arbol = null
-      if (match?.objetivos) {
-        const parsed = typeof match.objetivos === 'string' ? JSON.parse(match.objetivos) : match.objetivos
-        if (Array.isArray(parsed) && parsed.length > 0) arbol = parsed
-      }
-      if (arbol) {
-        estadoEstructura.objetivos = arbol
-        estadoEstructura.esDataDemo = false
-      } else {
-        // Esta otra clase tampoco tiene plan real — mostrar la muestra demo
-        // de nuevo, no arrastrar los datos de la clase anterior.
-        estadoEstructura.objetivos = _objetivosDemoSeed()
-        estadoEstructura.esDataDemo = true
-      }
-    } catch {}
-    _loadAlumnosModal().then(() => _renderObjetivosFull(container, estadoEstructura, alumnosState))
-  })
-
-=======
->>>>>>> Stashed changes
   container.querySelector('#input-frecuencia-full')?.addEventListener('input', (e) => {
     estadoEstructura.frecuenciaSemanal = parseFloat(e.target.value || '2')
     _updateRitmoBanner(container, estadoEstructura)

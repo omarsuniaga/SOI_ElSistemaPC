@@ -300,8 +300,8 @@ function _renderUI(container, clases, planificaciones, { parentRoute = 'planific
         nodos,
         onNodeClick: (nodo) => {
           selectedNodo = nodo
-          AppToast.info(`Nodo Seleccionado: ${nodo.titulo}`)
           _actualizarPanelNodo()
+          openNodoDetailModal(nodo)
 
           // Roster ya resuelto para este nodo en esta sesión: repinta al toque.
           const cached = nodoEvalCache.get(nodo.id)
@@ -312,19 +312,10 @@ function _renderUI(container, clases, planificaciones, { parentRoute = 'planific
             return
           }
 
-          // Re-consulta el roster filtrado por (claseId, nodoId) — ver
-          // auditoría M-3: sin nodoId, las estrellas mostradas eran las de
-          // la evaluación más reciente del alumno en CUALQUIER nodo, no las
-          // de este nodo puntual. Mientras resuelve, la tabla sigue
-          // mostrando los datos previos (no hay flicker a estado vacío) pero
-          // queda deshabilitada (ver `nodoDatosListos`) para no registrar una
-          // evaluación con el conteo base de otro nodo.
           nodoDatosListos = false
           _renderTbody()
 
           obtenerAlumnosRealesPorClase(selectedClaseId, nodo.id).then((lista) => {
-            // El maestro pudo haber seleccionado otro nodo mientras esta
-            // consulta estaba en vuelo: descarta la respuesta obsoleta.
             if (selectedNodo?.id !== nodo.id) return
             nodoEvalCache.set(nodo.id, lista)
             alumnosClase = lista
@@ -426,4 +417,145 @@ function _getEtiquetaEstrella(cant) {
   if (cant === 4) return 'Logrado Fluido'
   if (cant === 5) return 'Dominado Total'
   return 'Sin Registrar'
+}
+
+let activeNodeModal = null
+
+function openNodoDetailModal(nodo) {
+  if (activeNodeModal) {
+    try {
+      const bsModal = bootstrap.Modal.getInstance(activeNodeModal)
+      if (bsModal) bsModal.dispose()
+    } catch {}
+    activeNodeModal.remove()
+    activeNodeModal = null
+  }
+
+  const modalEl = document.createElement('div')
+  modalEl.className = 'modal fade'
+  modalEl.id = 'nodoDetailModal90'
+  modalEl.tabIndex = -1
+  modalEl.setAttribute('aria-hidden', 'true')
+
+  const rawTitle = nodo.titulo || nodo.nombre || 'Postura corporal y emisión sonora libre'
+
+  modalEl.innerHTML = `
+    <div class="modal-dialog modal-dialog-centered modal-dialog-90" style="max-width: 92vw; width: 92vw;">
+      <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden" style="height: 88vh;">
+        <!-- Header del Modal -->
+        <div class="modal-header text-white px-4 py-3 border-0"
+             style="background: linear-gradient(135deg, hsl(215, 85%, 20%), hsl(240, 80%, 30%));">
+          <div class="d-flex align-items-center gap-3">
+            <div class="rounded-circle bg-white text-primary p-2 d-flex align-items-center justify-content-center fw-bold fs-5" style="width:42px; height:42px;">
+              <i class="bi bi-award-fill"></i>
+            </div>
+            <div>
+              <span class="badge bg-white bg-opacity-20 text-white border border-white border-opacity-25 px-2 py-1 mb-1" style="font-size:0.75rem;">
+                <i class="bi bi-journal-check me-1"></i>Detalle de Unidad & Contenido Didáctico
+              </span>
+              <h4 class="fw-bold mb-0 text-white">${escapeHTML(rawTitle)}</h4>
+            </div>
+          </div>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+
+        <!-- Body del Modal (Scrollable) -->
+        <div class="modal-body p-4 overflow-y-auto" style="background: var(--bs-body-bg, #0f172a);">
+          
+          <!-- SECCIÓN SOLICITADA: POSTURA CORPORAL Y EMISIÓN SONORA LIBRE -->
+          <div class="card border border-primary-subtle bg-primary-subtle bg-opacity-10 rounded-4 p-4 mb-4 shadow-sm">
+            <div class="d-flex align-items-center justify-content-between mb-3">
+              <h5 class="fw-bold text-primary mb-0">
+                <i class="bi bi-person-workspace me-2"></i>Postura corporal y emisión sonora libre
+              </h5>
+              <span class="badge bg-primary px-3 py-2 fs-6">Unidad Fundamental</span>
+            </div>
+            <p class="text-body-secondary mb-3 fs-6" style="line-height: 1.6;">
+              Diagnóstico y desarrollo de la alineación biomecánica del estudiante, equilibrio de peso sobre ambos pies, relajación de hombros, posición del instrumento/voz y emisión sonora sin tensiones parásitas.
+            </p>
+
+            <div class="row g-3">
+              <div class="col-md-4">
+                <div class="p-3 bg-body rounded-3 border border-secondary-subtle">
+                  <div class="fw-bold text-body mb-1"><i class="bi bi-check2-square text-success me-1"></i>Objetivo Biomecánico</div>
+                  <small class="text-body-secondary">Asegurar balance simétrico del torso y libertad de movimiento articular en los brazos.</small>
+                </div>
+              </div>
+              <div class="col-md-4">
+                <div class="p-3 bg-body rounded-3 border border-secondary-subtle">
+                  <div class="fw-bold text-body mb-1"><i class="bi bi-soundwave text-info me-1"></i>Resonancia y Sonido</div>
+                  <small class="text-body-secondary">Emisión sonora continua con volumen pleno, resonancia abierta y apoyo diafragmático/brazo.</small>
+                </div>
+              </div>
+              <div class="col-md-4">
+                <div class="p-3 bg-body rounded-3 border border-secondary-subtle">
+                  <div class="fw-bold text-body mb-1"><i class="bi bi-shield-exclamation text-warning me-1"></i>Indicador de Corrección</div>
+                  <small class="text-body-secondary">Prevención inmediata de rigidez cervical, elevación de hombros o agarre tenso.</small>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- DETALLES DE APRENDIZAJE Y TÉCNICA -->
+          <div class="row g-4 mb-4">
+            <div class="col-md-6">
+              <div class="card border border-secondary-subtle bg-body-tertiary rounded-4 p-4 h-100 shadow-sm">
+                <h6 class="fw-bold text-body mb-3"><i class="bi bi-list-task text-primary me-2"></i>Estrategias Didácticas Recomendadas</h6>
+                <ul class="list-group list-group-flush bg-transparent">
+                  <li class="list-group-item bg-transparent text-body border-secondary-subtle px-0 py-2">
+                    <i class="bi bi-arrow-right-circle text-primary me-2"></i>Ejercicios de espejo y conciencia propioceptiva sin instrumento.
+                  </li>
+                  <li class="list-group-item bg-transparent text-body border-secondary-subtle px-0 py-2">
+                    <i class="bi bi-arrow-right-circle text-primary me-2"></i>Pulsación rítmica libre sobre cuerdas/teclas abiertas buscando sonido rotundo.
+                  </li>
+                  <li class="list-group-item bg-transparent text-body border-secondary-subtle px-0 py-2">
+                    <i class="bi bi-arrow-right-circle text-primary me-2"></i>Respiración sincronizada antes del ataque del sonido.
+                  </li>
+                </ul>
+              </div>
+            </div>
+
+            <div class="col-md-6">
+              <div class="card border border-secondary-subtle bg-body-tertiary rounded-4 p-4 h-100 shadow-sm">
+                <h6 class="fw-bold text-body mb-3"><i class="bi bi-star-fill text-warning me-2"></i>Escala de Dominio (1 a 5 Estrellas)</h6>
+                <div class="d-flex flex-column gap-2">
+                  <div class="d-flex align-items-center justify-content-between p-2 rounded-3 bg-body border border-secondary-subtle">
+                    <span class="fw-bold text-body">1★ - Iniciado:</span>
+                    <small class="text-body-secondary">Presenta tensión visible o postura desalineada.</small>
+                  </div>
+                  <div class="d-flex align-items-center justify-content-between p-2 rounded-3 bg-body border border-secondary-subtle">
+                    <span class="fw-bold text-body">3★ - Aprobado Básico:</span>
+                    <small class="text-body-secondary">Mantiene buena postura con corrección esporádica.</small>
+                  </div>
+                  <div class="d-flex align-items-center justify-content-between p-2 rounded-3 bg-body border border-secondary-subtle">
+                    <span class="fw-bold text-success">5★ - Dominado Total:</span>
+                    <small class="text-body-secondary">Emisión sonora libre e impecable de forma natural.</small>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Footer del Modal -->
+        <div class="modal-footer border-0 bg-body-tertiary px-4 py-3">
+          <button type="button" class="btn btn-secondary rounded-3 px-4 fw-semibold" data-bs-dismiss="modal">Cerrar Modal</button>
+        </div>
+      </div>
+    </div>
+  `
+
+  document.body.appendChild(modalEl)
+  activeNodeModal = modalEl
+
+  const bsModal = new bootstrap.Modal(modalEl, { backdrop: true })
+  modalEl.addEventListener('hidden.bs.modal', () => {
+    try {
+      bsModal.dispose()
+    } catch {}
+    modalEl.remove()
+    activeNodeModal = null
+  }, { once: true })
+
+  bsModal.show()
 }

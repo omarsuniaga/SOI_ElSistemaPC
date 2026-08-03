@@ -27,6 +27,34 @@ import { getMisClases, getHorariosClases } from '../../../portal-maestros/servic
  * existen en `clases` — siempre caía al default de 2.
  * @returns {Promise<number>} clases/semana (mínimo 1 si hay horario, si no 0)
  */
+/**
+ * Muestra de ejemplo (NO son datos reales de ninguna clase) que se ve
+ * cuando una clase todavía no tiene un plan guardado. Se limpia por
+ * completo — no se le agregan unidades encima — en cuanto el maestro crea
+ * su primera unidad real (manual o con IA), para no persistir contenido
+ * inventado como si fuera el plan de la clase.
+ */
+function _objetivosDemoSeed() {
+  return [
+    {
+      id: 'obj-1',
+      titulo: 'Dominio de Postura y Emisión Sonora Libre',
+      indicadores: [
+        { id: 'ind-1', titulo: 'Postura corporal equilibrada y relajada', prerrequisitoId: null },
+        { id: 'ind-2', titulo: 'Distribución fluida del arco en cuerdas abiertas', prerrequisitoId: 'ind-1' },
+      ],
+    },
+    {
+      id: 'obj-2',
+      titulo: 'Afinación y Articulación Digital',
+      indicadores: [
+        { id: 'ind-3', titulo: 'Colocación exacta de 1er y 2do dedo', prerrequisitoId: 'ind-2' },
+        { id: 'ind-4', titulo: 'Independencia digital a pulso 60 BPM', prerrequisitoId: 'ind-3' },
+      ],
+    },
+  ]
+}
+
 async function _detectarFrecuenciaSemanalReal(claseId) {
   if (!claseId) return 0
   try {
@@ -76,29 +104,13 @@ export async function renderDisenadorCurricularView(container, { maestroId, clas
   } catch {}
 
   let estadoEstructura = {
+    esDataDemo: !planExistente?.objetivosEstructurados,
     claseId: claseIdInicial,
     nivelId: planExistente?.nivelId || 'nivel-1',
     frecuenciaSemanal: planExistente?.frecuenciaSemanal || 2,
     frecuenciaOrigen: 'manual',
     semanasTotales: 24,
-    objetivos: planExistente?.objetivosEstructurados || [
-      {
-        id: 'obj-1',
-        titulo: 'Dominio de Postura y Emisión Sonora Libre',
-        indicadores: [
-          { id: 'ind-1', titulo: 'Postura corporal equilibrada y relajada', prerrequisitoId: null },
-          { id: 'ind-2', titulo: 'Distribución fluida del arco en cuerdas abiertas', prerrequisitoId: 'ind-1' },
-        ],
-      },
-      {
-        id: 'obj-2',
-        titulo: 'Afinación y Articulación Digital',
-        indicadores: [
-          { id: 'ind-3', titulo: 'Colocación exacta de 1er y 2do dedo', prerrequisitoId: 'ind-2' },
-          { id: 'ind-4', titulo: 'Independencia digital a pulso 60 BPM', prerrequisitoId: 'ind-3' },
-        ],
-      },
-    ],
+    objetivos: planExistente?.objetivosEstructurados || _objetivosDemoSeed(),
   }
 
   // Sin frecuencia guardada en un plan previo: detectar del horario real de
@@ -242,6 +254,11 @@ function _renderUI(container, clases, estadoEstructura) {
                 </button>
               </div>
 
+              <div id="banner-data-demo" class="alert alert-warning d-flex align-items-center gap-2 py-2 mb-3" style="font-size:0.85rem; display:${estadoEstructura.esDataDemo ? '' : 'none'};">
+                <i class="bi bi-info-circle-fill"></i>
+                <div><strong>Datos de ejemplo</strong> — esta clase todavía no tiene un plan real guardado. Se reemplazan por completo apenas agregues o generes la primera unidad.</div>
+              </div>
+
               <div id="lista-objetivos-container"></div>
             </div>
           </div>
@@ -257,6 +274,9 @@ function _renderUI(container, clases, estadoEstructura) {
 }
 
 function _renderObjetivosFull(container, estadoEstructura, alumnosState) {
+  const banner = container.querySelector('#banner-data-demo')
+  if (banner) banner.style.display = estadoEstructura.esDataDemo ? '' : 'none'
+
   const listEl = container.querySelector('#lista-objetivos-container')
   if (!listEl) return
 
@@ -370,8 +390,14 @@ function _attachEventsFull(container, clases, estadoEstructura, alumnosState, _l
       const match = planes.find((p) => String(p.clase_id || p.claseId) === String(estadoEstructura.claseId))
       if (match && Array.isArray(match.objetivosEstructurados) && match.objetivosEstructurados.length > 0) {
         estadoEstructura.objetivos = match.objetivosEstructurados
+        estadoEstructura.esDataDemo = false
         if (match.nivelId) estadoEstructura.nivelId = match.nivelId
         if (match.frecuenciaSemanal) frecuenciaGuardada = match.frecuenciaSemanal
+      } else {
+        // Esta otra clase tampoco tiene plan real guardado — mostrar la
+        // muestra demo de nuevo, no arrastrar los datos de la clase anterior.
+        estadoEstructura.objetivos = _objetivosDemoSeed()
+        estadoEstructura.esDataDemo = true
       }
     } catch {}
 
@@ -434,17 +460,22 @@ function _attachEventsFull(container, clases, estadoEstructura, alumnosState, _l
     const instrumentoNombre = claseActual?.nombre || claseActual?.name || 'Música e Instrumento'
     const nivelNombre = nivelObj?.nombre || 'Nivel 1: Básico'
 
-    const numSiguiente = estadoEstructura.objetivos.length + 1
+    // Si lo que hay todavía es la muestra demo, la primera unidad real la
+    // reemplaza por completo — nunca se apila arriba de datos inventados.
+    const eraDataDemo = estadoEstructura.esDataDemo
+    const numSiguiente = eraDataDemo ? 1 : estadoEstructura.objetivos.length + 1
 
     try {
       const nuevaUnidad = await sugerirSiguienteUnidadIA({
         instrumento: instrumentoNombre,
         nivelNombre,
         numeroUnidad: numSiguiente,
-        unidadesExistentes: estadoEstructura.objetivos,
+        unidadesExistentes: eraDataDemo ? [] : estadoEstructura.objetivos,
       })
 
       if (nuevaUnidad && nuevaUnidad.titulo) {
+        if (eraDataDemo) estadoEstructura.objetivos = []
+        estadoEstructura.esDataDemo = false
         estadoEstructura.objetivos.push(nuevaUnidad)
         _renderObjetivosFull(container, estadoEstructura, alumnosState)
         
@@ -501,6 +532,10 @@ function _attachEventsFull(container, clases, estadoEstructura, alumnosState, _l
   })
 
   container.querySelector('#btn-add-objetivo-full')?.addEventListener('click', () => {
+    if (estadoEstructura.esDataDemo) {
+      estadoEstructura.objetivos = []
+      estadoEstructura.esDataDemo = false
+    }
     const count = estadoEstructura.objetivos.length + 1
     estadoEstructura.objetivos.push({
       id: `obj-${Date.now()}`,

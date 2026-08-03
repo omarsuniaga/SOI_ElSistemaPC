@@ -127,6 +127,7 @@ function _renderUI(container, clases, planificaciones, { parentRoute = 'planific
                   <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1">
                     <i class="bi bi-wifi me-1"></i>Modo Datos Reales + Sync Offline
                   </span>
+                  ${nodos.esDemo ? `<span class="badge bg-warning text-dark border border-warning px-2 py-1"><i class="bi bi-exclamation-triangle-fill me-1"></i>Ruta de ejemplo — sin plan real todavía</span>` : ''}
                 </div>
                 <h2 class="fw-bold mb-0 text-white">Ruta Pedagógica Interactiva</h2>
               </div>
@@ -305,15 +306,19 @@ function _extraerNodosDePlan(plan, claseObj = {}) {
     }
   }
 
-  // 3. Estructura base de fallback indexada a la clase real seleccionada (IDs reales para la BD)
+  // 3. Sin plan real todavía: muestra de ejemplo (NO son datos reales de la
+  //    clase). Se marca esDemo=true para que la UI avise — se reemplaza por
+  //    completo en cuanto el maestro publique un plan real desde el Diseñador.
   const prefix = claseObj?.id ? `node-${claseObj.id}` : 'node-real'
-  return [
+  const nodosDemo = [
     { id: `${prefix}-u1`, titulo: `Unidad 1: Técnica Base - ${claseObj.nombre || 'Instrumento'}`, estado: 'logrado' },
     { id: `${prefix}-u2`, titulo: `Unidad 2: Escalas y Articulación`, estado: 'en_proceso' },
     { id: `${prefix}-u3`, titulo: `Unidad 3: Control de Pulso y Ritmo`, estado: 'pendiente' },
     { id: `${prefix}-u4`, titulo: `Unidad 4: Independencia y Dinámicas`, estado: 'pendiente' },
     { id: `${prefix}-u5`, titulo: `Unidad 5: Repertorio e Interpretación`, estado: 'pendiente' },
   ]
+  nodosDemo.esDemo = true
+  return nodosDemo
 }
 
 function _renderEstrellasSVG(cant) {

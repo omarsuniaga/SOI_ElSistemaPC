@@ -193,7 +193,7 @@ function _renderUI(container, clases, planificaciones) {
 
             <!-- SELECTOR DE CLASE Y ACCIONES -->
             <div class="d-flex flex-wrap align-items-center gap-2">
-              <select class="form-select border-0 shadow-sm text-body fw-bold" id="select-clase-ruta" style="min-width: 240px; background-color: rgba(255, 255, 255, 0.95);">
+              <select class="form-select border-0 shadow-sm text-body  fw-bold" id="select-clase-ruta" style="min-width: 240px; ">
                 ${clases
                   .map(
                     (c) => `
@@ -335,7 +335,7 @@ function _renderUI(container, clases, planificaciones) {
 
     // Attach Event Listeners
     container.querySelector('#btn-volver-plan')?.addEventListener('click', () => {
-      router.navigate('planificacion-acm')
+      router.navigate('planificacion')
     })
 
     container.querySelector('#btn-ir-disenador')?.addEventListener('click', () => {

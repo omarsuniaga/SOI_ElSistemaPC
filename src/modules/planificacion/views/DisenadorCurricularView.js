@@ -327,7 +327,7 @@ function _renderObjetivosFull(container, estadoEstructura, alumnosState) {
 
 function _attachEventsFull(container, clases, estadoEstructura, alumnosState, _loadAlumnosModal) {
   container.querySelector('#btn-volver-acm')?.addEventListener('click', () => {
-    router.navigate('planificacion-acm')
+    router.navigate('planificacion')
   })
 
   container.querySelector('#select-clase-full')?.addEventListener('change', (e) => {

@@ -8,6 +8,7 @@
  */
 
 import { supabase } from '../../../lib/supabaseClient.js'
+import { config } from '../../../core/config/config.js'
 
 const ESTADOS_VALIDOS = ['sin_evaluar', 'inicia', 'en_progreso', 'avanzado', 'dominado']
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
@@ -21,8 +22,11 @@ function _isVirtualLikeId(value) {
 }
 
 function _shouldSkipRemoteWrite(values) {
+  if (!config?.isDemoMode) return false
   return values.some((value) => typeof value === 'string' && !_isUuid(value) && _isVirtualLikeId(value))
 }
+
+const _virtualEvaluaciones = new Map()
 
 /**
  * Register or update an evaluation for a student on a specific indicator.
@@ -36,11 +40,6 @@ export async function registrarEvaluacion(data) {
     throw new Error('alumno_id, indicator_id y clase_id son requeridos')
   }
 
-  if (_shouldSkipRemoteWrite([data.alumno_id, data.indicator_id, data.clase_id])) {
-    console.warn('[registrarEvaluacion] Se omite la escritura remota para IDs virtuales/no UUID:', data)
-    return null
-  }
-
   if (data.nota !== null && data.nota !== undefined) {
     if (data.nota < 1 || data.nota > 5) {
       throw new Error('La nota debe estar entre 1 y 5')
@@ -48,6 +47,7 @@ export async function registrarEvaluacion(data) {
   }
 
   const row = {
+    id: `ev-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
     alumno_id: data.alumno_id,
     indicator_id: data.indicator_id,
     clase_id: data.clase_id,
@@ -56,6 +56,12 @@ export async function registrarEvaluacion(data) {
     observaciones: data.observaciones || null,
     evaluado_por: data.evaluado_por || null,
     fecha_evaluacion: new Date().toISOString(),
+  }
+
+  if (_shouldSkipRemoteWrite([data.alumno_id, data.indicator_id, data.clase_id])) {
+    const key = `${data.alumno_id}:${data.indicator_id}:${data.clase_id}`
+    _virtualEvaluaciones.set(key, row)
+    return row
   }
 
   const { data: result, error } = await supabase
@@ -75,13 +81,19 @@ export async function registrarEvaluacion(data) {
  * @returns {Promise<Array<object>>} Evaluations with joined student/indicator data
  */
 export async function obtenerEvaluacionesPorClase(claseId) {
+  if (_shouldSkipRemoteWrite([claseId])) {
+    return Array.from(_virtualEvaluaciones.values()).filter((e) => e.clase_id === claseId)
+  }
+
   const { data, error } = await supabase
     .from('evaluacion_indicador')
     .select('*')
     .eq('clase_id', claseId)
     .order('created_at', { ascending: false })
 
-  if (error) throw error
+  if (error) {
+    return Array.from(_virtualEvaluaciones.values()).filter((e) => e.clase_id === claseId)
+  }
   return data || []
 }
 

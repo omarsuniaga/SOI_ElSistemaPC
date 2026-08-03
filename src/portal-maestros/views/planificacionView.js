@@ -389,8 +389,34 @@ export async function renderPlanificacionView(container, { maestroId }) {
       }
       .pm-indicator-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.06); }
 
+      /* ── Modal 90% Screen Custom Sizing ── */
+      .modal-dialog-90 {
+        max-width: 92vw !important;
+        width: 92vw !important;
+        margin: 1.5rem auto !important;
+      }
+      .modal-dialog-90 .modal-content {
+        height: 88vh !important;
+        max-height: 88vh !important;
+        display: flex !important;
+        flex-direction: column !important;
+      }
+      .modal-dialog-90 .modal-body {
+        flex: 1 1 auto !important;
+        overflow-y: auto !important;
+      }
+
       /* ── Responsivo ── */
       @media (max-width: 768px) {
+        .modal-dialog-90 {
+          max-width: 96vw !important;
+          width: 96vw !important;
+          margin: 0.5rem auto !important;
+        }
+        .modal-dialog-90 .modal-content {
+          height: 92vh !important;
+          max-height: 92vh !important;
+        }
         .pm-planning-container { padding: 0.75rem; }
         .pm-planning-header { padding: 1.25rem; border-radius: 14px; }
         .pm-planning-instructions-steps { grid-template-columns: 1fr; }
@@ -404,18 +430,21 @@ export async function renderPlanificacionView(container, { maestroId }) {
   container.innerHTML = `
     <div class="pm-planning-container">
       <div class="pm-planning-header">
-        <h1 class="pm-planning-title">📚 Planificación Académica</h1>
-        <p style="margin:0; opacity:0.88; font-size:0.95rem; line-height:1.5;">
-          ACM define la guía institucional. Adapta pedagógicamente la ejecución de tu grupo
-          y evalúa el progreso en tiempo real.
-        </p>
-        <div style="display:flex; gap:0.6rem; margin-top:0.85rem; flex-wrap:wrap;">
-          <button type="button" class="btn btn-sm btn-light text-primary fw-bold rounded-3 shadow-sm" id="btn-pm-header-disenador">
-            <i class="bi bi-pencil-square me-1"></i>🎨 Diseñador Curricular (ACM)
-          </button>
-          <button type="button" class="btn btn-sm btn-outline-light fw-bold rounded-3 shadow-sm" id="btn-pm-header-ruta">
-            <i class="bi bi-diagram-3 me-1"></i>🗺️ Ver Ruta Pedagógica SVG
-          </button>
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+          <div>
+            <h1 class="pm-planning-title">📚 Gestión y Rutas Académicas</h1>
+            <p style="margin:0; opacity:0.88; font-size:0.95rem; line-height:1.5;">
+              Estructura tus planificaciones o realiza el seguimiento interactivo del progreso de tus alumnos.
+            </p>
+          </div>
+          <div style="display:flex; gap:0.75rem; flex-wrap:wrap;">
+            <button type="button" class="btn btn-light text-primary fw-bold rounded-3 shadow-sm px-3 py-2" id="btn-pm-header-disenador">
+              <i class="bi bi-pencil-square me-2"></i>1. Registro y Planificación Docente
+            </button>
+            <button type="button" class="btn btn-outline-light fw-bold rounded-3 shadow-sm px-3 py-2" id="btn-pm-header-ruta">
+              <i class="bi bi-diagram-3 me-2"></i>2. Seguimiento Alumno vs Contenido (Ruta SVG)
+            </button>
+          </div>
         </div>
       </div>
 
@@ -695,7 +724,9 @@ export async function renderPlanificacionView(container, { maestroId }) {
   function openClassDetail(clase, initialTab = 'general') {
     // FIX C-3: Dispose de la instancia Bootstrap antes de remover el modal
     if (classDetailModal) {
-      bootstrap.Modal.getInstance(classDetailModal)?.dispose()
+      if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+        bootstrap.Modal.getInstance(classDetailModal)?.dispose()
+      }
       classDetailModal.remove()
       classDetailModal = null
     }
@@ -728,7 +759,7 @@ export async function renderPlanificacionView(container, { maestroId }) {
     classDetailModal.setAttribute('aria-label', `Detalle de clase: ${clase.nombre}`)
 
     classDetailModal.innerHTML = `
-      <div class="modal-dialog modal-xxl modal-dialog-centered modal-dialog-scrollable">
+      <div class="modal-dialog modal-dialog-90 modal-dialog-centered">
         <div class="modal-content" style="background:var(--pm-surface); color:var(--pm-text); border:1px solid var(--pm-border); border-radius:20px; box-shadow:0 24px 64px rgba(0,0,0,0.15);">
 
           <!-- Header del modal -->
@@ -760,7 +791,7 @@ export async function renderPlanificacionView(container, { maestroId }) {
           </div>
 
           <!-- Cuerpo -->
-          <div class="modal-body" style="padding:1.5rem; min-height:360px;">
+          <div class="modal-body" style="padding:1.5rem;">
 
             <!-- ── Pestaña: Perfil y Cobertura ── -->
             <div class="pm-tab-pane ${initialTab === 'general' ? '' : 'd-none'}" data-pane="general">
@@ -814,15 +845,15 @@ export async function renderPlanificacionView(container, { maestroId }) {
                 <div class="col-12 mt-2">
                   <div style="padding:1rem 1.25rem; border:1px solid rgba(59,130,246,0.3); border-radius:14px; background:rgba(59,130,246,0.06); display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:0.75rem;">
                     <div>
-                      <div style="font-weight:700; font-size:0.9rem; color:var(--pm-text);">Construcción de Ruta & Evaluación por Nodos</div>
-                      <div style="font-size:0.78rem; color:var(--pm-text-muted);">Diseñá el itinerario semestral desde cero o explorá la ruta vectorial con nodos.</div>
+                      <div style="font-weight:700; font-size:0.9rem; color:var(--pm-text);">Herramientas de Malla & Seguimiento Táctil</div>
+                      <div style="font-size:0.78rem; color:var(--pm-text-muted);">Edita la estructura completa de objetivos e indicadores o abre la matriz alumno vs contenido.</div>
                     </div>
                     <div style="display:flex; gap:0.5rem;">
-                      <button type="button" class="btn btn-sm btn-primary fw-semibold rounded-3 btn-modal-disenador" data-bs-dismiss="modal">
-                        🎨 Diseñador ACM
+                      <button type="button" class="btn btn-sm btn-primary fw-semibold rounded-3 btn-modal-disenador">
+                        ✏️ 1. Diseñar Malla / Contenidos
                       </button>
-                      <button type="button" class="btn btn-sm btn-outline-primary fw-semibold rounded-3 btn-modal-ruta-full" data-bs-dismiss="modal">
-                        🗺️ Vista SVG
+                      <button type="button" class="btn btn-sm btn-outline-primary fw-semibold rounded-3 btn-modal-ruta-full">
+                        🗺️ 2. Mapa Alumno vs Contenido (SVG)
                       </button>
                     </div>
                   </div>
@@ -842,88 +873,100 @@ export async function renderPlanificacionView(container, { maestroId }) {
                   <div style="font-size:2.5rem; margin-bottom:0.75rem;">📭</div>
                   <p>Esta clase no tiene semanas en el plan ACM.</p>
                 </div>
-              ` : weekItems.map((item) => {
-                const resolved = resolveWeekItem(item)
-                const isPast    = item.week_number < currentWeekNum
-                const isCurrent = item.week_number === currentWeekNum
-                const dotClass  = isPast ? 'past' : isCurrent ? 'current' : 'upcoming'
-                const weekLabel = isPast ? 'Pasada' : isCurrent ? 'Esta semana' : `Semana ${item.week_number}`
-                return `
-                  <div class="pm-week-item ${isCurrent ? 'is-current' : ''}" id="pm-week-${item.week_number}">
-                    <button class="pm-week-header" data-week="${item.week_number}" type="button" aria-expanded="${isCurrent}">
-                      <span class="pm-week-status-dot ${dotClass}"></span>
-                      <span style="font-size:0.72rem; font-weight:600; color:var(--pm-text-muted); min-width:80px;">${weekLabel}</span>
-                      <span style="font-weight:700; font-size:0.92rem; flex:1; color:var(--pm-text);">${escapeHtml(item.topic)}</span>
-                      ${resolved.hasTeacherAdjustment ? `<span style="font-size:0.7rem; padding:0.2rem 0.5rem; border-radius:6px; background:rgba(16,185,129,0.1); color:#10b981; border:1px solid rgba(16,185,129,0.2); font-weight:600;">✍ Ajustado</span>` : ''}
-                      <span class="pm-week-chevron ${isCurrent ? 'open' : ''}">▾</span>
-                    </button>
-                    <div class="pm-week-body ${isCurrent ? 'open' : ''}" id="pm-week-body-${item.week_number}">
-                      <div style="padding:1rem;">
-                        <!-- Info ACM base -->
-                        <div style="padding:0.85rem; background:var(--pm-surface-2,rgba(0,0,0,0.02)); border-radius:10px; margin-bottom:1rem; border:1px dashed var(--pm-border);">
-                          <div style="font-size:0.72rem; font-weight:700; text-transform:uppercase; color:var(--pm-text-muted); letter-spacing:0.5px; margin-bottom:0.4rem;">Base ACM (solo lectura)</div>
-                          <div style="font-size:0.83rem; color:var(--pm-text); margin-bottom:0.5rem;">${escapeHtml(item.objective || 'Sin objetivo registrado')}</div>
-                          <div class="row g-2">
-                            <div class="col-12 col-sm-6">
-                              <div style="font-size:0.72rem; font-weight:700; color:var(--pm-text-muted);">Estrategia base:</div>
-                              <div style="font-size:0.8rem; color:var(--pm-text-muted);">${escapeHtml(item.teacher_strategy || '—')}</div>
+              ` : `
+                <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom">
+                  <div class="small fw-semibold text-muted">Filtro de semanas:</div>
+                  <div class="btn-group btn-group-sm" id="pm-weeks-filter">
+                    <button class="btn btn-outline-secondary active" data-filter="all">Todas (${weekItems.length})</button>
+                    <button class="btn btn-outline-secondary" data-filter="current">Semana Activa</button>
+                    <button class="btn btn-outline-secondary" data-filter="adjusted">Con Ajuste Docente</button>
+                  </div>
+                </div>
+                <div id="pm-weeks-container">
+                  ${weekItems.map((item) => {
+                    const resolved = resolveWeekItem(item)
+                    const isPast    = item.week_number < currentWeekNum
+                    const isCurrent = item.week_number === currentWeekNum
+                    const dotClass  = isPast ? 'past' : isCurrent ? 'current' : 'upcoming'
+                    const weekLabel = isPast ? 'Pasada' : isCurrent ? 'Esta semana' : `Semana ${item.week_number}`
+                    return `
+                      <div class="pm-week-item ${isCurrent ? 'is-current' : ''}" id="pm-week-${item.week_number}" data-week-num="${item.week_number}" data-is-current="${isCurrent}" data-has-adjustment="${resolved.hasTeacherAdjustment}">
+                        <button class="pm-week-header" data-week="${item.week_number}" type="button" aria-expanded="${isCurrent}">
+                          <span class="pm-week-status-dot ${dotClass}"></span>
+                          <span style="font-size:0.72rem; font-weight:600; color:var(--pm-text-muted); min-width:80px;">${weekLabel}</span>
+                          <span style="font-weight:700; font-size:0.92rem; flex:1; color:var(--pm-text);">${escapeHtml(item.topic)}</span>
+                          ${resolved.hasTeacherAdjustment ? `<span style="font-size:0.7rem; padding:0.2rem 0.5rem; border-radius:6px; background:rgba(16,185,129,0.1); color:#10b981; border:1px solid rgba(16,185,129,0.2); font-weight:600;">✍ Ajustado</span>` : ''}
+                          <span class="pm-week-chevron ${isCurrent ? 'open' : ''}">▾</span>
+                        </button>
+                        <div class="pm-week-body ${isCurrent ? 'open' : ''}" id="pm-week-body-${item.week_number}">
+                          <div style="padding:1rem;">
+                            <!-- Info ACM base -->
+                            <div style="padding:0.85rem; background:var(--pm-surface-2,rgba(0,0,0,0.02)); border-radius:10px; margin-bottom:1rem; border:1px dashed var(--pm-border);">
+                              <div style="font-size:0.72rem; font-weight:700; text-transform:uppercase; color:var(--pm-text-muted); letter-spacing:0.5px; margin-bottom:0.4rem;">Base ACM (solo lectura)</div>
+                              <div style="font-size:0.83rem; color:var(--pm-text); margin-bottom:0.5rem;">${escapeHtml(item.objective || 'Sin objetivo registrado')}</div>
+                              <div class="row g-2">
+                                <div class="col-12 col-sm-6">
+                                  <div style="font-size:0.72rem; font-weight:700; color:var(--pm-text-muted);">Estrategia base:</div>
+                                  <div style="font-size:0.8rem; color:var(--pm-text-muted);">${escapeHtml(item.teacher_strategy || '—')}</div>
+                                </div>
+                                <div class="col-12 col-sm-6">
+                                  <div style="font-size:0.72rem; font-weight:700; color:var(--pm-text-muted);">Evidencia base:</div>
+                                  <div style="font-size:0.8rem; color:var(--pm-text-muted);">${escapeHtml(item.evidence || '—')}</div>
+                                </div>
+                              </div>
                             </div>
-                            <div class="col-12 col-sm-6">
-                              <div style="font-size:0.72rem; font-weight:700; color:var(--pm-text-muted);">Evidencia base:</div>
-                              <div style="font-size:0.8rem; color:var(--pm-text-muted);">${escapeHtml(item.evidence || '—')}</div>
-                            </div>
+
+                            <!-- Formulario de ajuste docente -->
+                            <form class="pm-week-adjustment-form" data-week="${item.week_number}">
+                              <div style="font-size:0.8rem; font-weight:700; color:var(--pm-primary); margin-bottom:0.75rem; display:flex; align-items:center; gap:0.4rem;">
+                                ✏️ Ajuste Docente — Semana ${item.week_number}
+                              </div>
+                              <div class="row g-3">
+                                <div class="col-12 col-md-6">
+                                  <label class="form-label" style="font-size:0.8rem; font-weight:600; color:var(--pm-text);">Estrategia ajustada</label>
+                                  <textarea class="form-control form-control-sm rounded-3" name="teacher_strategy" rows="3"
+                                    style="background:var(--pm-surface); color:var(--pm-text); border-color:var(--pm-border); resize:vertical;"
+                                  >${escapeHtml(resolved.teacher_strategy || '')}</textarea>
+                                </div>
+                                <div class="col-12 col-md-6">
+                                  <label class="form-label" style="font-size:0.8rem; font-weight:600; color:var(--pm-text);">Actividad del estudiante</label>
+                                  <textarea class="form-control form-control-sm rounded-3" name="student_activity" rows="3"
+                                    style="background:var(--pm-surface); color:var(--pm-text); border-color:var(--pm-border); resize:vertical;"
+                                  >${escapeHtml(resolved.student_activity || '')}</textarea>
+                                </div>
+                                <div class="col-12 col-md-6">
+                                  <label class="form-label" style="font-size:0.8rem; font-weight:600; color:var(--pm-text);">Tarea asignada</label>
+                                  <textarea class="form-control form-control-sm rounded-3" name="homework" rows="3"
+                                    style="background:var(--pm-surface); color:var(--pm-text); border-color:var(--pm-border); resize:vertical;"
+                                  >${escapeHtml(resolved.homework || '')}</textarea>
+                                </div>
+                                <div class="col-12 col-md-6">
+                                  <label class="form-label" style="font-size:0.8rem; font-weight:600; color:var(--pm-text);">Evidencia ajustada</label>
+                                  <textarea class="form-control form-control-sm rounded-3" name="evidence" rows="3"
+                                    style="background:var(--pm-surface); color:var(--pm-text); border-color:var(--pm-border); resize:vertical;"
+                                  >${escapeHtml(resolved.evidence || '')}</textarea>
+                                </div>
+                                <div class="col-12">
+                                  <label class="form-label" style="font-size:0.8rem; font-weight:600; color:var(--pm-text);">Notas pedagógicas</label>
+                                  <textarea class="form-control form-control-sm rounded-3" name="teacher_notes" rows="2"
+                                    style="background:var(--pm-surface); color:var(--pm-text); border-color:var(--pm-border); resize:vertical;"
+                                  >${escapeHtml(resolved.teacher_notes || '')}</textarea>
+                                </div>
+                                <div class="col-12" style="display:flex; justify-content:flex-end;">
+                                  <button type="submit" class="btn btn-sm btn-primary px-4 rounded-3" style="font-weight:600; display:flex; align-items:center; gap:0.4rem;">
+                                    <span class="btn-text">Guardar ajuste</span>
+                                    <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+                                  </button>
+                                </div>
+                              </div>
+                            </form>
                           </div>
                         </div>
-
-                        <!-- Formulario de ajuste docente -->
-                        <form class="pm-week-adjustment-form" data-week="${item.week_number}">
-                          <div style="font-size:0.8rem; font-weight:700; color:var(--pm-primary); margin-bottom:0.75rem; display:flex; align-items:center; gap:0.4rem;">
-                            ✏️ Ajuste Docente — Semana ${item.week_number}
-                          </div>
-                          <div class="row g-3">
-                            <div class="col-12 col-md-6">
-                              <label class="form-label" style="font-size:0.8rem; font-weight:600; color:var(--pm-text);">Estrategia ajustada</label>
-                              <textarea class="form-control form-control-sm rounded-3" name="teacher_strategy" rows="3"
-                                style="background:var(--pm-surface); color:var(--pm-text); border-color:var(--pm-border); resize:vertical;"
-                              >${escapeHtml(resolved.teacher_strategy || '')}</textarea>
-                            </div>
-                            <div class="col-12 col-md-6">
-                              <label class="form-label" style="font-size:0.8rem; font-weight:600; color:var(--pm-text);">Actividad del estudiante</label>
-                              <textarea class="form-control form-control-sm rounded-3" name="student_activity" rows="3"
-                                style="background:var(--pm-surface); color:var(--pm-text); border-color:var(--pm-border); resize:vertical;"
-                              >${escapeHtml(resolved.student_activity || '')}</textarea>
-                            </div>
-                            <div class="col-12 col-md-6">
-                              <label class="form-label" style="font-size:0.8rem; font-weight:600; color:var(--pm-text);">Tarea asignada</label>
-                              <textarea class="form-control form-control-sm rounded-3" name="homework" rows="3"
-                                style="background:var(--pm-surface); color:var(--pm-text); border-color:var(--pm-border); resize:vertical;"
-                              >${escapeHtml(resolved.homework || '')}</textarea>
-                            </div>
-                            <div class="col-12 col-md-6">
-                              <label class="form-label" style="font-size:0.8rem; font-weight:600; color:var(--pm-text);">Evidencia ajustada</label>
-                              <textarea class="form-control form-control-sm rounded-3" name="evidence" rows="3"
-                                style="background:var(--pm-surface); color:var(--pm-text); border-color:var(--pm-border); resize:vertical;"
-                              >${escapeHtml(resolved.evidence || '')}</textarea>
-                            </div>
-                            <div class="col-12">
-                              <label class="form-label" style="font-size:0.8rem; font-weight:600; color:var(--pm-text);">Notas pedagógicas</label>
-                              <textarea class="form-control form-control-sm rounded-3" name="teacher_notes" rows="2"
-                                style="background:var(--pm-surface); color:var(--pm-text); border-color:var(--pm-border); resize:vertical;"
-                              >${escapeHtml(resolved.teacher_notes || '')}</textarea>
-                            </div>
-                            <div class="col-12" style="display:flex; justify-content:flex-end;">
-                              <button type="submit" class="btn btn-sm btn-primary px-4 rounded-3" style="font-weight:600; display:flex; align-items:center; gap:0.4rem;">
-                                <span class="btn-text">Guardar ajuste</span>
-                                <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
-                              </button>
-                            </div>
-                          </div>
-                        </form>
                       </div>
-                    </div>
-                  </div>
-                `
-              }).join('')}
+                    `
+                  }).join('')}
+                </div>
+              `}
             </div>
 
             <!-- ── Pestaña: Indicadores ── -->
@@ -1053,21 +1096,42 @@ export async function renderPlanificacionView(container, { maestroId }) {
       })
     })
 
+    // ── Filtro de semanas ──────────────────────────────────────────────────
+    const filterContainer = classDetailModal.querySelector('#pm-weeks-filter')
+    if (filterContainer) {
+      filterContainer.querySelectorAll('button').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          filterContainer.querySelectorAll('button').forEach((b) => b.classList.remove('active'))
+          btn.classList.add('active')
+          const filter = btn.dataset.filter
+          const items = classDetailModal.querySelectorAll('#pm-weeks-container .pm-week-item')
+          items.forEach((item) => {
+            if (filter === 'all') {
+              item.style.display = ''
+            } else if (filter === 'current') {
+              item.style.display = item.dataset.isCurrent === 'true' ? '' : 'none'
+            } else if (filter === 'adjusted') {
+              item.style.display = item.dataset.hasAdjustment === 'true' ? '' : 'none'
+            }
+          })
+        })
+      })
+    }
+
     const _closeModalAndNavigate = (targetRoute) => {
       if (document.activeElement) document.activeElement.blur()
-      bs.hide()
-      setTimeout(() => {
-        bootstrap.Modal.getInstance(classDetailModal)?.dispose()
-        document.querySelectorAll('.modal-backdrop').forEach((el) => el.remove())
-        document.body.classList.remove('modal-open')
-        document.body.style.removeProperty('overflow')
-        document.body.style.removeProperty('padding-right')
-        if (classDetailModal) {
-          classDetailModal.remove()
-          classDetailModal = null
+      if (classDetailModal) {
+        if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+          bootstrap.Modal.getInstance(classDetailModal)?.dispose()
         }
-        router.navigate(targetRoute)
-      }, 150)
+        classDetailModal.remove()
+        classDetailModal = null
+      }
+      document.querySelectorAll('.modal-backdrop').forEach((el) => el.remove())
+      document.body.classList.remove('modal-open')
+      document.body.style.removeProperty('overflow')
+      document.body.style.removeProperty('padding-right')
+      router.navigate(targetRoute)
     }
 
     classDetailModal.querySelectorAll('.btn-modal-disenador').forEach((b) => {
@@ -1339,9 +1403,13 @@ export async function renderPlanificacionView(container, { maestroId }) {
     // ── Al cerrar: actualizar solo la tarjeta afectada (no recargar grid) ────
     classDetailModal.addEventListener('hidden.bs.modal', () => {
       // FIX C-3: Dispose antes de remove
-      bootstrap.Modal.getInstance(classDetailModal)?.dispose()
-      classDetailModal.remove()
-      classDetailModal = null
+      if (classDetailModal) {
+        if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+          bootstrap.Modal.getInstance(classDetailModal)?.dispose()
+        }
+        classDetailModal.remove()
+        classDetailModal = null
+      }
       // FIX I-3: actualizar solo la tarjeta de la clase que se editó
       if (currentClaseId) updateClassCard(currentClaseId)
     }, { once: true })

@@ -97,6 +97,7 @@
  * └─────────────────────────────────────────────────────────────────┘
  */
 
+import '../styles/horario-builder.css';
 import { fetchSchedulingData, saveScheduleRun, getScheduleRuns, fetchRegisteredScheduleData } from '../api/horarioBuilderApi.js';
 import { exportToPDF, exportToExcel } from '../utils/horarioExporter.js';
 import { AppToast } from '../../../shared/components/AppToast.js';
@@ -284,11 +285,39 @@ function _statsBar() {
 }
 
 function renderEntitySelector() {
-  if (state.activeView === 'grid') return '';
-
   let label = '';
   let id = '';
   let optionsHtml = '';
+
+  if (state.activeView === 'grid') {
+    return `
+      <div class="hb-entity-selector-bar d-flex align-items-center gap-3 p-2 mb-2 bg-body-tertiary rounded border flex-wrap">
+        <div class="d-flex align-items-center gap-2">
+          <i class="bi bi-funnel-fill text-primary"></i>
+          <span class="small fw-bold">Filtrar Horario:</span>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+          <label for="hb-maestro-select" class="form-label mb-0 extra-small text-muted">Maestro:</label>
+          <select class="form-select form-select-sm" id="hb-maestro-select" style="min-width:180px;">
+            <option value="">-- Todos los Maestros (${state.maestros.length}) --</option>
+            ${state.maestros.map(m => `<option value="${m.id}" ${m.id === state.selectedMaestroId ? 'selected' : ''}>${m.nombre_completo || m.nombre}</option>`).join('')}
+          </select>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+          <label for="hb-alumno-select" class="form-label mb-0 extra-small text-muted">Alumno:</label>
+          <select class="form-select form-select-sm" id="hb-alumno-select" style="min-width:180px;">
+            <option value="">-- Todos los Alumnos (${state.alumnos.length}) --</option>
+            ${state.alumnos.map(a => `<option value="${a.id}" ${a.id === state.selectedAlumnoId ? 'selected' : ''}>${a.nombre_completo} ${a.instrumento_principal ? `(${a.instrumento_principal})` : ''}</option>`).join('')}
+          </select>
+        </div>
+        ${(state.selectedMaestroId || state.selectedAlumnoId) ? `
+          <button class="btn btn-sm btn-outline-secondary py-0 ms-auto" id="hb-clear-filters-btn">
+            <i class="bi bi-x-circle"></i> Limpiar filtros
+          </button>
+        ` : ''}
+      </div>
+    `;
+  }
 
   if (state.activeView === 'student') {
     label = 'Seleccionar Alumno:';
@@ -442,6 +471,11 @@ function renderShell() {
         <div class="hb-collapse-panel__body ${state.conflictPanelExpanded && state.conflicts.length > 0 ? 'is-open' : 'is-collapsed'}" id="hb-conflict-panel-shell">
           <div id="hb-conflict-panel-wrapper"></div>
         </div>
+      </div>
+
+      <!-- Grid / empty state -->
+      <div id="hb-grid-wrapper" class="hb-grid-wrapper">
+        ${!hasContent ? _emptyState() : ''}
       </div>
 
       <!-- Publish wizard -->
@@ -824,10 +858,31 @@ function wireListeners() {
     if (e.target.id === 'hb-periodo-select') {
       state.activePeriodo = e.target.value;
       renderGrid();
+    } else if (e.target.id === 'hb-alumno-select') {
+      state.selectedAlumnoId = e.target.value;
+      renderGrid();
+    } else if (e.target.id === 'hb-maestro-select') {
+      state.selectedMaestroId = e.target.value;
+      renderGrid();
+    } else if (e.target.id === 'hb-clase-select') {
+      state.selectedClaseId = e.target.value;
+      renderGrid();
+    } else if (e.target.id === 'hb-salon-select') {
+      state.selectedSalonId = e.target.value;
+      renderGrid();
     }
   });
 
   _container.addEventListener('click', async e => {
+    if (e.target.closest('#hb-clear-filters-btn')) {
+      state.selectedAlumnoId = '';
+      state.selectedMaestroId = '';
+      state.selectedClaseId = '';
+      state.selectedSalonId = '';
+      renderGrid();
+      return;
+    }
+
     if (e.target.closest('#hb-toggle-constraints')) {
       state.constraintsExpanded = !state.constraintsExpanded;
       renderShell();
@@ -847,7 +902,8 @@ function wireListeners() {
       const v = pill.dataset.view;
       if (VIEWS.includes(v) && v !== state.activeView) {
         state.activeView = v;
-        renderViewToggle();
+        const toggleSlot = _container.querySelector('#hb-view-toggle-slot');
+        if (toggleSlot) toggleSlot.innerHTML = createViewToggle(state.activeView);
         renderGrid();
       }
       return;

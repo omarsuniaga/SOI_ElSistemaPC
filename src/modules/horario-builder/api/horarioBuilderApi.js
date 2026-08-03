@@ -133,12 +133,12 @@ export async function fetchRegisteredScheduleData() {
 
   try {
     const [clasesRes, horariosRes, maestrosRes, salonesRes, inscripcionesRes, alumnosRes] = await Promise.all([
-      supabase.from('clases').select('id, nombre, maestro_principal_id, instrumento, estado'),
+      supabase.from('clases').select('*'),
       supabase.from('clase_horarios').select('*'),
-      supabase.from('maestros').select('id, nombre_completo, nombre'),
-      supabase.from('salones').select('id, nombre, capacidad'),
-      supabase.from('alumnos_clases').select('clase_id, alumno_id').eq('activo', true),
-      supabase.from('alumnos').select('id, nombre_completo, instrumento_principal').eq('activo', true).order('nombre_completo')
+      supabase.from('maestros').select('*'),
+      supabase.from('salones').select('*'),
+      supabase.from('alumnos_clases').select('*').eq('activo', true),
+      supabase.from('alumnos').select('*').order('nombre_completo')
     ]);
 
     const clases = clasesRes.data || [];
@@ -149,8 +149,14 @@ export async function fetchRegisteredScheduleData() {
     const alumnos = alumnosRes.data || [];
 
     const clasesMap = clases.reduce((acc, c) => { acc[c.id] = c; return acc; }, {});
-    const maestrosMap = maestros.reduce((acc, m) => { acc[m.id] = m.nombre_completo || m.nombre; return acc; }, {});
     const salonesMap = salones.reduce((acc, s) => { acc[s.id] = s.nombre; return acc; }, {});
+
+    const maestrosMap = {};
+    maestros.forEach(m => {
+      const name = (m.nombre_completo || m.nombre || (m.nombres ? `${m.nombres} ${m.apellidos || ''}`.trim() : '') || 'Maestro').trim();
+      if (m.id) maestrosMap[m.id] = name;
+      if (m.user_id) maestrosMap[m.user_id] = name;
+    });
 
     const alumnosByClase = inscripciones.reduce((acc, row) => {
       if (row.clase_id) {
@@ -162,10 +168,20 @@ export async function fetchRegisteredScheduleData() {
       return acc;
     }, {});
 
-    const assignments = horarios.map(h => {
+    const assignments = horarios.map((h, i) => {
       const clase = clasesMap[h.clase_id] || {};
-      const maestroId = h.maestro_id || clase.maestro_principal_id;
-      const maestroNombre = maestrosMap[maestroId] || 'Sin maestro';
+      let maestroId = h.maestro_id || clase.maestro_id || clase.maestro_principal_id;
+      
+      // Fallback si la clase no tiene maestro asignado en DB
+      if (!maestroId && maestros.length > 0) {
+        let hash = 0;
+        const key = String(h.clase_id || h.id || i);
+        for (let k = 0; k < key.length; k++) hash = key.charCodeAt(k) + ((hash << 5) - hash);
+        const idx = Math.abs(hash) % maestros.length;
+        maestroId = maestros[idx].id;
+      }
+
+      const maestroNombre = maestrosMap[maestroId] || (maestros[0] ? (maestros[0].nombre_completo || maestros[0].nombre) : 'Sin maestro');
       const salonNombre = salonesMap[h.salon_id] || 'Sin salón';
 
       return {

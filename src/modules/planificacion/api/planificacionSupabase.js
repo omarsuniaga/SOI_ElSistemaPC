@@ -316,6 +316,7 @@ export async function obtenerCoberturaCurricular(maestroId = null) {
 
     return {
       clase_id: clase.id,
+      nombre: clase.nombre || 'Sin nombre',
       clase_nombre: clase.nombre || 'Sin nombre',
       instrumento: clase.instrumento || 'General',
       maestro_id: clase.maestro_principal_id,

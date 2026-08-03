@@ -438,9 +438,8 @@ function openNodoDetailModal(nodo, alumnosList = []) {
         estrellas: targetAl.estrellas,
       })
 
-      // Actualizar vista dentro del modal
+      // Actualizar vista dentro del modal de forma silenciosa e instantánea
       tbodyModal.innerHTML = renderModalTbody(alumnosList)
-      AppToast.show(`${targetAl.nombre}: ${targetAl.estrellas}★ evaluad@ en este nodo`, 'info')
     }
   })
 

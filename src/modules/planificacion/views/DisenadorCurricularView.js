@@ -310,7 +310,7 @@ function _attachEventsFull(container, clases, estadoEstructura, alumnosState, _l
 
   container.querySelector('#btn-ver-rutas-svg')?.addEventListener('click', () => {
     const activeNav = (typeof window !== 'undefined' && window.router) ? window.router : router
-    activeNav.navigate('planificacion-ruta')
+    activeNav.navigate('planificacion-ruta', { parentRoute: 'planificacion-disenador' })
   })
 
   container.querySelector('#select-clase-full')?.addEventListener('change', (e) => {

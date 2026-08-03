@@ -5,7 +5,7 @@ import {
   crearPlanificacion,
   obtenerClases,
 } from '../api/planificacionAdapter.js'
-import { sugerirRutaDidacticaIA } from '../services/aiEvaluacionService.js'
+import { sugerirRutaDidacticaIA, sugerirSiguienteUnidadIA } from '../services/aiEvaluacionService.js'
 import { renderMapaContenidoSVG } from '../components/MapaContenidoSVG.js'
 import { obtenerAlumnosRealesPorClase } from '../services/realAlumnosService.js'
 import { OfflineSyncAdapter } from '../api/offlineSyncAdapter.js'
@@ -131,7 +131,7 @@ function _renderUI(container, clases, estadoEstructura) {
                 <i class="bi bi-diagram-3"></i>Ver Rutas (SVG)
               </button>
               <button type="button" class="btn btn-light text-primary fw-bold d-inline-flex align-items-center gap-1 shadow-sm px-3" id="btn-ia-generar-full">
-                <i class="bi bi-magic"></i>Generar Mapeo con IA (GROQ)
+                <i class="bi bi-magic text-purple"></i>+ Generar Siguiente Unidad con IA (GROQ)
               </button>
               <button type="button" class="btn btn-success fw-bold d-inline-flex align-items-center gap-1 shadow-sm px-3" id="btn-guardar-plan-full">
                 <i class="bi bi-check-circle-fill"></i>Publicar Plan Oficial
@@ -254,6 +254,11 @@ function _renderObjetivosFull(container, estadoEstructura, alumnosState) {
         <div class="d-flex align-items-center gap-2 flex-grow-1 me-2">
           <span class="badge bg-primary rounded-pill">Unidad ${objIdx + 1}</span>
           <input type="text" class="form-control form-control-sm fw-bold input-obj-title bg-body text-body" data-obj-idx="${objIdx}" value="${escapeHTML(obj.titulo)}" placeholder="Título del Objetivo Pedagógico">
+          ${obj.clasesEstimadas ? `
+            <span class="badge bg-info-subtle text-info-emphasis border border-info-subtle px-2 py-1 text-nowrap" style="font-size:0.75rem;" title="${escapeHTML(obj.justificacionPedagogica || 'Estimación basada en complejidad')}">
+              <i class="bi bi-clock me-1"></i>~${obj.clasesEstimadas} Clases Est.
+            </span>
+          ` : ''}
         </div>
         <button type="button" class="btn btn-sm btn-outline-danger btn-del-obj" data-obj-idx="${objIdx}" title="Eliminar Unidad">
           <i class="bi bi-trash"></i>
@@ -261,6 +266,11 @@ function _renderObjetivosFull(container, estadoEstructura, alumnosState) {
       </div>
 
       <div class="card-body p-3">
+        ${obj.justificacionPedagogica ? `
+          <div class="alert alert-info py-1 px-2 border-0 bg-info bg-opacity-10 text-info-emphasis mb-2 small" style="font-size:0.78rem;">
+            <i class="bi bi-robot me-1"></i><strong>Análisis GROQ:</strong> ${escapeHTML(obj.justificacionPedagogica)}
+          </div>
+        ` : ''}
         <label class="form-label text-body-secondary small fw-bold text-uppercase mb-2">Indicadores Evaluables (1 Clase por Indicador)</label>
         
         <div class="indicadores-wrapper">
@@ -363,39 +373,44 @@ function _attachEventsFull(container, clases, estadoEstructura, alumnosState, _l
 
   container.querySelector('#btn-ia-generar-full')?.addEventListener('click', async () => {
     const btn = container.querySelector('#btn-ia-generar-full')
-    if (btn) btn.disabled = true
-    AppToast.show('Generando Estructura Curricular Contextual con IA (GROQ)...', 'info')
+    const originalText = btn ? btn.innerHTML : ''
+    if (btn) {
+      btn.disabled = true
+      btn.innerHTML = `<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span> Analizando en GROQ...`
+    }
+    AppToast.show('Analizando materia, nivel e historial para la Siguiente Unidad...', 'info')
 
     const claseActual = clases.find((c) => String(c.id) === String(estadoEstructura.claseId))
     const nivelObj = NIVELES_TECNICOS.find((n) => n.id === estadoEstructura.nivelId)
     const instrumentoNombre = claseActual?.nombre || claseActual?.name || 'Música e Instrumento'
     const nivelNombre = nivelObj?.nombre || 'Nivel 1: Básico'
 
-    // Extraer temas previos de objetivos existentes para evitar repeticiones
-    const temasPrevios = estadoEstructura.objetivos
-      .flatMap((obj) => obj.indicadores ? obj.indicadores.map((ind) => ind.titulo) : [obj.titulo])
-      .filter(Boolean)
+    const numSiguiente = estadoEstructura.objetivos.length + 1
 
-    const sugerencias = await sugerirRutaDidacticaIA({
-      instrumento: instrumentoNombre,
-      nivelNombre,
-      temasPrevios,
-    })
+    try {
+      const nuevaUnidad = await sugerirSiguienteUnidadIA({
+        instrumento: instrumentoNombre,
+        nivelNombre,
+        numeroUnidad: numSiguiente,
+        unidadesExistentes: estadoEstructura.objetivos,
+      })
 
-    if (sugerencias && sugerencias.length > 0) {
-      estadoEstructura.objetivos = sugerencias.map((sug, i) => ({
-        id: sug.id || `obj-full-ia-${Date.now()}-${i}`,
-        titulo: sug.titulo || `Unidad Didáctica ${i + 1}`,
-        indicadores: (Array.isArray(sug.indicadores) ? sug.indicadores : [{ titulo: 'Evaluación de desempeño' }]).map((ind, j) => ({
-          id: ind.id || `ind-full-ia-${Date.now()}-${i}-${j}`,
-          titulo: typeof ind === 'string' ? ind : ind.titulo || 'Contenido Evaluables',
-          prerrequisitoId: j > 0 ? (sug.indicadores[j - 1]?.id || `ind-full-ia-${Date.now()}-${i}-${j - 1}`) : null,
-        })),
-      }))
-      _renderObjetivosFull(container, estadoEstructura, alumnosState)
-      AppToast.show(`Estructura pedagógica para "${instrumentoNombre}" cargada exitosamente ⭐`, 'success')
+      if (nuevaUnidad && nuevaUnidad.titulo) {
+        estadoEstructura.objetivos.push(nuevaUnidad)
+        _renderObjetivosFull(container, estadoEstructura, alumnosState)
+        
+        const cantInds = nuevaUnidad.indicadores?.length || 0
+        const estimacion = nuevaUnidad.clasesEstimadas || cantInds
+        AppToast.show(`¡Unidad ${numSiguiente} generada! (${cantInds} Indicadores, ~${estimacion} clases estimadas) ⭐`, 'success')
+      }
+    } catch (err) {
+      AppToast.show(`Error al consultar a GROQ: ${err.message}`, 'error')
+    } finally {
+      if (btn) {
+        btn.disabled = false
+        btn.innerHTML = originalText
+      }
     }
-    if (btn) btn.disabled = false
   })
 
   container.querySelector('#btn-guardar-plan-full')?.addEventListener('click', async () => {

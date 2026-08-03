@@ -66,6 +66,110 @@ Responde ÚNICAMENTE en JSON válido con este esquema exacto (sin texto adiciona
 }
 
 /**
+ * Genera la SIGUIENTE Unidad Didáctica incremental (1 por cada clic) mediante análisis profundo con IA (GROQ).
+ *
+ * Analiza el instrumento, nivel técnico, unidades existentes y la complejidad pedagógica para:
+ * 1. Proponer 1 nueva Unidad coherente sin repetir contenidos.
+ * 2. Determinar analíticamente la cantidad exacta de Indicadores Evaluables necesarios (2 a 5).
+ * 3. Asignar los prerrequisitos técnicos inmediatos para cada indicador.
+ * 4. Estimación del número de clases presenciales necesarias según la dificultad del tema.
+ *
+ * @param {Object} params
+ * @param {string} params.instrumento — Instrumento o asignatura (ej. Violín, Piano)
+ * @param {string} params.nivelNombre — Nivel técnico (ej. Nivel 1: Básico)
+ * @param {number} params.numeroUnidad — Número secuencial de la unidad a generar (1, 2, 3...)
+ * @param {Array<Object>} [params.unidadesExistentes] — Lista de unidades e indicadores previamente creados
+ * @returns {Promise<Object>} Objeto completo de la nueva unidad sugerida
+ */
+export async function sugerirSiguienteUnidadIA({
+  instrumento = 'Música',
+  nivelNombre = 'Nivel 1: Básico',
+  numeroUnidad = 1,
+  unidadesExistentes = [],
+}) {
+  const historialText = unidadesExistentes.length > 0
+    ? unidadesExistentes.map((u, i) => `Unidad ${i + 1}: ${u.titulo} -> [${(u.indicadores || []).map(ind => ind.titulo).join(', ')}]`).join('\n')
+    : 'No hay unidades previas creadas aún en este plan.'
+
+  const prompt = `Como Máximo Director Pedagógico Musical de El Sistema, estás diseñando paso a paso la estructura curricular para: "${instrumento}" (${nivelNombre}).
+
+HISTORIAL DE UNIDADES Y TEMAS YA CREADOS:
+${historialText}
+
+TAREA PEDAGÓGICA CONCRETA:
+Analiza a profundidad el progreso pedagógico y genera ÚNICAMENTE LA SIGUIENTE UNIDAD DIDÁCTICA (Unidad #${numeroUnidad}).
+
+REGLAS DE ANÁLISIS DE GROQ:
+1. CONTINUIDAD LÓGICA: La nueva Unidad debe ser la continuación didáctica natural del historial previo (sin repetir temas ya vistos).
+2. MULTI-INDICADORES: Evalúa cuántos indicadores específicos son requeridos para dominar esta unidad (entre 2 y 4 indicadores). No te limites a 1 solo indicador.
+3. PRERREQUISITOS TÉCNICOS: Cada indicador debe fundamentarse en el indicador previo inmediato o en un tema del historial.
+4. ESTIMACIÓN DE CLASES: Calcula cuántas clases presenciales (de 45 min) se requerirán para dominar esta unidad según su complejidad técnica (ej. 2, 3 o 4 clases).
+
+Responde ÚNICAMENTE en formato JSON válido (sin explicaciones afuera del JSON):
+{
+  "titulo": "Unidad ${numeroUnidad}: [Título descriptivo y profesional]",
+  "complejidad": "baja|media|alta",
+  "clasesEstimadas": 3,
+  "justificacionPedagogica": "[Explicación de 1 línea de por qué se requieren esos indicadores]",
+  "indicadores": [
+    {
+      "titulo": "[Título del indicador de la clase 1]",
+      "esPrerrequisitoDeSiguiente": true
+    },
+    {
+      "titulo": "[Título del indicador de la clase 2]",
+      "esPrerrequisitoDeSiguiente": false
+    }
+  ]
+}`
+
+  try {
+    const raw = await callGroq([{ role: 'user', content: prompt }])
+    const jsonStr = raw.replace(/```json/g, '').replace(/```/g, '').trim()
+    const parsed = JSON.parse(jsonStr)
+
+    if (parsed && parsed.titulo) {
+      const now = Date.now()
+      const objId = `obj-ia-seq-${now}`
+      const indicadoresFormateados = (Array.isArray(parsed.indicadores) ? parsed.indicadores : [
+        { titulo: 'Técnica base de la unidad' },
+        { titulo: 'Ejecución del ejercicio evaluable' },
+      ]).map((ind, j) => ({
+        id: `ind-ia-seq-${now}-${j + 1}`,
+        titulo: typeof ind === 'string' ? ind : ind.titulo || `Indicador ${j + 1}`,
+        prerrequisitoId: j > 0 ? `ind-ia-seq-${now}-${j}` : null,
+      }))
+
+      return {
+        id: objId,
+        titulo: parsed.titulo,
+        complejidad: parsed.complejidad || 'media',
+        clasesEstimadas: parsed.clasesEstimadas || indicadoresFormateados.length,
+        justificacionPedagogica: parsed.justificacionPedagogica || '',
+        indicadores: indicadoresFormateados,
+      }
+    }
+  } catch (err) {
+    console.warn('[aiEvaluacionService] Error generando siguiente unidad en GROQ, aplicando fallback didáctico:', err)
+  }
+
+  // Fallback didáctico analítico si falla la llamada
+  const now = Date.now()
+  return {
+    id: `obj-ia-fallback-${now}`,
+    titulo: `Unidad ${numeroUnidad}: Avance Didáctico e Interpretativo - ${instrumento}`,
+    complejidad: 'media',
+    clasesEstimadas: 3,
+    justificacionPedagogica: 'Secuencia base ajustada para desarrollo progresivo de la materia.',
+    indicadores: [
+      { id: `ind-ia-fb-${now}-1`, titulo: `Afinación, postura y sonoridad en ${instrumento}`, prerrequisitoId: null },
+      { id: `ind-ia-fb-${now}-2`, titulo: 'Digitación, pulso rítmico y control de dinámicas', prerrequisitoId: `ind-ia-fb-${now}-1` },
+      { id: `ind-ia-fb-${now}-3`, titulo: 'Ejecución del pasaje o pieza de articulación', prerrequisitoId: `ind-ia-fb-${now}-2` },
+    ],
+  }
+}
+
+/**
  * Genera una sugerencia de tarea de refuerzo personalizada basada en los resultados de evaluación.
  * @param {Object} params
  * @param {string} params.indicadorTitulo — Nombre del indicador evaluado

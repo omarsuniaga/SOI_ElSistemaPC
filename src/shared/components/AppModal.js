@@ -414,5 +414,18 @@ export const AppModal = {
     if (!els.btnSave) return
     els.btnSave.style.display = ''
     els.btnCancel.style.display = ''
+  },
+
+  // Replace body content of an already-open modal (e.g. async step transitions)
+  // without tearing down and reopening the whole dialog.
+  updateBody(content) {
+    const els = getEls()
+    if (!els.body) return
+    if (typeof content === 'string') {
+      els.body.innerHTML = content
+    } else if (content instanceof HTMLElement) {
+      els.body.innerHTML = ''
+      els.body.appendChild(content)
+    }
   }
 }

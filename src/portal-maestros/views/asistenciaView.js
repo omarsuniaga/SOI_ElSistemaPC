@@ -1597,7 +1597,7 @@ function _renderVista(container, ctx) {
             alumno_id: a.id,
             fecha: fechaHoy,
             estado: estado[a.id],
-            registrado_por: maestro.id,
+            registrado_por: maestro.user_id,
           }))
 
         const tieneAsistenciaMarcada = asistencia.length > 0
@@ -1653,7 +1653,7 @@ function _renderVista(container, ctx) {
                     alumno_id: a.alumno_id,
                     fecha: fechaHoy,
                     estado: a.estado,
-                    registrado_por: maestro.id,
+                    registrado_por: maestro.user_id,
                     ...(sesionId ? { sesion_clase_id: sesionId } : {}),
                   },
                 })

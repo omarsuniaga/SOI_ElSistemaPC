@@ -12,7 +12,7 @@ import { getMisClases } from '../../../portal-maestros/services/maestroDataServi
 /**
  * Vista de Pantalla Completa: Ruta Pedagógica SVG Premium (UI/UX Rediseñada con Datos Reales)
  */
-export async function renderRutaPedagogicaView(container, { maestroId } = {}) {
+export async function renderRutaPedagogicaView(container, { maestroId, parentRoute = 'planificacion' } = {}) {
   if (!container) return
 
   container.innerHTML = `
@@ -38,10 +38,10 @@ export async function renderRutaPedagogicaView(container, { maestroId } = {}) {
     console.error('[RutaPedagogicaView] Error:', err)
   }
 
-  _renderUI(container, clases, planificaciones)
+  _renderUI(container, clases, planificaciones, { parentRoute })
 }
 
-function _renderUI(container, clases, planificaciones) {
+function _renderUI(container, clases, planificaciones, { parentRoute = 'planificacion' } = {}) {
   let selectedClaseId = clases[0]?.id || ''
   let selectedNodo = null
   let alumnosClase = []
@@ -338,7 +338,7 @@ function _renderUI(container, clases, planificaciones) {
     // Attach Event Listeners
     container.querySelector('#btn-volver-plan')?.addEventListener('click', () => {
       const activeNav = (typeof window !== 'undefined' && window.router) ? window.router : router
-      activeNav.navigate('planificacion')
+      activeNav.navigate(parentRoute)
     })
 
     container.querySelector('#btn-ir-disenador')?.addEventListener('click', () => {

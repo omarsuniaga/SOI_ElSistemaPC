@@ -8,6 +8,7 @@ import { OfflineSyncAdapter } from '../api/offlineSyncAdapter.js'
 import { IndicadorLogro } from '../domain/IndicadorLogro.js'
 
 import { getMisClases } from '../../../portal-maestros/services/maestroDataService.js'
+import { DeudaPedagogicaEngine } from '../domain/DeudaPedagogicaEngine.js'
 
 /**
  * Vista de Pantalla Completa: Ruta Pedagógica SVG Premium (UI/UX Rediseñada con Datos Reales)
@@ -295,7 +296,9 @@ function _getEtiquetaEstrella(cant) {
 
 let activeNodeModal = null
 
-function openNodoDetailModal(nodo, alumnosList = []) {
+async function openNodoDetailModal(nodo, alumnosList = []) {
+  const colaOfflineData = await OfflineSyncAdapter.obtenerCola()
+  alumnosList._colaOfflineData = colaOfflineData
   if (activeNodeModal) {
     try {
       const bsModal = bootstrap.Modal.getInstance(activeNodeModal)
@@ -336,6 +339,25 @@ function openNodoDetailModal(nodo, alumnosList = []) {
       const esEvaluable = a.presente && !a.justificado
       const statusLabel = a.justificado ? 'Bloqueado (Justificado)' : a.presente ? 'Presente' : 'Bloqueado (Ausente)'
 
+      // Evaluación de Deuda Pedagógica por Nodos Previos No Aprobados/Inasistencia
+      const nodosDemoSecuencia = [
+        { id: 'nd-1', titulo: 'Postura corporal y emisión sonora libre' },
+        { id: 'nd-2', titulo: 'Escala de Do Mayor en cuerdas Re-Sol' },
+        { id: 'nd-3', titulo: 'Estudio Nº 4: Control de pulso a 80 BPM' },
+        { id: 'nd-4', titulo: 'Articulación de 1er y 2do dedo' },
+        { id: 'nd-5', titulo: 'Repertorio: Canción de Mayo (Suzuki)' },
+      ]
+
+      const analisisDeuda = DeudaPedagogicaEngine.evaluarDeuda({
+        alumnoId: a.id,
+        nodoActual: nodo,
+        nodosOrdenados: nodosDemoSecuencia,
+        colaOffline: alumnosList._colaOfflineData || [],
+      })
+
+      const tieneDeudaPrev = esEvaluable && (analisisDeuda.tieneDeuda || a.tieneDeudaPrevia)
+      const warningDeudaText = analisisDeuda.advertencia || '⚠️ Deuda Pedagógica: Asistió hoy pero debe contenidos de clase(s) anterior(es).'
+
       return `
         <tr class="row-alumno-modal-eval${esEvaluable ? '' : ' opacity-50'}" data-id="${a.id}" style="cursor: ${esEvaluable ? 'pointer' : 'not-allowed'};">
           <td>
@@ -344,10 +366,21 @@ function openNodoDetailModal(nodo, alumnosList = []) {
                     style="width: 10px; height: 10px; background-color: ${statusColor}; flex-shrink: 0;"
                     title="${statusTitle}"></span>
               <span class="fw-bold text-body fs-6">${escapeHTML(a.nombre)}</span>
+              ${tieneDeudaPrev ? `
+                <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-2 py-0.5"
+                      style="font-size: 0.68rem;" title="${escapeHTML(warningDeudaText)}">
+                  <i class="bi bi-exclamation-triangle-fill text-warning me-1"></i>Deuda Previa
+                </span>
+              ` : ''}
             </div>
             <small class="text-body-secondary d-block" style="font-size: 0.75rem;">
               <i class="bi bi-clock-history me-1"></i>${escapeHTML(prevTexto)}
             </small>
+            ${tieneDeudaPrev ? `
+              <div class="text-warning-emphasis small mt-1 p-1 bg-warning bg-opacity-10 rounded border border-warning border-opacity-25" style="font-size:0.7rem; line-height: 1.2;">
+                <i class="bi bi-info-circle me-1"></i>${escapeHTML(warningDeudaText)}
+              </div>
+            ` : ''}
           </td>
           <td class="text-center">
             <span class="badge ${a.idia >= 80 ? 'bg-success-subtle text-success' : 'bg-warning-subtle text-warning-emphasis'} border px-2 py-1" style="font-size: 0.75rem;">

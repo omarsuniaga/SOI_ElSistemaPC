@@ -35,10 +35,6 @@ vi.mock('../../components/calificacionIndicadorPanel.js', () => ({
   renderCalificacionIndicadorPanel: vi.fn(),
 }))
 
-vi.mock('../../../../core/router/router.js', () => ({
-  router: { navigate: vi.fn() },
-}))
-
 import {
   obtenerNivelesAsignadosClase,
   obtenerObjetivosPorClase,
@@ -48,10 +44,14 @@ import {
 import { obtenerAsistenciaDelDia } from '../../../asistencias/api/asistenciasApi.js'
 import { renderObjetivoEditorModal } from '../../components/objetivoEditorModal.js'
 import { renderCalificacionIndicadorPanel } from '../../components/calificacionIndicadorPanel.js'
-import { router } from '../../../../core/router/router.js'
 import { renderMapaClaseView } from '../MapaClaseView.js'
 
 const flush = () => Promise.resolve().then(() => Promise.resolve())
+
+// El portal de maestros expone su router activo en window.router (ver main-maestros.js);
+// las vistas de planificación lo usan en vez de un import estático para funcionar
+// tanto en el portal de maestros como en ACM/admin.
+const router = { navigate: vi.fn() }
 
 const niveles = [{ id: 'level_A', nombre: 'Nivel 1' }]
 const objetivos = [
@@ -66,6 +66,7 @@ describe('MapaClaseView', () => {
     document.body.appendChild(container)
     lastRender = null
     vi.clearAllMocks()
+    window.router = router
 
     obtenerNivelesAsignadosClase.mockResolvedValue(niveles)
     obtenerObjetivosPorClase.mockResolvedValue(objetivos)

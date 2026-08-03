@@ -28,10 +28,6 @@ vi.mock('../../components/JustificacionDesfaseModal.js', () => ({
   openJustificacionDesfaseModal: vi.fn(),
 }))
 
-vi.mock('../../../../core/router/router.js', () => ({
-  router: { navigate: vi.fn() },
-}))
-
 import {
   obtenerPlanificacionesConDetalles,
   actualizarPlanificacion,

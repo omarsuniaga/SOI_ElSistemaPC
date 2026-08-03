@@ -1,4 +1,3 @@
-import { router } from '../../../core/router/router.js'
 import { escapeHTML } from '../../clases/utils/clasesUtils.js'
 import { AppToast } from '../../../shared/components/AppToast.js'
 import { obtenerClases, obtenerPlanificacionesConDetalles } from '../api/planificacionAdapter.js'
@@ -335,11 +334,11 @@ function _renderUI(container, clases, planificaciones) {
 
     // Attach Event Listeners
     container.querySelector('#btn-volver-plan')?.addEventListener('click', () => {
-      router.navigate('planificacion-acm')
+      window.router?.navigate('planificacion-acm')
     })
 
     container.querySelector('#btn-ir-disenador')?.addEventListener('click', () => {
-      router.navigate('planificacion-disenador')
+      window.router?.navigate('planificacion-disenador')
     })
 
     container.querySelector('#select-clase-ruta')?.addEventListener('change', (e) => {

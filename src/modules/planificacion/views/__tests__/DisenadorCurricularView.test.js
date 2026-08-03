@@ -42,10 +42,6 @@ vi.mock('../../../../shared/components/AppToast.js', () => ({
   AppToast: { show: vi.fn() },
 }))
 
-vi.mock('../../../../core/router/router.js', () => ({
-  router: { navigate: vi.fn() },
-}))
-
 import { obtenerClases, crearPlanificacion } from '../../api/planificacionAdapter.js'
 import { sugerirRutaDidacticaIA } from '../../services/aiEvaluacionService.js'
 import {
@@ -56,10 +52,14 @@ import {
   crearIndicador,
 } from '../../services/mapaClaseService.js'
 import { AppToast } from '../../../../shared/components/AppToast.js'
-import { router } from '../../../../core/router/router.js'
 import { renderDisenadorCurricularView } from '../DisenadorCurricularView.js'
 
 const flush = () => Promise.resolve().then(() => Promise.resolve())
+
+// El portal de maestros expone su router activo en window.router (ver main-maestros.js);
+// las vistas de planificación lo usan en vez de un import estático para funcionar
+// tanto en el portal de maestros como en ACM/admin.
+const router = { navigate: vi.fn() }
 
 describe('DisenadorCurricularView', () => {
   let container
@@ -68,6 +68,7 @@ describe('DisenadorCurricularView', () => {
     container = document.createElement('div')
     document.body.appendChild(container)
     vi.clearAllMocks()
+    window.router = router
   })
 
   afterEach(() => {

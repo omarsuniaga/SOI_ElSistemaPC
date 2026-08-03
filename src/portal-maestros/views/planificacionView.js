@@ -14,7 +14,6 @@ import { AppToast } from '../../shared/components/AppToast.js'
 import { createPlanClasePanel } from '../components/planning/PlanClasePanel.js'
 import { supabase } from '../../lib/supabaseClient.js'
 import * as bootstrap from 'bootstrap'
-import { router } from '../../core/router/router.js'
 import { renderMapaContenidoSVG } from '../../modules/planificacion/components/MapaContenidoSVG.js'
 import { obtenerAlumnosRealesPorClase } from '../../modules/planificacion/services/realAlumnosService.js'
 import { OfflineSyncAdapter } from '../../modules/planificacion/api/offlineSyncAdapter.js'
@@ -510,11 +509,11 @@ export async function renderPlanificacionView(container, { maestroId }) {
   })()
 
   container.querySelector('#btn-pm-header-disenador')?.addEventListener('click', () => {
-    router.navigate('planificacion-disenador')
+    window.router?.navigate('planificacion-disenador')
   })
 
   container.querySelector('#btn-pm-header-ruta')?.addEventListener('click', () => {
-    router.navigate('planificacion-ruta')
+    window.router?.navigate('planificacion-ruta')
   })
 
 
@@ -1066,7 +1065,7 @@ export async function renderPlanificacionView(container, { maestroId }) {
           classDetailModal.remove()
           classDetailModal = null
         }
-        router.navigate(targetRoute)
+        window.router?.navigate(targetRoute)
       }, 150)
     }
 

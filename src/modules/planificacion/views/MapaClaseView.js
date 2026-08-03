@@ -20,7 +20,6 @@
  * las decisiones de qué abrir al hacer click viven acá.
  */
 
-import { router } from '../../../core/router/router.js'
 import { AppToast } from '../../../shared/components/AppToast.js'
 import { escapeHTML } from '../../clases/utils/clasesUtils.js'
 import { renderMapaContenidoSVG } from '../components/MapaContenidoSVG.js'
@@ -169,7 +168,7 @@ function _renderShell(container, state) {
   })
 
   container.querySelector('#btn-modo-sesion')?.addEventListener('click', () => _handleToggleSesion(container, state))
-  container.querySelector('#btn-ir-asistencias')?.addEventListener('click', () => router.navigate('asistencias'))
+  container.querySelector('#btn-ir-asistencias')?.addEventListener('click', () => window.router?.navigate('asistencias'))
 }
 
 async function _handleToggleSesion(container, state) {

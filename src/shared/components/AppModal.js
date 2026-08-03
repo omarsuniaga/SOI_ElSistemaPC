@@ -1,4 +1,5 @@
 import { escapeHTML } from '../utils/sanitize.js'
+import { AppToast } from './AppToast.js'
 
 // Global modal singleton — lives in <body>, never touched by the router.
 // Usage:
@@ -259,6 +260,8 @@ export const AppModal = {
           btn.innerHTML = original
         }
       } catch (err) {
+        console.error('[AppModal] Error en onSave:', err)
+        AppToast.error(err?.message || 'Ocurrió un error al guardar')
         btn.disabled = false
         btn.innerHTML = original
       }

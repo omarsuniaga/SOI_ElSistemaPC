@@ -7,7 +7,6 @@ import { escapeHTML } from '../../clases/utils/clasesUtils.js'
 import { AppToast } from '../../../shared/components/AppToast.js'
 import { CalculadorVelocidadCurricular } from '../domain/CalculadorVelocidadCurricular.js'
 import { openJustificacionDesfaseModal } from '../components/JustificacionDesfaseModal.js'
-import { router } from '../../../core/router/router.js'
 
 export async function renderAcmAprobacionView(container) {
   if (!container) return
@@ -262,11 +261,11 @@ function _renderUI(container, planes) {
 
   // Navegar a las Vistas de Pantalla Completa
   container.querySelector('#btn-crear-disenador-full')?.addEventListener('click', () => {
-    router.navigate('planificacion-disenador')
+    window.router?.navigate('planificacion-disenador')
   })
 
   container.querySelector('#btn-ver-ruta-full')?.addEventListener('click', () => {
-    router.navigate('planificacion-ruta')
+    window.router?.navigate('planificacion-ruta')
   })
 
   container.querySelector('#chk-select-all')?.addEventListener('change', (e) => {

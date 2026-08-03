@@ -1,4 +1,3 @@
-import { router } from '../../../core/router/router.js'
 import { escapeHTML } from '../../clases/utils/clasesUtils.js'
 import { AppToast } from '../../../shared/components/AppToast.js'
 import { obtenerClases } from '../api/planificacionAdapter.js'
@@ -212,7 +211,7 @@ function _renderUI(container, clases, state) {
 
 function _attachEvents(container, clases, state) {
   container.querySelector('#btn-volver-acm')?.addEventListener('click', () => {
-    router.navigate('planificacion-acm')
+    window.router?.navigate('planificacion-acm')
   })
 
   container.querySelector('#select-clase-disenador')?.addEventListener('change', async (e) => {
@@ -237,7 +236,7 @@ function _attachEvents(container, clases, state) {
     try {
       await clonarPlantillaAClase(state.claseId, state.plantillaId)
       AppToast.show('Plantilla clonada a la clase con éxito ⭐', 'success')
-      router.navigate('planificacion-acm')
+      window.router?.navigate('planificacion-acm')
     } catch (err) {
       AppToast.show(`Error al clonar la plantilla: ${err.message}`, 'error')
       btn.disabled = false
@@ -276,7 +275,7 @@ function _attachEvents(container, clases, state) {
       }
 
       AppToast.show('Estructura generada por IA creada en el mapa de la clase ⭐', 'success')
-      router.navigate('planificacion-acm')
+      window.router?.navigate('planificacion-acm')
     } catch (err) {
       console.error('[DisenadorCurricularView] Error generando con IA:', err)
       AppToast.show(`Error al generar con IA: ${err.message}`, 'error')

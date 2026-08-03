@@ -317,7 +317,7 @@ function openNodoDetailModal(nodo, alumnosList = []) {
     if (!list || list.length === 0) {
       return `
         <tr>
-          <td colspan="5" class="text-center py-4 text-muted">
+          <td colspan="3" class="text-center py-4 text-muted">
             <i class="bi bi-person-x display-6 d-block mb-2"></i>
             No hay alumnos registrados o cargando lista de la clase...
           </td>
@@ -325,47 +325,27 @@ function openNodoDetailModal(nodo, alumnosList = []) {
       `
     }
     return list.map((a) => {
-      const initials = a.nombre
-        .split(' ')
-        .slice(0, 2)
-        .map((n) => n[0])
-        .join('')
-        .toUpperCase()
-
       return `
         <tr class="row-alumno-modal-eval" data-id="${a.id}" style="cursor: pointer;">
           <td>
-            <div class="d-flex align-items-center gap-3">
-              <div class="rounded-circle text-white fw-bold d-flex align-items-center justify-content-center shadow-sm"
-                   style="width: 40px; height: 40px; background: linear-gradient(135deg, hsl(220, 80%, 55%), hsl(280, 75%, 60%)); flex-shrink: 0;">
-                ${initials}
-              </div>
-              <div>
-                <div class="fw-bold text-body fs-6">${escapeHTML(a.nombre)}</div>
-                <small class="text-body-secondary">ID: ${a.id.slice(0, 8)}</small>
-              </div>
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+              <span class="fw-bold text-body fs-6">${escapeHTML(a.nombre)}</span>
+              <span class="badge ${a.presente ? 'bg-success text-white' : 'bg-danger text-white'}" style="font-size: 0.7rem;">
+                ${a.presente ? 'Presente' : 'Ausente'}
+              </span>
             </div>
+            <small class="text-body-secondary d-block" style="font-size: 0.75rem;">ID: ${a.id.slice(0, 8)}</small>
           </td>
           <td class="text-center">
-            <span class="badge ${a.idia >= 80 ? 'bg-success-subtle text-success' : 'bg-warning-subtle text-warning-emphasis'} border px-2 py-1">
+            <span class="badge ${a.idia >= 80 ? 'bg-success-subtle text-success' : 'bg-warning-subtle text-warning-emphasis'} border px-2 py-1" style="font-size: 0.75rem;">
               IDIA ${a.idia || 85}%
             </span>
           </td>
-          <td class="text-center">
-            <span class="badge ${a.presente ? 'bg-success-subtle text-success border border-success-subtle' : 'bg-danger-subtle text-danger border border-danger-subtle'}">
-              ${a.presente ? 'Presente' : 'Ausente'}
-            </span>
-          </td>
-          <td class="text-center">
-            <div class="fs-4 text-warning user-select-none">
+          <td class="text-center text-nowrap" style="white-space: nowrap;">
+            <div class="d-inline-flex align-items-center gap-1 text-warning user-select-none text-nowrap" style="white-space: nowrap;">
               ${_renderEstrellasSVG(a.estrellas || 0)}
             </div>
-            <small class="fw-bold text-body-secondary">${a.estrellas > 0 ? `${a.estrellas}★ (${_getEtiquetaEstrella(a.estrellas)})` : 'Sin Registrar (0★)'}</small>
-          </td>
-          <td class="text-end">
-            <button class="btn btn-sm ${a.presente ? 'btn-primary' : 'btn-outline-secondary'} btn-modal-tap-star" data-id="${a.id}" ${!a.presente ? 'disabled' : ''}>
-              <i class="bi bi-star-fill me-1"></i>Ciclar 1-5★
-            </button>
+            <small class="fw-bold text-body-secondary d-block" style="font-size: 0.75rem;">${a.estrellas > 0 ? `${a.estrellas}★ (${_getEtiquetaEstrella(a.estrellas)})` : 'Sin Registrar (0★)'}</small>
           </td>
         </tr>
       `
@@ -373,52 +353,50 @@ function openNodoDetailModal(nodo, alumnosList = []) {
   }
 
   modalEl.innerHTML = `
-    <div class="modal-dialog modal-dialog-centered modal-dialog-90" style="max-width: 92vw; width: 92vw;">
-      <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden" style="height: 88vh;">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-90" style="max-width: 96vw; width: 96vw;">
+      <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden" style="height: 90vh;">
         <!-- Header del Modal -->
-        <div class="modal-header text-white px-4 py-3 border-0"
+        <div class="modal-header text-white px-3 py-3 border-0"
              style="background: linear-gradient(135deg, hsl(215, 85%, 20%), hsl(240, 80%, 30%));">
-          <div class="d-flex align-items-center gap-3">
-            <div class="rounded-circle bg-white text-primary p-2 d-flex align-items-center justify-content-center fw-bold fs-5" style="width:42px; height:42px;">
+          <div class="d-flex align-items-center gap-2">
+            <div class="rounded-circle bg-white text-primary p-2 d-flex align-items-center justify-content-center fw-bold fs-6" style="width:36px; height:36px; flex-shrink: 0;">
               <i class="bi bi-award-fill"></i>
             </div>
             <div>
-              <span class="badge bg-white bg-opacity-20 text-white border border-white border-opacity-25 px-2 py-1 mb-1" style="font-size:0.75rem;">
-                <i class="bi bi-journal-check me-1"></i>Calificación de Alumnos vs Contenido del Nodo
+              <span class="badge bg-white bg-opacity-20 text-white border border-white border-opacity-25 px-2 py-0.5 mb-0.5" style="font-size:0.7rem;">
+                <i class="bi bi-journal-check me-1"></i>Calificación de Alumnos
               </span>
-              <h4 class="fw-bold mb-0 text-white">${escapeHTML(rawTitle)}</h4>
+              <h5 class="fw-bold mb-0 text-white" style="font-size: 1rem;">${escapeHTML(rawTitle)}</h5>
             </div>
           </div>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+          <button type="button" class="btn-close btn-close-white ms-auto" data-bs-dismiss="modal" aria-label="Cerrar"></button>
         </div>
 
         <!-- Body del Modal (Scrollable 90%) -->
-        <div class="modal-body p-4 overflow-y-auto" style="background: var(--bs-body-bg, #0f172a);">
+        <div class="modal-body p-3 overflow-y-auto" style="background: var(--bs-body-bg, #0f172a);">
           
           <!-- TARJETA DEL NODO SELECCIONADO -->
-          <div class="card border border-primary-subtle bg-primary-subtle bg-opacity-10 rounded-4 p-4 mb-4 shadow-sm">
-            <div class="d-flex align-items-center justify-content-between mb-2">
-              <h5 class="fw-bold text-primary mb-0">
-                <i class="bi bi-award me-2"></i>${escapeHTML(rawTitle)}
-              </h5>
-              <span class="badge bg-primary px-3 py-2 fs-6">Nodo Activo</span>
+          <div class="card border border-primary-subtle bg-primary-subtle bg-opacity-10 rounded-4 p-3 mb-3 shadow-sm">
+            <div class="d-flex align-items-center justify-content-between mb-1">
+              <h6 class="fw-bold text-primary mb-0">
+                <i class="bi bi-award me-1"></i>${escapeHTML(rawTitle)}
+              </h6>
+              <span class="badge bg-primary px-2 py-1" style="font-size: 0.7rem;">Nodo Activo</span>
             </div>
-            <p class="text-body-secondary mb-0 small">
-              Toca el botón o la fila de cualquier alumno para evaluar o ciclar de 1 a 5 estrellas. Las calificaciones se sincronizan en tiempo real y en modo offline.
+            <p class="text-body-secondary mb-0" style="font-size: 0.8rem;">
+              Toca la fila de cualquier alumno para ciclar su calificación (1 a 5★).
             </p>
           </div>
 
-          <!-- TABLA DE ALUMNOS DE LA CLASE EN EL MODAL DE 90% -->
-          <div class="card border border-secondary-subtle bg-body-tertiary rounded-4 p-3 shadow-sm">
+          <!-- TABLA OPTIMIZADA PARA MÓVIL EN EL MODAL DE 90% -->
+          <div class="card border border-secondary-subtle bg-body-tertiary rounded-4 p-2 shadow-sm">
             <div class="table-responsive">
               <table class="table table-hover align-middle mb-0">
                 <thead>
                   <tr>
-                    <th>Alumno Inscrito</th>
-                    <th class="text-center">Índice IDIA</th>
-                    <th class="text-center">Asistencia</th>
-                    <th class="text-center">Calificación (1-5★)</th>
-                    <th class="text-end">Acción 1-Tap</th>
+                    <th>Alumno</th>
+                    <th class="text-center">IDIA</th>
+                    <th class="text-center text-nowrap" style="white-space: nowrap;">Calificación (1-5★)</th>
                   </tr>
                 </thead>
                 <tbody id="tbody-modal-alumnos">
@@ -431,8 +409,8 @@ function openNodoDetailModal(nodo, alumnosList = []) {
         </div>
 
         <!-- Footer del Modal -->
-        <div class="modal-footer border-0 bg-body-tertiary px-4 py-3">
-          <button type="button" class="btn btn-secondary rounded-3 px-4 fw-semibold" data-bs-dismiss="modal">Cerrar Modal</button>
+        <div class="modal-footer border-0 bg-body-tertiary px-3 py-2">
+          <button type="button" class="btn btn-sm btn-secondary rounded-3 px-4 fw-semibold" data-bs-dismiss="modal">Cerrar</button>
         </div>
       </div>
     </div>

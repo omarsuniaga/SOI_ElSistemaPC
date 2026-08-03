@@ -364,21 +364,36 @@ function _attachEventsFull(container, clases, estadoEstructura, alumnosState, _l
   container.querySelector('#btn-ia-generar-full')?.addEventListener('click', async () => {
     const btn = container.querySelector('#btn-ia-generar-full')
     if (btn) btn.disabled = true
-    AppToast.show('Generando Estructura Curricular con IA (GROQ)...', 'info')
+    AppToast.show('Generando Estructura Curricular Contextual con IA (GROQ)...', 'info')
 
-    const sugerencias = await sugerirRutaDidacticaIA({ instrumento: 'Música e Instrumento', nivelIndex: 1 })
+    const claseActual = clases.find((c) => String(c.id) === String(estadoEstructura.claseId))
+    const nivelObj = NIVELES_TECNICOS.find((n) => n.id === estadoEstructura.nivelId)
+    const instrumentoNombre = claseActual?.nombre || claseActual?.name || 'Música e Instrumento'
+    const nivelNombre = nivelObj?.nombre || 'Nivel 1: Básico'
+
+    // Extraer temas previos de objetivos existentes para evitar repeticiones
+    const temasPrevios = estadoEstructura.objetivos
+      .flatMap((obj) => obj.indicadores ? obj.indicadores.map((ind) => ind.titulo) : [obj.titulo])
+      .filter(Boolean)
+
+    const sugerencias = await sugerirRutaDidacticaIA({
+      instrumento: instrumentoNombre,
+      nivelNombre,
+      temasPrevios,
+    })
+
     if (sugerencias && sugerencias.length > 0) {
       estadoEstructura.objetivos = sugerencias.map((sug, i) => ({
-        id: `obj-full-ia-${i}`,
+        id: sug.id || `obj-full-ia-${Date.now()}-${i}`,
         titulo: sug.titulo || `Unidad Didáctica ${i + 1}`,
-        indicadores: (sug.indicadores || ['Evaluación de desempeño']).map((ind, j) => ({
-          id: `ind-full-ia-${i}-${j}`,
+        indicadores: (Array.isArray(sug.indicadores) ? sug.indicadores : [{ titulo: 'Evaluación de desempeño' }]).map((ind, j) => ({
+          id: ind.id || `ind-full-ia-${Date.now()}-${i}-${j}`,
           titulo: typeof ind === 'string' ? ind : ind.titulo || 'Contenido Evaluables',
-          prerrequisitoId: j > 0 ? `ind-full-ia-${i}-${j - 1}` : null,
+          prerrequisitoId: j > 0 ? (sug.indicadores[j - 1]?.id || `ind-full-ia-${Date.now()}-${i}-${j - 1}`) : null,
         })),
       }))
       _renderObjetivosFull(container, estadoEstructura, alumnosState)
-      AppToast.show('Estructura generada por IA cargada exitosamente', 'success')
+      AppToast.show(`Estructura pedagógica para "${instrumentoNombre}" cargada exitosamente ⭐`, 'success')
     }
     if (btn) btn.disabled = false
   })

@@ -13,7 +13,7 @@ import { DeudaPedagogicaEngine } from '../domain/DeudaPedagogicaEngine.js'
 /**
  * Vista de Pantalla Completa: Ruta Pedagógica SVG Premium (UI/UX Rediseñada con Datos Reales)
  */
-export async function renderRutaPedagogicaView(container, { maestroId, parentRoute = 'planificacion' } = {}) {
+export async function renderRutaPedagogicaView(container, { maestroId, parentRoute = 'planificacion', claseId } = {}) {
   if (!container) return
 
   container.innerHTML = `
@@ -39,11 +39,13 @@ export async function renderRutaPedagogicaView(container, { maestroId, parentRou
     console.error('[RutaPedagogicaView] Error:', err)
   }
 
-  _renderUI(container, clases, planificaciones, { parentRoute })
+  _renderUI(container, clases, planificaciones, { parentRoute, claseIdInicial: claseId })
 }
 
-function _renderUI(container, clases, planificaciones, { parentRoute = 'planificacion' } = {}) {
-  let selectedClaseId = clases[0]?.id || ''
+function _renderUI(container, clases, planificaciones, { parentRoute = 'planificacion', claseIdInicial } = {}) {
+  let selectedClaseId = (claseIdInicial && clases.find((c) => String(c.id) === String(claseIdInicial)))
+    ? claseIdInicial
+    : clases[0]?.id || ''
   let selectedNodo = null
   let alumnosClase = []
   // Cache en memoria de roster por nodo (evita repetir la consulta a
@@ -228,7 +230,7 @@ function _renderUI(container, clases, planificaciones, { parentRoute = 'planific
 
     container.querySelector('#btn-ir-disenador')?.addEventListener('click', () => {
       const activeNav = (typeof window !== 'undefined' && window.router) ? window.router : router
-      activeNav.navigate('planificacion-disenador')
+      activeNav.navigate(`planificacion-disenador?clase=${selectedClaseId}`)
     })
 
     container.querySelector('#select-clase-ruta')?.addEventListener('change', (e) => {

@@ -23,7 +23,7 @@ import { getMisClases } from '../../../portal-maestros/services/maestroDataServi
 /**
  * Vista de Pantalla Completa: Diseñador Curricular Institucional (Premium UI/UX con Datos Reales)
  */
-export async function renderDisenadorCurricularView(container, { maestroId } = {}) {
+export async function renderDisenadorCurricularView(container, { maestroId, claseId } = {}) {
   if (!container) return
 
   container.innerHTML = `
@@ -46,14 +46,18 @@ export async function renderDisenadorCurricularView(container, { maestroId } = {
     console.error('[DisenadorCurricularView] Error:', err)
   }
 
+  const claseIdInicial = (claseId && clases.find((c) => String(c.id) === String(claseId)))
+    ? claseId
+    : clases[0]?.id || ''
+
   let planExistente = null
   try {
     const planes = await obtenerPlanificacionesConDetalles().catch(() => [])
-    planExistente = planes.find((p) => String(p.clase_id || p.claseId) === String(clases[0]?.id))
+    planExistente = planes.find((p) => String(p.clase_id || p.claseId) === String(claseIdInicial))
   } catch {}
 
   let estadoEstructura = {
-    claseId: clases[0]?.id || '',
+    claseId: claseIdInicial,
     nivelId: planExistente?.nivelId || 'nivel-1',
     frecuenciaSemanal: planExistente?.frecuenciaSemanal || 2,
     frecuenciaOrigen: 'manual',

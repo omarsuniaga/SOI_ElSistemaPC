@@ -12,7 +12,13 @@
     X-Frame-Options = "DENY"
     Referrer-Policy = "strict-origin-when-cross-origin"
     Permissions-Policy = "camera=(), microphone=(), geolocation=()"
-    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self'; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.groq.com https://openrouter.ai; frame-ancestors 'none'"
+    # Keep this in sync with vite.config.js and public/_headers. Ollama runs on the developer's host.
+    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self'; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.groq.com https://openrouter.ai https://docs.google.com http://localhost:11434 ws://localhost:11434; frame-ancestors 'none'"
+
+[[redirects]]
+  from = "/maestros.html"
+  to = "/"
+  status = 301
 
 [[redirects]]
   from = "/*"

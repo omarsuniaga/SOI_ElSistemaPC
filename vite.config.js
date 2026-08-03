@@ -14,8 +14,8 @@ const CSP = [
   "img-src 'self' data: blob: https://*.supabase.co",
   // Fonts: self only (no Google Fonts)
   "font-src 'self'",
-  // API calls: Supabase REST + Realtime, Groq AI
-  "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.groq.com https://docs.google.com",
+  // API calls: Supabase REST + Realtime, Groq AI, Ollama Local
+  "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.groq.com https://docs.google.com http://localhost:11434 ws://localhost:11434",
   // Workers: blob (pdf.js spawns a worker from blob URL)
   "worker-src 'self' blob:",
   // Media: self + blob (audio recording)
@@ -38,7 +38,6 @@ export default defineConfig({
         input: {
           index:      'index.html',
           admin:      'admin.html',
-          maestros:   'maestros.html',
           audiciones: 'audiciones.html',
           fin:        'fin.html',
           acm:        'acm.html',

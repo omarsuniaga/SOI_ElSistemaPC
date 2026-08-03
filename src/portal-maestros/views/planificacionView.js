@@ -438,13 +438,6 @@ export async function renderPlanificacionView(container, { maestroId, router: po
               Estructura tus planificaciones o realiza el seguimiento interactivo del progreso de tus alumnos.
             </p>
           </div>
-          <div style="display:flex; gap:0.75rem; flex-wrap:wrap;">
-            <button type="button" class="btn btn-light text-primary fw-bold rounded-3 shadow-sm px-3 py-2" id="btn-pm-header-disenador">
-              <i class="bi bi-pencil-square me-2"></i>1. Registro y Planificación Docente
-            </button>
-            <button type="button" class="btn btn-outline-light fw-bold rounded-3 shadow-sm px-3 py-2" id="btn-pm-header-ruta">
-              <i class="bi bi-diagram-3 me-2"></i>2. Seguimiento Alumno vs Contenido (Ruta SVG)
-            </button>
           </div>
         </div>
       </div>
@@ -538,15 +531,6 @@ export async function renderPlanificacionView(container, { maestroId, router: po
 
     goTo(0)
   })()
-
-  container.querySelector('#btn-pm-header-disenador')?.addEventListener('click', () => {
-    activeRouter.navigate('planificacion-disenador')
-  })
-
-  container.querySelector('#btn-pm-header-ruta')?.addEventListener('click', () => {
-    activeRouter.navigate('planificacion-ruta')
-  })
-
 
   // ─── Actualización parcial de una tarjeta (evita recargar todo el grid) ───
   async function updateClassCard(claseId) {

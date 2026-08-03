@@ -416,7 +416,13 @@ function _getEtiquetaEstrella(cant) {
   if (cant === 2) return 'En Proceso'
   if (cant === 3) return 'Aprobado Básico'
   if (cant === 4) return 'Logrado Fluido'
-  if (cant === 5) return 'Dominadofunction openNodoDetailModal(nodo, alumnosList = []) {
+  if (cant === 5) return 'Dominado Total'
+  return 'Sin Registrar'
+}
+
+let activeNodeModal = null
+
+function openNodoDetailModal(nodo, alumnosList = []) {
   if (activeNodeModal) {
     try {
       const bsModal = bootstrap.Modal.getInstance(activeNodeModal)

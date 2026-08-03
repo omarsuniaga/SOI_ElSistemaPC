@@ -62,79 +62,12 @@ function _renderUI(container, clases, planificaciones, { parentRoute = 'planific
     _renderShell()
   }
 
-  // Actualiza únicamente la cabecera del panel de evaluación (título del nodo
-  // seleccionado + visibilidad). No toca el tbody ni el canvas SVG.
   const _actualizarPanelNodo = () => {
-    const panel = container.querySelector('#panel-alumnos-evaluacion-nodo')
-    const lblNodo = container.querySelector('#lbl-nodo-seleccionado')
-    if (panel) panel.style.display = selectedNodo ? 'block' : 'none'
-    if (lblNodo) {
-      lblNodo.innerHTML = `<i class="bi bi-award-fill text-warning me-2"></i>${escapeHTML(selectedNodo?.titulo || 'Selecciona un Nodo')}`
-    }
+    // El detalle ahora se gestiona limpiamente a través del modal del 90%
   }
 
-  // Repinta SOLO el <tbody> con las filas de alumnos (y el chip de "Evaluados").
-  // Se invoca tras cada tap de estrella o cambio de roster — nunca reconstruye
-  // la cabecera, los chips KPI completos ni el canvas SVG, evitando el
-  // flicker de un innerHTML completo en cada evaluación.
   const _renderTbody = () => {
-    const tbody = container.querySelector('#tbody-alumnos-ruta')
-    if (!tbody) return
-
-    tbody.innerHTML = alumnosClase
-      .map((a) => {
-        const initials = a.nombre
-          .split(' ')
-          .slice(0, 2)
-          .map((n) => n[0])
-          .join('')
-          .toUpperCase()
-
-        return `
-          <tr class="row-alumno-ruta${nodoDatosListos ? '' : ' opacity-50'}" data-id="${a.id}" style="cursor: pointer;">
-            <td>
-              <div class="d-flex align-items-center gap-3">
-                <div class="rounded-circle text-white fw-bold d-flex align-items-center justify-content-center shadow-sm"
-                     style="width: 40px; height: 40px; background: linear-gradient(135deg, hsl(220, 80%, 55%), hsl(280, 75%, 60%)); flex-shrink: 0;">
-                  ${initials}
-                </div>
-                <div>
-                  <div class="fw-bold text-body fs-6">${escapeHTML(a.nombre)}</div>
-                  <small class="text-body-secondary">ID: ${a.id.slice(0, 8)}</small>
-                </div>
-              </div>
-            </td>
-
-            <td class="text-center">
-              <span class="badge ${a.idia >= 80 ? 'bg-success-subtle text-success' : 'bg-warning-subtle text-warning-emphasis'} border px-2 py-1">
-                IDIA ${a.idia}%
-              </span>
-            </td>
-
-            <td class="text-center">
-              <span class="badge ${a.presente ? 'bg-success-subtle text-success border border-success-subtle' : 'bg-danger-subtle text-danger border border-danger-subtle'}">
-                ${a.presente ? 'Presente' : 'Ausente (Bloqueado)'}
-              </span>
-            </td>
-
-            <td class="text-center">
-              <div class="fs-4 text-warning user-select-none">
-                ${_renderEstrellasSVG(a.estrellas)}
-              </div>
-              <small class="fw-bold text-body-secondary">${a.estrellas > 0 ? `${a.estrellas} Estrellas (${_getEtiquetaEstrella(a.estrellas)})` : 'Sin Registrar (0★)'}</small>
-            </td>
-
-            <td class="text-end">
-              <button class="btn btn-sm ${a.presente ? 'btn-outline-primary' : 'btn-outline-secondary'} btn-evaluar-one-tap" data-id="${a.id}" ${!a.presente || !nodoDatosListos ? 'disabled' : ''}>
-                <i class="bi bi-hand-index me-1"></i>Ciclar ★
-              </button>
-            </td>
-          </tr>
-        `
-      })
-      .join('')
-
-    // Chip "Evaluados en Nodo" — se actualiza en el DOM sin re-render completo.
+    // La evaluación se gestiona limpiamente en la tabla interactiva dentro del modal del 90%
     const chipEvaluados = container.querySelector('#kpi-evaluados-count')
     if (chipEvaluados) {
       const evaluadosCount = alumnosClase.filter((a) => a.estrellas > 0).length
@@ -254,39 +187,8 @@ function _renderUI(container, clases, planificaciones, { parentRoute = 'planific
         </div>
 
         <!-- CANVAS SVG DE GRAFO VECTORIAL -->
-        <div class="card border border-secondary-subtle bg-body-tertiary rounded-4 p-4 shadow-sm mb-4">
+        <div class="card border border-secondary-subtle bg-body-tertiary rounded-4 p-4 shadow-sm">
           <div id="full-ruta-svg-canvas" style="min-height: 260px;"></div>
-        </div>
-
-        <!-- SECCIÓN DE EVALUACIÓN DE ALUMNOS (SE DESPLIEGA AL SELECCIONAR NODO) -->
-        <div id="panel-alumnos-evaluacion-nodo" class="card border border-secondary-subtle bg-body-tertiary rounded-4 p-4 shadow-sm" style="display: ${selectedNodo ? 'block' : 'none'};">
-          <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3 pb-3 border-bottom border-secondary-subtle">
-            <div>
-              <h4 class="fw-bold text-body mb-1" id="lbl-nodo-seleccionado">
-                <i class="bi bi-award-fill text-warning me-2"></i>${escapeHTML(selectedNodo?.titulo || 'Selecciona un Nodo')}
-              </h4>
-              <p class="text-body-secondary small mb-0">Toca la fila de cualquier alumno para ciclar la evaluación 1-5★. (0★ = Sin Registrar).</p>
-            </div>
-            <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-2 fs-6 fw-semibold">
-              <i class="bi bi-hand-index-thumb me-1"></i>1-Tap Star Evaluator
-            </span>
-          </div>
-
-          <!-- GRID DE TARJETAS DE ALUMNOS (DISEÑO PREMIUM A DOS COLUMNAS / TABLA) -->
-          <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
-              <thead>
-                <tr>
-                  <th>Alumno Inscrito</th>
-                  <th class="text-center">Índice IDIA</th>
-                  <th class="text-center">Asistencia</th>
-                  <th class="text-center">Calificación (1-5★)</th>
-                  <th class="text-end">Acción Rápida</th>
-                </tr>
-              </thead>
-              <tbody id="tbody-alumnos-ruta"></tbody>
-            </table>
-          </div>
         </div>
       </div>
     `
@@ -345,35 +247,6 @@ function _renderUI(container, clases, planificaciones, { parentRoute = 'planific
     })
 
     // Delegación ÚNICA para evaluar estrellas: un solo listener en el tbody
-    // (no en cada fila/botón), así un click en el botón no dispara el mismo
-    // handler dos veces (una en el target, otra en el bubbling hacia la fila).
-    container.querySelector('#tbody-alumnos-ruta')?.addEventListener('click', (e) => {
-      // El roster del nodo seleccionado todavía se está confirmando por red:
-      // ignora el tap para no evaluar sobre el conteo base de otro nodo.
-      if (!nodoDatosListos) return
-      const tr = e.target.closest('.row-alumno-ruta')
-      if (!tr) return
-      const alId = tr.dataset.id
-      const targetAl = alumnosClase.find((al) => String(al.id) === String(alId))
-
-      if (targetAl && targetAl.presente) {
-        targetAl.estrellas = IndicadorLogro.siguienteEstrella(targetAl.estrellas)
-
-        // Guardar persistencia en IndexedDB / LocalStorage
-        OfflineSyncAdapter.guardarLocal({
-          alumnoId: targetAl.id,
-          claseId: selectedClaseId,
-          nodoId: selectedNodo?.id || 'nodo-1',
-          estrellas: targetAl.estrellas,
-        })
-
-        // Solo repinta el tbody — evita el flicker de re-renderizar toda
-        // la vista (cabecera + SVG) por cada tap de estrella.
-        _renderTbody()
-        AppToast.show(`${targetAl.nombre}: ${targetAl.estrellas}★ registrad@s en LocalStorage/Offline`, 'info')
-      }
-    })
-
     _actualizarPanelNodo()
     _renderTbody()
   }

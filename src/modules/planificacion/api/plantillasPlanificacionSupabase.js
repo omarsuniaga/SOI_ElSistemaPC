@@ -59,6 +59,7 @@ export async function crearPlantillaPlanificacion(plantilla) {
       contenido: plantilla.contenido?.trim() || '',
       recursos: plantilla.recursos?.trim() || '',
       evaluacion_metodo: plantilla.evaluacion_metodo?.trim() || '',
+      ...(plantilla.clase_id && { clase_id: plantilla.clase_id }),
     })
     .select()
 

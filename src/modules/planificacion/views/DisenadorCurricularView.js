@@ -2,8 +2,10 @@ import { router } from '../../../core/router/router.js'
 import { escapeHTML } from '../../clases/utils/clasesUtils.js'
 import { AppToast } from '../../../shared/components/AppToast.js'
 import {
-  crearPlanificacion,
   obtenerClases,
+  obtenerPlantillasPlanificacion,
+  crearPlantillaPlanificacion,
+  actualizarPlantillaPlanificacion,
 } from '../api/planificacionAdapter.js'
 import { sugerirRutaDidacticaIA, sugerirSiguienteUnidadIA } from '../services/aiEvaluacionService.js'
 import { renderMapaContenidoSVG } from '../components/MapaContenidoSVG.js'
@@ -18,54 +20,7 @@ const NIVELES_TECNICOS = [
   { id: 'nivel-3', nombre: 'Nivel 3: Avanzado / Maestría Institucional', color: 'danger' },
 ]
 
-import { getMisClases, getHorariosClases } from '../../../portal-maestros/services/maestroDataService.js'
-
-/**
- * Frecuencia semanal real de una clase: cuenta los días distintos en
- * `horarios` (tabla real, vía getHorariosClases) para esa clase. Reemplaza
- * la detección anterior que adivinaba campos `diasSemana`/`horario` que no
- * existen en `clases` — siempre caía al default de 2.
- * @returns {Promise<number>} clases/semana (mínimo 1 si hay horario, si no 0)
- */
-/**
- * Muestra de ejemplo (NO son datos reales de ninguna clase) que se ve
- * cuando una clase todavía no tiene un plan guardado. Se limpia por
- * completo — no se le agregan unidades encima — en cuanto el maestro crea
- * su primera unidad real (manual o con IA), para no persistir contenido
- * inventado como si fuera el plan de la clase.
- */
-function _objetivosDemoSeed() {
-  return [
-    {
-      id: 'obj-1',
-      titulo: 'Dominio de Postura y Emisión Sonora Libre',
-      indicadores: [
-        { id: 'ind-1', titulo: 'Postura corporal equilibrada y relajada', prerrequisitoId: null },
-        { id: 'ind-2', titulo: 'Distribución fluida del arco en cuerdas abiertas', prerrequisitoId: 'ind-1' },
-      ],
-    },
-    {
-      id: 'obj-2',
-      titulo: 'Afinación y Articulación Digital',
-      indicadores: [
-        { id: 'ind-3', titulo: 'Colocación exacta de 1er y 2do dedo', prerrequisitoId: 'ind-2' },
-        { id: 'ind-4', titulo: 'Independencia digital a pulso 60 BPM', prerrequisitoId: 'ind-3' },
-      ],
-    },
-  ]
-}
-
-async function _detectarFrecuenciaSemanalReal(claseId) {
-  if (!claseId) return 0
-  try {
-    const horarios = await getHorariosClases([claseId])
-    const dias = new Set((horarios || []).filter((h) => h.clase_id === claseId).map((h) => h.dia))
-    return dias.size
-  } catch (err) {
-    console.error('[DisenadorCurricularView] Error detectando frecuencia horaria:', err)
-    return 0
-  }
-}
+import { getMisClases } from '../../../portal-maestros/services/maestroDataService.js'
 
 /**
  * Vista de Pantalla Completa: Diseñador Curricular Institucional (Premium UI/UX con Datos Reales)
@@ -99,28 +54,34 @@ export async function renderDisenadorCurricularView(container, { maestroId, clas
 
   let planExistente = null
   try {
-    const planes = await obtenerPlanificacionesConDetalles().catch(() => [])
-    planExistente = planes.find((p) => String(p.clase_id || p.claseId) === String(claseIdInicial))
+    const plantillas = await obtenerPlantillasPlanificacion().catch(() => [])
+    planExistente = plantillas.find((p) => String(p.clase_id) === String(claseIdInicial))
   } catch {}
 
   let estadoEstructura = {
-    esDataDemo: !planExistente?.objetivosEstructurados,
     claseId: claseIdInicial,
     nivelId: planExistente?.nivelId || 'nivel-1',
     frecuenciaSemanal: planExistente?.frecuenciaSemanal || 2,
     frecuenciaOrigen: 'manual',
     semanasTotales: 24,
-    objetivos: planExistente?.objetivosEstructurados || _objetivosDemoSeed(),
-  }
-
-  // Sin frecuencia guardada en un plan previo: detectar del horario real de
-  // la clase en vez de quedarse con el default hardcodeado de 2/semana.
-  if (!planExistente?.frecuenciaSemanal) {
-    const detectada = await _detectarFrecuenciaSemanalReal(estadoEstructura.claseId)
-    if (detectada > 0) {
-      estadoEstructura.frecuenciaSemanal = detectada
-      estadoEstructura.frecuenciaOrigen = 'horario'
-    }
+    objetivos: planExistente?.objetivosEstructurados || [
+      {
+        id: 'obj-1',
+        titulo: 'Dominio de Postura y Emisión Sonora Libre',
+        indicadores: [
+          { id: 'ind-1', titulo: 'Postura corporal equilibrada y relajada', prerrequisitoId: null },
+          { id: 'ind-2', titulo: 'Distribución fluida del arco en cuerdas abiertas', prerrequisitoId: 'ind-1' },
+        ],
+      },
+      {
+        id: 'obj-2',
+        titulo: 'Afinación y Articulación Digital',
+        indicadores: [
+          { id: 'ind-3', titulo: 'Colocación exacta de 1er y 2do dedo', prerrequisitoId: 'ind-2' },
+          { id: 'ind-4', titulo: 'Independencia digital a pulso 60 BPM', prerrequisitoId: 'ind-3' },
+        ],
+      },
+    ],
   }
 
   _renderUI(container, clases, estadoEstructura)
@@ -254,11 +215,6 @@ function _renderUI(container, clases, estadoEstructura) {
                 </button>
               </div>
 
-              <div id="banner-data-demo" class="alert alert-warning d-flex align-items-center gap-2 py-2 mb-3" style="font-size:0.85rem; display:${estadoEstructura.esDataDemo ? '' : 'none'};">
-                <i class="bi bi-info-circle-fill"></i>
-                <div><strong>Datos de ejemplo</strong> — esta clase todavía no tiene un plan real guardado. Se reemplazan por completo apenas agregues o generes la primera unidad.</div>
-              </div>
-
               <div id="lista-objetivos-container"></div>
             </div>
           </div>
@@ -274,9 +230,6 @@ function _renderUI(container, clases, estadoEstructura) {
 }
 
 function _renderObjetivosFull(container, estadoEstructura, alumnosState) {
-  const banner = container.querySelector('#banner-data-demo')
-  if (banner) banner.style.display = estadoEstructura.esDataDemo ? '' : 'none'
-
   const listEl = container.querySelector('#lista-objetivos-container')
   if (!listEl) return
 
@@ -384,39 +337,16 @@ function _attachEventsFull(container, clases, estadoEstructura, alumnosState, _l
 
   container.querySelector('#select-clase-full')?.addEventListener('change', async (e) => {
     estadoEstructura.claseId = e.target.value
-    let frecuenciaGuardada = null
     try {
-      const planes = await obtenerPlanificacionesConDetalles().catch(() => [])
-      const match = planes.find((p) => String(p.clase_id || p.claseId) === String(estadoEstructura.claseId))
-      if (match && Array.isArray(match.objetivosEstructurados) && match.objetivosEstructurados.length > 0) {
-        estadoEstructura.objetivos = match.objetivosEstructurados
-        estadoEstructura.esDataDemo = false
-        if (match.nivelId) estadoEstructura.nivelId = match.nivelId
-        if (match.frecuenciaSemanal) frecuenciaGuardada = match.frecuenciaSemanal
-      } else {
-        // Esta otra clase tampoco tiene plan real guardado — mostrar la
-        // muestra demo de nuevo, no arrastrar los datos de la clase anterior.
-        estadoEstructura.objetivos = _objetivosDemoSeed()
-        estadoEstructura.esDataDemo = true
+      const plantillas = await obtenerPlantillasPlanificacion().catch(() => [])
+      const match = plantillas.find((p) => String(p.clase_id) === String(estadoEstructura.claseId))
+      if (match) {
+        const arbol = typeof match.objetivos === 'string' ? JSON.parse(match.objetivos) : match.objetivos
+        if (Array.isArray(arbol) && arbol.length > 0) {
+          estadoEstructura.objetivos = arbol
+        }
       }
     } catch {}
-
-    // Si el plan guardado ya trae una frecuencia (el maestro la fijó a mano
-    // antes), respetarla. Si no, detectarla del horario real de la clase.
-    if (frecuenciaGuardada) {
-      estadoEstructura.frecuenciaSemanal = frecuenciaGuardada
-      estadoEstructura.frecuenciaOrigen = 'manual'
-    } else {
-      const detectada = await _detectarFrecuenciaSemanalReal(estadoEstructura.claseId)
-      if (detectada > 0) {
-        estadoEstructura.frecuenciaSemanal = detectada
-        estadoEstructura.frecuenciaOrigen = 'horario'
-      }
-    }
-    const inp = container.querySelector('#input-frecuencia-full')
-    if (inp) inp.value = estadoEstructura.frecuenciaSemanal
-    _updateRitmoBanner(container, estadoEstructura)
-
     _loadAlumnosModal().then(() => _renderObjetivosFull(container, estadoEstructura, alumnosState))
   })
 
@@ -425,24 +355,26 @@ function _attachEventsFull(container, clases, estadoEstructura, alumnosState, _l
     _updateRitmoBanner(container, estadoEstructura)
   })
 
-  container.querySelector('#btn-auto-frecuencia')?.addEventListener('click', async () => {
-    if (!estadoEstructura.claseId) {
+  container.querySelector('#btn-auto-frecuencia')?.addEventListener('click', () => {
+    const targetClase = clases.find((c) => String(c.id) === String(estadoEstructura.claseId))
+    if (!targetClase) {
       AppToast.show('Selecciona primero una clase para detectar su horario', 'warning')
       return
     }
 
-    const detectedFreq = await _detectarFrecuenciaSemanalReal(estadoEstructura.claseId)
-    if (detectedFreq === 0) {
-      AppToast.show('Esta clase no tiene horario cargado todavía — no se pudo detectar la frecuencia', 'warning')
-      return
+    let detectedFreq = 2
+    if (Array.isArray(targetClase.diasSemana)) {
+      detectedFreq = targetClase.diasSemana.length
+    } else if (typeof targetClase.horario === 'string') {
+      const matches = targetClase.horario.match(/lunes|martes|miércoles|jueves|viernes|sábado|domingo/gi)
+      if (matches) detectedFreq = new Set(matches.map((m) => m.toLowerCase())).size
     }
 
     estadoEstructura.frecuenciaSemanal = detectedFreq
-    estadoEstructura.frecuenciaOrigen = 'horario'
     const inp = container.querySelector('#input-frecuencia-full')
     if (inp) inp.value = detectedFreq
 
-    AppToast.show(`Horario detectado: ${detectedFreq} clase(s)/semana`, 'info')
+    AppToast.show(`Horario detectado: ${detectedFreq} clases/semana`, 'info')
     _updateRitmoBanner(container, estadoEstructura)
   })
 
@@ -460,22 +392,17 @@ function _attachEventsFull(container, clases, estadoEstructura, alumnosState, _l
     const instrumentoNombre = claseActual?.nombre || claseActual?.name || 'Música e Instrumento'
     const nivelNombre = nivelObj?.nombre || 'Nivel 1: Básico'
 
-    // Si lo que hay todavía es la muestra demo, la primera unidad real la
-    // reemplaza por completo — nunca se apila arriba de datos inventados.
-    const eraDataDemo = estadoEstructura.esDataDemo
-    const numSiguiente = eraDataDemo ? 1 : estadoEstructura.objetivos.length + 1
+    const numSiguiente = estadoEstructura.objetivos.length + 1
 
     try {
       const nuevaUnidad = await sugerirSiguienteUnidadIA({
         instrumento: instrumentoNombre,
         nivelNombre,
         numeroUnidad: numSiguiente,
-        unidadesExistentes: eraDataDemo ? [] : estadoEstructura.objetivos,
+        unidadesExistentes: estadoEstructura.objetivos,
       })
 
       if (nuevaUnidad && nuevaUnidad.titulo) {
-        if (eraDataDemo) estadoEstructura.objetivos = []
-        estadoEstructura.esDataDemo = false
         estadoEstructura.objetivos.push(nuevaUnidad)
         _renderObjetivosFull(container, estadoEstructura, alumnosState)
         
@@ -498,44 +425,73 @@ function _attachEventsFull(container, clases, estadoEstructura, alumnosState, _l
       AppToast.show('Debes seleccionar una Clase o Agrupación', 'warning')
       return
     }
+    if (!estadoEstructura.objetivos || estadoEstructura.objetivos.length === 0) {
+      AppToast.show('Agrega al menos una Unidad Didáctica antes de publicar', 'warning')
+      return
+    }
 
-    const contenidos = []
-    estadoEstructura.objetivos.forEach((obj) => {
-      contenidos.push(`[OBJETIVO] ${obj.titulo}`)
-      obj.indicadores.forEach((ind) => {
-        contenidos.push(`  • [CLASE] ${ind.titulo}`)
-      })
-    })
+    const btn = container.querySelector('#btn-guardar-plan-full')
+    const originalText = btn?.innerHTML
+    if (btn) {
+      btn.disabled = true
+      btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Publicando...'
+    }
+
+    const nivelId = container.querySelector('#select-nivel-full')?.value || estadoEstructura.nivelId || 'nivel-1'
+    const nivelNombre = NIVELES_TECNICOS.find((n) => n.id === nivelId)?.nombre || nivelId
+    const claseNombre = document.querySelector('#select-clase-full option:checked')?.textContent?.trim() || estadoEstructura.claseId
 
     const payload = {
+      id: (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : `${Date.now()}`,
+      nombre: `Plan Curricular · ${claseNombre} · ${nivelNombre}`,
+      // El árbol completo de unidades + indicadores serializado como JSON en el campo TEXT `objetivos`
+      objetivos: JSON.stringify(estadoEstructura.objetivos),
+      contenido: estadoEstructura.objetivos
+        .map((obj) => [
+          `[UNIDAD] ${obj.titulo}`,
+          ...(obj.indicadores || []).map((ind) => `  • ${ind.titulo}`),
+        ].join('\n'))
+        .join('\n\n'),
+      recursos: '',
+      evaluacion_metodo: `Frecuencia: ${estadoEstructura.frecuenciaSemanal} clase(s)/semana · ${estadoEstructura.semanasTotales || 24} semanas`,
       clase_id: estadoEstructura.claseId,
-      semana: 1,
-      titulo: `Plan Didáctico Semestral - ${estadoEstructura.frecuenciaSemanal} clases/sem`,
-      nivelId: container.querySelector('#select-nivel-full')?.value || 'nivel-1',
-      frecuenciaSemanal: estadoEstructura.frecuenciaSemanal,
-      semanasTotales: 24,
-      objetivosEstructurados: estadoEstructura.objetivos,
-      contenidos,
-      estado: 'publicada',
-      esPlantillaOficial: true,
-      fecha: new Date().toISOString().slice(0, 10),
     }
 
     try {
-      await crearPlanificacion(payload)
-      AppToast.show('Plan Institucional Oficial publicado con éxito ⭐', 'success')
+      // Upsert: intentar actualizar si ya existe, crear si no.
+      let existente = null
+      try {
+        const todas = await obtenerPlantillasPlanificacion()
+        existente = todas.find((p) => p.id === plantillaId || String(p.clase_id) === String(estadoEstructura.claseId))
+      } catch {}
+
+      if (existente) {
+        await actualizarPlantillaPlanificacion(existente.id, {
+          nombre: payload.nombre,
+          objetivos: payload.objetivos,
+          contenido: payload.contenido,
+          evaluacion_metodo: payload.evaluacion_metodo,
+        })
+        AppToast.show('Plan Curricular actualizado con éxito ✅', 'success')
+      } else {
+        await crearPlantillaPlanificacion(payload)
+        AppToast.show('Plan Curricular publicado con éxito ⭐', 'success')
+      }
+
       const activeNav = (typeof window !== 'undefined' && window.router) ? window.router : router
       activeNav.navigate('planificacion')
     } catch (err) {
-      AppToast.show(`Error al publicar plan: ${err.message}`, 'error')
+      console.error('[DisenadorCurricularView] Error al publicar plan:', err)
+      AppToast.show(`Error al publicar: ${err.message}`, 'error')
+    } finally {
+      if (btn) {
+        btn.disabled = false
+        btn.innerHTML = originalText
+      }
     }
   })
 
   container.querySelector('#btn-add-objetivo-full')?.addEventListener('click', () => {
-    if (estadoEstructura.esDataDemo) {
-      estadoEstructura.objetivos = []
-      estadoEstructura.esDataDemo = false
-    }
     const count = estadoEstructura.objetivos.length + 1
     estadoEstructura.objetivos.push({
       id: `obj-${Date.now()}`,

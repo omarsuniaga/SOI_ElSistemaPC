@@ -99,6 +99,27 @@ describe('crearAlumno — familia obligatoria', () => {
     })
   })
 
+  it('tolera clientes RPC thenable sin .catch durante la limpieza de familia huérfana', async () => {
+    const cleanupThenable = {
+      then(onFulfilled) {
+        return Promise.resolve(onFulfilled({ data: null, error: { message: 'cleanup failed' } }))
+      },
+    }
+
+    supabase.rpc
+      .mockResolvedValueOnce({ data: FAMILIA_ID, error: null })
+      .mockReturnValueOnce(cleanupThenable)
+    supabase.from.mockReturnValue(
+      mockInsert({ data: null, error: { message: 'duplicate key' } }),
+    )
+
+    await expect(crearAlumno({ nombre: 'Ana Pérez' })).rejects.toThrow(/duplicate key/)
+
+    expect(supabase.rpc).toHaveBeenLastCalledWith('fn_eliminar_familia_huerfana', {
+      p_familia_id: FAMILIA_ID,
+    })
+  })
+
   it('no borra una familia preexistente cuando el alta falla', async () => {
     supabase.from.mockReturnValue(
       mockInsert({ data: null, error: { message: 'duplicate key' } }),
@@ -110,6 +131,22 @@ describe('crearAlumno — familia obligatoria', () => {
 
     // La familia no era nuestra: borrarla arrastraría a otros alumnos.
     expect(supabase.rpc).not.toHaveBeenCalled()
+  })
+
+  it('traduce el rechazo RLS de alumnos a un mensaje accionable', async () => {
+    supabase.rpc
+      .mockResolvedValueOnce({ data: FAMILIA_ID, error: null })
+      .mockResolvedValueOnce({ data: true, error: null })
+    supabase.from.mockReturnValue(
+      mockInsert({
+        data: null,
+        error: { message: 'new row violates row-level security policy for table "alumnos"' },
+      }),
+    )
+
+    await expect(crearAlumno({ nombre: 'Ana Pérez' })).rejects.toThrow(
+      /no tiene permisos para crear alumnos/i,
+    )
   })
 
   it('exige el nombre antes de tocar la base', async () => {

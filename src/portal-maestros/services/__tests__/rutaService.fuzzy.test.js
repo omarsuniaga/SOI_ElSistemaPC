@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { resolveRutaIdForClaseWithFuzzy } from '../rutaService.js'
+import { resolveRutaIdForClase, resolveRutaIdForClaseWithFuzzy } from '../rutaService.js'
 
 // Mock dependencies
 vi.mock('../maestroDataService.js', () => ({
@@ -27,6 +27,17 @@ describe('rutaService - Fuzzy Matching for Routes', () => {
   })
 
   describe('resolveRutaIdForClaseWithFuzzy', () => {
+    it('should prefer route_version_id from the class before querying routes', async () => {
+      getMisClasesMock.mockResolvedValue([
+        { id: 'clase-1', instrumento: 'violin', route_version_id: 'rv-directa-1' },
+      ])
+
+      const result = await resolveRutaIdForClaseWithFuzzy('clase-1')
+
+      expect(result).toBe('rv-directa-1')
+      expect(supabaseMock.from).not.toHaveBeenCalled()
+    })
+
     it('should find exact instrument match', async () => {
       getMisClasesMock.mockResolvedValue([
         { id: 'clase-1', instrumento: 'violin' },
@@ -161,6 +172,19 @@ describe('rutaService - Fuzzy Matching for Routes', () => {
       const result = await resolveRutaIdForClaseWithFuzzy('clase-1')
 
       expect(result).toBeNull()
+      expect(supabaseMock.from).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('resolveRutaIdForClase', () => {
+    it('should prefer route_version_id from the class before instrument matching', async () => {
+      getMisClasesMock.mockResolvedValue([
+        { id: 'clase-1', instrumento: 'violin', route_version_id: 'rv-directa-1' },
+      ])
+
+      const result = await resolveRutaIdForClase('clase-1')
+
+      expect(result).toBe('rv-directa-1')
       expect(supabaseMock.from).not.toHaveBeenCalled()
     })
   })

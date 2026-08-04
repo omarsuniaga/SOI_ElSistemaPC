@@ -6,9 +6,8 @@
  */
 
 import { supabase } from '../../lib/supabaseClient.js'
-import { segmentObservation, inferTipo } from '../utils/observationParser.js'
+import { segmentObservation, inferTipo, detectNote, detectTask } from '../utils/observationParser.js'
 import { buildSeccionContext, expandSeccionItems } from '../data/seccionesOrquestales.js'
-import { config } from '../../core/config/config.js'
 
 const GROQ_CONFIG = {
   model: 'llama-3.1-8b-instant',
@@ -44,43 +43,7 @@ async function authHeaders() {
   }
 }
 
-/**
- * POST to /chat endpoint of the proxy.
- */
-async function ollamaChat(messages, temperature) {
-  const res = await fetch(`${config.ai.ollamaUrl}/v1/chat/completions`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ model: config.ai.ollamaModel, messages, temperature }),
-  })
-
-  let data
-  try {
-    data = await res.json()
-  } catch (parseErr) {
-    throw new Error(`Ollama returned non-JSON (status ${res.status})`)
-  }
-
-  if (!res.ok || data.error) {
-    const msg = data.error?.message ?? data.error ?? `Ollama error ${res.status}`
-    console.error('[OLLAMA] chat error response:', res.status, data)
-    throw new Error(msg)
-  }
-
-  const content = data.choices?.[0]?.message?.content
-  if (!content) {
-    console.error('[OLLAMA] chat: empty or missing content in response', data)
-    throw new Error('Ollama devolvió una respuesta vacía')
-  }
-
-  return content.trim()
-}
-
 async function proxyChat(messages, temperature = GROQ_CONFIG.temperature) {
-  if (config.ai.provider === 'ollama') {
-    return ollamaChat(messages, temperature)
-  }
-
   const headers = await authHeaders()
   const res = await fetch(`${proxyBase()}/chat`, {
     method: 'POST',
@@ -114,10 +77,6 @@ async function proxyChat(messages, temperature = GROQ_CONFIG.temperature) {
  * POST to /transcribe endpoint of the proxy.
  */
 async function proxyTranscribe(audioBlob) {
-  if (config.ai.provider === 'ollama') {
-    throw new Error('Transcripción de audio no disponible en modo Ollama (usa VITE_AI_PROVIDER=groq o modo demo)')
-  }
-
   const {
     data: { session },
   } = await supabase.auth.getSession()
@@ -372,8 +331,8 @@ export async function improveText(text) {
       { role: 'user', content: text },
     ])
   } catch (err) {
-    console.error('[GROQ] Error en improveText:', err)
-    throw err
+    console.warn('[GROQ] improveText fallback:', err.message)
+    return (text || '').trim()
   }
 }
 
@@ -390,8 +349,39 @@ export async function structureTextToDSL(text, context = {}) {
       { role: 'user', content: text },
     ])
   } catch (err) {
-    console.error('[GROQ] Error en structureTextToDSL:', err)
-    throw err
+    console.warn('[GROQ] structureTextToDSL fallback:', err.message)
+    const presentes = context.presentes?.length ? context.presentes : context.alumnos || []
+    const groupsRaw = segmentObservation(text, { ...context, alumnos: presentes, presentes })
+    const groups = Array.isArray(groupsRaw) ? groupsRaw : []
+    const progreso = (groups.length ? groups : [{
+      alumnos: presentes,
+      fragment: text,
+      estado: { value: 'EN_PROGRESO' },
+      nota: detectNote(text),
+      tarea: detectTask(text),
+      esColectivo: presentes.length > 1 || presentes.length === 0,
+      alerta: false,
+      alertDetails: { type: null },
+      scope: 'grupo',
+      excludeIds: [],
+      requires_confirmation: false,
+    }]).map((g) => ({
+      alumnos: g.alumnos.map((a) => a.nombre || a.nombre_completo || a.nombreCorto),
+      contenido: _extractFallbackContent(g.fragment),
+      tipo: inferTipo(`${g.fragment} ${g.tarea || ''}`, context.tipoClase),
+      estado: g.estado?.value || g.estado || 'EN_PROGRESO',
+      nota: g.nota,
+      tarea: g.tarea,
+      observacion: null,
+      es_colectivo: g.esColectivo,
+      alerta: g.alerta || false,
+      alertaTipo: g.alertDetails?.type || null,
+      alertDetails: g.alertDetails,
+      scope: g.scope || 'grupo',
+      excludeIds: g.excludeIds || [],
+      requires_confirmation: g.requires_confirmation || false,
+    }))
+    return _buildDSL(progreso, presentes)
   }
 }
 

@@ -1,6 +1,8 @@
 import { escHTML } from '../../utils/portalUtils.js'
 import * as weeklyPlanAdapter from '../../../modules/planificacion/api/weeklyPlanAdapter.js'
 import { renderMapaContenidoSVG } from '../../../modules/planificacion/components/MapaContenidoSVG.js'
+import { extraerNodosDePlan, extraerNodosDeRutaCurricular } from '../../../modules/planificacion/components/routeNodes.js'
+import { obtenerPlanificacionesConDetalles, crearPlanificacion, actualizarPlanificacion } from '../../../modules/planificacion/api/planificacionAdapter.js'
 import { config } from '../../../core/config/config.js'
 import { AppToast } from '../../../shared/components/AppToast.js'
 
@@ -11,7 +13,15 @@ const STATUS_META = {
   current: { label: 'En curso', icon: '🔵', className: 'current' },
 }
 
+function normalizeNullableId(value) {
+  if (value == null) return null
+  const text = String(value).trim()
+  if (!text || text.toLowerCase() === 'null' || text.toLowerCase() === 'undefined') return null
+  return text
+}
+
 export function createPlanificationCard(container, opts) {
+  const claseId = normalizeNullableId(opts.claseId)
   let activeRoute = null
   let weeklyPlan = null
   let progressMap = {}
@@ -96,9 +106,9 @@ export function createPlanificationCard(container, opts) {
   }
 
   async function loadTeacherAdjustmentsMap(weeklyPlanId) {
-    if (!weeklyPlanId || !opts.claseId || !opts.maestro?.id) return {}
+    if (!weeklyPlanId || !claseId || !opts.maestro?.id) return {}
     const adjustments = await weeklyPlanAdapter
-      .obtenerAjustesPlanDocente(opts.claseId, opts.maestro.id, weeklyPlanId)
+      .obtenerAjustesPlanDocente(claseId, opts.maestro.id, weeklyPlanId)
       .catch(() => [])
 
     return adjustments.reduce((acc, item) => {
@@ -123,30 +133,15 @@ export function createPlanificationCard(container, opts) {
   async function init() {
     try {
       planificacionCard.style.display = ''
-      activeRoute = await weeklyPlanAdapter.obtenerRutaActivaPorGrupo(opts.claseId)
+      activeRoute = await weeklyPlanAdapter.obtenerRutaActivaPorGrupo(claseId)
 
       if (!activeRoute) {
-        if (config.isDemoMode) {
-          activeRoute = await weeklyPlanAdapter.crearRutaActiva({
-            group_id: opts.claseId,
-            weekly_plan_id: 'wplan-violin-n0',
-            level_id: 'pnivel_001',
-            teacher_id: opts.maestro?.id || 'maestro_001',
-          })
-        } else {
-          if (planNombreEl) planNombreEl.textContent = 'Sin guía ACM asignada'
-          if (treeContainer) {
-            treeContainer.innerHTML = `
-              <div style="padding:10px;font-size:0.82rem;color:var(--pm-text-muted);">
-                ACM todavía no ha asignado una guía institucional a esta clase.
-              </div>
-            `
-          }
-          return
-        }
+        if (planNombreEl) planNombreEl.textContent = 'Sin guía ACM asignada'
+        renderNoRouteMap()
+        return
       }
 
-      progressMap = await weeklyPlanAdapter.obtenerProgresoGrupo(opts.claseId).catch(() => ({}))
+      progressMap = await weeklyPlanAdapter.obtenerProgresoGrupo(claseId).catch(() => ({}))
       weeklyPlan =
         (activeRoute.weekly_plan_id && await weeklyPlanAdapter.obtenerPlanSemanalPorId?.(activeRoute.weekly_plan_id)) ||
         await weeklyPlanAdapter.obtenerPlanSemanalPorNivel(activeRoute.level_id, 'violín')
@@ -251,7 +246,7 @@ export function createPlanificationCard(container, opts) {
       const fd = new FormData(form)
       try {
         await weeklyPlanAdapter.guardarAjustePlanDocente({
-          group_id: opts.claseId,
+          group_id: claseId,
           teacher_id: opts.maestro?.id,
           weekly_plan_id: activeRoute?.weekly_plan_id,
           week_number: currentItem.week_number,
@@ -421,6 +416,204 @@ export function createPlanificationCard(container, opts) {
           node_id: nodo.item.node_id,
         })
       },
+    })
+  }
+
+  function openAgregarUnidadModal(planClase) {
+    const overlay = document.createElement('div')
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,.72);backdrop-filter:blur(4px);z-index:2100;display:flex;align-items:center;justify-content:center;padding:16px;'
+    overlay.innerHTML = `
+      <div style="width:min(500px,100%);max-height:90vh;overflow:auto;background:var(--pm-surface,#0f172a);color:var(--pm-text,#fff);border:1px solid var(--pm-border,rgba(255,255,255,.1));border-radius:18px;">
+        <div style="padding:16px 18px;border-bottom:1px solid rgba(255,255,255,.08);display:flex;justify-content:space-between;gap:12px;align-items:start;">
+          <div>
+            <div style="font-weight:800;font-size:1rem;">Agregar Nueva Unidad</div>
+            <div style="font-size:.85rem;color:var(--pm-text-muted,#94a3b8);margin-top:4px;">Define una unidad pedagógica con su objetivo e indicador.</div>
+          </div>
+          <button type="button" data-close-modal style="border:none;background:none;color:inherit;font-size:1.4rem;cursor:pointer;">×</button>
+        </div>
+        <form id="pm-agregar-unidad-form" style="padding:16px 18px;display:grid;gap:14px;">
+          <label style="display:grid;gap:6px;font-size:.85rem;font-weight:700;">Título de la Unidad
+            <input type="text" name="unidad_titulo" placeholder="Ej: Unidad 1: Fundamentos de la Música" required style="width:100%;border-radius:12px;padding:10px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);color:inherit;" />
+          </label>
+          <label style="display:grid;gap:6px;font-size:.85rem;font-weight:700;">Objetivo Pedagógico
+            <input type="text" name="objetivo_titulo" placeholder="Ej: Dominar la lectura de notas" required style="width:100%;border-radius:12px;padding:10px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);color:inherit;" />
+          </label>
+          <label style="display:grid;gap:6px;font-size:.85rem;font-weight:700;">Indicador de Evaluación
+            <input type="text" name="indicador_titulo" placeholder="Ej: Lee fluidamente en clave de Sol" required style="width:100%;border-radius:12px;padding:10px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);color:inherit;" />
+          </label>
+          <div style="display:flex;justify-content:flex-end;gap:10px;">
+            <button type="button" data-close-modal style="border:1px solid rgba(255,255,255,.12);background:transparent;color:inherit;padding:10px 14px;border-radius:12px;font-weight:700;cursor:pointer;">Cancelar</button>
+            <button type="submit" style="border:none;background:var(--pm-primary,#2563eb);color:#fff;padding:10px 14px;border-radius:12px;font-weight:700;cursor:pointer;">Guardar Unidad</button>
+          </div>
+        </form>
+      </div>
+    `
+
+    const close = () => overlay.remove()
+    overlay.querySelectorAll('[data-close-modal]').forEach((btn) => { btn.onclick = close })
+    overlay.onclick = (event) => { if (event.target === overlay) close() }
+
+    const form = overlay.querySelector('#pm-agregar-unidad-form')
+    form.onsubmit = async (event) => {
+      event.preventDefault()
+      const fd = new FormData(form)
+      const uTitle = String(fd.get('unidad_titulo')).trim()
+      const oTitle = String(fd.get('objetivo_titulo')).trim()
+      const iTitle = String(fd.get('indicador_titulo')).trim()
+
+      if (!uTitle || !oTitle || !iTitle) return
+
+      try {
+        let currentObjetivos = []
+        if (planClase && Array.isArray(planClase.objetivosEstructurados)) {
+          currentObjetivos = JSON.parse(JSON.stringify(planClase.objetivosEstructurados))
+        }
+
+        const nextUnitId = `unidad_${Date.now()}`
+        const nextObjId = `obj_${Date.now()}`
+        const nextIndId = `ind_${Date.now()}`
+
+        const newUnidad = {
+          id: nextUnitId,
+          titulo: uTitle,
+          objetivos: [
+            {
+              id: nextObjId,
+              titulo: oTitle,
+              indicadores: [
+                {
+                  id: nextIndId,
+                  titulo: iTitle,
+                  prerrequisitoId: null
+                }
+              ]
+            }
+          ]
+        }
+
+        currentObjetivos.push(newUnidad)
+
+        if (planClase && planClase.id) {
+          await actualizarPlanificacion(planClase.id, {
+            objetivosEstructurados: currentObjetivos
+          })
+        } else {
+          await crearPlanificacion({
+            clase_id: claseId,
+            maestro_id: opts.maestro?.id || 'maestro_001',
+            fecha_inicio: new Date().toISOString().slice(0, 10),
+            titulo: 'Planificación Personalizada',
+            estado: 'planificado',
+            objetivosEstructurados: currentObjetivos
+          })
+        }
+
+        AppToast.success('Nueva unidad agregada correctamente a la planificación.')
+        close()
+        await init()
+      } catch (err) {
+        console.error('[PlanificationCard] Error guardando nueva unidad:', err)
+        AppToast.error(err.message || 'No se pudo guardar la unidad.')
+      }
+    }
+
+    document.body.appendChild(overlay)
+  }
+
+  async function renderNoRouteMap() {
+    if (!treeContainer) return
+
+    let planClase = null
+    try {
+      const planificaciones = (await obtenerPlanificacionesConDetalles()) || []
+      planClase =
+        planificaciones.find(
+          (p) => String(p.clase_id || p.claseId) === String(claseId),
+        ) || null
+    } catch (err) {
+      console.warn('[PlanificationCard] No se pudo cargar la planificación de la clase:', err)
+    }
+
+    const nodos = extraerNodosDePlan(planClase, opts.clase || {})
+
+    let selectedId = null
+    let dimUsed = false
+    if (nodos.length > 0) {
+      try {
+        const progressMap = (await weeklyPlanAdapter.obtenerProgresoGrupo(claseId).catch(() => ({}))) || {}
+        const usados = new Set()
+        nodos.forEach((nodo) => {
+          const hasAnyGrade = Object.keys(progressMap).some(
+            (key) =>
+              key.endsWith(`_${nodo.id}`) &&
+              progressMap[key]?.status &&
+              progressMap[key]?.status !== 'not_started',
+          )
+          if (hasAnyGrade) usados.add(String(nodo.id))
+        })
+
+        dimUsed = true
+        nodos.forEach((nodo) => {
+          nodo.estado = usados.has(String(nodo.id)) ? 'logrado' : 'pendiente'
+        })
+        const primerSinUso = nodos.find((nodo) => !usados.has(String(nodo.id)))
+        selectedId = primerSinUso ? String(primerSinUso.id) : null
+      } catch (err) {
+        console.warn('[PlanificationCard] No se pudo cargar el progreso de la clase:', err)
+      }
+    }
+
+    treeContainer.innerHTML = `
+      <div class="d-flex align-items-center justify-content-between mb-3 w-100 flex-wrap gap-2">
+        <div class="pm-plan-sin-guia-chip" style="margin-top:0;">
+          <i class="bi bi-info-circle me-1"></i>Ruta de tu planificación
+        </div>
+        <button type="button" class="btn btn-sm btn-primary" id="pm-btn-agregar-unidad" style="font-weight: 700; font-size: 0.75rem; display: inline-flex; align-items: center; gap: 4px;">
+          <i class="bi bi-plus-circle"></i> Agregar Unidad
+        </button>
+      </div>
+    `
+
+    const btnAgregar = treeContainer.querySelector('#pm-btn-agregar-unidad')
+    if (btnAgregar) {
+      btnAgregar.onclick = (e) => {
+        e.stopPropagation()
+        openAgregarUnidadModal(planClase)
+      }
+    }
+
+    if (nodos.length === 0) {
+      const emptyMsg = document.createElement('div')
+      emptyMsg.className = 'text-center p-4 text-muted bg-body-tertiary rounded-4 border border-secondary-subtle mb-3 w-100'
+      emptyMsg.style.fontSize = '0.85rem'
+      emptyMsg.innerHTML = `
+        <i class="bi bi-calendar-x d-block mb-2 fs-3 text-secondary"></i>
+        <span>No tienes unidades registradas aún. ¡Haz clic en "Agregar Unidad" para comenzar a planificar!</span>
+      `
+      treeContainer.appendChild(emptyMsg)
+      return
+    }
+
+    const mapaEl = document.createElement('div')
+    mapaEl.id = 'pm-ruta-mapa-preview'
+    mapaEl.style.marginTop = '10px'
+    treeContainer.appendChild(mapaEl)
+
+    const onNodeClick = (nodo) => {
+      opts.onIndicadorSelect?.({
+        id: nodo.id,
+        nombre: nodo.titulo,
+        node_id: nodo.node_id || null,
+      })
+    }
+    renderMapaContenidoSVG({
+      container: mapaEl,
+      nodos,
+      showHeader: false,
+      compact: true,
+      dimUsed,
+      selectedId,
+      onNodeClick,
     })
   }
 

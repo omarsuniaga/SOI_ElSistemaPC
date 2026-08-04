@@ -68,3 +68,47 @@ export class IndicadorLogro {
     }
   }
 }
+
+/**
+ * Genera un UUID v4 seguro, con fallback si crypto.randomUUID no está disponible.
+ * @returns {string}
+ */
+export function generarUUIDSeguro() {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID()
+  }
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+    const r = (Math.random() * 16) | 0
+    const v = c === 'x' ? r : (r & 0x3) | 0x8
+    return v.toString(16)
+  })
+}
+
+/**
+ * Fábrica centralizada de dominio para crear indicadores con UUID real e integridad garantizada.
+ */
+export function crearIndicadorDominio({
+  objetivoId,
+  titulo,
+  descripcion = '',
+  nivelIndex = 0,
+  orden = 1,
+  prerrequisitoId = null,
+  id = null,
+}) {
+  const indicadorId = id || generarUUIDSeguro()
+  const indicador = new IndicadorLogro({
+    id: indicadorId,
+    objetivoId,
+    titulo,
+    descripcion,
+    nivelIndex,
+    orden,
+  })
+
+  return {
+    ...indicador,
+    prerrequisitoId,
+  }
+}
+

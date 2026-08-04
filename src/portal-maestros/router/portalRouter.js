@@ -40,6 +40,11 @@ export function createPortalRouter() {
     if (_guardEnabled && _authCheck && !_publicRoutes.includes(route)) {
       if (!_authCheck()) {
         localStorage.setItem('intended-route', route)
+        if (params && Object.keys(params).length > 0) {
+          localStorage.setItem('intended-route-params', JSON.stringify(params))
+        } else {
+          localStorage.removeItem('intended-route-params')
+        }
         history.pushState({ route: 'login' }, '', '/login')
         _dispatch('login')
         return
@@ -67,6 +72,11 @@ export function createPortalRouter() {
     if (_guardEnabled && _authCheck && !_publicRoutes.includes(route)) {
       if (!_authCheck()) {
         localStorage.setItem('intended-route', route)
+        if (params && Object.keys(params).length > 0) {
+          localStorage.setItem('intended-route-params', JSON.stringify(params))
+        } else {
+          localStorage.removeItem('intended-route-params')
+        }
         history.replaceState({ route: 'login' }, '', '/login')
         _dispatch('login')
         return

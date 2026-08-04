@@ -67,3 +67,6 @@ export const actualizarPlantillaPlanificacion = (id, cambios) =>
   plantillasPlanificacionImpl.actualizarPlantillaPlanificacion(id, cambios)
 export const eliminarPlantillaPlanificacion = (id) =>
   plantillasPlanificacionImpl.eliminarPlantillaPlanificacion(id)
+export const guardarArbolCurricular = (data) =>
+  plantillasPlanificacionImpl.guardarArbolCurricular(data)
+

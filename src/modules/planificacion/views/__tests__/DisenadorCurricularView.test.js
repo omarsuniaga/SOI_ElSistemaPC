@@ -14,10 +14,10 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 
 vi.mock('../../api/planificacionAdapter.js', () => ({
   obtenerClases: vi.fn(),
-  crearPlanificacion: vi.fn(),
+  obtenerPlanificacionesConDetalles: vi.fn(() => Promise.resolve([])),
   obtenerPlantillasPlanificacion: vi.fn(() => Promise.resolve([])),
-  crearPlantillaPlanificacion: vi.fn(() => Promise.resolve({})),
-  actualizarPlantillaPlanificacion: vi.fn(() => Promise.resolve({})),
+  crearPlanificacion: vi.fn(),
+  actualizarPlanificacion: vi.fn(),
 }))
 
 vi.mock('../../../../portal-maestros/services/maestroDataService.js', () => ({
@@ -40,13 +40,22 @@ vi.mock('../../api/offlineSyncAdapter.js', () => ({
 }))
 
 let lastOnNodeClick = null
+let lastRenderMapaArgs = null
 vi.mock('../../components/MapaContenidoSVG.js', () => ({
-  renderMapaContenidoSVG: vi.fn(({ onNodeClick }) => {
+  renderMapaContenidoSVG: vi.fn((args) => {
+    lastRenderMapaArgs = args
+    const { onNodeClick } = args
     lastOnNodeClick = onNodeClick
   }),
 }))
 
-import { obtenerClases } from '../../api/planificacionAdapter.js'
+import {
+  obtenerClases,
+  obtenerPlanificacionesConDetalles,
+  obtenerPlantillasPlanificacion,
+  crearPlanificacion,
+  actualizarPlanificacion,
+} from '../../api/planificacionAdapter.js'
 import { obtenerAlumnosRealesPorClase } from '../../services/realAlumnosService.js'
 import { OfflineSyncAdapter } from '../../api/offlineSyncAdapter.js'
 import { renderDisenadorCurricularView } from '../DisenadorCurricularView.js'
@@ -60,6 +69,7 @@ describe('DisenadorCurricularView', () => {
     container = document.createElement('div')
     document.body.appendChild(container)
     lastOnNodeClick = null
+    lastRenderMapaArgs = null
     vi.clearAllMocks()
   })
 
@@ -131,6 +141,71 @@ describe('DisenadorCurricularView', () => {
     expect(container.textContent).toContain('Violín Inicial')
     expect(container.textContent).toContain('Parámetros Curriculares y Frecuencia Horaria')
     expect(obtenerAlumnosRealesPorClase).toHaveBeenCalledWith('clase-1')
+  })
+
+  it('carga la estructura real del plan cuando la plantilla está vinculada a la clase', async () => {
+    obtenerClases.mockResolvedValue([{ id: 'clase-1', nombre: 'Violín Inicial' }])
+    obtenerAlumnosRealesPorClase.mockResolvedValue([])
+    obtenerPlanificacionesConDetalles.mockResolvedValue([
+      {
+        id: 'plan-1',
+        clase_id: 'clase-1',
+        nombre: 'Plan real',
+        objetivosEstructurados: [
+          {
+            id: 'u-1',
+            titulo: 'Unidad real',
+            objetivos: [
+              {
+                id: 'o-1',
+                titulo: 'Objetivo real',
+                indicadores: [
+                  { id: 'i-1', titulo: 'Indicador real', prerrequisitoId: null },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    ])
+
+    await renderDisenadorCurricularView(container, { claseId: 'clase-1' })
+    await flush()
+
+    expect(obtenerPlanificacionesConDetalles).toHaveBeenCalled()
+    expect(obtenerPlantillasPlanificacion).not.toHaveBeenCalled()
+    expect(lastRenderMapaArgs).toBeTruthy()
+    expect(lastRenderMapaArgs.unidades).toHaveLength(1)
+    expect(lastRenderMapaArgs.unidades[0].titulo).toBe('Unidad real')
+    expect(lastRenderMapaArgs.unidades[0].objetivos[0].indicadores[0].titulo).toBe('Indicador real')
+    expect(container.textContent).toContain('Violín Inicial')
+  })
+
+  it('persiste la estructura del diseñador en planificaciones y no en plantillas', async () => {
+    obtenerClases.mockResolvedValue([{ id: 'clase-1', nombre: 'Violín Inicial' }])
+    obtenerAlumnosRealesPorClase.mockResolvedValue([])
+    obtenerPlanificacionesConDetalles.mockResolvedValue([])
+    crearPlanificacion.mockResolvedValue({
+      id: 'plan-99',
+      objetivosEstructurados: [
+        {
+          id: 'u-1',
+          titulo: 'Unidad guardada',
+          objetivos: [{ id: 'o-1', titulo: 'Objetivo guardado', indicadores: [] }],
+        },
+      ],
+    })
+
+    await renderDisenadorCurricularView(container, { claseId: 'clase-1' })
+    await flush()
+
+    const btnGuardar = container.querySelector('#btn-guardar-plan-full')
+    expect(btnGuardar).toBeTruthy()
+    btnGuardar.click()
+    await flush()
+
+    expect(crearPlanificacion).toHaveBeenCalled()
+    expect(actualizarPlanificacion).not.toHaveBeenCalled()
   })
 
   describe('cambio de nodo (regresión M-3 — integración)', () => {

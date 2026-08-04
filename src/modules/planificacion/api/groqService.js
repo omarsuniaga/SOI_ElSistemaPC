@@ -68,10 +68,6 @@ async function proxyChat(messages, { maxTokens, temperature = 0.3, responseForma
 
 
 async function proxyTranscribe(audioBlob, fileName = 'audio.webm') {
-  if (config.ai.provider === 'ollama') {
-    throw new Error('Transcripción de audio no disponible en modo Ollama (usa VITE_AI_PROVIDER=groq o modo demo)')
-  }
-
   const { data: { session } } = await supabase.auth.getSession()
   const token = session?.access_token ?? ''
 

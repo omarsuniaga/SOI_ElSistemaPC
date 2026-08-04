@@ -7,23 +7,38 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 const mockRouter = { register: vi.fn() }
 vi.mock('../../../core/router/router.js', () => ({ router: mockRouter }))
 
-const mockRenderPlanificacionView = vi.fn()
+const mockRenderMaestroPlanificacionView = vi.fn()
+const mockRenderAcmAprobacionView = vi.fn()
 const mockRenderCoberturaView = vi.fn()
-vi.mock('../views/planificacionView.js', () => ({
-  renderPlanificacionView: mockRenderPlanificacionView,
-  renderCoberturaView: mockRenderCoberturaView,
+const mockRenderAcmPropuestasView = vi.fn()
+const mockRenderClasePlanificacionView = vi.fn()
+const mockRenderDisenadorView = vi.fn()
+const mockRenderRutaPedagogicaView = vi.fn()
+
+vi.mock('../views/MaestroPlanificacionView.js', () => ({
+  renderMaestroPlanificacionView: mockRenderMaestroPlanificacionView,
 }))
 
-vi.mock('../views/rutaAcademicaView.js', () => ({
-  renderRutaAcademicaView: vi.fn(),
+vi.mock('../views/AcmAprobacionView.js', () => ({
+  renderAcmAprobacionView: mockRenderAcmAprobacionView,
+}))
+
+vi.mock('../views/CoberturaCurricularView.js', () => ({
+  renderCoberturaCurricularView: mockRenderCoberturaView,
 }))
 
 vi.mock('../views/acmPropuestasView.js', () => ({
-  renderAcmPropuestasView: vi.fn(),
+  renderAcmPropuestasView: mockRenderAcmPropuestasView,
 }))
 
 vi.mock('../views/clasePlanificacionView.js', () => ({
-  renderClasePlanificacionView: vi.fn(),
+  renderClasePlanificacionView: mockRenderClasePlanificacionView,
+}))
+vi.mock('../views/DisenadorCurricularView.js', () => ({
+  renderDisenadorCurricularView: mockRenderDisenadorView,
+}))
+vi.mock('../views/RutaPedagogicaView.js', () => ({
+  renderRutaPedagogicaView: mockRenderRutaPedagogicaView,
 }))
 
 // ── Tests ──────────────────────────────────────────────────────────────────────
@@ -55,6 +70,23 @@ describe('planificacion.router - planificacion-clase route', () => {
     const mockContainer = document.createElement('div')
     claseRoute[1](mockContainer)
 
-    expect(renderClasePlanificacionView).toHaveBeenCalledWith(mockContainer)
+    expect(mockRenderClasePlanificacionView).toHaveBeenCalledWith(mockContainer, {})
+  })
+
+  it('the planificacion-disenador route forwards class params to renderDisenadorCurricularView', async () => {
+    const { registerRoutesPlanificacion } = await import('../planificacion.router.js')
+
+    registerRoutesPlanificacion()
+
+    const disenadorRoute = mockRouter.register.mock.calls.find((c) => c[0] === 'planificacion-disenador')
+    expect(disenadorRoute).toBeTruthy()
+
+    const mockContainer = document.createElement('div')
+    disenadorRoute[1](mockContainer, { clase: 'clase-123', parentRoute: 'planificacion-ruta' })
+
+    expect(mockRenderDisenadorView).toHaveBeenCalledWith(
+      mockContainer,
+      expect.objectContaining({ claseId: 'clase-123', parentRoute: 'planificacion-ruta' }),
+    )
   })
 })

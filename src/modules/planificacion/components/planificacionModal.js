@@ -1005,6 +1005,56 @@ function _getModalStyles() {
         justify-content: center;
       }
     }
+
+    @media (max-width: 576px) {
+      .pm-plan-section {
+        margin-bottom: 1.15rem;
+        padding-bottom: 1.15rem;
+      }
+
+      .pm-plan-section-title {
+        font-size: 0.72rem;
+      }
+
+      .pm-plan-label {
+        font-size: 0.85rem;
+      }
+
+      .pm-plan-input,
+      .pm-plan-select,
+      .pm-plan-textarea {
+        font-size: 1rem;
+        line-height: 1.45;
+        min-height: 44px;
+        padding: 0.72rem 0.9rem;
+      }
+
+      .pm-plan-textarea {
+        min-height: 96px;
+      }
+
+      #pl-tema,
+      #pl-recursos {
+        min-height: 44px;
+      }
+
+      #pl-objetivos {
+        min-height: 110px;
+      }
+
+      #pl-contenido {
+        min-height: 140px;
+      }
+
+      #pl-evaluacion,
+      #pl-observaciones {
+        min-height: 104px;
+      }
+
+      .pm-plan-section-desc {
+        font-size: 0.8rem;
+      }
+    }
   `
 }
 

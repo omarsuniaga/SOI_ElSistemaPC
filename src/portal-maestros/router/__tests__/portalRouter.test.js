@@ -90,4 +90,16 @@ describe('View Transitions', () => {
     // Should not throw
     expect(() => router._dispatch('empty-route')).not.toThrow()
   })
+
+  it('should preserve intended route params when auth guard redirects to login', () => {
+    router.setAuthGuard(() => false, ['login'])
+
+    router.navigate('planificacion-disenador', { claseId: 'clase-123', parentRoute: 'planificacion-ruta' })
+
+    expect(localStorage.getItem('intended-route')).toBe('planificacion-disenador')
+    expect(JSON.parse(localStorage.getItem('intended-route-params'))).toEqual({
+      claseId: 'clase-123',
+      parentRoute: 'planificacion-ruta',
+    })
+  })
 })

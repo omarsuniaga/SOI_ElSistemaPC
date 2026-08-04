@@ -25,12 +25,20 @@ vi.mock('../../services/realAlumnosService.js', () => ({
 vi.mock('../../api/offlineSyncAdapter.js', () => ({
   OfflineSyncAdapter: {
     guardarLocal: vi.fn(),
+    obtenerCola: vi.fn().mockResolvedValue([]),
   },
 }))
 
+vi.mock('../../../../portal-maestros/services/maestroDataService.js', () => ({
+  getMisClases: vi.fn().mockResolvedValue([]),
+}))
+
 let lastOnNodeClick = null
+let lastRenderArgs = null
 vi.mock('../../components/MapaContenidoSVG.js', () => ({
-  renderMapaContenidoSVG: vi.fn(({ onNodeClick }) => {
+  renderMapaContenidoSVG: vi.fn((args) => {
+    lastRenderArgs = args
+    const { onNodeClick } = args
     lastOnNodeClick = onNodeClick
   }),
 }))
@@ -64,6 +72,22 @@ describe('RutaPedagogicaView', () => {
     lastOnNodeClick = null
     vi.clearAllMocks()
 
+    const mockModalInstance = {
+      show: vi.fn(),
+      hide: vi.fn(),
+      dispose: vi.fn(),
+    }
+    global.bootstrap = {
+      Modal: class {
+        constructor() {
+          return mockModalInstance
+        }
+        static getInstance() {
+          return mockModalInstance
+        }
+      }
+    }
+
     obtenerClases.mockResolvedValue([mockClase])
     obtenerPlanificacionesConDetalles.mockResolvedValue([])
   })
@@ -73,6 +97,14 @@ describe('RutaPedagogicaView', () => {
     vi.restoreAllMocks()
   })
 
+  it('la ruta ya no expone la acción de crear unidad desde el mapa SVG', async () => {
+    obtenerAlumnosRealesPorClase.mockResolvedValue([])
+    await renderRutaPedagogicaView(container)
+    await flush()
+
+    expect(lastRenderArgs).not.toHaveProperty('onAddUnidad')
+  })
+
   it('un solo click en el botón "Ciclar ★" incrementa la evaluación en exactamente 1 estrella (no 2)', async () => {
     const alumno = mockAlumno({ estrellas: 0 })
     obtenerAlumnosRealesPorClase.mockResolvedValue([alumno])
@@ -80,7 +112,10 @@ describe('RutaPedagogicaView', () => {
     await renderRutaPedagogicaView(container)
     await flush()
 
-    const btn = container.querySelector('.btn-evaluar-one-tap[data-id="al-1"]')
+    lastOnNodeClick({ id: 'nd-1', titulo: 'Nodo 1' })
+    await flush()
+
+    const btn = document.querySelector('.btn-evaluar-one-tap[data-id="al-1"]')
     expect(btn).toBeTruthy()
 
     btn.click()
@@ -101,12 +136,15 @@ describe('RutaPedagogicaView', () => {
     await renderRutaPedagogicaView(container)
     await flush()
 
+    lastOnNodeClick({ id: 'nd-1', titulo: 'Nodo 1' })
+    await flush()
+
     const secuencia = []
     for (let i = 0; i < 7; i++) {
       // _renderTbody() reemplaza el <tbody>.innerHTML tras cada tap (fix
       // m-2: repintado parcial), lo que reemplaza el nodo del botón —
       // hay que volver a consultarlo en cada vuelta, no reusar la referencia.
-      const btn = container.querySelector('.btn-evaluar-one-tap[data-id="al-1"]')
+      const btn = document.querySelector('.btn-evaluar-one-tap[data-id="al-1"]')
       btn.click()
       secuencia.push(alumno.estrellas)
     }
@@ -121,7 +159,10 @@ describe('RutaPedagogicaView', () => {
     await renderRutaPedagogicaView(container)
     await flush()
 
-    const row = container.querySelector('.row-alumno-ruta[data-id="al-1"]')
+    lastOnNodeClick({ id: 'nd-1', titulo: 'Nodo 1' })
+    await flush()
+
+    const row = document.querySelector('.row-alumno-modal-eval[data-id="al-1"]')
     expect(row).toBeTruthy()
 
     row.click()
@@ -136,7 +177,10 @@ describe('RutaPedagogicaView', () => {
     await renderRutaPedagogicaView(container)
     await flush()
 
-    const row = container.querySelector('.row-alumno-ruta[data-id="al-1"]')
+    lastOnNodeClick({ id: 'nd-1', titulo: 'Nodo 1' })
+    await flush()
+
+    const row = document.querySelector('.row-alumno-modal-eval[data-id="al-1"]')
     row.click()
 
     expect(alumno.estrellas).toBe(0)
@@ -165,7 +209,7 @@ describe('RutaPedagogicaView', () => {
 
       await flush()
 
-      const fila = container.querySelector('.row-alumno-ruta[data-id="al-1"]')
+      const fila = document.querySelector('.row-alumno-modal-eval[data-id="al-1"]')
       expect(fila.textContent).toContain('4 Estrellas')
     })
 
@@ -206,9 +250,9 @@ describe('RutaPedagogicaView', () => {
       await flush()
 
       // La consulta de nd-2 sigue en vuelo: la fila queda deshabilitada.
-      const rowCargando = container.querySelector('.row-alumno-ruta[data-id="al-1"]')
+      const rowCargando = document.querySelector('.row-alumno-modal-eval[data-id="al-1"]')
       expect(rowCargando.className).toContain('opacity-50')
-      expect(container.querySelector('.btn-evaluar-one-tap[data-id="al-1"]').disabled).toBe(true)
+      expect(document.querySelector('.btn-evaluar-one-tap[data-id="al-1"]').disabled).toBe(true)
 
       // Un click mientras se resuelve NO debe registrar evaluación — de lo
       // contrario se guardaría con el nodoId nuevo pero el conteo base del
@@ -219,7 +263,7 @@ describe('RutaPedagogicaView', () => {
       resolveNodo2([mockAlumno({ id: 'al-1', estrellas: 3 })])
       await flush()
 
-      const rowLista = container.querySelector('.row-alumno-ruta[data-id="al-1"]')
+      const rowLista = document.querySelector('.row-alumno-modal-eval[data-id="al-1"]')
       expect(rowLista.className).not.toContain('opacity-50')
 
       rowLista.click()
@@ -251,14 +295,14 @@ describe('RutaPedagogicaView', () => {
       lastOnNodeClick({ id: 'nd-3', titulo: 'Nodo 3' })
       await flush()
 
-      expect(container.querySelector('.row-alumno-ruta[data-id="al-1"]').textContent).toContain('2 Estrellas')
+      expect(document.querySelector('.row-alumno-modal-eval[data-id="al-1"]').textContent).toContain('2 Estrellas')
 
       // La respuesta tardía de nd-2 llega después: no debe pisar los datos
       // del nodo 3 ya confirmados en pantalla.
       resolveNodo2([mockAlumno({ id: 'al-1', estrellas: 5 })])
       await flush()
 
-      expect(container.querySelector('.row-alumno-ruta[data-id="al-1"]').textContent).toContain('2 Estrellas')
+      expect(document.querySelector('.row-alumno-modal-eval[data-id="al-1"]').textContent).toContain('2 Estrellas')
     })
   })
 })

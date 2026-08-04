@@ -2,8 +2,8 @@
   "name": "Portal Maestros SOI",
   "short_name": "SOI Maestros",
   "description": "Sistema Académico Institucional - Portal de Maestros",
-  "id": "/maestros.html",
-  "start_url": "/maestros.html",
+  "id": "/",
+  "start_url": "/",
   "display": "standalone",
   "display_override": [
     "window-controls-overlay",
@@ -79,7 +79,7 @@
       "name": "Mis Clases",
       "short_name": "Clases",
       "description": "Ver mis clases de hoy",
-      "url": "/maestros.html#/hoy",
+      "url": "/#/hoy",
       "icons": [
         {
           "src": "/icons/icon-96.png",
@@ -91,7 +91,7 @@
       "name": "Calendario",
       "short_name": "Calendario",
       "description": "Ver calendario de clases",
-      "url": "/maestros.html#/calendario",
+      "url": "/#/calendario",
       "icons": [
         {
           "src": "/icons/icon-96.png",
@@ -103,7 +103,7 @@
       "name": "Métricas",
       "short_name": "Métricas",
       "description": "Ver estadísticas y métricas",
-      "url": "/maestros.html#/metricas",
+      "url": "/#/metricas",
       "icons": [
         {
           "src": "/icons/icon-96.png",

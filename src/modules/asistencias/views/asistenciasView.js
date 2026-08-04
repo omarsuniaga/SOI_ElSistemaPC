@@ -1,4 +1,4 @@
-import '../styles/asistencias.css'
+﻿import '../styles/asistencias.css'
 import { AppModal } from '../../../shared/components/AppModal.js'
 import { AppToast } from '../../../shared/components/AppToast.js'
 import {
@@ -247,6 +247,42 @@ function formatTimelineDate(dateStr) {
   return date.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })
 }
 
+function getObservacionTipoLabel(tipo) {
+  const labels = {
+    academico: 'Académica',
+    conducta: 'Conducta',
+    seguimiento: 'Seguimiento',
+    familiar: 'Familiar',
+    salud: 'Salud',
+  }
+
+  if (!tipo) return 'General'
+  return labels[tipo] || tipo.charAt(0).toUpperCase() + tipo.slice(1)
+}
+
+function getPrioridadLabel(prioridad) {
+  const labels = {
+    baja: 'Prioridad baja',
+    media: 'Prioridad media',
+    alta: 'Prioridad alta',
+    urgente: 'Prioridad urgente',
+  }
+
+  if (!prioridad) return 'Sin prioridad'
+  return labels[prioridad] || prioridad.charAt(0).toUpperCase() + prioridad.slice(1)
+}
+
+function getPrioridadBadgeClass(prioridad) {
+  const classes = {
+    baja: 'success',
+    media: 'warning',
+    alta: 'danger',
+    urgente: 'danger',
+  }
+
+  return classes[prioridad] || 'secondary'
+}
+
 function _attachEvents(container) {
   container.querySelector('#select-periodo')?.addEventListener('change', async (e) => {
     state.filtroPeriodo = e.target.value
@@ -302,12 +338,51 @@ async function openDetailModal(sesionId) {
             <p class="text-secondary small">${escapeHTML(detail.sesion.observacionesGenerales || 'Sin observaciones.')}</p>
           </div>
           <div class="col-md-4 bg-body-tertiary p-3 rounded">
-            <div class="d-flex justify-content-between mb-2"><span>Fecha:</span> <strong>${detail.sesion.fecha}</strong></div>
-            <div class="d-flex justify-content-between mb-2"><span>Horario:</span> <strong>${(detail.sesion.horaInicio || '--:--').slice(0, 5)} - ${(detail.sesion.horaFin || '--:--').slice(0, 5)}</strong></div>
+            <div class="d-flex justify-content-between mb-2"><span>Fecha:</span> <strong>${escapeHTML(detail.sesion.fecha || '—')}</strong></div>
+            <div class="d-flex justify-content-between mb-2"><span>Horario:</span> <strong>${escapeHTML((detail.sesion.horaInicio || '--:--').slice(0, 5))} - ${escapeHTML((detail.sesion.horaFin || '--:--').slice(0, 5))}</strong></div>
             <div class="d-flex justify-content-between mb-2"><span>Maestro:</span> <strong>${escapeHTML(detail.sesion.maestroNombre)}</strong></div>
             <button class="btn btn-sm btn-primary w-100 mt-2" id="btn-evaluar-modal-inner">
               <i class="bi bi-star me-1"></i>Evaluar Contenido (1-5★)
             </button>
+          </div>
+          <div class="col-12">
+            <h6 class="fw-bold border-bottom pb-2 mb-3">Registro de Observaciones</h6>
+            ${
+              detail.observaciones?.length
+                ? `
+              <div class="observaciones-section">
+                <div class="d-flex flex-column gap-3">
+                  ${detail.observaciones
+                    .map(
+                      (o) => `
+                    <article class="border rounded-3 p-3 bg-body">
+                      <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-2">
+                        <div>
+                          <div class="fw-semibold">${escapeHTML(o.titulo || 'Observación sin título')}</div>
+                          <div class="small text-muted">
+                            <i class="bi bi-person me-1"></i>${escapeHTML(o.alumnoNombre || '—')}
+                            <span class="mx-1">•</span>
+                            ${escapeHTML(getObservacionTipoLabel(o.tipo))}
+                          </div>
+                        </div>
+                        <div class="d-flex flex-wrap gap-2">
+                          <span class="badge text-bg-${getPrioridadBadgeClass(o.prioridad)}">${escapeHTML(getPrioridadLabel(o.prioridad))}</span>
+                        </div>
+                      </div>
+                      <div class="observacion-content">${escapeHTML(o.descripcion || 'Sin descripción.')}</div>
+                    </article>
+                  `,
+                    )
+                    .join('')}
+                </div>
+              </div>
+            `
+                : `
+              <div class="alert alert-light border small mb-0">
+                No hay observaciones registradas para esta sesión.
+              </div>
+            `
+            }
           </div>
           <div class="col-12">
             <h6 class="fw-bold border-bottom pb-2 mb-3">Listado de Asistencia y Evaluación</h6>
@@ -327,7 +402,7 @@ async function openDetailModal(sesionId) {
                     <tr>
                       <td>${escapeHTML(a.alumnoNombre)}</td>
                       <td class="text-center">
-                        <span class="badge bg-${ESTADO_LABEL[a.estado]?.css || 'secondary'}">${ESTADO_LABEL[a.estado]?.label || a.estado}</span>
+                        <span class="badge bg-${ESTADO_LABEL[a.estado]?.css || 'secondary'}">${escapeHTML(ESTADO_LABEL[a.estado]?.label || a.estado)}</span>
                       </td>
                       <td class="small text-muted">${escapeHTML(a.observacion || a.justificacionTexto || '-')}</td>
                     </tr>

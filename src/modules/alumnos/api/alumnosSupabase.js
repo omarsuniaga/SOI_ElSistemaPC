@@ -507,6 +507,151 @@ export async function obtenerResumenAcademico(alumnoId) {
   }
 }
 
+function _buildResumenAcademicoIntegradoFallback({ indicatorAttempts = [], starEvaluations = [], indicatorsMeta = [], nodesMeta = [], clasesMeta = [] }) {
+  const indicatorMap = new Map((indicatorsMeta || []).map((item) => [item.id, item]))
+  const nodeMap = new Map((nodesMeta || []).map((item) => [item.id, item.name]))
+  const claseMap = new Map((clasesMeta || []).map((item) => [item.id, item.nombre]))
+
+  const attempts = (indicatorAttempts || []).map((row) => {
+    const meta = indicatorMap.get(row.indicator_id)
+    return {
+      ...row,
+      fuente: 'indicator_attempt',
+      fuenteLabel: 'Indicador',
+      fuenteIcono: '📘',
+      indicador_nombre: meta?.nombre || 'Indicador',
+      nodo_nombre: nodeMap.get(meta?.node_id) || 'Tema',
+      clase_nombre: claseMap.get(row.covered_by_clase_id) || 'Clase',
+      created_at: row.created_at,
+    }
+  })
+
+  const stars = (starEvaluations || []).map((row) => {
+    const meta = indicatorMap.get(row.indicator_id)
+    return {
+      ...row,
+      fuente: 'estrella',
+      fuenteLabel: 'Estrella',
+      fuenteIcono: '⭐',
+      indicador_nombre: meta?.nombre || 'Indicador',
+      nodo_nombre: nodeMap.get(meta?.node_id) || 'Tema',
+      clase_nombre: claseMap.get(row.clase_id) || 'Clase',
+      fechaReferencia: row.fecha_evaluacion || row.created_at,
+    }
+  })
+
+  const notasIntegradas = [
+    ...attempts.map((row) => Number(row.nota)),
+    ...stars.map((row) => Number(row.nota)),
+  ].filter((value) => Number.isFinite(value) && value !== 0)
+
+  const promedio = notasIntegradas.length > 0
+    ? Math.round((notasIntegradas.reduce((sum, nota) => sum + nota, 0) / notasIntegradas.length) * 100) / 100
+    : null
+
+  return {
+    alumno_id: null,
+    total_indicator_attempts: attempts.length,
+    total_indicator_attempts_with_note: attempts.filter((row) => row.nota != null && row.nota !== 0).length,
+    indicadores_aprobados: attempts.filter((row) => row.nota >= 4).length,
+    promedio_indicator_attempts: attempts.length > 0
+      ? Math.round((attempts.filter((row) => row.nota != null && row.nota !== 0).reduce((sum, row) => sum + Number(row.nota), 0) / Math.max(attempts.filter((row) => row.nota != null && row.nota !== 0).length, 1)) * 100) / 100
+      : null,
+    total_star_evaluations: stars.length,
+    total_star_evaluations_with_note: stars.filter((row) => row.nota != null && row.nota !== 0).length,
+    estrellas_aprobadas: stars.filter((row) => row.nota >= 4).length,
+    promedio_star_evaluations: stars.length > 0
+      ? Math.round((stars.filter((row) => row.nota != null && row.nota !== 0).reduce((sum, row) => sum + Number(row.nota), 0) / Math.max(stars.filter((row) => row.nota != null && row.nota !== 0).length, 1)) * 100) / 100
+      : null,
+    promedio_integrado: promedio,
+    historial_indicator_attempts: attempts.slice(0, 25),
+    historial_star_evaluations: stars.slice(0, 25),
+  }
+}
+
+export async function obtenerResumenAcademicoIntegrado(alumnoId, { limite = 25 } = {}) {
+  try {
+    const { data, error } = await supabase.rpc('fn_resumen_academico_integrado', {
+      p_alumno_id: alumnoId,
+      p_limite: limite,
+    })
+
+    if (error) throw error
+    return data || null
+  } catch (error) {
+    const [
+      { data: indicatorAttempts, error: attemptsError },
+      { data: starEvaluations, error: starsError },
+    ] = await Promise.all([
+      supabase
+        .from('indicator_attempts')
+        .select('id, nota, observations, tarea, created_at, indicator_id, covered_by_clase_id')
+        .eq('student_id', alumnoId)
+        .order('created_at', { ascending: false })
+        .limit(limite),
+      supabase
+        .from('evaluacion_indicador')
+        .select('id, indicator_id, clase_id, nota, estado, observaciones, fecha_evaluacion, created_at')
+        .eq('alumno_id', alumnoId)
+        .order('fecha_evaluacion', { ascending: false })
+        .order('created_at', { ascending: false })
+        .limit(limite),
+    ])
+
+    if (attemptsError && starsError) {
+      console.warn('[alumnosSupabase] Fallback integrado: sin datos remotos', error?.message || error)
+      return _buildResumenAcademicoIntegradoFallback({
+        indicatorAttempts: [],
+        starEvaluations: [],
+        indicatorsMeta: [],
+        nodesMeta: [],
+        clasesMeta: [],
+      })
+    }
+
+    const indicatorIds = [
+      ...new Set([
+        ...((indicatorAttempts || []).map((row) => row.indicator_id).filter(Boolean)),
+        ...((starEvaluations || []).map((row) => row.indicator_id).filter(Boolean)),
+      ]),
+    ]
+    const claseIds = [
+      ...new Set([
+        ...((indicatorAttempts || []).map((row) => row.covered_by_clase_id).filter(Boolean)),
+        ...((starEvaluations || []).map((row) => row.clase_id).filter(Boolean)),
+      ]),
+    ]
+
+    const [{ data: indicatorsMeta }, { data: classesMeta }] = await Promise.all([
+      indicatorIds.length
+        ? supabase
+            .from('indicators')
+            .select('id, nombre, node_id')
+            .in('id', indicatorIds)
+        : Promise.resolve({ data: [] }),
+      claseIds.length
+        ? supabase
+            .from('clases')
+            .select('id, nombre')
+            .in('id', claseIds)
+        : Promise.resolve({ data: [] }),
+    ])
+
+    const nodeIds = [...new Set((indicatorsMeta || []).map((row) => row.node_id).filter(Boolean))]
+    const { data: nodesMeta } = nodeIds.length
+      ? await supabase.from('nodes').select('id, name').in('id', nodeIds)
+      : { data: [] }
+
+    return _buildResumenAcademicoIntegradoFallback({
+      indicatorAttempts: indicatorAttempts || [],
+      starEvaluations: starEvaluations || [],
+      indicatorsMeta: indicatorsMeta || [],
+      nodesMeta: nodesMeta || [],
+      clasesMeta: classesMeta || [],
+    })
+  }
+}
+
 export async function obtenerAsistenciasAlumno(alumnoId) {
   const { data, error } = await supabase
     .from('asistencias')
@@ -533,4 +678,4 @@ export async function obtenerInscripcionesDetalladasAlumno(alumnoId) {
     throw new Error('No se pudieron cargar las clases del alumno')
   }
   return (data || []).map(r => r.clases).filter(Boolean)
-}
+}

@@ -3,6 +3,7 @@ import { escapeHTML } from '../../clases/utils/clasesUtils.js'
 import { AppToast } from '../../../shared/components/AppToast.js'
 import { obtenerClases, obtenerPlanificacionesConDetalles } from '../api/planificacionAdapter.js'
 import { renderMapaContenidoSVG } from '../components/MapaContenidoSVG.js'
+import { extraerNodosDePlan } from '../components/routeNodes.js'
 import { obtenerAlumnosRealesPorClase } from '../services/realAlumnosService.js'
 import { OfflineSyncAdapter } from '../api/offlineSyncAdapter.js'
 import { IndicadorLogro } from '../domain/IndicadorLogro.js'
@@ -98,7 +99,7 @@ function _renderUI(container, clases, planificaciones, { parentRoute = 'planific
     const planClase = planificaciones.find((p) => String(p.clase_id || p.claseId) === String(selectedClaseId)) || planificaciones[0]
     const targetClaseObj = clases.find((c) => String(c.id) === String(selectedClaseId)) || { nombre: 'Clase General' }
 
-    const nodos = _extraerNodosDePlan(planClase, targetClaseObj)
+    const nodos = extraerNodosDePlan(planClase, targetClaseObj)
 
     // Métricas para la cabecera Premium
     const totalAlumnosCount = alumnosClase.length
@@ -106,9 +107,9 @@ function _renderUI(container, clases, planificaciones, { parentRoute = 'planific
     const idiaPromedio = Math.round(alumnosClase.reduce((acc, a) => acc + (a.idia || 0), 0) / (totalAlumnosCount || 1))
 
     container.innerHTML = `
-      <div class="container-fluid px-4 py-4">
+      <div class="container-fluid px-2 py-2">
         <!-- CABECERA PREMIUM EN GLASSMORPHISM / HSL GRADIENTE -->
-        <div class="card border-0 shadow-lg rounded-4 p-4 mb-4 text-white position-relative overflow-hidden"
+        <div class="card border-0 shadow-lg rounded-4 p-2 mb-2 text-white position-relative overflow-hidden"
              style="background: linear-gradient(135deg, hsl(224, 76%, 16%), hsl(263, 70%, 28%), hsl(217, 91%, 35%));">
           <div class="position-absolute top-0 end-0 p-3 pe-none" style="opacity:.1;">
             <i class="bi bi-diagram-3-fill display-1"></i>
@@ -202,12 +203,13 @@ function _renderUI(container, clases, planificaciones, { parentRoute = 'planific
           if (cached) {
             alumnosClase = cached
             nodoDatosListos = true
-            openNodoDetailModal(nodo, alumnosClase, nodos, selectedClaseId)
+            openNodoDetailModal(nodo, alumnosClase, nodos, selectedClaseId, true)
             _renderTbody()
             return
           }
 
           nodoDatosListos = false
+          openNodoDetailModal(nodo, alumnosClase, nodos, selectedClaseId, false)
           _renderTbody()
 
           obtenerAlumnosRealesPorClase(selectedClaseId, nodo.id).then((lista) => {
@@ -215,7 +217,7 @@ function _renderUI(container, clases, planificaciones, { parentRoute = 'planific
             nodoEvalCache.set(nodo.id, lista)
             alumnosClase = lista
             nodoDatosListos = true
-            openNodoDetailModal(nodo, alumnosClase, nodos, selectedClaseId)
+            openNodoDetailModal(nodo, alumnosClase, nodos, selectedClaseId, true)
             _renderTbody()
           })
         },
@@ -230,7 +232,10 @@ function _renderUI(container, clases, planificaciones, { parentRoute = 'planific
 
     container.querySelector('#btn-ir-disenador')?.addEventListener('click', () => {
       const activeNav = (typeof window !== 'undefined' && window.router) ? window.router : router
-      activeNav.navigate(`planificacion-disenador?clase=${selectedClaseId}`)
+      activeNav.navigate('planificacion-disenador', {
+        claseId: selectedClaseId,
+        parentRoute,
+      })
     })
 
     // Delegación ÚNICA para evaluar estrellas: un solo listener en el tbody
@@ -241,79 +246,6 @@ function _renderUI(container, clases, planificaciones, { parentRoute = 'planific
   _loadAlumnosYRender()
 }
 
-function _extraerNodosDePlan(plan, claseObj = {}) {
-  const nodos = []
-
-  // 1. Si el plan posee objetivosEstructurados (del Diseñador ACM / Supabase)
-  if (plan && Array.isArray(plan.objetivosEstructurados) && plan.objetivosEstructurados.length > 0) {
-    plan.objetivosEstructurados.forEach((unidad, uIdx) => {
-      // Estructura nueva (Unidad -> Objetivos -> Indicadores). Fallback a la
-      // vieja (Unidad -> Indicadores directo) para planes guardados antes
-      // del cambio de esquema, sin romper su lectura.
-      const objetivosDeUnidad = Array.isArray(unidad.objetivos) && unidad.objetivos.length > 0
-        ? unidad.objetivos
-        : [{ id: unidad.id, titulo: unidad.titulo, indicadores: unidad.indicadores || [] }]
-
-      let huboIndicador = false
-      objetivosDeUnidad.forEach((obj, objIdx) => {
-        if (Array.isArray(obj.indicadores) && obj.indicadores.length > 0) {
-          huboIndicador = true
-          obj.indicadores.forEach((ind, indIdx) => {
-            const tituloInd = ind.titulo || `Indicador ${indIdx + 1}`
-            nodos.push({
-              id: ind.id || `node-${plan.id || claseObj.id}-${uIdx + 1}-${objIdx + 1}-${indIdx + 1}`,
-              // Jerarquía siempre visible en el nodo: Unidad › Objetivo › Indicador.
-              titulo: `${unidad.titulo} › ${obj.titulo} › ${tituloInd}`,
-              estado: ind.prerrequisitoId ? 'en_proceso' : 'logrado',
-              prerrequisitoId: ind.prerrequisitoId || null,
-            })
-          })
-        }
-      })
-      if (!huboIndicador) {
-        nodos.push({
-          id: unidad.id || `node-${plan.id || claseObj.id}-${uIdx + 1}`,
-          titulo: unidad.titulo || `Unidad ${uIdx + 1}`,
-          estado: uIdx === 0 ? 'logrado' : 'en_proceso',
-        })
-      }
-    })
-    return nodos
-  }
-
-  // 2. Si el plan posee contenido/tema directo en la base de datos Supabase
-  if (plan && (plan.tema || plan.contenido)) {
-    const items = (plan.contenido || plan.tema)
-      .split(/[\n,;•.]/)
-      .map((s) => s.trim())
-      .filter((s) => s.length > 3)
-
-    if (items.length > 0) {
-      items.forEach((itemText, idx) => {
-        nodos.push({
-          id: `node-${plan.id || 'real'}-${idx + 1}`,
-          titulo: itemText,
-          estado: idx === 0 ? 'logrado' : idx === 1 ? 'en_proceso' : 'pendiente',
-        })
-      })
-      return nodos
-    }
-  }
-
-  // 3. Sin plan real todavía: muestra de ejemplo (NO son datos reales de la
-  //    clase). Se marca esDemo=true para que la UI avise — se reemplaza por
-  //    completo en cuanto el maestro publique un plan real desde el Diseñador.
-  const prefix = claseObj?.id ? `node-${claseObj.id}` : 'node-real'
-  const nodosDemo = [
-    { id: `${prefix}-u1`, titulo: `Unidad 1: Técnica Base - ${claseObj.nombre || 'Instrumento'}`, estado: 'logrado' },
-    { id: `${prefix}-u2`, titulo: `Unidad 2: Escalas y Articulación`, estado: 'en_proceso' },
-    { id: `${prefix}-u3`, titulo: `Unidad 3: Control de Pulso y Ritmo`, estado: 'pendiente' },
-    { id: `${prefix}-u4`, titulo: `Unidad 4: Independencia y Dinámicas`, estado: 'pendiente' },
-    { id: `${prefix}-u5`, titulo: `Unidad 5: Repertorio e Interpretación`, estado: 'pendiente' },
-  ]
-  nodosDemo.esDemo = true
-  return nodosDemo
-}
 
 function _renderEstrellasSVG(cant) {
   let html = ''
@@ -375,7 +307,7 @@ function _mostrarExplicacionIDIA() {
               <span class="badge bg-warning-subtle text-warning-emphasis">Atención</span>
             </div>
             <div class="d-flex align-items-center justify-content-between p-2 rounded bg-danger bg-opacity-10 border border-danger border-opacity-25" style="font-size:0.78rem;">
-              <span><i class="bi bi-x-circle-fill text-danger me-1"></i><strong>< 50%</strong> (Riesgo)</span>
+              <span><i class="bi bi-x-circle-fill text-danger me-1"></i><strong>&lt; 50%</strong> (Riesgo)</span>
               <span class="badge bg-danger-subtle text-danger">Riesgo</span>
             </div>
           </div>
@@ -392,7 +324,7 @@ function _mostrarExplicacionIDIA() {
   document.body.appendChild(infoModalEl)
   const bsModal = new bootstrap.Modal(infoModalEl)
   infoModalEl.addEventListener('hidden.bs.modal', () => {
-    try { bsModal.dispose() } catch {}
+    try { bsModal.dispose() } catch { }
     infoModalEl.remove()
   }, { once: true })
   bsModal.show()
@@ -409,47 +341,48 @@ function _getEtiquetaEstrella(cant) {
 
 let activeNodeModal = null
 
-async function openNodoDetailModal(nodo, alumnosList = [], nodosSecuencia = [], selectedClaseId = '') {
+async function openNodoDetailModal(nodo, alumnosList = [], nodosSecuencia = [], selectedClaseId = '', datosListos = true) {
   const colaOfflineData = await OfflineSyncAdapter.obtenerCola()
   alumnosList._colaOfflineData = colaOfflineData
-  if (activeNodeModal) {
-    try {
-      const bsModal = bootstrap.Modal.getInstance(activeNodeModal)
-      if (bsModal) bsModal.dispose()
-    } catch {}
-    activeNodeModal.remove()
-    activeNodeModal = null
+
+  let isExisting = false
+  let modalEl
+  if (activeNodeModal && activeNodeModal.dataset.nodoId === nodo.id) {
+    modalEl = activeNodeModal
+    isExisting = true
+  } else {
+    modalEl = document.createElement('div')
+    modalEl.className = 'modal fade'
+    modalEl.id = 'nodoDetailModal90'
+    modalEl.tabIndex = -1
+    modalEl.dataset.nodoId = nodo.id
   }
 
-  const modalEl = document.createElement('div')
-  modalEl.className = 'modal fade'
-  modalEl.id = 'nodoDetailModal90'
-  modalEl.tabIndex = -1
+  modalEl._state = { nodo, alumnosList, nodosSecuencia, selectedClaseId, datosListos }
 
-  const rawTitle = nodo.titulo || nodo.nombre || 'Postura corporal y emisión sonora libre'
-
+  // ─── RENDER: Card-based student list (mobile-first) ───────────────────────
   const renderModalTbody = (list) => {
     if (!list || list.length === 0) {
       return `
-        <tr>
-          <td colspan="3" class="text-center py-4 text-muted">
-            <i class="bi bi-person-x display-6 d-block mb-2"></i>
-            No hay alumnos registrados o cargando lista de la clase...
-          </td>
-        </tr>
+        <div style="text-align: center; padding: 2.5rem 1rem; color: var(--bs-secondary-color, #94a3b8);">
+          <i class="bi bi-person-x" style="font-size: 2.5rem; display: block; margin-bottom: 0.75rem;"></i>
+          <p style="margin: 0; font-size: 0.9rem;">No hay alumnos registrados o cargando lista de la clase...</p>
+        </div>
       `
     }
+    const currentDatosListos = modalEl._state.datosListos !== false
     return list.map((a) => {
       const statusColor = a.justificado ? '#8b5cf6' : a.presente ? '#10b981' : '#ef4444'
+      const statusBg    = a.justificado ? 'rgba(139,92,246,.12)' : a.presente ? 'rgba(16,185,129,.10)' : 'rgba(239,68,68,.10)'
       const statusTitle = a.justificado ? 'Justificado' : a.presente ? 'Presente' : 'Ausente'
 
       const prevEstrellas = typeof a.estrellasAnteriores === 'number' ? a.estrellasAnteriores : null
-      const prevTexto = prevEstrellas !== null && prevEstrellas > 0 
-        ? `Previo: ${prevEstrellas}★ (${_getEtiquetaEstrella(prevEstrellas)})` 
+      const prevTexto = prevEstrellas !== null && prevEstrellas > 0
+        ? `Previo: ${prevEstrellas}★ — ${_getEtiquetaEstrella(prevEstrellas)}`
         : 'Sin calificación previa'
 
-      const esEvaluable = a.presente && !a.justificado
-      const statusLabel = a.justificado ? 'Bloqueado (Justificado)' : a.presente ? 'Presente' : 'Bloqueado (Ausente)'
+      const esEvaluable = currentDatosListos && a.presente && !a.justificado
+      const statusLabel = a.justificado ? 'Justificado' : a.presente ? (currentDatosListos ? 'Presente' : 'Actualizando…') : 'Ausente'
 
       const analisisDeuda = DeudaPedagogicaEngine.evaluarDeuda({
         alumnoId: a.id,
@@ -461,47 +394,96 @@ async function openNodoDetailModal(nodo, alumnosList = [], nodosSecuencia = [], 
       const tieneDeudaPrev = esEvaluable && (analisisDeuda.tieneDeuda || a.tieneDeudaPrevia)
       const warningDeudaText = analisisDeuda.advertencia || '⚠️ Deuda Pedagógica: Asistió hoy pero debe contenidos de clase(s) anterior(es).'
 
+      const idiaVal = a.idia || 85
+      const idiaClass = idiaVal >= 80 ? 'bg-info-subtle text-info-emphasis border-info-subtle' : 'bg-secondary-subtle text-body border-secondary-subtle'
+
+      const estrellaLabel = esEvaluable
+        ? (a.estrellas > 0 ? `${a.estrellas} Estrellas · ${a.estrellas}★  ${_getEtiquetaEstrella(a.estrellas)}` : 'Sin Registrar (0 Estrellas)')
+        : statusLabel
+      const estrellaColor = esEvaluable ? 'color: var(--bs-secondary-color, #94a3b8);' : 'color: #ef4444;'
+
       return `
-        <tr class="row-alumno-modal-eval${esEvaluable ? '' : ' opacity-50'}" data-id="${a.id}" style="cursor: ${esEvaluable ? 'pointer' : 'not-allowed'};">
-          <td>
-            <div class="d-flex align-items-center gap-2 flex-wrap">
-              <span class="rounded-circle d-inline-block shadow-sm"
-                    style="width: 10px; height: 10px; background-color: ${statusColor}; flex-shrink: 0;"
-                    title="${statusTitle}"></span>
-              <span class="fw-bold text-body fs-6">${escapeHTML(a.nombre)}</span>
-              ${tieneDeudaPrev ? `
-                <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-2 py-0.5"
-                      style="font-size: 0.68rem;" title="${escapeHTML(warningDeudaText)}">
-                  <i class="bi bi-exclamation-triangle-fill text-warning me-1"></i>Deuda Previa
-                </span>
-              ` : ''}
-            </div>
-            <small class="text-body-secondary d-block" style="font-size: 0.75rem;">
-              <i class="bi bi-clock-history me-1"></i>${escapeHTML(prevTexto)}
-            </small>
-            ${tieneDeudaPrev ? `
-              <div class="text-warning-emphasis small mt-1 p-1 bg-warning bg-opacity-10 rounded border border-warning border-opacity-25" style="font-size:0.7rem; line-height: 1.2;">
-                <i class="bi bi-info-circle me-1"></i>${escapeHTML(warningDeudaText)}
-              </div>
-            ` : ''}
-          </td>
-          <td class="text-center">
-            <span class="badge ${a.idia >= 80 ? 'bg-info-subtle text-info-emphasis border border-info-subtle' : 'bg-secondary-subtle text-body border'} px-2 py-1" style="font-size: 0.75rem;">
-              IDIA ${a.idia || 85}%
+        <div class="row-alumno-modal-eval row-alumno-ruta${esEvaluable ? '' : ' is-blocked opacity-50'}"
+             data-id="${a.id}"
+             style="
+               background: ${esEvaluable ? 'var(--bs-tertiary-bg, #1e293b)' : 'rgba(30,41,59,0.45)'};
+               border: 1px solid ${esEvaluable ? 'rgba(255,255,255,0.07)' : 'rgba(255,255,255,0.03)'};
+               border-radius: 14px;
+               padding: 12px 14px;
+               margin-bottom: 10px;
+               cursor: ${esEvaluable ? 'pointer' : 'not-allowed'};
+               opacity: ${esEvaluable ? '1' : '0.55'};
+               transition: background 0.15s ease;
+             "
+        >
+          <!-- ROW 1: dot + nombre + status pill -->
+          <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 5px;">
+            <span style="
+              width: 11px; height: 11px; border-radius: 50%; flex-shrink: 0;
+              background: ${statusColor}; box-shadow: 0 0 6px ${statusColor}88;
+            " title="${statusTitle}"></span>
+            <span style="font-weight: 700; font-size: 0.96rem; flex: 1; line-height: 1.25;">${escapeHTML(a.nombre)}</span>
+            <span style="
+              font-size: 0.67rem; font-weight: 600; padding: 2px 9px;
+              border-radius: 20px; white-space: nowrap;
+              background: ${statusBg}; color: ${statusColor}; border: 1px solid ${statusColor}44;
+            ">${statusTitle}</span>
+          </div>
+
+          <!-- ROW 2: calificación previa -->
+          <div style="font-size: 0.73rem; color: var(--bs-secondary-color, #94a3b8); margin-bottom: ${tieneDeudaPrev ? '8px' : '10px'}; padding-left: 21px;">
+            <i class="bi bi-clock-history" style="margin-right: 4px;"></i>${escapeHTML(prevTexto)}
+          </div>
+
+          <!-- ROW 3 (condicional): advertencia de deuda pedagógica -->
+          ${tieneDeudaPrev ? `
+          <div style="
+            background: rgba(234,179,8,.10); border: 1px solid rgba(234,179,8,.28);
+            border-radius: 8px; padding: 7px 10px; margin-bottom: 10px;
+            font-size: 0.71rem; line-height: 1.4; color: #fde68a;
+            display: flex; align-items: flex-start; gap: 6px;
+          ">
+            <i class="bi bi-exclamation-triangle-fill" style="color: #f59e0b; flex-shrink: 0; margin-top: 1px;"></i>
+            <span>${escapeHTML(warningDeudaText)}</span>
+          </div>
+          ` : ''}
+
+          <!-- ROW 4: IDIA + estrellas -->
+          <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+            <span class="border ${idiaClass}" style="font-size: 0.73rem; padding: 3px 10px; border-radius: 20px; font-weight: 600; white-space: nowrap;">
+              IDIA ${idiaVal}%
             </span>
-          </td>
-          <td class="text-center text-nowrap" style="white-space: nowrap;">
-            <div class="d-inline-flex align-items-center gap-1 ${esEvaluable ? 'text-warning' : 'text-secondary opacity-50'} user-select-none text-nowrap" style="white-space: nowrap; ${esEvaluable ? '' : 'pointer-events: none;'}">
-              ${_renderEstrellasSVG(a.estrellas || 0, esEvaluable)}
+            <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 2px;">
+              <button class="btn-evaluar-one-tap d-none" data-id="${a.id}" ${esEvaluable ? '' : 'disabled'}></button>
+              <div class="${esEvaluable ? 'text-warning' : 'text-secondary'}"
+                   style="display: inline-flex; gap: 2px; ${esEvaluable ? '' : 'opacity: 0.35; pointer-events: none;'}">
+                ${_renderEstrellasSVG(a.estrellas || 0, esEvaluable)}
+              </div>
+              <small style="font-size: 0.69rem; font-weight: 600; ${estrellaColor}">${estrellaLabel}</small>
             </div>
-            <small class="fw-bold ${esEvaluable ? 'text-body-secondary' : 'text-danger'} d-block" style="font-size: 0.75rem;">
-              ${esEvaluable ? (a.estrellas > 0 ? `${a.estrellas}★ (${_getEtiquetaEstrella(a.estrellas)})` : 'Sin Registrar (0★)') : statusLabel}
-            </small>
-          </td>
-        </tr>
+          </div>
+        </div>
       `
     }).join('')
   }
+  // ──────────────────────────────────────────────────────────────────────────
+
+  if (isExisting) {
+    const listEl = modalEl.querySelector('#tbody-modal-alumnos')
+    if (listEl) listEl.innerHTML = renderModalTbody(alumnosList)
+    return
+  }
+
+  if (activeNodeModal) {
+    try {
+      const bsModal = bootstrap.Modal.getInstance(activeNodeModal)
+      if (bsModal) bsModal.dispose()
+    } catch { }
+    activeNodeModal.remove()
+    activeNodeModal = null
+  }
+
+  const rawTitle = nodo.titulo || nodo.nombre || 'Postura corporal y emisión sonora libre'
 
   modalEl.innerHTML = `
     <div class="modal-dialog modal-dialog-centered modal-dialog-90" style="max-width: 96vw; width: 96vw;">
@@ -525,7 +507,7 @@ async function openNodoDetailModal(nodo, alumnosList = [], nodosSecuencia = [], 
 
         <!-- Body del Modal (Scrollable 90%) -->
         <div class="modal-body p-3 overflow-y-auto" style="background: var(--bs-body-bg, #0f172a);">
-          
+
           <!-- TARJETA DEL NODO SELECCIONADO -->
           <div class="card border border-primary-subtle bg-primary-subtle bg-opacity-10 rounded-4 p-3 mb-3 shadow-sm">
             <div class="d-flex align-items-center justify-content-between mb-1">
@@ -535,33 +517,21 @@ async function openNodoDetailModal(nodo, alumnosList = [], nodosSecuencia = [], 
               <span class="badge bg-primary px-2 py-1" style="font-size: 0.7rem;">Nodo Activo</span>
             </div>
             <p class="text-body-secondary mb-0" style="font-size: 0.8rem;">
-              Toca la fila de cualquier alumno para ciclar su calificación (1 a 5★).
+              Toca la card de cualquier alumno para ciclar su calificación (1 a 5★).
             </p>
           </div>
 
-          <!-- TABLA OPTIMIZADA PARA MÓVIL EN EL MODAL DE 90% -->
-          <div class="card border border-secondary-subtle bg-body-tertiary rounded-4 p-2 shadow-sm">
-            <div class="table-responsive">
-              <table class="table table-hover align-middle mb-0">
-                <thead>
-                  <tr>
-                    <th>Alumno</th>
-                    <th class="text-center">
-                      <div class="d-inline-flex align-items-center justify-content-center gap-1">
-                        <span>IDIA</span>
-                        <button type="button" class="btn btn-link p-0 text-info text-decoration-none" id="btn-info-idia" title="¿Qué es el Índice IDIA? Tap para saber más">
-                          <i class="bi bi-info-circle-fill fs-6"></i>
-                        </button>
-                      </div>
-                    </th>
-                    <th class="text-center text-nowrap" style="white-space: nowrap;">Calificación (1-5★)</th>
-                  </tr>
-                </thead>
-                <tbody id="tbody-modal-alumnos">
-                  ${renderModalTbody(alumnosList)}
-                </tbody>
-              </table>
-            </div>
+          <!-- CABECERA DE LISTA -->
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+            <span style="font-size: 0.78rem; font-weight: 600; color: var(--bs-secondary-color, #94a3b8); letter-spacing: 0.05em;">ALUMNOS</span>
+            <button type="button" class="btn btn-link p-0 text-info text-decoration-none d-inline-flex align-items-center gap-1" id="btn-info-idia" title="¿Qué es el Índice IDIA?" style="font-size: 0.75rem;">
+              <i class="bi bi-info-circle-fill"></i> ¿Qué es IDIA?
+            </button>
+          </div>
+
+          <!-- LISTA DE CARDS DE ALUMNOS -->
+          <div id="tbody-modal-alumnos">
+            ${renderModalTbody(alumnosList)}
           </div>
 
         </div>
@@ -583,13 +553,16 @@ async function openNodoDetailModal(nodo, alumnosList = [], nodosSecuencia = [], 
     _mostrarExplicacionIDIA()
   })
 
-  // Event listener con soporte para clic directo en estrella o clic de fila (ciclo)
-  const tbodyModal = modalEl.querySelector('#tbody-modal-alumnos')
-  tbodyModal?.addEventListener('click', (e) => {
-    const tr = e.target.closest('.row-alumno-modal-eval')
-    if (!tr) return
-    const alId = tr.dataset.id
-    const targetAl = alumnosList.find((al) => String(al.id) === String(alId))
+  // Event listener con soporte para clic directo en estrella o clic de card (ciclo)
+  const listContainer = modalEl.querySelector('#tbody-modal-alumnos')
+  listContainer?.addEventListener('click', (e) => {
+    const state = modalEl._state || { nodo, alumnosList, selectedClaseId, datosListos }
+    if (state.datosListos === false) return
+
+    const cardEl = e.target.closest('.row-alumno-modal-eval')
+    if (!cardEl) return
+    const alId = cardEl.dataset.id
+    const targetAl = state.alumnosList.find((al) => String(al.id) === String(alId))
 
     if (targetAl && targetAl.presente && !targetAl.justificado) {
       // Verificar si el clic fue en un ícono de estrella específico
@@ -603,13 +576,13 @@ async function openNodoDetailModal(nodo, alumnosList = [], nodosSecuencia = [], 
       // Guardar persistencia con IDs reales de Alumno, Clase y Nodo en Supabase/IndexedDB
       OfflineSyncAdapter.guardarLocal({
         alumnoId: targetAl.id,
-        claseId: targetAl.claseId || selectedClaseId,
-        nodoId: nodo.id,
+        claseId: targetAl.claseId || state.selectedClaseId,
+        nodoId: state.nodo.id,
         estrellas: targetAl.estrellas,
       })
 
       // Actualizar vista dentro del modal de forma silenciosa e instantánea
-      tbodyModal.innerHTML = renderModalTbody(alumnosList)
+      listContainer.innerHTML = renderModalTbody(state.alumnosList)
     }
   })
 
@@ -625,7 +598,7 @@ async function openNodoDetailModal(nodo, alumnosList = [], nodosSecuencia = [], 
   modalEl.addEventListener('hidden.bs.modal', () => {
     try {
       bsModal.dispose()
-    } catch {}
+    } catch { }
     modalEl.remove()
     activeNodeModal = null
   }, { once: true })

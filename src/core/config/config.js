@@ -12,11 +12,8 @@ export const config = {
     maxTokens: 1024,
     temperature: 0.3,
   },
-  // Proveedor de chat IA: 'groq' (proxy Supabase, default) u 'ollama' (local, solo dev)
   ai: {
-    provider: import.meta.env.VITE_AI_PROVIDER || 'groq',
-    ollamaUrl: import.meta.env.VITE_OLLAMA_URL || 'http://localhost:11434',
-    ollamaModel: import.meta.env.VITE_OLLAMA_MODEL || 'qwen2.5-coder:7b',
+    provider: 'groq',
   },
   // Sistema de tareas de maestro
   tareas: {

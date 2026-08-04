@@ -444,8 +444,11 @@ function _showLoginScreen() {
     renderViewContent('login', loginContainer, {}, new URLSearchParams(), {
       router,
       onLoginSuccess: (intended) => {
+        const intendedParamsRaw = localStorage.getItem('intended-route-params')
+        const intendedParams = intendedParamsRaw ? JSON.parse(intendedParamsRaw) : {}
+        localStorage.removeItem('intended-route-params')
         if (intended && intended !== 'login') {
-          router.navigate(intended)
+          router.navigate(intended, intendedParams)
         } else {
           initPortal()
         }
@@ -710,6 +713,13 @@ window.addEventListener('error', (e) => {
 })
 
 window.addEventListener('unhandledrejection', (e) => {
+  const ignoredPatterns = ['useCache', 'WebSocket', 'content.js']
+  const reasonText = String(e.reason || '')
+  if (ignoredPatterns.some((p) => reasonText.includes(p))) {
+    console.warn('[Ignored Rejection]', reasonText)
+    return
+  }
+
   reportError(e.reason instanceof Error ? e.reason : new Error(String(e.reason)), {
     context: 'unhandledRejection',
   })

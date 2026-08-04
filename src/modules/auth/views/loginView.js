@@ -220,8 +220,11 @@ async function handleLogin(email, password, remember, container) {
       showToast('¡Bienvenido!', 'success', container)
       setTimeout(() => {
         const intended = localStorage.getItem('intended-route')
+        const intendedParamsRaw = localStorage.getItem('intended-route-params')
+        const intendedParams = intendedParamsRaw ? JSON.parse(intendedParamsRaw) : {}
         localStorage.removeItem('intended-route')
-        router.navigate(intended || 'programas')
+        localStorage.removeItem('intended-route-params')
+        router.navigate(intended || 'programas', intendedParams)
       }, 500)
     } else {
       showToast(result.error || 'Error al iniciar sesión', 'error', container)

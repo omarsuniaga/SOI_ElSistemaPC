@@ -510,6 +510,493 @@ function _renderVista(container, ctx) {
 
   container.innerHTML = `
     <style>
+.pm-saved-overlay {
+  --pm-overlay-bg: rgb(15 23 42 / 0.68);
+  --pm-surface: var(--bs-body-bg, #ffffff);
+  --pm-surface-soft: var(--bs-tertiary-bg, #f8fafc);
+  --pm-border: var(--bs-border-color, #dbe3ee);
+  --pm-text: var(--bs-body-color, #172033);
+  --pm-muted: var(--bs-secondary-color, #64748b);
+  --pm-primary: var(--bs-primary, #2563eb);
+  --pm-primary-soft: rgb(37 99 235 / 0.1);
+  --pm-success: var(--bs-success, #16a34a);
+  --pm-success-soft: rgb(22 163 74 / 0.12);
+  --pm-whatsapp: #168c4b;
+  --pm-whatsapp-soft: rgb(22 140 75 / 0.12);
+  --pm-shadow: 0 24px 60px rgb(15 23 42 / 0.22);
+
+  position: fixed;
+  inset: 0;
+  z-index: 1080;
+
+  display: grid;
+  place-items: center;
+
+  padding: clamp(12px, 3vw, 32px);
+  overflow-y: auto;
+
+  background: var(--pm-overlay-bg);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.pm-saved-dialog {
+  width: min(100%, 760px);
+  max-height: calc(100dvh - 24px);
+  overflow-y: auto;
+
+  color: var(--pm-text);
+  background: var(--pm-surface);
+  border: 1px solid var(--pm-border);
+  border-radius: 20px;
+  box-shadow: var(--pm-shadow);
+}
+
+/* Header */
+
+.pm-saved-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+
+  padding: 20px;
+  border-bottom: 1px solid var(--pm-border);
+}
+
+.pm-saved-status-icon {
+  flex: 0 0 auto;
+
+  display: grid;
+  place-items: center;
+
+  width: 48px;
+  height: 48px;
+
+  color: var(--pm-success);
+  font-size: 1.5rem;
+
+  background: var(--pm-success-soft);
+  border: 1px solid rgb(22 163 74 / 0.2);
+  border-radius: 14px;
+
+  animation: pm-saved-pop 380ms ease-out both;
+}
+
+.pm-saved-header-copy {
+  min-width: 0;
+}
+
+.pm-saved-eyebrow {
+  display: block;
+  margin-bottom: 2px;
+
+  color: var(--pm-success);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.pm-saved-header h2 {
+  margin: 0;
+
+  color: var(--pm-text);
+  font-size: clamp(1.15rem, 3vw, 1.45rem);
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.pm-saved-header p {
+  margin: 4px 0 0;
+
+  color: var(--pm-muted);
+  font-size: 0.875rem;
+  line-height: 1.45;
+}
+
+/* Contenido */
+
+.pm-saved-content {
+  display: grid;
+  gap: 20px;
+  padding: 20px;
+}
+
+.pm-action-section {
+  min-width: 0;
+}
+
+.pm-section-heading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  margin-bottom: 10px;
+
+  color: var(--pm-muted);
+}
+
+.pm-section-heading i {
+  color: var(--pm-primary);
+  font-size: 0.95rem;
+}
+
+.pm-section-heading h3 {
+  margin: 0;
+
+  color: inherit;
+  font-size: 0.77rem;
+  font-weight: 700;
+  letter-spacing: 0.045em;
+  text-transform: uppercase;
+}
+
+/* Cuadrícula */
+
+.pm-actions-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.pm-actions-grid-featured,
+.pm-actions-grid-share {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+/* Tarjetas de acción */
+
+.pm-action-card {
+  position: relative;
+
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+
+  width: 100%;
+  min-width: 0;
+  min-height: 72px;
+
+  padding: 11px 12px;
+
+  color: var(--pm-text);
+  text-align: left;
+
+  background: var(--pm-surface-soft);
+  border: 1px solid var(--pm-border);
+  border-radius: 14px;
+
+  cursor: pointer;
+  transition:
+    transform 160ms ease,
+    border-color 160ms ease,
+    background-color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.pm-action-card:hover {
+  border-color: color-mix(in srgb, var(--pm-primary) 55%, var(--pm-border));
+  background: color-mix(
+    in srgb,
+    var(--pm-primary-soft) 45%,
+    var(--pm-surface)
+  );
+  box-shadow: 0 8px 20px rgb(15 23 42 / 0.08);
+  transform: translateY(-1px);
+}
+
+.pm-action-card:active {
+  transform: translateY(0);
+}
+
+.pm-action-card:focus-visible,
+.pm-nav-button:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--pm-primary) 35%, transparent);
+  outline-offset: 2px;
+}
+
+.pm-action-card-primary {
+  background: var(--pm-primary-soft);
+  border-color: color-mix(
+    in srgb,
+    var(--pm-primary) 28%,
+    var(--pm-border)
+  );
+}
+
+.pm-action-card-whatsapp {
+  background: var(--pm-whatsapp-soft);
+  border-color: color-mix(
+    in srgb,
+    var(--pm-whatsapp) 28%,
+    var(--pm-border)
+  );
+}
+
+.pm-action-card-whatsapp .pm-action-icon {
+  color: var(--pm-whatsapp);
+  background: var(--pm-whatsapp-soft);
+}
+
+/* Iconos */
+
+.pm-action-icon {
+  display: grid;
+  place-items: center;
+
+  width: 38px;
+  height: 38px;
+
+  color: var(--pm-primary);
+  font-size: 1rem;
+
+  background: var(--pm-primary-soft);
+  border-radius: 11px;
+}
+
+.pm-action-content {
+  min-width: 0;
+}
+
+.pm-action-content strong,
+.pm-action-content small {
+  display: block;
+}
+
+.pm-action-content strong {
+  color: var(--pm-text);
+  font-size: 0.9rem;
+  font-weight: 650;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.pm-action-content small {
+  margin-top: 3px;
+
+  color: var(--pm-muted);
+  font-size: 0.75rem;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.pm-action-arrow {
+  color: var(--pm-muted);
+  font-size: 0.8rem;
+}
+
+.pm-action-badge {
+  align-self: start;
+
+  padding: 3px 6px;
+
+  color: var(--pm-primary);
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+
+  background: var(--pm-primary-soft);
+  border-radius: 6px;
+}
+
+/* Navegación inferior */
+
+.pm-saved-footer {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+
+  padding: 14px 20px 20px;
+  border-top: 1px solid var(--pm-border);
+}
+
+.pm-nav-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+
+  min-height: 42px;
+  padding: 9px 14px;
+
+  color: var(--pm-text);
+  font-size: 0.85rem;
+  font-weight: 650;
+
+  background: transparent;
+  border: 1px solid var(--pm-border);
+  border-radius: 12px;
+
+  cursor: pointer;
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease,
+    transform 160ms ease;
+}
+
+.pm-nav-button:hover {
+  background: var(--pm-surface-soft);
+  border-color: color-mix(
+    in srgb,
+    var(--pm-primary) 40%,
+    var(--pm-border)
+  );
+}
+
+.pm-nav-button-primary {
+  color: #ffffff;
+  background: var(--pm-primary);
+  border-color: var(--pm-primary);
+}
+
+.pm-nav-button-primary:hover {
+  color: #ffffff;
+  background: color-mix(in srgb, var(--pm-primary) 88%, #000000);
+  border-color: transparent;
+}
+
+/* Modo oscuro de Bootstrap */
+
+[data-bs-theme='dark'] .pm-saved-overlay {
+  --pm-overlay-bg: rgb(2 6 23 / 0.78);
+  --pm-surface: var(--bs-body-bg, #111827);
+  --pm-surface-soft: var(--bs-tertiary-bg, #192233);
+  --pm-border: var(--bs-border-color, #334155);
+  --pm-text: var(--bs-body-color, #f1f5f9);
+  --pm-muted: var(--bs-secondary-color, #a8b3c4);
+  --pm-primary-soft: rgb(96 165 250 / 0.13);
+  --pm-success-soft: rgb(74 222 128 / 0.12);
+  --pm-whatsapp-soft: rgb(37 211 102 / 0.12);
+  --pm-shadow: 0 28px 70px rgb(0 0 0 / 0.48);
+}
+
+/* Fallback si la aplicación no usa data-bs-theme */
+
+@media (prefers-color-scheme: dark) {
+  .pm-saved-overlay:not(
+      :is(
+        [data-bs-theme='light'] *,
+        [data-bs-theme='light']
+      )
+    ) {
+    --pm-overlay-bg: rgb(2 6 23 / 0.78);
+    --pm-surface: #111827;
+    --pm-surface-soft: #192233;
+    --pm-border: #334155;
+    --pm-text: #f1f5f9;
+    --pm-muted: #a8b3c4;
+    --pm-primary-soft: rgb(96 165 250 / 0.13);
+    --pm-success-soft: rgb(74 222 128 / 0.12);
+  }
+}
+
+/* Tablet pequeña */
+
+@media (max-width: 620px) {
+  .pm-saved-overlay {
+    place-items: end center;
+    padding: 8px;
+  }
+
+  .pm-saved-dialog {
+    max-height: calc(100dvh - 8px);
+    border-radius: 18px 18px 12px 12px;
+  }
+
+  .pm-saved-header {
+    padding: 16px;
+  }
+
+  .pm-saved-content {
+    gap: 16px;
+    padding: 16px 16px calc(16px + var(--pm-bottom-nav-h, 64px) + env(safe-area-inset-bottom, 0px));
+  }
+
+  .pm-saved-footer {
+    position: sticky;
+    bottom: calc(var(--pm-bottom-nav-h, 64px) + env(safe-area-inset-bottom, 0px) + 8px);
+    z-index: 2;
+
+    padding: 12px 16px 16px;
+    margin-bottom: 0;
+
+    background: color-mix(
+      in srgb,
+      var(--pm-surface) 94%,
+      transparent
+    );
+    backdrop-filter: blur(12px);
+  }
+
+  .pm-actions-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .pm-actions-grid-featured,
+  .pm-actions-grid-share {
+    grid-template-columns: 1fr;
+  }
+
+  .pm-action-card {
+    min-height: 68px;
+  }
+}
+
+/* Dispositivos muy estrechos */
+
+@media (max-width: 380px) {
+  .pm-saved-header {
+    align-items: flex-start;
+  }
+
+  .pm-saved-status-icon {
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+  }
+
+  .pm-saved-footer {
+    grid-template-columns: 1fr;
+  }
+
+  .pm-action-card {
+    grid-template-columns: 36px minmax(0, 1fr) auto;
+    padding: 10px;
+  }
+
+  .pm-action-icon {
+    width: 36px;
+    height: 36px;
+  }
+}
+
+/* Accesibilidad */
+
+@media (prefers-reduced-motion: reduce) {
+  .pm-saved-status-icon,
+  .pm-action-card,
+  .pm-nav-button {
+    animation: none;
+    transition: none;
+  }
+}
+
+@keyframes pm-saved-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.72);
+  }
+
+  70% {
+    transform: scale(1.08);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
       .pm-asist-header { 
         display: flex; align-items: center; gap: 1rem;
         background: linear-gradient(135deg, var(--pm-primary), #1d4ed8); 
@@ -1760,7 +2247,10 @@ function _renderVista(container, ctx) {
             btn.style.background = 'var(--pm-success)'
             await createAchievementsSummaryModal(container, achievements)
           } else {
-            console.warn(
+            // Caso esperado (no un error): el cierre de sesión devuelve 0
+            // logros cuando todavía no hay progresos aprobados. Se loguea en
+            // debug para no ensuciar la consola en cada guardado de asistencia.
+            console.debug(
               '[asistencia] processSessionClosure devolvió 0 logros (puede que no haya progresos vinculados a esta sesión aún).',
             )
           }
@@ -1785,48 +2275,199 @@ function _renderVista(container, ctx) {
         // 5. Mostrar pantalla de éxito (overlay sólido sobre todo el contenido)
         const overlay = document.createElement('div')
         overlay.className = 'pm-saved-overlay'
+        overlay.classList.add('pm-saved-overlay')
+
         overlay.innerHTML = `
-        <div class="pm-saved-options">
-          <div class="pm-saved-header">
-            <div class="pm-saved-check-anim">
-              <i class="bi bi-check-circle-fill"></i>
-            </div>
-            <h3>Sesión Guardada</h3>
-            <p>¿Qué deseas hacer ahora?</p>
-          </div>
-          <div class="pm-saved-actions">
-            <button class="pm-btn pm-btn-primary" id="btn-resumen-pedagogico">
-              <i class="bi bi-bar-chart-steps"></i> Resumen pedagógico
-            </button>
-            <button class="pm-btn pm-btn-secondary" id="btn-editar-asistencia">
-              <i class="bi bi-pencil"></i> Editar Asistencia
-            </button>
-            <button class="pm-btn pm-btn-primary" id="btn-reporte-dia-overlay">
-              <i class="bi bi-file-earmark-pdf"></i> Reporte del día (PDF)
-            </button>
-            <button class="pm-btn pm-btn-secondary" id="btn-resumen-mes-overlay">
-              <i class="bi bi-bar-chart-line"></i> Resumen del mes (PDF)
-            </button>
-            <button class="pm-btn pm-btn-secondary" id="btn-informe-ped-overlay">
-              <i class="bi bi-mortarboard"></i> Informe pedagógico (PDF)
-            </button>
-            <button class="pm-btn pm-btn-outline" id="btn-compartir-correo">
-              <i class="bi bi-envelope"></i> Compartir por Correo
-            </button>
-            <button class="pm-btn pm-btn-success" id="btn-compartir-whatsapp">
-              <i class="bi bi-whatsapp"></i> Compartir por WhatsApp
-            </button>
-          </div>
-          <div class="pm-saved-nav">
-            <button class="pm-saved-nav-btn" id="btn-volver-hoy" title="Volver a Hoy">
-              <i class="bi bi-arrow-left-circle"></i>
-            </button>
-            <button class="pm-saved-nav-btn" id="btn-ir-calendario" title="Ir al Calendario">
-              <i class="bi bi-calendar3"></i>
-            </button>
-          </div>
+  <section
+    class="pm-saved-dialog"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="pm-saved-title"
+    aria-describedby="pm-saved-description"
+  >
+    <header class="pm-saved-header">
+      <div class="pm-saved-status-icon" aria-hidden="true">
+        <i class="bi bi-check-lg"></i>
+      </div>
+
+      <div class="pm-saved-header-copy">
+        <span class="pm-saved-eyebrow">Proceso completado</span>
+        <h2 id="pm-saved-title">Sesión guardada</h2>
+        <p id="pm-saved-description">
+          Selecciona qué deseas hacer a continuación.
+        </p>
+      </div>
+    </header>
+
+    <div class="pm-saved-content">
+      <section class="pm-action-section" aria-labelledby="pm-main-actions-title">
+        <div class="pm-section-heading">
+          <i class="bi bi-lightning-charge"></i>
+          <h3 id="pm-main-actions-title">Acciones principales</h3>
         </div>
-      `
+
+        <div class="pm-actions-grid pm-actions-grid-featured">
+          <button
+            type="button"
+            class="pm-action-card pm-action-card-primary"
+            id="btn-resumen-pedagogico"
+          >
+            <span class="pm-action-icon" aria-hidden="true">
+              <i class="bi bi-bar-chart-steps"></i>
+            </span>
+
+            <span class="pm-action-content">
+              <strong>Resumen pedagógico</strong>
+              <small>Revisa avances y resultados de la sesión.</small>
+            </span>
+
+            <i class="bi bi-chevron-right pm-action-arrow" aria-hidden="true"></i>
+          </button>
+
+          <button
+            type="button"
+            class="pm-action-card"
+            id="btn-editar-asistencia"
+          >
+            <span class="pm-action-icon" aria-hidden="true">
+              <i class="bi bi-person-check"></i>
+            </span>
+
+            <span class="pm-action-content">
+              <strong>Editar asistencia</strong>
+              <small>Corrige la asistencia registrada.</small>
+            </span>
+
+            <i class="bi bi-chevron-right pm-action-arrow" aria-hidden="true"></i>
+          </button>
+        </div>
+      </section>
+
+      <section class="pm-action-section" aria-labelledby="pm-reports-title">
+        <div class="pm-section-heading">
+          <i class="bi bi-file-earmark-text"></i>
+          <h3 id="pm-reports-title">Informes y reportes</h3>
+        </div>
+
+        <div class="pm-actions-grid">
+          <button
+            type="button"
+            class="pm-action-card"
+            id="btn-reporte-dia-overlay"
+          >
+            <span class="pm-action-icon" aria-hidden="true">
+              <i class="bi bi-file-earmark-pdf"></i>
+            </span>
+
+            <span class="pm-action-content">
+              <strong>Reporte del día</strong>
+              <small>Genera el resumen diario en PDF.</small>
+            </span>
+
+            <span class="pm-action-badge">PDF</span>
+          </button>
+
+          <button
+            type="button"
+            class="pm-action-card"
+            id="btn-resumen-mes-overlay"
+          >
+            <span class="pm-action-icon" aria-hidden="true">
+              <i class="bi bi-calendar2-range"></i>
+            </span>
+
+            <span class="pm-action-content">
+              <strong>Resumen del mes</strong>
+              <small>Consulta la evolución mensual.</small>
+            </span>
+
+            <span class="pm-action-badge">PDF</span>
+          </button>
+
+          <button
+            type="button"
+            class="pm-action-card"
+            id="btn-informe-ped-overlay"
+          >
+            <span class="pm-action-icon" aria-hidden="true">
+              <i class="bi bi-mortarboard"></i>
+            </span>
+
+            <span class="pm-action-content">
+              <strong>Informe pedagógico</strong>
+              <small>Genera un informe académico detallado.</small>
+            </span>
+
+            <span class="pm-action-badge">PDF</span>
+          </button>
+        </div>
+      </section>
+
+      <section class="pm-action-section" aria-labelledby="pm-share-title">
+        <div class="pm-section-heading">
+          <i class="bi bi-share"></i>
+          <h3 id="pm-share-title">Compartir</h3>
+        </div>
+
+        <div class="pm-actions-grid pm-actions-grid-share">
+          <button
+            type="button"
+            class="pm-action-card"
+            id="btn-compartir-correo"
+          >
+            <span class="pm-action-icon" aria-hidden="true">
+              <i class="bi bi-envelope"></i>
+            </span>
+
+            <span class="pm-action-content">
+              <strong>Enviar por correo</strong>
+              <small>Comparte los resultados por email.</small>
+            </span>
+
+            <i class="bi bi-chevron-right pm-action-arrow" aria-hidden="true"></i>
+          </button>
+
+          <button
+            type="button"
+            class="pm-action-card pm-action-card-whatsapp"
+            id="btn-compartir-whatsapp"
+          >
+            <span class="pm-action-icon" aria-hidden="true">
+              <i class="bi bi-whatsapp"></i>
+            </span>
+
+            <span class="pm-action-content">
+              <strong>Enviar por WhatsApp</strong>
+              <small>Comparte rápidamente el reporte.</small>
+            </span>
+
+            <i class="bi bi-chevron-right pm-action-arrow" aria-hidden="true"></i>
+          </button>
+        </div>
+      </section>
+    </div>
+
+    <footer class="pm-saved-footer">
+      <button
+        type="button"
+        class="pm-nav-button"
+        id="btn-volver-hoy"
+      >
+        <i class="bi bi-arrow-left"></i>
+        <span>Volver a hoy</span>
+      </button>
+
+      <button
+        type="button"
+        class="pm-nav-button pm-nav-button-primary"
+        id="btn-ir-calendario"
+      >
+        <i class="bi bi-calendar3"></i>
+        <span>Ir al calendario</span>
+      </button>
+    </footer>
+  </section>
+`
         document.body.appendChild(overlay)
 
         // Attach event listeners

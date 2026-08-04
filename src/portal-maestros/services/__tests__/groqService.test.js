@@ -26,11 +26,13 @@ globalThis.fetch = fetchMock
 vi.mock('../../utils/observationParser.js', () => ({
   segmentObservation: vi.fn(),
   inferTipo: vi.fn().mockReturnValue('tecnica'),
+  detectNote: vi.fn().mockReturnValue(null),
+  detectTask: vi.fn().mockReturnValue(null),
 }))
 
 import { supabase } from '../../../lib/supabaseClient.js'
 import { segmentObservation } from '../../utils/observationParser.js'
-import { generateMonthlyPatterns, analyzeObservation, enrichToDSL } from '../groqService.js'
+import { generateMonthlyPatterns, analyzeObservation, enrichToDSL, improveText, structureTextToDSL } from '../groqService.js'
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
@@ -211,6 +213,29 @@ describe('proxyChat — manejo de errores del Edge Function', () => {
     })
 
     await expect(enrichToDSL('texto')).rejects.toThrow('non-JSON (status 503)')
+  })
+})
+
+describe('fallbacks locales ante fallo de red', () => {
+  beforeEach(() => vi.clearAllMocks())
+
+  it('improveText devuelve el texto original si la red falla', async () => {
+    mockFetchNetworkError()
+
+    await expect(improveText('Texto original')).resolves.toBe('Texto original')
+  })
+
+  it('structureTextToDSL genera DSL local si la red falla', async () => {
+    mockFetchNetworkError()
+
+    const dsl = await structureTextToDSL('María trabajó escalas y dejó tarea para la próxima clase.', {
+      presentes: [{ id: '1', nombre: 'María Pérez', nombreCorto: 'María' }],
+      tipoClase: 'instrumento',
+      instrumento: 'violín',
+    })
+
+    expect(dsl).toContain('#María')
+    expect(dsl).toContain('!EN_PROGRESO')
   })
 })
 

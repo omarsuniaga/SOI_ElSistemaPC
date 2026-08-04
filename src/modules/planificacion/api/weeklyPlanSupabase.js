@@ -3,6 +3,13 @@ import { checkPeriodoSupport } from '../../../lib/periodoSniffer.js'
 
 const _warnedMissingTables = new Set()
 
+function normalizeNullableId(value) {
+  if (value == null) return null
+  const text = String(value).trim()
+  if (!text || text.toLowerCase() === 'null' || text.toLowerCase() === 'undefined') return null
+  return text
+}
+
 function isMissingSchemaTableError(error, tableName) {
   return Boolean(
     error &&
@@ -34,10 +41,13 @@ async function _obtenerMaestroIdActual() {
  * @returns {Promise<object|null>} Route version with levels or null
  */
 export async function _resolveRouteVersionForClase(claseId) {
+  const cleanClaseId = normalizeNullableId(claseId)
+  if (!cleanClaseId) return null
+
   const { data: clase, error: claseError } = await supabase
     .from('clases')
     .select('route_version_id')
-    .eq('id', claseId)
+    .eq('id', cleanClaseId)
     .maybeSingle()
 
   if (claseError) throw claseError
@@ -70,7 +80,8 @@ export async function _resolveRouteVersionForClase(claseId) {
  * vacío. No faltaban datos: hay 8 rutas cargadas.
  */
 export async function obtenerFuentesCurriculares(claseId) {
-  if (!claseId) {
+  const cleanClaseId = normalizeNullableId(claseId)
+  if (!cleanClaseId) {
     const { data, error } = await supabase
       .from('routes')
       .select('id, name, instrument, status')
@@ -85,7 +96,7 @@ export async function obtenerFuentesCurriculares(claseId) {
     }))
   }
 
-  const rv = await _resolveRouteVersionForClase(claseId)
+  const rv = await _resolveRouteVersionForClase(cleanClaseId)
   if (!rv?.id) return []
 
   const { data: levels, error } = await supabase
@@ -99,11 +110,14 @@ export async function obtenerFuentesCurriculares(claseId) {
 }
 
 export async function obtenerPlanSemanalPorNivel(levelId, instrument = 'violín') {
+  const cleanLevelId = normalizeNullableId(levelId)
+  if (!cleanLevelId) return null
+
   // Buscar la versión de ruta que contiene este levelId
   const { data: levelData, error: levelError } = await supabase
     .from('levels')
     .select('route_version_id')
-    .eq('id', levelId)
+    .eq('id', cleanLevelId)
     .maybeSingle()
 
   if (levelError) throw levelError
@@ -113,13 +127,14 @@ export async function obtenerPlanSemanalPorNivel(levelId, instrument = 'violín'
 }
 
 export async function obtenerPlanSemanalPorId(planId) {
-  if (!planId) return null
+  const cleanPlanId = normalizeNullableId(planId)
+  if (!cleanPlanId) return null
 
   // Consultar route_versions con su jerarquía completa
   const { data, error } = await supabase
     .from('route_versions')
     .select('*, levels(id, level_number, name, main_objective, nodes(id, name, type, order_index, objetivos(id, nombre, order_index, indicators(id, description, order_index))))')
-    .eq('id', planId)
+    .eq('id', cleanPlanId)
     .maybeSingle()
 
   if (error) throw error
@@ -263,14 +278,18 @@ export async function obtenerRutaActivaPorGrupo(groupId) {
  * trabajo y ya no está.
  */
 export async function obtenerAjustesPlanDocente(groupId, teacherId, weeklyPlanId) {
+  const cleanGroupId = normalizeNullableId(groupId)
+  const cleanTeacherId = normalizeNullableId(teacherId)
+  const cleanWeeklyPlanId = normalizeNullableId(weeklyPlanId)
+
   let q = supabase
     .from('acm_teacher_week_adjustments')
     .select('*')
     .order('week_number', { ascending: true })
 
-  if (groupId) q = q.eq('group_id', groupId)
-  if (teacherId) q = q.eq('teacher_id', teacherId)
-  if (weeklyPlanId) q = q.eq('weekly_plan_id', weeklyPlanId)
+  if (cleanGroupId) q = q.eq('group_id', cleanGroupId)
+  if (cleanTeacherId) q = q.eq('teacher_id', cleanTeacherId)
+  if (cleanWeeklyPlanId) q = q.eq('weekly_plan_id', cleanWeeklyPlanId)
 
   const { data, error } = await q
   if (error) throw error
@@ -278,13 +297,20 @@ export async function obtenerAjustesPlanDocente(groupId, teacherId, weeklyPlanId
 }
 
 export async function guardarAjustePlanDocente(adjustmentData) {
-  if (!adjustmentData?.group_id || !adjustmentData?.teacher_id) {
+  const cleanGroupId = normalizeNullableId(adjustmentData?.group_id)
+  const cleanTeacherId = normalizeNullableId(adjustmentData?.teacher_id)
+  if (!cleanGroupId || !cleanTeacherId) {
     throw new Error('El ajuste requiere group_id y teacher_id')
   }
 
   const { data, error } = await supabase
     .from('acm_teacher_week_adjustments')
-    .upsert(adjustmentData)
+    .upsert({
+      ...adjustmentData,
+      group_id: cleanGroupId,
+      teacher_id: cleanTeacherId,
+      weekly_plan_id: normalizeNullableId(adjustmentData?.weekly_plan_id),
+    })
     .select()
     .maybeSingle()
 
@@ -293,14 +319,15 @@ export async function guardarAjustePlanDocente(adjustmentData) {
 }
 
 export async function crearRutaActiva(routeData) {
-  if (!routeData?.group_id) {
+  const cleanGroupId = normalizeNullableId(routeData?.group_id)
+  if (!cleanGroupId) {
     throw new Error('Se requiere group_id para crear una ruta activa.')
   }
   return {
     id: routeData.weekly_plan_id,
     weekly_plan_id: routeData.weekly_plan_id,
-    group_id: routeData.group_id,
-    level_id: routeData.level_id,
+    group_id: cleanGroupId,
+    level_id: normalizeNullableId(routeData.level_id),
     current_week: 1,
     status: 'active',
   }
@@ -389,11 +416,12 @@ export async function registrarProgresoIndicador(studentId, indicatorId, status,
 }
 
 export async function obtenerProgresoGrupo(groupId, levelId = null) {
+  const cleanGroupId = normalizeNullableId(groupId)
   // Sin groupId (ej. sesión de asistencia emergente sin clase vinculada) no
   // hay nada que consultar — `.eq('covered_by_clase_id', groupId)` con
   // groupId null/undefined serializa el string "null" y Postgres lo rechaza
   // (columna uuid): "invalid input syntax for type uuid: null".
-  if (!groupId) return {}
+  if (!cleanGroupId) return {}
 
   // Obtener el período activo (si existe en base de datos y hay soporte de columnas en DB)
   const isPeriodoSupported = await checkPeriodoSupport()
@@ -409,7 +437,7 @@ export async function obtenerProgresoGrupo(groupId, levelId = null) {
     }
   }
 
-  let query = supabase.from('indicator_attempts').select('*').eq('covered_by_clase_id', groupId)
+  let query = supabase.from('indicator_attempts').select('*').eq('covered_by_clase_id', cleanGroupId)
   if (isPeriodoSupported && activePeriodId) {
     query = query.eq('periodo_id', activePeriodId)
   }

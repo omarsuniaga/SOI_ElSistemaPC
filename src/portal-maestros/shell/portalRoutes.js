@@ -40,6 +40,13 @@ const VIEW_LOADERS = {
 
 const MAESTRO_VIEWS = Object.keys(VIEW_LOADERS).concat(['logout'])
 
+function normalizeNullableParam(value) {
+  if (value == null) return null
+  const text = String(value).trim()
+  if (!text || text.toLowerCase() === 'null' || text.toLowerCase() === 'undefined') return null
+  return text
+}
+
 export const CACHEABLE_VIEWS = new Set([
   'hoy', 'fechas', 'calendario', 'metricas', 'perfil', 'ruta',
   'gamificacion', 'crear-clase', 'planificacion', 'planificacion-disenador', 'planificacion-ruta', 'ruta-libreria',
@@ -121,9 +128,9 @@ export async function renderViewContent(route, container, params, urlParams, con
       })
     case 'asistencia':
       return await mod.renderAsistenciaView(container, {
-        claseId: urlParams.get('clase'),
-        fecha: urlParams.get('fecha'),
-        sesionId: urlParams.get('sesion'),
+        claseId: normalizeNullableParam(urlParams.get('clase')),
+        fecha: normalizeNullableParam(urlParams.get('fecha')),
+        sesionId: normalizeNullableParam(urlParams.get('sesion')),
         router,
       })
     case 'metricas':
@@ -135,9 +142,16 @@ export async function renderViewContent(route, container, params, urlParams, con
     case 'planificacion':
       return await mod.renderPlanificacionView(container, { maestroId, router })
     case 'planificacion-disenador':
-      return await mod.renderDisenadorCurricularView(container, { maestroId, claseId: urlParams.get('clase') })
+      return await mod.renderDisenadorCurricularView(container, {
+        maestroId,
+        claseId: normalizeNullableParam(urlParams.get('clase')),
+      })
     case 'planificacion-ruta':
-      return await mod.renderRutaPedagogicaView(container, { maestroId, parentRoute: params.parentRoute || 'planificacion', claseId: urlParams.get('clase') })
+      return await mod.renderRutaPedagogicaView(container, {
+        maestroId,
+        parentRoute: params.parentRoute || 'planificacion',
+        claseId: normalizeNullableParam(urlParams.get('clase')),
+      })
     case 'alumno':
       return mod.renderAlumnoPerfilView(container, { alumnoId: urlParams.get('id') || params.id })
     case 'gamificacion':
@@ -170,7 +184,7 @@ export async function renderViewContent(route, container, params, urlParams, con
     case 'proponer-contenido':
       return mod.renderProponerContenidoView(container, {
         maestroId,
-        claseId: urlParams.get('clase'),
+        claseId: normalizeNullableParam(urlParams.get('clase')),
       })
   }
 

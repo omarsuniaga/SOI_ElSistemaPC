@@ -141,16 +141,16 @@ function renderResumenTab() {
   return `
     <div class="row g-3">
       <div class="col-md-6 col-lg-3">
-        ${renderMetricCard({ label: 'Alumnos Activos', value: s.total_alumnos || 0, icon: 'bi-people', color: 'primary' })}
+        ${renderMetricCard({ label: 'Alumnos Activos', value: s.alumnos_activos || 0, icon: 'bi-people', color: 'primary' })}
       </div>
       <div class="col-md-6 col-lg-3">
-        ${renderMetricCard({ label: 'Promedio Global', value: (s.promedio_general || 0).toFixed(2), icon: 'bi-star', color: 'success' })}
+        ${renderMetricCard({ label: 'Promedio Global', value: ((s.promedio_integrado ?? s.promedio_calificacion_periodo) || 0).toFixed(2), icon: 'bi-star', color: 'success' })}
       </div>
       <div class="col-md-6 col-lg-3">
         ${renderMetricCard({ label: 'Alertas Rojas', value: ra.rojas, icon: 'bi-exclamation-octagon', color: 'danger' })}
       </div>
       <div class="col-md-6 col-lg-3">
-        ${renderMetricCard({ label: 'Asistencia Hoy', value: (s.asistencia_hoy_porcentaje || 0) + '%', icon: 'bi-check2-circle', color: 'info' })}
+        ${renderMetricCard({ label: 'Asistencia Hoy', value: (s.tasa_asistencia_periodo || 0) + '%', icon: 'bi-check2-circle', color: 'info' })}
       </div>
       <div class="col-md-6 col-lg-3">
         ${renderMetricCard({ label: 'Riesgo Pedagógico (<2.5)', value: s.alumnos_riesgo || 0, icon: 'bi-exclamation-triangle-fill', color: 'warning' })}
@@ -374,9 +374,9 @@ function _compilarContextoIA(dslData) {
   const ra = state.resumenAlertas || {}
   return {
     periodo_activo: {
-      total_alumnos: s.total_alumnos ?? null,
-      promedio_general: s.promedio_general ?? null,
-      asistencia_hoy_porcentaje: s.asistencia_hoy_porcentaje ?? null,
+      total_alumnos: s.alumnos_activos ?? null,
+      promedio_general: (s.promedio_integrado ?? s.promedio_calificacion_periodo) ?? null,
+      asistencia_hoy_porcentaje: s.tasa_asistencia_periodo ?? null,
     },
     alertas: { total: ra.total ?? 0, rojas: ra.rojas ?? 0 },
     hotspots_pedagogicos: (dslData?.nodeDifficulty || []).slice(0, 5),

@@ -173,7 +173,7 @@ describe('planificacionSupabase — class_curriculum_plan_id support', () => {
       expect(stored.class_curriculum_plan_id).toBe('ccp_001')
     })
 
-    it('should allow creating planificacion without class_curriculum_plan_id (nullable)', async () => {
+    it('should allow creating planificacion without class_curriculum_plan_id (legacy / unmigrated schema)', async () => {
       const planData = {
         tema: 'Clase legacy',
         clase_id: 'clase_001',
@@ -183,8 +183,11 @@ describe('planificacionSupabase — class_curriculum_plan_id support', () => {
       const result = await crearPlanificacion(planData)
       expect(result).toBeDefined()
 
+      // La columna no existe en el esquema desplegado (migración archivada):
+      // el payload NO debe referenciarla cuando no hay valor. Enviarla como
+      // null rompía el insert con PGRST204.
       const stored = tables.planificaciones.find((p) => p.titulo === 'Clase legacy')
-      expect(stored.class_curriculum_plan_id).toBeNull()
+      expect(stored.class_curriculum_plan_id).toBeUndefined()
     })
   })
 

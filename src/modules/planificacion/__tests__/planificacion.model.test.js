@@ -68,5 +68,29 @@ describe('Planificacion Model', () => {
       const json = p.toJSON()
       expect(json.notas_dsl).toBeNull()
     })
+
+    it('should omit class_curriculum_plan_id and route_version_id when null (legacy schema)', () => {
+      // La migración que agrega estas columnas a `planificaciones` fue
+      // archivada; enviarlas como null rompía insert/update con PGRST204.
+      const p = new Planificacion({
+        tema: 'Clase de prueba',
+        clase_id: 'clase_001',
+      })
+      const json = p.toJSON()
+      expect(json.class_curriculum_plan_id).toBeUndefined()
+      expect(json.route_version_id).toBeUndefined()
+    })
+
+    it('should include class_curriculum_plan_id and route_version_id when present', () => {
+      const p = new Planificacion({
+        tema: 'Clase de prueba',
+        clase_id: 'clase_001',
+        class_curriculum_plan_id: 'ccp_001',
+        route_version_id: 'rv_001',
+      })
+      const json = p.toJSON()
+      expect(json.class_curriculum_plan_id).toBe('ccp_001')
+      expect(json.route_version_id).toBe('rv_001')
+    })
   })
 })

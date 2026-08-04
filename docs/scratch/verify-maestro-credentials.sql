@@ -1,4 +1,4 @@
--- VerificaciÛn r·pida del feature maestro-credentials
+-- Verificaci√≥n r√°pida del feature maestro-credentials
 -- Ejecutar en Supabase SQL Editor por bloques.
 
 -- 1) Confirmar que existe la tabla de vault.

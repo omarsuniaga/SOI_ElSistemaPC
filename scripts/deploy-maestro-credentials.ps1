@@ -21,7 +21,7 @@ function Run-Step([string]$Label, [scriptblock]$Action) {
 }
 
 if (-not (Get-Command supabase -ErrorAction SilentlyContinue)) {
-  throw 'Supabase CLI no est· instalado o no est· disponible en PATH.'
+  throw 'Supabase CLI no est√° instalado o no est√° disponible en PATH.'
 }
 
 Run-Step 'Validando Supabase CLI' {
@@ -57,7 +57,7 @@ if (-not $SkipSecret) {
   }
 
   if (-not $CredentialSecret) {
-    throw 'MAESTRO_CREDENTIALS_SECRET no puede estar vacÌo.'
+    throw 'MAESTRO_CREDENTIALS_SECRET no puede estar vac√≠o.'
   }
 
   Run-Step 'Configurando secret de credenciales' {

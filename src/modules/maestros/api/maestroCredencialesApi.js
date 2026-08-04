@@ -2,7 +2,7 @@ import { supabase } from '../../../lib/supabaseClient.js'
 
 const EDGE_FUNCTION_NAME = 'maestro-credentials'
 const EDGE_FUNCTION_DEPLOY_GUIDANCE =
-  'La Edge Function maestro-credentials no est· desplegada o no es accesible en este proyecto. Debes aplicar la migraciÛn de credenciales y desplegar la funciÛn en Supabase.'
+  'La Edge Function maestro-credentials no est√° desplegada o no es accesible en este proyecto. Debes aplicar la migraci√≥n de credenciales y desplegar la funci√≥n en Supabase.'
 
 function normalizeMaestroCredentialsError(error, action) {
   const rawMessage = String(error?.message || error || '').trim()
@@ -18,7 +18,7 @@ function normalizeMaestroCredentialsError(error, action) {
 
   if (lowerMessage.includes('non-2xx status code')) {
     return new Error(
-      `La Edge Function ${EDGE_FUNCTION_NAME} respondiÛ con error al ${action}. Revisa los logs remotos de Supabase y la configuraciÛn de MAESTRO_CREDENTIALS_SECRET.`,
+      `La Edge Function ${EDGE_FUNCTION_NAME} respondi√≥ con error al ${action}. Revisa los logs remotos de Supabase y la configuraci√≥n de MAESTRO_CREDENTIALS_SECRET.`,
     )
   }
 

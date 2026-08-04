@@ -2,8 +2,9 @@ import { router } from '../../../core/router/router.js'
 import { escapeHTML } from '../../clases/utils/clasesUtils.js'
 import { AppToast } from '../../../shared/components/AppToast.js'
 import { obtenerClases, obtenerPlanificacionesConDetalles } from '../api/planificacionAdapter.js'
+import { getFullHierarchy } from '../api/routeAdapter.js'
 import { renderMapaContenidoSVG } from '../components/MapaContenidoSVG.js'
-import { extraerNodosDePlan } from '../components/routeNodes.js'
+import { extraerNodosDePlan, extraerNodosDeRutaCurricular } from '../components/routeNodes.js'
 import { obtenerAlumnosRealesPorClase } from '../services/realAlumnosService.js'
 import { registrarEvaluacion } from '../services/evaluacionClaseService.js'
 import { OfflineSyncAdapter } from '../api/offlineSyncAdapter.js'
@@ -35,7 +36,13 @@ export async function renderRutaPedagogicaView(container, { maestroId, parentRou
       getMisClases().catch(() => []),
       obtenerPlanificacionesConDetalles(),
     ])
-    clases = misClases && misClases.length > 0 ? misClases : await obtenerClases()
+    const claseSolicitadaNoEstaEnMisClases =
+      claseId && Array.isArray(misClases) && misClases.length > 0 &&
+      !misClases.some((c) => String(c.id) === String(claseId))
+
+    clases = (misClases && misClases.length > 0 && !claseSolicitadaNoEstaEnMisClases)
+      ? misClases
+      : await obtenerClases()
     planificaciones = pRes || []
   } catch (err) {
     console.error('[RutaPedagogicaView] Error:', err)
@@ -50,6 +57,7 @@ function _renderUI(container, clases, planificaciones, { parentRoute = 'planific
     : clases[0]?.id || ''
   let selectedNodo = null
   let alumnosClase = []
+  let jerarquiaCurricular = []
   // Cache en memoria de roster por nodo (evita repetir la consulta a
   // Supabase/cola offline cada vez que el maestro vuelve a un nodo ya
   // visitado en esta sesión de la vista). Se invalida al cambiar de clase.
@@ -63,7 +71,12 @@ function _renderUI(container, clases, planificaciones, { parentRoute = 'planific
   const _loadAlumnosYRender = async () => {
     nodoEvalCache.clear()
     nodoDatosListos = true
-    alumnosClase = await obtenerAlumnosRealesPorClase(selectedClaseId)
+    const [roster, hierarchy] = await Promise.all([
+      obtenerAlumnosRealesPorClase(selectedClaseId).catch(() => []),
+      getFullHierarchy(selectedClaseId).catch(() => []),
+    ])
+    alumnosClase = roster
+    jerarquiaCurricular = Array.isArray(hierarchy) ? hierarchy : []
     _renderShell()
   }
 
@@ -97,10 +110,13 @@ function _renderUI(container, clases, planificaciones, { parentRoute = 'planific
   // tabla vacía) UNA sola vez por carga de clase/roster. El canvas SVG solo
   // se dibuja acá — nunca en cada tap de estrella.
   const _renderShell = () => {
-    const planClase = planificaciones.find((p) => String(p.clase_id || p.claseId) === String(selectedClaseId)) || planificaciones[0]
+    const planClase = planificaciones.find((p) => String(p.clase_id || p.claseId) === String(selectedClaseId)) || null
     const targetClaseObj = clases.find((c) => String(c.id) === String(selectedClaseId)) || { nombre: 'Clase General' }
 
-    const nodos = extraerNodosDePlan(planClase, targetClaseObj)
+    const nodosDelPlan = planClase ? extraerNodosDePlan(planClase, targetClaseObj) : []
+    const nodos = nodosDelPlan.length > 0
+      ? nodosDelPlan
+      : extraerNodosDeRutaCurricular(jerarquiaCurricular, targetClaseObj)
 
     // Métricas para la cabecera Premium
     const totalAlumnosCount = alumnosClase.length

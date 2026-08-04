@@ -34,6 +34,10 @@ vi.mock('../../services/evaluacionClaseService.js', () => ({
   registrarEvaluacion: vi.fn().mockResolvedValue({}),
 }))
 
+vi.mock('../../api/routeAdapter.js', () => ({
+  getFullHierarchy: vi.fn(),
+}))
+
 vi.mock('../../../../portal-maestros/services/maestroDataService.js', () => ({
   getMisClases: vi.fn().mockResolvedValue([]),
 }))
@@ -49,9 +53,11 @@ vi.mock('../../components/MapaContenidoSVG.js', () => ({
 }))
 
 import { obtenerClases, obtenerPlanificacionesConDetalles } from '../../api/planificacionAdapter.js'
+import { getFullHierarchy } from '../../api/routeAdapter.js'
 import { obtenerAlumnosRealesPorClase } from '../../services/realAlumnosService.js'
 import { OfflineSyncAdapter } from '../../api/offlineSyncAdapter.js'
 import { registrarEvaluacion } from '../../services/evaluacionClaseService.js'
+import { getMisClases } from '../../../../portal-maestros/services/maestroDataService.js'
 import { renderRutaPedagogicaView } from '../RutaPedagogicaView.js'
 
 const flush = () => Promise.resolve().then(() => Promise.resolve())
@@ -96,6 +102,8 @@ describe('RutaPedagogicaView', () => {
 
     obtenerClases.mockResolvedValue([mockClase])
     obtenerPlanificacionesConDetalles.mockResolvedValue([])
+    getFullHierarchy.mockResolvedValue([])
+    getMisClases.mockResolvedValue([])
   })
 
   afterEach(() => {
@@ -109,6 +117,105 @@ describe('RutaPedagogicaView', () => {
     await flush()
 
     expect(lastRenderArgs).not.toHaveProperty('onAddUnidad')
+  })
+
+  it('si se abre una clase de otro maestro, usa esa clase explícita y no cae a la primera de mis clases', async () => {
+    getMisClases.mockResolvedValue([
+      { id: 'clase-cello', nombre: 'Clase de violoncellos' },
+    ])
+    obtenerClases.mockResolvedValue([
+      { id: 'clase-cello', nombre: 'Clase de violoncellos' },
+      { id: 'clase-violin-ajena', nombre: 'Violín Maestro 2' },
+    ])
+    getFullHierarchy.mockResolvedValue([
+      {
+        id: 'nivel-violin-ajena',
+        level_number: 1,
+        name: 'Ruta Violín Maestro 2',
+        nodes: [
+          {
+            id: 'node-violin-ajena',
+            name: 'Arco',
+            objetivos: [
+              {
+                id: 'obj-violin-ajena',
+                nombre: 'Arco afinado',
+                indicators: [{ id: 'ind-violin-ajena', description: 'Controla el arco con precisión' }],
+              },
+            ],
+          },
+        ],
+      },
+    ])
+    obtenerAlumnosRealesPorClase.mockResolvedValue([])
+
+    await renderRutaPedagogicaView(container, { claseId: 'clase-violin-ajena' })
+    await flush()
+
+    expect(obtenerClases).toHaveBeenCalled()
+    expect(getFullHierarchy).toHaveBeenCalledWith('clase-violin-ajena')
+    expect(lastRenderArgs.nodos).toHaveLength(1)
+    expect(lastRenderArgs.nodos[0].id).toBe('ind-violin-ajena')
+    expect(lastRenderArgs.nodos.some((nodo) => String(nodo.titulo).includes('violoncellos'))).toBe(false)
+  })
+
+  it('cuando la clase no tiene plan propio, no reutiliza nodos de otra clase y cae a su jerarqu?a curricular', async () => {
+    const clases = [
+      { id: 'clase-cello', nombre: 'Clase de violoncellos' },
+      { id: 'clase-violin', nombre: 'Viol?n Nivel 1' },
+    ]
+
+    obtenerClases.mockResolvedValue(clases)
+    obtenerPlanificacionesConDetalles.mockResolvedValue([
+      {
+        id: 'plan-cello',
+        clase_id: 'clase-cello',
+        objetivosEstructurados: [
+          {
+            id: 'unidad-cello',
+            titulo: 'Unidad Violoncellos',
+            objetivos: [
+              {
+                id: 'obj-cello',
+                titulo: 'Arco de violoncellos',
+                indicadores: [{ id: 'ind-cello', titulo: 'Nodo de violoncellos' }],
+              },
+            ],
+          },
+        ],
+      },
+    ])
+    getFullHierarchy.mockResolvedValue([
+      {
+        id: 'nivel-violin',
+        level_number: 1,
+        name: 'T?cnica de Viol?n',
+        nodes: [
+          {
+            id: 'node-violin',
+            name: 'Arco',
+            objetivos: [
+              {
+                id: 'obj-violin',
+                nombre: 'Arco estable',
+                indicators: [{ id: 'ind-violin', description: 'Mantiene arco estable' }],
+              },
+            ],
+          },
+        ],
+      },
+    ])
+    obtenerAlumnosRealesPorClase.mockResolvedValue([])
+
+    await renderRutaPedagogicaView(container, { claseId: 'clase-violin' })
+    await flush()
+
+    expect(getFullHierarchy).toHaveBeenCalledWith('clase-violin')
+    expect(lastRenderArgs.nodos).toHaveLength(1)
+    expect(lastRenderArgs.nodos[0].id).toBe('ind-violin')
+    expect(String(lastRenderArgs.nodos[0].titulo)).toContain('Arco estable')
+    expect(String(lastRenderArgs.nodos[0].titulo)).toContain('Mantiene arco estable')
+    expect(lastRenderArgs.nodos.some((nodo) => String(nodo.titulo).includes('violoncellos'))).toBe(false)
   })
 
   it('un solo click en el botón "Ciclar ★" incrementa la evaluación en exactamente 1 estrella (no 2)', async () => {

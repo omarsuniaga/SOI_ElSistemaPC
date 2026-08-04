@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { crearUsuario, listarUsuariosPorRol } from '../adminUsuariosApi.js'
+import { crearUsuario, listarUsuarios, listarUsuariosPorRol } from '../adminUsuariosApi.js'
 import { supabase } from '../../../../lib/supabaseClient.js'
 
 vi.mock('../../../../lib/supabaseClient.js', () => ({
@@ -73,6 +73,22 @@ describe('adminUsuariosApi', () => {
       ).rejects.toThrow()
       expect(supabase.functions.invoke).not.toHaveBeenCalled()
     })
+
+    it('acepta rol user además de admin y maestro', async () => {
+      supabase.functions.invoke.mockResolvedValue({
+        data: { ok: true, user: { id: 'u9', email: 'user@soi.org', rol: 'user', estado: 'activo' } },
+        error: null,
+      })
+
+      const result = await crearUsuario({
+        nombre: 'Usuario Base',
+        email: 'user@soi.org',
+        password: 'Secret123',
+        rol: 'user',
+      })
+
+      expect(result.rol).toBe('user')
+    })
   })
 
   describe('listarUsuariosPorRol', () => {
@@ -93,6 +109,20 @@ describe('adminUsuariosApi', () => {
       supabase.from.mockReturnValue(chain)
 
       await expect(listarUsuariosPorRol('admin')).rejects.toThrow('boom')
+    })
+  })
+
+  describe('listarUsuarios', () => {
+    it('consulta todos los usuarios cuando no se filtra por rol', async () => {
+      const rows = [{ id: 'u1', email: 'a@b.com', nombre_completo: 'Ana', rol: 'admin', estado: 'activo' }]
+      const chain = createSelectChain({ data: rows, error: null })
+      supabase.from.mockReturnValue(chain)
+
+      const result = await listarUsuarios()
+
+      expect(supabase.from).toHaveBeenCalledWith('profiles')
+      expect(chain.eq).not.toHaveBeenCalled()
+      expect(result).toEqual(rows)
     })
   })
 })

@@ -75,6 +75,19 @@ function normalizeAlumno(a) {
   }
 }
 
+function normalizeAlumnoWriteError(error) {
+  const rawMessage = String(error?.message || error || '').trim()
+  const lowerMessage = rawMessage.toLowerCase()
+
+  if (lowerMessage.includes('row-level security')) {
+    return new Error(
+      'Tu usuario no tiene permisos para crear alumnos en este entorno. Debes aplicar la migración RLS del módulo o verificar que el perfil autenticado tenga el rol y permisos correctos.',
+    )
+  }
+
+  return new Error(rawMessage || 'No se pudo crear el alumno')
+}
+
 export async function obtenerAlumnos({ page = 0, pageSize = 1000 } = {}) {
   const from = page * pageSize
   const to = from + pageSize - 1
@@ -221,12 +234,22 @@ export async function crearAlumno(alumno) {
     // insertarse, esa familia queda sin dueño. Se revierte para no acumular
     // registros que nadie referencia.
     if (familiaCreadaAqui) {
-      await supabase
-        .rpc('fn_eliminar_familia_huerfana', { p_familia_id: familiaId })
-        .catch(() => {})
+      try {
+        const { error: cleanupError } = await supabase.rpc('fn_eliminar_familia_huerfana', {
+          p_familia_id: familiaId,
+        })
+        if (cleanupError) {
+          console.warn('No se pudo limpiar la familia huérfana:', cleanupError.message)
+        }
+      } catch (cleanupException) {
+        console.warn(
+          'Falló la limpieza best-effort de la familia huérfana:',
+          cleanupException?.message || cleanupException,
+        )
+      }
     }
     console.error('Error creando alumno:', error.message)
-    throw new Error(error.message || 'No se pudo crear el alumno')
+    throw normalizeAlumnoWriteError(error)
   }
 
   return normalizeAlumno(data[0])

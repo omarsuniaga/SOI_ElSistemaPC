@@ -49,7 +49,7 @@ export async function getMisClases(forceRefresh = false) {
 
   const { data, error } = await supabase
     .from('clases')
-    .select('id, nombre, instrumento, plan_estudio, capacidad_maxima, maestro_principal_id')
+    .select('id, nombre, instrumento, plan_estudio, capacidad_maxima, maestro_principal_id, route_version_id')
     .or(
       `maestro_principal_id.eq.${maestroId},maestro_suplente_id.eq.${maestroId},maestro_id.eq.${maestroId}`,
     )

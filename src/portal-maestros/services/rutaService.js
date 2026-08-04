@@ -103,6 +103,8 @@ export function invalidateSemaphoresForClase(claseId) {
 export async function resolveRutaIdForClaseWithFuzzy(claseId) {
   const misClases = await getMisClases()
   const claseRow  = misClases?.find(c => c.id === claseId)
+  if (claseRow?.route_version_id) return claseRow.route_version_id
+
   const instrumento = claseRow?.instrumento
   if (!instrumento) return null
 
@@ -206,6 +208,8 @@ export async function loadIndicatorsForNode(nodeId) {
 export async function resolveRutaIdForClase(claseId) {
   const misClases = await getMisClases()
   const claseRow  = misClases?.find(c => c.id === claseId)
+  if (claseRow?.route_version_id) return claseRow.route_version_id
+
   const instrumento = claseRow?.instrumento
   if (!instrumento) return null
 

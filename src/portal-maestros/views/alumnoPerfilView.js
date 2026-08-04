@@ -4,6 +4,7 @@ import { escHTML } from '../utils/portalUtils.js'
 import { formatPhone } from '../../shared/utils/phoneUtils.js'
 import { PlanEstudiosPanel } from '../components/PlanEstudiosPanel.js'
 import { AppToast } from '../../shared/components/AppToast.js'
+import { CalculadorSaludPerfil } from '../../modules/planificacion/domain/CalculadorSaludPerfil.js'
 
 
 /**
@@ -87,6 +88,24 @@ function _normalizeNullableText(value) {
   if (value == null) return ''
   const text = String(value).trim()
   return (!text || text.toLowerCase() === 'null' || text.toLowerCase() === 'undefined') ? '' : text
+}
+
+function _promedioNumerico(valores = []) {
+  const numeros = valores.map(v => Number(v)).filter(Number.isFinite)
+  if (numeros.length === 0) return null
+  const suma = numeros.reduce((acc, value) => acc + value, 0)
+  return Math.round((suma / numeros.length) * 10) / 10
+}
+
+function _pctDesdePromedio(promedio) {
+  if (!Number.isFinite(Number(promedio))) return null
+  return Math.round((Number(promedio) / 5) * 100)
+}
+
+function _combinarPromedios(...promedios) {
+  const valores = promedios.filter(value => Number.isFinite(Number(value))).map(Number)
+  if (valores.length === 0) return null
+  return Math.round((valores.reduce((acc, value) => acc + value, 0) / valores.length) * 10) / 10
 }
 
 function _getEtiquetaEstrella(cant) {
@@ -871,13 +890,16 @@ export async function renderAlumnoPerfilView(container, { alumnoId }) {
     // Mapa de contenido DSL por sesión (ya está en asistenciaRows)
     const sesionDslMap = new Map(asistenciaRows.map(r => [r.sesion_id, r.contenido_dsl]))
 
-    // Obtener todas las evaluaciones del alumno
-    const { data: evaluaciones } = await supabase
-      .from('indicator_attempts')
-      .select('id, nota, observations, tarea, created_at, indicator_id, covered_by_clase_id')
-      .eq('student_id', alumnoId)
-      .order('created_at', { ascending: false })
-      .limit(30)
+    // Obtener todas las evaluaciones del alumno y las estrellas por indicador
+    const [{ data: evaluaciones }, starEvaluaciones] = await Promise.all([
+      supabase
+        .from('indicator_attempts')
+        .select('id, nota, observations, tarea, created_at, indicator_id, covered_by_clase_id')
+        .eq('student_id', alumnoId)
+        .order('created_at', { ascending: false })
+        .limit(30),
+      _loadStarEvaluacionesAlumno(alumnoId),
+    ])
 
     // Obtener ausencias del alumno
     const { data: ausencias } = await supabase
@@ -903,28 +925,26 @@ export async function renderAlumnoPerfilView(container, { alumnoId }) {
     const tardanzas  = asistenciaRows.filter(r => r.estado === 'T').length
     const pctAsistencia = totalSesiones > 0 ? Math.round((presentes / totalSesiones) * 100) : 0
 
-    // Calcular estadísticas de rendimiento (notas)
-    const notasValidas = evaluaciones?.filter(e => e.nota != null && e.nota !== 0) || []
+    const evaluacionesContenido = evaluaciones?.filter(e => e.nota != null && e.nota !== 0) || []
+    const evaluacionesEstrella = starEvaluaciones?.filter(e => e.nota != null && e.nota !== 0) || []
+
+    // Calcular estadísticas de rendimiento (contenido + estrellas)
+    const notasContenido = evaluacionesContenido.map(e => e.nota)
+    const notasEstrella = evaluacionesEstrella.map(e => e.nota)
+    const promedioContenido = _promedioNumerico(notasContenido)
+    const promedioEstrellas = _promedioNumerico(notasEstrella)
+    const promedioIntegrado = _combinarPromedios(promedioContenido, promedioEstrellas)
+    const promedioIntegradoPct = _pctDesdePromedio(promedioIntegrado) ?? 0
+
+    const idiaAlumno = CalculadorSaludPerfil.calcular({
+      progresoContenidoPct: promedioIntegradoPct,
+      inasistenciasInjustificadas: ausentes,
+      inasistenciasJustificadas: justifica,
+    })
+
+    const notasValidas = [...evaluacionesContenido, ...evaluacionesEstrella]
+      .sort((a, b) => new Date(b.created_at || b.fechaReferencia || 0) - new Date(a.created_at || a.fechaReferencia || 0))
     
-    // Agrupar notas por clase
-    const notasPorClase = {}
-    notasValidas.forEach(e => {
-      const claseId = e.covered_by_clase_id || 'sin_clase'
-      if (!notasPorClase[claseId]) notasPorClase[claseId] = []
-      notasPorClase[claseId].push(e.nota)
-    })
-
-    // Calcular el promedio de cada clase
-    const promediosClases = Object.values(notasPorClase).map(notas => {
-      const sum = notas.reduce((acc, n) => acc + n, 0)
-      return sum / notas.length
-    })
-
-    // El promedio general es el promedio de los promedios de las clases (weighted class average)
-    const promedioNotas = promediosClases.length > 0
-      ? Math.round((promediosClases.reduce((acc, p) => acc + p, 0) / promediosClases.length) * 10) / 10
-      : 0
-
     const indicadoresAprobados = notasValidas.filter(e => e.nota >= 4).length
     const indicadoresTotales   = notasValidas.length
     const pctAprobacion = indicadoresTotales > 0 ? Math.round((indicadoresAprobados / indicadoresTotales) * 100) : 0
@@ -1010,18 +1030,29 @@ export async function renderAlumnoPerfilView(container, { alumnoId }) {
           <div class="pm-zen-mosaic" style="grid-template-columns: repeat(2, 1fr);">
             <div class="pm-zen-card pm-zen-card--large pm-glass" style="grid-column: span 2;">
               <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5rem;">
-                <span class="pm-zen-card__label" style="font-size:0.78rem;font-weight:500;">📈 Rendimiento Académico</span>
-                ${indicadoresTotales > 0
-                  ? `<span style="font-size:1.4rem;font-weight:700;line-height:1;color:${promedioNotas >= 4 ? 'var(--pm-success)' : promedioNotas >= 2 ? 'var(--pm-warning)' : 'var(--pm-danger)'}">${promedioNotas.toFixed(1)}</span>`
+                <span class="pm-zen-card__label" style="font-size:0.78rem;font-weight:500;">📈 Rendimiento Académico Integrado</span>
+                ${promedioIntegrado != null
+                  ? `<span style="font-size:1.4rem;font-weight:700;line-height:1;color:${promedioIntegrado >= 4 ? 'var(--pm-success)' : promedioIntegrado >= 2 ? 'var(--pm-warning)' : 'var(--pm-danger)'}">${promedioIntegrado.toFixed(1)}</span>`
                   : `<span style="font-size:0.8rem;color:var(--pm-text-muted);">Sin datos</span>`
                 }
               </div>
-              ${indicadoresTotales > 0 ? `
+              ${promedioIntegrado != null ? `
               <div class="pm-student-panel__progress-bar" style="height:6px;border-radius:3px;background:var(--pm-border);">
-                <div style="width:${pctAprobacion}%;background:${promedioNotas >= 4 ? 'var(--pm-success)' : promedioNotas >= 2 ? 'var(--pm-warning)' : 'var(--pm-danger)'};height:100%;border-radius:3px;"></div>
+                <div style="width:${idiaAlumno.progresoAjustadoPct}%;background:${idiaAlumno.progresoAjustadoPct >= 80 ? 'var(--pm-success)' : idiaAlumno.progresoAjustadoPct >= 50 ? 'var(--pm-warning)' : 'var(--pm-danger)'};height:100%;border-radius:3px;"></div>
+              </div>
+              <div style="display:flex;flex-wrap:wrap;gap:0.35rem;margin-top:0.45rem;">
+                <span class="badge-apple" style="background:${promedioContenido != null ? 'rgba(13, 110, 253, 0.12)' : 'var(--pm-surface-3)'}; color:${promedioContenido != null ? 'rgb(13, 110, 253)' : 'var(--pm-text-muted)'}; font-size:0.68rem; font-weight:700; padding:2px 8px; border-radius:10px;">
+                  Contenido ${promedioContenido != null ? `${promedioContenido.toFixed(1)}/5` : 'sin datos'}
+                </span>
+                <span class="badge-apple" style="background:${promedioEstrellas != null ? 'rgba(255, 149, 0, 0.12)' : 'var(--pm-surface-3)'}; color:${promedioEstrellas != null ? 'rgb(229, 134, 0)' : 'var(--pm-text-muted)'}; font-size:0.68rem; font-weight:700; padding:2px 8px; border-radius:10px;">
+                  Estrellas ${promedioEstrellas != null ? `${promedioEstrellas.toFixed(1)}/5` : 'sin datos'}
+                </span>
+                <span class="badge-apple" style="background:${idiaAlumno.progresoAjustadoPct >= 80 ? 'rgba(52, 199, 89, 0.12)' : idiaAlumno.progresoAjustadoPct >= 50 ? 'rgba(255, 149, 0, 0.12)' : 'rgba(255, 59, 48, 0.12)'}; color:${idiaAlumno.progresoAjustadoPct >= 80 ? 'rgb(36, 172, 69)' : idiaAlumno.progresoAjustadoPct >= 50 ? 'rgb(229, 134, 0)' : 'rgb(221, 35, 29)'}; font-size:0.68rem; font-weight:700; padding:2px 8px; border-radius:10px;">
+                  IDIA ${idiaAlumno.progresoAjustadoPct}%
+                </span>
               </div>
               <p style="font-size:0.72rem;color:var(--pm-text-muted);margin-top:0.4rem;">
-                ${indicadoresAprobados} de ${indicadoresTotales} indicadores aprobados · ${pctAprobacion}%
+                ${indicadoresAprobados} de ${indicadoresTotales} registros aprobados · ${pctAprobacion}% aprob. · asistencia ${pctAsistencia}%
               </p>` : `<p style="font-size:0.72rem;color:var(--pm-text-muted);margin-top:0.25rem;">Aún no hay evaluaciones registradas</p>`}
             </div>
 

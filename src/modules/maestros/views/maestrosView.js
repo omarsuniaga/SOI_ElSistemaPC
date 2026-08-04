@@ -1,4 +1,4 @@
-import '../styles/maestros.css'
+﻿import '../styles/maestros.css'
 import { AppModal } from '../../../shared/components/AppModal.js'
 import {
   obtenerMaestros,
@@ -6,11 +6,19 @@ import {
   actualizarMaestro,
   inactivarMaestro,
   activarMaestro,
-  eliminarMaestro,
   validarEmail,
 } from '../api/maestrosApi.js'
+import {
+  obtenerEstadoCredencialesMaestro,
+  revelarCredencialesMaestro,
+  generarCredencialesMaestro,
+} from '../api/maestroCredencialesApi.js'
 import { escapeHTML, getStatusColor, getStatusLabel, getInitials } from '../utils/maestrosUtils.js'
-import { obtenerClasesPorMaestro, actualizarClase, obtenerAlumnosInscritosPorClases } from '../../clases/api/clasesApi.js'
+import {
+  obtenerClasesPorMaestro,
+  actualizarClase,
+  obtenerAlumnosInscritosPorClases,
+} from '../../clases/api/clasesApi.js'
 import { openClaseModal } from '../../clases/components/claseModal.js'
 import { supabase } from '../../../lib/supabaseClient.js'
 import { HelpPanel } from '../../../shared/components/HelpPanel.js'
@@ -29,12 +37,12 @@ const VALIDATION = {
 
 let currentContainer = null
 
-// ─── Entry point ────────────────────────────────────────────────────────────
+// â”€â”€â”€ Entry point â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const ESPECTACULOS_PREDEFINIDOS = [
   'Piano',
   'Guitarra',
-  'Violín',
+  'ViolÃ­n',
   'Viola',
   'Cello',
   'Contrabajo',
@@ -42,18 +50,18 @@ const ESPECTACULOS_PREDEFINIDOS = [
   'Clarinete',
   'Oboe',
   'Fagot',
-  'Saxofón',
+  'SaxofÃ³n',
   'Trompeta',
-  'Trombón',
+  'TrombÃ³n',
   'Corno',
   'Tuba',
-  'Percusión',
-  'Batería',
+  'PercusiÃ³n',
+  'BaterÃ­a',
   'Canto',
-  'Teoría',
+  'TeorÃ­a',
   'Solfeo',
-  'Dirección',
-  'Composición',
+  'DirecciÃ³n',
+  'ComposiciÃ³n',
   'Arreglos',
 ]
 
@@ -71,7 +79,7 @@ export async function renderMaestrosView(container) {
   }
 }
 
-// ─── Render helpers ─────────────────────────────────────────────────────────
+// â”€â”€â”€ Render helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function renderLoading(container) {
   container.innerHTML = `
@@ -155,7 +163,7 @@ function getEspecialidadesFromModal(modalBody) {
   const container = modalBody.querySelector('.especialidades-chips-container')
   if (!container) return []
   const chips = container.querySelectorAll('.chip-item')
-  return Array.from(chips).map((chip) => chip.textContent.replace(/×$/, '').trim())
+  return Array.from(chips).map((chip) => chip.textContent.replace(/Ã—$/, '').trim())
 }
 
 function attachEspecialidadesEvents(modalBody, onChange) {
@@ -214,7 +222,7 @@ function renderContent(container) {
         </div>
         
         <div class="maestros-header-actions">
-          <button class="btn-help-trigger" id="btn-help-maestros" title="¿Cómo funciona esta pantalla?" aria-label="Ayuda">
+          <button class="btn-help-trigger" id="btn-help-maestros" title="Â¿CÃ³mo funciona esta pantalla?" aria-label="Ayuda">
             <i class="bi bi-question"></i>
           </button>
           <button class="btn btn-outline-success btn-sm-compact me-2" id="btnExportarCSV" title="Exportar CSV">
@@ -293,7 +301,7 @@ function renderTableRows(maestros) {
               <i class="bi bi-whatsapp"></i> <span class="d-none d-sm-inline fw-medium">${escapeHTML(a.telefono)}</span>
             </button>
           `
-              : '<span class="badge bg-light text-muted border d-none d-sm-inline-block">Sin número</span>'
+              : '<span class="badge bg-light text-muted border d-none d-sm-inline-block">Sin nÃºmero</span>'
           }
           <i class="bi bi-chevron-right text-muted ms-1" style="font-size: 1.1rem; transition: transform 0.2s ease;"></i>
         </div>
@@ -303,7 +311,7 @@ function renderTableRows(maestros) {
     .join('')
 }
 
-// ─── Events ─────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Events â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function attachEvents(container) {
   currentContainer = container
@@ -314,12 +322,12 @@ function attachEvents(container) {
     HelpPanel.open({
       title: 'Maestros',
       intro:
-        'Gestión del plantel docente. Desde acá podés ver, agregar, editar y desactivar maestros, y acceder al perfil completo de cada uno.',
+        'GestiÃ³n del plantel docente. Desde acÃ¡ podÃ©s ver, agregar, editar y desactivar maestros, y acceder al perfil completo de cada uno.',
       sections: [
         {
           icon: 'bi-search',
           title: 'Buscador y filtros',
-          description: 'Filtrá por nombre, instrumento o estado (activo/inactivo) en tiempo real.',
+          description: 'FiltrÃ¡ por nombre, instrumento o estado (activo/inactivo) en tiempo real.',
           color: '#6b7280',
         },
         {
@@ -333,14 +341,14 @@ function attachEvents(container) {
           icon: 'bi-eye',
           title: 'Ver perfil',
           description:
-            'Perfil completo: datos personales, clases (titular y suplente), horarios y ocupación.',
+            'Perfil completo: datos personales, clases (titular y suplente), horarios y ocupaciÃ³n.',
           color: '#10b981',
         },
         {
           icon: 'bi-pencil',
           title: 'Editar desde el perfil',
           description:
-            'Desde el perfil podés editar cualquier clase que dicte directamente, sin salir del modal.',
+            'Desde el perfil podÃ©s editar cualquier clase que dicte directamente, sin salir del modal.',
           color: '#f59e0b',
         },
         {
@@ -419,17 +427,17 @@ function openWhatsAppModal(id) {
     saveText: 'Enviar WhatsApp',
     body: `
       <div class="mb-3">
-        <label class="form-label-compact">Número de destino</label>
+        <label class="form-label-compact">NÃºmero de destino</label>
         <p class="form-control-plaintext fw-bold mb-0">
           <i class="bi bi-whatsapp text-success me-1"></i> +${telefonoLimpio}
         </p>
       </div>
       <div class="mb-3">
         <label class="form-label-compact">Mensaje</label>
-        <textarea class="form-control input-dense" id="modal-whatsapp-msg" rows="4" placeholder="Escribe tu mensaje aquí..."></textarea>
+        <textarea class="form-control input-dense" id="modal-whatsapp-msg" rows="4" placeholder="Escribe tu mensaje aquÃ­..."></textarea>
       </div>
       <p class="text-muted small mb-0">
-        Se abrirá WhatsApp Web (o la aplicación) con el mensaje listo para ser enviado.
+        Se abrirÃ¡ WhatsApp Web (o la aplicaciÃ³n) con el mensaje listo para ser enviado.
       </p>
     `,
     onSave: async (modalBody) => {
@@ -440,7 +448,7 @@ function openWhatsAppModal(id) {
   })
 }
 
-// ─── Filters ─────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Filters â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function applyFilters() {
   const searchTerm = currentContainer.querySelector('#buscar').value.trim().toLowerCase()
@@ -468,7 +476,7 @@ function applyFilters() {
   refreshTable()
 }
 
-// ─── Modal openers ───────────────────────────────────────────────────────────
+// â”€â”€â”€ Modal openers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function openCreateModal() {
   state.editando = null
@@ -477,7 +485,7 @@ function openCreateModal() {
     body: `<form class="row g-2" novalidate>
       <div class="col-12">
         <label class="form-label-compact">Nombre Completo *</label>
-        <input type="text" class="form-control input-dense" id="modal-nombre" required maxlength="${VALIDATION.nombreMax}" placeholder="Juan Pérez">
+        <input type="text" class="form-control input-dense" id="modal-nombre" required maxlength="${VALIDATION.nombreMax}" placeholder="Juan PÃ©rez">
         <small class="text-muted" id="modal-nombreCount">0/${VALIDATION.nombreMax}</small>
       </div>
       <div class="col-md-6">
@@ -485,21 +493,21 @@ function openCreateModal() {
         <input type="email" class="form-control input-dense" id="modal-email" required placeholder="email@ejemplo.com">
       </div>
       <div class="col-md-6">
-        <label class="form-label-compact">Contraseña *</label>
-        <input type="password" class="form-control input-dense" id="modal-password" required placeholder="Contraseña para iniciar sesión" minlength="6">
+        <label class="form-label-compact">ContraseÃ±a *</label>
+        <input type="password" class="form-control input-dense" id="modal-password" required placeholder="ContraseÃ±a para iniciar sesiÃ³n" minlength="6">
       </div>
       <div class="col-md-6">
-        <label class="form-label-compact">Teléfono</label>
+        <label class="form-label-compact">TelÃ©fono</label>
         <input type="text" class="form-control input-dense" id="modal-telefono" placeholder="+58 412 1234567">
       </div>
       <div class="col-md-6">
         <label class="form-label-compact">Instrumento *</label>
-        <input type="text" class="form-control input-dense" id="modal-instrumento" required placeholder="Violín">
+        <input type="text" class="form-control input-dense" id="modal-instrumento" required placeholder="ViolÃ­n">
       </div>
       ${renderEspecialidadesChips([], 'modal-especialidades-input')}
       <div class="col-12">
-        <label class="form-label-compact">Biografía</label>
-        <textarea class="form-control input-dense" id="modal-bio" rows="2" placeholder="Breve descripción..."></textarea>
+        <label class="form-label-compact">BiografÃ­a</label>
+        <textarea class="form-control input-dense" id="modal-bio" rows="2" placeholder="Breve descripciÃ³n..."></textarea>
       </div>
     </form>`,
     onShow: (modalBody) => attachEspecialidadesEvents(modalBody),
@@ -521,11 +529,11 @@ function openCreateModal() {
         return false
       }
       if (!isValidEmail(email)) {
-        showToast('El formato del email no es válido', 'error')
+        showToast('El formato del email no es vÃ¡lido', 'error')
         return false
       }
       if (!password || password.length < 6) {
-        showToast('La contraseña debe tener al menos 6 caracteres', 'error')
+        showToast('La contraseÃ±a debe tener al menos 6 caracteres', 'error')
         return false
       }
       if (!instrumento) {
@@ -535,7 +543,7 @@ function openCreateModal() {
 
       const emailExiste = await validarEmail(email)
       if (emailExiste) {
-        showToast('El email ya está registrado', 'error')
+        showToast('El email ya estÃ¡ registrado', 'error')
         return false
       }
 
@@ -555,7 +563,7 @@ function openCreateModal() {
       state.maestros = maestros
       state.maestrosOriginales = [...maestros]
       applyFilters()
-      showToast('Maestro creado exitosamente. Ya puede iniciar sesión.', 'success')
+      showToast('Maestro creado exitosamente. Ya puede iniciar sesiÃ³n.', 'success')
     },
   })
 }
@@ -581,7 +589,7 @@ function openEditModal(id) {
         <input type="email" class="form-control input-dense" id="modal-email" required value="${escapeHTML(maestro.email || '')}">
       </div>
       <div class="col-md-6">
-        <label class="form-label-compact">Teléfono</label>
+        <label class="form-label-compact">TelÃ©fono</label>
         <input type="text" class="form-control input-dense" id="modal-telefono" value="${escapeHTML(maestro.telefono || '')}">
       </div>
       <div class="col-md-6">
@@ -594,7 +602,7 @@ function openEditModal(id) {
       </div>
       ${renderEspecialidadesChips(maestro.especialidades || [], 'modal-especialidades-input')}
       <div class="col-12">
-        <label class="form-label-compact">Biografía</label>
+        <label class="form-label-compact">BiografÃ­a</label>
         <textarea class="form-control input-dense" id="modal-bio" rows="2">${escapeHTML(maestro.bio || '')}</textarea>
       </div>
       <div class="col-12">
@@ -624,14 +632,14 @@ function openEditModal(id) {
         return false
       }
       if (!isValidEmail(email)) {
-        showToast('El formato del email no es válido', 'error')
+        showToast('El formato del email no es vÃ¡lido', 'error')
         return false
       }
 
       if (email && maestro.email !== email) {
         const emailExiste = await validarEmail(email)
         if (emailExiste) {
-          showToast('El email ya está registrado', 'error')
+          showToast('El email ya estÃ¡ registrado', 'error')
           return false
         }
       }
@@ -681,11 +689,11 @@ function openViewModal(id) {
   `
 
   AppModal.open({
-    title:         nombre,
+    title: nombre,
     headerActions: headerActionsHTML,
-    autoFocus:     false,
-    hideSave:      true,
-    cancelText:    'Cerrar',
+    autoFocus: false,
+    hideSave: true,
+    cancelText: 'Cerrar',
     body: `
       <div class="row">
         <div class="col-md-6">
@@ -698,7 +706,7 @@ function openViewModal(id) {
             <p class="form-control-plaintext">${maestro.email ? `<a href="mailto:${escapeHTML(maestro.email)}">${escapeHTML(maestro.email)}</a>` : '-'}</p>
           </div>
           <div class="mb-3">
-            <label class="form-label fw-bold">Teléfono</label>
+            <label class="form-label fw-bold">TelÃ©fono</label>
             <p class="form-control-plaintext">${escapeHTML(maestro.telefono || '-')}</p>
           </div>
         </div>
@@ -736,8 +744,24 @@ function openViewModal(id) {
       </div>
       <hr>
       <div class="mb-4">
-        <label class="form-label fw-bold">Biografía</label>
-        <p class="form-control-plaintext">${escapeHTML(maestro.bio || 'Sin biografía')}</p>
+        <label class="form-label fw-bold">BiografÃ­a</label>
+        <p class="form-control-plaintext">${escapeHTML(maestro.bio || 'Sin biografÃ­a')}</p>
+      </div>
+      <hr>
+      <div class="mb-4">
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <div>
+            <label class="form-label fw-bold mb-0">Credenciales de acceso</label>
+            <div class="text-muted small">Se almacenan cifradas y se pueden recuperar en cualquier momento desde ADM.</div>
+          </div>
+          <span class="badge bg-secondary-subtle text-secondary" id="maestro-cred-status">Cargando...</span>
+        </div>
+        <div id="maestro-cred-container">
+          <div class="d-flex align-items-center gap-2 text-muted py-2">
+            <div class="spinner-border spinner-border-sm text-primary"></div>
+            <small>Cargando credenciales...</small>
+          </div>
+        </div>
       </div>
       <hr>
       <div class="mb-2">
@@ -767,7 +791,240 @@ function openViewModal(id) {
         setTimeout(() => openDeleteModal(id), 300)
       })
 
-      // ── Carga y render de clases ─────────────────────────────────────────
+      const credContainer = modalBody.querySelector('#maestro-cred-container')
+      const credStatus = modalBody.querySelector('#maestro-cred-status')
+      const fechaFormatter = new Intl.DateTimeFormat('es-DO', {
+        dateStyle: 'medium',
+        timeStyle: 'short',
+      })
+      const maskPassword = '••••••••••••••'
+
+      let currentPlainPassword = null
+      let currentCredentialData = null
+
+      const formatCredentialDate = (value) => {
+        if (!value) return 'Sin registro'
+        const date = new Date(value)
+        if (Number.isNaN(date.getTime())) return 'Sin registro'
+        return fechaFormatter.format(date)
+      }
+
+      const setCredentialBadge = (label, tone = 'secondary') => {
+        if (!credStatus) return
+        credStatus.className = `badge bg-${tone}-subtle text-${tone}`
+        credStatus.textContent = label
+      }
+
+      const renderCredentialActions = (hasCredentials) => `
+        <div class="d-flex flex-wrap gap-2">
+          ${
+            hasCredentials
+              ? `
+            <button type="button" class="btn btn-outline-primary btn-sm" id="btn-maestro-cred-reveal">
+              <i class="bi bi-eye me-1"></i>Ver contraseña
+            </button>
+            <button type="button" class="btn btn-outline-secondary btn-sm" id="btn-maestro-cred-copy" ${
+              currentPlainPassword ? '' : 'disabled'
+            }>
+              <i class="bi bi-copy me-1"></i>Copiar
+            </button>
+            <button type="button" class="btn btn-warning btn-sm" id="btn-maestro-cred-regenerate">
+              <i class="bi bi-arrow-repeat me-1"></i>Regenerar contraseña
+            </button>
+          `
+              : `
+            <button type="button" class="btn btn-primary btn-sm" id="btn-maestro-cred-generate">
+              <i class="bi bi-key me-1"></i>Generar contraseña
+            </button>
+          `
+          }
+          <button type="button" class="btn btn-outline-secondary btn-sm" id="btn-maestro-cred-refresh">
+            <i class="bi bi-arrow-clockwise me-1"></i>Actualizar estado
+          </button>
+        </div>
+      `
+
+      const renderCredentialCard = (credentialData, plainPassword = null) => {
+        currentCredentialData = credentialData
+        currentPlainPassword = plainPassword
+
+        const hasCredentials = !!credentialData?.hasCredentials
+        const credentialEmail = credentialData?.email || maestro.email || maestro.correo || '-'
+        const passwordVersion = credentialData?.passwordVersion || 0
+        const passwordValue =
+          plainPassword || (hasCredentials ? maskPassword : 'Sin contraseña generada')
+
+        credContainer.innerHTML = `
+          <div class="card border-0 bg-body-tertiary">
+            <div class="card-body p-3">
+              <div class="row g-3 mb-3">
+                <div class="col-md-6">
+                  <div class="small text-muted">Correo de acceso</div>
+                  <div class="fw-semibold text-break">${escapeHTML(credentialEmail)}</div>
+                </div>
+                <div class="col-md-3">
+                  <div class="small text-muted">Versión</div>
+                  <div class="fw-semibold">${hasCredentials ? `v${passwordVersion}` : '—'}</div>
+                </div>
+                <div class="col-md-3">
+                  <div class="small text-muted">Vinculación</div>
+                  <div class="fw-semibold">${credentialData?.userLinked ? 'Activa' : 'Pendiente'}</div>
+                </div>
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label fw-semibold mb-1">Contraseña</label>
+                <input
+                  type="text"
+                  class="form-control font-monospace"
+                  id="maestro-cred-password-input"
+                  readonly
+                  value="${escapeHTML(passwordValue)}"
+                >
+                <div class="form-text">
+                  ${hasCredentials ? 'La contraseña se almacena cifrada en la base de datos.' : 'Aún no existe una contraseña para este maestro.'}
+                </div>
+              </div>
+
+              <div class="d-flex flex-column gap-2">
+                ${renderCredentialActions(hasCredentials)}
+                <div class="small text-muted">
+                  <div><strong>Generada:</strong> ${formatCredentialDate(credentialData?.lastGeneratedAt)}</div>
+                  <div><strong>Última visualización:</strong> ${formatCredentialDate(credentialData?.lastRevealedAt)}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        `
+
+        const passwordInput = credContainer.querySelector('#maestro-cred-password-input')
+        const revealBtn = credContainer.querySelector('#btn-maestro-cred-reveal')
+        const copyBtn = credContainer.querySelector('#btn-maestro-cred-copy')
+        const regenerateBtn = credContainer.querySelector('#btn-maestro-cred-regenerate')
+        const generateBtn = credContainer.querySelector('#btn-maestro-cred-generate')
+        const refreshBtn = credContainer.querySelector('#btn-maestro-cred-refresh')
+
+        const setPasswordValue = (value) => {
+          currentPlainPassword = value
+          if (passwordInput) passwordInput.value = value
+          if (copyBtn) copyBtn.disabled = !value
+        }
+
+        revealBtn?.addEventListener('click', async () => {
+          try {
+            revealBtn.disabled = true
+            revealBtn.innerHTML =
+              '<span class="spinner-border spinner-border-sm me-1"></span>Verificando...'
+            const result = await revelarCredencialesMaestro(id)
+            setCredentialBadge('Visible', 'success')
+            setPasswordValue(result.password)
+            showToast('Contraseña revelada correctamente', 'success')
+          } catch (error) {
+            showToast(error.message || 'No se pudo revelar la contraseña', 'error')
+          } finally {
+            revealBtn.disabled = false
+            revealBtn.innerHTML = '<i class="bi bi-eye me-1"></i>Ver contraseña'
+          }
+        })
+
+        copyBtn?.addEventListener('click', async () => {
+          if (!currentPlainPassword) {
+            showToast('Primero debes ver la contraseña', 'warning')
+            return
+          }
+
+          try {
+            await navigator.clipboard.writeText(currentPlainPassword)
+            showToast('Contraseña copiada al portapapeles', 'success')
+          } catch {
+            showToast('No se pudo copiar la contraseña', 'error')
+          }
+        })
+
+        const generatePassword = async ({ confirmReplace = false } = {}) => {
+          if (
+            confirmReplace &&
+            !confirm('Esto reemplazará la contraseña actual del maestro. ¿Deseas continuar?')
+          ) {
+            return
+          }
+
+          let button = null
+          try {
+            button = confirmReplace ? regenerateBtn : generateBtn
+            if (button) {
+              button.disabled = true
+              button.innerHTML =
+                '<span class="spinner-border spinner-border-sm me-1"></span>Guardando...'
+            }
+
+            const result = await generarCredencialesMaestro(id)
+            setCredentialBadge('Cifradas', 'success')
+            renderCredentialCard(
+              {
+                ...(currentCredentialData || {}),
+                hasCredentials: true,
+                email: result.email || credentialEmail,
+                passwordVersion: result.passwordVersion || passwordVersion + 1,
+                lastGeneratedAt: result.generatedAt || new Date().toISOString(),
+                lastRevealedAt: null,
+                userLinked: true,
+              },
+              result.password,
+            )
+            showToast('Credenciales generadas correctamente', 'success')
+          } catch (error) {
+            showToast(error.message || 'No se pudieron generar las credenciales', 'error')
+          } finally {
+            if (button) {
+              button.disabled = false
+              button.innerHTML = confirmReplace
+                ? '<i class="bi bi-arrow-repeat me-1"></i>Regenerar contraseña'
+                : '<i class="bi bi-key me-1"></i>Generar contraseña'
+            }
+          }
+        }
+
+        regenerateBtn?.addEventListener('click', () => {
+          void generatePassword({ confirmReplace: true })
+        })
+
+        generateBtn?.addEventListener('click', () => {
+          void generatePassword()
+        })
+
+        refreshBtn?.addEventListener('click', () => {
+          void loadCredentialState()
+        })
+      }
+
+      const loadCredentialState = async () => {
+        try {
+          setCredentialBadge('Cargando...', 'secondary')
+          credContainer.innerHTML = `
+            <div class="d-flex align-items-center gap-2 text-muted py-2">
+              <div class="spinner-border spinner-border-sm text-primary"></div>
+              <small>Cargando credenciales...</small>
+            </div>
+          `
+
+          const credentialState = await obtenerEstadoCredencialesMaestro(id)
+          currentCredentialData = credentialState
+          setCredentialBadge(
+            credentialState.hasCredentials ? 'Cifradas' : 'Sin credenciales',
+            credentialState.hasCredentials ? 'success' : 'warning',
+          )
+          renderCredentialCard(credentialState)
+        } catch (error) {
+          setCredentialBadge('Error', 'danger')
+          credContainer.innerHTML = `
+            <div class="alert alert-danger py-2 mb-0 small">
+              <i class="bi bi-exclamation-triangle me-1"></i>
+              ${escapeHTML(error.message || 'No se pudieron cargar las credenciales')}
+            </div>
+          `
+        }
+      }
       const clasesContainer = modalBody.querySelector('#maestro-clases-container')
       const badge = modalBody.querySelector('#maestro-clases-badge')
 
@@ -806,15 +1063,15 @@ function openViewModal(id) {
           const DIAS = {
             lunes: 'Lun',
             martes: 'Mar',
-            miercoles: 'Mié',
+            miercoles: 'MiÃ©',
             jueves: 'Jue',
             viernes: 'Vie',
-            sabado: 'Sáb',
+            sabado: 'SÃ¡b',
             domingo: 'Dom',
           }
           const fmtHora = (t) => t?.slice(0, 5) || ''
           const fmtHorario = (h) =>
-            `${DIAS[h.dia] || h.dia} ${fmtHora(h.hora_inicio)}–${fmtHora(h.hora_fin)}`
+            `${DIAS[h.dia] || h.dia} ${fmtHora(h.hora_inicio)}â€“${fmtHora(h.hora_fin)}`
 
           clasesContainer.innerHTML = `
             <div class="d-flex flex-column gap-2">
@@ -856,7 +1113,7 @@ function openViewModal(id) {
                         </div>
 
                         <div class="d-flex align-items-center gap-2 flex-wrap mb-1" style="font-size:0.75rem;color:var(--bs-secondary-color);">
-                          ${c.instrumento ? `<span>${escapeHTML(c.instrumento)}</span><span style="opacity:0.3;">·</span>` : ''}
+                          ${c.instrumento ? `<span>${escapeHTML(c.instrumento)}</span><span style="opacity:0.3;">Â·</span>` : ''}
                           ${c.horarios.length ? horarioPills : `<span class="fst-italic" style="opacity:0.5;">Sin horario</span>`}
                         </div>
 
@@ -900,7 +1157,7 @@ function openViewModal(id) {
                 .join('')}
             </div>`
 
-          // ── Editar clase ────────────────────────────────────────────────
+          // â”€â”€ Editar clase â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
           clasesContainer.querySelectorAll('.btn-editar-clase').forEach((btn) => {
             btn.addEventListener('click', (e) => {
               const claseId = e.currentTarget.dataset.claseId
@@ -918,14 +1175,14 @@ function openViewModal(id) {
             })
           })
 
-          // ── Desvincular maestro ─────────────────────────────────────────
+          // â”€â”€ Desvincular maestro â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
           clasesContainer.querySelectorAll('.btn-desvincular-clase').forEach((btn) => {
             btn.addEventListener('click', async (e) => {
               const claseId = e.currentTarget.dataset.claseId
               const claseNombre = e.currentTarget.dataset.claseNombre
               const esSuplente = e.currentTarget.dataset.esSuplente === 'true'
               const campo = esSuplente ? 'maestro_suplente_id' : 'maestro_principal_id'
-              if (!confirm(`¿Quitar a este maestro de "${claseNombre}"?`)) return
+              if (!confirm(`Â¿Quitar a este maestro de "${claseNombre}"?`)) return
               try {
                 e.currentTarget.disabled = true
                 e.currentTarget.innerHTML = '<span class="spinner-border spinner-border-sm"></span>'
@@ -941,7 +1198,7 @@ function openViewModal(id) {
               }
             })
           })
-        } catch (err) {
+        } catch {
           badge.textContent = 'Error'
           clasesContainer.innerHTML = `
             <div class="alert alert-danger py-2 mb-0 small">
@@ -950,7 +1207,8 @@ function openViewModal(id) {
         }
       }
 
-      renderClasesSection()
+      void loadCredentialState()
+      void renderClasesSection()
     },
   })
 }
@@ -967,14 +1225,14 @@ function openDeleteModal(id) {
   const isActive = maestro.is_active !== false
 
   AppModal.open({
-    title: isActive ? '⏸️ Desactivar Maestro' : '▶️ Reactivar Maestro',
+    title: isActive ? 'â¸ï¸ Desactivar Maestro' : 'â–¶ï¸ Reactivar Maestro',
     size: 'sm',
     saveText: isActive ? 'Desactivar' : 'Reactivar',
     body: isActive
-      ? `<p>¿Desactivar al maestro <strong>${escapeHTML(nombre)}</strong>?</p>
-         <p class="text-muted small mb-0">El maestro no aparecerá en las listas, pero sus datos se conservarán.</p>`
-      : `<p>¿Reactivar al maestro <strong>${escapeHTML(nombre)}</strong>?</p>
-         <p class="text-muted small mb-0">El maestro volverá a aparecer en las listas.</p>`,
+      ? `<p>Â¿Desactivar al maestro <strong>${escapeHTML(nombre)}</strong>?</p>
+         <p class="text-muted small mb-0">El maestro no aparecerÃ¡ en las listas, pero sus datos se conservarÃ¡n.</p>`
+      : `<p>Â¿Reactivar al maestro <strong>${escapeHTML(nombre)}</strong>?</p>
+         <p class="text-muted small mb-0">El maestro volverÃ¡ a aparecer en las listas.</p>`,
     onSave: async () => {
       if (isActive) {
         await inactivarMaestro(id)
@@ -988,7 +1246,7 @@ function openDeleteModal(id) {
   })
 }
 
-// ─── Utils ───────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Utils â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function refreshTable() {
   const tbody = currentContainer.querySelector('#maestrosTBody')
@@ -1008,7 +1266,7 @@ function exportarMaestrosCSV() {
     return
   }
 
-  const headers = ['Nombre', 'Email', 'Teléfono', 'Instrumento', 'Especialidad', 'Estado']
+  const headers = ['Nombre', 'Email', 'TelÃ©fono', 'Instrumento', 'Especialidad', 'Estado']
   const rows = state.maestrosOriginales.map((m) => [
     m.nombre || '',
     m.email || '',
@@ -1033,8 +1291,13 @@ function exportarMaestrosCSV() {
 
 function showToast(message, type = 'info') {
   const bgColor = type === 'success' ? '#198754' : type === 'error' ? '#dc3545' : '#0dcaf0'
-  const icon = type === 'success' ? 'bi-check-circle' : type === 'error' ? 'bi-exclamation-circle' : 'bi-info-circle'
-  const label = type === 'success' ? 'Éxito' : type === 'error' ? 'Error' : 'Información'
+  const icon =
+    type === 'success'
+      ? 'bi-check-circle'
+      : type === 'error'
+        ? 'bi-exclamation-circle'
+        : 'bi-info-circle'
+  const label = type === 'success' ? 'Ã‰xito' : type === 'error' ? 'Error' : 'InformaciÃ³n'
 
   const el = document.createElement('div')
   el.style.cssText = `
@@ -1058,7 +1321,9 @@ function showToast(message, type = 'info') {
   `
   document.body.appendChild(el)
 
-  el.querySelector('button').addEventListener('click', () => { el.remove() })
+  el.querySelector('button').addEventListener('click', () => {
+    el.remove()
+  })
   setTimeout(() => {
     el.style.transition = 'opacity .3s'
     el.style.opacity = '0'

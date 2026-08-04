@@ -90,10 +90,16 @@ export async function renderGestionarClasesView(container) {
       return
     }
 
-    const [clases, todosAlumnos] = await Promise.all([
+    const [clases, alumnosPayload] = await Promise.all([
       obtenerClasesPorMaestro(maestro.id),
-      obtenerAlumnos().catch(() => []),
+      obtenerAlumnos().catch(() => ({ alumnos: [] })),
     ])
+
+    const todosAlumnos = Array.isArray(alumnosPayload)
+      ? alumnosPayload
+      : Array.isArray(alumnosPayload?.alumnos)
+        ? alumnosPayload.alumnos
+        : []
 
     _allStudents = todosAlumnos.filter((a) => a.activo !== false && a.is_active !== false)
 

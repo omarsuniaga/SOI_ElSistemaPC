@@ -5,6 +5,7 @@ import { obtenerClases, obtenerPlanificacionesConDetalles } from '../api/planifi
 import { renderMapaContenidoSVG } from '../components/MapaContenidoSVG.js'
 import { extraerNodosDePlan } from '../components/routeNodes.js'
 import { obtenerAlumnosRealesPorClase } from '../services/realAlumnosService.js'
+import { registrarEvaluacion } from '../services/evaluacionClaseService.js'
 import { OfflineSyncAdapter } from '../api/offlineSyncAdapter.js'
 import { IndicadorLogro } from '../domain/IndicadorLogro.js'
 
@@ -40,10 +41,10 @@ export async function renderRutaPedagogicaView(container, { maestroId, parentRou
     console.error('[RutaPedagogicaView] Error:', err)
   }
 
-  _renderUI(container, clases, planificaciones, { parentRoute, claseIdInicial: claseId })
+  _renderUI(container, clases, planificaciones, { parentRoute, claseIdInicial: claseId, maestroId })
 }
 
-function _renderUI(container, clases, planificaciones, { parentRoute = 'planificacion', claseIdInicial } = {}) {
+function _renderUI(container, clases, planificaciones, { parentRoute = 'planificacion', claseIdInicial, maestroId } = {}) {
   let selectedClaseId = (claseIdInicial && clases.find((c) => String(c.id) === String(claseIdInicial)))
     ? claseIdInicial
     : clases[0]?.id || ''
@@ -203,13 +204,13 @@ function _renderUI(container, clases, planificaciones, { parentRoute = 'planific
           if (cached) {
             alumnosClase = cached
             nodoDatosListos = true
-            openNodoDetailModal(nodo, alumnosClase, nodos, selectedClaseId, true)
+            openNodoDetailModal(nodo, alumnosClase, nodos, selectedClaseId, true, maestroId)
             _renderTbody()
             return
           }
 
           nodoDatosListos = false
-          openNodoDetailModal(nodo, alumnosClase, nodos, selectedClaseId, false)
+          openNodoDetailModal(nodo, alumnosClase, nodos, selectedClaseId, false, maestroId)
           _renderTbody()
 
           obtenerAlumnosRealesPorClase(selectedClaseId, nodo.id).then((lista) => {
@@ -217,7 +218,7 @@ function _renderUI(container, clases, planificaciones, { parentRoute = 'planific
             nodoEvalCache.set(nodo.id, lista)
             alumnosClase = lista
             nodoDatosListos = true
-            openNodoDetailModal(nodo, alumnosClase, nodos, selectedClaseId, true)
+            openNodoDetailModal(nodo, alumnosClase, nodos, selectedClaseId, true, maestroId)
             _renderTbody()
           })
         },
@@ -257,6 +258,15 @@ function _renderEstrellasSVG(cant) {
     }
   }
   return html
+}
+
+function _estadoDesdeEstrellas(estrellas) {
+  if (estrellas <= 0) return 'sin_evaluar'
+  if (estrellas === 1) return 'inicia'
+  if (estrellas === 2) return 'en_progreso'
+  if (estrellas === 3) return 'avanzado'
+  if (estrellas === 4) return 'avanzado'
+  return 'dominado'
 }
 
 function _mostrarExplicacionIDIA() {
@@ -341,7 +351,14 @@ function _getEtiquetaEstrella(cant) {
 
 let activeNodeModal = null
 
-async function openNodoDetailModal(nodo, alumnosList = [], nodosSecuencia = [], selectedClaseId = '', datosListos = true) {
+async function openNodoDetailModal(
+  nodo,
+  alumnosList = [],
+  nodosSecuencia = [],
+  selectedClaseId = '',
+  datosListos = true,
+  evaluadoPorId = null,
+) {
   const colaOfflineData = await OfflineSyncAdapter.obtenerCola()
   alumnosList._colaOfflineData = colaOfflineData
 
@@ -358,7 +375,7 @@ async function openNodoDetailModal(nodo, alumnosList = [], nodosSecuencia = [], 
     modalEl.dataset.nodoId = nodo.id
   }
 
-  modalEl._state = { nodo, alumnosList, nodosSecuencia, selectedClaseId, datosListos }
+  modalEl._state = { nodo, alumnosList, nodosSecuencia, selectedClaseId, datosListos, evaluadoPorId }
 
   // ─── RENDER: Card-based student list (mobile-first) ───────────────────────
   const renderModalTbody = (list) => {
@@ -538,6 +555,9 @@ async function openNodoDetailModal(nodo, alumnosList = [], nodosSecuencia = [], 
 
         <!-- Footer del Modal -->
         <div class="modal-footer border-0 bg-body-tertiary px-3 py-2">
+          <button type="button" class="btn btn-sm btn-success rounded-3 px-4 fw-semibold me-auto" id="btn-guardar-calificaciones">
+            Guardar calificaciones
+          </button>
           <button type="button" class="btn btn-sm btn-secondary rounded-3 px-4 fw-semibold" data-bs-dismiss="modal">Cerrar</button>
         </div>
       </div>
@@ -556,7 +576,7 @@ async function openNodoDetailModal(nodo, alumnosList = [], nodosSecuencia = [], 
   // Event listener con soporte para clic directo en estrella o clic de card (ciclo)
   const listContainer = modalEl.querySelector('#tbody-modal-alumnos')
   listContainer?.addEventListener('click', (e) => {
-    const state = modalEl._state || { nodo, alumnosList, selectedClaseId, datosListos }
+    const state = modalEl._state || { nodo, alumnosList, selectedClaseId, datosListos, evaluadoPorId }
     if (state.datosListos === false) return
 
     const cardEl = e.target.closest('.row-alumno-modal-eval')
@@ -583,6 +603,76 @@ async function openNodoDetailModal(nodo, alumnosList = [], nodosSecuencia = [], 
 
       // Actualizar vista dentro del modal de forma silenciosa e instantánea
       listContainer.innerHTML = renderModalTbody(state.alumnosList)
+    }
+  })
+
+  modalEl.querySelector('#btn-guardar-calificaciones')?.addEventListener('click', async (e) => {
+    e.preventDefault()
+    const state = modalEl._state || { nodo, alumnosList, selectedClaseId, datosListos, evaluadoPorId }
+    const saveBtn = e.currentTarget
+    const originalHTML = saveBtn.innerHTML
+    const evaluables = (state.alumnosList || []).filter((a) => a.presente && !a.justificado)
+
+    if (evaluables.length === 0) {
+      AppToast.show('No hay calificaciones para guardar en este nodo.', 'info')
+      return
+    }
+
+    saveBtn.disabled = true
+    saveBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Guardando...'
+
+    let guardadas = 0
+    let pendientes = 0
+
+    try {
+      for (const alumno of evaluables) {
+        const estrellas = Number(alumno.estrellas || 0)
+
+        try {
+          await registrarEvaluacion({
+            alumno_id: alumno.id,
+            indicator_id: state.nodo.id,
+            clase_id: state.selectedClaseId,
+            nota: estrellas > 0 ? estrellas : null,
+            estado: _estadoDesdeEstrellas(estrellas),
+            evaluado_por: state.evaluadoPorId || evaluadoPorId || null,
+          })
+
+          await OfflineSyncAdapter.eliminarDeCola({
+            alumnoId: alumno.id,
+            claseId: state.selectedClaseId,
+            nodoId: state.nodo.id,
+          })
+
+          guardadas++
+        } catch (err) {
+          pendientes++
+          console.error('[RutaPedagogicaView] Error guardando calificación en Supabase:', err)
+          await OfflineSyncAdapter.guardarLocal({
+            alumnoId: alumno.id,
+            claseId: state.selectedClaseId,
+            nodoId: state.nodo.id,
+            estrellas,
+          })
+        }
+      }
+
+      state.alumnosList._colaOfflineData = await OfflineSyncAdapter.obtenerCola()
+      const refrescados = await obtenerAlumnosRealesPorClase(state.selectedClaseId, state.nodo.id)
+      state.alumnosList.splice(0, state.alumnosList.length, ...refrescados)
+      listContainer.innerHTML = renderModalTbody(state.alumnosList)
+
+      if (pendientes === 0) {
+        AppToast.show(`${guardadas} calificaciones guardadas en la base de datos.`, 'success')
+      } else {
+        AppToast.show(`${guardadas} calificaciones guardadas en la base de datos y ${pendientes} quedaron pendientes de sincronización.`, 'warning')
+      }
+    } catch (err) {
+      console.error('[RutaPedagogicaView] Error en el guardado masivo del nodo:', err)
+      AppToast.show(err.message || 'No se pudieron guardar las calificaciones.', 'error')
+    } finally {
+      saveBtn.disabled = false
+      saveBtn.innerHTML = originalHTML
     }
   })
 

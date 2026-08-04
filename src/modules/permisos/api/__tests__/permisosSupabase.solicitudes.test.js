@@ -202,9 +202,32 @@ describe('permisosSupabase - Solicitudes', () => {
           data: {
             puede_registrar_alumnos: false,
             puede_inscribir_clases: false,
+            puede_crear_clases: false,
             permisos: [],
             solicitudes: [],
           },
+          error: null,
+        }),
+      }
+
+      const getMaestroChain = {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        maybeSingle: vi.fn().mockResolvedValue({
+          data: {
+            id: mockMaestroId,
+            nombre_completo: 'Prof. García',
+            correo: 'garcia@example.com',
+            activo: true,
+          },
+          error: null,
+        }),
+      }
+
+      const getClasesChain = {
+        select: vi.fn().mockReturnThis(),
+        or: vi.fn().mockResolvedValue({
+          data: [],
           error: null,
         }),
       }
@@ -217,6 +240,7 @@ describe('permisosSupabase - Solicitudes', () => {
           data: {
             puede_registrar_alumnos: false,
             puede_inscribir_clases: false,
+            puede_crear_clases: false,
             permisos: [],
             solicitudes: [],
           },
@@ -241,6 +265,8 @@ describe('permisosSupabase - Solicitudes', () => {
       supabase.from
         .mockReturnValueOnce(approveChain)      // solicitudes_permisos update
         .mockReturnValueOnce(getPermisoChain)   // obtenerPermisoPorMaestro
+        .mockReturnValueOnce(getMaestroChain)   // obtener maestro
+        .mockReturnValueOnce(getClasesChain)    // obtener clases asignadas
         .mockReturnValueOnce(readCurrentChain)  // actualizarPermiso read
         .mockReturnValueOnce(updateChain)       // actualizarPermiso upsert
 

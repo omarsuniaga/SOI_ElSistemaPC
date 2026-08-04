@@ -9,6 +9,7 @@ export class Permiso {
     this.maestro_email = data.maestro_email || ''
     this.puede_registrar_alumnos = data.puede_registrar_alumnos !== undefined ? data.puede_registrar_alumnos : false
     this.puede_inscribir_clases = data.puede_inscribir_clases !== undefined ? data.puede_inscribir_clases : false
+    this.puede_crear_clases = data.puede_crear_clases !== undefined ? data.puede_crear_clases : false
     this.permisos = Array.isArray(data.permisos) ? data.permisos : []
     this.solicitudes = Array.isArray(data.solicitudes) ? data.solicitudes : []
     this.concedido_por = data.concedido_por || null
@@ -38,6 +39,10 @@ export class Permiso {
       errores.push('puede_inscribir_clases debe ser un valor booleano')
     }
 
+    if (typeof this.puede_crear_clases !== 'boolean') {
+      errores.push('puede_crear_clases debe ser un valor booleano')
+    }
+
     // Validación de arreglos
     if (!Array.isArray(this.permisos)) {
       errores.push('permisos debe ser un arreglo')
@@ -62,6 +67,7 @@ export class Permiso {
       maestro_email: this.maestro_email || null,
       puede_registrar_alumnos: this.puede_registrar_alumnos,
       puede_inscribir_clases: this.puede_inscribir_clases,
+      puede_crear_clases: this.puede_crear_clases,
       permisos: this.permisos,
       solicitudes: this.solicitudes,
       concedido_por: this.concedido_por || null,

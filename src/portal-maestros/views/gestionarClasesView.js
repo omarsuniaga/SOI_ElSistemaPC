@@ -103,8 +103,8 @@ export async function renderGestionarClasesView(container) {
 
     _allStudents = todosAlumnos.filter((a) => a.activo !== false && a.is_active !== false)
 
-    container.innerHTML = _buildShell(clases)
-    _attachShellEvents(clases)
+    container.innerHTML = _buildShell(clases, { canCreateClasses: permisos.puede_crear_clases })
+    _attachShellEvents(clases, permisos)
 
     if (clases.length > 0) {
       await _selectClase(clases[0].id, clases)
@@ -195,7 +195,7 @@ function _attachPermissionEvents(maestroId) {
 
 // ── Shell layout ──────────────────────────────────────────────────────────────
 
-function _buildShell(clases) {
+function _buildShell(clases, { canCreateClasses = false } = {}) {
   return `
     <div class="gcv-root">
       <div class="gcv-header">
@@ -206,6 +206,11 @@ function _buildShell(clases) {
             <p class="gcv-subtitle">${clases.length} clase${clases.length !== 1 ? 's' : ''} asignada${clases.length !== 1 ? 's' : ''}</p>
           </div>
         </div>
+        ${canCreateClasses ? `
+          <button type="button" class="gcv-btn gcv-btn-primary" id="gcv-btn-crear-clase">
+            <i class="bi bi-plus-circle"></i> Nueva clase
+          </button>
+        ` : ''}
       </div>
 
       ${
@@ -417,13 +422,23 @@ function _rowDisponible(a) {
 
 // ── Event wiring ──────────────────────────────────────────────────────────────
 
-function _attachShellEvents(clases) {
+function _attachShellEvents(clases, permisos = {}) {
   document.getElementById('gcv-clase-list')?.addEventListener('click', async (e) => {
     const card = e.target.closest('.gcv-clase-card')
     if (!card) return
     const claseId = card.dataset.claseId
     if (claseId && claseId !== _selectedClaseId) {
       await _selectClase(claseId, clases)
+    }
+  })
+
+  document.getElementById('gcv-btn-crear-clase')?.addEventListener('click', () => {
+    if (!permisos?.puede_crear_clases) {
+      AppToast.error('Tu perfil todavía no tiene habilitado el permiso para crear clases.')
+      return
+    }
+    if (window.router?.navigate) {
+      window.router.navigate('crear-clase')
     }
   })
 }

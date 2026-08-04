@@ -1,7 +1,6 @@
 import { normalizeText } from '../../../core/utils/normalizeText.js'
 import { AppModal } from '../../../shared/components/AppModal.js'
 import { AppToast } from '../../../shared/components/AppToast.js'
-import { supabase } from '../../../lib/supabaseClient.js'
 import {
   crearClase,
   actualizarClase,
@@ -11,13 +10,10 @@ import {
   actualizarTurnoInscripcion,
   verificarSolapamientoCompleto,
   resolverConflictosClases,
-  NIVELES
 } from '../api/clasesApi.js'
 import { openClaseConflictModal } from './claseConflictModal.js'
 import {
   escapeHTML,
-  getConsistentColor,
-  formatHora,
   timeToMinutes,
   minutesToTime,
   rendimientoBadgeHTML,
@@ -30,13 +26,18 @@ import { openRutaSelectorModal } from '../../planificacion/components/rutaSelect
  * Encapsula la lógica de creación/edición, gestión de horarios y alumnos.
  */
 
-let _options = {
+const DEFAULT_OPTIONS = {
   maestros: [],
   salones: [],
   programas: [],
   alumnos: [],
-  onSuccess: null
+  onSuccess: null,
+  lockedPrincipalTeacherId: null,
+  lockedPrincipalTeacherLabel: '',
+  allowPrincipalTeacherSelection: true,
 }
+
+let _options = { ...DEFAULT_OPTIONS }
 
 const VALIDATION = {
   nombreMax: 100,
@@ -47,7 +48,7 @@ const VALIDATION = {
  * Abre el modal de clase (Nuevo o Editar)
  */
 export async function openClaseModal(clase = null, options = {}) {
-  _options = { ..._options, ...options }
+  _options = { ...DEFAULT_OPTIONS, ...options }
   const isEdicion = !!clase
   let inscritosIds = []
 
@@ -83,6 +84,13 @@ export async function openClaseModal(clase = null, options = {}) {
 }
 
 function _getClaseFormHTML(clase, inscritosIds, inscritosSlots = []) {
+  const selectedPrincipalTeacherId = clase?.maestro_principal_id || _options.lockedPrincipalTeacherId || ''
+  const principalTeacherLabel =
+    _options.lockedPrincipalTeacherLabel ||
+    _options.maestros.find((maestro) => maestro.id === selectedPrincipalTeacherId)?.nombre_completo ||
+    _options.maestros.find((maestro) => maestro.id === selectedPrincipalTeacherId)?.nombre ||
+    'Maestro asignado'
+
   return `
     <form class="row g-3" id="formClase">
       <div class="col-md-6">
@@ -112,9 +120,13 @@ function _getClaseFormHTML(clase, inscritosIds, inscritosSlots = []) {
       </div>
       <div class="col-md-6">
         <label class="form-label-compact">Maestro Titular *</label>
-        <select class="form-select input-dense" id="modal-maestro_id" required>
-          ${_getMaestrosOptions(clase?.maestro_principal_id)}
-        </select>
+        ${_options.allowPrincipalTeacherSelection
+          ? `<select class="form-select input-dense" id="modal-maestro_id" required>
+              ${_getMaestrosOptions(selectedPrincipalTeacherId)}
+            </select>`
+          : `<input type="text" class="form-control input-dense" value="${escapeHTML(principalTeacherLabel)}" readonly>
+             <input type="hidden" id="modal-maestro_id" value="${escapeHTML(selectedPrincipalTeacherId)}">`
+        }
       </div>
       <div class="col-md-6">
         <div class="d-flex align-items-center gap-2">
@@ -192,7 +204,6 @@ function _getSlotBuilderHTML(inscritosSlots = []) {
   const alumnos = _options.alumnos || []
 
   const slotRow = (alumnoId = '', horaInicio = '', horaFin = '') => {
-    const alumno = alumnos.find(a => a.id === alumnoId)
     return `
       <div class="slot-row d-flex align-items-center gap-2 mb-2 p-2 rounded border bg-body-tertiary">
         <select class="form-select form-select-sm slot-alumno-select flex-grow-1" style="min-width:0;" required>
@@ -263,7 +274,7 @@ function _getSlotBuilderHTML(inscritosSlots = []) {
     </div>`
 }
 
-function _attachModalEvents(modalBody, clase) {
+function _attachModalEvents(modalBody, _clase) {
   // Botón para seleccionar ruta
   const btnSeleccionarRuta = modalBody.querySelector('#btn-seleccionar-ruta')
   if (btnSeleccionarRuta) {

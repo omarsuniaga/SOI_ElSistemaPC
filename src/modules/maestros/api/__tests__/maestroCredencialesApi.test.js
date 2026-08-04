@@ -36,12 +36,23 @@ describe('maestroCredencialesApi', () => {
 
   it('propaga el error del backend al revelar credenciales', async () => {
     supabase.functions.invoke.mockResolvedValue({
-      data: { ok: false, error: 'TodavÃ­a no existe una contraseÃ±a' },
+      data: { ok: false, error: 'Todavía no existe una contraseña' },
       error: null,
     })
 
     await expect(revelarCredencialesMaestro('m1')).rejects.toThrow(
-      'TodavÃ­a no existe una contraseÃ±a',
+      'Todavía no existe una contraseña',
+    )
+  })
+
+  it('traduce el error de transporte de la edge function a una guía accionable', async () => {
+    supabase.functions.invoke.mockResolvedValue({
+      data: null,
+      error: { message: 'Failed to send a request to the Edge Function' },
+    })
+
+    await expect(generarCredencialesMaestro('m1')).rejects.toThrow(
+      'La Edge Function maestro-credentials no está desplegada o no es accesible en este proyecto. Debes aplicar la migración de credenciales y desplegar la función en Supabase.',
     )
   })
 

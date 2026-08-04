@@ -15,8 +15,13 @@ export async function getPermisos(maestroId) {
   const failClosed = {
     puede_registrar_alumnos: false,
     puede_inscribir_clases: false,
+    puede_crear_clases: false,
     puede_planificar: false,
     puede_asistir: false,
+    total_clases_asignadas: 0,
+    clases_titular: 0,
+    clases_suplente: 0,
+    tiene_clases_asignadas: false,
     solicitudes: [],
     solicitud_actual: null
   }
@@ -42,6 +47,11 @@ export async function getPermisos(maestroId) {
         ...failClosed,
         puede_registrar_alumnos: solicitudAprobada?.solicita_alumnos ?? false,
         puede_inscribir_clases: solicitudAprobada?.solicita_clases ?? false,
+        puede_crear_clases: false,
+        total_clases_asignadas: permiso?.total_clases_asignadas ?? 0,
+        clases_titular: permiso?.clases_titular ?? 0,
+        clases_suplente: permiso?.clases_suplente ?? 0,
+        tiene_clases_asignadas: (permiso?.total_clases_asignadas ?? 0) > 0,
         solicitud_actual,
       }
     }
@@ -61,15 +71,22 @@ export async function getPermisos(maestroId) {
     const puedeInscribirClases =
       permisosArray.includes('clases:enroll') ||
       permisosArray.includes('inscribir_clases') ||
-      permisosArray.includes('clases:create') ||
       (permiso.puede_inscribir_clases ?? false) ||
       (solicitudAprobada?.solicita_clases ?? false)
+    const puedeCrearClases =
+      permisosArray.includes('clases:create') ||
+      (permiso.puede_crear_clases ?? false)
 
     return {
       puede_registrar_alumnos: puedeRegistrarAlumnos,
       puede_inscribir_clases: puedeInscribirClases,
+      puede_crear_clases: puedeCrearClases,
       puede_planificar: permisosArray.includes('planificacion:write') || false,
       puede_asistir: permisosArray.includes('asistencias:write') || false,
+      total_clases_asignadas: permiso.total_clases_asignadas ?? 0,
+      clases_titular: permiso.clases_titular ?? 0,
+      clases_suplente: permiso.clases_suplente ?? 0,
+      tiene_clases_asignadas: (permiso.total_clases_asignadas ?? 0) > 0,
       solicitudes: solicitudes,
       solicitud_actual: solicitud_actual
     }

@@ -1,242 +1,157 @@
-import { supabase } from '../../lib/supabaseClient.js'
+import { AppToast } from '../../shared/components/AppToast.js'
+import { openClaseModal } from '../../modules/clases/components/claseModal.js'
 import { getMaestroLocal } from '../auth/maestroAuth.js'
-import { escHTML } from '../utils/portalUtils.js'
+import { obtenerDatosCreadorClases } from '../api/crearClasePortalApi.js'
+import { getPermisos } from '../services/permisoService.js'
 
-const DIAS_SEMANA = ['lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado', 'domingo']
+function escHTML(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+}
 
 export async function renderCrearClaseView(container) {
-  container.innerHTML = `<div class="pm-loading"><div class="pm-spinner"></div></div>`
+  container.innerHTML = `
+    <div class="gcv-root">
+      <div class="gcv-loading"><div class="gcv-spinner"></div></div>
+    </div>
+  `
 
   const maestro = getMaestroLocal()
   if (!maestro) {
-    container.innerHTML = `<p class="pm-empty">No hay sesión activa.</p>`
+    container.innerHTML = renderEmptyState(
+      'bi-lock',
+      'Sin sesión activa',
+      'Inicia sesión nuevamente para crear una clase.',
+    )
     return
   }
 
   try {
-    // Verificar si el admin autorizó al maestro a crear clases
-    const { data: config } = await supabase
-      .from('system_config')
-      .select('value')
-      .eq('key', 'maestros_pueden_crear_clases')
-      .maybeSingle()
+    const permisos = await getPermisos(maestro.id)
 
-    const puedeCrear = config?.value === 'true'
-
-    if (!puedeCrear) {
-      container.innerHTML = `
-        <div class="pm-empty" style="text-align:center;padding:3rem 1rem;">
-          <i class="bi bi-lock" style="font-size:3rem;color:var(--pm-text-muted);"></i>
-          <p style="margin-top:1rem;"><strong>Crear clases deshabilitado</strong></p>
-          <p style="font-size:0.85rem;color:var(--pm-text-muted);">Solo los administradores pueden crear nuevas clases. Contacta al admin si necesitas una nueva clase.</p>
-        </div>
-      `
+    if (!permisos?.puede_crear_clases) {
+      container.innerHTML = renderEmptyState(
+        'bi-shield-lock',
+        'Acceso no habilitado',
+        'ADM debe activar el permiso “Crear clases” antes de usar esta herramienta.',
+      )
       return
     }
 
-    // Obtener tipos de instrumento desde inventario activo
-    const { data: activos } = await supabase
-      .from('inventario_activos')
-      .select('tipo_instrumento')
-      .eq('activo', true)
-      .not('tipo_instrumento', 'is', null)
-      .order('tipo_instrumento')
-    const instrumentos = [...new Map((activos || []).map(a => [a.tipo_instrumento, { nombre: a.tipo_instrumento }])).values()]
-
-    // Obtener maestros para co-docencia
-    const { data: maestros } = await supabase
-      .from('maestros')
-      .select('id, nombre, email')
-      .neq('id', maestro.id)
-      .order('nombre')
+    const soporte = await obtenerDatosCreadorClases()
 
     container.innerHTML = `
-      <div class="pm-crear-clase">
-        <h2 class="pm-title">
-          <i class="bi bi-plus-circle"></i> Crear Nueva Clase
-        </h2>
-        <p class="pm-subtitle">Esta clase será visible para ti y tus alumnos</p>
-
-        <div class="pm-form-section">
-          <h3 class="pm-section-title">Información básica</h3>
-          
-          <div class="pm-form-group">
-            <label class="pm-label">Nombre de la clase *</label>
-            <input type="text" id="nueva-clase-nombre" class="pm-input" 
-              placeholder="Ej: Guitarra Beginners, Piano Intermedio">
-          </div>
-
-          <div class="pm-form-group">
-            <label class="pm-label">Instrumento *</label>
-            <select id="nueva-clase-instrumento" class="pm-input">
-              <option value="">Seleccionar instrumento...</option>
-              ${(instrumentos || []).map(i => `<option value="${escHTML(i.nombre)}">${escHTML(i.nombre)}</option>`).join('')}
-            </select>
-          </div>
-
-          <div class="pm-form-group">
-            <label class="pm-label">Capacidad máxima de alumnos</label>
-            <input type="number" id="nueva-clase-capacidad" class="pm-input" 
-              value="10" min="1" max="50">
-          </div>
-
-          <div class="pm-form-group">
-            <label class="pm-label">Salón / Ubicación</label>
-            <input type="text" id="nueva-clase-salon" class="pm-input" 
-              placeholder="Ej: Salon 1, Room A">
+      <div class="gcv-root">
+        <div class="gcv-header">
+          <div class="gcv-header-left">
+            <i class="bi bi-journal-plus gcv-header-icon"></i>
+            <div>
+              <h2 class="gcv-title">Crear nueva clase</h2>
+              <p class="gcv-subtitle">Autogestión guiada usando el flujo real del módulo de clases</p>
+            </div>
           </div>
         </div>
 
-        <div class="pm-form-section">
-          <h3 class="pm-section-title">Horario</h3>
-          
-          <div id="nueva-clase-horarios">
-            <div class="pm-horario-row" data-index="0">
-              <select class="pm-input pm-horario-dia">
-                ${DIAS_SEMANA.map(d => `<option value="${d}">${d.charAt(0).toUpperCase() + d.slice(1)}</option>`).join('')}
-              </select>
-              <input type="time" class="pm-input pm-horario-inicio" value="15:30">
-              <span>a</span>
-              <input type="time" class="pm-input pm-horario-fin" value="17:00">
-              <button class="pm-btn-remove" type="button"><i class="bi bi-x"></i></button>
+        <div class="gcv-panel" style="max-width: 880px;">
+          <div class="gcv-panel-inner">
+            <div class="d-flex flex-wrap gap-2">
+              <span class="badge bg-primary-subtle text-primary-emphasis">
+                ${Number(permisos.total_clases_asignadas || 0)} clases asignadas
+              </span>
+              <span class="badge bg-success-subtle text-success-emphasis">
+                Maestro titular bloqueado en tu perfil
+              </span>
+              <span class="badge bg-secondary-subtle text-secondary-emphasis">
+                ${soporte.salones.length} salones disponibles
+              </span>
+            </div>
+
+            <div class="gcv-section">
+              <div class="gcv-section-header">
+                <span class="gcv-section-label"><i class="bi bi-check2-circle gcv-icon-primary"></i> Qué puedes hacer aquí</span>
               </div>
-          </div>
-          
-          <button class="pm-btn pm-btn-secondary" id="btn-agregar-horario" style="margin-top:0.5rem;">
-            <i class="bi bi-plus"></i> Agregar horario
-          </button>
-        </div>
+              <div class="gcv-student-list">
+                ${[
+                  'Crear la clase con el mismo motor de validación usado por ADM.',
+                  'Definir múltiples horarios y asignar salones reales por `salon_id`.',
+                  'Inscribir alumnos durante la creación, incluyendo turnos rotativos.',
+                  'Mantenerte como maestro titular fijo para evitar inconsistencias operativas.',
+                ].map((item) => `
+                  <div class="gcv-student-row">
+                    <div class="gcv-student-avatar gcv-avatar-primary"><i class="bi bi-check-lg"></i></div>
+                    <div class="gcv-student-data"><span class="gcv-student-name">${escHTML(item)}</span></div>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
 
-        <div class="pm-form-section">
-          <h3 class="pm-section-title">Maestro(es)</h3>
-          
-          <div class="pm-form-group">
-            <label class="pm-label">Maestro titular *</label>
-            <input type="text" class="pm-input" value="${escHTML(maestro.nombre_completo || maestro.nombre || 'Tú')}" disabled>
-            <input type="hidden" id="nueva-clase-maestro-titular" value="${maestro.id}">
-          </div>
+            <div class="gcv-section">
+              <div class="gcv-section-header">
+                <span class="gcv-section-label"><i class="bi bi-diagram-3 gcv-icon-success"></i> Reglas del flujo</span>
+              </div>
+              <div class="small text-muted" style="line-height:1.65;">
+                Esta pantalla reutiliza el <strong>modal real de clases</strong>. Eso significa que los conflictos de horario,
+                maestro y salón se validan con la misma lógica que ya existe en ADM. NO estamos creando una segunda versión débil.
+              </div>
+            </div>
 
-          <div class="pm-form-group">
-            <label class="pm-label">Maestro auxiliar (opcional)</label>
-            <select id="nueva-clase-maestro-aux" class="pm-input">
-              <option value="">Sin maestro auxiliar</option>
-              ${(maestros || []).map(m => `<option value="${m.id}">${escHTML(m.nombre || m.email)}</option>`).join('')}
-            </select>
+            <div class="gcv-add-actions" style="justify-content:flex-start;">
+              <button type="button" class="gcv-btn gcv-btn-primary" id="btn-abrir-creador-clase">
+                <i class="bi bi-plus-circle"></i> Abrir creador avanzado
+              </button>
+              <button type="button" class="gcv-btn gcv-btn-ghost" id="btn-volver-gestionar-clases">
+                <i class="bi bi-arrow-left"></i> Volver a mis clases
+              </button>
+            </div>
           </div>
-        </div>
-
-        <div class="pm-form-actions">
-          <button class="pm-btn" id="btn-cancelar-clase">Cancelar</button>
-          <button class="pm-btn pm-btn-primary" id="btn-guardar-clase">Crear Clase</button>
         </div>
       </div>
     `
 
-    // Agregar más horarios
-    document.getElementById('btn-agregar-horario').onclick = () => {
-      const container = document.getElementById('nueva-clase-horarios')
-      const index = container.children.length
-      const row = document.createElement('div')
-      row.className = 'pm-horario-row'
-      row.dataset.index = index
-      row.innerHTML = `
-        <select class="pm-input pm-horario-dia">
-          ${DIAS_SEMANA.map(d => `<option value="${d}">${d.charAt(0).toUpperCase() + d.slice(1)}</option>`).join('')}
-        </select>
-        <input type="time" class="pm-input pm-horario-inicio" value="15:30">
-        <span>a</span>
-        <input type="time" class="pm-input pm-horario-fin" value="17:00">
-        <button class="pm-btn-remove" type="button"><i class="bi bi-x"></i></button>
-      `
-      row.querySelector('.pm-btn-remove').onclick = () => row.remove()
-      container.appendChild(row)
-    }
-
-    // Guardar clase
-    document.getElementById('btn-guardar-clase').onclick = async () => {
-      const nombre = document.getElementById('nueva-clase-nombre').value.trim()
-      const instrumentoId = document.getElementById('nueva-clase-instrumento').value
-      const capacidad = parseInt(document.getElementById('nueva-clase-capacidad').value) || 10
-      const salon = document.getElementById('nueva-clase-salon').value.trim()
-      const maestroAuxId = document.getElementById('nueva-clase-maestro-aux').value
-
-      if (!nombre) {
-        alert('El nombre de la clase es obligatorio')
-        return
-      }
-      if (!instrumentoId) {
-        alert('Selecciona un instrumento')
-        return
-      }
-
-      const btn = document.getElementById('btn-guardar-clase')
-      btn.disabled = true
-      btn.textContent = 'Creando...'
-
-      try {
-        // Crear la clase
-        const { data: clase, error } = await supabase
-          .from('clases')
-          .insert({
-            nombre,
-            instrumento: instrumentoId,
-            capacidad_maxima: capacidad,
-            salon,
-            maestro_principal_id: maestro.id,
-            maestro_suplente_id: maestroAuxId || null,
-            activo: true
-          })
-          .select()
-          .single()
-
-        if (error) throw error
-
-        // Agregar horarios
-        const horariosRows = document.querySelectorAll('.pm-horario-row')
-        const horarios = []
-        for (const row of horariosRows) {
-          const dia = row.querySelector('.pm-horario-dia').value
-          const horaInicio = row.querySelector('.pm-horario-inicio').value
-          const horaFin = row.querySelector('.pm-horario-fin').value
-          if (dia && horaInicio && horaFin) {
-            horarios.push({
-              clase_id: clase.id,
-              dia,
-              hora_inicio: horaInicio,
-              hora_fin: horaFin
-            })
+    container.querySelector('#btn-abrir-creador-clase')?.addEventListener('click', () => {
+      openClaseModal(null, {
+        maestros: soporte.maestros,
+        salones: soporte.salones,
+        programas: soporte.programas,
+        alumnos: soporte.alumnos,
+        lockedPrincipalTeacherId: maestro.id,
+        lockedPrincipalTeacherLabel: maestro.nombre_completo || maestro.nombre || 'Mi perfil',
+        allowPrincipalTeacherSelection: false,
+        onSuccess: () => {
+          AppToast.success('Clase creada desde el portal de maestros.')
+          if (window.router?.navigate) {
+            window.router.navigate('gestionar-clases')
+            return
           }
-        }
+          renderCrearClaseView(container)
+        },
+      })
+    })
 
-        if (horarios.length > 0) {
-          const { error: errHorarios } = await supabase
-            .from('clase_horarios')
-            .insert(horarios)
-          
-          if (errHorarios) throw errHorarios
-        }
-
-        alert('¡Clase creada exitosamente!')
-        window.location.hash = '#/fechas'
-
-      } catch (err) {
-        console.error(err)
-        alert('Error al crear la clase: ' + err.message)
-        btn.disabled = false
-        btn.textContent = 'Crear Clase'
+    container.querySelector('#btn-volver-gestionar-clases')?.addEventListener('click', () => {
+      if (window.router?.navigate) {
+        window.router.navigate('gestionar-clases')
       }
-    }
-
-    // Cancelar
-    document.getElementById('btn-cancelar-clase').onclick = () => {
-      window.history.back()
-    }
-
-  } catch (err) {
-    container.innerHTML = `
-      <div class="pm-empty" style="color:var(--pm-danger)">
-        Error: ${escHTML(err.message)}
-      </div>
-    `
+    })
+  } catch (error) {
+    console.error('[crearClaseView]', error)
+    container.innerHTML = renderEmptyState(
+      'bi-exclamation-triangle',
+      'No se pudo cargar el creador',
+      error.message || 'Ocurrió un error inesperado.',
+    )
   }
+}
+
+function renderEmptyState(icon, title, message) {
+  return `
+    <div class="gcv-empty-state">
+      <i class="bi ${icon} gcv-empty-icon"></i>
+      <p class="gcv-empty-title">${escHTML(title)}</p>
+      <p class="gcv-empty-msg">${escHTML(message)}</p>
+    </div>
+  `
 }

@@ -21,6 +21,14 @@ export class Planificacion {
     this.created_at = data.created_at || null
     this.updated_at = data.updated_at || null
 
+    // Soporte para planificación estructurada (Unidades, Objetivos, Indicadores)
+    this.contenidos = Array.isArray(data.contenidos) ? data.contenidos : []
+    this.objetivosEstructurados = Array.isArray(data.objetivosEstructurados)
+      ? data.objetivosEstructurados
+      : (Array.isArray(data.contenidos) && data.contenidos.length > 0 && typeof data.contenidos[0] === 'object'
+          ? data.contenidos
+          : [])
+
     // UI Helpers
     this.clase_nombre = data.clase_nombre || null
     this.maestro_nombre = data.maestro_nombre || null
@@ -120,7 +128,7 @@ export class Planificacion {
    * @returns {object}
    */
   toJSON() {
-    return {
+    const json = {
       clase_id: this.clase_id,
       maestro_id: this.maestro_id,
       fecha_inicio: this.fecha_inicio,
@@ -133,8 +141,18 @@ export class Planificacion {
       notas_dsl: this.notas_dsl || null,
       estado: this.estado,
       instrumento: this.instrumento?.trim() || null,
-      class_curriculum_plan_id: this.class_curriculum_plan_id || null,
-      route_version_id: this.route_version_id || null,
+      contenidos: this.objetivosEstructurados.length > 0 ? this.objetivosEstructurados : this.contenidos,
     }
+
+    // Columnas opcionales del rediseño curricular: SOLO se incluyen cuando
+    // tienen valor. La migración que las agrega a `planificaciones`
+    // (20260722000002) quedó ARCHIVADA por bugs de backfill, así que el
+    // esquema desplegado aún no las tiene. Enviarlas siempre como null
+    // rompía todo insert/update con PGRST204 (columna no existe). Cuando el
+    // esquema se migre (20260803000002) y exista valor, se enviarán normal.
+    if (this.class_curriculum_plan_id) json.class_curriculum_plan_id = this.class_curriculum_plan_id
+    if (this.route_version_id) json.route_version_id = this.route_version_id
+
+    return json
   }
 }

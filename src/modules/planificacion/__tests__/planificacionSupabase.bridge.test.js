@@ -134,12 +134,16 @@ vi.mock('../../../lib/supabaseClient.js', () => ({
   supabase: {
     from: vi.fn((table) => buildChain(table)),
     rpc: vi.fn(),
+    auth: {
+      getUser: vi.fn(),
+    },
   },
 }))
 
 // ── Import AFTER mock ──────────────────────────────────────────
 
 import { Planificacion } from '../models/planificacion.model.js'
+import { supabase } from '../../../lib/supabaseClient.js'
 import {
   crearPlanificacion,
   actualizarPlanificacion,
@@ -151,6 +155,8 @@ import {
 describe('planificacionSupabase — class_curriculum_plan_id support', () => {
   beforeEach(() => {
     resetStore()
+    supabase.auth.getUser.mockResolvedValue({ data: { user: { id: 'user_001' } }, error: null })
+    tables.maestros.push({ id: 'mae_001', user_id: 'user_001', nombre_completo: 'Maestro Test' })
   })
 
   describe('crearPlanificacion', () => {
@@ -159,6 +165,7 @@ describe('planificacionSupabase — class_curriculum_plan_id support', () => {
         tema: 'Clase de escalas',
         clase_id: 'clase_001',
         maestro_id: 'mae_001',
+        fecha_inicio: '2026-08-04',
         class_curriculum_plan_id: 'ccp_001',
       }
 
@@ -171,6 +178,8 @@ describe('planificacionSupabase — class_curriculum_plan_id support', () => {
       const stored = tables.planificaciones.find((p) => p.titulo === 'Clase de escalas')
       expect(stored).toBeDefined()
       expect(stored.class_curriculum_plan_id).toBe('ccp_001')
+      expect(stored.contenido).toBeUndefined()
+      expect(stored.fecha_inicio).toBe('2026-08-04')
     })
 
     it('should allow creating planificacion without class_curriculum_plan_id (legacy / unmigrated schema)', async () => {
@@ -178,6 +187,7 @@ describe('planificacionSupabase — class_curriculum_plan_id support', () => {
         tema: 'Clase legacy',
         clase_id: 'clase_001',
         maestro_id: 'mae_001',
+        fecha_inicio: '2026-08-04',
       }
 
       const result = await crearPlanificacion(planData)
@@ -188,6 +198,20 @@ describe('planificacionSupabase — class_curriculum_plan_id support', () => {
       // null rompía el insert con PGRST204.
       const stored = tables.planificaciones.find((p) => p.titulo === 'Clase legacy')
       expect(stored.class_curriculum_plan_id).toBeUndefined()
+    })
+
+    it('should resolve maestro_id from the authenticated user when not provided by the UI', async () => {
+      const planData = {
+        tema: 'Clase autocompletada',
+        clase_id: 'clase_001',
+        fecha_inicio: '2026-08-04',
+      }
+
+      const result = await crearPlanificacion(planData)
+
+      expect(result).toBeDefined()
+      const stored = tables.planificaciones.find((p) => p.titulo === 'Clase autocompletada')
+      expect(stored.maestro_id).toBe('mae_001')
     })
   })
 

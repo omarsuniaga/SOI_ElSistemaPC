@@ -149,7 +149,14 @@ export async function crearPlanificacion(planData) {
   const errores = model.validate()
   if (errores.length > 0) throw new Error(errores.join('. '))
 
-  const { data, error } = await supabase.from('planificaciones').insert([model.toJSON()]).select()
+  if (!model.maestro_id) {
+    model.maestro_id = await _obtenerMaestroActualId()
+  }
+
+  const { data, error } = await supabase
+    .from('planificaciones')
+    .insert([_toPlanificacionPayload(model)])
+    .select()
 
   if (error) throw error
   return new Planificacion(data[0])
@@ -169,7 +176,7 @@ export async function actualizarPlanificacion(id, actualizaciones) {
 
   const { data, error } = await supabase
     .from('planificaciones')
-    .update(model.toJSON())
+    .update(_toPlanificacionPayload(model))
     .eq('id', id)
     .select()
 
@@ -203,6 +210,49 @@ export async function marcarRevisada(id) {
 
 export async function marcarEjecutada(id) {
   return actualizarPlanificacion(id, { estado: 'ejecutado' })
+}
+
+async function _obtenerMaestroActualId() {
+  const { data: sesion, error: authError } = await supabase.auth.getUser()
+  if (authError) throw new Error(`No se pudo identificar al usuario autenticado: ${authError.message}`)
+
+  const userId = sesion?.user?.id
+  if (!userId) throw new Error('Sesión no iniciada')
+
+  const { data, error } = await supabase
+    .from('maestros')
+    .select('id')
+    .eq('user_id', userId)
+    .maybeSingle()
+
+  if (error) throw new Error(`No se pudo identificar al maestro: ${error.message}`)
+  if (!data?.id) throw new Error('Su usuario no está vinculado a un maestro')
+  return data.id
+}
+
+function _toPlanificacionPayload(model) {
+  const contenidos = model.objetivosEstructurados.length > 0 ? model.objetivosEstructurados : model.contenidos
+
+  const payload = {
+    clase_id: model.clase_id,
+    maestro_id: model.maestro_id,
+    fecha_inicio: model.fecha_inicio,
+    titulo: model.tema.trim(),
+    contenidos,
+    tecnicas: [],
+    obras: [],
+    escalas_arpegios: [],
+    evaluaciones: [],
+    estado: model.estado,
+    activo: true,
+    instrumento: model.instrumento?.trim() || null,
+  }
+
+  if (model.class_curriculum_plan_id) payload.class_curriculum_plan_id = model.class_curriculum_plan_id
+  if (model.route_version_id) payload.route_version_id = model.route_version_id
+  if (model.descripcion) payload.descripcion = model.descripcion
+  if (model.periodo_nombre) payload.periodo_nombre = model.periodo_nombre
+  return payload
 }
 
 // ── New functions ────────────────────────────────────────────────

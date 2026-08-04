@@ -34,11 +34,17 @@ function ensureDOM() {
     }
 
     @media (min-width: 992px) {
+      #${MODAL_ID} .app-modal-dialog.modal-size-lg {
+        width: 78vw !important;
+        max-width: 78vw !important;
+        max-height: 82vh !important;
+      }
+
       #${MODAL_ID} .app-modal-dialog.modal-size-xl {
-        width: 75vw !important;
-        max-width: 75vw !important;
-        height: 75vh !important;
-        max-height: 75vh !important;
+        width: 86vw !important;
+        max-width: 86vw !important;
+        height: 86vh !important;
+        max-height: 86vh !important;
       }
     }
 
@@ -48,9 +54,9 @@ function ensureDOM() {
       }
 
       #${MODAL_ID} .app-modal-dialog {
-        width: 95vw;
-        max-width: 95vw;
-        max-height: 92vh;
+        width: 98vw;
+        max-width: 98vw;
+        max-height: 96vh;
         border-radius: 14px;
       }
 
@@ -167,7 +173,7 @@ function getEls() {
 }
 
 // Sizes
-const SIZES = { sm: '400px', md: '520px', lg: '720px', xl: '75vw' }
+const SIZES = { sm: '400px', md: '560px', lg: '78vw', xl: '86vw' }
 
 export const AppModal = {
   _saveHandler: null,
@@ -187,6 +193,15 @@ export const AppModal = {
     els.dialog.classList.remove('modal-size-sm', 'modal-size-md', 'modal-size-lg', 'modal-size-xl')
     els.dialog.classList.add(`modal-size-${size}`)
     els.dialog.style.maxWidth = SIZES[size] || SIZES.md
+    els.dialog.style.width = SIZES[size] || SIZES.md
+
+    if (size === 'xl') {
+      els.dialog.style.height = '86vh'
+      els.dialog.style.maxHeight = '86vh'
+    } else {
+      els.dialog.style.removeProperty('height')
+      els.dialog.style.removeProperty('max-height')
+    }
 
     // Content
     els.title.textContent = title

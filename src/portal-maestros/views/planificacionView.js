@@ -1145,7 +1145,7 @@ export async function renderPlanificacionView(container, { maestroId, router: po
       })
     }
 
-    const _closeModalAndNavigate = (targetRoute) => {
+    const _closeModalAndNavigate = (targetRoute, params = {}) => {
       if (document.activeElement) document.activeElement.blur()
       if (classDetailModal) {
         if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
@@ -1158,14 +1158,14 @@ export async function renderPlanificacionView(container, { maestroId, router: po
       document.body.classList.remove('modal-open')
       document.body.style.removeProperty('overflow')
       document.body.style.removeProperty('padding-right')
-      activeRouter.navigate(targetRoute)
+      activeRouter.navigate(targetRoute, params)
     }
 
     classDetailModal.querySelectorAll('.btn-modal-disenador').forEach((b) => {
-      b.addEventListener('click', () => _closeModalAndNavigate(`planificacion-disenador?clase=${clase.id}`))
+      b.addEventListener('click', () => _closeModalAndNavigate('planificacion-disenador', { claseId: clase.id }))
     })
     classDetailModal.querySelectorAll('.btn-modal-ruta-full').forEach((b) => {
-      b.addEventListener('click', () => _closeModalAndNavigate(`planificacion-ruta?clase=${clase.id}`))
+      b.addEventListener('click', () => _closeModalAndNavigate('planificacion-ruta', { claseId: clase.id }))
     })
 
     let rutaSvgMontado = false

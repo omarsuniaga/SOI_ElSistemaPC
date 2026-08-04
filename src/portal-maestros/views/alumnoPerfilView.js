@@ -75,6 +75,79 @@ const ESTADO_CFG = {
   DIFICULTAD:  { label: 'Dificultad',  color: '#dc3545', bg: '#dc354518', icon: '⚠️' },
 }
 
+const ESTRELLA_CFG = {
+  1: { label: 'Iniciado', color: '#6c757d', icon: '⭐' },
+  2: { label: 'En proceso', color: '#fd7e14', icon: '⭐⭐' },
+  3: { label: 'Aprobado básico', color: '#0d6efd', icon: '⭐⭐⭐' },
+  4: { label: 'Logrado fluido', color: '#198754', icon: '⭐⭐⭐⭐' },
+  5: { label: 'Dominado total', color: '#198754', icon: '⭐⭐⭐⭐⭐' },
+}
+
+function _normalizeNullableText(value) {
+  if (value == null) return ''
+  const text = String(value).trim()
+  return (!text || text.toLowerCase() === 'null' || text.toLowerCase() === 'undefined') ? '' : text
+}
+
+function _getEtiquetaEstrella(cant) {
+  const cfg = ESTRELLA_CFG[Number(cant)] || null
+  return cfg?.label || 'Sin registrar'
+}
+
+function _mapStarNotaToEstado(nota) {
+  if (nota === 5) return 'dominado'
+  if (nota === 4) return 'avanzado'
+  if (nota === 3) return 'en_progreso'
+  if (nota === 2) return 'en_progreso'
+  if (nota === 1) return 'inicia'
+  return 'sin_evaluar'
+}
+
+async function _loadStarEvaluacionesAlumno(alumnoId) {
+  const { data: rows, error } = await supabase
+    .from('evaluacion_indicador')
+    .select('id, alumno_id, indicator_id, clase_id, nota, estado, observaciones, fecha_evaluacion, created_at')
+    .eq('alumno_id', alumnoId)
+    .order('fecha_evaluacion', { ascending: false })
+    .order('created_at', { ascending: false })
+
+  if (error) throw error
+  if (!rows || rows.length === 0) return []
+
+  const indicatorIds = [...new Set(rows.map(r => r.indicator_id).filter(Boolean))]
+  const claseIds = [...new Set(rows.map(r => r.clase_id).filter(Boolean))]
+
+  const [{ data: indicatorsMeta }, { data: clasesMeta }] = await Promise.all([
+    indicatorIds.length
+      ? supabase.from('indicators').select('id, nombre, node_id').in('id', indicatorIds)
+      : Promise.resolve({ data: [] }),
+    claseIds.length
+      ? supabase.from('clases').select('id, nombre').in('id', claseIds)
+      : Promise.resolve({ data: [] }),
+  ])
+
+  const indicatorMap = new Map((indicatorsMeta || []).map(item => [item.id, item]))
+  const nodeIds = [...new Set((indicatorsMeta || []).map(item => item.node_id).filter(Boolean))]
+  const { data: nodesData } = nodeIds.length
+    ? await supabase.from('nodes').select('id, name').in('id', nodeIds)
+    : { data: [] }
+  const nodeMap = new Map((nodesData || []).map(item => [item.id, item.name]))
+  const claseMap = new Map((clasesMeta || []).map(item => [item.id, item.nombre]))
+
+  return rows.map(row => {
+    const indicatorMeta = indicatorMap.get(row.indicator_id)
+    return {
+      ...row,
+      fechaReferencia: row.fecha_evaluacion || row.created_at,
+      indicadorNombre: indicatorMeta?.nombre || 'Indicador',
+      nodoNombre: nodeMap.get(indicatorMeta?.node_id) || 'Tema',
+      claseNombre: claseMap.get(row.clase_id) || 'Clase',
+      estadoCalculado: _mapStarNotaToEstado(row.nota),
+      etiquetaEstrella: _getEtiquetaEstrella(row.nota),
+    }
+  })
+}
+
 /**
  * Renders the AI-generated progress history from the `progresos` table.
  * Groups records by contenido_dsl and shows a chronological timeline per content.
@@ -89,7 +162,7 @@ async function _renderProgresos(container, alumnoId, offset = 0) {
   }
 
   try {
-    const { data: rows, error } = await supabase
+    const progressPromise = supabase
       .from('progresos')
       .select('id, contenido_dsl, estado_cualitativo, calificacion, observaciones, fecha_evaluacion, clase_id, indicadores')
       .eq('alumno_id', alumnoId)
@@ -98,38 +171,41 @@ async function _renderProgresos(container, alumnoId, offset = 0) {
       .order('fecha_evaluacion', { ascending: false })
       .range(offset, offset + 19)
 
+    const starPromise = isFirstPage ? _loadStarEvaluacionesAlumno(alumnoId) : Promise.resolve([])
+    const [{ data: rows, error }, starEvaluaciones] = await Promise.all([progressPromise, starPromise])
+
     if (error) throw error
 
-    if (!rows || rows.length === 0) {
+    const progressRows = rows || []
+    const starRows = isFirstPage ? (starEvaluaciones || []) : []
+
+    if (progressRows.length === 0 && starRows.length === 0) {
       if (isFirstPage) {
-        root.innerHTML = `<p style="font-size:0.82rem;color:var(--pm-text-muted);text-align:center;padding:1rem 0;">Sin registros de progreso generados por IA aún.</p>`
+        root.innerHTML = `<p style="font-size:0.82rem;color:var(--pm-text-muted);text-align:center;padding:1rem 0;">Sin registros de progreso ni estrellas aún.</p>`
       }
       return
     }
 
-    // Fetch class names in one query
-    const claseIds = [...new Set(rows.map(r => r.clase_id).filter(Boolean))]
+    const claseIds = [...new Set([
+      ...progressRows.map(r => r.clase_id).filter(Boolean),
+      ...starRows.map(r => r.clase_id).filter(Boolean),
+    ])]
     const { data: clasesData } = claseIds.length
       ? await supabase.from('clases').select('id, nombre').in('id', claseIds)
       : { data: [] }
     const claseMap = new Map((clasesData || []).map(c => [c.id, c.nombre]))
 
-    // Group by contenido_dsl — one card per unique content, timeline inside
     const byContent = new Map()
-    for (const row of rows) {
+    for (const row of progressRows) {
       const key = row.contenido_dsl
-      if (!byContent.has(key)) {
-        byContent.set(key, { contenido: key, entries: [] })
-      }
+      if (!byContent.has(key)) byContent.set(key, { contenido: key, entries: [] })
       byContent.get(key).entries.push(row)
     }
 
-    const contents = Array.from(byContent.values())
-
-    const cardsHTML = contents.map(({ contenido, entries }) => {
-      const latest     = entries[0]
-      const cfg        = ESTADO_CFG[latest.estado_cualitativo] ?? ESTADO_CFG.EN_PROGRESO
-      const lastFecha  = new Date(latest.fecha_evaluacion).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: '2-digit' })
+    const progressCardsHTML = Array.from(byContent.values()).map(({ contenido, entries }) => {
+      const latest = entries[0]
+      const cfg = ESTADO_CFG[latest.estado_cualitativo] ?? ESTADO_CFG.EN_PROGRESO
+      const lastFecha = new Date(latest.fecha_evaluacion).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: '2-digit' })
       return `
         <details class="pm-prog-card">
           <summary class="pm-prog-card__summary">
@@ -143,11 +219,11 @@ async function _renderProgresos(container, alumnoId, offset = 0) {
           </summary>
           <div class="pm-prog-card__timeline">
             ${entries.map(e => {
-              const eCfg    = ESTADO_CFG[e.estado_cualitativo] ?? ESTADO_CFG.EN_PROGRESO
-              const fecha   = new Date(e.fecha_evaluacion).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' })
-              const clase   = claseMap.get(e.clase_id) || 'Clase'
-              const tarea   = e.indicadores?.tarea
-              const nota    = e.calificacion != null ? `${e.calificacion}/5` : null
+              const eCfg = ESTADO_CFG[e.estado_cualitativo] ?? ESTADO_CFG.EN_PROGRESO
+              const fecha = new Date(e.fecha_evaluacion).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' })
+              const clase = claseMap.get(e.clase_id) || 'Clase'
+              const tarea = e.indicadores?.tarea
+              const nota = e.calificacion != null ? `${e.calificacion}/5` : null
               return `
                 <div class="pm-prog-entry">
                   <div class="pm-prog-entry__dot" style="background:${eCfg.color}"></div>
@@ -169,13 +245,127 @@ async function _renderProgresos(container, alumnoId, offset = 0) {
       `
     }).join('')
 
+    const byIndicator = new Map()
+    for (const row of starRows) {
+      const key = row.indicator_id
+      if (!byIndicator.has(key)) {
+        byIndicator.set(key, {
+          indicadorNombre: row.indicadorNombre,
+          nodoNombre: row.nodoNombre,
+          claseNombre: row.claseNombre,
+          entries: [],
+        })
+      }
+      byIndicator.get(key).entries.push(row)
+    }
+
+    const starCardsHTML = Array.from(byIndicator.values()).map(({ indicadorNombre, nodoNombre, claseNombre, entries }) => {
+      const latest = entries[0]
+      const cfg = ESTRELLA_CFG[Number(latest.nota)] ?? { label: 'Sin registrar', color: '#6c757d', icon: '⭐' }
+      const lastFecha = new Date(latest.fechaReferencia).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: '2-digit' })
+      return `
+        <details class="pm-prog-card pm-prog-card--stars">
+          <summary class="pm-prog-card__summary">
+            <span class="pm-prog-card__icon" style="color:${cfg.color}">⭐</span>
+            <div class="pm-prog-card__info">
+              <span class="pm-prog-card__name">${escHTML(indicadorNombre)}</span>
+              <span class="pm-prog-card__meta">${escHTML(nodoNombre)}${claseNombre ? ` · ${escHTML(claseNombre)}` : ''} · ${entries.length} registro${entries.length !== 1 ? 's' : ''} · último: ${lastFecha}</span>
+            </div>
+            <span class="pm-prog-card__badge" style="color:${cfg.color};background:${cfg.bg}">${latest.nota != null ? `${latest.nota}/5` : '—'} · ${escHTML(latest.etiquetaEstrella)}</span>
+            <i class="bi bi-chevron-down pm-prog-card__chevron"></i>
+          </summary>
+          <div class="pm-prog-card__timeline">
+            ${entries.map(entry => {
+              const entryCfg = ESTRELLA_CFG[Number(entry.nota)] ?? { label: 'Sin registrar', color: '#6c757d', icon: '⭐' }
+              const fecha = new Date(entry.fechaReferencia).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' })
+              return `
+                <div class="pm-prog-entry">
+                  <div class="pm-prog-entry__dot" style="background:${entryCfg.color}"></div>
+                  <div class="pm-prog-entry__body">
+                    <div class="pm-prog-entry__header">
+                      <span class="pm-prog-entry__fecha">${fecha}</span>
+                      <span class="pm-prog-entry__clase">${escHTML(entry.claseNombre)}</span>
+                      <span class="pm-prog-entry__nota" style="color:${entryCfg.color}">${entry.nota != null ? `${entry.nota}/5` : '—'}</span>
+                    </div>
+                    <span class="pm-prog-entry__estado" style="color:${entryCfg.color}">${entryCfg.icon} ${escHTML(entry.etiquetaEstrella)}</span>
+                    <p class="pm-prog-entry__tarea" style="margin-top:0.15rem;">${escHTML(entry.nodoNombre)}</p>
+                    ${entry.observaciones ? `<p class="pm-prog-entry__obs">${escHTML(entry.observaciones)}</p>` : ''}
+                  </div>
+                </div>
+              `
+            }).join('')}
+          </div>
+        </details>
+      `
+    }).join('')
+
     if (isFirstPage) {
       root.innerHTML = `
         <div class="pm-prog-list">
-          ${cardsHTML}
+          <section class="pm-prog-block">
+            <div class="pm-prog-block__header">
+              <div>
+                <span class="pm-prog-block__kicker">IA</span>
+                <h4 class="pm-prog-block__title">Historial de Progreso</h4>
+              </div>
+              <span class="pm-prog-block__meta">${progressRows.length} registro${progressRows.length !== 1 ? 's' : ''}</span>
+            </div>
+            <div class="pm-prog-block__list">
+              ${progressCardsHTML || '<p style="font-size:0.82rem;color:var(--pm-text-muted);text-align:center;padding:1rem 0;">Sin registros de progreso generados por IA aún.</p>'}
+            </div>
+          </section>
+          ${starCardsHTML ? `
+          <section class="pm-prog-block">
+            <div class="pm-prog-block__header">
+              <div>
+                <span class="pm-prog-block__kicker">★</span>
+                <h4 class="pm-prog-block__title">Estrellas del plan</h4>
+              </div>
+              <span class="pm-prog-block__meta">${starRows.length} registro${starRows.length !== 1 ? 's' : ''}</span>
+            </div>
+            <div class="pm-prog-block__list">
+              ${starCardsHTML}
+            </div>
+          </section>` : ''}
         </div>
         <style>
           .pm-prog-list { display: flex; flex-direction: column; gap: 0.5rem; }
+          .pm-prog-block { display: flex; flex-direction: column; gap: 0.5rem; }
+          .pm-prog-block__header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 0.75rem;
+          }
+          .pm-prog-block__kicker {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.65rem;
+            font-weight: 800;
+            letter-spacing: 0.08em;
+            padding: 2px 6px;
+            border-radius: 99px;
+            background: var(--pm-surface-3);
+            color: var(--pm-text-muted);
+            margin-bottom: 0.25rem;
+          }
+          .pm-prog-block__title {
+            margin: 0;
+            font-size: 0.92rem;
+            font-weight: 700;
+            color: var(--pm-text);
+          }
+          .pm-prog-block__meta {
+            font-size: 0.72rem;
+            color: var(--pm-text-muted);
+            white-space: nowrap;
+          }
+          .pm-prog-block__list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+          }
           .pm-prog-card {
             border: 1px solid var(--pm-border);
             border-radius: 10px;
@@ -293,12 +483,12 @@ async function _renderProgresos(container, alumnoId, offset = 0) {
       const listDiv = root.querySelector('.pm-prog-list')
       if (listDiv) {
         const tmp = document.createElement('div')
-        tmp.innerHTML = cardsHTML
+        tmp.innerHTML = progressCardsHTML
         listDiv.append(...tmp.children)
       }
     }
 
-    if (rows && rows.length === 20) {
+    if (progressRows.length === 20) {
       const loadMoreBtn = document.createElement('button')
       loadMoreBtn.className = 'pm-btn pm-btn-outline'
       loadMoreBtn.style.cssText = 'display:block;margin:0.75rem auto 0;font-size:0.82rem;'
@@ -307,7 +497,8 @@ async function _renderProgresos(container, alumnoId, offset = 0) {
         loadMoreBtn.remove()
         _renderProgresos(container, alumnoId, offset + 20)
       }
-      root.appendChild(loadMoreBtn)
+      const listDiv = root.querySelector('.pm-prog-list')
+      listDiv?.appendChild(loadMoreBtn)
     }
 
   } catch (err) {
@@ -336,9 +527,13 @@ async function _renderEvaluaciones(container, alumnoId) {
 
     if (error) throw error
 
+    const starEvaluaciones = await _loadStarEvaluacionesAlumno(alumnoId)
+
     if (!evaluaciones || evaluaciones.length === 0) {
-      root.innerHTML = `<p class="pm-empty">Sin evaluaciones registradas.</p>`
-      return
+      if (!starEvaluaciones || starEvaluaciones.length === 0) {
+        root.innerHTML = `<p class="pm-empty">Sin evaluaciones registradas.</p>`
+        return
+      }
     }
 
     // Obtener info de indicadores una sola vez (sin join multiplicador)
@@ -363,25 +558,50 @@ async function _renderEvaluaciones(container, alumnoId) {
       : { data: [] }
     const claseMapName = new Map((clasesMeta || []).map(c => [c.id, c.nombre]))
 
+    const evaluacionesIntegradas = [
+      ...(evaluaciones || []).map(ev => ({
+        ...ev,
+        fuente: 'indicador',
+        fuenteLabel: 'Indicador',
+        fuenteIcono: '📘',
+        fechaReferencia: ev.created_at,
+        claseRefId: ev.covered_by_clase_id || null,
+        claseNombre: claseMapName.get(ev.covered_by_clase_id) || '',
+        indicadorNombre: '',
+        nodeName: '',
+      })),
+      ...(starEvaluaciones || []).map(ev => ({
+        ...ev,
+        fuente: 'estrella',
+        fuenteLabel: 'Estrella',
+        fuenteIcono: '⭐',
+        fechaReferencia: ev.fechaReferencia || ev.created_at,
+        claseRefId: ev.clase_id || null,
+        claseNombre: ev.claseNombre || '',
+        indicadorNombre: ev.indicadorNombre || '',
+        nodeName: ev.nodoNombre || '',
+      })),
+    ].sort((a, b) => new Date(b.fechaReferencia || b.created_at) - new Date(a.fechaReferencia || a.created_at))
+
     const indicatorMap = new Map((indicatorsMeta || []).map(i => [i.id, i]))
 
     // Agrupar por indicador ID (un solo registro por indicador, el más reciente)
     const byIndicator = new Map()
-    for (const ev of evaluaciones) {
+    for (const ev of evaluacionesIntegradas) {
       if (byIndicator.has(ev.indicator_id)) continue // ya está el más reciente por orden desc
       const meta = indicatorMap.get(ev.indicator_id)
       byIndicator.set(ev.indicator_id, {
         id: ev.indicator_id,
-        nombre: meta?.nombre || '',
-        nodeName: nodeMap.get(meta?.node_id) || '',
-        claseNombre: claseMapName.get(ev.covered_by_clase_id) || '',
+        nombre: ev.indicadorNombre || meta?.nombre || 'Indicador',
+        nodeName: ev.nodeName || nodeMap.get(meta?.node_id) || 'Tema',
+        claseNombre: ev.claseNombre || claseMapName.get(ev.covered_by_clase_id) || claseMapName.get(ev.clase_id) || '',
         latest: ev,
         history: []
       })
     }
 
     // Agregar intentos restantes al history (sin duplicar el primero)
-    for (const ev of evaluaciones) {
+    for (const ev of evaluacionesIntegradas) {
       if (byIndicator.has(ev.indicator_id)) {
         const entry = byIndicator.get(ev.indicator_id)
         if (entry.history.length === 0 || entry.history[0].id !== ev.id) {
@@ -392,9 +612,15 @@ async function _renderEvaluaciones(container, alumnoId) {
 
     const indicators = Array.from(byIndicator.values())
       // Solo mostrar indicadores que tengan nota o una observación
-      .filter(i => (i.latest.nota != null && i.latest.nota !== 0) || (i.latest.observations && i.latest.observations.trim() !== ''))
-    const aprobados = indicators.filter(i => i.latest.nota >= 4).length
-    const totalInd = indicators.length
+      .filter(i => {
+        const obs = (i.latest.observations ?? i.latest.observaciones ?? '').trim()
+        return (i.latest.nota != null && i.latest.nota !== 0) || obs !== ''
+      })
+    const notasRendimiento = evaluacionesIntegradas
+      .map(ev => Number(ev.nota))
+      .filter(nota => Number.isFinite(nota) && nota !== 0)
+    const aprobados = notasRendimiento.filter(nota => nota >= 4).length
+    const totalInd = notasRendimiento.length
     const avance = totalInd > 0 ? Math.round((aprobados / totalInd) * 100) : 0
 
     function semaforo(nota) {
@@ -514,13 +740,13 @@ async function _renderEvaluaciones(container, alumnoId) {
       </style>
 
       <div class="pm-eval-progress-header">
-        <span class="pm-eval-progress-label">🎯 Progreso académico</span>
+        <span class="pm-eval-progress-label">Progreso academico integrado</span>
         <span class="pm-eval-progress-pct" style="color:${avance >= 70 ? 'var(--pm-success)' : avance >= 40 ? 'var(--pm-warning)' : 'var(--pm-danger)'}">${avance}%</span>
       </div>
       <div class="pm-student-panel__progress-bar" style="height:6px;border-radius:3px;background:var(--pm-border);">
         <div class="pm-student-panel__progress-fill" style="width:${avance}%;height:100%;border-radius:3px;background:${avance >= 70 ? 'var(--pm-success)' : avance >= 40 ? 'var(--pm-warning)' : 'var(--pm-danger)'};"></div>
       </div>
-      <p class="pm-eval-progress-sub">${aprobados} de ${indicators.length} indicadores aprobados</p>
+      <p class="pm-eval-progress-sub">${aprobados} de ${totalInd} registros con nota aprobados · incluye estrellas y evaluaciones por indicador</p>
 
       <div class="pm-eval-indicadores">
         ${indicators.length === 0
@@ -545,10 +771,11 @@ async function _renderEvaluaciones(container, alumnoId) {
                   ${ind.history.map(ev => `
                     <div class="pm-eval-entry">
                       <div class="pm-eval-entry-meta">
-                        <span>${new Date(ev.created_at).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
-                        <strong style="color:${ev.nota != null ? notaColor : 'inherit'}">${semaforo(ev.nota)} ${ev.nota ?? '—'}</strong>
+                        <span>${new Date(ev.fechaReferencia || ev.created_at).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
+                        <strong style="color:${ev.nota != null ? notaColor : 'inherit'}">${ev.fuenteIcono || semaforo(ev.nota)} ${ev.nota ?? '-'}</strong>
+                        <span class="pm-eval-entry-source" style="font-size:0.65rem;font-weight:700;color:var(--pm-text-muted);background:var(--pm-surface-3);padding:2px 6px;border-radius:999px;">${escHTML(ev.fuenteLabel || 'Registro')}</span>
                       </div>
-                      ${ev.observations ? `<p class="pm-eval-entry-obs">${escHTML(ev.observations)}</p>` : ''}
+                      ${(ev.observations || ev.observaciones) ? `<p class="pm-eval-entry-obs">${escHTML(ev.observations || ev.observaciones)}</p>` : ''}
                       ${ev.tarea ? `<p class="pm-eval-entry-tarea">📋 ${escHTML(ev.tarea)}</p>` : ''}
                     </div>
                   `).join('')}
@@ -838,10 +1065,15 @@ export async function renderAlumnoPerfilView(container, { alumnoId }) {
                 const stats = sesionesPorClase[claseId] || { P: 0, A: 0, J: 0, T: 0, total: 0 }
                 const pctClase = stats.total > 0 ? Math.round((stats.P / stats.total) * 100) : null
                 
-                // Calcular promedio específico para esta clase
+                                // Calcular promedio espec?fico para esta clase
                 const claseEvaluaciones = evaluaciones?.filter(ev => ev.covered_by_clase_id === claseId && ev.nota != null && ev.nota !== 0) || []
-                const classPromedio = claseEvaluaciones.length > 0
-                  ? Math.round(claseEvaluaciones.reduce((sum, ev) => sum + ev.nota, 0) / claseEvaluaciones.length * 10) / 10
+                const estrellaEvaluaciones = starEvaluaciones?.filter(ev => ev.clase_id === claseId && ev.nota != null && ev.nota !== 0) || []
+                const notasClase = [
+                  ...claseEvaluaciones.map(ev => ev.nota),
+                  ...estrellaEvaluaciones.map(ev => ev.nota),
+                ]
+                const classPromedio = notasClase.length > 0
+                  ? Math.round(notasClase.reduce((sum, nota) => sum + nota, 0) / notasClase.length * 10) / 10
                   : null
 
                 return `
@@ -961,7 +1193,7 @@ export async function renderAlumnoPerfilView(container, { alumnoId }) {
                     <div class="pm-zen-desenv-dot" style="background:${ev.nota != null ? notaColor : 'var(--pm-primary)'}"></div>
                     <div class="pm-zen-desenv-content">
                       <div class="pm-zen-desenv-header">
-                        <span class="pm-zen-desenv-fecha">${new Date(ev.created_at).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
+                        <span class="pm-zen-desenv-fecha">${new Date(ev.fechaReferencia || ev.created_at).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
                         ${ev.nota != null ? `<span class="pm-zen-desenv-nota" style="color:${notaColor};">Nota: ${ev.nota}</span>` : ''}
                       </div>
                       <p class="pm-zen-desenv-obs">${escHTML(ev.observations)}</p>
@@ -1119,10 +1351,10 @@ export async function renderAlumnoPerfilView(container, { alumnoId }) {
             </div>
           </div>
 
-          <!-- 🎯 Historial de Progreso (IA) -->
+          <!-- 🎯 Historial de Progreso y Estrellas -->
           <div class="pm-zen-section">
             <div class="pm-zen-section-header">
-              <h3 class="pm-zen-section-title">🎯 Historial de Progreso (IA)</h3>
+              <h3 class="pm-zen-section-title">🎯 Historial de Progreso y Estrellas</h3>
             </div>
             <div id="pm-alumno-progresos-root" class="pm-zen-progress-container">
               <div class="pm-loading-zen"><div class="pm-pulse"></div></div>

@@ -3,6 +3,7 @@
  */
 
 import { callGroq } from '../api/groqService.js'
+import { generarUUIDSeguro } from '../domain/IndicadorLogro.js'
 
 /**
  * Genera una secuencia didáctica de ruta con Objetivos e Indicadores usando IA (GROQ).
@@ -41,29 +42,119 @@ Responde ÚNICAMENTE en JSON válido con este esquema exacto (sin texto adiciona
     const raw = await callGroq([{ role: 'user', content: prompt }])
     const jsonStr = raw.replace(/```json/g, '').replace(/```/g, '').trim()
     const parsed = JSON.parse(jsonStr)
-    return Array.isArray(parsed) ? parsed : []
+    if (!Array.isArray(parsed)) return []
+
+    return parsed.map((u, uIdx) => {
+      const uId = generarUUIDSeguro()
+      const oId = generarUUIDSeguro()
+      return {
+        id: uId,
+        titulo: u.titulo || `Unidad Didáctica ${uIdx + 1}`,
+        persistido: false,
+        objetivos: [
+          {
+            id: oId,
+            unidadId: uId,
+            titulo: `Objetivo General ${uIdx + 1}`,
+            persistido: false,
+            indicadores: (u.indicadores || []).map((ind, indIdx) => {
+              const iId = generarUUIDSeguro()
+              return {
+                id: iId,
+                objetivoId: oId,
+                titulo: typeof ind === 'string' ? ind : ind.titulo || `Indicador ${indIdx + 1}`,
+                descripcion: '',
+                nivelIndex: 0,
+                orden: indIdx + 1,
+                prerrequisitoId: null,
+                persistido: false,
+              }
+            }),
+          },
+        ],
+      }
+    })
   } catch (err) {
     console.warn('[aiEvaluacionService] Error llamando a GROQ, usando fallback estructurado:', err)
+    const u1Id = generarUUIDSeguro()
+    const o1Id = generarUUIDSeguro()
+    const u2Id = generarUUIDSeguro()
+    const o2Id = generarUUIDSeguro()
     return [
       {
-        id: 'obj-ia-1',
+        id: u1Id,
         titulo: `Unidad 1: Técnica Base e Iniciación - ${instrumento}`,
-        indicadores: [
-          { id: 'ind-ia-1-1', titulo: 'Postura corporal equilibrada y emisión sonora libre' },
-          { id: 'ind-ia-1-2', titulo: 'Control de pulso rítmico y afinación base' },
+        persistido: false,
+        objetivos: [
+          {
+            id: o1Id,
+            unidadId: u1Id,
+            titulo: 'Fundamentos de Postura y Emisión',
+            persistido: false,
+            indicadores: [
+              {
+                id: generarUUIDSeguro(),
+                objetivoId: o1Id,
+                titulo: 'Postura corporal equilibrada y emisión sonora libre',
+                descripcion: '',
+                nivelIndex: 0,
+                orden: 1,
+                prerrequisitoId: null,
+                persistido: false,
+              },
+              {
+                id: generarUUIDSeguro(),
+                objetivoId: o1Id,
+                titulo: 'Control de pulso rítmico y afinación base',
+                descripcion: '',
+                nivelIndex: 0,
+                orden: 2,
+                prerrequisitoId: null,
+                persistido: false,
+              },
+            ],
+          },
         ],
       },
       {
-        id: 'obj-ia-2',
+        id: u2Id,
         titulo: `Unidad 2: Articulación y Desarrollo Melódico - ${instrumento}`,
-        indicadores: [
-          { id: 'ind-ia-2-1', titulo: 'Digitación de escalas e independencia digital' },
-          { id: 'ind-ia-2-2', titulo: 'Fraseo dinámico y lectura a vista' },
+        persistido: false,
+        objetivos: [
+          {
+            id: o2Id,
+            unidadId: u2Id,
+            titulo: 'Desarrollo Melódico e Independencia Digital',
+            persistido: false,
+            indicadores: [
+              {
+                id: generarUUIDSeguro(),
+                objetivoId: o2Id,
+                titulo: 'Digitación de escalas e independencia digital',
+                descripcion: '',
+                nivelIndex: 0,
+                orden: 1,
+                prerrequisitoId: null,
+                persistido: false,
+              },
+              {
+                id: generarUUIDSeguro(),
+                objetivoId: o2Id,
+                titulo: 'Fraseo dinámico y lectura a vista',
+                descripcion: '',
+                nivelIndex: 0,
+                orden: 2,
+                prerrequisitoId: null,
+                persistido: false,
+              },
+            ],
+          },
         ],
       },
     ]
   }
 }
+
 
 /**
  * Genera la SIGUIENTE Unidad Didáctica incremental (1 por cada clic) mediante análisis profundo con IA (GROQ).
@@ -87,8 +178,22 @@ export async function sugerirSiguienteUnidadIA({
   numeroUnidad = 1,
   unidadesExistentes = [],
 }) {
+  // El historial se construye con el árbol COMPLETO (unidad → objetivo →
+  // indicadores) para que GROQ vea la secuencia pedagógica real. Antes se
+  // leía `u.indicadores` (plano), que en este esquema nunca existe: las
+  // unidades tienen `.objetivos[].indicadores[]`.
   const historialText = unidadesExistentes.length > 0
-    ? unidadesExistentes.map((u, i) => `Unidad ${i + 1}: ${u.titulo} -> [${(u.indicadores || []).map(ind => ind.titulo).join(', ')}]`).join('\n')
+    ? unidadesExistentes
+        .map((u, i) => {
+          const objetivosText = (u.objetivos || [])
+            .map((o, oi) => {
+              const inds = (o.indicadores || []).map((ind) => ind.titulo).join(', ')
+              return `    Objetivo ${oi + 1}: ${o.titulo}${inds ? ` -> [${inds}]` : ''}`
+            })
+            .join('\n')
+          return `Unidad ${i + 1}: ${u.titulo}\n${objetivosText}`
+        })
+        .join('\n')
     : 'No hay unidades previas creadas aún en este plan.'
 
   const prompt = `Como Máximo Director Pedagógico Musical de El Sistema, estás diseñando paso a paso la estructura curricular para: "${instrumento}" (${nivelNombre}).
@@ -131,12 +236,12 @@ Responde ÚNICAMENTE en formato JSON válido (sin explicaciones afuera del JSON)
     throw new Error('GROQ no devolvió una estructura de unidad válida. Intenta nuevamente.')
   }
 
-  const now = Date.now()
-  const objId = `obj-ia-seq-${now}`
+  const unidadId = generarUUIDSeguro()
+  const indIds = (Array.isArray(parsed.indicadores) ? parsed.indicadores : []).map(() => generarUUIDSeguro())
   const indicadoresFormateados = (Array.isArray(parsed.indicadores) ? parsed.indicadores : []).map((ind, j) => ({
-    id: `ind-ia-seq-${now}-${j + 1}`,
+    id: indIds[j],
     titulo: typeof ind === 'string' ? ind : ind.titulo || `Indicador ${j + 1}`,
-    prerrequisitoId: j > 0 ? `ind-ia-seq-${now}-${j}` : null,
+    prerrequisitoId: j > 0 ? indIds[j - 1] : null,
   }))
 
   if (indicadoresFormateados.length < 2 || indicadoresFormateados.length > 4) {
@@ -146,7 +251,7 @@ Responde ÚNICAMENTE en formato JSON válido (sin explicaciones afuera del JSON)
   }
 
   return {
-    id: objId,
+    id: unidadId,
     titulo: parsed.titulo,
     complejidad: parsed.complejidad || 'media',
     clasesEstimadas: parsed.clasesEstimadas || indicadoresFormateados.length,

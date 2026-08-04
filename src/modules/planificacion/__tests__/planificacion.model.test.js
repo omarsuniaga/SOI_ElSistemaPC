@@ -36,6 +36,12 @@ describe('Planificacion Model', () => {
       const errores = p.validate()
       expect(errores).toContain('El estado no es válido')
     })
+
+    it('accepts legacy UI aliases for estado so the editor can persist without failing', () => {
+      const p = new Planificacion({ tema: 'Valid', clase_id: 'c1', estado: 'borrador' })
+      expect(p.validate()).not.toContain('El estado no es válido')
+      expect(p.canEdit()).toBe(true)
+    })
   })
 
   describe('State Logic', () => {

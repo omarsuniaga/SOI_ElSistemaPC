@@ -207,6 +207,24 @@ export async function obtenerResumenAcademico(alumnoId) {
   return { nivel: null, promedioBase: null, totalEvaluaciones: 0, promedioEvaluaciones: null, promedioActualizado: null }
 }
 
+export async function obtenerResumenAcademicoIntegrado(alumnoId) {
+  await delay()
+  return {
+    alumno_id: alumnoId,
+    total_indicator_attempts: 0,
+    total_indicator_attempts_with_note: 0,
+    indicadores_aprobados: 0,
+    promedio_indicator_attempts: null,
+    total_star_evaluations: 0,
+    total_star_evaluations_with_note: 0,
+    estrellas_aprobadas: 0,
+    promedio_star_evaluations: null,
+    promedio_integrado: null,
+    historial_indicator_attempts: [],
+    historial_star_evaluations: [],
+  }
+}
+
 export async function obtenerAsistenciasAlumno(alumnoId) {
   await delay()
   return []

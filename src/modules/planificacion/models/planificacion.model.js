@@ -2,11 +2,25 @@
  * Modelo de Planificacion - Validaciones y lógica de negocio
  */
 export class Planificacion {
+  static normalizeEstado(estado) {
+    const value = String(estado || '').trim().toLowerCase()
+
+    const aliases = {
+      borrador: 'planificado',
+      activo: 'planificado',
+      archivado: 'revisado',
+      revisada: 'revisado',
+      publicada: 'revisado',
+    }
+
+    return aliases[value] || value
+  }
+
   constructor(data = {}) {
     this.id = data.id || null
     this.clase_id = data.clase_id || null
     this.maestro_id = data.maestro_id || null
-    this.fecha_inicio = data.fecha_inicio || null
+    this.fecha_inicio = data.fecha_inicio || data.fecha || null
     this.tema = data.tema || data.titulo || ''
     this.objetivos = data.objetivos || ''
     this.contenido = data.contenido || ''
@@ -40,6 +54,7 @@ export class Planificacion {
    */
   validate() {
     const errores = []
+    const estadoNormalizado = Planificacion.normalizeEstado(this.estado)
 
     if (!this.tema || !this.tema.trim()) {
       errores.push('El tema es obligatorio')
@@ -73,8 +88,8 @@ export class Planificacion {
       errores.push('El instrumento no puede exceder 100 caracteres')
     }
 
-    const estadosValidos = Planificacion.getEstados().map((e) => e.value)
-    if (!estadosValidos.includes(this.estado)) {
+    const estadosValidos = [...Planificacion.getEstados().map((e) => e.value), 'borrador', 'activo', 'archivado', 'revisada', 'publicada']
+    if (!estadosValidos.includes(String(this.estado).trim().toLowerCase()) && !Planificacion.getEstados().some((e) => e.value === estadoNormalizado)) {
       errores.push('El estado no es válido')
     }
 
@@ -86,7 +101,8 @@ export class Planificacion {
    * @returns {boolean}
    */
   canEdit() {
-    return this.estado === 'planificado' || this.estado === 'ejecutado'
+    const estado = Planificacion.normalizeEstado(this.estado)
+    return estado === 'planificado' || estado === 'ejecutado'
   }
 
   /**
@@ -94,7 +110,7 @@ export class Planificacion {
    * @returns {boolean}
    */
   canApprove() {
-    return this.estado === 'ejecutado'
+    return Planificacion.normalizeEstado(this.estado) === 'ejecutado'
   }
 
   /**
@@ -102,7 +118,8 @@ export class Planificacion {
    * @returns {boolean}
    */
   isLocked() {
-    return this.estado === 'revisado'
+    const estado = Planificacion.normalizeEstado(this.estado)
+    return estado === 'revisado' || estado === 'archivado'
   }
 
   static getEstados() {

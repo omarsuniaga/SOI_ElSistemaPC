@@ -30,7 +30,16 @@ const _virtualEvaluaciones = new Map()
 
 /**
  * Register or update an evaluation for a student on a specific indicator.
- * Uses UPSERT on the UNIQUE(alumno_id, indicator_id, clase_id) constraint.
+ *
+ * ⚠️  DB NOTE: The original `.upsert(..., { onConflict: 'alumno_id,indicator_id,clase_id' })`
+ * requires a UNIQUE constraint on those three columns in `evaluacion_indicador`.
+ * Until that migration is applied (see migration file needed below), we use a
+ * manual SELECT → UPDATE / INSERT pattern that is functionally identical.
+ *
+ * Run this migration in Supabase SQL Editor to restore the simpler upsert:
+ *   ALTER TABLE evaluacion_indicador
+ *     ADD CONSTRAINT evaluacion_indicador_alumno_indicator_clase_unique
+ *     UNIQUE (alumno_id, indicator_id, clase_id);
  *
  * @param {object} data - { alumno_id, indicator_id, clase_id, nota?, estado?, observaciones?, evaluado_por? }
  * @returns {Promise<object>} The upserted evaluation record
@@ -46,11 +55,35 @@ export async function registrarEvaluacion(data) {
     }
   }
 
-  const row = {
-    id: `ev-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-    alumno_id: data.alumno_id,
-    indicator_id: data.indicator_id,
-    clase_id: data.clase_id,
+  if (_shouldSkipRemoteWrite([data.alumno_id, data.indicator_id, data.clase_id])) {
+    const key = `${data.alumno_id}:${data.indicator_id}:${data.clase_id}`
+    const row = {
+      id: key,
+      alumno_id: data.alumno_id,
+      indicator_id: data.indicator_id,
+      clase_id: data.clase_id,
+      nota: data.nota ?? null,
+      estado: data.estado || 'sin_evaluar',
+      observaciones: data.observaciones || null,
+      evaluado_por: data.evaluado_por || null,
+      fecha_evaluacion: new Date().toISOString(),
+    }
+    _virtualEvaluaciones.set(key, row)
+    return row
+  }
+
+  // ── Step 1: check for an existing record ──────────────────────────────────
+  const { data: existing, error: selectError } = await supabase
+    .from('evaluacion_indicador')
+    .select('id')
+    .eq('alumno_id', data.alumno_id)
+    .eq('indicator_id', data.indicator_id)
+    .eq('clase_id', data.clase_id)
+    .maybeSingle()
+
+  if (selectError) throw selectError
+
+  const updatePayload = {
     nota: data.nota ?? null,
     estado: data.estado || 'sin_evaluar',
     observaciones: data.observaciones || null,
@@ -58,19 +91,34 @@ export async function registrarEvaluacion(data) {
     fecha_evaluacion: new Date().toISOString(),
   }
 
-  if (_shouldSkipRemoteWrite([data.alumno_id, data.indicator_id, data.clase_id])) {
-    const key = `${data.alumno_id}:${data.indicator_id}:${data.clase_id}`
-    _virtualEvaluaciones.set(key, row)
-    return row
+  if (existing?.id) {
+    // ── Step 2a: UPDATE existing record ──────────────────────────────────────
+    const { data: result, error: updateError } = await supabase
+      .from('evaluacion_indicador')
+      .update(updatePayload)
+      .eq('id', existing.id)
+      .select()
+      .single()
+
+    if (updateError) throw updateError
+    return result
   }
 
-  const { data: result, error } = await supabase
+  // ── Step 2b: INSERT new record ─────────────────────────────────────────────
+  const insertRow = {
+    alumno_id: data.alumno_id,
+    indicator_id: data.indicator_id,
+    clase_id: data.clase_id,
+    ...updatePayload,
+  }
+
+  const { data: result, error: insertError } = await supabase
     .from('evaluacion_indicador')
-    .upsert(row, { onConflict: 'alumno_id,indicator_id,clase_id' })
+    .insert(insertRow)
     .select()
     .single()
 
-  if (error) throw error
+  if (insertError) throw insertError
   return result
 }
 

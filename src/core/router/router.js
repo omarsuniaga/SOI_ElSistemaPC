@@ -31,19 +31,27 @@ export const router = {
   },
 
   navigate(path, params = {}) {
-    if (!this.routes[path]) {
-      console.error(`Route ${path} not found`)
+    const { routePath, queryParams } = this._splitRoutePath(path)
+    const mergedParams = { ...queryParams, ...(params || {}) }
+
+    if (!this.routes[routePath]) {
+      console.error(`Route ${routePath} not found`)
       return
     }
-    if (this._guardEnabled && this._authCheck && !this._publicRoutes.includes(path)) {
+    if (this._guardEnabled && this._authCheck && !this._publicRoutes.includes(routePath)) {
       if (!this._authCheck()) {
         localStorage.setItem('current-view', 'login')
-        localStorage.setItem('intended-route', path)
+        localStorage.setItem('intended-route', routePath)
+        if (Object.keys(mergedParams).length > 0) {
+          localStorage.setItem('intended-route-params', JSON.stringify(mergedParams))
+        } else {
+          localStorage.removeItem('intended-route-params')
+        }
         this._navigateTo('login', {})
         return
       }
     }
-    this._navigateTo(path, params)
+    this._navigateTo(routePath, mergedParams)
   },
 
   _navigateTo(path, params = {}) {
@@ -60,6 +68,24 @@ export const router = {
       }
       window.dispatchEvent(new CustomEvent('routeChanged', { detail: path }))
     }
+  },
+
+  _splitRoutePath(path) {
+    if (typeof path !== 'string') {
+      return { routePath: path, queryParams: {} }
+    }
+
+    const [routePath, queryString = ''] = path.split('?')
+    const queryParams = {}
+
+    if (queryString) {
+      const searchParams = new URLSearchParams(queryString)
+      for (const [key, value] of searchParams.entries()) {
+        queryParams[key] = value
+      }
+    }
+
+    return { routePath, queryParams }
   },
 
   init() {

@@ -125,3 +125,60 @@ export async function eliminarPlantillaPlanificacion(id) {
   _data[idx].activo = false
   _persist()
 }
+
+/**
+ * Guarda el árbol curricular completo en Modo Demo (localStorage).
+ * Mismo contrato que la implementación Supabase: devuelve el id de la
+ * plantilla y el árbol marcado como persistido. En demo la persistencia es
+ * real (localStorage), por lo que `persistido: true` es honesto.
+ * @param {{ plantillaId?: string|null, claseId?: string|null, nombre?: string, unidades: Array }} params
+ * @returns {Promise<{ plantillaId: string, unidades: Array }>}
+ */
+export async function guardarArbolCurricular({ plantillaId = null, claseId = null, nombre = 'Plan Curricular Institucional', unidades = [] }) {
+  await _delay()
+  _ensureStore()
+
+  let targetId = plantillaId
+  if (!targetId) {
+    const existente = _data.find((p) => p.clase_id && String(p.clase_id) === String(claseId))
+    targetId = existente?.id || (typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `plan-${Date.now()}`)
+  }
+
+  const payload = {
+    id: targetId,
+    nombre: nombre.trim(),
+    objetivos: JSON.stringify(unidades),
+    contenido: '',
+    recursos: '',
+    evaluacion_metodo: '',
+    clase_id: claseId || null,
+    activo: true,
+    updated_at: new Date().toISOString(),
+  }
+
+  const idx = _data.findIndex((p) => p.id === targetId)
+  if (idx === -1) {
+    _data.push({ ...payload, created_at: new Date().toISOString() })
+  } else {
+    _data[idx] = { ..._data[idx], ...payload }
+  }
+  _persist()
+
+  const unidadesPersistidas = unidades.map((u) => ({
+    ...u,
+    persistido: true,
+    objetivos: (u.objetivos || []).map((o) => ({
+      ...o,
+      persistido: true,
+      indicadores: (o.indicadores || []).map((ind) => ({
+        ...ind,
+        persistido: true,
+      })),
+    })),
+  }))
+
+  return {
+    plantillaId: targetId,
+    unidades: unidadesPersistidas,
+  }
+}

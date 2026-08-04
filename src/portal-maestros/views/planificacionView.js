@@ -9,6 +9,7 @@
 
 import { getMisClases, getInscripcionesClases } from '../services/maestroDataService.js'
 import * as weeklyPlanAdapter from '../../modules/planificacion/api/weeklyPlanAdapter.js'
+import { obtenerPlantillasPlanificacion } from '../../modules/planificacion/api/planificacionAdapter.js'
 import { announce } from '../utils/a11yUtils.js'
 import { AppToast } from '../../shared/components/AppToast.js'
 import { createPlanClasePanel } from '../components/planning/PlanClasePanel.js'
@@ -64,6 +65,27 @@ function getInstrumentIcon(instrumento) {
   if (!instrumento) return '🎼'
   const key = instrumento.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
   return Object.entries(INSTRUMENT_ICONS).find(([k]) => key.includes(k))?.[1] || '🎼'
+}
+
+/**
+ * Cuenta las unidades creadas en una plantilla de planificación.
+ * `objetivos` viaja serializado como JSON-string en la columna TEXT.
+ * Devuelve 0 si la plantilla no existe o no tiene unidades parseables.
+ * @param {{ clase_id?: string, claseId?: string, objetivos?: string|Array }|undefined|null} plantilla
+ * @returns {number}
+ */
+function contarUnidadesDePlantilla(plantilla) {
+  if (!plantilla) return 0
+  const fuente = plantilla.objetivos
+  if (typeof fuente === 'string') {
+    try {
+      const parsed = JSON.parse(fuente)
+      return Array.isArray(parsed) ? parsed.length : 0
+    } catch {
+      return 0
+    }
+  }
+  return Array.isArray(fuente) ? fuente.length : 0
 }
 
 /**
@@ -570,6 +592,15 @@ export async function renderPlanificacionView(container, { maestroId, router: po
         return
       }
 
+      // Plantillas del Diseñador Curricular: mapa clase_id → unidades creadas.
+      // El card usa tienePlan (existe plantilla activa) y unidadesCount.
+      const plantillas = await obtenerPlantillasPlanificacion().catch(() => [])
+      const unidadesPorClase = new Map()
+      for (const p of plantillas || []) {
+        const cid = p.clase_id || p.claseId
+        if (cid) unidadesPorClase.set(String(cid), contarUnidadesDePlantilla(p))
+      }
+
       // FIX C-4: Promise.allSettled — tolerante a fallos individuales
       const results = await Promise.allSettled(clases.map(async (clase) => {
         const [guide, progressMap, ins] = await Promise.all([
@@ -578,11 +609,22 @@ export async function renderPlanificacionView(container, { maestroId, router: po
           getInscripcionesClases([clase.id]).catch(() => []),
         ])
         const { progressPercentage, totalStudents } = calcProgressForClase(guide, progressMap, ins)
-        return { ...clase, currentWeek: guide?.route?.current_week || 1, hasGuide: !!guide, progressPercentage, totalStudents }
+        const tienePlan = unidadesPorClase.has(String(clase.id))
+        return {
+          ...clase,
+          currentWeek: guide?.route?.current_week || 1,
+          hasGuide: !!guide,
+          tienePlan,
+          unidadesCount: tienePlan ? unidadesPorClase.get(String(clase.id)) : 0,
+          progressPercentage,
+          totalStudents,
+        }
       }))
 
       const clasesConMetricas = results.map((r, i) =>
-        r.status === 'fulfilled' ? r.value : { ...clases[i], currentWeek: 1, hasGuide: false, progressPercentage: 0, totalStudents: 0 }
+        r.status === 'fulfilled'
+          ? r.value
+          : { ...clases[i], currentWeek: 1, hasGuide: false, tienePlan: false, unidadesCount: 0, progressPercentage: 0, totalStudents: 0 }
       )
 
       contentDiv.innerHTML = `
@@ -604,14 +646,16 @@ export async function renderPlanificacionView(container, { maestroId, router: po
                 <div class="pm-class-card-body">
                   <div class="pm-class-card-top">
                     <h4 class="pm-class-card-title">${escapeHtml(clase.nombre)}</h4>
-                    <span class="pm-class-card-badge" style="${clase.hasGuide
+                    <span class="pm-class-card-badge" style="${clase.tienePlan
                       ? 'background:rgba(16,185,129,0.1); color:#10b981; border:1px solid rgba(16,185,129,0.25);'
                       : 'background:rgba(239,68,68,0.08); color:#ef4444; border:1px solid rgba(239,68,68,0.2);'}">
-                      ${clase.hasGuide ? '● ACM' : '○ Sin guía'}
+                      ${clase.tienePlan ? '● Con Guía' : '○ Sin Guía'}
                     </span>
                   </div>
 
-                  <div class="pm-class-card-plan">${escapeHtml(clase.plan_estudio || 'Sin plan curricular')}</div>
+                  <div class="pm-class-card-plan">${clase.tienePlan
+                    ? `${clase.unidadesCount} ${clase.unidadesCount === 1 ? 'unidad' : 'unidades'}`
+                    : 'Sin Plan Curricular'}</div>
 
                   ${hasProgress ? `
                     <div class="pm-class-card-progress">

@@ -202,6 +202,20 @@ describe('Evaluación por Estrellas y Protocolo SDD Suite', () => {
       expect(res.progresoAjustadoPct).toBe(72)
     })
 
+    it('blends content progress with star average before applying attendance penalty', () => {
+      const res = CalculadorSaludPerfil.calcular({
+        progresoContenidoPct: 60,
+        promedioEstrellas: 4,
+        inasistenciasInjustificadas: 1,
+        inasistenciasJustificadas: 0,
+      })
+
+      expect(res.avanceContenidoPct).toBe(60)
+      expect(res.avanceEstrellasPct).toBe(80)
+      expect(res.avancePuroPct).toBe(70)
+      expect(res.progresoAjustadoPct).toBe(66)
+    })
+
     it('triggers critical alert on 4 unexcused absences', () => {
       const res = CalculadorSaludPerfil.calcular({
         totalIndicadores: 10,

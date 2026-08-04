@@ -25,8 +25,13 @@ vi.mock('../../services/realAlumnosService.js', () => ({
 vi.mock('../../api/offlineSyncAdapter.js', () => ({
   OfflineSyncAdapter: {
     guardarLocal: vi.fn(),
+    eliminarDeCola: vi.fn(),
     obtenerCola: vi.fn().mockResolvedValue([]),
   },
+}))
+
+vi.mock('../../services/evaluacionClaseService.js', () => ({
+  registrarEvaluacion: vi.fn().mockResolvedValue({}),
 }))
 
 vi.mock('../../../../portal-maestros/services/maestroDataService.js', () => ({
@@ -46,6 +51,7 @@ vi.mock('../../components/MapaContenidoSVG.js', () => ({
 import { obtenerClases, obtenerPlanificacionesConDetalles } from '../../api/planificacionAdapter.js'
 import { obtenerAlumnosRealesPorClase } from '../../services/realAlumnosService.js'
 import { OfflineSyncAdapter } from '../../api/offlineSyncAdapter.js'
+import { registrarEvaluacion } from '../../services/evaluacionClaseService.js'
 import { renderRutaPedagogicaView } from '../RutaPedagogicaView.js'
 
 const flush = () => Promise.resolve().then(() => Promise.resolve())
@@ -185,6 +191,38 @@ describe('RutaPedagogicaView', () => {
 
     expect(alumno.estrellas).toBe(0)
     expect(OfflineSyncAdapter.guardarLocal).not.toHaveBeenCalled()
+  })
+
+  it('el botón Guardar calificaciones persiste el nodo en Supabase y limpia la cola local', async () => {
+    const alumno = mockAlumno({ estrellas: 0 })
+    obtenerAlumnosRealesPorClase.mockResolvedValue([alumno])
+
+    await renderRutaPedagogicaView(container, { maestroId: 'mae-1' })
+    await flush()
+
+    lastOnNodeClick({ id: 'nd-1', titulo: 'Nodo 1' })
+    await flush()
+
+    document.querySelector('.btn-evaluar-one-tap[data-id="al-1"]').click()
+    await flush()
+
+    const saveBtn = document.querySelector('#btn-guardar-calificaciones')
+    expect(saveBtn).toBeTruthy()
+
+    await saveBtn.click()
+    await flush()
+
+    expect(registrarEvaluacion).toHaveBeenCalledWith(expect.objectContaining({
+      alumno_id: 'al-1',
+      indicator_id: 'nd-1',
+      clase_id: 'clase-1',
+      nota: 1,
+      estado: 'inicia',
+      evaluado_por: 'mae-1',
+    }))
+    expect(OfflineSyncAdapter.eliminarDeCola).toHaveBeenCalledWith(
+      expect.objectContaining({ alumnoId: 'al-1', claseId: 'clase-1', nodoId: 'nd-1' }),
+    )
   })
 
   describe('cambio de nodo (regresión M-3 — integración)', () => {

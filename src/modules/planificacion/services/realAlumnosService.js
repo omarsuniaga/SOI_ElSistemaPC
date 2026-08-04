@@ -1,5 +1,6 @@
 import { obtenerAlumnosInscritos } from '../../clases/api/clasesApi.js'
 import { OfflineSyncAdapter } from '../api/offlineSyncAdapter.js'
+import { obtenerEvaluacionesPorClase } from './evaluacionClaseService.js'
 import { CalculadorSaludPerfil } from '../domain/CalculadorSaludPerfil.js'
 
 /**
@@ -40,23 +41,29 @@ export async function obtenerAlumnosRealesPorClase(claseId, nodoId = null) {
     return []
   }
 
-  // Obtener cola local de evaluaciones para combinar puntajes de estrellas
-  const colaOffline = await OfflineSyncAdapter.obtenerCola()
+  const [colaOffline, evaluacionesRemotas] = await Promise.all([
+    OfflineSyncAdapter.obtenerCola(),
+    obtenerEvaluacionesPorClase(claseId).catch((err) => {
+      console.warn('[realAlumnosService] No se pudo leer evaluaciones remotas de la clase:', err)
+      return []
+    }),
+  ])
+
+  const evaluacionesNormalizadas = [
+    ..._normalizarEvaluacionesRemotas(evaluacionesRemotas),
+    ..._normalizarEvaluacionesCola(colaOffline),
+  ]
 
   return alumnosRaw.map((al) => {
     // Última evaluación registrada para este alumno (y nodo, si se indica).
-    // guardarLocal() apila (push) al final de la cola, por lo que se recorre
-    // en reversa para quedarnos con la MÁS RECIENTE, no con la más antigua
-    // (ver auditoría M-3). También se exige coincidencia de claseId (y de
-    // nodoId cuando se especifica) para que la evaluación de un nodo/clase
-    // no se filtre hacia otro nodo/clase del mismo alumno.
-    // Buscar todas las evaluaciones de este alumno en este nodo/clase (ordenadas de más reciente a más antigua)
-    const evalsAlumno = [...colaOffline].reverse().filter((item) => {
+    // Se combinan las evaluaciones persistidas en Supabase con la cola
+    // offline local para que el panel refleje la fuente de verdad real.
+    const evalsAlumno = evaluacionesNormalizadas.filter((item) => {
       if (String(item.alumnoId) !== String(al.id)) return false
       if (String(item.claseId) !== String(claseId)) return false
       if (nodoId != null && String(item.nodoId) !== String(nodoId)) return false
       return true
-    })
+    }).sort((a, b) => b._orden - a._orden)
 
     const evalActual = evalsAlumno[0] || null
     const evalAnterior = evalsAlumno[1] || null
@@ -72,6 +79,7 @@ export async function obtenerAlumnosRealesPorClase(claseId, nodoId = null) {
     const calculoIDIA = CalculadorSaludPerfil.calcular({
       totalIndicadores: 1,
       indicadoresLogrados: estrellas >= 3 ? 1 : 0,
+      progresoContenidoPct: estrellas > 0 ? estrellas * 20 : 0,
       inasistenciasInjustificadas: ausenciasInjustificadas,
       inasistenciasJustificadas: ausenciasJustificadas,
     })
@@ -89,4 +97,36 @@ export async function obtenerAlumnosRealesPorClase(claseId, nodoId = null) {
       ausencias: ausenciasInjustificadas + ausenciasJustificadas,
     }
   })
+}
+
+function _normalizarEvaluacionesRemotas(evaluaciones = []) {
+  return (evaluaciones || []).map((e, idx) => ({
+    alumnoId: e.alumno_id,
+    claseId: e.clase_id,
+    nodoId: e.indicator_id,
+    estrellas: Number.isFinite(Number(e.nota)) ? Number(e.nota) : 0,
+    timestamp: e.fecha_evaluacion || e.created_at || null,
+    _orden: _toOrderValue(e.fecha_evaluacion || e.created_at || null, idx),
+    _source: 'remote',
+    _raw: e,
+  }))
+}
+
+function _normalizarEvaluacionesCola(cola = []) {
+  return (cola || []).map((e, idx) => ({
+    alumnoId: e.alumnoId,
+    claseId: e.claseId,
+    nodoId: e.nodoId,
+    estrellas: Number.isFinite(Number(e.estrellas)) ? Number(e.estrellas) : 0,
+    timestamp: e.timestamp || null,
+    _orden: _toOrderValue(e.timestamp || null, idx),
+    _source: 'queue',
+    _raw: e,
+  }))
+}
+
+function _toOrderValue(timestamp, fallbackIdx = 0) {
+  const value = Date.parse(timestamp || '')
+  if (Number.isFinite(value)) return value
+  return fallbackIdx
 }

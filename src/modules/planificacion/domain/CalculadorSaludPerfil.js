@@ -4,10 +4,13 @@
 
 export class CalculadorSaludPerfil {
   /**
-   * Calcula el progreso ajustado del alumno considerando avance curricular e inasistencias.
+   * Calcula el progreso ajustado del alumno considerando avance curricular,
+   * promedio de estrellas e inasistencias.
    * @param {Object} params
    * @param {number} params.totalIndicadores — Cantidad total de indicadores del nivel/programa
    * @param {number} params.indicadoresLogrados — Cantidad de indicadores aprobados (>=3 estrellas)
+   * @param {number} [params.progresoContenidoPct] — Progreso base ya calculado en porcentaje (0-100)
+   * @param {number} [params.promedioEstrellas] — Promedio de estrellas/calificación (0-5)
    * @param {number} params.inasistenciasInjustificadas — Faltas no justificadas
    * @param {number} params.inasistenciasJustificadas — Faltas justificadas
    * @returns {Object} Datos consolidados del perfil
@@ -15,11 +18,23 @@ export class CalculadorSaludPerfil {
   static calcular({
     totalIndicadores = 1,
     indicadoresLogrados = 0,
+    progresoContenidoPct = null,
+    promedioEstrellas = null,
     inasistenciasInjustificadas = 0,
     inasistenciasJustificadas = 0,
   }) {
     const total = Math.max(totalIndicadores, 1)
-    const avancePuroPct = Math.min(Math.round((indicadoresLogrados / total) * 100), 100)
+    const avancePorIndicadoresPct = Math.min(Math.round((indicadoresLogrados / total) * 100), 100)
+    const avanceContenidoPct = progresoContenidoPct != null && Number.isFinite(Number(progresoContenidoPct))
+      ? _clampPct(Number(progresoContenidoPct))
+      : avancePorIndicadoresPct
+    const avanceEstrellasPct = promedioEstrellas != null && Number.isFinite(Number(promedioEstrellas))
+      ? _clampPct((Number(promedioEstrellas) / 5) * 100)
+      : null
+
+    const componentes = [avanceContenidoPct]
+    if (avanceEstrellasPct != null) componentes.push(avanceEstrellasPct)
+    const avancePuroPct = Math.round(componentes.reduce((acc, pct) => acc + pct, 0) / componentes.length)
 
     // Penalización: -4% por cada falta injustificada, -1.5% por cada falta justificada (atraso de práctica)
     const penalizacionInjustificada = inasistenciasInjustificadas * 4
@@ -60,6 +75,13 @@ export class CalculadorSaludPerfil {
       inasistenciasInjustificadas,
       inasistenciasJustificadas,
       alertaAusentismo,
+      avancePorIndicadoresPct,
+      avanceContenidoPct,
+      avanceEstrellasPct,
     }
   }
+}
+
+function _clampPct(value) {
+  return Math.max(0, Math.min(100, Math.round(value)))
 }

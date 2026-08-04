@@ -20,9 +20,15 @@ export async function getEstadisticasPeriodoActivo() {
   const data = await loadJsonMock(DATA_PATH)
   const activo = data.configuraciones.find(c => c.activo)
   const est = data.estadisticas_periodo.find(e => e.periodo_id === activo?.id)
-  return activo ? { 
-    ...activo, 
+  return activo ? {
+    ...activo,
     ...est,
+    // Campos mapeados al contrato real de vw_estadisticas_periodo
+    alumnos_activos: est.total_alumnos ?? 0,
+    promedio_calificacion_periodo: est.promedio_calificaciones ?? 7.82,
+    promedio_integrado: est.promedio_calificaciones ?? 7.82, // Demo: sin estrellas, integrado = notas
+    tasa_asistencia_periodo: est.tasa_asistencia_promedio ?? 87.5,
+    // Hardcodes legacy (out of scope para esta task)
     alumnos_riesgo: 3,
     instrumentos_taller: 2
   } : null

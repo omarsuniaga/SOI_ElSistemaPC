@@ -10,6 +10,8 @@
  *   ACCESO CONTROLADO POR PERMISO:
  *   - gestionar-clases SIN puede_inscribir_clases → navega a 'hoy'
  *   - gestionar-clases CON puede_inscribir_clases → renderiza la vista
+ *   - crear-clase SIN puede_crear_clases → navega a 'hoy'
+ *   - crear-clase CON puede_crear_clases → renderiza la vista
  *
  *   ACCESO LIBRE (vistas de maestro):
  *   - hoy, calendario, metricas, perfil → siempre accesibles para maestros autenticados
@@ -202,6 +204,51 @@ describe('gestionar-clases — docente autorizado puede gestionar clases', () =>
   })
 })
 
+describe('crear-clase — docente autorizado puede crear clases', () => {
+  let container
+  let router
+
+  beforeEach(() => {
+    container = document.createElement('div')
+    router = { navigate: vi.fn() }
+    vi.clearAllMocks()
+  })
+
+  it('SIN permiso → navega a "hoy" y NO renderiza la vista', async () => {
+    const { renderCrearClaseView } = await import('../../../portal-maestros/views/crearClaseView.js')
+
+    await renderViewContent('crear-clase', container, {}, new URLSearchParams(), {
+      router,
+      permisos: { puede_crear_clases: false },
+      maestroId: 'm1',
+      showLoginScreen: vi.fn(),
+      cleanupPushService: vi.fn(),
+      stopRealtime: vi.fn(),
+      logoutMaestro: vi.fn(),
+    })
+
+    expect(router.navigate).toHaveBeenCalledWith('hoy')
+    expect(renderCrearClaseView).not.toHaveBeenCalled()
+  })
+
+  it('CON permiso puede_crear_clases=true → renderiza la vista', async () => {
+    const { renderCrearClaseView } = await import('../../../portal-maestros/views/crearClaseView.js')
+
+    await renderViewContent('crear-clase', container, {}, new URLSearchParams(), {
+      router,
+      permisos: { puede_crear_clases: true },
+      maestroId: 'm1',
+      showLoginScreen: vi.fn(),
+      cleanupPushService: vi.fn(),
+      stopRealtime: vi.fn(),
+      logoutMaestro: vi.fn(),
+    })
+
+    expect(router.navigate).not.toHaveBeenCalledWith('hoy')
+    expect(renderCrearClaseView).toHaveBeenCalledWith(container)
+  })
+})
+
 // ── Suite: vistas de maestro accesibles sin restricción ───────────────────────
 
 describe('Vistas de maestro — accesibles para cualquier maestro autenticado', () => {
@@ -249,7 +296,7 @@ describe('Rutas admin-* en portal de maestros → default case → no renderizan
       const router = { navigate: vi.fn() }
       container.innerHTML = '<p>ANTES</p>'
 
-      const result = await renderViewContent(route, container, {}, new URLSearchParams(), {
+      await renderViewContent(route, container, {}, new URLSearchParams(), {
         router,
         permisos: {},
         maestroId: 'm1',

@@ -608,13 +608,22 @@ function renderCollaborationPermissions(container, perm, maestroId, solicitarPer
     },
     {
       key: 'clases:enroll',
-      title: 'Crear y Gestionar Clases',
-      desc: 'Crear clases, inscribir alumnos y mantener la secuencia operativa del grupo.',
+      title: 'Gestionar clases asignadas',
+      desc: 'Inscribir alumnos y mantener la secuencia operativa de las clases que ya te asignó ADM.',
       icon: 'bi-journal-bookmark',
       iconClass: 'pm-icon-teal',
       active: perm.puede_inscribir_clases,
       pending: es_solicitud_clases && estado_solicitud === 'pendiente',
       pending_clases: true
+    },
+    {
+      key: 'clases:create',
+      title: 'Crear nuevas clases',
+      desc: 'Abrir el creador avanzado para proponer o crear nuevas clases con horarios, salones y alumnos.',
+      icon: 'bi-journal-plus',
+      iconClass: 'pm-icon-blue',
+      active: perm.puede_crear_clases,
+      pending: false,
     }
   ];
 
@@ -645,7 +654,13 @@ function renderCollaborationPermissions(container, perm, maestroId, solicitarPer
               actionHtml = `
                 <button class="btn-apple-primary btn-apple-sm w-100 pm-collab-action-btn" data-route="gestionar-clases"
                   style="padding: 0.45rem 0.9rem; font-size: 0.8rem; display:flex; align-items:center; justify-content:center; gap:0.4rem; background: linear-gradient(135deg, #0d9488, #0891b2);">
-                  <i class="bi bi-mortarboard-fill"></i> Crear / Gestionar Clases
+                  <i class="bi bi-mortarboard-fill"></i> Gestionar Clases
+                </button>`;
+            } else if (item.key === 'clases:create') {
+              actionHtml = `
+                <button class="btn-apple-primary btn-apple-sm w-100 pm-collab-action-btn" data-route="crear-clase"
+                  style="padding: 0.45rem 0.9rem; font-size: 0.8rem; display:flex; align-items:center; justify-content:center; gap:0.4rem;">
+                  <i class="bi bi-journal-plus"></i> Crear Clase
                 </button>`;
             } else {
               actionHtml = `<p class="pm-collab-help-text">Permiso activo.</p>`;
@@ -723,6 +738,8 @@ function renderCollaborationPermissions(container, perm, maestroId, solicitarPer
         if (window.router) window.router.navigate('registrar-alumno');
       } else if (route === 'gestionar-clases') {
         if (window.router) window.router.navigate('gestionar-clases');
+      } else if (route === 'crear-clase') {
+        if (window.router) window.router.navigate('crear-clase');
       }
     });
   });

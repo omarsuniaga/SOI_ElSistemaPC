@@ -103,6 +103,11 @@ export async function renderViewContent(route, container, params, urlParams, con
     return
   }
 
+  if (route === 'crear-clase' && !permisos?.puede_crear_clases) {
+    router.navigate('hoy')
+    return
+  }
+
   const load = VIEW_LOADERS[route]
   if (!load) return null
 

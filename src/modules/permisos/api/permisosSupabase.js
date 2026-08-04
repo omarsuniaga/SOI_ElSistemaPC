@@ -1,4 +1,5 @@
 import { supabase } from '../../../lib/supabaseClient.js'
+import { buildSinglePermisoRoster, mergePermisosRoster } from './permisosRoster.js'
 
 function normalizePermiso(p) {
   if (!p) return null
@@ -10,6 +11,7 @@ function normalizePermiso(p) {
     maestro_email: p.maestros?.correo ?? '',
     puede_registrar_alumnos: p.puede_registrar_alumnos ?? false,
     puede_inscribir_clases: p.puede_inscribir_clases ?? false,
+    puede_crear_clases: p.puede_crear_clases ?? false,
     permisos: Array.isArray(p.permisos) ? p.permisos : [],
     solicitudes: Array.isArray(p.solicitudes) ? p.solicitudes : [],
     concedido_por: p.concedido_por ?? null,
@@ -19,40 +21,100 @@ function normalizePermiso(p) {
   }
 }
 
-export async function obtenerPermisos() {
+async function obtenerMaestrosRegistrados() {
   const { data, error } = await supabase
-    .from('permisos_maestros')
-    .select('*, maestros!permisos_maestros_maestro_id_fkey(nombre_completo, correo)')
-    .order('creado_en', { ascending: false })
+    .from('maestros')
+    .select('id, nombre_completo, correo, activo')
+    .order('nombre_completo', { ascending: true })
+
+  if (error) {
+    console.error('Error cargando maestros para permisos:', error.message)
+    throw new Error('No se pudieron cargar los maestros')
+  }
+
+  return data || []
+}
+
+async function obtenerClasesAsignadasBase() {
+  const { data, error } = await supabase
+    .from('clases')
+    .select('id, maestro_principal_id, maestro_suplente_id')
+
+  if (error) {
+    console.error('Error cargando clases asignadas para permisos:', error.message)
+    throw new Error('No se pudieron cargar las clases asignadas')
+  }
+
+  return data || []
+}
+
+export async function obtenerPermisos() {
+  const [{ data, error }, maestros, clases] = await Promise.all([
+    supabase
+      .from('permisos_maestros')
+      .select('*, maestros!permisos_maestros_maestro_id_fkey(nombre_completo, correo)')
+      .order('creado_en', { ascending: false }),
+    obtenerMaestrosRegistrados(),
+    obtenerClasesAsignadasBase(),
+  ])
 
   if (error) {
     console.error('Error cargando permisos:', error.message)
     throw new Error('No se pudieron cargar los permisos')
   }
 
-  return data.map(normalizePermiso)
+  return mergePermisosRoster({
+    maestros,
+    permisos: (data || []).map(normalizePermiso),
+    clases,
+  })
 }
 
 export async function obtenerPermisoPorMaestro(maestroId) {
-  const { data, error } = await supabase
-    .from('permisos_maestros')
-    .select('*, maestros!permisos_maestros_maestro_id_fkey(nombre_completo, correo)')
-    .eq('maestro_id', maestroId)
-    .maybeSingle()
+  const [{ data, error }, maestro, clases] = await Promise.all([
+    supabase
+      .from('permisos_maestros')
+      .select('*, maestros!permisos_maestros_maestro_id_fkey(nombre_completo, correo)')
+      .eq('maestro_id', maestroId)
+      .maybeSingle(),
+    supabase
+      .from('maestros')
+      .select('id, nombre_completo, correo, activo')
+      .eq('id', maestroId)
+      .maybeSingle(),
+    supabase
+      .from('clases')
+      .select('id, maestro_principal_id, maestro_suplente_id')
+      .or(`maestro_principal_id.eq.${maestroId},maestro_suplente_id.eq.${maestroId}`),
+  ])
 
   if (error) {
     console.error('Error cargando permiso:', error.message)
     throw new Error('No se pudo cargar el permiso')
   }
 
-  return normalizePermiso(data)
+  if (maestro.error) {
+    console.error('Error cargando maestro para permiso:', maestro.error.message)
+    throw new Error('No se pudo cargar el maestro')
+  }
+
+  if (clases.error) {
+    console.error('Error cargando clases del maestro para permiso:', clases.error.message)
+    throw new Error('No se pudieron cargar las clases asignadas del maestro')
+  }
+
+  return buildSinglePermisoRoster({
+    maestro: maestro.data || null,
+    permiso: normalizePermiso(data),
+    clases: clases.data || [],
+  })
 }
 
 export async function actualizarPermiso(maestroId, changes) {
   // First read the current row so we never overwrite fields not included in `changes`
   const { data: current } = await supabase
     .from('permisos_maestros')
-    .select('puede_registrar_alumnos, puede_inscribir_clases, permisos, solicitudes')
+    .select('puede_registrar_alumnos, puede_inscribir_clases, puede_crear_clases, permisos, solicitudes')
     .eq('maestro_id', maestroId)
     .maybeSingle()
 
@@ -67,6 +129,10 @@ export async function actualizarPermiso(maestroId, changes) {
       'puede_inscribir_clases' in changes
         ? (changes.puede_inscribir_clases ?? false)
         : (current?.puede_inscribir_clases ?? false),
+    puede_crear_clases:
+      'puede_crear_clases' in changes
+        ? (changes.puede_crear_clases ?? false)
+        : (current?.puede_crear_clases ?? false),
     permisos: Array.isArray(changes.permisos) ? changes.permisos : (current?.permisos ?? []),
     solicitudes: Array.isArray(changes.solicitudes) ? changes.solicitudes : (current?.solicitudes ?? []),
     concedido_por: changes.concedido_por || null,
@@ -207,7 +273,7 @@ export async function aprobarSolicitud(solicitudId, adminId) {
     const permisosArray = []
 
   if (solicitud.solicita_alumnos) permisosArray.push('registrar_alumnos', 'alumnos:create')
-    if (solicitud.solicita_clases) permisosArray.push('inscribir_clases', 'clases:enroll', 'clases:create')
+    if (solicitud.solicita_clases) permisosArray.push('inscribir_clases', 'clases:enroll')
 
     const permisoActual = await obtenerPermisoPorMaestro(data.maestro_id)
     const permisosActuales = Array.isArray(permisoActual?.permisos) ? permisoActual.permisos : []
@@ -215,6 +281,7 @@ export async function aprobarSolicitud(solicitudId, adminId) {
     await actualizarPermiso(data.maestro_id, {
       puede_registrar_alumnos: solicitud.solicita_alumnos || (permisoActual?.puede_registrar_alumnos ?? false),
       puede_inscribir_clases: solicitud.solicita_clases || (permisoActual?.puede_inscribir_clases ?? false),
+      puede_crear_clases: permisoActual?.puede_crear_clases ?? false,
       permisos: [...new Set([...permisosActuales, ...permisosArray])],
       concedido_por: adminId,
     })

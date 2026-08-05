@@ -635,7 +635,9 @@ export async function renderPlanificacionView(container, { maestroId, router: po
                   </div>
 
                   <div class="pm-class-card-plan">${clase.tieneRuta
-                    ? `${clase.unidadesCount} ${clase.unidadesCount === 1 ? 'unidad' : 'unidades'}`
+                    ? clase.routeSource === 'planificacion'
+                      ? `${clase.unidadesCount} ${clase.unidadesCount === 1 ? 'unidad' : 'unidades'}`
+                      : 'Ruta institucional asignada'
                     : 'Sin Ruta Curricular'}</div>
 
                   ${hasProgress ? `

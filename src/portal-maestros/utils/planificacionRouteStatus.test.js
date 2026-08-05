@@ -37,7 +37,7 @@ describe('planificacionRouteStatus', () => {
     expect(result.planClase?.id).toBe('plan-estructurado')
   })
 
-  it('cae a la jerarquia curricular cuando no hay unidades en planificaciones', () => {
+  it('marca ruta institucional pero no inventa unidades de clase desde la jerarquia curricular', () => {
     const result = resolveClassRouteStatus({
       claseId: 'clase-2',
       maestroId: 'maestro-1',
@@ -54,7 +54,7 @@ describe('planificacionRouteStatus', () => {
 
     expect(result).toMatchObject({
       tieneRuta: true,
-      unidadesCount: 3,
+      unidadesCount: 0,
       source: 'jerarquia',
     })
   })

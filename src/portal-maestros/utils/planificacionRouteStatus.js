@@ -59,7 +59,7 @@ export function resolveClassRouteStatus({
   if (unitsFromHierarchy > 0) {
     return {
       tieneRuta: true,
-      unidadesCount: unitsFromHierarchy,
+      unidadesCount: 0,
       source: 'jerarquia',
       planClase,
     }

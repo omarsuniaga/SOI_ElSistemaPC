@@ -11,6 +11,13 @@ disablePullToRefresh()
 import { disableMobileZoom } from './shared/utils/mobileZoomBlocker.js'
 disableMobileZoom()
 
+import { updatePwaApp } from './shared/utils/pwaUpdate.js'
+
+// API pública para que la vista Perfil pueda solicitar una actualización manual.
+window.soiPwaUpdater = {
+  update: () => updatePwaApp(),
+}
+
 // ============================================
 // PWA: Registrar Service Worker + Update Detection
 // ============================================

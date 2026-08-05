@@ -20,6 +20,7 @@ import {
 } from '../utils/clasesUtils.js'
 import { Clase } from '../models/clase.model.js'
 import { openRutaSelectorModal } from '../../planificacion/components/rutaSelectorModal.js'
+import { alumnoPerteneceAPrograma, getAlumnoProgramaId } from './claseModal.helpers.js'
 
 /**
  * claseModal - Componente modular para la gestión de clases académicas.
@@ -209,7 +210,7 @@ function _getSlotBuilderHTML(inscritosSlots = []) {
         <select class="form-select form-select-sm slot-alumno-select flex-grow-1" style="min-width:0;" required>
           <option value="">Seleccionar alumno…</option>
           ${alumnos.map(a => `
-            <option value="${a.id}" ${a.id === alumnoId ? 'selected' : ''}>
+            <option value="${a.id}" data-alumno-id="${a.id}" ${a.id === alumnoId ? 'selected' : ''}>
               ${escapeHTML(a.nombre_completo)}${a.instrumento_principal ? ` — ${escapeHTML(a.instrumento_principal)}` : ''}
             </option>`).join('')}
         </select>
@@ -272,6 +273,17 @@ function _getSlotBuilderHTML(inscritosSlots = []) {
         ${inscritosSlots.length || 0} turno${inscritosSlots.length !== 1 ? 's' : ''} asignado${inscritosSlots.length !== 1 ? 's' : ''}
       </small>
     </div>`
+}
+
+function _applyProgramFilterToSlots(modalBody) {
+  const programaId = modalBody.querySelector('#modal-programa_id')?.value || ''
+  modalBody.querySelectorAll('.slot-alumno-select option[data-alumno-id]').forEach(option => {
+    const alumno = (_options.alumnos || []).find(a => String(a.id) === String(option.dataset.alumnoId))
+    const matches = !programaId || alumnoPerteneceAPrograma(alumno, programaId)
+    const isSelected = option.selected
+    option.hidden = !matches && !isSelected
+    option.disabled = !matches && !isSelected
+  })
 }
 
 function _attachModalEvents(modalBody, _clase) {
@@ -362,7 +374,7 @@ function _attachModalEvents(modalBody, _clase) {
     emptyRow.innerHTML = `
       <select class="form-select form-select-sm slot-alumno-select flex-grow-1" style="min-width:0;" required>
         <option value="">Seleccionar alumno…</option>
-        ${alumnos.map(a => `<option value="${a.id}">${escapeHTML(a.nombre_completo)}${a.instrumento_principal ? ` — ${escapeHTML(a.instrumento_principal)}` : ''}</option>`).join('')}
+        ${alumnos.map(a => `<option value="${a.id}" data-alumno-id="${a.id}">${escapeHTML(a.nombre_completo)}${a.instrumento_principal ? ` — ${escapeHTML(a.instrumento_principal)}` : ''}</option>`).join('')}
       </select>
       <div class="d-flex align-items-center gap-1 flex-shrink-0">
         <input type="time" class="form-control form-control-sm slot-hora-inicio" style="width:110px;" required title="Hora inicio">
@@ -373,6 +385,7 @@ function _attachModalEvents(modalBody, _clase) {
         <i class="bi bi-x-circle-fill fs-5"></i>
       </button>`
     slotsContainer.appendChild(emptyRow)
+    _applyProgramFilterToSlots(modalBody)
     _updateSlotsCount()
   })
 
@@ -438,7 +451,7 @@ function _attachModalEvents(modalBody, _clase) {
         row.innerHTML = `
           <select class="form-select form-select-sm slot-alumno-select flex-grow-1" style="min-width:0;" required>
             <option value="">Seleccionar alumno…</option>
-            ${alumnos.map(a => `<option value="${a.id}">${escapeHTML(a.nombre_completo)}${a.instrumento_principal ? ` — ${escapeHTML(a.instrumento_principal)}` : ''}</option>`).join('')}
+            ${alumnos.map(a => `<option value="${a.id}" data-alumno-id="${a.id}">${escapeHTML(a.nombre_completo)}${a.instrumento_principal ? ` — ${escapeHTML(a.instrumento_principal)}` : ''}</option>`).join('')}
           </select>
           <div class="d-flex align-items-center gap-1 flex-shrink-0">
             <input type="time" class="form-control form-control-sm slot-hora-inicio" style="width:110px;" required title="Hora inicio">
@@ -456,6 +469,7 @@ function _attachModalEvents(modalBody, _clase) {
 
     _updateSlotsCount()
     _sortSlotRows()
+    _applyProgramFilterToSlots(modalBody)
     AppToast.success(`Se generaron ${turnosGenerados.length} franjas de ${durationMin} min (${startStr} a ${endStr})`)
   })
 
@@ -493,26 +507,99 @@ function _attachModalEvents(modalBody, _clase) {
     }
   })
 
-  // ── Alumnos grupal: filtro + contador ────────────────────────────────────
+  // ── Alumnos grupal: filtro + contador + seleccionar todos ─────────────────
   const searchInput = modalBody.querySelector('#search-modal-alumnos')
   const listItems   = modalBody.querySelectorAll('.alumno-check-item')
-  searchInput?.addEventListener('input', (e) => {
-    const term = normalizeText(e.target.value)
-    listItems.forEach(item => {
-      const nombre      = item.dataset.nombre      || ''
-      const instrumento = item.dataset.instrumento || ''
-      const match = nombre.includes(term) || instrumento.includes(term)
-      item.style.display = match ? '' : 'none'
-    })
-  })
-
+  const selectAllChk = modalBody.querySelector('#chk-select-all-alumnos')
   const checks = modalBody.querySelectorAll('.alumnos-list input[type="checkbox"]')
   const countDisplay = modalBody.querySelector('#alumnos-selection-count')
+  const programaSelect = modalBody.querySelector('#modal-programa_id')
+
+  const getVisibleItems = () => {
+    return Array.from(listItems).filter(item => item.style.display !== 'none')
+  }
+
+  const updateSelectAllState = () => {
+    if (!selectAllChk) return
+    const visibleItems = getVisibleItems()
+    if (visibleItems.length === 0) {
+      selectAllChk.checked = false
+      selectAllChk.indeterminate = false
+      selectAllChk.disabled = true
+      return
+    }
+    selectAllChk.disabled = false
+    const visibleChecks = visibleItems.map(item => item.querySelector('input[type="checkbox"]')).filter(Boolean)
+    const checkedCount = visibleChecks.filter(c => c.checked).length
+
+    if (checkedCount === 0) {
+      selectAllChk.checked = false
+      selectAllChk.indeterminate = false
+    } else if (checkedCount === visibleChecks.length) {
+      selectAllChk.checked = true
+      selectAllChk.indeterminate = false
+    } else {
+      selectAllChk.checked = false
+      selectAllChk.indeterminate = true
+    }
+  }
+
   const updateCount = () => {
     const selected = Array.from(checks).filter(c => c.checked).length
     if (countDisplay) countDisplay.textContent = `${selected} alumnos seleccionados`
+    updateSelectAllState()
   }
+
+  const applyAlumnoFilters = () => {
+    const term = normalizeText(searchInput?.value || '')
+    const programaId = programaSelect?.value || ''
+
+    listItems.forEach(item => {
+      const nombre = item.dataset.nombre || ''
+      const instrumento = item.dataset.instrumento || ''
+      const checkbox = item.querySelector('input[type="checkbox"]')
+      const perteneceAlPrograma = !programaId || item.dataset.programaId === String(programaId)
+      const esInscritoActual = checkbox?.checked === true
+      const coincideBusqueda = !term || nombre.includes(term) || instrumento.includes(term)
+      item.style.display = (coincideBusqueda && (perteneceAlPrograma || esInscritoActual)) ? '' : 'none'
+    })
+
+    const filterNote = modalBody.querySelector('#alumnos-program-filter-note')
+    if (filterNote) {
+      const selectedProgram = programaSelect?.selectedOptions?.[0]?.textContent?.trim()
+      filterNote.textContent = selectedProgram
+        ? `Mostrando alumnos pertenecientes a ${selectedProgram}.`
+        : 'Selecciona un programa para filtrar los alumnos disponibles.'
+    }
+    updateSelectAllState()
+  }
+
+  searchInput?.addEventListener('input', applyAlumnoFilters)
+  programaSelect?.addEventListener('change', () => {
+    applyAlumnoFilters()
+    _applyProgramFilterToSlots(modalBody)
+  })
+
+  selectAllChk?.addEventListener('click', (e) => {
+    e.stopPropagation()
+    const visibleItems = getVisibleItems()
+    const visibleChecks = visibleItems.map(item => item.querySelector('input[type="checkbox"]')).filter(Boolean)
+    
+    // Regla: Si hay AL MENOS 1 alumno marcado de los visibles -> desmarcar todos los visibles.
+    // Si NINGUNO está marcado -> marcar todos los visibles.
+    const anyChecked = visibleChecks.some(c => c.checked)
+    const shouldCheck = !anyChecked
+
+    visibleChecks.forEach(c => {
+      c.checked = shouldCheck
+    })
+
+    updateCount()
+  })
+
   checks.forEach(c => c.addEventListener('change', updateCount))
+  _applyProgramFilterToSlots(modalBody)
+  applyAlumnoFilters()
   updateCount()
 }
 
@@ -746,13 +833,22 @@ function _getAlumnosSelectorHTML(selectedIds = []) {
   })
   return `
     <div class="alumnos-selector-container">
-      <div class="input-group input-group-sm mb-2">
-        <span class="input-group-text"><i class="bi bi-search"></i></span>
-        <input type="text" class="form-control" id="search-modal-alumnos" placeholder="Filtrar por nombre o instrumento...">
+      <div class="d-flex align-items-center justify-content-between mb-2 gap-2 flex-wrap">
+        <div class="input-group input-group-sm flex-grow-1" style="min-width: 200px;">
+          <span class="input-group-text"><i class="bi bi-search"></i></span>
+          <input type="text" class="form-control" id="search-modal-alumnos" placeholder="Filtrar por nombre o instrumento...">
+        </div>
+        <div class="form-check text-nowrap mb-0 flex-shrink-0" style="font-size: 0.85rem;">
+          <input class="form-check-input cursor-pointer" type="checkbox" id="chk-select-all-alumnos" title="Marcar / Desmarcar alumnos visibles">
+          <label class="form-check-label cursor-pointer user-select-none text-muted fw-semibold" for="chk-select-all-alumnos">
+            Marcar visibles
+          </label>
+        </div>
       </div>
+      <small id="alumnos-program-filter-note" class="text-muted d-block mb-2">Selecciona un programa para filtrar los alumnos disponibles.</small>
       <div class="alumnos-list border rounded bg-body-tertiary" style="max-height: 200px; overflow-y: auto; padding: 8px;">
         ${alumnos.map(a => `
-          <div class="form-check alumno-check-item" data-nombre="${normalizeText(a.nombre_completo)}" data-instrumento="${normalizeText(a.instrumento_principal)}">
+          <div class="form-check alumno-check-item" data-nombre="${normalizeText(a.nombre_completo)}" data-instrumento="${normalizeText(a.instrumento_principal)}" data-programa-id="${escapeHTML(getAlumnoProgramaId(a))}">
             <input class="form-check-input" type="checkbox" value="${a.id}" id="chk-a-${a.id}" ${selectedIds.includes(a.id) ? 'checked' : ''}>
             <label class="form-check-label small w-100 cursor-pointer" for="chk-a-${a.id}">
               ${escapeHTML(a.nombre_completo)} <span class="text-muted">(${escapeHTML(a.instrumento_principal || 'N/A')})</span>

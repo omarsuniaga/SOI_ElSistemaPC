@@ -1,0 +1,15 @@
+{
+  "name": "unicode-source-reviewer",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Interactive Unicode scanner and safe normalizer for source files.",
+  "scripts": {
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "vitest": "^4.1.0"
+  },
+  "engines": {
+    "node": ">=22.12.0"
+  }
+}

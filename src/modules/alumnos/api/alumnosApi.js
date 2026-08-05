@@ -42,6 +42,8 @@ export const obtenerResumenAcademico = (...args) => getApi().obtenerResumenAcade
 export const obtenerResumenAcademicoIntegrado = (...args) => getApi().obtenerResumenAcademicoIntegrado(...args)
 export const obtenerAsistenciasAlumno = (...args) => getApi().obtenerAsistenciasAlumno(...args)
 export const obtenerInscripcionesDetalladasAlumno = (...args) => getApi().obtenerInscripcionesDetalladasAlumno(...args)
+export const obtenerTodosLosAlumnosParaAnalisis = (...args) => getApi().obtenerTodosLosAlumnosParaAnalisis(...args)
+export const fusionarAlumnos = (...args) => getApi().fusionarAlumnos(...args)
 
 // Re-exportar constantes (copiadas para evitar problemas de inicialización circular)
 export const PARENTESCOS = [

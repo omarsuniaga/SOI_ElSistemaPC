@@ -3,6 +3,7 @@ import * as weeklyPlanAdapter from '../../../modules/planificacion/api/weeklyPla
 import { renderMapaContenidoSVG } from '../../../modules/planificacion/components/MapaContenidoSVG.js'
 import { extraerNodosDePlan, extraerNodosDeRutaCurricular } from '../../../modules/planificacion/components/routeNodes.js'
 import { obtenerPlanificacionesConDetalles, crearPlanificacion, actualizarPlanificacion } from '../../../modules/planificacion/api/planificacionAdapter.js'
+import { selectBestPlanForClass } from '../../../modules/planificacion/utils/planificacionClassResolver.js'
 import { config } from '../../../core/config/config.js'
 import { AppToast } from '../../../shared/components/AppToast.js'
 
@@ -525,11 +526,11 @@ export function createPlanificationCard(container, opts) {
 
     let planClase = null
     try {
-      const planificaciones = (await obtenerPlanificacionesConDetalles()) || []
-      planClase =
-        planificaciones.find(
-          (p) => String(p.clase_id || p.claseId) === String(claseId),
-        ) || null
+      const planificaciones = (await obtenerPlanificacionesConDetalles(opts.maestro?.id || null)) || []
+      planClase = selectBestPlanForClass(planificaciones, {
+        claseId,
+        maestroId: opts.maestro?.id || null,
+      })
     } catch (err) {
       console.warn('[PlanificationCard] No se pudo cargar la planificación de la clase:', err)
     }

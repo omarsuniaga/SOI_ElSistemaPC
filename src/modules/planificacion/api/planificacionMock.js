@@ -10,6 +10,7 @@ import { Planificacion } from '../models/planificacion.model.js'
 import MOCK_PLANIFICACIONES from '../../../assets/data/mocks/planificaciones.json'
 import MOCK_CLASES from '../../../assets/data/mocks/clases.json'
 import MOCK_MAESTROS from '../../../assets/data/mocks/maestros.json'
+import { isPlanificacionEstadoExportable } from '../utils/planificacionExportUtils.js'
 
 const STORAGE_KEY = 'planificaciones_demo'
 const SCHEMA_VERSION = 1
@@ -161,6 +162,20 @@ export async function obtenerPlanificacionesPaginadas(maestroId = null, { page =
     ),
     totalCount
   }
+}
+
+export async function obtenerPlanificacionesExportables({
+  maestroId = null,
+  claseId = null,
+  estados = ['approved'],
+} = {}) {
+  await _simulateDelay()
+
+  const plans = await obtenerPlanificacionesConDetalles(maestroId)
+
+  return plans
+    .filter((plan) => (claseId ? String(plan.clase_id) === String(claseId) : true))
+    .filter((plan) => isPlanificacionEstadoExportable(plan, estados))
 }
 
 export async function obtenerCoberturaEvaluacion(claseId) {

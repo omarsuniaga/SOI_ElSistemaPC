@@ -6,11 +6,19 @@ export class Planificacion {
     const value = String(estado || '').trim().toLowerCase()
 
     const aliases = {
-      borrador: 'planificado',
-      activo: 'planificado',
-      archivado: 'revisado',
-      revisada: 'revisado',
-      publicada: 'revisado',
+      planificado: 'borrador',
+      borrador: 'borrador',
+      revisada: 'borrador',
+      activo: 'activa',
+      activa: 'activa',
+      publicada: 'activa',
+      aprobado: 'activa',
+      aprobada: 'activa',
+      revisado: 'activa',
+      ejecutado: 'cerrada',
+      cerrada: 'cerrada',
+      archivado: 'archivada',
+      archivada: 'archivada',
     }
 
     return aliases[value] || value
@@ -28,7 +36,7 @@ export class Planificacion {
     this.evaluacion_metodo = data.evaluacion_metodo || ''
     this.observaciones = data.observaciones || ''
     this.notas_dsl = data.notas_dsl || ''
-    this.estado = data.estado || 'planificado'
+    this.estado = data.estado || 'borrador'
     this.instrumento = data.instrumento || null
     this.class_curriculum_plan_id = data.class_curriculum_plan_id || null
     this.route_version_id = data.route_version_id || null
@@ -88,7 +96,17 @@ export class Planificacion {
       errores.push('El instrumento no puede exceder 100 caracteres')
     }
 
-    const estadosValidos = [...Planificacion.getEstados().map((e) => e.value), 'borrador', 'activo', 'archivado', 'revisada', 'publicada']
+    const estadosValidos = [
+      ...Planificacion.getEstados().map((e) => e.value),
+      'planificado',
+      'revisada',
+      'publicada',
+      'revisado',
+      'aprobado',
+      'aprobada',
+      'activo',
+      'archivado',
+    ]
     if (!estadosValidos.includes(String(this.estado).trim().toLowerCase()) && !Planificacion.getEstados().some((e) => e.value === estadoNormalizado)) {
       errores.push('El estado no es válido')
     }
@@ -102,7 +120,7 @@ export class Planificacion {
    */
   canEdit() {
     const estado = Planificacion.normalizeEstado(this.estado)
-    return estado === 'planificado' || estado === 'ejecutado'
+    return estado === 'borrador' || estado === 'activa'
   }
 
   /**
@@ -110,7 +128,7 @@ export class Planificacion {
    * @returns {boolean}
    */
   canApprove() {
-    return Planificacion.normalizeEstado(this.estado) === 'ejecutado'
+    return Planificacion.normalizeEstado(this.estado) === 'borrador'
   }
 
   /**
@@ -119,22 +137,24 @@ export class Planificacion {
    */
   isLocked() {
     const estado = Planificacion.normalizeEstado(this.estado)
-    return estado === 'revisado' || estado === 'archivado'
+    return estado === 'cerrada' || estado === 'archivada'
   }
 
   static getEstados() {
     return [
-      { value: 'planificado', label: 'Planificado', color: 'bg-primary' },
-      { value: 'ejecutado', label: 'Ejecutado', color: 'bg-success' },
-      { value: 'revisado', label: 'Revisado', color: 'bg-info' },
+      { value: 'borrador', label: 'Borrador', color: 'bg-secondary' },
+      { value: 'activa', label: 'Activa', color: 'bg-success' },
+      { value: 'cerrada', label: 'Cerrada', color: 'bg-info' },
+      { value: 'archivada', label: 'Archivada', color: 'bg-dark' },
     ]
   }
 
   static getEstadoConfig(estado) {
+    const normalized = this.normalizeEstado(estado)
     return (
-      this.getEstados().find((e) => e.value === estado) || {
-        value: estado,
-        label: estado,
+      this.getEstados().find((e) => e.value === normalized) || {
+        value: normalized,
+        label: normalized,
         color: 'bg-secondary',
       }
     )
@@ -145,6 +165,7 @@ export class Planificacion {
    * @returns {object}
    */
   toJSON() {
+    const persistedEstado = Planificacion.normalizeEstado(this.estado)
     const json = {
       clase_id: this.clase_id,
       maestro_id: this.maestro_id,
@@ -156,7 +177,7 @@ export class Planificacion {
       evaluacion_metodo: this.evaluacion_metodo.trim() || null,
       observaciones: this.observaciones.trim() || null,
       notas_dsl: this.notas_dsl || null,
-      estado: this.estado,
+      estado: persistedEstado,
       instrumento: this.instrumento?.trim() || null,
       contenidos: this.objetivosEstructurados.length > 0 ? this.objetivosEstructurados : this.contenidos,
     }

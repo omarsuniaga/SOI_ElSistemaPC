@@ -5,6 +5,7 @@ import { obtenerClases, obtenerPlanificacionesConDetalles } from '../api/planifi
 import { getFullHierarchy } from '../api/routeAdapter.js'
 import { renderMapaContenidoSVG } from '../components/MapaContenidoSVG.js'
 import { extraerNodosDePlan, extraerNodosDeRutaCurricular } from '../components/routeNodes.js'
+import { selectBestPlanForClass } from '../utils/planificacionClassResolver.js'
 import { obtenerAlumnosRealesPorClase } from '../services/realAlumnosService.js'
 import { registrarEvaluacion } from '../services/evaluacionClaseService.js'
 import { OfflineSyncAdapter } from '../api/offlineSyncAdapter.js'
@@ -34,7 +35,7 @@ export async function renderRutaPedagogicaView(container, { maestroId, parentRou
   try {
     const [misClases, pRes] = await Promise.all([
       getMisClases().catch(() => []),
-      obtenerPlanificacionesConDetalles(),
+      obtenerPlanificacionesConDetalles(maestroId || null),
     ])
     const claseSolicitadaNoEstaEnMisClases =
       claseId && Array.isArray(misClases) && misClases.length > 0 &&
@@ -110,7 +111,10 @@ function _renderUI(container, clases, planificaciones, { parentRoute = 'planific
   // tabla vacía) UNA sola vez por carga de clase/roster. El canvas SVG solo
   // se dibuja acá — nunca en cada tap de estrella.
   const _renderShell = () => {
-    const planClase = planificaciones.find((p) => String(p.clase_id || p.claseId) === String(selectedClaseId)) || null
+    const planClase = selectBestPlanForClass(planificaciones, {
+      claseId: selectedClaseId,
+      maestroId,
+    })
     const targetClaseObj = clases.find((c) => String(c.id) === String(selectedClaseId)) || { nombre: 'Clase General' }
 
     const nodosDelPlan = planClase ? extraerNodosDePlan(planClase, targetClaseObj) : []

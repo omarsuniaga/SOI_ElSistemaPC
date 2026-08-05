@@ -6,6 +6,7 @@ import { renderAcmPropuestasView } from './views/acmPropuestasView.js'
 import { renderClasePlanificacionView } from './views/clasePlanificacionView.js'
 import { renderDisenadorCurricularView } from './views/DisenadorCurricularView.js'
 import { renderRutaPedagogicaView } from './views/RutaPedagogicaView.js'
+import { renderPlanificacionPrintView } from './views/PlanificacionPrintView.js'
 
 export function registerRoutesPlanificacion() {
   // "Mis Planes" - vista del maestro logueado
@@ -13,7 +14,7 @@ export function registerRoutesPlanificacion() {
     renderMaestroPlanificacionView(container, params),
   )
 
-  // "Aprobaci贸n y Revisi贸n ACM" - vista de coordinaci贸n pedag贸gica
+  // "Aprobaci髇 y Revisi髇 ACM" - vista de coordinaci髇 pedag骻ica
   router.register('planificacion-acm', (container, params = {}) =>
     renderAcmAprobacionView(container, params),
   )
@@ -21,7 +22,7 @@ export function registerRoutesPlanificacion() {
     renderAcmAprobacionView(container, params),
   )
 
-  // "Dise帽ador Curricular Institucional (ACM)" - Pantalla Completa
+  // "Dise馻dor Curricular Institucional (ACM)" - Pantalla Completa
   router.register('planificacion-disenador', (container, params = {}) =>
     renderDisenadorCurricularView(container, {
       ...params,
@@ -29,7 +30,7 @@ export function registerRoutesPlanificacion() {
     }),
   )
 
-  // "Ruta Pedag贸gica Completa (SVG)" - Pantalla Completa con Alumnos y Estrellas
+  // "Ruta Pedag骻ica Completa (SVG)" - Pantalla Completa con Alumnos y Estrellas
   router.register('planificacion-ruta', (container, params = {}) =>
     renderRutaPedagogicaView(container, {
       ...params,
@@ -37,17 +38,22 @@ export function registerRoutesPlanificacion() {
     }),
   )
 
-  // "Cobertura Curricular" - mapa de cumplimiento pedag贸gico para Direcci贸n
+  // "Cobertura Curricular" - mapa de cumplimiento pedag骻ico para Direcci髇
   router.register('planificacion-cobertura', (container, params = {}) =>
     renderCoberturaCurricularView(container, params),
   )
 
-  // "Planificaci贸n de Clase" - detalle por clase
+  // "Planificaci髇 de Clase" - detalle por clase
   router.register('planificacion-clase', (container, params = {}) =>
     renderClasePlanificacionView(container, params),
   )
 
-  // "Propuestas de Maestros" - revisi贸n ACM de contenido propuesto
+  // Documento imprimible / HTML
+  router.register('planificacion-print', (container, params = {}) =>
+    renderPlanificacionPrintView(container, params),
+  )
+
+  // "Propuestas de Maestros" - revisi髇 ACM de contenido propuesto
   router.register('maestro-propuestas-pendientes', (container, params = {}) =>
     renderAcmPropuestasView(container, params),
   )

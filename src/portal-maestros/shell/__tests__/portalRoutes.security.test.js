@@ -34,6 +34,8 @@ vi.mock('../../../portal-maestros/views/asistenciaView.js',      () => ({ render
 vi.mock('../../../portal-maestros/views/claseEmergenteView.js',  () => ({ renderClaseEmergenteView: vi.fn() }))
 vi.mock('../../../portal-maestros/views/perfilView.js',          () => ({ renderPerfilView: vi.fn() }))
 vi.mock('../../../portal-maestros/views/planificacionView.js',   () => ({ renderPlanificacionView: vi.fn().mockResolvedValue(null) }))
+vi.mock('../../../modules/planificacion/views/DisenadorCurricularView.js', () => ({ renderDisenadorCurricularView: vi.fn().mockResolvedValue(null) }))
+vi.mock('../../../modules/planificacion/views/RutaPedagogicaView.js', () => ({ renderRutaPedagogicaView: vi.fn().mockResolvedValue(null) }))
 vi.mock('../../../portal-maestros/views/alumnoPerfilView.js',    () => ({ renderAlumnoPerfilView: vi.fn() }))
 vi.mock('../../../portal-maestros/views/gamificacionView.js',    () => ({ renderGamificacionView: vi.fn().mockResolvedValue(undefined) }))
 vi.mock('../../../portal-maestros/views/rutaGameificadaView.js', () => ({ renderRutaGameificadaView: vi.fn().mockResolvedValue(undefined) }))
@@ -278,6 +280,62 @@ describe('Vistas de maestro — accesibles para cualquier maestro autenticado', 
       // La vista debe renderizarse (router.navigate a 'hoy' NO debe llamarse)
       expect(router.navigate).not.toHaveBeenCalledWith('hoy')
     })
+  })
+})
+
+describe('Rutas de planificación — preservan el contexto de clase', () => {
+  let container
+  let router
+  let commonContext
+
+  beforeEach(() => {
+    container = document.createElement('div')
+    router = { navigate: vi.fn() }
+    commonContext = {
+      router,
+      permisos: { puede_planificar: true },
+      maestroId: 'maestro-1',
+      showLoginScreen: vi.fn(),
+      cleanupPushService: vi.fn(),
+      stopRealtime: vi.fn(),
+      logoutMaestro: vi.fn(),
+    }
+    vi.clearAllMocks()
+  })
+
+  it('planificacion-disenador acepta claseId desde params cuando no hay query string', async () => {
+    const { renderDisenadorCurricularView } = await import('../../../modules/planificacion/views/DisenadorCurricularView.js')
+
+    await renderViewContent('planificacion-disenador', container, { claseId: 'clase-123' }, new URLSearchParams(), commonContext)
+
+    expect(renderDisenadorCurricularView).toHaveBeenCalledWith(
+      container,
+      expect.objectContaining({
+        maestroId: 'maestro-1',
+        claseId: 'clase-123',
+      }),
+    )
+  })
+
+  it('planificacion-ruta prioriza la clase del query string y preserva parentRoute', async () => {
+    const { renderRutaPedagogicaView } = await import('../../../modules/planificacion/views/RutaPedagogicaView.js')
+
+    await renderViewContent(
+      'planificacion-ruta',
+      container,
+      { claseId: 'clase-params', parentRoute: 'planificacion-disenador' },
+      new URLSearchParams('clase=clase-query'),
+      commonContext,
+    )
+
+    expect(renderRutaPedagogicaView).toHaveBeenCalledWith(
+      container,
+      expect.objectContaining({
+        maestroId: 'maestro-1',
+        claseId: 'clase-query',
+        parentRoute: 'planificacion-disenador',
+      }),
+    )
   })
 })
 

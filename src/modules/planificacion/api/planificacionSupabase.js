@@ -1,5 +1,6 @@
 import { supabase } from '../../../lib/supabaseClient.js'
 import { Planificacion } from '../models/planificacion.model.js'
+import { resolveExportableEstadoAliases } from '../utils/planificacionExportUtils.js'
 
 /**
  * PlanificacionApi - Adaptador para la persistencia de planes curriculares.
@@ -111,6 +112,43 @@ export async function obtenerPlanificacionesPaginadas(
     ),
     totalCount: count ?? 0,
   }
+}
+
+
+export async function obtenerPlanificacionesExportables({
+  maestroId = null,
+  claseId = null,
+  estados = ['approved'],
+} = {}) {
+  const exportStates = resolveExportableEstadoAliases(estados)
+  let query = supabase.from('planificaciones').select(`
+    *,
+    clase:clases (id, nombre, instrumento),
+    maestro:maestros (id, nombre_completo)
+  `)
+
+  if (maestroId) query = query.eq('maestro_id', maestroId)
+  if (claseId) query = query.eq('clase_id', claseId)
+  if (!exportStates.includes('all')) query = query.in('estado', exportStates)
+
+  const { data, error } = await query
+    .order('fecha_inicio', { ascending: true })
+    .order('created_at', { ascending: true })
+
+  if (error) {
+    console.error('Error cargando planificaciones exportables:', error.message)
+    throw new Error('No se pudieron cargar las planificaciones exportables')
+  }
+
+  return (data || []).map(
+    (p) =>
+      new Planificacion({
+        ...p,
+        clase_nombre: p.clase?.nombre || 'Sin asignar',
+        maestro_nombre: p.maestro?.nombre_completo || 'Sin asignar',
+        instrumento: p.instrumento || p.clase?.instrumento || null,
+      }),
+  )
 }
 
 /**
@@ -232,6 +270,7 @@ async function _obtenerMaestroActualId() {
 
 function _toPlanificacionPayload(model) {
   const contenidos = model.objetivosEstructurados.length > 0 ? model.objetivosEstructurados : model.contenidos
+  const persistedEstado = Planificacion.normalizeEstado(model.estado)
 
   const payload = {
     clase_id: model.clase_id,
@@ -243,7 +282,7 @@ function _toPlanificacionPayload(model) {
     obras: [],
     escalas_arpegios: [],
     evaluaciones: [],
-    estado: model.estado,
+    estado: persistedEstado,
     activo: true,
     instrumento: model.instrumento?.trim() || null,
   }

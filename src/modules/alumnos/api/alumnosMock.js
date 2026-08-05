@@ -230,6 +230,34 @@ export async function obtenerAsistenciasAlumno(alumnoId) {
   return []
 }
 
+export async function obtenerTodosLosAlumnosParaAnalisis() {
+  await delay()
+  return alumnos.map(normalizeAlumno)
+}
+
+export async function fusionarAlumnos({ principalId, obsoletoId, datosFusion }) {
+  await delay(300)
+  const indexPrincipal = alumnos.findIndex(a => a.id === principalId)
+  if (indexPrincipal === -1) throw new Error('El alumno principal (a conservar) no existe (Demo)')
+  if (!alumnos.some(a => a.id === obsoletoId)) throw new Error('El alumno obsoleto (a eliminar) no existe (Demo)')
+  if (principalId === obsoletoId) throw new Error('No se puede fusionar un alumno consigo mismo')
+
+  alumnos[indexPrincipal] = { ...alumnos[indexPrincipal], ...(datosFusion || {}) }
+  alumnos = alumnos.filter(a => a.id !== obsoletoId)
+  saveAlumnos(alumnos)
+
+  return {
+    success: true,
+    principal_id: principalId,
+    obsoleto_id: obsoletoId,
+    eliminado: true,
+    tablas_migradas: [
+      { tabla: 'alumnos_clases', column: 'alumno_id', migradas: 1 },
+      { tabla: 'progresos', column: 'alumno_id', migradas: 0 },
+    ],
+  }
+}
+
 export async function obtenerInscripcionesDetalladasAlumno(alumnoId) {
   await delay()
   return [

@@ -1,9 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-// ── Mocks ──────────────────────────────────────────────────────────────────────
-// All mock paths must resolve to the same module the production code imports.
-// From __tests__/ → ../../../ resolves to src/ level.
-
 const mockRouter = { register: vi.fn() }
 vi.mock('../../../core/router/router.js', () => ({ router: mockRouter }))
 
@@ -14,6 +10,7 @@ const mockRenderAcmPropuestasView = vi.fn()
 const mockRenderClasePlanificacionView = vi.fn()
 const mockRenderDisenadorView = vi.fn()
 const mockRenderRutaPedagogicaView = vi.fn()
+const mockRenderPlanificacionPrintView = vi.fn()
 
 vi.mock('../views/MaestroPlanificacionView.js', () => ({
   renderMaestroPlanificacionView: mockRenderMaestroPlanificacionView,
@@ -40,33 +37,33 @@ vi.mock('../views/DisenadorCurricularView.js', () => ({
 vi.mock('../views/RutaPedagogicaView.js', () => ({
   renderRutaPedagogicaView: mockRenderRutaPedagogicaView,
 }))
+vi.mock('../views/PlanificacionPrintView.js', () => ({
+  renderPlanificacionPrintView: mockRenderPlanificacionPrintView,
+}))
 
-// ── Tests ──────────────────────────────────────────────────────────────────────
-describe('planificacion.router - planificacion-clase route', () => {
+describe('planificacion.router - planificacion routes', () => {
   beforeEach(() => {
     vi.clearAllMocks()
   })
 
-  it('registers a planificacion-clase route', async () => {
+  it('registers clase and print routes', async () => {
     const { registerRoutesPlanificacion } = await import('../planificacion.router.js')
 
     registerRoutesPlanificacion()
 
     const routeCalls = mockRouter.register.mock.calls.map((c) => c[0])
     expect(routeCalls).toContain('planificacion-clase')
+    expect(routeCalls).toContain('planificacion-print')
   })
 
   it('the planificacion-clase route calls renderClasePlanificacionView', async () => {
-    const { renderClasePlanificacionView } = await import('../views/clasePlanificacionView.js')
     const { registerRoutesPlanificacion } = await import('../planificacion.router.js')
 
     registerRoutesPlanificacion()
 
-    // Find the planificacion-clase route handler
     const claseRoute = mockRouter.register.mock.calls.find((c) => c[0] === 'planificacion-clase')
     expect(claseRoute).toBeTruthy()
 
-    // Call the handler with a mock container
     const mockContainer = document.createElement('div')
     claseRoute[1](mockContainer)
 
@@ -87,6 +84,23 @@ describe('planificacion.router - planificacion-clase route', () => {
     expect(mockRenderDisenadorView).toHaveBeenCalledWith(
       mockContainer,
       expect.objectContaining({ claseId: 'clase-123', parentRoute: 'planificacion-ruta' }),
+    )
+  })
+
+  it('the planificacion-print route calls renderPlanificacionPrintView with params', async () => {
+    const { registerRoutesPlanificacion } = await import('../planificacion.router.js')
+
+    registerRoutesPlanificacion()
+
+    const printRoute = mockRouter.register.mock.calls.find((c) => c[0] === 'planificacion-print')
+    expect(printRoute).toBeTruthy()
+
+    const mockContainer = document.createElement('div')
+    printRoute[1](mockContainer, { scope: 'class', claseId: 'clase-55', output: 'pdf' })
+
+    expect(mockRenderPlanificacionPrintView).toHaveBeenCalledWith(
+      mockContainer,
+      expect.objectContaining({ scope: 'class', claseId: 'clase-55', output: 'pdf' }),
     )
   })
 })

@@ -74,6 +74,25 @@ describe('planificacionAdapter routing', () => {
     })
   })
 
+
+  it('should return only approved/exportable planificaciones via mock export query', async () => {
+    vi.doMock('../../../core/config/config.js', () => ({
+      config: { isDemoMode: true },
+    }))
+    const adapter = await import('../api/planificacionAdapter.js')
+    await flushPromises()
+
+    const result = await adapter.obtenerPlanificacionesExportables({
+      maestroId: 'maestro_001',
+      estados: ['approved'],
+    })
+
+    expect(Array.isArray(result)).toBe(true)
+    expect(result.length).toBe(1)
+    expect(result[0].id).toBe('plan_003')
+    expect(result[0].estado).toBe('revisado')
+  })
+
   it('should fail loudly when isDemoMode is false (no supabase in test)', async () => {
     vi.doMock('../../../core/config/config.js', () => ({
       config: { isDemoMode: false },
@@ -127,7 +146,7 @@ describe('planificacionMock CRUD lifecycle', () => {
     expect(newPlan.id).toBeDefined()
     expect(newPlan.tema).toBe('Nueva clase de prueba')
     expect(newPlan.notas_dsl).toBe('alumno:"Test" asiste:true')
-    expect(newPlan.estado).toBe('planificado')
+    expect(newPlan.estado).toBe('borrador')
   })
 
   it('should create → read → update → delete a planificacion', async () => {
@@ -240,12 +259,12 @@ describe('planificacionMock batch operations', () => {
     expect(result.estado).toBe('revisado')
   })
 
-  it('marcarEjecutada changes estado to ejecutado', async () => {
+  it('marcarEjecutada changes estado to cerrada', async () => {
     const mock = await import('../api/planificacionMock.js')
     await flushPromises()
 
     const result = await mock.marcarEjecutada('plan_004')
-    expect(result.estado).toBe('ejecutado')
+    expect(result.estado).toBe('cerrada')
     expectPlanificacionShape(result)
   })
 

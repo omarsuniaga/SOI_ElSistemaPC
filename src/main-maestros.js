@@ -7,6 +7,10 @@ import './early-error-suppression.js'
 import { disablePullToRefresh } from './shared/utils/pullToRefreshBlocker.js'
 disablePullToRefresh()
 
+// Evitar zoom accidental en la versión móvil instalada, sin bloquear el scroll.
+import { disableMobileZoom } from './shared/utils/mobileZoomBlocker.js'
+disableMobileZoom()
+
 // ============================================
 // PWA: Registrar Service Worker + Update Detection
 // ============================================

@@ -28,7 +28,7 @@ export async function renderCalendarioView(container, { onFechaClick } = {}) {
 
   const maestro = getMaestroLocal()
   if (!maestro) {
-    container.innerHTML = `<p class="pm-empty">No hay sesión activa.</p>`
+    container.innerHTML = `<p class="pm-empty">No hay sesion activa.</p>`
     return
   }
 
@@ -38,11 +38,54 @@ export async function renderCalendarioView(container, { onFechaClick } = {}) {
 
   async function cargarYRenderizar() {
     try {
-      const { estadoMap, dotsMap } = await _calcularEstadoMes(maestro.id, anio, mes)
+      const {
+        estadoMap,
+        dotsMap,
+        classCount,
+        hasAssignedClasses,
+      } = await _calcularEstadoMes(maestro.id, anio, mes)
+
+      if (!hasAssignedClasses) {
+        container.innerHTML = `
+          <section class="pm-calendar-shell">
+            <div class="pm-calendar-hero pm-calendar-hero--empty">
+              <div class="pm-calendar-hero__content">
+                <span class="pm-calendar-badge">Vista Clases</span>
+                <h1 class="pm-calendar-title">Aun no tienes clases asignadas</h1>
+                <p class="pm-calendar-subtitle">
+                  Cuando el area academica te asigne grupos, aqui veras tu agenda mensual,
+                  accesos rapidos a asistencia y el estado de cada fecha.
+                </p>
+              </div>
+            </div>
+            <div class="pm-calendar-empty-card">
+              <div class="pm-calendar-empty-card__icon">
+                <i class="bi bi-journal-bookmark"></i>
+              </div>
+              <div>
+                <h2 class="pm-calendar-empty-card__title">Sin clases cargadas</h2>
+                <p class="pm-calendar-empty-card__text">
+                  Esta vista fue optimizada para mostrar tus clases programadas por mes.
+                  En cuanto existan asignaciones, el calendario aparecera aqui.
+                </p>
+              </div>
+            </div>
+          </section>
+        `
+        return
+      }
+
       _renderCalendario(container, anio, mes, hoy, estadoMap, dotsMap, {
+        classCount,
         onFechaClick: (fecha) => {
           _openActionDrawer(fecha)
           onFechaClick?.(fecha)
+        },
+        onToday: () => {
+          const now = new Date()
+          anio = now.getFullYear()
+          mes = now.getMonth()
+          cargarYRenderizar()
         },
         onPrev: () => {
           if (mes === 0) {
@@ -88,7 +131,12 @@ async function _calcularEstadoMes(maestroId, anio, mes) {
   const claseIds = clases.map((c) => c.id)
 
   if (claseIds.length === 0) {
-    return new Map()
+    return {
+      estadoMap: new Map(),
+      dotsMap: new Map(),
+      classCount: 0,
+      hasAssignedClasses: false,
+    }
   }
 
   // 2. Horarios de esas clases (con cache)
@@ -288,7 +336,42 @@ async function _calcularEstadoMes(maestroId, anio, mes) {
     }
   }
 
-  return { estadoMap, dotsMap }
+  return {
+    estadoMap,
+    dotsMap,
+    classCount: clases.length,
+    hasAssignedClasses: true,
+  }
+}
+
+function _buildMonthSummary({ anio, mes, hoy, estadoMap, dotsMap, classCount }) {
+  const todayStr = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}-${String(hoy.getDate()).padStart(2, '0')}`
+
+  let daysWithAgenda = 0
+  let completedDays = 0
+  let pendingDays = 0
+  let futureProgrammedDays = 0
+
+  for (let day = 1; day <= new Date(anio, mes + 1, 0).getDate(); day++) {
+    const fecha = `${anio}-${String(mes + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+    const estado = estadoMap.get(fecha) || 'sin-clase'
+    const dots = dotsMap.get(fecha) || []
+
+    if (dots.length > 0) {
+      daysWithAgenda++
+      if (fecha > todayStr) futureProgrammedDays++
+    }
+
+    if (estado === 'registrada' || estado === 'cubierta-emergente') completedDays++
+    if (estado === 'pendiente' || estado === 'vencida') pendingDays++
+  }
+
+  return [
+    { key: 'clases', label: 'Clases asignadas', value: classCount, icon: 'bi-collection-play', tone: 'primary' },
+    { key: 'agenda', label: 'Días con agenda', value: daysWithAgenda, icon: 'bi-calendar-week', tone: 'info' },
+    { key: 'pendientes', label: 'Días pendientes', value: pendingDays, icon: 'bi-exclamation-circle', tone: pendingDays > 0 ? 'warning' : 'neutral' },
+    { key: 'proximos', label: 'Días por venir', value: futureProgrammedDays, icon: 'bi-arrow-right-circle', tone: 'success' },
+  ]
 }
 
 /** ¿La clase de hoy ya finalizó según su hora_fin? */
@@ -299,7 +382,13 @@ function _claseFinalizoHoy(horaFin) {
   return ahoraStr >= fin
 }
 
-function _renderCalendario(container, anio, mes, hoy, estadoMap, dotsMap, { onFechaClick, onPrev, onNext }) {
+function _renderCalendario(container, anio, mes, hoy, estadoMap, dotsMap, {
+  classCount = 0,
+  onFechaClick,
+  onPrev,
+  onNext,
+  onToday,
+}) {
   const primerDia = new Date(anio, mes, 1)
   const ultimoDia = new Date(anio, mes + 1, 0)
   const primerDiaSem = primerDia.getDay()
@@ -308,11 +397,12 @@ function _renderCalendario(container, anio, mes, hoy, estadoMap, dotsMap, { onFe
   const dH = String(hoy.getDate()).padStart(2, '0')
   const hoyStr = `${yH}-${mH}-${dH}`
 
-  // Determine active date for roving tabindex: today if visible, else first day of month
   const diasEnMes = ultimoDia.getDate()
   const firstDate = `${anio}-${String(mes + 1).padStart(2, '0')}-01`
   const lastDate = `${anio}-${String(mes + 1).padStart(2, '0')}-${String(diasEnMes).padStart(2, '0')}`
   const activeDate = hoyStr >= firstDate && hoyStr <= lastDate ? hoyStr : firstDate
+  const monthSummary = _buildMonthSummary({ anio, mes, hoy, estadoMap, dotsMap, classCount })
+  const isCurrentMonth = hoy.getFullYear() === anio && hoy.getMonth() === mes
 
   let diasHTML = DIAS_HEADER.map((d) => `<div class="pm-cal-day-header">${d}</div>`).join('')
 
@@ -324,7 +414,6 @@ function _renderCalendario(container, anio, mes, hoy, estadoMap, dotsMap, { onFe
     const fecha = `${anio}-${String(mes + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`
     const estado = estadoMap.get(fecha) || 'sin-clase'
     const dots = dotsMap?.get(fecha) || []
-    // Fondo amarillo SOLO si hay clases sin registrar o en borrador
     const hayAlerta = dots.includes('rojo') || dots.includes('amarillo')
     const dotsHTML = dots.length
       ? `<div class="pm-day-dots">${dots.map((c) => `<span class="pm-day-dot pm-dot-${c}"></span>`).join('')}</div>`
@@ -345,53 +434,101 @@ function _renderCalendario(container, anio, mes, hoy, estadoMap, dotsMap, { onFe
   }
 
   container.innerHTML = `
-    <div class="pm-calendar-wrapper">
-      <div class="pm-calendar-container">
-        <div class="pm-cal-header">
-        <button id="pm-cal-prev" class="pm-cal-nav-btn">
-          <i class="bi bi-chevron-left"></i>
-        </button>
-        <h2 class="pm-month-title">
-          ${MESES_ES[mes]} ${anio}
-        </h2>
-        <button id="pm-cal-next" class="pm-cal-nav-btn">
-          <i class="bi bi-chevron-right"></i>
-        </button>
-      </div>
-
-      <div class="pm-cal-grid-container">
-        <div class="pm-cal-grid" role="grid" aria-label="Calendario ${MESES_ES[mes]} ${anio}">
-          ${diasHTML}
+    <section class="pm-calendar-shell">
+      <div class="pm-calendar-hero">
+        <div class="pm-calendar-hero__content">
+          <span class="pm-calendar-badge">Vista Clases</span>
+          <h1 class="pm-calendar-title">Agenda mensual del maestro</h1>
+          <p class="pm-calendar-subtitle">
+            Revisa tus clases por mes, detecta registros pendientes y entra a cada fecha
+            con un solo toque para pasar asistencia o continuar un borrador.
+          </p>
+        </div>
+        <div class="pm-calendar-hero__actions">
+          <span class="pm-calendar-month-chip">
+            <i class="bi bi-calendar3"></i> ${MESES_ES[mes]} ${anio}
+          </span>
+          <button id="pm-cal-today" class="pm-calendar-today-btn" ${isCurrentMonth ? 'disabled' : ''}>
+            <i class="bi bi-bullseye"></i> ${isCurrentMonth ? 'Mes actual' : 'Ir a hoy'}
+          </button>
         </div>
       </div>
 
-      <div class="pm-cal-legend">
-        <div class="pm-cal-legend-item">
-          <div class="pm-cal-legend-dot" style="background:var(--pm-success)"></div> Clase registrada
-        </div>
-        <div class="pm-cal-legend-item">
-          <div class="pm-cal-legend-dot" style="background:var(--pm-warning)"></div> Borrador
-        </div>
-        <div class="pm-cal-legend-item">
-          <div class="pm-cal-legend-dot" style="background:var(--pm-danger)"></div> Sin registrar
-        </div>
-        <div class="pm-cal-legend-item">
-          <div class="pm-cal-legend-dot" style="background:var(--pm-text-muted);opacity:.5"></div> Programada
-        </div>
-        <div class="pm-cal-legend-item">
-          <div class="pm-cal-legend-dot" style="background:var(--pm-warning-bg);border:1px solid var(--pm-warning);border-radius:3px"></div> Día con registro pendiente
-        </div>
-</div>
+      <div class="pm-calendar-overview" aria-label="Resumen de clases del mes">
+        ${monthSummary.map((item) => `
+          <article class="pm-calendar-kpi pm-calendar-kpi--${item.tone}">
+            <div class="pm-calendar-kpi__icon">
+              <i class="bi ${item.icon}"></i>
+            </div>
+            <div class="pm-calendar-kpi__body">
+              <span class="pm-calendar-kpi__label">${item.label}</span>
+              <strong class="pm-calendar-kpi__value">${item.value}</strong>
+            </div>
+          </article>
+        `).join('')}
       </div>
-    </div>
+
+      <div class="pm-calendar-wrapper">
+        <div class="pm-calendar-container">
+          <div class="pm-cal-header">
+            <div class="pm-cal-header-copy">
+              <span class="pm-cal-header-copy__eyebrow">Calendario operativo</span>
+              <h2 class="pm-month-title">${MESES_ES[mes]} ${anio}</h2>
+            </div>
+            <div class="pm-cal-header-actions">
+              <button id="pm-cal-prev" class="pm-cal-nav-btn" aria-label="Mes anterior">
+                <i class="bi bi-chevron-left"></i>
+              </button>
+              <button id="pm-cal-next" class="pm-cal-nav-btn" aria-label="Mes siguiente">
+                <i class="bi bi-chevron-right"></i>
+              </button>
+            </div>
+          </div>
+
+          <div class="pm-cal-helper">
+            <i class="bi bi-hand-index-thumb"></i>
+            <span>Toca un dia para ver clases del dia, borradores o crear una clase emergente.</span>
+          </div>
+
+          <div class="pm-cal-grid-container">
+            <div class="pm-cal-grid" role="grid" aria-label="Calendario ${MESES_ES[mes]} ${anio}">
+              ${diasHTML}
+            </div>
+          </div>
+
+          <div class="pm-cal-legend" aria-label="Leyenda del calendario">
+            <div class="pm-cal-legend-item">
+              <div class="pm-cal-legend-dot" style="background:var(--pm-success)"></div>
+              <span>Clase registrada</span>
+            </div>
+            <div class="pm-cal-legend-item">
+              <div class="pm-cal-legend-dot" style="background:var(--pm-warning)"></div>
+              <span>Borrador</span>
+            </div>
+            <div class="pm-cal-legend-item">
+              <div class="pm-cal-legend-dot" style="background:var(--pm-danger)"></div>
+              <span>Sin registrar</span>
+            </div>
+            <div class="pm-cal-legend-item">
+              <div class="pm-cal-legend-dot" style="background:var(--pm-text-muted);opacity:.5"></div>
+              <span>Programada</span>
+            </div>
+            <div class="pm-cal-legend-item">
+              <div class="pm-cal-legend-dot" style="background:var(--pm-warning-bg);border:1px solid var(--pm-warning);border-radius:3px"></div>
+              <span>Dia con registro pendiente</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
   `
 
   container.querySelector('#pm-cal-prev').addEventListener('click', onPrev)
   container.querySelector('#pm-cal-next').addEventListener('click', onNext)
+  container.querySelector('#pm-cal-today')?.addEventListener('click', onToday)
 
   container.querySelectorAll('.pm-cal-day[data-fecha]').forEach((cell) => {
     cell.addEventListener('click', () => {
-      // Update aria-selected on click
       container
         .querySelectorAll('.pm-cal-day[data-fecha]')
         .forEach((c) => c.setAttribute('aria-selected', 'false'))
@@ -400,7 +537,6 @@ function _renderCalendario(container, anio, mes, hoy, estadoMap, dotsMap, { onFe
     })
   })
 
-  // Keyboard navigation: WAI-ARIA grid pattern with roving tabindex
   const grid = container.querySelector('.pm-cal-grid')
   if (!grid) return
 

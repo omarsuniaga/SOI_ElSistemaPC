@@ -329,6 +329,200 @@ async function _selectClase(claseId, clases) {
 
 function _buildPanel(clase, inscritos, disponibles) {
   const nombre = escHTML(clase.nombre || 'Clase')
+    container.innerHTML = _buildShell(clases, { canCreateClasses: permisos.puede_crear_clases })
+    _attachShellEvents(clases, permisos)
+
+    if (clases.length > 0) {
+      await _selectClase(clases[0].id, clases)
+    }
+  } catch (err) {
+    console.error('[GestionarClases]', err)
+    container.innerHTML = _emptyState(
+      'bi-exclamation-triangle',
+      'Error al cargar',
+      escHTML(err.message),
+    )
+  }
+}
+
+function _hasPendingClassRequest(permisos) {
+  const solicitudes = permisos?.solicitudes || []
+  const solicitudActual = permisos?.solicitud_actual
+
+  return (
+    solicitudes.includes('clases:enroll') ||
+    solicitudes.includes('inscribir_clases') ||
+    (solicitudActual?.estado === 'pendiente' && solicitudActual?.solicita_clases)
+  )
+}
+
+function _noPermissionState(permisos) {
+  const pending = _hasPendingClassRequest(permisos)
+
+  return `
+    <div class="gcv-root">
+      <div class="gcv-permission-card">
+        <div class="gcv-permission-icon">
+          <i class="bi bi-shield-exclamation"></i>
+        </div>
+        <h2 class="gcv-permission-title">Acceso de Colaborador Requerido</h2>
+        <p class="gcv-permission-copy">
+          Para gestionar clases e inscribir alumnos, necesitás que Admin active tu permiso de clases.
+        </p>
+        <div id="gcv-permission-action">
+          ${
+            pending
+              ? `
+            <div class="gcv-pending-badge">
+              <i class="bi bi-clock-history"></i>
+              Solicitud Pendiente de Aprobación
+            </div>
+          `
+              : `
+            <button class="gcv-btn gcv-btn-primary" id="gcv-btn-request-classes" type="button">
+              <i class="bi bi-send-fill"></i>
+              Solicitar Permiso de Clases
+            </button>
+          `
+          }
+        </div>
+      </div>
+    </div>
+  `
+}
+
+function _attachPermissionEvents(maestroId) {
+  const btn = document.getElementById('gcv-btn-request-classes')
+  if (!btn) return
+
+  btn.addEventListener('click', async () => {
+    btn.disabled = true
+    const originalHTML = btn.innerHTML
+    btn.innerHTML = '<span class="gcv-spinner-sm"></span> Enviando...'
+
+    try {
+      await solicitarPermiso(maestroId, 'clases:enroll')
+      AppToast.success('Solicitud de permiso enviada correctamente.')
+      const action = document.getElementById('gcv-permission-action')
+      if (action) {
+        action.innerHTML = `
+          <div class="gcv-pending-badge">
+            <i class="bi bi-clock-history"></i>
+            Solicitud Pendiente de Aprobación
+          </div>`
+      }
+    } catch (err) {
+      AppToast.error('Error al solicitar: ' + err.message)
+      btn.disabled = false
+      btn.innerHTML = originalHTML
+    }
+  })
+}
+
+// ── Shell layout ──────────────────────────────────────────────────────────────
+
+function _buildShell(clases, { canCreateClasses = false } = {}) {
+  return `
+    <div class="gcv-root">
+      <div class="gcv-header">
+        <div class="gcv-header-left">
+          <i class="bi bi-mortarboard gcv-header-icon"></i>
+          <div>
+            <h2 class="gcv-title">Mis Clases</h2>
+            <p class="gcv-subtitle">${clases.length} clase${clases.length !== 1 ? 's' : ''} asignada${clases.length !== 1 ? 's' : ''}</p>
+          </div>
+        </div>
+        ${canCreateClasses ? `
+          <button type="button" class="gcv-btn gcv-btn-primary" id="gcv-btn-crear-clase">
+            <i class="bi bi-plus-circle"></i> Nueva clase
+          </button>
+        ` : ''}
+      </div>
+
+      ${
+        clases.length === 0
+          ? _emptyState(
+              'bi-calendar-x',
+              'Sin clases asignadas',
+              'El administrador debe asignarte clases primero.',
+            )
+          : `<div class="gcv-layout">
+            <div class="gcv-clase-list" id="gcv-clase-list">
+              ${clases.map((c) => _classCard(c)).join('')}
+            </div>
+            <div class="gcv-panel" id="gcv-panel">
+              <div class="gcv-panel-placeholder">
+                <i class="bi bi-arrow-left-circle" style="font-size:2.5rem;opacity:.3;"></i>
+                <p style="margin-top:.75rem;opacity:.4;">Seleccioná una clase</p>
+              </div>
+            </div>
+          </div>`
+      }
+    </div>
+  `
+}
+
+function _classCard(clase) {
+  const nombre = escHTML(clase.nombre || 'Clase sin nombre')
+  const horarioHTML = formatHorarios(clase.horarios || [])
+  const nivel = escHTML(clase.nivel || '')
+  const capacidad = clase.capacidad_maxima ?? clase.max_alumnos ?? '–'
+  return `
+    <button class="gcv-clase-card" data-clase-id="${clase.id}" id="gcv-card-${clase.id}" type="button">
+      <div class="gcv-clase-card-top">
+        <div class="gcv-clase-avatar">
+          <i class="bi bi-music-note-beamed"></i>
+        </div>
+        <div class="gcv-clase-info">
+          <span class="gcv-clase-name">${nombre}</span>
+          ${nivel ? `<span class="gcv-clase-nivel">${nivel}</span>` : ''}
+        </div>
+        <i class="bi bi-chevron-right gcv-clase-arrow"></i>
+      </div>
+      <div class="gcv-clase-horarios">${horarioHTML}</div>
+      <div class="gcv-clase-meta">
+        <span><i class="bi bi-people"></i> Cap. ${capacidad}</span>
+      </div>
+    </button>
+  `
+}
+
+// ── Panel de gestión de alumnos ────────────────────────────────────────────────
+
+async function _selectClase(claseId, clases) {
+  _selectedClaseId = claseId
+
+  // Highlight selected card
+  document.querySelectorAll('.gcv-clase-card').forEach((c) => c.classList.remove('active'))
+  document.getElementById(`gcv-card-${claseId}`)?.classList.add('active')
+
+  const panel = document.getElementById('gcv-panel')
+  if (!panel) return
+
+  const clase = clases.find((c) => c.id === claseId)
+  if (!clase) return
+
+  panel.innerHTML = `<div class="gcv-loading"><div class="gcv-spinner"></div></div>`
+
+  try {
+    const inscritosRaw = await obtenerAlumnosInscritos(claseId)
+    const inscritos = inscritosRaw.map((r) => r.alumno).filter(Boolean)
+    _enrolledIds = new Set(inscritosRaw.map((r) => r.alumno_id))
+    const disponibles = _allStudents.filter((a) => !_enrolledIds.has(a.id))
+
+    panel.innerHTML = _buildPanel(clase, inscritos, disponibles)
+    _attachPanelEvents(claseId, clases)
+  } catch (err) {
+    panel.innerHTML = _emptyState(
+      'bi-exclamation-circle',
+      'Error al cargar alumnos',
+      escHTML(err.message),
+    )
+  }
+}
+
+function _buildPanel(clase, inscritos, disponibles) {
+  const nombre = escHTML(clase.nombre || 'Clase')
   const instrumentosDisponibles = getInstrumentOptions(disponibles)
   return `
     <div class="gcv-panel-inner">
@@ -361,10 +555,6 @@ function _buildPanel(clase, inscritos, disponibles) {
           placeholder="Buscar alumno inscrito por nombre o instrumento..."
           autocomplete="off"
         />
-        <button class="gcv-btn-new" id="gcv-btn-nuevo" type="button" title="Registrar nuevo alumno">
-          <i class="bi bi-person-plus"></i>
-          <span>Nuevo</span>
-        </button>
       </div>
 
       <!-- Quick register form -->
@@ -393,37 +583,6 @@ function _buildPanel(clase, inscritos, disponibles) {
           ${
             inscritos.length === 0
               ? '<p class="gcv-empty-list">Sin alumnos inscritos aun.</p>'
-              : inscritos.map((a) => _rowInscrito(a)).join('')
-          }
-        </div>
-      </div>
-
-      <div class="gcv-divider"></div>
-
-      <!-- Available students -->
-      <div class="gcv-section">
-        <div class="gcv-section-header">
-          <span class="gcv-section-label"><i class="bi bi-person-plus-fill gcv-icon-primary"></i> Agregar alumno</span>
-          <span class="gcv-section-count" id="gcv-count-disponibles">${disponibles.length} de ${disponibles.length} disponibles</span>
-        </div>
-        <div class="gcv-available-toolbar">
-          <div class="gcv-search-bar gcv-search-bar-compact">
-            <i class="bi bi-filter-circle gcv-search-icon"></i>
-            <input
-              type="text"
-              id="gcv-disponibles-search"
-              class="gcv-search-input"
-              placeholder="Filtrar disponibles por nombre o instrumento..."
-              autocomplete="off"
-            />
-          </div>
-          <div class="gcv-available-filters">
-            <select id="gcv-filter-instrumento" class="gcv-input gcv-input-sm" aria-label="Filtrar por instrumento">
-              <option value="">Todos los instrumentos</option>
-              ${instrumentosDisponibles.map((instrumento) => `<option value="${escHTML(instrumento)}">${escHTML(instrumento)}</option>`).join('')}
-            </select>
-            <label class="gcv-inline-check">
-              <input type="checkbox" id="gcv-filter-sin-clase" />
               <span>Solo sin clase</span>
             </label>
           </div>

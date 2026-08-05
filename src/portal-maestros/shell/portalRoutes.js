@@ -47,6 +47,15 @@ function normalizeNullableParam(value) {
   return text
 }
 
+function resolveClaseId(params = {}, urlParams = new URLSearchParams()) {
+  return (
+    normalizeNullableParam(urlParams.get('clase')) ||
+    normalizeNullableParam(params.claseId) ||
+    normalizeNullableParam(params.clase) ||
+    null
+  )
+}
+
 export const CACHEABLE_VIEWS = new Set([
   'hoy', 'fechas', 'calendario', 'metricas', 'perfil', 'ruta',
   'gamificacion', 'crear-clase', 'planificacion', 'planificacion-disenador', 'planificacion-ruta', 'ruta-libreria',
@@ -149,13 +158,14 @@ export async function renderViewContent(route, container, params, urlParams, con
     case 'planificacion-disenador':
       return await mod.renderDisenadorCurricularView(container, {
         maestroId,
-        claseId: normalizeNullableParam(urlParams.get('clase')),
+        claseId: resolveClaseId(params, urlParams),
+        parentRoute: params.parentRoute || normalizeNullableParam(urlParams.get('parentRoute')) || 'planificacion',
       })
     case 'planificacion-ruta':
       return await mod.renderRutaPedagogicaView(container, {
         maestroId,
-        parentRoute: params.parentRoute || 'planificacion',
-        claseId: normalizeNullableParam(urlParams.get('clase')),
+        parentRoute: params.parentRoute || normalizeNullableParam(urlParams.get('parentRoute')) || 'planificacion',
+        claseId: resolveClaseId(params, urlParams),
       })
     case 'alumno':
       return mod.renderAlumnoPerfilView(container, { alumnoId: urlParams.get('id') || params.id })

@@ -181,6 +181,19 @@ describe('DisenadorCurricularView', () => {
     expect(container.textContent).toContain('Violín Inicial')
   })
 
+  it('no reconstruye masivamente la jerarquía ACM cuando no existe estructura serializada del plan', async () => {
+    obtenerClases.mockResolvedValue([{ id: 'clase-1', nombre: 'Violín Inicial' }])
+    obtenerAlumnosRealesPorClase.mockResolvedValue([])
+    obtenerPlanificacionesConDetalles.mockResolvedValue([])
+
+    await renderDisenadorCurricularView(container, { claseId: 'clase-1' })
+    await flush()
+
+    expect(container.textContent).toContain('Datos de ejemplo')
+    expect(lastRenderMapaArgs).toBeTruthy()
+    expect(lastRenderMapaArgs.unidades).toHaveLength(2)
+  })
+
   it('persiste la estructura del diseñador en planificaciones y no en plantillas', async () => {
     obtenerClases.mockResolvedValue([{ id: 'clase-1', nombre: 'Violín Inicial' }])
     obtenerAlumnosRealesPorClase.mockResolvedValue([])

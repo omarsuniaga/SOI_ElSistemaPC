@@ -689,6 +689,51 @@ export async function obtenerAsistenciasAlumno(alumnoId) {
   return data || []
 }
 
+/**
+ * Carga TODOS los alumnos (sin paginar) para el análisis de duplicados.
+ * @returns {Promise<object[]>} filas crudas normalizadas
+ */
+export async function obtenerTodosLosAlumnosParaAnalisis() {
+  const { data, error } = await supabase
+    .from('alumnos')
+    .select('*')
+    .order('nombre_completo', { ascending: true })
+
+  if (error) {
+    console.error('Error cargando alumnos para análisis de duplicados:', error.message)
+    throw new Error('No se pudieron cargar los alumnos para revisar duplicados')
+  }
+
+  return (data || []).map(normalizeAlumno)
+}
+
+/**
+ * Fusiona dos alumnos duplicados en base de datos mediante RPC transaccional.
+ * @param {{ principalId: string, obsoletoId: string, datosFusion: object }} params
+ * @returns {Promise<{success:boolean, principal_id:string, tablas_migradas:object[]}>}
+ */
+export async function fusionarAlumnos({ principalId, obsoletoId, datosFusion }) {
+  if (!principalId || !obsoletoId) throw new Error('Se requieren los dos ids de los alumnos a fusionar')
+  if (principalId === obsoletoId) throw new Error('No se puede fusionar un alumno consigo mismo')
+
+  const { data, error } = await supabase.rpc('fn_fusionar_alumnos_duplicados', {
+    p_principal_id: principalId,
+    p_obsoleto_id: obsoletoId,
+    p_datos_fusion: datosFusion || {},
+  })
+
+  if (error) {
+    console.error('Error fusionando alumnos:', error.message)
+    throw new Error(`No se pudo fusionar los alumnos: ${error.message}`)
+  }
+
+  if (!data || !data.success) {
+    throw new Error(data?.message || 'No se pudo confirmar la fusión de los alumnos')
+  }
+
+  return data
+}
+
 export async function obtenerInscripcionesDetalladasAlumno(alumnoId) {
   const { data, error } = await supabase
     .from('alumnos_clases')

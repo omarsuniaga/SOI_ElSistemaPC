@@ -13,6 +13,7 @@ import { renderMapaContenidoSVG } from '../components/MapaContenidoSVG.js'
 import { obtenerAlumnosRealesPorClase } from '../services/realAlumnosService.js'
 import { OfflineSyncAdapter } from '../api/offlineSyncAdapter.js'
 import { IndicadorLogro, generarUUIDSeguro } from '../domain/IndicadorLogro.js'
+import { selectBestPlanForClass } from '../utils/planificacionClassResolver.js'
 
 const NIVELES_TECNICOS = [
   { id: 'nivel-0', nombre: 'Nivel 0: Iniciación / Descubrimiento', color: 'success' },
@@ -55,8 +56,11 @@ export async function renderDisenadorCurricularView(container, { maestroId, clas
 
   let planExistente = null
   try {
-    const planificaciones = await obtenerPlanificacionesConDetalles().catch(() => [])
-    planExistente = planificaciones.find((p) => String(p.clase_id || p.claseId) === String(claseIdInicial))
+    const planificaciones = await obtenerPlanificacionesConDetalles(maestroId || null).catch(() => [])
+    planExistente = selectBestPlanForClass(planificaciones, {
+      claseId: claseIdInicial,
+      maestroId,
+    })
 
     if (!planExistente) {
       const plantillas = await obtenerPlantillasPlanificacion().catch(() => [])
@@ -92,7 +96,7 @@ export async function renderDisenadorCurricularView(container, { maestroId, clas
     claseId: claseIdInicial,
     planificacionId: planExistente?.id || null,
     fechaInicio: planExistente?.fecha_inicio || new Date().toISOString().slice(0, 10),
-    estadoPlan: planExistente?.estado || 'planificado',
+    estadoPlan: planExistente?.estado || 'borrador',
     instrumento: planExistente?.instrumento || null,
     nivelId: planExistente?.nivelId || 'nivel-1',
     frecuenciaSemanal: planExistente?.frecuenciaSemanal || 2,
@@ -911,7 +915,7 @@ function _attachEventsFull(container, clases, estadoEstructura, alumnosState, _l
         clase_id: estadoEstructura.claseId,
         tema: `Plan Curricular · ${claseNombre} · ${nivelNombre}`,
         fecha_inicio: estadoEstructura.fechaInicio,
-        estado: estadoEstructura.estadoPlan,
+        estado: 'activa',
         instrumento: estadoEstructura.instrumento,
         objetivosEstructurados: estadoEstructura.unidades,
         contenidos: estadoEstructura.unidades,
@@ -922,6 +926,7 @@ function _attachEventsFull(container, clases, estadoEstructura, alumnosState, _l
         : await crearPlanificacion(payload)
 
       estadoEstructura.planificacionId = resultado.id
+      estadoEstructura.estadoPlan = resultado.estado || 'activa'
       estadoEstructura.unidades = _marcarPersistidos(resultado.objetivosEstructurados || estadoEstructura.unidades)
       estadoEstructura.esDataDemo = false
 

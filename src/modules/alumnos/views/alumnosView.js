@@ -6,6 +6,7 @@ import { AppToast } from '../../../shared/components/AppToast.js'
 import { AlumnoForm } from '../components/AlumnoForm.js'
 import { AlumnoDeleteModal } from '../components/AlumnoDeleteModal.js'
 import { PostuladosBackfillModal } from '../components/PostuladosBackfillModal.js'
+import { DuplicadosModal } from '../components/DuplicadosModal.js'
 import {
   obtenerAlumnos,
   crearAlumno,
@@ -16,6 +17,7 @@ import {
 } from '../api/alumnosApi.js'
 import { descargarPdfListadoAlumnos } from '../domain/generarPdfInscripcion.js'
 import { calcularEdad } from '../domain/calcularEdad.js'
+import { detectarCandidatosDe } from '../domain/duplicadosAlumnos.js'
 import {
   formatDate,
   escapeHTML,
@@ -168,6 +170,9 @@ export async function renderAlumnosView(container) {
             </button>
             <button class="btn btn-outline-danger btn-sm-compact" id="btnDescargarPdfListado" title="Descargar PDF del listado de alumnos">
               <i class="bi bi-file-earmark-pdf"></i> PDF Listado
+            </button>
+            <button class="btn btn-outline-primary btn-sm-compact" id="btnDetectarDuplicados" title="Buscar y fusionar alumnos duplicados">
+              <i class="bi bi-copy me-1"></i>Duplicados
             </button>
             <button class="btn btn-success btn-sm-compact" id="btnInscribir">
               <i class="bi bi-person-plus me-1"></i>Inscribir
@@ -382,6 +387,26 @@ export async function renderAlumnosView(container) {
 
     container.querySelector('#btnExportarCSV')?.addEventListener('click', () => exportarAlumnosCSV(), { signal })
 
+    container.querySelector('#btnDetectarDuplicados')?.addEventListener('click', () => {
+      DuplicadosModal.abrir({
+        alumnos: state.alumnosOriginales,
+        onSuccess: async () => {
+          try {
+            const { alumnos: nuevos, total } = await obtenerAlumnos()
+            state.totalAlumnos = total
+            state.alumnosOriginales = nuevos.map(a => ({
+              ...a,
+              _completitud: calcularCompletitud(a),
+            }))
+            applyFilters()
+            AppToast.success('Lista actualizada tras la fusión')
+          } catch (err) {
+            console.error('[alumnosView] Error recargando alumnos tras fusión:', err)
+          }
+        },
+      })
+    }, { signal })
+
     container.querySelector('#btnConciliarPostulados')?.addEventListener('click', () => {
       PostuladosBackfillModal.open({
         onSuccess: async () => {
@@ -569,6 +594,13 @@ export async function renderAlumnosView(container) {
           return false
         }
 
+        // Prevención de duplicados: antes de crear, avisar si el nuevo alumno
+        // coincide fuertemente con uno existente.
+        const candidatos = detectarCandidatosDe(validation.data, state.alumnosOriginales)
+        if (candidatos.length) {
+          return confirmarAlumnoPosibleDuplicado(validation.data, candidatos)
+        }
+
         try {
           const nuevo = await crearAlumno(validation.data)
           nuevo._completitud = calcularCompletitud(nuevo)
@@ -582,6 +614,52 @@ export async function renderAlumnosView(container) {
           return false
         }
       }
+    })
+  }
+
+  function confirmarAlumnoPosibleDuplicado(data, candidatos) {
+    const top = candidatos[0]
+    const existente = state.alumnosOriginales.find(a => a.id === top.a.id)
+    const nombreExistente = existente?.nombre || existente?.nombre_completo || 'alumno existente'
+    const pct = Math.round(top.puntaje * 100)
+
+    return new Promise(resolve => {
+      AppModal.open({
+        title: 'Posible alumno duplicado',
+        size: 'md',
+        saveText: 'Crear de todas formas',
+        cancelText: 'Revisar duplicados',
+        body: `
+          <div class="alert alert-warning py-2 small d-flex gap-2 align-items-start mb-3">
+            <i class="bi bi-exclamation-triangle-fill flex-shrink-0"></i>
+            <div>
+              El alumno ingresado coincide en un <strong>${pct}%</strong> con
+              <strong>${escapeHTML(nombreExistente)}</strong>. ¿Es realmente un alumno nuevo?
+            </div>
+          </div>
+          <p class="text-muted small mb-0">
+            Si prefieres no crearlo, pulsa "Revisar duplicados" y usa la herramienta de
+            duplicados para revisar o fusionar el registro existente.
+          </p>
+        `,
+        onCancel: () => resolve(false),
+        onSave: async () => {
+          try {
+            const nuevo = await crearAlumno(data)
+            nuevo._completitud = calcularCompletitud(nuevo)
+            state.alumnosOriginales.push(nuevo)
+            applyFilters()
+            AppToast.success('Alumno creado exitosamente')
+            resolve(true)
+            return true
+          } catch (err) {
+            console.error(err)
+            AppToast.error(err.message || 'Error al crear el alumno')
+            resolve(false)
+            return false
+          }
+        },
+      })
     })
   }
 

@@ -6,7 +6,7 @@ describe('Planificacion Model', () => {
     it('should create instance with default values', () => {
       const p = new Planificacion()
       expect(p.id).toBeNull()
-      expect(p.estado).toBe('planificado')
+      expect(p.estado).toBe('borrador')
       expect(p.recursos).toEqual([])
     })
   })
@@ -49,12 +49,22 @@ describe('Planificacion Model', () => {
       const p1 = new Planificacion({ estado: 'planificado' })
       expect(p1.canEdit()).toBe(true)
 
-      const p2 = new Planificacion({ estado: 'revisado' })
+      const p2 = new Planificacion({ estado: 'cerrada' })
       expect(p2.canEdit()).toBe(false)
     })
   })
 
   describe('toJSON()', () => {
+    it('normalizes UI estado aliases before persistence', () => {
+      const p = new Planificacion({
+        tema: 'Clase de prueba',
+        clase_id: 'clase_001',
+        estado: 'publicada',
+      })
+      const json = p.toJSON()
+      expect(json.estado).toBe('activa')
+    })
+
     it('should include notas_dsl in serialized output', () => {
       const p = new Planificacion({
         tema: 'Clase de prueba',

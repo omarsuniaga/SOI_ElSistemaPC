@@ -13,7 +13,6 @@
  */
 
 import { config } from '../../core/config/config.js'
-import { supabase } from '../../lib/supabaseClient.js'
 import { getBreakpoint, onBreakpointChange } from '../utils/portalUtils.js'
 import { getMaestroLocal } from '../auth/maestroAuth.js'
 import { enableTrap } from '../utils/focusTrap.js'
@@ -186,8 +185,9 @@ function _semaphore(status) {
 
 async function _loadProgress(alumnoId, rutaId, claseId = null) {
   let indicators = []
+  const hasClassContext = Boolean(claseId)
 
-  if (claseId) {
+  if (hasClassContext) {
     const guia = await weeklyPlanAdapter.obtenerGuiaHeredadaPorClase(claseId).catch(() => null)
     const planItems = guia?.plan?.items || []
     const seen = new Set()
@@ -213,8 +213,34 @@ async function _loadProgress(alumnoId, rutaId, claseId = null) {
       }))
   }
 
+  if (!indicators.length && !hasClassContext && rutaId) {
+    const plan = await weeklyPlanAdapter.obtenerPlanSemanalPorId(rutaId).catch(() => null)
+    const planItems = plan?.items || []
+    const seen = new Set()
+    indicators = planItems
+      .filter((item) => {
+        const key = item.indicator_id || `${item.node_id}:${item.week_number}`
+        if (seen.has(key)) return false
+        seen.add(key)
+        return true
+      })
+      .map((item) => ({
+        id: item.indicator_id || item.node_id || item.id,
+        nombre: item.topic || item.objective || 'Indicador',
+        node: {
+          id: item.node_id || item.id,
+          name: item.topic || 'Tema',
+          level: {
+            id: item.level_id || null,
+            level_number: item.week_number,
+            name: `Semana ${item.week_number}`,
+          },
+        },
+      }))
+  }
+
   if (!indicators.length && config.isDemoMode) {
-    // 1. Cargar la jerarquÃ­a de temas del mock
+    // 1. Cargar la jerarquía de temas del mock
     const { getFullHierarchy } = await import('../../modules/planificacion/api/routeMock.js')
     const hierarchy = await getFullHierarchy(claseId || 'pclase_001')
     
@@ -240,21 +266,6 @@ async function _loadProgress(alumnoId, rutaId, claseId = null) {
         })
       })
     })
-  } else if (!indicators.length) {
-    // Modo Real: Supabase query
-    const { data, error } = await supabase
-      .from('indicators')
-      .select('id, nombre, description, order_index, node_id, nodes(id, name, order_index, level_id, levels(id, name, level_number))')
-      .eq('nodes.route_version_id', rutaId)
-      .eq('activo', true)
-      .order('order_index')
-      
-    if (error) throw error
-    indicators = (data ?? []).filter(i => i.nodes !== null).map(i => ({
-      id: i.id,
-      nombre: i.nombre || i.description,
-      node: i.nodes
-    }))
   }
 
   // 2. Cargar el historial de calificaciones registradas
@@ -583,7 +594,15 @@ export function createStudentProgressPanel({ alumno, rutaId, sessionId, claseId,
       _summaries = data.indicatorSummaries
       el.innerHTML = _renderContent(alumno, data)
     } catch (err) {
-      console.error('[studentProgressPanel] Error loading:', err)
+      console.error('[studentProgressPanel] Error loading:', {
+        message: err?.message || null,
+        code: err?.code || null,
+        details: err?.details || null,
+        hint: err?.hint || null,
+        alumnoId: alumno?.id || null,
+        rutaId: rutaId || null,
+        claseId: claseId || null,
+      }, err)
       el.innerHTML = _renderError(err?.message ?? 'Error desconocido al cargar datos.')
     }
   }
@@ -608,3 +627,4 @@ export function createStudentProgressPanel({ alumno, rutaId, sessionId, claseId,
 
   return { open, close, destroy }
 }
+

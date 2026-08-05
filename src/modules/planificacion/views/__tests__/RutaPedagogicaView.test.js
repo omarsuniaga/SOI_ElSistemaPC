@@ -218,6 +218,49 @@ describe('RutaPedagogicaView', () => {
     expect(lastRenderArgs.nodos.some((nodo) => String(nodo.titulo).includes('violoncellos'))).toBe(false)
   })
 
+  it('si hay varios planes para la misma clase, prioriza el que tiene unidades estructuradas', async () => {
+    obtenerClases.mockResolvedValue([{ id: 'clase-violin', nombre: 'Viol?n Nivel 1' }])
+    obtenerPlanificacionesConDetalles.mockResolvedValue([
+      {
+        id: 'plan-simple',
+        clase_id: 'clase-violin',
+        maestro_id: 'maestro-1',
+        tema: 'Plan simple',
+        contenido: 'Texto plano sin unidades',
+        estado: 'activa',
+        updated_at: '2026-08-05T12:00:00Z',
+      },
+      {
+        id: 'plan-estructurado',
+        clase_id: 'clase-violin',
+        maestro_id: 'maestro-1',
+        estado: 'borrador',
+        updated_at: '2026-08-04T12:00:00Z',
+        objetivosEstructurados: [
+          {
+            id: 'u-1',
+            titulo: 'Unidad real',
+            objetivos: [
+              {
+                id: 'o-1',
+                titulo: 'Objetivo real',
+                indicadores: [{ id: 'i-1', titulo: 'Indicador real' }],
+              },
+            ],
+          },
+        ],
+      },
+    ])
+    obtenerAlumnosRealesPorClase.mockResolvedValue([])
+
+    await renderRutaPedagogicaView(container, { claseId: 'clase-violin', maestroId: 'maestro-1' })
+    await flush()
+
+    expect(obtenerPlanificacionesConDetalles).toHaveBeenCalledWith('maestro-1')
+    expect(lastRenderArgs.nodos.some((nodo) => String(nodo.titulo).includes('Unidad real'))).toBe(true)
+    expect(lastRenderArgs.nodos.some((nodo) => String(nodo.titulo).includes('Texto plano'))).toBe(false)
+  })
+
   it('un solo click en el botón "Ciclar ★" incrementa la evaluación en exactamente 1 estrella (no 2)', async () => {
     const alumno = mockAlumno({ estrellas: 0 })
     obtenerAlumnosRealesPorClase.mockResolvedValue([alumno])

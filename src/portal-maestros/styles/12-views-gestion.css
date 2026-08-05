@@ -182,11 +182,23 @@
   flex-wrap: wrap;
   gap: .5rem;
 }
+.gcv-panel-header-actions {
+  display: flex;
+  align-items: center;
+  gap: .65rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
 .gcv-panel-title {
   font-size: 1.1rem;
   font-weight: 700;
   margin: 0;
   color: var(--pm-text);
+}
+.gcv-panel-subtitle {
+  margin: .2rem 0 0;
+  font-size: .8rem;
+  color: var(--pm-text-muted);
 }
 .gcv-enrolled-badge {
   background: linear-gradient(135deg, var(--pm-primary, #6366f1), #8b5cf6);
@@ -219,6 +231,9 @@
   color: var(--pm-text);
 }
 .gcv-search-input::placeholder { color: var(--pm-text-muted); }
+.gcv-search-bar-compact {
+  padding: .3rem .65rem;
+}
 
 .gcv-btn-new {
   display: flex;
@@ -267,11 +282,43 @@
   width: 100%;
 }
 .gcv-input:focus { border-color: var(--pm-primary, #6366f1); }
+.gcv-input-sm {
+  min-width: 180px;
+  padding: .45rem .75rem;
+  font-size: .82rem;
+}
 .gcv-new-form-actions {
   display: flex;
   justify-content: flex-end;
   gap: .6rem;
   margin-top: .75rem;
+}
+.gcv-available-toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: .6rem;
+}
+.gcv-available-filters {
+  display: flex;
+  gap: .75rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.gcv-inline-check {
+  display: inline-flex;
+  align-items: center;
+  gap: .45rem;
+  font-size: .82rem;
+  font-weight: 600;
+  color: var(--pm-text);
+}
+.gcv-inline-check input {
+  accent-color: var(--pm-primary, #6366f1);
+}
+.gcv-filter-hint {
+  margin: 0;
+  font-size: .76rem;
+  color: var(--pm-text-muted);
 }
 
 /* ── Section layout ───────────────────────────────────────── */

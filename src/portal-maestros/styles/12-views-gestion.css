@@ -682,3 +682,41 @@
   background: rgba(59, 130, 246, .15);
   color: var(--pm-primary, #3b82f6);
 }
+.pm-app-update-panel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--pm-border, rgba(120, 120, 128, 0.18));
+}
+
+.pm-app-update-panel__copy {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.pm-app-update-panel__copy strong {
+  color: var(--pm-text, #1d1d1f);
+  font-size: 0.86rem;
+}
+
+.pm-app-update-panel__copy span {
+  color: var(--pm-text-muted, #6e6e73);
+  font-size: 0.76rem;
+}
+
+@media (max-width: 576px) {
+  .pm-app-update-panel {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .pm-app-update-panel .btn-apple-utility {
+    width: 100%;
+    justify-content: center;
+  }
+}

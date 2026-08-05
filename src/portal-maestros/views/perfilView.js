@@ -536,6 +536,16 @@ function renderInstallApp(container) {
         </div>
         <p id="pm-install-note" class="pm-install-note" style="display:none;"></p>
       </div>
+      <div class="pm-app-update-panel" id="pm-app-update-panel">
+        <div class="pm-app-update-panel__copy">
+          <strong>Actualizar aplicación</strong>
+          <span>Busca una nueva versión y refresca la app instalada.</span>
+        </div>
+        <button class="btn-apple-utility" id="pm-btn-update-app" type="button">
+          <i class="bi bi-arrow-clockwise" aria-hidden="true"></i>
+          <span>Actualizar ahora</span>
+        </button>
+      </div>
     </section>`);
 
   // Lógica del botón
@@ -567,6 +577,28 @@ function renderInstallApp(container) {
   });
 
   // Si el prompt nativo no está disponible, mostrar fallback desde el inicio
+  document.getElementById('pm-btn-update-app')?.addEventListener('click', async (event) => {
+    const updateBtn = event.currentTarget;
+    const originalHtml = updateBtn.innerHTML;
+    updateBtn.disabled = true;
+    updateBtn.innerHTML = '<span class="pm-settings-spinner"></span><span>Comprobando...</span>';
+
+    try {
+      if (window.soiPwaUpdater?.update) {
+        await window.soiPwaUpdater.update();
+      } else {
+        window.location.reload();
+      }
+    } catch (error) {
+      console.warn('[PerfilView] Error actualizando la aplicación:', error);
+      updateBtn.disabled = false;
+      updateBtn.innerHTML = originalHtml;
+      window.dispatchEvent(new CustomEvent('showToast', {
+        detail: { message: 'No se pudo comprobar la actualización. Intenta nuevamente.', type: 'danger' }
+      }));
+    }
+  });
+
   window.addEventListener('beforeinstallprompt', () => {
     if (btn) btn.disabled = false;
   }, { once: true });

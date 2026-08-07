@@ -64,7 +64,6 @@ function formatHorarios(horarios) {
     .join(' ')
 }
 
-
 function normalizeAlumnosPayload(payload) {
   if (Array.isArray(payload)) return payload
   if (Array.isArray(payload?.alumnos)) return payload.alumnos
@@ -88,6 +87,7 @@ function getInstrumentOptions(alumnos = []) {
       .filter(Boolean),
   )].sort((a, b) => a.localeCompare(b, 'es'))
 }
+
 // ── Module state ──────────────────────────────────────────────────────────────
 
 let _selectedClaseId = null
@@ -135,200 +135,6 @@ export async function renderGestionarClasesView(container) {
     _studentsWithoutClassIds = new Set(flattenAlumnosSinClase(gruposSinClase).map((alumno) => alumno.id))
     _canEditClasses = permisos.puede_inscribir_clases === true
 
-    container.innerHTML = _buildShell(clases, { canCreateClasses: permisos.puede_crear_clases })
-    _attachShellEvents(clases, permisos)
-
-    if (clases.length > 0) {
-      await _selectClase(clases[0].id, clases)
-    }
-  } catch (err) {
-    console.error('[GestionarClases]', err)
-    container.innerHTML = _emptyState(
-      'bi-exclamation-triangle',
-      'Error al cargar',
-      escHTML(err.message),
-    )
-  }
-}
-
-function _hasPendingClassRequest(permisos) {
-  const solicitudes = permisos?.solicitudes || []
-  const solicitudActual = permisos?.solicitud_actual
-
-  return (
-    solicitudes.includes('clases:enroll') ||
-    solicitudes.includes('inscribir_clases') ||
-    (solicitudActual?.estado === 'pendiente' && solicitudActual?.solicita_clases)
-  )
-}
-
-function _noPermissionState(permisos) {
-  const pending = _hasPendingClassRequest(permisos)
-
-  return `
-    <div class="gcv-root">
-      <div class="gcv-permission-card">
-        <div class="gcv-permission-icon">
-          <i class="bi bi-shield-exclamation"></i>
-        </div>
-        <h2 class="gcv-permission-title">Acceso de Colaborador Requerido</h2>
-        <p class="gcv-permission-copy">
-          Para gestionar clases e inscribir alumnos, necesitás que Admin active tu permiso de clases.
-        </p>
-        <div id="gcv-permission-action">
-          ${
-            pending
-              ? `
-            <div class="gcv-pending-badge">
-              <i class="bi bi-clock-history"></i>
-              Solicitud Pendiente de Aprobación
-            </div>
-          `
-              : `
-            <button class="gcv-btn gcv-btn-primary" id="gcv-btn-request-classes" type="button">
-              <i class="bi bi-send-fill"></i>
-              Solicitar Permiso de Clases
-            </button>
-          `
-          }
-        </div>
-      </div>
-    </div>
-  `
-}
-
-function _attachPermissionEvents(maestroId) {
-  const btn = document.getElementById('gcv-btn-request-classes')
-  if (!btn) return
-
-  btn.addEventListener('click', async () => {
-    btn.disabled = true
-    const originalHTML = btn.innerHTML
-    btn.innerHTML = '<span class="gcv-spinner-sm"></span> Enviando...'
-
-    try {
-      await solicitarPermiso(maestroId, 'clases:enroll')
-      AppToast.success('Solicitud de permiso enviada correctamente.')
-      const action = document.getElementById('gcv-permission-action')
-      if (action) {
-        action.innerHTML = `
-          <div class="gcv-pending-badge">
-            <i class="bi bi-clock-history"></i>
-            Solicitud Pendiente de Aprobación
-          </div>`
-      }
-    } catch (err) {
-      AppToast.error('Error al solicitar: ' + err.message)
-      btn.disabled = false
-      btn.innerHTML = originalHTML
-    }
-  })
-}
-
-// ── Shell layout ──────────────────────────────────────────────────────────────
-
-function _buildShell(clases, { canCreateClasses = false } = {}) {
-  return `
-    <div class="gcv-root">
-      <div class="gcv-header">
-        <div class="gcv-header-left">
-          <i class="bi bi-mortarboard gcv-header-icon"></i>
-          <div>
-            <h2 class="gcv-title">Mis Clases</h2>
-            <p class="gcv-subtitle">${clases.length} clase${clases.length !== 1 ? 's' : ''} asignada${clases.length !== 1 ? 's' : ''}</p>
-          </div>
-        </div>
-        ${canCreateClasses ? `
-          <button type="button" class="gcv-btn gcv-btn-primary" id="gcv-btn-crear-clase">
-            <i class="bi bi-plus-circle"></i> Nueva clase
-          </button>
-        ` : ''}
-      </div>
-
-      ${
-        clases.length === 0
-          ? _emptyState(
-              'bi-calendar-x',
-              'Sin clases asignadas',
-              'El administrador debe asignarte clases primero.',
-            )
-          : `<div class="gcv-layout">
-            <div class="gcv-clase-list" id="gcv-clase-list">
-              ${clases.map((c) => _classCard(c)).join('')}
-            </div>
-            <div class="gcv-panel" id="gcv-panel">
-              <div class="gcv-panel-placeholder">
-                <i class="bi bi-arrow-left-circle" style="font-size:2.5rem;opacity:.3;"></i>
-                <p style="margin-top:.75rem;opacity:.4;">Seleccioná una clase</p>
-              </div>
-            </div>
-          </div>`
-      }
-    </div>
-  `
-}
-
-function _classCard(clase) {
-  const nombre = escHTML(clase.nombre || 'Clase sin nombre')
-  const horarioHTML = formatHorarios(clase.horarios || [])
-  const nivel = escHTML(clase.nivel || '')
-  const capacidad = clase.capacidad_maxima ?? clase.max_alumnos ?? '–'
-  return `
-    <button class="gcv-clase-card" data-clase-id="${clase.id}" id="gcv-card-${clase.id}" type="button">
-      <div class="gcv-clase-card-top">
-        <div class="gcv-clase-avatar">
-          <i class="bi bi-music-note-beamed"></i>
-        </div>
-        <div class="gcv-clase-info">
-          <span class="gcv-clase-name">${nombre}</span>
-          ${nivel ? `<span class="gcv-clase-nivel">${nivel}</span>` : ''}
-        </div>
-        <i class="bi bi-chevron-right gcv-clase-arrow"></i>
-      </div>
-      <div class="gcv-clase-horarios">${horarioHTML}</div>
-      <div class="gcv-clase-meta">
-        <span><i class="bi bi-people"></i> Cap. ${capacidad}</span>
-      </div>
-    </button>
-  `
-}
-
-// ── Panel de gestión de alumnos ────────────────────────────────────────────────
-
-async function _selectClase(claseId, clases) {
-  _selectedClaseId = claseId
-
-  // Highlight selected card
-  document.querySelectorAll('.gcv-clase-card').forEach((c) => c.classList.remove('active'))
-  document.getElementById(`gcv-card-${claseId}`)?.classList.add('active')
-
-  const panel = document.getElementById('gcv-panel')
-  if (!panel) return
-
-  const clase = clases.find((c) => c.id === claseId)
-  if (!clase) return
-
-  panel.innerHTML = `<div class="gcv-loading"><div class="gcv-spinner"></div></div>`
-
-  try {
-    const inscritosRaw = await obtenerAlumnosInscritos(claseId)
-    const inscritos = inscritosRaw.map((r) => r.alumno).filter(Boolean)
-    _enrolledIds = new Set(inscritosRaw.map((r) => r.alumno_id))
-    const disponibles = _allStudents.filter((a) => !_enrolledIds.has(a.id))
-
-    panel.innerHTML = _buildPanel(clase, inscritos, disponibles)
-    _attachPanelEvents(claseId, clases)
-  } catch (err) {
-    panel.innerHTML = _emptyState(
-      'bi-exclamation-circle',
-      'Error al cargar alumnos',
-      escHTML(err.message),
-    )
-  }
-}
-
-function _buildPanel(clase, inscritos, disponibles) {
-  const nombre = escHTML(clase.nombre || 'Clase')
     container.innerHTML = _buildShell(clases, { canCreateClasses: permisos.puede_crear_clases })
     _attachShellEvents(clases, permisos)
 
@@ -583,12 +389,46 @@ function _buildPanel(clase, inscritos, disponibles) {
           ${
             inscritos.length === 0
               ? '<p class="gcv-empty-list">Sin alumnos inscritos aun.</p>'
-              <span>Solo sin clase</span>
+              : inscritos.map((a) => _rowInscrito(a)).join('')
+          }
+        </div>
+      </div>
+
+      <div class="gcv-divider"></div>
+
+      <!-- Available students -->
+      <div class="gcv-section">
+        <div class="gcv-section-header">
+          <div style="display:flex;align-items:center;gap:.75rem;">
+            <span class="gcv-section-label"><i class="bi bi-person-plus-fill gcv-icon-primary"></i> Agregar alumno</span>
+            <span class="gcv-section-count" id="gcv-count-disponibles">${disponibles.length} de ${disponibles.length} disponibles</span>
+          </div>
+          <button class="gcv-btn-new" id="gcv-btn-nuevo" type="button" title="Registrar nuevo alumno">
+            <i class="bi bi-person-plus"></i>
+            <span>Nuevo</span>
+          </button>
+        </div>
+        <div class="gcv-available-toolbar">
+          <div class="gcv-search-bar gcv-search-bar-compact">
+            <i class="bi bi-filter-circle gcv-search-icon"></i>
+            <input
+              type="text"
+              id="gcv-disponibles-search"
+              class="gcv-search-input"
+              placeholder="Filtrar por nombre..."
+              autocomplete="off"
+            />
+          </div>
+          <div class="gcv-available-filters">
+            <select id="gcv-filter-instrumento" class="gcv-input gcv-input-sm" aria-label="Filtrar por instrumento">
+              <option value="">Todos los instrumentos</option>
+              ${instrumentosDisponibles.map((instrumento) => `<option value="${escHTML(instrumento)}">${escHTML(instrumento)}</option>`).join('')}
+            </select>
+            <label class="gcv-inline-check" title="Mostrar únicamente alumnos sin ninguna clase asignada">
+              <input type="checkbox" id="gcv-filter-sin-clase" />
+              <span>Sin clase asignada</span>
             </label>
           </div>
-          <p class="gcv-filter-hint" id="gcv-filter-hint">
-            Activa "Solo sin clase" para ver unicamente alumnos activos sin ninguna inscripcion.
-          </p>
         </div>
         <div id="gcv-lista-disponibles" class="gcv-student-list gcv-available-list">
           ${
@@ -867,7 +707,6 @@ function _resetNewForm() {
   })
 }
 
-
 async function _refreshStudentsWithoutClass() {
   try {
     const gruposSinClase = await obtenerAlumnosSinClase()
@@ -882,6 +721,7 @@ async function _ensureClassEditorSupport() {
   _classEditorSupport = await obtenerDatosCreadorClases()
   return _classEditorSupport
 }
+
 // ── Utilities ─────────────────────────────────────────────────────────────────
 
 function _skeletonHTML() {
@@ -910,537 +750,4 @@ function _emptyState(icon, title, msg) {
       <p class="gcv-empty-msg">${msg}</p>
     </div>
   `
-}
-
-// ── Styles ────────────────────────────────────────────────────────────────────
-
-// Styles are in 12-views-gestion.css — _injectStyles() removed.
-// eslint-disable-next-line no-unused-vars
-function _injectStyles_legacy() {
-  /* noop — kept to avoid parse errors with backtick below */
-  const style = document.createElement('style')
-  style.textContent = `
-    .gcv-root {
-      padding: 1.5rem;
-      max-width: 1100px;
-      margin: 0 auto;
-      height: 100%;
-      display: flex;
-      flex-direction: column;
-      gap: 1.25rem;
-      color: var(--pm-text, #1e293b);
-    }
-
-    /* ── Header ── */
-    .gcv-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      flex-wrap: wrap;
-      gap: .75rem;
-    }
-    .gcv-header-left {
-      display: flex;
-      align-items: center;
-      gap: 1rem;
-    }
-    .gcv-header-icon {
-      font-size: 2rem;
-      background: linear-gradient(135deg, var(--pm-primary, #6366f1), #8b5cf6);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-    }
-    .gcv-title {
-      font-size: 1.4rem;
-      font-weight: 700;
-      margin: 0;
-      color: var(--pm-text, #1e293b);
-    }
-    .gcv-subtitle {
-      font-size: .8rem;
-      color: var(--pm-text-muted, #64748b);
-      margin: 0;
-    }
-
-    /* ── Layout: card list + panel ── */
-    .gcv-layout {
-      display: grid;
-      grid-template-columns: 320px 1fr;
-      gap: 1.25rem;
-      flex: 1;
-      min-height: 0;
-    }
-    @media (max-width: 768px) {
-      .gcv-layout { grid-template-columns: 1fr; }
-    }
-
-    /* ── Class cards ── */
-    .gcv-clase-list {
-      display: flex;
-      flex-direction: column;
-      gap: .65rem;
-      overflow-y: auto;
-    }
-    .gcv-clase-card {
-      background: var(--pm-surface, #fff);
-      border: 1.5px solid var(--pm-border, #e2e8f0);
-      border-radius: 14px;
-      padding: 1rem;
-      cursor: pointer;
-      text-align: left;
-      transition: all .2s ease;
-      width: 100%;
-    }
-    .gcv-clase-card:hover {
-      border-color: var(--pm-primary, #6366f1);
-      box-shadow: 0 4px 16px rgba(99,102,241,.12);
-      transform: translateY(-1px);
-    }
-    .gcv-clase-card.active {
-      border-color: var(--pm-primary, #6366f1);
-      background: linear-gradient(135deg, rgba(99,102,241,.06), rgba(139,92,246,.04));
-      box-shadow: 0 4px 20px rgba(99,102,241,.18);
-    }
-    .gcv-clase-card-top {
-      display: flex;
-      align-items: center;
-      gap: .75rem;
-      margin-bottom: .6rem;
-    }
-    .gcv-clase-avatar {
-      width: 40px;
-      height: 40px;
-      border-radius: 10px;
-      background: linear-gradient(135deg, var(--pm-primary, #6366f1), #8b5cf6);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: #fff;
-      font-size: 1.1rem;
-      flex-shrink: 0;
-    }
-    .gcv-clase-info {
-      flex: 1;
-      min-width: 0;
-    }
-    .gcv-clase-name {
-      display: block;
-      font-weight: 600;
-      font-size: .95rem;
-      color: var(--pm-text, #1e293b);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    .gcv-clase-nivel {
-      display: block;
-      font-size: .72rem;
-      color: var(--pm-text-muted, #64748b);
-      margin-top: .1rem;
-    }
-    .gcv-clase-arrow {
-      color: var(--pm-text-muted, #64748b);
-      font-size: .85rem;
-      transition: transform .2s;
-    }
-    .gcv-clase-card.active .gcv-clase-arrow {
-      transform: rotate(90deg);
-      color: var(--pm-primary, #6366f1);
-    }
-    .gcv-clase-horarios {
-      display: flex;
-      flex-wrap: wrap;
-      gap: .35rem;
-      margin-bottom: .5rem;
-    }
-    .gcv-horario-chip {
-      display: inline-block;
-      background: var(--pm-surface-2, #f1f5f9);
-      color: var(--pm-text, #1e293b);
-      border: 1px solid var(--pm-border, transparent);
-      border-radius: 20px;
-      padding: .15rem .6rem;
-      font-size: .7rem;
-      font-weight: 500;
-    }
-    .gcv-clase-meta {
-      font-size: .72rem;
-      color: var(--pm-text-muted, #64748b);
-    }
-
-    /* ── Detail panel ── */
-    .gcv-panel {
-      background: var(--pm-surface, #fff);
-      border: 1.5px solid var(--pm-border, #e2e8f0);
-      border-radius: 16px;
-      overflow-y: auto;
-    }
-    .gcv-panel-placeholder {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      height: 100%;
-      min-height: 300px;
-      color: var(--pm-text-muted, #64748b);
-    }
-    .gcv-panel-inner {
-      padding: 1.5rem;
-      display: flex;
-      flex-direction: column;
-      gap: 1.25rem;
-    }
-    .gcv-panel-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      flex-wrap: wrap;
-      gap: .5rem;
-    }
-    .gcv-panel-title {
-      font-size: 1.1rem;
-      font-weight: 700;
-      margin: 0;
-      color: var(--pm-text, #1e293b);
-    }
-    .gcv-enrolled-badge {
-      background: linear-gradient(135deg, var(--pm-primary, #6366f1), #8b5cf6);
-      color: #fff;
-      border-radius: 20px;
-      padding: .2rem .8rem;
-      font-size: .78rem;
-      font-weight: 600;
-    }
-
-    /* ── Search ── */
-    .gcv-search-bar {
-      display: flex;
-      align-items: center;
-      gap: .5rem;
-      background: var(--pm-surface-2, #f8fafc);
-      border: 1.5px solid var(--pm-border, #e2e8f0);
-      border-radius: 10px;
-      padding: .4rem .75rem;
-      transition: border-color .2s;
-    }
-    .gcv-search-bar:focus-within {
-      border-color: var(--pm-primary, #6366f1);
-    }
-    .gcv-search-icon { color: var(--pm-text-muted, #64748b); font-size: .9rem; }
-    .gcv-search-input {
-      flex: 1;
-      border: none;
-      background: transparent;
-      outline: none;
-      font-size: .9rem;
-      color: var(--pm-text, #1e293b);
-    }
-    .gcv-search-input::placeholder { color: var(--pm-text-muted, #94a3b8); }
-    .gcv-btn-new {
-      display: flex;
-      align-items: center;
-      gap: .35rem;
-      background: linear-gradient(135deg, var(--pm-primary, #6366f1), #8b5cf6);
-      color: #fff;
-      border: none;
-      border-radius: 7px;
-      padding: .35rem .8rem;
-      font-size: .8rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: opacity .2s, transform .1s;
-      white-space: nowrap;
-    }
-    .gcv-btn-new:hover { opacity: .9; transform: scale(1.03); }
-
-    /* ── New student form ── */
-    .gcv-new-form {
-      background: var(--pm-surface-2, #f8fafc);
-      border: 1.5px solid var(--pm-border, #e2e8f0);
-      border-radius: 12px;
-      padding: 1.1rem;
-    }
-    .gcv-new-form-title {
-      font-size: .9rem;
-      font-weight: 600;
-      color: var(--pm-text, #1e293b);
-      margin: 0 0 .75rem;
-    }
-    .gcv-new-form-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-      gap: .65rem;
-    }
-    .gcv-input {
-      background: var(--pm-surface, #fff);
-      border: 1.5px solid var(--pm-border, #e2e8f0);
-      border-radius: 8px;
-      padding: .5rem .85rem;
-      font-size: .875rem;
-      color: var(--pm-text, #1e293b);
-      transition: border-color .15s;
-      outline: none;
-      width: 100%;
-    }
-    .gcv-input:focus { border-color: var(--pm-primary, #6366f1); }
-    .gcv-new-form-actions {
-      display: flex;
-      justify-content: flex-end;
-      gap: .6rem;
-      margin-top: .75rem;
-    }
-
-    /* ── Section layout ── */
-    .gcv-section { display: flex; flex-direction: column; gap: .6rem; }
-    .gcv-section-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-    .gcv-section-label {
-      font-size: .85rem;
-      font-weight: 600;
-      color: var(--pm-text, #1e293b);
-      display: flex;
-      align-items: center;
-      gap: .4rem;
-    }
-    .gcv-section-count {
-      font-size: .75rem;
-      color: var(--pm-text-muted, #64748b);
-    }
-    .gcv-icon-success { color: #22c55e; }
-    .gcv-icon-primary { color: var(--pm-primary, #6366f1); }
-    .gcv-divider {
-      height: 1px;
-      background: var(--pm-border, #e2e8f0);
-    }
-
-    /* ── Student list ── */
-    .gcv-student-list { display: flex; flex-direction: column; gap: .35rem; }
-    .gcv-available-list { max-height: 260px; overflow-y: auto; }
-    .gcv-student-row {
-      display: flex;
-      align-items: center;
-      gap: .75rem;
-      padding: .6rem .75rem;
-      border-radius: 10px;
-      border: 1px solid transparent;
-      transition: background .15s, border-color .15s;
-    }
-    .gcv-student-row:hover {
-      background: var(--pm-surface-2, #f8fafc);
-      border-color: var(--pm-border, #e2e8f0);
-    }
-    .gcv-student-selectable { cursor: pointer; }
-    .gcv-student-selectable:has(.gcv-checkbox:checked) {
-      background: rgba(99,102,241,.06);
-      border-color: var(--pm-primary, #6366f1);
-    }
-    .gcv-student-avatar {
-      width: 36px;
-      height: 36px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: .72rem;
-      font-weight: 700;
-      color: #fff;
-      flex-shrink: 0;
-    }
-    .gcv-avatar-success { background: linear-gradient(135deg, #22c55e, #16a34a); }
-    .gcv-avatar-primary { background: linear-gradient(135deg, var(--pm-primary, #6366f1), #8b5cf6); }
-    .gcv-student-data { flex: 1; min-width: 0; }
-    .gcv-student-name {
-      display: block;
-      font-size: .875rem;
-      font-weight: 600;
-      color: var(--pm-text, #1e293b);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    .gcv-student-sub {
-      display: block;
-      font-size: .72rem;
-      color: var(--pm-text-muted, #64748b);
-    }
-    .gcv-btn-remove {
-      background: none;
-      border: 1.5px solid transparent;
-      border-radius: 8px;
-      padding: .3rem .5rem;
-      color: var(--pm-text-muted, #94a3b8);
-      cursor: pointer;
-      transition: all .15s;
-      flex-shrink: 0;
-    }
-    .gcv-btn-remove:hover {
-      color: #ef4444;
-      border-color: #ef4444;
-      background: rgba(239,68,68,.06);
-    }
-    .gcv-checkbox {
-      width: 17px;
-      height: 17px;
-      accent-color: var(--pm-primary, #6366f1);
-      cursor: pointer;
-      flex-shrink: 0;
-    }
-    .gcv-empty-list {
-      font-size: .8rem;
-      color: var(--pm-text-muted, #64748b);
-      margin: .5rem 0;
-      padding: .5rem .75rem;
-    }
-    .gcv-add-actions {
-      display: flex;
-      justify-content: flex-end;
-      margin-top: .5rem;
-    }
-
-    /* ── Buttons ── */
-    .gcv-btn {
-      display: inline-flex;
-      align-items: center;
-      gap: .4rem;
-      border: none;
-      border-radius: 9px;
-      padding: .55rem 1.1rem;
-      font-size: .875rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all .18s;
-    }
-    .gcv-btn-primary {
-      background: linear-gradient(135deg, var(--pm-primary, #6366f1), #8b5cf6);
-      color: #fff;
-    }
-    .gcv-btn-primary:hover { opacity: .9; transform: translateY(-1px); }
-    .gcv-btn-ghost {
-      background: var(--pm-surface-2, #f1f5f9);
-      color: var(--pm-text, #1e293b);
-    }
-    .gcv-btn-ghost:hover { background: var(--pm-border, #e2e8f0); }
-
-    /* ── Empty state ── */
-    .gcv-empty-state {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      min-height: 280px;
-      text-align: center;
-      padding: 2rem;
-    }
-    .gcv-empty-icon {
-      font-size: 3rem;
-      color: var(--pm-text-muted, #94a3b8);
-      margin-bottom: 1rem;
-    }
-    .gcv-empty-title {
-      font-size: 1rem;
-      font-weight: 600;
-      color: var(--pm-text, #1e293b);
-      margin: 0 0 .4rem;
-    }
-    .gcv-empty-msg {
-      font-size: .85rem;
-      color: var(--pm-text-muted, #64748b);
-      margin: 0;
-    }
-
-
-    /* Permission state */
-    .gcv-permission-card {
-      width: min(100%, 520px);
-      margin: 2rem auto;
-      padding: 3rem 2rem;
-      text-align: center;
-      background: var(--pm-surface-2, #f8fafc);
-      border: 1px solid var(--pm-border, #e2e8f0);
-      border-radius: 18px;
-      box-shadow: 0 18px 45px rgba(15, 23, 42, .08);
-    }
-    .gcv-permission-icon {
-      width: 80px;
-      height: 80px;
-      margin: 0 auto 1.5rem;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border-radius: 50%;
-      background: rgba(59, 130, 246, .12);
-      color: var(--pm-primary, #3b82f6);
-      font-size: 2.5rem;
-    }
-    .gcv-permission-title {
-      color: var(--pm-text, #1e293b);
-      font-size: 1.4rem;
-      font-weight: 800;
-      margin: 0 0 .75rem;
-    }
-    .gcv-permission-copy {
-      color: var(--pm-text-muted, #64748b);
-      line-height: 1.55;
-      max-width: 410px;
-      margin: 0 auto 1.5rem;
-    }
-    .gcv-pending-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: .5rem;
-      padding: .85rem 1rem;
-      border-radius: 12px;
-      background: rgba(234, 179, 8, .12);
-      border: 1px solid rgba(234, 179, 8, .34);
-      color: #eab308;
-      font-weight: 700;
-      font-size: .85rem;
-    }
-
-    /* ── Loading ── */
-    .gcv-loading {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      min-height: 200px;
-    }
-    .gcv-spinner {
-      width: 36px;
-      height: 36px;
-      border: 3px solid var(--pm-border, #e2e8f0);
-      border-top-color: var(--pm-primary, #6366f1);
-      border-radius: 50%;
-      animation: gcv-spin .7s linear infinite;
-    }
-    .gcv-spinner-sm {
-      display: inline-block;
-      width: 14px;
-      height: 14px;
-      border: 2px solid rgba(255,255,255,.4);
-      border-top-color: #fff;
-      border-radius: 50%;
-      animation: gcv-spin .7s linear infinite;
-    }
-    @keyframes gcv-spin { to { transform: rotate(360deg); } }
-
-    /* ── Skeleton ── */
-    .gcv-skeleton {
-      background: linear-gradient(90deg, var(--pm-border, #e2e8f0) 25%, var(--pm-bg-secondary, #f1f5f9) 50%, var(--pm-border, #e2e8f0) 75%);
-      background-size: 200% 100%;
-      animation: gcv-shimmer 1.4s ease infinite;
-      border-radius: 10px;
-    }
-    .gcv-skel-title { height: 36px; width: 220px; }
-    .gcv-skel-card { height: 90px; }
-    @keyframes gcv-shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
-
-    /* ── Utility ── */
-
-    .d-none { display: none !important; }
-  `
-  document.head.appendChild(style)
 }

@@ -5,7 +5,7 @@ import { obtenerClases, obtenerPlanificacionesConDetalles } from '../api/planifi
 import { getFullHierarchy } from '../api/routeAdapter.js'
 import { renderMapaContenidoSVG } from '../components/MapaContenidoSVG.js'
 import { extraerNodosDePlan, extraerNodosDeRutaCurricular } from '../components/routeNodes.js'
-import { selectBestPlanForClass } from '../utils/planificacionClassResolver.js'
+import { selectBestPlanForClass, sameClaseId } from '../utils/planificacionClassResolver.js'
 import { obtenerAlumnosRealesPorClase } from '../services/realAlumnosService.js'
 import { registrarEvaluacion } from '../services/evaluacionClaseService.js'
 import { OfflineSyncAdapter } from '../api/offlineSyncAdapter.js'
@@ -39,7 +39,7 @@ export async function renderRutaPedagogicaView(container, { maestroId, parentRou
     ])
     const claseSolicitadaNoEstaEnMisClases =
       claseId && Array.isArray(misClases) && misClases.length > 0 &&
-      !misClases.some((c) => String(c.id) === String(claseId))
+      !misClases.some((c) => sameClaseId(c.id, claseId))
 
     clases = (misClases && misClases.length > 0 && !claseSolicitadaNoEstaEnMisClases)
       ? misClases
@@ -53,8 +53,8 @@ export async function renderRutaPedagogicaView(container, { maestroId, parentRou
 }
 
 function _renderUI(container, clases, planificaciones, { parentRoute = 'planificacion', claseIdInicial, maestroId } = {}) {
-  let selectedClaseId = (claseIdInicial && clases.find((c) => String(c.id) === String(claseIdInicial)))
-    ? claseIdInicial
+  let selectedClaseId = (claseIdInicial && clases.find((c) => sameClaseId(c.id, claseIdInicial)))
+    ? (clases.find((c) => sameClaseId(c.id, claseIdInicial))?.id || claseIdInicial)
     : clases[0]?.id || ''
   let selectedNodo = null
   let alumnosClase = []
@@ -115,7 +115,7 @@ function _renderUI(container, clases, planificaciones, { parentRoute = 'planific
       claseId: selectedClaseId,
       maestroId,
     })
-    const targetClaseObj = clases.find((c) => String(c.id) === String(selectedClaseId)) || { nombre: 'Clase General' }
+    const targetClaseObj = clases.find((c) => sameClaseId(c.id, selectedClaseId)) || { nombre: 'Clase General' }
 
     const nodosDelPlan = planClase ? extraerNodosDePlan(planClase, targetClaseObj) : []
     const nodos = nodosDelPlan.length > 0

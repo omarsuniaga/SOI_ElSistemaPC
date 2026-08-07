@@ -146,15 +146,65 @@ export async function obtenerRutasActivas(maestroId = null) {
   return [...routes]
 }
 
+const EXCLUDED_INDICATORS_KEY = 'acm_class_excluded_indicators_demo'
+let _excludedIndicators = {}
+
+function _ensureExcludedStore() {
+  if (Object.keys(_excludedIndicators).length > 0) return
+  try {
+    const raw = localStorage.getItem(EXCLUDED_INDICATORS_KEY)
+    if (raw) _excludedIndicators = JSON.parse(raw)
+  } catch {
+    _excludedIndicators = {}
+  }
+}
+
+function _persistExcludedStore() {
+  try {
+    localStorage.setItem(EXCLUDED_INDICATORS_KEY, JSON.stringify(_excludedIndicators))
+  } catch (e) {
+    console.warn('[weeklyPlanMock] Failed to persist excluded indicators:', e.message)
+  }
+}
+
+export async function obtenerIndicadoresExcluidosDeClase(claseId) {
+  await _delay()
+  _ensureExcludedStore()
+  return _excludedIndicators[String(claseId)] || []
+}
+
+export async function eliminarIndicadoresDeClase(claseId, indicatorIds = []) {
+  await _delay()
+  _ensureExcludedStore()
+  const cid = String(claseId)
+  const current = new Set(_excludedIndicators[cid] || [])
+  indicatorIds.forEach((id) => current.add(id))
+  _excludedIndicators[cid] = [...current]
+  _persistExcludedStore()
+  return _excludedIndicators[cid]
+}
+
 export async function obtenerGuiaHeredadaPorClase(claseId, maestroId = null) {
   await _delay()
   _ensureStore()
+  _ensureExcludedStore()
   const routes = await obtenerRutasActivas(maestroId)
   const route = routes.find((r) => String(r.group_id) === String(claseId) && r.status === 'active')
   if (!route) return null
-  const plan = route.weekly_plan_id
+  let plan = route.weekly_plan_id
     ? _data.weekly_plans.find((p) => p.id === route.weekly_plan_id)
     : _data.weekly_plans.find((p) => p.level_id === route.level_id)
+
+  const excluded = new Set(_excludedIndicators[String(claseId)] || [])
+
+  if (plan && plan.items && excluded.size > 0) {
+    plan = _clone(plan)
+    plan.items = plan.items.filter((item) => {
+      const id = item.indicator_id || item.node_id || item.id
+      return !excluded.has(id)
+    })
+  }
+
   return {
     route: _clone(route),
     plan: plan ? _clone(plan) : null,

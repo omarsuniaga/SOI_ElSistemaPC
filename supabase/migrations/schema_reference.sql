@@ -814,6 +814,7 @@ CREATE TABLE public.programas (
   created_at timestamp with time zone DEFAULT now(),
   updated_at timestamp with time zone DEFAULT now(),
   nivel text,
+  duracion_anios numeric,
   CONSTRAINT programas_pkey PRIMARY KEY (id)
 );
 CREATE TABLE public.progresos (

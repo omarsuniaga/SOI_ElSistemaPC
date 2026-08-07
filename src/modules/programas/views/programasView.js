@@ -168,10 +168,10 @@ function renderContent() {
       </div>
 
       ${renderFilterPanel({
-        isOpen: state.filtrosAbiertos,
-        filtersHtml: getFilterConfigHtml(),
-        onToggleId: 'btnToggleFiltros',
-      })}
+    isOpen: state.filtrosAbiertos,
+    filtersHtml: getFilterConfigHtml(),
+    onToggleId: 'btnToggleFiltros',
+  })}
 
       <div class="page-glass rounded w-100">
         <div class="list-group list-group-flush w-100" id="programasTBody">
@@ -260,7 +260,7 @@ function attachEvents() {
     }
   })
 
-  container.cleanup = () => {}
+  container.cleanup = () => { }
 }
 
 function applyFilters() {
@@ -337,7 +337,6 @@ function _renderFormModal({ title, saveText, programa = null }) {
         <div class="col-12">
           <div class="form-check">
             <input class="form-check-input" type="checkbox" id="prog-activo" ${programa?.activo !== false ? 'checked' : ''}>
-            <p>aqui estoy  </p>
             <label class="form-check-label" for="prog-activo">Programa Activo</label>
           </div>
         </div>
@@ -395,10 +394,10 @@ async function loadClasesForPrograma(programaId, modalBody) {
       supabase.from('alumnos_clases').select('clase_id, alumno_id'),
     ])
 
-    const clases        = clasesRes.data   || []
-    const maestros      = maestrosRes.data || []
-    const salonesData   = salonesRes.data   || []
-    const horariosData  = horariosRes.data  || []
+    const clases = clasesRes.data || []
+    const maestros = maestrosRes.data || []
+    const salonesData = salonesRes.data || []
+    const horariosData = horariosRes.data || []
     const alumnosClases = alumnosClasesRes.data || []
 
     if (clases.length === 0) {
@@ -468,16 +467,16 @@ async function loadClasesForPrograma(programaId, modalBody) {
 
     const clasesHtml = clases.map(clase => {
       const principal = maestros.find(m => m.id === (clase.maestro_principal_id || clase.maestro_id))
-      const nombreP   = principal ? (principal.nombre_completo || principal.nombre) : (clase.maestro_nombre || 'No asignado')
-      
+      const nombreP = principal ? (principal.nombre_completo || principal.nombre) : (clase.maestro_nombre || 'No asignado')
+
       const claseHorarios = horariosByClase[clase.id] || clase.horarios || []
       const horarioStr = claseHorarios.length > 0
         ? claseHorarios.map(h => {
-            const dia = (h.dia || '').slice(0, 3).toUpperCase()
-            const inicio = (h.hora_inicio || '').slice(0, 5)
-            const fin = (h.hora_fin || '').slice(0, 5)
-            return fin ? `${dia} ${inicio}-${fin}` : `${dia} ${inicio}`
-          }).join(' · ')
+          const dia = (h.dia || '').slice(0, 3).toUpperCase()
+          const inicio = (h.hora_inicio || '').slice(0, 5)
+          const fin = (h.hora_fin || '').slice(0, 5)
+          return fin ? `${dia} ${inicio}-${fin}` : `${dia} ${inicio}`
+        }).join(' · ')
         : 'Sin horario'
 
       let salonStr = clase.salon || null
@@ -531,12 +530,12 @@ function openViewModal(id) {
   const bodyHTML = `
     <div class="programa-profile-container">
       ${renderHeroCard({
-        title: p.nombre || 'Programa',
-        badgesHtml: `
+    title: p.nombre || 'Programa',
+    badgesHtml: `
           <span class="badge bg-primary bg-opacity-10 text-white border border-primary-subtle" style="font-size: 0.75rem;">${escapeHTML(nivel)}</span>
           <span class="d-inline-block rounded-circle ${estadoDotClass}" style="width: 10px; height: 10px;" title="${estadoLabel}"></span>
         `,
-        actionsHtml: `
+    actionsHtml: `
           <button class="btn btn-outline-primary btn-sm btn-profile-edit" data-id="${p.id}" type="button" title="Editar programa">
             <i class="bi bi-pencil"></i>
           </button>
@@ -544,16 +543,16 @@ function openViewModal(id) {
             <i class="bi bi-trash"></i>
           </button>
         `,
-      })}
+  })}
 
       ${renderDetailGrid({
-        items: [
-          { icon: 'bi-clock', label: 'Duración', value: p.duracion_anios ? `${p.duracion_anios} ${p.duracion_anios === 1 ? 'año' : 'años'}` : 'No especificada' },
-          { icon: 'bi-fingerprint', label: 'Identificador', value: `<code>${escapeHTML(p.id)}</code>` },
-          { icon: 'bi-calendar-check', label: 'Creado', value: formatDate(p.created_at) },
-          { icon: 'bi-calendar-event', label: 'Modificado', value: p.updated_at ? formatDate(p.updated_at) : formatDate(p.created_at) },
-        ],
-      })}
+    items: [
+      { icon: 'bi-clock', label: 'Duración', value: p.duracion_anios ? `${p.duracion_anios} ${p.duracion_anios === 1 ? 'año' : 'años'}` : 'No especificada' },
+      { icon: 'bi-fingerprint', label: 'Identificador', value: `<code>${escapeHTML(p.id)}</code>` },
+      { icon: 'bi-calendar-check', label: 'Creado', value: formatDate(p.created_at) },
+      { icon: 'bi-calendar-event', label: 'Modificado', value: p.updated_at ? formatDate(p.updated_at) : formatDate(p.created_at) },
+    ],
+  })}
 
       ${p.descripcion ? `
         <div class="description-card p-3 rounded mb-4 border bg-body-tertiary">

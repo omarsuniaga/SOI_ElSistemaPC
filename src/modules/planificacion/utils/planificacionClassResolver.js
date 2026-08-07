@@ -52,10 +52,17 @@ function _getPlanTimestamp(plan) {
   return 0
 }
 
+export function sameClaseId(idA, idB) {
+  if (idA == null || idB == null) return false
+  const cleanA = String(idA).trim().toLowerCase().replace(/^clase-/, '')
+  const cleanB = String(idB).trim().toLowerCase().replace(/^clase-/, '')
+  return cleanA === cleanB && cleanA.length > 0
+}
+
 export function selectBestPlanForClass(plans = [], { claseId, maestroId = null } = {}) {
   if (!claseId || !Array.isArray(plans) || plans.length === 0) return null
 
-  const byClass = plans.filter((plan) => String(plan?.clase_id || plan?.claseId) === String(claseId))
+  const byClass = plans.filter((plan) => sameClaseId(plan?.clase_id || plan?.claseId, claseId))
   if (byClass.length === 0) return null
 
   const sameTeacher = maestroId

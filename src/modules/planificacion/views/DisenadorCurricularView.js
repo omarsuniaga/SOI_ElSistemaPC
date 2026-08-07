@@ -13,7 +13,8 @@ import { renderMapaContenidoSVG } from '../components/MapaContenidoSVG.js'
 import { obtenerAlumnosRealesPorClase } from '../services/realAlumnosService.js'
 import { OfflineSyncAdapter } from '../api/offlineSyncAdapter.js'
 import { IndicadorLogro, generarUUIDSeguro } from '../domain/IndicadorLogro.js'
-import { selectBestPlanForClass } from '../utils/planificacionClassResolver.js'
+import { selectBestPlanForClass, sameClaseId } from '../utils/planificacionClassResolver.js'
+import { getMisClases } from '../../../portal-maestros/services/maestroDataService.js'
 
 const NIVELES_TECNICOS = [
   { id: 'nivel-0', nombre: 'Nivel 0: Iniciación / Descubrimiento', color: 'success' },
@@ -21,8 +22,6 @@ const NIVELES_TECNICOS = [
   { id: 'nivel-2', nombre: 'Nivel 2: Intermedio / Desarrollo Solista', color: 'warning' },
   { id: 'nivel-3', nombre: 'Nivel 3: Avanzado / Maestría Institucional', color: 'danger' },
 ]
-
-import { getMisClases } from '../../../portal-maestros/services/maestroDataService.js'
 
 /**
  * Vista de Pantalla Completa: Diseñador Curricular Institucional (Premium UI/UX con Datos Reales)
@@ -50,9 +49,8 @@ export async function renderDisenadorCurricularView(container, { maestroId, clas
     console.error('[DisenadorCurricularView] Error:', err)
   }
 
-  const claseIdInicial = (claseId && clases.find((c) => String(c.id) === String(claseId)))
-    ? claseId
-    : clases[0]?.id || ''
+  const claseMatch = (claseId && clases.find((c) => sameClaseId(c.id, claseId)))
+  const claseIdInicial = claseMatch ? claseMatch.id : (clases[0]?.id || '')
 
   let planExistente = null
   try {
@@ -64,10 +62,9 @@ export async function renderDisenadorCurricularView(container, { maestroId, clas
 
     if (!planExistente) {
       const plantillas = await obtenerPlantillasPlanificacion().catch(() => [])
-      planExistente = plantillas.find((p) => String(p.clase_id || p.claseId) === String(claseIdInicial))
+      planExistente = plantillas.find((p) => sameClaseId(p.clase_id || p.claseId, claseIdInicial))
     }
-  } catch {}
-
+  } catch { }
   // El árbol de unidades viaja serializado como JSON-string en la columna
   // TEXT `objetivos` — hay que parsearlo. Bug encontrado: esto solo se hacía
   // al cambiar de clase en el selector, nunca en la carga inicial, así que
@@ -154,8 +151,8 @@ function _objetivosDemoSeed() {
 function _todosLosIndicadores(unidades) {
   const out = []
   unidades.forEach((u) => {
-    ;(u.objetivos || []).forEach((o) => {
-      ;(o.indicadores || []).forEach((ind) =>
+    ; (u.objetivos || []).forEach((o) => {
+      ; (o.indicadores || []).forEach((ind) =>
         out.push({ ...ind, unidadTitulo: u.titulo, objTitulo: o.titulo }),
       )
     })
@@ -251,8 +248,7 @@ function _renderUI(container, clases, estadoEstructura) {
                   </span>
                 </div>
                 <div class="d-flex align-items-center gap-2">
-                  <h2 class="fw-bold mb-0">Diseñador Curricular Institucional</h2>
-                  <i class="bi bi-stars text-warning fs-4 dc-title-sparkle"></i>
+                  <h2 class="fw-bold mb-0">Crea la planificación de tus clases</h2>
                 </div>
                 <p class="mb-0 mt-1 text-white-50 small dc-subtitle">
                   <i class="bi bi-bezier2 me-1"></i>Diseña, ordena y publica el mapa de unidades, objetivos e indicadores evaluables de tu clase.
@@ -644,47 +640,98 @@ function _renderObjetivosFull(container, estadoEstructura, alumnosState) {
         to { opacity: 1; transform: translateY(0); }
       }
       .dc-animate { animation: dc-fade-up 0.4s ease both; }
+      /* ===== MOBILE RESPONSIVE (≤ 576px) ===== */
       @media (max-width: 576px) {
-        .dc-unit-card .card-header,
-        .dc-obj-card .card-body > .d-flex {
+        /* --- Unit header: stack badge + input vertically --- */
+        .dc-unit-header {
+          flex-direction: column !important;
           align-items: stretch !important;
+          gap: 0.55rem !important;
+          padding: 0.75rem 0.9rem !important;
+        }
+        .dc-unit-header > .d-flex {
+          flex-wrap: wrap !important;
+        }
+        .dc-unit-card .input-unidad-title {
+          width: 100% !important;
+          flex: 1 1 100% !important;
+          min-width: 0 !important;
+          font-size: 1rem !important;
+          min-height: 44px;
+          padding: 0.6rem 0.8rem !important;
+        }
+        .dc-unit-header .btn-del-unidad {
+          align-self: flex-end;
+          flex-shrink: 0;
         }
 
-        .dc-unit-card .card-header {
-          gap: 0.65rem;
+        /* --- Objective header: wrap naturally --- */
+        .dc-obj-card .card-body > .d-flex {
+          flex-wrap: wrap !important;
+          gap: 0.5rem !important;
+        }
+        .dc-obj-card .input-obj-title {
+          width: 100% !important;
+          flex: 1 1 100% !important;
+          min-width: 0 !important;
+          font-size: 0.97rem !important;
+          min-height: 44px;
+          padding: 0.6rem 0.8rem !important;
+        }
+        .dc-obj-card .btn-del-obj {
+          align-self: flex-end;
+          flex-shrink: 0;
         }
 
-        .dc-unit-card .input-unidad-title,
-        .dc-obj-card .input-obj-title,
+        /* --- Indicator row: full column layout --- */
+        .ind-row-container {
+          flex-direction: column !important;
+          align-items: stretch !important;
+          gap: 0.45rem !important;
+          padding: 0.65rem 0.5rem 0.65rem 0.5rem !important;
+          background: rgba(120,130,220,0.04);
+          border-radius: 10px;
+          margin-bottom: 0.55rem !important;
+        }
+        .ind-row-container .dc-clase-badge {
+          align-self: flex-start;
+        }
+        .ind-row-container .ind-fields-wrap {
+          display: flex !important;
+          flex-direction: column !important;
+          gap: 0.4rem !important;
+          width: 100% !important;
+        }
         .ind-row-container .input-ind-title,
         .ind-row-container .select-prereq {
           width: 100% !important;
-          flex: 1 1 100%;
-          font-size: 0.98rem !important;
+          max-width: 100% !important;
+          flex: 1 1 100% !important;
+          min-width: 0 !important;
+          font-size: 0.95rem !important;
           min-height: 44px;
-          padding: 0.72rem 0.85rem !important;
+          padding: 0.6rem 0.8rem !important;
+        }
+        .ind-row-container .btn-del-ind {
+          align-self: flex-end;
+          flex-shrink: 0;
         }
 
+        /* --- General padding --- */
+        .dc-unit-card .card-body,
+        .dc-obj-card .card-body {
+          padding: 0.85rem 0.75rem !important;
+        }
+        .indicadores-wrapper {
+          padding-left: 0 !important;
+        }
+
+        /* Badges allowed to wrap text */
         .dc-unit-badge,
         .dc-obj-badge,
         .dc-clase-badge {
-          white-space: normal;
-          line-height: 1.2;
-        }
-
-        .ind-row-container {
-          padding: 10px !important;
-        }
-
-        .dc-unit-card .btn-del-unidad,
-        .dc-obj-card .btn-del-obj,
-        .ind-row-container .btn-del-ind {
-          align-self: flex-end;
-        }
-
-        .dc-unit-card .card-body,
-        .dc-obj-card .card-body {
-          padding: 0.85rem !important;
+          white-space: nowrap;
+          line-height: 1.3;
         }
       }
     `
@@ -754,34 +801,34 @@ function _renderObjetivosFull(container, estadoEstructura, alumnosState) {
 
               <div class="indicadores-wrapper ps-3">
                 ${(obj.indicadores || [])
-                  .map((ind, indIdx) => {
-                    const currentClaseNum = claseCounter++
-                    return `
+                .map((ind, indIdx) => {
+                  const currentClaseNum = claseCounter++
+                  return `
                   <div class="d-flex align-items-center gap-2 mb-2 ind-row-container" data-u-idx="${uIdx}" data-obj-idx="${objIdx}" data-ind-idx="${indIdx}">
-                    <span class="dc-clase-badge" title="Número de clase estimada"><i class="bi bi-play-circle me-1"></i>Clase ${currentClaseNum}</span>
-                    <input type="text" class="form-control flex-grow-1 input-ind-title" data-u-idx="${uIdx}" data-obj-idx="${objIdx}" data-ind-idx="${indIdx}" value="${escapeHTML(ind.titulo)}" placeholder="Indicador evaluable de la clase">
-
-                    <select class="form-select select-prereq" data-u-idx="${uIdx}" data-obj-idx="${objIdx}" data-ind-idx="${indIdx}" style="max-width: 190px;">
-                      <option value="">Sin Prerrequisito</option>
-                      ${todosIndicadores
-                        .filter((item) => item.id !== ind.id)
-                        .map(
-                          (item) => `
-                        <option value="${item.id}" ${item.id === ind.prerrequisitoId ? 'selected' : ''}>
-                          Requiere: ${escapeHTML(item.titulo.slice(0, 18))}…
-                        </option>
-                      `,
-                        )
-                        .join('')}
-                    </select>
-
-                    <button type="button" class="btn btn-sm btn-link text-danger p-0 px-1 btn-del-ind shadow-none" data-u-idx="${uIdx}" data-obj-idx="${objIdx}" data-ind-idx="${indIdx}">
+                    <span class="dc-clase-badge flex-shrink-0" title="Número de clase estimada"><i class="bi bi-play-circle me-1"></i>Clase ${currentClaseNum}</span>
+                    <div class="ind-fields-wrap d-flex align-items-center gap-2 flex-grow-1">
+                      <input type="text" class="form-control input-ind-title" data-u-idx="${uIdx}" data-obj-idx="${objIdx}" data-ind-idx="${indIdx}" value="${escapeHTML(ind.titulo)}" placeholder="Indicador evaluable de la clase" style="min-width:0;">
+                      <select class="form-select select-prereq flex-shrink-0" data-u-idx="${uIdx}" data-obj-idx="${objIdx}" data-ind-idx="${indIdx}" style="max-width: 190px; min-width:130px;">
+                        <option value="">Sin Prerrequisito</option>
+                        ${todosIndicadores
+                      .filter((item) => item.id !== ind.id)
+                      .map(
+                        (item) => `
+                          <option value="${item.id}" ${item.id === ind.prerrequisitoId ? 'selected' : ''}>
+                            Requiere: ${escapeHTML(item.titulo.slice(0, 18))}…
+                          </option>
+                        `,
+                      )
+                      .join('')}
+                      </select>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-link text-danger p-0 px-1 btn-del-ind shadow-none flex-shrink-0" data-u-idx="${uIdx}" data-obj-idx="${objIdx}" data-ind-idx="${indIdx}">
                       <i class="bi bi-x-circle fs-5"></i>
                     </button>
                   </div>
                 `
-                  })
-                  .join('')}
+                })
+                .join('')}
               </div>
 
               <button type="button" class="btn btn-sm btn-link text-primary p-0 mt-1 btn-add-ind" data-u-idx="${uIdx}" data-obj-idx="${objIdx}" style="font-weight: 600;">

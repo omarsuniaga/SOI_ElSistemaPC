@@ -33,10 +33,34 @@ async function _obtenerMaestroIdActual() {
   return maestro?.id || null
 }
 
+const EXCLUDED_KEY = 'acm_class_excluded_indicators_demo'
+
+export async function obtenerIndicadoresExcluidosDeClase(claseId) {
+  try {
+    const raw = localStorage.getItem(EXCLUDED_KEY)
+    const store = raw ? JSON.parse(raw) : {}
+    return store[String(claseId)] || []
+  } catch {
+    return []
+  }
+}
+
+export async function eliminarIndicadoresDeClase(claseId, indicatorIds = []) {
+  try {
+    const raw = localStorage.getItem(EXCLUDED_KEY)
+    const store = raw ? JSON.parse(raw) : {}
+    const cid = String(claseId)
+    const current = new Set(store[cid] || [])
+    indicatorIds.forEach((id) => current.add(id))
+    store[cid] = [...current]
+    localStorage.setItem(EXCLUDED_KEY, JSON.stringify(store))
+    return store[cid]
+  } catch {
+    return []
+  }
+}
+
 /**
- * Resolve the route version for a class via the class_curriculum_plan bridge.
- * Returns the route_versions row with levels included.
- *
  * @param {string} claseId - ID of the class
  * @returns {Promise<object|null>} Route version with levels or null
  */

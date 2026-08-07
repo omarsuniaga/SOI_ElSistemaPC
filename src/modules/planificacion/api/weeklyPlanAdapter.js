@@ -59,3 +59,9 @@ export const obtenerVersionesCurriculares = (routeId = null) =>
 export const publicarVersionCurricular = (versionId) => 
   impl.publicarVersionCurricular(versionId)
 
+export const obtenerIndicadoresExcluidosDeClase = (claseId) =>
+  impl.obtenerIndicadoresExcluidosDeClase(claseId)
+
+export const eliminarIndicadoresDeClase = (claseId, indicatorIds) =>
+  impl.eliminarIndicadoresDeClase(claseId, indicatorIds)
+

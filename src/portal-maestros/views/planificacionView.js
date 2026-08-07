@@ -18,6 +18,7 @@ import { renderMapaContenidoSVG } from '../../modules/planificacion/components/M
 import { obtenerAlumnosRealesPorClase } from '../../modules/planificacion/services/realAlumnosService.js'
 import { OfflineSyncAdapter } from '../../modules/planificacion/api/offlineSyncAdapter.js'
 import { IndicadorLogro } from '../../modules/planificacion/domain/IndicadorLogro.js'
+import { navegarConClase } from '../../modules/planificacion/utils/crossPortalNav.js'
 
 
 // ─── Constantes ────────────────────────────────────────────────────────────────
@@ -579,8 +580,15 @@ export async function renderPlanificacionView(container, { maestroId }) {
             const hasProgress = clase.hasGuide && clase.totalStudents > 0
             return `
               <div class="pm-class-card-interactive" data-clase-id="${clase.id}"
-                   role="button" tabindex="0" aria-label="Abrir clase ${escapeHtml(clase.nombre)}"
-                   style="animation-delay:${idx * 60}ms;">
+                   role="button" tabindex="0" aria-label="Abrir mapa de ${escapeHtml(clase.nombre)}"
+                   style="animation-delay:${idx * 60}ms; position:relative;">
+
+                <!-- Detalle ACM (Perfil / Mi Plan institucional) — no navega, abre el panel viejo -->
+                <button type="button" class="pm-class-card-detail-btn" data-clase-id="${clase.id}"
+                        aria-label="Ver perfil y plan institucional de ${escapeHtml(clase.nombre)}"
+                        style="position:absolute; top:0.5rem; right:0.5rem; z-index:1; width:26px; height:26px; border-radius:50%; border:1px solid var(--pm-border); background:var(--pm-surface); color:var(--pm-text-muted); font-size:0.75rem; display:flex; align-items:center; justify-content:center; cursor:pointer;">
+                  <i class="bi bi-three-dots"></i>
+                </button>
 
                 <!-- Avatar circular con ícono de instrumento -->
                 <div class="pm-class-card-avatar">${icon}</div>
@@ -628,18 +636,39 @@ export async function renderPlanificacionView(container, { maestroId }) {
 
       announce(`${clasesConMetricas.length} clases cargadas.`)
 
-      // Listeners en tarjetas — soporta clic y Enter/Space
+      // Listeners en tarjetas — soporta clic y Enter/Space.
+      // Click principal: va directo al mapa de ruta (MapaClaseView, la
+      // arquitectura que debe prevalecer — Unidad → Objetivo → Indicador,
+      // con estrellas reales y calificación por alumno). El botón "⋯" en la
+      // esquina abre el panel viejo (Perfil / Mi Plan institucional ACM),
+      // que sigue existiendo pero deja de ser el camino por defecto.
       contentDiv.querySelectorAll('.pm-class-card-interactive').forEach((card) => {
-        const handler = async () => {
-          const claseId  = card.dataset.claseId
+        const claseId = card.dataset.claseId
+        const handler = () => navegarConClase('planificacion-mapa-clase', claseId)
+        card.addEventListener('click', handler)
+        // e.target !== card: sin este guard, el keydown del botón "⋯" anidado
+        // (foco + Enter/Espacio) también burbujea hasta acá y dispara la
+        // navegación al mapa por encima de/junto con la acción del botón —
+        // un usuario de teclado que quiere abrir el detalle terminaba en el
+        // mapa en su lugar. El click sí tiene stopPropagation() en el botón
+        // (más abajo) y no lo necesita, pero keydown se dispara ANTES de que
+        // el navegador sintetice ese click, así que hay que cortarlo acá.
+        card.addEventListener('keydown', (e) => {
+          if (e.target !== card) return
+          if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handler() }
+        })
+      })
+
+      contentDiv.querySelectorAll('.pm-class-card-detail-btn').forEach((btn) => {
+        btn.addEventListener('click', async (e) => {
+          e.stopPropagation()
+          const claseId  = btn.dataset.claseId
           const selected = clasesConMetricas.find((c) => String(c.id) === String(claseId))
           if (!selected) return
           currentClaseId = selected.id
           await refreshData()
           openClassDetail(selected)
-        }
-        card.addEventListener('click', handler)
-        card.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handler() } })
+        })
       })
 
     } catch (error) {
@@ -1073,7 +1102,11 @@ export async function renderPlanificacionView(container, { maestroId }) {
       b.addEventListener('click', () => _closeModalAndNavigate('planificacion-disenador'))
     })
     classDetailModal.querySelectorAll('.btn-modal-ruta-full').forEach((b) => {
-      b.addEventListener('click', () => _closeModalAndNavigate('planificacion-ruta'))
+      // Navega al mapa gamificado propio de ESTA clase (clase_mapa_objetivos +
+      // vw_clase_objetivo_estrellas). 'planificacion-ruta' (RutaPedagogicaView)
+      // no recibía el id de clase y por eso siempre mostraba la primera clase
+      // de la lista, sin importar cuál se hubiera abierto — mismo mapa para todas.
+      b.addEventListener('click', () => _closeModalAndNavigate(`planificacion-mapa-clase?clase=${clase.id}`))
     })
 
     let rutaSvgMontado = false
@@ -1084,23 +1117,41 @@ export async function renderPlanificacionView(container, { maestroId }) {
       const canvasHost = classDetailModal.querySelector(`#pm-svg-canvas-host-${clase.id}`)
       if (!canvasHost) return
 
+      // Sin plan ACM cargado para esta clase: antes esto caía a 3 nodos demo
+      // fijos ("Postura corporal...", "Escala de Do Mayor...", "Estudio Nº 4...")
+      // idénticos para cualquier clase sin guía — de ahí que distintas clases
+      // mostraran el mismo mapa. Mejor mostrar el vacío real.
+      if (weekItems.length === 0) {
+        canvasHost.innerHTML = `
+          <div class="pm-planning-empty" style="padding:1.5rem 1rem;">
+            <div style="font-size:2rem; margin-bottom:0.5rem;">🗺️</div>
+            <p style="margin:0; font-size:0.85rem;">Esta clase no tiene una ruta curricular asignada por ACM todavía.</p>
+          </div>`
+        return
+      }
+
       const alumnosReales = await obtenerAlumnosRealesPorClase(clase.id)
 
-      const nodosDemo = (weekItems || []).map((w, i) => ({
+      // Estado real por nodo derivado del progreso del grupo (currentIndicators),
+      // no un índice fijo (antes: nodo 0 siempre "logrado", nodo 1 siempre
+      // "en_proceso" sin importar el avance real de los alumnos).
+      const estadoPorIndicador = (indicatorId) => {
+        const ind = currentIndicators.find((i) => i.id === indicatorId)
+        if (!ind) return 'pendiente'
+        if (['achieved', 'exceeded'].includes(ind.overallStatus)) return 'logrado'
+        if (['in_process', 'needs_reinforcement'].includes(ind.overallStatus)) return 'en_proceso'
+        return 'pendiente'
+      }
+
+      const nodos = weekItems.map((w, i) => ({
         id: `w-node-${w.week_number || i + 1}`,
         titulo: w.topic || `Clase ${w.week_number || i + 1}`,
-        estado: i === 0 ? 'logrado' : i === 1 ? 'en_proceso' : 'pendiente',
+        estado: estadoPorIndicador(w.indicator_id),
       }))
-
-      const nodosFinales = nodosDemo.length > 0 ? nodosDemo : [
-        { id: 'nd-1', titulo: 'Postura corporal y emisión sonora libre', estado: 'logrado' },
-        { id: 'nd-2', titulo: 'Escala de Do Mayor en cuerdas Re-Sol', estado: 'en_proceso' },
-        { id: 'nd-3', titulo: 'Estudio Nº 4: Control de pulso a 80 BPM', estado: 'pendiente' },
-      ]
 
       renderMapaContenidoSVG({
         container: canvasHost,
-        nodos: nodosFinales,
+        nodos,
         onNodeClick: (nodo) => {
           _renderAlumnosModalNodo(classDetailModal, clase.id, nodo, alumnosReales)
         },

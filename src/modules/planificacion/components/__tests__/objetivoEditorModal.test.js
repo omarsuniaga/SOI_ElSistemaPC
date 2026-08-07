@@ -61,7 +61,12 @@ vi.mock('../../services/mapaClaseService.js', () => ({
   RequiereArchivarError,
 }))
 
+vi.mock('../historialIndicadorModal.js', () => ({
+  renderHistorialIndicadorModal: vi.fn(),
+}))
+
 import { renderObjetivoEditorModal } from '../objetivoEditorModal.js'
+import { renderHistorialIndicadorModal } from '../historialIndicadorModal.js'
 
 const flush = () => Promise.resolve().then(() => Promise.resolve())
 
@@ -149,6 +154,23 @@ describe('objetivoEditorModal', () => {
       const rows = document.querySelectorAll('.objetivo-editor-indicador-row')
       expect(rows.length).toBe(2)
       expect(document.body.textContent).toContain('Afinación limpia')
+    })
+
+    it('"Historial" abre historialIndicadorModal con el claseId del contenedor y el id del indicador de la fila', async () => {
+      obtenerIndicadoresPorObjetivo.mockResolvedValue([
+        { id: 'i1', objetivo_id: 'o1', descripcion: 'Afinación limpia', es_requerido: true },
+      ])
+
+      renderObjetivoEditorModal({ claseId: 'clase-1', niveles, objetivo })
+      await flush()
+
+      document.querySelector('.objetivo-editor-indicador-row .btn-historial-indicador').click()
+
+      expect(renderHistorialIndicadorModal).toHaveBeenCalledWith({
+        claseId: 'clase-1',
+        claseIndicadorId: 'i1',
+        indicadorDescripcion: 'Afinación limpia',
+      })
     })
 
     it('agregar indicador calls crearIndicador and re-renders the list', async () => {

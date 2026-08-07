@@ -109,6 +109,15 @@ describe('MapaClaseView', () => {
     )
   })
 
+  it('"Diseñador Completo" navega a planificacion-disenador con el claseId de esta clase', async () => {
+    await renderMapaClaseView(container, { claseId: 'clase-1' })
+    await flush()
+
+    container.querySelector('#btn-ir-disenador').click()
+
+    expect(router.navigate).toHaveBeenCalledWith('planificacion-disenador?clase=clase-1')
+  })
+
   it('arranca en modo Diseño por defecto', async () => {
     await renderMapaClaseView(container, { claseId: 'clase-1' })
     await flush()

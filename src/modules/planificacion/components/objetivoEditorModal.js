@@ -33,6 +33,7 @@ import {
   eliminarIndicador,
   RequiereArchivarError,
 } from '../services/mapaClaseService.js'
+import { renderHistorialIndicadorModal } from './historialIndicadorModal.js'
 
 /**
  * @param {object} options
@@ -185,6 +186,15 @@ function _wireEvents({ overlay, claseId, niveles, maestroId, state, close, rende
   // Borrar / Archivar indicadores (REQ-09 — el path principal de esta tarea)
   overlay.querySelectorAll('.objetivo-editor-indicador-row').forEach((row) => {
     const indicadorId = row.dataset.indicadorId
+    const indicador = state.indicadores.find((i) => String(i.id) === String(indicadorId))
+
+    row.querySelector('.btn-historial-indicador')?.addEventListener('click', () => {
+      renderHistorialIndicadorModal({
+        claseId,
+        claseIndicadorId: indicadorId,
+        indicadorDescripcion: indicador?.descripcion || '',
+      })
+    })
 
     row.querySelector('.btn-borrar-indicador')?.addEventListener('click', async () => {
       try {
@@ -253,7 +263,7 @@ function _buildHTML({ claseId, niveles, state }) {
           </select>
         ` : ''}
 
-        ${esEdicion ? _buildIndicadoresHTML(state) : ''}
+        ${esEdicion ? _buildIndicadoresHTML(state, claseId) : ''}
       </div>
       <div class="objetivo-editor-modal-footer">
         ${esEdicion ? `<button class="btn btn-outline-danger objetivo-editor-borrar-objetivo-btn">Borrar Objetivo</button>` : ''}
@@ -265,12 +275,13 @@ function _buildHTML({ claseId, niveles, state }) {
   `
 }
 
-function _buildIndicadoresHTML(state) {
+function _buildIndicadoresHTML(state, claseId) {
   const rows = state.indicadores
     .map((ind) => `
       <div class="objetivo-editor-indicador-row" data-indicador-id="${ind.id}">
         <span class="objetivo-editor-indicador-desc">${esc(ind.descripcion)}</span>
         <div class="objetivo-editor-indicador-actions">
+          <button class="btn btn-sm btn-outline-secondary btn-historial-indicador" data-clase-id="${claseId}">Historial</button>
           <button class="btn btn-sm btn-outline-danger btn-borrar-indicador">Borrar</button>
           ${state.archivarPendienteId === ind.id ? `<button class="btn btn-sm btn-warning btn-archivar-indicador">Archivar</button>` : ''}
         </div>

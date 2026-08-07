@@ -43,6 +43,10 @@ vi.mock('../../../../shared/components/AppToast.js', () => ({
   AppToast: { show: vi.fn() },
 }))
 
+vi.mock('../../components/objetivoEditorModal.js', () => ({
+  renderObjetivoEditorModal: vi.fn(),
+}))
+
 import { obtenerClases, crearPlanificacion } from '../../api/planificacionAdapter.js'
 import { sugerirRutaDidacticaIA } from '../../services/aiEvaluacionService.js'
 import {
@@ -53,6 +57,7 @@ import {
   crearIndicador,
 } from '../../services/mapaClaseService.js'
 import { AppToast } from '../../../../shared/components/AppToast.js'
+import { renderObjetivoEditorModal } from '../../components/objetivoEditorModal.js'
 import { renderDisenadorCurricularView } from '../DisenadorCurricularView.js'
 
 const flush = () => Promise.resolve().then(() => Promise.resolve())
@@ -100,7 +105,7 @@ describe('DisenadorCurricularView', () => {
     expect(container.querySelector('#btn-generar-ia').disabled).toBe(true)
   })
 
-  it('"Clonar a esta clase" invoca clonarCatalogoAClase y navega a planificacion-acm al tener éxito', async () => {
+  it('"Clonar a esta clase" invoca clonarCatalogoAClase y vuelve al mapa de la clase al tener éxito', async () => {
     obtenerClases.mockResolvedValue([{ id: 'clase-1', nombre: 'Violín Inicial' }])
     obtenerNivelesAsignadosClase.mockResolvedValue([{ id: 'level-A', nombre: 'Nivel 2' }])
     clonarCatalogoAClase.mockResolvedValue([{ objetivo_id: 'o1' }])
@@ -111,7 +116,10 @@ describe('DisenadorCurricularView', () => {
 
     expect(clonarCatalogoAClase).toHaveBeenCalledWith('clase-1', 'level-A')
     expect(AppToast.show).toHaveBeenCalledWith(expect.stringContaining('clonado'), 'success')
-    expect(router.navigate).toHaveBeenCalledWith('planificacion-acm')
+    // Vuelve al mapa de ESTA clase (no 'planificacion-acm', ruta que ni
+    // siquiera existe en el router de Portal Maestros) para que el maestro
+    // vea de inmediato lo que acaba de clonar.
+    expect(router.navigate).toHaveBeenCalledWith('planificacion-mapa-clase?clase=clase-1')
   })
 
   it('muestra un error y no navega si clonarCatalogoAClase falla (ej. SOI-CAT-02)', async () => {
@@ -152,6 +160,7 @@ describe('DisenadorCurricularView', () => {
       level_id: 'level-A',
       nombre: 'Postura',
       orden_objetivo: 4, // MAX(orden_objetivo) del nivel (3) + 1
+      created_by: null, // sin maestroId en este test (comportamiento ACM) — ver renderDisenadorCurricularView
     })
     expect(crearIndicador).toHaveBeenCalledWith({
       objetivo_id: 'objetivo-creado-1',
@@ -163,7 +172,7 @@ describe('DisenadorCurricularView', () => {
       clase_id: 'clase-1',
       descripcion: 'Emisión sonora libre',
     })
-    expect(router.navigate).toHaveBeenCalledWith('planificacion-acm')
+    expect(router.navigate).toHaveBeenCalledWith('planificacion-mapa-clase?clase=clase-1')
   })
 
   it('al cambiar de clase, recarga los niveles del catálogo de la nueva clase', async () => {
@@ -185,6 +194,55 @@ describe('DisenadorCurricularView', () => {
 
     expect(obtenerNivelesAsignadosClase).toHaveBeenCalledWith('clase-2')
     expect(container.querySelector('#select-nivel-ia-disenador').textContent).toContain('Nivel 1')
+  })
+
+  it('precarga la clase recibida por parámetro en vez de defaultear siempre a la primera de la lista', async () => {
+    obtenerClases.mockResolvedValue([
+      { id: 'clase-1', nombre: 'Violín Inicial' },
+      { id: 'clase-2', nombre: 'Piano Avanzado' },
+    ])
+    obtenerNivelesAsignadosClase.mockResolvedValue([{ id: 'level-B', nombre: 'Nivel 1' }])
+
+    await renderDisenadorCurricularView(container, { claseId: 'clase-2' })
+
+    expect(obtenerNivelesAsignadosClase).toHaveBeenCalledWith('clase-2')
+    expect(container.querySelector('#select-clase-disenador').value).toBe('clase-2')
+  })
+
+  it('ignora un claseId que no pertenece a ninguna clase del maestro y cae al default', async () => {
+    obtenerClases.mockResolvedValue([{ id: 'clase-1', nombre: 'Violín Inicial' }])
+    obtenerNivelesAsignadosClase.mockResolvedValue([{ id: 'level-A', nombre: 'Nivel 2' }])
+
+    await renderDisenadorCurricularView(container, { claseId: 'clase-de-otro-maestro' })
+
+    expect(obtenerNivelesAsignadosClase).toHaveBeenCalledWith('clase-1')
+  })
+
+  it('"Nuevo Objetivo" pasa el maestroId de la sesión al modal — antes quedaba siempre null (autoría indistinguible de ACM)', async () => {
+    obtenerClases.mockResolvedValue([{ id: 'clase-1', nombre: 'Violín Inicial' }])
+    obtenerNivelesAsignadosClase.mockResolvedValue([{ id: 'level-A', nombre: 'Nivel 2' }])
+
+    await renderDisenadorCurricularView(container, { maestroId: 'maestro-77' })
+    container.querySelector('#btn-nuevo-objetivo').click()
+
+    expect(renderObjetivoEditorModal).toHaveBeenCalledWith(
+      expect.objectContaining({ claseId: 'clase-1', maestroId: 'maestro-77', objetivo: null }),
+    )
+  })
+
+  it('"Generar Mapeo con IA" atribuye los objetivos creados al maestroId de la sesión', async () => {
+    obtenerClases.mockResolvedValue([{ id: 'clase-1', nombre: 'Violín Inicial' }])
+    obtenerNivelesAsignadosClase.mockResolvedValue([{ id: 'level-A', nombre: 'Nivel 2' }])
+    obtenerObjetivosPorClase.mockResolvedValue([])
+    sugerirRutaDidacticaIA.mockResolvedValue([{ id: 'obj-1', titulo: 'Postura', indicadores: [] }])
+    crearObjetivo.mockResolvedValue({ id: 'objetivo-creado-1' })
+
+    await renderDisenadorCurricularView(container, { maestroId: 'maestro-77' })
+    await container.querySelector('#btn-generar-ia').click()
+    await flush()
+    await flush()
+
+    expect(crearObjetivo).toHaveBeenCalledWith(expect.objectContaining({ created_by: 'maestro-77' }))
   })
 
   it('nunca llama a crearPlanificacion (ya no serializa objetivosEstructurados/esPlantillaOficial)', async () => {

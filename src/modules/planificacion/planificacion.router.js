@@ -7,6 +7,7 @@ import { renderClasePlanificacionView } from './views/clasePlanificacionView.js'
 import { renderDisenadorCurricularView } from './views/DisenadorCurricularView.js'
 import { renderRutaPedagogicaView } from './views/RutaPedagogicaView.js'
 import { renderCatalogoAcmView } from './views/CatalogoAcmView.js'
+import { renderMapaClaseView } from './views/MapaClaseView.js'
 
 export function registerRoutesPlanificacion() {
   // "Mis Planes" - vista del maestro logueado
@@ -23,8 +24,17 @@ export function registerRoutesPlanificacion() {
   )
 
   // "Diseñador Curricular Institucional (ACM)" - Pantalla Completa
-  router.register('planificacion-disenador', (container) =>
-    renderDisenadorCurricularView(container),
+  router.register('planificacion-disenador', (container, params) =>
+    renderDisenadorCurricularView(container, { claseId: params?.claseId || null }),
+  )
+
+  // "Mapa de Planificación por Clase" (Unidad → Objetivo → Indicador, con
+  // estrellas reales) — antes solo alcanzable desde Portal Maestros; ACM/ADM
+  // la necesitan para ver el mapa de una clase y, si la clase no tiene
+  // planificación, elaborarla desde 'planificacion-disenador' (mismo botón
+  // "Diseñador Completo" que usa el maestro).
+  router.register('planificacion-mapa-clase', (container, params) =>
+    renderMapaClaseView(container, { claseId: params?.claseId || null }),
   )
 
   // "Ruta Pedagógica Completa (SVG)" - Pantalla Completa con Alumnos y Estrellas

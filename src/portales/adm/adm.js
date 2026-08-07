@@ -29,6 +29,7 @@ const navGroups = [
     items: [
       { id: 'periodos', label: 'Períodos Académicos', icon: 'bi-calendar-event' },
       { id: 'periodo-lectivo', label: 'Período Lectivo', icon: 'bi-calendar-range' },
+      { id: 'planificacion-disenador', label: 'Unidades y Objetivos (por Clase)', icon: 'bi-diagram-3-fill' },
       { id: 'reporte-cierre', label: 'Informe de Cierre', icon: 'bi-file-earmark-bar-graph' },
       { id: 'campanias', label: 'Períodos / Campañas', icon: 'bi-megaphone' },
       { id: 'gateway-config', label: 'Gateway WhatsApp', icon: 'bi-chat-dots' },

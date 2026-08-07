@@ -137,7 +137,7 @@ export async function renderViewContent(route, container, params, urlParams, con
     case 'planificacion':
       return await mod.renderPlanificacionView(container, { maestroId })
     case 'planificacion-disenador':
-      return await mod.renderDisenadorCurricularView(container)
+      return await mod.renderDisenadorCurricularView(container, { claseId: urlParams.get('clase'), maestroId })
     case 'planificacion-ruta':
       return await mod.renderRutaPedagogicaView(container)
     case 'planificacion-mapa-clase':

@@ -228,3 +228,32 @@ export async function obtenerProgresoPorIndicadorClase(claseIndicadorId, claseId
   if (error) throw error
   return data || []
 }
+
+/**
+ * Get the full evaluation HISTORY for a class-owned indicator — every time
+ * a student was graded on it, not just the current state.
+ *
+ * `evaluacion_indicador` has UNIQUE(alumno_id, clase_indicador_id)
+ * (migración 20260731000003) and `registrarEvaluacion` upserts on that
+ * conflict, so it only ever holds the LATEST grade per student — a
+ * recalificación overwrites the previous nota/fecha with no trace.
+ * `evaluacion_indicador_historial` (migración 20260807000002) is an
+ * append-only log populated by a DB trigger on every insert/recalificación,
+ * so this is the source to use for "cuándo se dio cada evaluación", not
+ * `obtenerProgresoPorIndicadorClase`.
+ *
+ * @param {string} claseIndicadorId - ID of the clase_mapa_indicadores record
+ * @param {string} claseId - ID of the class
+ * @returns {Promise<Array<object>>} Every graded event for this indicator, newest first
+ */
+export async function obtenerHistorialPorIndicadorClase(claseIndicadorId, claseId) {
+  const { data, error } = await supabase
+    .from('evaluacion_indicador_historial')
+    .select('*')
+    .eq('clase_indicador_id', claseIndicadorId)
+    .eq('clase_id', claseId)
+    .order('registrado_en', { ascending: false })
+
+  if (error) throw error
+  return data || []
+}

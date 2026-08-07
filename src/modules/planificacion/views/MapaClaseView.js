@@ -32,6 +32,7 @@ import {
   obtenerIndicadoresPorObjetivo,
 } from '../services/mapaClaseService.js'
 import { obtenerAsistenciaDelDia } from '../../asistencias/api/asistenciasApi.js'
+import { navegarConClase } from '../utils/crossPortalNav.js'
 
 function _fechaHoy() {
   return new Date().toISOString().slice(0, 10)
@@ -115,12 +116,17 @@ function _renderShell(container, state) {
     <div class="mapa-clase-view container-fluid px-3 py-3">
       <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
         <h4 class="fw-bold mb-0">Mapa de Planificación</h4>
-        <div class="btn-group" role="group" aria-label="Modo del mapa">
-          <button type="button" id="btn-modo-diseno" class="btn btn-sm ${state.modo === 'diseno' ? 'btn-primary' : 'btn-outline-primary'}">
-            <i class="bi bi-pencil-square me-1"></i>Diseñar Ruta
-          </button>
-          <button type="button" id="btn-modo-sesion" class="btn btn-sm ${state.modo === 'sesion' ? 'btn-primary' : 'btn-outline-primary'}">
-            <i class="bi bi-person-video3 me-1"></i>Dar Clase
+        <div class="d-flex flex-wrap align-items-center gap-2">
+          <div class="btn-group" role="group" aria-label="Modo del mapa">
+            <button type="button" id="btn-modo-diseno" class="btn btn-sm ${state.modo === 'diseno' ? 'btn-primary' : 'btn-outline-primary'}">
+              <i class="bi bi-pencil-square me-1"></i>Diseñar Ruta
+            </button>
+            <button type="button" id="btn-modo-sesion" class="btn btn-sm ${state.modo === 'sesion' ? 'btn-primary' : 'btn-outline-primary'}">
+              <i class="bi bi-person-video3 me-1"></i>Dar Clase
+            </button>
+          </div>
+          <button type="button" id="btn-ir-disenador" class="btn btn-sm btn-outline-secondary">
+            <i class="bi bi-diagram-3 me-1"></i>Diseñador Completo
           </button>
         </div>
       </div>
@@ -169,6 +175,7 @@ function _renderShell(container, state) {
 
   container.querySelector('#btn-modo-sesion')?.addEventListener('click', () => _handleToggleSesion(container, state))
   container.querySelector('#btn-ir-asistencias')?.addEventListener('click', () => window.router?.navigate('asistencias'))
+  container.querySelector('#btn-ir-disenador')?.addEventListener('click', () => navegarConClase('planificacion-disenador', state.claseId))
 }
 
 async function _handleToggleSesion(container, state) {

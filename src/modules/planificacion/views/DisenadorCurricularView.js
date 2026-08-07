@@ -2,6 +2,8 @@ import { escapeHTML } from '../../clases/utils/clasesUtils.js'
 import { AppToast } from '../../../shared/components/AppToast.js'
 import { obtenerClases } from '../api/planificacionAdapter.js'
 import { sugerirRutaDidacticaIA } from '../services/aiEvaluacionService.js'
+import { renderObjetivoEditorModal } from '../components/objetivoEditorModal.js'
+import { navegarConClase } from '../utils/crossPortalNav.js'
 import {
   obtenerNivelesAsignadosClase,
   clonarCatalogoAClase,
@@ -36,7 +38,21 @@ import {
  * clase vía `crearObjetivo`/`crearIndicador` en lugar de quedar como una
  * maqueta en memoria que nunca se guardaba.
  */
-export async function renderDisenadorCurricularView(container) {
+/**
+ * @param {HTMLElement} container
+ * @param {object} [options]
+ * @param {string|null} [options.claseId] - preselecciona la clase (llega desde
+ *   "Diseñar Estructura" en MapaClaseView.js, vía navegarConClase). Sin esto,
+ *   la vista defaulteaba siempre a la primera clase de la lista sin importar
+ *   desde qué clase se haya entrado — mismo síntoma que en RutaPedagogicaView.
+ * @param {string|null} [options.maestroId] - autor (`created_by`) de los
+ *   objetivos que se creen desde acá. Sin esto, TODO objetivo creado desde
+ *   el Diseñador (incluido el que crea un maestro sobre su propia clase)
+ *   quedaba con `created_by: null` — indistinguible de uno elaborado por ACM.
+ *   En ACM/ADM no hay maestroId real: se pasa null a propósito (created_by
+ *   NULL = "elaborado por ACM/administración", ver migración 20260807000001).
+ */
+export async function renderDisenadorCurricularView(container, { claseId: claseIdInicial = null, maestroId = null } = {}) {
   if (!container) return
 
   container.innerHTML = `
@@ -56,11 +72,15 @@ export async function renderDisenadorCurricularView(container) {
     console.error('[DisenadorCurricularView] Error cargando clases:', err)
   }
 
+  const claseValida = claseIdInicial && clases.some((c) => String(c.id) === String(claseIdInicial))
+
   const state = {
-    claseId: clases[0]?.id || '',
+    claseId: (claseValida ? claseIdInicial : clases[0]?.id) || '',
+    maestroId,
     niveles: [],
     nivelIdClonar: '',
     nivelIdIA: '',
+    objetivos: [],
   }
 
   await _cargarDependenciasClase(state)
@@ -72,6 +92,7 @@ async function _cargarDependenciasClase(state) {
     state.niveles = []
     state.nivelIdClonar = ''
     state.nivelIdIA = ''
+    state.objetivos = []
     return
   }
 
@@ -84,6 +105,13 @@ async function _cargarDependenciasClase(state) {
 
   state.nivelIdClonar = state.niveles[0]?.id || ''
   state.nivelIdIA = state.niveles[0]?.id || ''
+
+  try {
+    state.objetivos = await obtenerObjetivosPorClase(state.claseId)
+  } catch (err) {
+    console.error('[DisenadorCurricularView] Error cargando objetivos de la clase:', err)
+    state.objetivos = []
+  }
 }
 
 /** Próximo orden_objetivo libre para (claseId, nivelId) — mismo criterio que el RPC clonar_catalogo_a_clase. */
@@ -202,15 +230,76 @@ function _renderUI(container, clases, state) {
           </div>
         </div>
       </div>
+
+      <!-- GESTIÓN: UNIDADES, OBJETIVOS E INDICADORES DE ESTA CLASE -->
+      <div class="card border border-secondary-subtle bg-body-tertiary rounded-4 p-4 mt-4 shadow-sm">
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+          <div>
+            <h5 class="fw-bold mb-1 text-body"><i class="bi bi-diagram-3 me-2 text-primary"></i>Unidades, Objetivos e Indicadores</h5>
+            <p class="text-body-secondary small mb-0">Estructura propia de esta clase. Editá o eliminá cualquier objetivo/indicador — no afecta el catálogo institucional ni a otras clases.</p>
+          </div>
+          <button type="button" class="btn btn-sm btn-primary" id="btn-nuevo-objetivo" ${bloqueado ? 'disabled' : ''}>
+            <i class="bi bi-plus-lg me-1"></i>Nuevo Objetivo
+          </button>
+        </div>
+        ${_renderEstructuraHTML(state)}
+      </div>
     </div>
   `
 
   _attachEvents(container, clases, state)
 }
 
+function _renderEstructuraHTML(state) {
+  if (!state.claseId) {
+    return `<p class="text-body-secondary small mb-0">Seleccioná una clase para ver su estructura.</p>`
+  }
+  if (state.objetivos.length === 0) {
+    return `<p class="text-body-secondary small mb-0">Esta clase todavía no tiene objetivos propios. Cloná un nivel del catálogo, generá con IA, o creá uno nuevo.</p>`
+  }
+
+  const nombrePorNivel = new Map(state.niveles.map((n) => [n.id, n.nombre]))
+  const porNivel = new Map()
+  state.objetivos.forEach((o) => {
+    const key = o.level_id || '__sin_nivel__'
+    if (!porNivel.has(key)) porNivel.set(key, [])
+    porNivel.get(key).push(o)
+  })
+
+  return Array.from(porNivel.entries())
+    .map(([levelId, objetivos]) => `
+      <div class="mb-3">
+        <div class="fw-bold small text-uppercase text-body-secondary mb-2">
+          <i class="bi bi-bookmark-fill me-1 text-primary"></i>${escapeHTML(nombrePorNivel.get(levelId) || 'Sin nivel')}
+        </div>
+        <div class="list-group">
+          ${objetivos
+            .map(
+              (o) => `
+            <div class="list-group-item d-flex align-items-center justify-content-between gap-2 bg-body-tertiary border-secondary-subtle">
+              <span class="text-body">${escapeHTML(o.nombre)}</span>
+              <button type="button" class="btn btn-sm btn-outline-secondary btn-editar-objetivo" data-objetivo-id="${o.id}">
+                <i class="bi bi-pencil-square me-1"></i>Gestionar
+              </button>
+            </div>
+          `,
+            )
+            .join('')}
+        </div>
+      </div>
+    `)
+    .join('')
+}
+
 function _attachEvents(container, clases, state) {
   container.querySelector('#btn-volver-acm')?.addEventListener('click', () => {
-    window.router?.navigate('planificacion-acm')
+    // Antes iba siempre a 'planificacion-acm' — esa ruta ni siquiera existe
+    // en el router de Portal Maestros (quedaba en pantalla en blanco / "hoy").
+    // Volver al mapa de la clase con la que se entró cierra el flujo. Sin
+    // clase (caso borde: maestro sin ninguna clase asignada), 'planificacion'
+    // sí existe en ambos routers — a diferencia de 'planificacion-acm'.
+    if (state.claseId) navegarConClase('planificacion-mapa-clase', state.claseId)
+    else window.router?.navigate('planificacion')
   })
 
   container.querySelector('#btn-ir-catalogo')?.addEventListener('click', () => {
@@ -221,6 +310,39 @@ function _attachEvents(container, clases, state) {
     state.claseId = e.target.value
     await _cargarDependenciasClase(state)
     _renderUI(container, clases, state)
+  })
+
+  const _refrescarEstructura = async () => {
+    await _cargarDependenciasClase(state)
+    _renderUI(container, clases, state)
+  }
+
+  container.querySelector('#btn-nuevo-objetivo')?.addEventListener('click', () => {
+    if (!state.claseId) return
+    renderObjetivoEditorModal({
+      claseId: state.claseId,
+      niveles: state.niveles,
+      objetivo: null,
+      maestroId: state.maestroId,
+      onSaved: _refrescarEstructura,
+      onClosed: _refrescarEstructura,
+    })
+  })
+
+  container.querySelectorAll('.btn-editar-objetivo').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const objetivoId = btn.dataset.objetivoId
+      const objetivo = state.objetivos.find((o) => String(o.id) === String(objetivoId))
+      if (!objetivo) return
+      renderObjetivoEditorModal({
+        claseId: state.claseId,
+        niveles: state.niveles,
+        objetivo,
+        maestroId: state.maestroId,
+        onSaved: _refrescarEstructura,
+        onClosed: _refrescarEstructura,
+      })
+    })
   })
 
   container.querySelector('#select-nivel-clonar-disenador')?.addEventListener('change', (e) => {
@@ -239,7 +361,7 @@ function _attachEvents(container, clases, state) {
     try {
       await clonarCatalogoAClase(state.claseId, state.nivelIdClonar)
       AppToast.show('Nivel del catálogo clonado a la clase con éxito ⭐', 'success')
-      window.router?.navigate('planificacion-acm')
+      navegarConClase('planificacion-mapa-clase', state.claseId)
     } catch (err) {
       AppToast.show(`Error al clonar el catálogo: ${err.message}`, 'error')
       btn.disabled = false
@@ -268,6 +390,7 @@ function _attachEvents(container, clases, state) {
           level_id: state.nivelIdIA,
           nombre: sug.titulo || sug.id || 'Objetivo generado por IA',
           orden_objetivo: ordenObjetivo++,
+          created_by: state.maestroId,
         })
 
         for (const ind of sug.indicadores || []) {
@@ -280,7 +403,7 @@ function _attachEvents(container, clases, state) {
       }
 
       AppToast.show('Estructura generada por IA creada en el mapa de la clase ⭐', 'success')
-      window.router?.navigate('planificacion-acm')
+      navegarConClase('planificacion-mapa-clase', state.claseId)
     } catch (err) {
       console.error('[DisenadorCurricularView] Error generando con IA:', err)
       AppToast.show(`Error al generar con IA: ${err.message}`, 'error')

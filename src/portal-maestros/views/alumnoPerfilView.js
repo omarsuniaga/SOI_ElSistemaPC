@@ -5,6 +5,41 @@ import { formatPhone } from '../../shared/utils/phoneUtils.js'
 import { PlanEstudiosPanel } from '../components/PlanEstudiosPanel.js'
 import { AppToast } from '../../shared/components/AppToast.js'
 import { CalculadorSaludPerfil } from '../../modules/planificacion/domain/CalculadorSaludPerfil.js'
+import { getPeriodoActivo } from '../../modules/periodos/api/periodosApi.js'
+
+// ─── Rango de métricas ──────────────────────────────────────────────────────
+// Por defecto las métricas del perfil se acotan al período académico activo
+// (se "reinician" visualmente en cada cambio de semestre — el dato viejo no
+// se borra, solo deja de contarse por defecto). El maestro puede ampliar el
+// rango para ver rendimiento de períodos anteriores (seguimiento longitudinal).
+const RANGO_OPCIONES = [
+  { value: 'periodo', label: 'Período actual' },
+  { value: '3m', label: 'Últimos 3 meses' },
+  { value: '1y', label: 'Último año' },
+  { value: 'todo', label: 'Todo el historial' },
+]
+
+/**
+ * Calcula la fecha de corte (YYYY-MM-DD) para el rango elegido.
+ * `null` = sin corte (todo el historial).
+ */
+function _calcularFechaCorte(rango, periodoActivo) {
+  const hoy = new Date()
+  if (rango === '3m') {
+    const d = new Date(hoy)
+    d.setMonth(d.getMonth() - 3)
+    return d.toISOString().slice(0, 10)
+  }
+  if (rango === '1y') {
+    const d = new Date(hoy)
+    d.setFullYear(d.getFullYear() - 1)
+    return d.toISOString().slice(0, 10)
+  }
+  if (rango === 'todo') return null
+  // 'periodo' (default): si no hay período activo configurado, no hay
+  // corte que aplicar — mejor mostrar todo que mostrar nada (fail-open).
+  return periodoActivo?.fecha_inicio || null
+}
 
 
 /**
@@ -132,11 +167,13 @@ function _mapStarNotaToEstado(nota) {
   return 'sin_evaluar'
 }
 
-async function _loadStarEvaluacionesAlumno(alumnoId) {
-  const { data: rows, error } = await supabase
+async function _loadStarEvaluacionesAlumno(alumnoId, fechaCorte = null) {
+  let query = supabase
     .from('evaluacion_indicador')
     .select('id, alumno_id, indicator_id, clase_id, nota, estado, observaciones, fecha_evaluacion, created_at')
     .eq('alumno_id', alumnoId)
+  if (fechaCorte) query = query.gte('fecha_evaluacion', fechaCorte)
+  const { data: rows, error } = await query
     .order('fecha_evaluacion', { ascending: false })
     .order('created_at', { ascending: false })
 
@@ -181,7 +218,7 @@ async function _loadStarEvaluacionesAlumno(alumnoId) {
  * Renders the AI-generated progress history from the `progresos` table.
  * Groups records by contenido_dsl and shows a chronological timeline per content.
  */
-async function _renderProgresos(container, alumnoId, offset = 0) {
+async function _renderProgresos(container, alumnoId, offset = 0, fechaCorte = null) {
   const root = container.querySelector('#pm-alumno-progresos-root')
   if (!root) return
 
@@ -191,16 +228,22 @@ async function _renderProgresos(container, alumnoId, offset = 0) {
   }
 
   try {
-    const progressPromise = supabase
+    let progressQuery = supabase
       .from('progresos')
       .select('id, contenido_dsl, estado_cualitativo, calificacion, observaciones, fecha_evaluacion, clase_id, indicadores')
       .eq('alumno_id', alumnoId)
       .not('contenido_dsl', 'is', null)
       .neq('contenido_dsl', '')
+    // Mismo corte por período/rango que el resto del perfil — esta sección
+    // (tarjetas de progreso agrupadas por contenido) es tan "métrica" como
+    // el historial de arriba; antes ignoraba el rango elegido y siempre
+    // mostraba todo el historial sin importar el período activo.
+    if (fechaCorte) progressQuery = progressQuery.gte('fecha_evaluacion', fechaCorte)
+    const progressPromise = progressQuery
       .order('fecha_evaluacion', { ascending: false })
       .range(offset, offset + 19)
 
-    const starPromise = isFirstPage ? _loadStarEvaluacionesAlumno(alumnoId) : Promise.resolve([])
+    const starPromise = isFirstPage ? _loadStarEvaluacionesAlumno(alumnoId, fechaCorte) : Promise.resolve([])
     const [{ data: rows, error }, starEvaluaciones] = await Promise.all([progressPromise, starPromise])
 
     if (error) throw error
@@ -524,7 +567,7 @@ async function _renderProgresos(container, alumnoId, offset = 0) {
       loadMoreBtn.textContent = 'Cargar más'
       loadMoreBtn.onclick = () => {
         loadMoreBtn.remove()
-        _renderProgresos(container, alumnoId, offset + 20)
+        _renderProgresos(container, alumnoId, offset + 20, fechaCorte)
       }
       const listDiv = root.querySelector('.pm-prog-list')
       listDiv?.appendChild(loadMoreBtn)
@@ -833,7 +876,7 @@ async function _renderEvaluaciones(container, alumnoId) {
   }
 }
 
-export async function renderAlumnoPerfilView(container, { alumnoId }) {
+export async function renderAlumnoPerfilView(container, { alumnoId, rango = 'periodo' }) {
   container.innerHTML = `<div class="pm-loading"><div class="pm-spinner"></div></div>`
 
   const maestro = getMaestroLocal()
@@ -848,20 +891,13 @@ export async function renderAlumnoPerfilView(container, { alumnoId }) {
   }
 
   try {
-    // Todas las consultas independientes van en paralelo — antes se esperaba
-    // una por una (alumno → inscripciones → sesiones → evaluaciones →
-    // ausencias → justificaciones), sumando la latencia de cada ida y
-    // vuelta a Supabase antes de poder pintar nada. Ninguna de estas 7
-    // depende del resultado de otra (todas usan solo alumnoId), así que
-    // corren juntas — mismo patrón aplicado al drawer del calendario.
+    // Oleada 1: lo mínimo para poder calcular la fecha de corte del rango
+    // de métricas elegido — "Período actual" (default) necesita saber
+    // cuándo empezó ese período ANTES de poder filtrar el resto.
     const [
       { data: alumno, error: alumnoError },
       { data: inscripcionesRaw },
-      { data: sesiones },
-      [{ data: evaluaciones }, starEvaluaciones],
-      { data: ausencias },
-      { data: justificaciones },
-      { data: progresos },
+      periodoActivo,
     ] = await Promise.all([
       supabase
         .from('alumnos')
@@ -870,45 +906,7 @@ export async function renderAlumnoPerfilView(container, { alumnoId }) {
         .single(),
       // Sin join — evita bloqueo RLS en clases
       supabase.from('alumnos_clases').select('clase_id').eq('alumno_id', alumnoId).eq('activo', true),
-      // Los datos de asistencia viven en el JSONB asistencia[] de sesiones_clase
-      // estados: 'P' | 'A' | 'J' | 'T'
-      supabase
-        .from('sesiones_clase')
-        .select('id, clase_id, fecha, contenido_dsl, asistencia')
-        .filter('asistencia', 'cs', JSON.stringify([{ alumno_id: alumnoId }]))
-        .order('fecha', { ascending: false })
-        .limit(60),
-      Promise.all([
-        supabase
-          .from('indicator_attempts')
-          .select('id, nota, observations, tarea, created_at, indicator_id, covered_by_clase_id')
-          .eq('student_id', alumnoId)
-          .order('created_at', { ascending: false })
-          .limit(30),
-        _loadStarEvaluacionesAlumno(alumnoId),
-      ]),
-      supabase
-        .from('ausencias')
-        .select('id, fecha_inicio, fecha_fin, motivo, estado, clase_id')
-        .eq('alumno_id', alumnoId)
-        .order('fecha_inicio', { ascending: false })
-        .limit(10),
-      supabase
-        .from('justificaciones')
-        .select('sesion_id, motivo, evidencia_url, estado, fecha')
-        .eq('alumno_id', alumnoId)
-        .order('fecha', { ascending: false }),
-      // Registros estructurados por alumno+sesión (contenido + calificación
-      // ya vinculados vía sesion_clase_id) — la fuente que de verdad conecta
-      // "qué recibió" con "qué nota sacó" en la MISMA fila. Se guarda sola
-      // cuando el maestro guarda observaciones de la sesión (ObservationSaveButton).
-      supabase
-        .from('progresos')
-        .select('id, sesion_clase_id, clase_id, contenido_dsl, estado_cualitativo, calificacion, observaciones, fecha_evaluacion')
-        .eq('alumno_id', alumnoId)
-        .not('sesion_clase_id', 'is', null)
-        .order('fecha_evaluacion', { ascending: false })
-        .limit(150),
+      getPeriodoActivo().catch(() => null),
     ])
 
     if (alumnoError || !alumno) {
@@ -922,6 +920,72 @@ export async function renderAlumnoPerfilView(container, { alumnoId }) {
       `
       return
     }
+
+    // Las métricas se acotan por defecto al período académico activo — se
+    // "reinician" visualmente en cada cambio de semestre sin borrar nada.
+    // El maestro puede ampliar el rango (3 meses / 1 año / todo) para ver
+    // rendimiento de períodos anteriores.
+    const fechaCorte = _calcularFechaCorte(rango, periodoActivo)
+
+    // Oleada 2: todo lo que depende de alumnoId + fechaCorte, en paralelo —
+    // antes se esperaba una por una (sesiones → evaluaciones → ausencias →
+    // justificaciones), sumando la latencia de cada ida y vuelta a Supabase
+    // antes de poder pintar nada.
+    const [
+      { data: sesiones },
+      [{ data: evaluaciones }, starEvaluaciones],
+      { data: ausencias },
+      { data: justificaciones },
+      { data: progresos },
+    ] = await Promise.all([
+      // Los datos de asistencia viven en el JSONB asistencia[] de sesiones_clase
+      // estados: 'P' | 'A' | 'J' | 'T'
+      (() => {
+        let q = supabase
+          .from('sesiones_clase')
+          .select('id, clase_id, fecha, contenido_dsl, asistencia')
+          .filter('asistencia', 'cs', JSON.stringify([{ alumno_id: alumnoId }]))
+        if (fechaCorte) q = q.gte('fecha', fechaCorte)
+        return q.order('fecha', { ascending: false }).limit(60)
+      })(),
+      Promise.all([
+        (() => {
+          let q = supabase
+            .from('indicator_attempts')
+            .select('id, nota, observations, tarea, created_at, indicator_id, covered_by_clase_id')
+            .eq('student_id', alumnoId)
+          if (fechaCorte) q = q.gte('created_at', fechaCorte)
+          return q.order('created_at', { ascending: false }).limit(30)
+        })(),
+        _loadStarEvaluacionesAlumno(alumnoId, fechaCorte),
+      ]),
+      (() => {
+        let q = supabase
+          .from('ausencias')
+          .select('id, fecha_inicio, fecha_fin, motivo, estado, clase_id')
+          .eq('alumno_id', alumnoId)
+        if (fechaCorte) q = q.gte('fecha_inicio', fechaCorte)
+        return q.order('fecha_inicio', { ascending: false }).limit(10)
+      })(),
+      supabase
+        .from('justificaciones')
+        .select('sesion_id, motivo, evidencia_url, estado, fecha')
+        .eq('alumno_id', alumnoId)
+        .order('fecha', { ascending: false }),
+      // Registros estructurados por alumno+sesión (contenido + calificación
+      // ya vinculados vía sesion_clase_id) — la fuente que de verdad conecta
+      // "qué recibió" con "qué nota sacó" en la MISMA fila. Se guarda sola
+      // cuando el maestro guarda observaciones de la sesión (ObservationSaveButton).
+      (() => {
+        let q = supabase
+          .from('progresos')
+          .select('id, sesion_clase_id, clase_id, contenido_dsl, estado_cualitativo, calificacion, observaciones, fecha_evaluacion')
+          .eq('alumno_id', alumnoId)
+          .not('sesion_clase_id', 'is', null)
+        if (fechaCorte) q = q.gte('fecha_evaluacion', fechaCorte)
+        return q.order('fecha_evaluacion', { ascending: false }).limit(150)
+      })(),
+    ])
 
     const inscritaIds = (inscripcionesRaw || []).map(r => r.clase_id).filter(Boolean)
 
@@ -1074,7 +1138,19 @@ export async function renderAlumnoPerfilView(container, { alumnoId }) {
               <i class="bi bi-chevron-left"></i>
             </button>
             <span class="pm-zen-header-tag">Perfil Académico</span>
+            <select id="pm-alumno-rango" style="margin-left:auto; font-size:0.72rem; font-weight:600; border-radius:999px; border:1px solid rgba(255,255,255,0.4); background:rgba(255,255,255,0.15); color:#fff; padding:0.3rem 0.6rem;">
+              ${RANGO_OPCIONES.map(o => `<option value="${o.value}" ${o.value === rango ? 'selected' : ''}>${escHTML(o.label)}</option>`).join('')}
+            </select>
           </header>
+          ${rango === 'periodo' && periodoActivo ? `
+          <p style="margin:-0.5rem 1.25rem 0; font-size:0.72rem; opacity:0.85; position:relative; z-index:1;">
+            📅 Mostrando desde el inicio de "${escHTML(periodoActivo.nombre || 'período actual')}" (${new Date(periodoActivo.fecha_inicio).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' })}). Ampliá el rango para ver períodos anteriores.
+          </p>
+          ` : rango === 'periodo' ? `
+          <p style="margin:-0.5rem 1.25rem 0; font-size:0.72rem; opacity:0.85; position:relative; z-index:1;">
+            ⚠️ No hay un período académico activo configurado — mostrando todo el historial.
+          </p>
+          ` : ''}
           
           <div class="pm-zen-hero__content">
             <div class="pm-zen-avatar" style="width:70px;height:70px;font-size:1.8rem;">
@@ -2019,6 +2095,9 @@ export async function renderAlumnoPerfilView(container, { alumnoId }) {
 
     // Eventos
     container.querySelector('#pm-alumno-back').onclick = () => window.history.back()
+    container.querySelector('#pm-alumno-rango').onchange = (e) => {
+      renderAlumnoPerfilView(container, { alumnoId, rango: e.target.value })
+    }
 
     // ── Modal WhatsApp con gestión de plantillas ──────────────────────────
     const waPhone = formatPhoneForWA(alumno.tlf_alumno || alumno.representante_tlf)
@@ -2211,7 +2290,7 @@ export async function renderAlumnoPerfilView(container, { alumnoId }) {
       })
     }
 
-    _renderProgresos(container, alumnoId)
+    _renderProgresos(container, alumnoId, 0, fechaCorte)
 
   } catch (err) {
     console.error('[AlumnoPerfil] Error crítico:', err)

@@ -3,6 +3,7 @@ import { getMaestroLocal } from '../auth/maestroAuth.js';
 import { getMisClases, getHorariosClases, getSesiones } from './maestroDataService.js';
 import { onPushReceived } from './pushService.js';
 import { LifecycleManager } from '../../shared/services/lifecycleManager.js';
+import { getPeriodoActivo } from '../../modules/periodos/api/periodosApi.js';
 
 function getLocalYYYYMMDD(d = new Date()) {
   const year = d.getFullYear()
@@ -190,22 +191,40 @@ export async function fetchNotificaciones() {
   }
 
   try {
-    const { data, error } = await supabase
-      .from('notificaciones')
-      .select('*')
-      .eq('profile_id', maestro.id)
-      .order('created_at', { ascending: false })
-      .limit(30);
+    const [{ data, error }, periodoActivo] = await Promise.all([
+      supabase
+        .from('notificaciones')
+        .select('*')
+        .eq('profile_id', maestro.id)
+        .order('created_at', { ascending: false })
+        .limit(30),
+      getPeriodoActivo().catch(() => null),
+    ]);
 
     if (error) {
       console.warn('[NotifService] Error fetch:', error);
       return notificacionesCache;
     }
 
-    const newNotifications = (data || []).map(n => ({
-      ...n,
-      created_at: n.created_at || new Date().toISOString(),
-    }));
+    // Recordatorios de clase ('recordatorio_clase', generados por el cron
+    // fn_generate_class_start_reminders) de un período académico YA CERRADO
+    // se descartan acá — antes se colaban indefinidamente: el .limit(30) por
+    // fecha de creación seguía trayendo avisos de mayo del semestre pasado
+    // mientras hubiera menos de 30 notificaciones nuevas desde entonces, sin
+    // ningún filtro de fecha ni de período. Otros tipos ('sistema', 'in_app',
+    // etc.) no se tocan — pueden seguir siendo relevantes más allá de un
+    // cambio de semestre.
+    const cutoff = periodoActivo?.fecha_inicio || null;
+    const newNotifications = (data || [])
+      .filter(n => {
+        if (n.tipo !== 'recordatorio_clase') return true;
+        if (!cutoff) return true;
+        return (n.created_at || '') >= cutoff;
+      })
+      .map(n => ({
+        ...n,
+        created_at: n.created_at || new Date().toISOString(),
+      }));
 
     // Merge: las notificaciones del servidor son la fuente de verdad,
     // pero conservamos las alertas locales generadas en el cliente.

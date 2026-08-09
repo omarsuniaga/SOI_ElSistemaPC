@@ -27,6 +27,7 @@ function chain(resolvedValue) {
     in: vi.fn().mockReturnThis(),
     not: vi.fn().mockReturnThis(),
     filter: vi.fn().mockReturnThis(),
+    gte: vi.fn().mockReturnThis(),
     order: vi.fn().mockReturnThis(),
     limit: vi.fn().mockReturnThis(),
     range: vi.fn().mockReturnThis(),
@@ -46,31 +47,40 @@ const MOCK_ALUMNO = {
   created_at: '2026-01-01',
 }
 
-function setupSupabase({ sesiones = [], progresos = [], clases = [] }) {
+function setupSupabase({ sesiones = [], progresos = [], clases = [], periodoActivo = null }) {
+  const chains = {}
   supabase.from.mockImplementation((table) => {
     switch (table) {
       case 'alumnos':
         return chain({ data: MOCK_ALUMNO, error: null })
       case 'alumnos_clases':
         return chain({ data: [{ clase_id: 'clase-1' }], error: null })
+      case 'periodos':
+        return chain({ data: periodoActivo, error: periodoActivo ? null : new Error('no rows') })
       case 'sesiones_clase':
-        return chain({ data: sesiones, error: null })
+        chains.sesiones = chain({ data: sesiones, error: null })
+        return chains.sesiones
       case 'indicator_attempts':
-        return chain({ data: [], error: null })
+        chains.indicatorAttempts = chain({ data: [], error: null })
+        return chains.indicatorAttempts
       case 'evaluacion_indicador':
-        return chain({ data: [], error: null })
+        chains.evaluacionIndicador = chain({ data: [], error: null })
+        return chains.evaluacionIndicador
       case 'ausencias':
-        return chain({ data: [], error: null })
+        chains.ausencias = chain({ data: [], error: null })
+        return chains.ausencias
       case 'justificaciones':
         return chain({ data: [], error: null })
       case 'progresos':
-        return chain({ data: progresos, error: null })
+        chains.progresos = chain({ data: progresos, error: null })
+        return chains.progresos
       case 'clases':
         return chain({ data: clases, error: null })
       default:
         return chain({ data: [], error: null })
     }
   })
+  return chains
 }
 
 describe('alumnoPerfilView — Historial de Clases (contenido + calificación de la misma sesión)', () => {
@@ -258,6 +268,49 @@ describe('alumnoPerfilView — Historial de Clases (contenido + calificación de
 
     expect(container.textContent).toContain('Pendiente de recuperar')
     expect(container.textContent).not.toContain('Recuperó este contenido')
+  })
+
+  it('por defecto ("Período actual") filtra desde la fecha de inicio del período activo', async () => {
+    const periodoActivo = { id: 'per-1', nombre: '2do Semestre 2026', fecha_inicio: '2026-07-01', fecha_fin: '2026-12-15', activo: true }
+    const chains = setupSupabase({ sesiones: [], progresos: [], clases: [], periodoActivo })
+
+    await renderAlumnoPerfilView(container, { alumnoId: ALUMNO_ID })
+
+    expect(chains.sesiones.gte).toHaveBeenCalledWith('fecha', '2026-07-01')
+    expect(chains.progresos.gte).toHaveBeenCalledWith('fecha_evaluacion', '2026-07-01')
+    expect(chains.ausencias.gte).toHaveBeenCalledWith('fecha_inicio', '2026-07-01')
+    expect(container.textContent).toContain('2do Semestre 2026')
+    expect(container.textContent).toContain('Mostrando desde el inicio')
+  })
+
+  it('rango "todo" no aplica ningún corte de fecha, aunque haya un período activo', async () => {
+    const periodoActivo = { id: 'per-1', nombre: '2do Semestre 2026', fecha_inicio: '2026-07-01', fecha_fin: '2026-12-15', activo: true }
+    const chains = setupSupabase({ sesiones: [], progresos: [], clases: [], periodoActivo })
+
+    await renderAlumnoPerfilView(container, { alumnoId: ALUMNO_ID, rango: 'todo' })
+
+    expect(chains.sesiones.gte).not.toHaveBeenCalled()
+    expect(chains.progresos.gte).not.toHaveBeenCalled()
+  })
+
+  it('sin período activo configurado, "Período actual" no corta nada (fail-open) y avisa en la UI', async () => {
+    const chains = setupSupabase({ sesiones: [], progresos: [], clases: [], periodoActivo: null })
+
+    await renderAlumnoPerfilView(container, { alumnoId: ALUMNO_ID })
+
+    expect(chains.sesiones.gte).not.toHaveBeenCalled()
+    expect(container.textContent).toContain('No hay un período académico activo')
+  })
+
+  it('rango "1y" filtra desde hace 1 año, sin depender del período académico', async () => {
+    const periodoActivo = { id: 'per-1', nombre: '2do Semestre 2026', fecha_inicio: '2026-07-01', fecha_fin: '2026-12-15', activo: true }
+    const chains = setupSupabase({ sesiones: [], progresos: [], clases: [], periodoActivo })
+
+    await renderAlumnoPerfilView(container, { alumnoId: ALUMNO_ID, rango: '1y' })
+
+    const cutoffUsado = chains.sesiones.gte.mock.calls[0][1]
+    expect(cutoffUsado).not.toBe('2026-07-01') // no es la fecha del período
+    expect(cutoffUsado < '2026-07-01').toBe(true) // es anterior — cubre más historia
   })
 
   it('sesión con estado "Tardanza" no entra al historial (solo P/A/J muestran contenido)', async () => {

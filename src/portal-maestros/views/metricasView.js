@@ -4,6 +4,7 @@ import { escHTML } from '../utils/portalUtils.js'
 import { getMisClases, getSesiones } from '../services/maestroDataService.js'
 import { announce } from '../utils/a11yUtils.js'
 import { openClaseAnalysisModal } from '../components/claseAnalysisModal.js'
+import { getPeriodoActivo } from '../../modules/periodos/api/periodosApi.js'
 
 // ── Mini gráfico de barras (SVG interno con labels) ──────────────
 function barChartContent(data, maxVal, width = 160, height = 36) {
@@ -40,8 +41,19 @@ async function cargarDatos(semanas, maestroId) {
 
   const fechaInicio = new Date()
   fechaInicio.setDate(fechaInicio.getDate() - semanas * 7)
-  const fechaStr = fechaInicio.toISOString().split('T')[0]
+  let fechaStr = fechaInicio.toISOString().split('T')[0]
   const hoyStr = new Date().toISOString().split('T')[0]
+
+  // La ventana de semanas (4/8/12) es relativa a HOY, no al período
+  // académico — con "12 semanas" alcanzaba a cruzar hacia atrás del inicio
+  // del período activo y volvía a mostrar "Pendientes" de un semestre ya
+  // cerrado (mismo síntoma que en las notificaciones). Se acota la ventana
+  // para que nunca cruce el inicio del período activo — sin período
+  // configurado, no se acota nada (fail-open).
+  const periodoActivo = await getPeriodoActivo().catch(() => null)
+  if (periodoActivo?.fecha_inicio && periodoActivo.fecha_inicio > fechaStr) {
+    fechaStr = periodoActivo.fecha_inicio
+  }
 
   const sesiones = await getSesiones(maestroId, fechaStr, hoyStr)
   const sesionesValidas = sesiones || []

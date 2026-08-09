@@ -414,7 +414,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 18px;
+  font-size: 1.125rem;
   transition: color 0.2s ease;
 }
 
@@ -443,7 +443,7 @@
 
 /* ── Hoy View (Dashboard iOS) ─────────────────────────────────── */
 .pm-date-header {
-  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
+  font-family: var(--pm-font-family, -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif);
   font-size: 1.8rem;
   font-weight: 800;
   letter-spacing: -0.03em;
@@ -494,7 +494,7 @@
 }
 
 .pm-clase-nombre {
-  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
+  font-family: var(--pm-font-family, -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif);
   font-weight: 700;
   font-size: 1rem;
   letter-spacing: -0.01em;

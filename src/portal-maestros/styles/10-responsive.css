@@ -197,15 +197,22 @@
   }
 
   /* ── Modales: bottom sheet ────────────────────────────────────── */
+  /* El footer móvil fuerza z-index 9999; el modal debe quedar POR ENCIMA
+     para que sus botones de acción no queden tapados por el menú. */
   .pm-modal-overlay {
     align-items: flex-end;
     padding: 0;
+    z-index: 10000 !important;
   }
 
   .pm-modal-content {
     border-radius: var(--pm-radius) var(--pm-radius) 0 0;
     max-width: 100%;
     width: 100%;
+    max-height: calc(100vh - 1rem);
+    max-height: calc(100dvh - 1rem);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
 
   /* ── Sidebar: drawer ─────────────────────────────────────────── */

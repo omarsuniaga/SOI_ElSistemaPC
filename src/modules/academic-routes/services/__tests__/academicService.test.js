@@ -52,7 +52,7 @@ describe('academicService.processSessionClosure', () => {
       { weekly_plan_id: 'plan-1', week_number: 2, topic: 'Arco recto', objective: 'Mantener trayectoria', teacher_strategy: 'Base ACM', student_activity: 'Ejercicio espejo', homework: '3 min', evidence: 'Video', indicator_id: 'ind-1' },
     ]
     tableData.acm_teacher_week_adjustments = [
-      { group_id: 'clase-1', teacher_id: 'mae-1', weekly_plan_id: 'plan-1', week_number: 2, teacher_strategy: 'Modelado individual', student_activity: 'Parejas', homework: '5 min', evidence: 'Video corto', teacher_notes: 'Grupo heterogéneo' },
+      { group_id: 'clase-1', teacher_id: 'mae-1', weekly_plan_id: 'plan-1', week_number: 2, teacher_strategy: 'Modelado individual', student_activity: 'Parejas', homework: '5 min', evidence: 'Video corto', teacher_notes: 'Grupo heterogÃ©neo' },
     ]
     tableData.indicator_attempts = [{ session_id: 'ses-1', student_id: 'stu-1', indicator_id: 'ind-1' }]
     tableData.student_indicator_progress = [{ session_id: 'ses-1', student_id: 'stu-2', indicator_id: 'ind-1', status: 'achieved' }]
@@ -73,7 +73,7 @@ describe('academicService.processSessionClosure', () => {
     expect(results[0].planningContext?.source).toBe('acm')
     expect(results[0].planningContext?.topic).toBe('Arco recto')
     expect(results[0].planningContext?.teacherStrategy).toBe('Modelado individual')
-    expect(results[0].planningContext?.teacherNotes).toBe('Grupo heterogéneo')
+    expect(results[0].planningContext?.teacherNotes).toBe('Grupo heterogÃ©neo')
     expect(academicService.recalculateNodeProgress).toHaveBeenCalledTimes(2)
   })
 })

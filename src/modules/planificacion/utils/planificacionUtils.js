@@ -61,11 +61,11 @@ export function calcularDuracion(fechaInicio, now) {
 
   if (diffDays < 0) return 'Futura'
   if (diffDays === 0) return 'Hoy'
-  if (diffDays === 1) return 'Hace 1 dÃ­a'
-  if (diffDays < 7) return `Hace ${diffDays} dÃ­as`
+  if (diffDays === 1) return 'Hace 1 día'
+  if (diffDays < 7) return `Hace ${diffDays} días`
   if (diffDays < 30) return `Hace ${Math.floor(diffDays / 7)} sem.`
   if (diffDays < 365) return `Hace ${Math.floor(diffDays / 30)} mes(es)`
-  return `Hace ${Math.floor(diffDays / 365)} aÃ±o(s)`
+  return `Hace ${Math.floor(diffDays / 365)} año(s)`
 }
 
 export function parseRecursos(recursosArray) {

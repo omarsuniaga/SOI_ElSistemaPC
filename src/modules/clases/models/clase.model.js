@@ -13,7 +13,7 @@ export class Clase {
     this.tiene_suplente = data.tiene_suplente || false
     this.programa_id = data.programa_id || null
     this.instrumento = data.instrumento || ''
-    this.horarios = data.horarios || []
+    this.horarios = data.horarios || data.clase_horarios || []
     // Mapeo: max_alumnos del formulario → capacidad_maxima en BD
     this.capacidad_maxima = data.capacidad_maxima ?? data.max_alumnos ?? 20
     this.estado = data.estado || 'activa'
@@ -39,6 +39,9 @@ export class Clase {
 
   get notas_pedagogicas() { return this.descripcion }
   set notas_pedagogicas(val) { this.descripcion = val }
+
+  get clase_horarios() { return this.horarios }
+  set clase_horarios(val) { this.horarios = val }
 
   /**
    * Valida los datos de la clase

@@ -35,7 +35,7 @@ export function openClaseEmergenteModal(options = {}) {
             </div>
             <div class="pm-emergente-field">
               <label class="pm-emergente-label">Actividad / clase</label>
-              <input type="text" class="pm-emergente-input" id="modal-clase_id" required placeholder="Ej: Clase grupal de violÃ­n, Ensayo de orquesta, Taller de teorÃ­a...">
+              <input type="text" class="pm-emergente-input" id="modal-clase_id" required placeholder="Ej: Clase grupal de violín, Ensayo de orquesta, Taller de teoría...">
             </div>
             <div class="pm-emergente-field">
               <label class="pm-emergente-label">Hora inicio</label>
@@ -84,7 +84,7 @@ export function openClaseEmergenteModal(options = {}) {
           <div class="pm-emergente-select-all">
             <label class="pm-emergente-checkbox-sm">
               <input type="checkbox" id="modal-seleccionar-todos">
-              <span class="pm-emergente-checkbox-mark-sm">âœ“</span>
+              <span class="pm-emergente-checkbox-mark-sm">✓</span>
               <span class="pm-emergente-select-all-text">Seleccionar todos los visibles</span>
             </label>
           </div>
@@ -97,7 +97,7 @@ export function openClaseEmergenteModal(options = {}) {
         <div class="pm-emergente-section">
           <label class="pm-emergente-checkbox">
             <input type="checkbox" id="modal-es_co-docencia">
-            <span class="pm-emergente-checkbox-mark">âœ“</span>
+            <span class="pm-emergente-checkbox-mark">✓</span>
             <span class="pm-emergente-checkbox-text">&iquest;Esta clase tiene co-docencia?</span>
           </label>
           
@@ -299,7 +299,7 @@ export function openEditarSesionModal(sesion, options = {}) {
   const { clases = [], maestros = [], onSave = null, onDelete = null } = options
 
   AppModal.open({
-    title: 'âœï¸ Editar SesiÃ³n Pasada',
+    title: '✏️ Editar Sesión Pasada',
     size: 'lg',
     saveText: 'Guardar Cambios',
     cancelText: 'Cancelar',
@@ -348,7 +348,7 @@ export function openEditarSesionModal(sesion, options = {}) {
           <input type="text" class="form-control input-dense" id="modal-tema" required value="${escapeHTML(sesion.tema || '')}">
         </div>
         <div class="col-12">
-          <label class="form-label-compact">Contenido / DescripciÃ³n</label>
+          <label class="form-label-compact">Contenido / Descripción</label>
           <textarea class="form-control input-dense" id="modal-contenido" rows="4">${escapeHTML(sesion.contenido || '')}</textarea>
         </div>
         ${
@@ -390,7 +390,7 @@ export function openVerSesionModal(sesion, options = {}) {
     : '<p class="text-muted">Sin asistencia registrada</p>'
 
   AppModal.open({
-    title: `ðŸ“‹ ${sesion.tema || 'SesiÃ³n'}`,
+    title: `📋 ${sesion.tema || 'Sesión'}`,
     size: 'lg',
     saveText: onEditar ? 'Editar' : 'Cerrar',
     cancelText: onPasarAsistencia ? 'Pasar Asistencia' : '',
@@ -422,7 +422,7 @@ export function openVerSesionModal(sesion, options = {}) {
             <label class="form-label fw-bold">Tipo</label>
             <p class="form-control-plaintext">
               <span class="badge ${sesion.tipo === 'emergente' ? 'bg-warning text-dark' : 'bg-primary'}">
-                ${sesion.tipo === 'emergente' ? 'âš¡ Emergente' : 'ðŸ“… Regular'}
+                ${sesion.tipo === 'emergente' ? '⚡ Emergente' : '📅 Regular'}
               </span>
             </p>
           </div>
@@ -430,7 +430,7 @@ export function openVerSesionModal(sesion, options = {}) {
             <label class="form-label fw-bold">Estado</label>
             <p class="form-control-plaintext">
               <span class="badge ${sesion.estado === 'registrada' ? 'bg-success' : sesion.estado === 'pendiente' ? 'bg-warning text-dark' : 'bg-secondary'}">
-                ${sesion.estado === 'registrada' ? 'âœ… Registrada' : sesion.estado === 'pendiente' ? 'â³ Pendiente' : sesion.estado}
+                ${sesion.estado === 'registrada' ? '✅ Registrada' : sesion.estado === 'pendiente' ? '⏳ Pendiente' : sesion.estado}
               </span>
             </p>
           </div>

@@ -26,7 +26,7 @@ export function createRouteTopicAutoInjector(container, { editor, toolbar }) {
         banner.className = 'pm-ruta-tema-banner'
         banner.style.cssText = `
           background:#eff6ff;border:1px solid #93c5fd;border-radius:8px;
-          padding:8px 12px;margin-bottom:8px;font-size:12px;color:#1d4ed8;
+          padding:8px 12px;margin-bottom:8px;font-size:0.75rem;color:#1d4ed8;
           display:flex;align-items:center;gap:8px;
         `
         banner.innerHTML = `
@@ -34,7 +34,7 @@ export function createRouteTopicAutoInjector(container, { editor, toolbar }) {
           Tema cargado desde Ruta: <strong>${rutaTema.nombre.replace(/</g, '&lt;')}</strong>
           <button onclick="this.parentElement.remove()" style="
             margin-left:auto;background:none;border:none;cursor:pointer;
-            font-size:12px;color:#1d4ed8;
+            font-size:0.75rem;color:#1d4ed8;
           ">✕</button>
         `
         editorContainer.parentElement.insertBefore(banner, editorContainer)

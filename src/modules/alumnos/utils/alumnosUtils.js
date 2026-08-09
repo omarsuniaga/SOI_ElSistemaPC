@@ -1,7 +1,7 @@
 export { escapeHTML } from '../../../shared/utils/sanitize.js'
 
 /**
- * Utilidades para el mÃ³dulo de Alumnos
+ * Utilidades para el módulo de Alumnos
  */
 
 /**
@@ -17,7 +17,7 @@ export function formatDate(dateStr) {
 
 
 /**
- * Valida si un email es vÃ¡lido
+ * Valida si un email es válido
  * @param {string} email
  * @returns {boolean}
  */
@@ -27,7 +27,7 @@ export function isValidEmail(email) {
 }
 
 /**
- * Formatea gÃ©nero a label legible
+ * Formatea género a label legible
  * @param {string} genero
  * @returns {string}
  */
@@ -42,7 +42,7 @@ export function formatGenero(genero) {
 }
 
 /**
- * Obtiene el Ã­cono de gÃ©nero en Bootstrap Icons
+ * Obtiene el ícono de género en Bootstrap Icons
  * @param {string} genero
  * @returns {string}
  */
@@ -75,7 +75,7 @@ export function getEstadoLabel(esActivo) {
 }
 
 /**
- * Compara dos strings ignorando mayÃºsculas y acentos
+ * Compara dos strings ignorando mayúsculas y acentos
  * @param {string} a
  * @param {string} b
  * @returns {boolean}
@@ -112,7 +112,7 @@ export function getInitials(nombre) {
 }
 
 /**
- * Formatea telÃ©fono con mÃ¡scara (simplificado)
+ * Formatea teléfono con máscara (simplificado)
  * @param {string} telefono
  * @returns {string}
  */
@@ -126,7 +126,7 @@ export function formatPhoneNumber(telefono) {
 }
 
 /**
- * Obtiene color de badge aleatorio pero consistente segÃºn el ID
+ * Obtiene color de badge aleatorio pero consistente según el ID
  * @param {string} id
  * @returns {string}
  */

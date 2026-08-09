@@ -277,9 +277,9 @@ export async function generateDailyReport(sesionId) {
 
     const html = wrapDocument(pageHtml, landscape)
 
-    // 4. Open and print (falls back to file download if popup blocked)
     const date = sesion.fecha?.replace(/-/g, '') || 'fecha'
-    const opened = openReport(html, `reporte-diario-${date}`)
+    const reportTitle = `Reporte Diario de Asistencia · ${claseData?.nombre || 'Clase'} (${formatDate(sesion.fecha)})`
+    const opened = openReport(html, `reporte-diario-${date}`, { title: reportTitle })
     if (!opened) {
       AppToast.info('El reporte se descargó como archivo. Abrilo en el navegador y usá Imprimir → Guardar como PDF.')
     }
@@ -564,7 +564,8 @@ export async function generateMonthlyAttendance(claseId, year, month) {
     }
 
     const html = wrapDocument(page1 + page2, landscape)
-    const opened = openReport(html, `resumen-asistencia-${year}-${padMM(month)}`)
+    const reportTitle = `Resumen Mensual de Asistencia · ${claseData?.nombre || 'Clase'} (${monthName(month)} ${year})`
+    const opened = openReport(html, `resumen-asistencia-${year}-${padMM(month)}`, { title: reportTitle })
     if (!opened) {
       AppToast.info('El reporte se descargó como archivo. Abrilo en el navegador y usá Imprimir → Guardar como PDF.')
     }
@@ -1099,7 +1100,8 @@ export async function generateMonthlyPedagogical(claseId, year, month) {
     `
 
     const html = wrapDocument(p1 + p2 + p3, true)
-    const opened = openReport(html, `informe-pedagogico-${year}-${padMM(month)}`)
+    const reportTitle = `Informe Pedagógico Institucional · ${claseData?.nombre || 'Clase'} (${monthName(month)} ${year})`
+    const opened = openReport(html, `informe-pedagogico-${year}-${padMM(month)}`, { title: reportTitle })
     if (!opened) {
       AppToast.info('El reporte se descargó como archivo. Abrilo en el navegador y usá Imprimir → Guardar como PDF.')
     }

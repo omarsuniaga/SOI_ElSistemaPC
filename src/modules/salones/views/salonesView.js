@@ -115,7 +115,9 @@ export function renderSalonesView(container) {
 
 function renderTable() {
   const container = state.container
+  if (!container) return
   const tbody = container.querySelector('#salonesTableBody')
+  if (!tbody) return
   const salonesCount = container.querySelector('#salonesCount')
 
   const query = (container.querySelector('#searchSalon')?.value || '').trim()
@@ -142,7 +144,7 @@ function renderTable() {
     return
   }
 
-  salonesCount.textContent = salones.length
+  if (salonesCount) salonesCount.textContent = salones.length
 
   tbody.innerHTML = salones
     .map((salon) => {

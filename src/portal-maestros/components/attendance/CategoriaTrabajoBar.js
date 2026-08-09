@@ -11,14 +11,14 @@ import {
  * El maestro escribe su clase como siempre. Mientras escribe, esta barra propone
  * qué categoría curricular está cubriendo y le ofrece confirmarla con un toque.
  *
- * Tres reglas de comportamiento, en orden de importancia:
+* Tres reglas de comportamiento, en orden de importancia:
  *
- *  1. Nunca confirma sola. La sugerencia queda pendiente hasta que el maestro la
- *     acepta. Una categoría asignada automáticamente convertiría la cobertura que
- *     lee la coordinación en una inferencia disfrazada de hecho.
- *  2. No interrumpe. Es una franja bajo el editor, no un modal ni un paso previo
- *     al guardado. Si el maestro la ignora, la clase se guarda igual.
- *  3. Si el maestro escribió `>ARC`, ya decidió: se marca como confirmada sin
+ *  1. Repite sin fricción. Cuando la inferencia es "firme" (2+ términos
+ *     coincidentes y sin empate), se confirma sola. Solo cuando la confianza es
+ *     media, baja o nula se le pregunta al maestro con un toque.
+ *  2. No interrumpe. Es una franja bajo el editor, no un formulario ni un paso
+ *     previo al guardado. Si el maestro la ignora, la clase se guarda igual.
+ *  3. Si el maestro escribió `>CODIGO`, ya decidió: se marca como confirmada sin
  *     pedirle nada.
  */
 
@@ -137,14 +137,18 @@ export function createCategoriaTrabajoBar(container, opts = {}) {
   })
 
   /**
-   * Analiza el texto y propone. No pisa una elección ya confirmada por el
-   * maestro: lo que él decidió gana sobre cualquier inferencia posterior.
+   * Analiza el texto y propone (o autoconfirma cuando la confianza es firme).
+   * No pisa una elección ya confirmada por el maestro: lo que él decidió gana
+   * sobre cualquier inferencia posterior.
    */
   async function analizar(texto) {
     if (texto === ultimoTexto) return
     ultimoTexto = texto
 
-    if (estado.confirmada && estado.origen === ORIGEN.MANUAL) return
+    // Lo que el maestro ya decidió gana sobre cualquier inferencia posterior.
+    // Solo el código explícito (escrito por él) sigue pudiendo re-analizarse:
+    // si borra `>ARC` y escribe `>SON`, la barra debe seguirlo.
+    if (estado.confirmada && estado.origen !== ORIGEN.EXPLICITO) return
 
     estado.cargando = true
     render()
@@ -164,7 +168,21 @@ export function createCategoriaTrabajoBar(container, opts = {}) {
         estado.confirmada = true
         estado.alternativas = []
         emitir()
+      } else if (r.confianza === 'alta') {
+        // Inferencia firme: se autoconfirma. Preguntarle en cada clase con una
+        // palabra inequívoca ("escalas") es fricción sin valor; el maestro puede
+        // corregir con "Cambiar" si la inferencia se equivocó. Se guarda con
+        // origen 'derivado' (el mismo que una confirmación con un toque); no se
+        // crea un origen nuevo porque node_origen está limitado por un CHECK en
+        // la BD y el dato de cobertura solo depende de node_codigo.
+        estado.codigo = r.codigo
+        estado.origen = ORIGEN.DERIVADO
+        estado.confirmada = true
+        estado.alternativas = []
+        emitir()
       } else if (!estado.confirmada) {
+        // Confianza media o baja: la propuesta queda pendiente hasta que el
+        // maestro la confirma, para no convertir una suposición en un hecho.
         estado.codigo = r.codigo
         estado.origen = r.origen
         estado.alternativas = r.alternativas ?? []

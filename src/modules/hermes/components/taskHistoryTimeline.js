@@ -1,9 +1,9 @@
 ﻿/**
- * taskHistoryTimeline.js â€” Timeline del historial de cambios de una tarea.
- * SP-0 / R5: muestra campo, valor anterior â†’ nuevo, actor real y fecha.
- * tarea_historial es INMUTABLE (sÃ³lo lectura para usuarios).
+ * taskHistoryTimeline.js — Timeline del historial de cambios de una tarea.
+ * SP-0 / R5: muestra campo, valor anterior → nuevo, actor real y fecha.
+ * tarea_historial es INMUTABLE (sólo lectura para usuarios).
  *
- * Render puro: renderTaskHistoryTimeline(historial) â†’ HTML string.
+ * Render puro: renderTaskHistoryTimeline(historial) → HTML string.
  */
 
 import { escapeHTML } from '../../../shared/utils/sanitize.js'
@@ -50,8 +50,8 @@ export function renderTaskHistoryTimeline(historial = []) {
   const entriesHTML = historial.map((h) => {
     const campoLabel = CAMPO_LABELS[h.campo] ?? escapeHTML(h.campo)
     const actor = h.actor_nombre ? escapeHTML(h.actor_nombre) : '<em class="text-muted">Sistema</em>'
-    const anterior = h.valor_anterior != null ? `<span class="text-danger text-decoration-line-through small">${escapeHTML(h.valor_anterior)}</span>` : '<span class="text-muted small">â€”</span>'
-    const nuevo = h.valor_nuevo != null ? `<span class="text-success fw-semibold small">${escapeHTML(h.valor_nuevo)}</span>` : '<span class="text-muted small">â€”</span>'
+    const anterior = h.valor_anterior != null ? `<span class="text-danger text-decoration-line-through small">${escapeHTML(h.valor_anterior)}</span>` : '<span class="text-muted small">—</span>'
+    const nuevo = h.valor_nuevo != null ? `<span class="text-success fw-semibold small">${escapeHTML(h.valor_nuevo)}</span>` : '<span class="text-muted small">—</span>'
 
     return `
       <div class="task-history-entry d-flex gap-3 mb-3" data-history-id="${escapeHTML(h.id)}">
@@ -64,14 +64,14 @@ export function renderTaskHistoryTimeline(historial = []) {
         <div class="flex-grow-1 pb-2">
           <div class="d-flex flex-wrap align-items-baseline gap-2 mb-1">
             <strong class="small">${campoLabel}</strong>
-            <span class="small text-muted">cambiÃ³ de</span>
+            <span class="small text-muted">cambió de</span>
             ${anterior}
             <i class="bi bi-arrow-right small text-muted"></i>
             ${nuevo}
           </div>
           <div class="d-flex gap-2 small text-muted">
             <span><i class="bi bi-person me-1"></i>${actor}</span>
-            <span>Â·</span>
+            <span>·</span>
             <span><i class="bi bi-clock me-1"></i>${formatDate(h.created_at)}</span>
           </div>
         </div>

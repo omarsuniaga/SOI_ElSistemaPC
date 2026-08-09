@@ -13,6 +13,12 @@ import { notifConfigModal } from '../components/notifConfigModal.js';
 import { escHTML, getInitials } from '../utils/portalUtils.js';
 import { normalizePhone } from '../../shared/utils/phoneUtils.js';
 import { pushDiagnostic } from '../components/pushDiagnostic.js';
+import {
+  FONT_SCALES, normalizeFontScale, scaleIndex, scaleLabel,
+  resolveFontFamily,
+  applyFontScale as applyFontScalePref,
+  applyFontFamily as applyFontFamilyPref
+} from '../utils/typography.js';
 
 // Estado local de la vista
 const viewState = {
@@ -20,6 +26,7 @@ const viewState = {
   saving: false,
   theme: localStorage.getItem('portal-maestros-theme') || 'system',
   fontScale: localStorage.getItem('portal-maestros-font-scale') || '1',
+  fontFamily: localStorage.getItem('portal-maestros-font-family') || 'system',
   pushEnabled: false
 };
 
@@ -214,25 +221,30 @@ function renderAppearance(container) {
             <h4 id="text-size-title" class="pm-settings-section__subtitle">Tamaño de texto</h4>
             <p class="pm-settings-section__desc">Ajusta la letra del portal para mejorar la lectura</p>
           </div>
-          <span class="pm-text-size-chip" id="pm-font-scale-label">100%</span>
+          <span class="pm-text-size-chip" id="pm-font-scale-label" aria-live="polite">100%</span>
         </div>
-        <div class="pm-text-size-controls" role="group" aria-label="Ajustar tamaño de letra">
-          <button type="button" class="btn-apple-utility pm-font-size-btn" data-font-scale="0.92" aria-label="Reducir tamaño de texto">
+        <div class="pm-scale-row">
+          <button type="button" class="btn-apple-utility pm-font-size-btn" id="pm-font-scale-down" aria-label="Reducir tamaño de texto">
             <i class="bi bi-dash-lg" aria-hidden="true"></i>
             <span>A-</span>
           </button>
-          <button type="button" class="btn-apple-utility pm-font-size-btn" data-font-scale="1" aria-label="Tamaño de texto normal">
-            <i class="bi bi-fonts" aria-hidden="true"></i>
-            <span>Normal</span>
-          </button>
-          <button type="button" class="btn-apple-utility pm-font-size-btn" data-font-scale="1.08" aria-label="Aumentar tamaño de texto">
+          <button type="button" class="btn-apple-utility pm-font-size-btn" id="pm-font-scale-up" aria-label="Aumentar tamaño de texto">
             <i class="bi bi-plus-lg" aria-hidden="true"></i>
             <span>A+</span>
           </button>
-          <button type="button" class="btn-apple-utility pm-font-size-btn" data-font-scale="1.16" aria-label="Tamaño de texto muy grande">
-            <i class="bi bi-type-bold" aria-hidden="true"></i>
-            <span>Muy grande</span>
-          </button>
+        </div>
+        <div class="pm-font-family-field">
+          <label class="pm-settings-section__subtitle" for="pm-font-family-select" id="pm-font-family-label">Tipo de letra</label>
+          <p class="pm-settings-section__desc">Cambia el estilo tipográfico del portal</p>
+          <select id="pm-font-family-select" class="form-select pm-font-family-select" aria-labelledby="pm-font-family-label">
+            <option value="system">Sistema</option>
+            <option value="inter">Inter</option>
+            <option value="poppins">Poppins</option>
+            <option value="nunito">Nunito</option>
+            <option value="lato">Lato</option>
+            <option value="merriweather">Merriweather</option>
+            <option value="georgia">Georgia (serif)</option>
+          </select>
         </div>
       </div>
     </section>`);
@@ -927,10 +939,11 @@ function initListeners(maestro) {
   document.getElementById('pm-theme-system')?.addEventListener('click', () => applyTheme('system'));
 
   // Tamaño de texto
-  document.querySelectorAll('.pm-font-size-btn').forEach(btn => {
-    btn.addEventListener('click', () => applyFontScale(btn.dataset.fontScale));
-  });
+  document.getElementById('pm-font-scale-down')?.addEventListener('click', () => stepFontScale(-1));
+  document.getElementById('pm-font-scale-up')?.addEventListener('click', () => stepFontScale(1));
+  document.getElementById('pm-font-family-select')?.addEventListener('change', (e) => applyFontFamily(e.target.value));
   syncFontScaleUI(viewState.fontScale);
+  syncFontFamilyUI(viewState.fontFamily);
 
   // Ausencias
   document.getElementById('pm-btn-ver-ausencias')?.addEventListener('click', async () => {
@@ -1096,30 +1109,38 @@ function applyTheme(theme) {
 }
 
 function applyFontScale(scale) {
-  const allowed = new Set(['0.92', '1', '1.08', '1.16']);
-  const resolved = allowed.has(String(scale)) ? String(scale) : '1';
-  document.documentElement.style.setProperty('--pm-font-scale', resolved);
-  localStorage.setItem('portal-maestros-font-scale', resolved);
+  const resolved = applyFontScalePref(scale);
   viewState.fontScale = resolved;
   syncFontScaleUI(resolved);
-  window.dispatchEvent(new CustomEvent('fontScaleChanged', { detail: { scale: resolved } }));
+}
+
+function stepFontScale(direction) {
+  const index = scaleIndex(viewState.fontScale);
+  const next = index + direction;
+  if (next < 0 || next >= FONT_SCALES.length) return;
+  applyFontScale(FONT_SCALES[next]);
 }
 
 function syncFontScaleUI(scale) {
-  const allowed = new Set(['0.92', '1', '1.08', '1.16']);
-  const resolved = allowed.has(String(scale)) ? String(scale) : '1';
-  const labelMap = {
-    '0.92': '92%',
-    '1': '100%',
-    '1.08': '108%',
-    '1.16': '116%'
-  };
+  const resolved = normalizeFontScale(scale);
   const labelEl = document.getElementById('pm-font-scale-label');
-  if (labelEl) labelEl.textContent = labelMap[resolved] || '100%';
-  document.querySelectorAll('.pm-font-size-btn').forEach(btn => {
-    btn.classList.toggle('active', btn.dataset.fontScale === resolved);
-    btn.setAttribute('aria-pressed', btn.dataset.fontScale === resolved ? 'true' : 'false');
-  });
+  if (labelEl) labelEl.textContent = scaleLabel(resolved);
+  const downBtn = document.getElementById('pm-font-scale-down');
+  const upBtn = document.getElementById('pm-font-scale-up');
+  if (downBtn) downBtn.disabled = scaleIndex(resolved) === 0;
+  if (upBtn) upBtn.disabled = scaleIndex(resolved) === FONT_SCALES.length - 1;
+}
+
+function applyFontFamily(id) {
+  const resolved = applyFontFamilyPref(id);
+  viewState.fontFamily = resolved;
+  syncFontFamilyUI(resolved);
+}
+
+function syncFontFamilyUI(id) {
+  const resolved = resolveFontFamily(id).id;
+  const selectEl = document.getElementById('pm-font-family-select');
+  if (selectEl && selectEl.value !== resolved) selectEl.value = resolved;
 }
 
 // ─── PERFIL INCOMPLETO ──────────────────────────────────────

@@ -107,9 +107,10 @@
   /* ── Accessibility ────────────────────────────────────────── */
   --pm-touch-min: 44px; /* WCAG AA 2.5.8 touch target minimum */
 
-  /* Typography accessibility */
+/* Typography accessibility */
   --pm-font-scale: 1;
   --pm-font-size-base: calc(16px * var(--pm-font-scale));
+  --pm-font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
 /* Global Glass Utility */

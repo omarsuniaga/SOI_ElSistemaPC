@@ -385,34 +385,37 @@ export function contentChips(items) {
   return `<div class="rpt-content-chips">${chips}</div>`
 }
 
+import { showReportViewerModal } from '../components/ReportViewerModal.js'
+
 /**
- * Abre el HTML del reporte en una ventana visible y dispara el diálogo de impresión.
- * Si el navegador bloquea la ventana emergente, descarga el reporte como archivo HTML
- * que el usuario puede abrir y guardar como PDF.
+ * Abre el HTML del reporte en un visor interactivo HTML dentro de la aplicación.
+ * Permite al usuario visualizar los datos estructurados en pantalla y descargarlos en PDF o HTML.
  *
  * @param {string} html     — documento HTML completo
  * @param {string} filename — nombre base del archivo (sin extensión)
- * @returns {boolean}       — true si se pudo abrir la ventana, false si se descargó como archivo
+ * @param {Object|string} [options] — opciones adicionales o título del reporte
+ * @returns {boolean}       — true si se visualizó o abrió la ventana, false si se descargó
  */
-export function openReport(html, filename = 'reporte') {
+export function openReport(html, filename = 'reporte', options = {}) {
+  const opts = typeof options === 'string' ? { title: options } : options
+  const { title = 'Informe Institucional', openInNewTab = false } = opts
+
+  if (!openInNewTab && typeof document !== 'undefined' && document.body) {
+    try {
+      showReportViewerModal({ html, title, filename })
+      return true
+    } catch (e) {
+      console.warn('[reportTemplates] showReportViewerModal fallo, usando fallback:', e)
+    }
+  }
+
   const reportWindow = window.open('', '_blank')
 
   if (reportWindow) {
-    // Ventana abierta correctamente: escribir el HTML y disparar impresión
     reportWindow.document.open()
     reportWindow.document.write(html)
     reportWindow.document.close()
     reportWindow.focus()
-    // Esperar a que carguen fuentes y estilos antes de imprimir
-    reportWindow.onload = () => {
-      setTimeout(() => reportWindow.print(), 500)
-    }
-    // Fallback: si onload ya disparó antes de asignarlo
-    setTimeout(() => {
-      try {
-        if (reportWindow && !reportWindow.closed) reportWindow.print()
-      } catch (_) {}
-    }, 1500)
     return true
   }
 

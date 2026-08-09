@@ -240,7 +240,7 @@ async function _loadProgress(alumnoId, rutaId, claseId = null) {
   }
 
   if (!indicators.length && config.isDemoMode) {
-    // 1. Cargar la jerarquía de temas del mock
+    // 1. Cargar la jerarquÃ­a de temas del mock
     const { getFullHierarchy } = await import('../../modules/planificacion/api/routeMock.js')
     const hierarchy = await getFullHierarchy(claseId || 'pclase_001')
     

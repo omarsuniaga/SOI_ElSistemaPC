@@ -22,7 +22,7 @@ export function formatPhone(phone) {
 
 export function formatInstrumento(instrumento) {
   const mapa = {
-    'violin': 'ViolÃ­n',
+    'violin': 'Violín',
     'viola': 'Viola',
     'cello': 'Cello',
     'bajo': 'Bajo',
@@ -32,16 +32,16 @@ export function formatInstrumento(instrumento) {
     'fagot': 'Fagot',
     'trompa': 'Trompa',
     'trompeta': 'Trompeta',
-    'trombon': 'TrombÃ³n',
+    'trombon': 'Trombón',
     'tuba': 'Tuba',
     'piano': 'Piano',
     'guitarra': 'Guitarra',
     'arpa': 'Arpa',
-    'percusion': 'PercusiÃ³n',
+    'percusion': 'Percusión',
     'voz': 'Voz',
-    'direccion': 'DirecciÃ³n',
+    'direccion': 'Dirección',
     'solfeo': 'Solfeo',
-    'teorÃ­a': 'TeorÃ­a',
+    'teoría': 'Teoría',
   }
   return mapa[instrumento?.toLowerCase()] || instrumento || 'No especificado'
 }
@@ -66,7 +66,7 @@ export function getInitials(nombre) {
 
 export function getInstrumentos() {
   return [
-    { value: 'violin', label: 'ViolÃ­n' },
+    { value: 'violin', label: 'Violín' },
     { value: 'viola', label: 'Viola' },
     { value: 'cello', label: 'Cello' },
     { value: 'bajo', label: 'Bajo' },
@@ -76,16 +76,16 @@ export function getInstrumentos() {
     { value: 'fagot', label: 'Fagot' },
     { value: 'trompa', label: 'Trompa' },
     { value: 'trompeta', label: 'Trompeta' },
-    { value: 'trombon', label: 'TrombÃ³n' },
+    { value: 'trombon', label: 'Trombón' },
     { value: 'tuba', label: 'Tuba' },
     { value: 'piano', label: 'Piano' },
     { value: 'guitarra', label: 'Guitarra' },
     { value: 'arpa', label: 'Arpa' },
-    { value: 'percusion', label: 'PercusiÃ³n' },
+    { value: 'percusion', label: 'Percusión' },
     { value: 'voz', label: 'Voz' },
-    { value: 'direccion', label: 'DirecciÃ³n' },
+    { value: 'direccion', label: 'Dirección' },
     { value: 'solfeo', label: 'Solfeo' },
-    { value: 'teorÃ­a', label: 'TeorÃ­a' },
+    { value: 'teoría', label: 'Teoría' },
   ]
 }
 

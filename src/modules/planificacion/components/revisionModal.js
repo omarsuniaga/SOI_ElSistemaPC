@@ -8,28 +8,28 @@ export function openRevisionModal(originalText, dslResult, onAccept) {
   const highlighted = highlightDsl(dslResult)
 
   AppModal.open({
-    title: 'âœ¨ RevisiÃ³n IA',
+    title: '✨ Revisión IA',
     size: 'lg',
     saveText: 'Aceptar y usar',
     cancelText: 'Cancelar',
     body: `
       <div class="row">
         <div class="col-12 mb-3">
-          <label class="form-label fw-bold text-muted small">ðŸ“ Texto original</label>
+          <label class="form-label fw-bold text-muted small">📝 Texto original</label>
           <div class="p-2 bg-light rounded" style="font-size: 0.9rem;">
             ${escapeHTML(originalText)}
           </div>
         </div>
         
         <div class="col-12 mb-3">
-          <label class="form-label fw-bold text-success small">âœ¨ DSL estructurado</label>
+          <label class="form-label fw-bold text-success small">✨ DSL estructurado</label>
           <div class="p-3 bg-white border rounded" style="font-size: 0.95rem; white-space: pre-wrap;">
             ${highlighted || escapeHTML(dslResult)}
           </div>
         </div>
         
         <div class="col-12">
-          <label class="form-label fw-bold text-muted small">ðŸ“Š Resumen</label>
+          <label class="form-label fw-bold text-muted small">📊 Resumen</label>
           <div class="d-flex flex-wrap gap-2">
             ${summary !== 'Sin tokens' ? summary.split(', ').map(token => `
               <span class="badge bg-secondary bg-opacity-10 text-secondary border">

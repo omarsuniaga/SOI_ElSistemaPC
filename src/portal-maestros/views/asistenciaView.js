@@ -2356,15 +2356,15 @@ function _renderVista(container, ctx) {
             id="btn-reporte-dia-overlay"
           >
             <span class="pm-action-icon" aria-hidden="true">
-              <i class="bi bi-file-earmark-pdf"></i>
+              <i class="bi bi-file-earmark-text"></i>
             </span>
 
             <span class="pm-action-content">
               <strong>Reporte del día</strong>
-              <small>Genera el resumen diario en PDF.</small>
+              <small>Visualiza el reporte diario en HTML con opción a PDF.</small>
             </span>
 
-            <span class="pm-action-badge">PDF</span>
+            <span class="pm-action-badge">HTML / PDF</span>
           </button>
 
           <button
@@ -2378,10 +2378,10 @@ function _renderVista(container, ctx) {
 
             <span class="pm-action-content">
               <strong>Resumen del mes</strong>
-              <small>Consulta la evolución mensual.</small>
+              <small>Consulta la evolución mensual en HTML o descarga en PDF.</small>
             </span>
 
-            <span class="pm-action-badge">PDF</span>
+            <span class="pm-action-badge">HTML / PDF</span>
           </button>
 
           <button
@@ -2395,10 +2395,10 @@ function _renderVista(container, ctx) {
 
             <span class="pm-action-content">
               <strong>Informe pedagógico</strong>
-              <small>Genera un informe académico detallado.</small>
+              <small>Visualiza el informe académico en HTML con exportación a PDF.</small>
             </span>
 
-            <span class="pm-action-badge">PDF</span>
+            <span class="pm-action-badge">HTML / PDF</span>
           </button>
         </div>
       </section>

@@ -55,7 +55,7 @@
 }
 
 .pm-header-title {
-  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
+  font-family: var(--pm-font-family, -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif);
   font-size: 1.75rem;
   font-weight: 700;
   letter-spacing: -0.03em;
@@ -295,7 +295,7 @@
   color: var(--pm-text-muted);
   font-size: 0.6rem;
   font-weight: 500;
-  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
+  font-family: var(--pm-font-family, -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif);
   padding: 6px 4px 8px;
   position: relative;
   transition:
@@ -493,7 +493,7 @@
 }
 
 .pm-theme-icon {
-  font-size: 14px;
+  font-size: 0.875rem;
   color: var(--pm-text);
   transition: color 0.3s ease;
 }
@@ -660,7 +660,7 @@
     left: 3px;
   }
   #pm-theme-toggle-container .pm-theme-icon {
-    font-size: 12px;
+    font-size: 0.75rem;
   }
   [data-bs-theme='dark'] #pm-theme-toggle-container .pm-theme-toggle-thumb,
   [data-portal-theme='dark'] #pm-theme-toggle-container .pm-theme-toggle-thumb {

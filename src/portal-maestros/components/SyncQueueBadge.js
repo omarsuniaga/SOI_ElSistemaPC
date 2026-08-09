@@ -31,7 +31,7 @@ export function createSyncQueueBadge(options = {}) {
     gap: 6px;
     padding: 4px 10px;
     border-radius: 16px;
-    font-size: 11px;
+    font-size: 0.6875rem;
     font-weight: 600;
     cursor: default;
     transition: all 0.2s ease;
@@ -52,7 +52,7 @@ export function createSyncQueueBadge(options = {}) {
       background: transparent;
       border: none;
       color: inherit;
-      font-size: 10px;
+      font-size: 0.625rem;
       font-weight: 600;
       cursor: pointer;
       padding: 2px 6px;

@@ -209,7 +209,7 @@ function _showSuccessToast(evalCount, indicadorNombre) {
       <span style="font-size:0.85em; opacity:0.9;">Tema detectado: <b>${indicadorNombre}</b></span>
     </div>`
   toast.style.cssText =
-    'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:var(--pm-surface, #1e1e1e);color:#fff;padding:12px 24px;border-radius:12px;z-index:10000;font-size:14px;font-weight:600;box-shadow:0 8px 24px rgba(0,0,0,0.3); border: 1px solid var(--apple-success, #22c55e);'
+    'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:var(--pm-surface, #1e1e1e);color:#fff;padding:12px 24px;border-radius:12px;z-index:10000;font-size:0.875rem;font-weight:600;box-shadow:0 8px 24px rgba(0,0,0,0.3); border: 1px solid var(--apple-success, #22c55e);'
   document.body.appendChild(toast)
   setTimeout(() => toast.remove(), 4500)
 }

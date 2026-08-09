@@ -487,7 +487,7 @@ export function createDslEditor(container, { initialContent = '', onChange, onAl
       msg.textContent =
         '🚫 No puedes pegar imágenes. Usa 🎤 para grabar audio o describe el contenido.'
       msg.style.cssText =
-        'position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:#dc3545; color:white; padding:12px 20px; border-radius:8px; z-index:10000; font-size:14px;'
+        'position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:#dc3545; color:white; padding:12px 20px; border-radius:8px; z-index:10000; font-size:0.875rem;'
       document.body.appendChild(msg)
       setTimeout(() => msg.remove(), 4000)
     }

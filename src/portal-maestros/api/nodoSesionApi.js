@@ -28,7 +28,7 @@ export const CATEGORIAS = {
 /** Cómo se determinó la categoría. Queda registrado para poder auditar el acierto. */
 export const ORIGEN = {
   EXPLICITO: 'explicito', // el maestro escribió >CODIGO
-  DERIVADO: 'derivado',   // se infirió del texto y el maestro lo confirmó
+  DERIVADO: 'derivado',   // se infirió del texto y se confirmó (por el maestro o sola)
   MANUAL: 'manual',       // el maestro lo eligió de la lista
 }
 

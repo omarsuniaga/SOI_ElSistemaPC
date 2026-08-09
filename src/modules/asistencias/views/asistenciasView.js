@@ -1,4 +1,4 @@
-﻿import '../styles/asistencias.css'
+import '../styles/asistencias.css'
 import { AppModal } from '../../../shared/components/AppModal.js'
 import { AppToast } from '../../../shared/components/AppToast.js'
 import {
@@ -346,7 +346,7 @@ async function openDetailModal(sesionId) {
             </button>
           </div>
           <div class="col-12">
-            <h6 class="fw-bold border-bottom pb-2 mb-3">Registro de Observaciones</h6>
+            <h6 class="fw-bold border-bottom pb-2 mb-3">Registro de Observaciones </h6>
             ${
               detail.observaciones?.length
                 ? `

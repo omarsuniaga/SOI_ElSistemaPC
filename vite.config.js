@@ -8,20 +8,20 @@ const CSP = [
   // Scripts: self + dynamic imports (Vite HMR needs 'self')
   // pdf.js, mammoth, tesseract loaded dynamically from cdnjs/jsdelivr
   "script-src 'self' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net",
-  // Styles: unsafe-inline needed — Bootstrap and component styles are inline
-  "style-src 'self' 'unsafe-inline'",
+  // Styles: unsafe-inline needed — Bootstrap and component styles are inline; Google Fonts
+  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   // Images: self, data URIs (avatars), blob (canvas/pdf previews), Supabase Storage
   "img-src 'self' data: blob: https://*.supabase.co",
-  // Fonts: self only (no Google Fonts)
-  "font-src 'self'",
+  // Fonts: self + Google Fonts CDN
+  "font-src 'self' https://fonts.gstatic.com data:",
   // API calls: Supabase REST + Realtime, Groq AI, Ollama Local
   "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.groq.com https://docs.google.com http://localhost:11434 ws://localhost:11434",
   // Workers: blob (pdf.js spawns a worker from blob URL)
   "worker-src 'self' blob:",
   // Media: self + blob (audio recording)
   "media-src 'self' blob:",
-  // Frames: none
-  "frame-src 'none'",
+  // Frames: self + blob + data (ReportViewerModal and document previews)
+  "frame-src 'self' blob: data:",
   // Object/embed: none
   "object-src 'none'",
   // Base URI locked to self

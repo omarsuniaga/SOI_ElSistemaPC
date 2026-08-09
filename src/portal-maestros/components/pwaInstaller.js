@@ -493,7 +493,7 @@ export const pwaInstaller = {
       }
 
       .psb-severity-dot i {
-        font-size: 15px;
+        font-size: 0.9375rem;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -505,7 +505,7 @@ export const pwaInstaller = {
       }
 
       .psb-title {
-        font-size: 13px;
+        font-size: 0.8125rem;
         font-weight: 600;
         color: #1d1d1f;
         line-height: 1.35;
@@ -527,7 +527,7 @@ export const pwaInstaller = {
         border: none;
         border-radius: 16px;
         padding: 5px 12px;
-        font-size: 11.5px;
+        font-size: 0.71875rem;
         font-weight: 700;
         cursor: pointer;
         transition: background 0.2s, transform 0.1s;
@@ -548,7 +548,7 @@ export const pwaInstaller = {
         background: transparent;
         border: none;
         color: #86868b;
-        font-size: 16px;
+        font-size: 1rem;
         cursor: pointer;
         padding: 4px;
         display: flex;
@@ -635,19 +635,19 @@ export const pwaInstaller = {
       }
 
       .pgm-icon-wrap i {
-        font-size: 28px;
+        font-size: 1.75rem;
         color: white;
       }
 
       #pwa-guide-modal h3 {
         margin: 0 0 6px;
-        font-size: 18px;
+        font-size: 1.125rem;
         font-weight: 700;
         color: #fff;
       }
 
       .pgm-subtitle {
-        font-size: 13px;
+        font-size: 0.8125rem;
         color: rgba(255, 255, 255, 0.5);
         margin: 0 0 20px;
       }
@@ -666,7 +666,7 @@ export const pwaInstaller = {
         display: flex;
         align-items: flex-start;
         gap: 10px;
-        font-size: 13.5px;
+        font-size: 0.84375rem;
         color: rgba(255, 255, 255, 0.75);
         line-height: 1.5;
       }
@@ -678,7 +678,7 @@ export const pwaInstaller = {
         background: rgba(88, 86, 214, 0.3);
         border: 1px solid rgba(88, 86, 214, 0.6);
         color: #7C7AE6;
-        font-size: 11px;
+        font-size: 0.6875rem;
         font-weight: 700;
         display: flex;
         align-items: center;
@@ -698,7 +698,7 @@ export const pwaInstaller = {
         color: white;
         border: none;
         border-radius: 14px;
-        font-size: 16px;
+        font-size: 1rem;
         font-weight: 600;
         cursor: pointer;
         transition: transform 0.2s, box-shadow 0.2s;

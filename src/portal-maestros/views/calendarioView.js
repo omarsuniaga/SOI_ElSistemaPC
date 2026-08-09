@@ -233,11 +233,20 @@ async function _calcularEstadoMes(maestroId, anio, mes) {
     const fechaDate = new Date(d)
     const diffDias = Math.floor((hoy - fechaDate) / 86400000)
 
-    // Si la fecha está fuera del período activo y no hay sesión registrada en ese día → Receso Académico
+    // Fuera del período activo → el calendario operativo se muestra vacío
+    // (Receso Académico), SIN importar si esa fecha tiene sesiones
+    // registradas de un período ya cerrado. Antes esta condición se
+    // saltaba cuando la fecha SÍ tenía una sesión real (`tieneSesionRealEnFecha`)
+    // — pero prácticamente todas las fechas de un semestre anterior tienen
+    // sesiones reales, así que esa excepción anulaba el blanqueo justo para
+    // el caso que importa: un semestre cerrado seguía mostrando sus puntos
+    // pendiente/vencida (naranja/rojo) en el calendario. El historial de
+    // esas sesiones sigue disponible en el perfil del alumno y en los
+    // informes de cierre — este calendario es la vista operativa del
+    // período activo, no un archivo histórico.
     const esFueraDePeriodo = periodoActivo && (fecha < periodoActivo.fecha_inicio || fecha > periodoActivo.fecha_fin)
-    const tieneSesionRealEnFecha = Array.from(sesionPorClaseFecha.keys()).some(k => k.startsWith(`${fecha}|`)) || emergentesFecha.length > 0
 
-    if (esFueraDePeriodo && !tieneSesionRealEnFecha) {
+    if (esFueraDePeriodo) {
       estadoMap.set(fecha, 'receso-academico')
       dotsMap.set(fecha, [])
       continue

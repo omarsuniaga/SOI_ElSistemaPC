@@ -139,6 +139,65 @@ describe('periodosView ↔ AppModal (contrato)', () => {
     expect([...new Set(desconocidas)]).toEqual([])
   })
 
+  it('crear un período marcado como "activo" activa por la RPC atómica, nunca por un INSERT directo con activo:true', async () => {
+    // Bugfix: `openCreateModal` llamaba a `PeriodosApi.crearPeriodo({..., activo:
+    // true})` directo — un INSERT plano sin desactivar el período que ya
+    // estuviera activo. Sin un índice único que lo impida, la base terminaba con
+    // DOS filas `activo = true` a la vez, y `getPeriodoActivo()` (que usa
+    // `.single()`) empezaba a fallar en silencio. Ahora el período SIEMPRE se
+    // crea inactivo, y si se marcó el checkbox, la activación pasa por
+    // `activarPeriodoAtomico` — la misma RPC transaccional que usa el botón
+    // "Activar" de un período existente.
+    PeriodosApi.crearPeriodo.mockResolvedValue({ id: 'p-nuevo' })
+    activarPeriodoAtomico.mockResolvedValue({ ok: true })
+
+    const container = await montar()
+    container.querySelector('#btn-nuevo-periodo').click()
+    await vi.waitFor(() => expect(AppModal.open).toHaveBeenCalled())
+
+    const { onSave } = AppModal.open.mock.calls.at(-1)[0]
+
+    const modalBody = document.createElement('div')
+    modalBody.innerHTML = `
+      <input id="modal-nombre" value="Semestre 2027-I">
+      <input id="modal-fecha_inicio" type="date" value="2027-01-01">
+      <input id="modal-fecha_fin" type="date" value="2027-06-30">
+      <input id="modal-activo" type="checkbox" checked>
+    `
+
+    await onSave(modalBody)
+
+    expect(PeriodosApi.crearPeriodo).toHaveBeenCalledWith(
+      expect.objectContaining({ nombre: 'Semestre 2027-I', activo: false }),
+    )
+    expect(activarPeriodoAtomico).toHaveBeenCalledWith('p-nuevo')
+  })
+
+  it('crear un período SIN marcar "activo" no llama a la RPC de activación', async () => {
+    PeriodosApi.crearPeriodo.mockResolvedValue({ id: 'p-nuevo-2' })
+
+    const container = await montar()
+    container.querySelector('#btn-nuevo-periodo').click()
+    await vi.waitFor(() => expect(AppModal.open).toHaveBeenCalled())
+
+    const { onSave } = AppModal.open.mock.calls.at(-1)[0]
+
+    const modalBody = document.createElement('div')
+    modalBody.innerHTML = `
+      <input id="modal-nombre" value="Semestre 2027-II">
+      <input id="modal-fecha_inicio" type="date" value="2027-07-01">
+      <input id="modal-fecha_fin" type="date" value="2027-12-31">
+      <input id="modal-activo" type="checkbox">
+    `
+
+    await onSave(modalBody)
+
+    expect(PeriodosApi.crearPeriodo).toHaveBeenCalledWith(
+      expect.objectContaining({ activo: false }),
+    )
+    expect(activarPeriodoAtomico).not.toHaveBeenCalled()
+  })
+
   it('escapa el nombre del período al renderlo en la tabla', async () => {
     PeriodosApi.getPeriodos.mockResolvedValue([
       { ...PERIODOS[0], nombre: '<img src=x onerror=alert(1)>' },

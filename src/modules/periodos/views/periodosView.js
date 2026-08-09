@@ -384,7 +384,24 @@ export async function renderPeriodosView(container) {
           return false
         }
 
-        await PeriodosApi.crearPeriodo({ nombre, fecha_inicio, fecha_fin, activo })
+        // El período siempre se crea inactivo — si se marcó "Marcar como
+        // período activo", la activación pasa por `activarPeriodoAtomico`
+        // (la misma RPC transaccional que usa el botón "Activar" de un
+        // período existente), NUNCA por un INSERT directo con activo:true.
+        //
+        // Bug que esto corrige: `crearPeriodo({..., activo: true})` hacía
+        // un INSERT plano. No hay ningún índice único sobre
+        // `periodos.activo` que lo impida, así que si ya había OTRO período
+        // activo, la base quedaba con DOS filas activo=true a la vez.
+        // `getPeriodoActivo()` usa `.single()`, que lanza error apenas hay
+        // más de una fila — el error se traga silenciosamente (se trata
+        // como "sin período activo") y CUALQUIER pantalla que se apoye en
+        // el período activo (historial del alumno, notificaciones) deja de
+        // filtrar nada, sin ningún aviso visible.
+        const nuevoPeriodo = await PeriodosApi.crearPeriodo({ nombre, fecha_inicio, fecha_fin, activo: false })
+        if (activo) {
+          await activarPeriodoAtomico(nuevoPeriodo.id)
+        }
         showToast('Período creado con éxito')
         await loadPeriodos()
       }

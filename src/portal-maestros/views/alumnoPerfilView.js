@@ -47,6 +47,16 @@ function waApplyVars(text, { alumno, contacto }) {
 // ───────────────────────────────────────────────────────────────────────────
 
 /**
+ * Normaliza contenido para comparar si dos sesiones cubrieron "lo mismo"
+ * (recuperación de clases perdidas): minúsculas, sin tildes, sin espacios
+ * sobrantes. Coincidencia exacta tras normalizar — no substring, para no
+ * emparejar contenidos distintos que solo comparten una palabra suelta.
+ */
+function _normalizarContenido(str) {
+  return (str || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim()
+}
+
+/**
  * Converts contenido_dsl to readable plain text.
  * Strips DSL bracket markers like [tipo:valor] or [bloque] → readable label.
  */
@@ -838,12 +848,68 @@ export async function renderAlumnoPerfilView(container, { alumnoId }) {
   }
 
   try {
-    // Obtener datos del alumno
-    const { data: alumno, error: alumnoError } = await supabase
-      .from('alumnos')
-      .select('id, nombre_completo, instrumento_principal, tlf_alumno, fecha_nacimiento, created_at, nivel_actual, representante_nombre, representante_tlf, correo_representante, direccion')
-      .eq('id', alumnoId)
-      .single()
+    // Todas las consultas independientes van en paralelo — antes se esperaba
+    // una por una (alumno → inscripciones → sesiones → evaluaciones →
+    // ausencias → justificaciones), sumando la latencia de cada ida y
+    // vuelta a Supabase antes de poder pintar nada. Ninguna de estas 7
+    // depende del resultado de otra (todas usan solo alumnoId), así que
+    // corren juntas — mismo patrón aplicado al drawer del calendario.
+    const [
+      { data: alumno, error: alumnoError },
+      { data: inscripcionesRaw },
+      { data: sesiones },
+      [{ data: evaluaciones }, starEvaluaciones],
+      { data: ausencias },
+      { data: justificaciones },
+      { data: progresos },
+    ] = await Promise.all([
+      supabase
+        .from('alumnos')
+        .select('id, nombre_completo, instrumento_principal, tlf_alumno, fecha_nacimiento, created_at, nivel_actual, representante_nombre, representante_tlf, correo_representante, direccion')
+        .eq('id', alumnoId)
+        .single(),
+      // Sin join — evita bloqueo RLS en clases
+      supabase.from('alumnos_clases').select('clase_id').eq('alumno_id', alumnoId).eq('activo', true),
+      // Los datos de asistencia viven en el JSONB asistencia[] de sesiones_clase
+      // estados: 'P' | 'A' | 'J' | 'T'
+      supabase
+        .from('sesiones_clase')
+        .select('id, clase_id, fecha, contenido_dsl, asistencia')
+        .filter('asistencia', 'cs', JSON.stringify([{ alumno_id: alumnoId }]))
+        .order('fecha', { ascending: false })
+        .limit(60),
+      Promise.all([
+        supabase
+          .from('indicator_attempts')
+          .select('id, nota, observations, tarea, created_at, indicator_id, covered_by_clase_id')
+          .eq('student_id', alumnoId)
+          .order('created_at', { ascending: false })
+          .limit(30),
+        _loadStarEvaluacionesAlumno(alumnoId),
+      ]),
+      supabase
+        .from('ausencias')
+        .select('id, fecha_inicio, fecha_fin, motivo, estado, clase_id')
+        .eq('alumno_id', alumnoId)
+        .order('fecha_inicio', { ascending: false })
+        .limit(10),
+      supabase
+        .from('justificaciones')
+        .select('sesion_id, motivo, evidencia_url, estado, fecha')
+        .eq('alumno_id', alumnoId)
+        .order('fecha', { ascending: false }),
+      // Registros estructurados por alumno+sesión (contenido + calificación
+      // ya vinculados vía sesion_clase_id) — la fuente que de verdad conecta
+      // "qué recibió" con "qué nota sacó" en la MISMA fila. Se guarda sola
+      // cuando el maestro guarda observaciones de la sesión (ObservationSaveButton).
+      supabase
+        .from('progresos')
+        .select('id, sesion_clase_id, clase_id, contenido_dsl, estado_cualitativo, calificacion, observaciones, fecha_evaluacion')
+        .eq('alumno_id', alumnoId)
+        .not('sesion_clase_id', 'is', null)
+        .order('fecha_evaluacion', { ascending: false })
+        .limit(150),
+    ])
 
     if (alumnoError || !alumno) {
       console.error('[AlumnoPerfil] Error al obtener alumno:', alumnoError)
@@ -857,22 +923,7 @@ export async function renderAlumnoPerfilView(container, { alumnoId }) {
       return
     }
 
-    // Obtener IDs de clases inscritas (sin join — evita bloqueo RLS en clases)
-    const { data: inscripcionesRaw } = await supabase
-      .from('alumnos_clases')
-      .select('clase_id')
-      .eq('alumno_id', alumnoId)
-      .eq('activo', true)
     const inscritaIds = (inscripcionesRaw || []).map(r => r.clase_id).filter(Boolean)
-
-    // Los datos de asistencia viven en el JSONB asistencia[] de sesiones_clase
-    // estados: 'P' | 'A' | 'J' | 'T'
-    const { data: sesiones } = await supabase
-      .from('sesiones_clase')
-      .select('id, clase_id, fecha, contenido_dsl, asistencia')
-      .filter('asistencia', 'cs', JSON.stringify([{ alumno_id: alumnoId }]))
-      .order('fecha', { ascending: false })
-      .limit(60)
 
     // Aplanar a filas simples y extraer el registro del alumno de cada sesión
     const asistenciaRows = (sesiones || []).map(s => {
@@ -890,31 +941,19 @@ export async function renderAlumnoPerfilView(container, { alumnoId }) {
     // Mapa de contenido DSL por sesión (ya está en asistenciaRows)
     const sesionDslMap = new Map(asistenciaRows.map(r => [r.sesion_id, r.contenido_dsl]))
 
-    // Obtener todas las evaluaciones del alumno y las estrellas por indicador
-    const [{ data: evaluaciones }, starEvaluaciones] = await Promise.all([
-      supabase
-        .from('indicator_attempts')
-        .select('id, nota, observations, tarea, created_at, indicator_id, covered_by_clase_id')
-        .eq('student_id', alumnoId)
-        .order('created_at', { ascending: false })
-        .limit(30),
-      _loadStarEvaluacionesAlumno(alumnoId),
-    ])
+    // progresos SÍ conecta contenido + calificación en una sola fila por
+    // sesión (sesion_clase_id) — a diferencia de indicator_attempts, que
+    // solo referencia la clase, nunca la sesión puntual. Agrupamos por
+    // sesión para poder mostrar, en el historial, qué calificación salió
+    // de CADA clase que el alumno recibió (no solo una lista de notas
+    // suelta y desconectada del contenido que las originó).
+    const progresosPorSesion = new Map()
+    for (const p of (progresos || [])) {
+      if (!p.sesion_clase_id) continue
+      if (!progresosPorSesion.has(p.sesion_clase_id)) progresosPorSesion.set(p.sesion_clase_id, [])
+      progresosPorSesion.get(p.sesion_clase_id).push(p)
+    }
 
-    // Obtener ausencias del alumno
-    const { data: ausencias } = await supabase
-      .from('ausencias')
-      .select('id, fecha_inicio, fecha_fin, motivo, estado, clase_id')
-      .eq('alumno_id', alumnoId)
-      .order('fecha_inicio', { ascending: false })
-      .limit(10)
-
-    // Obtener justificaciones del alumno (para mostrar motivo en historial)
-    const { data: justificaciones } = await supabase
-      .from('justificaciones')
-      .select('sesion_id, motivo, evidencia_url, estado, fecha')
-      .eq('alumno_id', alumnoId)
-      .order('fecha', { ascending: false })
     const justifMap = new Map((justificaciones || []).map(j => [j.sesion_id, j]))
 
     // Estados directos del JSONB: 'P' | 'A' | 'J' | 'T'
@@ -969,10 +1008,34 @@ export async function renderAlumnoPerfilView(container, { alumnoId }) {
       : { data: [] }
     const claseMap = new Map((clasesInfo || []).map(c => [c.id, c]))
 
-    // Sesiones donde estuvo presente y hay contenido DSL
+    // Sesiones con contenido para mostrar en el historial: presente (con
+    // calificación si la hay), o ausente/justificado (sin calificación,
+    // pero el contenido SÍ se muestra — la clase se dio igual, el alumno
+    // simplemente no la recibió ese día y debe recuperarla).
     const sesionesPresentes = asistenciaRows.filter(r =>
-      r.estado === 'P' && r.contenido_dsl?.trim()
+      (r.estado === 'P' || r.estado === 'A' || r.estado === 'J') &&
+      (r.contenido_dsl?.trim() || progresosPorSesion.has(r.sesion_id))
     )
+
+    // Recuperación: si el alumno faltó/justificó una sesión con cierto
+    // contenido y MÁS ADELANTE aparece presente en otra sesión de la MISMA
+    // clase con el mismo contenido (normalizado), se anota en la entrada
+    // perdida que la recuperó — sin duplicar la fila (la sesión de
+    // recuperación ya aparece por su cuenta, al ser presente). El alumno
+    // puede quedar desfasado del resto del grupo y aun así recuperar.
+    const recuperacionPorSesion = new Map() // sesion_id (de la perdida) -> { fecha }
+    const perdidas = sesionesPresentes.filter(r => r.estado !== 'P')
+    for (const perdida of perdidas) {
+      const contenidoPerdida = _normalizarContenido(perdida.contenido_dsl)
+      if (!contenidoPerdida) continue
+      const recuperacion = sesionesPresentes.find(r =>
+        r.estado === 'P' &&
+        r.clase_id === perdida.clase_id &&
+        r.fecha > perdida.fecha &&
+        _normalizarContenido(r.contenido_dsl) === contenidoPerdida
+      )
+      if (recuperacion) recuperacionPorSesion.set(perdida.sesion_id, recuperacion)
+    }
 
     // Evaluaciones que tienen observaciones del maestro
     const conObservaciones = evaluaciones?.filter(e => e.observations?.trim()) || []
@@ -1155,21 +1218,59 @@ export async function renderAlumnoPerfilView(container, { alumnoId }) {
           </div>
           ` : ''}
 
-          <!-- 📖 Bitácora de Clases -->
+          <!-- 📖 Historial de Clases (contenido + calificación de esa misma sesión, cuando existe) -->
           ${sesionesPresentes.length > 0 ? `
           <div class="pm-zen-section">
-            <h3 class="pm-zen-section-title">📖 Bitácora de Clases</h3>
+            <h3 class="pm-zen-section-title">📖 Historial de Clases</h3>
             <div class="pm-zen-bitacora">
               ${sesionesPresentes.map(r => {
                 const clase = claseMap.get(r.clase_id)
-                const contenido = parseDslToText(r.contenido_dsl)
+                const contenidoGeneral = parseDslToText(r.contenido_dsl)
+                const fechaStr = new Date(r.fecha).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: '2-digit' })
+                // progresos trae el registro estructurado (contenido + nota) de ESTA
+                // sesión puntual — puede haber más de uno si se calificó más de un
+                // indicador/tema el mismo día.
+                const registros = progresosPorSesion.get(r.sesion_id) || []
+
+                const registrosHTML = registros.map(p => {
+                  const cfg = ESTADO_CFG[p.estado_cualitativo] ?? ESTADO_CFG.EN_PROGRESO
+                  const contenidoRegistro = p.contenido_dsl && p.contenido_dsl !== r.contenido_dsl
+                    ? escHTML(p.contenido_dsl)
+                    : ''
+                  return `
+                    <div class="pm-zen-bitacora-registro" style="display:flex; align-items:flex-start; gap:0.4rem; margin-top:0.35rem; padding-top:0.35rem; border-top:1px dashed var(--pm-border);">
+                      <span style="color:${cfg.color}; flex-shrink:0;">${cfg.icon}</span>
+                      <div style="min-width:0;">
+                        ${contenidoRegistro ? `<span style="font-size:0.78rem;">${contenidoRegistro}</span><br/>` : ''}
+                        <span style="font-size:0.72rem; font-weight:700; color:${cfg.color};">${cfg.label}${p.calificacion != null ? ` · ${p.calificacion}/10` : ''}</span>
+                        ${p.observaciones ? `<span style="font-size:0.72rem; color:var(--pm-text-muted);"> — ${escHTML(p.observaciones)}</span>` : ''}
+                      </div>
+                    </div>
+                  `
+                }).join('')
+
+                // No asistió (Ausente/Justificado): la clase se dio igual —
+                // se muestra el contenido para que quede claro qué debe
+                // recuperar, sin calificación (no la recibió ese día).
+                const noAsistio = r.estado !== 'P'
+                const badgeAusencia = noAsistio
+                  ? `<span style="font-size:0.68rem; font-weight:700; padding:0.15rem 0.5rem; border-radius:999px; background:${r.estado === 'J' ? 'rgba(13,110,253,0.12)' : 'rgba(220,53,69,0.12)'}; color:${r.estado === 'J' ? '#0d6efd' : '#dc3545'};">${r.estado === 'J' ? '📌 Justificado — no asistió' : '❌ No asistió'}</span>`
+                  : ''
+
+                const recuperacion = recuperacionPorSesion.get(r.sesion_id)
+                const notaRecuperacion = recuperacion
+                  ? `<p style="font-size:0.72rem; color:var(--pm-success); margin:0.35rem 0 0;">🔁 Recuperó este contenido el ${new Date(recuperacion.fecha).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: '2-digit' })}.</p>`
+                  : (noAsistio ? `<p style="font-size:0.72rem; color:var(--pm-text-muted); margin:0.35rem 0 0; font-style:italic;">Pendiente de recuperar.</p>` : '')
+
                 return `
-                  <div class="pm-zen-bitacora-item pm-glass">
+                  <div class="pm-zen-bitacora-item pm-glass" style="${noAsistio ? 'opacity:0.75;' : ''}">
                     <div class="pm-zen-bitacora-header">
                       <span class="pm-zen-bitacora-clase">${escHTML(clase?.nombre || 'Clase')}</span>
-                      <span class="pm-zen-bitacora-fecha">${new Date(r.fecha).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: '2-digit' })}</span>
+                      <span class="pm-zen-bitacora-fecha">${fechaStr}</span>
                     </div>
-                    <p class="pm-zen-bitacora-contenido">${escHTML(contenido)}</p>
+                    ${badgeAusencia}
+                    ${contenidoGeneral ? `<p class="pm-zen-bitacora-contenido">${escHTML(contenidoGeneral)}</p>` : ''}
+                    ${noAsistio ? notaRecuperacion : registrosHTML}
                   </div>
                 `
               }).join('')}

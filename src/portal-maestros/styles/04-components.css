@@ -164,12 +164,15 @@
 }
 
 /* ── Drawer ─────────────────────────────────────────────────── */
+/* Los drawers son overlays a pantalla completa: deben quedar POR ENCIMA del
+   footer móvil (z-index 9999), igual que los modales, para que sus acciones
+   no queden tapadas por el menú. */
 .pm-drawer-overlay,
 .calendario-drawer-overlay {
   position: fixed;
   inset: 0;
   background: rgba(0,0,0,.4);
-  z-index: 1000;
+  z-index: 10000;
   opacity: 0;
   visibility: hidden;
   transition: opacity .25s, visibility .25s;
@@ -572,7 +575,7 @@
   padding: 12px 20px;
   border-radius: 8px;
   z-index: 10000;
-  font-size: 14px;
+  font-size: 0.875rem;
 }
 
 /* ═══════════════════════════════════════════════════════════════

@@ -615,18 +615,18 @@ function _injectToastStyles() {
       padding: 12px 14px;
       box-shadow: 0 8px 32px rgba(0,0,0,0.35);
     }
-    .pm-iat-icon { font-size: 22px; flex-shrink: 0; line-height: 1.4; }
+    .pm-iat-icon { font-size: 1.375rem; flex-shrink: 0; line-height: 1.4; }
     .pm-iat-text { flex: 1; min-width: 0; }
     .pm-iat-title {
       display: block;
-      font-size: 13px;
+      font-size: 0.8125rem;
       font-weight: 700;
       color: #fff;
       margin-bottom: 2px;
     }
     .pm-iat-msg {
       display: block;
-      font-size: 12px;
+      font-size: 0.75rem;
       color: rgba(255,255,255,0.6);
       line-height: 1.4;
       overflow: hidden;
@@ -638,7 +638,7 @@ function _injectToastStyles() {
       background: transparent;
       border: none;
       color: rgba(255,255,255,0.35);
-      font-size: 18px;
+      font-size: 1.125rem;
       cursor: pointer;
       padding: 0 2px;
       line-height: 1;

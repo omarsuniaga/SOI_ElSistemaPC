@@ -400,7 +400,7 @@
   border-radius: 8px;
   background: var(--pm-surface, #fff);
   color: var(--pm-text-primary, #1e293b);
-  font-size: 13px;
+  font-size: 0.8125rem;
   cursor: pointer;
 }
 
@@ -411,7 +411,7 @@
   border-radius: 10px;
   padding: 10px 14px;
   margin-bottom: 16px;
-  font-size: 13px;
+  font-size: 0.8125rem;
   color: #92400e;
   display: flex;
   align-items: center;
@@ -423,7 +423,7 @@
   background: none;
   border: none;
   cursor: pointer;
-  font-size: 12px;
+  font-size: 0.75rem;
   color: #92400e;
   text-decoration: underline;
 }
@@ -467,12 +467,12 @@
 
 .rp-level-name {
   font-weight: 600;
-  font-size: 13px;
+  font-size: 0.8125rem;
   color: var(--pm-text-primary, #1e293b);
 }
 
 .rp-level-pct {
-  font-size: 11px;
+  font-size: 0.6875rem;
   margin-top: 2px;
 }
 .rp-level-pct[data-semaphore="green"] { color: #22c55e; }
@@ -499,7 +499,7 @@
 .rp-chevron {
   color: #94a3b8;
   transition: transform 0.2s;
-  font-size: 14px;
+  font-size: 0.875rem;
 }
 
 .rp-level-body {
@@ -539,7 +539,7 @@
 }
 
 .rp-node-name {
-  font-size: 13px;
+  font-size: 0.8125rem;
   font-weight: 600;
   color: var(--pm-text-primary, #1e293b);
   flex: 1;

@@ -308,35 +308,27 @@ describe('generateDailyReport', () => {
 describe('openReport / downloadReport', () => {
   // Estos tests verifican el comportamiento importando directamente de reportTemplates
   // Para evitar el mock completo del módulo, reimportamos con vi.importActual
-  it('openReport retorna true cuando window.open tiene éxito', async () => {
-    const { openReport: realOpenReport } = await vi.importActual('../reportTemplates.js')
+  it('openReport renderiza el modal visor HTML en el DOM por defecto', async () => {
+    const { openReport: realOpenReport, closeReportViewerModal } = await vi.importActual('../reportTemplates.js')
 
-    const mockWindow = {
-      document: { open: vi.fn(), write: vi.fn(), close: vi.fn() },
-      focus: vi.fn(),
-      print: vi.fn(),
-      closed: false,
-      onload: null,
-    }
-    const originalOpen = window.open
-    window.open = vi.fn().mockReturnValue(mockWindow)
-
-    const result = realOpenReport('<html><body>test</body></html>', 'reporte-test')
+    const result = realOpenReport('<html><body>test</body></html>', 'reporte-test', { title: 'Reporte de Prueba' })
 
     expect(result).toBe(true)
-    expect(window.open).toHaveBeenCalledWith('', '_blank')
-    expect(mockWindow.document.write).toHaveBeenCalledWith('<html><body>test</body></html>')
+    const modal = document.querySelector('.pm-report-overlay')
+    expect(modal).toBeTruthy()
+    expect(modal.textContent).toContain('Reporte de Prueba')
+    expect(modal.querySelector('#btn-pm-modal-pdf')).toBeTruthy()
+    expect(modal.querySelector('#btn-pm-modal-html')).toBeTruthy()
 
-    window.open = originalOpen
+    modal.remove()
   })
 
-  it('openReport retorna false y descarga como archivo cuando window.open está bloqueado', async () => {
+  it('openReport con openInNewTab usa window.open y fallback de descarga si está bloqueado', async () => {
     const { openReport: realOpenReport } = await vi.importActual('../reportTemplates.js')
 
     const originalOpen = window.open
     window.open = vi.fn().mockReturnValue(null) // bloqueado
 
-    // Mock para URL.createObjectURL y el anchor click
     const originalCreateObjectURL = URL.createObjectURL
     const originalRevokeObjectURL = URL.revokeObjectURL
     URL.createObjectURL = vi.fn().mockReturnValue('blob:mock-url')
@@ -345,7 +337,7 @@ describe('openReport / downloadReport', () => {
     const appendChildSpy = vi.spyOn(document.body, 'appendChild').mockImplementation(() => {})
     const removeChildSpy = vi.spyOn(document.body, 'removeChild').mockImplementation(() => {})
 
-    const result = realOpenReport('<html><body>test</body></html>', 'mi-reporte')
+    const result = realOpenReport('<html><body>test</body></html>', 'mi-reporte', { openInNewTab: true })
 
     expect(result).toBe(false)
     expect(URL.createObjectURL).toHaveBeenCalled()

@@ -1,33 +1,33 @@
 /**
- * tareasView.js â€” Vista de Tareas Institucionales (Hermes).
+ * tareasView.js — Vista de Tareas Institucionales (Hermes).
  * Lee las tareas generadas por el motor de cascada y permite al staff
  * actualizar estado, checklist y feedback.
  *
- * Esquema real (tareas_institucionales) â€” SP-0 ampliado:
+ * Esquema real (tareas_institucionales) — SP-0 ampliado:
  *   departamento: DIR|ACM|ADM|FIN|LOG|COM|TECNICO
  *   estado:       pendiente|en_progreso|completada|bloqueada|cancelada|observada
  *   prioridad:    baja|media|alta|critica
  *   checklist:    [{ item, completado }]
  *   feedback:     TEXT
- *   entidad_tipo, entidad_id, entidad_label  (SP-0: asociaciÃ³n polimÃ³rfica)
- *   correlation_id                           (SP-0: agrupaciÃ³n por caso)
+ *   entidad_tipo, entidad_id, entidad_label  (SP-0: asociación polimórfica)
+ *   correlation_id                           (SP-0: agrupación por caso)
  *   updated_by, updated_by_nombre            (SP-0: actor real del cambio)
  *
  * SP-0 agrega (aditivamente, sin romper funcionalidad existente):
  *   - entityChip en cards y modal
  *   - statusBadge con observada en cards
  *   - commentsPanel, historyTimeline, attachmentsPanel en modal
- *   - TransiciÃ³n a observada vÃ­a botÃ³n dedicado (RPC, comentario obligatorio)
- *   - KPI "Observadas" en header (cuando hay â‰¥1)
+ *   - Transición a observada vía botón dedicado (RPC, comentario obligatorio)
+ *   - KPI "Observadas" en header (cuando hay ≥1)
  *   - Filtro de estado incluye observada
  *
- * PatrÃ³n: retorna { teardown() } para limpieza de listeners (AbortController).
+ * Patrón: retorna { teardown() } para limpieza de listeners (AbortController).
  *
  * @param {HTMLElement} container
  * @param {object} [opciones]
- * @param {string} [opciones.departamento] â€” fija el portal a un departamento
- * @param {object} [opciones.actor] â€” { id, nombre } del usuario en sesiÃ³n (SP-0)
- * @param {boolean} [opciones.hideCalendarBtn] â€” reservado (no-op hoy)
+ * @param {string} [opciones.departamento] — fija el portal a un departamento
+ * @param {object} [opciones.actor] — { id, nombre } del usuario en sesión (SP-0)
+ * @param {boolean} [opciones.hideCalendarBtn] — reservado (no-op hoy)
  */
 
 import '../styles/tareas.css'
@@ -44,13 +44,13 @@ import { esTareaToolCallAprobable, extraerToolCallPayload, formatearArgsToolCall
 import { escapeHTML } from '../../../shared/utils/sanitize.js'
 
 const DEPARTAMENTOS = {
-  DIR: 'DirecciÃ³n',
-  ACM: 'AcadÃ©mica',
-  ADM: 'AdministraciÃ³n',
+  DIR: 'Dirección',
+  ACM: 'Académica',
+  ADM: 'Administración',
   FIN: 'Financiero',
-  LOG: 'LogÃ­stica',
+  LOG: 'Logística',
   COM: 'Comunicaciones',
-  TECNICO: 'TÃ©cnico',
+  TECNICO: 'Técnico',
 }
 
 // SP-0: ESTADOS sourced from taskStatusBadge component (includes 'observada').
@@ -62,7 +62,7 @@ const PRIORIDADES = {
   baja: { label: 'Baja', color: 'secondary', orden: 3 },
   media: { label: 'Media', color: 'info', orden: 2 },
   alta: { label: 'Alta', color: 'warning', orden: 1 },
-  critica: { label: 'CrÃ­tica', color: 'danger', orden: 0 },
+  critica: { label: 'Crítica', color: 'danger', orden: 0 },
 }
 
 const state = {
@@ -185,7 +185,7 @@ function renderContent(container) {
   const tareasFiltradas = filtrarTareas()
   const cuenta = (estado) => state.tareas.filter((t) => t.estado === estado).length
   const tituloPortal = state.departamentoFijo
-    ? `Tareas â€” ${DEPARTAMENTOS[state.departamentoFijo] || state.departamentoFijo}`
+    ? `Tareas — ${DEPARTAMENTOS[state.departamentoFijo] || state.departamentoFijo}`
     : state.processCode
       ? `Tareas del caso ${state.processCode}`
       : 'Tareas Institucionales'
@@ -244,7 +244,7 @@ function renderContent(container) {
       <div class="tareas-filters mb-4 d-flex gap-2 flex-wrap">
         <div class="flex-grow-1" style="min-width: 200px;">
           <input type="text" class="form-control form-control-sm" id="buscarTarea"
-            placeholder="ðŸ” Buscar tarea..." autocomplete="off" value="${escapeHTML(state.busqueda)}">
+            placeholder="🔍 Buscar tarea..." autocomplete="off" value="${escapeHTML(state.busqueda)}">
         </div>
         <select class="form-select form-select-sm" id="filtroEstado" style="max-width: 150px;">
           <option value="todos">Todos Estados</option>
@@ -298,7 +298,7 @@ function renderTareaCard(tarea) {
   // SP-0: entity chip and status badge from sub-components
   const entityChip = renderTaskEntityChip(tarea)
   const statusBadge = renderTaskStatusBadge(tarea.estado)
-  // Slice 4: badge "Tool" para solicitudes de aprobaciÃ³n de tool_call.
+  // Slice 4: badge "Tool" para solicitudes de aprobación de tool_call.
   const esToolCall = tarea.entidad_tipo === 'tool_call'
 
   return `
@@ -307,7 +307,7 @@ function renderTareaCard(tarea) {
         <div class="d-flex align-items-start gap-3">
           <div class="flex-shrink-0">
             <span class="badge bg-${prioridad.color}" title="${prioridad.label}">${prioridad.label}</span>
-            ${esToolCall ? `<span class="badge bg-dark ms-1" title="Solicitud de aprobaciÃ³n de tool"><i class="bi bi-robot me-1"></i>Tool</span>` : ''}
+            ${esToolCall ? `<span class="badge bg-dark ms-1" title="Solicitud de aprobación de tool"><i class="bi bi-robot me-1"></i>Tool</span>` : ''}
           </div>
           <div class="flex-grow-1">
             <h5 class="card-title mb-1">${escapeHTML(tarea.titulo)}</h5>
@@ -469,7 +469,7 @@ async function openTareaModal(container, tarea) {
   // (must use the dedicated "Observar" button which calls the RPC with mandatory comment)
   const estadosParaSelect = Object.entries(ESTADOS).filter(([k]) => k !== 'observada')
 
-  // Slice 4: panel de aprobaciÃ³n humana para tool_calls (Domain: hermes-write-approval).
+  // Slice 4: panel de aprobación humana para tool_calls (Domain: hermes-write-approval).
   const esAprobableToolCall = esTareaToolCallAprobable(tarea)
   const toolCallPayload = esAprobableToolCall ? extraerToolCallPayload(tarea) : null
   const toolCallArgsFilas = toolCallPayload ? formatearArgsToolCall(toolCallPayload.args) : []
@@ -483,7 +483,7 @@ async function openTareaModal(container, tarea) {
         <div class="row mb-3">
           <div class="col-md-4"><strong>Departamento</strong><p>${DEPARTAMENTOS[tarea.departamento] || tarea.departamento}</p></div>
           <div class="col-md-4"><strong>Prioridad</strong><p><span class="badge bg-${prioridad.color}">${prioridad.label}</span></p></div>
-          <div class="col-md-4"><strong>Vencimiento</strong><p>${tarea.fecha_vencimiento || 'â€”'}</p></div>
+          <div class="col-md-4"><strong>Vencimiento</strong><p>${tarea.fecha_vencimiento || '—'}</p></div>
         </div>
 
         ${entityChip ? `<div class="mb-3"><strong>Entidad asociada</strong><div class="mt-1">${entityChip}</div></div>` : ''}
@@ -491,7 +491,7 @@ async function openTareaModal(container, tarea) {
         ${
           esAprobableToolCall && toolCallPayload
             ? `<div class="mb-3 border rounded p-3 bg-dark bg-opacity-10" id="toolApprovalPanel">
-                 <strong class="d-block mb-2"><i class="bi bi-robot me-1"></i>Solicitud de ejecuciÃ³n de tool</strong>
+                 <strong class="d-block mb-2"><i class="bi bi-robot me-1"></i>Solicitud de ejecución de tool</strong>
                  <div class="row mb-2 small">
                    <div class="col-md-6"><span class="text-muted">Tool</span><p class="mb-0 fw-semibold">${escapeHTML(tarea.entidad_label || toolCallPayload.tool_name)}</p></div>
                    <div class="col-md-6"><span class="text-muted">Departamento</span><p class="mb-0">${DEPARTAMENTOS[tarea.departamento] || tarea.departamento}</p></div>
@@ -508,7 +508,7 @@ async function openTareaModal(container, tarea) {
                      : '<p class="text-muted small mb-2">Esta tool no requiere argumentos.</p>'
                  }
                  <textarea class="form-control form-control-sm mb-2" id="toolRechazoMotivo" rows="2"
-                   placeholder="Motivo del rechazo (obligatorio solo si rechazÃ¡s)..."></textarea>
+                   placeholder="Motivo del rechazo (obligatorio solo si rechazás)..."></textarea>
                  <div class="d-flex gap-2">
                    <button class="btn btn-sm btn-success" id="btnAprobarTool" type="button">
                      <i class="bi bi-check-circle me-1"></i>Aprobar y ejecutar
@@ -532,7 +532,7 @@ async function openTareaModal(container, tarea) {
                      .join('')}
                  </select>`
               : `<input type="hidden" id="modalEstado" value="observada">
-                 <p class="text-muted small mt-1"><i class="bi bi-info-circle me-1"></i>Este estado sÃ³lo puede modificarse mediante una nueva transiciÃ³n.</p>`
+                 <p class="text-muted small mt-1"><i class="bi bi-info-circle me-1"></i>Este estado sólo puede modificarse mediante una nueva transición.</p>`
           }
         </div>
 
@@ -540,9 +540,9 @@ async function openTareaModal(container, tarea) {
           tarea.estado !== 'observada'
             ? `<div class="mb-3 border rounded p-3 bg-warning bg-opacity-10">
                  <strong class="d-block mb-2"><i class="bi bi-eye me-1 text-warning"></i>Marcar como Observada</strong>
-                 <p class="small text-muted mb-2">Requiere un comentario obligatorio que explique la observaciÃ³n.</p>
+                 <p class="small text-muted mb-2">Requiere un comentario obligatorio que explique la observación.</p>
                  <textarea class="form-control form-control-sm" id="modalObservarComentario" rows="2"
-                   placeholder="Motivo de la observaciÃ³n (obligatorio)..."></textarea>
+                   placeholder="Motivo de la observación (obligatorio)..."></textarea>
                  <button class="btn btn-sm btn-warning mt-2" id="btnObservar" type="button">
                    <i class="bi bi-eye me-1"></i>Marcar como Observada
                  </button>
@@ -679,7 +679,7 @@ async function openTareaModal(container, tarea) {
           const input = modalBody.querySelector('.task-comment-input')
           const cuerpo = input?.value?.trim() || ''
           if (!cuerpo) {
-            AppToast.show('El comentario no puede estar vacÃ­o', 'error')
+            AppToast.show('El comentario no puede estar vacío', 'error')
             return
           }
           try {

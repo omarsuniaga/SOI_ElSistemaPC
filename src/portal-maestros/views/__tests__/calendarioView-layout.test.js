@@ -31,7 +31,7 @@ describe('calendarioView - layout responsive y estados vacios', () => {
     expect(container.querySelector('.pm-calendar-empty-card')).toBeTruthy()
   })
 
-  it('renderiza hero y resumen mensual cuando existen clases', async () => {
+  it('renderiza calendario operativo y controles de navegación cuando existen clases', async () => {
     maestroDataService.getMisClases.mockResolvedValue([
       { id: 'clase-1', nombre: 'Violín A', maestro_id: 'maestro-1' },
     ])
@@ -42,9 +42,11 @@ describe('calendarioView - layout responsive y estados vacios', () => {
 
     await renderCalendarioView(container)
 
-    expect(container.querySelector('.pm-calendar-hero')).toBeTruthy()
-    expect(container.querySelector('.pm-calendar-overview')).toBeTruthy()
-    expect(container.querySelectorAll('.pm-calendar-kpi').length).toBe(4)
-    expect(container.textContent).toContain('Agenda mensual del maestro')
+    expect(container.querySelector('.pm-calendar-container')).toBeTruthy()
+    expect(container.querySelector('.pm-cal-grid')).toBeTruthy()
+    expect(container.querySelector('#pm-cal-prev')).toBeTruthy()
+    expect(container.querySelector('#pm-cal-next')).toBeTruthy()
+    expect(container.querySelector('#pm-cal-today')).toBeTruthy()
+    expect(container.querySelector('.pm-cal-header-copy__eyebrow').textContent).toBe('Calendario operativo')
   })
 })

@@ -1,8 +1,8 @@
 ﻿/**
- * taskCommentsPanel.js â€” Panel de comentarios internos de una tarea.
+ * taskCommentsPanel.js — Panel de comentarios internos de una tarea.
  * SP-0 / R4: hilo de comentarios + input para agregar.
  *
- * Render puro: renderTaskCommentsPanel(tareaId, comentarios) â†’ HTML string.
+ * Render puro: renderTaskCommentsPanel(tareaId, comentarios) → HTML string.
  * El wiring de eventos (submit) lo hace el caller (tareasView.js).
  */
 
@@ -29,7 +29,7 @@ function formatDate(isoString) {
  */
 export function renderTaskCommentsPanel(tareaId, comentarios = []) {
   const hiloHTML = comentarios.length === 0
-    ? `<p class="text-muted small text-center py-2"><i class="bi bi-chat-square-dots me-1"></i>Sin comentarios aÃºn.</p>`
+    ? `<p class="text-muted small text-center py-2"><i class="bi bi-chat-square-dots me-1"></i>Sin comentarios aún.</p>`
     : comentarios.map((c) => `
         <div class="task-comment-item d-flex gap-2 mb-3" data-comment-id="${escapeHTML(c.id)}">
           <div class="task-comment-avatar flex-shrink-0 rounded-circle bg-primary bg-opacity-10 text-primary d-flex align-items-center justify-content-center" style="width:32px;height:32px;">
@@ -37,7 +37,7 @@ export function renderTaskCommentsPanel(tareaId, comentarios = []) {
           </div>
           <div class="flex-grow-1">
             <div class="d-flex align-items-baseline gap-2 mb-1">
-              <strong class="small">${escapeHTML(c.autor_nombre || 'AnÃ³nimo')}</strong>
+              <strong class="small">${escapeHTML(c.autor_nombre || 'Anónimo')}</strong>
               <small class="text-muted">${formatDate(c.created_at)}</small>
             </div>
             <p class="mb-0 small">${escapeHTML(c.cuerpo)}</p>
@@ -56,7 +56,7 @@ export function renderTaskCommentsPanel(tareaId, comentarios = []) {
       <div class="task-comment-form">
         <label class="form-label small fw-semibold">Agregar comentario</label>
         <textarea class="form-control form-control-sm task-comment-input" id="taskCommentInput"
-          rows="2" placeholder="Escribe tu comentario aquÃ­..."></textarea>
+          rows="2" placeholder="Escribe tu comentario aquí..."></textarea>
         <div class="d-flex justify-content-end mt-2">
           <button class="btn btn-sm btn-primary task-comment-submit" type="button">
             <i class="bi bi-send me-1"></i>Enviar

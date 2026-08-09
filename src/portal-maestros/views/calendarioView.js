@@ -78,7 +78,7 @@ export async function renderCalendarioView(container, { onFechaClick } = {}) {
       _renderCalendario(container, anio, mes, hoy, estadoMap, dotsMap, {
         classCount,
         onFechaClick: (fecha) => {
-          _openActionDrawer(fecha)
+          _openActionDrawer(fecha, container)
           onFechaClick?.(fecha)
         },
         onToday: () => {
@@ -401,7 +401,6 @@ function _renderCalendario(container, anio, mes, hoy, estadoMap, dotsMap, {
   const firstDate = `${anio}-${String(mes + 1).padStart(2, '0')}-01`
   const lastDate = `${anio}-${String(mes + 1).padStart(2, '0')}-${String(diasEnMes).padStart(2, '0')}`
   const activeDate = hoyStr >= firstDate && hoyStr <= lastDate ? hoyStr : firstDate
-  const monthSummary = _buildMonthSummary({ anio, mes, hoy, estadoMap, dotsMap, classCount })
   const isCurrentMonth = hoy.getFullYear() === anio && hoy.getMonth() === mes
 
   let diasHTML = DIAS_HEADER.map((d) => `<div class="pm-cal-day-header">${d}</div>`).join('')
@@ -435,39 +434,6 @@ function _renderCalendario(container, anio, mes, hoy, estadoMap, dotsMap, {
 
   container.innerHTML = `
     <section class="pm-calendar-shell">
-      <div class="pm-calendar-hero">
-        <div class="pm-calendar-hero__content">
-          <span class="pm-calendar-badge">Vista Clases</span>
-          <h1 class="pm-calendar-title">Agenda mensual del maestro</h1>
-          <p class="pm-calendar-subtitle">
-            Revisa tus clases por mes, detecta registros pendientes y entra a cada fecha
-            con un solo toque para pasar asistencia o continuar un borrador.
-          </p>
-        </div>
-        <div class="pm-calendar-hero__actions">
-          <span class="pm-calendar-month-chip">
-            <i class="bi bi-calendar3"></i> ${MESES_ES[mes]} ${anio}
-          </span>
-          <button id="pm-cal-today" class="pm-calendar-today-btn" ${isCurrentMonth ? 'disabled' : ''}>
-            <i class="bi bi-bullseye"></i> ${isCurrentMonth ? 'Mes actual' : 'Ir a hoy'}
-          </button>
-        </div>
-      </div>
-
-      <div class="pm-calendar-overview" aria-label="Resumen de clases del mes">
-        ${monthSummary.map((item) => `
-          <article class="pm-calendar-kpi pm-calendar-kpi--${item.tone}">
-            <div class="pm-calendar-kpi__icon">
-              <i class="bi ${item.icon}"></i>
-            </div>
-            <div class="pm-calendar-kpi__body">
-              <span class="pm-calendar-kpi__label">${item.label}</span>
-              <strong class="pm-calendar-kpi__value">${item.value}</strong>
-            </div>
-          </article>
-        `).join('')}
-      </div>
-
       <div class="pm-calendar-wrapper">
         <div class="pm-calendar-container">
           <div class="pm-cal-header">
@@ -478,6 +444,9 @@ function _renderCalendario(container, anio, mes, hoy, estadoMap, dotsMap, {
             <div class="pm-cal-header-actions">
               <button id="pm-cal-prev" class="pm-cal-nav-btn" aria-label="Mes anterior">
                 <i class="bi bi-chevron-left"></i>
+              </button>
+              <button id="pm-cal-today" class="pm-cal-nav-btn" ${isCurrentMonth ? 'disabled' : ''} aria-label="Mes actual" title="Ir al mes actual">
+                <i class="bi bi-bullseye"></i>
               </button>
               <button id="pm-cal-next" class="pm-cal-nav-btn" aria-label="Mes siguiente">
                 <i class="bi bi-chevron-right"></i>
@@ -599,17 +568,52 @@ function _renderCalendario(container, anio, mes, hoy, estadoMap, dotsMap, {
 /**
  * Muestra el drawer con acciones contextuales para la fecha seleccionada.
  */
-async function _openActionDrawer(fecha) {
+function _ensureDrawerStyles() {
+  if (document.getElementById('pm-drawer-styles')) return
+  const style = document.createElement('style')
+  style.id = 'pm-drawer-styles'
+  style.textContent = `
+    .pm-drawer-overlay {
+      position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.5); display: none; align-items: flex-end;
+      /* Por encima del footer móvil (z-index 9999): el drawer es un bottom
+         sheet y sus acciones no deben quedar tapadas por el menú. */
+      z-index: 10000;
+    }
+    .pm-drawer-overlay.open { display: flex; }
+    .pm-drawer-content {
+      background: var(--pm-surface); width: 100%; border-radius: 1.5rem 1.5rem 0 0;
+      padding-bottom: 2rem; transform: translateY(100%);
+      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      max-height: 80vh; overflow-y: auto;
+    }
+    .pm-drawer-overlay.open .pm-drawer-content { transform: translateY(0); }
+    .pm-drawer-header { padding: 1.25rem 1.25rem 0.5rem; display: flex; justify-content: space-between; align-items: flex-start; }
+    .pm-drawer-close { background: none; border: none; font-size: 1.8rem; color: var(--pm-text-muted); cursor: pointer; }
+    .pm-drawer-clase-item {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 0.75rem; background: var(--pm-surface-2); border-radius: var(--pm-radius-sm); margin-bottom: 0.5rem;
+    }
+    .pm-drawer-clase-info { display: flex; flex-direction: column; }
+    .pm-drawer-clase-hora { font-size: 0.75rem; color: var(--pm-primary); font-weight: 600; }
+    .pm-drawer-clase-nombre { font-size: 0.95rem; font-weight: 600; }
+    .pm-drawer-clase-instrumento { font-size: 0.75rem; color: var(--pm-text-muted); }
+    .pm-drawer-clase-actions { display: flex; gap: 0.5rem; }
+    .pm-drawer-skeleton-item {
+      height: 52px; border-radius: var(--pm-radius-sm); margin-bottom: 0.5rem;
+      background: linear-gradient(90deg, var(--pm-surface-2) 25%, rgba(255,255,255,0.06) 50%, var(--pm-surface-2) 75%);
+      background-size: 200% 100%; animation: pm-drawer-shimmer 1.3s infinite;
+    }
+    @keyframes pm-drawer-shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+  `
+  document.head.appendChild(style)
+}
+
+async function _openActionDrawer(fecha, container) {
   const maestro = getMaestroLocal()
   if (!maestro) return
 
-  const now = new Date()
-  const yH = now.getFullYear()
-  const mH = String(now.getMonth() + 1).padStart(2, '0')
-  const dH = String(now.getDate()).padStart(2, '0')
-  const hoyStr = `${yH}-${mH}-${dH}`
   let drawer = document.getElementById('pm-action-drawer')
-
   if (!drawer) {
     drawer = document.createElement('div')
     drawer.id = 'pm-action-drawer'
@@ -617,61 +621,82 @@ async function _openActionDrawer(fecha) {
     document.body.appendChild(drawer)
   }
 
-  const isToday = fecha === hoyStr
-  const isPast = fecha < hoyStr
-
-  // 1. Obtener datos necesarios
-  let sesiones = []
-  let clasesDelMaestro = []
-  let horarios = []
-  let emergentes = []
-  let sesionesAutoJustificadas = []
-
-  try {
-    // Clases emergentes tienen prioridad — se consultan primero
-    const { data: eme } = await supabase
-      .from('clases_emergentes')
-      .select('*')
-      .eq('maestro_id', maestro.id)
-      .eq('fecha', fecha)
-      .order('hora_inicio', { ascending: true, nullsFirst: false })
-    emergentes = eme || []
-
-    const { data: s } = await supabase
-      .from('sesiones_clase')
-      .select('*')
-      .eq('maestro_id', maestro.id)
-      .eq('fecha', fecha)
-    sesiones = s || []
-    sesionesAutoJustificadas = sesiones.filter((s) => s.clase_id && s.emergente_id)
-
-    const { data: c } = await supabase
-      .from('clases')
-      .select('id, nombre, instrumento')
-      .or(
-        `maestro_principal_id.eq.${maestro.id},maestro_suplente_id.eq.${maestro.id},maestro_id.eq.${maestro.id}`,
-      )
-    clasesDelMaestro = c || []
-
-    const claseIds = clasesDelMaestro.map((x) => x.id)
-    if (claseIds.length > 0) {
-      const { data: h } = await supabase
-        .from('clase_horarios')
-        .select('clase_id, hora_inicio, hora_fin, dia')
-        .in('clase_id', claseIds)
-      horarios = h || []
-    }
-  } catch (e) {
-    console.error('Error fetching drawer data:', e)
-  }
-
-  // 2. Filtrar clases programadas para este día de la semana
   const [y, m, d] = fecha.split('-').map(Number)
   const fechaLocal = new Date(y, m - 1, d)
   const diaSemana = fechaLocal.toLocaleDateString('es-ES', { weekday: 'long' }).toLowerCase()
 
-  const periodoActivo = await getPeriodoActivo().catch(() => null)
-  const cumplimiento = await obtenerEstadoCumplimientoMaestro(maestro.id, periodoActivo?.id).catch(() => ({ esCompleto: true, pendientesCount: 0 }))
+  // Mostrar el drawer YA, con un esqueleto — antes se esperaba a que
+  // terminaran 6 consultas a Supabase EN CADENA (una tras otra, no en
+  // paralelo) antes de siquiera agregar la clase "open" (la que dispara la
+  // animación de aparición), así que el drawer tardaba exactamente lo que
+  // tardaran esas 6 consultas sumadas en aparecer en pantalla. Ahora se
+  // abre al toque y el contenido real reemplaza el esqueleto cuando llega.
+  _ensureDrawerStyles()
+  drawer.innerHTML = `
+    <div class="pm-drawer-content">
+      <div class="pm-drawer-header">
+        <div style="flex:1">
+          <h3 style="margin:0; font-size:1.1rem; font-weight:700;">${fechaLocal.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })}</h3>
+          <p style="margin:0.25rem 0 0; font-size:0.85rem; color:var(--pm-text-muted);">Cargando...</p>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+          <button class="pm-drawer-close" id="pm-drawer-close-btn">&times;</button>
+        </div>
+      </div>
+      <div class="pm-drawer-body">
+        <div class="pm-drawer-skeleton-item"></div>
+        <div class="pm-drawer-skeleton-item"></div>
+        <div class="pm-drawer-skeleton-item"></div>
+      </div>
+    </div>
+  `
+  const closeEarly = () => drawer.classList.remove('open')
+  drawer.querySelector('#pm-drawer-close-btn').onclick = closeEarly
+  drawer.onclick = (e) => { if (e.target === drawer) closeEarly() }
+  requestAnimationFrame(() => drawer.classList.add('open'))
+
+  // 1. Obtener datos necesarios — en paralelo, no en cadena. `horarios`
+  // depende de los ids de `clasesDelMaestro` y `cumplimiento` depende del
+  // id de `periodoActivo`, así que van en una segunda tanda paralela una
+  // vez resuelta la primera — 2 idas y vueltas en total en vez de 6.
+  const [emeRes, sesRes, clasesRes, periodoActivoRes] = await Promise.allSettled([
+    supabase
+      .from('clases_emergentes')
+      .select('*')
+      .eq('maestro_id', maestro.id)
+      .eq('fecha', fecha)
+      .order('hora_inicio', { ascending: true, nullsFirst: false }),
+    supabase.from('sesiones_clase').select('*').eq('maestro_id', maestro.id).eq('fecha', fecha),
+    supabase
+      .from('clases')
+      .select('id, nombre, instrumento')
+      .or(
+        `maestro_principal_id.eq.${maestro.id},maestro_suplente_id.eq.${maestro.id},maestro_id.eq.${maestro.id}`,
+      ),
+    getPeriodoActivo().catch(() => null),
+  ])
+
+  const emergentes = (emeRes.status === 'fulfilled' ? emeRes.value.data : null) || []
+  const sesiones = (sesRes.status === 'fulfilled' ? sesRes.value.data : null) || []
+  const clasesDelMaestro = (clasesRes.status === 'fulfilled' ? clasesRes.value.data : null) || []
+  const periodoActivo = periodoActivoRes.status === 'fulfilled' ? periodoActivoRes.value : null
+  const sesionesAutoJustificadas = sesiones.filter((s) => s.clase_id && s.emergente_id)
+
+  const claseIds = clasesDelMaestro.map((x) => x.id)
+  const [horariosRes, cumplimiento] = await Promise.all([
+    claseIds.length > 0
+      ? supabase
+          .from('clase_horarios')
+          .select('clase_id, hora_inicio, hora_fin, dia')
+          .in('clase_id', claseIds)
+          .then((r) => r.data || [])
+          .catch(() => [])
+      : Promise.resolve([]),
+    obtenerEstadoCumplimientoMaestro(maestro.id, periodoActivo?.id).catch(() => ({ esCompleto: true, pendientesCount: 0 })),
+  ])
+  const horarios = horariosRes
+
+  // 2. Filtrar clases programadas para este día de la semana
   const esFueraDePeriodo = periodoActivo && (fecha < periodoActivo.fecha_inicio || fecha > periodoActivo.fecha_fin)
 
   let recesoBannerHTML = ''
@@ -854,45 +879,14 @@ async function _openActionDrawer(fecha) {
     </div>
   `
 
-  // Estilos (solo una vez)
-  if (!document.getElementById('pm-drawer-styles')) {
-    const style = document.createElement('style')
-    style.id = 'pm-drawer-styles'
-    style.textContent = `
-      .pm-drawer-overlay {
-        position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-        background: rgba(0,0,0,0.5); display: none; z-index: 1001; align-items: flex-end;
-      }
-      .pm-drawer-overlay.open { display: flex; }
-      .pm-drawer-content {
-        background: var(--pm-surface); width: 100%; border-radius: 1.5rem 1.5rem 0 0;
-        padding-bottom: 2rem; transform: translateY(100%);
-        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        max-height: 80vh; overflow-y: auto;
-      }
-      .pm-drawer-overlay.open .pm-drawer-content { transform: translateY(0); }
-      .pm-drawer-header { padding: 1.25rem 1.25rem 0.5rem; display: flex; justify-content: space-between; align-items: flex-start; }
-      .pm-drawer-close { background: none; border: none; font-size: 1.8rem; color: var(--pm-text-muted); cursor: pointer; }
-      .pm-drawer-clase-item {
-        display: flex; justify-content: space-between; align-items: center;
-        padding: 0.75rem; background: var(--pm-surface-2); border-radius: var(--pm-radius-sm); margin-bottom: 0.5rem;
-      }
-      .pm-drawer-clase-info { display: flex; flex-direction: column; }
-      .pm-drawer-clase-hora { font-size: 0.75rem; color: var(--pm-primary); font-weight: 600; }
-      .pm-drawer-clase-nombre { font-size: 0.95rem; font-weight: 600; }
-      .pm-drawer-clase-instrumento { font-size: 0.75rem; color: var(--pm-text-muted); }
-      .pm-drawer-clase-actions { display: flex; gap: 0.5rem; }
-    `
-    document.head.appendChild(style)
-  }
-
-  // Eventos
+  // Eventos — se re-vinculan porque el innerHTML de arriba reemplazó el
+  // esqueleto (y sus listeners tempranos) por el contenido real.
   const close = () => drawer.classList.remove('open')
   const closeBtn = drawer.querySelector('#pm-drawer-close-btn')
   if (closeBtn) closeBtn.onclick = close
-  drawer.addEventListener('click', (e) => {
+  drawer.onclick = (e) => {
     if (e.target === drawer) close()
-  })
+  }
 
   drawer
     .querySelectorAll('.btn-pasar-asistencia, .btn-ver-sesion, .btn-continuar-sesion')
@@ -947,8 +941,8 @@ async function _openActionDrawer(fecha) {
       _abrirModalClaseEmergente(fecha, clasesDelMaestro)
     })
   })
-
-  setTimeout(() => drawer.classList.add('open'), 10)
+  // El drawer ya se abrió al toque, junto con el esqueleto (más arriba) —
+  // acá no hace falta volver a agregar "open".
 }
 
 /**

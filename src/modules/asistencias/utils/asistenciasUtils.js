@@ -1,7 +1,7 @@
 ﻿export { escapeHTML } from '../../../shared/utils/sanitize.js'
 
 /**
- * Utilidades para el mÃ³dulo de Asistencias
+ * Utilidades para el módulo de Asistencias
  */
 
 /**
@@ -56,7 +56,7 @@ export function getEstadoLabel(estado) {
 }
 
 /**
- * Devuelve el Ã­cono de Bootstrap Icons para el estado
+ * Devuelve el ícono de Bootstrap Icons para el estado
  * @param {string} estado
  * @returns {string}
  */
@@ -120,7 +120,7 @@ export function formatResumen(stats) {
 }
 
 /**
- * Obtiene color de badge aleatorio pero consistente segÃºn el ID
+ * Obtiene color de badge aleatorio pero consistente según el ID
  * @param {string} id
  * @returns {string}
  */

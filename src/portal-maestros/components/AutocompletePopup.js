@@ -74,7 +74,7 @@ function initPopup() {
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 14px;
+        font-size: 0.875rem;
         flex-shrink: 0;
       }
       .pm-ac-option.selected .pm-ac-icon {
@@ -86,7 +86,7 @@ function initPopup() {
       }
       .pm-ac-label {
         font-weight: 600;
-        font-size: 14px;
+        font-size: 0.875rem;
         color: var(--pm-text, #333);
         white-space: nowrap;
         overflow: hidden;
@@ -96,7 +96,7 @@ function initPopup() {
         color: white;
       }
       .pm-ac-sublabel {
-        font-size: 12px;
+        font-size: 0.75rem;
         color: var(--pm-text-muted, #888);
         white-space: nowrap;
         overflow: hidden;
@@ -106,7 +106,7 @@ function initPopup() {
         color: rgba(255,255,255,0.7);
       }
       .pm-ac-badge {
-        font-size: 10px;
+        font-size: 0.625rem;
         padding: 2px 6px;
         border-radius: 4px;
         background: var(--pm-primary-light, #e8f0ff);
@@ -119,7 +119,7 @@ function initPopup() {
       }
       .pm-ac-header {
         padding: 8px 14px;
-        font-size: 11px;
+        font-size: 0.6875rem;
         color: var(--pm-text-muted, #888);
         text-transform: uppercase;
         letter-spacing: 0.5px;
@@ -130,13 +130,13 @@ function initPopup() {
         padding: 20px;
         text-align: center;
         color: var(--pm-text-muted, #888);
-        font-size: 13px;
+        font-size: 0.8125rem;
       }
       .pm-ac-loading {
         padding: 20px;
         text-align: center;
         color: var(--pm-text-muted, #888);
-        font-size: 13px;
+        font-size: 0.8125rem;
       }
     `;
     document.head.appendChild(style);

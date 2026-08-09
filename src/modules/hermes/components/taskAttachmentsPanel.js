@@ -1,11 +1,11 @@
 ﻿/**
- * taskAttachmentsPanel.js â€” Panel de adjuntos de una tarea.
- * SP-0 / R6: lista adjuntos con nombre, subido_por y enlace (vÃ­a urlFirmada).
- * Los adjuntos tienen la forma estÃ¡ndar SP-0: { id, nombre, storage_path,
+ * taskAttachmentsPanel.js — Panel de adjuntos de una tarea.
+ * SP-0 / R6: lista adjuntos con nombre, subido_por y enlace (vía urlFirmada).
+ * Los adjuntos tienen la forma estándar SP-0: { id, nombre, storage_path,
  * mime_type, size_bytes, subido_por, subido_por_nombre, created_at }.
- * La URL firmada se carga asÃ­ncronamente al hacer click (no se persiste).
+ * La URL firmada se carga asíncronamente al hacer click (no se persiste).
  *
- * Render puro: renderTaskAttachmentsPanel(tareaId, adjuntos) â†’ HTML string.
+ * Render puro: renderTaskAttachmentsPanel(tareaId, adjuntos) → HTML string.
  * El caller inyecta el HTML y luego puede llamar wireTaskAttachmentsPanel(container)
  * para activar los links firmados.
  */
@@ -90,8 +90,8 @@ export function renderTaskAttachmentsPanel(tareaId, adjuntos = []) {
  * Wires download buttons inside a container to call urlFirmada and open the signed URL.
  * Must be called AFTER the panel HTML is injected into the DOM.
  *
- * @param {HTMLElement} container â€” element containing the rendered panel
- * @param {(storagePath: string) => Promise<string>} urlFirmadaFn â€” API function
+ * @param {HTMLElement} container — element containing the rendered panel
+ * @param {(storagePath: string) => Promise<string>} urlFirmadaFn — API function
  * @param {AbortSignal} [signal]
  */
 export function wireTaskAttachmentsPanel(container, urlFirmadaFn, signal) {

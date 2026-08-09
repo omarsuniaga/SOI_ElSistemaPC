@@ -2,10 +2,11 @@
  * Theme Toggle Component - Portal Maestros
  * Maneja el cambio entre tema claro y oscuro con persistencia
  */
+import { getSavedFontScale, applyFontScale, getSavedFontFamily, applyFontFamily } from '../utils/typography.js'
+
 export class ThemeToggle {
   constructor() {
     this.storageKey = 'portal-maestros-theme'
-    this.fontScaleKey = 'portal-maestros-font-scale'
     this.init()
   }
 
@@ -16,7 +17,8 @@ export class ThemeToggle {
     
     this.currentTheme = savedTheme || systemPrefers
     this.applyTheme(this.currentTheme)
-    this.applyFontScale(this.getSavedFontScale())
+    applyFontFamily(getSavedFontFamily())
+    applyFontScale(getSavedFontScale())
     
     // Escuchar cambios en preferencias del sistema
     window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
@@ -49,28 +51,7 @@ export class ThemeToggle {
     }
   }
 
-  getSavedFontScale() {
-    const saved = localStorage.getItem(this.fontScaleKey)
-    const allowed = new Set(['0.92', '1', '1.08', '1.16'])
-    return allowed.has(saved) ? saved : '1'
-  }
-
-  applyFontScale(scale) {
-    const resolved = this.normalizeFontScale(scale)
-    document.documentElement.style.setProperty('--pm-font-scale', resolved)
-    localStorage.setItem(this.fontScaleKey, String(resolved))
-    window.dispatchEvent(new CustomEvent('fontScaleChanged', {
-      detail: { scale: resolved }
-    }))
-  }
-
-  normalizeFontScale(scale) {
-    const allowed = new Set(['0.92', '1', '1.08', '1.16'])
-    const value = String(scale)
-    return allowed.has(value) ? value : '1'
-  }
-
-  toggle() {
+toggle() {
     this.currentTheme = this.currentTheme === 'dark' ? 'light' : 'dark'
     this.applyTheme(this.currentTheme)
     localStorage.setItem(this.storageKey, this.currentTheme)
@@ -86,7 +67,7 @@ export class ThemeToggle {
   }
 
   getCurrentFontScale() {
-    return this.getSavedFontScale()
+    return getSavedFontScale()
   }
 
   // Crear botón de toggle con diseño mejorado

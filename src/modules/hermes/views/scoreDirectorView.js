@@ -1,11 +1,11 @@
 ﻿/**
- * scoreDirectorView.js â€” "Score del Director" (DIR).
+ * scoreDirectorView.js — "Score del Director" (DIR).
  * Vista global de TODAS las tareas institucionales agrupadas por departamento,
- * con indicadores de saturaciÃ³n y detecciÃ³n de cuellos de botella. Permite al
+ * con indicadores de saturación y detección de cuellos de botella. Permite al
  * Director crear un evento de calendario que dispara la cascada Hermes
  * (fn_hermes_auto_delegar_tareas), generando tareas en los departamentos.
  *
- * PatrÃ³n: retorna { teardown() } para limpieza de listeners (AbortController).
+ * Patrón: retorna { teardown() } para limpieza de listeners (AbortController).
  *
  * @param {HTMLElement} container
  */
@@ -18,13 +18,13 @@ import { AppModal } from '../../../shared/components/AppModal.js'
 import { escapeHTML } from '../../../shared/utils/sanitize.js'
 
 const DEPARTAMENTOS = {
-  DIR: 'DirecciÃ³n',
-  ACM: 'AcadÃ©mica',
-  ADM: 'AdministraciÃ³n',
+  DIR: 'Dirección',
+  ACM: 'Académica',
+  ADM: 'Administración',
   FIN: 'Financiero',
-  LOG: 'LogÃ­stica',
+  LOG: 'Logística',
   COM: 'Comunicaciones',
-  TECNICO: 'TÃ©cnico',
+  TECNICO: 'Técnico',
 }
 
 const DEPT_ICON = {
@@ -41,12 +41,12 @@ const DEPT_ICON = {
 const CATEGORIAS = {
   concierto: 'Concierto',
   ensayo: 'Ensayo',
-  reunion: 'ReuniÃ³n',
+  reunion: 'Reunión',
   patrocinio: 'Patrocinio',
   pago: 'Pago',
   corte: 'Corte',
-  inscripcion: 'InscripciÃ³n',
-  auditoria: 'AuditorÃ­a',
+  inscripcion: 'Inscripción',
+  auditoria: 'Auditoría',
   otro: 'Otro',
 }
 
@@ -155,7 +155,7 @@ function renderContent(container, tareas) {
             </div>
             <div>
               <h1 class="tareas-title mb-0">Score del Director</h1>
-              <p class="text-muted small mb-0">Vista global Â· Hermes Â· ${total} tareas en ${deptList.length} departamentos</p>
+              <p class="text-muted small mb-0">Vista global · Hermes · ${total} tareas en ${deptList.length} departamentos</p>
             </div>
           </div>
           <div class="d-flex gap-2">
@@ -174,18 +174,18 @@ function renderContent(container, tareas) {
           ${kpi('En Progreso', sum('en_progreso'), 'info')}
           ${kpi('Bloqueadas', sum('bloqueada'), 'danger')}
           ${kpi('Vencidas', vencidasGlobal, 'warning')}
-          ${kpi('CrÃ­ticas', criticasGlobal, 'danger')}
+          ${kpi('Críticas', criticasGlobal, 'danger')}
           ${kpi('Completadas', sum('completada'), 'success')}
         </div>
       </div>
 
       <h6 class="text-muted text-uppercase small fw-bold mb-3">
-        <i class="bi bi-diagram-3 me-1"></i> SaturaciÃ³n por departamento
+        <i class="bi bi-diagram-3 me-1"></i> Saturación por departamento
       </h6>
       <div class="row g-3 mb-2">
         ${
           deptList.length === 0
-            ? `<div class="col-12"><div class="alert alert-info text-center py-4"><i class="bi bi-inbox"></i> AÃºn no hay tareas. CreÃ¡ un evento para disparar la cascada Hermes.</div></div>`
+            ? `<div class="col-12"><div class="alert alert-info text-center py-4"><i class="bi bi-inbox"></i> Aún no hay tareas. Creá un evento para disparar la cascada Hermes.</div></div>`
             : deptList.map(({ dept, s }) => renderDeptCard(dept, s)).join('')
         }
       </div>
@@ -226,7 +226,7 @@ function renderDeptCard(dept, s) {
           </div>
 
           <div class="d-flex justify-content-between align-items-center mb-1">
-            <small class="text-muted">SaturaciÃ³n (${abierta}/${s.total} abiertas)</small>
+            <small class="text-muted">Saturación (${abierta}/${s.total} abiertas)</small>
             <small class="fw-bold text-${satColor}">${saturacion}%</small>
           </div>
           <div class="progress mb-3" style="height: 8px;">
@@ -238,7 +238,7 @@ function renderDeptCard(dept, s) {
             ${chip('Progr.', s.en_progreso, 'info')}
             ${s.bloqueada > 0 ? chip('Bloq.', s.bloqueada, 'danger') : ''}
             ${s.vencidas > 0 ? chip('Venc.', s.vencidas, 'warning') : ''}
-            ${s.criticas > 0 ? chip('CrÃ­t.', s.criticas, 'danger') : ''}
+            ${s.criticas > 0 ? chip('Crít.', s.criticas, 'danger') : ''}
             ${chip('Compl.', s.completada, 'success')}
           </div>
         </div>
@@ -257,7 +257,7 @@ function attachEvents(container, tareas) {
   container.querySelector('#btnCrearEvento')?.addEventListener('click', () => openCrearEventoModal(container), { signal })
   container.querySelector('#btnAsignarTarea')?.addEventListener('click', () => openAsignarTareaModal(container), { signal })
 
-  // Click en card â†’ navegar a la lista filtrada por departamento (router admin)
+  // Click en card → navegar a la lista filtrada por departamento (router admin)
   container.querySelectorAll('.score-dept-card').forEach((card) => {
     card.addEventListener(
       'click',
@@ -265,7 +265,7 @@ function attachEvents(container, tareas) {
         const dept = card.dataset.dept
         if (window.router?.navigate) {
           // Ruta de tareas del departamento (registrada como 'hermes-tareas' en portales,
-          // o 'dir-score' aquÃ­). En admin mostramos un detalle inline rÃ¡pido.
+          // o 'dir-score' aquí). En admin mostramos un detalle inline rápido.
           mostrarDetalleDepartamento(container, tareas, dept)
         }
       },
@@ -280,7 +280,7 @@ function mostrarDetalleDepartamento(container, tareas, dept) {
     .sort((a, b) => ordenPrioridad(a.prioridad) - ordenPrioridad(b.prioridad))
 
   AppModal.open({
-    title: `Tareas â€” ${DEPARTAMENTOS[dept]} (${dept})`,
+    title: `Tareas — ${DEPARTAMENTOS[dept]} (${dept})`,
     size: 'lg',
     body: lista.length === 0
       ? `<div class="alert alert-info">Sin tareas en este departamento.</div>`
@@ -292,7 +292,7 @@ function mostrarDetalleDepartamento(container, tareas, dept) {
               <div class="d-flex justify-content-between align-items-start gap-2">
                 <div>
                   <div class="fw-semibold">${escapeHTML(t.titulo)}</div>
-                  <small class="text-muted">${t.fecha_vencimiento || 'sin fecha'}${venc ? ' Â· <span class="text-danger">vencida</span>' : ''}</small>
+                  <small class="text-muted">${t.fecha_vencimiento || 'sin fecha'}${venc ? ' · <span class="text-danger">vencida</span>' : ''}</small>
                 </div>
                 <div class="text-end">
                   <span class="badge bg-${badgePrioridad(t.prioridad)}">${t.prioridad}</span>
@@ -325,16 +325,16 @@ function openCrearEventoModal(container) {
     size: 'lg',
     body: `
       <div class="alert alert-info small py-2">
-        <i class="bi bi-robot me-1"></i> Al crear el evento, Hermes generarÃ¡ automÃ¡ticamente las
-        tareas departamentales segÃºn el protocolo de la categorÃ­a.
+        <i class="bi bi-robot me-1"></i> Al crear el evento, Hermes generará automáticamente las
+        tareas departamentales según el protocolo de la categoría.
       </div>
       <div class="mb-3">
-        <label class="form-label small fw-semibold">TÃ­tulo <span class="text-danger">*</span></label>
-        <input type="text" class="form-control" id="evTitulo" placeholder="Ej. Concierto de Gala de Fin de AÃ±o" required>
+        <label class="form-label small fw-semibold">Título <span class="text-danger">*</span></label>
+        <input type="text" class="form-control" id="evTitulo" placeholder="Ej. Concierto de Gala de Fin de Año" required>
       </div>
       <div class="row g-3 mb-3">
         <div class="col-md-6">
-          <label class="form-label small fw-semibold">CategorÃ­a <span class="text-danger">*</span></label>
+          <label class="form-label small fw-semibold">Categoría <span class="text-danger">*</span></label>
           <select class="form-select" id="evCategoria">
             ${Object.entries(CATEGORIAS).map(([k, v]) => `<option value="${k}" ${k === 'concierto' ? 'selected' : ''}>${v}</option>`).join('')}
           </select>
@@ -357,11 +357,11 @@ function openCrearEventoModal(container) {
         </div>
       </div>
       <div class="mb-3">
-        <label class="form-label small fw-semibold">UbicaciÃ³n</label>
-        <input type="text" class="form-control" id="evUbicacion" placeholder="Ej. Teatro Nacional, SalÃ³n principal">
+        <label class="form-label small fw-semibold">Ubicación</label>
+        <input type="text" class="form-control" id="evUbicacion" placeholder="Ej. Teatro Nacional, Salón principal">
       </div>
       <div class="mb-2">
-        <label class="form-label small fw-semibold">DescripciÃ³n</label>
+        <label class="form-label small fw-semibold">Descripción</label>
         <textarea class="form-control" id="evDescripcion" rows="2" placeholder="Detalles del evento..."></textarea>
       </div>
     `,
@@ -370,7 +370,7 @@ function openCrearEventoModal(container) {
       const titulo = modalBody.querySelector('#evTitulo').value.trim()
       const fechaInicio = modalBody.querySelector('#evInicio').value
       if (!titulo) {
-        AppToast.show('El tÃ­tulo es obligatorio', 'error')
+        AppToast.show('El título es obligatorio', 'error')
         return false
       }
       if (!fechaInicio) {
@@ -391,8 +391,8 @@ function openCrearEventoModal(container) {
         const n = tareasGeneradas?.length || 0
         AppToast.show(
           n > 0
-            ? `Evento creado Â· Hermes generÃ³ ${n} tarea${n === 1 ? '' : 's'}`
-            : 'Evento creado (sin tareas para esta categorÃ­a)',
+            ? `Evento creado · Hermes generó ${n} tarea${n === 1 ? '' : 's'}`
+            : 'Evento creado (sin tareas para esta categoría)',
           'success',
         )
         await renderScoreDirectorView(container)
@@ -404,12 +404,12 @@ function openCrearEventoModal(container) {
   })
 }
 
-// â”€â”€ Enrutamiento inteligente: texto libre â†’ departamento â†’ tarea â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Enrutamiento inteligente: texto libre → departamento → tarea ────────────────
 const PRIORIDADES_TAREA = {
   baja: 'Baja',
   media: 'Media',
   alta: 'Alta',
-  critica: 'CrÃ­tica',
+  critica: 'Crítica',
 }
 
 function openAsignarTareaModal(container) {
@@ -418,22 +418,22 @@ function openAsignarTareaModal(container) {
     size: 'lg',
     body: `
       <div class="alert alert-info small py-2">
-        <i class="bi bi-stars me-1"></i> PegÃ¡ la solicitud en texto libre. La IA detecta el
-        departamento que debe atenderla y arma la tarea. Vos confirmÃ¡s antes de crearla.
+        <i class="bi bi-stars me-1"></i> Pegá la solicitud en texto libre. La IA detecta el
+        departamento que debe atenderla y arma la tarea. Vos confirmás antes de crearla.
       </div>
       <textarea class="form-control" id="atTexto" rows="4"
-        placeholder="Ej. Necesito que me manden la relaciÃ³n de pago del mes de febrero"></textarea>
+        placeholder="Ej. Necesito que me manden la relación de pago del mes de febrero"></textarea>
     `,
     saveText: '<i class="bi bi-stars me-1"></i>Analizar con IA',
     onSave: async (mb) => {
       const texto = mb.querySelector('#atTexto').value.trim()
       if (!texto) {
-        AppToast.show('EscribÃ­ la solicitud primero', 'error')
+        AppToast.show('Escribí la solicitud primero', 'error')
         return false
       }
       try {
         const c = await clasificarDepartamento(texto)
-        // Cerramos este modal y abrimos el de confirmaciÃ³n con lo sugerido.
+        // Cerramos este modal y abrimos el de confirmación con lo sugerido.
         setTimeout(() => openConfirmarTareaModal(container, c), 50)
       } catch (err) {
         AppToast.show(`IA no disponible: ${err.message}`, 'error')
@@ -474,23 +474,23 @@ function openConfirmarTareaModal(container, c) {
         </div>
       </div>
       <div class="mb-3">
-        <label class="form-label small fw-semibold">TÃ­tulo <span class="text-danger">*</span></label>
+        <label class="form-label small fw-semibold">Título <span class="text-danger">*</span></label>
         <input type="text" class="form-control" id="atTitulo" value="${escapeHTML(c.titulo)}">
       </div>
       <div class="mb-2">
-        <label class="form-label small fw-semibold">DescripciÃ³n</label>
+        <label class="form-label small fw-semibold">Descripción</label>
         <textarea class="form-control" id="atDescripcion" rows="3">${escapeHTML(c.descripcion)}</textarea>
       </div>
       <p class="text-muted extra-small mb-0">
         <i class="bi bi-info-circle me-1"></i> Al crearla, aparece en el portal del departamento.
-        Si es <strong>alta</strong> o <strong>crÃ­tica</strong>, Hermes encola un aviso de WhatsApp al encargado.
+        Si es <strong>alta</strong> o <strong>crítica</strong>, Hermes encola un aviso de WhatsApp al encargado.
       </p>
     `,
     saveText: 'Crear y asignar',
     onSave: async (mb) => {
       const titulo = mb.querySelector('#atTitulo').value.trim()
       if (!titulo) {
-        AppToast.show('El tÃ­tulo es obligatorio', 'error')
+        AppToast.show('El título es obligatorio', 'error')
         return false
       }
       const departamento = mb.querySelector('#atDepto').value

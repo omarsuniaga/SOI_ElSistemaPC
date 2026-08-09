@@ -80,3 +80,32 @@ window.addEventListener('error', (event) => {
 // NOTE: window.fetch monkey-patch REMOVED — was silently returning null on
 // suppressed errors, causing cascading bugs. Console/event suppression kept
 // for browser extension noise (chrome-extension://, content.js, polyfill).
+
+// ============================================
+// Early Preferences Restoration (Theme, Font Scale, Font Family)
+// Runs in module context with zero CSP script-src violations.
+// ============================================
+try {
+  const theme = localStorage.getItem('portal-maestros-theme')
+  if (theme) {
+    document.documentElement.setAttribute('data-bs-theme', theme)
+    document.documentElement.setAttribute('data-portal-theme', theme)
+  }
+  const scale = localStorage.getItem('portal-maestros-font-scale')
+  if (scale) {
+    document.documentElement.style.setProperty('--pm-font-scale', scale)
+  }
+  const family = localStorage.getItem('portal-maestros-font-family')
+  const families = {
+    system: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+    inter: "'Inter', -apple-system, 'Segoe UI', Roboto, sans-serif",
+    poppins: "'Poppins', -apple-system, 'Segoe UI', Roboto, sans-serif",
+    nunito: "'Nunito', -apple-system, 'Segoe UI', Roboto, sans-serif",
+    lato: "'Lato', 'Segoe UI', Roboto, sans-serif",
+    merriweather: "'Merriweather', Georgia, 'Times New Roman', serif",
+    georgia: "Georgia, 'Times New Roman', serif",
+  }
+  if (family && families[family]) {
+    document.documentElement.style.setProperty('--pm-font-family', families[family])
+  }
+} catch (_) {}

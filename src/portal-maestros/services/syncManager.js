@@ -39,17 +39,36 @@ function _notify(count, status) {
 /** Mapa: nombre de tabla → función de sync */
 const _syncHandlers = {
   sesiones_clase: async (item) => {
-    const { operacion, payload } = item
-    if (operacion === 'insert') {
-      const { error } = await supabase.from('sesiones_clase').insert(payload)
+    const { operacion, payload: rawPayload } = item
+    const payload = { ...rawPayload }
+    if (payload.contenido_dsl !== undefined) {
+      payload.contenido = payload.contenido_dsl
+      delete payload.contenido_dsl
+    }
+    if (payload.asistencias !== undefined && payload.asistencia === undefined) {
+      payload.asistencia = payload.asistencias
+      delete payload.asistencias
+    }
+
+    if (operacion === 'insert' || operacion === 'upsert') {
+      const { error } = await supabase
+        .from('sesiones_clase')
+        .upsert(payload, { onConflict: 'clase_id,fecha,maestro_id' })
       if (error) throw error
     } else if (operacion === 'update') {
       const { id, ...data } = payload
-      const { error } = await supabase
-        .from('sesiones_clase')
-        .update({ ...data, updated_at: new Date().toISOString() })
-        .eq('id', id || payload.id)
-      if (error) throw error
+      if (id) {
+        const { error } = await supabase
+          .from('sesiones_clase')
+          .update({ ...data, updated_at: new Date().toISOString() })
+          .eq('id', id)
+        if (error) throw error
+      } else {
+        const { error } = await supabase
+          .from('sesiones_clase')
+          .upsert({ ...data, updated_at: new Date().toISOString() }, { onConflict: 'clase_id,fecha,maestro_id' })
+        if (error) throw error
+      }
     } else {
       throw new Error(`Operación no soportada para sesiones_clase: ${operacion}`)
     }

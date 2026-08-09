@@ -43,7 +43,7 @@ function persistMockWeeklyStore(store) {
 }
 
 /**
- * Obtiene todas las rutas acadÃ©micas
+ * Obtiene todas las rutas académicas
  */
 export async function getRoutes() {
   const { data, error } = await supabase.from('routes').select('*').order('name')
@@ -57,7 +57,7 @@ export async function getRoutes() {
 }
 
 /**
- * Obtiene las versiones de una ruta especÃ­fica
+ * Obtiene las versiones de una ruta específica
  */
 export async function getRouteVersions(routeId) {
   const { data, error } = await supabase
@@ -75,7 +75,7 @@ export async function getRouteVersions(routeId) {
 }
 
 /**
- * Recupera el Ã¡rbol jerÃ¡rquico completo de una versiÃ³n de ruta.
+ * Recupera el árbol jerárquico completo de una versión de ruta.
  * Optimizado para cargar Bloques -> Niveles -> Nodos -> Indicadores.
  */
 export async function getAcademicTree(routeVersionId) {
@@ -144,7 +144,7 @@ export async function getAcademicTree(routeVersionId) {
     }))
   } catch (error) {
     console.error('Error building academic tree:', error.message)
-    throw new Error('Error al construir el Ã¡rbol acadÃ©mico')
+    throw new Error('Error al construir el árbol académico')
   }
 }
 
@@ -225,7 +225,7 @@ export async function getNodeHotspots() {
 
   if (error) {
     console.error('Error fetching node hotspots:', error.message)
-    throw new Error('No se pudieron cargar los puntos calientes pedagÃ³gicos')
+    throw new Error('No se pudieron cargar los puntos calientes pedagógicos')
   }
 
   return data

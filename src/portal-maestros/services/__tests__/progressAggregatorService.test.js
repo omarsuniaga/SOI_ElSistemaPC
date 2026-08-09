@@ -198,3 +198,103 @@ describe('progressAggregatorService — section support', () => {
     expect(result.saved).toBe(1)
   })
 })
+
+describe('progressAggregatorService — resolución de nombres mencionados (saveProgressFromDSL)', () => {
+  function mockUpsertChain({ data = [], error = null } = {}) {
+    const chain = {
+      upsert: vi.fn(() => chain),
+      select: vi.fn(() => Promise.resolve({ data, error })),
+    }
+    return chain
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('prioriza la coincidencia EXACTA sobre una coincidencia parcial anterior en el roster (bugfix: antes ganaba el orden del arreglo, no la mejor coincidencia)', async () => {
+    // "Mariana López" aparece PRIMERO en el roster y "mariana" contiene la
+    // substring "ana" — con el bug anterior, mencionar "#Ana" se resolvía
+    // a Mariana (primer match de .find()) en vez de a "Ana Pérez", que es
+    // la coincidencia EXACTA pero aparece después en el arreglo.
+    const alumnos = [
+      { id: 'mariana-1', nombre: 'Mariana López', nombreCorto: 'Mariana' },
+      { id: 'ana-1', nombre: 'Ana Pérez', nombreCorto: 'Ana' },
+    ]
+    const chain = mockUpsertChain({
+      data: [{ id: 'n1', alumno_id: 'ana-1', contenido_dsl: 'Escalas', estado_cualitativo: 'LOGRADO' }],
+    })
+    supabase.from.mockReturnValue(chain)
+
+    const { saveProgressFromDSL } = await import('../progressAggregatorService.js')
+
+    const result = await saveProgressFromDSL({
+      sesionId: 'ses-1',
+      claseId: 'cls-1',
+      maestroId: 'm-1',
+      fechaHoy: '2026-08-09',
+      dslText: '#Ana [Escalas] !LOGRADO',
+      alumnos,
+    })
+
+    expect(result.errors).toEqual([])
+    const upsertedRows = chain.upsert.mock.calls[0][0]
+    expect(upsertedRows).toHaveLength(1)
+    expect(upsertedRows[0].alumno_id).toBe('ana-1') // Ana Pérez — NO Mariana López
+  })
+
+  it('un nombre ambiguo (ninguna coincidencia exacta, varias parciales) reporta error en vez de adivinar', async () => {
+    // Ni "Anabel" ni "Anastasia" son coincidencia exacta de "Ana", y ambas
+    // contienen "ana" como substring — antes se elegía la primera del
+    // arreglo en silencio; ahora debe reportarse como ambiguo.
+    const alumnos = [
+      { id: 'anabel-1', nombre: 'Anabel Ruiz', nombreCorto: 'Anabel' },
+      { id: 'anastasia-1', nombre: 'Anastasia Cruz', nombreCorto: 'Anastasia' },
+    ]
+    const chain = mockUpsertChain({ data: [] })
+    supabase.from.mockReturnValue(chain)
+
+    const { saveProgressFromDSL } = await import('../progressAggregatorService.js')
+
+    const result = await saveProgressFromDSL({
+      sesionId: 'ses-1',
+      claseId: 'cls-1',
+      maestroId: 'm-1',
+      fechaHoy: '2026-08-09',
+      dslText: '#Ana [Escalas] !LOGRADO',
+      alumnos,
+    })
+
+    expect(result.saved).toEqual([])
+    expect(result.errors.length).toBe(1)
+    expect(result.errors[0]).toContain('ambiguo')
+    expect(result.errors[0]).toContain('Anabel Ruiz')
+    expect(result.errors[0]).toContain('Anastasia Cruz')
+  })
+
+  it('sigue resolviendo un nombre corto sin ambigüedad (compatibilidad hacia atrás)', async () => {
+    const alumnos = [
+      { id: 'pedro-1', nombre: 'Pedro Ruiz', nombreCorto: 'Pedro' },
+      { id: 'luis-1', nombre: 'Luis Torres', nombreCorto: 'Luis' },
+    ]
+    const chain = mockUpsertChain({
+      data: [{ id: 'n1', alumno_id: 'pedro-1', contenido_dsl: 'Arco', estado_cualitativo: 'LOGRADO' }],
+    })
+    supabase.from.mockReturnValue(chain)
+
+    const { saveProgressFromDSL } = await import('../progressAggregatorService.js')
+
+    const result = await saveProgressFromDSL({
+      sesionId: 'ses-1',
+      claseId: 'cls-1',
+      maestroId: 'm-1',
+      fechaHoy: '2026-08-09',
+      dslText: '#Pedro [Arco] !LOGRADO',
+      alumnos,
+    })
+
+    expect(result.errors).toEqual([])
+    const upsertedRows = chain.upsert.mock.calls[0][0]
+    expect(upsertedRows[0].alumno_id).toBe('pedro-1')
+  })
+})

@@ -134,7 +134,9 @@ export async function obtenerClases() {
 
   return (clases || []).map(c => {
     const claseObj = normalizeClase(c)
-    claseObj.horarios = horarios?.filter(h => h.clase_id === c.id) || []
+    const claseHorarios = horarios?.filter(h => h.clase_id === c.id) || (c.horarios || c.clase_horarios || [])
+    claseObj.horarios = claseHorarios
+    claseObj.clase_horarios = claseHorarios
     claseObj.alumnos_ids = alumnosByClase[c.id] || []
     claseObj.total_alumnos = claseObj.alumnos_ids.length
     return claseObj

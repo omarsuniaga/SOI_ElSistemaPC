@@ -24,21 +24,44 @@ function normalize(str) {
 
 /**
  * Resolves a name string to an alumno object from the class list.
- * Matches full name or first name (nombreCorto).
- * Returns null if no match found.
+ * Matches full name or first name (nombreCorto) first (EXACT match across
+ * the whole roster); only falls back to substring matching when no exact
+ * match exists anywhere.
+ *
+ * Bugfix: the previous version used a single `alumnos.find(...)` with both
+ * exact and substring conditions OR'd together. `.find()` stops at the
+ * FIRST element for which the callback is true, in array order — so if a
+ * student earlier in the roster matched only by substring (e.g. "Mariana
+ * López" contains "ana"), it won — even when a student LATER in the array
+ * was an EXACT match for the mentioned name (e.g. "Ana Pérez"). A mention
+ * of "Ana" could silently get attributed to the wrong student depending on
+ * roster order, with no error raised. Exact matches are now resolved in a
+ * dedicated first pass, independent of array position.
+ *
+ * Ambiguity (two+ students tie on the same pass) is now surfaced instead
+ * of silently picked by array order — see `resolveAlumnos`' error message.
+ *
+ * @returns {{ match: object|null, ambiguous: boolean, candidates?: object[] }}
  */
 function resolveAlumno(name, alumnos) {
   const n = normalize(name)
-  return (
-    alumnos.find(
-      (a) =>
-        normalize(a.nombre) === n ||
-        normalize(a.nombreCorto || a.nombre.split(' ')[0]) === n ||
-        // Substring checks guarded to avoid false positives on very short strings
-        (n.length >= 3 && normalize(a.nombre).includes(n)) ||
-        (n.length >= 3 && n.includes(normalize(a.nombreCorto || a.nombre.split(' ')[0]))),
-    ) ?? null
+  if (!n) return { match: null, ambiguous: false }
+
+  const exact = alumnos.filter(
+    (a) => normalize(a.nombre) === n || normalize(a.nombreCorto || a.nombre.split(' ')[0]) === n,
   )
+  if (exact.length === 1) return { match: exact[0], ambiguous: false }
+  if (exact.length > 1) return { match: null, ambiguous: true, candidates: exact }
+
+  // Substring matching guarded to avoid false positives on very short strings.
+  if (n.length < 3) return { match: null, ambiguous: false }
+  const partial = alumnos.filter((a) => {
+    const nombreCorto = normalize(a.nombreCorto || a.nombre.split(' ')[0])
+    return normalize(a.nombre).includes(n) || n.includes(nombreCorto)
+  })
+  if (partial.length === 1) return { match: partial[0], ambiguous: false }
+  if (partial.length > 1) return { match: null, ambiguous: true, candidates: partial }
+  return { match: null, ambiguous: false }
 }
 
 /**
@@ -54,9 +77,12 @@ function resolveAlumnos(alumnoNames, alumnos) {
       resolved.push(...alumnos)
       continue
     }
-    const match = resolveAlumno(name, alumnos)
+    const { match, ambiguous, candidates } = resolveAlumno(name, alumnos)
     if (match) {
       resolved.push(match)
+    } else if (ambiguous) {
+      const opciones = candidates.map((c) => c.nombre).join(', ')
+      errors.push(`"${name}" es ambiguo — coincide con varios alumnos (${opciones}). Sé más específico.`)
     } else {
       errors.push(`No se encontró el alumno: "${name}"`)
     }

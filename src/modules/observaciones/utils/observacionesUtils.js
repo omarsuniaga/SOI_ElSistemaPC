@@ -9,7 +9,7 @@ export function formatDate(dateStr) {
 export function getTipoLabel(tipo) {
   const mapa = {
     'comportamiento': 'Comportamiento',
-    'academico': 'AcadÃ©mico',
+    'academico': 'Académico',
     'social': 'Social',
     'disciplina': 'Disciplina',
   }

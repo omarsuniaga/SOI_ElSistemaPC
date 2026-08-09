@@ -1,11 +1,14 @@
 /**
  * Contrato de la barra de categoría de trabajo.
  *
- * La regla que estas pruebas protegen: **la barra nunca confirma sola**. La
- * cobertura curricular que lee la coordinación se alimenta de estas categorías;
- * si el sistema las asignara por su cuenta, esa métrica sería una inferencia
- * presentada como un hecho. Es el mismo defecto que hoy hace que el informe de
- * cierre muestre 100 % de cobertura sobre cero evidencia.
+ * Las reglas que estas pruebas protegen:
+ *  - La barra **autoconfirma en silencio** cuando la inferencia es de confianza
+ *    alta (2+ términos coincidentes y sin empate). La cobertura curricular se
+ *    alimenta igual, pero sin fricción en el caso común.
+ *  - Con confianza **media o baja no se confirma sola**: la categoría se emite
+ *    recién cuando el maestro acepta. Ese es el candado que evita que una
+ *    suposición se presente como un hecho (el defecto del informe de cierre con
+ *    100 % de cobertura sobre cero evidencia).
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -21,7 +24,7 @@ import { createCategoriaTrabajoBar } from '../CategoriaTrabajoBar.js'
 import { resolverCategoria, detectarCodigoExplicito, CATEGORIAS } from '../../../api/nodoSesionApi.js'
 
 /** Reproduce la resolución real sin tocar la red. */
-function comoResuelve(texto, candidatos = []) {
+function comoResuelve(texto, candidatos = [], confianza = 'media') {
   const explicito = detectarCodigoExplicito(texto)
   if (explicito) {
     return { codigo: explicito, nombre: CATEGORIAS[explicito], origen: 'explicito', confianza: 'alta', alternativas: [] }
@@ -30,7 +33,7 @@ function comoResuelve(texto, candidatos = []) {
     return { codigo: null, nombre: null, origen: null, confianza: null, alternativas: [] }
   }
   const [mejor, ...resto] = candidatos
-  return { codigo: mejor.codigo, nombre: mejor.nombre, origen: 'derivado', confianza: 'alta', alternativas: resto }
+  return { codigo: mejor.codigo, nombre: mejor.nombre, origen: 'derivado', confianza, alternativas: resto }
 }
 
 function montar(opts = {}) {
@@ -55,22 +58,49 @@ describe('CategoriaTrabajoBar', () => {
     expect(bar.getCategoria().codigo).toBeNull()
   })
 
-  it('propone sin confirmar: la categoría no se emite hasta que el maestro acepta', async () => {
+  it('autoconfirma en silencio cuando la inferencia es de confianza alta', async () => {
     resolverCategoria.mockImplementation(async (t) =>
-      comoResuelve(t, [{ codigo: 'ESC', nombre: 'Escalas', aciertos: 2 }]))
+      comoResuelve(t, [{ codigo: 'ESC', nombre: 'Escalas', aciertos: 2 }], 'alta'))
+    const { bar, onChange } = montar()
+
+    await bar.analizarAhora('practicamos escalas en una octava')
+
+    // Confianza alta: no se pregunta, se emite (origen 'derivado', igual que
+    // una confirmación con un toque; no se introdujo un origen nuevo).
+    expect(bar.el.textContent).not.toContain('¿Trabajaste')
+    expect(bar.getCategoria()).toEqual({ codigo: 'ESC', origen: 'derivado' })
+    expect(onChange).toHaveBeenCalledWith({ codigo: 'ESC', origen: 'derivado' })
+  })
+
+  it('no vuelve a cambiar una categoría ya autoconfirmada mientras el maestro escribe', async () => {
+    resolverCategoria.mockImplementation(async (t) =>
+      comoResuelve(t, [{ codigo: 'ESC', nombre: 'Escalas', aciertos: 2 }], 'alta'))
+    const { bar } = montar()
+    await bar.analizarAhora('practicamos escalas')
+
+    resolverCategoria.mockImplementation(async (t) =>
+      comoResuelve(t, [{ codigo: 'ARP', nombre: 'Arpegios', aciertos: 3 }], 'alta'))
+    await bar.analizarAhora('practicamos escalas y ahora arpegios')
+
+    expect(bar.getCategoria()).toEqual({ codigo: 'ESC', origen: 'derivado' })
+  })
+
+  it('propone sin confirmar con confianza media: no emite hasta que el maestro acepta', async () => {
+    resolverCategoria.mockImplementation(async (t) =>
+      comoResuelve(t, [{ codigo: 'ESC', nombre: 'Escalas', aciertos: 1 }], 'media'))
     const { bar, onChange } = montar()
 
     await bar.analizarAhora('practicamos escalas en una octava')
 
     expect(bar.el.textContent).toContain('¿Trabajaste')
-    // El defecto que esto previene, escrito como aserción.
+    // El candado que este test protege: la categoría no se emite por sí sola.
     expect(bar.getCategoria().codigo).toBeNull()
     expect(onChange).not.toHaveBeenCalled()
   })
 
-  it('emite la categoría recién cuando el maestro confirma', async () => {
+  it('emite la categoría cuando el maestro confirma (derivado)', async () => {
     resolverCategoria.mockImplementation(async (t) =>
-      comoResuelve(t, [{ codigo: 'ESC', nombre: 'Escalas', aciertos: 2 }]))
+      comoResuelve(t, [{ codigo: 'ESC', nombre: 'Escalas', aciertos: 1 }]))
     const { bar, onChange } = montar()
     await bar.analizarAhora('practicamos escalas')
 

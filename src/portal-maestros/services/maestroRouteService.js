@@ -553,7 +553,7 @@ export async function checkPrerequisiteSatisfied(indicadorId, alumnoId, claseId)
     const { data: evaluaciones, error } = await supabase
       .from('evaluacion_indicador')
       .select('nota, recovery_status')
-      .eq('indicator_id', indicadorId)
+      .eq('maestro_indicador_id', indicadorId)
       .eq('alumno_id', alumnoId)
       .eq('clase_id', claseId)
 
@@ -572,6 +572,37 @@ export async function checkPrerequisiteSatisfied(indicadorId, alumnoId, claseId)
   } catch (err) {
     console.error('[MaestroRouteService] checkPrerequisiteSatisfied error:', err)
     return false
+  }
+}
+
+/**
+ * Get the direct prerequisite indicator for a given indicator, if any.
+ * Cadenas lineales en Fase 1: a lo sumo un prerrequisito por indicador.
+ * @param {string} indicadorId
+ * @returns {Promise<{id: string, nombre: string}|null>}
+ */
+export async function getDirectPrerequisite(indicadorId) {
+  if (!indicadorId) return null
+  try {
+    const { data: link, error: linkError } = await supabase
+      .from('indicador_prerequisito')
+      .select('prerequisito_indicador_id')
+      .eq('indicador_id', indicadorId)
+      .maybeSingle()
+
+    if (linkError || !link) return null
+
+    const { data: indicador, error: indError } = await supabase
+      .from('maestro_indicadores')
+      .select('id, nombre')
+      .eq('id', link.prerequisito_indicador_id)
+      .maybeSingle()
+
+    if (indError || !indicador) return null
+    return indicador
+  } catch (err) {
+    console.warn('[MaestroRouteService] getDirectPrerequisite error:', err.message)
+    return null
   }
 }
 

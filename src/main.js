@@ -87,6 +87,10 @@ import { registerRoutesInventario } from './modules/inventario/index.js'
 import { registerRoutesHelp } from './modules/help/index.js'
 import { registerRoutesPeriodos } from './modules/periodos/index.js'
 import { renderScoreDirectorView } from './modules/hermes/views/scoreDirectorView.js'
+import { renderTareasView } from './modules/hermes/views/tareasView.js'
+import { renderCasoDetalleView } from './modules/hermes/views/casoDetalleView.js'
+import { renderProcedimientosView } from './modules/hermes/views/procedimientosView.js'
+import { renderHermesConsultaView } from './modules/hermes/views/hermesConsultaView.js'
 import {
   startAdminRealtimeNotifications,
   stopAdminRealtimeNotifications,
@@ -666,11 +670,23 @@ function registerModules() {
     }
   })
 
-  // Score del Director (DIR): vista global de tareas Hermes + creación de eventos
+  // Score del Director (DIR) y Rutas Hermes
   try {
     router.register('dir-score', (mount) => renderScoreDirectorView(mount))
+    router.register('hermes-tareas', (mount, params = {}) =>
+      renderTareasView(mount, { hideCalendarBtn: true, ...params }),
+    )
+    router.register('hermes-caso', (mount, params = {}) =>
+      renderCasoDetalleView(mount, params),
+    )
+    router.register('hermes-procedimientos', (mount) =>
+      renderProcedimientosView(mount),
+    )
+    router.register('hermes-consulta', (mount) =>
+      renderHermesConsultaView(mount),
+    )
   } catch (error) {
-    console.error('Error registering dir-score route:', error)
+    console.error('Error registering hermes routes:', error)
   }
 
   // Centro de Ayuda

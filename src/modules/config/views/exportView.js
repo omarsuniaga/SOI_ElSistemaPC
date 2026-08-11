@@ -607,9 +607,9 @@ function _attachEvents(container) {
       const filtro  = document.getElementById('fichas-filtro').value
       const instrF  = document.getElementById('fichas-instrumento').value.trim().toLowerCase()
       let alumnos   = filtro === 'activos'
-        ? _alumnosCache.filter(a => a.is_active !== false)
-        : _alumnosCache
-      if (instrF) alumnos = alumnos.filter(a => _p(a.instrumento_principal).toLowerCase().includes(instrF))
+        ? (_alumnosCache || []).filter(a => a && a.is_active !== false)
+        : (_alumnosCache || [])
+      if (instrF) alumnos = (alumnos || []).filter(a => a && _p(a.instrumento_principal).toLowerCase().includes(instrF))
       if (alumnos.length === 0) { _setStatus('fichas-status', 'Sin alumnos con ese filtro.', true); return }
       _setStatus('fichas-status', `Generando ${alumnos.length} ficha(s)...`)
       const partes = ['Fichas Técnicas']
@@ -631,7 +631,7 @@ function _attachEvents(container) {
     try {
       const instrF = document.getElementById('lista-instrumento').value.trim().toLowerCase()
       const nivelF = document.getElementById('lista-nivel').value.trim().toLowerCase()
-      let activos  = _alumnosCache.filter(a => a.is_active !== false)
+      let activos  = (_alumnosCache || []).filter(a => a && a.is_active !== false)
       if (instrF) activos = activos.filter(a => _p(a.instrumento_principal).toLowerCase().includes(instrF))
       if (nivelF) activos = activos.filter(a => _p(a.nivel_actual).toLowerCase().includes(nivelF))
       if (activos.length === 0) { _setStatus('lista-status', 'Sin alumnos con ese filtro.', true); return }

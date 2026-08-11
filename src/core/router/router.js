@@ -18,13 +18,13 @@ export const router = {
 
   _cleanupModals() {
     // Dispose all Bootstrap modal instances to remove backdrop and body classes
-    document.querySelectorAll('.modal.show, .modal.fade').forEach(el => {
+    document.querySelectorAll('.modal.show, .modal.fade').forEach((el) => {
       try {
         const instance = Modal.getInstance(el)
         if (instance) instance.dispose()
       } catch {}
     })
-    document.querySelectorAll('.modal-backdrop').forEach(el => el.remove())
+    document.querySelectorAll('.modal-backdrop').forEach((el) => el.remove())
     document.body.classList.remove('modal-open')
     document.body.style.removeProperty('overflow')
     document.body.style.removeProperty('padding-right')
@@ -35,9 +35,18 @@ export const router = {
     const mergedParams = { ...queryParams, ...(params || {}) }
 
     if (!this.routes[routePath]) {
+      console.warn(`[Router] Route '${routePath}' not found in current context. Falling back to default.`)
+      const fallbackRoute = this.routes['dir-score']
+        ? 'dir-score'
+        : (this.routes['programas'] ? 'programas' : Object.keys(this.routes)[0])
+      if (fallbackRoute && fallbackRoute !== routePath) {
+        this.navigate(fallbackRoute, {})
+        return
+      }
       console.error(`Route ${routePath} not found`)
       return
     }
+
     if (this._guardEnabled && this._authCheck && !this._publicRoutes.includes(routePath)) {
       if (!this._authCheck()) {
         localStorage.setItem('current-view', 'login')
@@ -88,10 +97,21 @@ export const router = {
     return { routePath, queryParams }
   },
 
-  init() {
-    const currentView = localStorage.getItem('current-view') || 'programas'
+  init(defaultRoute = 'programas') {
+    const currentView = localStorage.getItem('current-view') || defaultRoute
+    const { routePath } = this._splitRoutePath(currentView)
     const paramsRaw = localStorage.getItem('current-view-params')
     const params = paramsRaw ? JSON.parse(paramsRaw) : {}
+
+    if (!this.routes[routePath]) {
+      const fallback = this.routes[defaultRoute]
+        ? defaultRoute
+        : (this.routes['dir-score'] ? 'dir-score' : Object.keys(this.routes)[0])
+      if (fallback) {
+        this.navigate(fallback, {})
+        return
+      }
+    }
     this.navigate(currentView, params)
   },
 
@@ -113,5 +133,5 @@ export const router = {
       const id = e.detail?.alumnoId || e.detail?.id
       if (id) this.navigate('metricas-riesgo', { highlightId: id })
     })
-  }
+  },
 }

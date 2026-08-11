@@ -1,8 +1,9 @@
 /**
  * gestionarClasesView.js
  * Teacher-facing class management portal.
- * Allows teachers to view their assigned classes, manage student rosters,
- * enroll existing students, remove students, and register new ones.
+ * Unified class roster: View enrolled & available students,
+ * perform accent-insensitive search, accumulate selections non-destructively,
+ * and register new students with real-time duplicate detection.
  *
  * Depends on: clasesApi (DataAdapter pattern), alumnosApi, crearAlumno
  */
@@ -67,25 +68,63 @@ function formatHorarios(horarios) {
 function normalizeAlumnosPayload(payload) {
   if (Array.isArray(payload)) return payload
   if (Array.isArray(payload?.alumnos)) return payload.alumnos
+  if (Array.isArray(payload?.data)) return payload.data
   return []
 }
 
 function flattenAlumnosSinClase(grupos = []) {
-  return grupos.flatMap((grupo) => grupo?.alumnos || []).filter(Boolean)
+  if (!Array.isArray(grupos)) return []
+  return grupos.flatMap((grupo) => (Array.isArray(grupo?.alumnos) ? grupo.alumnos : [])).filter(Boolean)
 }
 
-function getInstrumentoSlug(value) {
+function normalizeSearch(value = '') {
   return String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
     .trim()
-    .toLocaleLowerCase('es')
 }
 
 function getInstrumentOptions(alumnos = []) {
   return [...new Set(
     alumnos
-      .map((alumno) => getInstrumentoSlug(alumno.instrumento_principal || alumno.instrumento))
+      .map((alumno) => String(alumno.instrumento_principal || alumno.instrumento || '').trim())
       .filter(Boolean),
   )].sort((a, b) => a.localeCompare(b, 'es'))
+}
+
+// ── Duplicate Detection Logic ────────────────────────────────────────────────
+
+function findDuplicateMatches(nombre = '', telefono = '', allStudents = []) {
+  const normNombre = normalizeSearch(nombre)
+  const normTel = String(telefono || '').replace(/\D/g, '')
+  if (normNombre.length < 2 && normTel.length < 6) return []
+
+  const nameTokens = normNombre.split(/\s+/).filter((t) => t.length >= 2)
+
+  return allStudents.filter((student) => {
+    const studentNormNombre = normalizeSearch(student.nombre_completo || student.nombre || '')
+    const studentTel = String(student.familiar_telefono || student.telefono || '').replace(/\D/g, '')
+
+    // Match by phone (at least 7 digits)
+    if (normTel.length >= 7 && studentTel.length >= 7 && (normTel === studentTel || studentTel.endsWith(normTel) || normTel.endsWith(studentTel))) {
+      return true
+    }
+
+    if (normNombre.length < 2) return false
+
+    // Exact match or substring inclusion
+    if (studentNormNombre === normNombre) return true
+    if (studentNormNombre.includes(normNombre) || normNombre.includes(studentNormNombre)) return true
+
+    // Multi-token match (e.g. "Dylan Machillanda" matches "Dylan" + "Machillanda")
+    if (nameTokens.length >= 2) {
+      const matchCount = nameTokens.filter((token) => studentNormNombre.includes(token)).length
+      if (matchCount >= 2) return true
+    }
+
+    return false
+  })
 }
 
 // ── Module state ──────────────────────────────────────────────────────────────
@@ -94,6 +133,7 @@ let _selectedClaseId = null
 let _allStudents = [] // Cache of all active students for search
 let _enrolledIds = new Set()
 let _studentsWithoutClassIds = new Set()
+let _selectedAvailableStudentIds = new Set() // Persistent selection queue across filters/searches
 let _canEditClasses = false
 let _classEditorSupport = null
 let _rootContainer = null
@@ -131,7 +171,7 @@ export async function renderGestionarClasesView(container) {
 
     const todosAlumnos = normalizeAlumnosPayload(alumnosPayload)
 
-    _allStudents = todosAlumnos.filter((a) => a.activo !== false && a.is_active !== false)
+    _allStudents = (todosAlumnos || []).filter((a) => a && a.activo !== false && a.is_active !== false)
     _studentsWithoutClassIds = new Set(flattenAlumnosSinClase(gruposSinClase).map((alumno) => alumno.id))
     _canEditClasses = permisos.puede_inscribir_clases === true
 
@@ -293,10 +333,11 @@ function _classCard(clase) {
   `
 }
 
-// ── Panel de gestión de alumnos ────────────────────────────────────────────────
+// ── Unified Student Roster Panel ──────────────────────────────────────────────
 
 async function _selectClase(claseId, clases) {
   _selectedClaseId = claseId
+  _selectedAvailableStudentIds.clear()
 
   // Highlight selected card
   document.querySelectorAll('.gcv-clase-card').forEach((c) => c.classList.remove('active'))
@@ -329,16 +370,20 @@ async function _selectClase(claseId, clases) {
 
 function _buildPanel(clase, inscritos, disponibles) {
   const nombre = escHTML(clase.nombre || 'Clase')
-  const instrumentosDisponibles = getInstrumentOptions(disponibles)
+  const totalRoster = inscritos.length + disponibles.length
+  const sinClaseCount = disponibles.filter((a) => _studentsWithoutClassIds.has(a.id)).length
+  const instrumentosTodos = getInstrumentOptions([...inscritos, ...disponibles])
+
   return `
     <div class="gcv-panel-inner">
+      <!-- Header -->
       <div class="gcv-panel-header">
         <div>
           <h3 class="gcv-panel-title"><i class="bi bi-people-fill"></i> ${nombre}</h3>
-          <p class="gcv-panel-subtitle">Gestiona alumnos y actualiza la configuracion de esta clase.</p>
+          <p class="gcv-panel-subtitle">Gestiona inscripciones y alumnos de esta clase.</p>
         </div>
         <div class="gcv-panel-header-actions">
-          <span class="gcv-enrolled-badge">${inscritos.length} alumno${inscritos.length !== 1 ? 's' : ''}</span>
+          <span class="gcv-enrolled-badge" id="gcv-count-inscritos-badge">${inscritos.length} inscrito${inscritos.length !== 1 ? 's' : ''}</span>
           ${
             _canEditClasses
               ? `
@@ -351,26 +396,58 @@ function _buildPanel(clase, inscritos, disponibles) {
         </div>
       </div>
 
-      <!-- Search bar -->
-      <div class="gcv-search-bar">
-        <i class="bi bi-search gcv-search-icon"></i>
-        <input
-          type="text"
-          id="gcv-search"
-          class="gcv-search-input"
-          placeholder="Buscar alumno inscrito por nombre o instrumento..."
-          autocomplete="off"
-        />
+      <!-- Universal Search & Actions Toolbar -->
+      <div class="gcv-available-toolbar">
+        <div class="gcv-search-row">
+          <div class="gcv-search-bar gcv-search-bar-compact">
+            <i class="bi bi-search gcv-search-icon"></i>
+            <input
+              type="text"
+              id="gcv-disponibles-search"
+              class="gcv-search-input gcv-universal-search"
+              placeholder="Buscar por nombre o instrumento (inscritos y disponibles)..."
+              autocomplete="off"
+            />
+          </div>
+          <button class="gcv-btn-new" id="gcv-btn-nuevo" type="button" title="Registrar nuevo alumno en la academia">
+            <i class="bi bi-person-plus"></i>
+            <span>Nuevo</span>
+          </button>
+        </div>
+
+        <!-- Selection Queue Banner -->
+        <div id="gcv-selection-queue-bar" class="gcv-selection-queue-banner d-none">
+          <span><i class="bi bi-check2-circle"></i> <span id="gcv-selection-queue-text">0 seleccionados en cola</span></span>
+          <button type="button" id="gcv-btn-clear-selection">Desmarcar todos</button>
+        </div>
+
+        <!-- Filter Pills & Instrument Select -->
+        <div class="gcv-filters-row">
+          <div class="gcv-filter-pills" id="gcv-filter-pills">
+            <button type="button" class="gcv-pill active" data-filter="all">Todos (${totalRoster})</button>
+            <button type="button" class="gcv-pill" data-filter="inscritos">Inscritos (${inscritos.length})</button>
+            <button type="button" class="gcv-pill" data-filter="disponibles">Disponibles (${disponibles.length})</button>
+            <button type="button" class="gcv-pill" data-filter="sin-clase">Sin clase (${sinClaseCount})</button>
+          </div>
+          <div style="display:flex;align-items:center;gap:.5rem;">
+            <select id="gcv-filter-instrumento" class="gcv-input gcv-input-sm" aria-label="Filtrar por instrumento">
+              <option value="">Todos los instrumentos</option>
+              ${instrumentosTodos.map((instrumento) => `<option value="${escHTML(instrumento)}">${escHTML(instrumento)}</option>`).join('')}
+            </select>
+            <input type="checkbox" id="gcv-filter-sin-clase" class="d-none" />
+          </div>
+        </div>
       </div>
 
-      <!-- Quick register form -->
+      <!-- Quick register form with Live Duplicate Detection -->
       <div class="gcv-new-form d-none" id="gcv-new-form">
         <p class="gcv-new-form-title"><i class="bi bi-person-plus-fill"></i> Registrar nuevo alumno</p>
         <div class="gcv-new-form-grid">
-          <input type="text" id="gcv-nuevo-nombre" class="gcv-input" placeholder="Nombre completo *" />
-          <input type="text" id="gcv-nuevo-instrumento" class="gcv-input" placeholder="Instrumento *" />
-          <input type="tel" id="gcv-nuevo-telefono" class="gcv-input" placeholder="Telefono representante *" />
+          <input type="text" id="gcv-nuevo-nombre" class="gcv-input" placeholder="Nombre completo *" autocomplete="off" />
+          <input type="text" id="gcv-nuevo-instrumento" class="gcv-input" placeholder="Instrumento *" autocomplete="off" />
+          <input type="tel" id="gcv-nuevo-telefono" class="gcv-input" placeholder="Teléfono representante *" autocomplete="off" />
         </div>
+        <div id="gcv-dup-feedback" class="gcv-dup-feedback"></div>
         <div class="gcv-new-form-actions">
           <button type="button" class="gcv-btn gcv-btn-ghost" id="gcv-btn-cancelar-nuevo">Cancelar</button>
           <button type="button" class="gcv-btn gcv-btn-primary" id="gcv-btn-guardar-nuevo">
@@ -379,76 +456,32 @@ function _buildPanel(clase, inscritos, disponibles) {
         </div>
       </div>
 
-      <!-- Enrolled students -->
+      <!-- Unified Roster Section -->
       <div class="gcv-section">
         <div class="gcv-section-header">
-          <span class="gcv-section-label"><i class="bi bi-check-circle-fill gcv-icon-success"></i> Inscritos</span>
-          <span class="gcv-section-count" id="gcv-count-inscritos">${inscritos.length}</span>
+          <span class="gcv-section-label"><i class="bi bi-list-check gcv-icon-primary"></i> Lista de Alumnos</span>
+          <span class="gcv-section-count" id="gcv-count-disponibles">${totalRoster} de ${totalRoster} alumnos</span>
         </div>
-        <div id="gcv-lista-inscritos" class="gcv-student-list">
+
+        <div id="gcv-lista-disponibles" class="gcv-student-list gcv-unified-list">
           ${
-            inscritos.length === 0
-              ? '<p class="gcv-empty-list">Sin alumnos inscritos aun.</p>'
-              : inscritos.map((a) => _rowInscrito(a)).join('')
+            totalRoster === 0
+              ? '<p class="gcv-empty-list">No hay alumnos activos registrados.</p>'
+              : `
+                ${inscritos.map((a) => _rowInscrito(a)).join('')}
+                ${disponibles.map((a) => _rowDisponible(a)).join('')}
+              `
           }
         </div>
-      </div>
 
-      <div class="gcv-divider"></div>
+        <p class="gcv-empty-list d-none" id="gcv-empty-disponibles-filter">Ningún alumno coincide con los filtros de búsqueda.</p>
 
-      <!-- Available students -->
-      <div class="gcv-section">
-        <div class="gcv-section-header">
-          <div style="display:flex;align-items:center;gap:.75rem;">
-            <span class="gcv-section-label"><i class="bi bi-person-plus-fill gcv-icon-primary"></i> Agregar alumno</span>
-            <span class="gcv-section-count" id="gcv-count-disponibles">${disponibles.length} de ${disponibles.length} disponibles</span>
-          </div>
-          <button class="gcv-btn-new" id="gcv-btn-nuevo" type="button" title="Registrar nuevo alumno">
-            <i class="bi bi-person-plus"></i>
-            <span>Nuevo</span>
+        <!-- Contextual Enrollment Button -->
+        <div class="gcv-add-actions">
+          <button type="button" class="gcv-btn gcv-btn-primary" id="gcv-btn-inscribir">
+            <i class="bi bi-person-check"></i> Inscribir seleccionados
           </button>
         </div>
-        <div class="gcv-available-toolbar">
-          <div class="gcv-search-bar gcv-search-bar-compact">
-            <i class="bi bi-filter-circle gcv-search-icon"></i>
-            <input
-              type="text"
-              id="gcv-disponibles-search"
-              class="gcv-search-input"
-              placeholder="Filtrar por nombre..."
-              autocomplete="off"
-            />
-          </div>
-          <div class="gcv-available-filters">
-            <select id="gcv-filter-instrumento" class="gcv-input gcv-input-sm" aria-label="Filtrar por instrumento">
-              <option value="">Todos los instrumentos</option>
-              ${instrumentosDisponibles.map((instrumento) => `<option value="${escHTML(instrumento)}">${escHTML(instrumento)}</option>`).join('')}
-            </select>
-            <label class="gcv-inline-check" title="Mostrar únicamente alumnos sin ninguna clase asignada">
-              <input type="checkbox" id="gcv-filter-sin-clase" />
-              <span>Sin clase asignada</span>
-            </label>
-          </div>
-        </div>
-        <div id="gcv-lista-disponibles" class="gcv-student-list gcv-available-list">
-          ${
-            disponibles.length === 0
-              ? '<p class="gcv-empty-list">Todos los alumnos activos ya estan inscritos.</p>'
-              : disponibles.map((a) => _rowDisponible(a)).join('')
-          }
-        </div>
-        <p class="gcv-empty-list d-none" id="gcv-empty-disponibles-filter">Ningun alumno coincide con los filtros actuales.</p>
-        ${
-          disponibles.length > 0
-            ? `
-          <div class="gcv-add-actions">
-            <button type="button" class="gcv-btn gcv-btn-primary" id="gcv-btn-inscribir">
-              <i class="bi bi-person-check"></i> Inscribir seleccionados
-            </button>
-          </div>
-        `
-            : ''
-        }
       </div>
     </div>
   `
@@ -458,13 +491,18 @@ function _rowInscrito(a) {
   const nombre = escHTML(a.nombre_completo || a.nombre || 'Alumno')
   const instrumento = escHTML(a.instrumento_principal || a.instrumento || '')
   return `
-    <div class="gcv-student-row inscrito-item"
+    <div class="gcv-student-row inscrito-item gcv-row-enrolled"
          data-alumno-id="${a.id}"
-         data-name="${nombre.toLowerCase()}"
-         data-instrumento="${instrumento.toLowerCase()}">
+         data-is-enrolled="true"
+         data-name="${normalizeSearch(nombre)}"
+         data-instrumento="${normalizeSearch(instrumento)}"
+         data-sin-clase="false">
       <div class="gcv-student-avatar gcv-avatar-success">${getInitials(nombre)}</div>
       <div class="gcv-student-data">
-        <span class="gcv-student-name">${nombre}</span>
+        <div style="display:flex;align-items:center;gap:.5rem;">
+          <span class="gcv-student-name">${nombre}</span>
+          <span class="gcv-badge-enrolled"><i class="bi bi-check-circle-fill"></i> Inscrito</span>
+        </div>
         ${instrumento ? `<span class="gcv-student-sub"><i class="bi bi-music-note"></i> ${instrumento}</span>` : ''}
       </div>
       <button type="button" class="gcv-btn-remove desinscribir-btn" data-alumno-id="${a.id}" title="Quitar de la clase">
@@ -477,16 +515,23 @@ function _rowInscrito(a) {
 function _rowDisponible(a) {
   const nombre = escHTML(a.nombre_completo || a.nombre || 'Alumno')
   const instrumento = escHTML(a.instrumento_principal || a.instrumento || '')
+  const isSinClase = _studentsWithoutClassIds.has(a.id)
+  const isSelected = _selectedAvailableStudentIds.has(a.id)
+
   return `
-    <label class="gcv-student-row gcv-student-selectable disponible-item"
+    <label class="gcv-student-row gcv-student-selectable disponible-item ${isSelected ? 'selected' : ''}"
            data-alumno-id="${a.id}"
-           data-name="${nombre.toLowerCase()}"
-           data-instrumento="${instrumento.toLowerCase()}"
-           data-sin-clase="${_studentsWithoutClassIds.has(a.id) ? 'true' : 'false'}">
-      <input class="gcv-checkbox" type="checkbox" value="${a.id}" />
+           data-is-enrolled="false"
+           data-name="${normalizeSearch(nombre)}"
+           data-instrumento="${normalizeSearch(instrumento)}"
+           data-sin-clase="${isSinClase ? 'true' : 'false'}">
+      <input class="gcv-checkbox" type="checkbox" value="${a.id}" ${isSelected ? 'checked' : ''} />
       <div class="gcv-student-avatar gcv-avatar-primary">${getInitials(nombre)}</div>
       <div class="gcv-student-data">
-        <span class="gcv-student-name">${nombre}</span>
+        <div style="display:flex;align-items:center;gap:.5rem;">
+          <span class="gcv-student-name">${nombre}</span>
+          ${isSinClase ? '<span class="gcv-badge-sin-clase">Sin clase</span>' : ''}
+        </div>
         ${instrumento ? `<span class="gcv-student-sub"><i class="bi bi-music-note"></i> ${instrumento}</span>` : ''}
       </div>
     </label>
@@ -517,52 +562,134 @@ function _attachShellEvents(clases, permisos = {}) {
 }
 
 function _attachPanelEvents(claseId, clases) {
-  document.getElementById('gcv-search')?.addEventListener('input', (e) => {
-    const term = e.target.value.toLowerCase().trim()
-    document.querySelectorAll('.inscrito-item').forEach((row) => {
-      const match =
-        !term ||
-        (row.dataset.name || '').includes(term) ||
-        (row.dataset.instrumento || '').includes(term)
-      row.style.display = match ? '' : 'none'
-    })
-  })
+  let activeFilter = 'all'
 
-  const applyAvailableFilters = () => {
-    const term = document.getElementById('gcv-disponibles-search')?.value?.toLowerCase().trim() || ''
-    const instrumento = document.getElementById('gcv-filter-instrumento')?.value || ''
-    const soloSinClase = document.getElementById('gcv-filter-sin-clase')?.checked === true
-    const rows = [...document.querySelectorAll('.disponible-item')]
+  const updateSelectionUI = () => {
+    const totalSelected = _selectedAvailableStudentIds.size
+    const queueBar = document.getElementById('gcv-selection-queue-bar')
+    const queueText = document.getElementById('gcv-selection-queue-text')
+    const btnInscribir = document.getElementById('gcv-btn-inscribir')
+
+    if (queueBar && queueText) {
+      if (totalSelected > 0) {
+        queueBar.classList.remove('d-none')
+        queueText.textContent = `${totalSelected} alumno${totalSelected > 1 ? 's' : ''} seleccionado${totalSelected > 1 ? 's' : ''} en cola`
+      } else {
+        queueBar.classList.add('d-none')
+      }
+    }
+
+    if (btnInscribir) {
+      btnInscribir.innerHTML = totalSelected > 0
+        ? `<i class="bi bi-person-check"></i> Inscribir seleccionados (${totalSelected})`
+        : '<i class="bi bi-person-check"></i> Inscribir seleccionados'
+    }
+  }
+
+  const applyUnifiedFilters = () => {
+    const term = normalizeSearch(document.getElementById('gcv-disponibles-search')?.value)
+    const instrumento = normalizeSearch(document.getElementById('gcv-filter-instrumento')?.value)
+    const soloSinClase = activeFilter === 'sin-clase' || document.getElementById('gcv-filter-sin-clase')?.checked === true
+    const rows = [...document.querySelectorAll('#gcv-lista-disponibles .gcv-student-row')]
     let visibles = 0
+    let disponiblesVisibles = 0
+    const totalDisponibles = document.querySelectorAll('.disponible-item').length
 
     rows.forEach((row) => {
+      const isEnrolled = row.dataset.isEnrolled === 'true'
       const matchText =
         !term ||
         (row.dataset.name || '').includes(term) ||
         (row.dataset.instrumento || '').includes(term)
       const matchInstrumento = !instrumento || (row.dataset.instrumento || '') === instrumento
-      const matchSinClase = !soloSinClase || row.dataset.sinClase === 'true'
-      const visible = matchText && matchInstrumento && matchSinClase
+
+      let matchPill = true
+      if (activeFilter === 'inscritos') matchPill = isEnrolled
+      else if (activeFilter === 'disponibles') matchPill = !isEnrolled
+      else if (soloSinClase) matchPill = !isEnrolled && row.dataset.sinClase === 'true'
+
+      const visible = matchText && matchInstrumento && matchPill
       row.style.display = visible ? '' : 'none'
-      if (!visible) {
+
+      if (!isEnrolled) {
         const checkbox = row.querySelector('.gcv-checkbox')
-        if (checkbox) checkbox.checked = false
+        if (checkbox) {
+          checkbox.checked = _selectedAvailableStudentIds.has(row.dataset.alumnoId)
+          row.classList.toggle('selected', checkbox.checked)
+        }
+        if (visible) disponiblesVisibles++
       }
+
       if (visible) visibles++
     })
 
     const count = document.getElementById('gcv-count-disponibles')
-    if (count) count.textContent = `${visibles} de ${rows.length} disponibles`
+    if (count) {
+      if (activeFilter === 'sin-clase' || soloSinClase) {
+        count.textContent = `${disponiblesVisibles} de ${totalDisponibles} disponibles`
+      } else {
+        count.textContent = `${visibles} de ${rows.length} alumnos`
+      }
+    }
 
     const empty = document.getElementById('gcv-empty-disponibles-filter')
     if (empty) empty.classList.toggle('d-none', visibles > 0 || rows.length === 0)
   }
 
-  document.getElementById('gcv-disponibles-search')?.addEventListener('input', applyAvailableFilters)
-  document.getElementById('gcv-filter-instrumento')?.addEventListener('change', applyAvailableFilters)
-  document.getElementById('gcv-filter-sin-clase')?.addEventListener('change', applyAvailableFilters)
-  applyAvailableFilters()
+  // Filter Pills click handler
+  document.getElementById('gcv-filter-pills')?.addEventListener('click', (e) => {
+    const pill = e.target.closest('.gcv-pill')
+    if (!pill) return
+    document.querySelectorAll('#gcv-filter-pills .gcv-pill').forEach((p) => p.classList.remove('active'))
+    pill.classList.add('active')
+    activeFilter = pill.dataset.filter || 'all'
 
+    const sinClaseToggle = document.getElementById('gcv-filter-sin-clase')
+    if (sinClaseToggle) sinClaseToggle.checked = (activeFilter === 'sin-clase')
+
+    applyUnifiedFilters()
+  })
+
+  // Handle selection queue changes
+  document.getElementById('gcv-lista-disponibles')?.addEventListener('change', (e) => {
+    const cb = e.target.closest('.gcv-checkbox')
+    if (!cb) return
+    const alumnoId = cb.value
+    if (cb.checked) {
+      _selectedAvailableStudentIds.add(alumnoId)
+      cb.closest('.disponible-item')?.classList.add('selected')
+    } else {
+      _selectedAvailableStudentIds.delete(alumnoId)
+      cb.closest('.disponible-item')?.classList.remove('selected')
+    }
+    updateSelectionUI()
+  })
+
+  // Clear queue
+  document.getElementById('gcv-btn-clear-selection')?.addEventListener('click', () => {
+    _selectedAvailableStudentIds.clear()
+    document.querySelectorAll('#gcv-lista-disponibles .gcv-checkbox').forEach((cb) => {
+      cb.checked = false
+      cb.closest('.disponible-item')?.classList.remove('selected')
+    })
+    updateSelectionUI()
+  })
+
+  // Search and filter inputs
+  document.getElementById('gcv-disponibles-search')?.addEventListener('input', applyUnifiedFilters)
+  document.getElementById('gcv-filter-instrumento')?.addEventListener('change', applyUnifiedFilters)
+  document.getElementById('gcv-filter-sin-clase')?.addEventListener('change', () => {
+    if (document.getElementById('gcv-filter-sin-clase')?.checked) {
+      activeFilter = 'sin-clase'
+      document.querySelectorAll('#gcv-filter-pills .gcv-pill').forEach((p) => p.classList.toggle('active', p.dataset.filter === 'sin-clase'))
+    }
+    applyUnifiedFilters()
+  })
+
+  applyUnifiedFilters()
+  updateSelectionUI()
+
+  // Class editor
   document.getElementById('gcv-btn-editar-clase')?.addEventListener('click', async (e) => {
     const btn = e.currentTarget
     const maestro = getMaestroLocal()
@@ -602,10 +729,92 @@ function _attachPanelEvents(claseId, clases) {
     }
   })
 
+  // ── New Student Form & Live Duplicate Detection ────────────────────────────
+
+  const evaluateDuplicates = () => {
+    const nombre = document.getElementById('gcv-nuevo-nombre')?.value || ''
+    const telefono = document.getElementById('gcv-nuevo-telefono')?.value || ''
+    const feedback = document.getElementById('gcv-dup-feedback')
+    if (!feedback) return
+
+    const matches = findDuplicateMatches(nombre, telefono, _allStudents)
+
+    if (matches.length > 0) {
+      feedback.innerHTML = `
+        <div class="gcv-dup-alert">
+          <div class="gcv-dup-header">
+            <i class="bi bi-exclamation-triangle-fill"></i>
+            <span>Atención: Se encontraron coincidencias en la base de datos (${matches.length})</span>
+          </div>
+          <div class="gcv-dup-list">
+            ${matches.slice(0, 4).map((m) => {
+              const isEnrolled = _enrolledIds.has(m.id)
+              const isSinClase = _studentsWithoutClassIds.has(m.id)
+              const statusLabel = isEnrolled
+                ? 'Ya inscrito en esta clase'
+                : (isSinClase ? 'Sin clase asignada' : 'Activo en otra clase')
+
+              return `
+                <div class="gcv-dup-item">
+                  <div>
+                    <strong>${escHTML(m.nombre_completo || m.nombre)}</strong>
+                    <span class="gcv-dup-sub">
+                      ${escHTML(m.instrumento_principal || 'Sin instrumento')}
+                      ${m.familiar_telefono ? ` • Tel: ${escHTML(m.familiar_telefono)}` : ''}
+                      • <em>${statusLabel}</em>
+                    </span>
+                  </div>
+                  ${!isEnrolled ? `
+                    <button type="button" class="gcv-btn-use-existing" data-alumno-id="${m.id}" data-alumno-nombre="${escHTML(m.nombre_completo || m.nombre)}">
+                      <i class="bi bi-person-check"></i> Inscribir existente
+                    </button>
+                  ` : ''}
+                </div>
+              `
+            }).join('')}
+          </div>
+        </div>
+      `
+    } else if (normalizeSearch(nombre).length >= 3) {
+      feedback.innerHTML = `
+        <div class="gcv-dup-clean">
+          <i class="bi bi-check-circle-fill"></i> Nombre disponible para nuevo registro.
+        </div>
+      `
+    } else {
+      feedback.innerHTML = ''
+    }
+  }
+
   document.getElementById('gcv-btn-nuevo')?.addEventListener('click', () => {
     const form = document.getElementById('gcv-new-form')
     form?.classList.remove('d-none')
     document.getElementById('gcv-nuevo-nombre')?.focus()
+  })
+
+  document.getElementById('gcv-nuevo-nombre')?.addEventListener('input', evaluateDuplicates)
+  document.getElementById('gcv-nuevo-telefono')?.addEventListener('input', evaluateDuplicates)
+
+  // Use existing student from duplicate alert
+  document.getElementById('gcv-dup-feedback')?.addEventListener('click', async (e) => {
+    const btn = e.target.closest('.gcv-btn-use-existing')
+    if (!btn) return
+    const alumnoId = btn.dataset.alumnoId
+    const alumnoNombre = btn.dataset.alumnoNombre || 'El alumno'
+    btn.disabled = true
+    btn.innerHTML = '<span class="gcv-spinner-sm"></span> Inscribiendo...'
+
+    try {
+      await inscribirAlumno(claseId, alumnoId)
+      AppToast.success(`${alumnoNombre} inscrito en la clase exitosamente.`)
+      _resetNewForm()
+      await _refreshStudentsWithoutClass()
+      await _selectClase(claseId, clases)
+    } catch (err) {
+      AppToast.error('Error al inscribir: ' + err.message)
+      btn.disabled = false
+      btn.innerHTML = '<i class="bi bi-person-check"></i> Inscribir existente'
+    }
   })
 
   document.getElementById('gcv-btn-cancelar-nuevo')?.addEventListener('click', _resetNewForm)
@@ -616,8 +825,19 @@ function _attachPanelEvents(claseId, clases) {
     const telefono = document.getElementById('gcv-nuevo-telefono').value.trim()
 
     if (!nombre || !instrumento || !telefono) {
-      AppToast.error('Nombre, instrumento y telefono son obligatorios')
+      AppToast.error('Nombre, instrumento y teléfono son obligatorios')
       return
+    }
+
+    // Exact duplicate confirmation safety guard
+    const exactMatch = _allStudents.find(
+      (a) => normalizeSearch(a.nombre_completo || a.nombre) === normalizeSearch(nombre),
+    )
+    if (exactMatch) {
+      const proceed = confirm(
+        `Ya existe un alumno registrado con el nombre exacto "${exactMatch.nombre_completo || exactMatch.nombre}". ¿Deseas registrar un nuevo alumno con este mismo nombre?`,
+      )
+      if (!proceed) return
     }
 
     const btn = document.getElementById('gcv-btn-guardar-nuevo')
@@ -634,7 +854,7 @@ function _attachPanelEvents(claseId, clases) {
       await inscribirAlumno(claseId, nuevoAlumno.id)
       AppToast.success(`${nombre} registrado e inscrito exitosamente`)
       const todosActualizados = normalizeAlumnosPayload(await obtenerAlumnos().catch(() => _allStudents))
-      _allStudents = todosActualizados.filter((a) => a.activo !== false && a.is_active !== false)
+      _allStudents = (todosActualizados || []).filter((a) => a && a.activo !== false && a.is_active !== false)
       await _refreshStudentsWithoutClass()
       _classEditorSupport = null
       await _selectClase(claseId, clases)
@@ -645,14 +865,15 @@ function _attachPanelEvents(claseId, clases) {
     }
   })
 
-  document.getElementById('gcv-lista-inscritos')?.addEventListener('click', async (e) => {
+  // Unenroll student
+  document.getElementById('gcv-lista-disponibles')?.addEventListener('click', async (e) => {
     const btn = e.target.closest('.desinscribir-btn')
     if (!btn) return
     const alumnoId = btn.dataset.alumnoId
     const row = btn.closest('.gcv-student-row')
     const nombre = row?.querySelector('.gcv-student-name')?.textContent || 'este alumno'
 
-    if (!confirm(`Quitar a ${nombre} de esta clase?`)) return
+    if (!confirm(`¿Quitar a ${nombre} de esta clase?`)) return
 
     btn.disabled = true
     btn.innerHTML = '<span class="gcv-spinner-sm"></span>'
@@ -669,30 +890,32 @@ function _attachPanelEvents(claseId, clases) {
     }
   })
 
+  // Inscribe selected students in bulk
   document.getElementById('gcv-btn-inscribir')?.addEventListener('click', async () => {
-    const checks = [...document.querySelectorAll('#gcv-lista-disponibles .gcv-checkbox:checked')]
-    if (!checks.length) {
+    const idsToEnroll = [..._selectedAvailableStudentIds]
+    if (!idsToEnroll.length) {
       AppToast.error('Selecciona al menos un alumno')
       return
     }
 
     const btn = document.getElementById('gcv-btn-inscribir')
     btn.disabled = true
-    btn.innerHTML = '<span class="gcv-spinner-sm"></span> Inscribiendo...'
+    btn.innerHTML = `<span class="gcv-spinner-sm"></span> Inscribiendo ${idsToEnroll.length} alumno(s)...`
 
     try {
-      for (const cb of checks) {
-        await inscribirAlumno(claseId, cb.value)
+      for (const id of idsToEnroll) {
+        await inscribirAlumno(claseId, id)
       }
+      _selectedAvailableStudentIds.clear()
       await _refreshStudentsWithoutClass()
       AppToast.success(
-        `${checks.length} alumno${checks.length > 1 ? 's' : ''} inscrito${checks.length > 1 ? 's' : ''} correctamente`,
+        `${idsToEnroll.length} alumno${idsToEnroll.length > 1 ? 's' : ''} inscrito${idsToEnroll.length > 1 ? 's' : ''} correctamente`,
       )
       await _selectClase(claseId, clases)
     } catch (err) {
       AppToast.error('Error: ' + err.message)
       btn.disabled = false
-      btn.innerHTML = '<i class="bi bi-person-check"></i> Inscribir seleccionados'
+      btn.innerHTML = `<i class="bi bi-person-check"></i> Inscribir seleccionados (${_selectedAvailableStudentIds.size})`
     }
   })
 }
@@ -705,6 +928,8 @@ function _resetNewForm() {
     const el = document.getElementById(id)
     if (el) el.value = ''
   })
+  const feedback = document.getElementById('gcv-dup-feedback')
+  if (feedback) feedback.innerHTML = ''
 }
 
 async function _refreshStudentsWithoutClass() {

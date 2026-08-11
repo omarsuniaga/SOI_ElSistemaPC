@@ -72,6 +72,24 @@ export async function registrarEvaluacion(data) {
     return row
   }
 
+  // ── Step 0: Try atomic RPC if deployed ──────────────────────────────────
+  try {
+    const { data: rpcResult, error: rpcError } = await supabase.rpc('fn_registrar_evaluacion_indicador', {
+      p_alumno_id: data.alumno_id,
+      p_indicator_id: data.indicator_id,
+      p_clase_id: data.clase_id,
+      p_nota: data.nota ?? null,
+      p_estado: data.estado || 'sin_evaluar',
+      p_observaciones: data.observaciones || null,
+      p_evaluado_por: data.evaluado_por || null,
+    })
+    if (!rpcError && rpcResult) {
+      return rpcResult
+    }
+  } catch {
+    // Fallback to table queries below if RPC is not available
+  }
+
   // ── Step 1: check for an existing record ──────────────────────────────────
   const { data: existing, error: selectError } = await supabase
     .from('evaluacion_indicador')

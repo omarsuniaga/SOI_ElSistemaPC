@@ -235,22 +235,64 @@
   padding: .3rem .65rem;
 }
 
-.gcv-btn-new {
+.gcv-search-row {
   display: flex;
+  align-items: center;
+  gap: .5rem;
+}
+
+.gcv-search-row .gcv-search-bar {
+  flex: 1;
+}
+
+.gcv-btn-new {
+  display: inline-flex;
   align-items: center;
   gap: .35rem;
   background: linear-gradient(135deg, var(--pm-primary, #6366f1), #8b5cf6);
   color: #fff;
   border: none;
-  border-radius: 7px;
-  padding: .35rem .8rem;
-  font-size: .8rem;
+  border-radius: 8px;
+  padding: .42rem .85rem;
+  font-size: .825rem;
   font-weight: 600;
   cursor: pointer;
-  transition: opacity .2s, transform .1s;
+  transition: opacity .2s, transform .1s, box-shadow .2s;
   white-space: nowrap;
+  box-shadow: 0 2px 5px rgba(99, 102, 241, 0.25);
 }
-.gcv-btn-new:hover { opacity: .9; transform: scale(1.03); }
+.gcv-btn-new:hover {
+  opacity: .95;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(99, 102, 241, 0.35);
+}
+
+.gcv-selection-queue-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(99, 102, 241, .12);
+  border: 1px solid rgba(99, 102, 241, .3);
+  border-radius: 8px;
+  padding: .45rem .85rem;
+  font-size: .82rem;
+  font-weight: 600;
+  color: var(--pm-primary, #6366f1);
+  animation: fadeIn .15s ease-out;
+}
+.gcv-selection-queue-banner button {
+  background: transparent;
+  border: none;
+  color: var(--pm-text-muted);
+  font-size: .78rem;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+  transition: color .15s;
+}
+.gcv-selection-queue-banner button:hover {
+  color: #ef4444;
+}
 
 /* ── New student form ─────────────────────────────────────── */
 .gcv-new-form {
@@ -298,29 +340,139 @@
   flex-direction: column;
   gap: .65rem;
 }
-.gcv-available-filters {
+/* ── Unified Roster Toolbar & Filters ───────────────────── */
+.gcv-filters-row {
   display: flex;
-  gap: .75rem;
+  gap: .65rem;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+}
+.gcv-filter-pills {
+  display: flex;
+  gap: .35rem;
   flex-wrap: wrap;
   align-items: center;
 }
-.gcv-inline-check {
-  display: inline-flex;
-  align-items: center;
-  gap: .5rem;
-  font-size: .85rem;
+.gcv-pill {
+  border: 1.5px solid var(--pm-border);
+  background: var(--pm-surface);
+  color: var(--pm-text-muted);
+  border-radius: 20px;
+  padding: .3rem .75rem;
+  font-size: .78rem;
   font-weight: 600;
-  color: var(--pm-text);
-  padding: .35rem 0;
   cursor: pointer;
+  white-space: nowrap;
+  transition: all .15s ease;
   user-select: none;
 }
-.gcv-inline-check input {
-  accent-color: var(--pm-primary, #6366f1);
+.gcv-pill:hover {
+  border-color: var(--pm-primary, #6366f1);
+  color: var(--pm-text);
+}
+.gcv-pill.active {
+  background: linear-gradient(135deg, var(--pm-primary, #6366f1), #8b5cf6);
+  border-color: transparent;
+  color: #fff;
+  box-shadow: 0 2px 5px rgba(99, 102, 241, 0.25);
+}
+
+/* ── Badges ──────────────────────────────────────────────── */
+.gcv-badge-enrolled {
+  display: inline-flex;
+  align-items: center;
+  gap: .25rem;
+  background: rgba(34, 197, 94, .12);
+  color: #16a34a;
+  border: 1px solid rgba(34, 197, 94, .25);
+  border-radius: 6px;
+  padding: .15rem .45rem;
+  font-size: .7rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.gcv-badge-sin-clase {
+  display: inline-flex;
+  align-items: center;
+  gap: .25rem;
+  background: rgba(234, 179, 8, .12);
+  color: #ca8a04;
+  border: 1px solid rgba(234, 179, 8, .25);
+  border-radius: 6px;
+  padding: .15rem .45rem;
+  font-size: .7rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* ── Duplicate Checker Card in New Form ─────────────────── */
+.gcv-dup-feedback {
+  margin-top: .6rem;
+}
+.gcv-dup-alert {
+  background: rgba(245, 158, 11, .08);
+  border: 1.5px solid rgba(245, 158, 11, .35);
+  border-radius: 10px;
+  padding: .65rem .85rem;
+  animation: fadeIn .15s ease-out;
+}
+.gcv-dup-header {
   display: flex;
   align-items: center;
-  gap: .4rem;
+  gap: .45rem;
+  font-size: .8rem;
+  font-weight: 700;
+  color: #d97706;
+  margin-bottom: .45rem;
 }
+.gcv-dup-list {
+  display: flex;
+  flex-direction: column;
+  gap: .35rem;
+}
+.gcv-dup-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .6rem;
+  background: var(--pm-surface);
+  border: 1px solid var(--pm-border);
+  border-radius: 6px;
+  padding: .35rem .6rem;
+  font-size: .78rem;
+}
+.gcv-dup-sub {
+  display: block;
+  font-size: .7rem;
+  color: var(--pm-text-muted);
+}
+.gcv-dup-clean {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  color: #16a34a;
+  font-size: .78rem;
+  font-weight: 600;
+  padding: .2rem 0;
+}
+.gcv-btn-use-existing {
+  background: rgba(99, 102, 241, .12);
+  color: var(--pm-primary, #6366f1);
+  border: 1px solid rgba(99, 102, 241, .3);
+  border-radius: 6px;
+  padding: .25rem .55rem;
+  font-size: .72rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all .15s;
+}
+.gcv-btn-use-existing:hover {
+  background: var(--pm-primary, #6366f1);
+  color: #fff;
+}
+
 .gcv-section-count { font-size: .75rem; color: var(--pm-text-muted); }
 .gcv-icon-success { color: #22c55e; }
 .gcv-icon-primary { color: var(--pm-primary, #6366f1); }
@@ -331,7 +483,8 @@
 
 /* ── Student rows ─────────────────────────────────────────── */
 .gcv-student-list { display: flex; flex-direction: column; gap: .35rem; }
-.gcv-available-list { max-height: 260px; overflow-y: auto; }
+.gcv-available-list,
+.gcv-unified-list { max-height: 360px; overflow-y: auto; }
 .gcv-student-row {
   display: flex;
   align-items: center;
@@ -346,9 +499,14 @@
   border-color: var(--pm-border);
 }
 .gcv-student-selectable { cursor: pointer; }
+.gcv-student-selectable.selected,
 .gcv-student-selectable:has(.gcv-checkbox:checked) {
   background: rgba(99, 102, 241, .08);
   border-color: var(--pm-primary, #6366f1);
+}
+.gcv-row-enrolled {
+  background: rgba(34, 197, 94, .04);
+  border-color: rgba(34, 197, 94, .18);
 }
 .gcv-student-avatar {
   width: 36px;
@@ -398,14 +556,6 @@
   width: 17px;
   height: 17px;
   accent-color: var(--pm-primary, #6366f1);
-  cursor: pointer;
-  flex-shrink: 0;
-}
-.gcv-empty-list {
-  font-size: .8rem;
-  color: var(--pm-text-muted);
-  margin: .5rem 0;
-  padding: .5rem .75rem;
 }
 .gcv-add-actions {
   display: flex;

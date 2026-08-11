@@ -427,6 +427,288 @@ export async function getRutasMaestro(claseId, instrumento = null) {
   return rutasFiltradas
 }
 
+/**
+ * Get all personal routes for teacher in a class (Phase 1 support)
+ * @param {string} maestroId - Teacher ID
+ * @param {string} claseId - Class ID
+ * @returns {Promise<Array>} Array of routes with hierarchy
+ */
+export async function getPersonalRoutes(maestroId, claseId, forceRefresh = false) {
+  if (!maestroId || !claseId) return []
+
+  const cacheKey = `personal_routes_${maestroId}_${claseId}`
+
+  if (!forceRefresh) {
+    const cached = viewCache.getCached(cacheKey)
+    if (cached) return cached
+  }
+
+  try {
+    // Import here to avoid circular dependencies
+    const { getTeacherRoutes } = await import('./maestroRouteService.js')
+    const routes = await getTeacherRoutes(maestroId, claseId)
+    viewCache.set(cacheKey, routes, 'personal_routes')
+    return routes
+  } catch (err) {
+    console.warn('[MaestroData] Error cargando rutas personales:', err.message)
+    return []
+  }
+}
+
+/**
+ * Get prerequisite graph for a route
+ * @param {string} routeId - Route ID
+ * @returns {Promise<Object>} Adjacency list of prerequisites
+ */
+export async function getRoutePrerequisites(routeId) {
+  if (!routeId) return {}
+
+  const cacheKey = `route_prerequisites_${routeId}`
+  const cached = viewCache.getCached(cacheKey)
+  if (cached) return cached
+
+  try {
+    const { getRoutePrerequisites: getPrereqs } = await import('./maestroRouteService.js')
+    const prerequisites = await getPrereqs(routeId)
+    viewCache.set(cacheKey, prerequisites, 'prerequisites')
+    return prerequisites
+  } catch (err) {
+    console.warn('[MaestroData] Error cargando prerequisitos:', err.message)
+    return {}
+  }
+}
+
+/**
+ * Get recovery sessions for a class
+ * @param {string} claseId - Class ID
+ * @returns {Promise<Array>} Recovery sessions with status
+ */
+export async function getRecoverySessions(claseId) {
+  if (!claseId) return []
+
+  const cacheKey = `recovery_sessions_${claseId}`
+  const cached = viewCache.getCached(cacheKey)
+  if (cached) return cached
+
+  try {
+    const { data, error } = await supabase
+      .from('evaluacion_indicador')
+      .select(
+        'id, alumno_id, indicator_id, clase_id, recovery_status, recovery_timestamp, recovery_notes'
+      )
+      .eq('clase_id', claseId)
+      .not('recovery_status', 'is', null)
+      .order('recovery_timestamp', { ascending: false })
+
+    if (error) {
+      console.warn('[MaestroData] Error loading recovery sessions:', error.message)
+      return []
+    }
+
+    const sessions = data || []
+    viewCache.set(cacheKey, sessions, 'recovery_sessions')
+    return sessions
+  } catch (err) {
+    console.error('[MaestroData] getRecoverySessions error:', err)
+    return []
+  }
+}
+
+/**
+ * Get check states for all indicators in a route per class
+ * Check state indicates grading progress: "none" | "single" | "double"
+ * @param {string} routeId - Route ID
+ * @param {string} claseId - Class ID
+ * @returns {Promise<Array>} Array of {indicador_id, check_state, stats}
+ */
+export async function getIndicadorCheckStates(routeId, claseId) {
+  if (!routeId || !claseId) return []
+
+  const cacheKey = `check_states_${routeId}_${claseId}`
+  const cached = viewCache.getCached(cacheKey)
+  if (cached) return cached
+
+  try {
+    // Query: For each indicador in route, count evaluations and recovery status
+    // check_state = "none" if no evaluations
+    // check_state = "single" if >= 1 evaluation but some students absent/not recovered
+    // check_state = "double" if all students evaluated or recovered
+    const { data: indicadores, error: indError } = await supabase
+      .from('maestro_indicadores')
+      .select('id')
+      .in(
+        'objetivo_id',
+        (
+          await supabase
+            .from('maestro_objetivos')
+            .select('id')
+            .in(
+              'unidad_id',
+              (await supabase.from('maestro_unidades').select('id').eq('ruta_id', routeId)).data.map(
+                (u) => u.id
+              ) || []
+            )
+        ).data.map((o) => o.id) || []
+      )
+
+    if (indError) {
+      console.warn('[MaestroData] Error loading indicators:', indError.message)
+      return []
+    }
+
+    const indicadorIds = indicadores.map((i) => i.id)
+    if (indicadorIds.length === 0) return []
+
+    // For each indicador, get evaluation counts
+    const checkStates = await Promise.all(
+      indicadorIds.map(async (indicadorId) => {
+        const { data: evals, error: evalError } = await supabase
+          .from('evaluacion_indicador')
+          .select('alumno_id, recovery_status')
+          .eq('indicator_id', indicadorId)
+          .eq('clase_id', claseId)
+
+        if (evalError || !evals) {
+          return { indicador_id: indicadorId, check_state: 'none' }
+        }
+
+        const hasEvals = evals.length > 0
+        const hasUnresolvedDebt = evals.some(
+          (e) =>
+            e.recovery_status === 'pendiente' || e.recovery_status === null
+        )
+
+        if (!hasEvals) {
+          return { indicador_id: indicadorId, check_state: 'none' }
+        }
+
+        if (hasUnresolvedDebt) {
+          return { indicador_id: indicadorId, check_state: 'single' }
+        }
+
+        return { indicador_id: indicadorId, check_state: 'double' }
+      })
+    )
+
+    viewCache.set(cacheKey, checkStates, 'check_states')
+    return checkStates
+  } catch (err) {
+    console.error('[MaestroData] getIndicadorCheckStates error:', err)
+    return []
+  }
+}
+
+/**
+ * Update recovery status for a student indicator (atomic update)
+ * Triggers dependent indicator flagging via updateRecoveryStatus logic
+ * @param {string} alumnoId - Student ID
+ * @param {string} indicadorId - Indicator ID (from maestro_indicadores)
+ * @param {string} claseId - Class ID
+ * @param {string} status - Recovery status: 'recuperado' | 'no_aplica'
+ * @param {string} notes - Optional recovery notes
+ * @param {number} grade - Optional recovery grade (1-5)
+ * @returns {Promise<Object>} Updated evaluation record
+ */
+export async function updateRecoveryStatus(alumnoId, indicadorId, claseId, status, notes, grade) {
+  if (!alumnoId || !indicadorId || !claseId) {
+    throw new Error('Missing required parameters: alumnoId, indicadorId, claseId')
+  }
+
+  try {
+    // Update evaluacion_indicador recovery fields
+    const { data, error } = await supabase
+      .from('evaluacion_indicador')
+      .update({
+        recovery_status: status,
+        recovery_notes: notes || null,
+        recovery_timestamp: new Date().toISOString(),
+        recovery_grade: grade || null,
+      })
+      .eq('alumno_id', alumnoId)
+      .eq('indicator_id', indicadorId)
+      .eq('clase_id', claseId)
+      .select()
+
+    if (error) {
+      throw new Error(`Failed to update recovery status: ${error.message}`)
+    }
+
+    // Invalidate check states cache for this route+class
+    // (Frontend will trigger refresh after recovery update)
+    viewCache.clear('check_states')
+
+    return data[0] || {}
+  } catch (err) {
+    console.error('[MaestroData] updateRecoveryStatus error:', err)
+    throw err
+  }
+}
+
+/**
+ * Get attendance state for a class session (for grading modal partitioning)
+ * @param {string} claseId - Class ID
+ * @param {string} sesionId - Session ID
+ * @returns {Promise<Object>} { presentes: [...], ausentes: [...] }
+ */
+export async function getAttendanceForClass(claseId, sesionId) {
+  if (!claseId) return { presentes: [], ausentes: [] }
+
+  try {
+    // Query attendance records for session
+    const { data: attendance, error } = await supabase
+      .from('asistencias') // Adjust table name if needed
+      .select('alumno_id, estado')
+      .eq('clase_id', claseId)
+      .eq('sesion_id', sesionId)
+
+    if (error) {
+      console.warn('[MaestroData] Error loading attendance:', error.message)
+      return { presentes: [], ausentes: [] }
+    }
+
+    const presentes = (attendance || [])
+      .filter((a) => a.estado && ['present', 'late', 'justified'].includes(a.estado))
+      .map((a) => a.alumno_id)
+    const ausentes = (attendance || [])
+      .filter((a) => a.estado === 'absent')
+      .map((a) => a.alumno_id)
+
+    return { presentes, ausentes }
+  } catch (err) {
+    console.error('[MaestroData] getAttendanceForClass error:', err)
+    return { presentes: [], ausentes: [] }
+  }
+}
+
+/**
+ * Get all evaluations for an indicator in a class
+ * Used for check-state calculation and recovery cascade
+ * @param {string} indicadorId - Indicator ID (from maestro_indicadores)
+ * @param {string} claseId - Class ID
+ * @returns {Promise<Array>} Evaluation records for this indicator+class
+ */
+export async function getIndicadorEvaluations(indicadorId, claseId) {
+  if (!indicadorId || !claseId) return []
+
+  try {
+    const { data, error } = await supabase
+      .from('evaluacion_indicador')
+      .select('*')
+      .eq('indicator_id', indicadorId)
+      .eq('clase_id', claseId)
+
+    if (error) {
+      console.warn('[MaestroData] Error loading evaluations:', error.message)
+      return []
+    }
+
+    return data || []
+  } catch (err) {
+    console.error('[MaestroData] getIndicadorEvaluations error:', err)
+    return []
+  }
+}
+
 export default {
   getMisClases,
   getHorariosClases,
@@ -439,5 +721,12 @@ export default {
   prefetchMonthData,
   invalidateClasesCache,
   invalidateAllCache,
+  getPersonalRoutes,
+  getRoutePrerequisites,
+  getRecoverySessions,
+  getIndicadorCheckStates,
+  updateRecoveryStatus,
+  getAttendanceForClass,
+  getIndicadorEvaluations,
   CACHE_KEYS,
 }

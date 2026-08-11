@@ -13,6 +13,104 @@ describe('clasesApi Integration', () => {
     vi.clearAllMocks()
   })
 
+  describe('buscarSalonDisponible', () => {
+    function mockRoomSearch({ count = 0, rooms = [], schedules = [] } = {}) {
+      supabase.from.mockImplementation((table) => {
+        if (table === 'alumnos_clases') {
+          const result = { data: null, count, error: null }
+          const chain = { select: vi.fn(() => chain), eq: vi.fn(() => chain), then: resolve => resolve(result) }
+          return chain
+        }
+        if (table === 'salones') return { select: vi.fn().mockResolvedValue({ data: rooms, error: null }) }
+        if (table === 'clase_horarios') {
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockResolvedValue({ data: schedules, error: null }),
+            }),
+          }
+        }
+        throw new Error(`unexpected table ${table}`)
+      })
+    }
+
+    const search = (overrides = {}) => clasesApi.buscarSalonDisponible({
+      claseId: 'c1', dia: 'viernes', horaInicio: '15:30', horaFin: '17:00', ...overrides,
+    })
+
+    it('rejects invalid and reversed time intervals', async () => {
+      await expect(search({ horaInicio: '25:00' })).rejects.toThrow('no es válido')
+      await expect(search({ horaInicio: '17:00', horaFin: '15:30' })).rejects.toThrow('no es válido')
+      expect(supabase.from).not.toHaveBeenCalled()
+    })
+
+    it('returns NO_CAPACITY when active rooms cannot fit active students', async () => {
+      mockRoomSearch({ count: 15, rooms: [{ id: 's1', nombre: 'Pequeño', capacidad: 10 }] })
+      await expect(search()).resolves.toMatchObject({ salon: null, alumnosActivos: 15, reason: 'NO_CAPACITY' })
+    })
+
+    it('returns NO_AVAILABILITY when capable rooms overlap', async () => {
+      mockRoomSearch({
+        count: 15,
+        rooms: [{ id: 's1', capacidad: 20 }],
+        schedules: [{ id: 'h2', clase_id: 'c2', salon_id: 's1', dia: 'viernes', hora_inicio: '16:00', hora_fin: '18:00' }],
+      })
+      await expect(search()).resolves.toMatchObject({ salon: null, reason: 'NO_AVAILABILITY' })
+    })
+
+    it('allows adjacent sessions and selects the smallest fitting room', async () => {
+      mockRoomSearch({
+        count: 15,
+        rooms: [{ id: 'large', nombre: 'Grande', capacidad: 30 }, { id: 'fit', nombre: 'Justo', capacidad: 15 }],
+        schedules: [{ id: 'h2', salon_id: 'fit', dia: 'viernes', hora_inicio: '17:00:00', hora_fin: '18:00:00' }],
+      })
+      await expect(search()).resolves.toMatchObject({ salon: { id: 'fit' }, alumnosActivos: 15, reason: null })
+    })
+
+    it('prefers the current room when equal-capacity rooms are available', async () => {
+      mockRoomSearch({
+        count: 8,
+        rooms: [{ id: 'a', nombre: 'Alfa', capacidad: 10 }, { id: 'current', nombre: 'Zulu', capacidad: 10 }],
+      })
+      await expect(search({ salonActualId: 'current' })).resolves.toMatchObject({
+        salon: { id: 'current' }, mantieneSalonActual: true,
+      })
+    })
+
+    it('excludes rooms disabled through either active flag', async () => {
+      mockRoomSearch({
+        count: 2,
+        rooms: [
+          { id: 'disabled-a', capacidad: 2, activo: false },
+          { id: 'disabled-b', capacidad: 2, is_active: false },
+          { id: 'active', capacidad: 3, activo: true, is_active: true },
+        ],
+      })
+      await expect(search()).resolves.toMatchObject({ salon: { id: 'active' } })
+    })
+
+    it('supports classes with zero active students deterministically', async () => {
+      mockRoomSearch({
+        count: 0,
+        rooms: [{ id: 'b', nombre: 'Beta', capacidad: 5 }, { id: 'a', nombre: 'Alfa', capacidad: 5 }],
+      })
+      await expect(search()).resolves.toMatchObject({ salon: { id: 'a' }, alumnosActivos: 0 })
+    })
+
+    it('excludes only the edited schedule, preserving conflicts from another session of the same class', async () => {
+      mockRoomSearch({
+        count: 4,
+        rooms: [{ id: 's1', capacidad: 5 }, { id: 's2', capacidad: 6 }],
+        schedules: [
+          { id: 'editing', clase_id: 'c1', salon_id: 's1', dia: 'viernes', hora_inicio: '15:30', hora_fin: '17:00' },
+          { id: 'other-session', clase_id: 'c1', salon_id: 's1', dia: 'viernes', hora_inicio: '16:00', hora_fin: '18:00' },
+        ],
+      })
+      await expect(search({ horarioId: 'editing', salonActualId: 's1' })).resolves.toMatchObject({
+        salon: { id: 's2' }, mantieneSalonActual: false,
+      })
+    })
+  })
+
   describe('obtenerAlumnosInscritosPorClases', () => {
     it('should fetch enrollments in one bulk query and group them by class', async () => {
       const order = vi.fn().mockResolvedValue({

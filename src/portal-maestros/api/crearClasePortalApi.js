@@ -6,6 +6,7 @@ import { obtenerSalonesActivos } from '../../modules/salones/api/salonesApi.js'
 function normalizeAlumnosPayload(payload) {
   if (Array.isArray(payload)) return payload
   if (Array.isArray(payload?.alumnos)) return payload.alumnos
+  if (Array.isArray(payload?.data)) return payload.data
   return []
 }
 
@@ -21,6 +22,6 @@ export async function obtenerDatosCreadorClases() {
     maestros: maestros || [],
     salones: salones || [],
     programas: programas || [],
-    alumnos: normalizeAlumnosPayload(alumnosPayload).filter((alumno) => alumno?.activo !== false && alumno?.is_active !== false),
+    alumnos: (normalizeAlumnosPayload(alumnosPayload) || []).filter((alumno) => alumno && alumno.activo !== false && alumno.is_active !== false),
   }
 }

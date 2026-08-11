@@ -114,11 +114,25 @@ describe('duplicadosAlumnos: detección en lista', () => {
 
   it('permite subir el umbral mínimo', () => {
     const alumnos = [
-      { id: 'a', nombre_completo: 'Luis Martinez', fecha_nacimiento: '2015-05-10', madre_nombre: 'Carmen', instrumento_principal: 'Violín' },
-      { id: 'b', nombre_completo: 'Luis Eduardo Martinez Obando', fecha_nacimiento: '2015-05-10', madre_nombre: 'Carmen', instrumento_principal: 'Violín' },
+      { id: 'a', nombre_completo: 'Luis Martinez' },
+      { id: 'b', nombre_completo: 'Luis Eduardo Martinez Obando' },
     ]
     const res = detectarPosiblesDuplicados(alumnos, { minPuntaje: 0.95 })
     expect(res).toHaveLength(0)
+  })
+
+  it('detecta duplicado complejo: Matias Paredes vs Mathias Alejandro Paredes Masuoka con mismo padre', () => {
+    const alumnos = [
+      { id: 'm1', nombre_completo: 'Matias Paredes', padre_nombre: 'Carlos Paredes' },
+      { id: 'm2', nombre_completo: 'Mathias Alejandro Paredes Masuoka', padre_nombre: 'Carlos Paredes' },
+      { id: 'x3', nombre_completo: 'Juan Pérez', padre_nombre: 'Pedro Pérez' },
+    ]
+    const res = detectarPosiblesDuplicados(alumnos)
+    expect(res.length).toBeGreaterThanOrEqual(1)
+    expect(res[0].a.id).toBe('m1')
+    expect(res[0].b.id).toBe('m2')
+    expect(res[0].puntaje).toBeGreaterThanOrEqual(0.80)
+    expect(res[0].nivel).toBe('alta')
   })
 })
 

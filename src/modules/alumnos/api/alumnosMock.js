@@ -41,10 +41,15 @@ function getSavedAlumnos() {
   try {
     if (typeof localStorage !== 'undefined' && (typeof process === 'undefined' || process.env.NODE_ENV !== 'test')) {
       const saved = localStorage.getItem(MOCK_STORAGE_KEY)
-      if (saved) return JSON.parse(saved)
+      if (saved) {
+        const parsed = JSON.parse(saved)
+        if (Array.isArray(parsed)) return parsed
+        if (Array.isArray(parsed?.alumnos)) return parsed.alumnos
+        if (Array.isArray(parsed?.data)) return parsed.data
+      }
     }
   } catch (e) {}
-  return [...alumnosMockData]
+  return Array.isArray(alumnosMockData) ? [...alumnosMockData] : []
 }
 
 function saveAlumnos(list) {
@@ -59,21 +64,24 @@ let alumnos = getSavedAlumnos()
 
 export async function obtenerAlumnos({ page = 0, pageSize = 100 } = {}) {
   await delay()
+  const list = Array.isArray(alumnos) ? alumnos : getSavedAlumnos()
   const from = page * pageSize
   const to = from + pageSize
-  const paginated = alumnos.slice(from, to)
-  return { alumnos: paginated.map(normalizeAlumno), total: alumnos.length }
+  const paginated = list.slice(from, to)
+  return { alumnos: paginated.map(normalizeAlumno), total: list.length }
 }
 
 export async function obtenerAlumno(id) {
   await delay()
-  const alumno = alumnos.find(a => a.id === id)
+  const list = Array.isArray(alumnos) ? alumnos : getSavedAlumnos()
+  const alumno = list.find(a => a.id === id)
   if (!alumno) throw new Error('Alumno no encontrado (Demo)')
   return normalizeAlumno(alumno)
 }
 
 export async function crearAlumno(alumno) {
   await delay()
+  if (!Array.isArray(alumnos)) alumnos = getSavedAlumnos()
   const nuevo = {
     ...alumno,
     id: Math.random().toString(36).substr(2, 9),
@@ -87,6 +95,7 @@ export async function crearAlumno(alumno) {
 
 export async function actualizarAlumno(id, actualizaciones) {
   await delay()
+  if (!Array.isArray(alumnos)) alumnos = getSavedAlumnos()
   const index = alumnos.findIndex(a => a.id === id)
   if (index === -1) throw new Error('Alumno no encontrado (Demo)')
   
@@ -97,23 +106,26 @@ export async function actualizarAlumno(id, actualizaciones) {
 
 export async function eliminarAlumno(id) {
   await delay()
+  if (!Array.isArray(alumnos)) alumnos = getSavedAlumnos()
   alumnos = alumnos.filter(a => a.id !== id)
   saveAlumnos(alumnos)
 }
 
 export async function validarEmail(email) {
   await delay(100)
-  return alumnos.some(a => a.correo_representante === email.trim().toLowerCase())
+  const list = Array.isArray(alumnos) ? alumnos : getSavedAlumnos()
+  return list.some(a => a.correo_representante === email.trim().toLowerCase())
 }
 
 export async function validarCedula(cedula) {
   await delay(100)
-  return alumnos.some(a => a.representante_cedula === cedula.trim())
+  const list = Array.isArray(alumnos) ? alumnos : getSavedAlumnos()
+  return list.some(a => a.representante_cedula === cedula.trim())
 }
 
 export async function obtenerInscripcionesAlumno(alumnoId) {
   await delay(200)
-  return inscripciones
+  return (inscripciones || [])
     .filter(i => i.alumno_id === alumnoId)
     .map(i => ({
       clase_id: i.clase_id,
@@ -123,7 +135,8 @@ export async function obtenerInscripcionesAlumno(alumnoId) {
 
 export async function obtenerAlumnosPorMes(year, month) {
   await delay(300)
-  return alumnos
+  const list = Array.isArray(alumnos) ? alumnos : getSavedAlumnos()
+  return list
     .filter(a => {
       const d = new Date(a.created_at ?? a.fecha_ingreso ?? '')
       return d.getFullYear() === year && d.getMonth() + 1 === month
@@ -142,24 +155,25 @@ export async function obtenerAlumnosFiltradosYOrdenados({
   soloActivos = true
 } = {}) {
   await delay()
-  let result = [...alumnos]
+  const list = Array.isArray(alumnos) ? alumnos : getSavedAlumnos()
+  let result = [...list]
 
   // Filtrar por alumnos activos
   if (soloActivos) {
-    result = result.filter(a => a.activo !== false && a.is_active !== false)
+    result = (result || []).filter(a => a && a.activo !== false && a.is_active !== false)
   }
 
   // Filtrar por clase
   if (id_clase) {
-    const alumnoIds = inscripciones
+    const alumnoIds = (inscripciones || [])
       .filter(i => i.clase_id === id_clase)
       .map(i => i.alumno_id)
-    result = result.filter(a => alumnoIds.includes(a.id))
+    result = (result || []).filter(a => a && alumnoIds.includes(a.id))
   }
 
   // Filtrar por instrumento
   if (instrumento) {
-    result = result.filter(a => a.instrumento_principal === instrumento)
+    result = (result || []).filter(a => a && a.instrumento_principal === instrumento)
   }
 
   // Ordenar
@@ -190,7 +204,7 @@ export async function obtenerAlumnosFiltradosYOrdenados({
 
 export async function verificarEliminacionAlumno(alumnoId) {
   await delay()
-  const studentClasses = inscripciones.filter(i => i.alumno_id === alumnoId)
+  const studentClasses = (inscripciones || []).filter(i => i.alumno_id === alumnoId)
   return {
     canDelete: studentClasses.length === 0,
     activeClasses: studentClasses.map(i => i.clase_nombre)
@@ -232,11 +246,13 @@ export async function obtenerAsistenciasAlumno(alumnoId) {
 
 export async function obtenerTodosLosAlumnosParaAnalisis() {
   await delay()
-  return alumnos.map(normalizeAlumno)
+  const list = Array.isArray(alumnos) ? alumnos : getSavedAlumnos()
+  return list.map(normalizeAlumno)
 }
 
 export async function fusionarAlumnos({ principalId, obsoletoId, datosFusion }) {
   await delay(300)
+  if (!Array.isArray(alumnos)) alumnos = getSavedAlumnos()
   const indexPrincipal = alumnos.findIndex(a => a.id === principalId)
   if (indexPrincipal === -1) throw new Error('El alumno principal (a conservar) no existe (Demo)')
   if (!alumnos.some(a => a.id === obsoletoId)) throw new Error('El alumno obsoleto (a eliminar) no existe (Demo)')
@@ -264,4 +280,3 @@ export async function obtenerInscripcionesDetalladasAlumno(alumnoId) {
     { id: 'clase_001', nombre: 'Violín Principiantes A', clase_horarios: [{ dia: 'Lunes', hora_inicio: '14:00:00' }] }
   ]
 }
-

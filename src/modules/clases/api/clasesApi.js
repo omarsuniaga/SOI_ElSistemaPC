@@ -92,6 +92,110 @@ function normalizeClase(c) {
   })
 }
 
+function parseStrictTime(value) {
+  if (typeof value !== 'string') return null
+  const match = value.trim().match(/^(\d{1,2}):(\d{2})(?::\d{2}(?:\.\d+)?)?$/)
+  if (!match) return null
+  const hours = Number(match[1])
+  const minutes = Number(match[2])
+  if (hours > 23 || minutes > 59) return null
+  return (hours * 60) + minutes
+}
+
+/**
+ * Recomienda el salón activo más ajustado a la matrícula de una sesión.
+ * No modifica la clase ni su horario.
+ */
+export async function buscarSalonDisponible({
+  claseId,
+  dia,
+  horaInicio,
+  horaFin,
+  horarioId = null,
+  salonActualId = null,
+} = {}) {
+  if (!claseId || !dia || !horaInicio || !horaFin) {
+    throw new Error('claseId, día, hora de inicio y hora de fin son obligatorios')
+  }
+
+  const start = parseStrictTime(horaInicio)
+  const end = parseStrictTime(horaFin)
+  if (start === null || end === null || start >= end) {
+    throw new Error('El intervalo de horario no es válido')
+  }
+
+  const [enrollmentsResult, roomsResult, schedulesResult] = await Promise.all([
+    supabase
+      .from('alumnos_clases')
+      .select('id', { count: 'exact', head: true })
+      .eq('clase_id', claseId)
+      .eq('activo', true),
+    supabase.from('salones').select('*'),
+    supabase.from('clase_horarios').select('id, clase_id, salon_id, dia, hora_inicio, hora_fin').eq('dia', dia),
+  ])
+
+  if (enrollmentsResult.error) throw enrollmentsResult.error
+  if (roomsResult.error) throw roomsResult.error
+  if (schedulesResult.error) throw schedulesResult.error
+
+  const alumnosActivos = enrollmentsResult.count ?? enrollmentsResult.data?.length ?? 0
+  const activeRooms = (roomsResult.data || []).filter(room => (
+    room?.activo !== false
+    && room?.is_active !== false
+    && Number.isFinite(Number(room?.capacidad))
+  ))
+  const capableRooms = activeRooms.filter(room => Number(room.capacidad) >= alumnosActivos)
+
+  if (capableRooms.length === 0) {
+    return {
+      salon: null,
+      alumnosActivos,
+      mantieneSalonActual: false,
+      reason: 'NO_CAPACITY',
+    }
+  }
+
+  const occupiedRoomIds = new Set()
+  for (const schedule of (schedulesResult.data || [])) {
+    if (!schedule?.salon_id || schedule.dia?.toLowerCase() !== dia.toLowerCase()) continue
+    // Al editar una sesión se excluye sólo esa fila. Las demás sesiones de la
+    // misma clase siguen reservando su salón como cualquier otro horario.
+    if (horarioId && schedule.id === horarioId) continue
+    const otherStart = parseStrictTime(schedule.hora_inicio)
+    const otherEnd = parseStrictTime(schedule.hora_fin)
+    if (otherStart === null || otherEnd === null || otherStart >= otherEnd) continue
+    if (start < otherEnd && otherStart < end) occupiedRoomIds.add(schedule.salon_id)
+  }
+
+  const availableRooms = capableRooms.filter(room => !occupiedRoomIds.has(room.id))
+  if (availableRooms.length === 0) {
+    return {
+      salon: null,
+      alumnosActivos,
+      mantieneSalonActual: false,
+      reason: 'NO_AVAILABILITY',
+    }
+  }
+
+  availableRooms.sort((left, right) => {
+    const capacityDifference = Number(left.capacidad) - Number(right.capacidad)
+    if (capacityDifference !== 0) return capacityDifference
+    const leftCurrent = left.id === salonActualId ? 0 : 1
+    const rightCurrent = right.id === salonActualId ? 0 : 1
+    if (leftCurrent !== rightCurrent) return leftCurrent - rightCurrent
+    const nameDifference = String(left.nombre || '').localeCompare(String(right.nombre || ''), 'es')
+    return nameDifference || String(left.id).localeCompare(String(right.id))
+  })
+
+  const salon = availableRooms[0]
+  return {
+    salon,
+    alumnosActivos,
+    mantieneSalonActual: salon.id === salonActualId,
+    reason: null,
+  }
+}
+
 export async function obtenerClases() {
   const isPeriodoSupported = await checkPeriodoSupport()
 

@@ -748,6 +748,73 @@ export async function analyzeObservation(text, context = {}) {
   return { dsl, progreso, resumen }
 }
 
+// ---------------------------------------------------------------------------
+// AnalyzeIndicadorObservation — "Analizar" del modal de Calificaciones
+// ---------------------------------------------------------------------------
+//
+// A propósito NO reusa analyzeObservation(): esa función ya infiere `nota`
+// por alumno a partir del texto como parte de su DSL, y aquí el requisito
+// explícito es lo contrario — la IA da un panorama y, como mucho, SUGIERE
+// preguntar por una calificación grupal; nunca la asigna ella misma.
+
+const ANALYZE_INDICADOR_PROMPT = `Eres un analista pedagógico musical. Tu tarea es leer la observación de
+texto libre que un maestro escribió sobre UN SOLO indicador de su clase, y devolver
+un panorama real de lo que describe — sin inventar información que no esté en el texto.
+
+Debes devolver SOLO un objeto JSON, sin texto adicional, con esta forma exacta:
+{
+  "panorama": "resumen pedagógico breve (2-4 frases) de lo que dice el texto sobre este indicador",
+  "tieneValoracionImplicita": true o false — true si el texto ya expresa cómo le fue a la clase
+    (bien, mal, con dificultad, dominado, etc.), false si es puramente descriptivo sin ningún juicio de valor
+}
+
+Reglas estrictas:
+- NUNCA incluyas una calificación numérica, nota, ni el campo "estrellas" — no es tu trabajo asignar notas.
+- Si "tieneValoracionImplicita" es false, el panorama puede mencionar que no hay valoración explícita,
+  pero no debes inventar una.
+- Responde solo con el JSON, sin markdown ni explicaciones fuera de él.`
+
+/**
+ * Analiza el texto libre de UN indicador para el modal de Calificaciones.
+ * La IA nunca asigna calificaciones — solo da panorama y, si el texto no trae
+ * ninguna valoración implícita, el llamador puede ofrecerle al maestro
+ * preguntarle cómo calificaría el resultado (con estrellas, solo a presentes).
+ * @param {string} text - Observación de texto libre del maestro
+ * @param {object} [context]
+ * @param {string} [context.indicadorNombre]
+ * @param {string} [context.criterios]
+ * @param {string[]} [context.estudiantesPresentes]
+ * @returns {Promise<{panorama: string, tieneValoracionImplicita: boolean, sugerirCalificarConEstrellas: boolean}>}
+ */
+export async function analyzeIndicadorObservation(text, context = {}) {
+  if (!text || !text.trim()) {
+    throw new Error('No hay texto para analizar')
+  }
+
+  const payload = {
+    observacion: text,
+    indicador: context.indicadorNombre || '',
+    criterios: context.criterios || '',
+    estudiantesPresentes: (context.estudiantesPresentes || []).join(', '),
+  }
+
+  const raw = await proxyChat(
+    [
+      { role: 'system', content: ANALYZE_INDICADOR_PROMPT },
+      { role: 'user', content: JSON.stringify(payload) },
+    ],
+    0.2,
+  )
+
+  const parsed = parseGroqJSON(raw)
+  const tieneValoracionImplicita = !!parsed?.tieneValoracionImplicita
+  return {
+    panorama: parsed?.panorama || 'No se pudo generar un panorama a partir del texto.',
+    tieneValoracionImplicita,
+    sugerirCalificarConEstrellas: !tieneValoracionImplicita,
+  }
+}
+
 /**
  * Fallback legacy: usa el pre-parser JS (segmentObservation) + Groq enrichment.
  * Se ejecuta cuando Groq no devuelve análisis completo.

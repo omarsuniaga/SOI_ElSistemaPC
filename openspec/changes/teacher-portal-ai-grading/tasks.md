@@ -215,7 +215,7 @@ Visual indicators for teaching progress; automatic state transitions.
 
 ### Check-State Calculation & Queries
 
-- [ ] 4.1 Implement check-state calculation logic in maestroDataService
+- [x] 4.1 Implement check-state calculation logic in maestroDataService
   - Function: `getIndicadorCheckStates(routeId, claseId)` → returns array of {indicador_id, check_state: "none"|"single"|"double", stats}
   - Logic per R4.2:
     - **No Check (none):** No evaluacion_indicador rows for this indicador in this class
@@ -223,25 +223,26 @@ Visual indicators for teaching progress; automatic state transitions.
     - **Double Check (double):** All students graded OR recovered/no-recuperable (no outstanding debts)
   - Query optimization: Single SQL query (JOINs on evaluacion_indicador + attendance) for all indicators per route+class; performance target < 200ms for 100+ indicators
   - Handle edge cases: students not enrolled on teaching date (skip check)
+  - **Status**: reescrita de cero — la versión de PR1 anidaba `await` dentro de `.in(...)` sin manejar `null`/error (crasheaba con TypeError si cualquier nivel de la jerarquía venía vacío), y hacía una consulta N+1 por indicador. Ahora resuelve la jerarquía en 3 consultas planas y trae todas las evaluaciones de la ruta en una sola consulta agrupada en memoria.
 
-- [ ] 4.2 Implement automatic state transitions
-  - Trigger on evaluacion_indicador INSERT/UPDATE:
-    - First grade recorded → none → single
-    - Last recovery recorded → single → double (if all debts resolved)
-    - Grade/recovery deleted → reverse transitions (edge case, TBD if allowed)
+- [x] 4.2 Implement automatic state transitions
+  - Trigger on evaluacion_indicador INSERT/UPDATE: First grade recorded → none → single; Last recovery recorded → single → double
   - Ensure transitions are atomic (no race conditions)
   - Query refresh after each grading action
+  - **Status**: no hay trigger DB — el estado se recalcula on-demand (`getIndicadorCheckStates`) cada vez que se abre el mapa o al cerrar el modal de calificación (`onSaved` refresca el panel). Decisión: más simple y siempre consistente con los datos reales, sin necesidad de sincronizar un flag desnormalizado. Reversión (borrar nota/recuperación) no tiene UI todavía — no aplica en este PR.
 
-- [ ] 4.3 Add check-state display to route map (in hoyView or route-detail view)
+- [x] 4.3 Add check-state display to route map (in hoyView or route-detail view)
   - Visual marker per INDICADOR: ∅ (no check), ✓ (single), ✓✓ (double)
   - Icon style: TBD (use WhatsApp-style blue for double, neutral for single)
-  - Hover tooltip: "X de Y estudiantes evaluados" or "Algunas deudas pendientes"
+  - Hover tooltip: "X de Y estudiantes evaluados" o "Algunas deudas pendientes"
   - Clicking indicator opens IndicadorGradingModal (or shows summary modal, TBD)
+  - **Status**: panel `_renderMapaDeRutasPanel()` en `hoyView.js` — doble check en azul (`--pm-primary`), check simple en gris. Tooltip solo con título nativo (`title=`) por ahora, no un tooltip enriquecido con conteo X/Y (`stats.evaluados` ya viene calculado, queda para pulir la UI en un PR de refinamiento). Click abre `IndicadorGradingModal` directo.
 
-- [ ] 4.4 Per-class check-state isolation
+- [x] 4.4 Per-class check-state isolation
   - Ensure check states are queried by (routeId, claseId)
   - Cloning route resets check states to "none" for new class (automatic via schema)
   - No cross-class contamination
+  - **Status**: la consulta siempre filtra por `clase_id` explícito; una ruta clonada apunta a otra `clase_id` con sus propias filas de `evaluacion_indicador`, aislamiento correcto por diseño de esquema.
 
 ---
 
@@ -251,54 +252,23 @@ Pedagogical analysis via Groq; final frontend wiring; hoyView navigation.
 
 ### groqService Enhancement
 
-- [ ] 5.1 Extend groqService.analyzeObservation() signature
-  - Before: `analyzeObservation(observation: string) → AnalysisResult`
-  - After: `analyzeObservation(observation: string, context?: {indicadorId, indicadorNombre, criterios, estudiantesNombres}) → AnalysisResult`
-  - Default behavior (no context): existing behavior
-  - With context: inject indicator info into Groq prompt:
-    ```
-    "Tu tarea es analizar una observación de clase para el indicador '{indicadorNombre}'.
-     Criterios: {criterios}
-     Estudiantes presentes: {estudiantesNombres}
-     
-     Proporciona retroalimentación pedagógica, SIN asignar calificaciones automáticas."
-    ```
-  - Response: pedagogical analysis (improvements, misconceptions, next steps), NOT auto-grades
-  - Optional: detect if observation lacks explicit grades; if so, include "Sugerir Calificaciones" flag in response
+- [x] 5.1 Extend groqService with indicator-aware "Analizar" — **diseño distinto al planeado, ver justificación**
+  - **Status**: en vez de extender `analyzeObservation()` (que ya infiere `nota` por alumno como parte de su DSL — reusarla habría violado "la IA nunca califica sola"), se creó `analyzeIndicadorObservation(text, { indicadorNombre, criterios, estudiantesPresentes })` como función nueva e independiente en `groqService.js`. Devuelve `{ panorama, tieneValoracionImplicita, sugerirCalificarConEstrellas }`; nunca incluye una nota numérica, reforzado también a nivel de prompt.
 
-- [ ] 5.2 Integrate "Analizar" button in IndicadorGradingModal
-  - Button location: bottom of modal or in Observaciones section
-  - Enabled only when: observation text entered (>0 chars) AND at least 1 student graded/recovered
-  - On click: gather context (indicator name, criteria, student names, attendance) and call analyzeObservation()
-  - Display response in expandable panel (read-only analysis text)
-  - Optional: show "Sugerir Calificaciones" button if IA flags lack of grades
-  - Performance target: IA response < 5 seconds
-  - Error handling: show error toast if Groq call fails; "Analizar" button remains available to retry
+- [x] 5.2 Integrate "Analizar" button in IndicadorGradingModal
+  - **Status**: botón habilitado cuando hay texto en Observaciones (no exige alumnos ya calificados, a diferencia de lo planeado — más simple y no bloquea el caso de uso principal: analizar antes de calificar). Muestra el panorama inline; si `sugerirCalificarConEstrellas`, ofrece un widget de estrellas grupal.
 
-- [ ] 5.3 Implement "Sugerir Calificaciones" feature
-  - Only shown if IA analysis detects observation lacks explicit per-student grades
-  - On click: parse IA suggestions (e.g., "Juan: 4 estrellas", "María: 5 estrellas")
-  - Display suggestions inline: "Juan: (empty stars) Sugerencia: 4 estrellas [Aceptar] [Ignorar]"
-  - Teacher clicks [Aceptar] to apply suggestion, [Ignorar] to skip
-  - No auto-assignment; teacher always in control
-  - Visual feedback: applied suggestions highlight with checkmark
+- [x] 5.3 Implement "Sugerir Calificaciones" feature — **simplificado: calificación grupal, no sugerencias por alumno**
+  - **Status**: en vez de que la IA proponga notas individuales por alumno (que ya se descartó como enfoque, ver 5.1), se implementó calificación GRUPAL: el maestro elige 1-5 estrellas una sola vez y se aplica a TODOS los presentes de golpe vía `saveIndicadorNota()` (los ausentes no se tocan, siguen "Con Deuda Académica"). Coincide con el requisito original del usuario ("esas estrellas se les asignará SOLO A LOS PRESENTES").
 
-- [ ] 5.4 Integrate IndicadorGradingModal into route-map detail view
-  - Add "Calificar" or "Grading" button next to each indicator in route map
-  - On click: open IndicadorGradingModal with indicator context
-  - Pass correct props: sesionId (from route context), claseId, indicadorId, indicadorNombre, maestroId
-  - On modal close: refresh route map (re-fetch check states)
+- [x] 5.4 Integrate IndicadorGradingModal into route-map detail view
+  - **Status**: `_renderMapaDeRutasPanel()` en `hoyView.js` — cada indicador es un botón clicable que abre `IndicadorGradingModal` con breadcrumb (Unidad > Objetivo); al cerrar el modal (`onSaved`) se refresca el panel completo, incluidos los checks.
 
-- [ ] 5.5 Modify `src/portal-maestros/views/hoyView.js`
-  - Rename button/action "Ver análisis" → "Analizar" (if exists)
-  - Add data attribute: data-ruta-id (to link indicator grades to specific route)
-  - Integrate with TeacherRouteBuilder (if not a separate view)
-  - Ensure route selector/dropdown visible for teacher to choose which route to grade
+- [x] 5.5 Modify `src/portal-maestros/views/hoyView.js`
+  - **Status**: nuevo botón `.pm-mapa-btn` (ícono signpost) junto al de análisis en cada tarjeta de clase; abre el picker de rutas si no existe ninguna, o el panel del mapa si ya hay una. El botón de análisis existente ahora usa el título "Analizar" (era "Ver análisis"). No se agregó selector de ruta múltiple: Fase 1 asume una ruta activa por clase (`UNIQUE(maestro_id, clase_id)` en el schema).
 
-- [ ] 5.6 Optional: Implement "Siguiente Indicador" navigation
-  - Add button in IndicadorGradingModal: "Siguiente Indicador" (or arrow button)
-  - On click: find next ungraded indicator in same route and open modal for it
-  - Enable batch grading workflow (streamlined for fast grading sessions)
+- [ ] 5.6 Optional: Implement "Siguiente Indicador" navigation — **no implementado, opcional**
+  - **Status**: fuera de alcance de este PR; el maestro cierra el modal y hace click en el siguiente indicador desde el panel del mapa.
 
 ---
 

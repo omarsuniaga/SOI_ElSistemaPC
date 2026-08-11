@@ -529,6 +529,30 @@ export async function getIndicadorCheckStates(routeId, claseId) {
   if (cached) return cached
 
   try {
+    // Resolvemos la jerarquía paso a paso (no anidando awaits dentro de .in())
+    // para poder manejar de forma segura resultados vacíos/null en cada nivel.
+    const { data: unidades, error: unidadesError } = await supabase
+      .from('maestro_unidades')
+      .select('id')
+      .eq('ruta_id', routeId)
+    if (unidadesError) {
+      console.warn('[MaestroData] Error loading unidades:', unidadesError.message)
+      return []
+    }
+    const unidadIds = (unidades || []).map((u) => u.id)
+    if (unidadIds.length === 0) return []
+
+    const { data: objetivos, error: objetivosError } = await supabase
+      .from('maestro_objetivos')
+      .select('id')
+      .in('unidad_id', unidadIds)
+    if (objetivosError) {
+      console.warn('[MaestroData] Error loading objetivos:', objetivosError.message)
+      return []
+    }
+    const objetivoIds = (objetivos || []).map((o) => o.id)
+    if (objetivoIds.length === 0) return []
+
     // Query: For each indicador in route, count evaluations and recovery status
     // check_state = "none" if no evaluations
     // check_state = "single" if >= 1 evaluation but some students absent/not recovered
@@ -536,59 +560,48 @@ export async function getIndicadorCheckStates(routeId, claseId) {
     const { data: indicadores, error: indError } = await supabase
       .from('maestro_indicadores')
       .select('id')
-      .in(
-        'objetivo_id',
-        (
-          await supabase
-            .from('maestro_objetivos')
-            .select('id')
-            .in(
-              'unidad_id',
-              (await supabase.from('maestro_unidades').select('id').eq('ruta_id', routeId)).data.map(
-                (u) => u.id
-              ) || []
-            )
-        ).data.map((o) => o.id) || []
-      )
+      .in('objetivo_id', objetivoIds)
 
     if (indError) {
       console.warn('[MaestroData] Error loading indicators:', indError.message)
       return []
     }
 
-    const indicadorIds = indicadores.map((i) => i.id)
+    const indicadorIds = (indicadores || []).map((i) => i.id)
     if (indicadorIds.length === 0) return []
 
-    // For each indicador, get evaluation counts
-    const checkStates = await Promise.all(
-      indicadorIds.map(async (indicadorId) => {
-        const { data: evals, error: evalError } = await supabase
-          .from('evaluacion_indicador')
-          .select('alumno_id, recovery_status')
-          .eq('maestro_indicador_id', indicadorId)
-          .eq('clase_id', claseId)
+    // Una sola consulta para las evaluaciones de TODOS los indicadores de la
+    // ruta (en vez de una consulta por indicador), agrupadas en memoria.
+    const { data: allEvals, error: evalError } = await supabase
+      .from('evaluacion_indicador')
+      .select('maestro_indicador_id, alumno_id, recovery_status')
+      .in('maestro_indicador_id', indicadorIds)
+      .eq('clase_id', claseId)
 
-        if (evalError || !evals) {
-          return { indicador_id: indicadorId, check_state: 'none' }
-        }
+    if (evalError) {
+      console.warn('[MaestroData] Error loading evaluations:', evalError.message)
+      return indicadorIds.map((id) => ({ indicador_id: id, check_state: 'none' }))
+    }
 
-        const hasEvals = evals.length > 0
-        const hasUnresolvedDebt = evals.some(
-          (e) =>
-            e.recovery_status === 'pendiente' || e.recovery_status === null
-        )
+    const evalsByIndicador = new Map()
+    for (const ev of allEvals || []) {
+      const list = evalsByIndicador.get(ev.maestro_indicador_id) || []
+      list.push(ev)
+      evalsByIndicador.set(ev.maestro_indicador_id, list)
+    }
 
-        if (!hasEvals) {
-          return { indicador_id: indicadorId, check_state: 'none' }
-        }
-
-        if (hasUnresolvedDebt) {
-          return { indicador_id: indicadorId, check_state: 'single' }
-        }
-
-        return { indicador_id: indicadorId, check_state: 'double' }
-      })
-    )
+    const checkStates = indicadorIds.map((indicadorId) => {
+      const evals = evalsByIndicador.get(indicadorId) || []
+      if (evals.length === 0) {
+        return { indicador_id: indicadorId, check_state: 'none' }
+      }
+      const hasUnresolvedDebt = evals.some((e) => e.recovery_status === 'pendiente' || e.recovery_status === null)
+      return {
+        indicador_id: indicadorId,
+        check_state: hasUnresolvedDebt ? 'single' : 'double',
+        stats: { evaluados: evals.length },
+      }
+    })
 
     viewCache.set(cacheKey, checkStates, 'check_states')
     return checkStates

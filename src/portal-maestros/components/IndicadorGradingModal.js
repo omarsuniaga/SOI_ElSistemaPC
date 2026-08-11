@@ -15,6 +15,7 @@ import {
   updateRecoveryStatus,
 } from '../services/maestroDataService.js'
 import { checkPrerequisiteSatisfied, getDirectPrerequisite } from '../services/maestroRouteService.js'
+import { analyzeIndicadorObservation } from '../services/groqService.js'
 
 /**
  * @param {Object} opts
@@ -198,10 +199,11 @@ export async function openIndicadorGradingModal({
 
       <div class="igm-section">
         <h4 class="igm-section-title"><i class="bi bi-chat-left-text-fill"></i> Observaciones</h4>
-        <textarea class="igm-observaciones" placeholder="Escribe cómo fue la clase…" maxlength="1000"></textarea>
-        <button class="igm-btn igm-btn-secondary igm-analizar" disabled title="Disponible en un próximo PR">
-          <i class="bi bi-magic"></i> Analizar (próximamente)
+        <textarea class="igm-observaciones" id="igm-observaciones" placeholder="Escribe cómo fue la clase…" maxlength="1000"></textarea>
+        <button class="igm-btn igm-btn-secondary igm-analizar" id="igm-analizar" disabled>
+          <i class="bi bi-magic"></i> Analizar
         </button>
+        <div class="igm-analisis-resultado" id="igm-analisis-resultado" hidden></div>
       </div>
     `
 
@@ -290,8 +292,89 @@ export async function openIndicadorGradingModal({
       })
     }
 
+    function _bindAnalizar() {
+      const textarea = body.querySelector('#igm-observaciones')
+      const btn = body.querySelector('#igm-analizar')
+      const resultadoEl = body.querySelector('#igm-analisis-resultado')
+
+      textarea.addEventListener('input', () => {
+        btn.disabled = !textarea.value.trim()
+      })
+
+      btn.addEventListener('click', async () => {
+        const texto = textarea.value.trim()
+        if (!texto) return
+
+        btn.disabled = true
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Analizando…'
+
+        try {
+          const estudiantesPresentes = [...presentesIds].map((id) => alumnosMap[id]?.nombre).filter(Boolean)
+          const analisis = await analyzeIndicadorObservation(texto, {
+            indicadorNombre,
+            estudiantesPresentes,
+          })
+
+          resultadoEl.hidden = false
+          resultadoEl.innerHTML = `
+            <div class="igm-panorama"><i class="bi bi-lightbulb-fill"></i> ${escHTML(analisis.panorama)}</div>
+            ${
+              analisis.sugerirCalificarConEstrellas
+                ? `
+              <div class="igm-sugerencia-estrellas">
+                <p>El texto no trae una valoración clara. ¿Cómo calificarías el resultado de la clase para los presentes?</p>
+                <div class="igm-stars igm-stars-grupal" id="igm-stars-grupal">
+                  ${[1, 2, 3, 4, 5]
+                    .map((n) => `<button class="igm-star" data-value="${n}" aria-label="${n} estrellas"><i class="bi bi-star-fill"></i></button>`)
+                    .join('')}
+                </div>
+                <p class="igm-sugerencia-nota">Se aplicará solo a los ${presentesIds.size} alumnos presentes. Los ausentes seguirán "Con Deuda Académica".</p>
+              </div>
+            `
+                : ''
+            }
+          `
+
+          if (analisis.sugerirCalificarConEstrellas) {
+            const grupalStars = resultadoEl.querySelectorAll('#igm-stars-grupal .igm-star')
+            grupalStars.forEach((starBtn) => {
+              starBtn.addEventListener('click', async () => {
+                const value = Number(starBtn.dataset.value)
+                grupalStars.forEach((s) => s.classList.toggle('igm-star-filled', Number(s.dataset.value) <= value))
+
+                try {
+                  await Promise.all(
+                    [...presentesIds].map(async (alumnoId) => {
+                      const saved = await saveIndicadorNota({ alumnoId, indicadorId, claseId, nota: value, evaluadoPor })
+                      state.set(alumnoId, { ...(state.get(alumnoId) || {}), ...saved, nota: value })
+                      const row = body.querySelector(`.igm-stars[data-alumno-id="${alumnoId}"]`)
+                      if (row) {
+                        row.querySelectorAll('.igm-star').forEach((s) => {
+                          s.classList.toggle('igm-star-filled', Number(s.dataset.value) <= value)
+                        })
+                      }
+                    })
+                  )
+                  AppToast.success(`Calificación grupal aplicada a ${presentesIds.size} presentes`)
+                  _refreshCompletarBtn()
+                } catch (err) {
+                  AppToast.error(`No se pudo aplicar la calificación grupal: ${err.message}`)
+                }
+              })
+            })
+          }
+        } catch (err) {
+          AppToast.error(`No se pudo analizar: ${err.message}`)
+        } finally {
+          btn.disabled = false
+          btn.innerHTML = '<i class="bi bi-magic"></i> Analizar'
+        }
+      })
+    }
+
     _bindStars()
     _bindDeudaButtons()
+    _bindAnalizar()
     _refreshCompletarBtn()
 
     backdrop.querySelector('#igm-completar').addEventListener('click', () => {
@@ -393,6 +476,18 @@ if (!document.getElementById('igm-styles')) {
     .igm-btn-success { background: #059669 !important; }
     .igm-btn-secondary { background: var(--pm-surface-2, #f3f4f6); color: var(--pm-text, #111827); border-color: var(--pm-border, #d1d5db); }
     .igm-btn-ghost { background: none; color: var(--pm-text-muted); }
+
+    .igm-analisis-resultado {
+      margin-top: 0.6rem; padding: 0.7rem 0.8rem; border-radius: 10px;
+      background: rgba(59,130,246,0.06); border: 1px solid rgba(59,130,246,0.18);
+    }
+    .igm-panorama { font-size: 0.84rem; display: flex; gap: 0.4rem; align-items: flex-start; color: var(--pm-text); }
+    .igm-panorama i { color: #f59e0b; flex-shrink: 0; margin-top: 0.1rem; }
+    .igm-sugerencia-estrellas { margin-top: 0.6rem; padding-top: 0.6rem; border-top: 1px dashed rgba(59,130,246,0.25); }
+    .igm-sugerencia-estrellas p { font-size: 0.8rem; margin: 0 0 0.4rem; color: var(--pm-text); }
+    .igm-stars-grupal { display: flex; gap: 0.25rem; }
+    .igm-stars-grupal .igm-star { font-size: 1.4rem; }
+    .igm-sugerencia-nota { font-size: 0.72rem !important; color: var(--pm-text-muted) !important; margin-top: 0.35rem !important; }
   `
   document.head.appendChild(s)
 }

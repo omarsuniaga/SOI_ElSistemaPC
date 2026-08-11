@@ -76,86 +76,111 @@ export async function createRoute(maestroId, claseId, nombre, unidades) {
     }
 
     const routeId = routeData[0].id
-
-    // Insert unidades (level 1)
-    for (const unidad of unidades) {
-      const { data: unidadData, error: unidadError } = await supabase
-        .from('maestro_unidades')
-        .insert({
-          ruta_id: routeId,
-          orden: unidad.orden || 0,
-          nombre: unidad.nombre,
-          descripcion: unidad.descripcion || null,
-        })
-        .select()
-
-      if (unidadError) {
-        throw new Error(`Failed to create unidad: ${unidadError.message}`)
-      }
-
-      const unidadId = unidadData[0].id
-
-      // Insert objetivos (level 2)
-      if (unidad.objetivos && Array.isArray(unidad.objetivos)) {
-        for (const objetivo of unidad.objetivos) {
-          const { data: objetivoData, error: objetivoError } = await supabase
-            .from('maestro_objetivos')
-            .insert({
-              unidad_id: unidadId,
-              orden: objetivo.orden || 0,
-              nombre: objetivo.nombre,
-              descripcion: objetivo.descripcion || null,
-            })
-            .select()
-
-          if (objetivoError) {
-            throw new Error(`Failed to create objetivo: ${objetivoError.message}`)
-          }
-
-          const objetivoId = objetivoData[0].id
-
-          // Insert indicadores (level 3)
-          if (objetivo.indicadores && Array.isArray(objetivo.indicadores)) {
-            for (const indicador of objetivo.indicadores) {
-              const { data: indicadorData, error: indicadorError } = await supabase
-                .from('maestro_indicadores')
-                .insert({
-                  objetivo_id: objetivoId,
-                  orden: indicador.orden || 0,
-                  nombre: indicador.nombre,
-                  criterios_json: indicador.criterios_json || null,
-                })
-                .select()
-
-              if (indicadorError) {
-                throw new Error(`Failed to create indicador: ${indicadorError.message}`)
-              }
-
-              // Insert prerequisites for this indicator
-              const indicadorId = indicadorData[0].id
-              if (indicador.prerequisito_indicador_id) {
-                const { error: prereqError } = await supabase
-                  .from('indicador_prerequisito')
-                  .insert({
-                    indicador_id: indicadorId,
-                    prerequisito_indicador_id: indicador.prerequisito_indicador_id,
-                  })
-
-                if (prereqError) {
-                  console.warn('[MaestroRouteService] Warning setting prerequisite:', prereqError.message)
-                }
-              }
-            }
-          }
-        }
-      }
-    }
+    await _insertHierarchy(routeId, unidades)
 
     // Return created route with hierarchy
     return getTeacherRoutes(maestroId, claseId).then((routes) => routes[0])
   } catch (err) {
     console.error('[MaestroRouteService] createRoute error:', err)
     throw err
+  }
+}
+
+/**
+ * Insert unidades/objetivos/indicadores/prerequisitos for a route.
+ * Prerequisites are resolved in a SECOND pass after all indicadores exist,
+ * because `indicador.prerequisito_indicador_id` in the incoming payload may
+ * be a temporary/local id (assigned by the form) rather than a real UUID —
+ * and a prerequisite may reference an indicador defined later in the array.
+ * @private
+ */
+async function _insertHierarchy(routeId, unidades) {
+  // Maps the payload's temporary id (unidad.id / objetivo.id / indicador.id,
+  // as sent by TeacherRouteBuilder) to the real UUID inserted in Supabase.
+  const idMap = new Map()
+  // Deferred prerequisite links: [realIndicadorId, payloadPrerequisitoId]
+  const pendingPrereqs = []
+
+  for (const unidad of unidades) {
+    const { data: unidadData, error: unidadError } = await supabase
+      .from('maestro_unidades')
+      .insert({
+        ruta_id: routeId,
+        orden: unidad.orden || 0,
+        nombre: unidad.nombre,
+        descripcion: unidad.descripcion || null,
+      })
+      .select()
+
+    if (unidadError) {
+      throw new Error(`Failed to create unidad: ${unidadError.message}`)
+    }
+
+    const unidadId = unidadData[0].id
+    if (unidad.id) idMap.set(unidad.id, unidadId)
+
+    if (!Array.isArray(unidad.objetivos)) continue
+
+    for (const objetivo of unidad.objetivos) {
+      const { data: objetivoData, error: objetivoError } = await supabase
+        .from('maestro_objetivos')
+        .insert({
+          unidad_id: unidadId,
+          orden: objetivo.orden || 0,
+          nombre: objetivo.nombre,
+          descripcion: objetivo.descripcion || null,
+        })
+        .select()
+
+      if (objetivoError) {
+        throw new Error(`Failed to create objetivo: ${objetivoError.message}`)
+      }
+
+      const objetivoId = objetivoData[0].id
+      if (objetivo.id) idMap.set(objetivo.id, objetivoId)
+
+      if (!Array.isArray(objetivo.indicadores)) continue
+
+      for (const indicador of objetivo.indicadores) {
+        const { data: indicadorData, error: indicadorError } = await supabase
+          .from('maestro_indicadores')
+          .insert({
+            objetivo_id: objetivoId,
+            orden: indicador.orden || 0,
+            nombre: indicador.nombre,
+            criterios_json: indicador.criterios_json || null,
+          })
+          .select()
+
+        if (indicadorError) {
+          throw new Error(`Failed to create indicador: ${indicadorError.message}`)
+        }
+
+        const indicadorId = indicadorData[0].id
+        if (indicador.id) idMap.set(indicador.id, indicadorId)
+
+        if (indicador.prerequisito_indicador_id) {
+          pendingPrereqs.push([indicadorId, indicador.prerequisito_indicador_id])
+        }
+      }
+    }
+  }
+
+  // Segunda pasada: ahora que todos los indicadores tienen ID real,
+  // resolvemos cada prerrequisito (puede apuntar a un id temporal del payload
+  // o, si viene de una edición, ya ser un UUID real existente).
+  for (const [indicadorId, prereqRef] of pendingPrereqs) {
+    const prerequisitoIndicadorId = idMap.get(prereqRef) || prereqRef
+    const { error: prereqError } = await supabase
+      .from('indicador_prerequisito')
+      .insert({
+        indicador_id: indicadorId,
+        prerequisito_indicador_id: prerequisitoIndicadorId,
+      })
+
+    if (prereqError) {
+      console.warn('[MaestroRouteService] Warning setting prerequisite:', prereqError.message)
+    }
   }
 }
 
@@ -173,8 +198,8 @@ export async function updateRoute(routeId, unidades) {
       throw new Error(`DAG validation failed: ${dagError}`)
     }
 
-    // Note: Full update would require careful deletion/re-insertion logic
-    // For Phase 1, this is a placeholder that updates route timestamp
+    await _upsertHierarchy(routeId, unidades)
+
     const { data: routeData, error: routeError } = await supabase
       .from('maestro_routes')
       .update({ updated_at: new Date().toISOString() })
@@ -189,6 +214,126 @@ export async function updateRoute(routeId, unidades) {
   } catch (err) {
     console.error('[MaestroRouteService] updateRoute error:', err)
     throw err
+  }
+}
+
+/**
+ * Upserts unidades/objetivos/indicadores/prerequisitos for an existing route.
+ * Rows whose payload `id` matches an existing UUID are UPDATEd in place;
+ * rows with a local/temporary id are INSERTed as new.
+ * Rows that existed in the DB but are missing from the payload are left
+ * untouched (never auto-deleted) — deleting could orphan evaluations
+ * (`evaluacion_indicador`) or prerequisite links that reference them.
+ * Prerequisite links for indicadores in this route are fully recomputed.
+ * @private
+ */
+async function _upsertHierarchy(routeId, unidades) {
+  const { data: existingUnidades } = await supabase
+    .from('maestro_unidades')
+    .select('id')
+    .eq('ruta_id', routeId)
+  const existingUnidadIds = new Set((existingUnidades || []).map((u) => u.id))
+
+  const idMap = new Map()
+  const pendingPrereqs = []
+  const touchedIndicadorIds = []
+
+  for (const unidad of unidades) {
+    let unidadId = unidad.id && existingUnidadIds.has(unidad.id) ? unidad.id : null
+
+    if (unidadId) {
+      const { error } = await supabase
+        .from('maestro_unidades')
+        .update({ orden: unidad.orden || 0, nombre: unidad.nombre, descripcion: unidad.descripcion || null })
+        .eq('id', unidadId)
+      if (error) throw new Error(`Failed to update unidad: ${error.message}`)
+    } else {
+      const { data, error } = await supabase
+        .from('maestro_unidades')
+        .insert({ ruta_id: routeId, orden: unidad.orden || 0, nombre: unidad.nombre, descripcion: unidad.descripcion || null })
+        .select()
+      if (error) throw new Error(`Failed to create unidad: ${error.message}`)
+      unidadId = data[0].id
+    }
+    if (unidad.id) idMap.set(unidad.id, unidadId)
+
+    const { data: existingObjetivos } = await supabase
+      .from('maestro_objetivos')
+      .select('id')
+      .eq('unidad_id', unidadId)
+    const existingObjetivoIds = new Set((existingObjetivos || []).map((o) => o.id))
+
+    for (const objetivo of unidad.objetivos || []) {
+      let objetivoId = objetivo.id && existingObjetivoIds.has(objetivo.id) ? objetivo.id : null
+
+      if (objetivoId) {
+        const { error } = await supabase
+          .from('maestro_objetivos')
+          .update({ orden: objetivo.orden || 0, nombre: objetivo.nombre, descripcion: objetivo.descripcion || null })
+          .eq('id', objetivoId)
+        if (error) throw new Error(`Failed to update objetivo: ${error.message}`)
+      } else {
+        const { data, error } = await supabase
+          .from('maestro_objetivos')
+          .insert({ unidad_id: unidadId, orden: objetivo.orden || 0, nombre: objetivo.nombre, descripcion: objetivo.descripcion || null })
+          .select()
+        if (error) throw new Error(`Failed to create objetivo: ${error.message}`)
+        objetivoId = data[0].id
+      }
+      if (objetivo.id) idMap.set(objetivo.id, objetivoId)
+
+      const { data: existingIndicadores } = await supabase
+        .from('maestro_indicadores')
+        .select('id')
+        .eq('objetivo_id', objetivoId)
+      const existingIndicadorIds = new Set((existingIndicadores || []).map((i) => i.id))
+
+      for (const indicador of objetivo.indicadores || []) {
+        let indicadorId = indicador.id && existingIndicadorIds.has(indicador.id) ? indicador.id : null
+
+        if (indicadorId) {
+          const { error } = await supabase
+            .from('maestro_indicadores')
+            .update({ orden: indicador.orden || 0, nombre: indicador.nombre, criterios_json: indicador.criterios_json || null })
+            .eq('id', indicadorId)
+          if (error) throw new Error(`Failed to update indicador: ${error.message}`)
+        } else {
+          const { data, error } = await supabase
+            .from('maestro_indicadores')
+            .insert({ objetivo_id: objetivoId, orden: indicador.orden || 0, nombre: indicador.nombre, criterios_json: indicador.criterios_json || null })
+            .select()
+          if (error) throw new Error(`Failed to create indicador: ${error.message}`)
+          indicadorId = data[0].id
+        }
+        if (indicador.id) idMap.set(indicador.id, indicadorId)
+        touchedIndicadorIds.push(indicadorId)
+
+        if (indicador.prerequisito_indicador_id) {
+          pendingPrereqs.push([indicadorId, indicador.prerequisito_indicador_id])
+        }
+      }
+    }
+  }
+
+  // Recompute prerequisite links for every indicador touched in this save.
+  if (touchedIndicadorIds.length > 0) {
+    const { error: delError } = await supabase
+      .from('indicador_prerequisito')
+      .delete()
+      .in('indicador_id', touchedIndicadorIds)
+    if (delError) {
+      console.warn('[MaestroRouteService] Warning clearing old prerequisites:', delError.message)
+    }
+  }
+
+  for (const [indicadorId, prereqRef] of pendingPrereqs) {
+    const prerequisitoIndicadorId = idMap.get(prereqRef) || prereqRef
+    const { error: prereqError } = await supabase
+      .from('indicador_prerequisito')
+      .insert({ indicador_id: indicadorId, prerequisito_indicador_id: prerequisitoIndicadorId })
+    if (prereqError) {
+      console.warn('[MaestroRouteService] Warning setting prerequisite:', prereqError.message)
+    }
   }
 }
 

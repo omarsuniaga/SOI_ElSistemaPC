@@ -313,6 +313,18 @@ export async function obtenerAsistenciaDelDia({ claseId, fecha } = {}) {
   return { tomada: registros.length > 0, presentes }
 }
 
+export async function obtenerAsistenciasPorClasesFecha(claseIds = [], fecha) {
+  const ids = [...new Set((claseIds || []).filter(Boolean))]
+  if (ids.length === 0 || !fecha) return {}
+  return dbAsistencias
+    .filter((a) => ids.includes(a.clase_id) && a.fecha === fecha)
+    .reduce((acc, a) => {
+      if (!acc[a.clase_id]) acc[a.clase_id] = {}
+      acc[a.clase_id][a.alumno_id] = { estado: a.estado, justificacion_texto: a.justificacion_texto }
+      return acc
+    }, {})
+}
+
 // ─── REPORTE CONSOLIDADO ─────────────────────────────────────────────────────
 
 export async function getReporteConsolidado({ fecha, claseId } = {}) {

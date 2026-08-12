@@ -69,3 +69,7 @@ export async function getReporteConsolidado(params) {
 export async function obtenerAsistenciaDelDia(params) {
   return impl.obtenerAsistenciaDelDia(params)
 }
+
+export async function obtenerAsistenciasPorClasesFecha(claseIds, fecha) {
+  return impl.obtenerAsistenciasPorClasesFecha(claseIds, fecha)
+}

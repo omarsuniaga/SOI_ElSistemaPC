@@ -457,6 +457,33 @@ export async function obtenerAsistenciaDelDia({ claseId, fecha } = {}) {
   return { tomada: registros.length > 0, presentes }
 }
 
+/**
+ * Todos los registros de asistencias (cualquier estado) de una o varias
+ * clases en una misma fecha, indexados por clase_id → alumno_id. Usado por
+ * el tablero "Clases de Hoy" para no hacer N queries (una por clase) al
+ * pintar el feed completo del día, y para saber qué alumnos ya tienen un
+ * estado precargado (ej. 'justificado') antes de que el maestro tome
+ * asistencia — así se evita duplicar el INSERT.
+ */
+export async function obtenerAsistenciasPorClasesFecha(claseIds = [], fecha) {
+  const ids = [...new Set((claseIds || []).filter(Boolean))]
+  if (ids.length === 0 || !fecha) return {}
+
+  const { data, error } = await supabase
+    .from('asistencias')
+    .select('clase_id, alumno_id, estado, justificacion_texto')
+    .in('clase_id', ids)
+    .eq('fecha', fecha)
+
+  if (error) throwError('No se pudo verificar la asistencia de las clases', error)
+
+  return (data || []).reduce((acc, r) => {
+    if (!acc[r.clase_id]) acc[r.clase_id] = {}
+    acc[r.clase_id][r.alumno_id] = { estado: r.estado, justificacion_texto: r.justificacion_texto }
+    return acc
+  }, {})
+}
+
 export async function getClases() {
   const { data, error } = await supabase
     .from('clases')

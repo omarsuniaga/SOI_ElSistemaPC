@@ -84,7 +84,7 @@ function renderNavbar(profile, isAuthenticated, storageKey) {
   const sidebar = document.createElement('aside')
   sidebar.className = 'app-sidebar'
   sidebar.innerHTML = `
-    <div class="sidebar-brand">
+    <div class="sidebar-brand" role="button" tabindex="0" title="Ir a ${profile.defaultRoute}">
       <div class="sidebar-brand-icon"><i class="bi ${profile.brandIcon}"></i></div>
       <span class="sidebar-brand-text">${profile.brandText}</span>
     </div>
@@ -187,6 +187,22 @@ function renderNavbar(profile, isAuthenticated, storageKey) {
       { signal },
     )
   })
+
+  sidebar.querySelector('.sidebar-brand')?.addEventListener(
+    'click',
+    () => router.navigate(profile.defaultRoute),
+    { signal },
+  )
+  sidebar.querySelector('.sidebar-brand')?.addEventListener(
+    'keydown',
+    (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault()
+        router.navigate(profile.defaultRoute)
+      }
+    },
+    { signal },
+  )
 
   sidebar.querySelector('#sidebarBtnTheme').addEventListener(
     'click',

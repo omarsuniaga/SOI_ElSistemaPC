@@ -140,21 +140,23 @@ Specialized modal for per-indicator grading with attendance partitioning and rec
 
 ### IndicadorGradingModal Component
 
-- [ ] 3.1 Create `src/portal-maestros/components/IndicadorGradingModal.js`
+- [x] 3.1 Create `src/portal-maestros/components/IndicadorGradingModal.js`
   - Props: `sesionId`, `claseId`, `indicadorId`, `indicadorNombre`, `maestroId`, `onSave(grades)`, `onClose()`
   - Header: Route context (breadcrumb: UNIDAD > OBJETIVO > INDICADOR)
   - Three main sections (stacked, scrollable):
     1. **Presentes**: List of present students (from attendance query)
     2. **Con Deudas Académicas**: List of absent students
     3. **Observaciones**: Free-text area
+  - **Status**: implementado como `openIndicadorGradingModal({ claseId, fecha, indicadorId, indicadorNombre, breadcrumb, evaluadoPor, onSaved })`. Se usa `fecha` en vez de `sesionId`: la tabla real `asistencias` no tiene columna `sesion_id` (verificado en las migraciones), se filtra por `clase_id + fecha`.
 
-- [ ] 3.2 Implement "Presentes" section
+- [x] 3.2 Implement "Presentes" section
   - For each present student: name, 5-star rating control (click-to-rate), optional grade label (Insuficiente/Aceptable/Excelente)
   - On star click: auto-save (or on blur) to evaluacion_indicador.nota
   - Star control must persist state (don't reset on blur)
   - Sorting optional: by name, by grade
+  - **Status**: estrellas 1-5 clicables, auto-guardan vía `saveIndicadorNota()` (nuevo — hace upsert y fija `recovery_status='no_aplica'` explícitamente, ver bug documentado abajo en la migración)
 
-- [ ] 3.3 Implement "Con Deudas Académicas" section
+- [x] 3.3 Implement "Con Deudas Académicas" section
   - For each absent student: name, absence-type badge (Ausente/Justificado), "Registrar Recuperación" button
   - On button click: expand inline form (or open sub-modal) with fields:
     - Dropdown: "Recuperado" | "No Recuperable"
@@ -164,40 +166,46 @@ Specialized modal for per-indicator grading with attendance partitioning and rec
   - On "Registrar": update evaluacion_indicador.recovery_status, .recovery_grade, .recovery_notes, .recovery_timestamp
   - **Trigger:** maestroDataService.updateRecoveryStatus() must flag dependent indicators (R2.3)
   - After recovery saved: move student to completed state (visual change in modal)
+  - **Status**: `updateRecoveryStatus()` reescrito a upsert (antes era UPDATE puro — fallaba en silencio si el alumno ausente no tenía fila previa). También dispara `_flagDependentIndicadores()` (R2.3): al recuperar, marca `review_flag=true` en los indicadores posteriores ya calificados bajo advertencia blanda para ese alumno. **Bug de esquema encontrado y corregido**: el CHECK constraint de `recovery_status` (migración 20260812000002) solo admitía `('pendiente','recuperado','no_aplica')`, sin `'no_recuperable'` que la spec sí requiere — corregido en la migración nueva de este PR.
 
-- [ ] 3.4 Implement "Observaciones" section
+- [ ] 3.4 Implement "Observaciones" section — **PARCIAL, guardado diferido a PR4**
   - Text area for free-form teacher notes (500–1000 char limit, TBD in design)
   - Optional: tag buttons (reuse existing tags or define new: "Necesita apoyo", "Destaca", "Requiere seguimiento")
   - Save observation to evaluacion_indicador.observaciones (or new field if needed)
+  - **Status**: el textarea existe en la UI pero el botón "Analizar" queda deshabilitado ("próximamente"). `evaluacion_indicador.observaciones` es por alumno, no hay campo para una nota grupal del indicador — decisión de esquema pendiente para cuando se conecte la IA en PR4 (groqService), no se inventó una columna nueva sin confirmar el diseño final.
 
-- [ ] 3.5 Implement prerequisite warning integration (from R2.2)
+- [x] 3.5 Implement prerequisite warning integration (from R2.2)
   - When modal loads: check prerequisites for each student
   - For each student with unmet prerequisite: show soft warning inline or on-save
   - Modal message: "Este indicador requiere [Prerequisite Name]. Estudiante aún no ha alcanzado prerequisito. ¿Desea continuar?"
   - Buttons: "Cancelar" (discard grade) | "Continuar Igual" (persist grade anyway)
   - Warning per student (multiple students may have different prerequisite states)
   - Allow override; no blocking
+  - **Status**: solo se implementó cadena lineal de un prerrequisito directo por indicador (`getDirectPrerequisite()`), consistente con el alcance de Fase 1 de la spec. Warning inline por alumno, nunca bloquea el guardado.
 
-- [ ] 3.6 Implement "Marcar como Completamente Evaluado" button
+- [x] 3.6 Implement "Marcar como Completamente Evaluado" button
   - Visible in modal footer or header
   - On click: verify all present students graded AND all absent students have recovery status
   - If validation passes: mark completion flag (session-only or DB, TBD); trigger check-state update (R4.2)
   - If validation fails: show error "Faltan estudiantes por calificar o recuperar"
   - On completion: enable smooth modal close
+  - **Status**: el botón se habilita cuando todos los presentes tienen nota Y todos los ausentes tienen recovery_status resuelto; cierra el modal y dispara `onSaved()`. No hay flag DB separado de "completado" — se deriva siempre de los datos (consistente con Fase 4, check-state calculado, no almacenado)
 
-- [ ] 3.7 Data persistence and auto-save
+- [x] 3.7 Data persistence and auto-save
   - On star click: auto-persist to evaluacion_indicador.nota (or on blur)
   - On recovery save: auto-persist recovery fields
   - On observation blur: auto-persist observation
   - Visual feedback: "Guardado" tooltip or spinner brief
   - Unsaved changes: TBD (auto-save + warn on close, or explicit save button)
+  - **Status**: auto-save real en estrellas y recuperación (sin botón "Guardar" explícito), con toast de error si falla. Observaciones diferido (ver 3.4).
 
-- [ ] 3.8 Create `src/portal-maestros/styles/indicador-grading.css`
+- [x] 3.8 Create `src/portal-maestros/styles/indicador-grading.css`
   - Styling for attendance badges (Ausente/Justificado colors)
   - Star rating control (existing or new implementation)
   - Check-mark toggles (for completion status)
   - Modal layout (responsive)
   - Section dividers (Presentes vs. Con Deudas)
+  - **Status**: estilos inline vía `<style id="igm-styles">`, mismo patrón que `TeacherRouteBuilder.js`/`hoyView.js`. Checks visuales simple/doble del mapa (icono en la ruta, no en el modal) quedan para Fase 4.
 
 ---
 

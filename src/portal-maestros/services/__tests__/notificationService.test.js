@@ -206,8 +206,8 @@ describe('Deduplication Logic', () => {
   });
 
   describe('Polling Interval Constants', () => {
-    it('should define POLL_INTERVAL_MS as 30 seconds', () => {
-      expect(POLL_INTERVAL_MS).toBe(30000);
+    it('should use five-minute fallback polling behind realtime', () => {
+      expect(POLL_INTERVAL_MS).toBe(5 * 60 * 1000);
     });
 
     it('should define DEDUP_WINDOW_MS as 60 seconds', () => {

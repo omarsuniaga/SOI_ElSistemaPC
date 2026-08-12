@@ -18,6 +18,29 @@ const CACHE_KEYS = {
   EMERGENTES: 'emergentes',
 }
 
+const _inFlight = new Map()
+let _cacheGeneration = 0
+
+function _singleFlight(key, load, forceRefresh = false) {
+  const generation = _cacheGeneration
+  const flightKey = `${generation}:${key}`
+  if (!forceRefresh && _inFlight.has(flightKey)) return _inFlight.get(flightKey)
+  const request = Promise.resolve().then(() => load(generation)).finally(() => {
+    if (_inFlight.get(flightKey) === request) _inFlight.delete(flightKey)
+  })
+  _inFlight.set(flightKey, request)
+  return request
+}
+
+function _setCacheIfCurrent(generation, key, value, group) {
+  if (generation === _cacheGeneration) viewCache.set(key, value, group)
+}
+
+function _invalidateFlights() {
+  _cacheGeneration += 1
+  _inFlight.clear()
+}
+
 async function _getMaestroId() {
   const maestro = getMaestroLocal()
   if (!maestro?.id) return null
@@ -42,26 +65,28 @@ export async function getMisClases(forceRefresh = false) {
   const maestroId = await _getMaestroId()
   if (!maestroId) return []
 
+  const cacheKey = `${CACHE_KEYS.MIS_CLASES}_${maestroId}`
+
   if (!forceRefresh) {
-    const cached = viewCache.getCached(`${CACHE_KEYS.MIS_CLASES}_${maestroId}`)
+    const cached = viewCache.getCached(cacheKey)
     if (cached) return cached
   }
 
-  const { data, error } = await supabase
-    .from('clases')
-    .select('id, nombre, instrumento, plan_estudio, capacidad_maxima, maestro_principal_id, route_version_id')
-    .or(
-      `maestro_principal_id.eq.${maestroId},maestro_suplente_id.eq.${maestroId},maestro_id.eq.${maestroId}`,
-    )
-
-  if (error) {
-    console.warn('[MaestroData] Error cargando clases:', error.message)
-    return []
-  }
-
-  const clases = data || []
-  viewCache.set(`${CACHE_KEYS.MIS_CLASES}_${maestroId}`, clases, 'misClases')
-  return clases
+  return _singleFlight(cacheKey, async (generation) => {
+    const { data, error } = await supabase
+      .from('clases')
+      .select('id, nombre, instrumento, plan_estudio, capacidad_maxima, maestro_principal_id, route_version_id')
+      .or(
+        `maestro_principal_id.eq.${maestroId},maestro_suplente_id.eq.${maestroId},maestro_id.eq.${maestroId}`,
+      )
+    if (error) {
+      console.warn('[MaestroData] Error cargando clases:', error.message)
+      return []
+    }
+    const clases = data || []
+    _setCacheIfCurrent(generation, cacheKey, clases, 'misClases')
+    return clases
+  }, forceRefresh)
 }
 
 export async function getHorariosClases(claseIds, forceRefresh = false) {
@@ -81,26 +106,27 @@ export async function getHorariosClases(claseIds, forceRefresh = false) {
 
   if (!claseIds || claseIds.length === 0) return []
 
-  const cacheKey = `horarios_${claseIds.sort().join(',')}`
+  const stableClaseIds = [...new Set(claseIds)].sort()
+  const cacheKey = `horarios_${stableClaseIds.join(',')}`
 
   if (!forceRefresh) {
     const cached = viewCache.getCached(cacheKey)
     if (cached) return cached
   }
 
-  const { data, error } = await supabase
-    .from('clase_horarios')
-    .select('hora_inicio, hora_fin, salon_id, clase_id, dia')
-    .in('clase_id', claseIds)
-
-  if (error) {
-    console.warn('[MaestroData] Error cargando horarios:', error.message)
-    return []
-  }
-
-  const horarios = data || []
-  viewCache.set(cacheKey, horarios, 'horarios')
-  return horarios
+  return _singleFlight(cacheKey, async (generation) => {
+    const { data, error } = await supabase
+      .from('clase_horarios')
+      .select('hora_inicio, hora_fin, salon_id, clase_id, dia')
+      .in('clase_id', stableClaseIds)
+    if (error) {
+      console.warn('[MaestroData] Error cargando horarios:', error.message)
+      return []
+    }
+    const horarios = data || []
+    _setCacheIfCurrent(generation, cacheKey, horarios, 'horarios')
+    return horarios
+  }, forceRefresh)
 }
 
 /**
@@ -110,6 +136,7 @@ export async function getHorariosClases(claseIds, forceRefresh = false) {
  */
 export async function getSesiones(maestroId, desde, hasta, forceRefresh = false) {
   if (!maestroId) return []
+  const cacheKey = `sesiones_${maestroId}_${desde}_${hasta}`
 
   // Intentar servir desde el cache mensual (rango más amplio que cubre este pedido)
   if (!forceRefresh) {
@@ -123,26 +150,25 @@ export async function getSesiones(maestroId, desde, hasta, forceRefresh = false)
     }
 
     // Cache exacto por rango
-    const cacheKey = `sesiones_${maestroId}_${desde}_${hasta}`
     const cached = viewCache.getCached(cacheKey)
     if (cached) return cached
   }
 
-  const { data, error } = await supabase
-    .from('sesiones_clase')
-    .select('*')
-    .eq('maestro_id', maestroId)
-    .gte('fecha', desde)
-    .lte('fecha', hasta)
-
-  if (error) {
-    console.warn('[MaestroData] Error cargando sesiones:', error.message)
-    return []
-  }
-
-  const sesiones = data || []
-  viewCache.set(`sesiones_${maestroId}_${desde}_${hasta}`, sesiones, 'sesiones')
-  return sesiones
+  return _singleFlight(cacheKey, async (generation) => {
+    const { data, error } = await supabase
+      .from('sesiones_clase')
+      .select('*')
+      .eq('maestro_id', maestroId)
+      .gte('fecha', desde)
+      .lte('fecha', hasta)
+    if (error) {
+      console.warn('[MaestroData] Error cargando sesiones:', error.message)
+      return []
+    }
+    const sesiones = data || []
+    _setCacheIfCurrent(generation, cacheKey, sesiones, 'sesiones')
+    return sesiones
+  }, forceRefresh)
 }
 
 /**
@@ -198,27 +224,28 @@ export async function getInscripcionesClases(claseIds, forceRefresh = false) {
 
   if (!claseIds || claseIds.length === 0) return []
 
-  const cacheKey = `inscripciones_${claseIds.sort().join(',')}`
+  const stableClaseIds = [...new Set(claseIds)].sort()
+  const cacheKey = `inscripciones_${stableClaseIds.join(',')}`
 
   if (!forceRefresh) {
     const cached = viewCache.getCached(cacheKey)
     if (cached) return cached
   }
 
-  const { data, error } = await supabase
-    .from('alumnos_clases')
-    .select('clase_id, alumno_id, hora_inicio, hora_fin, alumnos(id, nombre_completo, instrumento_principal)')
-    .in('clase_id', claseIds)
-    .eq('activo', true)
-
-  if (error) {
-    console.warn('[MaestroData] Error cargando inscripciones:', error.message)
-    return []
-  }
-
-  const inscripciones = data || []
-  viewCache.set(cacheKey, inscripciones, 'inscripciones')
-  return inscripciones
+  return _singleFlight(cacheKey, async (generation) => {
+    const { data, error } = await supabase
+      .from('alumnos_clases')
+      .select('clase_id, alumno_id, hora_inicio, hora_fin, alumnos(id, nombre_completo, instrumento_principal)')
+      .in('clase_id', stableClaseIds)
+      .eq('activo', true)
+    if (error) {
+      console.warn('[MaestroData] Error cargando inscripciones:', error.message)
+      return []
+    }
+    const inscripciones = data || []
+    _setCacheIfCurrent(generation, cacheKey, inscripciones, 'inscripciones')
+    return inscripciones
+  }, forceRefresh)
 }
 
 /**
@@ -267,6 +294,41 @@ export async function getSalones(salonIds, forceRefresh = false) {
   const salones = data || []
   viewCache.set(cacheKey, salones, 'salones')
   return salones
+}
+
+/**
+ * Carga el conjunto mínimo compartido antes de mostrar la primera vista.
+ * Las vistas consumen después las mismas entradas de cache/single-flight.
+ */
+export async function prefetchEssentialData() {
+  const maestroId = await _getMaestroId()
+  if (!maestroId) return { clases: 0, horarios: 0, inscripciones: 0, sesiones: 0 }
+
+  const clases = await getMisClases()
+  const claseIds = clases.map((clase) => clase.id)
+  if (claseIds.length === 0) return { clases: 0, horarios: 0, inscripciones: 0, sesiones: 0 }
+
+  const hoy = new Date()
+  const proximoMes = new Date(hoy)
+  proximoMes.setDate(proximoMes.getDate() + 28)
+  const desde = hoy.toISOString().split('T')[0]
+  const hasta = proximoMes.toISOString().split('T')[0]
+
+  const [horarios, inscripciones, sesiones] = await Promise.all([
+    getHorariosClases(claseIds),
+    getInscripcionesClases(claseIds),
+    getSesiones(maestroId, desde, hasta),
+  ])
+
+  const salonIds = [...new Set(horarios.map((horario) => horario.salon_id).filter(Boolean))]
+  if (salonIds.length > 0) await getSalones(salonIds)
+
+  return {
+    clases: clases.length,
+    horarios: horarios.length,
+    inscripciones: inscripciones.length,
+    sesiones: sesiones.length,
+  }
 }
 
 /**
@@ -347,6 +409,7 @@ export async function getEmergentesHoy(maestroId, fecha) {
 }
 
 export function invalidateClasesCache() {
+  _invalidateFlights()
   viewCache.invalidate('mis_clases')
   viewCache.invalidate('horarios')
   viewCache.invalidate('inscripciones')
@@ -354,6 +417,7 @@ export function invalidateClasesCache() {
 }
 
 export function invalidateAllCache() {
+  _invalidateFlights()
   viewCache.invalidateAll()
 }
 

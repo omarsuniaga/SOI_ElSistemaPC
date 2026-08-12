@@ -169,7 +169,10 @@ import { usePortalAuth, logoutMaestro } from './portal-maestros/auth/usePortalAu
 import { createPortalRouter } from './portal-maestros/router/portalRouter.js'
 import { processQueue, getQueue } from './portal-maestros/services/offlineQueue.js'
 import { supabase } from './lib/supabaseClient.js'
-import { prefetchMonthData } from './portal-maestros/services/maestroDataService.js'
+import {
+  prefetchEssentialData,
+  prefetchMonthData,
+} from './portal-maestros/services/maestroDataService.js'
 import { cleanupPushService } from './portal-maestros/services/pushService.js'
 import { getPermisos } from './portal-maestros/services/permisoService.js'
 import { setNavigationCallbacks } from './portal-maestros/services/navigationHooks.js'
@@ -182,6 +185,8 @@ import {
   initViewContainers,
   renderViewContent,
   CACHEABLE_VIEWS,
+  createViewRenderCache,
+  createViewRenderQueue,
 } from './portal-maestros/shell/portalRoutes.js'
 import { setupGlobalAppEvents } from './portal-maestros/shell/portalEvents.js'
 import { registerRoutesPlanificacion } from './modules/planificacion/index.js'
@@ -207,7 +212,8 @@ window.router = router
 
 const _viewContainers = {}
 let _activeViewCleanup = null
-const _viewRendered = new Set()
+const _viewRendered = createViewRenderCache()
+const _viewRenderQueue = createViewRenderQueue()
 
 // ============================================
 // TAB DEFINITIONS — solo vistas de maestro
@@ -332,7 +338,12 @@ export function invalidateView(name) {
   _viewRendered.delete(name)
 }
 
-async function _renderView(route, params = {}, { silent = false } = {}) {
+async function _renderView(route, params = {}, options = {}) {
+  const baseRoute = route.split('?')[0]
+  return _viewRenderQueue.run(baseRoute, () => _renderViewSerial(route, params, options))
+}
+
+async function _renderViewSerial(route, params = {}, { silent = false } = {}) {
   const queryStr = window.location.search || (window.location.hash.includes('?') ? window.location.hash.split('?')[1] : '')
   const urlParams = new URLSearchParams(queryStr)
   const baseRoute = route.split('?')[0]
@@ -369,7 +380,7 @@ async function _renderView(route, params = {}, { silent = false } = {}) {
     targetContainer.classList.add('active')
   }
 
-  if (_viewRendered.has(baseRoute)) return
+  if (_viewRendered.has(baseRoute, params, urlParams)) return
 
   const spinnerTimeout = setTimeout(() => {
     targetContainer.querySelectorAll('.pm-loading-overlay').forEach((el) => el.remove())
@@ -397,7 +408,7 @@ async function _renderView(route, params = {}, { silent = false } = {}) {
     targetContainer.querySelector('.pm-loading-overlay')?.remove()
 
     if (CACHEABLE_VIEWS.has(baseRoute)) {
-      _viewRendered.add(baseRoute)
+      _viewRendered.add(baseRoute, params, urlParams)
     }
   } catch (err) {
     clearTimeout(spinnerTimeout)
@@ -488,6 +499,7 @@ const _SPLASH_PHASES = {
   auth:      { bar: 25 },
   profile:   { bar: 50, txt: 'Cargando tu perfil...' },
   preparing: { bar: 75, txt: 'Preparando tu espacio de trabajo...' },
+  data:      { bar: 88, txt: 'Cargando clases, alumnos y fechas...' },
   ready:     { bar: 100, txt: '¡Listo!' },
 }
 
@@ -524,6 +536,7 @@ function _updateSplashState(phase, maestro) {
       if (statusEl && step.txt) statusEl.textContent = step.txt
       break
     case 'preparing':
+    case 'data':
       if (statusEl && step.txt) statusEl.textContent = step.txt
       if (spinnerEl) spinnerEl.style.opacity = '0.5'
       break
@@ -619,7 +632,20 @@ async function initPortal() {
   // 4. Contenedores de vista
   Object.assign(_viewContainers, initViewContainers())
 
-  // 5. Eventos globales (una sola vez)
+  // 5. Datos esenciales: llenar cache compartido antes de que la primera vista
+  // y las notificaciones intenten pedir las mismas tablas en paralelo.
+  _updateSplashState('data')
+  try {
+    await Promise.race([
+      prefetchEssentialData(),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('timeout de precarga')), 8000)),
+    ])
+  } catch (err) {
+    // Entrada degradada: el portal sigue disponible y las vistas reintentan bajo demanda.
+    console.warn('[Init] Precarga esencial incompleta:', err.message)
+  }
+
+  // 6. Eventos globales (una sola vez). Notificaciones comienzan después del cache esencial.
   setupGlobalAppEvents({
     isAdmin: false,
     getMaestro: () => _maestro,
@@ -650,10 +676,10 @@ async function initPortal() {
     },
   })
 
-  // 6. Callbacks de navegación
+  // 7. Callbacks de navegación
   setNavigationCallbacks(invalidateView, invalidateAllViews)
 
-  // 7. Router
+  // 8. Router
   _setupRouter()
   router.setAuthGuard(() => usePortalAuth.isAuthenticated(), publicRoutes)
   router.start()
@@ -668,23 +694,16 @@ async function initPortal() {
     router.navigate('hoy')
   }
 
-  // 8. Prefetch + precargar vistas
-  prefetchMonthData()
-    .then(async () => {
-      const PRELOAD_VIEWS = ['hoy', 'fechas', 'calendario', 'metricas']
-      const current = (router.currentRoute?.() || 'hoy').split('?')[0]
-      const pending = PRELOAD_VIEWS.filter((v) => v !== current && !_viewRendered.has(v))
+  // 9. Datos secundarios en idle. Nunca renderiza vistas ocultas.
+  const prefetchSecondary = () => {
+    prefetchMonthData()
+      .then(() => window.pwaInstaller?.evaluateInsights())
+      .catch((err) => console.warn('[Prefetch] Error:', err.message))
+  }
+  if ('requestIdleCallback' in window) window.requestIdleCallback(prefetchSecondary, { timeout: 3000 })
+  else setTimeout(prefetchSecondary, 500)
 
-      await Promise.all(pending.map((viewName) => {
-        const container = _viewContainers[viewName]
-        if (container) return _renderView(viewName, {}, { silent: true })
-      }))
-
-      window.pwaInstaller?.evaluateInsights()
-    })
-    .catch((err) => console.warn('[Prefetch] Error:', err.message))
-
-  // 9. Sync inicial
+  // 10. Sync inicial
   _triggerSync()
 }
 

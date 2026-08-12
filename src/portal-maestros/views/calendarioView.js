@@ -139,20 +139,21 @@ async function _calcularEstadoMes(maestroId, anio, mes) {
     }
   }
 
-  // 2. Horarios de esas clases (con cache)
-  const horarios = await getHorariosClases(claseIds)
-  const diasConClase = new Set(horarios.map((h) => h.dia?.toLowerCase()))
+  // 2 & 3. Horarios y sesiones del mes en paralelo (con cache)
+  const [horarios, todasSesiones] = await Promise.all([
+    getHorariosClases(claseIds).catch(() => []),
+    getSesiones(maestroId, desde, hasta).catch(() => []),
+  ])
+
+  const diasConClase = new Set((horarios || []).map((h) => h.dia?.toLowerCase()))
   const horaFinPorDia = new Map() // Map<"lunes"|"martes"|..., max_hora_fin>
-  horarios.forEach((h) => {
+  ;(horarios || []).forEach((h) => {
     const dia = h.dia?.toLowerCase()
     const horaFin = h.hora_fin || '23:59'
     if ((dia && !horaFinPorDia.has(dia)) || horaFin > horaFinPorDia.get(dia)) {
       horaFinPorDia.set(dia, horaFin)
     }
   })
-
-  // 3. Sesiones del mes (con cache)
-  const todasSesiones = await getSesiones(maestroId, desde, hasta)
 
   // Sesión registrada/completada solo si NO es un borrador pendiente
   const esSesionRegistrada = (s) => {

@@ -90,7 +90,7 @@ const lifecycle = new LifecycleManager('maestro-notifications');
 
 // -- Deduplication Configuration --
 // Realtime es la fuente primaria. Polling cada 5 min es el fallback.
-export const POLL_INTERVAL_MS = 30 * 1000;  // 30 segundos (NOTIF-04)
+export const POLL_INTERVAL_MS = 5 * 60 * 1000;  // Realtime primario; polling de respaldo cada 5 min
 export const DEDUP_WINDOW_MS  = 60 * 1000;        // 1 minuto
 export const DEDUP_EXPIRY_MS  = 120 * 1000;        // 2 minutos
 
@@ -674,6 +674,7 @@ function _injectToastStyles() {
 
 // ── Polling controlado ──────────────────────────────────────────────────────
 let _pollIntervalId = null;
+let _pollingEnabled = false;
 
 function _startPolling() {
   if (_pollIntervalId !== null) return;
@@ -693,8 +694,20 @@ function _stopPolling() {
   }
 }
 
+export function startNotificationPolling() {
+  if (_pollingEnabled) return
+  _pollingEnabled = true
+  fetchNotificaciones()
+  if (document.visibilityState !== 'hidden') _startPolling()
+}
+
+export function stopNotificationPolling() {
+  _pollingEnabled = false
+  _stopPolling()
+}
+
 document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible') {
+  if (document.visibilityState === 'visible' && _pollingEnabled) {
     fetchNotificaciones();
     _startPolling();
   } else {
@@ -711,7 +724,3 @@ function _cleanStaleLocalAlerts() {
 }
 
 _cleanStaleLocalAlerts();
-
-if (document.visibilityState !== 'hidden') {
-  _startPolling();
-}

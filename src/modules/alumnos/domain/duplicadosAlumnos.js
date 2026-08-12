@@ -47,17 +47,20 @@ export function normalizeText(value) {
 export function spanishPhoneticKey(token) {
   if (!token) return ''
   let s = normalizeText(token)
-  s = s.replace(/h/g, '') // h muda
-  s = s.replace(/v/g, 'b') // b/v equivalentes
-  s = s.replace(/ph/g, 'f') // ph -> f
+  s = s.replace(/ph/g, 'f') // ph -> f (antes de h muda)
+  s = s.replace(/th/g, 't') // th -> t
+  s = s.replace(/ch/g, 'c') // ch -> c
+  s = s.replace(/sh/g, 's') // sh -> s
+  s = s.replace(/h/g, '')   // h muda
+  s = s.replace(/v/g, 'b')   // b/v equivalentes
   s = s.replace(/c(?=[ei])/g, 's') // c ante e/i -> s
-  s = s.replace(/z/g, 's') // z -> s
-  s = s.replace(/ck/g, 'c') // ck -> c
-  s = s.replace(/qu/g, 'c') // qu -> c
-  s = s.replace(/k/g, 'c') // k -> c
-  s = s.replace(/y/g, 'i') // y -> i
-  s = s.replace(/w/g, 'u') // w -> u
-  s = s.replace(/(.)\1+/g, '$1') // colapsar letras repetidas (ej: 'll' -> 'l', 'nn' -> 'n')
+  s = s.replace(/z/g, 's')   // z -> s
+  s = s.replace(/ck/g, 'c')  // ck -> c
+  s = s.replace(/qu/g, 'c')  // qu -> c
+  s = s.replace(/k/g, 'c')   // k -> c
+  s = s.replace(/y/g, 'i')   // y -> i
+  s = s.replace(/w/g, 'u')   // w -> u
+  s = s.replace(/(.)\1+/g, '$1') // colapsar letras repetidas
   return s
 }
 
@@ -324,6 +327,54 @@ export function camposCompartidos(a, b) {
 }
 
 /**
+ * Detecta si dos alumnos son hermanos (comparten apellidos/padres/contacto pero sus nombres de pila son distintos).
+ * Los hermanos comparten familia pero NO son la misma persona y no deben sugerirse como duplicados.
+ * @param {object} a
+ * @param {object} b
+ * @returns {boolean}
+ */
+export function sonHermanos(a, b) {
+  const tokensA = tokensNombre(a?.nombre_completo || a?.nombre)
+  const tokensB = tokensNombre(b?.nombre_completo || b?.nombre)
+  if (tokensA.length === 0 || tokensB.length === 0) return false
+
+  // Nombres de pila (primeros 1-2 tokens)
+  const givenNamesA = tokensA.length > 2 ? tokensA.slice(0, -2) : [tokensA[0]]
+  const givenNamesB = tokensB.length > 2 ? tokensB.slice(0, -2) : [tokensB[0]]
+
+  // Verificar si hay alguna coincidencia (exacta o fonética) entre los nombres de pila
+  const sharesGivenName = givenNamesA.some(ga =>
+    tokensB.some(tb => tokenSimilarity(ga, tb) >= 0.80)
+  ) || givenNamesB.some(gb =>
+    tokensA.some(ta => tokenSimilarity(gb, ta) >= 0.80)
+  )
+
+  // Si los nombres de pila NO tienen coincidencia (ej. "Jose Tomas" vs "Alondra")
+  if (!sharesGivenName) {
+    const genA = normalizeText(a?.genero)
+    const genB = normalizeText(b?.genero)
+    const distinctGender = genA && genB && ((genA.startsWith('m') && genB.startsWith('f')) || (genA.startsWith('f') && genB.startsWith('m')))
+
+    const fA = String(a?.fecha_nacimiento || '').slice(0, 4)
+    const fB = String(b?.fecha_nacimiento || '').slice(0, 4)
+    const distinctYear = fA && fB && fA.length === 4 && fB.length === 4 && fA !== fB
+
+    const sharesFamily = (
+      samePersonName(a?.padre_nombre, b?.padre_nombre) ||
+      samePersonName(a?.madre_nombre, b?.madre_nombre) ||
+      matchPhones(a, b) ||
+      (tokensA.length >= 2 && tokensB.length >= 2 && tokenSimilarity(tokensA[tokensA.length - 1], tokensB[tokensB.length - 1]) >= 0.85)
+    )
+
+    if (sharesFamily || distinctGender || distinctYear) {
+      return true
+    }
+  }
+
+  return false
+}
+
+/**
  * Calcula la similitud global entre dos alumnos.
  *
  * @param {object} a
@@ -332,10 +383,22 @@ export function camposCompartidos(a, b) {
  *   puntaje: number,
  *   nombreScore: number,
  *   coincidencias: object,
- *   esSubsetNombre: boolean
+ *   esSubsetNombre: boolean,
+ *   esHermano?: boolean
  * }}
  */
 export function similitudEntre(a, b) {
+  // Regla Anti-Hermanos: si son hermanos (nombres de pila disjuntos con misma familia/contacto), NO son duplicados
+  if (sonHermanos(a, b)) {
+    return {
+      puntaje: 0.0,
+      nombreScore: 0.0,
+      esHermano: true,
+      coincidencias: { compartidos: 0, peso: 0 },
+      esSubsetNombre: false,
+    }
+  }
+
   const nombreScore = compareNombres(a?.nombre_completo || a?.nombre, b?.nombre_completo || b?.nombre)
   const compartidos = camposCompartidos(a, b)
   const pesoCompartido = compartidos.reduce((s, c) => s + c.peso, 0)

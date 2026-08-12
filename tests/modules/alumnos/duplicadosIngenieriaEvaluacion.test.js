@@ -130,6 +130,34 @@ describe('Evaluación de Ingeniería de Duplicados', () => {
       const res = detectarPosiblesDuplicados([a1, a2])
       expect(res.length).toBe(0)
     })
+
+    it('Regla Anti-Hermanos: discrimina a Jose Tomas Lorenzo Ogando y Alondra Lorenzo Ogando (mismos padres/apellidos pero distintos nombres de pila e instrumentos)', () => {
+      const hermano = {
+        id: 'h1',
+        nombre_completo: 'Jose Tomas Lorenzo Ogando',
+        padre_nombre: 'Tomas Lorenzo',
+        madre_nombre: 'Maria Ogando',
+        representante_tlf: '8295559988',
+        genero: 'M',
+        instrumento_principal: 'Trompeta',
+      }
+      const hermana = {
+        id: 'h2',
+        nombre_completo: 'Alondra Lorenzo Ogando',
+        padre_nombre: 'Tomas Lorenzo',
+        madre_nombre: 'Maria Ogando',
+        representante_tlf: '8295559988',
+        genero: 'F',
+        instrumento_principal: 'Violoncello',
+      }
+
+      const score = similitudEntre(hermano, hermana)
+      expect(score.esHermano).toBe(true)
+      expect(score.puntaje).toBe(0.0)
+
+      const res = detectarPosiblesDuplicados([hermano, hermana])
+      expect(res.length).toBe(0)
+    })
   })
 
   // ── 3. Evaluación de Fusión de Clases e Interacción Modal ──────────────────

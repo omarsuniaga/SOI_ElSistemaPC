@@ -27,7 +27,11 @@ function isSuppressed(target = '') {
   if (!target) return false
   let str = ''
   if (typeof target === 'object' && target !== null) {
-    str = `${target.message || ''} ${target.stack || ''} ${target.reason || ''} ${target.filename || ''}`
+    const reason = target.reason
+    const reasonStr = typeof reason === 'object' && reason !== null
+      ? `${reason.message || ''} ${reason.stack || ''}`
+      : String(reason || '')
+    str = `${target.message || ''} ${target.stack || ''} ${reasonStr} ${target.filename || ''} ${target.name || ''} ${String(target)}`
   } else {
     str = String(target)
   }

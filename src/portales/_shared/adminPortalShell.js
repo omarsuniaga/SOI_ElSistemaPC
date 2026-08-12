@@ -35,6 +35,7 @@ import { renderCasoDetalleView } from '../../modules/hermes/views/casoDetalleVie
 import { renderScoreDirectorView } from '../../modules/hermes/views/scoreDirectorView.js'
 import { renderHermesConsultaView } from '../../modules/hermes/views/hermesConsultaView.js'
 import { renderCierreAcademicoView } from '../../modules/metricas/views/cierreAcademicoView.js'
+import { reportCatalogAudit } from '../../core/catalogAudit.js'
 
 window.router = router
 
@@ -347,6 +348,17 @@ export async function bootAdminPortal(profile) {
   router.register('dir-score', (mount) => renderScoreDirectorView(mount))
   // SP-5: capa de consulta de Hermes (respuestas factuales).
   router.register('hermes-consulta', (mount) => renderHermesConsultaView(mount))
+
+  // El catálogo sombra cubre inicialmente ADM y ACM. Los demás perfiles se
+  // incorporarán cuando sus contratos estén inventariados y probados.
+  if (profile.hermesDept === 'ADM' || profile.hermesDept === 'ACM') {
+    reportCatalogAudit({
+      portalId: profile.hermesDept,
+      defaultRoute: profile.defaultRoute,
+      navGroups: profile.navGroups,
+      registeredRoutes: Object.keys(router.routes),
+    })
+  }
 
   router.initCustomEvents()
 

@@ -19,6 +19,8 @@
  * "Mock First": la feature funciona en Demo mode antes de ir a producción.
  */
 
+import { auditAndEnrichProcessContract } from '../logic/processDomainAuditor.js'
+
 const LATENCIA = 250
 
 const EVENT_DEMO = '00000000-0000-0000-0000-0000000000ev'
@@ -502,7 +504,13 @@ export async function startProcessCase(payload = {}) {
 
   const caseId = genId(`case-${contract.process_code.toLowerCase()}`)
   const now = new Date().toISOString()
-  const templates = Array.isArray(contract.task_templates) ? contract.task_templates : []
+
+  // Ejecutar auditoría de dominio institucional para generar tareas contextuales
+  const { taskTemplates, auditSummary, metadata } = await auditAndEnrichProcessContract(contract, payload)
+  const templates = Array.isArray(taskTemplates) && taskTemplates.length > 0
+    ? taskTemplates
+    : (Array.isArray(contract.task_templates) ? contract.task_templates : [])
+
   const generated = templates.map((template, index) => {
     const due = template.due_in_days != null
       ? new Date(Date.now() + Number(template.due_in_days) * 86400000).toISOString().slice(0, 10)
@@ -511,7 +519,7 @@ export async function startProcessCase(payload = {}) {
     return {
       id: `${caseId}-task-${index + 1}`,
       titulo: template.title || template.titulo || contract.process_name,
-      descripcion: template.description || template.descripcion || payload.description || null,
+      descripcion: template.description || template.descripcion || auditSummary || payload.description || null,
       departamento: template.department,
       estado: 'pendiente',
       prioridad: template.priority || payload.priority || 'media',
@@ -531,6 +539,7 @@ export async function startProcessCase(payload = {}) {
       correlation_id: caseId,
       updated_by: payload.requested_by || null,
       updated_by_nombre: payload.requested_by_name || null,
+      metadata: { ...metadata, audit_summary: auditSummary },
     }
   })
 

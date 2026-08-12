@@ -8,7 +8,8 @@ import { supabase } from '../../lib/supabaseClient.js'
 import {
   onNotificacionesChange,
   getUnreadCount,
-  fetchNotificaciones,
+  startNotificationPolling,
+  stopNotificationPolling,
   startRealtime,
   stopRealtime,
 } from '../services/notificationService.js'
@@ -43,7 +44,7 @@ export function setupGlobalAppEvents({
     }
   })
 
-  fetchNotificaciones()
+  startNotificationPolling()
   startRealtime()
 
   // ── Permisos Realtime (solo maestros, no admins) ───────────
@@ -138,6 +139,7 @@ function _subscribeToPermisos({ getMaestro, getPermisosCached, onPermisosUpdate,
 
 export function teardownGlobalEvents() {
   _globalEventsInitialized = false
+  stopNotificationPolling()
   stopRealtime()
   if (_permisosChannel) {
     supabase.removeChannel(_permisosChannel)

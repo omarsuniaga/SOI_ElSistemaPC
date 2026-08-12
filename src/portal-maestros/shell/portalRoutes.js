@@ -57,10 +57,70 @@ function resolveClaseId(params = {}, urlParams = new URLSearchParams()) {
 }
 
 export const CACHEABLE_VIEWS = new Set([
-  'hoy', 'fechas', 'calendario', 'metricas', 'perfil', 'ruta',
+  'hoy', 'fechas', 'calendario', 'clases', 'gestionar-clases', 'metricas', 'perfil', 'ruta',
   'gamificacion', 'crear-clase', 'planificacion', 'planificacion-disenador', 'planificacion-ruta', 'ruta-libreria',
   'gestionar-horario',
 ])
+
+function viewRenderKey(route, params = {}, urlParams = new URLSearchParams()) {
+  const values = [
+    ...Object.entries(params).map(([key, value]) => [`param:${key}`, String(value)]),
+    ...Array.from(urlParams.entries()).map(([key, value]) => [`query:${key}`, value]),
+  ]
+  values.sort(([keyA, valueA], [keyB, valueB]) => {
+    return keyA.localeCompare(keyB) || valueA.localeCompare(valueB)
+  })
+  return JSON.stringify([route, values])
+}
+
+/**
+ * Tracks the variant currently rendered in each persistent view container.
+ * A container can cache one route+params variant at a time; rendering another
+ * variant replaces it, so returning to the previous one must render again.
+ */
+export function createViewRenderCache(cacheableViews = CACHEABLE_VIEWS) {
+  const renderedKeys = new Map()
+
+  return {
+    has(route, params = {}, urlParams = new URLSearchParams()) {
+      if (!cacheableViews.has(route)) return false
+      return renderedKeys.get(route) === viewRenderKey(route, params, urlParams)
+    },
+    add(route, params = {}, urlParams = new URLSearchParams()) {
+      if (cacheableViews.has(route)) {
+        renderedKeys.set(route, viewRenderKey(route, params, urlParams))
+      }
+    },
+    delete(route) {
+      renderedKeys.delete(route)
+    },
+    clear() {
+      renderedKeys.clear()
+    },
+  }
+}
+
+/**
+ * Serializes renders that target the same persistent view container while
+ * allowing unrelated views to load in parallel.
+ */
+export function createViewRenderQueue() {
+  const pending = new Map()
+
+  return {
+    run(key, render) {
+      const previous = pending.get(key) || Promise.resolve()
+      const current = previous.catch(() => {}).then(render)
+      pending.set(key, current)
+      return current.finally(() => {
+        if (pending.get(key) === current) pending.delete(key)
+      })
+    },
+    clear() {
+      pending.clear()
+    },
+  }
+}
 
 export function setupRouterRoutes(router, _isAdmin, renderView) {
   const route = (name) => router.on(name, (r, params) => renderView(name, params))

@@ -2,6 +2,7 @@ import { supabase } from '../../../lib/supabaseClient.js'
 import { formatHora, timeToMinutes } from '../utils/clasesUtils.js'
 import { checkPeriodoSupport } from '../../../lib/periodoSniffer.js'
 import { Clase } from '../models/clase.model.js'
+import { config } from '../../../core/config/config.js'
 
 export const NIVELES = [
   { value: '1', label: '1° Año' },
@@ -94,12 +95,30 @@ function normalizeClase(c) {
 
 function parseStrictTime(value) {
   if (typeof value !== 'string') return null
-  const match = value.trim().match(/^(\d{1,2}):(\d{2})(?::\d{2}(?:\.\d+)?)?$/)
+  const match = value.trim().match(/^(\d{1,2}):(\d{2})(?::(\d{2})(?:\.\d+)?)?$/)
   if (!match) return null
   const hours = Number(match[1])
   const minutes = Number(match[2])
-  if (hours > 23 || minutes > 59) return null
+  const seconds = match[3] === undefined ? 0 : Number(match[3])
+  if (hours > 23 || minutes > 59 || seconds > 59) return null
   return (hours * 60) + minutes
+}
+
+const DEMO_ROOM_SEARCH = {
+  activeStudents: 15,
+  rooms: [
+    { id: 's-101', nombre: 'Salón Mozart (Grande)', capacidad: 30, activo: true, is_active: true },
+    { id: 's-102', nombre: 'Salón Beethoven (Mediano)', capacidad: 15, activo: true, is_active: true },
+    { id: 's-103', nombre: 'Salón Bach (Piano)', capacidad: 10, activo: true, is_active: true },
+  ],
+  schedules: [],
+}
+
+function normalizeRoomCapacity(room) {
+  // Keep the same fallback used by salonesApi.normalizeSalon for legacy rows.
+  if (room?.capacidad === null || room?.capacidad === undefined || room?.capacidad === '') return 20
+  const capacity = Number(room.capacidad)
+  return Number.isFinite(capacity) ? capacity : 20
 }
 
 /**
@@ -124,15 +143,21 @@ export async function buscarSalonDisponible({
     throw new Error('El intervalo de horario no es válido')
   }
 
-  const [enrollmentsResult, roomsResult, schedulesResult] = await Promise.all([
-    supabase
-      .from('alumnos_clases')
-      .select('id', { count: 'exact', head: true })
-      .eq('clase_id', claseId)
-      .eq('activo', true),
-    supabase.from('salones').select('*'),
-    supabase.from('clase_horarios').select('id, clase_id, salon_id, dia, hora_inicio, hora_fin').eq('dia', dia),
-  ])
+  const [enrollmentsResult, roomsResult, schedulesResult] = config.isDemoMode
+    ? [
+        { count: DEMO_ROOM_SEARCH.activeStudents, data: null, error: null },
+        { data: DEMO_ROOM_SEARCH.rooms, error: null },
+        { data: DEMO_ROOM_SEARCH.schedules, error: null },
+      ]
+    : await Promise.all([
+        supabase
+          .from('alumnos_clases')
+          .select('id', { count: 'exact', head: true })
+          .eq('clase_id', claseId)
+          .eq('activo', true),
+        supabase.from('salones').select('*'),
+        supabase.from('clase_horarios').select('id, clase_id, salon_id, dia, hora_inicio, hora_fin').eq('dia', dia),
+      ])
 
   if (enrollmentsResult.error) throw enrollmentsResult.error
   if (roomsResult.error) throw roomsResult.error
@@ -142,9 +167,9 @@ export async function buscarSalonDisponible({
   const activeRooms = (roomsResult.data || []).filter(room => (
     room?.activo !== false
     && room?.is_active !== false
-    && Number.isFinite(Number(room?.capacidad))
   ))
-  const capableRooms = activeRooms.filter(room => Number(room.capacidad) >= alumnosActivos)
+    .map(room => ({ ...room, capacidad: normalizeRoomCapacity(room) }))
+  const capableRooms = activeRooms.filter(room => room.capacidad >= alumnosActivos)
 
   if (capableRooms.length === 0) {
     return {

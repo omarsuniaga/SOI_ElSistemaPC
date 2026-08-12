@@ -58,32 +58,29 @@ export async function createTasks(
 
   const { data: caseData, error: caseError } = await supabase
     .from('hermes_process_cases')
-    .upsert(
-      {
-        process_code: processCode,
-        title,
-        description,
-        source: 'telegram',
-        status: 'pendiente',
-        priority: priorityMap[groqData.urgencia] ?? 'media',
-        requested_by: requestedBy,
-        requested_by_name: requestedByName,
-        owner_department: departments[0] ?? 'DIR',
-        entity_type: null,
-        entity_id: null,
-        entity_label: null,
-        required_evidence_snapshot: contract?.required_evidence ?? null,
-        closure_criteria_snapshot: contract?.closure_criteria ?? null,
-        closure_summary: null,
-        metadata: {
-          groq_response: JSON.parse(groqRaw),
-          correlation_id: correlationId,
-          fallback_reason: fallbackReason ?? null,
-          hermes_inbox_id: hermesRow.id,
-        },
+    .insert({
+      process_code: processCode,
+      title,
+      description,
+      source: 'telegram',
+      status: 'pendiente',
+      priority: priorityMap[groqData.urgencia] ?? 'media',
+      requested_by: requestedBy,
+      requested_by_name: requestedByName,
+      owner_department: departments[0] ?? 'DIR',
+      entity_type: null,
+      entity_id: null,
+      entity_label: null,
+      required_evidence_snapshot: contract?.required_evidence ?? null,
+      closure_criteria_snapshot: contract?.closure_criteria ?? null,
+      closure_summary: null,
+      metadata: {
+        groq_response: JSON.parse(groqRaw),
+        correlation_id: correlationId,
+        fallback_reason: fallbackReason ?? null,
+        hermes_inbox_id: hermesRow.id,
       },
-      { onConflict: 'process_code, source' },
-    )
+    })
     .select('id')
     .single();
 

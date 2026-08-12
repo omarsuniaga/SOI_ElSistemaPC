@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import * as clasesApi from '../api/clasesApi.js'
 import { supabase } from '../../../lib/supabaseClient.js'
+import { config } from '../../../core/config/config.js'
 
 vi.mock('../../../lib/supabaseClient.js', () => ({
   supabase: {
@@ -11,6 +12,7 @@ vi.mock('../../../lib/supabaseClient.js', () => ({
 describe('clasesApi Integration', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    config.isDemoMode = false
   })
 
   describe('buscarSalonDisponible', () => {
@@ -39,7 +41,33 @@ describe('clasesApi Integration', () => {
 
     it('rejects invalid and reversed time intervals', async () => {
       await expect(search({ horaInicio: '25:00' })).rejects.toThrow('no es válido')
+      await expect(search({ horaInicio: '15:30:99' })).rejects.toThrow('no es válido')
       await expect(search({ horaInicio: '17:00', horaFin: '15:30' })).rejects.toThrow('no es válido')
+      expect(supabase.from).not.toHaveBeenCalled()
+    })
+
+    it('normalizes a legacy null room capacity to the shared default of 20', async () => {
+      mockRoomSearch({ count: 15, rooms: [{ id: 'legacy', nombre: 'Legado', capacidad: null }] })
+      await expect(search()).resolves.toMatchObject({ salon: { id: 'legacy', capacidad: 20 } })
+    })
+
+    it('does not promote explicit non-positive capacities to the legacy default', async () => {
+      mockRoomSearch({
+        count: 1,
+        rooms: [
+          { id: 'zero', capacidad: 0 },
+          { id: 'negative', capacidad: -1 },
+        ],
+      })
+      await expect(search()).resolves.toMatchObject({ salon: null, reason: 'NO_CAPACITY' })
+    })
+
+    it('uses local fixtures in demo mode without querying Supabase', async () => {
+      config.isDemoMode = true
+      await expect(search()).resolves.toMatchObject({
+        salon: { id: 's-102', capacidad: 15 },
+        alumnosActivos: 15,
+      })
       expect(supabase.from).not.toHaveBeenCalled()
     })
 

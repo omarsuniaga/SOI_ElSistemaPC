@@ -26,4 +26,9 @@ export function registerRoutesConfig() {
     const { renderGeneratedDocumentsView } = await import('./views/generatedDocumentsView.js')
     await renderGeneratedDocumentsView(container)
   })
+
+  router.register('inicio-periodo-seguro', async (container) => {
+    const { renderPeriodResetView } = await import('./views/periodResetView.js')
+    await renderPeriodResetView(container)
+  })
 }

@@ -9,9 +9,11 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "build:safe": "bash scripts/run-build-safe.sh",
     "preview": "vite preview",
     "test": "vitest",
     "test:run": "vitest run",
+    "test:safe": "bash scripts/run-tests-from-tmp.sh",
     "lint": "eslint src/",
     "lint:fix": "eslint src/ --fix",
     "format": "prettier --check src/",

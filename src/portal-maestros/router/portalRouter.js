@@ -68,7 +68,7 @@ export function createPortalRouter() {
     _dispatch(route)
   }
 
-  function replace(route) {
+  function replace(route, params = {}) {
     if (_guardEnabled && _authCheck && !_publicRoutes.includes(route)) {
       if (!_authCheck()) {
         localStorage.setItem('intended-route', route)
@@ -81,6 +81,11 @@ export function createPortalRouter() {
         _dispatch('login')
         return
       }
+    }
+    if (params && Object.keys(params).length > 0) {
+      _pendingParams = params
+      // Force re-dispatch even if already on this route (e.g. replace a specific record)
+      _currentRoute = null
     }
     const url = route === 'hoy' ? '/' : `/${route}`
     history.replaceState({ route }, '', url)

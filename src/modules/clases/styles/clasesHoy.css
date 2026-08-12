@@ -1,0 +1,229 @@
+.clases-hoy {
+  padding: 1.5rem;
+}
+
+.clases-hoy__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.clases-hoy__title {
+  margin: 0;
+  font-weight: 600;
+}
+
+.clases-hoy__subtitle {
+  color: var(--bs-secondary-color, #6c757d);
+  text-transform: capitalize;
+}
+
+.clases-hoy__dias {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-bottom: 1.25rem;
+}
+
+.clases-hoy__dia-pill {
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  background: var(--bs-body-bg, #fff);
+  border-radius: 999px;
+  padding: 0.35rem 0.9rem;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.clases-hoy__dia-pill:hover {
+  background: var(--bs-tertiary-bg, #f1f3f5);
+}
+
+.clases-hoy__dia-pill.is-active {
+  background: var(--bs-primary, #007aff);
+  border-color: var(--bs-primary, #007aff);
+  color: #fff;
+}
+
+.clases-hoy__dia-pill .badge-hoy {
+  margin-left: 0.35rem;
+}
+
+.clases-hoy__kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+
+.clases-hoy__kpi {
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: 0.75rem;
+  padding: 0.9rem 1rem;
+  background: var(--bs-body-bg, #fff);
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.clases-hoy__kpi-icon {
+  font-size: 1.4rem;
+  color: var(--bs-secondary-color, #6c757d);
+  flex-shrink: 0;
+}
+
+.clases-hoy__kpi-value {
+  font-size: 1.6rem;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.clases-hoy__kpi-label {
+  font-size: 0.8rem;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.clases-hoy__kpi--en-curso .clases-hoy__kpi-value,
+.clases-hoy__kpi--en-curso .clases-hoy__kpi-icon {
+  color: #34c759;
+}
+
+.clases-hoy__kpi--justificados .clases-hoy__kpi-value,
+.clases-hoy__kpi--justificados .clases-hoy__kpi-icon {
+  color: #5ac8fa;
+}
+
+.clases-hoy__kpi--pendiente .clases-hoy__kpi-value,
+.clases-hoy__kpi--pendiente .clases-hoy__kpi-icon {
+  color: #f97316;
+}
+
+.clases-hoy__card.has-pendiente {
+  background: rgba(249, 115, 22, 0.04);
+}
+
+.clases-hoy__filtros {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+}
+
+.clases-hoy__filtros .form-select {
+  max-width: 200px;
+}
+
+.clases-hoy__buscar-wrap {
+  position: relative;
+  flex: 1 1 260px;
+  min-width: 220px;
+}
+
+.clases-hoy__buscar-wrap i {
+  position: absolute;
+  left: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.clases-hoy__buscar-wrap input {
+  padding-left: 2.2rem;
+}
+
+.clases-hoy__feed {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.clases-hoy__card {
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: 0.85rem;
+  padding: 1rem 1.15rem;
+  background: var(--bs-body-bg, #fff);
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 1rem;
+  align-items: start;
+}
+
+.clases-hoy__card.is-en-curso {
+  border-color: #34c759;
+  box-shadow: 0 0 0 1px rgba(52, 199, 89, 0.25);
+}
+
+.clases-hoy__card-hora {
+  font-weight: 600;
+  white-space: nowrap;
+  min-width: 90px;
+}
+
+.clases-hoy__card-titulo {
+  font-weight: 600;
+  margin-bottom: 0.15rem;
+}
+
+.clases-hoy__card-meta {
+  font-size: 0.85rem;
+  color: var(--bs-secondary-color, #6c757d);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.clases-hoy__card-acciones {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  align-items: flex-end;
+}
+
+.clases-hoy__nomina {
+  margin-top: 0.75rem;
+  border-top: 1px dashed var(--bs-border-color, #dee2e6);
+  padding-top: 0.6rem;
+  display: none;
+}
+
+.clases-hoy__nomina.is-open {
+  display: block;
+}
+
+.clases-hoy__nomina-alumno {
+  font-size: 0.85rem;
+  padding: 0.2rem 0;
+}
+
+.clases-hoy__empty {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+.pulse-dot {
+  display: inline-block;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: #34c759;
+  animation: pulse-green 1.5s infinite;
+}
+
+@keyframes pulse-green {
+  0% { box-shadow: 0 0 0 0 rgba(52, 199, 89, 0.6); }
+  70% { box-shadow: 0 0 0 8px rgba(52, 199, 89, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(52, 199, 89, 0); }
+}
+
+@media (prefers-color-scheme: dark) {
+  .clases-hoy__dia-pill,
+  .clases-hoy__kpi,
+  .clases-hoy__card {
+    background: var(--bs-body-bg, #1c1c1e);
+  }
+}

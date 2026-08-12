@@ -425,6 +425,65 @@ export async function obtenerEstadoCumplimientoMaestro(maestroId, periodoId = nu
   }
 }
 
+// ─── GATE DE MODO SESIÓN (mapa-gamificado-planificacion, Tarea 3.2, REQ-03) ──
+
+/**
+ * Checks whether attendance has already been recorded for a class on a
+ * given date, and returns the roster of PRESENT students for that day.
+ * Used by `MapaClaseView.js` to gate the switch into "Dar Clase" (Modo
+ * Sesión MUST NOT be reachable for a date without recorded attendance,
+ * REQ-03) and by `calificacionIndicadorPanel.js` to scope grading to
+ * students actually present today (REQ-05 — not the full class roster).
+ *
+ * @param {{claseId: string, fecha: string}} params
+ * @returns {Promise<{tomada: boolean, presentes: Array<{id: string, nombre: string}>}>}
+ */
+export async function obtenerAsistenciaDelDia({ claseId, fecha } = {}) {
+  if (!claseId || !fecha) return { tomada: false, presentes: [] }
+
+  const { data, error } = await supabase
+    .from('asistencias')
+    .select('id, estado, alumno_id, alumnos ( id, nombre_completo )')
+    .eq('clase_id', claseId)
+    .eq('fecha', fecha)
+
+  if (error) throwError('No se pudo verificar la asistencia del día', error)
+
+  const registros = data || []
+  const presentes = registros
+    .filter((r) => r.estado === ESTADOS.PRESENTE)
+    .map((r) => ({ id: r.alumno_id, nombre: r.alumnos?.nombre_completo ?? '—' }))
+
+  return { tomada: registros.length > 0, presentes }
+}
+
+/**
+ * Todos los registros de asistencias (cualquier estado) de una o varias
+ * clases en una misma fecha, indexados por clase_id → alumno_id. Usado por
+ * el tablero "Clases de Hoy" para no hacer N queries (una por clase) al
+ * pintar el feed completo del día, y para saber qué alumnos ya tienen un
+ * estado precargado (ej. 'justificado') antes de que el maestro tome
+ * asistencia — así se evita duplicar el INSERT.
+ */
+export async function obtenerAsistenciasPorClasesFecha(claseIds = [], fecha) {
+  const ids = [...new Set((claseIds || []).filter(Boolean))]
+  if (ids.length === 0 || !fecha) return {}
+
+  const { data, error } = await supabase
+    .from('asistencias')
+    .select('clase_id, alumno_id, estado, justificacion_texto')
+    .in('clase_id', ids)
+    .eq('fecha', fecha)
+
+  if (error) throwError('No se pudo verificar la asistencia de las clases', error)
+
+  return (data || []).reduce((acc, r) => {
+    if (!acc[r.clase_id]) acc[r.clase_id] = {}
+    acc[r.clase_id][r.alumno_id] = { estado: r.estado, justificacion_texto: r.justificacion_texto }
+    return acc
+  }, {})
+}
+
 export async function getClases() {
   const { data, error } = await supabase
     .from('clases')

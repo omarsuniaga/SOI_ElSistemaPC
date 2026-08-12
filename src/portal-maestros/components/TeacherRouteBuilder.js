@@ -12,6 +12,7 @@ import {
   updateRoute,
   cloneRoute,
 } from '../services/maestroRouteService.js'
+import { getMisClases } from '../services/maestroDataService.js'
 
 let _uidCounter = 0
 function _uid(prefix = 'tmp') {
@@ -251,18 +252,39 @@ export function openTeacherRouteBuilder({ maestroId, claseId, route = null, onSa
     state.nombre = e.target.value
   })
 
-  // Clonar ruta existente (solo disponible al editar una ruta ya guardada)
+  // Clonar ruta existente hacia OTRA clase (solo disponible al editar una ruta
+  // ya guardada). maestro_routes tiene UNIQUE(maestro_id, clase_id): clonar
+  // hacia la misma clase que ya tiene esta ruta siempre viola esa restricción,
+  // así que se excluye de las opciones y se pide explícitamente la clase destino.
   backdrop.querySelector('#trb-btn-clonar').addEventListener('click', async () => {
     if (!state.routeId) return
+
+    const misClases = await getMisClases()
+    const opciones = (misClases || []).filter((c) => c.id !== claseId)
+
+    if (opciones.length === 0) {
+      AppToast.error('No tienes otra clase disponible para clonar esta ruta')
+      return
+    }
+
+    const claseDestinoId = await _pickClaseDestino(opciones)
+    if (!claseDestinoId) return
+
     const nuevoNombre = window.prompt('Nombre para la ruta clonada:', `Copia de ${state.nombre}`)
     if (!nuevoNombre) return
+
     try {
-      const cloned = await cloneRoute(state.routeId, nuevoNombre, claseId)
+      const cloned = await cloneRoute(state.routeId, nuevoNombre, claseDestinoId)
       AppToast.success('Ruta clonada correctamente')
       closeModal()
       onSaved?.(cloned)
     } catch (err) {
-      AppToast.error(`No se pudo clonar la ruta: ${err.message}`)
+      const yaExiste = err.message?.includes('duplicate key') || err.message?.includes('23505')
+      AppToast.error(
+        yaExiste
+          ? 'Esa clase ya tiene una ruta propia — no se puede clonar encima'
+          : `No se pudo clonar la ruta: ${err.message}`
+      )
     }
   })
 
@@ -425,6 +447,53 @@ function _buildPayloadForSave(unidades) {
       })),
     })),
   }))
+}
+
+/**
+ * Modal simple para elegir la clase destino al clonar una ruta.
+ * @param {Array<{id: string, nombre: string}>} clases
+ * @returns {Promise<string|null>} claseId elegido, o null si canceló
+ */
+function _pickClaseDestino(clases) {
+  return new Promise((resolve) => {
+    const backdrop = document.createElement('div')
+    backdrop.className = 'trb-backdrop'
+    backdrop.innerHTML = `
+      <div class="trb-modal trb-modal-sm" role="dialog" aria-modal="true">
+        <div class="trb-header">
+          <h3>Clonar hacia qué clase</h3>
+          <button class="trb-close" aria-label="Cerrar"><i class="bi bi-x-lg"></i></button>
+        </div>
+        <div class="trb-body">
+          <div class="trb-route-list">
+            ${clases
+              .map(
+                (c) => `
+              <button class="trb-route-item" data-clase-id="${c.id}">
+                <span class="trb-route-nombre">${escHTML(c.nombre)}</span>
+              </button>
+            `
+              )
+              .join('')}
+          </div>
+        </div>
+      </div>
+    `
+    document.body.appendChild(backdrop)
+
+    const finish = (value) => {
+      backdrop.remove()
+      resolve(value)
+    }
+
+    backdrop.querySelector('.trb-close').addEventListener('click', () => finish(null))
+    backdrop.addEventListener('click', (e) => {
+      if (e.target === backdrop) finish(null)
+    })
+    backdrop.querySelectorAll('.trb-route-item').forEach((btn) => {
+      btn.addEventListener('click', () => finish(btn.dataset.claseId))
+    })
+  })
 }
 
 // ─── Estilos ──────────────────────────────────────────────────

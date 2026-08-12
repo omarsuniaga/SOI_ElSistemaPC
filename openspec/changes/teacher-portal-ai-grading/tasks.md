@@ -84,7 +84,7 @@ Form-based CRUD for routes; UI to create/edit/clone and import ACM templates.
 
 ### TeacherRouteBuilder Component
 
-- [ ] 2.1 Create `src/portal-maestros/components/TeacherRouteBuilder.js`
+- [x] 2.1 Create `src/portal-maestros/components/TeacherRouteBuilder.js`
   - Props: `maestroId`, `claseId`, `onSave(ruta)`, `onClose()`
   - Form structure:
     - Route name input (text)
@@ -95,36 +95,42 @@ Form-based CRUD for routes; UI to create/edit/clone and import ACM templates.
   - Prerequisite dropdown per INDICADOR: selector for another INDICADOR in same route (optional)
   - Action buttons: "Guardar" (validates DAG, calls maestroRouteService.createRoute), "Cancelar" (close without save)
   - Error display: if DAG validation fails, show error modal and block save
+  - **Status**: hecho como `openTeacherRouteBuilder()` + `openTeacherRoutePicker()`. Se encontró y corrigió un bug real en `maestroRouteService.createRoute()`: los prerrequisitos usaban el id temporal del formulario como si fuera un UUID real, lo que hubiera fallado el insert por FK. Se agregó resolución en dos pasadas (`_insertHierarchy`).
 
-- [ ] 2.2 Create prerequisite configuration UI within TeacherRouteBuilder
+- [x] 2.2 Create prerequisite configuration UI within TeacherRouteBuilder
   - For each INDICADOR, add button/dropdown: "Sin Prerequisitos" or "Requiere: [indicador list]"
   - Prerequisite selector shows only indicators in same route (all unidades, but logical filtering optional in Phase 1)
   - Auto-update prerequisito table on save
+  - **Status**: select por indicador, excluye al propio indicador de sus opciones, se re-renderiza al cambiar nombres
 
-- [ ] 2.3 Implement route import flow
+- [ ] 2.3 Implement route import flow — BLOQUEADO, no implementado en este PR
   - Add button in route-creation form: "Importar desde Catálogo Institucional"
   - Opens modal showing ACM hierarchy (NIVEL → OBJETIVO GENERAL → OBJETIVO ESPECÍFICO)
   - Checkboxes for NIVEL selection
   - On click "Importar", map structure via maestroRouteService.importACMAsRoute()
   - Pre-fill route form with imported structure; teacher can edit freely
+  - **Status**: el módulo de catálogo ACM (`CatalogoAcmView.js`, commit `1160209`) no existe todavía en `feat/planificacion-clases-rediseño` (solo en `master`). Botón deshabilitado con "Próximamente" en la UI; `importACMAsRoute()` sigue como stub en el servicio. Retomar cuando el catálogo ACM esté disponible en esta rama.
 
-- [ ] 2.4 Implement route editing view
+- [x] 2.4 Implement route editing view
   - Access existing route by ID
   - Load current structure via maestroRouteService.getTeacherRoutes()
   - Allow rename/add/remove UNIDADES, OBJETIVOS, INDICADORES
   - Show warning if deleting UNIDAD/OBJETIVO/INDICADOR with evaluation records ("Tiene evaluaciones; ¿desea continuar?")
   - Save via maestroRouteService.updateRoute()
+  - **Status**: `updateRoute()` reescrito de cero (antes era un placeholder que solo tocaba `updated_at`, no persistía nada). Ahora hace upsert real: actualiza filas existentes por id, inserta las nuevas, y nunca borra automáticamente filas quitadas del formulario (evita huérfanos en `evaluacion_indicador`/`indicador_prerequisito`). El aviso explícito de "tiene evaluaciones" queda pendiente para un PR posterior; por ahora el borrado simplemente se ignora de forma segura.
 
-- [ ] 2.5 Implement route cloning
+- [x] 2.5 Implement route cloning
   - Add button in route detail: "Clonar"
   - Dialog: new route name (defaults to "Copia de [original]"), target class (defaults to current)
   - On confirm: maestroRouteService.cloneRoute() creates independent copy
   - New route appears in route list immediately (no evaluations)
+  - **Status**: disponible desde el selector de rutas al editar una ya guardada (usa `window.prompt` para el nombre; se puede mejorar a un diálogo propio en un PR posterior)
 
-- [ ] 2.6 Create `src/portal-maestros/styles/route-builder.css` (or inline)
+- [x] 2.6 Create `src/portal-maestros/styles/route-builder.css` (or inline)
   - Styling for nested form structure (accordion/collapsible sections)
   - Input styles, button styles, error messages
   - Responsive layout (mobile-friendly)
+  - **Status**: estilos inyectados inline vía `<style id="trb-styles">`, siguiendo el mismo patrón que `hoyView.js` (no se creó un archivo .css nuevo, para mantener consistencia con el resto del portal)
 
 ---
 

@@ -242,11 +242,18 @@ async function _upsertHierarchy(routeId, unidades) {
     let unidadId = unidad.id && existingUnidadIds.has(unidad.id) ? unidad.id : null
 
     if (unidadId) {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('maestro_unidades')
         .update({ orden: unidad.orden || 0, nombre: unidad.nombre, descripcion: unidad.descripcion || null })
         .eq('id', unidadId)
+        .select('id')
       if (error) throw new Error(`Failed to update unidad: ${error.message}`)
+      // Sin .select() encadenado, RLS puede bloquear el UPDATE afectando 0 filas
+      // sin devolver error (PostgREST no lo trata como fallo). Detectarlo explícito
+      // evita reportar "guardado" cuando en realidad no se persistió nada.
+      if (!data || data.length === 0) {
+        throw new Error('No se pudo actualizar la unidad: puede que no tengas permiso sobre esta ruta')
+      }
     } else {
       const { data, error } = await supabase
         .from('maestro_unidades')
@@ -267,11 +274,15 @@ async function _upsertHierarchy(routeId, unidades) {
       let objetivoId = objetivo.id && existingObjetivoIds.has(objetivo.id) ? objetivo.id : null
 
       if (objetivoId) {
-        const { error } = await supabase
+        const { data, error } = await supabase
           .from('maestro_objetivos')
           .update({ orden: objetivo.orden || 0, nombre: objetivo.nombre, descripcion: objetivo.descripcion || null })
           .eq('id', objetivoId)
+          .select('id')
         if (error) throw new Error(`Failed to update objetivo: ${error.message}`)
+        if (!data || data.length === 0) {
+          throw new Error('No se pudo actualizar el objetivo: puede que no tengas permiso sobre esta ruta')
+        }
       } else {
         const { data, error } = await supabase
           .from('maestro_objetivos')
@@ -292,11 +303,15 @@ async function _upsertHierarchy(routeId, unidades) {
         let indicadorId = indicador.id && existingIndicadorIds.has(indicador.id) ? indicador.id : null
 
         if (indicadorId) {
-          const { error } = await supabase
+          const { data, error } = await supabase
             .from('maestro_indicadores')
             .update({ orden: indicador.orden || 0, nombre: indicador.nombre, criterios_json: indicador.criterios_json || null })
             .eq('id', indicadorId)
+            .select('id')
           if (error) throw new Error(`Failed to update indicador: ${error.message}`)
+          if (!data || data.length === 0) {
+            throw new Error('No se pudo actualizar el indicador: puede que no tengas permiso sobre esta ruta')
+          }
         } else {
           const { data, error } = await supabase
             .from('maestro_indicadores')

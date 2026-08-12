@@ -153,11 +153,16 @@ describe('maestroDataService — indicator grading (recovery state machine)', ()
 
   // ── getIndicadorCheckStates ───────────────────────────────────────────────
   describe('getIndicadorCheckStates', () => {
-    function mockHierarchy({ unidades, objetivos, indicadores, evaluaciones }) {
+    function mockHierarchy({ unidades, objetivos, indicadores, evaluaciones, totalAlumnos }) {
+      // Por defecto, el total de alumnos inscritos coincide con la cantidad
+      // de evaluaciones del fixture — los tests que quieran ejercer el gap
+      // "hay menos evaluaciones que alumnos inscritos" pasan totalAlumnos explícito.
+      const total = totalAlumnos ?? evaluaciones.length
       supabase.from.mockImplementation((table) => {
         if (table === 'maestro_unidades') return mockChain({ data: unidades, error: null })
         if (table === 'maestro_objetivos') return mockChain({ data: objetivos, error: null })
         if (table === 'maestro_indicadores') return mockChain({ data: indicadores, error: null })
+        if (table === 'alumnos_clases') return mockChain({ count: total, error: null })
         if (table === 'evaluacion_indicador') return mockChain({ data: evaluaciones, error: null })
         throw new Error(`Unexpected table in test: ${table}`)
       })
@@ -169,6 +174,7 @@ describe('maestroDataService — indicator grading (recovery state machine)', ()
         objetivos: [{ id: 'o1' }],
         indicadores: [{ id: 'i1' }],
         evaluaciones: [],
+        totalAlumnos: 3,
       })
 
       const result = await getIndicadorCheckStates('route-1', 'clase-1')
@@ -204,6 +210,23 @@ describe('maestroDataService — indicator grading (recovery state machine)', ()
 
       const result = await getIndicadorCheckStates('route-1', 'clase-1')
       expect(result[0].check_state).toBe('double')
+    })
+
+    it('"single" (no "double"): hay una fila resuelta pero quedan alumnos inscritos sin tocar', async () => {
+      // Bug real encontrado en revisión adversarial: antes del fix, esto marcaba
+      // "double" (indicador completo) con 1 de 20 alumnos calificados, porque el
+      // cálculo solo miraba las filas ya existentes, nunca el total real de la clase.
+      mockHierarchy({
+        unidades: [{ id: 'u1' }],
+        objetivos: [{ id: 'o1' }],
+        indicadores: [{ id: 'i1' }],
+        evaluaciones: [{ maestro_indicador_id: 'i1', alumno_id: 'a1', recovery_status: 'no_aplica' }],
+        totalAlumnos: 20,
+      })
+
+      const result = await getIndicadorCheckStates('route-1', 'clase-1')
+      expect(result[0].check_state).toBe('single')
+      expect(result[0].stats).toEqual({ evaluados: 1, total: 20 })
     })
 
     it('transición single→double: recuperar al último alumno pendiente cambia el estado', async () => {

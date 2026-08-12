@@ -529,6 +529,30 @@ export async function getIndicadorCheckStates(routeId, claseId) {
   if (cached) return cached
 
   try {
+    // Resolvemos la jerarquía paso a paso (no anidando awaits dentro de .in())
+    // para poder manejar de forma segura resultados vacíos/null en cada nivel.
+    const { data: unidades, error: unidadesError } = await supabase
+      .from('maestro_unidades')
+      .select('id')
+      .eq('ruta_id', routeId)
+    if (unidadesError) {
+      console.warn('[MaestroData] Error loading unidades:', unidadesError.message)
+      return []
+    }
+    const unidadIds = (unidades || []).map((u) => u.id)
+    if (unidadIds.length === 0) return []
+
+    const { data: objetivos, error: objetivosError } = await supabase
+      .from('maestro_objetivos')
+      .select('id')
+      .in('unidad_id', unidadIds)
+    if (objetivosError) {
+      console.warn('[MaestroData] Error loading objetivos:', objetivosError.message)
+      return []
+    }
+    const objetivoIds = (objetivos || []).map((o) => o.id)
+    if (objetivoIds.length === 0) return []
+
     // Query: For each indicador in route, count evaluations and recovery status
     // check_state = "none" if no evaluations
     // check_state = "single" if >= 1 evaluation but some students absent/not recovered
@@ -536,59 +560,68 @@ export async function getIndicadorCheckStates(routeId, claseId) {
     const { data: indicadores, error: indError } = await supabase
       .from('maestro_indicadores')
       .select('id')
-      .in(
-        'objetivo_id',
-        (
-          await supabase
-            .from('maestro_objetivos')
-            .select('id')
-            .in(
-              'unidad_id',
-              (await supabase.from('maestro_unidades').select('id').eq('ruta_id', routeId)).data.map(
-                (u) => u.id
-              ) || []
-            )
-        ).data.map((o) => o.id) || []
-      )
+      .in('objetivo_id', objetivoIds)
 
     if (indError) {
       console.warn('[MaestroData] Error loading indicators:', indError.message)
       return []
     }
 
-    const indicadorIds = indicadores.map((i) => i.id)
+    const indicadorIds = (indicadores || []).map((i) => i.id)
     if (indicadorIds.length === 0) return []
 
-    // For each indicador, get evaluation counts
-    const checkStates = await Promise.all(
-      indicadorIds.map(async (indicadorId) => {
-        const { data: evals, error: evalError } = await supabase
-          .from('evaluacion_indicador')
-          .select('alumno_id, recovery_status')
-          .eq('maestro_indicador_id', indicadorId)
-          .eq('clase_id', claseId)
+    // Total real de alumnos inscritos en la clase — SIN esto, un indicador
+    // con una sola fila en evaluacion_indicador (de 20 alumnos reales) se
+    // marcaba "doble check" (completo) porque el código solo miraba las
+    // filas que YA existían, nunca cuántas deberían existir. Bug crítico
+    // encontrado en revisión adversarial.
+    const { count: totalAlumnos, error: alumnosError } = await supabase
+      .from('alumnos_clases')
+      .select('alumno_id', { count: 'exact', head: true })
+      .eq('clase_id', claseId)
+      .eq('activo', true)
 
-        if (evalError || !evals) {
-          return { indicador_id: indicadorId, check_state: 'none' }
-        }
+    if (alumnosError) {
+      console.warn('[MaestroData] Error loading alumnos inscritos:', alumnosError.message)
+      return indicadorIds.map((id) => ({ indicador_id: id, check_state: 'none' }))
+    }
 
-        const hasEvals = evals.length > 0
-        const hasUnresolvedDebt = evals.some(
-          (e) =>
-            e.recovery_status === 'pendiente' || e.recovery_status === null
-        )
+    // Una sola consulta para las evaluaciones de TODOS los indicadores de la
+    // ruta (en vez de una consulta por indicador), agrupadas en memoria.
+    const { data: allEvals, error: evalError } = await supabase
+      .from('evaluacion_indicador')
+      .select('maestro_indicador_id, alumno_id, recovery_status')
+      .in('maestro_indicador_id', indicadorIds)
+      .eq('clase_id', claseId)
 
-        if (!hasEvals) {
-          return { indicador_id: indicadorId, check_state: 'none' }
-        }
+    if (evalError) {
+      console.warn('[MaestroData] Error loading evaluations:', evalError.message)
+      return indicadorIds.map((id) => ({ indicador_id: id, check_state: 'none' }))
+    }
 
-        if (hasUnresolvedDebt) {
-          return { indicador_id: indicadorId, check_state: 'single' }
-        }
+    const evalsByIndicador = new Map()
+    for (const ev of allEvals || []) {
+      const list = evalsByIndicador.get(ev.maestro_indicador_id) || []
+      list.push(ev)
+      evalsByIndicador.set(ev.maestro_indicador_id, list)
+    }
 
-        return { indicador_id: indicadorId, check_state: 'double' }
-      })
-    )
+    const checkStates = indicadorIds.map((indicadorId) => {
+      const evals = evalsByIndicador.get(indicadorId) || []
+      if (evals.length === 0) {
+        return { indicador_id: indicadorId, check_state: 'none' }
+      }
+      const hasUnresolvedDebt = evals.some((e) => e.recovery_status === 'pendiente' || e.recovery_status === null)
+      // "Doble check" exige que TODOS los alumnos inscritos tengan una fila
+      // resuelta (calificados, recuperados, o no_aplica/no_recuperable), no
+      // solo que las filas existentes no tengan deuda pendiente.
+      const faltanAlumnosPorTocar = (totalAlumnos ?? evals.length) > evals.length
+      return {
+        indicador_id: indicadorId,
+        check_state: hasUnresolvedDebt || faltanAlumnosPorTocar ? 'single' : 'double',
+        stats: { evaluados: evals.length, total: totalAlumnos ?? evals.length },
+      }
+    })
 
     viewCache.set(cacheKey, checkStates, 'check_states')
     return checkStates
@@ -638,7 +671,7 @@ export async function saveIndicadorNota({ alumnoId, indicadorId, claseId, nota, 
     throw new Error(`Failed to save nota: ${error.message}`)
   }
 
-  viewCache.clear('check_states')
+  viewCache.invalidate('check_states')
   return data[0] || {}
 }
 
@@ -689,7 +722,7 @@ export async function updateRecoveryStatus(alumnoId, indicadorId, claseId, statu
       throw new Error(`Failed to update recovery status: ${error.message}`)
     }
 
-    viewCache.clear('check_states')
+    viewCache.invalidate('check_states')
 
     if (status === 'recuperado') {
       await _flagDependentIndicadores(alumnoId, indicadorId, claseId)
@@ -760,11 +793,6 @@ export async function getAttendanceForClass(claseId, fecha) {
       return { presentes: [], ausentes: [] }
     }
 
-    // 'tarde' cuenta como presente (llegó, recibió la clase) — el enum real
-    // de asistencias.estado es presente/ausente/tarde/justificado. Antes
-    // 'tarde' no caía en ninguna de las dos listas y el alumno desaparecía
-    // por completo del modal de calificación (no calificable, invisible
-    // para "Con Deudas Académicas", ignorado por "completamente evaluado").
     const presentes = (attendance || [])
       .filter((a) => a.estado === 'presente' || a.estado === 'tarde')
       .map((a) => a.alumno_id)

@@ -760,8 +760,13 @@ export async function getAttendanceForClass(claseId, fecha) {
       return { presentes: [], ausentes: [] }
     }
 
+    // 'tarde' cuenta como presente (llegó, recibió la clase) — el enum real
+    // de asistencias.estado es presente/ausente/tarde/justificado. Antes
+    // 'tarde' no caía en ninguna de las dos listas y el alumno desaparecía
+    // por completo del modal de calificación (no calificable, invisible
+    // para "Con Deudas Académicas", ignorado por "completamente evaluado").
     const presentes = (attendance || [])
-      .filter((a) => a.estado === 'presente')
+      .filter((a) => a.estado === 'presente' || a.estado === 'tarde')
       .map((a) => a.alumno_id)
     const ausentes = (attendance || [])
       .filter((a) => a.estado === 'ausente' || a.estado === 'justificado')

@@ -24,7 +24,7 @@ CHECK (recovery_grade IS NULL OR recovery_grade BETWEEN 1 AND 5);
 
 -- 5. Create indices for efficient querying by recovery status
 CREATE INDEX IF NOT EXISTS idx_ei_recovery_status ON evaluacion_indicador(recovery_status);
-CREATE INDEX IF NOT EXISTS idx_ei_maestro_clase_recovery ON evaluacion_indicador(maestro_id, clase_id, recovery_status);
-
--- Note: maestro_id is obtained via evaluado_por column which references maestros(id)
--- The index above should work once evaluado_por is used for teacher filtering.
+-- No existe columna maestro_id en esta tabla; el autor de la evaluación se
+-- registra en evaluado_por (FK a maestros). Se indexa clase_id+recovery_status,
+-- que es el filtro real que usan las consultas de deuda académica.
+CREATE INDEX IF NOT EXISTS idx_ei_clase_recovery ON evaluacion_indicador(clase_id, recovery_status);

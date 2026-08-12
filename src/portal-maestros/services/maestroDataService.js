@@ -494,7 +494,7 @@ export async function getRecoverySessions(claseId) {
     const { data, error } = await supabase
       .from('evaluacion_indicador')
       .select(
-        'id, alumno_id, indicator_id, clase_id, recovery_status, recovery_timestamp, recovery_notes'
+        'id, alumno_id, maestro_indicador_id, clase_id, recovery_status, recovery_timestamp, recovery_notes'
       )
       .eq('clase_id', claseId)
       .not('recovery_status', 'is', null)
@@ -565,7 +565,7 @@ export async function getIndicadorCheckStates(routeId, claseId) {
         const { data: evals, error: evalError } = await supabase
           .from('evaluacion_indicador')
           .select('alumno_id, recovery_status')
-          .eq('indicator_id', indicadorId)
+          .eq('maestro_indicador_id', indicadorId)
           .eq('clase_id', claseId)
 
         if (evalError || !evals) {
@@ -599,43 +599,101 @@ export async function getIndicadorCheckStates(routeId, claseId) {
 }
 
 /**
- * Update recovery status for a student indicator (atomic update)
- * Triggers dependent indicator flagging via updateRecoveryStatus logic
- * @param {string} alumnoId - Student ID
- * @param {string} indicadorId - Indicator ID (from maestro_indicadores)
- * @param {string} claseId - Class ID
- * @param {string} status - Recovery status: 'recuperado' | 'no_aplica'
- * @param {string} notes - Optional recovery notes
- * @param {number} grade - Optional recovery grade (1-5)
- * @returns {Promise<Object>} Updated evaluation record
+ * Save (upsert) a star grade for a PRESENT student on a personal-route indicator.
+ * Sets recovery_status = 'no_aplica' explicitly — el alumno estaba presente,
+ * no hay deuda que resolver. Sin este valor explícito, el DEFAULT 'pendiente'
+ * de la columna lo dejaría marcado como si tuviera deuda (bug detectado al
+ * revisar la migración 20260812000002).
+ * @param {Object} params
+ * @param {string} params.alumnoId
+ * @param {string} params.indicadorId - Id de maestro_indicadores
+ * @param {string} params.claseId
+ * @param {number} params.nota - 1 a 5
+ * @param {string} [params.observaciones]
+ * @param {string} params.evaluadoPor - auth.uid() del maestro (maestro.user_id, NO maestro.id)
+ * @returns {Promise<Object>}
  */
-export async function updateRecoveryStatus(alumnoId, indicadorId, claseId, status, notes, grade) {
+export async function saveIndicadorNota({ alumnoId, indicadorId, claseId, nota, observaciones, evaluadoPor }) {
   if (!alumnoId || !indicadorId || !claseId) {
     throw new Error('Missing required parameters: alumnoId, indicadorId, claseId')
   }
 
+  const { data, error } = await supabase
+    .from('evaluacion_indicador')
+    .upsert(
+      {
+        alumno_id: alumnoId,
+        maestro_indicador_id: indicadorId,
+        clase_id: claseId,
+        nota: nota ?? null,
+        observaciones: observaciones ?? null,
+        recovery_status: 'no_aplica',
+        evaluado_por: evaluadoPor || null,
+      },
+      { onConflict: 'alumno_id,maestro_indicador_id,clase_id' }
+    )
+    .select()
+
+  if (error) {
+    throw new Error(`Failed to save nota: ${error.message}`)
+  }
+
+  viewCache.clear('check_states')
+  return data[0] || {}
+}
+
+/**
+ * Update (upsert) recovery status for a student indicator.
+ * Usa upsert (no plain UPDATE) porque un alumno ausente puede no tener
+ * todavía ninguna fila en evaluacion_indicador para este indicador.
+ * Además dispara la reevaluación de cadena de prerrequisitos (R2.3):
+ * marca con review_flag = true los indicadores posteriores de este alumno
+ * que dependían de este indicador y fueron calificados bajo advertencia
+ * blanda (prerrequisito no satisfecho en su momento).
+ * @param {string} alumnoId - Student ID
+ * @param {string} indicadorId - Indicator ID (from maestro_indicadores)
+ * @param {string} claseId - Class ID
+ * @param {string} status - Recovery status: 'recuperado' | 'no_recuperable'
+ * @param {string} notes - Optional recovery notes
+ * @param {number} grade - Optional recovery grade (1-5)
+ * @param {string} [evaluadoPor] - auth.uid() del maestro
+ * @returns {Promise<Object>} Updated evaluation record
+ */
+export async function updateRecoveryStatus(alumnoId, indicadorId, claseId, status, notes, grade, evaluadoPor) {
+  if (!alumnoId || !indicadorId || !claseId) {
+    throw new Error('Missing required parameters: alumnoId, indicadorId, claseId')
+  }
+  if (status !== 'recuperado' && status !== 'no_recuperable') {
+    throw new Error(`Invalid recovery status: ${status}`)
+  }
+
   try {
-    // Update evaluacion_indicador recovery fields
     const { data, error } = await supabase
       .from('evaluacion_indicador')
-      .update({
-        recovery_status: status,
-        recovery_notes: notes || null,
-        recovery_timestamp: new Date().toISOString(),
-        recovery_grade: grade || null,
-      })
-      .eq('alumno_id', alumnoId)
-      .eq('indicator_id', indicadorId)
-      .eq('clase_id', claseId)
+      .upsert(
+        {
+          alumno_id: alumnoId,
+          maestro_indicador_id: indicadorId,
+          clase_id: claseId,
+          recovery_status: status,
+          recovery_notes: notes || null,
+          recovery_timestamp: new Date().toISOString(),
+          recovery_grade: grade || null,
+          evaluado_por: evaluadoPor || null,
+        },
+        { onConflict: 'alumno_id,maestro_indicador_id,clase_id' }
+      )
       .select()
 
     if (error) {
       throw new Error(`Failed to update recovery status: ${error.message}`)
     }
 
-    // Invalidate check states cache for this route+class
-    // (Frontend will trigger refresh after recovery update)
     viewCache.clear('check_states')
+
+    if (status === 'recuperado') {
+      await _flagDependentIndicadores(alumnoId, indicadorId, claseId)
+    }
 
     return data[0] || {}
   } catch (err) {
@@ -645,32 +703,73 @@ export async function updateRecoveryStatus(alumnoId, indicadorId, claseId, statu
 }
 
 /**
- * Get attendance state for a class session (for grading modal partitioning)
+ * Reevaluación de cadena (R2.3): cuando un alumno recupera `indicadorId`,
+ * busca los indicadores de la misma ruta que lo tienen como prerrequisito,
+ * y si ese alumno ya tiene una evaluación registrada ahí, la marca con
+ * review_flag = true para que el maestro la revise. No recalifica sola.
+ * @private
+ */
+async function _flagDependentIndicadores(alumnoId, indicadorId, claseId) {
+  try {
+    const { data: dependientes, error: depError } = await supabase
+      .from('indicador_prerequisito')
+      .select('indicador_id')
+      .eq('prerequisito_indicador_id', indicadorId)
+
+    if (depError || !dependientes || dependientes.length === 0) return
+
+    const dependientesIds = dependientes.map((d) => d.indicador_id)
+
+    const { error: flagError } = await supabase
+      .from('evaluacion_indicador')
+      .update({ review_flag: true })
+      .eq('alumno_id', alumnoId)
+      .eq('clase_id', claseId)
+      .in('maestro_indicador_id', dependientesIds)
+
+    if (flagError) {
+      console.warn('[MaestroData] Warning flagging dependent indicadores:', flagError.message)
+    }
+  } catch (err) {
+    console.warn('[MaestroData] _flagDependentIndicadores error:', err.message)
+  }
+}
+
+/**
+ * Get attendance state for a class on a given date (for grading modal partitioning)
+ * Usa la tabla real `asistencias` (clase_id, alumno_id, fecha, estado) — NO existe
+ * columna sesion_id en esa tabla; el filtro real es por fecha (ver
+ * supabase/migrations/20260520_add_unique_asistencias_constraint.sql).
+ * Valores reales de `estado`: 'presente' | 'ausente' | 'justificado'.
  * @param {string} claseId - Class ID
- * @param {string} sesionId - Session ID
+ * @param {string} fecha - Fecha de la sesión, formato 'YYYY-MM-DD'
  * @returns {Promise<Object>} { presentes: [...], ausentes: [...] }
  */
-export async function getAttendanceForClass(claseId, sesionId) {
-  if (!claseId) return { presentes: [], ausentes: [] }
+export async function getAttendanceForClass(claseId, fecha) {
+  if (!claseId || !fecha) return { presentes: [], ausentes: [] }
 
   try {
-    // Query attendance records for session
     const { data: attendance, error } = await supabase
-      .from('asistencias') // Adjust table name if needed
+      .from('asistencias')
       .select('alumno_id, estado')
       .eq('clase_id', claseId)
-      .eq('sesion_id', sesionId)
+      .eq('fecha', fecha)
 
     if (error) {
       console.warn('[MaestroData] Error loading attendance:', error.message)
       return { presentes: [], ausentes: [] }
     }
 
+    // 'tarde' cuenta como presente (llegó, recibió la clase) — el enum real
+    // de asistencias.estado es presente/ausente/tarde/justificado. Antes
+    // 'tarde' no caía en ninguna de las dos listas y el alumno desaparecía
+    // por completo del modal de calificación (no calificable, invisible
+    // para "Con Deudas Académicas", ignorado por "completamente evaluado").
     const presentes = (attendance || [])
-      .filter((a) => a.estado && ['present', 'late', 'justified'].includes(a.estado))
+      .filter((a) => a.estado === 'presente' || a.estado === 'tarde')
       .map((a) => a.alumno_id)
     const ausentes = (attendance || [])
-      .filter((a) => a.estado === 'absent')
+      .filter((a) => a.estado === 'ausente' || a.estado === 'justificado')
       .map((a) => a.alumno_id)
 
     return { presentes, ausentes }
@@ -681,7 +780,7 @@ export async function getAttendanceForClass(claseId, sesionId) {
 }
 
 /**
- * Get all evaluations for an indicator in a class
+ * Get all evaluations for a personal-route indicator in a class
  * Used for check-state calculation and recovery cascade
  * @param {string} indicadorId - Indicator ID (from maestro_indicadores)
  * @param {string} claseId - Class ID
@@ -694,7 +793,7 @@ export async function getIndicadorEvaluations(indicadorId, claseId) {
     const { data, error } = await supabase
       .from('evaluacion_indicador')
       .select('*')
-      .eq('indicator_id', indicadorId)
+      .eq('maestro_indicador_id', indicadorId)
       .eq('clase_id', claseId)
 
     if (error) {

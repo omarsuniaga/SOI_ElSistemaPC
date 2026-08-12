@@ -27,6 +27,7 @@ const navGroups = [
     label: 'Operación',
     icon: 'bi-clipboard-data',
     items: [
+      { id: 'clases-hoy', label: 'Clases de Hoy', icon: 'bi-calendar-day' },
       { id: 'periodos', label: 'Períodos Académicos', icon: 'bi-calendar-event' },
       { id: 'periodo-lectivo', label: 'Período Lectivo', icon: 'bi-calendar-range' },
       { id: 'reporte-cierre', label: 'Informe de Cierre', icon: 'bi-file-earmark-bar-graph' },
@@ -74,7 +75,7 @@ bootAdminPortal({
   navGroups,
   registrars: allRegistrars,
   allowedRoles: ['admin'],
-  defaultRoute: 'alumnos',
+  defaultRoute: 'clases-hoy',
   hermesDept: 'ADM',
 }).catch((err) => {
   console.error('[adm] boot falló:', err)

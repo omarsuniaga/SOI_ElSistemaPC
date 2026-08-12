@@ -74,7 +74,7 @@ function _restaurarFiltrosStorage() {
 /**
  * Vista de Clases Académicas (Simplified Refactor)
  */
-export async function renderClasesView(container) {
+export async function renderClasesView(container, params = {}) {
   if (!container) return
 
   try {
@@ -106,6 +106,18 @@ export async function renderClasesView(container) {
     // localStorage; hay que aplicar el filtrado real para que la lista de
     // abajo coincida con lo que el usuario ve seleccionado arriba.
     applyFilters()
+
+    // Deep-link: si llegamos con un ?selectedId (ej. desde "Ver Ficha" del
+    // tablero Clases de Hoy), abrimos directamente el perfil de esa clase
+    // en vez de dejar al usuario buscarla en la lista.
+    if (params?.selectedId) {
+      const clase = state.clasesOriginales.find(c => c.id === params.selectedId)
+      if (clase) {
+        openClasePerfilModal(clase)
+      } else {
+        AppToast.error('No se encontró la clase solicitada')
+      }
+    }
   } catch (error) {
     console.error(error)
     renderError(container, error.message)

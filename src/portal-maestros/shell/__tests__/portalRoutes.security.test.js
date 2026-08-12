@@ -51,6 +51,8 @@ import {
   initViewContainers,
   renderViewContent,
   CACHEABLE_VIEWS,
+  createViewRenderCache,
+  createViewRenderQueue,
 } from '../portalRoutes.js'
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
@@ -121,6 +123,50 @@ describe('Separación de portales — rutas admin-* no existen en portal de maes
     expect(containers['gestionar-clases']).toBeTruthy()
 
     document.body.removeChild(viewWrapper)
+  })
+})
+
+describe('createViewRenderQueue', () => {
+  it('serializa A y B sobre el mismo contenedor y deja B como resultado final', async () => {
+    const queue = createViewRenderQueue()
+    const events = []
+    let releaseA
+    const waitA = new Promise((resolve) => { releaseA = resolve })
+
+    const a = queue.run('planificacion-ruta', async () => {
+      events.push('A:start')
+      await waitA
+      events.push('A:commit')
+    })
+    const b = queue.run('planificacion-ruta', async () => {
+      events.push('B:start')
+      events.push('B:commit')
+    })
+
+    await Promise.resolve()
+    expect(events).toEqual(['A:start'])
+    releaseA()
+    await Promise.all([a, b])
+
+    expect(events).toEqual(['A:start', 'A:commit', 'B:start', 'B:commit'])
+  })
+
+  it('permite cargar contenedores diferentes en paralelo', async () => {
+    const queue = createViewRenderQueue()
+    const events = []
+    let releaseA
+    const waitA = new Promise((resolve) => { releaseA = resolve })
+
+    const a = queue.run('planificacion-ruta', async () => {
+      events.push('A:start')
+      await waitA
+    })
+    const b = queue.run('asistencia', async () => { events.push('B:start') })
+
+    await Promise.resolve()
+    expect(events).toEqual(['A:start', 'B:start'])
+    releaseA()
+    await Promise.all([a, b])
   })
 })
 
@@ -384,5 +430,28 @@ describe('CACHEABLE_VIEWS — solo vistas de maestro', () => {
     expect(CACHEABLE_VIEWS.has('calendario')).toBe(true)
     expect(CACHEABLE_VIEWS.has('metricas')).toBe(true)
     expect(CACHEABLE_VIEWS.has('perfil')).toBe(true)
+  })
+
+  it('vuelve a renderizar cada cambio de clase A → B → A', () => {
+    const cache = createViewRenderCache()
+    const renderedClasses = []
+    const navigate = (claseId) => {
+      const params = { claseId }
+      const query = new URLSearchParams()
+
+      if (cache.has('planificacion-ruta', params, query)) return
+      renderedClasses.push(claseId)
+      cache.add('planificacion-ruta', params, query)
+    }
+
+    navigate('clase-a')
+    navigate('clase-b')
+    navigate('clase-a')
+
+    expect(renderedClasses).toEqual([
+      'clase-a',
+      'clase-b',
+      'clase-a',
+    ])
   })
 })

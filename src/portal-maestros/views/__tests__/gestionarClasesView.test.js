@@ -6,6 +6,7 @@ vi.mock('../../../modules/clases/api/clasesApi.js', () => ({
   obtenerAlumnosSinClase: vi.fn(),
   inscribirAlumno: vi.fn(),
   desinscribirAlumno: vi.fn(),
+  eliminarClase: vi.fn(),
 }))
 
 vi.mock('../../../modules/alumnos/api/alumnosApi.js', () => ({
@@ -42,6 +43,7 @@ import {
   obtenerClasesPorMaestro,
   obtenerAlumnosInscritos,
   obtenerAlumnosSinClase,
+  eliminarClase,
 } from '../../../modules/clases/api/clasesApi.js'
 import { obtenerAlumnos } from '../../../modules/alumnos/api/alumnosApi.js'
 import { openClaseModal } from '../../../modules/clases/components/claseModal.js'
@@ -316,5 +318,37 @@ describe('gestionarClasesView', () => {
     pillDisponibles.click()
     expect(enrolledRow.style.display).toBe('none')
     expect(availableRow.style.display).toBe('')
+  })
+
+  it('muestra el botón con icono para eliminar la clase y solicita confirmación antes de eliminar', async () => {
+    obtenerAlumnosInscritos.mockResolvedValue([])
+    obtenerAlumnos.mockResolvedValue([])
+    eliminarClase.mockResolvedValue(true)
+
+    const confirmSpy = vi.spyOn(window, 'confirm')
+    const container = document.getElementById('app')
+    await renderGestionarClasesView(container)
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    const btnDelete = container.querySelector('#gcv-btn-eliminar-clase')
+    expect(btnDelete).toBeTruthy()
+    expect(btnDelete.querySelector('i.bi-trash3-fill')).toBeTruthy()
+    expect(btnDelete.textContent.trim()).toBe('') // Solo icono, sin texto
+
+    // Caso 1: Usuario cancela confirmación
+    confirmSpy.mockReturnValueOnce(false)
+    btnDelete.click()
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    expect(confirmSpy).toHaveBeenCalledTimes(1)
+    expect(eliminarClase).not.toHaveBeenCalled()
+
+    // Caso 2: Usuario confirma eliminación
+    confirmSpy.mockReturnValueOnce(true)
+    btnDelete.click()
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    expect(confirmSpy).toHaveBeenCalledTimes(2)
+    expect(eliminarClase).toHaveBeenCalledWith('clase-1')
+
+    confirmSpy.mockRestore()
   })
 })

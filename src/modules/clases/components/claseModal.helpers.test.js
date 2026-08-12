@@ -1,15 +1,16 @@
 import { describe, expect, it } from 'vitest'
-import { alumnoPerteneceAPrograma, getAlumnoProgramaId } from './claseModal.helpers.js'
+import { alumnoCoincideBusqueda } from './claseModal.helpers.js'
 
-describe('claseModal program student filter', () => {
-  it('resolves the student program id from supported shapes', () => {
-    expect(getAlumnoProgramaId({ programa_id: 'piano' })).toBe('piano')
-    expect(getAlumnoProgramaId({ programa: { id: 'cuerdas' } })).toBe('cuerdas')
+describe('claseModal student eligibility', () => {
+  it('does not use the student program to determine visibility', () => {
+    expect(alumnoCoincideBusqueda({ nombre: 'ana', instrumento: 'violín', programa_id: 'otro' })).toBe(true)
+    expect(alumnoCoincideBusqueda({ nombre: 'luis', instrumento: 'piano', programa_id: null })).toBe(true)
   })
 
-  it('only matches students belonging to the selected program', () => {
-    expect(alumnoPerteneceAPrograma({ programa_id: 'piano' }, 'piano')).toBe(true)
-    expect(alumnoPerteneceAPrograma({ programa_id: 'cuerdas' }, 'piano')).toBe(false)
-    expect(alumnoPerteneceAPrograma({ programa_id: null }, 'piano')).toBe(false)
+  it('keeps the existing name and instrument search behavior', () => {
+    const alumno = { nombre: 'ana pérez', instrumento: 'violín' }
+    expect(alumnoCoincideBusqueda(alumno, 'ana')).toBe(true)
+    expect(alumnoCoincideBusqueda(alumno, 'violín')).toBe(true)
+    expect(alumnoCoincideBusqueda(alumno, 'piano')).toBe(false)
   })
 })

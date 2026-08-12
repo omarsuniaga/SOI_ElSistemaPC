@@ -587,6 +587,20 @@
   border: 1.5px solid var(--pm-border);
 }
 .gcv-btn-ghost:hover { background: var(--pm-border); }
+.gcv-btn-danger-icon {
+  background: var(--pm-surface-2);
+  color: var(--pm-danger, #ef4444);
+  border: 1.5px solid var(--pm-border);
+  padding: .55rem .75rem;
+  font-size: 1.05rem;
+  line-height: 1;
+}
+.gcv-btn-danger-icon:hover {
+  background: rgba(239, 68, 68, 0.12);
+  border-color: var(--pm-danger, #ef4444);
+  color: var(--pm-danger, #ef4444);
+  transform: translateY(-1px);
+}
 
 /* ── Empty state ──────────────────────────────────────────── */
 .gcv-empty-state {

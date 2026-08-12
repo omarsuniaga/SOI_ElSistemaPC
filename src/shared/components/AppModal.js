@@ -204,7 +204,16 @@ export const AppModal = {
     }
 
     // Content
-    els.title.textContent = title
+    if (typeof title === 'string') {
+      if (title.includes('<')) {
+        els.title.innerHTML = title
+      } else {
+        els.title.textContent = title
+      }
+    } else if (title instanceof HTMLElement) {
+      els.title.innerHTML = ''
+      els.title.appendChild(title)
+    }
     if (els.headerActions) {
       if (typeof headerActions === 'string') {
         els.headerActions.innerHTML = headerActions
@@ -235,8 +244,12 @@ export const AppModal = {
     
     // Delete btn logic
     if (onDelete) {
-      els.btnDelete.textContent = deleteText
-      els.btnDelete.style.display = 'block'
+      els.btnDelete.innerHTML = deleteText
+      els.btnDelete.style.display = 'inline-flex'
+      els.btnDelete.style.alignItems = 'center'
+      els.btnDelete.style.justifyContent = 'center'
+      els.btnDelete.setAttribute('aria-label', typeof deleteText === 'string' && deleteText.includes('<') ? 'Eliminar' : String(deleteText))
+      els.btnDelete.setAttribute('title', 'Eliminar')
     } else {
       els.btnDelete.style.display = 'none'
     }

@@ -1,0 +1,218 @@
+/* ============================================================================
+   PROCEDIMIENTOS INSTITUCIONALES & CASOS HERMES — Design System Minimalista
+   ============================================================================ */
+
+.proc-container {
+  padding: 1.25rem 1rem 3rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* ── KPI Cards Compactas ── */
+.proc-kpi-card {
+  background: var(--bs-card-bg, #ffffff);
+  border: 1px solid var(--bs-border-color, rgba(0, 0, 0, 0.08));
+  border-radius: 12px;
+  padding: 0.875rem 1rem !important;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+  user-select: none;
+}
+
+.proc-kpi-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--bs-primary, #6366f1);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.06);
+}
+
+.proc-kpi-card.active-filter {
+  border-color: var(--bs-primary, #6366f1);
+  background: var(--bs-primary-bg-subtle, rgba(99, 102, 241, 0.08));
+  box-shadow: 0 0 0 1px var(--bs-primary, #6366f1);
+}
+
+.proc-kpi-card .kpi-num {
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+
+.proc-kpi-card .kpi-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--bs-secondary-color, #64748b);
+}
+
+/* ── Contratos SOI Grid ── */
+.contract-card {
+  background: var(--bs-card-bg, #ffffff);
+  border: 1px solid var(--bs-border-color, rgba(0, 0, 0, 0.08));
+  border-radius: 12px;
+  padding: 1rem;
+  transition: all 0.2s ease;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.contract-card:hover {
+  border-color: var(--bs-primary, #6366f1);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.05);
+}
+
+.contract-code {
+  font-family: var(--bs-font-monospace, monospace);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--bs-primary, #6366f1);
+}
+
+/* ── Tarjetas de Caso / Procedimiento ── */
+.case-card {
+  background: var(--bs-card-bg, #ffffff);
+  border: 1px solid var(--bs-border-color, rgba(0, 0, 0, 0.08));
+  border-radius: 12px;
+  padding: 1rem;
+  transition: all 0.2s ease;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.02);
+}
+
+.case-card:hover {
+  border-color: var(--bs-primary, #6366f1);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
+}
+
+.case-title {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--bs-body-color, #1e293b);
+  margin-bottom: 0.35rem;
+}
+
+/* ── Progress Bar Minimalista ── */
+.progress-minimal {
+  height: 6px;
+  background-color: var(--bs-secondary-bg, #e2e8f0);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.progress-minimal .progress-bar {
+  border-radius: 999px;
+  transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ── Filtros y Buscador Compactos ── */
+.filter-bar {
+  background: var(--bs-card-bg, #ffffff);
+  border: 1px solid var(--bs-border-color, rgba(0, 0, 0, 0.08));
+  border-radius: 12px;
+  padding: 0.75rem 1rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+}
+
+.filter-bar .form-control,
+.filter-bar .form-select {
+  border-radius: 8px;
+  font-size: 0.875rem;
+}
+
+/* ============================================================================
+   DARK MODE ADAPTABILITY ([data-bs-theme="dark"] & [data-portal-theme="dark"])
+   ============================================================================ */
+[data-bs-theme="dark"] .proc-kpi-card,
+[data-portal-theme="dark"] .proc-kpi-card {
+  background: #1e293b;
+  border-color: #334155;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+}
+
+[data-bs-theme="dark"] .proc-kpi-card:hover,
+[data-portal-theme="dark"] .proc-kpi-card:hover {
+  background: #243248;
+  border-color: #6366f1;
+}
+
+[data-bs-theme="dark"] .proc-kpi-card.active-filter,
+[data-portal-theme="dark"] .proc-kpi-card.active-filter {
+  background: rgba(99, 102, 241, 0.15);
+  border-color: #6366f1;
+}
+
+[data-bs-theme="dark"] .contract-card,
+[data-portal-theme="dark"] .contract-card,
+[data-bs-theme="dark"] .case-card,
+[data-portal-theme="dark"] .case-card,
+[data-bs-theme="dark"] .filter-bar,
+[data-portal-theme="dark"] .filter-bar {
+  background: #1e293b;
+  border-color: #334155;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+}
+
+[data-bs-theme="dark"] .contract-card:hover,
+[data-portal-theme="dark"] .contract-card:hover,
+[data-bs-theme="dark"] .case-card:hover,
+[data-portal-theme="dark"] .case-card:hover {
+  background: #243248;
+  border-color: #6366f1;
+}
+
+[data-bs-theme="dark"] .case-title,
+[data-portal-theme="dark"] .case-title {
+  color: #f8fafc;
+}
+
+[data-bs-theme="dark"] .progress-minimal,
+[data-portal-theme="dark"] .progress-minimal {
+  background-color: #0f172a;
+}
+
+/* ============================================================================
+   RESPONSIVE DESIGN BREAKPOINTS
+   ============================================================================ */
+@media (max-width: 768px) {
+  .proc-container {
+    padding: 0.85rem 0.5rem 2.5rem;
+  }
+
+  .proc-kpis-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 0.5rem !important;
+  }
+
+  .proc-kpi-card {
+    padding: 0.65rem 0.75rem !important;
+  }
+
+  .proc-kpi-card .kpi-num {
+    font-size: 1.25rem;
+  }
+
+  .filter-bar {
+    padding: 0.65rem;
+  }
+
+  .contract-card,
+  .case-card {
+    padding: 0.85rem;
+  }
+}
+
+@media (max-width: 576px) {
+  .proc-kpi-card .kpi-label {
+    font-size: 0.6875rem;
+  }
+}

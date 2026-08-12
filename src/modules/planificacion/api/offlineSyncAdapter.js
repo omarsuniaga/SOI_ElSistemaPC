@@ -167,6 +167,29 @@ export class OfflineSyncAdapter {
 /** Guard anti doble-procesamiento: ver `sincronizarEnSegundoPlano`. */
 let _syncEnCurso = null
 
+function _isPermanentSyncError(err) {
+  if (!err) return false
+  const code = err.code || err?.error?.code
+  const msg = (err.message || err?.error?.message || err?.details || String(err)).toLowerCase()
+
+  // Códigos Postgres / PostgREST irrecuperables (foreign key, not null, check constraint, invalid UUID)
+  if (['23503', '23502', '23514', '22P02', '42P01', 'PGRST116'].includes(String(code))) {
+    return true
+  }
+
+  // Patrones textuales de violación de integridad
+  if (
+    msg.includes('foreign key') ||
+    msg.includes('is not present in table') ||
+    msg.includes('violates check constraint') ||
+    msg.includes('invalid input syntax for type uuid')
+  ) {
+    return true
+  }
+
+  return false
+}
+
 async function _procesarCola(remoteSyncFn) {
   const queue = await OfflineSyncAdapter.obtenerCola()
   if (queue.length === 0) return { synced: 0, failed: 0 }
@@ -186,8 +209,13 @@ async function _procesarCola(remoteSyncFn) {
       await OfflineSyncAdapter.eliminarDeCola(item)
       synced++
     } catch (err) {
-      failed++
-      console.warn('[OfflineSyncAdapter] Falló la sincronización de un item, se mantiene en cola para reintentar:', err)
+      if (_isPermanentSyncError(err)) {
+        await OfflineSyncAdapter.eliminarDeCola(item)
+        console.warn('[OfflineSyncAdapter] Se descarta item de la cola por error irrecuperable en base de datos (registro inexistente/FK):', err?.message || err)
+      } else {
+        failed++
+        console.warn('[OfflineSyncAdapter] Falló la sincronización de un item, se mantiene en cola para reintentar:', err)
+      }
     }
   }
 

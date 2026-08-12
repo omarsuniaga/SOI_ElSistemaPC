@@ -439,7 +439,7 @@ function renderPlaybookCard(playbook) {
               <h5 class="mb-1"><i class="bi ${playbook.icon} text-primary me-2"></i>${esc(playbook.title)}</h5>
               <div class="small text-muted">${esc(playbook.cadence)}</div>
             </div>
-            <span class="badge bg-light text-dark border">${esc(playbook.owner)}</span>
+            <span class="badge bg-secondary-subtle text-secondary-emphasis border border-secondary-subtle">${esc(playbook.owner)}</span>
           </div>
 
           <p class="small mb-3">${esc(playbook.purpose)}</p>

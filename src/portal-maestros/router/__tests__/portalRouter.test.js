@@ -21,6 +21,7 @@ describe('View Transitions', () => {
     // Mock history
     window.history.pushState = vi.fn()
     window.history.replaceState = vi.fn()
+    localStorage.clear()
 
     router = createPortalRouter()
   })
@@ -101,5 +102,22 @@ describe('View Transitions', () => {
       claseId: 'clase-123',
       parentRoute: 'planificacion-ruta',
     })
+  })
+
+  it('should replace a private route without params by login when unauthenticated', () => {
+    router.setAuthGuard(() => false, ['login'])
+    const loginHandler = vi.fn()
+    router.on('login', loginHandler)
+
+    expect(() => router.replace('planificacion-ruta')).not.toThrow()
+
+    expect(localStorage.getItem('intended-route')).toBe('planificacion-ruta')
+    expect(localStorage.getItem('intended-route-params')).toBeNull()
+    expect(window.history.replaceState).toHaveBeenCalledWith(
+      { route: 'login' },
+      '',
+      '/login',
+    )
+    expect(loginHandler).toHaveBeenCalledOnce()
   })
 })

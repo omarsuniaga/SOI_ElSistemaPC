@@ -347,6 +347,27 @@ describe('Evaluación por Estrellas y Protocolo SDD Suite', () => {
       expect(await OfflineSyncAdapter.obtenerCola()).toHaveLength(0)
     })
 
+    it('purges items with permanent foreign key / constraint errors (e.g. 23503) instead of leaving them in queue forever', async () => {
+      Object.defineProperty(navigator, 'onLine', { value: true, configurable: true })
+      await OfflineSyncAdapter.guardarLocal({ alumnoId: '00000000-0000-0000-0000-000000000001', claseId: '00000000-0000-0000-0000-000000000002', nodoId: '00000000-0000-0000-0000-000000000003', estrellas: 4 })
+      await OfflineSyncAdapter.guardarLocal({ alumnoId: '00000000-0000-0000-0000-000000000004', claseId: '00000000-0000-0000-0000-000000000005', nodoId: '00000000-0000-0000-0000-000000000006', estrellas: 5 })
+
+      const remoteSyncFn = vi.fn(async (item) => {
+        if (item.alumnoId === '00000000-0000-0000-0000-000000000001') {
+          const fkError = new Error('insert or update on table "evaluacion_indicador" violates foreign key constraint "evaluacion_indicador_indicator_id_fkey"')
+          fkError.code = '23503'
+          fkError.details = 'Key is not present in table "indicators".'
+          throw fkError
+        }
+      })
+
+      const result = await OfflineSyncAdapter.sincronizarEnSegundoPlano(remoteSyncFn)
+
+      expect(result).toEqual({ synced: 1, failed: 0 })
+      const cola = await OfflineSyncAdapter.obtenerCola()
+      expect(cola).toHaveLength(0)
+    })
+
     it('does not double-process items when sync is triggered concurrently (idempotent)', async () => {
       Object.defineProperty(navigator, 'onLine', { value: true, configurable: true })
       await OfflineSyncAdapter.guardarLocal({ alumnoId: 'a1', claseId: 'c1', nodoId: 'n1', estrellas: 5 })

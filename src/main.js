@@ -54,6 +54,10 @@ import './modules/academic-admin/styles/academic-admin.css'
 import { router } from './core/router/router.js'
 window.router = router
 import { config } from './core/config/config.js'
+import { reportCatalogAudit } from './core/catalogAudit.js'
+import { renderCatalogDiagnosticsView } from './core/catalogDiagnosticsView.js'
+import { governanceMatrixRoute } from './core/portalModuleMatrix.js'
+import { renderPortalModuleMatrixView } from './core/portalModuleMatrixView.js'
 
 // Auth
 import { useAuth } from './modules/auth/hooks/useAuth.js'
@@ -86,6 +90,11 @@ import { registerRoutesLuteria } from './modules/luteria/index.js'
 import { registerRoutesInventario } from './modules/inventario/index.js'
 import { registerRoutesHelp } from './modules/help/index.js'
 import { registerRoutesPeriodos } from './modules/periodos/index.js'
+import { registerRoutesComunicaciones } from './modules/comunicaciones/index.js'
+import { registerRoutesDepartamentos } from './modules/departamentos/index.js'
+import { registerRoutesCampanias } from './modules/campanias/index.js'
+import { registerRoutesGatewayConfig } from './modules/gateway-config/index.js'
+import { registerRoutesSimulador } from './modules/simulador/index.js'
 import { renderScoreDirectorView } from './modules/hermes/views/scoreDirectorView.js'
 import { renderTareasView } from './modules/hermes/views/tareasView.js'
 import { renderCasoDetalleView } from './modules/hermes/views/casoDetalleView.js'
@@ -292,6 +301,46 @@ const MODULES_REGISTRY = [
     enabled: true,
     register: registerRoutesInventario,
   },
+  {
+    id: 'campanias',
+    label: 'Períodos y Campañas',
+    icon: 'bi-megaphone',
+    description: 'Gestión de períodos y campañas institucionales',
+    enabled: true,
+    register: registerRoutesCampanias,
+  },
+  {
+    id: 'gateway-config',
+    label: 'Gateway WhatsApp',
+    icon: 'bi-chat-dots',
+    description: 'Configuración y estado del gateway WhatsApp',
+    enabled: true,
+    register: registerRoutesGatewayConfig,
+  },
+  {
+    id: 'comunicaciones',
+    label: 'Comunicaciones',
+    icon: 'bi-broadcast',
+    description: 'Bandeja de difusión y seguimiento de comunicaciones',
+    enabled: true,
+    register: registerRoutesComunicaciones,
+  },
+  {
+    id: 'departamentos',
+    label: 'Correos Departamentos',
+    icon: 'bi-envelope-at',
+    description: 'Directorio y configuración de correos departamentales',
+    enabled: true,
+    register: registerRoutesDepartamentos,
+  },
+  {
+    id: 'simulador',
+    label: 'Simulador de Operaciones',
+    icon: 'bi-cpu',
+    description: 'Simulación de operaciones y pruebas de carga',
+    enabled: true,
+    register: registerRoutesSimulador,
+  },
 ]
 
 // ============================================================================
@@ -319,21 +368,30 @@ function toggleTheme() {
 const NAV_GROUPS = [
   {
     id: 'direccion',
-    label: 'Dirección',
+    label: 'Dirección & Hermes',
     icon: 'bi-bullseye',
     items: [
       { id: 'dir-score', label: 'Score del Director', icon: 'bi-bullseye' },
+      { id: 'hermes-procedimientos', label: 'Procedimientos', icon: 'bi-diagram-3' },
+      { id: 'hermes-consulta', label: 'Consultar a Hermes', icon: 'bi-robot' },
+      { id: 'hermes-tareas', label: 'Tareas Institucionales', icon: 'bi-check2-square' },
     ],
   },
   {
-    id: 'academico',
-    label: 'Académico',
-    icon: 'bi-easel',
+    id: 'operacion',
+    label: 'Operación',
+    icon: 'bi-clipboard-data',
     items: [
-      { id: 'programas', label: 'Programas', icon: 'bi-book' },
-      { id: 'clases', label: 'Clases', icon: 'bi-easel2' },
-      { id: 'salones', label: 'Salones', icon: 'bi-door-open' },
-      { id: 'horario-builder', label: 'Constructor Horarios', icon: 'bi-calendar-range' },
+      { id: 'periodos', label: 'Períodos Académicos', icon: 'bi-calendar-event' },
+      { id: 'periodo-lectivo', label: 'Período Lectivo', icon: 'bi-calendar-range' },
+      { id: 'reporte-cierre', label: 'Informe de Cierre', icon: 'bi-file-earmark-bar-graph' },
+      { id: 'campanias', label: 'Períodos / Campañas', icon: 'bi-megaphone' },
+      { id: 'gateway-config', label: 'Gateway WhatsApp', icon: 'bi-chat-dots' },
+      { id: 'asistencias', label: 'Resumen Asistencias', icon: 'bi-calendar-check' },
+      { id: 'admin-dashboard', label: 'Cumplimiento Maestros', icon: 'bi-clipboard-check' },
+      { id: 'admin-ausencias', label: 'Gestión Ausencias', icon: 'bi-calendar-x' },
+      { id: 'inicio-periodo-seguro', label: 'Inicio seguro de período', icon: 'bi-shield-check' },
+      { id: 'simulador-panel-control', label: 'Simulador Operaciones', icon: 'bi-cpu' },
     ],
   },
   {
@@ -348,6 +406,17 @@ const NAV_GROUPS = [
     ],
   },
   {
+    id: 'academico',
+    label: 'Académico',
+    icon: 'bi-easel',
+    items: [
+      { id: 'programas', label: 'Programas', icon: 'bi-book' },
+      { id: 'clases', label: 'Clases', icon: 'bi-easel2' },
+      { id: 'salones', label: 'Salones', icon: 'bi-door-open' },
+      { id: 'horario-builder', label: 'Constructor Horarios', icon: 'bi-calendar-range' },
+    ],
+  },
+  {
     id: 'pedagogico',
     label: 'Pedagógico',
     icon: 'bi-journal-check',
@@ -355,7 +424,7 @@ const NAV_GROUPS = [
       { id: 'pedagogico-dashboard', label: 'Dashboard', icon: 'bi-grid-1x2' },
       { id: 'planificacion', label: 'Planificación', icon: 'bi-journal-text' },
       { id: 'bitacora-clase', label: 'Bitácora', icon: 'bi-journal-check' },
-      { id: 'planificacion-maestros', label: 'Todas las Planes', icon: 'bi-journal-check' },
+      { id: 'planificacion-maestros', label: 'Todos los Planes', icon: 'bi-journal-check' },
       { id: 'planificacion-cobertura', label: 'Cobertura Curricular', icon: 'bi-grid-3x3-gap' },
       { id: 'planificacion-ruta', label: 'Ruta Académica', icon: 'bi-diagram-3' },
       { id: 'pedagogico-seguimiento', label: 'Seguimiento', icon: 'bi-person-lines-fill' },
@@ -368,8 +437,7 @@ const NAV_GROUPS = [
     label: 'Análisis',
     icon: 'bi-bar-chart-line',
     items: [
-      { id: 'metricas', label: 'Dashboard', icon: 'bi-bar-chart-line' },
-      { id: 'admin-dashboard', label: 'Cumplimiento Maestros', icon: 'bi-clipboard-check' },
+      { id: 'metricas', label: 'Dashboard Métricas', icon: 'bi-bar-chart-line' },
       { id: 'admin-dashboard-reportes', label: 'Reportes Director', icon: 'bi-file-earmark-pdf' },
       { id: 'admin-dashboard-analitca-llenado', label: 'Analítica Llenado', icon: 'bi-graph-up' },
       { id: 'admin-dashboard-tendencias', label: 'Tendencias', icon: 'bi-arrow-up-right' },
@@ -377,7 +445,7 @@ const NAV_GROUPS = [
   },
   {
     id: 'operaciones',
-    label: 'Operaciones y Finanzas',
+    label: 'Finanzas & Inventario',
     icon: 'bi-bank',
     items: [
       { id: 'finanzas-balance', label: 'Balances de Alumnos', icon: 'bi-wallet2' },
@@ -385,6 +453,17 @@ const NAV_GROUPS = [
       { id: 'inventario-stock', label: 'Stock Instrumentos', icon: 'bi-box-seam' },
       { id: 'inventario-comodatos', label: 'Comodatos/Préstamos', icon: 'bi-file-earmark-text' },
       { id: 'inventario-reparaciones', label: 'Reparaciones (Lutería)', icon: 'bi-tools' },
+      { id: 'luteria-ordenes', label: 'Órdenes de Lutería', icon: 'bi-wrench' },
+    ],
+  },
+  {
+    id: 'comunicaciones',
+    label: 'Comunicaciones',
+    icon: 'bi-broadcast',
+    items: [
+      { id: 'comunicaciones', label: 'Bandeja Comunicaciones', icon: 'bi-broadcast' },
+      { id: 'com-seguimiento', label: 'Seguimiento Envíos', icon: 'bi-send-check' },
+      { id: 'com-calendario', label: 'Calendario Difusión', icon: 'bi-calendar-week' },
     ],
   },
   {
@@ -395,9 +474,11 @@ const NAV_GROUPS = [
       { id: 'admin-notificaciones', label: 'Centro de Actividad', icon: 'bi-bell' },
       { id: 'admin-aprobacion', label: 'Aprobaciones', icon: 'bi-person-check' },
       { id: 'gestion-usuarios', label: 'Gestión de Usuarios', icon: 'bi-person-gear' },
-      { id: 'admin-ausencias', label: 'Gestión Ausencias', icon: 'bi-calendar-x' },
+      { id: 'departamentos', label: 'Correos Departamentos', icon: 'bi-envelope-at' },
       { id: 'configuracion', label: 'Configuración', icon: 'bi-sliders' },
       { id: 'permisos', label: 'Permisos', icon: 'bi-shield-lock' },
+      { id: 'diagnostico-catalogo', label: 'Diagnóstico Portales', icon: 'bi-activity' },
+      { id: governanceMatrixRoute.routeId, label: governanceMatrixRoute.label, icon: governanceMatrixRoute.icon },
       { id: 'importar-datos', label: 'Importar Datos', icon: 'bi-cloud-upload' },
       { id: 'exportar-datos', label: 'Exportar Datos', icon: 'bi-file-earmark-arrow-down' },
       { id: 'audiciones', label: 'Audiciones', icon: 'bi-music-note-beamed' },
@@ -692,6 +773,8 @@ function registerModules() {
   // Centro de Ayuda
   try {
     registerRoutesHelp()
+    router.register('diagnostico-catalogo', renderCatalogDiagnosticsView)
+    router.register(governanceMatrixRoute.routeId, renderPortalModuleMatrixView)
   } catch (error) {
     console.error('Error registering help routes:', error)
   }
@@ -718,6 +801,12 @@ async function startApp() {
 
   // 2b. Activar escucha de eventos de navegación inter-módulo
   router.initCustomEvents()
+  reportCatalogAudit({
+    portalId: 'admin',
+    defaultRoute: 'dir-score',
+    navGroups: NAV_GROUPS,
+    registeredRoutes: Object.keys(router.routes),
+  })
 
   // 3. Sincronizar sesión con Supabase antes de cualquier otra cosa (CRÍTICO para evitar 404)
   console.log('🔄 Sincronizando sesión...')

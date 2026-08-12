@@ -1,4 +1,4 @@
-﻿/**
+/**
  * scoreDirectorView.js — "Score del Director" (DIR).
  * Vista global de TODAS las tareas institucionales agrupadas por departamento,
  * con indicadores de saturación y detección de cuellos de botella. Permite al
@@ -220,7 +220,7 @@ function renderDeptCard(dept, s) {
             <div class="d-flex align-items-center gap-2">
               <i class="bi ${DEPT_ICON[dept] || 'bi-building'} fs-5 text-primary"></i>
               <span class="fw-bold">${DEPARTAMENTOS[dept]}</span>
-              <span class="badge bg-light text-dark border">${dept}</span>
+              <span class="badge bg-secondary-subtle text-secondary-emphasis border border-secondary-subtle">${dept}</span>
             </div>
             ${cuelloBotella ? `<span class="badge bg-danger" title="Cuello de botella"><i class="bi bi-exclamation-octagon-fill me-1"></i>Cuello</span>` : ''}
           </div>

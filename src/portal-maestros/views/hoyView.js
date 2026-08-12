@@ -114,16 +114,19 @@ export async function renderHoyView(container, { onClaseClick } = {}) {
   const fechaHoy = `${yH}-${mH}-${dH}`
 
   try {
-    // 0. Verificar si hay clases emergentes hoy — reemplazan lo programado
-    const emergentesHoy = await getEmergentesHoy(maestro.id, fechaHoy)
+    // 0 & 1. Obtener datos iniciales en paralelo
+    const [emergentesHoy, misClases, rutasActivas] = await Promise.all([
+      getEmergentesHoy(maestro.id, fechaHoy).catch(() => []),
+      getMisClases().catch(() => []),
+      obtenerRutasActivas(maestro.id).catch(() => []),
+    ])
+
     if (emergentesHoy && emergentesHoy.length > 0) {
       container.innerHTML = _renderEmergentes(emergentesHoy, diaHoy, hoy)
       _bindEmergenteClicks(container, fechaHoy, maestro.id)
       return
     }
 
-    // 1. Obtener clases del maestro (con cache)
-    const misClases = await getMisClases()
     if (!misClases || misClases.length === 0) {
       container.innerHTML = `
         <div class="pm-hoy-empty-state">
@@ -143,12 +146,24 @@ export async function renderHoyView(container, { onClaseClick } = {}) {
 
     const claseIds = misClases.map((c) => c.id)
     const clasesMap = Object.fromEntries(misClases.map((c) => [c.id, c]))
-    const rutasActivas = await obtenerRutasActivas(maestro.id).catch(() => [])
     const rutaMap = Object.fromEntries((rutasActivas || []).map((ruta) => [String(ruta.group_id), ruta]))
 
-    // 2. Obtener horarios de hoy para esas clases (con cache)
-    const todosHorarios = await getHorariosClases(claseIds)
-    const horarios = todosHorarios
+    // 2, 3 & 4. Fechas de sesiones recientes y ejecución en paralelo del resto de datos
+    const hace3Dias = new Date(hoy)
+    hace3Dias.setDate(hace3Dias.getDate() - 3)
+    const desde3d = `${hace3Dias.getFullYear()}-${String(hace3Dias.getMonth() + 1).padStart(2, '0')}-${String(hace3Dias.getDate()).padStart(2, '0')}`
+    const ayer = new Date(hoy)
+    ayer.setDate(ayer.getDate() - 1)
+    const ayerStr = `${ayer.getFullYear()}-${String(ayer.getMonth() + 1).padStart(2, '0')}-${String(ayer.getDate()).padStart(2, '0')}`
+
+    const [todosHorarios, sesionesRecientes, todasSesiones, inscripciones] = await Promise.all([
+      getHorariosClases(claseIds).catch(() => []),
+      getSesiones(maestro.id, desde3d, ayerStr).catch(() => []),
+      getSesiones(maestro.id, fechaHoy, fechaHoy).catch(() => []),
+      getInscripcionesClases(claseIds).catch(() => []),
+    ])
+
+    const horarios = (todosHorarios || [])
       .filter((h) => h.dia?.toLowerCase() === diaHoy)
       .sort((a, b) => a.hora_inicio.localeCompare(b.hora_inicio))
 
@@ -172,15 +187,6 @@ export async function renderHoyView(container, { onClaseClick } = {}) {
       return
     }
 
-    // 3a. Obtener sesiones pendientes de los últimos 3 días (excluye hoy)
-    const hace3Dias = new Date(hoy)
-    hace3Dias.setDate(hace3Dias.getDate() - 3)
-    const desde3d = `${hace3Dias.getFullYear()}-${String(hace3Dias.getMonth() + 1).padStart(2, '0')}-${String(hace3Dias.getDate()).padStart(2, '0')}`
-    const ayer = new Date(hoy)
-    ayer.setDate(ayer.getDate() - 1)
-    const ayerStr = `${ayer.getFullYear()}-${String(ayer.getMonth() + 1).padStart(2, '0')}-${String(ayer.getDate()).padStart(2, '0')}`
-
-    const sesionesRecientes = await getSesiones(maestro.id, desde3d, ayerStr)
     const pendientesRecientes = (sesionesRecientes || []).filter((s) => {
       if (!claseIds.includes(s.clase_id)) return false
       const tieneAsistencia = Array.isArray(s.asistencia) && s.asistencia.length > 0
@@ -188,23 +194,15 @@ export async function renderHoyView(container, { onClaseClick } = {}) {
       return !tieneAsistencia && !(s.borrador === false && tieneContenido)
     })
 
-    // 3. Obtener sesiones de hoy (con cache)
-    const todasSesiones = await getSesiones(maestro.id, fechaHoy, fechaHoy)
-    const sesionesHoy = todasSesiones.filter((s) => claseIds.includes(s.clase_id))
-
-    // Sesión se considera registrada si tiene datos reales, no solo el flag borrador.
-    // Esto cubre el race condition que dejaba borrador=true en sesiones correctamente guardadas.
+    const sesionesHoy = (todasSesiones || []).filter((s) => claseIds.includes(s.clase_id))
     const sesionesRegistradas = sesionesHoy.filter((s) => {
       const tieneAsistencia = Array.isArray(s.asistencia) && s.asistencia.length > 0
       const tieneContenido = typeof s.contenido === 'string' && s.contenido.trim().length > 0
-      // Registrada: tiene asistencia marcada, O fue guardada (borrador=false) con contenido
       return tieneAsistencia || (s.borrador === false && tieneContenido)
     })
 
     const registradasHoy = new Set(sesionesRegistradas.map((s) => s.clase_id))
 
-    // 4. Obtener cantidad de alumnos por clase (con cache)
-    const inscripciones = await getInscripcionesClases(claseIds)
     const alumnosPorClase = {}
     for (const insc of inscripciones || []) {
       if (insc.clase_id) {

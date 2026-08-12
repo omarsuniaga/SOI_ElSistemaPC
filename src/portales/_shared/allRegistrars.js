@@ -29,6 +29,8 @@ import { registerRoutesComunicaciones } from '../../modules/comunicaciones/index
 import { registerRoutesDepartamentos } from '../../modules/departamentos/index.js'
 import { registerRoutesCampanias } from '../../modules/campanias/index.js'
 import { registerRoutesGatewayConfig } from '../../modules/gateway-config/index.js'
+import { registerRoutesFinanzas } from '../../modules/finanzas/index.js'
+import { registerRoutesInventario } from '../../modules/inventario/index.js'
 import { registerRoutesLuteria } from '../../modules/luteria/index.js'
 import { registerRoutesSimulador } from '../../modules/simulador/index.js'
 import { registerRoutesPeriodos } from '../../modules/periodos/index.js'
@@ -59,6 +61,8 @@ export const allRegistrars = [
   registerRoutesAdminUsuarios,
   registerRoutesCampanias,
   registerRoutesGatewayConfig,
+  registerRoutesFinanzas,
+  registerRoutesInventario,
   registerRoutesLuteria,
   registerRoutesSimulador,
 ]

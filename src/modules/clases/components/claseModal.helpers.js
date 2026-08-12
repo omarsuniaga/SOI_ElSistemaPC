@@ -1,8 +1,7 @@
-export function getAlumnoProgramaId(alumno) {
-  return alumno?.programa_id ?? alumno?.programaId ?? alumno?.programa?.id ?? ''
-}
-
-export function alumnoPerteneceAPrograma(alumno, programaId) {
-  if (!programaId) return true
-  return String(getAlumnoProgramaId(alumno)) === String(programaId)
+/**
+ * Filtra candidatos únicamente por la búsqueda visible del modal.
+ * El programa pertenece a la clase, pero no determina elegibilidad del alumno.
+ */
+export function alumnoCoincideBusqueda({ nombre = '', instrumento = '' } = {}, term = '') {
+  return !term || nombre.includes(term) || instrumento.includes(term)
 }

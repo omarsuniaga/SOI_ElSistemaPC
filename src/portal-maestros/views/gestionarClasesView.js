@@ -14,6 +14,7 @@ import {
   obtenerAlumnosSinClase,
   inscribirAlumno,
   desinscribirAlumno,
+  eliminarClase,
 } from '../../modules/clases/api/clasesApi.js'
 import { obtenerAlumnos, crearAlumno } from '../../modules/alumnos/api/alumnosApi.js'
 import { openClaseModal } from '../../modules/clases/components/claseModal.js'
@@ -387,8 +388,11 @@ function _buildPanel(clase, inscritos, disponibles) {
           ${
             _canEditClasses
               ? `
-            <button type="button" class="gcv-btn gcv-btn-ghost" id="gcv-btn-editar-clase">
+            <button type="button" class="gcv-btn gcv-btn-ghost" id="gcv-btn-editar-clase" title="Editar clase">
               <i class="bi bi-pencil-square"></i> Editar clase
+            </button>
+            <button type="button" class="gcv-btn gcv-btn-danger-icon" id="gcv-btn-eliminar-clase" title="Eliminar clase" aria-label="Eliminar clase">
+              <i class="bi bi-trash3-fill"></i>
             </button>
           `
               : ''
@@ -724,6 +728,33 @@ function _attachPanelEvents(claseId, clases) {
       btn.innerHTML = originalHTML
     } catch (err) {
       AppToast.error('No se pudo abrir el editor de la clase: ' + err.message)
+      btn.disabled = false
+      btn.innerHTML = originalHTML
+    }
+  })
+
+  // Delete class action
+  document.getElementById('gcv-btn-eliminar-clase')?.addEventListener('click', async (e) => {
+    const btn = e.currentTarget
+    const clase = clases.find((item) => item.id === claseId)
+    if (!btn || !clase) return
+
+    const confirmMsg = `¿Estás seguro de que deseas eliminar la clase "${clase.nombre || 'esta clase'}"? Esta acción eliminará los horarios e inscripciones asociadas de forma irreversible.`
+    if (!window.confirm(confirmMsg)) return
+
+    const originalHTML = btn.innerHTML
+    btn.disabled = true
+    btn.innerHTML = '<span class="gcv-spinner-sm"></span>'
+
+    try {
+      await eliminarClase(claseId)
+      AppToast.success('Clase eliminada correctamente.')
+      _classEditorSupport = null
+      if (_rootContainer) {
+        await renderGestionarClasesView(_rootContainer)
+      }
+    } catch (err) {
+      AppToast.error('Error al eliminar la clase: ' + err.message)
       btn.disabled = false
       btn.innerHTML = originalHTML
     }

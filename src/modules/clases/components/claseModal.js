@@ -4,6 +4,7 @@ import { AppToast } from '../../../shared/components/AppToast.js'
 import {
   crearClase,
   actualizarClase,
+  eliminarClase,
   obtenerAlumnosInscritos,
   inscribirAlumno,
   desinscribirAlumno,
@@ -20,7 +21,7 @@ import {
 } from '../utils/clasesUtils.js'
 import { Clase } from '../models/clase.model.js'
 import { openRutaSelectorModal } from '../../planificacion/components/rutaSelectorModal.js'
-import { alumnoPerteneceAPrograma, getAlumnoProgramaId } from './claseModal.helpers.js'
+import { alumnoCoincideBusqueda } from './claseModal.helpers.js'
 
 /**
  * claseModal - Componente modular para la gestión de clases académicas.
@@ -73,6 +74,20 @@ export async function openClaseModal(clase = null, options = {}) {
   AppModal.open({
     title,
     saveText,
+    deleteText: '<i class="bi bi-trash3-fill" style="font-size:1.1rem;"></i>',
+    onDelete: isEdicion ? async () => {
+      try {
+        await eliminarClase(clase.id)
+        AppToast.success('Clase eliminada correctamente.')
+        if (_options.onSuccess) {
+          await _options.onSuccess()
+        }
+        return true
+      } catch (err) {
+        AppToast.error('Error al eliminar la clase: ' + err.message)
+        return false
+      }
+    } : null,
     size: 'xl',
     body: _getClaseFormHTML(clase, inscritosIds, inscritosSlots),
     onShow: (modalBody) => {
@@ -275,17 +290,6 @@ function _getSlotBuilderHTML(inscritosSlots = []) {
     </div>`
 }
 
-function _applyProgramFilterToSlots(modalBody) {
-  const programaId = modalBody.querySelector('#modal-programa_id')?.value || ''
-  modalBody.querySelectorAll('.slot-alumno-select option[data-alumno-id]').forEach(option => {
-    const alumno = (_options.alumnos || []).find(a => String(a.id) === String(option.dataset.alumnoId))
-    const matches = !programaId || alumnoPerteneceAPrograma(alumno, programaId)
-    const isSelected = option.selected
-    option.hidden = !matches && !isSelected
-    option.disabled = !matches && !isSelected
-  })
-}
-
 function _attachModalEvents(modalBody, _clase) {
   // Botón para seleccionar ruta
   const btnSeleccionarRuta = modalBody.querySelector('#btn-seleccionar-ruta')
@@ -385,7 +389,6 @@ function _attachModalEvents(modalBody, _clase) {
         <i class="bi bi-x-circle-fill fs-5"></i>
       </button>`
     slotsContainer.appendChild(emptyRow)
-    _applyProgramFilterToSlots(modalBody)
     _updateSlotsCount()
   })
 
@@ -469,7 +472,6 @@ function _attachModalEvents(modalBody, _clase) {
 
     _updateSlotsCount()
     _sortSlotRows()
-    _applyProgramFilterToSlots(modalBody)
     AppToast.success(`Se generaron ${turnosGenerados.length} franjas de ${durationMin} min (${startStr} a ${endStr})`)
   })
 
@@ -513,7 +515,6 @@ function _attachModalEvents(modalBody, _clase) {
   const selectAllChk = modalBody.querySelector('#chk-select-all-alumnos')
   const checks = modalBody.querySelectorAll('.alumnos-list input[type="checkbox"]')
   const countDisplay = modalBody.querySelector('#alumnos-selection-count')
-  const programaSelect = modalBody.querySelector('#modal-programa_id')
 
   const getVisibleItems = () => {
     return Array.from(listItems).filter(item => item.style.display !== 'none')
@@ -552,33 +553,17 @@ function _attachModalEvents(modalBody, _clase) {
 
   const applyAlumnoFilters = () => {
     const term = normalizeText(searchInput?.value || '')
-    const programaId = programaSelect?.value || ''
 
     listItems.forEach(item => {
       const nombre = item.dataset.nombre || ''
       const instrumento = item.dataset.instrumento || ''
-      const checkbox = item.querySelector('input[type="checkbox"]')
-      const perteneceAlPrograma = !programaId || item.dataset.programaId === String(programaId)
-      const esInscritoActual = checkbox?.checked === true
-      const coincideBusqueda = !term || nombre.includes(term) || instrumento.includes(term)
-      item.style.display = (coincideBusqueda && (perteneceAlPrograma || esInscritoActual)) ? '' : 'none'
+      const coincideBusqueda = alumnoCoincideBusqueda({ nombre, instrumento }, term)
+      item.style.display = coincideBusqueda ? '' : 'none'
     })
-
-    const filterNote = modalBody.querySelector('#alumnos-program-filter-note')
-    if (filterNote) {
-      const selectedProgram = programaSelect?.selectedOptions?.[0]?.textContent?.trim()
-      filterNote.textContent = selectedProgram
-        ? `Mostrando alumnos pertenecientes a ${selectedProgram}.`
-        : 'Selecciona un programa para filtrar los alumnos disponibles.'
-    }
     updateSelectAllState()
   }
 
   searchInput?.addEventListener('input', applyAlumnoFilters)
-  programaSelect?.addEventListener('change', () => {
-    applyAlumnoFilters()
-    _applyProgramFilterToSlots(modalBody)
-  })
 
   selectAllChk?.addEventListener('click', (e) => {
     e.stopPropagation()
@@ -598,7 +583,6 @@ function _attachModalEvents(modalBody, _clase) {
   })
 
   checks.forEach(c => c.addEventListener('change', updateCount))
-  _applyProgramFilterToSlots(modalBody)
   applyAlumnoFilters()
   updateCount()
 }
@@ -845,10 +829,9 @@ function _getAlumnosSelectorHTML(selectedIds = []) {
           </label>
         </div>
       </div>
-      <small id="alumnos-program-filter-note" class="text-muted d-block mb-2">Selecciona un programa para filtrar los alumnos disponibles.</small>
       <div class="alumnos-list border rounded bg-body-tertiary" style="max-height: 200px; overflow-y: auto; padding: 8px;">
         ${alumnos.map(a => `
-          <div class="form-check alumno-check-item" data-nombre="${normalizeText(a.nombre_completo)}" data-instrumento="${normalizeText(a.instrumento_principal)}" data-programa-id="${escapeHTML(getAlumnoProgramaId(a))}">
+          <div class="form-check alumno-check-item" data-nombre="${normalizeText(a.nombre_completo)}" data-instrumento="${normalizeText(a.instrumento_principal)}">
             <input class="form-check-input" type="checkbox" value="${a.id}" id="chk-a-${a.id}" ${selectedIds.includes(a.id) ? 'checked' : ''}>
             <label class="form-check-label small w-100 cursor-pointer" for="chk-a-${a.id}">
               ${escapeHTML(a.nombre_completo)} <span class="text-muted">(${escapeHTML(a.instrumento_principal || 'N/A')})</span>

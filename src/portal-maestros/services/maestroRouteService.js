@@ -5,7 +5,6 @@
  */
 
 import { supabase } from '../../lib/supabaseClient.js'
-import { getMaestroLocal } from '../auth/maestroAuth.js'
 
 /**
  * Get all routes for a teacher in a given class

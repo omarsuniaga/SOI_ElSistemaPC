@@ -342,30 +342,35 @@ Unit, integration, and E2E tests for all components and workflows.
 
 Final polish and documentation.
 
-- [ ] 7.1 Update API documentation (OpenAPI/Swagger or inline comments)
+- [x] 7.1 Update API documentation (OpenAPI/Swagger or inline comments)
   - Document new maestroRouteService methods (getTeacherRoutes, createRoute, validateDAG, etc.)
   - Document new maestroDataService methods (getIndicadorCheckStates, updateRecoveryStatus, etc.)
   - Document groqService.analyzeObservation() new signature and context parameter
+  - **Status**: no hay OpenAPI/Swagger en este proyecto (es un portal directo a Supabase, sin capa REST propia) — se documentó vía JSDoc en cada función nueva, ya presente desde que se escribió el código (no un archivo separado). No se extendió `analyzeObservation()`: se creó `analyzeIndicadorObservation()` aparte (decisión documentada en 5.1) — esa función también tiene JSDoc completo.
 
-- [ ] 7.2 Add inline code comments
+- [x] 7.2 Add inline code comments
   - DAG validation algorithm (explain DFS cycle detection)
   - Check-state calculation (explain state machine logic)
   - Recovery cascade (explain dependent-indicator flagging)
+  - **Status**: comentarios ya presentes en `_dfsCycleDetect`, `_insertHierarchy`/`_upsertHierarchy` (resolución de ids temporales en dos pasadas), `getIndicadorCheckStates` (semántica none/single/double), y `_flagDependentIndicadores` (por qué solo marca, no recalifica).
 
-- [ ] 7.3 Update project README or HANDOFF.md
+- [x] 7.3 Update project README or HANDOFF.md
   - Document new feature: personal routes, indicator grading, IA analysis
   - Document new tables and their purpose
   - Document configuration: feature flags (FEATURE_TEACHER_ROUTES), Groq API key
+  - **Status**: agregada sección "🎓 Mapa de Rutas del Maestro" en `src/portal-maestros/README.md` con enlace a los docs completos en `openspec/changes/teacher-portal-ai-grading/`. **No se tocó el resto del README** — tiene contenido genérico/desactualizado preexistente (dice "Vue 3 + Vite", "Playwright", middleware CSRF/joi que no existen en este codebase vanilla-JS); corregirlo es un proyecto aparte, fuera de alcance de esta feature. No hay feature flag `FEATURE_TEACHER_ROUTES` implementado (el plan lo mencionaba como opcional para rollout gradual; no se construyó — la feature está simplemente detrás de un botón nuevo en `hoyView.js`, visible para todos los maestros en cuanto se mergea).
 
-- [ ] 7.4 Code cleanup
+- [x] 7.4 Code cleanup
   - Remove any temporary logging or debug code
   - Ensure ESLint/Prettier compliance
   - Review for dead code or unused imports
+  - **Status**: `eslint --fix` corrido sobre los 8 archivos tocados por la feature — 0 errores. Se eliminó 1 import muerto real (`getMaestroLocal` en `maestroRouteService.js`, nunca usado). Los warnings restantes (unused vars en `groqService.js`, `hoyView.js`, `maestroDataService.js`) son preexistentes, no introducidos por esta feature — no se tocaron para no scope-creepear código ajeno.
 
-- [ ] 7.5 Performance profiling (if needed)
+- [x] 7.5 Performance profiling (if needed)
   - DAG validation for 50+ indicators: assert < 50ms
   - Check-state query for 100+ indicators: assert < 200ms
   - IA response time: assert < 5 seconds (acceptable; async)
+  - **Status**: DAG validation medido de verdad en el test suite (60 indicadores, benchmark real con `performance.now()`, <50ms confirmado en CI). Check-state query y latencia de IA **no se pudieron medir de verdad** — este worktree no tiene `.env.local` de Supabase ni acceso a un proyecto real, así que no hay forma honesta de benchmarkear una consulta a una base de datos que no existe aquí. No se inventaron números — queda pendiente de medir en un entorno con datos reales antes de mergear a producción.
 
 ---
 

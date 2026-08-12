@@ -21,6 +21,21 @@ Enterprise-grade teacher portal for El Sistema Punta Cana. Streamlined lesson pl
 | Audit Logging | ✅ | Enterprise |
 | GDPR Compliance | ✅ | Enterprise |
 | Performance Monitoring | ✅ | Enterprise |
+| Mapa de Rutas del Maestro + Calificación IA | 🚧 (PRs #23–#26) | Core |
+
+## 🎓 Mapa de Rutas del Maestro (calificación asistida por IA)
+
+Cada maestro puede construir su propio mapa de clase (UNIDADES > OBJETIVOS > INDICADORES),
+calificar por indicador con estrellas (presentes) o texto libre analizado por IA, y trackear
+deuda académica de alumnos ausentes con su flujo de recuperación. Prerrequisitos entre
+indicadores con advertencia blanda (nunca bloquea) y reevaluación de cadena al recuperar.
+
+Documentación completa (propuesta, specs, diseño técnico, tareas) en
+[`openspec/changes/teacher-portal-ai-grading/`](../../openspec/changes/teacher-portal-ai-grading/).
+Componentes clave: `components/TeacherRouteBuilder.js`, `components/IndicadorGradingModal.js`,
+`services/maestroRouteService.js`. La IA (`groqService.analyzeIndicadorObservation`) solo da
+panorama pedagógico y, si el texto no trae valoración, sugiere calificar — nunca asigna notas
+por sí sola.
 
 ## 🚀 Quick Start
 

@@ -1,0 +1,28 @@
+# Normaliza todos los saltos de línea a LF en el repositorio.
+# Evita el ruido de "archivos modificados" fantasma por CRLF vs LF
+# al trabajar desde Windows / OneDrive / WSL.
+* text=auto eol=lf
+
+# Scripts que deben conservar LF sí o sí (se ejecutan en Linux/CI)
+*.sh    text eol=lf
+*.mjs   text eol=lf
+*.cjs   text eol=lf
+
+# Scripts de Windows: conservar CRLF
+*.ps1   text eol=crlf
+*.bat   text eol=crlf
+*.cmd   text eol=crlf
+
+# Archivos binarios: nunca tocar saltos de línea
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.gif   binary
+*.ico   binary
+*.pdf   binary
+*.xlsx  binary
+*.woff  binary
+*.woff2 binary
+*.ttf   binary
+*.eot   binary
+*.dots  binary

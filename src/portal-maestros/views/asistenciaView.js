@@ -101,7 +101,7 @@ async function _renderEmergenteSesion(container, { sesionId, fecha, maestro, rou
   try {
     const { data: sesion, error } = await supabase
       .from('sesiones_clase')
-      .select('id, actividad, fecha, asistencia, contenido')
+      .select('id, actividad, fecha, asistencia, contenido, borrador, estado')
       .eq('id', sesionId)
       .single()
 

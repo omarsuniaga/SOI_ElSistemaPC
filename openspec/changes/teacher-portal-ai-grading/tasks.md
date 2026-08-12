@@ -278,76 +278,63 @@ Unit, integration, and E2E tests for all components and workflows.
 
 ### Unit Tests
 
-- [ ] 6.1 DAG validation tests (maestroRouteService.validateDAG)
+- [x] 6.1 DAG validation tests (maestroRouteService.validateDAG)
   - Test: linear chain (no cycles) passes
   - Test: circular prerequisite (A→B→C→A) detected and throws error
   - Test: complex DAG with 50+ indicators, no cycles, completes < 50ms
   - Test: self-reference (A→A) detected
   - Test: diamond dependency (A→B, A→C, B→D, C→D) passes (multi-prerequisite, Phase 2+)
+  - **Status**: `maestroRouteService.validateDAG.test.js`, 10 tests, todos verdes. Diamond dependency **omitido a propósito**: el esquema de Fase 1 solo admite un `prerequisito_indicador_id` por indicador (cadena lineal), así que una dependencia multi-padre no es representable con los datos actuales — no es un gap de testing, es una limitación de diseño ya documentada.
 
-- [ ] 6.2 Recovery state machine tests (maestroDataService.updateRecoveryStatus)
+- [x] 6.2 Recovery state machine tests (maestroDataService.updateRecoveryStatus)
   - Test: absence → recovery_status='Recuperado' updates correctly
   - Test: dependent indicators flagged when prerequisite recovered
   - Test: 'No Recuperable' status persists and blocks reevaluation
   - Test: recovery_notes and recovery_grade saved correctly
+  - **Status**: `maestroDataService.indicadorGrading.test.js`, cubre upsert (no update puro), rechazo de status inválido, reevaluación de cadena (`review_flag`) con y sin dependientes, y `saveIndicadorNota` (estrellas para presentes). **Bug real encontrado y corregido al escribir estos tests**: `viewCache.clear()` no existe en `viewCache.js` (el método real es `invalidate()`) — `saveIndicadorNota()` y `updateRecoveryStatus()` habrían lanzado `TypeError` en cada guardado real. Corregido en ambos call sites.
 
-- [ ] 6.3 Check-state calculation tests
+- [x] 6.3 Check-state calculation tests
   - Test: no evaluations → "none" state
   - Test: some students graded, 1 absent → "single" state
   - Test: all students graded/recovered → "double" state
   - Test: state transitions on recovery recorded
   - Vitest + supabase mock or local Supabase instance
+  - **Status**: cubierto en el mismo archivo que 6.2 — none/single/double, transición single→double al recuperar al último pendiente, ruta sin unidades (no crashea), y guard clause sin routeId/claseId.
 
 ### Integration Tests
 
-- [ ] 6.4 Route Builder form submission
+- [ ] 6.4 Route Builder form submission — **DIFERIDO**
   - Load form with empty route
   - Add 2 unidades, 2 objetivos per unidad, 1 indicador per objetivo
   - Set prerequisite on 2nd indicador
   - Submit form; assert database contains all rows with correct FKs
   - Page reload; assert data persists
+  - **Status**: `TeacherRouteBuilder.js` construye el modal directo sobre `document.body` (no exporta una función pura testeable sin DOM real). Probarlo bien requiere jsdom + simular clicks/inputs sobre un modal completo — más trabajo que valor inmediato dado que la lógica de negocio real (DAG, upsert) ya está cubierta a nivel de servicio (6.1/6.2). Queda para un PR de testing dedicado si se decide invertir en esto.
 
-- [ ] 6.5 IndicadorGradingModal data flow
+- [ ] 6.5 IndicadorGradingModal data flow — **DIFERIDO, mismo motivo que 6.4**
   - Load modal with 3 present students, 2 absent students
   - Grade 3 present students (stars 3, 4, 5)
   - Register recovery for 1 absent student (status "Recuperado", grade 3)
   - Assert evaluacion_indicador rows updated correctly
   - Assert check-state transitions: none → single → double
   - Assert prerequisite-dependent indicators flagged
+  - **Status**: mismo problema de testabilidad que 6.4 (componente DOM-first, no una función pura). La lógica que este test intentaría validar (upsert de nota, upsert de recuperación, reevaluación de cadena) ya está cubierta en 6.2.
 
-- [ ] 6.6 Grading with prerequisite warning
+- [ ] 6.6 Grading with prerequisite warning — **DIFERIDO, mismo motivo**
   - Route with prerequisite: Indicador A → Indicador B
   - Student has no grade for A
   - Grade student for B; assert warning modal appears
   - Click "Continuar Igual"; assert grade persists
   - Assert no blocking (soft enforcement)
+  - **Status**: la función que realmente decide si hay advertencia (`checkPrerequisiteSatisfied`) es simple y ya se ejerce indirectamente por los tests de DAG; falta el test del componente en sí (mismo motivo que 6.4/6.5).
 
 ### E2E Tests (Playwright or Cypress)
 
-- [ ] 6.7 Full workflow: create route → grade indicators → view check states
-  - Teacher logs in
-  - Creates route "Algebra 2026" with 2 unidades, 3 objetivos, 5 indicadores
-  - Sets prerequisite: Indicador E requires C
-  - Opens grading modal for Indicador A (present students)
-  - Grades 3 students (stars 4, 3, 5)
-  - Registers recovery for 1 absent student
-  - Asserts route map shows ✓ (single check) for Indicador A
-  - Grades Indicador C
-  - Grades Indicador E; prerequisite warning appears; clicks "Continuar Igual"
-  - Marks Indicador C as recovered for student
-  - Asserts Indicador E flagged for reevaluation (visual indicator TBD)
-  - Re-grades Indicador E for that student
-  - Asserts check-state progression (∅ → ✓ → ✓✓)
+- [ ] 6.7 Full workflow: create route → grade indicators → view check states — **NO IMPLEMENTADO**
+  - **Status**: no hay Playwright ni Cypress instalado en este repo (`package.json` confirmado sin ninguno de los dos). Escribir este test requeriría primero introducir un framework E2E nuevo al proyecto — decisión que excede el alcance de esta feature. No se fabricó un test falso para simular cobertura.
 
-- [ ] 6.8 ACM import flow
-  - Navigate to "Nueva Ruta"
-  - Click "Importar desde Catálogo Institucional"
-  - Select NIVEL "Comprensión Lectora"
-  - Click "Importar"
-  - Asserts route populated with OBJETIVO GENERAL and OBJETIVO ESPECÍFICO hierarchies
-  - Edit route (rename one indicador)
-  - Save and reload
-  - Asserts edit persists; no sync back to ACM
+- [ ] 6.8 ACM import flow — **NO APLICA todavía**
+  - **Status**: la feature que este test cubriría (importar desde ACM) está deshabilitada en la UI ("Próximamente") porque el catálogo ACM no existe en esta rama — no hay nada que probar E2E. Retomar junto con la tarea 2.3 cuando el catálogo esté disponible.
 
 ---
 

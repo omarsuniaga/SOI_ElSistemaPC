@@ -651,7 +651,7 @@ export async function saveIndicadorNota({ alumnoId, indicadorId, claseId, nota, 
     throw new Error(`Failed to save nota: ${error.message}`)
   }
 
-  viewCache.clear('check_states')
+  viewCache.invalidate('check_states')
   return data[0] || {}
 }
 
@@ -702,7 +702,7 @@ export async function updateRecoveryStatus(alumnoId, indicadorId, claseId, statu
       throw new Error(`Failed to update recovery status: ${error.message}`)
     }
 
-    viewCache.clear('check_states')
+    viewCache.invalidate('check_states')
 
     if (status === 'recuperado') {
       await _flagDependentIndicadores(alumnoId, indicadorId, claseId)

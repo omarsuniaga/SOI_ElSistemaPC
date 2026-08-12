@@ -570,6 +570,22 @@ export async function getIndicadorCheckStates(routeId, claseId) {
     const indicadorIds = (indicadores || []).map((i) => i.id)
     if (indicadorIds.length === 0) return []
 
+    // Total real de alumnos inscritos en la clase — SIN esto, un indicador
+    // con una sola fila en evaluacion_indicador (de 20 alumnos reales) se
+    // marcaba "doble check" (completo) porque el código solo miraba las
+    // filas que YA existían, nunca cuántas deberían existir. Bug crítico
+    // encontrado en revisión adversarial.
+    const { count: totalAlumnos, error: alumnosError } = await supabase
+      .from('alumnos_clases')
+      .select('alumno_id', { count: 'exact', head: true })
+      .eq('clase_id', claseId)
+      .eq('activo', true)
+
+    if (alumnosError) {
+      console.warn('[MaestroData] Error loading alumnos inscritos:', alumnosError.message)
+      return indicadorIds.map((id) => ({ indicador_id: id, check_state: 'none' }))
+    }
+
     // Una sola consulta para las evaluaciones de TODOS los indicadores de la
     // ruta (en vez de una consulta por indicador), agrupadas en memoria.
     const { data: allEvals, error: evalError } = await supabase
@@ -596,10 +612,14 @@ export async function getIndicadorCheckStates(routeId, claseId) {
         return { indicador_id: indicadorId, check_state: 'none' }
       }
       const hasUnresolvedDebt = evals.some((e) => e.recovery_status === 'pendiente' || e.recovery_status === null)
+      // "Doble check" exige que TODOS los alumnos inscritos tengan una fila
+      // resuelta (calificados, recuperados, o no_aplica/no_recuperable), no
+      // solo que las filas existentes no tengan deuda pendiente.
+      const faltanAlumnosPorTocar = (totalAlumnos ?? evals.length) > evals.length
       return {
         indicador_id: indicadorId,
-        check_state: hasUnresolvedDebt ? 'single' : 'double',
-        stats: { evaluados: evals.length },
+        check_state: hasUnresolvedDebt || faltanAlumnosPorTocar ? 'single' : 'double',
+        stats: { evaluados: evals.length, total: totalAlumnos ?? evals.length },
       }
     })
 
@@ -773,11 +793,6 @@ export async function getAttendanceForClass(claseId, fecha) {
       return { presentes: [], ausentes: [] }
     }
 
-    // 'tarde' cuenta como presente (llegó, recibió la clase) — el enum real
-    // de asistencias.estado es presente/ausente/tarde/justificado. Antes
-    // 'tarde' no caía en ninguna de las dos listas y el alumno desaparecía
-    // por completo del modal de calificación (no calificable, invisible
-    // para "Con Deudas Académicas", ignorado por "completamente evaluado").
     const presentes = (attendance || [])
       .filter((a) => a.estado === 'presente' || a.estado === 'tarde')
       .map((a) => a.alumno_id)

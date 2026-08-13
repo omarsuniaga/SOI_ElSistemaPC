@@ -65,7 +65,14 @@ export async function openIndicadorGradingModal({
   `
   document.body.appendChild(backdrop)
 
-  const closeModal = () => backdrop.remove()
+  // Cualquier calificación o registro de recuperación guardado exitosamente
+  // marca `dirty`, para que el mapa de rutas se refresque (check simple/doble)
+  // sin importar por qué puerta se cierre el modal — no solo al completar.
+  let dirty = false
+  const closeModal = () => {
+    backdrop.remove()
+    if (dirty) onSaved?.()
+  }
   backdrop.querySelector('.igm-close').addEventListener('click', closeModal)
   backdrop.addEventListener('click', (e) => {
     if (e.target === backdrop) closeModal()
@@ -240,6 +247,7 @@ export async function openIndicadorGradingModal({
                 evaluadoPor,
               })
               state.set(alumnoId, { ...(state.get(alumnoId) || {}), ...saved, nota: value })
+              dirty = true
               _refreshCompletarBtn()
             } catch (err) {
               AppToast.error(`No se pudo guardar: ${err.message}`)
@@ -277,6 +285,7 @@ export async function openIndicadorGradingModal({
           try {
             const saved = await updateRecoveryStatus(alumnoId, indicadorId, claseId, status, notes, null, evaluadoPor)
             state.set(alumnoId, { ...(state.get(alumnoId) || {}), ...saved, recovery_status: status })
+            dirty = true
 
             const row = body.querySelector(`.igm-alumno-row-deuda[data-alumno-id="${alumnoId}"]`)
             const form = body.querySelector(`.igm-recovery-form[data-alumno-id="${alumnoId}"]`)
@@ -355,6 +364,7 @@ export async function openIndicadorGradingModal({
                       }
                     })
                   )
+                  dirty = true
                   AppToast.success(`Calificación grupal aplicada a ${presentesIds.size} presentes`)
                   _refreshCompletarBtn()
                 } catch (err) {
@@ -379,8 +389,8 @@ export async function openIndicadorGradingModal({
 
     backdrop.querySelector('#igm-completar').addEventListener('click', () => {
       AppToast.success('Indicador marcado como completamente evaluado')
+      dirty = true
       closeModal()
-      onSaved?.()
     })
   } catch (err) {
     console.error('[IndicadorGradingModal] error:', err)

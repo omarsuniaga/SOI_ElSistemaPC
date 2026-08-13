@@ -4,6 +4,7 @@ import { escHTML } from '../utils/portalUtils.js'
 import { announce } from '../utils/a11yUtils.js'
 import { enqueue, getQueueCount } from '../services/offlineQueue.js'
 import { createSyncQueueBadge } from '../components/SyncQueueBadge.js'
+import { abrirMapaDeRutas } from '../components/teacherRouteMapPanel.js'
 
 import {
   improveText,
@@ -1502,6 +1503,18 @@ function _renderVista(container, ctx) {
     },
   })
   _cleanups.push(() => headerComp.destroy())
+
+  // ── Mapa de rutas del maestro (mismo panel que en "Hoy") ──
+  const mapaBtnAnchor = headerContainer?.querySelector('#pm-sync-badge-container')?.parentElement
+  if (mapaBtnAnchor) {
+    const mapaBtn = document.createElement('button')
+    mapaBtn.className = 'pm-mapa-btn pm-asist-mapa-btn'
+    mapaBtn.title = 'Mapa de rutas'
+    mapaBtn.setAttribute('aria-label', 'Mapa de rutas de la clase')
+    mapaBtn.innerHTML = '<i class="bi bi-signpost-2-fill"></i>'
+    mapaBtn.addEventListener('click', () => abrirMapaDeRutas(claseId, maestro, fechaHoy))
+    mapaBtnAnchor.insertBefore(mapaBtn, mapaBtnAnchor.firstChild)
+  }
 
   // ── Sync queue badge ──
   const badgeContainer = container.querySelector('#pm-sync-badge-container')

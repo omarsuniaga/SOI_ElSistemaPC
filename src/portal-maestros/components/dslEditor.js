@@ -223,22 +223,28 @@ export function createDslEditor(container, { initialContent = '', onChange, onAl
       query = triggerData.query
     }
 
+    // Capturar la posición del cursor y del caret ANTES del await: la
+    // llamada a catalogService es async, y mientras está en vuelo el
+    // resaltado de sintaxis puede reemplazar el innerHTML (colapsando la
+    // selección) o el usuario puede mover el foco/scroll — leer la posición
+    // después del await hacía que el popup apareciera en la selección
+    // "de donde sea" en vez de en el cursor real donde se escribió el trigger.
+    const pos = getCursorPosition()
+    _saveCaretOffset()
+
+    if (!pos) return
+
     try {
       const options = await catalogService.getOptionsForTrigger(trigger, query, _context)
 
       if (options.length > 0) {
-        const pos = getCursorPosition()
-        if (pos) {
-          // Guardar posición del caret ANTES de mostrar el popup
-          _saveCaretOffset()
-          autocompletePopup.show(
-            options,
-            (selected) => {
-              _insertAutocomplete(selected, trigger, query)
-            },
-            { trigger, position: pos },
-          )
-        }
+        autocompletePopup.show(
+          options,
+          (selected) => {
+            _insertAutocomplete(selected, trigger, query)
+          },
+          { trigger, position: pos },
+        )
       } else {
         autocompletePopup.hide()
       }

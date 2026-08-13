@@ -36,19 +36,23 @@ export function createAttendanceHeader(container, opts) {
       : ''
     }
     <div class="pm-asist-header">
-      <button id="pm-asist-back" class="pm-icon-btn"><i class="bi bi-arrow-left"></i></button>
-      <div style="flex:1">
-        <h2 class="pm-asist-title">${escHTML(clase.nombre)}</h2>
-        <p class="pm-asist-subtitle">
-          ${salonNombre ? `📍 ${escHTML(salonNombre)} · ` : ''}
-          ${horario ? `${formatHora(horario.hora_inicio)} – ${formatHora(horario.hora_fin)} · ` : ''}
-          <span style="color:var(--pm-primary); font-weight:700;">${formatFechaPortal(new Date(fechaHoy + 'T12:00:00'))}</span> · 
-          ${totalAlumnos} alumnos
-        </p>
+      <div class="pm-asist-header-row1">
+        <button id="pm-asist-back" class="pm-icon-btn"><i class="bi bi-arrow-left"></i></button>
+        <div class="pm-asist-header-titles">
+          <h2 class="pm-asist-title">${escHTML(clase.nombre)}</h2>
+          <p class="pm-asist-subtitle">
+            ${salonNombre ? `📍 ${escHTML(salonNombre)} · ` : ''}
+            ${horario ? `${formatHora(horario.hora_inicio)} – ${formatHora(horario.hora_fin)} · ` : ''}
+            <span class="pm-asist-subtitle-fecha">${formatFechaPortal(new Date(fechaHoy + 'T12:00:00'))}</span> ·
+            ${totalAlumnos} alumnos
+          </p>
+        </div>
       </div>
-      <div style="display:flex;align-items:center;gap:0.75rem;">
-        <div id="pm-sync-badge-container"></div>
-        <button id="pm-btn-help" class="pm-help-btn" title="Guía rápida"><i class="bi bi-question-lg"></i></button>
+      <div class="pm-asist-header-row2">
+        <div class="pm-asist-header-row2-left">
+          <div id="pm-sync-badge-container"></div>
+          <button id="pm-btn-help" class="pm-help-btn" title="Guía rápida"><i class="bi bi-question-lg"></i></button>
+        </div>
         <div class="pm-asist-bulk-circles">
           <button id="btn-bulk-p" class="pm-bulk-circle p" title="Marcar todos presentes">P</button>
           <button id="btn-bulk-a" class="pm-bulk-circle a" title="Marcar todos ausentes">A</button>

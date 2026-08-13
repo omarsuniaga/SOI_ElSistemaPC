@@ -17,6 +17,7 @@ const navGroups = [
     icon: 'bi-easel',
     items: [
       { id: 'clases-hoy', label: 'Clases de Hoy', icon: 'bi-calendar-day' },
+      { id: 'maestros', label: 'Maestros', icon: 'bi-person-check' },
       { id: 'programas', label: 'Programas', icon: 'bi-book' },
       { id: 'clases', label: 'Clases', icon: 'bi-easel2' },
       { id: 'salones', label: 'Salones', icon: 'bi-door-open' },

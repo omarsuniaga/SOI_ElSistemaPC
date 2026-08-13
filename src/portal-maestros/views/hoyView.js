@@ -14,9 +14,7 @@ import {
 import { obtenerRutasActivas } from '../../modules/planificacion/api/weeklyPlanAdapter.js'
 import { openClaseAnalysisModal } from '../components/claseAnalysisModal.js'
 import { openClaseEmergenteModal } from '../../modules/planificacion/components/claseEmergenteModal.js'
-import { openTeacherRoutePicker } from '../components/TeacherRouteBuilder.js'
-import { openIndicadorGradingModal } from '../components/IndicadorGradingModal.js'
-import { getPersonalRoutes, getIndicadorCheckStates } from '../services/maestroDataService.js'
+import { abrirMapaDeRutas } from '../components/teacherRouteMapPanel.js'
 
 // ─── Detección de clase en curso ───────────────────────────────
 
@@ -368,7 +366,7 @@ export async function renderHoyView(container, { onClaseClick } = {}) {
           e.stopPropagation()
           e.preventDefault()
           const claseId = mapaBtn.dataset.claseId
-          _abrirMapaDeRutas(claseId, maestro, fechaHoy)
+          abrirMapaDeRutas(claseId, maestro, fechaHoy)
         })
       }
 
@@ -419,157 +417,14 @@ export async function renderHoyView(container, { onClaseClick } = {}) {
 }
 
 // ─── Mapa de rutas del maestro (por clase) ────────────────────────
+// Ver src/portal-maestros/components/teacherRouteMapPanel.js — compartido
+// con asistenciaView.js (mismo mapa SVG, mismo picker, mismo modal de
+// calificación).
 
-/**
- * Abre el mapa de rutas propio del maestro para una clase: si no tiene
- * ninguna ruta creada, abre el picker (que a su vez ofrece crear una nueva);
- * si ya tiene, muestra el panel con los indicadores y sus checks.
- * @param {string} claseId
- * @param {Object} maestro
- * @param {string} fechaHoy - 'YYYY-MM-DD'
- */
-async function _abrirMapaDeRutas(claseId, maestro, fechaHoy) {
-  const routes = await getPersonalRoutes(maestro.id, claseId, true)
-
-  if (!routes || routes.length === 0) {
-    openTeacherRoutePicker(maestro.id, claseId, () => {
-      _abrirMapaDeRutas(claseId, maestro, fechaHoy)
-    })
-    return
-  }
-
-  // Fase 1: una ruta activa por clase (UNIQUE(maestro_id, clase_id) en el schema)
-  const route = routes[0]
-  await _renderMapaDeRutasPanel(route, claseId, maestro, fechaHoy)
-}
-
-async function _renderMapaDeRutasPanel(route, claseId, maestro, fechaHoy) {
-  const checkStates = await getIndicadorCheckStates(route.id, claseId)
-  const checkByIndicador = Object.fromEntries((checkStates || []).map((c) => [c.indicador_id, c.check_state]))
-
-  const backdrop = document.createElement('div')
-  backdrop.className = 'pmr-backdrop'
-
-  function _checkIcon(state) {
-    if (state === 'double') return '<i class="bi bi-check2-all pmr-check-double" title="Doble check: todos evaluados"></i>'
-    if (state === 'single') return '<i class="bi bi-check2 pmr-check-single" title="Check simple: hay deudas pendientes"></i>'
-    return '<span class="pmr-check-none" title="Sin dictar todavía"></span>'
-  }
-
-  const unidadesHTML = (route.unidades || [])
-    .map(
-      (unidad) => `
-    <div class="pmr-unidad">
-      <div class="pmr-unidad-title">${escHTML(unidad.nombre)}</div>
-      ${(unidad.objetivos || [])
-        .map(
-          (objetivo) => `
-        <div class="pmr-objetivo">
-          <div class="pmr-objetivo-title">${escHTML(objetivo.nombre)}</div>
-          <div class="pmr-indicadores">
-            ${(objetivo.indicadores || [])
-              .map(
-                (ind) => `
-              <button class="pmr-indicador" data-indicador-id="${ind.id}" data-indicador-nombre="${escHTML(ind.nombre)}" data-breadcrumb="${escHTML(unidad.nombre)} &gt; ${escHTML(objetivo.nombre)}">
-                ${_checkIcon(checkByIndicador[ind.id])}
-                <span>${escHTML(ind.nombre)}</span>
-              </button>
-            `
-              )
-              .join('')}
-          </div>
-        </div>
-      `
-        )
-        .join('')}
-    </div>
-  `
-    )
-    .join('')
-
-  backdrop.innerHTML = `
-    <div class="pmr-modal" role="dialog" aria-modal="true">
-      <div class="pmr-header">
-        <h3><i class="bi bi-signpost-2-fill"></i> ${escHTML(route.nombre)}</h3>
-        <div class="pmr-header-actions">
-          <button class="pmr-editar-btn" title="Editar ruta"><i class="bi bi-pencil-square"></i></button>
-          <button class="pmr-close" aria-label="Cerrar"><i class="bi bi-x-lg"></i></button>
-        </div>
-      </div>
-      <div class="pmr-body">
-        ${unidadesHTML || '<p class="pmr-empty">Esta ruta todavía no tiene unidades.</p>'}
-      </div>
-    </div>
-  `
-  document.body.appendChild(backdrop)
-
-  const closeModal = () => backdrop.remove()
-  backdrop.querySelector('.pmr-close').addEventListener('click', closeModal)
-  backdrop.addEventListener('click', (e) => {
-    if (e.target === backdrop) closeModal()
-  })
-
-  backdrop.querySelector('.pmr-editar-btn').addEventListener('click', () => {
-    closeModal()
-    openTeacherRoutePicker(maestro.id, claseId, () => {
-      _abrirMapaDeRutas(claseId, maestro, fechaHoy)
-    })
-  })
-
-  backdrop.querySelectorAll('.pmr-indicador').forEach((btn) => {
-    btn.addEventListener('click', async () => {
-      closeModal()
-      await openIndicadorGradingModal({
-        claseId,
-        fecha: fechaHoy,
-        indicadorId: btn.dataset.indicadorId,
-        indicadorNombre: btn.dataset.indicadorNombre,
-        breadcrumb: btn.dataset.breadcrumb,
-        evaluadoPor: maestro.user_id,
-        onSaved: () => _renderMapaDeRutasPanel(route, claseId, maestro, fechaHoy),
-      })
-    })
-  })
-}
-
-if (!document.getElementById('pmr-styles')) {
+if (!document.getElementById('pm-mapa-btn-styles')) {
   const s = document.createElement('style')
-  s.id = 'pmr-styles'
+  s.id = 'pm-mapa-btn-styles'
   s.textContent = `
-    .pmr-backdrop {
-      position: fixed; inset: 0; background: rgba(15,23,42,0.55);
-      display: flex; align-items: center; justify-content: center;
-      z-index: 9400; padding: 1rem;
-    }
-    .pmr-modal {
-      background: var(--pm-surface, #fff); border-radius: 16px;
-      width: min(560px, 100%); max-height: 85vh; display: flex; flex-direction: column;
-      box-shadow: 0 24px 64px rgba(0,0,0,0.25);
-    }
-    .pmr-header {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 1rem 1.15rem; border-bottom: 1px solid var(--pm-border, #e5e7eb);
-    }
-    .pmr-header h3 { margin: 0; font-size: 1rem; font-weight: 700; display: flex; align-items: center; gap: 0.4rem; }
-    .pmr-header-actions { display: flex; gap: 0.4rem; }
-    .pmr-editar-btn, .pmr-close { background: none; border: none; font-size: 1rem; cursor: pointer; color: var(--pm-text-muted); }
-    .pmr-body { padding: 1rem 1.15rem; overflow-y: auto; flex: 1; }
-    .pmr-empty { color: var(--pm-text-muted); font-size: 0.85rem; text-align: center; padding: 1.5rem 0; }
-    .pmr-unidad { margin-bottom: 1rem; }
-    .pmr-unidad-title { font-size: 0.85rem; font-weight: 700; color: var(--pm-primary, #3b82f6); margin-bottom: 0.4rem; }
-    .pmr-objetivo { margin: 0.4rem 0 0.4rem 0.6rem; }
-    .pmr-objetivo-title { font-size: 0.78rem; font-weight: 600; color: var(--pm-text-muted); margin-bottom: 0.3rem; }
-    .pmr-indicadores { display: flex; flex-direction: column; gap: 0.3rem; margin-left: 0.6rem; }
-    .pmr-indicador {
-      display: flex; align-items: center; gap: 0.5rem; text-align: left;
-      padding: 0.4rem 0.6rem; border-radius: 8px; border: 1px solid var(--pm-border, #e5e7eb);
-      background: var(--pm-surface-2, #fafafa); cursor: pointer; font-size: 0.82rem; color: var(--pm-text);
-    }
-    .pmr-indicador:hover { border-color: var(--pm-primary, #3b82f6); background: rgba(59,130,246,0.05); }
-    .pmr-check-double { color: #3b82f6; }
-    .pmr-check-single { color: #9ca3af; }
-    .pmr-check-none { display: inline-block; width: 1em; }
-
     .pm-mapa-btn {
       background: transparent; border: 2px solid var(--pm-border, #d1d5db); border-radius: 8px;
       padding: 0.5rem 0.7rem; min-width: 32px; height: 32px; font-size: 1rem;

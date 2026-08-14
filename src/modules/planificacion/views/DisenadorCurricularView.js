@@ -257,9 +257,6 @@ function _renderUI(container, clases, estadoEstructura) {
             </div>
 
             <div class="d-flex flex-wrap align-items-center gap-2">
-              <button type="button" class="btn btn-outline-light fw-bold d-inline-flex align-items-center gap-1 shadow-sm px-3 dc-btn-glass" id="btn-ver-rutas-svg">
-                <i class="bi bi-diagram-3"></i>Ver Rutas (SVG)
-              </button>
               <button type="button" class="btn btn-light text-primary fw-bold d-inline-flex align-items-center gap-1 shadow-sm px-3 dc-btn-ia" id="btn-ia-generar-full">
                 <i class="bi bi-magic text-purple"></i>+ Generar Siguiente Unidad con IA (GROQ)
               </button>
@@ -857,14 +854,6 @@ function _attachEventsFull(container, clases, estadoEstructura, alumnosState, _l
   container.querySelector('#btn-volver-acm')?.addEventListener('click', () => {
     const activeNav = (typeof window !== 'undefined' && window.router) ? window.router : router
     activeNav.navigate('planificacion')
-  })
-
-  container.querySelector('#btn-ver-rutas-svg')?.addEventListener('click', () => {
-    const activeNav = (typeof window !== 'undefined' && window.router) ? window.router : router
-    activeNav.navigate('planificacion-ruta', {
-      parentRoute: 'planificacion-disenador',
-      claseId: estadoEstructura.claseId,
-    })
   })
 
   container.querySelector('#btn-ia-generar-full')?.addEventListener('click', async () => {

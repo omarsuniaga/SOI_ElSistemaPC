@@ -9,3 +9,4 @@ export const getSemaforoClase = (claseId) => impl.getSemaforoClase(claseId)
 export const registrarSesion = (payload) => impl.registrarSesion(payload)
 export const getHistorialContenido = (claseId, objetivoId) =>
   impl.getHistorialContenido(claseId, objetivoId)
+export const getAuditoriaSuplentes = (params) => impl.getAuditoriaSuplentes(params)

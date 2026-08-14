@@ -271,7 +271,11 @@ export async function renderHoyView(container, { onClaseClick } = {}) {
             </div>
           </div>
           <div class="pm-clase-meta">
-            <div class="meta-item"><i class="bi bi-clock"></i> ${formatHora(h.hora_inicio)} – ${formatHora(h.hora_fin)}</div>
+            <div class="meta-item"><i class="bi bi-clock"></i> ${
+              clase.tipo_clase === 'rotativa'
+                ? 'Turnos individuales'
+                : `${formatHora(h.hora_inicio)} – ${formatHora(h.hora_fin)}`
+            }</div>
             <div class="meta-item"><i class="bi bi-music-note-beamed"></i> ${escHTML(clase.instrumento || '—')}</div>
             <div class="meta-item"><i class="bi bi-people"></i> ${totalAlumnos} alumnos</div>
             ${h.salon_id ? `<div class="meta-item"><i class="bi bi-geo-alt"></i> ${escHTML(salonMap[h.salon_id] || 'Salón')}</div>` : ''}

@@ -56,8 +56,8 @@ export async function crearAsistencia(asistencia) {
   return impl.crearAsistencia(asistencia)
 }
 
-export async function registrarAsistenciaBulk(asistencias) {
-  return impl.registrarAsistenciaBulk(asistencias)
+export async function registrarAsistenciaBulk(asistencias, auditContext) {
+  return impl.registrarAsistenciaBulk(asistencias, auditContext)
 }
 
 export async function getReporteConsolidado(params) {

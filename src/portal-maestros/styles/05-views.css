@@ -797,6 +797,43 @@
   color: var(--pm-text-muted);
 }
 
+/* ── Turno individual (clases rotativas: día+hora por alumno) ── */
+.pm-turno-edit-btn {
+  flex-shrink: 0; width: 32px; height: 32px; border-radius: 50%;
+  border: 1px solid var(--pm-border, #d1d5db); background: var(--pm-surface-2, #f3f4f6);
+  color: var(--pm-text-muted, #6b7280); display: flex; align-items: center; justify-content: center;
+  cursor: pointer; font-size: 0.85rem; transition: all 0.15s;
+}
+.pm-turno-edit-btn:hover { background: var(--pm-primary, #3b82f6); color: #fff; border-color: var(--pm-primary, #3b82f6); }
+
+.pm-turno-overlay {
+  position: fixed; inset: 0; background: rgba(15,23,42,0.55);
+  display: flex; align-items: center; justify-content: center; z-index: 10000; padding: 1rem;
+}
+.pm-turno-dialog {
+  background: var(--pm-surface, #fff); color: var(--pm-text, #111827);
+  border-radius: 16px; width: min(360px, 100%); padding: 1.25rem;
+  box-shadow: 0 24px 64px rgba(0,0,0,0.3);
+}
+.pm-turno-dialog h4 { margin: 0 0 0.4rem; font-size: 1rem; font-weight: 700; }
+.pm-turno-hint { font-size: 0.78rem; color: var(--pm-text-muted, #6b7280); margin: 0 0 1rem; }
+.pm-turno-field { display: block; margin-bottom: 0.85rem; }
+.pm-turno-field span { display: block; font-size: 0.78rem; font-weight: 600; color: var(--pm-text-muted, #6b7280); margin-bottom: 0.3rem; }
+.pm-turno-field select, .pm-turno-field input {
+  width: 100%; padding: 0.5rem 0.6rem; border-radius: 9px;
+  border: 1px solid var(--pm-border, #d1d5db); background: var(--pm-surface-2, #f9fafb);
+  color: var(--pm-text, #111827); font-size: 0.9rem;
+}
+.pm-turno-row { display: flex; gap: 0.6rem; }
+.pm-turno-row .pm-turno-field { flex: 1; }
+.pm-turno-actions { display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 0.4rem; }
+.pm-turno-btn-ghost, .pm-turno-btn-primary {
+  border-radius: 9px; padding: 0.5rem 0.9rem; font-size: 0.85rem; font-weight: 600; cursor: pointer; border: 1px solid transparent;
+}
+.pm-turno-btn-ghost { background: none; color: var(--pm-text-muted, #6b7280); border-color: var(--pm-border, #d1d5db); }
+.pm-turno-btn-primary { background: var(--pm-primary, #3b82f6); color: #fff; }
+.pm-turno-btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
+
 .pm-asist-btns {
   display: flex;
   gap: 0.35rem;

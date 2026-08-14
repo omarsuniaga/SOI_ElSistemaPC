@@ -99,6 +99,11 @@ export function createObservationSaveButton(container, opts) {
         parsed,
         resultado.dslGenerado || null,
         resultado.textoMejorado || null,
+        {
+          clase: opts.clase || null,
+          maestroUserId: opts.maestro?.user_id || opts.maestro?.id || null,
+          fechaHoy: opts.fechaHoy || null,
+        },
       )
 
       const _parsedForProgress = parseDSL(raw)

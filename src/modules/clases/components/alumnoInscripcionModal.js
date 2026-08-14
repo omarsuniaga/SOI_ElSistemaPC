@@ -4,6 +4,18 @@ import { inscribirAlumno, desinscribirAlumno, obtenerAlumnosInscritos, obtenerCl
 import { crearAlumno } from '../../alumnos/api/alumnosApi.js'
 import { escapeHTML, getInitials } from '../utils/clasesUtils.js'
 
+// Mismos valores que el CHECK constraint de clase_horarios.dia y alumnos_clases.dia.
+const DIAS = ['lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado', 'domingo']
+
+function _diaSelectHTML(className, selected, placeholderLabel) {
+  return `
+    <select class="form-select form-select-sm ${className}" style="width: 108px;">
+      <option value="">${placeholderLabel}</option>
+      ${DIAS.map((d) => `<option value="${d}" ${d === selected ? 'selected' : ''}>${d[0].toUpperCase()}${d.slice(1)}</option>`).join('')}
+    </select>
+  `
+}
+
 export async function openAlumnoInscripcionModal(claseId) {
   AppModal.open({
     title: 'Inscripción de alumnos',
@@ -87,7 +99,7 @@ function _buildBody(inscritos, disponibles, claseId, clase, inscritosRaw) {
           ? '<p class="text-muted small mb-0">Sin alumnos inscritos aún.</p>'
           : inscritos.map(a => {
               const inscripcion = inscritosRaw.find(r => r.alumno_id === a.id)
-              return _rowInscrito(a, isRotativa, inscripcion?.hora_inicio, inscripcion?.hora_fin)
+              return _rowInscrito(a, isRotativa, inscripcion?.hora_inicio, inscripcion?.hora_fin, inscripcion?.dia)
             }).join('')}
       </div>
     </div>
@@ -117,17 +129,21 @@ function _buildBody(inscritos, disponibles, claseId, clase, inscritosRaw) {
   `
 }
 
-function _rowInscrito(a, isRotativa, horaInicio, horaFin) {
+function _rowInscrito(a, isRotativa, horaInicio, horaFin, dia) {
   const nombre = escapeHTML(a.nombre_completo || a.nombre || 'Alumno')
   const instrumento = escapeHTML(a.instrumento_principal || '')
-  
+
   let turnoHtml = ''
   if (isRotativa) {
-    const timeDisplay = (horaInicio && horaFin) ? `${horaInicio.slice(0,5)} a ${horaFin.slice(0,5)}` : 'Sin turno'
+    // dia=null → el alumno va el mismo día que la clase (clase_horarios); solo se
+    // muestra explícito en el badge si el maestro/admin lo fijó distinto.
+    const diaLabel = dia ? `${dia[0].toUpperCase()}${dia.slice(1)} ` : ''
+    const timeDisplay = (horaInicio && horaFin) ? `${diaLabel}${horaInicio.slice(0,5)} a ${horaFin.slice(0,5)}` : 'Sin turno'
     turnoHtml = `
       <div class="d-flex align-items-center gap-2 ms-auto me-3 turno-container">
         <span class="badge bg-secondary turno-display"><i class="bi bi-clock"></i> ${timeDisplay}</span>
         <div class="turno-edit-form d-none d-flex gap-1">
+          ${_diaSelectHTML('turno-dia', dia, 'Día clase')}
           <input type="time" class="form-control form-control-sm" style="width: 80px;" value="${horaInicio ? horaInicio.slice(0,5) : ''}">
           <input type="time" class="form-control form-control-sm" style="width: 80px;" value="${horaFin ? horaFin.slice(0,5) : ''}">
           <button class="btn btn-sm btn-success btn-guardar-turno" data-alumno-id="${a.id}"><i class="bi bi-check2"></i></button>
@@ -167,6 +183,7 @@ function _rowDisponible(a, isRotativa) {
   if (isRotativa) {
     turnoHtml = `
       <div class="d-flex gap-1 ms-auto me-2">
+        ${_diaSelectHTML('new-dia', null, 'Día clase')}
         <input type="time" class="form-control form-control-sm new-hora-inicio" style="width: 80px;" placeholder="Inicio">
         <input type="time" class="form-control form-control-sm new-hora-fin" style="width: 80px;" placeholder="Fin">
       </div>
@@ -287,10 +304,11 @@ function _wireEvents(claseId, clase) {
       const inputs = container.querySelectorAll('input[type="time"]')
       const horaInicio = inputs[0].value || null
       const horaFin = inputs[1].value || null
+      const dia = container.querySelector('.turno-dia')?.value || null
 
       e.currentTarget.disabled = true
       try {
-        await actualizarTurnoInscripcion(claseId, alumnoId, horaInicio, horaFin)
+        await actualizarTurnoInscripcion(claseId, alumnoId, horaInicio, horaFin, dia)
         openAlumnoInscripcionModal(claseId)
       } catch (err) {
         alert(err.message)
@@ -310,13 +328,14 @@ function _wireEvents(claseId, clase) {
 
     try {
       for (const cb of checks) {
-        let horaInicio = null, horaFin = null
+        let horaInicio = null, horaFin = null, dia = null
         if (isRotativa) {
           const row = cb.closest('.disponible-item')
           horaInicio = row.querySelector('.new-hora-inicio')?.value || null
           horaFin = row.querySelector('.new-hora-fin')?.value || null
+          dia = row.querySelector('.new-dia')?.value || null
         }
-        await inscribirAlumno(claseId, cb.value, horaInicio, horaFin)
+        await inscribirAlumno(claseId, cb.value, horaInicio, horaFin, dia)
       }
       openAlumnoInscripcionModal(claseId)
     } catch (err) {

@@ -3,6 +3,7 @@ import { formatHora, timeToMinutes } from '../utils/clasesUtils.js'
 import { checkPeriodoSupport } from '../../../lib/periodoSniffer.js'
 import { Clase } from '../models/clase.model.js'
 import { config } from '../../../core/config/config.js'
+import { logSubstituteActivity } from '../../../portal-maestros/services/substituteAuditService.js'
 
 export const NIVELES = [
   { value: '1', label: '1° Año' },
@@ -364,6 +365,24 @@ export async function crearClase(claseData, force = false) {
 
   const claseCreada = data[0]
 
+  if (claseCreada?.maestro_suplente_id) {
+    logSubstituteActivity({
+      action: 'SUBSTITUTE_ASSIGN',
+      classId: claseCreada.id,
+      maestroTitularId: claseCreada.maestro_principal_id,
+      maestroSuplenteId: claseCreada.maestro_suplente_id,
+      fecha: new Date().toISOString().slice(0, 10),
+      summary: `Se asignó suplente a la clase "${claseCreada.nombre}"`,
+      changes: {
+        event: 'class_created_with_substitute',
+        class_name: claseCreada.nombre,
+      },
+      force: true,
+    }).catch((err) => {
+      console.warn('[clasesApi] No se pudo registrar auditoría de suplente en alta:', err)
+    })
+  }
+
   if (clase.horarios.length > 0) {
     const horariosData = clase.horarios.map(h => ({
       clase_id: claseCreada.id,
@@ -448,6 +467,34 @@ export async function actualizarClase(id, actualizaciones, force = false) {
     throw new Error('No se pudo actualizar la clase')
   }
 
+  const claseActualizada = data?.[0] || null
+  const suplenteAnterior = original?.maestro_suplente_id ?? null
+  const suplenteNuevo = claseActualizada?.maestro_suplente_id ?? updatePayload.maestro_suplente_id ?? null
+
+  if (suplenteAnterior !== suplenteNuevo) {
+    const action = suplenteNuevo ? 'SUBSTITUTE_ASSIGN' : 'SUBSTITUTE_REMOVE'
+    const summary = suplenteNuevo
+      ? `Se asignó suplente a la clase "${claseActualizada?.nombre || original?.nombre || id}"`
+      : `Se retiró el suplente de la clase "${claseActualizada?.nombre || original?.nombre || id}"`
+
+    logSubstituteActivity({
+      action,
+      classId: id,
+      maestroTitularId: claseActualizada?.maestro_principal_id || original?.maestro_principal_id,
+      maestroSuplenteId: suplenteNuevo,
+      fecha: new Date().toISOString().slice(0, 10),
+      summary,
+      changes: {
+        event: suplenteNuevo ? 'substitute_assigned_or_changed' : 'substitute_removed',
+        previous_substitute_id: suplenteAnterior,
+        next_substitute_id: suplenteNuevo,
+      },
+      force: true,
+    }).catch((err) => {
+      console.warn('[clasesApi] No se pudo registrar auditoría de suplente en edición:', err)
+    })
+  }
+
   if (actualizaciones.horarios) {
     const { error: errorDelete } = await supabase
       .from('clase_horarios')
@@ -514,16 +561,17 @@ export async function obtenerClasesPorMaestro(maestroId) {
   })
 }
 
-export async function inscribirAlumno(claseId, alumnoId, horaInicio = null, horaFin = null) {
+export async function inscribirAlumno(claseId, alumnoId, horaInicio = null, horaFin = null, dia = null) {
   const { data, error } = await supabase
     .from('alumnos_clases')
-    .insert([{ 
-      clase_id: claseId, 
-      alumno_id: alumnoId, 
-      activo: true, 
+    .insert([{
+      clase_id: claseId,
+      alumno_id: alumnoId,
+      activo: true,
       fecha_inscripcion: new Date().toISOString().split('T')[0],
       hora_inicio: horaInicio,
-      hora_fin: horaFin
+      hora_fin: horaFin,
+      dia,
     }])
     .select()
 
@@ -544,10 +592,15 @@ export async function desinscribirAlumno(claseId, alumnoId) {
   if (error) throw error
 }
 
-export async function actualizarTurnoInscripcion(claseId, alumnoId, horaInicio, horaFin) {
+export async function actualizarTurnoInscripcion(claseId, alumnoId, horaInicio, horaFin, dia = undefined) {
+  const update = { hora_inicio: horaInicio, hora_fin: horaFin }
+  // `undefined` = no tocar el día actual (llamadas viejas que solo cambian hora);
+  // `null` explícito = volver a "usa el día de la clase".
+  if (dia !== undefined) update.dia = dia
+
   const { data, error } = await supabase
     .from('alumnos_clases')
-    .update({ hora_inicio: horaInicio, hora_fin: horaFin })
+    .update(update)
     .eq('clase_id', claseId)
     .eq('alumno_id', alumnoId)
     .select()

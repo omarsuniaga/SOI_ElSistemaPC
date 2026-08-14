@@ -231,9 +231,6 @@ function _renderUI(container, planes) {
           <button class="btn btn-primary d-inline-flex align-items-center gap-1 shadow-sm px-3" id="btn-crear-disenador-full">
             <i class="bi bi-journal-plus"></i>Diseñar Plan Completo (ACM)
           </button>
-          <button class="btn btn-outline-primary d-inline-flex align-items-center gap-1 shadow-sm px-3" id="btn-ver-ruta-full">
-            <i class="bi bi-diagram-3"></i>Ver Ruta SVG Completa
-          </button>
           <button class="btn btn-success d-inline-flex align-items-center gap-1 shadow-sm px-3" id="btn-aprobar-masivo" disabled>
             <i class="bi bi-check2-all"></i>Aprobar Seleccionados (0)
           </button>
@@ -278,10 +275,6 @@ function _renderUI(container, planes) {
   // Navegar a las Vistas de Pantalla Completa
   container.querySelector('#btn-crear-disenador-full')?.addEventListener('click', () => {
     router.navigate('planificacion-disenador')
-  })
-
-  container.querySelector('#btn-ver-ruta-full')?.addEventListener('click', () => {
-    router.navigate('planificacion-ruta')
   })
 
   container.querySelector('#chk-select-all')?.addEventListener('change', (e) => {

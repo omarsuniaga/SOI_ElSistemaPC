@@ -106,3 +106,15 @@ export async function getHistorialContenido(claseId, objetivoId) {
     s => s.claseId === claseId && s.objetivoId === objetivoId
   )
 }
+
+export async function getAuditoriaSuplentes({ claseId = null, action = null, limit = 100 } = {}) {
+  await delay()
+  const store = loadStore()
+  const logs = (store.auditLogs || []).filter((log) => {
+    if (claseId && String(log.entity_id) !== String(claseId)) return false
+    if (action && String(log.action) !== String(action)) return false
+    return String(log.entity) === 'substitute_class_activity'
+  })
+
+  return logs.slice(0, limit)
+}

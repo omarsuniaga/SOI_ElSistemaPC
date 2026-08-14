@@ -216,30 +216,53 @@ function _getClaseFormHTML(clase, inscritosIds, inscritosSlots = []) {
   `
 }
 
-function _getSlotBuilderHTML(inscritosSlots = []) {
+// Mismos valores que el CHECK constraint de clase_horarios.dia / alumnos_clases.dia.
+const DIAS_TURNO = ['lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado', 'domingo']
+
+/**
+ * Fila de un turno individual. Un alumno de una clase rotativa puede tener
+ * día, hora de inicio y duración propios, distintos al resto del grupo —
+ * "día" vacío significa "el mismo día que el horario global de la clase"
+ * (clase_horarios), así que no hace falta repetirlo si coincide con el resto.
+ * La duración es solo un atajo de captura (recalcula la hora de fin al
+ * cambiar inicio o duración); lo que persiste es hora_inicio/hora_fin.
+ */
+function _slotRowHTML({ alumnoId = '', horaInicio = '', horaFin = '', dia = '' } = {}) {
   const alumnos = _options.alumnos || []
+  return `
+    <div class="slot-row d-flex flex-wrap align-items-center gap-2 mb-2 p-2 rounded border bg-body-tertiary">
+      <select class="form-select form-select-sm slot-alumno-select flex-grow-1" style="min-width:160px;" required>
+        <option value="">Seleccionar alumno…</option>
+        ${alumnos.map(a => `
+          <option value="${a.id}" data-alumno-id="${a.id}" ${a.id === alumnoId ? 'selected' : ''}>
+            ${escapeHTML(a.nombre_completo)}${a.instrumento_principal ? ` — ${escapeHTML(a.instrumento_principal)}` : ''}
+          </option>`).join('')}
+      </select>
+      <select class="form-select form-select-sm slot-dia" style="width:128px;" title="Día del turno">
+        <option value="">(día de la clase)</option>
+        ${DIAS_TURNO.map(d => `<option value="${d}" ${d === dia ? 'selected' : ''}>${d[0].toUpperCase()}${d.slice(1)}</option>`).join('')}
+      </select>
+      <div class="d-flex align-items-center gap-1 flex-shrink-0">
+        <input type="time" class="form-control form-control-sm slot-hora-inicio" value="${horaInicio}" style="width:110px;" required title="Hora inicio">
+        <span class="text-muted small">–</span>
+        <input type="time" class="form-control form-control-sm slot-hora-fin" value="${horaFin}" style="width:110px;" required title="Hora fin">
+      </div>
+      <select class="form-select form-select-sm slot-duracion" style="width:96px;" title="Duración (calcula la hora de fin)">
+        <option value="">Duración…</option>
+        <option value="15">15 min</option>
+        <option value="20">20 min</option>
+        <option value="30">30 min</option>
+        <option value="45">45 min</option>
+        <option value="60">60 min</option>
+        <option value="90">90 min</option>
+      </select>
+      <button type="button" class="btn btn-sm btn-link text-danger p-0 btn-remove-slot" title="Quitar turno">
+        <i class="bi bi-x-circle-fill fs-5"></i>
+      </button>
+    </div>`
+}
 
-  const slotRow = (alumnoId = '', horaInicio = '', horaFin = '') => {
-    return `
-      <div class="slot-row d-flex align-items-center gap-2 mb-2 p-2 rounded border bg-body-tertiary">
-        <select class="form-select form-select-sm slot-alumno-select flex-grow-1" style="min-width:0;" required>
-          <option value="">Seleccionar alumno…</option>
-          ${alumnos.map(a => `
-            <option value="${a.id}" data-alumno-id="${a.id}" ${a.id === alumnoId ? 'selected' : ''}>
-              ${escapeHTML(a.nombre_completo)}${a.instrumento_principal ? ` — ${escapeHTML(a.instrumento_principal)}` : ''}
-            </option>`).join('')}
-        </select>
-        <div class="d-flex align-items-center gap-1 flex-shrink-0">
-          <input type="time" class="form-control form-control-sm slot-hora-inicio" value="${horaInicio}" style="width:110px;" required title="Hora inicio">
-          <span class="text-muted small">–</span>
-          <input type="time" class="form-control form-control-sm slot-hora-fin" value="${horaFin}" style="width:110px;" required title="Hora fin">
-        </div>
-        <button type="button" class="btn btn-sm btn-link text-danger p-0 btn-remove-slot" title="Quitar turno">
-          <i class="bi bi-x-circle-fill fs-5"></i>
-        </button>
-      </div>`
-  }
-
+function _getSlotBuilderHTML(inscritosSlots = []) {
   const sortedSlots = [...inscritosSlots].sort((a, b) => {
     const minA = timeToMinutes(a.hora_inicio || '23:59')
     const minB = timeToMinutes(b.hora_inicio || '23:59')
@@ -247,12 +270,13 @@ function _getSlotBuilderHTML(inscritosSlots = []) {
   })
 
   const existingRows = sortedSlots.length
-    ? sortedSlots.map(s => slotRow(
-        s.alumno_id,
-        (s.hora_inicio || '').slice(0, 5),
-        (s.hora_fin   || '').slice(0, 5)
-      )).join('')
-    : slotRow()   // Una fila vacía por defecto
+    ? sortedSlots.map(s => _slotRowHTML({
+        alumnoId: s.alumno_id,
+        horaInicio: (s.hora_inicio || '').slice(0, 5),
+        horaFin: (s.hora_fin || '').slice(0, 5),
+        dia: s.dia || '',
+      })).join('')
+    : _slotRowHTML()   // Una fila vacía por defecto
 
   return `
     <div id="slots-container" class="mb-2">
@@ -368,27 +392,9 @@ function _attachModalEvents(modalBody, _clase) {
 
   // Agregar turno
   modalBody.querySelector('#btn-add-slot')?.addEventListener('click', () => {
-    const alumnos = _options.alumnos || []
     const temp = document.createElement('div')
-    temp.innerHTML = _getSlotBuilderHTML([]).split('id="slots-container"')[1]
-      ? '' : ''
-    // Build a single empty row and append
-    const emptyRow = document.createElement('div')
-    emptyRow.className = 'slot-row d-flex align-items-center gap-2 mb-2 p-2 rounded border bg-body-tertiary'
-    emptyRow.innerHTML = `
-      <select class="form-select form-select-sm slot-alumno-select flex-grow-1" style="min-width:0;" required>
-        <option value="">Seleccionar alumno…</option>
-        ${alumnos.map(a => `<option value="${a.id}" data-alumno-id="${a.id}">${escapeHTML(a.nombre_completo)}${a.instrumento_principal ? ` — ${escapeHTML(a.instrumento_principal)}` : ''}</option>`).join('')}
-      </select>
-      <div class="d-flex align-items-center gap-1 flex-shrink-0">
-        <input type="time" class="form-control form-control-sm slot-hora-inicio" style="width:110px;" required title="Hora inicio">
-        <span class="text-muted small">–</span>
-        <input type="time" class="form-control form-control-sm slot-hora-fin" style="width:110px;" required title="Hora fin">
-      </div>
-      <button type="button" class="btn btn-sm btn-link text-danger p-0 btn-remove-slot" title="Quitar turno">
-        <i class="bi bi-x-circle-fill fs-5"></i>
-      </button>`
-    slotsContainer.appendChild(emptyRow)
+    temp.innerHTML = _slotRowHTML().trim()
+    slotsContainer.appendChild(temp.firstElementChild)
     _updateSlotsCount()
   })
 
@@ -444,26 +450,13 @@ function _attachModalEvents(modalBody, _clase) {
     }
 
     const existingRows = Array.from(slotsContainer.querySelectorAll('.slot-row'))
-    const alumnos = _options.alumnos || []
 
     turnosGenerados.forEach((t, idx) => {
       let row = existingRows[idx]
       if (!row) {
-        row = document.createElement('div')
-        row.className = 'slot-row d-flex align-items-center gap-2 mb-2 p-2 rounded border bg-body-tertiary'
-        row.innerHTML = `
-          <select class="form-select form-select-sm slot-alumno-select flex-grow-1" style="min-width:0;" required>
-            <option value="">Seleccionar alumno…</option>
-            ${alumnos.map(a => `<option value="${a.id}" data-alumno-id="${a.id}">${escapeHTML(a.nombre_completo)}${a.instrumento_principal ? ` — ${escapeHTML(a.instrumento_principal)}` : ''}</option>`).join('')}
-          </select>
-          <div class="d-flex align-items-center gap-1 flex-shrink-0">
-            <input type="time" class="form-control form-control-sm slot-hora-inicio" style="width:110px;" required title="Hora inicio">
-            <span class="text-muted small">–</span>
-            <input type="time" class="form-control form-control-sm slot-hora-fin" style="width:110px;" required title="Hora fin">
-          </div>
-          <button type="button" class="btn btn-sm btn-link text-danger p-0 btn-remove-slot" title="Quitar turno">
-            <i class="bi bi-x-circle-fill fs-5"></i>
-          </button>`
+        const temp = document.createElement('div')
+        temp.innerHTML = _slotRowHTML().trim()
+        row = temp.firstElementChild
         slotsContainer.appendChild(row)
       }
       row.querySelector('.slot-hora-inicio').value = t.inicio
@@ -494,6 +487,19 @@ function _attachModalEvents(modalBody, _clase) {
   modalBody.querySelector('#btn-sort-slots')?.addEventListener('click', () => {
     _sortSlotRows()
     AppToast.success('Turnos ordenados por horario ascendente')
+  })
+
+  // Duración por fila: solo un atajo de captura — recalcula la hora de fin a
+  // partir de inicio+duración; el maestro puede sobreescribir Fin a mano después.
+  slotsContainer?.addEventListener('change', e => {
+    const durEl = e.target.closest('.slot-duracion')
+    const inicioEl = e.target.closest('.slot-hora-inicio')
+    const row = (durEl || inicioEl)?.closest('.slot-row')
+    if (!row) return
+    const duracion = row.querySelector('.slot-duracion')?.value
+    const inicio = row.querySelector('.slot-hora-inicio')?.value
+    if (!duracion || !inicio) return
+    row.querySelector('.slot-hora-fin').value = minutesToTime(timeToMinutes(inicio) + Number(duracion))
   })
 
   // Quitar turno (delegado)
@@ -631,6 +637,7 @@ async function _handleSave(modalBody, originalClase) {
       alumno_id:   row.querySelector('.slot-alumno-select').value,
       hora_inicio: row.querySelector('.slot-hora-inicio').value,
       hora_fin:    row.querySelector('.slot-hora-fin').value,
+      dia:         row.querySelector('.slot-dia')?.value || null,
     })).filter(s => s.alumno_id)
       .sort((a, b) => timeToMinutes(a.hora_inicio || '23:59') - timeToMinutes(b.hora_inicio || '23:59'))
 
@@ -665,8 +672,8 @@ async function _handleSave(modalBody, originalClase) {
     // Upsert each slot: update time if already enrolled, insert if new
     await Promise.all(slots.map(s =>
       currentIds.includes(s.alumno_id)
-        ? actualizarTurnoInscripcion(claseId, s.alumno_id, s.hora_inicio, s.hora_fin)
-        : inscribirAlumno(claseId, s.alumno_id, s.hora_inicio, s.hora_fin)
+        ? actualizarTurnoInscripcion(claseId, s.alumno_id, s.hora_inicio, s.hora_fin, s.dia)
+        : inscribirAlumno(claseId, s.alumno_id, s.hora_inicio, s.hora_fin, s.dia)
     ))
     return true
   }

@@ -297,3 +297,23 @@ export async function getHistorialContenido(claseId, objetivoId) {
   merged.sort((a, b) => String(b.fecha || '').localeCompare(String(a.fecha || '')))
   return merged
 }
+
+export async function getAuditoriaSuplentes({
+  claseId = null,
+  action = null,
+  limit = 100,
+} = {}) {
+  let query = supabase
+    .from('audit_logs')
+    .select('id, action, entity, entity_id, user_id, changes, metadata, timestamp')
+    .eq('entity', 'substitute_class_activity')
+    .order('timestamp', { ascending: false })
+    .limit(limit)
+
+  if (claseId) query = query.eq('entity_id', claseId)
+  if (action) query = query.eq('action', action)
+
+  const { data, error } = await query
+  if (error) throw error
+  return data || []
+}

@@ -4,7 +4,6 @@ import { openHistorialObjetivoModal } from '../components/HistorialObjetivoPanel
 import { obtenerAlumnos } from '../../alumnos/api/alumnosApi.js'
 import { obtenerClases } from '../../clases/api/clasesApi.js'
 import { obtenerMaestros } from '../../maestros/api/maestrosApi.js'
-import { config } from '../../../core/config/config.js'
 import * as bitacoraAdapter from '../api/bitacoraAdapter.js'
 import { escapeHTML } from '../../../shared/utils/sanitize.js'
 

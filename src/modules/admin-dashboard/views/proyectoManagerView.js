@@ -6,6 +6,7 @@
 import { supabase } from '../../../lib/supabaseClient.js'
 import { analizarSaludEvento } from '../../calendario/domain/eventProjectManagerEngine.js'
 import { abrirEventProjectManagerModal } from '../../calendario/views/eventProjectManagerModal.js'
+import { persistirSaludEvento } from '../../calendario/api/wbsApi.js'
 
 const SEMAFORO = {
   en_orden:    { clase: 'success',   icono: 'bi-check-circle-fill',          label: 'En Orden' },
@@ -82,6 +83,7 @@ export function renderProyectoManagerView(containerId) {
         },
         tareas
       )
+      persistirSaludEvento(evento.id, salud.estado).catch(() => {})
       return { evento, tareas, salud }
     })
 

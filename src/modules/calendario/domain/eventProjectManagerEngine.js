@@ -237,12 +237,13 @@ export const PROTOCOLOS_ORQUESTACION = {
 
 // ── 3. Motor de Análisis Proactivo de Salud del Evento ────────────────────────
 export function analizarSaludEvento(evento, tareasAsociadas = []) {
-  if (!evento || !evento.fecha_inicio) {
+  const fechaRaw = evento?.fecha_inicio || evento?.start
+  if (!evento || !fechaRaw) {
     return { estado: 'desconocido', porcentaje: 0, alertas: [], cuellosDeBotella: [] }
   }
 
   const hoy = new Date()
-  const fechaEvento = new Date(evento.fecha_inicio)
+  const fechaEvento = new Date(fechaRaw)
   const diasRestantes = Math.ceil((fechaEvento - hoy) / (1000 * 60 * 60 * 24))
 
   const totalTareas = tareasAsociadas.length

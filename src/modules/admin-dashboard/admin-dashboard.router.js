@@ -69,4 +69,19 @@ export function registerRoutesAdminDashboard() {
       container.innerHTML = `<div class="pm-placeholder"><i class="bi bi-exclamation-triangle"></i><p>Error al cargar tendencias: ${error.message}</p></div>`
     }
   })
+
+  // Project Manager Institucional — Motor WBS y DAG
+  router.register('proyecto-manager', async (container) => {
+    try {
+      container.innerHTML = `<div id="proyecto-manager-container" class="p-3"></div>`
+      const { renderProyectoManagerView } = await import('./views/proyectoManagerView.js')
+      renderProyectoManagerView('proyecto-manager-container')
+    } catch (error) {
+      console.error('[proyecto-manager] Error:', error)
+      container.innerHTML = `<div class="pm-placeholder p-4 text-center text-muted">
+        <i class="bi bi-exclamation-triangle fs-3 d-block mb-2"></i>
+        <p>Error al cargar el Project Manager: ${error.message}</p>
+      </div>`
+    }
+  })
 }

@@ -22,7 +22,6 @@ import {
 } from '../api/calendarioUnificadoApi.js'
 
 import { abrirEventProjectManagerModal } from './eventProjectManagerModal.js'
-import { router } from '../../../core/router/router.js'
 import '../styles/calendarioGlobal.css'
 
 export async function renderCalendarioGlobalView(container) {
@@ -564,7 +563,8 @@ export async function renderCalendarioGlobalView(container) {
   })
 
   container.querySelector('#btn-ir-proyecto-manager')?.addEventListener('click', () => {
-    router.navigate('proyecto-manager')
+    localStorage.setItem('current-view', 'proyecto-manager')
+    window.location.href = '/'
   })
 
   // 5. Retornar Controlador de Ciclo de Vida

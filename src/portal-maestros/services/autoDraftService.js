@@ -4,6 +4,7 @@
 
 import { supabase } from '../../lib/supabaseClient.js'
 import { enqueue } from './offlineQueue.js'
+import { logSubstituteActivity, isSubstituteAssignment } from './substituteAuditService.js'
 
 /**
  * Factory that creates an auto-draft controller with debounced saving.
@@ -135,6 +136,7 @@ export async function saveObservation(
   contenidoParsed,
   contenidoIaDsl = null,
   contenidoIaMejorado = null,
+  auditContext = {},
 ) {
   try {
     // Delete any active draft first
@@ -162,6 +164,24 @@ export async function saveObservation(
       .single()
 
     if (error) throw error
+
+    if (auditContext?.clase && isSubstituteAssignment(auditContext.clase, maestroId)) {
+      await logSubstituteActivity({
+        action: 'SUBSTITUTE_CONTENT',
+        clase: auditContext.clase,
+        maestroTitularId: auditContext.clase?.maestro_principal_id,
+        maestroSuplenteId: maestroId,
+        fecha: auditContext.fechaHoy || auditContext.fecha || null,
+        sesionId,
+        userId: auditContext.userId || auditContext.maestroUserId || null,
+        summary: `Se registró contenido de clase como suplente en "${auditContext.clase?.nombre || 'Clase'}"`,
+        changes: {
+          indicador_id: contenidoParsed?.indicador_id || null,
+          dsl_length: typeof contenidoRaw === 'string' ? contenidoRaw.length : null,
+          es_borrador: false,
+        },
+      })
+    }
     return data
   } catch (err) {
     // Fallback: encolar para sync offline

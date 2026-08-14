@@ -1,4 +1,5 @@
 import { supabase } from '../../../lib/supabaseClient.js'
+import { logSubstituteActivity, isSubstituteAssignment } from '../../../portal-maestros/services/substituteAuditService.js'
 
 // ─── CONSTANTES ──────────────────────────────────────────────────────────────
 
@@ -550,7 +551,7 @@ export async function crearAsistencia(asistencia) {
   return data[0]
 }
 
-export async function registrarAsistenciaBulk(asistencias) {
+export async function registrarAsistenciaBulk(asistencias, auditContext = {}) {
   if (!asistencias?.length) throwError('No hay asistencias para registrar')
 
   const alumnoIds = [...new Set(asistencias.map((a) => a.alumno_id))]
@@ -630,6 +631,23 @@ export async function registrarAsistenciaBulk(asistencias) {
   }
 
   if (error) throwError('No se pudieron registrar las asistencias', error)
+  if (auditContext?.clase && isSubstituteAssignment(auditContext.clase, auditContext.maestroId || auditContext.maestro?.id)) {
+    await logSubstituteActivity({
+      action: 'SUBSTITUTE_ATTENDANCE',
+      clase: auditContext.clase,
+      maestroTitularId: auditContext.clase?.maestro_principal_id || null,
+      maestroSuplenteId: auditContext.maestroId || auditContext.maestro?.id || null,
+      fecha: auditContext.fecha || auditContext.fechaHoy || null,
+      sesionId: auditContext.sesionId || null,
+      userId: auditContext.userId || auditContext.maestroUserId || null,
+      summary: `Se registró asistencia como suplente en "${auditContext.clase?.nombre || auditContext.clase?.clase_nombre || 'Clase'}"`,
+      changes: {
+        total_presentes: records.filter((a) => a.estado === ESTADOS.PRESENTE).length,
+        total_ausentes: records.filter((a) => a.estado === ESTADOS.AUSENTE).length,
+        total_justificados: records.filter((a) => a.estado === ESTADOS.JUSTIFICADO).length,
+      },
+    })
+  }
   return data
 }
 

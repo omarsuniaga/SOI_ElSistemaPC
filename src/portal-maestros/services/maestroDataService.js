@@ -75,7 +75,7 @@ export async function getMisClases(forceRefresh = false) {
   return _singleFlight(cacheKey, async (generation) => {
     const { data, error } = await supabase
       .from('clases')
-      .select('id, nombre, instrumento, plan_estudio, capacidad_maxima, maestro_principal_id, route_version_id')
+      .select('id, nombre, instrumento, plan_estudio, capacidad_maxima, maestro_principal_id, route_version_id, tipo_clase')
       .or(
         `maestro_principal_id.eq.${maestroId},maestro_suplente_id.eq.${maestroId},maestro_id.eq.${maestroId}`,
       )
@@ -235,7 +235,7 @@ export async function getInscripcionesClases(claseIds, forceRefresh = false) {
   return _singleFlight(cacheKey, async (generation) => {
     const { data, error } = await supabase
       .from('alumnos_clases')
-      .select('clase_id, alumno_id, hora_inicio, hora_fin, alumnos(id, nombre_completo, instrumento_principal)')
+      .select('clase_id, alumno_id, hora_inicio, hora_fin, dia, alumnos(id, nombre_completo, instrumento_principal)')
       .in('clase_id', stableClaseIds)
       .eq('activo', true)
     if (error) {
@@ -246,6 +246,33 @@ export async function getInscripcionesClases(claseIds, forceRefresh = false) {
     _setCacheIfCurrent(generation, cacheKey, inscripciones, 'inscripciones')
     return inscripciones
   }, forceRefresh)
+}
+
+/**
+ * Actualiza el turno individual (día + hora) de un alumno en una clase
+ * rotativa. `dia: null` explícito significa "usa el mismo día que la clase"
+ * (clase_horarios) — solo se fija un día propio cuando el alumno rota en una
+ * fecha distinta al resto del grupo.
+ * @param {string} claseId
+ * @param {string} alumnoId
+ * @param {{dia?: string|null, horaInicio: string|null, horaFin: string|null}} turno
+ */
+export async function actualizarTurnoAlumno(claseId, alumnoId, { dia = null, horaInicio, horaFin }) {
+  const { data, error } = await supabase
+    .from('alumnos_clases')
+    .update({ dia, hora_inicio: horaInicio, hora_fin: horaFin })
+    .eq('clase_id', claseId)
+    .eq('alumno_id', alumnoId)
+    .select()
+    .maybeSingle()
+
+  if (error) throw error
+
+  // La cache de inscripciones está indexada por el conjunto de claseIds
+  // pedido (orden estable), no por clase individual — invalidar todo el
+  // bucket es más simple y seguro que tratar de reconstruir esa key acá.
+  viewCache.invalidate('inscripciones_')
+  return data
 }
 
 /**
@@ -268,6 +295,7 @@ export async function getAlumnosPorClaseIds(claseIds) {
         instrumento_principal: ins.alumnos.instrumento_principal,
         hora_inicio: ins.hora_inicio,
         hora_fin: ins.hora_fin,
+        dia: ins.dia,
       })
     }
   })

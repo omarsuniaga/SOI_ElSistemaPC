@@ -22,6 +22,7 @@ import {
 } from '../api/calendarioUnificadoApi.js'
 
 import { abrirEventProjectManagerModal } from './eventProjectManagerModal.js'
+import { router } from '../../../core/router/router.js'
 import '../styles/calendarioGlobal.css'
 
 export async function renderCalendarioGlobalView(container) {
@@ -56,6 +57,9 @@ export async function renderCalendarioGlobalView(container) {
             </button>
             <button id="btn-nuevo-evento" class="btn btn-primary btn-sm fw-semibold shadow-sm">
               <i class="bi bi-plus-circle me-1"></i> Nuevo Evento
+            </button>
+            <button id="btn-ir-proyecto-manager" class="btn btn-outline-success btn-sm fw-semibold" title="Ver Project Manager Institucional">
+              <i class="bi bi-kanban me-1"></i> Project Manager
             </button>
           </div>
         </div>
@@ -557,6 +561,10 @@ export async function renderCalendarioGlobalView(container) {
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
+  })
+
+  container.querySelector('#btn-ir-proyecto-manager')?.addEventListener('click', () => {
+    router.navigate('proyecto-manager')
   })
 
   // 5. Retornar Controlador de Ciclo de Vida

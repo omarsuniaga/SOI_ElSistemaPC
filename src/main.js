@@ -98,6 +98,7 @@ import { registerRoutesSimulador } from './modules/simulador/index.js'
 import { renderScoreDirectorView } from './modules/hermes/views/scoreDirectorView.js'
 import { renderTareasView } from './modules/hermes/views/tareasView.js'
 import { renderEventoTrackingView } from './modules/hermes/views/eventoTrackingView.js'
+import { renderAlianzasView } from './modules/alianzas/views/alianzasView.js'
 import { renderCasoDetalleView } from './modules/hermes/views/casoDetalleView.js'
 import { renderProcedimientosView } from './modules/hermes/views/procedimientosView.js'
 import { renderHermesConsultaView } from './modules/hermes/views/hermesConsultaView.js'
@@ -385,6 +386,7 @@ const NAV_GROUPS = [
       { id: 'hermes-consulta', label: 'Consultar a Hermes', icon: 'bi-robot' },
       { id: 'hermes-tareas', label: 'Tareas Institucionales', icon: 'bi-check2-square' },
       { id: 'hermes-evento', label: 'Seguimiento de Evento', icon: 'bi-calendar3-event' },
+      { id: 'dir-alianzas', label: 'Panel de Alianzas', icon: 'bi-handshake' },
     ],
   },
   {
@@ -772,6 +774,7 @@ function registerModules() {
     router.register('hermes-evento', (mount, params = {}) =>
       renderEventoTrackingView(mount, { ...params }),
     )
+    router.register('dir-alianzas', (mount) => renderAlianzasView(mount))
     router.register('hermes-caso', (mount, params = {}) =>
       renderCasoDetalleView(mount, params),
     )

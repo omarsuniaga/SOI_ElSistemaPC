@@ -42,6 +42,7 @@ import { renderTaskHistoryTimeline } from '../components/taskHistoryTimeline.js'
 import { renderTaskAttachmentsPanel, wireTaskAttachmentsPanel } from '../components/taskAttachmentsPanel.js'
 import { esTareaToolCallAprobable, extraerToolCallPayload, formatearArgsToolCall } from '../logic/toolApprovalFormatter.js'
 import { escapeHTML } from '../../../shared/utils/sanitize.js'
+import { generateCaseDossierPdf } from '../logic/caseDossierPdfGenerator.js'
 
 const DEPARTAMENTOS = {
   DIR: 'Dirección',
@@ -181,6 +182,32 @@ function renderError(container, mensaje) {
   )
 }
 
+function todasLasTareasFinalizadas() {
+  if (state.tareas.length === 0) return false
+  return state.tareas.every((t) => t.estado === 'completada' || t.estado === 'cancelada')
+}
+
+function buildCierreBanner() {
+  if (!todasLasTareasFinalizadas()) return ''
+  const eventId = state.tareas.find((t) => t.event_id)?.event_id || null
+  const nombreEvento = state.tareas[0]?.titulo?.match(/—\s*(.+)$/)?.[1]?.trim() || 'este evento'
+  return `
+    <div class="alert alert-success d-flex align-items-center justify-content-between gap-3 mb-3 py-3 px-4" role="alert" id="cierreBanner">
+      <div class="d-flex align-items-center gap-2">
+        <i class="bi bi-check-circle-fill fs-4"></i>
+        <div>
+          <strong>¡Todas las tareas completadas!</strong>
+          <div class="small text-success-emphasis">El evento <em>${escapeHTML(nombreEvento)}</em> está listo. Descargá el Acta Oficial de Cierre.</div>
+        </div>
+      </div>
+      <button class="btn btn-success btn-sm d-flex align-items-center gap-1 text-nowrap" id="btnDescargarActa"
+        data-event-id="${escapeHTML(eventId || '')}">
+        <i class="bi bi-file-earmark-pdf-fill"></i> Descargar Acta PDF
+      </button>
+    </div>
+  `
+}
+
 function renderContent(container) {
   const tareasFiltradas = filtrarTareas()
   const cuenta = (estado) => state.tareas.filter((t) => t.estado === estado).length
@@ -240,6 +267,8 @@ function renderContent(container) {
           }
         </div>
       </div>
+
+      ${buildCierreBanner()}
 
       <div class="tareas-filters mb-4 d-flex gap-2 flex-wrap">
         <div class="flex-grow-1" style="min-width: 200px;">
@@ -418,6 +447,46 @@ function attachGlobalEvents(container) {
     (e) => {
       state.filtroPrioridad = e.target.value
       rerender()
+    },
+    { signal },
+  )
+
+  container.querySelector('#btnDescargarActa')?.addEventListener(
+    'click',
+    async (e) => {
+      const btn = e.currentTarget
+      btn.disabled = true
+      btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Generando...'
+      try {
+        const eventId = btn.dataset.eventId
+        let eventoData = {}
+        if (eventId) {
+          const { data } = await supabase
+            .from('calendario_institucional')
+            .select('id, titulo, categoria, fecha_inicio, departamento_responsable, metadata')
+            .eq('id', eventId)
+            .single()
+          if (data) eventoData = data
+        }
+        generateCaseDossierPdf({
+          tasks: state.tareas,
+          correlation_id: eventId || state.correlationId || 'EVT-ANIVERSARIO',
+          contract: {
+            process_code: eventoData.categoria?.toUpperCase() || 'EVT-P09',
+            process_name: eventoData.titulo || 'Concierto Aniversario Institucional',
+            department_owner: eventoData.departamento_responsable || 'DIR',
+          },
+          closure_summary:
+            `Evento "${eventoData.titulo || 'Concierto Aniversario'}" completado al 100%. ` +
+            `${state.tareas.filter((t) => t.estado === 'completada').length} de ${state.tareas.length} tareas ejecutadas exitosamente.`,
+        })
+        AppToast.show('Acta de Cierre generada y descargada.', 'success')
+      } catch (err) {
+        AppToast.show('Error al generar el acta: ' + err.message, 'danger')
+      } finally {
+        btn.disabled = false
+        btn.innerHTML = '<i class="bi bi-file-earmark-pdf-fill"></i> Descargar Acta PDF'
+      }
     },
     { signal },
   )

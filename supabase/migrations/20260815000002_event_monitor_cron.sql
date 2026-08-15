@@ -14,7 +14,13 @@ CREATE EXTENSION IF NOT EXISTS pg_net;
 
 -- Cron: revisar completitud de eventos cada hora (minuto 5 de cada hora)
 -- Auth: anon key como Bearer JWT (la edge function acepta Bearer OR x-hermes-token)
-SELECT cron.unschedule('hermes-event-completion-monitor');
+-- Guard: si el job ya existe, lo desprograma antes de reprogramar (idempotente).
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM cron.job WHERE jobname = 'hermes-event-completion-monitor') THEN
+    PERFORM cron.unschedule('hermes-event-completion-monitor');
+  END IF;
+END $$;
 
 SELECT cron.schedule(
   'hermes-event-completion-monitor',

@@ -2,14 +2,20 @@
 -- Migration: Protocolo Concierto Aniversario — Hermes SOI
 -- Timestamp: 20260815000000
 -- Description:
---   1. Agrega valor 'aniversario' al enum event_categoria
---   2. Inserta protocolo completo (25 tareas T-Minus) en hermes_protocolos
---   3. Trigger fn_validar_checklist_tarea: bloquea completar tarea con checklist incompleto
---   4. Función + cron fn_hermes_escalar_tareas_bloqueadas: escala tareas bloqueadas >72h a DIR
+--   1. Inserta protocolo completo (25 tareas T-Minus) en hermes_protocolos
+--      (el enum value 'aniversario' se agrega en 20260814235959_aniversario_enum.sql)
+--   2. Trigger fn_validar_checklist_tarea: bloquea completar tarea con checklist incompleto
+--   3. Función + cron fn_hermes_escalar_tareas_bloqueadas: escala tareas bloqueadas >72h a DIR
+--
+-- REQUIERE: 20260814235959_aniversario_enum.sql aplicado primero.
 -- ============================================================
 
 -- ─── 1. NUEVO VALOR EN ENUM ─────────────────────────────────────────────────
-ALTER TYPE event_categoria ADD VALUE IF NOT EXISTS 'aniversario';
+-- El ADD VALUE del enum 'aniversario' vive AHORA en el archivo separado
+-- 20260814235959_aniversario_enum.sql (timestamp anterior), para respetar la
+-- restricción de Postgres: "unsafe use of new value ... of enum type" cuando
+-- se agrega y consume el mismo valor en la misma transacción/migración.
+-- Este archivo asume que el enum ya contiene 'aniversario'.
 
 -- ─── 2. PROTOCOLO ANIVERSARIO EN hermes_protocolos ──────────────────────────
 -- UPSERT: si ya existe la categoría 'aniversario', actualiza. Si no, inserta.
@@ -442,7 +448,15 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- Cron job: ejecutar fn_hermes_escalar_tareas_bloqueadas cada 4 horas
+-- Cron job: ejecutar fn_hermes_escalar_tareas_bloqueadas cada 4 horas.
+-- Idempotente: si el job ya existe, se desprograma antes de reprogramar.
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM cron.job WHERE jobname = 'hermes-escalar-tareas-bloqueadas') THEN
+    PERFORM cron.unschedule('hermes-escalar-tareas-bloqueadas');
+  END IF;
+END $$;
+
 SELECT cron.schedule(
   'hermes-escalar-tareas-bloqueadas',
   '0 */4 * * *',

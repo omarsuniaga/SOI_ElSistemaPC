@@ -77,17 +77,42 @@ function estadoIcon(estado) {
   return ESTADO_ICONS[estado] || '⏳'
 }
 
+/**
+ * Normalize a date-like value to a YYYY-MM-DD string using UTC.
+ * Accepts:
+ *   - 'YYYY-MM-DD' (returned unchanged)
+ *   - full ISO 'YYYY-MM-DDTHH:mm:ss[±HH:MM|Z]' (takes UTC date portion)
+ * Returns null for invalid/empty input.
+ */
+function toDateOnly(value) {
+  if (!value) return null
+  const s = String(value)
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s
+  const d = new Date(s)
+  if (Number.isNaN(d.getTime())) return null
+  // Use UTC date components so tz offsets don't shift the day.
+  const yyyy = d.getUTCFullYear()
+  const mm = String(d.getUTCMonth() + 1).padStart(2, '0')
+  const dd = String(d.getUTCDate()).padStart(2, '0')
+  return `${yyyy}-${mm}-${dd}`
+}
+
 function formatDateES(dateStr) {
-  if (!dateStr) return '—'
-  // dateStr can be YYYY-MM-DD or full ISO; parse as UTC to avoid off-by-one
-  const d = new Date(dateStr + (dateStr.length === 10 ? 'T00:00:00' : ''))
+  const dateOnly = toDateOnly(dateStr)
+  if (!dateOnly) return '—'
+  // Force local midnight parse for a stable display in the browser locale.
+  const d = new Date(dateOnly + 'T00:00:00')
+  if (Number.isNaN(d.getTime())) return '—'
   return d.toLocaleDateString('es-DO', { year: 'numeric', month: 'long', day: 'numeric' })
 }
 
 function calcTMinus(eventoFechaInicio, grupoFecha) {
+  const eventoDate = toDateOnly(eventoFechaInicio)
+  const grupoDate = toDateOnly(grupoFecha)
+  if (!eventoDate || !grupoDate) return 0
   const msPerDay = 86400000
-  const eventoMs = new Date(eventoFechaInicio + 'T00:00:00').getTime()
-  const grupoMs = new Date(grupoFecha + 'T00:00:00').getTime()
+  const eventoMs = new Date(eventoDate + 'T00:00:00Z').getTime()
+  const grupoMs = new Date(grupoDate + 'T00:00:00Z').getTime()
   return Math.round((eventoMs - grupoMs) / msPerDay)
 }
 
@@ -264,7 +289,7 @@ function renderTimeline(tareas, evento) {
   // Group by fecha_vencimiento (YYYY-MM-DD)
   const gruposMap = {}
   for (const t of tareas) {
-    const fecha = t.fecha_vencimiento ? t.fecha_vencimiento.slice(0, 10) : 'sin-fecha'
+    const fecha = toDateOnly(t.fecha_vencimiento) || 'sin-fecha'
     if (!gruposMap[fecha]) gruposMap[fecha] = []
     gruposMap[fecha].push(t)
   }

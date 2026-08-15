@@ -87,6 +87,12 @@ import { registerRoutesInventario } from './modules/inventario/index.js'
 import { registerRoutesHelp } from './modules/help/index.js'
 import { registerRoutesPeriodos } from './modules/periodos/index.js'
 import { renderScoreDirectorView } from './modules/hermes/views/scoreDirectorView.js'
+import { renderTareasView } from './modules/hermes/views/tareasView.js'
+import { renderEventoTrackingView } from './modules/hermes/views/eventoTrackingView.js'
+import { renderAlianzasView } from './modules/alianzas/views/alianzasView.js'
+import { renderCasoDetalleView } from './modules/hermes/views/casoDetalleView.js'
+import { renderProcedimientosView } from './modules/hermes/views/procedimientosView.js'
+import { renderHermesConsultaView } from './modules/hermes/views/hermesConsultaView.js'
 import {
   startAdminRealtimeNotifications,
   stopAdminRealtimeNotifications,
@@ -319,6 +325,11 @@ const NAV_GROUPS = [
     icon: 'bi-bullseye',
     items: [
       { id: 'dir-score', label: 'Score del Director', icon: 'bi-bullseye' },
+      { id: 'hermes-procedimientos', label: 'Procedimientos', icon: 'bi-diagram-3' },
+      { id: 'hermes-consulta', label: 'Consultar a Hermes', icon: 'bi-robot' },
+      { id: 'hermes-tareas', label: 'Tareas Institucionales', icon: 'bi-check2-square' },
+      { id: 'hermes-evento', label: 'Seguimiento de Evento', icon: 'bi-calendar3-event' },
+      { id: 'dir-alianzas', label: 'Panel de Alianzas', icon: 'bi-handshake' },
     ],
   },
   {
@@ -669,6 +680,22 @@ function registerModules() {
   // Score del Director (DIR): vista global de tareas Hermes + creación de eventos
   try {
     router.register('dir-score', (mount) => renderScoreDirectorView(mount))
+    router.register('hermes-tareas', (mount, params = {}) =>
+      renderTareasView(mount, { hideCalendarBtn: true, ...params }),
+    )
+    router.register('hermes-evento', (mount, params = {}) =>
+      renderEventoTrackingView(mount, { ...params }),
+    )
+    router.register('dir-alianzas', (mount) => renderAlianzasView(mount))
+    router.register('hermes-caso', (mount, params = {}) =>
+      renderCasoDetalleView(mount, params),
+    )
+    router.register('hermes-procedimientos', (mount) =>
+      renderProcedimientosView(mount),
+    )
+    router.register('hermes-consulta', (mount) =>
+      renderHermesConsultaView(mount),
+    )
   } catch (error) {
     console.error('Error registering dir-score route:', error)
   }

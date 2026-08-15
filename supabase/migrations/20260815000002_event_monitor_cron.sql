@@ -13,6 +13,9 @@
 CREATE EXTENSION IF NOT EXISTS pg_net;
 
 -- Cron: revisar completitud de eventos cada hora (minuto 5 de cada hora)
+-- Auth: anon key como Bearer JWT (la edge function acepta Bearer OR x-hermes-token)
+SELECT cron.unschedule('hermes-event-completion-monitor');
+
 SELECT cron.schedule(
   'hermes-event-completion-monitor',
   '5 * * * *',
@@ -21,7 +24,7 @@ SELECT cron.schedule(
     url := 'https://zmhmdvmyeyswunurcyow.supabase.co/functions/v1/hermes-event-monitor',
     headers := jsonb_build_object(
       'Content-Type', 'application/json',
-      'x-hermes-token', current_setting('app.hermes_email_token', true)
+      'Authorization', 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InptaG1kdm15ZXlzd3VudXJjeW93Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzczMzI3MjEsImV4cCI6MjA5MjkwODcyMX0.ZEPI2FuJ-apwZYR20PAjAOLRUNIpfknG1LHDCUUwMRs'
     ),
     body := '{"check_all": true}'::jsonb,
     timeout_milliseconds := 30000

@@ -209,9 +209,9 @@ VALUES (
       ]
     },
     {
-      "titulo": "🚚 OPR: Gestión de transporte para traslado de instrumentos — {evento_titulo}",
+      "titulo": "🚚 LOG: Gestión de transporte para traslado de instrumentos — {evento_titulo}",
       "descripcion": "Reservar y coordinar el transporte necesario para el traslado de instrumentos musicales (incluyendo instrumentos pesados: cellos, contrabajos, timbales, percusión) a la sede del concierto.",
-      "departamento": "OPR",
+      "departamento": "LOG",
       "prioridad": "alta",
       "diferencia_dias": -21,
       "checklist": [
@@ -222,9 +222,9 @@ VALUES (
       ]
     },
     {
-      "titulo": "👷 OPR: Contratación de personal logístico para montaje/desmontaje — {evento_titulo}",
+      "titulo": "👷 LOG: Contratación de personal logístico para montaje/desmontaje — {evento_titulo}",
       "descripcion": "Contratar personal de apoyo logístico (posiblemente externos) para cargar instrumentos pesados, montar la tarima, atriles y el escenario, y desmontar al finalizar.",
-      "departamento": "OPR",
+      "departamento": "LOG",
       "prioridad": "alta",
       "diferencia_dias": -18,
       "checklist": [
@@ -312,9 +312,9 @@ VALUES (
       ]
     },
     {
-      "titulo": "🔍 OPR: Verificación técnica de locación — {evento_titulo}",
+      "titulo": "🔍 LOG: Verificación técnica de locación — {evento_titulo}",
       "descripcion": "Inspección técnica del recinto: tarima con espacio para 100 personas, iluminación escénica, sistema de micrófonos (mín. 8 canales), acústica, camerinos y servicios.",
-      "departamento": "OPR",
+      "departamento": "LOG",
       "prioridad": "critica",
       "diferencia_dias": -5,
       "checklist": [

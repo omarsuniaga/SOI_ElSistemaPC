@@ -21,7 +21,7 @@ SELECT cron.schedule(
     url := 'https://zmhmdvmyeyswunurcyow.supabase.co/functions/v1/hermes-event-monitor',
     headers := jsonb_build_object(
       'Content-Type', 'application/json',
-      'x-hermes-token', current_setting('app.hermes_email_token', true)
+      'Authorization', 'Bearer sb_publishable_-TE6E79mrn4fSs4XGnvWnw_2QgDrX0P'
     ),
     body := '{"check_all": true}'::jsonb,
     timeout_milliseconds := 30000

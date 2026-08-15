@@ -470,7 +470,6 @@ INSERT INTO public.calendario_institucional (
   fecha_fin,
   departamento_responsable,
   estado,
-  es_macro_evento,
   metadata
 ) VALUES (
   'Audiciones de Cierre de Trimestre — Todos los Programas',
@@ -480,7 +479,6 @@ INSERT INTO public.calendario_institucional (
   '2026-10-17 18:00:00+00',
   'ACM',
   'programado',
-  true,
   '{"anio": 2026, "trimestre": 3, "programas": ["iniciacion", "orquesta", "coro", "ensambles"], "objetivo_concierto": "Concierto 5to Aniversario 22-nov-2026"}'::jsonb
 );
 
@@ -493,7 +491,6 @@ INSERT INTO public.calendario_institucional (
   fecha_fin,
   departamento_responsable,
   estado,
-  es_macro_evento,
   metadata
 ) VALUES (
   'Ensayos Intensivos Pre-Concierto Aniversario (Nov 6-8)',
@@ -503,7 +500,6 @@ INSERT INTO public.calendario_institucional (
   '2026-11-08 19:00:00+00',
   'ACM',
   'programado',
-  true,
   '{"anio": 2026, "duracion_dias": 3, "horario": "09:00-19:00", "participantes_estimados": 100, "concierto_objetivo": "Concierto 5to Aniversario 22-nov-2026"}'::jsonb
 );
 

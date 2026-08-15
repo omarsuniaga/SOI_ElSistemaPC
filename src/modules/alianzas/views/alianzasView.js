@@ -55,8 +55,27 @@ const ESTADOS_PIPELINE = [
 
 let _abortController = null
 
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+}
+
 function estrellas(n) {
-  return '⭐'.repeat(n) + '☆'.repeat(5 - n)
+  const puntuacion = Math.min(5, Math.max(0, Number(n) || 0))
+  return '⭐'.repeat(puntuacion) + '☆'.repeat(5 - puntuacion)
+}
+
+function safeWebsiteHref(website) {
+  try {
+    const url = new URL(website)
+    if (url.protocol !== 'http:' && url.protocol !== 'https:') return null
+    return url
+  } catch {
+    return null
+  }
 }
 
 function cardHTML(c) {
@@ -75,23 +94,25 @@ function cardHTML(c) {
     : ''
 
   const emailLine = c.email_contacto
-    ? `<div class="text-muted small mt-1"><i class="bi bi-envelope me-1"></i>${c.email_contacto}</div>`
+    ? `<div class="text-muted small mt-1"><i class="bi bi-envelope me-1"></i>${escapeHtml(c.email_contacto)}</div>`
     : ''
 
   const personaLine = c.persona_contacto
-    ? `<div class="text-muted small"><i class="bi bi-person me-1"></i>${c.persona_contacto}</div>`
+    ? `<div class="text-muted small"><i class="bi bi-person me-1"></i>${escapeHtml(c.persona_contacto)}</div>`
     : ''
 
   const statsOpts = ESTADOS_PIPELINE.map(e =>
     `<option value="${e}" ${c.estado === e ? 'selected' : ''}>${ESTADO_LABELS[e]}</option>`
   ).join('')
 
+  const websiteUrl = c.website ? safeWebsiteHref(c.website) : null
+
   return `
     <div class="col-md-6 col-lg-4 mb-3" data-id="${c.id}" data-tipo="${c.tipo}" data-estado="${c.estado}" data-match="${c.puntuacion_match}">
       <div class="card h-100 shadow-sm border-0 alianza-card ${c.estado === 'convenio_activo' ? 'border-success border-start border-3' : ''}">
         <div class="card-body d-flex flex-column gap-2">
           <div class="d-flex justify-content-between align-items-start">
-            <div class="fw-semibold" style="font-size:.95rem">${c.nombre_institucion}</div>
+            <div class="fw-semibold" style="font-size:.95rem">${escapeHtml(c.nombre_institucion)}</div>
             <div class="text-nowrap ms-2" style="font-size:.8rem">${estrellas(c.puntuacion_match)}</div>
           </div>
 
@@ -99,8 +120,8 @@ function cardHTML(c) {
             ${tipoBadge}${estadoBadge}${borradorBadge}
           </div>
 
-          ${c.area_enfoque ? `<div class="text-muted small">${c.area_enfoque}</div>` : ''}
-          ${c.enfoque_geografico ? `<div class="text-muted small"><i class="bi bi-geo me-1"></i>${c.enfoque_geografico}</div>` : ''}
+          ${c.area_enfoque ? `<div class="text-muted small">${escapeHtml(c.area_enfoque)}</div>` : ''}
+          ${c.enfoque_geografico ? `<div class="text-muted small"><i class="bi bi-geo me-1"></i>${escapeHtml(c.enfoque_geografico)}</div>` : ''}
           ${emailLine}${personaLine}
 
           <div class="mt-auto pt-2">
@@ -109,9 +130,9 @@ function cardHTML(c) {
             </select>
           </div>
         </div>
-        ${c.website ? `<div class="card-footer bg-transparent py-1">
-          <a href="${c.website}" target="_blank" rel="noopener" class="text-decoration-none small text-muted">
-            <i class="bi bi-box-arrow-up-right me-1"></i>${new URL(c.website).hostname}
+        ${websiteUrl ? `<div class="card-footer bg-transparent py-1">
+          <a href="${escapeHtml(websiteUrl.href)}" target="_blank" rel="noopener" class="text-decoration-none small text-muted">
+            <i class="bi bi-box-arrow-up-right me-1"></i>${escapeHtml(websiteUrl.hostname)}
           </a>
         </div>` : ''}
       </div>
@@ -302,7 +323,7 @@ export async function renderAlianzasView(container, opciones = {}) {
           renderTodo()
           toast(`Estado actualizado: <strong>${ESTADO_LABELS[nuevoEstado]}</strong>`)
         } catch (err) {
-          toast(`Error al actualizar: ${err.message}`, 'danger')
+          toast(`Error al actualizar: ${escapeHtml(err.message)}`, 'danger')
           e.target.value = todos.find(c => c.id === id)?.estado ?? 'prospecto'
         }
       }, { signal })
@@ -316,7 +337,7 @@ export async function renderAlianzasView(container, opciones = {}) {
     renderTodo()
   } catch (err) {
     const grid = container.querySelector('#alianzas-grid')
-    if (grid) grid.innerHTML = `<div class="alert alert-danger">Error cargando alianzas: ${err.message}</div>`
+    if (grid) grid.innerHTML = `<div class="alert alert-danger">Error cargando alianzas: ${escapeHtml(err.message)}</div>`
   }
 
   // Filtros
@@ -343,7 +364,14 @@ export async function renderAlianzasView(container, opciones = {}) {
   const channel = supabase
     .channel('alianzas:panel')
     .on('postgres_changes', { event: '*', schema: 'public', table: 'contactos_alianzas' }, async () => {
-      todos = await getAlianzas()
+      if (signal.aborted) return
+      try {
+        todos = await getAlianzas()
+      } catch (err) {
+        console.error('[AlianzasView] Realtime refresh error:', err.message)
+        return
+      }
+      if (signal.aborted) return
       const stats = container.querySelector('#alianzas-stats')
       if (stats) stats.innerHTML = renderStats(todos)
       renderTodo()

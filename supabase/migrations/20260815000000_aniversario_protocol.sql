@@ -209,22 +209,22 @@ VALUES (
       ]
     },
     {
-      "titulo": "🚚 OPR: Gestión de transporte para traslado de instrumentos — {evento_titulo}",
+      "titulo": "🚚 LOG: Gestión de transporte para traslado de instrumentos — {evento_titulo}",
       "descripcion": "Reservar y coordinar el transporte necesario para el traslado de instrumentos musicales (incluyendo instrumentos pesados: cellos, contrabajos, timbales, percusión) a la sede del concierto.",
-      "departamento": "OPR",
+      "departamento": "LOG",
       "prioridad": "alta",
       "diferencia_dias": -21,
       "checklist": [
         {"item": "Inventariar instrumentos que requieren transporte especial", "completado": false},
         {"item": "Cotizar y contratar transporte adecuado (camión/van de carga)", "completado": false},
-        {"item": "Coordinar día y hora de carga con OPR y LUT", "completado": false},
+        {"item": "Coordinar día y hora de carga con LOG y LUT", "completado": false},
         {"item": "Asegurar transporte también para personal y alumnos", "completado": false}
       ]
     },
     {
-      "titulo": "👷 OPR: Contratación de personal logístico para montaje/desmontaje — {evento_titulo}",
+      "titulo": "👷 LOG: Contratación de personal logístico para montaje/desmontaje — {evento_titulo}",
       "descripcion": "Contratar personal de apoyo logístico (posiblemente externos) para cargar instrumentos pesados, montar la tarima, atriles y el escenario, y desmontar al finalizar.",
-      "departamento": "OPR",
+      "departamento": "LOG",
       "prioridad": "alta",
       "diferencia_dias": -18,
       "checklist": [
@@ -312,9 +312,9 @@ VALUES (
       ]
     },
     {
-      "titulo": "🔍 OPR: Verificación técnica de locación — {evento_titulo}",
+      "titulo": "🔍 LOG: Verificación técnica de locación — {evento_titulo}",
       "descripcion": "Inspección técnica del recinto: tarima con espacio para 100 personas, iluminación escénica, sistema de micrófonos (mín. 8 canales), acústica, camerinos y servicios.",
-      "departamento": "OPR",
+      "departamento": "LOG",
       "prioridad": "critica",
       "diferencia_dias": -5,
       "checklist": [
@@ -346,7 +346,7 @@ VALUES (
       "diferencia_dias": -1,
       "checklist": [
         {"item": "ACM confirma: repertorio listo, alumnos preparados, maestros en posición", "completado": false},
-        {"item": "OPR confirma: transporte reservado, personal logístico briefeado", "completado": false},
+        {"item": "LOG confirma: transporte reservado, personal logístico briefeado", "completado": false},
         {"item": "COM confirma: programas de mano recibidos, VIPs confirmados, fotógrafo listo", "completado": false},
         {"item": "FIN confirma: presupuesto ejecutado, catering asegurado, pagos al día", "completado": false},
         {"item": "ADM confirma: lista de alumnos depurada, permisos firmados", "completado": false},

@@ -85,9 +85,11 @@ function formatDateES(dateStr) {
 }
 
 function calcTMinus(eventoFechaInicio, grupoFecha) {
+  // eventoFechaInicio puede venir como timestamptz completo (calendario_institucional.fecha_inicio);
+  // grupoFecha siempre es YYYY-MM-DD. Normalizamos ambos a la parte de fecha antes de comparar.
   const msPerDay = 86400000
-  const eventoMs = new Date(eventoFechaInicio + 'T00:00:00').getTime()
-  const grupoMs = new Date(grupoFecha + 'T00:00:00').getTime()
+  const eventoMs = new Date(eventoFechaInicio.slice(0, 10) + 'T00:00:00').getTime()
+  const grupoMs = new Date(grupoFecha.slice(0, 10) + 'T00:00:00').getTime()
   return Math.round((eventoMs - grupoMs) / msPerDay)
 }
 
@@ -145,11 +147,11 @@ function renderEventoHeader(evento, tareas) {
   const pctBarColor = pct === 100 ? 'bg-success' : pct >= 50 ? 'bg-primary' : 'bg-warning'
 
   const estadoBadgeColor =
-    evento.estado === 'completado' || evento.estado === 'realizado'
+    evento.estado === 'completado'
       ? 'success'
       : evento.estado === 'cancelado'
         ? 'secondary'
-        : evento.estado === 'en_progreso'
+        : evento.estado === 'en_curso'
           ? 'info'
           : 'primary'
 

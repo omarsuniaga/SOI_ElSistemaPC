@@ -17,6 +17,7 @@ const navGroups = [
     icon: 'bi-tools',
     items: [
       { id: 'hermes-tareas', label: 'Tareas Institucionales', icon: 'bi-check2-square' },
+      { id: 'hermes-evento', label: 'Seguimiento de Evento', icon: 'bi-calendar3-event' },
       { id: 'admin-notificaciones', label: 'Centro de Actividad', icon: 'bi-bell' },
     ],
   },

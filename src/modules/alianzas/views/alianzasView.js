@@ -56,16 +56,49 @@ const ESTADOS_PIPELINE = [
 let _abortController = null
 
 function estrellas(n) {
-  return '⭐'.repeat(n) + '☆'.repeat(5 - n)
+  const safeN = Math.max(0, Math.min(5, Number(n) || 0))
+  return '⭐'.repeat(safeN) + '☆'.repeat(5 - safeN)
+}
+
+/**
+ * Parse a website URL safely. Returns { href, hostname } or null if invalid.
+ * Handles: null, empty strings, URLs missing scheme (auto-prepends https://).
+ */
+function safeWebsite(raw) {
+  if (!raw || typeof raw !== 'string') return null
+  const trimmed = raw.trim()
+  if (!trimmed) return null
+  const withScheme = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`
+  try {
+    const u = new URL(withScheme)
+    return { href: u.href, hostname: u.hostname }
+  } catch (_e) {
+    return null
+  }
+}
+
+function escapeAttr(str) {
+  return String(str ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+}
+
+function escapeText(str) {
+  return String(str ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
 }
 
 function cardHTML(c) {
   const tipoBadge = `<span class="badge bg-${TIPO_COLORS[c.tipo] ?? 'secondary'} me-1">
-    <i class="bi ${TIPO_ICONS[c.tipo] ?? 'bi-circle'} me-1"></i>${TIPO_LABELS[c.tipo] ?? c.tipo}
+    <i class="bi ${TIPO_ICONS[c.tipo] ?? 'bi-circle'} me-1"></i>${escapeText(TIPO_LABELS[c.tipo] ?? c.tipo)}
   </span>`
 
   const estadoBadge = `<span class="badge bg-${ESTADO_COLORS[c.estado] ?? 'secondary'}">
-    ${ESTADO_LABELS[c.estado] ?? c.estado}
+    ${escapeText(ESTADO_LABELS[c.estado] ?? c.estado)}
   </span>`
 
   const borradorBadge = c.email_draft_id
@@ -75,23 +108,32 @@ function cardHTML(c) {
     : ''
 
   const emailLine = c.email_contacto
-    ? `<div class="text-muted small mt-1"><i class="bi bi-envelope me-1"></i>${c.email_contacto}</div>`
+    ? `<div class="text-muted small mt-1"><i class="bi bi-envelope me-1"></i>${escapeText(c.email_contacto)}</div>`
     : ''
 
   const personaLine = c.persona_contacto
-    ? `<div class="text-muted small"><i class="bi bi-person me-1"></i>${c.persona_contacto}</div>`
+    ? `<div class="text-muted small"><i class="bi bi-person me-1"></i>${escapeText(c.persona_contacto)}</div>`
     : ''
 
   const statsOpts = ESTADOS_PIPELINE.map(e =>
-    `<option value="${e}" ${c.estado === e ? 'selected' : ''}>${ESTADO_LABELS[e]}</option>`
+    `<option value="${e}" ${c.estado === e ? 'selected' : ''}>${escapeText(ESTADO_LABELS[e])}</option>`
   ).join('')
 
+  const site = safeWebsite(c.website)
+  const websiteBlock = site
+    ? `<div class="card-footer bg-transparent py-1">
+        <a href="${escapeAttr(site.href)}" target="_blank" rel="noopener noreferrer" class="text-decoration-none small text-muted">
+          <i class="bi bi-box-arrow-up-right me-1"></i>${escapeText(site.hostname)}
+        </a>
+      </div>`
+    : ''
+
   return `
-    <div class="col-md-6 col-lg-4 mb-3" data-id="${c.id}" data-tipo="${c.tipo}" data-estado="${c.estado}" data-match="${c.puntuacion_match}">
+    <div class="col-md-6 col-lg-4 mb-3" data-id="${escapeAttr(c.id)}" data-tipo="${escapeAttr(c.tipo)}" data-estado="${escapeAttr(c.estado)}" data-match="${escapeAttr(c.puntuacion_match)}">
       <div class="card h-100 shadow-sm border-0 alianza-card ${c.estado === 'convenio_activo' ? 'border-success border-start border-3' : ''}">
         <div class="card-body d-flex flex-column gap-2">
           <div class="d-flex justify-content-between align-items-start">
-            <div class="fw-semibold" style="font-size:.95rem">${c.nombre_institucion}</div>
+            <div class="fw-semibold" style="font-size:.95rem">${escapeText(c.nombre_institucion)}</div>
             <div class="text-nowrap ms-2" style="font-size:.8rem">${estrellas(c.puntuacion_match)}</div>
           </div>
 
@@ -99,21 +141,17 @@ function cardHTML(c) {
             ${tipoBadge}${estadoBadge}${borradorBadge}
           </div>
 
-          ${c.area_enfoque ? `<div class="text-muted small">${c.area_enfoque}</div>` : ''}
-          ${c.enfoque_geografico ? `<div class="text-muted small"><i class="bi bi-geo me-1"></i>${c.enfoque_geografico}</div>` : ''}
+          ${c.area_enfoque ? `<div class="text-muted small">${escapeText(c.area_enfoque)}</div>` : ''}
+          ${c.enfoque_geografico ? `<div class="text-muted small"><i class="bi bi-geo me-1"></i>${escapeText(c.enfoque_geografico)}</div>` : ''}
           ${emailLine}${personaLine}
 
           <div class="mt-auto pt-2">
-            <select class="form-select form-select-sm estado-select" data-id="${c.id}">
+            <select class="form-select form-select-sm estado-select" data-id="${escapeAttr(c.id)}">
               ${statsOpts}
             </select>
           </div>
         </div>
-        ${c.website ? `<div class="card-footer bg-transparent py-1">
-          <a href="${c.website}" target="_blank" rel="noopener" class="text-decoration-none small text-muted">
-            <i class="bi bi-box-arrow-up-right me-1"></i>${new URL(c.website).hostname}
-          </a>
-        </div>` : ''}
+        ${websiteBlock}
       </div>
     </div>`
 }
@@ -272,6 +310,7 @@ export async function renderAlianzasView(container, opciones = {}) {
 
   let todos = []
   let filtros = { tipo: 'todos', estado: 'todos', busqueda: '' }
+  let _toastTimer = null
 
   function toast(msg, tipo = 'success') {
     const el = container.querySelector('#alianzas-toast')
@@ -282,7 +321,11 @@ export async function renderAlianzasView(container, opciones = {}) {
         <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
       </div>
     </div>`
-    setTimeout(() => { el.innerHTML = '' }, 3000)
+    if (_toastTimer) clearTimeout(_toastTimer)
+    _toastTimer = setTimeout(() => {
+      const still = container.querySelector('#alianzas-toast')
+      if (still) still.innerHTML = ''
+    }, 3000)
   }
 
   function renderTodo() {
@@ -332,7 +375,7 @@ export async function renderAlianzasView(container, opciones = {}) {
 
   let _debounce = null
   container.querySelector('#alianzas-busqueda')?.addEventListener('input', e => {
-    clearTimeout(_debounce)
+    if (_debounce) clearTimeout(_debounce)
     _debounce = setTimeout(() => {
       filtros.busqueda = e.target.value.trim()
       renderTodo()
@@ -343,17 +386,27 @@ export async function renderAlianzasView(container, opciones = {}) {
   const channel = supabase
     .channel('alianzas:panel')
     .on('postgres_changes', { event: '*', schema: 'public', table: 'contactos_alianzas' }, async () => {
-      todos = await getAlianzas()
-      const stats = container.querySelector('#alianzas-stats')
-      if (stats) stats.innerHTML = renderStats(todos)
-      renderTodo()
+      if (signal.aborted) return
+      try {
+        todos = await getAlianzas()
+        if (signal.aborted) return
+        const stats = container.querySelector('#alianzas-stats')
+        if (stats) stats.innerHTML = renderStats(todos)
+        renderTodo()
+      } catch (err) {
+        console.error('[alianzasView] Realtime refresh error:', err.message)
+      }
     })
     .subscribe()
 
   return {
     teardown() {
       _abortController?.abort()
-      channel.unsubscribe?.()
+      if (_debounce) clearTimeout(_debounce)
+      if (_toastTimer) clearTimeout(_toastTimer)
+      try {
+        channel.unsubscribe?.()
+      } catch (_e) { /* noop */ }
     },
   }
 }

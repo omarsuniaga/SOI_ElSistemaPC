@@ -156,7 +156,7 @@ export function descargarPdfRutaClase({ claseNombre, maestroNombre = '', unidade
   doc.setTextColor(...C.grisMedio)
   doc.text(`Maestro: ${p(maestroNombre)}  ·  Generado: ${nowDate}`, M + 4, 56)
 
-  let y = 66
+  const y = 66
 
   if (unidades.length === 0) {
     doc.setFont('helvetica', 'italic')

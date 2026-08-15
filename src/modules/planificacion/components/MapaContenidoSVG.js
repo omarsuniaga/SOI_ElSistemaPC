@@ -15,6 +15,13 @@
  * planificacionView, asistenciasView — `DisenadorCurricularView.js` dejó de
  * usar este componente en la Tarea 3.6, ver design.md Migration/Rollout §2)
  * no pasan `modo` ni `estrellas` y deben seguir renderizando exactamente igual.
+ *
+ * `unidadNombre` (opcional, string): agrupador visual "Unidad" — hoy mapeado
+ * 1:1 a `catalogo_niveles.nombre` (no hay tabla "unidad" separada; el Nivel
+ * ya scopea los objetivos de la clase vía `clase_mapa_objetivos.level_id`,
+ * así que se reutiliza como agrupador en vez de crear una jerarquía nueva).
+ * Puramente aditivo: si no viene, no se dibuja ningún divisor/etiqueta y el
+ * render es idéntico al de antes.
  */
 import { escapeHTML } from '../../clases/utils/clasesUtils.js'
 
@@ -49,10 +56,12 @@ function _colorLegadoPorEstado(estado) {
 export function renderMapaContenidoSVG({ container, nodos = [], modo = 'sesion', onNodeClick = null, onAddNodeClick = null }) {
   if (!container) return
 
-  const height = 230
+  const tieneUnidades = nodos.some((n) => n.unidadNombre)
+  const unidadBandH = tieneUnidades ? 28 : 0
+  const height = 230 + unidadBandH
   const startX = 70
   const stepX = 180
-  const centerY = 95
+  const centerY = 95 + unidadBandH
 
   let pathD = ''
 
@@ -109,12 +118,28 @@ export function renderMapaContenidoSVG({ container, nodos = [], modo = 'sesion',
 
           const accionLabel = modo === 'diseno' ? 'Editar objetivo' : 'Evaluar nodo'
           const pctTexto = typeof nodo.pctAvance === 'number' ? ` — ${nodo.pctAvance}% de avance` : ''
-          const tooltipTexto = `${rawTitle}${pctTexto}`
+          const unidadTexto = nodo.unidadNombre ? ` · Unidad: ${nodo.unidadNombre}` : ''
+          const tooltipTexto = `${rawTitle}${pctTexto}${unidadTexto}`
           const estrellasTexto = tieneEstrellas ? (enProgreso ? 'En progreso' : '★'.repeat(nodo.estrellas)) : ''
+
+          // Nueva "Unidad" (Nivel del catálogo) respecto al nodo anterior: dibuja
+          // divisor + etiqueta arriba del nodo. Puramente aditivo (solo si
+          // algún nodo trae unidadNombre) — no afecta call-sites legado.
+          const esInicioDeUnidad = tieneUnidades && nodo.unidadNombre && nodo.unidadNombre !== nodos[idx - 1]?.unidadNombre
+          const dividerX = cx - stepX / 2
+          const unidadMarkup = esInicioDeUnidad
+            ? `
+            ${idx > 0 ? `<line x1="${dividerX}" y1="18" x2="${dividerX}" y2="${height - 10}" stroke="var(--bs-border-color-translucent, #334155)" stroke-width="1.5" stroke-dasharray="4 3" />` : ''}
+            <text x="${cx}" y="16" text-anchor="middle" font-size="11" font-weight="700" fill="var(--bs-primary, #3b82f6)" class="svg-unidad-label">
+              <tspan>${escapeHTML(nodo.unidadNombre)}</tspan>
+            </text>
+          `
+            : ''
 
           return `
           <g class="svg-node-group" data-id="${nodo.id}" data-modo="${modo}" role="button" tabindex="0" aria-label="${accionLabel}: ${escapeHTML(rawTitle)}" style="cursor: pointer;">
             <title>${escapeHTML(tooltipTexto)}</title>
+            ${unidadMarkup}
             <circle cx="${cx}" cy="${cy}" r="${r + 5}" fill="${fillColor}" opacity="0.2" />
             <circle cx="${cx}" cy="${cy}" r="${r}" fill="${fillColor}" stroke="var(--bs-border-color, #ffffff)" stroke-width="3" filter="url(#glow)" />
             <text x="${cx}" y="${cy + 5}" text-anchor="middle" fill="#ffffff" font-size="12" font-weight="bold">${idx + 1}</text>

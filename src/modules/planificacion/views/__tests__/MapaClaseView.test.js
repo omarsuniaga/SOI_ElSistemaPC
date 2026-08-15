@@ -14,6 +14,13 @@ vi.mock('../../services/mapaClaseService.js', () => ({
   obtenerObjetivosPorClase: vi.fn(),
   obtenerEstrellasPorClase: vi.fn(),
   obtenerIndicadoresPorObjetivo: vi.fn(),
+  obtenerIndicadoresPorClase: vi.fn(),
+  obtenerClaseYMaestroParaExport: vi.fn(),
+}))
+
+vi.mock('../../domain/generarPdfRutaClase.js', () => ({
+  buildRutaClasePdfEstructura: vi.fn(() => []),
+  descargarPdfRutaClase: vi.fn(),
 }))
 
 vi.mock('../../../asistencias/api/asistenciasApi.js', () => ({
@@ -40,10 +47,13 @@ import {
   obtenerObjetivosPorClase,
   obtenerEstrellasPorClase,
   obtenerIndicadoresPorObjetivo,
+  obtenerIndicadoresPorClase,
+  obtenerClaseYMaestroParaExport,
 } from '../../services/mapaClaseService.js'
 import { obtenerAsistenciaDelDia } from '../../../asistencias/api/asistenciasApi.js'
 import { renderObjetivoEditorModal } from '../../components/objetivoEditorModal.js'
 import { renderCalificacionIndicadorPanel } from '../../components/calificacionIndicadorPanel.js'
+import { buildRutaClasePdfEstructura, descargarPdfRutaClase } from '../../domain/generarPdfRutaClase.js'
 import { renderMapaClaseView } from '../MapaClaseView.js'
 
 const flush = () => Promise.resolve().then(() => Promise.resolve())
@@ -72,6 +82,8 @@ describe('MapaClaseView', () => {
     obtenerObjetivosPorClase.mockResolvedValue(objetivos)
     obtenerEstrellasPorClase.mockResolvedValue([])
     obtenerIndicadoresPorObjetivo.mockResolvedValue([])
+    obtenerIndicadoresPorClase.mockResolvedValue([])
+    obtenerClaseYMaestroParaExport.mockResolvedValue({ nombreClase: 'Violín Inicial', nombreMaestro: 'Ana Pérez' })
     obtenerAsistenciaDelDia.mockResolvedValue({ tomada: false, presentes: [] })
   })
 
@@ -92,7 +104,7 @@ describe('MapaClaseView', () => {
     await renderMapaClaseView(container, { claseId: 'clase-1' })
     await flush()
 
-    expect(container.textContent).toMatch(/no tiene niveles asignados/i)
+    expect(container.textContent).toMatch(/no tiene unidades \(niveles\) asignadas/i)
 
     lastRender.onAddNodeClick()
     expect(renderObjetivoEditorModal).not.toHaveBeenCalled()
@@ -209,6 +221,50 @@ describe('MapaClaseView', () => {
           evaluadoPor: 'maestro-1',
         }),
       )
+    })
+  })
+
+  describe('Exportar a PDF (formalización académica)', () => {
+    it('el botón está deshabilitado cuando la clase no tiene niveles asignados', async () => {
+      obtenerNivelesAsignadosClase.mockResolvedValue([])
+
+      await renderMapaClaseView(container, { claseId: 'clase-1' })
+      await flush()
+
+      expect(container.querySelector('#btn-exportar-pdf').disabled).toBe(true)
+    })
+
+    it('al hacer click, arma la estructura con los indicadores de TODA la clase y delega en descargarPdfRutaClase', async () => {
+      const indicadoresDeLaClase = [{ id: 'i1', objetivo_id: 'o1', descripcion: 'Indicador 1' }]
+      obtenerIndicadoresPorClase.mockResolvedValue(indicadoresDeLaClase)
+
+      await renderMapaClaseView(container, { claseId: 'clase-1', maestroId: 'maestro-1' })
+      await flush()
+
+      container.querySelector('#btn-exportar-pdf').click()
+      await flush()
+      await flush()
+
+      expect(obtenerIndicadoresPorClase).toHaveBeenCalledWith('clase-1')
+      expect(obtenerClaseYMaestroParaExport).toHaveBeenCalledWith('clase-1')
+      expect(buildRutaClasePdfEstructura).toHaveBeenCalledWith(niveles, objetivos, indicadoresDeLaClase, expect.any(Map))
+      expect(descargarPdfRutaClase).toHaveBeenCalledWith(
+        expect.objectContaining({ claseNombre: 'Violín Inicial', maestroNombre: 'Ana Pérez' }),
+      )
+    })
+
+    it('si falla la carga de datos, muestra un error y no llama a descargarPdfRutaClase', async () => {
+      obtenerIndicadoresPorClase.mockRejectedValue(new Error('network down'))
+
+      await renderMapaClaseView(container, { claseId: 'clase-1' })
+      await flush()
+
+      container.querySelector('#btn-exportar-pdf').click()
+      await flush()
+      await flush()
+
+      expect(descargarPdfRutaClase).not.toHaveBeenCalled()
+      expect(container.querySelector('#btn-exportar-pdf').disabled).toBe(false)
     })
   })
 })

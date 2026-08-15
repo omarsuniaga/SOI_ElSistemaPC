@@ -86,13 +86,6 @@ async function _cargarDependenciasClase(state) {
   state.nivelIdIA = state.niveles[0]?.id || ''
 }
 
-/** Próximo orden_objetivo libre para (claseId, nivelId) — mismo criterio que el RPC clonar_catalogo_a_clase. */
-async function _siguienteOrdenObjetivo(claseId, nivelId) {
-  const existentes = await obtenerObjetivosPorClase(claseId)
-  const delNivel = existentes.filter((o) => o.level_id === nivelId)
-  return delNivel.reduce((max, o) => Math.max(max, o.orden_objetivo || 0), 0) + 1
-}
-
 function _renderUI(container, clases, state) {
   const sinNiveles = Boolean(state.claseId) && state.niveles.length === 0
   const bloqueado = !state.claseId || sinNiveles
@@ -157,7 +150,7 @@ function _renderUI(container, clases, state) {
             <h5 class="fw-bold text-body mb-2"><i class="bi bi-copy me-2 text-primary"></i>Clonar desde catálogo</h5>
             <p class="text-body-secondary small mb-3">Copia editable e independiente de un nivel del catálogo institucional.</p>
 
-            <label class="form-label fw-semibold text-body">Nivel</label>
+            <label class="form-label fw-semibold text-body">Unidad</label>
             <select class="form-select border-secondary-subtle mb-3" id="select-nivel-clonar-disenador" ${state.niveles.length === 0 ? 'disabled' : ''}>
               ${
                 state.niveles.length === 0
@@ -185,7 +178,7 @@ function _renderUI(container, clases, state) {
             <h5 class="fw-bold text-body mb-2"><i class="bi bi-magic me-2 text-primary"></i>Generar con IA (GROQ)</h5>
             <p class="text-body-secondary small mb-3">Sugiere objetivos e indicadores y los crea directamente en el mapa de esta clase.</p>
 
-            <label class="form-label fw-semibold text-body">Nivel</label>
+            <label class="form-label fw-semibold text-body">Unidad</label>
             <select class="form-select border-secondary-subtle mb-3" id="select-nivel-ia-disenador" ${state.niveles.length === 0 ? 'disabled' : ''}>
               ${
                 state.niveles.length === 0
@@ -256,12 +249,21 @@ function _attachEvents(container, clases, state) {
       const clase = clases.find((c) => String(c.id) === String(state.claseId))
       const nivelIndex = state.niveles.findIndex((n) => n.id === state.nivelIdIA)
 
+      // Una sola lectura del árbol de la clase, reutilizada tanto para el
+      // siguiente orden_objetivo como para el contexto de continuidad de la
+      // IA (Decisión: no debe repetir/contradecir lo que ya existe en esta
+      // misma Unidad de la clase).
+      const objetivosDeLaClase = await obtenerObjetivosPorClase(state.claseId)
+      const objetivosDelNivel = objetivosDeLaClase.filter((o) => o.level_id === state.nivelIdIA)
+      let ordenObjetivo = objetivosDelNivel.reduce((max, o) => Math.max(max, o.orden_objetivo || 0), 0) + 1
+      const objetivosExistentes = objetivosDelNivel.map((o) => o.nombre)
+
       const sugerencias = await sugerirRutaDidacticaIA({
         instrumento: clase?.nombre || clase?.name || 'Música',
         nivelIndex: nivelIndex >= 0 ? nivelIndex : 0,
+        objetivosExistentes,
       })
 
-      let ordenObjetivo = await _siguienteOrdenObjetivo(state.claseId, state.nivelIdIA)
       for (const sug of sugerencias || []) {
         const objetivoCreado = await crearObjetivo({
           clase_id: state.claseId,

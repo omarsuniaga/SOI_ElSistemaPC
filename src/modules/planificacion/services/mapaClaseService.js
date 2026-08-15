@@ -199,6 +199,26 @@ export async function obtenerIndicadoresPorObjetivo(objetivoId) {
 }
 
 /**
+ * Todos los indicadores de una clase (todos sus objetivos), en una sola
+ * consulta — usado por la exportación a PDF de la ruta completa (evita N+1
+ * llamadas a obtenerIndicadoresPorObjetivo, una por cada objetivo).
+ *
+ * @param {string} claseId
+ * @returns {Promise<Array<object>>}
+ */
+export async function obtenerIndicadoresPorClase(claseId) {
+  const { data, error } = await supabase
+    .from('clase_mapa_indicadores')
+    .select('*')
+    .eq('clase_id', claseId)
+    .is('archived_at', null)
+    .order('order_index')
+
+  if (error) throw error
+  return data || []
+}
+
+/**
  * Update an indicador's editable fields (descripcion, order_index, es_requerido).
  * `orden_indicador` (the hierarchical-ID segment) is immutable once
  * evaluations exist, enforced at the DB trigger level (Decisión 3).
@@ -462,4 +482,33 @@ export async function obtenerEstrellasPorClase(claseId) {
     estrellas: row.estrellas,
     estadoVisual: row.estado_visual,
   }))
+}
+
+/**
+ * Nombre de la clase y del maestro titular — usado únicamente para el
+ * encabezado del PDF de la ruta de contenido (generarPdfRutaClase.js). No
+ * trae el resto de columnas de `clases`/`maestros`: este servicio es del
+ * árbol de planificación, no el dueño de esos datos.
+ *
+ * @param {string} claseId
+ * @returns {Promise<{nombreClase: string, nombreMaestro: string}>}
+ */
+export async function obtenerClaseYMaestroParaExport(claseId) {
+  const { data: clase, error: claseError } = await supabase
+    .from('clases')
+    .select('nombre, maestro_principal_id')
+    .eq('id', claseId)
+    .single()
+
+  if (claseError || !clase) return { nombreClase: '', nombreMaestro: '' }
+
+  if (!clase.maestro_principal_id) return { nombreClase: clase.nombre || '', nombreMaestro: '' }
+
+  const { data: maestro } = await supabase
+    .from('maestros')
+    .select('nombre_completo')
+    .eq('id', clase.maestro_principal_id)
+    .single()
+
+  return { nombreClase: clase.nombre || '', nombreMaestro: maestro?.nombre_completo || '' }
 }

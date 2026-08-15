@@ -59,7 +59,10 @@ const navGroups = [
     id: 'hermes',
     label: 'Hermes',
     icon: 'bi-robot',
-    items: [{ id: 'hermes-tareas', label: 'Tareas Institucionales', icon: 'bi-check2-square' }],
+    items: [
+      { id: 'hermes-tareas', label: 'Tareas Institucionales', icon: 'bi-check2-square' },
+      { id: 'hermes-evento', label: 'Seguimiento de Evento', icon: 'bi-calendar3-event' },
+    ],
   },
 ]
 

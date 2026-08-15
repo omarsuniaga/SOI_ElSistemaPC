@@ -30,6 +30,7 @@ import { router } from '../../core/router/router.js'
 import { useAuth } from '../../modules/auth/hooks/useAuth.js'
 import { registerRoutesAuth } from '../../modules/auth/index.js'
 import { renderTareasView } from '../../modules/hermes/views/tareasView.js'
+import { renderEventoTrackingView } from '../../modules/hermes/views/eventoTrackingView.js'
 import { renderProcedimientosView } from '../../modules/hermes/views/procedimientosView.js'
 import { renderCasoDetalleView } from '../../modules/hermes/views/casoDetalleView.js'
 import { renderScoreDirectorView } from '../../modules/hermes/views/scoreDirectorView.js'
@@ -353,6 +354,9 @@ export async function bootAdminPortal(profile) {
       hideCalendarBtn: true,
       ...params,
     }),
+  )
+  router.register('hermes-evento', (mount, params = {}) =>
+    renderEventoTrackingView(mount, { ...params }),
   )
   router.register('hermes-caso', (mount, params = {}) =>
     renderCasoDetalleView(mount, params),

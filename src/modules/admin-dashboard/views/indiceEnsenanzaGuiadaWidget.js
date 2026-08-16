@@ -16,9 +16,8 @@
  * separadas del factory `indiceEnsenanzaGuiadaWidget(containerId)` para
  * poder probarlas sin mockear el DOM/Supabase completo.
  *
- * NOTA: el copy exacto ("Maestros destacados por enseñanza guiada", etc.) es
- * un borrador razonable — spec.md pide validarlo con DIR antes de dar la
- * tarea por cerrada del todo (no se asume el texto final).
+ * Copy aprobado por DIR (Omar Suniaga) el 2026-08-16, tal cual — cierra la
+ * tarea 4.4 de tasks.md (openspec/changes/archive/2026-08-16-juego-gamificado-planificacion/).
  */
 import { getIndiceEnsenanzaGuiada } from '../api/indiceEnsenanzaGuiadaApi.js'
 import { escapeHTML } from '../../../shared/utils/sanitize.js'

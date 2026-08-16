@@ -91,7 +91,7 @@ The `juego-gamificado-planificacion` SDD change has been successfully completed,
 
 **Migrations Applied to Production**: ✅ `20260816050000_vw_indice_ensenanza_guiada.sql` + RPC `fn_get_indice_ensenanza_guiada()` with guard (admin/coordinador only)
 
-**Non-Blocking Note**: Copy in widget is documented as "borrador" — recommended validation with DIR (Omar Suniaga) before final rollout. Technical implementation verified complete; text/framing TBD.
+**Copy Sign-Off**: Approved by DIR (Omar Suniaga) on 2026-08-16, as-is — no wording changes requested.
 
 ---
 
@@ -100,7 +100,7 @@ The `juego-gamificado-planificacion` SDD change has been successfully completed,
 **Total Tests Passed**: 84/84  
 **Critical Issues**: 0  
 **Warnings**: 0  
-**Suggestions**: 1 (D-02 copy validation, non-blocking)
+**Suggestions**: 0 (D-02 copy validated and approved by DIR on 2026-08-16)
 
 ### Detailed Breakdown by PR
 
@@ -148,7 +148,7 @@ npm run build → success (21.98s)
 
 4. **B-02 Logro Criteria**: Real seed uses different types than spec anticipated. Function now supports all types (backward compatible). No breaking changes.
 
-5. **D-02 Copy**: Widget text is borrador pending DIR validation. Technical implementation complete; semantic framing TBD.
+5. **D-02 Copy**: Approved by DIR (Omar Suniaga) on 2026-08-16, as-is. Resolved — not a remaining limitation.
 
 ---
 
@@ -184,8 +184,7 @@ If critical issues emerge post-archive:
 **Date**: 2026-08-16  
 **Artifact Store**: OpenSpec (files in `openspec/changes/archive/2026-08-16-juego-gamificado-planificacion/`)
 
-**Remaining Action** (recommended, not blocking):
-- Omar (DIR): Validate copy in D-02 widget (15 min) and confirm OK for production display
+**Remaining Actions**: None. DIR (Omar Suniaga) validated and approved the D-02 widget copy as-is on 2026-08-16.
 
 **Ready For**: 
 - ✅ Production use (already live)

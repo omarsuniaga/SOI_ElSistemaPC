@@ -16,7 +16,7 @@
 - **C-01**: `TeacherRouteBuilder.js`/`teacherRouteMapPanel.js` no tienen ningún mapa visual con nodos de progreso en Sistema B — la transición GSAP se aplicó al star-rating real de `IndicadorGradingModal.js`.
 - **D-01**: la vista está protegida por `fn_get_indice_ensenanza_guiada()` (SECURITY DEFINER, admin/coordinador) en vez de un GRANT directo — decisión de seguridad más estricta que el precedente de Sistema A, justificada por la sensibilidad del dato comparativo entre maestros.
 
-**Pendiente no bloqueante**: el copy exacto del reporte de reconocimiento (D-02, Tarea 4.4) es un borrador razonable — falta validarlo con DIR antes de considerarlo textualmente definitivo. No bloquea el cierre del cambio: la implementación técnica está completa, probada y en producción.
+**Tarea 4.4 (D-02, copy del reporte)**: aprobado por DIR (Omar Suniaga) el 2026-08-16, tal cual — sin cambios de texto. No quedan pendientes abiertos en este cambio.
 
 ## Review Workload Forecast
 

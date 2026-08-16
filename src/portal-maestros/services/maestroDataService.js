@@ -830,6 +830,65 @@ export async function getIndicadorEvaluations(indicadorId, claseId) {
   }
 }
 
+/**
+ * Get the logros (achievements) an alumno already has, joined with their
+ * metadata (nombre/descripcion/icono). Alimentado por
+ * fn_evaluar_logros_alumno (trigger sobre evaluacion_indicador) — ver
+ * openspec/changes/juego-gamificado-planificacion/spec.md, B-02/B-03.
+ * @param {string} alumnoId
+ * @returns {Promise<Array<{id: string, nombre: string, descripcion: string, icono: string}>>}
+ */
+export async function getLogrosAlumno(alumnoId) {
+  if (!alumnoId) return []
+
+  try {
+    const { data, error } = await supabase
+      .from('alumnos_logros')
+      .select('logro_id, logros(nombre, descripcion, icono)')
+      .eq('alumno_id', alumnoId)
+
+    if (error) {
+      console.warn('[MaestroData] Error loading logros alumno:', error.message)
+      return []
+    }
+
+    return (data || []).map((row) => ({
+      id: row.logro_id,
+      nombre: row.logros?.nombre || '',
+      descripcion: row.logros?.descripcion || '',
+      icono: row.logros?.icono || '',
+    }))
+  } catch (err) {
+    console.error('[MaestroData] getLogrosAlumno error:', err)
+    return []
+  }
+}
+
+/**
+ * Get the current racha (streak) of an alumno. Alimentado por
+ * fn_actualizar_racha_alumno (trigger sobre evaluacion_indicador) — ver
+ * openspec/changes/juego-gamificado-planificacion/spec.md, B-01/B-03.
+ * @param {string} alumnoId
+ * @returns {Promise<{racha_actual: number, racha_maxima: number, ultima_fecha_activa: string}|null>}
+ */
+export async function getRachaAlumno(alumnoId) {
+  if (!alumnoId) return null
+
+  try {
+    const { data, error } = await supabase
+      .from('rachas')
+      .select('racha_actual, racha_maxima, ultima_fecha_activa')
+      .eq('alumno_id', alumnoId)
+      .maybeSingle()
+
+    if (error || !data) return null
+    return data
+  } catch (err) {
+    console.error('[MaestroData] getRachaAlumno error:', err)
+    return null
+  }
+}
+
 export default {
   getMisClases,
   getHorariosClases,
@@ -849,5 +908,7 @@ export default {
   updateRecoveryStatus,
   getAttendanceForClass,
   getIndicadorEvaluations,
+  getLogrosAlumno,
+  getRachaAlumno,
   CACHE_KEYS,
 }

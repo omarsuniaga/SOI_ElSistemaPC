@@ -13,6 +13,8 @@ import {
   getIndicadorEvaluations,
   saveIndicadorNota,
   updateRecoveryStatus,
+  getLogrosAlumno,
+  getRachaAlumno,
 } from '../services/maestroDataService.js'
 import { checkPrerequisiteSatisfied, getDirectPrerequisite } from '../services/maestroRouteService.js'
 import { analyzeIndicadorObservation } from '../services/groqService.js'
@@ -83,6 +85,55 @@ export async function openIndicadorGradingModal({
   // Estado en memoria: alumno_id -> { nota, recovery_status, recovery_notes, recovery_grade }
   const state = new Map()
 
+  // Snapshot de logros/racha ANTES de calificar en esta sesión del modal, para
+  // poder detectar qué es "nuevo" tras cada guardado (Spec B-03: el trigger
+  // SQL corre en cada INSERT/UPDATE de evaluacion_indicador, así que la única
+  // forma de saber "qué otorgó ESTE guardado" desde el cliente es comparar
+  // antes/después — ver design.md, Data Flow paso 3).
+  const achievementsBaseline = new Map()
+
+  async function _snapshotAchievements(alumnoId) {
+    const [logros, racha] = await Promise.all([getLogrosAlumno(alumnoId), getRachaAlumno(alumnoId)])
+    achievementsBaseline.set(alumnoId, {
+      logroIds: new Set(logros.map((l) => l.id)),
+      rachaActual: racha?.racha_actual || 0,
+    })
+  }
+
+  // Devuelve la entrada de resultado para este alumno si hubo novedad, o
+  // null si no hay nada nuevo que mostrar — separado de mostrar el modal
+  // para poder agrupar varios alumnos en un solo modal (calificación grupal).
+  async function _computeAchievementsUpdate(alumnoId, alumnoNombre) {
+    try {
+      const [logrosActuales, racha] = await Promise.all([getLogrosAlumno(alumnoId), getRachaAlumno(alumnoId)])
+      const baseline = achievementsBaseline.get(alumnoId) || { logroIds: new Set(), rachaActual: 0 }
+      const logrosNuevos = logrosActuales.filter((l) => !baseline.logroIds.has(l.id))
+      const rachaActual = racha?.racha_actual || 0
+      const rachaSubio = rachaActual > baseline.rachaActual
+
+      achievementsBaseline.set(alumnoId, { logroIds: new Set(logrosActuales.map((l) => l.id)), rachaActual })
+
+      // Sin novedades: el modal no se muestra (Spec B-03, "sin interrumpir el flujo del maestro")
+      if (logrosNuevos.length === 0 && !rachaSubio) return null
+      return { studentName: alumnoNombre, logrosNuevos, rachaActual, rachaSubio }
+    } catch (err) {
+      console.warn('[IndicadorGradingModal] Error comprobando logros/racha:', err)
+      return null
+    }
+  }
+
+  async function _showAchievements(entries) {
+    const results = entries.filter(Boolean)
+    if (results.length === 0) return
+    const { createAchievementsSummaryModal } = await import('./AchievementsSummaryModal.js')
+    await createAchievementsSummaryModal(document.body, results)
+  }
+
+  async function _checkAndShowAchievements(alumnoId, alumnoNombre) {
+    const entry = await _computeAchievementsUpdate(alumnoId, alumnoNombre)
+    await _showAchievements([entry])
+  }
+
   try {
     const [alumnos, attendance, evaluaciones, prerequisito] = await Promise.all([
       getAlumnos(claseId),
@@ -96,6 +147,13 @@ export async function openIndicadorGradingModal({
     const presentesIds = new Set(attendance.presentes)
     const ausentesIds = new Set(attendance.ausentes)
     const alumnosMap = Object.fromEntries(alumnos.map((a) => [a.id, a]))
+
+    // Snapshot "antes de calificar" para todos los alumnos de la sesión (no
+    // solo presentes: una recuperación de un ausente también puede otorgar
+    // un logro). Se espera (no fire-and-forget) para que un primer click muy
+    // rápido no vea el baseline vacío y reporte como "nuevo" un logro que el
+    // alumno ya tenía.
+    await Promise.all([...presentesIds, ...ausentesIds].map((id) => _snapshotAchievements(id)))
 
     if (presentesIds.size === 0 && ausentesIds.size === 0) {
       body.innerHTML = `
@@ -249,6 +307,7 @@ export async function openIndicadorGradingModal({
               state.set(alumnoId, { ...(state.get(alumnoId) || {}), ...saved, nota: value })
               dirty = true
               _refreshCompletarBtn()
+              _checkAndShowAchievements(alumnoId, alumnosMap[alumnoId]?.nombre)
             } catch (err) {
               AppToast.error(`No se pudo guardar: ${err.message}`)
             }
@@ -293,6 +352,7 @@ export async function openIndicadorGradingModal({
             if (form) form.remove()
             AppToast.success('Recuperación registrada')
             _refreshCompletarBtn()
+            _checkAndShowAchievements(alumnoId, alumnosMap[alumnoId]?.nombre)
           } catch (err) {
             AppToast.error(`No se pudo registrar la recuperación: ${err.message}`)
             btn.disabled = false
@@ -352,7 +412,7 @@ export async function openIndicadorGradingModal({
                 grupalStars.forEach((s) => s.classList.toggle('igm-star-filled', Number(s.dataset.value) <= value))
 
                 try {
-                  await Promise.all(
+                  const achievementEntries = await Promise.all(
                     [...presentesIds].map(async (alumnoId) => {
                       const saved = await saveIndicadorNota({ alumnoId, indicadorId, claseId, nota: value, evaluadoPor })
                       state.set(alumnoId, { ...(state.get(alumnoId) || {}), ...saved, nota: value })
@@ -362,11 +422,13 @@ export async function openIndicadorGradingModal({
                           s.classList.toggle('igm-star-filled', Number(s.dataset.value) <= value)
                         })
                       }
+                      return _computeAchievementsUpdate(alumnoId, alumnosMap[alumnoId]?.nombre)
                     })
                   )
                   dirty = true
                   AppToast.success(`Calificación grupal aplicada a ${presentesIds.size} presentes`)
                   _refreshCompletarBtn()
+                  _showAchievements(achievementEntries)
                 } catch (err) {
                   AppToast.error(`No se pudo aplicar la calificación grupal: ${err.message}`)
                 }

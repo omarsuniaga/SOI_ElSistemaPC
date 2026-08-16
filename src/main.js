@@ -87,6 +87,12 @@ import { registerRoutesInventario } from './modules/inventario/index.js'
 import { registerRoutesHelp } from './modules/help/index.js'
 import { registerRoutesPeriodos } from './modules/periodos/index.js'
 import { renderScoreDirectorView } from './modules/hermes/views/scoreDirectorView.js'
+import { renderTareasView } from './modules/hermes/views/tareasView.js'
+import { renderEventoTrackingView } from './modules/hermes/views/eventoTrackingView.js'
+import { renderAlianzasView } from './modules/alianzas/views/alianzasView.js'
+import { renderCasoDetalleView } from './modules/hermes/views/casoDetalleView.js'
+import { renderProcedimientosView } from './modules/hermes/views/procedimientosView.js'
+import { renderHermesConsultaView } from './modules/hermes/views/hermesConsultaView.js'
 import {
   startAdminRealtimeNotifications,
   stopAdminRealtimeNotifications,
@@ -217,6 +223,14 @@ const MODULES_REGISTRY = [
     register: registerRoutesBitacora,
   },
   {
+    id: 'bitacora-suplentes',
+    label: 'Auditoría Suplentes',
+    icon: 'bi-clipboard2-data',
+    description: 'Seguimiento de actividad de suplentes',
+    enabled: true,
+    register: registerRoutesBitacora,
+  },
+  {
     id: 'progresos',
     label: 'Progresos',
     icon: 'bi-graph-up',
@@ -319,6 +333,11 @@ const NAV_GROUPS = [
     icon: 'bi-bullseye',
     items: [
       { id: 'dir-score', label: 'Score del Director', icon: 'bi-bullseye' },
+      { id: 'hermes-procedimientos', label: 'Procedimientos', icon: 'bi-diagram-3' },
+      { id: 'hermes-consulta', label: 'Consultar a Hermes', icon: 'bi-robot' },
+      { id: 'hermes-tareas', label: 'Tareas Institucionales', icon: 'bi-check2-square' },
+      { id: 'hermes-evento', label: 'Seguimiento de Evento', icon: 'bi-calendar3-event' },
+      { id: 'dir-alianzas', label: 'Panel de Alianzas', icon: 'bi-handshake' },
     ],
   },
   {
@@ -351,7 +370,8 @@ const NAV_GROUPS = [
       { id: 'pedagogico-dashboard', label: 'Dashboard', icon: 'bi-grid-1x2' },
       { id: 'planificacion', label: 'Planificación', icon: 'bi-journal-text' },
       { id: 'bitacora-clase', label: 'Bitácora', icon: 'bi-journal-check' },
-      { id: 'planificacion-maestros', label: 'Todas las Planes', icon: 'bi-journal-check' },
+      { id: 'bitacora-suplentes', label: 'Auditoría Suplentes', icon: 'bi-clipboard2-data' },
+      { id: 'planificacion-maestros', label: 'Todos los Planes', icon: 'bi-journal-check' },
       { id: 'planificacion-cobertura', label: 'Cobertura Curricular', icon: 'bi-grid-3x3-gap' },
       { id: 'planificacion-ruta', label: 'Ruta Académica', icon: 'bi-diagram-3' },
       { id: 'pedagogico-seguimiento', label: 'Seguimiento', icon: 'bi-person-lines-fill' },
@@ -669,6 +689,22 @@ function registerModules() {
   // Score del Director (DIR): vista global de tareas Hermes + creación de eventos
   try {
     router.register('dir-score', (mount) => renderScoreDirectorView(mount))
+    router.register('hermes-tareas', (mount, params = {}) =>
+      renderTareasView(mount, { hideCalendarBtn: true, ...params }),
+    )
+    router.register('hermes-evento', (mount, params = {}) =>
+      renderEventoTrackingView(mount, { ...params }),
+    )
+    router.register('dir-alianzas', (mount) => renderAlianzasView(mount))
+    router.register('hermes-caso', (mount, params = {}) =>
+      renderCasoDetalleView(mount, params),
+    )
+    router.register('hermes-procedimientos', (mount) =>
+      renderProcedimientosView(mount),
+    )
+    router.register('hermes-consulta', (mount) =>
+      renderHermesConsultaView(mount),
+    )
   } catch (error) {
     console.error('Error registering dir-score route:', error)
   }

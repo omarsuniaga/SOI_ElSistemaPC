@@ -20,6 +20,7 @@ const navGroups = [
       { id: 'com-seguimiento', label: 'Seguimiento', icon: 'bi-telephone-outbound' },
       { id: 'com-calendario', label: 'Calendario', icon: 'bi-calendar-week' },
       { id: 'hermes-tareas', label: 'Tareas Institucionales', icon: 'bi-check2-square' },
+      { id: 'hermes-evento', label: 'Seguimiento de Evento', icon: 'bi-calendar3-event' },
       { id: 'admin-notificaciones', label: 'Centro de Actividad', icon: 'bi-bell' },
     ],
   },

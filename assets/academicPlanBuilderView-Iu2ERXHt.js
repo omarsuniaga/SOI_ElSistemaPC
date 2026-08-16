@@ -1,4 +1,4 @@
-import{i as e}from"./supabase-Cgh_dhNB.js";import{t}from"./academicService-b7bfwMLY.js";import{i as n}from"./portalUtils-CkF82Yyk.js";async function r(r,{alumnoId:i}){r.innerHTML=`<div class="pm-loading"><div class="pm-spinner"></div></div>`;try{let a=await t.getStudent(i),o=await t.fetchRoutes();r.innerHTML=`
+import{i as e}from"./supabase-Cgh_dhNB.js";import{t}from"./academicService-CgmFcPKt.js";import{i as n}from"./portalUtils-CkF82Yyk.js";async function r(r,{alumnoId:i}){r.innerHTML=`<div class="pm-loading"><div class="pm-spinner"></div></div>`;try{let a=await t.getStudent(i),o=await t.fetchRoutes();r.innerHTML=`
       <div class="pm-asist-header">
         <h2 class="apple-display-md">Asignar Ruta</h2>
         <p class="apple-caption">Configura el plan académico para <strong>${n(a.name)} ${n(a.last_name||``)}</strong></p>

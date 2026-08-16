@@ -475,6 +475,19 @@ function renderOperacionesTab() {
       <div id="cumplimiento-maestros-container" style="width: 100%; min-width: 0;">
         <div class="text-center py-5"><div class="spinner-border text-primary"></div></div>
       </div>
+
+      <div class="d-flex justify-content-between align-items-center mt-4 mb-3 flex-wrap gap-2">
+        <h5 class="fw-bold m-0"><i class="bi bi-stars text-warning me-2"></i>Reconocimiento — Enseñanza Guiada</h5>
+      </div>
+      <div class="row g-4">
+        <div class="col-12">
+          <div class="p-3 border rounded-3 bg-light bg-opacity-25 shadow-sm">
+            <div id="indice-ensenanza-guiada-container">
+              <div class="text-center py-5"><div class="spinner-border spinner-border-sm text-primary"></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   `
 }
@@ -594,6 +607,20 @@ async function _onTabChange() {
       const el = state.container?.querySelector('#cumplimiento-maestros-container')
       if (el)
         el.innerHTML = `<div class="alert alert-warning small"><i class="bi bi-exclamation-circle me-1"></i> No se pudo instanciar el Balance de Asistencia & Solvencia Docente.</div>`
+    }
+
+    // 3. indiceEnsenanzaGuiadaWidget (Spec D-01/D-02: reconocimiento, no ranking)
+    try {
+      const { indiceEnsenanzaGuiadaWidget } =
+        await import('../../admin-dashboard/views/indiceEnsenanzaGuiadaWidget.js')
+      const widget = indiceEnsenanzaGuiadaWidget('indice-ensenanza-guiada-container')
+      await widget.init()
+      state.activeWidgetInstances.push(widget)
+    } catch (err) {
+      console.error('Error al cargar el widget de Índice de Enseñanza Guiada:', err)
+      const el = state.container.querySelector('#indice-ensenanza-guiada-container')
+      if (el)
+        el.innerHTML = `<div class="alert alert-warning small"><i class="bi bi-exclamation-circle me-1"></i> No se pudo instanciar el Índice de Enseñanza Guiada.</div>`
     }
   }
 

@@ -1,4 +1,4 @@
-import{i as e}from"./supabase-Cgh_dhNB.js";import{b as t,v as n,x as r,y as i}from"./hermesConsultaView-D4WBJnjB.js";async function a(e){e&&(e.innerHTML=`
+import{i as e}from"./supabase-Cgh_dhNB.js";import{b as t,v as n,x as r,y as i}from"./hermesConsultaView-C7opwovR.js";async function a(e){e&&(e.innerHTML=`
     <div class="page-container d-flex align-items-center justify-content-center" style="min-height:300px;">
       <div class="spinner-border text-primary"></div>
     </div>`,await o(e))}async function o(t){try{let{data:n,error:r}=await e.from(`generated_documents`).select(`*`).order(`created_at`,{ascending:!1}).limit(100);if(r)throw r;s(t,n||[])}catch(e){t.innerHTML=`<div class="page-container"><div class="alert alert-warning">Error: ${e.message}</div></div>`}}function s(e,a){let s={borrador:`bg-secondary-subtle text-secondary-emphasis`,generado:`bg-success-subtle text-success-emphasis`,archivado:`bg-warning-subtle text-warning-emphasis`,anulado:`bg-danger-subtle text-danger-emphasis`};e.innerHTML=`

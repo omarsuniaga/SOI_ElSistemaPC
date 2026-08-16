@@ -9,10 +9,23 @@ import { callGroq } from '../api/groqService.js'
  * @param {Object} params
  * @param {string} params.instrumento — Instrumento o asignatura (ej. Violín, Solfeo)
  * @param {number} params.nivelIndex — Nivel (0, 1, 2, 3)
+ * @param {string[]} [params.objetivosExistentes] — nombres de los objetivos que
+ *   YA existen en esa Unidad/Nivel de la clase (si los hay), para que la IA
+ *   continúe la ruta de forma coherente en vez de repetir o contradecir lo
+ *   que el maestro/coordinador ya redactó. Opcional y retrocompatible — los
+ *   callers que no lo pasan (ej. EditorPlanificacionModal.js, sistema
+ *   legado) siguen generando contenido genérico como antes.
  * @returns {Promise<Array<Object>>} Lista de nodos sugeridos
  */
-export async function sugerirRutaDidacticaIA({ instrumento = 'Música', nivelIndex = 0 }) {
-  const prompt = `Como pedagogo musical experto de El Sistema, genera una secuencia didáctica de 4 objetivos con 2 indicadores cada uno para ${instrumento} en el Nivel ${nivelIndex}.
+export async function sugerirRutaDidacticaIA({ instrumento = 'Música', nivelIndex = 0, objetivosExistentes = [] }) {
+  const contextoPrevio =
+    objetivosExistentes.length > 0
+      ? `\n\nEsta clase YA tiene estos objetivos redactados para este mismo nivel/unidad, en este orden:\n${objetivosExistentes
+          .map((o, i) => `${i + 1}. ${o}`)
+          .join('\n')}\nGenerá SOLO objetivos NUEVOS que continúen esa progresión de forma coherente (más avanzados, sin repetir ni contradecir los anteriores). No los repitas en la respuesta.`
+      : ''
+
+  const prompt = `Como pedagogo musical experto de El Sistema, genera una secuencia didáctica de 4 objetivos con 2 indicadores cada uno para ${instrumento} en el Nivel ${nivelIndex}.${contextoPrevio}
 Responde ÚNICAMENTE en JSON con el formato:
 [
   { "id": "obj-1", "titulo": "Objetivo 1", "indicadores": [{ "id": "ind-1-1", "titulo": "Indicador 1" }] }

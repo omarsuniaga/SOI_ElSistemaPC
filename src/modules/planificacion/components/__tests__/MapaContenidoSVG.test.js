@@ -128,4 +128,36 @@ describe('MapaContenidoSVG', () => {
       expect(circle.getAttribute('fill')).toBe('#10b981') // nodos[0].estado === 'logrado'
     })
   })
+
+  describe('agrupador "Unidad" (nodo.unidadNombre, opcional)', () => {
+    it('does not render any unidad label/divider when no node has unidadNombre (backwards compatible)', () => {
+      renderMapaContenidoSVG({ container, nodos })
+      expect(container.querySelector('.svg-unidad-label')).toBeFalsy()
+    })
+
+    it('renders one label per distinct consecutive unidad, but no divider before the first node', () => {
+      const nodosConUnidad = [
+        { id: 'o1', titulo: 'Objetivo 1', unidadNombre: 'Nivel 1' },
+        { id: 'o2', titulo: 'Objetivo 2', unidadNombre: 'Nivel 1' },
+        { id: 'o3', titulo: 'Objetivo 3', unidadNombre: 'Nivel 2' },
+      ]
+      renderMapaContenidoSVG({ container, nodos: nodosConUnidad })
+
+      const labels = container.querySelectorAll('.svg-unidad-label')
+      expect(labels.length).toBe(2)
+      expect(labels[0].textContent.trim()).toBe('Nivel 1')
+      expect(labels[1].textContent.trim()).toBe('Nivel 2')
+
+      const dividers = container.querySelectorAll('line[stroke-dasharray="4 3"]')
+      expect(dividers.length).toBe(1) // solo entre Nivel 1 y Nivel 2, no antes del primer nodo
+    })
+
+    it('includes the unidad name in the node tooltip', () => {
+      const nodosConUnidad = [{ id: 'o1', titulo: 'Objetivo 1', unidadNombre: 'Nivel 1' }]
+      renderMapaContenidoSVG({ container, nodos: nodosConUnidad })
+
+      const title = container.querySelector('.svg-node-group title')
+      expect(title.textContent).toContain('Unidad: Nivel 1')
+    })
+  })
 })

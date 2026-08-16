@@ -15,7 +15,68 @@ vi.mock('../../api/groqService.js', () => ({
 }))
 
 import { callGroq } from '../../api/groqService.js'
-import { profesionalizarBitacoraIA } from '../aiEvaluacionService.js'
+import { profesionalizarBitacoraIA, sugerirRutaDidacticaIA } from '../aiEvaluacionService.js'
+
+describe('sugerirRutaDidacticaIA', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('parses the JSON array returned by GROQ (fenced or not)', async () => {
+    callGroq.mockResolvedValue(
+      '```json\n[{"id":"obj-1","titulo":"Postura","indicadores":[{"id":"ind-1","titulo":"Espalda recta"}]}]\n```',
+    )
+
+    const result = await sugerirRutaDidacticaIA({ instrumento: 'Violín', nivelIndex: 0 })
+
+    expect(result).toEqual([
+      { id: 'obj-1', titulo: 'Postura', indicadores: [{ id: 'ind-1', titulo: 'Espalda recta' }] },
+    ])
+  })
+
+  it('does not mention prior content in the prompt when objetivosExistentes is omitted (backwards compatible with legacy callers)', async () => {
+    callGroq.mockResolvedValue('[]')
+
+    await sugerirRutaDidacticaIA({ instrumento: 'Violín', nivelIndex: 1 })
+
+    const [messages] = callGroq.mock.calls[0]
+    expect(messages[0].content).not.toContain('YA tiene estos objetivos')
+  })
+
+  it('includes objetivosExistentes in the prompt and asks for continuity, not repetition', async () => {
+    callGroq.mockResolvedValue('[]')
+
+    await sugerirRutaDidacticaIA({
+      instrumento: 'Violín',
+      nivelIndex: 1,
+      objetivosExistentes: ['Postura y emisión de sonido', 'Control de pulso rítmico'],
+    })
+
+    const [messages] = callGroq.mock.calls[0]
+    expect(messages[0].content).toContain('YA tiene estos objetivos')
+    expect(messages[0].content).toContain('1. Postura y emisión de sonido')
+    expect(messages[0].content).toContain('2. Control de pulso rítmico')
+    expect(messages[0].content).toContain('SOLO objetivos NUEVOS')
+  })
+
+  it('falls back to a demo objetivo (no orphaned demo IDs are ever persisted by callers) when GROQ fails', async () => {
+    callGroq.mockRejectedValue(new Error('proxy down'))
+
+    const result = await sugerirRutaDidacticaIA({ instrumento: 'Violín', nivelIndex: 2 })
+
+    expect(result).toHaveLength(1)
+    expect(result[0].titulo).toContain('Nivel 2')
+    expect(result[0].indicadores.length).toBeGreaterThan(0)
+  })
+
+  it('returns an empty array when GROQ responds with valid JSON that is not an array', async () => {
+    callGroq.mockResolvedValue('{"not": "an array"}')
+
+    const result = await sugerirRutaDidacticaIA({ instrumento: 'Violín' })
+
+    expect(result).toEqual([])
+  })
+})
 
 describe('profesionalizarBitacoraIA', () => {
   beforeEach(() => {

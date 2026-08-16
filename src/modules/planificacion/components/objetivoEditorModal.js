@@ -122,7 +122,7 @@ function _wireEvents({ overlay, claseId, niveles, maestroId, state, close, rende
         onSaved?.(state.objetivo)
       } else {
         if (!levelId) {
-          _showError(overlay, 'Seleccioná un nivel')
+          _showError(overlay, 'Seleccioná una unidad')
           return
         }
         const existentes = await obtenerObjetivosPorClase(claseId)
@@ -235,7 +235,7 @@ function _buildHTML({ claseId, niveles, state }) {
       <div class="objetivo-editor-modal-body">
         ${bloqueadoPorNiveles ? `
           <div class="objetivo-editor-warning" role="alert">
-            Esta clase no tiene niveles asignados en la matriz ACM. Asigná un nivel antes de crear objetivos.
+            Esta clase no tiene unidades (niveles) asignadas en la matriz ACM. Asigná una unidad antes de crear objetivos.
           </div>
         ` : ''}
         <div class="objetivo-editor-error-msg d-none" role="alert"></div>
@@ -247,7 +247,7 @@ function _buildHTML({ claseId, niveles, state }) {
         <textarea id="objetivo-editor-descripcion" class="form-control" rows="2">${esc(objetivo?.descripcion || '')}</textarea>
 
         ${!esEdicion ? `
-          <label class="objetivo-editor-label" for="objetivo-editor-nivel">Nivel</label>
+          <label class="objetivo-editor-label" for="objetivo-editor-nivel">Unidad</label>
           <select id="objetivo-editor-nivel" class="form-select" ${bloqueadoPorNiveles ? 'disabled' : ''}>
             ${nivelOptions}
           </select>

@@ -30,8 +30,11 @@ import {
   obtenerObjetivosPorClase,
   obtenerEstrellasPorClase,
   obtenerIndicadoresPorObjetivo,
+  obtenerIndicadoresPorClase,
+  obtenerClaseYMaestroParaExport,
 } from '../services/mapaClaseService.js'
 import { obtenerAsistenciaDelDia } from '../../asistencias/api/asistenciasApi.js'
+import { buildRutaClasePdfEstructura, descargarPdfRutaClase } from '../domain/generarPdfRutaClase.js'
 
 function _fechaHoy() {
   return new Date().toISOString().slice(0, 10)
@@ -95,12 +98,32 @@ async function _cargarObjetivosYEstrellas(state) {
   }
 }
 
+/**
+ * Agrupa los objetivos en "Unidades" para el mapa visual. No existe una
+ * tabla "unidad" separada: se reutiliza el Nivel del catálogo
+ * (catalogo_niveles, ya scopeado a la clase vía level_id) como agrupador,
+ * en el orden en que aparece en `state.niveles` (ya viene ordenado por
+ * catalogo_niveles.orden). Los objetivos sin nivel resuelto (no debería
+ * pasar dado el NOT NULL de la FK, pero se cubre por robustez) quedan al
+ * final bajo "Sin unidad".
+ */
 function _buildNodos(state) {
-  return state.objetivos.map((o) => {
+  const nivelById = new Map(state.niveles.map((n) => [n.id, n.nombre]))
+  const objetivosOrdenadosPorUnidad = [...state.objetivos].sort((a, b) => {
+    const idxA = state.niveles.findIndex((n) => n.id === a.level_id)
+    const idxB = state.niveles.findIndex((n) => n.id === b.level_id)
+    const rankA = idxA === -1 ? Number.MAX_SAFE_INTEGER : idxA
+    const rankB = idxB === -1 ? Number.MAX_SAFE_INTEGER : idxB
+    if (rankA !== rankB) return rankA - rankB
+    return (a.order_index ?? 0) - (b.order_index ?? 0)
+  })
+
+  return objetivosOrdenadosPorUnidad.map((o) => {
     const est = state.estrellasMap.get(o.id)
     return {
       id: o.id,
       titulo: o.nombre,
+      unidadNombre: nivelById.get(o.level_id) || 'Sin unidad',
       ...(est
         ? { estrellas: est.estrellas, pctAvance: est.pctAvance, estadoVisual: est.estadoVisual }
         : {}),
@@ -115,19 +138,24 @@ function _renderShell(container, state) {
     <div class="mapa-clase-view container-fluid px-3 py-3">
       <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
         <h4 class="fw-bold mb-0">Mapa de Planificación</h4>
-        <div class="btn-group" role="group" aria-label="Modo del mapa">
-          <button type="button" id="btn-modo-diseno" class="btn btn-sm ${state.modo === 'diseno' ? 'btn-primary' : 'btn-outline-primary'}">
-            <i class="bi bi-pencil-square me-1"></i>Diseñar Ruta
+        <div class="d-flex flex-wrap gap-2">
+          <button type="button" id="btn-exportar-pdf" class="btn btn-sm btn-outline-secondary" ${sinNiveles ? 'disabled' : ''}>
+            <i class="bi bi-file-earmark-pdf me-1"></i>Exportar a PDF
           </button>
-          <button type="button" id="btn-modo-sesion" class="btn btn-sm ${state.modo === 'sesion' ? 'btn-primary' : 'btn-outline-primary'}">
-            <i class="bi bi-person-video3 me-1"></i>Dar Clase
-          </button>
+          <div class="btn-group" role="group" aria-label="Modo del mapa">
+            <button type="button" id="btn-modo-diseno" class="btn btn-sm ${state.modo === 'diseno' ? 'btn-primary' : 'btn-outline-primary'}">
+              <i class="bi bi-pencil-square me-1"></i>Diseñar Ruta
+            </button>
+            <button type="button" id="btn-modo-sesion" class="btn btn-sm ${state.modo === 'sesion' ? 'btn-primary' : 'btn-outline-primary'}">
+              <i class="bi bi-person-video3 me-1"></i>Dar Clase
+            </button>
+          </div>
         </div>
       </div>
 
       ${sinNiveles ? `
         <div class="alert alert-warning" role="alert">
-          Esta clase no tiene niveles asignados en la matriz ACM (acm_active_routes). Asigná un nivel antes de crear objetivos.
+          Esta clase no tiene unidades (niveles) asignadas en la matriz ACM (acm_active_routes). Asigná una unidad antes de crear objetivos.
         </div>
       ` : ''}
 
@@ -169,6 +197,32 @@ function _renderShell(container, state) {
 
   container.querySelector('#btn-modo-sesion')?.addEventListener('click', () => _handleToggleSesion(container, state))
   container.querySelector('#btn-ir-asistencias')?.addEventListener('click', () => window.router?.navigate('asistencias'))
+  container.querySelector('#btn-exportar-pdf')?.addEventListener('click', () => _handleExportarPdf(container, state))
+}
+
+async function _handleExportarPdf(container, state) {
+  const btn = container.querySelector('#btn-exportar-pdf')
+  if (btn) btn.disabled = true
+
+  try {
+    const [indicadores, { nombreClase, nombreMaestro }] = await Promise.all([
+      obtenerIndicadoresPorClase(state.claseId),
+      obtenerClaseYMaestroParaExport(state.claseId),
+    ])
+
+    const unidades = buildRutaClasePdfEstructura(state.niveles, state.objetivos, indicadores, state.estrellasMap)
+
+    descargarPdfRutaClase({
+      claseNombre: nombreClase || 'Clase',
+      maestroNombre: nombreMaestro,
+      unidades,
+    })
+  } catch (err) {
+    console.error('[MapaClaseView] Error exportando PDF de la ruta:', err)
+    AppToast.error('No se pudo generar el PDF de la ruta de contenido.')
+  } finally {
+    if (btn) btn.disabled = state.niveles.length === 0
+  }
 }
 
 async function _handleToggleSesion(container, state) {
@@ -194,7 +248,7 @@ async function _handleToggleSesion(container, state) {
 
 function _handleAddNodeClick(container, state) {
   if (state.niveles.length === 0) {
-    AppToast.warning('Esta clase no tiene niveles asignados. Asigná un nivel en la matriz ACM primero.')
+    AppToast.warning('Esta clase no tiene unidades (niveles) asignadas. Asigná una unidad en la matriz ACM primero.')
     return
   }
 

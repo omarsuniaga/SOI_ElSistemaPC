@@ -132,8 +132,8 @@ describe('DisenadorCurricularView', () => {
     obtenerClases.mockResolvedValue([{ id: 'clase-1', nombre: 'Violín Inicial' }])
     obtenerNivelesAsignadosClase.mockResolvedValue([{ id: 'level-A', nombre: 'Nivel 2' }])
     obtenerObjetivosPorClase.mockResolvedValue([
-      { level_id: 'level-A', orden_objetivo: 3 },
-      { level_id: 'otro-nivel', orden_objetivo: 99 }, // de otro nivel, no debe contar
+      { level_id: 'level-A', orden_objetivo: 3, nombre: 'Escalas mayores' },
+      { level_id: 'otro-nivel', orden_objetivo: 99, nombre: 'De otro nivel' }, // de otro nivel, no debe contar
     ])
     sugerirRutaDidacticaIA.mockResolvedValue([
       { id: 'obj-1', titulo: 'Postura', indicadores: [{ id: 'ind-1', titulo: 'Postura corporal' }, 'Emisión sonora libre'] },
@@ -146,7 +146,11 @@ describe('DisenadorCurricularView', () => {
     await flush()
     await flush()
 
-    expect(sugerirRutaDidacticaIA).toHaveBeenCalledWith({ instrumento: 'Violín Inicial', nivelIndex: 0 })
+    expect(sugerirRutaDidacticaIA).toHaveBeenCalledWith({
+      instrumento: 'Violín Inicial',
+      nivelIndex: 0,
+      objetivosExistentes: ['Escalas mayores'], // solo del mismo nivel (level-A), no "De otro nivel"
+    })
     expect(crearObjetivo).toHaveBeenCalledWith({
       clase_id: 'clase-1',
       level_id: 'level-A',

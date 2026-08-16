@@ -94,7 +94,7 @@ describe('objetivoEditorModal', () => {
       renderObjetivoEditorModal({ claseId: 'clase-1', niveles: [] })
 
       expect(document.querySelector('.objetivo-editor-guardar-btn').disabled).toBe(true)
-      expect(document.body.textContent).toMatch(/no tiene niveles asignados/i)
+      expect(document.body.textContent).toMatch(/no tiene unidades \(niveles\) asignadas/i)
     })
 
     it('Guardar calls crearObjetivo with the form data and fires onSaved', async () => {

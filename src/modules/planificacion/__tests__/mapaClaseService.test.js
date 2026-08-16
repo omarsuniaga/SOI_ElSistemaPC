@@ -24,6 +24,7 @@ function resetStore() {
     mapa_plantillas: [],
     clases: [],
     catalogo_niveles: [],
+    maestros: [],
   }
   nextId = 1
   deleteShouldFail = null
@@ -173,6 +174,7 @@ import {
   eliminarObjetivo,
   crearIndicador,
   obtenerIndicadoresPorObjetivo,
+  obtenerIndicadoresPorClase,
   actualizarIndicador,
   archivarIndicador,
   eliminarIndicador,
@@ -180,6 +182,7 @@ import {
   obtenerNivelesAsignadosClase,
   obtenerEstrellasPorClase,
   obtenerPlantillasDisponibles,
+  obtenerClaseYMaestroParaExport,
   RequiereArchivarError,
 } from '../services/mapaClaseService.js'
 
@@ -279,6 +282,20 @@ describe('mapaClaseService', () => {
       const result = await obtenerIndicadoresPorObjetivo('o1')
       expect(result.length).toBe(2)
       expect(result[0].id).toBe('i2')
+    })
+
+    it('obtenerIndicadoresPorClase returns non-archived indicadores across ALL objetivos of the class, ordered (bulk fetch for PDF export)', async () => {
+      tables.clase_mapa_indicadores.push(
+        { id: 'i1', objetivo_id: 'o1', clase_id: 'clase_001', descripcion: 'A', order_index: 1, archived_at: null },
+        { id: 'i2', objetivo_id: 'o2', clase_id: 'clase_001', descripcion: 'B', order_index: 0, archived_at: null },
+        { id: 'i3', objetivo_id: 'o1', clase_id: 'clase_001', descripcion: 'C archivado', order_index: 2, archived_at: new Date().toISOString() },
+        { id: 'i4', objetivo_id: 'o5', clase_id: 'clase_002', descripcion: 'Otra clase', order_index: 0, archived_at: null },
+      )
+
+      const result = await obtenerIndicadoresPorClase('clase_001')
+      expect(result.length).toBe(2)
+      expect(result[0].id).toBe('i2') // order_index 0 first
+      expect(result[1].id).toBe('i1')
     })
 
     it('actualizarIndicador updates descripcion/order_index/es_requerido only', async () => {
@@ -449,6 +466,30 @@ describe('mapaClaseService', () => {
 
       expect(result.length).toBe(1)
       expect(result[0].id).toBe('p2')
+    })
+  })
+
+  describe('obtenerClaseYMaestroParaExport (encabezado del PDF de ruta de contenido)', () => {
+    it('returns the class name and the titular teacher name', async () => {
+      tables.clases.push({ id: 'clase_001', nombre: 'Violín Inicial', maestro_principal_id: 'maestro_001' })
+      tables.maestros.push({ id: 'maestro_001', nombre_completo: 'Ana Pérez' })
+
+      const result = await obtenerClaseYMaestroParaExport('clase_001')
+
+      expect(result).toEqual({ nombreClase: 'Violín Inicial', nombreMaestro: 'Ana Pérez' })
+    })
+
+    it('returns empty strings when the class does not exist', async () => {
+      const result = await obtenerClaseYMaestroParaExport('clase-inexistente')
+      expect(result).toEqual({ nombreClase: '', nombreMaestro: '' })
+    })
+
+    it('returns the class name with an empty teacher name when maestro_principal_id is null', async () => {
+      tables.clases.push({ id: 'clase_002', nombre: 'Sin Maestro Asignado', maestro_principal_id: null })
+
+      const result = await obtenerClaseYMaestroParaExport('clase_002')
+
+      expect(result).toEqual({ nombreClase: 'Sin Maestro Asignado', nombreMaestro: '' })
     })
   })
 })

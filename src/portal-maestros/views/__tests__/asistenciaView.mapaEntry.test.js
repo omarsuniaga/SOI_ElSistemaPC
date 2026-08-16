@@ -120,6 +120,10 @@ vi.mock('../../../modules/planificacion/components/bitacoraSesionPanel.js', () =
   renderBitacoraSesionPanel: vi.fn(),
 }))
 
+vi.mock('../../components/attendance/IndicadorSelectorPanel.js', () => ({
+  renderIndicadorSelectorPanel: vi.fn(),
+}))
+
 // AsistenciaTour schedules a real setTimeout auto-start (AUTO_START_DELAY)
 // that calls the real scrollIntoView (unimplemented in jsdom) — mocked here
 // so it never fires as stray async noise across this file's several tests.
@@ -175,6 +179,7 @@ vi.mock('../../../lib/supabaseClient.js', () => ({
 
 import { renderAsistenciaView } from '../asistenciaView.js'
 import { renderBitacoraSesionPanel } from '../../../modules/planificacion/components/bitacoraSesionPanel.js'
+import { renderIndicadorSelectorPanel } from '../../components/attendance/IndicadorSelectorPanel.js'
 import { AppToast } from '../../../shared/components/AppToast.js'
 import { parseDSL } from '../../utils/dslParser.js'
 
@@ -230,6 +235,41 @@ describe('asistenciaView — entrada a Modo Sesión (mapa) + Bitácora (Tarea 3.
       }),
     )
     expect(AppToast.warning).not.toHaveBeenCalled()
+  })
+
+  describe('"Indicadores dados hoy" — atajo embebido a calificar con estrellas (Task 3, plan gamificado maestros)', () => {
+    it('renderiza el botón junto a los otros dos accesos', async () => {
+      await renderAsistenciaView(container, { claseId: 'clase-1', router })
+      expect(container.querySelector('#btn-calificar-indicadores')).toBeTruthy()
+    })
+
+    it('sin sesión guardada hoy muestra una advertencia y NO abre el panel', async () => {
+      mockSesionRows = []
+
+      await renderAsistenciaView(container, { claseId: 'clase-1', router })
+      container.querySelector('#btn-calificar-indicadores').click()
+
+      expect(AppToast.warning).toHaveBeenCalledWith(expect.stringContaining('Guardá la asistencia'))
+      expect(renderIndicadorSelectorPanel).not.toHaveBeenCalled()
+    })
+
+    it('con sesión ya guardada hoy abre IndicadorSelectorPanel con claseId/fecha/evaluadoPor y un resolver de presentes', async () => {
+      mockSesionRows = [
+        { id: 'sesion-1', clase_id: 'clase-1', maestro_id: 'maestro-1', fecha: '2026-07-31', borrador: true, asistencia: [] },
+      ]
+
+      await renderAsistenciaView(container, { claseId: 'clase-1', router })
+      container.querySelector('#btn-calificar-indicadores').click()
+
+      expect(renderIndicadorSelectorPanel).toHaveBeenCalledWith(
+        expect.objectContaining({
+          claseId: 'clase-1',
+          evaluadoPor: 'maestro-1',
+          getPresentes: expect.any(Function),
+        }),
+      )
+      expect(AppToast.warning).not.toHaveBeenCalled()
+    })
   })
 
   describe('la DSL de texto libre existente no se toca (REQ-11)', () => {

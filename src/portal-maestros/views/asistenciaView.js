@@ -86,6 +86,7 @@ import {
   generateMonthlyPedagogical,
 } from '../services/reportService.js'
 import { renderBitacoraSesionPanel } from '../../modules/planificacion/components/bitacoraSesionPanel.js'
+import { renderIndicadorSelectorPanel } from '../components/attendance/IndicadorSelectorPanel.js'
 
 /**
  * Vista Asistencia Optimizada (F3+): toma de asistencia con micro-interacciones.
@@ -981,6 +982,9 @@ function _renderVista(container, ctx) {
       <!-- Tarea 3.8 (mapa-gamificado-planificacion): entrada real a Modo Sesión (mapa) + Bitácora.
            No reemplaza ni modifica el registro DSL de arriba — es un punto de entrada aparte. -->
       <div class="pm-mapa-gamificado-entry" id="pm-mapa-gamificado-entry" style="margin-top:1.25rem; display:flex; gap:0.5rem; flex-wrap:wrap;">
+        <button type="button" class="pm-btn pm-btn-outline" id="btn-calificar-indicadores">
+          <i class="bi bi-stars"></i> Indicadores dados hoy
+        </button>
         <button type="button" class="pm-btn pm-btn-outline" id="btn-ir-modo-sesion">
           <i class="bi bi-map"></i> Ir a Modo Sesión (Mapa)
         </button>
@@ -1301,6 +1305,28 @@ function _renderVista(container, ctx) {
   if (btnIrModoSesion) {
     btnIrModoSesion.onclick = () => {
       navigateTo(`planificacion-mapa-clase?clase=${claseId}`)
+    }
+  }
+
+  // Atajo embebido: seleccionar indicador dado hoy y calificar con estrellas
+  // sin salir de la toma de asistencia (mismo árbol/servicios que Modo Sesión
+  // del mapa — ver IndicadorSelectorPanel.js).
+  const btnCalificarIndicadores = container.querySelector('#btn-calificar-indicadores')
+  if (btnCalificarIndicadores) {
+    btnCalificarIndicadores.onclick = () => {
+      if (!sesionId) {
+        AppToast.warning('Guardá la asistencia de hoy antes de calificar indicadores.')
+        return
+      }
+      renderIndicadorSelectorPanel({
+        claseId,
+        fecha: fechaHoy,
+        evaluadoPor: maestro.id,
+        getPresentes: () =>
+          alumnos
+            .filter((a) => estado[a.id] === 'P')
+            .map((a) => ({ id: a.id, nombre: a.nombre_completo || a.nombre || '' })),
+      })
     }
   }
 

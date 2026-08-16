@@ -5,6 +5,7 @@
  * en un PR posterior, ver openspec/changes/teacher-portal-ai-grading/design.md).
  */
 
+import gsap from 'gsap'
 import { AppToast } from '../../shared/components/AppToast.js'
 import { escHTML } from '../utils/portalUtils.js'
 import { getAlumnos } from '../services/catalogService.js'
@@ -122,9 +123,22 @@ export async function openIndicadorGradingModal({
     }
   }
 
+  // Logro nuevo detectado: dispara la celebración de insignia (import()
+  // dinámico, nunca en el bundle principal — ver InsigniaCelebrationOverlay.js)
+  // ANTES del resumen (Spec C-02, design.md paso 4: "se dispara
+  // import('./InsigniaCelebrationOverlay.js') → carga Rive → reproduce
+  // celebración → AchievementsSummaryModal.js muestra el resumen").
+  async function _triggerCelebrationIfAny(entries) {
+    const primerLogro = entries.filter(Boolean).flatMap((e) => e.logrosNuevos || [])[0]
+    if (!primerLogro) return
+    const { default: showInsigniaCelebration } = await import('./InsigniaCelebrationOverlay.js')
+    await showInsigniaCelebration(primerLogro)
+  }
+
   async function _showAchievements(entries) {
     const results = entries.filter(Boolean)
     if (results.length === 0) return
+    await _triggerCelebrationIfAny(results)
     const { createAchievementsSummaryModal } = await import('./AchievementsSummaryModal.js')
     await createAchievementsSummaryModal(document.body, results)
   }
@@ -132,6 +146,19 @@ export async function openIndicadorGradingModal({
   async function _checkAndShowAchievements(alumnoId, alumnoNombre) {
     const entry = await _computeAchievementsUpdate(alumnoId, alumnoNombre)
     await _showAchievements([entry])
+  }
+
+  // Anima el color/tamaño de una estrella con GSAP en vez de reasignar la
+  // clase CSS directamente — el nodo (estrella) ya existe en el DOM, GSAP
+  // solo transiciona sus propiedades visuales (Spec C-01, design.md: "GSAP
+  // envuelve el renderer existente, no lo reemplaza"). El toggle de la clase
+  // se mantiene como estado final persistente (fallback CSS sin JS).
+  const STAR_COLOR_FILLED = '#f59e0b'
+  const STAR_COLOR_EMPTY = '#d1d5db'
+  function _animateStarFill(starEl, filled) {
+    starEl.classList.toggle('igm-star-filled', filled)
+    gsap.to(starEl, { color: filled ? STAR_COLOR_FILLED : STAR_COLOR_EMPTY, duration: 0.25 })
+    gsap.fromTo(starEl, { scale: 1 }, { scale: filled ? 1.3 : 1, duration: 0.15, ease: 'power1.out', yoyo: true, repeat: filled ? 1 : 0 })
   }
 
   try {
@@ -294,7 +321,7 @@ export async function openIndicadorGradingModal({
           starBtn.addEventListener('click', async () => {
             const value = Number(starBtn.dataset.value)
             starsEl.querySelectorAll('.igm-star').forEach((s) => {
-              s.classList.toggle('igm-star-filled', Number(s.dataset.value) <= value)
+              _animateStarFill(s, Number(s.dataset.value) <= value)
             })
             try {
               const saved = await saveIndicadorNota({
@@ -409,7 +436,7 @@ export async function openIndicadorGradingModal({
             grupalStars.forEach((starBtn) => {
               starBtn.addEventListener('click', async () => {
                 const value = Number(starBtn.dataset.value)
-                grupalStars.forEach((s) => s.classList.toggle('igm-star-filled', Number(s.dataset.value) <= value))
+                grupalStars.forEach((s) => _animateStarFill(s, Number(s.dataset.value) <= value))
 
                 try {
                   const achievementEntries = await Promise.all(
@@ -419,7 +446,7 @@ export async function openIndicadorGradingModal({
                       const row = body.querySelector(`.igm-stars[data-alumno-id="${alumnoId}"]`)
                       if (row) {
                         row.querySelectorAll('.igm-star').forEach((s) => {
-                          s.classList.toggle('igm-star-filled', Number(s.dataset.value) <= value)
+                          _animateStarFill(s, Number(s.dataset.value) <= value)
                         })
                       }
                       return _computeAchievementsUpdate(alumnoId, alumnosMap[alumnoId]?.nombre)

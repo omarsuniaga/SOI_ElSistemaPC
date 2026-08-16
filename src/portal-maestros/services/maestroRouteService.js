@@ -5,6 +5,7 @@
  */
 
 import { supabase } from '../../lib/supabaseClient.js'
+import { callGroq } from './groqService.js'
 
 /**
  * Get all routes for a teacher in a given class
@@ -602,6 +603,105 @@ export async function getDirectPrerequisite(indicadorId) {
   } catch (err) {
     console.warn('[MaestroRouteService] getDirectPrerequisite error:', err.message)
     return null
+  }
+}
+
+/**
+ * Get the average `nota` and evaluation count per indicator, across all
+ * students of a class. `maestro_routes` no tiene una vista agregada como
+ * `vw_clase_objetivo_estrellas` de Sistema A — se calcula acá con una sola
+ * consulta batched (evita N+1 sobre `evaluacion_indicador`).
+ * @param {Array<string>} indicadorIds
+ * @param {string} claseId
+ * @returns {Promise<Map<string, {promedio: number, evaluados: number}>>}
+ */
+export async function getPromediosPorIndicador(indicadorIds, claseId) {
+  const resultado = new Map()
+  if (!indicadorIds || indicadorIds.length === 0 || !claseId) return resultado
+
+  try {
+    const { data, error } = await supabase
+      .from('evaluacion_indicador')
+      .select('maestro_indicador_id, nota')
+      .in('maestro_indicador_id', indicadorIds)
+      .eq('clase_id', claseId)
+      .not('nota', 'is', null)
+
+    if (error || !data) return resultado
+
+    const sumas = new Map()
+    for (const fila of data) {
+      const acc = sumas.get(fila.maestro_indicador_id) || { suma: 0, count: 0 }
+      acc.suma += fila.nota
+      acc.count += 1
+      sumas.set(fila.maestro_indicador_id, acc)
+    }
+
+    for (const [indicadorId, { suma, count }] of sumas) {
+      resultado.set(indicadorId, { promedio: suma / count, evaluados: count })
+    }
+
+    return resultado
+  } catch (err) {
+    console.warn('[MaestroRouteService] getPromediosPorIndicador error:', err.message)
+    return resultado
+  }
+}
+
+/**
+ * Sugiere una nueva unidad (con objetivos e indicadores) para la ruta
+ * personal del maestro, vía IA. No existía un generador equivalente en
+ * Sistema B — se sigue el mismo patrón que `sugerirRutaDidacticaIA` de
+ * Sistema A (`src/modules/planificacion/services/aiEvaluacionService.js`):
+ * cuando ya hay objetivos previos en la ruta, se agregan al prompt pidiendo
+ * continuidad (no repetición), y ante cualquier falla de GROQ se devuelve
+ * un fallback demo en vez de propagar el error (para no bloquear al maestro).
+ *
+ * @param {object} params
+ * @param {string} [params.instrumento] - Instrumento/especialidad de la clase, para contextualizar el prompt.
+ * @param {Array<{nombre: string, objetivos: Array<{nombre: string}>}>} [params.unidadesExistentes] - Unidades ya creadas en esta ruta (o clase), solo nombres — sin IDs.
+ * @returns {Promise<{nombre: string, objetivos: Array<{nombre: string, indicadores: Array<{nombre: string}>}>}>}
+ */
+export async function sugerirUnidadRutaIA({ instrumento = 'Música', unidadesExistentes = [] } = {}) {
+  const objetivosExistentes = unidadesExistentes.flatMap((u) => (u.objetivos || []).map((o) => o.nombre))
+
+  const contextoPrevio =
+    objetivosExistentes.length > 0
+      ? `\n\nEsta ruta YA tiene estos objetivos redactados en unidades anteriores:\n${objetivosExistentes
+          .map((o, i) => `${i + 1}. ${o}`)
+          .join('\n')}\nGenerá una unidad NUEVA cuyos objetivos continúen esa progresión de forma coherente (más avanzados, sin repetir ni contradecir los anteriores). No repitas ninguno de esos nombres en la respuesta.`
+      : ''
+
+  const prompt = `Como pedagogo musical experto de El Sistema, genera una nueva unidad didáctica para ${instrumento}, con 2 a 4 objetivos y 2 indicadores observables por objetivo.${contextoPrevio}
+Responde ÚNICAMENTE en JSON con el formato:
+{
+  "nombre": "Nombre de la unidad",
+  "objetivos": [
+    { "nombre": "Objetivo 1", "indicadores": [{ "nombre": "Indicador 1" }, { "nombre": "Indicador 2" }] }
+  ]
+}`
+
+  try {
+    const raw = await callGroq([{ role: 'user', content: prompt }])
+    const jsonStr = raw.replace(/```json/g, '').replace(/```/g, '').trim()
+    const parsed = JSON.parse(jsonStr)
+    if (parsed && typeof parsed === 'object' && Array.isArray(parsed.objetivos)) return parsed
+    return _fallbackUnidadRutaIA(instrumento)
+  } catch (err) {
+    console.warn('[MaestroRouteService] Error llamando a GROQ para sugerir unidad, usando fallback demo:', err.message)
+    return _fallbackUnidadRutaIA(instrumento)
+  }
+}
+
+function _fallbackUnidadRutaIA(instrumento) {
+  return {
+    nombre: `Nueva unidad — ${instrumento}`,
+    objetivos: [
+      {
+        nombre: 'Postura y emisión de sonido',
+        indicadores: [{ nombre: 'Postura correcta del instrumento' }, { nombre: 'Producción de sonido estable' }],
+      },
+    ],
   }
 }
 

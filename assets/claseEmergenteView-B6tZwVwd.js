@@ -1,4 +1,4 @@
-import{i as e}from"./supabase-Cgh_dhNB.js";import{s as t}from"./main-maestros-BovXrrN5.js";function n(e,{alumnos:t=[],onSelect:n}){let r=document.getElementById(`pm-alumno-picker-modal`);r||(r=document.createElement(`div`),r.id=`pm-alumno-picker-modal`,r.className=`pm-modal-overlay`,r.innerHTML=`
+import{i as e}from"./supabase-Cgh_dhNB.js";import{s as t}from"./main-maestros-CerkHiU8.js";function n(e,{alumnos:t=[],onSelect:n}){let r=document.getElementById(`pm-alumno-picker-modal`);r||(r=document.createElement(`div`),r.id=`pm-alumno-picker-modal`,r.className=`pm-modal-overlay`,r.innerHTML=`
       <div class="pm-modal-content">
         <div class="pm-modal-header">
           <h3 style="margin: 0; font-size: 1.1rem; font-weight: 700;">Mencionar Alumnos</h3>
